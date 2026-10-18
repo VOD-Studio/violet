@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { Canvas } from "../src/canvas/index.ts";
 import { applyMove, invertMove } from "../src/core/index.ts";
 import {
 	Board,
@@ -89,4 +90,58 @@ function App() {
 	);
 }
 
-createRoot(document.getElementById("root") as HTMLElement).render(<App />);
+/** 画布视图：一块比窗口宽的只读看板放进画布，画布下面有一大块页面，用来验证滚轮不被劫持。 */
+function CanvasDemo() {
+	const tall = Array.from({ length: 10 }, (_, index) => ({
+		id: `l${index + 1}`,
+		title: `Later ${index + 1}`,
+	}));
+	const canvasTasks = [...tasks, { id: "f", title: "Task F" }, ...tall];
+	const wide = [
+		...columns,
+		{ id: "c4", title: "Later" },
+		{ id: "c5", title: "Backlog" },
+		{ id: "c6", title: "Ideas" },
+	];
+	// c4 很高、c6 在最右：默认适应窗口后，底部与右侧的卡片都在视口之外
+	const wideOrder: BoardState["order"] = {
+		...initial,
+		c4: tall.map((task) => task.id),
+		c5: [],
+		c6: ["f"],
+	};
+	return (
+		<div style={{ width: 900, padding: 24 }}>
+			<p id="before">above the canvas</p>
+			<button type="button" id="outside-before">
+				outside before
+			</button>
+			<Canvas style={{ height: 420 }} locale="en">
+				<Board
+					columns={wide}
+					cards={canvasTasks}
+					order={wideOrder}
+					getCardLabel={(task) => task.title}
+					renderCard={(task) => (
+						<button
+							type="button"
+							style={{ all: "unset", display: "block", width: "100%" }}
+						>
+							{task.title}
+						</button>
+					)}
+				/>
+			</Canvas>
+			<button type="button" id="outside-after">
+				outside after
+			</button>
+			<div id="spacer" style={{ height: 2400 }}>
+				page keeps scrolling
+			</div>
+		</div>
+	);
+}
+
+createRoot(document.getElementById("root") as HTMLElement).render(
+	params.get("view") === "canvas" ? <CanvasDemo /> : <App />,
+);

@@ -44,6 +44,9 @@ try {
 		"dist/unstyled.d.ts",
 		"dist/core/index.js",
 		"dist/core/index.d.ts",
+		"dist/canvas/index.js",
+		"dist/canvas/index.d.ts",
+		"dist/canvas/canvas.css",
 		"dist/styles.css",
 		"dist/board/board.css",
 		"dist/history/history.css",
@@ -64,6 +67,7 @@ try {
 		[".", "index", "unstyled"],
 		["./unstyled", "unstyled", "unstyled"],
 		["./core", "core/index", "core/index"],
+		["./canvas", "canvas/index", "canvas/index"],
 	]) {
 		assert.equal(packed.exports[entry].import, `./dist/${js}.js`);
 		assert.equal(packed.exports[entry].types, `./dist/${types}.d.ts`);
@@ -106,7 +110,8 @@ try {
 		"types.tsx",
 		`import { Board, createPointerController, type BoardCard, type BoardColumn, type BoardLocale, type BoardMessages, type BoardMove, type BoardProps, type BoardState, type DragController, type DragHost, type MoveDecision } from "${metadata.name}";
 import { Board as Unstyled, HistoryButtons, useHistoryAnnouncement, useHistoryShortcuts, useHistoryState, type HistoryCommand, type CommandHistory } from "${metadata.name}/unstyled";
-import { createHistory, invertMove } from "${metadata.name}/core";
+import { createHistory, invertMove, fitViewport, zoomAt, DEFAULT_SCALE_LIMITS, type Viewport } from "${metadata.name}/core";
+import { Canvas, type CanvasHandle, type CanvasMessages } from "${metadata.name}/canvas";
 import { applyMove, violatesAutoSort, createMove, isNoopMove, locateCard, normalizeBoardState, resolveBoard, resolveDropTarget, type ColumnLayout, type ResolvedColumn } from "${metadata.name}/core";
 interface Task extends BoardCard { title: string }
 interface Stage extends BoardColumn { hint: string }
@@ -127,6 +132,10 @@ export const nodes = [
 	<Unstyled columns={stages} cards={tasks} order={{}} renderCard={(task) => task.title} />,
 ];
 export const props: BoardProps<Task, Stage>["order"] = {};
+const viewport: Viewport = fitViewport({ width: 800, height: 600 }, { width: 400, height: 300 });
+export const zoomed: Viewport = zoomAt(viewport, { x: 0, y: 0 }, 1.5, DEFAULT_SCALE_LIMITS);
+const canvasMessages: Partial<CanvasMessages> = { fit: "Fit" };
+export const canvas = <Canvas defaultViewport={zoomed} onViewportChange={(next) => console.log(next.scale)} fit={{ minScale: 0.5 }} controls locale="zh-CN" messages={canvasMessages} ref={(handle: CanvasHandle | null) => handle?.fit()}><div /></Canvas>;
 const command: HistoryCommand = { label: "move", undo: async () => {}, redo: () => {} };
 const history: CommandHistory = createHistory({ limit: 10, onError: (error, failed) => console.error(error, failed.label) });
 history.push(command);
@@ -162,6 +171,7 @@ import { renderToString } from "react-dom/server";
 import { Board } from "${metadata.name}/unstyled";
 import { createMove, applyMove, resolveBoard, createHistory } from "${metadata.name}/core";
 import { HistoryButtons } from "${metadata.name}/unstyled";
+import { Canvas } from "${metadata.name}/canvas";
 const props = {
 	columns: [{ id: "todo", title: "Todo" }, { id: "done", title: "Done" }],
 	cards: [{ id: "a", title: "First" }, { id: "b", title: "Second" }],
@@ -185,6 +195,10 @@ assert.ok(!/<script|<style/.test(html));
 assert.deepEqual(resolveBoard({ columns: ["todo"], order: { todo: ["b", "x"] } }, props.cards).map((column) => column.cards.map((card) => card.id)), [["b"]]);
 const moved = applyMove({ columns: ["todo", "done"], order: { todo: ["a", "b"], done: [] } }, createMove({ columns: ["todo", "done"], order: { todo: ["a", "b"], done: [] } }, "a", { columnId: "done", index: 0 }));
 assert.deepEqual(moved.order, { todo: ["b"], done: ["a"] });
+const canvasHtml = renderToString(createElement(Canvas, { defaultViewport: { scale: 1, x: 0, y: 0 } }, createElement('p', null, 'Canvas content')));
+assert.match(canvasHtml, /Canvas content/);
+assert.ok(canvasHtml.includes('translate(0px, 0px) scale(1)'));
+assert.match(canvasHtml, /aria-label="Zoom in"/);
 const controls = renderToString(createElement(HistoryButtons, { history: createHistory() }));
 assert.equal((controls.match(/aria-disabled="true"/g) ?? []).length, 2);
 assert.ok(controls.includes('aria-keyshortcuts="Control+Z Meta+Z"'));
@@ -220,6 +234,7 @@ console.log("Installed tarball: SSR and core contracts passed.");
 	for (const [name, contents] of [
 		["unstyled", `export { Board } from "${metadata.name}/unstyled";`],
 		["core", `export { normalizeBoardState, resolveBoard } from "${metadata.name}/core";`],
+		["canvas", `export { Canvas } from "${metadata.name}/canvas";`],
 	]) {
 		const result = await bundle(contents, "node");
 		const inputs = Object.keys(result.metafile.inputs);

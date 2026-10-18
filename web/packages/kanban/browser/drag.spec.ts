@@ -517,3 +517,302 @@ test.describe("撤销与重做", () => {
 		await expect(undo(page)).toBeEnabled();
 	});
 });
+
+test.describe("画布视口", () => {
+	const root = (page: Page) => page.locator(".v-kanban-canvas");
+	const viewportEl = (page: Page) => page.locator(".v-kanban-canvas__viewport");
+	const content = (page: Page) => page.locator(".v-kanban-canvas__content");
+	/** 内容层当前的 transform：{ x, y, scale }。 */
+	const shownTransform = async (page: Page) =>
+		content(page).evaluate((element) => {
+			const match = /translate\(([-\d.e]+)px, ([-\d.e]+)px\) scale\(([-\d.e]+)\)/.exec(
+				(element as HTMLElement).style.transform,
+			);
+			if (!match) throw new Error("no transform");
+			return { x: Number(match[1]), y: Number(match[2]), scale: Number(match[3]) };
+		});
+
+	// 画布页没有卡片 a，open() 的等待条件不适用
+	async function openCanvas(page: Page) {
+		await page.addInitScript(() => {
+			window.__animateCalls = 0;
+		});
+		await page.goto(`${process.env.KANBAN_FIXTURE_URL}?view=canvas`);
+		await expect(viewportEl(page)).toBeVisible();
+	}
+
+	test("挂载后适应窗口：内容远大于窗口时缩放停在 0.8，从左上角开始", async ({ page }) => {
+		await openCanvas(page);
+
+		const shown = await shownTransform(page);
+		expect(shown.scale).toBe(0.8);
+		expect(shown.x).toBe(24);
+	});
+
+	test("普通滚轮滚动页面而不被画布劫持；Ctrl 加滚轮缩放画布而页面不滚动", async ({ page }) => {
+		await openCanvas(page);
+		const box = await viewportEl(page).boundingBox();
+		if (!box) throw new Error("viewport not visible");
+		await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+		const before = await shownTransform(page);
+
+		await page.mouse.wheel(0, 300);
+		await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+		expect(await shownTransform(page)).toEqual(before);
+
+		// 滚回顶部，让画布重新回到鼠标下面
+		await page.evaluate(() => window.scrollTo(0, 0));
+		await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+		const scrolled = await page.evaluate(() => window.scrollY);
+		await page.keyboard.down("Control");
+		await page.mouse.wheel(0, -300);
+		await page.keyboard.up("Control");
+		await expect
+			.poll(async () => (await shownTransform(page)).scale)
+			.toBeGreaterThan(before.scale);
+		expect(await page.evaluate(() => window.scrollY)).toBe(scrolled);
+		expect(await page.evaluate(() => window.visualViewport?.scale)).toBe(1);
+	});
+
+	test("按钮缩放与适应窗口，读数同步", async ({ page }) => {
+		await openCanvas(page);
+
+		await page.getByRole("button", { name: "Zoom in" }).click();
+		await expect(page.locator(".v-kanban-canvas__zoom")).toHaveText("100%");
+		await page.getByRole("button", { name: "Zoom in" }).click();
+		await expect(page.locator(".v-kanban-canvas__zoom")).toHaveText("125%");
+		await page.getByRole("button", { name: "Fit to window" }).click();
+		await expect(page.locator(".v-kanban-canvas__zoom")).toHaveText("80%");
+		await expect(page.locator(".v-kanban-canvas__status")).toHaveText("Zoom 80%");
+	});
+
+	test("拖动背景平移，拖动卡片不平移", async ({ page }) => {
+		await openCanvas(page);
+		const before = await shownTransform(page);
+		const box = await viewportEl(page).boundingBox();
+		if (!box) throw new Error("viewport not visible");
+		// 视口底部没有内容的空白处
+		const start = { x: box.x + box.width / 2, y: box.y + box.height - 20 };
+
+		await page.mouse.move(start.x, start.y);
+		await page.mouse.down();
+		await page.mouse.move(start.x - 120, start.y - 40, { steps: 6 });
+		await expect(viewportEl(page)).toHaveAttribute("data-panning", "true");
+		await page.mouse.up();
+
+		const after = await shownTransform(page);
+		expect(Math.round(after.x - before.x)).toBe(-120);
+		expect(Math.round(after.y - before.y)).toBe(-40);
+
+		const card = page.locator('[data-card-id="a"]');
+		const cardBox = await card.boundingBox();
+		if (!cardBox) throw new Error("card not visible");
+		await page.mouse.move(cardBox.x + 20, cardBox.y + 10);
+		await page.mouse.down();
+		await page.mouse.move(cardBox.x + 100, cardBox.y + 60, { steps: 4 });
+		await page.mouse.up();
+		expect(await shownTransform(page)).toEqual(after);
+	});
+
+	test("全屏：铺满窗口并锁住页面滚动，Esc 退出", async ({ page }) => {
+		await openCanvas(page);
+
+		await page.getByRole("button", { name: "Enter full screen" }).click();
+		const size = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
+		const full = await root(page).boundingBox();
+		expect(full).toMatchObject({ x: 0, y: 0, width: size.width, height: size.height });
+		expect(await page.evaluate(() => document.body.style.overflow)).toBe("hidden");
+		await expect(page.locator(".v-kanban-canvas__status")).toHaveText(/Escape/);
+
+		await page.keyboard.press("Escape");
+
+		await expect(root(page)).not.toHaveAttribute("data-fullscreen", "true");
+		const restored = await root(page).boundingBox();
+		expect(restored?.height).toBeLessThan(size.height);
+		expect(await page.evaluate(() => document.body.style.overflow)).toBe("");
+	});
+
+	test("键盘：视口聚焦后方向键平移、+ 与 - 缩放、0 适应窗口", async ({ page }) => {
+		await openCanvas(page);
+		await viewportEl(page).focus();
+		const start = await shownTransform(page);
+
+		await page.keyboard.press("ArrowRight");
+		expect((await shownTransform(page)).x).toBe(start.x - 48);
+		await page.keyboard.press("Shift+ArrowDown");
+		expect((await shownTransform(page)).y).toBe(start.y - 192);
+		await page.keyboard.press("+");
+		await expect.poll(async () => (await shownTransform(page)).scale).toBeCloseTo(1, 5);
+		await page.keyboard.press("0");
+		await expect.poll(async () => (await shownTransform(page)).scale).toBeCloseTo(0.8, 5);
+	});
+
+	/** 元素相对视口的位置是否完整落在视口内，四周至少留 8px。 */
+	const isRevealed = async (page: Page, selector: string) => {
+		const viewportBox = await viewportEl(page).boundingBox();
+		const box = await page.locator(selector).boundingBox();
+		if (!viewportBox || !box) throw new Error("not visible");
+		return (
+			box.x >= viewportBox.x + 8 - 1 &&
+			box.y >= viewportBox.y + 8 - 1 &&
+			box.x + box.width <= viewportBox.x + viewportBox.width - 8 + 1 &&
+			box.y + box.height <= viewportBox.y + viewportBox.height - 8 + 1
+		);
+	};
+	const insideViewport = async (page: Page, selector: string) => {
+		const viewportBox = await viewportEl(page).boundingBox();
+		const box = await page.locator(selector).boundingBox();
+		if (!viewportBox || !box) throw new Error("not visible");
+		return (
+			box.x >= viewportBox.x &&
+			box.y >= viewportBox.y &&
+			box.x + box.width <= viewportBox.x + viewportBox.width &&
+			box.y + box.height <= viewportBox.y + viewportBox.height
+		);
+	};
+	/** 过渡与动画都结束。 */
+	const settled = (page: Page) =>
+		page.waitForFunction(() => document.getAnimations().length === 0);
+	const nativeScroll = (page: Page) =>
+		viewportEl(page).evaluate((element) => [element.scrollLeft, element.scrollTop]);
+
+	test("聚焦到视口之外的卡片（右侧与底部）时画布平移到刚好露出，聚焦环不被裁剪，视口自己不滚动", async ({
+		page,
+	}) => {
+		await openCanvas(page);
+		for (const id of ["f", "l10"]) {
+			expect(await insideViewport(page, `[data-card-id="${id}"] button`)).toBe(false);
+			await page.evaluate(
+				(cardId) =>
+					document
+						.querySelector<HTMLElement>(`[data-card-id="${cardId}"] button`)
+						?.focus(),
+				id,
+			);
+			await settled(page);
+
+			expect(await isRevealed(page, `[data-card-id="${id}"] button`)).toBe(true);
+			expect(await nativeScroll(page)).toEqual([0, 0]);
+		}
+
+		await page.getByRole("button", { name: "Fit to window" }).click();
+		await settled(page);
+		expect(await insideViewport(page, '[data-card-id="a"] button')).toBe(true);
+	});
+
+	test("缩放过渡进行中聚焦视口外的卡片，最终也刚好露出", async ({ page }) => {
+		await openCanvas(page);
+		expect(await insideViewport(page, '[data-card-id="f"] button')).toBe(false);
+
+		await page.getByRole("button", { name: "Zoom in" }).click();
+		await page.evaluate(() =>
+			document.querySelector<HTMLElement>('[data-card-id="f"] button')?.focus(),
+		);
+		await settled(page);
+
+		expect(await isRevealed(page, '[data-card-id="f"] button')).toBe(true);
+	});
+
+	test("全屏时 Tab 不会跑到被遮住的页面内容里", async ({ page }) => {
+		await openCanvas(page);
+		await page.getByRole("button", { name: "Enter full screen" }).click();
+
+		const visited = new Set<string>();
+		for (let index = 0; index < 20; index += 1) {
+			await page.keyboard.press("Tab");
+			visited.add(
+				await page.evaluate(() => {
+					const active = document.activeElement;
+					if (!active || active === document.body) return "body";
+					return active.closest(".v-kanban-canvas") ? "canvas" : (active.id ?? "other");
+				}),
+			);
+		}
+
+		expect([...visited].filter((place) => place !== "canvas" && place !== "body")).toEqual([]);
+
+		await page.keyboard.press("Escape");
+		await page.locator("#outside-before").focus();
+		await expect(page.locator("#outside-before")).toBeFocused();
+	});
+
+	test("按钮缩放用过渡，偏好减弱动态时不用", async ({ page }) => {
+		await openCanvas(page);
+		await page.getByRole("button", { name: "Zoom in" }).click();
+		const normal = await content(page).evaluate(
+			(element) => getComputedStyle(element).transitionDuration,
+		);
+		expect(normal).toBe("0.2s");
+
+		await page.emulateMedia({ reducedMotion: "reduce" });
+		const reduced = await content(page).evaluate(
+			(element) => getComputedStyle(element).transitionDuration,
+		);
+		expect(reduced).toBe("0s");
+	});
+});
+
+test.describe("画布视口（触屏模拟）", () => {
+	test.use({ hasTouch: true });
+
+	test("双指拉开放大画布", async ({ page, context }) => {
+		await page.goto(`${process.env.KANBAN_FIXTURE_URL}?view=canvas`);
+		const viewport = page.locator(".v-kanban-canvas__viewport");
+		await expect(viewport).toBeVisible();
+		const box = await viewport.boundingBox();
+		if (!box) throw new Error("viewport not visible");
+		const cdp = await context.newCDPSession(page);
+		const center = { x: box.x + box.width / 2, y: box.y + box.height - 40 };
+		const touches = (gap: number) => [
+			{ x: center.x - gap, y: center.y },
+			{ x: center.x + gap, y: center.y },
+		];
+		const scaleOf = () =>
+			page.locator(".v-kanban-canvas__content").evaluate((element) => {
+				const match = /scale\(([-\d.e]+)\)/.exec((element as HTMLElement).style.transform);
+				return Number(match?.[1]);
+			});
+		const before = await scaleOf();
+
+		await cdp.send("Input.dispatchTouchEvent", {
+			type: "touchStart",
+			touchPoints: touches(40),
+		});
+		for (let gap = 50; gap <= 140; gap += 15)
+			await cdp.send("Input.dispatchTouchEvent", {
+				type: "touchMove",
+				touchPoints: touches(gap),
+			});
+		await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+
+		expect(await scaleOf()).toBeGreaterThan(before);
+	});
+
+	test("单指从卡片上起手也能平移画布", async ({ page, context }) => {
+		await page.goto(`${process.env.KANBAN_FIXTURE_URL}?view=canvas`);
+		const card = page.locator('[data-card-id="a"]');
+		await expect(card).toBeVisible();
+		const box = await card.boundingBox();
+		if (!box) throw new Error("card not visible");
+		const transformX = () =>
+			page.locator(".v-kanban-canvas__content").evaluate((element) => {
+				const match = /translate\(([-\d.e]+)px/.exec(
+					(element as HTMLElement).style.transform,
+				);
+				return Number(match?.[1]);
+			});
+		const before = await transformX();
+		const cdp = await context.newCDPSession(page);
+		const start = { x: box.x + 20, y: box.y + 10 };
+
+		await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [start] });
+		for (let step = 1; step <= 6; step += 1)
+			await cdp.send("Input.dispatchTouchEvent", {
+				type: "touchMove",
+				touchPoints: [{ x: start.x - step * 20, y: start.y }],
+			});
+		await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+
+		expect(Math.round(before - (await transformX()))).toBe(120);
+	});
+});

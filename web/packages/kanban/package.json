@@ -48,6 +48,11 @@
 			"import": "./src/core/index.ts",
 			"default": "./src/core/index.ts"
 		},
+		"./canvas": {
+			"types": "./src/canvas/index.ts",
+			"import": "./src/canvas/index.ts",
+			"default": "./src/canvas/index.ts"
+		},
 		"./styles.css": "./src/styles.css",
 		"./package.json": "./package.json"
 	},
@@ -70,6 +75,11 @@
 				"types": "./dist/core/index.d.ts",
 				"import": "./dist/core/index.js",
 				"default": "./dist/core/index.js"
+			},
+			"./canvas": {
+				"types": "./dist/canvas/index.d.ts",
+				"import": "./dist/canvas/index.js",
+				"default": "./dist/canvas/index.js"
 			},
 			"./styles.css": "./dist/styles.css",
 			"./package.json": "./package.json"

@@ -10,7 +10,8 @@ This is a workspace package and is **not published to npm**. This README covers 
 | --- | --- |
 | `@violetjs/kanban` | `Board`, `HistoryButtons`, history hooks, `createHistory`, `createPointerController` and types, with the default stylesheet |
 | `@violetjs/kanban/unstyled` | The same exports without any CSS |
-| `@violetjs/kanban/core` | React-free board state, moves, drop-target resolution, auto-sort rule, keyboard steps, undo history |
+| `@violetjs/kanban/core` | React-free board state, moves, drop-target resolution, auto-sort rule, keyboard steps, undo history, viewport math |
+| `@violetjs/kanban/canvas` | `Canvas`, a pannable and zoomable viewport for the board (import the stylesheet once) |
 | `@violetjs/kanban/styles.css` | The default stylesheet on its own |
 
 The package does not depend on `@violet/ui` or any site module. React 19 is a peer dependency.
@@ -129,6 +130,29 @@ const history = useMemo(() => createHistory(), []);
 - An error thrown by a subscriber or by `onError` never corrupts the history; it is rethrown asynchronously so it still reaches your error reporting.
 - `HistoryButtons` names the buttons by their visible text, puts the next step's name in `title`, marks unavailable buttons `aria-disabled` (so focus stays put after the last undo) and announces results. `useHistoryState(history)` and `useHistoryAnnouncement(history)` expose the same state and announcement text for your own UI.
 - `useHistoryShortcuts(history, { scope, enabled })` binds Ctrl/⌘+Z to undo and Ctrl/⌘+Shift+Z or Ctrl+Y to redo. It ignores inputs, textareas, selects and editable text (also inside shadow roots), combinations with `Alt`, and IME composition.
+
+## Canvas
+
+`Canvas` from `@violetjs/kanban/canvas` is a pannable, zoomable, full-screen-able viewport. Put a whole board (or anything else) inside it; it needs the stylesheet (`@violetjs/kanban/styles.css`, or the root entry).
+
+```tsx
+import { Canvas } from "@violetjs/kanban/canvas";
+
+<Canvas style={{ height: 480 }}>
+  <Board /* … */ />
+</Canvas>
+```
+
+- Drag the background to pan. With a mouse, buttons, links, form fields and draggable cards never start a pan, so dragging a card still moves the card; read-only cards are part of the background. On touch screens there is no other way to scroll, so a finger can also start on a button or a read-only card (form fields and draggable cards still keep their own touch handling).
+- `Ctrl` or `⌘` with the mouse wheel zooms around the pointer, anywhere on the canvas including the control bar (and stops the browser from zooming the page). A plain wheel is never intercepted, so the page keeps scrolling. A trackpad pinch in Safari zooms the canvas too. On touch screens two fingers zoom and pan; one finger on the canvas pans it instead of scrolling the page (`touch-action: none` on everything inside).
+- The scale stays between 0.3 and 2 (`scaleLimits`). The buttons, `+` and `-` zoom in steps of 1.25 around the centre.
+- It fits the window on mount and when the window or content resizes, until you pan or zoom. Fitting never goes below 0.8 (`fit.minScale`) or above 1: content that is still too large is placed at the top left and reached by panning.
+- Focus the viewport (`Tab`) and use the arrow keys (`Shift` for bigger steps) to pan, `+` `-` to zoom and `0` to fit. Focusing something outside the visible area pans just far enough to show it, so focus rings are never clipped. Every control is a real button, so everything works from the keyboard.
+- The full-screen button fills the window with the canvas, locks page scrolling and makes the rest of the page `inert`, so `Tab` and screen readers stay inside the canvas. It is CSS, not the browser Fullscreen API, so `Esc` is handled by the page: it exits full screen unless a drag or a keyboard pick-up already claimed that `Esc`. Don't put the canvas inside an element with a `transform`, which would break the fixed layout. The canvas ignores an inline `height` while full screen.
+- Zoom changes animate over 200ms for the buttons, keys and fit, and not at all for the wheel, drag and pinch; both are off under `prefers-reduced-motion: reduce`.
+- A `ref` gives `fit()`, `zoomIn()`, `zoomOut()`, `setViewport()` and `getViewport()`; `onViewportChange` reports every change. `@violetjs/kanban/core` has the underlying pure functions (`fitViewport`, `zoomAt`, `pinchViewport`, `revealRect`, …).
+- Editing a board inside a canvas is not supported yet: pointer dragging, keyboard moves and the "Move to…" menu all assume an untransformed coordinate space, and the canvas fits at 0.8 by default. Put read-only boards in a canvas for now.
+- Viewports passed in (`defaultViewport`, `setViewport`) are corrected: the scale is clamped into the limits and non-finite numbers become 0.
 
 ## Slots and messages
 

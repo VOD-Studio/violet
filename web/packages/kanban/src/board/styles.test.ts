@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 const board = read("./board.css");
 const history = read("../history/history.css");
+const canvas = read("../canvas/canvas.css");
 
 /** 取选择器恰好为 `selector` 的规则块内容。 */
 function rule(css: string, selector: string): string {
@@ -37,9 +38,25 @@ describe("看板样式", () => {
 	});
 });
 
+describe("画布样式", () => {
+	it("触摸手势归画布：touch-action: none 落在视口与它的每个后代上（内容里的滚动容器会截断继承）", () => {
+		expect(canvas).toMatch(
+			/\.v-kanban-canvas \.v-kanban-canvas__viewport,\s*\.v-kanban-canvas \.v-kanban-canvas__viewport \*\s*\{[^}]*touch-action:\s*none/,
+		);
+	});
+
+	it("视口用 overflow: clip，不成为滚动容器，聚焦视口外的元素时浏览器不会原生滚动它", () => {
+		const viewport = rule(canvas, ".v-kanban-canvas .v-kanban-canvas__viewport");
+
+		expect(viewport).toMatch(/overflow:\s*clip/);
+		expect(viewport).not.toMatch(/overflow(-[xy])?:\s*(hidden|auto|scroll)/);
+	});
+});
+
 describe.each([
 	["board.css", board],
 	["history.css", history],
+	["canvas.css", canvas],
 ])("%s 的视觉红线", (_name, css) => {
 	it("不使用 scale；阴影只有一种轻微软影或没有", () => {
 		expect(css).not.toMatch(/scale/);
