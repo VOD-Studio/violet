@@ -1,4 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { PAN_REGION_SELECTOR } from "../pan-region.ts";
+import { screenScale } from "./drag/dom.ts";
 
 export interface MoveMenuProps {
 	/** 菜单按钮与菜单的可访问名称。 */
@@ -30,23 +32,31 @@ export function MoveMenu({ label, triggerText, targets, mode, onSelect }: MoveMe
 		const menu = menuRef.current;
 		const trigger = triggerRef.current;
 		if (!open || !menu || !trigger) return;
-		// fixed 定位不受滚动层裁剪；先放在 0,0 量出祖先 transform 造成的偏差
+		// fixed 定位不受滚动层裁剪；先放在 0,0 量出祖先 transform 造成的偏差，位置按布局像素写入（画布缩放下屏幕像素要除以缩放）
 		menu.style.left = "0px";
 		menu.style.top = "0px";
 		const origin = menu.getBoundingClientRect();
+		const scale = screenScale(menu);
 		const anchor = trigger.getBoundingClientRect();
 		const margin = 4;
-		const left = Math.min(
-			Math.max(anchor.right - origin.width, margin),
-			window.innerWidth - origin.width - margin,
+		// 在画布里时，菜单被画布视口裁剪，要按它而不是窗口来翻转与收拢
+		const bounds = trigger.closest(PAN_REGION_SELECTOR)?.getBoundingClientRect() ?? {
+			left: 0,
+			top: 0,
+			right: window.innerWidth,
+			bottom: window.innerHeight,
+		};
+		const left = Math.max(
+			Math.min(anchor.right - origin.width, bounds.right - origin.width - margin),
+			bounds.left + margin,
 		);
 		const below = anchor.bottom + margin;
 		const top =
-			below + origin.height > window.innerHeight
-				? anchor.top - origin.height - margin
+			below + origin.height > bounds.bottom
+				? Math.max(anchor.top - origin.height - margin, bounds.top + margin)
 				: below;
-		menu.style.left = `${left - origin.left}px`;
-		menu.style.top = `${top - origin.top}px`;
+		menu.style.left = `${(left - origin.left) / scale}px`;
+		menu.style.top = `${(top - origin.top) / scale}px`;
 		menu.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
 	}, [open]);
 

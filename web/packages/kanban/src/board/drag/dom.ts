@@ -9,7 +9,7 @@ export const FLIP_SELECTOR = "[data-flip]";
 export const PLACEHOLDER_FLIP_ID = "placeholder";
 export const cardFlipId = (cardId: string) => `card:${cardId}`;
 
-const toRect = (rect: DOMRect): Rect => ({
+export const toRect = (rect: DOMRect): Rect => ({
 	left: rect.left,
 	top: rect.top,
 	right: rect.right,
@@ -43,15 +43,28 @@ export function measureColumns(
 	});
 }
 
-/** 相对滚动层内容原点的位置，页面滚动与横向滚动都不改变它。 */
+/**
+ * 屏幕像素与布局像素之比：看板放在被缩放的祖先（画布）里时不为 1。
+ *
+ * 屏幕宽度来自 `getBoundingClientRect`，布局宽度来自不受 transform 影响的 `offsetWidth`。
+ */
+export function screenScale(element: HTMLElement): number {
+	const layout = element.offsetWidth;
+	if (!layout) return 1;
+	const scale = element.getBoundingClientRect().width / layout;
+	return Number.isFinite(scale) && scale > 0 ? scale : 1;
+}
+
+/** 相对滚动层内容原点的位置（布局像素），页面滚动、横向滚动与画布的缩放平移都不改变它。 */
 export function measureFlip(scroller: HTMLElement) {
 	const base = scroller.getBoundingClientRect();
+	const scale = screenScale(scroller);
 	const positions = new Map<string, Point>();
 	for (const element of scroller.querySelectorAll<HTMLElement>(FLIP_SELECTOR)) {
 		const rect = element.getBoundingClientRect();
 		positions.set(element.getAttribute("data-flip") ?? "", {
-			x: rect.left - base.left + scroller.scrollLeft,
-			y: rect.top - base.top + scroller.scrollTop,
+			x: (rect.left - base.left) / scale + scroller.scrollLeft,
+			y: (rect.top - base.top) / scale + scroller.scrollTop,
 		});
 	}
 	return positions;

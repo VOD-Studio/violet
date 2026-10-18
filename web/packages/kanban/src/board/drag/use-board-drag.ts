@@ -4,14 +4,17 @@ import {
 	type BoardMove,
 	type BoardPosition,
 	createMove,
+	edgePanSpeed,
 	isNoopMove,
 	locateCard,
 	type Point,
+	type Rect,
 	resolveDropTarget,
 } from "../../core/index.ts";
 import { EDITABLE_SELECTOR } from "../../editable.ts";
+import { notifyEditing, PAN_REGION_SELECTOR, requestPan } from "../../pan-region.ts";
 import type { ActivityRef } from "./activity.ts";
-import { CARD_SELECTOR, findCard, measureColumns } from "./dom.ts";
+import { CARD_SELECTOR, findCard, measureColumns, screenScale, toRect } from "./dom.ts";
 import { MOTION_EASING, MOTION_MS, prefersReducedMotion } from "./motion.ts";
 import { createPointerController } from "./pointer-controller.ts";
 import type { DragController, DragHost } from "./types.ts";
@@ -33,7 +36,7 @@ interface Size {
 	height: number;
 }
 
-/** 被抓起的卡片：出发位置与抓起时的尺寸。 */
+/** 被抓起的卡片：出发位置与抓起时的尺寸（布局像素，不含画布的缩放）。 */
 interface Grabbed {
 	cardId: string;
 	origin: BoardPosition;
@@ -64,11 +67,21 @@ type Session = ({ phase: "dragging" } & DragView) | ({ phase: "settling" } & Gra
 
 interface Runtime extends Grabbed {
 	pointer: Point;
-	/** 抓取点相对卡片左上角的偏移。 */
+	/** 抓取点相对卡片左上角的偏移（屏幕像素）。 */
 	grab: Point;
-	/** 浮起卡片在 transform 为 none 时的屏幕位置，用来抵消祖先 transform 造成的定位偏差。 */
-	ghostOffset: Point;
-	ghostReady: boolean;
+	/**
+	 * 这次拖拽已经放置过的浮起卡片节点。落位动画还没结束就抓起另一张卡时，
+	 * 浮起卡片的节点会被复用，上面还留着上一张的平移，必须先重置再放置。
+	 */
+	ghost: HTMLElement | null;
+	/** 浮起卡片当前的平移（布局像素）。 */
+	ghostAt: Point;
+	/** 看板所在的画布视口；不在画布里为 null。 */
+	region: HTMLElement | null;
+	/** 自动平移的下一帧。 */
+	frame: number | null;
+	/** 上一帧的时间戳（ms）。 */
+	frameAt: number;
 	/** 上次求值的落点，落点不变时不重复调用 `canMove`。 */
 	targetKey: string;
 	/** 当前落点对应的有效移动；没有落点或被拒绝时为 null。 */
@@ -80,11 +93,28 @@ const defaultController = createPointerController();
 
 const NO_DRAG_SELECTOR = `${EDITABLE_SELECTOR}, [data-kanban-no-drag]`;
 
-function placeGhost(ghost: HTMLElement | null, run: Runtime) {
-	if (!ghost || !run.ghostReady) return;
-	const x = run.pointer.x - run.grab.x - run.ghostOffset.x;
-	const y = run.pointer.y - run.grab.y - run.ghostOffset.y;
-	ghost.style.transform = `translate(${x}px, ${y}px)`;
+const contains = (rect: Rect, point: Point) =>
+	point.x >= rect.left && point.x <= rect.right && point.y >= rect.top && point.y <= rect.bottom;
+
+/**
+ * 浮起卡片包含块原点的屏幕位置：当前矩形减去已经应用的平移。
+ *
+ * 看板在画布里时，fixed 定位相对被变换的祖先；每次放置前这样反推，画布平移或缩放之后仍然准确。
+ */
+function measureGhostOrigin(ghost: HTMLElement, scale: number, at: Point): Point {
+	const box = ghost.getBoundingClientRect();
+	return { x: box.left - scale * at.x, y: box.top - scale * at.y };
+}
+
+/** 把浮起卡片放到指针下，保持抓取位置。 */
+function placeGhost(ghost: HTMLElement, run: Runtime, root: HTMLElement) {
+	const scale = screenScale(root);
+	const origin = measureGhostOrigin(ghost, scale, run.ghostAt);
+	run.ghostAt = {
+		x: (run.pointer.x - run.grab.x - origin.x) / scale,
+		y: (run.pointer.y - run.grab.y - origin.y) / scale,
+	};
+	ghost.style.transform = `translate(${run.ghostAt.x}px, ${run.ghostAt.y}px)`;
 }
 
 /**
@@ -105,10 +135,16 @@ export function useBoardDrag(options: BoardDragOptions): BoardDrag {
 
 		/** @param force - 放下时强制按当前指针与布局重新求值 */
 		const resolveTarget = (current: Runtime, force: boolean) => {
+			// 指针在画布视口之外时，列虽然在几何上还在那里，却是看不见的
+			const visible =
+				!current.region ||
+				contains(toRect(current.region.getBoundingClientRect()), current.pointer);
 			const layout = measureColumns(root, live.current.autoSort, current.cardId);
-			const target = resolveDropTarget(layout, current.pointer, {
-				originColumnId: current.origin.columnId,
-			});
+			const target = visible
+				? resolveDropTarget(layout, current.pointer, {
+						originColumnId: current.origin.columnId,
+					})
+				: null;
 			const key = target ? `${target.columnId}:${target.index}` : "";
 			if (!force && key === current.targetKey) return;
 			current.targetKey = key;
@@ -139,8 +175,43 @@ export function useBoardDrag(options: BoardDragOptions): BoardDrag {
 			);
 		};
 
-		const startSettling = ({ cardId, origin, size }: Grabbed) =>
-			setSession({ phase: "settling", cardId, origin, size });
+		/** 这次拖拽的浮起卡片已经挂载并放置过时，把它放到指针下。 */
+		const followPointer = (current: Runtime) => {
+			const ghost = ghostRef.current;
+			if (ghost && current.ghost === ghost) placeGhost(ghost, current, root);
+		};
+
+		const stopPanning = (current: Runtime) => {
+			if (current.frame !== null) cancelAnimationFrame(current.frame);
+			current.frame = null;
+		};
+
+		const startSettling = (current: Runtime) => {
+			stopPanning(current);
+			setSession({
+				phase: "settling",
+				cardId: current.cardId,
+				origin: current.origin,
+				size: current.size,
+			});
+		};
+
+		/** 指针停在画布视口边缘时，每帧请求画布平移，并按新的布局重新放置浮起卡片、求落点。 */
+		const panTick = (current: Runtime, now: number) => {
+			const region = current.region;
+			if (!region || run.current !== current) return;
+			current.frame = requestAnimationFrame((next) => panTick(current, next));
+			// 标签页被挂起后的第一帧不要一下子飞出去；拖拽是在事件里开始的，
+			// 读到的时间可能比第一帧的帧起始时间还晚
+			const seconds = Math.max(0, Math.min(now - current.frameAt, 64)) / 1000;
+			current.frameAt = now;
+			const speed = edgePanSpeed(current.pointer, toRect(region.getBoundingClientRect()));
+			if (speed.x === 0 && speed.y === 0) return;
+			// 画布没动（已到内容尽头）就没有什么要重新量的
+			if (!requestPan(root, speed.x * seconds, speed.y * seconds)) return;
+			followPointer(current);
+			resolveTarget(current, false);
+		};
 
 		const release = (current: Runtime | null) => {
 			if (run.current !== current) return;
@@ -172,20 +243,30 @@ export function useBoardDrag(options: BoardDragOptions): BoardDrag {
 				const origin = locateCard(state(), cardId);
 				if (!element || !origin) return;
 				const rect = element.getBoundingClientRect();
-				const size = { width: rect.width, height: rect.height };
+				const scale = screenScale(root);
+				const size = { width: rect.width / scale, height: rect.height / scale };
+				const region = root.closest<HTMLElement>(PAN_REGION_SELECTOR);
 				live.current.activity.current = "pointer";
-				run.current = {
+				const current: Runtime = {
 					cardId,
 					origin,
 					size,
 					pointer: point,
 					grab: { x: point.x - rect.left, y: point.y - rect.top },
-					ghostOffset: { x: 0, y: 0 },
-					ghostReady: false,
+					ghost: null,
+					ghostAt: { x: 0, y: 0 },
+					region,
+					frame: null,
+					frameAt: performance.now(),
 					targetKey: "?",
 					move: null,
 					reason: undefined,
 				};
+				run.current = current;
+				if (region) {
+					notifyEditing(root);
+					current.frame = requestAnimationFrame((now) => panTick(current, now));
+				}
 				setSession({
 					phase: "dragging",
 					cardId,
@@ -199,7 +280,7 @@ export function useBoardDrag(options: BoardDragOptions): BoardDrag {
 				const current = run.current;
 				if (!current) return;
 				current.pointer = point;
-				placeGhost(ghostRef.current, current);
+				followPointer(current);
 				resolveTarget(current, false);
 			},
 			drop() {
@@ -216,20 +297,25 @@ export function useBoardDrag(options: BoardDragOptions): BoardDrag {
 				if (current) startSettling(current);
 			},
 		};
-		return controller.attach(host);
+		const detach = controller.attach(host);
+		return () => {
+			detach();
+			if (run.current) stopPanning(run.current);
+		};
 	}, [editable, controller, rootRef, live, state, decide, commit, showNotice]);
 
-	// 浮起卡片挂载后：测出祖先 transform 造成的偏差并定位到指针
+	// 浮起卡片挂载后定位到指针
 	useLayoutEffect(() => {
 		const current = run.current;
 		const ghost = ghostRef.current;
-		if (session?.phase !== "dragging" || !current || !ghost || current.ghostReady) return;
-		ghost.style.transform = "none";
-		const rect = ghost.getBoundingClientRect();
-		current.ghostOffset = { x: rect.left, y: rect.top };
-		current.ghostReady = true;
-		placeGhost(ghost, current);
-	}, [session]);
+		const root = rootRef.current;
+		if (session?.phase !== "dragging" || !current || !ghost || !root || current.ghost === ghost)
+			return;
+		ghost.style.transform = "";
+		current.ghost = ghost;
+		current.ghostAt = { x: 0, y: 0 };
+		placeGhost(ghost, current, root);
+	}, [session, rootRef]);
 
 	// 落位：浮起卡片平滑飞到卡片的最终位置，到达后卡片显现
 	useLayoutEffect(() => {
@@ -258,11 +344,13 @@ export function useBoardDrag(options: BoardDragOptions): BoardDrag {
 			finish();
 			return;
 		}
+		const scale = screenScale(root);
+		const origin = measureGhostOrigin(ghost, scale, current.ghostAt);
 		const animation = ghost.animate(
 			[
 				{ transform: ghost.style.transform || "none" },
 				{
-					transform: `translate(${target.left - current.ghostOffset.x}px, ${target.top - current.ghostOffset.y}px)`,
+					transform: `translate(${(target.left - origin.x) / scale}px, ${(target.top - origin.y) / scale}px)`,
 				},
 			],
 			{ duration: MOTION_MS, easing: MOTION_EASING, fill: "forwards" },
