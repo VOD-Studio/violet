@@ -9,7 +9,9 @@
 	--_kanban-column-width: var(--kanban-column-width, 18rem);
 	--_kanban-card-padding: var(--kanban-card-padding, 12px);
 	--_kanban-danger: var(--kanban-danger, light-dark(#b91c1c, #f87171));
+	--_kanban-focus: var(--kanban-focus, light-dark(#2563eb, #60a5fa));
 	color-scheme: light dark;
+	position: relative;
 	box-sizing: border-box;
 	min-width: 0;
 	color: var(--_kanban-foreground);
@@ -106,6 +108,7 @@
 }
 
 .v-kanban .v-kanban__card {
+	position: relative;
 	min-width: 0;
 	margin: 0;
 	padding: var(--_kanban-card-padding);
@@ -201,4 +204,16 @@
 	clip-path: inset(50%);
 	white-space: nowrap;
 	border: 0;
+}
+
+/* 聚焦环外扩 2px 线宽加 2px 偏移，在滚动层 6px 的内边距之内，不会被裁剪 */
+.v-kanban .v-kanban__card[data-draggable="true"]:focus-visible {
+	outline: 2px solid var(--_kanban-focus);
+	outline-offset: 2px;
+}
+
+/* 键盘拿起的卡片：留在列里按预览位置显示 */
+.v-kanban .v-kanban__card[data-lifted="true"] {
+	border-color: var(--_kanban-focus);
+	box-shadow: 0 4px 24px rgb(0 0 0 / 0.05);
 }

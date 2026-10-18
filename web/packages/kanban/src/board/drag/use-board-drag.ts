@@ -9,11 +9,13 @@ import {
 	type Point,
 	resolveDropTarget,
 } from "../../core/index.ts";
+import type { ActivityRef } from "./activity.ts";
 import { CARD_SELECTOR, findCard, measureColumns } from "./dom.ts";
 import { MOTION_EASING, MOTION_MS, prefersReducedMotion } from "./motion.ts";
 import { createPointerController } from "./pointer-controller.ts";
 import type { DragController, DragHost } from "./types.ts";
 import type { BoardMoves } from "./use-board-moves.ts";
+import { useLatest } from "./use-latest.ts";
 
 /** `useBoardDrag` 的输入：DOM 引用与共用的移动逻辑。 */
 export interface BoardDragOptions {
@@ -21,6 +23,8 @@ export interface BoardDragOptions {
 	moves: BoardMoves;
 	autoSort: (columnId: string) => AutoSortEntry | undefined;
 	controller?: DragController;
+	/** 同一时刻只有一种输入占用看板：键盘拿着卡片时不接受指针拖拽。 */
+	activity: ActivityRef;
 }
 
 interface Size {
@@ -91,10 +95,7 @@ export function useBoardDrag(options: BoardDragOptions): BoardDrag {
 	const { editable, state, decide, commit, showNotice } = moves;
 
 	const [session, setSession] = useState<Session | null>(null);
-	const live = useRef(options);
-	useLayoutEffect(() => {
-		live.current = options;
-	});
+	const live = useLatest(options);
 	const run = useRef<Runtime | null>(null);
 	const ghostRef = useRef<HTMLDivElement | null>(null);
 
@@ -141,8 +142,14 @@ export function useBoardDrag(options: BoardDragOptions): BoardDrag {
 		const startSettling = ({ cardId, origin, size }: Grabbed) =>
 			setSession({ phase: "settling", cardId, origin, size });
 
+		const release = (current: Runtime | null) => {
+			if (run.current !== current) return;
+			run.current = null;
+			live.current.activity.current = null;
+		};
+
 		const endSettling = (cardId: string) => {
-			if (run.current?.cardId === cardId) run.current = null;
+			if (run.current?.cardId === cardId) release(run.current);
 			setSession((previous) =>
 				previous?.phase === "settling" && previous.cardId === cardId ? null : previous,
 			);
@@ -151,6 +158,7 @@ export function useBoardDrag(options: BoardDragOptions): BoardDrag {
 		const host: DragHost = {
 			root,
 			cardIdFor(target) {
+				if (live.current.activity.current === "keyboard") return null;
 				const element = (target as Element | null)?.closest?.(CARD_SELECTOR);
 				if (!element || !root.contains(element) || !element.hasAttribute("data-draggable"))
 					return null;
@@ -165,6 +173,7 @@ export function useBoardDrag(options: BoardDragOptions): BoardDrag {
 				if (!element || !origin) return;
 				const rect = element.getBoundingClientRect();
 				const size = { width: rect.width, height: rect.height };
+				live.current.activity.current = "pointer";
 				run.current = {
 					cardId,
 					origin,
@@ -208,7 +217,7 @@ export function useBoardDrag(options: BoardDragOptions): BoardDrag {
 			},
 		};
 		return controller.attach(host);
-	}, [editable, controller, rootRef, state, decide, commit, showNotice]);
+	}, [editable, controller, rootRef, live, state, decide, commit, showNotice]);
 
 	// 浮起卡片挂载后：测出祖先 transform 造成的偏差并定位到指针
 	useLayoutEffect(() => {
@@ -230,7 +239,10 @@ export function useBoardDrag(options: BoardDragOptions): BoardDrag {
 		const current = run.current;
 		const ghost = ghostRef.current;
 		const finish = () => {
-			if (run.current === current) run.current = null;
+			if (run.current === current) {
+				run.current = null;
+				live.current.activity.current = null;
+			}
 			setSession((previous) =>
 				previous?.phase === "settling" && previous.cardId === cardId ? null : previous,
 			);
@@ -257,7 +269,7 @@ export function useBoardDrag(options: BoardDragOptions): BoardDrag {
 		);
 		animation.finished.then(finish, () => {});
 		return () => animation.cancel();
-	}, [session, rootRef]);
+	}, [session, rootRef, live]);
 
 	return {
 		dragging: session?.phase === "dragging" ? session : null,

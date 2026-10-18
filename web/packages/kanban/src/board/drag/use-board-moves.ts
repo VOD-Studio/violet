@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	type AutoSortEntry,
 	applyMove,
@@ -8,9 +8,13 @@ import {
 	violatesAutoSort,
 } from "../../core/index.ts";
 import type { BoardMessages } from "../messages.ts";
+import { useLatest } from "./use-latest.ts";
 
 /** `canMove` 的裁决：允许，或拒绝并给出原因。 */
 export type MoveDecision = { allowed: true } | { allowed: false; reason?: string };
+
+/** 看板对一次移动的最终裁决：拒绝时一定有可显示的原因。 */
+export type MoveVerdict = { allowed: true } | { allowed: false; reason: string };
 
 /** `useBoardMoves` 的输入：看板的数据与规则回调。 */
 export interface BoardMovesOptions {
@@ -25,17 +29,19 @@ export interface BoardMovesOptions {
 	messages: BoardMessages;
 }
 
-/** 移动的共用部分：规则判定、乐观显示、提交与回滚、提示。指针拖拽与键盘移动都通过它提交。 */
+/** 移动的共用部分：规则判定、乐观显示、提交与回滚、提示。指针拖拽、键盘与菜单都通过它提交。 */
 export interface BoardMoves {
 	editable: boolean;
 	/** 当前显示的顺序：使用方的 `order` 加上尚未完成的移动。 */
 	order: BoardState["order"];
 	notice: string;
+	/** 每次出现提示都会变化，使相同的文本也会被读屏重新播报。 */
+	noticeSeq: number;
 	showNotice(text: string): void;
 	/** 当前显示顺序对应的看板状态。 */
 	state(): BoardState;
 	/** 内置规则与 `canMove` 对一次移动的裁决；`canMove` 抛错按拒绝处理。 */
-	decide(move: BoardMove): MoveDecision;
+	decide(move: BoardMove): MoveVerdict;
 	/**
 	 * 提交一次移动：按新顺序显示，直到 `onMove` 完成；失败则回滚、触发 `onMoveError` 并提示。
 	 *
@@ -48,7 +54,7 @@ export interface BoardMoves {
 const NOTICE_MS = 4000;
 
 function useNotice() {
-	const [text, setText] = useState("");
+	const [notice, setNotice] = useState({ text: "", seq: 0 });
 	const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 	const mounted = useRef(false);
 	useEffect(() => {
@@ -58,13 +64,16 @@ function useNotice() {
 			clearTimeout(timer.current);
 		};
 	}, []);
-	const show = useCallback((message: string) => {
+	const show = useCallback((text: string) => {
 		if (!mounted.current) return;
 		clearTimeout(timer.current);
-		setText(message);
-		timer.current = setTimeout(() => setText(""), NOTICE_MS);
+		setNotice((previous) => ({ text, seq: previous.seq + 1 }));
+		timer.current = setTimeout(
+			() => setNotice((previous) => ({ ...previous, text: "" })),
+			NOTICE_MS,
+		);
 	}, []);
-	return [text, show] as const;
+	return [notice, show] as const;
 }
 
 /**
@@ -81,10 +90,7 @@ export function useBoardMoves(options: BoardMovesOptions): BoardMoves {
 		order,
 	);
 
-	const live = useRef({ options, columnIds, effectiveOrder });
-	useLayoutEffect(() => {
-		live.current = { options, columnIds, effectiveOrder };
-	});
+	const live = useLatest({ options, columnIds, effectiveOrder });
 	const tokens = useRef(0);
 
 	const state = useCallback(
@@ -92,24 +98,28 @@ export function useBoardMoves(options: BoardMovesOptions): BoardMoves {
 			columns: live.current.columnIds,
 			order: live.current.effectiveOrder,
 		}),
-		[],
+		[live],
 	);
 
-	const decide = useCallback((move: BoardMove): MoveDecision => {
-		const { options: current } = live.current;
-		if (isNoopMove(move)) return { allowed: true };
-		if (violatesAutoSort(move, (id) => current.autoSort(id) !== undefined))
-			return { allowed: false, reason: current.messages.autoSorted };
-		try {
-			const verdict = current.canMove?.(move);
-			if (verdict && !verdict.allowed)
-				return { allowed: false, reason: verdict.reason ?? current.messages.moveRejected };
-		} catch {
-			// 使用方的规则出错时按拒绝处理，交互本身不能因此中断
-			return { allowed: false, reason: current.messages.moveRejected };
-		}
-		return { allowed: true };
-	}, []);
+	const decide = useCallback(
+		(move: BoardMove): MoveVerdict => {
+			const { options: current } = live.current;
+			const { messages } = current;
+			if (isNoopMove(move)) return { allowed: true };
+			if (violatesAutoSort(move, (id) => current.autoSort(id) !== undefined))
+				return { allowed: false, reason: messages.autoSorted };
+			try {
+				const verdict = current.canMove?.(move);
+				if (verdict && !verdict.allowed)
+					return { allowed: false, reason: verdict.reason ?? messages.moveRejected };
+			} catch {
+				// 使用方的规则出错时按拒绝处理，交互本身不能因此中断
+				return { allowed: false, reason: messages.moveRejected };
+			}
+			return { allowed: true };
+		},
+		[live],
+	);
 
 	const commit = useCallback(
 		(move: BoardMove, onRollback?: () => void) => {
@@ -131,8 +141,17 @@ export function useBoardMoves(options: BoardMovesOptions): BoardMoves {
 				showNotice(current.messages.moveFailed);
 			});
 		},
-		[showNotice],
+		[live, showNotice],
 	);
 
-	return { editable, order: effectiveOrder, notice, showNotice, state, decide, commit };
+	return {
+		editable,
+		order: effectiveOrder,
+		notice: notice.text,
+		noticeSeq: notice.seq,
+		showNotice,
+		state,
+		decide,
+		commit,
+	};
 }

@@ -1,4 +1,4 @@
-import { type HTMLAttributes, type ReactNode, useMemo, useRef } from "react";
+import { type HTMLAttributes, type ReactNode, useId, useMemo, useRef } from "react";
 import {
 	type AutoSortEntry,
 	type BoardCard,
@@ -6,11 +6,16 @@ import {
 	type BoardState,
 	resolveBoard,
 } from "../core/index.ts";
-import { cardFlipId, PLACEHOLDER_FLIP_ID } from "./drag/dom.ts";
+import { CardItem } from "./card-item.tsx";
+import type { Activity } from "./drag/activity.ts";
+import { PLACEHOLDER_FLIP_ID } from "./drag/dom.ts";
 import { useFlip } from "./drag/motion.ts";
 import type { DragController } from "./drag/types.ts";
+import { useAnnouncer } from "./drag/use-announcer.ts";
 import { useBoardDrag } from "./drag/use-board-drag.ts";
 import { type MoveDecision, useBoardMoves } from "./drag/use-board-moves.ts";
+import { useFocusRequest } from "./drag/use-focus-request.ts";
+import { useKeyboardMove } from "./drag/use-keyboard-move.ts";
 import {
 	type BoardLocale,
 	type BoardMessages,
@@ -72,6 +77,11 @@ export interface BoardProps<TCard extends BoardCard, TColumn extends BoardColumn
 	isDraggable?: (card: TCard) => boolean;
 	/** 即使提供了 `onMove` 也不允许拖动。 */
 	readOnly?: boolean;
+	/**
+	 * 卡片的文字名称，用于键盘播报与「移到…」菜单的可访问名称。
+	 * @default (card) => card.id
+	 */
+	getCardLabel?: (card: TCard) => string;
 	/** 替换拖拽控制器，默认是指针控制器。身份变化会重新挂载并取消进行中的拖拽，请保持引用稳定。 */
 	dragController?: DragController;
 	/** 内置文案的语言。 */
@@ -83,7 +93,7 @@ export interface BoardProps<TCard extends BoardCard, TColumn extends BoardColumn
 /**
  * 受控看板：按使用方给出的列与顺序排布卡片。
  *
- * 不提供 `onMove` 时只读；提供后用户可用鼠标、笔或触屏拖动卡片，看板不持有数据，只报告移动。
+ * 不提供 `onMove` 时只读；提供后用户可用鼠标、笔、触屏或键盘移动卡片，看板不持有数据，只报告移动。
  *
  * @typeParam TCard - 卡片类型，只要求有 id
  * @typeParam TColumn - 列类型，只要求有 id 与可选 title
@@ -100,6 +110,7 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 	onMoveError,
 	isDraggable,
 	readOnly,
+	getCardLabel,
 	dragController,
 	locale,
 	messages: messageOverrides,
@@ -112,10 +123,17 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 		if (!definitions.has(column.id)) definitions.set(column.id, column);
 	const columnIds = columns.map((column) => column.id);
 	const cardsById = useMemo(() => new Map(cards.map((card) => [card.id, card])), [cards]);
+	const autoSort = (id: string) => definitions.get(id)?.autoSort;
+	const columnTitle = (id: string) => definitions.get(id)?.title ?? id;
+	const cardLabel = (id: string) => {
+		const card = cardsById.get(id);
+		return card ? (getCardLabel?.(card) ?? card.id) : id;
+	};
 
 	const rootRef = useRef<HTMLDivElement>(null);
 	const scrollerRef = useRef<HTMLDivElement>(null);
-	const autoSort = (id: string) => definitions.get(id)?.autoSort;
+	const activity = useRef<Activity>(null);
+	const hintId = useId();
 	const moves = useBoardMoves({
 		columnIds,
 		order,
@@ -126,11 +144,24 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 		readOnly,
 		messages,
 	});
-	const drag = useBoardDrag({ rootRef, moves, autoSort, controller: dragController });
-	const resolved = resolveBoard({ columns: columnIds, order: moves.order }, cards);
+	const focus = useFocusRequest(rootRef);
+	const { announcement, announce } = useAnnouncer({ moves, cardLabel, columnTitle, messages });
+	const keyboard = useKeyboardMove({
+		rootRef,
+		moves,
+		columnIds,
+		autoSort,
+		messages,
+		activity,
+		announce,
+		focus,
+	});
+	const drag = useBoardDrag({ rootRef, moves, autoSort, controller: dragController, activity });
+
+	const resolved = resolveBoard({ columns: columnIds, order: keyboard.order }, cards);
 	useFlip(
 		scrollerRef,
-		`${JSON.stringify(columnIds.map((id) => [id, moves.order[id] ?? []]))}|${drag.layoutKey}`,
+		`${JSON.stringify(columnIds.map((id) => [id, keyboard.order[id] ?? []]))}|${drag.layoutKey}`,
 		moves.editable,
 	);
 	const ghostCard = drag.ghost ? cardsById.get(drag.ghost.cardId) : undefined;
@@ -171,21 +202,18 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 						if (!isOrigin && shown === placeholder?.index && placeholderNode)
 							items.push(placeholderNode);
 						items.push(
-							<li
+							<CardItem
 								key={card.id}
-								className="v-kanban__card"
-								data-card-id={card.id}
-								data-flip={isOrigin ? undefined : cardFlipId(card.id)}
-								data-origin={isOrigin ? "true" : undefined}
-								data-draggable={
-									moves.editable && isDraggable?.(card) !== false
-										? "true"
-										: undefined
-								}
-								data-settling={card.id === drag.settlingId ? "true" : undefined}
+								cardId={card.id}
+								origin={isOrigin}
+								draggable={moves.editable && isDraggable?.(card) !== false}
+								lifted={keyboard.liftedId === card.id}
+								settling={card.id === drag.settlingId}
+								hintId={hintId}
+								onKeyDown={(event) => keyboard.onCardKeyDown(event, card.id)}
 							>
 								{renderCard(card, { column, index })}
-							</li>,
+							</CardItem>,
 						);
 						if (!isOrigin) shown += 1;
 					}
@@ -244,12 +272,27 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 					})}
 				</div>
 			) : null}
+			{moves.editable ? (
+				<>
+					<span id={hintId} className="v-kanban__sr-only">
+						{messages.keyboardHint}
+					</span>
+					<div
+						role="status"
+						aria-live="polite"
+						aria-atomic="true"
+						className="v-kanban__sr-only v-kanban__announcer"
+					>
+						<span key={announcement.seq}>{announcement.text}</span>
+					</div>
+				</>
+			) : null}
 			<div
 				role="status"
 				className="v-kanban__notice"
 				data-empty={moves.notice ? undefined : "true"}
 			>
-				{moves.notice}
+				<span key={moves.noticeSeq}>{moves.notice}</span>
 			</div>
 		</div>
 	);

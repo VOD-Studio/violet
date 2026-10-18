@@ -58,6 +58,8 @@ const cardIds = (columnName: string) =>
 		.filter((item) => !item.hasAttribute("data-origin"))
 		.map((item) => item.getAttribute("data-card-id"));
 
+const notice = () => document.querySelector(".v-kanban__notice")?.textContent;
+
 /** 按下卡片、移出阈值、再移到目标点；返回松开与取消的操作。 */
 function pickUp(id: string, to: { x: number; y: number }) {
 	const from = center(card(id));
@@ -249,7 +251,7 @@ describe("canMove 与自动排序列", () => {
 		expect(canMove).toHaveBeenCalled();
 		expect(onMove).not.toHaveBeenCalled();
 		expect(cardIds("规划中")).toEqual(["a", "b", "c"]);
-		expect(screen.getByRole("status").textContent).toBe("被阻塞的条目不能进入开发中");
+		expect(notice()).toBe("被阻塞的条目不能进入开发中");
 	});
 
 	it("拖拽中落在被拒绝的位置时，占位标记为不可放置", () => {
@@ -267,7 +269,7 @@ describe("canMove 与自动排序列", () => {
 
 		pickUp("a", { x: colX(1), y: slotY(1) }).release();
 
-		expect(screen.getByRole("status").textContent).toBe("This card can't be moved here.");
+		expect(notice()).toBe("This card can't be moved here.");
 	});
 
 	it("canMove 允许时放行，并收到完整的移动", () => {
@@ -316,7 +318,7 @@ describe("canMove 与自动排序列", () => {
 
 		expect(onMove).not.toHaveBeenCalled();
 		expect(cardIds("已完成")).toEqual(["x", "y"]);
-		expect(screen.getByRole("status").textContent).toBe("该列自动排序，不能手动调整顺序");
+		expect(notice()).toBe("该列自动排序，不能手动调整顺序");
 	});
 });
 
@@ -333,9 +335,7 @@ describe("乐观更新与回滚", () => {
 		expect(onMoveError).toHaveBeenCalledWith(error, expect.objectContaining({ cardId: "a" }));
 		expect(cardIds("规划中")).toEqual(["a", "b", "c"]);
 		expect(cardIds("开发中")).toEqual(["d"]);
-		expect(screen.getByRole("status").textContent).toBe(
-			"The move couldn't be saved. The card is back where it was.",
-		);
+		expect(notice()).toBe("The move couldn't be saved. The card is back where it was.");
 	});
 
 	it("onMove 同步抛错与 Promise 拒绝一样回滚", async () => {
@@ -397,11 +397,11 @@ describe("乐观更新与回滚", () => {
 		try {
 			renderBoard({ canMove: () => ({ allowed: false, reason: "不行" }) });
 			pickUp("a", { x: colX(1), y: slotY(1) }).release();
-			expect(screen.getByRole("status").textContent).toBe("不行");
+			expect(notice()).toBe("不行");
 
 			act(() => vi.advanceTimersByTime(5000));
 
-			expect(screen.getByRole("status").textContent).toBe("");
+			expect(notice()).toBe("");
 		} finally {
 			vi.useRealTimers();
 		}
@@ -528,7 +528,7 @@ describe("放下时重新判定", () => {
 		pickUp("a", { x: colX(1), y: slotY(1) }).release();
 
 		expect(onMove).not.toHaveBeenCalled();
-		expect(screen.getByRole("status").textContent).toBe("This card can't be moved here.");
+		expect(notice()).toBe("This card can't be moved here.");
 		expect(cardIds("规划中")).toEqual(["a", "b", "c"]);
 	});
 });

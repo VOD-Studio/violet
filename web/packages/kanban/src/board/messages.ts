@@ -39,6 +39,38 @@ export interface BoardMessages {
 	 * @example "The move couldn't be saved. The card is back where it was."
 	 */
 	moveFailed: string;
+	/**
+	 * 键盘操作说明，关联到每张可拖动的卡片。
+	 * @example "Press Space or Enter to pick up this card. Then use the arrow keys to move it, Space or Enter to drop it, and Escape to cancel."
+	 */
+	keyboardHint: string;
+	/**
+	 * 键盘拿起卡片时的播报。
+	 *
+	 * {card}、{column}、{position}、{count} 分别替换为卡片名称、列名、位置与该列卡片数。
+	 * @example "Picked up {card}. {column}, position {position} of {count}. Use the arrow keys to move it, Space or Enter to drop it, Escape to cancel."
+	 */
+	keyboardPickedUp: string;
+	/**
+	 * 键盘移动一步后的播报，占位符同 `keyboardPickedUp`。
+	 * @example "{column}, position {position} of {count}."
+	 */
+	keyboardMoved: string;
+	/**
+	 * 已到边缘、无法继续移动时的播报，占位符同 `keyboardPickedUp`。
+	 * @example "Can't move further. {column}, position {position} of {count}."
+	 */
+	keyboardAtEdge: string;
+	/**
+	 * 键盘放下卡片后的播报，占位符同 `keyboardPickedUp`。
+	 * @example "Dropped {card}. {column}, position {position} of {count}."
+	 */
+	keyboardDropped: string;
+	/**
+	 * 键盘取消移动后的播报，占位符同 `keyboardPickedUp`。
+	 * @example "Move cancelled. {card} is back in {column}, position {position} of {count}."
+	 */
+	keyboardCancelled: string;
 }
 
 const messagesByLocale: Record<BoardLocale, BoardMessages> = {
@@ -49,6 +81,15 @@ const messagesByLocale: Record<BoardLocale, BoardMessages> = {
 		autoSorted: "This column is sorted automatically. Cards can't be reordered by hand.",
 		moveRejected: "This card can't be moved here.",
 		moveFailed: "The move couldn't be saved. The card is back where it was.",
+		keyboardHint:
+			"Press Space or Enter to pick up this card. Then use the arrow keys to move it, Space or Enter to drop it, and Escape to cancel.",
+		keyboardPickedUp:
+			"Picked up {card}. {column}, position {position} of {count}. Use the arrow keys to move it, Space or Enter to drop it, Escape to cancel.",
+		keyboardMoved: "{column}, position {position} of {count}.",
+		keyboardAtEdge: "Can't move further. {column}, position {position} of {count}.",
+		keyboardDropped: "Dropped {card}. {column}, position {position} of {count}.",
+		keyboardCancelled:
+			"Move cancelled. {card} is back in {column}, position {position} of {count}.",
 	},
 	"zh-CN": {
 		boardLabel: "看板",
@@ -57,6 +98,13 @@ const messagesByLocale: Record<BoardLocale, BoardMessages> = {
 		autoSorted: "该列自动排序，不能手动调整顺序",
 		moveRejected: "不能把卡片移到这里",
 		moveFailed: "移动未能保存，卡片已回到原位",
+		keyboardHint: "按空格或回车拿起这张卡片，然后用方向键移动，空格或回车放下，Esc 取消。",
+		keyboardPickedUp:
+			"已拿起 {card}。{column}，第 {position} 个，共 {count} 个。用方向键移动，空格或回车放下，Esc 取消。",
+		keyboardMoved: "{column}，第 {position} 个，共 {count} 个。",
+		keyboardAtEdge: "已到边缘，无法继续移动。{column}，第 {position} 个，共 {count} 个。",
+		keyboardDropped: "已放下 {card}。{column}，第 {position} 个，共 {count} 个。",
+		keyboardCancelled: "已取消移动。{card} 回到 {column}，第 {position} 个，共 {count} 个。",
 	},
 };
 

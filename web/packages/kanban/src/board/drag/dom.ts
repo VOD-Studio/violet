@@ -56,3 +56,22 @@ export function measureFlip(scroller: HTMLElement) {
 	}
 	return positions;
 }
+
+/** 卡片节点的数据属性：看板渲染它们，拖拽与键盘逻辑读取它们。 */
+export function cardAttributes(state: {
+	cardId: string;
+	/** 拖拽中留在原处隐藏的那一张。 */
+	origin: boolean;
+	draggable: boolean;
+	lifted: boolean;
+	settling: boolean;
+}) {
+	return {
+		"data-card-id": state.cardId,
+		"data-flip": state.origin ? undefined : cardFlipId(state.cardId),
+		"data-origin": state.origin ? "true" : undefined,
+		"data-draggable": state.draggable ? "true" : undefined,
+		"data-lifted": state.lifted ? "true" : undefined,
+		"data-settling": state.settling ? "true" : undefined,
+	};
+}

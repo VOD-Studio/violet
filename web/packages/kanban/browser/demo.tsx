@@ -7,6 +7,7 @@ declare global {
 	interface Window {
 		__moves: BoardMove[];
 		__animateCalls: number;
+		__pageKeys: string[];
 	}
 }
 
@@ -30,6 +31,9 @@ const params = new URLSearchParams(location.search);
 const failMoves = params.has("fail");
 
 window.__moves = [];
+// 页面级快捷键的替身：拿起期间不该收到看板接管的按键
+window.__pageKeys = [];
+window.addEventListener("keydown", (event) => window.__pageKeys.push(event.key));
 
 function App() {
 	const [order, setOrder] = useState(initial);
@@ -42,6 +46,7 @@ function App() {
 				cards={tasks}
 				order={order}
 				locale="en"
+				getCardLabel={(task) => task.title}
 				renderCard={(task) => (
 					<button
 						type="button"

@@ -179,7 +179,7 @@ test.describe("自动排序列", () => {
 		await expect(page.locator("[data-placeholder]")).toHaveAttribute("data-invalid", "true");
 		await page.mouse.up();
 
-		await expect(page.getByRole("status")).toHaveText(/sorted automatically/);
+		await expect(page.locator(".v-kanban__notice")).toHaveText(/sorted automatically/);
 		await expect.poll(() => idsIn(page, "done")).toEqual(["c", "e"]);
 		expect(await page.evaluate(() => window.__moves.length)).toBe(1);
 	});
@@ -192,7 +192,7 @@ test.describe("保存失败", () => {
 		await pickUp(page, "a", await belowLastCard(page, "doing"));
 		await page.mouse.up();
 
-		await expect(page.getByRole("status")).toHaveText(/couldn't be saved/);
+		await expect(page.locator(".v-kanban__notice")).toHaveText(/couldn't be saved/);
 		await expect.poll(() => idsIn(page, "todo")).toEqual(["a", "b", "c"]);
 		expect(await idsIn(page, "doing")).toEqual(["d"]);
 		await expect(page.locator('[data-card-id="a"]')).toBeVisible();
@@ -258,5 +258,90 @@ test.describe("触屏（模拟）", () => {
 
 		await expect.poll(() => idsIn(page, "doing")).toEqual(["d", "a"]);
 		expect(await page.evaluate(() => window.__moves.length)).toBe(1);
+	});
+});
+
+test.describe("键盘", () => {
+	const announcement = (page: Page) => page.locator(".v-kanban__announcer");
+	const focusedCard = (page: Page) =>
+		page.evaluate(() => document.activeElement?.getAttribute("data-card-id") ?? null);
+
+	test("Tab 聚焦卡片，空格拿起、方向键移动、空格放下，全程有播报且焦点不丢", async ({ page }) => {
+		await open(page);
+
+		await page.keyboard.press("Tab");
+		expect(await focusedCard(page)).toBe("a");
+		await expect(page.locator('[data-card-id="a"]')).toHaveCSS("outline-style", "solid");
+
+		await page.keyboard.press(" ");
+		await expect(announcement(page)).toHaveText(
+			/^Picked up Task A\. Planned, position 1 of 3\./,
+		);
+		await page.keyboard.press("ArrowRight");
+		await expect(announcement(page)).toHaveText("In progress, position 1 of 2.");
+		await page.keyboard.press("ArrowDown");
+		await expect(announcement(page)).toHaveText("In progress, position 2 of 2.");
+		expect(await focusedCard(page)).toBe("a");
+		expect(await page.evaluate(() => window.__moves.length)).toBe(0);
+
+		await page.keyboard.press(" ");
+
+		await expect(announcement(page)).toHaveText(
+			"Dropped Task A. In progress, position 2 of 2.",
+		);
+		expect(await focusedCard(page)).toBe("a");
+		await expect.poll(() => idsIn(page, "doing")).toEqual(["d", "a"]);
+		const move = await page.evaluate(() => window.__moves[0]);
+		expect(move).toMatchObject({
+			cardId: "a",
+			to: { columnId: "doing", index: 1 },
+			previousId: "d",
+		});
+	});
+
+	test("拿起期间方向键、空格、Enter 与 Esc 不会传给页面级快捷键；放下后恢复", async ({
+		page,
+	}) => {
+		await open(page);
+		await page.keyboard.press("Tab");
+
+		await page.keyboard.press(" ");
+		for (const key of ["ArrowDown", "ArrowRight", "ArrowUp", "ArrowLeft"])
+			await page.keyboard.press(key);
+		await page.keyboard.press("Escape");
+		expect(await page.evaluate(() => window.__pageKeys)).toEqual(["Tab"]);
+
+		await page.keyboard.press("ArrowDown");
+		expect(await page.evaluate(() => window.__pageKeys)).toEqual(["Tab", "ArrowDown"]);
+	});
+
+	test("Esc 取消：恢复原位，不提交", async ({ page }) => {
+		await open(page);
+		await page.keyboard.press("Tab");
+
+		await page.keyboard.press(" ");
+		await page.keyboard.press("ArrowRight");
+		await page.keyboard.press("Escape");
+
+		await expect(announcement(page)).toHaveText(
+			"Move cancelled. Task A is back in Planned, position 1 of 3.",
+		);
+		expect(await idsIn(page, "todo")).toEqual(["a", "b", "c"]);
+		expect(await page.evaluate(() => window.__moves.length)).toBe(0);
+		expect(await focusedCard(page)).toBe("a");
+	});
+
+	test("自动排序列：进入落在入口一端，列内上下被拒绝并提示原因", async ({ page }) => {
+		await open(page);
+		await page.keyboard.press("Tab");
+
+		await page.keyboard.press(" ");
+		await page.keyboard.press("ArrowRight");
+		await page.keyboard.press("ArrowRight");
+		await expect(announcement(page)).toHaveText("Done, position 1 of 2.");
+		await page.keyboard.press("ArrowDown");
+
+		await expect(page.locator(".v-kanban__notice")).toHaveText(/sorted automatically/);
+		expect(await idsIn(page, "done")).toEqual(["a", "e"]);
 	});
 });

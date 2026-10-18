@@ -105,7 +105,7 @@ try {
 		"types.tsx",
 		`import { Board, createPointerController, type BoardCard, type BoardColumn, type BoardLocale, type BoardMessages, type BoardMove, type BoardProps, type BoardState, type DragController, type DragHost, type MoveDecision } from "${metadata.name}";
 import { Board as Unstyled } from "${metadata.name}/unstyled";
-import { applyMove, violatesAutoSort, createMove, isNoopMove, locateCard, normalizeBoardState, resolveBoard, resolveDropTarget, entryIndex, stepTarget, type ColumnLayout, type ResolvedColumn, type StepResult } from "${metadata.name}/core";
+import { applyMove, violatesAutoSort, createMove, isNoopMove, locateCard, normalizeBoardState, resolveBoard, resolveDropTarget, type ColumnLayout, type ResolvedColumn } from "${metadata.name}/core";
 interface Task extends BoardCard { title: string }
 interface Stage extends BoardColumn { hint: string }
 const canMove = (move: BoardMove): MoveDecision => move.to.columnId === "done" ? { allowed: false, reason: "no" } : { allowed: true };
@@ -121,7 +121,7 @@ export const nodes = [
 		renderColumnHeader={(stage, { count }) => <b>{stage.hint}{count}</b>}
 		renderEmpty={(stage) => <i>{stage.hint}</i>}
 		onMove={async (move) => { await Promise.resolve(move.cardId); }} canMove={canMove} onMoveError={(error, move) => console.error(error, move.previousId)}
-		isDraggable={(task) => task.title !== ""} readOnly={false} dragController={controller} />,
+		isDraggable={(task) => task.title !== ""} readOnly={false} dragController={controller} getCardLabel={(task) => task.title} />,
 	<Unstyled columns={stages} cards={tasks} order={{}} renderCard={(task) => task.title} />,
 ];
 export const props: BoardProps<Task, Stage>["order"] = {};
@@ -130,8 +130,6 @@ export const resolved: ResolvedColumn<Task>[] = resolveBoard(state, tasks);
 export const normalized: BoardState = normalizeBoardState(state);
 const move: BoardMove | null = createMove(state, "a", { columnId: "todo", index: 0 });
 const layout: ColumnLayout[] = [{ id: "todo", rect: { left: 0, top: 0, right: 1, bottom: 1 }, cards: [] }];
-export const steps: StepResult[] = [stepTarget(state, "a", { columnId: "todo", index: 0 }, { columnId: "todo", index: 0 }, "down", () => undefined)];
-export const entry: number = entryIndex("end", 2);
 export const moves = [move && applyMove(state, move), move && isNoopMove(move), move && violatesAutoSort(move, () => false), locateCard(state, "a"), resolveDropTarget(layout, { x: 0, y: 0 })];
 // @ts-expect-error 卡片必须有 id
 export const bad = <Board columns={stages} cards={[{ title: "no id" }]} order={{}} renderCard={() => null} />;
@@ -166,6 +164,8 @@ assert.match(renderToString(createElement(Board, { ...props, locale: "zh-CN" }))
 const editable = renderToString(createElement(Board, { ...props, onMove: () => {} }));
 assert.equal(renderToString(createElement(Board, { ...props, onMove: () => {} })), editable, "Editable SSR output must be deterministic.");
 assert.match(editable, /data-draggable="true"/);
+assert.match(editable, /tabindex="0"/);
+assert.match(editable, /aria-describedby=/);
 assert.ok(!/data-draggable/.test(html), "Read-only boards must not advertise dragging.");
 assert.ok(!/<script|<style/.test(html));
 assert.deepEqual(resolveBoard({ columns: ["todo"], order: { todo: ["b", "x"] } }, props.cards).map((column) => column.cards.map((card) => card.id)), [["b"]]);

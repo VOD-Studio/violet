@@ -84,9 +84,19 @@ Pass `onMove` and the board becomes editable: users drag cards within a column o
 - While a card is dragged, `renderCard` runs once more for the floating copy (hidden from assistive technology and inert), so don't rely on unique DOM ids or one-shot effects inside it.
 - Dragging starts after the pointer moves 4px (before that it is a click) and the click that follows a drag is suppressed. `Esc`, moving the pointer away from the board, or the window losing focus cancels it. On touch screens, press and hold for 250ms; moving earlier scrolls the page.
 - Motion is a 200ms position transition (displacement and landing), turned off under `prefers-reduced-motion: reduce`. There is no scaling.
-- Keyboard moving and undo are not available yet.
+- Undo is not available yet.
 
 `@violetjs/kanban/core` exposes the same logic without React: `createMove`, `applyMove`, `isNoopMove`, `locateCard`, `resolveDropTarget` and `violatesAutoSort`.
+
+### Keyboard
+
+Editable cards are focusable (`Tab`). Press `Space` or `Enter` on the card itself to pick it up, `↑ ↓` to move it within its column, `← →` to move it to the neighbouring column, `Space` or `Enter` to drop it, `Esc` to cancel. Moving focus off the card (`Tab`, clicking elsewhere) also cancels. Each step is announced through an `aria-live` region in English or Simplified Chinese; `getCardLabel(card)` supplies the card's spoken name (its `id` by default). While a card is held, the arrow keys, `Space`, `Enter` and `Esc` do not reach page-level shortcuts.
+
+- The card stays in its column and shows at the previewed position; nothing is committed until you drop it, and `Esc` restores it. `canMove` is checked on every step and again on drop, and rejected steps show the reason in the notice instead of moving.
+- Inside an auto-sort column `↑ ↓` is always rejected, including right after entering it: the position is yours to decide.
+- `Enter` on a focused editable card picks it up, so a detail view should be opened from a control inside the card (a button or link keeps its own `Enter`). Key repeat, modifier combinations (such as `Alt+←`) and IME composition are ignored while moving.
+- A step moves one column or one place at a time, so a column that `canMove` rejects blocks the way.
+- Keyboard moving does not go through `DragController`, which only handles pointer input.
 
 ### Replacing the drag controller
 
