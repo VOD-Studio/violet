@@ -128,7 +128,7 @@ api/
 | **chat(bot)** | chat | chat | Bot API：外部程序以 Bearer bot token 代表虚拟用户收发文本与图片、发布命令目录、引用回复时推进已读位置与订阅事件流（`/api/v1/chat/bot/*`）；成员从会话接口读取目录，后台凭据管理需 `chat:bot-manage` |
 | **chatappearance** | chatappearance | chatappearance | 账号级聊天外观（头像框/挂件/气泡主题/佩戴徽章），本人读写与批量公开查询（CAS 乐观锁），管理员徽章授予与撤销（chat:manage） |
 | **api_token** | api_token | api_token | 个人访问令牌 PAT（MCP 授权凭证） |
-| **project** | project | project | 项目展示 CRUD，唯一 slug 可在后台编辑；公开详情支持 `GET /projects/by-slug/{slug}`，保留按 ID 读取 |
+| **project** | project | project | 项目展示 CRUD，唯一 slug 可在后台编辑；公开详情支持 `GET /projects/by-slug/{slug}`，保留按 ID 读取；列表附带路线图进度和近期条目摘要 |
 | **roadmap** | roadmap | roadmap | 项目内稳定编号的路线图条目、三阶段进度与内容编辑；写操作需 `project:update` |
 | **announcement** | announcement | announcement（并入 content） | 公告管理 |
 | **emoji** | emoji | media | 表情分组/表情 CRUD、B站表情导入、文件上传 |
@@ -162,6 +162,8 @@ api/
 ### 项目路线图接口
 
 以下路径均以 `/api/v1` 为前缀；写操作需登录、CSRF 与 `project:update` 权限。
+
+`GET /projects`（包括 `page`/`limit` 分页）为每个项目附带 `roadmap`：三阶段进度、至多 2 条 `in_progress`、1 条 `latest_completed`（含完成日期）。无条目时返回零进度、空数组与 `null`，由消费方隐藏空进度区；按 ID 或 slug 读取项目本身不附带摘要。
 
 | 方法与路径 | 行为 |
 | --- | --- |

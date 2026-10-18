@@ -27,6 +27,32 @@ func registerPublicPaths(t *openapi3.T) {
 	})
 
 	// ProjectDTO
+	completionDate := nullableStr("YYYY-MM-DD；开发中条目为 null")
+	completionDate.Value.Format = "date"
+	registerSchema(t, "ProjectRoadmapItemPreviewDTO", openapi3.Schemas{
+		"id":              reqStr("条目 UUID"),
+		"number":          optInt64("项目内稳定编号"),
+		"title":           reqStr("纯文本标题"),
+		"completion_date": completionDate,
+	}, "id", "number", "title", "completion_date")
+	registerSchema(t, "ProjectRoadmapProgressDTO", openapi3.Schemas{
+		"planned":     optInt("未删除的规划中条目数"),
+		"in_progress": optInt("未删除的开发中条目数"),
+		"completed":   optInt("未删除的已完成条目数"),
+		"total":       optInt("未删除条目总数"),
+		"percent":     optInt("已完成数除以总数，四舍五入为整数百分比；无条目为 0"),
+	}, "planned", "in_progress", "completed", "total", "percent")
+	inProgress := refArray("按位置与编号升序选取至多两条开发中条目；无条目为 []", "ProjectRoadmapItemPreviewDTO")
+	maxCurrent := uint64(2)
+	inProgress.Value.MaxItems = &maxCurrent
+	latestCompleted := *t.Components.Schemas["ProjectRoadmapItemPreviewDTO"].Value
+	latestCompleted.Nullable = true
+	latestCompleted.Description = "按完成日期及编号倒序选取一条；无已完成条目时为 null"
+	registerSchema(t, "ProjectRoadmapSummaryDTO", openapi3.Schemas{
+		"progress":         optRef("未删除条目的进度概览", "ProjectRoadmapProgressDTO"),
+		"in_progress":      inProgress,
+		"latest_completed": {Value: &latestCompleted},
+	}, "progress", "in_progress", "latest_completed")
 	registerSchema(t, "ProjectDTO", openapi3.Schemas{
 		"id":          reqStr("项目 ID（UUID）"),
 		"title":       reqStr("项目标题"),
@@ -38,6 +64,7 @@ func registerPublicPaths(t *openapi3.T) {
 		"tech_stack":  strArray("技术栈"),
 		"sort_order":  optInt("排序权重"),
 		"created_at":  optStr("创建时间（RFC3339）"),
+		"roadmap":     optRef("仅项目列表附带；无条目时计数为零、开发中为 []、最近完成为 null", "ProjectRoadmapSummaryDTO"),
 	})
 
 	// AnnouncementDTO
@@ -149,9 +176,10 @@ func registerPublicPaths(t *openapi3.T) {
 		Get: &openapi3.Operation{
 			Tags:        []string{"项目"},
 			Summary:     "项目列表",
-			Description: "获取项目列表（非分页，返回全部）。",
+			Description: "每个项目附带路线图进度概览、至多两条开发中条目与一条最近完成条目。无 page/limit 时返回全部；传入任一参数时返回 offset 分页结果。",
+			Parameters:  openapi3.Parameters{pageParam(), limitParam(100)},
 			Responses: responses(
-				200, dataArrayResponse("ProjectDTO", "项目列表", 200, false),
+				200, dataArrayResponse("ProjectDTO", "项目列表（分页请求附带 meta.pagination）", 200, true),
 			),
 		},
 	})

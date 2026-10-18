@@ -23,16 +23,25 @@ type ProjectDTO struct {
 	TechStack   []string `json:"tech_stack"`
 	SortOrder   int      `json:"sort_order"`
 	CreatedAt   string   `json:"created_at"`
+	// Roadmap 仅项目列表附带；详情接口使用独立的路线图读模型。
+	Roadmap *RoadmapSummaryDTO `json:"roadmap,omitempty"`
 }
 
 // Service 项目用例服务
 type Service struct {
-	repo domain.ProjectRepository
+	repo      domain.ProjectRepository
+	summaries RoadmapSummaryReader
 }
 
 // NewService 构造项目用例服务
 func NewService(repo domain.ProjectRepository) *Service {
 	return &Service{repo: repo}
+}
+
+// WithRoadmapSummaries 在构造时配置列表摘要读取，不参与运行时配置切换。
+func (s *Service) WithRoadmapSummaries(reader RoadmapSummaryReader) *Service {
+	s.summaries = reader
+	return s
 }
 
 // List 获取所有项目
@@ -41,11 +50,7 @@ func (s *Service) List(ctx context.Context) ([]ProjectDTO, error) {
 	if err != nil {
 		return nil, err
 	}
-	dtos := make([]ProjectDTO, 0, len(items))
-	for _, p := range items {
-		dtos = append(dtos, ToDTO(p))
-	}
-	return dtos, nil
+	return s.listDTOs(ctx, items)
 }
 
 // ListPage 分页获取项目
@@ -54,11 +59,35 @@ func (s *Service) ListPage(ctx context.Context, q domainshared.PageQuery) (domai
 	if err != nil {
 		return domainshared.PageResult[ProjectDTO]{}, err
 	}
-	dtos := make([]ProjectDTO, 0, len(result.Items))
-	for _, p := range result.Items {
-		dtos = append(dtos, ToDTO(p))
+	dtos, err := s.listDTOs(ctx, result.Items)
+	if err != nil {
+		return domainshared.PageResult[ProjectDTO]{}, err
 	}
 	return domainshared.NewPageResult(domainshared.PageQuery{Page: result.Page, Limit: result.Limit}, dtos, result.Total), nil
+}
+
+func (s *Service) listDTOs(ctx context.Context, projects []*domain.Project) ([]ProjectDTO, error) {
+	dtos := make([]ProjectDTO, 0, len(projects))
+	ids := make([]domainshared.ID, 0, len(projects))
+	for _, p := range projects {
+		dtos = append(dtos, ToDTO(p))
+		ids = append(ids, p.ID())
+	}
+	if s.summaries == nil || len(projects) == 0 {
+		return dtos, nil
+	}
+	summaries, err := s.summaries.ReadSummaries(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	for index, id := range ids {
+		summary := summaries[id]
+		if summary.InProgress == nil {
+			summary.InProgress = []RoadmapItemPreviewDTO{}
+		}
+		dtos[index].Roadmap = &summary
+	}
+	return dtos, nil
 }
 
 // Get 按 ID 获取项目详情
