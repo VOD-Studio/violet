@@ -207,6 +207,27 @@ describe("拖拽移动", () => {
 	});
 });
 
+describe("折叠的列", () => {
+	it("折叠的列不是落点：拖到它上面放下没有移动，卡片留在原处", () => {
+		const onMove = vi.fn();
+		renderBoard({ onMove, collapsible: true, defaultCollapsedColumns: ["doing"] });
+
+		pickUp("a", { x: colX(1), y: slotY(1) }).release();
+
+		expect(onMove).not.toHaveBeenCalled();
+		expect(cardIds("规划中")).toEqual(["a", "b", "c"]);
+	});
+
+	it("展开的邻列照常接收", () => {
+		const onMove = vi.fn();
+		renderBoard({ onMove, collapsible: true, defaultCollapsedColumns: ["doing"] });
+
+		pickUp("a", { x: colX(2), y: slotY(0) }).release();
+
+		expect(onMove).toHaveBeenCalledTimes(1);
+	});
+});
+
 describe("可编辑与只读", () => {
 	it("没有 onMove 时看板只读：卡片没有拖拽标记，按下后移动也不会拖起", () => {
 		renderBoard({ onMove: undefined });

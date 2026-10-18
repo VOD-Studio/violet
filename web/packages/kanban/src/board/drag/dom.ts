@@ -33,6 +33,7 @@ export function measureColumns(
 			id,
 			rect: toRect(column.getBoundingClientRect()),
 			autoSort: autoSort(id),
+			disabled: column.hasAttribute("data-collapsed"),
 			cards: [...column.querySelectorAll<HTMLElement>(CARD_SELECTOR)]
 				.filter((card) => card.getAttribute("data-card-id") !== draggedId)
 				.map((card) => ({

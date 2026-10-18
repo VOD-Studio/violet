@@ -88,6 +88,16 @@ export interface BoardMessages {
 	 * @example "Move {card} to another column"
 	 */
 	moveToLabel: string;
+	/**
+	 * 折叠列的按钮名称，{column} 替换为列标题。
+	 * @example "Collapse {column}"
+	 */
+	collapseColumn: string;
+	/**
+	 * 展开列的按钮名称，{column} 替换为列标题。
+	 * @example "Expand {column}"
+	 */
+	expandColumn: string;
 }
 
 const messagesByLocale: Record<BoardLocale, BoardMessages> = {
@@ -110,6 +120,8 @@ const messagesByLocale: Record<BoardLocale, BoardMessages> = {
 		movedByMenu: "Moved {card} to {column}, position {position} of {count}.",
 		moveTo: "Move to…",
 		moveToLabel: "Move {card} to another column",
+		collapseColumn: "Collapse {column}",
+		expandColumn: "Expand {column}",
 	},
 	"zh-CN": {
 		boardLabel: "看板",
@@ -128,6 +140,8 @@ const messagesByLocale: Record<BoardLocale, BoardMessages> = {
 		movedByMenu: "已把 {card} 移到 {column}，第 {position} 个，共 {count} 个。",
 		moveTo: "移到…",
 		moveToLabel: "把 {card} 移到其他列",
+		collapseColumn: "折叠 {column}",
+		expandColumn: "展开 {column}",
 	},
 };
 

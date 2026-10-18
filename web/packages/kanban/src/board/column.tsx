@@ -1,0 +1,98 @@
+import { type ReactNode, useId } from "react";
+import { formatMessage } from "../locale.ts";
+import type { BoardMessages } from "./messages.ts";
+
+export interface ColumnViewProps {
+	id: string;
+	title: string;
+	/** 列内卡片总数。 */
+	count: number;
+	/** 使用方的列头渲染，取代默认的标题与计数；返回 `null` 就不显示列头。 */
+	renderHeader?: () => ReactNode;
+	/** 显示折叠按钮。 */
+	collapsible: boolean;
+	collapsed: boolean;
+	onToggle(): void;
+	messages: BoardMessages;
+	/** 卡片列表或空状态。 */
+	children: ReactNode;
+}
+
+/**
+ * 一列：列头（标题、计数、折叠按钮）、可折叠的列体与列底快速添加。
+ *
+ * 列体里的聚焦环会外扩，折叠动画又必须裁剪溢出，所以裁剪层四周留出内边距并以负外边距抵消。
+ */
+export function ColumnView({
+	id,
+	title,
+	count,
+	renderHeader,
+	collapsible,
+	collapsed,
+	onToggle,
+	messages,
+	children,
+}: ColumnViewProps) {
+	const bodyId = useId();
+	const heading = renderHeader ? (
+		renderHeader()
+	) : (
+		<header className="v-kanban__column-header">
+			<h3 className="v-kanban__column-title">{title}</h3>
+			<span className="v-kanban__count">
+				<span aria-hidden="true">{count}</span>
+				<span className="v-kanban__sr-only">
+					{formatMessage(messages.cardCount, { count })}
+				</span>
+			</span>
+		</header>
+	);
+	return (
+		<div
+			role="group"
+			className="v-kanban__column"
+			aria-label={title}
+			data-column-id={id}
+			data-collapsed={collapsed ? "true" : undefined}
+		>
+			{collapsible ? (
+				<div className="v-kanban__column-top">
+					{heading}
+					<button
+						type="button"
+						className="v-kanban__collapse"
+						aria-expanded={!collapsed}
+						aria-controls={bodyId}
+						aria-label={formatMessage(
+							collapsed ? messages.expandColumn : messages.collapseColumn,
+							{ column: title },
+						)}
+						onClick={onToggle}
+					>
+						<svg
+							viewBox="0 0 16 16"
+							width="16"
+							height="16"
+							fill="none"
+							stroke="currentColor"
+							strokeWidth="1.5"
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							aria-hidden="true"
+						>
+							<path d={collapsed ? "M6 3.5 10.5 8 6 12.5" : "M3.5 6 8 10.5 12.5 6"} />
+						</svg>
+					</button>
+				</div>
+			) : (
+				heading
+			)}
+			<div id={bodyId} className="v-kanban__column-body">
+				<div className="v-kanban__column-body-inner" inert={collapsed}>
+					{children}
+				</div>
+			</div>
+		</div>
+	);
+}

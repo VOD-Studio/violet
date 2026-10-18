@@ -49,6 +49,7 @@ try {
 		"dist/canvas/canvas.css",
 		"dist/styles.css",
 		"dist/board/board.css",
+		"dist/board/shell.css",
 		"dist/history/history.css",
 	])
 		assert.ok(files.includes(name), `Missing packed file: ${name}`);
@@ -130,6 +131,10 @@ export const nodes = [
 		onMove={async (move) => { await Promise.resolve(move.cardId); }} canMove={canMove} onMoveError={(error, move) => console.error(error, move.previousId)}
 		isDraggable={(task) => task.title !== ""} readOnly={false} dragController={controller} getCardLabel={(task) => task.title} moveMenu="always" />,
 	<Unstyled columns={stages} cards={tasks} order={{}} renderCard={(task) => task.title} />,
+	<Board columns={[{ id: "todo", title: "Todo", collapsible: false }]} cards={tasks} order={{ todo: ["a"] }}
+		renderCard={(task) => task.title}
+		collapsible collapsedColumns={["todo"]} defaultCollapsedColumns={[]} onCollapsedColumnsChange={(ids: string[]) => ids.length}
+		/>,
 ];
 export const props: BoardProps<Task, Stage>["order"] = {};
 const viewport: Viewport = fitViewport({ width: 800, height: 600 }, { width: 400, height: 300 });
@@ -184,6 +189,9 @@ assert.ok(html.indexOf("Todo") < html.indexOf("Done"));
 assert.ok(html.indexOf("Second") < html.indexOf("First"), "Card order must follow the order prop.");
 assert.match(html, /No cards/);
 assert.match(renderToString(createElement(Board, { ...props, locale: "zh-CN" })), /暂无卡片/);
+const shell = renderToString(createElement(Board, { ...props, collapsible: true, onMove: () => {} }));
+assert.equal(renderToString(createElement(Board, { ...props, collapsible: true, onMove: () => {} })), shell, "Shell SSR output must be deterministic.");
+assert.match(shell, /aria-expanded="true"/);
 const editable = renderToString(createElement(Board, { ...props, onMove: () => {} }));
 assert.equal(renderToString(createElement(Board, { ...props, onMove: () => {} })), editable, "Editable SSR output must be deterministic.");
 assert.match(editable, /data-draggable="true"/);

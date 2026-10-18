@@ -35,6 +35,11 @@ export interface KeyboardMoveOptions {
 	activity: ActivityRef;
 	announce: ReturnType<typeof useAnnouncer>["announce"];
 	focus: ReturnType<typeof useFocusRequest>;
+	/**
+	 * 预览位置进入一列时调用，在显示新位置之前。折叠的列体不能聚焦，要在同一次渲染里展开，
+	 * 焦点才能跟着卡片进去。
+	 */
+	onEnterColumn?: (columnId: string) => void;
 }
 
 /** 键盘拿起的卡片：出发位置与当前预览的目标位置。 */
@@ -134,6 +139,7 @@ export function useKeyboardMove(options: KeyboardMoveOptions): KeyboardMove {
 			if (!move) return;
 			const verdict = board.decide(move);
 			if (!verdict.allowed) return board.showNotice(verdict.reason);
+			current.onEnterColumn?.(move.to.columnId);
 			setLifted({ ...held, target: move.to });
 			announce("keyboardMoved", held.cardId, move.to);
 		},

@@ -5,12 +5,14 @@ import { describe, expect, it } from "vitest";
 // 以纯文本读取源码：vitest 默认会把 CSS 导入替换为空串，站点根配置下同样如此。
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 const board = read("./board.css");
+const shell = read("./shell.css");
 const history = read("../history/history.css");
 const canvas = read("../canvas/canvas.css");
 
 /** 取选择器恰好为 `selector` 的规则块内容。 */
 function rule(css: string, selector: string): string {
-	const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+	// 格式化可能把长选择器拆成多行，所以空白按任意空白匹配
+	const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+");
 	const match = new RegExp(`(?:^|\\n)${escaped}\\s*\\{([^}]*)\\}`).exec(css);
 	if (!match) throw new Error(`Missing rule: ${selector}`);
 	return match[1];
@@ -38,6 +40,49 @@ describe("看板样式", () => {
 	});
 });
 
+describe("看板外壳样式", () => {
+	it("列体的裁剪层留出聚焦环的空间（内边距不少于 6px），以等量负外边距抵消，又不超出列与滚动层的内边距（17px）", () => {
+		const inner = rule(shell, ".v-kanban .v-kanban__column-body-inner");
+
+		expect(inner).toMatch(/overflow:\s*hidden/);
+		const padding = Number(/padding:\s*(\d+)px/.exec(inner)?.[1]);
+		const margin = Number(/margin:\s*-(\d+)px/.exec(inner)?.[1]);
+		expect(padding).toBeGreaterThanOrEqual(6);
+		expect(padding).toBeLessThanOrEqual(17);
+		expect(margin).toBe(padding);
+	});
+
+	it("裁剪层盖到列头上却不接收指针事件，只让里面的内容接收", () => {
+		expect(rule(shell, ".v-kanban .v-kanban__column-body-inner")).toMatch(
+			/pointer-events:\s*none/,
+		);
+		expect(rule(shell, ".v-kanban .v-kanban__column-body-inner > *")).toMatch(
+			/pointer-events:\s*auto/,
+		);
+	});
+
+	it("折叠用行高过渡，不用位移或缩放；减弱动态下关闭所有折叠过渡", () => {
+		expect(rule(shell, ".v-kanban .v-kanban__column-body")).toMatch(
+			/grid-template-rows:\s*1fr[\s\S]*transition:\s*grid-template-rows 200ms/,
+		);
+		expect(shell).not.toMatch(/translate|slide/);
+		const reduced =
+			/@media \(prefers-reduced-motion: reduce\) \{([\s\S]*?)\n\}/.exec(shell)?.[1] ?? "";
+		expect(reduced).toMatch(/transition:\s*none/);
+		expect(reduced).toContain(".v-kanban__column-body");
+	});
+
+	it("折叠后内容隐藏且不可聚焦，但等动画结束后才隐藏", () => {
+		const collapsed = rule(
+			shell,
+			'.v-kanban .v-kanban__column[data-collapsed="true"] > .v-kanban__column-body > .v-kanban__column-body-inner',
+		);
+
+		expect(collapsed).toMatch(/visibility:\s*hidden/);
+		expect(collapsed).toMatch(/transition:\s*visibility 0s linear 200ms/);
+	});
+});
+
 describe("画布样式", () => {
 	it("触摸手势归画布：touch-action: none 落在视口与它的每个后代上（内容里的滚动容器会截断继承）", () => {
 		expect(canvas).toMatch(
@@ -55,6 +100,7 @@ describe("画布样式", () => {
 
 describe.each([
 	["board.css", board],
+	["shell.css", shell],
 	["history.css", history],
 	["canvas.css", canvas],
 ])("%s 的视觉红线", (_name, css) => {

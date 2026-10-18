@@ -7,7 +7,9 @@ import {
 	resolveBoard,
 } from "../core/index.ts";
 import { formatMessage } from "../locale.ts";
+import { notifyEditing } from "../pan-region.ts";
 import { CardItem } from "./card-item.tsx";
+import { ColumnView } from "./column.tsx";
 import type { Activity } from "./drag/activity.ts";
 import { PLACEHOLDER_FLIP_ID } from "./drag/dom.ts";
 import { useFlip } from "./drag/motion.ts";
@@ -19,6 +21,7 @@ import { useFocusRequest } from "./drag/use-focus-request.ts";
 import { useKeyboardMove } from "./drag/use-keyboard-move.ts";
 import { useMoveMenu } from "./drag/use-move-menu.ts";
 import { type BoardLocale, type BoardMessages, resolveMessages } from "./messages.ts";
+import { useCollapsedColumns } from "./use-collapsed.ts";
 
 /** 列定义。`title` 同时是列分组的可访问名称。 */
 export interface BoardColumn {
@@ -29,6 +32,11 @@ export interface BoardColumn {
 	 * @default undefined 普通列
 	 */
 	autoSort?: AutoSortEntry;
+	/**
+	 * 看板开启 `collapsible` 时，这一列是否可折叠；`false` 让这一列不可折叠。
+	 * @default undefined 跟随看板
+	 */
+	collapsible?: boolean;
 }
 
 /**
@@ -85,6 +93,17 @@ export interface BoardProps<TCard extends BoardCard, TColumn extends BoardColumn
 	 * @default "hover"
 	 */
 	moveMenu?: "hover" | "always" | "none";
+	/**
+	 * 列可折叠：列头出现折叠按钮，折叠后只剩列头与计数。列可用 `column.collapsible: false` 单独退出。
+	 * @default false
+	 */
+	collapsible?: boolean;
+	/** 受控的折叠列 id；给出后以它为准，点击只通过 `onCollapsedColumnsChange` 通知。 */
+	collapsedColumns?: readonly string[];
+	/** 非受控时的初始折叠列 id。 */
+	defaultCollapsedColumns?: readonly string[];
+	/** 折叠状态变化时调用，参数是完整的折叠列 id。卡片被移到折叠的列时，该列会自动展开并通知。 */
+	onCollapsedColumnsChange?: (collapsed: string[]) => void;
 	/** 替换拖拽控制器，默认是指针控制器。身份变化会重新挂载并取消进行中的拖拽，请保持引用稳定。 */
 	dragController?: DragController;
 	/** 内置文案的语言。 */
@@ -115,6 +134,10 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 	readOnly,
 	getCardLabel,
 	moveMenu = "hover",
+	collapsible = false,
+	collapsedColumns,
+	defaultCollapsedColumns,
+	onCollapsedColumnsChange,
 	dragController,
 	locale,
 	messages: messageOverrides,
@@ -138,11 +161,26 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 	const scrollerRef = useRef<HTMLDivElement>(null);
 	const activity = useRef<Activity>(null);
 	const hintId = useId();
+	const collapse = useCollapsedColumns({
+		collapsed: collapsedColumns,
+		defaultCollapsed: defaultCollapsedColumns,
+		onChange: onCollapsedColumnsChange,
+	});
+	/** 用户在看板里操作：外层画布不再随内容尺寸变化自动适应。 */
+	const engage = () => {
+		if (rootRef.current) notifyEditing(rootRef.current);
+	};
 	const moves = useBoardMoves({
 		columnIds,
 		order,
 		autoSort,
-		onMove,
+		// 移到折叠的列时先把它展开，免得卡片落进看不见的地方
+		onMove:
+			onMove &&
+			((move) => {
+				collapse.expand(move.to.columnId);
+				return onMove(move);
+			}),
 		canMove,
 		onMoveError,
 		readOnly,
@@ -159,6 +197,7 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 		activity,
 		announce,
 		focus,
+		onEnterColumn: collapse.expand,
 	});
 	const drag = useBoardDrag({ rootRef, moves, autoSort, controller: dragController, activity });
 	const moveToColumn = useMoveMenu({ moves, autoSort, announce, focus });
@@ -244,29 +283,30 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 					if (placeholderNode && shown === placeholder?.index)
 						items.push(placeholderNode);
 					const hasVisible = shown > 0 || placeholderNode !== null;
+					// 折叠列表只对可折叠的列起作用：否则列被藏起来，又没有按钮可以展开
+					const columnCollapsible = collapsible && column.collapsible !== false;
 					return (
-						<div
+						<ColumnView
 							key={id}
-							role="group"
-							className="v-kanban__column"
-							aria-label={title}
-							data-column-id={id}
-						>
-							{renderColumnHeader ? (
-								renderColumnHeader(column, { count: columnCards.length })
-							) : (
-								<header className="v-kanban__column-header">
-									<h3 className="v-kanban__column-title">{title}</h3>
-									<span className="v-kanban__count">
-										<span aria-hidden="true">{columnCards.length}</span>
-										<span className="v-kanban__sr-only">
-											{formatMessage(messages.cardCount, {
+							id={id}
+							title={title}
+							count={columnCards.length}
+							renderHeader={
+								renderColumnHeader
+									? () =>
+											renderColumnHeader(column, {
 												count: columnCards.length,
-											})}
-										</span>
-									</span>
-								</header>
-							)}
+											})
+									: undefined
+							}
+							collapsible={columnCollapsible}
+							collapsed={columnCollapsible && collapse.isCollapsed(id)}
+							onToggle={() => {
+								engage();
+								collapse.toggle(id);
+							}}
+							messages={messages}
+						>
 							{items.length > 0 ? (
 								// biome-ignore lint/a11y/noRedundantRoles: 显式 role：list-style: none 会让 Safari 丢弃列表语义
 								<ul role="list" className="v-kanban__cards">
@@ -278,7 +318,7 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 							) : (
 								<p className="v-kanban__empty">{messages.emptyColumn}</p>
 							)}
-						</div>
+						</ColumnView>
 					);
 				})}
 			</div>

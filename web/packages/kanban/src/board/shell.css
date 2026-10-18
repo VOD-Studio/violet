@@ -1,0 +1,83 @@
+/* 列头与折叠按钮 */
+.v-kanban .v-kanban__column-top {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+.v-kanban .v-kanban__column-top > :first-child {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+.v-kanban .v-kanban__collapse {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	border: 0;
+	border-radius: 9999px;
+	background: transparent;
+	color: var(--_kanban-muted);
+	cursor: pointer;
+}
+.v-kanban .v-kanban__collapse:hover {
+	background: color-mix(in oklab, var(--_kanban-muted) 14%, transparent);
+}
+.v-kanban .v-kanban__collapse:focus-visible {
+	outline: 2px solid var(--_kanban-focus);
+	outline-offset: 1px;
+}
+
+/* 列体：折叠用行高 1fr → 0fr 的过渡，不测量高度，也不用位移 */
+.v-kanban .v-kanban__column {
+	transition: gap 200ms cubic-bezier(0.2, 0, 0, 1);
+}
+.v-kanban .v-kanban__column[data-collapsed="true"] {
+	gap: 0;
+}
+.v-kanban .v-kanban__column-body {
+	display: grid;
+	grid-template-rows: 1fr;
+	transition: grid-template-rows 200ms cubic-bezier(0.2, 0, 0, 1);
+}
+.v-kanban .v-kanban__column[data-collapsed="true"] > .v-kanban__column-body {
+	grid-template-rows: 0fr;
+}
+/* 折叠动画要裁剪溢出，而卡片与输入框的聚焦环会外扩 2px 线宽加 2px 偏移：
+   裁剪层四周留 12px 内边距，再用等量负外边距抵消，布局位置不变。
+   不能更大：这层的盒子超出列的内边距与边框（11px）再加横向滚动层的 6px 内边距时，会把滚动层撑出多余的滚动范围。
+   它会盖到列头上，所以自己不接收指针事件，只让里面的内容接收。 */
+.v-kanban .v-kanban__column-body-inner {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	min-height: 0;
+	margin: -12px;
+	padding: 12px;
+	overflow: hidden;
+	pointer-events: none;
+	visibility: visible;
+	transition: visibility 0s;
+}
+.v-kanban .v-kanban__column-body-inner > * {
+	pointer-events: auto;
+}
+/* 折叠完成后才隐藏，动画过程中内容仍可见 */
+.v-kanban .v-kanban__column[data-collapsed="true"]
+	> .v-kanban__column-body
+	> .v-kanban__column-body-inner {
+	visibility: hidden;
+	transition: visibility 0s linear 200ms;
+}
+@media (prefers-reduced-motion: reduce) {
+	.v-kanban .v-kanban__column,
+	.v-kanban .v-kanban__column-body,
+	.v-kanban
+		.v-kanban__column[data-collapsed="true"]
+		> .v-kanban__column-body
+		> .v-kanban__column-body-inner {
+		transition: none;
+	}
+}
