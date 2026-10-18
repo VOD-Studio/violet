@@ -282,7 +282,7 @@ Relations are `{ sourceId, targetId, type }`. Built-in presentation types are `e
 - Locale defaults to `en`; `zh-CN` and partial `messages` overrides are available. Relation text and live announcements complement visual lines. A custom card still needs meaningful text and accessible controls.
 - Reduced-motion preferences disable board position/collapse motion and animated canvas zoom; relation jumps become immediate. This is not a claim of real-device or screen-reader certification. Review the final application with its target assistive technology and devices.
 
-`renderCard` can run twice during pointer dragging because of the inert, assistive-technology-hidden floating copy. Avoid duplicate DOM ids and one-shot side effects in card content. `renderColumnHeader` and `renderEmpty` replace their respective contents; returning `null` suppresses them. Quick add (`onAddCard`) and InlineEdit only report saves; they do not own your records. Failed saves retain the draft.
+`renderCard` can run twice during pointer dragging because of the inert, assistive-technology-hidden floating copy. Avoid duplicate DOM ids and one-shot side effects in card content. `renderColumnHeader` and `renderEmpty` replace their respective contents; returning `null` suppresses them. When you provide only part of a column's cards (a "show more" list), set `column.total` so the header and switcher tabs show the real count, and put the control in `renderColumnFooter`, which renders after the cards. Quick add (`onAddCard`) and InlineEdit only report saves; they do not own your records. Failed saves retain the draft.
 
 ## Styling and server rendering
 

@@ -282,7 +282,7 @@ RelationGraph 只读。它根据数据确定性计算按列分区的坐标，卡
 - `locale` 默认 `en`，支持 `zh-CN` 和局部 `messages` 覆盖。关系文字与 live 播报补充视觉线条，自定义卡片仍需提供有意义的文本与可访问控件。
 - 减弱动态偏好会关闭卡片位移、列折叠和画布缩放过渡，关系跳转改为即时。实现这些行为不代表已通过真实读屏或真机认证，最终应用仍需在目标设备和辅助技术上检查。
 
-指针拖动时会额外调用一次 `renderCard` 绘制 inert 且对辅助技术隐藏的浮动副本。内容不能依赖唯一 DOM id 或只执行一次的副作用。`renderColumnHeader` 与 `renderEmpty` 分别替换列头和空内容，返回 `null` 可不显示。快速添加（`onAddCard`）与 InlineEdit 只报告保存，不持有业务记录；失败会保留草稿。
+指针拖动时会额外调用一次 `renderCard` 绘制 inert 且对辅助技术隐藏的浮动副本。内容不能依赖唯一 DOM id 或只执行一次的副作用。`renderColumnHeader` 与 `renderEmpty` 分别替换列头和空内容，返回 `null` 可不显示。只提供某列一部分卡片时（例如「展开更多」列表），用 `column.total` 让列头与切换器标签显示真实数量，并把控件放进 `renderColumnFooter`（渲染在卡片之后）。快速添加（`onAddCard`）与 InlineEdit 只报告保存，不持有业务记录；失败会保留草稿。
 
 ## 样式与服务端渲染
 

@@ -17,6 +17,8 @@ export interface ColumnViewProps {
 	collapsible: boolean;
 	collapsed: boolean;
 	onToggle(): void;
+	/** 列内卡片之后、快速添加之前的内容；`null` 或不提供则不显示。 */
+	footer?: ReactNode;
 	/** 列底快速添加；不提供则不显示。 */
 	quickAdd?: Pick<QuickAddProps, "onSubmit" | "onError" | "onOpen">;
 	/**
@@ -43,6 +45,7 @@ export function ColumnView({
 	collapsible,
 	collapsed,
 	onToggle,
+	footer,
 	quickAdd,
 	panel,
 	messages,
@@ -101,6 +104,7 @@ export function ColumnView({
 			<div id={bodyId} className="v-kanban__column-body">
 				<div className="v-kanban__column-body-inner" inert={collapsed}>
 					{children}
+					{footer}
 					{quickAdd ? (
 						<QuickAdd
 							columnTitle={title}

@@ -37,6 +37,14 @@ import { useCollapsedColumns } from "./use-collapsed.ts";
 const EMPTY_SPACE =
 	".v-kanban__column, .v-kanban__column-body, .v-kanban__column-body-inner, .v-kanban__cards, .v-kanban__empty";
 
+/** 列显示的卡片总数：`total` 是有限数时取它，但不小于实际提供的张数。 */
+function columnTotal(column: BoardColumn | undefined, shown: number) {
+	const total = column?.total;
+	return total !== undefined && Number.isFinite(total)
+		? Math.max(Math.floor(total), shown)
+		: shown;
+}
+
 /** 列定义。`title` 同时是列分组的可访问名称。 */
 export interface BoardColumn {
 	id: string;
@@ -56,6 +64,12 @@ export interface BoardColumn {
 	 * @default undefined 跟随看板
 	 */
 	quickAdd?: boolean;
+	/**
+	 * 列的卡片总数。只提供了列内一部分卡片（例如「展开更多」之前）时设置：列头、切换器标签与读屏的数量取它，
+	 * 而不是提供的张数。小于提供的张数时忽略；`filter` 只作用于提供的卡片，所以隐藏的卡片不计入匹配数。
+	 * @default undefined 提供的卡片数
+	 */
+	total?: number;
 }
 
 /** 快速添加提交的新卡片：所在列与标题。 */
@@ -91,6 +105,11 @@ export interface BoardProps<TCard extends BoardCard, TColumn extends BoardColumn
 	) => ReactNode;
 	/** 取代列内没有卡片时的默认提示；返回 `null` 则不显示任何提示。 */
 	renderEmpty?: (column: TColumn) => ReactNode;
+	/**
+	 * 列内卡片之后的内容，例如「展开更多」。`count` 是列的卡片总数（设置了 `column.total` 时取它），
+	 * `shown` 是提供并正在显示的张数；返回 `null` 不显示。折叠的列里不可交互。
+	 */
+	renderColumnFooter?: (column: TColumn, context: { count: number; shown: number }) => ReactNode;
 	/**
 	 * 提交一次移动。提供它即让看板可编辑。
 	 *
@@ -209,6 +228,7 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 	renderCard,
 	renderColumnHeader,
 	renderEmpty,
+	renderColumnFooter,
 	onMove,
 	canMove,
 	onMoveError,
@@ -415,7 +435,7 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 						columns={resolved.map(({ id, cards: columnCards }) => ({
 							id,
 							title: columnTitle(id),
-							count: columnCards.length,
+							count: columnTotal(definitions.get(id), columnCards.length),
 							matched: filterActive ? columnCards.filter(matches).length : null,
 						}))}
 						activeId={active.current}
@@ -533,20 +553,29 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 						// 折叠列表只对可折叠的列起作用：否则列被藏起来，又没有按钮可以展开
 						const columnCollapsible =
 							!switcher && collapsible && column.collapsible !== false;
+						const total = columnTotal(column, columnCards.length);
 						return (
 							<ColumnView
 								key={id}
 								id={id}
 								title={title}
-								count={columnCards.length}
+								count={total}
 								matched={matched}
 								renderHeader={
 									renderColumnHeader
 										? () =>
 												renderColumnHeader(column, {
-													count: columnCards.length,
+													count: total,
 													matched,
 												})
+										: undefined
+								}
+								footer={
+									renderColumnFooter
+										? renderColumnFooter(column, {
+												count: total,
+												shown: columnCards.length,
+											})
 										: undefined
 								}
 								collapsible={columnCollapsible}

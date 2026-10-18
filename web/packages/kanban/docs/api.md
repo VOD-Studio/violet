@@ -24,7 +24,7 @@
 - `BoardCard = { id: string }`，额外业务字段由泛型保留。
 - `BoardState = { columns: readonly string[]; order: Readonly<Record<string, readonly string[]>> }`。列顺序和每列卡片顺序分开保存。
 - `ResolvedColumn<TCard> = { id: string; cards: TCard[] }`。
-- `BoardColumn` 有 `id: string`、可选 `title: string`、`autoSort: "start" | "end"`、`collapsible: boolean`、`quickAdd: boolean`。后两项为 `false` 时让该列退出相应看板能力。`title` 还是列的可访问名称，没有时退回 id。
+- `BoardColumn` 有 `id: string`、可选 `title: string`、`autoSort: "start" | "end"`、`collapsible: boolean`、`quickAdd: boolean`、`total: number`。`collapsible`、`quickAdd` 为 `false` 时让该列退出相应看板能力。`total` 用于只提供了列内一部分卡片（例如「展开更多」之前）：列头、切换器标签与读屏的数量取它（有限数，向下取整，小于提供的张数时忽略），筛选只作用于提供的卡片。`title` 还是列的可访问名称，没有时退回 id。
 - `NewCard = { columnId: string; title: string }`。
 
 `normalizeBoardState(state): BoardState` 返回新状态，为每个列 id 补排序数组，丢弃未知列记录，重复列/卡片位置保留首次出现，一张卡片归属最靠前的列。
@@ -45,8 +45,9 @@
 | cards | `readonly TCard[]`，必填 | 顺序无关的卡片池 |
 | order | `BoardState["order"]`，必填 | 每列从上到下的卡片 id |
 | renderCard | `(card, { column, index }) => ReactNode`，必填 | 只渲染卡片内容，外壳由包提供；指针拖动时额外渲染浮动副本 |
-| renderColumnHeader | `(column, { count: number, matched: number | null }) => ReactNode` | 替换默认标题/计数；未筛选 matched 为 null；返回 null 不显示内容，列名称仍保留 |
+| renderColumnHeader | `(column, { count: number, matched: number | null }) => ReactNode` | 替换默认标题/计数，count 是列总数（有 `total` 时取它）；未筛选 matched 为 null；返回 null 不显示内容，列名称仍保留 |
 | renderEmpty | `(column) => ReactNode` | 替换空列提示，null 可隐藏 |
+| renderColumnFooter | `(column, { count: number, shown: number }) => ReactNode` | 列内卡片之后、快速添加之前的内容，例如「展开更多」；count 是列总数（有 `total` 时取它），shown 是提供的张数；折叠的列里随列体一起不可交互 |
 | onMove | `(move: BoardMove) => void | Promise<void>` | 提供即启用移动；完成前要更新受控 order |
 | canMove | `(move: BoardMove) => MoveDecision` | 同步规则，目标变化和提交时调用，抛错按拒绝处理 |
 | onMoveError | `(error: unknown, move: BoardMove) => void` | 保存失败且包内预览已回滚时通知 |
