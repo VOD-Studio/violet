@@ -15,18 +15,21 @@ function rule(selector: string): string {
 
 describe("默认样式的视觉红线", () => {
 	it("横向滚动层留出聚焦环空间：内边距不少于 4px，并以等量负外边距抵消", () => {
-		const root = rule(".v-kanban");
+		const scroller = rule(".v-kanban .v-kanban__scroller");
 
-		expect(root).toMatch(/overflow-x:\s*auto/);
-		const padding = Number(/padding:\s*(\d+)px/.exec(root)?.[1]);
-		const margin = Number(/margin:\s*-(\d+)px/.exec(root)?.[1]);
+		expect(scroller).toMatch(/overflow-x:\s*auto/);
+		const padding = Number(/padding:\s*(\d+)px/.exec(scroller)?.[1]);
+		const margin = Number(/margin:\s*-(\d+)px/.exec(scroller)?.[1]);
 		expect(padding).toBeGreaterThanOrEqual(4);
 		expect(margin).toBe(padding);
 	});
 
-	it("不使用 scale 与阴影", () => {
+	it("不使用 scale；阴影只有一种轻微软影", () => {
 		expect(css).not.toMatch(/scale/);
-		expect(css).not.toMatch(/box-shadow/);
+		const shadows = [...css.matchAll(/box-shadow:\s*([^;]+);/g)].map((match) => match[1]);
+
+		expect(shadows.length).toBeGreaterThan(0);
+		expect(new Set(shadows)).toEqual(new Set(["0 4px 24px rgb(0 0 0 / 0.05)"]));
 	});
 
 	it("字面圆角不超过 16px（胶囊除外）", () => {

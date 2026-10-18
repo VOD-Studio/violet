@@ -122,7 +122,7 @@ Mermaid 图块统一使用手写字体与 `@violetjs/inkline` 笔触（G 笔、�
 
 ## 看板组件包
 
-[`@violetjs/kanban`](packages/kanban/README.md) 是独立的受控看板组件包（尚未发布 npm），不依赖 `@violet/ui` 与站点模块。目前提供只读看板与不依赖 React 的 `/core`，站点内暂无使用方。
+[`@violetjs/kanban`](packages/kanban/README.md) 是独立的受控看板组件包（尚未发布 npm），不依赖 `@violet/ui` 与站点模块。目前提供受控看板（只读，或用鼠标、笔、触屏拖动卡片）与不依赖 React 的 `/core`，站点内暂无使用方。
 
 ## 开发环境
 

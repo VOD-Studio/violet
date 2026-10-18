@@ -278,6 +278,10 @@ jobs:
         if: needs.changes.outputs.web == 'true'
         run: pnpm test:contract --workers=2
 
+      - name: Kanban real-browser tests
+        if: needs.changes.outputs.web == 'true'
+        run: pnpm --filter @violetjs/kanban browser
+
       - name: Setup Docker Buildx
         if: needs.changes.outputs.web == 'true' && (!inputs.ref || inputs.build_images)
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3

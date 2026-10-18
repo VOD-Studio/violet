@@ -79,6 +79,7 @@
 		"build": "node scripts/build.mjs",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run --config vitest.config.ts",
+		"browser": "playwright test --config browser/playwright.config.ts",
 		"consumer": "node scripts/consumer-smoke.mjs",
 		"prepack": "pnpm build"
 	},
@@ -86,6 +87,7 @@
 		"react": "^19.0.0"
 	},
 	"devDependencies": {
+		"@playwright/test": "^1.63.0",
 		"@testing-library/react": "^16.3.0",
 		"@types/node": "^22.10.2",
 		"@types/react": "^19.2.0",

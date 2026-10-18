@@ -8,7 +8,7 @@
         web-test web-contract ui-sync ui-check ui-build ui-test ui-pack ui-consumer \
         inkline-check inkline-build inkline-test inkline-pack inkline-consumer inkline-examples \
         react-tweet-check react-tweet-build react-tweet-test react-tweet-pack react-tweet-consumer react-tweet-examples \
-        kanban-check kanban-build kanban-test kanban-pack kanban-consumer \
+        kanban-check kanban-build kanban-test kanban-browser kanban-pack kanban-consumer \
         build docker-build docker-up \
         deploy-prod-init deploy-prod deploy-prod-down \
         deploy-remote deploy-remote-skip-build deploy-remote-patch \
@@ -249,6 +249,9 @@ kanban-build: ## 构建独立看板组件 ESM、声明与样式
 
 kanban-test: ## 运行独立看板组件行为测试
 	cd web && pnpm --filter @violetjs/kanban test
+
+kanban-browser: ## 在真实 Chromium 中运行看板拖拽测试（需已安装 Playwright Chromium）
+	cd web && pnpm --filter @violetjs/kanban browser
 
 kanban-pack: ## 打包看板组件（NPM_PACK_DEST 指定输出目录）
 	cd web && pnpm --dir packages/kanban pack --pack-destination "$(NPM_PACK_DEST)"

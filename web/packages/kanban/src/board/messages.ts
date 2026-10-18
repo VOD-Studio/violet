@@ -24,6 +24,21 @@ export interface BoardMessages {
 	 * @example "No cards"
 	 */
 	emptyColumn: string;
+	/**
+	 * 在自动排序列内手动重排时的拒绝原因。
+	 * @example "This column is sorted automatically. Cards can't be reordered by hand."
+	 */
+	autoSorted: string;
+	/**
+	 * `canMove` 拒绝但没有给出原因时的提示。
+	 * @example "This card can't be moved here."
+	 */
+	moveRejected: string;
+	/**
+	 * `onMove` 失败、卡片已回到原位时的提示。
+	 * @example "The move couldn't be saved. The card is back where it was."
+	 */
+	moveFailed: string;
 }
 
 const messagesByLocale: Record<BoardLocale, BoardMessages> = {
@@ -31,11 +46,17 @@ const messagesByLocale: Record<BoardLocale, BoardMessages> = {
 		boardLabel: "Kanban board",
 		cardCount: "Cards: {count}",
 		emptyColumn: "No cards",
+		autoSorted: "This column is sorted automatically. Cards can't be reordered by hand.",
+		moveRejected: "This card can't be moved here.",
+		moveFailed: "The move couldn't be saved. The card is back where it was.",
 	},
 	"zh-CN": {
 		boardLabel: "看板",
 		cardCount: "卡片数：{count}",
 		emptyColumn: "暂无卡片",
+		autoSorted: "该列自动排序，不能手动调整顺序",
+		moveRejected: "不能把卡片移到这里",
+		moveFailed: "移动未能保存，卡片已回到原位",
 	},
 };
 

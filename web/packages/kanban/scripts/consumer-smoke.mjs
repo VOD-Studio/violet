@@ -103,11 +103,14 @@ try {
 	// 公开类型：泛型卡片只要求 id，使用方自己的列类型贯穿插槽；缺 id 的卡片必须被拒绝。
 	write(
 		"types.tsx",
-		`import { Board, type BoardCard, type BoardColumn, type BoardLocale, type BoardMessages, type BoardProps, type BoardState } from "${metadata.name}";
+		`import { Board, createPointerController, type BoardCard, type BoardColumn, type BoardLocale, type BoardMessages, type BoardMove, type BoardProps, type BoardState, type DragController, type DragHost, type MoveDecision } from "${metadata.name}";
 import { Board as Unstyled } from "${metadata.name}/unstyled";
-import { applyMove, violatesAutoSort, createMove, isNoopMove, locateCard, normalizeBoardState, resolveBoard, resolveDropTarget, type BoardMove, type ColumnLayout, type ResolvedColumn } from "${metadata.name}/core";
+import { applyMove, violatesAutoSort, createMove, isNoopMove, locateCard, normalizeBoardState, resolveBoard, resolveDropTarget, type ColumnLayout, type ResolvedColumn } from "${metadata.name}/core";
 interface Task extends BoardCard { title: string }
 interface Stage extends BoardColumn { hint: string }
+const canMove = (move: BoardMove): MoveDecision => move.to.columnId === "done" ? { allowed: false, reason: "no" } : { allowed: true };
+const controller: DragController = { attach: (host: DragHost) => { host.root.focus(); return () => {}; } };
+export const defaultController: DragController = createPointerController({ threshold: 6 });
 const tasks: Task[] = [{ id: "a", title: "A" }];
 const stages: Stage[] = [{ id: "todo", title: "Todo", hint: "next" }];
 const locale: BoardLocale = "zh-CN";
@@ -116,7 +119,9 @@ export const nodes = [
 	<Board columns={stages} cards={tasks} order={{ todo: ["a"] }} locale={locale} messages={messages}
 		renderCard={(task, { column, index }) => <span>{task.title}{column.hint}{index}</span>}
 		renderColumnHeader={(stage, { count }) => <b>{stage.hint}{count}</b>}
-		renderEmpty={(stage) => <i>{stage.hint}</i>} />,
+		renderEmpty={(stage) => <i>{stage.hint}</i>}
+		onMove={async (move) => { await Promise.resolve(move.cardId); }} canMove={canMove} onMoveError={(error, move) => console.error(error, move.previousId)}
+		isDraggable={(task) => task.title !== ""} readOnly={false} dragController={controller} />,
 	<Unstyled columns={stages} cards={tasks} order={{}} renderCard={(task) => task.title} />,
 ];
 export const props: BoardProps<Task, Stage>["order"] = {};
@@ -156,6 +161,10 @@ assert.ok(html.indexOf("Todo") < html.indexOf("Done"));
 assert.ok(html.indexOf("Second") < html.indexOf("First"), "Card order must follow the order prop.");
 assert.match(html, /No cards/);
 assert.match(renderToString(createElement(Board, { ...props, locale: "zh-CN" })), /暂无卡片/);
+const editable = renderToString(createElement(Board, { ...props, onMove: () => {} }));
+assert.equal(renderToString(createElement(Board, { ...props, onMove: () => {} })), editable, "Editable SSR output must be deterministic.");
+assert.match(editable, /data-draggable="true"/);
+assert.ok(!/data-draggable/.test(html), "Read-only boards must not advertise dragging.");
 assert.ok(!/<script|<style/.test(html));
 assert.deepEqual(resolveBoard({ columns: ["todo"], order: { todo: ["b", "x"] } }, props.cards).map((column) => column.cards.map((card) => card.id)), [["b"]]);
 const moved = applyMove({ columns: ["todo", "done"], order: { todo: ["a", "b"], done: [] } }, createMove({ columns: ["todo", "done"], order: { todo: ["a", "b"], done: [] } }, "a", { columnId: "done", index: 0 }));

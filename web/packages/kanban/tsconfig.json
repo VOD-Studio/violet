@@ -13,6 +13,6 @@
 		"noEmit": true,
 		"types": ["react", "node"]
 	},
-	"include": ["src"],
+	"include": ["src", "browser"],
 	"exclude": ["dist"]
 }
