@@ -10,7 +10,7 @@ This is a workspace package and is **not published to npm**. This README covers 
 | --- | --- |
 | `@violetjs/kanban` | `Board` with the default stylesheet |
 | `@violetjs/kanban/unstyled` | `Board` without any CSS |
-| `@violetjs/kanban/core` | React-free `BoardState`, `normalizeBoardState`, `resolveBoard` |
+| `@violetjs/kanban/core` | React-free board state, move creation and application, drop-target resolution, auto-sort rule |
 | `@violetjs/kanban/styles.css` | The default stylesheet on its own |
 
 The package does not depend on `@violet/ui` or any site module. React 19 is a peer dependency.

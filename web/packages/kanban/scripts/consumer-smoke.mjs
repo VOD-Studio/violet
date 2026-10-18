@@ -105,7 +105,7 @@ try {
 		"types.tsx",
 		`import { Board, type BoardCard, type BoardColumn, type BoardLocale, type BoardMessages, type BoardProps, type BoardState } from "${metadata.name}";
 import { Board as Unstyled } from "${metadata.name}/unstyled";
-import { normalizeBoardState, resolveBoard, type ResolvedColumn } from "${metadata.name}/core";
+import { applyMove, violatesAutoSort, createMove, isNoopMove, locateCard, normalizeBoardState, resolveBoard, resolveDropTarget, type BoardMove, type ColumnLayout, type ResolvedColumn } from "${metadata.name}/core";
 interface Task extends BoardCard { title: string }
 interface Stage extends BoardColumn { hint: string }
 const tasks: Task[] = [{ id: "a", title: "A" }];
@@ -123,6 +123,9 @@ export const props: BoardProps<Task, Stage>["order"] = {};
 const state: BoardState = { columns: ["todo"], order: { todo: ["a"] } };
 export const resolved: ResolvedColumn<Task>[] = resolveBoard(state, tasks);
 export const normalized: BoardState = normalizeBoardState(state);
+const move: BoardMove | null = createMove(state, "a", { columnId: "todo", index: 0 });
+const layout: ColumnLayout[] = [{ id: "todo", rect: { left: 0, top: 0, right: 1, bottom: 1 }, cards: [] }];
+export const moves = [move && applyMove(state, move), move && isNoopMove(move), move && violatesAutoSort(move, () => false), locateCard(state, "a"), resolveDropTarget(layout, { x: 0, y: 0 })];
 // @ts-expect-error 卡片必须有 id
 export const bad = <Board columns={stages} cards={[{ title: "no id" }]} order={{}} renderCard={() => null} />;
 `,
@@ -140,7 +143,7 @@ export const bad = <Board columns={stages} cards={[{ title: "no id" }]} order={{
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { Board } from "${metadata.name}/unstyled";
-import { resolveBoard } from "${metadata.name}/core";
+import { createMove, applyMove, resolveBoard } from "${metadata.name}/core";
 const props = {
 	columns: [{ id: "todo", title: "Todo" }, { id: "done", title: "Done" }],
 	cards: [{ id: "a", title: "First" }, { id: "b", title: "Second" }],
@@ -155,6 +158,8 @@ assert.match(html, /No cards/);
 assert.match(renderToString(createElement(Board, { ...props, locale: "zh-CN" })), /暂无卡片/);
 assert.ok(!/<script|<style/.test(html));
 assert.deepEqual(resolveBoard({ columns: ["todo"], order: { todo: ["b", "x"] } }, props.cards).map((column) => column.cards.map((card) => card.id)), [["b"]]);
+const moved = applyMove({ columns: ["todo", "done"], order: { todo: ["a", "b"], done: [] } }, createMove({ columns: ["todo", "done"], order: { todo: ["a", "b"], done: [] } }, "a", { columnId: "done", index: 0 }));
+assert.deepEqual(moved.order, { todo: ["b"], done: ["a"] });
 console.log("Installed tarball: SSR and core contracts passed.");
 `,
 	);
