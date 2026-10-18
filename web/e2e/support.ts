@@ -14,10 +14,11 @@ export async function loadClient(context: BrowserContext) {
 	});
 	await context.route("**/api/**", async (route) => {
 		const url = new URL(route.request().url());
-		const response = await route.fetch({
-			url: `http://127.0.0.1:9410${url.pathname}${url.search}`,
-		});
-		await route.fulfill({ response });
+		// 页面跳走或用例结束时请求已取消，转发到一半的响应随之作废；没有人再等这个应答
+		await route
+			.fetch({ url: `http://127.0.0.1:9410${url.pathname}${url.search}` })
+			.then((response) => route.fulfill({ response }))
+			.catch(() => {});
 	});
 }
 
