@@ -14,6 +14,9 @@ const column = (page: Page, stage: string) =>
 const card = (page: Page, number: number) =>
 	page.locator(`.v-kanban-canvas [data-card-id="${idOf(number)}"]`);
 const notice = (page: Page) => page.locator(".v-kanban-canvas .v-kanban__notice");
+/** 工具栏里的撤销重做按钮；删除提示里也有一个「撤销」，要分开找。 */
+const historyButton = (page: Page, name: "撤销" | "重做") =>
+	page.locator(".v-kanban-history").getByRole("button", { name });
 
 async function openEditable(page: Page) {
 	await page.goto(`/projects/${SLUG}`);
@@ -205,21 +208,15 @@ test.describe("管理员拖动条目", () => {
 		).toBeVisible();
 
 		// 保存的响应回来、这一步记进历史之后，「撤销」才可用
-		await expect(page.getByRole("button", { name: "撤销" })).toHaveAttribute(
-			"aria-disabled",
-			"false",
-		);
+		await expect(historyButton(page, "撤销")).toHaveAttribute("aria-disabled", "false");
 		await page.keyboard.press("ControlOrMeta+z");
 
 		await expect.poll(() => moves.length).toBe(2);
 		expect(moves[1].body).toEqual({ stage: "planned", before_id: idOf(2), after_id: "" });
 		await expect(column(page, "planned").locator(`[data-card-id="${idOf(3)}"]`)).toBeVisible();
 
-		await expect(page.getByRole("button", { name: "重做" })).toHaveAttribute(
-			"aria-disabled",
-			"false",
-		);
-		await page.getByRole("button", { name: "重做" }).click();
+		await expect(historyButton(page, "重做")).toHaveAttribute("aria-disabled", "false");
+		await historyButton(page, "重做").click();
 
 		await expect.poll(() => moves.length).toBe(3);
 		expect(moves[2].body.stage).toBe("in_progress");
@@ -236,12 +233,9 @@ test.describe("管理员拖动条目", () => {
 		await page.getByRole("button", { name: `把 #17 ${titleOf(17)} 移到其他列` }).click();
 		await page.getByRole("menuitem", { name: "计划中" }).click();
 		await expect.poll(() => moves.length).toBe(1);
-		await expect(page.getByRole("button", { name: "撤销" })).toHaveAttribute(
-			"aria-disabled",
-			"false",
-		);
+		await expect(historyButton(page, "撤销")).toHaveAttribute("aria-disabled", "false");
 
-		await page.getByRole("button", { name: "撤销" }).click();
+		await historyButton(page, "撤销").click();
 
 		await expect.poll(() => moves.length).toBe(2);
 		expect(moves[1].body).toMatchObject({
@@ -265,10 +259,7 @@ test.describe("管理员编辑条目", () => {
 
 	/** 等这一步记进历史：保存的响应回来之后「撤销」才可用。 */
 	const undoReady = (page: Page) =>
-		expect(page.getByRole("button", { name: "撤销" })).toHaveAttribute(
-			"aria-disabled",
-			"false",
-		);
+		expect(historyButton(page, "撤销")).toHaveAttribute("aria-disabled", "false");
 
 	async function quickAdd(page: Page, stage: string, label: string, title: string) {
 		await column(page, stage).getByRole("button", { name: "添加卡片" }).click();
@@ -301,7 +292,7 @@ test.describe("管理员编辑条目", () => {
 		await expect.poll(() => writes.map((write) => write.action)).toEqual(["create", "delete"]);
 		await expect(page.getByText("快速记下的想法")).toHaveCount(0);
 
-		await page.getByRole("button", { name: "重做" }).click();
+		await historyButton(page, "重做").click();
 		await expect
 			.poll(() => writes.map((write) => write.action))
 			.toEqual(["create", "delete", "restore"]);
@@ -485,5 +476,60 @@ test.describe("管理员编辑条目", () => {
 
 		await expect(dialog.getByRole("alert")).toHaveText("保存失败");
 		await expect(dialog.getByRole("textbox", { name: "简介" })).toHaveValue("保存不了的简介");
+	});
+
+	const toastUndo = (page: Page) =>
+		page.locator("[data-sonner-toast]").getByRole("button", { name: "撤销" });
+
+	test("删除不弹确认：条目消失并提示，点提示里的「撤销」恢复同一个条目（同编号、同位置）", async ({
+		page,
+		context,
+	}) => {
+		const { writes } = await roadmapBackend(context);
+		await openEditable(page);
+		const dialog = await openDetails(page, 2);
+
+		await dialog.getByRole("button", { name: "删除" }).click();
+
+		await expect(dialog).toHaveCount(0);
+		await expect.poll(() => writes.map((write) => write.action)).toEqual(["delete"]);
+		expect(writes[0].itemId).toBe(idOf(2));
+		await expect(card(page, 2)).toHaveCount(0);
+		await expect(page.locator("[data-sonner-toast]")).toContainText(`已删除 #2 ${titleOf(2)}`);
+
+		await toastUndo(page).click();
+
+		await expect.poll(() => writes.map((write) => write.action)).toEqual(["delete", "restore"]);
+		await expect(column(page, "planned").locator("[data-card-id]").nth(1)).toHaveAttribute(
+			"data-card-id",
+			idOf(2),
+		);
+	});
+
+	test("删除也记入撤销历史：Ctrl/⌘+Z 恢复，重做再删", async ({ page, context }) => {
+		const { writes } = await roadmapBackend(context);
+		await openEditable(page);
+		const dialog = await openDetails(page, 3);
+		await dialog.getByRole("button", { name: "删除" }).click();
+		await expect(card(page, 3)).toHaveCount(0);
+
+		await undoReady(page);
+		await page.keyboard.press("ControlOrMeta+z");
+		await expect(card(page, 3)).toBeVisible();
+
+		await page.keyboard.press("ControlOrMeta+Shift+z");
+		await expect(card(page, 3)).toHaveCount(0);
+		expect(writes.map((write) => write.action)).toEqual(["delete", "restore", "delete"]);
+	});
+
+	test("删除失败：条目留在原处并提示", async ({ page, context }) => {
+		await roadmapBackend(context, { fail: true });
+		await openEditable(page);
+		const dialog = await openDetails(page, 3);
+
+		await dialog.getByRole("button", { name: "删除" }).click();
+
+		await expect(page.locator("[data-sonner-toast]")).toContainText("删除未能完成");
+		await expect(card(page, 3)).toBeVisible();
 	});
 });

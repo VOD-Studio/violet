@@ -7,7 +7,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@violet/ui";
-import { ExternalLink, Lock, Pencil } from "lucide-react";
+import { ExternalLink, Lock, Pencil, Trash2 } from "lucide-react";
 import { useId, useState } from "react";
 import { ROADMAP_STAGE_LABELS } from "../lib/roadmap-board";
 import type { RoadmapContentInput } from "../lib/roadmap-content";
@@ -28,6 +28,8 @@ export interface RoadmapItemDialogProps {
 	returnFocusTo?: () => HTMLElement | null;
 	/** 保存编辑后的内容；给出时弹窗底部有「编辑」。失败时抛出，表单留着草稿并显示原因。 */
 	onSave?: (item: RoadmapItem, content: RoadmapContentInput) => Promise<void>;
+	/** 删除条目；给出时弹窗底部有「删除」，不再二次确认，由调用方提供撤销。 */
+	onDelete?: (item: RoadmapItem) => void;
 }
 
 /**
@@ -42,6 +44,7 @@ export function RoadmapItemDialog({
 	onOpenChange,
 	returnFocusTo,
 	onSave,
+	onDelete,
 }: RoadmapItemDialogProps) {
 	const relationsHeadingId = useId();
 	const groups = item ? relationGroups(item.id, items, relations) : [];
@@ -183,17 +186,31 @@ export function RoadmapItemDialog({
 								))}
 							</ul>
 						) : null}
-						{onSave && !editing ? (
+						{(onSave || onDelete) && !editing ? (
 							<div className="flex justify-end gap-2 border-t border-border/60 pt-4">
-								<Button
-									type="button"
-									variant="ghost"
-									size="sm"
-									onClick={() => setEditingId(item.id)}
-								>
-									<Pencil className="size-4" aria-hidden="true" />
-									编辑
-								</Button>
+								{onDelete ? (
+									<Button
+										type="button"
+										variant="ghost"
+										size="sm"
+										className="text-destructive hover:text-destructive"
+										onClick={() => onDelete(item)}
+									>
+										<Trash2 className="size-4" aria-hidden="true" />
+										删除
+									</Button>
+								) : null}
+								{onSave ? (
+									<Button
+										type="button"
+										variant="ghost"
+										size="sm"
+										onClick={() => setEditingId(item.id)}
+									>
+										<Pencil className="size-4" aria-hidden="true" />
+										编辑
+									</Button>
+								) : null}
 							</div>
 						) : null}
 					</>

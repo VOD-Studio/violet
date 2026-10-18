@@ -1,6 +1,7 @@
 import { Empty, PageShell, ShimmerSkeleton } from "@violet/ui";
 import { useHistoryShortcuts } from "@violetjs/kanban/unstyled";
 import { useRef, useState } from "react";
+import { toast } from "sonner";
 import { useProjectRoadmap } from "../api/queries";
 import { useCanEditRoadmap } from "../hooks/useCanEditRoadmap";
 import { useRoadmapEditor } from "../hooks/useRoadmapEditor";
@@ -84,6 +85,20 @@ export function ProjectDetailPage({
 				open={openItem !== null}
 				returnFocusTo={() => opener.current}
 				onSave={canEdit ? editor.save : undefined}
+				onDelete={
+					canEdit
+						? (item) => {
+								setOpenId(null);
+								editor.remove(item).catch((error: unknown) => {
+									toast.error(
+										error instanceof Error && error.message
+											? `删除未能完成：${error.message}`
+											: "删除未能完成，请重试",
+									);
+								});
+							}
+						: undefined
+				}
 				onOpenChange={(open) => {
 					if (!open) setOpenId(null);
 				}}

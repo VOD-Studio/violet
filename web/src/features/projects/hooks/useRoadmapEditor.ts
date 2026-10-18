@@ -36,6 +36,11 @@ export interface RoadmapEditor {
 	rename: (item: RoadmapItem, title: string) => Promise<void>;
 	/** 整体保存条目内容并记入历史；失败时抛出，表单留着草稿并显示原因。 */
 	save: (item: RoadmapItem, content: RoadmapContentInput) => Promise<void>;
+	/**
+	 * 删除条目（不确认），记入历史并弹出带「撤销」的提示；撤销恢复同一个条目。
+	 * 失败时抛出，条目留在原处。
+	 */
+	remove: (item: RoadmapItem) => Promise<void>;
 }
 
 /**
@@ -136,6 +141,19 @@ export function useRoadmapEditor(slug: string, detail: RoadmapDetail | undefined
 		const save = (item: RoadmapItem, content: RoadmapContentInput) =>
 			update(item, content, `编辑 #${item.number}`);
 
-		return { history, move, add, rename, save };
+		const remove = async (item: RoadmapItem) => {
+			await persistDelete(item.id);
+			history.push({
+				label: `删除 #${item.number}`,
+				undo: () => persistRestore(item.id),
+				redo: () => persistDelete(item.id),
+			});
+			// 提示里的「撤销」撤的是历史里最近一步，也就是这次删除
+			toast(`已删除 #${item.number} ${item.title}`, {
+				action: { label: "撤销", onClick: () => void history.undo() },
+			});
+		};
+
+		return { history, move, add, rename, save, remove };
 	}, [history, queryClient, slug]);
 }
