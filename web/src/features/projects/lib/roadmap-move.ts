@@ -10,6 +10,10 @@ export interface RoadmapMoveInput {
 	before_id: string;
 	/** 目标位置的后一条 */
 	after_id: string;
+	/** 进入已完成时的完成日期 YYYY-MM-DD；省略取后端当天，其他阶段忽略 */
+	completion_date?: string;
+	/** 进入已完成时的交付版本；其他阶段由后端清空 */
+	delivered_version?: string;
 }
 
 /** 看板报告的一次移动换成移动接口的请求体；看板的列就是阶段。 */
@@ -18,6 +22,19 @@ export function toMoveInput(move: BoardMove): RoadmapMoveInput {
 		stage: move.to.columnId as RoadmapStage,
 		before_id: move.previousId ?? "",
 		after_id: move.nextId ?? "",
+	};
+}
+
+/**
+ * 从已完成移走之后再移回去时带上原来的完成日期与交付版本，不然后端会记成今天、版本清空。
+ * `item` 是移回去之后应当恢复成的样子；它不在已完成阶段时原样返回。
+ */
+export function keepCompletion(input: RoadmapMoveInput, item: RoadmapItem): RoadmapMoveInput {
+	if (input.stage !== "completed" || item.stage !== "completed") return input;
+	return {
+		...input,
+		...(item.completion_date ? { completion_date: item.completion_date } : {}),
+		delivered_version: item.delivered_version,
 	};
 }
 

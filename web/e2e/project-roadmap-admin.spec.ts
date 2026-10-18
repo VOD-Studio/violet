@@ -3,7 +3,13 @@ import { ROADMAP_FIXTURE } from "./mock-data.mjs";
 import { authenticated, collectDiagnostics, loadClient } from "./support.ts";
 
 type Item = (typeof ROADMAP_FIXTURE.items)[number];
-type MoveBody = { stage: string; before_id: string; after_id: string };
+type MoveBody = {
+	stage: string;
+	before_id: string;
+	after_id: string;
+	completion_date?: string;
+	delivered_version?: string;
+};
 
 const SLUG = ROADMAP_FIXTURE.project.slug;
 const idOf = (number: number) =>
@@ -53,8 +59,12 @@ async function roadmapBackend(context: BrowserContext, options: { fail?: boolean
 			Object.assign(moved, {
 				stage: body.stage,
 				position: positionBetween(items, body.before_id, body.after_id),
-				completion_date: completed ? (moved.completion_date ?? "2026-10-21") : null,
-				delivered_version: completed ? moved.delivered_version : "",
+				completion_date: completed
+					? (body.completion_date ?? moved.completion_date ?? "2026-10-21")
+					: null,
+				delivered_version: completed
+					? (body.delivered_version ?? moved.delivered_version)
+					: "",
 			});
 			// 按后端的展示顺序放回：已完成按完成日期倒序，其余阶段按位置
 			const rank = { planned: 0, in_progress: 1, completed: 2 } as Record<string, number>;
@@ -250,5 +260,70 @@ test.describe("管理员拖动条目", () => {
 
 		await expect.poll(() => moves.length).toBe(1);
 		expect(moves[0].body).toEqual({ stage: "in_progress", before_id: idOf(5), after_id: "" });
+	});
+
+	test("撤销与重做移动：Ctrl/⌘+Z 移回原位，「重做」再移过去，每一步都保存", async ({
+		page,
+		context,
+	}) => {
+		const moves = await roadmapBackend(context);
+		await openEditable(page);
+
+		await card(page, 3).hover();
+		await page.getByRole("button", { name: `把 #3 ${titleOf(3)} 移到其他列` }).click();
+		await page.getByRole("menuitem", { name: "进行中" }).click();
+		await expect.poll(() => moves.length).toBe(1);
+		await expect(
+			column(page, "in_progress").locator(`[data-card-id="${idOf(3)}"]`),
+		).toBeVisible();
+
+		// 保存的响应回来、这一步记进历史之后，「撤销」才可用
+		await expect(page.getByRole("button", { name: "撤销" })).toHaveAttribute(
+			"aria-disabled",
+			"false",
+		);
+		await page.keyboard.press("ControlOrMeta+z");
+
+		await expect.poll(() => moves.length).toBe(2);
+		expect(moves[1].body).toEqual({ stage: "planned", before_id: idOf(2), after_id: "" });
+		await expect(column(page, "planned").locator(`[data-card-id="${idOf(3)}"]`)).toBeVisible();
+
+		await expect(page.getByRole("button", { name: "重做" })).toHaveAttribute(
+			"aria-disabled",
+			"false",
+		);
+		await page.getByRole("button", { name: "重做" }).click();
+
+		await expect.poll(() => moves.length).toBe(3);
+		expect(moves[2].body.stage).toBe("in_progress");
+		await expect(
+			column(page, "in_progress").locator(`[data-card-id="${idOf(3)}"]`),
+		).toBeVisible();
+	});
+
+	test("撤销「移出已完成」时带回原来的完成日期与交付版本", async ({ page, context }) => {
+		const moves = await roadmapBackend(context);
+		await openEditable(page);
+
+		await card(page, 17).hover();
+		await page.getByRole("button", { name: `把 #17 ${titleOf(17)} 移到其他列` }).click();
+		await page.getByRole("menuitem", { name: "计划中" }).click();
+		await expect.poll(() => moves.length).toBe(1);
+		await expect(page.getByRole("button", { name: "撤销" })).toHaveAttribute(
+			"aria-disabled",
+			"false",
+		);
+
+		await page.getByRole("button", { name: "撤销" }).click();
+
+		await expect.poll(() => moves.length).toBe(2);
+		expect(moves[1].body).toMatchObject({
+			stage: "completed",
+			completion_date: "2026-10-20",
+			delivered_version: "v2.17.0",
+		});
+		const first = column(page, "completed").locator("[data-card-id]").first();
+		await expect(first).toHaveAttribute("data-card-id", idOf(17));
+		await expect(first).toContainText("v2.17.0 · 2026-10-20");
 	});
 });

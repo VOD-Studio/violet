@@ -1,7 +1,12 @@
 import { Button, Checkbox } from "@violet/ui";
 import { Canvas } from "@violetjs/kanban/canvas";
-import type { BoardMove } from "@violetjs/kanban/core";
-import { Board, ResponsiveLayout, type ResponsiveLayoutKind } from "@violetjs/kanban/unstyled";
+import type { BoardMove, CommandHistory } from "@violetjs/kanban/core";
+import {
+	Board,
+	HistoryButtons,
+	ResponsiveLayout,
+	type ResponsiveLayoutKind,
+} from "@violetjs/kanban/unstyled";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
 	buildRoadmapBoard,
@@ -38,6 +43,8 @@ export interface RoadmapBoardProps {
 	 * 返回的 Promise 被拒绝时看板把卡片放回原位并提示。
 	 */
 	onMove?: (move: BoardMove) => Promise<void>;
+	/** 撤销重做历史；给出时工具栏显示撤销与重做按钮。 */
+	history?: CommandHistory;
 }
 
 /**
@@ -53,6 +60,7 @@ export function RoadmapBoard({
 	filters,
 	onFiltersChange,
 	onMove,
+	history,
 }: RoadmapBoardProps) {
 	const [expanded, setExpanded] = useState(false);
 	// 显示的阶段由这里持有：宽窄布局切换会重新挂载看板，不持有就回到第一个阶段
@@ -179,7 +187,14 @@ export function RoadmapBoard({
 				onFiltersChange={onFiltersChange}
 				filter={filter}
 				includesCollapsed={board.hiddenCompleted > 0}
-				trailing={lineControls}
+				trailing={
+					history || lineControls ? (
+						<div className="flex flex-wrap items-center gap-3">
+							{history ? <HistoryButtons history={history} locale="zh-CN" /> : null}
+							{lineControls}
+						</div>
+					) : null
+				}
 			/>
 			<ResponsiveLayout
 				className="roadmap-board"

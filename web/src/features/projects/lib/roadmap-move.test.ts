@@ -1,7 +1,7 @@
 import type { BoardMove } from "@violetjs/kanban/core";
 import { describe, expect, it } from "vitest";
 import type { RoadmapDetail, RoadmapItem, RoadmapStage } from "../model/roadmap";
-import { applyMovedItem, toMoveInput } from "./roadmap-move";
+import { applyMovedItem, keepCompletion, toMoveInput } from "./roadmap-move";
 
 const item = (
 	number: number,
@@ -128,5 +128,27 @@ describe("applyMovedItem", () => {
 		const before = detail([item(1, "planned")]);
 
 		expect(applyMovedItem(before, item(9, "completed"))).toBe(before);
+	});
+});
+
+describe("keepCompletion", () => {
+	const input = { stage: "completed" as const, before_id: "", after_id: "i2" };
+
+	it("回到已完成时带上原来的完成日期与交付版本", () => {
+		expect(
+			keepCompletion(
+				input,
+				item(1, "completed", {
+					completion_date: "2026-09-01",
+					delivered_version: "v1.0.0",
+				}),
+			),
+		).toEqual({ ...input, completion_date: "2026-09-01", delivered_version: "v1.0.0" });
+	});
+
+	it("目标不是已完成，或原来不在已完成时原样返回", () => {
+		const planned = { ...input, stage: "planned" as const };
+		expect(keepCompletion(planned, item(1, "completed"))).toBe(planned);
+		expect(keepCompletion(input, item(1, "planned"))).toBe(input);
 	});
 });

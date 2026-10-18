@@ -1,8 +1,9 @@
 import { Empty, PageShell, ShimmerSkeleton } from "@violet/ui";
+import { useHistoryShortcuts } from "@violetjs/kanban/unstyled";
 import { useRef, useState } from "react";
-import { useMoveRoadmapItem } from "../api/mutations";
 import { useProjectRoadmap } from "../api/queries";
 import { useCanEditRoadmap } from "../hooks/useCanEditRoadmap";
+import { useRoadmapEditor } from "../hooks/useRoadmapEditor";
 import type { RoadmapFilters } from "../lib/roadmap-filter";
 import type { RoadmapDetail, RoadmapItem } from "../model/roadmap";
 import { ProjectDetailHeader } from "./ProjectDetailHeader";
@@ -25,9 +26,11 @@ export function ProjectDetailPage({
 	onFiltersChange,
 }: ProjectDetailPageProps) {
 	const { data } = useProjectRoadmap(slug, initialData);
-	// 只有能更新项目的人才能拖动；后端同样按 project:update 拒绝
+	// 只有能更新项目的人才能编辑；后端同样按 project:update 拒绝
 	const canEdit = useCanEditRoadmap();
-	const moveItem = useMoveRoadmapItem(slug, data?.project.id ?? "");
+	const editor = useRoadmapEditor(slug, data);
+	// Ctrl/⌘+Z 撤销、Ctrl/⌘+Shift+Z 重做；输入框里的按键留给输入框
+	useHistoryShortcuts(editor.history, { enabled: canEdit });
 	const [openId, setOpenId] = useState<string | null>(null);
 	const opener = useRef<HTMLElement | null>(null);
 	// 条目随重新拉取更新；被删除时弹窗随之关闭，淡出期间沿用最后一次的内容
@@ -64,7 +67,8 @@ export function ProjectDetailPage({
 					relations={data.relations}
 					filters={filters}
 					onFiltersChange={onFiltersChange}
-					onMove={canEdit ? moveItem : undefined}
+					onMove={canEdit ? editor.move : undefined}
+					history={canEdit ? editor.history : undefined}
 					onOpenItem={(item, trigger) => {
 						opener.current = trigger;
 						setOpenId(item.id);
