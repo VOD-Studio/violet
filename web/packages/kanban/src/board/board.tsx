@@ -25,8 +25,9 @@ import { useKeyboardMove } from "./drag/use-keyboard-move.ts";
 import { useMoveMenu } from "./drag/use-move-menu.ts";
 import { BoardLocaleContext } from "./locale-context.ts";
 import { type BoardLocale, type BoardMessages, resolveMessages } from "./messages.ts";
+import { relationEntries, relationsSummary } from "./relations/entries.ts";
 import { RelationLayer } from "./relations/relation-layer.tsx";
-import { type RelationTypeStyle, relationStyle, resolveRelationTypes } from "./relations/types.ts";
+import { type RelationTypeStyle, resolveRelationTypes } from "./relations/types.ts";
 import { useRelationGeometry } from "./relations/use-relation-geometry.ts";
 import { useActiveColumn } from "./use-active-column.ts";
 import { useArrival } from "./use-arrival.ts";
@@ -340,30 +341,10 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 	const selectedId =
 		selectedCardId !== null && cardsById.has(selectedCardId) ? selectedCardId : null;
 	const neighborIds = selectedId === null ? null : new Set(adjacency.neighbors(selectedId));
-	/** 一张卡片的每条关系，从这张卡片的角度读：「扩展 X」「被阻塞 Y」。 */
-	const relationEntries = (id: string) =>
-		adjacency.of(id).map((relation) => {
-			const style = relationStyle(relationTypes, relation.type);
-			const outgoing = relation.sourceId === id;
-			const otherId = outgoing ? relation.targetId : relation.sourceId;
-			return {
-				key: `${relation.sourceId}\u0000${relation.type}\u0000${relation.targetId}`,
-				type: relation.type,
-				direction: outgoing ? ("out" as const) : ("in" as const),
-				text: `${outgoing ? style.label : style.inverseLabel} ${cardLabel(otherId)}`,
-				targetId: otherId,
-			};
-		});
-	const relationsText = (id: string) => {
-		const list = relationEntries(id).map((entry) => entry.text);
-		return list.length > 0
-			? formatMessage(messages.relationsSummary, {
-					list: list.join(messages.relationsSeparator),
-				})
-			: undefined;
-	};
+	const entriesOf = (id: string) => relationEntries(adjacency, id, relationTypes, cardLabel);
+	const relationsText = (id: string) => relationsSummary(entriesOf(id), messages);
 	const relationMarkers = (id: string) =>
-		relationEntries(id).map((entry) => ({
+		entriesOf(id).map((entry) => ({
 			...entry,
 			label: formatMessage(messages.relationJump, { relation: entry.text }),
 		}));
