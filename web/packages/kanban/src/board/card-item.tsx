@@ -19,7 +19,7 @@ export interface RelationMarker {
 }
 
 /** 点击这些元素不算选中卡片：它们有自己的点击语义。 */
-const OWN_CLICK = `a, button, summary, ${EDITABLE_SELECTOR}, [data-kanban-no-select]`;
+export const OWN_CLICK = `a, button, summary, ${EDITABLE_SELECTOR}, [data-kanban-no-select]`;
 
 export interface CardItemProps {
 	cardId: string;

@@ -10,6 +10,7 @@ const switcher = read("./switcher.css");
 const relations = read("./relations/relations.css");
 const history = read("../history/history.css");
 const canvas = read("../canvas/canvas.css");
+const graph = read("../graph/graph.css");
 
 /** 取选择器恰好为 `selector` 的规则块内容。 */
 function rule(css: string, selector: string): string {
@@ -174,6 +175,38 @@ describe("关系线样式", () => {
 	});
 });
 
+describe("关系图样式", () => {
+	it("卡片内容在内层裁剪，卡片自己不裁剪：聚焦环画在卡片外面，裁了就缺一圈", () => {
+		expect(rule(graph, ".v-kanban .v-kanban-graph__card-body")).toMatch(/overflow:\s*hidden/);
+		expect(rule(graph, ".v-kanban .v-kanban-graph__card")).not.toMatch(/overflow/);
+		expect(rule(graph, ".v-kanban .v-kanban-graph__column")).not.toMatch(/overflow/);
+		expect(rule(graph, ".v-kanban .v-kanban-graph__zone")).not.toMatch(/overflow/);
+	});
+
+	it("分区、分组与卡片都是按像素绝对定位，不用 transform", () => {
+		for (const selector of [".zone", ".column", ".card"])
+			expect(rule(graph, `.v-kanban .v-kanban-graph__${selector.slice(1)}`)).toMatch(
+				/position:\s*absolute/,
+			);
+		expect(graph).not.toMatch(/transform|translate/);
+	});
+
+	it("键盘聚焦的卡片有可见的聚焦环", () => {
+		expect(rule(graph, ".v-kanban .v-kanban-graph__card:focus-visible")).toMatch(
+			/outline:\s*2px solid var\(--_kanban-focus\)/,
+		);
+	});
+
+	it("子图的根用前景色描边，但不压过选中的描边", () => {
+		expect(
+			rule(
+				graph,
+				'.v-kanban .v-kanban-graph__card[data-root="true"]:not([data-selected="true"])',
+			),
+		).toMatch(/border-color:\s*var\(--_kanban-foreground\)/);
+	});
+});
+
 describe("画布样式", () => {
 	it("触摸手势归画布：touch-action: none 落在视口与它的每个后代上（内容里的滚动容器会截断继承）", () => {
 		expect(canvas).toMatch(
@@ -194,6 +227,7 @@ describe.each([
 	["shell.css", shell],
 	["switcher.css", switcher],
 	["relations.css", relations],
+	["graph.css", graph],
 	["history.css", history],
 	["canvas.css", canvas],
 ])("%s 的视觉红线", (_name, css) => {

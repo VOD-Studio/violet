@@ -47,6 +47,9 @@ try {
 		"dist/canvas/index.js",
 		"dist/canvas/index.d.ts",
 		"dist/canvas/canvas.css",
+		"dist/graph/index.js",
+		"dist/graph/index.d.ts",
+		"dist/graph/graph.css",
 		"dist/styles.css",
 		"dist/board/board.css",
 		"dist/board/shell.css",
@@ -71,6 +74,7 @@ try {
 		["./unstyled", "unstyled", "unstyled"],
 		["./core", "core/index", "core/index"],
 		["./canvas", "canvas/index", "canvas/index"],
+		["./graph", "graph/index", "graph/index"],
 	]) {
 		assert.equal(packed.exports[entry].import, `./dist/${js}.js`);
 		assert.equal(packed.exports[entry].types, `./dist/${types}.d.ts`);
@@ -115,6 +119,8 @@ try {
 import { Board as Unstyled, ResponsiveLayout, DEFAULT_NARROW_BREAKPOINT, type ResponsiveLayoutKind, HistoryButtons, useHistoryAnnouncement, useHistoryShortcuts, useHistoryState, type HistoryCommand, type CommandHistory } from "${metadata.name}/unstyled";
 import { createHistory, invertMove, fitViewport, zoomAt, DEFAULT_SCALE_LIMITS, type Viewport } from "${metadata.name}/core";
 import { Canvas, type CanvasHandle, type CanvasMessages } from "${metadata.name}/canvas";
+import { RelationGraph, type RelationGraphProps } from "${metadata.name}/graph";
+import { layoutGraph, relatedSubgraph, DEFAULT_GRAPH_LAYOUT, type GraphLayout, type Subgraph } from "${metadata.name}/core";
 import { applyMove, violatesAutoSort, createMove, isNoopMove, locateCard, normalizeBoardState, resolveBoard, resolveDropTarget, type ColumnLayout, type ResolvedColumn } from "${metadata.name}/core";
 interface Task extends BoardCard { title: string }
 interface Stage extends BoardColumn { hint: string }
@@ -150,6 +156,15 @@ const viewport: Viewport = fitViewport({ width: 800, height: 600 }, { width: 400
 export const zoomed: Viewport = zoomAt(viewport, { x: 0, y: 0 }, 1.5, DEFAULT_SCALE_LIMITS);
 const canvasMessages: Partial<CanvasMessages> = { fit: "Fit" };
 export const canvas = <Canvas defaultViewport={zoomed} onViewportChange={(next) => console.log(next.scale)} fit={{ minScale: 0.5 }} controls locale="zh-CN" messages={canvasMessages} ref={(handle: CanvasHandle | null) => handle?.fit()}><div /></Canvas>;
+const graphProps: RelationGraphProps<Task, Stage> = {
+	columns: stages, cards: tasks, order: { todo: ["a"] }, relations: [{ sourceId: "a", targetId: "a", type: "extends" }],
+	renderCard: (task, { column }) => <span>{task.title}{column.hint}</span>, rootId: "a", subgraph: { direction: "in", depth: 2, types: ["extends"] },
+	cardSize: { width: 200, height: 64 }, getCardLabel: (task) => task.title, relationTypes: {}, selectedCardId: null,
+	onSelectedCardChange: (id: string | null) => id?.length, locale: "zh-CN", messages: { graphEmpty: "none" },
+};
+export const graph = <RelationGraph {...graphProps} />;
+export const laidOut: GraphLayout = layoutGraph({ columns: ["todo"], cards: [{ id: "a", columnId: "todo", width: DEFAULT_GRAPH_LAYOUT.cardWidth }], relations: [] }, { sweeps: 2 });
+export const related: Subgraph = relatedSubgraph([{ sourceId: "a", targetId: "b", type: "extends" }], "a", { direction: "out" });
 const command: HistoryCommand = { label: "move", undo: async () => {}, redo: () => {} };
 const history: CommandHistory = createHistory({ limit: 10, onError: (error, failed) => console.error(error, failed.label) });
 history.push(command);
@@ -186,6 +201,8 @@ import { Board, ResponsiveLayout } from "${metadata.name}/unstyled";
 import { createMove, applyMove, resolveBoard, createHistory } from "${metadata.name}/core";
 import { HistoryButtons } from "${metadata.name}/unstyled";
 import { Canvas } from "${metadata.name}/canvas";
+import { RelationGraph } from "${metadata.name}/graph";
+import { layoutGraph, relatedSubgraph } from "${metadata.name}/core";
 const props = {
 	columns: [{ id: "todo", title: "Todo" }, { id: "done", title: "Done" }],
 	cards: [{ id: "a", title: "First" }, { id: "b", title: "Second" }],
@@ -224,6 +241,19 @@ const canvasHtml = renderToString(createElement(Canvas, { defaultViewport: { sca
 assert.match(canvasHtml, /Canvas content/);
 assert.ok(canvasHtml.includes('translate(0px, 0px) scale(1)'));
 assert.match(canvasHtml, /aria-label="Zoom in"/);
+const graphProps = {
+	columns: props.columns, cards: props.cards, order: { todo: ["a"], done: ["b"] },
+	relations: [{ sourceId: "a", targetId: "b", type: "extends" }, { sourceId: "b", targetId: "a", type: "fixes" }],
+	renderCard: (card) => card.title,
+};
+const graphHtml = renderToString(createElement(RelationGraph, graphProps));
+assert.equal(renderToString(createElement(RelationGraph, graphProps)), graphHtml, "Graph SSR output must be deterministic.");
+assert.ok(graphHtml.indexOf("Todo") < graphHtml.indexOf("Done") && graphHtml.includes("First") && graphHtml.includes("Second"));
+assert.match(graphHtml, /v-kanban__relation/);
+assert.match(graphHtml, /Relations: extends b; is fixed by b/, "The card text names related cards by id when no label is given.");
+assert.match(renderToString(createElement(RelationGraph, { ...graphProps, cards: [] })), /Nothing to show/);
+assert.deepEqual(layoutGraph({ columns: ["todo"], cards: [{ id: "a", columnId: "todo" }], relations: [] }).cards.map((entry) => entry.id), ["a"]);
+assert.deepEqual(relatedSubgraph([{ sourceId: "a", targetId: "b", type: "extends" }], "b", { direction: "in" }).ids, ["b", "a"]);
 const controls = renderToString(createElement(HistoryButtons, { history: createHistory() }));
 assert.equal((controls.match(/aria-disabled="true"/g) ?? []).length, 2);
 assert.ok(controls.includes('aria-keyshortcuts="Control+Z Meta+Z"'));
@@ -260,6 +290,7 @@ console.log("Installed tarball: SSR and core contracts passed.");
 		["unstyled", `export { Board } from "${metadata.name}/unstyled";`],
 		["core", `export { normalizeBoardState, resolveBoard } from "${metadata.name}/core";`],
 		["canvas", `export { Canvas } from "${metadata.name}/canvas";`],
+		["graph", `export { RelationGraph } from "${metadata.name}/graph";`],
 	]) {
 		const result = await bundle(contents, "node");
 		const inputs = Object.keys(result.metafile.inputs);

@@ -14,6 +14,7 @@ if (result.status !== 0) process.exit(result.status ?? 1);
 await mkdir(new URL("dist/board/", root), { recursive: true });
 await mkdir(new URL("dist/history/", root), { recursive: true });
 await mkdir(new URL("dist/canvas/", root), { recursive: true });
+await mkdir(new URL("dist/graph/", root), { recursive: true });
 await Promise.all(
-	["styles.css", "board/board.css", "board/shell.css", "board/switcher.css", "board/relations/relations.css", "history/history.css", "canvas/canvas.css"].map((path) => copyFile(new URL(`src/${path}`, root), new URL(`dist/${path}`, root))),
+	["styles.css", "board/board.css", "board/shell.css", "board/switcher.css", "board/relations/relations.css", "history/history.css", "canvas/canvas.css", "graph/graph.css"].map((path) => copyFile(new URL(`src/${path}`, root), new URL(`dist/${path}`, root))),
 );

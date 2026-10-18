@@ -53,6 +53,11 @@
 			"import": "./src/canvas/index.ts",
 			"default": "./src/canvas/index.ts"
 		},
+		"./graph": {
+			"types": "./src/graph/index.ts",
+			"import": "./src/graph/index.ts",
+			"default": "./src/graph/index.ts"
+		},
 		"./styles.css": "./src/styles.css",
 		"./package.json": "./package.json"
 	},
@@ -80,6 +85,11 @@
 				"types": "./dist/canvas/index.d.ts",
 				"import": "./dist/canvas/index.js",
 				"default": "./dist/canvas/index.js"
+			},
+			"./graph": {
+				"types": "./dist/graph/index.d.ts",
+				"import": "./dist/graph/index.js",
+				"default": "./dist/graph/index.js"
 			},
 			"./styles.css": "./dist/styles.css",
 			"./package.json": "./package.json"

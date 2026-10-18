@@ -2,5 +2,6 @@
 @import "./board/shell.css";
 @import "./board/switcher.css";
 @import "./board/relations/relations.css";
+@import "./graph/graph.css";
 @import "./history/history.css";
 @import "./canvas/canvas.css";

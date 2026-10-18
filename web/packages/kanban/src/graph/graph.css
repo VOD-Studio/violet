@@ -1,0 +1,41 @@
+/* 关系图：分区、卡片与线都按像素定位，尺寸由排布算出并写在行内样式里，这里只管外观。 */
+.v-kanban .v-kanban-graph__zone {
+	position: absolute;
+	box-sizing: border-box;
+	border: 1px solid var(--_kanban-border);
+	border-radius: var(--_kanban-radius);
+	background: var(--_kanban-column);
+}
+.v-kanban .v-kanban-graph__zone-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 0 14px;
+}
+.v-kanban .v-kanban-graph__column {
+	position: absolute;
+}
+.v-kanban .v-kanban-graph__cards {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.v-kanban .v-kanban-graph__card {
+	position: absolute;
+}
+.v-kanban .v-kanban-graph__card-body {
+	height: 100%;
+	overflow: hidden;
+}
+.v-kanban .v-kanban-graph__card[data-selectable="true"] {
+	cursor: pointer;
+}
+.v-kanban .v-kanban-graph__card:focus-visible {
+	outline: 2px solid var(--_kanban-focus);
+	outline-offset: 2px;
+}
+/* 子图的根：用前景色描边；选中时仍以选中的描边为准 */
+.v-kanban .v-kanban-graph__card[data-root="true"]:not([data-selected="true"]) {
+	border-color: var(--_kanban-foreground);
+}
