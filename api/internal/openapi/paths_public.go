@@ -30,6 +30,7 @@ func registerPublicPaths(t *openapi3.T) {
 	registerSchema(t, "ProjectDTO", openapi3.Schemas{
 		"id":          reqStr("项目 ID（UUID）"),
 		"title":       reqStr("项目标题"),
+		"slug":        reqStr("唯一网址标识（小写字母数字与单连字符，最多 255 字符）"),
 		"description": optStr("项目描述"),
 		"url":         optStr("项目链接"),
 		"github_url":  optStr("GitHub 仓库链接"),
@@ -167,6 +168,16 @@ func registerPublicPaths(t *openapi3.T) {
 		},
 	})
 
+	get(t, "/projects/by-slug/{slug}", &openapi3.Operation{
+		Tags:       []string{"项目"},
+		Summary:    "按 slug 获取项目详情",
+		Parameters: openapi3.Parameters{pathStrParam("slug", "项目网址标识")},
+		Responses: responses(
+			200, dataResponse("ProjectDTO", "项目详情", 200),
+			404, errorResponse("项目不存在"),
+		),
+	})
+
 	// ---- GET /announcements ----
 	t.Paths.Set("/announcements", &openapi3.PathItem{
 		Get: &openapi3.Operation{
@@ -269,6 +280,7 @@ func registerPublicPaths(t *openapi3.T) {
 	// ---- admin 项目 CRUD ----
 	registerSchema(t, "ProjectRequest", openapi3.Schemas{
 		"title":       reqStr("项目标题"),
+		"slug":        optStr("小写字母数字与单连字符，最多 255 字符；创建时为空按标题生成，更新时省略保留原值"),
 		"description": optStr("项目描述"),
 		"url":         optStr("项目链接"),
 		"github_url":  optStr("GitHub 仓库链接"),
@@ -285,7 +297,9 @@ func registerPublicPaths(t *openapi3.T) {
 		Parameters:  openapi3.Parameters{csrfHeaderParam()},
 		RequestBody: jsonBody("ProjectRequest", true, "项目信息"),
 		Responses: responses(
-			201, dataResponse("ProjectDTO", "新建项目", 201),
+			201, messageResponse("项目已创建"),
+			400, errorResponse("标题或 slug 格式不合法"),
+			409, errorResponse("项目 slug 已被占用"),
 		),
 	})
 
@@ -297,8 +311,10 @@ func registerPublicPaths(t *openapi3.T) {
 		Parameters:  openapi3.Parameters{pathStrParam("id", "项目 ID"), csrfHeaderParam()},
 		RequestBody: jsonBody("ProjectRequest", true, "项目信息"),
 		Responses: responses(
-			200, dataResponse("ProjectDTO", "更新后的项目", 200),
+			200, messageResponse("项目已更新"),
+			400, errorResponse("标题或 slug 格式不合法"),
 			404, errorResponse("项目不存在"),
+			409, errorResponse("项目 slug 已被占用"),
 		),
 	})
 

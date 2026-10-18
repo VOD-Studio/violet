@@ -25,7 +25,8 @@ func setupContentTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 	tmpFile := filepath.Join(t.TempDir(), "content_test.db")
 	db, err := gorm.Open(sqlite.Open(tmpFile), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
+		Logger:         logger.Default.LogMode(logger.Silent),
+		TranslateError: true,
 	})
 	require.NoError(t, err)
 	require.NoError(t, db.AutoMigrate(&model.Announcement{}, &model.Project{}))
@@ -161,4 +162,31 @@ func TestProjectRepository_FindByID_NotFound(t *testing.T) {
 	repo := NewProjectRepository(db)
 	_, err := repo.FindByID(context.Background(), domainshared.NewID())
 	assert.ErrorIs(t, err, domainproject.ErrNotFound)
+}
+
+func TestProjectRepository_SlugLookupAndUniqueness(t *testing.T) {
+	db := setupContentTestDB(t)
+	repo := NewProjectRepository(db)
+	ctx := context.Background()
+	p, err := domainproject.NewProject(domainshared.NewID(), "Violet", "")
+	require.NoError(t, err)
+	require.NoError(t, repo.Save(ctx, p))
+
+	loaded, err := repo.FindBySlug(ctx, "violet")
+	require.NoError(t, err)
+	assert.Equal(t, p.ID(), loaded.ID())
+	assert.Equal(t, "violet", loaded.Slug())
+	_, err = repo.FindBySlug(ctx, "missing")
+	assert.ErrorIs(t, err, domainproject.ErrNotFound)
+
+	duplicate, err := domainproject.NewProject(domainshared.NewID(), "Violet", "")
+	require.NoError(t, err)
+	assert.ErrorIs(t, repo.Save(ctx, duplicate), domainproject.ErrSlugConflict)
+	require.NoError(t, duplicate.SetSlug("iris"))
+	require.NoError(t, repo.Save(ctx, duplicate))
+	require.NoError(t, duplicate.SetSlug("violet"))
+	assert.ErrorIs(t, repo.Save(ctx, duplicate), domainproject.ErrSlugConflict)
+	loaded, err = repo.FindByID(ctx, duplicate.ID())
+	require.NoError(t, err)
+	assert.Equal(t, "iris", loaded.Slug())
 }

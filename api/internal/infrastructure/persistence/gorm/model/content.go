@@ -158,6 +158,7 @@ func (Announcement) TableName() string { return "announcements" }
 type Project struct {
 	ID          uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
 	Title       string         `gorm:"type:varchar(255);not null" json:"title"`
+	Slug        string         `gorm:"type:varchar(255);not null;uniqueIndex:projects_slug_key" json:"slug"`
 	Description string         `gorm:"type:text" json:"description"`
 	URL         string         `gorm:"type:text" json:"url"`
 	GithubURL   string         `gorm:"type:text;column:github_url" json:"github_url"`

@@ -15,6 +15,8 @@ type Project struct {
 	id shared.ID
 	// title 项目标题（必填，不能为空）
 	title string
+	// slug 全局唯一的网址标识，只含小写字母、数字与单连字符
+	slug string
 	// description 项目简介
 	description string
 	// url 项目在线链接（可空）
@@ -36,21 +38,30 @@ func NewProject(id shared.ID, title, description string) (*Project, error) {
 	if title == "" {
 		return nil, shared.BadRequest("项目标题不能为空")
 	}
-	p := &Project{id: id, title: title, description: description, techStack: []string{}}
+	p := &Project{id: id, title: title, slug: GenerateSlug(title, id), description: description, techStack: []string{}}
 	return p, nil
 }
 
 // ReconstructProject 从持久化数据重建
-func ReconstructProject(id shared.ID, title, description, url, githubURL, imageURL string, techStack []string, sortOrder int, createdAt, updatedAt time.Time) *Project {
+func ReconstructProject(id shared.ID, title, slug, description, url, githubURL, imageURL string, techStack []string, sortOrder int, createdAt, updatedAt time.Time) *Project {
 	if techStack == nil {
 		techStack = []string{}
 	}
 	return &Project{
-		id: id, title: title, description: description,
+		id: id, title: title, slug: slug, description: description,
 		url: url, githubURL: githubURL, imageURL: imageURL,
 		techStack: techStack, sortOrder: sortOrder,
 		timestamps: shared.Timestamps{CreatedAt: createdAt, UpdatedAt: updatedAt},
 	}
+}
+
+// SetSlug 校验网址标识格式；唯一性由仓储约束保证。
+func (p *Project) SetSlug(slug string) error {
+	if !IsValidSlug(slug) {
+		return shared.BadRequest("项目 slug 须为 1–255 字符的小写字母数字，并以单连字符分隔")
+	}
+	p.slug = slug
+	return nil
 }
 
 // Update 更新项目信息
@@ -80,6 +91,7 @@ func (p *Project) SetSortOrder(order int) { p.sortOrder = order }
 // 访问器
 func (p *Project) ID() shared.ID        { return p.id }
 func (p *Project) Title() string        { return p.title }
+func (p *Project) Slug() string         { return p.slug }
 func (p *Project) Description() string  { return p.description }
 func (p *Project) URL() string          { return p.url }
 func (p *Project) GithubURL() string    { return p.githubURL }

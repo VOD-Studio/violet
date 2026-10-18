@@ -1,0 +1,3 @@
+BEGIN;
+ALTER TABLE projects DROP COLUMN slug;
+COMMIT;
