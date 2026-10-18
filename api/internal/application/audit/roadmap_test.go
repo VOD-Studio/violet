@@ -62,3 +62,25 @@ func TestSubscriber_RoadmapStageChangeExcludesReorder(t *testing.T) {
 	assert.Equal(t, domainaudit.ActionUpdate, store.appended[0].Action)
 	assert.Equal(t, []domainaudit.FieldChange{{Field: "stage", From: "planned", To: "completed"}}, store.appended[0].Changes)
 }
+
+func TestSubscriber_RoadmapDeletionAndRestore(t *testing.T) {
+	store := &fakeStore{}
+	subscriber := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor", "admin@example.com", "127.0.0.1", "test")
+	item, err := roadmap.NewItem(shared.NewID(), shared.NewID(), 1, roadmap.Content{Title: "Restore"}, roadmap.Planned, "V", time.Now())
+	require.NoError(t, err)
+	item.PullEvents()
+	item.SoftDelete(time.Now())
+	for _, event := range item.PullEvents() {
+		require.NoError(t, subscriber.Handle(ctx, event))
+	}
+	item.Restore(time.Now())
+	for _, event := range item.PullEvents() {
+		require.NoError(t, subscriber.Handle(ctx, event))
+	}
+	require.Len(t, store.appended, 2)
+	assert.Equal(t, domainaudit.ActionDelete, store.appended[0].Action)
+	assert.Equal(t, domainaudit.ActionUpdate, store.appended[1].Action)
+	assert.Contains(t, store.appended[1].Summary, "恢复")
+	assert.Equal(t, []domainaudit.FieldChange{{Field: "deleted", From: true, To: false}}, store.appended[1].Changes)
+}

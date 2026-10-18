@@ -169,6 +169,8 @@ api/
 | `POST /admin/projects/{projectID}/roadmap/items` | 创建条目，分配项目内不复用的编号 |
 | `PUT /admin/projects/{projectID}/roadmap/items/{id}` | 全量编辑内容；未传完成日期时保留原值 |
 | `POST /admin/projects/{projectID}/roadmap/items/{id}/move` | 按目标阶段与邻居移动；邻居失效时追加末尾，已完成阶段拒绝手动重排 |
+| `DELETE /admin/projects/{projectID}/roadmap/items/{id}` | 标记软删除，返回 204 |
+| `POST /admin/projects/{projectID}/roadmap/items/{id}/restore` | 恢复原条目，保留编号、位置和内容 |
 
 阶段固定为 `planned`、`in_progress`、`completed`。进度为已完成数除以未删除条目总数，四舍五入为整数百分比，空路线图为 0。完成日期格式为 `YYYY-MM-DD`，默认取 `Asia/Shanghai` 当天；仅已完成条目持有完成日期与交付版本，离开已完成时两者一并清空。阶段变更记录操作日志，同阶段排序不记录。
 

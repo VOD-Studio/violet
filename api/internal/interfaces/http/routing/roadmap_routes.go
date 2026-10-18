@@ -19,4 +19,8 @@ func registerAdminRoadmapRoutes(projects chi.Router, handler *roadmaphttp.Handle
 		Put("/{projectID}/roadmap/items/{id}", handler.Update)
 	projects.With(middleware.RequirePermission(checker, permission.ProjectUpdate.String())).
 		Post("/{projectID}/roadmap/items/{id}/move", handler.Move)
+	projects.With(middleware.RequirePermission(checker, permission.ProjectUpdate.String())).
+		Delete("/{projectID}/roadmap/items/{id}", handler.Delete)
+	projects.With(middleware.RequirePermission(checker, permission.ProjectUpdate.String())).
+		Post("/{projectID}/roadmap/items/{id}/restore", handler.Restore)
 }

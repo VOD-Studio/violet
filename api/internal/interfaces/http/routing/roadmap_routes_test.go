@@ -25,6 +25,8 @@ func TestRoadmapRoutesRequireProjectUpdate(t *testing.T) {
 		{http.MethodPost, "/p/roadmap/items"},
 		{http.MethodPut, "/p/roadmap/items/i"},
 		{http.MethodPost, "/p/roadmap/items/i/move"},
+		{http.MethodDelete, "/p/roadmap/items/i"},
+		{http.MethodPost, "/p/roadmap/items/i/restore"},
 	} {
 		t.Run(request.method+request.path, func(t *testing.T) {
 			checker := &roadmapRouteChecker{}
@@ -65,4 +67,13 @@ func TestRoadmapSpecDocumentsReadAndWriteContracts(t *testing.T) {
 	item := spec.Components.Schemas["RoadmapItemDTO"].Value
 	assert.Equal(t, "date", item.Properties["completion_date"].Value.Format)
 	assert.True(t, item.Properties["completion_date"].Value.Nullable)
+	deletion := spec.Paths.Find("/admin/projects/{projectID}/roadmap/items/{id}").Delete
+	require.NotNil(t, deletion)
+	assert.Contains(t, deletion.Responses.Map(), "204")
+	assert.NotEmpty(t, deletion.Security)
+	restore := spec.Paths.Find("/admin/projects/{projectID}/roadmap/items/{id}/restore")
+	require.NotNil(t, restore)
+	require.NotNil(t, restore.Post)
+	assert.Contains(t, restore.Post.Responses.Map(), "200")
+	assert.NotEmpty(t, restore.Post.Security)
 }
