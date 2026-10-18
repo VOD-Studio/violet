@@ -7,6 +7,7 @@ export type { MoveDecision } from "./board/drag/use-board-moves.ts";
 export type { InlineEditMessages, InlineEditProps } from "./board/inline-edit.tsx";
 export { InlineEdit } from "./board/inline-edit.tsx";
 export type { BoardLocale, BoardMessages } from "./board/messages.ts";
+export type { RelationLine, RelationTypeStyle } from "./board/relations/types.ts";
 export type {
 	BoardCard,
 	BoardMove,

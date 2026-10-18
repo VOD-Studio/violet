@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 const board = read("./board.css");
 const shell = read("./shell.css");
+const relations = read("./relations/relations.css");
 const history = read("../history/history.css");
 const canvas = read("../canvas/canvas.css");
 
@@ -83,6 +84,30 @@ describe("看板外壳样式", () => {
 	});
 });
 
+describe("关系线样式", () => {
+	it("线型本身区分类型，不靠颜色：虚线有 dasharray，挡条与箭头是不同的终点标记", () => {
+		expect(
+			rule(
+				relations,
+				'.v-kanban .v-kanban__relation[data-line="dashed"] .v-kanban__relation-line',
+			),
+		).toMatch(/stroke-dasharray:\s*\d+ \d+/);
+		expect(rule(relations, ".v-kanban .v-kanban__relation-head")).toMatch(
+			/fill:\s*currentColor/,
+		);
+		expect(rule(relations, ".v-kanban .v-kanban__relation-bar")).toMatch(/stroke-width:\s*3/);
+		// 实线与虚线共用同一条颜色，说明区分来自线型
+		expect(rule(relations, ".v-kanban .v-kanban__relation-line")).toMatch(
+			/stroke:\s*currentColor/,
+		);
+	});
+
+	it("强制颜色模式下用系统色，减弱动态下不加过渡", () => {
+		expect(relations).toMatch(/@media \(forced-colors: active\)/);
+		expect(relations).toMatch(/@media \(prefers-reduced-motion: no-preference\)/);
+	});
+});
+
 describe("筛选淡化", () => {
 	it("淡化只作用在卡片内容上，不给整个 li 加 opacity（否则固定定位的菜单与聚焦环会被一起拖淡）", () => {
 		expect(shell).not.toMatch(/\[data-dimmed="true"\]\s*\{[^}]*opacity/);
@@ -108,6 +133,7 @@ describe("画布样式", () => {
 describe.each([
 	["board.css", board],
 	["shell.css", shell],
+	["relations.css", relations],
 	["history.css", history],
 	["canvas.css", canvas],
 ])("%s 的视觉红线", (_name, css) => {

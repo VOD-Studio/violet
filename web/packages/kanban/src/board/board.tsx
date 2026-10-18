@@ -4,6 +4,7 @@ import {
 	type BoardCard,
 	type BoardMove,
 	type BoardState,
+	type Relation,
 	resolveBoard,
 } from "../core/index.ts";
 import { formatMessage } from "../locale.ts";
@@ -22,6 +23,9 @@ import { useKeyboardMove } from "./drag/use-keyboard-move.ts";
 import { useMoveMenu } from "./drag/use-move-menu.ts";
 import { BoardLocaleContext } from "./locale-context.ts";
 import { type BoardLocale, type BoardMessages, resolveMessages } from "./messages.ts";
+import { RelationLayer } from "./relations/relation-layer.tsx";
+import { type RelationTypeStyle, resolveRelationTypes } from "./relations/types.ts";
+import { useRelationGeometry } from "./relations/use-relation-geometry.ts";
 import { useCollapsedColumns } from "./use-collapsed.ts";
 
 /** 列定义。`title` 同时是列分组的可访问名称。 */
@@ -132,6 +136,21 @@ export interface BoardProps<TCard extends BoardCard, TColumn extends BoardColumn
 	 * （拖拽、键盘、「移到…」菜单）并给出提示；不筛选时传 `undefined`。谓词抛错的卡片按匹配处理。
 	 */
 	filter?: (card: TCard) => boolean;
+	/**
+	 * 卡片之间带类型的关系，读作「来源 类型 目标」。看板画出关系线，线随拖拽、滚动和画布的缩放平移保持连接，
+	 * 并给每张有关系的卡片加一段读屏的文字描述。端点不可见（在折叠的列里、卡片不存在）的关系不画线。
+	 */
+	relations?: readonly Relation[];
+	/**
+	 * 关系类型的读法与线型，与内置的 `extends`（实线）、`fixes`（虚线）、`blocks`（实线加挡条）合并。
+	 * 没有映射的类型按实线处理，类型名当文字。
+	 */
+	relationTypes?: Readonly<Record<string, RelationTypeStyle>>;
+	/**
+	 * 隐藏关系线；卡片上的文字描述仍在。
+	 * @default false
+	 */
+	hideRelations?: boolean;
 	/** 替换拖拽控制器，默认是指针控制器。身份变化会重新挂载并取消进行中的拖拽，请保持引用稳定。 */
 	dragController?: DragController;
 	/** 内置文案的语言。 */
@@ -169,6 +188,9 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 	onAddCard,
 	onAddCardError,
 	filter,
+	relations,
+	relationTypes: relationTypeOverrides,
+	hideRelations = false,
 	dragController,
 	locale,
 	messages: messageOverrides,
@@ -249,11 +271,32 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 	const moveToColumn = useMoveMenu({ moves, autoSort, announce, focus });
 
 	const resolved = resolveBoard({ columns: columnIds, order: keyboard.order }, cards);
-	useFlip(
-		scrollerRef,
-		`${JSON.stringify(columnIds.map((id) => [id, keyboard.order[id] ?? []]))}|${drag.layoutKey}`,
-		moves.editable,
+	const layoutVersion = `${JSON.stringify(columnIds.map((id) => [id, keyboard.order[id] ?? []]))}|${drag.layoutKey}`;
+	useFlip(scrollerRef, layoutVersion, moves.editable);
+
+	// 关系：两端都是已知卡片的才算；选中与高亮、读屏描述、关系线共用这份结果
+	const relationTypes = resolveRelationTypes(locale, relationTypeOverrides);
+	const knownRelations = (relations ?? []).filter(
+		(relation) => cardsById.has(relation.sourceId) && cardsById.has(relation.targetId),
 	);
+	const showRelationLines = !hideRelations && knownRelations.length > 0;
+	const relationRects = useRelationGeometry({
+		scrollerRef,
+		ids: showRelationLines
+			? [
+					...new Set(
+						knownRelations.flatMap((relation) => [
+							relation.sourceId,
+							relation.targetId,
+						]),
+					),
+				]
+			: [],
+		ghostRef: drag.ghostRef,
+		heldId: drag.ghost?.cardId ?? null,
+		active: drag.ghost !== null || keyboard.liftedId !== null,
+		version: `${layoutVersion}|${columnIds.filter(collapse.isCollapsed).join(",")}`,
+	});
 	const targets = [...definitions.values()].map((column) => ({
 		id: column.id,
 		title: column.title ?? column.id,
@@ -283,7 +326,12 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 						{showFilterHint ? messages.filterDragDisabled : ""}
 					</p>
 				) : null}
-				<div ref={scrollerRef} className="v-kanban__scroller">
+				<div
+					ref={scrollerRef}
+					className="v-kanban__scroller"
+					// 关系线叠加层以滚动层为定位参照；写在行内，不依赖样式表
+					style={showRelationLines ? { position: "relative" } : undefined}
+				>
 					{resolved.map(({ id, cards: columnCards }) => {
 						const column = definitions.get(id) as TColumn;
 						const title = column.title ?? column.id;
@@ -400,6 +448,14 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 							</ColumnView>
 						);
 					})}
+					{showRelationLines ? (
+						<RelationLayer
+							relations={knownRelations}
+							rects={relationRects}
+							types={relationTypes}
+							cardLabel={cardLabel}
+						/>
+					) : null}
 				</div>
 				{drag.ghost && ghostCard ? (
 					<div
