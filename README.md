@@ -92,6 +92,7 @@ violet/
 ├── web/                    React 前端应用（TanStack Start）
 │   ├── packages/ui/           @violet/ui 组件、主题与独立构建入口
 │   ├── packages/react-tweet/  @violetjs/react-tweet 原生推文、独立数据接口与样式
+│   ├── packages/kanban/       @violetjs/kanban 通用看板组件（尚未发布 npm）
 │   ├── src/
 │   │   ├── routes/         文件路由
 │   │   ├── features/       业务模块（feature-sliced）

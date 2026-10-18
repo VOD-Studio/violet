@@ -245,12 +245,15 @@ jobs:
           pnpm --filter @violetjs/inkline test
           pnpm --filter @violetjs/react-tweet typecheck
           pnpm --filter @violetjs/react-tweet test
+          pnpm --filter @violetjs/kanban typecheck
+          pnpm --filter @violetjs/kanban test
 
       - name: Public library independent tarball consumers
         if: needs.changes.outputs.web == 'true'
         run: |
           pnpm --filter @violetjs/inkline consumer
           pnpm --filter @violetjs/react-tweet consumer
+          pnpm --filter @violetjs/kanban consumer
 
       - name: Vitest
         if: needs.changes.outputs.web == 'true'
