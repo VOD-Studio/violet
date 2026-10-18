@@ -244,6 +244,7 @@ func NewAdminRouter(d *Deps) chi.Router {
 
 	// 项目管理
 	r.Route("/projects", func(r chi.Router) {
+		registerAdminRoadmapRoutes(r, d.Roadmap, perm)
 		r.With(middleware.RequirePermission(perm, "project:create")).Post("/", contentH.CreateProject)
 		r.With(middleware.RequirePermission(perm, "project:update")).Put("/{id}", contentH.UpdateProject)
 		r.With(middleware.RequirePermission(perm, "project:delete")).Delete("/{id}", contentH.DeleteProject)

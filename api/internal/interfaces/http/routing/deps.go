@@ -36,6 +36,7 @@ import (
 	posthttp "blog-api/internal/interfaces/http/handler/post"
 	publicationhttp "blog-api/internal/interfaces/http/handler/publication"
 	releaseshttp "blog-api/internal/interfaces/http/handler/releases"
+	roadmaphttp "blog-api/internal/interfaces/http/handler/roadmap"
 	rolehttp "blog-api/internal/interfaces/http/handler/role"
 	serieshttp "blog-api/internal/interfaces/http/handler/series"
 	settingshttp "blog-api/internal/interfaces/http/handler/settings"
@@ -85,6 +86,7 @@ type Deps struct {
 	Releases            *releaseshttp.Handler
 	Auth                *authhttp.Handler
 	Content             *contenthttp.Handler
+	Roadmap             *roadmaphttp.Handler
 	Comment             *commenthttp.Handler
 	CommentReaction     *crhttp.Handler
 	Media               *mediahttp.Handler

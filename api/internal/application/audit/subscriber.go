@@ -97,6 +97,10 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 		UserAgent: middleware.GetUserAgentFromContext(ctx),
 	}
 
+	if entry, ok := mapRoadmapEvent(actor, event); ok {
+		return entry, true
+	}
+
 	switch e := event.(type) {
 	case domainuser.UserRegistered:
 		return domainaudit.AuditEvent{
