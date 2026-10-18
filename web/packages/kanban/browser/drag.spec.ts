@@ -642,6 +642,46 @@ test.describe("画布视口", () => {
 		expect(new Set(frames.frames).size, JSON.stringify(frames)).toBe(1);
 	});
 
+	test("进入与退出全屏淡入淡出，只动透明度；减弱动态时直接切换", async ({ page }) => {
+		await openCanvas(page);
+		/** 画布根节点上正在跑的动画动了哪些属性。 */
+		const animated = () =>
+			page.evaluate(() =>
+				(document.querySelector(".v-kanban-canvas") as HTMLElement)
+					.getAnimations()
+					.flatMap((animation) =>
+						(animation.effect as KeyframeEffect)
+							.getKeyframes()
+							.flatMap((frame) =>
+								Object.keys(frame).filter(
+									(key) =>
+										![
+											"offset",
+											"computedOffset",
+											"easing",
+											"composite",
+										].includes(key),
+								),
+							),
+					),
+			);
+
+		await page.getByRole("button", { name: "Enter full screen" }).click();
+		expect(new Set(await animated())).toEqual(new Set(["opacity"]));
+
+		await page.keyboard.press("Escape");
+		// 淡出期间仍是全屏层，结束后才回到页面里
+		await expect(root(page)).toHaveAttribute("data-fullscreen", "true");
+		expect(new Set(await animated())).toEqual(new Set(["opacity"]));
+		await expect(root(page)).not.toHaveAttribute("data-fullscreen", "true");
+
+		await page.emulateMedia({ reducedMotion: "reduce" });
+		await page.getByRole("button", { name: "Enter full screen" }).click();
+		expect(await animated()).toEqual([]);
+		await page.keyboard.press("Escape");
+		expect(await root(page).getAttribute("data-fullscreen")).toBeNull();
+	});
+
 	test("全屏与页面里的视口互不影响", async ({ page }) => {
 		await openCanvas(page);
 		const transform = () =>
@@ -778,6 +818,8 @@ test.describe("画布视口", () => {
 		expect([...visited].filter((place) => place !== "canvas" && place !== "body")).toEqual([]);
 
 		await page.keyboard.press("Escape");
+		// 退出要先淡出，淡出结束后页面内容才解除 inert
+		await expect(root(page)).not.toHaveAttribute("data-fullscreen", "true");
 		await page.locator("#outside-before").focus();
 		await expect(page.locator("#outside-before")).toBeFocused();
 	});

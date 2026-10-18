@@ -37,6 +37,19 @@ import { useInertOutside } from "./use-inert-outside.ts";
 const KEY_PAN = 48;
 /** 聚焦的元素离视口边缘至少留出多少 px，容得下聚焦环。 */
 const REVEAL_MARGIN = 8;
+/** 进入与退出全屏的淡入淡出：只动透明度，不缩放也不滑动。 */
+const FULLSCREEN_FADE = { duration: 180, easing: "cubic-bezier(0.2, 0, 0, 1)" } as const;
+
+/** 按透明度淡入或淡出；不支持 Web Animations 或用户要求减弱动态时不做动画，返回 null。 */
+function fade(element: HTMLElement | null, direction: "in" | "out"): Animation | null {
+	if (!element || typeof element.animate !== "function") return null;
+	if (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches)
+		return null;
+	const frames =
+		direction === "in" ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }];
+	return element.animate(frames, FULLSCREEN_FADE);
+}
+
 /** `Canvas` 的命令式句柄。 */
 export interface CanvasHandle {
 	/** 适应窗口，并恢复随窗口尺寸变化自动适应。 */
@@ -102,7 +115,8 @@ function Icon({ children }: { children: ReactNode }) {
 /**
  * 可平移缩放的画布视口，承载整块看板或其他内容。
  *
- * 拖动背景平移；Ctrl/⌘ 加滚轮、按钮、键盘与触屏双指缩放；普通滚轮仍然滚动页面。可全屏，Esc 退出。
+ * 拖动背景平移；Ctrl/⌘ 加滚轮、按钮、键盘与触屏双指缩放；普通滚轮仍然滚动页面。
+ * 可全屏（淡入淡出，减弱动态时直接切换），Esc 退出。
  * 视口聚焦时方向键平移、`+` `-` 缩放、`0` 适应窗口。
  */
 export function Canvas({
@@ -349,14 +363,35 @@ export function Canvas({
 		};
 	}, [apply, measure]);
 
+	/** 正在淡出的全屏层；淡出期间再次请求退出不重复处理。 */
+	const leaving = useRef<Animation | null>(null);
 	const changeFullscreen = useCallback((next: boolean) => {
-		setFullscreen(next);
-		setStatus(
-			next
-				? latest.current.messages.fullscreenEntered
-				: latest.current.messages.fullscreenExited,
-		);
-		latest.current.onFullscreenChange?.(next);
+		const commit = () => {
+			leaving.current = null;
+			setFullscreen(next);
+			setStatus(
+				next
+					? latest.current.messages.fullscreenEntered
+					: latest.current.messages.fullscreenExited,
+			);
+			latest.current.onFullscreenChange?.(next);
+		};
+		if (next) {
+			leaving.current?.cancel();
+			commit();
+			return;
+		}
+		if (leaving.current) return;
+		// 退出：先在全屏层上淡出，结束后再回到页面里的位置
+		const animation = fade(rootRef.current, "out");
+		if (!animation) {
+			commit();
+			return;
+		}
+		leaving.current = animation;
+		animation.finished.then(commit, () => {
+			leaving.current = null;
+		});
 	}, []);
 
 	useInertOutside(rootRef, fullscreen);
@@ -372,6 +407,8 @@ export function Canvas({
 		if (fullscreen) {
 			inline.current = { viewport: latest.current.viewport, adjusted: adjusted.current };
 			refit();
+			// 从透明淡入；在绘制前开始，第一帧就是透明的
+			fade(rootRef.current, "in");
 			return;
 		}
 		const saved = inline.current;
