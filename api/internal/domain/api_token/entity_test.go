@@ -49,6 +49,15 @@ func TestNewPAT_AcceptsRoadmapScopesIndependently(t *testing.T) {
 	assert.False(t, write.HasScope(ScopeRoadmapRead), "写不含读")
 }
 
+func TestAllScopes_IsSortedAndMatchesValidity(t *testing.T) {
+	scopes := AllScopes()
+	assert.IsIncreasing(t, scopes, "升序，便于核对")
+	for _, scope := range scopes {
+		assert.True(t, IsValidScope(scope), scope)
+	}
+	assert.Len(t, scopes, 13)
+}
+
 func TestNewPAT_AcceptsCommentsWriteScope(t *testing.T) {
 	p, _, err := NewPAT("u-1", "x", []string{ScopeCommentsWrite}, time.Time{}, time.Now())
 	assert.NoError(t, err, "comments:write 是合法 scope")

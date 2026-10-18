@@ -7,6 +7,8 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	domainapitoken "blog-api/internal/domain/api_token"
 )
 
 func TestParseExpiry_EmptyDefaultsTo90Days(t *testing.T) {
@@ -62,4 +64,17 @@ func TestCreateTokenRequest_RejectsUnknownScope(t *testing.T) {
 	v := validator.New()
 	err := v.Struct(createTokenRequest{Name: "mcp", Scopes: []string{"comments:admin"}})
 	assert.Error(t, err, "未知 scope 应被 oneof 拒绝")
+}
+
+// 请求校验里的 oneof 白名单是手写的一份，领域层是另一份：新增 scope 时漏改前者，创建令牌会被拒绝。
+func TestCreateTokenRequest_AcceptsEveryDomainScope(t *testing.T) {
+	v := validator.New()
+	scopes := domainapitoken.AllScopes()
+	require.NotEmpty(t, scopes)
+	for _, scope := range scopes {
+		err := v.Struct(createTokenRequest{Name: "mcp", Scopes: []string{scope}})
+		assert.NoError(t, err, "领域层合法的 scope %q 必须通过 HTTP 校验", scope)
+	}
+	assert.Contains(t, scopes, domainapitoken.ScopeRoadmapRead)
+	assert.Contains(t, scopes, domainapitoken.ScopeRoadmapWrite)
 }

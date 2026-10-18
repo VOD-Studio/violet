@@ -1,6 +1,7 @@
 package apitoken
 
 import (
+	"sort"
 	"time"
 
 	domainshared "blog-api/internal/domain/shared"
@@ -39,6 +40,17 @@ var validScopes = map[string]struct{}{
 	ScopeNotesPublish:       {},
 	ScopeRoadmapRead:        {},
 	ScopeRoadmapWrite:       {},
+}
+
+// AllScopes 返回全部合法 scope（升序）。供需要手写白名单的边界（请求校验的 oneof 标签）做一致性核对，
+// 新增 scope 时漏改那份白名单会让创建令牌被拒。
+func AllScopes() []string {
+	scopes := make([]string, 0, len(validScopes))
+	for scope := range validScopes {
+		scopes = append(scopes, scope)
+	}
+	sort.Strings(scopes)
+	return scopes
 }
 
 // IsValidScope 判断 scope 是否在预定义枚举内。
