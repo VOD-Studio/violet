@@ -8,7 +8,7 @@ This is a workspace package and is **not published to npm**. This README covers 
 
 | Import | Contents |
 | --- | --- |
-| `@violetjs/kanban` | `Board`, `HistoryButtons`, history hooks, `createHistory`, `createPointerController` and types, with the default stylesheet |
+| `@violetjs/kanban` | `Board`, `InlineEdit`, `HistoryButtons`, history hooks, `createHistory`, `createPointerController` and types, with the default stylesheet |
 | `@violetjs/kanban/unstyled` | The same exports without any CSS |
 | `@violetjs/kanban/core` | React-free board state, moves, drop-target resolution, auto-sort rule, keyboard steps, undo history, viewport math |
 | `@violetjs/kanban/canvas` | `Canvas`, a pannable and zoomable viewport for the board (import the stylesheet once) |
@@ -103,6 +103,29 @@ Editable cards are focusable (`Tab`). Press `Space` or `Enter` on the card itsel
 
 `dragController` takes any `DragController` (keep its identity stable, for example at module level: a new one re-attaches and cancels a drag in progress): an object with `attach(host)` that turns input into `host.start`, `host.move`, `host.drop` and `host.cancel` calls and returns a cleanup function. The default is `createPointerController({ threshold, touchHoldDelay, touchTolerance })`.
 
+## Column shell and filtering
+
+Everything here is opt-in; saving and validation stay with you.
+
+```tsx
+<Board
+  /* … */
+  collapsible
+  onAddCard={async ({ columnId, title }) => { await api.addCard(columnId, title); }}
+  filter={query ? (task) => task.title.includes(query) : undefined}
+  renderCard={(task) => (
+    <InlineEdit label="Card title" value={task.title} onSave={(title) => api.rename(task.id, title)} />
+  )}
+/>
+```
+
+- **Collapse and counts.** `collapsible` adds a toggle to each column header (opt a column out with `column.collapsible: false`). A collapsed column keeps its header and count; its cards and add form become `inert`, so `Tab` and screen readers skip them. State is uncontrolled (`defaultCollapsedColumns`) or controlled (`collapsedColumns`), and `onCollapsedColumnsChange` always reports the full list. Moving a card into a collapsed column (menu or keyboard) expands it, while a pointer drop onto a collapsed column has no target — expand it first, because the card and its placeholder would be invisible. The collapsed list only applies to columns that can collapse. The height animates over 200ms and is instant under `prefers-reduced-motion`.
+- **Quick add.** `onAddCard({ columnId, title })` shows an "Add card" button at the bottom of every column (`column.quickAdd: false` opts one out; read-only boards show none). It opens a title field: `Enter` saves and keeps the field open for the next one, `Esc` closes it. A rejected or throwing `onAddCard` keeps the typed title, shows an error and calls `onAddCardError`.
+- **Inline title editing.** `InlineEdit` renders the text as a button; clicking it turns it into an input. `Enter` or leaving the field saves, `Esc` discards, an unchanged value never calls `onSave`, and an empty value is refused unless `allowEmpty`. Failure stays in the editor with the text intact. Render it inside `renderCard` — it uses the board's tokens, and typing or pressing in the input never lifts or drags the card. Dragging from the text itself still drags the card; a plain click edits.
+- **Filter.** Pass `filter` (a predicate) while a filter is on and `undefined` otherwise. Non-matching cards fade but keep their place and stay reachable; the column count reads "matched/total". While the filter is on, the whole board stops moving cards (pointer, keyboard and the "Move to…" menu) and says so, so nobody reorders cards they can't see. A throwing predicate counts as a match.
+
+Focus rings are never clipped: the collapsing body clips overflow, so it keeps 12px of padding offset by a negative margin (and ignores pointer events itself), the same trick the horizontal scroller uses. `InlineEdit` follows the board's `locale` unless you pass its own.
+
 ## Undo and redo
 
 `createHistory()` (also in `@violetjs/kanban/core`) is a plain command history that lives for the current session. It does not know what a command does: each command carries its own forward and backward actions, so moves, additions, deletions and edits all fit.
@@ -158,7 +181,7 @@ import { Canvas } from "@violetjs/kanban/canvas";
 ## Slots and messages
 
 - `renderCard(card, { column, index })` renders the card content. The board draws the card surface.
-- `renderColumnHeader(column, { count })` replaces the default title and count. `column.title` stays the column group's accessible name.
+- `renderColumnHeader(column, { count, matched })` replaces the default title and count (`matched` is the number of cards passing `filter`, or `null` without one; returning `null` shows no header). `column.title` stays the column group's accessible name.
 - `renderEmpty(column)` replaces the default empty-column text; return `null` to show nothing.
 - `locale` is `"en"` (default) or `"zh-CN"`. `messages` overrides any built-in text; `{count}` is replaced with plain text, never HTML.
 
