@@ -58,6 +58,11 @@ export interface ColumnLayout {
 	 * @default undefined 普通列，按指针位置决定序号
 	 */
 	autoSort?: AutoSortEntry;
+	/**
+	 * 不接收落点：指针落在它上面时没有落点（例如折叠的列，落进去的卡片和占位都看不见）。
+	 * @default undefined 接收
+	 */
+	disabled?: boolean;
 }
 
 /** 查找卡片所在的列与列内序号。 */
@@ -151,7 +156,8 @@ export function resolveDropTarget(
 		const right = next ? (column.rect.right + next.rect.left) / 2 : column.rect.right + slack;
 		return point.x >= left && point.x <= right;
 	});
-	if (!hit || point.y < hit.rect.top - slack || point.y > hit.rect.bottom + slack) return null;
+	if (!hit || hit.disabled) return null;
+	if (point.y < hit.rect.top - slack || point.y > hit.rect.bottom + slack) return null;
 	if (hit.autoSort && hit.id !== options.originColumnId)
 		return { columnId: hit.id, index: entryIndex(hit.autoSort, hit.cards.length) };
 	const index = hit.cards.filter(

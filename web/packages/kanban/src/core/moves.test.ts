@@ -177,6 +177,19 @@ describe("resolveDropTarget", () => {
 		});
 	});
 
+	it("禁用的列（例如折叠的列）不是落点：指针落在它上面时没有落点，邻列的划分不变", () => {
+		const withDisabled = columns.map((column) =>
+			column.id === "doing" ? { ...column, disabled: true } : column,
+		);
+
+		expect(resolveDropTarget(withDisabled, { x: 150, y: 100 })).toBeNull();
+		expect(resolveDropTarget(withDisabled, { x: 50, y: 100 })?.columnId).toBe("todo");
+		expect(resolveDropTarget(withDisabled, { x: 290, y: 100 })?.columnId).toBe("done");
+		// 空隙仍按中线划给两侧的列
+		expect(resolveDropTarget(withDisabled, { x: 108, y: 50 })?.columnId).toBe("todo");
+		expect(resolveDropTarget(withDisabled, { x: 232, y: 50 })?.columnId).toBe("done");
+	});
+
 	it("列间空隙归属最近的列", () => {
 		expect(resolveDropTarget(columns, { x: 108, y: 50 })?.columnId).toBe("todo");
 		expect(resolveDropTarget(columns, { x: 112, y: 50 })?.columnId).toBe("doing");
