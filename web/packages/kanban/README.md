@@ -8,7 +8,7 @@ This is a workspace package and is **not published to npm**. This README covers 
 
 | Import | Contents |
 | --- | --- |
-| `@violetjs/kanban` | `Board`, `InlineEdit`, `HistoryButtons`, history hooks, `createHistory`, `createPointerController` and types, with the default stylesheet |
+| `@violetjs/kanban` | `Board`, `InlineEdit`, `RelationList`, `HistoryButtons`, history hooks, `createHistory`, `createPointerController` and types, with the default stylesheet |
 | `@violetjs/kanban/unstyled` | The same exports without any CSS |
 | `@violetjs/kanban/core` | React-free board state, moves, drop-target resolution, auto-sort rule, keyboard steps, undo history, viewport math |
 | `@violetjs/kanban/canvas` | `Canvas`, a pannable and zoomable viewport for the board (import the stylesheet once) |
@@ -125,6 +125,26 @@ Everything here is opt-in; saving and validation stay with you.
 - **Filter.** Pass `filter` (a predicate) while a filter is on and `undefined` otherwise. Non-matching cards fade but keep their place and stay reachable; the column count reads "matched/total". While the filter is on, the whole board stops moving cards (pointer, keyboard and the "Move to…" menu) and says so, so nobody reorders cards they can't see. A throwing predicate counts as a match.
 
 Focus rings are never clipped: the collapsing body clips overflow, so it keeps 12px of padding offset by a negative margin (and ignores pointer events itself), the same trick the horizontal scroller uses. `InlineEdit` follows the board's `locale` unless you pass its own.
+
+## Relations
+
+A relation is `{ sourceId, targetId, type }`, read as "source *type* target" (for example "A extends B"). The board draws them and describes them in text; the rules live in `/core`.
+
+```tsx
+<Board
+  /* … */
+  relations={[{ sourceId: "a", targetId: "d", type: "extends" }]}
+  selectedCardId={selected}
+  onSelectedCardChange={setSelected}
+  hideRelations={hidden}
+/>
+```
+
+- **Line styles tell types apart, not colour.** The built-in types are `extends` (solid with an arrowhead), `fixes` (dashed with an arrowhead) and `blocks` (solid with a bar at the end). `relationTypes` adds your own or overrides these: `{ label, inverseLabel, line: "solid" | "dashed" | "blocker" }`. A type with no mapping draws solid and uses its name as the text. Colours are `--kanban-relation` and `--kanban-relation-blocker`.
+- **Lines stay attached.** Cards in different columns connect side to side; two cards in the same column connect around the right edge so the line never crosses the cards between them. Lines follow dragging (they attach to the floating card), the reorder animation, horizontal scrolling and canvas pan and zoom. A relation whose card is missing or inside a collapsed column is not drawn. `hideRelations` removes the lines and keeps the text.
+- **Selection.** With `onSelectedCardChange`, clicking a card selects it (again to clear; the empty board clears too). Clicks on buttons, links and inputs inside a card don't count. Non-draggable cards become focusable and use `Enter` or `Space`; draggable cards keep `Enter` and `Space` for picking up and use `Alt+Enter`. The selected card and its direct neighbours stay clear, everything else and the unrelated lines fade, and the selected card has `aria-current`.
+- **Text equivalent.** Every card with relations gets a screen-reader sentence ("Relations: extends Delta; is blocked by Epsilon"). `RelationList` renders the same as a list ("Alpha extends Delta"), for the whole graph or one card (`cardId`, both directions), for a narrow layout that doesn't draw lines.
+- **Rules.** `@violetjs/kanban/core` has `checkRelation(existing, candidate)` — refuses a relation to itself, a duplicate, and a cycle *within one type* (it returns the path that would close). Cycles are checked per type because the directions mean opposite things ("A extends B" puts A after B, "A blocks B" puts A before B), so mixing types would give false alarms. `createAdjacency(relations)` answers `outgoing`, `incoming`, `of` and `neighbors`; `routeEdge`, `arrowHead` and `blockerBar` are the geometry the board uses.
 
 ## Undo and redo
 
