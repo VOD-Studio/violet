@@ -121,7 +121,7 @@ export const nodes = [
 		renderColumnHeader={(stage, { count }) => <b>{stage.hint}{count}</b>}
 		renderEmpty={(stage) => <i>{stage.hint}</i>}
 		onMove={async (move) => { await Promise.resolve(move.cardId); }} canMove={canMove} onMoveError={(error, move) => console.error(error, move.previousId)}
-		isDraggable={(task) => task.title !== ""} readOnly={false} dragController={controller} getCardLabel={(task) => task.title} />,
+		isDraggable={(task) => task.title !== ""} readOnly={false} dragController={controller} getCardLabel={(task) => task.title} moveMenu="always" />,
 	<Unstyled columns={stages} cards={tasks} order={{}} renderCard={(task) => task.title} />,
 ];
 export const props: BoardProps<Task, Stage>["order"] = {};
@@ -166,6 +166,7 @@ assert.equal(renderToString(createElement(Board, { ...props, onMove: () => {} })
 assert.match(editable, /data-draggable="true"/);
 assert.match(editable, /tabindex="0"/);
 assert.match(editable, /aria-describedby=/);
+assert.match(editable, /Move to…/);
 assert.ok(!/data-draggable/.test(html), "Read-only boards must not advertise dragging.");
 assert.ok(!/<script|<style/.test(html));
 assert.deepEqual(resolveBoard({ columns: ["todo"], order: { todo: ["b", "x"] } }, props.cards).map((column) => column.cards.map((card) => card.id)), [["b"]]);

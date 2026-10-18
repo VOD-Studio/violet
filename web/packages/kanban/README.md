@@ -88,14 +88,15 @@ Pass `onMove` and the board becomes editable: users drag cards within a column o
 
 `@violetjs/kanban/core` exposes the same logic without React: `createMove`, `applyMove`, `isNoopMove`, `locateCard`, `resolveDropTarget` and `violatesAutoSort`.
 
-### Keyboard
+### Keyboard and the "Move to…" menu
 
 Editable cards are focusable (`Tab`). Press `Space` or `Enter` on the card itself to pick it up, `↑ ↓` to move it within its column, `← →` to move it to the neighbouring column, `Space` or `Enter` to drop it, `Esc` to cancel. Moving focus off the card (`Tab`, clicking elsewhere) also cancels. Each step is announced through an `aria-live` region in English or Simplified Chinese; `getCardLabel(card)` supplies the card's spoken name (its `id` by default). While a card is held, the arrow keys, `Space`, `Enter` and `Esc` do not reach page-level shortcuts.
 
 - The card stays in its column and shows at the previewed position; nothing is committed until you drop it, and `Esc` restores it. `canMove` is checked on every step and again on drop, and rejected steps show the reason in the notice instead of moving.
 - Inside an auto-sort column `↑ ↓` is always rejected, including right after entering it: the position is yours to decide.
+- Each draggable card also carries a "Move to…" menu button (`aria-haspopup="menu"`) listing the other columns; choosing one moves the card to that column's entry end (or its end). It is the single-pointer alternative to dragging (WCAG 2.2, 2.5.7). It opens with a click or `↓`, arrow keys move between items, `Enter` or `Space` selects, `Esc` closes. `moveMenu` is `"hover"` (shown on hover or focus, and always on devices without hover; the default), `"always"` or `"none"`.
 - `Enter` on a focused editable card picks it up, so a detail view should be opened from a control inside the card (a button or link keeps its own `Enter`). Key repeat, modifier combinations (such as `Alt+←`) and IME composition are ignored while moving.
-- A step moves one column or one place at a time, so a column that `canMove` rejects blocks the way.
+- A step moves one column or one place at a time, so a column that `canMove` rejects blocks the way; use the menu to jump over it.
 - Keyboard moving does not go through `DragController`, which only handles pointer input.
 
 ### Replacing the drag controller

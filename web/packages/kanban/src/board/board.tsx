@@ -16,6 +16,7 @@ import { useBoardDrag } from "./drag/use-board-drag.ts";
 import { type MoveDecision, useBoardMoves } from "./drag/use-board-moves.ts";
 import { useFocusRequest } from "./drag/use-focus-request.ts";
 import { useKeyboardMove } from "./drag/use-keyboard-move.ts";
+import { useMoveMenu } from "./drag/use-move-menu.ts";
 import {
 	type BoardLocale,
 	type BoardMessages,
@@ -82,6 +83,12 @@ export interface BoardProps<TCard extends BoardCard, TColumn extends BoardColumn
 	 * @default (card) => card.id
 	 */
 	getCardLabel?: (card: TCard) => string;
+	/**
+	 * 每张可拖动卡片上的「移到…」菜单，是拖拽的单指针替代：选择目标列即移到该列的入口端或末尾。
+	 * `"hover"` 在悬停或聚焦卡片时显示（无悬停的触屏设备上常显），`"always"` 常显，`"none"` 关闭。
+	 * @default "hover"
+	 */
+	moveMenu?: "hover" | "always" | "none";
 	/** 替换拖拽控制器，默认是指针控制器。身份变化会重新挂载并取消进行中的拖拽，请保持引用稳定。 */
 	dragController?: DragController;
 	/** 内置文案的语言。 */
@@ -111,6 +118,7 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 	isDraggable,
 	readOnly,
 	getCardLabel,
+	moveMenu = "hover",
 	dragController,
 	locale,
 	messages: messageOverrides,
@@ -157,6 +165,7 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 		focus,
 	});
 	const drag = useBoardDrag({ rootRef, moves, autoSort, controller: dragController, activity });
+	const moveToColumn = useMoveMenu({ moves, autoSort, announce, focus });
 
 	const resolved = resolveBoard({ columns: columnIds, order: keyboard.order }, cards);
 	useFlip(
@@ -164,6 +173,10 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 		`${JSON.stringify(columnIds.map((id) => [id, keyboard.order[id] ?? []]))}|${drag.layoutKey}`,
 		moves.editable,
 	);
+	const targets = [...definitions.values()].map((column) => ({
+		id: column.id,
+		title: column.title ?? column.id,
+	}));
 	const ghostCard = drag.ghost ? cardsById.get(drag.ghost.cardId) : undefined;
 
 	return (
@@ -205,11 +218,26 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 							<CardItem
 								key={card.id}
 								cardId={card.id}
+								columnId={id}
 								origin={isOrigin}
 								draggable={moves.editable && isDraggable?.(card) !== false}
 								lifted={keyboard.liftedId === card.id}
 								settling={card.id === drag.settlingId}
 								hintId={hintId}
+								menu={
+									moveMenu === "none"
+										? undefined
+										: {
+												mode: moveMenu,
+												label: formatMessage(messages.moveToLabel, {
+													card: cardLabel(card.id),
+												}),
+												triggerText: messages.moveTo,
+												targets,
+												onSelect: (columnId) =>
+													moveToColumn(card.id, columnId),
+											}
+								}
 								onKeyDown={(event) => keyboard.onCardKeyDown(event, card.id)}
 							>
 								{renderCard(card, { column, index })}

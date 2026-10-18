@@ -261,7 +261,7 @@ test.describe("触屏（模拟）", () => {
 	});
 });
 
-test.describe("键盘", () => {
+test.describe("键盘与「移到…」菜单", () => {
 	const announcement = (page: Page) => page.locator(".v-kanban__announcer");
 	const focusedCard = (page: Page) =>
 		page.evaluate(() => document.activeElement?.getAttribute("data-card-id") ?? null);
@@ -343,5 +343,95 @@ test.describe("键盘", () => {
 
 		await expect(page.locator(".v-kanban__notice")).toHaveText(/sorted automatically/);
 		expect(await idsIn(page, "done")).toEqual(["a", "e"]);
+	});
+
+	test("「移到…」菜单悬停或聚焦时出现，选择目标列即提交并播报", async ({ page }) => {
+		await open(page);
+		const tools = page.locator('[data-card-id="a"] .v-kanban__card-tools');
+		await expect(tools).toHaveCSS("opacity", "0");
+
+		await page.locator('[data-card-id="a"]').hover();
+		await expect(tools).toHaveCSS("opacity", "1");
+		await page.locator('[data-card-id="a"] [aria-haspopup="menu"]').click();
+		await page.getByRole("menuitem", { name: "In progress" }).click();
+
+		await expect(announcement(page)).toHaveText(
+			"Moved Task A to In progress, position 2 of 2.",
+		);
+		await expect.poll(() => idsIn(page, "doing")).toEqual(["d", "a"]);
+		expect(await page.evaluate(() => window.__moves.length)).toBe(1);
+		expect(await focusedCard(page)).toBe("a");
+	});
+
+	test("只用键盘：Tab 到菜单按钮，方向键只在菜单项间移动，Enter 才选中", async ({ page }) => {
+		await open(page);
+		await page.keyboard.press("Tab"); // 卡片 a
+		await page.keyboard.press("Tab"); // 卡片里使用方渲染的按钮
+		await page.keyboard.press("Tab"); // 菜单按钮
+		await expect(page.locator('[data-card-id="a"] .v-kanban__card-tools')).toHaveCSS(
+			"opacity",
+			"1",
+		);
+
+		await page.keyboard.press("ArrowDown");
+		await expect(page.getByRole("menu")).toBeVisible();
+		await expect(page.getByRole("menuitem", { name: "In progress" })).toBeFocused();
+		await page.keyboard.press("ArrowDown");
+		await expect(page.getByRole("menuitem", { name: "Done" })).toBeFocused();
+		expect(await page.evaluate(() => window.__moves.length)).toBe(0);
+
+		await page.keyboard.press("Enter");
+
+		await expect.poll(() => idsIn(page, "done")).toEqual(["a", "e"]);
+		await expect(page.getByRole("menu")).toHaveCount(0);
+		expect(await focusedCard(page)).toBe("a");
+	});
+
+	test("菜单不被滚动层裁剪，Esc 关闭并把焦点还给按钮", async ({ page }) => {
+		await open(page);
+		await page.locator('[data-card-id="c"]').hover();
+		const trigger = page.locator('[data-card-id="c"] [aria-haspopup="menu"]');
+		await trigger.click();
+
+		const menu = page.getByRole("menu");
+		await expect(menu).toBeVisible();
+		const box = await menu.boundingBox();
+		expect(box && box.width > 0 && box.height > 0).toBe(true);
+		expect(await menu.evaluate((element) => getComputedStyle(element).position)).toBe("fixed");
+
+		await page.keyboard.press("Escape");
+
+		await expect(menu).toHaveCount(0);
+		await expect(trigger).toBeFocused();
+	});
+
+	test("菜单按钮上按下鼠标移动不会拖起卡片", async ({ page }) => {
+		await open(page);
+		await page.locator('[data-card-id="a"]').hover();
+		const box = await page.locator('[data-card-id="a"] [aria-haspopup="menu"]').boundingBox();
+		if (!box) throw new Error("menu trigger not visible");
+
+		await page.mouse.move(box.x + 5, box.y + 5);
+		await page.mouse.down();
+		await page.mouse.move(box.x + 80, box.y + 90, { steps: 4 });
+
+		await expect(page.locator("[data-placeholder]")).toHaveCount(0);
+		await page.mouse.up();
+	});
+
+	test("触屏（无悬停）设备上菜单按钮常显", async ({ browser }) => {
+		const context = await browser.newContext({
+			hasTouch: true,
+			isMobile: true,
+			viewport: { width: 1200, height: 700 },
+		});
+		const page = await context.newPage();
+		await open(page);
+
+		await expect(page.locator('[data-card-id="a"] .v-kanban__card-tools')).toHaveCSS(
+			"opacity",
+			"1",
+		);
+		await context.close();
 	});
 });

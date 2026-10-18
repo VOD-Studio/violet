@@ -483,6 +483,171 @@ describe("键盘细节", () => {
 	});
 });
 
+describe("「移到…」菜单", () => {
+	const trigger = (id: string) =>
+		card(id).querySelector('[aria-haspopup="menu"]') as HTMLButtonElement;
+	const open = (id: string) => {
+		fireEvent.click(trigger(id));
+		return screen.getByRole("menu");
+	};
+
+	it("每张可编辑卡片有菜单按钮：名称带卡片，默认收起", () => {
+		renderBoard();
+
+		const button = trigger("a");
+		expect(button.getAttribute("aria-label")).toBe("Move Task A to another column");
+		expect(button.textContent).toBe("Move to…");
+		expect(button.getAttribute("aria-haspopup")).toBe("menu");
+		expect(button.getAttribute("aria-expanded")).toBe("false");
+		expect(screen.queryByRole("menu")).toBeNull();
+	});
+
+	it("点开后列出其他列，焦点落在第一项", () => {
+		renderBoard();
+
+		const menu = open("a");
+
+		expect(trigger("a").getAttribute("aria-expanded")).toBe("true");
+		const items = within(menu).getAllByRole("menuitem");
+		expect(items.map((item) => item.textContent)).toEqual(["In progress", "Done"]);
+		expect(document.activeElement).toBe(items[0]);
+	});
+
+	it("选择目标列：移到该列末尾，提交、播报、菜单关闭，焦点回到卡片", () => {
+		const onMove = vi.fn<(move: BoardMove) => void>();
+		renderBoard({ onMove });
+
+		fireEvent.click(within(open("a")).getByRole("menuitem", { name: "In progress" }));
+
+		expect(onMove.mock.calls[0][0]).toMatchObject({
+			cardId: "a",
+			to: { columnId: "doing", index: 1 },
+			previousId: "d",
+			nextId: null,
+		});
+		expect(announced()).toBe("Moved Task A to In progress, position 2 of 2.");
+		expect(ids("In progress")).toEqual(["d", "a"]);
+		expect(screen.queryByRole("menu")).toBeNull();
+		expect(document.activeElement).toBe(card("a"));
+	});
+
+	it("键盘：方向键只在菜单项之间移动并循环，不会立即移动卡片；Enter 才选中", () => {
+		const onMove = vi.fn();
+		renderBoard({ onMove });
+		trigger("a").focus();
+
+		fireEvent.keyDown(trigger("a"), { key: "ArrowDown" });
+		const menu = screen.getByRole("menu");
+		const [first, second] = within(menu).getAllByRole("menuitem");
+		expect(document.activeElement).toBe(first);
+
+		fireEvent.keyDown(menu, { key: "ArrowDown" });
+		expect(document.activeElement).toBe(second);
+		fireEvent.keyDown(menu, { key: "ArrowDown" });
+		expect(document.activeElement).toBe(first);
+		fireEvent.keyDown(menu, { key: "ArrowUp" });
+		expect(document.activeElement).toBe(second);
+		fireEvent.keyDown(menu, { key: "Home" });
+		expect(document.activeElement).toBe(first);
+		fireEvent.keyDown(menu, { key: "End" });
+		expect(document.activeElement).toBe(second);
+		expect(onMove).not.toHaveBeenCalled();
+
+		fireEvent.click(second);
+		expect(onMove).toHaveBeenCalledTimes(1);
+	});
+
+	it("Esc 关闭菜单并把焦点还给按钮，不取消别的东西", () => {
+		renderBoard();
+		trigger("a").focus();
+		const menu = open("a");
+
+		fireEvent.keyDown(menu, { key: "Escape" });
+
+		expect(screen.queryByRole("menu")).toBeNull();
+		expect(document.activeElement).toBe(trigger("a"));
+	});
+
+	it("点击菜单之外关闭", () => {
+		renderBoard();
+		open("a");
+
+		fireEvent.pointerDown(document.body);
+
+		expect(screen.queryByRole("menu")).toBeNull();
+	});
+
+	it("移入自动排序列落在入口一端；被 canMove 拒绝时显示原因", () => {
+		const onMove = vi.fn<(move: BoardMove) => void>();
+		renderBoard({
+			onMove,
+			order: { todo: ["a", "b"], doing: ["d"], done: ["c"] },
+			canMove: (move) =>
+				move.cardId === "b" ? { allowed: false, reason: "B is locked" } : { allowed: true },
+		});
+
+		fireEvent.click(within(open("a")).getByRole("menuitem", { name: "Done" }));
+		expect(onMove.mock.calls[0][0]).toMatchObject({
+			to: { columnId: "done", index: 0 },
+			nextId: "c",
+		});
+
+		fireEvent.click(within(open("b")).getByRole("menuitem", { name: "In progress" }));
+		expect(onMove).toHaveBeenCalledTimes(1);
+		expect(document.querySelector(".v-kanban__notice")?.textContent).toBe("B is locked");
+	});
+
+	it("moveMenu 可设为常显或关闭；只读看板与被禁用的卡片没有菜单", () => {
+		const view = renderBoard({ moveMenu: "always" });
+		expect(card("a").querySelector(".v-kanban__card-tools")?.getAttribute("data-menu")).toBe(
+			"always",
+		);
+		view.unmount();
+
+		renderBoard({ moveMenu: "none" });
+		expect(card("a").querySelector(".v-kanban__card-tools")).toBeNull();
+		document.body.innerHTML = "";
+
+		renderBoard({ onMove: undefined });
+		expect(card("a").querySelector(".v-kanban__card-tools")).toBeNull();
+		document.body.innerHTML = "";
+
+		renderBoard({ isDraggable: (task) => task.id !== "a" });
+		expect(card("a").querySelector(".v-kanban__card-tools")).toBeNull();
+		expect(card("b").querySelector(".v-kanban__card-tools")).not.toBeNull();
+	});
+
+	it("菜单按钮上按下指针不会开始拖拽", () => {
+		renderBoard();
+
+		fireEvent.pointerDown(trigger("a"), {
+			pointerId: 1,
+			pointerType: "mouse",
+			isPrimary: true,
+			button: 0,
+			clientX: 5,
+			clientY: 5,
+		});
+		fireEvent.pointerMove(document, {
+			pointerId: 1,
+			pointerType: "mouse",
+			clientX: 80,
+			clientY: 80,
+		});
+
+		expect(document.querySelector("[data-placeholder]")).toBeNull();
+	});
+
+	it("zh-CN：按钮、菜单名称与播报都是中文", () => {
+		renderBoard({ locale: "zh-CN" });
+
+		expect(trigger("a").textContent).toBe("移到…");
+		expect(trigger("a").getAttribute("aria-label")).toBe("把 Task A 移到其他列");
+		fireEvent.click(within(open("a")).getByRole("menuitem", { name: "In progress" }));
+		expect(announced()).toBe("已把 Task A 移到 In progress，第 2 个，共 2 个。");
+	});
+});
+
 describe("本地化：拒绝提示", () => {
 	it("自动排序列内上下移动的拒绝原因是中文", () => {
 		renderBoard({

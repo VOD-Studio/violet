@@ -10,7 +10,8 @@ export type AnnounceKind =
 	| "keyboardMoved"
 	| "keyboardAtEdge"
 	| "keyboardDropped"
-	| "keyboardCancelled";
+	| "keyboardCancelled"
+	| "movedByMenu";
 
 export interface AnnouncerOptions {
 	moves: BoardMoves;

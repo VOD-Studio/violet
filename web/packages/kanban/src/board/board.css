@@ -207,7 +207,8 @@
 }
 
 /* 聚焦环外扩 2px 线宽加 2px 偏移，在滚动层 6px 的内边距之内，不会被裁剪 */
-.v-kanban .v-kanban__card[data-draggable="true"]:focus-visible {
+.v-kanban .v-kanban__card[data-draggable="true"]:focus-visible,
+.v-kanban .v-kanban__move:focus-visible {
 	outline: 2px solid var(--_kanban-focus);
 	outline-offset: 2px;
 }
@@ -216,4 +217,74 @@
 .v-kanban .v-kanban__card[data-lifted="true"] {
 	border-color: var(--_kanban-focus);
 	box-shadow: 0 4px 24px rgb(0 0 0 / 0.05);
+}
+
+.v-kanban .v-kanban__card-tools {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+}
+.v-kanban .v-kanban__card-tools[data-menu="hover"] {
+	opacity: 0;
+	pointer-events: none;
+}
+.v-kanban .v-kanban__card:hover > .v-kanban__card-tools[data-menu="hover"],
+.v-kanban .v-kanban__card:focus-within > .v-kanban__card-tools[data-menu="hover"] {
+	opacity: 1;
+	pointer-events: auto;
+}
+.v-kanban .v-kanban__move {
+	max-width: 9rem;
+	padding: 2px 8px;
+	border: 1px solid var(--_kanban-border);
+	border-radius: 9999px;
+	background: var(--_kanban-card);
+	color: var(--_kanban-muted);
+	font: inherit;
+	font-size: 12px;
+	cursor: pointer;
+}
+
+/* 「移到…」菜单：fixed 定位，不被滚动层裁剪，位置由脚本在打开时算出 */
+.v-kanban .v-kanban__menu {
+	position: fixed;
+	z-index: 60;
+	min-width: 8rem;
+	margin: 0;
+	padding: 4px;
+	border: 1px solid var(--_kanban-border);
+	border-radius: calc(var(--_kanban-radius) - 2px);
+	background: var(--_kanban-card);
+	color: var(--_kanban-foreground);
+	box-shadow: 0 4px 24px rgb(0 0 0 / 0.05);
+	list-style: none;
+}
+.v-kanban .v-kanban__menu-item {
+	display: block;
+	width: 100%;
+	padding: 6px 10px;
+	border: 0;
+	border-radius: 6px;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	font-size: 13px;
+	text-align: start;
+	cursor: pointer;
+}
+.v-kanban .v-kanban__menu-item:hover,
+.v-kanban .v-kanban__menu-item:focus-visible {
+	background: color-mix(in oklab, var(--_kanban-muted) 14%, transparent);
+}
+.v-kanban .v-kanban__menu-item:focus-visible {
+	outline: 2px solid var(--_kanban-focus);
+	outline-offset: -2px;
+}
+
+/* 没有悬停的设备上（触屏）菜单按钮常显 */
+@media (hover: none) {
+	.v-kanban .v-kanban__card-tools[data-menu="hover"] {
+		opacity: 1;
+		pointer-events: auto;
+	}
 }

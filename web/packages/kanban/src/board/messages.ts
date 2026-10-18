@@ -71,6 +71,21 @@ export interface BoardMessages {
 	 * @example "Move cancelled. {card} is back in {column}, position {position} of {count}."
 	 */
 	keyboardCancelled: string;
+	/**
+	 * 通过「移到…」菜单移动后的播报，占位符同 `keyboardPickedUp`。
+	 * @example "Moved {card} to {column}, position {position} of {count}."
+	 */
+	movedByMenu: string;
+	/**
+	 * 「移到…」菜单的占位选项。
+	 * @example "Move to…"
+	 */
+	moveTo: string;
+	/**
+	 * 「移到…」菜单的可访问名称，{card} 替换为卡片名称。
+	 * @example "Move {card} to another column"
+	 */
+	moveToLabel: string;
 }
 
 const messagesByLocale: Record<BoardLocale, BoardMessages> = {
@@ -90,6 +105,9 @@ const messagesByLocale: Record<BoardLocale, BoardMessages> = {
 		keyboardDropped: "Dropped {card}. {column}, position {position} of {count}.",
 		keyboardCancelled:
 			"Move cancelled. {card} is back in {column}, position {position} of {count}.",
+		movedByMenu: "Moved {card} to {column}, position {position} of {count}.",
+		moveTo: "Move to…",
+		moveToLabel: "Move {card} to another column",
 	},
 	"zh-CN": {
 		boardLabel: "看板",
@@ -105,6 +123,9 @@ const messagesByLocale: Record<BoardLocale, BoardMessages> = {
 		keyboardAtEdge: "已到边缘，无法继续移动。{column}，第 {position} 个，共 {count} 个。",
 		keyboardDropped: "已放下 {card}。{column}，第 {position} 个，共 {count} 个。",
 		keyboardCancelled: "已取消移动。{card} 回到 {column}，第 {position} 个，共 {count} 个。",
+		movedByMenu: "已把 {card} 移到 {column}，第 {position} 个，共 {count} 个。",
+		moveTo: "移到…",
+		moveToLabel: "把 {card} 移到其他列",
 	},
 };
 
