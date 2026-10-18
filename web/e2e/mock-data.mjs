@@ -273,6 +273,21 @@ export const ROADMAP_EMBED_POST = {
 	tags: [],
 };
 
+/** 画布嵌入契约用文章：看板画布、整个项目的关系图与以 #1 为根的关系图。 */
+export const ROADMAP_CANVAS_POST = {
+	...ROADMAP_EMBED_POST,
+	id: "32000000-0000-0000-0000-000000000002",
+	title: "路线图画布契约文章",
+	slug: "roadmap-canvas-embeds",
+	content_html: [
+		"<p>画布之前的一段话。</p>",
+		roadmapFence({ project: "roadmap-contract", display: "canvas" }),
+		roadmapFence({ project: "roadmap-contract", display: "canvas", view: "graph" }),
+		roadmapFence({ project: "roadmap-contract", display: "canvas", view: "graph", item: 1 }),
+		`<p>${"画布之后的长段落，用来让页面可以滚动。".repeat(60)}</p>`,
+	].join(""),
+};
+
 const summarize = (progress, inProgress, latestCompleted) => ({
 	progress,
 	in_progress: inProgress,
@@ -402,6 +417,8 @@ export function handle(method, pathname, search, cookie = "") {
 	if (pathname === "/api/v1/settings") return { status: 200, body: envelope({}) };
 	if (pathname === "/api/v1/announcements") return { status: 200, body: envelope([]) };
 	if (pathname === "/api/v1/projects") return { status: 200, body: envelope(PROJECTS_FIXTURE) };
+	if (pathname === `/api/v1/posts/${ROADMAP_CANVAS_POST.slug}`)
+		return { status: 200, body: envelope(ROADMAP_CANVAS_POST) };
 	if (pathname === `/api/v1/posts/${ROADMAP_EMBED_POST.slug}`)
 		return { status: 200, body: envelope(ROADMAP_EMBED_POST) };
 	const roadmap = /^\/api\/v1\/projects\/by-slug\/([^/]+)\/roadmap$/.exec(pathname);

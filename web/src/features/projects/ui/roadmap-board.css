@@ -31,11 +31,16 @@
 .roadmap-board .v-kanban .v-kanban__column {
 	min-height: 10rem;
 	padding: 14px;
+}
+.roadmap-board .v-kanban .v-kanban__column,
+.roadmap-board .v-kanban .v-kanban-graph__zone {
 	border: 0;
 	border-radius: 16px;
 	background: color-mix(in oklab, var(--muted) 70%, transparent);
 }
-.roadmap-board .v-kanban [data-column-id="in_progress"] {
+/* 关系图的底色画在分区上：卡片所在的分组层盖在分区之上，给它上色会遮住列标题 */
+.roadmap-board .v-kanban .v-kanban__column[data-column-id="in_progress"],
+.roadmap-board .v-kanban .v-kanban-graph__zone[data-zone-id="in_progress"] {
 	background: var(--accent);
 }
 .roadmap-board .v-kanban .v-kanban__column-header {
@@ -67,13 +72,16 @@
 	height: 10px;
 	border-radius: 9999px;
 }
-.roadmap-board .v-kanban [data-column-id="planned"] .v-kanban__column-title::before {
+.roadmap-board .v-kanban [data-column-id="planned"] .v-kanban__column-title::before,
+.roadmap-board .v-kanban [data-zone-id="planned"] .v-kanban__column-title::before {
 	border: 1.5px solid var(--muted-foreground);
 }
-.roadmap-board .v-kanban [data-column-id="in_progress"] .v-kanban__column-title::before {
+.roadmap-board .v-kanban [data-column-id="in_progress"] .v-kanban__column-title::before,
+.roadmap-board .v-kanban [data-zone-id="in_progress"] .v-kanban__column-title::before {
 	background: var(--primary);
 }
-.roadmap-board .v-kanban [data-column-id="completed"] .v-kanban__column-title::before {
+.roadmap-board .v-kanban [data-column-id="completed"] .v-kanban__column-title::before,
+.roadmap-board .v-kanban [data-zone-id="completed"] .v-kanban__column-title::before {
 	background: var(--success);
 }
 
@@ -114,4 +122,9 @@
 /* 筛选时禁拖的说明由筛选栏统一给出（画布外、紧挨着筛选控件）；看板自带的同一句不再重复显示 */
 .roadmap-board .v-kanban .v-kanban__filter-hint {
 	display: none;
+}
+
+/* 关系图的节点尺寸固定，内边距收紧一些，编号与两行标题才放得下 */
+.roadmap-board .v-kanban .v-kanban-graph__card {
+	padding: 10px 12px;
 }

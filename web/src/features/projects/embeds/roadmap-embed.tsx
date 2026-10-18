@@ -11,6 +11,7 @@ import { ChecklistMeter } from "../ui/ChecklistMeter";
 import { RoadmapItemDialog } from "../ui/RoadmapItemDialog";
 import { RoadmapProgress } from "../ui/RoadmapProgress";
 import { StageDot } from "../ui/StageDot";
+import { RoadmapCanvasEmbed } from "./RoadmapCanvasEmbed";
 import { parseRoadmapEmbed, type RoadmapEmbedConfig } from "./roadmap-embed-config";
 
 const FOCUS =
@@ -25,7 +26,7 @@ function EmbedFrame({
 	busy,
 	children,
 }: {
-	variant: "item" | "project" | "notice";
+	variant: "item" | "project" | "board" | "graph" | "notice";
 	busy?: boolean;
 	children: ReactNode;
 }) {
@@ -226,19 +227,62 @@ function ProjectCard({ detail }: { detail: RoadmapDetail }) {
 	);
 }
 
+/** 看板画布或关系画布：标题行写明是谁的路线图，条目点开看只读详情。 */
+function CanvasEmbed({
+	detail,
+	view,
+	root,
+}: {
+	detail: RoadmapDetail;
+	view: "board" | "graph";
+	root?: RoadmapItem;
+}) {
+	const { show, dialog } = useItemDialog(detail);
+	const title = root
+		? `#${root.number} ${root.title} 的关系`
+		: view === "graph"
+			? `${detail.project.title} 的条目关系`
+			: `${detail.project.title} 的路线图`;
+	return (
+		<EmbedFrame variant={view}>
+			<RoadmapCanvasEmbed
+				detail={detail}
+				view={view}
+				root={root}
+				onOpen={show}
+				header={
+					<div className="flex items-center justify-between gap-4">
+						<p className="font-reading text-sm font-medium">{title}</p>
+						<ProjectLink detail={detail}>在项目页查看</ProjectLink>
+					</div>
+				}
+			/>
+			{dialog}
+		</EmbedFrame>
+	);
+}
+
 function RoadmapEmbedBody({ config }: { config: RoadmapEmbedConfig }) {
 	const { data } = useSuspenseQuery(roadmapEmbedQueryOptions(config.project));
 	if (data.status === "missing") return <Notice>项目「{config.project}」不存在或已删除</Notice>;
 	if (data.status === "error") return <Notice>路线图暂时无法读取，请稍后刷新</Notice>;
-	if (config.item === undefined) return <ProjectCard detail={data.detail} />;
-	const item = data.detail.items.find((entry) => entry.number === config.item);
-	if (!item)
+	const item =
+		config.item === undefined
+			? undefined
+			: data.detail.items.find((entry) => entry.number === config.item);
+	if (config.item !== undefined && !item)
 		return (
 			<Notice>
 				{data.detail.project.title} 的条目 #{config.item} 不存在或已删除
 			</Notice>
 		);
-	return <ItemCard detail={data.detail} item={item} />;
+	if (config.display === "canvas")
+		return <CanvasEmbed detail={data.detail} view={config.view ?? "board"} root={item} />;
+	return item ? (
+		<ItemCard detail={data.detail} item={item} />
+	) : (
+		<ProjectCard detail={data.detail} />
+	);
 }
 
 /** 文章里的 `roadmap` 卡片：读阅读时的当前公开数据，服务端渲染时直接输出内容。 */

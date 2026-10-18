@@ -49,3 +49,6 @@ export declare const ROADMAP_FIXTURE: {
 
 /** 文章嵌入契约用文章：正文里有条目卡片、项目卡片与不存在的条目。 */
 export declare const ROADMAP_EMBED_POST: { title: string; slug: string; content_html: string };
+
+/** 画布嵌入契约用文章：看板画布、整个项目的关系图与以 #1 为根的关系图。 */
+export declare const ROADMAP_CANVAS_POST: { title: string; slug: string; content_html: string };
