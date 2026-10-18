@@ -1,4 +1,5 @@
 import type { Point } from "../../core/index.ts";
+import { HOLD_PENDING_ATTRIBUTE } from "../../pan-region.ts";
 import type { DragController, DragHost } from "./types.ts";
 
 /** 默认指针控制器的参数。 */
@@ -72,6 +73,7 @@ export function createPointerController(options: PointerControllerOptions = {}):
 				else target.removeEventListener(type, listener, capture);
 			};
 			const listen = (active: boolean) => {
+				toggle(active, document, "pointerdown", onOtherDown, true);
 				toggle(active, document, "pointermove", onMove);
 				toggle(active, document, "pointerup", onUp);
 				toggle(active, document, "pointercancel", onCancel);
@@ -106,6 +108,7 @@ export function createPointerController(options: PointerControllerOptions = {}):
 			function begin() {
 				if (!candidate) return;
 				clearTimeout(candidate.timer);
+				root.removeAttribute(HOLD_PENDING_ATTRIBUTE);
 				dragging = true;
 				try {
 					root.setPointerCapture?.(candidate.pointerId);
@@ -122,6 +125,7 @@ export function createPointerController(options: PointerControllerOptions = {}):
 				const wasDragging = dragging;
 				const { pointerId, pointerType, timer } = candidate;
 				clearTimeout(timer);
+				root.removeAttribute(HOLD_PENDING_ATTRIBUTE);
 				candidate = null;
 				dragging = false;
 				listen(false);
@@ -153,6 +157,12 @@ export function createPointerController(options: PointerControllerOptions = {}):
 				} else if (distance > threshold) begin();
 			}
 
+			/** 长按等待期间又落下一根手指：那是捏合，不是要拖这张卡片。 */
+			function onOtherDown(event: PointerEvent) {
+				if (!candidate || dragging || event.pointerId === candidate.pointerId) return;
+				if (candidate.pointerType === "touch") finish("cancel", false);
+			}
+
 			function onUp(event: PointerEvent) {
 				if (candidate && event.pointerId === candidate.pointerId) finish("drop", true);
 			}
@@ -178,8 +188,10 @@ export function createPointerController(options: PointerControllerOptions = {}):
 					last: point(event),
 				};
 				listen(true);
-				if (event.pointerType === "touch")
+				if (event.pointerType === "touch") {
+					root.setAttribute(HOLD_PENDING_ATTRIBUTE, "true");
 					candidate.timer = setTimeout(begin, touchHoldDelay);
+				}
 			}
 
 			root.addEventListener("pointerdown", onDown);

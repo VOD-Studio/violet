@@ -254,6 +254,86 @@ describe("触屏", () => {
 		expect(calls).toEqual([]);
 	});
 
+	it("长按等待期间看板根上带 data-kanban-holding：开始拖拽、放弃、抬起与卸载后都移除", () => {
+		const { root, card, detach } = setup();
+		const touchDown = () =>
+			card.dispatchEvent(
+				pointer("pointerdown", { pointerType: "touch", clientX: 20, clientY: 20 }),
+			);
+
+		touchDown();
+		expect(root.hasAttribute("data-kanban-holding")).toBe(true);
+		vi.advanceTimersByTime(260);
+		expect(root.hasAttribute("data-kanban-holding")).toBe(false);
+		document.dispatchEvent(pointer("pointerup", { pointerType: "touch" }));
+
+		touchDown();
+		document.dispatchEvent(
+			pointer("pointermove", { pointerType: "touch", clientX: 20, clientY: 60 }),
+		);
+		expect(root.hasAttribute("data-kanban-holding")).toBe(false);
+
+		touchDown();
+		document.dispatchEvent(pointer("pointerup", { pointerType: "touch" }));
+		expect(root.hasAttribute("data-kanban-holding")).toBe(false);
+
+		touchDown();
+		detach();
+		expect(root.hasAttribute("data-kanban-holding")).toBe(false);
+	});
+
+	it("鼠标按下不带 data-kanban-holding", () => {
+		const { root, card } = setup();
+
+		card.dispatchEvent(pointer("pointerdown", { clientX: 10, clientY: 10 }));
+
+		expect(root.hasAttribute("data-kanban-holding")).toBe(false);
+	});
+
+	it("长按等待期间又落下第二根手指（捏合）：放弃这次长按，不开始拖拽", () => {
+		const { root, card, calls } = setup();
+		card.dispatchEvent(
+			pointer("pointerdown", { pointerType: "touch", clientX: 20, clientY: 20 }),
+		);
+
+		root.querySelector("#outside")?.dispatchEvent(
+			pointer("pointerdown", {
+				pointerType: "touch",
+				pointerId: 2,
+				isPrimary: false,
+				clientX: 300,
+				clientY: 40,
+			}),
+		);
+		vi.advanceTimersByTime(1000);
+
+		expect(calls).toEqual([]);
+		expect(root.hasAttribute("data-kanban-holding")).toBe(false);
+	});
+
+	it("拖拽已经开始之后落下的第二根手指不打断拖拽", () => {
+		const { root, card, calls } = setup();
+		card.dispatchEvent(
+			pointer("pointerdown", { pointerType: "touch", clientX: 20, clientY: 20 }),
+		);
+		vi.advanceTimersByTime(260);
+
+		root.querySelector("#outside")?.dispatchEvent(
+			pointer("pointerdown", {
+				pointerType: "touch",
+				pointerId: 2,
+				isPrimary: false,
+				clientX: 300,
+				clientY: 40,
+			}),
+		);
+		document.dispatchEvent(
+			pointer("pointermove", { pointerType: "touch", clientX: 50, clientY: 50 }),
+		);
+
+		expect(calls.at(-1)).toEqual(["move", { x: 50, y: 50 }]);
+	});
+
 	it("拖拽开始后阻止触摸滚动，拖拽之外不干预滚动", () => {
 		const { card } = setup();
 		const before = new Event("touchmove", { bubbles: true, cancelable: true });
