@@ -156,6 +156,8 @@ describe("routeEdge", () => {
 		const controls = down.d.match(/-?\d+(?:\.\d+)?/g)?.map(Number) ?? [];
 		expect(controls[2]).toBeGreaterThan(100);
 		expect(controls[4]).toBeGreaterThan(100);
+		// 三次贝塞尔曲线最远伸出控制点距离的 3/4；要落在滚动层 6px 的内边距之内，最后一列的弧线才不被截掉
+		expect(0.75 * (controls[2] - 100)).toBeLessThanOrEqual(6);
 	});
 
 	it("同输入同输出，退化输入（同一矩形）不产生 NaN", () => {

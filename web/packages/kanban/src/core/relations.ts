@@ -121,8 +121,11 @@ export interface EdgeRoute {
 /** 水平方向上控制点离端点的距离范围。 */
 const MIN_REACH = 24;
 const MAX_REACH = 120;
-/** 同一列里的两张卡片之间，线从右缘向外鼓出的距离。 */
-const BULGE = 32;
+/**
+ * 同一列里的两张卡片之间，线从右缘向外鼓出的控制距离。曲线最远伸出它的 3/4，要不超过滚动层的内边距（6px），
+ * 最后一列里的弧线才不会被滚动层裁掉。
+ */
+const BULGE = 8;
 
 const round = (value: number) => Math.round(value * 100) / 100;
 const middle = (rect: Rect) => (rect.top + rect.bottom) / 2;
