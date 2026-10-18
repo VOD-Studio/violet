@@ -113,6 +113,36 @@ export interface BoardMessages {
 	 * @example "A filter is on, so cards can't be moved. Clear it to move cards."
 	 */
 	filterDragDisabled: string;
+	/**
+	 * 列底「添加卡片」按钮的文字。
+	 * @example "Add card"
+	 */
+	addCard: string;
+	/**
+	 * 新卡片标题输入框的可访问名称，{column} 替换为列标题。
+	 * @example "New card title in {column}"
+	 */
+	addCardLabel: string;
+	/**
+	 * 新卡片标题输入框的占位文字。
+	 * @example "Card title"
+	 */
+	addCardPlaceholder: string;
+	/**
+	 * 提交新卡片的按钮文字。
+	 * @example "Add"
+	 */
+	addCardSubmit: string;
+	/**
+	 * 关闭添加表单的按钮文字。
+	 * @example "Cancel"
+	 */
+	addCardCancel: string;
+	/**
+	 * 添加卡片失败时的提示。
+	 * @example "The card couldn't be saved. Try again."
+	 */
+	addCardFailed: string;
 }
 
 const messagesByLocale: Record<BoardLocale, BoardMessages> = {
@@ -140,6 +170,12 @@ const messagesByLocale: Record<BoardLocale, BoardMessages> = {
 		cardCountFiltered: "Cards: {matched} of {count}",
 		filteredOut: "Doesn't match the filter",
 		filterDragDisabled: "A filter is on, so cards can't be moved. Clear it to move cards.",
+		addCard: "Add card",
+		addCardLabel: "New card title in {column}",
+		addCardPlaceholder: "Card title",
+		addCardSubmit: "Add",
+		addCardCancel: "Cancel",
+		addCardFailed: "The card couldn't be saved. Try again.",
 	},
 	"zh-CN": {
 		boardLabel: "看板",
@@ -163,6 +199,12 @@ const messagesByLocale: Record<BoardLocale, BoardMessages> = {
 		cardCountFiltered: "卡片数：匹配 {matched}，共 {count}",
 		filteredOut: "不符合筛选条件",
 		filterDragDisabled: "筛选生效中，不能拖动卡片。清除筛选后再试。",
+		addCard: "添加卡片",
+		addCardLabel: "{column} 中的新卡片标题",
+		addCardPlaceholder: "卡片标题",
+		addCardSubmit: "添加",
+		addCardCancel: "取消",
+		addCardFailed: "卡片未能保存，请重试",
 	},
 };
 

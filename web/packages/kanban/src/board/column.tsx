@@ -1,6 +1,7 @@
 import { type ReactNode, useId } from "react";
 import { formatMessage } from "../locale.ts";
 import type { BoardMessages } from "./messages.ts";
+import { QuickAdd, type QuickAddProps } from "./quick-add.tsx";
 
 export interface ColumnViewProps {
 	id: string;
@@ -15,6 +16,8 @@ export interface ColumnViewProps {
 	collapsible: boolean;
 	collapsed: boolean;
 	onToggle(): void;
+	/** 列底快速添加；不提供则不显示。 */
+	quickAdd?: Pick<QuickAddProps, "onSubmit" | "onError" | "onOpen">;
 	messages: BoardMessages;
 	/** 卡片列表或空状态。 */
 	children: ReactNode;
@@ -34,6 +37,7 @@ export function ColumnView({
 	collapsible,
 	collapsed,
 	onToggle,
+	quickAdd,
 	messages,
 	children,
 }: ColumnViewProps) {
@@ -96,6 +100,15 @@ export function ColumnView({
 			<div id={bodyId} className="v-kanban__column-body">
 				<div className="v-kanban__column-body-inner" inert={collapsed}>
 					{children}
+					{quickAdd ? (
+						<QuickAdd
+							columnTitle={title}
+							messages={messages}
+							onSubmit={quickAdd.onSubmit}
+							onError={quickAdd.onError}
+							onOpen={quickAdd.onOpen}
+						/>
+					) : null}
 				</div>
 			</div>
 		</div>

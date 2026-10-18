@@ -82,6 +82,73 @@
 	}
 }
 
+/* 列底快速添加 */
+.v-kanban .v-kanban__add {
+	width: 100%;
+	padding: 6px 10px;
+	border: 1px dashed var(--_kanban-border);
+	border-radius: calc(var(--_kanban-radius) - 2px);
+	background: transparent;
+	color: var(--_kanban-muted);
+	font: inherit;
+	text-align: start;
+	cursor: pointer;
+}
+.v-kanban .v-kanban__add:hover {
+	background: color-mix(in oklab, var(--_kanban-muted) 8%, transparent);
+}
+.v-kanban .v-kanban__add-form {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+.v-kanban .v-kanban__add-input {
+	width: 100%;
+	padding: 6px 10px;
+	border: 1px solid var(--_kanban-border);
+	border-radius: calc(var(--_kanban-radius) - 2px);
+	background: var(--_kanban-card);
+	color: inherit;
+	font: inherit;
+}
+.v-kanban .v-kanban__add-input[aria-invalid="true"] {
+	border-color: var(--_kanban-danger);
+}
+.v-kanban .v-kanban__add-actions {
+	display: flex;
+	gap: 6px;
+}
+.v-kanban .v-kanban__add-submit,
+.v-kanban .v-kanban__add-cancel {
+	padding: 4px 12px;
+	border: 1px solid var(--_kanban-border);
+	border-radius: 9999px;
+	background: var(--_kanban-card);
+	color: inherit;
+	font: inherit;
+	font-size: 13px;
+	cursor: pointer;
+}
+.v-kanban .v-kanban__add-cancel {
+	color: var(--_kanban-muted);
+}
+.v-kanban .v-kanban__add-submit[aria-disabled="true"] {
+	cursor: progress;
+	opacity: 0.6;
+}
+.v-kanban .v-kanban__add-error {
+	margin: 0;
+	color: var(--_kanban-danger);
+	font-size: 12px;
+}
+.v-kanban .v-kanban__add:focus-visible,
+.v-kanban .v-kanban__add-input:focus-visible,
+.v-kanban .v-kanban__add-submit:focus-visible,
+.v-kanban .v-kanban__add-cancel:focus-visible {
+	outline: 2px solid var(--_kanban-focus);
+	outline-offset: 2px;
+}
+
 /* 筛选：不匹配的卡片淡化，位置不变；仍可点击与聚焦 */
 .v-kanban .v-kanban__card[data-dimmed="true"] {
 	opacity: 0.4;

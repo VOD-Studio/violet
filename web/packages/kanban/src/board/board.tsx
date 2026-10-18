@@ -37,6 +37,17 @@ export interface BoardColumn {
 	 * @default undefined 跟随看板
 	 */
 	collapsible?: boolean;
+	/**
+	 * 提供 `onAddCard` 时，这一列是否有列底快速添加；`false` 关闭这一列的入口。
+	 * @default undefined 跟随看板
+	 */
+	quickAdd?: boolean;
+}
+
+/** 快速添加提交的新卡片：所在列与标题。 */
+export interface NewCard {
+	columnId: string;
+	title: string;
 }
 
 /**
@@ -108,6 +119,14 @@ export interface BoardProps<TCard extends BoardCard, TColumn extends BoardColumn
 	/** 折叠状态变化时调用，参数是完整的折叠列 id。卡片被移到折叠的列时，该列会自动展开并通知。 */
 	onCollapsedColumnsChange?: (collapsed: string[]) => void;
 	/**
+	 * 列底快速添加：只填标题，保存由使用方负责。提供它即显示入口（只读看板除外）。
+	 *
+	 * 返回的 Promise 被拒绝（或同步抛错）表示保存失败：保留已输入的标题、显示错误并触发 `onAddCardError`。
+	 */
+	onAddCard?: (card: NewCard) => void | Promise<void>;
+	/** `onAddCard` 失败时调用。 */
+	onAddCardError?: (error: unknown, card: NewCard) => void;
+	/**
 	 * 筛选谓词：不匹配的卡片淡化并保持原位。提供它即表示筛选生效，此时整板禁用移动
 	 * （拖拽、键盘、「移到…」菜单）并给出提示；不筛选时传 `undefined`。谓词抛错的卡片按匹配处理。
 	 */
@@ -146,6 +165,8 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 	collapsedColumns,
 	defaultCollapsedColumns,
 	onCollapsedColumnsChange,
+	onAddCard,
+	onAddCardError,
 	filter,
 	dragController,
 	locale,
@@ -347,6 +368,20 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 								engage();
 								collapse.toggle(id);
 							}}
+							quickAdd={
+								onAddCard && !readOnly && column.quickAdd !== false
+									? {
+											onSubmit: (cardTitle) =>
+												onAddCard({ columnId: id, title: cardTitle }),
+											onError: (error, cardTitle) =>
+												onAddCardError?.(error, {
+													columnId: id,
+													title: cardTitle,
+												}),
+											onOpen: engage,
+										}
+									: undefined
+							}
 							messages={messages}
 						>
 							{items.length > 0 ? (

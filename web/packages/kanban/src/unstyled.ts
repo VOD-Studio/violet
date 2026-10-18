@@ -1,4 +1,4 @@
-export type { BoardColumn, BoardProps } from "./board/board.tsx";
+export type { BoardColumn, BoardProps, NewCard } from "./board/board.tsx";
 export { Board } from "./board/board.tsx";
 export type { PointerControllerOptions } from "./board/drag/pointer-controller.ts";
 export { createPointerController } from "./board/drag/pointer-controller.ts";

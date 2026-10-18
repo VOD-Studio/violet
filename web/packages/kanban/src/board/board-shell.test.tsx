@@ -255,6 +255,239 @@ describe("列折叠", () => {
 	});
 });
 
+describe("列底快速添加", () => {
+	const open = (name: string) =>
+		fireEvent.click(within(column(name)).getByRole("button", { name: "Add card" }));
+	const input = (name: string) =>
+		within(column(name)).getByRole("textbox", { name: `New card title in ${name}` });
+	const type = (name: string, value: string) =>
+		fireEvent.change(input(name), { target: { value } });
+	const submit = (name: string) =>
+		fireEvent.submit(input(name).closest("form") as HTMLFormElement);
+
+	it("没有 onAddCard、只读或列声明 quickAdd: false 时不显示", () => {
+		const { unmount } = renderBoard();
+		expect(screen.queryByRole("button", { name: "Add card" })).toBeNull();
+		unmount();
+
+		const { unmount: second } = renderBoard({ onAddCard: () => {}, readOnly: true });
+		expect(screen.queryByRole("button", { name: "Add card" })).toBeNull();
+		second();
+
+		renderBoard({
+			onAddCard: () => {},
+			columns: [
+				{ id: "todo", title: "Todo" },
+				{ id: "doing", title: "Doing", quickAdd: false },
+				{ id: "done", title: "Done" },
+			],
+		});
+		expect(within(column("Todo")).queryByRole("button", { name: "Add card" })).not.toBeNull();
+		expect(within(column("Doing")).queryByRole("button", { name: "Add card" })).toBeNull();
+	});
+
+	it("点击后出现输入框，提交时去掉首尾空白并带上列 id；成功后清空并保持打开与聚焦，方便连续添加", async () => {
+		const onAddCard = vi.fn();
+		renderBoard({ onAddCard });
+		open("Doing");
+		expect(document.activeElement).toBe(input("Doing"));
+
+		type("Doing", "  New idea  ");
+		await act(async () => submit("Doing"));
+
+		expect(onAddCard).toHaveBeenCalledWith({ columnId: "doing", title: "New idea" });
+		expect((input("Doing") as HTMLInputElement).value).toBe("");
+		expect(document.activeElement).toBe(input("Doing"));
+	});
+
+	it("空白标题不提交", async () => {
+		const onAddCard = vi.fn();
+		renderBoard({ onAddCard });
+		open("Todo");
+
+		type("Todo", "   ");
+		await act(async () => submit("Todo"));
+
+		expect(onAddCard).not.toHaveBeenCalled();
+	});
+
+	it("保存失败（拒绝或同步抛错）：保留已输入的标题，显示错误并通知 onAddCardError", async () => {
+		const failure = new Error("nope");
+		const onAddCardError = vi.fn();
+		renderBoard({
+			onAddCard: () => Promise.reject(failure),
+			onAddCardError,
+		});
+		open("Todo");
+
+		type("Todo", "Keep me");
+		await act(async () => submit("Todo"));
+
+		expect((input("Todo") as HTMLInputElement).value).toBe("Keep me");
+		expect(within(column("Todo")).getByRole("alert").textContent).toMatch(/couldn't be saved/i);
+		expect(onAddCardError).toHaveBeenCalledWith(failure, {
+			columnId: "todo",
+			title: "Keep me",
+		});
+	});
+
+	it("同步抛错与拒绝一样处理", async () => {
+		const onAddCardError = vi.fn();
+		renderBoard({
+			onAddCard: () => {
+				throw new Error("sync");
+			},
+			onAddCardError,
+		});
+		open("Todo");
+
+		type("Todo", "x");
+		await act(async () => submit("Todo"));
+
+		expect(onAddCardError).toHaveBeenCalledTimes(1);
+		expect(within(column("Todo")).getByRole("alert")).toBeTruthy();
+	});
+
+	it("再次输入会清除上一次的错误", async () => {
+		renderBoard({ onAddCard: () => Promise.reject(new Error("nope")) });
+		open("Todo");
+		type("Todo", "a");
+		await act(async () => submit("Todo"));
+		expect(within(column("Todo")).queryByRole("alert")).not.toBeNull();
+
+		type("Todo", "ab");
+
+		expect(within(column("Todo")).queryByRole("alert")).toBeNull();
+	});
+
+	it("保存期间不重复提交，输入框保持可聚焦（只读而非禁用）", async () => {
+		let resolve = () => {};
+		const onAddCard = vi.fn(
+			() =>
+				new Promise<void>((done) => {
+					resolve = done;
+				}),
+		);
+		renderBoard({ onAddCard });
+		open("Todo");
+		type("Todo", "once");
+
+		act(() => submit("Todo"));
+		act(() => submit("Todo"));
+
+		expect(onAddCard).toHaveBeenCalledTimes(1);
+		expect((input("Todo") as HTMLInputElement).readOnly).toBe(true);
+		expect(input("Todo").getAttribute("aria-busy")).toBe("true");
+		await act(async () => resolve());
+		expect((input("Todo") as HTMLInputElement).readOnly).toBe(false);
+	});
+
+	it("Esc 关闭并把焦点还给「添加」按钮；空输入失去焦点也关闭，有内容时保持", () => {
+		renderBoard({ onAddCard: () => {} });
+		open("Todo");
+
+		fireEvent.keyDown(input("Todo"), { key: "Escape" });
+
+		expect(within(column("Todo")).queryByRole("textbox")).toBeNull();
+		expect(document.activeElement).toBe(
+			within(column("Todo")).getByRole("button", { name: "Add card" }),
+		);
+
+		open("Todo");
+		fireEvent.blur(input("Todo"));
+		expect(within(column("Todo")).queryByRole("textbox")).toBeNull();
+
+		open("Todo");
+		type("Todo", "draft");
+		fireEvent.blur(input("Todo"));
+		expect(within(column("Todo")).queryByRole("textbox")).not.toBeNull();
+	});
+
+	it("Esc 只关闭表单，不再往外传（不会连带退出全屏）", () => {
+		renderBoard({ onAddCard: () => {} });
+		const outside = vi.fn();
+		document.addEventListener("keydown", outside);
+		open("Todo");
+
+		fireEvent.keyDown(input("Todo"), { key: "Escape" });
+		document.removeEventListener("keydown", outside);
+
+		expect(outside).not.toHaveBeenCalled();
+	});
+
+	it("保存期间关掉表单：之后才失败时不弄脏下一次打开，但仍通知 onAddCardError", async () => {
+		let reject: (reason: unknown) => void = () => {};
+		const onAddCardError = vi.fn();
+		renderBoard({
+			onAddCard: () =>
+				new Promise<void>((_, fail) => {
+					reject = fail;
+				}),
+			onAddCardError,
+		});
+		open("Todo");
+		type("Todo", "slow");
+		act(() => submit("Todo"));
+
+		fireEvent.keyDown(input("Todo"), { key: "Escape" });
+		await act(async () => reject(new Error("late")));
+		open("Todo");
+
+		expect((input("Todo") as HTMLInputElement).value).toBe("");
+		expect(within(column("Todo")).queryByRole("alert")).toBeNull();
+		expect(input("Todo").getAttribute("aria-invalid")).toBeNull();
+		expect(onAddCardError).toHaveBeenCalledTimes(1);
+	});
+
+	it("打开添加表单算用户在操作：告知外层画布", () => {
+		const { container } = renderBoard({ onAddCard: () => {} });
+		const notified = vi.fn();
+		container.addEventListener(EDITING_EVENT, notified);
+
+		open("Todo");
+
+		expect(notified).toHaveBeenCalledTimes(1);
+	});
+
+	it("「取消」按钮关闭表单", () => {
+		renderBoard({ onAddCard: () => {} });
+		open("Todo");
+		type("Todo", "draft");
+
+		fireEvent.click(within(column("Todo")).getByRole("button", { name: "Cancel" }));
+
+		expect(within(column("Todo")).queryByRole("textbox")).toBeNull();
+	});
+
+	it("在输入框里按键不会触发卡片的键盘移动", () => {
+		renderBoard({ onAddCard: () => {}, onMove: () => {} });
+		open("Todo");
+
+		fireEvent.keyDown(input("Todo"), { key: " " });
+		fireEvent.keyDown(input("Todo"), { key: "Enter" });
+
+		expect(document.querySelector("[data-lifted]")).toBeNull();
+	});
+
+	it("折叠的列里添加入口一起不可用（inert）", () => {
+		renderBoard({ onAddCard: () => {}, collapsible: true, defaultCollapsedColumns: ["todo"] });
+
+		expect(
+			body("Todo").querySelector(".v-kanban__column-body-inner")?.hasAttribute("inert"),
+		).toBe(true);
+	});
+
+	it("zh-CN 文案", () => {
+		renderBoard({ onAddCard: () => {}, locale: "zh-CN" });
+
+		fireEvent.click(within(column("Todo")).getByRole("button", { name: "添加卡片" }));
+
+		expect(
+			within(column("Todo")).getByRole("textbox", { name: "Todo 中的新卡片标题" }),
+		).toBeTruthy();
+	});
+});
+
 describe("筛选", () => {
 	const filter = (task: Task) => task.id === "a" || task.id === "d";
 

@@ -109,7 +109,7 @@ try {
 	// 公开类型：泛型卡片只要求 id，使用方自己的列类型贯穿插槽；缺 id 的卡片必须被拒绝。
 	write(
 		"types.tsx",
-		`import { Board, createPointerController, type BoardCard, type BoardColumn, type BoardLocale, type BoardMessages, type BoardMove, type BoardProps, type BoardState, type DragController, type DragHost, type MoveDecision } from "${metadata.name}";
+		`import { Board, createPointerController, type NewCard, type BoardCard, type BoardColumn, type BoardLocale, type BoardMessages, type BoardMove, type BoardProps, type BoardState, type DragController, type DragHost, type MoveDecision } from "${metadata.name}";
 import { Board as Unstyled, HistoryButtons, useHistoryAnnouncement, useHistoryShortcuts, useHistoryState, type HistoryCommand, type CommandHistory } from "${metadata.name}/unstyled";
 import { createHistory, invertMove, fitViewport, zoomAt, DEFAULT_SCALE_LIMITS, type Viewport } from "${metadata.name}/core";
 import { Canvas, type CanvasHandle, type CanvasMessages } from "${metadata.name}/canvas";
@@ -131,9 +131,10 @@ export const nodes = [
 		onMove={async (move) => { await Promise.resolve(move.cardId); }} canMove={canMove} onMoveError={(error, move) => console.error(error, move.previousId)}
 		isDraggable={(task) => task.title !== ""} readOnly={false} dragController={controller} getCardLabel={(task) => task.title} moveMenu="always" />,
 	<Unstyled columns={stages} cards={tasks} order={{}} renderCard={(task) => task.title} />,
-	<Board columns={[{ id: "todo", title: "Todo", collapsible: false }]} cards={tasks} order={{ todo: ["a"] }}
+	<Board columns={[{ id: "todo", title: "Todo", collapsible: false, quickAdd: false }]} cards={tasks} order={{ todo: ["a"] }}
 		renderCard={(task) => task.title}
 		collapsible collapsedColumns={["todo"]} defaultCollapsedColumns={[]} onCollapsedColumnsChange={(ids: string[]) => ids.length}
+		onAddCard={async (card: NewCard) => { await Promise.resolve(card.columnId + card.title); }} onAddCardError={(error, card) => console.error(error, card.title)}
 		filter={(task) => task.title.includes("A")} />,
 ];
 export const props: BoardProps<Task, Stage>["order"] = {};
@@ -189,9 +190,10 @@ assert.ok(html.indexOf("Todo") < html.indexOf("Done"));
 assert.ok(html.indexOf("Second") < html.indexOf("First"), "Card order must follow the order prop.");
 assert.match(html, /No cards/);
 assert.match(renderToString(createElement(Board, { ...props, locale: "zh-CN" })), /暂无卡片/);
-const shell = renderToString(createElement(Board, { ...props, collapsible: true, filter: (card) => card.id === "a", onMove: () => {} }));
-assert.equal(renderToString(createElement(Board, { ...props, collapsible: true, filter: (card) => card.id === "a", onMove: () => {} })), shell, "Shell SSR output must be deterministic.");
+const shell = renderToString(createElement(Board, { ...props, collapsible: true, onAddCard: () => {}, filter: (card) => card.id === "a", onMove: () => {} }));
+assert.equal(renderToString(createElement(Board, { ...props, collapsible: true, onAddCard: () => {}, filter: (card) => card.id === "a", onMove: () => {} })), shell, "Shell SSR output must be deterministic.");
 assert.match(shell, /aria-expanded="true"/);
+assert.match(shell, /Add card/);
 assert.match(shell, /data-dimmed="true"/);
 assert.match(shell, /A filter is on/);
 const editable = renderToString(createElement(Board, { ...props, onMove: () => {} }));
