@@ -1,6 +1,7 @@
 import { Empty, PageShell, ShimmerSkeleton } from "@violet/ui";
 import { useRef, useState } from "react";
 import { useProjectRoadmap } from "../api/queries";
+import type { RoadmapFilters } from "../lib/roadmap-filter";
 import type { RoadmapDetail, RoadmapItem } from "../model/roadmap";
 import { ProjectDetailHeader } from "./ProjectDetailHeader";
 import { RoadmapBoard } from "./RoadmapBoard";
@@ -10,10 +11,17 @@ export interface ProjectDetailPageProps {
 	slug: string;
 	/** 路由 loader 取到的路线图，作为首帧数据，水合时才与直出的 HTML 一致。 */
 	initialData?: RoadmapDetail;
+	filters: RoadmapFilters;
+	onFiltersChange: (filters: RoadmapFilters) => void;
 }
 
 /** 项目详情页：头部加只读路线图；数据由路由 loader 预取，窗口重新聚焦时更新。 */
-export function ProjectDetailPage({ slug, initialData }: ProjectDetailPageProps) {
+export function ProjectDetailPage({
+	slug,
+	initialData,
+	filters,
+	onFiltersChange,
+}: ProjectDetailPageProps) {
 	const { data } = useProjectRoadmap(slug, initialData);
 	const [openId, setOpenId] = useState<string | null>(null);
 	const opener = useRef<HTMLElement | null>(null);
@@ -49,6 +57,8 @@ export function ProjectDetailPage({ slug, initialData }: ProjectDetailPageProps)
 				<RoadmapBoard
 					items={data.items}
 					relations={data.relations}
+					filters={filters}
+					onFiltersChange={onFiltersChange}
 					onOpenItem={(item, trigger) => {
 						opener.current = trigger;
 						setOpenId(item.id);

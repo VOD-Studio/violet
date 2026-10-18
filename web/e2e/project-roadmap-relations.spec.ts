@@ -131,6 +131,7 @@ test.describe("选中与高亮", () => {
 		await page.keyboard.press("Escape");
 		await expect(card(page, 3)).toHaveAttribute("data-selected", "true");
 		await expect(page.getByRole("dialog")).toHaveCount(0);
+		await page.getByRole("group", { name: "画布", exact: true }).scrollIntoViewIfNeeded();
 		const last = await stableBox(card(page, 3));
 		await page.mouse.click(last.x + last.width / 2, last.y + last.height + 40);
 		await expect(page.locator("[data-selected]")).toHaveCount(0);

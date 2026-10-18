@@ -9,8 +9,10 @@ import {
 	shownItemIds,
 	toBoardRelations,
 } from "../lib/roadmap-board";
+import { createRoadmapFilter, type RoadmapFilters } from "../lib/roadmap-filter";
 import type { RoadmapItem, RoadmapRelation } from "../model/roadmap";
 import { RoadmapCardContent } from "./RoadmapCardContent";
+import { RoadmapFilterBar } from "./RoadmapFilterBar";
 
 export interface RoadmapBoardProps {
 	/** 后端按展示顺序给出的全部条目。 */
@@ -19,6 +21,8 @@ export interface RoadmapBoardProps {
 	relations: readonly RoadmapRelation[];
 	/** 打开条目详情；`trigger` 是被点击的按钮，弹窗关闭后焦点要还给它。 */
 	onOpenItem: (item: RoadmapItem, trigger: HTMLElement) => void;
+	filters: RoadmapFilters;
+	onFiltersChange: (filters: RoadmapFilters) => void;
 }
 
 /**
@@ -27,13 +31,20 @@ export interface RoadmapBoardProps {
  * 宽屏上关系线常显，点击条目会选中它：相关的条目与线保持清晰，其余淡化，也可以整体隐藏连线；
  * 窄屏没有线，关系用卡片上的标记表达。已完成阶段默认只显示最近的条目，列底的按钮展开全部。
  */
-export function RoadmapBoard({ items, relations, onOpenItem }: RoadmapBoardProps) {
+export function RoadmapBoard({
+	items,
+	relations,
+	onOpenItem,
+	filters,
+	onFiltersChange,
+}: RoadmapBoardProps) {
 	const [expanded, setExpanded] = useState(false);
 	// 显示的阶段由这里持有：宽窄布局切换会重新挂载看板，不持有就回到第一个阶段
 	const [activeColumn, setActiveColumn] = useState<string>();
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [linesHidden, setLinesHidden] = useState(false);
 	const toggleId = useId();
+	const filter = useMemo(() => createRoadmapFilter(filters), [filters]);
 	const board = useMemo(
 		() => buildRoadmapBoard(items, { expandCompleted: expanded }),
 		[items, expanded],
@@ -41,11 +52,11 @@ export function RoadmapBoard({ items, relations, onOpenItem }: RoadmapBoardProps
 	const boardRelations = useMemo(() => toBoardRelations(relations), [relations]);
 	// 选中的条目被收起时不再显示：不然其余条目全被淡化，却看不到被选中的是谁
 	const selected = useMemo(() => {
-		if (selectedId === null) return null;
+		if (filter || selectedId === null) return null;
 		return shownItemIds(board).has(selectedId)
 			? (items.find((item) => item.id === selectedId) ?? null)
 			: null;
-	}, [selectedId, board, items]);
+	}, [selectedId, board, items, filter]);
 	const root = useRef<HTMLDivElement>(null);
 	// 展开后按钮被新露出的条目挤到下面，焦点留在原处会落到视野之外：把焦点交给第一条新露出的卡片
 	const focusAfterExpand = useRef<string | null>(null);
@@ -63,6 +74,7 @@ export function RoadmapBoard({ items, relations, onOpenItem }: RoadmapBoardProps
 		cards: items,
 		order: board.order,
 		relations: boardRelations,
+		filter,
 		locale: "zh-CN" as const,
 		getCardLabel: (item: RoadmapItem) => `#${item.number} ${item.title}`,
 		renderCard: (item: RoadmapItem) => (
@@ -95,6 +107,13 @@ export function RoadmapBoard({ items, relations, onOpenItem }: RoadmapBoardProps
 
 	return (
 		<div ref={root}>
+			<RoadmapFilterBar
+				items={items}
+				filters={filters}
+				onFiltersChange={onFiltersChange}
+				filter={filter}
+				includesCollapsed={board.hiddenCompleted > 0}
+			/>
 			<ResponsiveLayout
 				narrow={
 					<Board
@@ -121,6 +140,8 @@ export function RoadmapBoard({ items, relations, onOpenItem }: RoadmapBoardProps
 										取消选中
 									</Button>
 								</>
+							) : filter ? (
+								"筛选生效中，关系连线保持原样"
 							) : (
 								"点击条目查看详情，并突出它的关系"
 							)}
