@@ -1,7 +1,7 @@
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { findArticleEmbed, registerArticleEmbed } from "../registry";
+import { findArticleEmbed, listArticleEmbeds, registerArticleEmbed } from "../registry";
 import type { ArticleEmbedDefinition } from "../types";
 
 const fence = (language: string, source: string) =>
@@ -49,6 +49,17 @@ describe("文章嵌入注册表", () => {
 	it("登记新的嵌入后按它的围栏语言找到；同一份定义重复登记不报错", () => {
 		expect(findArticleEmbed("HELLO")).toBe(greeting);
 		expect(() => registerArticleEmbed(greeting)).not.toThrow();
+	});
+
+	it("列出已登记的嵌入：每种一份，按登记先后", () => {
+		expect(listArticleEmbeds().map((definition) => definition.kind)).toEqual([
+			"dialogue",
+			"github",
+			"link-preview",
+			"tweet",
+			"social-links",
+			"greeting",
+		]);
 	});
 
 	it("围栏语言已经属于另一种嵌入时拒绝登记", () => {

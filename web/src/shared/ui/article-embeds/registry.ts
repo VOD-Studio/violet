@@ -28,4 +28,9 @@ export function findArticleEmbed(language: string): ArticleEmbedDefinition | nul
 	return byLanguage.get(normalize(language)) ?? null;
 }
 
+/** 已登记的嵌入，每种一份，按登记先后排列。 */
+export function listArticleEmbeds(): ArticleEmbedDefinition[] {
+	return [...new Set(byLanguage.values())];
+}
+
 for (const definition of BUILTIN_EMBEDS) registerArticleEmbed(definition);

@@ -1,3 +1,4 @@
+import type { LucideIcon } from "lucide-react";
 import type { ComponentType } from "react";
 
 /** 文章行内人物提及所需的公开档案。 */
@@ -212,7 +213,38 @@ export interface ArticleEmbedModule<Config = unknown> {
 export interface ArticleEmbedDefinition<Config = unknown> {
 	/** 种类名，出现在配置无效的提示里。 */
 	kind: string;
-	/** 识别的围栏语言，不区分大小写；同一种语言只能属于一种嵌入。 */
+	/** 识别的围栏语言，不区分大小写；同一种语言只能属于一种嵌入。第一个是编辑器插入时写的语言。 */
 	languages: readonly string[];
 	load(): Promise<ArticleEmbedModule<Config>>;
+	/**
+	 * 编辑器里的插入入口。
+	 *
+	 * @default undefined — Slash 菜单里没有这一项，作者手写围栏块。
+	 */
+	inserter?: ArticleEmbedInserter;
+}
+
+/** 编辑器 Slash 菜单里的一项：选中后打开弹层，作者用表单选参数，不手写 JSON。 */
+export interface ArticleEmbedInserter {
+	/** 菜单项与弹层标题里的名称。 */
+	title: string;
+	/** 菜单项下的一句说明。 */
+	description: string;
+	/** 搜索菜单时也能匹配的别名。 */
+	keywords: readonly string[];
+	icon: LucideIcon;
+	/** 按需加载选择表单，不进编辑器首包。 */
+	loadPicker(): Promise<ComponentType<ArticleEmbedPickerProps>>;
+}
+
+/** 选择表单的属性：表单只管选参数，确认、取消与预览由编辑器的弹层负责。 */
+export interface ArticleEmbedPickerProps {
+	/**
+	 * 编辑已有的块时它的原文，表单从中回填。
+	 *
+	 * @default undefined — 新插入，从空白开始。
+	 */
+	initialSource?: string;
+	/** 每次选择变化时报告围栏块原文；还没选完整时报告 null。 */
+	onChange(source: string | null): void;
 }
