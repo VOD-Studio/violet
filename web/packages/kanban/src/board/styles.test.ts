@@ -83,6 +83,13 @@ describe("看板外壳样式", () => {
 	});
 });
 
+describe("筛选淡化", () => {
+	it("淡化只作用在卡片内容上，不给整个 li 加 opacity（否则固定定位的菜单与聚焦环会被一起拖淡）", () => {
+		expect(shell).not.toMatch(/\[data-dimmed="true"\]\s*\{[^}]*opacity/);
+		expect(shell).toMatch(/\[data-dimmed="true"\][\s\S]*?> :not\(\.v-kanban__card-tools/);
+	});
+});
+
 describe("画布样式", () => {
 	it("触摸手势归画布：touch-action: none 落在视口与它的每个后代上（内容里的滚动容器会截断继承）", () => {
 		expect(canvas).toMatch(

@@ -293,9 +293,10 @@ test.describe("筛选", () => {
 		await open(page, "&filter=1");
 
 		const opacity = (id: string) =>
-			page
-				.locator(`[data-card-id="${id}"]`)
-				.evaluate((element) => Number.parseFloat(getComputedStyle(element).opacity));
+			page.locator(`[data-card-id="${id}"]`).evaluate((element) =>
+				// 淡化的是卡片内容，不是 li 自己（li 的 opacity 会拖淡菜单与聚焦环）
+				Number.parseFloat(getComputedStyle(element.firstElementChild ?? element).opacity),
+			);
 		expect(await opacity("a")).toBe(1);
 		expect(await opacity("c")).toBeLessThan(0.6);
 		expect(

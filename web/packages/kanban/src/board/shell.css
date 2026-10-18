@@ -151,6 +151,11 @@
 
 /* 筛选：不匹配的卡片淡化，位置不变；仍可点击与聚焦 */
 .v-kanban .v-kanban__card[data-dimmed="true"] {
+	border-color: color-mix(in oklab, var(--_kanban-border) 40%, transparent);
+	background: color-mix(in oklab, var(--_kanban-card) 40%, transparent);
+}
+/* 淡化内容而不是整个 li：li 上的 opacity 会生成层叠上下文，把固定定位的「移到…」菜单和聚焦环一起拖淡 */
+.v-kanban .v-kanban__card[data-dimmed="true"] > :not(.v-kanban__card-tools, .v-kanban__sr-only) {
 	opacity: 0.4;
 }
 .v-kanban .v-kanban__filter-hint {
