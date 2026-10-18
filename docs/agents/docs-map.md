@@ -12,6 +12,7 @@
 | 部署/发版流程变化 | `docs/deploy/release-runbook.md` | 流程步骤与拓扑图 |
 | 新增面向开发者的指南 | `docs/README.md` | 文档索引登记 |
 | 组件库单元或开发流程变化 | 包 README / AGENTS.md、包内 docs 及 `violet-ui` skill | 清单状态、同源示例、构建与独立消费流程同步 |
+| 编辑器功能面变化(扩展、Slash/工具栏项、数学宏、图块格式、卡片围栏) | `web/src/features/editor/docs/` 各章节 md 与同目录漂移测试 | 手册章节记载同步,新增能力在 `docs-coverage.test.ts` 关键词表登记 |
 
 ## 下线功能
 
