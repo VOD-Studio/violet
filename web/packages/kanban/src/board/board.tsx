@@ -6,6 +6,7 @@ import {
 	type BoardState,
 	resolveBoard,
 } from "../core/index.ts";
+import { formatMessage } from "../locale.ts";
 import { CardItem } from "./card-item.tsx";
 import type { Activity } from "./drag/activity.ts";
 import { PLACEHOLDER_FLIP_ID } from "./drag/dom.ts";
@@ -17,12 +18,7 @@ import { type MoveDecision, useBoardMoves } from "./drag/use-board-moves.ts";
 import { useFocusRequest } from "./drag/use-focus-request.ts";
 import { useKeyboardMove } from "./drag/use-keyboard-move.ts";
 import { useMoveMenu } from "./drag/use-move-menu.ts";
-import {
-	type BoardLocale,
-	type BoardMessages,
-	formatMessage,
-	resolveMessages,
-} from "./messages.ts";
+import { type BoardLocale, type BoardMessages, resolveMessages } from "./messages.ts";
 
 /** 列定义。`title` 同时是列分组的可访问名称。 */
 export interface BoardColumn {

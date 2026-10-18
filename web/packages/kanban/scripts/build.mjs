@@ -12,6 +12,7 @@ const result = spawnSync("tsc", ["--project", "tsconfig.build.json"], {
 if (result.error) throw result.error;
 if (result.status !== 0) process.exit(result.status ?? 1);
 await mkdir(new URL("dist/board/", root), { recursive: true });
+await mkdir(new URL("dist/history/", root), { recursive: true });
 await Promise.all(
-	["styles.css", "board/board.css"].map((path) => copyFile(new URL(`src/${path}`, root), new URL(`dist/${path}`, root))),
+	["styles.css", "board/board.css", "history/history.css"].map((path) => copyFile(new URL(`src/${path}`, root), new URL(`dist/${path}`, root))),
 );

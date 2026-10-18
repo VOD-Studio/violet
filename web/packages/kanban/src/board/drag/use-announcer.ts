@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import type { BoardPosition } from "../../core/index.ts";
-import { type BoardMessages, formatMessage } from "../messages.ts";
+import { formatMessage } from "../../locale.ts";
+import type { BoardMessages } from "../messages.ts";
 import type { BoardMoves } from "./use-board-moves.ts";
 import { useLatest } from "./use-latest.ts";
 

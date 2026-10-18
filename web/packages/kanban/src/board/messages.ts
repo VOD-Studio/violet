@@ -1,5 +1,7 @@
-/** 内置文案的语言。 */
-export type BoardLocale = "en" | "zh-CN";
+import type { Locale } from "../locale.ts";
+
+/** 看板内置文案的语言。 */
+export type BoardLocale = Locale;
 
 /**
  * 可覆盖的展示文案。
@@ -135,11 +137,4 @@ export function resolveMessages(
 	overrides?: Partial<BoardMessages>,
 ): BoardMessages {
 	return { ...(messagesByLocale[locale] ?? messagesByLocale.en), ...overrides };
-}
-
-/** 把模板中的 `{name}` 替换为对应值；没有给出的占位符原样保留。 */
-export function formatMessage(template: string, values: Record<string, string | number>): string {
-	return template.replace(/\{(\w+)\}/g, (match, name: string) =>
-		name in values ? String(values[name]) : match,
-	);
 }

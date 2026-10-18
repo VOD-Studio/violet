@@ -8,8 +8,8 @@ This is a workspace package and is **not published to npm**. This README covers 
 
 | Import | Contents |
 | --- | --- |
-| `@violetjs/kanban` | `Board`, `createPointerController` and types, with the default stylesheet |
-| `@violetjs/kanban/unstyled` | `Board` without any CSS |
+| `@violetjs/kanban` | `Board`, `HistoryButtons`, history hooks, `createHistory`, `createPointerController` and types, with the default stylesheet |
+| `@violetjs/kanban/unstyled` | The same exports without any CSS |
 | `@violetjs/kanban/core` | React-free board state, moves, drop-target resolution, auto-sort rule, keyboard steps, undo history |
 | `@violetjs/kanban/styles.css` | The default stylesheet on its own |
 
@@ -127,6 +127,8 @@ const history = useMemo(() => createHistory(), []);
 - A step whose forward action changed fields on the server (for example clearing a completion date) can capture them in its closure and restore them in `undo`.
 - `invertMove(move)` returns the move that puts the card back. A move records the cards next to its origin, so the inverse needs no board state and stays correct when other moves happened in between.
 - An error thrown by a subscriber or by `onError` never corrupts the history; it is rethrown asynchronously so it still reaches your error reporting.
+- `HistoryButtons` names the buttons by their visible text, puts the next step's name in `title`, marks unavailable buttons `aria-disabled` (so focus stays put after the last undo) and announces results. `useHistoryState(history)` and `useHistoryAnnouncement(history)` expose the same state and announcement text for your own UI.
+- `useHistoryShortcuts(history, { scope, enabled })` binds Ctrl/⌘+Z to undo and Ctrl/⌘+Shift+Z or Ctrl+Y to redo. It ignores inputs, textareas, selects and editable text (also inside shadow roots), combinations with `Alt`, and IME composition.
 
 ## Slots and messages
 

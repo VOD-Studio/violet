@@ -1,7 +1,14 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { applyMove } from "../src/core/index.ts";
-import { Board, type BoardMove, type BoardState } from "../src/index.ts";
+import { applyMove, invertMove } from "../src/core/index.ts";
+import {
+	Board,
+	type BoardMove,
+	type BoardState,
+	createHistory,
+	HistoryButtons,
+	useHistoryShortcuts,
+} from "../src/index.ts";
 
 declare global {
 	interface Window {
@@ -35,12 +42,22 @@ window.__moves = [];
 window.__pageKeys = [];
 window.addEventListener("keydown", (event) => window.__pageKeys.push(event.key));
 
+const columnIds = columns.map((column) => column.id);
+
 function App() {
 	const [order, setOrder] = useState(initial);
 	const [clicks, setClicks] = useState(0);
+	const history = useMemo(() => createHistory(), []);
+	useHistoryShortcuts(history);
+	const apply = (move: BoardMove) =>
+		setOrder((previous) => applyMove({ columns: columnIds, order: previous }, move).order);
 	return (
 		<div style={{ width: 1000, padding: 24 }}>
 			<p id="clicks">clicks: {clicks}</p>
+			<div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
+				<HistoryButtons history={history} locale="en" />
+				<input id="note" aria-label="note" defaultValue="note" />
+			</div>
 			<Board
 				columns={columns}
 				cards={tasks}
@@ -60,13 +77,12 @@ function App() {
 					window.__moves.push(move);
 					await new Promise((resolve) => setTimeout(resolve, 30));
 					if (failMoves) throw new Error("save failed");
-					setOrder(
-						(current) =>
-							applyMove(
-								{ columns: columns.map((column) => column.id), order: current },
-								move,
-							).order,
-					);
+					apply(move);
+					history.push({
+						label: `move ${move.cardId.toUpperCase()}`,
+						undo: () => apply(invertMove(move)),
+						redo: () => apply(move),
+					});
 				}}
 			/>
 		</div>

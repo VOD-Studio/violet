@@ -9,6 +9,7 @@ import {
 	type Point,
 	resolveDropTarget,
 } from "../../core/index.ts";
+import { EDITABLE_SELECTOR } from "../../editable.ts";
 import type { ActivityRef } from "./activity.ts";
 import { CARD_SELECTOR, findCard, measureColumns } from "./dom.ts";
 import { MOTION_EASING, MOTION_MS, prefersReducedMotion } from "./motion.ts";
@@ -77,8 +78,7 @@ interface Runtime extends Grabbed {
 
 const defaultController = createPointerController();
 
-const NO_DRAG_SELECTOR =
-	'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [data-kanban-no-drag]';
+const NO_DRAG_SELECTOR = `${EDITABLE_SELECTOR}, [data-kanban-no-drag]`;
 
 function placeGhost(ghost: HTMLElement | null, run: Runtime) {
 	if (!ghost || !run.ghostReady) return;

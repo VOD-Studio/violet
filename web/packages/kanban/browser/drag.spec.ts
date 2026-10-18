@@ -268,10 +268,16 @@ test.describe("键盘与「移到…」菜单", () => {
 	const focusedCard = (page: Page) =>
 		page.evaluate(() => document.activeElement?.getAttribute("data-card-id") ?? null);
 
+	/** 页面上看板前面有输入框：从它出发按一次 Tab 到达第一张卡片。 */
+	async function tabToFirstCard(page: Page) {
+		await page.locator("#note").focus();
+		await page.keyboard.press("Tab");
+	}
+
 	test("Tab 聚焦卡片，空格拿起、方向键移动、空格放下，全程有播报且焦点不丢", async ({ page }) => {
 		await open(page);
 
-		await page.keyboard.press("Tab");
+		await tabToFirstCard(page);
 		expect(await focusedCard(page)).toBe("a");
 		await expect(page.locator('[data-card-id="a"]')).toHaveCSS("outline-style", "solid");
 
@@ -305,7 +311,7 @@ test.describe("键盘与「移到…」菜单", () => {
 		page,
 	}) => {
 		await open(page);
-		await page.keyboard.press("Tab");
+		await tabToFirstCard(page);
 
 		await page.keyboard.press(" ");
 		for (const key of ["ArrowDown", "ArrowRight", "ArrowUp", "ArrowLeft"])
@@ -319,7 +325,7 @@ test.describe("键盘与「移到…」菜单", () => {
 
 	test("Esc 取消：恢复原位，不提交", async ({ page }) => {
 		await open(page);
-		await page.keyboard.press("Tab");
+		await tabToFirstCard(page);
 
 		await page.keyboard.press(" ");
 		await page.keyboard.press("ArrowRight");
@@ -335,7 +341,7 @@ test.describe("键盘与「移到…」菜单", () => {
 
 	test("自动排序列：进入落在入口一端，列内上下被拒绝并提示原因", async ({ page }) => {
 		await open(page);
-		await page.keyboard.press("Tab");
+		await tabToFirstCard(page);
 
 		await page.keyboard.press(" ");
 		await page.keyboard.press("ArrowRight");
@@ -367,7 +373,7 @@ test.describe("键盘与「移到…」菜单", () => {
 
 	test("只用键盘：Tab 到菜单按钮，方向键只在菜单项间移动，Enter 才选中", async ({ page }) => {
 		await open(page);
-		await page.keyboard.press("Tab"); // 卡片 a
+		await tabToFirstCard(page); // 卡片 a
 		await page.keyboard.press("Tab"); // 卡片里使用方渲染的按钮
 		await page.keyboard.press("Tab"); // 菜单按钮
 		await expect(page.locator('[data-card-id="a"] .v-kanban__card-tools')).toHaveCSS(
@@ -435,5 +441,79 @@ test.describe("键盘与「移到…」菜单", () => {
 			"1",
 		);
 		await context.close();
+	});
+});
+
+test.describe("撤销与重做", () => {
+	const undo = (page: Page) => page.getByRole("button", { name: /^Undo/ });
+	const redo = (page: Page) => page.getByRole("button", { name: /^Redo/ });
+
+	async function moveAToDoing(page: Page) {
+		await pickUp(page, "a", await belowLastCard(page, "doing"));
+		await page.mouse.up();
+		await expect.poll(() => idsIn(page, "doing")).toEqual(["d", "a"]);
+		await settled(page);
+	}
+
+	test("按钮随历史启用，撤销与重做把卡片放回去又移过来", async ({ page }) => {
+		await open(page);
+		await expect(undo(page)).toBeDisabled();
+		await expect(redo(page)).toBeDisabled();
+
+		await moveAToDoing(page);
+		await expect(undo(page)).toBeEnabled();
+		await expect(undo(page)).toHaveAttribute("title", "Undo move A");
+
+		await undo(page).click();
+		await expect.poll(() => idsIn(page, "todo")).toEqual(["a", "b", "c"]);
+		await expect(page.locator(".v-kanban-history__announcer")).toHaveText("Undone: move A.");
+		await expect(redo(page)).toBeEnabled();
+		await expect(undo(page)).toBeDisabled();
+
+		await redo(page).click();
+		await expect.poll(() => idsIn(page, "doing")).toEqual(["d", "a"]);
+	});
+
+	test("撤销完最后一步后焦点仍留在撤销按钮上", async ({ page }) => {
+		await open(page);
+		await moveAToDoing(page);
+
+		await undo(page).focus();
+		await page.keyboard.press("Enter");
+
+		await expect.poll(() => idsIn(page, "todo")).toEqual(["a", "b", "c"]);
+		await expect(undo(page)).toBeDisabled();
+		await expect(undo(page)).toBeFocused();
+	});
+
+	test("Ctrl+Z 撤销、Ctrl+Shift+Z 重做", async ({ page }) => {
+		await open(page);
+		await moveAToDoing(page);
+
+		await page.keyboard.press("Control+z");
+		await expect.poll(() => idsIn(page, "todo")).toEqual(["a", "b", "c"]);
+		await page.keyboard.press("Control+Shift+Z");
+		await expect.poll(() => idsIn(page, "doing")).toEqual(["d", "a"]);
+	});
+
+	test("焦点在输入框里时 Ctrl+Z 留给输入框自己，不撤销看板", async ({ page }) => {
+		await open(page);
+		await moveAToDoing(page);
+		const note = page.locator("#note");
+		await note.click();
+		await note.pressSequentially("X");
+		await expect(note).toHaveValue("noteX");
+
+		await page.keyboard.press("Control+z");
+		await page.evaluate(
+			() =>
+				new Promise((resolve) =>
+					requestAnimationFrame(() => requestAnimationFrame(resolve)),
+				),
+		);
+
+		// 看板的历史没有被消耗：卡片还在，撤销按钮仍可用
+		expect(await idsIn(page, "doing")).toEqual(["d", "a"]);
+		await expect(undo(page)).toBeEnabled();
 	});
 });
