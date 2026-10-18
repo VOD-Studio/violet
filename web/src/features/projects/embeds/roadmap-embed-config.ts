@@ -33,3 +33,37 @@ export function parseRoadmapEmbed(input: unknown): RoadmapEmbedConfig | null {
 	const result = roadmapEmbedSchema.safeParse(input);
 	return result.success ? result.data : null;
 }
+
+/** 编辑器选择弹层里的形态：卡片、看板画布与关系画布。 */
+export type RoadmapEmbedShape = "card" | "board" | "graph";
+
+/** 编辑器选择弹层里的选择。 */
+export interface RoadmapEmbedChoice {
+	/** 项目 slug；空串表示还没选 */
+	project: string;
+	shape: RoadmapEmbedShape;
+	/** 条目编号；看板画布忽略它 */
+	item?: number;
+}
+
+/** 把弹层里的选择写成围栏块原文：省略默认值，看板画布不带条目。 */
+export function roadmapEmbedSource({ project, shape, item }: RoadmapEmbedChoice): string {
+	if (shape === "board") return JSON.stringify({ project, display: "canvas" });
+	const config =
+		shape === "graph" ? { project, display: "canvas", view: "graph", item } : { project, item };
+	return JSON.stringify(config);
+}
+
+/** 从已有的围栏块原文回填选择；不是合法的 roadmap 配置时返回 null。 */
+export function roadmapEmbedChoice(source: string): RoadmapEmbedChoice | null {
+	let config: RoadmapEmbedConfig | null;
+	try {
+		config = parseRoadmapEmbed(JSON.parse(source));
+	} catch {
+		return null;
+	}
+	if (!config) return null;
+	const shape: RoadmapEmbedShape =
+		config.display === "card" ? "card" : config.view === "graph" ? "graph" : "board";
+	return { project: config.project, shape, item: config.item };
+}
