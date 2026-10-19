@@ -6,7 +6,7 @@
 /*
  * 三列铺满页面里的容器宽度：减去两道列间距（48px）、内容两侧的内边距（RoadmapBoard 里的 p-2，8px），
  * 再留 1px 给画布量内容宽度时的取整（scrollWidth 是整数，向上取整），然后三等分；
- * 太窄时不小于 17rem，由画布缩放兜底。全屏沿用同样的列宽，不再拉宽。
+ * 太窄时不小于 17rem，超宽内容可平移或手动缩放查看。全屏沿用同样的列宽，不再拉宽。
  * 列间距要宽：同列关系的弧线从卡片右缘绕出、跨列的线从这里穿过，太窄就会挤在一起。
  */
 .roadmap-board {
@@ -21,9 +21,8 @@
 	/* 不画框；边框即使透明也占尺寸，画布高度按内容设置时会因此差 2px，适应窗口就会缩小一点 */
 	border: 0;
 }
-/* 全屏盖在页面上，背景必须不透明，否则下面的页面会透出来 */
 .roadmap-board .v-kanban-canvas[data-fullscreen="true"] {
-	--kanban-canvas-background: var(--background);
+	--kanban-canvas-background: color-mix(in oklab, var(--color-white) 70%, transparent);
 }
 
 /* 列：短的列不拉伸成一整块空面板；留一点最小高度，方便以后往里拖 */

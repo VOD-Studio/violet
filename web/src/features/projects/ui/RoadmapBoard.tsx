@@ -22,10 +22,10 @@ import { RoadmapFilterBar } from "./RoadmapFilterBar";
 import "./roadmap-board.css";
 
 /**
- * 画布适应窗口时不再另留白：内容自带 p-2（8px，只留够选中卡片的外描边），三列按 roadmap-board.css 的算式正好铺满宽度，
- * 适应的结果就是不缩放、不平移，与服务端直出的首帧相同，水合后看板不跳。改内边距要同步改 CSS 里的列宽算式。
+ * 三列按 roadmap-board.css 的算式铺满页面宽度；全屏也保持原字号，超高内容通过画布平移查看。
+ * 内容自带 p-2（8px，容纳选中描边），改内边距时须同步列宽算式。
  */
-const FIT = { padding: 0, maxScale: 1 };
+const FIT = { padding: 0, minScale: 1, maxScale: 1 };
 /** 量到看板高度之前（服务端渲染与水合的首帧）画布用的高度。 */
 const FALLBACK_HEIGHT = "min(80dvh, 52rem)";
 

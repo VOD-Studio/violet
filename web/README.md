@@ -126,6 +126,8 @@ Mermaid 图块统一使用手写字体与 `@violetjs/inkline` 笔触（G 笔、�
 
 使用契约见[双语 README](packages/kanban/README.md)与 [API 文档](packages/kanban/docs/api.md)；[开发说明](packages/kanban/DEVELOPMENT.md)维护同源示例校验、全入口 tarball 消费验收和发布前清单。本次不接入 npm 发布工作流。
 
+项目详情的画布在普通与全屏模式下均以 100% 字号开始，长列通过平移查看，不为塞进屏幕而自动缩小；仍可手动缩放。全屏沿用图片灯箱的原位展开与收回动效，使用白色半透明背景而非黑色遮罩；保留页面占位，退出恢复原来的滚动位置与画布视口，减弱动态偏好下直接切换。
+
 ## 开发环境
 
 项目使用 **pnpm** 作为包管理器，请勿使用 npm 或 yarn。
