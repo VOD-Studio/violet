@@ -15,20 +15,26 @@ export function HomeIndexSkeleton() {
 						<Skeleton className="mt-2 h-9 w-32 rounded-lg" />
 					</div>
 
-					{/* 焦点篇目（大字标题与 meta 行） */}
-					<div className="mb-8 space-y-2.5">
-						<Skeleton className="h-8 w-3/4 rounded-lg" />
-						<Skeleton className="h-3 w-32 rounded" />
+					{/* 焦点篇目微卡片骨架 */}
+					<div className="mb-6 rounded-2xl border border-border/50 bg-muted/20 p-5 sm:p-6">
+						<div className="flex items-center justify-between">
+							<Skeleton className="h-4.5 w-16 rounded-full" />
+							<Skeleton className="h-3 w-14 rounded" />
+						</div>
+						<Skeleton className="mt-3.5 h-7 w-4/5 rounded-lg" />
 					</div>
 
-					{/* 后续篇目（标题与日期两端） */}
-					<div className="divide-y divide-border/30">
+					{/* 后续篇目交互行骨架 */}
+					<div className="space-y-1">
 						{Array.from({ length: 4 }).map((_, i) => (
 							<div
 								key={i}
-								className="flex items-baseline justify-between gap-4 py-4 first:pt-0 last:pb-0"
+								className="-mx-2.5 flex items-center justify-between gap-4 px-2.5 py-2.5"
 							>
-								<Skeleton className="h-4 w-4/5 rounded" />
+								<div className="flex items-center gap-3">
+									<Skeleton className="h-3.5 w-4 rounded" />
+									<Skeleton className="h-4.5 w-48 rounded" />
+								</div>
 								<Skeleton className="h-3.5 w-14 rounded" />
 							</div>
 						))}

@@ -99,22 +99,27 @@ export function HomeIndex({
 							</button>
 						</div>
 					) : leadItem ? (
-						<article className="mb-8">
-							<h3 className="font-serif text-2xl font-normal leading-snug text-foreground sm:text-[1.75rem]">
+						<article className="group relative mb-6 rounded-2xl border border-border/50 bg-muted/20 p-5 transition-colors hover:border-primary/40 hover:bg-muted/30 sm:p-6">
+							<div className="flex items-center justify-between gap-2">
+								<span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary">
+									<span className="size-1.5 rounded-full bg-primary" />
+									{HOME_KIND_LABEL[leadItem.kind]}
+								</span>
+								<time
+									dateTime={leadItem.published_at}
+									className="text-xs text-muted-foreground/70 tabular-nums"
+								>
+									{formatRelativeOrDate(leadItem.published_at)}
+								</time>
+							</div>
+							<h3 className="mt-3.5 font-serif text-xl font-normal leading-snug text-foreground transition-colors group-hover:text-primary sm:text-2xl">
 								<HomeContentLink
 									item={leadItem}
-									className="underline-offset-4 transition-colors hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary"
+									className="focus-visible:outline-2 focus-visible:outline-primary"
 								>
 									{leadItem.title}
 								</HomeContentLink>
 							</h3>
-							<p className="mt-2.5 flex items-center gap-1.5 text-xs text-muted-foreground/80">
-								<span>{HOME_KIND_LABEL[leadItem.kind]}</span>
-								<span aria-hidden>·</span>
-								<time dateTime={leadItem.published_at}>
-									{formatRelativeOrDate(leadItem.published_at)}
-								</time>
-							</p>
 						</article>
 					) : (
 						<p className="mb-7 border-l border-border/80 pl-4 text-sm text-muted-foreground">
@@ -123,33 +128,41 @@ export function HomeIndex({
 					)}
 
 					{subsequentItems.length > 0 ? (
-						<ul className="divide-y divide-border/30">
-							{subsequentItems.map((item) => (
-								<li
-									key={item.id}
-									className="flex items-baseline justify-between gap-4 py-4 first:pt-0 last:pb-0"
-								>
-									<div className="flex min-w-0 items-baseline gap-2.5">
-										{item.kind !== "article" ? (
-											<span className="shrink-0 font-mono text-[10px] uppercase tracking-wider text-muted-foreground/60">
-												{HOME_KIND_LABEL[item.kind]}
-											</span>
-										) : null}
+						<ul className="space-y-1">
+							{subsequentItems.map((item, index) => {
+								const order = String(index + 2).padStart(2, "0");
+								return (
+									<li key={item.id}>
 										<HomeContentLink
 											item={item}
-											className="min-w-0 truncate font-serif text-[15px] font-normal text-foreground/90 transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-primary"
+											className="group -mx-2.5 flex items-center justify-between gap-4 rounded-xl px-2.5 py-2.5 transition-colors hover:bg-muted/35 focus-visible:outline-2 focus-visible:outline-primary"
 										>
-											{item.title}
+											<div className="flex min-w-0 items-center gap-3">
+												<span className="font-mono text-xs text-muted-foreground/40 tabular-nums transition-colors group-hover:text-primary">
+													{order}
+												</span>
+												{item.kind !== "article" ? (
+													<span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/75">
+														{HOME_KIND_LABEL[item.kind]}
+													</span>
+												) : null}
+												<span className="truncate font-serif text-[15px] font-normal text-foreground/85 transition-colors group-hover:text-foreground">
+													{item.title}
+												</span>
+											</div>
+											<div className="flex shrink-0 items-center gap-2">
+												<time
+													dateTime={item.published_at}
+													className="text-xs text-muted-foreground/60 tabular-nums"
+												>
+													{formatRelativeOrDate(item.published_at)}
+												</time>
+												<ArrowRight className="size-3.5 text-primary opacity-0 transition-opacity group-hover:opacity-100" />
+											</div>
 										</HomeContentLink>
-									</div>
-									<time
-										dateTime={item.published_at}
-										className="shrink-0 text-xs text-muted-foreground/60 tabular-nums"
-									>
-										{formatRelativeOrDate(item.published_at)}
-									</time>
-								</li>
-							))}
+									</li>
+								);
+							})}
 						</ul>
 					) : null}
 
