@@ -17,6 +17,10 @@ export async function loadClient(context: BrowserContext) {
 			else await route.continue();
 		}
 	});
+	// Google 登录脚本契约用例用不到，给空脚本：CI 访问它时断线会变成控制台错误，让无关用例失败
+	await context.route("https://accounts.google.com/gsi/**", (route) =>
+		route.fulfill({ contentType: "application/javascript", body: "" }),
+	);
 	await context.route("**/api/**", async (route) => {
 		const url = new URL(route.request().url());
 		// 页面跳走或用例结束时请求已取消，转发到一半的响应随之作废；没有人再等这个应答
