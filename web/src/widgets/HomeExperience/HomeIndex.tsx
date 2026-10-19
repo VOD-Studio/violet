@@ -2,6 +2,7 @@ import type { AdminComment } from "@entities/comment/model/types";
 import type { Tweet } from "@entities/tweet/model/types";
 import { formatDate, formatRelativeTime } from "@shared/lib/date";
 import { Link } from "@tanstack/react-router";
+import { Skeleton } from "@violet/ui";
 import { ArrowRight, ArrowUpRight, RefreshCw } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -74,7 +75,7 @@ export function HomeIndex({
 						<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
 							FRESH INK
 						</p>
-						<h2 className="mt-1.5 text-2xl font-normal tracking-[-0.01em] text-foreground sm:text-[1.75rem]">
+						<h2 className="mt-2 font-serif text-[1.75rem] font-normal leading-tight tracking-[0.08em] text-foreground sm:text-3xl">
 							近稿
 						</h2>
 					</div>
@@ -112,10 +113,10 @@ export function HomeIndex({
 										{formatRelativeOrDate(leadItem.published_at)}
 									</time>
 								</div>
-								<h3 className="mt-2 text-lg font-medium leading-snug text-foreground sm:text-xl">
+								<h3 className="mt-2.5 font-serif text-xl font-normal leading-snug text-foreground sm:text-2xl">
 									<HomeContentLink
 										item={leadItem}
-										className="transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-primary"
+										className="underline-offset-4 transition-colors hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary"
 									>
 										{leadItem.title}
 									</HomeContentLink>
@@ -141,7 +142,7 @@ export function HomeIndex({
 											<div className="min-w-0">
 												<HomeContentLink
 													item={item}
-													className="block truncate text-sm font-medium text-foreground/90 transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-primary"
+													className="block truncate font-serif text-sm font-normal text-foreground/90 transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-primary"
 												>
 													{item.title}
 												</HomeContentLink>
@@ -185,18 +186,23 @@ export function HomeIndex({
 							<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
 								GLEANINGS
 							</p>
-							<h2 className="mt-1.5 text-2xl font-normal tracking-[-0.01em] text-foreground sm:text-[1.75rem]">
+							<h2 className="mt-2 font-serif text-[1.75rem] font-normal leading-tight tracking-[0.08em] text-foreground sm:text-3xl">
 								偶得
 							</h2>
 						</div>
 
 						{tweetsLoading ? (
-							<article
-								aria-live="polite"
-								className="border-l border-border/80 pl-3.5 text-xs text-muted-foreground"
-							>
-								<p>正在收拢偶得…</p>
-							</article>
+							<div aria-live="polite" className="space-y-4">
+								{[0, 1].map((i) => (
+									<div
+										key={i}
+										className="space-y-2 border-l border-border/80 pl-3.5"
+									>
+										<Skeleton className="h-3.5 w-full rounded" />
+										<Skeleton className="h-3 w-16 rounded" />
+									</div>
+								))}
+							</div>
 						) : musings.length > 0 ? (
 							<div className="space-y-4">
 								{musings.map((tweet) => (
@@ -207,7 +213,7 @@ export function HomeIndex({
 										<Link
 											to="/tweets/$id"
 											params={{ id: tweet.id }}
-											className="block text-xs leading-relaxed text-foreground/85 transition-colors hover:text-primary line-clamp-2"
+											className="block font-serif text-[13px] italic leading-relaxed text-foreground/85 transition-colors hover:text-primary line-clamp-2"
 										>
 											{tweet.content.trim() ||
 												(tweet.images.length > 0
@@ -224,8 +230,10 @@ export function HomeIndex({
 								))}
 							</div>
 						) : (
-							<article className="text-xs text-muted-foreground">
-								<p className="font-serif italic">近日未有新得，静待文思泉涌。</p>
+							<article className="text-[13px] text-muted-foreground">
+								<p className="font-serif italic leading-relaxed">
+									近日未有新得，静待文思泉涌。
+								</p>
 							</article>
 						)}
 

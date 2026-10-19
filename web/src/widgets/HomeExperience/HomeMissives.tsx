@@ -5,6 +5,7 @@ import { AICommentProfile } from "@entities/comment/ui/AICommentProfile";
 import { CommentAuthorAvatar } from "@entities/comment/ui/CommentAuthorAvatar";
 import { EmojiText } from "@shared/ui/emoji-text";
 import { Link } from "@tanstack/react-router";
+import { Skeleton } from "@violet/ui";
 
 interface HomeMissivesProps {
 	missives: AdminComment[];
@@ -19,23 +20,26 @@ export function HomeMissives({ missives, isLoading }: HomeMissivesProps) {
 				<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
 					MISSIVES
 				</p>
-				<h2 className="mt-1.5 text-2xl font-normal tracking-[-0.01em] text-foreground sm:text-[1.75rem]">
+				<h2 className="mt-2 font-serif text-[1.75rem] font-normal leading-tight tracking-[0.08em] text-foreground sm:text-3xl">
 					尺素
 				</h2>
 			</div>
 
 			{isLoading ? (
-				<article
-					aria-live="polite"
-					className="border-l border-border/80 pl-3.5 text-xs text-muted-foreground"
-				>
-					<p>正在收拢来信…</p>
-				</article>
+				<div aria-live="polite" className="space-y-4">
+					{[0, 1].map((i) => (
+						<div key={i} className="space-y-2 border-l border-border/80 pl-3.5">
+							<Skeleton className="h-3.5 w-full rounded" />
+							<Skeleton className="h-3.5 w-5/6 rounded" />
+							<Skeleton className="h-3 w-24 rounded" />
+						</div>
+					))}
+				</div>
 			) : missives.length > 0 ? (
 				<div className="space-y-4">
 					{missives.map((comment) => (
 						<article key={comment.id} className="border-l border-border/80 pl-3.5">
-							<p className="line-clamp-3 text-xs leading-relaxed text-foreground/80">
+							<p className="line-clamp-3 font-serif text-[13px] leading-relaxed text-foreground/80">
 								<EmojiText text={comment.body} emote={comment.emote} />
 							</p>
 							<HomeMissiveAuthor comment={comment} />
@@ -44,7 +48,7 @@ export function HomeMissives({ missives, isLoading }: HomeMissivesProps) {
 				</div>
 			) : (
 				<article className="text-xs text-muted-foreground">
-					<p className="font-serif italic">
+					<p className="font-serif text-[13px] italic leading-relaxed text-muted-foreground">
 						一纸相闻，落笔为记。欢迎通过邮件，或在文章与推文下方留言。
 					</p>
 					<p className="mt-2 text-[11px] text-muted-foreground/75">— 站长回笺</p>

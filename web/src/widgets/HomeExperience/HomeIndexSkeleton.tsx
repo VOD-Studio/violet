@@ -12,7 +12,7 @@ export function HomeIndexSkeleton() {
 				<div className="min-w-0">
 					<div className="mb-7">
 						<Skeleton className="h-2.5 w-24 rounded" />
-						<Skeleton className="mt-2.5 h-7 w-32 rounded-lg" />
+						<Skeleton className="mt-2 h-9 w-32 rounded-lg" />
 					</div>
 
 					{/* 01 焦点篇目（双行大字与标签） */}
@@ -50,7 +50,7 @@ export function HomeIndexSkeleton() {
 					<div>
 						<div className="mb-5">
 							<Skeleton className="h-2.5 w-16 rounded" />
-							<Skeleton className="mt-2.5 h-7 w-20 rounded-lg" />
+							<Skeleton className="mt-2 h-9 w-20 rounded-lg" />
 						</div>
 						<div className="space-y-4">
 							<div className="space-y-2 border-l border-border/80 pl-3.5">
@@ -71,7 +71,7 @@ export function HomeIndexSkeleton() {
 					<div>
 						<div className="mb-5">
 							<Skeleton className="h-2.5 w-16 rounded" />
-							<Skeleton className="mt-2.5 h-7 w-20 rounded-lg" />
+							<Skeleton className="mt-2 h-9 w-20 rounded-lg" />
 						</div>
 						<div className="space-y-4">
 							<div className="space-y-2 border-l border-border/80 pl-3.5">
