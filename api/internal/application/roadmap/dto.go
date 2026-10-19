@@ -93,7 +93,7 @@ func toDTO(item *domain.Item) ItemDTO {
 	dto := ItemDTO{ID: item.ID().String(), ProjectID: item.ProjectID().String(), Number: item.Number(),
 		Title: item.Title(), Description: item.Description(), Stage: string(item.Stage()), Position: item.Position(),
 		Tags: item.Tags(), Links: links, Checklist: checklist, DeliveredVersion: item.DeliveredVersion(),
-		CreatedAt: item.CreatedAt().Format(time.RFC3339), UpdatedAt: item.UpdatedAt().Format(time.RFC3339)}
+		CreatedAt: item.CreatedAt().UTC().Format(time.RFC3339), UpdatedAt: item.UpdatedAt().UTC().Format(time.RFC3339)}
 	if date := item.CompletionDate(); date != nil {
 		formatted := date.Format(time.DateOnly)
 		dto.CompletionDate = &formatted

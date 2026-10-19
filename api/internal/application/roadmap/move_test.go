@@ -33,7 +33,7 @@ func TestServiceMoveOnlyChangesOneItemAndDoesNotAuditReorder(t *testing.T) {
 	for _, unchanged := range created[:2] {
 		item := repo.items[shared.MustParseID(unchanged.ID)]
 		assert.Equal(t, unchanged.Position, item.Position())
-		assert.Equal(t, unchanged.UpdatedAt, item.UpdatedAt().Format(time.RFC3339))
+		assert.Equal(t, unchanged.UpdatedAt, item.UpdatedAt().UTC().Format(time.RFC3339))
 	}
 }
 

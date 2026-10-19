@@ -60,7 +60,7 @@ func EnrichRelations(items []ItemDTO, relations []RelationDTO) []RelationDTO {
 func relationToDTO(relation *domain.Relation) RelationDTO {
 	return RelationDTO{ID: relation.ID().String(), ProjectID: relation.ProjectID().String(),
 		SourceID: relation.SourceID().String(), TargetID: relation.TargetID().String(),
-		Type: string(relation.Type()), CreatedAt: relation.CreatedAt().Format(time.RFC3339)}
+		Type: string(relation.Type()), CreatedAt: relation.CreatedAt().UTC().Format(time.RFC3339)}
 }
 
 func toBlockedDTO(ctx context.Context, repo domain.Repository, item *domain.Item) (ItemDTO, error) {
