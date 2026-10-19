@@ -150,9 +150,11 @@ switcher 只渲染活动列，标签条是 tablist；左右键循环切换，Hom
 
 视口聚焦后方向键每次平移 48px，Shift 四倍；+/− 按 1.25 倍步进，0 适应。聚焦离屏控件会露出其焦点区域。拖卡时视口边缘自动平移，越靠边越快，内容到边时停止；离开视口无落点。
 
-全屏为 CSS fixed 模式，不调用 Fullscreen API；进入与退出时整层淡入淡出（180ms，只动透明度，减弱动态时直接切换）；全屏与页面里各用各的视口：进入时从适应窗口开始，退出时回到页面里原来的视口，切换在绘制前完成；锁页面滚动，使画布外内容 inert。不要放在 transform 祖先下。全屏忽略内联 height。Escape 先取消卡片操作，未被处理时才退出全屏。按钮/键盘缩放有过渡，滚轮/拖动/双指即时；减弱动态关闭过渡。默认高度 `32rem`，宿主应提供适合页面的可用空间。
+全屏为 CSS fixed 模式，不调用 Fullscreen API。内容从页面原位置连续展开到全屏（250ms），关闭时收回原位置与缩放（300ms），缓动为 `cubic-bezier(0.22, 0.61, 0.36, 1)`；背景与工具栏同步淡入淡出，不先隐藏整块内容。过渡只改变 transform、视口裁剪与透明度，不逐帧修改看板宽高；减弱动态时直接切换。原位置保留等尺寸占位，不改变文档高度；全屏期间锁页面滚动并使画布外内容 inert。退出恢复页面滚动位置与触发器焦点。全屏忽略内联 height、width 与 margin；不要放在 transform 祖先下。Escape 先取消卡片操作，未被处理时退出全屏，也可在展开途中平滑收回。
 
-追溯：`src/canvas/canvas.tsx`、`use-canvas-gestures.ts`、`use-inert-outside.ts`。
+画布内的看板不再单独裁剪关系线，拖出看板两侧但仍位于画布视口内的连接段保持可见；独立看板仍保留自身横向滚动。按钮/键盘缩放有过渡，滚轮/拖动/双指即时；减弱动态关闭过渡。默认高度 `32rem`，宿主应提供适合页面的可用空间。
+
+追溯：`src/canvas/canvas.tsx`、`use-canvas-fullscreen.ts`、`use-canvas-gestures.ts`、`use-inert-outside.ts`。
 
 ## ResponsiveLayout
 

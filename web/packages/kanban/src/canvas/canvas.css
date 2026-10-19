@@ -29,6 +29,13 @@
 	color-scheme: light;
 }
 
+.v-kanban-canvas__placeholder {
+	box-sizing: border-box;
+	max-width: 100%;
+	visibility: hidden;
+	pointer-events: none;
+}
+
 /* 全屏：铺满视口。用 fixed 而不是浏览器的全屏 API，这样 Esc 由页面自己处理，拖拽中的 Esc 才能优先取消拖拽。 */
 .v-kanban-canvas[data-fullscreen="true"] {
 	position: fixed;
@@ -36,8 +43,24 @@
 	z-index: 1000;
 	/* biome-ignore lint/complexity/noImportantStyles: 使用方给画布设的内联高度（常见用法）不能让全屏只占一部分 */
 	height: auto !important;
+	/* biome-ignore lint/complexity/noImportantStyles: 页面布局的内联宽度与外边距不应约束全屏边界 */
+	width: auto !important;
+	/* biome-ignore lint/complexity/noImportantStyles: 占位层保留页面外边距，全屏层始终贴合视口 */
+	margin: 0 !important;
 	border: 0;
 	border-radius: 0;
+	background: transparent;
+}
+
+.v-kanban-canvas__backdrop {
+	display: none;
+}
+.v-kanban-canvas[data-fullscreen="true"] > .v-kanban-canvas__backdrop {
+	position: absolute;
+	inset: 0;
+	display: block;
+	background: var(--_kanban-canvas-surface);
+	pointer-events: none;
 }
 
 .v-kanban-canvas .v-kanban-canvas__viewport {

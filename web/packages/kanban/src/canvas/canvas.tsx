@@ -30,25 +30,13 @@ import {
 import type { Locale } from "../locale.ts";
 import { EDITING_EVENT, PAN_EVENT, type PanRequest } from "../pan-region.ts";
 import { type CanvasMessages, resolveCanvasMessages, zoomStatusText } from "./messages.ts";
+import { useCanvasFullscreen } from "./use-canvas-fullscreen.ts";
 import { useCanvasGestures } from "./use-canvas-gestures.ts";
-import { useInertOutside } from "./use-inert-outside.ts";
 
 /** 方向键每次平移的距离（px），按住 Shift 为 4 倍。 */
 const KEY_PAN = 48;
 /** 聚焦的元素离视口边缘至少留出多少 px，容得下聚焦环。 */
 const REVEAL_MARGIN = 8;
-/** 进入与退出全屏的淡入淡出：只动透明度，不缩放也不滑动。 */
-const FULLSCREEN_FADE = { duration: 180, easing: "cubic-bezier(0.2, 0, 0, 1)" } as const;
-
-/** 按透明度淡入或淡出；不支持 Web Animations 或用户要求减弱动态时不做动画，返回 null。 */
-function fade(element: HTMLElement | null, direction: "in" | "out"): Animation | null {
-	if (!element || typeof element.animate !== "function") return null;
-	if (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches)
-		return null;
-	const frames =
-		direction === "in" ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }];
-	return element.animate(frames, FULLSCREEN_FADE);
-}
 
 /** `Canvas` 的命令式句柄。 */
 export interface CanvasHandle {
@@ -146,7 +134,6 @@ export function Canvas({
 		viewport: normalizeViewport(defaultViewport ?? IDENTITY_VIEWPORT, limits),
 		animate: false,
 	});
-	const [fullscreen, setFullscreen] = useState(false);
 	const [status, setStatus] = useState("");
 
 	const latest = useRef({
@@ -363,78 +350,35 @@ export function Canvas({
 		};
 	}, [apply, measure]);
 
-	/** 正在淡出的全屏层；淡出期间再次请求退出不重复处理。 */
-	const leaving = useRef<Animation | null>(null);
-	const changeFullscreen = useCallback((next: boolean) => {
-		const commit = () => {
-			leaving.current = null;
-			setFullscreen(next);
+	const inline = useRef<{ viewport: Viewport; adjusted: boolean } | null>(null);
+	const { fullscreen, placeholderStyle, changeFullscreen } = useCanvasFullscreen({
+		root: rootRef,
+		content: contentRef,
+		getViewport: () => latest.current.viewport,
+		onLayoutChange: (next) => {
+			if (next) {
+				inline.current = { viewport: latest.current.viewport, adjusted: adjusted.current };
+				refit();
+				return;
+			}
+			const saved = inline.current;
+			inline.current = null;
+			if (saved?.adjusted) {
+				adjusted.current = true;
+				apply(saved.viewport);
+			} else {
+				refit();
+			}
+		},
+		onChange: (next) => {
 			setStatus(
 				next
 					? latest.current.messages.fullscreenEntered
 					: latest.current.messages.fullscreenExited,
 			);
 			latest.current.onFullscreenChange?.(next);
-		};
-		if (next) {
-			leaving.current?.cancel();
-			commit();
-			return;
-		}
-		if (leaving.current) return;
-		// 退出：先在全屏层上淡出，结束后再回到页面里的位置
-		const animation = fade(rootRef.current, "out");
-		if (!animation) {
-			commit();
-			return;
-		}
-		leaving.current = animation;
-		animation.finished.then(commit, () => {
-			leaving.current = null;
-		});
-	}, []);
-
-	useInertOutside(rootRef, fullscreen);
-
-	// 全屏与页面里各用各的视口：进入全屏时记下页面里的视口，全屏从适应窗口开始；
-	// 退出时放回去，全屏里的平移缩放不带回页面。都在绘制前完成，
-	// 等尺寸观察器的话，它触发的更新排在绘制之后，会先画出一帧停在旧位置的内容再跳过去
-	const wasFullscreen = useRef(fullscreen);
-	const inline = useRef<{ viewport: Viewport; adjusted: boolean } | null>(null);
-	useLayoutEffect(() => {
-		if (wasFullscreen.current === fullscreen) return;
-		wasFullscreen.current = fullscreen;
-		if (fullscreen) {
-			inline.current = { viewport: latest.current.viewport, adjusted: adjusted.current };
-			refit();
-			// 从透明淡入；在绘制前开始，第一帧就是透明的
-			fade(rootRef.current, "in");
-			return;
-		}
-		const saved = inline.current;
-		inline.current = null;
-		if (saved?.adjusted) {
-			adjusted.current = true;
-			apply(saved.viewport);
-		} else {
-			refit();
-		}
-	}, [apply, fullscreen, refit]);
-
-	// 全屏：锁住页面滚动；Esc 退出（已被拖拽或键盘拿起接管的 Esc 不会走到这里）
-	useEffect(() => {
-		if (!fullscreen) return;
-		const previous = document.body.style.overflow;
-		document.body.style.overflow = "hidden";
-		const onKeyDown = (event: globalThis.KeyboardEvent) => {
-			if (event.key === "Escape" && !event.defaultPrevented) changeFullscreen(false);
-		};
-		document.addEventListener("keydown", onKeyDown);
-		return () => {
-			document.body.style.overflow = previous;
-			document.removeEventListener("keydown", onKeyDown);
-		};
-	}, [fullscreen, changeFullscreen]);
+		},
+	});
 
 	const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
 		// 内容里的元素自己处理自己的按键；带修饰键的组合留给浏览器与页面
@@ -467,106 +411,118 @@ export function Canvas({
 	const atMax = viewport.scale >= limits.max;
 	const atMin = viewport.scale <= limits.min;
 	return (
-		<div
-			ref={rootRef}
-			className={className ? `v-kanban-canvas ${className}` : "v-kanban-canvas"}
-			data-fullscreen={fullscreen ? "true" : undefined}
-			{...rest}
-		>
-			<div
-				ref={viewportRef}
-				role="group"
-				data-kanban-pan-region=""
-				aria-label={messages.canvasLabel}
-				aria-describedby={hintId}
-				// biome-ignore lint/a11y/noNoninteractiveTabindex: 可平移缩放的视口要能聚焦，才能用方向键平移、+ 与 - 缩放
-				tabIndex={0}
-				className="v-kanban-canvas__viewport"
-				onKeyDown={onKeyDown}
-			>
+		<>
+			{fullscreen ? (
 				<div
-					ref={contentRef}
-					className="v-kanban-canvas__content"
-					data-animate={animate ? "true" : undefined}
-					style={{
-						transform: transformOf(viewport),
-					}}
-				>
-					{children}
-				</div>
-			</div>
-			{controls ? (
-				<div
-					role="group"
-					aria-label={messages.controlsLabel}
-					className="v-kanban-canvas__controls"
-				>
-					<button
-						type="button"
-						className="v-kanban-canvas__button"
-						aria-label={messages.zoomOut}
-						title={messages.zoomOut}
-						aria-disabled={atMin}
-						onClick={() => zoomBy(-1)}
-					>
-						<Icon>
-							<path d="M3 8h10" />
-						</Icon>
-					</button>
-					<span className="v-kanban-canvas__zoom">
-						{Math.round(viewport.scale * 100)}%
-					</span>
-					<button
-						type="button"
-						className="v-kanban-canvas__button"
-						aria-label={messages.zoomIn}
-						title={messages.zoomIn}
-						aria-disabled={atMax}
-						onClick={() => zoomBy(1)}
-					>
-						<Icon>
-							<path d="M3 8h10M8 3v10" />
-						</Icon>
-					</button>
-					<button
-						type="button"
-						className="v-kanban-canvas__button"
-						aria-label={messages.fit}
-						title={messages.fit}
-						onClick={fitToWindow}
-					>
-						<Icon>
-							<path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10" />
-						</Icon>
-					</button>
-					<button
-						type="button"
-						className="v-kanban-canvas__button"
-						aria-label={fullscreen ? messages.exitFullscreen : messages.enterFullscreen}
-						title={fullscreen ? messages.exitFullscreen : messages.enterFullscreen}
-						onClick={() => changeFullscreen(!fullscreen)}
-					>
-						<Icon>
-							{fullscreen ? (
-								<path d="M13.5 6.5h-4v-4M9.5 6.5l4-4M2.5 9.5h4v4M6.5 9.5l-4 4" />
-							) : (
-								<path d="M9.5 2.5h4v4M13.5 2.5l-4 4M6.5 13.5h-4v-4M2.5 13.5l4-4" />
-							)}
-						</Icon>
-					</button>
-				</div>
+					aria-hidden="true"
+					className="v-kanban-canvas__placeholder"
+					style={placeholderStyle}
+				/>
 			) : null}
-			<span id={hintId} className="v-kanban-canvas__sr-only">
-				{messages.canvasHint}
-			</span>
 			<div
-				role="status"
-				aria-live="polite"
-				aria-atomic="true"
-				className="v-kanban-canvas__sr-only v-kanban-canvas__status"
+				ref={rootRef}
+				className={className ? `v-kanban-canvas ${className}` : "v-kanban-canvas"}
+				data-fullscreen={fullscreen ? "true" : undefined}
+				{...rest}
 			>
-				{status}
+				<div className="v-kanban-canvas__backdrop" aria-hidden="true" />
+				<div
+					ref={viewportRef}
+					role="group"
+					data-kanban-pan-region=""
+					aria-label={messages.canvasLabel}
+					aria-describedby={hintId}
+					// biome-ignore lint/a11y/noNoninteractiveTabindex: 可平移缩放的视口要能聚焦，才能用方向键平移、+ 与 - 缩放
+					tabIndex={0}
+					className="v-kanban-canvas__viewport"
+					onKeyDown={onKeyDown}
+				>
+					<div
+						ref={contentRef}
+						className="v-kanban-canvas__content"
+						data-animate={animate ? "true" : undefined}
+						style={{
+							transform: transformOf(viewport),
+						}}
+					>
+						{children}
+					</div>
+				</div>
+				{controls ? (
+					<div
+						role="group"
+						aria-label={messages.controlsLabel}
+						className="v-kanban-canvas__controls"
+					>
+						<button
+							type="button"
+							className="v-kanban-canvas__button"
+							aria-label={messages.zoomOut}
+							title={messages.zoomOut}
+							aria-disabled={atMin}
+							onClick={() => zoomBy(-1)}
+						>
+							<Icon>
+								<path d="M3 8h10" />
+							</Icon>
+						</button>
+						<span className="v-kanban-canvas__zoom">
+							{Math.round(viewport.scale * 100)}%
+						</span>
+						<button
+							type="button"
+							className="v-kanban-canvas__button"
+							aria-label={messages.zoomIn}
+							title={messages.zoomIn}
+							aria-disabled={atMax}
+							onClick={() => zoomBy(1)}
+						>
+							<Icon>
+								<path d="M3 8h10M8 3v10" />
+							</Icon>
+						</button>
+						<button
+							type="button"
+							className="v-kanban-canvas__button"
+							aria-label={messages.fit}
+							title={messages.fit}
+							onClick={fitToWindow}
+						>
+							<Icon>
+								<path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10" />
+							</Icon>
+						</button>
+						<button
+							type="button"
+							className="v-kanban-canvas__button"
+							aria-label={
+								fullscreen ? messages.exitFullscreen : messages.enterFullscreen
+							}
+							title={fullscreen ? messages.exitFullscreen : messages.enterFullscreen}
+							onClick={() => changeFullscreen(!fullscreen)}
+						>
+							<Icon>
+								{fullscreen ? (
+									<path d="M13.5 6.5h-4v-4M9.5 6.5l4-4M2.5 9.5h4v4M6.5 9.5l-4 4" />
+								) : (
+									<path d="M9.5 2.5h4v4M13.5 2.5l-4 4M6.5 13.5h-4v-4M2.5 13.5l4-4" />
+								)}
+							</Icon>
+						</button>
+					</div>
+				) : null}
+				<span id={hintId} className="v-kanban-canvas__sr-only">
+					{messages.canvasHint}
+				</span>
+				<div
+					role="status"
+					aria-live="polite"
+					aria-atomic="true"
+					className="v-kanban-canvas__sr-only v-kanban-canvas__status"
+				>
+					{status}
+				</div>
 			</div>
-		</div>
+		</>
 	);
 }

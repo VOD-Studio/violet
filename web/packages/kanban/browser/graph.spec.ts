@@ -225,6 +225,7 @@ test.describe("画布里的平移、缩放与全屏", () => {
 		await open(page);
 
 		await page.getByRole("button", { name: "Enter full screen" }).click();
+		await expect(canvas(page)).toHaveAttribute("data-fullscreen", "true");
 		const size = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
 		expect(await canvas(page).boundingBox()).toMatchObject({
 			x: 0,
