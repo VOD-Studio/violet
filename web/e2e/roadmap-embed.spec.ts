@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
+import { loadClient } from "./client";
 import { ROADMAP_CANVAS_POST, ROADMAP_EMBED_POST, ROADMAP_FIXTURE } from "./mock-data.mjs";
-import { collectDiagnostics, loadClient } from "./support.ts";
+import { collectDiagnostics } from "./support.ts";
 
 const PATH = `/blog/${ROADMAP_EMBED_POST.slug}`;
 const titleOf = (number: number) =>
@@ -57,7 +58,6 @@ test.describe("文章里的 roadmap 卡片", () => {
 
 		await card(page, "project").getByRole("link", { name: "查看完整路线图" }).click();
 		await expect(page).toHaveURL(new RegExp(`/projects/${ROADMAP_FIXTURE.project.slug}$`));
-		// 文章页的评论、批注等接口 mock 没有，资源 404 与卡片无关
 		expect(diagnostics.filter((entry) => !entry.includes("Failed to load resource"))).toEqual(
 			[],
 		);

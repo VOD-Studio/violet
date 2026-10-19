@@ -21,16 +21,11 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { type BrowserContext, expect, type Page, type Route, test } from "@playwright/test";
+import { CONTRACT_IMAGE_PNG } from "./client";
 import { handle } from "./mock-data.mjs";
 
 const THEME_SERVER_PORT = 4173;
 const CLIENT_DIR = join(import.meta.dirname, "..", "dist", "client");
-
-/** 沉浸方言契约图集用的 1×1 PNG（经 /assets 路径应答，避免真实网络图源）。 */
-const CONTRACT_IMAGE_PNG = Buffer.from(
-	"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
-	"base64",
-);
 
 const VIEWPORTS = [
 	{ name: "mobile", width: 390, height: 844 },

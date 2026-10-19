@@ -1,8 +1,6 @@
 import { CustomEmojiContextMenu } from "@features/customemoji/ui/CustomEmojiContextMenu";
 import { useSettings } from "@features/settings/api/queries";
 import { GoogleOAuthProvider } from "@react-oauth/google";
-import { clientQueryClient } from "@shared/api/query-client";
-import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster, type VioletToasterProps } from "@violet/ui";
 import { ThemeProvider, useTheme } from "next-themes";
 import type { ReactNode } from "react";
@@ -41,24 +39,17 @@ function ThemedToaster() {
 }
 
 /**
- * 全局 Provider 装配（集中于此避免 __root 组件膨胀）：
- * - QueryClientProvider：服务端状态（TanStack Query），复用 clientQueryClient 单例
- *   （与 http 拦截器等非组件代码共用同一实例，避免缓存串扰）
- * - GoogleOAuthProvider: Google 登录（clientId 实时取自公开 settings，需在
- *   QueryClientProvider 内部以使用 useSettings）
- * - ThemeProvider（next-themes）：双主题，cookie 持久化防 FOUC
- * - Toaster：全局错误/成功 toast（接 QueryCache error）
+ * 站点级主题、OAuth、toast 与表情交互。
+ * 查询缓存由外层 Router–Query SSR 集成提供。
  */
 const AppProvider = ({ children }: AppProviderProps) => {
 	return (
-		<QueryClientProvider client={clientQueryClient}>
-			<GoogleOAuthGate>
-				<ThemeProvider attribute="class" defaultTheme="system" enableColorScheme={false}>
-					<CustomEmojiContextMenu>{children}</CustomEmojiContextMenu>
-					<ThemedToaster />
-				</ThemeProvider>
-			</GoogleOAuthGate>
-		</QueryClientProvider>
+		<GoogleOAuthGate>
+			<ThemeProvider attribute="class" defaultTheme="system" enableColorScheme={false}>
+				<CustomEmojiContextMenu>{children}</CustomEmojiContextMenu>
+				<ThemedToaster />
+			</ThemeProvider>
+		</GoogleOAuthGate>
 	);
 };
 

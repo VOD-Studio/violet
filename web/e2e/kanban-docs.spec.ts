@@ -1,5 +1,6 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
-import { collectDiagnostics, loadClient } from "./support.ts";
+import { loadClient } from "./client";
+import { collectDiagnostics } from "./support.ts";
 
 const editable = (page: Page) => page.locator('[data-kanban-example="editable"]');
 const column = (page: Page, title: string) =>

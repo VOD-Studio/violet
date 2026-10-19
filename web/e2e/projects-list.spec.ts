@@ -1,6 +1,7 @@
 import { type BrowserContext, expect, type Page, test } from "@playwright/test";
+import { loadClient } from "./client";
 import { PROJECTS_FIXTURE } from "./mock-data.mjs";
-import { collectDiagnostics, loadClient } from "./support.ts";
+import { collectDiagnostics } from "./support.ts";
 
 const PNG = Buffer.from(
 	"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNIK+/4DwAFEQJlVsm6GwAAAABJRU5ErkJggg==",

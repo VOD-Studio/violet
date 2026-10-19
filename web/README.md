@@ -96,6 +96,8 @@ Segmented 是横纵两个方向、soft / ink / line 三种变体的分段控制�
 
 ## 首页时间轴
 
+近稿以左侧渐变时间线呈现最近五条发布记录，序号沿轴线排列。首篇突出标题，其余条目按目录排版，日期靠右、类型置于次行。条目不使用卡片或横向分割线，窄屏长标题自然换行；加载占位保留相同的时间线布局。
+
 `widgets/HomeExperience` 的发布积累区在宽屏显示连续单轴，窄屏按季节分行。今日刻度使用完整的「今天」标注，与紫色发布节点区分；当天有发布时节点与今日位置对齐。没有当天发布且聚合窗口尚未结束时，节点按已过去的窗口部分定位，不借用未来空白日期计算中点；桌面与分季视图共用这一时间定位规则。
 
 ## 文章编辑与阅读
@@ -218,6 +220,10 @@ pnpm sync:pdf-worker     # 同步 pdfjs worker 到 public/（postinstall 已自�
 
 表情目录与会话内个人表情由 TanStack Query 缓存，关闭浮层不丢弃列表。后台目录变更、个人表情增删收藏和后台下架会失效对应缓存；登出或收到 401 时取消并清除私有查询，重登弹窗打开期间暂停个人列表请求。
 
+SSR 的 `getRouter()` 每请求创建独立 QueryClient，浏览器继续复用 `clientQueryClient`。`@tanstack/react-router-ssr-query` 在组件首轮读取前恢复 loader 预取缓存，并传递渲染期间完成的查询；QueryClientProvider 由 Router 统一装配，站点 AppProvider 不另建缓存。已显示的 SSR 内容不能因客户端接管或后台重取退回骨架，首次无数据和独立延迟区块仍可显示加载态。
+
+关于页在 loader 中预取公开设置，与根布局共用同一个查询键，避免服务端骨架和客户端已加载正文竞争首帧。
+
 ## API 与认证
 
 - 开发环境通过 Vite 反向代理将 `/api/*` 与 `/uploads/*` 转发到后端 `http://localhost:9090`，避免跨域与 CSRF 边界问题。
@@ -252,6 +258,7 @@ pnpm test
 - 看板文档契约：`pnpm test:contract e2e/kanban-docs.spec.ts`，覆盖导航入口、服务端直出、同源源码、API 目录跳转、演示的拖拽与键盘移动、撤销重做与暗色。
 - 编辑器路线图入口契约：`pnpm test:contract e2e/editor-roadmap-embed.spec.ts`，覆盖 Slash 选择与预览、插入后的编辑区预览、代码块上的编辑与手写围栏块。
 - 路线图筛选契约：`pnpm test:contract e2e/project-roadmap-filters.spec.ts`，覆盖搜索与标签组合、原位淡化、清除、URL 直入和刷新、收起条目计数、管理员禁拖提示及窄屏键盘操作。
+- 首访连续性回归：`pnpm test:contract e2e/ssr-hydration.spec.ts`。同一全新浏览器上下文先展示真实 SSR 内容，再放行冷启动脚本并暂缓浏览器数据请求，持续检查正文未消失、没有水合错误。覆盖文章、首页、笔记、图集、系列、关于页和人设空资源。
 
 ## 环境变量
 

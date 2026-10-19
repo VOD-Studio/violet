@@ -1,7 +1,8 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
+import { loadClient } from "./client";
 import { ROADMAP_FIXTURE } from "./mock-data.mjs";
 import { roadmapBackend } from "./roadmap-backend.ts";
-import { authenticated, collectDiagnostics, loadClient } from "./support.ts";
+import { authenticated, collectDiagnostics } from "./support.ts";
 
 const SLUG = ROADMAP_FIXTURE.project.slug;
 const idOf = (number: number) =>

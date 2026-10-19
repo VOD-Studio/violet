@@ -1,6 +1,7 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
+import { loadClient } from "./client";
 import { ROADMAP_FIXTURE } from "./mock-data.mjs";
-import { collectDiagnostics, loadClient } from "./support.ts";
+import { collectDiagnostics } from "./support.ts";
 
 const SLUG = ROADMAP_FIXTURE.project.slug;
 const idOf = (number: number) =>

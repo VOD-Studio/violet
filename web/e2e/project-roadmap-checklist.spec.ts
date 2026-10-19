@@ -1,6 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
+import { loadClient } from "./client";
 import { ROADMAP_FIXTURE } from "./mock-data.mjs";
-import { collectDiagnostics, loadClient } from "./support.ts";
+import { collectDiagnostics } from "./support.ts";
 
 const SLUG = ROADMAP_FIXTURE.project.slug;
 /** 卡片按钮的名字以 #编号 开头；关系标记按钮的名字不是 */

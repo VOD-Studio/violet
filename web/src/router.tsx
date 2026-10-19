@@ -3,21 +3,18 @@ import type { SessionClaims } from "@entities/user/model/types";
 import RouteError from "@shared/ui/route-error";
 import type { QueryClient } from "@tanstack/react-query";
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
+import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 import { RuaLoading } from "@widgets/PersonaMotion";
 import "./register-article-embeds";
 import { routeTree } from "./routeTree.gen";
-import { clientQueryClient } from "./shared/api/query-client";
+import { clientQueryClient, createQueryClient } from "./shared/api/query-client";
 import { reconcileIntent, resolveViewTransitionTypes } from "./shared/lib/view-transition";
 
 /**
- * RouterContext - 全路由共享的上下文
- *
- * 在 __root 的 beforeLoad 中填充：
- * - queryClient：SSR 每请求独立实例（避免跨请求缓存串扰），客户端复用单例
- * - auth：SSR 期间通过 /auth/session 确定的鉴权快照，client hydrate 时复用
+ * 根路由填充鉴权与主题；查询缓存由路由工厂按运行环境创建。
  */
 export interface RouterContext {
-	/** TanStack Query 实例 */
+	/** loader、SSR 渲染与浏览器接管使用同一份路由缓存。 */
 	queryClient: QueryClient;
 	/** 鉴权状态 */
 	auth: {
@@ -30,13 +27,9 @@ export interface RouterContext {
 	theme: "light" | "dark";
 }
 
-/**
- * getRouter - 创建 TanStack Router 实例
- *
- * queryClient 在 router 实例化时注入单例（客户端复用，SSR 由 router 重建），
- * auth 初始为未登录态，由 __root 的 beforeLoad 在请求开始时覆盖为真实值。
- */
+/** SSR 每请求隔离查询缓存，浏览器复用会话层使用的单例。 */
 export const getRouter = () => {
+	const queryClient = typeof window === "undefined" ? createQueryClient() : clientQueryClient;
 	const router = createTanStackRouter({
 		routeTree,
 		scrollRestoration: true,
@@ -62,11 +55,12 @@ export const getRouter = () => {
 			},
 		},
 		context: {
-			queryClient: clientQueryClient,
+			queryClient,
 			auth: { isAuthenticated: false, claims: null },
 			theme: "light",
 		},
 	});
+	setupRouterSsrQueryIntegration({ router, queryClient });
 
 	return router;
 };

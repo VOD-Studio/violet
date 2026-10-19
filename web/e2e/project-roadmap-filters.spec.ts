@@ -1,6 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
+import { loadClient } from "./client";
 import { ROADMAP_FIXTURE } from "./mock-data.mjs";
-import { authenticated, collectDiagnostics, loadClient } from "./support.ts";
+import { authenticated, collectDiagnostics } from "./support.ts";
 
 const SLUG = ROADMAP_FIXTURE.project.slug;
 const PATH = `/projects/${SLUG}`;

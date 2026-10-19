@@ -1,5 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
-import { collectDiagnostics, loadClient } from "./support.ts";
+import { loadClient } from "./client";
+import { collectDiagnostics } from "./support.ts";
 
 async function expectNoOverflow(page: Page) {
 	await expect
