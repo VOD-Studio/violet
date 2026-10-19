@@ -2,7 +2,8 @@ import { resolveSectionOrder } from "@features/about/model/about-config";
 import { AboutPageLayout } from "@features/about/ui/AboutPageLayout";
 import { AboutPageError, AboutPageSkeleton } from "@features/about/ui/AboutPageSkeleton";
 import { ABOUT_SECTION_IDS, resolveAboutSection } from "@features/about/ui/section-registry";
-import { useSettings } from "@features/settings/api/queries";
+import { settingsKeys } from "@features/settings/api/keys";
+import { fetchSettings, useSettings } from "@features/settings/api/queries";
 import { createFileRoute } from "@tanstack/react-router";
 
 function AboutPage() {
@@ -34,6 +35,12 @@ function AboutPage() {
 }
 
 export const Route = createFileRoute("/about/")({
+	loader: async ({ context }) => {
+		await context.queryClient.ensureQueryData({
+			queryKey: settingsKeys.public(),
+			queryFn: fetchSettings,
+		});
+	},
 	head: () => ({
 		meta: [
 			{ title: "关于" },

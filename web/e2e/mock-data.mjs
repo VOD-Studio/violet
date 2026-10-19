@@ -36,6 +36,56 @@ const PUBLICATIONS = [1, 2, 3].map((i) => ({
 	featured: i === 1,
 }));
 
+const CONTRACT_POST = {
+	id: "10000000-0000-0000-0000-000000000001",
+	slug: "contract-post-1",
+	title: "壳层契约文章 1",
+	content_html: "<h2>首访缓存</h2><p>首访缓存回归正文始终可读。</p>",
+	content_md: "",
+	excerpt: "首访缓存回归正文。",
+	cover_image: "",
+	status: "published",
+	author_id: "30000000-0000-0000-0000-000000000001",
+	view_count: 7,
+	is_featured: true,
+	show_signature: false,
+	seo_title: "",
+	seo_description: "",
+	tags: ["契约"],
+	published_at: "2026-08-11T10:00:00Z",
+	created_at: "2026-08-11T10:00:00Z",
+	updated_at: "2026-08-11T10:00:00Z",
+};
+
+const CONTRACT_NOTE = {
+	id: "41000000-0000-0000-0000-000000000001",
+	title: "缓存接管笔记",
+	content_html: "<p>笔记内容在首访接管期间保持可读。</p>",
+	tags: ["ssr"],
+	published_at: "2026-08-11T10:00:00Z",
+};
+
+const CONTRACT_SERIES = {
+	id: "42000000-0000-0000-0000-000000000001",
+	slug: "contract-series",
+	title: "缓存接管系列",
+	description: "系列目录在首访接管期间保持可读。",
+	cover_image: "",
+	chapter_count: 1,
+	latest_chapter_at: CONTRACT_POST.published_at,
+	created_at: CONTRACT_POST.created_at,
+	sections: [],
+	root_chapters: [
+		{
+			post_id: CONTRACT_POST.id,
+			slug: CONTRACT_POST.slug,
+			title: CONTRACT_POST.title,
+			chapter_no: 1,
+			published_at: CONTRACT_POST.published_at,
+		},
+	],
+};
+
 const envelope = (data) => JSON.stringify({ data });
 
 const paged = (data, limit) =>
@@ -147,6 +197,26 @@ export function handle(method, pathname, search, cookie = "") {
 		}));
 		return { status: 200, body: paged(posts, limit) };
 	}
+	if (pathname === "/api/v1/posts/contract-post-1") {
+		return { status: 200, body: envelope(CONTRACT_POST) };
+	}
+	if (pathname === `/api/v1/posts/${CONTRACT_POST.id}/annotations/summary`) {
+		return { status: 200, body: envelope([]) };
+	}
+	if (pathname === "/api/v1/series/context/contract-post-1") {
+		return { status: 200, body: envelope(null) };
+	}
+	if (pathname === "/api/v1/notes") {
+		const tag = params.get("tag");
+		const notes = !tag || CONTRACT_NOTE.tags.includes(tag) ? [CONTRACT_NOTE] : [];
+		return { status: 200, body: paged(notes, Number(params.get("limit") || 24)) };
+	}
+	if (pathname === `/api/v1/notes/${CONTRACT_NOTE.id}`) {
+		return { status: 200, body: envelope(CONTRACT_NOTE) };
+	}
+	if (pathname === "/api/v1/series/contract-series") {
+		return { status: 200, body: envelope(CONTRACT_SERIES) };
+	}
 	if (pathname === "/api/v1/auth/session") {
 		if (!isAdminActor) {
 			return { status: 401, body: JSON.stringify({ error: "UNAUTHORIZED", message: "未登录" }) };
@@ -181,7 +251,21 @@ export function handle(method, pathname, search, cookie = "") {
 		const limit = Number(params.get("limit") || 20);
 		return { status: 200, body: paged([], limit) };
 	}
-	if (pathname === "/api/v1/settings") return { status: 200, body: envelope({}) };
+	if (pathname === "/api/v1/settings") {
+		return {
+			status: 200,
+			body: envelope({
+				site_name: "Violet",
+				github_username: "contract",
+				profile_role: "缓存接管契约作者",
+				avatar_url: "",
+				tagline: "",
+				about_config: {
+					sections: [{ id: "bio", enabled: true }],
+				},
+			}),
+		};
+	}
 	if (pathname === "/api/v1/announcements") return { status: 200, body: envelope([]) };
 	if (pathname === "/api/v1/galleries") {
 		const limit = Number(params.get("limit") || 12);

@@ -18,7 +18,7 @@ const Footer = () => {
 		`© ${year} ${siteName}. All rights reserved.`;
 
 	return (
-		<footer className="relative z-1 bg-[color-mix(in_oklab,var(--primary-base)_7%,var(--background))] pb-14 pt-8 text-foreground transition-colors">
+		<footer className="relative z-1 bg-[color-mix(in_oklab,var(--primary-base)_7%,var(--background))] pb-4 pt-8 text-foreground transition-colors">
 			{/* 顶部自然消融渐变带：主色低占比晕染，随 palette 自适应，无生硬边框切线 */}
 			<div
 				aria-hidden="true"
@@ -170,25 +170,10 @@ const Footer = () => {
 					</div>
 				</div>
 
-				{/* 底部极细行 */}
-				<div className="mt-12 flex flex-col justify-between gap-3 border-t border-border/50 pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center">
-					<div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-						{data?.social_rss ? (
-							<a
-								href={data.social_rss}
-								className="transition-colors hover:text-foreground"
-							>
-								RSS 订阅
-							</a>
-						) : null}
-						{displayDomain ? (
-							<>
-								<span aria-hidden>·</span>
-								<span className="font-mono">{displayDomain}</span>
-							</>
-						) : null}
-					</div>
-					<p className="tabular-nums">{footerText}</p>
+				{/* 底部通栏行：域名与版权，自然衔接无分割线 */}
+				<div className="mt-4 flex flex-col gap-3 text-xs text-muted-foreground sm:flex-row sm:items-center">
+					{displayDomain ? <span className="font-mono">{displayDomain}</span> : null}
+					<p className="tabular-nums sm:ml-auto">{footerText}</p>
 				</div>
 			</div>
 		</footer>

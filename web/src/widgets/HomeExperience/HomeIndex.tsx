@@ -2,6 +2,8 @@ import type { AdminComment } from "@entities/comment/model/types";
 import type { Tweet } from "@entities/tweet/model/types";
 import { formatDate, formatRelativeTime } from "@shared/lib/date";
 import { Link } from "@tanstack/react-router";
+import { Skeleton } from "@violet/ui";
+import { cn } from "cn";
 import { ArrowRight, ArrowUpRight, RefreshCw } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -50,8 +52,6 @@ export function HomeIndex({
 	missivesLoading,
 }: HomeIndexProps) {
 	const writings = items.slice(0, 5);
-	const leadItem = writings[0];
-	const subsequentItems = writings.slice(1);
 
 	const musings = tweets.slice(0, 2);
 
@@ -62,7 +62,7 @@ export function HomeIndex({
 			id="recent"
 			className="mx-auto max-w-7xl scroll-mt-24 px-5 pt-20 sm:px-8 lg:px-12 lg:pt-28"
 		>
-			<div className="grid min-w-0 grid-cols-1 gap-14 lg:grid-cols-[1.62fr_1fr] lg:gap-16">
+			<div className="grid min-w-0 grid-cols-1 gap-14 lg:grid-cols-[1.62fr_1fr] lg:gap-12">
 				<motion.div
 					className="min-w-0"
 					initial={false}
@@ -70,11 +70,11 @@ export function HomeIndex({
 					viewport={{ once: true, amount: 0.2 }}
 					transition={transition}
 				>
-					<div className="mb-7">
+					<div className="mb-4">
 						<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
 							FRESH INK
 						</p>
-						<h2 className="mt-1.5 text-2xl font-normal tracking-[-0.01em] text-foreground sm:text-[1.75rem]">
+						<h2 className="mt-1.5 font-serif text-xl font-normal leading-tight tracking-[0.08em] text-foreground/85 sm:text-2xl">
 							近稿
 						</h2>
 					</div>
@@ -97,70 +97,85 @@ export function HomeIndex({
 								{publicationRetrying ? "正在重试" : "重新获取近稿"}
 							</button>
 						</div>
-					) : leadItem ? (
-						<article className="relative mb-7 border-l-2 border-primary pl-4">
-							<span className="font-mono text-xs font-semibold tracking-wider text-primary">
-								01
-							</span>
-							<div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground/80">
-								<span className="font-normal text-muted-foreground/90">
-									{HOME_KIND_LABEL[leadItem.kind]}
-								</span>
-								<span aria-hidden>·</span>
-								<time dateTime={leadItem.published_at}>
-									{formatRelativeOrDate(leadItem.published_at)}
-								</time>
-							</div>
-							<h3 className="mt-2 text-lg font-medium leading-snug text-foreground sm:text-xl">
-								<HomeContentLink
-									item={leadItem}
-									className="transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-primary"
-								>
-									{leadItem.title}
-								</HomeContentLink>
-							</h3>
-						</article>
+					) : writings.length > 0 ? (
+						<div className="relative">
+							<div
+								aria-hidden
+								className="pointer-events-none absolute inset-y-5 left-3 w-px -translate-x-1/2 bg-linear-to-b from-primary/70 via-border to-transparent"
+							/>
+							<ol aria-label="最近发布的作品" className="relative">
+								{writings.map((item, index) => (
+									<li key={item.id}>
+										<HomeContentLink
+											item={item}
+											className="group relative block py-3.5 pl-9 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary sm:pl-10"
+										>
+											<span
+												aria-hidden
+												className={cn(
+													"absolute left-3 top-3.5 -translate-x-1/2 bg-background px-1 font-mono text-[10px] leading-5 tabular-nums transition-colors group-hover:text-primary group-focus-visible:text-primary",
+													index === 0
+														? "text-primary"
+														: "text-muted-foreground/55",
+												)}
+											>
+												{String(index + 1).padStart(2, "0")}
+											</span>
+											{index === 0 ? (
+												<>
+													<div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] leading-5 text-muted-foreground/75">
+														<span>{HOME_KIND_LABEL[item.kind]}</span>
+														<span
+															aria-hidden
+															className="text-muted-foreground/35"
+														>
+															·
+														</span>
+														<time
+															dateTime={item.published_at}
+															className="tabular-nums"
+														>
+															{formatRelativeOrDate(
+																item.published_at,
+															)}
+														</time>
+													</div>
+													<h3 className="mt-2 font-serif text-xl font-normal leading-8 text-foreground wrap-break-word transition-colors group-hover:text-primary group-focus-visible:text-primary sm:text-[22px]">
+														{item.title}
+													</h3>
+												</>
+											) : (
+												<>
+													<div className="flex min-w-0 items-baseline justify-between gap-3 sm:gap-5">
+														<h3 className="min-w-0 font-serif text-[15px] font-normal leading-6 text-foreground/85 wrap-break-word transition-colors group-hover:text-primary group-focus-visible:text-primary">
+															{item.title}
+														</h3>
+														<time
+															dateTime={item.published_at}
+															className="shrink-0 text-[11px] leading-5 text-muted-foreground/60 tabular-nums"
+														>
+															{formatRelativeOrDate(
+																item.published_at,
+															)}
+														</time>
+													</div>
+													<p className="mt-1 text-[11px] leading-4 text-muted-foreground/60">
+														{HOME_KIND_LABEL[item.kind]}
+													</p>
+												</>
+											)}
+										</HomeContentLink>
+									</li>
+								))}
+							</ol>
+						</div>
 					) : (
 						<p className="mb-7 border-l border-border/80 pl-4 text-sm text-muted-foreground">
 							尚无公开作品。
 						</p>
 					)}
 
-					{subsequentItems.length > 0 ? (
-						<ul className="divide-y divide-border/30">
-							{subsequentItems.map((item, index) => {
-								const order = String(index + 2).padStart(2, "0");
-								return (
-									<li key={item.id} className="py-3.5 first:pt-0 last:pb-0">
-										<div className="grid grid-cols-[24px_minmax(0,1fr)_auto] items-baseline gap-3">
-											<span className="font-mono text-xs text-muted-foreground/50 tabular-nums">
-												{order}
-											</span>
-											<div className="min-w-0">
-												<HomeContentLink
-													item={item}
-													className="block truncate text-sm font-medium text-foreground/90 transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-primary"
-												>
-													{item.title}
-												</HomeContentLink>
-												<span className="mt-1 inline-block text-[11px] text-muted-foreground/70">
-													{HOME_KIND_LABEL[item.kind]}
-												</span>
-											</div>
-											<time
-												dateTime={item.published_at}
-												className="shrink-0 text-xs text-muted-foreground/70 tabular-nums"
-											>
-												{formatRelativeOrDate(item.published_at)}
-											</time>
-										</div>
-									</li>
-								);
-							})}
-						</ul>
-					) : null}
-
-					<div className="mt-7">
+					<div className="mt-4 pl-9 sm:pl-10">
 						<Link
 							to="/blog"
 							className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
@@ -183,18 +198,23 @@ export function HomeIndex({
 							<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
 								GLEANINGS
 							</p>
-							<h2 className="mt-1.5 text-2xl font-normal tracking-[-0.01em] text-foreground sm:text-[1.75rem]">
+							<h2 className="mt-1.5 font-serif text-xl font-normal leading-tight tracking-[0.08em] text-foreground/85 sm:text-2xl">
 								偶得
 							</h2>
 						</div>
 
 						{tweetsLoading ? (
-							<article
-								aria-live="polite"
-								className="border-l border-border/80 pl-3.5 text-xs text-muted-foreground"
-							>
-								<p>正在收拢偶得…</p>
-							</article>
+							<div aria-live="polite" className="space-y-4">
+								{[0, 1].map((i) => (
+									<div
+										key={i}
+										className="space-y-2 border-l border-border/80 pl-3.5"
+									>
+										<Skeleton className="h-3.5 w-full rounded" />
+										<Skeleton className="h-3 w-16 rounded" />
+									</div>
+								))}
+							</div>
 						) : musings.length > 0 ? (
 							<div className="space-y-4">
 								{musings.map((tweet) => (
@@ -205,7 +225,7 @@ export function HomeIndex({
 										<Link
 											to="/tweets/$id"
 											params={{ id: tweet.id }}
-											className="block text-xs leading-relaxed text-foreground/85 transition-colors hover:text-primary line-clamp-2"
+											className="block font-serif text-[13px] italic leading-relaxed text-foreground/85 transition-colors hover:text-primary line-clamp-2"
 										>
 											{tweet.content.trim() ||
 												(tweet.images.length > 0
@@ -222,8 +242,10 @@ export function HomeIndex({
 								))}
 							</div>
 						) : (
-							<article className="border-l border-border/80 pl-3.5 text-xs text-muted-foreground">
-								<p>近日未有新得，静待文思泉涌。</p>
+							<article className="text-[13px] text-muted-foreground">
+								<p className="font-serif italic leading-relaxed">
+									近日未有新得，静待文思泉涌。
+								</p>
 							</article>
 						)}
 
@@ -238,7 +260,7 @@ export function HomeIndex({
 						</div>
 					</div>
 
-					<hr className="my-8 border-0 border-t border-border/40" />
+					<hr className="my-7 border-0 border-t border-border/40" />
 
 					<HomeMissives missives={missives} isLoading={missivesLoading} />
 				</motion.div>
