@@ -66,6 +66,7 @@ function pickUp(id: string, to: { x: number; y: number }) {
 	fireEvent.pointerDown(card(id), { ...init, clientX: from.x, clientY: from.y });
 	fireEvent.pointerMove(document, { ...init, clientX: from.x + 10, clientY: from.y });
 	fireEvent.pointerMove(document, { ...init, clientX: to.x, clientY: to.y });
+	act(() => vi.advanceTimersToNextFrame());
 	return {
 		release: () => fireEvent.pointerUp(document, { ...init, clientX: to.x, clientY: to.y }),
 	};
@@ -91,9 +92,15 @@ function renderBoard(props: Props = {}) {
 
 let layout: ReturnType<typeof stubLayout>;
 beforeEach(() => {
+	vi.useFakeTimers({
+		toFake: ["requestAnimationFrame", "cancelAnimationFrame", "performance"],
+	});
 	layout = stubLayout();
 });
-afterEach(() => layout.mockRestore());
+afterEach(() => {
+	layout.mockRestore();
+	vi.useRealTimers();
+});
 
 describe("拖拽移动", () => {
 	it("跨列拖动：拖拽中显示占位与跟随指针的浮起卡片，松开后以移动事件提交", () => {
@@ -528,10 +535,12 @@ describe("放下时重新判定", () => {
 		fireEvent.pointerDown(card("a"), { ...init, clientX: from.x, clientY: from.y });
 		fireEvent.pointerMove(document, { ...init, clientX: from.x + 10, clientY: from.y });
 		fireEvent.pointerMove(document, { ...init, clientX: colX(1), clientY: slotY(1) });
+		act(() => vi.advanceTimersToNextFrame());
 		const afterEnter = canMove.mock.calls.length;
 
 		fireEvent.pointerMove(document, { ...init, clientX: colX(1) + 3, clientY: slotY(1) + 2 });
 		fireEvent.pointerMove(document, { ...init, clientX: colX(1) + 5, clientY: slotY(1) + 3 });
+		act(() => vi.advanceTimersToNextFrame());
 		expect(canMove.mock.calls.length).toBe(afterEnter);
 
 		fireEvent.pointerUp(document, { ...init, clientX: colX(1) + 5, clientY: slotY(1) + 3 });

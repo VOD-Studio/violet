@@ -1,4 +1,4 @@
-import type { KeyboardEvent, MouseEvent, ReactNode } from "react";
+import { type KeyboardEvent, type MouseEvent, memo, type ReactNode } from "react";
 import { EDITABLE_SELECTOR } from "../editable.ts";
 import { cardAttributes } from "./drag/dom.ts";
 import { MoveMenu } from "./move-menu.tsx";
@@ -166,3 +166,22 @@ export function CardItem({
 		</li>
 	);
 }
+
+interface CardContentProps<TCard, TColumn> {
+	card: TCard;
+	column: TColumn;
+	index: number;
+	render: (card: TCard, context: { column: TColumn; index: number }) => ReactNode;
+}
+
+function CardContentView<TCard, TColumn>({
+	card,
+	column,
+	index,
+	render,
+}: CardContentProps<TCard, TColumn>) {
+	return render(card, { column, index });
+}
+
+/** 卡片数据与插槽不变时，拖拽占位更新不重新渲染正文。 */
+export const CardContent = memo(CardContentView) as typeof CardContentView;

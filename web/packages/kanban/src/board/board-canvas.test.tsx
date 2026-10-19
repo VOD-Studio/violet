@@ -119,11 +119,14 @@ function pickUp(id: string, to: { x: number; y: number }) {
 	fireEvent.pointerDown(card(id), { ...init, clientX: from.x, clientY: from.y });
 	fireEvent.pointerMove(document, { ...init, clientX: from.x + 10, clientY: from.y });
 	fireEvent.pointerMove(document, { ...init, clientX: to.x, clientY: to.y });
+	act(() => vi.advanceTimersToNextFrame());
 	return {
 		from,
 		release: () => fireEvent.pointerUp(document, { ...init, clientX: to.x, clientY: to.y }),
-		moveTo: (point: { x: number; y: number }) =>
-			fireEvent.pointerMove(document, { ...init, clientX: point.x, clientY: point.y }),
+		moveTo: (point: { x: number; y: number }) => {
+			fireEvent.pointerMove(document, { ...init, clientX: point.x, clientY: point.y });
+			act(() => vi.advanceTimersToNextFrame());
+		},
 	};
 }
 
@@ -146,12 +149,18 @@ function renderBoard(
 
 let restore: () => void;
 beforeEach(() => {
+	vi.useFakeTimers({
+		toFake: ["requestAnimationFrame", "cancelAnimationFrame", "performance"],
+	});
 	view.scale = 0.5;
 	view.origin = { x: 100, y: 60 };
 	view.region = rect(0, 0, 2000, 2000);
 	restore = stubCanvasLayout();
 });
-afterEach(() => restore());
+afterEach(() => {
+	restore();
+	vi.useRealTimers();
+});
 
 describe("缩放与平移下的拖拽", () => {
 	it("落点按屏幕坐标求值：51% 缩放、画布已平移时仍落在指针下的列与位置", () => {
@@ -222,6 +231,46 @@ describe("缩放与平移下的拖拽", () => {
 		drag.release();
 
 		expect(onMove.mock.calls[0][0]).toMatchObject({ to: { columnId: "done", index: 0 } });
+	});
+
+	it("下一帧前快速移动并松开：按最后的指针位置提交，旧帧不会重新拖起卡片", () => {
+		const onMove = vi.fn<(move: BoardMove) => void>();
+		renderBoard({ onMove });
+		const from = screenCenter(card("a"));
+		const intermediate = toScreen(colX(2), slotY(0));
+		const target = toScreen(colX(1), slotY(1));
+		fireEvent.pointerDown(card("a"), { ...init, clientX: from.x, clientY: from.y });
+		fireEvent.pointerMove(document, {
+			...init,
+			clientX: intermediate.x,
+			clientY: intermediate.y,
+		});
+		fireEvent.pointerMove(document, { ...init, clientX: target.x, clientY: target.y });
+		fireEvent.pointerUp(document, { ...init, clientX: target.x, clientY: target.y });
+		act(() => vi.advanceTimersByTime(32));
+
+		expect(onMove).toHaveBeenCalledTimes(1);
+		expect(onMove.mock.calls[0][0]).toMatchObject({
+			cardId: "a",
+			to: { columnId: "doing", index: 1 },
+		});
+		expect(ghost()).toBeNull();
+	});
+
+	it("下一帧前取消：待处理的位置不再移动卡片或恢复占位", () => {
+		const onMove = vi.fn();
+		renderBoard({ onMove });
+		const from = screenCenter(card("a"));
+		const target = toScreen(colX(1), slotY(1));
+		fireEvent.pointerDown(card("a"), { ...init, clientX: from.x, clientY: from.y });
+		fireEvent.pointerMove(document, { ...init, clientX: target.x, clientY: target.y });
+		fireEvent.keyDown(document, { key: "Escape" });
+		act(() => vi.advanceTimersByTime(32));
+
+		expect(onMove).not.toHaveBeenCalled();
+		expect(ghost()).toBeNull();
+		expect(document.querySelector("[data-placeholder]")).toBeNull();
+		expect(card("a").closest("[data-column-id]")?.getAttribute("data-column-id")).toBe("todo");
 	});
 
 	it("开始拖拽时告知画布：用户在编辑，画布不再随内容尺寸自动适应", () => {

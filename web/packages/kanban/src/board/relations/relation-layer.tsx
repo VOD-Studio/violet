@@ -1,3 +1,4 @@
+import type { Ref } from "react";
 import {
 	arrowHead,
 	assignLanes,
@@ -13,6 +14,7 @@ const ARROW = 9;
 const BAR = 16;
 
 export interface RelationLayerProps {
+	ref?: Ref<SVGSVGElement>;
 	relations: readonly Relation[];
 	/** 各卡片在滚动层内容坐标系里的矩形。 */
 	rects: ReadonlyMap<string, Rect>;
@@ -33,6 +35,7 @@ export interface RelationLayerProps {
  * 所以随横向滚动，也随画布一起缩放平移。叠加层对读屏隐藏，文字等价由卡片上的关系描述提供。
  */
 export function RelationLayer({
+	ref,
 	relations,
 	rects,
 	types,
@@ -48,6 +51,7 @@ export function RelationLayer({
 	const laneOf = lanes ? assignLanes(edges) : [];
 	return (
 		<svg
+			ref={ref}
 			className="v-kanban__relations"
 			width="1"
 			height="1"

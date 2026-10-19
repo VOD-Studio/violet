@@ -78,10 +78,11 @@ interface Runtime extends Grabbed {
 	ghostAt: Point;
 	/** 看板所在的画布视口；不在画布里为 null。 */
 	region: HTMLElement | null;
-	/** 自动平移的下一帧。 */
+	/** 指针跟随与边缘平移共用的下一帧。 */
 	frame: number | null;
 	/** 上一帧的时间戳（ms）。 */
 	frameAt: number;
+	pointerChanged: boolean;
 	/** 上次求值的落点，落点不变时不重复调用 `canMove`。 */
 	targetKey: string;
 	/** 当前落点对应的有效移动；没有落点或被拒绝时为 null。 */
@@ -196,21 +197,30 @@ export function useBoardDrag(options: BoardDragOptions): BoardDrag {
 			});
 		};
 
-		/** 指针停在画布视口边缘时，每帧请求画布平移，并按新的布局重新放置浮起卡片、求落点。 */
-		const panTick = (current: Runtime, now: number) => {
-			const region = current.region;
-			if (!region || run.current !== current) return;
-			current.frame = requestAnimationFrame((next) => panTick(current, next));
-			// 标签页被挂起后的第一帧不要一下子飞出去；拖拽是在事件里开始的，
-			// 读到的时间可能比第一帧的帧起始时间还晚
+		const tick = (current: Runtime, now: number) => {
+			if (run.current !== current) return;
+			current.frame = null;
+			let changed = current.pointerChanged;
+			current.pointerChanged = false;
 			const seconds = Math.max(0, Math.min(now - current.frameAt, 64)) / 1000;
 			current.frameAt = now;
-			const speed = edgePanSpeed(current.pointer, toRect(region.getBoundingClientRect()));
-			if (speed.x === 0 && speed.y === 0) return;
-			// 画布没动（已到内容尽头）就没有什么要重新量的
-			if (!requestPan(root, speed.x * seconds, speed.y * seconds)) return;
-			followPointer(current);
-			resolveTarget(current, false);
+			if (current.region) {
+				const speed = edgePanSpeed(
+					current.pointer,
+					toRect(current.region.getBoundingClientRect()),
+				);
+				if (
+					(speed.x !== 0 || speed.y !== 0) &&
+					requestPan(root, speed.x * seconds, speed.y * seconds)
+				)
+					changed = true;
+			}
+			if (changed) {
+				resolveTarget(current, false);
+				followPointer(current);
+			}
+			if ((current.region || current.pointerChanged) && current.frame === null)
+				current.frame = requestAnimationFrame((next) => tick(current, next));
 		};
 
 		const release = (current: Runtime | null) => {
@@ -258,15 +268,14 @@ export function useBoardDrag(options: BoardDragOptions): BoardDrag {
 					region,
 					frame: null,
 					frameAt: performance.now(),
+					pointerChanged: true,
 					targetKey: "?",
 					move: null,
 					reason: undefined,
 				};
 				run.current = current;
-				if (region) {
-					notifyEditing(root);
-					current.frame = requestAnimationFrame((now) => panTick(current, now));
-				}
+				if (region) notifyEditing(root);
+				current.frame = requestAnimationFrame((now) => tick(current, now));
 				setSession({
 					phase: "dragging",
 					cardId,
@@ -280,13 +289,15 @@ export function useBoardDrag(options: BoardDragOptions): BoardDrag {
 				const current = run.current;
 				if (!current) return;
 				current.pointer = point;
-				followPointer(current);
-				resolveTarget(current, false);
+				current.pointerChanged = true;
+				if (current.frame === null)
+					current.frame = requestAnimationFrame((now) => tick(current, now));
 			},
 			drop() {
 				const current = run.current;
 				if (!current) return;
 				resolveTarget(current, true);
+				followPointer(current);
 				if (current.move && !isNoopMove(current.move))
 					commit(current.move, () => endSettling(current.cardId));
 				else if (current.reason) showNotice(current.reason);

@@ -10,7 +10,7 @@ import {
 } from "../core/index.ts";
 import { formatMessage } from "../locale.ts";
 import { notifyEditing } from "../pan-region.ts";
-import { CardItem } from "./card-item.tsx";
+import { CardContent, CardItem } from "./card-item.tsx";
 import { ColumnView } from "./column.tsx";
 import { ColumnSwitcher, switcherTabId } from "./column-switcher.tsx";
 import type { Activity } from "./drag/activity.ts";
@@ -25,10 +25,9 @@ import { useKeyboardMove } from "./drag/use-keyboard-move.ts";
 import { useMoveMenu } from "./drag/use-move-menu.ts";
 import { BoardLocaleContext } from "./locale-context.ts";
 import { type BoardLocale, type BoardMessages, resolveMessages } from "./messages.ts";
+import { BoardRelationLayer } from "./relations/board-relation-layer.tsx";
 import { relationEntries, relationsSummary } from "./relations/entries.ts";
-import { RelationLayer } from "./relations/relation-layer.tsx";
 import { type RelationTypeStyle, resolveRelationTypes } from "./relations/types.ts";
-import { useRelationGeometry } from "./relations/use-relation-geometry.ts";
 import { useActiveColumn } from "./use-active-column.ts";
 import { useArrival } from "./use-arrival.ts";
 import { useCollapsedColumns } from "./use-collapsed.ts";
@@ -380,23 +379,6 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 		arrive(cardId);
 	};
 	const showRelationLines = !switcher && !hideRelations && knownRelations.length > 0;
-	const relationRects = useRelationGeometry({
-		scrollerRef,
-		ids: showRelationLines
-			? [
-					...new Set(
-						knownRelations.flatMap((relation) => [
-							relation.sourceId,
-							relation.targetId,
-						]),
-					),
-				]
-			: [],
-		ghostRef: drag.ghostRef,
-		heldId: drag.ghost?.cardId ?? null,
-		active: drag.ghost !== null || keyboard.liftedId !== null,
-		version: `${layoutVersion}|${columnIds.filter(collapse.isCollapsed).join(",")}`,
-	});
 	const targets = [...definitions.values()].map((column) => ({
 		id: column.id,
 		title: column.title ?? column.id,
@@ -541,7 +523,12 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 									}
 									onKeyDown={(event) => keyboard.onCardKeyDown(event, card.id)}
 								>
-									{renderCard(card, { column, index })}
+									<CardContent
+										card={card}
+										column={column}
+										index={index}
+										render={renderCard}
+									/>
 								</CardItem>,
 							);
 							if (!isOrigin) shown += 1;
@@ -620,13 +607,17 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 						);
 					})}
 					{showRelationLines ? (
-						<RelationLayer
+						<BoardRelationLayer
 							relations={knownRelations}
-							rects={relationRects}
 							types={relationTypes}
 							selectedId={selectedId}
 							cardLabel={cardLabel}
-							lanes
+							geometry={{
+								ghostRef: drag.ghostRef,
+								heldId: drag.ghost?.cardId ?? null,
+								active: drag.ghost !== null || keyboard.liftedId !== null,
+								version: `${layoutVersion}|${columnIds.filter(collapse.isCollapsed).join(",")}`,
+							}}
 						/>
 					) : null}
 				</div>
@@ -638,10 +629,12 @@ export function Board<TCard extends BoardCard, TColumn extends BoardColumn = Boa
 						className="v-kanban__card v-kanban__ghost"
 						style={{ width: drag.ghost.size.width, height: drag.ghost.size.height }}
 					>
-						{renderCard(ghostCard, {
-							column: definitions.get(drag.ghost.origin.columnId) as TColumn,
-							index: drag.ghost.origin.index,
-						})}
+						<CardContent
+							card={ghostCard}
+							column={definitions.get(drag.ghost.origin.columnId) as TColumn}
+							index={drag.ghost.origin.index}
+							render={renderCard}
+						/>
 					</div>
 				) : null}
 				{onSelectedCardChange ? (

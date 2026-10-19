@@ -110,25 +110,45 @@ describe("Board", () => {
 	});
 
 	describe("插槽", () => {
-		it("renderCard 拿到所在列与列内序号", () => {
-			const seen: Array<[string, string, number]> = [];
-			render(
+		it("卡片数据、所在位置和渲染插槽更新后，正文同步变化", () => {
+			const renderCard = (
+				task: Task,
+				{ column, index }: { column: (typeof columns)[number]; index: number },
+			) => <span>{`${task.title} · ${column.title} ${index + 1}`}</span>;
+			const view = render(
 				<Board
 					columns={columns}
 					cards={tasks}
 					order={{ todo: ["t1", "t2"], doing: ["t3"] }}
-					renderCard={(task, { column, index }) => {
-						seen.push([task.id, column.id, index]);
-						return task.title;
-					}}
+					renderCard={renderCard}
 				/>,
 			);
+			expect(screen.getByText("写规格 · 规划中 1")).toBeTruthy();
 
-			expect(seen).toEqual([
-				["t1", "todo", 0],
-				["t2", "todo", 1],
-				["t3", "doing", 0],
-			]);
+			const updated = tasks.map((task) =>
+				task.id === "t1" ? { ...task, title: "补全规格" } : task,
+			);
+			view.rerender(
+				<Board
+					columns={columns}
+					cards={updated}
+					order={{ todo: ["t2"], doing: ["t3", "t1"] }}
+					renderCard={renderCard}
+				/>,
+			);
+			expect(screen.getByText("补全规格 · 开发中 2")).toBeTruthy();
+			expect(screen.queryByText("写规格 · 规划中 1")).toBeNull();
+
+			view.rerender(
+				<Board
+					columns={columns}
+					cards={updated}
+					order={{ todo: ["t2"], doing: ["t3", "t1"] }}
+					renderCard={(task) => <strong>待确认：{task.title}</strong>}
+				/>,
+			);
+			expect(screen.getByText("待确认：补全规格")).toBeTruthy();
+			expect(screen.queryByText("补全规格 · 开发中 2")).toBeNull();
 		});
 
 		it("renderColumnHeader 取代默认列头，并拿到使用方自己的列类型与卡片数", () => {
