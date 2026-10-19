@@ -16,10 +16,12 @@ export function HomeIndexSkeleton() {
 					</div>
 
 					{/* 01 焦点篇目（双行大字与标签） */}
-					<div className="relative mb-7 space-y-2 border-l-2 border-primary/30 pl-4">
+					<div className="mb-7 grid grid-cols-[24px_minmax(0,1fr)] items-baseline gap-3">
 						<Skeleton className="h-3 w-8 rounded" />
-						<Skeleton className="h-3 w-28 rounded" />
-						<Skeleton className="h-14 w-full rounded-lg" />
+						<div className="space-y-2 border-l-2 border-primary/30 pl-4">
+							<Skeleton className="h-3 w-28 rounded" />
+							<Skeleton className="h-14 w-full rounded-lg" />
+						</div>
 					</div>
 
 					{/* 02-05 后续篇目 */}
@@ -63,7 +65,7 @@ export function HomeIndexSkeleton() {
 						<Skeleton className="mt-5 h-3.5 w-24 rounded" />
 					</div>
 
-					<hr className="my-8 border-0 border-t border-border/40" />
+					<hr className="my-7 border-0 border-t border-border/40" />
 
 					{/* 尺素 */}
 					<div>
@@ -71,20 +73,20 @@ export function HomeIndexSkeleton() {
 							<Skeleton className="h-2.5 w-16 rounded" />
 							<Skeleton className="mt-2.5 h-7 w-20 rounded-lg" />
 						</div>
-						<div className="space-y-5">
-							<div className="relative space-y-2 pl-6">
+						<div className="space-y-4">
+							<div className="space-y-2 border-l border-border/80 pl-3.5">
 								<Skeleton className="h-3.5 w-full rounded" />
 								<Skeleton className="h-3.5 w-5/6 rounded" />
 								<Skeleton className="h-3.5 w-2/3 rounded" />
-								<div className="flex justify-end pt-1">
+								<div className="flex justify-start pt-1">
 									<Skeleton className="h-3 w-16 rounded" />
 								</div>
 							</div>
-							<div className="relative space-y-2 border-t border-border/25 pt-4 pl-6">
+							<div className="space-y-2 border-l border-border/80 pl-3.5">
 								<Skeleton className="h-3.5 w-full rounded" />
 								<Skeleton className="h-3.5 w-4/5 rounded" />
 								<Skeleton className="h-3.5 w-1/2 rounded" />
-								<div className="flex justify-end pt-1">
+								<div className="flex justify-start pt-1">
 									<Skeleton className="h-3 w-16 rounded" />
 								</div>
 							</div>

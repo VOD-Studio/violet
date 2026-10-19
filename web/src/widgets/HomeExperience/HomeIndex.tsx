@@ -98,27 +98,29 @@ export function HomeIndex({
 							</button>
 						</div>
 					) : leadItem ? (
-						<article className="relative mb-7 border-l-2 border-primary pl-4">
+						<article className="mb-7 grid grid-cols-[24px_minmax(0,1fr)] items-baseline gap-3">
 							<span className="font-mono text-xs font-semibold tracking-wider text-primary">
 								01
 							</span>
-							<div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground/80">
-								<span className="font-normal text-muted-foreground/90">
-									{HOME_KIND_LABEL[leadItem.kind]}
-								</span>
-								<span aria-hidden>·</span>
-								<time dateTime={leadItem.published_at}>
-									{formatRelativeOrDate(leadItem.published_at)}
-								</time>
+							<div className="border-l-2 border-primary pl-4">
+								<div className="flex items-center gap-1.5 text-xs text-muted-foreground/80">
+									<span className="font-normal text-muted-foreground/90">
+										{HOME_KIND_LABEL[leadItem.kind]}
+									</span>
+									<span aria-hidden>·</span>
+									<time dateTime={leadItem.published_at}>
+										{formatRelativeOrDate(leadItem.published_at)}
+									</time>
+								</div>
+								<h3 className="mt-2 text-lg font-medium leading-snug text-foreground sm:text-xl">
+									<HomeContentLink
+										item={leadItem}
+										className="transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-primary"
+									>
+										{leadItem.title}
+									</HomeContentLink>
+								</h3>
 							</div>
-							<h3 className="mt-2 text-lg font-medium leading-snug text-foreground sm:text-xl">
-								<HomeContentLink
-									item={leadItem}
-									className="transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-primary"
-								>
-									{leadItem.title}
-								</HomeContentLink>
-							</h3>
 						</article>
 					) : (
 						<p className="mb-7 border-l border-border/80 pl-4 text-sm text-muted-foreground">
@@ -222,8 +224,8 @@ export function HomeIndex({
 								))}
 							</div>
 						) : (
-							<article className="border-l border-border/80 pl-3.5 text-xs text-muted-foreground">
-								<p>近日未有新得，静待文思泉涌。</p>
+							<article className="text-xs text-muted-foreground">
+								<p className="font-serif italic">近日未有新得，静待文思泉涌。</p>
 							</article>
 						)}
 
@@ -238,7 +240,7 @@ export function HomeIndex({
 						</div>
 					</div>
 
-					<hr className="my-8 border-0 border-t border-border/40" />
+					<hr className="my-7 border-0 border-t border-border/40" />
 
 					<HomeMissives missives={missives} isLoading={missivesLoading} />
 				</motion.div>

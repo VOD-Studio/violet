@@ -32,24 +32,9 @@ export function HomeMissives({ missives, isLoading }: HomeMissivesProps) {
 					<p>正在收拢来信…</p>
 				</article>
 			) : missives.length > 0 ? (
-				<div className="space-y-5">
-					{missives.map((comment, index) => (
-						<article
-							key={comment.id}
-							className={
-								index === 0
-									? "relative pl-6"
-									: "relative border-t border-border/25 pt-4 pl-6"
-							}
-						>
-							<span
-								aria-hidden
-								className={`absolute left-0 font-serif text-3xl leading-none text-muted-foreground/25 select-none ${
-									index === 0 ? "-top-3" : "top-1"
-								}`}
-							>
-								“
-							</span>
+				<div className="space-y-4">
+					{missives.map((comment) => (
+						<article key={comment.id} className="border-l border-border/80 pl-3.5">
 							<p className="line-clamp-3 text-xs leading-relaxed text-foreground/80">
 								<EmojiText text={comment.body} emote={comment.emote} />
 							</p>
@@ -58,19 +43,11 @@ export function HomeMissives({ missives, isLoading }: HomeMissivesProps) {
 					))}
 				</div>
 			) : (
-				<article className="relative pl-6">
-					<span
-						aria-hidden
-						className="absolute -top-3 left-0 font-serif text-3xl leading-none text-muted-foreground/25 select-none"
-					>
-						“
-					</span>
-					<p className="text-xs leading-relaxed text-foreground/80">
+				<article className="text-xs text-muted-foreground">
+					<p className="font-serif italic">
 						一纸相闻，落笔为记。欢迎通过邮件，或在文章与推文下方留言。
 					</p>
-					<p className="mt-2 text-right text-[11px] text-muted-foreground/75">
-						— 站长回笺
-					</p>
+					<p className="mt-2 text-[11px] text-muted-foreground/75">— 站长回笺</p>
 				</article>
 			)}
 		</div>
@@ -88,7 +65,7 @@ function HomeMissiveAuthor({ comment }: { comment: AdminComment }) {
 		/>
 	);
 	return (
-		<p className="mt-2 flex items-center justify-end gap-1.5 text-[11px] text-muted-foreground/75">
+		<p className="mt-2 flex items-center justify-start gap-1.5 text-[11px] text-muted-foreground/75">
 			<span aria-hidden>—</span>
 			{comment.is_ai ? (
 				<AICommentProfile name={comment.author_name} className="shrink-0 rounded-full">
