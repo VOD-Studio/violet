@@ -7,6 +7,15 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.13.0](https://github.com/VOD-Studio/violet/compare/v2.12.1...v2.13.0) (2026-10-19)
+
+
+### 新增
+
+* **api-token:** 支持原位修改 MCP 授权 ([7c481f7](https://github.com/VOD-Studio/violet/commit/7c481f76adfb7b5c2ab2fd41555d87d4c70161ed))
+* **mcp:** 增加访问令牌编辑入口 ([4d1562a](https://github.com/VOD-Studio/violet/commit/4d1562a97fbd473a5e0cb175d44e30e1b8a43c16))
+* **projects:** 项目路线图 ([25da392](https://github.com/VOD-Studio/violet/commit/25da3925d4404b29c4fe1829a33b3eb027370c9d))
+
 ## [2.12.1](https://github.com/VOD-Studio/violet/compare/v2.12.0...v2.12.1) (2026-10-19)
 
 
