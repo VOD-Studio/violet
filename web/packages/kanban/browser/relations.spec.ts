@@ -42,6 +42,52 @@ async function expectAttached(page: Page) {
 	}
 }
 
+/** 箭头覆盖区内线身沿箭头轴线进入，不能从侧翼斜穿；挡条也应被水平接入。 */
+async function expectTerminalAlignment(page: Page) {
+	const terminals = await page.locator(".v-kanban__relation").evaluateAll((groups) =>
+		groups.map((group) => {
+			const line = group.querySelector(".v-kanban__relation-line") as SVGPathElement;
+			const head = group.querySelector(".v-kanban__relation-head") as SVGPathElement | null;
+			const length = line.getTotalLength();
+			const end = line.getPointAtLength(length);
+			const samples = [1, 3, 5, 7].map((distance) => {
+				const point = line.getPointAtLength(length - distance);
+				return {
+					horizontal: Math.abs(point.y - end.y) < 0.05,
+					insideHead: head === null || head.isPointInFill(point),
+				};
+			});
+			const target = document.querySelector(
+				`[data-card-id="${group.getAttribute("data-target")}"]`,
+			) as HTMLElement;
+			const box = target.getBoundingClientRect();
+			const tip = new DOMPoint(end.x, end.y).matrixTransform(
+				line.getScreenCTM() as DOMMatrix,
+			);
+			return {
+				source: group.getAttribute("data-source"),
+				target: group.getAttribute("data-target"),
+				samples,
+				edgeDistance: Math.min(Math.abs(tip.x - box.left), Math.abs(tip.x - box.right)),
+				centerDistance: Math.abs(tip.y - (box.top + box.bottom) / 2),
+			};
+		}),
+	);
+	expect(terminals.length).toBeGreaterThan(0);
+	for (const terminal of terminals) {
+		expect(
+			terminal.samples.every((sample) => sample.horizontal),
+			JSON.stringify(terminal),
+		).toBe(true);
+		expect(
+			terminal.samples.every((sample) => sample.insideHead),
+			JSON.stringify(terminal),
+		).toBe(true);
+		expect(terminal.edgeDistance, JSON.stringify(terminal)).toBeLessThan(1);
+		expect(terminal.centerDistance, JSON.stringify(terminal)).toBeLessThan(1);
+	}
+}
+
 test.describe("关系线", () => {
 	test("两端贴着各自卡片的边缘；同一列的关系从右缘绕出再回到目标右缘", async ({ page }) => {
 		await open(page);
@@ -52,6 +98,20 @@ test.describe("关系线", () => {
 		const to = await box(page, card("c"));
 		expect(near(same.start, rightMiddle(from))).toBe(true);
 		expect(near(same.end, rightMiddle(to))).toBe(true);
+	});
+
+	test("大竖差与缩放时，曲线从箭头尾部进入而不斜穿侧翼，终点仍贴卡片", async ({ page }) => {
+		await open(page, "&canvas=1");
+		await page.locator(card("b")).evaluate((element) => {
+			(element as HTMLElement).style.minHeight = "1000px";
+		});
+		await settled(page);
+		await expectTerminalAlignment(page);
+
+		await page.getByRole("button", { name: "Zoom out" }).click();
+		await page.getByRole("button", { name: "Zoom out" }).click();
+		await settled(page);
+		await expectTerminalAlignment(page);
 	});
 
 	test("拖拽时线跟着浮起卡片，放下后跟着卡片的新位置", async ({ page }) => {
@@ -319,6 +379,7 @@ test.describe("同列关系线的车道", () => {
 	test("车道让线两端仍然贴着各自卡片的右缘", async ({ page }) => {
 		await page.goto(`${process.env.KANBAN_FIXTURE_URL}?view=lanes`);
 		await expect(page.locator(".v-kanban__relation")).toHaveCount(4);
+		await expectTerminalAlignment(page);
 		await settled(page);
 
 		for (const [source, target] of [

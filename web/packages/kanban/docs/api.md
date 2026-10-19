@@ -243,7 +243,7 @@ CommandHistory 方法：`push(command): void` 记录已完成操作并清空重�
 
 - `checkRelation(existing: readonly Relation[], candidate: Relation): RelationCheck`；结果 `{ ok: true }`、`{ ok: false; reason: "self" | "duplicate" }` 或 `{ ok: false; reason: "cycle"; path: string[] }`。只按相同类型检测环，cycle path 为目标到来源的路径；已有环不会导致死循环。它不检查卡片是否存在，也不自动改数据。
 - `createAdjacency<R extends Relation>(relations: readonly R[]): Adjacency<R>`；`outgoing(id, type?)`、`incoming(id, type?)`、`of(id)` 返回 readonly R[] 并保持输入顺序，`neighbors(id): readonly string[]` 去重且不含自身。
-- `routeEdge(from: Rect, to: Rect, options?: { lane?: number }): EdgeRoute`；`EdgeRoute = { d: string; start: Point; end: Point; angle: number }`，d 为 SVG 贝塞尔路径，angle 为终点切线弧度；同列从右侧绕行，`lane`（0–2，默认 0）让同列弧线向外错开，每条多 6px。
+- `routeEdge(from: Rect, to: Rect, options?: { lane?: number }): EdgeRoute`；`EdgeRoute = { d: string; start: Point; end: Point; angle: number }`，d 为 SVG 贝塞尔曲线与水平终段，angle 为终点切线弧度；终段使线身从箭头尾部接入，不斜穿侧翼。同列从右侧绕行，`lane`（0–2，默认 0）在右缘外 15px 内分配三条窄走廊车道。
 - `assignLanes(edges: Array<{ from: Rect; to: Rect }>): number[]`：给一批线分配同列弧线的车道，竖直范围重叠（端点相接也算）的分到不同车道，短的在内侧；`Board` 的关系线已自动使用。
 - `arrowHead(end: Point, angle: number, size: number): string` 返回箭头 SVG 路径。
 - `blockerBar(end: Point, angle: number, length: number): string` 返回垂直挡条 SVG 路径。

@@ -44,6 +44,11 @@
 	overflow-x: auto;
 }
 
+/* 画布负责平移与视口裁剪；看板不再二次裁掉仍在视口内的浮起卡片连线。 */
+[data-kanban-pan-region] .v-kanban .v-kanban__scroller {
+	overflow: visible;
+}
+
 :where(.dark, [data-theme="dark"]) .v-kanban,
 .v-kanban[data-theme="dark"] {
 	color-scheme: dark;

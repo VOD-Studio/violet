@@ -110,7 +110,7 @@ export function createAdjacency<R extends Relation>(relations: readonly R[]): Ad
 
 /** 一条关系线的几何：SVG 路径、两端与终点处的方向。 */
 export interface EdgeRoute {
-	/** SVG 三次贝塞尔路径。 */
+	/** SVG 三次贝塞尔曲线与水平终端路径。 */
 	d: string;
 	start: Point;
 	end: Point;
@@ -121,16 +121,11 @@ export interface EdgeRoute {
 /** 水平方向上控制点离端点的距离范围。 */
 const MIN_REACH = 24;
 const MAX_REACH = 120;
-/**
- * 同一列里的两张卡片之间，线从右缘向外鼓出的控制距离（最内一条车道）。
- */
-const BULGE = 8;
-/** 相邻车道的鼓出距离之差。 */
-const LANE_STEP = 6;
-/**
- * 车道数上限。三次贝塞尔曲线最远伸出控制距离的 3/4，最外一条车道伸出 0.75 × (8 + 2 × 6) = 15px；
- * 默认样式下卡片右缘到滚动层边缘有 17px（列内边距 10、列边框 1、滚动层内边距 6），最后一列里的弧线才不会被裁掉。
- */
+/** 终端保持水平，容纳 9px 箭头，避免长曲线斜穿箭头侧翼。 */
+const TERMINAL = 9;
+/** 同列控制点限制在 15px 走廊内，留出描边与滚动层边界之间的空间。 */
+const BULGE = 10;
+const LANE_STEP = 2.5;
 const MAX_LANE = 2;
 
 const round = (value: number) => Math.round(value * 100) / 100;
@@ -139,7 +134,7 @@ const middle = (rect: Rect) => (rect.top + rect.bottom) / 2;
 /** `routeEdge` 的选项。 */
 export interface RouteOptions {
 	/**
-	 * 同一列的弧线用第几条车道：0 最贴近卡片，每加一条向外错开 6px，最多 2。
+	 * 同一列的弧线用第几条车道：0 最贴近卡片，最多 2，全部落在右缘外 15px 的走廊内。
 	 * 只影响同一列的线，其他方向的线忽略；多条重叠的弧线分到不同车道就不会叠成一条。
 	 * @default 0
 	 */
@@ -158,21 +153,25 @@ export function routeEdge(from: Rect, to: Rect, options: RouteOptions = {}): Edg
 	let end: Point;
 	let first: Point;
 	let second: Point;
+	let terminal: Point;
 	if (to.left >= from.right) {
 		start = { x: from.right, y: middle(from) };
 		end = { x: to.left, y: middle(to) };
+		terminal = { x: end.x - TERMINAL, y: end.y };
 		const reach = Math.min(MAX_REACH, Math.max(MIN_REACH, (end.x - start.x) / 2));
 		first = { x: start.x + reach, y: start.y };
-		second = { x: end.x - reach, y: end.y };
+		second = { x: terminal.x - Math.min(reach, Math.max(0, terminal.x - start.x)), y: end.y };
 	} else if (to.right <= from.left) {
 		start = { x: from.left, y: middle(from) };
 		end = { x: to.right, y: middle(to) };
+		terminal = { x: end.x + TERMINAL, y: end.y };
 		const reach = Math.min(MAX_REACH, Math.max(MIN_REACH, (start.x - end.x) / 2));
 		first = { x: start.x - reach, y: start.y };
-		second = { x: end.x + reach, y: end.y };
+		second = { x: terminal.x + Math.min(reach, Math.max(0, start.x - terminal.x)), y: end.y };
 	} else {
 		start = { x: from.right, y: middle(from) };
 		end = { x: to.right, y: middle(to) };
+		terminal = { x: end.x + TERMINAL, y: end.y };
 		const lane = Math.min(MAX_LANE, Math.max(0, Math.floor(options.lane ?? 0)));
 		const out = Math.max(start.x, end.x) + BULGE + lane * LANE_STEP;
 		first = { x: out, y: start.y };
@@ -180,10 +179,10 @@ export function routeEdge(from: Rect, to: Rect, options: RouteOptions = {}): Edg
 	}
 	const point = (p: Point) => `${round(p.x)} ${round(p.y)}`;
 	return {
-		d: `M ${point(start)} C ${point(first)} ${point(second)} ${point(end)}`,
+		d: `M ${point(start)} C ${point(first)} ${point(second)} ${point(terminal)} L ${point(end)}`,
 		start,
 		end,
-		angle: Math.atan2(end.y - second.y, end.x - second.x),
+		angle: Math.atan2(end.y - terminal.y, end.x - terminal.x),
 	};
 }
 

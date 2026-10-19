@@ -21,7 +21,7 @@ export interface RelationLayerProps {
 	selectedId: string | null;
 	cardLabel(id: string): string;
 	/**
-	 * 同一列里重叠的弧线分到不同车道、向外错开。车道最多伸出 15px，要有这么多空间才能用：
+	 * 同一列里重叠的弧线分到不同车道、向外错开。路径限制在右缘外 15px，要有这么多空间才能用：
 	 * 看板的列有内边距，够用；卡片紧贴边缘的布局不要开。
 	 * @default false
 	 */

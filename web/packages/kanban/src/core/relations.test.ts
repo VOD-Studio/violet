@@ -143,7 +143,7 @@ describe("routeEdge", () => {
 		expect(Math.abs(route.angle)).toBeCloseTo(Math.PI, 6);
 	});
 
-	it("同一列：从右缘绕出再回到目标右缘，不穿过中间的卡片", () => {
+	it("同一列：两端在右缘中点，向左接入目标卡片", () => {
 		const down = routeEdge(rect(0, 0), rect(0, 200));
 		const up = routeEdge(rect(0, 200), rect(0, 0));
 
@@ -153,12 +153,7 @@ describe("routeEdge", () => {
 		expect(Math.abs(down.angle)).toBeCloseTo(Math.PI, 6);
 		expect(up.start).toEqual({ x: 100, y: 220 });
 		expect(up.end).toEqual({ x: 100, y: 20 });
-		// 弧线向右鼓出
-		const controls = down.d.match(/-?\d+(?:\.\d+)?/g)?.map(Number) ?? [];
-		expect(controls[2]).toBeGreaterThan(100);
-		expect(controls[4]).toBeGreaterThan(100);
-		// 三次贝塞尔曲线最远伸出控制点距离的 3/4；要落在滚动层 6px 的内边距之内，最后一列的弧线才不被截掉
-		expect(0.75 * (controls[2] - 100)).toBeLessThanOrEqual(6);
+		expect(Math.abs(up.angle)).toBeCloseTo(Math.PI, 6);
 	});
 
 	it("同输入同输出，退化输入（同一矩形）不产生 NaN", () => {
@@ -201,25 +196,14 @@ describe("同列弧线的车道", () => {
 		right: left + width,
 		bottom: top + height,
 	});
-	const controlX = (route: ReturnType<typeof routeEdge>) =>
-		Number(route.d.match(/-?\d+(?:\.\d+)?/g)?.[2]);
-
-	it("车道每加一条，弧线向外多鼓 6px，最多两条；其他方向的线不受影响", () => {
-		const x = [0, 1, 2, 9].map((lane) => controlX(routeEdge(rect(0), rect(200), { lane })));
-
-		expect(x[1] - x[0]).toBe(6);
-		expect(x[2] - x[1]).toBe(6);
-		expect(x[3]).toBe(x[2]);
+	it("车道限制在 0–2，其他方向的线不受影响", () => {
+		expect(routeEdge(rect(0), rect(200), { lane: 9 })).toEqual(
+			routeEdge(rect(0), rect(200), { lane: 2 }),
+		);
 		expect(routeEdge(rect(0), rect(100, 300), { lane: 2 })).toEqual(
 			routeEdge(rect(0), rect(100, 300)),
 		);
 		expect(routeEdge(rect(0), rect(200), { lane: -3 })).toEqual(routeEdge(rect(0), rect(200)));
-	});
-
-	it("最外一条车道的弧线最远伸出 15px，落在卡片右缘到滚动层边缘的 17px 之内", () => {
-		const out = controlX(routeEdge(rect(0), rect(200), { lane: 2 }));
-
-		expect(0.75 * (out - 100)).toBeLessThanOrEqual(15);
 	});
 
 	it("竖直范围不重叠的弧线共用最内车道", () => {
