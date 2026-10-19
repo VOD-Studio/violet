@@ -26,13 +26,13 @@ function renderPicker(initialSource?: string) {
 		{ id: "p1", title: "Kite 协作", slug: "kite" },
 		{ id: "p2", title: "Violet 博客", slug: "violet" },
 	] as Project[]);
-	client.setQueryData<RoadmapEmbedResult>(projectKeys.roadmapEmbed("kite"), {
+	const kite: RoadmapEmbedResult = {
 		status: "ok",
 		detail: { items: [item(1, "收敛执行入口"), item(2, "建立领域模型")] } as RoadmapDetail,
-	});
-	client.setQueryData<RoadmapEmbedResult>(projectKeys.roadmapEmbed("violet"), {
-		status: "missing",
-	});
+	};
+	const violet: RoadmapEmbedResult = { status: "missing" };
+	client.setQueryData(projectKeys.roadmapEmbed("kite"), kite);
+	client.setQueryData(projectKeys.roadmapEmbed("violet"), violet);
 	const onChange = vi.fn();
 	render(
 		<QueryClientProvider client={client}>
