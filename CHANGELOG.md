@@ -7,6 +7,19 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.12.0](https://github.com/VOD-Studio/violet/compare/v2.11.2...v2.12.0) (2026-10-19)
+
+
+### 新增
+
+* **editor-docs:** 编辑器手册拆为站内系列并加漂移防线 ([868d4c4](https://github.com/VOD-Studio/violet/commit/868d4c4174cfc0853bf281b389d83f7bd831d91d))
+* **editor-docs:** 编辑器手册站内系列页 ([b711699](https://github.com/VOD-Studio/violet/commit/b7116992704c99da0a95bd785dfbba97593b5485))
+
+
+### 重构
+
+* **shared:** 上提指南目录三件套到共享层 ([fe6a4af](https://github.com/VOD-Studio/violet/commit/fe6a4af541f4566d0584dfa8d9760c8576a204c1))
+
 ## [2.11.2](https://github.com/VOD-Studio/violet/compare/v2.11.1...v2.11.2) (2026-10-17)
 
 
