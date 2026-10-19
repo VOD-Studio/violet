@@ -207,6 +207,10 @@ pnpm sync:pdf-worker     # 同步 pdfjs worker 到 public/（postinstall 已自�
 
 表情目录与会话内个人表情由 TanStack Query 缓存，关闭浮层不丢弃列表。后台目录变更、个人表情增删收藏和后台下架会失效对应缓存；登出或收到 401 时取消并清除私有查询，重登弹窗打开期间暂停个人列表请求。
 
+SSR 的 `getRouter()` 每请求创建独立 QueryClient，浏览器继续复用 `clientQueryClient`。`@tanstack/react-router-ssr-query` 在组件首轮读取前恢复 loader 预取缓存，并传递渲染期间完成的查询；QueryClientProvider 由 Router 统一装配，站点 AppProvider 不另建缓存。已显示的 SSR 内容不能因客户端接管或后台重取退回骨架，首次无数据和独立延迟区块仍可显示加载态。
+
+关于页在 loader 中预取公开设置，与根布局共用同一个查询键，避免服务端骨架和客户端已加载正文竞争首帧。
+
 ## API 与认证
 
 - 开发环境通过 Vite 反向代理将 `/api/*` 与 `/uploads/*` 转发到后端 `http://localhost:9090`，避免跨域与 CSRF 边界问题。
@@ -238,6 +242,7 @@ pnpm test
 - setup：`src/test/setup.ts`
 - 主题浏览器契约（Playwright，需先 `pnpm build`）：`pnpm test:contract`，或仓库根 `make web-contract`
 - 组件库文档契约检查实际导航、按钮响应、复选框键盘操作与代码展开/收起，不固定组件目录数量、链接清单或示例源码文本。
+- 首访连续性回归：`pnpm test:contract e2e/ssr-hydration.spec.ts`。同一全新浏览器上下文先展示真实 SSR 内容，再放行冷启动脚本并暂缓浏览器数据请求，持续检查正文未消失、没有水合错误。覆盖文章、首页、笔记、图集、系列、关于页和人设空资源。
 
 ## 环境变量
 

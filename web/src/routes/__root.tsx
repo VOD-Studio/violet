@@ -30,12 +30,6 @@ import { getAuthSession } from "../shared/server/session";
 import { getSSRTheme } from "../shared/server/theme";
 import appCss from "../styles.css?url";
 
-/**
- * __root - 根路由，所有路由共享
- *
- * queryClient 从 router context 复用（router.tsx 注入单例），
- * beforeLoad 仅返回 auth（serializable，可通过 dehydrate 传给客户端）。
- */
 /** 缓存首次 getAuthSession 结果，客户端 SPA 导航复用避免网络阻塞 */
 let cachedClaims: ReturnType<typeof getAuthSession> extends Promise<infer T>
 	? T | undefined
@@ -107,7 +101,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 /**
  * RootComponent - 根组件
  *
- * 装配 AppProvider（QueryClient + Theme + Toaster）+ 子路由出口 + devtools。
+ * 装配站点 Provider 与子路由出口；查询缓存 Provider 位于 Router 外层。
  * 后台路由（/admin）独立布局，不显示前台 Header/Footer。
  */
 function RootComponent() {

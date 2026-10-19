@@ -1,29 +1,5 @@
-import { existsSync, statSync } from "node:fs";
-import { join } from "node:path";
-import { type BrowserContext, expect, type Page, test } from "@playwright/test";
-
-const CLIENT_DIR = join(import.meta.dirname, "..", "dist", "client");
-
-async function loadClient(context: BrowserContext) {
-	// 生产 SSR 入口不伺服静态文件；页面导航仍由真实路由应答，其余资源直接加载本次构建产物。
-	// pending 组件会请求 public/ 下任意路径（如 /persona/*.webp），按资源类型兜底而不是只认 /assets/。
-	await context.route("*://127.0.0.1:4173/**", async (route) => {
-		const request = route.request();
-		if (request.resourceType() === "document") await route.continue();
-		else {
-			const path = join(CLIENT_DIR, new URL(request.url()).pathname);
-			if (existsSync(path) && statSync(path).isFile()) await route.fulfill({ path });
-			else await route.continue();
-		}
-	});
-	await context.route("**/api/**", async (route) => {
-		const url = new URL(route.request().url());
-		const response = await route.fetch({
-			url: `http://127.0.0.1:9410${url.pathname}${url.search}`,
-		});
-		await route.fulfill({ response });
-	});
-}
+import { expect, type Page, test } from "@playwright/test";
+import { loadClient } from "./client";
 
 function collectDiagnostics(page: Page) {
 	const diagnostics: string[] = [];

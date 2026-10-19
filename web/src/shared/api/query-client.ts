@@ -11,8 +11,7 @@ import { ApiError } from "./error";
  * - 网络错误/5xx 最多重试 2 次
  * - 关闭窗口聚焦自动刷新（避免无谓请求）
  *
- * SSR 时每个请求必须独立创建（避免跨请求缓存串扰），
- * 客户端可复用单例（见 app/provider.tsx）。
+ * SSR 每请求创建独立实例；浏览器复用 clientQueryClient。
  *
  * @returns 配好默认 options 的 QueryClient
  */
