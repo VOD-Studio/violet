@@ -286,6 +286,8 @@ test.describe("路线图筛选", () => {
 			await expect(card(serverPage, 1)).not.toHaveAttribute("data-dimmed", "true");
 			await expect(card(serverPage, 4)).toHaveAttribute("data-dimmed", "true");
 			await expect(done(serverPage).getByRole("listitem")).toHaveCount(10);
+			// 下拉在首帧就显示当前选中的标签，不是水合后才出现
+			await expect(tags(serverPage)).toContainText("性能");
 		} finally {
 			await noScript.close();
 		}

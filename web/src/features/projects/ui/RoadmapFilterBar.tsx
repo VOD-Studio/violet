@@ -75,7 +75,8 @@ export function RoadmapFilterBar({
 					size="sm"
 					className="max-w-full border-transparent bg-muted/50 shadow-none"
 				>
-					<SelectValue />
+					{/* 显式给出文字：Radix 要挂载后才从选项里读出显示文字，服务端直出的首帧会是空白 */}
+					<SelectValue>{selectedTag ?? "全部标签"}</SelectValue>
 				</SelectTrigger>
 				<SelectContent
 					className="animate-none!"
