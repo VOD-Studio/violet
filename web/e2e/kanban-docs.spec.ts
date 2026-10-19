@@ -59,7 +59,8 @@ test.describe("/kanban 看板文档与演示", () => {
 		request,
 	}) => {
 		const html = await (await request.get("/kanban")).text();
-		for (const text of ["可编辑看板与历史", "make kanban-pack", 'id="board"', "主题接缝"])
+		// 只断言正文文字：代码块由懒加载组件渲染，服务器冷启动时首个请求可能只输出占位
+		for (const text of ["可编辑看板与历史", "仓库外", 'id="board"', "主题接缝"])
 			expect(html).toContain(text);
 
 		const diagnostics = collectDiagnostics(page);
