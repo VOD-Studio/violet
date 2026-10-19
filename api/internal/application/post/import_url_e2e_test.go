@@ -1,6 +1,8 @@
 package post
 
 import (
+	"bytes"
+	"io"
 	urlpkg "net/url"
 	"strings"
 	"testing"
@@ -25,8 +27,13 @@ func TestImportURLPipeline_RuaPlusE2E(t *testing.T) {
 		t.Skipf("无法访问 %s: %v（跳过）", rawURL, err)
 	}
 	defer resp.Body.Close()
+	// 超时也覆盖读正文：响应头到了、正文没读完同样是网络问题，跳过而不是当成解析失败
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Skipf("读取 %s 中断: %v（跳过）", rawURL, err)
+	}
 
-	doc, err := html.Parse(resp.Body)
+	doc, err := html.Parse(bytes.NewReader(body))
 	if err != nil {
 		t.Fatalf("html.Parse 失败: %v", err)
 	}
