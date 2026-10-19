@@ -1,7 +1,7 @@
+import { GuideTocLayout } from "@shared/ui/guide-toc";
 import { notFound } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { UI_DOCS_CATALOG } from "../model/guides";
-import { GuideTocLayout } from "./LibraryGuideToc";
 import { GUIDE_CONTENT } from "./library-guides/registry";
 
 /** 正文加载占位：与指南页排版同宽，避免标题与正文间跳变。 */

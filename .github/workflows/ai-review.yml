@@ -19,6 +19,9 @@
 #     inori 的 ignore_bots 会兜底跳过其余 bot PR，如 dependabot）
 #   - 锁文件与发版文本（inori 内置忽略清单，无需配置）
 #   - 纯 CI/workflow 改动（评审 workflow 配置无代码语义，白耗额度）
+#
+# 开关：仓库变量 AI_REVIEW_ENABLED 设为 false 时整体跳过（Settings → Secrets and
+# variables → Variables）；未设置或为其他值时默认启用。
 
 name: AI Review
 
@@ -42,7 +45,7 @@ permissions:
 jobs:
   ai-review:
     runs-on: ubuntu-latest
-    if: ${{ !startsWith(github.head_ref, 'release-please--') }}
+    if: ${{ !startsWith(github.head_ref, 'release-please--') && vars.AI_REVIEW_ENABLED != 'false' }}
     env:
       MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
     steps:
