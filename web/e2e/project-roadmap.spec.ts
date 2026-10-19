@@ -233,6 +233,35 @@ test.describe("未知 slug 与首屏直出", () => {
 		for (const stage of ["计划中", "进行中", "已完成"]) expect(markup).toContain(stage);
 	});
 
+	test("服务端直出的看板已在最终位置：水合后适应窗口不再挪动它", async ({
+		page,
+		context,
+		browser,
+	}) => {
+		const viewport = { width: 1280, height: 900 };
+		const noScript = await browser.newContext({ javaScriptEnabled: false, viewport });
+		let before: { x: number; y: number; width: number } | null;
+		try {
+			await loadClient(noScript);
+			const serverPage = await noScript.newPage();
+			await serverPage.goto(`http://127.0.0.1:4173/projects/${SLUG}`);
+			before = await column(serverPage, "计划中").boundingBox();
+		} finally {
+			await noScript.close();
+		}
+
+		await page.setViewportSize(viewport);
+		await loadClient(context);
+		await open(page);
+		// 关系线只在客户端测量绘制：出现时画布已经按窗口适应过
+		await expect(page.locator(".v-kanban__relation").first()).toBeAttached();
+		const after = await column(page, "计划中").boundingBox();
+		if (!before || !after) throw new Error("column is not visible");
+		expect(Math.abs(after.x - before.x)).toBeLessThan(1);
+		expect(Math.abs(after.y - before.y)).toBeLessThan(1);
+		expect(Math.abs(after.width - before.width)).toBeLessThan(1);
+	});
+
 	test("未知 slug 的 HTML 也是 404", async ({ request }) => {
 		const response = await request.get("/projects/no-such-project");
 

@@ -22,10 +22,10 @@ import { RoadmapFilterBar } from "./RoadmapFilterBar";
 import "./roadmap-board.css";
 
 /**
- * 画布里内容与边缘的间距（px）：只留够选中卡片的外描边，三列按 roadmap-board.css 的算法正好铺满宽度。
- * 改它要同步改 CSS 里的列宽算式。
+ * 画布适应窗口时不再另留白：内容自带 p-2（8px，只留够选中卡片的外描边），三列按 roadmap-board.css 的算式正好铺满宽度，
+ * 适应的结果就是不缩放、不平移，与服务端直出的首帧相同，水合后看板不跳。改内边距要同步改 CSS 里的列宽算式。
  */
-const FIT_PADDING = 8;
+const FIT = { padding: 0, maxScale: 1 };
 /** 量到看板高度之前（服务端渲染与水合的首帧）画布用的高度。 */
 const FALLBACK_HEIGHT = "min(80dvh, 52rem)";
 
@@ -218,16 +218,11 @@ export function RoadmapBoard({
 			>
 				<Canvas
 					locale="zh-CN"
-					fit={{ padding: FIT_PADDING, maxScale: 1 }}
-					style={{
-						height:
-							contentHeight === null
-								? FALLBACK_HEIGHT
-								: contentHeight + 2 * FIT_PADDING,
-					}}
+					fit={FIT}
+					style={{ height: contentHeight ?? FALLBACK_HEIGHT }}
 				>
-					{/* 顶部留一条给画布的缩放按钮，不压住列头 */}
-					<div ref={content} className="pt-11">
+					{/* 顶部多留一条给画布的缩放按钮，不压住列头 */}
+					<div ref={content} className="p-2 pt-13">
 						<Board
 							{...shared}
 							hideRelations={linesHidden}
