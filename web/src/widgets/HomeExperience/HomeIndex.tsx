@@ -99,29 +99,22 @@ export function HomeIndex({
 							</button>
 						</div>
 					) : leadItem ? (
-						<article className="mb-7 grid grid-cols-[24px_minmax(0,1fr)] items-baseline gap-3">
-							<span className="font-mono text-xs font-semibold tracking-wider text-primary">
-								01
-							</span>
-							<div className="border-l-2 border-primary pl-4">
-								<div className="flex items-center gap-1.5 text-xs text-muted-foreground/80">
-									<span className="font-normal text-muted-foreground/90">
-										{HOME_KIND_LABEL[leadItem.kind]}
-									</span>
-									<span aria-hidden>·</span>
-									<time dateTime={leadItem.published_at}>
-										{formatRelativeOrDate(leadItem.published_at)}
-									</time>
-								</div>
-								<h3 className="mt-2.5 font-serif text-xl font-normal leading-snug text-foreground sm:text-2xl">
-									<HomeContentLink
-										item={leadItem}
-										className="underline-offset-4 transition-colors hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary"
-									>
-										{leadItem.title}
-									</HomeContentLink>
-								</h3>
-							</div>
+						<article className="mb-8">
+							<h3 className="font-serif text-2xl font-normal leading-snug text-foreground sm:text-[1.75rem]">
+								<HomeContentLink
+									item={leadItem}
+									className="underline-offset-4 transition-colors hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary"
+								>
+									{leadItem.title}
+								</HomeContentLink>
+							</h3>
+							<p className="mt-2.5 flex items-center gap-1.5 text-xs text-muted-foreground/80">
+								<span>{HOME_KIND_LABEL[leadItem.kind]}</span>
+								<span aria-hidden>·</span>
+								<time dateTime={leadItem.published_at}>
+									{formatRelativeOrDate(leadItem.published_at)}
+								</time>
+							</p>
 						</article>
 					) : (
 						<p className="mb-7 border-l border-border/80 pl-4 text-sm text-muted-foreground">
@@ -131,35 +124,32 @@ export function HomeIndex({
 
 					{subsequentItems.length > 0 ? (
 						<ul className="divide-y divide-border/30">
-							{subsequentItems.map((item, index) => {
-								const order = String(index + 2).padStart(2, "0");
-								return (
-									<li key={item.id} className="py-3.5 first:pt-0 last:pb-0">
-										<div className="grid grid-cols-[24px_minmax(0,1fr)_auto] items-baseline gap-3">
-											<span className="font-mono text-xs text-muted-foreground/50 tabular-nums">
-												{order}
+							{subsequentItems.map((item) => (
+								<li
+									key={item.id}
+									className="flex items-baseline justify-between gap-4 py-4 first:pt-0 last:pb-0"
+								>
+									<div className="flex min-w-0 items-baseline gap-2.5">
+										{item.kind !== "article" ? (
+											<span className="shrink-0 font-mono text-[10px] uppercase tracking-wider text-muted-foreground/60">
+												{HOME_KIND_LABEL[item.kind]}
 											</span>
-											<div className="min-w-0">
-												<HomeContentLink
-													item={item}
-													className="block truncate font-serif text-sm font-normal text-foreground/90 transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-primary"
-												>
-													{item.title}
-												</HomeContentLink>
-												<span className="mt-1 inline-block text-[11px] text-muted-foreground/70">
-													{HOME_KIND_LABEL[item.kind]}
-												</span>
-											</div>
-											<time
-												dateTime={item.published_at}
-												className="shrink-0 text-xs text-muted-foreground/70 tabular-nums"
-											>
-												{formatRelativeOrDate(item.published_at)}
-											</time>
-										</div>
-									</li>
-								);
-							})}
+										) : null}
+										<HomeContentLink
+											item={item}
+											className="min-w-0 truncate font-serif text-[15px] font-normal text-foreground/90 transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-primary"
+										>
+											{item.title}
+										</HomeContentLink>
+									</div>
+									<time
+										dateTime={item.published_at}
+										className="shrink-0 text-xs text-muted-foreground/60 tabular-nums"
+									>
+										{formatRelativeOrDate(item.published_at)}
+									</time>
+								</li>
+							))}
 						</ul>
 					) : null}
 

@@ -26,9 +26,9 @@ export function HomeMissives({ missives, isLoading }: HomeMissivesProps) {
 			</div>
 
 			{isLoading ? (
-				<div aria-live="polite" className="space-y-4">
+				<div aria-live="polite" className="space-y-5">
 					{[0, 1].map((i) => (
-						<div key={i} className="space-y-2 border-l border-border/80 pl-3.5">
+						<div key={i} className="space-y-2 pl-6">
 							<Skeleton className="h-3.5 w-full rounded" />
 							<Skeleton className="h-3.5 w-5/6 rounded" />
 							<Skeleton className="h-3 w-24 rounded" />
@@ -36,9 +36,23 @@ export function HomeMissives({ missives, isLoading }: HomeMissivesProps) {
 					))}
 				</div>
 			) : missives.length > 0 ? (
-				<div className="space-y-4">
-					{missives.map((comment) => (
-						<article key={comment.id} className="border-l border-border/80 pl-3.5">
+				<div className="space-y-5">
+					{missives.map((comment, index) => (
+						<article
+							key={comment.id}
+							className={
+								index === 0
+									? "relative pl-6"
+									: "relative border-t border-border/25 pt-4 pl-6"
+							}
+						>
+							<span
+								aria-hidden
+								className={`absolute left-0 font-serif text-3xl leading-none text-muted-foreground/25 select-none ${index === 0 ? "-top-3" : "top-1"
+									}`}
+							>
+								“
+							</span>
 							<p className="line-clamp-3 font-serif text-[13px] leading-relaxed text-foreground/80">
 								<EmojiText text={comment.body} emote={comment.emote} />
 							</p>
@@ -47,11 +61,19 @@ export function HomeMissives({ missives, isLoading }: HomeMissivesProps) {
 					))}
 				</div>
 			) : (
-				<article className="text-xs text-muted-foreground">
-					<p className="font-serif text-[13px] italic leading-relaxed text-muted-foreground">
+				<article className="relative pl-6">
+					<span
+						aria-hidden
+						className="absolute -top-3 left-0 font-serif text-3xl leading-none text-muted-foreground/25 select-none"
+					>
+						“
+					</span>
+					<p className="font-serif text-[13px] italic leading-relaxed text-foreground/80">
 						一纸相闻，落笔为记。欢迎通过邮件，或在文章与推文下方留言。
 					</p>
-					<p className="mt-2 text-[11px] text-muted-foreground/75">— 站长回笺</p>
+					<p className="mt-2 text-right text-[11px] text-muted-foreground/75">
+						— 站长回笺
+					</p>
 				</article>
 			)}
 		</div>
@@ -69,7 +91,7 @@ function HomeMissiveAuthor({ comment }: { comment: AdminComment }) {
 		/>
 	);
 	return (
-		<p className="mt-2 flex items-center justify-start gap-1.5 text-[11px] text-muted-foreground/75">
+		<p className="mt-2 flex items-center justify-end gap-1.5 text-[11px] text-muted-foreground/75">
 			<span aria-hidden>—</span>
 			{comment.is_ai ? (
 				<AICommentProfile name={comment.author_name} className="shrink-0 rounded-full">

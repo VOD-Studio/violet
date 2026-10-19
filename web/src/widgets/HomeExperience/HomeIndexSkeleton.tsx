@@ -15,27 +15,20 @@ export function HomeIndexSkeleton() {
 						<Skeleton className="mt-2 h-9 w-32 rounded-lg" />
 					</div>
 
-					{/* 01 焦点篇目（双行大字与标签） */}
-					<div className="mb-7 grid grid-cols-[24px_minmax(0,1fr)] items-baseline gap-3">
-						<Skeleton className="h-3 w-8 rounded" />
-						<div className="space-y-2 border-l-2 border-primary/30 pl-4">
-							<Skeleton className="h-3 w-28 rounded" />
-							<Skeleton className="h-14 w-full rounded-lg" />
-						</div>
+					{/* 焦点篇目（大字标题与 meta 行） */}
+					<div className="mb-8 space-y-2.5">
+						<Skeleton className="h-8 w-3/4 rounded-lg" />
+						<Skeleton className="h-3 w-32 rounded" />
 					</div>
 
-					{/* 02-05 后续篇目 */}
+					{/* 后续篇目（标题与日期两端） */}
 					<div className="divide-y divide-border/30">
 						{Array.from({ length: 4 }).map((_, i) => (
 							<div
 								key={i}
-								className="grid grid-cols-[24px_minmax(0,1fr)_auto] items-baseline gap-3 py-[15px] first:pt-0 last:pb-0"
+								className="flex items-baseline justify-between gap-4 py-4 first:pt-0 last:pb-0"
 							>
-								<Skeleton className="h-3.5 w-4 rounded" />
-								<div className="space-y-2">
-									<Skeleton className="h-4.5 w-4/5 rounded" />
-									<Skeleton className="h-3 w-12 rounded" />
-								</div>
+								<Skeleton className="h-4 w-4/5 rounded" />
 								<Skeleton className="h-3.5 w-14 rounded" />
 							</div>
 						))}
@@ -73,20 +66,20 @@ export function HomeIndexSkeleton() {
 							<Skeleton className="h-2.5 w-16 rounded" />
 							<Skeleton className="mt-2 h-9 w-20 rounded-lg" />
 						</div>
-						<div className="space-y-4">
-							<div className="space-y-2 border-l border-border/80 pl-3.5">
+						<div className="space-y-5">
+							<div className="relative space-y-2 pl-6">
 								<Skeleton className="h-3.5 w-full rounded" />
 								<Skeleton className="h-3.5 w-5/6 rounded" />
 								<Skeleton className="h-3.5 w-2/3 rounded" />
-								<div className="flex justify-start pt-1">
+								<div className="flex justify-end pt-1">
 									<Skeleton className="h-3 w-16 rounded" />
 								</div>
 							</div>
-							<div className="space-y-2 border-l border-border/80 pl-3.5">
+							<div className="relative space-y-2 border-t border-border/25 pt-4 pl-6">
 								<Skeleton className="h-3.5 w-full rounded" />
 								<Skeleton className="h-3.5 w-4/5 rounded" />
 								<Skeleton className="h-3.5 w-1/2 rounded" />
-								<div className="flex justify-start pt-1">
+								<div className="flex justify-end pt-1">
 									<Skeleton className="h-3 w-16 rounded" />
 								</div>
 							</div>
