@@ -262,7 +262,7 @@ describe("violet-comments 评论 server 配置", () => {
 		);
 	});
 
-	it("CreatePATDialog 列出评论 server（非 anonymous，进 scope 勾选区）", () => {
+	it("PATDialog 列出评论 server（非 anonymous，进 scope 勾选区）", () => {
 		// violet-comments 是 PAT server（非 anonymous），serversForScopes 推导得到
 		const servers = serversForScopes(["comments:read"]);
 		expect(servers.some((s) => s.key === "violet-comments")).toBe(true);

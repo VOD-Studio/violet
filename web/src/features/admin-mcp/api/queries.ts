@@ -1,7 +1,7 @@
 import type { PageQuery } from "@shared/api/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import type { CreatePATRequest } from "../model/types";
+import type { CreatePATRequest, UpdatePATRequest } from "../model/types";
 import * as api from "./client";
 import { mcpKeys } from "./keys";
 
@@ -22,6 +22,19 @@ export const useCreatePAT = () => {
 			toast.success("令牌已创建");
 		},
 		onError: (e: Error) => toast.error(`创建失败：${e.message}`),
+	});
+};
+
+export const useUpdatePAT = () => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: ({ id, body }: { id: string; body: UpdatePATRequest }) =>
+			api.updatePAT(id, body),
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: mcpKeys.all });
+			toast.success("令牌已更新，原令牌和客户端配置仍可使用");
+		},
+		onError: (e: Error) => toast.error(`保存失败：${e.message}`),
 	});
 };
 

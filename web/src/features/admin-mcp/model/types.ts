@@ -16,7 +16,7 @@ export const PAT_SCOPES = [
 ] as const;
 export type PATScope = (typeof PAT_SCOPES)[number];
 
-/** PAT 过期：ISO 日期或 "never"，空串后端默认 90 天 */
+/** PAT 过期：YYYY-MM-DD 或 "never"；仅创建时空串表示默认 90 天。 */
 export type PATExpiry = string;
 
 /** MCP server 规格，新增 server 在此追加即可 */
@@ -100,6 +100,8 @@ export interface PATDTO {
 	/** RFC3339，空表示从未使用 */
 	last_used_at?: string;
 	created_at: string;
+	/** 未返回或为 null 时沿用开启交互的默认行为。 */
+	interactive?: boolean | null;
 	/** 明文 token，仅创建响应返回 */
 	token?: string;
 }
@@ -110,5 +112,13 @@ export interface CreatePATRequest {
 	scopes: PATScope[];
 	expires_at: string;
 	/** MCP 交互偏好：true/省略=冲突返回候选由 agent 转述；false=一路到底按推荐项自动决策 */
+	interactive?: boolean;
+}
+
+/** 仅发送需要修改的字段；省略有效期时精确保留原过期时间。 */
+export interface UpdatePATRequest {
+	name?: string;
+	scopes?: PATScope[];
+	expires_at?: string;
 	interactive?: boolean;
 }

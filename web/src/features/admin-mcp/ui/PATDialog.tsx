@@ -1,32 +1,41 @@
-import { useCreatePAT } from "@features/admin-mcp/api/queries";
+import { useCreatePAT, useUpdatePAT } from "@features/admin-mcp/api/queries";
 import {
 	type CreatePATRequest,
 	MCP_SERVERS,
 	PAT_SCOPES,
+	type PATDTO,
 	type PATScope,
+	type UpdatePATRequest,
 } from "@features/admin-mcp/model/types";
 import { DateTimePicker } from "@shared/ui/date-time-picker/components/DateTimePicker";
 import type { DateTimePreset } from "@shared/ui/date-time-picker/types/date-time-picker-types";
 import { Button, Checkbox, Input, Label, Modal } from "@violet/ui";
 
-import { Loader2 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 
-interface CreatePATDialogProps {
+/** 创建与编辑共用的访问令牌表单。 */
+export interface PATDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	/** 创建成功：回传一次性明文令牌与所选 scope */
-	onCreated: (token: string, scopes: PATScope[]) => void;
+	token: PATDTO | null;
+	/** 创建成功时包含一次性明文；编辑响应不进入此回调。 */
+	onCreated: (token: PATDTO) => void;
+	onUpdated: (token: PATDTO) => void;
 }
 
-export function CreatePATDialog({ open, onOpenChange, onCreated }: CreatePATDialogProps) {
+/** 创建或编辑当前用户的访问令牌，共用字段与校验。 */
+export function PATDialog({ open, onOpenChange, token, onCreated, onUpdated }: PATDialogProps) {
 	const create = useCreatePAT();
+	const update = useUpdatePAT();
 	const [name, setName] = React.useState("");
 	const [scopes, setScopes] = React.useState<Set<PATScope>>(new Set(["posts:read"]));
 	const [expiresAt, setExpiresAt] = React.useState("");
-	// MCP 交互偏好（#272）：默认开（与既有 token 行为一致）；自动化脚本用 token 可关
 	const [interactive, setInteractive] = React.useState(true);
+	const submitting = React.useRef(false);
+	const formId = React.useId();
+	const pending = create.isPending || update.isPending;
+	const initialExpiry = token ? (token.expires_at ? token.expires_at.slice(0, 10) : "never") : "";
 
 	const { today, expiryPresets } = React.useMemo(() => {
 		const fmt = (d: Date) => d.toISOString().slice(0, 10);
@@ -47,13 +56,12 @@ export function CreatePATDialog({ open, onOpenChange, onCreated }: CreatePATDial
 	}, []);
 
 	React.useEffect(() => {
-		if (open) setInteractive(true);
-		if (open) {
-			setName("");
-			setScopes(new Set(["posts:read"]));
-			setExpiresAt("");
-		}
-	}, [open]);
+		if (!open) return;
+		setName(token?.name ?? "");
+		setScopes(new Set(token?.scopes ?? ["posts:read"]));
+		setExpiresAt(initialExpiry);
+		setInteractive(token?.interactive ?? true);
+	}, [open, token, initialExpiry]);
 
 	const toggleScope = (s: PATScope) => {
 		setScopes((prev) => {
@@ -67,68 +75,90 @@ export function CreatePATDialog({ open, onOpenChange, onCreated }: CreatePATDial
 		});
 	};
 
-	const submit = () => {
-		if (!name.trim()) {
+	const changeOpen = (nextOpen: boolean) => {
+		if (!submitting.current && !pending) onOpenChange(nextOpen);
+	};
+
+	const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+		if (submitting.current || pending) return;
+		const trimmedName = name.trim();
+		if (!trimmedName) {
 			toast.error("请填写令牌名称");
+			return;
+		}
+		if ([...trimmedName].length > 100) {
+			toast.error("令牌名称不能超过 100 个字符");
 			return;
 		}
 		if (scopes.size === 0) {
 			toast.error("至少选择一个权限");
 			return;
 		}
+		if (token && !expiresAt) {
+			toast.error("请选择有效期，或明确选择永不过期");
+			return;
+		}
+		submitting.current = true;
 		const body: CreatePATRequest = {
-			name: name.trim(),
+			name: trimmedName,
 			scopes: [...scopes],
 			expires_at: expiresAt,
 			interactive,
 		};
-		create.mutate(body, {
-			onSuccess: (dto) => {
-				if (dto.token) {
-					onCreated(dto.token, [...scopes]);
-				}
-			},
-		});
+		try {
+			if (token) {
+				const { expires_at, ...fields } = body;
+				const changes: UpdatePATRequest = fields;
+				if (expiresAt !== initialExpiry) changes.expires_at = expires_at;
+				onUpdated(await update.mutateAsync({ id: token.id, body: changes }));
+			} else {
+				onCreated(await create.mutateAsync(body));
+			}
+		} catch {
+			// Mutation 已显示错误；保留字段，供用户修正或重试。
+		} finally {
+			submitting.current = false;
+		}
 	};
 
 	return (
 		<Modal
 			open={open}
-			onOpenChange={onOpenChange}
-			title="创建访问令牌"
+			onOpenChange={changeOpen}
+			title={token ? "编辑访问令牌" : "创建访问令牌"}
+			description={
+				token ? "保存后原令牌和客户端配置仍可使用，无需重新签发或配置。" : undefined
+			}
 			footer={
 				<>
-					<Button
-						variant="outline"
-						onClick={() => onOpenChange(false)}
-						disabled={create.isPending}
-					>
+					<Button variant="outline" onClick={() => changeOpen(false)} disabled={pending}>
 						取消
 					</Button>
-					<Button onClick={submit} disabled={create.isPending}>
-						{create.isPending && <Loader2 className="mr-1 size-4 animate-spin" />}
-						创建
+					<Button type="submit" form={formId} loading={pending}>
+						{token ? "保存" : "创建"}
 					</Button>
 				</>
 			}
 		>
-			<div className="space-y-4">
+			<form id={formId} onSubmit={submit} className="space-y-4">
 				<div className="space-y-2">
-					<Label htmlFor="pat-name">
+					<Label htmlFor={`${formId}-name`}>
 						名称 <span className="text-destructive">*</span>
 					</Label>
 					<Input
-						id="pat-name"
+						id={`${formId}-name`}
 						value={name}
 						onChange={(e) => setName(e.target.value)}
 						placeholder="如：Claude Desktop"
-						disabled={create.isPending}
+						disabled={pending}
+						required
 					/>
 				</div>
-				<div className="space-y-2">
-					<Label>
+				<fieldset className="space-y-2">
+					<legend className="text-sm font-medium">
 						权限范围 <span className="text-destructive">*</span>
-					</Label>
+					</legend>
 					<div className="space-y-3">
 						{MCP_SERVERS.filter((s) => !s.anonymous).map((server) => (
 							<div key={server.key} className="space-y-1.5">
@@ -145,53 +175,54 @@ export function CreatePATDialog({ open, onOpenChange, onCreated }: CreatePATDial
 											(PAT_SCOPES as readonly string[]).includes(s),
 										)
 										.map((s) => (
-											<label
-												key={s}
-												htmlFor={`pat-scope-${s}`}
-												className="flex cursor-pointer items-center gap-2"
-											>
+											<div key={s} className="flex items-center gap-2">
 												<Checkbox
-													id={`pat-scope-${s}`}
+													id={`${formId}-scope-${s}`}
 													checked={scopes.has(s)}
 													onCheckedChange={() => toggleScope(s)}
-													disabled={create.isPending}
+													disabled={pending}
 												/>
 												<Label
-													htmlFor={`pat-scope-${s}`}
+													htmlFor={`${formId}-scope-${s}`}
 													className="cursor-pointer font-mono text-sm"
 												>
 													{s}
 												</Label>
-											</label>
+											</div>
 										))}
 								</div>
 							</div>
 						))}
 					</div>
-				</div>
-				<div className="space-y-2">
-					<Label>有效期</Label>
+				</fieldset>
+				<fieldset className="space-y-2">
+					<legend className="text-sm font-medium">有效期</legend>
 					<DateTimePicker
 						value={expiresAt}
 						onChange={setExpiresAt}
 						mode="date"
-						placeholder="留空默认 90 天"
+						placeholder="默认 90 天"
 						min={today}
-						disabled={create.isPending}
-						clearable
+						disabled={pending}
+						clearable={false}
 						presets={expiryPresets}
 					/>
-				</div>
+					<p className="text-xs text-muted-foreground">
+						{token
+							? "未修改时保留原过期时间；选择“永不过期”将移除到期限制。"
+							: "默认 90 天，也可选择具体日期或永不过期。"}
+					</p>
+				</fieldset>
 				<div className="flex items-start gap-2.5 rounded-lg border border-edge-hairline p-3">
 					<Checkbox
-						id="pat-interactive"
+						id={`${formId}-interactive`}
 						checked={interactive}
 						onCheckedChange={(v) => setInteractive(v === true)}
-						disabled={create.isPending}
+						disabled={pending}
 						className="mt-0.5"
 					/>
 					<div className="space-y-1">
-						<Label htmlFor="pat-interactive" className="cursor-pointer">
+						<Label htmlFor={`${formId}-interactive`} className="cursor-pointer">
 							agent 遇到冲突时询问我
 						</Label>
 						<p className="text-muted-foreground text-xs leading-relaxed">
@@ -200,7 +231,7 @@ export function CreatePATDialog({ open, onOpenChange, onCreated }: CreatePATDial
 						</p>
 					</div>
 				</div>
-			</div>
+			</form>
 		</Modal>
 	);
 }

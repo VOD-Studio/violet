@@ -33,6 +33,7 @@
 - **系统面板**：数据库与服务器状态、受控 SQL 控制台、流式数据导出、手动及定时备份与数据库恢复
 - **可运行代码块**：代码沙箱执行（Python/Node/Go/Rust/Bun，复用 yggdrasil runner 镜像）
 - **开放接口**：RESTful API + OpenAPI 文档、MCP 服务（写作/RSS 抓取/评论检索与 AI 自署名发表，支持正文块发现、段落批注和划线批注，最小权限拆分）
+- **MCP 授权管理**：创建、编辑与吊销个人访问令牌，调整名称、权限、有效期和交互偏好时复用原令牌及客户端配置
 - **violet/ui 组件库**：`@violet/ui` 以组件清单管理公开入口与成熟度，基础单元共用 BEM CSS；`/ui` 提供安装、主题、组件 API 与同源交互示例，包内规范和真实 tarball 消费验证支持独立使用（尚未发布 npm）
 - **原生推文组件**：文章引用与推文页面共用独立的 [`@violetjs/react-tweet`](web/packages/react-tweet/README.md)；使用与开发说明见包内文档（尚未发布 npm）
 - **通用看板组件**：[`@violetjs/kanban`](web/packages/kanban/README.zh-CN.md) 提供受控看板、画布、关系图与键盘操作；双语文档、同源示例和真实 tarball 消费验收支持独立接入（尚未发布 npm）；站内 `/kanban` 提供可交互演示、安装说明与 API
