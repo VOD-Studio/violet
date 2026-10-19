@@ -1,0 +1,80 @@
+/* 关系线叠加层的定位（absolute、overflow: visible、不接收指针、滚动层 relative）写在行内样式里，
+   不依赖样式表；这里只管外观。线画在卡片之上：线只在两端贴着卡片边缘，中间经过的是列之间的空隙。 */
+.v-kanban .v-kanban__relation {
+	--_kanban-relation: var(--kanban-relation, var(--_kanban-muted));
+	--_kanban-relation-blocker: var(--kanban-relation-blocker, var(--_kanban-danger));
+	color: var(--_kanban-relation);
+}
+/* 线型本身区分类型：实线加箭头、虚线加箭头、实线加挡条；颜色只是附加的提示 */
+.v-kanban .v-kanban__relation-line {
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.5;
+	stroke-linecap: round;
+}
+.v-kanban .v-kanban__relation[data-line="dashed"] .v-kanban__relation-line {
+	stroke-dasharray: 6 5;
+}
+.v-kanban .v-kanban__relation[data-line="blocker"] {
+	color: var(--_kanban-relation-blocker);
+}
+.v-kanban .v-kanban__relation-head {
+	fill: currentColor;
+	stroke: none;
+}
+.v-kanban .v-kanban__relation-bar {
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 3;
+	stroke-linecap: round;
+}
+
+/* 选中时：相关的线加粗，其余淡化 */
+.v-kanban .v-kanban__relation[data-state="active"] .v-kanban__relation-line {
+	stroke-width: 2.5;
+}
+.v-kanban .v-kanban__relation[data-state="active"] .v-kanban__relation-bar {
+	stroke-width: 4;
+}
+.v-kanban .v-kanban__relation[data-state="faded"] {
+	opacity: 0.2;
+}
+
+/* 选中卡片与相关卡片：选中的描边，其余清晰；无关的淡化 */
+.v-kanban .v-kanban__card[data-selected="true"] {
+	border-color: var(--_kanban-focus);
+}
+/* 淡化的是卡片的内容与描边，而不是整个 li：li 上的 opacity 会生成层叠上下文，
+   把固定定位的「移到…」菜单和聚焦环一起拖淡 */
+.v-kanban .v-kanban__card[data-faded="true"] {
+	border-color: color-mix(in oklab, var(--_kanban-border) 40%, transparent);
+	background: color-mix(in oklab, var(--_kanban-card) 40%, transparent);
+}
+.v-kanban .v-kanban__card[data-faded="true"] > :not(.v-kanban__card-tools, .v-kanban__sr-only) {
+	opacity: 0.4;
+}
+
+/* 文本等价的关系列表：可以放在看板之外，所以不依赖 .v-kanban 祖先与它的变量 */
+.v-kanban__relation-list {
+	margin: 0;
+	padding-left: 1.25em;
+}
+.v-kanban__relation-empty {
+	margin: 0;
+	color: var(--kanban-muted, light-dark(#737373, #a3a3a3));
+}
+
+@media (forced-colors: active) {
+	.v-kanban .v-kanban__relation {
+		color: CanvasText;
+	}
+	.v-kanban .v-kanban__relation[data-line="blocker"] {
+		color: Mark;
+	}
+}
+@media (prefers-reduced-motion: no-preference) {
+	.v-kanban .v-kanban__relation,
+	.v-kanban .v-kanban__card[data-faded="true"] > * {
+		transition: opacity 200ms cubic-bezier(0.2, 0, 0, 1);
+	}
+}

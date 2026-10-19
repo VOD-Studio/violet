@@ -53,7 +53,7 @@ const CommentSection = lazy(() =>
 
 function BlogDetailPage() {
 	const { slug } = Route.useParams();
-	const { data: post, isLoading, error } = usePost(slug);
+	const { data: post, isLoading, error } = usePost(slug, Route.useLoaderData());
 	const contentRef = useRef<HTMLElement>(null);
 	const progress = useScrollProgress();
 	const articleImages = useArticleImagePreview();

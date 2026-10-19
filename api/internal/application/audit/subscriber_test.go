@@ -757,3 +757,29 @@ func TestSubscriber_BotEvents(t *testing.T) {
 		})
 	}
 }
+
+func TestSubscriber_PATUpdated_RecordsTokenIDAndSafeChanges(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor", "admin@blog.com", "1.2.3.4", "ua")
+	tokenID := shared.NewID()
+	changes := []domainapitoken.PATChange{
+		{Field: "name", From: "旧名", To: "新名"},
+		{Field: "scopes", From: []string{"posts:read"}, To: []string{"notes:write"}},
+		{Field: "expires_at", From: "2026-10-20T23:59:59Z", To: nil},
+		{Field: "interactive", From: true, To: false},
+	}
+	require.NoError(t, sub.Handle(ctx, domainapitoken.NewPATUpdated(tokenID, "新名", changes)))
+	require.Len(t, store.appended, 1)
+	event := store.appended[0]
+	assert.Equal(t, domainaudit.ActionUpdate, event.Action)
+	assert.Equal(t, domainaudit.ResourceRef{Type: "api_token", ID: tokenID.String(), Name: "新名"}, event.Resource)
+	assert.Equal(t, "actor", event.Actor.UserID)
+	assert.Equal(t, []domainaudit.FieldChange{
+		{Field: "name", From: "旧名", To: "新名"},
+		{Field: "scopes", From: []string{"posts:read"}, To: []string{"notes:write"}},
+		{Field: "expires_at", From: "2026-10-20T23:59:59Z", To: nil},
+		{Field: "interactive", From: true, To: false},
+	}, event.Changes)
+	assert.Empty(t, event.Metadata)
+}

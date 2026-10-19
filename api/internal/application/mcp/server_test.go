@@ -22,4 +22,7 @@ func TestNewServers_RegisterAllToolsWithoutPanic(t *testing.T) {
 
 	comments := NewCommentsServer(NewCommentTools(nil, nil, nil))
 	require.NotNil(t, comments, "评论 server 应构造成功（7 tool 注册无 panic）")
+
+	roadmap := NewRoadmapServer(NewRoadmapTools(nil, nil, nil, nil))
+	require.NotNil(t, roadmap, "路线图 server 应构造成功（10 tool 注册无 panic）")
 }

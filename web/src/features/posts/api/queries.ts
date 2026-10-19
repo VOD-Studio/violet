@@ -38,12 +38,15 @@ export const fetchPostBySlug = async (slug: string): Promise<PostDetail> =>
  * usePost - 按 slug 获取文章详情 hook
  *
  * @param slug 文章 slug，传入空串时不启用查询
+ * @param initialData 路由 loader 已取到的文章：客户端的查询缓存不随 SSR 传递，不给它首帧没有数据，
+ * 与服务端直出的 HTML 对不上
  */
-export const usePost = (slug: string) =>
+export const usePost = (slug: string, initialData?: PostDetail) =>
 	useQuery({
 		queryKey: postKeys.detail(slug),
 		queryFn: () => fetchPostBySlug(slug),
 		enabled: slug.length > 0,
+		initialData,
 	});
 
 /**

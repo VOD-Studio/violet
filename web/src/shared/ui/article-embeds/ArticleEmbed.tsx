@@ -1,23 +1,26 @@
 import { AlertCircle } from "lucide-react";
 import styles from "./ArticleEmbed.module.css";
-import { DialogueCard } from "./DialogueCard";
-import { GitHubProjectReference } from "./GitHubProjectReference";
-import { LinkPreviewCard } from "./LinkPreviewCard";
-import { SocialLinksCard } from "./SocialLinksCard";
-import { parseArticleEmbed } from "./schema";
-import { TweetEmbedCard } from "./TweetEmbedCard";
-import type { ArticleContentContext, ArticleEmbedKind } from "./types";
+import type { ArticleContentContext, ArticleEmbedModule } from "./types";
 
-interface ArticleEmbedProps {
-	kind: ArticleEmbedKind;
+export interface ArticleEmbedProps {
+	/** 种类名，出现在配置无效的提示里。 */
+	kind: string;
+	/** 已加载的嵌入实现。 */
+	module: ArticleEmbedModule;
+	/** 围栏块里的原文（JSON）。 */
 	source: string;
 	context?: ArticleContentContext;
 }
 
-/** 将受支持的围栏代码配置渲染为文章卡片，并为坏配置保留可诊断降级。 */
-export function ArticleEmbed({ kind, source, context }: ArticleEmbedProps) {
-	const parsed = parseArticleEmbed(kind, source);
-	if (!parsed) {
+/** 把围栏块里的配置交给嵌入实现渲染；JSON 或配置无效时显示可读降级，不中断文章其余部分。 */
+export function ArticleEmbed({ kind, module, source, context }: ArticleEmbedProps) {
+	let config: unknown = null;
+	try {
+		config = module.parse(JSON.parse(source));
+	} catch {
+		config = null;
+	}
+	if (config === null) {
 		return (
 			<aside className={styles.invalid} role="note">
 				<p>
@@ -28,17 +31,6 @@ export function ArticleEmbed({ kind, source, context }: ArticleEmbedProps) {
 			</aside>
 		);
 	}
-
-	switch (parsed.kind) {
-		case "dialogue":
-			return <DialogueCard config={parsed.config} context={context} />;
-		case "github":
-			return <GitHubProjectReference config={parsed.config} />;
-		case "link-preview":
-			return <LinkPreviewCard config={parsed.config} />;
-		case "tweet":
-			return <TweetEmbedCard config={parsed.config} />;
-		case "social-links":
-			return <SocialLinksCard config={parsed.config} />;
-	}
+	const { Component } = module;
+	return <Component config={config} context={context} />;
 }

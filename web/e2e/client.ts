@@ -27,11 +27,15 @@ export async function loadClient(context: BrowserContext) {
 			else await route.continue();
 		}
 	});
+	await context.route("https://accounts.google.com/gsi/**", (route) =>
+		route.fulfill({ contentType: "application/javascript", body: "" }),
+	);
 	await context.route("**/api/**", async (route) => {
 		const url = new URL(route.request().url());
-		const response = await route.fetch({
-			url: `http://127.0.0.1:9410${url.pathname}${url.search}`,
-		});
-		await route.fulfill({ response });
+		// 页面跳走或用例结束时，请求可能已经取消。
+		await route
+			.fetch({ url: `http://127.0.0.1:9410${url.pathname}${url.search}` })
+			.then((response) => route.fulfill({ response }))
+			.catch(() => {});
 	});
 }

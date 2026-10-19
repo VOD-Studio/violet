@@ -16,6 +16,7 @@ import { Route as ChatRouteImport } from './routes/chat'
 import { Route as FeedDotxmlRouteImport } from './routes/feed[.]xml'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as FriendsRouteImport } from './routes/friends'
+import { Route as KanbanRouteImport } from './routes/kanban'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as PersonaRouteImport } from './routes/persona'
 import { Route as PetRouteImport } from './routes/pet'
@@ -69,6 +70,7 @@ import { Route as NotesIndexRouteImport } from './routes/notes.index'
 import { Route as NotesIdRouteImport } from './routes/notes.$id'
 import { Route as ProfileIndexRouteImport } from './routes/profile/index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
+import { Route as ProjectsSlugRouteImport } from './routes/projects/$slug'
 import { Route as SeriesIndexRouteImport } from './routes/series.index'
 import { Route as SeriesSlugRouteImport } from './routes/series.$slug'
 import { Route as TweetsIndexRouteImport } from './routes/tweets/index'
@@ -143,6 +145,11 @@ const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
 const FriendsRoute = FriendsRouteImport.update({
   id: '/friends',
   path: '/friends',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KanbanRoute = KanbanRouteImport.update({
+  id: '/kanban',
+  path: '/kanban',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -410,6 +417,11 @@ const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
   path: '/projects/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectsSlugRoute = ProjectsSlugRouteImport.update({
+  id: '/projects/$slug',
+  path: '/projects/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SeriesIndexRoute = SeriesIndexRouteImport.update({
   id: '/series/',
   path: '/series/',
@@ -620,6 +632,7 @@ export interface FileRoutesByFullPath {
   '/feed.xml': typeof FeedDotxmlRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/friends': typeof FriendsRoute
+  '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
   '/persona': typeof PersonaRoute
   '/pet': typeof PetRoute
@@ -664,6 +677,7 @@ export interface FileRoutesByFullPath {
   '/lab/theme': typeof LabThemeRoute
   '/lab/toc-tree': typeof LabTocTreeRoute
   '/notes/$id': typeof NotesIdRoute
+  '/projects/$slug': typeof ProjectsSlugRoute
   '/series/$slug': typeof SeriesSlugRoute
   '/tweets/$id': typeof TweetsIdRoute
   '/ui/components': typeof UiComponentsRouteWithChildren
@@ -721,6 +735,7 @@ export interface FileRoutesByTo {
   '/feed.xml': typeof FeedDotxmlRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/friends': typeof FriendsRoute
+  '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
   '/persona': typeof PersonaRoute
   '/pet': typeof PetRoute
@@ -759,6 +774,7 @@ export interface FileRoutesByTo {
   '/lab/theme': typeof LabThemeRoute
   '/lab/toc-tree': typeof LabTocTreeRoute
   '/notes/$id': typeof NotesIdRoute
+  '/projects/$slug': typeof ProjectsSlugRoute
   '/series/$slug': typeof SeriesSlugRoute
   '/tweets/$id': typeof TweetsIdRoute
   '/users/$username': typeof UsersUsernameRoute
@@ -817,6 +833,7 @@ export interface FileRoutesById {
   '/feed.xml': typeof FeedDotxmlRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/friends': typeof FriendsRoute
+  '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
   '/persona': typeof PersonaRoute
   '/pet': typeof PetRoute
@@ -861,6 +878,7 @@ export interface FileRoutesById {
   '/lab/theme': typeof LabThemeRoute
   '/lab/toc-tree': typeof LabTocTreeRoute
   '/notes/$id': typeof NotesIdRoute
+  '/projects/$slug': typeof ProjectsSlugRoute
   '/series/$slug': typeof SeriesSlugRoute
   '/tweets/$id': typeof TweetsIdRoute
   '/ui/components': typeof UiComponentsRouteWithChildren
@@ -921,6 +939,7 @@ export interface FileRouteTypes {
     | '/feed.xml'
     | '/forgot-password'
     | '/friends'
+    | '/kanban'
     | '/login'
     | '/persona'
     | '/pet'
@@ -965,6 +984,7 @@ export interface FileRouteTypes {
     | '/lab/theme'
     | '/lab/toc-tree'
     | '/notes/$id'
+    | '/projects/$slug'
     | '/series/$slug'
     | '/tweets/$id'
     | '/ui/components'
@@ -1022,6 +1042,7 @@ export interface FileRouteTypes {
     | '/feed.xml'
     | '/forgot-password'
     | '/friends'
+    | '/kanban'
     | '/login'
     | '/persona'
     | '/pet'
@@ -1060,6 +1081,7 @@ export interface FileRouteTypes {
     | '/lab/theme'
     | '/lab/toc-tree'
     | '/notes/$id'
+    | '/projects/$slug'
     | '/series/$slug'
     | '/tweets/$id'
     | '/users/$username'
@@ -1117,6 +1139,7 @@ export interface FileRouteTypes {
     | '/feed.xml'
     | '/forgot-password'
     | '/friends'
+    | '/kanban'
     | '/login'
     | '/persona'
     | '/pet'
@@ -1161,6 +1184,7 @@ export interface FileRouteTypes {
     | '/lab/theme'
     | '/lab/toc-tree'
     | '/notes/$id'
+    | '/projects/$slug'
     | '/series/$slug'
     | '/tweets/$id'
     | '/ui/components'
@@ -1220,6 +1244,7 @@ export interface RootRouteChildren {
   FeedDotxmlRoute: typeof FeedDotxmlRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   FriendsRoute: typeof FriendsRoute
+  KanbanRoute: typeof KanbanRoute
   LoginRoute: typeof LoginRoute
   PersonaRoute: typeof PersonaRoute
   PetRoute: typeof PetRoute
@@ -1243,6 +1268,7 @@ export interface RootRouteChildren {
   LabThemeRoute: typeof LabThemeRoute
   LabTocTreeRoute: typeof LabTocTreeRoute
   NotesIdRoute: typeof NotesIdRoute
+  ProjectsSlugRoute: typeof ProjectsSlugRoute
   SeriesSlugRoute: typeof SeriesSlugRoute
   TweetsIdRoute: typeof TweetsIdRoute
   UsersUsernameRoute: typeof UsersUsernameRoute
@@ -1309,6 +1335,13 @@ declare module '@tanstack/react-router' {
       path: '/friends'
       fullPath: '/friends'
       preLoaderRoute: typeof FriendsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kanban': {
+      id: '/kanban'
+      path: '/kanban'
+      fullPath: '/kanban'
+      preLoaderRoute: typeof KanbanRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -1680,6 +1713,13 @@ declare module '@tanstack/react-router' {
       path: '/projects'
       fullPath: '/projects/'
       preLoaderRoute: typeof ProjectsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects/$slug': {
+      id: '/projects/$slug'
+      path: '/projects/$slug'
+      fullPath: '/projects/$slug'
+      preLoaderRoute: typeof ProjectsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/series/': {
@@ -2169,6 +2209,7 @@ const rootRouteChildren: RootRouteChildren = {
   FeedDotxmlRoute: FeedDotxmlRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   FriendsRoute: FriendsRoute,
+  KanbanRoute: KanbanRoute,
   LoginRoute: LoginRoute,
   PersonaRoute: PersonaRoute,
   PetRoute: PetRoute,
@@ -2192,6 +2233,7 @@ const rootRouteChildren: RootRouteChildren = {
   LabThemeRoute: LabThemeRoute,
   LabTocTreeRoute: LabTocTreeRoute,
   NotesIdRoute: NotesIdRoute,
+  ProjectsSlugRoute: ProjectsSlugRoute,
   SeriesSlugRoute: SeriesSlugRoute,
   TweetsIdRoute: TweetsIdRoute,
   UsersUsernameRoute: UsersUsernameRoute,
@@ -2211,3 +2253,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

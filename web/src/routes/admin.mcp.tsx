@@ -1,8 +1,8 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { usePATs } from "@features/admin-mcp/api/queries";
-import type { PATScope } from "@features/admin-mcp/model/types";
+import type { PATDTO, PATScope } from "@features/admin-mcp/model/types";
 import { ClientConnectPanel } from "@features/admin-mcp/ui/ClientConnectPanel";
-import { CreatePATDialog } from "@features/admin-mcp/ui/CreatePATDialog";
+import { PATDialog } from "@features/admin-mcp/ui/PATDialog";
 import { PATTable } from "@features/admin-mcp/ui/PATTable";
 import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
@@ -18,11 +18,13 @@ export const Route = createFileRoute("/admin/mcp")({
 function AdminMCPPage() {
 	const { data: paged, isLoading, pagination } = usePagedQuery(usePATs);
 	const tokens = paged?.data ?? [];
-	const [createOpen, setCreateOpen] = React.useState(false);
+	const [dialogOpen, setDialogOpen] = React.useState(false);
+	const [editingToken, setEditingToken] = React.useState<PATDTO | null>(null);
 	// 创建成功后的一次性明文令牌；其余时刻恒为 null（配置走占位符）
 	const [revealToken, setRevealToken] = React.useState<string | null>(null);
 	// 接入区的 scope 上下文；null 表示展示全部 server
 	const [activeScopes, setActiveScopes] = React.useState<readonly PATScope[] | null>(null);
+	const [activeTokenId, setActiveTokenId] = React.useState<string | null>(null);
 	const connectRef = React.useRef<HTMLDivElement>(null);
 	const scrollToConnect = () =>
 		connectRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -32,7 +34,13 @@ function AdminMCPPage() {
 			title="MCP 接入"
 			description="为 AI agent 签发令牌并复制客户端配置"
 			action={
-				<Button size="sm" onClick={() => setCreateOpen(true)}>
+				<Button
+					size="sm"
+					onClick={() => {
+						setEditingToken(null);
+						setDialogOpen(true);
+					}}
+				>
 					<Plus className="size-3.5" />
 					创建令牌
 				</Button>
@@ -44,10 +52,16 @@ function AdminMCPPage() {
 						tokens={tokens}
 						pagination={pagination}
 						loading={isLoading}
-						onConnect={(scopes) => {
+						onConnect={(token) => {
 							setRevealToken(null);
-							setActiveScopes(scopes);
+							setActiveTokenId(token.id);
+							setActiveScopes(token.scopes);
 							scrollToConnect();
+						}}
+						onEdit={(token) => {
+							setRevealToken(null);
+							setEditingToken(token);
+							setDialogOpen(true);
 						}}
 					/>
 					<div ref={connectRef} className="scroll-mt-6">
@@ -56,14 +70,21 @@ function AdminMCPPage() {
 				</div>
 			</PermissionGuard>
 
-			<CreatePATDialog
-				open={createOpen}
-				onOpenChange={setCreateOpen}
-				onCreated={(token, scopes) => {
-					setCreateOpen(false);
-					setRevealToken(token);
-					setActiveScopes(scopes);
+			<PATDialog
+				open={dialogOpen}
+				onOpenChange={setDialogOpen}
+				token={editingToken}
+				onCreated={(token) => {
+					setDialogOpen(false);
+					setRevealToken(token.token ?? null);
+					setActiveTokenId(token.id);
+					setActiveScopes(token.scopes);
 					scrollToConnect();
+				}}
+				onUpdated={(token) => {
+					setDialogOpen(false);
+					setRevealToken(null);
+					if (activeTokenId === token.id) setActiveScopes(token.scopes);
 				}}
 			/>
 		</PageShell>

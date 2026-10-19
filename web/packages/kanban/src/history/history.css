@@ -1,0 +1,55 @@
+.v-kanban-history {
+	--_kanban-history-foreground: var(--kanban-foreground, light-dark(#171717, #ededed));
+	--_kanban-history-muted: var(--kanban-muted, light-dark(#737373, #a3a3a3));
+	--_kanban-history-border: var(--kanban-border, light-dark(#e5e5e5, #2e2e2e));
+	--_kanban-history-card: var(--kanban-card-background, light-dark(#ffffff, #0a0a0a));
+	--_kanban-history-focus: var(--kanban-focus, light-dark(#2563eb, #60a5fa));
+	color-scheme: light dark;
+	position: relative;
+	box-sizing: border-box;
+	display: inline-flex;
+	gap: 8px;
+	font-family: var(--kanban-font-family, inherit);
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+:where(.dark, [data-theme="dark"]) .v-kanban-history,
+.v-kanban-history[data-theme="dark"] {
+	color-scheme: dark;
+}
+:where(.light, [data-theme="light"]) .v-kanban-history,
+.v-kanban-history[data-theme="light"] {
+	color-scheme: light;
+}
+
+.v-kanban-history .v-kanban-history__button {
+	padding: 4px 12px;
+	border: 1px solid var(--_kanban-history-border);
+	border-radius: 9999px;
+	background: var(--_kanban-history-card);
+	color: var(--_kanban-history-foreground);
+	font: inherit;
+	cursor: pointer;
+}
+.v-kanban-history .v-kanban-history__button[aria-disabled="true"] {
+	color: var(--_kanban-history-muted);
+	cursor: not-allowed;
+	opacity: 0.6;
+}
+.v-kanban-history .v-kanban-history__button:focus-visible {
+	outline: 2px solid var(--_kanban-history-focus);
+	outline-offset: 2px;
+}
+
+.v-kanban-history .v-kanban-history__sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
+}

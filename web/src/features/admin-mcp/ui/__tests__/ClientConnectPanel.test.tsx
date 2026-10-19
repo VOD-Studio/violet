@@ -84,4 +84,22 @@ describe("ClientConnectPanel", () => {
 			"cursor://anysphere.cursor-deeplink/mcp/install",
 		);
 	});
+
+	it("令牌编辑后的权限与明文上下文变化会同步到客户端配置", async () => {
+		const { rerender } = render(
+			<ClientConnectPanel token="tok_created" scopes={["posts:read", "comments:write"]} />,
+		);
+		expect(screen.getByText("tok_created")).toBeTruthy();
+		expect(screen.getByRole("button", { name: /评论/ })).toBeTruthy();
+
+		rerender(<ClientConnectPanel token={null} scopes={["notes:read"]} />);
+		expect(screen.queryByText("tok_created")).toBeNull();
+		expect(screen.queryByRole("button", { name: /评论/ })).toBeNull();
+		expect(screen.queryByRole("button", { name: /文章/ })).toBeNull();
+		expect(screen.getByRole("button", { name: /笔记/ })).toBeTruthy();
+		expect(
+			await screen.findByText(/claude mcp add --transport http violet-notes/),
+		).toBeTruthy();
+		expect(screen.queryByText(/Bearer tok_created/)).toBeNull();
+	});
 });

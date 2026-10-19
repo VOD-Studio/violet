@@ -1,14 +1,16 @@
 /*
  * web/src/styles.css —— 站点全局样式入口。
  *
- * 导入顺序即层叠顺序：Tailwind → 字体 → @violet/ui → 站点主题与方言 →
+ * 导入顺序即层叠顺序：Tailwind → 字体 → @violet/ui → @violetjs/kanban（站点 token 映射见 kanban.css）→ 站点主题与方言 →
  * 全局基础行为 → 页面转场。@violet/ui 持有 Tailwind 映射、基础 token 与
  * Violet 默认 palette；方言及站点特有规则仍由应用持有。
  */
 @import "tailwindcss";
 @import "@violet/ui/styles.css";
+@import "@violetjs/kanban/styles.css";
 @import "./styles/site-theme.css";
 @import "./styles/site-tokens.css";
+@import "./styles/kanban.css";
 @import "./styles/dialects/public.css";
 @import "./styles/dialects/tool.css";
 @import "./styles/dialects/immersive.css";

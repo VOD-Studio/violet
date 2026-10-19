@@ -2,6 +2,10 @@
 
 人物提及和内容卡片从 Markdown 源码模式输入。它们沿用行内代码或围栏代码块载体，保存后在文章页转换为可交互组件；普通代码块仍按原样高亮。
 
+卡片按围栏语言识别，识别规则登记在 `web/src/shared/ui/article-embeds/registry.ts`：内置的对话、项目引用、链接摘要、推文与社交入口已登记；新增卡片由所属 feature 调用 `registerArticleEmbed` 登记语言、配置校验与组件，并加进 `web/src/register-article-embeds.ts`（服务端与客户端都执行），不需要改 `shared` 里的分派代码。配置无效时文章里显示「无法解析 … 卡片配置」与原文，其余内容照常渲染。
+
+富文本模式里，卡片的围栏块显示为代码块，代码下方实时预览文章里的渲染结果（停止输入后刷新，配置无效时同样显示降级提示）；语言下拉里显示卡片的名称。声明了插入入口的卡片（如[路线图](#项目路线图卡片与画布)）还能从 Slash 菜单「嵌入」组用弹层插入，代码块头部另有「编辑…」按钮，重新打开同一个弹层，回填当前参数，更新后替换整块。
+
 > 本章站内页的所有示例围栏都直接渲染为对应组件，不是外层 Markdown 代码示意。
 
 ## 行内人物提及
@@ -149,6 +153,45 @@
 ```tweet
 {"url":"https://x.com/thsottiaux/status/2062329981548802523","author":"Tibo","handle":"@thsottiaux","text":"Hi. Over the last 24 hours we had three separate small incidents that affected Codex reliability. Those are three too many and we are taking active steps for them to not reproduce.\n\nI have reset usage limits for Codex across all paid plans. May the tokens flow again.","avatar":"https://pbs.twimg.com/profile_images/2093807917833281537/2yBgpwVV_200x200.jpg","date":"2026-06-04 00:25:58 UTC"}
 ```
+
+## 项目路线图卡片与画布
+
+用 `roadmap` 围栏块引用站内项目的路线图。内容读取**阅读时**的当前公开数据，不保存快照。
+
+````markdown
+```roadmap
+{"project": "kite", "item": 3}
+```
+
+```roadmap
+{"project": "kite"}
+```
+
+```roadmap
+{"project": "kite", "display": "canvas"}
+```
+
+```roadmap
+{"project": "kite", "display": "canvas", "view": "graph", "item": 3}
+```
+````
+
+| 参数 | 必填 | 说明 |
+|---|---|---|
+| `project` | 是 | 项目 slug（项目页地址 `/projects/<slug>` 的最后一段） |
+| `item` | 否 | 条目编号（`#3` 的 3）。卡片里给出时是条目卡片、省略时是项目卡片；关系画布里给出时以该条目为根 |
+| `display` | 否 | 形态：`card`（默认）是卡片，`canvas` 是可平移缩放的画布 |
+| `view` | 否 | 画布内容，只用于 `canvas`：`board`（默认）是三阶段看板，`graph` 是关系图 |
+
+- **条目卡片**：阶段、编号、标题、被阻塞标记、标签，以及子项进度或交付版本与完成日期；点击打开与项目页相同的只读详情。
+- **项目卡片**：项目名、简介、进度概览（按阶段分段的进度条与计数）、正在进行与最近完成的条目，底部链接到项目页。
+- **看板画布**：整个项目的三阶段看板与条目关系连线，固定高度；不接受 `item`。
+- **关系画布**：条目仍按阶段分区，列内按关系重排以减少连线交叉，已完成的条目全部画出；给出 `item` 时只画与它直接或间接相连的条目并描边标出根，省略时画整个项目。
+- **编辑器入口**：Slash 菜单「路线图」打开弹层，选项目、形态（卡片／看板画布／关系画布）与条目，下方实时预览，插入后即是上面的围栏块；手写围栏块同样在编辑区实时预览。已有的块点代码块头部的「编辑路线图」回填参数修改。
+- 卡片在服务端渲染时直接输出内容，首屏不闪；画布只在浏览器里绘制，之前是同样高度的占位，文章不会跳动。
+- 画布里普通滚轮仍滚动文章，Ctrl/⌘ 加滚轮缩放、拖动空白处平移；可全屏查看，Esc 退出。条目点开是只读详情。
+- 项目或条目已删除时显示「… 不存在或已删除」的占位说明；读取出错时提示稍后刷新；文章其余部分照常渲染。
+- 参数不合法（slug 写错格式、编号不是正整数、未知字段、未知形态、`view` 用在卡片上、看板画布带 `item`、不是 JSON）时显示「无法解析 roadmap 卡片配置」与原文。
 
 ## 文章末尾签名
 

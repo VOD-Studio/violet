@@ -1,10 +1,14 @@
 export { ArticleEmbed } from "./ArticleEmbed";
-export { articleEmbedKind } from "./language";
+export { LazyArticleEmbed } from "./LazyArticleEmbed";
 export { ProfileMention } from "./ProfileMention";
-export { parseArticleEmbed } from "./schema";
+export { findArticleEmbed, listArticleEmbeds, registerArticleEmbed } from "./registry";
 export type {
 	ArticleContentContext,
+	ArticleEmbedDefinition,
+	ArticleEmbedInserter,
 	ArticleEmbedKind,
+	ArticleEmbedModule,
+	ArticleEmbedPickerProps,
 	ArticleProfile,
 	DialogueEmbedConfig,
 	GitHubEmbedConfig,

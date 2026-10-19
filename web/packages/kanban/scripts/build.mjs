@@ -1,0 +1,20 @@
+import { spawnSync } from "node:child_process";
+import { copyFile, mkdir, rm } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+
+const root = new URL("../", import.meta.url);
+await rm(new URL("dist/", root), { recursive: true, force: true });
+const result = spawnSync("tsc", ["--project", "tsconfig.build.json"], {
+	cwd: fileURLToPath(root),
+	stdio: "inherit",
+	shell: process.platform === "win32",
+});
+if (result.error) throw result.error;
+if (result.status !== 0) process.exit(result.status ?? 1);
+await mkdir(new URL("dist/board/", root), { recursive: true });
+await mkdir(new URL("dist/history/", root), { recursive: true });
+await mkdir(new URL("dist/canvas/", root), { recursive: true });
+await mkdir(new URL("dist/graph/", root), { recursive: true });
+await Promise.all(
+	["styles.css", "board/board.css", "board/shell.css", "board/switcher.css", "board/relations/relations.css", "history/history.css", "canvas/canvas.css", "graph/graph.css"].map((path) => copyFile(new URL(`src/${path}`, root), new URL(`dist/${path}`, root))),
+);

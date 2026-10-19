@@ -9,6 +9,7 @@ import (
 // ProjectRepository 项目仓储接口
 type ProjectRepository interface {
 	FindByID(ctx context.Context, id shared.ID) (*Project, error)
+	FindBySlug(ctx context.Context, slug string) (*Project, error)
 	FindAll(ctx context.Context) ([]*Project, error)
 	// FindPage 分页查找项目（按 sort_order ASC, created_at DESC）
 	FindPage(ctx context.Context, q shared.PageQuery) (shared.PageResult[*Project], error)
@@ -17,5 +18,6 @@ type ProjectRepository interface {
 }
 
 var (
-	ErrNotFound = shared.NotFound("项目")
+	ErrNotFound     = shared.NotFound("项目")
+	ErrSlugConflict = shared.Conflict("项目 slug 已被占用")
 )

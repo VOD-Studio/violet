@@ -5,7 +5,6 @@
 package post
 
 import (
-	"regexp"
 	"time"
 
 	"blog-api/internal/domain/shared"
@@ -65,9 +64,6 @@ func NewPostRevertedToDraft(postID shared.ID, title string) PostRevertedToDraft 
 	}
 }
 
-// slugPattern slug 格式：小写字母数字连字符
-var slugPattern = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
-
 // IsValidStatus 状态合法性
 func IsValidStatus(s string) bool {
 	switch s {
@@ -79,7 +75,7 @@ func IsValidStatus(s string) bool {
 
 // IsValidSlug slug 格式校验
 func IsValidSlug(s string) bool {
-	return slugPattern.MatchString(s)
+	return shared.IsValidSlug(s)
 }
 
 // Post 文章聚合根

@@ -1,0 +1,128 @@
+{
+	"name": "@violetjs/kanban",
+	"version": "0.1.0",
+	"description": "Accessible, controlled kanban board for React with a React-free core",
+	"license": "MIT",
+	"keywords": [
+		"react",
+		"kanban",
+		"board",
+		"ssr",
+		"accessibility"
+	],
+	"homepage": "https://github.com/VOD-Studio/violet/tree/release/2.0/web/packages/kanban#readme",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/VOD-Studio/violet.git",
+		"directory": "web/packages/kanban"
+	},
+	"bugs": {
+		"url": "https://github.com/VOD-Studio/violet/issues"
+	},
+	"main": "./src/index.ts",
+	"types": "./src/unstyled.ts",
+	"type": "module",
+	"files": [
+		"dist",
+		"README.md",
+		"README.zh-CN.md",
+		"DEVELOPMENT.md",
+		"docs/api.md",
+		"examples",
+		"LICENSE"
+	],
+	"sideEffects": [
+		"./src/index.ts",
+		"./dist/index.js",
+		"**/*.css"
+	],
+	"exports": {
+		".": {
+			"types": "./src/unstyled.ts",
+			"import": "./src/index.ts",
+			"default": "./src/index.ts"
+		},
+		"./unstyled": {
+			"types": "./src/unstyled.ts",
+			"import": "./src/unstyled.ts",
+			"default": "./src/unstyled.ts"
+		},
+		"./core": {
+			"types": "./src/core/index.ts",
+			"import": "./src/core/index.ts",
+			"default": "./src/core/index.ts"
+		},
+		"./canvas": {
+			"types": "./src/canvas/index.ts",
+			"import": "./src/canvas/index.ts",
+			"default": "./src/canvas/index.ts"
+		},
+		"./graph": {
+			"types": "./src/graph/index.ts",
+			"import": "./src/graph/index.ts",
+			"default": "./src/graph/index.ts"
+		},
+		"./styles.css": "./src/styles.css",
+		"./package.json": "./package.json"
+	},
+	"publishConfig": {
+		"access": "public",
+		"main": "./dist/index.js",
+		"types": "./dist/unstyled.d.ts",
+		"exports": {
+			".": {
+				"types": "./dist/unstyled.d.ts",
+				"import": "./dist/index.js",
+				"default": "./dist/index.js"
+			},
+			"./unstyled": {
+				"types": "./dist/unstyled.d.ts",
+				"import": "./dist/unstyled.js",
+				"default": "./dist/unstyled.js"
+			},
+			"./core": {
+				"types": "./dist/core/index.d.ts",
+				"import": "./dist/core/index.js",
+				"default": "./dist/core/index.js"
+			},
+			"./canvas": {
+				"types": "./dist/canvas/index.d.ts",
+				"import": "./dist/canvas/index.js",
+				"default": "./dist/canvas/index.js"
+			},
+			"./graph": {
+				"types": "./dist/graph/index.d.ts",
+				"import": "./dist/graph/index.js",
+				"default": "./dist/graph/index.js"
+			},
+			"./styles.css": "./dist/styles.css",
+			"./package.json": "./package.json"
+		}
+	},
+	"scripts": {
+		"build": "node scripts/build.mjs",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run --config vitest.config.ts",
+		"browser": "playwright test --config browser/playwright.config.ts",
+		"examples": "node scripts/sync-readme.mjs",
+		"examples:check": "node scripts/sync-readme.mjs --check",
+		"consumer": "node scripts/consumer-smoke.mjs",
+		"prepack": "pnpm examples:check && pnpm build"
+	},
+	"peerDependencies": {
+		"react": "^19.0.0"
+	},
+	"devDependencies": {
+		"@playwright/test": "^1.63.0",
+		"@testing-library/react": "^16.3.0",
+		"@types/node": "^22.10.2",
+		"@types/react": "^19.2.0",
+		"@types/react-dom": "^19.2.0",
+		"esbuild": "^0.28.1",
+		"jsdom": "^28.1.0",
+		"react": "^19.2.0",
+		"react-dom": "^19.2.0",
+		"typescript": "^7.0.2",
+		"vitest": "^4.1.5"
+	}
+}

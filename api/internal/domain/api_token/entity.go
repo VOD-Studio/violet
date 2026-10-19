@@ -1,12 +1,13 @@
 package apitoken
 
 import (
+	"sort"
 	"time"
 
 	domainshared "blog-api/internal/domain/shared"
 )
 
-// PAT scope 枚举。固定十一个：文章读/写/发布、抓取、订阅读/写、评论读/写、笔记读/写/发布，创建时多选。
+// PAT scope 枚举。固定十三个：文章读/写/发布、抓取、订阅读/写、评论读/写、笔记读/写/发布、路线图读/写，创建时多选。
 const (
 	ScopePostsRead          = "posts:read"
 	ScopePostsWrite         = "posts:write"
@@ -19,6 +20,8 @@ const (
 	ScopeNotesRead          = "notes:read"          // 列/查自己的笔记含草稿（MCP violet-notes server）
 	ScopeNotesWrite         = "notes:write"         // 创建/编辑/删除自己的笔记
 	ScopeNotesPublish       = "notes:publish"       // 以 published 状态建笔记（直发；draft 不需要）
+	ScopeRoadmapRead        = "roadmap:read"        // 列项目与读路线图（MCP violet-roadmap server）
+	ScopeRoadmapWrite       = "roadmap:write"       // 写条目与关系；还需要持有人自己有 project:update 权限
 )
 
 // validScopes 合法 scope 集合，校验与新增 scope 时同步此处 + 前端 PAT_SCOPES 常量
@@ -35,6 +38,19 @@ var validScopes = map[string]struct{}{
 	ScopeNotesRead:          {},
 	ScopeNotesWrite:         {},
 	ScopeNotesPublish:       {},
+	ScopeRoadmapRead:        {},
+	ScopeRoadmapWrite:       {},
+}
+
+// AllScopes 返回全部合法 scope（升序）。供需要手写白名单的边界（请求校验的 oneof 标签）做一致性核对，
+// 新增 scope 时漏改那份白名单会让创建令牌被拒。
+func AllScopes() []string {
+	scopes := make([]string, 0, len(validScopes))
+	for scope := range validScopes {
+		scopes = append(scopes, scope)
+	}
+	sort.Strings(scopes)
+	return scopes
 }
 
 // IsValidScope 判断 scope 是否在预定义枚举内。
@@ -80,9 +96,9 @@ func NewPATDeleted(userID domainshared.ID, name string) PATDeleted {
 // 不变量：
 //   - tokenHash 创建后永不变（明文仅在创建时返回一次，库中只存哈希）
 //   - expiresAt 零值表示永不过期；非零值时与 now 比较判过期
-//   - scopes 是创建时声明的写权限子集，校验时按子集判定
+//   - scopes 是当前授权的权限子集，校验时按子集判定
 //
-// 聚合根只做纯领域逻辑（HasScope/IsExpired），不访问 DB；
+// 聚合根只做纯领域逻辑，不访问 DB；
 // 持久化由 TokenRepository 完成。
 type PAT struct {
 	// id PAT 标识（持久化主键，如 ULID）
@@ -93,7 +109,7 @@ type PAT struct {
 	name string
 	// tokenHash 令牌哈希（创建后永不变；明文仅在创建时一次性返回，库中只存哈希）
 	tokenHash string
-	// scopes 授权 scope 列表（创建时声明的子集，HasScope 按子集判定）
+	// scopes 当前授权 scope 列表，HasScope 按子集判定
 	scopes []string
 	// expiresAt 过期时间（零值表示永不过期；非零值时与 now 比较判过期）
 	expiresAt time.Time
@@ -120,13 +136,12 @@ func WithInteractive(v bool) PATOption {
 // expiresAt 零值表示永不过期；非零值时与 now 比较判过期。
 // 随机源失败返回错误，调用方映射为 500。
 func NewPAT(userID, name string, scopes []string, expiresAt, now time.Time, opts ...PATOption) (*PAT, string, error) {
-	if len(scopes) == 0 {
-		return nil, "", domainshared.BadRequest("至少选择一个权限范围")
+	name, err := validateName(name)
+	if err != nil {
+		return nil, "", err
 	}
-	for _, s := range scopes {
-		if !IsValidScope(s) {
-			return nil, "", domainshared.BadRequest("未知的权限范围: " + s)
-		}
+	if err := validateScopes(scopes); err != nil {
+		return nil, "", err
 	}
 	raw, err := GenerateToken()
 	if err != nil {

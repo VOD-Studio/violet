@@ -151,6 +151,7 @@ func NewAdminRouter(d *Deps) chi.Router {
 		r.Use(middleware.RequirePermission(perm, "mcp:manage-tokens"))
 		r.Get("/", d.APIToken.List)
 		r.Post("/", d.APIToken.Create)
+		r.Patch("/{id}", d.APIToken.Update)
 		r.Delete("/{id}", d.APIToken.Delete)
 	})
 
@@ -244,6 +245,7 @@ func NewAdminRouter(d *Deps) chi.Router {
 
 	// 项目管理
 	r.Route("/projects", func(r chi.Router) {
+		registerAdminRoadmapRoutes(r, d.Roadmap, d.RoadmapRelations, perm)
 		r.With(middleware.RequirePermission(perm, "project:create")).Post("/", contentH.CreateProject)
 		r.With(middleware.RequirePermission(perm, "project:update")).Put("/{id}", contentH.UpdateProject)
 		r.With(middleware.RequirePermission(perm, "project:delete")).Delete("/{id}", contentH.DeleteProject)

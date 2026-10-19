@@ -12,6 +12,8 @@
 export interface CreateProject {
 	/** 项目标题，必填 */
 	title: string;
+	/** 创建时留空按标题生成；更新时省略保留原值。 */
+	slug?: string;
 	/** 项目描述 */
 	description?: string;
 	/** 项目主页 URL */

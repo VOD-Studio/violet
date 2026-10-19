@@ -1,3 +1,6 @@
+import type { LucideIcon } from "lucide-react";
+import type { ComponentType } from "react";
+
 /** 文章行内人物提及所需的公开档案。 */
 export interface ArticleProfile {
 	/** 人物的公开显示名称。 */
@@ -166,7 +169,8 @@ export interface SocialLinksEmbedConfig {
 	links: ArticleSocialLink[];
 }
 
-interface ArticleEmbedConfigMap {
+/** 内置嵌入的种类与配置类型的对应。 */
+export interface ArticleEmbedConfigMap {
 	/** 单轮对话使用的配置。 */
 	dialogue: DialogueEmbedConfig;
 	/** GitHub 项目引用使用的配置。 */
@@ -179,15 +183,68 @@ interface ArticleEmbedConfigMap {
 	"social-links": SocialLinksEmbedConfig;
 }
 
-/** 文章解析器支持的内容种类，与配置映射保持一致。 */
+/** 内置嵌入的种类，与配置映射保持一致。 */
 export type ArticleEmbedKind = keyof ArticleEmbedConfigMap;
 
-/** 按内容种类关联配置类型，避免种类与字段不匹配。 */
-export type ParsedArticleEmbed = {
-	[Kind in ArticleEmbedKind]: {
-		/** 已通过解析的内容种类。 */
-		kind: Kind;
-		/** 与该种类对应的有效配置。 */
-		config: ArticleEmbedConfigMap[Kind];
-	};
-}[ArticleEmbedKind];
+/**
+ * 一种嵌入的实现：把围栏块里的 JSON 解析成配置，再渲染成卡片。
+ *
+ * 按需加载，不进文章正文的首包；解析失败返回 null，由宿主显示可读的降级提示。
+ *
+ * @typeParam Config - 解析后的配置类型
+ */
+export interface ArticleEmbedModule<Config = unknown> {
+	/** 校验 `JSON.parse` 之后的值；无效时返回 null。 */
+	parse(input: unknown): Config | null;
+	Component: ComponentType<{ config: Config; context?: ArticleContentContext }>;
+}
+
+/**
+ * 登记一种文章嵌入：识别哪些围栏语言，以及如何按需加载它的实现。
+ *
+ * @typeParam Config - 解析后的配置类型
+ * @example
+ * registerArticleEmbed({
+ *   kind: "roadmap",
+ *   languages: ["roadmap"],
+ *   load: () => import("./roadmap-embed").then((module) => module.roadmapEmbed),
+ * });
+ */
+export interface ArticleEmbedDefinition<Config = unknown> {
+	/** 种类名，出现在配置无效的提示里。 */
+	kind: string;
+	/** 识别的围栏语言，不区分大小写；同一种语言只能属于一种嵌入。第一个是编辑器插入时写的语言。 */
+	languages: readonly string[];
+	load(): Promise<ArticleEmbedModule<Config>>;
+	/**
+	 * 编辑器里的插入入口。
+	 *
+	 * @default undefined — Slash 菜单里没有这一项，作者手写围栏块。
+	 */
+	inserter?: ArticleEmbedInserter;
+}
+
+/** 编辑器 Slash 菜单里的一项：选中后打开弹层，作者用表单选参数，不手写 JSON。 */
+export interface ArticleEmbedInserter {
+	/** 菜单项与弹层标题里的名称。 */
+	title: string;
+	/** 菜单项下的一句说明。 */
+	description: string;
+	/** 搜索菜单时也能匹配的别名。 */
+	keywords: readonly string[];
+	icon: LucideIcon;
+	/** 按需加载选择表单，不进编辑器首包。 */
+	loadPicker(): Promise<ComponentType<ArticleEmbedPickerProps>>;
+}
+
+/** 选择表单的属性：表单只管选参数，确认、取消与预览由编辑器的弹层负责。 */
+export interface ArticleEmbedPickerProps {
+	/**
+	 * 编辑已有的块时它的原文，表单从中回填。
+	 *
+	 * @default undefined — 新插入，从空白开始。
+	 */
+	initialSource?: string;
+	/** 每次选择变化时报告围栏块原文；还没选完整时报告 null。 */
+	onChange(source: string | null): void;
+}

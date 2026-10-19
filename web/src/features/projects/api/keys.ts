@@ -25,4 +25,18 @@ export const projectKeys = {
 	 * @param id 项目 ID
 	 */
 	detail: (id: string) => [...projectKeys.details(), id] as const,
+	/** 路线图维度 */
+	roadmaps: () => [...projectKeys.all, "roadmap"] as const,
+	/**
+	 * 某个项目的路线图
+	 *
+	 * @param slug 项目 slug
+	 */
+	roadmap: (slug: string) => [...projectKeys.roadmaps(), slug] as const,
+	/**
+	 * 文章里嵌入的路线图：结果把「不存在」与「出错」也当作数据，和详情页的查询分开缓存
+	 *
+	 * @param slug 项目 slug
+	 */
+	roadmapEmbed: (slug: string) => [...projectKeys.roadmaps(), slug, "embed"] as const,
 };

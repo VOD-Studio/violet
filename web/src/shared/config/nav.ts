@@ -14,6 +14,7 @@ import {
 	NotebookText,
 	Rss,
 	Sparkles,
+	SquareKanban,
 	SquarePen,
 	Users,
 } from "lucide-react";
@@ -144,6 +145,12 @@ export const NAV_ITEMS: NavItem[] = [
 				to: "/editor-guide",
 				icon: SquarePen,
 				description: "查阅文章编辑器语法与功能手册",
+			},
+			{
+				label: "看板",
+				to: "/kanban",
+				icon: SquareKanban,
+				description: "试玩 @violetjs/kanban 并查阅安装与 API",
 			},
 		],
 	},

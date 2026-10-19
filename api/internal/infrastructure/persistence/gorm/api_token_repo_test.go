@@ -145,3 +145,71 @@ func (r *APITokenRepository) FindByHashMust(t *testing.T, hash string) *domainap
 	require.NoError(t, err)
 	return p
 }
+
+func TestAPITokenRepository_UpdatePreservesIdentityAndConcurrentUsage(t *testing.T) {
+	db := setupTokenTestDB(t)
+	repo := NewAPITokenRepository(db)
+	ctx := context.Background()
+	created := time.Date(2026, 1, 1, 0, 0, 0, 123456789, time.UTC)
+	expiry := created.Add(time.Hour)
+	p := domainapitoken.Reconstruct("id", "owner", "旧名", "original-hash", []string{domainapitoken.ScopePostsRead}, expiry, time.Time{}, created, true)
+	require.NoError(t, repo.Save(ctx, p))
+	loaded, err := repo.FindByID(ctx, p.ID(), p.UserID())
+	require.NoError(t, err)
+	used := created.Add(2 * time.Hour)
+	require.NoError(t, repo.TouchLastUsed(ctx, p.ID(), used))
+	name, interactive := "新名", false
+	scopes := []string{domainapitoken.ScopeNotesWrite}
+	_, err = loaded.Update(domainapitoken.UpdateInput{Name: &name, Scopes: &scopes, Interactive: &interactive}, created)
+	require.NoError(t, err)
+	require.NoError(t, repo.Update(ctx, loaded))
+	got, err := repo.FindByHash(ctx, "original-hash")
+	require.NoError(t, err)
+	assert.Equal(t, p.ID(), got.ID())
+	assert.Equal(t, p.UserID(), got.UserID())
+	assert.Equal(t, p.TokenHash(), got.TokenHash())
+	assert.Equal(t, created, got.CreatedAt())
+	assert.Equal(t, expiry, got.ExpiresAt())
+	assert.Equal(t, used, got.LastUsedAt(), "编辑不能覆盖读取后异步刷新的使用时间")
+	assert.Equal(t, name, got.Name())
+	assert.Equal(t, scopes, got.Scopes())
+	assert.False(t, got.Interactive())
+
+	never := time.Time{}
+	_, err = got.Update(domainapitoken.UpdateInput{ExpiresAt: &never}, created)
+	require.NoError(t, err)
+	require.NoError(t, repo.Update(ctx, got))
+	updated, err := repo.FindByHash(ctx, "original-hash")
+	require.NoError(t, err)
+	assert.True(t, updated.ExpiresAt().IsZero(), "永久令牌必须真正写入 NULL")
+	var po model.APIToken
+	require.NoError(t, db.First(&po, "id = ?", p.ID()).Error)
+	assert.Nil(t, po.ExpiresAt)
+	assert.Equal(t, used, *po.LastUsedAt)
+	var count int64
+	require.NoError(t, db.Model(&model.APIToken{}).Count(&count).Error)
+	assert.EqualValues(t, 1, count, "编辑不能重建或新增令牌")
+}
+
+func TestAPITokenRepository_UpdateRejectsMissingAndForeignOwner(t *testing.T) {
+	db := setupTokenTestDB(t)
+	repo := NewAPITokenRepository(db)
+	ctx := context.Background()
+	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	original := domainapitoken.Reconstruct("id", "owner", "原名", "hash", []string{domainapitoken.ScopePostsRead}, time.Time{}, time.Time{}, now, true)
+	require.NoError(t, repo.Save(ctx, original))
+	for _, pair := range []struct{ id, owner string }{{"id", "other"}, {"missing", "owner"}} {
+		_, err := repo.FindByID(ctx, pair.id, pair.owner)
+		assert.ErrorIs(t, err, domainapitoken.ErrNotFound)
+		forged := domainapitoken.Reconstruct(pair.id, pair.owner, "不应写入", "new-hash", []string{domainapitoken.ScopeNotesWrite}, time.Time{}, time.Time{}, now.Add(time.Hour), false)
+		assert.ErrorIs(t, repo.Update(ctx, forged), domainapitoken.ErrNotFound)
+	}
+	got, err := repo.FindByHash(ctx, original.TokenHash())
+	require.NoError(t, err)
+	assert.Equal(t, original.Name(), got.Name())
+	assert.Equal(t, original.UserID(), got.UserID())
+	assert.Equal(t, original.CreatedAt(), got.CreatedAt())
+	var count int64
+	require.NoError(t, db.Model(&model.APIToken{}).Count(&count).Error)
+	assert.EqualValues(t, 1, count)
+}

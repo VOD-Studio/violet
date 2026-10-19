@@ -1,6 +1,6 @@
 # Violet MCP Server 使用指南
 
-violet 通过 MCP（Model Context Protocol）向外暴露博客内容读写能力。共 4 个面向 AI agent 的 server，按「读/写/抓取/评论」切分权限边界，互不重叠。
+violet 通过 MCP（Model Context Protocol）向外暴露博客内容读写能力。共 6 个面向 AI agent 的 server，按「读/写/抓取/评论/笔记/路线图」切分权限边界，互不重叠。
 
 ## 总览
 
@@ -11,8 +11,9 @@ violet 通过 MCP（Model Context Protocol）向外暴露博客内容读写能�
 | `violet-posts` | 自己的文章读写 | PAT（`posts:read/write/publish`） | 当前用户名下文章（含草稿） |
 | `violet-scraper` | 外站抓取 + RSS 订阅 | PAT（`posts:scrape` / `subscriptions:*`） | 外站内容 + 订阅配置 |
 | `violet-notes` | 知识笔记写入（AI 会话沉淀） | PAT（`notes:read/write/publish`） | 当前用户名下笔记（含草稿） |
+| `violet-roadmap` | 项目开发路线图读写 | PAT（`roadmap:read` / `roadmap:write`），写入还需持有人账号有项目更新权限 | 公开项目的路线图条目与关系 |
 
-此外 `.omp/mcp.json` 还保留了一个本地开发用的 `violet` server（指向 `localhost:5174`），是全量 server，用于本地联调；生产环境拆分为上述 5 个最小权限通道。
+此外 `.omp/mcp.json` 还保留了一个本地开发用的 `violet` server（指向 `localhost:5174`），是全量 server，用于本地联调；生产环境拆分为上述 6 个最小权限通道。
 
 ## 配置
 
@@ -34,6 +35,11 @@ MCP server 在 `.omp/mcp.json` 声明：
       "type": "http",
       "url": "https://xunrua.top/api/v1/mcp/notes",
       "headers": { "Authorization": "Bearer ${VIOLET_NOTES_PAT}" }
+    },
+    "violet-roadmap": {
+      "type": "http",
+      "url": "https://xunrua.top/api/v1/mcp/roadmap",
+      "headers": { "Authorization": "Bearer ${VIOLET_ROADMAP_PAT}" }
     }
     // …scraper / comments 同理
   }
@@ -41,6 +47,8 @@ MCP server 在 `.omp/mcp.json` 声明：
 ```
 
 - **鉴权**：除 `reader` 匿名外，其余 server 通过 `VIOLET_MCP_PAT` 环境变量传 PAT（Personal Access Token）。PAT 在博客后台生成，scope 决定该 server 可用的工具集。
+- **调整授权**：在 `/admin/mcp` 点击现有令牌的编辑按钮，修改名称、权限、有效期或交互偏好后保存；原令牌与客户端配置不变，下一次 MCP 请求使用新授权，既有会话同样生效。
+- **有效期与明文**：编辑时未改动有效期则保留原到期时间；选择“永不过期”才移除到期限制。明文仍只在创建时展示一次，编辑不会重新显示或生成明文。
 - **本地开发**：把对应 url 改为 `http://localhost:5174/api/v1/mcp…`，或直接用全量 `violet` server。
 
 ## 各 Server 详解
@@ -139,6 +147,27 @@ MCP 不可用时仍可完成本地稿件。保存或发布失败保留同一稿�
 
 当前 `update_post` 无法无损保留 SEO 与精选元数据；有此类元数据时 skill 保留本地修改稿并说明限制，不直接覆盖。完整操作及恢复规则见 [出版参考](../../.agents/skills/blog-writing/references/publishing.md)。
 
+### violet-roadmap — 项目路线图读写
+
+读取与维护站点上项目的开发路线图（`/projects/<slug>` 展示的内容）：条目分计划中、进行中、已完成三个阶段，条目之间可带「扩展、修复、阻塞」关系。项目用 slug 定位，条目用项目内编号（`#N` 的 N）定位，所以 agent 不需要先查 UUID。
+
+| 工具 | 用途 | scope |
+|------|------|------|
+| `list_projects` | 列出项目（slug、标题、技术栈）及各自的路线图摘要，写入前先确认 slug | `roadmap:read` |
+| `get_roadmap` | 读一个项目的全部条目、关系与进度；新增前先读，避免重复 | `roadmap:read` |
+| `create_item` | 建一个条目，追加到目标阶段末尾（默认计划中） | `roadmap:write` |
+| `create_items` | 一次建一批条目与关系（最多 50 个条目、100 条关系），生成整份路线图用它；条目设 `ref`，关系的 `source`/`target` 用 `ref` 或已有条目的 `#编号` | `roadmap:write` |
+| `update_item` | 局部更新标题、简介、标签、链接、子项清单、交付版本、完成日期：只改给出的字段，`tags`/`links`/`checklist` 传空数组是清空；`checklist` 整体替换，勾选一项要连同其余项一起传回 | `roadmap:write` |
+| `move_item` | 换阶段或调位置：`after_number` / `before_number` 指定目标阶段内的锚点，都不给则放到末尾 | `roadmap:write` |
+| `delete_item` / `restore_item` | 软删除与恢复；`delete_item` 返回的 `item_id` 交给 `restore_item` | `roadmap:write` |
+| `create_relation` / `delete_relation` | 建立与移除关系，读作「来源 类型 目标」；自指、重复、同类型成环会被拒绝 | `roadmap:write` |
+
+**权限**：写入需要两个条件同时满足——PAT 带 `roadmap:write`，且 PAT 持有人自己的账号有项目更新权限（与后台一致）。PAT 不会超出持有人自己的权限，账号停用后令牌也写不进去。写入以持有人身份进入操作日志，同阶段内的排序不记录。
+
+**批量创建的失败语义**：先整体校验（数量、`ref` 唯一、关系指向的 `ref` 或 `#编号` 都存在），校验不过一个都不建；创建中某个条目失败就停下，错误里列出已经建好的编号，修正后只提交剩下的；关系单条失败（成环、重复）不影响其余，失败项在 `relation_errors` 里。
+
+**生成一份路线图的做法**：先 `list_projects` 找到 slug，`get_roadmap` 看现状；按优先级从高到低排好条目（同阶段按创建顺序排列），已完成的带完成日期与交付版本；条目内的待办步骤写进 `checklist`（每项 `text` 加 `done`，最多 100 项），别塞进简介；能单独交付的功能点另建条目；确有依赖才建关系，别拿关系当分组；整份用一次 `create_items` 提交。
+
 ## 使用决策
 
 - 读公开已发布内容 → **reader**（resources）或 posts 的 `search_posts`
@@ -146,6 +175,7 @@ MCP 不可用时仍可完成本地稿件。保存或发布失败保留同一稿�
 - 写/改/发布自己的文章 → **posts**
 - 搬运外站 / 订阅 RSS → **scraper**
 - 会话沉淀知识笔记 → **notes**（配合 `.agents/skills/blog-writing`）
+- 为项目生成、维护开发路线图 → **roadmap**
 
 ## 更新日志
 
@@ -153,4 +183,6 @@ MCP 不可用时仍可完成本地稿件。保存或发布失败保留同一稿�
 - 2026-08-07: 新增 `create_tag` / `list_tags`（violet-posts），补全标签创建能力——此前 `create_post` 带未创建的标签会失败
 - 2026-10-11: 新增 `upload_image`（violet-posts），文章配图经 MCP 入库，不再需要后台手动上传
 - 2026-09-03: 新增 `violet-notes`（PRD-0024 AI 会话沉淀）：5 个笔记工具、`notes:read/write/publish` scope、会话捕获 skill 部署步骤
+- 2026-10-18: 路线图条目新增 `checklist` 子项清单，`create_item`、`create_items`、`update_item` 可读写
+- 2026-10-18: 新增 `violet-roadmap`：10 个路线图工具、`roadmap:read/write` scope；写入同时要求持有人有项目更新权限
 - 2026-09-07: 功能级文章调整为源码驱动的工程长文；新增 MCP 不可用时经用户确认保存并提交项目恢复稿，在连接恢复入库后提交删除

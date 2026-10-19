@@ -23,6 +23,14 @@ func (m *mockProjectRepo) FindByID(ctx context.Context, id shared.ID) (*domain.P
 	return nil, args.Error(1)
 }
 
+func (m *mockProjectRepo) FindBySlug(ctx context.Context, slug string) (*domain.Project, error) {
+	args := m.Called(ctx, slug)
+	if v := args.Get(0); v != nil {
+		return v.(*domain.Project), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
 func (m *mockProjectRepo) FindAll(ctx context.Context) ([]*domain.Project, error) {
 	args := m.Called(ctx)
 	if v := args.Get(0); v != nil {
@@ -55,7 +63,7 @@ func TestService_List(t *testing.T) {
 	svc, repo := newSvc()
 	id := shared.MustParseID(testUUID)
 	now := time.Now()
-	p := domain.ReconstructProject(id, "My Project", "desc", "https://x.com", "https://gh.com", "https://img.com", []string{"Go", "React"}, 2, now, now)
+	p := domain.ReconstructProject(id, "My Project", "my-project", "desc", "https://x.com", "https://gh.com", "https://img.com", []string{"Go", "React"}, 2, now, now)
 	repo.On("FindAll", mock.Anything).Return([]*domain.Project{p}, nil).Once()
 
 	dtos, err := svc.List(context.Background())
@@ -83,7 +91,7 @@ func TestService_Get(t *testing.T) {
 	svc, repo := newSvc()
 	id := shared.MustParseID(testUUID)
 	now := time.Now()
-	p := domain.ReconstructProject(id, "My Project", "desc", "https://x.com", "", "", []string{"Go"}, 1, now, now)
+	p := domain.ReconstructProject(id, "My Project", "my-project", "desc", "https://x.com", "", "", []string{"Go"}, 1, now, now)
 	repo.On("FindByID", mock.Anything, id).Return(p, nil).Once()
 
 	got, err := svc.Get(context.Background(), id.String())
@@ -103,6 +111,7 @@ func TestService_Get_InvalidID(t *testing.T) {
 
 func TestService_Create(t *testing.T) {
 	svc, repo := newSvc()
+	repo.On("FindBySlug", mock.Anything, "new-project").Return(nil, domain.ErrNotFound).Once()
 	repo.On("Save", mock.Anything, mock.AnythingOfType("*project.Project")).Return(nil).Once()
 
 	err := svc.Create(context.Background(), CreateInput{
@@ -124,7 +133,7 @@ func TestService_Create_EmptyTitle(t *testing.T) {
 func TestService_Update(t *testing.T) {
 	svc, repo := newSvc()
 	id := shared.MustParseID(testUUID)
-	p := domain.ReconstructProject(id, "Old", "", "", "", "", nil, 0, time.Now(), time.Now())
+	p := domain.ReconstructProject(id, "Old", "old", "", "", "", "", nil, 0, time.Now(), time.Now())
 	repo.On("FindByID", mock.Anything, id).Return(p, nil).Once()
 	repo.On("Save", mock.Anything, mock.AnythingOfType("*project.Project")).Return(nil).Once()
 

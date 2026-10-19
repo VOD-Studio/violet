@@ -127,8 +127,9 @@ api/
 | **chatreaction** | chatreaction | chat | 聊天消息表情反应（成员鉴权、聚合计数、SSE 变化事件） |
 | **chat(bot)** | chat | chat | Bot API：外部程序以 Bearer bot token 代表虚拟用户收发文本与图片、发布命令目录、引用回复时推进已读位置与订阅事件流（`/api/v1/chat/bot/*`）；成员从会话接口读取目录，后台凭据管理需 `chat:bot-manage` |
 | **chatappearance** | chatappearance | chatappearance | 账号级聊天外观（头像框/挂件/气泡主题/佩戴徽章），本人读写与批量公开查询（CAS 乐观锁），管理员徽章授予与撤销（chat:manage） |
-| **api_token** | api_token | api_token | 个人访问令牌 PAT（MCP 授权凭证） |
-| **project** | project | project | 项目展示 CRUD |
+| **api_token** | api_token | api_token | 本人访问令牌 PAT 的创建、分页查询、原位编辑与吊销；编辑不轮换 MCP 凭据 |
+| **project** | project | project | 项目展示 CRUD，唯一 slug 可在后台编辑；公开详情支持 `GET /projects/by-slug/{slug}`，保留按 ID 读取；列表附带路线图进度和近期条目摘要 |
+| **roadmap** | roadmap | roadmap | 项目内稳定编号的路线图条目、三阶段进度与内容编辑；写操作需 `project:update` |
 | **announcement** | announcement | announcement（并入 content） | 公告管理 |
 | **emoji** | emoji | media | 表情分组/表情 CRUD、B站表情导入、文件上传 |
 | **customemoji** | customemoji | customemoji | 用户自定义表情上传、软删除、收藏与按 ID 解析 |
@@ -157,6 +158,27 @@ api/
 > **注意**：`media` application 层同时服务 emoji/upload/music/media 四个 domain，因为它们共享基础设施（文件存储、音乐解析）。
 
 `POST /uploads` 与 `GET /uploads/instant` 只对磁盘上仍存在的素材返回秒传成功。数据库记录存在但文件丢失时，记录保留并标记为 `failed`，重新上传会创建可读取的新文件；权限等读取错误直接返回错误，不当作秒传未命中。已丢失的图片字节无法从数据库恢复，原有失效地址需重新上传后替换。
+
+### 项目路线图接口
+
+以下路径均以 `/api/v1` 为前缀；写操作需登录、CSRF 与 `project:update` 权限。
+
+`GET /projects`（包括 `page`/`limit` 分页）为每个项目附带 `roadmap`：三阶段进度、至多 2 条 `in_progress`、1 条 `latest_completed`（含完成日期）。无条目时返回零进度、空数组与 `null`，由消费方隐藏空进度区；按 ID 或 slug 读取项目本身不附带摘要。
+
+| 方法与路径 | 行为 |
+| --- | --- |
+| `GET /projects/by-slug/{slug}/roadmap` | 公开返回项目、全部未删除条目、关系与进度概览 |
+| `POST /admin/projects/{projectID}/roadmap/items` | 创建条目，分配项目内不复用的编号 |
+| `PUT /admin/projects/{projectID}/roadmap/items/{id}` | 全量编辑内容（含有序子项 `checklist`，整体替换）；未传完成日期时保留原值 |
+| `POST /admin/projects/{projectID}/roadmap/items/{id}/move` | 按目标阶段与邻居移动；邻居失效时追加末尾，已完成阶段拒绝手动重排 |
+| `DELETE /admin/projects/{projectID}/roadmap/items/{id}` | 标记软删除，返回 204 |
+| `POST /admin/projects/{projectID}/roadmap/items/{id}/restore` | 恢复原条目，保留编号、位置和内容 |
+| `POST /admin/projects/{projectID}/roadmap/relations` | 建立项目内扩展、修复或阻塞关系 |
+| `DELETE /admin/projects/{projectID}/roadmap/relations/{relationID}` | 显式删除关系 |
+
+阶段固定为 `planned`、`in_progress`、`completed`。进度为已完成数除以未删除条目总数，四舍五入为整数百分比，空路线图为 0。完成日期格式为 `YYYY-MM-DD`，默认取 `Asia/Shanghai` 当天；仅已完成条目持有完成日期与交付版本，离开已完成时两者一并清空。阶段变更记录操作日志，同阶段排序不记录。
+
+关系按 `extends`、`fixes`、`blocks` 分别校验无环，不允许自指、同类型重复或跨项目。软删除条目只隐藏关系，恢复时保留同一关系；环校验仍包含隐藏关系。显式删除关系后，恢复条目不会重建该关系。`blocked` 由未完成且未删除的阻塞前置条目派生，不改变阶段。
 
 ## 基础设施适配器
 

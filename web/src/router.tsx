@@ -1,9 +1,11 @@
 import type { SessionClaims } from "@entities/user/model/types";
+// 文章里的 roadmap 卡片：服务端与客户端都要登记，两边渲染才一致
 import RouteError from "@shared/ui/route-error";
 import type { QueryClient } from "@tanstack/react-query";
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 import { RuaLoading } from "@widgets/PersonaMotion";
+import "./register-article-embeds";
 import { routeTree } from "./routeTree.gen";
 import { clientQueryClient, createQueryClient } from "./shared/api/query-client";
 import { reconcileIntent, resolveViewTransitionTypes } from "./shared/lib/view-transition";

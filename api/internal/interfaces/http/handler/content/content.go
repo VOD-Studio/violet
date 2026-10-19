@@ -212,8 +212,18 @@ func (h *Handler) GetProject(w http.ResponseWriter, r *http.Request) {
 	response.RespondOK(w, dto)
 }
 
+func (h *Handler) GetProjectBySlug(w http.ResponseWriter, r *http.Request) {
+	dto, err := h.projSvc.GetBySlug(r.Context(), r.PathValue("slug"))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, dto)
+}
+
 type projectRequest struct {
 	Title       string   `json:"title" validate:"required"`
+	Slug        *string  `json:"slug"`
 	Description string   `json:"description"`
 	URL         string   `json:"url"`
 	GithubURL   string   `json:"github_url"`
@@ -232,11 +242,15 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, err)
 		return
 	}
-	if err := h.projSvc.Create(r.Context(), appproj.CreateInput{
+	in := appproj.CreateInput{
 		Title: req.Title, Description: req.Description, URL: req.URL,
 		GithubURL: req.GithubURL, ImageURL: req.ImageURL,
 		TechStack: req.TechStack, SortOrder: req.SortOrder,
-	}); err != nil {
+	}
+	if req.Slug != nil {
+		in.Slug = *req.Slug
+	}
+	if err := h.projSvc.Create(r.Context(), in); err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
@@ -251,7 +265,7 @@ func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.projSvc.Update(r.Context(), id, appproj.UpdateInput{
-		Title: req.Title, Description: req.Description, URL: req.URL,
+		Title: req.Title, Slug: req.Slug, Description: req.Description, URL: req.URL,
 		GithubURL: req.GithubURL, ImageURL: req.ImageURL,
 		TechStack: req.TechStack, SortOrder: req.SortOrder,
 	}); err != nil {

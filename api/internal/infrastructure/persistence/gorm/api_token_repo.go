@@ -31,6 +31,41 @@ func (r *APITokenRepository) Save(ctx context.Context, p *domainapitoken.PAT) er
 	return r.db.WithContext(ctx).Create(tokenToPO(p)).Error
 }
 
+func (r *APITokenRepository) FindByID(ctx context.Context, id, userID string) (*domainapitoken.PAT, error) {
+	var po model.APIToken
+	err := r.db.WithContext(ctx).Where("id = ? AND user_id = ?", id, userID).First(&po).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, domainapitoken.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return tokenToDomain(po)
+}
+
+func (r *APITokenRepository) Update(ctx context.Context, p *domainapitoken.PAT) error {
+	var expiresAt *time.Time
+	if !p.ExpiresAt().IsZero() {
+		expires := p.ExpiresAt()
+		expiresAt = &expires
+	}
+	result := r.db.WithContext(ctx).Model(&model.APIToken{}).
+		Where("id = ? AND user_id = ?", p.ID(), p.UserID()).
+		Updates(map[string]any{
+			"name":        p.Name(),
+			"scopes":      datatypes.JSONSlice[string](p.Scopes()),
+			"expires_at":  expiresAt,
+			"interactive": p.Interactive(),
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return domainapitoken.ErrNotFound
+	}
+	return nil
+}
+
 // FindByHash 按 token 哈希查找。找不到返回 ErrNotFound。
 func (r *APITokenRepository) FindByHash(ctx context.Context, hash string) (*domainapitoken.PAT, error) {
 	var po model.APIToken

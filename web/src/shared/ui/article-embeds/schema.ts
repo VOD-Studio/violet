@@ -1,6 +1,5 @@
 import { parseTweetId } from "@violetjs/react-tweet/api";
 import { z } from "zod";
-import type { ArticleEmbedKind, ParsedArticleEmbed } from "./types";
 import { isSafeArticleHref, isSafeArticleImage } from "./url";
 
 const text = (max: number) => z.string().trim().min(1).max(max);
@@ -85,38 +84,19 @@ const socialLinksSchema = z.object({
 		.max(8),
 });
 
-/** 严格解析卡片 JSON；无效配置交给调用方显示可读降级，而非让整篇文章崩溃。 */
-export function parseArticleEmbed(
-	kind: ArticleEmbedKind,
-	source: string,
-): ParsedArticleEmbed | null {
-	let input: unknown;
-	try {
-		input = JSON.parse(source);
-	} catch {
-		return null;
-	}
+/** 内置嵌入的配置校验，按种类索引；无效配置交给宿主显示可读降级，而非让整篇文章崩溃。 */
+export const BUILTIN_SCHEMAS = {
+	dialogue: dialogueSchema,
+	github: githubSchema,
+	"link-preview": linkPreviewSchema,
+	tweet: tweetSchema,
+	"social-links": socialLinksSchema,
+};
 
-	switch (kind) {
-		case "dialogue": {
-			const result = dialogueSchema.safeParse(input);
-			return result.success ? { kind, config: result.data } : null;
-		}
-		case "github": {
-			const result = githubSchema.safeParse(input);
-			return result.success ? { kind, config: result.data } : null;
-		}
-		case "link-preview": {
-			const result = linkPreviewSchema.safeParse(input);
-			return result.success ? { kind, config: result.data } : null;
-		}
-		case "tweet": {
-			const result = tweetSchema.safeParse(input);
-			return result.success ? { kind, config: result.data } : null;
-		}
-		case "social-links": {
-			const result = socialLinksSchema.safeParse(input);
-			return result.success ? { kind, config: result.data } : null;
-		}
-	}
-}
+/** 用 zod 校验配置：通过时返回整理后的值，否则返回 null。 */
+export const parseWith =
+	<Schema extends z.ZodType>(schema: Schema) =>
+	(input: unknown): z.output<Schema> | null => {
+		const result = schema.safeParse(input);
+		return result.success ? result.data : null;
+	};

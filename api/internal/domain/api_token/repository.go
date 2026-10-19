@@ -21,6 +21,11 @@ type TokenLookup interface {
 type TokenRepository interface {
 	// Save 创建 PAT（id 由聚合根生成）。
 	Save(ctx context.Context, p *PAT) error
+	// FindByID 按 id + userID 定位，缺失或非本人令牌均返回 ErrNotFound。
+	FindByID(ctx context.Context, id, userID string) (*PAT, error)
+	// Update 只写可编辑字段，不触碰凭据、归属、创建时间和异步使用记录。
+	// 不存在或非本人令牌返回 ErrNotFound；不得插入新行。
+	Update(ctx context.Context, p *PAT) error
 	// FindByHash 按 token 哈希查找（鉴权中间件用）。找不到返回 ErrNotFound。
 	FindByHash(ctx context.Context, hash string) (*PAT, error)
 	// FindByUser 列出某用户全部 PAT。

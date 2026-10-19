@@ -42,7 +42,7 @@ func TestPublicPaths(t *testing.T) {
 	spec, _ := Spec()
 	for _, p := range []string{
 		"/settings", "/github/contributions", "/github/repos",
-		"/projects", "/projects/{id}", "/announcements",
+		"/projects", "/projects/{id}", "/projects/by-slug/{slug}", "/announcements",
 		"/emojis", "/emojis/groups/{name}",
 	} {
 		require.NotNil(t, spec.Paths.Find(p), "missing public path %s", p)

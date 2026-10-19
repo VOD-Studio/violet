@@ -1,14 +1,15 @@
 /**
  * 手册覆盖漂移测试：编辑器功能面从代码枚举（Slash 项、工具栏项、提示块类型、
- * KaTeX 宏表、图块格式、卡片围栏），断言手册对应章节有记载。新增能力未同步
+ * KaTeX 宏表、图块格式、已登记的卡片围栏与它们的 Slash 入口），断言手册对应章节有记载。新增能力未同步
  * 文档时在此红灯，登记处见 SLASH_DOC_KEYWORD / TOOLBAR_DOC_KEYWORD。
  */
-import { LANGUAGE_KIND } from "@shared/ui/article-embeds/language";
+import "@/register-article-embeds";
+import { listArticleEmbeds } from "@shared/ui/article-embeds";
 import { diagramRenderers } from "@shared/ui/diagram/renderers";
 import { KATEX_MACROS } from "@shared/ui/katex/katex-core";
 import { describe, expect, it } from "vitest";
 import { ALERT_TYPES } from "../extensions/alert";
-import { buildSlashItems } from "../slash-menu/slash-items";
+import { buildEmbedSlashItems, buildSlashItems } from "../slash-menu/slash-items";
 import { blockItems, formatItems } from "../toolbar/toolbar-items";
 import diagram from "./diagram.md?raw";
 import math from "./math.md?raw";
@@ -116,18 +117,20 @@ describe("编辑器手册漂移测试", () => {
 	});
 
 	it("每种语义卡片围栏在人物章节有示例", () => {
-		const kinds = new Map<string, string[]>();
-		for (const [lang, kind] of Object.entries(LANGUAGE_KIND)) {
-			if (!kind) continue;
-			kinds.set(kind, [...(kinds.get(kind) ?? []), lang]);
-		}
-		for (const [kind, langs] of kinds) {
-			const documented = langs.some((lang) => personaCards.includes(`\`\`\`${lang}`));
+		for (const { kind, languages } of listArticleEmbeds()) {
+			const documented = languages.some((lang) => personaCards.includes(`\`\`\`${lang}`));
 			expect(
 				documented,
-				`卡片类型 ${kind} 的围栏（${langs.join("/")}）未在 persona-cards.md 示例`,
+				`卡片类型 ${kind} 的围栏（${languages.join("/")}）未在 persona-cards.md 示例`,
 			).toBe(true);
 		}
+	});
+
+	it("Slash 菜单「嵌入」组的每项在基础语法章节有记载", () => {
+		for (const item of buildEmbedSlashItems(() => {}))
+			expect(syntax, `Slash「${item.title}」(${item.id}) 未在 syntax.md 记载`).toContain(
+				item.title,
+			);
 	});
 
 	it("README 链接全部章节且互链目标存在", () => {

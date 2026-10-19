@@ -11,6 +11,7 @@
 | `violet-posts` | 当前用户名下文章的读写、发布、标签与检索 | PAT（`posts:read/write/publish`） |
 | `violet-scraper` | 抓取外站文章、管理 RSS 订阅 | PAT（`posts:scrape` / `subscriptions:*`） |
 | `violet-notes` | 会话知识笔记的写入与检索 | PAT（`notes:read/write/publish`） |
+| `violet-roadmap` | 项目路线图的读取与写入（条目、阶段、关系，可批量创建） | PAT（`roadmap:read/write`，写入还需账号有项目更新权限） |
 
 可以问什么：
 

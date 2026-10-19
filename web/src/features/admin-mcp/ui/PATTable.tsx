@@ -1,5 +1,5 @@
 import { useDeletePAT } from "@features/admin-mcp/api/queries";
-import type { PATDTO, PATScope } from "@features/admin-mcp/model/types";
+import type { PATDTO } from "@features/admin-mcp/model/types";
 import {
 	DataTable,
 	type DataTableColumn,
@@ -15,17 +15,18 @@ import {
 	TooltipTrigger,
 } from "@violet/ui";
 
-import { Cable, Trash2 } from "lucide-react";
+import { Cable, Pencil, Trash2 } from "lucide-react";
 
 interface PATTableProps {
 	tokens: PATDTO[];
 	pagination: DataTablePagination;
 	loading: boolean;
-	/** 跳转接入区，按该令牌 scope 推导可见 server */
-	onConnect: (scopes: PATScope[]) => void;
+	/** 跳转接入区，按该令牌 scope 推导可见 server。 */
+	onConnect: (token: PATDTO) => void;
+	onEdit: (token: PATDTO) => void;
 }
 
-export function PATTable({ tokens, pagination, loading, onConnect }: PATTableProps) {
+export function PATTable({ tokens, pagination, loading, onConnect, onEdit }: PATTableProps) {
 	const del = useDeletePAT();
 
 	const columns: DataTableColumn<PATDTO>[] = [
@@ -70,7 +71,7 @@ export function PATTable({ tokens, pagination, loading, onConnect }: PATTablePro
 			header: "操作",
 			hideable: false,
 			sticky: "right",
-			width: "96px",
+			width: "136px",
 			cell: (row) => (
 				<div className="flex items-center gap-2">
 					<Tooltip>
@@ -79,7 +80,7 @@ export function PATTable({ tokens, pagination, loading, onConnect }: PATTablePro
 								<Button
 									variant="ghost"
 									size="icon-sm"
-									onClick={() => onConnect(row.scopes)}
+									onClick={() => onConnect(row)}
 									aria-label={`查看令牌 ${row.name} 接入配置`}
 								>
 									<Cable className="size-3.5" />
@@ -87,6 +88,19 @@ export function PATTable({ tokens, pagination, loading, onConnect }: PATTablePro
 							</span>
 						</TooltipTrigger>
 						<TooltipContent>接入配置</TooltipContent>
+					</Tooltip>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								variant="ghost"
+								size="icon-sm"
+								onClick={() => onEdit(row)}
+								aria-label={`编辑令牌 ${row.name}`}
+							>
+								<Pencil className="size-3.5" />
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>编辑令牌</TooltipContent>
 					</Tooltip>
 					<Tooltip>
 						<TooltipTrigger asChild>

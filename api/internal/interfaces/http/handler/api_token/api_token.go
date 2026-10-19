@@ -26,8 +26,8 @@ func NewHandler(svc *appapitoken.Service) *Handler {
 }
 
 type createTokenRequest struct {
-	Name      string   `json:"name" validate:"required,max=100"`
-	Scopes    []string `json:"scopes" validate:"required,min=1,dive,oneof=posts:read posts:write posts:publish posts:scrape subscriptions:read subscriptions:write comments:read comments:write notes:read notes:write notes:publish"`
+	Name   string   `json:"name" validate:"required,max=100"`
+	Scopes []string `json:"scopes" validate:"required,min=1,dive,oneof=posts:read posts:write posts:publish posts:scrape subscriptions:read subscriptions:write comments:read comments:write notes:read notes:write notes:publish roadmap:read roadmap:write"`
 	// ExpiresAt：ISO 日期（YYYY-MM-DD）或 "never"（永不过期）。空串默认 90 天。
 	ExpiresAt string `json:"expires_at" validate:"omitempty"`
 	// Interactive MCP 交互偏好：省略/true=冲突返回候选；false=一路到底（#272）
@@ -63,6 +63,53 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.RespondCreated(w, result.Token)
+}
+
+type updateTokenRequest struct {
+	Name        *string         `json:"name"`
+	Scopes      json.RawMessage `json:"scopes"`
+	ExpiresAt   *string         `json:"expires_at"`
+	Interactive *bool           `json:"interactive"`
+}
+
+// Update 仅修改本人的令牌；省略字段保留原值。
+func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
+	var req updateTokenRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	var scopes *[]string
+	if req.Scopes != nil {
+		var values []string
+		if err := json.Unmarshal(req.Scopes, &values); err != nil {
+			response.RespondError(w, r, err)
+			return
+		}
+		scopes = &values
+	}
+	var expiresAt *time.Time
+	if req.ExpiresAt != nil {
+		if *req.ExpiresAt == "" {
+			response.RespondError(w, r, domainshared.BadRequest("过期日期不能为空，永久令牌请使用 never"))
+			return
+		}
+		expiry, err := parseExpiry(*req.ExpiresAt, time.Now())
+		if err != nil {
+			response.RespondError(w, r, err)
+			return
+		}
+		expiresAt = &expiry
+	}
+	token, err := h.svc.Update(r.Context(), appapitoken.UpdateInput{
+		ID: r.PathValue("id"), UserID: interfacesmw.GetUserIDFromContext(r),
+		Name: req.Name, Scopes: scopes, ExpiresAt: expiresAt, Interactive: req.Interactive,
+	})
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, token)
 }
 
 // parseExpiry 把前端传入的过期值解析为绝对时间。

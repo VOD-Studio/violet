@@ -18,7 +18,12 @@ const apiProxyTarget = env.VITE_API_PROXY_TARGET || "http://localhost:9090";
 const enableAnalyze = process.env.ANALYZE === "true";
 
 const config = defineConfig({
-	resolve: { tsconfigPaths: true },
+	resolve: {
+		tsconfigPaths: true,
+		// 看板包根入口会附带导入默认样式；站点已在 styles.css 里引入一次并由 kanban.css 覆写 token，
+		// 再从 JS 注入一份会排在覆写之后。站点只用无样式入口，/kanban 演示原样复用的包内示例也一样。
+		alias: [{ find: /^@violetjs\/kanban$/, replacement: "@violetjs/kanban/unstyled" }],
+	},
 	plugins: [
 		devtools(),
 		tailwindcss(),

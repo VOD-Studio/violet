@@ -171,6 +171,239 @@ const ADMIN_VIEW_TRENDS = {
 	})),
 };
 
+/**
+ * 项目路线图契约用数据：计划中 3、进行中 2、已完成 12 条（超过默认展开的 10 条）。
+ * 条目顺序同后端：计划中与进行中按位置，已完成按完成日期倒序（同日按编号倒序）。
+ */
+const ROADMAP_PROJECT = {
+	id: "40000000-0000-0000-0000-000000000001",
+	title: "路线图契约项目",
+	slug: "roadmap-contract",
+	description: "用于项目详情页验收的样例项目。",
+	url: "https://example.com/demo",
+	github_url: "https://github.com/example/roadmap-contract",
+	image_url: "",
+	tech_stack: ["Go", "React", "PostgreSQL"],
+	sort_order: 1,
+	created_at: "2026-08-01T00:00:00Z",
+};
+
+const roadmapItem = (number, stage, overrides = {}) => ({
+	id: `41000000-0000-0000-0000-${String(number).padStart(12, "0")}`,
+	project_id: ROADMAP_PROJECT.id,
+	number,
+	title: `条目 ${number}`,
+	description: "",
+	stage,
+	position: `a${String(number).padStart(3, "0")}`,
+	tags: [],
+	links: [],
+	checklist: [],
+	completion_date: null,
+	delivered_version: "",
+	blocked: false,
+	created_at: "2026-09-01T00:00:00Z",
+	updated_at: "2026-09-01T00:00:00Z",
+	...overrides,
+});
+
+const ROADMAP_ITEMS = [
+	roadmapItem(1, "planned", {
+		title: "计划中的第一项",
+		description: "第一行说明\n第二行说明",
+		tags: ["性能", "画布", "文档", "测试", "发布"],
+		links: [{ label: "设计稿", url: "https://example.com/design" }],
+		checklist: [
+			{ text: "梳理现有画布的交互", done: true },
+			{ text: "补键盘操作", done: false },
+			{ text: "补读屏说明", done: false },
+		],
+	}),
+	// 被进行中的第一项阻塞（见下面的关系）：后端据此派生 blocked
+	roadmapItem(2, "planned", { title: "计划中的第二项", blocked: true }),
+	roadmapItem(3, "planned", { title: "计划中的第三项" }),
+	// 子项很多：卡片只显示进度，弹窗里清单在区域内滚动并可只看未完成的
+	roadmapItem(4, "in_progress", {
+		title: "进行中的第一项",
+		tags: ["后端"],
+		checklist: Array.from({ length: 30 }, (_, index) => ({
+			text: `第 ${index + 1} 步：${index % 7 === 0 ? "这一步的说明比较长，需要在清单里自然换行而不是撑破弹窗的宽度，也不能把后面的步骤挤到看不见的地方" : "处理一小块"}`,
+			done: index < 12,
+		})),
+	}),
+	roadmapItem(5, "in_progress", { title: "进行中的第二项" }),
+	...Array.from({ length: 12 }, (_, index) => {
+		const number = 17 - index;
+		return roadmapItem(number, "completed", {
+			title: `已完成的第 ${number} 项`,
+			completion_date: `2026-10-${String(20 - index).padStart(2, "0")}`,
+			delivered_version: `v2.${number}.0`,
+			...(number === 17
+				? {
+						description: "完成后的复盘说明",
+						tags: ["复盘"],
+						links: [
+							{ label: "发布说明", url: "https://example.com/release" },
+							{ label: "", url: "https://example.com/no-label" },
+						],
+					}
+				: {}),
+		});
+	}),
+];
+
+const itemId = (number) => `41000000-0000-0000-0000-${String(number).padStart(12, "0")}`;
+
+const roadmapRelation = (source, target, type) => ({
+	id: `42000000-0000-0000-0000-${String(source).padStart(6, "0")}${String(target).padStart(6, "0")}`,
+	project_id: ROADMAP_PROJECT.id,
+	source_id: itemId(source),
+	target_id: itemId(target),
+	type,
+	created_at: "2026-09-02T00:00:00Z",
+});
+
+/**
+ * 关系覆盖三种线型与跨列、同列两种走线：#4 阻塞 #2（跨列），#4 扩展 #1（跨列），
+ * #3 扩展 #1（同列），#17 修复 #16（同列）。
+ */
+const ROADMAP_RELATIONS = [
+	roadmapRelation(4, 2, "blocks"),
+	roadmapRelation(4, 1, "extends"),
+	roadmapRelation(3, 1, "extends"),
+	roadmapRelation(17, 16, "fixes"),
+];
+
+/** 路线图详情（GET /projects/by-slug/{slug}/roadmap）；可导出供契约 spec 引用条目。 */
+export const ROADMAP_FIXTURE = {
+	project: ROADMAP_PROJECT,
+	items: ROADMAP_ITEMS,
+	relations: ROADMAP_RELATIONS,
+	progress: { planned: 3, in_progress: 2, completed: 12, total: 17, percent: 71 },
+};
+
+const ROADMAP_EMPTY = {
+	project: { ...ROADMAP_PROJECT, id: "40000000-0000-0000-0000-000000000002", slug: "roadmap-empty", title: "空路线图项目" },
+	items: [],
+	relations: [],
+	progress: { planned: 0, in_progress: 0, completed: 0, total: 0, percent: 0 },
+};
+
+const ROADMAPS = { "roadmap-contract": ROADMAP_FIXTURE, "roadmap-empty": ROADMAP_EMPTY };
+
+const roadmapFence = (config) =>
+	`<pre><code class="language-roadmap">${JSON.stringify(config)}</code></pre>`;
+
+/** 文章嵌入契约用文章：条目卡片、项目卡片与不存在的条目各一张。 */
+export const ROADMAP_EMBED_POST = {
+	id: "32000000-0000-0000-0000-000000000001",
+	title: "路线图嵌入契约文章",
+	slug: "roadmap-embeds",
+	content_md: "",
+	content_html: [
+		"<p>文章开头的一段话。</p>",
+		roadmapFence({ project: "roadmap-contract", item: 2, display: "card" }),
+		"<p>中间的一段话。</p>",
+		roadmapFence({ project: "roadmap-contract", display: "card" }),
+		roadmapFence({ project: "roadmap-contract", item: 99 }),
+		"<p>文章结尾的一段话。</p>",
+	].join(""),
+	excerpt: "",
+	cover_image: "",
+	status: "published",
+	author_id: "30000000-0000-0000-0000-000000000001",
+	view_count: 1,
+	is_featured: false,
+	show_signature: false,
+	seo_title: "",
+	seo_description: "",
+	published_at: "2026-10-18T10:00:00Z",
+	created_at: "2026-10-18T10:00:00Z",
+	updated_at: "2026-10-18T10:00:00Z",
+	tags: [],
+};
+
+/** 画布嵌入契约用文章：看板画布、整个项目的关系图与以 #1 为根的关系图。 */
+export const ROADMAP_CANVAS_POST = {
+	...ROADMAP_EMBED_POST,
+	id: "32000000-0000-0000-0000-000000000002",
+	title: "路线图画布契约文章",
+	slug: "roadmap-canvas-embeds",
+	content_html: [
+		"<p>画布之前的一段话。</p>",
+		roadmapFence({ project: "roadmap-contract", display: "canvas" }),
+		roadmapFence({ project: "roadmap-contract", display: "canvas", view: "graph" }),
+		roadmapFence({ project: "roadmap-contract", display: "canvas", view: "graph", item: 1 }),
+		`<p>${"画布之后的长段落，用来让页面可以滚动。".repeat(60)}</p>`,
+	].join(""),
+};
+
+const summarize = (progress, inProgress, latestCompleted) => ({
+	progress,
+	in_progress: inProgress,
+	latest_completed: latestCompleted,
+});
+
+/**
+ * 项目列表契约用数据（GET /projects）。顺序是站主设定的展示顺序，故意既不按标题也不按时间排：
+ * 路线图契约项目有完整摘要与可用封面；Zeta 工具封面失效、没有进行中与已完成；
+ * 空路线图项目有摘要但没有条目；Alpha 读不到摘要。
+ */
+export const PROJECTS_FIXTURE = [
+	{
+		...ROADMAP_PROJECT,
+		image_url: "/assets/contract-cover.png",
+		created_at: "2026-08-01T00:00:00Z",
+		roadmap: summarize(
+			ROADMAP_FIXTURE.progress,
+			ROADMAP_ITEMS.filter((item) => item.stage === "in_progress").map((item) => ({
+				id: item.id,
+				number: item.number,
+				title: item.title,
+				completion_date: null,
+			})),
+			{
+				id: ROADMAP_ITEMS[5].id,
+				number: ROADMAP_ITEMS[5].number,
+				title: ROADMAP_ITEMS[5].title,
+				completion_date: ROADMAP_ITEMS[5].completion_date,
+			},
+		),
+	},
+	{
+		id: "40000000-0000-0000-0000-000000000003",
+		title: "Zeta 工具",
+		slug: "zeta-tool",
+		description: "封面失效的项目，只有计划中的条目。",
+		url: "",
+		github_url: "",
+		image_url: "/uploads/missing-cover.png",
+		tech_stack: ["TypeScript"],
+		sort_order: 2,
+		created_at: "2026-09-01T00:00:00Z",
+		roadmap: summarize({ planned: 2, in_progress: 0, completed: 0, total: 2, percent: 0 }, [], null),
+	},
+	{
+		...ROADMAP_EMPTY.project,
+		image_url: "",
+		sort_order: 3,
+		created_at: "2026-07-01T00:00:00Z",
+		roadmap: summarize({ planned: 0, in_progress: 0, completed: 0, total: 0, percent: 0 }, [], null),
+	},
+	{
+		id: "40000000-0000-0000-0000-000000000004",
+		title: "Alpha 无摘要",
+		slug: "alpha",
+		description: "后端没有附带路线图摘要的项目。",
+		url: "",
+		github_url: "",
+		image_url: "",
+		tech_stack: [],
+		sort_order: 4,
+		created_at: "2026-10-01T00:00:00Z",
+	},
+];
+
 /** 与后端 envelope 语义一致的只读路由表；浏览器侧 page.route 复用同一份数据。
  * cookie 含 contract_admin=1 时按已登录 root 应答会话与后台数据（工具方言契约用）。 */
 export function handle(method, pathname, search, cookie = "") {
@@ -200,7 +433,11 @@ export function handle(method, pathname, search, cookie = "") {
 	if (pathname === "/api/v1/posts/contract-post-1") {
 		return { status: 200, body: envelope(CONTRACT_POST) };
 	}
-	if (pathname === `/api/v1/posts/${CONTRACT_POST.id}/annotations/summary`) {
+	if (
+		pathname === `/api/v1/posts/${CONTRACT_POST.id}/annotations/summary` ||
+		pathname === `/api/v1/posts/${ROADMAP_EMBED_POST.id}/annotations/summary` ||
+		pathname === `/api/v1/posts/${ROADMAP_CANVAS_POST.id}/annotations/summary`
+	) {
 		return { status: 200, body: envelope([]) };
 	}
 	if (pathname === "/api/v1/series/context/contract-post-1") {
@@ -267,6 +504,18 @@ export function handle(method, pathname, search, cookie = "") {
 		};
 	}
 	if (pathname === "/api/v1/announcements") return { status: 200, body: envelope([]) };
+	if (pathname === "/api/v1/projects") return { status: 200, body: envelope(PROJECTS_FIXTURE) };
+	if (pathname === `/api/v1/posts/${ROADMAP_CANVAS_POST.slug}`)
+		return { status: 200, body: envelope(ROADMAP_CANVAS_POST) };
+	if (pathname === `/api/v1/posts/${ROADMAP_EMBED_POST.slug}`)
+		return { status: 200, body: envelope(ROADMAP_EMBED_POST) };
+	const roadmap = /^\/api\/v1\/projects\/by-slug\/([^/]+)\/roadmap$/.exec(pathname);
+	if (roadmap) {
+		const detail = ROADMAPS[decodeURIComponent(roadmap[1])];
+		return detail
+			? { status: 200, body: envelope(detail) }
+			: { status: 404, body: JSON.stringify({ error: "NOT_FOUND", message: "项目不存在" }) };
+	}
 	if (pathname === "/api/v1/galleries") {
 		const limit = Number(params.get("limit") || 12);
 		return { status: 200, body: paged([CONTRACT_GALLERY], limit) };

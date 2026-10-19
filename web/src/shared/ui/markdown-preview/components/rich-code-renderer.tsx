@@ -1,4 +1,5 @@
-import { articleEmbedKind } from "@shared/ui/article-embeds/language";
+import { LazyArticleEmbed } from "@shared/ui/article-embeds/LazyArticleEmbed";
+import { findArticleEmbed } from "@shared/ui/article-embeds/registry";
 import type { ArticleContentContext } from "@shared/ui/article-embeds/types";
 import type { ReactElement, ReactNode } from "react";
 import { lazy, Suspense } from "react";
@@ -18,11 +19,6 @@ const LazyInlineMathFormula = lazy(() =>
 const LazyBlockMathFormula = lazy(() =>
 	import("../../katex/MathFormula").then((module) => ({
 		default: module.BlockMathFormula,
-	})),
-);
-const LazyArticleEmbed = lazy(() =>
-	import("../../article-embeds/ArticleEmbed").then((module) => ({
-		default: module.ArticleEmbed,
 	})),
 );
 const LazyProfileMention = lazy(() =>
@@ -55,18 +51,8 @@ export function createRichCodeRenderer(
 		const cls = className || "";
 		const code = nodeToText(children).replace(/\n$/, "");
 		const language = /language-(\S+)/u.exec(cls)?.[1] ?? "";
-		const embedKind = articleEmbedKind(language);
-		if (embedKind) {
-			return (
-				<Suspense
-					fallback={
-						<div className="my-6 min-h-24 animate-pulse rounded-xl border border-edge-hairline bg-muted/40" />
-					}
-				>
-					<LazyArticleEmbed kind={embedKind} source={code} context={context} />
-				</Suspense>
-			);
-		}
+		const embed = findArticleEmbed(language);
+		if (embed) return <LazyArticleEmbed definition={embed} source={code} context={context} />;
 
 		if (/\bmath-inline\b/u.test(cls)) {
 			return (

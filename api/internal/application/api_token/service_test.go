@@ -18,14 +18,40 @@ type fakeRepo struct {
 	saveErr    error
 	findByUser []*domainapitoken.PAT
 	findByErr  error
+	updateErr  error
 
-	saveCalls  []*domainapitoken.PAT
+	saveCalls   []*domainapitoken.PAT
 	deleteCalls []struct{ id, userID string }
 }
 
 func (f *fakeRepo) Save(_ context.Context, p *domainapitoken.PAT) error {
 	f.saveCalls = append(f.saveCalls, p)
 	return f.saveErr
+}
+
+func (f *fakeRepo) FindByID(_ context.Context, id, userID string) (*domainapitoken.PAT, error) {
+	if f.findByErr != nil {
+		return nil, f.findByErr
+	}
+	for _, p := range f.findByUser {
+		if p.ID() == id && p.UserID() == userID {
+			return domainapitoken.Reconstruct(p.ID(), p.UserID(), p.Name(), p.TokenHash(), p.Scopes(), p.ExpiresAt(), p.LastUsedAt(), p.CreatedAt(), p.Interactive()), nil
+		}
+	}
+	return nil, domainapitoken.ErrNotFound
+}
+
+func (f *fakeRepo) Update(_ context.Context, updated *domainapitoken.PAT) error {
+	if f.updateErr != nil {
+		return f.updateErr
+	}
+	for i, p := range f.findByUser {
+		if p.ID() == updated.ID() && p.UserID() == updated.UserID() {
+			f.findByUser[i] = updated
+			return nil
+		}
+	}
+	return domainapitoken.ErrNotFound
 }
 
 func (f *fakeRepo) FindPageByUser(_ context.Context, _ string, q shared.PageQuery) (shared.PageResult[*domainapitoken.PAT], error) {

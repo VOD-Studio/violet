@@ -7,6 +7,8 @@
  */
 
 import { getExecResult, isTerminalStatus, submitExec } from "@features/code-run";
+import { useDebouncedValue } from "@shared/hooks/use-debounced-value";
+import { findArticleEmbed, LazyArticleEmbed } from "@shared/ui/article-embeds";
 import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
 import { Fragment } from "@tiptap/pm/model";
 import type { NodeViewProps } from "@tiptap/react";
@@ -22,13 +24,14 @@ import {
 	SelectValue,
 } from "@violet/ui";
 import type { createLowlight } from "lowlight";
-import { Play } from "lucide-react";
+import { Pencil, Play } from "lucide-react";
 import { useState } from "react";
 
 import { parseFenceInfo } from "@/shared/lib/markdown/fence-info";
 import codeScrollbar from "@/shared/ui/code-scrollbar.module.css";
 import { ensureLanguageRegistered } from "../extensions";
 import { renderCodeFence } from "../extensions/code-fence";
+import { EmbedInsertDialog } from "./EmbedInsertDialog";
 
 /**
  * 代码块语言下拉选项。
@@ -85,6 +88,9 @@ const LANGUAGES = [
 	{ value: "arduino", label: "Arduino" },
 	{ value: "wasm", label: "WebAssembly" },
 ];
+
+/** 停止输入多久后刷新嵌入预览（ms）：逐字刷新时半截 JSON 会让预览在降级提示与卡片之间来回闪。 */
+const PREVIEW_DELAY = 400;
 
 /**
  * 从 class 字符串中提取语言 id。
@@ -267,7 +273,13 @@ export function createCodeBlockExtension(lowlight: ReturnType<typeof createLowli
 	}).configure({ lowlight, defaultLanguage: null });
 }
 
-function CodeBlockViewComponent({ node, updateAttributes, extension }: NodeViewProps) {
+function CodeBlockViewComponent({
+	node,
+	updateAttributes,
+	extension,
+	editor,
+	getPos,
+}: NodeViewProps) {
 	const language = (node.attrs.language as string) || "text";
 	const isRunnable = node.attrs.runnable === true;
 	const overridesJson = (node.attrs.overrides as string | null) || undefined;
@@ -277,6 +289,13 @@ function CodeBlockViewComponent({ node, updateAttributes, extension }: NodeViewP
 	const [runState, setRunState] = useState<"idle" | "running">("idle");
 	const [resultText, setResultText] = useState<string | null>(null);
 	void extension;
+	const embed = findArticleEmbed(language);
+	const previewSource = useDebouncedValue(node.textContent, PREVIEW_DELAY);
+	const [editingEmbed, setEditingEmbed] = useState(false);
+	// 嵌入的围栏语言不在常用语言里，补一项，下拉才显示得出当前语言
+	const options = LANGUAGES.some((entry) => entry.value === language)
+		? LANGUAGES
+		: [...LANGUAGES, { value: language, label: embed?.inserter?.title ?? language }];
 
 	const handleLanguageChange = async (v: string) => {
 		setRegistering(true);
@@ -284,6 +303,16 @@ function CodeBlockViewComponent({ node, updateAttributes, extension }: NodeViewP
 		setRegistering(false);
 		// updateAttributes 产生 docChanged 事务，LowlightPlugin 据此重算高亮装饰
 		updateAttributes({ language: v });
+	};
+
+	/** 用选择弹层给出的原文替换整块代码。 */
+	const replaceSource = (source: string) => {
+		const pos = getPos();
+		if (typeof pos !== "number") return;
+		const { state, view } = editor;
+		view.dispatch(
+			state.tr.replaceWith(pos + 1, pos + node.nodeSize - 1, state.schema.text(source)),
+		);
 	};
 
 	// 编辑器内运行：轮询路径（submitExec 拿 task_id → 轮询 getExecResult）
@@ -342,7 +371,7 @@ function CodeBlockViewComponent({ node, updateAttributes, extension }: NodeViewP
 					</SelectTrigger>
 					<SelectContent>
 						<SelectGroup>
-							{LANGUAGES.map((l) => (
+							{options.map((l) => (
 								<SelectItem
 									key={l.value}
 									value={l.value}
@@ -354,6 +383,16 @@ function CodeBlockViewComponent({ node, updateAttributes, extension }: NodeViewP
 						</SelectGroup>
 					</SelectContent>
 				</Select>
+				{embed?.inserter ? (
+					<button
+						type="button"
+						onClick={() => setEditingEmbed(true)}
+						className="ml-auto inline-flex h-6 items-center gap-1 rounded-sm bg-white/5 px-2 text-xs text-white/70 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+					>
+						<Pencil className="size-3" aria-hidden="true" />
+						编辑{embed.inserter.title}
+					</button>
+				) : null}
 				{isRunnable && (
 					<Button
 						type="button"
@@ -377,6 +416,24 @@ function CodeBlockViewComponent({ node, updateAttributes, extension }: NodeViewP
 				as="pre"
 				className={`m-0! bg-transparent! overflow-x-auto p-4 text-[0.85rem] leading-6 text-[#e6edf3] ${language ? `language-${language}` : ""}`}
 			/>
+			{embed ? (
+				<section
+					aria-label="嵌入预览"
+					contentEditable={false}
+					className="flow-root border-t border-white/10 bg-background px-4"
+				>
+					<LazyArticleEmbed definition={embed} source={previewSource} />
+				</section>
+			) : null}
+			{embed?.inserter ? (
+				<EmbedInsertDialog
+					definition={editingEmbed ? embed : null}
+					initialSource={node.textContent}
+					onSubmit={replaceSource}
+					onClose={() => setEditingEmbed(false)}
+					returnFocus={() => editor.commands.focus()}
+				/>
+			) : null}
 			{/* 运行结果区（仅 runnable 且有结果时显示） */}
 			{isRunnable && resultText && (
 				<pre
