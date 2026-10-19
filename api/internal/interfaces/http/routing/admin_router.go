@@ -151,6 +151,7 @@ func NewAdminRouter(d *Deps) chi.Router {
 		r.Use(middleware.RequirePermission(perm, "mcp:manage-tokens"))
 		r.Get("/", d.APIToken.List)
 		r.Post("/", d.APIToken.Create)
+		r.Patch("/{id}", d.APIToken.Update)
 		r.Delete("/{id}", d.APIToken.Delete)
 	})
 

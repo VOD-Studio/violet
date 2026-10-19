@@ -216,6 +216,9 @@ _Avoid_: 公开 server（未区分通道语义）、reader API（HTTP REST 语�
 
 博客通过 MCP（Model Context Protocol）向 AI agent 暴露能力，按**域（bounded context）**拆分独立 server（AWS DDD MCP 实践："Name your MCP servers after the domain they own" + "each server owns one domain"）。混域是 context boundary 设计失败。
 
+**PAT 授权编辑（PAT Authorization Editing）**:
+持有人可编辑自己的令牌名称、权限范围、有效期与交互偏好，不改变令牌 ID、归属、哈希或创建时间，不重新揭示明文。省略字段保持原值；未修改有效期时精确保留原时间，已过期令牌也可单独改名。权限变更从下一次 MCP 请求起生效，包括既有会话；客户端无需替换令牌。
+
 **violet-posts（文章域 server）**:`/api/v1/mcp`，PAT `posts:read/write/publish`。文章 CRUD + 文章检索（S1：search_posts/formulas/code_blocks）。原用裸品牌名 `violet`，S3 正名为 `violet-posts`（按域命名）。
 _Avoid_: 把评论检索塞进文章 server（评论是独立 bounded context）
 

@@ -25,10 +25,10 @@ func NewService(repo domainapitoken.TokenRepository, bus appshared.EventBus) *Se
 
 // CreateInput 创建 PAT 入参。
 type CreateInput struct {
-	UserID     string
-	Name       string
-	Scopes     []string
-	ExpiresAt  time.Time // 零值表示永不过期
+	UserID    string
+	Name      string
+	Scopes    []string
+	ExpiresAt time.Time // 零值表示永不过期
 	// Interactive MCP 写 tool 交互偏好（#272）：true=冲突返回候选由 agent 转述；
 	// false=一路到底按推荐项自动决策。Go 零值 false 与默认 true 冲突，故用
 	// 三态指针：nil=默认 true；显式 false 才关闭。
@@ -61,6 +61,44 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 		}
 	}
 	return CreateResult{Token: toDTO(p, plaintext)}, nil
+}
+
+// UpdateInput 的指针字段省略时保留原值，包括已过期的精确到期时间。
+type UpdateInput struct {
+	ID          string
+	UserID      string
+	Name        *string
+	Scopes      *[]string
+	ExpiresAt   *time.Time // nil=保留，指向零时间=永久
+	Interactive *bool
+}
+
+// Update 编辑本人的令牌元数据，不重签或揭示凭据。
+func (s *Service) Update(ctx context.Context, in UpdateInput) (PATDTO, error) {
+	tokenID, err := shared.ParseID(in.ID)
+	if err != nil {
+		return PATDTO{}, domainapitoken.ErrNotFound
+	}
+	p, err := s.repo.FindByID(ctx, in.ID, in.UserID)
+	if err != nil {
+		return PATDTO{}, err
+	}
+	changes, err := p.Update(domainapitoken.UpdateInput{
+		Name: in.Name, Scopes: in.Scopes, ExpiresAt: in.ExpiresAt, Interactive: in.Interactive,
+	}, time.Now())
+	if err != nil {
+		return PATDTO{}, err
+	}
+	if len(changes) == 0 {
+		return toDTO(p, ""), nil
+	}
+	if err := s.repo.Update(ctx, p); err != nil {
+		return PATDTO{}, err
+	}
+	if err := s.bus.Publish(ctx, []shared.DomainEvent{domainapitoken.NewPATUpdated(tokenID, p.Name(), changes)}); err != nil {
+		log.Warn().Err(err).Msg("发布 PAT 更新事件失败")
+	}
+	return toDTO(p, ""), nil
 }
 
 // List 列出某用户的全部 PAT（不含明文）。
@@ -118,10 +156,10 @@ type PATDTO struct {
 	ID             string   `json:"id"`
 	Name           string   `json:"name"`
 	Scopes         []string `json:"scopes"`
-	ExpiresAt      string   `json:"expires_at,omitempty"`     // 空表示永不过期
-	LastUsedAt     string   `json:"last_used_at,omitempty"`   // 空表示从未使用
+	ExpiresAt      string   `json:"expires_at,omitempty"`   // 空表示永不过期
+	LastUsedAt     string   `json:"last_used_at,omitempty"` // 空表示从未使用
 	CreatedAt      string   `json:"created_at"`
-	PlaintextToken string   `json:"token,omitempty"`          // 明文 token（一次性，仅创建响应非空）；列表及其他场景恒为空
+	PlaintextToken string   `json:"token,omitempty"` // 明文 token（一次性，仅创建响应非空）；列表及其他场景恒为空
 	// Interactive MCP 写 tool 交互偏好；nil/true=冲突返回候选，false=一路到底
 	Interactive *bool `json:"interactive,omitempty"`
 }
@@ -129,11 +167,11 @@ type PATDTO struct {
 func toDTO(p *domainapitoken.PAT, plaintext string) PATDTO {
 	interactive := p.Interactive()
 	dto := PATDTO{
-		Interactive: &interactive,
-		ID:          p.ID(),
-		Name: p.Name(),
-		Scopes: p.Scopes(),
-		CreatedAt: p.CreatedAt().Format(time.RFC3339),
+		Interactive:    &interactive,
+		ID:             p.ID(),
+		Name:           p.Name(),
+		Scopes:         p.Scopes(),
+		CreatedAt:      p.CreatedAt().Format(time.RFC3339),
 		PlaintextToken: plaintext,
 	}
 	if !p.ExpiresAt().IsZero() {

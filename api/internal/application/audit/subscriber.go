@@ -515,6 +515,21 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			OccurredAt: e.OccurredAt(),
 		}, true
 
+	case domainapitoken.PATUpdated:
+		changes := make([]domainaudit.FieldChange, 0, len(e.Changes))
+		for _, change := range e.Changes {
+			changes = append(changes, domainaudit.FieldChange{Field: change.Field, From: change.From, To: change.To})
+		}
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionUpdate,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "api_token", ID: e.AggregateID().String(), Name: e.Name},
+			Summary:    fmt.Sprintf("编辑访问令牌「%s」", e.Name),
+			Changes:    changes,
+			OccurredAt: e.OccurredAt(),
+		}, true
+
 	case domainapitoken.PATDeleted:
 		return domainaudit.AuditEvent{
 			EventID:    e.EventID(),

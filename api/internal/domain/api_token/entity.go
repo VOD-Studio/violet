@@ -96,9 +96,9 @@ func NewPATDeleted(userID domainshared.ID, name string) PATDeleted {
 // 不变量：
 //   - tokenHash 创建后永不变（明文仅在创建时返回一次，库中只存哈希）
 //   - expiresAt 零值表示永不过期；非零值时与 now 比较判过期
-//   - scopes 是创建时声明的写权限子集，校验时按子集判定
+//   - scopes 是当前授权的权限子集，校验时按子集判定
 //
-// 聚合根只做纯领域逻辑（HasScope/IsExpired），不访问 DB；
+// 聚合根只做纯领域逻辑，不访问 DB；
 // 持久化由 TokenRepository 完成。
 type PAT struct {
 	// id PAT 标识（持久化主键，如 ULID）
@@ -109,7 +109,7 @@ type PAT struct {
 	name string
 	// tokenHash 令牌哈希（创建后永不变；明文仅在创建时一次性返回，库中只存哈希）
 	tokenHash string
-	// scopes 授权 scope 列表（创建时声明的子集，HasScope 按子集判定）
+	// scopes 当前授权 scope 列表，HasScope 按子集判定
 	scopes []string
 	// expiresAt 过期时间（零值表示永不过期；非零值时与 now 比较判过期）
 	expiresAt time.Time
@@ -136,13 +136,12 @@ func WithInteractive(v bool) PATOption {
 // expiresAt 零值表示永不过期；非零值时与 now 比较判过期。
 // 随机源失败返回错误，调用方映射为 500。
 func NewPAT(userID, name string, scopes []string, expiresAt, now time.Time, opts ...PATOption) (*PAT, string, error) {
-	if len(scopes) == 0 {
-		return nil, "", domainshared.BadRequest("至少选择一个权限范围")
+	name, err := validateName(name)
+	if err != nil {
+		return nil, "", err
 	}
-	for _, s := range scopes {
-		if !IsValidScope(s) {
-			return nil, "", domainshared.BadRequest("未知的权限范围: " + s)
-		}
+	if err := validateScopes(scopes); err != nil {
+		return nil, "", err
 	}
 	raw, err := GenerateToken()
 	if err != nil {
