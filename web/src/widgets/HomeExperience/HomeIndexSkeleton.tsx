@@ -1,46 +1,59 @@
 import { Skeleton } from "@violet/ui";
 
-/** 首页近稿与偶得尺素专属骨架屏（与正式 HomeIndex 1:1 几何高度对齐）。 */
+/** 首页近稿时间线与偶得尺素的加载占位。 */
 export function HomeIndexSkeleton() {
 	return (
 		<section
 			aria-label="正在加载近稿与动态"
 			className="mx-auto max-w-7xl scroll-mt-24 px-5 pt-20 sm:px-8 lg:px-12 lg:pt-28"
 		>
-			<div className="grid min-w-0 grid-cols-1 gap-14 lg:grid-cols-[1.62fr_1fr] lg:gap-16">
+			<div className="grid min-w-0 grid-cols-1 gap-14 lg:grid-cols-[1.62fr_1fr] lg:gap-12">
 				{/* 左栏：近稿骨架 */}
 				<div className="min-w-0">
-					<div className="mb-7">
-						<Skeleton className="h-2.5 w-24 rounded" />
-						<Skeleton className="mt-2 h-9 w-32 rounded-lg" />
+					<div className="mb-4">
+						<Skeleton className="h-3.5 w-24 rounded" />
+						<Skeleton className="mt-1.5 h-6 w-20 rounded sm:h-7.5" />
 					</div>
 
-					{/* 焦点篇目微卡片骨架 */}
-					<div className="mb-6 rounded-2xl border border-border/50 bg-muted/20 p-5 sm:p-6">
-						<div className="flex items-center justify-between">
-							<Skeleton className="h-4.5 w-16 rounded-full" />
-							<Skeleton className="h-3 w-14 rounded" />
-						</div>
-						<Skeleton className="mt-3.5 h-7 w-4/5 rounded-lg" />
-					</div>
-
-					{/* 后续篇目交互行骨架 */}
-					<div className="space-y-1">
-						{Array.from({ length: 4 }).map((_, i) => (
-							<div
-								key={i}
-								className="-mx-2.5 flex items-center justify-between gap-4 px-2.5 py-2.5"
-							>
-								<div className="flex items-center gap-3">
-									<Skeleton className="h-3.5 w-4 rounded" />
-									<Skeleton className="h-4.5 w-48 rounded" />
+					<div className="relative">
+						<div
+							aria-hidden
+							className="pointer-events-none absolute inset-y-5 left-3 w-px -translate-x-1/2 bg-linear-to-b from-border via-border/60 to-transparent"
+						/>
+						<div className="relative">
+							{Array.from({ length: 5 }).map((_, index) => (
+								<div key={index} className="relative py-3.5 pl-9 sm:pl-10">
+									<div
+										aria-hidden
+										className="absolute left-3 top-3.5 flex h-5 -translate-x-1/2 items-center bg-background px-1"
+									>
+										<Skeleton className="h-2.5 w-3 rounded" />
+									</div>
+									{index === 0 ? (
+										<>
+											<div className="flex h-5 items-center gap-2">
+												<Skeleton className="h-3 w-8 rounded" />
+												<Skeleton className="h-3 w-14 rounded" />
+											</div>
+											<Skeleton className="mt-2 h-8 w-4/5 rounded" />
+										</>
+									) : (
+										<>
+											<div className="flex h-6 items-center justify-between gap-3 sm:gap-5">
+												<Skeleton className="h-4 w-2/3 rounded" />
+												<Skeleton className="h-3 w-14 shrink-0 rounded" />
+											</div>
+											<Skeleton className="mt-1 h-4 w-8 rounded" />
+										</>
+									)}
 								</div>
-								<Skeleton className="h-3.5 w-14 rounded" />
-							</div>
-						))}
+							))}
+						</div>
 					</div>
 
-					<Skeleton className="mt-7 h-4 w-28 rounded" />
+					<div className="mt-4 pl-9 sm:pl-10">
+						<Skeleton className="h-4 w-28 rounded" />
+					</div>
 				</div>
 
 				{/* 右栏：偶得 + 尺素骨架 */}
@@ -48,8 +61,8 @@ export function HomeIndexSkeleton() {
 					{/* 偶得 */}
 					<div>
 						<div className="mb-5">
-							<Skeleton className="h-2.5 w-16 rounded" />
-							<Skeleton className="mt-2 h-9 w-20 rounded-lg" />
+							<Skeleton className="h-3.5 w-16 rounded" />
+							<Skeleton className="mt-1.5 h-6 w-20 rounded sm:h-7.5" />
 						</div>
 						<div className="space-y-4">
 							<div className="space-y-2 border-l border-border/80 pl-3.5">
@@ -69,8 +82,8 @@ export function HomeIndexSkeleton() {
 					{/* 尺素 */}
 					<div>
 						<div className="mb-5">
-							<Skeleton className="h-2.5 w-16 rounded" />
-							<Skeleton className="mt-2 h-9 w-20 rounded-lg" />
+							<Skeleton className="h-3.5 w-16 rounded" />
+							<Skeleton className="mt-1.5 h-6 w-20 rounded sm:h-7.5" />
 						</div>
 						<div className="space-y-5">
 							<div className="relative space-y-2 pl-6">

@@ -20,7 +20,7 @@ export function HomeMissives({ missives, isLoading }: HomeMissivesProps) {
 				<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
 					MISSIVES
 				</p>
-				<h2 className="mt-2 font-serif text-[1.75rem] font-normal leading-tight tracking-[0.08em] text-foreground sm:text-3xl">
+				<h2 className="mt-1.5 font-serif text-xl font-normal leading-tight tracking-[0.08em] text-foreground/85 sm:text-2xl">
 					尺素
 				</h2>
 			</div>
@@ -48,8 +48,9 @@ export function HomeMissives({ missives, isLoading }: HomeMissivesProps) {
 						>
 							<span
 								aria-hidden
-								className={`absolute left-0 font-serif text-3xl leading-none text-muted-foreground/25 select-none ${index === 0 ? "-top-3" : "top-1"
-									}`}
+								className={`absolute left-0 font-serif text-3xl leading-none text-muted-foreground/25 select-none ${
+									index === 0 ? "-top-3" : "top-1"
+								}`}
 							>
 								“
 							</span>
