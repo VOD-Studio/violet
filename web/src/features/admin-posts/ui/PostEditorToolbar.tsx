@@ -8,6 +8,7 @@ import {
 } from "@violet/ui";
 
 import {
+	BookOpen,
 	History,
 	Maximize2,
 	Minimize2,
@@ -132,6 +133,16 @@ export function PostEditorToolbar({
 						<History className="size-4" /> 历史版本
 					</Button>
 				)}
+				<Button asChild variant="ghost" size="icon-sm" className="hidden lg:flex">
+					<a
+						href="/editor-guide"
+						target="_blank"
+						rel="noreferrer"
+						title="语法与功能手册（新标签页）"
+					>
+						<BookOpen className="size-4" />
+					</a>
+				</Button>
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
 						<Button variant="outline" className="lg:hidden" title="更多操作">
@@ -163,6 +174,11 @@ export function PostEditorToolbar({
 								<History className="size-4" /> 历史版本
 							</DropdownMenuItem>
 						)}
+						<DropdownMenuItem
+							onClick={() => window.open("/editor-guide", "_blank", "noopener")}
+						>
+							<BookOpen className="size-4" /> 语法手册
+						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
 				<Button variant="outline" onClick={onSaveDraft} disabled={isDisabled}>

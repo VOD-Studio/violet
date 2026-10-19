@@ -1,6 +1,6 @@
+import { GuideTocContent, GuideTocLayout } from "@shared/ui/guide-toc";
 import type { ReactNode } from "react";
 import { getComponentStatus } from "../model/guides";
-import { GuideTocContent, GuideTocLayout } from "./LibraryGuideToc";
 
 interface ComponentDocProps {
 	componentId: string;

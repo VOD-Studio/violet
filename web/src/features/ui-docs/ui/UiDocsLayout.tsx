@@ -1,7 +1,7 @@
+import { useNaturalAnchorTop } from "@shared/hooks/use-natural-anchor-top";
 import { Outlet, useRouterState } from "@tanstack/react-router";
 import { PageShell } from "@violet/ui";
 import { findNavItemByPath } from "../model/navigation";
-import { useNaturalAnchorTop } from "../model/use-natural-anchor-top";
 import { UiDocsMobileNav } from "./UiDocsMobileNav";
 import { UiDocsPagination } from "./UiDocsPagination";
 import { UiDocsSidebar } from "./UiDocsSidebar";

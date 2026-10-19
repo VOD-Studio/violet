@@ -1,6 +1,7 @@
 import type { ArticleEmbedKind } from "./types";
 
-const LANGUAGE_KIND: Record<string, ArticleEmbedKind | undefined> = {
+/** 围栏语言 → 卡片类型；手册漂移测试据此枚举全部卡片围栏。 */
+export const LANGUAGE_KIND: Record<string, ArticleEmbedKind | undefined> = {
 	dialogue: "dialogue",
 	chat: "dialogue",
 	github: "github",

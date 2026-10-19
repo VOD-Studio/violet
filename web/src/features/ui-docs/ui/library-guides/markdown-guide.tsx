@@ -1,7 +1,8 @@
 /** 指南正文沿用文章 Markdown 渲染管线，并把渲染后的标题交给目录适配层。 */
+
+import { GuideTocContent } from "@shared/ui/guide-toc";
 import { MarkdownContent } from "@shared/ui/markdown-preview/MarkdownContent";
 import type { Components } from "react-markdown";
-import { GuideTocContent } from "../LibraryGuideToc";
 
 export interface MarkdownGuideDocProps {
 	/** Markdown 源文本（调用方经 ?raw 导入） */
