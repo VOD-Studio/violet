@@ -212,6 +212,39 @@ test.describe("动态偏好", () => {
 		expect(await page.evaluate(() => window.__animateCalls)).toBeGreaterThan(0);
 	});
 
+	test("落点在过渡途中连续变化：让位从卡片当前位置接着走，不会越叠越远", async ({ page }) => {
+		await open(page);
+		const todo = await belowLastCard(page, "todo");
+		const doing = await belowLastCard(page, "doing");
+		// 卡片此刻偏离布局位置的距离：读的是过渡正在施加的位移
+		const farthest = () =>
+			page.evaluate(() =>
+				Math.max(
+					0,
+					...[...document.querySelectorAll<HTMLElement>("[data-flip]")].map((element) => {
+						const transform = getComputedStyle(element).transform;
+						if (transform === "none") return 0;
+						const matrix = new DOMMatrix(transform);
+						return Math.hypot(matrix.e, matrix.f);
+					}),
+				),
+			);
+
+		await pickUp(page, "a", doing);
+		let worst = 0;
+		for (let step = 0; step < 16; step += 1) {
+			const to = step % 2 === 0 ? todo : doing;
+			await page.mouse.move(to.x, to.y);
+			await page.waitForTimeout(30);
+			worst = Math.max(worst, await farthest());
+		}
+		await page.mouse.up();
+		await settled(page);
+
+		// 占位在两个落点之间来回，任何卡片的位移都不该明显超过两点间的距离
+		expect(worst).toBeLessThan(Math.hypot(todo.x - doing.x, todo.y - doing.y) * 1.5);
+	});
+
 	test("偏好减弱动态时不做任何位移过渡，浮起卡片立即落位", async ({ page }) => {
 		await page.emulateMedia({ reducedMotion: "reduce" });
 		await open(page);
