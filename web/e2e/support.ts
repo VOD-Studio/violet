@@ -26,6 +26,13 @@ export function collectDiagnostics(page: Page) {
 	return diagnostics;
 }
 
+/** 导航并等待客户端会话探活，SSR 文本可见时事件监听可能尚未挂载。 */
+export async function openClientPage(page: Page, path: string) {
+	const ready = page.waitForResponse("**/api/v1/auth/me");
+	const [response] = await Promise.all([page.goto(path), ready]);
+	return response;
+}
+
 /**
  * 以契约后台操作者登录，并把 `/auth/me` 返回的权限换成 `permissions`。
  * Cookie 建立 SSR 会话；客户端 useMe 仍独立读取实际权限。

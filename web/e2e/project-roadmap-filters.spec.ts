@@ -1,7 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 import { loadClient } from "./client";
 import { ROADMAP_FIXTURE } from "./mock-data.mjs";
-import { authenticated, collectDiagnostics } from "./support.ts";
+import { authenticated, collectDiagnostics, openClientPage } from "./support.ts";
 
 const SLUG = ROADMAP_FIXTURE.project.slug;
 const PATH = `/projects/${SLUG}`;
@@ -23,7 +23,7 @@ const count = (page: Page, matched: number) =>
 	page.getByRole("status").filter({ hasText: `匹配 ${matched} / 17 条` });
 
 async function open(page: Page, query = "") {
-	const response = await page.goto(`${PATH}${query}`);
+	const response = await openClientPage(page, `${PATH}${query}`);
 	expect(response?.status()).toBe(200);
 	await expect(
 		page.getByRole("heading", { level: 1, name: ROADMAP_FIXTURE.project.title }),

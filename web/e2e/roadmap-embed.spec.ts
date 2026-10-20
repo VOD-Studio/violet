@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { loadClient } from "./client";
 import { ROADMAP_CANVAS_POST, ROADMAP_EMBED_POST, ROADMAP_FIXTURE } from "./mock-data.mjs";
-import { collectDiagnostics } from "./support.ts";
+import { collectDiagnostics, openClientPage } from "./support.ts";
 
 const PATH = `/blog/${ROADMAP_EMBED_POST.slug}`;
 const titleOf = (number: number) =>
@@ -34,7 +34,7 @@ test.describe("文章里的 roadmap 卡片", () => {
 	}) => {
 		await loadClient(context);
 		const diagnostics = collectDiagnostics(page);
-		await page.goto(PATH);
+		await openClientPage(page, PATH);
 
 		await expect(card(page, "item")).toContainText(titleOf(2));
 		await expect(card(page, "item")).toContainText("被阻塞");
