@@ -2,7 +2,10 @@ import type { SessionClaims } from "@entities/user/model/types";
 // 文章里的 roadmap 卡片：服务端与客户端都要登记，两边渲染才一致
 import RouteError from "@shared/ui/route-error";
 import type { QueryClient } from "@tanstack/react-query";
-import { createRouter as createTanStackRouter } from "@tanstack/react-router";
+import {
+	createRouter as createTanStackRouter,
+	type RegisteredRouter,
+} from "@tanstack/react-router";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 import { RuaLoading } from "@widgets/PersonaMotion";
 import "./register-article-embeds";
@@ -73,5 +76,12 @@ declare module "@tanstack/react-router" {
 	interface StaticDataRouteOption {
 		/** 详情页在 Header 主导航里显示的标题；返回空值则保持常规标签。 */
 		navTitle?: (loaderData: never) => string | null | undefined;
+	}
+}
+
+declare module "@tanstack/react-start" {
+	interface Register {
+		ssr: true;
+		router: RegisteredRouter;
 	}
 }
