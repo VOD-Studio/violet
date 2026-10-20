@@ -97,7 +97,7 @@ services:
       # 部署步骤见 docs/deploy/manual-deploy.md)
       HTTPS_PROXY: http://host.containers.internal:20172
       HTTP_PROXY: http://host.containers.internal:20172
-      NO_PROXY: localhost,127.0.0.1,::1,postgres,redis,10.89.0.0/16
+      NO_PROXY: localhost,127.0.0.1,::1,postgres,redis,kite,10.89.0.0/16
     volumes:
       # 持久化上传文件
       - uploads_data:/app/uploads
@@ -124,6 +124,7 @@ services:
     networks:
       - backend
       - proxy
+      - kite
 
   # 前端生产服务（2.0 SSR：Node 运行 TanStack Start Nitro server）
   web:
@@ -175,3 +176,6 @@ networks:
   proxy:
     name: nginx-proxy
     external: true
+  kite:
+    name: ${KITE_NETWORK_NAME:-violet_music}
+    external: ${KITE_NETWORK_EXTERNAL:-false}

@@ -30,6 +30,7 @@ import (
 	githubhttp "blog-api/internal/interfaces/http/handler/github"
 	imagehttp "blog-api/internal/interfaces/http/handler/image"
 	mediahttp "blog-api/internal/interfaces/http/handler/media"
+	musichttp "blog-api/internal/interfaces/http/handler/music"
 	notehttp "blog-api/internal/interfaces/http/handler/note"
 	notificationhttp "blog-api/internal/interfaces/http/handler/notification"
 	personahttp "blog-api/internal/interfaces/http/handler/persona"
@@ -88,6 +89,7 @@ type Deps struct {
 	Auth                *authhttp.Handler
 	Content             *contenthttp.Handler
 	Roadmap             *roadmaphttp.Handler
+	Music               *musichttp.Handler
 	RoadmapRelations    *roadmaphttp.RelationHandler
 	Comment             *commenthttp.Handler
 	CommentReaction     *crhttp.Handler

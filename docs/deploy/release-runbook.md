@@ -41,6 +41,8 @@ PR 检查拒绝小于或等于目标分支 manifest 的版本意图；release-pl
 
 公开入口由 `nginx-proxy` 提供 TLS，`/api/` 和 `/uploads/` 转发至 API，其余页面由 Web SSR 服务。带 hash 的静态资源由 nginx 的共享目录提供。PostgreSQL、Redis、上传和备份使用独立卷。
 
+音乐是可选后端模块。默认 Compose 自建空 `violet_music` 网络；同机接入 Kite 时由 `.env` 显式指定 `KITE_NETWORK_NAME=kite_network`、`KITE_NETWORK_EXTERNAL=true`，发布前确认该外部网络已存在。只有 API 加入 Kite 专网，服务令牌与 Cookie 加密密钥仅留在后端部署环境。前置配置及验收见 [Kite 音乐服务](manual-deploy.md#kite-音乐服务可选)。
+
 首次接入要求现有 API/Web 容器与 Compose 配置齐全、数据库迁移记录 clean。脚本先捕获实际镜像 ID 和配置，保存为 `bootstrap-*` 归档，再部署候选。它不是空服务器安装器。后续版本以 `/root/docker/violet/.releases/` 为准：
 
 | 文件 | 运维用途 |

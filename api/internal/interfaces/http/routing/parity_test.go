@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"blog-api/config"
+	musichttp "blog-api/internal/interfaces/http/handler/music"
 	publicationhttp "blog-api/internal/interfaces/http/handler/publication"
 	siteidentityhttp "blog-api/internal/interfaces/http/handler/siteidentity"
 	siteimpressionhttp "blog-api/internal/interfaces/http/handler/siteimpression"
@@ -31,8 +32,7 @@ func isParityExcluded(route string) bool {
 
 // fullRouterDeps 构造能走完 RegisterRoutes 全量注册的最小 Deps。
 // handler 取零值指针即可（注册只提取方法值不调用）；nil 即跳过的可选域
-// （Publication/SiteIdentity/SiteImpression）必须给非零值，否则其路由不注册，
-// 对账会把 spec 里对应条目误判为过期。
+// 必须给非零值，否则对账会把 spec 里对应条目误判为过期。
 func fullRouterDeps() *Deps {
 	identity := func(h http.Handler) http.Handler { return h }
 	return &Deps{
@@ -46,6 +46,7 @@ func fullRouterDeps() *Deps {
 		SiteIdentity:        &siteidentityhttp.Handler{},
 		SiteImpression:      &siteimpressionhttp.Handler{},
 		Publication:         &publicationhttp.Handler{},
+		Music:               &musichttp.Handler{},
 	}
 }
 

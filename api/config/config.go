@@ -46,6 +46,8 @@ type Config struct {
 	// 未配置时仍能注册 bot，但凭据不落密文，只能靠创建/重置那一次响应拿到；
 	// 改了它只影响解密：库里旧密文全部作废，对应 bot 需重置一次凭据。
 	BotTokenKey string
+	// Music 留空时音乐模块不可用，不阻塞其他 API。
+	Music MusicConfig
 	// BotMediaMaxBytes Bot 图片整体上传的字节上限；0 表示不限制。
 	BotMediaMaxBytes int64
 	// BilibiliCookie B站登录 Cookie，用于获取表情种子数据（自动拼接）
@@ -76,6 +78,15 @@ type Config struct {
 	// CustomEmojiMaxPerUser 单用户自定义表情份额上限（自传+收藏合计）的 env 兜底默认值，
 	// 仅当 site_settings 未配置（值为 0）时生效，见 docs/adr/0013。
 	CustomEmojiMaxPerUser int
+}
+
+type MusicConfig struct {
+	// BaseURL Kite 的 HTTP 网关地址；空值禁用音乐服务。
+	BaseURL string
+	// AuthToken Kite 服务鉴权令牌，不是网易云登录凭据。
+	AuthToken string
+	// CredentialKey 至少 32 字节，单独加密站点网易云 Cookie。
+	CredentialKey string
 }
 
 // WebPushConfig 浏览器 Web Push VAPID 配置。
@@ -371,9 +382,14 @@ func Load() *Config {
 		BackupDir:          v.GetString("backup_dir"),
 		ResourceSigningKey: v.GetString("resource_signing_key"),
 		BotTokenKey:        v.GetString("bot_token_key"),
-		BotMediaMaxBytes:   v.GetInt64("bot_media_max_bytes"),
-		BilibiliCookie:     bilibiliCookie,
-		BilibiliAPIType:    v.GetString("bilibili_api_type"),
+		Music: MusicConfig{
+			BaseURL:       v.GetString("kite_base_url"),
+			AuthToken:     v.GetString("kite_auth_token"),
+			CredentialKey: v.GetString("music_credential_key"),
+		},
+		BotMediaMaxBytes: v.GetInt64("bot_media_max_bytes"),
+		BilibiliCookie:   bilibiliCookie,
+		BilibiliAPIType:  v.GetString("bilibili_api_type"),
 		Cookie: CookieConfig{
 			Domain:      v.GetString("cookie.domain"),
 			Secure:      v.GetBool("cookie.secure"),
@@ -596,7 +612,7 @@ func readDotenvKeys() map[string]bool {
 
 // sensitiveKeyParts 键名中出现这些片段时,打印值一律脱敏
 // 注意用复数 cookies:单数 cookie 会误伤 cookie.csrf_name 等非敏感键
-var sensitiveKeyParts = []string{"password", "secret", "signing_key", "cookies", "token", "api_key"}
+var sensitiveKeyParts = []string{"password", "secret", "signing_key", "credential_key", "cookies", "token", "api_key"}
 
 // printConfigSources 打印全部配置项的最终值(脱敏)与来源。
 //
