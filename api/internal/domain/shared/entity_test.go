@@ -114,8 +114,8 @@ func TestAggregateRoot_RecordEvent_PullEvents(t *testing.T) {
 
 	assert.False(t, root.HasEvents())
 
-	ev1 := fakeEvent{BaseEvent: NewBaseEvent("music.playlist.created", root.GetID()), payload: "a"}
-	ev2 := fakeEvent{BaseEvent: NewBaseEvent("music.playlist.updated", root.GetID()), payload: "b"}
+	ev1 := fakeEvent{BaseEvent: NewBaseEvent("test.aggregate.created", root.GetID()), payload: "a"}
+	ev2 := fakeEvent{BaseEvent: NewBaseEvent("test.aggregate.updated", root.GetID()), payload: "b"}
 
 	root.RecordEvent(ev1)
 	root.RecordEvent(ev2)
@@ -125,8 +125,8 @@ func TestAggregateRoot_RecordEvent_PullEvents(t *testing.T) {
 	pulled := root.PullEvents()
 	assert.Len(t, pulled, 2)
 	assert.False(t, root.HasEvents(), "PullEvents 后应清空事件队列")
-	assert.Equal(t, "music.playlist.created", pulled[0].EventName())
-	assert.Equal(t, "music.playlist.updated", pulled[1].EventName())
+	assert.Equal(t, "test.aggregate.created", pulled[0].EventName())
+	assert.Equal(t, "test.aggregate.updated", pulled[1].EventName())
 
 	// 再次 Pull 应返回 nil
 	assert.Nil(t, root.PullEvents())

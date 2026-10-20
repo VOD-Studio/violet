@@ -24,7 +24,7 @@ Single-context repo:
 └── web/                       # blog frontend (React + Vite)
 ```
 
-**Note**: 网易云音乐能力服务（原 mimo-music，现 kite）已迁移至独立仓库 `github.com/VOD-Studio/kite`，本仓库不再保留其代码与域语言。`api/internal/infrastructure/music/` 保留 `KiteProvider` stub 作为 blog 文章音乐嵌入的服务消费方。
+音乐能力服务由独立仓库 [`VOD-Studio/kite`](https://github.com/VOD-Studio/kite) 维护；本仓库目前不包含音乐模块或 Kite 适配器。
 
 ## Use the glossary's vocabulary
 

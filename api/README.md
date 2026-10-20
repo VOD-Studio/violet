@@ -134,7 +134,6 @@ api/
 | **emoji** | emoji | media | 表情分组/表情 CRUD、B站表情导入、文件上传 |
 | **customemoji** | customemoji | customemoji | 用户自定义表情上传、软删除、收藏与按 ID 解析 |
 | **upload** | upload | media | 分片上传（秒传/断点续传/合并）、文件管理 |
-| **music** | music | media | 歌单管理、歌曲 CRUD、网易云解析（kite） |
 | **image** | image | image | 图片处理 |
 | **tweet** | tweet | tweet | 推文发布与互动、免凭据 X 原文预览、共享来源刷新和撤回 |
 | **settings** | settings | settings | 站点配置（key-value） |
@@ -155,7 +154,11 @@ api/
 | **siteidentity** | settings | siteidentity | 首页站点身份：默认值、公开链接和可用订阅渠道归一（`GET /site-identity`） |
 | **siteimpression** | siteimpression | siteimpression | 首页匿名设备印记：HMAC 令牌去重、私有状态查询与限流写入（`GET/POST /site-impressions`） |
 
-> **注意**：`media` application 层同时服务 emoji/upload/music/media 四个 domain，因为它们共享基础设施（文件存储、音乐解析）。
+> **注意**：`media` application 层服务 emoji/upload 两个 domain，共享文件存储基础设施。
+
+旧音乐模块及 `/api/v1/music/*`、`/api/v1/admin/music/*` 端点已移除，不再提供歌单、歌曲解析或播放器设置，也不再读取音乐解析服务配置。通用音频文件上传与素材管理不受影响。历史迁移保持不变，`playlists`、`music_settings` 表及其中的数据保留，但当前应用不再读写或通过 AutoMigrate 管理这两张表。
+
+迁移 `139_retire_playlist_permissions` 回收 `playlist:view/create/update/delete/toggle` 的角色授权并删除权限点，仅清理不再包含其他子节点的 `playlist` 菜单。回滚只恢复权限定义、菜单及默认 `admin` 角色授权，不恢复已回收的自定义授权；历史歌曲权限已由迁移 `055_remove_dead_permissions` 退役。
 
 `POST /uploads` 与 `GET /uploads/instant` 只对磁盘上仍存在的素材返回秒传成功。数据库记录存在但文件丢失时，记录保留并标记为 `failed`，重新上传会创建可读取的新文件；权限等读取错误直接返回错误，不当作秒传未命中。已丢失的图片字节无法从数据库恢复，原有失效地址需重新上传后替换。
 
@@ -190,7 +193,6 @@ api/
 | `email/` | `EmailSender` | Sender (Resend) | 验证码/密码重置邮件 |
 | `eventbus/` | `EventBus` | Noop / InMemory | 领域事件总线（audit / notification 订阅者消费事件） |
 | `github/` | `GitHubProvider` | Adapter | GitHub GraphQL + REST API |
-| `music/` | `MusicProvider` | Provider | 网易云解析（kite SDK） |
 | `xtweet/` | tweet 应用层的获取、媒体和预览缓存端口 | Fetcher, MediaStore, PreviewStore | FxTwitter v2 与一次 Syndication 回退、来源图片本地保存、用户绑定预览凭证 |
 | `storage/` | `ChunkStorage` | LocalStorage | 分片文件存储、缩略图生成（imaging + ffmpeg） |
 | `persistence/gorm/` | 各 `*Repository` | GORM 实现 | 所有数据库访问 |

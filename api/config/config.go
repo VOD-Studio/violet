@@ -52,9 +52,6 @@ type Config struct {
 	BilibiliCookie string
 	// BilibiliAPIType B站表情 API 类型：user(用户收藏) 或 official(官方)
 	BilibiliAPIType string
-	// KiteURL kite 音乐解析服务地址（自托管网易云解析）。
-	// 默认 http://localhost:3721，与 kite docker-compose 端口映射对齐。
-	KiteURL string
 	// Cookie 鉴权 Cookie 配置（opaque session id 通过 HttpOnly Cookie 下发）
 	Cookie CookieConfig
 	// Session opaque session 生命周期配置（IdleTTL 滑动续期 + MaxTTL 绝对寿命）
@@ -281,7 +278,6 @@ func Load() *Config {
 	v.SetDefault("bot_media_max_bytes", int64(10<<20))
 	v.SetDefault("bilibili_cookies", "")
 	v.SetDefault("bilibili_api_type", "user")
-	v.SetDefault("kite_url", "http://localhost:3721")
 	// Cookie 默认值：开发环境友好（HTTP、lax、空 domain）
 	// 生产环境必须通过 COOKIE_SECURE=true、COOKIE_DOMAIN、CORS_ALLOWED_ORIGINS 覆盖
 	v.SetDefault("cookie.domain", "")
@@ -378,7 +374,6 @@ func Load() *Config {
 		BotMediaMaxBytes:   v.GetInt64("bot_media_max_bytes"),
 		BilibiliCookie:     bilibiliCookie,
 		BilibiliAPIType:    v.GetString("bilibili_api_type"),
-		KiteURL:            v.GetString("kite_url"),
 		Cookie: CookieConfig{
 			Domain:      v.GetString("cookie.domain"),
 			Secure:      v.GetBool("cookie.secure"),

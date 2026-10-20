@@ -108,9 +108,9 @@ type Comment struct {
 	AnchorSelectedText  *string `gorm:"type:text;column:anchor_selected_text" json:"anchor_selected_text,omitempty"`
 	AnchorBlockTextHash *string `gorm:"type:varchar(16);column:anchor_block_text_hash" json:"anchor_block_text_hash,omitempty"`
 
-	Status    string    `gorm:"type:varchar(20);default:pending" json:"status"`
-	IPHash    string    `gorm:"type:varchar(64);column:ip_hash" json:"ip_hash"`
-	UserAgent string    `gorm:"type:text;column:user_agent" json:"user_agent"`
+	Status    string `gorm:"type:varchar(20);default:pending" json:"status"`
+	IPHash    string `gorm:"type:varchar(64);column:ip_hash" json:"ip_hash"`
+	UserAgent string `gorm:"type:text;column:user_agent" json:"user_agent"`
 	// IsAI MCP/AI agent 发表标记（comments.is_ai）；展示专用头像与 AI 徽章。
 	IsAI      bool      `gorm:"column:is_ai;not null;default:false" json:"is_ai"`
 	CreatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
@@ -206,32 +206,6 @@ type Emoji struct {
 }
 
 func (Emoji) TableName() string { return "emojis" }
-
-// Playlist 歌单表（歌曲以 JSONB 内联存储）
-type Playlist struct {
-	ID         uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
-	Title      string    `gorm:"type:varchar(255)" json:"title"`
-	Cover      string    `gorm:"type:varchar(512)" json:"cover"`
-	Creator    string    `gorm:"type:varchar(100)" json:"creator"`
-	Platform   string    `gorm:"type:varchar(20)" json:"platform"`
-	PlaylistID string    `gorm:"type:varchar(100);column:playlist_id" json:"playlist_id"`
-	SongCount  int       `gorm:"default:0" json:"song_count"`
-	Songs      []byte    `gorm:"type:jsonb;default:'[]'" json:"songs"`
-	IsActive   bool      `gorm:"default:false" json:"is_active"`
-	CreatedAt  time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
-	UpdatedAt  time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
-}
-
-func (Playlist) TableName() string { return "playlists" }
-
-// MusicSetting 音乐播放器设置（单行配置，id=1）
-type MusicSetting struct {
-	ID            int32     `gorm:"primaryKey" json:"id"`
-	PlayerVersion string    `gorm:"column:player_version;type:varchar(50)" json:"player_version"`
-	UpdatedAt     time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
-}
-
-func (MusicSetting) TableName() string { return "music_settings" }
 
 // File 文件表
 type File struct {

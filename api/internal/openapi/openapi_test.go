@@ -235,25 +235,6 @@ func TestMediaPaths(t *testing.T) {
 	require.NotEmpty(t, spec.Paths.Find("/uploads").Post.Security)
 }
 
-func TestMusicPaths(t *testing.T) {
-	spec, _ := Spec()
-	for _, p := range []string{
-		"/music/embed", "/music/playlist", "/music/song", "/music/search",
-		"/music/lyrics", "/music/meta", "/music/playlists/active", "/music/settings",
-	} {
-		require.NotNil(t, spec.Paths.Find(p), "missing music path %s", p)
-	}
-	for _, s := range []string{"Song", "PlaylistDTO", "MusicEmbedInfo", "MusicSongMeta", "MusicPlaylistMeta"} {
-		require.Contains(t, spec.Components.Schemas, s, "missing schema %s", s)
-	}
-	// 音乐接口全部公开
-	require.Empty(t, spec.Paths.Find("/music/search").Get.Security)
-	// EmbedInfo 用 PascalCase 字段（验证无 json tag 的 struct）
-	emb := spec.Components.Schemas["MusicEmbedInfo"].Value.Properties
-	require.Contains(t, emb, "Platform")
-	require.Contains(t, emb, "EmbedURL")
-}
-
 func TestAdminUserPaths(t *testing.T) {
 	spec, _ := Spec()
 	for _, p := range []string{
@@ -318,22 +299,6 @@ func TestAdminAnnouncementPaths(t *testing.T) {
 	require.NotNil(t, item.Get)
 	require.NotNil(t, item.Patch)
 	require.NotNil(t, item.Delete)
-}
-
-func TestAdminMusicPaths(t *testing.T) {
-	spec, _ := Spec()
-	for _, p := range []string{
-		"/admin/music/playlists", "/admin/music/playlists/custom",
-		"/admin/music/playlists/{id}", "/admin/music/playlists/{id}/active",
-		"/admin/music/playlists/{id}/refresh", "/admin/music/playlists/{id}/songs",
-		"/admin/music/playlists/{id}/songs/{index}", "/admin/music/settings",
-	} {
-		require.NotNil(t, spec.Paths.Find(p), "missing path %s", p)
-	}
-	// /admin/music/playlists/{id}/songs/{index} 同时有 DELETE/PATCH
-	item := spec.Paths.Find("/admin/music/playlists/{id}/songs/{index}")
-	require.NotNil(t, item.Delete)
-	require.NotNil(t, item.Patch)
 }
 
 func TestAdminEmojiPaths(t *testing.T) {

@@ -128,10 +128,6 @@ bilibili_api_type: user
 # env: BILIBILI_COOKIES（密钥，禁止写入本文件）
 bilibili_cookies: ""
 
-# ── 音乐解析服务（独立仓库 VOD-Studio/kite）──────
-# env: KITE_URL
-kite_url: http://localhost:3721
-
 # ── 超级管理员 ────────────────────────────────
 superadmin:
   # env: SUPERADMIN_ENABLED（首次部署创建管理员后建议改回 false）

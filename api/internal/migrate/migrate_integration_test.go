@@ -164,7 +164,7 @@ func TestSQLMigrationsCoverStartupModels(t *testing.T) {
 		&model.User{}, &model.Role{}, &model.Permission{}, &model.RolePermission{},
 		&model.Post{}, &model.PostVersion{}, &model.PostView{}, &model.Tag{},
 		&model.Comment{}, &model.CommentReaction{}, &model.Announcement{}, &model.Project{},
-		&model.EmojiGroup{}, &model.Emoji{}, &model.Playlist{}, &model.MusicSetting{},
+		&model.EmojiGroup{}, &model.Emoji{},
 		&model.File{}, &model.UploadSession{}, &model.APIToken{}, &model.Subscription{}, &model.SubscriptionEntry{},
 	}
 	for _, value := range models {
@@ -215,4 +215,103 @@ func TestSQLMigrationsCoverStartupModels(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestRetirePlaylistPermissionsPreservesDataAndUnrelatedGrants(t *testing.T) {
+	for _, keepCustomChild := range []bool{false, true} {
+		t.Run(fmt.Sprintf("custom_child=%t", keepCustomChild), func(t *testing.T) {
+			db, dsn := testDatabase(t)
+			m, err := gmigrate.New("file://"+repoMigrationsDir(t), strings.Replace(dsn, "postgres://", "pgx5://", 1))
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { m.Close() })
+			if err := m.Migrate(138); err != nil {
+				t.Fatal(err)
+			}
+
+			setup := `
+INSERT INTO playlists (id, title, platform, playlist_id, songs, song_count, is_active)
+VALUES ('00000000-0000-4000-8000-000000000139', '保留的歌单', 'netease', 'retirement-test',
+        '[{"name":"保留的歌曲","url":"/uploads/retained.mp3"}]', 1, TRUE);
+UPDATE music_settings SET player_version = 'v2' WHERE id = 1;
+INSERT INTO roles (name, description) VALUES ('retirement-test', '迁移测试角色');
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r, permissions p
+WHERE r.name = 'retirement-test'
+  AND p.code IN ('playlist', 'playlist:view', 'playlist:create', 'playlist:update',
+                 'playlist:delete', 'playlist:toggle', 'media:view');`
+			if _, err := db.Exec(setup); err != nil {
+				t.Fatal(err)
+			}
+			if keepCustomChild {
+				if _, err := db.Exec(`
+INSERT INTO permissions (code, name, type, parent_id)
+SELECT 'archive:view', '自定义归档', 'action', id FROM permissions WHERE code = 'playlist';
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r, permissions p
+WHERE r.name = 'retirement-test' AND p.code = 'archive:view';`); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			assertCount := func(query string, want int) {
+				t.Helper()
+				var got int
+				if err := db.QueryRow(query).Scan(&got); err != nil {
+					t.Fatal(err)
+				}
+				if got != want {
+					t.Fatalf("%s: got %d, want %d", query, got, want)
+				}
+			}
+			assertData := func() {
+				t.Helper()
+				assertCount(`SELECT COUNT(*) FROM playlists
+WHERE id = '00000000-0000-4000-8000-000000000139' AND title = '保留的歌单'
+  AND platform = 'netease' AND playlist_id = 'retirement-test' AND is_active
+  AND song_count = 1 AND songs = '[{"name":"保留的歌曲","url":"/uploads/retained.mp3"}]'::jsonb`, 1)
+				assertCount(`SELECT COUNT(*) FROM music_settings WHERE id = 1 AND player_version = 'v2'`, 1)
+				assertCount(`SELECT COUNT(*) FROM role_permissions rp
+JOIN roles r ON r.id = rp.role_id JOIN permissions p ON p.id = rp.permission_id
+WHERE r.name = 'retirement-test' AND p.code = 'media:view'`, 1)
+			}
+			assertCount(`SELECT COUNT(*) FROM role_permissions rp
+JOIN roles r ON r.id = rp.role_id JOIN permissions p ON p.id = rp.permission_id
+WHERE r.name = 'retirement-test' AND p.code LIKE 'playlist:%'`, 5)
+
+			if err := m.Migrate(139); err != nil {
+				t.Fatal(err)
+			}
+			assertData()
+			assertCount(`SELECT COUNT(*) FROM permissions WHERE code LIKE 'playlist:%'`, 0)
+			wantMenu, wantGrants := 0, 1
+			if keepCustomChild {
+				wantMenu, wantGrants = 1, 3
+				assertCount(`SELECT COUNT(*) FROM permissions child
+JOIN permissions menu ON menu.id = child.parent_id
+WHERE child.code = 'archive:view' AND menu.code = 'playlist'`, 1)
+			}
+			assertCount(`SELECT COUNT(*) FROM permissions WHERE code = 'playlist'`, wantMenu)
+			assertCount(`SELECT COUNT(*) FROM role_permissions rp
+JOIN roles r ON r.id = rp.role_id WHERE r.name = 'retirement-test'`, wantGrants)
+
+			if err := m.Migrate(138); err != nil {
+				t.Fatal(err)
+			}
+			assertData()
+			assertCount(`SELECT COUNT(*) FROM permissions p
+JOIN permissions menu ON menu.id = p.parent_id
+WHERE p.code LIKE 'playlist:%' AND p.type = 'action' AND p.is_builtin
+  AND menu.code = 'playlist' AND menu.type = 'menu'`, 5)
+			assertCount(`SELECT COUNT(*) FROM role_permissions rp
+JOIN roles r ON r.id = rp.role_id JOIN permissions p ON p.id = rp.permission_id
+WHERE r.name = 'admin' AND p.code LIKE 'playlist:%'`, 5)
+			assertCount(`SELECT COUNT(*) FROM role_permissions rp
+JOIN roles r ON r.id = rp.role_id JOIN permissions p ON p.id = rp.permission_id
+WHERE r.name = 'retirement-test' AND p.code LIKE 'playlist:%'`, 0)
+			assertCount(`SELECT COUNT(*) FROM role_permissions rp
+JOIN roles r ON r.id = rp.role_id WHERE r.name = 'retirement-test'`, wantGrants)
+		})
+	}
 }

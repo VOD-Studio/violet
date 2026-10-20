@@ -200,29 +200,6 @@ func NewAdminRouter(d *Deps) chi.Router {
 	r.With(middleware.RequirePermission(perm, "post:view")).Get("/posts/versions/{versionId}", postH.GetVersion)
 	r.Post("/posts/{id}/versions/{versionId}/restore", postH.RestoreVersion) // 应用层鉴权
 
-	// 音乐管理（读：playlist:view；写：按动作细分）
-	r.Route("/music", func(r chi.Router) {
-		r.Route("/playlists", func(r chi.Router) {
-			r.With(middleware.RequirePermission(perm, "playlist:view")).Get("/", mediaH.ListAllPlaylists)
-			r.With(middleware.RequirePermission(perm, "playlist:create")).Post("/", mediaH.CreatePlaylist)
-			r.With(middleware.RequirePermission(perm, "playlist:create")).Post("/custom", mediaH.CreateCustomPlaylist)
-			r.With(middleware.RequirePermission(perm, "playlist:view")).Get("/{id}", mediaH.GetPlaylistDetail)
-			r.With(middleware.RequirePermission(perm, "playlist:update")).Patch("/{id}", mediaH.UpdatePlaylist)
-			r.With(middleware.RequirePermission(perm, "playlist:delete")).Delete("/{id}", mediaH.DeletePlaylist)
-			r.With(middleware.RequirePermission(perm, "playlist:toggle")).Patch("/{id}/active", mediaH.SetPlaylistActive)
-			r.With(middleware.RequirePermission(perm, "playlist:update")).Post("/{id}/refresh", mediaH.RefreshPlaylist)
-			// 歌曲增删改仅超管
-			r.Group(func(r chi.Router) {
-				r.Use(middleware.SuperAdminRequired)
-				r.Post("/{id}/songs", mediaH.AddSongToPlaylist)
-				r.Delete("/{id}/songs/{index}", mediaH.RemoveSongFromPlaylist)
-				r.Patch("/{id}/songs/{index}", mediaH.UpdateSongInPlaylist)
-			})
-		})
-		r.With(middleware.RequirePermission(perm, "playlist:update")).
-			Patch("/settings", mediaH.UpdatePlayerVersion)
-	})
-
 	// 表情管理（读：emoji:view；分组管理 emoji:manage-group；建/改 emoji:create；删 emoji:delete）
 	r.Route("/emojis", func(r chi.Router) {
 		r.With(middleware.RequirePermission(perm, "emoji:view")).Get("/groups", mediaH.ListAllEmojiGroups)

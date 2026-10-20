@@ -336,18 +336,6 @@ func registerMediaRoutes(v1 chi.Router, d *Deps) {
 		r.Get("/instant", mediaH.CheckInstantUpload)
 	})
 
-	// 音乐（公开）
-	v1.Route("/music", func(r chi.Router) {
-		r.Get("/embed", mediaH.GetMusicEmbed)
-		r.Get("/playlist", mediaH.ParsePlaylist)
-		r.Get("/song", mediaH.GetSongDetail)
-		r.Get("/search", mediaH.SearchSongs)
-		r.Get("/lyrics", mediaH.GetLyrics)
-		r.Get("/meta", mediaH.GetSongMeta)
-		r.Get("/playlists/active", mediaH.GetActivePlaylists)
-		r.Get("/settings", mediaH.GetMusicSettings)
-	})
-
 	// 表情（公开）
 	v1.Route("/emojis", func(r chi.Router) {
 		r.Get("/", mediaH.GetAllEmojis)
