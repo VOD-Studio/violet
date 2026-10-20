@@ -96,6 +96,9 @@ func registerMusicPaths(t *openapi3.T) {
 			op.Description += " 歌曲资料、播放地址、歌词与曲目查询共用每 IP 每分钟 60 次配额；超限返回 429 和 Retry-After。"
 			op.Responses.Set("429", errorResponse("公开音乐查询过于频繁"))
 		}
+		if endpoint.path == "/admin/music/account/refresh" {
+			op.Description += " 先按账号版本原子保存续期 Cookie，再校验状态；后续状态查询失败仍保留新凭据并返回错误，不恢复旧 Cookie。"
+		}
 		if endpoint.path == "/admin/music/account" && endpoint.method == "DELETE" {
 			op.Description += " 本地先清除凭据并使旧扫码和续期失效。若上游退出失败，返回400并明确本站已退出，不恢复凭据。"
 		}

@@ -64,3 +64,45 @@ func TestMusicAccountIntegrationRefreshReplacesFullCookieAndDistinguishesExpiry(
 	_, err = service.Account(ctx)
 	require.Error(t, err, "网络错误不能冒充未连接")
 }
+
+func TestMusicAccountIntegrationRefreshSurvivesStatusFailure(t *testing.T) {
+	repo := NewMusicRepository(setupIntegrationDB(t))
+	ctx := context.Background()
+	box, err := crypto.NewTokenBoxFromSecret("test-only-credential-key-32-characters")
+	require.NoError(t, err)
+	sealed, err := box.Seal("MUSIC_U=old")
+	require.NoError(t, err)
+	saved, err := repo.ReplaceCredential(ctx, 0, music.Credential{SealedCookie: sealed, Profile: music.Profile{ID: "42", Nickname: "Owner"}})
+	require.NoError(t, err)
+	require.True(t, saved)
+
+	var statusUnavailable atomic.Bool
+	statusUnavailable.Store(true)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path == "/api/v1/auth/refresh" {
+			_, _ = w.Write([]byte(`{"cookie":"MUSIC_U=fresh"}`))
+			return
+		}
+		if statusUnavailable.Load() {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		if r.Header.Get("Grpc-Metadata-X-Netease-Cookie") != "MUSIC_U=fresh" {
+			w.WriteHeader(http.StatusUnauthorized)
+			_, _ = w.Write([]byte(`{"details":[{"reason":"LOGIN_REQUIRED"}]}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"session":{"userId":"42","nickname":"Owner"}}`))
+	}))
+	defer server.Close()
+	service := appmusic.NewService(repo, kite.NewClient(server.URL, "token"), box)
+	_, err = service.Refresh(ctx)
+	require.Error(t, err, "后续状态检查失败不能伪造已确认的账号状态")
+	statusUnavailable.Store(false)
+	account, err := service.Account(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "connected", account.State, "状态服务恢复后必须能使用已续期 Cookie")
+	require.NotNil(t, account.Profile)
+	assert.Equal(t, "42", account.Profile.ID)
+}

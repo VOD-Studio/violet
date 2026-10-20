@@ -193,23 +193,24 @@ func (s *Service) Refresh(ctx context.Context) (music.Account, error) {
 	if fresh == "" {
 		return music.Account{}, shared.Internal("音乐服务未返回续期凭据", nil)
 	}
+	// 上游可能已轮换 Cookie，后续状态查询失败也不能丢弃新凭据。
+	sealed, err := s.box.Seal(fresh)
+	if err != nil {
+		return music.Account{}, shared.Internal("音乐凭据加密失败", nil)
+	}
+	saved, err := s.repo.ReplaceCredential(ctx, c.Generation, music.Credential{SealedCookie: sealed, Profile: c.Profile})
+	if err != nil {
+		return music.Account{}, err
+	}
+	if !saved {
+		return music.Account{}, shared.Conflict("账号已发生变更，请刷新状态")
+	}
 	session, err := s.provider.Account(ctx, fresh)
 	if err != nil {
 		return music.Account{}, safeProviderError(err)
 	}
 	if session == nil {
 		return music.Account{}, shared.BadRequest("网易云账号已过期，请重新扫码")
-	}
-	sealed, err := s.box.Seal(fresh)
-	if err != nil {
-		return music.Account{}, shared.Internal("音乐凭据加密失败", nil)
-	}
-	saved, err := s.repo.ReplaceCredential(ctx, c.Generation, music.Credential{SealedCookie: sealed, Profile: session.Profile})
-	if err != nil {
-		return music.Account{}, err
-	}
-	if !saved {
-		return music.Account{}, shared.Conflict("账号已发生变更，请刷新状态")
 	}
 	return music.Account{State: "connected", Profile: &session.Profile}, nil
 }

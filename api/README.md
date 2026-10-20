@@ -179,7 +179,7 @@ api/
 | `POST /admin/music/login/qr` | 返回 201；提供本站挑战 `id`、二维码内容 `url`、RFC3339 `expires_at`，由未来前端生成二维码图像 |
 | `POST /admin/music/login/qr/{id}/check` | 返回 `waiting` / `scanned` / `confirmed` / `expired`；确认时加密保存 Cookie，`account` 仅确认成功时非空 |
 | `DELETE /admin/music/login/qr/{id}` | 发起者幂等取消挑战；取消先于确认提交时，迟到结果不能接入账号 |
-| `POST /admin/music/account/refresh` | 续期并替换完整 Cookie；账号已退出或变更时拒绝迟到写入 |
+| `POST /admin/music/account/refresh` | 续期后先用账号版本校验保存完整 Cookie，再查询状态；状态查询失败仍保留新凭据并返回错误，账号已退出或变更时拒绝迟到写入 |
 | `DELETE /admin/music/account` | 先清除本地连接，再尝试上游退出；上游失败仍保持本地断开，并明确返回失败说明 |
 | `GET /admin/music/library/playlists` | 使用已保存账号的 ID/Cookie 请求我的歌单，受上述 Kite 限制影响 |
 | `GET /admin/music/library/search?q=&type=song\|playlist` | 匿名搜索歌曲或歌单 |
