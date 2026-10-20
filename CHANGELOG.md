@@ -7,6 +7,13 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.13.1](https://github.com/VOD-Studio/violet/compare/v2.13.0...v2.13.1) (2026-10-20)
+
+
+### 修复
+
+* **router:** 保证本地路由生成失败时中止构建 ([#595](https://github.com/VOD-Studio/violet/issues/595)) ([db86fe6](https://github.com/VOD-Studio/violet/commit/db86fe654eeafb1faadf3c307fff046377139dee))
+
 ## [2.13.0](https://github.com/VOD-Studio/violet/compare/v2.12.1...v2.13.0) (2026-10-19)
 
 
