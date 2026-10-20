@@ -13,6 +13,9 @@ __unconfig*
 todos.json
 .pnpm-store/
 
+# TanStack 文件路由生成物
+/src/routeTree.gen.ts
+
 # 体积分析报告（ANALYZE=true 生成）
 .reports/
 

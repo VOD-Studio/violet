@@ -44,6 +44,15 @@ web/src/
 └── styles/           # 站点方言 / 基础行为 / 转场（基础 token 与 theme 映射在 packages/ui）
 ```
 
+`src/routeTree.gen.ts` 是文件路由的本地生成物，不纳入 Git，也不从宿主复制进镜像或开发容器；只修改 `src/routes/` 下的路由源码，不手动编辑或提交生成文件。
+
+- `pnpm generate-routes` 直接执行官方 `tsr generate`，不加载 Vite 配置或启动开发服务器。
+- `pnpm dev`、`pnpm typecheck`、`pnpm test`、`pnpm build` 和 `pnpm build:analyze` 都先执行路由生成。CI 与 Docker 使用这些项目命令，不绕过前置步骤直接调用 `vite build`。
+- 应用的 SSR 与路由类型在 `src/router.tsx` 显式登记，不依赖 CLI 生成物携带 Start 专属声明；开发期路由监听与最终 SSR 构建仍由 TanStack Start 插件处理。
+- 缺少根路由、路由冲突等首次生成错误会以非零退出码中止生成、校验或构建；已有旧生成文件也不会被判为成功。
+
+旧分支需同步这项跟踪规则变更；切换到仍跟踪生成文件的历史分支时，Git 仍会按旧规则管理它。
+
 `web/packages/ui/` 是通用 UI workspace 包。所有单元放在 `src/components/<name>/`，结构、recipe、CSS、导出与测试共置；`component-manifest.json` 管理公开入口与 foundation / legacy 状态。当前 10 个 foundation 单元为 Button、Checkbox、Dropdown、ImagePixelReveal、Input、Label、SearchInput、Segmented、Textarea、UploadTile，其余 34 个 legacy 单元保留兼容 API 并逐个重建；成熟度以清单为准。Input 提供四种外观、三种尺寸、清除与密码显隐，以及可选标签、说明和错误；正式 `/ui/components/input` 的预览与复制源码同源，包含原生表单 reset 示例。SearchInput 独立组合 Input，复用变体、尺寸和样式槽，防抖与回车搜索契约及示例见 `/ui/components/search-input`。
 
 后台搜索统一使用 `controlSize="sm"`，列表筛选、选择弹窗与账户合并搜索保持相同的控件密度；宽度由工具栏或弹窗容器决定。普通表单字段不受搜索密度约束。
@@ -155,7 +164,7 @@ make dev          # 同时启动 API + Web + Postgres + Redis
 ```bash
 # 开发
 pnpm dev                 # 启动 Vite 开发服务器
-pnpm generate-routes     # 重新生成文件路由（tsr generate）
+pnpm generate-routes     # 通过 Start 插件重新生成文件路由和 SSR 类型
 
 # 构建
 pnpm build               # 生产构建

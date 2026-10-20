@@ -7,6 +7,7 @@ node_modules/
 
 # 构建产物
 dist/
+src/routeTree.gen.ts
 .reports/
 
 # 环境文件不进镜像，运行时由 compose environment 注入
