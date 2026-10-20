@@ -91,7 +91,7 @@ func registerMusicPaths(t *openapi3.T) {
 		if endpoint.array {
 			success = dataArrayResponse(endpoint.schema, "数组永不为 null", endpoint.status, endpoint.paged)
 		}
-		op.Responses = responses(endpoint.status, success, 400, errorResponse("输入、Kite 配置或网易云登录态错误；不会返回本站登录 401"), 404, errorResponse("未启用展示或资源不存在"), 409, errorResponse("重复歌单或账号已变更"), 500, errorResponse("存储或音乐服务错误"))
+		op.Responses = responses(endpoint.status, success, 400, errorResponse("输入或网易云登录态错误；不会返回本站登录 401"), 404, errorResponse("未启用展示或资源不存在"), 409, errorResponse("重复歌单或账号已变更"), 500, errorResponse("存储、Kite 连接、响应或服务令牌错误"))
 		if strings.HasPrefix(endpoint.path, "/music/") && endpoint.path != "/music/playlists" {
 			op.Description += " 歌曲资料、播放地址、歌词与曲目查询共用每 IP 每分钟 60 次配额；超限返回 429 和 Retry-After。"
 			op.Responses.Set("429", errorResponse("公开音乐查询过于频繁"))
@@ -117,5 +117,5 @@ func registerMusicPaths(t *openapi3.T) {
 	songSchema := songResponse.Value.Content["application/json"].Schema
 	playlistSchema := playlistResponse.Value.Content["application/json"].Schema
 	unionResponse := &openapi3.ResponseRef{Value: &openapi3.Response{Description: strPtr("按 type 返回歌曲或歌单分页信封"), Content: openapi3.Content{"application/json": &openapi3.MediaType{Schema: &openapi3.SchemaRef{Value: &openapi3.Schema{OneOf: openapi3.SchemaRefs{songSchema, playlistSchema}}}}}}}
-	get(t, "/admin/music/library/search", &openapi3.Operation{Tags: []string{"音乐"}, Summary: "匿名搜索歌曲或歌单", Description: "需 admin:access 与 music:view；不附加站点网易云 Cookie。", Security: securityAdmin(), Parameters: openapi3.Parameters{query, searchType, pageParam(), limitParam(100)}, Responses: responses(200, unionResponse, 400, errorResponse("搜索参数或 Kite 请求错误"))})
+	get(t, "/admin/music/library/search", &openapi3.Operation{Tags: []string{"音乐"}, Summary: "匿名搜索歌曲或歌单", Description: "需 admin:access 与 music:view；不附加站点网易云 Cookie。", Security: securityAdmin(), Parameters: openapi3.Parameters{query, searchType, pageParam(), limitParam(100)}, Responses: responses(200, unionResponse, 400, errorResponse("搜索参数错误"), 500, errorResponse("Kite 连接、响应或服务令牌错误"))})
 }

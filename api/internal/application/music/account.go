@@ -58,7 +58,10 @@ func safeProviderError(err error) error {
 	}
 	var pe *ProviderError
 	if errors.As(err, &pe) {
-		return shared.BadRequest(pe.Message)
+		if pe.Reason == "LOGIN_REQUIRED" {
+			return shared.BadRequest(pe.Message)
+		}
+		return shared.Internal(pe.Message, pe)
 	}
 	return shared.Internal("音乐服务暂时不可用", nil)
 }
