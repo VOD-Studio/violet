@@ -237,10 +237,6 @@ function BlogDetailPage() {
 				</div>
 			</article>
 
-			{/*
-			 * 右下角浮动操作区（flex-col 竖列）：目录按钮（仅小屏，大屏用侧边目录）+ 返回顶部。
-			 * 同一 fixed 容器，避免与全局 MusicPlayer 等右下角元素重叠。
-			 */}
 			<FloatingBack to="/blog" label="返回博客" history />
 			<div className="fixed right-8 bottom-8 z-40 flex flex-col items-center gap-3 max-lg:bottom-24">
 				{hasSidebarToc ? (
