@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { loadClient } from "./client";
-import { collectDiagnostics } from "./support.ts";
+import { collectDiagnostics, openClientPage } from "./support.ts";
 
 const editable = (page: Page) => page.locator('[data-kanban-example="editable"]');
 const column = (page: Page, title: string) =>
@@ -46,7 +46,7 @@ test.describe("/kanban 看板文档与演示", () => {
 	});
 
 	test("导航「更多」里有「看板」入口，进入文档页", async ({ page }) => {
-		await page.goto("/projects");
+		await openClientPage(page, "/projects");
 		await page.getByRole("button", { name: "更多" }).click();
 		await page.getByRole("link", { name: /看板/ }).click();
 
@@ -65,7 +65,7 @@ test.describe("/kanban 看板文档与演示", () => {
 			expect(html).toContain(text);
 
 		const diagnostics = collectDiagnostics(page);
-		await page.goto("/kanban");
+		await openClientPage(page, "/kanban");
 		const example = page.locator("#example-editable");
 		await example.getByText("源码 · examples/editable.tsx").click();
 		await expect(example.locator("pre")).toContainText("export function EditableBoard()");
@@ -86,7 +86,7 @@ test.describe("/kanban 看板文档与演示", () => {
 		page.on("request", (request) => {
 			if (request.method() !== "GET") writes.push(`${request.method()} ${request.url()}`);
 		});
-		await page.goto("/kanban");
+		await openClientPage(page, "/kanban");
 		await expect(card(page, "Write the specification")).toBeVisible();
 
 		await drag(page, card(page, "Write the specification"), column(page, "In progress"));
@@ -102,14 +102,18 @@ test.describe("/kanban 看板文档与演示", () => {
 	});
 
 	test("演示：键盘拿起、移动、放下，Ctrl/⌘+Z 撤销", async ({ page }) => {
-		await page.goto("/kanban");
+		await openClientPage(page, "/kanban");
 		const prototype = card(page, "Build the prototype");
 		await prototype.focus();
 
 		await page.keyboard.press("Space");
+		await expect(prototype).toHaveAttribute("data-lifted", "true");
 		await page.keyboard.press("ArrowRight");
-		await page.keyboard.press("Space");
 		await expect.poll(() => cardsIn(page, "Done")).toEqual(["Build the prototype"]);
+		await expect(prototype).toBeFocused();
+		await page.keyboard.press("Space");
+		await expect(prototype).not.toHaveAttribute("data-lifted", "true");
+		await expect(editable(page).getByRole("button", { name: "Undo" })).toBeEnabled();
 
 		await page.keyboard.press("ControlOrMeta+z");
 		await expect.poll(() => cardsIn(page, "In progress")).toEqual(["Build the prototype"]);
