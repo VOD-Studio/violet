@@ -12,6 +12,7 @@
 | `guides/` | 开发规范、风格指南、最佳实践。含 [前端代码规范](./guides/frontend-style-guide.md)、[Go 测试规范](./guides/go-testing-guide.md)、[MCP Server 使用指南](./guides/mcp-servers.md)、[页面转场指南](./guides/view-transitions.md)。 |
 | `issues/` | 按 PRD 或功能主题分组的历史任务/issue 记录。 |
 | `prd/` | 产品需求文档（Product Requirements Documents）。 |
+| `research/` | 基于一手来源的接入与技术可行性分析，含 [Kite 接入分析](./research/kite-integration.md)。 |
 | `superpowers/` | 被 `.gitignore` 忽略，不纳入版本控制。 |
 
 ## 组件库开发
