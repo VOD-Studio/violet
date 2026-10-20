@@ -14,7 +14,6 @@ import AnnouncementBar from "@widgets/AnnouncementBar";
 import CommandPalette from "@widgets/CommandPalette";
 import Footer from "@widgets/Footer";
 import Header from "@widgets/Header";
-import MusicPlayer from "@widgets/MusicPlayer";
 import { RuaRouteTransition } from "@widgets/PersonaMotion";
 import SiteBackdrop from "@widgets/SiteBackdrop";
 import { cn } from "cn";
@@ -161,7 +160,6 @@ function RootComponent() {
 				</div>
 			)}
 			<DocumentScrollbar />
-			<MusicPlayer />
 			<CommandPalette />
 			<LoginDialog />
 			<LinkConfirmDialog />

@@ -74,7 +74,6 @@ func TestPredefinedCodes(t *testing.T) {
 		CommentView, CommentDelete, CommentApprove,
 		TagView, TagCreate, TagUpdate, TagDelete,
 		MediaView, MediaUpload, MediaDelete,
-		PlaylistView, PlaylistCreate, PlaylistUpdate, PlaylistDelete, PlaylistToggle,
 		EmojiView, EmojiCreate, EmojiDelete, EmojiManageGroup, EmojiRefetch,
 		UserView, UserUpdateRole, UserBan,
 		ProjectView, ProjectCreate, ProjectUpdate, ProjectDelete,

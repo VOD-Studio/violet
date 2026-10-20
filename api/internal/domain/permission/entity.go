@@ -89,12 +89,6 @@ var (
 	MediaView   = MustParse("media:view") // 素材管理页可见
 	MediaUpload = MustParse("media:upload")
 	MediaDelete = MustParse("media:delete")
-	// playlist
-	PlaylistView   = MustParse("playlist:view") // 歌单管理页可见
-	PlaylistCreate = MustParse("playlist:create")
-	PlaylistUpdate = MustParse("playlist:update")
-	PlaylistDelete = MustParse("playlist:delete")
-	PlaylistToggle = MustParse("playlist:toggle")
 	// emoji
 	EmojiView        = MustParse("emoji:view") // 表情管理页可见
 	EmojiCreate      = MustParse("emoji:create")

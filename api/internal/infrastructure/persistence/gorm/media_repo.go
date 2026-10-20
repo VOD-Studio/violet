@@ -2,7 +2,6 @@ package gorm
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"time"
 
@@ -10,7 +9,6 @@ import (
 	"gorm.io/gorm/clause"
 
 	"blog-api/internal/domain/emoji"
-	"blog-api/internal/domain/music"
 	domainshared "blog-api/internal/domain/shared"
 	"blog-api/internal/domain/upload"
 	"blog-api/internal/infrastructure/persistence/gorm/model"
@@ -353,105 +351,6 @@ func (r *EmojiGroupRepository) DeleteEmoji(ctx context.Context, id int32) error 
 var _ emoji.EmojiGroupRepository = (*EmojiGroupRepository)(nil)
 
 // ============================================================
-// PlaylistRepository (Music)
-// ============================================================
-
-type PlaylistRepository struct{ db *gorm.DB }
-
-func NewPlaylistRepository(db *gorm.DB) *PlaylistRepository {
-	return &PlaylistRepository{db: db}
-}
-
-func playlistToPO(p *music.Playlist) (model.Playlist, error) {
-	var songsJSON []byte
-	if len(p.Songs()) > 0 {
-		songsJSON, _ = json.Marshal(p.Songs())
-	} else {
-		songsJSON = []byte("[]")
-	}
-	po := model.Playlist{
-		ID: p.ID().UUID(), Title: p.Title(), Cover: p.Cover(),
-		Creator: p.Creator(), Platform: p.Platform(),
-		PlaylistID: p.PlaylistID(), SongCount: p.SongCount(),
-		Songs: songsJSON, IsActive: p.IsActive(),
-	}
-	return po, nil
-}
-
-func playlistToDomain(po model.Playlist) (*music.Playlist, error) {
-	var songs []music.Song
-	if len(po.Songs) > 0 {
-		_ = json.Unmarshal(po.Songs, &songs)
-	}
-	return music.ReconstructPlaylist(
-		domainshared.MustParseID(po.ID.String()),
-		po.Title, po.Cover, po.Creator, po.Platform, po.PlaylistID,
-		po.SongCount, songs, po.IsActive,
-	), nil
-}
-
-func (r *PlaylistRepository) FindByID(ctx context.Context, id domainshared.ID) (*music.Playlist, error) {
-	var po model.Playlist
-	if err := r.db.WithContext(ctx).First(&po, "id = ?", id.UUID()).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, music.ErrNotFound
-		}
-		return nil, domainshared.Internal("查询歌单失败", err)
-	}
-	return playlistToDomain(po)
-}
-
-func (r *PlaylistRepository) FindActive(ctx context.Context) ([]*music.Playlist, error) {
-	var pos []model.Playlist
-	if err := r.db.WithContext(ctx).Where("is_active = ?", true).Order("created_at DESC").Find(&pos).Error; err != nil {
-		return nil, domainshared.Internal("查询活跃歌单失败", err)
-	}
-	result := make([]*music.Playlist, 0, len(pos))
-	for _, po := range pos {
-		p, _ := playlistToDomain(po)
-		result = append(result, p)
-	}
-	return result, nil
-}
-
-func (r *PlaylistRepository) FindAll(ctx context.Context) ([]*music.Playlist, error) {
-	var pos []model.Playlist
-	if err := r.db.WithContext(ctx).Order("created_at DESC").Find(&pos).Error; err != nil {
-		return nil, domainshared.Internal("查询歌单列表失败", err)
-	}
-	result := make([]*music.Playlist, 0, len(pos))
-	for _, po := range pos {
-		p, _ := playlistToDomain(po)
-		result = append(result, p)
-	}
-	return result, nil
-}
-
-func (r *PlaylistRepository) Save(ctx context.Context, p *music.Playlist) error {
-	po, err := playlistToPO(p)
-	if err != nil {
-		return err
-	}
-	if err := r.db.WithContext(ctx).Save(&po).Error; err != nil {
-		return domainshared.Internal("保存歌单失败", err)
-	}
-	return nil
-}
-
-func (r *PlaylistRepository) Delete(ctx context.Context, id domainshared.ID) error {
-	result := r.db.WithContext(ctx).Where("id = ?", id.UUID()).Delete(&model.Playlist{})
-	if result.Error != nil {
-		return domainshared.Internal("删除歌单失败", result.Error)
-	}
-	if result.RowsAffected == 0 {
-		return music.ErrNotFound
-	}
-	return nil
-}
-
-var _ music.PlaylistRepository = (*PlaylistRepository)(nil)
-
-// ============================================================
 // FileRepository (Upload)
 // ============================================================
 
@@ -616,32 +515,3 @@ func (r *FileRepository) UpdateRefCount(ctx context.Context, id domainshared.ID,
 }
 
 var _ upload.FileRepository = (*FileRepository)(nil)
-
-// ============================================================
-// MusicSettingStore 音乐设置单行配置读写
-// ============================================================
-
-// MusicSettingStore 实现应用层 musicSettingsStore 端口
-type MusicSettingStore struct{ db *gorm.DB }
-
-// NewMusicSettingStore 创建音乐设置存储
-func NewMusicSettingStore(db *gorm.DB) *MusicSettingStore {
-	return &MusicSettingStore{db: db}
-}
-
-func (s *MusicSettingStore) GetPlayerVersion(ctx context.Context) (string, error) {
-	var ms model.MusicSetting
-	if err := s.db.WithContext(ctx).First(&ms, 1).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return "", nil
-		}
-		return "", err
-	}
-	return ms.PlayerVersion, nil
-}
-
-func (s *MusicSettingStore) UpdatePlayerVersion(ctx context.Context, version string) error {
-	return s.db.WithContext(ctx).Model(&model.MusicSetting{}).
-		Where("id = ?", 1).
-		Updates(map[string]any{"player_version": version, "updated_at": time.Now()}).Error
-}
