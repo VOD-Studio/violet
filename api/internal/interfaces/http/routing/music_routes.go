@@ -1,6 +1,8 @@
 package routing
 
 import (
+	"time"
+
 	"github.com/go-chi/chi/v5"
 
 	"blog-api/internal/domain/permission"
@@ -14,10 +16,13 @@ func registerMusicPublicRoutes(r chi.Router, d *Deps) {
 	h := d.Music
 	r.Route("/music", func(r chi.Router) {
 		r.Get("/playlists", h.PublicPlaylists)
-		r.Get("/playlists/{id}/tracks", h.PublicTracks)
-		r.Get("/songs/{id}", h.Song)
-		r.Get("/songs/{id}/url", h.SongURL)
-		r.Get("/songs/{id}/lyric", h.Lyric)
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RateLimit("music_public", d.Redis, time.Minute, 60))
+			r.Get("/playlists/{id}/tracks", h.PublicTracks)
+			r.Get("/songs/{id}", h.Song)
+			r.Get("/songs/{id}/url", h.SongURL)
+			r.Get("/songs/{id}/lyric", h.Lyric)
+		})
 	})
 }
 func registerMusicAdminRoutes(r chi.Router, d *Deps) {

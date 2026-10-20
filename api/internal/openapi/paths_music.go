@@ -92,6 +92,10 @@ func registerMusicPaths(t *openapi3.T) {
 			success = dataArrayResponse(endpoint.schema, "数组永不为 null", endpoint.status, endpoint.paged)
 		}
 		op.Responses = responses(endpoint.status, success, 400, errorResponse("输入、Kite 配置或网易云登录态错误；不会返回本站登录 401"), 404, errorResponse("未启用展示或资源不存在"), 409, errorResponse("重复歌单或账号已变更"), 500, errorResponse("存储或音乐服务错误"))
+		if strings.HasPrefix(endpoint.path, "/music/") && endpoint.path != "/music/playlists" {
+			op.Description += " 歌曲资料、播放地址、歌词与曲目查询共用每 IP 每分钟 60 次配额；超限返回 429 和 Retry-After。"
+			op.Responses.Set("429", errorResponse("公开音乐查询过于频繁"))
+		}
 		if endpoint.path == "/admin/music/account" && endpoint.method == "DELETE" {
 			op.Description += " 本地先清除凭据并使旧扫码和续期失效。若上游退出失败，返回400并明确本站已退出，不恢复凭据。"
 		}
