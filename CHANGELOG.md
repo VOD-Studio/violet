@@ -7,6 +7,13 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.13.2](https://github.com/VOD-Studio/violet/compare/v2.13.1...v2.13.2) (2026-10-20)
+
+
+### 重构
+
+* **music:** 下线旧音乐模块 ([#597](https://github.com/VOD-Studio/violet/issues/597)) ([2feaf15](https://github.com/VOD-Studio/violet/commit/2feaf1598063dac5e005270929cc5d3fdb2b1517))
+
 ## [2.13.1](https://github.com/VOD-Studio/violet/compare/v2.13.0...v2.13.1) (2026-10-20)
 
 
