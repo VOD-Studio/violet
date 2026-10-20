@@ -254,6 +254,7 @@ pnpm test
 - 环境：jsdom
 - setup：`src/test/setup.ts`
 - 主题浏览器契约（Playwright，需先 `pnpm build`）：`pnpm test:contract`，或仓库根 `make web-contract`
+- 路线图首屏交互用例通过 `e2e/support.ts` 的 `openClientPage` 导航，先注册 `/auth/me` 响应等待，客户端会话探活响应后再点击或派发聚焦事件。SSR 文本可见不代表事件监听已挂载；只验证服务端直出的用例仍直接读取 HTML。
 - 组件库文档契约检查实际导航、按钮响应、复选框键盘操作与代码展开/收起，不固定组件目录数量、链接清单或示例源码文本。
 - 看板文档契约：`pnpm test:contract e2e/kanban-docs.spec.ts`，覆盖导航入口、服务端直出、同源源码、API 目录跳转、演示的拖拽与键盘移动、撤销重做与暗色。
 - 编辑器路线图入口契约：`pnpm test:contract e2e/editor-roadmap-embed.spec.ts`，覆盖 Slash 选择与预览、插入后的编辑区预览、代码块上的编辑与手写围栏块。

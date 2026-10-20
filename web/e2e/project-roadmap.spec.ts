@@ -1,7 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 import { loadClient } from "./client";
 import { ROADMAP_FIXTURE } from "./mock-data.mjs";
-import { collectDiagnostics } from "./support.ts";
+import { collectDiagnostics, openClientPage } from "./support.ts";
 
 const SLUG = ROADMAP_FIXTURE.project.slug;
 const completed = ROADMAP_FIXTURE.items.filter((item) => item.stage === "completed");
@@ -16,7 +16,7 @@ const idOf = (number: number) =>
 const card = (page: Page, number: number) => page.locator(`[data-card-id="${idOf(number)}"]`);
 
 async function open(page: Page, slug = SLUG) {
-	const response = await page.goto(`/projects/${slug}`);
+	const response = await openClientPage(page, `/projects/${slug}`);
 	await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 	return response;
 }
