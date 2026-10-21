@@ -130,7 +130,7 @@ api/
 | **api_token** | api_token | api_token | 本人访问令牌 PAT 的创建、分页查询、原位编辑与吊销；编辑不轮换 MCP 凭据 |
 | **project** | project | project | 项目展示 CRUD，唯一 slug 可在后台编辑；公开详情支持 `GET /projects/by-slug/{slug}`，保留按 ID 读取；列表附带路线图进度和近期条目摘要 |
 | **roadmap** | roadmap | roadmap | 项目内稳定编号的路线图条目、三阶段进度与内容编辑；写操作需 `project:update` |
-| **music** | music | music | Kite 单一网易云账号连接、展示歌单配置、匿名歌曲/播放地址/歌词；上游分页与私有读取限制见下文 |
+| **music** | music | music | Kite 单一网易云账号连接与每日续期、展示歌单配置、按站点账号权益或匿名解析播放；上游分页与私有读取限制见下文 |
 | **announcement** | announcement | announcement（并入 content） | 公告管理 |
 | **emoji** | emoji | media | 表情分组/表情 CRUD、B站表情导入、文件上传 |
 | **customemoji** | customemoji | customemoji | 用户自定义表情上传、软删除、收藏与按 ID 解析 |
@@ -158,6 +158,8 @@ api/
 > **注意**：`media` application 层服务 emoji/upload 两个 domain，共享文件存储基础设施。
 
 旧音乐实现已移除；历史 `playlists`、`music_settings` 表及其中的数据保留，当前应用不再读写或通过 AutoMigrate 管理这两张表。新的 Kite 音乐模块使用迁移 `140_add_music_admin` 创建的 `music_account`、`music_login_challenges` 与 `music_featured_playlists`，不恢复旧解析服务、播放器设置或旧权限。通用音频文件上传与素材管理不受影响。
+
+迁移 `141_music_account_expiry` 为站点账号增加持久化失效标记。部署新 API 前需执行迁移；回滚仅移除此标记，不删除 Cookie、账号资料或展示歌单。
 
 迁移 `139_retire_playlist_permissions` 回收 `playlist:view/create/update/delete/toggle` 的角色授权并删除权限点，仅清理不再包含其他子节点的 `playlist` 菜单。回滚只恢复权限定义、菜单及默认 `admin` 角色授权，不恢复已回收的自定义授权；历史歌曲权限已由迁移 `055_remove_dead_permissions` 退役。
 
@@ -202,6 +204,10 @@ api/
 歌曲资料、歌词与公开曲目查询共用每 IP 每分钟 60 次配额；播放地址与音频重定向单独收紧为每 IP 每分钟 20 次，并叠加全站每分钟 30 次的解析聚合限流——站点账号取链形态保持低频，避免被上游识别为批量行为。超限返回 `429` 与 `Retry-After`，不会继续调用 Kite；本地展示歌单列表与播放模式不占配额。复用现有 Redis 限流中间件及其故障放行策略。成功解析结果进程内缓存 25 分钟（按凭据版本整体失效），同曲目全站重复解析在窗口内只发一次上游请求；凭据不缓存。
 
 二维码挑战绑定发起管理员，三分钟绝对过期、一次性消费；轮询建议约两秒，关闭时调用取消接口，过期/确认后停止。退出会使旧挑战和在途续期结果失效。Kite 服务鉴权错误与网易云登录过期均不是博客登录失效，不返回会触发本站退出的 401。
+
+Violet API 的 `MusicRenewalJob` 每 24 小时调用一次账号续期用例，首次在进程启动 24 小时后执行，重启会重新计时；沿用当前单实例后台任务模式，不依赖浏览器页面或外部 cron。未配置 Kite、缺少凭据加密密钥、未连接或已确认失效时跳过，不先请求上游状态。每轮串行执行，临时故障仅记录安全错误，下一周期再尝试；进程关闭会取消在途请求。
+
+自动续期与手动刷新共用完整 Cookie 替换及账号版本校验。`LOGIN_REQUIRED` 会持久化失效标记并推进凭据版本，保留加密 Cookie 和账号资料；后台直接返回 `expired`，公开播放模式切为 `anonymous`，旧账号播放缓存失效，免费歌不带 Cookie 解析。失效账号停止自动续期，重新扫码或手动续期成功后恢复账号模式。网络或服务鉴权故障不冒充账号失效；退出或换号后，旧版本的成功或失效结果都不能覆盖当前账号。
 
 Kite 连接故障、超时、无效响应和服务令牌错误映射为 `500 INTERNAL_ERROR`；网易云登录过期或请求参数错误仍为 `400 BAD_REQUEST`。错误响应不透出上游响应体或凭据，也不清除博客 Session。账号退出接口保留上述「本地先断开、上游失败明确返回」的独立语义。
 

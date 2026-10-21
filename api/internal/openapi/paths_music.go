@@ -28,7 +28,7 @@ func registerMusicPaths(t *openapi3.T) {
 	nullableAccount := &openapi3.SchemaRef{Value: &openapi3.Schema{Nullable: true, AllOf: openapi3.SchemaRefs{{Ref: "#/components/schemas/MusicAccount"}}}}
 	registerSchema(t, "MusicChallengeCheck", openapi3.Schemas{"state": strEnum("扫码状态", "waiting", "scanned", "confirmed", "expired"), "account": nullableAccount}, "state", "account")
 	registerSchema(t, "MusicSongURL", openapi3.Schemas{"id": reqStr("歌曲 ID"), "url": nullableStr("无可播放地址时 null；按需获取，不持久化"), "playable": optBool("是否有可播放地址"), "trial": optBool("true 表示该地址为试听片段，照常交付并提示"), "format": reqStr("文件格式"), "bitrate": optInt64("比特率"), "size": optInt64("字节数")}, "id", "url", "playable", "trial", "format", "bitrate", "size")
-	registerSchema(t, "MusicPlayback", openapi3.Schemas{"mode": strEnum("播放凭据模式", "account", "anonymous")}, "mode")
+	registerSchema(t, "MusicPlayback", openapi3.Schemas{"mode": strEnum("播放凭据模式；未连接或续期确认失效时为 anonymous", "account", "anonymous")}, "mode")
 	registerSchema(t, "MusicLyric", openapi3.Schemas{"lrc": reqStr("原文 LRC"), "translated": reqStr("翻译 LRC"), "romanized": reqStr("音译 LRC")}, "lrc", "translated", "romanized")
 	registerSchema(t, "MusicAddPlaylist", openapi3.Schemas{"playlist_id": reqStr("正整数十进制 ID；匿名验证可读后加入")}, "playlist_id")
 	registerSchema(t, "MusicSetEnabled", openapi3.Schemas{"enabled": optBool("是否公开展示")}, "enabled")
@@ -73,7 +73,7 @@ func registerMusicPaths(t *openapi3.T) {
 		} else {
 			op.Description = "匿名调用 Kite；不读取站点账号凭据，即使浏览器带本站 session。"
 			if endpoint.path == "/music/songs/{id}/url" || endpoint.path == "/music/songs/{id}/stream" {
-				op.Description = "站点账号已连接时携带其凭据按账号权益解析，且仅限启用展示歌单内的曲目；未连接时匿名解析。凭据不离开后端。"
+				op.Description = "站点账号已连接时携带其凭据按账号权益解析，且仅限启用展示歌单内的曲目；未连接或续期确认失效时匿名解析。凭据不离开后端。"
 			}
 			if endpoint.path == "/music/playback" || endpoint.path == "/music/playlists" {
 				op.Description = "只读本地展示配置，不发起上游请求。"

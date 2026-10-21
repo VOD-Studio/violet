@@ -68,9 +68,10 @@ type Lyric struct {
 
 // Credential 永不直接序列化；Cookie 在仓储边界只允许密文。
 type Credential struct {
-	Generation   int64   // 每次连接替换或退出推进，防止在途结果复活旧账号。
+	Generation   int64   // 每次连接替换、失效或退出推进，防止在途结果复活旧账号。
 	SealedCookie string  // 独立 MUSIC_CREDENTIAL_KEY 加密后的完整 Cookie。
 	Profile      Profile // 最近确认的网易云公开账号资料。
+	Expired      bool    // 续期已确认登录失效；保留凭据和资料，但公开播放不再使用它。
 }
 
 // Challenge 绑定发起管理员及创建时的站点账号版本。

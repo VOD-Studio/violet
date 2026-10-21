@@ -59,6 +59,9 @@ func (s *Service) UserPlaylists(ctx context.Context, q shared.PageQuery) (shared
 	if c.SealedCookie == "" {
 		return shared.PageResult[music.Playlist]{}, shared.BadRequest("尚未连接网易云账号")
 	}
+	if c.Expired {
+		return shared.PageResult[music.Playlist]{}, shared.BadRequest("网易云账号已过期，请重新扫码")
+	}
 	cookie, err := s.open(c)
 	if err != nil {
 		return shared.PageResult[music.Playlist]{}, err
@@ -111,6 +114,9 @@ func (s *Service) Tracks(ctx context.Context, id string, q shared.PageQuery, pub
 		if err != nil {
 			return shared.PageResult[music.Song]{}, err
 		}
+		if c.Expired {
+			return shared.PageResult[music.Song]{}, shared.BadRequest("网易云账号已过期，请重新扫码")
+		}
 		if c.SealedCookie != "" {
 			cookie, err = s.open(c)
 			if err != nil {
@@ -151,7 +157,7 @@ func (s *Service) SongURL(ctx context.Context, id, level string) (music.SongURL,
 		if cached, ok := s.cachedPlayback(id+":"+level, generation); ok {
 			return cached, nil
 		}
-		if c.SealedCookie != "" {
+		if c.SealedCookie != "" && !c.Expired {
 			// 站点账号只为启用展示歌单内的曲目解析，避免开放成任意歌曲的账号解析代理。
 			if err := s.ensureFeaturedTrack(ctx, id); err != nil {
 				return music.SongURL{}, err
@@ -343,7 +349,7 @@ func (s *Service) Playback(ctx context.Context) (music.Playback, error) {
 		if err != nil {
 			return music.Playback{}, err
 		}
-		if c.SealedCookie != "" {
+		if c.SealedCookie != "" && !c.Expired {
 			return music.Playback{Mode: "account"}, nil
 		}
 	}

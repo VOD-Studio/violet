@@ -20,11 +20,12 @@ type musicAccountRow struct {
 	ID                                           int
 	Generation                                   int64
 	SealedCookie, ProfileID, Nickname, AvatarURL string
+	Expired                                      bool
 }
 
 func (musicAccountRow) TableName() string { return "music_account" }
 func (r musicAccountRow) credential() music.Credential {
-	return music.Credential{Generation: r.Generation, SealedCookie: r.SealedCookie, Profile: music.Profile{ID: r.ProfileID, Nickname: r.Nickname, AvatarURL: r.AvatarURL}}
+	return music.Credential{Generation: r.Generation, SealedCookie: r.SealedCookie, Profile: music.Profile{ID: r.ProfileID, Nickname: r.Nickname, AvatarURL: r.AvatarURL}, Expired: r.Expired}
 }
 func lockMusicAccount(tx *gorm.DB) (musicAccountRow, error) {
 	var row musicAccountRow
@@ -32,7 +33,7 @@ func lockMusicAccount(tx *gorm.DB) (musicAccountRow, error) {
 	return row, err
 }
 func credentialValues(c music.Credential, generation int64) map[string]any {
-	return map[string]any{"generation": generation, "sealed_cookie": c.SealedCookie, "profile_id": c.Profile.ID, "nickname": c.Profile.Nickname, "avatar_url": c.Profile.AvatarURL}
+	return map[string]any{"generation": generation, "sealed_cookie": c.SealedCookie, "profile_id": c.Profile.ID, "nickname": c.Profile.Nickname, "avatar_url": c.Profile.AvatarURL, "expired": c.Expired}
 }
 func (r *MusicRepository) Credential(ctx context.Context) (music.Credential, error) {
 	var row musicAccountRow
