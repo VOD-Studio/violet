@@ -7,10 +7,10 @@ import {
 	DialogTitle,
 } from "@violet/ui";
 import { CheckCircle2, QrCode, RefreshCw, Smartphone } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useCancelMusicLoginQR, useCreateMusicLoginQR, useMusicQrPolling } from "../api/queries";
-import { generateQrSvgPath } from "../lib/qr";
 import type { MusicAccount, MusicChallenge } from "../model/types";
 
 /** 扫码登录对话框的受控状态与完成通知。 */
@@ -101,14 +101,6 @@ function MusicQrSession({ onRetry, onConfirmed }: MusicQrSessionProps) {
 		onConfirmed(account);
 	});
 	const error = createError ?? pollingError;
-	const qrSvg = useMemo(() => {
-		if (!challenge) return null;
-		try {
-			return generateQrSvgPath(challenge.url, 6, 4);
-		} catch {
-			return null;
-		}
-	}, [challenge]);
 
 	return (
 		<div className="flex flex-col items-center gap-4 py-6">
@@ -147,19 +139,18 @@ function MusicQrSession({ onRetry, onConfirmed }: MusicQrSessionProps) {
 						<CheckCircle2 className="size-8 text-success" />
 						登录成功
 					</div>
-				) : qrSvg ? (
-					<svg
-						viewBox={`0 0 ${qrSvg.size} ${qrSvg.size}`}
-						className="size-56 rounded-xl bg-white text-neutral-900"
+				) : (
+					<QRCodeSVG
+						value={challenge.url}
+						size={224}
+						level="M"
+						marginSize={4}
+						bgColor="#ffffff"
+						fgColor="#000000"
+						className="size-56 rounded-xl"
 						aria-label="网易云登录二维码"
 						role="img"
-					>
-						<path d={qrSvg.path} fill="currentColor" />
-					</svg>
-				) : (
-					<p role="alert" className="text-destructive text-sm">
-						二维码解析失败，请关闭后重试
-					</p>
+					/>
 				)}
 			</div>
 			{challenge && !error && qrState === "waiting" && (
