@@ -1,5 +1,9 @@
 import type { MusicPlaylist, MusicSong } from "@entities/music/model/types";
-import type { MusicLyricDTO, MusicPlaybackDTO } from "@features/music-player/model/types";
+import type {
+	MusicLyricDTO,
+	MusicPlaybackDTO,
+	MusicPlaybackStatusDTO,
+} from "@features/music-player/model/types";
 import { httpClient } from "@shared/api/http";
 import { apiGet, apiGetPaged } from "@shared/api/request";
 import type { PagedResponse, PageQuery } from "@shared/api/types";
@@ -9,6 +13,9 @@ const READ_OPTIONS = { "axios-retry": { retries: 0 } };
 
 export const getPublicMusicPlaylists = (signal?: AbortSignal): Promise<MusicPlaylist[]> =>
 	apiGet<MusicPlaylist[]>(`${BASE}/playlists`, { ...READ_OPTIONS, signal });
+
+export const getPublicPlaybackStatus = (signal?: AbortSignal): Promise<MusicPlaybackStatusDTO> =>
+	apiGet<MusicPlaybackStatusDTO>(`${BASE}/playback`, { ...READ_OPTIONS, signal });
 
 export const getPublicPlaylistTracks = (
 	id: string,
@@ -22,8 +29,11 @@ export const getPublicPlaylistTracks = (
 export const getPublicSong = (id: string): Promise<MusicSong> =>
 	apiGet<MusicSong>(`${BASE}/songs/${encodeURIComponent(id)}`, READ_OPTIONS);
 
-export const getPublicPlayback = (id: string): Promise<MusicPlaybackDTO> =>
-	apiGet<MusicPlaybackDTO>(`${BASE}/songs/${encodeURIComponent(id)}/url`, READ_OPTIONS);
+export const getPublicPlayback = (id: string, signal?: AbortSignal): Promise<MusicPlaybackDTO> =>
+	apiGet<MusicPlaybackDTO>(`${BASE}/songs/${encodeURIComponent(id)}/url`, {
+		...READ_OPTIONS,
+		signal,
+	});
 
 export const getPublicLyric = (id: string): Promise<MusicLyricDTO> =>
 	apiGet<MusicLyricDTO>(`${BASE}/songs/${encodeURIComponent(id)}/lyric`, READ_OPTIONS);
