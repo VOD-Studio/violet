@@ -411,6 +411,7 @@ export function handle(method, pathname, search, cookie = "") {
 	const isAdminActor = /(?:^|;\s*)contract_admin=1(?:;|$)/.test(cookie);
 	if (method !== "GET") return { status: 405, body: JSON.stringify({ error: "METHOD_NOT_ALLOWED" }) };
 	if (pathname === "/api/v1/site-identity") return { status: 200, body: envelope(SITE_IDENTITY) };
+	if (pathname === "/api/v1/music/playlists") return { status: 200, body: envelope([]) };
 	if (pathname === "/api/v1/publications") {
 		const limit = Number(params.get("limit") || 5);
 		return { status: 200, body: paged(PUBLICATIONS.slice(0, limit), limit) };

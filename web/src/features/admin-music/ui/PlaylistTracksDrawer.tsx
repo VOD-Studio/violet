@@ -1,3 +1,4 @@
+import type { MusicPlaylist, MusicSong } from "@entities/music/model/types";
 import {
 	Button,
 	Dialog,
@@ -15,7 +16,7 @@ import {
 import { ChevronLeft, ChevronRight, Disc3, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import { usePlaylistTracks } from "../api/queries";
-import type { MusicFeaturedPlaylist, MusicPlaylist, MusicSong } from "../model/types";
+import type { MusicFeaturedPlaylist } from "../model/types";
 
 /**
  * 歌单曲目列表弹窗 props。

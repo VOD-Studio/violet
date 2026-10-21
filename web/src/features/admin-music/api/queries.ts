@@ -1,3 +1,4 @@
+import { musicKeys } from "@entities/music/api/keys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import type { PageQuery } from "@/shared/api/types";
@@ -97,6 +98,7 @@ export const useAddFeaturedPlaylist = () => {
 		mutationFn: (body: AddFeaturedPlaylistRequest) => addFeaturedPlaylist(body),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: adminMusicKeys.featured() });
+			qc.invalidateQueries({ queryKey: musicKeys.playlists() });
 		},
 	});
 };
@@ -109,6 +111,7 @@ export const useSetFeaturedPlaylistEnabled = () => {
 			setFeaturedPlaylistEnabled(id, { enabled }),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: adminMusicKeys.featured() });
+			qc.invalidateQueries({ queryKey: musicKeys.playlists() });
 		},
 	});
 };
@@ -120,6 +123,7 @@ export const useOrderFeaturedPlaylists = () => {
 		mutationFn: (ids: string[]) => orderFeaturedPlaylists({ ids }),
 		onSuccess: (data) => {
 			qc.setQueryData(adminMusicKeys.featured(), data);
+			qc.invalidateQueries({ queryKey: musicKeys.playlists() });
 		},
 	});
 };
@@ -131,6 +135,7 @@ export const useRemoveFeaturedPlaylist = () => {
 		mutationFn: (id: string) => removeFeaturedPlaylist(id),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: adminMusicKeys.featured() });
+			qc.invalidateQueries({ queryKey: musicKeys.playlists() });
 		},
 	});
 };

@@ -1,10 +1,11 @@
+import type { MusicPlaylist } from "@entities/music/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import {
 	useFeaturedPlaylists,
 	useMusicAccount,
 	useMusicStatus,
 } from "@features/admin-music/api/queries";
-import type { MusicFeaturedPlaylist, MusicPlaylist } from "@features/admin-music/model/types";
+import type { MusicFeaturedPlaylist } from "@features/admin-music/model/types";
 import { AddPlaylistDialog } from "@features/admin-music/ui/AddPlaylistDialog";
 import { FeaturedPlaylistsTable } from "@features/admin-music/ui/FeaturedPlaylistsTable";
 import { MusicAccountCard } from "@features/admin-music/ui/MusicAccountCard";

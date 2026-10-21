@@ -1,3 +1,4 @@
+import type { MusicPlaylist, MusicSong } from "@entities/music/model/types";
 import { apiDelete, apiGet, apiGetPaged, apiPatch, apiPost, apiPut } from "@/shared/api/request";
 import type { PagedResponse, PageQuery } from "@/shared/api/types";
 import type {
@@ -6,8 +7,6 @@ import type {
 	MusicChallenge,
 	MusicChallengeCheck,
 	MusicFeaturedPlaylist,
-	MusicPlaylist,
-	MusicSong,
 	MusicStatus,
 	MusicVerification,
 	OrderFeaturedPlaylistsRequest,

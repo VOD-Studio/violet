@@ -165,7 +165,7 @@ api/
 
 ### 站点音乐接口（Kite）
 
-管理接口由前端 `/admin/music` 页面消费，暂不包含公开音乐页面或播放组件。全站维护一个网易云账号，Cookie 由独立 `MUSIC_CREDENTIAL_KEY` 加密后存入 PostgreSQL；响应与启动配置日志不暴露 Cookie、服务令牌或加密密钥。接入配置见 [部署指南](../docs/deploy/manual-deploy.md#kite-音乐服务可选)。
+管理接口由前端 `/admin/music` 页面消费；公开展示列表由站点的 `@violetjs/kite-player` 播放组件匿名消费。全站维护一个网易云账号，Cookie 由独立 `MUSIC_CREDENTIAL_KEY` 加密后存入 PostgreSQL；响应与启动配置日志不暴露 Cookie、服务令牌或加密密钥。接入配置见 [部署指南](../docs/deploy/manual-deploy.md#kite-音乐服务可选)。
 
 **版本限制**：旧版 Kite v0.4.0 存在 [曲目 offset 未生效 #89](https://github.com/VOD-Studio/kite/issues/89)、[账号歌单分页结果错误 #88](https://github.com/VOD-Studio/kite/issues/88) 和 [账号歌单读取丢弃登录上下文 #90](https://github.com/VOD-Studio/kite/issues/90)。是否受影响以实际服务版本与业务验收为准，不将旧版结论当作线上当前事实；重复页或缺页不能作为完整歌单交付，匿名结果也不作为完整私有音乐库。
 

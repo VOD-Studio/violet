@@ -1,3 +1,4 @@
+import type { MusicPlaylist } from "@entities/music/model/types";
 import {
 	Badge,
 	Button,
@@ -23,7 +24,7 @@ import {
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useAddFeaturedPlaylist, useSearchMusicPlaylists, useUserPlaylists } from "../api/queries";
-import type { MusicAccount, MusicFeaturedPlaylist, MusicPlaylist } from "../model/types";
+import type { MusicAccount, MusicFeaturedPlaylist } from "../model/types";
 
 /**
  * 添加展示歌单对话框 props。

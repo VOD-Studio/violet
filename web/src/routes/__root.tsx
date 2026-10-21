@@ -1,3 +1,4 @@
+import { SiteMusicPlayer } from "@features/music-player/ui/SiteMusicPlayer";
 import { CustomCursor } from "@shared/ui/cursor";
 import NotFound from "@shared/ui/not-found";
 import RouteError from "@shared/ui/route-error";
@@ -157,6 +158,7 @@ function RootComponent() {
 						<Outlet />
 					</main>
 					{!isFullscreenRoute && <Footer />}
+					{showBackdrop && <SiteMusicPlayer />}
 				</div>
 			)}
 			<DocumentScrollbar />
