@@ -32,6 +32,14 @@ bot_token_key: ""
 # env: BOT_MEDIA_MAX_BYTES（Bot 图片上传上限，字节；0 表示不限制）
 bot_media_max_bytes: 10485760
 
+# ── 站点音乐 Kite（可选）─────────────────────
+# env: KITE_BASE_URL（HTTP 网关地址；留空不启用）
+kite_base_url: ""
+# env: KITE_AUTH_TOKEN（仅通过环境变量注入）
+kite_auth_token: ""
+# env: MUSIC_CREDENTIAL_KEY（至少 32 字节；更换后需重新扫码）
+music_credential_key: ""
+
 # ── 数据库 ──────────────────────────────────
 database:
   # env: DATABASE_HOST

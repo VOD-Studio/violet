@@ -38,6 +38,7 @@ func RegisterRoutes(r chi.Router, d *Deps) {
 		v1.Get("/settings", d.Settings.GetPublicSettings)
 		registerSiteIdentityRoutes(v1, d)
 		registerSiteImpressionRoutes(v1, d)
+		registerMusicPublicRoutes(v1, d)
 		v1.Get("/stats", d.Stats.GetPublicStats)
 
 		// GitHub 数据（公开，Token 在后端管理）

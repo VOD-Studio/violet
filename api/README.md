@@ -130,6 +130,7 @@ api/
 | **api_token** | api_token | api_token | 本人访问令牌 PAT 的创建、分页查询、原位编辑与吊销；编辑不轮换 MCP 凭据 |
 | **project** | project | project | 项目展示 CRUD，唯一 slug 可在后台编辑；公开详情支持 `GET /projects/by-slug/{slug}`，保留按 ID 读取；列表附带路线图进度和近期条目摘要 |
 | **roadmap** | roadmap | roadmap | 项目内稳定编号的路线图条目、三阶段进度与内容编辑；写操作需 `project:update` |
+| **music** | music | music | Kite 单一网易云账号连接、展示歌单配置、匿名歌曲/播放地址/歌词；上游分页与私有读取限制见下文 |
 | **announcement** | announcement | announcement（并入 content） | 公告管理 |
 | **emoji** | emoji | media | 表情分组/表情 CRUD、B站表情导入、文件上传 |
 | **customemoji** | customemoji | customemoji | 用户自定义表情上传、软删除、收藏与按 ID 解析 |
@@ -156,11 +157,53 @@ api/
 
 > **注意**：`media` application 层服务 emoji/upload 两个 domain，共享文件存储基础设施。
 
-旧音乐模块及 `/api/v1/music/*`、`/api/v1/admin/music/*` 端点已移除，不再提供歌单、歌曲解析或播放器设置，也不再读取音乐解析服务配置。通用音频文件上传与素材管理不受影响。历史迁移保持不变，`playlists`、`music_settings` 表及其中的数据保留，但当前应用不再读写或通过 AutoMigrate 管理这两张表。
+旧音乐实现已移除；历史 `playlists`、`music_settings` 表及其中的数据保留，当前应用不再读写或通过 AutoMigrate 管理这两张表。新的 Kite 音乐模块使用迁移 `140_add_music_admin` 创建的 `music_account`、`music_login_challenges` 与 `music_featured_playlists`，不恢复旧解析服务、播放器设置或旧权限。通用音频文件上传与素材管理不受影响。
 
 迁移 `139_retire_playlist_permissions` 回收 `playlist:view/create/update/delete/toggle` 的角色授权并删除权限点，仅清理不再包含其他子节点的 `playlist` 菜单。回滚只恢复权限定义、菜单及默认 `admin` 角色授权，不恢复已回收的自定义授权；历史歌曲权限已由迁移 `055_remove_dead_permissions` 退役。
 
 `POST /uploads` 与 `GET /uploads/instant` 只对磁盘上仍存在的素材返回秒传成功。数据库记录存在但文件丢失时，记录保留并标记为 `failed`，重新上传会创建可读取的新文件；权限等读取错误直接返回错误，不当作秒传未命中。已丢失的图片字节无法从数据库恢复，原有失效地址需重新上传后替换。
+
+### 站点音乐接口（Kite）
+
+仅提供后端 API，不包含管理页面、公开音乐页面或播放组件。全站维护一个网易云账号，Cookie 由独立 `MUSIC_CREDENTIAL_KEY` 加密后存入 PostgreSQL；响应与启动配置日志不暴露 Cookie、服务令牌或加密密钥。接入配置见 [部署指南](../docs/deploy/manual-deploy.md#kite-音乐服务可选)。
+
+**当前上游限制**：已部署的 Kite v0.4.0 存在 [曲目 offset 未生效 #89](https://github.com/VOD-Studio/kite/issues/89)、[账号歌单分页结果错误 #88](https://github.com/VOD-Studio/kite/issues/88) 和 [账号歌单读取丢弃登录上下文 #90](https://github.com/VOD-Studio/kite/issues/90)。本次仅提 issue，不修改或部署 Kite。上游修复前，不能依赖曲目翻页、账号歌单总数或私有歌单读取；Violet 不伪造总数，也不把匿名结果当作完整私有音乐库。
+
+以下路径均以 `/api/v1` 为前缀。管理接口要求管理员身份；读取需 `music:view`，写入需 `music:manage` 与 CSRF。网易云 ID 均为十进制字符串。分页沿用 `page`/`limit` 与 `meta.pagination`，上游限制同时影响后台与公开曲目接口。
+
+| 方法与路径 | 行为 |
+| --- | --- |
+| `GET /admin/music/status` | 返回 `configured`、`credential_storage_ready`、`base_url`，不发起外部请求 |
+| `POST /admin/music/verify` | 同时检查 Kite 健康和受服务令牌保护的只读接口，返回 `valid` 与说明 |
+| `GET /admin/music/account` | 返回 `disconnected` / `connected` / `expired` 和可空的 `profile`；网络故障返回错误，不冒充未登录 |
+| `POST /admin/music/login/qr` | 返回 201；提供本站挑战 `id`、二维码内容 `url`、RFC3339 `expires_at`，由未来前端生成二维码图像 |
+| `POST /admin/music/login/qr/{id}/check` | 返回 `waiting` / `scanned` / `confirmed` / `expired`；确认时加密保存 Cookie，`account` 仅确认成功时非空 |
+| `DELETE /admin/music/login/qr/{id}` | 发起者幂等取消挑战；取消先于确认提交时，迟到结果不能接入账号 |
+| `POST /admin/music/account/refresh` | 续期后先用账号版本校验保存完整 Cookie，再查询状态；状态查询失败仍保留新凭据并返回错误，账号已退出或变更时拒绝迟到写入 |
+| `DELETE /admin/music/account` | 先清除本地连接，再尝试上游退出；上游失败仍保持本地断开，并明确返回失败说明 |
+| `GET /admin/music/library/playlists` | 使用已保存账号的 ID/Cookie 请求我的歌单，受上述 Kite 限制影响 |
+| `GET /admin/music/library/search?q=&type=song\|playlist` | 匿名搜索歌曲或歌单 |
+| `GET /admin/music/library/playlists/{id}/tracks` | 管理端曲目读取，可向 Kite 传入站点 Cookie |
+| `GET /admin/music/playlists` | 返回全部展示歌单及 `enabled`、`position` |
+| `POST /admin/music/playlists` | 接受 `{playlist_id}`，匿名校验歌单可公开读取后保存引用；成功 201，重复 409 |
+| `PATCH /admin/music/playlists/{id}` | 接受必填 `{enabled}` |
+| `PUT /admin/music/playlists/order` | 接受当前全部 ID 的无重复 `{ids}` 排列，原子排序；无效输入不改变原顺序 |
+| `DELETE /admin/music/playlists/{id}` | 仅移除本站引用，不删除网易云原歌单 |
+| `GET /music/playlists` | 按配置顺序返回已启用的展示歌单 |
+| `GET /music/playlists/{id}/tracks` | 匿名读取已启用展示歌单的曲目；未展示或已停用返回 404 |
+| `GET /music/songs/{id}` | 匿名歌曲元数据 |
+| `GET /music/songs/{id}/url?level=standard` | 请求 `standard` / `exhigh` / `lossless` / `hires` 音质，按需获取播放地址 |
+| `GET /music/songs/{id}/lyric` | 返回 `lrc`、`translated`、`romanized` |
+
+公开接口即使收到博客 Session Cookie，也不读取或传入站点网易云凭据，不共享站长会员权益。无播放权限时返回 `playable=false`、`url=null`；实际音质以返回的 `format` / `bitrate` 为准，上游可能降级。播放 URL 临时有效，不持久化、不代理音频，响应使用 `Cache-Control: no-store`。
+
+歌曲资料、播放地址、歌词与公开曲目查询共用每 IP 每分钟 60 次的滑动窗口配额，超限返回 `429` 与 `Retry-After`，不会继续调用 Kite；本地展示歌单列表不占此配额。复用现有 Redis 限流中间件及其故障放行策略，不新增歌曲或凭据缓存。
+
+二维码挑战绑定发起管理员，三分钟绝对过期、一次性消费；轮询建议约两秒，关闭时调用取消接口，过期/确认后停止。退出会使旧挑战和在途续期结果失效。Kite 服务鉴权错误与网易云登录过期均不是博客登录失效，不返回会触发本站退出的 401。
+
+Kite 连接故障、超时、无效响应和服务令牌错误映射为 `500 INTERNAL_ERROR`；网易云登录过期或请求参数错误仍为 `400 BAD_REQUEST`。错误响应不透出上游响应体或凭据，也不清除博客 Session。账号退出接口保留上述「本地先断开、上游失败明确返回」的独立语义。
+
+账号状态机、取消竞态和退出失败通过独立 PostgreSQL 与确定性协议夹具验证；真实 Kite 的搜索、公开歌单、歌曲 URL、歌词和二维码待扫状态已实跑。真实扫码确认、真实账号续期及私有歌单验收仍需用户参与，夹具不能替代该验收。
 
 ### 项目路线图接口
 

@@ -21,6 +21,24 @@ ssh rua 'bash -lc "python3 --version && docker compose version && podman --versi
 
 部署目录 `/root/docker/violet` 必须已有 `.env`、secrets、两份 Compose 文件、运行中的数据库与服务。外部 nginx-proxy 网络、TLS 反代和共享资源目录需预先就绪。该入口接管已有部署，不负责空机初始化。
 
+## Kite 音乐服务（可选）
+
+音乐模块未配置时不影响博客 API 启动。只配置后端，不自动创建页面或播放控件。
+
+同机 Kite 使用既有 `kite_network` 时，在服务器 `/root/docker/violet/.env` 设置：
+
+```dotenv
+KITE_BASE_URL=http://kite:3721
+KITE_NETWORK_NAME=kite_network
+KITE_NETWORK_EXTERNAL=true
+```
+
+`KITE_AUTH_TOKEN` 从该服务器的 `/srv/kite/auth-token` 安全写入 `.env`，不要粘贴到 issue、日志或前端环境。另生成并保存独立的 `MUSIC_CREDENTIAL_KEY`（例如 `openssl rand -hex 32`），至少 32 字节；它加密站点网易云 Cookie，不复用 `BOT_TOKEN_KEY`。更换或丢失后需退出旧连接并重新扫码。生产 `.env` 的既有文件权限与归档安全要求同样适用。
+
+发布前确认 Kite 已启动、`podman network exists kite_network` 成功。设置上述网络变量后，只有 API 加入 Kite 专网；Web、数据库与 Redis 不加入。`NO_PROXY` 包含 `kite`，内部请求不经过外网代理。不设置网络变量时，Compose 使用自建的空 `violet_music` 网络，不要求外部 Kite 网络存在；使用远程 Kite 地址时也不必接入同机专网。
+
+随正常发布执行迁移 `140_add_music_admin`。使用具有 `music:manage` 权限的管理员 Session 调用 `POST /api/v1/admin/music/verify` 检查连接与服务令牌，再生成二维码、由用户在网易云确认。账号 Cookie 只落加密数据库，不回传给客户端。完整接口、匿名播放边界及已知 Kite 限制见 [API 说明](../../api/README.md#站点音乐接口kite)。
+
 ## SSH 回滚
 
 ```bash

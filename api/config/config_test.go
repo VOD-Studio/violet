@@ -54,6 +54,7 @@ func TestMaskValue(t *testing.T) {
 		{"resend_api_key", "re_123", "***"},
 		{"resource_signing_key", "cursor-signing-secret", "***"},
 		{"bot_token_key", "violet-bot-token-key-0123456789", "***"},
+		{"music_credential_key", "private-music-cookie-key", "***"},
 		{"cookie.csrf_name", "violet_csrf", "violet_csrf"},
 		{"cookie.session_name", "violet_session", "violet_session"},
 		{"cookie.secure", false, "false"},

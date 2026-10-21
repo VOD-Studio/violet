@@ -135,6 +135,8 @@ var (
 	// persona
 	PersonaView   = MustParse("persona:view")   // 人设管理入口、档案列表与详情
 	PersonaManage = MustParse("persona:manage") // 创建、保存、激活与删除人设档案
+	MusicView     = MustParse("music:view")
+	MusicManage   = MustParse("music:manage")
 )
 
 // ============================================================
