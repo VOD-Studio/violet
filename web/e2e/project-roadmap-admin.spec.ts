@@ -2,7 +2,7 @@ import { expect, type Locator, type Page, test } from "@playwright/test";
 import { loadClient } from "./client";
 import { ROADMAP_FIXTURE } from "./mock-data.mjs";
 import { roadmapBackend } from "./roadmap-backend.ts";
-import { authenticated, collectDiagnostics } from "./support.ts";
+import { authenticated, collectDiagnostics, refocusUntilRequest } from "./support.ts";
 
 const SLUG = ROADMAP_FIXTURE.project.slug;
 const idOf = (number: number) =>
@@ -316,10 +316,7 @@ test.describe("管理员编辑条目", () => {
 		await expect(column(other, "planned")).toContainText("第二个标签页的条目");
 		// 第一个标签页回到前台时重新拉取，也看到两条
 		await page.bringToFront();
-		// TanStack Query 的聚焦监听只认冒泡的 visibilitychange
-		await page.evaluate(() =>
-			document.dispatchEvent(new Event("visibilitychange", { bubbles: true })),
-		);
+		await refocusUntilRequest(page, `**/api/v1/projects/by-slug/${SLUG}/roadmap`);
 		await expect(column(page, "planned")).toContainText("第二个标签页的条目");
 	});
 
@@ -376,9 +373,7 @@ test.describe("管理员编辑条目", () => {
 
 		await expect(card(other, 2)).toContainText("第二个标签页改的");
 		await page.bringToFront();
-		await page.evaluate(() =>
-			document.dispatchEvent(new Event("visibilitychange", { bubbles: true })),
-		);
+		await refocusUntilRequest(page, `**/api/v1/projects/by-slug/${SLUG}/roadmap`);
 		await expect(card(page, 2)).toContainText("第二个标签页改的");
 	});
 

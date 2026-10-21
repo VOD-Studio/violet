@@ -1,7 +1,7 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { loadClient } from "./client";
 import { ROADMAP_FIXTURE } from "./mock-data.mjs";
-import { collectDiagnostics } from "./support.ts";
+import { collectDiagnostics, refocusUntilRequest } from "./support.ts";
 
 const SLUG = ROADMAP_FIXTURE.project.slug;
 const idOf = (number: number) =>
@@ -200,15 +200,7 @@ test.describe("被阻塞", () => {
 		await expect(card(page, 2).getByText("被阻塞", { exact: true })).toBeVisible();
 
 		unblocked = true;
-		await page.evaluate(() => {
-			for (const state of ["hidden", "visible"]) {
-				Object.defineProperty(document, "visibilityState", {
-					configurable: true,
-					value: state,
-				});
-				document.dispatchEvent(new Event("visibilitychange", { bubbles: true }));
-			}
-		});
+		await refocusUntilRequest(page, `**/api/v1/projects/by-slug/${SLUG}/roadmap`);
 
 		await expect(card(page, 2).getByText("被阻塞", { exact: true })).toHaveCount(0);
 		await expect(
