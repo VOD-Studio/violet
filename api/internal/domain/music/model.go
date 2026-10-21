@@ -48,11 +48,17 @@ type Account struct {
 }
 type SongURL struct {
 	ID       string  `json:"id"`       // 请求的网易云歌曲 ID。
-	URL      *string `json:"url"`      // 没有匿名播放权时为 nil。
-	Playable bool    `json:"playable"` // 仅表示本次取得匿名可用地址。
-	Format   string  `json:"format"`   // 上游音频格式，如 mp3/flac。
-	Bitrate  int64   `json:"bitrate"`  // 比特每秒。
-	Size     int64   `json:"size"`     // 音频字节数。
+	URL      *string `json:"url"`      // 无可用播放权时为 nil。
+	Playable bool    `json:"playable"` // 表示本次取得可播放的地址；试听片段同样为 true。
+	// Trial 为 true 表示该地址是账号权益不足时的试听片段；照常交付，
+	// 由前端提示「仅试听」。Kite 当前契约丢弃上游 freeTrialInfo，按地址时长估算判定。
+	Trial   bool   `json:"trial"`
+	Format  string `json:"format"`  // 上游音频格式，如 mp3/flac。
+	Bitrate int64  `json:"bitrate"` // 比特每秒。
+	Size    int64  `json:"size"`    // 音频字节数。
+}
+type Playback struct {
+	Mode string `json:"mode"` // account=已连接站点音乐账号，按其权益解析；anonymous=仅网易云匿名可用范围。
 }
 type Lyric struct {
 	LRC        string `json:"lrc"`        // 带时间轴的原文歌词。

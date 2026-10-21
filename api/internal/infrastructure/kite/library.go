@@ -128,7 +128,7 @@ func (c *Client) Song(ctx context.Context, id string) (music.Song, error) {
 	}
 	return response.Song.song(), err
 }
-func (c *Client) SongURL(ctx context.Context, id, level string) (music.SongURL, error) {
+func (c *Client) SongURL(ctx context.Context, id, cookie, level string) (music.SongURL, error) {
 	var response struct {
 		URL struct {
 			ID      string `json:"id"`
@@ -142,7 +142,7 @@ func (c *Client) SongURL(ctx context.Context, id, level string) (music.SongURL, 
 	if level == "hires" {
 		level = "hres"
 	}
-	err := c.request(ctx, http.MethodGet, "/api/v1/songs/"+id+"/url", "", url.Values{"level": {"SONG_LEVEL_" + strings.ToUpper(level)}}, &response)
+	err := c.request(ctx, http.MethodGet, "/api/v1/songs/"+id+"/url", cookie, url.Values{"level": {"SONG_LEVEL_" + strings.ToUpper(level)}}, &response)
 	result := music.SongURL{ID: id, Format: response.URL.Format, Bitrate: response.URL.Bitrate, Size: response.URL.Size}
 	if value := publicURL(response.URL.URL); value != "" {
 		result.URL = &value

@@ -165,7 +165,7 @@ api/
 
 ### 站点音乐接口（Kite）
 
-管理接口由前端 `/admin/music` 页面消费；公开展示列表由站点的 `@violetjs/kite-player` 播放组件匿名消费。全站维护一个网易云账号，Cookie 由独立 `MUSIC_CREDENTIAL_KEY` 加密后存入 PostgreSQL；响应与启动配置日志不暴露 Cookie、服务令牌或加密密钥。接入配置见 [部署指南](../docs/deploy/manual-deploy.md#kite-音乐服务可选)。
+管理接口由前端 `/admin/music` 页面消费；公开展示列表由站点的 `@violetjs/kite-player` 播放组件消费。全站维护一个网易云账号：后台浏览音乐库，前台展示歌单按该账号权益解析播放（`/music/playback` 返回当前模式）。Cookie 由独立 `MUSIC_CREDENTIAL_KEY` 加密后存入 PostgreSQL；响应与启动配置日志不暴露 Cookie、服务令牌或加密密钥。接入配置见 [部署指南](../docs/deploy/manual-deploy.md#kite-音乐服务可选)。
 
 **版本限制**：旧版 Kite v0.4.0 存在 [曲目 offset 未生效 #89](https://github.com/VOD-Studio/kite/issues/89)、[账号歌单分页结果错误 #88](https://github.com/VOD-Studio/kite/issues/88) 和 [账号歌单读取丢弃登录上下文 #90](https://github.com/VOD-Studio/kite/issues/90)。是否受影响以实际服务版本与业务验收为准，不将旧版结论当作线上当前事实；重复页或缺页不能作为完整歌单交付，匿名结果也不作为完整私有音乐库。
 
@@ -189,16 +189,17 @@ api/
 | `PATCH /admin/music/playlists/{id}` | 接受必填 `{enabled}` |
 | `PUT /admin/music/playlists/order` | 接受当前全部 ID 的无重复 `{ids}` 排列，原子排序；无效输入不改变原顺序 |
 | `DELETE /admin/music/playlists/{id}` | 仅移除本站引用，不删除网易云原歌单 |
+| `GET /music/playback` | 返回 `account` / `anonymous` 播放模式；只读本地存储，不发上游请求，不暴露账号资料 |
 | `GET /music/playlists` | 按配置顺序返回已启用的展示歌单 |
 | `GET /music/playlists/{id}/tracks` | 匿名读取已启用展示歌单的曲目；未展示或已停用返回 404 |
 | `GET /music/songs/{id}` | 匿名歌曲元数据 |
-| `GET /music/songs/{id}/url?level=standard` | 请求 `standard` / `exhigh` / `lossless` / `hires` 音质，按需获取播放地址 |
-| `GET /music/songs/{id}/stream?level=standard` | 按需解析匿名地址并返回 302；无可用地址时 404，不代理音频 |
+| `GET /music/songs/{id}/url?level=standard` | 请求 `standard` / `exhigh` / `lossless` / `hires` 音质，按需获取播放地址；仅试听片段时 `trial=true` 且照常交付 |
+| `GET /music/songs/{id}/stream?level=standard` | 按需解析地址并返回 302；无可用地址时 404，不代理音频 |
 | `GET /music/songs/{id}/lyric` | 返回 `lrc`、`translated`、`romanized` |
 
-公开接口即使收到博客 Session Cookie，也不读取或传入站点网易云凭据，不共享站长会员权益。`/url` 无播放权限时返回 `playable=false`、`url=null`；实际音质以返回的 `format` / `bitrate` 为准，上游可能降级。`/stream` 可直接作为音频源，跟随重定向后由浏览器向 CDN 读取音频；Violet 不转发音频字节。临时播放 URL 不持久化，播放地址的成功 JSON 与 302 响应使用 `Cache-Control: no-store`。
+站点账号已连接时，`/url` 与 `/stream` 携带其凭据按账号权益解析，且仅限启用展示歌单内的曲目（展示外返回 404），凭据不离开后端；未连接或已退出时匿名解析。`/url` 无播放权限时返回 `playable=false`、`url=null`；实际音质以返回的 `format` / `bitrate` 为准，上游可能降级。Kite 当前契约丢弃上游试听信息，试听按地址时长估算判定（估算 <45s 且曲目 >90s）并标记 `trial=true` 照常交付，前端提示「仅试听」；精确判定依赖 [Kite #103](https://github.com/VOD-Studio/kite/issues/103)。`/stream` 可直接作为音频源，跟随重定向后由浏览器向 CDN 读取音频；Violet 不转发音频字节。临时播放 URL 不持久化，播放地址的成功 JSON 与 302 响应使用 `Cache-Control: no-store`。
 
-歌曲资料、播放地址、音频重定向、歌词与公开曲目查询共用每 IP 每分钟 60 次的滑动窗口配额，超限返回 `429` 与 `Retry-After`，不会继续调用 Kite；本地展示歌单列表不占此配额。复用现有 Redis 限流中间件及其故障放行策略，不新增歌曲或凭据缓存。
+歌曲资料、歌词与公开曲目查询共用每 IP 每分钟 60 次配额；播放地址与音频重定向单独收紧为每 IP 每分钟 20 次，并叠加全站每分钟 30 次的解析聚合限流——站点账号取链形态保持低频，避免被上游识别为批量行为。超限返回 `429` 与 `Retry-After`，不会继续调用 Kite；本地展示歌单列表与播放模式不占配额。复用现有 Redis 限流中间件及其故障放行策略。成功解析结果进程内缓存 25 分钟（按凭据版本整体失效），同曲目全站重复解析在窗口内只发一次上游请求；凭据不缓存。
 
 二维码挑战绑定发起管理员，三分钟绝对过期、一次性消费；轮询建议约两秒，关闭时调用取消接口，过期/确认后停止。退出会使旧挑战和在途续期结果失效。Kite 服务鉴权错误与网易云登录过期均不是博客登录失效，不返回会触发本站退出的 401。
 

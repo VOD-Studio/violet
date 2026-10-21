@@ -3,6 +3,7 @@ package music
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,8 +16,24 @@ type Service struct {
 	repo     music.Repository
 	provider Provider
 	box      CredentialBox
+	// featuredIDs 缓存启用展示歌单的曲目 ID 集合，featuredExpiry 前有效；
+	// 用于把站点账号解析范围限制在展示曲目内。
+	featuredMu     sync.Mutex
+	featuredIDs    map[string]struct{}
+	featuredExpiry time.Time
+	// playbackCache 缓存最近成功解析的播放地址（含试听标记），playbackCacheGen 是
+	// 产出缓存的凭据版本；连接、退出或续期推进版本即整体失效。匿名解析同样缓存。
+	playbackMu       sync.Mutex
+	playbackCache    map[string]playbackEntry
+	playbackCacheGen int64
+	// playbackInflight 让同曲并发解析收敛为一次上游请求（singleflight）。
+	playbackInflight map[string]chan struct{}
 }
 
+type playbackEntry struct {
+	value  music.SongURL
+	expiry time.Time
+}
 func NewService(repo music.Repository, provider Provider, box CredentialBox) *Service {
 	return &Service{repo: repo, provider: provider, box: box}
 }

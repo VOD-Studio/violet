@@ -46,7 +46,7 @@ func TestPublicMusicNeverForwardsAccountCookie(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int64(180000), song.DurationMS)
 	assert.NotNil(t, song.Artists)
-	playback, err := client.SongURL(ctx, "42", "standard")
+	playback, err := client.SongURL(ctx, "42", "", "standard")
 	require.NoError(t, err)
 	assert.False(t, playback.Playable)
 	assert.Nil(t, playback.URL)
@@ -107,7 +107,7 @@ func TestHiResPlaybackUsesProviderQuality(t *testing.T) {
 	}))
 	defer server.Close()
 
-	playback, err := kite.NewClient(server.URL, "service-secret").SongURL(context.Background(), "42", "hires")
+	playback, err := kite.NewClient(server.URL, "service-secret").SongURL(context.Background(), "42", "", "hires")
 	require.NoError(t, err)
 	require.True(t, playback.Playable)
 	assert.Equal(t, "flac", playback.Format)

@@ -48,6 +48,14 @@ func RateLimitByUser(key string, client *redis.Client, window time.Duration, max
 	})
 }
 
+// GlobalRateLimit 全站共享维度的滑动窗口限流。
+//
+// 与 RateLimit（按 IP 隔离窗口）不同：所有请求共占同一窗口，适合保护
+// 站点共享的上游资源（如站点音乐账号的解析配额）。Redis 故障放行策略与 RateLimit 一致。
+func GlobalRateLimit(key string, client *redis.Client, window time.Duration, max int64) func(http.Handler) http.Handler {
+	return rateLimitByDimension(key, client, window, max, func(*http.Request) string { return "site" })
+}
+
 // rateLimitByDimension 滑动窗口限流共享实现。dimension 从请求解析计数维度
 // （IP / 用户 ID），拼入 redis key 隔离不同接口与维度。
 func rateLimitByDimension(key string, client *redis.Client, window time.Duration, max int64, dimension func(*http.Request) string) func(http.Handler) http.Handler {
