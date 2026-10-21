@@ -7,6 +7,13 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.15.1](https://github.com/VOD-Studio/violet/compare/v2.15.0...v2.15.1) (2026-10-21)
+
+
+### 修复
+
+* **admin-music:** 修复网易云登录二维码无法识别 ([#608](https://github.com/VOD-Studio/violet/issues/608)) ([2777ddc](https://github.com/VOD-Studio/violet/commit/2777ddcf6267773500313c190500f4941fbd973f))
+
 ## [2.15.0](https://github.com/VOD-Studio/violet/compare/v2.14.0...v2.15.0) (2026-10-21)
 
 
