@@ -32,7 +32,7 @@ type Provider interface {
 	Playlist(context.Context, string) (music.Playlist, error)
 	Tracks(context.Context, string, string, shared.PageQuery) (shared.PageResult[music.Song], error)
 	Song(context.Context, string) (music.Song, error)
-	SongURL(context.Context, string, string) (music.SongURL, error)
+	SongURL(context.Context, string, string, string) (music.SongURL, error)
 	Lyric(context.Context, string) (music.Lyric, error)
 }
 type CredentialBox interface {

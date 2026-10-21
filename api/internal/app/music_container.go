@@ -11,7 +11,10 @@ import (
 	"gorm.io/gorm"
 )
 
-type MusicContainer struct{ Handler *musichttp.Handler }
+type MusicContainer struct {
+	Service *appmusic.Service
+	Handler *musichttp.Handler
+}
 
 func NewMusicContainer(db *gorm.DB, cfg config.MusicConfig) *MusicContainer {
 	var box appmusic.CredentialBox
@@ -23,5 +26,5 @@ func NewMusicContainer(db *gorm.DB, cfg config.MusicConfig) *MusicContainer {
 		}
 	}
 	service := appmusic.NewService(gormrepo.NewMusicRepository(db), kite.NewClient(cfg.BaseURL, cfg.AuthToken), box)
-	return &MusicContainer{Handler: musichttp.NewHandler(service)}
+	return &MusicContainer{Service: service, Handler: musichttp.NewHandler(service)}
 }

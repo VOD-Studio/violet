@@ -27,7 +27,8 @@ func registerMusicPaths(t *openapi3.T) {
 	registerSchema(t, "MusicChallenge", openapi3.Schemas{"id": reqStr("本站不透明挑战 ID"), "url": reqStr("网易云二维码扫描 URL"), "expires_at": reqStr("RFC3339 过期时间；最长三分钟")}, "id", "url", "expires_at")
 	nullableAccount := &openapi3.SchemaRef{Value: &openapi3.Schema{Nullable: true, AllOf: openapi3.SchemaRefs{{Ref: "#/components/schemas/MusicAccount"}}}}
 	registerSchema(t, "MusicChallengeCheck", openapi3.Schemas{"state": strEnum("扫码状态", "waiting", "scanned", "confirmed", "expired"), "account": nullableAccount}, "state", "account")
-	registerSchema(t, "MusicSongURL", openapi3.Schemas{"id": reqStr("歌曲 ID"), "url": nullableStr("匿名无播放权时 null；按需获取，不持久化"), "playable": optBool("是否有匿名可用地址"), "format": reqStr("文件格式"), "bitrate": optInt64("比特率"), "size": optInt64("字节数")}, "id", "url", "playable", "format", "bitrate", "size")
+	registerSchema(t, "MusicSongURL", openapi3.Schemas{"id": reqStr("歌曲 ID"), "url": nullableStr("无可播放地址时 null；按需获取，不持久化"), "playable": optBool("是否有可播放地址"), "trial": optBool("true 表示该地址为试听片段，照常交付并提示"), "format": reqStr("文件格式"), "bitrate": optInt64("比特率"), "size": optInt64("字节数")}, "id", "url", "playable", "trial", "format", "bitrate", "size")
+	registerSchema(t, "MusicPlayback", openapi3.Schemas{"mode": strEnum("播放凭据模式；未连接或续期确认失效时为 anonymous", "account", "anonymous")}, "mode")
 	registerSchema(t, "MusicLyric", openapi3.Schemas{"lrc": reqStr("原文 LRC"), "translated": reqStr("翻译 LRC"), "romanized": reqStr("音译 LRC")}, "lrc", "translated", "romanized")
 	registerSchema(t, "MusicAddPlaylist", openapi3.Schemas{"playlist_id": reqStr("正整数十进制 ID；匿名验证可读后加入")}, "playlist_id")
 	registerSchema(t, "MusicSetEnabled", openapi3.Schemas{"enabled": optBool("是否公开展示")}, "enabled")
@@ -53,10 +54,12 @@ func registerMusicPaths(t *openapi3.T) {
 		{"PATCH", "/admin/music/playlists/{id}", "启停展示歌单", "MusicFeaturedPlaylist", "MusicSetEnabled", false, false, 200},
 		{"PUT", "/admin/music/playlists/order", "原子更新全部展示顺序", "MusicFeaturedPlaylist", "MusicPlaylistOrder", true, false, 200},
 		{"DELETE", "/admin/music/playlists/{id}", "仅移除本站展示引用", "", "", false, false, 200},
+		{"GET", "/music/playback", "读取公开播放凭据模式", "MusicPlayback", "", false, false, 200},
 		{"GET", "/music/playlists", "匿名读取启用的展示歌单", "MusicPlaylist", "", true, false, 200},
 		{"GET", "/music/playlists/{id}/tracks", "匿名读取启用歌单的曲目", "MusicSong", "", true, true, 200},
 		{"GET", "/music/songs/{id}", "匿名读取歌曲资料", "MusicSong", "", false, false, 200},
-		{"GET", "/music/songs/{id}/url", "取得匿名播放地址", "MusicSongURL", "", false, false, 200},
+		{"GET", "/music/songs/{id}/url", "取得播放地址", "MusicSongURL", "", false, false, 200},
+		{"GET", "/music/songs/{id}/stream", "按需重定向到音频地址", "", "", false, false, 302},
 		{"GET", "/music/songs/{id}/lyric", "匿名读取歌词", "MusicLyric", "", false, false, 200},
 	} {
 		op := &openapi3.Operation{Tags: []string{"音乐"}, Summary: endpoint.summary}
@@ -68,7 +71,13 @@ func registerMusicPaths(t *openapi3.T) {
 				op.Parameters = append(op.Parameters, csrfHeaderParam())
 			}
 		} else {
-			op.Description = "严格匿名调用 Kite；不读取站点账号凭据，即使浏览器带本站 session。"
+			op.Description = "匿名调用 Kite；不读取站点账号凭据，即使浏览器带本站 session。"
+			if endpoint.path == "/music/songs/{id}/url" || endpoint.path == "/music/songs/{id}/stream" {
+				op.Description = "站点账号已连接时携带其凭据按账号权益解析，且仅限启用展示歌单内的曲目；未连接或续期确认失效时匿名解析。凭据不离开后端。"
+			}
+			if endpoint.path == "/music/playback" || endpoint.path == "/music/playlists" {
+				op.Description = "只读本地展示配置，不发起上游请求。"
+			}
 		}
 		if strings.Contains(endpoint.path, "{id}") {
 			op.Parameters = append(op.Parameters, pathStrParam("id", "网易云正整数 ID；扫码路由为本站不透明挑战 ID"))
@@ -76,7 +85,7 @@ func registerMusicPaths(t *openapi3.T) {
 		if endpoint.paged {
 			op.Parameters = append(op.Parameters, pageParam(), limitParam(100))
 		}
-		if endpoint.path == "/music/songs/{id}/url" {
+		if endpoint.path == "/music/songs/{id}/url" || endpoint.path == "/music/songs/{id}/stream" {
 			p := queryStrParam("level", "默认 standard")
 			p.Value.Schema = strEnum("音质", "standard", "exhigh", "lossless", "hires")
 			op.Parameters = append(op.Parameters, p)
@@ -84,15 +93,24 @@ func registerMusicPaths(t *openapi3.T) {
 		if endpoint.body != "" {
 			op.RequestBody = jsonBody(endpoint.body, true, "操作参数")
 		}
-		success := messageResponse("操作成功，data 为 null")
-		if endpoint.schema != "" {
-			success = dataResponse(endpoint.schema, "操作结果", endpoint.status)
-		}
-		if endpoint.array {
+		var success *openapi3.ResponseRef
+		switch {
+		case endpoint.path == "/music/songs/{id}/stream":
+			success = &openapi3.ResponseRef{Value: &openapi3.Response{
+				Description: strPtr("按需解析后重定向到 CDN；不代理音频，响应不缓存。无完整播放地址或仅试听时返回 404。"),
+				Headers: openapi3.Headers{
+					"Location": &openapi3.HeaderRef{Value: &openapi3.Header{Parameter: openapi3.Parameter{Schema: reqStr("临时音频地址")}}},
+				},
+			}}
+		case endpoint.array:
 			success = dataArrayResponse(endpoint.schema, "数组永不为 null", endpoint.status, endpoint.paged)
+		case endpoint.schema != "":
+			success = dataResponse(endpoint.schema, "操作结果", endpoint.status)
+		default:
+			success = messageResponse("操作成功，data 为 null")
 		}
 		op.Responses = responses(endpoint.status, success, 400, errorResponse("输入或网易云登录态错误；不会返回本站登录 401"), 404, errorResponse("未启用展示或资源不存在"), 409, errorResponse("重复歌单或账号已变更"), 500, errorResponse("存储、Kite 连接、响应或服务令牌错误"))
-		if strings.HasPrefix(endpoint.path, "/music/") && endpoint.path != "/music/playlists" {
+		if strings.HasPrefix(endpoint.path, "/music/") && endpoint.path != "/music/playlists" && endpoint.path != "/music/playback" {
 			op.Description += " 歌曲资料、播放地址、歌词与曲目查询共用每 IP 每分钟 60 次配额；超限返回 429 和 Retry-After。"
 			op.Responses.Set("429", errorResponse("公开音乐查询过于频繁"))
 		}

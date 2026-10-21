@@ -57,6 +57,14 @@ web/src/
 
 后台搜索统一使用 `controlSize="sm"`，列表筛选、选择弹窗与账户合并搜索保持相同的控件密度；宽度由工具栏或弹窗容器决定。普通表单字段不受搜索密度约束。
 
+后台 `/admin/music` 的扫码连接要求 Kite 服务地址、访问令牌和凭据加密密钥就绪。创建或扫码检查失败后保留错误态，仅由手动重试发起新挑战；关闭弹窗或二维码过期后停止请求。
+
+公开内容页通过 `src/features/music-player/` 接入 [`@violetjs/kite-player@0.1.0`](https://github.com/VOD-Studio/kite/tree/6a6d35f856678176d3d8a0c905b64a9acdd789fe/packages/kite-player)。后台启用的展示歌单驱动队列；没有展示歌单时不显示播放器，进入后台、聊天、个人中心或文档等工具页面时暂停。播放核心仅在客户端初始化，公开页面间复用同一实例；刷新后恢复队列与位置，但不自动播放。浮层通过 Portal 保留公开方言和站点主题，移动端播放条避让底部导航，全屏面板不被导航覆盖。
+
+`entities/music/` 提供后台与播放器共用的歌曲、歌单类型及匿名查询键；账号与扫码状态仍属于 `admin-music`。数据源只调用本站 `/api/v1/music/*`，不使用站点网易云凭据。曲目每页读取 100 首，重复或缺失的后续页明确报错；初始化失败后仅手动重试。队列中的媒体地址指向本站 `/stream`，播放时才解析临时 CDN URL，不批量预取或持久保存整单播放链接。VIP 与数字专辑按匿名入口预判受限，免费曲目仍以实际流接口结果为准。
+
+歌词将普通 LRC 的原文、翻译和音译按时间对齐；当前接口没有真实逐字与副歌数据，不生成这些信息，也不把空歌词标记成纯音乐。
+
 `@violet/ui/styles.css` 在 Tailwind v4 后导入；React 基础单元和 HTML 共用 BEM CSS，纯 CSS 可选择 `tokens.css` 与组件叶子入口。Maple 字体、签名和装饰动画归站点 `src/styles/site-theme.css`。Maple Mono 与 Alex Brush 使用 Fontsource 5.3.0 的 jsDelivr CDN，`@font-face` 在该文件声明，由 `src/styles.css` 引入，不再打包本地字体。包可输出 preserveModules ESM、类型声明与 CSS，`pnpm --filter @violet/ui consumer` 在工作区外安装真实 tarball 验收；npm 发布尚未执行。架构与操作流程以包内 [architecture.md](packages/ui/docs/architecture.md) 和 [component-design.md](packages/ui/docs/component-design.md) 为权威。`src/features/ui-docs/` 负责 `/ui` 组件库文档，架构与设计规范直接读取包内正文，组件预览与复制源码共用同一份示例文件。
 
 站点 `Signature` 内置 Mizuki Miru、水月みる、水月见三款笔迹，按名字、月牙、下划线顺序书写；`Mizuki_Miru` 账号名与 `Mizuki Miru` 共用同一款，笔画 JSON 与组件共置。

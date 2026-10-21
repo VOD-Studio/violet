@@ -77,6 +77,7 @@
 		"@violet/ui": "workspace:*",
 		"@violetjs/inkline": "workspace:*",
 		"@violetjs/kanban": "workspace:*",
+		"@violetjs/kite-player": "0.1.0",
 		"@violetjs/react-tweet": "workspace:*",
 		"@xterm/addon-fit": "^0.11.0",
 		"@xterm/xterm": "^6.0.0",

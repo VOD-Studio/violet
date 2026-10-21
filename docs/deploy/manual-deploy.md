@@ -23,7 +23,7 @@ ssh rua 'bash -lc "python3 --version && docker compose version && podman --versi
 
 ## Kite 音乐服务（可选）
 
-音乐模块未配置时不影响博客 API 启动。只配置后端，不自动创建页面或播放控件。
+音乐模块未配置时不影响博客 API 启动。Kite 仅由后端连接；启用展示歌单后，公开内容页通过本站匿名接口加载播放器，不自动播放。已部署的 Kite 可继续使用，无需为前端播放器单独开放服务令牌或新增公网代理。
 
 同机 Kite 使用既有 `kite_network` 时，在服务器 `/root/docker/violet/.env` 设置：
 

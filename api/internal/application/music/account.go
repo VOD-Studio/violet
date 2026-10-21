@@ -3,6 +3,7 @@ package music
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,6 +16,23 @@ type Service struct {
 	repo     music.Repository
 	provider Provider
 	box      CredentialBox
+	// featuredIDs 缓存启用展示歌单的曲目 ID 集合，featuredExpiry 前有效；
+	// 用于把站点账号解析范围限制在展示曲目内。
+	featuredMu     sync.Mutex
+	featuredIDs    map[string]struct{}
+	featuredExpiry time.Time
+	// playbackCache 缓存最近成功解析的播放地址（含试听标记），playbackCacheGen 是
+	// 产出缓存的凭据版本；连接、退出或续期推进版本即整体失效。匿名解析同样缓存。
+	playbackMu       sync.Mutex
+	playbackCache    map[string]playbackEntry
+	playbackCacheGen int64
+	// playbackInflight 让同曲并发解析收敛为一次上游请求（singleflight）。
+	playbackInflight map[string]chan struct{}
+}
+
+type playbackEntry struct {
+	value  music.SongURL
+	expiry time.Time
 }
 
 func NewService(repo music.Repository, provider Provider, box CredentialBox) *Service {
@@ -100,6 +118,9 @@ func (s *Service) Account(ctx context.Context) (music.Account, error) {
 	if c.SealedCookie == "" {
 		return disconnected(), nil
 	}
+	if c.Expired {
+		return music.Account{State: "expired", Profile: &c.Profile}, nil
+	}
 	cookie, err := s.open(c)
 	if err != nil {
 		return music.Account{}, err
@@ -174,6 +195,23 @@ func (s *Service) CheckQR(ctx context.Context, id, owner string) (CheckDTO, erro
 func (s *Service) CancelQR(ctx context.Context, id, owner string) error {
 	return s.repo.CancelChallenge(ctx, id, owner)
 }
+
+// RefreshIfConnected 供每日任务调用；未配置、未保存账号或已确认失效时不请求上游。
+func (s *Service) RefreshIfConnected(ctx context.Context) error {
+	if !s.provider.Configured() || s.box == nil {
+		return nil
+	}
+	c, err := s.repo.Credential(ctx)
+	if err != nil {
+		return err
+	}
+	if c.SealedCookie == "" || c.Expired {
+		return nil
+	}
+	_, err = s.refreshCredential(ctx, c)
+	return err
+}
+
 func (s *Service) Refresh(ctx context.Context) (music.Account, error) {
 	if err := s.ready(); err != nil {
 		return music.Account{}, err
@@ -185,12 +223,21 @@ func (s *Service) Refresh(ctx context.Context) (music.Account, error) {
 	if c.SealedCookie == "" {
 		return music.Account{}, shared.BadRequest("尚未连接网易云账号")
 	}
+	return s.refreshCredential(ctx, c)
+}
+
+func (s *Service) refreshCredential(ctx context.Context, c music.Credential) (music.Account, error) {
 	cookie, err := s.open(c)
 	if err != nil {
 		return music.Account{}, err
 	}
 	fresh, err := s.provider.Refresh(ctx, cookie)
 	if err != nil {
+		if loginRequired(err) {
+			if saveErr := s.expireCredential(ctx, c); saveErr != nil {
+				return music.Account{}, saveErr
+			}
+		}
 		return music.Account{}, safeProviderError(err)
 	}
 	if fresh == "" {
@@ -209,14 +256,36 @@ func (s *Service) Refresh(ctx context.Context) (music.Account, error) {
 		return music.Account{}, shared.Conflict("账号已发生变更，请刷新状态")
 	}
 	session, err := s.provider.Account(ctx, fresh)
+	if loginRequired(err) || err == nil && session == nil {
+		c.Generation++
+		c.SealedCookie = sealed
+		c.Expired = false
+		if saveErr := s.expireCredential(ctx, c); saveErr != nil {
+			return music.Account{}, saveErr
+		}
+		return music.Account{}, shared.BadRequest("网易云账号已过期，请重新扫码")
+	}
 	if err != nil {
 		return music.Account{}, safeProviderError(err)
 	}
-	if session == nil {
-		return music.Account{}, shared.BadRequest("网易云账号已过期，请重新扫码")
-	}
 	return music.Account{State: "connected", Profile: &session.Profile}, nil
 }
+
+func (s *Service) expireCredential(ctx context.Context, c music.Credential) error {
+	if c.Expired {
+		return nil
+	}
+	c.Expired = true
+	saved, err := s.repo.ReplaceCredential(ctx, c.Generation, c)
+	if err != nil {
+		return err
+	}
+	if !saved {
+		return shared.Conflict("账号已发生变更，请刷新状态")
+	}
+	return nil
+}
+
 func (s *Service) Logout(ctx context.Context) error {
 	// 先原子清除本地连接并推进版本；任何在途续期/扫码结果都不能复活它。
 	c, err := s.repo.ClearCredential(ctx)
