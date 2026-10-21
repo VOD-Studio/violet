@@ -2,6 +2,7 @@ package routing
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -25,6 +26,10 @@ type musicRouteRepository struct{ music.Repository }
 
 func (*musicRouteRepository) ListFeatured(context.Context) ([]music.FeaturedPlaylist, error) {
 	return []music.FeaturedPlaylist{{Playlist: music.Playlist{ID: "7", Name: "Public"}, Enabled: true}}, nil
+}
+
+func (*musicRouteRepository) Credential(context.Context) (music.Credential, error) {
+	return music.Credential{}, nil
 }
 
 func TestPublicMusicQueriesSharePerIPLimit(t *testing.T) {
@@ -64,11 +69,9 @@ func TestPublicMusicQueriesSharePerIPLimit(t *testing.T) {
 		path   string
 		status int
 	}{
-		{"/songs/42/url", http.StatusOK},
 		{"/songs/42", http.StatusOK},
 		{"/songs/42/lyric", http.StatusOK},
 		{"/playlists/7/tracks", http.StatusOK},
-		{"/songs/42/stream", http.StatusNotFound},
 	}
 	for i := range 60 {
 		test := paths[i%len(paths)]
@@ -80,8 +83,59 @@ func TestPublicMusicQueriesSharePerIPLimit(t *testing.T) {
 		assert.Equal(t, "60", response.Header().Get("Retry-After"))
 	}
 	assert.Equal(t, int32(60), upstreamCalls.Load(), "被限流的请求不能继续调用 Kite")
-	assert.Equal(t, http.StatusOK, request("/songs/42/url", "203.0.113.11:1234").Code)
+	assert.Equal(t, http.StatusOK, request("/songs/42", "203.0.113.11:1234").Code)
+	assert.Equal(t, http.StatusOK, request("/songs/42/url", "203.0.113.10:1234").Code, "元数据配额不能消耗独立播放配额")
 	assert.Equal(t, http.StatusOK, request("/playlists", "203.0.113.10:1234").Code, "本地展示配置不占上游查询配额")
+	assert.Equal(t, http.StatusOK, request("/playback", "203.0.113.10:1234").Code, "本地播放模式不占上游查询配额")
+}
+
+func TestPublicMusicPlaybackLimitsPerIPAndAcrossSite(t *testing.T) {
+	cache := miniredis.RunT(t)
+	redisClient := redis.NewClient(&redis.Options{Addr: cache.Addr()})
+	t.Cleanup(func() { assert.NoError(t, redisClient.Close()) })
+	var upstreamCalls atomic.Int32
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		upstreamCalls.Add(1)
+		w.Header().Set("Content-Type", "application/json")
+		if strings.HasSuffix(r.URL.Path, "/url") {
+			_, _ = w.Write([]byte(`{"url":{"id":"42","url":""}}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"song":{"id":"42","name":"Song","artists":[]}}`))
+	}))
+	defer upstream.Close()
+	deps := fullRouterDeps()
+	deps.Redis = redisClient
+	deps.Music = musichttp.NewHandler(appmusic.NewService(&musicRouteRepository{}, kite.NewClient(upstream.URL, "token"), nil))
+	router := chi.NewRouter()
+	RegisterRoutes(router, deps)
+	request := func(path, address string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/music"+path, nil)
+		req.RemoteAddr = address
+		response := httptest.NewRecorder()
+		router.ServeHTTP(response, req)
+		return response
+	}
+	for i := range 20 {
+		endpoint, status := "url", http.StatusOK
+		if i%2 == 1 {
+			endpoint, status = "stream", http.StatusNotFound
+		}
+		require.Equal(t, status, request(fmt.Sprintf("/songs/%d/%s", i+1, endpoint), "203.0.113.10:1234").Code)
+	}
+	limited := request("/songs/100/url", "203.0.113.10:1234")
+	assert.Equal(t, http.StatusTooManyRequests, limited.Code, "url 与 stream 必须共用 IP 配额")
+	assert.Equal(t, "60", limited.Header().Get("Retry-After"))
+	assert.Equal(t, int32(20), upstreamCalls.Load())
+
+	for i := range 10 {
+		require.Equal(t, http.StatusOK, request(fmt.Sprintf("/songs/%d/url", i+21), "203.0.113.11:1234").Code)
+	}
+	limited = request("/songs/100/stream", "203.0.113.12:1234")
+	assert.Equal(t, http.StatusTooManyRequests, limited.Code, "换 IP 不能绕过全站解析配额")
+	assert.Equal(t, "60", limited.Header().Get("Retry-After"))
+	assert.Equal(t, int32(30), upstreamCalls.Load(), "被限流的请求不能继续调用 Kite")
+	assert.Equal(t, http.StatusOK, request("/songs/42", "203.0.113.10:1234").Code, "播放限流不能阻断元数据")
 }
 
 func TestPublicMusicStreamRedirectsOnlyToAnonymousPlayableURLs(t *testing.T) {
@@ -164,14 +218,17 @@ func TestPublicMusicPlaybackUsesSiteAccountCookieForFeaturedTracks(t *testing.T)
 			urlSongID = strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/api/v1/songs/"), "/url")
 			_, _ = w.Write([]byte(`{"url":{"id":"42","url":"https://audio.example.com/full.mp3","format":"mp3","bitrate":"128000","size":"1200000"}}`))
 		case strings.HasSuffix(r.URL.Path, "/tracks"):
-			_, _ = w.Write([]byte(`{"songs":[{"id":"42","name":"VIP 曲","durationMs":230000,"fee":1}],"total":1}`))
+			_, _ = w.Write([]byte(`{"songs":[{"id":"42","name":"VIP 曲","durationMs":"230000","fee":1}],"total":1}`))
 		default:
-			_, _ = w.Write([]byte(`{"song":{"id":"42","name":"VIP 曲","durationMs":230000,"fee":1}}`))
+			_, _ = w.Write([]byte(`{"song":{"id":"42","name":"VIP 曲","durationMs":"230000","fee":1}}`))
 		}
 	}))
 	defer upstream.Close()
 
 	deps := fullRouterDeps()
+	cache := miniredis.RunT(t)
+	deps.Redis = redis.NewClient(&redis.Options{Addr: cache.Addr()})
+	t.Cleanup(func() { assert.NoError(t, deps.Redis.Close()) })
 	repo := &musicAccountRepository{credential: music.Credential{
 		SealedCookie: sealed,
 		Profile:      music.Profile{ID: "9", Nickname: "站点账号"},
@@ -216,11 +273,14 @@ func TestPublicMusicTrialSnippetIsDeliveredAndFlagged(t *testing.T) {
 			_, _ = w.Write([]byte(`{"url":{"id":"42","url":"https://audio.example.com/trial.mp3","format":"mp3","bitrate":"128000","size":"480000"}}`))
 			return
 		}
-		_, _ = w.Write([]byte(`{"song":{"id":"42","name":"付费曲","durationMs":230000,"fee":4}}`))
+		_, _ = w.Write([]byte(`{"song":{"id":"42","name":"付费曲","durationMs":"230000","fee":4}}`))
 	}))
 	defer upstream.Close()
 
 	deps := fullRouterDeps()
+	cache := miniredis.RunT(t)
+	deps.Redis = redis.NewClient(&redis.Options{Addr: cache.Addr()})
+	t.Cleanup(func() { assert.NoError(t, deps.Redis.Close()) })
 	deps.Music = musichttp.NewHandler(appmusic.NewService(nil, kite.NewClient(upstream.URL, "server-token"), nil))
 	router := chi.NewRouter()
 	RegisterRoutes(router, deps)
