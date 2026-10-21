@@ -154,6 +154,22 @@ func (h *Handler) SongURL(w http.ResponseWriter, r *http.Request) {
 	value, err := h.svc.SongURL(r.Context(), r.PathValue("id"), r.URL.Query().Get("level"))
 	respond(w, r, value, err)
 }
+
+// SongStream 按需解析匿名播放地址，只重定向、不代理音频。
+func (h *Handler) SongStream(w http.ResponseWriter, r *http.Request) {
+	value, err := h.svc.SongURL(r.Context(), r.PathValue("id"), r.URL.Query().Get("level"))
+	if err != nil {
+		respond(w, r, nil, err)
+		return
+	}
+	if !value.Playable || value.URL == nil {
+		respond(w, r, nil, shared.NotFound("匿名播放地址"))
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	http.Redirect(w, r, *value.URL, http.StatusFound)
+}
+
 func (h *Handler) Lyric(w http.ResponseWriter, r *http.Request) {
 	value, err := h.svc.Lyric(r.Context(), r.PathValue("id"))
 	respond(w, r, value, err)

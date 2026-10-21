@@ -57,6 +57,7 @@ func registerMusicPaths(t *openapi3.T) {
 		{"GET", "/music/playlists/{id}/tracks", "匿名读取启用歌单的曲目", "MusicSong", "", true, true, 200},
 		{"GET", "/music/songs/{id}", "匿名读取歌曲资料", "MusicSong", "", false, false, 200},
 		{"GET", "/music/songs/{id}/url", "取得匿名播放地址", "MusicSongURL", "", false, false, 200},
+		{"GET", "/music/songs/{id}/stream", "按需重定向到匿名音频地址", "", "", false, false, 302},
 		{"GET", "/music/songs/{id}/lyric", "匿名读取歌词", "MusicLyric", "", false, false, 200},
 	} {
 		op := &openapi3.Operation{Tags: []string{"音乐"}, Summary: endpoint.summary}
@@ -76,7 +77,7 @@ func registerMusicPaths(t *openapi3.T) {
 		if endpoint.paged {
 			op.Parameters = append(op.Parameters, pageParam(), limitParam(100))
 		}
-		if endpoint.path == "/music/songs/{id}/url" {
+		if endpoint.path == "/music/songs/{id}/url" || endpoint.path == "/music/songs/{id}/stream" {
 			p := queryStrParam("level", "默认 standard")
 			p.Value.Schema = strEnum("音质", "standard", "exhigh", "lossless", "hires")
 			op.Parameters = append(op.Parameters, p)
@@ -84,12 +85,21 @@ func registerMusicPaths(t *openapi3.T) {
 		if endpoint.body != "" {
 			op.RequestBody = jsonBody(endpoint.body, true, "操作参数")
 		}
-		success := messageResponse("操作成功，data 为 null")
-		if endpoint.schema != "" {
-			success = dataResponse(endpoint.schema, "操作结果", endpoint.status)
-		}
-		if endpoint.array {
+		var success *openapi3.ResponseRef
+		switch {
+		case endpoint.path == "/music/songs/{id}/stream":
+			success = &openapi3.ResponseRef{Value: &openapi3.Response{
+				Description: strPtr("按需解析后重定向到 CDN；不代理音频，响应不缓存。无匿名播放地址时返回 404。"),
+				Headers: openapi3.Headers{
+					"Location": &openapi3.HeaderRef{Value: &openapi3.Header{Parameter: openapi3.Parameter{Schema: reqStr("临时的匿名音频地址")}}},
+				},
+			}}
+		case endpoint.array:
 			success = dataArrayResponse(endpoint.schema, "数组永不为 null", endpoint.status, endpoint.paged)
+		case endpoint.schema != "":
+			success = dataResponse(endpoint.schema, "操作结果", endpoint.status)
+		default:
+			success = messageResponse("操作成功，data 为 null")
 		}
 		op.Responses = responses(endpoint.status, success, 400, errorResponse("输入或网易云登录态错误；不会返回本站登录 401"), 404, errorResponse("未启用展示或资源不存在"), 409, errorResponse("重复歌单或账号已变更"), 500, errorResponse("存储、Kite 连接、响应或服务令牌错误"))
 		if strings.HasPrefix(endpoint.path, "/music/") && endpoint.path != "/music/playlists" {

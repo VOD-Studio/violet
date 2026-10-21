@@ -21,6 +21,7 @@ func registerMusicPublicRoutes(r chi.Router, d *Deps) {
 			r.Get("/playlists/{id}/tracks", h.PublicTracks)
 			r.Get("/songs/{id}", h.Song)
 			r.Get("/songs/{id}/url", h.SongURL)
+			r.Get("/songs/{id}/stream", h.SongStream)
 			r.Get("/songs/{id}/lyric", h.Lyric)
 		})
 	})
