@@ -134,7 +134,7 @@ export function AddPlaylistDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="flex h-[620px] max-h-[90dvh] w-full flex-col overflow-hidden sm:max-w-2xl">
+			<DialogContent className="flex h-155 max-h-[90dvh] w-full flex-col overflow-hidden sm:max-w-2xl">
 				<DialogHeader className="shrink-0 pb-1">
 					<DialogTitle className="flex items-center gap-2">
 						<ListPlus className="size-5 text-primary" />
@@ -157,7 +157,7 @@ export function AddPlaylistDialog({
 
 				{/* Tab 1: 我的账号歌单库 */}
 				{activeTab === "library" ? (
-					<div className="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden">
+					<div className="mt-4 -mx-1 -mb-1 flex min-h-0 flex-1 flex-col overflow-hidden p-1">
 						{!isConnected ? (
 							<div className="flex flex-1 flex-col items-center justify-center space-y-3 py-12 text-center">
 								<Headphones className="size-10 text-muted-foreground" />
@@ -317,7 +317,7 @@ export function AddPlaylistDialog({
 					</div>
 				) : (
 					/* Tab 2: 按 ID 添加或关键字搜索 */
-					<div className="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden space-y-4">
+					<div className="mt-4 -mx-1 -mb-1 flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-1">
 						{/* 直接输入 ID 快捷添加 */}
 						<div className="shrink-0 rounded-xl border border-border/50 bg-muted/20 p-4">
 							<p className="mb-2 font-medium text-xs">通过歌单 ID 直接选入</p>
@@ -341,7 +341,7 @@ export function AddPlaylistDialog({
 						</div>
 
 						{/* 关键词搜索公开歌单 */}
-						<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+						<div className="-m-1 flex min-h-0 flex-1 flex-col overflow-hidden p-1">
 							<form
 								onSubmit={handleSearchSubmit}
 								className="flex shrink-0 items-center gap-2"
@@ -364,7 +364,7 @@ export function AddPlaylistDialog({
 								</Button>
 							</form>
 
-							<div className="mt-3 min-h-0 flex-1 overflow-y-auto pr-1">
+							<div className="mt-3 min-h-0 flex-1 overflow-y-auto px-1">
 								{isSearchLoading ? (
 									<div className="flex h-32 items-center justify-center text-muted-foreground text-xs">
 										正在搜索网易云歌单...

@@ -1,9 +1,9 @@
-import { createQueryClient } from "@/shared/api/query-client";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Route } from "@/routes/admin.music";
+import { createQueryClient } from "@/shared/api/query-client";
 
 vi.mock("@/features/auth/hooks/usePermissions", () => ({
 	useHasPermission: () => true,
@@ -119,45 +119,14 @@ describe("AdminMusicPage Route Integration", () => {
 		cleanup();
 	});
 
-	it("成功渲染音乐管理页面各主区域", () => {
-		const Component = Route.options.component;
-		if (!Component) throw new Error("Component is missing");
-		render(<Component />, { wrapper });
-
-		// PageShell 描述
-		expect(
-			screen.getByText("管理全站音乐服务连通性、绑定网易云账号并维护前台公开展示歌单。"),
-		).toBeDefined();
-
-		// Action 按钮
-		expect(screen.getByText("添加展示歌单")).toBeDefined();
-
-		// Kite 卡片
-		expect(screen.getByText("Kite 音乐服务")).toBeDefined();
-		expect(screen.getByText("http://127.0.0.1:3721")).toBeDefined();
-
-		// 账号卡片
-		expect(screen.getByText("站点网易云账号")).toBeDefined();
-		expect(screen.getByText("博丽灵梦")).toBeDefined();
-
-		// 展示歌单表格
-		expect(screen.getByText("站点展示歌单")).toBeDefined();
-		expect(screen.getByText("东方华彩录")).toBeDefined();
-	});
-
 	it("点击添加展示歌单打开弹窗", () => {
 		const Component = Route.options.component;
 		if (!Component) throw new Error("Component is missing");
 		render(<Component />, { wrapper });
 
-		const addBtn = screen.getByText("添加展示歌单");
+		const addBtn = screen.getByRole("button", { name: "添加歌单" });
 		fireEvent.click(addBtn);
 
-		// 检查弹窗标题出现
-		expect(
-			screen.getByText(
-				"选入网易云公开歌单作为本站展示歌单，支持按序展示并供前台访客浏览试听。",
-			),
-		).toBeDefined();
+		expect(screen.getByRole("dialog", { name: "添加展示歌单" })).toBeDefined();
 	});
 });

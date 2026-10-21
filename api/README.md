@@ -165,7 +165,7 @@ api/
 
 ### 站点音乐接口（Kite）
 
-仅提供后端 API，不包含管理页面、公开音乐页面或播放组件。全站维护一个网易云账号，Cookie 由独立 `MUSIC_CREDENTIAL_KEY` 加密后存入 PostgreSQL；响应与启动配置日志不暴露 Cookie、服务令牌或加密密钥。接入配置见 [部署指南](../docs/deploy/manual-deploy.md#kite-音乐服务可选)。
+管理接口由前端 `/admin/music` 页面消费，暂不包含公开音乐页面或播放组件。全站维护一个网易云账号，Cookie 由独立 `MUSIC_CREDENTIAL_KEY` 加密后存入 PostgreSQL；响应与启动配置日志不暴露 Cookie、服务令牌或加密密钥。接入配置见 [部署指南](../docs/deploy/manual-deploy.md#kite-音乐服务可选)。
 
 **当前上游限制**：已部署的 Kite v0.4.0 存在 [曲目 offset 未生效 #89](https://github.com/VOD-Studio/kite/issues/89)、[账号歌单分页结果错误 #88](https://github.com/VOD-Studio/kite/issues/88) 和 [账号歌单读取丢弃登录上下文 #90](https://github.com/VOD-Studio/kite/issues/90)。本次仅提 issue，不修改或部署 Kite。上游修复前，不能依赖曲目翻页、账号歌单总数或私有歌单读取；Violet 不伪造总数，也不把匿名结果当作完整私有音乐库。
 
@@ -176,7 +176,7 @@ api/
 | `GET /admin/music/status` | 返回 `configured`、`credential_storage_ready`、`base_url`，不发起外部请求 |
 | `POST /admin/music/verify` | 同时检查 Kite 健康和受服务令牌保护的只读接口，返回 `valid` 与说明 |
 | `GET /admin/music/account` | 返回 `disconnected` / `connected` / `expired` 和可空的 `profile`；网络故障返回错误，不冒充未登录 |
-| `POST /admin/music/login/qr` | 返回 201；提供本站挑战 `id`、二维码内容 `url`、RFC3339 `expires_at`，由未来前端生成二维码图像 |
+| `POST /admin/music/login/qr` | 返回 201；提供本站挑战 `id`、二维码内容 `url`、RFC3339 `expires_at`，管理页生成二维码图像并在到期后停止轮询 |
 | `POST /admin/music/login/qr/{id}/check` | 返回 `waiting` / `scanned` / `confirmed` / `expired`；确认时加密保存 Cookie，`account` 仅确认成功时非空 |
 | `DELETE /admin/music/login/qr/{id}` | 发起者幂等取消挑战；取消先于确认提交时，迟到结果不能接入账号 |
 | `POST /admin/music/account/refresh` | 续期后先用账号版本校验保存完整 Cookie，再查询状态；状态查询失败仍保留新凭据并返回错误，账号已退出或变更时拒绝迟到写入 |

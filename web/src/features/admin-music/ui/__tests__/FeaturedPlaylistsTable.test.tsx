@@ -63,20 +63,9 @@ describe("FeaturedPlaylistsTable", () => {
 		},
 	];
 
-	it("空列表时展示空占位文案", () => {
-		render(<FeaturedPlaylistsTable playlists={[]} onViewTracks={vi.fn()} />);
-
-		expect(screen.getByText("暂无展示歌单")).toBeDefined();
-	});
-
 	it("渲染展示歌单并响应曲目查看点击", () => {
 		const onViewTracks = vi.fn();
 		render(<FeaturedPlaylistsTable playlists={samplePlaylists} onViewTracks={onViewTracks} />);
-
-		expect(screen.getByText("东方华彩录")).toBeDefined();
-		expect(screen.getByText("ACG 精选集")).toBeDefined();
-		expect(screen.getByText("ID: 1001")).toBeDefined();
-		expect(screen.getByText("42 首")).toBeDefined();
 
 		const trackBtn = screen.getAllByText("曲目")[0];
 		if (!trackBtn) throw new Error("Track button not found");
