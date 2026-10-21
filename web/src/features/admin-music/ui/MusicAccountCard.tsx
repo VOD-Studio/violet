@@ -1,4 +1,3 @@
-import { useHasPermission } from "@/features/auth/hooks/usePermissions";
 import { Badge, Button, Card, ConfirmDialog } from "@violet/ui";
 import {
 	Activity,
@@ -13,6 +12,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useHasPermission } from "@/features/auth/hooks/usePermissions";
 import { useDisconnectMusicAccount, useRefreshMusicAccount, useVerifyMusic } from "../api/queries";
 import type { MusicAccount, MusicStatus } from "../model/types";
 
@@ -28,6 +28,8 @@ export interface MusicAccountCardProps {
 	isStatusLoading?: boolean;
 	/** 账号状态是否在加载中 */
 	isAccountLoading?: boolean;
+	/** 无法扫码时的原因；省略表示配置就绪。 */
+	loginDisabledReason?: string;
 	/** 打开扫码登录对话框的回调 */
 	onOpenQrLogin: () => void;
 }
@@ -40,6 +42,7 @@ export function MusicAccountCard({
 	account,
 	isStatusLoading,
 	isAccountLoading,
+	loginDisabledReason,
 	onOpenQrLogin,
 }: MusicAccountCardProps) {
 	const canManage = useHasPermission("music:manage");
@@ -255,7 +258,7 @@ export function MusicAccountCard({
 								<Button
 									size="sm"
 									onClick={onOpenQrLogin}
-									disabled={!canManage}
+									disabled={!canManage || Boolean(loginDisabledReason)}
 									className="gap-1.5"
 								>
 									<LogIn className="size-3.5" />
@@ -281,7 +284,7 @@ export function MusicAccountCard({
 								<Button
 									size="sm"
 									onClick={onOpenQrLogin}
-									disabled={!canManage}
+									disabled={!canManage || Boolean(loginDisabledReason)}
 									className="gap-1.5"
 								>
 									<LogIn className="size-3.5" />
@@ -289,6 +292,9 @@ export function MusicAccountCard({
 								</Button>
 							</div>
 						</div>
+					)}
+					{loginDisabledReason && account?.state !== "connected" && (
+						<p className="text-muted-foreground text-xs">{loginDisabledReason}</p>
 					)}
 				</div>
 			</Card>

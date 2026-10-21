@@ -37,6 +37,8 @@ export interface AddPlaylistDialogProps {
 	account?: MusicAccount;
 	/** 当前已加入展示的歌单列表，用于判断是否已添加 */
 	featuredPlaylists: MusicFeaturedPlaylist[];
+	/** 无法扫码时的原因；省略表示配置就绪。 */
+	loginDisabledReason?: string;
 	/** 打开扫码登录弹窗的回调 */
 	onOpenQrLogin: () => void;
 }
@@ -64,6 +66,7 @@ export function AddPlaylistDialog({
 	onOpenChange,
 	account,
 	featuredPlaylists,
+	loginDisabledReason,
 	onOpenQrLogin,
 }: AddPlaylistDialogProps) {
 	const addMutation = useAddFeaturedPlaylist();
@@ -166,6 +169,7 @@ export function AddPlaylistDialog({
 								</p>
 								<Button
 									size="sm"
+									disabled={Boolean(loginDisabledReason)}
 									onClick={() => {
 										onOpenChange(false);
 										onOpenQrLogin();
@@ -174,6 +178,11 @@ export function AddPlaylistDialog({
 								>
 									立即扫码连接
 								</Button>
+								{loginDisabledReason && (
+									<p className="text-muted-foreground text-xs">
+										{loginDisabledReason}
+									</p>
+								)}
 							</div>
 						) : (
 							<div className="flex min-h-0 flex-1 flex-col">

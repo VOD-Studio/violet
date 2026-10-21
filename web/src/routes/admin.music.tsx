@@ -1,3 +1,4 @@
+import { PageShell } from "@features/admin-layout/ui/PageShell";
 import {
 	useFeaturedPlaylists,
 	useMusicAccount,
@@ -9,7 +10,6 @@ import { FeaturedPlaylistsTable } from "@features/admin-music/ui/FeaturedPlaylis
 import { MusicAccountCard } from "@features/admin-music/ui/MusicAccountCard";
 import { MusicLoginQrDialog } from "@features/admin-music/ui/MusicLoginQrDialog";
 import { PlaylistTracksDrawer } from "@features/admin-music/ui/PlaylistTracksDrawer";
-import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@violet/ui";
@@ -27,6 +27,15 @@ function AdminMusicPage() {
 	const { data: status, isLoading: isStatusLoading } = useMusicStatus();
 	const { data: account, isLoading: isAccountLoading } = useMusicAccount();
 	const { data: playlists = [], isLoading: isPlaylistsLoading } = useFeaturedPlaylists();
+	const loginDisabledReason = isStatusLoading
+		? "正在检查音乐服务配置"
+		: !status
+			? "无法读取音乐服务配置，请刷新页面"
+			: !status.configured
+				? "请先配置 Kite 服务地址与访问令牌"
+				: !status.credential_storage_ready
+					? "请先配置音乐凭据加密密钥"
+					: undefined;
 
 	// 弹窗状态管理
 	const [qrDialogOpen, setQrDialogOpen] = useState(false);
@@ -54,6 +63,7 @@ function AdminMusicPage() {
 				account={account}
 				isStatusLoading={isStatusLoading}
 				isAccountLoading={isAccountLoading}
+				loginDisabledReason={loginDisabledReason}
 				onOpenQrLogin={() => setQrDialogOpen(true)}
 			/>
 
@@ -74,6 +84,7 @@ function AdminMusicPage() {
 				onOpenChange={setAddDialogOpen}
 				account={account}
 				featuredPlaylists={playlists}
+				loginDisabledReason={loginDisabledReason}
 				onOpenQrLogin={() => setQrDialogOpen(true)}
 			/>
 

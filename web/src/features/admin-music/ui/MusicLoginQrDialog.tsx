@@ -7,75 +7,25 @@ import {
 	DialogTitle,
 } from "@violet/ui";
 import { CheckCircle2, QrCode, RefreshCw, Smartphone } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useCancelMusicLoginQR, useCreateMusicLoginQR, useMusicQrPolling } from "../api/queries";
 import { generateQrSvgPath } from "../lib/qr";
 import type { MusicAccount, MusicChallenge } from "../model/types";
 
-/**
- * 扫码登录对话框 props。
- */
+/** 扫码登录对话框的受控状态与完成通知。 */
 export interface MusicLoginQrDialogProps {
-	/** 对话框是否打开 */
+	/** 关闭时卸载当前扫码会话。 */
 	open: boolean;
-	/** 打开状态改变事件 */
+	/** 扫码确认成功后请求关闭对话框。 */
 	onOpenChange: (open: boolean) => void;
-	/** 成功扫码登录并绑定账号后的回调 */
+	/** 仅在确认结果包含有效账号时通知调用方。 */
 	onSuccess?: (account: MusicAccount) => void;
 }
 
-/**
- * 网易云音乐客户端扫码登录对话框。
- */
+/** 连接全站统一使用的网易云账号，不向浏览器返回账号凭据。 */
 export function MusicLoginQrDialog({ open, onOpenChange, onSuccess }: MusicLoginQrDialogProps) {
-	const createQrMutation = useCreateMusicLoginQR();
-	const cancelQrMutation = useCancelMusicLoginQR();
-
-	const [challenge, setChallenge] = useState<MusicChallenge | null>(null);
-	const activeChallengeIdRef = useRef<string | null>(null);
-	activeChallengeIdRef.current = challenge?.id ?? null;
-
-	const startChallenge = useCallback(async () => {
-		try {
-			const res = await createQrMutation.mutateAsync();
-			setChallenge(res);
-		} catch (error) {
-			const message = error instanceof Error ? error.message : "获取登录二维码失败";
-			toast.error(message);
-		}
-	}, [createQrMutation]);
-
-	// 弹窗打开时生成挑战，关闭时清理
-	useEffect(() => {
-		if (open) {
-			startChallenge();
-		} else {
-			const idToCancel = activeChallengeIdRef.current;
-			if (idToCancel) {
-				cancelQrMutation.mutate(idToCancel);
-			}
-			setChallenge(null);
-		}
-	}, [open, startChallenge, cancelQrMutation]);
-
-	const handleConfirmed = (account: MusicAccount) => {
-		toast.success(`网易云账号「${account.profile?.nickname ?? "已连接"}」连接成功！`);
-		onSuccess?.(account);
-		onOpenChange(false);
-	};
-
-	const { qrState } = useMusicQrPolling(challenge?.id ?? null, handleConfirmed);
-
-	const qrSvg = useMemo(() => {
-		if (!challenge?.url) return null;
-		try {
-			return generateQrSvgPath(challenge.url, 6, 2);
-		} catch {
-			return null;
-		}
-	}, [challenge?.url]);
-
+	const [attempt, setAttempt] = useState(0);
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="sm:max-w-md">
@@ -88,84 +38,133 @@ export function MusicLoginQrDialog({ open, onOpenChange, onSuccess }: MusicLogin
 						全站统一使用该账号访问歌单库；不会代表访客获取付费歌曲播放权。
 					</DialogDescription>
 				</DialogHeader>
-
-				<div className="flex flex-col items-center justify-center py-6">
-					<div className="relative flex size-56 items-center justify-center rounded-2xl border border-border bg-white p-3 shadow-xs">
-						{createQrMutation.isPending || !challenge ? (
-							<div className="flex flex-col items-center gap-2 text-muted-foreground text-xs">
-								<RefreshCw className="size-6 animate-spin text-primary" />
-								<span>正在生成二维码...</span>
-							</div>
-						) : qrSvg ? (
-							<>
-								<svg
-									viewBox={`0 0 ${qrSvg.size} ${qrSvg.size}`}
-									className="size-full text-neutral-900"
-									aria-label="网易云登录二维码"
-									role="img"
-								>
-									<path d={qrSvg.path} fill="currentColor" />
-								</svg>
-
-								{/* 已扫码待确认遮罩 */}
-								{qrState === "scanned" && (
-									<div className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-white/92 backdrop-blur-xs">
-										<Smartphone className="size-8 text-primary animate-bounce" />
-										<p className="mt-2 font-medium text-neutral-800 text-sm">
-											扫描成功
-										</p>
-										<p className="mt-1 text-neutral-500 text-xs">
-											请在手机上点击确认登录
-										</p>
-									</div>
-								)}
-
-								{/* 确认成功遮罩 */}
-								{qrState === "confirmed" && (
-									<div className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-white/92 backdrop-blur-xs">
-										<CheckCircle2 className="size-8 text-emerald-600" />
-										<p className="mt-2 font-medium text-neutral-800 text-sm">
-											登录成功
-										</p>
-									</div>
-								)}
-
-								{/* 过期遮罩 */}
-								{qrState === "expired" && (
-									<div className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-white/92 backdrop-blur-xs">
-										<p className="font-medium text-neutral-700 text-sm">
-											二维码已失效
-										</p>
-										<Button
-											size="sm"
-											onClick={startChallenge}
-											className="mt-3 gap-1.5"
-										>
-											<RefreshCw className="size-3.5" />
-											刷新二维码
-										</Button>
-									</div>
-								)}
-							</>
-						) : (
-							<div className="text-destructive text-xs">二维码解析失败</div>
-						)}
-					</div>
-
-					<div className="mt-4 text-center">
-						{qrState === "waiting" && (
-							<p className="text-muted-foreground text-xs">
-								请使用{" "}
-								<span className="font-medium text-foreground">网易云音乐 APP</span>{" "}
-								扫一扫
-							</p>
-						)}
-						{qrState === "scanned" && (
-							<p className="text-primary text-xs">正在等待客户端确认...</p>
-						)}
-					</div>
-				</div>
+				{open && (
+					<MusicQrSession
+						key={attempt}
+						onRetry={() => setAttempt((value) => value + 1)}
+						onConfirmed={(account) => {
+							toast.success(
+								`网易云账号「${account.profile?.nickname ?? "已连接"}」连接成功`,
+							);
+							onSuccess?.(account);
+							onOpenChange(false);
+						}}
+					/>
+				)}
 			</DialogContent>
 		</Dialog>
+	);
+}
+
+interface MusicQrSessionProps {
+	onRetry: () => void;
+	onConfirmed: (account: MusicAccount) => void;
+}
+
+/** 每次挂载只创建一个挑战，卸载时取消尚未确认的会话。 */
+function MusicQrSession({ onRetry, onConfirmed }: MusicQrSessionProps) {
+	const { mutateAsync: createQr, isPending: isCreating } = useCreateMusicLoginQR();
+	const { mutate: cancelQr } = useCancelMusicLoginQR();
+	const [challenge, setChallenge] = useState<MusicChallenge | null>(null);
+	const [createError, setCreateError] = useState<string | null>(null);
+	const confirmedRef = useRef(false);
+
+	useEffect(() => {
+		const controller = new AbortController();
+		let active = true;
+		let challengeId: string | undefined;
+		// 跳过 StrictMode 同步清理的那次 setup，避免生成两个登录挑战。
+		queueMicrotask(async () => {
+			if (!active) return;
+			try {
+				const next = await createQr(controller.signal);
+				challengeId = next.id;
+				if (!active) {
+					cancelQr(next.id);
+					return;
+				}
+				setChallenge(next);
+			} catch (cause) {
+				if (!active) return;
+				setCreateError(cause instanceof Error ? cause.message : "获取登录二维码失败");
+			}
+		});
+		return () => {
+			active = false;
+			controller.abort();
+			if (challengeId && !confirmedRef.current) cancelQr(challengeId);
+		};
+	}, [createQr, cancelQr]);
+
+	const { qrState, error: pollingError } = useMusicQrPolling(challenge, (account) => {
+		confirmedRef.current = true;
+		onConfirmed(account);
+	});
+	const error = createError ?? pollingError;
+	const qrSvg = useMemo(() => {
+		if (!challenge) return null;
+		try {
+			return generateQrSvgPath(challenge.url, 6, 4);
+		} catch {
+			return null;
+		}
+	}, [challenge]);
+
+	return (
+		<div className="flex flex-col items-center gap-4 py-6">
+			<div className="flex min-h-56 w-full flex-col items-center justify-center gap-3 p-4 text-center">
+				{error ? (
+					<>
+						<p role="alert" className="text-destructive text-sm">
+							{error}
+						</p>
+						<Button size="sm" disabled={isCreating} onClick={onRetry}>
+							重试
+						</Button>
+					</>
+				) : isCreating || !challenge ? (
+					<div
+						role="status"
+						className="flex flex-col items-center gap-2 text-muted-foreground text-xs"
+					>
+						<RefreshCw className="size-6 animate-spin text-primary" />
+						正在生成二维码…
+					</div>
+				) : qrState === "expired" ? (
+					<>
+						<p className="text-muted-foreground text-sm">二维码已失效</p>
+						<Button size="sm" onClick={onRetry}>
+							刷新二维码
+						</Button>
+					</>
+				) : qrState === "scanned" ? (
+					<div role="status" className="flex flex-col items-center gap-2">
+						<Smartphone className="size-8 text-primary" />
+						<p className="text-sm">请在手机上确认登录</p>
+					</div>
+				) : qrState === "confirmed" ? (
+					<div role="status" className="flex flex-col items-center gap-2">
+						<CheckCircle2 className="size-8 text-success" />
+						登录成功
+					</div>
+				) : qrSvg ? (
+					<svg
+						viewBox={`0 0 ${qrSvg.size} ${qrSvg.size}`}
+						className="size-56 rounded-xl bg-white text-neutral-900"
+						aria-label="网易云登录二维码"
+						role="img"
+					>
+						<path d={qrSvg.path} fill="currentColor" />
+					</svg>
+				) : (
+					<p role="alert" className="text-destructive text-sm">
+						二维码解析失败，请关闭后重试
+					</p>
+				)}
+			</div>
+			{challenge && !error && qrState === "waiting" && (
+				<p className="text-muted-foreground text-xs">请使用网易云音乐 APP 扫一扫</p>
+			)}
+		</div>
 	);
 }

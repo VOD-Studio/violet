@@ -1,5 +1,5 @@
 import { apiDelete, apiGet, apiGetPaged, apiPatch, apiPost, apiPut } from "@/shared/api/request";
-import type { PageQuery, PagedResponse } from "@/shared/api/types";
+import type { PagedResponse, PageQuery } from "@/shared/api/types";
 import type {
 	AddFeaturedPlaylistRequest,
 	MusicAccount,
@@ -29,13 +29,20 @@ export const verifyMusic = async (): Promise<MusicVerification> =>
 export const getMusicAccount = async (): Promise<MusicAccount> =>
 	apiGet<MusicAccount>(`${BASE}/account`);
 
-/** 发起网易云扫码登录挑战 */
-export const createMusicLoginQR = async (): Promise<MusicChallenge> =>
-	apiPost<MusicChallenge>(`${BASE}/login/qr`);
+export const createMusicLoginQR = async (signal?: AbortSignal): Promise<MusicChallenge> =>
+	apiPost<MusicChallenge>(`${BASE}/login/qr`, undefined, {
+		signal,
+		"axios-retry": { retries: 0 },
+	});
 
-/** 轮询网易云扫码挑战状态 */
-export const checkMusicLoginQR = async (challengeId: string): Promise<MusicChallengeCheck> =>
-	apiPost<MusicChallengeCheck>(`${BASE}/login/qr/${challengeId}/check`);
+export const checkMusicLoginQR = async (
+	challengeId: string,
+	signal?: AbortSignal,
+): Promise<MusicChallengeCheck> =>
+	apiPost<MusicChallengeCheck>(`${BASE}/login/qr/${challengeId}/check`, undefined, {
+		signal,
+		"axios-retry": { retries: 0 },
+	});
 
 /** 取消未完成的扫码挑战 */
 export const cancelMusicLoginQR = async (challengeId: string): Promise<void> =>

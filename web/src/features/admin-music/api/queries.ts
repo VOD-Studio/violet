@@ -1,10 +1,10 @@
-import type { PageQuery } from "@/shared/api/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
+import type { PageQuery } from "@/shared/api/types";
 import type {
 	AddFeaturedPlaylistRequest,
 	MusicAccount,
-	MusicChallengeCheck,
+	MusicChallenge,
 	MusicQrState,
 	SearchMusicLibraryQuery,
 } from "../model/types";
@@ -167,62 +167,85 @@ export const usePlaylistTracks = (
 	});
 
 /**
- * 扫码登录状态自动轮询 Hook。
+ * 按挑战有效期轮询扫码状态；错误、过期或确认后停止，卸载时取消在途请求。
  *
- * @param challengeId 当前挑战 ID，为 null 时不轮询
- * @param onConfirmed 扫码并确认成功时的回调
+ * @param challenge - 当前挑战及过期时间；为 null 时不轮询
+ * @param onConfirmed - 确认结果包含有效账号时调用一次
+ * @returns 扫码状态与错误；出现错误后停止，重试需创建新挑战
  */
 export function useMusicQrPolling(
-	challengeId: string | null,
+	challenge: MusicChallenge | null,
 	onConfirmed?: (account: MusicAccount) => void,
 ) {
 	const qc = useQueryClient();
 	const [qrState, setQrState] = useState<MusicQrState>("waiting");
+	const [error, setError] = useState<string | null>(null);
 	const onConfirmedRef = useRef(onConfirmed);
 	onConfirmedRef.current = onConfirmed;
+	const challengeId = challenge?.id;
+	const expiresAt = challenge?.expires_at;
 
 	useEffect(() => {
-		if (!challengeId) {
-			setQrState("waiting");
+		setQrState("waiting");
+		setError(null);
+		if (!challengeId || !expiresAt) return;
+
+		const remaining = Date.parse(expiresAt) - Date.now();
+		if (!(remaining > 0)) {
+			setQrState("expired");
 			return;
 		}
 
+		const controller = new AbortController();
 		let active = true;
-		let timerId: NodeJS.Timeout | number | undefined;
+		let timerId: number | undefined;
+		const expiryTimerId = window.setTimeout(() => {
+			active = false;
+			controller.abort();
+			window.clearTimeout(timerId);
+			setQrState("expired");
+		}, remaining);
 
 		const poll = async () => {
 			try {
-				const check: MusicChallengeCheck = await checkMusicLoginQR(challengeId);
+				const check = await checkMusicLoginQR(challengeId, controller.signal);
 				if (!active) return;
-				setQrState(check.state);
-
-				if (check.state === "confirmed" && check.account) {
+				if (check.state === "confirmed") {
+					active = false;
+					window.clearTimeout(expiryTimerId);
+					if (check.account?.state !== "connected" || !check.account.profile) {
+						setError("扫码确认未返回有效账号，请重新扫码");
+						return;
+					}
+					setQrState("confirmed");
 					qc.setQueryData(adminMusicKeys.account(), check.account);
-					qc.invalidateQueries({ queryKey: adminMusicKeys.library() });
+					void qc.invalidateQueries({ queryKey: adminMusicKeys.library() });
 					onConfirmedRef.current?.(check.account);
 					return;
 				}
-
+				setQrState(check.state);
 				if (check.state === "expired") {
+					active = false;
+					window.clearTimeout(expiryTimerId);
 					return;
 				}
-
-				// 未完成时隔 2 秒继续轮询
-				timerId = setTimeout(poll, 2000);
-			} catch {
+				timerId = window.setTimeout(poll, 2000);
+			} catch (cause) {
 				if (!active) return;
-				// 上游异常时稍作退避重试
-				timerId = setTimeout(poll, 3000);
+				active = false;
+				window.clearTimeout(expiryTimerId);
+				setError(cause instanceof Error ? cause.message : "扫码状态查询失败，请重试");
 			}
 		};
 
-		poll();
-
+		void poll();
 		return () => {
 			active = false;
-			clearTimeout(timerId);
+			controller.abort();
+			window.clearTimeout(timerId);
+			window.clearTimeout(expiryTimerId);
 		};
-	}, [challengeId, qc]);
+	}, [challengeId, expiresAt, qc]);
 
-	return { qrState };
+	return { qrState, error };
 }
