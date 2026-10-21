@@ -7,6 +7,21 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.14.0](https://github.com/VOD-Studio/violet/compare/v2.13.2...v2.14.0) (2026-10-21)
+
+
+### 新增
+
+* **music:** 接入 Kite 站点音乐后端 ([c50bf59](https://github.com/VOD-Studio/violet/commit/c50bf5971359bdeff8d3a9fe8ff89a0def328370))
+* **music:** 接入 Kite 站点音乐后端 ([2bc49dc](https://github.com/VOD-Studio/violet/commit/2bc49dc85016a475a92ca18599c0f0fe6b19dee3))
+
+
+### 修复
+
+* **music:** 保留已续期的账号凭据 ([8e4b3e4](https://github.com/VOD-Studio/violet/commit/8e4b3e4e66328027f0d0d7b01af559ecfeaf7538))
+* **music:** 区分 Kite 故障与请求错误 ([8aa1a44](https://github.com/VOD-Studio/violet/commit/8aa1a44bbb537729c95edf71f428cb1aadb9edcd))
+* **music:** 限制公开 Kite 查询频率 ([9a57c49](https://github.com/VOD-Studio/violet/commit/9a57c49ef1a76dd2dc3e38964045efee3c156a37))
+
 ## [2.13.2](https://github.com/VOD-Studio/violet/compare/v2.13.1...v2.13.2) (2026-10-20)
 
 
