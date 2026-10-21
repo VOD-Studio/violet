@@ -7,6 +7,13 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.15.0](https://github.com/VOD-Studio/violet/compare/v2.14.0...v2.15.0) (2026-10-21)
+
+
+### 新增
+
+* **music:** 接入 Kite 站点音乐管理与前台播放 ([#604](https://github.com/VOD-Studio/violet/issues/604)) ([2676434](https://github.com/VOD-Studio/violet/commit/267643464df356ff65355cb68a717d62fd942cc8))
+
 ## [2.14.0](https://github.com/VOD-Studio/violet/compare/v2.13.2...v2.14.0) (2026-10-21)
 
 
