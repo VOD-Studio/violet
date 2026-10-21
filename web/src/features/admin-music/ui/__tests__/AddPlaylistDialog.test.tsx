@@ -96,4 +96,24 @@ describe("AddPlaylistDialog", () => {
 
 		expect(screen.getByText("已添加")).toBeDefined();
 	});
+	it("通过 Segmented 切换标签页", () => {
+		render(
+			<AddPlaylistDialog
+				open={true}
+				onOpenChange={vi.fn()}
+				account={{
+					state: "connected",
+					profile: { id: "1", nickname: "Rua", avatar_url: "" },
+				}}
+				featuredPlaylists={[]}
+				onOpenQrLogin={vi.fn()}
+			/>,
+		);
+
+		const manualSegment = screen.getByText("按 ID 或关键字搜索");
+		fireEvent.click(manualSegment);
+
+		expect(screen.getByText("通过歌单 ID 直接选入")).toBeDefined();
+		expect(screen.getByPlaceholderText("输入网易云歌单十进制 ID（如 3778678）")).toBeDefined();
+	});
 });

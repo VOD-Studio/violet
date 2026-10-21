@@ -62,7 +62,7 @@ export function PlaylistTracksDrawer({ playlist, open, onOpenChange }: PlaylistT
 				onOpenChange(val);
 			}}
 		>
-			<DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-3xl">
+			<DialogContent className="flex h-[620px] max-h-[90dvh] w-full flex-col overflow-hidden sm:max-w-3xl">
 				<DialogHeader>
 					<div className="flex items-center gap-3">
 						{playlist?.cover_url && (

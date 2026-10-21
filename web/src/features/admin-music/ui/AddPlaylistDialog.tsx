@@ -7,10 +7,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 	Input,
-	Tabs,
-	TabsContent,
-	TabsList,
-	TabsTrigger,
+	Segmented,
+	type SegmentedItem,
 } from "@violet/ui";
 import {
 	ChevronLeft,
@@ -43,6 +41,21 @@ export interface AddPlaylistDialogProps {
 	onOpenQrLogin: () => void;
 }
 
+type AddPlaylistTab = "library" | "manual";
+
+const SEGMENTS: SegmentedItem<AddPlaylistTab>[] = [
+	{
+		value: "library",
+		label: "从我的网易云歌单",
+		icon: <Headphones className="size-4" />,
+	},
+	{
+		value: "manual",
+		label: "按 ID 或关键字搜索",
+		icon: <Search className="size-4" />,
+	},
+];
+
 /**
  * 添加展示歌单对话框，支持从绑定的账号歌单库选入，或直接输入 ID 与关键字搜索公开歌单。
  */
@@ -55,9 +68,9 @@ export function AddPlaylistDialog({
 }: AddPlaylistDialogProps) {
 	const addMutation = useAddFeaturedPlaylist();
 
-	// 当前激活标签："library" | "manual"
+	// 当前激活分段："library" | "manual"
 	const isConnected = account?.state === "connected";
-	const [activeTab, setActiveTab] = useState<string>("library");
+	const [activeTab, setActiveTab] = useState<AddPlaylistTab>("library");
 
 	// Tab 1: 账号歌单库分页
 	const [libraryPage, setLibraryPage] = useState(1);
@@ -118,8 +131,8 @@ export function AddPlaylistDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-2xl">
-				<DialogHeader>
+			<DialogContent className="flex h-[620px] max-h-[90dvh] w-full flex-col overflow-hidden sm:max-w-2xl">
+				<DialogHeader className="shrink-0 pb-1">
 					<DialogTitle className="flex items-center gap-2">
 						<ListPlus className="size-5 text-primary" />
 						添加展示歌单
@@ -129,26 +142,19 @@ export function AddPlaylistDialog({
 					</DialogDescription>
 				</DialogHeader>
 
-				<Tabs
-					value={activeTab}
-					onValueChange={setActiveTab}
-					className="mt-2 flex min-h-0 flex-1 flex-col overflow-hidden"
-				>
-					<TabsList className="grid w-full grid-cols-2">
-						<TabsTrigger value="library" className="gap-1.5">
-							<Headphones className="size-4" />
-							从我的网易云歌单
-						</TabsTrigger>
-						<TabsTrigger value="manual" className="gap-1.5">
-							<Search className="size-4" />按 ID 或关键字搜索
-						</TabsTrigger>
-					</TabsList>
+				<div className="mt-2 shrink-0">
+					<Segmented<AddPlaylistTab>
+						value={activeTab}
+						onValueChange={setActiveTab}
+						segments={SEGMENTS}
+						block
+						className="w-full"
+					/>
+				</div>
 
-					{/* Tab 1: 我的账号歌单库 */}
-					<TabsContent
-						value="library"
-						className="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden"
-					>
+				{/* Tab 1: 我的账号歌单库 */}
+				{activeTab === "library" ? (
+					<div className="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden">
 						{!isConnected ? (
 							<div className="flex flex-1 flex-col items-center justify-center space-y-3 py-12 text-center">
 								<Headphones className="size-10 text-muted-foreground" />
@@ -173,7 +179,7 @@ export function AddPlaylistDialog({
 							<div className="flex min-h-0 flex-1 flex-col">
 								<div className="min-h-0 flex-1 overflow-y-auto pr-1">
 									{isLibraryLoading ? (
-										<div className="space-y-2 py-4">
+										<div className="space-y-2 py-2">
 											{Array.from({ length: 4 }).map((_, idx) => (
 												<div
 													key={`skeleton-${idx}`}
@@ -191,7 +197,7 @@ export function AddPlaylistDialog({
 											))}
 										</div>
 									) : (userPlaylistsData?.data?.length ?? 0) === 0 ? (
-										<div className="py-12 text-center text-muted-foreground text-xs">
+										<div className="flex h-full items-center justify-center text-muted-foreground text-xs">
 											暂无歌单数据
 										</div>
 									) : (
@@ -269,9 +275,9 @@ export function AddPlaylistDialog({
 
 								{/* 分页控制 */}
 								{libraryTotal > libraryLimit && (
-									<div className="flex items-center justify-between border-t border-border/40 pt-3 text-xs">
+									<div className="flex shrink-0 items-center justify-between border-t border-border/40 pt-3 text-xs">
 										<span className="text-muted-foreground">
-											第 {libraryPage} 页 / 共 {libraryTotalPages}页
+											第 {libraryPage} 页 / 共 {libraryTotalPages} 页
 										</span>
 										<div className="flex items-center gap-1">
 											<Button
@@ -299,15 +305,12 @@ export function AddPlaylistDialog({
 								)}
 							</div>
 						)}
-					</TabsContent>
-
-					{/* Tab 2: 按 ID 添加或关键字搜索 */}
-					<TabsContent
-						value="manual"
-						className="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden space-y-4"
-					>
+					</div>
+				) : (
+					/* Tab 2: 按 ID 添加或关键字搜索 */
+					<div className="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden space-y-4">
 						{/* 直接输入 ID 快捷添加 */}
-						<div className="rounded-xl border border-border/50 bg-muted/20 p-4">
+						<div className="shrink-0 rounded-xl border border-border/50 bg-muted/20 p-4">
 							<p className="mb-2 font-medium text-xs">通过歌单 ID 直接选入</p>
 							<div className="flex items-center gap-2">
 								<Input
@@ -330,7 +333,10 @@ export function AddPlaylistDialog({
 
 						{/* 关键词搜索公开歌单 */}
 						<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-							<form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
+							<form
+								onSubmit={handleSearchSubmit}
+								className="flex shrink-0 items-center gap-2"
+							>
 								<Input
 									placeholder="搜索网易云公开歌单关键词..."
 									value={searchKeyword}
@@ -351,13 +357,18 @@ export function AddPlaylistDialog({
 
 							<div className="mt-3 min-h-0 flex-1 overflow-y-auto pr-1">
 								{isSearchLoading ? (
-									<div className="py-8 text-center text-muted-foreground text-xs">
+									<div className="flex h-32 items-center justify-center text-muted-foreground text-xs">
 										正在搜索网易云歌单...
 									</div>
 								) : searchSubmitted &&
 									(searchResultsData?.data?.length ?? 0) === 0 ? (
-									<div className="py-8 text-center text-muted-foreground text-xs">
+									<div className="flex h-32 items-center justify-center text-muted-foreground text-xs">
 										未找到匹配的歌单
+									</div>
+								) : !searchSubmitted ? (
+									<div className="flex h-32 flex-col items-center justify-center text-muted-foreground text-xs space-y-1">
+										<Search className="size-5 opacity-40" />
+										<span>输入关键词可检索网易云全网公开歌单</span>
 									</div>
 								) : (
 									<div className="space-y-2">
@@ -433,8 +444,8 @@ export function AddPlaylistDialog({
 								)}
 							</div>
 						</div>
-					</TabsContent>
-				</Tabs>
+					</div>
+				)}
 			</DialogContent>
 		</Dialog>
 	);
