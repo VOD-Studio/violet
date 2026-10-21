@@ -1,7 +1,12 @@
 import { expect, type Page, test } from "@playwright/test";
 import { loadClient } from "./client";
 import { ROADMAP_FIXTURE } from "./mock-data.mjs";
-import { authenticated, collectDiagnostics, openClientPage } from "./support.ts";
+import {
+	authenticated,
+	collectDiagnostics,
+	openClientPage,
+	refocusUntilRequest,
+} from "./support.ts";
 
 const SLUG = ROADMAP_FIXTURE.project.slug;
 const PATH = `/projects/${SLUG}`;
@@ -159,15 +164,7 @@ test.describe("路线图筛选", () => {
 		});
 		await open(page);
 		// 首屏来自真实 SSR 夹具；通过客户端重新拉取后再验证本场景的数据。
-		await page.evaluate(() => {
-			for (const state of ["hidden", "visible"]) {
-				Object.defineProperty(document, "visibilityState", {
-					configurable: true,
-					value: state,
-				});
-				document.dispatchEvent(new Event("visibilitychange", { bubbles: true }));
-			}
-		});
+		await refocusUntilRequest(page, `**/api/v1/projects/by-slug/${SLUG}/roadmap`);
 		await expect(card(page, 3)).toContainText("CANVAS adapter");
 
 		await search(page).fill("  cAnVaS  ");

@@ -10,7 +10,7 @@ import { handle } from "./mock-data.mjs";
 
 const PORT = Number(process.env.PORT || 9410);
 
-createServer((req, res) => {
+const server = createServer((req, res) => {
 	const url = new URL(req.url, `http://127.0.0.1:${PORT}`);
 	const result = handle(req.method, url.pathname, url.search, req.headers.cookie ?? "");
 	res.writeHead(result.status, {
@@ -18,6 +18,10 @@ createServer((req, res) => {
 		"access-control-allow-origin": "*",
 	});
 	res.end(result.body);
-}).listen(PORT, "127.0.0.1", () => {
+});
+// route.fetch 的连接池不理会 Keep-Alive 超时提示，服务端按时关闭空闲连接时恰好复用会 ECONNRESET；
+// 空闲连接改由客户端在用例结束时关闭。
+server.keepAliveTimeout = 0;
+server.listen(PORT, "127.0.0.1", () => {
 	console.log(`[mock-api] listening on http://127.0.0.1:${PORT}`);
 });

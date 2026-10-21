@@ -1,7 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 import { loadClient } from "./client";
 import { ROADMAP_FIXTURE } from "./mock-data.mjs";
-import { collectDiagnostics, openClientPage } from "./support.ts";
+import { collectDiagnostics, openClientPage, refocusUntilRequest } from "./support.ts";
 
 const SLUG = ROADMAP_FIXTURE.project.slug;
 const completed = ROADMAP_FIXTURE.items.filter((item) => item.stage === "completed");
@@ -289,16 +289,7 @@ test.describe("窗口重新聚焦", () => {
 		await expect(cardButton(page, "计划中的第二项")).toBeVisible();
 
 		renamed = true;
-		await page.evaluate(() => {
-			// TanStack Query 的焦点管理只认 visibilitychange
-			for (const state of ["hidden", "visible"]) {
-				Object.defineProperty(document, "visibilityState", {
-					configurable: true,
-					value: state,
-				});
-				document.dispatchEvent(new Event("visibilitychange", { bubbles: true }));
-			}
-		});
+		await refocusUntilRequest(page, `**/api/v1/projects/by-slug/${SLUG}/roadmap`);
 
 		await expect(cardButton(page, "聚焦后改名的条目")).toBeVisible();
 		expect(requests).toBeGreaterThanOrEqual(1);
