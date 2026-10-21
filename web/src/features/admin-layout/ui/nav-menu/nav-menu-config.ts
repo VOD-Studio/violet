@@ -17,6 +17,7 @@ import {
 	Link2,
 	Megaphone,
 	MessageSquare,
+	Music,
 	NotebookText,
 	Rss,
 	ScrollText,
@@ -175,6 +176,13 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 		icon: Smile,
 		group: "assets",
 		permissions: ["emoji:view", "customemoji:manage"],
+	},
+	{
+		label: "音乐管理",
+		to: "/admin/music",
+		icon: Music,
+		group: "assets",
+		permissions: ["music:view"],
 	},
 	{
 		label: "用户管理",
