@@ -42,7 +42,9 @@ func (s *stubSettingsStore) UpsertMany(context.Context, map[string]string) error
 var _ domainsettings.SettingsStore = (*stubSettingsStore)(nil)
 
 func newSettingsHandler(store *stubSettingsStore) *Handler {
-	return NewHandler(appsettings.NewService(store, infraeventbus.NewInMemory()), authcmd.NewOAuthCredentials("", "", ""))
+	svc := appsettings.NewService(store, infraeventbus.NewInMemory())
+	svc.SetRuntimePolicies(newHTTPRuntimePolicies())
+	return NewHandler(svc, authcmd.NewOAuthCredentials("", "", ""))
 }
 
 func newJSONRequest(method, target, body string) *http.Request {

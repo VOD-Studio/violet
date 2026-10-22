@@ -7,7 +7,6 @@ package settings
 import (
 	"context"
 	"encoding/json"
-	"strconv"
 
 	"blog-api/internal/domain/shared"
 )
@@ -110,24 +109,6 @@ type SiteSettings struct {
 	LLMModel string `json:"llm_model"`
 	// LLMProtocol LLM 协议标识（区分 OpenAI/DeepSeek 等厂商协议变体）
 	LLMProtocol string `json:"llm_protocol"`
-	// 代码运行器配置（运行时可改，见 ADR-0006）
-
-	// CodeRunnerEnabled 是否启用代码运行器（parseBoolDefaultTrue，未配置默认启用）
-	CodeRunnerEnabled bool `json:"code_runner_enabled"`
-	// CodeRunnerMaxCPUCores 单次执行最大 CPU 核数（0 表示未配置，消费方 fallback 到 env config）
-	CodeRunnerMaxCPUCores float64 `json:"code_runner_max_cpu_cores"`
-	// CodeRunnerMaxMemoryMB 单次执行内存上限（MB）（0 表示未配置，消费方 fallback 到 env config）
-	CodeRunnerMaxMemoryMB uint64 `json:"code_runner_max_memory_mb"`
-	// CodeRunnerMaxTimeoutSecs 单次执行最大墙钟时长（秒）（0 表示未配置，消费方 fallback 到 env config）
-	CodeRunnerMaxTimeoutSecs uint64 `json:"code_runner_max_timeout_secs"`
-	// CodeRunnerMaxOutputBytes 单次执行 stdout/stderr 合计最大输出字节（0 表示未配置，消费方 fallback 到 env config）
-	CodeRunnerMaxOutputBytes uint64 `json:"code_runner_max_output_bytes"`
-	// CodeRunnerMaxSourceBytes 单次提交最大源码字节（0 表示未配置，消费方 fallback 到 env config）
-	CodeRunnerMaxSourceBytes uint64 `json:"code_runner_max_source_bytes"`
-	// CodeRunnerAllowNetwork 是否允许运行容器联网（最终生效需作者声明 + 语言允许 + 全局开关三者同时为真）
-	CodeRunnerAllowNetwork bool `json:"code_runner_allow_network"`
-	// CodeRunnerLanguages 允许运行的语言列表（逗号分隔的 canonical key：python/node/go/rust/bun）
-	CodeRunnerLanguages string `json:"code_runner_languages"`
 	// CustomEmojiMaxPerUser 单用户自定义表情份额上限（自传+收藏合计，0 表示未配置，
 	// 消费方 fallback 到 env config）
 	CustomEmojiMaxPerUser int `json:"custom_emoji_max_per_user"`
@@ -205,24 +186,6 @@ type UpdateInput struct {
 	LLMModel *string
 	// LLMProtocol LLM 协议标识（nil 不更新）
 	LLMProtocol *string
-	// 代码运行器配置（见 ADR-0006，nil 不更新）
-
-	// CodeRunnerEnabled 是否启用代码运行器（nil 不更新）
-	CodeRunnerEnabled *bool
-	// CodeRunnerMaxCPUCores 单次执行最大 CPU 核数（nil 不更新）
-	CodeRunnerMaxCPUCores *float64
-	// CodeRunnerMaxMemoryMB 单次执行内存上限 MB（nil 不更新）
-	CodeRunnerMaxMemoryMB *uint64
-	// CodeRunnerMaxTimeoutSecs 单次执行最大超时秒（nil 不更新）
-	CodeRunnerMaxTimeoutSecs *uint64
-	// CodeRunnerMaxOutputBytes 单次执行最大输出字节（nil 不更新）
-	CodeRunnerMaxOutputBytes *uint64
-	// CodeRunnerMaxSourceBytes 单次提交最大源码字节（nil 不更新）
-	CodeRunnerMaxSourceBytes *uint64
-	// CodeRunnerAllowNetwork 是否允许运行容器联网（nil 不更新）
-	CodeRunnerAllowNetwork *bool
-	// CodeRunnerLanguages 允许运行的语言列表（nil 不更新）
-	CodeRunnerLanguages *string
 	// CustomEmojiMaxPerUser 单用户自定义表情份额上限（nil 不更新）
 	CustomEmojiMaxPerUser *int
 }
@@ -290,16 +253,6 @@ func fromMap(m map[string]string) SiteSettings {
 	s.LLMAPIURL = m["llm_api_url"]
 	s.LLMModel = m["llm_model"]
 	s.LLMProtocol = m["llm_protocol"]
-	// 代码运行器：enabled 默认 true（parseBoolDefaultTrue，老站点升级无感）；
-	// 资源阈值为 0 表示未配置，消费方 fallback 到 env config（见 application/coderunner/service.go）。
-	s.CodeRunnerEnabled = parseBoolDefaultTrue(m["code_runner_enabled"])
-	s.CodeRunnerMaxCPUCores = parseFloat(m["code_runner_max_cpu_cores"])
-	s.CodeRunnerMaxMemoryMB = parseUint64(m["code_runner_max_memory_mb"])
-	s.CodeRunnerMaxTimeoutSecs = parseUint64(m["code_runner_max_timeout_secs"])
-	s.CodeRunnerMaxOutputBytes = parseUint64(m["code_runner_max_output_bytes"])
-	s.CodeRunnerMaxSourceBytes = parseUint64(m["code_runner_max_source_bytes"])
-	s.CodeRunnerAllowNetwork = m["code_runner_allow_network"] == "true"
-	s.CodeRunnerLanguages = m["code_runner_languages"]
 	// CustomEmojiMaxPerUser 为 0 表示未配置，消费方 fallback 到 env config
 	// （见 application/customemoji.Service 的份额校验）。
 	if v, ok := parseInt(m["custom_emoji_max_per_user"]); ok {
@@ -326,34 +279,6 @@ func parseInt(s string) (int, bool) {
 		n = n*10 + int(c-'0')
 	}
 	return n, true
-}
-
-// parseUint64 解析无符号整数，空串/非法返回 0（消费方据此 fallback 默认值）。
-func parseUint64(s string) uint64 {
-	if s == "" {
-		return 0
-	}
-	var n uint64
-	for _, c := range s {
-		if c < '0' || c > '9' {
-			return 0
-		}
-		n = n*10 + uint64(c-'0')
-	}
-	return n
-}
-
-// parseFloat 解析浮点数，空串/非法返回 0（消费方据此 fallback 默认值）。
-// 支持小数（如 "2.5"），用 strconv 保证精度。
-func parseFloat(s string) float64 {
-	if s == "" {
-		return 0
-	}
-	v, err := strconv.ParseFloat(s, 64)
-	if err != nil {
-		return 0
-	}
-	return v
 }
 
 // ErrInvalidSetting 无效配置

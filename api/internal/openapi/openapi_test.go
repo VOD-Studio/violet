@@ -263,11 +263,13 @@ func TestAdminRBACPaths(t *testing.T) {
 
 func TestAdminStatsAndSettingsPaths(t *testing.T) {
 	spec, _ := Spec()
-	// 站点设置按菜单子页拆成 7 组，每组 GET/PUT 两个路径
+	// 通用设置与四组版本化运行策略分别暴露明确路径。
 	for _, p := range []string{
 		"/admin/settings/general", "/admin/settings/auth", "/admin/settings/github",
 		"/admin/settings/profile", "/admin/settings/about", "/admin/settings/llm",
-		"/admin/settings/code-runner",
+		"/admin/settings/code-runner", "/admin/settings/rate-limit",
+		"/admin/settings/image", "/admin/settings/upload-queue",
+		"/uploads/policy", "/code-runner/policy",
 		"/admin/logs", "/admin/logs/user/{id}",
 	} {
 		require.NotNil(t, spec.Paths.Find(p), "missing path %s", p)
@@ -275,7 +277,8 @@ func TestAdminStatsAndSettingsPaths(t *testing.T) {
 	for _, s := range []string{
 		"DashboardStats", "ViewTrends",
 		"GeneralSettings", "AuthSettings", "GithubSettings", "ProfileSettings",
-		"AboutSettings", "LlmSettings", "CodeRunnerSettings",
+		"AboutSettings", "LlmSettings", "RuntimeCodeRunnerView",
+		"RuntimeRateLimitView", "RuntimeImageView", "RuntimeUploadQueueView",
 		"AuditEvent",
 	} {
 		require.Contains(t, spec.Components.Schemas, s, "missing schema %s", s)

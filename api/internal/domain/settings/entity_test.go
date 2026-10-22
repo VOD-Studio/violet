@@ -47,14 +47,6 @@ func TestMergeFrom_FullMap(t *testing.T) {
 		"llm_api_url":                     "https://api.openai.com/v1",
 		"llm_model":                       "gpt-4o",
 		"llm_protocol":                    "openai",
-		"code_runner_enabled":             "false",
-		"code_runner_max_cpu_cores":       "2.5",
-		"code_runner_max_memory_mb":       "512",
-		"code_runner_max_timeout_secs":    "30",
-		"code_runner_max_output_bytes":    "1048576",
-		"code_runner_max_source_bytes":    "65536",
-		"code_runner_allow_network":       "true",
-		"code_runner_languages":           "python,node,go",
 	}
 	s := SiteSettings{}.MergeFrom(m)
 
@@ -91,21 +83,13 @@ func TestMergeFrom_FullMap(t *testing.T) {
 	assert.Equal(t, "https://api.openai.com/v1", s.LLMAPIURL)
 	assert.Equal(t, "gpt-4o", s.LLMModel)
 	assert.Equal(t, "openai", s.LLMProtocol)
-	assert.False(t, s.CodeRunnerEnabled)
-	assert.Equal(t, 2.5, s.CodeRunnerMaxCPUCores)
-	assert.Equal(t, uint64(512), s.CodeRunnerMaxMemoryMB)
-	assert.Equal(t, uint64(30), s.CodeRunnerMaxTimeoutSecs)
-	assert.Equal(t, uint64(1048576), s.CodeRunnerMaxOutputBytes)
-	assert.Equal(t, uint64(65536), s.CodeRunnerMaxSourceBytes)
-	assert.True(t, s.CodeRunnerAllowNetwork)
-	assert.Equal(t, "python,node,go", s.CodeRunnerLanguages)
 }
 
 // TestMergeFrom_EmptyMapDefaults 验证空 map 时各字段的默认值。
 // - PostsPerPage 默认 10
 // - 首页发布足迹默认显示，聚合天数默认 7
-// - parseBoolDefaultTrue 字段（google/github/code_runner enabled）默认 true（升级无感）
-// - 其余布尔字段（comments_enabled/moderation/allow_network）默认 false（按 == "true"）
+// - parseBoolDefaultTrue 字段（google/github enabled）默认 true（升级无感）
+// - 评论布尔字段默认 false（按 == "true"）
 // - AboutConfig 为 nil
 // - 数值字段为 0（消费方 fallback 默认值）
 func TestMergeFrom_EmptyMapDefaults(t *testing.T) {
@@ -116,16 +100,9 @@ func TestMergeFrom_EmptyMapDefaults(t *testing.T) {
 	assert.Equal(t, 7, s.HomeFootprintAggregationDays, "未配置时默认按 7 日聚合")
 	assert.True(t, s.GoogleLoginEnabled, "未配置时默认启用 Google 登录")
 	assert.True(t, s.GithubLoginEnabled, "未配置时默认启用 GitHub 登录")
-	assert.True(t, s.CodeRunnerEnabled, "未配置时默认启用代码运行器")
 	assert.False(t, s.CommentsEnabled, "comments_enabled 缺省 false")
 	assert.False(t, s.CommentsModeration, "comments_moderation 缺省 false")
-	assert.False(t, s.CodeRunnerAllowNetwork, "allow_network 缺省 false")
 	assert.Nil(t, s.AboutConfig, "AboutConfig 缺省 nil")
-	assert.Equal(t, 0.0, s.CodeRunnerMaxCPUCores)
-	assert.Equal(t, uint64(0), s.CodeRunnerMaxMemoryMB)
-	assert.Equal(t, uint64(0), s.CodeRunnerMaxTimeoutSecs)
-	assert.Equal(t, uint64(0), s.CodeRunnerMaxOutputBytes)
-	assert.Equal(t, uint64(0), s.CodeRunnerMaxSourceBytes)
 	assert.Empty(t, s.SiteName)
 	assert.Empty(t, s.LLMAPIKey)
 }
@@ -145,8 +122,8 @@ func TestMergeFrom_ParseBoolDefaultTrue(t *testing.T) {
 		{"TRUE", false}, // 仅小写 "true" 命中
 	}
 	for _, c := range cases {
-		s := SiteSettings{}.MergeFrom(map[string]string{"code_runner_enabled": c.raw})
-		assert.Equal(t, c.expect, s.CodeRunnerEnabled, "code_runner_enabled=%q", c.raw)
+		s := SiteSettings{}.MergeFrom(map[string]string{"google_login_enabled": c.raw})
+		assert.Equal(t, c.expect, s.GoogleLoginEnabled, "google_login_enabled=%q", c.raw)
 	}
 }
 
@@ -181,49 +158,6 @@ func TestMergeFrom_HomeFootprintAggregationDaysBounds(t *testing.T) {
 		s := SiteSettings{}.MergeFrom(map[string]string{"home_footprint_aggregation_days": value})
 		assert.Equal(t, DefaultHomeFootprintAggregationDays, s.HomeFootprintAggregationDays)
 	}
-}
-
-// TestMergeFrom_Uint64Parsing 验证 uint64 字段解析：合法→值，空/非法→0。
-func TestMergeFrom_Uint64Parsing(t *testing.T) {
-	t.Run("valid", func(t *testing.T) {
-		s := SiteSettings{}.MergeFrom(map[string]string{
-			"code_runner_max_memory_mb": "256",
-		})
-		assert.Equal(t, uint64(256), s.CodeRunnerMaxMemoryMB)
-	})
-	t.Run("empty_is_zero", func(t *testing.T) {
-		s := SiteSettings{}.MergeFrom(map[string]string{"code_runner_max_memory_mb": ""})
-		assert.Equal(t, uint64(0), s.CodeRunnerMaxMemoryMB)
-	})
-	t.Run("invalid_is_zero", func(t *testing.T) {
-		s := SiteSettings{}.MergeFrom(map[string]string{"code_runner_max_memory_mb": "12abc"})
-		assert.Equal(t, uint64(0), s.CodeRunnerMaxMemoryMB)
-	})
-	t.Run("negative_is_zero", func(t *testing.T) {
-		// '-' < '0' → 非法 → 0
-		s := SiteSettings{}.MergeFrom(map[string]string{"code_runner_max_memory_mb": "-1"})
-		assert.Equal(t, uint64(0), s.CodeRunnerMaxMemoryMB)
-	})
-}
-
-// TestMergeFrom_FloatParsing 验证 code_runner_max_cpu_cores 浮点解析。
-func TestMergeFrom_FloatParsing(t *testing.T) {
-	t.Run("decimal", func(t *testing.T) {
-		s := SiteSettings{}.MergeFrom(map[string]string{"code_runner_max_cpu_cores": "1.75"})
-		assert.Equal(t, 1.75, s.CodeRunnerMaxCPUCores)
-	})
-	t.Run("integer_string", func(t *testing.T) {
-		s := SiteSettings{}.MergeFrom(map[string]string{"code_runner_max_cpu_cores": "4"})
-		assert.Equal(t, 4.0, s.CodeRunnerMaxCPUCores)
-	})
-	t.Run("empty_is_zero", func(t *testing.T) {
-		s := SiteSettings{}.MergeFrom(map[string]string{"code_runner_max_cpu_cores": ""})
-		assert.Equal(t, 0.0, s.CodeRunnerMaxCPUCores)
-	})
-	t.Run("invalid_is_zero", func(t *testing.T) {
-		s := SiteSettings{}.MergeFrom(map[string]string{"code_runner_max_cpu_cores": "core"})
-		assert.Equal(t, 0.0, s.CodeRunnerMaxCPUCores)
-	})
 }
 
 // TestMergeFrom_AboutConfig 验证 AboutConfig 仅在非空时赋值（空串保持 nil）。
@@ -262,44 +196,4 @@ func TestMergeFrom_IgnoresReceiverState(t *testing.T) {
 	assert.Equal(t, "https://x", got.SiteURL)
 	// 接收者本身不变
 	assert.Equal(t, "不应泄漏", preexisting.SiteName)
-}
-
-// TestUpdateInput_PointerFieldSemantics 验证 UpdateInput 作为部分更新入参的结构：
-// 零值时所有字段为 nil（=不更新）；非 nil 指针可解引用为覆盖值。
-// 这是 domain 层的契约锚点；实际 nil=跳过 / 非 nil=覆盖 的写入逻辑在 application 层。
-func TestUpdateInput_PointerFieldSemantics(t *testing.T) {
-	t.Run("zero_value_all_nil", func(t *testing.T) {
-		var in UpdateInput
-		assert.Nil(t, in.SiteName)
-		assert.Nil(t, in.PostsPerPage)
-		assert.Nil(t, in.CommentsEnabled)
-		assert.Nil(t, in.AboutConfig)
-		assert.Nil(t, in.CodeRunnerMaxMemoryMB)
-		assert.Nil(t, in.CodeRunnerMaxCPUCores)
-		// 抽查若干不同类型指针字段均为 nil
-	})
-
-	t.Run("set_then_deref", func(t *testing.T) {
-		perPage := 20
-		enabled := false
-		raw := json.RawMessage(`{"sections":[]}`)
-		in := UpdateInput{
-			SiteName:        strPtr("新名称"),
-			PostsPerPage:    &perPage,
-			CommentsEnabled: &enabled,
-			AboutConfig:     &raw,
-		}
-		assert.Equal(t, "新名称", *in.SiteName)
-		assert.Equal(t, 20, *in.PostsPerPage)
-		assert.False(t, *in.CommentsEnabled)
-		assert.JSONEq(t, `{"sections":[]}`, string(*in.AboutConfig))
-	})
-
-	t.Run("partial_update_keeps_others_nil", func(t *testing.T) {
-		// 仅设置一个字段，其余保持 nil（PATCH 语义的 domain 锚点）
-		in := UpdateInput{Bio: strPtr("新简介")}
-		assert.Equal(t, "新简介", *in.Bio)
-		assert.Nil(t, in.SiteName, "未提供的字段应为 nil")
-		assert.Nil(t, in.LLMAPIKey, "未提供的字段应为 nil")
-	})
 }

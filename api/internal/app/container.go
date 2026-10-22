@@ -130,7 +130,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	persona := NewPersonaContainer(db)
 	mcp := NewMCPContainer(apiToken.TokenLookup, post.PostService, tag.TagService, subscription.SubscriptionService, comment.CommentService, series.SeriesService, note.Service, media.UploadService,
 		roadmap.Service, roadmap.RelationService, content.ProjectService, newMCPOperatorResolver(gormrepo.NewUserRepository(db)))
-	codeRunner := NewCodeRunnerContainer(rdb, settings.Store, cfg.CodeRunner)
+	codeRunner := NewCodeRunnerContainer(rdb, policies, cfg.CodeRunner)
 	image := NewImageContainer(cfg.UploadDir, cfg.UploadPathPrefix, policies, encoder)
 	policies.SetImageMaintenanceStatus(image.DiskCache.Status)
 	tweet := NewTweetContainer(db, rdb, cfg, permissionChecker, customEmoji.Service, bus, policies, encoder)

@@ -13,17 +13,19 @@ func registerPublicPaths(t *openapi3.T) {
 	// ---- 公共 schema ----
 	// PublicSettings：公开站点配置（不含敏感字段）
 	registerSchema(t, "PublicSettings", openapi3.Schemas{
-		"site_name":            optStr("站点名称"),
-		"site_url":             optStr("站点 URL"),
-		"posts_per_page":       optInt("每页文章数"),
-		"comments_enabled":     optBool("是否开启评论"),
-		"comments_moderation":  optBool("评论是否需要审核"),
-		"google_login_enabled": optBool("是否启用 Google 登录"),
-		"github_login_enabled": optBool("是否启用 GitHub 登录"),
-		"github_username":      optStr("GitHub 用户名"),
-		"tech_stack":           optStr("技术栈"),
-		"bio":                  optStr("个人简介"),
-		"footer_text":          optStr("页脚文案"),
+		"site_name":             optStr("站点名称"),
+		"site_url":              optStr("站点 URL"),
+		"posts_per_page":        optInt("每页文章数"),
+		"comments_enabled":      optBool("是否开启评论"),
+		"comments_moderation":   optBool("评论是否需要审核"),
+		"google_login_enabled":  optBool("是否启用 Google 登录"),
+		"github_login_enabled":  optBool("是否启用 GitHub 登录"),
+		"github_username":       optStr("GitHub 用户名"),
+		"tech_stack":            optStr("技术栈"),
+		"bio":                   optStr("个人简介"),
+		"footer_text":           optStr("页脚文案"),
+		"code_runner_enabled":   optBool("当前实例实际生效的运行器启停状态"),
+		"code_runner_languages": strArray("当前实例实际生效的语言白名单，空数组禁用全部"),
 	})
 
 	// ProjectDTO

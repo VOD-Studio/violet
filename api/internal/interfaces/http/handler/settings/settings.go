@@ -37,14 +37,13 @@ func (h *Handler) GetPublicSettings(w http.ResponseWriter, r *http.Request) {
 
 // ---- admin 分组接口（按菜单子页拆分）----
 //
-// 原 GET/PUT /admin/settings 一次性返回/接收全量聚合，已拆成 7 组子接口：
+// 站点通用设置按菜单子页拆分，运行策略由 RuntimeHandler 提供版本化接口：
 //   /admin/settings/general      基础信息
 //   /admin/settings/auth         第三方登录开关
 //   /admin/settings/github       GitHub 资料
 //   /admin/settings/profile      关于博主内容
 //   /admin/settings/about        关于页区块版面配置
 //   /admin/settings/llm          LLM 配置
-//   /admin/settings/code-runner  代码运行器
 //
 // 每组 GET 只返回该组字段，PUT 只接收该组字段（指针表部分更新，nil 不动）。
 // 前端各子页独立 queryKey，互不干扰，消除回填竞态。
@@ -257,49 +256,6 @@ func (h *Handler) UpdateLlm(w http.ResponseWriter, r *http.Request) {
 	data, err := h.svc.UpdateLlm(r.Context(), appsettings.LlmUpdate{
 		LLMAPIKey: req.LLMAPIKey, LLMAPIURL: req.LLMAPIURL,
 		LLMModel: req.LLMModel, LLMProtocol: req.LLMProtocol,
-	})
-	if err != nil {
-		response.RespondError(w, r, err)
-		return
-	}
-	response.RespondOK(w, data)
-}
-
-// GetCodeRunner 获取代码运行器组
-func (h *Handler) GetCodeRunner(w http.ResponseWriter, r *http.Request) {
-	data, err := h.svc.GetCodeRunner(r.Context())
-	if err != nil {
-		response.RespondError(w, r, err)
-		return
-	}
-	response.RespondOK(w, data)
-}
-
-// UpdateCodeRunner 更新代码运行器组
-func (h *Handler) UpdateCodeRunner(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		CodeRunnerEnabled        *bool    `json:"code_runner_enabled"`
-		CodeRunnerMaxCPUCores    *float64 `json:"code_runner_max_cpu_cores"`
-		CodeRunnerMaxMemoryMB    *uint64  `json:"code_runner_max_memory_mb"`
-		CodeRunnerMaxTimeoutSecs *uint64  `json:"code_runner_max_timeout_secs"`
-		CodeRunnerMaxOutputBytes *uint64  `json:"code_runner_max_output_bytes"`
-		CodeRunnerMaxSourceBytes *uint64  `json:"code_runner_max_source_bytes"`
-		CodeRunnerAllowNetwork   *bool    `json:"code_runner_allow_network"`
-		CodeRunnerLanguages      *string  `json:"code_runner_languages"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.RespondError(w, r, err)
-		return
-	}
-	data, err := h.svc.UpdateCodeRunner(r.Context(), appsettings.CodeRunnerUpdate{
-		CodeRunnerEnabled:        req.CodeRunnerEnabled,
-		CodeRunnerMaxCPUCores:    req.CodeRunnerMaxCPUCores,
-		CodeRunnerMaxMemoryMB:    req.CodeRunnerMaxMemoryMB,
-		CodeRunnerMaxTimeoutSecs: req.CodeRunnerMaxTimeoutSecs,
-		CodeRunnerMaxOutputBytes: req.CodeRunnerMaxOutputBytes,
-		CodeRunnerMaxSourceBytes: req.CodeRunnerMaxSourceBytes,
-		CodeRunnerAllowNetwork:   req.CodeRunnerAllowNetwork,
-		CodeRunnerLanguages:      req.CodeRunnerLanguages,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)

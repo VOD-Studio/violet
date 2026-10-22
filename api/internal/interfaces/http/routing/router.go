@@ -382,6 +382,7 @@ func registerTweetRoutes(v1 chi.Router, d *Deps) {
 // registerCodeRunnerRoutes 注册 /code-runner 路由（登录可执行，SSE 用 GET）。
 func registerCodeRunnerRoutes(v1 chi.Router, d *Deps) {
 	codeRunnerH := d.CodeRunner
+	v1.Get("/code-runner/policy", codeRunnerH.Policy)
 
 	v1.Route("/code-runner", func(r chi.Router) {
 		r.Use(d.SessionAuth)

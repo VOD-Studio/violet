@@ -16,8 +16,8 @@ import (
 	appcoderunner "blog-api/internal/application/coderunner"
 	domaincoderunner "blog-api/internal/domain/coderunner"
 	domainshared "blog-api/internal/domain/shared"
-	"blog-api/internal/middleware"
 	"blog-api/internal/interfaces/http/response"
+	"blog-api/internal/middleware"
 )
 
 // Handler code-runner HTTP 处理器。
@@ -30,10 +30,27 @@ func NewHandler(svc *appcoderunner.Service) *Handler {
 	return &Handler{svc: svc}
 }
 
+// Policy 提供编辑器和阅读器共用的有效启停与语言投影。
+func (h *Handler) Policy(w http.ResponseWriter, r *http.Request) {
+	policy, version, err := h.svc.Policy()
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	if policy.Languages == nil {
+		policy.Languages = []string{}
+	}
+	response.RespondOK(w, struct {
+		Version   uint64   `json:"version"`
+		Enabled   bool     `json:"enabled"`
+		Languages []string `json:"languages"`
+	}{Version: version, Enabled: policy.Enabled, Languages: policy.Languages})
+}
+
 // runRequest 提交执行的请求体。
 type runRequest struct {
-	Language string                            `json:"language"`
-	Source   string                            `json:"source"`
+	Language  string                           `json:"language"`
+	Source    string                           `json:"source"`
 	Overrides *domaincoderunner.ResourceLimits `json:"overrides,omitempty"`
 }
 
@@ -181,8 +198,8 @@ func decodeRunRequest(r *http.Request) (appcoderunner.ExecRequest, error) {
 		return appcoderunner.ExecRequest{}, domainshared.BadRequest("language 不能为空")
 	}
 	return appcoderunner.ExecRequest{
-		Language: req.Language,
-		Source:   req.Source,
+		Language:  req.Language,
+		Source:    req.Source,
 		Overrides: req.Overrides,
 	}, nil
 }

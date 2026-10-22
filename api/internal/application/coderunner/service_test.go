@@ -8,6 +8,7 @@ import (
 	"time"
 
 	domaincoderunner "blog-api/internal/domain/coderunner"
+	domainsettings "blog-api/internal/domain/settings"
 	domainshared "blog-api/internal/domain/shared"
 )
 
@@ -85,7 +86,8 @@ func (r *fakeRepo) Save(ctx context.Context, task *domaincoderunner.ExecutionTas
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.calls++
-	r.data[task.ID().String()] = task
+	copyTask := *task
+	r.data[task.ID().String()] = &copyTask
 	return nil
 }
 
@@ -110,13 +112,15 @@ func newFakeSink() *fakeSink {
 	return &fakeSink{channels: make(map[string]chan OutputChunk)}
 }
 
-func (s *fakeSink) Insert(taskID string) chan OutputChunk {
+func (s *fakeSink) Insert(taskID string, ttl time.Duration) chan OutputChunk {
 	ch := make(chan OutputChunk, 64)
 	s.mu.Lock()
 	s.channels[taskID] = ch
 	s.mu.Unlock()
 	return ch
 }
+
+func (s *fakeSink) Complete(taskID string, ttl time.Duration) {}
 
 func (s *fakeSink) Take(taskID string) chan OutputChunk {
 	s.mu.Lock()
@@ -138,14 +142,45 @@ func (testResolver) Resolve(langKey string) (string, string, string, domaincoder
 	}, false, true
 }
 
-func newTestService(t *testing.T, runner RunnerAlias) (*Service, *fakeRepo, *fakeSink) {
+func newTestService(t *testing.T, runner SandboxRunner) (*Service, *fakeRepo, *fakeSink) {
 	t.Helper()
 	repo := newFakeRepo()
 	sink := newFakeSink()
-	cfg := Config{MaxSourceBytes: 1024, MaxConcurrent: 2, QueueTimeoutSecs: 5, TaskTTLSecs: 300}
-	// settingsStore 传 nil：测试只用 env cfg，不读 site_settings
-	svc := NewService(repo, runner, sink, testResolver{}, nil, cfg)
+	svc := NewService(repo, runner, sink, testResolver{}, &testPolicies{value: defaultTestPolicy()})
 	return svc, repo, sink
+}
+
+type testPolicies struct {
+	mu    sync.RWMutex
+	value domainsettings.CodeRunnerPolicy
+	err   error
+}
+
+func (p *testPolicies) CodeRunner() (domainsettings.CodeRunnerPolicy, uint64) {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	return p.value, 1
+}
+
+func (p *testPolicies) CodeRunnerError() error {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	return p.err
+}
+
+func (p *testPolicies) update(change func(*domainsettings.CodeRunnerPolicy)) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	change(&p.value)
+}
+
+func defaultTestPolicy() domainsettings.CodeRunnerPolicy {
+	return domainsettings.CodeRunnerPolicy{
+		Enabled: true, MaxCPUCores: 2, MaxMemoryMB: 1024,
+		MaxTimeoutSecs: 30, MaxOutputBytes: 1048576, MaxSourceBytes: 1024,
+		MaxConcurrent: 2, QueueTimeoutSecs: 5, TaskTTLSecs: 300,
+		Languages: []string{"python", "node", "go", "rust", "bun"},
+	}
 }
 
 func TestService_StartExec_InvalidLanguage(t *testing.T) {
@@ -282,7 +317,7 @@ func TestService_ConsumeStream(t *testing.T) {
 	svc, _, sink := newTestService(t, &fakeRunner{})
 
 	// 手动 Insert 一个（模拟 StartExecStream 的行为）
-	sink.Insert("task-x")
+	sink.Insert("task-x", time.Minute)
 	ch := svc.ConsumeStream("task-x")
 	if ch == nil {
 		t.Fatal("ConsumeStream 应返回 Insert 的 channel")

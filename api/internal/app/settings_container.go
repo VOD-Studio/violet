@@ -37,6 +37,7 @@ func NewSettingsContainer(db *gorm.DB, bus appshared.EventBus, oauthCreds *authc
 		TaskTTLSecs: cfg.TaskTTLSecs,
 	}, bus)
 	policies.SetCodeRunnerDefaultSources(cfg.DefaultSources)
+	svc.SetRuntimePolicies(policies)
 	return &SettingsContainer{
 		SettingsHandler: settingshttp.NewHandler(svc, oauthCreds),
 		Service:         svc,

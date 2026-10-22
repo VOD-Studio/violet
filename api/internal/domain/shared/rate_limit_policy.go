@@ -21,7 +21,7 @@ type RateLimitPolicy struct {
 // RateLimitSnapshot 将整组规则与版本绑定，消费者只能按值读取规则。
 type RateLimitSnapshot struct {
 	// rules 是发布后不可再变的规则表，不向消费者暴露可写引用。
-	rules   map[string]RateLimitPolicy
+	rules map[string]RateLimitPolicy
 	// version 标识整组规则的同一次发布。
 	version uint64
 }

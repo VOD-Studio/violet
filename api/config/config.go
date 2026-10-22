@@ -439,7 +439,7 @@ func codeRunnerDefaultSources(v *viper.Viper) map[string]string {
 	sources := map[string]string{"enabled": "application"}
 	for _, key := range v.AllKeys() {
 		field, ok := strings.CutPrefix(key, "code_runner.")
-		if !ok || field == "docker_socket_path" {
+		if !ok || field == "docker_socket_path" || field == "enabled" {
 			continue
 		}
 		source := "application"

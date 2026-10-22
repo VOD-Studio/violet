@@ -76,13 +76,12 @@ func registerRuntimeSettingsPaths(t *openapi3.T) {
 			{Value: &openapi3.Schema{Required: []string{"values"}, Properties: openapi3.Schemas{"reset": {Value: &openapi3.Schema{Enum: []any{false}}}}}},
 			{Value: &openapi3.Schema{Required: []string{"reset"}, Properties: openapi3.Schemas{"reset": {Value: &openapi3.Schema{Enum: []any{true}}}}, Not: &openapi3.SchemaRef{Value: &openapi3.Schema{Required: []string{"values"}}}}},
 		}
-		if group.path == "code-runner" {
-			continue
-		}
 		path := "/admin/settings/" + group.path
 		get(t, path, &openapi3.Operation{Tags: []string{"站点设置"}, Summary: "获取" + group.label + "运行策略", Description: "需settings:view。每2秒跨实例刷新；保存值与当前实例有效值分开展示，stale/failed不能视为已应用。", Security: securityAdmin(), Responses: responses(200, dataResponse(group.name+"View", "运行策略与本实例状态", 200), 401, errorResponse("未登录"), 403, errorResponse("缺少settings:view"), 500, errorResponse("无法读取初始配置"))})
 		put(t, path, &openapi3.Operation{Tags: []string{"站点设置"}, Summary: "保存或重置" + group.label + "运行策略", Description: "需settings:update与CSRF。整组验证后原子CAS；保存后应用失败仍返回200，runtime.status=failed且保留旧有效值。管理员仍受入口限流。", Security: securityAdmin(), Parameters: openapi3.Parameters{csrfHeaderParam()}, RequestBody: jsonBody(group.name+"Update", true, "版本及部分字段，或reset:true"), Responses: responses(200, dataResponse(group.name+"View", "已保存配置与实际应用结果", 200), 400, errorResponse("未知字段、null或非法范围；范围错误含details字段路径"), 401, errorResponse("未登录"), 403, errorResponse("缺少settings:update或CSRF无效"), 409, errorResponse("版本冲突；整组不落库"), 500, errorResponse("读取或持久化失败"))})
 	}
 	registerSchema(t, "UploadQueuePolicy", openapi3.Schemas{"version": optInt64("当前实例有效版本"), "max_concurrent_files": runtimeNumber("后续文件调度上限", 1, 10, true)}, "version", "max_concurrent_files")
 	get(t, "/uploads/policy", &openapi3.Operation{Tags: []string{"媒体"}, Summary: "读取上传调度策略", Description: "只需登录，不需settings:view，位于文件写配额之外。仅影响刷新后的后续调度。", Security: securityCookie(), Responses: responses(200, dataResponse("UploadQueuePolicy", "有效上传策略", 200), 401, errorResponse("未登录"), 500, errorResponse("配置暂不可用"))})
+	registerSchema(t, "CodeRunnerPublicPolicy", openapi3.Schemas{"version": optInt64("当前实例有效版本"), "enabled": optBool("是否接受新任务"), "languages": strArray("有效语言白名单，空数组禁用全部")}, "version", "enabled", "languages")
+	get(t, "/code-runner/policy", &openapi3.Operation{Tags: []string{"代码运行器"}, Summary: "读取运行器有效启停与语言", Description: "读取当前实例有效快照，不暴露资源与管理配置；配置不可用不解释为主动关闭。", Responses: responses(200, dataResponse("CodeRunnerPublicPolicy", "运行器公开策略", 200), 500, errorResponse("运行策略不可用"))})
 }

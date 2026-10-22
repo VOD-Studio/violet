@@ -91,3 +91,16 @@ func TestRuntimeHTTPStrictWriteAndConflict(t *testing.T) {
 	assert.Equal(t, uint64(1), actual.Data.Version)
 	assert.Equal(t, 6, actual.Data.MaxConcurrentFiles)
 }
+
+func TestPublicSettingsProjectsEffectiveRunnerInsteadOfLegacy(t *testing.T) {
+	service := appsettings.NewService(&stubSettingsStore{all: map[string]string{"code_runner_enabled": "true", "code_runner_languages": "python"}}, nil)
+	policies := newHTTPRuntimePolicies()
+	service.SetRuntimePolicies(policies)
+	_, version := policies.CodeRunner()
+	_, err := policies.UpdateCodeRunner(context.Background(), appsettings.RuntimeUpdate{ExpectedVersion: &version, Values: json.RawMessage(`{"enabled":false,"languages":[]}`)})
+	require.NoError(t, err)
+	public, err := service.GetPublic(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, false, public["code_runner_enabled"])
+	assert.Equal(t, []string{}, public["code_runner_languages"])
+}

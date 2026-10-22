@@ -18,30 +18,52 @@ import (
 type StreamRegistry struct {
 	mu   sync.RWMutex
 	data map[string]streamEntry
-	ttl  time.Duration
 }
 
-// streamEntry 单个任务的流式 channel + 创建时间（供 GC 判定）。
+// streamEntry 仅由生产者关闭 channel，过期回收只移除注册项。
 type streamEntry struct {
 	ch        chan appcoderunner.OutputChunk
-	createdAt time.Time
+	timer     *time.Timer
+	expiresAt time.Time
 }
 
-// NewStreamRegistry 构造注册表。ttl 为 entry 保留时长（防泄漏）。
-func NewStreamRegistry(ttl time.Duration) *StreamRegistry {
-	return &StreamRegistry{
-		data: make(map[string]streamEntry),
-		ttl:  ttl,
-	}
+// NewStreamRegistry 构造按任务保留期回收的注册表。
+func NewStreamRegistry() *StreamRegistry {
+	return &StreamRegistry{data: make(map[string]streamEntry)}
 }
 
-// Insert 创建并注册一个 channel，返回供生产者（执行后台 goroutine）写入。
-func (r *StreamRegistry) Insert(taskID string) chan appcoderunner.OutputChunk {
+// Insert 注册活动任务流；到期删除索引，不关闭生产者仍在写入的 channel。
+func (r *StreamRegistry) Insert(taskID string, ttl time.Duration) chan appcoderunner.OutputChunk {
 	ch := make(chan appcoderunner.OutputChunk, 64)
 	r.mu.Lock()
-	r.data[taskID] = streamEntry{ch: ch, createdAt: time.Now()}
+	if old, ok := r.data[taskID]; ok {
+		old.timer.Stop()
+	}
+	r.data[taskID] = r.entry(taskID, ch, ttl)
 	r.mu.Unlock()
 	return ch
+}
+
+func (r *StreamRegistry) entry(taskID string, ch chan appcoderunner.OutputChunk, ttl time.Duration) streamEntry {
+	expiry := time.Now().Add(ttl)
+	timer := time.AfterFunc(ttl, func() {
+		r.mu.Lock()
+		defer r.mu.Unlock()
+		if current, ok := r.data[taskID]; ok && current.ch == ch && !time.Now().Before(current.expiresAt) {
+			delete(r.data, taskID)
+		}
+	})
+	return streamEntry{ch: ch, timer: timer, expiresAt: expiry}
+}
+
+// Complete 从完成时重新计算未消费结果流的保留期。
+func (r *StreamRegistry) Complete(taskID string, ttl time.Duration) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if current, ok := r.data[taskID]; ok {
+		current.timer.Stop()
+		r.data[taskID] = r.entry(taskID, current.ch, ttl)
+	}
 }
 
 // Take 取出并删除 channel（一次性消费），返回 nil 表示不存在。
@@ -56,19 +78,18 @@ func (r *StreamRegistry) Take(taskID string) chan appcoderunner.OutputChunk {
 		return nil
 	}
 	delete(r.data, taskID)
+	entry.timer.Stop()
 	return entry.ch
 }
 
-// GC 清理超过 TTL 的 entry（前端永不连 SSE 的兜底）。
-//
-// 关闭 channel 通知等待的消费者（执行 goroutine）停止写入。
+// GC 删除过期索引，不能关闭仍属于生产者的 channel。
 func (r *StreamRegistry) GC(ctx context.Context) {
 	now := time.Now()
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	for id, entry := range r.data {
-		if now.Sub(entry.createdAt) > r.ttl {
-			close(entry.ch)
+		if !now.Before(entry.expiresAt) {
+			entry.timer.Stop()
 			delete(r.data, id)
 		}
 	}

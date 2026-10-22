@@ -84,18 +84,6 @@ type LlmView struct {
 	LLMProtocol string `json:"llm_protocol"`
 }
 
-// CodeRunnerView 代码运行器组：开关 + 资源阈值 + 语言白名单
-type CodeRunnerView struct {
-	CodeRunnerEnabled        bool    `json:"code_runner_enabled"`
-	CodeRunnerMaxCPUCores    float64 `json:"code_runner_max_cpu_cores"`
-	CodeRunnerMaxMemoryMB    uint64  `json:"code_runner_max_memory_mb"`
-	CodeRunnerMaxTimeoutSecs uint64  `json:"code_runner_max_timeout_secs"`
-	CodeRunnerMaxOutputBytes uint64  `json:"code_runner_max_output_bytes"`
-	CodeRunnerMaxSourceBytes uint64  `json:"code_runner_max_source_bytes"`
-	CodeRunnerAllowNetwork   bool    `json:"code_runner_allow_network"`
-	CodeRunnerLanguages      string  `json:"code_runner_languages"`
-}
-
 // ---- 从聚合读模型构造分组视图 ----
 
 func generalView(s domainsettings.SiteSettings) GeneralView {
@@ -160,19 +148,6 @@ func llmView(s domainsettings.SiteSettings) LlmView {
 	}
 }
 
-func codeRunnerView(s domainsettings.SiteSettings) CodeRunnerView {
-	return CodeRunnerView{
-		CodeRunnerEnabled:        s.CodeRunnerEnabled,
-		CodeRunnerMaxCPUCores:    s.CodeRunnerMaxCPUCores,
-		CodeRunnerMaxMemoryMB:    s.CodeRunnerMaxMemoryMB,
-		CodeRunnerMaxTimeoutSecs: s.CodeRunnerMaxTimeoutSecs,
-		CodeRunnerMaxOutputBytes: s.CodeRunnerMaxOutputBytes,
-		CodeRunnerMaxSourceBytes: s.CodeRunnerMaxSourceBytes,
-		CodeRunnerAllowNetwork:   s.CodeRunnerAllowNetwork,
-		CodeRunnerLanguages:      s.CodeRunnerLanguages,
-	}
-}
-
 // ---- 分组更新入参（指针字段表部分更新，nil 不更新）----
 // 字段与 domain UpdateInput 对齐，每组只含本组字段；service 方法映射成
 // domain.UpdateInput 的子集后复用 s.Update，未提供字段保持不变。
@@ -233,16 +208,4 @@ type LlmUpdate struct {
 	LLMAPIURL   *string
 	LLMModel    *string
 	LLMProtocol *string
-}
-
-// CodeRunnerUpdate 代码运行器组更新入参
-type CodeRunnerUpdate struct {
-	CodeRunnerEnabled        *bool
-	CodeRunnerMaxCPUCores    *float64
-	CodeRunnerMaxMemoryMB    *uint64
-	CodeRunnerMaxTimeoutSecs *uint64
-	CodeRunnerMaxOutputBytes *uint64
-	CodeRunnerMaxSourceBytes *uint64
-	CodeRunnerAllowNetwork   *bool
-	CodeRunnerLanguages      *string
 }

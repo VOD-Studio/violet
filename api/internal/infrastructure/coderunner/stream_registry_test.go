@@ -11,10 +11,10 @@ import (
 
 func TestStreamRegistry_InsertAndTake(t *testing.T) {
 	t.Parallel()
-	reg := NewStreamRegistry(time.Minute)
+	reg := NewStreamRegistry()
 	taskID := "task-1"
 
-	ch := reg.Insert(taskID)
+	ch := reg.Insert(taskID, time.Minute)
 	ch <- appcoderunner.OutputChunk{Type: "stdout", Data: "hello"}
 
 	got := reg.Take(taskID)
@@ -38,7 +38,7 @@ func TestStreamRegistry_InsertAndTake(t *testing.T) {
 
 func TestStreamRegistry_Take_NotExist(t *testing.T) {
 	t.Parallel()
-	reg := NewStreamRegistry(time.Minute)
+	reg := NewStreamRegistry()
 	if reg.Take("nope") != nil {
 		t.Error("不存在的 taskID Take 应返回 nil")
 	}
@@ -46,18 +46,20 @@ func TestStreamRegistry_Take_NotExist(t *testing.T) {
 
 func TestStreamRegistry_GC_RemovesExpired(t *testing.T) {
 	t.Parallel()
-	reg := NewStreamRegistry(50 * time.Millisecond) // 短 TTL
-	reg.Insert("old-task")
+	reg := NewStreamRegistry()
+	reg.Insert("old-task", 50*time.Millisecond)
 
 	// 未过期前存在:Take 应返回 non-nil(消费掉该 entry)
 	if reg.Take("old-task") == nil {
 		t.Error("未过期 entry 的 Take 应返回 non-nil")
 	}
 	// 重新插一个（Take 刚消费了）
-	reg.Insert("old-task")
+	ch := reg.Insert("old-task", 50*time.Millisecond)
 
 	time.Sleep(80 * time.Millisecond)
 	reg.GC(context.Background())
+	ch <- appcoderunner.OutputChunk{Type: "stdout", Data: "过期后生产者仍可写入"}
+	close(ch)
 
 	// GC 后过期 entry 被清理，Take 返回 nil
 	if reg.Take("old-task") != nil {
@@ -67,8 +69,8 @@ func TestStreamRegistry_GC_RemovesExpired(t *testing.T) {
 
 func TestStreamRegistry_GC_KeepsFresh(t *testing.T) {
 	t.Parallel()
-	reg := NewStreamRegistry(time.Minute)
-	reg.Insert("fresh-task")
+	reg := NewStreamRegistry()
+	reg.Insert("fresh-task", time.Minute)
 
 	reg.GC(context.Background())
 
@@ -80,7 +82,7 @@ func TestStreamRegistry_GC_KeepsFresh(t *testing.T) {
 func TestStreamRegistry_ConcurrentInsertTake(t *testing.T) {
 	// 并发 Insert/Take 不应 panic 或丢数据
 	t.Parallel()
-	reg := NewStreamRegistry(time.Minute)
+	reg := NewStreamRegistry()
 	var wg sync.WaitGroup
 
 	// 10 个并发 Insert
@@ -88,7 +90,7 @@ func TestStreamRegistry_ConcurrentInsertTake(t *testing.T) {
 		wg.Add(1)
 		go func(n int) {
 			defer wg.Done()
-			ch := reg.Insert("task-" + string(rune('a'+n)))
+			ch := reg.Insert("task-"+string(rune('a'+n)), time.Minute)
 			ch <- appcoderunner.OutputChunk{Type: "done", Data: "ok"}
 		}(i)
 	}
@@ -104,4 +106,23 @@ func TestStreamRegistry_ConcurrentInsertTake(t *testing.T) {
 	if count != 10 {
 		t.Errorf("并发 Insert 后应能 Take 全部 10 个，实际 %d", count)
 	}
+}
+
+func TestStreamRegistryAutomaticallyReclaimsCompletedResults(t *testing.T) {
+	t.Parallel()
+	reg := NewStreamRegistry()
+	ch := reg.Insert("completed", time.Hour)
+	close(ch)
+	reg.Complete("completed", 10*time.Millisecond)
+	deadline := time.Now().Add(time.Second)
+	for time.Now().Before(deadline) {
+		reg.mu.RLock()
+		_, exists := reg.data["completed"]
+		reg.mu.RUnlock()
+		if !exists {
+			return
+		}
+		time.Sleep(time.Millisecond)
+	}
+	t.Fatal("完成后的未消费流未按任务保留期自动回收")
 }

@@ -106,18 +106,17 @@ func IsTerminalStatus(s string) bool {
 
 // ResourceLimits 单次执行的资源限制。
 //
-// 作者可在围栏 info string 里声明覆盖（如 `python runnable {"timeout_secs":10}`），
-// 在执行前被 ClampLimits 钳制到全局 CODE_RUNNER_MAX_* 上限内（见 infrastructure 层）。
-// allow_network 需作者声明、语言允许、全局开关三者同时为真（见 ClampLimits）。
+// 作者可在围栏声明资源覆盖；执行时按提交策略和启动前策略的较严边界钳制。
+// 联网仍需作者声明、语言许可与有效策略同时允许。
 type ResourceLimits struct {
-	// CPUCores 单次执行分配的 CPU 核数上限（ClampLimits 钳制到全局 CodeRunnerMaxCPUCores 内）
+	// CPUCores 单次执行的 CPU 核数上限。
 	CPUCores float64 `json:"cpu_cores"`
-	// MemoryMB 单次执行内存上限（MB，ClampLimits 钳制到全局 CodeRunnerMaxMemoryMB 内）
+	// MemoryMB 单次执行的内存上限，单位 MiB。
 	MemoryMB uint64 `json:"memory_mb"`
-	// TimeoutSecs 单次执行最大墙钟时长（秒，ClampLimits 钳制到全局 CodeRunnerMaxTimeoutSecs 内）
+	// TimeoutSecs 单次执行的最大墙钟秒数。
 	TimeoutSecs uint64 `json:"timeout_secs"`
-	// OutputBytes stdout/stderr 合计最大输出字节（超出截断，ClampLimits 钳制到全局上限内）
+	// OutputBytes stdout/stderr 合计字节上限，超出部分截断。
 	OutputBytes uint64 `json:"output_bytes"`
-	// AllowNetwork 是否允许容器联网（最终生效需作者声明 + 语言允许 + 全局开关三者同时为真，见 ClampLimits）
+	// AllowNetwork 作者的联网请求，不单独构成联网授权。
 	AllowNetwork bool `json:"allow_network"`
 }

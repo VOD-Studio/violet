@@ -1,9 +1,7 @@
 // Package coderunner 编排代码执行的用例。
 //
-// StartExec（轮询路径）与 StartExecStream（SSE 流式路径）共用同一套校验链
-// 与沙箱执行。校验：语言白名单 → 源码大小。沙箱执行：信号量限并发 →
-// ClampLimits 资源钳制 → SandboxRunner 起隔离容器。错误脱敏：匿名可见
-// 「不支持的语言/超限」；系统内部异常一律「系统暂时不可用」（见 ADR-0006）。
+// 两条执行路径共用快照策略、动态并发准入和 Docker 沙箱。
+// 排队超时及策略拒绝保留明确原因，依赖故障不降级为无隔离执行。
 package coderunner
 
 import domaincoderunner "blog-api/internal/domain/coderunner"
@@ -14,8 +12,8 @@ import domaincoderunner "blog-api/internal/domain/coderunner"
 // canonical key 后再进 domain/基础设施。Overrides 为作者在围栏 info string
 // 里声明的资源覆盖，nil 表示用语言默认限制。
 type ExecRequest struct {
-	Language  string                          `json:"language"`
-	Source    string                          `json:"source"`
+	Language  string                           `json:"language"`
+	Source    string                           `json:"source"`
 	Overrides *domaincoderunner.ResourceLimits `json:"overrides,omitempty"`
 }
 

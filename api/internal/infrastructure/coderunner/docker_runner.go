@@ -27,7 +27,7 @@ var (
 	onceDockerClient   sync.Once
 	// dockerInitAttempted 标记是否曾调用过 InitDockerClient。
 	// 区分两种 nil 场景，给准确的错误信息：
-	//   - false（从未初始化）→ 功能未启用（CODE_RUNNER_ENABLED=false）
+	//   - false（从未初始化）→ 尚未完成应用装配
 	//   - true（初始化过但失败）→ daemon 连接失败
 	dockerInitAttempted bool
 )
@@ -58,14 +58,14 @@ func InitDockerClient(socketPath string) {
 // getDocker 取共享客户端；不可用时返回明确错误（对应 yggdrasil get_docker）。
 //
 // 区分两种失败，给出可操作的错误信息：
-//   - 从未初始化（InitDockerClient 未调）→ 功能未启用
-//   - 初始化过但 daemon 连不上 → 连接失败（含 socket 路径供排查）
+//   - 从未初始化（InitDockerClient 未调）→ 应用装配未完成
+//   - 初始化过但 daemon 连不上 → 提示检查 socket 与 daemon
 func getDocker() (*client.Client, error) {
 	if sharedDockerClient != nil {
 		return sharedDockerClient, nil
 	}
 	if !dockerInitAttempted {
-		return nil, fmt.Errorf("代码运行器未启用（设置 CODE_RUNNER_ENABLED=true 开启）")
+		return nil, fmt.Errorf("代码运行器尚未初始化")
 	}
 	return nil, fmt.Errorf("docker daemon 不可连接（确认 docker/podman 已运行且 socket 路径正确）")
 }
@@ -122,7 +122,8 @@ func BuildHostConfig(limits domaincoderunner.ResourceLimits) container.HostConfi
 		// tmpfs：mode=1777 让容器内 1000:1000 用户可写；/tmp 必须 exec（编译型语言执行产物）
 		Tmpfs: map[string]string{
 			"/code": "size=16m,mode=1777",
-			"/tmp":  "size=64m,mode=1777,exec",
+			// Go 冷编译的临时对象可使用任务内存额度，实际页仍受同一内存 cgroup 限制。
+			"/tmp":  fmt.Sprintf("size=%dm,mode=1777,exec,nosuid,nodev", limits.MemoryMB),
 			"/run":  "size=16m,mode=1777",
 		},
 		// 权限收敛：丢弃全部 Linux capabilities
@@ -143,15 +144,22 @@ func NewDockerRunner(cli *client.Client) *DockerRunner {
 	return &DockerRunner{cli: cli}
 }
 
-// Available 探测 Docker daemon 是否可连。
-//
-// cli 非 nil 时直接可用；为 nil 时查共享 client（区分「未启用」与「连接失败」）。
+// Available 实际探测依赖，已有客户端对象不代表 daemon 仍可连接。
 func (r *DockerRunner) Available() error {
-	if r.cli != nil {
-		return nil
+	cli := r.cli
+	if cli == nil {
+		var err error
+		cli, err = getDocker()
+		if err != nil {
+			return err
+		}
 	}
-	_, err := getDocker()
-	return err
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if _, err := cli.Ping(ctx); err != nil {
+		return fmt.Errorf("代码执行器不可用: %w", err)
+	}
+	return nil
 }
 
 // Run 起隔离容器执行，阻塞至完成，返回一次性结果（轮询路径）。

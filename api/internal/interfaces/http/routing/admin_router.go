@@ -36,7 +36,7 @@ func NewAdminRouter(d *Deps) chi.Router {
 	r.Get("/stats", d.Stats.GetDashboardStats)
 	r.Get("/stats/views", d.Stats.GetViewTrends)
 
-	// 站点设置与运行策略入口共用设置权限。
+	// 站点设置与四个固定运行策略入口共用设置权限。
 	r.Route("/settings", func(sub chi.Router) {
 		sub.Group(func(sub chi.Router) {
 			sub.Use(middleware.RequirePermission(perm, "settings:view"))
@@ -50,8 +50,8 @@ func NewAdminRouter(d *Deps) chi.Router {
 				sub.Get("/rate-limit", h.GetRateLimit)
 				sub.Get("/image", h.GetImage)
 				sub.Get("/upload-queue", h.GetUploadQueue)
+				sub.Get("/code-runner", h.GetCodeRunner)
 			}
-			sub.Get("/code-runner", settingsH.GetCodeRunner)
 		})
 		sub.Group(func(sub chi.Router) {
 			sub.Use(middleware.RequirePermission(perm, "settings:update"))
@@ -65,8 +65,8 @@ func NewAdminRouter(d *Deps) chi.Router {
 				sub.Put("/rate-limit", h.UpdateRateLimit)
 				sub.Put("/image", h.UpdateImage)
 				sub.Put("/upload-queue", h.UpdateUploadQueue)
+				sub.Put("/code-runner", h.UpdateCodeRunner)
 			}
-			sub.Put("/code-runner", settingsH.UpdateCodeRunner)
 		})
 	})
 

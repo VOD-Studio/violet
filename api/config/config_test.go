@@ -120,6 +120,8 @@ func TestRunnerDefaultSourcesDistinguishExplicitEqualValues(t *testing.T) {
 	v := viper.New()
 	v.SetDefault("code_runner.max_concurrent", 4)
 	v.SetDefault("code_runner.allow_network", false)
+	v.Set("code_runner.enabled", false)
+	t.Setenv("CODE_RUNNER_ENABLED", "false")
 	t.Setenv("CODE_RUNNER_MAX_CONCURRENT", "4")
 	t.Setenv("CODE_RUNNER_ALLOW_NETWORK", "")
 	sources := codeRunnerDefaultSources(v)
