@@ -524,6 +524,8 @@ type InitSessionInput struct {
 	MimeType  string
 	ChunkSize int
 	Purpose   string
+	// ClientUploadID 为空时由服务端创建；客户端预先生成时可在初始化返回前取消。
+	ClientUploadID string
 }
 
 // InitSessionResult 初始化上传会话结果
@@ -535,81 +537,6 @@ type InitSessionResult struct {
 	ChunkSize      int    `json:"chunk_size"`
 	TotalChunks    int    `json:"total_chunks"`
 	UploadedChunks []int  `json:"uploaded_chunks"`
-}
-
-// InitSession 初始化上传会话（秒传/续传/新建）
-func (s *UploadService) InitSession(ctx context.Context, in InitSessionInput) (*InitSessionResult, error) {
-	uid, err := shared.ParseID(in.UserID)
-	if err != nil {
-		return nil, err
-	}
-	ext := strings.ToLower(filepath.Ext(in.FileName))
-	if _, ok := allowedUploadTypes[ext]; !ok {
-		return nil, shared.BadRequest("不支持的文件类型")
-	}
-	if in.FileSize > maxFileSize {
-		return nil, shared.BadRequest("文件过大（上限 1GB）")
-	}
-	purpose := in.Purpose
-	if purpose == "" {
-		purpose = "material"
-	}
-
-	// 秒传检查(仅命中自己上传过的文件,防越权秒传他人文件)
-	if in.FileHash != "" {
-		if f, err := s.fileRepo.FindByHash(ctx, in.FileHash, uid); err == nil && f != nil {
-			available, err := s.isStoredFileAvailable(ctx, f)
-			if err != nil {
-				return nil, err
-			}
-			if available {
-				return &InitSessionResult{Instant: true, FileID: f.ID().String(), URL: f.URL()}, nil
-			}
-		}
-	}
-
-	chunkSize := in.ChunkSize
-	if chunkSize <= 0 {
-		chunkSize = 5 * 1024 * 1024
-	}
-	totalChunks := int((in.FileSize + int64(chunkSize) - 1) / int64(chunkSize))
-	if totalChunks == 0 {
-		totalChunks = 1
-	}
-
-	// 续传恢复
-	if in.FileHash != "" {
-		if existing, err := s.sessionRepo.FindByHash(ctx, in.FileHash, uid); err == nil && existing != nil {
-			return &InitSessionResult{
-				UploadID: existing.ID().String(), ChunkSize: existing.ChunkSize(),
-				TotalChunks: existing.TotalChunks(), UploadedChunks: existing.UploadedChunks(),
-			}, nil
-		}
-	}
-
-	// 新建会话
-	mimeType := in.MimeType
-	if mimeType == "" {
-		mimeType = allowedUploadTypes[ext]
-	}
-	sid := shared.NewID()
-	tmpPath := filepath.Join(s.chunkDir, sid.String())
-	session := domainupload.ReconstructUploadSession(
-		sid, uid, in.FileName, in.FileSize, mimeType, in.FileHash,
-		purpose, chunkSize, totalChunks, []int{}, domainupload.SessionActive, tmpPath,
-		time.Now().Add(24*time.Hour), time.Time{}, time.Time{},
-	)
-	if err := s.storage.EnsureDir(tmpPath); err != nil {
-		return nil, shared.Internal("创建分片目录失败", err)
-	}
-	if err := s.sessionRepo.Save(ctx, session); err != nil {
-		_ = s.storage.CleanupDir(tmpPath)
-		return nil, err
-	}
-	return &InitSessionResult{
-		UploadID: sid.String(), ChunkSize: chunkSize,
-		TotalChunks: totalChunks, UploadedChunks: []int{},
-	}, nil
 }
 
 // SaveChunk 保存单个分片
@@ -639,7 +566,16 @@ func (s *UploadService) SaveChunk(ctx context.Context, uploadID string, index in
 	if err := s.storage.SaveChunk(session.TmpPath(), index, data); err != nil {
 		return shared.Internal("保存分片失败", err)
 	}
-	return s.sessionRepo.AppendChunk(ctx, sid, index)
+	if err := s.sessionRepo.AppendChunk(ctx, sid, index); err != nil {
+		cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 3*time.Second)
+		defer cancel()
+		latest, readErr := s.sessionRepo.FindByID(cleanupCtx, sid)
+		if readErr == nil && latest.Status() == domainupload.SessionCancelled {
+			_ = s.storage.CleanupDir(session.TmpPath())
+		}
+		return err
+	}
+	return nil
 }
 
 // MergeResult 合并上传结果
@@ -652,7 +588,7 @@ type MergeResult struct {
 }
 
 // CompleteUpload 合并所有分片为完整文件
-func (s *UploadService) CompleteUpload(ctx context.Context, uploadID, userID string) (*MergeResult, error) {
+func (s *UploadService) CompleteUpload(ctx context.Context, uploadID, userID string) (result *MergeResult, resultErr error) {
 	processor := s.processor
 	if processor != nil {
 		processor = processor.ForRequest(ctx)
@@ -673,9 +609,32 @@ func (s *UploadService) CompleteUpload(ctx context.Context, uploadID, userID str
 	if !session.UserID().Equal(uid) {
 		return nil, shared.Forbidden("无权操作他人上传会话")
 	}
+	if session.Status() == domainupload.SessionCompleted {
+		return s.completedUploadResult(ctx, session)
+	}
+	if session.Status() == domainupload.SessionCancelled {
+		return nil, domainupload.ErrSessionCancelled
+	}
 	if !session.IsComplete() {
 		return nil, domainupload.ErrUploadIncomplete
 	}
+	mergeStarted := false
+	defer func() {
+		if resultErr == nil {
+			return
+		}
+		restoreCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 3*time.Second)
+		defer cancel()
+		// 取消清理临时文件造成的 I/O 失败属于取消；查询失败时保留原始错误。
+		latest, err := s.sessionRepo.FindByID(restoreCtx, sid)
+		if err == nil && latest.Status() == domainupload.SessionCancelled {
+			resultErr = domainupload.ErrSessionCancelled
+			return
+		}
+		if mergeStarted {
+			_, _ = s.sessionRepo.UpdateStatus(restoreCtx, sid, domainupload.SessionMerging, domainupload.SessionActive)
+		}
+	}()
 	// CAS：active → merging
 	ok, err := s.sessionRepo.UpdateStatus(ctx, sid, domainupload.SessionActive, domainupload.SessionMerging)
 	if err != nil {
@@ -684,11 +643,14 @@ func (s *UploadService) CompleteUpload(ctx context.Context, uploadID, userID str
 	if !ok {
 		return nil, domainupload.ErrSessionNotActive
 	}
+	mergeStarted = true
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 
 	// 合并分片
 	mergedPath := filepath.Join(session.TmpPath(), "merged")
 	if err := s.storage.MergeChunks(session.TmpPath(), session.TotalChunks(), mergedPath); err != nil {
-		_, _ = s.sessionRepo.UpdateStatus(ctx, sid, domainupload.SessionMerging, domainupload.SessionActive)
 		return nil, shared.Internal("合并分片失败", err)
 	}
 
@@ -709,17 +671,15 @@ func (s *UploadService) CompleteUpload(ctx context.Context, uploadID, userID str
 	finalMime := srcMime
 	finalExt := strings.ToLower(filepath.Ext(session.FileName()))
 	if processor != nil && strings.HasPrefix(srcMime, "image/") {
-		// 校验:非图片或损坏文件拒绝(不落盘)
+		// 校验失败保留分片供重试，不创建正式文件。
 		validMime, err := processor.Validate(mergedPath)
 		if err != nil {
-			_ = s.storage.CleanupDir(session.TmpPath())
 			return nil, shared.BadRequest("图片校验失败: " + err.Error())
 		}
 		srcMime = validMime
 		// 转 WebP(GIF/WebP 跳过;JPEG/PNG 仅更小时采用,否则回退)
 		result, err := processor.Transcode(mergedPath, filepath.Dir(mergedPath), "transcoded", srcMime)
 		if err != nil {
-			_ = s.storage.CleanupDir(session.TmpPath())
 			return nil, shared.Internal("图片转码失败", err)
 		}
 		mergedPath = result.Path
@@ -763,6 +723,24 @@ func (s *UploadService) CompleteUpload(ctx context.Context, uploadID, userID str
 		}
 		thumbnail = s.storage.GenerateThumbnail(finalPath, fileUUID.String(), storageDir, finalMime)
 	}
+	published := false
+	defer func() {
+		if published {
+			return
+		}
+		// 提交结果可能不确定，不能删除已发布或暂时无法确认归属的正式文件。
+		checkCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 3*time.Second)
+		defer cancel()
+		latest, err := s.sessionRepo.FindByID(checkCtx, sid)
+		if err != nil && !errors.Is(err, domainupload.ErrSessionNotFound) {
+			return
+		}
+		if latest != nil && latest.Status() == domainupload.SessionCompleted &&
+			latest.ResultFileID() != nil && latest.ResultFileID().Equal(fileUUID) {
+			return
+		}
+		s.cleanupUncommittedUpload(finalPath, thumbnail)
+	}()
 
 	// File 记录(用转码后的 mime)
 	f, err := domainupload.NewFile(fileUUID, uid, session.Purpose(), session.FileName(), finalPath, fileURL, fileSize, finalMime, session.FileHash())
@@ -775,44 +753,16 @@ func (s *UploadService) CompleteUpload(ctx context.Context, uploadID, userID str
 	if thumbnail != "" {
 		f.SetThumbnail(thumbnail)
 	}
-	if err := s.fileRepo.Save(ctx, f); err != nil {
+	if err := s.sessionRepo.Complete(ctx, sid, f); err != nil {
 		return nil, err
 	}
-
+	published = true
 	_ = s.storage.CleanupDir(session.TmpPath())
-	_, _ = s.sessionRepo.UpdateStatus(ctx, sid, domainupload.SessionMerging, domainupload.SessionCompleted)
 
 	return &MergeResult{
 		FileID: fileUUID.String(), URL: fileURL,
 		Thumbnail: thumbnail, Width: width, Height: height,
 	}, nil
-}
-
-// CancelUpload 取消上传
-func (s *UploadService) CancelUpload(ctx context.Context, uploadID, callerID string) error {
-	sid, err := shared.ParseID(uploadID)
-	if err != nil {
-		return err
-	}
-	session, err := s.sessionRepo.FindByID(ctx, sid)
-	if err != nil {
-		return err
-	}
-	// owner 校验:防越权操作他人上传会话
-	cid, err := shared.ParseID(callerID)
-	if err != nil {
-		return shared.BadRequest("无效的调用者 ID")
-	}
-	if !session.UserID().Equal(cid) {
-		return shared.Forbidden("无权操作他人上传会话")
-	}
-	if session.Status() != domainupload.SessionActive {
-		return domainupload.ErrSessionNotActive
-	}
-	if session.TmpPath() != "" {
-		_ = s.storage.CleanupDir(session.TmpPath())
-	}
-	return s.sessionRepo.Delete(ctx, sid)
 }
 
 // GetUploadStatus 查询上传状态（断点续传）
@@ -830,13 +780,7 @@ func (s *UploadService) GetUploadStatus(ctx context.Context, uploadID, callerID 
 	if err != nil {
 		return nil, shared.BadRequest("无效的调用者 ID")
 	}
-	if !session.UserID().Equal(cid) {
-		return nil, shared.Forbidden("无权操作他人上传会话")
-	}
-	return &InitSessionResult{
-		UploadID: session.ID().String(), ChunkSize: session.ChunkSize(),
-		TotalChunks: session.TotalChunks(), UploadedChunks: session.UploadedChunks(),
-	}, nil
+	return s.uploadSessionResult(ctx, session, cid)
 }
 
 // mimeToCategory MIME → 分类目录

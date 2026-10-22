@@ -558,12 +558,13 @@ func (h *Handler) ReplaceMediaFile(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) InitUploadSession(w http.ResponseWriter, r *http.Request) {
 	userID := interfacesmw.GetUserIDFromContext(r)
 	var req struct {
-		FileName  string `json:"fileName" validate:"required"`
-		FileSize  int64  `json:"fileSize" validate:"required"`
-		FileHash  string `json:"fileHash"`
-		MimeType  string `json:"mimeType"`
-		ChunkSize int    `json:"chunkSize"`
-		Purpose   string `json:"purpose"`
+		FileName       string `json:"fileName" validate:"required"`
+		FileSize       int64  `json:"fileSize" validate:"required"`
+		FileHash       string `json:"fileHash"`
+		MimeType       string `json:"mimeType"`
+		ChunkSize      int    `json:"chunkSize"`
+		Purpose        string `json:"purpose"`
+		ClientUploadID string `json:"clientUploadId" validate:"omitempty,uuid"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.RespondError(w, r, err)
@@ -577,6 +578,7 @@ func (h *Handler) InitUploadSession(w http.ResponseWriter, r *http.Request) {
 		UserID: userID, FileName: req.FileName, FileSize: req.FileSize,
 		FileHash: req.FileHash, MimeType: req.MimeType,
 		ChunkSize: req.ChunkSize, Purpose: req.Purpose,
+		ClientUploadID: req.ClientUploadID,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)
@@ -624,11 +626,12 @@ func (h *Handler) CompleteUpload(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) CancelUpload(w http.ResponseWriter, r *http.Request) {
 	uploadID := r.PathValue("uploadId")
 	userID := interfacesmw.GetUserIDFromContext(r)
-	if err := h.uploadSvc.CancelUpload(r.Context(), uploadID, userID); err != nil {
+	result, err := h.uploadSvc.CancelUpload(r.Context(), uploadID, userID)
+	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
-	response.RespondMessage(w, http.StatusOK, "上传已取消")
+	response.RespondOK(w, result)
 }
 
 // GetUploadStatus 查询上传状态（断点续传）

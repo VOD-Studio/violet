@@ -49,6 +49,7 @@ func NewAdminRouter(d *Deps) chi.Router {
 			if h := d.RuntimeSettings; h != nil {
 				sub.Get("/rate-limit", h.GetRateLimit)
 				sub.Get("/image", h.GetImage)
+				sub.Get("/upload-queue", h.GetUploadQueue)
 			}
 			sub.Get("/code-runner", settingsH.GetCodeRunner)
 		})
@@ -63,6 +64,7 @@ func NewAdminRouter(d *Deps) chi.Router {
 			if h := d.RuntimeSettings; h != nil {
 				sub.Put("/rate-limit", h.UpdateRateLimit)
 				sub.Put("/image", h.UpdateImage)
+				sub.Put("/upload-queue", h.UpdateUploadQueue)
 			}
 			sub.Put("/code-runner", settingsH.UpdateCodeRunner)
 		})

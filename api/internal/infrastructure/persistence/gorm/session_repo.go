@@ -8,6 +8,7 @@ import (
 
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	domainshared "blog-api/internal/domain/shared"
 	"blog-api/internal/domain/upload"
@@ -23,7 +24,7 @@ func NewUploadSessionRepository(db *gorm.DB) *UploadSessionRepository {
 
 func sessionToPO(s *upload.UploadSession) (newmodel.UploadSession, error) {
 	chunks := datatypes.NewJSONSlice(s.UploadedChunks())
-	return newmodel.UploadSession{
+	po := newmodel.UploadSession{
 		ID: s.ID().UUID(), UserID: s.UserID().UUID(),
 		FileName: s.FileName(), FileSize: s.FileSize(),
 		MimeType: s.MimeType(), FileHash: s.FileHash(),
@@ -31,7 +32,12 @@ func sessionToPO(s *upload.UploadSession) (newmodel.UploadSession, error) {
 		TotalChunks: s.TotalChunks(), UploadedChunks: chunks,
 		Status: newmodel.SessionStatus(s.Status()), TmpPath: s.TmpPath(),
 		ExpiresAt: s.ExpiresAt(),
-	}, nil
+	}
+	if fileID := s.ResultFileID(); fileID != nil {
+		id := fileID.UUID()
+		po.ResultFileID = &id
+	}
+	return po, nil
 }
 
 func sessionToDomain(po newmodel.UploadSession) (*upload.UploadSession, error) {
@@ -39,12 +45,17 @@ func sessionToDomain(po newmodel.UploadSession) (*upload.UploadSession, error) {
 	for _, v := range po.UploadedChunks {
 		chunks = append(chunks, v)
 	}
+	var resultFileID *domainshared.ID
+	if po.ResultFileID != nil {
+		id := domainshared.MustParseID(po.ResultFileID.String())
+		resultFileID = &id
+	}
 	return upload.ReconstructUploadSession(
 		domainshared.MustParseID(po.ID.String()),
 		domainshared.MustParseID(po.UserID.String()),
 		po.FileName, po.FileSize, po.MimeType, po.FileHash, po.Purpose,
 		po.ChunkSize, po.TotalChunks, chunks, string(po.Status), po.TmpPath,
-		po.ExpiresAt, po.CreatedAt, po.UpdatedAt,
+		po.ExpiresAt, po.CreatedAt, po.UpdatedAt, resultFileID,
 	), nil
 }
 
@@ -62,7 +73,7 @@ func (r *UploadSessionRepository) FindByID(ctx context.Context, id domainshared.
 func (r *UploadSessionRepository) FindByHash(ctx context.Context, hash string, userID domainshared.ID) (*upload.UploadSession, error) {
 	var po newmodel.UploadSession
 	if err := r.db.WithContext(ctx).
-		Where("file_hash = ? AND user_id = ? AND status = ?", hash, userID.UUID(), upload.SessionActive).
+		Where("file_hash = ? AND user_id = ? AND status = ? AND expires_at > ?", hash, userID.UUID(), upload.SessionActive, time.Now()).
 		First(&po).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, upload.ErrSessionNotFound
@@ -77,7 +88,7 @@ func (r *UploadSessionRepository) Save(ctx context.Context, s *upload.UploadSess
 	if err != nil {
 		return err
 	}
-	if err := r.db.WithContext(ctx).Save(&po).Error; err != nil {
+	if err := r.db.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&po).Error; err != nil {
 		return domainshared.Internal("保存上传会话失败", err)
 	}
 	return nil
@@ -99,7 +110,7 @@ func (r *UploadSessionRepository) UpdateStatus(ctx context.Context, id domainsha
 func (r *UploadSessionRepository) AppendChunk(ctx context.Context, id domainshared.ID, index int) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var po newmodel.UploadSession
-		if err := tx.Where("id = ? AND status = ?", id.UUID(), upload.SessionActive).First(&po).Error; err != nil {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ? AND status = ?", id.UUID(), upload.SessionActive).First(&po).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return upload.ErrSessionNotFound
 			}
@@ -117,6 +128,72 @@ func (r *UploadSessionRepository) AppendChunk(ctx context.Context, id domainshar
 		return tx.Model(&newmodel.UploadSession{}).
 			Where("id = ?", id.UUID()).
 			Update("uploaded_chunks", datatypes.NewJSONSlice(chunks)).Error
+	})
+}
+
+func (r *UploadSessionRepository) Cancel(ctx context.Context, id, userID domainshared.ID) (*upload.UploadSession, error) {
+	var po newmodel.UploadSession
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// 墓碑与初始化共用主键，冲突时不覆盖已有会话的归属或完成结果。
+		tombstone := newmodel.UploadSession{
+			ID: id.UUID(), UserID: userID.UUID(),
+			Purpose: upload.PurposeMaterial, ChunkSize: 1,
+			UploadedChunks: datatypes.NewJSONSlice([]int{}),
+			Status:         newmodel.SessionStatusCancelled,
+			ExpiresAt:      time.Now().Add(24 * time.Hour),
+		}
+		if err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&tombstone).Error; err != nil {
+			return err
+		}
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&po, "id = ?", id.UUID()).Error; err != nil {
+			return err
+		}
+		if po.UserID != userID.UUID() {
+			return domainshared.Forbidden("无权操作他人上传会话")
+		}
+		if po.Status == newmodel.SessionStatusCompleted || po.Status == newmodel.SessionStatusCancelled {
+			return nil
+		}
+		if err := tx.Model(&newmodel.UploadSession{}).Where("id = ?", id.UUID()).
+			Update("status", newmodel.SessionStatusCancelled).Error; err != nil {
+			return err
+		}
+		po.Status = newmodel.SessionStatusCancelled
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return sessionToDomain(po)
+}
+
+func (r *UploadSessionRepository) Complete(ctx context.Context, id domainshared.ID, file *upload.File) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// 行锁覆盖文件写入和会话提交，取消只能观察到整个事务之前或之后的状态。
+		var po newmodel.UploadSession
+		if err := tx.Select("user_id", "status").
+			Clauses(clause.Locking{Strength: "UPDATE"}).
+			First(&po, "id = ?", id.UUID()).Error; err != nil {
+			return err
+		}
+		if po.UserID != file.OwnerID().UUID() {
+			return domainshared.Forbidden("无权操作他人上传会话")
+		}
+		if po.Status == newmodel.SessionStatusCancelled {
+			return upload.ErrSessionCancelled
+		}
+		if po.Status != newmodel.SessionStatusMerging {
+			return upload.ErrSessionNotActive
+		}
+		if err := NewFileRepository(tx).Save(ctx, file); err != nil {
+			return err
+		}
+		return tx.Model(&newmodel.UploadSession{}).
+			Where("id = ?", id.UUID()).
+			Updates(map[string]any{
+				"status":         newmodel.SessionStatusCompleted,
+				"result_file_id": file.ID().UUID(),
+			}).Error
 	})
 }
 
