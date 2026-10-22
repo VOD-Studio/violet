@@ -15,9 +15,9 @@
 		"src/dom/ink-svg.ts": "bca938ad722f42fc82cf64d70e04b6ad9d6374fd75c81f1ee61f9516fd7c479e",
 		"src/draw.ts": "3f99c06d819b0994e64902e02dc090e5d0112547046d82aa829634a51a0a2b40",
 		"src/export/color-table.ts": "18ac27021b1a198d5d8bbe44ab6bb118f0f776a00d59954c9b0707a0bb19391a",
-		"src/export/frames.ts": "9e700e193b14ddda808388294ec7457b1c538f4317dd037aadda497bbdf79097",
+		"src/export/frames.ts": "0e0faa88fa8355b0cb187a096d24021d84ab42205987d06141d95c9e7bebca24",
 		"src/export/gif.ts": "4b6ed9a65692ab74bed692cf706c204ce554fc4bd816d8155a573868b2755bf7",
-		"src/export/index.ts": "dbfeaa522c46f3a6ad70add7ee9daa2b75a43e45bc28248741dfc1616f3265e2",
+		"src/export/index.ts": "8a9f70336d362d968d8cdbded506e0de7275fee926e55805a697de1d86e1a76c",
 		"src/export/webm.ts": "41c08621df1a35441d3c760cb47a2dfb90b86d9ef944be90fb1f721d39591f08",
 		"src/fill/patterns.ts": "552781a4842c7be683c0dd06ce0a8fb6263dfbe90f7ff7dd49b1c20376b0d155",
 		"src/fill/scan.ts": "7aae7e8077a459f9bd433af262648cdb8f6941d767c53c54c02bea4bee30d43e",
@@ -40,5 +40,5 @@
 		"src/render/text-writer.ts": "a9b2ed653a5210d3978589b8a08622f892e3527452ecd932bd31a3c4faa4d4e4",
 		"src/render/tracks.ts": "720433635742f9d05378aaa89cb4a81610b7c61aababbc7ef5709629d011f099"
 	},
-	"image": "2945be80ce7a736489c5b8fc50763430aecb574b5324705293349cea5514a954"
+	"image": "3c3b2c55d7c772d36e5d49fdf573e936efd36f3e97f99df8f6c2dce7dfc30d15"
 }

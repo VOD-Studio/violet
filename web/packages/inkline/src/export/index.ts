@@ -3,7 +3,7 @@ import type { Drawing } from "../core/types.ts";
 import { paintFrame } from "../render/paint.ts";
 import { type Palette, paint, type RenderOptions } from "../render/palette.ts";
 import { buildColorTable, createColorMapper, type Rgb } from "./color-table.ts";
-import { planFrames } from "./frames.ts";
+import { planGifFrames, sampleFrameTimes } from "./frames.ts";
 import { createGifEncoder } from "./gif.ts";
 import { createWebmMuxer, type WebmTrack } from "./webm.ts";
 
@@ -64,7 +64,8 @@ export async function exportGif(
 	if (loop !== true && !(Number.isInteger(loop) && loop >= 1))
 		throw new RangeError("loop must be true or a whole number of plays (1 or more).");
 	const job = prepare(drawing, palette, options, MAX_GIF_FPS, false);
-	const { width, height, plan, signal } = job;
+	const { width, height, signal } = job;
+	const plan = planGifFrames(job.length, job.fps, job.hold);
 	const ctx = job.canvas.getContext("2d", { willReadFrequently: true });
 	if (!ctx) throw new Error("OffscreenCanvas has no 2D context.");
 	const frame = (time: number) => {
@@ -106,7 +107,8 @@ export async function exportWebm(
 	if (options.bitrate !== undefined && !(options.bitrate > 0))
 		throw new RangeError("bitrate must be a positive number of bits per second.");
 	const job = prepare(drawing, palette, options, MAX_WEBM_FPS, true);
-	const { width, height, fps, plan, signal } = job;
+	const { width, height, fps, signal } = job;
+	const times = sampleFrameTimes(job.length, fps);
 	if (typeof VideoEncoder === "undefined" || typeof VideoFrame === "undefined")
 		throw new Error(
 			"WebM export needs WebCodecs (VideoEncoder), which this environment lacks.",
@@ -142,12 +144,12 @@ export async function exportWebm(
 	};
 	try {
 		encoder.configure(choice.config);
-		for (let i = 0; i < plan.times.length; i++) {
+		for (let i = 0; i < times.length; i++) {
 			signal?.throwIfAborted();
 			if (failure) throw failure;
-			job.paint(ctx, plan.times[i]);
-			encode(plan.times[i], i % keyEvery === 0);
-			options.onProgress?.(i + 1, plan.times.length);
+			job.paint(ctx, times[i]);
+			encode(times[i], i % keyEvery === 0);
+			options.onProgress?.(i + 1, times.length);
 			while (encoder.encodeQueueSize > 2) await wait(4);
 			await nextTask();
 		}
@@ -193,7 +195,6 @@ interface Job {
 	/** 导出时长，秒。 */
 	length: number;
 	hold: number;
-	plan: ReturnType<typeof planFrames>;
 	signal?: AbortSignal;
 	/** 背景色在前的配色原色，CSS 写法。 */
 	colors: string[];
@@ -243,7 +244,6 @@ function prepare(
 		fps,
 		length,
 		hold,
-		plan: planFrames(length, fps, hold),
 		signal: options.signal,
 		colors,
 		paint: (ctx, time) =>

@@ -4,15 +4,34 @@ import { createSchedule } from "./animate/schedule.ts";
 import { rect } from "./core/path.ts";
 import { draw } from "./draw.ts";
 import { buildColorTable, createColorMapper, type Rgb } from "./export/color-table.ts";
-import { planFrames } from "./export/frames.ts";
+import { planGifFrames, sampleFrameTimes } from "./export/frames.ts";
 import { createGifEncoder } from "./export/gif.ts";
 import { exportGif, exportWebm } from "./export/index.ts";
 import { createWebmMuxer } from "./export/webm.ts";
 import { styles } from "./presets.ts";
 
-describe("planFrames", () => {
+describe("sampleFrameTimes", () => {
+	it("keeps a uniform 60 fps cadence and the terminal frame for video", () => {
+		const times = sampleFrameTimes(1, 60);
+		expect(times).toHaveLength(61);
+		expect(times[0]).toBe(0);
+		expect(times.at(-1)).toBe(1);
+		for (let i = 1; i < times.length; i++)
+			expect(times[i] - times[i - 1]).toBeCloseTo(1 / 60, 9);
+	});
+
+	it("keeps the short terminal interval without GIF frame merging", () => {
+		expect(sampleFrameTimes(0.05, 25)).toEqual([0, 0.04, 0.05]);
+	});
+
+	it("samples a still drawing only once", () => {
+		expect(sampleFrameTimes(0, 60)).toEqual([0]);
+	});
+});
+
+describe("planGifFrames", () => {
 	it("samples every 1/fps second and holds the last frame", () => {
-		const plan = planFrames(1, 25, 1);
+		const plan = planGifFrames(1, 25, 1);
 		expect(plan.times).toHaveLength(26);
 		expect(plan.times[1]).toBeCloseTo(0.04);
 		expect(plan.times.at(-1)).toBe(1);
@@ -21,18 +40,18 @@ describe("planFrames", () => {
 	});
 
 	it("keeps the total length when the last interval is shorter than a frame", () => {
-		const plan = planFrames(1.67, 25, 1);
+		const plan = planGifFrames(1.67, 25, 1);
 		expect(plan.delays.reduce((a, b) => a + b, 0)).toBe(167 + 100);
 		expect(plan.delays.at(-2)).toBe(3);
 	});
 
 	it("merges frames shorter than 2/100 s into the previous frame", () => {
 		// 0 → 0.04 → 0.05：0.04 处的帧只显示 1/100 秒，并入首帧
-		expect(planFrames(0.05, 25, 0)).toEqual({ times: [0, 0.05], delays: [5, 4] });
+		expect(planGifFrames(0.05, 25, 0)).toEqual({ times: [0, 0.05], delays: [5, 4] });
 	});
 
 	it("exports a still drawing as one held frame", () => {
-		expect(planFrames(0, 25, 1)).toEqual({ times: [0], delays: [100] });
+		expect(planGifFrames(0, 25, 1)).toEqual({ times: [0], delays: [100] });
 	});
 });
 

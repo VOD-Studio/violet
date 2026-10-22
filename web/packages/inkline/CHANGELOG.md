@@ -10,6 +10,10 @@ All notable changes to `@violetjs/inkline` are documented here. Versions follow 
 - GIF export keeps every palette color exact and spends the remaining colors on anti-aliased edges, overlaps and wash. After the first frame only changed regions are stored, and identical frames are merged.
 - WebM export encodes VP9 through WebCodecs, falling back to VP8.
 
+### Fixed
+
+- WebM exports retain every requested frame up to 60 fps instead of applying GIF-specific short-frame merging, preserving the frame cadence and two-second keyframe interval.
+
 ## 0.2.0 - 2026-10-11
 
 First public release.
