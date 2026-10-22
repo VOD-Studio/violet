@@ -7,6 +7,15 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.16.1](https://github.com/VOD-Studio/violet/compare/v2.16.0...v2.16.1) (2026-10-22)
+
+
+### 修复
+
+* **music:** 恢复播放器滚动收起 ([2c8557d](https://github.com/VOD-Studio/violet/commit/2c8557d787b56d30115c84675bd4c16bc09412f2))
+* **music:** 恢复播放器滚动收起与毛玻璃透出 ([87e9370](https://github.com/VOD-Studio/violet/commit/87e937069bbd6ad09b4fdd92921809597e219df3))
+* **music:** 恢复播放条毛玻璃透出感 ([9e66b13](https://github.com/VOD-Studio/violet/commit/9e66b1381cc58dfaf28f92051786541f93345260))
+
 ## [2.16.0](https://github.com/VOD-Studio/violet/compare/v2.15.1...v2.16.0) (2026-10-22)
 
 
