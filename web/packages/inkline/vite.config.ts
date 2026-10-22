@@ -11,6 +11,7 @@ export default defineConfig({
 				"render/svg": entry("./src/render/svg.ts"),
 				"render/canvas": entry("./src/render/canvas.ts"),
 				"dom/index": entry("./src/dom/index.ts"),
+				"export/index": entry("./src/export/index.ts"),
 			},
 			formats: ["es"],
 		},

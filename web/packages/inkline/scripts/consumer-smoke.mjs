@@ -71,6 +71,8 @@ try {
 		"dist/render/canvas.d.ts",
 		"dist/dom/index.js",
 		"dist/dom/index.d.ts",
+		"dist/export/index.js",
+		"dist/export/index.d.ts",
 	])
 		assert.ok(files.includes(required), `Tarball is missing ${required}.`);
 	for (const path of files)
@@ -88,6 +90,8 @@ try {
 		assert.equal(packed.exports[`./${renderer}`].import, `./dist/render/${renderer}.js`);
 		assert.equal(packed.exports[`./${renderer}`].types, `./dist/render/${renderer}.d.ts`);
 	}
+	assert.equal(packed.exports["./export"].import, "./dist/export/index.js");
+	assert.equal(packed.exports["./export"].types, "./dist/export/index.d.ts");
 	assert.equal(packed.sideEffects, false);
 	assert.equal(packed.engines.node, ">=18");
 	assert.equal(packed.types, "./dist/index.d.ts");
@@ -120,6 +124,7 @@ try {
 import { mountSvg, renderSvg, seekSvg, updateSvgPalette } from "${packageJson.name}/svg";
 import { drawCanvas } from "${packageJson.name}/canvas";
 import { inkSvg, type InkSvgOptions } from "${packageJson.name}/dom";
+import { canExportWebm, exportGif, exportWebm, type GifExportOptions, type WebmExportOptions } from "${packageJson.name}/export";
 
 const item: SceneItem = { id: "card", path: rect(0, 0, 40, 30, 4), fillRole: "surface" };
 const style: Style = { ...styles.natural, fill: fills.hachure, pen: createGPen({ pressure: 0.5 }) };
@@ -127,7 +132,15 @@ const drawing: Drawing = draw({ width: 40, height: 30, items: [item] }, { style,
 const markup: string = renderSvg(drawing, { paper: "#fff", ink: "#000", surface: "#ccc" });
 const pen: Pen = gpen;
 const inkOptions: InkSvgOptions = { style, seed: 2, minWidth: 1.2, thickPen: createGPen({ pressure: 0.25 }) };
-export const checks = [markup, pen, lineWashStyle, mountSvg, seekSvg, updateSvgPalette, drawCanvas, createSchedule, createPlayer, inkSvg, inkOptions];
+const schedule = createSchedule(drawing, { mode: "stagger" });
+const gifOptions: GifExportOptions = { schedule, width: 120, fps: 25, duration: 2, hold: 1, loop: true };
+const webmOptions: WebmExportOptions = { schedule, bitrate: 1_000_000 };
+const exportCalls: [Promise<Blob>, Promise<Blob>, Promise<boolean>] = [
+	exportGif(drawing, { paper: "#fff", ink: "#000", surface: "#ccc" }, gifOptions),
+	exportWebm(drawing, { paper: "#fff", ink: "#000", surface: "#ccc" }, webmOptions),
+	canExportWebm(),
+];
+export const checks = [markup, pen, lineWashStyle, mountSvg, seekSvg, updateSvgPalette, drawCanvas, createSchedule, createPlayer, inkSvg, inkOptions, exportCalls];
 `,
 	);
 	const compilerOptions = {
@@ -194,7 +207,7 @@ console.log(renderSvg(draw({ width: 10, height: 10, items: [{ id: "r", path: rec
 	const included = Object.values(bundle.metafile.outputs).flatMap((file) =>
 		Object.entries(file.inputs).filter(([, input]) => input.bytesInOutput > 0).map(([path]) => path),
 	);
-	for (const excluded of ["fill/wash.js", "pen/ribbon.js", "pen/brushes.js", "render/canvas.js"]) {
+	for (const excluded of ["fill/wash.js", "pen/ribbon.js", "pen/brushes.js", "render/canvas.js", "render/paint.js", "export/index.js", "export/gif.js", "export/webm.js"]) {
 		assert.ok(!included.some((path) => path.endsWith(excluded)), `Tree shaking retained ${excluded}.`);
 	}
 	assert.ok(included.every((path) => path === "<stdin>" || !path.includes(packageRoot)), "Bundle leaked workspace source.");

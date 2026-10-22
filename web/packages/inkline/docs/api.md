@@ -11,6 +11,7 @@ English | [简体中文](./api.zh-CN.md)
 - [Rendering](#rendering): `renderSvg`, `mountSvg`, `seekSvg`, `updateSvgPalette`, `pathData`, `drawCanvas`
 - [Existing SVG](#existing-svg): `inkSvg`
 - [Animation](#animation): `createSchedule`, `itemProgress`, `createPlayer`
+- [Export](#export): `exportGif`, `exportWebm`, `canExportWebm`
 - [Extension API](#extension-api): `Hand`, `Pen`, `Fill`, `DrawContext`, `BatchBuilder` and helpers
 
 All coordinates are in scene units. Unless stated otherwise, "width" means the nominal line width of an item.
@@ -322,6 +323,50 @@ A clock for playing a schedule. It owns no strokes; it only calls `onFrame` with
 
 A `Player` has `time`, `playing` and a writable `rate`, and the methods `play()` (restarts from 0 when at the end), `pause()`, `seek(time)` (clamped, keeps the playing state), `restart()` and `cancel()`.
 
+## Export
+
+From `@violetjs/inkline/export`. Renders a schedule offline into a file, frame by frame at a fixed frame rate. The result does not depend on any player's rate, pauses or seeks, and the same drawing, schedule and palette give the same frames in the same browser. Export needs `OffscreenCanvas`, so it runs in browsers and Web Workers but not in Node.js.
+
+Both functions take these options:
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `schedule` | required | The schedule to render. |
+| `width` | `drawing.width` | Output width in pixels. The height follows the drawing's aspect ratio. |
+| `fps` | `25` | Frames per second. |
+| `duration` | `schedule.duration` | Length of the export in seconds. The whole schedule is scaled to fit, so `duration: 6` turns a 12-second schedule into a 6-second file. |
+| `hold` | `1` | How long the finished drawing stays on screen at the end, in seconds; at least one frame. |
+| `background` | `"paper"` | Palette role of the background. Export needs an opaque background, so `false` throws. |
+| `fontFamily` | `"system-ui, sans-serif"` | Font for labels. Load web fonts before exporting. |
+| `signal` | none | An `AbortSignal`. Aborting rejects the promise with the signal's reason. |
+| `onProgress(done, total)` | none | Called after each frame is painted. |
+
+Between frames the export yields to the event loop, so the page stays responsive. To keep the main thread entirely free, call it inside a Web Worker.
+
+### `exportGif(drawing, palette, options): Promise<Blob>`
+
+Resolves with an `image/gif` blob. Extra option:
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `loop` | `true` | `true` loops forever; a number is the total number of plays. Browsers do not all count loops the same way, so prefer `true` or `1`. |
+
+`fps` must be at most 50: GIF delays are counted in hundredths of a second and browsers slow down shorter delays. The color table keeps every palette color exactly and spends the remaining slots, up to 255 colors in total, on anti-aliased edges, overlaps and wash. After the first frame only the changed region of each frame is stored, and identical frames are merged.
+
+### `exportWebm(drawing, palette, options): Promise<Blob>`
+
+Resolves with a `video/webm` blob encoded through WebCodecs, using VP9 when the browser can encode it and VP8 otherwise. Extra option:
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `bitrate` | derived | Target bitrate in bits per second. By default it follows the pixel count and frame rate, between 250 kbit/s and 8 Mbit/s. |
+
+`fps` must be at most 60. Width and height are rounded down to even numbers, as VP8 and VP9 require. A keyframe is written every 2 seconds. Throws when the browser has no WebCodecs or can encode neither codec.
+
+### `canExportWebm(): Promise<boolean>`
+
+Whether this environment has `OffscreenCanvas` and can encode VP9 or VP8 through WebCodecs. Use it to disable a WebM option before the user asks for it.
+
 ## Extension API
 
 Hands, pens and fills are plain objects. Put your own in a style; there is nothing to register.
@@ -383,4 +428,4 @@ All these names are exported from the root entry unless an entry is explicitly g
 
 `PathBuilder.moveTo(x,y)`, `.lineTo(x,y)`, `.quadTo(cx,cy,x,y)`, `.cubicTo(c1x,c1y,c2x,c2y,x,y)` and `.close()` return the builder; `.build(fillRule = "nonzero")` returns a `Path`. `createPath` accepts `Uint8Array` verbs and `Float64Array` coordinates and retains those arrays, so callers must not mutate them.
 
-Option types are exported alongside their factories: `HandOptions`, `PenOptions`, `FinelinerOptions`, `InkPenOptions`, `GPenOptions`, `MarkerOptions`, `RibbonPenOptions`, `PatternOptions`, `WashOptions`, `ScheduleOptions`, `PlayerOptions`. Their fields and defaults are listed in the corresponding sections above. `ScheduleMode` is `"sequential" | "parallel" | "stagger"`. `Palette` and `RenderOptions` are root exports; `SvgOptions` and `CanvasOptions` belong to their renderer entry points.
+Option types are exported alongside their factories: `HandOptions`, `PenOptions`, `FinelinerOptions`, `InkPenOptions`, `GPenOptions`, `MarkerOptions`, `RibbonPenOptions`, `PatternOptions`, `WashOptions`, `ScheduleOptions`, `PlayerOptions`. Their fields and defaults are listed in the corresponding sections above. `ScheduleMode` is `"sequential" | "parallel" | "stagger"`. `Palette` and `RenderOptions` are root exports; `SvgOptions` and `CanvasOptions` belong to their renderer entry points; `AnimationExportOptions`, `GifExportOptions` and `WebmExportOptions` belong to `/export`.

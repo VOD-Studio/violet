@@ -12,7 +12,7 @@ pnpm test        # 单元与行为测试（使用 web/ 的 Vitest 配置）
 pnpm build       # 输出 dist：ESM、声明与 sourcemap
 pnpm consumer    # 打包 tarball，在临时独立项目中安装并验证类型、运行与打包体积
 pnpm examples    # 运行 examples/ 生成 docs/images 下的样例图，并把样例代码同步进两份 README
-pnpm examples:check # 重新计算 SVG 并逐字节比较现有图，核对 Mermaid 图的来源指纹，同时检查中英文 README 代码块
+pnpm examples:check # 重新计算 SVG 并逐字节比较现有图，核对 Mermaid 图与导出动图的来源指纹，同时检查中英文 README 代码块
 ```
 
 ## README 样例
@@ -20,6 +20,8 @@ pnpm examples:check # 重新计算 SVG 并逐字节比较现有图，核对 Merm
 `examples/` 下每个文件都是可运行的样例，`docs/images/` 中同名的图就是它的输出。README 里 `<!-- example: 名称 -->` 与 `<!-- /example -->` 之间的代码块由 `scripts/sync-readme.mjs` 从对应文件同步：文件里有 `// #region readme` 区域时只展示区域内的 `style` 与 `items`，导入与渲染留在文件里。不要手改这些代码块；`pnpm consumer` 会先运行 `pnpm examples:check`，检查代码与图均无漂移。首图通过 `examples/artwork.ts` 的 `inkArtwork` 处理单份咖啡少女 JSON 生成，保留每条墨区和中心线的独立角色（例如嘴唇），不导入应用运行时代码。
 
 Mermaid 样例 `examples/mermaid.ts` 需要浏览器：`node scripts/render-mermaid.mjs` 用 esbuild 打包后在 Chromium 中执行，把重画后的 SVG 写入 `docs/images/mermaid.svg`，并在 `mermaid.json` 记录 Mermaid 版本、`src/`（不含测试）、样例与脚本的哈希以及图片哈希。Mermaid 排版依赖本机字体，不能跨机器逐字节比对，`--check` 只核对这些指纹、不启动浏览器；改动 `src/` 后须在本机重新生成。
+
+导出样例 `examples/export.ts` 同样需要浏览器：`node scripts/render-export.mjs` 在 Chromium 中执行，把导出的动图写入 `docs/images/export.gif`，并在 `export.json` 记录 `src/`（不含测试）、样例与脚本的哈希以及图片哈希。导出依赖浏览器的光栅化，`--check` 只核对指纹；改动 `src/` 后同样须在本机重新生成。
 
 `node scripts/render-examples.ts [--artwork path/to/artwork.json] [--check]` 生成六张基础示例；传入画稿时同时生成首图。`--check` 只比较、不写文件。`node scripts/sync-readme.mjs [--check]` 同步或检查两份 README。`node scripts/consumer-smoke.mjs [--keep]` 打包并在系统临时目录内独立安装，验证 tarball 文件白名单、ESM 入口、Bundler/NodeNext 类型消费、Node SVG 执行、确定性与默认 SVG bundle 的 12 KiB gzip 上限，以及未用到的笔、淡彩与 Canvas 模块是否被摇树移除。`--keep` 保留临时消费项目供排查；默认结束后清理。
 
@@ -33,6 +35,7 @@ Mermaid 样例 `examples/mermaid.ts` 需要浏览器：`node scripts/render-merm
 | `src/fill/` | 扫描线、图案填充与淡彩填充 |
 | `src/animate/` | 编排与播放器 |
 | `src/render/` | SVG、Canvas、显现轨迹与配色解析 |
+| `src/export/` | 动画导出：取帧、色表、GIF 编码与 WebM 封装 |
 | `src/dom/` | `inkSvg`：在已渲染的 SVG 上原地换成手绘笔触 |
 | `examples/` | README 样例，每个文件生成一张图 |
 | `docs/` | 样例图与 API 文档（不进入 npm 包） |

@@ -14,6 +14,7 @@
 - **填充与淡彩。** 七种图案填充，外加一种水彩感的淡彩：朝光一侧留出纸白，背光侧加短排线。
 - **直接用于现有图表。** 用 `inkSvg` 原地重画 Mermaid、Graphviz 或 D3 的输出，布局、文字与颜色都保留。
 - **绘制动画。** 整幅图按笔画依次、同时或交错重放；跳转、暂停和倒放都不重新生成。
+- **导出 GIF 与 WebM。** 把动画离线渲染成 GIF 或 WebM 视频，尺寸、帧率与时长都可指定。
 - **结果确定。** 相同输入与 seed 总是得到相同输出，修改一个图形不会影响其他图形。
 - **体积小，不绑定框架。** 默认笔加 SVG 渲染器打包后约 10 KB（gzip），只有一个依赖。
 
@@ -369,6 +370,36 @@ export function animateCard(host: HTMLElement) {
 
 描边沿路径逐渐显现，变宽笔画从起笔处生长出来，填充淡入。动画只改变哪些部分可见，从不重新生成。Canvas 上每帧调用 `drawCanvas(drawing, canvas, palette, { schedule, time })`。
 
+### 导出
+
+![卡片动画导出的 GIF](https://raw.githubusercontent.com/VOD-Studio/violet/release/2.0/web/packages/inkline/docs/images/export.gif)
+
+<!-- example: export -->
+
+```ts
+import { createSchedule, draw, fills, rect, styles } from "@violetjs/inkline";
+import { exportGif } from "@violetjs/inkline/export";
+
+/** Call in a browser: renders the draw-on animation offline and resolves with a GIF. */
+export async function exportCard(): Promise<Blob> {
+	const drawing = draw(
+		{
+			width: 240,
+			height: 150,
+			items: [{ id: "card", path: rect(20, 20, 200, 110, 12), fillRole: "surface" }],
+		},
+		{ style: { ...styles.natural, fill: fills.hachure }, seed: 35 },
+	);
+	const palette = { paper: "#fffdf7", ink: "#252332", surface: "#8f7ad1" };
+	const schedule = createSchedule(drawing, { mode: "stagger" });
+	return exportGif(drawing, palette, { schedule, width: 360, hold: 1.5 });
+}
+```
+
+<!-- /example -->
+
+`exportGif` 按编排离线逐帧绘制，文件与播放速度、暂停无关。传入 `duration` 可把较长的编排压进较短的文件。`exportWebm` 通过 WebCodecs 写出 WebM 视频，先调用 `canExportWebm()` 确认浏览器能否编码。两者都需要浏览器。[全部参数](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/inkline/docs/api.zh-CN.md#导出)见 API 文档。
+
 ## API
 
 [API 文档](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/inkline/docs/api.zh-CN.md)列出了每个导出与参数。主要入口：
@@ -379,11 +410,13 @@ export function animateCard(host: HTMLElement) {
 | `@violetjs/inkline/svg` | `renderSvg`、`mountSvg`、`seekSvg`、`updateSvgPalette`、`pathData` |
 | `@violetjs/inkline/canvas` | `drawCanvas` |
 | `@violetjs/inkline/dom` | `inkSvg` |
+| `@violetjs/inkline/export` | `exportGif`、`exportWebm`、`canExportWebm` |
 
 ## 运行环境
 
 - ES2022 与原生 ES 模块：2022 年及以后发布的浏览器；`renderSvg` 需要 Node.js 18 及以上。
 - `mountSvg`、`seekSvg`、`drawCanvas` 与 `inkSvg` 需要浏览器 DOM。
+- `exportGif` 与 `exportWebm` 需要 `OffscreenCanvas`，`exportWebm` 还需要 WebCodecs。
 - 自带的类型声明需要 TypeScript 5 及以上。
 
 ## 许可证

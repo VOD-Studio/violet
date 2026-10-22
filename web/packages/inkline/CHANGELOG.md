@@ -2,7 +2,15 @@
 
 All notable changes to `@violetjs/inkline` are documented here. Versions follow [Semantic Versioning](https://semver.org/); before 1.0.0, a minor version may include breaking changes.
 
-## 0.2.0 - Unreleased
+## 0.3.0 - Unreleased
+
+### Added
+
+- `@violetjs/inkline/export` renders a schedule offline, frame by frame, into a GIF with `exportGif` or a WebM video with `exportWebm`. Both take a width, frame rate, length (`duration` scales the whole schedule), final-frame hold, progress callback and `AbortSignal`; GIF adds a loop count and WebM a bitrate. `canExportWebm` reports whether the browser can encode WebM.
+- GIF export keeps every palette color exact and spends the remaining colors on anti-aliased edges, overlaps and wash. After the first frame only changed regions are stored, and identical frames are merged.
+- WebM export encodes VP9 through WebCodecs, falling back to VP8.
+
+## 0.2.0 - 2026-10-11
 
 First public release.
 

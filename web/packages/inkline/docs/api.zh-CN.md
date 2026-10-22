@@ -11,6 +11,7 @@
 - [渲染](#渲染)：`renderSvg`、`mountSvg`、`seekSvg`、`updateSvgPalette`、`pathData`、`drawCanvas`
 - [现有 SVG](#现有-svg)：`inkSvg`
 - [动画](#动画)：`createSchedule`、`itemProgress`、`createPlayer`
+- [导出](#导出)：`exportGif`、`exportWebm`、`canExportWebm`
 - [扩展接口](#扩展接口)：`Hand`、`Pen`、`Fill`、`DrawContext`、`BatchBuilder` 与辅助函数
 
 所有坐标都以场景单位计。除非特别说明，「线宽」指图元的名义线宽。
@@ -322,6 +323,50 @@ inkSvg(host.querySelector("svg") as SVGSVGElement, { style: { ...styles.draft, p
 
 `Player` 包含 `time`、`playing` 与可写的 `rate`，以及方法 `play()`（已在末尾时从 0 开始）、`pause()`、`seek(time)`（钳制范围，保持播放状态）、`restart()` 与 `cancel()`。
 
+## 导出
+
+从 `@violetjs/inkline/export` 导入。按固定帧率逐帧把编排离线渲染成文件。结果与播放器的倍率、暂停和跳转无关，同一画面、编排与配色在同一浏览器里得到相同的帧。导出需要 `OffscreenCanvas`，可在浏览器与 Web Worker 中运行，不能在 Node.js 中运行。
+
+两个导出函数共用这些参数：
+
+| 参数 | 默认值 | 说明 |
+| --- | --- | --- |
+| `schedule` | 必填 | 要导出的编排。 |
+| `width` | `drawing.width` | 输出宽度，像素；高度按画面比例计算。 |
+| `fps` | `25` | 帧率。 |
+| `duration` | `schedule.duration` | 导出时长，秒。整条编排按比例缩放到这个长度，`duration: 6` 会把 12 秒的编排导出成 6 秒。 |
+| `hold` | `1` | 画完后在末帧停留的秒数，至少一帧。 |
+| `background` | `"paper"` | 背景的颜色角色。导出需要不透明背景，传 `false` 会抛出错误。 |
+| `fontFamily` | `"system-ui, sans-serif"` | 标签字体；网络字体须在导出前加载完成。 |
+| `signal` | 无 | `AbortSignal`。取消后 Promise 以 signal 的 reason 拒绝。 |
+| `onProgress(done, total)` | 无 | 每画完一帧调用一次。 |
+
+导出在帧与帧之间让出事件循环，页面仍可响应。若要完全不占主线程，可在 Web Worker 中调用。
+
+### `exportGif(drawing, palette, options): Promise<Blob>`
+
+返回 `image/gif` 的 Blob。额外参数：
+
+| 参数 | 默认值 | 说明 |
+| --- | --- | --- |
+| `loop` | `true` | `true` 为无限循环，数字为总播放次数。各浏览器计算循环次数的方式不完全一致，建议只用 `true` 或 `1`。 |
+
+`fps` 最大为 50：GIF 的帧延迟以百分之一秒计，浏览器会放慢更短的延迟。色表完整保留配色中的每种颜色，剩余槽位（总数不超过 255 色）留给抗锯齿边、叠色与淡彩。首帧之后每帧只写变化区域，相同的连续帧会合并。
+
+### `exportWebm(drawing, palette, options): Promise<Blob>`
+
+返回经 WebCodecs 编码的 `video/webm` Blob；浏览器能编码 VP9 时用 VP9，否则用 VP8。额外参数：
+
+| 参数 | 默认值 | 说明 |
+| --- | --- | --- |
+| `bitrate` | 自动 | 目标码率，bit/s。默认按像素数与帧率估算，范围 250 kbit/s 到 8 Mbit/s。 |
+
+`fps` 最大为 60。宽高向下取偶数，这是 VP8 与 VP9 的要求。每 2 秒写一个关键帧。浏览器没有 WebCodecs，或两种编码都不支持时抛出错误。
+
+### `canExportWebm(): Promise<boolean>`
+
+当前环境是否有 `OffscreenCanvas`，且能通过 WebCodecs 编码 VP9 或 VP8。可在用户选择之前据此禁用 WebM 选项。
+
 ## 扩展接口
 
 手法、笔与填充都是普通对象，把自己的实现放进风格即可，不需要注册。
@@ -383,4 +428,4 @@ interface Fill {
 
 `PathBuilder.moveTo(x,y)`、`.lineTo(x,y)`、`.quadTo(cx,cy,x,y)`、`.cubicTo(c1x,c1y,c2x,c2y,x,y)`、`.close()` 均返回 builder；`.build(fillRule = "nonzero")` 返回 `Path`。`createPath` 接收 `Uint8Array` 动词与 `Float64Array` 坐标并保留这些数组，调用方不得继续修改它们。
 
-工厂同时导出参数类型：`HandOptions`、`PenOptions`、`FinelinerOptions`、`InkPenOptions`、`GPenOptions`、`MarkerOptions`、`RibbonPenOptions`、`PatternOptions`、`WashOptions`、`ScheduleOptions`、`PlayerOptions`；字段与默认值见上方对应章节。`ScheduleMode` 为 `"sequential" | "parallel" | "stagger"`。`Palette`、`RenderOptions` 从根入口导出，`SvgOptions`、`CanvasOptions` 从各自渲染入口导出。
+工厂同时导出参数类型：`HandOptions`、`PenOptions`、`FinelinerOptions`、`InkPenOptions`、`GPenOptions`、`MarkerOptions`、`RibbonPenOptions`、`PatternOptions`、`WashOptions`、`ScheduleOptions`、`PlayerOptions`；字段与默认值见上方对应章节。`ScheduleMode` 为 `"sequential" | "parallel" | "stagger"`。`Palette`、`RenderOptions` 从根入口导出，`SvgOptions`、`CanvasOptions` 从各自渲染入口导出，`AnimationExportOptions`、`GifExportOptions`、`WebmExportOptions` 从 `/export` 导出。
