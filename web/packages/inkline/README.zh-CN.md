@@ -43,8 +43,10 @@ const drawing = draw(
 	{ style: { ...styles.natural, fill: fills.hachure }, seed: 35 },
 );
 
+const palette = { paper: "#fffdf7", ink: "#252332", surface: "#8f7ad1" };
+
 // SVG markup as a string. In the browser, mountSvg(drawing, palette) returns an <svg> element.
-const svg = renderSvg(drawing, { paper: "#fffdf7", ink: "#252332", surface: "#8f7ad1" });
+const svg = renderSvg(drawing, palette);
 ```
 
 <!-- /example -->

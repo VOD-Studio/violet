@@ -58,11 +58,14 @@ const items: SceneItem[] = [
 ];
 // #endregion
 
-export const svg = renderSvg(draw({ width: 530, height: 230, items }, { style, seed: 7 }), {
+export const scene = { width: 530, height: 230, items };
+export const options = { style, seed: 7 };
+export const palette = {
 	paper: "#fffdf7",
 	ink: "#2f2b3a",
 	sky: "#9fc9e8",
 	rose: "#eea7b8",
 	mint: "#9fd6b5",
 	sun: "#f3cf72",
-});
+};
+export const svg = renderSvg(draw(scene, options), palette);
