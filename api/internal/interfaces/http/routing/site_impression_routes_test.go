@@ -54,15 +54,14 @@ func TestSiteImpressionRouteSupportsAnonymousCSRFFlow(t *testing.T) {
 		),
 		cookieConfig,
 	)
-	passThrough := func(next http.Handler) http.Handler { return next }
 
 	router := chi.NewRouter()
 	router.Route("/api/v1", func(v1 chi.Router) {
 		v1.Use(middleware.CSRF(cookieConfig, nil))
 		v1.Get("/auth/csrf-token", authHandler.GetCSRFToken)
 		registerSiteImpressionRoutes(v1, &Deps{
-			SiteImpression:      impressionHandler,
-			SiteImpressionLimit: passThrough,
+			SiteImpression:         impressionHandler,
+			SiteImpressionIdentity: middleware.HashedIPIdentity([]byte("site-impression-rate-key")),
 		})
 	})
 

@@ -36,7 +36,7 @@ func NewAdminRouter(d *Deps) chi.Router {
 	r.Get("/stats", d.Stats.GetDashboardStats)
 	r.Get("/stats/views", d.Stats.GetViewTrends)
 
-	// 站点设置（按菜单子页拆成 7 组，每组独立 GET/PUT）
+	// 站点设置与运行策略入口共用设置权限。
 	r.Route("/settings", func(sub chi.Router) {
 		sub.Group(func(sub chi.Router) {
 			sub.Use(middleware.RequirePermission(perm, "settings:view"))
@@ -46,6 +46,9 @@ func NewAdminRouter(d *Deps) chi.Router {
 			sub.Get("/profile", settingsH.GetProfile)
 			sub.Get("/about", settingsH.GetAbout)
 			sub.Get("/llm", settingsH.GetLlm)
+			if h := d.RuntimeSettings; h != nil {
+				sub.Get("/rate-limit", h.GetRateLimit)
+			}
 			sub.Get("/code-runner", settingsH.GetCodeRunner)
 		})
 		sub.Group(func(sub chi.Router) {
@@ -56,6 +59,9 @@ func NewAdminRouter(d *Deps) chi.Router {
 			sub.Put("/profile", settingsH.UpdateProfile)
 			sub.Put("/about", settingsH.UpdateAbout)
 			sub.Put("/llm", settingsH.UpdateLlm)
+			if h := d.RuntimeSettings; h != nil {
+				sub.Put("/rate-limit", h.UpdateRateLimit)
+			}
 			sub.Put("/code-runner", settingsH.UpdateCodeRunner)
 		})
 	})

@@ -4,6 +4,7 @@ import "github.com/getkin/kin-openapi/openapi3"
 
 // registerAdminSettingsPaths 注册后台站点设置与操作日志接口。
 func registerAdminSettingsPaths(t *openapi3.T) {
+	registerRuntimeSettingsPaths(t)
 	// 站点设置按菜单子页拆成 7 组，每组独立 GET/PUT，schema 字段全 optional：
 	// GET 返回该组全量字段，PUT 接收该组部分字段（指针表部分更新）。
 

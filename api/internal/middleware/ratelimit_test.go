@@ -2,12 +2,16 @@ package middleware
 
 import (
 	"context"
-	"encoding/hex"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
+
+	domainsettings "blog-api/internal/domain/settings"
+	"blog-api/internal/domain/shared"
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/redis/go-redis/v9"
@@ -15,178 +19,327 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// newTestRedis 启动 miniredis 用于限流测试（无外部依赖）
-func newTestRedis(t *testing.T) *redis.Client {
+type ratePolicyFixture struct {
+	policy  shared.RateLimitPolicy
+	version uint64
+	entries map[string]domainsettings.RateLimitMetadata
+}
+
+func (f *ratePolicyFixture) RateLimits() shared.RateLimitSnapshot {
+	rules := make(map[string]shared.RateLimitPolicy, len(f.entries))
+	for id := range f.entries {
+		rules[id] = f.policy
+	}
+	return shared.NewRateLimitSnapshot(rules, f.version)
+}
+
+func (f *ratePolicyFixture) RegisterRateLimit(id string, _ shared.RateLimitPolicy, metadata domainsettings.RateLimitMetadata) error {
+	if f.entries == nil {
+		f.entries = make(map[string]domainsettings.RateLimitMetadata)
+	}
+	f.entries[id] = metadata
+	return nil
+}
+
+func rateFixture(t *testing.T, policy shared.RateLimitPolicy) (*miniredis.Miniredis, *redis.Client, *ratePolicyFixture, *RateLimiter) {
 	t.Helper()
-	mr, err := miniredis.Run()
-	require.NoError(t, err)
-	t.Cleanup(mr.Close)
-	return redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	ipExtractor = newIPExtractor(nil)
+	server := miniredis.RunT(t)
+	server.SetTime(time.Date(2026, 10, 22, 12, 0, 0, 0, time.UTC))
+	client := redis.NewClient(&redis.Options{Addr: server.Addr(), MaxRetries: -1})
+	t.Cleanup(func() { _ = client.Close() })
+	provider := &ratePolicyFixture{policy: policy, version: 1}
+	return server, client, provider, NewRateLimiter(client, provider)
 }
 
-func TestRateLimit_BlocksAfterMax(t *testing.T) {
-	ipExtractor = newIPExtractor(nil)
-	client := newTestRedis(t)
-	// 等待 Redis 就绪
-	ctx := context.Background()
-	require.NoError(t, client.Ping(ctx).Err())
-
-	rl := RateLimit("test", client, time.Minute, 2)
-	count := 0
-	handler := rl(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		count++
-		w.WriteHeader(http.StatusOK)
+func rateHandler(limiter *RateLimiter, policy shared.RateLimitPolicy, id string, identity func(*http.Request) string) http.Handler {
+	return limiter.Bind(id, policy, domainsettings.RateLimitMetadata{Title: "测试", Identity: "ip", Endpoints: []string{"POST /test"}}, identity)(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
 	}))
-
-	for i := 0; i < 2; i++ {
-		req := httptest.NewRequest(http.MethodPost, "/", nil)
-		req.RemoteAddr = "1.1.1.1:1234"
-		rr := httptest.NewRecorder()
-		handler.ServeHTTP(rr, req)
-		assert.Equal(t, http.StatusOK, rr.Code, "第 %d 个请求应放行", i+1)
-	}
-
-	// 第 3 个应被限流
-	req := httptest.NewRequest(http.MethodPost, "/", nil)
-	req.RemoteAddr = "1.1.1.1:1234"
-	rr := httptest.NewRecorder()
-	handler.ServeHTTP(rr, req)
-	assert.Equal(t, http.StatusTooManyRequests, rr.Code, "第 3 个请求应被限流(429)")
-	assert.Equal(t, 2, count, "handler 应只被调用 2 次")
 }
 
-func TestRateLimit_IsolatesByIP(t *testing.T) {
-	ipExtractor = newIPExtractor(nil)
-	client := newTestRedis(t)
-
-	rl := RateLimit("iso", client, time.Minute, 1)
-	served := 0
-	handler := rl(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		served++
-		w.WriteHeader(http.StatusOK)
-	}))
-
-	// 不同 IP 各自独立计数，都应放行
-	for _, addr := range []string{"1.1.1.1:1", "2.2.2.2:2", "3.3.3.3:3"} {
-		req := httptest.NewRequest(http.MethodPost, "/", nil)
-		req.RemoteAddr = addr
-		rr := httptest.NewRecorder()
-		handler.ServeHTTP(rr, req)
-		assert.Equal(t, http.StatusOK, rr.Code)
+func rateRequest(handler http.Handler, ip, user string) *httptest.ResponseRecorder {
+	r := httptest.NewRequest(http.MethodPost, "/test", nil)
+	r.RemoteAddr = ip
+	if user != "" {
+		r = r.WithContext(context.WithValue(r.Context(), UserIDKey, user))
 	}
-	assert.Equal(t, 3, served)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, r)
+	return w
 }
 
-func TestRateLimit_IsolatesByKey(t *testing.T) {
-	ipExtractor = newIPExtractor(nil)
-	client := newTestRedis(t)
-
-	rlA := RateLimit("keyA", client, time.Minute, 1)
-	rlB := RateLimit("keyB", client, time.Minute, 1)
-	served := 0
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		served++
-		w.WriteHeader(http.StatusOK)
-	})
-
-	// 同一 IP，不同限流维度，互不影响
-	for _, rl := range []func(http.Handler) http.Handler{rlA, rlB} {
-		req := httptest.NewRequest(http.MethodPost, "/", nil)
-		req.RemoteAddr = "9.9.9.9:9"
-		rr := httptest.NewRecorder()
-		rl(next).ServeHTTP(rr, req)
-		assert.Equal(t, http.StatusOK, rr.Code)
-	}
-	assert.Equal(t, 2, served)
+func defaultRatePolicy() shared.RateLimitPolicy {
+	return shared.RateLimitPolicy{Enabled: true, WindowSeconds: 60, MaxRequests: 2, FailureMode: "deny"}
 }
 
-func TestRateLimitByUser_IsolatesByUser(t *testing.T) {
-	ipExtractor = newIPExtractor(nil)
-	client := newTestRedis(t)
-
-	rl := RateLimitByUser("tweet_test", client, time.Hour, 1)
-	served := 0
-	handler := rl(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		served++
-		w.WriteHeader(http.StatusOK)
-	}))
-
-	// 同一 IP 不同登录用户：各自独立计数，都应放行
-	for _, uid := range []string{"user-a", "user-b"} {
-		req := httptest.NewRequest(http.MethodPost, "/", nil)
-		req.RemoteAddr = "1.1.1.1:1234"
-		req = req.WithContext(context.WithValue(req.Context(), UserIDKey, uid))
-		rr := httptest.NewRecorder()
-		handler.ServeHTTP(rr, req)
-		assert.Equal(t, http.StatusOK, rr.Code, "用户 %s 首次请求应放行", uid)
+func TestRateLimiterAtomicLastAdmission(t *testing.T) {
+	policy := defaultRatePolicy()
+	policy.MaxRequests = 1
+	_, _, _, limiter := rateFixture(t, policy)
+	handler := rateHandler(limiter, policy, "atomic", IPIdentity)
+	var group sync.WaitGroup
+	codes := make(chan int, 32)
+	for range 32 {
+		group.Go(func() { codes <- rateRequest(handler, "192.0.2.1:1234", "").Code })
 	}
-	assert.Equal(t, 2, served)
-
-	// 同一用户第二次请求：被限流（即使换 IP）
-	req := httptest.NewRequest(http.MethodPost, "/", nil)
-	req.RemoteAddr = "2.2.2.2:5678"
-	req = req.WithContext(context.WithValue(req.Context(), UserIDKey, "user-a"))
-	rr := httptest.NewRecorder()
-	handler.ServeHTTP(rr, req)
-	assert.Equal(t, http.StatusTooManyRequests, rr.Code, "同一用户换 IP 也应被限流")
-	assert.Equal(t, 2, served)
-}
-
-func TestRateLimitByUser_FallsBackToIP(t *testing.T) {
-	ipExtractor = newIPExtractor(nil)
-	client := newTestRedis(t)
-
-	rl := RateLimitByUser("tweet_fallback", client, time.Hour, 1)
-	served := 0
-	handler := rl(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		served++
-		w.WriteHeader(http.StatusOK)
-	}))
-
-	// 无用户上下文（中间件顺序错误）降级为 IP 维度：同 IP 第二次被限流
-	for i, want := range []int{http.StatusOK, http.StatusTooManyRequests} {
-		req := httptest.NewRequest(http.MethodPost, "/", nil)
-		req.RemoteAddr = "3.3.3.3:3"
-		rr := httptest.NewRecorder()
-		handler.ServeHTTP(rr, req)
-		assert.Equal(t, want, rr.Code, "第 %d 个请求状态码不符", i+1)
-	}
-	assert.Equal(t, 1, served)
-}
-
-func TestRateLimitByHashedIPCapsRequestsWithoutPersistingRawIP(t *testing.T) {
-	ipExtractor = newIPExtractor(nil)
-	client := newTestRedis(t)
-	ctx := context.Background()
-	require.NoError(t, client.Ping(ctx).Err())
-
-	limiter := RateLimitByHashedIP("site-impressions", client, []byte("independent-rate-limit-key"), time.Minute, 10)
-	served := 0
-	handler := limiter(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		served++
-		w.WriteHeader(http.StatusOK)
-	}))
-
-	const clientIP = "198.51.100.42"
-	for requestNumber := 1; requestNumber <= 11; requestNumber++ {
-		request := httptest.NewRequest(http.MethodPost, "/api/v1/site-impressions", nil)
-		request.RemoteAddr = clientIP + ":4321"
-		response := httptest.NewRecorder()
-		handler.ServeHTTP(response, request)
-		if requestNumber <= 10 {
-			assert.Equal(t, http.StatusOK, response.Code)
+	group.Wait()
+	close(codes)
+	allowed := 0
+	for code := range codes {
+		if code == http.StatusNoContent {
+			allowed++
 		} else {
-			assert.Equal(t, http.StatusTooManyRequests, response.Code)
+			assert.Equal(t, http.StatusTooManyRequests, code)
 		}
 	}
-	assert.Equal(t, 10, served)
+	assert.Equal(t, 1, allowed)
+}
 
-	keys, err := client.Keys(ctx, "ratelimit:site-impressions:*").Result()
+func TestRateLimiterRejectionsDoNotExtendWindowOrTTL(t *testing.T) {
+	policy := defaultRatePolicy()
+	policy.MaxRequests = 1
+	server, client, _, limiter := rateFixture(t, policy)
+	start := time.Date(2026, 10, 22, 12, 0, 0, 0, time.UTC)
+	handler := rateHandler(limiter, policy, "window", IPIdentity)
+	require.Equal(t, http.StatusNoContent, rateRequest(handler, "192.0.2.1:1", "").Code)
+	server.FastForward(40 * time.Second)
+	server.SetTime(start.Add(40 * time.Second))
+	for range 10 {
+		response := rateRequest(handler, "192.0.2.1:1", "")
+		require.Equal(t, http.StatusTooManyRequests, response.Code)
+		assert.Equal(t, "20", response.Header().Get("Retry-After"))
+		assert.Equal(t, "window", response.Header().Get("X-RateLimit-Reason"))
+		var body struct {
+			ResetAt    time.Time `json:"reset_at"`
+			RetryAfter int64     `json:"retry_after"`
+		}
+		require.NoError(t, json.Unmarshal(response.Body.Bytes(), &body))
+		assert.Equal(t, start.Add(time.Minute), body.ResetAt)
+		assert.EqualValues(t, 20, body.RetryAfter)
+	}
+	keys, err := client.Keys(context.Background(), "*:events").Result()
 	require.NoError(t, err)
 	require.Len(t, keys, 1)
-	assert.NotContains(t, keys[0], clientIP)
-	dimension := strings.TrimPrefix(keys[0], "ratelimit:site-impressions:")
-	decoded, err := hex.DecodeString(dimension)
+	assert.EqualValues(t, 1, client.ZCard(context.Background(), keys[0]).Val())
+	assert.Equal(t, 24*time.Hour-40*time.Second, client.TTL(context.Background(), keys[0]).Val())
+	server.SetTime(start.Add(time.Minute))
+	assert.Equal(t, http.StatusNoContent, rateRequest(handler, "192.0.2.1:1", "").Code)
+}
+
+func TestRateLimiterBurstAndUTCQuotaAreAtomic(t *testing.T) {
+	policy := defaultRatePolicy()
+	policy.MaxRequests = 100
+	policy.BurstRequests = 1
+	policy.DailyQuota = 2
+	server, _, _, limiter := rateFixture(t, policy)
+	start := time.Date(2026, 10, 22, 23, 59, 57, 0, time.UTC)
+	server.SetTime(start)
+	handler := rateHandler(limiter, policy, "quota", IPIdentity)
+	require.Equal(t, http.StatusNoContent, rateRequest(handler, "192.0.2.1:1", "").Code)
+	blocked := rateRequest(handler, "192.0.2.1:1", "")
+	assert.Equal(t, "burst", blocked.Header().Get("X-RateLimit-Reason"))
+	assert.Equal(t, "1", blocked.Header().Get("Retry-After"))
+	server.SetTime(start.Add(time.Second))
+	require.Equal(t, http.StatusNoContent, rateRequest(handler, "192.0.2.1:1", "").Code)
+	blocked = rateRequest(handler, "192.0.2.1:1", "")
+	assert.Equal(t, "daily", blocked.Header().Get("X-RateLimit-Reason"))
+	assert.Equal(t, "2", blocked.Header().Get("Retry-After"))
+	server.SetTime(start.Add(3 * time.Second))
+	assert.Equal(t, http.StatusNoContent, rateRequest(handler, "192.0.2.1:1", "").Code)
+}
+
+func TestRateLimiterPolicyChangesPreserveHistory(t *testing.T) {
+	policy := defaultRatePolicy()
+	server, _, provider, limiter := rateFixture(t, policy)
+	start := time.Date(2026, 10, 22, 12, 0, 0, 0, time.UTC)
+	handler := rateHandler(limiter, policy, "history", IPIdentity)
+	require.Equal(t, http.StatusNoContent, rateRequest(handler, "192.0.2.1:1", "").Code)
+	server.SetTime(start.Add(20 * time.Second))
+	require.Equal(t, http.StatusNoContent, rateRequest(handler, "192.0.2.1:1", "").Code)
+	provider.version++
+	provider.policy.MaxRequests = 1
+	blocked := rateRequest(handler, "192.0.2.1:1", "")
+	assert.Equal(t, "60", blocked.Header().Get("Retry-After"))
+	provider.policy.WindowSeconds = 1
+	server.SetTime(start.Add(22 * time.Second))
+	require.Equal(t, http.StatusNoContent, rateRequest(handler, "192.0.2.1:1", "").Code)
+	provider.policy.WindowSeconds = 3600
+	server.SetTime(start.Add(90 * time.Second))
+	assert.Equal(t, "3532", rateRequest(handler, "192.0.2.1:1", "").Header().Get("Retry-After"))
+	provider.policy.MaxRequests = 100
+	provider.policy.DailyQuota = 3
+	assert.Equal(t, "daily", rateRequest(handler, "192.0.2.1:1", "").Header().Get("X-RateLimit-Reason"))
+	provider.policy.DailyQuota = 0
+	server.SetTime(start.Add(24 * time.Hour))
+	assert.Equal(t, http.StatusNoContent, rateRequest(handler, "192.0.2.1:1", "").Code)
+}
+
+func TestRateLimiterIdentityAndRuleIsolation(t *testing.T) {
+	for _, tc := range []struct {
+		name                                     string
+		identity                                 func(*http.Request) string
+		firstIP, secondIP, firstUser, secondUser string
+		secondStatus                             int
+	}{
+		{"不同IP", IPIdentity, "192.0.2.1:1", "192.0.2.2:1", "", "", http.StatusNoContent},
+		{"同IP不同用户", UserIdentity, "192.0.2.1:1", "192.0.2.1:1", "a", "b", http.StatusNoContent},
+		{"用户换IP", UserIdentity, "192.0.2.1:1", "192.0.2.2:1", "a", "a", http.StatusTooManyRequests},
+		{"缺失用户回退IP", UserIdentity, "192.0.2.1:1", "192.0.2.1:2", "", "", http.StatusTooManyRequests},
+		{"共享站点", SharedIdentity, "192.0.2.1:1", "192.0.2.2:1", "a", "b", http.StatusTooManyRequests},
+		{"unknown固定桶", func(*http.Request) string { return "" }, "", "", "", "", http.StatusTooManyRequests},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			policy := defaultRatePolicy()
+			policy.MaxRequests = 1
+			_, _, _, limiter := rateFixture(t, policy)
+			handler := rateHandler(limiter, policy, "identity", tc.identity)
+			require.Equal(t, http.StatusNoContent, rateRequest(handler, tc.firstIP, tc.firstUser).Code)
+			assert.Equal(t, tc.secondStatus, rateRequest(handler, tc.secondIP, tc.secondUser).Code)
+			other := rateHandler(limiter, policy, "other", tc.identity)
+			assert.Equal(t, http.StatusNoContent, rateRequest(other, tc.firstIP, tc.firstUser).Code)
+		})
+	}
+}
+
+func TestRateLimiterHashedIdentityAndFiniteRetention(t *testing.T) {
+	policy := defaultRatePolicy()
+	server, client, _, limiter := rateFixture(t, policy)
+	handler := rateHandler(limiter, policy, "site-impressions", HashedIPIdentity([]byte("independent-key")))
+	require.Equal(t, http.StatusNoContent, rateRequest(handler, "198.51.100.42:1234", "").Code)
+	keys, err := client.Keys(context.Background(), "*").Result()
 	require.NoError(t, err)
-	assert.Len(t, decoded, 32)
+	require.Len(t, keys, 2)
+	for _, key := range keys {
+		assert.NotContains(t, key, "198.51.100.42")
+		assert.Positive(t, client.TTL(context.Background(), key).Val())
+	}
+	server.FastForward(24*time.Hour + 2*time.Second)
+	assert.Empty(t, server.Keys())
+}
+
+func TestRateLimiterStorageFailurePolicyAndDisabledState(t *testing.T) {
+	for _, mode := range []string{"allow", "deny"} {
+		t.Run(mode, func(t *testing.T) {
+			policy := defaultRatePolicy()
+			policy.FailureMode = mode
+			_, client, provider, limiter := rateFixture(t, policy)
+			require.NoError(t, client.Close())
+			handler := rateHandler(limiter, policy, "failure", IPIdentity)
+			response := rateRequest(handler, "192.0.2.1:1", "")
+			if mode == "allow" {
+				assert.Equal(t, http.StatusNoContent, response.Code)
+			} else {
+				assert.Equal(t, http.StatusServiceUnavailable, response.Code)
+				assert.Equal(t, "storage_unavailable", response.Header().Get("X-RateLimit-Reason"))
+			}
+			provider.policy.Enabled = false
+			assert.Equal(t, http.StatusNoContent, rateRequest(handler, "192.0.2.1:1", "").Code)
+		})
+	}
+}
+
+func TestRateLimiterGroupDoesNotSpendOtherRuleOnRejection(t *testing.T) {
+	policy := defaultRatePolicy()
+	policy.MaxRequests = 1
+	server, client, _, _ := rateFixture(t, policy)
+	limiter := NewRateLimiter(client, nil)
+	first := RateLimitBinding{ID: "per-user", Defaults: policy, Identity: UserIdentity}
+	second := RateLimitBinding{ID: "site", Defaults: policy, Identity: SharedIdentity}
+	next := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) })
+	handler := limiter.BindGroup(first, second)(next)
+	require.Equal(t, http.StatusNoContent, rateRequest(handler, "192.0.2.1:1", "a").Code)
+	require.Equal(t, http.StatusTooManyRequests, rateRequest(handler, "192.0.2.1:1", "b").Code)
+	// 站点额度拒绝不能消耗用户 b 自己的额度。
+	require.Equal(t, http.StatusNoContent, rateRequest(limiter.BindGroup(first)(next), "192.0.2.1:1", "b").Code)
+	server.SetTime(time.Date(2026, 10, 22, 12, 1, 0, 0, time.UTC))
+	assert.Equal(t, http.StatusNoContent, rateRequest(handler, "192.0.2.1:1", "b").Code)
+}
+
+func TestRateLimiterRecoveryRoundsUpFractionalSeconds(t *testing.T) {
+	policy := defaultRatePolicy()
+	policy.MaxRequests = 1
+	server, _, _, limiter := rateFixture(t, policy)
+	start := time.Date(2026, 10, 22, 12, 0, 0, 500000000, time.UTC)
+	server.SetTime(start)
+	handler := rateHandler(limiter, policy, "precision", IPIdentity)
+	require.Equal(t, http.StatusNoContent, rateRequest(handler, "192.0.2.1:1", "").Code)
+	server.SetTime(start.Add(59200 * time.Millisecond))
+	blocked := rateRequest(handler, "192.0.2.1:1", "")
+	assert.Equal(t, "1", blocked.Header().Get("Retry-After"))
+	var body struct {
+		ResetAt time.Time `json:"reset_at"`
+	}
+	require.NoError(t, json.Unmarshal(blocked.Body.Bytes(), &body))
+	assert.Equal(t, start.Add(time.Minute), body.ResetAt)
+	server.SetTime(start.Add(time.Minute))
+	assert.Equal(t, http.StatusNoContent, rateRequest(handler, "192.0.2.1:1", "").Code)
+}
+
+type switchingRatePolicyFixture struct {
+	current atomic.Pointer[shared.RateLimitSnapshot]
+}
+
+func (f *switchingRatePolicyFixture) RateLimits() shared.RateLimitSnapshot {
+	return *f.current.Load()
+}
+
+func (*switchingRatePolicyFixture) RegisterRateLimit(string, shared.RateLimitPolicy, domainsettings.RateLimitMetadata) error {
+	return nil
+}
+
+func TestRateLimiterGroupCapturesOnePolicyVersionBeforeAdmission(t *testing.T) {
+	seed := defaultRatePolicy()
+	seed.MaxRequests = 100
+	server, client, _, _ := rateFixture(t, seed)
+	start := time.Date(2026, 10, 22, 12, 0, 0, 0, time.UTC)
+	minute := RateLimitBinding{ID: "minute", Defaults: seed, Identity: IPIdentity}
+	day := RateLimitBinding{ID: "day", Defaults: seed, Identity: IPIdentity}
+	day.Defaults.WindowSeconds = 86400
+	next := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+	seedHandler := NewRateLimiter(client, nil).BindGroup(minute, day)(next)
+	for range 36 {
+		require.Equal(t, http.StatusNoContent, rateRequest(seedHandler, "192.0.2.1:1", "").Code)
+	}
+	server.SetTime(start.Add(2 * time.Minute))
+	for range 4 {
+		require.Equal(t, http.StatusNoContent, rateRequest(seedHandler, "192.0.2.1:1", "").Code)
+	}
+
+	oldMinute := minute.Defaults
+	oldMinute.MaxRequests = 5
+	oldDay := day.Defaults
+	oldDay.MaxRequests = 40
+	newMinute := oldMinute
+	newMinute.MaxRequests = 4
+	newDay := oldDay
+	newDay.MaxRequests = 50
+	oldSnapshot := shared.NewRateLimitSnapshot(map[string]shared.RateLimitPolicy{
+		"minute": oldMinute,
+		"day":    oldDay,
+	}, 1)
+	newSnapshot := shared.NewRateLimitSnapshot(map[string]shared.RateLimitPolicy{
+		"minute": newMinute,
+		"day":    newDay,
+	}, 2)
+	provider := &switchingRatePolicyFixture{}
+	provider.current.Store(&oldSnapshot)
+	var publish sync.Once
+	minute.Identity = func(r *http.Request) string {
+		// 在第一条规则读取后发布新版，复现旧分钟阈值与新日阈值混用的间隙。
+		publish.Do(func() {
+			provider.current.Store(&newSnapshot)
+		})
+		return IPIdentity(r)
+	}
+	handler := NewRateLimiter(client, provider).BindGroup(minute, day)(next)
+
+	first := rateRequest(handler, "192.0.2.1:1", "")
+	require.Equal(t, http.StatusTooManyRequests, first.Code)
+	assert.Equal(t, "86280", first.Header().Get("Retry-After"))
+	second := rateRequest(handler, "192.0.2.1:1", "")
+	require.Equal(t, http.StatusTooManyRequests, second.Code)
+	assert.Equal(t, "60", second.Header().Get("Retry-After"))
 }

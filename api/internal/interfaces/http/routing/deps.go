@@ -70,6 +70,7 @@ type MCPHandlers struct {
 type Deps struct {
 	Cfg               *config.Config
 	Redis             *redis.Client
+	RateLimits        *middleware.RateLimiter
 	PermissionChecker middleware.PermissionChecker
 
 	// 预构造的 session 中间件（在 main.go 一次性构造，省去各注册函数重复传
@@ -78,42 +79,43 @@ type Deps struct {
 	OptionalAuth          func(http.Handler) http.Handler
 	SessionAuthReadOnlyMW func(http.Handler) http.Handler
 
-	Role                *rolehttp.Handler
-	Settings            *settingshttp.Handler
-	SiteIdentity        *siteidentityhttp.Handler
-	SiteImpression      *siteimpressionhttp.Handler
-	SiteImpressionLimit func(http.Handler) http.Handler
-	Stats               *statshttp.Handler
-	GitHub              *githubhttp.Handler
-	Releases            *releaseshttp.Handler
-	Auth                *authhttp.Handler
-	Content             *contenthttp.Handler
-	Roadmap             *roadmaphttp.Handler
-	Music               *musichttp.Handler
-	RoadmapRelations    *roadmaphttp.RelationHandler
-	Comment             *commenthttp.Handler
-	CommentReaction     *crhttp.Handler
-	Media               *mediahttp.Handler
-	Post                *posthttp.Handler
-	Tag                 *taghttp.Handler
-	Audit               *audithttp.Handler
-	UserAdmin           *useradminhttp.Handler
-	APIToken            *apitokenhttp.Handler
-	Subscription        *subscriptionhttp.Handler
-	CodeRunner          *codehttp.Handler
-	System              *systemhttp.Handler
-	Image               *imagehttp.Handler
-	Tweet               *tweethttp.Handler
-	FriendLink          *friendlinkhttp.Handler
-	Series              *serieshttp.Handler
-	Gallery             *galleryhttp.Handler
-	Note                *notehttp.Handler
-	Publication         *publicationhttp.Handler
-	Persona             *personahttp.Handler
-	Notification        *notificationhttp.Handler
-	NotificationStream  *notificationhttp.StreamHandler
-	Chat                *chathttp.Handler
-	ChatStream          *chathttp.StreamHandler
+	Role                   *rolehttp.Handler
+	Settings               *settingshttp.Handler
+	RuntimeSettings        *settingshttp.RuntimeHandler
+	SiteIdentity           *siteidentityhttp.Handler
+	SiteImpression         *siteimpressionhttp.Handler
+	SiteImpressionIdentity func(*http.Request) string
+	Stats                  *statshttp.Handler
+	GitHub                 *githubhttp.Handler
+	Releases               *releaseshttp.Handler
+	Auth                   *authhttp.Handler
+	Content                *contenthttp.Handler
+	Roadmap                *roadmaphttp.Handler
+	Music                  *musichttp.Handler
+	RoadmapRelations       *roadmaphttp.RelationHandler
+	Comment                *commenthttp.Handler
+	CommentReaction        *crhttp.Handler
+	Media                  *mediahttp.Handler
+	Post                   *posthttp.Handler
+	Tag                    *taghttp.Handler
+	Audit                  *audithttp.Handler
+	UserAdmin              *useradminhttp.Handler
+	APIToken               *apitokenhttp.Handler
+	Subscription           *subscriptionhttp.Handler
+	CodeRunner             *codehttp.Handler
+	System                 *systemhttp.Handler
+	Image                  *imagehttp.Handler
+	Tweet                  *tweethttp.Handler
+	FriendLink             *friendlinkhttp.Handler
+	Series                 *serieshttp.Handler
+	Gallery                *galleryhttp.Handler
+	Note                   *notehttp.Handler
+	Publication            *publicationhttp.Handler
+	Persona                *personahttp.Handler
+	Notification           *notificationhttp.Handler
+	NotificationStream     *notificationhttp.StreamHandler
+	Chat                   *chathttp.Handler
+	ChatStream             *chathttp.StreamHandler
 	// Bot API（外部程序以 Bearer bot token 收发消息）与其后台管理。
 	BotAuth      func(http.Handler) http.Handler
 	ChatBot      *chathttp.BotHandler

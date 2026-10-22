@@ -20,6 +20,8 @@ import (
 )
 
 func Run(ctx context.Context, cfg *config.Config) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	infra, infraCleanup := InitInfra(ctx, cfg)
 	defer infraCleanup()
 
@@ -29,6 +31,11 @@ func Run(ctx context.Context, cfg *config.Config) error {
 	}
 	defer containerCleanup()
 
+	handler := buildHTTPHandler(cfg, infra.Redis, container)
+	if err := container.Settings.RuntimePolicies.Initialize(ctx); err != nil {
+		return fmt.Errorf("运行策略初始化失败: %w", err)
+	}
+	go container.Settings.RuntimePolicies.Run(ctx)
 	startJobs(ctx, container, infra.Gorm, cfg.UploadDir)
 
 	if cfg.SuperAdmin.Enabled {
@@ -39,7 +46,7 @@ func Run(ctx context.Context, cfg *config.Config) error {
 		}
 	}
 
-	return serveHTTP(ctx, cfg, infra.Redis, container)
+	return serveHTTP(ctx, cfg, handler)
 }
 
 func startJobs(ctx context.Context, c *Container, gormDB *gorm.DB, uploadRoot string) {
@@ -63,7 +70,7 @@ func startJobs(ctx context.Context, c *Container, gormDB *gorm.DB, uploadRoot st
 	).Start(ctx)
 }
 
-func serveHTTP(ctx context.Context, cfg *config.Config, redisClient *redis.Client, c *Container) error {
+func buildHTTPHandler(cfg *config.Config, redisClient *redis.Client, c *Container) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RequestID)
@@ -72,9 +79,13 @@ func serveHTTP(ctx context.Context, cfg *config.Config, redisClient *redis.Clien
 	r.Use(middleware.SecurityHeaders)
 
 	routing.RegisterRoutes(r, buildRoutingDeps(cfg, redisClient, c))
+	return r
+}
+
+func serveHTTP(ctx context.Context, cfg *config.Config, handler http.Handler) error {
 
 	addr := fmt.Sprintf(":%s", cfg.Port)
-	srv := &http.Server{Addr: addr, Handler: r}
+	srv := &http.Server{Addr: addr, Handler: handler}
 
 	serverErr := make(chan error, 1)
 	go func() {
@@ -104,52 +115,54 @@ func serveHTTP(ctx context.Context, cfg *config.Config, redisClient *redis.Clien
 func buildRoutingDeps(cfg *config.Config, redisClient *redis.Client, c *Container) *routing.Deps {
 	sessionLookup := c.Auth.SessionStore
 	return &routing.Deps{
-		Cfg:                   cfg,
-		Redis:                 redisClient,
-		PermissionChecker:     c.Role.PermissionChecker,
-		SessionAuth:           middleware.SessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL),
-		OptionalAuth:          middleware.OptionalSessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL),
-		SessionAuthReadOnlyMW: middleware.SessionAuthReadOnly(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL),
-		Role:                  c.Role.RoleHandler,
-		Settings:              c.Settings.SettingsHandler,
-		SiteIdentity:          c.SiteIdentity.Handler,
-		SiteImpression:        c.SiteImpression.Handler,
-		SiteImpressionLimit:   c.SiteImpression.RateLimit,
-		Stats:                 c.Stats.StatsHandler,
-		GitHub:                c.GitHub.GitHubHandler,
-		Releases:              c.Releases.ReleasesHandler,
-		Auth:                  c.Auth.AuthHandler,
-		Content:               c.Content.ContentHandler,
-		Roadmap:               c.Roadmap.Handler,
-		Music:                 c.Music.Handler,
-		RoadmapRelations:      c.Roadmap.Relations,
-		Comment:               c.Comment.CommentHandler,
-		CommentReaction:       c.CommentReaction.CommentReactionHandler,
-		Media:                 c.Media.MediaHandler,
-		Post:                  c.Post.PostHandler,
-		Tag:                   c.Tag.TagHandler,
-		Audit:                 c.Audit.AuditHandler,
-		UserAdmin:             c.UserAdmin.UserAdminHandler,
-		APIToken:              c.APIToken.APITokenHandler,
-		Subscription:          c.Subscription.SubscriptionHandler,
-		CodeRunner:            c.CodeRunner.CodeRunnerHandler,
-		System:                c.System.SystemHandler,
-		Image:                 c.Image.ImageHandler,
-		Tweet:                 c.Tweet.TweetHandler,
-		FriendLink:            c.FriendLink.FriendLinkHandler,
-		Series:                c.Series.SeriesHandler,
-		Gallery:               c.Gallery.Handler,
-		Note:                  c.Note.Handler,
-		Publication:           c.Publication.Handler,
-		Persona:               c.Persona.Handler,
-		Notification:          c.Notification.NotificationHandler,
-		NotificationStream:    c.Notification.StreamHandler,
-		Chat:                  c.Chat.ChatHandler,
-		ChatStream:            c.Chat.StreamHandler,
-		BotAuth:               middleware.BotAuth(c.Chat.BotService),
-		ChatBot:               c.Chat.BotHandler,
-		ChatBotAdmin:          c.Chat.BotAdminHandler,
-		CustomEmoji:           c.CustomEmoji.Handler,
+		Cfg:                    cfg,
+		Redis:                  redisClient,
+		PermissionChecker:      c.Role.PermissionChecker,
+		SessionAuth:            middleware.SessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL),
+		OptionalAuth:           middleware.OptionalSessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL),
+		SessionAuthReadOnlyMW:  middleware.SessionAuthReadOnly(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL),
+		Role:                   c.Role.RoleHandler,
+		Settings:               c.Settings.SettingsHandler,
+		RuntimeSettings:        c.Settings.RuntimeHandler,
+		RateLimits:             middleware.NewRateLimiter(redisClient, c.Settings.RuntimePolicies),
+		SiteIdentity:           c.SiteIdentity.Handler,
+		SiteImpression:         c.SiteImpression.Handler,
+		SiteImpressionIdentity: c.SiteImpression.Identity,
+		Stats:                  c.Stats.StatsHandler,
+		GitHub:                 c.GitHub.GitHubHandler,
+		Releases:               c.Releases.ReleasesHandler,
+		Auth:                   c.Auth.AuthHandler,
+		Content:                c.Content.ContentHandler,
+		Roadmap:                c.Roadmap.Handler,
+		Music:                  c.Music.Handler,
+		RoadmapRelations:       c.Roadmap.Relations,
+		Comment:                c.Comment.CommentHandler,
+		CommentReaction:        c.CommentReaction.CommentReactionHandler,
+		Media:                  c.Media.MediaHandler,
+		Post:                   c.Post.PostHandler,
+		Tag:                    c.Tag.TagHandler,
+		Audit:                  c.Audit.AuditHandler,
+		UserAdmin:              c.UserAdmin.UserAdminHandler,
+		APIToken:               c.APIToken.APITokenHandler,
+		Subscription:           c.Subscription.SubscriptionHandler,
+		CodeRunner:             c.CodeRunner.CodeRunnerHandler,
+		System:                 c.System.SystemHandler,
+		Image:                  c.Image.ImageHandler,
+		Tweet:                  c.Tweet.TweetHandler,
+		FriendLink:             c.FriendLink.FriendLinkHandler,
+		Series:                 c.Series.SeriesHandler,
+		Gallery:                c.Gallery.Handler,
+		Note:                   c.Note.Handler,
+		Publication:            c.Publication.Handler,
+		Persona:                c.Persona.Handler,
+		Notification:           c.Notification.NotificationHandler,
+		NotificationStream:     c.Notification.StreamHandler,
+		Chat:                   c.Chat.ChatHandler,
+		ChatStream:             c.Chat.StreamHandler,
+		BotAuth:                middleware.BotAuth(c.Chat.BotService),
+		ChatBot:                c.Chat.BotHandler,
+		ChatBotAdmin:           c.Chat.BotAdminHandler,
+		CustomEmoji:            c.CustomEmoji.Handler,
 		MCP: routing.MCPHandlers{
 			Post:     c.MCP.PostHandler,
 			Scraper:  c.MCP.ScraperHandler,

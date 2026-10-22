@@ -1,12 +1,6 @@
 package routing
 
-import (
-	"time"
-
-	"github.com/go-chi/chi/v5"
-
-	"blog-api/internal/middleware"
-)
+import "github.com/go-chi/chi/v5"
 
 // registerBotRoutes 注册 Bot API：外部程序以 Bearer bot token 代表虚拟用户收发消息。
 //
@@ -21,18 +15,18 @@ func registerBotRoutes(r chi.Router, d *Deps) {
 	r.Route("/api/v1/chat/bot", func(br chi.Router) {
 		br.Use(d.BotAuth)
 		br.Get("/profile", h.Profile)
-		br.With(middleware.RateLimitByUser("chat-bot-commands", d.Redis, time.Minute, 30)).Put("/commands", h.PutCommands)
+		br.With(d.limit("chat-bot-commands", "PUT /api/v1/chat/bot/commands")).Put("/commands", h.PutCommands)
 		br.Get("/events", h.Stream)
-		br.With(middleware.RateLimitByUser("chat-bot-media", d.Redis, time.Minute, 20)).Post("/media", h.UploadMedia)
+		br.With(d.limit("chat-bot-media", "POST /api/v1/chat/bot/media")).Post("/media", h.UploadMedia)
 		br.Get("/conversations", h.ListConversations)
 		br.Get("/conversations/{conversationId}", h.GetConversation)
 		br.Get("/conversations/{conversationId}/messages", h.ListMessages)
-		br.With(middleware.RateLimitByUser("chat-bot-send", d.Redis, time.Minute, 60)).
+		br.With(d.limit("chat-bot-send", "POST /api/v1/chat/bot/conversations/{conversationId}/messages")).
 			Post("/conversations/{conversationId}/messages", h.SendMessage)
 		// 流式回复靠反复 Edit 推进，配额要比普通编辑宽松。
-		br.With(middleware.RateLimitByUser("chat-bot-edit", d.Redis, time.Minute, 300)).
+		br.With(d.limit("chat-bot-edit", "PATCH /api/v1/chat/bot/conversations/{conversationId}/messages/{messageId}")).
 			Patch("/conversations/{conversationId}/messages/{messageId}", h.EditMessage)
-		br.With(middleware.RateLimitByUser("chat-bot-typing", d.Redis, time.Minute, 120)).
+		br.With(d.limit("chat-bot-typing", "POST /api/v1/chat/bot/conversations/{conversationId}/typing")).
 			Post("/conversations/{conversationId}/typing", h.SetTyping)
 	})
 }

@@ -3,7 +3,6 @@ package routing
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -120,7 +119,7 @@ func RegisterRoutes(r chi.Router, d *Deps) {
 	registerBotRoutes(r, d)
 
 	// 图片服务（动态 resize/转码 + 二级缓存 + ETag/304）
-	r.Get(cfg.UploadPathPrefix+"*", d.Image.ServeImage)
+	r.With(d.limit("image_processing", "GET "+cfg.UploadPathPrefix+"*")).Get(cfg.UploadPathPrefix+"*", d.Image.ServeImage)
 }
 
 // healthHandler 健康检查（无版本前缀，无鉴权）。
@@ -136,20 +135,19 @@ func healthHandler(w http.ResponseWriter, _ *http.Request) {
 // 公开端点（csrf-token/register/login 等）+ 限流防暴力；session 端点只读探活；
 // 登录态组（logout/me/profile/password）。
 func registerAuthRoutes(v1 chi.Router, d *Deps) {
-	redisClient := d.Redis
 	authH := d.Auth
 
 	v1.Route("/auth", func(r chi.Router) {
 		r.Get("/csrf-token", authH.GetCSRFToken)
 		// 认证类接口限流（防暴力破解与邮件轰炸）
-		r.With(middleware.AuthRateLimit(redisClient)).Post("/register", authH.Register)
-		r.With(middleware.AuthRateLimit(redisClient)).Post("/verify-email", authH.VerifyEmail)
-		r.With(middleware.AuthRateLimit(redisClient)).Post("/login", authH.Login)
-		r.With(middleware.AuthRateLimit(redisClient)).Post("/google", authH.GoogleLogin)
-		r.With(middleware.AuthRateLimit(redisClient)).Post("/github", authH.GithubLogin)
-		r.With(middleware.AuthRateLimit(redisClient)).Post("/link/confirm", authH.ConfirmLink)
-		r.With(middleware.AuthRateLimit(redisClient)).Post("/forgot-password", authH.ForgotPassword)
-		r.With(middleware.AuthRateLimit(redisClient)).Post("/reset-password", authH.ResetPassword)
+		r.With(d.limit("auth", "POST /api/v1/auth/register")).Post("/register", authH.Register)
+		r.With(d.limit("auth", "POST /api/v1/auth/verify-email")).Post("/verify-email", authH.VerifyEmail)
+		r.With(d.limit("auth", "POST /api/v1/auth/login")).Post("/login", authH.Login)
+		r.With(d.limit("auth", "POST /api/v1/auth/google")).Post("/google", authH.GoogleLogin)
+		r.With(d.limit("auth", "POST /api/v1/auth/github")).Post("/github", authH.GithubLogin)
+		r.With(d.limit("auth", "POST /api/v1/auth/link/confirm")).Post("/link/confirm", authH.ConfirmLink)
+		r.With(d.limit("auth", "POST /api/v1/auth/forgot-password")).Post("/forgot-password", authH.ForgotPassword)
+		r.With(d.limit("auth", "POST /api/v1/auth/reset-password")).Post("/reset-password", authH.ResetPassword)
 
 		// SSR 探活端点：只读校验当前 session，不续期、不写 cookie（命门不变量①）
 		r.With(d.SessionAuthReadOnlyMW).
@@ -226,11 +224,11 @@ func registerSiteIdentityRoutes(v1 chi.Router, d *Deps) {
 }
 
 func registerSiteImpressionRoutes(v1 chi.Router, d *Deps) {
-	if d.SiteImpression == nil || d.SiteImpressionLimit == nil {
+	if d.SiteImpression == nil || d.SiteImpressionIdentity == nil {
 		return
 	}
 	v1.Get("/site-impressions", d.SiteImpression.Get)
-	v1.With(d.SiteImpressionLimit).Post("/site-impressions", d.SiteImpression.Post)
+	v1.With(d.limit("site-impressions", "POST /api/v1/site-impressions")).Post("/site-impressions", d.SiteImpression.Post)
 }
 
 // registerTagRoutes 注册 /tags 路由（公开 List + 登录管理员写操作）。
@@ -255,7 +253,6 @@ func registerTagRoutes(v1 chi.Router, d *Deps) {
 // 评论方法散在多个前缀：/posts/{postId}/comments、/comments/{id}、/comments/{commentId}/replies 等。
 // admin 审核列表走 NewAdminRouter 内 /admin/comments。
 func registerCommentRoutes(v1 chi.Router, d *Deps) {
-	redisClient := d.Redis
 	perm := d.PermissionChecker
 	commentH := d.Comment
 	// /posts/{postId}/comments（列表 OptionalAuth；创建 OptionalAuth + 限流；发码独立限流）
@@ -264,9 +261,9 @@ func registerCommentRoutes(v1 chi.Router, d *Deps) {
 			Get("/", commentH.ListByPost)
 		r.With(
 			d.OptionalAuth,
-			middleware.CommentRateLimit(redisClient),
+			d.limit("comment", "POST /api/v1/posts/{postId}/comments"),
 		).Post("/", commentH.Create)
-		r.With(middleware.CommentCodeRateLimit(redisClient)).Post("/code", commentH.SendCode)
+		r.With(d.limit("comment_code", "POST /api/v1/posts/{postId}/comments/code")).Post("/code", commentH.SendCode)
 	})
 
 	// 评论回复列表（公开 + OptionalAuth）
@@ -286,7 +283,7 @@ func registerCommentRoutes(v1 chi.Router, d *Deps) {
 		r.With(d.OptionalAuth).
 			Get("/", crH.GetCommentReactions)
 		r.With(d.SessionAuth).
-			With(middleware.CommentRateLimit(redisClient)).
+			With(d.limit("comment", "POST /api/v1/comments/{comment_id}/reactions")).
 			Post("/", crH.AddReaction)
 		r.With(d.SessionAuth). // 删除反应需认证，防匿名删除他人反应
 					Delete("/{emoji_id}", crH.RemoveReaction)
@@ -308,7 +305,6 @@ func registerCommentRoutes(v1 chi.Router, d *Deps) {
 
 // registerMediaRoutes 注册媒体相关路由（公开获取 + 登录上传 + 音乐/表情公开查询）。
 func registerMediaRoutes(v1 chi.Router, d *Deps) {
-	redisClient := d.Redis
 	mediaH := d.Media
 
 	// 媒体（公开获取详情 + 登录列表/删除/批量删除）
@@ -322,18 +318,20 @@ func registerMediaRoutes(v1 chi.Router, d *Deps) {
 		})
 	})
 
-	// 上传（统一入口，分片/整体/秒传；登录 + UploadRateLimit）
+	// 上传写入共用额度；取消、状态与策略读取不占写配额。
 	v1.Route("/uploads", func(r chi.Router) {
 		r.Use(d.SessionAuth)
-		r.Use(middleware.UploadRateLimit(redisClient))
-		r.Post("/", mediaH.InitUploadSession)
-		r.Put("/{uploadId}/chunks/{index}", mediaH.SaveUploadChunk)
-		r.Post("/{uploadId}/complete", mediaH.CompleteUpload)
+		if d.RuntimeSettings != nil {
+			r.Get("/policy", d.RuntimeSettings.GetUploadQueuePolicy)
+		}
+		r.With(d.limit("upload", "POST /api/v1/uploads")).Post("/", mediaH.InitUploadSession)
+		r.With(d.limit("upload", "PUT /api/v1/uploads/{uploadId}/chunks/{index}")).Put("/{uploadId}/chunks/{index}", mediaH.SaveUploadChunk)
+		r.With(d.limit("upload", "POST /api/v1/uploads/{uploadId}/complete")).Post("/{uploadId}/complete", mediaH.CompleteUpload)
 		r.Delete("/{uploadId}", mediaH.CancelUpload)
 		r.Get("/{uploadId}", mediaH.GetUploadStatus)
-		r.Post("/thumbnail", mediaH.UploadThumbnail)
-		r.Post("/replace", mediaH.ReplaceMediaFile)
-		r.Post("/emoji", mediaH.UploadEmoji)
+		r.With(d.limit("upload", "POST /api/v1/uploads/thumbnail")).Post("/thumbnail", mediaH.UploadThumbnail)
+		r.With(d.limit("upload", "POST /api/v1/uploads/replace")).Post("/replace", mediaH.ReplaceMediaFile)
+		r.With(d.limit("upload", "POST /api/v1/uploads/emoji")).Post("/emoji", mediaH.UploadEmoji)
 		r.Get("/instant", mediaH.CheckInstantUpload)
 	})
 
@@ -357,15 +355,15 @@ func registerTweetRoutes(v1 chi.Router, d *Deps) {
 				next.ServeHTTP(w, r)
 			})
 		})
-		r.With(d.SessionAuth, middleware.RateLimitByUser("x-preview-minute", d.Redis, time.Minute, 5), middleware.RateLimitByUser("x-preview-day", d.Redis, 24*time.Hour, 50)).Post("/external/preview", tweetH.PreviewExternal)
+		r.With(d.SessionAuth, d.limits([]string{"x-preview-minute", "x-preview-day"}, "POST /api/v1/tweets/external/preview")).Post("/external/preview", tweetH.PreviewExternal)
 		r.With(d.SessionAuth).Delete("/external/{externalId}", tweetH.WithdrawExternal)
-		r.With(d.SessionAuth, middleware.RateLimitByUser("x-refresh", d.Redis, time.Minute, 5)).Post("/external/{externalId}/refresh", tweetH.RefreshExternal)
+		r.With(d.SessionAuth, d.limit("x-refresh", "POST /api/v1/tweets/external/{externalId}/refresh")).Post("/external/{externalId}/refresh", tweetH.RefreshExternal)
 		// 拖动进度会产生连续 Range 请求，限额按单 IP 放宽。
-		r.With(middleware.RateLimit("x-video", d.Redis, time.Minute, 600)).Get("/external/{externalId}/media/{index}/video", tweetH.ExternalVideo)
+		r.With(d.limit("x-video", "GET /api/v1/tweets/external/{externalId}/media/{index}/video")).Get("/external/{externalId}/media/{index}/video", tweetH.ExternalVideo)
 		r.With(d.OptionalAuth).Get("/", tweetH.ListTimeline)
 		r.With(d.OptionalAuth).Get("/{id}", tweetH.Get)
 		r.With(d.OptionalAuth).Get("/topics/{tag}", tweetH.ListByTopic)
-		r.With(d.SessionAuth, middleware.TweetRateLimit(d.Redis)).Post("/", tweetH.Create)
+		r.With(d.SessionAuth, d.limit("tweet", "POST /api/v1/tweets")).Post("/", tweetH.Create)
 		r.With(d.SessionAuth).Delete("/{id}", tweetH.Delete)
 		r.With(d.SessionAuth).Post("/{id}/like", tweetH.Like)
 		r.With(d.SessionAuth).Delete("/{id}/like", tweetH.Unlike)
@@ -383,14 +381,13 @@ func registerTweetRoutes(v1 chi.Router, d *Deps) {
 
 // registerCodeRunnerRoutes 注册 /code-runner 路由（登录可执行，SSE 用 GET）。
 func registerCodeRunnerRoutes(v1 chi.Router, d *Deps) {
-	redisClient := d.Redis
 	codeRunnerH := d.CodeRunner
 
 	v1.Route("/code-runner", func(r chi.Router) {
 		r.Use(d.SessionAuth)
-		r.With(middleware.CodeRunnerRateLimit(redisClient)).Post("/run", codeRunnerH.Run)
+		r.With(d.limit("code_runner", "POST /api/v1/code-runner/run")).Post("/run", codeRunnerH.Run)
 		r.Get("/tasks/{id}", codeRunnerH.GetTask)
-		r.With(middleware.CodeRunnerRateLimit(redisClient)).Post("/run/stream", codeRunnerH.RunStream)
+		r.With(d.limit("code_runner", "POST /api/v1/code-runner/run/stream")).Post("/run/stream", codeRunnerH.RunStream)
 		r.Get("/stream", codeRunnerH.Stream)
 	})
 }
@@ -399,20 +396,19 @@ func registerCodeRunnerRoutes(v1 chi.Router, d *Deps) {
 // 绕过 v1 的 CSRF（MCP 是 JSON-RPC、无 X-CSRF-Token）与 SessionAuth（用 PAT）。
 // PAT 鉴权在 handler 内（auth.RequireBearerToken），此处仅叠加独立限流。
 func registerMCPRoutes(r chi.Router, d *Deps) {
-	redisClient := d.Redis
 	mcp := d.MCP
 
-	r.With(middleware.RateLimit("mcp", redisClient, time.Minute, 60)).
+	r.With(d.limit("mcp", "* /api/v1/mcp")).
 		Handle("/api/v1/mcp", mcp.Post)
-	r.With(middleware.RateLimit("mcp-scraper", redisClient, time.Minute, 30)).
+	r.With(d.limit("mcp-scraper", "* /api/v1/mcp/scraper")).
 		Handle("/api/v1/mcp/scraper", mcp.Scraper)
-	r.With(middleware.RateLimit("mcp-notes", redisClient, time.Minute, 60)).
+	r.With(d.limit("mcp-notes", "* /api/v1/mcp/notes")).
 		Handle("/api/v1/mcp/notes", mcp.Notes)
-	r.With(middleware.RateLimit("mcp-roadmap", redisClient, time.Minute, 60)).
+	r.With(d.limit("mcp-roadmap", "* /api/v1/mcp/roadmap")).
 		Handle("/api/v1/mcp/roadmap", mcp.Roadmap)
-	r.With(middleware.RateLimit("mcp-reader", redisClient, time.Minute, 120)).
+	r.With(d.limit("mcp-reader", "* /api/v1/mcp/reader")).
 		Handle("/api/v1/mcp/reader", mcp.Public)
-	r.With(middleware.RateLimit("mcp-comments", redisClient, time.Minute, 60)).
+	r.With(d.limit("mcp-comments", "* /api/v1/mcp/comments")).
 		Handle("/api/v1/mcp/comments", mcp.Comments)
 }
 
@@ -426,16 +422,15 @@ func registerMCPRoutes(r chi.Router, d *Deps) {
 // 审核/写操作在 admin sub-router 内（friendlink:view/manage 权限码细分）。
 // 与评论域同构：OptionalAuth 让登录态享受简化流程，匿名走邮箱验证码两步流。
 func registerFriendLinkRoutes(v1 chi.Router, d *Deps) {
-	redisClient := d.Redis
 	friendLinkH := d.FriendLink
 
 	v1.Route("/friend-links", func(r chi.Router) {
 		r.Get("/", friendLinkH.ListPublic)
 		r.With(
 			d.OptionalAuth,
-			middleware.FriendLinkRateLimit(redisClient),
+			d.limit("friendlink", "POST /api/v1/friend-links"),
 		).Post("/", friendLinkH.Apply)
-		r.With(middleware.FriendLinkCodeRateLimit(redisClient)).
+		r.With(d.limit("friendlink_code", "POST /api/v1/friend-links/code")).
 			Post("/code", friendLinkH.SendCode)
 	})
 }
@@ -465,7 +460,7 @@ func registerChatRoutes(v1 chi.Router, d *Deps) {
 		r.With(d.SessionAuth).Get("/appearance", h.GetAppearance)
 		r.With(d.SessionAuth).Get("/appearances", h.ListAppearances)
 		r.With(d.SessionAuth).Get("/badges", h.GetMyBadges)
-		r.With(d.SessionAuth, middleware.RateLimit("chat-appearance", d.Redis, time.Minute, 30)).Put("/appearance", h.UpdateAppearance)
+		r.With(d.SessionAuth, d.limit("chat-appearance", "PUT /api/v1/chat/appearance")).Put("/appearance", h.UpdateAppearance)
 		r.With(d.SessionAuth).Get("/contacts", h.ListContacts)
 		r.With(d.SessionAuth).Get("/users/{username}", h.FindUserByUsername)
 		r.With(d.SessionAuth).Get("/unread-count", h.UnreadCount)
@@ -491,7 +486,7 @@ func registerChatRoutes(v1 chi.Router, d *Deps) {
 		r.With(d.SessionAuth).Patch("/conversations/{conversationId}/messages/{messageId}", h.EditMessage)
 		r.With(d.SessionAuth).Get("/conversations/{conversationId}/messages/{messageId}/readers", h.MessageReaders)
 		r.With(d.SessionAuth).Post("/conversations/{conversationId}/read", h.MarkRead)
-		r.With(d.SessionAuth, middleware.ChatTypingRateLimit(d.Redis)).Post("/conversations/{conversationId}/typing", h.SetTyping)
+		r.With(d.SessionAuth, d.limit("chat_typing", "POST /api/v1/chat/conversations/{conversationId}/typing")).Post("/conversations/{conversationId}/typing", h.SetTyping)
 		r.With(d.SessionAuth).Patch("/conversations/{conversationId}/mute", h.SetMuted)
 		r.With(d.SessionAuth, middleware.RequirePermission(d.PermissionChecker, permission.ChatManage.String())).
 			Delete("/conversations/{conversationId}/messages/{messageId}", h.DeleteMessage)

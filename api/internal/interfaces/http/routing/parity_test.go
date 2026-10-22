@@ -12,6 +12,7 @@ import (
 	"blog-api/config"
 	musichttp "blog-api/internal/interfaces/http/handler/music"
 	publicationhttp "blog-api/internal/interfaces/http/handler/publication"
+	settingshttp "blog-api/internal/interfaces/http/handler/settings"
 	siteidentityhttp "blog-api/internal/interfaces/http/handler/siteidentity"
 	siteimpressionhttp "blog-api/internal/interfaces/http/handler/siteimpression"
 	"blog-api/internal/openapi"
@@ -41,12 +42,13 @@ func fullRouterDeps() *Deps {
 		OptionalAuth:          identity,
 		SessionAuthReadOnlyMW: identity,
 		// BotAuth 是预构造中间件，nil 会让 chi 在 Use 处 panic（路由注册不吃 nil func）。
-		BotAuth:             identity,
-		SiteImpressionLimit: identity,
-		SiteIdentity:        &siteidentityhttp.Handler{},
-		SiteImpression:      &siteimpressionhttp.Handler{},
-		Publication:         &publicationhttp.Handler{},
-		Music:               &musichttp.Handler{},
+		BotAuth:                identity,
+		SiteImpressionIdentity: func(*http.Request) string { return "test" },
+		RuntimeSettings:        &settingshttp.RuntimeHandler{},
+		SiteIdentity:           &siteidentityhttp.Handler{},
+		SiteImpression:         &siteimpressionhttp.Handler{},
+		Publication:            &publicationhttp.Handler{},
+		Music:                  &musichttp.Handler{},
 	}
 }
 

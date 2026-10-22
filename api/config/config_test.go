@@ -109,5 +109,24 @@ func validTestConfig() Config {
 		Cookie:      CookieConfig{SessionName: "session", CSRFName: "csrf", SameSite: "lax"},
 		Session:     SessionConfig{IdleTTL: time.Hour},
 		BackupDir:   "backups",
+		CodeRunner: CodeRunnerConfig{
+			MaxCPUCores: 2, MaxMemoryMB: 1024, MaxTimeoutSecs: 30,
+			MaxConcurrent: 4, DockerSocketPath: "/var/run/docker.sock",
+		},
+	}
+}
+
+func TestRunnerDefaultSourcesDistinguishExplicitEqualValues(t *testing.T) {
+	v := viper.New()
+	v.SetDefault("code_runner.max_concurrent", 4)
+	v.SetDefault("code_runner.allow_network", false)
+	t.Setenv("CODE_RUNNER_MAX_CONCURRENT", "4")
+	t.Setenv("CODE_RUNNER_ALLOW_NETWORK", "")
+	sources := codeRunnerDefaultSources(v)
+	if sources["max_concurrent"] != "deployment" || sources["allow_network"] != "application" {
+		t.Fatalf("显式部署值与相同的应用默认值必须有不同来源: %v", sources)
+	}
+	if sources["enabled"] != "application" {
+		t.Fatalf("后台启停默认不来自旧无效部署开关: %v", sources)
 	}
 }

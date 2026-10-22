@@ -165,6 +165,15 @@ api/
 
 `POST /uploads` 与 `GET /uploads/instant` 只对磁盘上仍存在的素材返回秒传成功。数据库记录存在但文件丢失时，记录保留并标记为 `failed`，重新上传会创建可读取的新文件；权限等读取错误直接返回错误，不当作秒传未命中。已丢失的图片字节无法从数据库恢复，原有失效地址需重新上传后替换。
 
+### 入口限流
+
+`GET /admin/settings/rate-limit` 返回实际绑定入口、规则、字段来源与本实例有效版本，读取需要 `settings:view`；`PUT` 需要 `settings:update` 和 CSRF，提交 `expected_version` 以及 `values.rules.<id>` 的部分字段，或用 `reset: true` 清除整组覆盖。版本冲突返回 409，非法规则不会部分落库。
+
+滑动窗口、一秒突发和 UTC 自然日配额由 Redis 原子判定；组合入口不半扣额度，修改规则不清除已获准请求历史。管理员使用相同规则，Redis 故障遵循入口的 `allow` / `deny`。429 的 `Retry-After`、`X-RateLimit-Reason`、`X-RateLimit-Reset` 可供跨域客户端读取。
+
+上传初始化、分片、合并共用上传写额度，状态查询、取消与认证后的 `GET /uploads/policy` 不占写额度。该只读接口返回当前实例的上传调度版本和文件并发上限。
+
+
 ### 站点音乐接口（Kite）
 
 管理接口由前端 `/admin/music` 页面消费；公开展示列表由站点的 `@violetjs/kite-player` 播放组件消费。全站维护一个网易云账号：后台浏览音乐库，前台展示歌单按该账号权益解析播放（`/music/playback` 返回当前模式）。Cookie 由独立 `MUSIC_CREDENTIAL_KEY` 加密后存入 PostgreSQL；响应与启动配置日志不暴露 Cookie、服务令牌或加密密钥。接入配置见 [部署指南](../docs/deploy/manual-deploy.md#kite-音乐服务可选)。
