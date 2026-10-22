@@ -1,76 +1,130 @@
-// Package image 图片服务用例编排:查缓存 → singleflight 防击穿 → miss 调 transformer → 写缓存。
+// Package image 编排图片读取、内容寻址缓存与动态处理。
 package image
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
+	"io"
+	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"golang.org/x/sync/singleflight"
 
 	domainimage "blog-api/internal/domain/image"
+	domainsettings "blog-api/internal/domain/settings"
 )
 
-// Service 图片服务用例
+// Service 图片服务用例。
 type Service struct {
 	transformer domainimage.ImageTransformer
 	cache       domainimage.ImageCache
+	policies    domainimage.PolicyProvider
 	uploadDir   string
 	urlPrefix   string
 	group       singleflight.Group
+	workCtx     context.Context
+	cancel      context.CancelFunc
 }
 
-// NewService 创建图片服务用例。uploadDir 为静态文件根目录(如 "uploads")，
-// urlPrefix 为 URL 前缀(如 "/uploads")，用于把请求路径映射为物理路径。
-func NewService(transformer domainimage.ImageTransformer, cache domainimage.ImageCache, uploadDir, urlPrefix string) *Service {
+// NewService 装配图片服务；策略仅在请求开始时读取一次。
+func NewService(transformer domainimage.ImageTransformer, cache domainimage.ImageCache, uploadDir, urlPrefix string, policies domainimage.PolicyProvider) *Service {
+	workCtx, cancel := context.WithCancel(context.Background())
 	return &Service{
 		transformer: transformer,
 		cache:       cache,
+		policies:    policies,
 		uploadDir:   uploadDir,
 		urlPrefix:   strings.TrimSuffix(urlPrefix, "/"),
+		workCtx:     workCtx,
+		cancel:      cancel,
 	}
 }
 
-// Serve 处理一次带参数的图片请求。
-// relPath 形如 "/uploads/avatar/x.webp";params 为处理参数。
-// 返回处理结果(Bytes 非空表示命中或处理成功)。
-func (s *Service) Serve(relPath string, params domainimage.TransformParams) (domainimage.TransformResult, error) {
-	// 物理路径:剥掉 urlPrefix 前缀,接到 uploadDir
-	srcPath := filepath.Join(s.uploadDir, strings.TrimPrefix(relPath, s.urlPrefix))
-	// 共享来源可撤回；处理图直接读取当前文件，避免删除后由历史缓存继续展示。
-	if strings.HasPrefix(srcPath, filepath.Join(s.uploadDir, "external-tweets")+string(filepath.Separator)) {
-		return s.transformer.Transform(srcPath, params)
-	}
-	cacheKey := cacheKey(srcPath, params)
+// Close 在应用关停时取消全部共享编码任务；单个请求退出不会关闭服务。
+func (s *Service) Close() {
+	s.cancel()
+}
 
-	if cached, _ := s.cache.Get(cacheKey); cached.Bytes != nil {
-		return cached, nil
+// Serve 返回当前源文件对应的处理结果；删除和覆盖源文件都会立即使旧缓存不可达。
+func (s *Service) Serve(ctx context.Context, relPath string, params domainimage.TransformParams) (domainimage.TransformResult, error) {
+	if err := ctx.Err(); err != nil {
+		return domainimage.TransformResult{}, err
 	}
-
-	v, err, _ := s.group.Do(cacheKey, func() (any, error) {
-		// 二次查缓存(singleflight 内可能已被并发请求填充)
-		if cached, _ := s.cache.Get(cacheKey); cached.Bytes != nil {
-			return cached, nil
-		}
-		result, err := s.transformer.Transform(srcPath, params)
-		if err != nil {
-			return nil, err
-		}
-		_ = s.cache.Set(cacheKey, result)
-		return result, nil
-	})
+	if err := s.workCtx.Err(); err != nil {
+		return domainimage.TransformResult{}, err
+	}
+	policy, version := domainsettings.DefaultImagePolicy(), uint64(0)
+	if s.policies != nil {
+		policy, version = s.policies.Image()
+	}
+	if !strings.HasPrefix(relPath, s.urlPrefix+"/") {
+		return domainimage.TransformResult{}, os.ErrNotExist
+	}
+	rel := strings.TrimPrefix(relPath, s.urlPrefix+"/")
+	if !filepath.IsLocal(rel) {
+		return domainimage.TransformResult{}, os.ErrNotExist
+	}
+	srcPath := filepath.Join(s.uploadDir, rel)
+	file, err := os.Open(srcPath)
 	if err != nil {
 		return domainimage.TransformResult{}, err
 	}
-	return v.(domainimage.TransformResult), nil
+	defer file.Close()
+	info, err := file.Stat()
+	if err != nil {
+		return domainimage.TransformResult{}, err
+	}
+	if !info.Mode().IsRegular() || info.Size() > policy.MaxInputBytes {
+		return domainimage.TransformResult{}, fmt.Errorf("图片源文件超过输入限制")
+	}
+	source, err := io.ReadAll(io.LimitReader(file, policy.MaxInputBytes+1))
+	if err != nil {
+		return domainimage.TransformResult{}, err
+	}
+	if int64(len(source)) > policy.MaxInputBytes {
+		return domainimage.TransformResult{}, fmt.Errorf("图片源文件超过输入限制")
+	}
+	// 可撤回来源不缓存，避免撤回后继续暴露处理结果。
+	if strings.HasPrefix(rel, "external-tweets/") {
+		return s.transformer.Transform(ctx, source, params, policy)
+	}
+	key := cacheKey(source, params, policy, version)
+	if cached, _ := s.cache.Get(key); cached.Bytes != nil {
+		return cached, nil
+	}
+	pending := s.group.DoChan(key, func() (any, error) {
+		if cached, _ := s.cache.Get(key); cached.Bytes != nil {
+			return cached, nil
+		}
+		// 共享任务归应用生命周期所有，不随第一个等待者断开；即使全部等待者退出，
+		// 也只运行到策略超时，完成的结果仍可供后续请求复用。
+		workCtx, cancel := context.WithTimeout(s.workCtx, time.Duration(policy.EncodeTimeoutSeconds)*time.Second)
+		defer cancel()
+		result, err := s.transformer.Transform(workCtx, source, params, policy)
+		if err != nil {
+			return nil, err
+		}
+		_ = s.cache.Set(key, result)
+		return result, nil
+	})
+	select {
+	case <-ctx.Done():
+		return domainimage.TransformResult{}, ctx.Err()
+	case completed := <-pending:
+		if completed.Err != nil {
+			return domainimage.TransformResult{}, completed.Err
+		}
+		return completed.Val.(domainimage.TransformResult), nil
+	}
 }
 
-// cacheKey 缓存键 = sha256(物理路径 + 参数序列化)。
-// params.Key() 定义在 domain 层,application/infrastructure 共用,消除重复。
-func cacheKey(srcPath string, params domainimage.TransformParams) string {
+func cacheKey(source []byte, params domainimage.TransformParams, policy domainsettings.ImagePolicy, version uint64) string {
 	h := sha256.New()
-	h.Write([]byte(srcPath))
-	h.Write([]byte(params.Key()))
+	h.Write(source)
+	fmt.Fprintf(h, "\x00%s\x00%d\x00%+v", params.Key(), version, policy)
 	return hex.EncodeToString(h.Sum(nil))
 }

@@ -2,114 +2,160 @@ package image
 
 import (
 	"bytes"
+	"context"
+	"encoding/binary"
+	"hash/crc32"
+	"image"
+	"image/color"
+	"image/gif"
+	"image/png"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/disintegration/imaging"
+	"github.com/stretchr/testify/require"
 
 	domainimage "blog-api/internal/domain/image"
+	domainsettings "blog-api/internal/domain/settings"
 )
 
-// TestTransform_Resize 缩放后宽度应等于请求宽度
-func TestTransform_Resize(t *testing.T) {
-	tr := NewTransformer()
-	res, err := tr.Transform(filepath.Join("testdata", "sample.jpg"),
-		domainimage.TransformParams{Width: 50, Format: "jpeg", Quality: 80})
-	if err != nil {
-		t.Fatalf("处理失败: %v", err)
-	}
-	if len(res.Bytes) == 0 {
-		t.Fatal("结果为空")
-	}
-	if res.MimeType != "image/jpeg" {
-		t.Fatalf("期望 image/jpeg,实际 %s", res.MimeType)
-	}
-	// 验证确实缩小到 50px 宽
-	img, err := imaging.Decode(bytes.NewReader(res.Bytes))
-	if err != nil {
-		t.Fatalf("解码结果失败: %v", err)
-	}
-	if img.Bounds().Dx() != 50 {
-		t.Fatalf("期望宽 50,实际 %d", img.Bounds().Dx())
-	}
-	if res.ETag == "" {
-		t.Fatal("ETag 不应为空")
+func fixture(t *testing.T, name string) []byte {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join("testdata", name))
+	require.NoError(t, err)
+	return data
+}
+
+func TestTransformGeometry(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		params        domainimage.TransformParams
+		width, height int
+	}{
+		{"缩放", domainimage.TransformParams{Width: 50, Format: "jpeg", Quality: 80}, 50, 37},
+		{"裁剪", domainimage.TransformParams{ThumbW: 40, ThumbH: 40, Format: "jpeg"}, 40, 40},
+		{"旋转", domainimage.TransformParams{Rotate: 90, Format: "jpeg"}, 150, 200},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := NewTransformer(NewEncoder()).Transform(context.Background(), fixture(t, "sample.jpg"), test.params, domainsettings.DefaultImagePolicy())
+			require.NoError(t, err)
+			require.Equal(t, "image/jpeg", result.MimeType)
+			require.NotEmpty(t, result.ETag)
+			img, err := imaging.Decode(bytes.NewReader(result.Bytes))
+			require.NoError(t, err)
+			require.Equal(t, test.width, img.Bounds().Dx())
+			require.Equal(t, test.height, img.Bounds().Dy())
+		})
 	}
 }
 
-// TestTransform_FormatWebP 指定 webp 应输出 image/webp
-func TestTransform_FormatWebP(t *testing.T) {
-	tr := NewTransformer()
-	res, err := tr.Transform(filepath.Join("testdata", "sample.png"),
-		domainimage.TransformParams{Width: 50, Format: "webp"})
-	if err != nil {
-		t.Fatalf("处理失败: %v", err)
+func TestTransformRealLossyQualityAndAlpha(t *testing.T) {
+	policy := domainsettings.DefaultImagePolicy()
+	require.NoError(t, ValidatePolicy(policy))
+	img := image.NewNRGBA(image.Rect(0, 0, 128, 128))
+	for y := range 128 {
+		for x := range 128 {
+			img.SetNRGBA(x, y, color.NRGBA{R: byte(x*17 + y*3), G: byte(y*11 + x*5), B: byte(x * y), A: byte(x * 2)})
+		}
 	}
-	if res.MimeType != "image/webp" {
-		t.Fatalf("期望 image/webp,实际 %s", res.MimeType)
+	var source bytes.Buffer
+	require.NoError(t, png.Encode(&source, img))
+	tr := NewTransformer(NewEncoder())
+	params := domainimage.TransformParams{Format: "webp"}
+	lossless, err := tr.Transform(context.Background(), source.Bytes(), params, policy)
+	require.NoError(t, err)
+	require.Equal(t, "image/webp", lossless.MimeType)
+	policy.WebPMode, policy.WebPQuality, policy.WebPMethod = "lossy", 25, 0
+	low, err := tr.Transform(context.Background(), source.Bytes(), params, policy)
+	require.NoError(t, err)
+	policy.WebPQuality, policy.WebPMethod = 95, 6
+	high, err := tr.Transform(context.Background(), source.Bytes(), params, policy)
+	require.NoError(t, err)
+	require.NotEqual(t, low.Bytes, high.Bytes)
+	require.NotEqual(t, lossless.Bytes, high.Bytes)
+	for _, output := range [][]byte{lossless.Bytes, low.Bytes, high.Bytes} {
+		decoded, _, err := image.Decode(bytes.NewReader(output))
+		require.NoError(t, err)
+		_, _, _, alpha := decoded.At(32, 64).RGBA()
+		require.Equal(t, uint32(64*257), alpha)
 	}
+	transparent, err := tr.Transform(context.Background(), source.Bytes(), domainimage.TransformParams{Format: "jpeg"}, policy)
+	require.NoError(t, err)
+	require.Equal(t, "image/png", transparent.MimeType)
 }
 
-// TestTransform_Thumbnail thumb 应裁剪到精确尺寸
-func TestTransform_Thumbnail(t *testing.T) {
-	tr := NewTransformer()
-	res, err := tr.Transform(filepath.Join("testdata", "sample.jpg"),
-		domainimage.TransformParams{ThumbW: 40, ThumbH: 40, Format: "jpeg"})
-	if err != nil {
-		t.Fatalf("处理失败: %v", err)
+func TestTransformRejectsUnsafeSourceAndOutput(t *testing.T) {
+	tr := NewTransformer(NewEncoder())
+	policy := domainsettings.DefaultImagePolicy()
+	for _, data := range [][]byte{[]byte("not an image"), []byte("RIFF1234WEBPVP8X...")} {
+		_, err := tr.Transform(context.Background(), data, domainimage.TransformParams{}, policy)
+		require.Error(t, err)
 	}
-	img, _ := imaging.Decode(bytes.NewReader(res.Bytes))
-	if img.Bounds().Dx() != 40 || img.Bounds().Dy() != 40 {
-		t.Fatalf("期望 40x40,实际 %dx%d", img.Bounds().Dx(), img.Bounds().Dy())
-	}
+	data := fixture(t, "sample.jpg")
+	policy.MaxSourceDimension = 100
+	_, err := tr.Transform(context.Background(), data, domainimage.TransformParams{}, policy)
+	require.ErrorContains(t, err, "尺寸或像素")
+	policy = domainsettings.DefaultImagePolicy()
+	policy.MaxSourcePixels = 100
+	_, err = tr.Transform(context.Background(), data, domainimage.TransformParams{}, policy)
+	require.ErrorContains(t, err, "尺寸或像素")
+	policy = domainsettings.DefaultImagePolicy()
+	policy.MaxInputBytes = 1
+	_, err = tr.Transform(context.Background(), data, domainimage.TransformParams{}, policy)
+	require.ErrorContains(t, err, "输入字节")
+	policy = domainsettings.DefaultImagePolicy()
+	policy.MaxOutputBytes = 1
+	_, err = tr.Transform(context.Background(), data, domainimage.TransformParams{Format: "png"}, policy)
+	require.ErrorContains(t, err, "输出")
+	_, err = tr.Transform(context.Background(), data, domainimage.TransformParams{Format: "webp"}, policy)
+	require.ErrorContains(t, err, "输出")
 }
 
-// TestTransform_Rotate 旋转 90 度后宽高应互换(原图 200x150 → 150x200)
-func TestTransform_Rotate(t *testing.T) {
-	tr := NewTransformer()
-	res, err := tr.Transform(filepath.Join("testdata", "sample.jpg"),
-		domainimage.TransformParams{Rotate: 90, Format: "jpeg"})
-	if err != nil {
-		t.Fatalf("处理失败: %v", err)
-	}
-	img, _ := imaging.Decode(bytes.NewReader(res.Bytes))
-	if img.Bounds().Dx() != 150 || img.Bounds().Dy() != 200 {
-		t.Fatalf("旋转后期望 150x200,实际 %dx%d", img.Bounds().Dx(), img.Bounds().Dy())
-	}
+func TestHugePNGHeaderRejectedBeforeFullDecode(t *testing.T) {
+	data := bytes.Clone(fixture(t, "sample.png")[:33])
+	binary.BigEndian.PutUint32(data[16:20], 100000)
+	binary.BigEndian.PutUint32(data[20:24], 100000)
+	binary.BigEndian.PutUint32(data[29:33], crc32.ChecksumIEEE(data[12:29]))
+	policy := domainsettings.DefaultImagePolicy()
+	_, err := NewTransformer(NewEncoder()).Transform(context.Background(), data, domainimage.TransformParams{}, policy)
+	require.ErrorContains(t, err, "尺寸或像素")
+	path := filepath.Join(t.TempDir(), "huge.png")
+	require.NoError(t, os.WriteFile(path, data, 0o600))
+	_, err = NewProcessor(t.TempDir(), "/uploads/", nil, NewEncoder()).Validate(path)
+	require.ErrorContains(t, err, "尺寸或像素")
 }
 
-// TestTransform_CorruptFile 损坏文件应返回 error(不 panic)
-func TestTransform_CorruptFile(t *testing.T) {
-	tmp := filepath.Join(t.TempDir(), "bad.jpg")
-	// 直接复用 processor_test 的思路,但这里简单测:不存在文件应 error
-	tr := NewTransformer()
-	_, err := tr.Transform(filepath.Join("testdata", "nonexist.jpg"),
-		domainimage.TransformParams{Width: 50, Format: "jpeg"})
-	if err == nil {
-		t.Fatal("不存在文件应返回 error")
-	}
-	_ = tmp
+func TestAnimatedGIFPreservedAndCumulativePixelsBounded(t *testing.T) {
+	palette := color.Palette{color.Black, color.White}
+	frame := image.NewPaletted(image.Rect(0, 0, 10, 10), palette)
+	var data bytes.Buffer
+	require.NoError(t, gif.EncodeAll(&data, &gif.GIF{Image: []*image.Paletted{frame, frame}, Delay: []int{1, 1}}))
+	policy := domainsettings.DefaultImagePolicy()
+	tr := NewTransformer(NewEncoder())
+	result, err := tr.Transform(context.Background(), data.Bytes(), domainimage.TransformParams{Width: 1, Format: "webp"}, policy)
+	require.NoError(t, err)
+	require.Equal(t, data.Bytes(), result.Bytes)
+	require.Equal(t, "image/gif", result.MimeType)
+	policy.MaxSourcePixels = 150
+	_, err = tr.Transform(context.Background(), data.Bytes(), domainimage.TransformParams{}, policy)
+	require.ErrorContains(t, err, "累计像素")
 }
 
-// TestTransform_FallbackWebP 无法解码的 WebP(如 VP8X)应降级返回原图，而不是抛出 error
-func TestTransform_FallbackWebP(t *testing.T) {
-	tmp := filepath.Join(t.TempDir(), "animated.webp")
-	// 伪造一个有 WebP 头部的假文件，正常 decode 会失败
-	fakeWebP := []byte("RIFF1234WEBPVP8X...")
-	if err := os.WriteFile(tmp, fakeWebP, 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	tr := NewTransformer()
-	res, err := tr.Transform(tmp, domainimage.TransformParams{Width: 50, Format: "jpeg"})
-	if err != nil {
-		t.Fatalf("遇到有效的 WebP 头部但不兼容时，应降级成功，不应报错: %v", err)
-	}
-	if string(res.Bytes) != string(fakeWebP) {
-		t.Fatal("应该返回原始字节内容")
-	}
-	if res.MimeType != "image/webp" {
-		t.Fatalf("MimeType 应被重置为 image/webp, got: %s", res.MimeType)
-	}
+func TestEncoderAdmissionHonorsCancellationAndNewLimit(t *testing.T) {
+	encoder := NewEncoder()
+	release, err := encoder.acquire(context.Background(), 1)
+	require.NoError(t, err)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	defer cancel()
+	_, err = encoder.acquire(ctx, 1)
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+	releaseSecond, err := encoder.acquire(context.Background(), 2)
+	require.NoError(t, err)
+	releaseSecond()
+	release()
+	release, err = encoder.acquire(context.Background(), 1)
+	require.NoError(t, err)
+	release()
 }

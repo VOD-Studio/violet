@@ -41,7 +41,7 @@ func TestMediaStoreSavesOriginalsPostersAndLocalAvatarWithBoundedConcurrency(t *
 	root, id, version := t.TempDir(), uuid.NewString(), uuid.NewString()
 	body := mediaPNG(t)
 	var active, peak atomic.Int32
-	store := NewMediaStore(root, "/uploads", infraimage.NewProcessor(root, "/uploads"), &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+	store := NewMediaStore(root, "/uploads", infraimage.NewProcessor(root, "/uploads", nil, infraimage.NewEncoder()), &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
 		assert.Equal(t, "pbs.twimg.com", req.URL.Hostname())
 		assert.Empty(t, req.Header.Get("Authorization"))
 		assert.Empty(t, req.Header.Get("Cookie"))
@@ -101,7 +101,7 @@ func TestMediaStoreRejectsUnsafeInvalidOversizedAndPixelBombs(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			root, id, version := t.TempDir(), uuid.NewString(), uuid.NewString()
-			store := NewMediaStore(root, "/uploads", infraimage.NewProcessor(root, "/uploads"), &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) { return mediaResponse(tc.body, tc.mime), nil })})
+			store := NewMediaStore(root, "/uploads", infraimage.NewProcessor(root, "/uploads", nil, infraimage.NewEncoder()), &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) { return mediaResponse(tc.body, tc.mime), nil })})
 			snapshot := &tweet.ExternalSnapshot{Media: []tweet.ExternalMedia{{Kind: "photo", SourceURL: tc.url}}}
 			total := tc.initial
 			require.Error(t, store.Prepare(context.Background(), id, version, snapshot, &total))
@@ -116,7 +116,7 @@ func TestMediaStoreRejectsUnsafeInvalidOversizedAndPixelBombs(t *testing.T) {
 
 func TestMediaStoreOptionalAvatarAndCleanupProtectCurrentVersion(t *testing.T) {
 	root, id, version := t.TempDir(), uuid.NewString(), uuid.NewString()
-	store := NewMediaStore(root, "/uploads", infraimage.NewProcessor(root, "/uploads"), &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) { return mediaResponse([]byte("invalid"), "image/png"), nil })})
+	store := NewMediaStore(root, "/uploads", infraimage.NewProcessor(root, "/uploads", nil, infraimage.NewEncoder()), &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) { return mediaResponse([]byte("invalid"), "image/png"), nil })})
 	snapshot := &tweet.ExternalSnapshot{Author: tweet.ExternalAuthor{AvatarSourceURL: "https://pbs.twimg.com/avatar.png"}}
 	var total int64
 	require.NoError(t, store.Prepare(context.Background(), id, version, snapshot, &total))
@@ -141,7 +141,7 @@ func TestMediaStoreSavesJPEGAvatarAndMedia(t *testing.T) {
 	root, id, version := t.TempDir(), uuid.NewString(), uuid.NewString()
 	var body bytes.Buffer
 	require.NoError(t, jpeg.Encode(&body, image.NewRGBA(image.Rect(0, 0, 200, 200)), nil))
-	store := NewMediaStore(root, "/uploads", infraimage.NewProcessor(root, "/uploads"), &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+	store := NewMediaStore(root, "/uploads", infraimage.NewProcessor(root, "/uploads", nil, infraimage.NewEncoder()), &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
 		return mediaResponse(body.Bytes(), "image/jpeg"), nil
 	})})
 	snapshot := &tweet.ExternalSnapshot{
@@ -171,7 +171,7 @@ func TestMediaStoreUnavailableAvatarDoesNotHideContentWarnings(t *testing.T) {
 	for _, source := range []string{"", "https://evil.test/avatar.jpg", "https://pbs.twimg.com/profile_images/missing.jpg"} {
 		t.Run(source, func(t *testing.T) {
 			root := t.TempDir()
-			store := NewMediaStore(root, "/uploads", infraimage.NewProcessor(root, "/uploads"), &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+			store := NewMediaStore(root, "/uploads", infraimage.NewProcessor(root, "/uploads", nil, infraimage.NewEncoder()), &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
 				return nil, errors.New("source unavailable")
 			})})
 			snapshot := &tweet.ExternalSnapshot{

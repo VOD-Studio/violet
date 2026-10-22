@@ -8,6 +8,7 @@ import (
 
 	"blog-api/config"
 	appmedia "blog-api/internal/application/media"
+	domainimage "blog-api/internal/domain/image"
 	infraemoji "blog-api/internal/infrastructure/emoji"
 	infrapimage "blog-api/internal/infrastructure/image"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
@@ -25,8 +26,8 @@ type MediaContainer struct {
 
 // NewMediaContainer 装配 emoji/upload DDD 模块。
 // 内部自建 emojiRepo / refetchStatusStore / emojiSeedService，
-// 调用方只需传入 db / redisClient / cfg，不再在 main 构造 infra 对象。
-func NewMediaContainer(db *gorm.DB, redisClient *redis.Client, cfg *config.Config) *MediaContainer {
+// 图片策略与编码准入器由根容器注入，与动态图片和外部媒体共用。
+func NewMediaContainer(db *gorm.DB, redisClient *redis.Client, cfg *config.Config, policies domainimage.PolicyProvider, encoder *infrapimage.Encoder) *MediaContainer {
 	uploadRoot := cfg.UploadDir
 	emojiDir := filepath.Join(uploadRoot, "emojis")
 	chunkDir := filepath.Join(uploadRoot, "tmp")
@@ -41,7 +42,7 @@ func NewMediaContainer(db *gorm.DB, redisClient *redis.Client, cfg *config.Confi
 	refetchStatusStore := infraemoji.NewRefetchStatusStore(redisClient)
 
 	emojiSvc := appmedia.NewEmojiService(emojiRepo, emojiDir, urlPrefix, emojiSeedService, refetchStatusStore)
-	processor := infrapimage.NewProcessor(uploadRoot, urlPrefix)
+	processor := infrapimage.NewProcessor(uploadRoot, urlPrefix, policies, encoder)
 	uploadSvc := appmedia.NewUploadService(fileRepo, sessionRepo, localStorage, processor, chunkDir, uploadRoot, urlPrefix)
 
 	return &MediaContainer{

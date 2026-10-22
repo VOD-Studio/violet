@@ -30,12 +30,16 @@ func Run(ctx context.Context, cfg *config.Config) error {
 		return fmt.Errorf("模块容器初始化失败: %w", err)
 	}
 	defer containerCleanup()
+	stopImageWork := context.AfterFunc(ctx, container.Image.Close)
+	defer stopImageWork()
+	defer container.Image.Close()
 
 	handler := buildHTTPHandler(cfg, infra.Redis, container)
 	if err := container.Settings.RuntimePolicies.Initialize(ctx); err != nil {
 		return fmt.Errorf("运行策略初始化失败: %w", err)
 	}
 	go container.Settings.RuntimePolicies.Run(ctx)
+	go container.Image.RunMaintenance(ctx)
 	startJobs(ctx, container, infra.Gorm, cfg.UploadDir)
 
 	if cfg.SuperAdmin.Enabled {
@@ -59,7 +63,7 @@ func startJobs(ctx context.Context, c *Container, gormDB *gorm.DB, uploadRoot st
 		}
 	}()
 
-	go job.NewCleanupJob(gormDB, chunkDir, uploadRoot).Start(ctx)
+	go job.NewCleanupJob(gormDB, chunkDir).Start(ctx)
 	go job.NewExternalTweetJob(c.Tweet.ExternalService).Start(ctx)
 	go job.NewMusicRenewalJob(c.Music.Service).Start(ctx)
 

@@ -48,6 +48,9 @@ func NewMediaStore(root, prefix string, processor domainupload.ImageProcessor, c
 }
 
 func (s *MediaStore) Prepare(ctx context.Context, id, version string, snapshot *tweet.ExternalSnapshot, total *int64) (err error) {
+	requestStore := *s
+	requestStore.processor = s.processor.ForRequest(ctx)
+	s = &requestStore
 	if _, err := uuid.Parse(id); err != nil {
 		return err
 	}

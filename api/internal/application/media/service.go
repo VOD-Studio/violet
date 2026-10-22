@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"image"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -652,6 +653,10 @@ type MergeResult struct {
 
 // CompleteUpload 合并所有分片为完整文件
 func (s *UploadService) CompleteUpload(ctx context.Context, uploadID, userID string) (*MergeResult, error) {
+	processor := s.processor
+	if processor != nil {
+		processor = processor.ForRequest(ctx)
+	}
 	sid, err := shared.ParseID(uploadID)
 	if err != nil {
 		return nil, err
@@ -689,18 +694,30 @@ func (s *UploadService) CompleteUpload(ctx context.Context, uploadID, userID str
 
 	// 图片校验 + 转码(仅图片走转码;非图片跳过保持兼容)
 	srcMime := session.MimeType()
+	if processor != nil {
+		source, err := os.Open(mergedPath)
+		if err != nil {
+			return nil, shared.Internal("读取合并文件失败", err)
+		}
+		var header [512]byte
+		n, _ := source.Read(header[:])
+		source.Close()
+		if detected := http.DetectContentType(header[:n]); strings.HasPrefix(detected, "image/") {
+			srcMime = detected
+		}
+	}
 	finalMime := srcMime
 	finalExt := strings.ToLower(filepath.Ext(session.FileName()))
-	if s.processor != nil && strings.HasPrefix(srcMime, "image/") {
+	if processor != nil && strings.HasPrefix(srcMime, "image/") {
 		// 校验:非图片或损坏文件拒绝(不落盘)
-		validMime, err := s.processor.Validate(mergedPath)
+		validMime, err := processor.Validate(mergedPath)
 		if err != nil {
 			_ = s.storage.CleanupDir(session.TmpPath())
 			return nil, shared.BadRequest("图片校验失败: " + err.Error())
 		}
 		srcMime = validMime
 		// 转 WebP(GIF/WebP 跳过;JPEG/PNG 仅更小时采用,否则回退)
-		result, err := s.processor.Transcode(mergedPath, filepath.Dir(mergedPath), "transcoded", srcMime)
+		result, err := processor.Transcode(mergedPath, filepath.Dir(mergedPath), "transcoded", srcMime)
 		if err != nil {
 			_ = s.storage.CleanupDir(session.TmpPath())
 			return nil, shared.Internal("图片转码失败", err)
@@ -734,11 +751,11 @@ func (s *UploadService) CompleteUpload(ctx context.Context, uploadID, userID str
 		storageDir = filepath.Join(storageDir, mimeToCategory(finalMime))
 	}
 	var thumbnail string
-	if s.processor != nil {
+	if processor != nil {
 		if strings.HasPrefix(finalMime, "image/") {
-			width, height = s.processor.Dimensions(finalPath)
+			width, height = processor.Dimensions(finalPath)
 		}
-		thumbnail = s.processor.Thumbnail(finalPath, fileUUID.String(), storageDir, finalMime)
+		thumbnail = processor.Thumbnail(finalPath, fileUUID.String(), storageDir, finalMime)
 	} else {
 		// processor 未注入(如测试)走 storage 兼容路径
 		if strings.HasPrefix(finalMime, "image/") {
@@ -1043,6 +1060,23 @@ func (s *UploadService) UploadThumbnail(ctx context.Context, in UploadThumbnailI
 	if !f.OwnerID().Equal(cid) {
 		return "", shared.Forbidden("无权操作他人文件")
 	}
+	if s.processor != nil {
+		tmp, err := os.CreateTemp("", "upload-thumbnail-*")
+		if err != nil {
+			return "", shared.Internal("创建缩略图临时文件失败", err)
+		}
+		defer os.Remove(tmp.Name())
+		if _, err := tmp.Write(in.Content); err != nil {
+			tmp.Close()
+			return "", err
+		}
+		if err := tmp.Close(); err != nil {
+			return "", err
+		}
+		if _, err := s.processor.ForRequest(ctx).Validate(tmp.Name()); err != nil {
+			return "", shared.BadRequest("缩略图校验失败: " + err.Error())
+		}
+	}
 	// 缩略图存到文件同目录，命名 fileUUID_thumb.<ext>
 	ext := strings.ToLower(filepath.Ext(in.FileName))
 	thumbName := fid.String() + "_thumb" + ext
@@ -1078,6 +1112,10 @@ type ReplaceMediaFileInput struct {
 // 安全:fileHash 更新为新值,避免旧 hash 秒传误命中;旧物理文件保留。
 // 仅静态图支持(GIF 转码丢动画且文件不变,覆盖无意义);收到 GIF 返回 BadRequest。
 func (s *UploadService) ReplaceMediaFile(ctx context.Context, in ReplaceMediaFileInput, callerID string) (FileDTO, error) {
+	processor := s.processor
+	if processor != nil {
+		processor = processor.ForRequest(ctx)
+	}
 	fid, err := shared.ParseID(in.FileID)
 	if err != nil {
 		return FileDTO{}, err
@@ -1116,8 +1154,8 @@ func (s *UploadService) ReplaceMediaFile(ctx context.Context, in ReplaceMediaFil
 
 	// 校验真实图片 + 拒绝 GIF(sniff 后真 MIME 可能与声明不同)
 	srcMime := in.MimeType
-	if s.processor != nil {
-		validMime, err := s.processor.Validate(tmpPath)
+	if processor != nil {
+		validMime, err := processor.Validate(tmpPath)
 		if err != nil {
 			return FileDTO{}, shared.BadRequest("图片校验失败: " + err.Error())
 		}
@@ -1126,7 +1164,7 @@ func (s *UploadService) ReplaceMediaFile(ctx context.Context, in ReplaceMediaFil
 		}
 		srcMime = validMime
 		// 转码 WebP(GIF 已挡,JPEG/PNG 仅更小时采用)
-		result, err := s.processor.Transcode(tmpPath, tmpDir, "replaced", srcMime)
+		result, err := processor.Transcode(tmpPath, tmpDir, "replaced", srcMime)
 		if err != nil {
 			return FileDTO{}, shared.Internal("图片转码失败", err)
 		}
@@ -1159,9 +1197,9 @@ func (s *UploadService) ReplaceMediaFile(ctx context.Context, in ReplaceMediaFil
 		storageDir = filepath.Join(storageDir, mimeToCategory(srcMime))
 	}
 	var thumbnail string
-	if s.processor != nil {
-		width, height = s.processor.Dimensions(finalPath)
-		thumbnail = s.processor.Thumbnail(finalPath, fileUUID.String(), storageDir, srcMime)
+	if processor != nil {
+		width, height = processor.Dimensions(finalPath)
+		thumbnail = processor.Thumbnail(finalPath, fileUUID.String(), storageDir, srcMime)
 	} else {
 		width, height = s.storage.ImageDimensions(finalPath)
 		thumbnail = s.storage.GenerateThumbnail(finalPath, fileUUID.String(), storageDir, srcMime)
@@ -1302,6 +1340,10 @@ func (s *UploadService) SaveGeneratedCover(ctx context.Context, ownerID shared.I
 }
 
 func (s *UploadService) saveWholeImage(ctx context.Context, ownerID shared.ID, purpose, originalName, mimeType, ext string, data []byte) (*domainupload.File, error) {
+	processor := s.processor
+	if processor != nil {
+		processor = processor.ForRequest(ctx)
+	}
 	tmpFile, err := os.CreateTemp("", "image-*."+ext)
 	if err != nil {
 		return nil, shared.Internal("创建临时文件失败", err)
@@ -1330,8 +1372,8 @@ func (s *UploadService) saveWholeImage(ctx context.Context, ownerID shared.ID, p
 	if format != ext {
 		return nil, shared.BadRequest("图片格式与文件内容不一致")
 	}
-	if s.processor != nil {
-		validMIME, err := s.processor.Validate(tmpPath)
+	if processor != nil {
+		validMIME, err := processor.Validate(tmpPath)
 		if err != nil {
 			return nil, shared.BadRequest("图片内容无效: " + err.Error())
 		}
@@ -1364,8 +1406,8 @@ func (s *UploadService) saveWholeImage(ctx context.Context, ownerID shared.ID, p
 		return nil, shared.Internal("创建文件记录失败", err)
 	}
 	f.SetDimensions(config.Width, config.Height)
-	if s.processor != nil {
-		if thumbnail := s.processor.Thumbnail(finalPath, fileID.String(), purpose, mimeType); thumbnail != "" {
+	if processor != nil {
+		if thumbnail := processor.Thumbnail(finalPath, fileID.String(), purpose, mimeType); thumbnail != "" {
 			f.SetThumbnail(thumbnail)
 		}
 	}

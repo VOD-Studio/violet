@@ -15,7 +15,8 @@ import (
 // noopProcessor ImageProcessor 的 no-op 实现,让放行用例走完转码流程。
 type noopProcessor struct{}
 
-func (noopProcessor) Validate(path string) (string, error) { return "image/webp", nil }
+func (p noopProcessor) ForRequest(context.Context) domainupload.ImageProcessor { return p }
+func (noopProcessor) Validate(path string) (string, error)                     { return "image/webp", nil }
 func (noopProcessor) Transcode(srcPath, destDir, fileUUID, srcMime string) (domainupload.ProcessResult, error) {
 	return domainupload.ProcessResult{Path: srcPath, MimeType: "image/webp", Ext: ".webp"}, nil
 }
@@ -27,8 +28,8 @@ func (noopProcessor) Thumbnail(srcPath, fileUUID, storageDir, mime string) strin
 // realDirStorage 包装 noopStorage,但 EnsureDir/CleanupDir/FileSize 走真实文件系统。
 type realDirStorage struct{ noopStorage }
 
-func (realDirStorage) EnsureDir(dir string) error      { return os.MkdirAll(dir, 0o755) }
-func (realDirStorage) CleanupDir(dir string) error     { return os.RemoveAll(dir) }
+func (realDirStorage) EnsureDir(dir string) error  { return os.MkdirAll(dir, 0o755) }
+func (realDirStorage) CleanupDir(dir string) error { return os.RemoveAll(dir) }
 func (realDirStorage) FileSize(path string) (int64, error) {
 	info, err := os.Stat(path)
 	if err != nil {
@@ -77,4 +78,3 @@ func TestReplaceMediaFile_OwnerOK(t *testing.T) {
 		t.Error("临时工作目录未清理")
 	}
 }
-

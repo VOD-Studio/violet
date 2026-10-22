@@ -1,42 +1,90 @@
-// cache_mem.go 内存缓存:golang-lru LRU + TTI 失效。
 package image
 
 import (
+	"container/list"
+	"sync"
 	"time"
 
-	lru "github.com/hashicorp/golang-lru/v2"
-
 	domainimage "blog-api/internal/domain/image"
+	domainsettings "blog-api/internal/domain/settings"
 )
 
 type memEntry struct {
+	key     string
 	result  domainimage.TransformResult
-	expires time.Time
+	created time.Time
 }
 
-// MemoryCache 内存 LRU + TTI
+// MemoryCache 同时约束条目、字节与写入 TTL；调整策略后下次操作立即收敛。
 type MemoryCache struct {
-	cache *lru.Cache[string, memEntry]
-	ttl   time.Duration
+	mu       sync.Mutex
+	entries  map[string]*list.Element
+	order    *list.List
+	bytes    int64
+	policies domainimage.PolicyProvider
 }
 
-// NewMemoryCache 创建内存缓存。size 为条目上限,ttl 为存活时间(TTI,写入时起算)。
-func NewMemoryCache(size int, ttl time.Duration) *MemoryCache {
-	c, _ := lru.New[string, memEntry](size)
-	return &MemoryCache{cache: c, ttl: ttl}
+// NewMemoryCache 创建受运行策略约束的 LRU 缓存。
+func NewMemoryCache(policies domainimage.PolicyProvider) *MemoryCache {
+	return &MemoryCache{entries: make(map[string]*list.Element), order: list.New(), policies: policies}
+}
+
+func (m *MemoryCache) remove(element *list.Element) {
+	entry := element.Value.(memEntry)
+	m.bytes -= int64(len(entry.result.Bytes))
+	delete(m.entries, entry.key)
+	m.order.Remove(element)
+}
+
+func (m *MemoryCache) trim(policy domainsettings.ImagePolicy, now time.Time) {
+	for element := m.order.Back(); element != nil; {
+		previous := element.Prev()
+		entry := element.Value.(memEntry)
+		if now.Sub(entry.created) >= time.Duration(policy.MemoryTTLSeconds)*time.Second {
+			m.remove(element)
+		}
+		element = previous
+	}
+	for m.order.Len() > policy.MemoryMaxEntries || m.bytes > policy.MemoryMaxBytes {
+		m.remove(m.order.Back())
+	}
 }
 
 func (m *MemoryCache) Get(key string) (domainimage.TransformResult, error) {
-	e, ok := m.cache.Get(key)
-	if !ok || time.Now().After(e.expires) {
-		return domainimage.TransformResult{}, nil
+	policy := imagePolicy(m.policies)
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.trim(policy, time.Now())
+	if element := m.entries[key]; element != nil {
+		m.order.MoveToFront(element)
+		return element.Value.(memEntry).result, nil
 	}
-	return e.result, nil
+	return domainimage.TransformResult{}, nil
 }
 
 func (m *MemoryCache) Set(key string, result domainimage.TransformResult) error {
-	m.cache.Add(key, memEntry{result: result, expires: time.Now().Add(m.ttl)})
+	policy := imagePolicy(m.policies)
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.trim(policy, time.Now())
+	if old := m.entries[key]; old != nil {
+		m.remove(old)
+	}
+	if len(result.Bytes) == 0 || int64(len(result.Bytes)) > policy.MemoryMaxBytes {
+		return nil
+	}
+	m.entries[key] = m.order.PushFront(memEntry{key: key, result: result, created: time.Now()})
+	m.bytes += int64(len(result.Bytes))
+	m.trim(policy, time.Now())
 	return nil
+}
+
+// Cleanup 清除闲置缓存的到期项和超额项。
+func (m *MemoryCache) Cleanup() {
+	policy := imagePolicy(m.policies)
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.trim(policy, time.Now())
 }
 
 var _ domainimage.ImageCache = (*MemoryCache)(nil)

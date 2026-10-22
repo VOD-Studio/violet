@@ -4,7 +4,12 @@
 // 本端口面向"请求时按参数处理",由 application/image.Service 编排。
 package image
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+
+	domainsettings "blog-api/internal/domain/settings"
+)
 
 // TransformParams 动态处理参数
 type TransformParams struct {
@@ -15,7 +20,7 @@ type TransformParams struct {
 	// thumbW 缩略图宽度(px);需与 thumbH 同时 >0 才生效,强制裁剪到精确尺寸
 	ThumbW int
 	// thumbH 缩略图高度(px);需与 thumbW 同时 >0 才生效,强制裁剪到精确尺寸
-	ThumbH int
+	ThumbH  int
 	Rotate  int    // 0|90|180|270
 	Format  string // jpeg|png|webp
 	Quality int    // 1-100
@@ -40,8 +45,8 @@ type TransformResult struct {
 
 // ImageTransformer 图片动态处理端口
 type ImageTransformer interface {
-	// Transform 按参数处理图片;源文件不存在/解码失败返回 error
-	Transform(srcPath string, params TransformParams) (TransformResult, error)
+	// Transform 处理已经过字节数限制的源数据，整次请求使用同一策略快照。
+	Transform(ctx context.Context, source []byte, params TransformParams, policy domainsettings.ImagePolicy) (TransformResult, error)
 }
 
 // ImageCache 图片处理结果缓存端口
@@ -50,4 +55,9 @@ type ImageCache interface {
 	Get(key string) (TransformResult, error)
 	// Set 写入缓存
 	Set(key string, result TransformResult) error
+}
+
+// PolicyProvider 提供当前进程已生效的图片策略。
+type PolicyProvider interface {
+	Image() (domainsettings.ImagePolicy, uint64)
 }

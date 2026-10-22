@@ -1,190 +1,222 @@
-// Package image 提供图片处理的基础设施实现(转码/校验/尺寸/缩略图)。
-//
-// 实现 domain/upload.ImageProcessor 端口,供 application/media.UploadService 依赖。
-// 当前走纯 Go:imaging(解码/resize)+ nativewebp(WebP 编码,VP8L 无损)。
+// Package image 实现受策略约束的图片解码、编码与缓存。
 package image
 
 import (
-	"bytes"
+	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
-	webp "github.com/HugoSmits86/nativewebp"
 	"github.com/disintegration/imaging"
-	_ "golang.org/x/image/webp"
 	"github.com/rs/zerolog/log"
 
+	domainimage "blog-api/internal/domain/image"
+	domainsettings "blog-api/internal/domain/settings"
 	domainupload "blog-api/internal/domain/upload"
 )
 
-// Processor 图片处理实现(imaging + nativewebp)
+// Processor 上传图片处理器。
 type Processor struct {
 	uploadDir string
 	urlPrefix string
+	policies  domainimage.PolicyProvider
+	encoder   *Encoder
+	ctx       context.Context
+	policy    *domainsettings.ImagePolicy
 }
 
-// NewProcessor 创建图片处理器
-func NewProcessor(uploadDir, urlPrefix string) *Processor {
-	return &Processor{uploadDir: uploadDir, urlPrefix: urlPrefix}
+// NewProcessor 创建图片处理器；encoder 必须与动态图片管线共用。
+func NewProcessor(uploadDir, urlPrefix string, policies domainimage.PolicyProvider, encoder *Encoder) *Processor {
+	return &Processor{uploadDir: uploadDir, urlPrefix: urlPrefix, policies: policies, encoder: encoder, ctx: context.Background()}
 }
 
-// 编译期断言:实现 domain 端口
 var _ domainupload.ImageProcessor = (*Processor)(nil)
 
-// Validate 校验图片:magic bytes(http.DetectContentType)+ 真正解码
+// ForRequest 固定策略，后续校验、转码和缩略图使用同一份值。
+func (p *Processor) ForRequest(ctx context.Context) domainupload.ImageProcessor {
+	copy := *p
+	policy := imagePolicy(p.policies)
+	copy.ctx, copy.policy = ctx, &policy
+	return &copy
+}
+
+func (p *Processor) currentPolicy() domainsettings.ImagePolicy {
+	if p.policy != nil {
+		return *p.policy
+	}
+	return imagePolicy(p.policies)
+}
+
+func (p *Processor) source(path string, policy domainsettings.ImagePolicy) (sourceImage, []byte, error) {
+	data, err := readSource(path, policy)
+	if err != nil {
+		return sourceImage{}, nil, err
+	}
+	source, err := decodeSource(data, policy)
+	return source, data, err
+}
+
+func (p *Processor) begin(policy domainsettings.ImagePolicy) (context.Context, func(), error) {
+	ctx, cancel := context.WithTimeout(p.ctx, time.Duration(policy.EncodeTimeoutSeconds)*time.Second)
+	release, err := p.encoder.acquire(ctx, policy.MaxConcurrent)
+	if err != nil {
+		cancel()
+		return nil, nil, err
+	}
+	return ctx, func() { release(); cancel() }, nil
+}
+
+// Validate 先检查字节、尺寸和累计动画像素，再完整验证压缩内容。
 func (p *Processor) Validate(path string) (string, error) {
-	data, err := os.ReadFile(path)
+	policy := p.currentPolicy()
+	ctx, done, err := p.begin(policy)
 	if err != nil {
-		return "", fmt.Errorf("读取文件失败: %w", err)
+		return "", err
 	}
-	mime := http.DetectContentType(data)
-	if !strings.HasPrefix(mime, "image/") {
-		return "", fmt.Errorf("非图片文件,检测到 %s", mime)
+	defer done()
+	source, _, err := p.source(path, policy)
+	if err != nil {
+		return "", err
 	}
-
-	// 对于 WebP，如果头部确认为 RIFF...WEBP，直接放行，避免因 VP8X 动图导致解码失败
-	if mime == "image/webp" && len(data) >= 12 && string(data[0:4]) == "RIFF" && string(data[8:12]) == "WEBP" {
-		return mime, nil
+	if err := ctx.Err(); err != nil {
+		return "", err
 	}
-
-	// 真正解码验证(防改扩展名的损坏文件)
-	if _, err := imaging.Open(path); err != nil {
-		return "", fmt.Errorf("解码失败: %w", err)
-	}
-	return mime, nil
+	return source.mime, nil
 }
 
-// Dimensions 取宽高(非图片返回 0,0)
+// Dimensions 读取经过相同安全检查的尺寸。
 func (p *Processor) Dimensions(path string) (int, int) {
-	img, err := imaging.Open(path)
-	if err == nil {
-		b := img.Bounds()
-		return b.Dx(), b.Dy()
+	policy := p.currentPolicy()
+	_, done, err := p.begin(policy)
+	if err != nil {
+		return 0, 0
 	}
-
-	// 如果标准库解码失败（如 VP8X 动图），尝试手动解析 WebP 头部获取宽高
-	data, err := os.ReadFile(path)
-	if err == nil && len(data) >= 30 {
-		if string(data[0:4]) == "RIFF" && string(data[8:12]) == "WEBP" && string(data[12:16]) == "VP8X" {
-			w := 1 + int(data[24]) + (int(data[25]) << 8) + (int(data[26]) << 16)
-			h := 1 + int(data[27]) + (int(data[28]) << 8) + (int(data[29]) << 16)
-			return w, h
-		}
+	defer done()
+	source, _, err := p.source(path, policy)
+	if err != nil {
+		return 0, 0
 	}
-	return 0, 0
+	return source.width, source.height
 }
 
-// Transcode 转 WebP;GIF/WebP 跳过,JPEG/PNG 解码后编码,
-// 仅当 WebP 更小才采用,否则回退原格式
+// Transcode GIF/WebP 保留原文件；JPEG/PNG 使用真实质量和方法编码，只有体积更小时采用。
 func (p *Processor) Transcode(srcPath, destDir, fileUUID, srcMime string) (domainupload.ProcessResult, error) {
-	srcData, err := os.ReadFile(srcPath)
+	policy := p.currentPolicy()
+	ctx, done, err := p.begin(policy)
 	if err != nil {
-		return domainupload.ProcessResult{}, fmt.Errorf("读取源文件失败: %w", err)
-	}
-	// GIF/WebP 原样保留
-	if srcMime == "image/gif" || srcMime == "image/webp" {
-		ext := extFromMime(srcMime)
-		dst := filepath.Join(destDir, fileUUID+ext)
-		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-			return domainupload.ProcessResult{}, err
-		}
-		if err := os.WriteFile(dst, srcData, 0o644); err != nil {
-			return domainupload.ProcessResult{}, err
-		}
-		return domainupload.ProcessResult{Path: dst, MimeType: srcMime, Ext: ext}, nil
-	}
-	// JPEG/PNG → 解码 → WebP encode(VP8L 无损)
-	img, err := imaging.Open(srcPath)
-	if err != nil {
-		return domainupload.ProcessResult{}, fmt.Errorf("解码失败: %w", err)
-	}
-	var webpBuf bytes.Buffer
-	if err := webp.Encode(&webpBuf, img, nil); err != nil {
-		return domainupload.ProcessResult{}, fmt.Errorf("WebP 编码失败: %w", err)
-	}
-	// 仅当 WebP 更小才采用,否则回退原格式
-	if webpBuf.Len() < len(srcData) {
-		dst := filepath.Join(destDir, fileUUID+".webp")
-		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-			return domainupload.ProcessResult{}, err
-		}
-		if err := os.WriteFile(dst, webpBuf.Bytes(), 0o644); err != nil {
-			return domainupload.ProcessResult{}, err
-		}
-		return domainupload.ProcessResult{Path: dst, MimeType: "image/webp", Ext: ".webp"}, nil
-	}
-	// 回退原格式
-	ext := extFromMime(srcMime)
-	origDst := filepath.Join(destDir, fileUUID+ext)
-	if err := os.MkdirAll(filepath.Dir(origDst), 0o755); err != nil {
 		return domainupload.ProcessResult{}, err
 	}
-	if err := os.WriteFile(origDst, srcData, 0o644); err != nil {
+	defer done()
+	source, original, err := p.source(srcPath, policy)
+	if err != nil {
 		return domainupload.ProcessResult{}, err
 	}
-	return domainupload.ProcessResult{Path: origDst, MimeType: srcMime, Ext: ext}, nil
+	if source.mime != srcMime {
+		return domainupload.ProcessResult{}, fmt.Errorf("图片 MIME 与文件内容不一致")
+	}
+	data, mime := original, source.mime
+	if source.mime != "image/gif" && source.mime != "image/webp" {
+		encoded, err := encodeWebP(ctx, source.image, policy)
+		if err != nil {
+			return domainupload.ProcessResult{}, err
+		}
+		if len(encoded) < len(original) {
+			data, mime = encoded, "image/webp"
+		}
+	}
+	if int64(len(data)) > policy.MaxOutputBytes {
+		return domainupload.ProcessResult{}, fmt.Errorf("图片超过输出字节限制")
+	}
+	ext := extFromMime(mime)
+	dst := filepath.Join(destDir, fileUUID+ext)
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
+		return domainupload.ProcessResult{}, err
+	}
+	if err := os.WriteFile(dst, data, 0o644); err != nil {
+		return domainupload.ProcessResult{}, err
+	}
+	return domainupload.ProcessResult{Path: dst, MimeType: mime, Ext: ext}, nil
 }
 
-// Thumbnail 生成缩略图(图片用 imaging,最大宽 300px,JPEG 80%；视频用 ffmpeg 抽第 1 秒帧)
+// Thumbnail 保留动画和透明度；不透明静态图使用可配置的 JPEG 缩略图。
 func (p *Processor) Thumbnail(srcPath, fileUUID, storageDir, mime string) string {
-	// 视频用 ffmpeg 抽第 1 秒帧作为缩略图
+	policy := p.currentPolicy()
+	ctx, done, err := p.begin(policy)
+	if err != nil {
+		return ""
+	}
+	defer done()
 	if strings.HasPrefix(mime, "video/") {
-		return p.videoThumbnail(srcPath, fileUUID, storageDir)
+		return p.videoThumbnail(ctx, srcPath, fileUUID, storageDir, policy)
 	}
 	if !strings.HasPrefix(mime, "image/") {
 		return ""
 	}
-	img, err := imaging.Open(srcPath)
+	source, _, err := p.source(srcPath, policy)
 	if err != nil {
-		// 对于无法解码的动图 WebP (VP8X)，直接用原图作为缩略图
-		if mime == "image/webp" {
-			return p.urlPrefix + storageDir + "/" + fileUUID + ".webp"
+		return ""
+	}
+	if source.animated {
+		rel, err := filepath.Rel(p.uploadDir, srcPath)
+		if err != nil || !filepath.IsLocal(rel) {
+			return ""
 		}
+		return strings.TrimSuffix(p.urlPrefix, "/") + "/" + filepath.ToSlash(rel)
+	}
+	img := source.image
+	if img.Bounds().Dx() > policy.ThumbnailWidth {
+		img = imaging.Resize(img, policy.ThumbnailWidth, 0, imaging.Lanczos)
+	}
+	format, ext := imaging.JPEG, ".jpg"
+	if !opaque(img) {
+		format, ext = imaging.PNG, ".png"
+	}
+	buffer := &boundedBuffer{limit: policy.MaxOutputBytes}
+	if err := imaging.Encode(buffer, img, format, imaging.JPEGQuality(policy.ThumbnailQuality)); err != nil {
 		return ""
 	}
-	thumb := imaging.Resize(img, 300, 0, imaging.Lanczos)
-	thumbName := fileUUID + "_thumb.jpg"
+	if ctx.Err() != nil {
+		return ""
+	}
+	thumbName := fileUUID + "_thumb" + ext
 	thumbDir := filepath.Join(p.uploadDir, storageDir)
-	thumbPath := filepath.Join(thumbDir, thumbName)
 	if err := os.MkdirAll(thumbDir, 0o755); err != nil {
 		return ""
 	}
-	if err := imaging.Save(thumb, thumbPath, imaging.JPEGQuality(80)); err != nil {
+	if err := os.WriteFile(filepath.Join(thumbDir, thumbName), buffer.Bytes(), 0o644); err != nil {
 		return ""
 	}
-	return p.urlPrefix + storageDir + "/" + thumbName
+	return strings.TrimSuffix(p.urlPrefix, "/") + "/" + filepath.ToSlash(storageDir) + "/" + thumbName
 }
 
-// videoThumbnail 用 ffmpeg 抽取视频第 1 秒帧生成缩略图
-//
-// ffmpeg 未安装或抽帧失败时降级返回空串并打 warn 日志，不阻断上传主流程。
-// 命令：ffmpeg -i <src> -ss 1 -vframes 1 -vf scale=300:-1 -f image2 <thumb> -y
-func (p *Processor) videoThumbnail(srcPath, fileUUID, storageDir string) string {
+func (p *Processor) videoThumbnail(ctx context.Context, srcPath, fileUUID, storageDir string, policy domainsettings.ImagePolicy) string {
 	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		log.Warn().Msg("ffmpeg 未安装，跳过视频封面生成，上传不受影响")
+		log.Warn().Msg("ffmpeg 未安装，跳过视频封面生成")
 		return ""
 	}
 	thumbName := fileUUID + "_thumb.jpg"
 	thumbDir := filepath.Join(p.uploadDir, storageDir)
-	thumbPath := filepath.Join(thumbDir, thumbName)
 	if err := os.MkdirAll(thumbDir, 0o755); err != nil {
 		return ""
 	}
-	// -ss 1: 抽第 1 秒；-vframes 1: 只抽 1 帧；scale=300:-1: 宽 300px 等比缩放
-	cmd := exec.Command("ffmpeg", "-i", srcPath, "-ss", "1", "-vframes", "1",
-		"-vf", "scale=300:-1", "-f", "image2", thumbPath, "-y")
+	// 经管道限制输出，避免抽帧进程向缓存目录写入不受控文件。
+	cmd := exec.CommandContext(ctx, "ffmpeg", "-v", "error", "-i", srcPath, "-ss", "1", "-vframes", "1", "-vf", "scale="+strconv.Itoa(policy.ThumbnailWidth)+":-1", "-f", "image2pipe", "-vcodec", "mjpeg", "-")
+	buffer := &boundedBuffer{limit: policy.MaxOutputBytes}
+	cmd.Stdout = buffer
 	if err := cmd.Run(); err != nil {
-		log.Warn().Err(err).Str("path", srcPath).Msg("ffmpeg 抽取视频封面失败，跳过封面生成")
+		log.Warn().Err(err).Msg("视频封面生成失败")
 		return ""
 	}
-	return p.urlPrefix + storageDir + "/" + thumbName
+	if err := os.WriteFile(filepath.Join(thumbDir, thumbName), buffer.Bytes(), 0o644); err != nil {
+		return ""
+	}
+	return strings.TrimSuffix(p.urlPrefix, "/") + "/" + filepath.ToSlash(storageDir) + "/" + thumbName
 }
 
-// extFromMime MIME → 扩展名
 func extFromMime(mime string) string {
 	switch mime {
 	case "image/jpeg":

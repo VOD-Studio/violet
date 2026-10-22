@@ -76,7 +76,7 @@ func registerRuntimeSettingsPaths(t *openapi3.T) {
 			{Value: &openapi3.Schema{Required: []string{"values"}, Properties: openapi3.Schemas{"reset": {Value: &openapi3.Schema{Enum: []any{false}}}}}},
 			{Value: &openapi3.Schema{Required: []string{"reset"}, Properties: openapi3.Schemas{"reset": {Value: &openapi3.Schema{Enum: []any{true}}}}, Not: &openapi3.SchemaRef{Value: &openapi3.Schema{Required: []string{"values"}}}}},
 		}
-		if group.path != "rate-limit" {
+		if group.path != "rate-limit" && group.path != "image" {
 			continue
 		}
 		path := "/admin/settings/" + group.path
