@@ -40,7 +40,6 @@ Mermaid 样例 `examples/mermaid.ts` 需要浏览器：`node scripts/render-merm
 | `examples/` | README 样例，每个文件生成一张图 |
 | `docs/` | 样例图与 API 文档（不进入 npm 包） |
 | `scripts/` | 样例图生成、README 同步与装包验收 |
-| `bench/` | 与 Rough.js 的性能对照 |
 
 ## 约定
 
