@@ -588,6 +588,10 @@ _Avoid_: 文档弹层（未表达纸面材质语义）
 **组件库文档（Component Library Docs）**:
 `/ui` 提供安装、主题、组件 API 与可操作示例，由 `web/src/features/ui-docs/` 维护。指南位于 `/ui/guides/<slug>`，组件用法位于 `/ui/components/<name>`；架构与设计规范读取包内同一份正文，预览与复制源码来自同一份 TSX 示例。
 
+**包演示页（Package Workbench）**:
+`@violetjs/*` 独立包在站点上的试玩页，位于导航「更多」组，每项能力一节，路径为 `/<包名>/<节>`。一屏式工作台：左侧能力目录，中间舞台，右侧参数、导出与代码面板；示例代码与包 README 的示例同源。首个为 `/inkline`，其余包沿用同一布局。
+_Avoid_: 实验室（`/lab` 是原型试验场）、组件库文档（`/ui` 只覆盖 `@violet/ui`）
+
 ## 手绘绘图（Sketch Drawing）
 
 **笔（Pen）**:
