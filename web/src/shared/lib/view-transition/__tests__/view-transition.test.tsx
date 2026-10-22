@@ -63,7 +63,7 @@ describe("resolveTransitionKind", () => {
 		expect(resolveTransitionKind("/", "/admin")).toBe("none");
 		expect(resolveTransitionKind("/admin/posts", "/")).toBe("none");
 		expect(resolveTransitionKind("/admin/posts", "/admin/users")).toBe("none");
-		expect(resolveTransitionKind("/", "/lab/sketch")).toBe("none");
+		expect(resolveTransitionKind("/", "/lab/blog")).toBe("none");
 		expect(resolveTransitionKind("/ui/components/button", "/ui/guides/theming")).toBe("none");
 		expect(resolveTransitionKind("/", "/ui")).toBe("fade");
 		expect(resolveTransitionKind("/ui", "/blog")).toBe("fade");

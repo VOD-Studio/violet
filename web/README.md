@@ -127,11 +127,9 @@ Mermaid 图块统一使用手写字体与 `@violetjs/inkline` 笔触（G 笔、�
 
 ## 手绘绘图库
 
-[`@violetjs/inkline`](packages/inkline/README.md) 位于 `packages/inkline/`，不依赖 React、Mermaid 或 Rough.js。文章 Mermaid 图块经 `shared/ui/diagram` 用它渲染；Rough.js 只留给实验室对照页与基准脚本。
+[`@violetjs/inkline`](packages/inkline/README.md) 位于 `packages/inkline/`，不依赖 React、Mermaid 或 Rough.js。文章 Mermaid 图块经 `shared/ui/diagram` 用它渲染。
 
 `/inkline` 是它的包演示页（`src/features/inkline-workbench/`），一屏式工作台：左侧能力目录，中间舞台，右侧参数、导出与代码面板，窄屏改为底部按钮打开的浮层。画稿一节播放咖啡少女与人像，按底纸、线稿、上色分段编排，时间条按段着色、可点击或用键盘跳转；导出一节调用 `@violetjs/inkline/export` 生成 GIF 或 WebM 并提供下载。笔、手法、填充、换色各节直接使用包内 `examples/` 的场景与配色，代码面板展示与 README 同一段源码；能力示例随站点明暗换色，画稿保持原色白纸。重画一节用站点图块管线渲染 `examples/mermaid.ts` 的同一张图。页面使用工具方言，与聊天一样锁定视口、不显示页脚；入口在导航「更多」。
-
-`/lab/sketch` 并排对照 Rough.js 与本库：同一几何、线宽与 seed，可切换咖啡少女插画、人像、基础图元、填充、孔洞规则与真实 Mermaid 布局，并调节笔、压感、手法、1×/3× 缩放和 SVG/Canvas 后端。插画保留 1088×1445 的比例、微笑、眼镜、白花发饰、猫咪杯与手写 “Good morning”；采用少量角色色面、连续中心线与分级线宽，短唇线及瞳孔等点状细节使用独立实墨区域，不以逐色像素碎片叠加还原。插画播放先完成轮廓与细节，再上色；顺序、并行、交错均在阶段内编排，色面在渲染时始终位于线稿下方。人像去掉截图工具栏与边框，以较细的明暗色面保留五官、眼镜、手势与衣褶，沿用原有播放顺序。两种画稿默认 G 笔勾线与实色填充，可切换淡彩；均为矢量，不嵌入位图。控制条提供整图时间轴：播放、暂停、重播、拖动进度、顺序/并行/交错编排与变速。
 
 ## 推文组件包
 
