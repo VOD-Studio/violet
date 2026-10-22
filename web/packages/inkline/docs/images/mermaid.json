@@ -28,11 +28,12 @@
 		"src/pen/ribbon-pen.ts": "79d38cfee5d962390ef33d77d7fae82bf2ef763e4732491405b12898d0303b82",
 		"src/pen/ribbon.ts": "fd7870b4a738d38e7427c5aaab3ced91c2f99f360dbe3d791fc4574f62d4646b",
 		"src/presets.ts": "ac829816c0fcf8a1e57d23aa17993b15acef015b524e3c8ac3c39f5bc2835821",
-		"src/render/canvas.ts": "8045206da9a2974065504d14852e18953cd636956ebd9652a9e1fba76c6454ab",
+		"src/render/canvas.ts": "87948f5dcb1fdec5de8f73ea6a838f8566e3b9fcb9530099246c704a5e49301a",
+		"src/render/paint.ts": "b81ac1b6bd85563275eed7a1b262923608ce3770d5b9d38632d20f0614ffe2c0",
 		"src/render/palette.ts": "9f7641950440499ddbce15484c949dc9e4967db58cdd5893a402f0fe7ef67346",
 		"src/render/svg.ts": "b91a90cedf84f056a02ac34d4c333fd55cb7904d2b0a9bd36d09d72f8113ff1d",
 		"src/render/text-writer.ts": "a9b2ed653a5210d3978589b8a08622f892e3527452ecd932bd31a3c4faa4d4e4",
 		"src/render/tracks.ts": "720433635742f9d05378aaa89cb4a81610b7c61aababbc7ef5709629d011f099"
 	},
-	"image": "37bd5b913df9132672c584b49df4bc2f733352dad28ac8fda87b3fa9317ebbe6"
+	"image": "9c39025e0ca2cc51baf8d48dca11122b09d37e135ae58537ddf5f82245bd4a34"
 }
