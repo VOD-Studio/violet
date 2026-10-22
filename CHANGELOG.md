@@ -7,6 +7,26 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.16.0](https://github.com/VOD-Studio/violet/compare/v2.15.1...v2.16.0) (2026-10-22)
+
+
+### 新增
+
+* **inkline-workbench:** 新增 /inkline 包演示页 ([01f63d1](https://github.com/VOD-Studio/violet/commit/01f63d1cf52e9dac0bc75a6316982bca9b5017e9))
+* **inkline:** 支持把手绘时间轴导出为 GIF 与 WebM ([d71356e](https://github.com/VOD-Studio/violet/commit/d71356e24bf4d33f1233c0dd1599d908baec8890))
+* **inkline:** 支持把手绘时间轴导出为 GIF 与 WebM ([80b6569](https://github.com/VOD-Studio/violet/commit/80b6569c93e4e74cd2a294e542c543d475bd3c08))
+
+
+### 修复
+
+* **inkline:** 保留 WebM 导出的固定帧率 ([7e8410c](https://github.com/VOD-Studio/violet/commit/7e8410cd7556f937bee73d6c1d264c7c5d892f9c))
+
+
+### 重构
+
+* **inkline:** 拆出可指定像素尺寸的 Canvas 绘制 ([65e9441](https://github.com/VOD-Studio/violet/commit/65e944182b90b9f7d477c4316bd5c15e0185d5b4))
+* **inkline:** 样例导出场景、绘制选项与配色 ([9dbd81a](https://github.com/VOD-Studio/violet/commit/9dbd81a0da0f1adc77d7ab2846d949387dad2142))
+
 ## [2.15.1](https://github.com/VOD-Studio/violet/compare/v2.15.0...v2.15.1) (2026-10-21)
 
 
