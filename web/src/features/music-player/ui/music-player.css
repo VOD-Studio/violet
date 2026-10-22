@@ -12,7 +12,7 @@
 	--kite-chip: var(--muted);
 	--kite-chip-strong: var(--accent);
 	--kite-sheet: var(--popover);
-	--kite-glass: color-mix(in oklch, var(--card) 88%, transparent);
+	--kite-glass: color-mix(in oklch, var(--card) 72%, transparent);
 	--kite-glass-edge: var(--border);
 	--kite-glass-rim: var(--border);
 	--kite-ring-track: var(--muted);
