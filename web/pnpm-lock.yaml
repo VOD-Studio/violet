@@ -321,9 +321,6 @@ importers:
       remark-math:
         specifier: ^6.0.0
         version: 6.0.0
-      roughjs:
-        specifier: 4.6.6
-        version: 4.6.6
       shiki:
         specifier: ^4.3.0
         version: 4.3.1
@@ -448,12 +445,18 @@ importers:
       '@types/node':
         specifier: ^22.10.2
         version: 22.20.0
+      '@types/omggif':
+        specifier: ^1.0.5
+        version: 1.0.5
       esbuild:
         specifier: ^0.28.1
         version: 0.28.1
       mermaid:
         specifier: ^11.16.0
         version: 11.16.0
+      omggif:
+        specifier: ^1.0.10
+        version: 1.0.10
       typescript:
         specifier: ^7.0.2
         version: 7.0.2
@@ -3068,6 +3071,9 @@ packages:
   '@types/node@22.20.0':
     resolution: {integrity: sha512-QWlFW2wf3nTjC13/DqRnBpR4ZO36VJH/JVBkA/vcnmbTBNQIlnObqyqZE1tUR7+Ni23Lda8R1BxMfbXRpCUx5g==}
 
+  '@types/omggif@1.0.5':
+    resolution: {integrity: sha512-gDQJflz1rOgEcUXkMAl80bDGN46f5mp8GbcM5dyvq+zsFV6YRBRtmNxlJJ5mjY77T7BRkRFzdIBVmK90QYhCxA==}
+
   '@types/pngjs@6.0.5':
     resolution: {integrity: sha512-0k5eKfrA83JOZPppLtS2C7OUtyNAl2wKNxfyYl9Q5g9lPkgBl/9hNyAu6HuEH2J4XmIv2znEpkDd0SaZVxW6iQ==}
 
@@ -5036,6 +5042,9 @@ packages:
 
   ogl@1.0.11:
     resolution: {integrity: sha512-kUpC154AFfxi16pmZUK4jk3J+8zxwTWGPo03EoYA8QPbzikHoaC82n6pNTbd+oEaJonaE8aPWBlX7ad9zrqLsA==}
+
+  omggif@1.0.10:
+    resolution: {integrity: sha512-LMJTtvgc/nugXj0Vcrrs68Mn2D1r0zf630VNtqtpI1FEO7e+O9FP4gqs9AcnBaSEeoHIPm28u6qgPR0oyEpGSw==}
 
   on-finished@2.4.1:
     resolution: {integrity: sha512-oVlzkg3ENAhCk2zdv7IJwd/QUD4z2RxRwpkcGY8psCVcCYZNq4wYnVWALHM+brtuJjePWiYF/ClmuDr8Ch5+kg==}
@@ -8839,6 +8848,8 @@ snapshots:
     dependencies:
       undici-types: 6.21.0
 
+  '@types/omggif@1.0.5': {}
+
   '@types/pngjs@6.0.5':
     dependencies:
       '@types/node': 22.20.0
@@ -10909,6 +10920,8 @@ snapshots:
   obug@2.1.3: {}
 
   ogl@1.0.11: {}
+
+  omggif@1.0.10: {}
 
   on-finished@2.4.1:
     dependencies:

@@ -15,6 +15,7 @@ export interface TransitionRule {
 const ADMIN = ["/admin", "/admin/*"];
 const LAB = ["/lab", "/lab/*"];
 const UI_DOCS = ["/ui", "/ui/*"];
+const WORKBENCH = ["/inkline", "/inkline/*"];
 
 const eitherIn = (patterns: readonly string[]) => (from: string | undefined, to: string) =>
 	matchesAny(patterns, to) || matchesAny(patterns, from);
@@ -34,6 +35,12 @@ export const TRANSITION_RULES: readonly TransitionRule[] = [
 		id: "ui-docs-internal",
 		kind: "none",
 		applies: (from, to) => matchesAny(UI_DOCS, from) && matchesAny(UI_DOCS, to),
+	},
+	// 包演示页切换各节时工作台保持挂载，只换舞台与面板内容。
+	{
+		id: "workbench-internal",
+		kind: "none",
+		applies: (from, to) => matchesAny(WORKBENCH, from) && matchesAny(WORKBENCH, to),
 	},
 ];
 

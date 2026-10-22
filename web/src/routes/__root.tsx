@@ -109,13 +109,19 @@ function RootComponent() {
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
 	const isAdminRoute = pathname.startsWith("/admin");
 	const isChatRoute = pathname === "/chat" || pathname.startsWith("/chat/");
-	const isFullscreenRoute = isChatRoute;
+	// 包演示页是一屏式工作台，与聊天一样锁定视口、不显示页脚
+	const isWorkbenchRoute = pathname === "/inkline" || pathname.startsWith("/inkline/");
+	const isFullscreenRoute = isChatRoute || isWorkbenchRoute;
 	const isProfileRoute = pathname.startsWith("/profile");
-	// 工具方言：个人中心与聊天已落地（.dialect-tool）；/lab 实验豁免保持根作用域
+	// 工具方言：个人中心、聊天与包演示页（.dialect-tool）；/lab 实验豁免保持根作用域
 	// 中性，实验样式不得反向改写正式页面 token
 	const isLabRoute = pathname.startsWith("/lab");
 	const shellDialect =
-		isProfileRoute || isChatRoute ? "dialect-tool" : isLabRoute ? null : "dialect-public";
+		isProfileRoute || isChatRoute || isWorkbenchRoute
+			? "dialect-tool"
+			: isLabRoute
+				? null
+				: "dialect-public";
 	// 组件库文档的示例需要中性画布，星图点缀只铺在公开内容页
 	const isUiDocsRoute = pathname === "/ui" || pathname.startsWith("/ui/");
 	const showBackdrop = shellDialect === "dialect-public" && !isUiDocsRoute;
@@ -133,7 +139,7 @@ function RootComponent() {
 				// 后台路由：完全独立的布局，不包含前台 Header/Footer
 				<Outlet />
 			) : (
-				// 前台路由：包含 Header/Footer 的标准布局（/chat 隐藏 Footer 并锁定视口高度）
+				// 前台路由：包含 Header/Footer 的标准布局（/chat 与 /inkline 隐藏 Footer 并锁定视口高度）
 				<div
 					className={cn(
 						"flex min-h-screen flex-col",

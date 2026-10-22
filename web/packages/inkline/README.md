@@ -14,6 +14,7 @@ Hand-drawn vector inking for SVG and Canvas. Give it shapes or SVG paths and it 
 - **Fills and wash.** Seven pattern fills, plus a watercolor-like wash that leaves paper-white highlights and hatches the shadow side.
 - **Works with your diagrams.** Redraw Mermaid, Graphviz or D3 output in place with `inkSvg`, keeping its layout, text and colors.
 - **Draw-on animation.** Replay a drawing stroke by stroke, in sequence, in parallel or staggered. Seek, pause and reverse without redrawing.
+- **GIF and WebM export.** Render the animation offline into a GIF or a WebM video, at any size, frame rate and length.
 - **Deterministic.** The same input and seed always give the same output, and editing one shape never changes the others.
 - **Small and framework-agnostic.** About 10 KB gzipped with the default pen and the SVG renderer, and only one dependency.
 
@@ -42,8 +43,10 @@ const drawing = draw(
 	{ style: { ...styles.natural, fill: fills.hachure }, seed: 35 },
 );
 
+const palette = { paper: "#fffdf7", ink: "#252332", surface: "#8f7ad1" };
+
 // SVG markup as a string. In the browser, mountSvg(drawing, palette) returns an <svg> element.
-const svg = renderSvg(drawing, { paper: "#fffdf7", ink: "#252332", surface: "#8f7ad1" });
+const svg = renderSvg(drawing, palette);
 ```
 
 <!-- /example -->
@@ -369,6 +372,36 @@ export function animateCard(host: HTMLElement) {
 
 Strokes are revealed along their path, variable-width strokes grow from the start, and fills fade in. Animation only changes what is visible and never redraws. On a canvas, call `drawCanvas(drawing, canvas, palette, { schedule, time })` on every frame.
 
+### Export
+
+![The card animation exported as a GIF](https://raw.githubusercontent.com/VOD-Studio/violet/release/2.0/web/packages/inkline/docs/images/export.gif)
+
+<!-- example: export -->
+
+```ts
+import { createSchedule, draw, fills, rect, styles } from "@violetjs/inkline";
+import { exportGif } from "@violetjs/inkline/export";
+
+/** Call in a browser: renders the draw-on animation offline and resolves with a GIF. */
+export async function exportCard(): Promise<Blob> {
+	const drawing = draw(
+		{
+			width: 240,
+			height: 150,
+			items: [{ id: "card", path: rect(20, 20, 200, 110, 12), fillRole: "surface" }],
+		},
+		{ style: { ...styles.natural, fill: fills.hachure }, seed: 35 },
+	);
+	const palette = { paper: "#fffdf7", ink: "#252332", surface: "#8f7ad1" };
+	const schedule = createSchedule(drawing, { mode: "stagger" });
+	return exportGif(drawing, palette, { schedule, width: 360, hold: 1.5 });
+}
+```
+
+<!-- /example -->
+
+`exportGif` paints the schedule offline, frame by frame, so the file does not depend on playback speed or pauses. Pass `duration` to fit a long schedule into a shorter file. `exportWebm` writes a WebM video through WebCodecs; call `canExportWebm()` first to see whether the browser can encode it. Both need a browser. [Every option](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/inkline/docs/api.md#export) is in the API reference.
+
 ## API
 
 The [API reference](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/inkline/docs/api.md) documents every export and option. The main entry points are:
@@ -379,11 +412,13 @@ The [API reference](https://github.com/VOD-Studio/violet/blob/release/2.0/web/pa
 | `@violetjs/inkline/svg` | `renderSvg`, `mountSvg`, `seekSvg`, `updateSvgPalette`, `pathData` |
 | `@violetjs/inkline/canvas` | `drawCanvas` |
 | `@violetjs/inkline/dom` | `inkSvg` |
+| `@violetjs/inkline/export` | `exportGif`, `exportWebm`, `canExportWebm` |
 
 ## Requirements
 
 - ES2022 and native ES modules: browsers released in 2022 or later, or Node.js 18 or later for `renderSvg`.
 - `mountSvg`, `seekSvg`, `drawCanvas` and `inkSvg` need a browser DOM.
+- `exportGif` and `exportWebm` need `OffscreenCanvas`; `exportWebm` also needs WebCodecs.
 - TypeScript 5 or later for the bundled type definitions.
 
 ## License

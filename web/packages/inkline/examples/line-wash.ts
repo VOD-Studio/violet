@@ -29,16 +29,16 @@ const items: SceneItem[] = [
 ];
 // #endregion
 
-export const svg = renderSvg(
-	draw({ width: 400, height: 280, items }, { style, seed: 7, width: 2.4 }),
-	{
-		paper: "#fffdf7",
-		ink: "#4a3431",
-		grass: "#cfe6b8",
-		sun: "#f7dd8a",
-		wall: "#f4e3cf",
-		roof: "#e8a28f",
-		door: "#b9d3e8",
-		glass: "#d9ecf6",
-	},
-);
+export const scene = { width: 400, height: 280, items };
+export const options = { style, seed: 7, width: 2.4 };
+export const palette = {
+	paper: "#fffdf7",
+	ink: "#4a3431",
+	grass: "#cfe6b8",
+	sun: "#f7dd8a",
+	wall: "#f4e3cf",
+	roof: "#e8a28f",
+	door: "#b9d3e8",
+	glass: "#d9ecf6",
+};
+export const svg = renderSvg(draw(scene, options), palette);

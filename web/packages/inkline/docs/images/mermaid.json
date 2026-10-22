@@ -14,6 +14,11 @@
 		"src/dom/index.ts": "b17547c31dfe575445dd71c47b141e0b5b77e2181cfa597fbce31f886a9e5fce",
 		"src/dom/ink-svg.ts": "bca938ad722f42fc82cf64d70e04b6ad9d6374fd75c81f1ee61f9516fd7c479e",
 		"src/draw.ts": "3f99c06d819b0994e64902e02dc090e5d0112547046d82aa829634a51a0a2b40",
+		"src/export/color-table.ts": "18ac27021b1a198d5d8bbe44ab6bb118f0f776a00d59954c9b0707a0bb19391a",
+		"src/export/frames.ts": "0e0faa88fa8355b0cb187a096d24021d84ab42205987d06141d95c9e7bebca24",
+		"src/export/gif.ts": "4b6ed9a65692ab74bed692cf706c204ce554fc4bd816d8155a573868b2755bf7",
+		"src/export/index.ts": "8a9f70336d362d968d8cdbded506e0de7275fee926e55805a697de1d86e1a76c",
+		"src/export/webm.ts": "41c08621df1a35441d3c760cb47a2dfb90b86d9ef944be90fb1f721d39591f08",
 		"src/fill/patterns.ts": "552781a4842c7be683c0dd06ce0a8fb6263dfbe90f7ff7dd49b1c20376b0d155",
 		"src/fill/scan.ts": "7aae7e8077a459f9bd433af262648cdb8f6941d767c53c54c02bea4bee30d43e",
 		"src/fill/wash.ts": "b2400c99f27b508f7e81bc561da047cd545a4ec05dbf8527bf07766f5cd3b18d",
@@ -28,11 +33,12 @@
 		"src/pen/ribbon-pen.ts": "79d38cfee5d962390ef33d77d7fae82bf2ef763e4732491405b12898d0303b82",
 		"src/pen/ribbon.ts": "fd7870b4a738d38e7427c5aaab3ced91c2f99f360dbe3d791fc4574f62d4646b",
 		"src/presets.ts": "ac829816c0fcf8a1e57d23aa17993b15acef015b524e3c8ac3c39f5bc2835821",
-		"src/render/canvas.ts": "8045206da9a2974065504d14852e18953cd636956ebd9652a9e1fba76c6454ab",
+		"src/render/canvas.ts": "87948f5dcb1fdec5de8f73ea6a838f8566e3b9fcb9530099246c704a5e49301a",
+		"src/render/paint.ts": "b81ac1b6bd85563275eed7a1b262923608ce3770d5b9d38632d20f0614ffe2c0",
 		"src/render/palette.ts": "9f7641950440499ddbce15484c949dc9e4967db58cdd5893a402f0fe7ef67346",
 		"src/render/svg.ts": "b91a90cedf84f056a02ac34d4c333fd55cb7904d2b0a9bd36d09d72f8113ff1d",
 		"src/render/text-writer.ts": "a9b2ed653a5210d3978589b8a08622f892e3527452ecd932bd31a3c4faa4d4e4",
 		"src/render/tracks.ts": "720433635742f9d05378aaa89cb4a81610b7c61aababbc7ef5709629d011f099"
 	},
-	"image": "37bd5b913df9132672c584b49df4bc2f733352dad28ac8fda87b3fa9317ebbe6"
+	"image": "3c3b2c55d7c772d36e5d49fdf573e936efd36f3e97f99df8f6c2dce7dfc30d15"
 }
