@@ -137,7 +137,7 @@ api/
 | **upload** | upload | media | 分片上传（秒传/断点续传/合并）、文件管理 |
 | **image** | image | image | 图片处理 |
 | **tweet** | tweet | tweet | 推文发布与互动、免凭据 X 原文预览、共享来源刷新和撤回 |
-| **settings** | settings | settings | 站点配置（key-value） |
+| **settings** | settings | settings | 站点配置与分组运行策略（版本 CAS、字段来源、当前实例有效快照） |
 | **tag** | tag | tag | 标签 CRUD |
 | **github** | github | github | GitHub 贡献日历/仓库数据（GraphQL API） |
 | **mcp** | — | mcp | MCP 服务（写作/评论检索/RSS 抓取，按 PAT scope 拆分） |
