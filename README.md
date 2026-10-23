@@ -8,7 +8,7 @@
 
 [在线体验](https://xunrua.top) · [快速开始](#快速开始) · [生产部署](#生产部署) · [文档索引](docs/README.md)
 
-<!-- 界面预览位置：待线上版本更新后，补充 https://xunrua.top 的桌面截图；不使用本地测试数据或占位图片。 -->
+![Violet 首页、博客列表与文章阅读效果图](docs/images/violet-preview.webp)
 
 ## 功能
 
