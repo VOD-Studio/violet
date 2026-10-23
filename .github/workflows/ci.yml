@@ -146,6 +146,20 @@ jobs:
         if: needs.changes.outputs.api == 'true'
         run: go build ./...
 
+      - name: Prepare production WebP encoder
+        if: needs.changes.outputs.api == 'true'
+        run: |
+          encoder_image="violet-webp-encoder:ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          docker build --target webp-builder --tag "$encoder_image" .
+          encoder_container="$(docker create "$encoder_image" /bin/true)"
+          trap 'docker rm -f "$encoder_container"; docker image rm "$encoder_image"' EXIT
+          encoder_directory="$RUNNER_TEMP/violet-webp"
+          mkdir -p "$encoder_directory"
+          docker cp "${encoder_container}:/cwebp" "$encoder_directory/cwebp"
+          chmod +x "$encoder_directory/cwebp"
+          "$encoder_directory/cwebp" -version
+          echo "$encoder_directory" >> "$GITHUB_PATH"
+
       - name: Go test
         if: needs.changes.outputs.api == 'true'
         env:

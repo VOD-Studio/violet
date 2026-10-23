@@ -51,7 +51,7 @@ func TestAnimatedWebPValidatesFramesAndPreservesBytes(t *testing.T) {
 	require.NotEmpty(t, payload)
 	vp8x := make([]byte, 10)
 	vp8x[0], vp8x[4], vp8x[7] = 18, 15, 15
-	frame := make([]byte, 16)
+	frame := make([]byte, 16, 16+len(payload))
 	frame[6], frame[9], frame[12] = 15, 15, 100
 	frame = append(frame, payload...)
 	data := []byte("RIFF\x00\x00\x00\x00WEBP")
