@@ -191,17 +191,6 @@ func (s *MediaStore) download(ctx context.Context, source, dir, fileID string, t
 	if err != nil || detected != declared {
 		return "", 0, 0, errors.New("image MIME mismatch")
 	}
-	if format == "webp" {
-		file, err := os.Open(path)
-		if err != nil {
-			return "", 0, 0, err
-		}
-		_, _, decodeErr = image.Decode(file)
-		_ = file.Close()
-		if decodeErr != nil {
-			return "", 0, 0, errors.New("invalid WebP image")
-		}
-	}
 	if _, err := s.processor.Validate(path); err != nil {
 		return "", 0, 0, err
 	}
@@ -209,11 +198,7 @@ func (s *MediaStore) download(ctx context.Context, source, dir, fileID string, t
 	if err := s.storage.Move(path, filepath.Join(dir, name)); err != nil {
 		return "", 0, 0, err
 	}
-	width, height := s.processor.Dimensions(filepath.Join(dir, name))
-	if width <= 0 || height <= 0 {
-		return "", 0, 0, errors.New("invalid image dimensions")
-	}
-	return name, width, height, nil
+	return name, config.Width, config.Height, nil
 }
 
 func mustReadHeader(path string) []byte {
