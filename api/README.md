@@ -40,10 +40,6 @@ make api     # 启动 API
 
 服务默认监听 `:9090`，API 前缀 `/api/v1`。
 
-文章仅提交 `content_md` 时由 `application/markdown` 的 Goldmark 解析器生成 HTML：公式和高亮遵守代码、转义与围栏边界；Mermaid 与可运行围栏生成保留源码的语义载体。可运行标记支持 `run` / `runnable`，资源参数允许含空格的 JSON。`application/post` 的 HTML 转 Markdown 保留脚注重复引用、多段正文、代码围栏及带属性的表格；具体格式见[编辑器手册·存储与有损](../web/src/features/editor/docs/storage.md)。
-
-GitHub 提示块识别独占首行的 `[!NOTE]`、`[!TIP]`、`[!IMPORTANT]`、`[!WARNING]`、`[!CAUTION]`，普通引用和代码示例保持原义。HTML 转 Markdown 保留原生 `<sub>/<sup>` 与 `<details>/<summary>`，载体内换行使用字符实体保留；若载体内部包含脚注引用，则保留整篇 HTML，避免转换定义时更换 ID 导致断链。已保存的 HTML 不会因解析器更新而自动重写。
-
 ### 镜像构建
 
 生产 Dockerfile 的 `APK_MIRROR` 构建参数默认使用 `mirrors.aliyun.com`，下载失败时回退 Alpine 官方源。GitHub 官方 runner 上的 CI 与发布构建传入 `APK_MIRROR=dl-cdn.alpinelinux.org`；国内自托管 CI 保留国内源，避免跨地域下载编译依赖。
@@ -88,6 +84,13 @@ api/
 
 **核心原则**：依赖只能从外向内（interfaces → application → domain ← infrastructure）。domain 层不依赖任何其他层。
 
+## 正文处理
+
+- 文章提交 `content_md` 时由 Goldmark 生成 HTML：Mermaid 与可运行围栏保留源码的语义载体，可运行标记支持 `run` / `runnable`。
+- HTML 转 Markdown 保留脚注（含重复引用）、多段正文、代码围栏、带属性表格与原生 `<sub>/<sup>`、`<details>/<summary>`；正文含脚注引用时整篇保留 HTML，避免引用断链。
+- GitHub 提示块识别独占首行的 `[!NOTE]`、`[!TIP]`、`[!IMPORTANT]`、`[!WARNING]`、`[!CAUTION]`；已保存的 HTML 不会因解析器更新自动重写。
+- 具体格式契约见[编辑器手册·存储与有损](../web/src/features/editor/docs/storage.md)。
+
 ## 认证模型：Opaque Session Cookie
 
 项目已用 **opaque session cookie** 取代 access/refresh JWT：
@@ -114,7 +117,6 @@ api/
 - `PATCH /auth/profile` 接受可选的 `cover_url`：省略时保留原值，空串移除封面；不改变头像或简介。
 - `GET /auth/me` 与 `GET /users/{username}` 返回 `cover_url`，未设置时为空串。
 - GIF 保留原文件与动画，URL 的 `crop=x,y,width,height` 表示归一化展示选区；静态图片可使用裁剪后的文件。
-- 数据库迁移 `133_add_user_cover` 为既有用户提供空封面默认值。
 
 ## 业务模块
 
@@ -163,13 +165,7 @@ api/
 
 > **注意**：`media` application 层服务 emoji/upload 两个 domain，共享文件存储基础设施。
 
-旧音乐实现已移除；历史 `playlists`、`music_settings` 表及其中的数据保留，当前应用不再读写或通过 AutoMigrate 管理这两张表。新的 Kite 音乐模块使用迁移 `140_add_music_admin` 创建的 `music_account`、`music_login_challenges` 与 `music_featured_playlists`，不恢复旧解析服务、播放器设置或旧权限。通用音频文件上传与素材管理不受影响。
-
-迁移 `141_music_account_expiry` 为站点账号增加持久化失效标记。部署新 API 前需执行迁移；回滚仅移除此标记，不删除 Cookie、账号资料或展示歌单。
-
-迁移 `139_retire_playlist_permissions` 回收 `playlist:view/create/update/delete/toggle` 的角色授权并删除权限点，仅清理不再包含其他子节点的 `playlist` 菜单。回滚只恢复权限定义、菜单及默认 `admin` 角色授权，不恢复已回收的自定义授权；历史歌曲权限已由迁移 `055_remove_dead_permissions` 退役。
-
-`POST /uploads` 与 `GET /uploads/instant` 只对磁盘上仍存在的素材返回秒传成功。数据库记录存在但文件丢失时，记录保留并标记为 `failed`，重新上传会创建可读取的新文件；权限等读取错误直接返回错误，不当作秒传未命中。已丢失的图片字节无法从数据库恢复，原有失效地址需重新上传后替换。
+## 关键接口
 
 ### 入口限流
 
@@ -182,8 +178,6 @@ api/
 `GET/PUT /admin/settings/upload-queue` 配置浏览器后续文件调度，使用相同的版本与权限契约。`POST /uploads` 可携带客户端 UUID `clientUploadId`；同一文件的重试复用该 ID，并按返回的 `chunk_size` 和 `uploaded_chunks` 续传。未携带 ID 的旧客户端保留按本人文件哈希续传的入口。
 
 `DELETE /uploads/{id}` 对尚未初始化的稳定 ID 同样记录取消。响应 `{completed: false}` 表示取消已提交；若合并先完成，则返回 `{completed: true, file: ...}`，不撤销正式文件。文件记录与会话完成结果在同一事务提交；取消赢得竞争时，合并返回 409 并清除未提交文件，重复完成返回原文件结果。
-
-迁移 `142_upload_completion_result` 增加已完成文件引用。回滚仅移除结果列与取消墓碑，不删除正式素材；部署新 API 前须执行迁移。
 
 ### 图片处理与派生缓存
 
@@ -242,13 +236,9 @@ api/
 
 二维码挑战绑定发起管理员，三分钟绝对过期、一次性消费；轮询建议约两秒，关闭时调用取消接口，过期/确认后停止。退出会使旧挑战和在途续期结果失效。Kite 服务鉴权错误与网易云登录过期均不是博客登录失效，不返回会触发本站退出的 401。
 
-Violet API 的 `MusicRenewalJob` 每 24 小时调用一次账号续期用例，首次在进程启动 24 小时后执行，重启会重新计时；沿用当前单实例后台任务模式，不依赖浏览器页面或外部 cron。未配置 Kite、缺少凭据加密密钥、未连接或已确认失效时跳过，不先请求上游状态。每轮串行执行，临时故障仅记录安全错误，下一周期再尝试；进程关闭会取消在途请求。
-
-自动续期与手动刷新共用完整 Cookie 替换及账号版本校验。`LOGIN_REQUIRED` 会持久化失效标记并推进凭据版本，保留加密 Cookie 和账号资料；后台直接返回 `expired`，公开播放模式切为 `anonymous`，旧账号播放缓存失效，免费歌不带 Cookie 解析。失效账号停止自动续期，重新扫码或手动续期成功后恢复账号模式。网络或服务鉴权故障不冒充账号失效；退出或换号后，旧版本的成功或失效结果都不能覆盖当前账号。
+`MusicRenewalJob` 每 24 小时自动续期一次（进程启动 24 小时后首跑，重启重新计时），未配置 Kite、未连接或已失效时跳过。续期收到 `LOGIN_REQUIRED` 时持久化失效标记：后台返回 `expired`，公开播放切为 `anonymous`，免费歌不带 Cookie 解析；重新扫码或手动续期成功后恢复账号模式。网络或服务鉴权故障不冒充账号失效。
 
 Kite 连接故障、超时、无效响应和服务令牌错误映射为 `500 INTERNAL_ERROR`；网易云登录过期或请求参数错误仍为 `400 BAD_REQUEST`。错误响应不透出上游响应体或凭据，也不清除博客 Session。账号退出接口保留上述「本地先断开、上游失败明确返回」的独立语义。
-
-账号状态机、取消竞态和退出失败通过独立 PostgreSQL 与确定性协议夹具验证；真实 Kite 的搜索、公开歌单、歌曲 URL、歌词和二维码待扫状态已实跑。真实扫码确认、真实账号续期及私有歌单验收仍需用户参与，夹具不能替代该验收。
 
 ### 项目路线图接口
 
@@ -300,7 +290,7 @@ Kite 连接故障、超时、无效响应和服务令牌错误映射为 `500 INT
 
 X 获取与图片下载逐请求沿用部署已有的 `HTTPS_PROXY` / `HTTP_PROXY` / `NO_PROXY`：目标始终限制为上述 HTTPS 白名单（含每次重定向）；环境代理是运维配置的可信出站边界，未配置代理或匹配 `NO_PROXY` 时仍使用 DNS/IP SSRF 安全直连，不回退到无校验网络请求。生产 Compose 已注入已有出站代理；直连 `pbs.twimg.com` 被网络阻断时，勿只核对来源链接在个人浏览器是否可打开，应检查 API 容器的代理连通性。
 
-原作者头像按真实格式校验后保存为该版本目录下的 `avatar.jpg`（PNG/GIF/WebP 使用相应扩展名）。头像确实不存在或非致命下载失败时保持空 URL，由界面使用姓名占位，仅服务端记录失败，不混入投票等内容缺失提示。历史快照不会因代码升级立即重写；恢复网络后可调用上表的共享原文刷新接口。即使原文指纹未变化，缺少本站头像且来源仍提供头像 URL 的快照也会重新落盘；嵌套引用沿同一保存链修复，无需重建本站转发。
+原作者头像校验格式后保存到该版本目录；不存在或下载失败时保持空 URL，界面使用姓名占位，仅服务端记录失败。历史快照不因代码升级重写，恢复网络后可用上表的共享原文刷新接口补齐。
 
 ## 依赖注入
 
@@ -457,7 +447,6 @@ make help         # 查看所有命令
 | `resend_api_key` | Resend 邮件 API Key |
 | `web_push.*` | 浏览器 Web Push 的 VAPID 公钥、私钥与 subject；私钥仅从环境变量读取 |
 
-`GET /api/v1/chat/push/config` 与 `GET /api/v1/notifications/push/config` 可传 `endpoint_hash`（浏览器订阅地址的 SHA-256 十六进制指纹），返回当前登录用户在对应通道的 `subscribed` 状态；未传时为 `false`，不返回订阅地址或密钥。
 | `superadmin.*` | 初始超级管理员账户 |
 
 > 各键上方的行内注释标注对应的 env 覆盖名；敏感值一律走环境变量，不写入 `config.yaml`。
