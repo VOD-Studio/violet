@@ -41,6 +41,7 @@ export function EmojiManageDialog({ open, onOpenChange, group }: EmojiManageDial
 	const deleteEmoji = useDeleteEmoji();
 
 	const [activeTab, setActiveTab] = useState("manage");
+	const [uploadBusy, setUploadBusy] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [currentPage, setCurrentPage] = useState(1);
 	const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -58,6 +59,12 @@ export function EmojiManageDialog({ open, onOpenChange, group }: EmojiManageDial
 	// 内层弹窗（编辑/删除确认）打开时，阻止外层被 Radix 嵌套关闭事件连关。
 	const handleOpenChange = (o: boolean) => {
 		if (!o && innerDialog !== null) return;
+		if (
+			!o &&
+			uploadBusy &&
+			!window.confirm("仍有表情排队或上传，关闭将取消未完成项。是否关闭？")
+		)
+			return;
 		onOpenChange(o);
 	};
 
@@ -213,7 +220,15 @@ export function EmojiManageDialog({ open, onOpenChange, group }: EmojiManageDial
 				<div className="flex h-full flex-col">
 					<Tabs
 						value={activeTab}
-						onValueChange={setActiveTab}
+						onValueChange={(tab) => {
+							if (
+								uploadBusy &&
+								tab !== activeTab &&
+								!window.confirm("切换标签将取消未完成上传，是否继续？")
+							)
+								return;
+							setActiveTab(tab);
+						}}
 						className="flex h-full flex-col overflow-hidden"
 					>
 						<TabsList className="shrink-0">
@@ -264,7 +279,11 @@ export function EmojiManageDialog({ open, onOpenChange, group }: EmojiManageDial
 						</TabsContent>
 
 						<TabsContent value="upload" className="mt-4 flex-1 overflow-y-auto">
-							<EmojiUploader onUpload={handleUpload} maxFiles={20} />
+							<EmojiUploader
+								onUpload={handleUpload}
+								maxFiles={20}
+								onBusyChange={setUploadBusy}
+							/>
 						</TabsContent>
 					</Tabs>
 				</div>

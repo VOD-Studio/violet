@@ -1,5 +1,6 @@
 import { useChunkedUpload } from "@features/upload/hooks/use-chunked-upload";
 import { useFileSelection } from "@features/upload/hooks/use-file-selection";
+import { useUploadQueue } from "@features/upload/hooks/use-upload-queue";
 import { imageUrl } from "@shared/lib/image-url";
 import { Button } from "@violet/ui";
 
@@ -14,22 +15,19 @@ export interface UploadResult {
 	thumbnail?: string;
 }
 
-type ItemStatus = "uploading" | "done" | "error";
-
-interface UploadItem<T> {
-	id: string;
-	file: File;
-	status: ItemStatus;
-	progress: number; // 0-100
-	result?: T;
-	error?: string;
-}
-
 interface UploaderProps<T extends UploadResult> {
 	/** 自定义单文件上传；省略时使用默认分片上传。 */
-	upload?: (file: File, onProgress?: (percent: number) => void) => Promise<T>;
+	upload?: (
+		file: File,
+		onProgress?: (percent: number) => void,
+		signal?: AbortSignal,
+	) => Promise<T>;
 	/** 单文件成功回调，调用方据此落库 */
 	onUploaded?: (result: T, file: File) => void;
+	/** 父级关闭入口应在存在未完成上传时确认。 */
+	onBusyChange?: (busy: boolean) => void;
+	/** 仅禁止追加选择，不中断已排队任务。 */
+	disabled?: boolean;
 	/** 用途分类（仅默认分片上传模式生效），默认 material */
 	purpose?: string;
 	/** 接受的 MIME 或扩展名，逗号分隔。 */
@@ -52,6 +50,8 @@ export function Uploader<T extends UploadResult>({
 	upload: customUpload,
 	onUploaded,
 	purpose = "material",
+	onBusyChange,
+	disabled = false,
 	accept = "image/*",
 	maxSize = DEFAULT_MAX_SIZE,
 	maxFiles = 20,
@@ -59,61 +59,39 @@ export function Uploader<T extends UploadResult>({
 	hint,
 	className,
 }: UploaderProps<T>) {
-	const idRef = useRef(0);
-	const [items, setItems] = useState<UploadItem<T>[]>([]);
+	const { queue, items, busy, now, policy } = useUploadQueue<T>(onBusyChange);
 	const [isDragActive, setIsDragActive] = useState(false);
+	// 并发完成时读取最新回调，避免消费者用旧列表覆盖其他文件的结果。
+	const uploadedRef = useRef(onUploaded);
+	uploadedRef.current = onUploaded;
 
 	const { uploadFile: chunkedUpload } = useChunkedUpload({ purpose });
 
-	const updateItem = useCallback((id: string, updates: Partial<UploadItem<T>>) => {
-		setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...updates } : it)));
-	}, []);
-
-	const uploadOne = useCallback(
-		(item: UploadItem<T>) => {
-			updateItem(item.id, { status: "uploading", progress: 0 });
-
-			const onProgress = (percent: number) => {
-				updateItem(item.id, { progress: percent });
-			};
-
-			const run = customUpload
-				? customUpload(item.file, onProgress)
-				: (chunkedUpload(item.file, (p) => onProgress(p.percent)) as unknown as Promise<T>);
-
-			run.then((result) => {
-				updateItem(item.id, { status: "done", result, progress: 100 });
-				onUploaded?.(result, item.file);
-				toast.success(`「${item.file.name}」上传成功`);
-			}).catch((err: unknown) => {
-				updateItem(item.id, {
-					status: "error",
-					progress: 0,
-					error: err instanceof Error ? err.message : "上传失败",
-				});
-				toast.error("上传失败，请重试");
-			});
-		},
-		[customUpload, chunkedUpload, updateItem, onUploaded],
-	);
-
 	const uploadFiles = useCallback(
 		(files: File[]) => {
-			const newItems: UploadItem<T>[] = files.map((file) => ({
-				id: `upload-${idRef.current++}`,
-				file,
-				status: "uploading",
-				progress: 0,
-			}));
-			setItems((prev) => [...prev, ...newItems]);
-			for (const it of newItems) uploadOne(it);
+			queue.add(
+				files,
+				(file, onProgress, signal) =>
+					customUpload
+						? customUpload(file, onProgress, signal)
+						: (chunkedUpload(
+								file,
+								(progress) => onProgress(progress.percent),
+								signal,
+							) as unknown as Promise<T>),
+				(result, file) => {
+					uploadedRef.current?.(result, file);
+					toast.success(`「${file.name}」上传成功`);
+				},
+			);
 		},
-		[uploadOne],
+		[queue, customUpload, chunkedUpload],
 	);
 	const { inputProps, open, selectFiles } = useFileSelection({
 		accept,
 		maxSize,
 		maxFiles,
+		disabled,
 		onSelect: uploadFiles,
 	});
 
@@ -123,12 +101,8 @@ export function Uploader<T extends UploadResult>({
 		selectFiles(e.dataTransfer.files);
 	};
 
-	const removeItem = (id: string) => {
-		setItems((prev) => prev.filter((it) => it.id !== id));
-	};
-
 	const clearCompleted = () => {
-		setItems((prev) => prev.filter((it) => it.status !== "done"));
+		for (const item of items) if (item.status === "done") queue.remove(item.id);
 	};
 
 	const completedCount = items.filter((it) => it.status === "done").length;
@@ -138,6 +112,7 @@ export function Uploader<T extends UploadResult>({
 			<input {...inputProps} className="hidden" />
 			<button
 				type="button"
+				disabled={disabled}
 				onDrop={handleDrop}
 				onDragOver={(e) => {
 					e.preventDefault();
@@ -163,6 +138,50 @@ export function Uploader<T extends UploadResult>({
 					</div>
 				)}
 			</button>
+			{queue.requiresManualResume && (
+				<div role="alert" className="flex items-center gap-2 text-sm text-destructive">
+					<span>服务端未给出有效恢复时间，队列暂停。</span>
+					<Button variant="outline" size="sm" onClick={() => queue.resume()}>
+						手动恢复队列
+					</Button>
+				</div>
+			)}
+			{policy.isPending && (
+				<p role="status" className="text-sm text-muted-foreground">
+					正在读取上传并发配置，文件将先排队。
+				</p>
+			)}
+			{policy.isError && (
+				<div role="alert" className="flex items-center gap-2 text-sm text-destructive">
+					<span>
+						{policy.data
+							? "上传配置刷新失败，继续使用上次配置。"
+							: "无法读取上传配置，队列已暂停。"}
+					</span>
+					<Button variant="outline" size="sm" onClick={() => void policy.refetch()}>
+						重试配置
+					</Button>
+				</div>
+			)}
+			{busy && (
+				<div className="flex items-center justify-between gap-2 text-sm">
+					<span role="status">
+						上传并发 {policy.data?.max_concurrent_files ?? "—"} ·
+						关闭或离页将取消未完成项
+					</span>
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => {
+							for (const item of items)
+								if (!["done", "cancelled"].includes(item.status))
+									queue.cancel(item.id);
+						}}
+					>
+						取消全部
+					</Button>
+				</div>
+			)}
 
 			{items.length > 0 && (
 				<div className="space-y-2">
@@ -211,6 +230,18 @@ export function Uploader<T extends UploadResult>({
 								</div>
 								<div className="min-w-0 flex-1">
 									<p className="truncate text-sm">{item.file.name}</p>
+									<p className="text-xs text-muted-foreground" role="status">
+										{item.cancelling
+											? "正在确认取消结果…"
+											: {
+													queued: "排队中",
+													uploading: `上传中 ${item.progress}%`,
+													waiting: `请求受限，${Math.max(0, Math.ceil(((item.retryAt ?? now) - now) / 1000))} 秒后恢复`,
+													done: "上传成功",
+													error: "上传失败",
+													cancelled: "已取消",
+												}[item.status]}
+									</p>
 									{item.status === "uploading" && (
 										<div className="mt-1 h-1 overflow-hidden rounded-full bg-muted">
 											<div
@@ -225,14 +256,39 @@ export function Uploader<T extends UploadResult>({
 										</p>
 									)}
 								</div>
-								<Button
-									variant="ghost"
-									size="icon-sm"
-									onClick={() => removeItem(item.id)}
-									className="shrink-0"
-								>
-									<X className="size-4" />
-								</Button>
+								{item.status === "error" && (
+									<Button
+										variant="outline"
+										size="sm"
+										disabled={(item.retryAt ?? 0) > now}
+										onClick={() => queue.retry(item.id)}
+									>
+										{(item.retryAt ?? 0) > now
+											? `${Math.ceil(((item.retryAt ?? now) - now) / 1000)} 秒后重试`
+											: "重试"}
+									</Button>
+								)}
+								{!["done", "cancelled"].includes(item.status) && (
+									<Button
+										variant="ghost"
+										size="sm"
+										disabled={item.cancelling}
+										onClick={() => queue.cancel(item.id)}
+									>
+										取消
+									</Button>
+								)}
+								{["done", "cancelled"].includes(item.status) && (
+									<Button
+										variant="ghost"
+										size="icon-sm"
+										aria-label={`移除${item.file.name}`}
+										onClick={() => queue.remove(item.id)}
+										className="shrink-0"
+									>
+										<X className="size-4" />
+									</Button>
+								)}
 							</div>
 						))}
 					</div>

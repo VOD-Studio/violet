@@ -26,7 +26,7 @@ import { Uploader } from "@features/upload/ui/Uploader";
 import { ImagePreview } from "@shared/ui/image-preview";
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@violet/ui";
 import { ImagePlus } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { PersonaImageEditor } from "./PersonaImageEditor";
 
 interface PersonaImagesSectionProps {
@@ -47,6 +47,9 @@ const CLOSED_LIGHTBOX: LightboxState = { open: false, index: 0, trigger: null };
 export function PersonaImagesSection({ images, disabled, onChange }: PersonaImagesSectionProps) {
 	const [pickerOpen, setPickerOpen] = useState(false);
 	const [lightbox, setLightbox] = useState<LightboxState>(CLOSED_LIGHTBOX);
+	const [uploadBusy, setUploadBusy] = useState(false);
+	const imagesRef = useRef(images);
+	imagesRef.current = images;
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
 		useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -58,7 +61,9 @@ export function PersonaImagesSection({ images, disabled, onChange }: PersonaImag
 	};
 
 	const addUploaded = (uploaded: CompleteUploadResult, source: File) => {
-		onChange(appendUploadedPersonaImage(images, uploaded, source));
+		const next = appendUploadedPersonaImage(imagesRef.current, uploaded, source);
+		imagesRef.current = next;
+		onChange(next);
 	};
 
 	const handleDragEnd = ({ active, over }: DragEndEvent) => {
@@ -96,11 +101,13 @@ export function PersonaImagesSection({ images, disabled, onChange }: PersonaImag
 				) : null}
 			</CardHeader>
 			<CardContent className="space-y-5">
-				{!disabled && images.length < MAX_PERSONA_IMAGES ? (
+				{!disabled || uploadBusy ? (
 					<Uploader<CompleteUploadResult>
 						purpose="material"
+						onBusyChange={setUploadBusy}
+						disabled={disabled || images.length >= MAX_PERSONA_IMAGES}
 						accept="image/*"
-						maxFiles={MAX_PERSONA_IMAGES - images.length}
+						maxFiles={Math.max(0, MAX_PERSONA_IMAGES - images.length)}
 						label="上传设定图并加入档案"
 						hint="支持拖拽或多选；上传完成后自动加入列表末尾"
 						onUploaded={addUploaded}

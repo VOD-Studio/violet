@@ -10,6 +10,15 @@ import { apiPost } from "@shared/api/request";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+export const uploadEmoji = async (file: File, signal?: AbortSignal): Promise<EmojiUploadResult> => {
+	const form = new FormData();
+	form.append("file", file);
+	return apiPost<EmojiUploadResult>("/uploads/emoji", form, {
+		signal,
+		"axios-retry": { retries: 0 },
+	});
+};
+
 /**
  * useUploadEmoji - 上传表情图片，POST /uploads/emoji
  *
@@ -18,10 +27,6 @@ import { toast } from "sonner";
  */
 export const useUploadEmoji = () =>
 	useMutation({
-		mutationFn: async (file: File) => {
-			const form = new FormData();
-			form.append("file", file);
-			return apiPost<EmojiUploadResult>("/uploads/emoji", form);
-		},
+		mutationFn: (file: File) => uploadEmoji(file),
 		onError: (e: Error) => toast.error(e.message),
 	});
