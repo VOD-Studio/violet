@@ -20,14 +20,14 @@ func registerAdminAPITokenPaths(t *openapi3.T) {
 
 	registerSchema(t, "CreatePATRequest", openapi3.Schemas{
 		"name":        reqStr("令牌名（≤100 字）"),
-		"scopes":      strArray("授权范围（至少一项）"),
+		"scopes":      strArray("授权范围（至少一项）；usage:write 仅允许上报持有人的模型用量"),
 		"expires_at":  optStr("过期日（YYYY-MM-DD 或 never；空串=90 天）"),
 		"interactive": optBool("是否交互式会话令牌"),
 	}, "name", "scopes")
 
 	registerSchema(t, "UpdatePATRequest", openapi3.Schemas{
 		"name":        optStr("新名称（trim 后非空且≤100 字；省略保留）"),
-		"scopes":      strArray("新授权范围（至少一项且必须合法；省略保留）"),
+		"scopes":      strArray("新授权范围（至少一项且必须合法，包含 usage:write；省略保留）"),
 		"expires_at":  optStr("YYYY-MM-DD 当天末尾或 never 永久；省略精确保留旧时间，空串非法；已过期令牌也可仅改名"),
 		"interactive": optBool("新 MCP 交互偏好；省略保留，显式 false 生效"),
 	})
@@ -59,7 +59,7 @@ func registerAdminAPITokenPaths(t *openapi3.T) {
 	patch(t, "/admin/api-tokens/{id}", &openapi3.Operation{
 		Tags:        []string{"MCP 令牌"},
 		Summary:     "编辑我的令牌",
-		Description: "需 mcp:manage-tokens 权限且只能编辑自己的令牌。所有字段均可省略，未传字段原样保留。原令牌明文、ID、归属及创建时间不变，原客户端配置继续可用；后续 MCP 请求立即使用更新后的权限、到期时间和交互偏好。响应永不包含明文或哈希。",
+		Description: "需 mcp:manage-tokens 权限且只能编辑自己的令牌。所有字段均可省略，未传字段原样保留。原令牌明文、ID、归属及创建时间不变，原客户端配置继续可用；后续 MCP 与 PAT REST 请求立即使用更新后的权限和到期时间。交互偏好仅用于 MCP。响应永不包含明文或哈希。",
 		Security:    secure,
 		Parameters:  openapi3.Parameters{pathStrParam("id", "令牌 ID"), csrfHeaderParam()},
 		RequestBody: jsonBody("UpdatePATRequest", true, "需要修改的令牌字段"),

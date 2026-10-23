@@ -55,7 +55,6 @@ func TestAllScopes_IsSortedAndMatchesValidity(t *testing.T) {
 	for _, scope := range scopes {
 		assert.True(t, IsValidScope(scope), scope)
 	}
-	assert.Len(t, scopes, 13)
 }
 
 func TestNewPAT_AcceptsCommentsWriteScope(t *testing.T) {

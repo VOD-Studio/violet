@@ -49,6 +49,7 @@ MCP server 在 `.omp/mcp.json` 声明：
 - **鉴权**：除 `reader` 匿名外，其余 server 通过 `VIOLET_MCP_PAT` 环境变量传 PAT（Personal Access Token）。PAT 在博客后台生成，scope 决定该 server 可用的工具集。
 - **调整授权**：在 `/admin/mcp` 点击现有令牌的编辑按钮，修改名称、权限、有效期或交互偏好后保存；原令牌与客户端配置不变，下一次 MCP 请求使用新授权，既有会话同样生效。
 - **有效期与明文**：编辑时未改动有效期则保留原到期时间；选择“永不过期”才移除到期限制。明文仍只在创建时展示一次，编辑不会重新显示或生成明文。
+- **用量上报授权**：`usage:write` 允许通过 REST 上报当前 PAT 持有人的模型用量，不授予文章、笔记、MCP 工具或其他用户数据的权限；可单独创建仅含该 scope 的令牌，并在同一编辑界面调整或撤销。
 - **本地开发**：把对应 url 改为 `http://localhost:5174/api/v1/mcp…`，或直接用全量 `violet` server。
 
 ## 各 Server 详解

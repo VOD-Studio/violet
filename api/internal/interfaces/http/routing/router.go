@@ -107,6 +107,7 @@ func RegisterRoutes(r chi.Router, d *Deps) {
 
 		// 代码运行器（登录可执行，SSE 用 GET 绕过 CSRF）
 		registerCodeRunnerRoutes(v1, d)
+		registerOMPUsageQueryRoutes(v1, d)
 
 		// 管理后台（独立 sub-router，SessionAuth + AdminRequired 基线）
 		v1.Mount("/admin", NewAdminRouter(d))
@@ -117,6 +118,7 @@ func RegisterRoutes(r chi.Router, d *Deps) {
 
 	// Bot API（同样顶层挂载绕开 CSRF；鉴权走 Bearer bot token，见 registerBotRoutes）
 	registerBotRoutes(r, d)
+	registerOMPUsageIngestRoute(r, d)
 
 	// 图片服务（动态 resize/转码 + 二级缓存 + ETag/304）
 	r.With(d.limit("image_processing", "GET "+cfg.UploadPathPrefix+"*")).Get(cfg.UploadPathPrefix+"*", d.Image.ServeImage)

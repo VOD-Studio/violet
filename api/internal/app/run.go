@@ -148,6 +148,8 @@ func buildRoutingDeps(cfg *config.Config, redisClient *redis.Client, c *Containe
 		Audit:                  c.Audit.AuditHandler,
 		UserAdmin:              c.UserAdmin.UserAdminHandler,
 		APIToken:               c.APIToken.APITokenHandler,
+		OMPUsage:               c.OMPUsage.Handler,
+		OMPUsageAuth:           c.OMPUsage.PATAuth,
 		Subscription:           c.Subscription.SubscriptionHandler,
 		CodeRunner:             c.CodeRunner.CodeRunnerHandler,
 		System:                 c.System.SystemHandler,

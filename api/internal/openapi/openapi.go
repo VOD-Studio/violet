@@ -67,7 +67,7 @@ func build() (*openapi3.T, error) {
 		OpenAPI: "3.0.3",
 		Info: &openapi3.Info{
 			Title:       "Violet API",
-			Description: "全栈博客平台后端接口文档。鉴权采用 Cookie + CSRF Token（X-CSRF-Token 头），所有非 GET 写操作需携带有效的 CSRF Token。",
+			Description: "全栈博客平台后端接口文档。浏览器鉴权采用 Cookie + CSRF Token（X-CSRF-Token 头）；独立 Bearer PAT/Bot 路由不使用 Cookie/CSRF。",
 			Version:     version.Version,
 		},
 		Servers: openapi3.Servers{
@@ -93,6 +93,7 @@ func build() (*openapi3.T, error) {
 	registerSiteIdentityPaths(t)
 	registerSiteImpressionPaths(t)
 	registerMusicPaths(t)
+	registerOMPUsagePaths(t)
 	registerAuthPaths(t)
 	registerPostPaths(t)
 	registerTagPaths(t)
