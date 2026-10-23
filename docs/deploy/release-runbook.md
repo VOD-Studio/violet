@@ -23,11 +23,25 @@ flowchart LR
 
 检查、API 构建和 Web 构建并行。只有生产事务使用 Actions concurrency，服务器另用文件锁防止 SSH 部署并发。Actions concurrency 不是 FIFO 队列，等待中的旧运行可能被新运行替换；进入生产锁后仍检查提交祖先关系，已被线上双侧版本包含的旧候选会跳过。
 
-每次正常发布验证同一个提交的完整 CI，并构建双侧镜像；不再等待可能被新 push 取消的主干 CI，也不以空检查充当部署门禁。PR 的旧运行可取消，不同提交的主干运行互不取消。API、Web、依赖检查并行；基础设施检查失败会传递给既有 required check `Dependency Security`。
+每次正常发布验证同一个提交的完整 CI，并构建双侧镜像；不再等待可能被新 push 取消的主干 CI，也不以空检查充当部署门禁。PR 的旧运行可取消，不同提交的主干运行互不取消。API、Web、依赖扫描并行；既有 required check `Dependency Security` 在最后核对变更检测、runner、基础设施及各侧执行结果。
 
 CI 包含 PostgreSQL 仓储与迁移集成测试、前端构建及 Playwright 契约测试，以及工作流、部署脚本和 Compose 校验。镜像用提交标签保存，实际部署只使用构建产出的 `ghcr.io/...@sha256:...`，不读取或改写 `latest`。
 
 Omarchy 自托管 CI 的镜像更新须先通过 `Runner acceptance`：同一份 CI 强制双侧全量与镜像构建，禁止回退官方 runner。验收和工作流合入完成后才能开启 `SELF_HOSTED_RUNNER`，具体操作见 [Runner 运维指南](runner-setup.md#完整-ci-验收与启用)。生产部署仍固定使用 rua runner。
+
+### PR 与主干按需验证
+
+普通 PR 与主干 push 按文件影响选择检查，不根据 `docs` 等提交标题跳过 CI。顶层 `api/README.md`、`web/README.md` 不触发对应应用检查；根 README 和根文档配图也不触发重任务。被站点导入的 Markdown、包内 README 和示例仍属于构建输入。
+
+纯介绍文档只运行变更检测、runner 选择、轻量基础设施步骤和最终门禁，不启动 PostgreSQL，也不安装应用工具链或构建镜像。Infrastructure 保留 PR 版本意图检查；工作流、复合 action、脚本、部署配置等变化才执行其重校验。发布与 Runner acceptance 的 `full=true` 强制完整检查，不受文档排除影响。
+
+三个 required check 名称保持不变。未选中的应用任务以 skipped 结束；被选中的任务必须 success。检测结果缺失、runner 选择失败、必要任务失败或取消都会使 `Dependency Security` 失败，不能把前置失败造成的跳过当成无变更。
+
+本地验证最终门禁的退出码与失败传播：
+
+```bash
+python3 -m unittest discover -s scripts/tests -p test_ci_results.py -v
+```
 
 ### 多个 PR 与补丁版本
 
