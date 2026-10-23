@@ -74,7 +74,7 @@ pnpm dev
 | `/tweets`、`/tweets/:id` | 推文时间线与讨论 |
 | `/projects`、`/projects/:slug` | 项目与路线图 |
 | `/chat` | 私聊、房间与 Bot 会话 |
-| `/users/:username`、`/profile` | 公开主页与本人资料 |
+| `/users/:username`、`/profile` | 公开主页与个人中心（资料、安全、用量） |
 | `/persona`、`/about`、`/friends`、`/changelog` | 人设、关于、友链与更新日志 |
 | `/login`、`/register`、`/forgot-password` | 认证流程 |
 | `/admin/*` | 内容与站点管理 |
@@ -103,6 +103,14 @@ Zustand 用于需要跨组件共享的客户端交互状态，不替代服务端
 
 SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端会话查询、登录弹窗及失效处理复用 `shared/api/` 与 `features/auth/`，不要在单个页面另做一套登录状态。
 
+### 个人用量
+
+`/profile` 的「用量」页签展示当前账号的 OMP 请求数、token、缓存率、生成速度、错误率和 API 等价成本，并提供 7 / 30 / 90 天窗口、UTC 每日请求趋势与模型分布。成本以 USD 估算，不代表订阅实际账单；总 token 不重复计入推理 token。
+
+页面沿用个人中心的客户端渲染，选中页签后通过 Session 请求 `/omp-usage/summary`、`/omp-usage/models`、`/omp-usage/timeseries`。查询按账号、会话版本和窗口隔离，统一标记 `meta.sessionScoped: true`；登出或会话失效时取消请求并清除缓存，不发送可选用户 ID，也不通过 SSR 预取私人用量。
+
+空记录提供[OMP 扩展安装指南](../docs/guides/omp-usage.md)。访问令牌表单的「用量上报」分组可单独选择 `usage:write`；该权限仅用于客户端上报，不授予读取其他用户统计的能力。模型、API 与展示模块均保留在 `features/profile/`，不引入通用统计组件包。
+
 ## 模块定位
 
 开发时先区分页面装配、业务功能和共享能力，再找对应目录。下表是常用入口，不是逐控件行为清单。
@@ -113,7 +121,7 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 | 富文本、内容块、手册 | `features/editor`、`article-rich-content`、`editor-docs` |
 | 笔记、图集、人设 | `features/note-browse`、`gallery-browse` / `gallery-editor`、`persona-browse` / `persona-editor` |
 | 批注、推文、聊天、通知 | `features/comments`、`tweets`、`chat`、`notifications` |
-| 登录与个人资料 | `features/auth`、`profile`，共享用户模型在 `entities/user` |
+| 登录、个人资料与本人用量 | `features/auth`、`profile`，共享用户模型在 `entities/user` |
 | 项目与路线图 | `features/projects`、`admin-projects` |
 | 上传、媒体与表情 | `features/upload`、`media`、`emojis`、`customemoji` |
 | 站点音乐 | `features/admin-music`、`music-player`，共享模型在 `entities/music` |

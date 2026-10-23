@@ -7,7 +7,7 @@ import { Link } from "@tanstack/react-router";
 import { Button, PageShell, Tabs, TabsContent, TabsList, TabsTrigger } from "@violet/ui";
 
 import { cn } from "cn";
-import { Camera, ExternalLink, ShieldCheck, User as UserIcon } from "lucide-react";
+import { Camera, ExternalLink, Gauge, ShieldCheck, User as UserIcon } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import { useState } from "react";
@@ -17,12 +17,13 @@ interface ProfileShellProps {
 	defaultTab?: ProfileTab;
 	profile: ReactNode;
 	security: ReactNode;
+	usage: ReactNode;
 }
 
 /**
  * ProfileTab - 个人中心 Tab 标识
  */
-export type ProfileTab = "profile" | "security";
+export type ProfileTab = "profile" | "security" | "usage";
 
 /**
  * ProfileShell - 个人中心布局壳
@@ -37,6 +38,7 @@ export const ProfileShell = ({
 	defaultTab = "profile",
 	profile,
 	security,
+	usage,
 }: ProfileShellProps) => {
 	// 受控 tabs：滑动指示块（layoutId 共享元素）需要感知激活项
 	const [tab, setTab] = useState<ProfileTab>(defaultTab);
@@ -65,6 +67,12 @@ export const ProfileShell = ({
 								className="mt-0 outline-none data-[state=active]:animate-tab-panel-in"
 							>
 								{security}
+							</TabsContent>
+							<TabsContent
+								value="usage"
+								className="mt-0 outline-none data-[state=active]:animate-tab-panel-in"
+							>
+								{usage}
 							</TabsContent>
 						</div>
 					</div>
@@ -144,7 +152,7 @@ const ProfileSidebar = ({ user, activeTab }: { user: UserDTO; activeTab: Profile
 			{/* Tab 列表：default 分段式（自带激活态过渡），移动端横排可滚动 */}
 			<TabsList
 				className={cn(
-					"mt-6 h-auto w-full justify-start",
+					"mt-6 -mx-1 h-auto w-auto justify-start p-1",
 					"flex-row overflow-x-auto md:flex-col md:items-stretch md:overflow-visible",
 				)}
 			>
@@ -159,6 +167,12 @@ const ProfileSidebar = ({ user, activeTab }: { user: UserDTO; activeTab: Profile
 					active={activeTab === "security"}
 					icon={<ShieldCheck className="size-4" />}
 					label="账户与安全"
+				/>
+				<ProfileSidebarTab
+					value="usage"
+					active={activeTab === "usage"}
+					icon={<Gauge className="size-4" />}
+					label="用量"
 				/>
 			</TabsList>
 
