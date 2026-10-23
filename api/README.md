@@ -44,6 +44,12 @@ make api     # 启动 API
 
 GitHub 提示块识别独占首行的 `[!NOTE]`、`[!TIP]`、`[!IMPORTANT]`、`[!WARNING]`、`[!CAUTION]`，普通引用和代码示例保持原义。HTML 转 Markdown 保留原生 `<sub>/<sup>` 与 `<details>/<summary>`，载体内换行使用字符实体保留；若载体内部包含脚注引用，则保留整篇 HTML，避免转换定义时更换 ID 导致断链。已保存的 HTML 不会因解析器更新而自动重写。
 
+### 镜像构建
+
+生产 Dockerfile 的 `APK_MIRROR` 构建参数默认使用 `mirrors.aliyun.com`，下载失败时回退 Alpine 官方源。GitHub 官方 runner 上的 CI 与发布构建传入 `APK_MIRROR=dl-cdn.alpinelinux.org`；国内自托管 CI 保留国内源，避免跨地域下载编译依赖。
+
+后端 CI 从生产镜像的 `webp-builder` 阶段提取固定版本编码器，供真实 WebP 测试使用；编码器准备与完整 API 镜像构建使用同一镜像源参数。
+
 ## 目录结构
 
 ```text

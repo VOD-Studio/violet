@@ -87,6 +87,8 @@ jobs:
       actions: write   # buildx type=gha 缓存读写;workflow 级仅 contents:read 会把 actions 收为 none
       contents: read
     runs-on: ${{ fromJSON(needs.runner.outputs.labels) }}
+    env:
+      APK_MIRROR: ${{ contains(fromJSON(needs.runner.outputs.labels), 'self-hosted') && 'mirrors.aliyun.com' || 'dl-cdn.alpinelinux.org' }}
     services:
       postgres:
         image: postgres:16-alpine
@@ -150,7 +152,7 @@ jobs:
         if: needs.changes.outputs.api == 'true'
         run: |
           encoder_image="violet-webp-encoder:ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          docker build --target webp-builder --tag "$encoder_image" .
+          docker build --build-arg APK_MIRROR --target webp-builder --tag "$encoder_image" .
           encoder_container="$(docker create "$encoder_image" /bin/true)"
           trap 'docker rm -f "$encoder_container"; docker image rm "$encoder_image"' EXIT
           encoder_directory="$RUNNER_TEMP/violet-webp"
@@ -184,6 +186,7 @@ jobs:
           context: ./api
           push: false
           tags: violet-api:ci
+          build-args: APK_MIRROR=${{ env.APK_MIRROR }}
           # scope 与 deploy.yml 构建一致:发版时 deploy 直接命中 CI 已构建的层;
           # PR 分支命中率低,仅主干 push 写缓存
           cache-from: type=gha,scope=violet-api

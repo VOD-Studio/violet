@@ -1,10 +1,13 @@
 # syntax=docker/dockerfile:1
 
+ARG APK_MIRROR=mirrors.aliyun.com
+
 # 固定上游源码与摘要，独立静态工具不改变 Go 的 CGO_ENABLED=0。
 FROM alpine:3.20 AS webp-builder
-RUN sed -i 's#dl-cdn.alpinelinux.org#mirrors.aliyun.com#g' /etc/apk/repositories && \
+ARG APK_MIRROR
+RUN sed -i "s#dl-cdn.alpinelinux.org#${APK_MIRROR}#g" /etc/apk/repositories && \
     (apk add --no-cache build-base libpng-dev libpng-static zlib-static || \
-     (sed -i 's#mirrors.aliyun.com#dl-cdn.alpinelinux.org#g' /etc/apk/repositories && \
+     (sed -i "s#${APK_MIRROR}#dl-cdn.alpinelinux.org#g" /etc/apk/repositories && \
       apk add --no-cache build-base libpng-dev libpng-static zlib-static))
 WORKDIR /build
 RUN wget -q https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.6.0.tar.gz && \
@@ -42,14 +45,15 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 
 # 阶段2: 运行时，保留 shell 与 wget 以便健康检查和调试
 FROM alpine:3.20
+ARG APK_MIRROR
 
 WORKDIR /app
 
 # 优先使用国内镜像；镜像不可用时回退官方源，避免构建被单一镜像阻断。
 # ffmpeg 用于视频封面；postgresql-client 为系统面板提供 pg_dump/psql；tar 用于备份运维。
-RUN sed -i 's#dl-cdn.alpinelinux.org#mirrors.aliyun.com#g' /etc/apk/repositories && \
+RUN sed -i "s#dl-cdn.alpinelinux.org#${APK_MIRROR}#g" /etc/apk/repositories && \
     (apk add --no-cache ca-certificates wget ffmpeg postgresql-client tar || \
-     (sed -i 's#mirrors.aliyun.com#dl-cdn.alpinelinux.org#g' /etc/apk/repositories && \
+     (sed -i "s#${APK_MIRROR}#dl-cdn.alpinelinux.org#g" /etc/apk/repositories && \
       apk add --no-cache ca-certificates wget ffmpeg postgresql-client tar))
 
 # 创建非 root 用户，UID/GID 与 distroless nonroot 保持一致
