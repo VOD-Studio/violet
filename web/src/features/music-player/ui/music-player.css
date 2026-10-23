@@ -2,37 +2,8 @@
 	position: relative;
 	z-index: 60;
 	--kite-offset: 1rem;
-	--kite-accent: var(--primary);
 	--kite-blob: var(--primary);
 	--kite-blob-icon: var(--primary-foreground);
-	--kite-font: var(--font-sans);
-	--kite-fg: var(--foreground);
-	--kite-muted: var(--muted-foreground);
-	--kite-line: var(--border);
-	--kite-chip: var(--muted);
-	--kite-chip-strong: var(--accent);
-	--kite-sheet: var(--popover);
-	--kite-glass: color-mix(in oklch, var(--card) 72%, transparent);
-	--kite-glass-edge: var(--border);
-	--kite-glass-rim: var(--border);
-	--kite-ring-track: var(--muted);
-}
-
-.site-music-player::part(bar),
-.site-music-player::part(panel),
-.site-music-player::part(queue) {
-	border-radius: 1rem;
-	box-shadow: 0 4px 24px rgb(0 0 0 / 0.05);
-}
-
-.site-music-player::part(bar) {
-	transform: none;
-	transition: opacity 160ms;
-}
-
-.site-music-player::part(queue) {
-	transform: none;
-	transition: none;
 }
 
 @media (width < 64rem) {
