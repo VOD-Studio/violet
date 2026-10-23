@@ -187,8 +187,8 @@ importers:
         specifier: workspace:*
         version: link:packages/kanban
       '@violetjs/kite-player':
-        specifier: 0.1.0
-        version: 0.1.0(react@19.2.7)
+        specifier: 0.3.0
+        version: 0.3.0(react@19.2.7)
       '@violetjs/react-tweet':
         specifier: workspace:*
         version: link:packages/react-tweet
@@ -3226,8 +3226,8 @@ packages:
   '@upsetjs/venn.js@2.0.0':
     resolution: {integrity: sha512-WbBhLrooyePuQ1VZxrJjtLvTc4NVfpOyKx0sKqioq9bX1C1m7Jgykkn8gLrtwumBioXIqam8DLxp88Adbue6Hw==}
 
-  '@violetjs/kite-player@0.1.0':
-    resolution: {integrity: sha512-Wp1J7UFAo6m9ZnI16KeXtsdxj5ufTmlQ1wVU3RJ9aqGg7a33D/8kLc1Mx9nTzVENTupRwzQJlMuOhvrh8ldiTA==}
+  '@violetjs/kite-player@0.3.0':
+    resolution: {integrity: sha512-Q3j3DS7IP84Gc0wNyPtOOsH4WymIJzX8L2AcTjn9HzAmWfmC7BcVkGn/wi31HmjdTyzoDceXkI/emKVK4Vghlg==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18'
@@ -8939,7 +8939,7 @@ snapshots:
       d3-selection: 3.0.0
       d3-transition: 3.0.1(d3-selection@3.0.0)
 
-  '@violetjs/kite-player@0.1.0(react@19.2.7)':
+  '@violetjs/kite-player@0.3.0(react@19.2.7)':
     dependencies:
       lit: 3.3.3
     optionalDependencies:

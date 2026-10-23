@@ -22,7 +22,7 @@ interface PlayerFailureProps {
 
 function PlayerFailure({ error, loading, onRetry }: PlayerFailureProps) {
 	return (
-		<div className="site-music-failure fixed right-4 bottom-24 z-60 flex max-w-80 items-center gap-3 rounded-xl border border-border bg-card p-3 lg:bottom-4">
+		<div className="site-music-failure fixed bottom-24 left-4 z-60 flex max-w-80 items-center gap-3 rounded-xl border border-border bg-card p-3 lg:bottom-4">
 			<div className="min-w-0 text-xs" role="status">
 				<p className="font-medium">音乐暂时无法加载</p>
 				<p className="mt-1 text-muted-foreground">{error.message}</p>
@@ -150,7 +150,7 @@ function MusicPlayerSession({ playlists, mode, theme, onRetry }: MusicPlayerSess
 		<>
 			{playbackDetail?.trial && (
 				<div
-					className="site-music-trial fixed right-4 bottom-24 z-60 rounded-xl border border-border bg-card px-3 py-2 text-xs text-muted-foreground lg:bottom-24 lg:mb-12"
+					className="site-music-trial fixed bottom-24 left-4 z-60 rounded-xl border border-border bg-card px-3 py-2 text-xs text-muted-foreground lg:bottom-24 lg:mb-12"
 					role="status"
 				>
 					当前曲目仅提供试听片段
@@ -159,6 +159,7 @@ function MusicPlayerSession({ playlists, mode, theme, onRetry }: MusicPlayerSess
 			<KitePlayer
 				className="site-music-player"
 				playlists={playlists.map((item) => item.id).join(",")}
+				position="left"
 				theme={theme}
 			/>
 		</>
