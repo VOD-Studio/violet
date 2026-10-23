@@ -79,6 +79,8 @@ Segmented 是横纵两个方向、soft / ink / line 三种变体的分段控制�
 
 `shared/api` 保留 429 的原始 `Retry-After` 和换算后的本地恢复时刻，支持秒数、HTTP 日期与服务端时钟偏差；没有可信期限时不猜测。主动取消保留原始取消异常，不转换成网络失败或触发自动重试。
 
+`entities/runtime-policy/` 提供四组策略视图、版本化写入与上传调度查询，供后台设置和上传入口共用。
+
 文件选择与拖放共用 `features/upload/hooks/use-file-selection` 的类型、大小和数量校验；取消后可重新选择同一个文件。`Uploader` 保留默认分片上传和自定义上传策略，表情继续使用公共 `useUploadEmoji` 的专用端点，避免改变 GIF 文件与表情 URL 的契约。
 
 `CropUploadDialog` 的确认回调支持异步保存；上传或保存期间保持当前会话，失败时保留图片与选区供重试。本地预览 URL 与当前文件绑定，在更换或关闭时释放，避免开发模式重复挂载导致预览失效。
