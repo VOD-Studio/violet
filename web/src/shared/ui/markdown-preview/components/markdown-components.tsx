@@ -6,6 +6,7 @@
  * 不依赖 @tailwindcss/typography 插件（项目未全局启用 prose）。
  */
 
+import { RunnableCodeRenderer } from "@shared/ui/markdown-preview/code-renderer-context";
 import { cn } from "cn";
 import { type CSSProperties, lazy, type ReactNode, Suspense } from "react";
 import type { Components } from "react-markdown";
@@ -28,14 +29,6 @@ const LazyInlineMathFormula = lazy(() =>
 );
 const LazyBlockMathFormula = lazy(() =>
 	import("../../katex/MathFormula").then((m) => ({ default: m.BlockMathFormula })),
-);
-
-/**
- * CodeRunner 懒加载：可运行代码块才加载（CodeMirror + xterm 重依赖）。
- * 避免进入文章正文主 chunk。
- */
-const LazyCodeRunner = lazy(() =>
-	import("../../code-runner").then((m) => ({ default: m.CodeRunner })),
 );
 
 /** 把 react-markdown 传入的 React 节点递归提取为纯文本 */
@@ -296,7 +289,7 @@ export const markdownComponents: Components = {
 						</pre>
 					}
 				>
-					<LazyCodeRunner
+					<RunnableCodeRenderer
 						language={lang}
 						source={source}
 						overridesJson={overrides ? JSON.stringify(overrides) : undefined}

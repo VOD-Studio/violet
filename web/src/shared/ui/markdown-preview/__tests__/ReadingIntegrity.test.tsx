@@ -1,7 +1,23 @@
+import { CodeRunner } from "@entities/code-runner/ui/CodeRunner";
+import { RunnableCodeContext } from "@shared/ui/markdown-preview/code-renderer-context";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, waitFor } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { HtmlContent } from "../HtmlContent";
 import { MarkdownContent } from "../MarkdownContent";
+
+vi.mock("@shared/api/request", () => ({
+	apiGet: vi.fn().mockResolvedValue({ version: 1, enabled: true, languages: ["node"] }),
+}));
+
+function RunnerProvider({ children }: { children: ReactNode }) {
+	return (
+		<QueryClientProvider client={new QueryClient()}>
+			<RunnableCodeContext value={CodeRunner}>{children}</RunnableCodeContext>
+		</QueryClientProvider>
+	);
+}
 
 vi.mock("@/shared/ui/code-preview/use-shiki-highlight", () => ({
 	useShikiHighlight: () => ({ html: "", loading: false }),
@@ -12,7 +28,7 @@ vi.mock("@/shared/ui/diagram/render-mermaid", () => ({
 	}),
 }));
 // CodeMirror 依赖浏览器几何信息，仅替换其编辑区边界，保留真实 CodeRunner。
-vi.mock("@/shared/ui/code-runner/components/CodeMirrorEditor", () => ({
+vi.mock("@entities/code-runner/ui/CodeMirrorEditor", () => ({
 	CodeMirrorEditor: ({ value }: { value: string }) => (
 		<textarea aria-label="Code source" defaultValue={value} />
 	),
@@ -180,6 +196,7 @@ describe("article reading integrity", () => {
 			<MarkdownContent
 				content={'```js run {"timeout_secs": 10}\nconsole.log("==literal==")\n```'}
 			/>,
+			{ wrapper: RunnerProvider },
 		);
 		await waitFor(() =>
 			expect(markdown.queryByRole("button", { name: "运行" })).not.toBeNull(),
@@ -196,6 +213,7 @@ describe("article reading integrity", () => {
 					'<pre data-runnable="true" data-lang="node" data-overrides="{&quot;timeout_secs&quot;:10}" data-source="console.log(&quot;==literal==&quot;)"><code>console.log(&quot;==literal==&quot;)</code></pre>'
 				}
 			/>,
+			{ wrapper: RunnerProvider },
 		);
 		await waitFor(() => expect(html.queryByRole("button", { name: "运行" })).not.toBeNull());
 		expect((html.getByLabelText("Code source") as HTMLTextAreaElement).value).toBe(
