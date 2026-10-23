@@ -13,6 +13,7 @@ export const PAT_SCOPES = [
 	"notes:publish",
 	"roadmap:read",
 	"roadmap:write",
+	"usage:write",
 ] as const;
 export type PATScope = (typeof PAT_SCOPES)[number];
 
