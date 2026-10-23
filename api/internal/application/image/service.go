@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/sync/singleflight"
@@ -18,29 +19,33 @@ import (
 	domainsettings "blog-api/internal/domain/settings"
 )
 
-// Service 图片服务用例。
+// Service 约束动态图片源缓冲、共享变换与内容寻址缓存。
 type Service struct {
-	transformer domainimage.ImageTransformer
-	cache       domainimage.ImageCache
-	policies    domainimage.PolicyProvider
-	uploadDir   string
-	urlPrefix   string
-	group       singleflight.Group
-	workCtx     context.Context
-	cancel      context.CancelFunc
+	transformer   domainimage.ImageTransformer
+	cache         domainimage.ImageCache
+	policies      domainimage.PolicyProvider
+	uploadDir     string
+	urlPrefix     string
+	group         singleflight.Group
+	workCtx       context.Context
+	cancel        context.CancelFunc
+	sourceMu      sync.Mutex
+	activeSources int
+	sourceChanged chan struct{}
 }
 
 // NewService 装配图片服务；策略仅在请求开始时读取一次。
 func NewService(transformer domainimage.ImageTransformer, cache domainimage.ImageCache, uploadDir, urlPrefix string, policies domainimage.PolicyProvider) *Service {
 	workCtx, cancel := context.WithCancel(context.Background())
 	return &Service{
-		transformer: transformer,
-		cache:       cache,
-		policies:    policies,
-		uploadDir:   uploadDir,
-		urlPrefix:   strings.TrimSuffix(urlPrefix, "/"),
-		workCtx:     workCtx,
-		cancel:      cancel,
+		transformer:   transformer,
+		cache:         cache,
+		policies:      policies,
+		uploadDir:     uploadDir,
+		urlPrefix:     strings.TrimSuffix(urlPrefix, "/"),
+		workCtx:       workCtx,
+		cancel:        cancel,
+		sourceChanged: make(chan struct{}),
 	}
 }
 
@@ -68,6 +73,15 @@ func (s *Service) Serve(ctx context.Context, relPath string, params domainimage.
 	if !filepath.IsLocal(rel) {
 		return domainimage.TransformResult{}, os.ErrNotExist
 	}
+	if err := s.acquireSource(ctx, policy.MaxConcurrent); err != nil {
+		return domainimage.TransformResult{}, err
+	}
+	releaseOnReturn := true
+	defer func() {
+		if releaseOnReturn {
+			s.releaseSource()
+		}
+	}()
 	srcPath := filepath.Join(s.uploadDir, rel)
 	file, err := os.Open(srcPath)
 	if err != nil {
@@ -113,6 +127,12 @@ func (s *Service) Serve(ctx context.Context, relPath string, params domainimage.
 	})
 	select {
 	case <-ctx.Done():
+		// 共享任务仍持有源缓冲，不能随客户端离开立即归还名额。
+		releaseOnReturn = false
+		go func() {
+			<-pending
+			s.releaseSource()
+		}()
 		return domainimage.TransformResult{}, ctx.Err()
 	case completed := <-pending:
 		if completed.Err != nil {
@@ -120,6 +140,40 @@ func (s *Service) Serve(ctx context.Context, relPath string, params domainimage.
 		}
 		return completed.Val.(domainimage.TransformResult), nil
 	}
+}
+
+func (s *Service) acquireSource(ctx context.Context, max int) error {
+	for {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		if err := s.workCtx.Err(); err != nil {
+			return err
+		}
+		s.sourceMu.Lock()
+		if s.activeSources < max {
+			s.activeSources++
+			s.sourceMu.Unlock()
+			return nil
+		}
+		changed := s.sourceChanged
+		s.sourceMu.Unlock()
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-s.workCtx.Done():
+			return s.workCtx.Err()
+		case <-changed:
+		}
+	}
+}
+
+func (s *Service) releaseSource() {
+	s.sourceMu.Lock()
+	defer s.sourceMu.Unlock()
+	s.activeSources--
+	close(s.sourceChanged)
+	s.sourceChanged = make(chan struct{})
 }
 
 func cacheKey(source []byte, params domainimage.TransformParams, policy domainsettings.ImagePolicy, version uint64) string {

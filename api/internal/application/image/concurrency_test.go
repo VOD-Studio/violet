@@ -96,11 +96,13 @@ func TestServiceCloseCancelsSharedTransformAndAllWaiters(t *testing.T) {
 		first := serveAsync(service, context.Background())
 		<-transformer.started
 		second := serveAsync(service, context.Background())
+		third := serveAsync(service, context.Background())
 		synctest.Wait()
 		service.Close()
 		synctest.Wait()
 		require.ErrorIs(t, (<-first).err, context.Canceled)
 		require.ErrorIs(t, (<-second).err, context.Canceled)
+		require.ErrorIs(t, (<-third).err, context.Canceled)
 		require.Equal(t, int32(1), transformer.calls.Load())
 		_, err := service.Serve(context.Background(), "/uploads/sample.jpg", domainimage.TransformParams{})
 		require.ErrorIs(t, err, context.Canceled)
@@ -121,6 +123,45 @@ func TestSharedTransformRetainsPolicyDeadlineWithoutWaiters(t *testing.T) {
 		synctest.Wait()
 		outcome := <-second
 		require.ErrorIs(t, outcome.err, context.DeadlineExceeded)
+		require.Equal(t, int32(1), transformer.calls.Load())
+	})
+}
+
+func TestCancelledWaiterRetainsSourceAdmissionUntilSharedWorkEnds(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		root := t.TempDir()
+		path := filepath.Join(root, "sample.jpg")
+		require.NoError(t, os.WriteFile(path, []byte("shared-image"), 0o600))
+		policy := &mutablePolicy{values: domainsettings.DefaultImagePolicy()}
+		policy.values.MaxConcurrent = 1
+		policy.values.MaxInputBytes = 16
+		transformer := &blockingTransformer{
+			started: make(chan struct{}),
+			release: make(chan struct{}),
+		}
+		service := NewService(transformer, &fakeCache{store: map[string]domainimage.TransformResult{}}, root, "/uploads", policy)
+		defer service.Close()
+
+		firstCtx, cancelFirst := context.WithCancel(context.Background())
+		first := serveAsync(service, firstCtx)
+		<-transformer.started
+		cancelFirst()
+		synctest.Wait()
+		require.ErrorIs(t, (<-first).err, context.Canceled)
+
+		queued := make(chan serveOutcome, 1)
+		go func() {
+			result, err := service.Serve(context.Background(), "/uploads/sample.jpg", domainimage.TransformParams{Width: 51})
+			queued <- serveOutcome{result: result, err: err}
+		}()
+		synctest.Wait()
+
+		// 等待准入期间源文件变为超限；不能提前保留旧的完整源缓冲。
+		require.NoError(t, os.WriteFile(path, []byte("source-exceeds-the-input-budget"), 0o600))
+		close(transformer.release)
+		synctest.Wait()
+		outcome := <-queued
+		require.Error(t, outcome.err)
 		require.Equal(t, int32(1), transformer.calls.Load())
 	})
 }
