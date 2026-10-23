@@ -7,6 +7,34 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.17.0](https://github.com/VOD-Studio/violet/compare/v2.16.1...v2.17.0) (2026-10-23)
+
+
+### 新增
+
+* **code-runner:** 提供共享代码执行能力 ([c2a478f](https://github.com/VOD-Studio/violet/commit/c2a478f10a2cd016d69144d92f782956e7e1c1d3))
+* **coderunner:** 按有效策略调度沙箱任务 ([44c8067](https://github.com/VOD-Studio/violet/commit/44c8067c2c14e0416c88a9721c81a35f078e94df))
+* **http:** 保留限流期限与主动取消语义 ([13d151a](https://github.com/VOD-Studio/violet/commit/13d151a9be38601ce38f515a4e82fc6741e4699e))
+* **image:** 应用可配置编码与缓存边界 ([2b6836a](https://github.com/VOD-Studio/violet/commit/2b6836a0adb810d16f0908650d48f1777ab97d96))
+* **ratelimit:** 配置真实入口的原子配额 ([982542c](https://github.com/VOD-Studio/violet/commit/982542cf126138a4f6bc7c22410e667fd27464b6))
+* **runtime-policy:** 提供共享运行策略接口 ([32d8afe](https://github.com/VOD-Studio/violet/commit/32d8afe9512c29dd50d2a08cf5039d60155b3d87))
+* **settings:** 实现运行策略的可配置管理 ([8748424](https://github.com/VOD-Studio/violet/commit/8748424938d959486c17e9d666bb2aa2df5035f9))
+* **settings:** 提供分组策略草稿编辑 ([0c37763](https://github.com/VOD-Studio/violet/commit/0c37763a32c41ca1e013943e376b36a5d8154ae0))
+* **settings:** 提供版本化运行策略 ([28d78c6](https://github.com/VOD-Studio/violet/commit/28d78c6eb3b33d881f3d8ec545365787ca50b2ea))
+* **upload:** 原子确认上传取消与完成 ([391826f](https://github.com/VOD-Studio/violet/commit/391826f9cc2126e0a050d167fd9fb3d0104ccac9))
+* **upload:** 按运行策略调度批量上传 ([fa3ad32](https://github.com/VOD-Studio/violet/commit/fa3ad32b94533d75a1667a16b9ba25497484cf47))
+
+
+### 修复
+
+* **image:** 在源缓冲前约束动态处理准入 ([ce8fe83](https://github.com/VOD-Studio/violet/commit/ce8fe8363d7c7d1d8c83d4e2a7b7971ddb7ef8ee))
+* **xtweet:** 在完整解码前执行图片策略 ([56a8a43](https://github.com/VOD-Studio/violet/commit/56a8a433e54ec35b657aa03af52f17b63c00be3d))
+
+
+### 重构
+
+* **editor:** 接入统一运行器策略 ([4adc05f](https://github.com/VOD-Studio/violet/commit/4adc05f7d783fa3816f5e5a5b0e8e8e6a64f7e4e))
+
 ## [2.16.1](https://github.com/VOD-Studio/violet/compare/v2.16.0...v2.16.1) (2026-10-22)
 
 
