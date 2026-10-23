@@ -1,4 +1,24 @@
 # syntax=docker/dockerfile:1
+
+ARG APK_MIRROR=mirrors.aliyun.com
+
+# 固定上游源码与摘要，独立静态工具不改变 Go 的 CGO_ENABLED=0。
+FROM alpine:3.20 AS webp-builder
+ARG APK_MIRROR
+RUN sed -i "s#dl-cdn.alpinelinux.org#${APK_MIRROR}#g" /etc/apk/repositories && \
+    (apk add --no-cache build-base libpng-dev libpng-static zlib-static || \
+     (sed -i "s#${APK_MIRROR}#dl-cdn.alpinelinux.org#g" /etc/apk/repositories && \
+      apk add --no-cache build-base libpng-dev libpng-static zlib-static))
+WORKDIR /build
+RUN wget -q https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.6.0.tar.gz && \
+    echo "e4ab7009bf0629fd11982d4c2aa83964cf244cffba7347ecd39019a9e38c4564  libwebp-1.6.0.tar.gz" | sha256sum -c - && \
+    tar -xzf libwebp-1.6.0.tar.gz && \
+    cd libwebp-1.6.0 && \
+    LIBS="-lz" ./configure --disable-shared --enable-static --disable-jpeg --disable-tiff --disable-gif --disable-sdl --disable-gl --disable-threading && \
+    make -j2 LDFLAGS="-all-static" && cp examples/cwebp /cwebp && \
+    printf '%s' 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DQAAAEgQGALFXOsAAAAABJRU5ErkJggg==' | base64 -d > /tmp/encoder-probe.png && \
+    /cwebp -quiet /tmp/encoder-probe.png -o /tmp/encoder-probe.webp
+
 # 单构建阶段:go module 与编译缓存走 BuildKit cache mount,跨构建共享;
 # 不做 deps 阶段 COPY --from 传递(mount 内容不进镜像层,COPY 只能拿到空目录)
 FROM golang:1.26.10-alpine AS builder
@@ -25,14 +45,15 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 
 # 阶段2: 运行时，保留 shell 与 wget 以便健康检查和调试
 FROM alpine:3.20
+ARG APK_MIRROR
 
 WORKDIR /app
 
 # 优先使用国内镜像；镜像不可用时回退官方源，避免构建被单一镜像阻断。
 # ffmpeg 用于视频封面；postgresql-client 为系统面板提供 pg_dump/psql；tar 用于备份运维。
-RUN sed -i 's#dl-cdn.alpinelinux.org#mirrors.aliyun.com#g' /etc/apk/repositories && \
+RUN sed -i "s#dl-cdn.alpinelinux.org#${APK_MIRROR}#g" /etc/apk/repositories && \
     (apk add --no-cache ca-certificates wget ffmpeg postgresql-client tar || \
-     (sed -i 's#mirrors.aliyun.com#dl-cdn.alpinelinux.org#g' /etc/apk/repositories && \
+     (sed -i "s#${APK_MIRROR}#dl-cdn.alpinelinux.org#g" /etc/apk/repositories && \
       apk add --no-cache ca-certificates wget ffmpeg postgresql-client tar))
 
 # 创建非 root 用户，UID/GID 与 distroless nonroot 保持一致
@@ -42,6 +63,7 @@ RUN addgroup -g 65532 -S appgroup && adduser -u 65532 -S appuser -G appgroup
 COPY --from=builder --chown=appuser:appgroup /server /server
 COPY --from=builder --chown=appuser:appgroup /migrate /migrate
 COPY --from=builder --chown=appuser:appgroup /app/migrations ./migrations
+COPY --from=webp-builder /cwebp /usr/local/bin/cwebp
 
 # config.yaml 入库并随镜像分发：承载全部配置键与非敏感默认值（权威文档）
 # 密钥与环境差异由 compose 注入进程环境,优先级 env > config.yaml > 代码默认值

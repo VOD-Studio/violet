@@ -48,11 +48,16 @@ type FileListFilter struct {
 type UploadSessionRepository interface {
 	FindByID(ctx context.Context, id shared.ID) (*UploadSession, error)
 	FindByHash(ctx context.Context, hash string, userID shared.ID) (*UploadSession, error) // 断点续传
+	// Save 仅创建会话；已有 ID 的状态和结果保持不变。
 	Save(ctx context.Context, s *UploadSession) error
 	// UpdateStatus 更新会话状态（CAS：仅当旧状态匹配时更新，返回是否成功）
 	UpdateStatus(ctx context.Context, id shared.ID, oldStatus, newStatus string) (bool, error)
 	// AppendChunk 追加已上传分片索引（事务安全）
 	AppendChunk(ctx context.Context, id shared.ID, index int) error
+	// Cancel 记录取消墓碑；已完成会话返回原结果，不撤销正式文件。
+	Cancel(ctx context.Context, id, userID shared.ID) (*UploadSession, error)
+	// Complete 原子创建正式文件并结束合并；取消已提交时拒绝完成。
+	Complete(ctx context.Context, id shared.ID, file *File) error
 	Delete(ctx context.Context, id shared.ID) error
 	DeleteExpired(ctx context.Context) error
 }
@@ -65,6 +70,7 @@ var (
 	ErrSessionExpired    = shared.BadRequest("上传会话已过期")
 	ErrChunkIndexInvalid = shared.BadRequest("无效的分片索引")
 	ErrSessionNotActive  = shared.BadRequest("上传会话不在活跃状态")
+	ErrSessionCancelled  = shared.Conflict("上传已取消")
 	ErrUploadIncomplete  = shared.BadRequest("分片上传未完成")
 )
 

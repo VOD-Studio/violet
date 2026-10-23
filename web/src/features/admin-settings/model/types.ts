@@ -87,15 +87,3 @@ export interface LlmSettingsDTO {
 	llm_model: string;
 	llm_protocol: string;
 }
-
-/** 代码运行器组 */
-export interface CodeRunnerSettingsDTO {
-	code_runner_enabled: boolean;
-	code_runner_max_cpu_cores: number;
-	code_runner_max_memory_mb: number;
-	code_runner_max_timeout_secs: number;
-	code_runner_max_output_bytes: number;
-	code_runner_max_source_bytes: number;
-	code_runner_allow_network: boolean;
-	code_runner_languages: string;
-}

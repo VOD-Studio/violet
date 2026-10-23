@@ -23,6 +23,7 @@ concurrency:
 
 jobs:
   acceptance:
+    if: github.event_name == 'workflow_dispatch' || vars.SELF_HOSTED_RUNNER == 'true'
     uses: ./.github/workflows/ci.yml
     with:
       ref: ${{ github.sha }}

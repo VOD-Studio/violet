@@ -36,7 +36,7 @@ func NewAdminRouter(d *Deps) chi.Router {
 	r.Get("/stats", d.Stats.GetDashboardStats)
 	r.Get("/stats/views", d.Stats.GetViewTrends)
 
-	// 站点设置（按菜单子页拆成 7 组，每组独立 GET/PUT）
+	// 站点设置与四个固定运行策略入口共用设置权限。
 	r.Route("/settings", func(sub chi.Router) {
 		sub.Group(func(sub chi.Router) {
 			sub.Use(middleware.RequirePermission(perm, "settings:view"))
@@ -46,7 +46,12 @@ func NewAdminRouter(d *Deps) chi.Router {
 			sub.Get("/profile", settingsH.GetProfile)
 			sub.Get("/about", settingsH.GetAbout)
 			sub.Get("/llm", settingsH.GetLlm)
-			sub.Get("/code-runner", settingsH.GetCodeRunner)
+			if h := d.RuntimeSettings; h != nil {
+				sub.Get("/rate-limit", h.GetRateLimit)
+				sub.Get("/image", h.GetImage)
+				sub.Get("/upload-queue", h.GetUploadQueue)
+				sub.Get("/code-runner", h.GetCodeRunner)
+			}
 		})
 		sub.Group(func(sub chi.Router) {
 			sub.Use(middleware.RequirePermission(perm, "settings:update"))
@@ -56,7 +61,12 @@ func NewAdminRouter(d *Deps) chi.Router {
 			sub.Put("/profile", settingsH.UpdateProfile)
 			sub.Put("/about", settingsH.UpdateAbout)
 			sub.Put("/llm", settingsH.UpdateLlm)
-			sub.Put("/code-runner", settingsH.UpdateCodeRunner)
+			if h := d.RuntimeSettings; h != nil {
+				sub.Put("/rate-limit", h.UpdateRateLimit)
+				sub.Put("/image", h.UpdateImage)
+				sub.Put("/upload-queue", h.UpdateUploadQueue)
+				sub.Put("/code-runner", h.UpdateCodeRunner)
+			}
 		})
 	})
 

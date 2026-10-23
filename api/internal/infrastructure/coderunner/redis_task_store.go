@@ -20,23 +20,25 @@ const taskKeyPrefix = "code_runner:task:"
 // key 形如 code_runner:task:<id>。对应 yggdrasil 的 EXEC_TASKS（DashMap）的持久化版本。
 type RedisTaskStore struct {
 	rdb *redis.Client
-	ttl time.Duration // 任务保留时长，到期 Redis 自动删除
 }
 
-// NewRedisTaskStore 创建 Redis 任务存储。ttl 为任务保留时长。
-func NewRedisTaskStore(rdb *redis.Client, ttl time.Duration) *RedisTaskStore {
-	return &RedisTaskStore{rdb: rdb, ttl: ttl}
+// NewRedisTaskStore 创建按任务保留期过期的 Redis 存储。
+func NewRedisTaskStore(rdb *redis.Client) *RedisTaskStore {
+	return &RedisTaskStore{rdb: rdb}
 }
 
-// Save 保存任务（upsert），TTL 由构造时注入。
+// Save 保存任务，完成时重新开始计算该任务提交时确定的保留期。
 func (s *RedisTaskStore) Save(ctx context.Context, task *domaincoderunner.ExecutionTask) error {
+	if task.StorageTTL() <= 0 {
+		return domainshared.Internal("执行任务保留期无效", nil)
+	}
 	dto := taskToDTO(task)
 	body, err := json.Marshal(dto)
 	if err != nil {
 		return fmt.Errorf("序列化任务失败: %w", err)
 	}
 	key := taskKeyPrefix + task.ID().String()
-	if err := s.rdb.Set(ctx, key, body, s.ttl).Err(); err != nil {
+	if err := s.rdb.Set(ctx, key, body, task.StorageTTL()).Err(); err != nil {
 		return domainshared.Internal("保存执行任务失败", err)
 	}
 	return nil
@@ -59,41 +61,41 @@ func (s *RedisTaskStore) Get(ctx context.Context, id domainshared.ID) (*domainco
 	return taskFromDTO(dto), nil
 }
 
-// DeleteExpired 删除过期任务。
-//
-// Redis 的 TTL 自动过期机制已保证过期 key 被清理，此方法为接口完整性保留。
-// 未来若改用 SCAN 主动清理可在此实现。
+// DeleteExpired 由 Redis 原生 TTL 负责回收，无需扫描键空间。
 func (s *RedisTaskStore) DeleteExpired(ctx context.Context) error {
-	// Redis TTL 自动过期，无需主动清理
 	return nil
 }
 
 // taskDTO 任务在 Redis 里的序列化形态（公开字段，绕过 domain 的私有字段）。
 type taskDTO struct {
-	ID         string `json:"id"`
-	UserID     string `json:"user_id"`
-	Language   string `json:"language"`
-	Source     string `json:"source"`
-	Status     string `json:"status"`
-	Stdout     string `json:"stdout"`
-	Stderr     string `json:"stderr"`
-	ExitCode   *int   `json:"exit_code,omitempty"`
-	DurationMs uint64 `json:"duration_ms"`
-	CreatedAt  int64  `json:"created_at"` // unix nano
+	ID             string `json:"id"`
+	UserID         string `json:"user_id"`
+	Language       string `json:"language"`
+	Source         string `json:"source"`
+	Status         string `json:"status"`
+	Stdout         string `json:"stdout"`
+	Stderr         string `json:"stderr"`
+	ExitCode       *int   `json:"exit_code,omitempty"`
+	DurationMs     uint64 `json:"duration_ms"`
+	CreatedAt      int64  `json:"created_at"` // unix nano
+	RetentionNanos int64  `json:"retention_nanos"`
+	StorageNanos   int64  `json:"storage_nanos"`
 }
 
 func taskToDTO(task *domaincoderunner.ExecutionTask) taskDTO {
 	return taskDTO{
-		ID:         task.ID().String(),
-		UserID:     task.UserID().String(),
-		Language:   task.Language(),
-		Source:     task.Source(),
-		Status:     task.Status(),
-		Stdout:     task.Stdout(),
-		Stderr:     task.Stderr(),
-		ExitCode:   task.ExitCode(),
-		DurationMs: task.DurationMs(),
-		CreatedAt:  task.CreatedAt().UnixNano(),
+		ID:             task.ID().String(),
+		UserID:         task.UserID().String(),
+		Language:       task.Language(),
+		Source:         task.Source(),
+		Status:         task.Status(),
+		Stdout:         task.Stdout(),
+		Stderr:         task.Stderr(),
+		ExitCode:       task.ExitCode(),
+		DurationMs:     task.DurationMs(),
+		CreatedAt:      task.CreatedAt().UnixNano(),
+		RetentionNanos: int64(task.RetentionTTL()),
+		StorageNanos:   int64(task.StorageTTL()),
 	}
 }
 
@@ -104,8 +106,10 @@ func taskFromDTO(dto taskDTO) *domaincoderunner.ExecutionTask {
 	if dto.CreatedAt == 0 {
 		createdAt = time.Now()
 	}
-	return domaincoderunner.ReconstructExecutionTask(
+	task := domaincoderunner.ReconstructExecutionTask(
 		id, uid, dto.Language, dto.Source, dto.Status,
 		dto.Stdout, dto.Stderr, dto.ExitCode, dto.DurationMs, createdAt,
 	)
+	task.SetRetention(time.Duration(dto.RetentionNanos), time.Duration(dto.StorageNanos-dto.RetentionNanos))
+	return task
 }

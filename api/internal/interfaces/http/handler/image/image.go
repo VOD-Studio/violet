@@ -53,7 +53,7 @@ func (h *Handler) ServeImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 动态处理
-	result, err := h.svc.Serve(relPath, params)
+	result, err := h.svc.Serve(r.Context(), relPath, params)
 	if err != nil {
 		// 解码/处理失败返回 422(不降级返回原字节,防内容混淆)
 		response.WriteJSON(w, http.StatusUnprocessableEntity, map[string]string{"error": "图片处理失败"})
@@ -67,7 +67,7 @@ func (h *Handler) ServeImage(w http.ResponseWriter, r *http.Request) {
 
 	// ETag / 304
 	etag := `"` + result.ETag + `"`
-	w.Header().Set("Cache-Control", "public, max-age=86400")
+	w.Header().Set("Cache-Control", "public, no-cache")
 	if strings.HasPrefix(relPath, h.urlPrefix+"/external-tweets/") {
 		w.Header().Set("Cache-Control", "no-store")
 	}

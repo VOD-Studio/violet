@@ -65,8 +65,30 @@ services:
         limits:
           memory: 256M
 
+  api-volume-init:
+    image: violet-dev-api
+    pull_policy: never
+    user: "0:0"
+    restart: "no"
+    read_only: true
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE]
+    security_opt: [no-new-privileges:true]
+    entrypoint: ["sh", "-ec"]
+    command:
+      - |
+        for dir in /volumes/go-build /volumes/backups; do
+          if [ "$$(stat -c '%u:%g' "$$dir")" != "65532:65532" ]; then
+            chown -R 65532:65532 "$$dir"
+          fi
+        done
+    volumes:
+      - go_build_cache:/volumes/go-build
+      - backups_data:/volumes/backups
+
   # Go API 服务 (Air 热重载 + docker compose watch sync)
   api:
+    image: violet-dev-api
     build:
       context: ./api
       dockerfile: Dockerfile.dev
@@ -116,6 +138,8 @@ services:
         - action: rebuild
           path: ./api/Dockerfile.dev
     depends_on:
+      api-volume-init:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       redis:
@@ -123,7 +147,7 @@ services:
     volumes:
       # go 编译缓存持久化：recreate 后 air 增量编译秒级完成，
       # 否则每次全量编译 ~2.5 分钟
-      - go_build_cache:/root/.cache/go-build
+      - go_build_cache:/home/appuser/.cache/go-build
       # 系统面板数据库备份，容器重建后保留
       - backups_data:/app/backups
     healthcheck:

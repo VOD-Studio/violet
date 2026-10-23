@@ -5,15 +5,17 @@
  * 通用分片上传流程（秒传/续传/进度）由 useChunkedUpload hook 编排，
  * 业务侧（头像/表情/素材）直接复用本模块的裸函数或 hook。
  */
-import { apiDelete, apiGet, apiPost, apiPut } from "@shared/api/request";
-import { useMutation } from "@tanstack/react-query";
+
 import type {
+	CancelUploadResult,
 	CompleteUploadResult,
 	InitUploadRequest,
 	InitUploadResult,
 	ReplaceMediaResult,
 	ThumbnailUploadResult,
-} from "../model/types";
+} from "@features/upload/model/types";
+import { apiDelete, apiGet, apiPost, apiPut } from "@shared/api/request";
+import { useMutation } from "@tanstack/react-query";
 
 /**
  * initUpload - 初始化上传会话
@@ -23,8 +25,11 @@ import type {
  * @param opts 文件元信息与用途
  * @returns 秒传命中时带 url，否则带 upload_id 供后续分片上传
  */
-export const initUpload = (opts: InitUploadRequest): Promise<InitUploadResult> =>
-	apiPost<InitUploadResult>("/uploads", opts);
+export const initUpload = (
+	opts: InitUploadRequest,
+	signal?: AbortSignal,
+): Promise<InitUploadResult> =>
+	apiPost<InitUploadResult>("/uploads", opts, { signal, "axios-retry": { retries: 0 } });
 
 /**
  * uploadChunk - 上传单个分片
@@ -40,8 +45,11 @@ export const uploadChunk = async (
 	uploadId: string,
 	index: number,
 	data: ArrayBuffer,
+	signal?: AbortSignal,
 ): Promise<void> => {
 	await apiPut<null>(`/uploads/${uploadId}/chunks/${index}`, data, {
+		signal,
+		"axios-retry": { retries: 0 },
 		headers: { "Content-Type": "application/octet-stream" },
 	});
 };
@@ -54,25 +62,31 @@ export const uploadChunk = async (
  * @param uploadId 上传会话 ID
  * @returns 最终文件 ID 与访问 URL
  */
-export const completeUpload = (uploadId: string): Promise<CompleteUploadResult> =>
-	apiPost<CompleteUploadResult>(`/uploads/${uploadId}/complete`);
+export const completeUpload = (
+	uploadId: string,
+	signal?: AbortSignal,
+): Promise<CompleteUploadResult> =>
+	apiPost<CompleteUploadResult>(`/uploads/${uploadId}/complete`, undefined, {
+		signal,
+		"axios-retry": { retries: 0 },
+	});
 
 /**
- * cancelUpload - 取消上传，清理临时分片
- *
- * 调后端 DELETE /uploads/{uploadId}，后端清理临时分片并删除会话。
+ * 取消临时会话；合并已赢得竞争时返回正式文件，不删除正式素材。
  */
-export const cancelUpload = (uploadId: string): Promise<void> => {
-	return apiDelete<null>(`/uploads/${uploadId}`).then(() => undefined);
-};
+export const cancelUpload = (uploadId: string): Promise<CancelUploadResult> =>
+	apiDelete<CancelUploadResult>(`/uploads/${uploadId}`, { "axios-retry": { retries: 0 } });
 
 /**
  * getUploadStatus - 查询上传会话状态（断点续传）
  *
  * 调后端 GET /uploads/{uploadId}。
  */
-export const getUploadStatus = (uploadId: string): Promise<InitUploadResult> =>
-	apiGet<InitUploadResult>(`/uploads/${uploadId}`);
+export const getUploadStatus = (
+	uploadId: string,
+	signal?: AbortSignal,
+): Promise<InitUploadResult> =>
+	apiGet<InitUploadResult>(`/uploads/${uploadId}`, { signal, "axios-retry": { retries: 0 } });
 
 /**
  * uploadThumbnail - 上传缩略图底层请求函数

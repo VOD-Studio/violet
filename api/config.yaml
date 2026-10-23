@@ -151,8 +151,6 @@ superadmin:
 # 需 api 容器挂载 docker.sock（生产 podman 见 docs/deploy/manual-deploy.md）
 # 架构决策见 docs/adr/0006-code-runner-architecture.md
 code_runner:
-  # env: CODE_RUNNER_ENABLED（生产未挂 docker.sock 时自动降级，不 panic）
-  enabled: true
   # env: CODE_RUNNER_MAX_CPU_CORES
   max_cpu_cores: 2.0 # 单次执行 CPU 上限（核数）
   # env: CODE_RUNNER_MAX_MEMORY_MB

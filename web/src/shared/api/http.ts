@@ -1,7 +1,7 @@
+import { ApiError, parseRetryAt } from "@shared/api/error";
 import axios, { type AxiosError, type AxiosInstance, type InternalAxiosRequestConfig } from "axios";
 import axiosRetry from "axios-retry";
 import { CSRF_HEADER, getCSRFToken } from "./csrf";
-import { ApiError } from "./error";
 import { useLoginDialogStore } from "./login-dialog-store";
 import { isSessionActive } from "./session";
 import { onSessionExpired } from "./session-expired";
@@ -133,7 +133,16 @@ export const createHttpClient = (opts: HttpClientOptions = {}): AxiosInstance =>
 			return response;
 		},
 		async (err: AxiosError) => {
+			if (axios.isCancel(err)) throw err;
 			const status = err.response?.status ?? 0;
+			const retryHeader = err.response?.headers["retry-after"];
+			const retryAfter = typeof retryHeader === "string" ? retryHeader : undefined;
+			const dateHeader = err.response?.headers.date;
+			const retryAt = parseRetryAt(
+				retryAfter,
+				Date.now(),
+				typeof dateHeader === "string" ? dateHeader : undefined,
+			);
 
 			// 游客和 SSR 的 401 只返回错误，不触发客户端会话过期。
 			// 保留 sessionActive 供原地重登；登出或取消重登后，迟到的 401 不再弹窗。
@@ -168,6 +177,8 @@ export const createHttpClient = (opts: HttpClientOptions = {}): AxiosInstance =>
 					error: body.error,
 					message: body.message ?? "请求失败",
 					status,
+					retryAfter,
+					retryAt,
 					details: body.details,
 					requestId: body.request_id,
 					// 透传原始 body：409 LINK_CONFIRMATION_REQUIRED 等场景的非标准字段
@@ -184,6 +195,8 @@ export const createHttpClient = (opts: HttpClientOptions = {}): AxiosInstance =>
 				error: "UNKNOWN",
 				message: err.message || "未知错误",
 				status,
+				retryAfter,
+				retryAt,
 			});
 		},
 	);

@@ -38,7 +38,7 @@ func TestExternalImagesAreUncachedAndUnavailableAfterWithdrawal(t *testing.T) {
 	var data bytes.Buffer
 	require.NoError(t, png.Encode(&data, stdimage.NewRGBA(stdimage.Rect(0, 0, 64, 64))))
 	require.NoError(t, os.WriteFile(path, data.Bytes(), 0o644))
-	svc := appimage.NewService(infraimage.NewTransformer(), nil, dir, "/uploads")
+	svc := appimage.NewService(infraimage.NewTransformer(infraimage.NewEncoder()), nil, dir, "/uploads", nil)
 	h := NewHandler(svc, dir, "/uploads")
 	paths := []string{
 		"/uploads/external-tweets/source/version/photo.png",

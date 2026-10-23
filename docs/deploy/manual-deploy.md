@@ -150,9 +150,11 @@ GitHub、GHCR 与 Actions 日志域名由服务器部署专用 balancer 处理�
    ssh rua "podman images | grep yggdrasil-runner"
    ```
 
-3. **配置环境变量**：在 `.env` 加 `CODE_RUNNER_ENABLED=true` + `DOCKER_SOCKET_PATH=/run/podman/podman.sock`（覆盖默认 `/var/run/docker.sock`）。全套配置项见 `.env.example` 的「代码运行器」段。
+3. **配置部署默认值**：通过 `CODE_RUNNER_MAX_*`、`CODE_RUNNER_LANGUAGES` 设置启动默认资源与语言；已有后台覆盖不会被部署默认值替换。启停、资源上限与白名单在 `/admin/settings/code-runner` 保存，不再使用 `CODE_RUNNER_ENABLED`。
 
 4. **挂载 sock**：`docker-compose.prod.yml` 已配 `${DOCKER_SOCKET_PATH:-/var/run/docker.sock}:/var/run/docker.sock`，通过 `DOCKER_SOCKET_PATH` 环境变量控制宿主端路径。
+
+   API 以 UID/GID `65532` 运行，须通过宿主 socket 所属组或限定 ACL 授权该用户访问；不要以改回 root 或全局 `chmod 666` 代替授权。运行器容器仍以 `1000:1000`、只读根目录和受限网络执行；Go 镜像的 `GOCACHE`、`GOTMPDIR`、`GOPATH` 应位于可写 `/tmp`，临时页受任务同一内存 cgroup 约束。
 
 ### 启用验证
 

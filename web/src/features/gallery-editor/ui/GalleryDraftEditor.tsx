@@ -89,6 +89,7 @@ export function GalleryDraftEditor({ id }: GalleryDraftEditorProps) {
 	const unpublish = useUnpublishGallery(id);
 	const remove = useDeleteGallery(id, detail?.slug ?? null);
 	const [pickerOpen, setPickerOpen] = useState(false);
+	const [uploadBusy, setUploadBusy] = useState(false);
 	const [confirmAction, setConfirmAction] = useState<"unpublish" | "delete" | null>(null);
 	const [operationError, setOperationError] = useState<{
 		kind: "validation" | "conflict";
@@ -397,11 +398,13 @@ export function GalleryDraftEditor({ id }: GalleryDraftEditorProps) {
 								</span>
 							</div>
 
-							{!disabled && draft.items.length < MAX_GALLERY_ITEMS ? (
+							{!disabled || uploadBusy ? (
 								<Uploader<CompleteUploadResult>
 									purpose="material"
+									onBusyChange={setUploadBusy}
+									disabled={disabled || draft.items.length >= MAX_GALLERY_ITEMS}
 									accept="image/*"
-									maxFiles={MAX_GALLERY_ITEMS - draft.items.length}
+									maxFiles={Math.max(0, MAX_GALLERY_ITEMS - draft.items.length)}
 									label="上传图片并加入工作稿"
 									hint="支持拖拽或多选；上传完成后会自动加入末尾"
 									onUploaded={addUploadedFile}

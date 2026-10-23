@@ -12,7 +12,9 @@ type defaultLangResolver struct{}
 // NewLangResolver 创建默认语言解析器。
 func NewLangResolver() defaultLangResolver { return defaultLangResolver{} }
 
-func (defaultLangResolver) Normalize(lang string) string { return NormalizeLang(lang) }
+func (defaultLangResolver) Normalize(lang string) string {
+	return domaincoderunner.NormalizeLang(lang)
+}
 
 func (defaultLangResolver) Resolve(langKey string) (image, cmd, ext string, defaultLimits domaincoderunner.ResourceLimits, allowNetwork bool, ok bool) {
 	def, exists := Languages[langKey]

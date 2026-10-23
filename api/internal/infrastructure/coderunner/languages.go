@@ -91,48 +91,10 @@ var Languages = map[string]LanguageDef{
 	},
 }
 
-// langAliases 语言别名 → canonical key 映射。
-//
-// canonical key（python/node/go/rust/bun）不在表里——原样通过。
-// js/javascript→node、rs→rust、ts/typescript→bun。大小写不敏感。
-var langAliases = map[string]string{
-	"js":         "node",
-	"javascript": "node",
-	"rs":         "rust",
-	"ts":         "bun",
-	"typescript": "bun",
-}
-
-// NormalizeLang 把语言标识归一化为 canonical key。
-//
-// 步骤：trim → lowercase → 查 langAliases，命中返回映射值，未命中返回原值。
-// 保证 canonical 名与未注册字符串都能被调用方处理。
-func NormalizeLang(lang string) string {
-	clean := strings.ToLower(strings.TrimSpace(lang))
-	if to, ok := langAliases[clean]; ok {
-		return to
-	}
-	return clean
-}
-
-// IsSupportedLang 是否支持该语言：先 NormalizeLang 归一化，再查 Languages 注册表。
-//
-// 若设置了 globalAllowedLanguages（CODE_RUNNER_LANGUAGES），还需在白名单内
-// （白名单用 canonical key 比较——运维写 node 而非 js）。
+// IsSupportedLang 判断语言是否已注册；运行时白名单由执行服务检查。
 func IsSupportedLang(lang string) bool {
-	canonical := NormalizeLang(lang)
-	if _, ok := Languages[canonical]; !ok {
-		return false
-	}
-	if globalAllowedLanguages == nil {
-		return true
-	}
-	for _, allowed := range globalAllowedLanguages {
-		if allowed == canonical {
-			return true
-		}
-	}
-	return false
+	_, ok := Languages[domaincoderunner.NormalizeLang(lang)]
+	return ok
 }
 
 // ParseFenceInfo 解析围栏代码块的 info string。
@@ -153,7 +115,7 @@ func ParseFenceInfo(info string) (lang string, runnable bool, overrides *domainc
 	if len(tokens) == 0 {
 		return "", false, nil
 	}
-	lang = NormalizeLang(tokens[0])
+	lang = domaincoderunner.NormalizeLang(tokens[0])
 	for _, tok := range tokens[1:] {
 		if tok == "runnable" || tok == "run" {
 			runnable = true

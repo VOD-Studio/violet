@@ -44,6 +44,12 @@ make api     # 启动 API
 
 GitHub 提示块识别独占首行的 `[!NOTE]`、`[!TIP]`、`[!IMPORTANT]`、`[!WARNING]`、`[!CAUTION]`，普通引用和代码示例保持原义。HTML 转 Markdown 保留原生 `<sub>/<sup>` 与 `<details>/<summary>`，载体内换行使用字符实体保留；若载体内部包含脚注引用，则保留整篇 HTML，避免转换定义时更换 ID 导致断链。已保存的 HTML 不会因解析器更新而自动重写。
 
+### 镜像构建
+
+生产 Dockerfile 的 `APK_MIRROR` 构建参数默认使用 `mirrors.aliyun.com`，下载失败时回退 Alpine 官方源。GitHub 官方 runner 上的 CI 与发布构建传入 `APK_MIRROR=dl-cdn.alpinelinux.org`；国内自托管 CI 保留国内源，避免跨地域下载编译依赖。
+
+后端 CI 从生产镜像的 `webp-builder` 阶段提取固定版本编码器，供真实 WebP 测试使用；编码器准备与完整 API 镜像构建使用同一镜像源参数。
+
 ## 目录结构
 
 ```text
@@ -134,10 +140,10 @@ api/
 | **announcement** | announcement | announcement（并入 content） | 公告管理 |
 | **emoji** | emoji | media | 表情分组/表情 CRUD、B站表情导入、文件上传 |
 | **customemoji** | customemoji | customemoji | 用户自定义表情上传、软删除、收藏与按 ID 解析 |
-| **upload** | upload | media | 分片上传（秒传/断点续传/合并）、文件管理 |
+| **upload** | upload | media | 分片上传、稳定会话续传、持久化取消与原子完成、文件管理 |
 | **image** | image | image | 图片处理 |
 | **tweet** | tweet | tweet | 推文发布与互动、免凭据 X 原文预览、共享来源刷新和撤回 |
-| **settings** | settings | settings | 站点配置（key-value） |
+| **settings** | settings | settings | 站点配置与分组运行策略（版本 CAS、字段来源、当前实例有效快照） |
 | **tag** | tag | tag | 标签 CRUD |
 | **github** | github | github | GitHub 贡献日历/仓库数据（GraphQL API） |
 | **mcp** | — | mcp | MCP 服务（写作/评论检索/RSS 抓取，按 PAT scope 拆分） |
@@ -164,6 +170,37 @@ api/
 迁移 `139_retire_playlist_permissions` 回收 `playlist:view/create/update/delete/toggle` 的角色授权并删除权限点，仅清理不再包含其他子节点的 `playlist` 菜单。回滚只恢复权限定义、菜单及默认 `admin` 角色授权，不恢复已回收的自定义授权；历史歌曲权限已由迁移 `055_remove_dead_permissions` 退役。
 
 `POST /uploads` 与 `GET /uploads/instant` 只对磁盘上仍存在的素材返回秒传成功。数据库记录存在但文件丢失时，记录保留并标记为 `failed`，重新上传会创建可读取的新文件；权限等读取错误直接返回错误，不当作秒传未命中。已丢失的图片字节无法从数据库恢复，原有失效地址需重新上传后替换。
+
+### 入口限流
+
+`GET /admin/settings/rate-limit` 返回实际绑定入口、规则、字段来源与本实例有效版本，读取需要 `settings:view`；`PUT` 需要 `settings:update` 和 CSRF，提交 `expected_version` 以及 `values.rules.<id>` 的部分字段，或用 `reset: true` 清除整组覆盖。版本冲突返回 409，非法规则不会部分落库。
+
+滑动窗口、一秒突发和 UTC 自然日配额由 Redis 原子判定；组合入口不半扣额度，修改规则不清除已获准请求历史。管理员使用相同规则，Redis 故障遵循入口的 `allow` / `deny`。429 的 `Retry-After`、`X-RateLimit-Reason`、`X-RateLimit-Reset` 可供跨域客户端读取。
+
+上传初始化、分片、合并共用上传写额度，状态查询、取消与认证后的 `GET /uploads/policy` 不占写额度。该只读接口返回当前实例的上传调度版本和文件并发上限。
+
+`GET/PUT /admin/settings/upload-queue` 配置浏览器后续文件调度，使用相同的版本与权限契约。`POST /uploads` 可携带客户端 UUID `clientUploadId`；同一文件的重试复用该 ID，并按返回的 `chunk_size` 和 `uploaded_chunks` 续传。未携带 ID 的旧客户端保留按本人文件哈希续传的入口。
+
+`DELETE /uploads/{id}` 对尚未初始化的稳定 ID 同样记录取消。响应 `{completed: false}` 表示取消已提交；若合并先完成，则返回 `{completed: true, file: ...}`，不撤销正式文件。文件记录与会话完成结果在同一事务提交；取消赢得竞争时，合并返回 409 并清除未提交文件，重复完成返回原文件结果。
+
+迁移 `142_upload_completion_result` 增加已完成文件引用。回滚仅移除结果列与取消墓碑，不删除正式素材；部署新 API 前须执行迁移。
+
+### 图片处理与派生缓存
+
+`GET/PUT /admin/settings/image` 使用相同的版本、权限和重置契约，覆盖上传、素材替换、独立缩略图、外部媒体与动态图片。源图先检查输入字节、单边和累计动画像素，再解码；外部 WebP 也进入同一受限处理器，不在策略检查前单独完整解码。编码进程有共享并发、超时和输出上限。
+
+镜像包含固定 `cwebp 1.6.0`，支持实际无损与有损 WebP，质量和方法参数均参与编码。GIF 和动画 WebP 保留原动画；透明图请求 JPEG 时返回 PNG；APNG 明确拒绝并提示使用 GIF 或动画 WebP，不静默取首帧。
+
+内存与磁盘缓存分别受容量和 TTL 约束，缓存身份包含源内容与策略版本。专用维护只删除可重建缓存，先清过期项，再按写入时间和路径收敛容量；响应的 `cleanup` 给出真实时间、删除量与失败状态。工具准备失败保留最近有效策略，不能把保存成功当成应用成功。
+
+### 运行器策略
+
+`GET/PUT /admin/settings/code-runner` 使用版本化策略契约，启停、语言白名单、资源上限、并发、排队时限和任务保留影响后续任务。空语言数组禁止全部语言；旧配置和部署默认支持 `js/javascript`、`ts/typescript`、`rs` 别名，未知语言不会被当作允许全部语言。
+
+提交时固定任务保留期，完成后按该时长设置 Redis TTL；排队及执行期间另留收尾预算。启动沙箱前再次检查启停、语言和源码上限，资源取提交策略与最新策略的较严边界。降低并发不杀已运行任务，不为它们重复发放名额。
+
+公开 `GET /code-runner/policy` 只返回有效版本、启停和语言，供编辑器与阅读器消费；`GET /settings` 保留同源启停与语言投影。部署环境只提供默认资源值，不再使用 `CODE_RUNNER_ENABLED`，合法旧后台覆盖在首次启动时导入，升级不会重置。
+
 
 ### 站点音乐接口（Kite）
 

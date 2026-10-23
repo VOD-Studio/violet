@@ -14,14 +14,18 @@ import (
 
 // Service 站点配置用例服务
 type Service struct {
-	store domainsettings.SettingsStore
-	bus   appshared.EventBus
+	store   domainsettings.SettingsStore
+	bus     appshared.EventBus
+	runtime *RuntimePolicies
 }
 
 // NewService 构造配置服务
 func NewService(store domainsettings.SettingsStore, bus appshared.EventBus) *Service {
 	return &Service{store: store, bus: bus}
 }
+
+// SetRuntimePolicies 接入统一有效快照，公开投影不读取旧运行器键。
+func (s *Service) SetRuntimePolicies(policies *RuntimePolicies) { s.runtime = policies }
 
 // GetAll 获取全部站点配置
 func (s *Service) GetAll(ctx context.Context) (domainsettings.SiteSettings, error) {
@@ -39,6 +43,13 @@ func (s *Service) GetPublic(ctx context.Context) (map[string]any, error) {
 	if err != nil {
 		return nil, err
 	}
+	if s.runtime == nil {
+		return nil, shared.Internal("运行策略尚未装配", nil)
+	}
+	if err := s.runtime.CodeRunnerError(); err != nil {
+		return nil, shared.Internal("运行策略暂不可用", err)
+	}
+	runner, _ := s.runtime.CodeRunner()
 	return map[string]any{
 		"site_name":                       settings.SiteName,
 		"site_url":                        settings.SiteURL,
@@ -67,7 +78,8 @@ func (s *Service) GetPublic(ctx context.Context) (map[string]any, error) {
 		"social_email":                    settings.SocialEmail,
 		"social_rss":                      settings.SocialRss,
 		"social_bilibili":                 settings.SocialBilibili,
-		"code_runner_enabled":             settings.CodeRunnerEnabled,
+		"code_runner_enabled":             runner.Enabled,
+		"code_runner_languages":           runner.Languages,
 	}, nil
 }
 
@@ -162,31 +174,6 @@ func (s *Service) Update(ctx context.Context, in UpdateInput) (domainsettings.Si
 	}
 	if in.LLMProtocol != nil {
 		updates["llm_protocol"] = *in.LLMProtocol
-	}
-	// 代码运行器配置（运行时可改）
-	if in.CodeRunnerEnabled != nil {
-		updates["code_runner_enabled"] = boolStr(*in.CodeRunnerEnabled)
-	}
-	if in.CodeRunnerMaxCPUCores != nil {
-		updates["code_runner_max_cpu_cores"] = strconv.FormatFloat(*in.CodeRunnerMaxCPUCores, 'f', -1, 64)
-	}
-	if in.CodeRunnerMaxMemoryMB != nil {
-		updates["code_runner_max_memory_mb"] = strconv.FormatUint(*in.CodeRunnerMaxMemoryMB, 10)
-	}
-	if in.CodeRunnerMaxTimeoutSecs != nil {
-		updates["code_runner_max_timeout_secs"] = strconv.FormatUint(*in.CodeRunnerMaxTimeoutSecs, 10)
-	}
-	if in.CodeRunnerMaxOutputBytes != nil {
-		updates["code_runner_max_output_bytes"] = strconv.FormatUint(*in.CodeRunnerMaxOutputBytes, 10)
-	}
-	if in.CodeRunnerMaxSourceBytes != nil {
-		updates["code_runner_max_source_bytes"] = strconv.FormatUint(*in.CodeRunnerMaxSourceBytes, 10)
-	}
-	if in.CodeRunnerAllowNetwork != nil {
-		updates["code_runner_allow_network"] = boolStr(*in.CodeRunnerAllowNetwork)
-	}
-	if in.CodeRunnerLanguages != nil {
-		updates["code_runner_languages"] = *in.CodeRunnerLanguages
 	}
 	if in.CustomEmojiMaxPerUser != nil {
 		updates["custom_emoji_max_per_user"] = strconv.Itoa(*in.CustomEmojiMaxPerUser)
@@ -368,31 +355,4 @@ func (s *Service) UpdateLlm(ctx context.Context, in LlmUpdate) (LlmView, error) 
 		return LlmView{}, err
 	}
 	return llmView(all), nil
-}
-
-// GetCodeRunner 读取代码运行器组
-func (s *Service) GetCodeRunner(ctx context.Context) (CodeRunnerView, error) {
-	all, err := s.GetAll(ctx)
-	if err != nil {
-		return CodeRunnerView{}, err
-	}
-	return codeRunnerView(all), nil
-}
-
-// UpdateCodeRunner 更新代码运行器组
-func (s *Service) UpdateCodeRunner(ctx context.Context, in CodeRunnerUpdate) (CodeRunnerView, error) {
-	all, err := s.Update(ctx, domainsettings.UpdateInput{
-		CodeRunnerEnabled:        in.CodeRunnerEnabled,
-		CodeRunnerMaxCPUCores:    in.CodeRunnerMaxCPUCores,
-		CodeRunnerMaxMemoryMB:    in.CodeRunnerMaxMemoryMB,
-		CodeRunnerMaxTimeoutSecs: in.CodeRunnerMaxTimeoutSecs,
-		CodeRunnerMaxOutputBytes: in.CodeRunnerMaxOutputBytes,
-		CodeRunnerMaxSourceBytes: in.CodeRunnerMaxSourceBytes,
-		CodeRunnerAllowNetwork:   in.CodeRunnerAllowNetwork,
-		CodeRunnerLanguages:      in.CodeRunnerLanguages,
-	})
-	if err != nil {
-		return CodeRunnerView{}, err
-	}
-	return codeRunnerView(all), nil
 }

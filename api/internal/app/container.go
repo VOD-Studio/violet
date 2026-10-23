@@ -14,6 +14,7 @@ import (
 	authcmd "blog-api/internal/application/auth/command"
 	infraemail "blog-api/internal/infrastructure/email"
 	infraeventbus "blog-api/internal/infrastructure/eventbus"
+	infraimage "blog-api/internal/infrastructure/image"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
 )
 
@@ -86,9 +87,12 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	// （公开 client_id 下发）共享同一实例，后台写入即刻全局生效。
 	oauthCreds := authcmd.NewOAuthCredentials(cfg.GoogleClientID, cfg.GithubClientID, cfg.GithubClientSecret)
 
-	settings := NewSettingsContainer(db, bus, oauthCreds)
+	settings := NewSettingsContainer(db, bus, oauthCreds, cfg.CodeRunner)
+	policies := settings.RuntimePolicies
+	encoder := infraimage.NewEncoder()
+	policies.SetImageValidator(infraimage.ValidatePolicy)
 	siteIdentity := NewSiteIdentityContainer(settings.Store)
-	siteImpression := NewSiteImpressionContainer(db, rdb, []byte(cfg.ResourceSigningKey), cfg.Cookie)
+	siteImpression := NewSiteImpressionContainer(db, []byte(cfg.ResourceSigningKey), cfg.Cookie)
 	customEmoji := NewCustomEmojiContainer(db, permissionChecker, settings.Service, cfg.CustomEmojiMaxPerUser, cfg.UploadPathPrefix)
 
 	auth, err := NewAuthContainer(db, rdb, cfg, emailSender, bus, settings.Service, oauthCreds)
@@ -118,7 +122,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 		roleCleanup()
 		return nil, nil, err
 	}
-	media := NewMediaContainer(db, rdb, cfg)
+	media := NewMediaContainer(db, rdb, cfg, policies, encoder)
 	series := NewSeriesContainer(db, bus, settings.Store, media.UploadService)
 	gallery := NewGalleryContainer(db, bus, permissionChecker)
 	note := NewNoteContainer(db)
@@ -126,9 +130,10 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	persona := NewPersonaContainer(db)
 	mcp := NewMCPContainer(apiToken.TokenLookup, post.PostService, tag.TagService, subscription.SubscriptionService, comment.CommentService, series.SeriesService, note.Service, media.UploadService,
 		roadmap.Service, roadmap.RelationService, content.ProjectService, newMCPOperatorResolver(gormrepo.NewUserRepository(db)))
-	codeRunner := NewCodeRunnerContainer(rdb, settings.Store, cfg.CodeRunner)
-	image := NewImageContainer(cfg.UploadDir, cfg.UploadPathPrefix)
-	tweet := NewTweetContainer(db, rdb, cfg, permissionChecker, customEmoji.Service, bus)
+	codeRunner := NewCodeRunnerContainer(rdb, policies, cfg.CodeRunner)
+	image := NewImageContainer(cfg.UploadDir, cfg.UploadPathPrefix, policies, encoder)
+	policies.SetImageMaintenanceStatus(image.DiskCache.Status)
+	tweet := NewTweetContainer(db, rdb, cfg, permissionChecker, customEmoji.Service, bus, policies, encoder)
 	chat := NewChatContainer(db, cfg, customEmoji.Service, media.UploadService, bus)
 	chat.ChatService.WithTweetReader(tweet.TweetService)
 

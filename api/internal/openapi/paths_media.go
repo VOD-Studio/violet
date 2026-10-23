@@ -39,14 +39,19 @@ func registerMediaPaths(t *openapi3.T) {
 	})
 
 	registerSchema(t, "InitUploadSessionRequest", openapi3.Schemas{
-		"fileName":  reqStr("文件名"),
-		"fileSize":  optInt64("字节数（上限 1GB）"),
-		"fileHash":  optStr("文件哈希（用于秒传/续传）"),
-		"mimeType":  optStr("MIME 类型（缺省按扩展名推断）"),
-		"chunkSize": optInt("分片大小（≤0 时默认 5MB）"),
-		"purpose":   optStr("用途（缺省 material）"),
-	}, "fileName")
+		"fileName":       reqStr("文件名"),
+		"fileSize":       optInt64("字节数，须大于0且不超过1GB"),
+		"fileHash":       optStr("文件哈希（用于秒传/续传）"),
+		"mimeType":       optStr("MIME 类型（缺省按扩展名推断）"),
+		"chunkSize":      optInt("分片大小，≤0时默认5MiB，上限32MiB；续传以服务端原值为准"),
+		"purpose":        optStr("用途（缺省 material）"),
+		"clientUploadId": optStr("客户端预先生成的UUID；重试复用，可在初始化响应返回前取消"),
+	}, "fileName", "fileSize")
 
+	registerSchema(t, "CancelUploadResult", openapi3.Schemas{
+		"completed": optBool("true表示正式文件先于取消提交，不能显示为已取消"),
+		"file":      optRef("仅completed=true时返回，与已提交合并结果相同", "MergeResult"),
+	}, "completed")
 	registerSchema(t, "BatchDeleteMediaRequest", openapi3.Schemas{
 		"ids": strArray("文件 ID 列表"),
 	}, "ids")
@@ -230,13 +235,14 @@ func registerMediaPaths(t *openapi3.T) {
 	post(t, "/uploads", &openapi3.Operation{
 		Tags:        []string{"上传"},
 		Summary:     "初始化上传会话",
-		Description: "初始化上传会话（秒传/续传/新建）。需登录，受上传限流保护。",
+		Description: "初始化上传会话（秒传/续传/新建）。重试复用clientUploadId；已取消ID不能复活。需登录，受上传写额度保护。",
 		Security:    securityCookie(),
 		Parameters:  openapi3.Parameters{csrfHeaderParam()},
 		RequestBody: jsonBody("InitUploadSessionRequest", true, "上传会话初始化参数"),
 		Responses: responses(
 			200, dataResponse("InitSessionResult", "上传会话信息（秒传命中或新建/续传）", 200),
 			400, errorResponse("文件名/大小不合法"),
+			409, errorResponse("上传已取消、正在合并或稳定ID用于其他文件"),
 		),
 	})
 
@@ -268,31 +274,34 @@ func registerMediaPaths(t *openapi3.T) {
 		Responses: responses(
 			200, dataResponse("MergeResult", "合并结果", 200),
 			400, errorResponse("分片不完整"),
+			409, errorResponse("取消先于完成提交，未创建正式文件"),
 		),
 	})
 
 	del(t, "/uploads/{uploadId}", &openapi3.Operation{
 		Tags:        []string{"上传"},
 		Summary:     "取消上传",
-		Description: "取消上传会话并清理已上传分片。需登录，受上传限流保护。",
+		Description: "取消会话并清理分片，不消耗上传写额度。稳定ID尚未初始化时也记录取消；完成先提交时返回completed=true及原文件，不能撤销已完成文件。需登录及CSRF。",
 		Security:    securityCookie(),
 		Parameters: openapi3.Parameters{
 			pathStrParam("uploadId", "上传会话 ID"), csrfHeaderParam(),
 		},
 		Responses: responses(
-			200, messageResponse("上传已取消"),
+			200, dataResponse("CancelUploadResult", "实际取消或已完成结果", 200),
+			403, errorResponse("无权操作他人上传会话或CSRF无效"),
 		),
 	})
 
 	get(t, "/uploads/{uploadId}", &openapi3.Operation{
 		Tags:        []string{"上传"},
 		Summary:     "查询上传状态",
-		Description: "查询上传会话状态（断点续传用）。需登录，受上传限流保护。",
+		Description: "查询上传会话状态，不消耗上传写额度。需登录；取消后的会话返回409，完成后返回原文件结果。",
 		Security:    securityCookie(),
 		Parameters:  openapi3.Parameters{pathStrParam("uploadId", "上传会话 ID")},
 		Responses: responses(
 			200, dataResponse("InitSessionResult", "上传状态（含已上传分片）", 200),
 			404, errorResponse("上传会话不存在"),
+			409, errorResponse("会话已取消或正在合并"),
 		),
 	})
 

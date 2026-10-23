@@ -3,6 +3,9 @@ package coderunner
 import (
 	"context"
 	"fmt"
+	"math"
+	"slices"
+	"sync"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -12,18 +15,17 @@ import (
 	domainshared "blog-api/internal/domain/shared"
 )
 
-// Config 执行服务运行期配置（从 config.CodeRunnerConfig 派生）。
-type Config struct {
-	MaxSourceBytes   uint64
-	MaxConcurrent    int
-	QueueTimeoutSecs uint64
-	TaskTTLSecs      uint64
+// PolicyProvider 提供当前实例的有效运行策略及读取故障。
+type PolicyProvider interface {
+	CodeRunner() (domainsettings.CodeRunnerPolicy, uint64)
+	CodeRunnerError() error
 }
 
 // StreamSink 流式输出的 channel 生产者接口（StreamRegistry 实现之）。
 // service 只依赖此窄接口，不直接依赖 infrastructure 的 StreamRegistry 具体类型。
 type StreamSink interface {
-	Insert(taskID string) chan OutputChunk
+	Insert(taskID string, ttl time.Duration) chan OutputChunk
+	Complete(taskID string, ttl time.Duration)
 }
 
 // StreamConsumer SSE handler 取走 channel 的接口（StreamRegistry 实现之）。
@@ -44,45 +46,21 @@ type LangResolver interface {
 	Normalize(lang string) string
 }
 
-// RunnerAlias SandboxRunner 类型别名（保持 service 依赖 application 层定义的端口）。
-type RunnerAlias = SandboxRunner
-
-// Service 代码执行用例服务。
-//
-// StartExec（轮询路径）与 StartExecStream（SSE 流式路径）共用同一套校验链
-// 与后台执行逻辑。校验：语言白名单 → 源码大小。后台执行：信号量限并发 →
-// ClampLimits 资源钳制 → Runner 起隔离容器。错误脱敏：匿名可见
-// 「不支持的语言/超限」；系统内部异常一律「系统暂时不可用」（见 ADR-0006）。
+// Service 两条执行路径共用策略校验、动态准入与沙箱执行。
 type Service struct {
-	repo          domaincoderunner.TaskRepository
-	runner        RunnerAlias
-	sink          StreamSink
-	resolver      LangResolver
-	settingsStore domainsettings.SettingsStore // 运行时可配的站点设置（enabled + 资源阈值）
-	cfg           Config
-	sem           chan struct{} // 并发槽（MaxConcurrent）
-	ttl           time.Duration
+	repo     domaincoderunner.TaskRepository
+	runner   SandboxRunner
+	sink     StreamSink
+	resolver LangResolver
+	policies PolicyProvider
+	mu       sync.Mutex
+	active   int
+	changed  chan struct{}
 }
 
-// NewService 构造执行服务。sem 大小 = cfg.MaxConcurrent。
-//
-// settingsStore 用于运行时读取 code_runner_enabled + 资源阈值（admin 后台可改，
-// 无需重启）。nil 时降级为只用 cfg（env 配置）。
-func NewService(repo domaincoderunner.TaskRepository, runner RunnerAlias, sink StreamSink, resolver LangResolver, settingsStore domainsettings.SettingsStore, cfg Config) *Service {
-	conc := cfg.MaxConcurrent
-	if conc <= 0 {
-		conc = 4
-	}
-	return &Service{
-		repo:          repo,
-		runner:        runner,
-		sink:          sink,
-		resolver:      resolver,
-		settingsStore: settingsStore,
-		cfg:           cfg,
-		sem:           make(chan struct{}, conc),
-		ttl:           time.Duration(cfg.TaskTTLSecs) * time.Second,
-	}
+// NewService 构造执行服务，不维护独立的资源上限副本。
+func NewService(repo domaincoderunner.TaskRepository, runner SandboxRunner, sink StreamSink, resolver LangResolver, policies PolicyProvider) *Service {
+	return &Service{repo: repo, runner: runner, sink: sink, resolver: resolver, policies: policies, changed: make(chan struct{})}
 }
 
 // StartExec 提交执行请求（轮询路径）。
@@ -90,18 +68,7 @@ func NewService(repo domaincoderunner.TaskRepository, runner RunnerAlias, sink S
 // 校验通过后生成 task_id 入队，后台执行 Run，结果写 repo 供 GetExecResult 轮询。
 // 返回 task_id。语言不支持 / 源码过大时返回领域错误（前端可见具体原因）。
 func (s *Service) StartExec(ctx context.Context, req ExecRequest, userID domainshared.ID) (string, error) {
-	if err := s.validate(ctx, req); err != nil {
-		return "", err
-	}
-
-	langKey := s.resolver.Normalize(req.Language)
-	task := domaincoderunner.NewExecutionTask(langKey, req.Source, userID)
-	if err := s.repo.Save(ctx, task); err != nil {
-		return "", err
-	}
-
-	go s.runBackground(task, langKey, req.Overrides, nil)
-	return task.ID().String(), nil
+	return s.start(ctx, req, userID, false)
 }
 
 // StartExecStream 提交流式执行请求（SSE 路径）。
@@ -109,18 +76,32 @@ func (s *Service) StartExec(ctx context.Context, req ExecRequest, userID domains
 // 校验同 StartExec，额外创建 SSE channel 注册到 sink。后台执行 RunStream，
 // stdout/stderr chunk 实时推 channel；结束时推 done chunk 并更新 repo。
 func (s *Service) StartExecStream(ctx context.Context, req ExecRequest, userID domainshared.ID) (string, error) {
-	if err := s.validate(ctx, req); err != nil {
+	return s.start(ctx, req, userID, true)
+}
+
+func (s *Service) start(ctx context.Context, req ExecRequest, userID domainshared.ID, stream bool) (string, error) {
+	policy, _, err := s.Policy()
+	if err != nil {
 		return "", err
 	}
-
 	langKey := s.resolver.Normalize(req.Language)
+	if err := s.validate(req.Source, langKey, policy); err != nil {
+		return "", err
+	}
+	if err := s.runner.Available(); err != nil {
+		log.Warn().Err(err).Str("language", langKey).Msg("代码执行器不可用")
+		return "", domainshared.Internal("代码执行器不可用", err)
+	}
 	task := domaincoderunner.NewExecutionTask(langKey, req.Source, userID)
+	task.SetRetention(time.Duration(policy.TaskTTLSecs)*time.Second, time.Duration(policy.QueueTimeoutSecs+policy.MaxTimeoutSecs+30)*time.Second)
 	if err := s.repo.Save(ctx, task); err != nil {
 		return "", err
 	}
-
-	ch := s.sink.Insert(task.ID().String())
-	go s.runBackground(task, langKey, req.Overrides, ch)
+	var ch chan OutputChunk
+	if stream {
+		ch = s.sink.Insert(task.ID().String(), task.StorageTTL())
+	}
+	go s.runBackground(task, langKey, req.Overrides, ch, policy)
 	return task.ID().String(), nil
 }
 
@@ -146,76 +127,77 @@ func (s *Service) ConsumeStream(taskID string) chan OutputChunk {
 	return nil
 }
 
-// validate 校验语言白名单、功能开关、源码大小，并刷新资源上限。
-//
-// 每次执行前从 site_settings 读最新配置（运行时可改）：
-//   - code_runner_enabled false → 拒绝
-//   - 资源阈值 → reload 到全局（ClampLimits 据此生效）
-//   - source bytes 上限 → 用 site_settings 配置，未配则 fallback 到 env
-//
-// 非终态错误（语言不支持/功能禁用/源码过大）返回领域错误，前端可见具体原因。
-func (s *Service) validate(ctx context.Context, req ExecRequest) error {
-	if !domaincoderunner.IsValidLanguage(req.Language) {
+// Policy 返回可用于新任务的有效策略，读取故障不降级为默认值。
+func (s *Service) Policy() (domainsettings.CodeRunnerPolicy, uint64, error) {
+	if s.policies == nil {
+		return domainsettings.CodeRunnerPolicy{}, 0, domainshared.Internal("运行策略不可用", nil)
+	}
+	if err := s.policies.CodeRunnerError(); err != nil {
+		return domainsettings.CodeRunnerPolicy{}, 0, domainshared.Internal("运行策略不可用", err)
+	}
+	policy, version := s.policies.CodeRunner()
+	return policy, version, nil
+}
+
+func (s *Service) validate(source, lang string, policy domainsettings.CodeRunnerPolicy) *domainshared.DomainError {
+	if !policy.Enabled {
+		return domainshared.BadRequest("代码运行器已被禁用")
+	}
+	if !domaincoderunner.IsValidLanguage(lang) || !slices.Contains(policy.Languages, lang) {
 		return domainshared.BadRequest("不支持该执行语言")
 	}
-
-	// 读 site_settings（运行时可配）；store 为 nil 时只用 env cfg
-	maxSourceBytes := s.cfg.MaxSourceBytes
-	if s.settingsStore != nil {
-		m, err := s.settingsStore.GetAll(ctx)
-		if err == nil {
-			// 功能开关：默认 true（parseBoolDefaultTrue 语义，老站点/未配视为开）
-			if m["code_runner_enabled"] == "false" {
-				return domainshared.BadRequest("代码运行器已被禁用")
-			}
-			// 刷新资源上限（admin 改完下次执行即生效）
-			if reloadLimitsFromSettings != nil {
-				reloadLimitsFromSettings(m)
-			}
-			// source bytes 从 site_settings 读，未配（空）则用 env
-			if sb := parseSourceBytes(m["code_runner_max_source_bytes"]); sb > 0 {
-				maxSourceBytes = sb
-			}
-		}
-	}
-
-	if uint64(len(req.Source)) > maxSourceBytes {
+	if uint64(len(source)) > policy.MaxSourceBytes {
 		return domainshared.BadRequest("源代码过大")
-	}
-	// 前置探测执行器可用性：daemon 连接失败时直接拒绝
-	if err := s.runner.Available(); err != nil {
-		log.Warn().Err(err).Str("language", req.Language).Msg("代码运行器不可用，拒绝执行")
-		return domainshared.Internal(err.Error(), err)
 	}
 	return nil
 }
 
-// parseSourceBytes 解析 source bytes 字符串，空/非法返回 0（调用方 fallback env）。
-func parseSourceBytes(s string) uint64 {
-	if s == "" {
-		return 0
-	}
-	var n uint64
-	for _, c := range s {
-		if c < '0' || c > '9' {
-			return 0
+// acquire 不替换令牌容器，降容时已有名额仍计入 active。
+func (s *Service) acquire(ctx context.Context) (domainsettings.CodeRunnerPolicy, error) {
+	var ticker *time.Ticker
+	defer func() {
+		if ticker != nil {
+			ticker.Stop()
 		}
-		n = n*10 + uint64(c-'0')
+	}()
+	for {
+		if err := ctx.Err(); err != nil {
+			return domainsettings.CodeRunnerPolicy{}, err
+		}
+		s.mu.Lock()
+		policy, _, err := s.Policy()
+		if err != nil {
+			s.mu.Unlock()
+			return policy, err
+		}
+		if s.active < policy.MaxConcurrent {
+			s.active++
+			s.mu.Unlock()
+			return policy, nil
+		}
+		changed := s.changed
+		s.mu.Unlock()
+		if ticker == nil {
+			ticker = time.NewTicker(50 * time.Millisecond)
+		}
+		select {
+		case <-ctx.Done():
+			return domainsettings.CodeRunnerPolicy{}, ctx.Err()
+		case <-changed:
+		case <-ticker.C:
+		}
 	}
-	return n
 }
 
-// reloadLimitsFromSettings 由 infrastructure 注入（调 ReloadMaxLimitsFromMap）。
-// 接受 site_settings 的 map，infrastructure 内部用 env config 做 fallback。
-// 避免 application 层直接 import infrastructure。
-var reloadLimitsFromSettings func(m map[string]string)
-
-// SetReloadLimitsFn 由 infrastructure 在初始化时调用，注入资源上限刷新函数。
-func SetReloadLimitsFn(fn func(m map[string]string)) {
-	reloadLimitsFromSettings = fn
+func (s *Service) release() {
+	s.mu.Lock()
+	s.active--
+	close(s.changed)
+	s.changed = make(chan struct{})
+	s.mu.Unlock()
 }
 
-// runBackground 后台执行：排队等信号量 → ClampLimits → Run/RunStream → 更新 task。
+// runBackground 排队准入后重查策略，并复用两条沙箱执行路径。
 //
 // emit 非 nil 时为流式模式（stdout/stderr 实时推 channel）。
 // 系统内部异常（容器拉起失败等）记日志，task 标 Failed + 脱敏文案。
@@ -224,16 +206,25 @@ func (s *Service) runBackground(
 	langKey string,
 	overrides *domaincoderunner.ResourceLimits,
 	emit chan OutputChunk,
+	submitted domainsettings.CodeRunnerPolicy,
 ) {
 	ctx := context.Background()
-
-	// 排队等待容器槽（带超时，防排队过久）
-	queueTimeout := time.Duration(s.cfg.QueueTimeoutSecs) * time.Second
-	select {
-	case s.sem <- struct{}{}:
-		defer func() { <-s.sem }()
-	case <-time.After(queueTimeout):
-		s.finishFailed(ctx, task, emit, 0, false, fmt.Errorf("排队超时"))
+	queueCtx, cancel := context.WithDeadline(ctx, task.CreatedAt().Add(time.Duration(submitted.QueueTimeoutSecs)*time.Second))
+	defer cancel()
+	current, err := s.acquire(queueCtx)
+	if err != nil {
+		if queueCtx.Err() != nil {
+			task.MarkRejected("排队超时")
+			s.complete(ctx, task, emit)
+		} else {
+			s.finishFailed(ctx, task, emit, 0, false, err)
+		}
+		return
+	}
+	defer s.release()
+	if err := s.validate(task.Source(), langKey, current); err != nil {
+		task.MarkRejected(err.Message)
+		s.complete(ctx, task, emit)
 		return
 	}
 
@@ -244,15 +235,16 @@ func (s *Service) runBackground(
 		return
 	}
 
-	task.MarkRunning()
-	s.persist(ctx, task)
-
-	// 合并 + 钳制资源限制
 	limits := defaultLimits
 	if overrides != nil {
 		limits = *overrides
 	}
-	limits = clampLimits(limits, langAllowNet)
+	limits = clampLimits(clampLimits(limits, langAllowNet, submitted), langAllowNet, current)
+	task.MarkRunning()
+	if err := s.repo.Save(ctx, task); err != nil {
+		s.finishFailed(ctx, task, emit, 0, false, err)
+		return
+	}
 
 	start := time.Now()
 	var outcome RunOutcome
@@ -290,10 +282,7 @@ func (s *Service) finishTask(ctx context.Context, task *domaincoderunner.Executi
 		task.MarkError(outcome.Stdout, outcome.Stderr, outcome.ExitCode, duration)
 	}
 
-	s.persist(ctx, task)
-	if emit != nil {
-		s.emitDone(emit, task)
-	}
+	s.complete(ctx, task, emit)
 }
 
 // finishFailed 标记失败并收尾（排队超时、语言未注册等前置失败）。
@@ -304,9 +293,14 @@ func (s *Service) finishFailed(ctx context.Context, task *domaincoderunner.Execu
 		log.Error().Err(cause).Str("task_id", task.ID().String()).Msg("执行前置失败")
 		task.MarkFailed(duration)
 	}
+	s.complete(ctx, task, emit)
+}
+
+func (s *Service) complete(ctx context.Context, task *domaincoderunner.ExecutionTask, emit chan OutputChunk) {
 	s.persist(ctx, task)
 	if emit != nil {
 		s.emitDone(emit, task)
+		s.sink.Complete(task.ID().String(), task.RetentionTTL())
 	}
 }
 
@@ -339,14 +333,16 @@ func exitCodeJSON(code *int) string {
 	return fmt.Sprintf("%d", *code)
 }
 
-// clampLimits 资源钳制端口。由 infrastructure 通过 SetClampLimits 注入，
-// 避免 application 直接依赖 infrastructure 包。
-var clampLimits = func(merged domaincoderunner.ResourceLimits, langAllowsNetwork bool) domaincoderunner.ResourceLimits {
-	return merged // 兜底：未注入时不钳制（仅测试用）
-}
-
-// SetClampLimits 由 infrastructure 在初始化时调用，注入真实的 ClampLimits。
-// 生产必须调用，否则资源钳制不生效。
-func SetClampLimits(fn func(domaincoderunner.ResourceLimits, bool) domaincoderunner.ResourceLimits) {
-	clampLimits = fn
+func clampLimits(limits domaincoderunner.ResourceLimits, languageNetwork bool, policy domainsettings.CodeRunnerPolicy) domaincoderunner.ResourceLimits {
+	cpu := limits.CPUCores
+	if math.IsNaN(cpu) || math.IsInf(cpu, 0) {
+		cpu = 0.1
+	}
+	return domaincoderunner.ResourceLimits{
+		CPUCores:     min(max(cpu, 0.1), policy.MaxCPUCores),
+		MemoryMB:     min(max(limits.MemoryMB, 16), policy.MaxMemoryMB),
+		TimeoutSecs:  min(max(limits.TimeoutSecs, 1), policy.MaxTimeoutSecs),
+		OutputBytes:  min(max(limits.OutputBytes, 1), policy.MaxOutputBytes),
+		AllowNetwork: limits.AllowNetwork && languageNetwork && policy.AllowNetwork,
+	}
 }

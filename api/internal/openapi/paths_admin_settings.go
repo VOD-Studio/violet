@@ -4,8 +4,8 @@ import "github.com/getkin/kin-openapi/openapi3"
 
 // registerAdminSettingsPaths 注册后台站点设置与操作日志接口。
 func registerAdminSettingsPaths(t *openapi3.T) {
-	// 站点设置按菜单子页拆成 7 组，每组独立 GET/PUT，schema 字段全 optional：
-	// GET 返回该组全量字段，PUT 接收该组部分字段（指针表部分更新）。
+	registerRuntimeSettingsPaths(t)
+	// 通用设置仍按组部分更新；运行策略使用独立版本化契约。
 
 	registerSchema(t, "GeneralSettings", openapi3.Schemas{
 		"site_name":           optStr("站点名称"),
@@ -59,17 +59,6 @@ func registerAdminSettingsPaths(t *openapi3.T) {
 		"llm_protocol": optStr("LLM 协议（目前仅支持 openai）"),
 	})
 
-	registerSchema(t, "CodeRunnerSettings", openapi3.Schemas{
-		"code_runner_enabled":          optBool("是否启用代码运行器"),
-		"code_runner_max_cpu_cores":    optFloat("单次执行 CPU 上限（核数）"),
-		"code_runner_max_memory_mb":    optInt64("单次执行内存上限（MB）"),
-		"code_runner_max_timeout_secs": optInt64("单次执行超时上限（秒）"),
-		"code_runner_max_output_bytes": optInt64("输出大小上限（字节）"),
-		"code_runner_max_source_bytes": optInt64("源码大小上限（字节）"),
-		"code_runner_allow_network":    optBool("是否允许网络（需作者+语言+全局三者取与）"),
-		"code_runner_languages":        optStr("语言白名单（逗号分隔 canonical key，空=全部）"),
-	})
-
 	// ---- 分组 GET/PUT 路径 ----
 	settingsGroups := []struct {
 		path, schema, summary string
@@ -80,7 +69,6 @@ func registerAdminSettingsPaths(t *openapi3.T) {
 		{"/admin/settings/profile", "ProfileSettings", "关于博主内容"},
 		{"/admin/settings/about", "AboutSettings", "关于页区块配置"},
 		{"/admin/settings/llm", "LlmSettings", "LLM 配置"},
-		{"/admin/settings/code-runner", "CodeRunnerSettings", "代码运行器"},
 	}
 	for _, g := range settingsGroups {
 		get(t, g.path, &openapi3.Operation{

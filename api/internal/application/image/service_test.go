@@ -1,92 +1,100 @@
-// Package image 图片服务用例编排:查缓存 → (singleflight) → miss 调 transformer → 写缓存。
 package image
 
 import (
+	"context"
+	"os"
+	"path/filepath"
+	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	domainimage "blog-api/internal/domain/image"
+	domainsettings "blog-api/internal/domain/settings"
 )
 
-// --- fakes ---
+type fakeTransformer struct{ calls int }
 
-// fakeTransformer 记录调用次数,返回固定结果
-type fakeTransformer struct {
-	calls int
-}
-
-func (f *fakeTransformer) Transform(srcPath string, params domainimage.TransformParams) (domainimage.TransformResult, error) {
+func (f *fakeTransformer) Transform(_ context.Context, source []byte, _ domainimage.TransformParams, _ domainsettings.ImagePolicy) (domainimage.TransformResult, error) {
 	f.calls++
-	return domainimage.TransformResult{Bytes: []byte("fresh"), MimeType: "image/jpeg"}, nil
+	return domainimage.TransformResult{Bytes: source, MimeType: "image/jpeg"}, nil
 }
 
-// fakeCache 可预填数据,模拟命中
 type fakeCache struct {
+	mu    sync.Mutex
 	store map[string]domainimage.TransformResult
 }
 
 func (f *fakeCache) Get(key string) (domainimage.TransformResult, error) {
-	if v, ok := f.store[key]; ok {
-		return v, nil
-	}
-	return domainimage.TransformResult{}, nil
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.store[key], nil
 }
 func (f *fakeCache) Set(key string, result domainimage.TransformResult) error {
-	if f.store == nil {
-		f.store = map[string]domainimage.TransformResult{}
-	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	f.store[key] = result
 	return nil
 }
 
-// --- tests ---
-
-// TestServe_MissThenHit 第一次 miss 调用 transform,第二次命中缓存不再调用
-func TestServe_MissThenHit(t *testing.T) {
-	tr := &fakeTransformer{}
-	cache := &fakeCache{store: map[string]domainimage.TransformResult{}}
-	svc := NewService(tr, cache, "uploads", "/uploads/")
-	params := domainimage.TransformParams{Width: 50, Format: "jpeg"}
-
-	// 第一次:miss → 调用 transform → 回填缓存
-	res, err := svc.Serve("/uploads/sample.jpg", params)
-	if err != nil {
-		t.Fatalf("Serve 失败: %v", err)
-	}
-	if tr.calls != 1 {
-		t.Fatalf("未命中应调用 1 次 transform,实际 %d", tr.calls)
-	}
-	if string(res.Bytes) != "fresh" {
-		t.Fatal("应返回 transform 结果")
-	}
-
-	// 第二次:应命中缓存,transform 不再调用
-	res2, err := svc.Serve("/uploads/sample.jpg", params)
-	if err != nil || tr.calls != 1 {
-		t.Fatalf("第二次应命中缓存,transform 调用 %d", tr.calls)
-	}
-	if string(res2.Bytes) != "fresh" {
-		t.Fatal("应返回缓存内容")
-	}
+type mutablePolicy struct {
+	values  domainsettings.ImagePolicy
+	version uint64
 }
 
-// TestServe_CustomURLPrefix 验证使用非默认 upload_path_prefix 时路径映射正确
-func TestServe_CustomURLPrefix(t *testing.T) {
+func (p *mutablePolicy) Image() (domainsettings.ImagePolicy, uint64) { return p.values, p.version }
+
+func TestServeContentAndPolicyIdentity(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "sample.jpg")
+	require.NoError(t, os.WriteFile(path, []byte("first"), 0o600))
 	tr := &fakeTransformer{}
-	cache := &fakeCache{store: map[string]domainimage.TransformResult{}}
-	svc := NewService(tr, cache, "uploads", "/media/")
+	policy := &mutablePolicy{values: domainsettings.DefaultImagePolicy(), version: 1}
+	svc := NewService(tr, &fakeCache{store: map[string]domainimage.TransformResult{}}, root, "/uploads/", policy)
 	params := domainimage.TransformParams{Width: 50, Format: "jpeg"}
+	for range 2 {
+		result, err := svc.Serve(context.Background(), "/uploads/sample.jpg", params)
+		require.NoError(t, err)
+		require.Equal(t, "first", string(result.Bytes))
+	}
+	require.Equal(t, 1, tr.calls)
+	// 同长度覆盖也必须失效，不能只比较路径、尺寸或时间戳。
+	require.NoError(t, os.WriteFile(path, []byte("other"), 0o600))
+	result, err := svc.Serve(context.Background(), "/uploads/sample.jpg", params)
+	require.NoError(t, err)
+	require.Equal(t, "other", string(result.Bytes))
+	require.Equal(t, 2, tr.calls)
+	policy.version++
+	_, err = svc.Serve(context.Background(), "/uploads/sample.jpg", params)
+	require.NoError(t, err)
+	require.Equal(t, 3, tr.calls)
+	policy.values.WebPQuality--
+	_, err = svc.Serve(context.Background(), "/uploads/sample.jpg", params)
+	require.NoError(t, err)
+	require.Equal(t, 4, tr.calls)
+	params.Width++
+	_, err = svc.Serve(context.Background(), "/uploads/sample.jpg", params)
+	require.NoError(t, err)
+	require.Equal(t, 5, tr.calls)
+	require.NoError(t, os.Remove(path))
+	_, err = svc.Serve(context.Background(), "/uploads/sample.jpg", params)
+	require.ErrorIs(t, err, os.ErrNotExist)
+}
 
-	_, err := svc.Serve("/media/sample.jpg", params)
-	if err != nil {
-		t.Fatalf("Serve 失败: %v", err)
+func TestServeCustomPrefixAndSourceBudget(t *testing.T) {
+	root := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(root, "sample.jpg"), []byte("data"), 0o600))
+	tr := &fakeTransformer{}
+	policy := &mutablePolicy{values: domainsettings.DefaultImagePolicy()}
+	svc := NewService(tr, &fakeCache{store: map[string]domainimage.TransformResult{}}, root, "/media/", policy)
+	_, err := svc.Serve(context.Background(), "/media/sample.jpg", domainimage.TransformParams{})
+	require.NoError(t, err)
+	for _, path := range []string{"/uploads/sample.jpg", "/media/../sample.jpg"} {
+		_, err = svc.Serve(context.Background(), path, domainimage.TransformParams{})
+		require.Error(t, err)
 	}
-	if tr.calls != 1 {
-		t.Fatalf("自定义前缀应调用 1 次 transform,实际 %d", tr.calls)
-	}
-
-	// 旧前缀不应命中物理文件（这里仅验证不会 panic,transform 会尝试不存在的路径）
-	_, _ = svc.Serve("/uploads/sample.jpg", params)
-	if tr.calls != 2 {
-		t.Fatalf("旧前缀不应命中缓存,应再次调用 transform,实际 %d", tr.calls)
-	}
+	policy.values.MaxInputBytes = 3
+	_, err = svc.Serve(context.Background(), "/media/sample.jpg", domainimage.TransformParams{})
+	require.Error(t, err)
+	require.Equal(t, 1, tr.calls)
 }

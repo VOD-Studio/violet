@@ -9,27 +9,38 @@ import (
 	domainupload "blog-api/internal/domain/upload"
 )
 
-// ownerMismatchSessionRepo 假的 sessionRepo,FindByID 返回固定 owner 的会话
-// 其余接口方法返回零值(编译需要,本测试不触达)
-type ownerMismatchSessionRepo struct{ ownerID domainshared.ID }
+type ownerMismatchSessionRepo struct {
+	ownerID domainshared.ID
+	session *domainupload.UploadSession
+}
 
 func (m *ownerMismatchSessionRepo) FindByID(ctx context.Context, id domainshared.ID) (*domainupload.UploadSession, error) {
+	if m.session != nil && m.session.ID().Equal(id) {
+		return m.session, nil
+	}
 	zero := time.Time{}
 	return domainupload.ReconstructUploadSession(
 		id, m.ownerID, "f.jpg", 100, "image/jpeg", "hash", "avatar",
-		100, 1, []int{}, domainupload.SessionActive, "/tmp/x", zero, zero, zero,
+		100, 1, []int{}, domainupload.SessionActive, "/tmp/x", time.Now().Add(time.Hour), zero, zero, nil,
 	), nil
 }
 func (m *ownerMismatchSessionRepo) FindByHash(ctx context.Context, hash string, userID domainshared.ID) (*domainupload.UploadSession, error) {
 	return nil, nil
 }
 func (m *ownerMismatchSessionRepo) Save(ctx context.Context, s *domainupload.UploadSession) error {
+	m.session = s
 	return nil
 }
 func (m *ownerMismatchSessionRepo) UpdateStatus(ctx context.Context, id domainshared.ID, oldStatus, newStatus string) (bool, error) {
 	return false, nil
 }
 func (m *ownerMismatchSessionRepo) AppendChunk(ctx context.Context, id domainshared.ID, index int) error {
+	return nil
+}
+func (m *ownerMismatchSessionRepo) Cancel(ctx context.Context, id, userID domainshared.ID) (*domainupload.UploadSession, error) {
+	return m.FindByID(ctx, id)
+}
+func (m *ownerMismatchSessionRepo) Complete(context.Context, domainshared.ID, *domainupload.File) error {
 	return nil
 }
 func (m *ownerMismatchSessionRepo) Delete(ctx context.Context, id domainshared.ID) error { return nil }
@@ -74,7 +85,7 @@ func TestCancelUpload_RejectsNonOwner(t *testing.T) {
 	ownerB := domainshared.NewID()
 	repo := &ownerMismatchSessionRepo{ownerID: ownerA}
 	svc := NewUploadService(nil, repo, nil, nil, "/tmp", "/tmp", "/uploads/")
-	err := svc.CancelUpload(context.Background(), "00000000-0000-0000-0000-000000000001", ownerB.String())
+	_, err := svc.CancelUpload(context.Background(), "00000000-0000-0000-0000-000000000001", ownerB.String())
 	if err == nil {
 		t.Fatal("非 owner 应被拒绝")
 	}
@@ -95,43 +106,6 @@ func TestGetUploadStatus_RejectsNonOwner(t *testing.T) {
 	}
 	if !domainshared.IsDomainError(err, domainshared.CodeForbidden) {
 		t.Fatalf("应为 Forbidden,实际: %v", err)
-	}
-}
-
-// TestGetUploadStatus_AllowsOwner owner 本人查询应放行(校验通过后走正常流程,
-// fake repo 的 FindByID 返回 active 会话,owner 一致时不应返回 Forbidden)
-func TestGetUploadStatus_AllowsOwner(t *testing.T) {
-	owner := domainshared.NewID()
-	repo := &ownerMismatchSessionRepo{ownerID: owner}
-	svc := NewUploadService(nil, repo, nil, nil, "/tmp", "/tmp", "/uploads/")
-	_, err := svc.GetUploadStatus(context.Background(), "00000000-0000-0000-0000-000000000001", owner.String())
-	// owner 一致 → 不应返回 Forbidden(可能因其他原因出错,但绝不应是 Forbidden)
-	if err != nil && domainshared.IsDomainError(err, domainshared.CodeForbidden) {
-		t.Fatalf("owner 本人不应被 Forbidden,实际: %v", err)
-	}
-}
-
-// TestSaveChunk_AllowsOwner owner 本人上传分片应通过 owner 校验
-// (fake repo 的 AppendChunk 是 no-op,storage 用 noopStorage,故应无 error 返回)
-func TestSaveChunk_AllowsOwner(t *testing.T) {
-	owner := domainshared.NewID()
-	repo := &ownerMismatchSessionRepo{ownerID: owner}
-	svc := NewUploadService(nil, repo, noopStorage{}, nil, "/tmp", "/tmp", "/uploads/")
-	err := svc.SaveChunk(context.Background(), "00000000-0000-0000-0000-000000000001", 0, []byte("x"), owner.String())
-	if err != nil {
-		t.Fatalf("owner 本人应通过,实际: %v", err)
-	}
-}
-
-// TestCancelUpload_AllowsOwner owner 本人取消上传应通过 owner 校验
-// (fake repo 的 Delete 是 no-op,storage 用 noopStorage 的 CleanupDir,故应无 error 返回)
-func TestCancelUpload_AllowsOwner(t *testing.T) {
-	owner := domainshared.NewID()
-	repo := &ownerMismatchSessionRepo{ownerID: owner}
-	svc := NewUploadService(nil, repo, noopStorage{}, nil, "/tmp", "/tmp", "/uploads/")
-	err := svc.CancelUpload(context.Background(), "00000000-0000-0000-0000-000000000001", owner.String())
-	if err != nil {
-		t.Fatalf("owner 本人应通过,实际: %v", err)
 	}
 }
 

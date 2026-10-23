@@ -2,42 +2,7 @@ package coderunner
 
 import (
 	"testing"
-
-	domaincoderunner "blog-api/internal/domain/coderunner"
 )
-
-func TestNormalizeLang(t *testing.T) {
-	t.Parallel()
-	cases := []struct {
-		name  string
-		input string
-		want  string
-	}{
-		{"canonical python 原样通过", "python", "python"},
-		{"canonical node 原样通过", "node", "node"},
-		{"canonical go 原样通过", "go", "go"},
-		{"canonical rust 原样通过", "rust", "rust"},
-		{"canonical bun 原样通过", "bun", "bun"},
-		{"js → node", "js", "node"},
-		{"javascript → node", "javascript", "node"},
-		{"rs → rust", "rs", "rust"},
-		{"ts → bun", "ts", "bun"},
-		{"typescript → bun", "typescript", "bun"},
-		{"大小写不敏感", "JavaScript", "node"},
-		{"首尾空白容忍", "  JS  ", "node"},
-		{"tab 空白容忍", "\tRS\t", "rust"},
-		{"未注册语言原样返回", "ruby", "ruby"},
-		{"空串原样返回", "", ""},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			if got := NormalizeLang(tc.input); got != tc.want {
-				t.Errorf("NormalizeLang(%q) = %q, want %q", tc.input, got, tc.want)
-			}
-		})
-	}
-}
 
 func TestIsSupportedLang(t *testing.T) {
 	t.Parallel()
@@ -53,26 +18,6 @@ func TestIsSupportedLang(t *testing.T) {
 		if IsSupportedLang(lang) {
 			t.Errorf("IsSupportedLang(%q) 应为 false", lang)
 		}
-	}
-}
-
-func TestIsSupportedLang_Whitelist(t *testing.T) {
-	// 白名单收窄：仅 python/node 放行
-	save := globalAllowedLanguages
-	globalAllowedLanguages = []string{"python", "node"}
-	defer func() { globalAllowedLanguages = save }()
-
-	if !IsSupportedLang("python") {
-		t.Error("白名单内 python 应放行")
-	}
-	if !IsSupportedLang("node") {
-		t.Error("白名单内 node 应放行")
-	}
-	if IsSupportedLang("go") {
-		t.Error("白名单外 go 应拒绝")
-	}
-	if IsSupportedLang("rust") {
-		t.Error("白名单外 rust 应拒绝")
 	}
 }
 
@@ -202,104 +147,5 @@ func TestLanguages_Registry(t *testing.T) {
 		if def.Image != wantImage {
 			t.Errorf("%q Image = %q, want %q", lang, def.Image, wantImage)
 		}
-	}
-}
-
-func TestClampLimits(t *testing.T) {
-	t.Parallel()
-	save := globalMaxLimits
-	globalMaxLimits = maxLimitsSnapshot{
-		MaxCPUCores:    2.0,
-		MaxMemoryMB:    1024,
-		MaxTimeoutSecs: 30,
-		MaxOutputBytes: 1048576,
-		AllowNetwork:   false,
-	}
-	defer func() { globalMaxLimits = save }()
-
-	t.Run("超出上限被钳制", func(t *testing.T) {
-		t.Parallel()
-		raw := domaincoderunner.ResourceLimits{
-			CPUCores:     5.0,
-			MemoryMB:     4096,
-			TimeoutSecs:  120,
-			OutputBytes:  9999999,
-			AllowNetwork: true,
-		}
-		clamped := ClampLimits(raw, true)
-		if clamped.CPUCores > 2.0 {
-			t.Errorf("CPUCores = %v, 应 <= 2.0", clamped.CPUCores)
-		}
-		if clamped.MemoryMB > 1024 {
-			t.Errorf("MemoryMB = %v, 应 <= 1024", clamped.MemoryMB)
-		}
-		if clamped.TimeoutSecs > 30 {
-			t.Errorf("TimeoutSecs = %v, 应 <= 30", clamped.TimeoutSecs)
-		}
-		if clamped.OutputBytes > 1048576 {
-			t.Errorf("OutputBytes = %v, 应 <= 1048576", clamped.OutputBytes)
-		}
-		if clamped.AllowNetwork {
-			t.Error("全局 AllowNetwork=false 时应被钳为 false")
-		}
-	})
-
-	t.Run("allow_network 三者取与", func(t *testing.T) {
-		t.Parallel()
-		// 全局关 → 无论作者/语言如何都 false
-		clamped := ClampLimits(domaincoderunner.ResourceLimits{AllowNetwork: true}, true)
-		if clamped.AllowNetwork {
-			t.Error("全局关时应 false")
-		}
-	})
-
-	t.Run("allow_network 语言不允许时 false", func(t *testing.T) {
-		t.Parallel()
-		// 语言不允许网络（langAllowsNetwork=false）→ 即使作者声明也 false
-		save2 := globalMaxLimits.AllowNetwork
-		globalMaxLimits.AllowNetwork = true
-		defer func() { globalMaxLimits.AllowNetwork = save2 }()
-		clamped := ClampLimits(domaincoderunner.ResourceLimits{AllowNetwork: true}, false)
-		if clamped.AllowNetwork {
-			t.Error("语言不允许时应 false")
-		}
-	})
-}
-
-func TestClampLimits_Safeguarded(t *testing.T) {
-	// 配置上限极低时的边界保护（min 下限）
-	t.Parallel()
-	save := globalMaxLimits
-	globalMaxLimits = maxLimitsSnapshot{
-		MaxCPUCores:    0.05,
-		MaxMemoryMB:    8,
-		MaxTimeoutSecs: 1,
-		MaxOutputBytes: 100,
-		AllowNetwork:   true,
-	}
-	defer func() { globalMaxLimits = save }()
-
-	raw := domaincoderunner.ResourceLimits{
-		CPUCores:     1.0,
-		MemoryMB:     64,
-		TimeoutSecs:  10,
-		OutputBytes:  50,
-		AllowNetwork: true,
-	}
-	clamped := ClampLimits(raw, true)
-	if clamped.CPUCores != 0.05 {
-		t.Errorf("CPUCores = %v, want 0.05", clamped.CPUCores)
-	}
-	if clamped.MemoryMB != 8 {
-		t.Errorf("MemoryMB = %v, want 8", clamped.MemoryMB)
-	}
-	if clamped.TimeoutSecs != 1 {
-		t.Errorf("TimeoutSecs = %v, want 1", clamped.TimeoutSecs)
-	}
-	if clamped.OutputBytes != 50 {
-		t.Errorf("OutputBytes = %v, want 50", clamped.OutputBytes)
-	}
-	if !clamped.AllowNetwork {
-		t.Error("三者皆真时应 true")
 	}
 }

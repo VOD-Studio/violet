@@ -1,5 +1,7 @@
 package upload
 
+import "context"
+
 // ProcessResult 转码结果
 type ProcessResult struct {
 	Path     string // 最终落盘路径
@@ -10,8 +12,10 @@ type ProcessResult struct {
 // ImageProcessor 图片处理端口(上传时转码/校验/尺寸/缩略图)
 //
 // domain 层定义端口,application 层依赖端口,infrastructure 层提供实现。
-// 当前实现走纯 Go(imaging + nativewebp);未来可切换 cgo libwebp,只需替换实现。
+// 编码器在独立进程运行，API 本身不依赖 CGO。
 type ImageProcessor interface {
+	// ForRequest 固定本次上传的策略和取消上下文。
+	ForRequest(ctx context.Context) ImageProcessor
 	// Validate 校验图片有效性(magic bytes + 解码),返回真实 MIME
 	Validate(path string) (mime string, err error)
 	// Transcode 转 WebP;GIF/WebP 跳过,JPEG/PNG 解码后编码,

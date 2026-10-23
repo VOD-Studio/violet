@@ -4,7 +4,6 @@ go 1.26.10
 
 require (
 	codeberg.org/readeck/go-readability/v2 v2.1.1
-	github.com/HugoSmits86/nativewebp v1.3.0
 	github.com/JohannesKaufmann/html-to-markdown v1.6.0
 	github.com/PuerkitoBio/goquery v1.9.2
 	github.com/SherClockHolmes/webpush-go v1.4.0

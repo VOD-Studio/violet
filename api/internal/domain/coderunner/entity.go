@@ -44,6 +44,11 @@ type ExecutionTask struct {
 	durationMs uint64
 	// timestamps 创建/更新时间（每次状态变更刷新 UpdatedAt，供 TaskRepository 判定 GC 时机）
 	timestamps domainshared.Timestamps
+	// retentionTTL 任务完成后的结果保留期，提交时固定并随任务持久化。
+	retentionTTL time.Duration
+	// activeTTL 排队、执行及收尾的额外存活预算，与保留期一同在提交时固定；
+	// 仅非终态任务将其叠加进 StorageTTL。
+	activeTTL time.Duration
 }
 
 // NewExecutionTask 创建新执行任务（Queued 状态）。
@@ -138,8 +143,31 @@ func (t *ExecutionTask) MarkFailed(durationMs uint64) {
 	t.timestamps.UpdatedAt = time.Now()
 }
 
+// MarkRejected 记录可公开的排队或策略拒绝原因。
+func (t *ExecutionTask) MarkRejected(reason string) {
+	t.MarkFailed(0)
+	t.stderr = reason
+}
+
+// SetRetention 固定提交时的保留期，后续策略修改不追溯已有任务。
+func (t *ExecutionTask) SetRetention(retention, active time.Duration) {
+	t.retentionTTL = retention
+	t.activeTTL = active
+}
+
+// RetentionTTL 返回完成后的结果保留期。
+func (t *ExecutionTask) RetentionTTL() time.Duration { return t.retentionTTL }
+
+// StorageTTL 活动任务额外保留排队和执行预算，避免短结果保留期使运行中任务消失。
+func (t *ExecutionTask) StorageTTL() time.Duration {
+	if IsTerminalStatus(t.status) {
+		return t.retentionTTL
+	}
+	return t.retentionTTL + t.activeTTL
+}
+
 // 访问器
-func (t *ExecutionTask) ID() domainshared.ID { return t.id }
+func (t *ExecutionTask) ID() domainshared.ID     { return t.id }
 func (t *ExecutionTask) UserID() domainshared.ID { return t.userID }
 func (t *ExecutionTask) Language() string        { return t.language }
 func (t *ExecutionTask) Source() string          { return t.source }

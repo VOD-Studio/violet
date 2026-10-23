@@ -2,7 +2,6 @@ import { apiGet, apiPost, apiPut } from "@shared/api/request";
 import type {
 	AboutSettingsDTO,
 	AuthSettingsDTO,
-	CodeRunnerSettingsDTO,
 	GeneralSettingsDTO,
 	GithubSettingsDTO,
 	LlmSettingsDTO,
@@ -51,11 +50,6 @@ export const updateAbout = (body: Partial<AboutSettingsDTO>) =>
 export const getLlm = () => apiGet<LlmSettingsDTO>(`${BASE}/llm`);
 export const updateLlm = (body: Partial<LlmSettingsDTO>) =>
 	apiPut<LlmSettingsDTO>(`${BASE}/llm`, body);
-
-/** getCodeRunner / updateCodeRunner —— 代码运行器组 */
-export const getCodeRunner = () => apiGet<CodeRunnerSettingsDTO>(`${BASE}/code-runner`);
-export const updateCodeRunner = (body: Partial<CodeRunnerSettingsDTO>) =>
-	apiPut<CodeRunnerSettingsDTO>(`${BASE}/code-runner`, body);
 
 /** OAuth 凭据状态与写入（env 域，独立于 settings 分组，不落库） */
 export const getOAuthStatus = () =>

@@ -69,6 +69,7 @@ function AdminMediaPage() {
 
 	// 弹窗状态
 	const [uploadOpen, setUploadOpen] = useState(false);
+	const [uploadBusy, setUploadBusy] = useState(false);
 	const [editFile, setEditFile] = useState<MediaFile | null>(null);
 	const [editOpen, setEditOpen] = useState(false);
 	const [coverFile, setCoverFile] = useState<MediaFile | null>(null);
@@ -372,7 +373,15 @@ function AdminMediaPage() {
 			{/* 上传弹窗 */}
 			<Modal
 				open={uploadOpen}
-				onOpenChange={setUploadOpen}
+				onOpenChange={(open) => {
+					if (
+						!open &&
+						uploadBusy &&
+						!window.confirm("仍有文件排队或上传，关闭将取消未完成项。是否关闭？")
+					)
+						return;
+					setUploadOpen(open);
+				}}
 				title="上传素材"
 				description="支持拖拽多文件，分片上传含进度"
 				size="md"
@@ -380,6 +389,7 @@ function AdminMediaPage() {
 			>
 				<Uploader
 					purpose="material"
+					onBusyChange={setUploadBusy}
 					accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.7z,.md"
 					maxSize={1024 * 1024 * 1024}
 					maxFiles={10}

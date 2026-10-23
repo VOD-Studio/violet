@@ -125,7 +125,9 @@ jobs:
           context: ./api
           push: true
           tags: ghcr.io/vod-studio/violet-api:sha-${{ needs.prepare.outputs.revision }}
-          build-args: API_VERSION=${{ needs.prepare.outputs.version }}
+          build-args: |
+            API_VERSION=${{ needs.prepare.outputs.version }}
+            APK_MIRROR=dl-cdn.alpinelinux.org
           cache-from: type=gha,scope=violet-api
           cache-to: type=gha,mode=max,scope=violet-api
 

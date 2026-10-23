@@ -4,7 +4,6 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"net/http"
-	"time"
 
 	"blog-api/config"
 	appsiteimpression "blog-api/internal/application/siteimpression"
@@ -12,7 +11,6 @@ import (
 	siteimpressionhttp "blog-api/internal/interfaces/http/handler/siteimpression"
 	"blog-api/internal/middleware"
 
-	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -23,18 +21,18 @@ const (
 
 // SiteImpressionContainer 将令牌摘要与 IP 限流隔离到不同 HMAC 子密钥。
 type SiteImpressionContainer struct {
-	Handler   *siteimpressionhttp.Handler
-	RateLimit func(http.Handler) http.Handler
+	Handler  *siteimpressionhttp.Handler
+	Identity func(*http.Request) string
 }
 
 // NewSiteImpressionContainer 派生后的密钥只进入各自的运行时边界。
-func NewSiteImpressionContainer(db *gorm.DB, redisClient *redis.Client, rootKey []byte, cookieCfg config.CookieConfig) *SiteImpressionContainer {
+func NewSiteImpressionContainer(db *gorm.DB, rootKey []byte, cookieCfg config.CookieConfig) *SiteImpressionContainer {
 	tokenKey := deriveSiteImpressionKey(rootKey, siteImpressionTokenPurpose)
 	rateLimitKey := deriveSiteImpressionKey(rootKey, siteImpressionRateLimitPurpose)
 	service := appsiteimpression.NewService(gormrepo.NewSiteImpressionRepository(db), tokenKey)
 	return &SiteImpressionContainer{
-		Handler:   siteimpressionhttp.NewHandler(service, cookieCfg),
-		RateLimit: middleware.RateLimitByHashedIP("site-impressions", redisClient, rateLimitKey, time.Minute, 10),
+		Handler:  siteimpressionhttp.NewHandler(service, cookieCfg),
+		Identity: middleware.HashedIPIdentity(rateLimitKey),
 	}
 }
 

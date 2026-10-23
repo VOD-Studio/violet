@@ -6,14 +6,18 @@
  * - NodeViewContent 渲染可编辑代码区（contentEditable），保留 lowlight 实时高亮
  */
 
-import { getExecResult, isTerminalStatus, submitExec } from "@features/code-run";
+import { getExecResult, submitExec } from "@entities/code-runner/api/exec";
+import {
+	type CodeRunnerAvailability,
+	useCodeRunnerAvailability,
+} from "@entities/code-runner/hooks/useCodeRunnerAvailability";
+import { isTerminalStatus } from "@entities/code-runner/model/types";
 import { useDebouncedValue } from "@shared/hooks/use-debounced-value";
 import { findArticleEmbed, LazyArticleEmbed } from "@shared/ui/article-embeds";
 import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
 import { Fragment } from "@tiptap/pm/model";
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewContent, NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
-// isTerminalStatus 是值（函数），与上面同属值导入
 import {
 	Button,
 	Select,
@@ -159,7 +163,7 @@ export function resolveLanguageFromElement(element: Element): string | null {
  * 避免 readability 抓取的代码块因结构差异被解析为纯文本。
  *
  * 可运行代码块：node.attrs.runnable=true 时，renderHTML 输出 data-runnable/data-lang/
- * data-overrides/data-source 属性，供阅读页 CodeRunner 识别挂载（见 shared/ui/code-runner）。
+ * data-overrides/data-source 属性，供阅读页注入的 CodeRunner 识别挂载。
  *
  * @param lowlight 共享的 lowlight 实例
  */
@@ -205,7 +209,7 @@ export function createCodeBlockExtension(lowlight: ReturnType<typeof createLowli
 			return renderCodeFence(source, info);
 		},
 		addNodeView() {
-			return ReactNodeViewRenderer(CodeBlockViewComponent);
+			return ReactNodeViewRenderer(CodeBlockViewRoot);
 		},
 		addAttributes() {
 			return {
@@ -273,13 +277,33 @@ export function createCodeBlockExtension(lowlight: ReturnType<typeof createLowli
 	}).configure({ lowlight, defaultLanguage: null });
 }
 
+interface CodeBlockViewComponentProps extends NodeViewProps {
+	/** 仅可运行代码块读取策略；普通代码与嵌入不依赖查询上下文。 */
+	availability?: CodeRunnerAvailability;
+}
+
+function CodeBlockViewRoot(props: NodeViewProps) {
+	return props.node.attrs.runnable === true ? (
+		<RunnableCodeBlockView {...props} />
+	) : (
+		<CodeBlockViewComponent {...props} />
+	);
+}
+
+function RunnableCodeBlockView(props: NodeViewProps) {
+	const language = (props.node.attrs.language as string) || "text";
+	const availability = useCodeRunnerAvailability(language);
+	return <CodeBlockViewComponent {...props} availability={availability} />;
+}
+
 function CodeBlockViewComponent({
 	node,
 	updateAttributes,
 	extension,
 	editor,
 	getPos,
-}: NodeViewProps) {
+	availability,
+}: CodeBlockViewComponentProps) {
 	const language = (node.attrs.language as string) || "text";
 	const isRunnable = node.attrs.runnable === true;
 	const overridesJson = (node.attrs.overrides as string | null) || undefined;
@@ -315,16 +339,20 @@ function CodeBlockViewComponent({
 		);
 	};
 
-	// 编辑器内运行：轮询路径（submitExec 拿 task_id → 轮询 getExecResult）
-	// 对应 yggdrasil make_run_code_closure 的轮询逻辑。
+	// 编辑器使用轮询路径，正文使用流式订阅；两者由后端再次校验有效策略。
 	const handleRun = async () => {
+		if (!availability?.allowed || runState === "running") return;
 		// 从 node 取纯文本源码（contentEditable 内容）
 		const source = node.textContent || "";
 		setRunState("running");
 		setResultText(null);
 		try {
 			const overrides = overridesJson ? JSON.parse(overridesJson) : undefined;
-			const taskId = await submitExec({ language, source, overrides });
+			const taskId = await submitExec({
+				language: availability.canonical,
+				source,
+				overrides,
+			});
 			// 轮询直到终态
 			const maxAttempts = 120; // 最长 ~60s
 			for (let i = 0; i < maxAttempts; i++) {
@@ -399,14 +427,31 @@ function CodeBlockViewComponent({
 						size="xs"
 						variant={runState === "running" ? "secondary" : "default"}
 						onClick={handleRun}
-						disabled={runState === "running"}
+						disabled={runState === "running" || !availability?.allowed}
 						className="gap-1"
 					>
 						<Play className="size-3" />
-						{runState === "running" ? "运行中…" : "运行"}
+						{runState === "running" ? "运行中…" : (availability?.reason ?? "运行")}
 					</Button>
 				)}
 			</div>
+			{isRunnable && availability?.isError && (
+				<div
+					role="alert"
+					className="flex items-center gap-2 px-3 py-2 text-xs text-white/80"
+				>
+					<span>{availability.error.message}</span>
+					<Button
+						type="button"
+						size="xs"
+						variant="secondary"
+						disabled={availability.isFetching}
+						onClick={() => void availability.refetch()}
+					>
+						重试
+					</Button>
+				</div>
+			)}
 			{/*
 			 * 可编辑代码区：NodeViewContent 透传 contentEditable。
 			 * CodeBlockLowlight 通过 node.attrs.language 应用 ProseMirror decoration（hljs-*），

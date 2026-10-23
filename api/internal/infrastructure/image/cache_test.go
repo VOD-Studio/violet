@@ -14,7 +14,7 @@ func sampleResult() domainimage.TransformResult {
 
 // TestMemoryCache_SetGet 写入后应命中
 func TestMemoryCache_SetGet(t *testing.T) {
-	c := NewMemoryCache(100, 10*time.Second)
+	c := NewMemoryCache(nil)
 	_ = c.Set("k1", sampleResult())
 	got, err := c.Get("k1")
 	if err != nil || got.ETag != "abc123" {
@@ -24,9 +24,12 @@ func TestMemoryCache_SetGet(t *testing.T) {
 
 // TestMemoryCache_TTIExpire 过期后不应命中
 func TestMemoryCache_TTIExpire(t *testing.T) {
-	c := NewMemoryCache(100, 20*time.Millisecond)
+	c := NewMemoryCache(nil)
 	_ = c.Set("k1", sampleResult())
-	time.Sleep(50 * time.Millisecond)
+	element := c.entries["k1"]
+	entry := element.Value.(memEntry)
+	entry.created = time.Now().Add(-time.Hour)
+	element.Value = entry
 	got, _ := c.Get("k1")
 	if got.Bytes != nil {
 		t.Fatal("过期后不应命中")
@@ -35,7 +38,7 @@ func TestMemoryCache_TTIExpire(t *testing.T) {
 
 // TestDiskCache_SetGet 磁盘写入后应命中
 func TestDiskCache_SetGet(t *testing.T) {
-	c := NewDiskCache(t.TempDir())
+	c := NewDiskCache(t.TempDir(), nil)
 	_ = c.Set("k1", sampleResult())
 	got, _ := c.Get("k1")
 	if got.ETag == "" || got.MimeType != "image/webp" {
@@ -45,8 +48,8 @@ func TestDiskCache_SetGet(t *testing.T) {
 
 // TestCompositeCache_DiskBackfillMem 磁盘命中应回填内存
 func TestCompositeCache_DiskBackfillMem(t *testing.T) {
-	mem := NewMemoryCache(100, 10*time.Second)
-	disk := NewDiskCache(t.TempDir())
+	mem := NewMemoryCache(nil)
+	disk := NewDiskCache(t.TempDir(), nil)
 	comp := NewCompositeCache(mem, disk)
 	// 直接写磁盘,不写内存
 	_ = disk.Set("k1", sampleResult())
@@ -63,8 +66,8 @@ func TestCompositeCache_DiskBackfillMem(t *testing.T) {
 
 // TestCompositeCache_Set 双层写入后都应命中
 func TestCompositeCache_Set(t *testing.T) {
-	mem := NewMemoryCache(100, 10*time.Second)
-	disk := NewDiskCache(filepath.Join(t.TempDir(), "cache"))
+	mem := NewMemoryCache(nil)
+	disk := NewDiskCache(filepath.Join(t.TempDir(), "cache"), nil)
 	comp := NewCompositeCache(mem, disk)
 	_ = comp.Set("k1", sampleResult())
 	// 内存层

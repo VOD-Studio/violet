@@ -1,188 +1,222 @@
-// Package middleware 提供 HTTP 中间件，处理认证、日志、限流等横切关注点
 package middleware
 
 import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
+	"encoding/json"
+	"errors"
 	"net/http"
+	"strconv"
 	"time"
+
+	domainsettings "blog-api/internal/domain/settings"
+	"blog-api/internal/domain/shared"
 
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
 )
 
-// RateLimit 基于 IP 的 Redis 滑动窗口限流中间件工厂。
-//
-// key    限流维度标识（如 "comment"/"login"/"upload"），用于隔离不同接口的窗口
-// client Redis 客户端
-// window 时间窗口
-// max    窗口内最大请求数（达到即拒绝）
-func RateLimit(key string, client *redis.Client, window time.Duration, max int64) func(http.Handler) http.Handler {
-	return rateLimitByDimension(key, client, window, max, getClientIP)
+type RateLimitProvider interface {
+	RateLimits() shared.RateLimitSnapshot
+	RegisterRateLimit(string, shared.RateLimitPolicy, domainsettings.RateLimitMetadata) error
 }
 
-// RateLimitByHashedIP 使用 HMAC 后的 IP 作为 Redis 维度，避免原始 IP 进入 key 与日志。
-//
-// hmacKey 应由调用方为当前业务独立派生，不能与持久化令牌摘要共用。
-func RateLimitByHashedIP(key string, client *redis.Client, hmacKey []byte, window time.Duration, max int64) func(http.Handler) http.Handler {
-	keyCopy := append([]byte(nil), hmacKey...)
-	return rateLimitByDimension(key, client, window, max, func(r *http.Request) string {
-		mac := hmac.New(sha256.New, keyCopy)
-		_, _ = mac.Write([]byte(getClientIP(r)))
+type RateLimiter struct {
+	client   *redis.Client
+	provider RateLimitProvider
+}
+
+func NewRateLimiter(client *redis.Client, provider RateLimitProvider) *RateLimiter {
+	return &RateLimiter{client: client, provider: provider}
+}
+
+func IPIdentity(r *http.Request) string {
+	if ip := getClientIP(r); ip != "" {
+		return ip
+	}
+	return "unknown"
+}
+
+func UserIdentity(r *http.Request) string {
+	if id := GetUserID(r.Context()); id != "" {
+		return "user:" + id
+	}
+	return "ip:" + IPIdentity(r)
+}
+
+func SharedIdentity(*http.Request) string { return "site" }
+
+// HashedIPIdentity 的密钥由业务独立派生，不能复用持久化令牌摘要的密钥。
+func HashedIPIdentity(key []byte) func(*http.Request) string {
+	key = append([]byte(nil), key...)
+	return func(r *http.Request) string {
+		mac := hmac.New(sha256.New, key)
+		_, _ = mac.Write([]byte(IPIdentity(r)))
 		return hex.EncodeToString(mac.Sum(nil))
-	})
+	}
 }
 
-// RateLimitByUser 基于登录用户 ID 的滑动窗口限流（须挂在 SessionAuth 之后）。
-//
-// 用户维度适配「防单用户刷屏」场景（如发推文）：共用出口 IP 的多用户互不挤占。
-// 用户 ID 缺失时（中间件顺序错误）降级为 IP 维度，静默放行会架空限流。
-func RateLimitByUser(key string, client *redis.Client, window time.Duration, max int64) func(http.Handler) http.Handler {
-	return rateLimitByDimension(key, client, window, max, func(r *http.Request) string {
-		if uid := GetUserID(r.Context()); uid != "" {
-			return "u:" + uid
+type RateLimitBinding struct {
+	ID       string
+	Defaults shared.RateLimitPolicy
+	Metadata domainsettings.RateLimitMetadata
+	Identity func(*http.Request) string
+}
+
+func (l *RateLimiter) Bind(id string, defaults shared.RateLimitPolicy, metadata domainsettings.RateLimitMetadata, identity func(*http.Request) string) func(http.Handler) http.Handler {
+	return l.BindGroup(RateLimitBinding{ID: id, Defaults: defaults, Metadata: metadata, Identity: identity})
+}
+
+// BindGroup 登记真实入口，并将同一路由的多个额度作为一次原子准入，拒绝时不半扣额度。
+func (l *RateLimiter) BindGroup(bindings ...RateLimitBinding) func(http.Handler) http.Handler {
+	for i, binding := range bindings {
+		if binding.Identity == nil {
+			panic("限流身份解析器不能为空")
 		}
-		return getClientIP(r)
-	})
-}
-
-// GlobalRateLimit 全站共享维度的滑动窗口限流。
-//
-// 与 RateLimit（按 IP 隔离窗口）不同：所有请求共占同一窗口，适合保护
-// 站点共享的上游资源（如站点音乐账号的解析配额）。Redis 故障放行策略与 RateLimit 一致。
-func GlobalRateLimit(key string, client *redis.Client, window time.Duration, max int64) func(http.Handler) http.Handler {
-	return rateLimitByDimension(key, client, window, max, func(*http.Request) string { return "site" })
-}
-
-// rateLimitByDimension 滑动窗口限流共享实现。dimension 从请求解析计数维度
-// （IP / 用户 ID），拼入 redis key 隔离不同接口与维度。
-func rateLimitByDimension(key string, client *redis.Client, window time.Duration, max int64, dimension func(*http.Request) string) func(http.Handler) http.Handler {
+		for _, previous := range bindings[:i] {
+			if previous.ID == binding.ID {
+				panic("同一限流组合不能重复绑定规则")
+			}
+		}
+		if l.provider != nil {
+			if err := l.provider.RegisterRateLimit(binding.ID, binding.Defaults, binding.Metadata); err != nil {
+				panic(err)
+			}
+		}
+	}
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			dim := dimension(r)
-			redisKey := fmt.Sprintf("ratelimit:%s:%s", key, dim)
-
-			ctx := r.Context()
-			now := time.Now()
-			windowStart := now.Add(-window)
-
-			pipe := client.Pipeline()
-			// 清除窗口外的旧记录
-			pipe.ZRemRangeByScore(ctx, redisKey, "0", fmt.Sprintf("%d", windowStart.UnixMicro()))
-			// 统计当前窗口内的请求数
-			countCmd := pipe.ZCard(ctx, redisKey)
-			// 添加当前请求到滑动窗口
-			pipe.ZAdd(ctx, redisKey, redis.Z{
-				Score:  float64(now.UnixMicro()),
-				Member: fmt.Sprintf("%d", now.UnixNano()),
-			})
-			// 设置 key 过期时间，自动清理
-			pipe.Expire(ctx, redisKey, 2*window)
-
-			if _, err := pipe.Exec(ctx); err != nil {
-				// Redis 出错时放行请求，避免因限流服务故障导致全部请求被拒
-				log.Error().Err(err).Str("dim", dim).Str("path", r.URL.Path).
-					Msg("限流 Redis 操作失败，放行请求")
+			var snapshot shared.RateLimitSnapshot
+			if l.provider != nil {
+				snapshot = l.provider.RateLimits()
+			}
+			keys := make([]string, 0, len(bindings)*2)
+			args := make([]any, 1, 1+len(bindings)*4)
+			args[0] = shared.MaxRateLimitWindowSeconds
+			failureMode := "allow"
+			for _, binding := range bindings {
+				policy := binding.Defaults
+				if current, ok := snapshot.Lookup(binding.ID); ok {
+					policy = current
+				}
+				if !policy.Enabled {
+					continue
+				}
+				if policy.FailureMode != "allow" {
+					failureMode = "deny"
+				}
+				dimension := binding.Identity(r)
+				if dimension == "" {
+					dimension = "unknown"
+				}
+				// 固定摘要避免 Redis 键包含原始地址、用户标识或凭据。
+				digest := sha256.Sum256([]byte(binding.ID + "\x00" + dimension))
+				key := "ratelimit:{" + hex.EncodeToString(digest[:]) + "}"
+				keys = append(keys, key+":events", key+":day")
+				args = append(args, policy.WindowSeconds, policy.MaxRequests, policy.BurstRequests, policy.DailyQuota)
+			}
+			if len(keys) == 0 {
 				next.ServeHTTP(w, r)
 				return
 			}
-
-			// 拒绝条件：countCmd 反映的是加入当前请求之前的窗口内请求数（ZCard 在 ZAdd 之前执行）。
-			// 故 >= max 表示该请求已是第 (max+1) 个，放行前 max 个、拒绝后续。
-			if countCmd.Val() >= max {
-				log.Warn().Str("dim", dim).Str("key", key).Str("method", r.Method).
-					Str("path", r.URL.Path).Int64("count", countCmd.Val()).Msg("触发限流")
-				w.Header().Set("Content-Type", "application/json")
-				w.Header().Set("Retry-After", fmt.Sprintf("%d", int(window.Seconds())))
-				w.WriteHeader(http.StatusTooManyRequests)
-				w.Write([]byte(`{"error":"rate_limit_exceeded","message":"请求过于频繁，请稍后再试"}`))
+			result, err := l.decide(r, keys, args)
+			if err != nil {
+				// 底层错误可能包含服务器地址或键，不记录错误文本与身份维度。
+				log.Error().Str("policy", bindings[0].ID).Str("failure_mode", failureMode).Msg("限流存储不可用")
+				if failureMode == "allow" {
+					next.ServeHTTP(w, r)
+					return
+				}
+				writeRateLimitError(w, http.StatusServiceUnavailable, "rate_limit_unavailable", "限流服务暂不可用，请稍后重试", "storage_unavailable", 1, time.Time{})
 				return
 			}
-
+			if result[0] == 0 {
+				reasons := [...]string{"", "window", "burst", "daily"}
+				writeRateLimitError(w, http.StatusTooManyRequests, "rate_limit_exceeded", "请求过于频繁，请稍后再试", reasons[result[1]], result[2], time.UnixMicro(result[3]).UTC())
+				return
+			}
 			next.ServeHTTP(w, r)
 		})
 	}
 }
 
-// CommentRateLimit 评论限流（每分钟 3 条）—— 保留以兼容现有调用
-func CommentRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
-	return RateLimit("comment", redisClient, time.Minute, 3)
+func (l *RateLimiter) decide(r *http.Request, keys []string, args []any) ([]int64, error) {
+	if l.client == nil {
+		return nil, errors.New("限流存储未配置")
+	}
+	return rateLimitScript.Run(r.Context(), l.client, keys, args...).Int64Slice()
 }
 
-// CommentCodeRateLimit 评论验证码发送限流（每分钟 5 次/IP）。
-//
-// 阈值理由：5 次/min 对正常用户（输错邮箱重发、切换文章发码）足够宽松，
-// 但能挡住邮件轰炸（攻击者用脚本对大量邮箱发垃圾验证码）。
-//
-// 与 CommentRateLimit（提交评论，3/min）走独立 key="comment_code"：
-// 避免发码与提交共桶互相挤占——发码限流不应影响用户提交评论的能力。
-func CommentCodeRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
-	return RateLimit("comment_code", redisClient, time.Minute, 5)
+func writeRateLimitError(w http.ResponseWriter, status int, code, message, reason string, retry int64, reset time.Time) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Retry-After", strconv.FormatInt(retry, 10))
+	w.Header().Set("X-RateLimit-Reason", reason)
+	resetAt := ""
+	if !reset.IsZero() {
+		seconds := reset.Unix()
+		if reset.Nanosecond() != 0 {
+			seconds++
+		}
+		w.Header().Set("X-RateLimit-Reset", strconv.FormatInt(seconds, 10))
+		resetAt = reset.Format(time.RFC3339Nano)
+	}
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(struct {
+		Error      string `json:"error"`
+		Message    string `json:"message"`
+		Reason     string `json:"reason"`
+		RetryAfter int64  `json:"retry_after"`
+		ResetAt    string `json:"reset_at,omitempty"`
+	}{code, message, reason, retry, resetAt})
 }
 
-// AuthRateLimit 认证类接口限流（登录/注册/忘记密码/重置/验证：每分钟 5 次，防暴力与邮件轰炸）
-func AuthRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
-	return RateLimit("auth", redisClient, time.Minute, 5)
-}
-
-// RefreshRateLimit 刷新令牌接口限流（每分钟 30 次）。
-//
-// refresh 走独立 key，避免与登录/注册共用的 "auth" 桶互相挤占：
-// 前端并发请求触发自动刷新时可能短时多次调用，若与防爆破的 5/min 共桶
-// 会被 429 误伤。refresh 由 HttpOnly Cookie proof-of-possession 保护，
-// 无爆破风险，故配额放宽。
-func RefreshRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
-	return RateLimit("refresh", redisClient, time.Minute, 30)
-}
-
-// UploadRateLimit 上传类接口限流（每分钟 30 次，防资源 DoS）
-func UploadRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
-	return RateLimit("upload", redisClient, time.Minute, 30)
-}
-
-// TweetRateLimit 推文发布限流（每用户每小时 10 条，PRD-0013）。
-//
-// 即发即出模式的防刷屏兜底。按用户维度计数（须挂在 SessionAuth 之后）：
-// IP 维度对共用出口 IP 的多用户会误伤，且换 IP 即绕过的单用户刷屏防不住。
-func TweetRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
-	return RateLimitByUser("tweet", redisClient, time.Hour, 10)
-}
-
-// ChatTypingRateLimit 输入状态上报限流（每用户每分钟 60 次）。
-//
-// 客户端节流发送间隔为 3s（稳态约 20 次/分），但显式停止（is_typing:false）
-// 不受节流、随清空/发送/失焦随时触发；持续"输入-清空-重输"会在稳态之上叠加
-// 多次停止请求。60 次/分留出约 3 倍余量，此限流是防滥用兜底，不承担主要
-// 节流职责（须挂在 SessionAuth 之后）。
-func ChatTypingRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
-	return RateLimitByUser("chat_typing", redisClient, time.Minute, 60)
-}
-
-// CodeRunnerRateLimit 代码运行器限流（每分钟 5 次/IP）。
-//
-// 阈值理由：每次执行起一个 Docker 容器，资源开销大。5/min 对正常读者
-// （试运行示例、调试代码）足够，但能挡住容器资源耗尽攻击。
-// admin 角色的放行在 service 层之外由前端权限控制——此处按 IP 统一限流，
-// 与 ygggrasil「admin 跳过速率限制」的差异：violet 的限流在中间件层，
-// admin 判断需额外中间件，本期暂按 IP 统一限流（admin 同样受限，影响可忽略）。
-func CodeRunnerRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
-	return RateLimit("code_runner", redisClient, time.Minute, 5)
-}
-
-// FriendLinkRateLimit 友链申请限流
-//
-// 申请限流与发码限流走独立 key（friendlink vs friendlink_code），
-// 避免发码与提交共桶互相挤占——发码限流不应影响用户提交申请的能力。
-func FriendLinkRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
-	return RateLimit("friendlink", redisClient, time.Minute, 3)
-}
-
-// FriendLinkCodeRateLimit 友链申请验证码发送限流（每分钟 5 次/IP，镜像 CommentCodeRateLimit）。
-//
-// 阈值理由：5 次/min 对正常用户（输错邮箱重发）足够宽松，
-// 但能挡住邮件轰炸（攻击者用脚本对大量邮箱发垃圾验证码）。
-func FriendLinkCodeRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
-	return RateLimit("friendlink_code", redisClient, time.Minute, 5)
-}
+// Redis TIME 是跨实例唯一时钟；窗口采用 (now-window, now]。历史保留完整最大窗口，
+// 因此改版本、缩小再扩大窗口不会重置额度。拒绝不写入请求、不刷新 TTL。
+var rateLimitScript = redis.NewScript(`
+local clock = redis.call('TIME')
+local now = tonumber(clock[1]) * 1000000 + tonumber(clock[2])
+local retention = tonumber(ARGV[1])
+local day = math.floor(tonumber(clock[1]) / 86400)
+local midnight = (day + 1) * 86400 * 1000000
+local reset = 0
+local reason = 0
+local function checkWindow(key, duration, limit, code)
+  if limit == 0 then return end
+  local minimum = '(' .. string.format('%.0f', now - duration)
+  local count = redis.call('ZCOUNT', key, minimum, '+inf')
+  if count >= limit then
+    local item = redis.call('ZRANGEBYSCORE', key, minimum, '+inf', 'WITHSCORES', 'LIMIT', count - limit, 1)
+    local candidate = tonumber(item[2]) + duration
+    if candidate > reset then reset = candidate; reason = code end
+  end
+end
+for index = 1, #KEYS, 2 do
+  local arg = 2 + ((index - 1) / 2) * 4
+  local window = tonumber(ARGV[arg]) * 1000000
+  local maximum = tonumber(ARGV[arg + 1])
+  local burst = tonumber(ARGV[arg + 2])
+  local quota = tonumber(ARGV[arg + 3])
+  local storedDay = tonumber(redis.call('HGET', KEYS[index + 1], 'day') or '-1')
+  local daily = 0
+  if storedDay == day then daily = tonumber(redis.call('HGET', KEYS[index + 1], 'count') or '0') end
+  redis.call('ZREMRANGEBYSCORE', KEYS[index], '-inf', now - retention * 1000000)
+  checkWindow(KEYS[index], window, maximum, 1)
+  checkWindow(KEYS[index], 1000000, burst, 2)
+  if quota > 0 and daily >= quota and midnight > reset then reset = midnight; reason = 3 end
+end
+if reason ~= 0 then
+  return {0, reason, math.max(1, math.ceil((reset - now) / 1000000)), reset}
+end
+for index = 1, #KEYS, 2 do
+  local storedDay = tonumber(redis.call('HGET', KEYS[index + 1], 'day') or '-1')
+  if storedDay ~= day then redis.call('HSET', KEYS[index + 1], 'day', day, 'count', 0) end
+  local sequence = redis.call('HINCRBY', KEYS[index + 1], 'sequence', 1)
+  redis.call('HINCRBY', KEYS[index + 1], 'count', 1)
+  redis.call('ZADD', KEYS[index], now, string.format('%.0f', now) .. ':' .. sequence)
+  redis.call('EXPIRE', KEYS[index], retention)
+  redis.call('EXPIRE', KEYS[index + 1], retention + 1)
+end
+return {1, 0, 0, 0}
+`)

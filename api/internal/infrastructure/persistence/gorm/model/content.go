@@ -251,6 +251,7 @@ const (
 	SessionStatusMerging   SessionStatus = "merging"
 	SessionStatusCompleted SessionStatus = "completed"
 	SessionStatusExpired   SessionStatus = "expired"
+	SessionStatusCancelled SessionStatus = "cancelled"
 )
 
 // UploadSession 分片上传会话 PO
@@ -267,6 +268,7 @@ type UploadSession struct {
 	UploadedChunks datatypes.JSONSlice[int] `gorm:"type:jsonb;not null" json:"uploadedChunks"`
 	Status         SessionStatus            `gorm:"size:20;not null;default:active;index" json:"status"`
 	TmpPath        string                   `gorm:"size:500;not null" json:"-"`
+	ResultFileID   *uuid.UUID               `gorm:"type:uuid;column:result_file_id" json:"resultFileId,omitempty"`
 	ExpiresAt      time.Time                `gorm:"not null;index" json:"expiresAt"`
 	CreatedAt      time.Time                `json:"createdAt"`
 	UpdatedAt      time.Time                `json:"updatedAt"`

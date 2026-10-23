@@ -15,6 +15,8 @@ import type { MediaFile } from "@entities/media/model/types";
  * fileHash/mimeType/chunkSize/purpose 均可选，不传时由后端补默认值。
  */
 export interface InitUploadRequest {
+	/** 客户端稳定会话 ID，取消请求先到时阻止迟到初始化。 */
+	clientUploadId?: string;
 	/** 文件名，必填，后端据此校验扩展名 */
 	fileName: string;
 	/** 文件总大小，单位字节，必填 */
@@ -70,6 +72,12 @@ export interface CompleteUploadResult {
 	width?: number;
 	/** 图片高度，非图片为 0 */
 	height?: number;
+}
+
+/** 取消与合并竞争时，以服务端持久化结果为准。 */
+export interface CancelUploadResult {
+	completed: boolean;
+	file?: CompleteUploadResult;
 }
 
 /**

@@ -101,13 +101,9 @@ type WebPushConfig struct {
 
 // CodeRunnerConfig 代码运行器配置。
 //
-// 控制沙箱执行的全局上限与并发。作者在围栏 info string 声明的 overrides 经
-// ClampLimits 钳制到这些 Max* 上限内（见 infrastructure/coderunner/config.go）。
+// 定义启动默认资源上限，后台保存的运行策略覆盖这些默认值。
 // 默认值对齐 yggdrasil：2 核 / 1024MB / 30s 超时 / 1MB 输出 / 64KB 源码 / 4 并发。
 type CodeRunnerConfig struct {
-	// Enabled 是否启用代码运行功能。关闭时 exec 端点返回功能不可用。
-	// 关闭原因：生产未挂 docker.sock、或临时禁用。
-	Enabled bool
 	// MaxCPUCores 单次执行 CPU 上限（核数）。
 	MaxCPUCores float64
 	// MaxMemoryMB 单次执行内存上限（MB）。
@@ -132,6 +128,8 @@ type CodeRunnerConfig struct {
 	// Languages 语言白名单。空表示注册表里全部语言可用；非空则收窄到列表内
 	// （用 canonical key：python/node/go/rust/bun）。
 	Languages []string
+	// DefaultSources 记录实际解析来源，取值为 application 或 deployment。
+	DefaultSources map[string]string
 }
 
 // CookieConfig 鉴权 Cookie 配置
@@ -314,11 +312,6 @@ func Load() *Config {
 	// 受信代理默认为空：未配置时一律使用 RemoteAddr，拒绝客户端自报转发头
 	v.SetDefault("trusted_proxies", []string{})
 	// 代码运行器默认值（对齐 yggdrasil runner_config.rs）
-	// Enabled 默认 false：需显式开启并确认 docker.sock 已挂载
-	// 代码运行器默认启用：本地开发友好（装了 docker 即可用）。
-	// 生产环境若未挂 docker.sock，InitDockerClient 探活失败会降级（记日志，不 panic），
-	// 执行请求返回「daemon 不可连接」提示，不影响博客其他功能。
-	v.SetDefault("code_runner.enabled", true)
 	v.SetDefault("code_runner.max_cpu_cores", 2.0)
 	v.SetDefault("code_runner.max_memory_mb", 1024)
 	v.SetDefault("code_runner.max_timeout_secs", 30)
@@ -415,7 +408,6 @@ func Load() *Config {
 		},
 		TrustedProxies: getStringSlice(v, "trusted_proxies"),
 		CodeRunner: CodeRunnerConfig{
-			Enabled:          v.GetBool("code_runner.enabled"),
 			MaxCPUCores:      v.GetFloat64("code_runner.max_cpu_cores"),
 			MaxMemoryMB:      v.GetUint64("code_runner.max_memory_mb"),
 			MaxTimeoutSecs:   v.GetUint64("code_runner.max_timeout_secs"),
@@ -427,6 +419,7 @@ func Load() *Config {
 			TaskTTLSecs:      v.GetUint64("code_runner.task_ttl_secs"),
 			DockerSocketPath: v.GetString("code_runner.docker_socket_path"),
 			Languages:        getStringSlice(v, "code_runner.languages"),
+			DefaultSources:   codeRunnerDefaultSources(v),
 		},
 		FeedProxyURL:          v.GetString("feed_proxy_url"),
 		CustomEmojiMaxPerUser: v.GetInt("custom_emoji_max_per_user"),
@@ -440,6 +433,23 @@ func Load() *Config {
 	printConfigSources(v, preEnvKeys, dotenvKeys)
 
 	return cfg
+}
+
+func codeRunnerDefaultSources(v *viper.Viper) map[string]string {
+	sources := map[string]string{"enabled": "application"}
+	for _, key := range v.AllKeys() {
+		field, ok := strings.CutPrefix(key, "code_runner.")
+		if !ok || field == "docker_socket_path" || field == "enabled" {
+			continue
+		}
+		source := "application"
+		envName := strings.ToUpper(strings.ReplaceAll(key, ".", "_"))
+		if v.InConfig(key) || os.Getenv(envName) != "" {
+			source = "deployment"
+		}
+		sources[field] = source
+	}
+	return sources
 }
 
 // Validate 验证配置的有效性
@@ -543,23 +553,20 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	// 代码运行器配置校验（仅启用时检查上限合理性）
-	if c.CodeRunner.Enabled {
-		if c.CodeRunner.MaxCPUCores <= 0 {
-			return fmt.Errorf("code_runner.max_cpu_cores 必须大于 0")
-		}
-		if c.CodeRunner.MaxMemoryMB == 0 {
-			return fmt.Errorf("code_runner.max_memory_mb 必须大于 0")
-		}
-		if c.CodeRunner.MaxTimeoutSecs == 0 {
-			return fmt.Errorf("code_runner.max_timeout_secs 必须大于 0")
-		}
-		if c.CodeRunner.MaxConcurrent <= 0 {
-			return fmt.Errorf("code_runner.max_concurrent 必须大于 0")
-		}
-		if c.CodeRunner.DockerSocketPath == "" {
-			return fmt.Errorf("code_runner.docker_socket_path 不能为空")
-		}
+	if c.CodeRunner.MaxCPUCores <= 0 {
+		return fmt.Errorf("code_runner.max_cpu_cores 必须大于 0")
+	}
+	if c.CodeRunner.MaxMemoryMB == 0 {
+		return fmt.Errorf("code_runner.max_memory_mb 必须大于 0")
+	}
+	if c.CodeRunner.MaxTimeoutSecs == 0 {
+		return fmt.Errorf("code_runner.max_timeout_secs 必须大于 0")
+	}
+	if c.CodeRunner.MaxConcurrent <= 0 {
+		return fmt.Errorf("code_runner.max_concurrent 必须大于 0")
+	}
+	if c.CodeRunner.DockerSocketPath == "" {
+		return fmt.Errorf("code_runner.docker_socket_path 不能为空")
 	}
 
 	return nil

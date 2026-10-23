@@ -37,6 +37,7 @@ type uploadSessionMigrate struct {
 	UploadedChunks datatypes.JSONSlice[int] `gorm:"type:jsonb;not null" json:"uploadedChunks"`
 	Status         string                   `gorm:"size:20;not null;default:active;index" json:"status"`
 	TmpPath        string                   `gorm:"size:500;not null" json:"-"`
+	ResultFileID   *uuid.UUID               `gorm:"type:uuid;column:result_file_id"`
 	ExpiresAt      time.Time                `gorm:"not null;index" json:"expiresAt"`
 	CreatedAt      time.Time                `json:"createdAt"`
 	UpdatedAt      time.Time                `json:"updatedAt"`
@@ -218,7 +219,7 @@ func TestUploadSession_DeleteExpired(t *testing.T) {
 	reconstruct := func(hash, status string, expiresAt time.Time) *upload.UploadSession {
 		return upload.ReconstructUploadSession(
 			shared.NewID(), shared.NewID(), "f.png", 100, "image/png",
-			hash, "material", 100, 1, []int{}, status, "", expiresAt, now, now,
+			hash, "material", 100, 1, []int{}, status, "", expiresAt, now, now, nil,
 		)
 	}
 
@@ -247,4 +248,70 @@ func TestUploadSession_DeleteExpired(t *testing.T) {
 	got, err = repo.FindByID(ctx, completed.ID())
 	require.NoError(t, err)
 	require.NotNil(t, got)
+}
+
+func TestUploadSessionCancelBeforeInitializationCannotResurrect(t *testing.T) {
+	repo := NewUploadSessionRepository(setupSessionTestDB(t))
+	ctx := context.Background()
+	session := newUploadSession(t)
+	cancelled, err := repo.Cancel(ctx, session.ID(), session.UserID())
+	require.NoError(t, err)
+	require.Equal(t, upload.SessionCancelled, cancelled.Status())
+
+	require.NoError(t, repo.Save(ctx, session))
+	stored, err := repo.FindByID(ctx, session.ID())
+	require.NoError(t, err)
+	require.Equal(t, upload.SessionCancelled, stored.Status())
+	require.True(t, stored.ExpiresAt().After(time.Now()))
+	require.Nil(t, stored.ResultFileID())
+	changed, err := repo.UpdateStatus(ctx, session.ID(), upload.SessionActive, upload.SessionMerging)
+	require.NoError(t, err)
+	require.False(t, changed)
+}
+
+func TestUploadSessionForeignCancellationPreservesOwnerState(t *testing.T) {
+	repo := NewUploadSessionRepository(setupSessionTestDB(t))
+	ctx := context.Background()
+	session := newUploadSession(t)
+	require.NoError(t, repo.Save(ctx, session))
+	_, err := repo.Cancel(ctx, session.ID(), shared.NewID())
+	require.True(t, shared.IsDomainError(err, shared.CodeForbidden))
+	stored, err := repo.FindByID(ctx, session.ID())
+	require.NoError(t, err)
+	require.Equal(t, upload.SessionActive, stored.Status())
+}
+
+func TestUploadSessionCancellationWinsAgainstPendingCompletion(t *testing.T) {
+	repo := NewUploadSessionRepository(setupSessionTestDB(t))
+	ctx := context.Background()
+	session := newUploadSession(t)
+	require.NoError(t, repo.Save(ctx, session))
+	changed, err := repo.UpdateStatus(ctx, session.ID(), upload.SessionActive, upload.SessionMerging)
+	require.NoError(t, err)
+	require.True(t, changed)
+	_, err = repo.Cancel(ctx, session.ID(), session.UserID())
+	require.NoError(t, err)
+	file, err := upload.NewFile(shared.NewID(), session.UserID(), session.Purpose(), "test.png", "/upload/test.png", "/uploads/test.png", 100, "image/png", "hash")
+	require.NoError(t, err)
+	require.ErrorIs(t, repo.Complete(ctx, session.ID(), file), upload.ErrSessionCancelled)
+	stored, err := repo.FindByID(ctx, session.ID())
+	require.NoError(t, err)
+	require.Equal(t, upload.SessionCancelled, stored.Status())
+	require.Nil(t, stored.ResultFileID())
+}
+
+func TestUploadSessionCancellationReportsCommittedResult(t *testing.T) {
+	repo := NewUploadSessionRepository(setupSessionTestDB(t))
+	ctx := context.Background()
+	id, userID, fileID := shared.NewID(), shared.NewID(), shared.NewID()
+	now := time.Now()
+	session := upload.ReconstructUploadSession(id, userID, "test.png", 100, "image/png",
+		"hash", upload.PurposeMaterial, 100, 1, []int{0}, upload.SessionCompleted,
+		"", now.Add(time.Hour), now, now, &fileID)
+	require.NoError(t, repo.Save(ctx, session))
+	result, err := repo.Cancel(ctx, id, userID)
+	require.NoError(t, err)
+	require.Equal(t, upload.SessionCompleted, result.Status())
+	require.NotNil(t, result.ResultFileID())
+	require.True(t, fileID.Equal(*result.ResultFileID()))
 }

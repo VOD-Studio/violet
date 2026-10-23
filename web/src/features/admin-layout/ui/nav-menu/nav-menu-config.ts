@@ -249,6 +249,24 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 				permissions: ["settings:view"],
 			},
 			{
+				label: "请求限流",
+				to: "/admin/settings/rate-limit",
+				icon: Shield,
+				permissions: ["settings:view"],
+			},
+			{
+				label: "图片与缓存",
+				to: "/admin/settings/image",
+				icon: Images,
+				permissions: ["settings:view"],
+			},
+			{
+				label: "上传队列",
+				to: "/admin/settings/upload-queue",
+				icon: FolderKanban,
+				permissions: ["settings:view"],
+			},
+			{
 				label: "代码运行器",
 				to: "/admin/settings/code-runner",
 				icon: Cpu,

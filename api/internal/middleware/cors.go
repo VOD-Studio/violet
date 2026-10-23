@@ -31,7 +31,7 @@ func NewCORS(allowedOrigins []string, opts ...CORSOption) func(http.Handler) htt
 		AllowedOrigins:   allowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Requested-With"},
-		ExposedHeaders:   []string{"X-Total-Count"},
+		ExposedHeaders:   []string{"X-Total-Count", "Date", "Retry-After", "X-RateLimit-Reason", "X-RateLimit-Reset"},
 		AllowCredentials: true, // 必须 true，Cookie 才能跨域携带
 		MaxAge:           300,
 	}

@@ -33,7 +33,13 @@ func (m *mockSettingsStore) UpsertMany(ctx context.Context, kvs map[string]strin
 
 func newSvc() (*Service, *mockSettingsStore) {
 	store := new(mockSettingsStore)
-	return NewService(store, infraeventbus.NewInMemory()), store
+	policies := NewRuntimePolicies(newMemoryRuntimeStore(), runtimeTestDefaults(), nil)
+	if err := policies.Initialize(context.Background()); err != nil {
+		panic(err)
+	}
+	svc := NewService(store, infraeventbus.NewInMemory())
+	svc.SetRuntimePolicies(policies)
+	return svc, store
 }
 
 // GetPublic 必须返回公开配置 map，且过滤 github_token 等敏感字段。

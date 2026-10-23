@@ -11,6 +11,7 @@ import (
 	appshared "blog-api/internal/application/shared"
 	apptweet "blog-api/internal/application/tweet"
 	domainemoji "blog-api/internal/domain/emoji"
+	domainimage "blog-api/internal/domain/image"
 	"blog-api/internal/domain/shared"
 	domainupload "blog-api/internal/domain/upload"
 	infraimage "blog-api/internal/infrastructure/image"
@@ -33,6 +34,8 @@ func NewTweetContainer(
 	perm apptweet.TweetPermissionChecker,
 	customEmojiSvc *appcustomemoji.Service,
 	bus appshared.EventBus,
+	policies domainimage.PolicyProvider,
+	encoder *infraimage.Encoder,
 ) *TweetContainer {
 	tweetRepo := gormrepo.NewTweetRepository(db)
 	commentRepo := gormrepo.NewTweetCommentRepository(db)
@@ -41,7 +44,7 @@ func NewTweetContainer(
 	emojiRepo := gormrepo.NewEmojiGroupRepository(db)
 	external := apptweet.NewExternalService(
 		gormrepo.NewExternalTweetRepository(db), xtweet.NewFetcher(nil),
-		xtweet.NewMediaStore(cfg.UploadDir, cfg.UploadPathPrefix, infraimage.NewProcessor(cfg.UploadDir, cfg.UploadPathPrefix), nil),
+		xtweet.NewMediaStore(cfg.UploadDir, cfg.UploadPathPrefix, infraimage.NewProcessor(cfg.UploadDir, cfg.UploadPathPrefix, policies, encoder), nil),
 		xtweet.NewPreviewStore(redisClient),
 	).WithVideoSource(xtweet.NewVideoSource(nil))
 	svc := apptweet.NewService(

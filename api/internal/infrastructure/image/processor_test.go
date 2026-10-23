@@ -10,7 +10,7 @@ import (
 
 // TestValidate_DetectsRealMIME 校验真实图片应返回其 MIME
 func TestValidate_DetectsRealMIME(t *testing.T) {
-	p := NewProcessor("uploads", "/uploads/")
+	p := NewProcessor("uploads", "/uploads/", nil, NewEncoder())
 	mime, err := p.Validate(filepath.Join("testdata", "sample.jpg"))
 	if err != nil {
 		t.Fatalf("校验失败: %v", err)
@@ -26,7 +26,7 @@ func TestValidate_RejectsCorrupt(t *testing.T) {
 	if err := os.WriteFile(tmp, []byte("not an image"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	p := NewProcessor("uploads", "/uploads/")
+	p := NewProcessor("uploads", "/uploads/", nil, NewEncoder())
 	if _, err := p.Validate(tmp); err == nil {
 		t.Fatal("损坏文件应校验失败")
 	}
@@ -34,7 +34,7 @@ func TestValidate_RejectsCorrupt(t *testing.T) {
 
 // TestDimensions 读取测试图宽高
 func TestDimensions(t *testing.T) {
-	p := NewProcessor("uploads", "/uploads/")
+	p := NewProcessor("uploads", "/uploads/", nil, NewEncoder())
 	w, h := p.Dimensions(filepath.Join("testdata", "sample.png"))
 	if w != 200 || h != 150 {
 		t.Fatalf("期望 200x150,实际 %dx%d", w, h)
@@ -43,7 +43,7 @@ func TestDimensions(t *testing.T) {
 
 // TestTranscode_PNGToWebP PNG 转 WebP 应产出合法结果路径
 func TestTranscode_PNGToWebP(t *testing.T) {
-	p := NewProcessor("uploads", "/uploads/")
+	p := NewProcessor("uploads", "/uploads/", nil, NewEncoder())
 	res, err := p.Transcode(
 		filepath.Join("testdata", "sample.png"),
 		t.TempDir(), uuid.New().String(), "image/png",
@@ -62,7 +62,7 @@ func TestTranscode_PNGToWebP(t *testing.T) {
 
 // TestTranscode_GIFSkipped GIF 应原样保留(不转码)
 func TestTranscode_GIFSkipped(t *testing.T) {
-	p := NewProcessor("uploads", "/uploads/")
+	p := NewProcessor("uploads", "/uploads/", nil, NewEncoder())
 	res, err := p.Transcode(
 		filepath.Join("testdata", "sample.gif"),
 		t.TempDir(), uuid.New().String(), "image/gif",

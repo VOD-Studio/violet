@@ -37,6 +37,7 @@ const (
 	SessionMerging   = "merging"
 	SessionCompleted = "completed"
 	SessionExpired   = "expired"
+	SessionCancelled = "cancelled"
 )
 
 var purposePattern = regexp.MustCompile(`^(avatar|cover|post|emoji|material|comment|tweet|chat)$`)
@@ -239,13 +240,14 @@ type UploadSession struct {
 	//
 	// MarkChunkUploaded 幂等追加（重复索引直接跳过）；len 与 totalChunks 相等即上传完成。
 	uploadedChunks []int
-	// status 会话状态机（active/merging/completed/expired）
+	// status 会话状态（active/merging/completed/cancelled/expired）
 	//
-	// active→merging（StartMerge，写入 tmpPath）→completed（Complete）；
-	// 超时则 active→expired（Expire）。UpdateStatus 以 CAS 保证并发安全。
+	// 取消与完成通过持久化状态竞争；取消先提交时不得再创建正式文件。
 	status string
 	// tmpPath 合并阶段的临时目录路径（StartMerge 时写入，合并完成后清理）
 	tmpPath string
+	// resultFileID 成功提交的正式文件；nil 表示尚未完成或旧会话未记录结果
+	resultFileID *shared.ID
 	// expiresAt 会话过期时间（NewUploadSession 设为创建时刻 +24 小时，IsExpired 据此判定）
 	expiresAt time.Time
 	// timestamps 创建/更新时间（每次状态变更刷新 UpdatedAt）
@@ -267,7 +269,7 @@ func NewUploadSession(id, userID shared.ID, fileName string, fileSize int64, mim
 }
 
 // ReconstructUploadSession 从持久化数据重建
-func ReconstructUploadSession(id, userID shared.ID, fileName string, fileSize int64, mimeType, fileHash, purpose string, chunkSize, totalChunks int, uploadedChunks []int, status, tmpPath string, expiresAt time.Time, createdAt, updatedAt time.Time) *UploadSession {
+func ReconstructUploadSession(id, userID shared.ID, fileName string, fileSize int64, mimeType, fileHash, purpose string, chunkSize, totalChunks int, uploadedChunks []int, status, tmpPath string, expiresAt time.Time, createdAt, updatedAt time.Time, resultFileID *shared.ID) *UploadSession {
 	if uploadedChunks == nil {
 		uploadedChunks = []int{}
 	}
@@ -276,8 +278,9 @@ func ReconstructUploadSession(id, userID shared.ID, fileName string, fileSize in
 		mimeType: mimeType, fileHash: fileHash, purpose: purpose,
 		chunkSize: chunkSize, totalChunks: totalChunks,
 		uploadedChunks: uploadedChunks, status: status, tmpPath: tmpPath,
-		expiresAt:  expiresAt,
-		timestamps: shared.Timestamps{CreatedAt: createdAt, UpdatedAt: updatedAt},
+		resultFileID: resultFileID,
+		expiresAt:    expiresAt,
+		timestamps:   shared.Timestamps{CreatedAt: createdAt, UpdatedAt: updatedAt},
 	}
 }
 
@@ -310,18 +313,19 @@ func (s *UploadSession) Expire() { s.status = SessionExpired }
 func (s *UploadSession) UploadedChunkCount() int { return len(s.uploadedChunks) }
 
 // 访问器
-func (s *UploadSession) ID() shared.ID         { return s.id }
-func (s *UploadSession) UserID() shared.ID     { return s.userID }
-func (s *UploadSession) FileName() string      { return s.fileName }
-func (s *UploadSession) FileSize() int64       { return s.fileSize }
-func (s *UploadSession) MimeType() string      { return s.mimeType }
-func (s *UploadSession) FileHash() string      { return s.fileHash }
-func (s *UploadSession) Purpose() string       { return s.purpose }
-func (s *UploadSession) ChunkSize() int        { return s.chunkSize }
-func (s *UploadSession) TotalChunks() int      { return s.totalChunks }
-func (s *UploadSession) UploadedChunks() []int { return s.uploadedChunks }
-func (s *UploadSession) Status() string        { return s.status }
-func (s *UploadSession) TmpPath() string       { return s.tmpPath }
-func (s *UploadSession) ExpiresAt() time.Time  { return s.expiresAt }
-func (s *UploadSession) CreatedAt() time.Time  { return s.timestamps.CreatedAt }
-func (s *UploadSession) UpdatedAt() time.Time  { return s.timestamps.UpdatedAt }
+func (s *UploadSession) ID() shared.ID            { return s.id }
+func (s *UploadSession) UserID() shared.ID        { return s.userID }
+func (s *UploadSession) FileName() string         { return s.fileName }
+func (s *UploadSession) FileSize() int64          { return s.fileSize }
+func (s *UploadSession) MimeType() string         { return s.mimeType }
+func (s *UploadSession) FileHash() string         { return s.fileHash }
+func (s *UploadSession) Purpose() string          { return s.purpose }
+func (s *UploadSession) ChunkSize() int           { return s.chunkSize }
+func (s *UploadSession) TotalChunks() int         { return s.totalChunks }
+func (s *UploadSession) UploadedChunks() []int    { return s.uploadedChunks }
+func (s *UploadSession) Status() string           { return s.status }
+func (s *UploadSession) TmpPath() string          { return s.tmpPath }
+func (s *UploadSession) ResultFileID() *shared.ID { return s.resultFileID }
+func (s *UploadSession) ExpiresAt() time.Time     { return s.expiresAt }
+func (s *UploadSession) CreatedAt() time.Time     { return s.timestamps.CreatedAt }
+func (s *UploadSession) UpdatedAt() time.Time     { return s.timestamps.UpdatedAt }

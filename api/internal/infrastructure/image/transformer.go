@@ -1,45 +1,46 @@
-// transformer.go 图片动态处理实现:resize/thumb/rotate/转码。
-//
-// 处理顺序:decode → rotate → resize(保比例,只缩不放)→ thumbnail(强制裁剪)→ encode。
 package image
 
 import (
-	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"os"
+	"time"
 
-	webp "github.com/HugoSmits86/nativewebp"
 	"github.com/disintegration/imaging"
 
 	domainimage "blog-api/internal/domain/image"
+	domainsettings "blog-api/internal/domain/settings"
 )
 
-// Transformer 图片动态处理实现
-type Transformer struct{}
+// Transformer 动态图片处理器，与上传共享编码并发预算。
+type Transformer struct{ encoder *Encoder }
 
-// NewTransformer 创建图片动态处理器
-func NewTransformer() *Transformer { return &Transformer{} }
+// NewTransformer 创建动态处理器。
+func NewTransformer(encoder *Encoder) *Transformer { return &Transformer{encoder: encoder} }
 
-// 编译期断言
 var _ domainimage.ImageTransformer = (*Transformer)(nil)
 
-// Transform 按参数处理图片
-func (t *Transformer) Transform(srcPath string, params domainimage.TransformParams) (domainimage.TransformResult, error) {
-	img, err := imaging.Open(srcPath)
+// Transform 在完整解码前检查源尺寸，动画保持原样，透明图片不隐式转为不透明 JPEG。
+func (t *Transformer) Transform(ctx context.Context, data []byte, params domainimage.TransformParams, policy domainsettings.ImagePolicy) (domainimage.TransformResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(policy.EncodeTimeoutSeconds)*time.Second)
+	defer cancel()
+	release, err := t.encoder.acquire(ctx, policy.MaxConcurrent)
 	if err != nil {
-		// 对于无法解码的 WebP(例如 VP8X 动图)，直接降级返回原图，避免报错 422
-		data, readErr := os.ReadFile(srcPath)
-		if readErr == nil && len(data) >= 12 && string(data[0:4]) == "RIFF" && string(data[8:12]) == "WEBP" {
-			sum := sha256.Sum256(data)
-			etag := hex.EncodeToString(sum[:16])
-			return domainimage.TransformResult{Bytes: data, MimeType: "image/webp", ETag: etag}, nil
-		}
-		return domainimage.TransformResult{}, fmt.Errorf("解码失败: %w", err)
+		return domainimage.TransformResult{}, err
 	}
-
-	// rotate
+	defer release()
+	source, err := decodeSource(data, policy)
+	if err != nil {
+		return domainimage.TransformResult{}, err
+	}
+	if source.animated {
+		if int64(len(data)) > policy.MaxOutputBytes {
+			return domainimage.TransformResult{}, fmt.Errorf("动画原图超过输出限制")
+		}
+		return transformResult(data, source.mime), nil
+	}
+	img := source.image
 	switch params.Rotate {
 	case 90:
 		img = imaging.Rotate90(img)
@@ -48,8 +49,6 @@ func (t *Transformer) Transform(srcPath string, params domainimage.TransformPara
 	case 270:
 		img = imaging.Rotate270(img)
 	}
-
-	// resize(保比例,只缩不放)
 	if params.Width > 0 || params.Height > 0 {
 		w, h := params.Width, params.Height
 		if w <= 0 {
@@ -62,43 +61,49 @@ func (t *Transformer) Transform(srcPath string, params domainimage.TransformPara
 			img = imaging.Fit(img, w, h, imaging.Lanczos)
 		}
 	}
-
-	// thumbnail(强制裁剪到精确尺寸)
 	if params.ThumbW > 0 && params.ThumbH > 0 {
+		if err := checkDimensions(params.ThumbW, params.ThumbH, policy); err != nil {
+			return domainimage.TransformResult{}, err
+		}
 		img = imaging.Fill(img, params.ThumbW, params.ThumbH, imaging.Center, imaging.Lanczos)
 	}
-
-	// encode
 	format := params.Format
 	if format == "" {
 		format = "jpeg"
 	}
-	var buf bytes.Buffer
-	var mime string
-	switch format {
-	case "webp":
-		if err := webp.Encode(&buf, img, nil); err != nil {
-			return domainimage.TransformResult{}, fmt.Errorf("WebP 编码失败: %w", err)
-		}
-		mime = "image/webp"
-	case "png":
-		if err := imaging.Encode(&buf, img, imaging.PNG); err != nil {
-			return domainimage.TransformResult{}, err
-		}
-		mime = "image/png"
-	default: // jpeg
-		q := params.Quality
-		if q <= 0 {
-			q = 80
-		}
-		if err := imaging.Encode(&buf, img, imaging.JPEG, imaging.JPEGQuality(q)); err != nil {
-			return domainimage.TransformResult{}, err
-		}
-		mime = "image/jpeg"
+	if format == "jpeg" && !opaque(img) {
+		format = "png"
 	}
+	var output []byte
+	mime := "image/" + format
+	if format == "webp" {
+		output, err = encodeWebP(ctx, img, policy)
+	} else {
+		buf := &boundedBuffer{limit: policy.MaxOutputBytes}
+		switch format {
+		case "png":
+			err = imaging.Encode(buf, img, imaging.PNG)
+		case "jpeg":
+			quality := params.Quality
+			if quality <= 0 {
+				quality = policy.ThumbnailQuality
+			}
+			err = imaging.Encode(buf, img, imaging.JPEG, imaging.JPEGQuality(quality))
+		default:
+			return domainimage.TransformResult{}, fmt.Errorf("不支持的图片输出格式")
+		}
+		output = buf.Bytes()
+	}
+	if err != nil {
+		return domainimage.TransformResult{}, err
+	}
+	if err := ctx.Err(); err != nil {
+		return domainimage.TransformResult{}, err
+	}
+	return transformResult(output, mime), nil
+}
 
-	// ETag = sha256(结果字节)前 16 字节
-	sum := sha256.Sum256(buf.Bytes())
-	etag := hex.EncodeToString(sum[:16])
-	return domainimage.TransformResult{Bytes: buf.Bytes(), MimeType: mime, ETag: etag}, nil
+func transformResult(data []byte, mime string) domainimage.TransformResult {
+	sum := sha256.Sum256(data)
+	return domainimage.TransformResult{Bytes: data, MimeType: mime, ETag: hex.EncodeToString(sum[:16])}
 }
