@@ -26,10 +26,13 @@ docker compose exec -T runner bash -s < scripts/docker-smoke-test.sh
 
 ## 完整 CI 验收与启用
 
-更新镜像期间保持仓库变量 `SELF_HOSTED_RUNNER=false`。新分支修改 runner 源码或相关工作流并推送后，`Runner acceptance` 自动调用同一份 `ci.yml`，固定当前 SHA、强制双侧检查和双侧镜像构建。它允许在线但忙碌的 runner 排队；离线、查询失败、缺少状态 token 或不可信触发事件会失败，不回退官方 runner。
+仓库变量 `SELF_HOSTED_RUNNER=false` 时，日常 CI 使用 GitHub-hosted runner，push 自动触发的 `Runner acceptance` 跳过。变量为 `true` 时，新分支修改 runner 源码或相关工作流并推送后才自动执行自托管验收。
+
+更新镜像期间保持 `SELF_HOSTED_RUNNER=false`，从待验收分支手动触发 `Runner acceptance`。手动验收不受启用开关影响，固定当前 SHA、强制双侧检查和双侧镜像构建。它允许在线但忙碌的 runner 排队；离线、查询失败、缺少状态 token 或不可信触发事件会失败，不回退官方 runner。
 
 ```bash
 branch=$(git branch --show-current)
+gh workflow run runner-acceptance.yml --ref "$branch"
 gh run list --workflow runner-acceptance.yml --branch "$branch"
 gh run view <run-id> --json headSha,status,conclusion,jobs
 gh api repos/VOD-Studio/violet/actions/runs/<run-id>/jobs \
