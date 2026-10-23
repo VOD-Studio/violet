@@ -35,6 +35,7 @@ func TestTransformGeometry(t *testing.T) {
 		width, height int
 	}{
 		{"缩放", domainimage.TransformParams{Width: 50, Format: "jpeg", Quality: 80}, 50, 37},
+		{"不放大", domainimage.TransformParams{Width: 400, Format: "jpeg"}, 200, 150},
 		{"裁剪", domainimage.TransformParams{ThumbW: 40, ThumbH: 40, Format: "jpeg"}, 40, 40},
 		{"旋转", domainimage.TransformParams{Rotate: 90, Format: "jpeg"}, 150, 200},
 	} {
@@ -134,7 +135,7 @@ func TestAnimatedGIFPreservedAndCumulativePixelsBounded(t *testing.T) {
 	require.NoError(t, gif.EncodeAll(&data, &gif.GIF{Image: []*image.Paletted{frame, frame}, Delay: []int{1, 1}}))
 	policy := domainsettings.DefaultImagePolicy()
 	tr := NewTransformer(NewEncoder())
-	result, err := tr.Transform(context.Background(), data.Bytes(), domainimage.TransformParams{Width: 1, Format: "webp"}, policy)
+	result, err := tr.Transform(context.Background(), data.Bytes(), domainimage.TransformParams{Width: 1, Format: "webp", Quality: 80}, policy)
 	require.NoError(t, err)
 	require.Equal(t, data.Bytes(), result.Bytes)
 	require.Equal(t, "image/gif", result.MimeType)
@@ -158,4 +159,84 @@ func TestEncoderAdmissionHonorsCancellationAndNewLimit(t *testing.T) {
 	release, err = encoder.acquire(context.Background(), 1)
 	require.NoError(t, err)
 	release()
+}
+
+func TestTransformRequestWebPQualityPreservesAlphaAndUploadPolicy(t *testing.T) {
+	policy := domainsettings.DefaultImagePolicy()
+	require.NoError(t, ValidatePolicy(policy))
+	img := image.NewNRGBA(image.Rect(0, 0, 128, 128))
+	for y := range 128 {
+		for x := range 128 {
+			img.SetNRGBA(x, y, color.NRGBA{R: byte(x * 2), G: byte(y * 2), B: 100, A: byte(x * 2)})
+		}
+	}
+	var source bytes.Buffer
+	require.NoError(t, png.Encode(&source, img))
+	encoder := NewEncoder()
+	tr := NewTransformer(encoder)
+	params := domainimage.TransformParams{Width: 256, Format: "webp"}
+	lossless, err := tr.Transform(context.Background(), source.Bytes(), params, policy)
+	require.NoError(t, err)
+	require.Contains(t, webPChunkKinds(t, lossless.Bytes), "VP8L")
+	params.Quality = 20
+	low, err := tr.Transform(context.Background(), source.Bytes(), params, policy)
+	require.NoError(t, err)
+	params.Quality = 95
+	high, err := tr.Transform(context.Background(), source.Bytes(), params, policy)
+	require.NoError(t, err)
+	require.NotEqual(t, low.Bytes, high.Bytes)
+	require.NotEqual(t, low.ETag, high.ETag)
+	for _, result := range []domainimage.TransformResult{low, high} {
+		kinds := webPChunkKinds(t, result.Bytes)
+		require.Contains(t, kinds, "VP8 ")
+		require.NotContains(t, kinds, "VP8L")
+		decoded, format, err := image.Decode(bytes.NewReader(result.Bytes))
+		require.NoError(t, err)
+		require.Equal(t, "webp", format)
+		require.Equal(t, img.Bounds(), decoded.Bounds())
+		for y := range 128 {
+			for x := range 128 {
+				_, _, _, alpha := decoded.At(x, y).RGBA()
+				require.Equal(t, uint32(x*2*257), alpha)
+			}
+		}
+		pixel := color.NRGBAModel.Convert(decoded.At(64, 64)).(color.NRGBA)
+		require.InDelta(t, 128, pixel.R, 15)
+		require.InDelta(t, 128, pixel.G, 15)
+		require.InDelta(t, 100, pixel.B, 15)
+	}
+	params.Quality = 0
+	again, err := tr.Transform(context.Background(), source.Bytes(), params, policy)
+	require.NoError(t, err)
+	require.Equal(t, lossless.Bytes, again.Bytes)
+
+	root := t.TempDir()
+	path := filepath.Join(root, "source.png")
+	require.NoError(t, os.WriteFile(path, source.Bytes(), 0o600))
+	provider := &mutablePolicy{policy: policy}
+	uploaded, err := NewProcessor(root, "/uploads/", provider, encoder).Transcode(path, root, "uploaded", "image/png")
+	require.NoError(t, err)
+	data, err := os.ReadFile(uploaded.Path)
+	require.NoError(t, err)
+	if uploaded.MimeType == "image/webp" {
+		require.Contains(t, webPChunkKinds(t, data), "VP8L")
+	} else {
+		require.Equal(t, "image/png", uploaded.MimeType)
+		require.Equal(t, source.Bytes(), data)
+	}
+	decoded, _, err := image.Decode(bytes.NewReader(data))
+	require.NoError(t, err)
+	require.Equal(t, img.NRGBAAt(64, 64), color.NRGBAModel.Convert(decoded.At(64, 64)))
+}
+
+func webPChunkKinds(t *testing.T, data []byte) []string {
+	t.Helper()
+	require.NoError(t, validateWebPContainer(data))
+	var kinds []string
+	for pos := 12; pos < len(data); {
+		kinds = append(kinds, string(data[pos:pos+4]))
+		size := int(binary.LittleEndian.Uint32(data[pos+4 : pos+8]))
+		pos += 8 + size + (size & 1)
+	}
+	return kinds
 }

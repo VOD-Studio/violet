@@ -61,7 +61,7 @@ func TestAnimatedWebPValidatesFramesAndPreservesBytes(t *testing.T) {
 	data = append(data, webPChunk("ANMF", frame)...)
 	binary.LittleEndian.PutUint32(data[4:8], uint32(len(data)-8))
 	tr := NewTransformer(NewEncoder())
-	result, err := tr.Transform(context.Background(), data, domainimage.TransformParams{Width: 1, Format: "jpeg"}, policy)
+	result, err := tr.Transform(context.Background(), data, domainimage.TransformParams{Width: 1, Format: "webp", Quality: 80}, policy)
 	require.NoError(t, err)
 	require.Equal(t, "image/webp", result.MimeType)
 	require.Equal(t, data, result.Bytes)

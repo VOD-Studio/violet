@@ -3,6 +3,7 @@ package image
 import (
 	"bytes"
 	stdimage "image"
+	"image/color"
 	"image/png"
 	"net/http"
 	"net/http/httptest"
@@ -117,4 +118,53 @@ func TestServeImage_ServesOriginalFile_Returns200(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, content, rec.Body.Bytes())
+}
+
+func TestServeImageRejectsInvalidQuality(t *testing.T) {
+	h := NewHandler(nil, t.TempDir(), "/uploads")
+	for _, quality := range []string{"0", "101", "-1", "abc", "80.5"} {
+		rec := httptest.NewRecorder()
+		h.ServeImage(rec, httptest.NewRequest(http.MethodGet, "/uploads/img.png?w=32&format=webp&quality="+quality, nil))
+		require.Equal(t, http.StatusBadRequest, rec.Code)
+		require.Contains(t, rec.Body.String(), "quality 参数无效")
+	}
+}
+
+func TestServeImageRequestQualityAndConditionalCache(t *testing.T) {
+	dir := t.TempDir()
+	img := stdimage.NewNRGBA(stdimage.Rect(0, 0, 64, 64))
+	for y := range 64 {
+		for x := range 64 {
+			img.SetNRGBA(x, y, color.NRGBA{R: byte(x * 4), G: byte(y * 4), B: byte(x * y), A: 255})
+		}
+	}
+	var source bytes.Buffer
+	require.NoError(t, png.Encode(&source, img))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "image.png"), source.Bytes(), 0o600))
+	svc := appimage.NewService(infraimage.NewTransformer(infraimage.NewEncoder()), infraimage.NewMemoryCache(nil), dir, "/uploads", nil)
+	defer svc.Close()
+	h := NewHandler(svc, dir, "/uploads")
+	url := "/uploads/image.png?w=32&format=webp&quality=80"
+	first := httptest.NewRecorder()
+	h.ServeImage(first, httptest.NewRequest(http.MethodGet, url, nil))
+	require.Equal(t, http.StatusOK, first.Code)
+	require.Equal(t, "image/webp", first.Header().Get("Content-Type"))
+	require.Equal(t, "public, no-cache", first.Header().Get("Cache-Control"))
+	require.NotEmpty(t, first.Header().Get("ETag"))
+	decoded, _, err := stdimage.Decode(bytes.NewReader(first.Body.Bytes()))
+	require.NoError(t, err)
+	require.Equal(t, stdimage.Rect(0, 0, 32, 32), decoded.Bounds())
+	repeat := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, url, nil)
+	req.Header.Set("If-None-Match", first.Header().Get("ETag"))
+	h.ServeImage(repeat, req)
+	require.Equal(t, http.StatusNotModified, repeat.Code)
+	require.Empty(t, repeat.Body.Bytes())
+	changed := httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, "/uploads/image.png?w=32&format=webp&quality=20", nil)
+	req.Header.Set("If-None-Match", first.Header().Get("ETag"))
+	h.ServeImage(changed, req)
+	require.Equal(t, http.StatusOK, changed.Code)
+	require.NotEqual(t, first.Header().Get("ETag"), changed.Header().Get("ETag"))
+	require.NotEqual(t, first.Body.Bytes(), changed.Body.Bytes())
 }

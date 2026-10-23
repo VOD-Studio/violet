@@ -2,6 +2,9 @@ package image
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -97,4 +100,30 @@ func TestServeCustomPrefixAndSourceBudget(t *testing.T) {
 	_, err = svc.Serve(context.Background(), "/media/sample.jpg", domainimage.TransformParams{})
 	require.Error(t, err)
 	require.Equal(t, 1, tr.calls)
+}
+
+func TestServeRequestQualityDoesNotReuseLegacyWebPCache(t *testing.T) {
+	root := t.TempDir()
+	source := []byte("source")
+	require.NoError(t, os.WriteFile(filepath.Join(root, "sample.png"), source, 0o600))
+	policy := domainsettings.DefaultImagePolicy()
+	params := domainimage.TransformParams{Width: 50, Format: "webp", Quality: 80}
+	// 模拟旧版本持久化的缓存条目：质量在 key 中，但输出仍遵循无损策略。
+	hash := sha256.New()
+	hash.Write(source)
+	fmt.Fprintf(hash, "\x00%s\x00%d\x00%+v", params.Key(), uint64(0), policy)
+	legacyKey := hex.EncodeToString(hash.Sum(nil))
+	cache := &fakeCache{store: map[string]domainimage.TransformResult{
+		legacyKey: {Bytes: []byte("legacy lossless"), MimeType: "image/webp"},
+	}}
+	tr := &fakeTransformer{}
+	svc := NewService(tr, cache, root, "/uploads/", nil)
+	defer svc.Close()
+	for _, quality := range []int{80, 80, 60, 60, 0, 0} {
+		params.Quality = quality
+		result, err := svc.Serve(context.Background(), "/uploads/sample.png", params)
+		require.NoError(t, err)
+		require.Equal(t, source, result.Bytes)
+	}
+	require.Equal(t, 3, tr.calls)
 }

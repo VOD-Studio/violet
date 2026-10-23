@@ -77,6 +77,11 @@ func (t *Transformer) Transform(ctx context.Context, data []byte, params domaini
 	var output []byte
 	mime := "image/" + format
 	if format == "webp" {
+		// 显式质量只覆盖展示派生图，不修改上传共享的运行策略。
+		if params.Quality > 0 {
+			policy.WebPMode = "lossy"
+			policy.WebPQuality = params.Quality
+		}
 		output, err = encodeWebP(ctx, img, policy)
 	} else {
 		buf := &boundedBuffer{limit: policy.MaxOutputBytes}
