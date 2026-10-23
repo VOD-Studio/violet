@@ -26,6 +26,16 @@ help: ## 显示帮助信息
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-18s\033[0m %s\n", $$1, $$2}'
 
 .PHONY: runner-image runner-check
+.PHONY: omp-usage-sql-pack omp-usage-sql-consumer
+
+OMP_USAGE_PACK_DEST ?= /tmp
+
+omp-usage-sql-pack: ## 打包跨语言用量 SQL 契约（OMP_USAGE_PACK_DEST 指定目录）
+	python3 scripts/package-omp-usage.py "$(OMP_USAGE_PACK_DEST)/omp-usage-contract.tar.gz"
+
+omp-usage-sql-consumer: ## 在仓库外运行 Rust/真实 PostgreSQL 用量消费验收
+	python3 scripts/package-omp-usage.py "$(OMP_USAGE_PACK_DEST)/omp-usage-contract.tar.gz" --consumer
+
 runner-image: ## 构建自托管 CI runner 镜像
 	docker build --tag "$(RUNNER_IMAGE)" deploy/github-runner
 
