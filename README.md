@@ -1,117 +1,58 @@
-# violet
-
-> 全栈博客平台 · Go 1.26 + React 19
+# Violet
 
 [![CI](https://github.com/VOD-Studio/violet/actions/workflows/ci.yml/badge.svg)](https://github.com/VOD-Studio/violet/actions/workflows/ci.yml)
-[![Deploy](https://github.com/VOD-Studio/violet/actions/workflows/deploy.yml/badge.svg)](https://github.com/VOD-Studio/violet/actions/workflows/deploy.yml)
 [![Release](https://img.shields.io/github/v/release/VOD-Studio/violet)](https://github.com/VOD-Studio/violet/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Website](https://img.shields.io/badge/website-xunrua.top-8A2BE2)](https://xunrua.top)
 
-一个功能完整的现代博客系统：文章与项目管理、SSR 渲染、锚点批注评论、表情系统、细粒度 RBAC 权限、操作日志审计、可运行代码块，并对外暴露 MCP 服务。
+面向个人创作者的开源博客平台：长文、笔记、图集各有其位，读者可以批注、聊天，AI agent 可经 MCP 参与写作。
 
-在线体验：[https://xunrua.top](https://xunrua.top)
+[在线体验](https://xunrua.top) · [快速开始](#快速开始) · [生产部署](#生产部署) · [文档索引](docs/README.md)
 
-## 功能特性
+<!-- 界面预览位置：待线上版本更新后，补充 https://xunrua.top 的桌面截图；不使用本地测试数据或占位图片。 -->
 
-- **文章创作**：Markdown 富文本（TipTap）、人物提及、对话、GitHub 项目专用引用、链接预览、原生 X 推文嵌入、可选作者落款、流程图、公式、代码高亮（Shiki）、版本管理与发布状态机；后台设置侧栏在高度受限时可独立滚动
-- **图集创作**：以工作稿和公开版本维护视觉作品，支持更新发布、撤回、删除与稳定地址分享，审核员可处置他人作品并留操作审计
-- **知识笔记**：markdown + 标签的轻量知识条目（AI 会话沉淀与手工记录共用），草稿单向发布、独立笔记流浏览、标签筛选，不进文章流与推文时间线
-- **推文发布**：支持文字与最多四张图片，可在输入框直接粘贴图片上传，单图最大 10MB
-- **个人主页**：公开展示个人资料与推文，个人中心管理独立主页封面，支持静态图片自由裁剪与 GIF 动画
-- **X 推文转发**：无需绑定 X 账号，粘贴链接预览原文并保存图片，可附感想并在本站评论、点赞、引用及分享到聊天
-- **人设档案**：后台维护多份角色设定及其语言版本、共享头像与有序设定图，站点通过单一当前选择关系公开其中一份
-- **首页资源接口**：集中返回站点公开身份，以稳定游标读取已发布文章、知识笔记与图集，并维护匿名设备印记计数
-- **阅读体验**：SSR 首屏、桌面正文与目录整体居中（阅读轨随视口伸缩，目录吸附至评论区并在页脚前让位）、悬停展开可见章节与阅读进度、移动端目录导航、深色主题、瑠爱人设加载与纸页转场、图片灯箱（左右切图、缩放旋转与滚轮收回原位）、锚点批注 + 评论互动（GIF 表情、图片上传）
-- **项目路线图接口**：按项目 slug 公开读取条目与进度概览，项目列表附带开发中与最近完成摘要，管理员可维护条目内容与阶段顺序，支持软删除恢复及扩展、修复、阻塞关系；项目列表以叙事大行呈现每个项目正在做什么与最近完成；公开详情页 `/projects/<slug>` 以三阶段只读画布呈现路线图，条目关系画成连线并标出被阻塞的条目，条目可带子项清单（窄屏改为阶段切换器与可跳转的关系标记），可组合搜索标题／简介与筛选条目标签，未匹配条目原位淡化，筛选链接可分享；文章可用 `roadmap` 围栏块嵌入条目卡片、项目卡片、看板画布或关系画布，读取阅读时的当前数据，编辑器 Slash 菜单「路线图」可用弹层选择并预览
-- **社区能力**：批注审核工作流、按 IP 哈希匿名的表情反应、公告、项目展示、友链申请与审核、站内通知中心（推文点赞/转发/评论互动提醒，SSE 实时推送与浏览器 Web Push）、首页尺素橱窗公开展示最新读者评论
-- **即时聊天**：登录用户之间的私聊与私有房间、文本/图片消息、全类型消息乐观发送（气泡内显示上传进度与失败重试，支持连续发送）、消息表情反应、@ 提及成员与房间内所有人（支持点击用户名提及成员，被提及时绕过会话静音）、持久化历史、SSE 实时事件、顶栏与浏览器标签页未读提示、浏览器 Web Push 通知、账号级聊天外观（头像框、头像挂件、消息气泡主题、可佩戴徽章）
-- **聊天 Bot 接入**：外部程序（如 AI agent）以独立 bot token 参与站内聊天并收发图片；回复显示独立卡片、Markdown、生成状态与可配置的思考内容及默认展开状态，管理员可管理 Bot 与凭据
-- **聊天 Bot 命令**：Bot 发布可用命令目录，成员在聊天框输入 / 查看并补全；房间命令明确寻址目标 Bot
-- **自定义表情**：评论、推文与聊天共用表情选择器，爱心收藏集合合并上传与收藏，支持左右切组、等大上传入口和 GIF 大图预览；管理员可在后台统一管理并强制下架违规内容
-- **平台能力**：RBAC 角色权限（内置超管 + 委派超管）、登录态审计、操作日志（事件驱动 append-only）、用户/媒体/订阅管理
-- **站点音乐**：在 `/admin/music` 连接网易云账号并维护展示歌单，后端每日自动续期；公开内容页使用 Kite 播放器按站点账号权益播放展示曲目，未连接时匿名播放，支持跨页队列与歌词；接口与版本限制见 [接口说明](api/README.md#站点音乐接口kite)
-- **系统面板**：数据库与服务器状态、受控 SQL 控制台、流式数据导出、手动及定时备份与数据库恢复
-- **运行策略**：在站点设置中独立配置限流与 UTC 日配额、图片编码与缓存、批量上传队列和代码沙箱资源；场景预设只改草稿，显式保存后展示当前实例生效状态，解释性说明通过 Tooltip 按需查看
-- **可运行代码块**：代码沙箱执行（Python/Node/Go/Rust/Bun，复用 yggdrasil runner 镜像）
-- **开放接口**：RESTful API + OpenAPI 文档、MCP 服务（写作/RSS 抓取/评论检索与 AI 自署名发表，支持正文块发现、段落批注和划线批注，最小权限拆分）
-- **MCP 授权管理**：创建、编辑与吊销个人访问令牌，调整名称、权限、有效期和交互偏好时复用原令牌及客户端配置
-- **violet/ui 组件库**：`@violet/ui` 以组件清单管理公开入口与成熟度，基础单元共用 BEM CSS；`/ui` 提供安装、主题、组件 API 与同源交互示例，包内规范和真实 tarball 消费验证支持独立使用（尚未发布 npm）
-- **原生推文组件**：文章引用与推文页面共用独立的 [`@violetjs/react-tweet`](web/packages/react-tweet/README.md)；使用与开发说明见包内文档（尚未发布 npm）
-- **通用看板组件**：[`@violetjs/kanban`](web/packages/kanban/README.zh-CN.md) 提供受控看板、画布、关系图与键盘操作；双语文档、同源示例和真实 tarball 消费验收支持独立接入（尚未发布 npm）；站内 `/kanban` 提供可交互演示、安装说明与 API
-- **手绘绘图库**：[`@violetjs/inkline`](web/packages/inkline/README.md) 以手法、笔与填充组合生成手绘矢量图，提供压感笔、线稿淡彩风格、七种填充与淡彩、整图绘制动画与 GIF/WebM 导出、SVG/Canvas 双后端；文章 Mermaid 图块以 G 笔草稿手法经它渲染；站内 `/inkline` 工作台可试玩各项能力并导出动画
-- **工程化**：DDD 四层架构、CQRS、事件驱动审计、release-please 自动发版、CI/CD 全自动部署（含迁移门禁与自动回滚）
+## 功能
+
+### 内容
+
+- 文章与系列：TipTap 编辑器，公式、流程图、代码高亮、链接预览、X 推文嵌入，版本管理与发布状态机
+- 知识笔记：草稿单向发布，独立笔记流与标签筛选，不进文章流与推文时间线
+- 图集：工作稿与公开版本分离，支持更新发布、撤回与稳定地址分享
+- 项目路线图：条目分三阶段，支持阻塞/修复/扩展关系；公开画布页，文章可嵌入随项目实时更新的路线图块
+- 可运行代码块：Python / Node / Go / Rust / Bun 沙箱执行，结果回流正文
+
+### 社区
+
+- 批注评论：评论可锚定到段落或选中文本，支持 GIF 表情与图片上传，带审核工作流
+- 推文与主页：图文推文、免凭据转发 X 内容、个人主页与封面
+- 聊天：私聊与私有房间、乐观发送与失败重试、表情反应、@提及、SSE 实时事件、Web Push
+- 通知中心：互动提醒实时推送，浏览器与站内同步未读
+- 自定义表情：评论、推文与聊天共用，管理员可统一下架违规内容
+
+### AI 与程序接入
+
+- MCP：按权限分域的六个 server（公开读取 / 评论 / 文章读写 / 抓取订阅 / 笔记 / 路线图），见 [MCP 使用指南](docs/guides/mcp-servers.md)
+- REST API 与 OpenAPI 文档，个人访问令牌自主管理
+- 聊天 Bot：外部程序以独立 token 参与聊天，收发图片、Markdown 回复与命令目录
+
+### 站点管理
+
+- RBAC 权限：内置与委派超管、细粒度角色授权
+- 操作审计：事件驱动 append-only 日志
+- 系统面板：服务状态、受控 SQL 控制台、流式导出、定时备份与恢复
+- 运行策略：限流、日配额、图片编码、上传队列与沙箱资源，版本化保存
+- 站点音乐：连接网易云维护展示歌单，公开页经 Kite 播放器播放
 
 ## 技术栈
 
-### 后端（`api/`）
+| 部分 | 选型 |
+| --- | --- |
+| 前端 | React 19、TypeScript、TanStack Start（SSR）、Vite 8、Tailwind CSS v4、`@violet/ui`、TipTap |
+| 状态 | TanStack Query v5、Zustand |
+| 后端 | Go 1.26、Chi、GORM、golang-migrate |
+| 数据 | PostgreSQL 16、Redis 7 |
+| 工程工具 | pnpm、Biome、Docker Compose、GitHub Actions、release-please |
 
-| 类别 | 选型 |
-|------|------|
-| 语言 | Go 1.26 |
-| 路由 | chi v5 |
-| 数据库 | PostgreSQL 16（GORM 数据访问 + golang-migrate SQL 迁移） |
-| 缓存 | Redis 7 |
-| 认证 | Opaque session cookie（Redis 后端）+ CSRF double-submit |
-| 日志 | zerolog（结构化） |
-| 依赖注入 | 手工装配（`internal/app/*_container.go` 模块容器） |
-| 架构 | DDD 四层（domain/application/infrastructure/interfaces） |
-
-### 前端（`web/`）
-
-| 类别 | 选型 |
-|------|------|
-| 框架 | React 19 + TypeScript (strict) |
-| 全栈框架 | TanStack Start（SSR） |
-| 构建 | Vite 8 |
-| 状态 | Zustand + TanStack Query v5 |
-| 样式 | Tailwind CSS v4 |
-| UI | `@violet/ui`（native / Radix 行为、typed BEM recipe、同源 CSS 与语义主题）；`features/ui-docs` 提供组件库文档 |
-| 富文本 | TipTap |
-| 检查/格式化 | Biome |
-
-### 基础设施
-
-- Docker Compose（开发 + 生产编排），生产经 nginx-proxy + Let's Encrypt 反代
-- CI/CD：GitHub Actions（CI 检查 + release-please 发版 + 自动部署到 rua 服务器）
-
-## 架构概览
-
-```text
-violet/
-├── api/                    Go 后端服务（DDD 四层）
-│   ├── cmd/
-│   │   ├── server/         API 服务入口
-│   │   ├── migrate/        数据库迁移 CLI
-│   │   ├── check-publications/ 发布物投影一致性校验 CLI
-│   │   └── export-openapi/ OpenAPI 导出 CLI
-│   ├── internal/
-│   │   ├── domain/         领域层（聚合根、值对象、仓储端口、领域事件）
-│   │   ├── application/    应用层（用例编排、CQRS command/query）
-│   │   ├── infrastructure/ 基础设施层（GORM 实现、Redis、外部 API 适配）
-│   │   ├── interfaces/     接口层（HTTP handler、路由、中间件）
-│   │   ├── app/            依赖注入容器（手工装配，每模块一个 *_container.go）
-│   │   └── middleware/     HTTP 中间件（session/CSRF/限流/审计）
-│   ├── migrations/         数据库迁移（golang-migrate）
-│   └── config.yaml         入库配置（全量配置文档，敏感值走根 .env）
-├── web/                    React 前端应用（TanStack Start）
-│   ├── packages/ui/           @violet/ui 组件、主题与独立构建入口
-│   ├── packages/react-tweet/  @violetjs/react-tweet 原生推文、独立数据接口与样式
-│   ├── packages/kanban/       @violetjs/kanban 通用看板组件（尚未发布 npm）
-│   ├── src/
-│   │   ├── routes/         文件路由
-│   │   ├── features/       业务模块（feature-sliced）
-│   │   ├── entities/       实体定义
-│   │   ├── widgets/        页面级组合组件
-│   │   ├── shared/         通用组件 / API / 工具
-│   │   └── test/           测试配置
-│   ├── public/             静态资源
-│   └── server.mjs          SSR 生产服务器（srvx 桥接）
-├── docs/                   项目文档（索引见 docs/README.md）
-├── scripts/                工具脚本（Git 钩子、冒烟测试）
-├── docker-compose.yml      开发环境编排
-└── docker-compose.prod.yml 生产环境编排
-```
+后端采用 DDD 四层（domain / application / infrastructure / interfaces）与手工依赖装配，前端按 Feature-Sliced Design 组织。详细说明见 [api/README.md](api/README.md) 与 [web/README.md](web/README.md)。
 
 ## 快速开始
 
@@ -140,31 +81,28 @@ make dev
 - 后端 API：http://localhost:9090
 - 健康检查：http://localhost:9090/api/health
 
-<details>
-<summary>在 Docker 容器内开发（如 coder / code-server / omp）</summary>
-
-容器内无法经 `localhost` 访问宿主机上的数据库容器，需用 `host.docker.internal` 覆盖 host：
+不想在本机装 Go 和 Node.js 时，可用全容器化开发环境，Go、Node.js、PostgreSQL、Redis 都跑在容器里：
 
 ```bash
-# 1. 复制环境变量模板
-make env
-
-# 2. 复制容器开发覆盖配置
-cp .env.docker-dev.example .env.docker-dev
-
-# 3. 启动容器内开发环境
-make dev-dind
+make docker-dev
 ```
 
-前置条件：`docker.sock` 可访问（已加入 `docker` 组）。`host.docker.internal` 由 Docker Desktop 内置；Linux 原生 Docker 需在容器加 `--add-host=host.docker.internal:host-gateway`。
+日志与停止分别用 `make docker-dev-logs`、`make docker-dev-down`。在 coder / code-server 等容器内开发时，数据库需经 `host.docker.internal` 访问，步骤见 `make dev-dind` 说明或 [Makefile](Makefile)。
 
 ## 生产部署
 
-线上环境为 **xunrua.top**（rua 服务器，SSR 容器 + nginx-proxy 反代 + Let's Encrypt TLS）。日常发版全自动：向 `release/2.0` 推送 `feat`/`fix` 等发版型 commit → release-please 自动开 release PR → 合并即打 tag 并触发自动部署（按侧变更检测、迁移门禁、健康检查与跨组件冒烟，失败自动回滚）。`docs`/`chore`/`ci` 类型不发版。
+仓库提供 [Docker Compose 生产配置](docker-compose.prod.yml)，但它沿用了当前线上实例的部署环境，不能不改配置就当作通用的一键安装包：
 
-- [发布手册](docs/deploy/release-runbook.md)：发版流程、回滚、迁移门禁、线上拓扑
-- [手动部署手册](docs/deploy/manual-deploy.md)：runner 不可用或紧急发布时兜底
-- 本地 Docker 生产模式（无需服务器）：`make deploy-prod-init` 初始化 `.env`，`make deploy-prod` 构建并启动
+- 配置自己的域名、CORS 来源与 HTTPS 反向代理；当前编排依赖外部 `nginx-proxy` 网络。
+- 核对数据库密码、`RESOURCE_SIGNING_KEY`、`BOT_TOKEN_KEY` 与管理员配置，敏感值放在根 `.env`，不提交到仓库。
+- 按服务器环境调整外呼代理地址和 Docker / Podman socket 挂载。
+
+`make deploy-prod-init` 初始化环境文件；完成上述配置后，`make deploy-prod` 构建镜像、执行迁移并启动服务。线上拓扑、发布与回滚见[发布手册](docs/deploy/release-runbook.md)，服务器配置与手动发布见[部署手册](docs/deploy/manual-deploy.md)。
+
+可选服务需要单独准备：
+
+- [可运行代码块](docs/deploy/manual-deploy.md#代码运行器可运行代码块沙箱执行)：需要容器运行时与对应语言的 runner 镜像。
+- [站点音乐](docs/deploy/manual-deploy.md#kite-音乐服务可选)：需要 Kite 服务及凭据配置；播放范围受账号权益和上游接口限制。
 
 ## 常用命令
 
@@ -173,17 +111,14 @@ make help           # 查看所有可用命令
 
 # 开发
 make dev            # 启动完整开发环境（api + web + postgres + redis）
-make dev-dind       # 容器内开发（Docker-in-Docker，DB 经 host.docker.internal）
+make docker-dev     # 全容器化开发环境
 make up             # 仅启动 PostgreSQL + Redis
 make logs           # 查看日志
-make check          # 检查环境依赖（Go/Node/Docker）
 
 # 数据库
-make migrate        # 执行迁移
-make migrate-down n=1  # 回滚一次迁移
-make migrate-version   # 查看当前版本
-make check-publications # 校验发布物投影一致性
-make db-shell       # 进入 psql
+make migrate            # 执行迁移
+make migrate-down n=1   # 回滚一次迁移
+make db-shell           # 进入 psql
 
 # 代码检查与测试
 make api-lint       # 后端 golangci-lint
@@ -196,6 +131,36 @@ make web-test       # 前端 Vitest
 make build          # 构建前后端生产版本
 ```
 
+## 项目结构
+
+```text
+violet/
+├── api/                    Go 后端服务（DDD 四层）
+│   ├── cmd/                server / migrate / export-openapi 等 CLI 入口
+│   ├── internal/
+│   │   ├── domain/         领域层（聚合根、值对象、仓储端口、领域事件）
+│   │   ├── application/    应用层（用例编排、CQRS command/query）
+│   │   ├── infrastructure/ 基础设施层（GORM 实现、Redis、外部 API 适配）
+│   │   ├── interfaces/     接口层（HTTP handler、路由）
+│   │   ├── app/            依赖注入容器（手工装配，每模块一个 *_container.go）
+│   │   └── middleware/     HTTP 中间件（session/CSRF/限流/审计）
+│   ├── migrations/         数据库迁移（golang-migrate）
+│   └── config.yaml         入库配置（全量配置文档，敏感值走根 .env）
+├── web/                    React 前端应用（TanStack Start SSR）
+│   ├── packages/           可独立使用的组件包（ui / react-tweet / kanban / inkline）
+│   ├── src/
+│   │   ├── routes/         文件路由
+│   │   ├── features/       业务模块（feature-sliced）
+│   │   ├── entities/       跨模块领域实体
+│   │   ├── widgets/        页面级组合组件
+│   │   └── shared/         站点级通用能力
+│   └── server.mjs          SSR 生产服务器
+├── docs/                   项目文档（索引见 docs/README.md）
+├── scripts/                工具脚本（Git 钩子、部署、冒烟测试）
+├── docker-compose.yml      开发基础服务编排
+└── docker-compose.prod.yml 生产环境编排
+```
+
 ## Git 工作流
 
 启用代码检查钩子（首次 clone 后运行）：
@@ -204,20 +169,22 @@ make build          # 构建前后端生产版本
 ./scripts/install-hooks.sh
 ```
 
-启用后：
+提交规范（Conventional Commits，中文 subject）与分支命名详见[贡献指南](CONTRIBUTING.md)。
 
-- **pre-commit**：检查 Go 文件 gofmt 格式与前端 biome 检查
+## 独立组件
 
-提交规范（Conventional Commits，中文 subject）与分支命名详见 [贡献指南](CONTRIBUTING.md)。
+- [@violet/ui](web/packages/ui/README.md)：React 组件、语义主题与 CSS。
+- [@violetjs/react-tweet](web/packages/react-tweet/README.zh-CN.md)：原生 X 推文展示与服务端数据获取。
+- [@violetjs/kanban](web/packages/kanban/README.zh-CN.md)：受控看板、画布与关系图。
+- [@violetjs/inkline](web/packages/inkline/README.zh-CN.md)：手绘矢量图、SVG / Canvas 渲染与绘制动画。
 
 ## 文档
 
-- [贡献指南](CONTRIBUTING.md)
-- [后端说明](api/README.md)
-- [前端说明](web/README.md)
-- [文档目录](docs/README.md)
-- [项目代理规范与开发须知](AGENTS.md)
+- [文档索引](docs/README.md)：开发指南、部署手册与架构决策。
+- [MCP 使用指南](docs/guides/mcp-servers.md)：服务能力、授权边界与客户端配置。
+- [编辑器手册](web/src/features/editor/docs/README.md)：写作工具与内容块用法。
 - [架构决策记录](docs/adr/)
+- [安全政策](SECURITY.md)：安全问题的报告方式。
 
 ## License
 
