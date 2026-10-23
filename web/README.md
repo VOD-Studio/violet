@@ -83,6 +83,8 @@ Segmented 是横纵两个方向、soft / ink / line 三种变体的分段控制�
 
 编辑器与正文运行入口使用同一份服务端有效策略：读取失败、运行器关闭或语言被禁用时，保留源码并显示具体原因，不提交执行任务。应用层通过 `AppProvider` 注入共享运行器，旧 `features/code-run` 与 `shared/ui/code-runner` 实现不再保留。
 
+后台运行策略分别位于 `/admin/settings/rate-limit`、`/admin/settings/image`、`/admin/settings/upload-queue` 和 `/admin/settings/code-runner`。场景预设、恢复默认和高级参数只更新当前分组草稿，显式保存才应用；保存版本与实例有效版本分别展示。冲突保留草稿，重新加载和离页须确认；只读权限不能编辑。标签说明使用支持鼠标、键盘和触屏的 Tooltip，字段错误、危险确认与生效状态保持直接可见。
+
 文件选择与拖放共用 `features/upload/hooks/use-file-selection` 的类型、大小和数量校验；取消后可重新选择同一个文件。`Uploader` 保留默认分片上传和自定义上传策略，表情继续使用公共 `useUploadEmoji` 的专用端点，避免改变 GIF 文件与表情 URL 的契约。
 
 `CropUploadDialog` 的确认回调支持异步保存；上传或保存期间保持当前会话，失败时保留图片与选区供重试。本地预览 URL 与当前文件绑定，在更换或关闭时释放，避免开发模式重复挂载导致预览失效。

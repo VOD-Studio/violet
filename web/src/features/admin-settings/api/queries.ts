@@ -3,7 +3,6 @@ import { toast } from "sonner";
 import type {
 	AboutSettingsDTO,
 	AuthSettingsDTO,
-	CodeRunnerSettingsDTO,
 	GeneralSettingsDTO,
 	GithubSettingsDTO,
 	LlmSettingsDTO,
@@ -104,21 +103,6 @@ export const useUpdateLlm = () => {
 		mutationFn: (body: Partial<LlmSettingsDTO>) => api.updateLlm(body),
 		onSuccess: (data) => {
 			qc.setQueryData(settingsKeys.llm(), data);
-			toast.success("站点设置已保存");
-		},
-		onError: (e: Error) => toast.error(`保存失败：${e.message}`),
-	});
-};
-
-// ---- 代码运行器组 ----
-export const useCodeRunnerSettings = () =>
-	useQuery({ queryKey: settingsKeys.codeRunner(), queryFn: api.getCodeRunner });
-export const useUpdateCodeRunner = () => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: Partial<CodeRunnerSettingsDTO>) => api.updateCodeRunner(body),
-		onSuccess: (data) => {
-			qc.setQueryData(settingsKeys.codeRunner(), data);
 			toast.success("站点设置已保存");
 		},
 		onError: (e: Error) => toast.error(`保存失败：${e.message}`),
