@@ -43,9 +43,12 @@ type ExecutionTask struct {
 	// durationMs 执行耗时（毫秒，各终态方法写入）
 	durationMs uint64
 	// timestamps 创建/更新时间（每次状态变更刷新 UpdatedAt，供 TaskRepository 判定 GC 时机）
-	timestamps   domainshared.Timestamps
+	timestamps domainshared.Timestamps
+	// retentionTTL 任务完成后的结果保留期，提交时固定并随任务持久化。
 	retentionTTL time.Duration
-	activeTTL    time.Duration
+	// activeTTL 排队、执行及收尾的额外存活预算，与保留期一同在提交时固定；
+	// 仅非终态任务将其叠加进 StorageTTL。
+	activeTTL time.Duration
 }
 
 // NewExecutionTask 创建新执行任务（Queued 状态）。
