@@ -79,7 +79,7 @@ Segmented 是横纵两个方向、soft / ink / line 三种变体的分段控制�
 
 `shared/api` 保留 429 的原始 `Retry-After` 和换算后的本地恢复时刻，支持秒数、HTTP 日期与服务端时钟偏差；没有可信期限时不猜测。主动取消保留原始取消异常，不转换成网络失败或触发自动重试。
 
-`entities/runtime-policy/` 提供四组策略视图、版本化写入与上传调度查询，供后台设置和上传入口共用。
+`entities/runtime-policy/` 提供四组策略视图、版本化写入与上传调度查询；`entities/code-runner/` 提供编辑器和阅读器共用的运行器 API、语言可用状态和终端。Markdown 公共层只声明可运行代码渲染插槽，执行能力由应用层注入，不向业务 feature 反向依赖。
 
 文件选择与拖放共用 `features/upload/hooks/use-file-selection` 的类型、大小和数量校验；取消后可重新选择同一个文件。`Uploader` 保留默认分片上传和自定义上传策略，表情继续使用公共 `useUploadEmoji` 的专用端点，避免改变 GIF 文件与表情 URL 的契约。
 
