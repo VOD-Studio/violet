@@ -7,6 +7,14 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.17.1](https://github.com/VOD-Studio/violet/compare/v2.17.0...v2.17.1) (2026-10-23)
+
+
+### 修复
+
+* **music-player:** 恢复新版播放器原生动效 ([0067356](https://github.com/VOD-Studio/violet/commit/0067356d9e1c2938f1a0a80e6bcc5e6bf33ccc89))
+* **music-player:** 恢复新版播放器原生动效 ([3e04fec](https://github.com/VOD-Studio/violet/commit/3e04fecd2ab669f616025697363eb3f8da64ffdb))
+
 ## [2.17.0](https://github.com/VOD-Studio/violet/compare/v2.16.1...v2.17.0) (2026-10-23)
 
 
