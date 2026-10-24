@@ -631,7 +631,7 @@ _Avoid_: 色板、palette
 
 **语义 token（Semantic Token）**:
 组件与页面唯一可用的颜色接口，以用途命名（背景、边框、主要动作、焦点环、链接等），由方言映射到某条色阶的某一档。
-主要动作悬停使用 `primary-hover`，链接用 `link`，选择用 `selected` 及其前景，焦点用 `ring`，进度用 `progress`。`category-1` 至 `category-6` 提供分类实色、浅底、可读文字和实色前景，图表映射前五类。包内色阶静态生成并由同步/检查命令校验；人设身份色局部生成，实验室旧颜色只存在于 lab 路由作用域。
+主要动作悬停使用 `primary-hover`，同一角色在文字上取可读档（`text-primary`、`text-destructive` 等映射到 `primary-text`、`destructive-text`，实色档不直接当文字色），链接用 `link`，选择用 `selected` 及其前景，焦点用 `ring`，进度用 `progress`。`category-1` 至 `category-6` 提供分类实色、浅底、可读文字和实色前景，图表映射前五类。包内色阶静态生成并由同步/检查命令校验；人设身份色局部生成，实验室旧颜色只存在于 lab 路由作用域。
 
 **主要动作色（Primary）**:
 表示界面主要动作的语义 token。公开方言取品牌色；工具方言取高对比中性色，品牌色在工具界面只出现在焦点、选中、当前导航、链接与进度上。

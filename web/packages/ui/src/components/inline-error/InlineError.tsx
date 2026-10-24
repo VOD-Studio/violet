@@ -44,7 +44,7 @@ export function InlineError({
 			<p
 				role="alert"
 				className={cn(
-					"flex items-center gap-2 font-mono text-xs text-destructive-text",
+					"flex items-center gap-2 font-mono text-xs text-destructive",
 					className,
 				)}
 			>
@@ -72,7 +72,7 @@ export function InlineError({
 				/>
 				<div className="min-w-0">
 					<p className="font-mono text-[13px] text-foreground">
-						<span className="mr-2 tracking-[0.2em] text-destructive-text uppercase">
+						<span className="mr-2 tracking-[0.2em] text-destructive uppercase">
 							Error
 						</span>
 						{message}

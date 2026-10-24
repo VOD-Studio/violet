@@ -65,9 +65,15 @@ SSR 宿主必须在首屏输出与持久化外观一致的类。使用 next-them
 
 普通组件直接使用 `bg-primary`、`text-link`、`bg-selected text-selected-foreground`。缺少用途时，先补语义映射，不在页面直接取色阶。
 
+### 同一角色的实色与文字
+
+同一个角色名在背景和文字上取不同的档。`bg-primary` 是主要动作的实色；`text-primary` 是同色相的可读文字档，public 方言取品牌第 11 档。实色档在亮色种子下不保证能当文字读。
+
+包在 Tailwind 的 `--text-color-*` 命名空间里映射了主色、状态色与分类色，所以 `text-` 工具类取到的都是文字档：`text-destructive`、`text-warning`、`text-success`、`text-category-1` 都是可读文字。`border-`、`fill-`、`ring-` 等仍取实色。原生 CSS 里对应的变量是 `--primary-text`、`--destructive-text`、`--warning-text`、`--success-text` 与 `--category-N-text`。
+
 Button 的 `default` 与 `primary` 变体都遵守当前方言，悬停使用 `primary-hover`；`soft` 使用选中底色与文字，`link` 使用链接文字色。主要动作悬停不会把实色往背景混，前景文字对比度不低于常态。
 
-状态实色用于填充，说明文字使用 `text-destructive-text`、`text-warning-text` 或 `text-success-text`，不把实色档直接当作小字颜色。危险按钮使用配对的 `destructive-hover`。Input 的聚焦描边取 `ring`，标签取可读的 `link` 文字档。
+状态实色用于填充，说明文字直接写 `text-destructive`、`text-warning` 或 `text-success`。危险按钮使用配对的 `destructive-hover`。Input 的聚焦描边取 `ring`，标签取可读的 `link` 文字档。
 
 本站 `.dialect-public` 为阅读与展示页提供品牌动作；`.dialect-tool` 为后台、编辑器与聊天保留中性主要动作，焦点、选择、导航、链接与进度仍跟随品牌。`.dialect-immersive` 使用独立生成的固定深色灰阶，包括焦点环在内都不随主题或外观变化；它不改 `color-scheme`，状态色仍与页面其余部分一致。
 
@@ -115,13 +121,14 @@ const scales = (["light", "dark"] as const).flatMap((appearance) =>
 writeFileSync("ocean.css", toCssVariables(scales, { selector: ':root, [data-theme="ocean"]' }));
 ```
 
-在包样式后导入 `ocean.css`，根语义即读取新色阶。若宿主自定义主要动作映射，须同时映射常态、悬停与前景：
+在包样式后导入 `ocean.css`，根语义即读取新色阶。若宿主自定义主要动作映射，须同时映射常态、悬停、前景与主色文字：
 
 ```css
 .campaign-theme {
 	--primary: var(--brand-9);
 	--primary-hover: var(--brand-10);
 	--primary-foreground: var(--brand-contrast);
+	--primary-text: var(--brand-11);
 }
 ```
 

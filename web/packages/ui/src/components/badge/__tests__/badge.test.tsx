@@ -15,7 +15,7 @@ describe("Badge", () => {
 		expect(badge.classList.contains("px-0")).toBe(true);
 		expect(badge.classList.contains("px-2")).toBe(false);
 		expect(badge.classList.contains("text-destructive")).toBe(true);
-		expect(badge.classList.contains("text-primary")).toBe(false);
+		expect(badge.classList.contains("text-link")).toBe(false);
 	});
 
 	it("非默认尺寸不触发 link 的内边距组合规则", () => {

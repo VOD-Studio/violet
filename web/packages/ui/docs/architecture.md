@@ -88,7 +88,7 @@ component-manifest.json ──> 根入口 / legacy / exports / 构建与 CSS 清
 
 颜色生成入口是 `scripts/theme.mjs`：violet 与 coral 同时生成浅色、深色及提高对比度四种组合，默认使用 violet 种子。固定中性动作与沉浸灰阶也由同一算法生成。`tokens.css` 仅维护用途映射，本站三方言只改映射、不重写色值；状态色在方言间继承一致。`edge-hairline` 与 `surface-glass` 使用透明度色阶，图表与分类组件共享分类色。
 
-Button 的主要动作变体统一消费 `primary`、`primary-hover` 和 `primary-foreground`。悬停档与前景由算法成对求解，不使用降低对比度的透明混色。链接、选择、进度与装饰有独立语义，工具方言无需靠主要动作变量表达所有品牌反馈。
+Button 的主要动作变体统一消费 `primary`、`primary-hover` 和 `primary-foreground`；`text-primary` 在 Tailwind 的文字命名空间里映射到 `primary-text` 可读档，状态色与分类色同理，实色档不直接当文字色。悬停档与前景由算法成对求解，不使用降低对比度的透明混色。链接、选择、进度与装饰有独立语义，工具方言无需靠主要动作变量表达所有品牌反馈。
 
 `@violet/ui/variants` 只导出类名 recipes，不导入 React 组件。新增样式 recipe 时需要检查该入口的依赖图，不能让一次类名计算拉入 Dialog、图表或动效运行时。
 

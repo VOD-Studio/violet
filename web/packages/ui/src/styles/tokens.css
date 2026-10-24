@@ -21,6 +21,7 @@
 	--primary: var(--action-neutral-9);
 	--primary-hover: var(--action-neutral-10);
 	--primary-foreground: var(--action-neutral-contrast);
+	--primary-text: var(--action-neutral-9);
 	--secondary: var(--neutral-3);
 	--secondary-foreground: var(--neutral-12);
 	--muted: var(--neutral-3);

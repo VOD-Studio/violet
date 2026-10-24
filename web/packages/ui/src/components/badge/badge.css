@@ -55,7 +55,7 @@
 .v-badge--link {
 	/* link 形态贴合文字宽度，去掉胶囊内边距 */
 	padding: 0;
-	color: var(--primary);
+	color: var(--link);
 	text-decoration: underline;
 	text-underline-offset: 4px;
 }

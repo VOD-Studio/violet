@@ -93,6 +93,21 @@
 	--color-chart-3: var(--chart-3);
 	--color-chart-4: var(--chart-4);
 	--color-chart-5: var(--chart-5);
+
+	/*
+	 * 角色色在文字上取可读档：Tailwind 的 text- 先查 --text-color-*，
+	 * 所以 text-primary、text-destructive 是可读文字，bg-、border-、fill- 等回落到 --color-* 的实色。
+	 */
+	--text-color-primary: var(--primary-text);
+	--text-color-destructive: var(--destructive-text);
+	--text-color-warning: var(--warning-text);
+	--text-color-success: var(--success-text);
+	--text-color-category-1: var(--category-1-text);
+	--text-color-category-2: var(--category-2-text);
+	--text-color-category-3: var(--category-3-text);
+	--text-color-category-4: var(--category-4-text);
+	--text-color-category-5: var(--category-5-text);
+	--text-color-category-6: var(--category-6-text);
 }
 
 /* —— 主题动画 token 引用的 keyframes（全局注册，随映射层一起维护）—— */
