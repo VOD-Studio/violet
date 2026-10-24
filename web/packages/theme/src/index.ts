@@ -4,6 +4,7 @@ export { toCssVariables } from "./css.ts";
 export type {
 	AlphaScale,
 	Appearance,
+	ContrastLevel,
 	GenerateOptions,
 	Scale,
 	Step,

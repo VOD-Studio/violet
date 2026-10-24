@@ -35,11 +35,16 @@ const usage = `import { generateScales, normalizeTheme, toCssVariables } from "$
 const theme = normalizeTheme({ version: 1, seed: "#3A7BD5", knobs: { neutralChroma: 0.02, unknown: 1 } });
 if (theme.seed !== "#3a7bd5" || "unknown" in theme.knobs) throw new Error("normalizeTheme did not normalize");
 if (normalizeTheme({ version: 1, seed: "#fff;}" }).seed !== normalizeTheme(null).seed) throw new Error("normalizeTheme accepted CSS");
-const light = generateScales(theme, { appearance: "light" });
-const dark = generateScales(theme, { appearance: "dark" });
-const css = toCssVariables([light, dark]);
-const declarations = css.match(/--[a-z]+-(?:\\d+|contrast): light-dark\\(oklch\\([^)]+\\), oklch\\([^)]+\\)\\);/g) ?? [];
-if (declarations.length !== 26) throw new Error("Expected 26 custom properties, got " + declarations.length);
+const scales = ["light", "dark"].flatMap((appearance) =>
+	["standard", "more"].map((contrast) => generateScales(theme, { appearance, contrast })),
+);
+const css = toCssVariables(scales);
+const media = css.indexOf("@media (prefers-contrast: more)");
+if (media < 0) throw new Error("Missing prefers-contrast: more block");
+for (const name of ["--brand-9", "--brand-a12", "--neutral-contrast", "--neutral-a1"]) {
+	const pattern = new RegExp(name + ": light-dark\\\\((?:oklch|color)\\\\(", "g");
+	if ((css.match(pattern) ?? []).length !== 2) throw new Error("Expected " + name + " in both contrast levels");
+}
 export const result = css;
 `;
 
@@ -105,14 +110,15 @@ try {
 
 	write(
 		"types.ts",
-		`import { generateScales, normalizeTheme, toCssVariables, type AlphaScale, type Appearance, type CssOptions, type Gamut, type GenerateOptions, type Knobs, type NormalizedTheme, type Scale, type Step, type Theme, type ThemeScales } from "${packageJson.name}";
+		`import { generateScales, normalizeTheme, toCssVariables, type AlphaScale, type Appearance, type ContrastLevel, type CssOptions, type Gamut, type GenerateOptions, type Knobs, type NormalizedTheme, type Scale, type Step, type Theme, type ThemeScales } from "${packageJson.name}";
 
 const input: Theme = { version: 1, seed: "#3a7bd5", knobs: { neutralChroma: 0.02 } };
 const knobs: Knobs = normalizeTheme(input).knobs;
 const theme: NormalizedTheme = normalizeTheme(JSON.parse("{}") as unknown);
 const appearance: Appearance = "dark";
 const gamut: Gamut = "srgb";
-const options: GenerateOptions = { appearance, gamut };
+const contrast: ContrastLevel = "more";
+const options: GenerateOptions = { appearance, contrast, gamut };
 const scales: ThemeScales = generateScales(theme, options);
 const step: Step = 9;
 const scale: Scale = scales.brand;

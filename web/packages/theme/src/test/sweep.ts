@@ -1,8 +1,10 @@
 import { expect } from "vitest";
 import {
 	type Appearance,
+	type ContrastLevel,
 	generateScales,
 	normalizeTheme,
+	type Scale,
 	type Step,
 	type Theme,
 	type ThemeScales,
@@ -11,6 +13,11 @@ import { seedHex } from "./colors.ts";
 
 export const STEPS: readonly Step[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 export const APPEARANCES: readonly Appearance[] = ["light", "dark"];
+export const LEVELS: readonly ContrastLevel[] = ["standard", "more"];
+/** 外观 × 对比度档位的全部组合。 */
+export const COMBINATIONS = APPEARANCES.flatMap((appearance) =>
+	LEVELS.map((contrast) => ({ appearance, contrast })),
+);
 export const DEFAULT_NEUTRAL_CHROMA = normalizeTheme(undefined).knobs.neutralChroma;
 // 单个外观约两万次生成与逐对比较
 export const SWEEP_TIMEOUT = 120_000;
@@ -50,8 +57,14 @@ export interface Sample {
 	scales: ThemeScales;
 }
 
-export const sweep = (appearance: Appearance): Sample[] =>
-	THEMES.map((theme) => ({ theme, scales: generateScales(theme, { appearance }) }));
+export const sweep = (appearance: Appearance, contrast: ContrastLevel = "standard"): Sample[] =>
+	THEMES.map((theme) => ({ theme, scales: generateScales(theme, { appearance, contrast }) }));
+
+/** 全部色阶及其名称。 */
+export const namedScales = (scales: ThemeScales): [name: string, scale: Scale][] => [
+	["brand", scales.brand],
+	["neutral", scales.neutral],
+];
 
 export const describeTheme = ({ seed, knobs }: Theme) =>
 	knobs?.neutralChroma === undefined ? seed : `${seed} neutralChroma=${knobs.neutralChroma}`;

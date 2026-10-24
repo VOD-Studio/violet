@@ -19,7 +19,7 @@ export const parse = (css: string): Color => {
 export const PRECISIONS = ["float", "quantized"] as const;
 type Precision = (typeof PRECISIONS)[number];
 
-interface Measured {
+export interface Measured {
 	/** 0–255 的 sRGB 通道 */
 	rgb: Record<Precision, number[]>;
 	/** WCAG 2 相对亮度 */
@@ -55,16 +55,28 @@ export const measure = (css: string): Measured => {
 	return measured;
 };
 
+const measured = (color: string | Measured) => (typeof color === "string" ? measure(color) : color);
+
 /** WCAG 2.2 对比度比值。 */
-export const wcag = (a: string, b: string, precision: Precision = "float") => {
-	const [la, lb] = [measure(a).luminance[precision], measure(b).luminance[precision]];
+export const wcag = (
+	a: string | Measured,
+	b: string | Measured,
+	precision: Precision = "float",
+) => {
+	const [la, lb] = [measured(a).luminance[precision], measured(b).luminance[precision]];
 	return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
 };
 
 /** APCA Lc 绝对值，使用官方 apca-w3。极性有意义：先文字后背景。 */
-export const apca = (text: string, background: string, precision: Precision = "float") =>
+export const apca = (
+	text: string | Measured,
+	background: string | Measured,
+	precision: Precision = "float",
+) =>
 	Math.abs(
-		Number(APCAcontrast(measure(text).apcaY[precision], measure(background).apcaY[precision])),
+		Number(
+			APCAcontrast(measured(text).apcaY[precision], measured(background).apcaY[precision]),
+		),
 	);
 
 export const toHex = (color: Color) =>
@@ -73,6 +85,16 @@ export const toHex = (color: Color) =>
 /** 以 CSS Color 4 的色域映射把 OKLCH 坐标转成 `#rrggbb` 种子色。 */
 export const seedHex = (l: number, c: number, h: number) =>
 	toHex(new Color("oklch", [l, c, h]).toGamut({ space: "srgb", method: "css" }));
+
+/** 解析后的 OKLCH 坐标；colorjs 以 null 表示无色相。 */
+export const coords = (css: string) => {
+	const [l, c, h] = parse(css).coords.map((value) =>
+		value === null || Number.isNaN(value) ? 0 : value,
+	);
+	return { l: l ?? 0, c: c ?? 0, h: h ?? 0 };
+};
+
+export const hueDistance = (a: number, b: number) => Math.abs(((a - b + 540) % 360) - 180);
 
 /** OKLab 色差；CSS Color 4 以 0.02 作为可察觉阈值（JND）。 */
 export const deltaE = (a: string | Color, b: string | Color) =>
