@@ -1,7 +1,7 @@
 import {
-	type AlphaScale,
 	type Appearance,
 	type ContrastLevel,
+	type Scale,
 	STEPS,
 	type ThemeScales,
 } from "./generate.ts";
@@ -27,15 +27,20 @@ const PREFIX = /^[\w-]*$/;
 const UNSAFE_SELECTOR = /[{};<]/;
 const LEVELS: readonly ContrastLevel[] = ["standard", "more"];
 
-const entries = (name: string, scale: AlphaScale): [string, string][] => [
+const entries = (name: string, scale: Scale & { alpha?: Scale["steps"] }): [string, string][] => [
 	...STEPS.map((step): [string, string] => [`${name}-${step}`, scale.steps[step]]),
 	[`${name}-contrast`, scale.contrast],
-	...STEPS.map((step): [string, string] => [`${name}-a${step}`, scale.alpha[step]]),
+	...(scale.alpha
+		? STEPS.map((step): [string, string] => [`${name}-a${step}`, scale.alpha?.[step] ?? ""])
+		: []),
 ];
 
 const variables = (scales: ThemeScales): [string, string][] => [
 	...entries("brand", scales.brand),
 	...entries("neutral", scales.neutral),
+	...entries("danger", scales.status.danger),
+	...entries("warning", scales.status.warning),
+	...entries("success", scales.status.success),
 ];
 
 /** 同一档位的声明；浅色与深色都在时合并为 light-dark()。 */
@@ -55,8 +60,9 @@ function declarations(byAppearance: Map<Appearance, ThemeScales>, prefix: string
 }
 
 /**
- * 把生成结果序列化为样式表：每档一个自定义属性，即 `--brand-1` … `--brand-12`、`--brand-contrast`
- * 与透明度色阶 `--brand-a1` … `--brand-a12`，中性色阶同理。
+ * 把生成结果序列化为样式表：每档一个自定义属性。品牌与中性为 `--brand-1` … `--brand-12`、
+ * `--brand-contrast` 与透明度色阶 `--brand-a1` … `--brand-a12`；状态色为 `--danger-*`、`--warning-*`、
+ * `--success-*`。
  *
  * 同一档位同时传入浅色与深色时，每个值写成 `light-dark(浅色, 深色)`，由页面的 `color-scheme` 决定取哪一支；
  * 只传一种外观时直接写值。提高对比度档位写进 `@media (prefers-contrast: more)`，覆盖同名变量。

@@ -2,7 +2,7 @@
 
 [English](./README.md)
 
-用一个种子色生成浅色与深色两种外观下的 12 档品牌色阶与中性色阶，各带透明度版本。任何种子色生成的文字、实色前景与控件边界都同时通过 WCAG 2.2 AA 与 APCA 门槛，另有供 `prefers-contrast: more` 使用的提高对比度档位；全部颜色落在 sRGB 内，相同输入总是得到相同输出。零依赖，不使用 Node API，浏览器、SSR 与构建脚本都能运行。
+用一个种子色生成浅色与深色两种外观下的 12 档色阶：带透明度版本的品牌与中性色阶，以及色相固定的危险、警告与成功色阶。任何种子色生成的文字、实色前景与控件边界都同时通过 WCAG 2.2 AA 与 APCA 门槛，另有供 `prefers-contrast: more` 使用的提高对比度档位；全部颜色落在 sRGB 内，相同输入总是得到相同输出。零依赖，不使用 Node API，浏览器、SSR 与构建脚本都能运行。
 
 ```sh
 pnpm add @violetjs/theme
@@ -27,6 +27,7 @@ const darkMore = generateScales(theme, { appearance: "dark", contrast: "more" })
 light.brand.steps[9]; // "oklch(…)"：品牌实色
 light.brand.contrast; // 第 9、10 档上的文字色
 light.brand.alpha[3]; // "color(srgb … / …)"：叠在页面背景上等同第 3 档的半透明色
+light.status.danger.steps[11]; // 危险文字
 
 // 3. 序列化为 CSS 自定义属性。
 const css = toCssVariables([light, dark, lightMore, darkMore]);
@@ -45,6 +46,7 @@ const css = toCssVariables([light, dark, lightMore, darkMore]);
 | --- | --- |
 | `--brand-1` … `--brand-12`、`--brand-contrast`、`--brand-a1` … `--brand-a12` | 品牌，由种子色派生 |
 | `--neutral-1` … `--neutral-12`、`--neutral-contrast`、`--neutral-a1` … `--neutral-a12` | 中性，带种子色的色相 |
+| `--danger-*`、`--warning-*`、`--success-*` | 状态色，色相固定 |
 
 ## 主题
 
@@ -58,7 +60,7 @@ const css = toCssVariables([light, dark, lightMore, darkMore]);
 
 ## 档位
 
-档位分工沿用 [Radix Colors](https://www.radix-ui.com/colors/docs/palette-composition/understanding-the-scale)。两种外观下，第 1–8 档与第 11–12 档的亮度都随档位单调远离背景；实色第 9–10 档像 Radix 的第 9 档一样锚定种子色。两条色阶都在彼此的背景档上满足门槛。
+档位分工沿用 [Radix Colors](https://www.radix-ui.com/colors/docs/palette-composition/understanding-the-scale)。两种外观下，第 1–8 档与第 11–12 档的亮度都随档位单调远离背景；实色第 9–10 档像 Radix 的第 9 档一样锚定种子色。每条色阶都在品牌、中性与它自己的背景档上满足同一套门槛。
 
 | 档位 | 用途 | 标准档 | `"more"` 档 |
 | --- | --- | --- | --- |
@@ -73,6 +75,10 @@ const css = toCssVariables([light, dark, lightMore, darkMore]);
 标准档的 APCA 档位取自其用途分档：Lc 90 是字号表对 16px/400 正文的要求，Lc 75 是正文的最低值，Lc 60 用于标签、按钮等其余可读内容，Lc 30 用于有语义的非文字元素，Lc 15 是大面积按钮可辨的下限。`"more"` 档整体上调 Lc 15（APCA 对 AAA 的换算），正文在近白背景上至多做到 Lc 100，文字的 WCAG 门槛取 AAA 的 7:1。
 
 近白或近黑文字能在种子色上达标时，第 9 档就是种子色本身；否则只把它的亮度移到最近的可行值。`contrast` 取所需移动更小的那种文字色，两种外观一致：中等亮度的饱和色在深色下同样配白字，黄色这类亮种子保持明亮并配近黑字。第 10 档（悬停）朝文字对比度更高的方向偏移：白字时变暗，近黑字时变亮。
+
+## 状态色阶
+
+危险、警告与成功的种子固定，不随主题变化，生成规则与品牌色阶相同。
 
 ## 透明度色阶
 

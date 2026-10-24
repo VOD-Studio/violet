@@ -2,7 +2,7 @@
 
 [中文](./README.zh-CN.md)
 
-Turn one seed color into 12-step brand and neutral color scales, with translucent counterparts, for light and dark appearances. Text, solid foregrounds and control boundaries meet WCAG 2.2 AA and APCA thresholds for any seed, a higher-contrast level serves `prefers-contrast: more`, every color stays inside sRGB, and the same input always gives the same output. Zero dependencies, no Node APIs: it runs in the browser, during SSR and in build scripts.
+Turn one seed color into 12-step color scales for light and dark appearances: brand and neutral scales with translucent counterparts, and fixed danger, warning and success scales. Text, solid foregrounds and control boundaries meet WCAG 2.2 AA and APCA thresholds for any seed, a higher-contrast level serves `prefers-contrast: more`, every color stays inside sRGB, and the same input always gives the same output. Zero dependencies, no Node APIs: it runs in the browser, during SSR and in build scripts.
 
 ```sh
 pnpm add @violetjs/theme
@@ -27,6 +27,7 @@ const darkMore = generateScales(theme, { appearance: "dark", contrast: "more" })
 light.brand.steps[9]; // "oklch(…)": the solid brand color
 light.brand.contrast; // text color for steps 9 and 10
 light.brand.alpha[3]; // "color(srgb … / …)": step 3 as a translucent color over the page background
+light.status.danger.steps[11]; // danger text
 
 // 3. Serialize to CSS custom properties.
 const css = toCssVariables([light, dark, lightMore, darkMore]);
@@ -45,6 +46,7 @@ With both appearances, each value is a `light-dark()` pair, so the page needs `c
 | --- | --- |
 | `--brand-1` … `--brand-12`, `--brand-contrast`, `--brand-a1` … `--brand-a12` | Brand, from the seed |
 | `--neutral-1` … `--neutral-12`, `--neutral-contrast`, `--neutral-a1` … `--neutral-a12` | Neutral, tinted with the seed's hue |
+| `--danger-*`, `--warning-*`, `--success-*` | Status, fixed hues |
 
 ## Theme
 
@@ -58,7 +60,7 @@ With both appearances, each value is a `light-dark()` pair, so the page needs `c
 
 ## Steps
 
-Step roles follow [Radix Colors](https://www.radix-ui.com/colors/docs/palette-composition/understanding-the-scale). In both appearances, steps 1–8 and 11–12 move away from the background monotonically, while the solid steps 9–10 follow the seed, as Radix's step 9 does. Both scales meet the thresholds on the background steps of either scale.
+Step roles follow [Radix Colors](https://www.radix-ui.com/colors/docs/palette-composition/understanding-the-scale). In both appearances, steps 1–8 and 11–12 move away from the background monotonically, while the solid steps 9–10 follow the seed, as Radix's step 9 does. Every scale meets the same thresholds on the background steps of the brand and neutral scales and on its own.
 
 | Step | Use | Standard level | `"more"` level |
 | --- | --- | --- | --- |
@@ -73,6 +75,10 @@ Step roles follow [Radix Colors](https://www.radix-ui.com/colors/docs/palette-co
 The standard APCA levels follow APCA's use-case tiers: Lc 90 is what its font lookup table asks of 16px/400 body text, Lc 75 is the minimum for body text, Lc 60 for other readable content such as labels and buttons, Lc 30 for meaningful non-text elements and Lc 15 for large buttons to be discernible. The `"more"` level adds Lc 15, APCA's equivalent of AAA, with body text capped at Lc 100, the most an off-white background allows, and uses WCAG's AAA 7:1 for text.
 
 Step 9 is the seed itself whenever near-white or near-black text passes on it. Otherwise only its lightness moves, to the nearest value where one of them does. `contrast` is whichever text color needs the smaller move, the same in both appearances: saturated mid-tone seeds keep white text in dark mode too, and bright seeds such as yellow keep their brightness with near-black text. Step 10, the hover state, moves toward higher contrast with that text: darker under white text, lighter under near-black text.
+
+## Status scales
+
+Danger, warning and success have fixed seeds and do not change with the theme. They follow the same rules as the brand scale.
 
 ## Alpha scales
 

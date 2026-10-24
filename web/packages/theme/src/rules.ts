@@ -4,6 +4,9 @@ export type Appearance = "light" | "dark";
 /** 对比度档位：标准，或系统开启「提高对比度」（`prefers-contrast: more`）时使用的档位。 */
 export type ContrastLevel = "standard" | "more";
 
+/** 状态色：危险、警告、成功。 */
+export type StatusName = "danger" | "warning" | "success";
+
 /** 实色上的前景：近白或近黑。 */
 export type Foreground = "light" | "dark";
 
@@ -37,7 +40,7 @@ export interface AppearanceRules {
 	background: number;
 	/** 第 12 档能到达的最远亮度 */
 	limit: number;
-	/** 品牌色阶各档色度相对种子色度的比例 */
+	/** 品牌与状态色阶各档色度相对种子色度的比例 */
 	brandChroma: readonly number[];
 	/** 中性色阶各档色度相对 `neutralChroma` 的比例 */
 	neutralChroma: readonly number[];
@@ -109,4 +112,11 @@ export const RULES: Readonly<Record<Appearance, AppearanceRules>> = {
 			},
 		},
 	},
+};
+
+/** 状态色的种子色，色相与种子固定，不随主题变化。 */
+export const STATUS_SEEDS: Readonly<Record<StatusName, string>> = {
+	danger: "#dc2626",
+	warning: "#f59e0b",
+	success: "#15803d",
 };

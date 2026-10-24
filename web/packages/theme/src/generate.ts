@@ -13,11 +13,13 @@ import {
 	type ContrastLevel,
 	type Foreground,
 	RULES,
+	STATUS_SEEDS,
+	type StatusName,
 	type Targets,
 } from "./rules.ts";
 import { normalizeSeed, resolveKnobs, type Theme } from "./theme.ts";
 
-export type { Appearance, ContrastLevel } from "./rules.ts";
+export type { Appearance, ContrastLevel, StatusName } from "./rules.ts";
 
 /**
  * 色阶档位，用途沿用 Radix Colors：1–2 背景，3–5 组件底色及其悬停、按下，
@@ -66,6 +68,8 @@ export interface ThemeScales {
 	brand: AlphaScale;
 	/** 色相跟随种子色，色度由旋钮 `neutralChroma` 控制 */
 	neutral: AlphaScale;
+	/** 色相固定、不随主题变化的危险、警告与成功色阶 */
+	status: Readonly<Record<StatusName, Scale>>;
 }
 
 // 相邻档的最小亮度差（OKLab），保证单调且悬停、按下可辨
@@ -77,6 +81,8 @@ const PRIMARY_GAP = 0.06;
 const PRECISION = 1e-4;
 // 深色前景：近黑并略带色调；比纯黑亮一些，与实色并置时不显得生硬
 const DARK_FOREGROUND = { l: 0.2, c: 0.02 };
+// 状态色不随主题变化，对灰色参照背景求解；主题背景带色调时亮度略有出入，目标放大这一比例兜住
+const FIXED_SCALE_MARGIN = 1.03;
 const FOREGROUNDS: readonly Foreground[] = ["light", "dark"];
 export const STEPS: readonly Step[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
@@ -123,7 +129,7 @@ interface ScaleContext {
 	targets: Targets;
 	gamut: Gamut;
 	hue: number;
-	/** 色度曲线乘数：品牌为种子色度，中性为 min(旋钮, 种子色度) */
+	/** 色度曲线乘数：品牌与状态为种子色度，中性为 min(旋钮, 种子色度) */
 	chroma: number;
 	curve: readonly number[];
 	/** 实色与背景至少要达到的比值 */
@@ -271,13 +277,61 @@ function buildScale(context: ScaleContext, subtle: Oklch[], surfaces: Surfaces, 
 	};
 }
 
+const amplify = (targets: Targets, factor: number): Targets => ({
+	...targets,
+	boundary: targets.boundary * factor,
+	secondary: targets.secondary * factor,
+	primary: targets.primary * factor,
+	secondaryOnComponent: targets.secondaryOnComponent * factor,
+	primaryOnComponent: targets.primaryOnComponent * factor,
+	separation: targets.separation * factor,
+});
+
+interface FixedScales {
+	status: Record<StatusName, Scale>;
+}
+
+const fixedCache = new Map<string, FixedScales>();
+
+/** 状态色不随主题变化，对灰色参照背景求解，按外观、档位与色域缓存。 */
+function fixedScales(appearance: Appearance, contrast: ContrastLevel, gamut: Gamut): FixedScales {
+	const key = `${appearance}:${contrast}:${gamut}`;
+	const cached = fixedCache.get(key);
+	if (cached) return cached;
+	const rules = RULES[appearance];
+	const targets = amplify(rules.targets[contrast], FIXED_SCALE_MARGIN);
+	const base = {
+		rules,
+		targets,
+		gamut,
+		curve: rules.brandChroma,
+		separation: targets.separation,
+	};
+	const reference = subtleSteps({ ...base, hue: 0, chroma: 0 });
+
+	const status = Object.fromEntries(
+		(Object.keys(STATUS_SEEDS) as StatusName[]).map((name) => {
+			const seed = hexToOklch(STATUS_SEEDS[name]);
+			const context: ScaleContext = { ...base, hue: seed.h, chroma: seed.c };
+			const subtle = subtleSteps(context);
+			return [
+				name,
+				buildScale(context, subtle, surfacesOf([reference, subtle]), seed.l).scale,
+			];
+		}),
+	) as Record<StatusName, Scale>;
+	const fixed = { status };
+	fixedCache.set(key, fixed);
+	return fixed;
+}
+
 const toAlphaSteps = (colors: Oklch[], background: Oklch, gamut: Gamut) =>
 	Object.fromEntries(
 		STEPS.map((step) => [step, toAlpha(colors[step - 1] as Oklch, background, gamut)]),
 	) as Record<Step, string>;
 
 /**
- * 由主题生成某一外观与对比度档位下的品牌与中性色阶，各带透明度色阶。
+ * 由主题生成某一外观与对比度档位下的全部色阶：品牌与中性（各带透明度色阶）以及状态色。
  *
  * 背景、边框与文字档按对背景的目标对比度反解亮度并单调远离背景；实色档锚定种子色。文字、实色前景与控件边界
  * 同时满足 WCAG 2.2 AA 与 APCA 门槛，全部颜色落在目标色域内。纯函数，相同输入得到逐字相同的输出。
@@ -324,5 +378,6 @@ export function generateScales(theme: Theme, options: GenerateOptions): ThemeSca
 			...neutralBuilt.scale,
 			alpha: toAlphaSteps(neutralBuilt.colors, background, gamut),
 		},
+		...fixedScales(appearance, contrast, gamut),
 	};
 }

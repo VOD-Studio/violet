@@ -26,7 +26,7 @@ const allColors = (scale: Scale) => [
 		: []),
 ];
 
-/** 某一外观与对比度档位的遍历：对比度门槛，以及色域、单调、色相、实色与透明度的性质。 */
+/** 某一外观与对比度档位的遍历：对比度门槛，以及色域、单调、色相、实色、透明度与状态色的性质。 */
 export function describeSweep(appearance: Appearance, contrast: ContrastLevel) {
 	describe(`${appearance} 外观 ${contrast} 档遍历全部色相、色度与旋钮`, () => {
 		let samples: Sample[];
@@ -191,6 +191,37 @@ export function describeSweep(appearance: Appearance, contrast: ContrastLevel) {
 			},
 			SWEEP_TIMEOUT,
 		);
+
+		it("状态色不随主题变化", () => {
+			const [first] = samples;
+			const failures = samples
+				.filter(
+					(sample) =>
+						JSON.stringify(sample.scales.status) !==
+						JSON.stringify(first?.scales.status),
+				)
+				.map((sample) => describeTheme(sample.theme));
+			expectNoFailures(failures);
+		});
+
+		it("状态色阶各档色相固定", () => {
+			const { status } = generateScales(
+				{ version: 1, seed: "#684dda" },
+				{ appearance, contrast },
+			);
+			for (const [name, scale] of Object.entries(status)) {
+				const hues = Object.values(scale.steps)
+					.map(coords)
+					.filter(({ c }) => c > 0)
+					.map(({ h }) => h);
+				for (const hue of hues)
+					expect(hueDistance(hue, hues[0] ?? hue), name).toBeLessThanOrEqual(0.01);
+			}
+			const solidHue = (name: keyof typeof status) => coords(status[name].steps[9]).h;
+			expect(hueDistance(solidHue("danger"), 25)).toBeLessThan(15);
+			expect(hueDistance(solidHue("warning"), 70)).toBeLessThan(15);
+			expect(hueDistance(solidHue("success"), 150)).toBeLessThan(15);
+		});
 
 		it(
 			"结果可重复",

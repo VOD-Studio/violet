@@ -42,14 +42,17 @@ const parseSheet = (css: string) => {
 
 const steps = (name: string) => Array.from({ length: 12 }, (_, index) => `--${name}-${index + 1}`);
 const alpha = (name: string) => Array.from({ length: 12 }, (_, index) => `--${name}-a${index + 1}`);
-const NAMES = ["brand", "neutral"].flatMap((name) => [
-	...steps(name),
-	`--${name}-contrast`,
-	...alpha(name),
-]);
+const NAMES = [
+	...["brand", "neutral"].flatMap((name) => [
+		...steps(name),
+		`--${name}-contrast`,
+		...alpha(name),
+	]),
+	...["danger", "warning", "success"].flatMap((name) => [...steps(name), `--${name}-contrast`]),
+];
 
 describe("toCssVariables", () => {
-	it("单一外观输出 :root 规则，涵盖品牌、中性与透明度色阶", () => {
+	it("单一外观输出 :root 规则，涵盖品牌、中性、透明度与状态色阶", () => {
 		const { selector, declarations } = parseRule(toCssVariables(light));
 		expect(selector).toBe(":root");
 		expect(Object.keys(declarations)).toEqual(NAMES);
@@ -57,6 +60,7 @@ describe("toCssVariables", () => {
 		expect(declarations["--brand-contrast"]).toBe(light.brand.contrast);
 		expect(declarations["--brand-a3"]).toBe(light.brand.alpha[3]);
 		expect(declarations["--neutral-12"]).toBe(light.neutral.steps[12]);
+		expect(declarations["--danger-9"]).toBe(light.status.danger.steps[9]);
 	});
 
 	it("同时给出浅色与深色时以 light-dark() 合并，与传入顺序无关", () => {
@@ -70,6 +74,7 @@ describe("toCssVariables", () => {
 		expect(declarations["--neutral-contrast"]).toBe(
 			`light-dark(${light.neutral.contrast}, ${dark.neutral.contrast})`,
 		);
+		expect(declarations["--success-a1"]).toBeUndefined();
 	});
 
 	it("提高对比度档位写进 prefers-contrast: more 媒体查询，覆盖同名变量", () => {

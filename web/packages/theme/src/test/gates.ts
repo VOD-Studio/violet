@@ -16,7 +16,7 @@ export interface Gate {
 	texts: (Step | "contrast")[];
 	/** 背景档 */
 	on: Step[];
-	/** shared：中性与品牌的背景档；own：只用该色阶自己的档位 */
+	/** shared：中性、品牌与该色阶自己的背景档；own：只用该色阶自己的档位 */
 	surfaces: "shared" | "own";
 }
 
@@ -108,7 +108,13 @@ export function gateFailures(
 		const scales = measured[index] ?? [];
 		const [brand, neutral] = scales as [MeasuredScale, MeasuredScale];
 		for (const scale of scales) {
-			const surfaces = gate.surfaces === "own" ? [scale] : [neutral, brand];
+			// 每条色阶的文字放在中性、品牌与它自己的背景档上
+			const surfaces =
+				gate.surfaces === "own"
+					? [scale]
+					: scale === brand || scale === neutral
+						? [neutral, brand]
+						: [neutral, brand, scale];
 			for (const text of gate.texts) {
 				const foreground =
 					text === "contrast" ? scale.contrast : (scale.colors[text - 1] as Measured);

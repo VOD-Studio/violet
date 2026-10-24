@@ -7,6 +7,7 @@ export type {
 	ContrastLevel,
 	GenerateOptions,
 	Scale,
+	StatusName,
 	Step,
 	ThemeScales,
 } from "./generate.ts";
