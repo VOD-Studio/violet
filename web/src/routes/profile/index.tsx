@@ -7,6 +7,7 @@ import { PasswordSection } from "@features/profile/ui/PasswordSection";
 import { ProfileCoverSection } from "@features/profile/ui/ProfileCoverSection";
 import { ProfileInfoSection } from "@features/profile/ui/ProfileInfoSection";
 import { ProfileShell } from "@features/profile/ui/ProfileShell";
+import { UsageSection } from "@features/profile/ui/UsageSection";
 import { isSessionActive } from "@shared/api/session";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
@@ -20,6 +21,7 @@ const ProfilePage = () => {
 	return (
 		<ProfileShell
 			user={user}
+			usage={<UsageSection />}
 			profile={
 				<div className="space-y-6">
 					<ProfileInfoSection user={user} />

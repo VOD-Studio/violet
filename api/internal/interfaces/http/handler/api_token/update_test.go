@@ -161,3 +161,47 @@ func TestHandlerUpdate_OriginalPlaintextUsesLatestMCPAuthorization(t *testing.T)
 	assert.Equal(t, original.CreatedAt(), stored.CreatedAt())
 	assert.Equal(t, original.TokenHash(), stored.TokenHash())
 }
+
+func TestHandlerUsageScope_CreateUpdateList(t *testing.T) {
+	h, _, original, _ := setupUpdateHandler(t)
+	request := httptest.NewRequest(http.MethodPost, "/api/v1/admin/api-tokens", strings.NewReader(`{"name":"usage client","scopes":["usage:write"],"expires_at":"never"}`))
+	request = request.WithContext(context.WithValue(request.Context(), middleware.UserIDKey, original.UserID()))
+	created := httptest.NewRecorder()
+	h.Create(created, request)
+	require.Equal(t, http.StatusCreated, created.Code, created.Body.String())
+	var result struct {
+		Data struct {
+			ID     string   `json:"id"`
+			Scopes []string `json:"scopes"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(created.Body.Bytes(), &result))
+	require.Equal(t, []string{"usage:write"}, result.Data.Scopes)
+
+	updated := patchToken(h, original.ID(), original.UserID(), `{"scopes":["usage:write"]}`)
+	require.Equal(t, http.StatusOK, updated.Code, updated.Body.String())
+	invalid := patchToken(h, original.ID(), original.UserID(), `{"scopes":["usage:admin"]}`)
+	require.Equal(t, http.StatusBadRequest, invalid.Code, invalid.Body.String())
+
+	badRequest := httptest.NewRequest(http.MethodPost, "/api/v1/admin/api-tokens", strings.NewReader(`{"name":"invalid","scopes":["usage:admin"]}`))
+	badRequest = badRequest.WithContext(context.WithValue(badRequest.Context(), middleware.UserIDKey, original.UserID()))
+	rejected := httptest.NewRecorder()
+	h.Create(rejected, badRequest)
+	require.Equal(t, http.StatusBadRequest, rejected.Code, rejected.Body.String())
+
+	listRequest := httptest.NewRequest(http.MethodGet, "/api/v1/admin/api-tokens", nil)
+	listRequest = listRequest.WithContext(context.WithValue(listRequest.Context(), middleware.UserIDKey, original.UserID()))
+	listed := httptest.NewRecorder()
+	h.List(listed, listRequest)
+	require.Equal(t, http.StatusOK, listed.Code, listed.Body.String())
+	var list struct {
+		Data []struct {
+			Scopes []string `json:"scopes"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(listed.Body.Bytes(), &list))
+	require.Len(t, list.Data, 2)
+	for _, token := range list.Data {
+		require.Equal(t, []string{"usage:write"}, token.Scopes)
+	}
+}

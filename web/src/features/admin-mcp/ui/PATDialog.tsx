@@ -193,6 +193,26 @@ export function PATDialog({ open, onOpenChange, token, onCreated, onUpdated }: P
 								</div>
 							</div>
 						))}
+						<div className="space-y-1.5">
+							<p className="text-sm font-medium">用量上报</p>
+							<div className="flex items-center gap-2 pl-1">
+								<Checkbox
+									id={`${formId}-scope-usage:write`}
+									checked={scopes.has("usage:write")}
+									onCheckedChange={() => toggleScope("usage:write")}
+									disabled={pending}
+								/>
+								<Label
+									htmlFor={`${formId}-scope-usage:write`}
+									className="cursor-pointer font-mono text-sm"
+								>
+									usage:write
+								</Label>
+							</div>
+							<p className="text-xs text-muted-foreground">
+								允许客户端提交当前账号的模型用量，不授予读取权限。
+							</p>
+						</div>
 					</div>
 				</fieldset>
 				<fieldset className="space-y-2">

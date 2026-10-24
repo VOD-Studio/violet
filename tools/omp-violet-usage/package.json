@@ -1,0 +1,16 @@
+{
+  "name": "@violet/omp-usage",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Local OMP usage collector for compatible personal usage endpoints",
+  "omp": {
+    "extensions": ["./violet-usage.ts"]
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}
