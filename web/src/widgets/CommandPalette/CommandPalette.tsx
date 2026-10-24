@@ -1,7 +1,9 @@
 import { useAppearanceSwitcher } from "@features/appearance";
 import { useSearchPosts } from "@features/posts/api/queries";
+import { THEME_CHOICES, themeChoiceTitle, useThemeSwitcher } from "@features/theme-switcher";
 import { flattenNavLinks } from "@shared/config/nav";
 import { type CmdItem, filterCommands } from "@shared/lib/cmd-filter";
+import { THEME_PRESETS } from "@shared/lib/theme-presets";
 import { useNavigate } from "@tanstack/react-router";
 import { CommandList } from "@violet/ui";
 import { useEffect, useMemo, useState } from "react";
@@ -13,16 +15,17 @@ const GROUP_LABELS: Record<string, string> = {
 	posts: "文章",
 	navigation: "导航",
 	appearance: "外观",
+	theme: "主题",
 };
 
 /**
  * CommandPalette - 全局 Cmd/Ctrl+K 搜索 + 命令面板
  *
  * 双模态：输入 ≥ 2 字符触发服务端文章搜索（debounce 250ms），同时本地过滤
- * 导航/外观命令。文章结果来自服务端（已按 query 检索），不再经 filterCommands
+ * 导航、外观与主题命令。文章结果来自服务端（已按 query 检索），不再经 filterCommands
  * 二次过滤——query 可能命中正文而非标题，本地过滤会误删结果。
  * - Cmd/Ctrl+K 打开（也可由 HeaderActions 搜索按钮 open()）
- * - 导航命令派生自 NAV_ITEMS（与 Header nav 同源）；外观切换为面板独有
+ * - 导航命令派生自 NAV_ITEMS（与 Header nav 同源）；外观切换为面板独有，主题命令与顶栏菜单共用选项
  *
  * 显隐状态走 useCommandUIStore（与 HeaderActions 共享）。
  */
@@ -34,6 +37,7 @@ const CommandPalette = () => {
 	const [debouncedQuery, setDebouncedQuery] = useState("");
 	const navigate = useNavigate();
 	const { appearance, switchAppearance } = useAppearanceSwitcher();
+	const { switchTheme } = useThemeSwitcher();
 	const { data: searchData, isFetching } = useSearchPosts(debouncedQuery);
 
 	// 输入防抖：避免每次击键都打后端
@@ -61,7 +65,7 @@ const CommandPalette = () => {
 		}
 	}, [isOpen]);
 
-	// 本地命令：导航 + 外观（经 filterCommands 子串过滤）
+	// 本地命令：导航、外观与主题（经 filterCommands 子串过滤）
 	const localCommands: CmdItem[] = useMemo(
 		() => [
 			...flattenNavLinks().map((item) => ({
@@ -97,8 +101,23 @@ const CommandPalette = () => {
 					if (appearance !== "system") switchAppearance("system");
 				},
 			},
+			...THEME_CHOICES.map((preference) => ({
+				id: `theme-${preference}`,
+				label: `主题：${themeChoiceTitle(preference)}`,
+				group: "theme",
+				keywords:
+					preference === "follow"
+						? ["theme", "season", "主题", "季节"]
+						: [
+								"theme",
+								"主题",
+								THEME_PRESETS[preference].label,
+								THEME_PRESETS[preference].name,
+							],
+				run: () => void switchTheme(preference),
+			})),
 		],
-		[navigate, switchAppearance, appearance],
+		[navigate, switchAppearance, appearance, switchTheme],
 	);
 
 	const filtered = useMemo(() => {
