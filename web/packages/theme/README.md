@@ -2,7 +2,7 @@
 
 [中文](./README.zh-CN.md)
 
-Turn one seed color into 12-step color scales for light and dark appearances: brand and neutral scales with translucent counterparts, and fixed danger, warning and success scales. Text, solid foregrounds and control boundaries meet WCAG 2.2 AA and APCA thresholds for any seed, a higher-contrast level serves `prefers-contrast: more`, every color stays inside sRGB, and the same input always gives the same output. Zero dependencies, no Node APIs: it runs in the browser, during SSR and in build scripts.
+Turn one seed color into 12-step color scales for light and dark appearances: brand and neutral scales with translucent counterparts, fixed danger, warning and success scales, and six categorical scales for chart series and other categories. Text, solid foregrounds and control boundaries meet WCAG 2.2 AA and APCA thresholds for any seed, a higher-contrast level serves `prefers-contrast: more`, every color stays inside sRGB, and the same input always gives the same output. Zero dependencies, no Node APIs: it runs in the browser, during SSR and in build scripts.
 
 ```sh
 pnpm add @violetjs/theme
@@ -28,6 +28,7 @@ light.brand.steps[9]; // "oklch(…)": the solid brand color
 light.brand.contrast; // text color for steps 9 and 10
 light.brand.alpha[3]; // "color(srgb … / …)": step 3 as a translucent color over the page background
 light.status.danger.steps[11]; // danger text
+light.categorical[0].steps[9]; // first chart series
 
 // 3. Serialize to CSS custom properties.
 const css = toCssVariables([light, dark, lightMore, darkMore]);
@@ -47,6 +48,7 @@ With both appearances, each value is a `light-dark()` pair, so the page needs `c
 | `--brand-1` … `--brand-12`, `--brand-contrast`, `--brand-a1` … `--brand-a12` | Brand, from the seed |
 | `--neutral-1` … `--neutral-12`, `--neutral-contrast`, `--neutral-a1` … `--neutral-a12` | Neutral, tinted with the seed's hue |
 | `--danger-*`, `--warning-*`, `--success-*` | Status, fixed hues |
+| `--category-1-*` … `--category-6-*` | Categorical, fixed hues, in chart-series order |
 
 ## Theme
 
@@ -76,9 +78,12 @@ The standard APCA levels follow APCA's use-case tiers: Lc 90 is what its font lo
 
 Step 9 is the seed itself whenever near-white or near-black text passes on it. Otherwise only its lightness moves, to the nearest value where one of them does. `contrast` is whichever text color needs the smaller move, the same in both appearances: saturated mid-tone seeds keep white text in dark mode too, and bright seeds such as yellow keep their brightness with near-black text. Step 10, the hover state, moves toward higher contrast with that text: darker under white text, lighter under near-black text.
 
-## Status scales
+## Fixed scales
 
-Danger, warning and success have fixed seeds and do not change with the theme. They follow the same rules as the brand scale.
+Status and categorical scales do not change with the theme.
+
+- **Status**: danger, warning and success have fixed seeds and follow the same rules as the brand scale.
+- **Categorical**: six hues at least 45° apart (blue, amber, green, purple, teal, red), ordered so that neighbors differ most and red and green are not adjacent. Within one appearance and level, the solid steps of all six differ in lightness by at most 0.1, every other step shares one lightness, and the solids keep at least WCAG 3:1 and APCA Lc 30 against the background, as [WCAG 1.4.11](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast) requires of chart graphics. Hues and lightness come from an offline search that maximizes the smallest pairwise difference under normal vision and the protanopia, deuteranopia and tritanopia simulations of [Machado et al. 2009](https://www.inf.ufrgs.br/~oliveira/pubs_files/CVD_Simulation/CVD_Simulation.html); every pair stays at least ΔE<sub>OK</sub> 0.04 apart, twice the CSS Color 4 just-noticeable difference.
 
 ## Alpha scales
 

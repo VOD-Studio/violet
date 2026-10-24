@@ -1,7 +1,17 @@
 import Color from "colorjs.io";
 import { beforeAll, describe, expect, it } from "vitest";
 import { type Appearance, type ContrastLevel, generateScales, type Scale } from "../index.ts";
-import { apca, composite, coords, deltaE, hueDistance, parse, wcag } from "./colors.ts";
+import {
+	apca,
+	composite,
+	coords,
+	deltaE,
+	hueDistance,
+	parse,
+	simulate,
+	VISIONS,
+	wcag,
+} from "./colors.ts";
 import { GATES, gateFailures, type MeasuredScale, measureSample } from "./gates.ts";
 import {
 	DEFAULT_NEUTRAL_CHROMA,
@@ -17,6 +27,10 @@ import {
 
 // CSS Color 4 在 OKLab 中以 0.02 作为可察觉阈值
 const JUST_NOTICEABLE = 0.02;
+// 分类色两两之间至少两倍于可察觉阈值，正常视觉与三种二色视下都要成立
+const CATEGORICAL_DISTANCE = 2 * JUST_NOTICEABLE;
+// 近等亮度：同一档各分类色的亮度相差不超过此值
+const CATEGORICAL_LIGHTNESS_SPREAD = 0.1;
 
 const allColors = (scale: Scale) => [
 	...Object.values(scale.steps),
@@ -26,7 +40,7 @@ const allColors = (scale: Scale) => [
 		: []),
 ];
 
-/** 某一外观与对比度档位的遍历：对比度门槛，以及色域、单调、色相、实色、透明度与状态色的性质。 */
+/** 某一外观与对比度档位的遍历：对比度门槛，以及色域、单调、色相、实色、透明度与分类色的性质。 */
 export function describeSweep(appearance: Appearance, contrast: ContrastLevel) {
 	describe(`${appearance} 外观 ${contrast} 档遍历全部色相、色度与旋钮`, () => {
 		let samples: Sample[];
@@ -192,13 +206,13 @@ export function describeSweep(appearance: Appearance, contrast: ContrastLevel) {
 			SWEEP_TIMEOUT,
 		);
 
-		it("状态色不随主题变化", () => {
+		it("状态色与分类色不随主题变化", () => {
 			const [first] = samples;
 			const failures = samples
 				.filter(
 					(sample) =>
-						JSON.stringify(sample.scales.status) !==
-						JSON.stringify(first?.scales.status),
+						JSON.stringify([sample.scales.status, sample.scales.categorical]) !==
+						JSON.stringify([first?.scales.status, first?.scales.categorical]),
 				)
 				.map((sample) => describeTheme(sample.theme));
 			expectNoFailures(failures);
@@ -221,6 +235,33 @@ export function describeSweep(appearance: Appearance, contrast: ContrastLevel) {
 			expect(hueDistance(solidHue("danger"), 25)).toBeLessThan(15);
 			expect(hueDistance(solidHue("warning"), 70)).toBeLessThan(15);
 			expect(hueDistance(solidHue("success"), 150)).toBeLessThan(15);
+		});
+
+		it("分类色近等亮度，在正常视觉与红、绿、蓝色盲模拟下两两可辨", () => {
+			const { categorical } = generateScales(
+				{ version: 1, seed: "#684dda" },
+				{ appearance, contrast },
+			);
+			expect(categorical.length).toBeGreaterThanOrEqual(6);
+			for (const step of STEPS) {
+				const lightness = categorical.map((scale) => coords(scale.steps[step]).l);
+				const spread = +(Math.max(...lightness) - Math.min(...lightness)).toFixed(4);
+				expect(spread, `第 ${step} 档`).toBeLessThanOrEqual(CATEGORICAL_LIGHTNESS_SPREAD);
+			}
+			const failures: string[] = [];
+			for (const vision of VISIONS) {
+				const solids = categorical.map((scale) => simulate(scale.steps[9], vision));
+				solids.forEach((a, i) => {
+					solids.slice(i + 1).forEach((b, offset) => {
+						const difference = deltaE(a, b);
+						if (difference < CATEGORICAL_DISTANCE)
+							failures.push(
+								`${vision} category-${i + 1} vs category-${i + offset + 2}: ΔE ${difference.toFixed(4)}`,
+							);
+					});
+				});
+			}
+			expectNoFailures(failures);
 		});
 
 		it(

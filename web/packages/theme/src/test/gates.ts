@@ -18,6 +18,8 @@ export interface Gate {
 	on: Step[];
 	/** shared：中性、品牌与该色阶自己的背景档；own：只用该色阶自己的档位 */
 	surfaces: "shared" | "own";
+	/** 只检查名称匹配的色阶 */
+	only?: (name: string) => boolean;
 }
 
 // 第 1 档是背景，第 2 档是表面，第 3–5 档是组件底色及其悬停、按下
@@ -72,6 +74,15 @@ export const GATES: Gate[] = [
 		on: [9, 10],
 		surfaces: "own",
 	},
+	{
+		// 分类色用作图表系列，属于 WCAG 1.4.11 要求 3:1 的图形
+		name: "分类色实色作为图形对背景与表面",
+		threshold: { standard: { wcag: 3, apca: 30 }, more: { wcag: 4.5, apca: 45 } },
+		texts: [9, 10],
+		on: [1, 2],
+		surfaces: "shared",
+		only: (name) => name.startsWith("category"),
+	},
 ];
 
 export interface MeasuredScale {
@@ -108,6 +119,7 @@ export function gateFailures(
 		const scales = measured[index] ?? [];
 		const [brand, neutral] = scales as [MeasuredScale, MeasuredScale];
 		for (const scale of scales) {
+			if (gate.only && !gate.only(scale.name)) continue;
 			// 每条色阶的文字放在中性、品牌与它自己的背景档上
 			const surfaces =
 				gate.surfaces === "own"

@@ -40,7 +40,7 @@ export interface AppearanceRules {
 	background: number;
 	/** 第 12 档能到达的最远亮度 */
 	limit: number;
-	/** 品牌与状态色阶各档色度相对种子色度的比例 */
+	/** 品牌、状态与分类色阶各档色度相对种子色度的比例 */
 	brandChroma: readonly number[];
 	/** 中性色阶各档色度相对 `neutralChroma` 的比例 */
 	neutralChroma: readonly number[];
@@ -120,3 +120,63 @@ export const STATUS_SEEDS: Readonly<Record<StatusName, string>> = {
 	warning: "#f59e0b",
 	success: "#15803d",
 };
+
+/**
+ * 分类色：色相固定、不随主题变化，按图表系列的使用顺序排列，相邻两色差异最大且红绿不相邻。
+ * 同一外观与档位下各色实色档的亮度相差不超过 0.1（近等亮度）。色相两两至少相差 45°，色相与偏好亮度
+ * 由离线搜索得出：在正常视觉与 Machado 2009 的红、绿、蓝色盲模拟下，使两两最小色差最大。
+ */
+export const CATEGORICAL: readonly {
+	hue: number;
+	chroma: number;
+	lightness: Readonly<Record<Appearance, Readonly<Record<ContrastLevel, number>>>>;
+}[] = [
+	{
+		hue: 261,
+		chroma: 0.2,
+		lightness: {
+			light: { standard: 0.478, more: 0.436 },
+			dark: { standard: 0.811, more: 0.873 },
+		},
+	},
+	{
+		hue: 85,
+		chroma: 0.2,
+		lightness: {
+			light: { standard: 0.451, more: 0.35 },
+			dark: { standard: 0.794, more: 0.876 },
+		},
+	},
+	{
+		hue: 131,
+		chroma: 0.2,
+		lightness: {
+			light: { standard: 0.498, more: 0.397 },
+			dark: { standard: 0.848, more: 0.925 },
+		},
+	},
+	{
+		hue: 309,
+		chroma: 0.2,
+		lightness: {
+			light: { standard: 0.493, more: 0.403 },
+			dark: { standard: 0.882, more: 0.93 },
+		},
+	},
+	{
+		hue: 183,
+		chroma: 0.2,
+		lightness: {
+			light: { standard: 0.551, more: 0.414 },
+			dark: { standard: 0.84, more: 0.888 },
+		},
+	},
+	{
+		hue: 10,
+		chroma: 0.2,
+		lightness: {
+			light: { standard: 0.488, more: 0.447 },
+			dark: { standard: 0.854, more: 0.912 },
+		},
+	},
+];

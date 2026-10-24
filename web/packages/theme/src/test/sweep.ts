@@ -60,11 +60,12 @@ export interface Sample {
 export const sweep = (appearance: Appearance, contrast: ContrastLevel = "standard"): Sample[] =>
 	THEMES.map((theme) => ({ theme, scales: generateScales(theme, { appearance, contrast }) }));
 
-/** 全部色阶及其名称：品牌、中性与三种状态色。 */
+/** 全部色阶及其名称：品牌、中性、三种状态色与各分类色。 */
 export const namedScales = (scales: ThemeScales): [name: string, scale: Scale][] => [
 	["brand", scales.brand],
 	["neutral", scales.neutral],
 	...Object.entries(scales.status),
+	...scales.categorical.map((scale, index): [string, Scale] => [`category-${index + 1}`, scale]),
 ];
 
 export const describeTheme = ({ seed, knobs }: Theme) =>

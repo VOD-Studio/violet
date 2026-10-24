@@ -49,10 +49,14 @@ const NAMES = [
 		...alpha(name),
 	]),
 	...["danger", "warning", "success"].flatMap((name) => [...steps(name), `--${name}-contrast`]),
+	...light.categorical.flatMap((_, index) => [
+		...steps(`category-${index + 1}`),
+		`--category-${index + 1}-contrast`,
+	]),
 ];
 
 describe("toCssVariables", () => {
-	it("单一外观输出 :root 规则，涵盖品牌、中性、透明度与状态色阶", () => {
+	it("单一外观输出 :root 规则，涵盖品牌、中性、透明度、状态与分类色阶", () => {
 		const { selector, declarations } = parseRule(toCssVariables(light));
 		expect(selector).toBe(":root");
 		expect(Object.keys(declarations)).toEqual(NAMES);
@@ -61,6 +65,7 @@ describe("toCssVariables", () => {
 		expect(declarations["--brand-a3"]).toBe(light.brand.alpha[3]);
 		expect(declarations["--neutral-12"]).toBe(light.neutral.steps[12]);
 		expect(declarations["--danger-9"]).toBe(light.status.danger.steps[9]);
+		expect(declarations["--category-2-11"]).toBe(light.categorical[1]?.steps[11]);
 	});
 
 	it("同时给出浅色与深色时以 light-dark() 合并，与传入顺序无关", () => {

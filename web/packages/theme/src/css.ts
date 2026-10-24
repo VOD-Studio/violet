@@ -41,6 +41,7 @@ const variables = (scales: ThemeScales): [string, string][] => [
 	...entries("danger", scales.status.danger),
 	...entries("warning", scales.status.warning),
 	...entries("success", scales.status.success),
+	...scales.categorical.flatMap((scale, index) => entries(`category-${index + 1}`, scale)),
 ];
 
 /** 同一档位的声明；浅色与深色都在时合并为 light-dark()。 */
@@ -62,7 +63,7 @@ function declarations(byAppearance: Map<Appearance, ThemeScales>, prefix: string
 /**
  * 把生成结果序列化为样式表：每档一个自定义属性。品牌与中性为 `--brand-1` … `--brand-12`、
  * `--brand-contrast` 与透明度色阶 `--brand-a1` … `--brand-a12`；状态色为 `--danger-*`、`--warning-*`、
- * `--success-*`。
+ * `--success-*`；分类色为 `--category-1-*` 起依次编号。
  *
  * 同一档位同时传入浅色与深色时，每个值写成 `light-dark(浅色, 深色)`，由页面的 `color-scheme` 决定取哪一支；
  * 只传一种外观时直接写值。提高对比度档位写进 `@media (prefers-contrast: more)`，覆盖同名变量。

@@ -10,6 +10,7 @@ import {
 import {
 	type Appearance,
 	type AppearanceRules,
+	CATEGORICAL,
 	type ContrastLevel,
 	type Foreground,
 	RULES,
@@ -70,6 +71,8 @@ export interface ThemeScales {
 	neutral: AlphaScale;
 	/** 色相固定、不随主题变化的危险、警告与成功色阶 */
 	status: Readonly<Record<StatusName, Scale>>;
+	/** 色相固定、不随主题变化、近等亮度且色盲可辨的分类色阶，顺序固定 */
+	categorical: readonly Scale[];
 }
 
 // 相邻档的最小亮度差（OKLab），保证单调且悬停、按下可辨
@@ -81,7 +84,7 @@ const PRIMARY_GAP = 0.06;
 const PRECISION = 1e-4;
 // 深色前景：近黑并略带色调；比纯黑亮一些，与实色并置时不显得生硬
 const DARK_FOREGROUND = { l: 0.2, c: 0.02 };
-// 状态色不随主题变化，对灰色参照背景求解；主题背景带色调时亮度略有出入，目标放大这一比例兜住
+// 状态色与分类色不随主题变化，对灰色参照背景求解；主题背景带色调时亮度略有出入，目标放大这一比例兜住
 const FIXED_SCALE_MARGIN = 1.03;
 const FOREGROUNDS: readonly Foreground[] = ["light", "dark"];
 export const STEPS: readonly Step[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
@@ -129,14 +132,14 @@ interface ScaleContext {
 	targets: Targets;
 	gamut: Gamut;
 	hue: number;
-	/** 色度曲线乘数：品牌与状态为种子色度，中性为 min(旋钮, 种子色度) */
+	/** 色度曲线乘数：品牌、状态与分类为种子色度，中性为 min(旋钮, 种子色度) */
 	chroma: number;
 	curve: readonly number[];
-	/** 实色与背景至少要达到的比值 */
+	/** 实色与背景至少要达到的比值；分类色用作图表图形，取控件边界的门槛 */
 	separation: number;
 }
 
-/** 承载文字的背景的相对亮度。 */
+/** 承载文字与图形的背景的相对亮度。 */
 interface Surfaces {
 	/** 第 1–2 档：背景与表面 */
 	page: number[];
@@ -287,13 +290,70 @@ const amplify = (targets: Targets, factor: number): Targets => ({
 	separation: targets.separation * factor,
 });
 
+/**
+ * 分类色共用边框与文字档的亮度；实色档在各色可行区间的交集内取各自的偏好亮度，
+ * 因此同一档的亮度最多相差偏好亮度的差值。
+ */
+function categoricalScales(
+	contexts: ScaleContext[],
+	reference: Oklch[],
+	appearance: Appearance,
+	contrast: ContrastLevel,
+) {
+	const rules = contexts[0]?.rules ?? RULES[appearance];
+	const subtles = contexts.map(subtleSteps);
+	const surfaces = subtles.map((subtle) => surfacesOf([reference, subtle]));
+	const ladders = contexts.map((context, index) =>
+		ladder(context, subtles[index] as Oklch[], surfaces[index] as Surfaces),
+	);
+	const further = (values: number[]) =>
+		rules.direction < 0 ? Math.min(...values) : Math.max(...values);
+	const l7 = further(ladders.map((step) => step.l7));
+	const shared: Ladder = {
+		l7,
+		l8: l7 + rules.direction * BOUNDARY_HOVER,
+		l11: further(ladders.map((step) => step.l11)),
+		l12: further(ladders.map((step) => step.l12)),
+	};
+	const preferred = CATEGORICAL.map(({ lightness }) => lightness[appearance][contrast]);
+	const options = contexts.map((context, index) =>
+		solidOptions(context, (surfaces[index] as Surfaces).page),
+	);
+	const [choice] = FOREGROUNDS.flatMap((foreground) => {
+		const range = intersect(
+			options.map(
+				(list) => list.find((option) => option.foreground === foreground)?.range ?? null,
+			),
+		);
+		if (!range) return [];
+		const distance = preferred.reduce((sum, l) => sum + Math.abs(clamp(l, range) - l), 0);
+		return [{ foreground, range, distance }];
+	}).sort((a, b) => a.distance - b.distance);
+	return contexts.map((context, index) => {
+		const target = preferred[index] ?? rules.background;
+		const option = options[index]?.find(
+			(candidate) => candidate.foreground === choice?.foreground,
+		);
+		const solid =
+			option && choice
+				? {
+						l9: clamp(target, choice.range),
+						l10: clamp(target, choice.range) + option.hover,
+						contrast: option.color,
+					}
+				: pickSolid(options[index] ?? [], target);
+		return toScale(context, subtles[index] as Oklch[], shared, solid).scale;
+	});
+}
+
 interface FixedScales {
 	status: Record<StatusName, Scale>;
+	categorical: Scale[];
 }
 
 const fixedCache = new Map<string, FixedScales>();
 
-/** 状态色不随主题变化，对灰色参照背景求解，按外观、档位与色域缓存。 */
+/** 状态色与分类色不随主题变化，对灰色参照背景求解，按外观、档位与色域缓存。 */
 function fixedScales(appearance: Appearance, contrast: ContrastLevel, gamut: Gamut): FixedScales {
 	const key = `${appearance}:${contrast}:${gamut}`;
 	const cached = fixedCache.get(key);
@@ -320,7 +380,19 @@ function fixedScales(appearance: Appearance, contrast: ContrastLevel, gamut: Gam
 			];
 		}),
 	) as Record<StatusName, Scale>;
-	const fixed = { status };
+	const categorical = categoricalScales(
+		CATEGORICAL.map(({ hue, chroma }) => ({
+			...base,
+			hue,
+			chroma,
+			separation: targets.boundary,
+		})),
+		reference,
+		appearance,
+		contrast,
+	);
+
+	const fixed = { status, categorical };
 	fixedCache.set(key, fixed);
 	return fixed;
 }
@@ -331,7 +403,7 @@ const toAlphaSteps = (colors: Oklch[], background: Oklch, gamut: Gamut) =>
 	) as Record<Step, string>;
 
 /**
- * 由主题生成某一外观与对比度档位下的全部色阶：品牌与中性（各带透明度色阶）以及状态色。
+ * 由主题生成某一外观与对比度档位下的全部色阶：品牌与中性（各带透明度色阶）、状态色与分类色。
  *
  * 背景、边框与文字档按对背景的目标对比度反解亮度并单调远离背景；实色档锚定种子色。文字、实色前景与控件边界
  * 同时满足 WCAG 2.2 AA 与 APCA 门槛，全部颜色落在目标色域内。纯函数，相同输入得到逐字相同的输出。

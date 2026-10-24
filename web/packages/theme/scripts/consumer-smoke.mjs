@@ -41,7 +41,7 @@ const scales = ["light", "dark"].flatMap((appearance) =>
 const css = toCssVariables(scales);
 const media = css.indexOf("@media (prefers-contrast: more)");
 if (media < 0) throw new Error("Missing prefers-contrast: more block");
-for (const name of ["--brand-9", "--brand-a12", "--neutral-contrast", "--danger-9", "--warning-11", "--success-3"]) {
+for (const name of ["--brand-9", "--brand-a12", "--neutral-contrast", "--danger-9", "--warning-11", "--success-3", "--category-6-12"]) {
 	const pattern = new RegExp(name + ": light-dark\\\\((?:oklch|color)\\\\(", "g");
 	if ((css.match(pattern) ?? []).length !== 2) throw new Error("Expected " + name + " in both contrast levels");
 }
@@ -126,13 +126,14 @@ const solid: string = scale.steps[step];
 const alpha: AlphaScale = scales.neutral;
 const status: StatusName = "warning";
 const warning: Scale = scales.status[status];
+const series: Scale | undefined = scales.categorical[5];
 const cssOptions: CssOptions = { selector: ":root", prefix: "v-" };
 const css: string = toCssVariables([scales, generateScales(theme, { appearance: "light" })], cssOptions);
 // @ts-expect-error 版本号是字面量类型
 const wrongVersion: Theme = { version: 2, seed: "#000000" };
 // @ts-expect-error 档位只有 1–12
 const wrongStep: Step = 13;
-export const checks = [knobs, solid, alpha, warning, css, wrongVersion, wrongStep];
+export const checks = [knobs, solid, alpha, warning, series, css, wrongVersion, wrongStep];
 `,
 	);
 	const compilerOptions = { target: "ES2022", lib: ["ES2022"], strict: true, noEmit: true, skipLibCheck: false, types: [] };
