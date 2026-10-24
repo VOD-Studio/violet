@@ -17,9 +17,9 @@ import { toast } from "sonner";
 
 /** 来源标签使用分类色，不与审核状态或站点品牌混用。 */
 const SOURCE_COLORS: Record<string, string> = {
-	system: "bg-category-1-muted text-category-1-text border-category-1/20",
-	bilibili: "bg-category-2-muted text-category-2-text border-category-2/20",
-	custom: "bg-category-3-muted text-category-3-text border-category-3/20",
+	system: "bg-category-1-muted text-category-1 border-category-1/20",
+	bilibili: "bg-category-2-muted text-category-2 border-category-2/20",
+	custom: "bg-category-3-muted text-category-3 border-category-3/20",
 };
 
 /** 来源标签的中文映射 */

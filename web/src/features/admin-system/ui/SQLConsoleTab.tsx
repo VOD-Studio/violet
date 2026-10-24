@@ -162,7 +162,7 @@ export function SQLConsoleTab({
 			</div>
 
 			{execute.error && (
-				<div className="border-destructive/30 bg-destructive/5 text-destructive-text flex items-start gap-2 rounded-lg border px-4 py-3 text-sm">
+				<div className="border-destructive/30 bg-destructive/5 text-destructive flex items-start gap-2 rounded-lg border px-4 py-3 text-sm">
 					<AlertTriangle className="mt-0.5 size-4 shrink-0" />
 					<div>
 						<p className="font-medium">SQL 未执行</p>
@@ -196,7 +196,7 @@ function OptionSwitch({
 			<span>
 				<span
 					className={
-						danger ? "text-destructive-text text-sm font-medium" : "text-sm font-medium"
+						danger ? "text-destructive text-sm font-medium" : "text-sm font-medium"
 					}
 				>
 					{label}

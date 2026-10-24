@@ -186,7 +186,7 @@ export function GalleryDraftEditor({ id }: GalleryDraftEditorProps) {
 	if (error && !draft) {
 		return (
 			<div className="flex h-full flex-col items-center justify-center gap-3">
-				<p className="text-sm text-destructive-text">{error.message}</p>
+				<p className="text-sm text-destructive">{error.message}</p>
 				<Button variant="outline" onClick={() => void reload()}>
 					<RefreshCw className="size-4" />
 					重试

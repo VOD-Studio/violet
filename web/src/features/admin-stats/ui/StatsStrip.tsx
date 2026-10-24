@@ -110,7 +110,7 @@ function Cell({ cell }: { cell: StripCell }) {
 			<div className="my-2.5 flex items-baseline">
 				<span
 					className={`font-mono text-3xl font-bold tracking-tight tabular-nums leading-none ${
-						alert ? "text-warning-text" : "text-foreground"
+						alert ? "text-warning" : "text-foreground"
 					}`}
 				>
 					{display}
@@ -118,16 +118,16 @@ function Cell({ cell }: { cell: StripCell }) {
 			</div>
 			<div className="flex h-4 items-center text-xs">
 				{cell.action && cell.value > 0 ? (
-					<span className="text-warning-text flex items-center font-medium">
+					<span className="text-warning flex items-center font-medium">
 						{cell.action.hint} →
 					</span>
 				) : cell.context ? (
 					<span
 						className={`flex items-center gap-1 truncate ${
 							cell.trend === "up"
-								? "text-success-text"
+								? "text-success"
 								: cell.trend === "down"
-									? "text-destructive-text"
+									? "text-destructive"
 									: "text-muted-foreground"
 						}`}
 					>

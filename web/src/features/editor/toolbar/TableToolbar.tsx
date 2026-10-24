@@ -109,7 +109,7 @@ export function TableToolbar({ editor }: TableToolbarProps) {
 				variant="ghost"
 				size="xs"
 				title="删除整张表格"
-				className={cn("text-destructive-text hover:text-destructive-text")}
+				className={cn("text-destructive hover:text-destructive")}
 				onClick={() => editor.chain().focus().deleteTable().run()}
 			>
 				<Trash2 /> 删表

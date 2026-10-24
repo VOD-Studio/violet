@@ -40,7 +40,7 @@ export function ImagePolicyPage() {
 								<span>剩余字节：{cleanup.remaining_bytes}</span>
 							</div>
 							{cleanup.error && (
-								<p role="alert" className="text-destructive-text">
+								<p role="alert" className="text-destructive">
 									{cleanup.error}
 								</p>
 							)}

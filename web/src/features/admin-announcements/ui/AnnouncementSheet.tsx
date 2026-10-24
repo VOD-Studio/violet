@@ -247,7 +247,7 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
 						{/* 标题 */}
 						<div className="space-y-2">
 							<Label htmlFor="ann-title">
-								标题 <span className="text-destructive-text">*</span>
+								标题 <span className="text-destructive">*</span>
 							</Label>
 							<Input
 								id="ann-title"
@@ -256,9 +256,7 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
 								{...register("title")}
 							/>
 							{errors.title && (
-								<p className="text-sm text-destructive-text">
-									{errors.title.message}
-								</p>
+								<p className="text-sm text-destructive">{errors.title.message}</p>
 							)}
 						</div>
 
@@ -292,7 +290,7 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
 						{!isArticle && (
 							<div className="space-y-2">
 								<Label htmlFor="ann-content">
-									内容 <span className="text-destructive-text">*</span>
+									内容 <span className="text-destructive">*</span>
 								</Label>
 								<Textarea
 									id="ann-content"
@@ -302,7 +300,7 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
 									{...register("content")}
 								/>
 								{errors.content && (
-									<p className="text-sm text-destructive-text">
+									<p className="text-sm text-destructive">
 										{errors.content.message}
 									</p>
 								)}

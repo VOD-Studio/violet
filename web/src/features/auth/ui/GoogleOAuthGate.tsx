@@ -23,7 +23,7 @@ export function GoogleOAuthGate({ children }: GoogleOAuthGateProps) {
 		<GoogleOAuthProvider clientId={clientId} onScriptLoadError={() => setHasScriptError(true)}>
 			{children(
 				hasScriptError ? (
-					<p role="alert" className="text-sm text-destructive-text">
+					<p role="alert" className="text-sm text-destructive">
 						Google 登录组件加载失败，请使用其他登录方式或刷新页面重试。
 					</p>
 				) : null,

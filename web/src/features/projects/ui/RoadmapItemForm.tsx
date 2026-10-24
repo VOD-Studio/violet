@@ -196,7 +196,7 @@ export function RoadmapItemForm({ item, onSave, onCancel }: RoadmapItemFormProps
 			) : null}
 
 			{error ? (
-				<p role="alert" className="text-sm text-destructive-text">
+				<p role="alert" className="text-sm text-destructive">
 					{error}
 				</p>
 			) : null}

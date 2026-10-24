@@ -56,7 +56,7 @@ function DepCard({ name, icon, dep }: DepCardProps) {
 					</span>
 				) : (
 					<span
-						className={`${animations.shake} bg-destructive/20 text-destructive-text rounded-full px-2 py-0.5 text-xs font-medium`}
+						className={`${animations.shake} bg-destructive/20 text-destructive rounded-full px-2 py-0.5 text-xs font-medium`}
 					>
 						断开
 					</span>
@@ -80,7 +80,7 @@ function DepCard({ name, icon, dep }: DepCardProps) {
 					</p>
 				</>
 			) : (
-				<p className="text-destructive-text text-xs">{dep.error}</p>
+				<p className="text-destructive text-xs">{dep.error}</p>
 			)}
 		</div>
 	);

@@ -113,7 +113,7 @@ export function RuntimePolicyPage<T extends object>({
 						</span>
 					</div>
 					{runtime.error && (
-						<p role="alert" className="text-sm text-destructive-text">
+						<p role="alert" className="text-sm text-destructive">
 							{runtime.error}
 						</p>
 					)}
@@ -123,22 +123,22 @@ export function RuntimePolicyPage<T extends object>({
 						</p>
 					)}
 					{query.isError && (
-						<p role="alert" className="text-sm text-destructive-text">
+						<p role="alert" className="text-sm text-destructive">
 							读取失败：{query.error.message}
 						</p>
 					)}
 					{(conflict || newer) && (
-						<p role="alert" className="text-sm text-destructive-text">
+						<p role="alert" className="text-sm text-destructive">
 							服务器配置已变化，草稿已保留。请重新加载后再编辑保存。
 						</p>
 					)}
 					{mutation.error && !conflict && (
-						<p role="alert" className="text-sm text-destructive-text">
+						<p role="alert" className="text-sm text-destructive">
 							保存失败：{mutation.error.message}
 						</p>
 					)}
 					{form.reloadError && (
-						<p role="alert" className="text-sm text-destructive-text">
+						<p role="alert" className="text-sm text-destructive">
 							{form.reloadError}
 						</p>
 					)}

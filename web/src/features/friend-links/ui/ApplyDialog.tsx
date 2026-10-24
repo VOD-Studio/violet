@@ -206,7 +206,7 @@ export function ApplyDialog({ open, onOpenChange, isLoggedIn, currentUsername }:
 										damping: 18,
 										delay: 0.35,
 									}}
-									className="pointer-events-none absolute right-3 top-3 flex size-16 flex-col items-center justify-center rounded-full border-2 border-warning/60 font-mono text-[9px] uppercase leading-tight tracking-widest text-warning-text"
+									className="pointer-events-none absolute right-3 top-3 flex size-16 flex-col items-center justify-center rounded-full border-2 border-warning/60 font-mono text-[9px] uppercase leading-tight tracking-widest text-warning"
 								>
 									<span>pending</span>
 									<span>待审核</span>

@@ -404,7 +404,7 @@ export function MessageBubble({
 								{sending.status === "failed" ? (
 									<>
 										<AlertTriangle className="size-3.5 shrink-0 text-destructive" />
-										<span className="wrap-anywhere text-destructive-text">
+										<span className="wrap-anywhere text-destructive">
 											{sending.error}
 										</span>
 										<button

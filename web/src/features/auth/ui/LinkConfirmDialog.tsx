@@ -145,7 +145,7 @@ export function LinkConfirmDialog() {
 							autoComplete="current-password"
 							placeholder="••••••••"
 						/>
-						{error ? <p className="text-sm text-destructive-text">{error}</p> : null}
+						{error ? <p className="text-sm text-destructive">{error}</p> : null}
 					</div>
 				</form>
 			) : (

@@ -75,7 +75,7 @@ export function CreateRoleDialog({ open, onOpenChange }: CreateRoleDialogProps) 
 				{/* 角色名称 */}
 				<div className="space-y-2">
 					<Label htmlFor="name">
-						角色名称 <span className="text-destructive-text">*</span>
+						角色名称 <span className="text-destructive">*</span>
 					</Label>
 					<Input
 						id="name"
@@ -84,7 +84,7 @@ export function CreateRoleDialog({ open, onOpenChange }: CreateRoleDialogProps) 
 						disabled={createRole.isPending}
 					/>
 					{errors.name && (
-						<p className="text-destructive-text text-sm">{errors.name.message}</p>
+						<p className="text-destructive text-sm">{errors.name.message}</p>
 					)}
 					<p className="text-muted-foreground text-xs">
 						只能包含字母、数字、下划线和连字符
@@ -94,7 +94,7 @@ export function CreateRoleDialog({ open, onOpenChange }: CreateRoleDialogProps) 
 				{/* 角色描述 */}
 				<div className="space-y-2">
 					<Label htmlFor="description">
-						角色描述 <span className="text-destructive-text">*</span>
+						角色描述 <span className="text-destructive">*</span>
 					</Label>
 					<Textarea
 						id="description"
@@ -104,9 +104,7 @@ export function CreateRoleDialog({ open, onOpenChange }: CreateRoleDialogProps) 
 						disabled={createRole.isPending}
 					/>
 					{errors.description && (
-						<p className="text-destructive-text text-sm">
-							{errors.description.message}
-						</p>
+						<p className="text-destructive text-sm">{errors.description.message}</p>
 					)}
 				</div>
 			</form>

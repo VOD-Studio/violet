@@ -98,7 +98,7 @@ export function SubscriptionFormDialog({
 			<div className="space-y-4">
 				<div className="space-y-2">
 					<Label htmlFor="sub-feed-url">
-						Feed URL <span className="text-destructive-text">*</span>
+						Feed URL <span className="text-destructive">*</span>
 					</Label>
 					<Input
 						id="sub-feed-url"

@@ -135,7 +135,7 @@ export function SeriesSheet({ open, onOpenChange, editing, onCreated }: SeriesSh
 							}}
 						/>
 						{errors.title && (
-							<p className="text-destructive-text text-sm">{errors.title.message}</p>
+							<p className="text-destructive text-sm">{errors.title.message}</p>
 						)}
 					</div>
 					<div className="space-y-2">
@@ -151,7 +151,7 @@ export function SeriesSheet({ open, onOpenChange, editing, onCreated }: SeriesSh
 							}}
 						/>
 						{errors.slug && (
-							<p className="text-destructive-text text-sm">{errors.slug.message}</p>
+							<p className="text-destructive text-sm">{errors.slug.message}</p>
 						)}
 					</div>
 					<div className="space-y-2">
@@ -163,9 +163,7 @@ export function SeriesSheet({ open, onOpenChange, editing, onCreated }: SeriesSh
 							disabled={isSubmitting}
 						/>
 						{errors.description && (
-							<p className="text-destructive-text text-sm">
-								{errors.description.message}
-							</p>
+							<p className="text-destructive text-sm">{errors.description.message}</p>
 						)}
 					</div>
 					<div className="space-y-2">

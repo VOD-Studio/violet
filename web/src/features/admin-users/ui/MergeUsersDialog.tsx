@@ -132,7 +132,7 @@ export function MergeUsersDialog({ open, onOpenChange, user }: MergeUsersDialogP
 						placeholder={user.username}
 						aria-invalid={!!error}
 					/>
-					{error ? <p className="text-destructive-text text-sm">{error}</p> : null}
+					{error ? <p className="text-destructive text-sm">{error}</p> : null}
 				</div>
 			</form>
 		</Modal>

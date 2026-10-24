@@ -188,7 +188,7 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 
 				<div className="border-t border-border pt-3">
 					<Button
-						className="w-full justify-start rounded-xl text-xs text-destructive-text hover:bg-destructive/10 hover:text-destructive-text"
+						className="w-full justify-start rounded-xl text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
 						disabled={leave.isPending}
 						onClick={async () => {
 							try {

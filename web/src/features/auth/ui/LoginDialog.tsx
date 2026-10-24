@@ -141,7 +141,7 @@ function LoginDialogContent({ googleError }: { googleError: ReactNode }) {
 						autoComplete="username"
 					/>
 					{errors.identifier ? (
-						<p className="text-sm text-destructive-text">{errors.identifier}</p>
+						<p className="text-sm text-destructive">{errors.identifier}</p>
 					) : null}
 				</div>
 
@@ -157,7 +157,7 @@ function LoginDialogContent({ googleError }: { googleError: ReactNode }) {
 						autoComplete="current-password"
 					/>
 					{errors.password ? (
-						<p className="text-sm text-destructive-text">{errors.password}</p>
+						<p className="text-sm text-destructive">{errors.password}</p>
 					) : null}
 				</div>
 

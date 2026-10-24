@@ -144,7 +144,7 @@ export function PATDialog({ open, onOpenChange, token, onCreated, onUpdated }: P
 			<form id={formId} onSubmit={submit} className="space-y-4">
 				<div className="space-y-2">
 					<Label htmlFor={`${formId}-name`}>
-						名称 <span className="text-destructive-text">*</span>
+						名称 <span className="text-destructive">*</span>
 					</Label>
 					<Input
 						id={`${formId}-name`}
@@ -157,7 +157,7 @@ export function PATDialog({ open, onOpenChange, token, onCreated, onUpdated }: P
 				</div>
 				<fieldset className="space-y-2">
 					<legend className="text-sm font-medium">
-						权限范围 <span className="text-destructive-text">*</span>
+						权限范围 <span className="text-destructive">*</span>
 					</legend>
 					<div className="space-y-3">
 						{MCP_SERVERS.filter((s) => !s.anonymous).map((server) => (

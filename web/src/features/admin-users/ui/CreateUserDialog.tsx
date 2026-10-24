@@ -110,7 +110,7 @@ export function CreateUserDialog({
 				{/* 用户名 */}
 				<div className="space-y-2">
 					<Label htmlFor="username">
-						用户名 <span className="text-destructive-text">*</span>
+						用户名 <span className="text-destructive">*</span>
 					</Label>
 					<Input
 						id="username"
@@ -119,7 +119,7 @@ export function CreateUserDialog({
 						aria-invalid={!!errors.username}
 					/>
 					{errors.username && (
-						<p className="text-sm text-destructive-text">{errors.username.message}</p>
+						<p className="text-sm text-destructive">{errors.username.message}</p>
 					)}
 				</div>
 
@@ -132,16 +132,14 @@ export function CreateUserDialog({
 						placeholder="留空则默认显示用户名"
 					/>
 					{errors.display_name && (
-						<p className="text-sm text-destructive-text">
-							{errors.display_name.message}
-						</p>
+						<p className="text-sm text-destructive">{errors.display_name.message}</p>
 					)}
 				</div>
 
 				{/* 邮箱 */}
 				<div className="space-y-2">
 					<Label htmlFor="email">
-						邮箱 <span className="text-destructive-text">*</span>
+						邮箱 <span className="text-destructive">*</span>
 					</Label>
 					<Input
 						id="email"
@@ -151,14 +149,14 @@ export function CreateUserDialog({
 						aria-invalid={!!errors.email}
 					/>
 					{errors.email && (
-						<p className="text-sm text-destructive-text">{errors.email.message}</p>
+						<p className="text-sm text-destructive">{errors.email.message}</p>
 					)}
 				</div>
 
 				{/* 密码 */}
 				<div className="space-y-2">
 					<Label htmlFor="password">
-						密码 <span className="text-destructive-text">*</span>
+						密码 <span className="text-destructive">*</span>
 					</Label>
 					<Input
 						id="password"
@@ -168,7 +166,7 @@ export function CreateUserDialog({
 						aria-invalid={!!errors.password}
 					/>
 					{errors.password && (
-						<p className="text-sm text-destructive-text">{errors.password.message}</p>
+						<p className="text-sm text-destructive">{errors.password.message}</p>
 					)}
 				</div>
 

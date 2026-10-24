@@ -88,7 +88,7 @@ export function GalleryItemEditor({
 						type="button"
 						variant="ghost"
 						size="sm"
-						className="ml-auto text-destructive-text hover:text-destructive-text"
+						className="ml-auto text-destructive hover:text-destructive"
 						disabled={disabled}
 						onClick={onRemove}
 					>

@@ -424,9 +424,7 @@ function BackupTable({
 		);
 	}
 	if (error)
-		return (
-			<p className="text-destructive-text px-5 py-12 text-center text-sm">{error.message}</p>
-		);
+		return <p className="text-destructive px-5 py-12 text-center text-sm">{error.message}</p>;
 	if (items.length === 0) {
 		return (
 			<p className="text-muted-foreground px-5 py-16 text-center text-sm">还没有可用备份</p>
@@ -535,7 +533,7 @@ function TaskStatus({ task }: { task: BackupTaskDTO }) {
 					<div className="min-w-0">
 						<p className="truncate text-sm font-medium">{task.message}</p>
 						{task.error && (
-							<p className="text-destructive-text mt-1 text-xs">{task.error}</p>
+							<p className="text-destructive mt-1 text-xs">{task.error}</p>
 						)}
 					</div>
 				</div>

@@ -231,7 +231,7 @@ const PasswordField = ({
 				aria-invalid={!!error}
 				autoFocus={autoFocus}
 			/>
-			{error && <p className="text-xs text-destructive-text">{error}</p>}
+			{error && <p className="text-xs text-destructive">{error}</p>}
 		</div>
 	);
 };

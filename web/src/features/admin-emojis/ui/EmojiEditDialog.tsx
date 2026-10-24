@@ -137,7 +137,7 @@ export function EmojiEditDialog({
 
 				<div className="space-y-2">
 					<Label htmlFor="emoji-edit-name">
-						名称 <span className="text-destructive-text">*</span>
+						名称 <span className="text-destructive">*</span>
 					</Label>
 					<Input
 						id="emoji-edit-name"
@@ -146,7 +146,7 @@ export function EmojiEditDialog({
 						{...register("name")}
 					/>
 					{errors.name && (
-						<p className="text-sm text-destructive-text">{errors.name.message}</p>
+						<p className="text-sm text-destructive">{errors.name.message}</p>
 					)}
 				</div>
 

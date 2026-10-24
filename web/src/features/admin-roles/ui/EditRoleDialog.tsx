@@ -93,7 +93,7 @@ export function EditRoleDialog({ open, onOpenChange, role }: EditRoleDialogProps
 				{/* 角色名称 */}
 				<div className="space-y-2">
 					<Label htmlFor="name">
-						角色名称 <span className="text-destructive-text">*</span>
+						角色名称 <span className="text-destructive">*</span>
 					</Label>
 					<Input
 						id="name"
@@ -102,7 +102,7 @@ export function EditRoleDialog({ open, onOpenChange, role }: EditRoleDialogProps
 						disabled={isBuiltin || updateRole.isPending}
 					/>
 					{errors.name && (
-						<p className="text-destructive-text text-sm">{errors.name.message}</p>
+						<p className="text-destructive text-sm">{errors.name.message}</p>
 					)}
 					<p className="text-muted-foreground text-xs">
 						{isBuiltin ? "内置角色不可重命名" : "只能包含字母、数字、下划线和连字符"}
@@ -112,7 +112,7 @@ export function EditRoleDialog({ open, onOpenChange, role }: EditRoleDialogProps
 				{/* 角色描述 */}
 				<div className="space-y-2">
 					<Label htmlFor="description">
-						角色描述 <span className="text-destructive-text">*</span>
+						角色描述 <span className="text-destructive">*</span>
 					</Label>
 					<Textarea
 						id="description"
@@ -122,9 +122,7 @@ export function EditRoleDialog({ open, onOpenChange, role }: EditRoleDialogProps
 						disabled={updateRole.isPending}
 					/>
 					{errors.description && (
-						<p className="text-destructive-text text-sm">
-							{errors.description.message}
-						</p>
+						<p className="text-destructive text-sm">{errors.description.message}</p>
 					)}
 				</div>
 			</form>

@@ -107,7 +107,7 @@ export function PetDemo() {
 		);
 	}
 	if (demo.status === "error" || !demo.outcome || !demo.born) {
-		return <p className="text-sm text-destructive-text">规则核心加载失败：{demo.error}</p>;
+		return <p className="text-sm text-destructive">规则核心加载失败：{demo.error}</p>;
 	}
 
 	const { pet, phase, mood } = demo.outcome;
@@ -173,7 +173,7 @@ export function PetDemo() {
 						))}
 					</div>
 
-					<p className="min-h-5 text-sm text-destructive-text" role="status">
+					<p className="min-h-5 text-sm text-destructive" role="status">
 						{demo.notice}
 					</p>
 

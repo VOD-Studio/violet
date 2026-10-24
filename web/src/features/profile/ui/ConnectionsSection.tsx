@@ -176,7 +176,7 @@ const UnbindButton = ({ onClick, disabled }: { onClick: () => void; disabled?: b
 		type="button"
 		onClick={onClick}
 		disabled={disabled}
-		className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-destructive-text hover:underline disabled:opacity-50"
+		className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-destructive hover:underline disabled:opacity-50"
 	>
 		{disabled ? (
 			<Loader2 className="size-3.5 animate-spin" />

@@ -96,7 +96,7 @@ export function FriendLinkFormDialog({
 				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 					<div className="space-y-2">
 						<Label htmlFor="fl-name">
-							站点名称 <span className="text-destructive-text">*</span>
+							站点名称 <span className="text-destructive">*</span>
 						</Label>
 						<Input
 							id="fl-name"
@@ -118,7 +118,7 @@ export function FriendLinkFormDialog({
 				</div>
 				<div className="space-y-2">
 					<Label htmlFor="fl-url">
-						站点 URL <span className="text-destructive-text">*</span>
+						站点 URL <span className="text-destructive">*</span>
 					</Label>
 					<Input
 						id="fl-url"

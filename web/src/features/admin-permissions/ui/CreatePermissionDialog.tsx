@@ -191,7 +191,7 @@ export function CreatePermissionDialog({
 				{watch("type") === "action" && (
 					<div className="space-y-2">
 						<Label>
-							所属分组 <span className="text-destructive-text">*</span>
+							所属分组 <span className="text-destructive">*</span>
 						</Label>
 						<Controller
 							control={control}
@@ -219,9 +219,7 @@ export function CreatePermissionDialog({
 							)}
 						/>
 						{errors.parentId && (
-							<p className="text-destructive-text text-sm">
-								{errors.parentId.message}
-							</p>
+							<p className="text-destructive text-sm">{errors.parentId.message}</p>
 						)}
 					</div>
 				)}
@@ -229,7 +227,7 @@ export function CreatePermissionDialog({
 				{/* 代码 */}
 				<div className="space-y-2">
 					<Label htmlFor="code">
-						权限代码 <span className="text-destructive-text">*</span>
+						权限代码 <span className="text-destructive">*</span>
 					</Label>
 					{typeValue === "action" ? (
 						<div className="flex">
@@ -256,7 +254,7 @@ export function CreatePermissionDialog({
 						/>
 					)}
 					{errors.code && (
-						<p className="text-destructive-text text-sm">{errors.code.message}</p>
+						<p className="text-destructive text-sm">{errors.code.message}</p>
 					)}
 					<p className="text-muted-foreground text-xs">
 						menu 为纯小写字母（如 post）；action 选择分组后只需输入动作名（如
@@ -267,7 +265,7 @@ export function CreatePermissionDialog({
 				{/* 名称 */}
 				<div className="space-y-2">
 					<Label htmlFor="name">
-						权限名称 <span className="text-destructive-text">*</span>
+						权限名称 <span className="text-destructive">*</span>
 					</Label>
 					<Input
 						id="name"
@@ -276,7 +274,7 @@ export function CreatePermissionDialog({
 						{...register("name")}
 					/>
 					{errors.name && (
-						<p className="text-destructive-text text-sm">{errors.name.message}</p>
+						<p className="text-destructive text-sm">{errors.name.message}</p>
 					)}
 				</div>
 
@@ -290,9 +288,7 @@ export function CreatePermissionDialog({
 						{...register("description")}
 					/>
 					{errors.description && (
-						<p className="text-destructive-text text-sm">
-							{errors.description.message}
-						</p>
+						<p className="text-destructive text-sm">{errors.description.message}</p>
 					)}
 				</div>
 
@@ -307,7 +303,7 @@ export function CreatePermissionDialog({
 						{...register("sort", { valueAsNumber: true })}
 					/>
 					{errors.sort && (
-						<p className="text-destructive-text text-sm">{errors.sort.message}</p>
+						<p className="text-destructive text-sm">{errors.sort.message}</p>
 					)}
 				</div>
 			</form>

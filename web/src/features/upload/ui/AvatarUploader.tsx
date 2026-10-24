@@ -58,7 +58,7 @@ export function AvatarUploader({ user }: AvatarUploaderProps) {
 					}}
 				/>
 			</label>
-			{error && <p className="text-sm text-destructive-text">{error}</p>}
+			{error && <p className="text-sm text-destructive">{error}</p>}
 			<CropUploadDialog
 				file={pendingFile ?? undefined}
 				aspect={1}

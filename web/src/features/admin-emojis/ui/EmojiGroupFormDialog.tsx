@@ -157,7 +157,7 @@ export function EmojiGroupFormDialog({
 			<form id="group-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
 				<div className="space-y-2">
 					<Label htmlFor="group-name">
-						名称 <span className="text-destructive-text">*</span>
+						名称 <span className="text-destructive">*</span>
 					</Label>
 					<Input
 						id="group-name"
@@ -167,7 +167,7 @@ export function EmojiGroupFormDialog({
 						{...register("name")}
 					/>
 					{errors.name && (
-						<p className="text-sm text-destructive-text">{errors.name.message}</p>
+						<p className="text-sm text-destructive">{errors.name.message}</p>
 					)}
 				</div>
 
@@ -270,7 +270,7 @@ export function EmojiGroupFormDialog({
 						{...register("sort_order", { valueAsNumber: true })}
 					/>
 					{errors.sort_order && (
-						<p className="text-sm text-destructive-text">{errors.sort_order.message}</p>
+						<p className="text-sm text-destructive">{errors.sort_order.message}</p>
 					)}
 				</div>
 

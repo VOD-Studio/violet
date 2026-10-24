@@ -139,7 +139,7 @@ export function Uploader<T extends UploadResult>({
 				)}
 			</button>
 			{queue.requiresManualResume && (
-				<div role="alert" className="flex items-center gap-2 text-sm text-destructive-text">
+				<div role="alert" className="flex items-center gap-2 text-sm text-destructive">
 					<span>服务端未给出有效恢复时间，队列暂停。</span>
 					<Button variant="outline" size="sm" onClick={() => queue.resume()}>
 						手动恢复队列
@@ -152,7 +152,7 @@ export function Uploader<T extends UploadResult>({
 				</p>
 			)}
 			{policy.isError && (
-				<div role="alert" className="flex items-center gap-2 text-sm text-destructive-text">
+				<div role="alert" className="flex items-center gap-2 text-sm text-destructive">
 					<span>
 						{policy.data
 							? "上传配置刷新失败，继续使用上次配置。"
@@ -251,7 +251,7 @@ export function Uploader<T extends UploadResult>({
 										</div>
 									)}
 									{item.status === "error" && (
-										<p className="mt-0.5 text-xs text-destructive-text">
+										<p className="mt-0.5 text-xs text-destructive">
 											{item.error}
 										</p>
 									)}

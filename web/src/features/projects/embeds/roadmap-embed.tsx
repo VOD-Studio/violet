@@ -131,7 +131,7 @@ function ItemCard({ detail, item }: { detail: RoadmapDetail; item: RoadmapItem }
 				{item.blocked || item.tags.length > 0 ? (
 					<span className="mt-2.5 flex flex-wrap gap-1">
 						{item.blocked ? (
-							<span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 text-[11px] leading-5 text-destructive-text">
+							<span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 text-[11px] leading-5 text-destructive">
 								<Lock className="size-3" aria-hidden="true" />
 								被阻塞
 							</span>

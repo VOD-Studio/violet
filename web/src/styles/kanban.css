@@ -40,5 +40,5 @@
 	stroke-width: 2;
 }
 .v-kanban .v-kanban__relation[data-state="active"][data-line="blocker"] {
-	color: var(--destructive);
+	color: var(--destructive-text);
 }

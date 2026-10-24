@@ -67,7 +67,7 @@ function DepCard({ name, dep }: { name: string; dep: SystemDepStatusDTO["postgre
 				<dd className="text-foreground text-right">{ok ? dep.pool.waitCount : "-"}</dd>
 			</dl>
 			{!ok && dep.error && (
-				<p className="text-destructive-text mt-2 truncate text-xs" title={dep.error}>
+				<p className="text-destructive mt-2 truncate text-xs" title={dep.error}>
 					{dep.error}
 				</p>
 			)}

@@ -63,7 +63,7 @@ export function MathEditPanel({
 						variant="ghost"
 						size="sm"
 						onClick={onDelete}
-						className="h-7 gap-1 px-2 text-xs text-destructive-text hover:bg-destructive/10 hover:text-destructive-text"
+						className="h-7 gap-1 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
 					>
 						<Trash2 className="size-3" />
 						删除

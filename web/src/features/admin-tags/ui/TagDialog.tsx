@@ -74,11 +74,11 @@ export function TagDialog({ open, onOpenChange, editing }: TagDialogProps) {
 			<form id="tag-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
 				<div className="space-y-2">
 					<Label htmlFor="tag-name">
-						标签名 <span className="text-destructive-text">*</span>
+						标签名 <span className="text-destructive">*</span>
 					</Label>
 					<Input id="tag-name" disabled={pending} {...register("name")} />
 					{errors.name && (
-						<p className="text-destructive-text text-sm">{errors.name.message}</p>
+						<p className="text-destructive text-sm">{errors.name.message}</p>
 					)}
 				</div>
 			</form>

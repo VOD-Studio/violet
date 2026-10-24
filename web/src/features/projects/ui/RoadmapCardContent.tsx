@@ -30,7 +30,7 @@ function Pills({ item }: { item: RoadmapItem }) {
 		<span className="flex flex-wrap gap-1">
 			{item.blocked ? (
 				// 阻塞靠文字说明，颜色只是加强
-				<span className={`${PILL} bg-destructive/10 text-destructive-text`}>被阻塞</span>
+				<span className={`${PILL} bg-destructive/10 text-destructive`}>被阻塞</span>
 			) : null}
 			{item.tags.slice(0, VISIBLE_TAGS).map((tag) => (
 				<span key={tag} className={`${PILL} bg-muted text-muted-foreground`}>

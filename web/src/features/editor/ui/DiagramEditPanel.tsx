@@ -58,7 +58,7 @@ export function DiagramEditPanel({
                 失败内联显示错误（便于作者修） */}
 			<div className="relative max-h-72 overflow-auto rounded-md bg-muted/50 px-3 py-2">
 				{render.error && !render.svg ? (
-					<p className="whitespace-pre-wrap break-all text-xs text-destructive-text">
+					<p className="whitespace-pre-wrap break-all text-xs text-destructive">
 						{render.error}
 					</p>
 				) : render.svg ? (
@@ -84,7 +84,7 @@ export function DiagramEditPanel({
 					variant="ghost"
 					size="sm"
 					onClick={onDelete}
-					className="h-7 gap-1 px-2 text-xs text-destructive-text hover:bg-destructive/10 hover:text-destructive-text"
+					className="h-7 gap-1 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
 				>
 					<Trash2 className="size-3" />
 					删除

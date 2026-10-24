@@ -127,7 +127,7 @@ export function TweetComposerToolbar({
 					/>
 					<span
 						id={countId}
-						className={`${styles.counter} ${charCount > MAX_TWEET_LENGTH ? "text-destructive-text" : "text-muted-foreground"}`}
+						className={`${styles.counter} ${charCount > MAX_TWEET_LENGTH ? "text-destructive" : "text-muted-foreground"}`}
 					>
 						{MAX_TWEET_LENGTH - charCount}
 						<span className="sr-only"> 字剩余</span>

@@ -196,11 +196,11 @@ export function NoteEditor({ id }: NoteEditorProps) {
 						classNames={{ control: "px-2" }}
 						className={cn(
 							"text-2xl font-bold tracking-tight placeholder:text-muted-foreground/40 md:text-3xl",
-							errors.title && "text-destructive-text",
+							errors.title && "text-destructive",
 						)}
 					/>
 					{errors.title ? (
-						<p className="px-2 text-xs text-destructive-text">{errors.title.message}</p>
+						<p className="px-2 text-xs text-destructive">{errors.title.message}</p>
 					) : null}
 
 					{/* 编辑器主卡片容器：RichTextEditor 所见即所得 Markdown */}
@@ -224,9 +224,7 @@ export function NoteEditor({ id }: NoteEditorProps) {
 					</div>
 
 					{errors.contentMD ? (
-						<p className="px-2 text-xs text-destructive-text">
-							{errors.contentMD.message}
-						</p>
+						<p className="px-2 text-xs text-destructive">{errors.contentMD.message}</p>
 					) : null}
 				</div>
 

@@ -81,16 +81,16 @@ const sourceColor: Record<NotificationSourceType, string> = {
 	friendlink_applied: "text-warning",
 	friendlink_reviewed: "text-success",
 	comment_approved: "text-success",
-	comment_created: "text-category-1-text",
+	comment_created: "text-category-1",
 	comment_pending: "text-warning",
 	comment_rejected: "text-destructive",
-	user_registered: "text-category-2-text",
+	user_registered: "text-category-2",
 	account_security: "text-warning",
-	chat_room_invited: "text-category-3-text",
-	tweet_liked: "text-category-4-text",
-	tweet_quoted: "text-category-5-text",
-	tweet_commented: "text-category-1-text",
-	tweet_comment_replied: "text-category-6-text",
+	chat_room_invited: "text-category-3",
+	tweet_liked: "text-category-4",
+	tweet_quoted: "text-category-5",
+	tweet_commented: "text-category-1",
+	tweet_comment_replied: "text-category-6",
 };
 
 /**
