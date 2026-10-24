@@ -1,7 +1,6 @@
 import { SiteMusicPlayer } from "@features/music-player/ui/SiteMusicPlayer";
 import { getClientAppearance } from "@shared/lib/appearance-cookie";
 import { SystemAppearanceTransition } from "@shared/ui/appearance-transition";
-import { CustomCursor } from "@shared/ui/cursor";
 import NotFound from "@shared/ui/not-found";
 import RouteError from "@shared/ui/route-error";
 import {
@@ -169,7 +168,6 @@ function RootComponent() {
 			<LinkConfirmDialog />
 			<ApiDocsDialog />
 			<ShareTweetDialog />
-			<CustomCursor />
 		</AppProvider>
 	);
 }
