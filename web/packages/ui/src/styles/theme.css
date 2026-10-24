@@ -84,14 +84,6 @@
 	--color-category-6-text: var(--category-6-text);
 	--color-category-6-foreground: var(--category-6-foreground);
 
-	/* 主色源：值由 palettes/ 提供，语义 primary 可按页面方言映射到这一层 */
-	--color-primary-base: var(--primary-base);
-	--color-primary-base-foreground: var(--primary-base-foreground);
-	--color-primary-base-hover: var(--primary-base-hover);
-	--color-primary-base-soft: var(--primary-base-soft);
-	--color-primary-base-soft-foreground: var(--primary-base-soft-foreground);
-	--color-primary-base-ring: var(--primary-base-ring);
-
 	--radius-lg: var(--radius);
 	--radius-md: calc(var(--radius) - 2px);
 	--radius-sm: calc(var(--radius) - 4px);

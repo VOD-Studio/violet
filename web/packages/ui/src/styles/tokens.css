@@ -85,12 +85,4 @@
 	--chart-3: var(--category-3);
 	--chart-4: var(--category-4);
 	--chart-5: var(--category-5);
-
-	/* 消费方切换期间的旧名，完成迁移后移除。 */
-	--primary-base: var(--decoration);
-	--primary-base-foreground: var(--decoration-foreground);
-	--primary-base-hover: var(--brand-10);
-	--primary-base-soft: var(--selected);
-	--primary-base-soft-foreground: var(--selected-foreground);
-	--primary-base-ring: var(--decoration);
 }
