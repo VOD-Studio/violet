@@ -9,6 +9,7 @@
 	--primary: var(--brand-9);
 	--primary-hover: var(--brand-10);
 	--primary-foreground: var(--brand-contrast);
+	--primary-text: var(--brand-11);
 	--secondary: var(--neutral-3);
 	--secondary-foreground: var(--neutral-12);
 	--muted: var(--neutral-3);

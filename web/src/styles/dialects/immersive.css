@@ -9,6 +9,7 @@
 	--primary: var(--immersive-neutral-9);
 	--primary-hover: var(--immersive-neutral-10);
 	--primary-foreground: var(--immersive-neutral-contrast);
+	--primary-text: var(--immersive-neutral-9);
 	--secondary: var(--immersive-neutral-3);
 	--secondary-foreground: var(--immersive-neutral-12);
 	--muted: var(--immersive-neutral-3);
