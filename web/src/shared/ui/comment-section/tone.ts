@@ -20,12 +20,12 @@ export const COMMENT_TONES: Record<CommentTone, CommentToneCfg> = {
 		badge: "bg-muted text-muted-foreground",
 	},
 	discussion: {
-		bar: "bg-primary",
-		badge: "bg-primary/10 text-primary",
+		bar: "bg-decoration",
+		badge: "bg-selected text-selected-foreground",
 	},
 	author: {
 		bar: "bg-success",
-		badge: "bg-success/10 text-success",
+		badge: "bg-success/10 text-success-text",
 	},
 };
 
@@ -34,20 +34,16 @@ export function getCommentToneCfg(tone: CommentTone): CommentToneCfg {
 	return COMMENT_TONES[tone] ?? COMMENT_TONES.default;
 }
 
-/**
- * 作者（站长）的尊贵档样式，评论区与批注气泡共用：金紫渐变头像环 + 皇冠、渐变昵称、
- * 金色徽章、淡金渐变气泡。普通评论者保持中性底色，两档一眼可辨。
- */
+/** 作者标识使用品牌语义，与普通评论者的中性样式区分。 */
 export const AUTHOR_TIER = {
 	/** 头像外环（头像需放在 p-0.5 内层） */
-	avatarRing:
-		"rounded-full bg-linear-to-br from-persona-gold via-persona-gold/70 to-persona-violet p-0.5",
+	avatarRing: "rounded-full bg-decoration p-0.5",
 	/** 头像右上角皇冠角标 */
-	crown: "absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full bg-persona-gold text-white ring-2 ring-background",
-	/** 昵称：金到紫的渐变字 */
-	name: "bg-linear-to-r from-[oklch(0.58_0.13_70)] to-persona-violet bg-clip-text font-semibold text-transparent",
+	crown: "absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full bg-decoration text-decoration-foreground ring-2 ring-background",
+	/** 品牌文字色保证昵称可读。 */
+	name: "font-semibold text-link",
 	/** 作者徽章 */
-	badge: "inline-flex items-center gap-0.5 rounded-full bg-linear-to-r from-persona-gold to-persona-gold/75 px-1.5 py-0.5 text-[10px] font-medium text-white",
-	/** 气泡底色：纯淡金，不叠渐变与阴影，文字对比更干净 */
-	bubble: "bg-persona-gold/14",
+	badge: "inline-flex items-center gap-0.5 rounded-full bg-decoration px-1.5 py-0.5 text-[10px] font-medium text-decoration-foreground",
+	/** 品牌浅底保留正文对比。 */
+	bubble: "bg-selected",
 } as const;

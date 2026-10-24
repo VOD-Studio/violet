@@ -41,15 +41,16 @@
 }
 
 .summary:hover {
-	color: var(--primary);
+	color: var(--link-hover);
 }
 
 .panel .summary:hover {
-	background: color-mix(in oklab, var(--primary) 4%, transparent);
+	background: var(--selected-hover);
+	color: var(--selected-foreground);
 }
 
 .summary:focus-visible {
-	outline: 2px solid color-mix(in oklab, var(--primary) 62%, transparent);
+	outline: 2px solid var(--ring);
 	outline-offset: -2px;
 }
 

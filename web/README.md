@@ -168,6 +168,8 @@ Shiki 初始化、语言准备与分词在按需创建的 Web Worker 中执行�
 
 页面分别使用 `.dialect-public`、`.dialect-tool`、`.dialect-immersive`，通过语义 token 适配明暗外观，不锁定色板值。通用组件从 `@violet/ui` 使用；组件的公开入口与成熟度以 [component-manifest.json](packages/ui/component-manifest.json) 为准。
 
+站点公共层提供 `shared/ui/announcement-severity` 状态色和 `shared/hooks/use-banner-ticker` 轮播节拍。光标、终端、阅读进度等公共界面只消费用途语义色。
+
 ### 颜色守门
 
 `make web-lint` 依次执行 Biome 与颜色检查，CI 使用同一颜色检查命令。检查范围是 `src/`、`packages/` 内的 TSX 与 CSS，包括未加入 Git 的文件；新增 `oklch()`、hex、`rgb()`、`hsl()` 裸色值、Tailwind 原生色板类以及 `primary-base`、`neon`、`paper`、`persona` 旧颜色类会失败，输出文件、行号和规则。语义变量及基于变量的颜色、注释、链接锚点和 CSS ID 不作为裸色值。

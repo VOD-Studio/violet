@@ -18,7 +18,7 @@ export function DateTimeRangePickerField({
 		<div className="space-y-2">
 			<Label htmlFor={id}>{label}</Label>
 			<DateTimeRangePicker {...pickerProps} />
-			{error && <p className="text-destructive text-sm">{error}</p>}
+			{error && <p className="text-destructive-text text-sm">{error}</p>}
 		</div>
 	);
 }

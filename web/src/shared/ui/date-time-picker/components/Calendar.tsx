@@ -341,7 +341,7 @@ export function Calendar({
 												!isRangeSingle &&
 												"bg-transparent text-primary-foreground hover:bg-transparent hover:text-primary-foreground",
 											inRange &&
-												"bg-transparent text-foreground hover:bg-primary/10",
+												"bg-transparent text-foreground hover:bg-selected-hover",
 										)}
 									>
 										{date.getDate()}

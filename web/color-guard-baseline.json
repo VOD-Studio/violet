@@ -1658,18 +1658,6 @@
 			"count": 1
 		},
 		{
-			"file": "src/shared/ui/terminal-card.tsx",
-			"rule": "legacy-color",
-			"value": "from-neon-blue",
-			"count": 1
-		},
-		{
-			"file": "src/shared/ui/terminal-card.tsx",
-			"rule": "legacy-color",
-			"value": "to-neon-purple",
-			"count": 1
-		},
-		{
 			"file": "src/shared/ui/video-preview/components/VideoControls.tsx",
 			"rule": "tailwind-palette",
 			"value": "from-black",

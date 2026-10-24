@@ -23,8 +23,9 @@
 }
 
 .item:is(:hover, :focus-visible) {
-	border-color: color-mix(in oklab, var(--primary) 38%, transparent);
-	background: color-mix(in oklab, var(--primary) 5%, var(--card));
+	border-color: var(--selected-foreground);
+	background: var(--selected-hover);
+	color: var(--selected-foreground);
 	transform: translateY(-0.1rem);
 }
 
@@ -33,7 +34,7 @@
 }
 
 .item:focus-visible {
-	outline: 2px solid color-mix(in oklab, var(--primary) 60%, transparent);
+	outline: 2px solid var(--ring);
 	outline-offset: 3px;
 }
 
@@ -90,8 +91,8 @@
 }
 
 .item:is(:hover, :focus-visible) .icon {
-	background: color-mix(in oklab, var(--primary) 10%, var(--muted));
-	color: var(--primary);
+	background: var(--selected);
+	color: var(--selected-foreground);
 	transform: rotate(-2deg) scale(1.035);
 }
 

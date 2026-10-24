@@ -50,8 +50,8 @@ const CustomCursor = () => {
 				borderRadius: "9999px",
 				mixBlendMode: "difference",
 				backgroundColor: hovering
-					? "hsl(var(--neon-blue) / 0.5)"
-					: "hsl(var(--foreground))",
+					? "color-mix(in oklab, var(--decoration) 50%, transparent)"
+					: "var(--decoration)",
 			}}
 		/>
 	);

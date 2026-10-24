@@ -10,7 +10,7 @@ export interface ProfileCardProps {
 	enableTilt?: boolean;
 	/** 是否启用表面反光光斑（默认 true） */
 	enableGlare?: boolean;
-	/** 背景外发光颜色类名（如 bg-neon-cyan/20） */
+	/** 背景外发光颜色类名（如 bg-decoration/20） */
 	behindGlowClass?: string;
 	/** 最大倾斜角度（度数，默认 8） */
 	maxTilt?: number;
@@ -30,7 +30,7 @@ export function ProfileCard({
 	className,
 	enableTilt = true,
 	enableGlare = true,
-	behindGlowClass = "bg-primary/20",
+	behindGlowClass = "bg-decoration/20",
 	maxTilt = 8,
 }: ProfileCardProps) {
 	const cardRef = useRef<HTMLDivElement>(null);
