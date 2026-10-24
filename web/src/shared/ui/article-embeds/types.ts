@@ -219,7 +219,7 @@ export interface ArticleEmbedDefinition<Config = unknown> {
 	/**
 	 * 将整个嵌入延迟到接近视口；需要 SSR 语义内容的嵌入关闭此项，并在内部延迟重交互。
 	 *
-	 * @default false
+	 * @default true
 	 */
 	defer?: boolean;
 	/**

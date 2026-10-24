@@ -9,6 +9,7 @@ import type { RoadmapEmbedConfig } from "./roadmap-embed-config";
 registerArticleEmbed<RoadmapEmbedConfig>({
 	kind: "roadmap",
 	languages: ["roadmap"],
+	defer: false,
 	load: () => import("./roadmap-embed").then((module) => module.roadmapEmbed),
 	inserter: {
 		title: "路线图",

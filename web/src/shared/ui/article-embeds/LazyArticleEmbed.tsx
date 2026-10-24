@@ -50,7 +50,7 @@ export interface LazyArticleEmbedProps {
 export function LazyArticleEmbed({ definition, source, context }: LazyArticleEmbedProps) {
 	return (
 		<DeferredContent
-			defer={definition.defer ?? false}
+			defer={definition.defer}
 			load={getEmbedLoader(definition)}
 			componentProps={{ source, context }}
 			label="嵌入内容"
