@@ -1,6 +1,6 @@
 import { SiteMusicPlayer } from "@features/music-player/ui/SiteMusicPlayer";
 import { getClientAppearance } from "@shared/lib/appearance-cookie";
-import { getClientPresetTheme } from "@shared/lib/theme-preference";
+import { getClientThemeState } from "@shared/lib/theme-preference";
 import { SystemAppearanceTransition } from "@shared/ui/appearance-transition";
 import NotFound from "@shared/ui/not-found";
 import RouteError from "@shared/ui/route-error";
@@ -29,7 +29,7 @@ import type { RouterContext } from "../router";
 import { isSessionActive, markSessionActive } from "../shared/api/session";
 import { getSSRAppearance } from "../shared/server/appearance";
 import { getAuthSession } from "../shared/server/session";
-import { getSSRPresetTheme } from "../shared/server/theme";
+import { getSSRThemeState } from "../shared/server/theme";
 import appCss from "../styles.css?url";
 
 /** 缓存首次 getAuthSession 结果，客户端 SPA 导航复用避免网络阻塞 */
@@ -42,8 +42,8 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 		// SSR 与客户端使用同一 cookie 解析规则，避免水合时覆盖首帧外观与主题。
 		const [appearance, theme] =
 			typeof window === "undefined"
-				? await Promise.all([getSSRAppearance(), getSSRPresetTheme()])
-				: [getClientAppearance(), getClientPresetTheme()];
+				? await Promise.all([getSSRAppearance(), getSSRThemeState()])
+				: [getClientAppearance(), getClientThemeState()];
 		// SSR 或首次客户端 hydrate：网络获取
 		if (typeof window === "undefined" || cachedClaims === undefined) {
 			const claims = await getAuthSession();
@@ -190,7 +190,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 	return (
 		<html
 			className={appearance}
-			data-theme={theme}
+			data-theme={theme.preset}
 			lang="zh-CN"
 			data-scrollbar="none"
 			suppressHydrationWarning

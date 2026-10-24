@@ -12,7 +12,7 @@ function HomePage() {
 	return (
 		<HomeExperience
 			initialRecentPublicationsFailed={initialRecentPublicationsFailed}
-			season={theme}
+			season={theme.preset}
 		/>
 	);
 }

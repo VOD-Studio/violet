@@ -1,9 +1,11 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
-	getClientPresetTheme,
+	getClientThemeState,
 	parseThemeCookie,
+	persistThemePreference,
 	resolvePresetTheme,
+	seasonMonths,
 	serializeThemePreference,
 	THEME_COOKIE_NAME,
 } from "../theme-preference";
@@ -57,23 +59,41 @@ describe("parseThemeCookie", () => {
 	});
 });
 
-describe("getClientPresetTheme", () => {
+describe("客户端主题状态", () => {
 	afterEach(() => {
 		delete document.documentElement.dataset.theme;
 		// biome-ignore lint/suspicious/noDocumentCookie: jsdom 的 cookie jar 模拟浏览器偏好
 		document.cookie = `${THEME_COOKIE_NAME}=; path=/; Max-Age=0`;
+		vi.unstubAllGlobals();
 	});
 
-	it("沿用首帧渲染的预设主题，不随客户端时钟重算", () => {
+	it("预设沿用首帧渲染的 data-theme，偏好来自 cookie", () => {
 		document.documentElement.dataset.theme = "summer";
 		// biome-ignore lint/suspicious/noDocumentCookie: jsdom 的 cookie jar 模拟浏览器偏好
 		document.cookie = `${THEME_COOKIE_NAME}=${serializeThemePreference("follow")}; path=/`;
-		expect(getClientPresetTheme()).toBe("summer");
+		expect(getClientThemeState()).toEqual({ preference: "follow", preset: "summer" });
 	});
 
-	it("没有首帧主题时按 cookie 解析", () => {
+	it("没有首帧主题时按 cookie 解析预设", () => {
 		// biome-ignore lint/suspicious/noDocumentCookie: jsdom 的 cookie jar 模拟浏览器偏好
 		document.cookie = `${THEME_COOKIE_NAME}=${serializeThemePreference("winter")}; path=/`;
-		expect(getClientPresetTheme()).toBe("winter");
+		expect(getClientThemeState()).toEqual({ preference: "winter", preset: "winter" });
+	});
+
+	it("写入的偏好在下次读取时生效", async () => {
+		vi.stubGlobal("cookieStore", undefined);
+		await persistThemePreference("spring");
+		expect(parseThemeCookie(document.cookie)).toBe("spring");
+	});
+});
+
+describe("seasonMonths", () => {
+	it.each([
+		["spring", "3–5 月"],
+		["summer", "6–8 月"],
+		["autumn", "9–11 月"],
+		["winter", "12–2 月"],
+	] as const)("%s 显示为 %s", (season, label) => {
+		expect(seasonMonths(season)).toBe(label);
 	});
 });
