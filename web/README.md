@@ -151,6 +151,8 @@ Mermaid 使用独立的串行渲染队列，模块与字体下载不阻塞其他
 
 桌面文章目录将跟随目标限制在实际滚动范围内；进度、轨迹弹簧与展开状态收敛后停止排帧，滚动或尺寸变化再唤醒。正文尺寸测量与 SVG 写入分开，已完成几何不重复写入；目录滚动层为键盘聚焦环保留四周空间。
 
+文章发布时间与修订日期按 `Asia/Shanghai` 展示。
+
 ## 手绘绘图库
 
 [`@violetjs/inkline`](packages/inkline/README.md) 位于 `packages/inkline/`，不依赖 React、Mermaid 或 Rough.js。文章 Mermaid 图块经 `shared/ui/diagram` 用它渲染。

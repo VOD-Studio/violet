@@ -63,7 +63,9 @@ export function PostDetailHeader({ post, viewCount, children }: PostDetailHeader
 					{post.published_at ? (
 						<span className="inline-flex items-center gap-1.5">
 							<Calendar className="size-3.5" />
-							<span>{formatDate(post.published_at, "long-date")}</span>
+							<span>
+								{formatDate(post.published_at, "long-date", "—", "Asia/Shanghai")}
+							</span>
 							{post.edited_at ? <RevisionChip post={post} /> : null}
 						</span>
 					) : post.edited_at ? (
