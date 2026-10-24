@@ -279,6 +279,8 @@ SSR 的 `getRouter()` 每请求创建独立 QueryClient，浏览器继续复用 
   - `violet_uid`：前端可读 user id
 - SSR 场景只读 `/auth/session` 探活，不续期、不写 cookie。
 
+Google 登录 SDK 仅由登录页、实际打开的登录弹窗、行内登录区和账号绑定区挂载，不随全站阅读壳层加载。各入口共用 `GoogleOAuthGate`，Client ID 优先使用公开配置，缺省时读取构建环境变量。Google 按钮等待 SDK 就绪才可操作；下载失败在原表单内提示，保留已填内容，密码与 GitHub 登录不受影响。
+
 API 基础配置见 `src/shared/api/`。
 
 ## 样式
