@@ -1,4 +1,4 @@
-import { type ComponentType, lazy } from "react";
+import type { ComponentType } from "react";
 import type { DiagramBlockProps } from "./DiagramBlock";
 
 export type { DiagramBlockProps } from "./DiagramBlock";
@@ -11,20 +11,14 @@ export type { DiagramBlockProps } from "./DiagramBlock";
 export interface DiagramRenderer {
 	/** 稳定的模块工厂；失败重试时必须可以再次调用，而不是返回已拒绝的 lazy 组件。 */
 	load: () => Promise<{ default: ComponentType<DiagramBlockProps> }>;
-	/** 阅读端组件；组件本身由 React.lazy 加载。 */
-	ReaderComponent: ComponentType<DiagramBlockProps>;
 	/** 净化管线保留的 hast 驼峰属性名。 */
 	sanitizeAttrs: string[];
 }
 
-const loadMermaid = () =>
-	import("./DiagramBlock").then((module) => ({ default: module.DiagramBlock }));
-
 /** 阅读端格式注册表；登记新格式不会立即加载其渲染依赖。 */
 export const diagramRenderers: Record<string, DiagramRenderer> = {
 	mermaid: {
-		load: loadMermaid,
-		ReaderComponent: lazy(loadMermaid),
+		load: () => import("./DiagramBlock").then((module) => ({ default: module.DiagramBlock })),
 		sanitizeAttrs: ["dataFormat", "dataSource"],
 	},
 };

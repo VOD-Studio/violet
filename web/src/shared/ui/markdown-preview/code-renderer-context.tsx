@@ -20,9 +20,6 @@ export type RunnableCodeLoader = () => Promise<{ default: ComponentType<Runnable
 /** 注入应用层加载入口；值为 null 时仅显示完整源码，不调用执行服务。 */
 export const RunnableCodeLoaderContext = createContext<RunnableCodeLoader | null>(null);
 
-/** 注入应用层代码组件；未提供时只呈现源码。 */
-export const RunnableCodeContext = createContext<ComponentType<RunnableCodeProps> | null>(null);
-
 /**
  * 以完整源码承载可运行块，在接近视口后装配应用层执行界面。
  *
@@ -30,8 +27,6 @@ export const RunnableCodeContext = createContext<ComponentType<RunnableCodeProps
  */
 export function RunnableCodeRenderer(props: RunnableCodeProps) {
 	const load = useContext(RunnableCodeLoaderContext);
-	const Renderer = useContext(RunnableCodeContext);
-	if (!load && Renderer) return <Renderer {...props} />;
 	const fallback = (
 		<pre
 			data-runnable="true"

@@ -11,7 +11,7 @@ import {
 	type SceneItem,
 } from "@violetjs/inkline";
 import { Shuffle } from "lucide-react";
-import { type ReactNode, Suspense, useMemo } from "react";
+import { lazy, type ReactNode, Suspense, useMemo } from "react";
 import * as fillsExample from "../../../../packages/inkline/examples/fills";
 import * as handsExample from "../../../../packages/inkline/examples/hands";
 import * as lineWashExample from "../../../../packages/inkline/examples/line-wash";
@@ -238,8 +238,7 @@ export function FillsStage() {
 	);
 }
 
-// 图块组件依赖 DOMPurify 与 Mermaid，只能在浏览器里加载；注册表里是懒加载版本
-const MermaidDiagram = diagramRenderers.mermaid.ReaderComponent;
+const MermaidDiagram = lazy(diagramRenderers.mermaid.load);
 
 export function RedrawStage() {
 	const hydrated = useHydrated();

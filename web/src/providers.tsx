@@ -1,16 +1,15 @@
 import { CustomEmojiContextMenu } from "@features/customemoji/ui/CustomEmojiContextMenu";
 import { useSettings } from "@features/settings/api/queries";
 import { GoogleOAuthProvider } from "@react-oauth/google";
-import { RunnableCodeContext } from "@shared/ui/markdown-preview/code-renderer-context";
+import { RunnableCodeLoaderContext } from "@shared/ui/markdown-preview/code-renderer-context";
 import { Toaster, type VioletToasterProps } from "@violet/ui";
 import { ThemeProvider, useTheme } from "next-themes";
-import { lazy, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
-const CodeRunner = lazy(() =>
+const loadCodeRunner = () =>
 	import("@entities/code-runner/ui/CodeRunner").then((module) => ({
 		default: module.CodeRunner,
-	})),
-);
+	}));
 
 /**
  * AppProviderProps
@@ -53,9 +52,9 @@ const AppProvider = ({ children }: AppProviderProps) => {
 	return (
 		<GoogleOAuthGate>
 			<ThemeProvider attribute="class" defaultTheme="system" enableColorScheme={false}>
-				<RunnableCodeContext value={CodeRunner}>
+				<RunnableCodeLoaderContext value={loadCodeRunner}>
 					<CustomEmojiContextMenu>{children}</CustomEmojiContextMenu>
-				</RunnableCodeContext>
+				</RunnableCodeLoaderContext>
 				<ThemedToaster />
 			</ThemeProvider>
 		</GoogleOAuthGate>
