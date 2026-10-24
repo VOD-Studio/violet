@@ -13,6 +13,7 @@ export const SEMANTIC_TOKENS = [
 	"primary",
 	"primary-hover",
 	"primary-foreground",
+	"primary-text",
 	"secondary",
 	"secondary-foreground",
 	"muted",

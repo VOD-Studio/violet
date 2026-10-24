@@ -40,6 +40,13 @@ for (const appearance of ["light", "dark"] as const) {
 					button.textContent = `${dialect} ${variant}`;
 					section.append(button);
 				}
+				for (const role of ["primary", "destructive"]) {
+					const text = document.createElement("span");
+					text.className = `text-${role}`;
+					text.dataset.role = role;
+					text.textContent = `${dialect} ${role}`;
+					section.append(text);
+				}
 				fixture.append(section);
 			}
 			document.body.append(fixture);
@@ -86,6 +93,17 @@ for (const appearance of ["light", "dark"] as const) {
 					expect(contrastRatio(colors.link, colors.background)).toBeGreaterThanOrEqual(
 						4.5,
 					);
+					expect(
+						contrastRatio(colors["primary-text"], colors.background),
+					).toBeGreaterThanOrEqual(4.5);
+					for (const role of ["primary", "destructive"] as const) {
+						expect(
+							await page
+								.locator(`${selector} [data-role="${role}"]`)
+								.evaluate((el) => getComputedStyle(el).color),
+							`text-${role} 取可读文字档`,
+						).toBe(colors[`${role}-text`].value);
+					}
 					expect(
 						contrastRatio(colors["selected-foreground"], colors.selected),
 					).toBeGreaterThanOrEqual(4.5);

@@ -87,7 +87,7 @@
 }
 
 .index {
-	color: var(--primary);
+	color: var(--primary-text);
 	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 	font-size: 0.62rem;
 	font-variant-numeric: tabular-nums;
@@ -130,7 +130,7 @@
 .mobileChevron {
 	width: 1rem;
 	height: 1rem;
-	color: var(--primary);
+	color: var(--primary-text);
 	transition: transform 200ms ease-out;
 }
 

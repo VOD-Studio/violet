@@ -44,6 +44,7 @@ for (const viewport of VIEWPORTS) {
 				expect(firstPublic["primary-hover"].value).toBe(brand["brand-10"].value);
 				expect(firstPublic.link.value).toBe(brand["brand-11"].value);
 				expect(firstPublic.ring.value).toBe(brand["brand-8"].value);
+				expect(firstPublic["primary-text"].value).toBe(brand["brand-11"].value);
 				expect(firstRoot.primary.value).not.toBe(firstPublic.primary.value);
 				for (const token of STATUS_TOKENS)
 					expect(firstPublic[token]).toEqual(firstRoot[token]);
@@ -52,6 +53,9 @@ for (const viewport of VIEWPORTS) {
 				).toBeGreaterThanOrEqual(4.5);
 				expect(
 					contrastRatio(firstPublic.link, firstPublic.background),
+				).toBeGreaterThanOrEqual(4.5);
+				expect(
+					contrastRatio(firstPublic["primary-text"], firstPublic.background),
 				).toBeGreaterThanOrEqual(4.5);
 				expect(
 					await firstPage.evaluate(
@@ -106,6 +110,7 @@ for (const appearance of ["light", "dark"] as const) {
 				"brand-3",
 			]);
 			expect(scope.primary.value).toBe(root["action-neutral-9"].value);
+			expect(scope["primary-text"].value).toBe(root["action-neutral-9"].value);
 			expect(contrastRatio(scope.primary, scope["primary-foreground"])).toBeGreaterThan(10);
 			expect(scope.ring.value).toBe(root["brand-8"].value);
 			expect(scope.link.value).toBe(root["brand-11"].value);

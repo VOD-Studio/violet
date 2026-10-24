@@ -25,7 +25,7 @@ export const COMMENT_TONES: Record<CommentTone, CommentToneCfg> = {
 	},
 	author: {
 		bar: "bg-success",
-		badge: "bg-success/10 text-success-text",
+		badge: "bg-success/10 text-success",
 	},
 };
 

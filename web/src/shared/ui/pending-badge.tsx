@@ -18,7 +18,7 @@ export function PendingBadge({ show }: PendingBadgeProps) {
 	if (!show) return null;
 	return (
 		<span
-			className="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2 py-0.5 text-xs text-warning-text"
+			className="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2 py-0.5 text-xs text-warning"
 			title="管理员审核通过后公开"
 		>
 			<Clock className="size-3" />

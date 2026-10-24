@@ -69,7 +69,7 @@
 
 .root[data-open="true"] .chevron {
 	transform: rotate(180deg);
-	color: var(--primary);
+	color: var(--primary-text);
 }
 
 .contentGrid {
