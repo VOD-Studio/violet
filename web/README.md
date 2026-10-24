@@ -147,6 +147,8 @@ Mermaid 使用独立的串行渲染队列，模块与字体下载不阻塞其他
 
 `createAsyncLoader` 统一模块与初始化任务的并发复用、成功缓存和失败清理；不自动重试、不用于参数化业务查询。富内容加载与渲染失败只显示局部反馈，代码、图表源码和正文继续可读。浏览器会缓存同 URL 的模块下载失败，此类反馈提供重新载入页面；样式下载失败和渲染失败提供局部重试。代码样式重试以新 `<link>` 的 `load` 事件确认恢复，不以 `sheet` 是否存在判断下载成功。
 
+`formatDate` 可显式指定 IANA 时区；SSR 与浏览器需要显示相同日历日期时，调用方必须传入相同时区。纯 `YYYY-MM-DD` 输入按日历日期保留，不套用时区偏移；未指定时区的既有调用行为不变。
+
 ## 手绘绘图库
 
 [`@violetjs/inkline`](packages/inkline/README.md) 位于 `packages/inkline/`，不依赖 React、Mermaid 或 Rough.js。文章 Mermaid 图块经 `shared/ui/diagram` 用它渲染。
