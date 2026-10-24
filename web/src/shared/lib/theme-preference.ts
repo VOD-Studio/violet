@@ -65,3 +65,10 @@ export function resolvePresetTheme(preference: ThemePreference, date: Date): Sea
 	if (month >= 9 && month <= 11) return "autumn";
 	return "winter";
 }
+
+/** 客户端路由读取预设主题：沿用首帧的 data-theme，水合后不随客户端时钟跨季翻转。 */
+export function getClientPresetTheme(): Season {
+	const rendered = document.documentElement.dataset.theme;
+	if (isSeason(rendered)) return rendered;
+	return resolvePresetTheme(parseThemeCookie(document.cookie), new Date());
+}

@@ -1,4 +1,9 @@
 import type { Browser, Page } from "@playwright/test";
+import {
+	serializeThemePreference,
+	THEME_COOKIE_NAME,
+	type ThemePreference,
+} from "../src/shared/lib/theme-preference";
 import { loadClient } from "./client";
 
 export type Appearance = "light" | "dark" | "system";
@@ -60,7 +65,13 @@ export type ScopeColors = Record<string, ComputedColor>;
 export async function appearanceContext(
 	browser: Browser,
 	appearance: Appearance,
-	options: { blockScripts?: boolean; admin?: boolean; contrast?: "more" | "no-preference" } = {},
+	options: {
+		blockScripts?: boolean;
+		admin?: boolean;
+		contrast?: "more" | "no-preference";
+		/** 写入主题偏好 cookie；省略时不写，按跟随季节渲染 */
+		theme?: ThemePreference;
+	} = {},
 ) {
 	const context = await browser.newContext({
 		colorScheme: appearance === "light" ? "light" : "dark",
@@ -71,6 +82,14 @@ export async function appearanceContext(
 		await context.addCookies([{ name: "appearance", value: appearance, url: CONTRACT_ORIGIN }]);
 		await context.addInitScript((value) => localStorage.setItem("theme", value), appearance);
 	}
+	if (options.theme)
+		await context.addCookies([
+			{
+				name: THEME_COOKIE_NAME,
+				value: serializeThemePreference(options.theme),
+				url: CONTRACT_ORIGIN,
+			},
+		]);
 	if (options.admin)
 		await context.addCookies([{ name: "contract_admin", value: "1", url: CONTRACT_ORIGIN }]);
 	await loadClient(context);

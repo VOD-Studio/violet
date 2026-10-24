@@ -194,6 +194,10 @@ CLI fixture 使用临时 Git 仓库，可通过 `pnpm test scripts/check-colors.
 
 站点切换器与 hook 从 `@features/appearance` 引入 `AppearanceToggle`、`useAppearanceSwitcher`。Header、后台顶栏、命令面板和 `/lab/theme` 演示共用这一入口，正式页面不依赖 lab 实现。
 
+### 主题偏好
+
+主题偏好由 `shared/lib/theme-preference.ts` 解析，SSR 通过 `getSSRPresetTheme` 在 `<html>` 上输出 `data-theme`，首帧即为访客的预设主题；规则与术语见 CONTEXT「主题与色彩」。主题契约（`e2e/theme-contract.spec.ts`）覆盖「主题 × 外观 × 视口」的首帧与水合一致性，并在浏览器中实测关键文字组合的对比度。
+
 ### 独立包与文档站
 
 | 包 | 文档站 / 站内用途 | 开发依据 |

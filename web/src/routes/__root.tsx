@@ -1,5 +1,6 @@
 import { SiteMusicPlayer } from "@features/music-player/ui/SiteMusicPlayer";
 import { getClientAppearance } from "@shared/lib/appearance-cookie";
+import { getClientPresetTheme } from "@shared/lib/theme-preference";
 import { SystemAppearanceTransition } from "@shared/ui/appearance-transition";
 import NotFound from "@shared/ui/not-found";
 import RouteError from "@shared/ui/route-error";
@@ -28,6 +29,7 @@ import type { RouterContext } from "../router";
 import { isSessionActive, markSessionActive } from "../shared/api/session";
 import { getSSRAppearance } from "../shared/server/appearance";
 import { getAuthSession } from "../shared/server/session";
+import { getSSRPresetTheme } from "../shared/server/theme";
 import appCss from "../styles.css?url";
 
 /** 缓存首次 getAuthSession 结果，客户端 SPA 导航复用避免网络阻塞 */
@@ -37,9 +39,11 @@ let cachedClaims: ReturnType<typeof getAuthSession> extends Promise<infer T>
 
 export const Route = createRootRouteWithContext<RouterContext>()({
 	beforeLoad: async () => {
-		// SSR 与客户端使用同一 cookie 解析规则，避免水合时覆盖首帧外观。
-		const appearance =
-			typeof window === "undefined" ? await getSSRAppearance() : getClientAppearance();
+		// SSR 与客户端使用同一 cookie 解析规则，避免水合时覆盖首帧外观与主题。
+		const [appearance, theme] =
+			typeof window === "undefined"
+				? await Promise.all([getSSRAppearance(), getSSRPresetTheme()])
+				: [getClientAppearance(), getClientPresetTheme()];
 		// SSR 或首次客户端 hydrate：网络获取
 		if (typeof window === "undefined" || cachedClaims === undefined) {
 			const claims = await getAuthSession();
@@ -50,6 +54,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 			}
 			return {
 				appearance,
+				theme,
 				auth: {
 					isAuthenticated: claims !== null || isSessionActive(),
 					claims,
@@ -59,10 +64,11 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 		// 客户端 SPA 导航：复用缓存，用 sessionActive 检测登出
 		if (!isSessionActive()) {
 			cachedClaims = null;
-			return { appearance, auth: { isAuthenticated: false, claims: null } };
+			return { appearance, theme, auth: { isAuthenticated: false, claims: null } };
 		}
 		return {
 			appearance,
+			theme,
 			auth: {
 				isAuthenticated: cachedClaims !== null,
 				claims: cachedClaims,
@@ -178,11 +184,17 @@ function RootComponent() {
  * 必须渲染 HeadContent 与 Scripts，否则 SSR 不工作。
  */
 function RootDocument({ children }: { children: React.ReactNode }) {
-	const { appearance } = Route.useRouteContext();
+	const { appearance, theme } = Route.useRouteContext();
 	// color-scheme 不内联注入：light-dark() 的取值开关由 tokens 的
 	// .dark 规则驱动，内联会永远压过它
 	return (
-		<html className={appearance} lang="zh-CN" data-scrollbar="none" suppressHydrationWarning>
+		<html
+			className={appearance}
+			data-theme={theme}
+			lang="zh-CN"
+			data-scrollbar="none"
+			suppressHydrationWarning
+		>
 			<head>
 				<HeadContent />
 			</head>

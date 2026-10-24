@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import {
+	getClientPresetTheme,
 	parseThemeCookie,
 	resolvePresetTheme,
 	serializeThemePreference,
@@ -53,5 +54,26 @@ describe("parseThemeCookie", () => {
 			encodeURIComponent('{"v":1,"theme":"winter"}'),
 		);
 		expect(parseThemeCookie(cookie(serializeThemePreference("autumn")))).toBe("autumn");
+	});
+});
+
+describe("getClientPresetTheme", () => {
+	afterEach(() => {
+		delete document.documentElement.dataset.theme;
+		// biome-ignore lint/suspicious/noDocumentCookie: jsdom 的 cookie jar 模拟浏览器偏好
+		document.cookie = `${THEME_COOKIE_NAME}=; path=/; Max-Age=0`;
+	});
+
+	it("沿用首帧渲染的预设主题，不随客户端时钟重算", () => {
+		document.documentElement.dataset.theme = "summer";
+		// biome-ignore lint/suspicious/noDocumentCookie: jsdom 的 cookie jar 模拟浏览器偏好
+		document.cookie = `${THEME_COOKIE_NAME}=${serializeThemePreference("follow")}; path=/`;
+		expect(getClientPresetTheme()).toBe("summer");
+	});
+
+	it("没有首帧主题时按 cookie 解析", () => {
+		// biome-ignore lint/suspicious/noDocumentCookie: jsdom 的 cookie jar 模拟浏览器偏好
+		document.cookie = `${THEME_COOKIE_NAME}=${serializeThemePreference("winter")}; path=/`;
+		expect(getClientPresetTheme()).toBe("winter");
 	});
 });
