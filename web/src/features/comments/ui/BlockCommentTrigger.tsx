@@ -1,12 +1,17 @@
 import { closestAnnotatableBlock } from "@features/comments/lib/selection-to-anchor";
+import { DeferredContent } from "@shared/ui/deferred-content/DeferredContent";
 import { MessageSquareText } from "lucide-react";
 import { Popover } from "radix-ui";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAnnotationAnchorVisible } from "../hooks/use-annotation-anchor-visible";
 import { AnnotationPortal } from "./AnnotationPortal";
 import { AnnotationOverlayContext } from "./annotation-overlay-context";
-import { BlockAnnotationComposer } from "./BlockAnnotationComposer";
 import { useExclusivePanel } from "./use-exclusive-panel";
+
+const loadBlockComposer = () =>
+	import("./BlockAnnotationComposer").then((module) => ({
+		default: module.BlockAnnotationComposer,
+	}));
 
 /** 鼠标离开正文后入口延迟隐藏的时间，留给指针移向入口按钮。 */
 const HIDE_DELAY_MS = 200;
@@ -16,6 +21,7 @@ const TOP_OFFSET_PX = 2;
 const COMPOSER_GAP_PX = 8;
 const DRAFT_CLASS = "annotation-draft-highlight";
 
+/** 正文中的段评入口及其浮层定位上下文。 */
 export interface BlockCommentTriggerProps {
 	contentRef: React.RefObject<HTMLElement | null>;
 	/** 覆盖层元素：入口的纵向坐标相对它计算 */
@@ -27,7 +33,7 @@ export interface BlockCommentTriggerProps {
 }
 
 /**
- * BlockCommentTrigger - 鼠标悬停某段时在右侧边距出现的「段评」入口。
+ * 鼠标悬停某段时在右侧边距显示段评入口。
  *
  * 点击后在入口下方展开输入面板，对整段文字发表批注（锚点覆盖全块）。
  * 入口与面板都不进正文流，悬停时正文不位移。
@@ -45,6 +51,11 @@ export function BlockCommentTrigger({
 	const hideTimer = useRef<number | undefined>(undefined);
 	const composerVisible = useAnnotationAnchorVisible(composerBlock, composerBlock !== null);
 
+	const scheduleHide = useCallback(() => {
+		clearTimeout(hideTimer.current);
+		hideTimer.current = window.setTimeout(() => setHovered(null), HIDE_DELAY_MS);
+	}, []);
+
 	useEffect(() => {
 		const root = contentRef.current;
 		if (!root) return;
@@ -57,19 +68,15 @@ export function BlockCommentTrigger({
 				setHovered((cur) => (cur === block ? cur : block));
 			});
 		};
-		const onLeave = () => {
-			clearTimeout(hideTimer.current);
-			hideTimer.current = window.setTimeout(() => setHovered(null), HIDE_DELAY_MS);
-		};
 		root.addEventListener("mousemove", onMove);
-		root.addEventListener("mouseleave", onLeave);
+		root.addEventListener("mouseleave", scheduleHide);
 		return () => {
 			cancelAnimationFrame(frame);
 			clearTimeout(hideTimer.current);
 			root.removeEventListener("mousemove", onMove);
-			root.removeEventListener("mouseleave", onLeave);
+			root.removeEventListener("mouseleave", scheduleHide);
 		};
-	}, [contentRef]);
+	}, [contentRef, scheduleHide]);
 
 	const visibleBlock = composerBlock ?? hovered;
 	useEffect(() => {
@@ -104,9 +111,7 @@ export function BlockCommentTrigger({
 				style={{ top }}
 				tabIndex={showTrigger ? 0 : -1}
 				onMouseEnter={() => clearTimeout(hideTimer.current)}
-				onMouseLeave={() => {
-					hideTimer.current = window.setTimeout(() => setHovered(null), HIDE_DELAY_MS);
-				}}
+				onMouseLeave={scheduleHide}
 				onClick={open}
 				aria-label="发表段评"
 				aria-hidden={!showTrigger}
@@ -121,7 +126,7 @@ export function BlockCommentTrigger({
 					<Popover.Anchor virtualRef={{ current: composerBlock }} />
 					<AnnotationPortal>
 						<Popover.Content
-							className="annotation-block-composer pointer-events-auto z-50 max-w-[calc(100vw-2rem)] rounded-2xl outline-none"
+							className="annotation-block-composer pointer-events-auto z-50 max-w-[calc(100vw-2rem)] rounded-2xl bg-background outline-none"
 							align="end"
 							side="bottom"
 							sideOffset={COMPOSER_GAP_PX}
@@ -135,11 +140,28 @@ export function BlockCommentTrigger({
 							aria-label="发表段评"
 						>
 							<AnnotationOverlayContext value={composerVisible}>
-								<BlockAnnotationComposer
-									block={composerBlock}
-									postId={postId}
-									isLoggedIn={isLoggedIn}
-									onClose={close}
+								<DeferredContent
+									defer={false}
+									load={loadBlockComposer}
+									label="段评表单"
+									fallback={
+										<div className="p-4 text-sm">
+											<p role="status">正在准备段评…</p>
+											<button
+												type="button"
+												onClick={close}
+												className="mt-3 rounded-md px-2 py-1 text-primary focus-visible:outline-2 focus-visible:outline-ring"
+											>
+												关闭段评
+											</button>
+										</div>
+									}
+									componentProps={{
+										block: composerBlock,
+										postId,
+										isLoggedIn,
+										onClose: close,
+									}}
 								/>
 							</AnnotationOverlayContext>
 						</Popover.Content>

@@ -85,23 +85,25 @@ function paint(block: HTMLElement, strokes: Stroke[]): void {
 	block.style.setProperty("background-size", sizes.join(","));
 	block.style.setProperty("background-position", positions.join(","));
 	block.style.setProperty("background-repeat", "no-repeat");
+	block.setAttribute("data-selection-painted", "");
 }
 
 function clear(block: HTMLElement): void {
 	for (const prop of BG_PROPS) block.style.removeProperty(prop);
+	block.removeAttribute("data-selection-painted");
 }
 
+/** 选区笔触的绘制范围。 */
 export interface SelectionHighlightProps {
 	/** 正文容器 ref：只为落在其中的选区画笔触 */
 	contentRef: React.RefObject<HTMLElement | null>;
 }
 
 /**
- * SelectionHighlight - 拖选文字时的荧光笔笔触。
+ * 在所属正文块背景中绘制选区笔触，不修改文字或原生 Range。
  *
- * 原生选区和 CSS Custom Highlight API 都只能画直角色块，做不出手绘形状；这里把选区每一行的
- * 笔触画成所在块的背景图层（坐标相对块自身），笔触在文字下方、随正文滚动，不是浮在页面上的覆盖层。
- * 与已保存划线（绿色）、草稿划线（琥珀色）同款手绘形状而颜色更淡。
+ * @remarks 只有完成绘制的块才替代原生选区底色；清理时恢复原生底色，
+ * 模块尚未下载或加载失败时仍能看见浏览器选区。
  */
 export function SelectionHighlight({ contentRef }: SelectionHighlightProps) {
 	useEffect(() => {

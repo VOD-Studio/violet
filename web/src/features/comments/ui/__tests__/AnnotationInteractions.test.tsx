@@ -6,6 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { computeBlockId } from "../../lib/block-id";
 import type { BlockCount } from "../../model/types";
 import { AnnotationLayer } from "../AnnotationLayer";
+// 本组验证交互状态，在用例计时前加载真实模块；冷下载由浏览器契约覆盖。
+import "../AnnotationPopover";
 
 const requests = vi.hoisted(() => ({
 	apiGet: vi.fn(),
@@ -58,6 +60,7 @@ async function mount(firstAuthorLabel = "读者甲 的批注") {
 		</QueryClientProvider>,
 	);
 	fireEvent.click(await screen.findByRole("button", { name: firstAuthorLabel }));
+	await act(() => vi.dynamicImportSettled());
 	return screen.findByRole("dialog", { name: "段落批注" });
 }
 

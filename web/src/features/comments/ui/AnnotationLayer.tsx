@@ -1,13 +1,16 @@
-/** 角标不进入正文文本；桌面放在侧边，移动端使用块内预留的段尾空间。 */
+import { DeferredContent } from "@shared/ui/deferred-content/DeferredContent";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAnnotationMarks } from "../hooks/useAnnotationMarks";
 import type { AnnotationAuthorFilter, BlockCount } from "../model/types";
 import { AnnotationMarker } from "./AnnotationMarker";
-import { AnnotationPopover, type AnnotationPopoverTarget } from "./AnnotationPopover";
+import type { AnnotationPopoverTarget } from "./AnnotationPopover";
 import { BlockCommentTrigger } from "./BlockCommentTrigger";
 import { useExclusivePanel } from "./use-exclusive-panel";
 import "@entities/comment/ui/ai-personas.css";
 import "./annotations.css";
+
+const loadAnnotationPopover = () =>
+	import("./AnnotationPopover").then((module) => ({ default: module.AnnotationPopover }));
 
 /** 划线高亮 mark 的 class。 */
 const MARK_CLASS = "annotation-mark";
@@ -17,6 +20,7 @@ const MARKER_DATA_BLOCKID = "data-annotation-blockid";
 const MARKER_TOP_OFFSET_PX = 2;
 const MARKER_MOBILE_HEIGHT_PX = 40;
 
+/** 正文角标与按需批注面板的展示上下文。 */
 export interface AnnotationLayerProps {
 	/** 正文容器 ref */
 	contentRef: React.RefObject<HTMLElement | null>;
@@ -41,6 +45,11 @@ interface ActivePopover {
 	anchorEl: HTMLElement;
 }
 
+/**
+ * 显示不进入正文文本的轻量角标，打开时再加载完整批注面板。
+ *
+ * @remarks 桌面角标位于侧边，移动端使用块内预留的段尾空间。
+ */
 export function AnnotationLayer({
 	contentRef,
 	summary,
@@ -188,14 +197,23 @@ export function AnnotationLayer({
 					);
 				})}
 			</div>
-			<AnnotationPopover
-				open={active !== null}
-				target={popoverTarget}
-				postId={postId ?? ""}
-				isLoggedIn={isLoggedIn}
-				onFilter={(author) => setActive((cur) => (cur ? { ...cur, author } : cur))}
-				onClose={close}
-			/>
+			{target && (
+				<DeferredContent
+					defer={false}
+					load={loadAnnotationPopover}
+					label="批注详情"
+					fallback={null}
+					componentProps={{
+						open: active !== null,
+						target: popoverTarget,
+						postId: postId ?? "",
+						isLoggedIn,
+						onFilter: (author: AnnotationAuthorFilter) =>
+							setActive((cur) => (cur ? { ...cur, author } : cur)),
+						onClose: close,
+					}}
+				/>
+			)}
 		</>
 	);
 }

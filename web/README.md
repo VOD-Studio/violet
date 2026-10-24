@@ -153,6 +153,8 @@ Mermaid 使用独立的串行渲染队列，模块与字体下载不阻塞其他
 
 文章发布时间与修订日期按 `Asia/Shanghai` 展示。
 
+批注工具准备期间保留原生选区，绘制完成后再接管高亮；段评加载或失败时仍可关闭。
+
 ## 手绘绘图库
 
 [`@violetjs/inkline`](packages/inkline/README.md) 位于 `packages/inkline/`，不依赖 React、Mermaid 或 Rough.js。文章 Mermaid 图块经 `shared/ui/diagram` 用它渲染。

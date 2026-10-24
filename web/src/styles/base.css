@@ -33,14 +33,6 @@ button {
 	font-feature-settings: "liga", "calt";
 }
 
-/* 正文选区：原生底色整体透明，荧光笔笔触由划线批注的 SelectionHighlight 以块背景绘制，
-   否则笔触后面会露出一层直角色块。:root 前缀抬高优先级，压过方言层 .dialect-public ::selection
-   的纯主色底与白字。 */
-:root [data-article-content] ::selection {
-	background-color: transparent;
-	color: var(--foreground);
-}
-
 .prose {
 	line-height: 1.75;
 	/*
