@@ -153,15 +153,3 @@ function isUploadedImage(path: string): boolean {
 		return false;
 	}
 }
-
-/**
- * 为本站内容图生成响应式宽度候选；GIF 与外链不生成派生候选。
- *
- * @param widths - 完整源图的目标像素宽度，超过接口上限的值钳制后去重。
- * @returns 可直接赋给 img.srcSet 的宽度描述符；不支持派生时返回 undefined。
- */
-export function contentImageSrcSet(path: string, widths: readonly number[]): string | undefined {
-	if (!isUploadedImage(path) || widths.length === 0 || isGifPath(path)) return undefined;
-	const candidates = [...new Set(widths.map((width) => Math.min(MAX_IMAGE_WIDTH, width)))];
-	return candidates.map((width) => `${contentImageUrl(path, { width })} ${width}w`).join(", ");
-}

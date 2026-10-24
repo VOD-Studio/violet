@@ -2,7 +2,7 @@ import { usePublishedGallery } from "@entities/gallery/api/queries";
 import { sortedByPosition } from "@entities/gallery/model/sort";
 import type { PublishedGalleryItem } from "@entities/gallery/model/types";
 import { formatDate } from "@shared/lib/date";
-import { contentImageSrcSet, contentImageUrl } from "@shared/lib/image-url";
+import { contentImageSources, contentImageUrl } from "@shared/lib/image-url";
 import { HistoryBack } from "@shared/ui/history-back";
 import { ImagePreview } from "@shared/ui/image-preview";
 import { Link } from "@tanstack/react-router";
@@ -17,8 +17,8 @@ interface GalleryDetailPageProps {
 
 const GRID_IMAGE_WIDTH = 2048;
 
-/** srcset 候选宽度：移动端按视口取小档，避免 2048 单档对窄屏浪费带宽。 */
-const GRID_SRCSET_WIDTHS = [640, 1024, 1600, 2048];
+/** 按视口与 DPR 请求展示图，不把请求宽度当作素材实际宽度。 */
+const GRID_IMAGE_WIDTHS = [640, 1024, 1600, 2048];
 
 /** 灯箱会话：当前索引与触发按钮（关闭后焦点归还）。 */
 interface LightboxState {
@@ -117,17 +117,24 @@ export function GalleryDetailPage({ slug }: GalleryDetailPageProps) {
 									}
 									className="mx-auto block w-full cursor-zoom-in rounded-xl outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
 								>
-									<img
-										srcSet={contentImageSrcSet(item.url, GRID_SRCSET_WIDTHS)}
-										sizes="(min-width: 1024px) 1024px, 100vw"
-										src={contentImageUrl(item.url, { width: GRID_IMAGE_WIDTH })}
-										alt={itemAlt(item, index, gallery.title)}
-										width={item.width > 0 ? item.width : undefined}
-										height={item.height > 0 ? item.height : undefined}
-										loading={index === 0 ? "eager" : "lazy"}
-										fetchPriority={index === 0 ? "high" : "auto"}
-										className="mx-auto h-auto max-h-[85dvh] max-w-full rounded-xl object-contain"
-									/>
+									<picture>
+										{contentImageSources(item.url, GRID_IMAGE_WIDTHS, 1024).map(
+											(source) => (
+												<source key={source.media} {...source} />
+											),
+										)}
+										<img
+											src={contentImageUrl(item.url, {
+												width: GRID_IMAGE_WIDTH,
+											})}
+											alt={itemAlt(item, index, gallery.title)}
+											width={item.width > 0 ? item.width : undefined}
+											height={item.height > 0 ? item.height : undefined}
+											loading={index === 0 ? "eager" : "lazy"}
+											fetchPriority={index === 0 ? "high" : "auto"}
+											className="mx-auto h-auto max-h-[85dvh] max-w-full rounded-xl object-contain"
+										/>
+									</picture>
 								</button>
 								{item.caption ? (
 									<figcaption className="mx-auto max-w-3xl text-center text-muted-foreground text-sm leading-relaxed">
