@@ -1,361 +1,235 @@
-# violet / web
+# Violet Web
 
-博客平台前端应用，基于 **TanStack Start** 构建，支持 SSR/SSG、文件路由与 Server Function。
+Violet 的 React 前端，使用 TanStack Start 提供 SSR 与文件路由。站点代码位于 `src/`，可复用组件包位于 `packages/`；两者在同一 pnpm workspace 中开发。
 
-## 技术栈
+[快速开始](#快速开始) · [环境变量](#环境变量) · [路由](#路由) · [数据与认证](#数据与认证) · [样式与组件](#样式与组件) · [项目结构](#项目结构)
 
-| 类别 | 选型 |
-|------|------|
-| 框架 | React 19 + TypeScript (strict) |
-| 全栈框架 | TanStack Start |
-| 构建工具 | Vite 8 |
-| 路由 | TanStack Router（文件路由） |
-| 状态管理 | Zustand + TanStack Query v5 |
-| 样式 | Tailwind CSS v4 |
-| UI 组件 | `@violet/ui`（native / Radix 行为、typed BEM recipe 与同源 CSS） |
-| 表单 | React Hook Form + Zod |
-| 富文本 | TipTap v3 |
-| 代码高亮 | Shiki / lowlight |
-| 图标 | Lucide React |
-| 动效 | GSAP + Motion |
-| 检查/格式化 | Biome |
-| 测试 | Vitest + React Testing Library |
+## 快速开始
 
-## 目录结构
+本机开发需要 Node.js 22.12+ 和 pnpm 11。前端依赖 Go API；后端尚未启动时，先按[后端 README](../api/README.md#快速开始)准备。
 
-前端采用 **Feature-Sliced Design** 组织代码：
+使用整套容器环境时，在仓库根先运行 `make env` 并配置根 `.env`，再运行 `make docker-dev`；这条路径不要求本机安装 Go 或 Node.js。
 
-```text
-web/src/
-├── routes/           # TanStack Start 文件路由
-├── features/         # 业务模块（每个模块包含 api / ui / hooks / types 等）
-├── entities/         # 跨模块复用的领域实体（类型、查询、UI）
-├── widgets/          # 页面级组合组件
-├── shared/           # 通用基础能力
-│   ├── api/          # axios 实例、请求/响应拦截、CSRF、auth 探活
-│   ├── ui/           # 站点专用通用件；跨 feature 原语在 packages/ui
-│   ├── lib/          # 工具函数
-│   ├── config/       # 环境配置与常量
-│   ├── server/       # SSR server 端辅助函数
-│   └── vendor/       # 外部库本地适配
-├── test/             # 测试配置与 setup
-├── router.tsx        # 路由器入口
-├── styles.css        # 全局样式唯一入口（只负责导入）
-└── styles/           # 站点方言 / 基础行为 / 转场（基础 token 与 theme 映射在 packages/ui）
-```
-
-`src/routeTree.gen.ts` 是文件路由的本地生成物，不纳入 Git，也不从宿主复制进镜像或开发容器；只修改 `src/routes/` 下的路由源码，不手动编辑或提交生成文件。
-
-- `pnpm generate-routes` 直接执行官方 `tsr generate`，不加载 Vite 配置或启动开发服务器。
-- `pnpm dev`、`pnpm typecheck`、`pnpm test`、`pnpm build` 和 `pnpm build:analyze` 都先执行路由生成。CI 与 Docker 使用这些项目命令，不绕过前置步骤直接调用 `vite build`。
-- 应用的 SSR 与路由类型在 `src/router.tsx` 显式登记，不依赖 CLI 生成物携带 Start 专属声明；开发期路由监听与最终 SSR 构建仍由 TanStack Start 插件处理。
-- 缺少根路由、路由冲突等首次生成错误会以非零退出码中止生成、校验或构建；已有旧生成文件也不会被判为成功。
-
-旧分支需同步这项跟踪规则变更；切换到仍跟踪生成文件的历史分支时，Git 仍会按旧规则管理它。
-
-`web/packages/ui/` 是通用 UI workspace 包。所有单元放在 `src/components/<name>/`，结构、recipe、CSS、导出与测试共置；`component-manifest.json` 管理公开入口与 foundation / legacy 状态。当前 10 个 foundation 单元为 Button、Checkbox、Dropdown、ImagePixelReveal、Input、Label、SearchInput、Segmented、Textarea、UploadTile，其余 34 个 legacy 单元保留兼容 API 并逐个重建；成熟度以清单为准。Input 提供四种外观、三种尺寸、清除与密码显隐，以及可选标签、说明和错误；正式 `/ui/components/input` 的预览与复制源码同源，包含原生表单 reset 示例。SearchInput 独立组合 Input，复用变体、尺寸和样式槽，防抖与回车搜索契约及示例见 `/ui/components/search-input`。
-
-后台搜索统一使用 `controlSize="sm"`，列表筛选、选择弹窗与账户合并搜索保持相同的控件密度；宽度由工具栏或弹窗容器决定。普通表单字段不受搜索密度约束。
-
-后台 `/admin/music` 的扫码连接要求 Kite 服务地址、访问令牌和凭据加密密钥就绪。创建或扫码检查失败后保留错误态，仅由手动重试发起新挑战；关闭弹窗或二维码过期后停止请求。二维码使用 `qrcode.react` 编码服务端返回的完整登录 URL，保持黑码白底与四模块静区，使用网易云音乐 APP 扫描。`e2e/admin-music.spec.ts` 对亮色桌面和暗色窄屏的实际二维码截图进行独立解码校验。
-
-公开内容页通过 `src/features/music-player/` 接入 [`@violetjs/kite-player@0.3.0`](https://github.com/VOD-Studio/kite/tree/player-v0.3.0/packages/kite-player)。后台启用的展示歌单驱动队列；没有展示歌单时不显示播放器，进入后台、聊天、个人中心或文档等工具页面时暂停。播放核心仅在客户端初始化，公开页面间复用同一实例；刷新后恢复队列与位置，但不自动播放。桌面默认靠左，播放条按钮通过 `--kite-blob` 和 `--kite-blob-icon` 跟随站点主题色，其余保留播放器原生配色、玻璃背景、圆角、阴影与展开/收起动效。浮层通过 Portal 保留公开方言并跟随站点明暗主题；宿主仅保留按钮颜色、层级、边距和移动端底部导航避让，全屏面板不被导航覆盖。
-
-播放器升级需同步 `pnpm-workspace.yaml` 中 `minimumReleaseAgeExclude` 的精确版本，并以生产 Docker 构建验收；容器安装保留其余依赖默认的 24 小时发布冷却期。
-
-`entities/music/` 提供后台与播放器共用的歌曲、歌单类型及匿名查询键；账号与扫码状态仍属于 `admin-music`。数据源只调用本站 `/api/v1/music/*`，不使用站点网易云凭据。曲目每页读取 100 首，重复或缺失的后续页明确报错；初始化失败后仅手动重试。队列中的媒体地址指向本站 `/stream`，播放时才解析临时 CDN URL，不批量预取或持久保存整单播放链接。VIP 与数字专辑按匿名入口预判受限，免费曲目仍以实际流接口结果为准。
-
-歌词将普通 LRC 的原文、翻译和音译按时间对齐；当前接口没有真实逐字与副歌数据，不生成这些信息，也不把空歌词标记成纯音乐。
-
-`@violet/ui/styles.css` 在 Tailwind v4 后导入；React 基础单元和 HTML 共用 BEM CSS，纯 CSS 可选择 `tokens.css` 与组件叶子入口。Maple 字体、签名和装饰动画归站点 `src/styles/site-theme.css`。Maple Mono 与 Alex Brush 使用 Fontsource 5.3.0 的 jsDelivr CDN，`@font-face` 在该文件声明，由 `src/styles.css` 引入，不再打包本地字体。包可输出 preserveModules ESM、类型声明与 CSS，`pnpm --filter @violet/ui consumer` 在工作区外安装真实 tarball 验收；npm 发布尚未执行。架构与操作流程以包内 [architecture.md](packages/ui/docs/architecture.md) 和 [component-design.md](packages/ui/docs/component-design.md) 为权威。`src/features/ui-docs/` 负责 `/ui` 组件库文档，架构与设计规范直接读取包内正文，组件预览与复制源码共用同一份示例文件。
-
-站点 `Signature` 内置 Mizuki Miru、水月みる、水月见三款笔迹，按名字、月牙、下划线顺序书写；`Mizuki_Miru` 账号名与 `Mizuki Miru` 共用同一款，笔画 JSON 与组件共置。
-
-ImagePixelReveal 已归入 `@violet/ui`，通过瓦片裁剪展开拼合始终静止的原图或自定义内容；默认随机顺序每轮重新洗牌，悬停可完整重播，减弱动态直接显示。`/ui/components/image-pixel-reveal` 提供四种顺序、完整重播、切换图片和 children 的同源示例，资源使用内嵌 SVG，不依赖站点头像配置。
-
-UploadTile 提供与图片网格等大的加号入口，支持原生键盘激活、禁用和忙碌状态；文件选择与网络上传由消费方负责。`/ui/components/upload-tile` 的演示与复制源码同源，使用包内 Checkbox 控制状态，外部 tarball 消费验收覆盖根入口、叶子入口和普通 CSS。
-
-Segmented 是横纵两个方向、soft / ink / line 三种变体的分段控制，指示器位移走 transform；`itemSize` 进入不做 JS 测量的等尺寸布局，`expandSelected` 让选中项占满剩余长度。`/ui/components/segmented` 的演示与复制源码同源，外部 tarball 消费验收覆盖根入口、叶子入口、SSR 与普通 CSS。
-
-后台 `DataTable` 默认让未调整的列随容器伸缩；右固定列按行内容撑开，操作按钮增减无需维护 `width`。时间等需完整展示的非固定列可设置 `fitContent: true`；拖拽列宽后记录当时的列布局，重置列设置可恢复自适应。
-
-`shared/api` 保留 429 的原始 `Retry-After` 和换算后的本地恢复时刻，支持秒数、HTTP 日期与服务端时钟偏差；没有可信期限时不猜测。主动取消保留原始取消异常，不转换成网络失败或触发自动重试。
-
-`entities/runtime-policy/` 提供四组策略视图、版本化写入与上传调度查询；`entities/code-runner/` 提供编辑器和阅读器共用的运行器 API、语言可用状态和终端。Markdown 公共层只声明可运行代码渲染插槽，执行能力由应用层注入，不向业务 feature 反向依赖。
-
-编辑器与正文运行入口使用同一份服务端有效策略：读取失败、运行器关闭或语言被禁用时，保留源码并显示具体原因，不提交执行任务。应用层通过 `AppProvider` 注入共享运行器，旧 `features/code-run` 与 `shared/ui/code-runner` 实现不再保留。
-
-后台运行策略分别位于 `/admin/settings/rate-limit`、`/admin/settings/image`、`/admin/settings/upload-queue` 和 `/admin/settings/code-runner`。场景预设、恢复默认和高级参数只更新当前分组草稿，显式保存才应用；保存版本与实例有效版本分别展示。冲突保留草稿，重新加载和离页须确认；只读权限不能编辑。标签说明使用支持鼠标、键盘和触屏的 Tooltip，字段错误、危险确认与生效状态保持直接可见。
-
-文件选择与拖放共用 `features/upload/hooks/use-file-selection` 的类型、大小和数量校验；取消后可重新选择同一个文件。`Uploader` 保留默认分片上传和自定义上传策略，表情继续使用公共 `useUploadEmoji` 的专用端点，避免改变 GIF 文件与表情 URL 的契约。
-
-`Uploader` 按在途文件数调度连续加入的多批文件，`maxFiles` 仍只限制每次选择数量。服务端并发变更只影响后续调度；429 保留文件和会话，按真实恢复期限继续，已确认会话通过只读状态查询续传，不重复消耗初始化额度。单项取消须等待后端确认；若合并先完成，按成功结果刷新素材，不把正式文件误报为已撤销。素材、表情、图集与人设入口沿用各自上传端点和结果契约。
-
-`CropUploadDialog` 的确认回调支持异步保存；上传或保存期间保持当前会话，失败时保留图片与选区供重试。本地预览 URL 与当前文件绑定，在更换或关闭时释放，避免开发模式重复挂载导致预览失效。
-
-评论、推文与聊天共用表情选择器：爱心收藏入口排第一项并随分组滚动，上传与收藏合并在同一网格，加号占第一格；左右箭头直接切换相邻分组，关闭重开保留浏览位置。图片在网格与悬停、键盘聚焦的大图预览中均优先使用 GIF，个人条目保留右键删除与移出收藏的权限标识。`disabled` 同时停用入口并关闭已打开的选择器，恢复可用后不自动重开旧浮层。
-
-共享评论区通过 `renderAuthorName` 与 `renderAvatar` 插槽扩展作者展示；插槽返回 `undefined` 时保留默认头像、作者名称与原有个人链接，公共层不依赖具体评论者类型。回复对象按实际 `parent_id` 判断：直接回复楼主时省略目标标注，回复二级评论时即使与楼主同名也保留「回复 @昵称」；预览与展开列表使用相同规则。
-
-`CartoonPopover` 默认提供非模态对话框语义，也可作为其他对话框的手绘视觉容器；覆盖 `role` 时只输出适用的 ARIA 属性。切换触发方式会取消尚未执行的悬停计划，避免入口停用后恢复旧浮层。
-
-`entities/comment` 统一解析 AI 自署名、头像与角色简介；GPT、Claude、GLM、Grok、DeepSeek、Kimi、Gemini 各自独立，DeepSeek 昵称为「大肥鱼」，版本与未知署名保留原文，不映射到授权用户的个人页。名称与头像复用站点 `CartoonPopover` 展示完整比例封面和简介，支持悬停、键盘聚焦与触屏点击。简介加入嵌套关闭栈，Escape 先关闭当前简介；外层停用时取消待触发悬停并关闭简介，恢复可用不自动重开。`ui/ai-personas.css` 集中维护各角色明暗展示色；角色色用于名称、AI 标识、淡底与划线，不额外添加卡片描边。
-
-角色图片来自用户提供的 `AI-Chibi-Complete-8-Web.zip`，八张 512×512 头像和八张约 16∶9 封面以原始 WebP 字节保存在 `public/ai-personas/`，未导入商标 logo。均为非官方拟人形象；其中 GLM 黑白狐娘参考 [ZipZipPipe 社区设定](https://www.bilibili.com/opus/1238267551429951496)，简介为本站创作，不作模型厂商或真实性声明。
-
-文章批注、普通评论、首页近评与后台评论共用上述角色身份展示；真人头像、作者标识与个人链接保留原行为。宽屏只收窄正文阅读区并独立居中，标题、封面、目录和底部评论区维持原宽；正文右侧头像默认堆叠，悬停或键盘聚焦时平滑展开，固定侧轨不推动周围布局。移动端正文保持正常宽度，批注头像与计数移到段落下方，入口不参与正文纯文本或锚点偏移。浮层保留原有玻璃材质、软影与透明度／模糊过渡；AI 卡片仅使用角色淡底，不叠加新描边。
-
-批注阅读面板保留有界列表与固定外框，侧栏和面板的作者筛选双向同步；头部数量、可选 AI 标识与头像自然接排，不为缺少的标识预留空位。底部常驻紧凑段评输入区，已有讨论时仍可直接发表自己的整段批注，不转为回复、也不携带 `parent_id`。
-
-阅读、划线与新段评浮层通过同一个 `AnnotationPortal` 越过页面隔离层，并保留公开内容方言的 `primary`、选区与焦点色，避免被底部导航遮挡。锚点滚出视口时只隐藏并停用当前会话，表情与 AI 简介一并关闭；滚回后恢复原筛选、选区和草稿。真正关闭后重新打开属于新会话，不复活旧草稿。
-
-聊天消息按正文与状态两行布局，连续消息共用粘性头像，头像对齐组尾正文。新消息仅淡入；发送中与已读回执共用至少 16px 高的状态槽，发送确认后回执尚未到达时保留空槽，避免切换状态改变布局。
-
-用户资料 DTO 定义在 `entities/user/model/types.ts`；`entities/user/api/keys.ts` 提供按用户名区分的公开资料查询键 `userKeys.profile(username)`。
-
-移动端导航展开时是居中的短胶囊，只有当前入口显示文字；透镜边界与图标连续过渡，旧标签先退出，新标签随后出现，鼠标靠近相邻项时有轻微吸附。动画交给浏览器原生执行，不由 JS 逐帧更新。向下滚动收成右侧圆钮，向上滚动或点击恢复居中。访问快捷入口以外的页面时，最后一项和收起圆钮使用当前菜单的图标，最后一项同时显示菜单名称，点击仍展开全部导航。「更多」保留原有面板形变、模糊渐显与逐项展开动画。首页、博客、系列、图集四个快捷入口不启动整页截图转场；其余链接沿用原转场。减弱动态时直接切换，聊天页隐藏以避开输入栏。
-
-滑块在明暗主题下均使用白色表面与深色文字，轻微软影随透镜轮廓移动。阴影绘制在裁剪层外，展开轨道不裁剪阴影与焦点环；「更多」面板维持原有裁剪和动效。
-
-桌面 Header 的二级菜单由 Dropdown 的共享底色反馈 hover；hover 与当前路由统一使用主色提亮图标，文字保持正常颜色，图标底板不做黑白反色。当前路由保留 `aria-current="page"`，不附加「当前」文字。经过项间空隙或返回触发器时，底色与 hover 图标高亮一起保留，重新移入后平滑跟随。
-
-二级导航沿用各目标的 `exact` 匹配配置；「全部文章」只在 `/blog` 标记为当前项，归档页只标记「归档」。
-
-左上角品牌入口使用 `Dropdown` 展开站点档案；hover 与键盘聚焦展开，点击不切换面板，Escape 收起。面板使用公开内容方言，把贡献热力图、年度进度条、身份图标与入口反馈的 `primary` 映射到项目色板，随明暗主题与色板切换；内容保留贡献数据、倒计时、人设与项目入口。
-
-## 首页时间轴
-
-近稿以左侧渐变时间线呈现最近五条发布记录，序号沿轴线排列。首篇突出标题，其余条目按目录排版，日期靠右、类型置于次行。条目不使用卡片或横向分割线，窄屏长标题自然换行；加载占位保留相同的时间线布局。
-
-`widgets/HomeExperience` 的发布积累区在宽屏显示连续单轴，窄屏按季节分行。今日刻度使用完整的「今天」标注，与紫色发布节点区分；当天有发布时节点与今日位置对齐。没有当天发布且聚合窗口尚未结束时，节点按已过去的窗口部分定位，不借用未来空白日期计算中点；桌面与分季视图共用这一时间定位规则。
-
-## 文章编辑与阅读
-
-文章详情的路由参数、SSR loader 与 SEO 留在 `routes/blog/$slug.tsx`，阅读界面经 `widgets/BlogDetailPage` 的公开入口组合各 feature。浏览量登记复用 `features/posts/api/mutations` 的 `useIncrementView`，不在组合层拼接业务接口；mutation 状态变化和评论开关不重复提交统计，统计失败不影响正文，HTTP 客户端既有重试策略保持不变。
-
-源码模式与富文本维护同一份文档，保存和 `.md` 导出无需先退出源码。编辑器支持脚注的新建、正文编辑与重复引用；普通表格保留转义和列对齐，合并单元格以 HTML 表格载体往返。阅读端保留安全的链接锚点、列表编号、文本样式与脚注回链，HTML 和 Markdown 的 Mermaid、可运行代码、任务列表及高亮共用阅读组件。语法和格式边界见[编辑器手册](src/features/editor/docs/README.md)（站内渲染于 `/editor-guide`）。
-
-正文上下标使用 `<sub>/<sup>`，工具栏可互相切换；GitHub 五类提示块和原生折叠块支持 Slash 插入、正文编辑与源码往返。折叠内容保存默认展开状态，阅读端保留原生键盘交互。内容卡片的围栏块在富文本模式下于代码下方实时预览渲染结果。项目路线图可从 Slash 菜单「路线图」用弹层选项目、形态与条目插入。HTML 载体内部包含脚注时，导出整篇 HTML 保留统一引用与回链；其他文档继续使用 Markdown。已知 Markdown 来源显式选择解析链路，版本预览和文章目录支持混合 HTML，不再由正文里任意一个标签决定整篇格式。
-
-Mermaid 图块统一使用手写字体与 `@violetjs/inkline` 笔触（G 笔、草稿手法），编辑器预览与阅读端同源，覆盖手册图块章节的全部 13 种示例图型。Excalifont 使用 Excalidraw 0.18.1 发布的 jsDelivr CDN 分片，中文小赖体使用[中文网字计划 CDN](https://chinese-font.netlify.app/zh-cn/cdn/)，仅在图块出现时加载。SVG 导出内嵌所需字体与 OFL 通知，PNG 从同一 SVG 生成；字体版权通知保存在 `src/assets/fonts/diagram/` 并由导出模块引用。宽图保持自然字号，通过图内横向滚动阅读；系统要求减弱动态时直接呈现图表，不播放入场动画。存量文章无需重新保存。
-
-展示图片由 `shared/lib/image-url` 生成按视口与 DPR 选择的 `picture` 候选，不声明未经素材元数据证实的像素描述符；仅处理本站 `/uploads/` 地址，外链与 GIF 保持原地址，动画 WebP 由图片接口原样返回。`CroppedImage` 按容器、DPR 与作者选区计算像素需求，不叠加服务端居中 `thumb`；同一源图固定首次几何基准，已加载的充足候选不降档重下。`ArticleImage` 保留作者尺寸，使用原生懒加载和异步解码；缺少固有尺寸时只提供最小占位，加载完成后恢复自然尺寸，不保证零布局偏移。灯箱占位复用实际选中的候选，预览与下载仍使用原图地址。
-
-正文与标题始终由 SSR 输出，不做整篇虚拟化。`useViewportPreparation` 共用视口观察器，按约一个视口的提前量启动代码、图表、大公式和所属手绘外框；准备后保持挂载，滚出再返回不会重建已完成结果。行内公式保留稳定的 LaTeX 语义载体，不逐个设置观察器。`scheduleEnhancement` 将已准备的重计算分批执行，可见内容优先；外框只在尺寸、圆角或 seed 改变后重画，换色沿用 `currentColor`。
-
-代码高亮的 Shiki 初始化、语言准备与分词在按需创建的 Web Worker 中执行；取消的调用丢弃晚回结果，故障时保留源码。
-
-Mermaid 使用独立的串行渲染队列，模块与字体下载不阻塞其他增强，图表测量与 SVG 处理仍在主线程完成。
-
-`createAsyncLoader` 统一模块与初始化任务的并发复用、成功缓存和失败清理；不自动重试、不用于参数化业务查询。富内容加载与渲染失败只显示局部反馈，代码、图表源码和正文继续可读。浏览器会缓存同 URL 的模块下载失败，此类反馈提供重新载入页面；样式下载失败和渲染失败提供局部重试。代码样式重试以新 `<link>` 的 `load` 事件确认恢复，不以 `sheet` 是否存在判断下载成功。
-
-`formatDate` 可显式指定 IANA 时区；SSR 与浏览器需要显示相同日历日期时，调用方必须传入相同时区。纯 `YYYY-MM-DD` 输入按日历日期保留，不套用时区偏移；未指定时区的既有调用行为不变。
-
-桌面文章目录将跟随目标限制在实际滚动范围内；进度、轨迹弹簧与展开状态收敛后停止排帧，滚动或尺寸变化再唤醒。正文尺寸测量与 SVG 写入分开，已完成几何不重复写入；目录滚动层为键盘聚焦环保留四周空间。
-
-文章发布时间与修订日期按 `Asia/Shanghai` 展示。
-
-评论区接近时加载，评论抽屉首次打开时加载并保留已加载实例；选择正文后才加载划线工具，首次选区可直接继续批注。工具准备期间保留原生选区，绘制完成后再接管高亮；段评加载或失败时仍可关闭。这些模块失败只显示局部恢复入口，不替换已显示正文。文章方向键不接管灯箱等模态对话框内的交互。
-
-## 手绘绘图库
-
-[`@violetjs/inkline`](packages/inkline/README.md) 位于 `packages/inkline/`，不依赖 React、Mermaid 或 Rough.js。文章 Mermaid 图块经 `shared/ui/diagram` 用它渲染。
-
-`/inkline` 是它的包演示页（`src/features/inkline-workbench/`），一屏式工作台：左侧能力目录，中间舞台，右侧参数、导出与代码面板，窄屏改为底部按钮打开的浮层。画稿一节播放咖啡少女与人像，按底纸、线稿、上色分段编排，时间条按段着色、可点击或用键盘跳转；导出一节调用 `@violetjs/inkline/export` 生成 GIF 或 WebM 并提供下载。笔、手法、填充、换色各节直接使用包内 `examples/` 的场景与配色，代码面板展示与 README 同一段源码；能力示例随站点明暗换色，画稿保持原色白纸。重画一节用站点图块管线渲染 `examples/mermaid.ts` 的同一张图。页面使用工具方言，与聊天一样锁定视口、不显示页脚；入口在导航「更多」。
-
-## 推文组件包
-
-[`@violetjs/react-tweet`](packages/react-tweet/README.md) 是独立推文组件包；安装、API、主题与构建说明统一维护在包内 README。
-
-本站的文章嵌入、已保存 X 快照、`/tweets` 时间线和详情共用该包；多张竖图按 X 原帖的方式横向滚动展示，点击仍打开本站灯箱；站内互动与权限由 `features/tweets` 管理，同源取数边界位于 `src/shared/server/tweet-reference.ts`。
-
-`/tweets` 使用单列独立卡片，时间线与详情的宽度上限统一为 768px；引用以底色和留白区分，不逐层叠加边框。发布区让头像与正文并排，正文和底部工具栏在添加 X 原文时保持常驻；工具栏集中图片、X 转发、表情和剩余字数，发布按钮保留小色块与纸飞机，不单独显示作者栏或顶部模式按钮。X 转发通过链接图标打开 `@violet/ui` 的 Popover，浮层仅有链接输入与预览；`Enter` 获取原文，成功后自动收起并在正文下方显示原文。`Esc` 或点击外部取消链接输入，添加或移除原文不清空正文与附图。控件保留触控目标与键盘焦点，移动端工具栏占满一行，链接浮层与视口边缘至少间隔 16px。图片上传完成后再发布，正文内支持 `Ctrl/Cmd+Enter`。评论、引用、点赞与聊天分享位于卡片底部，详情的完整发布时间位于作者行，不单独添加分隔栏；刷新共享原文、下架和删除收在更多菜单，下架与删除仍需确认。X 正文默认折叠为六行，嵌套引用独立展开；文章嵌入可用 `maxTextLines: 0` 展示全文。
-
-## 看板组件包
-
-[`@violetjs/kanban`](packages/kanban/README.zh-CN.md) 是独立的受控看板组件包（尚未发布 npm），不依赖 `@violet/ui` 与站点模块。提供看板、可平移缩放的画布、关系图、容器响应式列切换、键盘移动与撤销重做；`/core` 不依赖 React。站点的项目路线图与文章里的路线图画布使用它；`src/features/kanban-docs/` 负责 `/kanban` 文档与演示，演示原样渲染包内 `examples/`、预览与复制源码同源，API 正文直接读取包内 `docs/api.md`。站点在 Vite 里把根入口 `@violetjs/kanban` 指向 `/unstyled`，默认样式只由 `src/styles.css` 引入一次，再由 `src/styles/kanban.css` 映射站点 token。
-
-使用契约见[双语 README](packages/kanban/README.md)与 [API 文档](packages/kanban/docs/api.md)；[开发说明](packages/kanban/DEVELOPMENT.md)维护同源示例校验、全入口 tarball 消费验收和发布前清单。本次不接入 npm 发布工作流。
-
-项目详情的画布在普通与全屏模式下均以 100% 字号开始，长列通过平移查看，不为塞进屏幕而自动缩小；仍可手动缩放。全屏沿用图片灯箱的原位展开与收回动效，使用白色半透明背景而非黑色遮罩；保留页面占位，退出恢复原来的滚动位置与画布视口，减弱动态偏好下直接切换。
-
-## 开发环境
-
-项目使用 **pnpm** 作为包管理器，请勿使用 npm 或 yarn。
+只在本机运行前端时，从仓库根进入 `web/`：
 
 ```bash
-# 安装依赖
+cd web
 pnpm install
+```
 
-# 启动开发服务器（默认 http://localhost:5173）
+首次配置将 [`.env.example`](.env.example) 复制为 `web/.env`；已有 `.env` 或 `.env.local` 时直接核对现有配置，不要覆盖。后端在本机 `:9090` 时可使用模板默认地址。
+
+```bash
 pnpm dev
 ```
 
-更推荐从项目根目录使用 `make` 一键管理：
+访问 <http://localhost:5173>。**本文件后续 pnpm 命令均在 `web/` 执行**；Make 命令在仓库根执行。不要让本机 Vite 与 Compose 的 Web 容器同时占用 5173。
 
-```bash
-make install      # 安装前后端依赖
-make setup        # 初始化 .env、数据库迁移
-make dev          # 同时启动 API + Web + Postgres + Redis
-```
+## 环境变量
+
+浏览器请求和 SSR 请求走不同链路：浏览器使用同源路径，经 Vite / 生产反向代理转发；SSR 直接访问后端。更换 API 地址时，应同时核对代理目标和 SSR 地址。
+
+| 变量 | 用途 | 本地示例 |
+| --- | --- | --- |
+| `VITE_API_BASE_URL` | 浏览器 API 基础路径 | `/api/v1` |
+| `VITE_API_PROXY_TARGET` | Vite 转发 `/api`、`/uploads` 的目标，不含 API 前缀 | `http://localhost:9090` |
+| `VITE_SSR_API_BASE_URL` | SSR 直连 API 的完整基础地址 | `http://localhost:9090/api/v1` |
+| `VITE_SITE_URL` | SEO 与 OpenGraph 使用的站点地址 | `http://localhost:5173` |
+| `VITE_GOOGLE_CLIENT_ID` | Google OAuth 的公开 Client ID | 按应用配置 |
+| `VITE_GITHUB_CLIENT_ID` | GitHub OAuth 的公开 Client ID | 按应用配置 |
+
+`VITE_` 配置可能进入浏览器构建产物，**不能放客户端密钥、PAT、站点音乐凭据或数据库密码**。SSR 的 API 地址优先读取 Node 进程中的 `VITE_SSR_API_BASE_URL`，可在运行时覆盖；浏览器端配置随构建固定。开发环境变更后重启 Vite。
 
 ## 常用命令
 
-```bash
-# 开发
-pnpm dev                 # 启动 Vite 开发服务器
-pnpm generate-routes     # 通过 Start 插件重新生成文件路由和 SSR 类型
+| 命令 | 用途 |
+| --- | --- |
+| `pnpm dev` | 启动 Vite 开发服务 |
+| `pnpm generate-routes` | 通过官方 `tsr generate` 生成路由树 |
+| `pnpm typecheck` | 生成路由后执行 TypeScript 检查 |
+| `pnpm check` | Biome 代码与格式检查 |
+| `pnpm format --write .` | 写入 Biome 格式化结果 |
+| `pnpm test` | 生成路由后执行 Vitest |
+| `pnpm test:contract` | 执行 Playwright 浏览器契约 |
+| `pnpm build` | 生成路由，构建客户端与 SSR 服务端 |
+| `pnpm build:analyze` | 构建并输出体积分析报告 |
 
-# 构建
-pnpm build               # 生产构建
-pnpm preview             # 预览生产构建
-
-# 代码质量
-pnpm lint                # Biome lint
-pnpm format              # Biome format
-pnpm check               # Biome lint + format 检查
-pnpm typecheck           # TypeScript 类型检查（tsc --noEmit）
-
-# 测试
-pnpm test                # 运行 Vitest 单元测试
-
-# 静态资源
-pnpm sync:pdf-worker     # 同步 pdfjs worker 到 public/（postinstall 已自动执行）
-```
+脚本定义在 [package.json](package.json)。不要直接调用 `vite build` 绕过项目脚本的路由生成步骤。
 
 ## 路由
 
-本项目使用 **TanStack Router 文件路由**。在 `src/routes/` 下新增 `.tsx` 文件即可自动生成路由。
+路由文件在 [src/routes/](src/routes/)，应用路由器在 [src/router.tsx](src/router.tsx)，根布局在 [src/routes/__root.tsx](src/routes/__root.tsx)。路由层组合页面、加载数据和处理访问条件；主要业务实现放在 feature 中。
 
-主要路由：
+`src/routeTree.gen.ts` 是本地生成物，不提交 Git，也不复制进开发容器。只修改路由源文件，再运行 `pnpm generate-routes`；开发时的路由监听由 Start 插件处理。缺少根路由或路由冲突会让生成命令失败，不能用旧生成物继续构建。SSR 类型在 `router.tsx` 显式登记，不依赖 CLI 附加声明。
 
-| 路由 | 说明 |
-|------|------|
-| `/` | 首页/文章列表 |
-| `/blog/:slug` | 文章详情（正文与目录整体居中、桌面阅读轨与完整目录围绕阅读位置原位展开收拢并支持减弱动态、窄屏浮动目录、批注、人物提及、语义内容卡片、项目路线图卡片与画布（看板或关系图，滚轮不劫持页面，可全屏）与可选作者落款） |
-| `/blog/archive` | 文章归档 |
-| `/announcements/:id` | 公告详情 |
-| `/projects` | 项目列表：每个项目一行（封面失效回落占位、两行简介、技术栈，以及「现在在做」「最近完成」与进度），整行进入详情页；没有路线图条目的项目不显示进度区；按站主设定的顺序排列 |
-| `/projects/:slug` | 项目详情：头部（技术栈、演示与源码、进度概览）加三阶段只读路线图，宽屏是可平移缩放全屏的画布，三列按页面宽度铺满并按 100% 显示、高度随内容（列是浅色圆角面板，条目是带软影的卡片；条目间的扩展、修复、阻塞关系画成连线，点卡片高亮它的关系并淡化其余，可「取消选中」或「隐藏连线」）、窄屏是阶段切换器（关系以卡片上的可跳转标记呈现）；可按标题／简介关键词与单个条目标签组合筛选，不匹配条目保留原位并淡化；被阻塞的条目带「被阻塞」标记；带子项清单的条目在卡片上显示完成进度，弹窗里列出清单（很多时在区域内滚动，可只看未完成的）；已完成阶段默认显示最近 10 条；条目详情为淡入淡出的弹窗，列出该条目的全部关系；有项目更新权限的管理员可直接拖动条目（指针、键盘与「移到…」菜单）改阶段与顺序，保存失败时回到原位并提示，已完成阶段按日期自动排序不可手动调整，筛选生效时禁拖；还可在列底快速添加条目、点卡片标题就地改名、在详情弹窗里编辑简介、标签、链接、子项清单与交付信息、搜索条目建立或删除关系（自指与成环会被拒绝并说明原因），或直接删除条目（不确认，提示里可撤销），这些修改与移动都可用工具栏按钮或 Ctrl/⌘+Z 撤销重做；窗口重新聚焦时重新拉取；未知 slug 返回 404 |
-| `/friends` | 友链页 |
-| `/about` | 关于页 |
-| `/profile`、`/profile/security` | 本人资料、主页封面与账户安全设置 |
-| `/users/:username` | 公开主页（个人资料、主页封面与推文） |
-| `/login`, `/register`, `/forgot-password` | 认证 |
-| `/changelog` | 更新日志 |
-| `/ui`、`/ui/guides/:slug`、`/ui/components/:name` | violet/ui 组件库文档、接入指南与组件 API 示例 |
-| `/kanban` | @violetjs/kanban 文档与演示：四个包内示例的可交互预览（只用本地状态）与同源源码、安装说明（包未发布 npm，按 workspace 依赖或 tarball 安装）、与包内 API 文档同一份的正文及宽屏目录；入口在导航「更多」 |
-| `/inkline`、`/inkline/<节>` | @violetjs/inkline 包演示页：画稿与时间轴、导出 GIF/WebM、快速上手、笔与压感、手法、填充与淡彩、重画已有 SVG、配色与换色八节，每节一个路径；工具方言、锁定视口；入口在导航「更多」 |
-| `/chat` | 登录用户的私聊与私有房间工作区（消息、消息表情反应、图片、Bot 斜杠命令补全、未读、Web Push 设置、账号级聊天外观）；评论、推文与聊天输入共用 `features/customemoji` 自定义表情能力 |
-| `/galleries`, `/galleries/:slug` | 公开图集浏览流与稳定地址详情 |
-| `/notes`, `/notes/:id` | 公开笔记流（游标分页 + 标签筛选）与详情，复用文章渲染管线 |
-| `/pet` | 独立电子宠物演示（规则核心以 WebAssembly 在浏览器内运行，不联网；含像素画风图鉴）。需把 [kodama](https://github.com/VOD-Studio/kodama) 与本仓库并排检出，再在 `web/` 执行 `pnpm pet:sync` 构建并同步 SDK（`PET_REPO` 可指向其他位置），产物不入库 |
-| `/persona` | 当前人设的多语言公开档案、完整设定正文与有序设定图 |
-| `/admin/personas` | 多份人设档案及语言版本管理、完整文档编辑与当前人设切换 |
-| `/admin/galleries` | 图集管理（作者与状态筛选、自动保存、更新发布、撤回与永久删除、他人作品审核处置） |
-| `/admin/chat-bots` | 聊天 Bot 凭据管理（注册虚拟用户可带头像、启停、重置一次性 token、吊销） |
-| `/admin/mcp` | 访问令牌创建、编辑与吊销；调整权限、有效期或交互偏好时保留原令牌与客户端配置 |
-| `/admin/*` | 后台管理（文章/评论/媒体/用户/角色权限/友链/审计日志/MCP/订阅/设置等） |
+### 页面入口
 
-详情页筛选条件保存在 URL：`q` 搜索标题与简介（忽略大小写和首尾空白），`tag` 精确匹配一个条目标签，两者取交集。匹配总数包含已完成阶段收起的条目，筛选不会自动展开它们；修改或清除条件保留原展开状态。筛选期间暂停关系选中高亮，避免命中条目再次被关系淡化；有 `project:update` 权限时显示禁拖提示。页面目前仍是只读，管理员移动与保存尚未接入。
+| 路由 | 页面 |
+| --- | --- |
+| `/` | 首页与发布物入口 |
+| `/blog`、`/blog/:slug`、`/blog/archive` | 文章列表、阅读与归档 |
+| `/series`、`/series/:slug` | 系列书架与连续阅读 |
+| `/notes`、`/notes/:id` | 笔记流与详情 |
+| `/galleries`、`/galleries/:slug` | 图集流与详情 |
+| `/tweets`、`/tweets/:id` | 推文时间线与讨论 |
+| `/projects`、`/projects/:slug` | 项目与路线图 |
+| `/chat` | 私聊、房间与 Bot 会话 |
+| `/users/:username`、`/profile` | 公开主页与本人资料 |
+| `/persona`、`/about`、`/friends`、`/changelog` | 人设、关于、友链与更新日志 |
+| `/login`、`/register`、`/forgot-password` | 认证流程 |
+| `/admin/*` | 内容与站点管理 |
+| `/editor-guide`、`/ui`、`/kanban`、`/inkline` | 编辑器手册、组件与工具文档 |
+| `/pet` | 电子宠物演示 |
 
-路由配置入口：`src/router.tsx`。根布局：`src/routes/__root.tsx`。
+`/pet` 的 SDK 不入库；开发该页面时需准备 [kodama](https://github.com/VOD-Studio/kodama)，再执行 `pnpm pet:sync`。脚本默认读取并排检出的仓库，也可通过 `PET_REPO` 指定。
 
-个人设置与公开主页共用 `max-w-7xl` 版心，公开页保留资料、推文与概览的原有布局。封面管理复用文件选择、UploadTile 与 CropUploadDialog，接受任意原图比例和自由选区，GIF 保留动画；更换与移除使用封面角落的小图标。未设置或移除封面时，公开页保留原头像模糊背景。资料保存只刷新对应用户的公开资料缓存，改名后清除旧用户名缓存。
+## 数据与认证
 
-## 状态管理
+### SSR 与查询缓存
 
-- **TanStack Query**：服务端状态（文章、评论、媒体等）缓存、失效、重试。
-- **Zustand**：客户端全局状态（播放器、主题、编辑器临时状态等）。
+TanStack Query 管理服务端数据。`getRouter()` 在服务端为每次请求创建独立 QueryClient，浏览器复用 `clientQueryClient`；Router 负责将服务端查询结果交给客户端，不在其他 Provider 里再建一份缓存。
 
-表情目录与会话内个人表情由 TanStack Query 缓存，关闭浮层不丢弃列表。后台目录变更、个人表情增删收藏和后台下架会失效对应缓存；登出或收到 401 时取消并清除私有查询，重登弹窗打开期间暂停个人列表请求。
+Zustand 用于需要跨组件共享的客户端交互状态，不替代服务端查询。修改数据后使用所属模块的查询键失效缓存。已展示的 SSR 正文不应在客户端接管或后台刷新时退回骨架。
 
-SSR 的 `getRouter()` 每请求创建独立 QueryClient，浏览器继续复用 `clientQueryClient`。`@tanstack/react-router-ssr-query` 在组件首轮读取前恢复 loader 预取缓存，并传递渲染期间完成的查询；QueryClientProvider 由 Router 统一装配，站点 AppProvider 不另建缓存。已显示的 SSR 内容不能因客户端接管或后台重取退回骨架，首次无数据和独立延迟区块仍可显示加载态。
+### HTTP 与会话
 
-关于页在 loader 中预取公开设置，与根布局共用同一个查询键，避免服务端骨架和客户端已加载正文竞争首帧。
+[shared/api/http.ts](src/shared/api/http.ts) 集中配置 API 地址、Cookie、CSRF、错误翻译与响应解包：业务代码使用解包后的 `data` / `pagination`，不重复处理后端信封。SSR 请求转发 Cookie 时创建当前请求专用的客户端，不把用户凭据写进进程共享实例。
 
-## API 与认证
+| Cookie | 前端处理 |
+| --- | --- |
+| `violet_session` | HttpOnly，由浏览器发送，不在脚本中读取 |
+| `violet_csrf` | 写请求由 HTTP 客户端回传 `X-CSRF-Token` |
+| `violet_uid` | 可读用户标识，不作为权限判断依据 |
 
-- 开发环境通过 Vite 反向代理将 `/api/*` 与 `/uploads/*` 转发到后端 `http://localhost:9090`，避免跨域与 CSRF 边界问题。
-- 后端认证采用 **opaque session cookie**：
-  - `violet_session`：HttpOnly session id
-  - `violet_csrf`：CSRF token，写请求需回传 `X-CSRF-Token`
-  - `violet_uid`：前端可读 user id
-- SSR 场景只读 `/auth/session` 探活，不续期、不写 cookie。
+SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端会话查询、登录弹窗及失效处理复用 `shared/api/` 与 `features/auth/`，不要在单个页面另做一套登录状态。
 
-Google 登录 SDK 仅由登录页、实际打开的登录弹窗、行内登录区和账号绑定区挂载，不随全站阅读壳层加载。各入口共用 `GoogleOAuthGate`，Client ID 优先使用公开配置，缺省时读取构建环境变量。Google 按钮等待 SDK 就绪才可操作；下载失败在原表单内提示，保留已填内容，密码与 GitHub 登录不受影响。
+## 模块定位
 
-API 基础配置见 `src/shared/api/`。
+开发时先区分页面装配、业务功能和共享能力，再找对应目录。下表是常用入口，不是逐控件行为清单。
 
-## 样式
+| 改动范围 | 主要位置（`src/` 下） |
+| --- | --- |
+| 文章列表、阅读、归档、系列 | `features/posts`、`archive`、`series` |
+| 富文本、内容块、手册 | `features/editor`、`article-rich-content`、`editor-docs` |
+| 笔记、图集、人设 | `features/note-browse`、`gallery-browse` / `gallery-editor`、`persona-browse` / `persona-editor` |
+| 批注、推文、聊天、通知 | `features/comments`、`tweets`、`chat`、`notifications` |
+| 登录与个人资料 | `features/auth`、`profile`，共享用户模型在 `entities/user` |
+| 项目与路线图 | `features/projects`、`admin-projects` |
+| 上传、媒体与表情 | `features/upload`、`media`、`emojis`、`customemoji` |
+| 站点音乐 | `features/admin-music`、`music-player`，共享模型在 `entities/music` |
+| 管理后台 | `features/admin-*`，公共后台布局与表格在 `admin-layout` / `admin-shared` |
+| 运行策略与代码执行 | `entities/runtime-policy`、`entities/code-runner`、`features/admin-settings` |
+| 首页与阅读页组合、导航 | `widgets/` 与 `shared/config/nav.ts` |
 
-- Tailwind CSS v4，`src/styles.css` 是全局入口；基础语义 token、默认色板和 Tailwind 映射归 `packages/ui/src/styles/`，站点视觉方言、基础行为和转场归 `src/styles/`。
-- 通用组件的结构、recipe、CSS 与测试放 `packages/ui/src/components/<name>/`；站点 feature 样式放组件旁 `*.module.css`，运行时 DOM 规则由所属 feature 持有。
-- 主题 token 分层：组件库的基础语义与主色源在 `packages/ui/src/styles/`，站点方言在 `src/styles/dialects/`。公开页面主容器挂 `.dialect-public`、后台等工具界面挂 `.dialect-tool`、灯箱等沉浸舞台挂 `.dialect-immersive`；页面消费 semantic token，不直接绑定色值。
-- 支持 v4 任意值简写（如 `max-w-50`）。
-- 暗色/亮色主题通过 `next-themes` 管理。
-- 根布局挂载 `@violet/ui` 的 `DocumentScrollbar`，文档滚动条覆盖内容、不占版心宽度；仍使用 `window` 滚动，SSR 首帧通过 `html[data-scrollbar="none"]` 取消原生占位。限高区域继续使用 `OverlayScroll`，不把整页改为内部滚动容器。
+只在一个 feature 内使用的实现留在 feature。第二个 feature 需要同一业务能力时，提到 `entities/`；站点专用基础能力放 `shared/`，通用 React 组件放 `packages/ui/`。不要让 `shared` 反向导入业务 feature。
+
+### 音乐播放器接入
+
+播放器通过公开 `position` 属性默认靠左。宿主只设置 `--kite-blob`、`--kite-blob-icon` 按钮颜色和层级、边距、移动端导航避让，保留播放器原生外观与开合动效；不要通过部件 CSS 重写圆角、阴影或动画。
+
+升级播放器依赖时同步 `pnpm-workspace.yaml` 中 `minimumReleaseAgeExclude` 的精确版本，并验证生产 Docker 构建；其余依赖保留默认的 24 小时发布冷却期。
+
+### 编辑器与正文渲染
+
+编辑器和阅读端共用内容格式契约，源码模式与富文本维护同一份文档。内容块、Markdown / HTML 往返、脚注、图表导出等细节维护在[编辑器手册](src/features/editor/docs/README.md)，不在本 README 复制功能规格。
+
+修改内容块时同时检查编辑预览与阅读渲染。可运行代码依赖服务端有效策略；项目卡片与路线图读取当前项目数据，而非在文章里保存一份静态副本。
+
+#### 阅读端加载边界
+
+文章详情的路由参数、SSR loader 与 SEO 留在 `routes/blog/$slug.tsx`，阅读界面经 `widgets/BlogDetailPage` 的公开入口组合各 feature。浏览量登记复用 `features/posts/api/mutations` 的 `useIncrementView`，不在组合层拼接业务接口；mutation 状态变化和评论开关不重复提交统计，统计失败不影响正文，HTTP 客户端既有重试策略保持不变。
+
+正文与标题始终由 SSR 输出，不做整篇虚拟化。`useViewportPreparation` 共用视口观察器，按约一个视口的提前量启动代码、图表、大公式和所属手绘外框；准备后保持挂载，滚出再返回不会重建已完成结果。行内公式保留稳定的 LaTeX 语义载体，不逐个设置观察器。`scheduleEnhancement` 分批执行重计算，可见内容优先；外框只在尺寸、圆角或 seed 改变后重画，换色沿用 `currentColor`。
+
+Shiki 初始化、语言准备与分词在按需创建的 Web Worker 中执行，取消的调用丢弃晚回结果。Mermaid 使用独立串行队列，模块与字体下载不阻塞其他增强；图表测量与 SVG 处理仍在主线程，字体与 Inkline 准备完整后再展示。
+
+`createAsyncLoader` 统一模块与初始化任务的并发复用、成功缓存和失败清理，不自动重试、不用于参数化业务查询。富内容失败只显示局部反馈，源码与正文继续可读。同 URL 的模块下载失败可能被浏览器缓存，此时提供重新载入页面；样式下载与渲染失败支持局部重试，样式恢复以新 `<link>` 的 `load` 事件确认。
+
+展示图片由 `shared/lib/image-url` 按视口与 DPR 生成 `picture` 候选，不声明未经素材元数据证实的像素描述符。仅处理本站 `/uploads/` 地址，外链与动图保持原有语义。`CroppedImage` 按容器、DPR 与作者选区计算需求，不叠加服务端居中 `thumb`；同一源图固定首次几何基准，充足候选不降档重下。`ArticleImage` 保留作者尺寸、原生懒加载与异步解码；未知固有尺寸时只提供最小占位，不保证零布局偏移。灯箱占位复用已选候选，预览与下载仍用原图。
+
+`formatDate` 支持显式 IANA 时区；文章发布时间与修订日期使用 `Asia/Shanghai`，SSR 与浏览器使用同一输入与时区。纯 `YYYY-MM-DD` 按日历日期保留，不套用时区偏移；未指定时区的既有调用行为不变。
+
+文章目录将跟随目标限制在真实滚动范围内；进度、轨迹弹簧与展开状态收敛后停止排帧，滚动或尺寸变化再唤醒。正文尺寸读取与 SVG 写入分开，已完成几何不重复写入；目录滚动层为聚焦环保留空间。
+
+评论区接近时加载，抽屉首次打开时加载并保留实例；划线工具加载期间保留原生选区，绘制完成后再接管高亮。段评加载或失败时仍可关闭，失败不替换正文。Google SDK 随登录入口准备，就绪前禁用对应按钮，失败保留表单与其他登录方式。文章方向键不接管灯箱等模态对话框内的交互。
+
+## 样式与组件
+
+全局入口是 [src/styles.css](src/styles.css)：Tailwind v4 后导入 `@violet/ui/styles.css`，再加载站点主题、方言和转场。
+
+| 样式内容 | 归属 |
+| --- | --- |
+| 基础语义 token、色板与通用组件 CSS | `packages/ui/` |
+| 站点字体、装饰与主题适配 | `src/styles/` |
+| 公开内容、工具界面、沉浸舞台的方言 | `src/styles/dialects/` |
+| feature 私有样式 | 所属组件旁的样式文件 |
+
+页面分别使用 `.dialect-public`、`.dialect-tool`、`.dialect-immersive`，通过语义 token 适配明暗主题，不锁定色板值。通用组件从 `@violet/ui` 使用；组件的公开入口与成熟度以 [component-manifest.json](packages/ui/component-manifest.json) 为准。
+
+### 独立包与文档站
+
+| 包 | 文档站 / 站内用途 | 开发依据 |
+| --- | --- | --- |
+| `@violet/ui` | `/ui`，通用 UI 与主题 | [架构](packages/ui/docs/architecture.md)、[组件设计](packages/ui/docs/component-design.md) |
+| `@violetjs/kanban` | `/kanban`，项目路线图看板与画布 | [使用说明](packages/kanban/README.zh-CN.md)、[维护指南](packages/kanban/DEVELOPMENT.md) |
+| `@violetjs/inkline` | `/inkline`，手绘工作台与文章图表 | [使用说明](packages/inkline/README.zh-CN.md)、[维护指南](packages/inkline/DEVELOPMENT.md) |
+| `@violetjs/react-tweet` | 文章引用与推文页面 | [使用说明](packages/react-tweet/README.zh-CN.md)、[维护指南](packages/react-tweet/DEVELOPMENT.md) |
+
+文档站复用包内正文与示例，不维护第二套 API 说明。修改包实现时按包内流程做构建和真实 tarball 消费验证；站点 workspace 能运行不能替代独立包验收。安装方式与发布状态见各包 README。
 
 ## 测试
+
+### 单元测试
 
 ```bash
 pnpm test
 ```
 
-- 测试文件：`src/**/*.test.{ts,tsx}`
-- 环境：jsdom
-- setup：`src/test/setup.ts`
-- 主题浏览器契约（Playwright，需先 `pnpm build`）：`pnpm test:contract`，或仓库根 `make web-contract`
-- 路线图与看板文档的首屏交互用例通过 `e2e/support.ts` 的 `openClientPage` 导航，先注册 `/auth/me` 响应等待，客户端会话探活响应后再点击、拖拽或发送键盘事件。SSR 文本可见不代表事件监听已挂载；只验证服务端直出或主题的用例仍直接导航或读取 HTML。探活来自壳层 Header，路由内容在独立 Suspense 边界里稍后水合：点击与按键会被 React 重放，窗口重新聚焦触发的重新拉取则依赖页面 effect 里订阅的查询，统一用 `refocusUntilRequest` 重复派发 `visibilitychange`，直到页面发出请求。
-- 组件库文档契约检查实际导航、按钮响应、复选框键盘操作与代码展开/收起，不固定组件目录数量、链接清单或示例源码文本。
-- 看板文档契约：`pnpm test:contract e2e/kanban-docs.spec.ts`，覆盖导航入口、服务端直出、同源源码、API 目录跳转、演示的拖拽与键盘移动、撤销重做与暗色。键盘移动依次确认拿起状态、跨列预览与焦点、放下后的历史提交，再发送撤销快捷键，不把连续按键的发送完成当作界面更新完成。
-- 编辑器路线图入口契约：`pnpm test:contract e2e/editor-roadmap-embed.spec.ts`，覆盖 Slash 选择与预览、插入后的编辑区预览、代码块上的编辑与手写围栏块。
-- 路线图筛选契约：`pnpm test:contract e2e/project-roadmap-filters.spec.ts`，覆盖搜索与标签组合、原位淡化、清除、URL 直入和刷新、收起条目计数、管理员禁拖提示及窄屏键盘操作。
-- 首访连续性回归：`pnpm test:contract e2e/ssr-hydration.spec.ts`。同一全新浏览器上下文先展示真实 SSR 内容，再放行冷启动脚本并暂缓浏览器数据请求，持续检查正文未消失、没有水合错误。覆盖文章、首页、笔记、图集、系列、关于页和人设空资源。
-- 富内容阅读契约：`pnpm test:contract e2e/{rich-content-loading,highlight-worker,comment-loading,reading-interactions,image-sizing,image-hydration,auth-sdk-readiness}.spec.ts`，覆盖局部下载故障与恢复、Worker 隔离、评论首次交互、目录焦点、原图预览、原生图片尺寸、水合选图交接和登录 SDK 就绪状态。
+Vitest 使用 jsdom，配置在 [vitest.config.ts](vitest.config.ts)。站点、workspace 包和路由脚本的测试分别位于 `src/`、`packages/*/src/`、`scripts/`，测试文件与实现就近放置。
 
-## 环境变量
-
-开发环境复制 `.env.example` 为 `.env`：
+### 浏览器契约
 
 ```bash
-cp .env.example .env
-```
-
-| 变量 | 说明 |
-|------|------|
-| `VITE_API_BASE_URL` | 浏览器端 API 基础路径（默认 `/api/v1`） |
-| `VITE_API_PROXY_TARGET` | dev 反向代理目标（默认 `http://localhost:9090`） |
-| `VITE_SSR_API_BASE_URL` | SSR 服务端直连后端地址 |
-| `VITE_SITE_URL` | 前端对外地址（用于 SEO/OpenGraph） |
-| `VITE_GOOGLE_CLIENT_ID` | Google OAuth Client ID |
-| `VITE_GITHUB_CLIENT_ID` | GitHub OAuth Client ID |
-
-## 构建与部署
-
-```bash
-# 生产构建
 pnpm build
-
-# 或从根目录
-make web-build
-make build          # 前后端一起构建
+pnpm test:contract
 ```
 
-生产环境使用 `server.mjs`（srvx 桥接）作为 Node.js SSR 入口，经外部 nginx-proxy 反代对外提供服务（线上 xunrua.top）。详见根目录 README「生产部署」章节。
+[playwright.config.ts](playwright.config.ts) 会启动测试 API（9410）和构建后的 SSR 服务（4173），不是连接线上业务环境。可在命令后指定用例文件，例如 `pnpm test:contract e2e/ssr-hydration.spec.ts`。
 
-## 代码规范
+SSR 内容可见不代表客户端交互已挂载。需要交互的测试使用 [e2e/support.ts](e2e/support.ts) 的 `openClientPage` 等待会话探活；涉及页面 effect 的聚焦刷新再使用对应就绪辅助函数，不能仅凭文本出现就派发窗口事件。
 
-- 缩进：tab（biome.json / .editorconfig 统一为 tab 4）
-- 换行符：LF
-- 格式化 + Lint：Biome（`pnpm check`，`make web-format` 可自动修复）
-- 类型检查：`pnpm typecheck`（strict 模式）
+## 生产构建与部署
 
-Git 钩子会在提交前检查前端 biome 规则，可通过根目录 `scripts/install-hooks.sh` 安装。
+`pnpm build` 输出 `dist/client/` 和 `dist/server/`。生产由 `node server.mjs` 把 SSR Handler 接到 HTTP 服务，`PORT` / `HOST` 控制监听；静态资源、上传文件和后端请求由部署中的反向代理共同处理。单独启动 Node 入口不等于完整生产站点。
+
+容器构建见 [Dockerfile](Dockerfile)，环境编排见[根 README 的生产部署](../README.md#生产部署)，版本发布与回滚见[发布手册](../docs/deploy/release-runbook.md)。前端对外地址和公开 OAuth Client ID 等构建参数变化后，需要重新构建客户端。
+
+## 项目结构
+
+```text
+web/
+├── src/
+│   ├── routes/          页面路由与数据加载入口
+│   ├── widgets/         页面级组合
+│   ├── features/        业务功能
+│   ├── entities/        跨 feature 的业务模型、查询与 UI
+│   ├── shared/          站点级 API、工具与基础能力
+│   ├── styles/          站点主题与方言
+│   ├── test/            测试装配
+│   ├── router.tsx       路由器与 SSR 查询缓存
+│   └── styles.css       全局样式入口
+├── packages/            可独立交付的 workspace 包
+├── e2e/                 浏览器契约与测试 API
+├── scripts/             路由回归、资源同步等脚本
+├── public/              静态资源
+├── vite.config.ts       Start、构建与开发代理
+└── server.mjs           生产 SSR 入口
+```
 
 ## 相关文档
 
 - [项目总览](../README.md)
-- [项目级代理规范与开发须知](../AGENTS.md)
-- [后端说明](../api/README.md)
+- [后端接口与开发](../api/README.md)
+- [前端代码规范](../docs/guides/frontend-style-guide.md)
+- [页面转场指南](../docs/guides/view-transitions.md)
 - [贡献指南](../CONTRIBUTING.md)
