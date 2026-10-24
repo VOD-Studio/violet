@@ -6,12 +6,14 @@ import {
 	Outlet,
 	RouterProvider,
 } from "@tanstack/react-router";
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import HeaderIsland from "../HeaderIsland";
 
 function renderAt(path: string) {
 	const root = createRootRoute({
+		// 面板里的主题选择读取根路由上下文
+		beforeLoad: () => ({ theme: { preference: "follow" as const, preset: "autumn" as const } }),
 		component: () => (
 			<>
 				<HeaderIsland />
@@ -53,6 +55,10 @@ describe("HeaderIsland", () => {
 		fireEvent.click(more);
 		await screen.findByText("Violet · 浏览本站");
 		expect(screen.getByRole("link", { name: "实验室" })).toBeTruthy();
+		const themes = screen.getByRole("radiogroup", { name: "主题" });
+		expect(
+			within(themes).getByRole("radio", { name: "跟随季节" }).getAttribute("aria-checked"),
+		).toBe("true");
 
 		fireEvent.keyDown(document, { key: "Escape" });
 		await waitFor(() => expect(screen.queryByText("Violet · 浏览本站")).toBeNull());

@@ -119,6 +119,7 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 | 上传、媒体与表情 | `features/upload`、`media`、`emojis`、`customemoji` |
 | 站点音乐 | `features/admin-music`、`music-player`，共享模型在 `entities/music` |
 | 明暗外观切换 | `features/appearance`，SSR 与 cookie 桥接在 `shared/` |
+| 主题切换 | `features/theme-switcher`，预设、偏好解析与 SSR 在 `shared/` |
 | 管理后台 | `features/admin-*`，公共后台布局与表格在 `admin-layout` / `admin-shared` |
 | 运行策略与代码执行 | `entities/runtime-policy`、`entities/code-runner`、`features/admin-settings` |
 | 首页与阅读页组合、导航 | `widgets/` 与 `shared/config/nav.ts` |
@@ -197,6 +198,8 @@ CLI fixture 使用临时 Git 仓库，可通过 `pnpm test scripts/check-colors.
 ### 主题偏好
 
 主题偏好由 `shared/lib/theme-preference.ts` 解析，SSR 通过 `getSSRThemeState` 在 `<html>` 上输出 `data-theme`，首帧即为访客的预设主题；规则与术语见 CONTEXT「主题与色彩」。主题契约（`e2e/theme-contract.spec.ts`）覆盖「主题 × 外观 × 视口」的首帧与水合一致性，并在浏览器中实测关键文字组合的对比度。
+
+切换入口是 `@features/theme-switcher` 的 `ThemeMenu`，挂在顶栏工具区外观开关旁；移动端底部导航的「更多」面板用 `ThemePicker` 提供同样的选择。选中后即时改写 `data-theme`、写入偏好 cookie，预设变化时复用外观切换的圆形扩散，`e2e/theme-switcher.spec.ts` 覆盖切换、刷新保持与键盘操作。
 
 ### 独立包与文档站
 
