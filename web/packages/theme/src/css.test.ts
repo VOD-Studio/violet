@@ -26,6 +26,7 @@ const parseRule = (css: string) => {
 const NAMES = ["brand", "neutral"].flatMap((scale) => [
 	...Array.from({ length: 12 }, (_, index) => `--${scale}-${index + 1}`),
 	`--${scale}-contrast`,
+	...Array.from({ length: 12 }, (_, index) => `--${scale}-a${index + 1}`),
 ]);
 
 describe("toCssVariables", () => {
@@ -36,6 +37,7 @@ describe("toCssVariables", () => {
 		expect(declarations["--brand-9"]).toBe(light.brand.steps[9]);
 		expect(declarations["--brand-contrast"]).toBe(light.brand.contrast);
 		expect(declarations["--neutral-12"]).toBe(light.neutral.steps[12]);
+		expect(declarations["--brand-a3"]).toBe(light.brand.alpha[3]);
 	});
 
 	it("同时给出浅色与深色时以 light-dark() 合并，与传入顺序无关", () => {

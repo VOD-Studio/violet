@@ -2,7 +2,7 @@
 import Color from "colorjs.io";
 import { beforeAll, describe, expect, it } from "vitest";
 import { type Appearance, generateScales, type Scale } from "./index.ts";
-import { apca, parse, toHex, wcag } from "./test/colors.ts";
+import { apca, composite, deltaE, parse, toHex, wcag } from "./test/colors.ts";
 import {
 	APPEARANCES,
 	DEFAULT_NEUTRAL_CHROMA,
@@ -109,7 +109,7 @@ describe.each(APPEARANCES)("%s 外观遍历全部色相、色度与旋钮", (app
 		() => {
 			const failures = samples.flatMap((sample) =>
 				scalesOf(sample).flatMap(([name, scale]) =>
-					[...Object.values(scale.steps), scale.contrast]
+					[...Object.values(scale.steps), scale.contrast, ...Object.values(scale.alpha)]
 						.filter((css) => !parse(css).inGamut("srgb"))
 						.map((css) => `${describeTheme(sample.theme)} ${name} ${css}`),
 				),
@@ -220,6 +220,31 @@ describe.each(APPEARANCES)("%s 外观遍历全部色相、色度与旋钮", (app
 							`${describeTheme(sample.theme)} ${name} ${scale.contrast}`,
 					),
 			);
+			expectNoFailures(failures);
+		},
+		SWEEP_TIMEOUT,
+	);
+
+	it(
+		"透明度色阶叠在页面背景上，与对应实色档的色差低于可察觉阈值",
+		() => {
+			// CSS Color 4 在 OKLab 中以 0.02 作为可察觉阈值
+			const failures: string[] = [];
+			for (const sample of samples) {
+				const background = sample.scales.neutral.steps[1];
+				for (const [name, scale] of scalesOf(sample)) {
+					for (const step of STEPS) {
+						const difference = deltaE(
+							composite(scale.alpha[step], background),
+							scale.steps[step],
+						);
+						if (difference >= 0.02)
+							failures.push(
+								`${describeTheme(sample.theme)} ${name}-a${step} ${scale.alpha[step]}: ΔE ${difference.toFixed(4)}`,
+							);
+					}
+				}
+			}
 			expectNoFailures(failures);
 		},
 		SWEEP_TIMEOUT,

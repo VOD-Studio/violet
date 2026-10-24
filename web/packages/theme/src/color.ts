@@ -74,6 +74,8 @@ const CHROMA_SEARCH_LIMIT = 0.5;
 
 const decode = (channel: number) =>
 	channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+const encode = (channel: number) =>
+	channel <= 0.0031308 ? channel * 12.92 : 1.055 * channel ** (1 / 2.4) - 0.055;
 
 export function oklchToLinearRgb({ l, c, h }: Oklch): Vector3 {
 	const lms = multiply(OKLAB_TO_LMS, [l, c * Math.cos(h * DEGREES), c * Math.sin(h * DEGREES)]);
@@ -91,13 +93,25 @@ function linearRgbToOklch(rgb: Vector3): Oklch {
 	return { l, c: Math.hypot(a, b), h };
 }
 
+/** 编码后的 sRGB 通道（0–1）；浏览器在这一空间做透明度合成。 */
+export function oklchToSrgb(color: Oklch): Vector3 {
+	const [r, g, b] = oklchToLinearRgb(color).map((channel) =>
+		encode(Math.min(1, Math.max(0, channel))),
+	);
+	return [r ?? 0, g ?? 0, b ?? 0];
+}
+
+export function srgbToOklch([r, g, b]: Vector3): Oklch {
+	return linearRgbToOklch([decode(r), decode(g), decode(b)]);
+}
+
 /** 解析 `#rrggbb`；调用方须先确认格式合法。 */
 export function hexToOklch(hex: string): Oklch {
 	const value = Number.parseInt(hex.slice(1), 16);
-	return linearRgbToOklch([
-		decode(((value >> 16) & 255) / 255),
-		decode(((value >> 8) & 255) / 255),
-		decode((value & 255) / 255),
+	return srgbToOklch([
+		((value >> 16) & 255) / 255,
+		((value >> 8) & 255) / 255,
+		(value & 255) / 255,
 	]);
 }
 

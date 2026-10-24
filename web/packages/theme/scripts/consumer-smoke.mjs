@@ -105,7 +105,7 @@ try {
 
 	write(
 		"types.ts",
-		`import { generateScales, normalizeTheme, toCssVariables, type Appearance, type CssOptions, type Gamut, type GenerateOptions, type Knobs, type NormalizedTheme, type Scale, type Step, type Theme, type ThemeScales } from "${packageJson.name}";
+		`import { generateScales, normalizeTheme, toCssVariables, type AlphaScale, type Appearance, type CssOptions, type Gamut, type GenerateOptions, type Knobs, type NormalizedTheme, type Scale, type Step, type Theme, type ThemeScales } from "${packageJson.name}";
 
 const input: Theme = { version: 1, seed: "#3a7bd5", knobs: { neutralChroma: 0.02 } };
 const knobs: Knobs = normalizeTheme(input).knobs;
@@ -117,13 +117,14 @@ const scales: ThemeScales = generateScales(theme, options);
 const step: Step = 9;
 const scale: Scale = scales.brand;
 const solid: string = scale.steps[step];
+const alpha: AlphaScale = scales.neutral;
 const cssOptions: CssOptions = { selector: ":root", prefix: "v-" };
 const css: string = toCssVariables([scales, generateScales(theme, { appearance: "light" })], cssOptions);
 // @ts-expect-error 版本号是字面量类型
 const wrongVersion: Theme = { version: 2, seed: "#000000" };
 // @ts-expect-error 档位只有 1–12
 const wrongStep: Step = 13;
-export const checks = [knobs, solid, css, wrongVersion, wrongStep];
+export const checks = [knobs, solid, alpha, css, wrongVersion, wrongStep];
 `,
 	);
 	const compilerOptions = { target: "ES2022", lib: ["ES2022"], strict: true, noEmit: true, skipLibCheck: false, types: [] };

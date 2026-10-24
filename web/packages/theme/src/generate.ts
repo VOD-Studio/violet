@@ -1,3 +1,4 @@
+import { toAlpha } from "./alpha.ts";
 import {
 	fitGamut,
 	formatOklch,
@@ -25,6 +26,12 @@ export interface Scale {
 	contrast: string;
 }
 
+/** 带透明度色阶的色阶。 */
+export interface AlphaScale extends Scale {
+	/** 第 n 档叠在中性第 1 档（页面背景）上时，视觉等同于 `steps[n]` */
+	alpha: Readonly<Record<Step, string>>;
+}
+
 /** 生成选项：外观与目标色域。 */
 export interface GenerateOptions {
 	appearance: Appearance;
@@ -41,9 +48,9 @@ export interface ThemeScales {
 	appearance: Appearance;
 	gamut: Gamut;
 	/** 由种子色派生，第 9 档尽量等于种子色 */
-	brand: Scale;
+	brand: AlphaScale;
 	/** 色相跟随种子色，色度由旋钮 `neutralChroma` 控制 */
-	neutral: Scale;
+	neutral: AlphaScale;
 }
 
 interface Rules {
@@ -298,8 +305,20 @@ const toScale = (steps: Oklch[], contrast: Oklch): Scale => ({
 	contrast: formatOklch(contrast),
 });
 
+const toAlphaScale = (
+	steps: Oklch[],
+	contrast: Oklch,
+	background: Oklch,
+	gamut: Gamut,
+): AlphaScale => ({
+	...toScale(steps, contrast),
+	alpha: Object.fromEntries(
+		STEPS.map((step) => [step, toAlpha(steps[step - 1] as Oklch, background, gamut)]),
+	) as Record<Step, string>,
+});
+
 /**
- * 由主题生成某一外观下的品牌与中性色阶。
+ * 由主题生成某一外观下的品牌与中性色阶，各带透明度色阶。
  *
  * 边框与文字档按对背景的目标对比度反解亮度，与背景档一起单调远离背景；实色档锚定种子色。文字、实色前景
  * 与控件边界同时满足 WCAG 2.2 AA 与 APCA 门槛，全部颜色落在目标色域内。纯函数，相同输入得到逐字相同的输出。
@@ -346,10 +365,21 @@ export function generateScales(theme: Theme, options: GenerateOptions): ThemeSca
 	const brandStrong = strongSteps(brand, brandSubtle, surfaces, seed.l);
 	// 中性实色与品牌实色取同一亮度，两者并列时分量一致
 	const neutralStrong = strongSteps(neutral, neutralSubtle, surfaces, brandStrong.solid);
+	const background = neutralSubtle[0] as Oklch;
 	return {
 		appearance,
 		gamut,
-		brand: toScale([...brandSubtle, ...brandStrong.steps], brandStrong.contrast),
-		neutral: toScale([...neutralSubtle, ...neutralStrong.steps], neutralStrong.contrast),
+		brand: toAlphaScale(
+			[...brandSubtle, ...brandStrong.steps],
+			brandStrong.contrast,
+			background,
+			gamut,
+		),
+		neutral: toAlphaScale(
+			[...neutralSubtle, ...neutralStrong.steps],
+			neutralStrong.contrast,
+			background,
+			gamut,
+		),
 	};
 }

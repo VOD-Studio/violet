@@ -1,4 +1,4 @@
-import { type Appearance, type Scale, STEPS, type ThemeScales } from "./generate.ts";
+import { type AlphaScale, type Appearance, STEPS, type ThemeScales } from "./generate.ts";
 
 /** 序列化选项：选择器与变量前缀。 */
 export interface CssOptions {
@@ -20,9 +20,10 @@ const PREFIX = /^[\w-]*$/;
 // 选择器由调用方提供；拒绝能结束规则、声明或 <style> 元素的字符，防止拼出额外的样式或标签
 const UNSAFE_SELECTOR = /[{};<]/;
 
-const entries = (name: string, scale: Scale): [string, string][] => [
+const entries = (name: string, scale: AlphaScale): [string, string][] => [
 	...STEPS.map((step): [string, string] => [`${name}-${step}`, scale.steps[step]]),
 	[`${name}-contrast`, scale.contrast],
+	...STEPS.map((step): [string, string] => [`${name}-a${step}`, scale.alpha[step]]),
 ];
 
 const variables = (scales: ThemeScales) => [
@@ -31,8 +32,8 @@ const variables = (scales: ThemeScales) => [
 ];
 
 /**
- * 把生成结果序列化为一条 CSS 规则，每档一个自定义属性：`--brand-1` … `--brand-12`、`--brand-contrast`，
- * 中性色阶同理。
+ * 把生成结果序列化为一条 CSS 规则，每档一个自定义属性：`--brand-1` … `--brand-12`、`--brand-contrast`
+ * 与透明度色阶 `--brand-a1` … `--brand-a12`，中性色阶同理。
  *
  * 同时传入浅色与深色结果时，每个值写成 `light-dark(浅色, 深色)`，由页面的 `color-scheme` 决定取哪一支；
  * 只传一种外观时直接写值。

@@ -8,7 +8,9 @@ export const parse = (css: string): Color => {
 	const cached = parsed.get(css);
 	if (cached) return cached;
 	const color = new Color(css);
-	if (color.space.id !== "oklch") throw new Error(`Expected oklch(), got ${css}`);
+	// 不透明色输出为 oklch()，透明度色阶在合成空间 sRGB 中输出为 color(srgb …)
+	if (color.space.id !== "oklch" && color.space.id !== "srgb")
+		throw new Error(`Expected oklch() or color(srgb), got ${css}`);
 	parsed.set(css, color);
 	return color;
 };
@@ -71,3 +73,20 @@ export const toHex = (color: Color) =>
 /** 以 CSS Color 4 的色域映射把 OKLCH 坐标转成 `#rrggbb` 种子色。 */
 export const seedHex = (l: number, c: number, h: number) =>
 	toHex(new Color("oklch", [l, c, h]).toGamut({ space: "srgb", method: "css" }));
+
+/** OKLab 色差；CSS Color 4 以 0.02 作为可察觉阈值（JND）。 */
+export const deltaE = (a: string | Color, b: string | Color) =>
+	(typeof a === "string" ? parse(a) : a).deltaE(typeof b === "string" ? parse(b) : b, "OK");
+
+/** 半透明色叠在不透明背景上的结果，与浏览器一样在编码后的 sRGB 中合成。 */
+export const composite = (foreground: string, background: string) => {
+	const top = parse(foreground).to("srgb");
+	const bottom = parse(background).to("srgb");
+	const alpha = top.alpha ?? 1;
+	return new Color(
+		"srgb",
+		top.coords.map(
+			(channel, index) => alpha * (channel ?? 0) + (1 - alpha) * (bottom.coords[index] ?? 0),
+		) as [number, number, number],
+	);
+};

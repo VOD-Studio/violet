@@ -2,7 +2,7 @@
 
 [中文](./README.zh-CN.md)
 
-Turn one seed color into 12-step brand and neutral color scales for light and dark appearances. Text, solid foregrounds and control boundaries meet WCAG 2.2 AA and APCA thresholds for any seed, every color stays inside sRGB, and the same input always gives the same output. Zero dependencies, no Node APIs: it runs in the browser, during SSR and in build scripts.
+Turn one seed color into 12-step brand and neutral color scales, with translucent counterparts, for light and dark appearances. Text, solid foregrounds and control boundaries meet WCAG 2.2 AA and APCA thresholds for any seed, every color stays inside sRGB, and the same input always gives the same output. Zero dependencies, no Node APIs: it runs in the browser, during SSR and in build scripts.
 
 ```sh
 pnpm add @violetjs/theme
@@ -24,6 +24,7 @@ const light = generateScales(theme, { appearance: "light" });
 const dark = generateScales(theme, { appearance: "dark" });
 light.brand.steps[9]; // "oklch(…)": the solid brand color
 light.brand.contrast; // text color for steps 9 and 10
+light.brand.alpha[3]; // "color(srgb … / …)": step 3 as a translucent color over the page background
 
 // 3. Serialize to CSS custom properties.
 const css = toCssVariables([light, dark]);
@@ -31,6 +32,8 @@ const css = toCssVariables([light, dark]);
 // 	--brand-1: light-dark(oklch(…), oklch(…));
 // 	…
 // 	--brand-contrast: light-dark(oklch(…), oklch(…));
+// 	--brand-a1: light-dark(color(srgb … / …), color(srgb … / …));
+// 	…
 // 	--neutral-1: light-dark(oklch(…), oklch(…));
 // 	…
 // }
@@ -65,6 +68,10 @@ Step roles follow [Radix Colors](https://www.radix-ui.com/colors/docs/palette-co
 Text also holds on the component backgrounds, steps 3–5 of both scales: step 12 at WCAG 4.5:1 and APCA Lc 75, step 11 at WCAG 4.5:1 and APCA Lc 60. The APCA levels follow APCA's use-case tiers: Lc 90 is what its font lookup table asks of 16px/400 body text, Lc 75 is the minimum for body text, Lc 60 for other readable content such as labels and buttons, and Lc 30 for meaningful non-text elements.
 
 Step 9 is the seed itself whenever near-white or near-black text passes on it. Otherwise only its lightness moves, to the nearest value where one of them does. `contrast` is whichever text color needs the smaller move, the same in both appearances: saturated mid-tone seeds keep white text in dark mode too, and bright seeds such as yellow keep their brightness with near-black text. Step 10, the hover state, moves toward higher contrast with that text: darker under white text, lighter under near-black text.
+
+## Alpha scales
+
+`brand.alpha` and `neutral.alpha` (`--brand-a1` … `--brand-a12`, `--neutral-a1` … `--neutral-a12`) are translucent versions of each step. Over the neutral step 1 page background, each looks the same as the solid step, within the just-noticeable difference ΔE<sub>OK</sub> 0.02. Each uses the smallest opacity that keeps the color inside sRGB, and is written as `color(srgb … / α)` because browsers composite in that space.
 
 ## How it works
 
