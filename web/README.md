@@ -137,6 +137,8 @@ Segmented 是横纵两个方向、soft / ink / line 三种变体的分段控制�
 
 Mermaid 图块统一使用手写字体与 `@violetjs/inkline` 笔触（G 笔、草稿手法），编辑器预览与阅读端同源，覆盖手册图块章节的全部 13 种示例图型。Excalifont 使用 Excalidraw 0.18.1 发布的 jsDelivr CDN 分片，中文小赖体使用[中文网字计划 CDN](https://chinese-font.netlify.app/zh-cn/cdn/)，仅在图块出现时加载。SVG 导出内嵌所需字体与 OFL 通知，PNG 从同一 SVG 生成；字体版权通知保存在 `src/assets/fonts/diagram/` 并由导出模块引用。宽图保持自然字号，通过图内横向滚动阅读；存量文章无需重新保存。
 
+`createAsyncLoader` 统一模块与初始化任务的并发复用、成功缓存和失败清理；不自动重试、不用于参数化业务查询。
+
 ## 手绘绘图库
 
 [`@violetjs/inkline`](packages/inkline/README.md) 位于 `packages/inkline/`，不依赖 React、Mermaid 或 Rough.js。文章 Mermaid 图块经 `shared/ui/diagram` 用它渲染。
