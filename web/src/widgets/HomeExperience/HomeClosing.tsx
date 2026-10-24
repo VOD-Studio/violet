@@ -1,4 +1,4 @@
-import { ClosingAccent, useDecoration } from "@features/theme-seasons-prototype/decorations";
+import { ClosingVignette, useDecoration } from "@features/theme-seasons-prototype/decorations";
 import { SEASON_BY_KEY } from "@features/theme-seasons-prototype/directions";
 import { Heart, Mail, Rss } from "lucide-react";
 import { motion } from "motion/react";
@@ -49,17 +49,14 @@ export function HomeClosing({ identity }: HomeClosingProps) {
 				className="mx-auto max-w-4xl px-5 text-center sm:px-8"
 			>
 				{/* PROTOTYPE（#645）：季节装饰的点缀位 */}
-				<ClosingAccent placement="above" />
-				<div className="relative mx-auto w-fit space-y-2">
+				<ClosingVignette />
+				<div className="space-y-2">
 					<p className="font-serif text-2xl font-normal tracking-widest text-foreground/90 sm:text-3xl">
 						{greeting.title}
 					</p>
 					<h2 className="font-serif text-2xl font-normal tracking-[0.08em] text-foreground/90 sm:text-3xl">
 						{greeting.subtitle}
 					</h2>
-					<span className="absolute top-1 left-full ml-6">
-						<ClosingAccent placement="beside" />
-					</span>
 				</div>
 
 				<div className="mt-14 flex items-center justify-center gap-8 sm:gap-14">

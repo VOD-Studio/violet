@@ -7,6 +7,7 @@ import { useChatUnreadCount } from "@features/chat/api/queries";
 import { useChatUnreadTitle } from "@features/chat/hooks/use-chat-unread-title";
 import { useChatStream } from "@features/chat/hooks/useChatStream";
 import NotificationBell from "@features/notifications/ui/NotificationBell";
+import { CapsuleOrnament } from "@features/theme-seasons-prototype/decorations";
 import { EntryPanel } from "@features/theme-seasons-prototype/entries";
 import { usePrototype } from "@features/theme-seasons-prototype/store";
 import { ApiError } from "@shared/api/error";
@@ -96,8 +97,10 @@ const HeaderActions = ({ user, children }: HeaderActionsProps) => {
 	return (
 		<div
 			data-pinned={actionsPinned || undefined}
-			className="group pointer-events-auto flex h-10 items-center rounded-full border border-border/60 bg-background/80 p-1 shadow-xs backdrop-blur-md transition-colors dark:bg-card/85"
+			className="group pointer-events-auto relative flex h-10 items-center rounded-full border border-border/60 bg-background/80 p-1 shadow-xs backdrop-blur-md transition-colors dark:bg-card/85"
 		>
+			{/* PROTOTYPE（#645）：挂件 */}
+			<CapsuleOrnament variant={3} />
 			{/* 工具区随 hover 展开；通知或用户菜单打开时保持展开。 */}
 			<div className="pointer-events-none hidden max-w-0 items-center gap-3 overflow-hidden py-2 opacity-0 transition-[max-width,opacity] duration-300 ease-out lg:flex lg:group-hover:pointer-events-auto lg:group-hover:max-w-56 lg:group-hover:opacity-100 lg:group-data-[pinned]:pointer-events-auto lg:group-data-[pinned]:max-w-56 lg:group-data-[pinned]:opacity-100">
 				{/* 搜索命令面板按钮 */}

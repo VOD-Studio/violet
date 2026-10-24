@@ -91,64 +91,19 @@ export function useLifeCanvas() {
 			newborn = style.outlineColor;
 		};
 
-		// PROTOTYPE（#645）：data-glyph 指定季节纹样时，活细胞画成桃花、水纹、桂花或雪花
-		const petals = (
-			x: number,
-			y: number,
-			count: number,
-			offset: number,
-			distance: number,
-			radius: number,
-		) => {
-			context.beginPath();
-			for (let k = 0; k < count; k++) {
-				const angle = offset + (k * Math.PI * 2) / count;
-				const px = x + Math.cos(angle) * distance;
-				const py = y + Math.sin(angle) * distance;
-				context.moveTo(px + radius, py);
-				context.arc(px, py, radius, 0, Math.PI * 2);
-			}
-			context.fill();
-		};
 		const dot = (index: number, color: string, opacity: number) => {
 			if (opacity <= 0) return;
-			const x = (index % board.cols) * CELL + CELL / 2;
-			const y = Math.floor(index / board.cols) * CELL + CELL / 2;
 			context.globalAlpha = opacity;
 			context.fillStyle = color;
-			context.strokeStyle = color;
-			context.lineCap = "round";
-			switch (canvas.dataset.glyph) {
-				case "spring":
-					petals(x, y, 5, -Math.PI / 2, 2.4, 1.8);
-					return;
-				case "summer":
-					context.lineWidth = 1.1;
-					context.beginPath();
-					context.arc(x, y, 3.6, 0, Math.PI * 2);
-					context.stroke();
-					context.beginPath();
-					context.arc(x, y, 1.1, 0, Math.PI * 2);
-					context.fill();
-					return;
-				case "autumn":
-					petals(x, y, 4, Math.PI / 4, 2.3, 1.75);
-					return;
-				case "winter":
-					context.lineWidth = 1.1;
-					context.beginPath();
-					for (let k = 0; k < 6; k++) {
-						const angle = (k * Math.PI) / 3 + Math.PI / 2;
-						context.moveTo(x, y);
-						context.lineTo(x + Math.cos(angle) * 4, y + Math.sin(angle) * 4);
-					}
-					context.stroke();
-					return;
-				default:
-					context.beginPath();
-					context.arc(x, y, DOT_RADIUS, 0, Math.PI * 2);
-					context.fill();
-			}
+			context.beginPath();
+			context.arc(
+				(index % board.cols) * CELL + CELL / 2,
+				Math.floor(index / board.cols) * CELL + CELL / 2,
+				DOT_RADIUS,
+				0,
+				Math.PI * 2,
+			);
+			context.fill();
 		};
 
 		const paint = (progress: number) => {

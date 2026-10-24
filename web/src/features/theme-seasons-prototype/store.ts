@@ -6,7 +6,11 @@ import { currentSeason, DIRECTIONS, type DirectionKey, type SeasonKey } from "./
 export type ThemePref = "follow" | SeasonKey | "custom";
 export type DecoPref = "follow" | "none" | SeasonKey;
 export type EntryVariant = "A" | "B" | "C";
-export type DecoVariant = "pattern" | "light";
+export interface Layers {
+	illustration: boolean;
+	particles: boolean;
+	ornaments: boolean;
+}
 
 interface Tuning {
 	seed: string;
@@ -20,7 +24,7 @@ interface PrototypeState {
 	customSeed: string;
 	decoPref: DecoPref;
 	entry: EntryVariant;
-	deco: DecoVariant;
+	layers: Layers;
 	/** 对照板里对种子色、旋钮的临时微调 */
 	tuning: Record<string, Tuning>;
 	setPick: (season: SeasonKey, key: DirectionKey) => void;
@@ -29,7 +33,7 @@ interface PrototypeState {
 	setCustomSeed: (seed: string) => void;
 	setDecoPref: (pref: DecoPref) => void;
 	setEntry: (entry: EntryVariant) => void;
-	setDeco: (deco: DecoVariant) => void;
+	toggleLayer: (layer: keyof Layers) => void;
 	tune: (id: string, tuning: Partial<Tuning>) => void;
 	resetTuning: (id: string) => void;
 }
@@ -40,7 +44,7 @@ export const usePrototype = create<PrototypeState>((set) => ({
 	customSeed: "#3a7bd5",
 	decoPref: "follow",
 	entry: "A",
-	deco: "pattern",
+	layers: { illustration: true, particles: true, ornaments: true },
 	tuning: {},
 	setPick: (season, key) => set((state) => ({ picks: { ...state.picks, [season]: key } })),
 	setAllPicks: (key) => set({ picks: { spring: key, summer: key, autumn: key, winter: key } }),
@@ -48,7 +52,8 @@ export const usePrototype = create<PrototypeState>((set) => ({
 	setCustomSeed: (customSeed) => set({ customSeed }),
 	setDecoPref: (decoPref) => set({ decoPref }),
 	setEntry: (entry) => set({ entry }),
-	setDeco: (deco) => set({ deco }),
+	toggleLayer: (layer) =>
+		set((state) => ({ layers: { ...state.layers, [layer]: !state.layers[layer] } })),
 	tune: (id, tuning) =>
 		set((state) => {
 			const base = DIRECTIONS.find((direction) => direction.id === id);

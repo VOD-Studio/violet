@@ -115,14 +115,6 @@
 	mask-image: var(--orn-edge);
 }
 
-/* PROTOTYPE（#645）：冬季纹样的稳定细胞是中性色的雪，新生时才带主题色 */
-.life[data-glyph="winter"] {
-	color: light-dark(
-		color-mix(in oklch, var(--muted-foreground) 45%, transparent),
-		color-mix(in oklch, var(--muted-foreground) 55%, transparent)
-	);
-}
-
 /* —— 纸纹：噪点作遮罩，颜色随明暗翻转 —— */
 .grain {
 	position: absolute;

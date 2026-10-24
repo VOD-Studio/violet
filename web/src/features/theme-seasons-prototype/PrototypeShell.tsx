@@ -1,18 +1,17 @@
 /**
  * PROTOTYPE（#645）：把样稿主题注入整站，并挂一条底部切换条。只在开发环境渲染。
  *
- * URL 参数：?entry=A|B|C&deco=pattern|light&set=A|B|C&theme=follow|spring|summer|autumn|winter
+ * URL 参数：?entry=A|B|C&theme=follow|spring|summer|autumn|winter&winter=A…F&layers=ipo（插画、飘落、挂件，缺字母即关闭）
  */
 import { Link } from "@tanstack/react-router";
 import { cn } from "cn";
 import { ChevronLeft, ChevronRight, LayoutGrid } from "lucide-react";
 import { useEffect } from "react";
 
-import { useDecoration } from "./decorations";
-import { type DirectionKey, directionOf, SEASON_BY_KEY, SETS } from "./directions";
+import { type DirectionKey, directionOf, SEASON_BY_KEY } from "./directions";
 import {
-	type DecoVariant,
 	type EntryVariant,
+	type Layers,
 	resolveSeason,
 	type ThemePref,
 	usePrototype,
@@ -21,6 +20,16 @@ import {
 import { themeCss } from "./theme-css";
 
 const THEME_CYCLE: ThemePref[] = ["follow", "spring", "summer", "autumn", "winter"];
+const LAYER_LETTERS: [string, keyof Layers][] = [
+	["i", "illustration"],
+	["p", "particles"],
+	["o", "ornaments"],
+];
+const LAYER_LABEL: Record<keyof Layers, string> = {
+	illustration: "插画",
+	particles: "飘落",
+	ornaments: "挂件",
+};
 
 function useActiveTheme() {
 	const themePref = usePrototype((state) => state.themePref);
@@ -40,10 +49,12 @@ function useUrlSync() {
 		const state = usePrototype.getState();
 		const entry = params.get("entry");
 		if (entry === "A" || entry === "B" || entry === "C") state.setEntry(entry);
-		const deco = params.get("deco");
-		if (deco === "pattern" || deco === "light") state.setDeco(deco);
-		const set = params.get("set");
-		if (set === "A" || set === "B" || set === "C") state.setAllPicks(set);
+		const winter = params.get("winter");
+		if (winter && /^[A-F]$/.test(winter)) state.setPick("winter", winter as DirectionKey);
+		const layers = params.get("layers");
+		if (layers !== null)
+			for (const [letter, layer] of LAYER_LETTERS)
+				if (layers.includes(letter) !== state.layers[layer]) state.toggleLayer(layer);
 		const theme = params.get("theme");
 		if (theme && (THEME_CYCLE as string[]).includes(theme))
 			state.setThemePref(theme as ThemePref);
@@ -63,10 +74,6 @@ function GlobalTheme() {
 		// 背景生命游戏监听根元素属性变化重新取色
 		document.documentElement.dataset.prototypeTheme = `${id}:${seed}:${neutralChroma}`;
 	}, [id, seed, neutralChroma]);
-	const decoration = useDecoration();
-	useEffect(() => {
-		document.documentElement.dataset.prototypeDeco = `${decoration.variant}:${decoration.season ?? "none"}`;
-	}, [decoration.variant, decoration.season]);
 	return null;
 }
 
@@ -115,14 +122,11 @@ function PrototypeBar() {
 	const themePref = usePrototype((state) => state.themePref);
 	const setThemePref = usePrototype((state) => state.setThemePref);
 	const picks = usePrototype((state) => state.picks);
-	const setAllPicks = usePrototype((state) => state.setAllPicks);
 	const entry = usePrototype((state) => state.entry);
 	const setEntry = usePrototype((state) => state.setEntry);
-	const deco = usePrototype((state) => state.deco);
-	const setDeco = usePrototype((state) => state.setDeco);
+	const layers = usePrototype((state) => state.layers);
+	const toggleLayer = usePrototype((state) => state.toggleLayer);
 	const season = resolveSeason(themePref);
-	const uniformSet =
-		new Set(Object.values(picks)).size === 1 ? picks.spring : ("mixed" as DirectionKey);
 
 	const cycle = (step: number) => {
 		const index = THEME_CYCLE.indexOf(themePref);
@@ -180,19 +184,6 @@ function PrototypeBar() {
 						<ChevronRight className="size-4" />
 					</button>
 				</div>
-				<Group label="方向">
-					{(Object.keys(SETS) as DirectionKey[]).map((key) => (
-						<Choice
-							key={key}
-							value={key}
-							current={uniformSet}
-							onSelect={setAllPicks}
-							title={SETS[key].summary}
-						>
-							{key} {SETS[key].name}
-						</Choice>
-					))}
-				</Group>
 				<Group label="入口">
 					{(["A", "B", "C"] as EntryVariant[]).map((key) => (
 						<Choice key={key} value={key} current={entry} onSelect={setEntry}>
@@ -201,10 +192,21 @@ function PrototypeBar() {
 					))}
 				</Group>
 				<Group label="装饰">
-					{(["pattern", "light"] as DecoVariant[]).map((key) => (
-						<Choice key={key} value={key} current={deco} onSelect={setDeco}>
-							{{ pattern: "纹样", light: "天光" }[key]}
-						</Choice>
+					{(Object.keys(LAYER_LABEL) as (keyof Layers)[]).map((layer) => (
+						<button
+							key={layer}
+							type="button"
+							aria-pressed={layers[layer]}
+							onClick={() => toggleLayer(layer)}
+							className={cn(
+								"h-7 rounded-full px-2.5 text-xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
+								layers[layer]
+									? "bg-background text-foreground"
+									: "text-background/60 line-through hover:text-background",
+							)}
+						>
+							{LAYER_LABEL[layer]}
+						</button>
 					))}
 				</Group>
 				<Link

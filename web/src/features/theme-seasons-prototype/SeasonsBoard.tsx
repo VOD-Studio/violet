@@ -9,10 +9,8 @@ import { ArrowRight, Check, Copy, RotateCcw } from "lucide-react";
 import { useState } from "react";
 
 import {
-	currentSeason,
 	DIRECTIONS,
 	type Direction,
-	type DirectionKey,
 	SEASON_BY_KEY,
 	SEASONS,
 	SETS,
@@ -303,13 +301,17 @@ function PickButton({ direction }: { direction: Direction }) {
 	);
 }
 
+function labelOf(direction: Direction): string {
+	return direction.group ?? SETS[direction.key as keyof typeof SETS].name;
+}
+
 function DirectionRow({ direction, contrast }: { direction: Direction; contrast: Contrast }) {
 	return (
 		<section className="grid gap-8 border-t border-border py-12 lg:grid-cols-[16rem_1fr]">
 			<div className="space-y-6">
 				<div>
 					<p className="font-mono text-[11px] tracking-[0.2em] text-muted-foreground">
-						{direction.key} · {SETS[direction.key].name}
+						{direction.key} · {labelOf(direction)}
 					</p>
 					<h3 className="mt-2 font-serif text-4xl tracking-widest">{direction.name}</h3>
 					<p className="mt-3 text-sm leading-6 text-muted-foreground">{direction.note}</p>
@@ -377,7 +379,12 @@ function OverviewCard({ direction }: { direction: Direction }) {
 				})}
 			</div>
 			<div className="flex items-baseline justify-between px-2.5 pt-3 pb-1.5">
-				<span className="font-serif text-base tracking-widest">{direction.name}</span>
+				<span className="font-serif text-base tracking-widest">
+					{direction.name}
+					<span className="ml-2 font-sans text-[11px] tracking-normal text-muted-foreground">
+						{direction.key} · {labelOf(direction)}
+					</span>
+				</span>
 				<span className="font-mono text-[11px] text-muted-foreground">{seed}</span>
 			</div>
 		</button>
@@ -387,25 +394,8 @@ function OverviewCard({ direction }: { direction: Direction }) {
 function Overview() {
 	return (
 		<div className="space-y-14">
-			<div className="hidden grid-cols-[9rem_repeat(3,minmax(0,1fr))] gap-5 lg:grid">
-				<span />
-				{(Object.keys(SETS) as DirectionKey[]).map((key) => (
-					<div key={key}>
-						<p className="font-mono text-[11px] tracking-[0.2em] text-muted-foreground">
-							{key}
-						</p>
-						<p className="mt-1 text-sm">{SETS[key].name}</p>
-						<p className="mt-1 text-xs leading-5 text-muted-foreground">
-							{SETS[key].summary}
-						</p>
-					</div>
-				))}
-			</div>
 			{SEASONS.map((season) => (
-				<div
-					key={season.key}
-					className="grid gap-5 lg:grid-cols-[9rem_repeat(3,minmax(0,1fr))]"
-				>
+				<div key={season.key} className="grid gap-5 lg:grid-cols-[9rem_1fr]">
 					<div>
 						<p className="font-serif text-5xl leading-none">{season.label}</p>
 						<p className="mt-3 font-serif text-sm tracking-widest text-foreground/85">
@@ -413,11 +403,13 @@ function Overview() {
 						</p>
 						<p className="mt-1 text-xs text-muted-foreground">{season.months}</p>
 					</div>
-					{DIRECTIONS.filter((direction) => direction.season === season.key).map(
-						(direction) => (
-							<OverviewCard key={direction.id} direction={direction} />
-						),
-					)}
+					<div className="grid gap-5 sm:grid-cols-3">
+						{DIRECTIONS.filter((direction) => direction.season === season.key).map(
+							(direction) => (
+								<OverviewCard key={direction.id} direction={direction} />
+							),
+						)}
+					</div>
 				</div>
 			))}
 		</div>
@@ -428,7 +420,7 @@ function Summary() {
 	const picks = usePrototype((state) => state.picks);
 	const tuning = usePrototype((state) => state.tuning);
 	const entry = usePrototype((state) => state.entry);
-	const deco = usePrototype((state) => state.deco);
+	const layers = usePrototype((state) => state.layers);
 	const [copied, setCopied] = useState(false);
 	const lines = SEASONS.map((season) => {
 		const direction = DIRECTIONS.find(
@@ -439,9 +431,12 @@ function Summary() {
 		const neutralChroma = tuning[direction.id]?.neutralChroma ?? direction.neutralChroma;
 		return `${season.label}  ${direction.key} ${direction.name}  seed ${seed}  neutralChroma ${neutralChroma}`;
 	});
-	const text = [...lines, `入口 ${entry}  装饰 ${deco === "pattern" ? "纹样" : "天光"}`].join(
-		"\n",
-	);
+	const kept = [
+		layers.illustration && "插画",
+		layers.particles && "飘落",
+		layers.ornaments && "挂件",
+	].filter(Boolean);
+	const text = [...lines, `入口 ${entry}  装饰 ${kept.join("、") || "无"}`].join("\n");
 	return (
 		<section className="mt-20 rounded-2xl bg-muted/60 p-6 sm:p-8">
 			<div className="flex items-start justify-between gap-4">
@@ -473,7 +468,7 @@ function Summary() {
 }
 
 export function SeasonsBoard() {
-	const [tab, setTab] = useState<Tab>(currentSeason());
+	const [tab, setTab] = useState<Tab>("winter");
 	const [contrast, setContrast] = useState<Contrast>("standard");
 	const tabs: { value: Tab; label: string }[] = [
 		{ value: "overview", label: "总览" },

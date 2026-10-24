@@ -1,11 +1,11 @@
 /**
  * PROTOTYPE（#645 四季主题样稿）：一次性代码，只在 prototype/theme-seasons 分支保留。
  *
- * 三套方向：A「意象」取首页季节寄语里的花木；B「对照」换一族色相；C「紫系」四季都留在紫色附近，保住 Violet 的识别度。
+ * 春夏秋三季已定 A「意象」（花朝、荷风、桂月），保留 B、C 作对照；冬季按冷、墨、暖三种气质重出六个候选。
  */
 
 export type SeasonKey = "spring" | "summer" | "autumn" | "winter";
-export type DirectionKey = "A" | "B" | "C";
+export type DirectionKey = "A" | "B" | "C" | "D" | "E" | "F";
 
 export interface Season {
 	key: SeasonKey;
@@ -23,6 +23,8 @@ export interface Direction {
 	seed: string;
 	neutralChroma: number;
 	note: string;
+	/** 冬季候选的气质分组 */
+	group?: string;
 }
 
 export const SEASONS: Season[] = [
@@ -32,7 +34,7 @@ export const SEASONS: Season[] = [
 	{ key: "winter", label: "冬", months: "12–2 月", greeting: ["梅信岁寒", "围炉夜话"] },
 ];
 
-export const SETS: Record<DirectionKey, { name: string; summary: string }> = {
+export const SETS: Record<"A" | "B" | "C", { name: string; summary: string }> = {
 	A: { name: "意象", summary: "取寄语里的花木：桃花、荷叶、桂花、梅花" },
 	B: { name: "对照", summary: "另一族色相：新柳、晴空、枫叶、霁雪" },
 	C: { name: "紫系", summary: "四季都在紫色附近，只换冷暖与明度" },
@@ -124,28 +126,61 @@ export const DIRECTIONS: Direction[] = [
 		id: "winter-A",
 		season: "winter",
 		key: "A",
-		name: "梅信",
-		seed: "#c43b4d",
-		neutralChroma: 0.01,
-		note: "梅红。白字实色，中性色几乎纯灰，像雪地。",
+		group: "冷",
+		name: "初雪",
+		seed: "#7d8ea3",
+		neutralChroma: 0.008,
+		note: "雪后银灰，带一点蓝。白字实色，几乎不抢内容。",
 	},
 	{
 		id: "winter-B",
 		season: "winter",
 		key: "B",
-		name: "霁青",
-		seed: "#3d6fb6",
-		neutralChroma: 0.008,
-		note: "雪后天青。白字实色，冷而克制。",
+		group: "冷",
+		name: "冰凌",
+		seed: "#7cc0e4",
+		neutralChroma: 0.01,
+		note: "冰面浅蓝。实色明亮配深色字，与花朝、桂月同属亮色一族。",
 	},
 	{
 		id: "winter-C",
 		season: "winter",
 		key: "C",
-		name: "靛紫",
-		seed: "#4b48b5",
-		neutralChroma: 0.012,
-		note: "靛蓝紫。白字实色，紫系里最深。",
+		group: "墨",
+		name: "松烟",
+		seed: "#3d4046",
+		neutralChroma: 0,
+		note: "松烟墨。品牌色接近黑，中性色纯灰，只剩墨与纸。",
+	},
+	{
+		id: "winter-D",
+		season: "winter",
+		key: "D",
+		group: "墨",
+		name: "玄青",
+		seed: "#2c3440",
+		neutralChroma: 0.004,
+		note: "带青的墨。比松烟多一丝冷色。",
+	},
+	{
+		id: "winter-E",
+		season: "winter",
+		key: "E",
+		group: "暖",
+		name: "围炉",
+		seed: "#cf6a2e",
+		neutralChroma: 0.02,
+		note: "炉火橙。白字实色，对应「围炉夜话」。",
+	},
+	{
+		id: "winter-F",
+		season: "winter",
+		key: "F",
+		group: "暖",
+		name: "栗褐",
+		seed: "#8c5634",
+		neutralChroma: 0.02,
+		note: "烤栗子的褐色。白字实色，比围炉沉稳。",
 	},
 ];
 
