@@ -137,6 +137,8 @@ Segmented 是横纵两个方向、soft / ink / line 三种变体的分段控制�
 
 Mermaid 图块统一使用手写字体与 `@violetjs/inkline` 笔触（G 笔、草稿手法），编辑器预览与阅读端同源，覆盖手册图块章节的全部 13 种示例图型。Excalifont 使用 Excalidraw 0.18.1 发布的 jsDelivr CDN 分片，中文小赖体使用[中文网字计划 CDN](https://chinese-font.netlify.app/zh-cn/cdn/)，仅在图块出现时加载。SVG 导出内嵌所需字体与 OFL 通知，PNG 从同一 SVG 生成；字体版权通知保存在 `src/assets/fonts/diagram/` 并由导出模块引用。宽图保持自然字号，通过图内横向滚动阅读；存量文章无需重新保存。
 
+展示图片由 `shared/lib/image-url` 生成按视口与 DPR 选择的 `picture` 候选，不声明未经素材元数据证实的像素描述符；仅处理本站 `/uploads/` 地址，外链与 GIF 保持原地址，动画 WebP 由图片接口原样返回。`CroppedImage` 按容器、DPR 与作者选区计算像素需求，不叠加服务端居中 `thumb`；同一源图固定首次几何基准，已加载的充足候选不降档重下。`ArticleImage` 保留作者尺寸，使用原生懒加载和异步解码；缺少固有尺寸时只提供最小占位，加载完成后恢复自然尺寸，不保证零布局偏移。灯箱占位复用实际选中的候选，预览与下载仍使用原图地址。
+
 `createAsyncLoader` 统一模块与初始化任务的并发复用、成功缓存和失败清理；不自动重试、不用于参数化业务查询。
 
 ## 手绘绘图库

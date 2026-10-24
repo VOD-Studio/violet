@@ -86,7 +86,6 @@ vi.mock("@shared/ui/image-preview", () => ({
 	},
 }));
 
-import { contentImageUrl } from "@shared/lib/image-url";
 import { GalleryBrowsePage } from "../GalleryBrowsePage";
 import { GalleryDetailPage } from "../GalleryDetailPage";
 
@@ -142,7 +141,7 @@ describe("公开图集用户流", () => {
 		);
 	});
 
-	it("详情按 position 展示优化图、替代文本与说明", () => {
+	it("详情按 position 展示图片、替代文本与说明", () => {
 		detailQuery.data = {
 			...gallery,
 			items: [items[2], items[0], items[1], ...items.slice(3)],
@@ -151,19 +150,14 @@ describe("公开图集用户流", () => {
 
 		const images = screen.getAllByRole("img");
 		expect(images).toHaveLength(6);
-		// 网格加载 w=2048 优化档，不直出原图
-		expect(images.map((image) => image.getAttribute("src"))).toEqual(
-			items.map((item) => contentImageUrl(item.url, { width: 2048 })),
+		expect(images.map((image) => image.getAttribute("alt"))).toEqual(
+			items.map((item) => item.alt_text),
 		);
 		expect(images[0]?.getAttribute("loading")).toBe("eager");
 		expect(images[0]?.getAttribute("fetchpriority")).toBe("high");
 		expect(images.slice(1).every((image) => image.getAttribute("loading") === "lazy")).toBe(
 			true,
 		);
-		// srcset 覆盖移动窄屏到 2x 桌面档,sizes 按视觉列宽声明
-		expect(images[0]?.getAttribute("srcset")).toContain("640w");
-		expect(images[0]?.getAttribute("srcset")).toContain("2048w");
-		expect(images[0]?.getAttribute("sizes")).toBe("(min-width: 1024px) 1024px, 100vw");
 		for (const item of items) {
 			expect(screen.getByText(item.caption)).toBeTruthy();
 		}
