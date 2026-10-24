@@ -349,6 +349,9 @@ importers:
         specifier: ^5.0.14
         version: 5.0.14(@types/react@19.2.17)(react@19.2.7)(use-sync-external-store@1.7.0(react@19.2.7))
     devDependencies:
+      '@babel/parser':
+        specifier: ^7.29.9
+        version: 7.29.9
       '@biomejs/biome':
         specifier: 2.5.2
         version: 2.5.2
@@ -409,6 +412,9 @@ importers:
       pngjs:
         specifier: ^7.0.0
         version: 7.0.0
+      postcss:
+        specifier: ^8.5.16
+        version: 8.5.16
       remark-parse:
         specifier: 11.0.0
         version: 11.0.0

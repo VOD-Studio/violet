@@ -1,0 +1,17 @@
+{
+	"roots": ["src", "packages"],
+	"baseline": "color-guard-baseline.json",
+	"initialRevision": "4d1b87acf592bb805d259072a9a9ce3b0c1dfa91",
+	"exemptions": [
+		{ "pattern": "**/node_modules/**", "reason": "安装依赖" },
+		{ "pattern": "**/dist/**", "reason": "构建产物" },
+		{ "pattern": "**/vendor/**", "reason": "第三方源码" },
+		{ "pattern": "packages/theme/**", "reason": "颜色算法包" },
+		{ "pattern": "**/*.generated.css", "reason": "生成的颜色 CSS" },
+		{ "pattern": "packages/ui/src/classes.css", "reason": "组件清单生成的 CSS 入口" },
+		{ "pattern": "src/features/lab/**", "reason": "实验室原型" },
+		{ "pattern": "src/routes/lab.tsx", "reason": "实验室路由" },
+		{ "pattern": "src/routes/lab.*.tsx", "reason": "实验室路由" },
+		{ "pattern": "src/routes/lab/**", "reason": "实验室路由" }
+	]
+}

@@ -214,6 +214,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ inputs.ref || github.sha }}
+          fetch-depth: 0
+          filter: blob:none
 
       - name: Setup pnpm
         uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
@@ -234,6 +236,11 @@ jobs:
       # 此前跑 pnpm lint(biome lint)不查格式,CI 与本地红绿不一致(#140)
       - name: Biome check
         run: pnpm check
+
+      - name: Color guard
+        env:
+          COLOR_GUARD_BASE: ${{ inputs.ref && 'HEAD^' || github.event.pull_request.base.sha || (github.event.before != '0000000000000000000000000000000000000000' && github.event.before) || 'HEAD^' }}
+        run: pnpm check:colors
 
       - name: TypeScript check
         run: pnpm typecheck

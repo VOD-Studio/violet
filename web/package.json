@@ -14,6 +14,7 @@
 		"format": "biome format",
 		"lint": "biome lint",
 		"check": "biome check",
+		"check:colors": "node scripts/check-colors.mjs",
 		"typecheck": "pnpm generate-routes && tsc --noEmit",
 		"sync:pdf-worker": "node -e \"require('fs').copyFileSync(require.resolve('pdfjs-dist/build/pdf.worker.min.mjs',{paths:[require.resolve('react-pdf')]}),'public/pdf.worker.min.mjs')\"",
 		"postinstall": "node -e \"require('fs').copyFileSync(require.resolve('pdfjs-dist/build/pdf.worker.min.mjs',{paths:[require.resolve('react-pdf')]}),'public/pdf.worker.min.mjs')\""
@@ -133,6 +134,7 @@
 		"zustand": "^5.0.14"
 	},
 	"devDependencies": {
+		"@babel/parser": "^7.29.9",
 		"@biomejs/biome": "2.5.2",
 		"@playwright/test": "^1.63.0",
 		"@tailwindcss/typography": "^0.5.16",
@@ -153,6 +155,7 @@
 		"mdast-util-from-markdown": "^2.0.3",
 		"micromark-util-types": "^2.0.2",
 		"pngjs": "^7.0.0",
+		"postcss": "^8.5.16",
 		"remark-parse": "11.0.0",
 		"rollup-plugin-visualizer": "^7.0.1",
 		"shadcn": "^4.11.0",

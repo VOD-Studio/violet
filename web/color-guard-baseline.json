@@ -1,0 +1,3203 @@
+{
+	"version": 1,
+	"entries": [
+		{
+			"file": "src/entities/code-runner/ui/CodeRunner.tsx",
+			"rule": "raw-color",
+			"value": "#24292e",
+			"count": 1
+		},
+		{
+			"file": "src/entities/code-runner/ui/CodeRunner.tsx",
+			"rule": "tailwind-palette",
+			"value": "border-white",
+			"count": 3
+		},
+		{
+			"file": "src/entities/code-runner/ui/CodeRunner.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-white",
+			"count": 8
+		},
+		{
+			"file": "src/entities/code-runner/ui/CodeRunner.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-white",
+			"count": 3
+		},
+		{
+			"file": "src/entities/code-runner/ui/Terminal.tsx",
+			"rule": "raw-color",
+			"value": "#24292e",
+			"count": 2
+		},
+		{
+			"file": "src/entities/code-runner/ui/Terminal.tsx",
+			"rule": "raw-color",
+			"value": "#e1e4e8",
+			"count": 2
+		},
+		{
+			"file": "src/entities/code-runner/ui/Terminal.tsx",
+			"rule": "raw-color",
+			"value": "#c8c8c8",
+			"count": 1
+		},
+		{
+			"file": "src/entities/code-runner/ui/Terminal.tsx",
+			"rule": "raw-color",
+			"value": "#444d56",
+			"count": 1
+		},
+		{
+			"file": "src/entities/code-runner/ui/Terminal.tsx",
+			"rule": "raw-color",
+			"value": "#f97583",
+			"count": 1
+		},
+		{
+			"file": "src/entities/code-runner/ui/Terminal.tsx",
+			"rule": "raw-color",
+			"value": "#85e89d",
+			"count": 1
+		},
+		{
+			"file": "src/entities/code-runner/ui/Terminal.tsx",
+			"rule": "raw-color",
+			"value": "#ffea7f",
+			"count": 1
+		},
+		{
+			"file": "src/entities/code-runner/ui/Terminal.tsx",
+			"rule": "raw-color",
+			"value": "#79b8ff",
+			"count": 1
+		},
+		{
+			"file": "src/entities/code-runner/ui/Terminal.tsx",
+			"rule": "raw-color",
+			"value": "#b392f0",
+			"count": 1
+		},
+		{
+			"file": "src/entities/code-runner/ui/Terminal.tsx",
+			"rule": "raw-color",
+			"value": "#56d4dd",
+			"count": 1
+		},
+		{
+			"file": "src/entities/code-runner/ui/Terminal.tsx",
+			"rule": "raw-color",
+			"value": "#959da5",
+			"count": 1
+		},
+		{
+			"file": "src/entities/code-runner/ui/Terminal.tsx",
+			"rule": "raw-color",
+			"value": "#fdaeb7",
+			"count": 1
+		},
+		{
+			"file": "src/entities/code-runner/ui/Terminal.tsx",
+			"rule": "raw-color",
+			"value": "#bef2c1",
+			"count": 1
+		},
+		{
+			"file": "src/entities/code-runner/ui/Terminal.tsx",
+			"rule": "raw-color",
+			"value": "#fff5b1",
+			"count": 1
+		},
+		{
+			"file": "src/entities/code-runner/ui/Terminal.tsx",
+			"rule": "raw-color",
+			"value": "#c8e1ff",
+			"count": 1
+		},
+		{
+			"file": "src/entities/code-runner/ui/Terminal.tsx",
+			"rule": "raw-color",
+			"value": "#d8bcff",
+			"count": 1
+		},
+		{
+			"file": "src/entities/code-runner/ui/Terminal.tsx",
+			"rule": "raw-color",
+			"value": "#b3f0ff",
+			"count": 1
+		},
+		{
+			"file": "src/entities/code-runner/ui/Terminal.tsx",
+			"rule": "raw-color",
+			"value": "#ffffff",
+			"count": 1
+		},
+		{
+			"file": "src/entities/comment/ui/ai-personas.css",
+			"rule": "raw-color",
+			"value": "oklch(0.43 0.1 160)",
+			"count": 1
+		},
+		{
+			"file": "src/entities/comment/ui/ai-personas.css",
+			"rule": "raw-color",
+			"value": "oklch(0.8 0.11 160)",
+			"count": 1
+		},
+		{
+			"file": "src/entities/comment/ui/ai-personas.css",
+			"rule": "raw-color",
+			"value": "oklch(0.47 0.12 45)",
+			"count": 1
+		},
+		{
+			"file": "src/entities/comment/ui/ai-personas.css",
+			"rule": "raw-color",
+			"value": "oklch(0.8 0.11 50)",
+			"count": 1
+		},
+		{
+			"file": "src/entities/comment/ui/ai-personas.css",
+			"rule": "raw-color",
+			"value": "oklch(0.43 0.015 270)",
+			"count": 1
+		},
+		{
+			"file": "src/entities/comment/ui/ai-personas.css",
+			"rule": "raw-color",
+			"value": "oklch(0.8 0.015 270)",
+			"count": 1
+		},
+		{
+			"file": "src/entities/comment/ui/ai-personas.css",
+			"rule": "raw-color",
+			"value": "oklch(0.44 0.15 15)",
+			"count": 1
+		},
+		{
+			"file": "src/entities/comment/ui/ai-personas.css",
+			"rule": "raw-color",
+			"value": "oklch(0.76 0.14 15)",
+			"count": 1
+		},
+		{
+			"file": "src/entities/comment/ui/ai-personas.css",
+			"rule": "raw-color",
+			"value": "oklch(0.48 0.16 262)",
+			"count": 1
+		},
+		{
+			"file": "src/entities/comment/ui/ai-personas.css",
+			"rule": "raw-color",
+			"value": "oklch(0.78 0.12 260)",
+			"count": 1
+		},
+		{
+			"file": "src/entities/comment/ui/ai-personas.css",
+			"rule": "raw-color",
+			"value": "oklch(0.47 0.11 83)",
+			"count": 1
+		},
+		{
+			"file": "src/entities/comment/ui/ai-personas.css",
+			"rule": "raw-color",
+			"value": "oklch(0.84 0.13 87)",
+			"count": 1
+		},
+		{
+			"file": "src/entities/comment/ui/ai-personas.css",
+			"rule": "raw-color",
+			"value": "oklch(0.49 0.18 294)",
+			"count": 1
+		},
+		{
+			"file": "src/entities/comment/ui/ai-personas.css",
+			"rule": "raw-color",
+			"value": "oklch(0.81 0.11 295)",
+			"count": 1
+		},
+		{
+			"file": "src/entities/comment/ui/ai-personas.css",
+			"rule": "raw-color",
+			"value": "oklch(0.49 0.038 305)",
+			"count": 1
+		},
+		{
+			"file": "src/entities/comment/ui/ai-personas.css",
+			"rule": "raw-color",
+			"value": "oklch(0.77 0.045 305)",
+			"count": 1
+		},
+		{
+			"file": "src/entities/comment/ui/AICommentProfile.module.css",
+			"rule": "raw-color",
+			"value": "rgb(0 0 0 / 0.05)",
+			"count": 1
+		},
+		{
+			"file": "src/entities/media/ui/AvatarPicker.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-black",
+			"count": 1
+		},
+		{
+			"file": "src/entities/media/ui/AvatarPicker.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-white",
+			"count": 2
+		},
+		{
+			"file": "src/entities/media/ui/MediaPicker.tsx",
+			"rule": "tailwind-palette",
+			"value": "from-black",
+			"count": 1
+		},
+		{
+			"file": "src/entities/media/ui/MediaPicker.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-white",
+			"count": 1
+		},
+		{
+			"file": "src/features/about/ui/SkillsSection.tsx",
+			"rule": "raw-color",
+			"value": "#00add8",
+			"count": 1
+		},
+		{
+			"file": "src/features/about/ui/SkillsSection.tsx",
+			"rule": "raw-color",
+			"value": "#087ea4",
+			"count": 1
+		},
+		{
+			"file": "src/features/about/ui/SkillsSection.tsx",
+			"rule": "raw-color",
+			"value": "#336791",
+			"count": 1
+		},
+		{
+			"file": "src/features/about/ui/SkillsSection.tsx",
+			"rule": "raw-color",
+			"value": "#3178c6",
+			"count": 1
+		},
+		{
+			"file": "src/features/about/ui/SkillsSection.tsx",
+			"rule": "raw-color",
+			"value": "#0ea5e9",
+			"count": 2
+		},
+		{
+			"file": "src/features/about/ui/SkillsSection.tsx",
+			"rule": "raw-color",
+			"value": "#663399",
+			"count": 1
+		},
+		{
+			"file": "src/features/admin-emojis/ui/EmojiGroupCard.tsx",
+			"rule": "legacy-color",
+			"value": "bg-primary-base",
+			"count": 1
+		},
+		{
+			"file": "src/features/admin-emojis/ui/EmojiGroupCard.tsx",
+			"rule": "legacy-color",
+			"value": "text-primary-base",
+			"count": 1
+		},
+		{
+			"file": "src/features/admin-emojis/ui/EmojiGroupCard.tsx",
+			"rule": "legacy-color",
+			"value": "border-primary-base",
+			"count": 1
+		},
+		{
+			"file": "src/features/admin-emojis/ui/EmojiGroupCard.tsx",
+			"rule": "legacy-color",
+			"value": "bg-neon-pink",
+			"count": 1
+		},
+		{
+			"file": "src/features/admin-emojis/ui/EmojiGroupCard.tsx",
+			"rule": "legacy-color",
+			"value": "text-neon-pink",
+			"count": 1
+		},
+		{
+			"file": "src/features/admin-emojis/ui/EmojiGroupCard.tsx",
+			"rule": "legacy-color",
+			"value": "border-neon-pink",
+			"count": 1
+		},
+		{
+			"file": "src/features/admin-layout/ui/nav-menu/__tests__/NavMenu.test.tsx",
+			"rule": "legacy-color",
+			"value": "bg-primary-base",
+			"count": 4
+		},
+		{
+			"file": "src/features/admin-layout/ui/nav-menu/NavMenuLink.tsx",
+			"rule": "legacy-color",
+			"value": "bg-primary-base",
+			"count": 1
+		},
+		{
+			"file": "src/features/admin-media/ui/Cover.tsx",
+			"rule": "tailwind-palette",
+			"value": "from-black",
+			"count": 1
+		},
+		{
+			"file": "src/features/admin-music/ui/MusicAccountCard.tsx",
+			"rule": "tailwind-palette",
+			"value": "border-emerald-500",
+			"count": 2
+		},
+		{
+			"file": "src/features/admin-music/ui/MusicAccountCard.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-emerald-600",
+			"count": 3
+		},
+		{
+			"file": "src/features/admin-music/ui/MusicAccountCard.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-emerald-400",
+			"count": 3
+		},
+		{
+			"file": "src/features/admin-music/ui/MusicAccountCard.tsx",
+			"rule": "tailwind-palette",
+			"value": "border-amber-500",
+			"count": 2
+		},
+		{
+			"file": "src/features/admin-music/ui/MusicAccountCard.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-amber-600",
+			"count": 4
+		},
+		{
+			"file": "src/features/admin-music/ui/MusicAccountCard.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-amber-400",
+			"count": 4
+		},
+		{
+			"file": "src/features/admin-music/ui/MusicLoginQrDialog.tsx",
+			"rule": "raw-color",
+			"value": "#ffffff",
+			"count": 1
+		},
+		{
+			"file": "src/features/admin-music/ui/MusicLoginQrDialog.tsx",
+			"rule": "raw-color",
+			"value": "#000000",
+			"count": 1
+		},
+		{
+			"file": "src/features/admin-shared/ui/data-table/styles/sticky-shadow.css",
+			"rule": "raw-color",
+			"value": "rgba(0, 0, 0, 0.15)",
+			"count": 2
+		},
+		{
+			"file": "src/features/admin-shared/ui/data-table/styles/sticky-shadow.css",
+			"rule": "raw-color",
+			"value": "rgba(0, 0, 0, 0.4)",
+			"count": 4
+		},
+		{
+			"file": "src/features/admin-system/ui/SchemaRelationshipCanvas.module.css",
+			"rule": "raw-color",
+			"value": "oklch(0.64 0.18 296)",
+			"count": 1
+		},
+		{
+			"file": "src/features/admin-system/ui/SchemaRelationshipCanvas.module.css",
+			"rule": "raw-color",
+			"value": "oklch(0.7 0.14 205)",
+			"count": 1
+		},
+		{
+			"file": "src/features/admin-system/ui/SchemaRelationshipCanvas.module.css",
+			"rule": "raw-color",
+			"value": "oklch(0.72 0.16 18)",
+			"count": 1
+		},
+		{
+			"file": "src/features/admin-system/ui/SchemaRelationshipCanvas.module.css",
+			"rule": "raw-color",
+			"value": "oklch(0.76 0.14 78)",
+			"count": 1
+		},
+		{
+			"file": "src/features/admin-system/ui/SchemaRelationshipCanvas.module.css",
+			"rule": "raw-color",
+			"value": "oklch(0.73 0.14 155)",
+			"count": 1
+		},
+		{
+			"file": "src/features/api-docs/ui/MethodBadge.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-emerald-600",
+			"count": 1
+		},
+		{
+			"file": "src/features/api-docs/ui/MethodBadge.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-emerald-400",
+			"count": 1
+		},
+		{
+			"file": "src/features/api-docs/ui/MethodBadge.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-sky-600",
+			"count": 1
+		},
+		{
+			"file": "src/features/api-docs/ui/MethodBadge.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-sky-400",
+			"count": 1
+		},
+		{
+			"file": "src/features/api-docs/ui/MethodBadge.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-amber-600",
+			"count": 1
+		},
+		{
+			"file": "src/features/api-docs/ui/MethodBadge.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-amber-400",
+			"count": 1
+		},
+		{
+			"file": "src/features/api-docs/ui/MethodBadge.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-orange-600",
+			"count": 1
+		},
+		{
+			"file": "src/features/api-docs/ui/MethodBadge.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-orange-400",
+			"count": 1
+		},
+		{
+			"file": "src/features/api-docs/ui/MethodBadge.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-red-600",
+			"count": 1
+		},
+		{
+			"file": "src/features/api-docs/ui/MethodBadge.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-red-400",
+			"count": 1
+		},
+		{
+			"file": "src/features/api-docs/ui/OperationRow.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-red-500",
+			"count": 1
+		},
+		{
+			"file": "src/features/api-docs/ui/SchemaFields.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-red-500",
+			"count": 1
+		},
+		{
+			"file": "src/features/appearance/ui/CyclicAppearanceButton.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-amber-500",
+			"count": 1
+		},
+		{
+			"file": "src/features/appearance/ui/CyclicAppearanceButton.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-emerald-500",
+			"count": 1
+		},
+		{
+			"file": "src/features/appearance/ui/SceneButton.tsx",
+			"rule": "tailwind-palette",
+			"value": "from-sky-100",
+			"count": 1
+		},
+		{
+			"file": "src/features/appearance/ui/SceneButton.tsx",
+			"rule": "tailwind-palette",
+			"value": "to-sky-50",
+			"count": 1
+		},
+		{
+			"file": "src/features/appearance/ui/SceneButton.tsx",
+			"rule": "tailwind-palette",
+			"value": "from-sky-950",
+			"count": 1
+		},
+		{
+			"file": "src/features/appearance/ui/SceneButton.tsx",
+			"rule": "tailwind-palette",
+			"value": "to-sky-900",
+			"count": 1
+		},
+		{
+			"file": "src/features/appearance/ui/SceneButton.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-amber-400",
+			"count": 1
+		},
+		{
+			"file": "src/features/appearance/ui/SceneButton.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-white",
+			"count": 2
+		},
+		{
+			"file": "src/features/appearance/ui/SceneButton.tsx",
+			"rule": "tailwind-palette",
+			"value": "from-slate-900",
+			"count": 1
+		},
+		{
+			"file": "src/features/appearance/ui/SceneButton.tsx",
+			"rule": "tailwind-palette",
+			"value": "to-slate-800",
+			"count": 1
+		},
+		{
+			"file": "src/features/appearance/ui/SceneButton.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-slate-100",
+			"count": 1
+		},
+		{
+			"file": "src/features/chat/ui/BotReplyCard.tsx",
+			"rule": "legacy-color",
+			"value": "bg-primary-base-soft",
+			"count": 1
+		},
+		{
+			"file": "src/features/chat/ui/BotReplyCard.tsx",
+			"rule": "legacy-color",
+			"value": "text-primary-base-soft-foreground",
+			"count": 1
+		},
+		{
+			"file": "src/features/chat/ui/ChatAvatar.tsx",
+			"rule": "raw-color",
+			"value": "#e17076",
+			"count": 1
+		},
+		{
+			"file": "src/features/chat/ui/ChatAvatar.tsx",
+			"rule": "raw-color",
+			"value": "#7bc862",
+			"count": 1
+		},
+		{
+			"file": "src/features/chat/ui/ChatAvatar.tsx",
+			"rule": "raw-color",
+			"value": "#e5ca77",
+			"count": 1
+		},
+		{
+			"file": "src/features/chat/ui/ChatAvatar.tsx",
+			"rule": "raw-color",
+			"value": "#65aadd",
+			"count": 1
+		},
+		{
+			"file": "src/features/chat/ui/ChatAvatar.tsx",
+			"rule": "raw-color",
+			"value": "#a695e7",
+			"count": 1
+		},
+		{
+			"file": "src/features/chat/ui/ChatAvatar.tsx",
+			"rule": "raw-color",
+			"value": "#ee7aae",
+			"count": 1
+		},
+		{
+			"file": "src/features/chat/ui/ChatAvatar.tsx",
+			"rule": "raw-color",
+			"value": "#6ec9cb",
+			"count": 1
+		},
+		{
+			"file": "src/features/chat/ui/ChatAvatar.tsx",
+			"rule": "raw-color",
+			"value": "#faa774",
+			"count": 1
+		},
+		{
+			"file": "src/features/chat/ui/ChatAvatar.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-white",
+			"count": 1
+		},
+		{
+			"file": "src/features/chat/ui/ChatMessageContent.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-black",
+			"count": 1
+		},
+		{
+			"file": "src/features/chat/ui/ChatMessageContent.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-white",
+			"count": 1
+		},
+		{
+			"file": "src/features/chat/ui/ChatMessageContent.tsx",
+			"rule": "raw-color",
+			"value": "#24292e",
+			"count": 1
+		},
+		{
+			"file": "src/features/chat/ui/ChatMessageContent.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-white",
+			"count": 1
+		},
+		{
+			"file": "src/features/chat/ui/SharedTweetSummary.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-black",
+			"count": 1
+		},
+		{
+			"file": "src/features/chat/ui/SharedTweetSummary.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-white",
+			"count": 1
+		},
+		{
+			"file": "src/features/chat/ui/TweetShareCard.tsx",
+			"rule": "legacy-color",
+			"value": "border-neon-cyan",
+			"count": 1
+		},
+		{
+			"file": "src/features/comments/ui/AnnotationComposer.tsx",
+			"rule": "tailwind-palette",
+			"value": "ring-white",
+			"count": 1
+		},
+		{
+			"file": "src/features/comments/ui/AnnotationPopover.tsx",
+			"rule": "tailwind-palette",
+			"value": "ring-white",
+			"count": 1
+		},
+		{
+			"file": "src/features/comments/ui/CommentDrawer.tsx",
+			"rule": "tailwind-palette",
+			"value": "ring-white",
+			"count": 1
+		},
+		{
+			"file": "src/features/comments/ui/FloatingToolbar.tsx",
+			"rule": "tailwind-palette",
+			"value": "ring-white",
+			"count": 1
+		},
+		{
+			"file": "src/features/comments/ui/RichCommentInput.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-black",
+			"count": 3
+		},
+		{
+			"file": "src/features/comments/ui/RichCommentInput.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-white",
+			"count": 3
+		},
+		{
+			"file": "src/features/editor/RichTextEditor.tsx",
+			"rule": "raw-color",
+			"value": "hsl(240_10%_8%)",
+			"count": 1
+		},
+		{
+			"file": "src/features/editor/styles.css",
+			"rule": "raw-color",
+			"value": "hsl(0 0% 45%)",
+			"count": 1
+		},
+		{
+			"file": "src/features/editor/styles.css",
+			"rule": "raw-color",
+			"value": "hsl(0 0% 85%)",
+			"count": 1
+		},
+		{
+			"file": "src/features/editor/styles.css",
+			"rule": "raw-color",
+			"value": "#24292e",
+			"count": 1
+		},
+		{
+			"file": "src/features/editor/styles.css",
+			"rule": "raw-color",
+			"value": "#e6edf3",
+			"count": 1
+		},
+		{
+			"file": "src/features/editor/styles.css",
+			"rule": "raw-color",
+			"value": "#c9d1d9",
+			"count": 2
+		},
+		{
+			"file": "src/features/editor/styles.css",
+			"rule": "raw-color",
+			"value": "#8b949e",
+			"count": 1
+		},
+		{
+			"file": "src/features/editor/styles.css",
+			"rule": "raw-color",
+			"value": "#ff7b72",
+			"count": 1
+		},
+		{
+			"file": "src/features/editor/styles.css",
+			"rule": "raw-color",
+			"value": "#a5d6ff",
+			"count": 2
+		},
+		{
+			"file": "src/features/editor/styles.css",
+			"rule": "raw-color",
+			"value": "#79c0ff",
+			"count": 3
+		},
+		{
+			"file": "src/features/editor/styles.css",
+			"rule": "raw-color",
+			"value": "#d2a8ff",
+			"count": 1
+		},
+		{
+			"file": "src/features/editor/styles.css",
+			"rule": "raw-color",
+			"value": "#ffa657",
+			"count": 3
+		},
+		{
+			"file": "src/features/editor/styles.css",
+			"rule": "raw-color",
+			"value": "#7ee787",
+			"count": 1
+		},
+		{
+			"file": "src/features/editor/styles.css",
+			"rule": "raw-color",
+			"value": "#ffa198",
+			"count": 1
+		},
+		{
+			"file": "src/features/editor/styles.css",
+			"rule": "raw-color",
+			"value": "#490202",
+			"count": 1
+		},
+		{
+			"file": "src/features/editor/styles.css",
+			"rule": "raw-color",
+			"value": "#aff5b4",
+			"count": 1
+		},
+		{
+			"file": "src/features/editor/styles.css",
+			"rule": "raw-color",
+			"value": "#033a16",
+			"count": 1
+		},
+		{
+			"file": "src/features/editor/ui/CodeBlockView.tsx",
+			"rule": "raw-color",
+			"value": "#24292e",
+			"count": 1
+		},
+		{
+			"file": "src/features/editor/ui/CodeBlockView.tsx",
+			"rule": "tailwind-palette",
+			"value": "border-white",
+			"count": 3
+		},
+		{
+			"file": "src/features/editor/ui/CodeBlockView.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-white",
+			"count": 4
+		},
+		{
+			"file": "src/features/editor/ui/CodeBlockView.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-white",
+			"count": 6
+		},
+		{
+			"file": "src/features/editor/ui/CodeBlockView.tsx",
+			"rule": "raw-color",
+			"value": "#e6edf3",
+			"count": 1
+		},
+		{
+			"file": "src/features/editor/ui/CodeBlockView.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-black",
+			"count": 1
+		},
+		{
+			"file": "src/features/emojis/ui/EmojiPicker.module.css",
+			"rule": "raw-color",
+			"value": "rgb(0 0 0 / 0.05)",
+			"count": 2
+		},
+		{
+			"file": "src/features/inkline-workbench/ui/ArtworkStage.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-white",
+			"count": 1
+		},
+		{
+			"file": "src/features/notifications/ui/NotificationBell.tsx",
+			"rule": "legacy-color",
+			"value": "text-primary-base",
+			"count": 4
+		},
+		{
+			"file": "src/features/notifications/ui/NotificationBell.tsx",
+			"rule": "legacy-color",
+			"value": "text-neon-cyan",
+			"count": 1
+		},
+		{
+			"file": "src/features/notifications/ui/NotificationBell.tsx",
+			"rule": "legacy-color",
+			"value": "text-neon-pink",
+			"count": 1
+		},
+		{
+			"file": "src/features/notifications/ui/NotificationBell.tsx",
+			"rule": "legacy-color",
+			"value": "text-neon-green",
+			"count": 1
+		},
+		{
+			"file": "src/features/notifications/ui/NotificationBell.tsx",
+			"rule": "legacy-color",
+			"value": "text-neon-blue",
+			"count": 1
+		},
+		{
+			"file": "src/features/notifications/ui/NotificationBell.tsx",
+			"rule": "tailwind-palette",
+			"value": "shadow-black",
+			"count": 2
+		},
+		{
+			"file": "src/features/persona-editor/ui/PersonaSaveIndicator.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-amber-600",
+			"count": 1
+		},
+		{
+			"file": "src/features/persona-editor/ui/PersonaSaveIndicator.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-amber-400",
+			"count": 1
+		},
+		{
+			"file": "src/features/persona-editor/ui/PersonaStatusPanel.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-emerald-600",
+			"count": 1
+		},
+		{
+			"file": "src/features/persona-editor/ui/PersonaStatusPanel.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-emerald-400",
+			"count": 1
+		},
+		{
+			"file": "src/features/pet-demo/ui/PetHatching.tsx",
+			"rule": "raw-color",
+			"value": "#3a3250",
+			"count": 2
+		},
+		{
+			"file": "src/features/pet-demo/ui/PetHatching.tsx",
+			"rule": "raw-color",
+			"value": "#f4ecd9",
+			"count": 1
+		},
+		{
+			"file": "src/features/pet-demo/ui/PetHatching.tsx",
+			"rule": "raw-color",
+			"value": "#fffaf0",
+			"count": 1
+		},
+		{
+			"file": "src/features/pet-demo/ui/PetHatching.tsx",
+			"rule": "raw-color",
+			"value": "#e2d5ba",
+			"count": 1
+		},
+		{
+			"file": "src/features/projects/ui/roadmap-board.css",
+			"rule": "raw-color",
+			"value": "rgb(0 0 0 / 0.05)",
+			"count": 1
+		},
+		{
+			"file": "src/features/projects/ui/RoadmapFilterBar.tsx",
+			"rule": "raw-color",
+			"value": "rgb(0 0 0 / 0.05)",
+			"count": 1
+		},
+		{
+			"file": "src/features/series/ui/BookCover.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-black",
+			"count": 2
+		},
+		{
+			"file": "src/features/series/ui/BookCover.tsx",
+			"rule": "tailwind-palette",
+			"value": "border-stone-700",
+			"count": 1
+		},
+		{
+			"file": "src/features/series/ui/BookCover.tsx",
+			"rule": "raw-color",
+			"value": "#e8e2d8",
+			"count": 1
+		},
+		{
+			"file": "src/features/series/ui/BookCover.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-stone-400",
+			"count": 2
+		},
+		{
+			"file": "src/features/series/ui/BookCover.tsx",
+			"rule": "tailwind-palette",
+			"value": "border-black",
+			"count": 1
+		},
+		{
+			"file": "src/features/series/ui/BookCover.tsx",
+			"rule": "tailwind-palette",
+			"value": "from-black",
+			"count": 1
+		},
+		{
+			"file": "src/features/series/ui/BookCover.tsx",
+			"rule": "tailwind-palette",
+			"value": "ring-white",
+			"count": 1
+		},
+		{
+			"file": "src/features/series/ui/BookCover.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-stone-950",
+			"count": 2
+		},
+		{
+			"file": "src/features/series/ui/BookCover.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-white",
+			"count": 4
+		},
+		{
+			"file": "src/features/series/ui/BookCover.tsx",
+			"rule": "raw-color",
+			"value": "#d8e1dc",
+			"count": 1
+		},
+		{
+			"file": "src/features/series/ui/BookCover.tsx",
+			"rule": "raw-color",
+			"value": "#17372f",
+			"count": 1
+		},
+		{
+			"file": "src/features/series/ui/BookCover.tsx",
+			"rule": "raw-color",
+			"value": "#315b50",
+			"count": 6
+		},
+		{
+			"file": "src/features/tweets/ui/TweetCard.module.css",
+			"rule": "raw-color",
+			"value": "rgb(0 0 0 / 0.05)",
+			"count": 1
+		},
+		{
+			"file": "src/features/tweets/ui/TweetComposer.module.css",
+			"rule": "raw-color",
+			"value": "rgb(0 0 0 / 0.05)",
+			"count": 1
+		},
+		{
+			"file": "src/features/ui-docs/ui/examples/image-pixel-reveal/basic.tsx",
+			"rule": "raw-color",
+			"value": "#e9c7a2",
+			"count": 1
+		},
+		{
+			"file": "src/features/ui-docs/ui/examples/image-pixel-reveal/basic.tsx",
+			"rule": "raw-color",
+			"value": "#fff0cb",
+			"count": 1
+		},
+		{
+			"file": "src/features/ui-docs/ui/examples/image-pixel-reveal/basic.tsx",
+			"rule": "raw-color",
+			"value": "#856982",
+			"count": 1
+		},
+		{
+			"file": "src/features/ui-docs/ui/examples/image-pixel-reveal/basic.tsx",
+			"rule": "raw-color",
+			"value": "#494e6b",
+			"count": 1
+		},
+		{
+			"file": "src/features/ui-docs/ui/examples/image-pixel-reveal/basic.tsx",
+			"rule": "raw-color",
+			"value": "#a3c5d2",
+			"count": 1
+		},
+		{
+			"file": "src/features/ui-docs/ui/examples/image-pixel-reveal/basic.tsx",
+			"rule": "raw-color",
+			"value": "#edf8f0",
+			"count": 1
+		},
+		{
+			"file": "src/features/ui-docs/ui/examples/image-pixel-reveal/basic.tsx",
+			"rule": "raw-color",
+			"value": "#587e88",
+			"count": 1
+		},
+		{
+			"file": "src/features/ui-docs/ui/examples/image-pixel-reveal/basic.tsx",
+			"rule": "raw-color",
+			"value": "#334f63",
+			"count": 1
+		},
+		{
+			"file": "src/features/ui-docs/ui/examples/image-pixel-reveal/basic.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-black",
+			"count": 1
+		},
+		{
+			"file": "src/features/ui-docs/ui/examples/image-pixel-reveal/basic.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-white",
+			"count": 1
+		},
+		{
+			"file": "src/routes/admin.emojis.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-green-500",
+			"count": 1
+		},
+		{
+			"file": "src/routes/admin.emojis.tsx",
+			"rule": "tailwind-palette",
+			"value": "border-orange-200",
+			"count": 1
+		},
+		{
+			"file": "src/routes/admin.settings.about.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-amber-600",
+			"count": 1
+		},
+		{
+			"file": "src/routes/admin.settings.about.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-amber-400",
+			"count": 1
+		},
+		{
+			"file": "src/routes/admin.settings.auth.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-amber-600",
+			"count": 1
+		},
+		{
+			"file": "src/routes/admin.subscriptions.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-yellow-600",
+			"count": 1
+		},
+		{
+			"file": "src/routes/admin.subscriptions.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-red-600",
+			"count": 1
+		},
+		{
+			"file": "src/routes/admin.subscriptions.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-red-400",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/archive-preview/components/ArchivePreview.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-red-500",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/article-embeds/GitHubProjectReference.module.css",
+			"rule": "raw-color",
+			"value": "#3178c6",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/article-embeds/GitHubProjectReference.module.css",
+			"rule": "raw-color",
+			"value": "#f1e05a",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/article-embeds/GitHubProjectReference.module.css",
+			"rule": "raw-color",
+			"value": "#00add8",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/audio-preview/components/AudioOverlay.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-red-500",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/cartoon-popover/CartoonPopover.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-violet-200",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/cartoon-popover/CartoonPopover.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-white",
+			"count": 2
+		},
+		{
+			"file": "src/shared/ui/cartoon-popover/CartoonPopoverGroup.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-violet-200",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/cartoon-popover/CartoonPopoverGroup.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-white",
+			"count": 2
+		},
+		{
+			"file": "src/shared/ui/code-preview/component-code.css",
+			"rule": "raw-color",
+			"value": "rgb(139 148 158)",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/code-preview/component-code.css",
+			"rule": "raw-color",
+			"value": "#6e7781",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/code-preview/components/CodeCard.tsx",
+			"rule": "raw-color",
+			"value": "#24292e",
+			"count": 4
+		},
+		{
+			"file": "src/shared/ui/code-preview/components/CodeCard.tsx",
+			"rule": "tailwind-palette",
+			"value": "border-white",
+			"count": 3
+		},
+		{
+			"file": "src/shared/ui/code-preview/components/CodeCard.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-white",
+			"count": 6
+		},
+		{
+			"file": "src/shared/ui/code-preview/components/CodeCard.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-white",
+			"count": 3
+		},
+		{
+			"file": "src/shared/ui/code-preview/components/CodeCard.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-green-400",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/code-preview/components/CodeCard.tsx",
+			"rule": "tailwind-palette",
+			"value": "border-slate-200",
+			"count": 4
+		},
+		{
+			"file": "src/shared/ui/code-preview/components/CodeCard.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-slate-500",
+			"count": 2
+		},
+		{
+			"file": "src/shared/ui/code-preview/components/CodeCard.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-slate-100",
+			"count": 2
+		},
+		{
+			"file": "src/shared/ui/code-preview/components/CodeCard.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-slate-900",
+			"count": 2
+		},
+		{
+			"file": "src/shared/ui/code-preview/components/CodeCard.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-emerald-600",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/code-preview/components/CodeCard.tsx",
+			"rule": "tailwind-palette",
+			"value": "from-white",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/code-preview/components/CodeCard.tsx",
+			"rule": "tailwind-palette",
+			"value": "via-white",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/code-preview/components/CodeCard.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-slate-700",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/code-preview/components/CodePreview.tsx",
+			"rule": "raw-color",
+			"value": "#24292e",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/code-preview/components/CodePreview.tsx",
+			"rule": "tailwind-palette",
+			"value": "border-white",
+			"count": 3
+		},
+		{
+			"file": "src/shared/ui/code-preview/components/CodePreview.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-white",
+			"count": 5
+		},
+		{
+			"file": "src/shared/ui/code-preview/components/CodePreview.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-white",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/code-preview/components/CodePreview.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-green-400",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/code-preview/components/CodePreview.tsx",
+			"rule": "tailwind-palette",
+			"value": "border-t-white",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/code-preview/components/CodePreview.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-red-400",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/code-scrollbar.module.css",
+			"rule": "raw-color",
+			"value": "rgba(255, 255, 255, 0.15)",
+			"count": 2
+		},
+		{
+			"file": "src/shared/ui/code-scrollbar.module.css",
+			"rule": "raw-color",
+			"value": "rgba(255, 255, 255, 0.25)",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/diagram/DiagramFullscreen.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-white",
+			"count": 4
+		},
+		{
+			"file": "src/shared/ui/diagram/DiagramFullscreen.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-white",
+			"count": 3
+		},
+		{
+			"file": "src/shared/ui/diagram/DiagramFullscreen.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-black",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/diagram/DiagramFullscreen.tsx",
+			"rule": "tailwind-palette",
+			"value": "from-black",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/diagram/DiagramViewport.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-green-400",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/docx-preview/components/DocxOverlay.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-red-500",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/docx-preview/components/DocxPreview.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-white",
+			"count": 2
+		},
+		{
+			"file": "src/shared/ui/file-preview/components/ContentImage.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-black",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/frame-picker.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-black",
+			"count": 4
+		},
+		{
+			"file": "src/shared/ui/frame-picker.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-white",
+			"count": 2
+		},
+		{
+			"file": "src/shared/ui/image-cropper/ImageFramer.tsx",
+			"rule": "tailwind-palette",
+			"value": "ring-white",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/image-cropper/ImageFramer.tsx",
+			"rule": "raw-color",
+			"value": "rgb(0 0 0 / 0.5)",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/image-cropper/ImageFramer.tsx",
+			"rule": "raw-color",
+			"value": "rgb(255 255 255 / 0.6)",
+			"count": 8
+		},
+		{
+			"file": "src/shared/ui/image-grid/__tests__/ImageGrid.test.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-black",
+			"count": 2
+		},
+		{
+			"file": "src/shared/ui/image-grid/ImageGrid.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-black",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/image-grid/ImageGrid.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-white",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/image-preview/components/ImagePreview.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-black",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/image-preview/components/ImagePreviewControls.tsx",
+			"rule": "tailwind-palette",
+			"value": "from-black",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/image-preview/components/ImagePreviewControls.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-white",
+			"count": 26
+		},
+		{
+			"file": "src/shared/ui/image-preview/components/ImagePreviewControls.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-white",
+			"count": 15
+		},
+		{
+			"file": "src/shared/ui/image-preview/components/ImagePreviewControls.tsx",
+			"rule": "tailwind-palette",
+			"value": "ring-white",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/image-preview/components/ImagePreviewImage.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-white",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/image-preview/components/ImagePreviewImage.tsx",
+			"rule": "tailwind-palette",
+			"value": "border-white",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/image-preview/components/ImagePreviewImage.tsx",
+			"rule": "tailwind-palette",
+			"value": "border-t-white",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/image-preview/components/ImagePreviewThumbnails.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-black",
+			"count": 2
+		},
+		{
+			"file": "src/shared/ui/image-preview/components/ImagePreviewThumbnails.tsx",
+			"rule": "tailwind-palette",
+			"value": "border-white",
+			"count": 3
+		},
+		{
+			"file": "src/shared/ui/image-preview/components/ImagePreviewThumbnails.tsx",
+			"rule": "tailwind-palette",
+			"value": "ring-white",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/markdown-preview/__tests__/CommonSyntax.test.tsx",
+			"rule": "raw-color",
+			"value": "#ff0000",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/markdown-preview/__tests__/CommonSyntax.test.tsx",
+			"rule": "raw-color",
+			"value": "rgb(255, 0, 0)",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/markdown-preview/__tests__/ReadingIntegrity.test.tsx",
+			"rule": "raw-color",
+			"value": "#ff0000",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/markdown-preview/__tests__/ReadingIntegrity.test.tsx",
+			"rule": "raw-color",
+			"value": "rgb(255, 0, 0)",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/markdown-preview/__tests__/RichArticleContent.test.tsx",
+			"rule": "raw-color",
+			"value": "#ff0000",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/markdown-preview/__tests__/RichArticleContent.test.tsx",
+			"rule": "raw-color",
+			"value": "rgb(255, 0, 0)",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/markdown-preview/code-renderer-context.tsx",
+			"rule": "raw-color",
+			"value": "#24292e",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/markdown-preview/code-renderer-context.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-white",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/markdown-preview/components/markdown-components.tsx",
+			"rule": "raw-color",
+			"value": "#24292e",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/markdown-preview/components/markdown-components.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-white",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/markdown-preview/components/MarkdownPreview.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-green-500",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/markdown-preview/components/MarkdownPreview.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-red-500",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/media-viewer/MediaViewer.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-black",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/paper-dialog/PaperDialog.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-black",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/particle-field.tsx",
+			"rule": "raw-color",
+			"value": "#000",
+			"count": 2
+		},
+		{
+			"file": "src/shared/ui/pdf-preview/components/PdfOverlay.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-red-500",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/photo-stack-stage.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-black",
+			"count": 2
+		},
+		{
+			"file": "src/shared/ui/photo-stack-stage.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-white",
+			"count": 2
+		},
+		{
+			"file": "src/shared/ui/spreadsheet-preview/components/SpreadsheetPreview.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-red-500",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/terminal-card.tsx",
+			"rule": "raw-color",
+			"value": "rgba(0,0,0,0.06)",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/terminal-card.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-red-500",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/terminal-card.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-amber-400",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/terminal-card.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-emerald-400",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/terminal-card.tsx",
+			"rule": "legacy-color",
+			"value": "from-neon-blue",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/terminal-card.tsx",
+			"rule": "legacy-color",
+			"value": "to-neon-purple",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/video-preview/components/VideoControls.tsx",
+			"rule": "tailwind-palette",
+			"value": "from-black",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/video-preview/components/VideoControls.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-white",
+			"count": 9
+		},
+		{
+			"file": "src/shared/ui/video-preview/components/VideoControls.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-black",
+			"count": 2
+		},
+		{
+			"file": "src/shared/ui/video-preview/components/VideoControls.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-white",
+			"count": 10
+		},
+		{
+			"file": "src/shared/ui/video-preview/components/VideoInfo.tsx",
+			"rule": "tailwind-palette",
+			"value": "border-white",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/video-preview/components/VideoInfo.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-black",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/video-preview/components/VideoInfo.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-white",
+			"count": 3
+		},
+		{
+			"file": "src/shared/ui/video-preview/components/VideoOverlay.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-black",
+			"count": 5
+		},
+		{
+			"file": "src/shared/ui/video-preview/components/VideoOverlay.tsx",
+			"rule": "tailwind-palette",
+			"value": "border-white",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/video-preview/components/VideoOverlay.tsx",
+			"rule": "tailwind-palette",
+			"value": "border-t-white",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/video-preview/components/VideoOverlay.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-white",
+			"count": 2
+		},
+		{
+			"file": "src/shared/ui/video-preview/components/VideoOverlay.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-red-400",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/video-preview/components/VideoPreview.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-black",
+			"count": 2
+		},
+		{
+			"file": "src/shared/ui/video-preview/components/VideoPreview.tsx",
+			"rule": "tailwind-palette",
+			"value": "from-black",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/video-preview/components/VideoPreview.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-white",
+			"count": 1
+		},
+		{
+			"file": "src/styles/dialects/immersive.css",
+			"rule": "raw-color",
+			"value": "oklch(0.13 0 0)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/dialects/immersive.css",
+			"rule": "raw-color",
+			"value": "oklch(0.94 0 0)",
+			"count": 2
+		},
+		{
+			"file": "src/styles/dialects/immersive.css",
+			"rule": "raw-color",
+			"value": "oklch(0.185 0 0)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/dialects/immersive.css",
+			"rule": "raw-color",
+			"value": "oklch(0.21 0 0)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/dialects/immersive.css",
+			"rule": "raw-color",
+			"value": "oklch(0.16 0 0)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/dialects/immersive.css",
+			"rule": "raw-color",
+			"value": "oklch(0.26 0 0)",
+			"count": 3
+		},
+		{
+			"file": "src/styles/dialects/immersive.css",
+			"rule": "raw-color",
+			"value": "oklch(0.7 0 0)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/dialects/immersive.css",
+			"rule": "raw-color",
+			"value": "oklch(1 0 0 / 12%)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/dialects/immersive.css",
+			"rule": "raw-color",
+			"value": "oklch(1 0 0 / 16%)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/dialects/public.css",
+			"rule": "raw-color",
+			"value": "oklch(0.992 0.003 286)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/dialects/public.css",
+			"rule": "raw-color",
+			"value": "oklch(0.138 0.012 286)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/dialects/public.css",
+			"rule": "raw-color",
+			"value": "oklch(0.19 0.015 286)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/dialects/public.css",
+			"rule": "raw-color",
+			"value": "oklch(0.955 0.008 286)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/dialects/public.css",
+			"rule": "raw-color",
+			"value": "oklch(1 0 0)",
+			"count": 2
+		},
+		{
+			"file": "src/styles/dialects/public.css",
+			"rule": "raw-color",
+			"value": "oklch(0.185 0.015 286)",
+			"count": 2
+		},
+		{
+			"file": "src/styles/dialects/public.css",
+			"rule": "raw-color",
+			"value": "oklch(0.958 0.008 286)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/dialects/public.css",
+			"rule": "raw-color",
+			"value": "oklch(0.225 0.016 286)",
+			"count": 2
+		},
+		{
+			"file": "src/styles/dialects/public.css",
+			"rule": "raw-color",
+			"value": "oklch(0.962 0.006 286)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/dialects/public.css",
+			"rule": "raw-color",
+			"value": "oklch(0.52 0.02 286)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/dialects/public.css",
+			"rule": "raw-color",
+			"value": "oklch(0.68 0.022 286)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/dialects/public.css",
+			"rule": "raw-color",
+			"value": "oklch(0.908 0.008 286)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/dialects/public.css",
+			"rule": "raw-color",
+			"value": "oklch(0.92 0.012 286 / 12%)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/dialects/public.css",
+			"rule": "raw-color",
+			"value": "oklch(0.895 0.01 286)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/dialects/public.css",
+			"rule": "raw-color",
+			"value": "oklch(0.92 0.012 286 / 18%)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/site-tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.976 0.012 85)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/site-tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.23 0.012 70)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/site-tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.24 0.014 60)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/site-tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.92 0.012 80)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/site-tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.46 0.016 60)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/site-tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.68 0.012 75)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/site-tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.885 0.018 80)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/site-tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.32 0.012 70)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/site-tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.54 0.14 286)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/site-tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.72 0.09 78)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/site-tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.985 0.012 84)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/site-tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.56 0.26 295)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/site-tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.72 0.3 295)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/site-tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.6 0.22 245)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/site-tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.78 0.28 245)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/site-tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.62 0.19 150)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/site-tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.8 0.25 150)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/site-tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.65 0.25 350)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/site-tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.75 0.3 350)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/site-tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.7 0.16 210)",
+			"count": 1
+		},
+		{
+			"file": "src/styles/site-tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.82 0.2 210)",
+			"count": 1
+		},
+		{
+			"file": "src/widgets/BlogDetailPage/BlogDetailPage.tsx",
+			"rule": "legacy-color",
+			"value": "from-primary-base",
+			"count": 1
+		},
+		{
+			"file": "src/widgets/BlogDetailPage/BlogDetailPage.tsx",
+			"rule": "legacy-color",
+			"value": "to-primary-base-hover",
+			"count": 1
+		},
+		{
+			"file": "src/widgets/Header/HeaderActions.tsx",
+			"rule": "tailwind-palette",
+			"value": "shadow-black",
+			"count": 2
+		},
+		{
+			"file": "src/widgets/Header/HeaderIsland.tsx",
+			"rule": "tailwind-palette",
+			"value": "ring-white",
+			"count": 1
+		},
+		{
+			"file": "src/widgets/Header/HeaderIsland.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-white",
+			"count": 1
+		},
+		{
+			"file": "src/widgets/Header/HeaderIsland.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-neutral-950",
+			"count": 1
+		},
+		{
+			"file": "src/widgets/Header/HeaderNavRow.tsx",
+			"rule": "legacy-color",
+			"value": "text-primary-base",
+			"count": 2
+		},
+		{
+			"file": "src/widgets/Hero/Hero.tsx",
+			"rule": "raw-color",
+			"value": "rgba(96,165,250,0.32)",
+			"count": 1
+		},
+		{
+			"file": "src/widgets/Hero/Hero.tsx",
+			"rule": "raw-color",
+			"value": "rgba(96,165,250,0.12)",
+			"count": 1
+		},
+		{
+			"file": "src/widgets/Hero/Hero.tsx",
+			"rule": "raw-color",
+			"value": "rgba(96,165,250,0.38)",
+			"count": 1
+		},
+		{
+			"file": "src/widgets/Hero/Hero.tsx",
+			"rule": "raw-color",
+			"value": "rgba(96,165,250,0.14)",
+			"count": 1
+		},
+		{
+			"file": "src/widgets/Hero/Hero.tsx",
+			"rule": "raw-color",
+			"value": "rgba(192,132,252,0.30)",
+			"count": 1
+		},
+		{
+			"file": "src/widgets/Hero/Hero.tsx",
+			"rule": "raw-color",
+			"value": "rgba(192,132,252,0.10)",
+			"count": 1
+		},
+		{
+			"file": "src/widgets/Hero/Hero.tsx",
+			"rule": "raw-color",
+			"value": "rgba(192,132,252,0.38)",
+			"count": 1
+		},
+		{
+			"file": "src/widgets/Hero/Hero.tsx",
+			"rule": "raw-color",
+			"value": "rgba(192,132,252,0.14)",
+			"count": 1
+		},
+		{
+			"file": "src/widgets/Hero/Hero.tsx",
+			"rule": "raw-color",
+			"value": "rgba(34,211,238,0.22)",
+			"count": 1
+		},
+		{
+			"file": "src/widgets/Hero/Hero.tsx",
+			"rule": "raw-color",
+			"value": "rgba(34,211,238,0.08)",
+			"count": 1
+		},
+		{
+			"file": "src/widgets/Hero/Hero.tsx",
+			"rule": "raw-color",
+			"value": "rgba(34,211,238,0.30)",
+			"count": 1
+		},
+		{
+			"file": "src/widgets/Hero/Hero.tsx",
+			"rule": "raw-color",
+			"value": "rgba(34,211,238,0.12)",
+			"count": 1
+		},
+		{
+			"file": "src/widgets/Hero/Hero.tsx",
+			"rule": "legacy-color",
+			"value": "bg-neon-green",
+			"count": 2
+		},
+		{
+			"file": "src/widgets/SiteBackdrop/SiteBackdrop.module.css",
+			"rule": "raw-color",
+			"value": "#000",
+			"count": 5
+		},
+		{
+			"file": "src/widgets/SiteBackdrop/SiteBackdrop.module.css",
+			"rule": "raw-color",
+			"value": "rgb(0 0 0 / 28%)",
+			"count": 2
+		},
+		{
+			"file": "src/widgets/SiteBackdrop/SiteBackdrop.module.css",
+			"rule": "raw-color",
+			"value": "rgb(0 0 0 / 4.5%)",
+			"count": 1
+		},
+		{
+			"file": "src/widgets/SiteBackdrop/SiteBackdrop.module.css",
+			"rule": "raw-color",
+			"value": "rgb(255 255 255 / 5%)",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/board/board.css",
+			"rule": "raw-color",
+			"value": "#171717",
+			"count": 2
+		},
+		{
+			"file": "packages/kanban/src/board/board.css",
+			"rule": "raw-color",
+			"value": "#ededed",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/board/board.css",
+			"rule": "raw-color",
+			"value": "#737373",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/board/board.css",
+			"rule": "raw-color",
+			"value": "#a3a3a3",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/board/board.css",
+			"rule": "raw-color",
+			"value": "#e5e5e5",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/board/board.css",
+			"rule": "raw-color",
+			"value": "#2e2e2e",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/board/board.css",
+			"rule": "raw-color",
+			"value": "#fafafa",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/board/board.css",
+			"rule": "raw-color",
+			"value": "#ffffff",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/board/board.css",
+			"rule": "raw-color",
+			"value": "#0a0a0a",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/board/board.css",
+			"rule": "raw-color",
+			"value": "#b91c1c",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/board/board.css",
+			"rule": "raw-color",
+			"value": "#f87171",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/board/board.css",
+			"rule": "raw-color",
+			"value": "#2563eb",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/board/board.css",
+			"rule": "raw-color",
+			"value": "#60a5fa",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/board/board.css",
+			"rule": "raw-color",
+			"value": "rgb(0 0 0 / 0.05)",
+			"count": 3
+		},
+		{
+			"file": "packages/kanban/src/board/relations/relations.css",
+			"rule": "raw-color",
+			"value": "#737373",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/board/relations/relations.css",
+			"rule": "raw-color",
+			"value": "#a3a3a3",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/canvas/canvas.css",
+			"rule": "raw-color",
+			"value": "#171717",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/canvas/canvas.css",
+			"rule": "raw-color",
+			"value": "#ededed",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/canvas/canvas.css",
+			"rule": "raw-color",
+			"value": "#737373",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/canvas/canvas.css",
+			"rule": "raw-color",
+			"value": "#a3a3a3",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/canvas/canvas.css",
+			"rule": "raw-color",
+			"value": "#e5e5e5",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/canvas/canvas.css",
+			"rule": "raw-color",
+			"value": "#2e2e2e",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/canvas/canvas.css",
+			"rule": "raw-color",
+			"value": "#fafafa",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/canvas/canvas.css",
+			"rule": "raw-color",
+			"value": "#0f0f0f",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/canvas/canvas.css",
+			"rule": "raw-color",
+			"value": "#ffffff",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/canvas/canvas.css",
+			"rule": "raw-color",
+			"value": "#0a0a0a",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/canvas/canvas.css",
+			"rule": "raw-color",
+			"value": "#2563eb",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/canvas/canvas.css",
+			"rule": "raw-color",
+			"value": "#60a5fa",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/history/history.css",
+			"rule": "raw-color",
+			"value": "#171717",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/history/history.css",
+			"rule": "raw-color",
+			"value": "#ededed",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/history/history.css",
+			"rule": "raw-color",
+			"value": "#737373",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/history/history.css",
+			"rule": "raw-color",
+			"value": "#a3a3a3",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/history/history.css",
+			"rule": "raw-color",
+			"value": "#e5e5e5",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/history/history.css",
+			"rule": "raw-color",
+			"value": "#2e2e2e",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/history/history.css",
+			"rule": "raw-color",
+			"value": "#ffffff",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/history/history.css",
+			"rule": "raw-color",
+			"value": "#0a0a0a",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/history/history.css",
+			"rule": "raw-color",
+			"value": "#2563eb",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/history/history.css",
+			"rule": "raw-color",
+			"value": "#60a5fa",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/examples/themes.tsx",
+			"rule": "raw-color",
+			"value": "#f0f1f3",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/media.css",
+			"rule": "raw-color",
+			"value": "#000",
+			"count": 9
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/media.css",
+			"rule": "raw-color",
+			"value": "#fff",
+			"count": 6
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#ffffff",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#0a0a0a",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#171717",
+			"count": 2
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#ededed",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#737373",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#a3a3a3",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#e5e5e5",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#333333",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#0866d9",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#75b6ff",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#fafafa",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#1d9bf0",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#829aab",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#c41665",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#ff69a8",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#0879be",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#59b8f7",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#008557",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#42dba0",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/button/__tests__/button.test.tsx",
+			"rule": "legacy-color",
+			"value": "bg-primary-base",
+			"count": 2
+		},
+		{
+			"file": "packages/ui/src/components/card/card.css",
+			"rule": "raw-color",
+			"value": "rgb(0 0 0 / 5%)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/chart/chart.tsx",
+			"rule": "raw-color",
+			"value": "#ccc",
+			"count": 3
+		},
+		{
+			"file": "packages/ui/src/components/chart/chart.tsx",
+			"rule": "raw-color",
+			"value": "#fff",
+			"count": 2
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#ef4444",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#f97316",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#f59e0b",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#eab308",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#84cc16",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#22c55e",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#10b981",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#14b8a6",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#06b6d4",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#0ea5e9",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#3b82f6",
+			"count": 2
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#6366f1",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#8b5cf6",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#a855f7",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#d946ef",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#ec4899",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#64748b",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#0f172a",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
+			"rule": "tailwind-palette",
+			"value": "from-white",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
+			"rule": "tailwind-palette",
+			"value": "from-black",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
+			"rule": "tailwind-palette",
+			"value": "border-white",
+			"count": 2
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
+			"rule": "raw-color",
+			"value": "#f00",
+			"count": 2
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
+			"rule": "raw-color",
+			"value": "#ff0",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
+			"rule": "raw-color",
+			"value": "#0f0",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
+			"rule": "raw-color",
+			"value": "#0ff",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
+			"rule": "raw-color",
+			"value": "#00f",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
+			"rule": "raw-color",
+			"value": "#f0f",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/dialog/dialog.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-black",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/dropdown/dropdown.css",
+			"rule": "raw-color",
+			"value": "rgb(0 0 0 / 0.05)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/icons/google.tsx",
+			"rule": "raw-color",
+			"value": "#ea4335",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/icons/google.tsx",
+			"rule": "raw-color",
+			"value": "#4285f4",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/icons/google.tsx",
+			"rule": "raw-color",
+			"value": "#fbbc05",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/icons/google.tsx",
+			"rule": "raw-color",
+			"value": "#34a853",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/modal/components/Modal.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-black",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/segmented/segmented.css",
+			"rule": "raw-color",
+			"value": "rgb(0 0 0 / 0.05)",
+			"count": 4
+		},
+		{
+			"file": "packages/ui/src/components/segmented/segmented.css",
+			"rule": "raw-color",
+			"value": "rgb(255 255 255 / 0.1)",
+			"count": 2
+		},
+		{
+			"file": "packages/ui/src/components/sheet/sheet.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-black",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/switch/switch.css",
+			"rule": "raw-color",
+			"value": "rgb(0 0 0 / 5%)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/tabs/tabs.css",
+			"rule": "raw-color",
+			"value": "rgb(0 0 0 / 5%)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/palettes/coral.css",
+			"rule": "raw-color",
+			"value": "oklch(0.625 0.19 25)",
+			"count": 2
+		},
+		{
+			"file": "packages/ui/src/styles/palettes/coral.css",
+			"rule": "raw-color",
+			"value": "oklch(0.72 0.15 22)",
+			"count": 2
+		},
+		{
+			"file": "packages/ui/src/styles/palettes/coral.css",
+			"rule": "raw-color",
+			"value": "oklch(0.99 0 0)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/palettes/coral.css",
+			"rule": "raw-color",
+			"value": "oklch(0.17 0 0)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/palettes/coral.css",
+			"rule": "raw-color",
+			"value": "oklch(0.575 0.185 25)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/palettes/coral.css",
+			"rule": "raw-color",
+			"value": "oklch(0.67 0.155 22)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/palettes/coral.css",
+			"rule": "raw-color",
+			"value": "oklch(0.95 0.025 25)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/palettes/coral.css",
+			"rule": "raw-color",
+			"value": "oklch(0.25 0.025 22)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/palettes/coral.css",
+			"rule": "raw-color",
+			"value": "oklch(0.36 0.11 25)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/palettes/coral.css",
+			"rule": "raw-color",
+			"value": "oklch(0.88 0.065 22)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/palettes/violet.css",
+			"rule": "raw-color",
+			"value": "oklch(0.53 0.205 286)",
+			"count": 2
+		},
+		{
+			"file": "packages/ui/src/styles/palettes/violet.css",
+			"rule": "raw-color",
+			"value": "oklch(0.72 0.148 286)",
+			"count": 2
+		},
+		{
+			"file": "packages/ui/src/styles/palettes/violet.css",
+			"rule": "raw-color",
+			"value": "oklch(0.99 0 0)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/palettes/violet.css",
+			"rule": "raw-color",
+			"value": "oklch(0.14 0.02 286)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/palettes/violet.css",
+			"rule": "raw-color",
+			"value": "oklch(0.47 0.215 286)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/palettes/violet.css",
+			"rule": "raw-color",
+			"value": "oklch(0.77 0.138 286)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/palettes/violet.css",
+			"rule": "raw-color",
+			"value": "oklch(0.965 0.022 286)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/palettes/violet.css",
+			"rule": "raw-color",
+			"value": "oklch(0.22 0.038 286)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/palettes/violet.css",
+			"rule": "raw-color",
+			"value": "oklch(0.35 0.14 286)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/palettes/violet.css",
+			"rule": "raw-color",
+			"value": "oklch(0.9 0.07 286)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.992 0.003 286)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.138 0.012 286)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.19 0.015 286)",
+			"count": 3
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.955 0.008 286)",
+			"count": 3
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(1 0 0)",
+			"count": 2
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.185 0.015 286)",
+			"count": 2
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.205 0 0)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.922 0 0)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.985 0 0)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.18 0.015 286)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.958 0.008 286)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.225 0.016 286)",
+			"count": 3
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.22 0.02 286)",
+			"count": 2
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.95 0.008 286)",
+			"count": 2
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.962 0.006 286)",
+			"count": 2
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.52 0.02 286)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.68 0.022 286)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.58 0.195 20)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.69 0.18 18)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.99 0 0)",
+			"count": 2
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.15 0.03 18)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.66 0.155 60)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.77 0.15 65)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.16 0.03 60)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.16 0.03 75)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.575 0.145 158)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.75 0.15 158)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.15 0.03 158)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.908 0.008 286)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.92 0.012 286 / 12%)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.895 0.01 286)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.92 0.012 286 / 18%)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.53 0.205 286)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.72 0.148 286)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.19 0.015 286 / 6%)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(1 0 0 / 8%)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(1 0 0 / 70%)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.185 0.015 286 / 60%)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.58 0.2 286)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.72 0.18 286)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.64 0.16 220)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.74 0.16 220)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.6 0.15 155)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.76 0.16 155)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.74 0.16 75)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.8 0.16 75)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.64 0.2 350)",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/styles/tokens.css",
+			"rule": "raw-color",
+			"value": "oklch(0.74 0.18 350)",
+			"count": 1
+		}
+	]
+}
