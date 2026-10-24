@@ -58,8 +58,8 @@ SSR 宿主必须在首屏输出与持久化外观一致的类。使用 next-them
 | 选中与悬停 | `selected` / `selected-hover` / `selected-foreground` | 品牌浅底与可读文字 |
 | 焦点与进度 | `ring` / `progress` | 品牌焦点档 / 实色档 |
 | 装饰 | `decoration` / `decoration-hover` / `decoration-muted` / `decoration-foreground` | 品牌实色 / 配对悬停档 / 浅底 / 实色前景 |
-| 危险、警告、成功 | `destructive` / `warning` / `success` | 固定状态实色；`-foreground` 为实色前景，`-text` 为页面上的可读状态文字 |
-| 分类 | `category-1` 至 `category-6` | 固定分类实色；`-muted` 为浅底、`-text` 为可读文字、`-foreground` 为实色前景 |
+| 危险、警告、成功 | `destructive` / `warning` / `success` | 固定状态实色；`-foreground` 为实色前景；`text-` 前缀取页面上的可读状态文字 |
+| 分类 | `category-1` 至 `category-6` | 固定分类实色；`-muted` 为浅底、`-foreground` 为实色前景；`text-` 前缀取可读文字 |
 | 图表 | `chart-1` 至 `chart-5` | 前五个分类实色 |
 | 轻分隔与玻璃表面 | `edge-hairline` / `surface-glass` | 中性透明度色阶 |
 
