@@ -160,7 +160,7 @@ export function DataExportTab() {
 							下载 {format === "csv" ? "CSV" : "SQL"}
 						</Button>
 						{exportMutation.error && (
-							<p className="text-destructive text-xs leading-5">
+							<p className="text-destructive-text text-xs leading-5">
 								{exportMutation.error.message}
 							</p>
 						)}

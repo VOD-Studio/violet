@@ -189,7 +189,7 @@
 }
 
 .submit:hover:not(:disabled) .submitLabel {
-	background: color-mix(in oklab, var(--primary) 90%, var(--foreground));
+	background: var(--primary-hover);
 }
 
 @media (prefers-reduced-motion: reduce) {

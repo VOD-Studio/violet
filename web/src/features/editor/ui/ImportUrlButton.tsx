@@ -74,7 +74,7 @@ export function ImportUrlButton({ onConfirm }: ImportUrlButtonProps) {
 							placeholder="https://example.com/article"
 							autoFocus
 						/>
-						{error ? <p className="text-sm text-destructive">{error}</p> : null}
+						{error ? <p className="text-sm text-destructive-text">{error}</p> : null}
 					</div>
 					<label
 						htmlFor={`${id}-formula`}

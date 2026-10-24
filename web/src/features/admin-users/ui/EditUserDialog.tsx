@@ -152,7 +152,7 @@ export function EditUserDialog({
 				{/* 用户名 */}
 				<div className="space-y-2">
 					<Label htmlFor="edit-username">
-						用户名 <span className="text-destructive">*</span>
+						用户名 <span className="text-destructive-text">*</span>
 					</Label>
 					<Input
 						id="edit-username"
@@ -161,7 +161,7 @@ export function EditUserDialog({
 						aria-invalid={!!errors.username}
 					/>
 					{errors.username && (
-						<p className="text-sm text-destructive">{errors.username.message}</p>
+						<p className="text-sm text-destructive-text">{errors.username.message}</p>
 					)}
 				</div>
 				{/* 显示名 */}
@@ -173,14 +173,16 @@ export function EditUserDialog({
 						placeholder="留空则默认显示用户名"
 					/>
 					{errors.display_name && (
-						<p className="text-sm text-destructive">{errors.display_name.message}</p>
+						<p className="text-sm text-destructive-text">
+							{errors.display_name.message}
+						</p>
 					)}
 				</div>
 
 				{/* 邮箱 */}
 				<div className="space-y-2">
 					<Label htmlFor="edit-email">
-						邮箱 <span className="text-destructive">*</span>
+						邮箱 <span className="text-destructive-text">*</span>
 					</Label>
 					<Input
 						id="edit-email"
@@ -190,7 +192,7 @@ export function EditUserDialog({
 						aria-invalid={!!errors.email}
 					/>
 					{errors.email && (
-						<p className="text-sm text-destructive">{errors.email.message}</p>
+						<p className="text-sm text-destructive-text">{errors.email.message}</p>
 					)}
 				</div>
 
@@ -205,7 +207,7 @@ export function EditUserDialog({
 						aria-invalid={!!errors.password}
 					/>
 					{errors.password && (
-						<p className="text-sm text-destructive">{errors.password.message}</p>
+						<p className="text-sm text-destructive-text">{errors.password.message}</p>
 					)}
 					<p className="text-xs text-muted-foreground">
 						不修改密码请留空，修改密码需至少 6 位

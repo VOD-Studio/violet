@@ -44,7 +44,7 @@ export function PaletteHero({ mode, onModeChange, resolvedAppearance }: PaletteH
 	const activeContrast = effectiveAppearance === "light" ? lightContrast : darkContrast;
 
 	const handleCopyAll = async () => {
-		const cssVariables = `:root {
+		const cssVariables = `.lab-scope {
   /* 紫罗兰主色源（浅色：皇家鸢尾紫） */
   --primary-base: oklch(0.53 0.205 286);
   --primary-base-foreground: oklch(0.99 0 0);
@@ -54,7 +54,7 @@ export function PaletteHero({ mode, onModeChange, resolvedAppearance }: PaletteH
   --primary-base-ring: oklch(0.53 0.205 286);
 }
 
-.dark {
+.dark .lab-scope {
   /* 紫罗兰主色源（深色：星空紫水晶，全 sRGB 覆盖） */
   --primary-base: oklch(0.72 0.148 286);
   --primary-base-foreground: oklch(0.14 0.02 286);

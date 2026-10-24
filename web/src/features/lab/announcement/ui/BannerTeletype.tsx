@@ -1,9 +1,9 @@
 import type { Announcement } from "@features/settings/model/types";
+import { usePrefersReducedMotion, useWheelStep } from "@shared/hooks/use-banner-ticker";
 import { getAnnouncementSev } from "@shared/ui/announcement-severity";
 import { cn } from "cn";
 import { useEffect, useRef, useState } from "react";
 import { BANNER_NEON, BannerStage } from "./BannerStage";
-import { usePrefersReducedMotion, useWheelStep } from "./use-banner-ticker";
 
 const CHAR_MS = 45; // 打字每字耗时
 const CLEAR_MS = 16; // 退格每字耗时（清屏快于打出）

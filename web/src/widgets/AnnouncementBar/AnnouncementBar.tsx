@@ -13,12 +13,8 @@
  *   下降级为静态整条展示
  */
 
-import { BANNER_NEON } from "@features/lab/announcement/ui/BannerStage";
-import {
-	usePrefersReducedMotion,
-	useWheelStep,
-} from "@features/lab/announcement/ui/use-banner-ticker";
 import { useAnnouncements } from "@features/settings/api/queries";
+import { usePrefersReducedMotion, useWheelStep } from "@shared/hooks/use-banner-ticker";
 import { getAnnouncementSev } from "@shared/ui/announcement-severity";
 import { cn } from "cn";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -172,19 +168,14 @@ export default function AnnouncementBar() {
 		<div
 			ref={barRef}
 			style={{ viewTransitionName: "announcement-bar" }}
-			className="relative flex h-7 items-center justify-center gap-2 border-b border-edge-hairline bg-primary/95 px-12 font-mono text-xs dark:bg-card"
+			className="relative flex h-7 items-center justify-center gap-2 border-b border-edge-hairline bg-card px-12 font-mono text-xs"
 			onMouseEnter={() => setPaused(true)}
 			onMouseLeave={() => setPaused(false)}
 			onFocus={() => setPaused(true)}
 			onBlur={() => setPaused(false)}
 		>
-			<cfg.Icon
-				className={cn(
-					"size-3.5 shrink-0",
-					BANNER_NEON[current.severity] ?? BANNER_NEON.info,
-				)}
-			/>
-			<span className="truncate text-primary-foreground dark:text-foreground">
+			<cfg.Icon className={cn("size-3.5 shrink-0", cfg.text)} />
+			<span className="truncate text-foreground">
 				{text}
 				{/* 光标：打字/清屏时常亮，驻留时闪烁 */}
 				<span
@@ -195,14 +186,14 @@ export default function AnnouncementBar() {
 					)}
 				/>
 			</span>
-			<span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[10px] text-primary-foreground/50 dark:text-foreground/50">
+			<span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[10px] text-muted-foreground">
 				{index + 1}/{banners.length}
 			</span>
 			<button
 				type="button"
 				onClick={handleClose}
 				aria-label="关闭公告"
-				className="absolute top-1/2 right-3 z-10 -translate-y-1/2 text-primary-foreground/70 transition-colors hover:text-primary-foreground dark:text-foreground/70 dark:hover:text-foreground"
+				className="absolute top-1/2 right-3 z-10 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
 			>
 				✕
 			</button>

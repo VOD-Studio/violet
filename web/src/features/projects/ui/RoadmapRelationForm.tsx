@@ -118,7 +118,7 @@ export function RoadmapRelationForm({ item, items, onRelate }: RoadmapRelationFo
 				)
 			) : null}
 			{error ? (
-				<p role="alert" className="text-sm text-destructive">
+				<p role="alert" className="text-sm text-destructive-text">
 					{error}
 				</p>
 			) : null}

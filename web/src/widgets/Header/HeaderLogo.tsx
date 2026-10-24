@@ -26,7 +26,7 @@ const HeaderLogo = () => {
 				>
 					<span
 						aria-hidden="true"
-						className="flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-primary ring-1 ring-border/50 transition-colors group-hover:bg-primary/15"
+						className="flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-selected text-selected-foreground ring-1 ring-border/50 transition-colors group-hover:bg-selected-hover"
 					>
 						{personaAvatar ? (
 							<img src={personaAvatar} alt="" className="size-full object-cover" />

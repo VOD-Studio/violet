@@ -242,7 +242,7 @@ export function MusicAccountCard({
 									size="sm"
 									onClick={() => setDisconnectOpen(true)}
 									disabled={!canManage || disconnectMutation.isPending}
-									className="text-destructive hover:bg-destructive/10"
+									className="text-destructive-text hover:bg-destructive/10"
 								>
 									<LogOut className="size-3.5" />
 									断开
@@ -269,7 +269,7 @@ export function MusicAccountCard({
 									size="sm"
 									onClick={() => setDisconnectOpen(true)}
 									disabled={!canManage}
-									className="text-destructive hover:bg-destructive/10"
+									className="text-destructive-text hover:bg-destructive/10"
 								>
 									断开连接
 								</Button>

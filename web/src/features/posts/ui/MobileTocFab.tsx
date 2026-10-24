@@ -21,9 +21,9 @@ const MobileTocFab = ({ items, contentRef }: MobileTocFabProps) => {
 				type="button"
 				onClick={() => setOpen(true)}
 				aria-label="打开目录"
-				className="group flex size-11 items-center justify-center rounded-full border border-edge-hairline bg-background/80 text-muted-foreground shadow-lg backdrop-blur transition-colors duration-300 hover:border-primary/50 hover:bg-accent hover:text-foreground"
+				className="group flex size-11 items-center justify-center rounded-full border border-edge-hairline bg-background/80 text-muted-foreground shadow-lg backdrop-blur transition-colors duration-300 hover:border-selected-foreground hover:bg-accent hover:text-foreground"
 			>
-				<span className="absolute inset-0 rounded-full bg-primary/10 opacity-0 blur-md transition-opacity duration-300 group-hover:opacity-100" />
+				<span className="absolute inset-0 rounded-full bg-decoration-muted opacity-0 blur-md transition-opacity duration-300 group-hover:opacity-100" />
 				<ListTree className="relative size-5" />
 			</button>
 			<SheetContent side="bottom" className="max-h-[70vh] p-0">

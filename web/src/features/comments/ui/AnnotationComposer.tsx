@@ -99,7 +99,7 @@ export function AnnotationComposer({
 						title={loginRequired ? "登录并发送" : embedded ? "发送段评" : "提交批注"}
 						aria-label={embedded ? "发送段评" : "提交批注"}
 						className={cn(
-							"inline-flex h-7 items-center rounded-full bg-primary text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50",
+							"inline-flex h-7 items-center rounded-full bg-primary text-xs font-medium text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50",
 							embedded ? "w-7 justify-center" : "gap-1 px-3",
 						)}
 					>

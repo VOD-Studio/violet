@@ -151,7 +151,7 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 				<p
 					id={errorId}
 					role="alert"
-					className={`${styles.status} text-sm text-destructive`}
+					className={`${styles.status} text-sm text-destructive-text`}
 				>
 					{overLimit
 						? `正文不能超过 ${MAX_TWEET_LENGTH} 字，请精简后发布。`

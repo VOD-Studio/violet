@@ -161,18 +161,22 @@ Shiki 初始化、语言准备与分词在按需创建的 Web Worker 中执行�
 
 | 样式内容 | 归属 |
 | --- | --- |
-| 基础语义 token、色板与通用组件 CSS | `packages/ui/` |
+| 生成色阶、基础语义 token 与通用组件 CSS | `packages/theme/` 生成算法，`packages/ui/` 构建期接入 |
 | 站点字体、装饰与主题适配 | `src/styles/` |
 | 公开内容、工具界面、沉浸舞台的方言 | `src/styles/dialects/` |
 | feature 私有样式 | 所属组件旁的样式文件 |
 
-页面分别使用 `.dialect-public`、`.dialect-tool`、`.dialect-immersive`，通过语义 token 适配明暗外观，不锁定色板值。通用组件从 `@violet/ui` 使用；组件的公开入口与成熟度以 [component-manifest.json](packages/ui/component-manifest.json) 为准。
+页面分别使用 `.dialect-public`、`.dialect-tool`、`.dialect-immersive`，只描述语义到色阶的映射：公开主要动作为品牌色，工具主要动作为高对比中性色，沉浸舞台使用固定深色灰阶；状态色不被方言改写。Button 悬停使用 `primary-hover`，链接、选中、焦点、进度、装饰和分类各有独立语义。通用组件从 `@violet/ui` 使用；组件的公开入口与成熟度以 [component-manifest.json](packages/ui/component-manifest.json) 为准。
+
+包颜色由 `pnpm --filter @violet/ui sync` 生成、`check` 校验。人设身份色只在 `.identity-theme` 内生效，修改种子后运行 `pnpm colors:persona`，`pnpm check:persona-colors` 校验提交的静态 CSS。
 
 站点公共层提供 `shared/ui/announcement-severity` 状态色和 `shared/hooks/use-banner-ticker` 轮播节拍。光标、终端、阅读进度等公共界面只消费用途语义色。
 
+公告横幅与卡片共享公共状态色，不依赖实验页面。lab 的固定实验色与旧 utility 仅限 `.lab-scope`，包括其 portal 内容；离开实验路由后不改变正式页面。
+
 ### 颜色守门
 
-`make web-lint` 依次执行 Biome 与颜色检查，CI 使用同一颜色检查命令。检查范围是 `src/`、`packages/` 内的 TSX 与 CSS，包括未加入 Git 的文件；新增 `oklch()`、hex、`rgb()`、`hsl()` 裸色值、Tailwind 原生色板类以及 `primary-base`、`neon`、`paper`、`persona` 旧颜色类会失败，输出文件、行号和规则。语义变量及基于变量的颜色、注释、链接锚点和 CSS ID 不作为裸色值。
+`make web-lint` 依次执行 Biome、颜色守门与人设颜色生成一致性检查。检查范围是 `src/`、`packages/` 内的 TSX 与 CSS，包括未加入 Git 的文件；新增裸色值、Tailwind 原生色板类或旧颜色类会失败，输出文件、行号和规则。注释、链接锚点和 CSS ID 不作为颜色违规。
 
 [color-guard.config.json](color-guard.config.json) 维护扫描根目录与带理由的豁免：颜色算法包、vendor、lab、构建产物、`*.generated.css` 和组件清单生成的 CSS 入口。手写的主题 CSS 与色板不豁免。
 
@@ -198,7 +202,7 @@ CLI fixture 使用临时 Git 仓库，可通过 `pnpm test scripts/check-colors.
 | `@violetjs/kanban` | `/kanban`，项目路线图看板与画布 | [使用说明](packages/kanban/README.zh-CN.md)、[维护指南](packages/kanban/DEVELOPMENT.md) |
 | `@violetjs/inkline` | `/inkline`，手绘工作台与文章图表 | [使用说明](packages/inkline/README.zh-CN.md)、[维护指南](packages/inkline/DEVELOPMENT.md) |
 | `@violetjs/react-tweet` | 文章引用与推文页面 | [使用说明](packages/react-tweet/README.zh-CN.md)、[维护指南](packages/react-tweet/DEVELOPMENT.md) |
-| `@violetjs/theme` | 种子色生成主题色阶，尚未接入站点 | [使用说明](packages/theme/README.zh-CN.md)、[维护指南](packages/theme/DEVELOPMENT.md) |
+| `@violetjs/theme` | 构建期生成组件色阶与站点局部身份色 | [使用说明](packages/theme/README.zh-CN.md)、[维护指南](packages/theme/DEVELOPMENT.md) |
 
 文档站复用包内正文与示例，不维护第二套 API 说明。修改包实现时按包内流程做构建和真实 tarball 消费验证；站点 workspace 能运行不能替代独立包验收。安装方式与发布状态见各包 README。
 

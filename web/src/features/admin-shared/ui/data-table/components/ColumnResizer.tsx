@@ -156,8 +156,8 @@ export function ColumnResizer({ minWidth, onResize }: ColumnResizerProps) {
 				"after:absolute after:inset-y-0 after:-right-1.5 after:w-4.5",
 				// 悬停和激活状态
 				isDragging
-					? "bg-primary/60"
-					: "hover:bg-primary/40 focus-visible:bg-primary/60 active:bg-primary/60",
+					? "bg-selected-foreground"
+					: "hover:bg-selected-foreground focus-visible:bg-ring active:bg-selected-foreground",
 			)}
 		/>
 	);

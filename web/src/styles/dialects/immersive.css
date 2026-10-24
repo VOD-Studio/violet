@@ -1,30 +1,36 @@
-/*
- * 沉浸方言作用域（Immersive Dialect）。
- *
- * 消费入口：给灯箱、媒体查看器与内容型图表舞台的根容器加 .dialect-immersive。
- *
- * 舞台恒近黑、明暗主题不变；主要动作色收回高对比中性。
- * 主色源只保留给焦点、选中与进度等控件反馈。
- * 行为状态色继承基础层，不被改写。
- */
+/* 沉浸舞台使用独立生成的固定深色灰阶；不改 color-scheme，状态色仍与页面一致。 */
 .dialect-immersive {
-	--background: oklch(0.13 0 0);
-	--foreground: oklch(0.94 0 0);
-	--card: oklch(0.185 0 0);
-	--card-foreground: var(--foreground);
-	--popover: oklch(0.21 0 0);
-	--popover-foreground: var(--foreground);
-	--primary: oklch(0.94 0 0);
-	--primary-foreground: oklch(0.16 0 0);
-	--secondary: oklch(0.26 0 0);
-	--secondary-foreground: var(--foreground);
-	--muted: oklch(0.26 0 0);
-	--muted-foreground: oklch(0.7 0 0);
-	--accent: oklch(0.26 0 0);
-	--accent-foreground: var(--foreground);
-	--border: oklch(1 0 0 / 12%);
-	--input: oklch(1 0 0 / 16%);
-	--ring: var(--primary-base-ring);
+	--background: var(--immersive-neutral-1);
+	--foreground: var(--immersive-neutral-12);
+	--card: var(--immersive-neutral-2);
+	--card-foreground: var(--immersive-neutral-12);
+	--popover: var(--immersive-neutral-2);
+	--popover-foreground: var(--immersive-neutral-12);
+	--primary: var(--immersive-neutral-9);
+	--primary-hover: var(--immersive-neutral-10);
+	--primary-foreground: var(--immersive-neutral-contrast);
+	--secondary: var(--immersive-neutral-3);
+	--secondary-foreground: var(--immersive-neutral-12);
+	--muted: var(--immersive-neutral-3);
+	--muted-foreground: var(--immersive-neutral-11);
+	--accent: var(--immersive-neutral-3);
+	--accent-foreground: var(--immersive-neutral-12);
+	--link: var(--immersive-neutral-11);
+	--link-hover: var(--immersive-neutral-12);
+	--selected: var(--immersive-neutral-3);
+	--selected-hover: var(--immersive-neutral-4);
+	--selected-foreground: var(--immersive-neutral-11);
+	--progress: var(--immersive-neutral-9);
+	--decoration: var(--immersive-neutral-9);
+	--decoration-hover: var(--immersive-neutral-10);
+	--decoration-muted: var(--immersive-neutral-3);
+	--decoration-foreground: var(--immersive-neutral-contrast);
+	--border: var(--immersive-neutral-6);
+	--input: var(--immersive-neutral-7);
+	--ring: var(--immersive-neutral-8);
+	--edge-hairline: var(--immersive-neutral-a6);
+	--surface-glass: var(--immersive-neutral-a2);
+	--scrollbar-thumb: var(--immersive-neutral-a7);
 	background: var(--background);
 	color: var(--foreground);
 }

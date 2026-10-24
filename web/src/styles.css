@@ -9,7 +9,6 @@
 @import "@violet/ui/styles.css";
 @import "@violetjs/kanban/styles.css";
 @import "./styles/site-theme.css";
-@import "./styles/site-tokens.css";
 @import "./styles/kanban.css";
 @import "./styles/dialects/public.css";
 @import "./styles/dialects/tool.css";

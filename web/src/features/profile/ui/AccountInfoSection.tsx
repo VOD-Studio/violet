@@ -26,7 +26,9 @@ export const AccountInfoSection = ({ user }: AccountInfoSectionProps) => {
 			{!user.is_active && (
 				<div className="mb-5 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm">
 					<AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
-					<span className="text-destructive">该账户已被禁用，如有疑问请联系管理员</span>
+					<span className="text-destructive-text">
+						该账户已被禁用，如有疑问请联系管理员
+					</span>
 				</div>
 			)}
 
@@ -39,7 +41,7 @@ export const AccountInfoSection = ({ user }: AccountInfoSectionProps) => {
 							已验证
 						</span>
 					) : (
-						<span className="inline-flex items-center gap-1 text-xs text-warning">
+						<span className="inline-flex items-center gap-1 text-xs text-warning-text">
 							<AlertTriangle className="size-3" />
 							未验证
 						</span>

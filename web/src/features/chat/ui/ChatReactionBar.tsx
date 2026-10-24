@@ -99,7 +99,7 @@ function reactionChipClass(isSelf: boolean): string {
 	const base =
 		"inline-flex h-6 items-center gap-1 rounded-full border px-2 text-xs transition-colors disabled:opacity-60";
 	return isSelf
-		? `${base} border-primary bg-primary/10 text-primary hover:bg-primary/20`
+		? `${base} border-selected-foreground bg-selected text-selected-foreground hover:bg-selected-hover`
 		: `${base} border-edge-hairline bg-muted/40 text-foreground hover:bg-muted`;
 }
 

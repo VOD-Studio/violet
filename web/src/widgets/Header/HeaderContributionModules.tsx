@@ -39,10 +39,10 @@ export function HeaderContributionModules({ onNavigate }: HeaderContributionModu
 							key={item.id}
 							to={item.to}
 							onClick={onNavigate}
-							className="group flex w-full items-center justify-between rounded-lg border border-border/50 bg-muted/20 px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors duration-200 hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+							className="group flex w-full items-center justify-between rounded-lg border border-border/50 bg-muted/20 px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors duration-200 hover:border-selected-foreground hover:bg-selected-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
 						>
 							<div className="flex items-center gap-2">
-								<span className="flex size-5 items-center justify-center rounded-md bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
+								<span className="flex size-5 items-center justify-center rounded-md bg-selected text-selected-foreground transition-colors group-hover:bg-selected-hover">
 									<Icon className="size-3" aria-hidden="true" />
 								</span>
 								<span>{item.name}</span>

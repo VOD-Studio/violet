@@ -150,7 +150,7 @@ export function ActivityTicker() {
 			title="最近活动"
 			fill={false}
 			trailing={
-				<span className="flex items-center gap-1.5 text-xs text-success">
+				<span className="flex items-center gap-1.5 text-xs text-success-text">
 					<span className="size-1.5 animate-pulse rounded-full bg-success" aria-hidden />
 					live
 				</span>

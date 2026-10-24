@@ -397,6 +397,12 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^6.0.1
         version: 6.0.3(vite@8.1.3(@types/node@22.20.0)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0))
+      '@violetjs/theme':
+        specifier: workspace:*
+        version: link:packages/theme
+      esbuild:
+        specifier: ^0.28.1
+        version: 0.28.1
       jsdom:
         specifier: ^28.1.0
         version: 28.1.0

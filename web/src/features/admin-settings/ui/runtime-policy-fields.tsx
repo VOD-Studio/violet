@@ -109,7 +109,7 @@ export function PolicyField({ name, label, help, children }: PolicyFieldProps) {
 				</span>
 			</div>
 			{error && (
-				<p id={`${id}-error`} role="alert" className="text-sm text-destructive">
+				<p id={`${id}-error`} role="alert" className="text-sm text-destructive-text">
 					{error}
 				</p>
 			)}

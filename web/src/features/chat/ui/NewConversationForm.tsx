@@ -111,7 +111,7 @@ export function NewConversationForm({ onCreated, onClose }: NewConversationFormP
 							{selectedUsers.map((user) => (
 								<button
 									aria-label={`移除 ${user.display_name}`}
-									className="inline-flex items-center gap-1.5 rounded-full bg-secondary py-0.5 pl-1.5 pr-2 text-xs font-medium text-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+									className="inline-flex items-center gap-1.5 rounded-full bg-secondary py-0.5 pl-1.5 pr-2 text-xs font-medium text-foreground transition-colors hover:bg-destructive/10 hover:text-destructive-text"
 									key={user.id}
 									onClick={() => toggleUser(user)}
 									type="button"
@@ -130,7 +130,7 @@ export function NewConversationForm({ onCreated, onClose }: NewConversationFormP
 				{contactsQuery.isLoading ? (
 					<ChatContactSkeleton />
 				) : contactsQuery.isError ? (
-					<p className="px-4 py-6 text-center text-sm text-destructive">
+					<p className="px-4 py-6 text-center text-sm text-destructive-text">
 						成员加载失败，请稍后重试
 					</p>
 				) : contacts.length > 0 ? (

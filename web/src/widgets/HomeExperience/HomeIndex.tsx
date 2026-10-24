@@ -89,7 +89,7 @@ export function HomeIndex({
 								type="button"
 								disabled={publicationRetrying}
 								onClick={onRetryPublications}
-								className="mt-3 inline-flex items-center gap-1.5 text-xs text-primary transition-colors hover:text-primary/80 disabled:cursor-wait disabled:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+								className="mt-3 inline-flex items-center gap-1.5 text-xs text-link transition-colors hover:text-link-hover disabled:cursor-wait disabled:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
 							>
 								<RefreshCw
 									className={`size-3.5 ${publicationRetrying ? "animate-spin" : ""}`}

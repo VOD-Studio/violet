@@ -59,7 +59,7 @@ export function NoteEditorToolbar({
 					</Badge>
 				) : null}
 				{isDirty && !saving ? (
-					<span className="font-mono text-xs text-warning">● 未保存</span>
+					<span className="font-mono text-xs text-warning-text">● 未保存</span>
 				) : null}
 			</div>
 
@@ -99,7 +99,7 @@ export function NoteEditorToolbar({
 						<Button
 							variant="ghost"
 							size="sm"
-							className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+							className="text-destructive-text hover:bg-destructive/10 hover:text-destructive-text"
 							disabled={deleting || saving}
 							onClick={() => setDeleteOpen(true)}
 						>

@@ -296,54 +296,6 @@
 			"count": 1
 		},
 		{
-			"file": "src/features/admin-emojis/ui/EmojiGroupCard.tsx",
-			"rule": "legacy-color",
-			"value": "bg-primary-base",
-			"count": 1
-		},
-		{
-			"file": "src/features/admin-emojis/ui/EmojiGroupCard.tsx",
-			"rule": "legacy-color",
-			"value": "text-primary-base",
-			"count": 1
-		},
-		{
-			"file": "src/features/admin-emojis/ui/EmojiGroupCard.tsx",
-			"rule": "legacy-color",
-			"value": "border-primary-base",
-			"count": 1
-		},
-		{
-			"file": "src/features/admin-emojis/ui/EmojiGroupCard.tsx",
-			"rule": "legacy-color",
-			"value": "bg-neon-pink",
-			"count": 1
-		},
-		{
-			"file": "src/features/admin-emojis/ui/EmojiGroupCard.tsx",
-			"rule": "legacy-color",
-			"value": "text-neon-pink",
-			"count": 1
-		},
-		{
-			"file": "src/features/admin-emojis/ui/EmojiGroupCard.tsx",
-			"rule": "legacy-color",
-			"value": "border-neon-pink",
-			"count": 1
-		},
-		{
-			"file": "src/features/admin-layout/ui/nav-menu/__tests__/NavMenu.test.tsx",
-			"rule": "legacy-color",
-			"value": "bg-primary-base",
-			"count": 4
-		},
-		{
-			"file": "src/features/admin-layout/ui/nav-menu/NavMenuLink.tsx",
-			"rule": "legacy-color",
-			"value": "bg-primary-base",
-			"count": 1
-		},
-		{
 			"file": "src/features/admin-media/ui/Cover.tsx",
 			"rule": "tailwind-palette",
 			"value": "from-black",
@@ -578,18 +530,6 @@
 			"count": 1
 		},
 		{
-			"file": "src/features/chat/ui/BotReplyCard.tsx",
-			"rule": "legacy-color",
-			"value": "bg-primary-base-soft",
-			"count": 1
-		},
-		{
-			"file": "src/features/chat/ui/BotReplyCard.tsx",
-			"rule": "legacy-color",
-			"value": "text-primary-base-soft-foreground",
-			"count": 1
-		},
-		{
 			"file": "src/features/chat/ui/ChatAvatar.tsx",
 			"rule": "raw-color",
 			"value": "#e17076",
@@ -677,12 +617,6 @@
 			"file": "src/features/chat/ui/SharedTweetSummary.tsx",
 			"rule": "tailwind-palette",
 			"value": "text-white",
-			"count": 1
-		},
-		{
-			"file": "src/features/chat/ui/TweetShareCard.tsx",
-			"rule": "legacy-color",
-			"value": "border-neon-cyan",
 			"count": 1
 		},
 		{
@@ -869,36 +803,6 @@
 			"file": "src/features/inkline-workbench/ui/ArtworkStage.tsx",
 			"rule": "tailwind-palette",
 			"value": "bg-white",
-			"count": 1
-		},
-		{
-			"file": "src/features/notifications/ui/NotificationBell.tsx",
-			"rule": "legacy-color",
-			"value": "text-primary-base",
-			"count": 4
-		},
-		{
-			"file": "src/features/notifications/ui/NotificationBell.tsx",
-			"rule": "legacy-color",
-			"value": "text-neon-cyan",
-			"count": 1
-		},
-		{
-			"file": "src/features/notifications/ui/NotificationBell.tsx",
-			"rule": "legacy-color",
-			"value": "text-neon-pink",
-			"count": 1
-		},
-		{
-			"file": "src/features/notifications/ui/NotificationBell.tsx",
-			"rule": "legacy-color",
-			"value": "text-neon-green",
-			"count": 1
-		},
-		{
-			"file": "src/features/notifications/ui/NotificationBell.tsx",
-			"rule": "legacy-color",
-			"value": "text-neon-blue",
 			"count": 1
 		},
 		{
@@ -1748,288 +1652,6 @@
 			"count": 1
 		},
 		{
-			"file": "src/styles/dialects/immersive.css",
-			"rule": "raw-color",
-			"value": "oklch(0.13 0 0)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/dialects/immersive.css",
-			"rule": "raw-color",
-			"value": "oklch(0.94 0 0)",
-			"count": 2
-		},
-		{
-			"file": "src/styles/dialects/immersive.css",
-			"rule": "raw-color",
-			"value": "oklch(0.185 0 0)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/dialects/immersive.css",
-			"rule": "raw-color",
-			"value": "oklch(0.21 0 0)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/dialects/immersive.css",
-			"rule": "raw-color",
-			"value": "oklch(0.16 0 0)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/dialects/immersive.css",
-			"rule": "raw-color",
-			"value": "oklch(0.26 0 0)",
-			"count": 3
-		},
-		{
-			"file": "src/styles/dialects/immersive.css",
-			"rule": "raw-color",
-			"value": "oklch(0.7 0 0)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/dialects/immersive.css",
-			"rule": "raw-color",
-			"value": "oklch(1 0 0 / 12%)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/dialects/immersive.css",
-			"rule": "raw-color",
-			"value": "oklch(1 0 0 / 16%)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/dialects/public.css",
-			"rule": "raw-color",
-			"value": "oklch(0.992 0.003 286)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/dialects/public.css",
-			"rule": "raw-color",
-			"value": "oklch(0.138 0.012 286)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/dialects/public.css",
-			"rule": "raw-color",
-			"value": "oklch(0.19 0.015 286)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/dialects/public.css",
-			"rule": "raw-color",
-			"value": "oklch(0.955 0.008 286)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/dialects/public.css",
-			"rule": "raw-color",
-			"value": "oklch(1 0 0)",
-			"count": 2
-		},
-		{
-			"file": "src/styles/dialects/public.css",
-			"rule": "raw-color",
-			"value": "oklch(0.185 0.015 286)",
-			"count": 2
-		},
-		{
-			"file": "src/styles/dialects/public.css",
-			"rule": "raw-color",
-			"value": "oklch(0.958 0.008 286)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/dialects/public.css",
-			"rule": "raw-color",
-			"value": "oklch(0.225 0.016 286)",
-			"count": 2
-		},
-		{
-			"file": "src/styles/dialects/public.css",
-			"rule": "raw-color",
-			"value": "oklch(0.962 0.006 286)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/dialects/public.css",
-			"rule": "raw-color",
-			"value": "oklch(0.52 0.02 286)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/dialects/public.css",
-			"rule": "raw-color",
-			"value": "oklch(0.68 0.022 286)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/dialects/public.css",
-			"rule": "raw-color",
-			"value": "oklch(0.908 0.008 286)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/dialects/public.css",
-			"rule": "raw-color",
-			"value": "oklch(0.92 0.012 286 / 12%)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/dialects/public.css",
-			"rule": "raw-color",
-			"value": "oklch(0.895 0.01 286)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/dialects/public.css",
-			"rule": "raw-color",
-			"value": "oklch(0.92 0.012 286 / 18%)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/site-tokens.css",
-			"rule": "raw-color",
-			"value": "oklch(0.976 0.012 85)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/site-tokens.css",
-			"rule": "raw-color",
-			"value": "oklch(0.23 0.012 70)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/site-tokens.css",
-			"rule": "raw-color",
-			"value": "oklch(0.24 0.014 60)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/site-tokens.css",
-			"rule": "raw-color",
-			"value": "oklch(0.92 0.012 80)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/site-tokens.css",
-			"rule": "raw-color",
-			"value": "oklch(0.46 0.016 60)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/site-tokens.css",
-			"rule": "raw-color",
-			"value": "oklch(0.68 0.012 75)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/site-tokens.css",
-			"rule": "raw-color",
-			"value": "oklch(0.885 0.018 80)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/site-tokens.css",
-			"rule": "raw-color",
-			"value": "oklch(0.32 0.012 70)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/site-tokens.css",
-			"rule": "raw-color",
-			"value": "oklch(0.54 0.14 286)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/site-tokens.css",
-			"rule": "raw-color",
-			"value": "oklch(0.72 0.09 78)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/site-tokens.css",
-			"rule": "raw-color",
-			"value": "oklch(0.985 0.012 84)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/site-tokens.css",
-			"rule": "raw-color",
-			"value": "oklch(0.56 0.26 295)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/site-tokens.css",
-			"rule": "raw-color",
-			"value": "oklch(0.72 0.3 295)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/site-tokens.css",
-			"rule": "raw-color",
-			"value": "oklch(0.6 0.22 245)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/site-tokens.css",
-			"rule": "raw-color",
-			"value": "oklch(0.78 0.28 245)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/site-tokens.css",
-			"rule": "raw-color",
-			"value": "oklch(0.62 0.19 150)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/site-tokens.css",
-			"rule": "raw-color",
-			"value": "oklch(0.8 0.25 150)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/site-tokens.css",
-			"rule": "raw-color",
-			"value": "oklch(0.65 0.25 350)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/site-tokens.css",
-			"rule": "raw-color",
-			"value": "oklch(0.75 0.3 350)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/site-tokens.css",
-			"rule": "raw-color",
-			"value": "oklch(0.7 0.16 210)",
-			"count": 1
-		},
-		{
-			"file": "src/styles/site-tokens.css",
-			"rule": "raw-color",
-			"value": "oklch(0.82 0.2 210)",
-			"count": 1
-		},
-		{
-			"file": "src/widgets/BlogDetailPage/BlogDetailPage.tsx",
-			"rule": "legacy-color",
-			"value": "from-primary-base",
-			"count": 1
-		},
-		{
-			"file": "src/widgets/BlogDetailPage/BlogDetailPage.tsx",
-			"rule": "legacy-color",
-			"value": "to-primary-base-hover",
-			"count": 1
-		},
-		{
 			"file": "src/widgets/Header/HeaderActions.tsx",
 			"rule": "tailwind-palette",
 			"value": "shadow-black",
@@ -2052,12 +1674,6 @@
 			"rule": "tailwind-palette",
 			"value": "text-neutral-950",
 			"count": 1
-		},
-		{
-			"file": "src/widgets/Header/HeaderNavRow.tsx",
-			"rule": "legacy-color",
-			"value": "text-primary-base",
-			"count": 2
 		},
 		{
 			"file": "src/widgets/Hero/Hero.tsx",
@@ -2130,12 +1746,6 @@
 			"rule": "raw-color",
 			"value": "rgba(34,211,238,0.12)",
 			"count": 1
-		},
-		{
-			"file": "src/widgets/Hero/Hero.tsx",
-			"rule": "legacy-color",
-			"value": "bg-neon-green",
-			"count": 2
 		},
 		{
 			"file": "src/widgets/SiteBackdrop/SiteBackdrop.module.css",

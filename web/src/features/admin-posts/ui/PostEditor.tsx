@@ -516,7 +516,7 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 						classNames={{ control: "px-4" }}
 					/>
 					{errors.title ? (
-						<p className="px-4 text-sm text-destructive">{errors.title.message}</p>
+						<p className="px-4 text-sm text-destructive-text">{errors.title.message}</p>
 					) : null}
 					<div className="mx-4 flex items-center gap-1.5 text-sm text-muted-foreground">
 						<span className="shrink-0 select-none font-mono">/blog/</span>
@@ -540,7 +540,7 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 						/>
 					</div>
 					{errors.slug ? (
-						<p className="px-4 text-sm text-destructive">{errors.slug.message}</p>
+						<p className="px-4 text-sm text-destructive-text">{errors.slug.message}</p>
 					) : null}
 					<div className="min-h-0 flex-1">
 						<Controller

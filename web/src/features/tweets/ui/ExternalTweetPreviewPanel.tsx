@@ -27,7 +27,7 @@ export function ExternalTweetPreviewPanel({ state, disabled }: ExternalTweetPrev
 				)}
 				{state.expired && (
 					<div className="flex items-center justify-between gap-3">
-						<p role="alert" className="text-xs text-destructive">
+						<p role="alert" className="text-xs text-destructive-text">
 							预览已过期，请重新预览后确认。
 						</p>
 						<button
@@ -83,7 +83,7 @@ export function ExternalTweetPreviewPanel({ state, disabled }: ExternalTweetPrev
 				</p>
 			)}
 			{state.error && (
-				<p role="alert" className="text-sm text-destructive">
+				<p role="alert" className="text-sm text-destructive-text">
 					{state.error}
 				</p>
 			)}

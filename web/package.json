@@ -15,6 +15,8 @@
 		"lint": "biome lint",
 		"check": "biome check",
 		"check:colors": "node scripts/check-colors.mjs",
+		"colors:persona": "node scripts/sync-persona-colors.mjs",
+		"check:persona-colors": "node scripts/sync-persona-colors.mjs --check",
 		"typecheck": "pnpm generate-routes && tsc --noEmit",
 		"sync:pdf-worker": "node -e \"require('fs').copyFileSync(require.resolve('pdfjs-dist/build/pdf.worker.min.mjs',{paths:[require.resolve('react-pdf')]}),'public/pdf.worker.min.mjs')\"",
 		"postinstall": "node -e \"require('fs').copyFileSync(require.resolve('pdfjs-dist/build/pdf.worker.min.mjs',{paths:[require.resolve('react-pdf')]}),'public/pdf.worker.min.mjs')\""
@@ -150,6 +152,8 @@
 		"@types/react": "^19.2.0",
 		"@types/react-dom": "^19.2.0",
 		"@vitejs/plugin-react": "^6.0.1",
+		"@violetjs/theme": "workspace:*",
+		"esbuild": "^0.28.1",
 		"jsdom": "^28.1.0",
 		"jsqr": "^1.4.0",
 		"mdast-util-from-markdown": "^2.0.3",

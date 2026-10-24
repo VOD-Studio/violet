@@ -1,7 +1,7 @@
 import type { Announcement } from "@features/settings/model/types";
+import { useBannerTicker } from "@shared/hooks/use-banner-ticker";
 import { AnimatePresence, motion } from "motion/react";
 import { BannerFace, BannerStage } from "./BannerStage";
-import { useBannerTicker } from "./use-banner-ticker";
 
 /**
  * 横幅方向 B · 渐隐轮换

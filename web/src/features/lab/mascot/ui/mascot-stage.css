@@ -1,7 +1,7 @@
 /*
  * 吉祥物黑盒舞台样式（lab.mascot MascotTheater 持有）。
  * 舞台 DOM 由 @violet/mascot 引擎按固定 class 名生成，属运行时 DOM，
- * 因此用功能持有全局选择器而非 CSS Module。
+ * 因此选择器限定在实验室作用域内，不影响正式页面的引擎实例。
  */
 
 /* 吉祥物对白气泡：弹入 → 驻留 → 淡出，一轮 = 一次表情切换的台词寿命 */
@@ -24,7 +24,7 @@
 }
 
 /* 吉祥物黑盒舞台：克制的冷绿环境光、台面与顶光，保持角色是唯一主角。 */
-.mascot-stage-scene {
+.lab-scope .mascot-stage-scene {
 	--stage-ink: #0f1412;
 	/* 聚光驱动位：引擎 SpotlightFX 在 0..1 间推动，真实灯光层随之增亮 */
 	--mascot-spotlight: 0;
@@ -32,19 +32,19 @@
 	background: var(--stage-ink);
 }
 
-.mascot-stage-ambient,
-.mascot-stage-floor-light,
-.mascot-stage-sidewash,
-.mascot-stage-beam,
-.mascot-stage-source,
-.mascot-stage-pool,
-.mascot-stage-edge,
-.mascot-stage-vignette {
+.lab-scope .mascot-stage-ambient,
+.lab-scope .mascot-stage-floor-light,
+.lab-scope .mascot-stage-sidewash,
+.lab-scope .mascot-stage-beam,
+.lab-scope .mascot-stage-source,
+.lab-scope .mascot-stage-pool,
+.lab-scope .mascot-stage-edge,
+.lab-scope .mascot-stage-vignette {
 	pointer-events: none;
 	position: absolute;
 }
 
-.mascot-stage-ambient {
+.lab-scope .mascot-stage-ambient {
 	inset: 0;
 	z-index: 0;
 	background: radial-gradient(
@@ -55,10 +55,10 @@
 }
 
 /* 主光 trio 由聚光驱动增亮；idle 时以极缓呼吸消除完全静态 */
-.mascot-stage-beam,
-.mascot-stage-source,
-.mascot-stage-pool,
-.mascot-stage-floor-light {
+.lab-scope .mascot-stage-beam,
+.lab-scope .mascot-stage-source,
+.lab-scope .mascot-stage-pool,
+.lab-scope .mascot-stage-floor-light {
 	filter: brightness(calc(1 + var(--mascot-spotlight) * 0.9));
 	animation: mascot-stage-breathe 8s ease-in-out infinite;
 }
@@ -70,15 +70,15 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.mascot-stage-beam,
-	.mascot-stage-source,
-	.mascot-stage-pool,
-	.mascot-stage-floor-light {
+	.lab-scope .mascot-stage-beam,
+	.lab-scope .mascot-stage-source,
+	.lab-scope .mascot-stage-pool,
+	.lab-scope .mascot-stage-floor-light {
 		animation: none;
 	}
 }
 
-.mascot-stage-floor-light {
+.lab-scope .mascot-stage-floor-light {
 	right: 0;
 	bottom: 0;
 	left: 0;
@@ -92,24 +92,24 @@
 	);
 }
 
-.mascot-stage-sidewash {
+.lab-scope .mascot-stage-sidewash {
 	top: 0;
 	bottom: 0;
 	z-index: 2;
 	width: 15%;
 }
 
-.mascot-stage-sidewash-left {
+.lab-scope .mascot-stage-sidewash-left {
 	left: 0;
 	background: linear-gradient(to right, rgb(5 9 7 / 0.62), transparent);
 }
 
-.mascot-stage-sidewash-right {
+.lab-scope .mascot-stage-sidewash-right {
 	right: 0;
 	background: linear-gradient(to left, rgb(5 9 7 / 0.62), transparent);
 }
 
-.mascot-stage-beam {
+.lab-scope .mascot-stage-beam {
 	inset: 0;
 	z-index: 3;
 	background: conic-gradient(
@@ -121,7 +121,7 @@
 	mask: linear-gradient(to bottom, #000 0%, #000 55%, transparent 92%);
 }
 
-.mascot-stage-source {
+.lab-scope .mascot-stage-source {
 	top: 0;
 	right: 0;
 	left: 0;
@@ -135,7 +135,7 @@
 	);
 }
 
-.mascot-stage-pool {
+.lab-scope .mascot-stage-pool {
 	inset: 0;
 	z-index: 5;
 	background:
@@ -148,7 +148,7 @@
 		);
 }
 
-.mascot-stage-edge {
+.lab-scope .mascot-stage-edge {
 	right: 2.5rem;
 	bottom: 0;
 	left: 2.5rem;
@@ -157,7 +157,7 @@
 	background: linear-gradient(to right, transparent, rgb(255 242 205 / 0.28), transparent);
 }
 
-.mascot-stage-vignette {
+.lab-scope .mascot-stage-vignette {
 	inset: 0;
 	z-index: 7;
 	background: radial-gradient(
@@ -167,7 +167,7 @@
 	);
 }
 
-.mascot-stage-hud {
+.lab-scope .mascot-stage-hud {
 	position: absolute;
 	top: 3.5%;
 	right: 0;
@@ -185,18 +185,18 @@
 	text-transform: uppercase;
 }
 
-.mascot-stage-hud [data-agent-state] {
+.lab-scope .mascot-stage-hud [data-agent-state] {
 	color: rgb(253 230 138 / 0.7);
 }
 
-.mascot-stage-live-dot {
+.lab-scope .mascot-stage-live-dot {
 	width: 4px;
 	height: 4px;
 	border-radius: 9999px;
 	background: rgb(74 222 128 / 0.8);
 }
 
-.mascot-stage-character {
+.lab-scope .mascot-stage-character {
 	position: absolute;
 	bottom: 11%;
 	left: 50%;
@@ -209,7 +209,7 @@
 }
 
 @media (min-width: 640px) {
-	.mascot-stage-character {
+	.lab-scope .mascot-stage-character {
 		width: 15rem;
 		height: 15rem;
 	}

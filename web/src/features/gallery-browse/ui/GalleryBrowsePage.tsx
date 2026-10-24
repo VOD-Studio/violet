@@ -117,7 +117,7 @@ export function GalleryBrowsePage() {
 						<div className="mt-14 flex justify-center">
 							<div className="space-y-3 text-center">
 								{feed.loadMoreFailed ? (
-									<p role="alert" className="text-destructive text-sm">
+									<p role="alert" className="text-destructive-text text-sm">
 										加载下一页失败，请重试
 									</p>
 								) : null}

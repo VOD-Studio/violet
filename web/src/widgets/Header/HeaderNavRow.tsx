@@ -25,7 +25,7 @@ const HeaderNavRow = ({ link, current, className, ...props }: HeaderNavRowProps)
 		>
 			<span
 				aria-hidden="true"
-				className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted/70 text-muted-foreground transition-colors duration-200 group-data-[highlighted]/row:text-primary-base group-aria-[current=page]/row:text-primary-base motion-reduce:transition-none"
+				className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted/70 text-muted-foreground transition-colors duration-200 group-data-[highlighted]/row:text-selected-foreground group-aria-[current=page]/row:text-selected-foreground motion-reduce:transition-none"
 			>
 				<Icon className="size-4" />
 			</span>

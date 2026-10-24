@@ -117,7 +117,7 @@
 }
 
 .categoryButton[aria-pressed="true"] {
-	color: var(--primary-base-soft-foreground);
+	color: var(--selected-foreground);
 	font-weight: 600;
 }
 
@@ -126,9 +126,9 @@
 	position: absolute;
 	inset: 0;
 	z-index: 0;
-	border: 1px solid var(--primary-base);
+	border: 1px solid var(--selected-foreground);
 	border-radius: 0.5rem;
-	background: var(--primary-base-soft);
+	background: var(--selected);
 }
 
 .categoryContent {
@@ -307,8 +307,8 @@
 
 .option[aria-pressed="true"],
 .badgeOption[aria-pressed="true"] {
-	background: var(--primary-base-soft);
-	box-shadow: inset 0 0 0 1px var(--primary-base);
+	background: var(--selected);
+	box-shadow: inset 0 0 0 1px var(--selected-foreground);
 }
 
 .categoryButton:focus-visible,
@@ -382,7 +382,7 @@
 
 .option[aria-pressed="true"] .optionName {
 	/* 只变色不加粗:字重变化会改变文本宽度,造成选中时的布局抖动 */
-	color: var(--primary-base);
+	color: var(--selected-foreground);
 }
 
 .check,
@@ -396,8 +396,8 @@
 	place-items: center;
 	padding: 0 0.25rem;
 	border-radius: 50%;
-	background: var(--primary-base);
-	color: var(--primary-base-foreground);
+	background: var(--selected);
+	color: var(--selected-foreground);
 	font-size: 0.75rem;
 	font-variant-numeric: tabular-nums;
 }
@@ -434,7 +434,7 @@
 	gap: 0.75rem;
 	padding: 0.75rem 2rem;
 	border-top: 1px solid var(--border);
-	color: var(--destructive);
+	color: var(--destructive-text);
 	font-size: 0.875rem;
 }
 

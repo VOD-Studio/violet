@@ -1,0 +1,248 @@
+/* 实验稿的固定明暗色板；不注册全局 Tailwind token，SPA 离开后不影响正式页面。 */
+.lab-scope,
+.lab-scope .dialect-public {
+	--background: light-dark(oklch(0.992 0.003 286), oklch(0.138 0.012 286));
+	--foreground: light-dark(oklch(0.19 0.015 286), oklch(0.955 0.008 286));
+	--card: light-dark(oklch(1 0 0), oklch(0.185 0.015 286));
+	--card-foreground: var(--foreground);
+	--popover: var(--card);
+	--popover-foreground: var(--foreground);
+	--primary: light-dark(oklch(0.205 0 0), oklch(0.922 0 0));
+	--primary-foreground: light-dark(oklch(0.985 0 0), oklch(0.18 0.015 286));
+	--primary-hover: color-mix(in oklab, var(--primary) 90%, var(--background));
+	--secondary: light-dark(oklch(0.958 0.008 286), oklch(0.225 0.016 286));
+	--secondary-foreground: light-dark(oklch(0.22 0.02 286), oklch(0.95 0.008 286));
+	--muted: light-dark(oklch(0.962 0.006 286), oklch(0.225 0.016 286));
+	--muted-foreground: light-dark(oklch(0.52 0.02 286), oklch(0.68 0.022 286));
+	--accent: var(--muted);
+	--accent-foreground: var(--secondary-foreground);
+	--destructive: light-dark(oklch(0.58 0.195 20), oklch(0.69 0.18 18));
+	--destructive-foreground: light-dark(oklch(0.99 0 0), oklch(0.15 0.03 18));
+	--warning: light-dark(oklch(0.66 0.155 60), oklch(0.77 0.15 65));
+	--warning-foreground: light-dark(oklch(0.16 0.03 60), oklch(0.16 0.03 75));
+	--success: light-dark(oklch(0.575 0.145 158), oklch(0.75 0.15 158));
+	--success-foreground: light-dark(oklch(0.99 0 0), oklch(0.15 0.03 158));
+	--border: light-dark(oklch(0.908 0.008 286), oklch(0.92 0.012 286 / 12%));
+	--input: light-dark(oklch(0.895 0.01 286), oklch(0.92 0.012 286 / 18%));
+	--edge-hairline: light-dark(oklch(0.19 0.015 286 / 6%), oklch(1 0 0 / 8%));
+	--surface-glass: light-dark(oklch(1 0 0 / 70%), oklch(0.185 0.015 286 / 60%));
+	--chart-1: light-dark(oklch(0.58 0.2 286), oklch(0.72 0.18 286));
+	--chart-2: light-dark(oklch(0.64 0.16 220), oklch(0.74 0.16 220));
+	--chart-3: light-dark(oklch(0.6 0.15 155), oklch(0.76 0.16 155));
+	--chart-4: light-dark(oklch(0.74 0.16 75), oklch(0.8 0.16 75));
+	--chart-5: light-dark(oklch(0.64 0.2 350), oklch(0.74 0.18 350));
+
+	--primary-base: light-dark(oklch(0.53 0.205 286), oklch(0.72 0.148 286));
+	--primary-base-foreground: light-dark(oklch(0.99 0 0), oklch(0.14 0.02 286));
+	--primary-base-hover: light-dark(oklch(0.47 0.215 286), oklch(0.77 0.138 286));
+	--primary-base-soft: light-dark(oklch(0.965 0.022 286), oklch(0.22 0.038 286));
+	--primary-base-soft-foreground: light-dark(oklch(0.35 0.14 286), oklch(0.9 0.07 286));
+	--primary-base-ring: var(--primary-base);
+	--ring: var(--primary-base-ring);
+	--paper: light-dark(oklch(0.976 0.012 85), oklch(0.23 0.012 70));
+	--paper-foreground: light-dark(oklch(0.24 0.014 60), oklch(0.92 0.012 80));
+	--paper-muted: light-dark(oklch(0.46 0.016 60), oklch(0.68 0.012 75));
+	--paper-border: light-dark(oklch(0.885 0.018 80), oklch(0.32 0.012 70));
+	--persona-violet: oklch(0.54 0.14 286);
+	--persona-gold: oklch(0.72 0.09 78);
+	--persona-ivory: oklch(0.985 0.012 84);
+	--neon-purple: light-dark(oklch(0.56 0.26 295), oklch(0.72 0.3 295));
+	--neon-blue: light-dark(oklch(0.6 0.22 245), oklch(0.78 0.28 245));
+	--neon-green: light-dark(oklch(0.62 0.19 150), oklch(0.8 0.25 150));
+	--neon-pink: light-dark(oklch(0.65 0.25 350), oklch(0.75 0.3 350));
+	--neon-cyan: light-dark(oklch(0.7 0.16 210), oklch(0.82 0.2 210));
+	/* 舞台内阴影直接读取此变量，不依赖已经移除的 @theme 别名。 */
+	--color-neon-blue: var(--neon-blue);
+
+	--selected: var(--primary-base-soft);
+	--selected-foreground: var(--primary-base-soft-foreground);
+	--selected-hover: color-mix(in oklab, var(--primary-base-soft) 85%, var(--primary-base));
+	--decoration: var(--primary-base);
+	--decoration-hover: var(--primary-base-hover);
+	--decoration-muted: var(--primary-base-soft);
+	--decoration-foreground: var(--primary-base-foreground);
+	--link: var(--primary-base);
+	--link-hover: var(--primary-base-hover);
+	--destructive-text: var(--destructive);
+	--warning-text: var(--warning);
+	--success-text: var(--success);
+	color: var(--foreground);
+	background-color: var(--background);
+}
+
+.lab-scope .v-input-field {
+	--v-input-accent: var(--primary);
+	--v-input-label-color: var(--primary);
+}
+
+.lab-scope
+	.v-input-field:has(
+		.v-input:is([aria-invalid="true"], [aria-invalid="grammar"], [aria-invalid="spelling"])
+	) {
+	--v-input-accent: var(--destructive);
+	--v-input-label-color: var(--destructive);
+}
+
+.lab-scope .dialect-public {
+	--background: light-dark(oklch(0.992 0.003 286), oklch(0.138 0.012 286));
+	--foreground: light-dark(oklch(0.19 0.015 286), oklch(0.955 0.008 286));
+	--card: light-dark(oklch(1 0 0), oklch(0.185 0.015 286));
+	--card-foreground: var(--foreground);
+	--popover: var(--card);
+	--popover-foreground: var(--foreground);
+	--primary: var(--primary-base);
+	--primary-foreground: var(--primary-base-foreground);
+	--primary-hover: color-mix(in oklab, var(--primary) 90%, var(--background));
+	--secondary: light-dark(oklch(0.958 0.008 286), oklch(0.225 0.016 286));
+	--secondary-foreground: var(--foreground);
+	--muted: light-dark(oklch(0.962 0.006 286), oklch(0.225 0.016 286));
+	--muted-foreground: light-dark(oklch(0.52 0.02 286), oklch(0.68 0.022 286));
+	--accent: var(--primary-base-soft);
+	--accent-foreground: var(--primary-base-soft-foreground);
+	--border: light-dark(oklch(0.908 0.008 286), oklch(0.92 0.012 286 / 12%));
+	--input: light-dark(oklch(0.895 0.01 286), oklch(0.92 0.012 286 / 18%));
+	--ring: var(--primary-base-ring);
+}
+
+/* 固定实验稿的按钮配色，不覆盖系统高对比度模式。 */
+@media (forced-colors: none) {
+	.lab-scope .v-button--default {
+		--v-button-active-bg: color-mix(in oklab, var(--primary) 80%, var(--background));
+	}
+
+	.lab-scope .v-button--primary {
+		--v-button-bg: var(--primary-base);
+		--v-button-fg: var(--primary-base-foreground);
+		--v-button-hover-bg: var(--primary-base-hover);
+		--v-button-active-bg: color-mix(in oklab, var(--primary-base-hover) 90%, var(--foreground));
+	}
+
+	.lab-scope .v-button--soft {
+		--v-button-active-bg: color-mix(
+			in oklab,
+			var(--primary-base-soft) 75%,
+			var(--primary-base)
+		);
+	}
+
+	.lab-scope .v-button--link {
+		--v-button-fg: var(--primary);
+	}
+
+	.lab-scope .v-button--destructive {
+		--v-button-hover-bg: color-mix(in oklab, var(--destructive) 90%, var(--foreground));
+		--v-button-active-bg: color-mix(in oklab, var(--destructive) 80%, var(--foreground));
+	}
+}
+
+.lab-scope ::selection {
+	background-color: color-mix(in oklch, var(--primary-base) 28%, transparent);
+}
+
+/* 仅保留实验稿实际使用的旧 utility；各选择器均要求局部作用域。 */
+@layer utilities {
+	:where(.lab-scope) .text-primary-base {
+		color: var(--primary-base);
+	}
+	:where(.lab-scope) .text-primary-base-soft-foreground {
+		color: var(--primary-base-soft-foreground);
+	}
+	:where(.lab-scope) .bg-primary-base-soft {
+		background-color: var(--primary-base-soft);
+	}
+	:where(.lab-scope) .border-primary-base\/40 {
+		border-color: color-mix(in oklab, var(--primary-base) 40%, transparent);
+	}
+	:where(.lab-scope) .text-neon-blue {
+		color: var(--neon-blue);
+	}
+	:where(.lab-scope) .text-neon-purple {
+		color: var(--neon-purple);
+	}
+	:where(.lab-scope) .text-neon-green {
+		color: var(--neon-green);
+	}
+	:where(.lab-scope) .text-neon-pink {
+		color: var(--neon-pink);
+	}
+	:where(.lab-scope) .text-neon-cyan {
+		color: var(--neon-cyan);
+	}
+	:where(.lab-scope) .bg-neon-blue {
+		background-color: var(--neon-blue);
+	}
+	:where(.lab-scope) .accent-neon-blue {
+		accent-color: var(--neon-blue);
+	}
+	:where(.lab-scope) .from-neon-blue {
+		--tw-gradient-from: var(--neon-blue);
+		--tw-gradient-stops: var(
+			--tw-gradient-via-stops,
+			var(--tw-gradient-position),
+			var(--tw-gradient-from) var(--tw-gradient-from-position),
+			var(--tw-gradient-to) var(--tw-gradient-to-position)
+		);
+	}
+	:where(.lab-scope) .to-neon-purple {
+		--tw-gradient-to: var(--neon-purple);
+		--tw-gradient-stops: var(
+			--tw-gradient-via-stops,
+			var(--tw-gradient-position),
+			var(--tw-gradient-from) var(--tw-gradient-from-position),
+			var(--tw-gradient-to) var(--tw-gradient-to-position)
+		);
+	}
+	:where(.lab-scope) .from-primary-base {
+		--tw-gradient-from: var(--primary-base);
+		--tw-gradient-stops: var(
+			--tw-gradient-via-stops,
+			var(--tw-gradient-position),
+			var(--tw-gradient-from) var(--tw-gradient-from-position),
+			var(--tw-gradient-to) var(--tw-gradient-to-position)
+		);
+	}
+	:where(.lab-scope) .to-primary-base-hover {
+		--tw-gradient-to: var(--primary-base-hover);
+		--tw-gradient-stops: var(
+			--tw-gradient-via-stops,
+			var(--tw-gradient-position),
+			var(--tw-gradient-from) var(--tw-gradient-from-position),
+			var(--tw-gradient-to) var(--tw-gradient-to-position)
+		);
+	}
+	:where(.lab-scope) .focus-within\:border-neon-blue:focus-within {
+		border-color: var(--neon-blue);
+	}
+	:where(.lab-scope) .focus-visible\:ring-neon-blue:focus-visible {
+		--tw-ring-color: var(--neon-blue);
+	}
+	:where(.lab-scope) .focus-visible\:outline-neon-blue:focus-visible {
+		outline-color: var(--neon-blue);
+	}
+	@media (hover: hover) {
+		:where(.lab-scope) .hover\:text-primary-base:hover {
+			color: var(--primary-base);
+		}
+		:where(.lab-scope) .hover\:border-primary-base:hover {
+			border-color: var(--primary-base);
+		}
+		:where(.lab-scope) .hover\:border-primary-base\/40:hover {
+			border-color: color-mix(in oklab, var(--primary-base) 40%, transparent);
+		}
+		:where(.lab-scope) .hover\:text-neon-blue:hover,
+		:where(.lab-scope) .group:hover .group-hover\:text-neon-blue {
+			color: var(--neon-blue);
+		}
+		:where(.lab-scope) .hover\:border-neon-blue:hover {
+			border-color: var(--neon-blue);
+		}
+		:where(.lab-scope) .hover\:bg-neon-blue:hover {
+			background-color: var(--neon-blue);
+		}
+	}
+}
+
+.lab-scope .selection\:bg-neon-blue::selection,
+.lab-scope .selection\:bg-neon-blue *::selection {
+	background-color: var(--neon-blue);
+}

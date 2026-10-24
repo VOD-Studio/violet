@@ -15,13 +15,13 @@ const COLLAPSE_ITEMS = 6;
 /** 分类标签配色：浅底深字 badge（对齐全站 severity 标签范式），按 label 关键词匹配。
  * 语义归位：破坏→warning、修复→destructive、新增→主色、优化→success、重构→中性。 */
 const labelColorRules: { match: string; cls: string }[] = [
-	{ match: "破坏", cls: "bg-warning/10 text-warning" },
+	{ match: "破坏", cls: "bg-warning/10 text-warning-text" },
 	{ match: "新功能", cls: "bg-primary/10 text-primary" },
 	{ match: "新增", cls: "bg-primary/10 text-primary" },
-	{ match: "Bug", cls: "bg-destructive/10 text-destructive" },
-	{ match: "修复", cls: "bg-destructive/10 text-destructive" },
-	{ match: "性能", cls: "bg-success/10 text-success" },
-	{ match: "优化", cls: "bg-success/10 text-success" },
+	{ match: "Bug", cls: "bg-destructive/10 text-destructive-text" },
+	{ match: "修复", cls: "bg-destructive/10 text-destructive-text" },
+	{ match: "性能", cls: "bg-success/10 text-success-text" },
+	{ match: "优化", cls: "bg-success/10 text-success-text" },
 ];
 
 function categoryColor(label: string): string {
@@ -121,7 +121,7 @@ export function ChangelogPage() {
 										</span>
 									) : null}
 									{release.breaking ? (
-										<span className="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2.5 py-0.5 text-xs font-semibold text-warning">
+										<span className="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2.5 py-0.5 text-xs font-semibold text-warning-text">
 											<TriangleAlert className="size-3.5" />
 											破坏性变更
 										</span>
@@ -180,7 +180,7 @@ export function ChangelogPage() {
 																								}
 																								target="_blank"
 																								rel="noreferrer"
-																								className="ml-1.5 align-baseline text-xs font-medium text-muted-foreground/70 underline decoration-muted-foreground/30 underline-offset-2 transition-colors hover:text-primary hover:decoration-primary/50"
+																								className="ml-1.5 align-baseline text-xs font-medium text-muted-foreground/70 underline decoration-muted-foreground/30 underline-offset-2 transition-colors hover:text-link-hover hover:decoration-link-hover"
 																							>
 																								{
 																									ref.label

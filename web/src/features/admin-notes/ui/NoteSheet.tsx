@@ -264,11 +264,13 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 								classNames={{ control: "px-0" }}
 								className={cn(
 									"text-xl font-bold tracking-tight placeholder:text-muted-foreground/40 md:text-2xl",
-									errors.title && "text-destructive",
+									errors.title && "text-destructive-text",
 								)}
 							/>
 							{errors.title ? (
-								<p className="text-xs text-destructive">{errors.title.message}</p>
+								<p className="text-xs text-destructive-text">
+									{errors.title.message}
+								</p>
 							) : null}
 						</div>
 
@@ -378,7 +380,7 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 								)}
 							/>
 							{errors.contentMD ? (
-								<p className="mt-1 text-xs text-destructive">
+								<p className="mt-1 text-xs text-destructive-text">
 									{errors.contentMD.message}
 								</p>
 							) : null}
@@ -395,7 +397,7 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 									type="button"
 									variant="ghost"
 									size="sm"
-									className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+									className="text-destructive-text hover:bg-destructive/10 hover:text-destructive-text"
 									disabled={deleteNote.isPending || saving}
 									onClick={() => setDeleteOpen(true)}
 								>

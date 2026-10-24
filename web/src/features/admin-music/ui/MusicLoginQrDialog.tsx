@@ -107,7 +107,7 @@ function MusicQrSession({ onRetry, onConfirmed }: MusicQrSessionProps) {
 			<div className="flex min-h-56 w-full flex-col items-center justify-center gap-3 p-4 text-center">
 				{error ? (
 					<>
-						<p role="alert" className="text-destructive text-sm">
+						<p role="alert" className="text-destructive-text text-sm">
 							{error}
 						</p>
 						<Button size="sm" disabled={isCreating} onClick={onRetry}>

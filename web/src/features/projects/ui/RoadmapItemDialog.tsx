@@ -92,7 +92,7 @@ export function RoadmapItemDialog({
 								{item.title}
 							</DialogTitle>
 							{item.blocked && !editing ? (
-								<p className="flex items-center gap-1.5 text-sm text-destructive">
+								<p className="flex items-center gap-1.5 text-sm text-destructive-text">
 									<Lock className="size-3.5 shrink-0" aria-hidden="true" />
 									被阻塞：还有未完成的前置条目
 								</p>
@@ -240,7 +240,7 @@ export function RoadmapItemDialog({
 										type="button"
 										variant="ghost"
 										size="sm"
-										className="text-destructive hover:text-destructive"
+										className="text-destructive-text hover:text-destructive-text"
 										onClick={() => onDelete(item)}
 									>
 										<Trash2 className="size-4" aria-hidden="true" />

@@ -171,7 +171,7 @@ const UsernameField = ({ user }: { user: UserDTO }) => {
 							</Button>
 						</div>
 					</div>
-					{error && <p className="text-xs text-destructive">{error}</p>}
+					{error && <p className="text-xs text-destructive-text">{error}</p>}
 				</>
 			}
 		/>
@@ -264,7 +264,7 @@ const DisplayNameField = ({ user }: { user: UserDTO }) => {
 							</Button>
 						</div>
 					</div>
-					{error && <p className="text-xs text-destructive">{error}</p>}
+					{error && <p className="text-xs text-destructive-text">{error}</p>}
 				</>
 			}
 		/>
@@ -334,7 +334,11 @@ const BioField = ({ user }: { user: UserDTO }) => {
 							autoFocus
 						/>
 						<div className="flex items-center justify-between">
-							{error ? <p className="text-xs text-destructive">{error}</p> : <span />}
+							{error ? (
+								<p className="text-xs text-destructive-text">{error}</p>
+							) : (
+								<span />
+							)}
 							<span className="ml-auto text-xs text-muted-foreground tabular-nums">
 								{value.length} / 500
 							</span>

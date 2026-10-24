@@ -9,9 +9,9 @@
 	scrollbar-color: color-mix(in oklch, var(--muted-foreground), transparent 60%) transparent;
 }
 
-/* 全局默认选区底色：主色低占比洗底，避免系统默认亮蓝与主题冲突 */
 ::selection {
-	background-color: color-mix(in oklch, var(--primary-base) 28%, transparent);
+	background-color: var(--selected);
+	color: var(--selected-foreground);
 }
 
 body {
@@ -43,7 +43,7 @@ button {
 	--tw-prose-headings: var(--color-foreground);
 	--tw-prose-bold: var(--color-foreground);
 	--tw-prose-lead: var(--color-foreground);
-	--tw-prose-links: var(--color-primary);
+	--tw-prose-links: var(--color-link);
 	--tw-prose-counters: var(--color-muted-foreground);
 	--tw-prose-bullets: var(--color-muted-foreground);
 	--tw-prose-hr: var(--color-border);

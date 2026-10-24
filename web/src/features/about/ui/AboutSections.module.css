@@ -227,13 +227,13 @@
 }
 
 .socialLink:hover {
-	border-color: color-mix(in oklab, var(--primary) 34%, transparent);
-	background: color-mix(in oklab, var(--primary) 5%, var(--background));
-	color: var(--primary);
+	border-color: var(--selected-foreground);
+	background: var(--selected-hover);
+	color: var(--selected-foreground);
 }
 
 .socialLink:focus-visible {
-	outline: 2px solid color-mix(in oklab, var(--primary) 58%, transparent);
+	outline: 2px solid var(--ring);
 	outline-offset: 2px;
 }
 
@@ -243,8 +243,8 @@
 	height: 1.85rem;
 	place-items: center;
 	border-radius: 0.4rem;
-	background: color-mix(in oklab, var(--primary) 9%, transparent);
-	color: var(--primary);
+	background: var(--selected);
+	color: var(--selected-foreground);
 }
 
 .socialIcon,

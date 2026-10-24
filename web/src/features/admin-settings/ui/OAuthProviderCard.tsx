@@ -70,7 +70,7 @@ export function OAuthProviderCard({
 				<div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
 					<span className="text-sm font-medium">{name}</span>
 					{enabled && status && !status.configured && (
-						<span className="text-xs text-warning">
+						<span className="text-xs text-warning-text">
 							{docsUrl ? (
 								<a
 									href={docsUrl}
@@ -139,7 +139,7 @@ export function OAuthProviderCard({
 				<p
 					className={cn(
 						"min-h-0 overflow-hidden text-xs",
-						result?.valid ? "text-success" : "text-warning",
+						result?.valid ? "text-success-text" : "text-warning-text",
 					)}
 				>
 					{result?.detail}

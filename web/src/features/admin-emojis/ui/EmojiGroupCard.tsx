@@ -15,11 +15,11 @@ import { cn } from "cn";
 import { Hash, Pencil, Smile, SortAsc, Tag, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-/** 来源标签的颜色映射：system=主色、bilibili=外站品牌粉（neon-pink 承接）、custom=success */
+/** 来源标签使用分类色，不与审核状态或站点品牌混用。 */
 const SOURCE_COLORS: Record<string, string> = {
-	system: "bg-primary-base/10 text-primary-base border-primary-base/20",
-	bilibili: "bg-neon-pink/10 text-neon-pink border-neon-pink/20",
-	custom: "bg-success/10 text-success border-success/20",
+	system: "bg-category-1-muted text-category-1-text border-category-1/20",
+	bilibili: "bg-category-2-muted text-category-2-text border-category-2/20",
+	custom: "bg-category-3-muted text-category-3-text border-category-3/20",
 };
 
 /** 来源标签的中文映射 */
@@ -65,9 +65,9 @@ export function EmojiGroupCard({ group, onEdit, onDelete, onManageEmojis }: Emoj
 				"relative overflow-hidden transition-all duration-300",
 				!isDisabled && [
 					"before:absolute before:inset-0 before:rounded-xl before:p-0.25",
-					"before:bg-linear-to-br before:from-primary/40 before:via-primary/20 before:to-transparent",
+					"before:bg-linear-to-br before:from-decoration/40 before:via-decoration/20 before:to-transparent",
 					"before:-z-10",
-					"shadow-md shadow-primary/5 hover:shadow-lg hover:shadow-primary/10",
+					"shadow-md shadow-decoration/5 hover:shadow-lg hover:shadow-decoration/10",
 				],
 				isDisabled && [
 					"bg-muted/30",

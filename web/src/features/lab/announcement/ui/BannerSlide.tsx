@@ -1,7 +1,7 @@
 import type { Announcement } from "@features/settings/model/types";
+import { useBannerTicker } from "@shared/hooks/use-banner-ticker";
 import { AnimatePresence, motion } from "motion/react";
 import { BannerFace, BannerStage } from "./BannerStage";
-import { useBannerTicker } from "./use-banner-ticker";
 
 const SLIDE_DURATION = 0.45;
 

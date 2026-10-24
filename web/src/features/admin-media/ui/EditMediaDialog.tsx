@@ -109,7 +109,9 @@ export function EditMediaDialog({ open, onOpenChange, file }: EditMediaDialogPro
 						{...register("original_name", { required: "请输入文件名" })}
 					/>
 					{errors.original_name ? (
-						<p className="text-xs text-destructive">{errors.original_name.message}</p>
+						<p className="text-xs text-destructive-text">
+							{errors.original_name.message}
+						</p>
 					) : null}
 				</div>
 

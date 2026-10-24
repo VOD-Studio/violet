@@ -71,7 +71,7 @@ export function NoteDetailPage({ noteId }: NoteDetailPageProps) {
 							</div>
 
 							<div className="flex items-center gap-3 tabular-nums">
-								<span className="flex items-center gap-1 text-success font-medium">
+								<span className="flex items-center gap-1 text-success-text font-medium">
 									<CheckCircle2 className="size-3" />
 									RESOLVED
 								</span>

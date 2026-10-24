@@ -246,7 +246,7 @@ export function ExportPanel() {
 				<output aria-live="polite" className="text-xs text-muted-foreground">
 					{job.state === "running" && `第 ${job.done} / ${job.total} 帧`}
 					{job.state === "failed" && (
-						<span className="text-destructive">{job.message}</span>
+						<span className="text-destructive-text">{job.message}</span>
 					)}
 					{job.state === "done" && (
 						<a

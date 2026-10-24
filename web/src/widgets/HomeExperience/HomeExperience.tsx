@@ -83,7 +83,7 @@ export function HomeExperience({ initialRecentPublicationsFailed }: HomeExperien
 						<button
 							type="button"
 							onClick={() => void footprintQuery.refetch()}
-							className="mt-3 text-primary transition-colors hover:text-primary/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+							className="mt-3 text-link transition-colors hover:text-link-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
 						>
 							重新获取足迹
 						</button>
