@@ -168,7 +168,7 @@ Shiki 初始化、语言准备与分词在按需创建的 Web Worker 中执行�
 
 页面分别使用 `.dialect-public`、`.dialect-tool`、`.dialect-immersive`，只描述语义到色阶的映射：公开主要动作为品牌色，工具主要动作为高对比中性色，沉浸舞台使用固定深色灰阶；状态色不被方言改写。Button 悬停使用 `primary-hover`，链接、选中、焦点、进度、装饰和分类各有独立语义。通用组件从 `@violet/ui` 使用；组件的公开入口与成熟度以 [component-manifest.json](packages/ui/component-manifest.json) 为准。
 
-包颜色由 `pnpm --filter @violet/ui sync` 生成、`check` 校验。人设身份色只在 `.identity-theme` 内生效，修改种子后运行 `pnpm colors:persona`，`pnpm check:persona-colors` 校验提交的静态 CSS。
+包颜色由 `pnpm --filter @violet/ui sync` 生成、`check` 校验。人设身份色只在 `.identity-theme` 内生效，修改种子后运行 `pnpm colors:persona`，`pnpm check:persona-colors` 校验提交的静态 CSS。四季预设主题的种子色与旋钮在 `src/shared/lib/theme-presets.ts`，修改后运行 `pnpm colors:themes` 重新生成 `src/styles/theme-presets.generated.css`，`pnpm check:theme-colors` 校验；每季一个 `[data-theme]` 规则，只含品牌与中性色阶，状态色与分类色沿用默认色板。
 
 站点公共层提供 `shared/ui/announcement-severity` 状态色和 `shared/hooks/use-banner-ticker` 轮播节拍。终端、阅读进度等公共界面只消费用途语义色。
 
@@ -176,7 +176,7 @@ Shiki 初始化、语言准备与分词在按需创建的 Web Worker 中执行�
 
 ### 颜色守门
 
-`make web-lint` 依次执行 Biome、颜色守门与人设颜色生成一致性检查。检查范围是 `src/`、`packages/` 内的 TSX 与 CSS，包括未加入 Git 的文件；新增裸色值、Tailwind 原生色板类或旧颜色类会失败，输出文件、行号和规则。`hover:bg-primary/90` 等透明主色悬停、CSS hover 中相同的透明混色也会失败；主要动作用 `primary-hover`，浅选中反馈用 `selected-hover`。带 `-text` 后缀的角色颜色类（如 `text-destructive-text`）会失败，文字直接写 `text-destructive`；CSS 的 `color`、`caret-color`、TSX 行内样式的 `color`，以及 `text-[var(--primary)]` 这类任意值类读取 `--primary`、`--destructive` 等实色角色也会失败，应读 `--primary-text` 等文字档。非 hover 的合法透明语义颜色、注释、链接锚点和 CSS ID 不误报。
+`make web-lint` 依次执行 Biome、颜色守门，以及人设颜色与四季预设主题的生成一致性检查。检查范围是 `src/`、`packages/` 内的 TSX 与 CSS，包括未加入 Git 的文件；新增裸色值、Tailwind 原生色板类或旧颜色类会失败，输出文件、行号和规则。`hover:bg-primary/90` 等透明主色悬停、CSS hover 中相同的透明混色也会失败；主要动作用 `primary-hover`，浅选中反馈用 `selected-hover`。带 `-text` 后缀的角色颜色类（如 `text-destructive-text`）会失败，文字直接写 `text-destructive`；CSS 的 `color`、`caret-color`、TSX 行内样式的 `color`，以及 `text-[var(--primary)]` 这类任意值类读取 `--primary`、`--destructive` 等实色角色也会失败，应读 `--primary-text` 等文字档。非 hover 的合法透明语义颜色、注释、链接锚点和 CSS ID 不误报。
 
 [color-guard.config.json](color-guard.config.json) 维护扫描根目录与带理由的豁免：颜色算法包、vendor、lab、构建产物、`*.generated.css` 和组件清单生成的 CSS 入口。手写的主题 CSS 与色板不豁免。
 

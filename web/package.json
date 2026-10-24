@@ -17,6 +17,8 @@
 		"check:colors": "node scripts/check-colors.mjs",
 		"colors:persona": "node scripts/sync-persona-colors.mjs",
 		"check:persona-colors": "node scripts/sync-persona-colors.mjs --check",
+		"colors:themes": "node scripts/sync-theme-presets.mjs",
+		"check:theme-colors": "node scripts/sync-theme-presets.mjs --check",
 		"typecheck": "pnpm generate-routes && tsc --noEmit",
 		"sync:pdf-worker": "node -e \"require('fs').copyFileSync(require.resolve('pdfjs-dist/build/pdf.worker.min.mjs',{paths:[require.resolve('react-pdf')]}),'public/pdf.worker.min.mjs')\"",
 		"postinstall": "node -e \"require('fs').copyFileSync(require.resolve('pdfjs-dist/build/pdf.worker.min.mjs',{paths:[require.resolve('react-pdf')]}),'public/pdf.worker.min.mjs')\""

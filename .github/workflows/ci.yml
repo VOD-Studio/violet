@@ -242,6 +242,9 @@ jobs:
           COLOR_GUARD_BASE: ${{ inputs.ref && 'HEAD^' || github.event.pull_request.base.sha || (github.event.before != '0000000000000000000000000000000000000000' && github.event.before) || 'HEAD^' }}
         run: pnpm check:colors
 
+      - name: Generated theme colors
+        run: pnpm check:theme-colors
+
       - name: TypeScript check
         run: pnpm typecheck
 
