@@ -4,6 +4,7 @@ import { useMe } from "@features/auth/api/queries";
 import { useAnnotationSummary } from "@features/comments/api/queries";
 import { ArticleAnnotations } from "@features/comments/ui/ArticleAnnotations";
 import { CommentDockButton } from "@features/comments/ui/CommentDockButton";
+import { useIncrementView } from "@features/posts/api/mutations";
 import { usePost } from "@features/posts/api/queries";
 import { ArticleSignature } from "@features/posts/ui/ArticleSignature";
 import ArticleToc from "@features/posts/ui/ArticleToc";
@@ -15,7 +16,6 @@ import { useChapterContext, useSeriesDetail } from "@features/series/api";
 import { ChapterNav, SeriesBelonging } from "@features/series/ui/ChapterNav";
 import { SeriesTocFab } from "@features/series/ui/SeriesToc";
 import { useSettings } from "@features/settings/api/queries";
-import { apiPost } from "@shared/api/request";
 import { useArticleImagePreview } from "@shared/hooks/use-article-image-preview";
 import { useScrollProgress } from "@shared/hooks/use-scroll-progress";
 import { extractToc } from "@shared/hooks/use-toc";
@@ -59,6 +59,7 @@ function ReadingProgress() {
 /** 组合文章正文、目录、原图预览与按需加载的评论交互。 */
 export function BlogDetailPage({ slug, initialPost }: BlogDetailPageProps) {
 	const { data: post, isLoading, error } = usePost(slug, initialPost);
+	const { mutate: incrementView } = useIncrementView();
 	const contentRef = useRef<HTMLElement>(null);
 	const articleImages = useArticleImagePreview();
 	// 批注数据流：summary 轻量计数用于角标渲染，
@@ -108,10 +109,9 @@ export function BlogDetailPage({ slug, initialPost }: BlogDetailPageProps) {
 	}, [chapterCtx]);
 	useEffect(() => {
 		if (!post?.id) return;
-		apiPost(`/posts/${post.id}/view`).catch(() => {
-			/* 浏览量统计失败不阻塞阅读 */
-		});
-	}, [post?.id]);
+		// mutate 保留失败状态但不抛出，统计失败不影响阅读。
+		incrementView(post.id);
+	}, [post?.id, incrementView]);
 
 	if (isLoading && !post) {
 		return <PostDetailSkeleton />;

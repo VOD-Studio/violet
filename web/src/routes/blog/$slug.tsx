@@ -6,7 +6,7 @@ import { fetchPostBySlug } from "@features/posts/api/queries";
 import { PostDetailSkeleton } from "@features/posts/ui/PostDetailSkeleton";
 import { SITE_URL } from "@shared/config/env";
 import { createFileRoute } from "@tanstack/react-router";
-import { BlogDetailPage } from "@widgets/BlogDetailPage/BlogDetailPage";
+import { BlogDetailPage } from "@widgets/BlogDetailPage";
 
 function BlogDetailRoute() {
 	const { slug } = Route.useParams();

@@ -1,0 +1,1 @@
+export { BlogDetailPage } from "./BlogDetailPage";
