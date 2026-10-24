@@ -140,7 +140,12 @@ const floorTo = (value: number, step: number) => Math.floor(value / step + 1e-9)
 export function fitGamut(l: number, c: number, h: number, gamut: Gamut): Oklch {
 	const lightness = Math.min(1, Math.max(0, roundTo(l, LIGHTNESS_STEP)));
 	const hue = roundTo(h, HUE_STEP) % 360;
-	let chroma = floorTo(Math.min(c, maxChroma(lightness, hue, gamut)), CHROMA_STEP);
+	const requested = floorTo(c, CHROMA_STEP);
+	// 多数档位的色度远在色域内，先直接检查请求值，省去二分查找
+	let chroma =
+		requested <= 0 || inGamut({ l: lightness, c: requested, h: hue }, gamut)
+			? requested
+			: floorTo(Math.min(c, maxChroma(lightness, hue, gamut)), CHROMA_STEP);
 	while (chroma > 0 && !inGamut({ l: lightness, c: chroma, h: hue }, gamut))
 		chroma = floorTo(chroma - CHROMA_STEP, CHROMA_STEP);
 	if (chroma <= 0) return { l: lightness, c: 0, h: 0 };
