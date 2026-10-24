@@ -1,4 +1,5 @@
 import { SiteMusicPlayer } from "@features/music-player/ui/SiteMusicPlayer";
+import { PrototypeShell } from "@features/theme-seasons-prototype/PrototypeShell";
 import { getClientAppearance } from "@shared/lib/appearance-cookie";
 import { SystemAppearanceTransition } from "@shared/ui/appearance-transition";
 import NotFound from "@shared/ui/not-found";
@@ -168,6 +169,8 @@ function RootComponent() {
 			<LinkConfirmDialog />
 			<ApiDocsDialog />
 			<ShareTweetDialog />
+			{/* PROTOTYPE（#645）：四季样稿切换条 */}
+			<PrototypeShell />
 		</AppProvider>
 	);
 }

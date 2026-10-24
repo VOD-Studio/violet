@@ -1,3 +1,5 @@
+import { ClosingAccent, useDecoration } from "@features/theme-seasons-prototype/decorations";
+import { SEASON_BY_KEY } from "@features/theme-seasons-prototype/directions";
 import { Heart, Mail, Rss } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -20,7 +22,14 @@ function getSeasonalGreeting(): { title: string; subtitle: string } {
 
 /** 首页收尾：季节寄语、匿名印记与服务端声明的订阅渠道。 */
 export function HomeClosing({ identity }: HomeClosingProps) {
-	const greeting = getSeasonalGreeting();
+	// PROTOTYPE（#645）：寄语跟随装饰所用的季节
+	const decorationSeason = useDecoration().season;
+	const greeting = decorationSeason
+		? {
+				title: SEASON_BY_KEY[decorationSeason].greeting[0],
+				subtitle: SEASON_BY_KEY[decorationSeason].greeting[1],
+			}
+		: getSeasonalGreeting();
 	const impressionQuery = useSiteImpression();
 	const impressionMutation = useLeaveSiteImpression();
 	const impression = impressionMutation.data ?? impressionQuery.data;
@@ -39,13 +48,18 @@ export function HomeClosing({ identity }: HomeClosingProps) {
 				transition={{ type: "spring", stiffness: 130, damping: 22, mass: 0.9 }}
 				className="mx-auto max-w-4xl px-5 text-center sm:px-8"
 			>
-				<div className="space-y-2">
+				{/* PROTOTYPE（#645）：季节装饰的点缀位 */}
+				<ClosingAccent placement="above" />
+				<div className="relative mx-auto w-fit space-y-2">
 					<p className="font-serif text-2xl font-normal tracking-widest text-foreground/90 sm:text-3xl">
 						{greeting.title}
 					</p>
 					<h2 className="font-serif text-2xl font-normal tracking-[0.08em] text-foreground/90 sm:text-3xl">
 						{greeting.subtitle}
 					</h2>
+					<span className="absolute top-1 left-full ml-6">
+						<ClosingAccent placement="beside" />
+					</span>
 				</div>
 
 				<div className="mt-14 flex items-center justify-center gap-8 sm:gap-14">

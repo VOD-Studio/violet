@@ -7,6 +7,8 @@ import { useChatUnreadCount } from "@features/chat/api/queries";
 import { useChatUnreadTitle } from "@features/chat/hooks/use-chat-unread-title";
 import { useChatStream } from "@features/chat/hooks/useChatStream";
 import NotificationBell from "@features/notifications/ui/NotificationBell";
+import { EntryPanel } from "@features/theme-seasons-prototype/entries";
+import { usePrototype } from "@features/theme-seasons-prototype/store";
 import { ApiError } from "@shared/api/error";
 import { avatarUrl } from "@shared/lib/image-url";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
@@ -51,7 +53,10 @@ const HeaderActions = ({ user, children }: HeaderActionsProps) => {
 	useChatUnreadTitle(user ? unreadChatCount : 0);
 	const [notificationOpen, setNotificationOpen] = useState(false);
 	const [userMenuOpen, setUserMenuOpen] = useState(false);
-	const actionsPinned = notificationOpen || userMenuOpen;
+	// PROTOTYPE（#645）：入口 A 把外观开关换成外观与主题面板
+	const prototypeEntry = usePrototype((state) => state.entry);
+	const [themePanelOpen, setThemePanelOpen] = useState(false);
+	const actionsPinned = notificationOpen || userMenuOpen || themePanelOpen;
 	// 聊天事件流全局挂载：任意页面收到新消息，聊天图标未读角标即时刷新
 	useChatStream();
 	useEffect(() => {
@@ -129,7 +134,11 @@ const HeaderActions = ({ user, children }: HeaderActionsProps) => {
 				)}
 
 				{/* 外观切换开关 */}
-				<AppearanceToggle size="sm" />
+				{import.meta.env.DEV && prototypeEntry === "A" ? (
+					<EntryPanel onOpenChange={setThemePanelOpen} />
+				) : (
+					<AppearanceToggle size="sm" />
+				)}
 			</div>
 			{/* 用户槽位：登录/未登录均为 size-8 圆形，宽度恒定 */}
 			<div className="flex size-8 items-center justify-center">

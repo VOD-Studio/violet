@@ -1,3 +1,5 @@
+import { EntrySeal } from "@features/theme-seasons-prototype/entries";
+import { usePrototype } from "@features/theme-seasons-prototype/store";
 import { useSessionStore } from "@shared/api/session";
 import { useMe } from "@/features/auth/api/queries";
 
@@ -24,6 +26,8 @@ const Header = ({ isAuthenticated }: HeaderProps) => {
 	const sessionActive = useSessionStore((s) => s.sessionActive);
 	const enabled = isAuthenticated || sessionActive;
 	const { data: user } = useMe({ enabled });
+	// PROTOTYPE（#645）：入口 B 在 Logo 旁放季节印章
+	const prototypeEntry = usePrototype((state) => state.entry);
 
 	return (
 		<header
@@ -32,8 +36,9 @@ const Header = ({ isAuthenticated }: HeaderProps) => {
 		>
 			<div className="container relative mx-auto flex h-10 max-w-6xl items-center justify-between gap-2 px-3 sm:px-4">
 				{/* 左段：Logo 胶囊 */}
-				<div className="flex shrink-0 items-center">
+				<div className="flex shrink-0 items-center gap-2">
 					<HeaderLogo />
+					{import.meta.env.DEV && prototypeEntry === "B" && <EntrySeal />}
 				</div>
 
 				{/* 中段：主导航船坞胶囊（相对页面绝对居中，不受左右胶囊宽度影响） */}

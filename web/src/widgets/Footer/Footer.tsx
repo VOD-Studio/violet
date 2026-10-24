@@ -1,9 +1,13 @@
 import { useSettings } from "@features/settings/api/queries";
+import { EntryFooter } from "@features/theme-seasons-prototype/entries";
+import { usePrototype } from "@features/theme-seasons-prototype/store";
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight } from "lucide-react";
 
 const Footer = () => {
 	const { data } = useSettings();
+	// PROTOTYPE（#645）：入口 C 在页脚放主题选择
+	const prototypeEntry = usePrototype((state) => state.entry);
 	const year = new Date().getFullYear();
 	const rawName = data?.site_name?.trim();
 	const siteName = !rawName || rawName === "My Blog" || rawName === "Blog" ? "Violet" : rawName;
@@ -169,6 +173,8 @@ const Footer = () => {
 						</div>
 					</div>
 				</div>
+
+				{import.meta.env.DEV && prototypeEntry === "C" && <EntryFooter />}
 
 				{/* 底部通栏行：域名与版权，自然衔接无分割线 */}
 				<div className="mt-4 flex flex-col gap-3 text-xs text-muted-foreground sm:flex-row sm:items-center">

@@ -1,0 +1,121 @@
+/*
+ * PROTOTYPE（#645）：「天光」背景层。只用品牌与中性的透明度色阶着色；
+ * 动效只有不透明度呼吸，减弱动态时静止。
+ */
+
+.light {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+
+.layer {
+	position: absolute;
+	inset: 0;
+}
+
+/* —— 春：花雾，两角浮起粉雾，底部一层薄霭 —— */
+.spring .a {
+	background:
+		radial-gradient(42rem 30rem at 8% 0%, var(--brand-a4), transparent 70%),
+		radial-gradient(36rem 26rem at 96% 6%, var(--brand-a3), transparent 72%);
+	animation: breathe 14s ease-in-out infinite;
+}
+
+.spring .b {
+	background: radial-gradient(80rem 22rem at 50% 108%, var(--brand-a3), transparent 70%);
+	animation: breathe 18s ease-in-out -6s infinite;
+}
+
+/* —— 夏：树影光斑，上半屏散落几处光斑，两组交替明灭 —— */
+.summer .a {
+	background:
+		radial-gradient(14rem 9rem at 12% 14%, var(--brand-a4), transparent 70%),
+		radial-gradient(10rem 7rem at 31% 6%, var(--brand-a3), transparent 70%),
+		radial-gradient(16rem 10rem at 72% 10%, var(--brand-a4), transparent 70%),
+		radial-gradient(9rem 6rem at 90% 26%, var(--brand-a3), transparent 70%);
+	animation: flicker 9s ease-in-out infinite;
+}
+
+.summer .b {
+	background:
+		radial-gradient(12rem 8rem at 22% 26%, var(--brand-a3), transparent 70%),
+		radial-gradient(11rem 7rem at 52% 4%, var(--brand-a4), transparent 70%),
+		radial-gradient(13rem 8rem at 84% 4%, var(--brand-a3), transparent 70%),
+		radial-gradient(10rem 6rem at 4% 34%, var(--brand-a2), transparent 70%);
+	animation: flicker 13s ease-in-out -4s infinite;
+}
+
+/* —— 秋：斜阳，左下角一道低角度暖光 —— */
+.autumn .a {
+	background: linear-gradient(32deg, var(--brand-a5) 0%, var(--brand-a3) 18%, transparent 46%);
+	animation: breathe 20s ease-in-out infinite;
+}
+
+.autumn .b {
+	background: radial-gradient(40rem 28rem at 100% 0%, var(--brand-a2), transparent 70%);
+}
+
+/* —— 冬：霜窗，四周结霜、视口中央透亮，稀疏静止的雪点 —— */
+.winter .a {
+	background: radial-gradient(
+		ellipse 75% 70% at 50% 45%,
+		transparent 55%,
+		var(--neutral-a4) 100%
+	);
+}
+
+.winter .b {
+	background-image:
+		radial-gradient(circle, var(--neutral-a7) 1.6px, transparent 2.2px),
+		radial-gradient(circle, var(--neutral-a5) 1.2px, transparent 1.8px);
+	background-size:
+		168px 120px,
+		96px 144px;
+	background-position:
+		12px 36px,
+		60px 0;
+	mask-image: radial-gradient(ellipse 70% 66% at 50% 46%, transparent 40%, #000 92%);
+}
+
+@keyframes breathe {
+	0%,
+	100% {
+		opacity: 0.75;
+	}
+	50% {
+		opacity: 1;
+	}
+}
+
+@keyframes flicker {
+	0%,
+	100% {
+		opacity: 0.35;
+	}
+	50% {
+		opacity: 1;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.layer {
+		animation: none;
+	}
+}
+
+/* —— 点缀位：印章 —— */
+.seal {
+	display: inline-flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 0.1rem;
+	width: 2.75rem;
+	padding: 0.45rem 0;
+	border-radius: 0.375rem;
+	background: var(--decoration);
+	color: var(--decoration-foreground);
+	font-family: var(--font-serif);
+	line-height: 1;
+}

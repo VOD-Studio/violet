@@ -1,3 +1,4 @@
+import { SeasonLight, useDecoration } from "@features/theme-seasons-prototype/decorations";
 import { useReducedMotion } from "@shared/lib/motion";
 import { useEffect, useRef } from "react";
 
@@ -68,13 +69,23 @@ function useLitGrid() {
 export default function SiteBackdrop() {
 	const litRef = useLitGrid();
 	const lifeRef = useLifeCanvas();
+	// PROTOTYPE（#645）：季节装饰的背景层
+	const decoration = useDecoration();
+	const light = decoration.variant === "light" ? decoration.season : null;
+	const glyph = decoration.variant === "pattern" ? decoration.season : null;
 
 	return (
 		<div aria-hidden className={styles.backdrop}>
-			<div className={`${styles.wash} ${styles.washSky}`} />
-			<div className={`${styles.wash} ${styles.washEmber}`} />
+			{light ? (
+				<SeasonLight season={light} />
+			) : (
+				<>
+					<div className={`${styles.wash} ${styles.washSky}`} />
+					<div className={`${styles.wash} ${styles.washEmber}`} />
+				</>
+			)}
 			<div className={styles.grid} />
-			<canvas ref={lifeRef} className={styles.life} />
+			<canvas ref={lifeRef} data-glyph={glyph ?? undefined} className={styles.life} />
 			<div ref={litRef} className={styles.lit} />
 			<div className={styles.grain} />
 		</div>
