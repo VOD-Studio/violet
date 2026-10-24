@@ -7,6 +7,35 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.17.2](https://github.com/VOD-Studio/violet/compare/v2.17.1...v2.17.2) (2026-10-24)
+
+
+### 修复
+
+* **date:** 支持明确时区的日历日期格式化 ([b6bc640](https://github.com/VOD-Studio/violet/commit/b6bc640ba95506189a70923e1f261817afc55603))
+* **image:** 让 WebP 展示请求应用质量参数 ([aeec90f](https://github.com/VOD-Studio/violet/commit/aeec90f1a1205b8a0630db62768cb1ad7d356e7d))
+* **posts:** 统一文章日期的水合时区 ([27504ad](https://github.com/VOD-Studio/violet/commit/27504ad69d4a0da0d9cde2c7ffbf2ae2b2d5f916))
+
+
+### 性能优化
+
+* **article-toc:** 让目录进度收敛后停止排帧 ([0a6bde6](https://github.com/VOD-Studio/violet/commit/0a6bde6b8d7bac37704f8efd8cfe80fe7a436161))
+* **auth:** 按登录入口准备 Google SDK ([0bdd009](https://github.com/VOD-Studio/violet/commit/0bdd009f7a45b36ed7a0169ed0834bea5776b5e6))
+* **comments:** 按交互准备批注工具 ([cf20a7f](https://github.com/VOD-Studio/violet/commit/cf20a7f17bfd9c6b657c514df738e4aba64c0531))
+* **image:** 按实际展示需求选择派生图片 ([f38116a](https://github.com/VOD-Studio/violet/commit/f38116ae10587806fa8cf1633695549ce6411722))
+* **image:** 接入文章与资源页响应式选图 ([ff318f0](https://github.com/VOD-Studio/violet/commit/ff318f0cd1fe3e53e2b8444bc4e38ff7e2c44141))
+* **posts:** 优化文章富内容加载与渲染时序 ([fade111](https://github.com/VOD-Studio/violet/commit/fade111bed29a85cf1c18befc01418c6ec241d5d))
+* **posts:** 接入按需阅读交互 ([6d65e3c](https://github.com/VOD-Studio/violet/commit/6d65e3c30348cb2ba289ab55ea196bfd7b4c528a))
+* **rich-content:** 按视口分批准备正文增强 ([1ad74d1](https://github.com/VOD-Studio/violet/commit/1ad74d1a65cf66312caa4e695b7a4c80bfd10358))
+* **roadmap:** 延后画布并保留嵌入语义内容 ([e1425f5](https://github.com/VOD-Studio/violet/commit/e1425f5efce46a9da195e75b18969bb78a83fb6e))
+
+
+### 重构
+
+* **async-loader:** 统一异步任务的并发复用 ([260467b](https://github.com/VOD-Studio/violet/commit/260467b188ba2005abe2c2af5110d47c6f52e25b))
+* **blog-detail:** 收紧文章阅读页模块边界 ([723133f](https://github.com/VOD-Studio/violet/commit/723133f7602b40d1d5d32e5b18375a9e0c8362da))
+* **rich-content:** 切换应用层模块加载入口 ([38b8e75](https://github.com/VOD-Studio/violet/commit/38b8e75363a2dd96167f1f50aeb66b25785498d1))
+
 ## [2.17.1](https://github.com/VOD-Studio/violet/compare/v2.17.0...v2.17.1) (2026-10-23)
 
 
