@@ -1,6 +1,8 @@
 /**
- * PROTOTYPE（#645）：四季飘落粒子。每季运动方式不同：
- * 春花瓣斜飘翻转；夏萤火原地游走明灭；秋落叶缓慢打旋下落；冬雪分远近三层下落。
+ * PROTOTYPE（#645）第三轮：四季飘落粒子。
+ *
+ * 每季运动方式不同：春花瓣斜飘翻转；夏萤火原地游走明灭；秋落叶缓慢打旋下落；冬雪分远近下落。
+ * 粒子按远近分层：远景小、慢、淡且虚化。形状先画进离屏精灵，逐帧只做贴图，避免每帧滤镜。
  * 颜色读取探针元素的计算值（canvas 不解析 CSS 变量与 light-dark()）；减弱动态时只画一帧静止画面。
  */
 import { useReducedMotion } from "@shared/lib/motion";
@@ -17,48 +19,172 @@ interface Particle {
 	rotation: number;
 	spin: number;
 	phase: number;
-	tone: number;
+	sprite: number;
 	depth: number;
 }
 
-const COUNT: Record<SeasonKey, number> = { spring: 16, summer: 22, autumn: 9, winter: 90 };
+const COUNT: Record<SeasonKey, number> = { spring: 22, summer: 20, autumn: 12, winter: 110 };
+const SPRITE = 64;
+const BLURS = [0, 1.2, 2.6];
 
-function petal(context: CanvasRenderingContext2D, size: number) {
-	context.beginPath();
-	context.moveTo(0, -size);
-	context.bezierCurveTo(size * 0.75, -size * 0.7, size * 0.55, size * 0.6, 0, size);
-	context.bezierCurveTo(-size * 0.55, size * 0.6, -size * 0.75, -size * 0.7, 0, -size);
-	context.fill();
+/** 探针：花瓣浅、中、深，萤火，落叶金、琥珀、赭红、灰绿，雪。 */
+export const PARTICLE_PROBES = [
+	"light-dark(color-mix(in oklch, var(--brand-4) 70%, var(--neutral-1)), color-mix(in oklch, var(--brand-8) 70%, var(--neutral-6)))",
+	"light-dark(color-mix(in oklch, var(--brand-6) 85%, var(--neutral-4)), color-mix(in oklch, var(--brand-9) 70%, var(--neutral-7)))",
+	"light-dark(color-mix(in oklch, var(--brand-9) 70%, var(--category-6-8)), color-mix(in oklch, var(--brand-10) 75%, var(--category-6-7)))",
+	"light-dark(color-mix(in oklch, var(--brand-9) 60%, var(--category-2-8)), color-mix(in oklch, var(--brand-11) 70%, var(--category-2-10)))",
+	"color-mix(in oklch, var(--brand-8) 75%, var(--neutral-7))",
+	"color-mix(in oklch, var(--category-2-8) 55%, var(--neutral-7))",
+	"color-mix(in oklch, var(--category-6-8) 50%, var(--neutral-7))",
+	"color-mix(in oklch, var(--category-3-8) 45%, var(--neutral-7))",
+	"light-dark(color-mix(in oklch, var(--neutral-6) 70%, var(--brand-5)), var(--neutral-12))",
+];
+
+/** 给计算出的颜色加透明度；canvas 不一定认 color-mix()。 */
+function withAlpha(color: string, alpha: number) {
+	const rgb = /^rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(color);
+	if (rgb) return `rgba(${rgb[1]}, ${rgb[2]}, ${rgb[3]}, ${alpha})`;
+	return color.replace(/\)$/, ` / ${alpha})`).replace(/ \/ [\d.]+ \/ /, " / ");
 }
 
-function mapleLeaf(context: CanvasRenderingContext2D, size: number) {
-	// 五裂枫叶：外凸点与内凹点交替，叶柄朝下
+function canvasOf(size: number) {
+	const canvas = document.createElement("canvas");
+	canvas.width = size;
+	canvas.height = size;
+	return canvas;
+}
+
+/** 在 SPRITE×SPRITE 的画布中心画形状，形状半径约为 SPRITE 的 0.3。 */
+function sprite(draw: (context: CanvasRenderingContext2D, r: number) => void, blur: number) {
+	const canvas = canvasOf(SPRITE);
+	const context = canvas.getContext("2d");
+	if (!context) return canvas;
+	context.translate(SPRITE / 2, SPRITE / 2);
+	if (blur) context.filter = `blur(${blur}px)`;
+	draw(context, SPRITE * 0.3);
+	return canvas;
+}
+
+function petalShape(context: CanvasRenderingContext2D, r: number) {
+	context.beginPath();
+	context.moveTo(0, r);
+	context.bezierCurveTo(-r * 0.85, r * 0.55, -r * 0.8, -r * 0.7, -r * 0.3, -r * 0.95);
+	context.quadraticCurveTo(0, -r * 0.82, 0, -r * 0.82);
+	context.quadraticCurveTo(0, -r * 0.82, r * 0.3, -r * 0.95);
+	context.bezierCurveTo(r * 0.8, -r * 0.7, r * 0.85, r * 0.55, 0, r);
+	context.closePath();
+}
+
+function mapleShape(context: CanvasRenderingContext2D, r: number) {
 	const lobes = [
 		[0, -1],
-		[0.18, -0.52],
-		[0.62, -0.72],
-		[0.42, -0.24],
-		[0.95, -0.05],
-		[0.4, 0.18],
-		[0.52, 0.62],
-		[0.08, 0.36],
-		[0, 0.9],
+		[0.16, -0.5],
+		[0.6, -0.74],
+		[0.42, -0.26],
+		[0.96, -0.08],
+		[0.42, 0.16],
+		[0.56, 0.6],
+		[0.1, 0.36],
+		[0, 0.62],
 	];
 	context.beginPath();
-	context.moveTo(0, -size);
-	for (const [x, y] of lobes) context.lineTo(x * size, y * size);
-	for (const [x, y] of [...lobes].reverse()) context.lineTo(-x * size, y * size);
+	context.moveTo(0, -r);
+	for (const [x, y] of lobes) context.lineTo(x * r, y * r);
+	for (const [x, y] of [...lobes].reverse()) context.lineTo(-x * r, y * r);
 	context.closePath();
-	context.fill();
-	context.lineWidth = 0.8;
-	context.beginPath();
-	context.moveTo(0, size * 0.9);
-	context.lineTo(0, -size * 0.7);
-	context.moveTo(0, 0);
-	context.lineTo(size * 0.62, -size * 0.5);
-	context.moveTo(0, 0);
-	context.lineTo(-size * 0.62, -size * 0.5);
-	context.stroke();
+}
+
+function buildSprites(season: SeasonKey, colors: string[]): HTMLCanvasElement[] {
+	const sprites: HTMLCanvasElement[] = [];
+	for (const blur of BLURS) {
+		switch (season) {
+			case "spring":
+				for (const [edge, mid, core] of [
+					[0, 1, 2],
+					[0, 0, 1],
+					[1, 1, 2],
+				]) {
+					sprites.push(
+						sprite((context, r) => {
+							const gradient = context.createRadialGradient(
+								0,
+								r,
+								0,
+								0,
+								r * 0.2,
+								r * 1.6,
+							);
+							gradient.addColorStop(0, colors[core]);
+							gradient.addColorStop(0.35, colors[mid]);
+							gradient.addColorStop(1, colors[edge]);
+							context.fillStyle = gradient;
+							petalShape(context, r);
+							context.fill();
+						}, blur),
+					);
+				}
+				break;
+			case "summer":
+				sprites.push(
+					sprite((context, r) => {
+						const glow = context.createRadialGradient(0, 0, 0, 0, 0, r * 1.5);
+						glow.addColorStop(0, colors[3]);
+						glow.addColorStop(0.12, colors[3]);
+						glow.addColorStop(0.3, withAlpha(colors[3], 0.35));
+						glow.addColorStop(1, withAlpha(colors[3], 0));
+						context.fillStyle = glow;
+						context.beginPath();
+						context.arc(0, 0, r * 1.5, 0, Math.PI * 2);
+						context.fill();
+					}, blur),
+				);
+				break;
+			case "autumn":
+				for (const tone of [4, 5, 6, 7]) {
+					sprites.push(
+						sprite((context, r) => {
+							context.fillStyle = colors[tone];
+							mapleShape(context, r);
+							context.fill();
+							// 叶柄一侧压暗，叶尖一侧提亮
+							const shade = context.createLinearGradient(0, r, 0, -r);
+							shade.addColorStop(0, "rgba(0, 0, 0, 0.22)");
+							shade.addColorStop(1, "rgba(255, 255, 255, 0.12)");
+							context.globalCompositeOperation = "source-atop";
+							context.fillStyle = shade;
+							context.fillRect(-r, -r, r * 2, r * 2);
+							context.globalCompositeOperation = "source-over";
+							context.strokeStyle = "rgba(255, 255, 255, 0.5)";
+							context.globalAlpha = 0.45;
+							context.lineWidth = 1;
+							context.beginPath();
+							context.moveTo(0, r * 0.62);
+							context.lineTo(0, -r * 0.8);
+							context.moveTo(0, r * 0.1);
+							context.lineTo(r * 0.62, -r * 0.5);
+							context.moveTo(0, r * 0.1);
+							context.lineTo(-r * 0.62, -r * 0.5);
+							context.stroke();
+						}, blur),
+					);
+				}
+				break;
+			default:
+				sprites.push(
+					sprite((context, r) => {
+						const flake = context.createRadialGradient(0, 0, 0, 0, 0, r);
+						flake.addColorStop(0, colors[8]);
+						flake.addColorStop(0.55, withAlpha(colors[8], 0.75));
+						flake.addColorStop(1, withAlpha(colors[8], 0));
+						context.fillStyle = flake;
+						context.beginPath();
+						context.arc(0, 0, r, 0, Math.PI * 2);
+						context.fill();
+					}, blur),
+				);
+		}
+	}
+	return sprites;
 }
 
 export function useSeasonParticles(season: SeasonKey | null) {
@@ -74,9 +200,11 @@ export function useSeasonParticles(season: SeasonKey | null) {
 
 		let width = 0;
 		let height = 0;
-		let colors: string[] = [];
+		let sprites: HTMLCanvasElement[] = [];
+		const perBlur = { spring: 3, summer: 1, autumn: 4, winter: 1 }[season];
 		const readColors = () => {
-			colors = Array.from(probe.children).map((child) => getComputedStyle(child).color);
+			const colors = Array.from(probe.children).map((child) => getComputedStyle(child).color);
+			sprites = buildSprites(season, colors);
 		};
 		const fitCanvas = () => {
 			const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -89,27 +217,30 @@ export function useSeasonParticles(season: SeasonKey | null) {
 
 		const spawn = (initial: boolean): Particle => {
 			const depth = Math.random();
+			// 远景（depth 小）更小、更慢、更虚
+			const near = 0.45 + depth * 0.55;
+			const layer = depth < 0.3 ? 2 : depth < 0.6 ? 1 : 0;
 			const base: Particle = {
 				x: Math.random() * width,
-				y: initial ? Math.random() * height : -20,
+				y: initial ? Math.random() * height : -30,
 				vx: 0,
 				vy: 0,
 				size: 0,
 				rotation: Math.random() * Math.PI * 2,
 				spin: 0,
 				phase: Math.random() * Math.PI * 2,
-				tone: Math.random(),
+				sprite: layer * perBlur + Math.floor(Math.random() * perBlur),
 				depth,
 			};
 			switch (season) {
 				case "spring":
 					return {
 						...base,
-						x: initial ? base.x : width * (0.3 + Math.random() * 0.8),
-						vx: -14 - Math.random() * 16,
-						vy: 18 + Math.random() * 14,
-						size: 4 + Math.random() * 3,
-						spin: (Math.random() - 0.5) * 2.4,
+						x: initial ? base.x : width * (0.25 + Math.random() * 0.85),
+						vx: (-12 - Math.random() * 14) * near,
+						vy: (16 + Math.random() * 14) * near,
+						size: (9 + Math.random() * 5) * near,
+						spin: (Math.random() - 0.5) * 2.2,
 					};
 				case "summer":
 					return {
@@ -117,22 +248,22 @@ export function useSeasonParticles(season: SeasonKey | null) {
 						y: height * (0.35 + Math.random() * 0.65),
 						vx: (Math.random() - 0.5) * 8,
 						vy: (Math.random() - 0.5) * 8,
-						size: 1.6 + Math.random() * 1.2,
+						size: (10 + Math.random() * 6) * near,
 					};
 				case "autumn":
 					return {
 						...base,
-						vx: -6 + Math.random() * 12,
-						vy: 22 + Math.random() * 16,
-						size: 12 + Math.random() * 7,
-						spin: (Math.random() - 0.5) * 1.6,
+						vx: (-6 + Math.random() * 12) * near,
+						vy: (20 + Math.random() * 14) * near,
+						size: (16 + Math.random() * 10) * near,
+						spin: (Math.random() - 0.5) * 1.4,
 					};
 				default:
 					return {
 						...base,
-						vx: -4 + Math.random() * 3,
-						vy: 14 + depth * 34,
-						size: 0.8 + depth * 2.2,
+						vx: (-5 + Math.random() * 4) * near,
+						vy: (12 + depth * 36) * near,
+						size: 3 + depth * 7,
 					};
 			}
 		};
@@ -144,52 +275,21 @@ export function useSeasonParticles(season: SeasonKey | null) {
 		const draw = (now: number) => {
 			context.clearRect(0, 0, width, height);
 			for (const p of particles) {
+				const image = sprites[p.sprite];
+				if (!image) continue;
+				context.globalAlpha =
+					season === "summer"
+						? (0.15 + 0.85 * Math.max(0, Math.sin(now / 950 + p.phase)) ** 3) *
+							(0.5 + p.depth * 0.5)
+						: 0.35 + p.depth * 0.55;
 				context.save();
 				context.translate(p.x, p.y);
-				switch (season) {
-					case "spring": {
-						context.rotate(p.rotation);
-						context.globalAlpha = 0.85;
-						context.fillStyle = p.tone < 0.6 ? colors[0] : colors[1];
-						petal(context, p.size);
-						break;
-					}
-					case "summer": {
-						const glow = Math.max(0, Math.sin(now / 900 + p.phase)) ** 3;
-						const halo = context.createRadialGradient(0, 0, 0, 0, 0, p.size * 7);
-						halo.addColorStop(0, colors[2]);
-						halo.addColorStop(1, "transparent");
-						context.globalAlpha = 0.35 * glow;
-						context.fillStyle = halo;
-						context.beginPath();
-						context.arc(0, 0, p.size * 7, 0, Math.PI * 2);
-						context.fill();
-						context.globalAlpha = 0.25 + 0.75 * glow;
-						context.fillStyle = colors[2];
-						context.beginPath();
-						context.arc(0, 0, p.size, 0, Math.PI * 2);
-						context.fill();
-						break;
-					}
-					case "autumn": {
-						context.rotate(p.rotation);
-						context.globalAlpha = 0.9;
-						context.fillStyle =
-							p.tone < 0.5 ? colors[0] : p.tone < 0.8 ? colors[1] : colors[3];
-						context.strokeStyle = colors[3];
-						mapleLeaf(context, p.size);
-						break;
-					}
-					default: {
-						context.globalAlpha = 0.45 + p.depth * 0.5;
-						context.fillStyle = colors[4];
-						context.beginPath();
-						context.arc(0, 0, p.size, 0, Math.PI * 2);
-						context.fill();
-					}
-				}
+				context.rotate(p.rotation);
+				const drawn = (p.size / (SPRITE * 0.3)) * SPRITE;
+				context.drawImage(image, -drawn / 2, -drawn / 2, drawn, drawn);
 				context.restore();
 			}
+			context.globalAlpha = 1;
 		};
 
 		const step = (now: number) => {
@@ -198,12 +298,12 @@ export function useSeasonParticles(season: SeasonKey | null) {
 			for (let i = 0; i < particles.length; i++) {
 				const p = particles[i];
 				if (season === "summer") {
-					p.vx += (Math.random() - 0.5) * 18 * dt;
-					p.vy += (Math.random() - 0.5) * 18 * dt;
+					p.vx += (Math.random() - 0.5) * 16 * dt;
+					p.vy += (Math.random() - 0.5) * 16 * dt;
 					const speed = Math.hypot(p.vx, p.vy);
-					if (speed > 10) {
-						p.vx = (p.vx / speed) * 10;
-						p.vy = (p.vy / speed) * 10;
+					if (speed > 9) {
+						p.vx = (p.vx / speed) * 9;
+						p.vy = (p.vy / speed) * 9;
 					}
 					p.x += p.vx * dt;
 					p.y += p.vy * dt;
@@ -211,13 +311,13 @@ export function useSeasonParticles(season: SeasonKey | null) {
 						particles[i] = spawn(true);
 					continue;
 				}
+				const swayAmplitude = season === "autumn" ? 28 : season === "spring" ? 16 : 7;
 				const sway =
-					Math.sin(now / 1000 + p.phase) *
-					(season === "autumn" ? 26 : season === "spring" ? 14 : 8);
+					Math.sin(now / 1100 + p.phase) * swayAmplitude * (0.45 + p.depth * 0.55);
 				p.x += (p.vx + sway) * dt;
 				p.y += p.vy * dt;
 				p.rotation += p.spin * dt;
-				if (p.y > height + 24 || p.x < -40 || p.x > width + 40) particles[i] = spawn(false);
+				if (p.y > height + 30 || p.x < -50 || p.x > width + 50) particles[i] = spawn(false);
 			}
 			draw(now);
 			frame = requestAnimationFrame(step);
@@ -227,7 +327,10 @@ export function useSeasonParticles(season: SeasonKey | null) {
 		readColors();
 		particles = Array.from({ length: COUNT[season] }, () => spawn(true));
 
-		const observer = new MutationObserver(readColors);
+		const observer = new MutationObserver(() => {
+			readColors();
+			if (reduceMotion) draw(0);
+		});
 		observer.observe(document.documentElement, { attributes: true });
 		const onResize = () => {
 			fitCanvas();
@@ -244,8 +347,8 @@ export function useSeasonParticles(season: SeasonKey | null) {
 			});
 		}
 		const onVisibility = () => {
-			if (document.hidden) cancelAnimationFrame(frame);
-			else if (!reduceMotion) {
+			cancelAnimationFrame(frame);
+			if (!document.hidden && !reduceMotion) {
 				last = performance.now();
 				frame = requestAnimationFrame(step);
 			}
@@ -262,14 +365,3 @@ export function useSeasonParticles(season: SeasonKey | null) {
 
 	return { canvasRef, probeRef };
 }
-
-/** 探针：依次为主色浅、主色中、萤火、深色描边、雪、雪描边。 */
-export const PARTICLE_PROBES = [
-	"var(--brand-6)",
-	"var(--brand-8)",
-	"light-dark(var(--brand-9), var(--brand-11))",
-	"var(--brand-10)",
-	// 浅色页面上的雪用淡青灰，深色页面用近白
-	"light-dark(var(--neutral-a6), var(--neutral-12))",
-	"var(--neutral-a8)",
-];
