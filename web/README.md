@@ -153,7 +153,7 @@ Mermaid 使用独立的串行渲染队列，模块与字体下载不阻塞其他
 
 文章发布时间与修订日期按 `Asia/Shanghai` 展示。
 
-批注工具准备期间保留原生选区，绘制完成后再接管高亮；段评加载或失败时仍可关闭。
+评论区接近时加载，评论抽屉首次打开时加载并保留已加载实例；选择正文后才加载划线工具，首次选区可直接继续批注。工具准备期间保留原生选区，绘制完成后再接管高亮；段评加载或失败时仍可关闭。这些模块失败只显示局部恢复入口，不替换已显示正文。文章方向键不接管灯箱等模态对话框内的交互。
 
 ## 手绘绘图库
 
@@ -310,6 +310,7 @@ pnpm test
 - 编辑器路线图入口契约：`pnpm test:contract e2e/editor-roadmap-embed.spec.ts`，覆盖 Slash 选择与预览、插入后的编辑区预览、代码块上的编辑与手写围栏块。
 - 路线图筛选契约：`pnpm test:contract e2e/project-roadmap-filters.spec.ts`，覆盖搜索与标签组合、原位淡化、清除、URL 直入和刷新、收起条目计数、管理员禁拖提示及窄屏键盘操作。
 - 首访连续性回归：`pnpm test:contract e2e/ssr-hydration.spec.ts`。同一全新浏览器上下文先展示真实 SSR 内容，再放行冷启动脚本并暂缓浏览器数据请求，持续检查正文未消失、没有水合错误。覆盖文章、首页、笔记、图集、系列、关于页和人设空资源。
+- 富内容阅读契约：`pnpm test:contract e2e/{rich-content-loading,highlight-worker,comment-loading,reading-interactions,image-sizing,image-hydration,auth-sdk-readiness}.spec.ts`，覆盖局部下载故障与恢复、Worker 隔离、评论首次交互、目录焦点、原图预览、原生图片尺寸、水合选图交接和登录 SDK 就绪状态。
 
 ## 环境变量
 
