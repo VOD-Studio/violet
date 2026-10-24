@@ -9,6 +9,7 @@
         inkline-check inkline-build inkline-test inkline-pack inkline-consumer inkline-examples \
         react-tweet-check react-tweet-build react-tweet-test react-tweet-pack react-tweet-consumer react-tweet-examples \
         kanban-check kanban-build kanban-test kanban-browser kanban-pack kanban-consumer kanban-examples \
+        theme-check theme-build theme-test theme-pack theme-consumer \
         build docker-build docker-up \
         deploy-prod-init deploy-prod deploy-prod-down \
         deploy-remote deploy-remote-skip-build deploy-remote-patch \
@@ -262,6 +263,21 @@ kanban-consumer: ## 安装看板 tarball 验证外部类型、SSR 与样式
 
 kanban-examples: ## 同步看板示例源码到双语 README
 	cd web && pnpm --filter @violetjs/kanban examples
+
+theme-check: ## 检查主题色彩算法包类型
+	cd web && pnpm --filter @violetjs/theme typecheck
+
+theme-build: ## 构建主题色彩算法包 ESM 与声明
+	cd web && pnpm --filter @violetjs/theme build
+
+theme-test: ## 遍历全部色相验证对比度门槛与色阶性质
+	cd web && pnpm --filter @violetjs/theme test
+
+theme-pack: ## 打包主题色彩算法包（NPM_PACK_DEST 指定输出目录）
+	cd web && pnpm --dir packages/theme pack --pack-destination "$(NPM_PACK_DEST)"
+
+theme-consumer: ## 安装主题包 tarball 验证外部类型、Node 与 Chromium 导入（需已安装 Playwright Chromium）
+	cd web && pnpm --filter @violetjs/theme consumer
 
 # ==================== 代码运行器（可运行代码块沙箱执行） ====================
 # runner 镜像字面复用 yggdrasil 项目（yggdrasil-runner-{python,node,go,rust,bun}），

@@ -252,6 +252,8 @@ jobs:
           pnpm --filter @violetjs/react-tweet test
           pnpm --filter @violetjs/kanban typecheck
           pnpm --filter @violetjs/kanban test
+          pnpm --filter @violetjs/theme typecheck
+          pnpm --filter @violetjs/theme test
 
       - name: Public library independent tarball consumers
         run: |
@@ -280,6 +282,10 @@ jobs:
 
       - name: Kanban real-browser tests
         run: pnpm --filter @violetjs/kanban browser
+
+      # 需要 Chromium 验证浏览器导入，故排在安装 Chromium 之后
+      - name: Theme independent tarball consumer
+        run: pnpm --filter @violetjs/theme consumer
 
       - name: Setup Docker Buildx
         if: ${{ !inputs.ref || inputs.build_images }}
