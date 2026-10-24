@@ -117,6 +117,7 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 | 项目与路线图 | `features/projects`、`admin-projects` |
 | 上传、媒体与表情 | `features/upload`、`media`、`emojis`、`customemoji` |
 | 站点音乐 | `features/admin-music`、`music-player`，共享模型在 `entities/music` |
+| 明暗外观切换 | `features/appearance`，SSR 与 cookie 桥接在 `shared/` |
 | 管理后台 | `features/admin-*`，公共后台布局与表格在 `admin-layout` / `admin-shared` |
 | 运行策略与代码执行 | `entities/runtime-policy`、`entities/code-runner`、`features/admin-settings` |
 | 首页与阅读页组合、导航 | `widgets/` 与 `shared/config/nav.ts` |
@@ -171,6 +172,8 @@ Shiki 初始化、语言准备与分词在按需创建的 Web Worker 中执行�
 `shared/lib/appearance-cookie.ts` 提供 SSR 与客户端共用的外观解析规则：`appearance` cookie 保存已解析的 `light` / `dark`，有效期一年。只有缺少新 cookie 时才读取旧 `theme` 值；SSR 通过 `getSSRAppearance` 的响应头补写，客户端路由读取时也会补写。新 cookie 存在但值非法时按浅色解析，不回退旧值。
 
 `next-themes` 的 `useTheme`、`setTheme` 等 API 与默认 localStorage 键保持不变，已保存的 `light` / `dark` / `system` 选择继续生效。
+
+站点切换器与 hook 从 `@features/appearance` 引入 `AppearanceToggle`、`useAppearanceSwitcher`。Header、后台顶栏、命令面板和 `/lab/theme` 演示共用这一入口，正式页面不依赖 lab 实现。
 
 ### 独立包与文档站
 

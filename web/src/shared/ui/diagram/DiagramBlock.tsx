@@ -4,7 +4,7 @@ import { EnhancementFailure } from "@shared/ui/deferred-content/DeferredContent"
 import { cn } from "cn";
 import { AnimatePresence } from "motion/react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { subscribeThemeRerender } from "@/shared/lib/theme-rerender";
+import { subscribeAppearanceRerender } from "@/shared/lib/appearance-rerender";
 import { CodeCard } from "@/shared/ui/code-preview/components/CodeCard";
 import { DiagramFullscreen } from "./DiagramFullscreen";
 import { DiagramPlaceholder } from "./DiagramPlaceholder";
@@ -25,8 +25,8 @@ export interface DiagramBlockProps {
 	source: string;
 }
 
-/** 读当前站点主题：<html>.classList 含 dark → dark，否则 light（SSR 安全兜底 light） */
-function readCurrentTheme(): DiagramTheme {
+/** SSR 默认浅色；客户端读取已应用的明暗 class。 */
+function readCurrentAppearance(): DiagramTheme {
 	if (typeof document === "undefined") return "light";
 	return document.documentElement.classList.contains("dark") ? "dark" : "light";
 }
@@ -73,7 +73,7 @@ export function DiagramBlock({ format, source }: DiagramBlockProps) {
 	 */
 	const [hasRendered, setHasRendered] = useState(false);
 	/** 当前 SVG 对应的主题（首渲染取当前主题；之后由主题订阅驱动更新） */
-	const themeRef = useRef<DiagramTheme>(readCurrentTheme());
+	const themeRef = useRef<DiagramTheme>(readCurrentAppearance());
 	/** 渲染序号：每渲一次递增，旧序号结果丢弃（防竞态写入过期 SVG） */
 	const renderSeqRef = useRef(0);
 
@@ -124,14 +124,10 @@ export function DiagramBlock({ format, source }: DiagramBlockProps) {
 		};
 	}, [doRender]);
 
-	// 主题跟随：mermaid 颜色烘焙进 SVG，切主题必须重新 render。
-	// 各自治 MutationObserver 会让重渲落在 VT 动画期间，DOM 写入与动画互相放大
-	// （实测 VT finished 从 ~500ms 拖到 9.5s）。改注册到 theme-rerender 表，
-	// 由主题切换的 VT update 回调统一 await——VT 等重渲完才捕获新帧，
-	// 动画期间 DOM 零变化（对齐 rua.plus 的 U/Be 模式）。
+	// Mermaid 颜色烘焙进 SVG，等明暗切换动画结束后再重渲，避免占用动画帧调度。
 	useEffect(
 		() =>
-			subscribeThemeRerender(async (next) => {
+			subscribeAppearanceRerender(async (next) => {
 				if (next === themeRef.current) return;
 				themeRef.current = next;
 				await doRender(next);

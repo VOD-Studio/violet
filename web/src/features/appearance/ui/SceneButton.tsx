@@ -1,23 +1,23 @@
 import { AnimatePresence, motion } from "motion/react";
-import type { ThemeOption, VariantProps } from "./types";
-import { useThemeSwitcher } from "./use-theme-switcher";
+import { useAppearanceSwitcher } from "../hooks/useAppearanceSwitcher";
+import type { AppearanceOption, VariantProps } from "./types";
 
 /**
- * SceneButton - 情景插画主题按钮
+ * 情景插画外观按钮。
  *
  * 按钮内部是一个微缩场景：亮色时太阳高挂、暗色时月亮星星升起、
  * 系统状态时显示自动切换的提示。点击按钮循环切换三态。
  */
 export function SceneButton({ size = "default" }: VariantProps) {
 	const containerCls = size === "sm" ? "h-10 w-20" : size === "lg" ? "h-20 w-36" : "h-16 w-28";
-	const { theme, switchTheme } = useThemeSwitcher();
+	const { appearance, switchAppearance } = useAppearanceSwitcher();
 
-	const cycleOrder: ThemeOption[] = ["light", "dark", "system"];
-	const currentIndex = theme ? cycleOrder.indexOf(theme) : 0;
+	const cycleOrder: AppearanceOption[] = ["light", "dark", "system"];
+	const currentIndex = appearance ? cycleOrder.indexOf(appearance) : 0;
 	const next = cycleOrder[(currentIndex + 1) % cycleOrder.length];
 
 	const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-		switchTheme(next, { clientX: e.clientX, clientY: e.clientY });
+		switchAppearance(next, { clientX: e.clientX, clientY: e.clientY });
 	};
 
 	return (
@@ -25,10 +25,10 @@ export function SceneButton({ size = "default" }: VariantProps) {
 			type="button"
 			onClick={handleClick}
 			className={`group relative ${containerCls} overflow-hidden rounded-2xl border border-border bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring`}
-			aria-label="切换主题"
+			aria-label="切换外观"
 		>
 			<AnimatePresence mode="wait">
-				{theme === "light" && (
+				{appearance === "light" && (
 					<motion.div
 						key="light"
 						initial={{ opacity: 0 }}
@@ -54,7 +54,7 @@ export function SceneButton({ size = "default" }: VariantProps) {
 					</motion.div>
 				)}
 
-				{theme === "dark" && (
+				{appearance === "dark" && (
 					<motion.div
 						key="dark"
 						initial={{ opacity: 0 }}
@@ -89,7 +89,7 @@ export function SceneButton({ size = "default" }: VariantProps) {
 					</motion.div>
 				)}
 
-				{theme === "system" && (
+				{appearance === "system" && (
 					<motion.div
 						key="system"
 						initial={{ opacity: 0 }}

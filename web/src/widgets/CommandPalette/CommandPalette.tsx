@@ -1,4 +1,4 @@
-import { useThemeSwitcher } from "@features/lab/theme/ui/use-theme-switcher";
+import { useAppearanceSwitcher } from "@features/appearance";
 import { useSearchPosts } from "@features/posts/api/queries";
 import { flattenNavLinks } from "@shared/config/nav";
 import { type CmdItem, filterCommands } from "@shared/lib/cmd-filter";
@@ -12,17 +12,17 @@ import { useCommandUIStore } from "./command-ui-store";
 const GROUP_LABELS: Record<string, string> = {
 	posts: "文章",
 	navigation: "导航",
-	theme: "主题",
+	appearance: "外观",
 };
 
 /**
  * CommandPalette - 全局 Cmd/Ctrl+K 搜索 + 命令面板
  *
  * 双模态：输入 ≥ 2 字符触发服务端文章搜索（debounce 250ms），同时本地过滤
- * 导航/主题命令。文章结果来自服务端（已按 query 检索），不再经 filterCommands
+ * 导航/外观命令。文章结果来自服务端（已按 query 检索），不再经 filterCommands
  * 二次过滤——query 可能命中正文而非标题，本地过滤会误删结果。
  * - Cmd/Ctrl+K 打开（也可由 HeaderActions 搜索按钮 open()）
- * - 导航命令派生自 NAV_ITEMS（与 Header nav 同源）；主题切换为面板独有
+ * - 导航命令派生自 NAV_ITEMS（与 Header nav 同源）；外观切换为面板独有
  *
  * 显隐状态走 useCommandUIStore（与 HeaderActions 共享）。
  */
@@ -33,7 +33,7 @@ const CommandPalette = () => {
 	const [query, setQuery] = useState("");
 	const [debouncedQuery, setDebouncedQuery] = useState("");
 	const navigate = useNavigate();
-	const { theme, switchTheme } = useThemeSwitcher();
+	const { appearance, switchAppearance } = useAppearanceSwitcher();
 	const { data: searchData, isFetching } = useSearchPosts(debouncedQuery);
 
 	// 输入防抖：避免每次击键都打后端
@@ -61,7 +61,7 @@ const CommandPalette = () => {
 		}
 	}, [isOpen]);
 
-	// 本地命令：导航 + 主题（经 filterCommands 子串过滤）
+	// 本地命令：导航 + 外观（经 filterCommands 子串过滤）
 	const localCommands: CmdItem[] = useMemo(
 		() => [
 			...flattenNavLinks().map((item) => ({
@@ -71,34 +71,34 @@ const CommandPalette = () => {
 				run: () => navigate({ to: item.to }),
 			})),
 			{
-				id: "theme-light",
-				label: "切换亮色主题",
-				group: "theme",
+				id: "appearance-light",
+				label: "切换亮色外观",
+				group: "appearance",
 				keywords: ["light", "day", "亮色"],
 				run: () => {
-					if (theme !== "light") switchTheme("light");
+					if (appearance !== "light") switchAppearance("light");
 				},
 			},
 			{
-				id: "theme-dark",
-				label: "切换暗黑主题",
-				group: "theme",
+				id: "appearance-dark",
+				label: "切换暗黑外观",
+				group: "appearance",
 				keywords: ["dark", "night", "暗黑"],
 				run: () => {
-					if (theme !== "dark") switchTheme("dark");
+					if (appearance !== "dark") switchAppearance("dark");
 				},
 			},
 			{
-				id: "theme-system",
-				label: "跟随系统主题",
-				group: "theme",
+				id: "appearance-system",
+				label: "跟随系统外观",
+				group: "appearance",
 				keywords: ["system", "auto", "跟随系统"],
 				run: () => {
-					if (theme !== "system") switchTheme("system");
+					if (appearance !== "system") switchAppearance("system");
 				},
 			},
 		],
-		[navigate, switchTheme, theme],
+		[navigate, switchAppearance, appearance],
 	);
 
 	const filtered = useMemo(() => {

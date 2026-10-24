@@ -2,30 +2,31 @@ import { act } from "@testing-library/react";
 import { hydrateRoot, type Root } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import ThemeToggle from "../ThemeToggle";
+import { AppearanceToggle } from "../AppearanceToggle";
 
-let storedTheme: "dark" | undefined;
+let storedAppearance: "dark" | undefined;
 
 vi.mock("next-themes", () => ({
-	useTheme: () => ({ theme: storedTheme, setTheme: vi.fn() }),
+	useTheme: () => ({ theme: storedAppearance, setTheme: vi.fn() }),
 }));
 
 afterEach(() => {
-	storedTheme = undefined;
+	storedAppearance = undefined;
 });
 
-describe("ThemeToggle hydration", () => {
-	it("服务端无浏览器主题时仍能水合深色偏好并选中暗色", async () => {
-		storedTheme = undefined;
+describe("AppearanceToggle hydration", () => {
+	it("服务端无浏览器外观时仍能水合深色偏好并选中暗色", async () => {
+		storedAppearance = undefined;
 		const host = document.createElement("div");
-		host.innerHTML = renderToString(<ThemeToggle size="sm" />);
+		host.innerHTML = renderToString(<AppearanceToggle size="sm" />);
+		expect(host.querySelectorAll('[role="radio"][aria-checked="true"]')).toHaveLength(0);
 		document.body.append(host);
-		storedTheme = "dark";
+		storedAppearance = "dark";
 		const recover = vi.fn();
 		let root: Root | undefined;
 		try {
 			await act(async () => {
-				root = hydrateRoot(host, <ThemeToggle size="sm" />, {
+				root = hydrateRoot(host, <AppearanceToggle size="sm" />, {
 					onRecoverableError: recover,
 				});
 			});

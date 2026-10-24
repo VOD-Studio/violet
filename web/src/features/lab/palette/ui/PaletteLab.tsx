@@ -18,11 +18,12 @@ import { useState } from "react";
  * 协调图表 5 色、霓虹发光材质、组件实装及 WCAG 2.1 对比度审计。
  */
 export function PaletteLab() {
-	const { resolvedTheme } = useTheme();
+	const { resolvedTheme: resolvedAppearance } = useTheme();
 	const [mode, setMode] = useState<DisplayMode>("sync");
 
-	const currentTheme = (resolvedTheme === "dark" ? "dark" : "light") as "light" | "dark";
-	const effectiveTheme = mode === "dual" ? currentTheme : mode === "sync" ? currentTheme : mode;
+	const currentAppearance = resolvedAppearance === "dark" ? "dark" : "light";
+	const effectiveAppearance =
+		mode === "dual" ? currentAppearance : mode === "sync" ? currentAppearance : mode;
 
 	return (
 		<div className="container mx-auto px-6 py-4">
@@ -55,7 +56,11 @@ export function PaletteLab() {
 
 			{/* 主视觉看板与模式切换器 */}
 			<div id="primary">
-				<PaletteHero mode={mode} onModeChange={setMode} resolvedTheme={currentTheme} />
+				<PaletteHero
+					mode={mode}
+					onModeChange={setMode}
+					resolvedAppearance={currentAppearance}
+				/>
 			</div>
 
 			{/* 11 阶紫罗兰色阶 */}
@@ -65,19 +70,19 @@ export function PaletteLab() {
 
 			{/* 双重画布与空间表面体系 */}
 			<div id="surfaces">
-				<SurfaceLayersSection mode={mode === "dual" ? "dual" : effectiveTheme} />
+				<SurfaceLayersSection mode={mode === "dual" ? "dual" : effectiveAppearance} />
 			</div>
 
 			{/* 状态语义色 */}
 			<div id="status">
-				<StatusMatrixSection mode={mode === "dual" ? "dual" : effectiveTheme} />
+				<StatusMatrixSection mode={mode === "dual" ? "dual" : effectiveAppearance} />
 			</div>
 
 			{/* 协调图表光谱与霓虹发光 */}
 			<div id="charts">
 				<ChartAndNeonSection
-					mode={mode === "dual" ? "dual" : effectiveTheme}
-					resolvedTheme={currentTheme}
+					mode={mode === "dual" ? "dual" : effectiveAppearance}
+					resolvedAppearance={currentAppearance}
 				/>
 			</div>
 

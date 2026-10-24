@@ -1,24 +1,24 @@
 import { Monitor, Moon, Sun } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import { useAppearanceSwitcher } from "../hooks/useAppearanceSwitcher";
 import type { VariantProps } from "./types";
-import { useThemeSwitcher } from "./use-theme-switcher";
 
 const cycle = ["light", "dark", "system"] as const;
 
 /**
- * CyclicThemeButton - 单键循环主题切换器
+ * 单键循环外观切换器。
  *
  * 一个按钮循环切换 light → dark → system → light。当前图标做缩放/旋转形变，
  * 点击位置作为圆形扩散动画起点。
  */
-export function CyclicThemeButton({ size = "default" }: VariantProps) {
-	const { theme, switchTheme } = useThemeSwitcher();
+export function CyclicAppearanceButton({ size = "default" }: VariantProps) {
+	const { appearance, switchAppearance } = useAppearanceSwitcher();
 
-	const currentIndex = theme ? cycle.indexOf(theme as (typeof cycle)[number]) : 0;
+	const currentIndex = appearance ? cycle.indexOf(appearance) : 0;
 	const next = cycle[(currentIndex + 1) % cycle.length];
 
 	const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-		switchTheme(next, { clientX: e.clientX, clientY: e.clientY });
+		switchAppearance(next, { clientX: e.clientX, clientY: e.clientY });
 	};
 
 	const sizeCls = size === "sm" ? "size-9" : size === "lg" ? "size-16" : "size-12";
@@ -29,10 +29,10 @@ export function CyclicThemeButton({ size = "default" }: VariantProps) {
 			type="button"
 			onClick={handleClick}
 			className={`relative flex items-center justify-center rounded-full border border-border bg-background shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring ${sizeCls}`}
-			aria-label="切换主题"
+			aria-label="切换外观"
 		>
 			<AnimatePresence mode="wait" initial={false}>
-				{theme === "light" && (
+				{appearance === "light" && (
 					<motion.div
 						key="light"
 						initial={{ rotate: -90, scale: 0.5, opacity: 0 }}
@@ -43,7 +43,7 @@ export function CyclicThemeButton({ size = "default" }: VariantProps) {
 						<Sun className={`${iconCls} text-amber-500`} />
 					</motion.div>
 				)}
-				{theme === "dark" && (
+				{appearance === "dark" && (
 					<motion.div
 						key="dark"
 						initial={{ rotate: 90, scale: 0.5, opacity: 0 }}
@@ -54,7 +54,7 @@ export function CyclicThemeButton({ size = "default" }: VariantProps) {
 						<Moon className={`${iconCls} text-primary`} />
 					</motion.div>
 				)}
-				{theme === "system" && (
+				{appearance === "system" && (
 					<motion.div
 						key="system"
 						initial={{ scale: 0.5, opacity: 0 }}

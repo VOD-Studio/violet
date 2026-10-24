@@ -80,15 +80,15 @@ export function animateAppearanceRipple(
 
 	// 命名组抑制持续到 finished；CSS transition 冻结只持续到 ready，避免阻塞后续淡入。
 	const root = document.documentElement;
-	root.classList.add("theme-vt", "theme-vt-freeze");
+	root.classList.add("appearance-vt", "appearance-vt-freeze");
 	// 扩散坐标交给 transitions.css 的圆形扩散动画。
-	root.style.setProperty("--theme-ripple-x", `${px}px`);
-	root.style.setProperty("--theme-ripple-y", `${py}px`);
-	root.style.setProperty("--theme-ripple-r", `${endRadius}px`);
+	root.style.setProperty("--appearance-ripple-x", `${px}px`);
+	root.style.setProperty("--appearance-ripple-y", `${py}px`);
+	root.style.setProperty("--appearance-ripple-r", `${endRadius}px`);
 
 	// update 只同步切换并强制重算颜色；图块依赖帧调度，必须等 finished 后再渲染。
 	const transition = document.startViewTransition({
-		types: ["theme"],
+		types: ["appearance"],
 		update: () => {
 			apply();
 			getComputedStyle(document.body).backgroundColor;
@@ -98,27 +98,27 @@ export function animateAppearanceRipple(
 	// ready：帧已捕获，解除 transition 冻结（VT 伪元素动画独立于真实 DOM）
 	transition.ready
 		.then(() => {
-			root.classList.remove("theme-vt-freeze");
+			root.classList.remove("appearance-vt-freeze");
 		})
 		.catch(() => {
-			root.classList.remove("theme-vt", "theme-vt-freeze");
+			root.classList.remove("appearance-vt", "appearance-vt-freeze");
 			applyAndRerender();
 		});
 
 	// 先解除全文档命名组抑制，再渲染图块，避免测量节点触发额外样式重算。
 	transition.finished
 		.then(() => {
-			root.classList.remove("theme-vt");
-			root.style.removeProperty("--theme-ripple-x");
-			root.style.removeProperty("--theme-ripple-y");
-			root.style.removeProperty("--theme-ripple-r");
+			root.classList.remove("appearance-vt");
+			root.style.removeProperty("--appearance-ripple-x");
+			root.style.removeProperty("--appearance-ripple-y");
+			root.style.removeProperty("--appearance-ripple-r");
 			return runAppearanceRerender(target);
 		})
 		.catch(() => {
-			root.classList.remove("theme-vt");
-			root.style.removeProperty("--theme-ripple-x");
-			root.style.removeProperty("--theme-ripple-y");
-			root.style.removeProperty("--theme-ripple-r");
+			root.classList.remove("appearance-vt");
+			root.style.removeProperty("--appearance-ripple-x");
+			root.style.removeProperty("--appearance-ripple-y");
+			root.style.removeProperty("--appearance-ripple-r");
 			applyAndRerender();
 		});
 

@@ -1,5 +1,5 @@
+import { useAppearanceSwitcher } from "@features/appearance";
 import { PRIMARY_TOKENS } from "@features/lab/palette/model/tokens";
-import { useThemeSwitcher } from "@features/lab/theme/ui/use-theme-switcher";
 import { copyText } from "@shared/lib/clipboard";
 import { getContrastRatio, oklchToRgb, parseOklch } from "@shared/lib/color-math";
 import { Segmented } from "@violet/ui";
@@ -14,14 +14,14 @@ export type DisplayMode = "sync" | "light" | "dark" | "dual";
 export interface PaletteHeroProps {
 	mode: DisplayMode;
 	onModeChange: (mode: DisplayMode) => void;
-	resolvedTheme: "light" | "dark";
+	resolvedAppearance: "light" | "dark";
 }
 
 /**
  * PaletteHero - 调色板实验室主视觉看板与模式切换器。
  */
-export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroProps) {
-	const { switchTheme } = useThemeSwitcher();
+export function PaletteHero({ mode, onModeChange, resolvedAppearance }: PaletteHeroProps) {
+	const { switchAppearance } = useAppearanceSwitcher();
 	const [copied, setCopied] = useState(false);
 
 	// 浅色与深色主色参数
@@ -35,11 +35,13 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 	const darkContrast = getContrastRatio(primaryToken.dark, "oklch(0.138 0.012 286)");
 
 	// 单域模式下生效的属性
-	const effectiveTheme = mode === "dual" ? resolvedTheme : mode === "sync" ? resolvedTheme : mode;
-	const activePrimaryOklch = effectiveTheme === "light" ? primaryToken.light : primaryToken.dark;
-	const activeParsed = effectiveTheme === "light" ? lightParsed : darkParsed;
-	const activeRgb = effectiveTheme === "light" ? lightRgb : darkRgb;
-	const activeContrast = effectiveTheme === "light" ? lightContrast : darkContrast;
+	const effectiveAppearance =
+		mode === "dual" ? resolvedAppearance : mode === "sync" ? resolvedAppearance : mode;
+	const activePrimaryOklch =
+		effectiveAppearance === "light" ? primaryToken.light : primaryToken.dark;
+	const activeParsed = effectiveAppearance === "light" ? lightParsed : darkParsed;
+	const activeRgb = effectiveAppearance === "light" ? lightRgb : darkRgb;
+	const activeContrast = effectiveAppearance === "light" ? lightContrast : darkContrast;
 
 	const handleCopyAll = async () => {
 		const cssVariables = `:root {
@@ -80,8 +82,8 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 						value={mode}
 						onValueChange={(val) => {
 							onModeChange(val as DisplayMode);
-							if (val === "light") switchTheme("light");
-							if (val === "dark") switchTheme("dark");
+							if (val === "light") switchAppearance("light");
+							if (val === "dark") switchAppearance("dark");
 						}}
 						segments={[
 							{ value: "sync", label: "跟随全站" },
@@ -251,7 +253,7 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 									className="relative z-10 flex items-center justify-between"
 									style={{
 										color:
-											effectiveTheme === "light"
+											effectiveAppearance === "light"
 												? "oklch(0.99 0 0)"
 												: "oklch(0.14 0.02 286)",
 									}}
@@ -260,12 +262,12 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 										Violet Iris · Primary
 									</span>
 									<div className="flex items-center gap-1.5 rounded-full bg-black/20 px-2 py-0.5 text-[11px] backdrop-blur-xs">
-										{effectiveTheme === "light" ? (
+										{effectiveAppearance === "light" ? (
 											<Sun className="size-3" />
 										) : (
 											<Moon className="size-3" />
 										)}
-										<span className="capitalize">{effectiveTheme}</span>
+										<span className="capitalize">{effectiveAppearance}</span>
 									</div>
 								</div>
 
@@ -274,7 +276,7 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 									className="relative z-10"
 									style={{
 										color:
-											effectiveTheme === "light"
+											effectiveAppearance === "light"
 												? "oklch(0.99 0 0)"
 												: "oklch(0.14 0.02 286)",
 									}}
@@ -292,7 +294,7 @@ export function PaletteHero({ mode, onModeChange, resolvedTheme }: PaletteHeroPr
 						<p className="mt-3 font-mono text-xs text-muted-foreground">
 							{mode === "dual"
 								? "左侧白瓷底色上的皇家鸢尾 (L: 0.53) ↔ 右侧星空底色上的紫水晶 (L: 0.72)"
-								: effectiveTheme === "light"
+								: effectiveAppearance === "light"
 									? "浅色白瓷底色上的皇家鸢尾 (Lightness 0.53 · 对比度 5.7:1)"
 									: "深色星空底色上的紫水晶 (Lightness 0.72 · 对比度 6.0:1)"}
 						</p>

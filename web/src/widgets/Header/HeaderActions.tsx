@@ -1,11 +1,11 @@
 import { getDisplayName } from "@entities/user/model/display-name";
 import type { UserDTO } from "@entities/user/model/types";
+import { AppearanceToggle } from "@features/appearance";
 import { useLogout } from "@features/auth/api/mutations";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useChatUnreadCount } from "@features/chat/api/queries";
 import { useChatUnreadTitle } from "@features/chat/hooks/use-chat-unread-title";
 import { useChatStream } from "@features/chat/hooks/useChatStream";
-import ThemeToggle from "@features/lab/theme/ui";
 import NotificationBell from "@features/notifications/ui/NotificationBell";
 import { ApiError } from "@shared/api/error";
 import { avatarUrl } from "@shared/lib/image-url";
@@ -34,7 +34,7 @@ interface HeaderActionsProps {
  * HeaderActions - 右侧操作胶囊
  *
  * - 桌面端默认只呈现用户槽位（未登录为登录入口，已登录为头像下拉），
- *   hover/聚焦时向左展开搜索、通知、聊天与主题工具区；移动端仅保留槽位与抽屉触发器。
+ *   hover 时向左展开搜索、通知、聊天与外观工具区；移动端仅保留槽位与抽屉触发器。
  * - 用户槽位（size-8 圆形，宽度恒定）：
  *   未登录 → 用户剪影图标，点击跳 /login；已登录 → 真实头像下拉菜单。
  *
@@ -128,8 +128,8 @@ const HeaderActions = ({ user, children }: HeaderActionsProps) => {
 					</BadgeAnchor>
 				)}
 
-				{/* 主题切换开关 */}
-				<ThemeToggle size="sm" />
+				{/* 外观切换开关 */}
+				<AppearanceToggle size="sm" />
 			</div>
 			{/* 用户槽位：登录/未登录均为 size-8 圆形，宽度恒定 */}
 			<div className="flex size-8 items-center justify-center">

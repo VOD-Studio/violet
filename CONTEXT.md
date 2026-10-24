@@ -598,6 +598,7 @@ _Avoid_: 实验室（`/lab` 是原型试验场）、组件库文档（`/ui` 只�
 
 **外观（Appearance）**:
 界面的明暗：跟随系统、浅色或深色。与主题相互独立，任何主题都有浅色与深色两种外观。
+站点代码统一使用 `appearance`：切换入口为 `AppearanceToggle` 与 `useAppearanceSwitcher`，SSR 通过 `getSSRAppearance` 读取已解析的 `appearance` cookie。仅当新 cookie 缺失时读取旧 `theme` cookie 并补写新值；`next-themes` 自身 API 与已有 localStorage 偏好保持不变。
 _Avoid_: 主题（指明暗时）、配色模式、color scheme（CSS 的 `color-scheme` 指的就是明暗）
 
 **主题（Theme）**:
