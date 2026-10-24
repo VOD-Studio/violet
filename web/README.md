@@ -176,7 +176,7 @@ Shiki 初始化、语言准备与分词在按需创建的 Web Worker 中执行�
 
 ### 颜色守门
 
-`make web-lint` 依次执行 Biome、颜色守门与人设颜色生成一致性检查。检查范围是 `src/`、`packages/` 内的 TSX 与 CSS，包括未加入 Git 的文件；新增裸色值、Tailwind 原生色板类或旧颜色类会失败，输出文件、行号和规则。注释、链接锚点和 CSS ID 不作为颜色违规。
+`make web-lint` 依次执行 Biome、颜色守门与人设颜色生成一致性检查。检查范围是 `src/`、`packages/` 内的 TSX 与 CSS，包括未加入 Git 的文件；新增裸色值、Tailwind 原生色板类或旧颜色类会失败，输出文件、行号和规则。`hover:bg-primary/90` 等透明主色悬停、CSS hover 中相同的透明混色也会失败；主要动作用 `primary-hover`，浅选中反馈用 `selected-hover`。非 hover 的合法透明语义颜色、注释、链接锚点和 CSS ID 不误报。
 
 [color-guard.config.json](color-guard.config.json) 维护扫描根目录与带理由的豁免：颜色算法包、vendor、lab、构建产物、`*.generated.css` 和组件清单生成的 CSS 入口。手写的主题 CSS 与色板不豁免。
 

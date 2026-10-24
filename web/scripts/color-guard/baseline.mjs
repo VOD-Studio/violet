@@ -36,7 +36,9 @@ export function parseBaseline(source) {
 			!/\.(tsx|css)$/.test(entry.file) ||
 			entry.file.startsWith("/") ||
 			entry.file.split("/").includes("..") ||
-			!["raw-color", "tailwind-palette", "legacy-color"].includes(entry.rule) ||
+			!["raw-color", "tailwind-palette", "legacy-color", "primary-hover-opacity"].includes(
+				entry.rule,
+			) ||
 			typeof entry.value !== "string" ||
 			!entry.value ||
 			!Number.isSafeInteger(entry.count) ||

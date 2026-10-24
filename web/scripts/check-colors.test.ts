@@ -144,6 +144,103 @@ export const Clean = () => <a href={"#abc"} id="def" className="bg-background te
 	expect(result.status, result.stderr).toBe(0);
 });
 
+it.each([
+	"hover:bg-primary/90",
+	"hover:bg-primary/0",
+	"hover:bg-primary/100",
+	"group-hover:bg-primary/75",
+	"group-hover/card:bg-primary/[0.83]",
+	"peer-hover:bg-primary/(--hover-opacity)",
+	"dark:hover:bg-primary/95",
+	"md:dark:group-hover/card:bg-primary/[var(--hover-opacity)]",
+	"data-[state=open]:hover:bg-primary/[calc(1-0.1)]!",
+	"hover:text-primary/80",
+	"hover:!border-primary/80",
+])("主色透明度 hover 失败并提示语义 token：%s", (className) => {
+	write(
+		"src/Hover.tsx",
+		`export const Hover = () => (\n\t<button className="${className}" />\n);\n`,
+	);
+	const result = check();
+	expect(result.status, result.stdout).toBe(1);
+	expect(result.stderr).toContain(`src/Hover.tsx:2:21: [primary-hover-opacity] ${className}`);
+	expect(result.stderr).toContain("悬停请使用 primary-hover token");
+});
+
+it("模板与类名组合函数中的主色透明度 hover 同样失败", () => {
+	write(
+		"src/Hover.tsx",
+		'const recipe = cva("hover:bg-primary/80");\n' +
+			'const classes = cn({ "group-hover:bg-primary/75": active });\n' +
+			`export const Hover = () => <button className={\`dark:hover:bg-primary/\${opacity}\`} />;\n`,
+	);
+	const result = check();
+	expect(result.status).toBe(1);
+	for (const line of [1, 2, 3]) {
+		expect(result.stderr).toMatch(
+			new RegExp(`src/Hover\\.tsx:${line}:\\d+.*primary-hover-opacity`),
+		);
+	}
+});
+
+it.each([
+	".card { @apply dark:hover:bg-primary/90; }",
+	".card:hover { @apply bg-primary/[0.9]; }",
+	".card { @variant hover { @apply bg-primary/90; } }",
+	".card:hover { background: color-mix(in oklch, var(--primary) 90%, transparent); }",
+	".group:hover .card { background: color-mix(in srgb, var(--color-primary), transparent); }",
+	".card { &:hover { background: oklch(from var(--primary) l c h / 0.9); } }",
+	".card:hover { background: hsl(var(--primary) / var(--hover-opacity)); }",
+	".card:hover { background: rgba(var(--primary), 0.9); }",
+	".card { @variant hover { background: rgb(from var(--primary) r g b / 90%); } }",
+])("CSS 悬停上下文中的主色透明度失败：%s", (css) => {
+	write("src/hover.css", css);
+	const result = check();
+	expect(result.status).toBe(1);
+	expect(result.stderr).toMatch(/src\/hover\.css:1:\d+.*primary-hover-opacity/);
+	expect(result.stderr).toContain("悬停请使用 primary-hover token");
+});
+
+it("语义 hover、非 hover 主色透明度和其它语义颜色透明度合法", () => {
+	write(
+		"src/Clean.tsx",
+		`export const Clean = () => <button className="hover:bg-primary-hover dark:group-hover:bg-primary-hover hover:text-primary-foreground/90 bg-primary/20 focus:bg-primary/80 not-hover:bg-primary/50 data-[hover=true]:bg-primary/60 hover:bg-selected/90" />;\n`,
+	);
+	write(
+		"src/clean.css",
+		`.card { background: color-mix(in oklch, var(--primary) 20%, transparent); }
+.card:hover { background: var(--primary-hover); color: var(--primary-foreground); }
+.card:hover { outline-color: color-mix(in oklch, var(--ring) 50%, transparent); }
+.card:hover { color: oklch(from var(--primary) l c h); }
+.card:not(:hover) { background: hsl(var(--primary) / 0.5); }
+.card { @variant focus { @apply bg-primary/80; } }
+`,
+	);
+	const result = check();
+	expect(result.status, result.stderr).toBe(0);
+});
+
+it("不能为主色透明度 hover 扩张白名单", () => {
+	write("src/Hover.tsx", 'export const Hover = <button className="hover:bg-primary/90" />;');
+	write(
+		config.baseline,
+		JSON.stringify({
+			version: 1,
+			entries: [
+				{
+					file: "src/Hover.tsx",
+					rule: "primary-hover-opacity",
+					value: "hover:bg-primary/90",
+					count: 1,
+				},
+			],
+		}),
+	);
+	const result = check();
+	expect(result.status).toBe(1);
+	expect(result.stderr).toContain("[baseline-growth]");
+});
+
 const oldEntry = { file: "src/old.css", rule: "raw-color", value: "#123456", count: 1 };
 
 function seedBaseline() {
@@ -273,8 +370,8 @@ it.each([
 	write(
 		file,
 		file.endsWith(".css")
-			? ".x { color: #abc; }"
-			: 'export const X = <div className="bg-red-500" />;',
+			? ".x:hover { color: #abc; background: color-mix(in oklch, var(--primary) 90%, transparent); @apply hover:bg-primary/90; }"
+			: 'export const X = <div className="bg-red-500 hover:bg-primary/90" />;',
 	);
 	const result = check();
 	expect(result.status, result.stderr).toBe(0);

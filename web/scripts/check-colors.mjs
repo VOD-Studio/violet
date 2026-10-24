@@ -43,7 +43,7 @@ try {
 		seen.set(key, count);
 		if (count > (baseline.get(key)?.count ?? 0)) {
 			errors.push(
-				`${finding.file}:${finding.line}:${finding.column}: [${finding.rule}] ${finding.value}`,
+				`${finding.file}:${finding.line}:${finding.column}: [${finding.rule}] ${finding.value}${finding.message ? ` — ${finding.message}` : ""}`,
 			);
 		}
 	}

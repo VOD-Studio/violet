@@ -15,6 +15,10 @@ const legacyClass = new RegExp(
 const legacyName = "(?:primary-base|neon|paper|persona)(?:-[a-z0-9]+)*";
 const legacyClassName = new RegExp(`(?<![\\w-])${legacyName}(?![\\w-])`, "g");
 const legacySelector = new RegExp(`(?<=\\.)${legacyName}(?![\\w-])`, "g");
+const primaryOpacityClass = new RegExp(`^!?${utilities}-primary/[^\\s]*$`);
+const primaryVariable = /\bvar\(\s*--(?:color-)?primary\s*[,)]/i;
+const hoverVariant = /^(?:(?:group|peer)-)?hover(?:\/[\w-]+)?$/;
+const primaryHoverMessage = "悬停请使用 primary-hover token，不要修改 primary 的透明度。";
 const references = new Set([
 	"href",
 	"to",
@@ -46,6 +50,43 @@ function closingParenthesis(value, start) {
 	return -1;
 }
 
+function classSegments(value) {
+	const segments = [];
+	let depth = 0;
+	let start = 0;
+	for (let index = 0; index < value.length; index++) {
+		const char = value[index];
+		if (char === "\\") index++;
+		else if (char === "[" || char === "(") depth++;
+		else if (char === "]" || char === ")") depth--;
+		else if (char === ":" && depth === 0) {
+			segments.push(value.slice(start, index));
+			start = index + 1;
+		}
+	}
+	segments.push(value.slice(start));
+	return segments;
+}
+
+function isHoverContext(node) {
+	for (let parent = node.parent; parent; parent = parent.parent) {
+		if (
+			parent.type === "atrule" &&
+			parent.name === "variant" &&
+			hoverVariant.test(parent.params.trim())
+		)
+			return true;
+		if (parent.type !== "rule") continue;
+		let selector = parent.selector;
+		for (const match of [...selector.matchAll(/:not\(/g)].reverse()) {
+			const end = closingParenthesis(selector, match.index + match[0].length - 1);
+			if (end >= 0) selector = selector.slice(0, match.index) + selector.slice(end + 1);
+		}
+		if (/(?<!\\):hover(?![\w-])/.test(selector)) return true;
+	}
+	return false;
+}
+
 /** 按配置排除算法、生成物、vendor 与实验室；目录使用尾随斜线。 */
 export function isExempt(path, config) {
 	return config.exemptions.some(({ pattern }) => matchesGlob(path, pattern));
@@ -54,7 +95,7 @@ export function isExempt(path, config) {
 /** 扫描静态 TSX 字符串与 CSS 语法节点，返回源码位置，不把注释和 CSS ID 当作色值。 */
 export function scanSource(file, source) {
 	const findings = [];
-	function scanText(value, offset, colors = true, classNames = "") {
+	function scanText(value, offset, colors = true, classNames = "", hovered = false) {
 		if (/^(?:https?:\/\/|data:)/i.test(value)) return;
 		let text = value.replace(/\/\*[\s\S]*?\*\//g, (comment) => comment.replace(/[^\n]/g, " "));
 		for (const match of [...text.matchAll(/\burl\(/gi)].reverse()) {
@@ -65,7 +106,7 @@ export function scanSource(file, source) {
 					text.slice(match.index, end + 1).replace(/[^\n]/g, " ") +
 					text.slice(end + 1);
 		}
-		function report(rule, value, index) {
+		function report(rule, value, index, message) {
 			const position = offset + index;
 			const prefix = source.slice(0, position);
 			findings.push({
@@ -74,6 +115,7 @@ export function scanSource(file, source) {
 				column: position - prefix.lastIndexOf("\n"),
 				rule,
 				value: value.replace(/\s+/g, " ").toLowerCase(),
+				...(message ? { message } : {}),
 			});
 		}
 		for (const match of text.matchAll(nativeClass))
@@ -87,7 +129,40 @@ export function scanSource(file, source) {
 				report("legacy-color", match[0], match.index);
 			}
 		}
+		for (const match of text.matchAll(/\S+/g)) {
+			const segments = classSegments(match[0]);
+			const utility = segments.pop();
+			if (
+				primaryOpacityClass.test(utility) &&
+				(hovered || segments.some((variant) => hoverVariant.test(variant)))
+			) {
+				report("primary-hover-opacity", match[0], match.index, primaryHoverMessage);
+			}
+		}
 		if (!colors) return;
+		if (hovered) {
+			for (const match of text.matchAll(
+				/(?<![\w-])(?:color-mix|rgba?|hsla?|oklch|oklab|color)\(/gi,
+			)) {
+				const start = match.index + match[0].length;
+				const end = closingParenthesis(text, start - 1);
+				if (end < 0) continue;
+				const channels = text.slice(start, end);
+				if (
+					primaryVariable.test(channels) &&
+					(match[0].toLowerCase() === "color-mix(" ||
+						channels.includes("/") ||
+						/^\s*var\(\s*--(?:color-)?primary\s*\)\s*,/i.test(channels))
+				) {
+					report(
+						"primary-hover-opacity",
+						text.slice(match.index, end + 1),
+						match.index,
+						primaryHoverMessage,
+					);
+				}
+			}
+		}
 		for (const match of text.matchAll(/(?<![\w-])#[\da-f]{3,8}(?![\w-])/gi)) {
 			if ([4, 5, 7, 9].includes(match[0].length)) report("raw-color", match[0], match.index);
 		}
@@ -110,7 +185,13 @@ export function scanSource(file, source) {
 				declaration.source.start.offset +
 				declaration.prop.length +
 				declaration.raws.between.length;
-			scanText(value, offset, declaration.prop !== "content");
+			scanText(
+				value,
+				offset,
+				declaration.prop !== "content",
+				"",
+				isHoverContext(declaration),
+			);
 		});
 		css.walkRules((rule) =>
 			scanText(rule.selector, rule.source.start.offset, false, "selector"),
@@ -126,6 +207,7 @@ export function scanSource(file, source) {
 				offset,
 				true,
 				["apply", "utility"].includes(rule.name) ? "classes" : "",
+				isHoverContext(rule),
 			);
 		});
 	} else {
