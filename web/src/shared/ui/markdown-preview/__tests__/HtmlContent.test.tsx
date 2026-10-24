@@ -52,6 +52,36 @@ describe("HtmlContent", () => {
 		expect(container.querySelectorAll("p")).toHaveLength(2);
 	});
 
+	it("HTML 清洗保留尺寸属性和安全 CSS 尺寸，但不放行其他样式", () => {
+		const { getByAltText } = render(
+			<HtmlContent
+				html={
+					'<img src="/uploads/a.png" alt="作者尺寸" width="800" height="400" style="width:50%;height:auto;position:fixed;background:url(https://bad.example/x)">'
+				}
+			/>,
+		);
+		const image = getByAltText("作者尺寸");
+		expect(image.getAttribute("width")).toBe("800");
+		expect(image.getAttribute("height")).toBe("400");
+		expect(image.style.width).toBe("50%");
+		expect(image.style.height).toBe("auto");
+		expect(image.style.position).toBe("");
+		expect(image.style.background).toBe("");
+	});
+
+	it("作者明确 CSS 高度不会被自动高度覆盖", () => {
+		const { getByAltText } = render(
+			<HtmlContent
+				html={
+					'<img src="/uploads/a.png" alt="固定高度" width="800" height="400" style="width:20rem;height:10rem">'
+				}
+			/>,
+		);
+		const image = getByAltText("固定高度");
+		expect(image.style.width).toBe("20rem");
+		expect(image.style.height).toBe("10rem");
+	});
+
 	it("HTML 中的特殊字符正常转义还原（< > &）", () => {
 		// 代码里含泛型 <T>、比较 >、&& —— TipTap 以实体存储，渲染后应还原为字面字符
 		const html =
@@ -78,7 +108,9 @@ describe("HtmlContent", () => {
 		const { container } = render(<HtmlContent html={html} />);
 
 		const img = container.querySelector("img");
-		expect(img?.getAttribute("src")).toBe("/uploads/2026/07/a.jpg?w=1200&format=webp");
+		expect(img?.getAttribute("src")).toBe(
+			"/uploads/2026/07/a.jpg?w=1200&format=webp&quality=80",
+		);
 	});
 
 	it("正文 GIF 图片剥除处理参数(保动画),crop 参数保留", () => {
