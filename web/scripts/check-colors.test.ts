@@ -131,7 +131,7 @@ it("语义变量、注释、链接与 CSS ID 不被当作颜色", () => {
 		"src/clean.css",
 		`/* #abc rgb(1 2 3) bg-red-500 */
 #abc { color: var(--foreground); background: hsl(var(--primary) / 0.5); filter: url(#def); }
-.card { color: oklch(from var(--primary) l c h); }
+.card { background: oklch(from var(--primary) l c h); }
 `,
 	);
 	write(
@@ -211,9 +211,78 @@ it("语义 hover、非 hover 主色透明度和其它语义颜色透明度合法
 		`.card { background: color-mix(in oklch, var(--primary) 20%, transparent); }
 .card:hover { background: var(--primary-hover); color: var(--primary-foreground); }
 .card:hover { outline-color: color-mix(in oklch, var(--ring) 50%, transparent); }
-.card:hover { color: oklch(from var(--primary) l c h); }
+.card:hover { background: oklch(from var(--primary) l c h); }
 .card:not(:hover) { background: hsl(var(--primary) / 0.5); }
 .card { @variant focus { @apply bg-primary/80; } }
+`,
+	);
+	const result = check();
+	expect(result.status, result.stderr).toBe(0);
+});
+
+it.each([
+	"text-destructive-text",
+	"hover:text-warning-text",
+	"dark:text-success-text/80",
+	"text-category-3-text",
+	"text-primary-text",
+])("带 -text 后缀的角色颜色类失败：%s", (className) => {
+	write("src/Role.tsx", `export const Role = () => <p className="${className}" />;\n`);
+	const result = check();
+	expect(result.status, result.stdout).toBe(1);
+	expect(result.stderr).toContain(`src/Role.tsx:1:41: [role-text-suffix] ${className}`);
+	expect(result.stderr).toContain("文字直接写 text-destructive 等");
+});
+
+it.each([
+	".note { color: var(--primary); }",
+	".note { color: var(--color-destructive); }",
+	".note { caret-color: var(--warning); }",
+	".note { color: color-mix(in oklch, var(--success) 80%, transparent); }",
+	".note { color: var(--category-2); }",
+])("CSS 把实色角色当文字色时失败：%s", (css) => {
+	write("src/note.css", css);
+	const result = check();
+	expect(result.status).toBe(1);
+	expect(result.stderr).toMatch(/src\/note\.css:1:\d+.*solid-role-text/);
+	expect(result.stderr).toContain("文字请读对应的 -text 变量");
+});
+
+it.each([
+	"text-[var(--primary)]",
+	"hover:text-(--destructive)",
+	"text-[color:var(--warning)]/80",
+	"caret-[var(--success)]",
+])("任意值类把实色角色当文字色时失败：%s", (className) => {
+	write("src/Arbitrary.tsx", `export const Arbitrary = () => <p className="${className}" />;\n`);
+	const result = check();
+	expect(result.status, result.stdout).toBe(1);
+	expect(result.stderr).toContain(`[solid-role-text] ${className}`);
+});
+
+it("TSX 行内样式把实色角色当文字色时失败", () => {
+	write(
+		"src/Inline.tsx",
+		'export const Inline = () => <p style={{ color: "var(--primary)", caretColor: "var(--destructive)" }} />;\n',
+	);
+	const result = check();
+	expect(result.status).toBe(1);
+	expect(result.stderr).toMatch(/src\/Inline\.tsx:1:\d+: \[solid-role-text\] var\(--primary\)/);
+	expect(result.stderr).toMatch(
+		/src\/Inline\.tsx:1:\d+: \[solid-role-text\] var\(--destructive\)/,
+	);
+});
+
+it("角色色的文字类、实色背景与 -text 变量合法", () => {
+	write(
+		"src/Role.tsx",
+		'export const Role = () => <p className="text-primary bg-primary text-destructive hover:text-warning/80 text-primary-foreground border-destructive text-category-2 text-[var(--primary-text)] bg-[var(--primary)] border-(--destructive)" style={{ color: "var(--primary-text)", background: "var(--primary)" }} />;\n',
+	);
+	write(
+		"src/role.css",
+		`.note { color: var(--primary-text); background: var(--primary); border-color: var(--destructive); }
+.note { color: var(--primary-foreground); caret-color: var(--destructive-text); }
+.note { color: color-mix(in oklch, var(--category-2-text) 80%, transparent); }
 `,
 	);
 	const result = check();

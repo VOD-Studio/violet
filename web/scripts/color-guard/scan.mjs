@@ -19,6 +19,17 @@ const primaryOpacityClass = new RegExp(`^!?${utilities}-primary/[^\\s]*$`);
 const primaryVariable = /\bvar\(\s*--(?:color-)?primary\s*[,)]/i;
 const hoverVariant = /^(?:(?:group|peer)-)?hover(?:\/[\w-]+)?$/;
 const primaryHoverMessage = "悬停请使用 primary-hover token，不要修改 primary 的透明度。";
+const roleName = "(?:primary|destructive|warning|success|category-[1-6])";
+const roleSuffixClass = new RegExp(`^!?${utilities}-${roleName}-text(?:/.*)?!?$`);
+const roleSuffixMessage =
+	"文字直接写 text-destructive 等不带后缀的类；-text 变量只在原生 CSS 中使用。";
+const solidRoleArbitraryClass = new RegExp(
+	`^!?(?:text|caret)-(?:\\[(?:color:)?var\\(--(?:color-)?${roleName}\\)\\]|\\(--(?:color-)?${roleName}\\))(?:/.*)?!?$`,
+);
+const solidRoleVariable = new RegExp(`var\\(\\s*--(?:color-)?${roleName}\\s*[,)]`, "gi");
+const solidRoleMessage = "文字请读对应的 -text 变量（如 --primary-text），实色档不保证可读。";
+const textProperties = new Set(["color", "caret-color", "-webkit-text-fill-color"]);
+const textStyleKeys = new Set(["color", "caretColor", "WebkitTextFillColor"]);
 const references = new Set([
 	"href",
 	"to",
@@ -95,7 +106,14 @@ export function isExempt(path, config) {
 /** 扫描静态 TSX 字符串与 CSS 语法节点，返回源码位置，不把注释和 CSS ID 当作色值。 */
 export function scanSource(file, source) {
 	const findings = [];
-	function scanText(value, offset, colors = true, classNames = "", hovered = false) {
+	function scanText(
+		value,
+		offset,
+		colors = true,
+		classNames = "",
+		hovered = false,
+		textProperty = false,
+	) {
 		if (/^(?:https?:\/\/|data:)/i.test(value)) return;
 		let text = value.replace(/\/\*[\s\S]*?\*\//g, (comment) => comment.replace(/[^\n]/g, " "));
 		for (const match of [...text.matchAll(/\burl\(/gi)].reverse()) {
@@ -138,6 +156,19 @@ export function scanSource(file, source) {
 			) {
 				report("primary-hover-opacity", match[0], match.index, primaryHoverMessage);
 			}
+			if (roleSuffixClass.test(utility))
+				report("role-text-suffix", match[0], match.index, roleSuffixMessage);
+			if (solidRoleArbitraryClass.test(utility))
+				report("solid-role-text", match[0], match.index, solidRoleMessage);
+		}
+		if (textProperty) {
+			for (const match of text.matchAll(solidRoleVariable))
+				report(
+					"solid-role-text",
+					match[0].replace(/\s+/g, "").replace(/,$/, ")"),
+					match.index,
+					solidRoleMessage,
+				);
 		}
 		if (!colors) return;
 		if (hovered) {
@@ -191,6 +222,7 @@ export function scanSource(file, source) {
 				declaration.prop !== "content",
 				"",
 				isHoverContext(declaration),
+				textProperties.has(declaration.prop.toLowerCase()),
 			);
 		});
 		css.walkRules((rule) =>
@@ -227,11 +259,17 @@ export function scanSource(file, source) {
 						? (node.value.cooked ?? node.value.raw)
 						: node.value;
 				const raw = source.slice(node.start, node.end);
+				const styleKey =
+					parent?.type === "ObjectProperty" && parent.value === node
+						? (parent.key.name ?? parent.key.value)
+						: "";
 				scanText(
 					value,
 					node.start + Math.max(0, raw.indexOf(value)),
 					true,
 					classNames ? "classes" : "",
+					false,
+					textStyleKeys.has(styleKey),
 				);
 			}
 			for (const child of Object.values(node)) {
