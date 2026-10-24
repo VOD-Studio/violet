@@ -1,6 +1,7 @@
 import { useActivePersona } from "@entities/persona/api/queries";
 import { useLatestComments } from "@features/comments/api/queries";
 import { useTimeline } from "@features/tweets/api/queries";
+import type { Season } from "@shared/lib/theme-preference";
 
 import { useFootprintPublications, useRecentPublications, useSiteIdentity } from "./api/queries";
 import { HomeAccumulation } from "./HomeAccumulation";
@@ -13,6 +14,8 @@ import type { SiteIdentity } from "./types";
 
 interface HomeExperienceProps {
 	initialRecentPublicationsFailed: boolean;
+	/** 当前预设主题的季节 */
+	season: Season;
 }
 
 const FALLBACK_SITE_IDENTITY: SiteIdentity = {
@@ -37,7 +40,7 @@ const FALLBACK_SITE_IDENTITY: SiteIdentity = {
 };
 
 /** Violet 首页按身份、动态、时间与探索顺序组织。 */
-export function HomeExperience({ initialRecentPublicationsFailed }: HomeExperienceProps) {
+export function HomeExperience({ initialRecentPublicationsFailed, season }: HomeExperienceProps) {
 	const identityQuery = useSiteIdentity();
 	const identity = identityQuery.data ?? FALLBACK_SITE_IDENTITY;
 	const persona = useActivePersona().data ?? null;
@@ -95,7 +98,7 @@ export function HomeExperience({ initialRecentPublicationsFailed }: HomeExperien
 					/>
 				)
 			) : null}
-			<HomeClosing identity={identity} />
+			<HomeClosing identity={identity} season={season} />
 		</div>
 	);
 }

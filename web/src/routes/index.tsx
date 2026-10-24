@@ -8,7 +8,13 @@ import HomeExperience, {
 
 function HomePage() {
 	const { initialRecentPublicationsFailed } = Route.useLoaderData();
-	return <HomeExperience initialRecentPublicationsFailed={initialRecentPublicationsFailed} />;
+	const { theme } = Route.useRouteContext();
+	return (
+		<HomeExperience
+			initialRecentPublicationsFailed={initialRecentPublicationsFailed}
+			season={theme}
+		/>
+	);
 }
 
 export const Route = createFileRoute("/")({
