@@ -16,7 +16,7 @@ const SEASONAL_GREETINGS: Record<Season, { title: string; subtitle: string }> = 
 	spring: { title: "花朝如约", subtitle: "春山可望" },
 	summer: { title: "熏风入弦", subtitle: "荷风送香" },
 	autumn: { title: "桂月流光", subtitle: "掬光以待" },
-	winter: { title: "梅信岁寒", subtitle: "围炉夜话" },
+	winter: { title: "初雪映窗", subtitle: "静候春来" },
 };
 
 /** 首页收尾：季节寄语、匿名印记与服务端声明的订阅渠道。 */
