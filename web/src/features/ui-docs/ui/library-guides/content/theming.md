@@ -1,119 +1,79 @@
-组件使用语义变量表达用色，宿主通过 CSS 覆盖变量并管理主题偏好。组件结构与分发边界见[组件库架构](/ui/guides/architecture)。
+组件使用语义变量表达用色；主题提供色阶，方言决定每个用途取哪一档。组件结构与分发边界见[组件库架构](/ui/guides/architecture)。
 
-## 主题如何工作
+## 三层颜色接口
 
-`@violet/ui` 的主题由三层 CSS 变量构成：
+1. **生成色阶**：`@violetjs/theme` 根据种子色生成品牌、中性、状态和分类色阶。品牌与中性另有透明度色阶。静态产物位于包内 `src/styles/palettes/*.generated.css`。
+2. **语义映射**：`src/styles/tokens.css` 只声明用途到色阶的映射。本站的三种方言位于 `web/src/styles/dialects/`，不随组件包发布。
+3. **Tailwind 映射**：`theme.css` 用 `@theme inline` 注册语义工具类，在使用元素的作用域读取变量。色阶本身不注册为工具类。
 
-1. **主色源预设**（`palettes/*.css`）：提供六个 `--primary-base*` 变量——实色、前景、悬停、柔和底、柔和前景、焦点环。
-2. **语义值**（`tokens.css`）：`--background`、`--primary`、`--success` 等描述用途的变量，画布、状态色都在这层。
-3. **Tailwind 映射**（`theme.css` 的 `@theme inline`）：把上述变量绑定成 `bg-primary`、`text-foreground` 等工具类。
+默认主题沿用 violet 种子 `#684dda`，另提供 coral。`scripts/theme.mjs` 是包内种子和生成选项的维护入口：
 
-`@theme inline` 让工具类在使用点读取变量，所以运行时在任何作用域覆盖变量都生效。命名规则与语义色板一致：不带后缀的颜色用作背景（`--accent`），带 `-foreground` 后缀的是其上的文字（`--accent-foreground`）。基础变量定义在 `web/packages/ui/src/styles/tokens.css`，色板定义在 `src/styles/palettes/`。
+```bash
+# 在仓库 web 目录运行
+pnpm --filter @violet/ui sync
+pnpm --filter @violet/ui check
+```
 
-## 快速开始
+`sync` 同时更新组件清单派生入口和颜色 CSS；`check` 只读比较生成结果，过期或缺失时失败。构建不会默默覆盖手工改过的产物。算法只作为构建依赖，不进入组件运行时。
 
-在应用全局 CSS 中先导入 Tailwind，再导入包样式：
+## 接入样式
+
+Tailwind v4 宿主先导入 Tailwind，再导入完整包样式：
 
 ```css
 @import "tailwindcss";
 @import "@violet/ui/styles.css";
 ```
 
-给 `html` 挂主题类，`body` 应用画布色：
+不使用 React、Tailwind 或客户端 JavaScript 时，可以直接加载纯 CSS：
+
+```css
+@import "@violet/ui/tokens.css";
+@import "@violet/ui/components/button.css";
+```
 
 ```html
-<html class="light">
-	<body class="bg-background text-foreground"><!-- 应用 --></body>
-</html>
+<button type="button" class="v-button v-button--primary">保存</button>
 ```
 
-### 切换浅色与深色
+`classes.css` 汇集全部组件规则；叶子 CSS 只包含对应组件及它的样式依赖。JavaScript tree-shaking 与 CSS 取用是两件事。
 
-包中的 `:root` 声明 `color-scheme: light`，`.dark` 声明 `color-scheme: dark`；语义值用 `light-dark(浅色, 深色)` 写在一条声明里。给 `html` 加或移除 `dark` 类即可切换，JS 切换与偏好持久化由宿主实现。
+## 外观与提高对比度
 
-宿主使用 `next-themes` 时（`pnpm add next-themes`），在根部放 Provider 并关闭其内联 `color-scheme` 注入，让包内的 `.dark` 规则驱动取值：
+`:root` 声明 `color-scheme: light`，`.dark` 声明 `color-scheme: dark`。生成值以 `light-dark()` 合并浅色和深色，给 `html` 加或移除 `dark` 即可切换外观。
 
-```tsx
-import { ThemeProvider, useTheme } from "next-themes";
-import type { ReactNode } from "react";
+每个主题同时生成标准与提高两档对比度；`@media (prefers-contrast: more)` 覆盖同名色阶。正文、次要文字、链接、控件边界和焦点随之提高对比度，不需要客户端监听媒体查询。
 
-export function Providers({ children }: { children: ReactNode }) {
-	return (
-		<ThemeProvider attribute="class" defaultTheme="system" enableColorScheme={false}>
-			{children}
-		</ThemeProvider>
-	);
-}
+SSR 宿主必须在首屏输出与持久化外观一致的类。使用 next-themes 时，设置 `attribute="class"` 与 `enableColorScheme={false}`，不要用内联 `color-scheme` 覆盖类规则。包级 `useTheme` 也可管理 light / dark / system 与 localStorage；详细用法见[深色模式](/ui/guides/dark-mode)。
 
-export function ThemeSwitch() {
-	const { setTheme } = useTheme();
-	return (
-		<div>
-			<button type="button" onClick={() => setTheme("light")}>浅色</button>
-			<button type="button" onClick={() => setTheme("dark")}>深色</button>
-			<button type="button" onClick={() => setTheme("system")}>跟随系统</button>
-		</div>
-	);
-}
-```
+## 用途与方言
 
-SSR 宿主须在首屏 `html` 上输出与持久化偏好一致的主题类；不要内联设置 `color-scheme`（会盖过类选择器），仅加 `suppressHydrationWarning` 也消不掉首屏闪色。本站的 cookie 同步方案见[深色模式](/ui/guides/dark-mode)。
+| 用途 | 语义变量 | 映射 |
+| --- | --- | --- |
+| 页面与正文 | `background` / `foreground` | 中性背景档 / 正文档 |
+| 表面与文字 | `card` / `card-foreground` | 中性表面档 / 正文档 |
+| 主要动作 | `primary` / `primary-foreground` | public 取品牌实色；tool 取固定高对比中性实色 |
+| 主要动作悬停 | `primary-hover` | 与主要动作相同色阶的第 10 档 |
+| 链接 | `link` / `link-hover` | 品牌可读文字档 |
+| 选中与悬停 | `selected` / `selected-hover` / `selected-foreground` | 品牌浅底与可读文字 |
+| 焦点与进度 | `ring` / `progress` | 品牌焦点档 / 实色档 |
+| 装饰 | `decoration` / `decoration-hover` / `decoration-muted` / `decoration-foreground` | 品牌实色 / 配对悬停档 / 浅底 / 实色前景 |
+| 危险、警告、成功 | `destructive` / `warning` / `success` | 固定状态实色；`-foreground` 为实色前景，`-text` 为页面上的可读状态文字 |
+| 分类 | `category-1` 至 `category-6` | 固定分类实色；`-muted` 为浅底、`-text` 为可读文字、`-foreground` 为实色前景 |
+| 图表 | `chart-1` 至 `chart-5` | 前五个分类实色 |
+| 轻分隔与玻璃表面 | `edge-hairline` / `surface-glass` | 中性透明度色阶 |
 
-普通 React 应用（Vite 等）可以不用 next-themes，直接用包级 `useTheme`：三态选择、localStorage 持久化、把 `dark` 类挂到 `html` 都是内置行为。用法见[深色模式](/ui/guides/dark-mode)。
+普通组件直接使用 `bg-primary`、`text-link`、`bg-selected text-selected-foreground`。缺少用途时，先补语义映射，不在页面直接取色阶。
 
-### 覆盖颜色
+Button 的 `default` 与 `primary` 变体都遵守当前方言，悬停使用 `primary-hover`；`soft` 使用选中底色与文字，`link` 使用链接文字色。主要动作悬停不会把实色往背景混，前景文字对比度不低于常态。
 
-在包样式之后覆盖同名变量即可，明暗值既可以合写在 `light-dark()` 里，也可以按选择器拆开（两种写法等效）：
+状态实色用于填充，说明文字使用 `text-destructive-text`、`text-warning-text` 或 `text-success-text`，不把实色档直接当作小字颜色。危险按钮使用配对的 `destructive-hover`。Input 的聚焦描边取 `ring`，标签取可读的 `link` 文字档。
 
-```css
-@import "tailwindcss";
-@import "@violet/ui/styles.css";
-
-:root {
-	--success: oklch(0.48 0.12 155);
-	--success-foreground: oklch(0.99 0 0);
-}
-
-.dark {
-	--success: oklch(0.76 0.12 155);
-	--success-foreground: oklch(0.15 0.03 158);
-}
-```
-
-包已注册 `--color-success` 等 Tailwind 映射，覆盖变量后 `bg-success` 自动跟随，无需重复注册。
-
-## 导入策略
-
-样式入口按粒度分四个：
-
-```css
-/* 完整（推荐）：变量 + Tailwind 映射 + 滚动条 + @source 扫描 */
-@import "@violet/ui/styles.css";
-
-/* Headless：只要 CSS 变量，不进 Tailwind 映射（无 @theme/@source），
-   适合不用 Tailwind 的宿主直接 var(--primary) 消费 */
-@import "@violet/ui/tokens.css";
-
-/* 主色源子导出：换主题色时替换默认色板 */
-@import "@violet/ui/palettes/violet.css"; /* 默认，styles.css 已含 */
-@import "@violet/ui/palettes/coral.css";  /* 暖珊瑚，按需替换 */
-```
-
-JS 侧是 ESM tree-shaking：`import { Button } from "@violet/ui"` 只打包用到的组件，无需按组件导样式。
+本站 `.dialect-public` 为阅读与展示页提供品牌动作；`.dialect-tool` 为后台、编辑器与聊天保留中性主要动作，焦点、选择、导航、链接与进度仍跟随品牌。`.dialect-immersive` 使用独立生成的固定深色灰阶，包括焦点环在内都不随主题或外观变化；它不改 `color-scheme`，状态色仍与页面其余部分一致。
 
 ## 命名主题
 
-主题色板支持 `[data-theme]` 命名作用域：包内色板同时命中 `:root` 与 `[data-theme="..."]`，在宿主容器上挂属性即可局部换色板，`dark` 类继续独立控制明暗，两轴正交：
-
-```html
-<html lang="zh-CN" class="light">
-	<body>默认 violet</body>
-	<section data-theme="coral">这片是暖珊瑚</section>
-</html>
-```
-两种导入位置对应两种效果：
-
-- **整站替换**：在包样式之后导入 coral——同特异性后者胜，`:root` 整体切换：
+主题与明暗是独立的两个维度。整站替换时，在包样式之后导入命名主题：
 
 ```css
 @import "tailwindcss";
@@ -121,7 +81,7 @@ JS 侧是 ESM tree-shaking：`import { Button } from "@violet/ui"` 只打包用�
 @import "@violet/ui/palettes/coral.css";
 ```
 
-- **只换子树**：在包样式**之前**导入 coral，`:root` 保持 violet，只有挂属性的子树切换：
+只替换子树时，把 coral 放在包样式之前，使根作用域仍取默认 violet：
 
 ```css
 @import "tailwindcss";
@@ -129,150 +89,77 @@ JS 侧是 ESM tree-shaking：`import { Button } from "@violet/ui"` 只打包用�
 @import "@violet/ui/styles.css";
 ```
 
-要创建自有命名主题，复制一份色板文件，把选择器改成你的名字（如 `[data-theme="ocean"]`），六个 `--primary-base*` 成对改值。在实际组件和明暗主题中检查文字对比、焦点与状态反馈，再保存色板。
-
-## 自定义组件样式
-
-foundation 组件使用独立 BEM CSS；legacy 尚有兼容样式，定制走两条稳定 API：
-
-**1. `data-slot` / `data-variant` 属性**——按组件实际公开的属性覆盖样式。例如 Button 提供 `data-slot="button"` 和 `data-variant`：
-
-```css
-/* 应用全局 CSS */
-[data-slot="button"][data-variant="primary"] {
-	box-shadow: none;
-}
-```
-
-**2. variants recipes 导出**——带变体的组件从包根导出 tailwind-variants 函数（`buttonVariants`、`checkboxVariants`、`tabsListVariants`、`badgeVariants`），供宿主组合自己的类：
-
-```tsx
-import { buttonVariants } from "@violet/ui";
-import { cn } from "cn";
-
-<button className={cn(buttonVariants({ variant: "soft", size: "lg" }), "rounded-full")}>
-	胶囊化的柔和按钮
-</button>
-```
-
-优先用 `className` 组合（variants 已处理优先级），data 属性选择器留给无法通过组合表达的覆盖。
-
-## 替换主色源与已有语义值
-
-换主色源六项要一起调整：实色与文字、悬停、浅染与文字、焦点环。每项提供浅色和深色值，并检查文字对比度（WCAG AA）：
-
-```css
-:root,
-[data-theme="coral"] {
-	--primary-base: light-dark(oklch(0.625 0.19 25), oklch(0.72 0.15 22));
-	--primary-base-foreground: light-dark(oklch(0.99 0 0), oklch(0.17 0 0));
-	--primary-base-hover: light-dark(oklch(0.575 0.185 25), oklch(0.67 0.155 22));
-	--primary-base-soft: light-dark(oklch(0.95 0.025 25), oklch(0.25 0.025 22));
-	--primary-base-soft-foreground: light-dark(oklch(0.36 0.11 25), oklch(0.88 0.065 22));
-	--primary-base-ring: light-dark(oklch(0.625 0.19 25), oklch(0.72 0.15 22));
-}
-```
-
-主色源不等于主要动作：包的 `--primary` 默认是高对比中性色，`Button variant="default"` 用它；`variant="primary"` 用 `--primary-base`，`variant="soft"` 用 `--primary-base-soft`。换主色源不会改动 `--success`、`--destructive` 等行为状态色。
-
-## 添加自定义颜色
-
-新角色要在宿主 CSS 定义背景与前景变量，并用 `@theme inline` 注册 Tailwind 映射：
-
-```css
-:root {
-	--notice: light-dark(oklch(0.52 0.15 240), oklch(0.72 0.12 240));
-	--notice-foreground: light-dark(oklch(0.99 0 0), oklch(0.15 0.02 240));
-}
-
-@theme inline {
-	--color-notice: var(--notice);
-	--color-notice-foreground: var(--notice-foreground);
-}
-```
-
-```tsx
-<div className="bg-notice text-notice-foreground">通知内容</div>
-```
-
-已有角色只覆盖变量，不要重复声明包内的 `--color-*` 映射。
-
-## 变量参考
-
-变量名称和默认值由 `web/packages/ui/src/styles/tokens.css` 定义。滚动条相关变量：
-
-| 变量 | 作用 | 默认 |
-| --- | --- | --- |
-| `--scrollbar-thumb` | 滑块颜色 | `color-mix(in oklab, var(--foreground) 15%, transparent)` |
-| `--scrollbar-track` | 轨道颜色 | `transparent` |
-| `--scrollbar-width` | 滑块宽度 | `thin` |
-| `--scrollbar-gutter` | 间隙 | `auto` |
-
-## 滚动条
-
-包提供主题化滚动条工具类（标准 `scrollbar-width` / `scrollbar-color` 属性，不依赖 `::-webkit-scrollbar`）：
-
 ```html
-<!-- 纤细主题滑块（默认形态） -->
-<div class="scrollbar-thin">…</div>
-
-<!-- 原生滚动条 -->
-<div class="scrollbar-default">…</div>
-
-<!-- 隐藏 -->
-<div class="scrollbar-none">…</div>
+<section data-theme="coral">
+	<button type="button" class="v-button v-button--primary">中性主要动作</button>
+	<a class="v-button v-button--link" href="/help">品牌链接</a>
+</section>
 ```
 
-也可以用属性模式，在元素或祖先上声明：
+`[data-theme]` 边界会重新绑定包内语义，避免继承父级已经求值的颜色。本站局部主题需要同时在边界选择方言，例如 `class="dialect-public" data-theme="coral"`；后代只改色阶不会自动重新求值祖先的语义变量。
 
-```html
-<div data-scrollbar="thin">纤细</div>
-<div data-scrollbar="default">原生</div>
-<div data-scrollbar="none">隐藏</div>
+## 从种子生成自己的主题
+
+在外部项目的构建脚本中调用算法包公开入口，输出静态 CSS：
+
+```ts
+import { writeFileSync } from "node:fs";
+import { generateScales, normalizeTheme, toCssVariables } from "@violetjs/theme";
+
+const theme = normalizeTheme({ version: 1, seed: "#3a7bd5" });
+const scales = (["light", "dark"] as const).flatMap((appearance) =>
+	(["standard", "more"] as const).map((contrast) =>
+		generateScales(theme, { appearance, contrast }),
+	),
+);
+writeFileSync("ocean.css", toCssVariables(scales, { selector: ':root, [data-theme="ocean"]' }));
 ```
 
-按滚动槽定制时覆盖对应 token 即可：
-
-```css
-.my-scroll-area {
-	--scrollbar-thumb: color-mix(in oklab, var(--primary-base) 30%, transparent);
-}
-```
-
-## 只为局部区域换色
-
-把色板文件的 `:root` 换成局部选择器，并在同一作用域重映射语义别名——上层方言（如本站 `.dialect-public`）求值过的 `--primary` 不会因后代覆盖 `--primary-base` 自动重算，必须成对重声明：
+在包样式后导入 `ocean.css`，根语义即读取新色阶。若宿主自定义主要动作映射，须同时映射常态、悬停与前景：
 
 ```css
 .campaign-theme {
-	--primary-base: light-dark(oklch(0.625 0.19 25), oklch(0.72 0.15 22));
-	/* …其余五个 --primary-base*… */
-
-	--primary: var(--primary-base);
-	--primary-foreground: var(--primary-base-foreground);
-	--accent: var(--primary-base-soft);
-	--accent-foreground: var(--primary-base-soft-foreground);
-	--ring: var(--primary-base-ring);
+	--primary: var(--brand-9);
+	--primary-hover: var(--brand-10);
+	--primary-foreground: var(--brand-contrast);
 }
 ```
 
-```tsx
-import { Button } from "@violet/ui";
+色阶引用只放在这样的映射层，消费组件仍使用语义变量。状态色和分类色由算法固定生成，不跟随品牌种子。
 
-export function CampaignActions() {
-	return (
-		<section className="campaign-theme">
-			<Button>主要动作</Button>
-			<Button variant="primary">主色动作</Button>
-		</section>
-	);
+## 自定义组件外观
+
+foundation 组件的视觉定义在独立 BEM CSS。优先通过 `className` 调整布局，或使用组件公开的 `data-slot` / `data-variant` 属性：
+
+```css
+[data-slot="button"][data-variant="primary"] {
+	border-radius: var(--radius);
 }
 ```
 
-本站的 `.dialect-public` / `.dialect-tool` 就是这种作用域方言，属于站点 `web/src/styles/dialects/`，不随包发布。
+带变体的组件也可通过 `@violet/ui/variants` 获取稳定类名。自定义颜色用途应提供完整背景与前景语义，复用生成色阶并核验对比度；不要逐组件手写颜色。
+
+## 滚动条
+
+`scrollbar-thin`、`scrollbar-default`、`scrollbar-none` 与 `data-scrollbar="thin|default|none"` 控制标准滚动条属性。
+
+| 变量 | 用途 | 默认 |
+| --- | --- | --- |
+| `--scrollbar-thumb` | 滑块 | 中性透明边界档 |
+| `--scrollbar-track` | 轨道 | transparent |
+| `--scrollbar-width` | 宽度 | thin |
+| `--scrollbar-gutter` | 预留间隙 | auto |
+
+按滚动槽覆盖语义即可：
+
+```css
+.my-scroll-area {
+	--scrollbar-thumb: var(--ring);
+}
+```
 
 ## 相关资源
 
-- [组件库架构](/ui/guides/architecture)：组件与主题的依赖边界
+- [组件库架构](/ui/guides/architecture)：组件与主题依赖边界
 - [深色模式](/ui/guides/dark-mode)：明暗切换的宿主职责
 - [样式](/ui/guides/styling)：Tailwind v4 与组件变体

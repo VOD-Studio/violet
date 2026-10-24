@@ -1,6 +1,7 @@
 @layer components {
 	.v-input-field {
-		--v-input-accent: var(--primary);
+		--v-input-accent: var(--ring);
+		--v-input-label-color: var(--link);
 		display: flex;
 		inline-size: 100%;
 		min-inline-size: 0;
@@ -16,6 +17,7 @@
 		.v-input:is([aria-invalid="true"], [aria-invalid="grammar"], [aria-invalid="spelling"])
 	) {
 		--v-input-accent: var(--destructive);
+		--v-input-label-color: var(--destructive-text);
 	}
 
 	.v-input-field__label {
@@ -31,7 +33,7 @@
 			.v-input:is([aria-invalid="true"], [aria-invalid="grammar"], [aria-invalid="spelling"])
 		)
 		> .v-input-field__label {
-		color: var(--v-input-accent);
+		color: var(--v-input-label-color);
 	}
 
 	.v-input-field__description,
@@ -46,7 +48,7 @@
 	}
 
 	.v-input-field__error {
-		color: var(--destructive);
+		color: var(--destructive-text);
 	}
 
 	.v-input-control {
@@ -92,7 +94,7 @@
 		outline: none;
 		background-color: transparent;
 		color: var(--foreground);
-		caret-color: var(--v-input-accent, var(--primary));
+		caret-color: var(--v-input-accent, var(--ring));
 		font-family: inherit;
 		font-size: 1rem;
 		line-height: 1.5;
@@ -103,8 +105,8 @@
 	}
 
 	.v-input::selection {
-		background-color: var(--primary);
-		color: var(--primary-foreground);
+		background-color: var(--selected);
+		color: var(--selected-foreground);
 	}
 
 	/* type=search 的原生清除按钮无法使用主题 token 定制，清空能力由 clearable 提供 */
@@ -148,7 +150,7 @@
 	}
 
 	.v-input-control__action:focus-visible {
-		outline: 2px solid var(--v-input-accent, var(--primary));
+		outline: 2px solid var(--v-input-accent, var(--ring));
 		outline-offset: 1px;
 	}
 
@@ -169,7 +171,7 @@
 	.v-input-control:has(
 		.v-input:is([aria-invalid="true"], [aria-invalid="grammar"], [aria-invalid="spelling"])
 	) {
-		color: var(--v-input-accent, var(--primary));
+		color: var(--v-input-accent, var(--ring));
 	}
 
 	.v-input-control--outline {
@@ -187,7 +189,7 @@
 
 	.v-input-control--outline::before {
 		box-shadow: 0 0 4px 2px
-			color-mix(in oklab, var(--v-input-accent, var(--primary)) 10%, transparent);
+			color-mix(in oklab, var(--v-input-accent, var(--ring)) 10%, transparent);
 		opacity: 0;
 		transition: opacity 320ms ease;
 	}
@@ -197,7 +199,7 @@
 	}
 
 	.v-input-control--outline:focus-within {
-		border-color: var(--v-input-accent, var(--primary));
+		border-color: var(--v-input-accent, var(--ring));
 	}
 
 	.v-input-control--outline:focus-within::before {
@@ -226,11 +228,7 @@
 	.v-input-control--soft:has(
 		.v-input:is([aria-invalid="true"], [aria-invalid="grammar"], [aria-invalid="spelling"])
 	) {
-		background-color: color-mix(
-			in oklab,
-			var(--v-input-accent, var(--primary)) 6%,
-			var(--muted)
-		);
+		background-color: color-mix(in oklab, var(--v-input-accent, var(--ring)) 6%, var(--muted));
 	}
 
 	.v-input-control--underline {
@@ -244,7 +242,7 @@
 		inset-inline: 0;
 		inset-block-end: -1px;
 		block-size: 2px;
-		background-color: var(--v-input-accent, var(--primary));
+		background-color: var(--v-input-accent, var(--ring));
 		clip-path: inset(0 100% 0 0);
 		pointer-events: none;
 		content: "";
@@ -272,22 +270,18 @@
 
 	@media (hover: hover) {
 		.v-input-control:not(:focus-within):not(:has(.v-input:disabled)):hover {
-			color: var(--v-input-accent, var(--primary));
+			color: var(--v-input-accent, var(--ring));
 		}
 
 		.v-input-control--outline:not(:focus-within):not(:has(.v-input:disabled)):hover,
 		.v-input-control--underline:not(:focus-within):not(:has(.v-input:disabled)):hover {
-			border-color: color-mix(
-				in oklab,
-				var(--v-input-accent, var(--primary)) 45%,
-				var(--input)
-			);
+			border-color: color-mix(in oklab, var(--v-input-accent, var(--ring)) 45%, var(--input));
 		}
 
 		.v-input-control--soft:not(:focus-within):not(:has(.v-input:disabled)):hover {
 			background-color: color-mix(
 				in oklab,
-				var(--v-input-accent, var(--primary)) 6%,
+				var(--v-input-accent, var(--ring)) 6%,
 				var(--muted)
 			);
 		}
@@ -333,11 +327,11 @@
 
 @keyframes v-input-ripple {
 	from {
-		box-shadow: 0 0 0 0 var(--v-input-accent, var(--primary));
+		box-shadow: 0 0 0 0 var(--v-input-accent, var(--ring));
 		opacity: 0.32;
 	}
 	to {
-		box-shadow: 0 0 0 8px var(--v-input-accent, var(--primary));
+		box-shadow: 0 0 0 8px var(--v-input-accent, var(--ring));
 		opacity: 0;
 	}
 }

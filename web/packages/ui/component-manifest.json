@@ -289,6 +289,9 @@
 		"tokens": "src/styles/tokens.css",
 		"foundation": "src/styles/foundation.css",
 		"utilities": ["src/styles/scrollbar.css"],
-		"palettes": ["src/styles/palettes/violet.css", "src/styles/palettes/coral.css"]
+		"palettes": [
+			"src/styles/palettes/violet.generated.css",
+			"src/styles/palettes/coral.generated.css"
+		]
 	}
 }

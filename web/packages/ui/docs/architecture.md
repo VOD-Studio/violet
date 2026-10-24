@@ -18,7 +18,8 @@ web/packages/ui/
       input/
       ...
     styles/
-      palettes/
+      palettes/*.generated.css
+      fixed.generated.css
       tokens.css
       foundation.css
       theme.css
@@ -40,7 +41,7 @@ web/packages/ui/
 | 原生语义、事件、ref、组件结构 | `web/packages/ui/src/components/<name>/` | 全部组件共用这一层目录；基础控件保留 HTML 行为，复杂交互使用 Radix |
 | variant / size 到类名的映射 | 有变体的组件使用 `styles.ts` | 类型从 recipe 推导，输出稳定 BEM 类名；无变体不建立空 recipe |
 | 组件外观与状态反馈 | 组件单元的 CSS | React 和纯 HTML 共用这份规则 |
-| 语义 token、色板和 Tailwind 映射 | `web/packages/ui/src/styles/` | 组件消费 token 名，色值可替换 |
+| 生成色阶、语义 token 和 Tailwind 映射 | `web/packages/ui/src/styles/` | `@violetjs/theme` 只用于构建；组件只消费语义，不引用色阶 |
 | 字体、博客方言和站点装饰动画 | `web/src/styles/` | 宿主负责加载字体和装饰资源 |
 | 公开单元、状态、CSS、文档路径 | `component-manifest.json` | 派生入口通过同步命令生成 |
 | 组件库文档与示例 | `web/src/features/ui-docs/` | 架构与设计规范读取包内正文，预览与复制代码使用同一 TSX 文件 |
@@ -56,7 +57,7 @@ web/packages/ui/
                       └── styles.ts ──> BEM 类名
 
 React 输出的 BEM 类 ──┐
-纯 HTML 使用的 BEM 类 ─┴──> 同一份组件 CSS ──> 语义 token ──> 色板
+纯 HTML 使用的 BEM 类 ─┴──> 同一份组件 CSS ──> 语义 token ──> 生成色阶
 
 component-manifest.json ──> 根入口 / legacy / exports / 构建与 CSS 清单
 ```
@@ -84,6 +85,10 @@ component-manifest.json ──> 根入口 / legacy / exports / 构建与 CSS 清
 ```
 
 工具类可以在 utilities layer 调整布局或覆盖外观。主题调整优先覆盖语义变量，保留焦点与错误提示。JS tree-shaking 和 CSS 取用是两件事：导入完整 `classes.css` 不会因为只用了 Button 就自动删除其他 CSS。
+
+颜色生成入口是 `scripts/theme.mjs`：violet 与 coral 同时生成浅色、深色及提高对比度四种组合，默认使用 violet 种子。固定中性动作与沉浸灰阶也由同一算法生成。`tokens.css` 仅维护用途映射，本站三方言只改映射、不重写色值；状态色在方言间继承一致。`edge-hairline` 与 `surface-glass` 使用透明度色阶，图表与分类组件共享分类色。
+
+Button 的主要动作变体统一消费 `primary`、`primary-hover` 和 `primary-foreground`。悬停档与前景由算法成对求解，不使用降低对比度的透明混色。链接、选择、进度与装饰有独立语义，工具方言无需靠主要动作变量表达所有品牌反馈。
 
 `@violet/ui/variants` 只导出类名 recipes，不导入 React 组件。新增样式 recipe 时需要检查该入口的依赖图，不能让一次类名计算拉入 Dialog、图表或动效运行时。
 
@@ -156,7 +161,7 @@ ImagePixelReveal 的 `className` 属于根容器，用于约束尺寸；`imgClas
 }
 ```
 
-在 `web` 目录运行 `pnpm --filter @violet/ui sync` 后检查 diff；`check` 以只读方式检查清单与派生入口。不要在根 barrel、legacy barrel、package exports 和 CSS 清单中各登记一遍同一个组件。组件迁移时替换该项并改变状态，避免新旧实现同时进入根入口。
+在 `web` 目录运行 `pnpm --filter @violet/ui sync` 后检查 diff；`check` 以只读方式检查清单派生入口及生成颜色 CSS。生成物缺失、手工修改或算法与种子变化但未同步时均失败。不要在根 barrel、legacy barrel、package exports 和 CSS 清单中各登记一遍同一个组件。组件迁移时替换该项并改变状态，避免新旧实现同时进入根入口。
 
 工作区入口指向源码；打包形态由 `publishConfig` 指向 dist 的 ESM 与声明文件。两种消费方式必须分别验收。具体命令和组件新增流程见[组件设计方法](./component-design.md)。
 

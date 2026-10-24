@@ -48,7 +48,7 @@ reset 按控件的实际 DOM 作用域捕获，支持 ShadowRoot 内的表单与
 | `checked` | `boolean \| "indeterminate"` | — | 受控状态 |
 | `defaultChecked` | `boolean \| "indeterminate"` | `false` | 非受控初值 |
 | `onCheckedChange` | `(checked: boolean \| "indeterminate") => void` | — | 请求最新状态 |
-| `variant` | `"default" \| "primary"` | `"default"` | default 使用 `--primary`；primary 使用可替换的 `--primary-base` |
+| `variant` | `"default" \| "primary"` | `"default"` | default 使用主要动作色；primary 使用 `selected` / `selected-foreground` 选中语义 |
 | `size` | `"sm" \| "default" \| "lg"` | `"default"` | 盒面为 14、16、20px；触摸场景通过关联标签扩大操作范围 |
 | `disabled` / `required` | `boolean` | `false` | 保留 primitive 的表单和可访问性语义 |
 | `id` / `name` / `value` / `form` | button / Root 对应属性 | — | 命名与表单归属；value 默认 `"on"` |

@@ -10,6 +10,7 @@ export const manifest = JSON.parse(readFileSync(resolve(packageRoot, "component-
 export const moduleName = (entry) => entry.replace(/^src\//, "").replace(/\.[cm]?[jt]sx?$/, "");
 export const importPath = (entry) => `./${moduleName(entry)}`;
 export const distEntry = (entry, extension = "js") => `./dist/${moduleName(entry)}.${extension}`;
+const paletteName = (path) => path.split("/").at(-1).replace(".generated", "");
 
 export const publicEntries = [
 	{ name: ".", entry: "src/index.ts" },
@@ -90,7 +91,7 @@ export function generatedPackageFields() {
 		distExports[`./components/${name}.css`] = `./dist/components/${name}.css`;
 	}
 	for (const palette of manifest.styles.palettes) {
-		const name = palette.split("/").at(-1);
+		const name = paletteName(palette);
 		sourceExports[`./palettes/${name}`] = `./${palette}`;
 		distExports[`./palettes/${name}`] = `./dist/palettes/${name}`;
 	}
@@ -106,5 +107,5 @@ export const cssEntries = {
 	tokens: "src/tokens.css",
 	classes: "src/classes.css",
 	...Object.fromEntries(manifest.components.filter((item) => item.css).map((item) => [`components/${item.name}`, item.css])),
-	...Object.fromEntries(manifest.styles.palettes.map((path) => [`palettes/${path.split("/").at(-1).replace(/\.css$/, "")}`, path])),
+	...Object.fromEntries(manifest.styles.palettes.map((path) => [`palettes/${paletteName(path).replace(/\.css$/, "")}`, path])),
 };

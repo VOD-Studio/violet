@@ -599,6 +599,12 @@ importers:
         specifier: ^3.3.1
         version: 3.3.1(tailwind-merge@3.6.0)(tailwindcss@4.3.2)
     devDependencies:
+      '@biomejs/biome':
+        specifier: 2.5.2
+        version: 2.5.2
+      '@playwright/test':
+        specifier: ^1.63.0
+        version: 1.63.0
       '@testing-library/dom':
         specifier: ^10.4.1
         version: 10.4.2
@@ -614,6 +620,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.0
         version: 19.3.0(@types/react@19.2.17)
+      '@violetjs/theme':
+        specifier: workspace:*
+        version: link:../theme
       esbuild:
         specifier: ^0.28.1
         version: 0.28.1

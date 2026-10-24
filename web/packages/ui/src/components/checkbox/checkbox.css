@@ -44,9 +44,9 @@
 	}
 
 	.v-checkbox--primary {
-		--v-checkbox-accent: var(--primary-base, var(--primary));
-		--v-checkbox-accent-foreground: var(--primary-base-foreground, var(--primary-foreground));
-		--v-checkbox-idle-border: color-mix(in oklab, var(--v-checkbox-accent) 45%, transparent);
+		--v-checkbox-accent: var(--selected);
+		--v-checkbox-accent-foreground: var(--selected-foreground);
+		--v-checkbox-idle-border: var(--selected-foreground);
 	}
 
 	.v-checkbox--sm {

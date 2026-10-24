@@ -109,7 +109,7 @@ export function PromptDialog({
 					}}
 				/>
 			)}
-			{error ? <p className="mt-1.5 text-xs text-destructive">{error}</p> : null}
+			{error ? <p className="mt-1.5 text-xs text-destructive-text">{error}</p> : null}
 		</Modal>
 	);
 }

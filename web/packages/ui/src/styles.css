@@ -3,7 +3,7 @@
 @import "./styles/tokens.css";
 @import "./styles/foundation.css";
 @import "./styles/scrollbar.css";
-@import "./styles/palettes/violet.css";
+@import "./styles/palettes/violet.generated.css";
 @import "./classes.css";
 
 /* Legacy components still use complete Tailwind utilities. */
