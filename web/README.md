@@ -164,7 +164,13 @@ Shiki 初始化、语言准备与分词在按需创建的 Web Worker 中执行�
 | 公开内容、工具界面、沉浸舞台的方言 | `src/styles/dialects/` |
 | feature 私有样式 | 所属组件旁的样式文件 |
 
-页面分别使用 `.dialect-public`、`.dialect-tool`、`.dialect-immersive`，通过语义 token 适配明暗主题，不锁定色板值。通用组件从 `@violet/ui` 使用；组件的公开入口与成熟度以 [component-manifest.json](packages/ui/component-manifest.json) 为准。
+页面分别使用 `.dialect-public`、`.dialect-tool`、`.dialect-immersive`，通过语义 token 适配明暗外观，不锁定色板值。通用组件从 `@violet/ui` 使用；组件的公开入口与成熟度以 [component-manifest.json](packages/ui/component-manifest.json) 为准。
+
+### 外观偏好
+
+`shared/lib/appearance-cookie.ts` 提供 SSR 与客户端共用的外观解析规则：`appearance` cookie 保存已解析的 `light` / `dark`，有效期一年。只有缺少新 cookie 时才读取旧 `theme` 值；SSR 通过 `getSSRAppearance` 的响应头补写，客户端路由读取时也会补写。新 cookie 存在但值非法时按浅色解析，不回退旧值。
+
+`next-themes` 的 `useTheme`、`setTheme` 等 API 与默认 localStorage 键保持不变，已保存的 `light` / `dark` / `system` 选择继续生效。
 
 ### 独立包与文档站
 
