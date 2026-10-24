@@ -62,25 +62,45 @@ function formatPattern(value: DateInput, pattern: string, fallback: string): str
 /**
  * 按站点约定格式化绝对日期。
  *
- * @param value Date、时间戳、ISO 8601 字符串或空值。
- * @param style 固定展示形态，默认 `yyyy-MM-dd`。
- * @param fallback 无效输入的返回值；默认保留字符串输入，否则显示破折号。
- * @returns 格式化后的本地日期，或无效输入的兜底值。
+ * @param value - Date、时间戳、ISO 8601 字符串或空值。
+ * @param style - 固定展示形态，默认 `yyyy-MM-dd`。
+ * @param fallback - 无效输入的返回值；默认保留字符串输入，否则显示破折号。
+ * @param timeZone - 显式 IANA 时区；SSR 与浏览器应传相同值。纯日期字符串保留日历日期。
+ * @returns 格式化后的日期，或无效输入的兜底值。
  */
 export function formatDate(
 	value: DateInput,
 	style: DateDisplayStyle = "iso-date",
 	fallback = typeof value === "string" ? value : "—",
+	timeZone?: string,
 ): string {
-	return formatPattern(value, DATE_FORMATS[style], fallback);
+	if (!timeZone || (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value))) {
+		return formatPattern(value, DATE_FORMATS[style], fallback);
+	}
+	if (value == null) return fallback;
+	const date = typeof value === "string" ? parseISO(value) : toDate(value);
+	if (!isValid(date)) return fallback;
+	const parts = new Intl.DateTimeFormat("en-CA", {
+		timeZone,
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+	}).formatToParts(date);
+	const part = (type: Intl.DateTimeFormatPartTypes) =>
+		parts.find((entry) => entry.type === type)?.value;
+	return formatPattern(
+		`${part("year")}-${part("month")}-${part("day")}`,
+		DATE_FORMATS[style],
+		fallback,
+	);
 }
 
 /**
  * 按站点约定格式化日期时间。
  *
- * @param value Date、时间戳、ISO 8601 字符串或空值。
- * @param style 分钟、秒、短日期或中文完整日期时间。
- * @param fallback 无效输入的返回值；默认保留字符串输入，否则显示破折号。
+ * @param value - Date、时间戳、ISO 8601 字符串或空值。
+ * @param style - 分钟、秒、短日期或中文完整日期时间。
+ * @param fallback - 无效输入的返回值；默认保留字符串输入，否则显示破折号。
  * @returns 格式化后的本地日期时间，或无效输入的兜底值。
  */
 export function formatDateTime(
@@ -94,9 +114,9 @@ export function formatDateTime(
 /**
  * 按站点约定格式化一天内的时间。
  *
- * @param value Date、时间戳、ISO 8601 字符串或空值。
- * @param precision 是否显示秒。
- * @param fallback 无效输入的返回值；默认保留字符串输入，否则显示破折号。
+ * @param value - Date、时间戳、ISO 8601 字符串或空值。
+ * @param precision - 是否显示秒。
+ * @param fallback - 无效输入的返回值；默认保留字符串输入，否则显示破折号。
  * @returns 格式化后的本地时间，或无效输入的兜底值。
  */
 export function formatTime(
@@ -110,8 +130,8 @@ export function formatTime(
 /**
  * 以中文显示距离当前时间的相对时长。
  *
- * @param value Date、时间戳、ISO 8601 字符串或空值。
- * @param fallback 无效输入的返回值；默认保留字符串输入，否则显示破折号。
+ * @param value - Date、时间戳、ISO 8601 字符串或空值。
+ * @param fallback - 无效输入的返回值；默认保留字符串输入，否则显示破折号。
  * @returns 带过去或未来后缀的相对时间，或无效输入的兜底值。
  */
 export function formatRelativeTime(

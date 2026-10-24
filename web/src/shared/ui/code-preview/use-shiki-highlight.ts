@@ -1,16 +1,8 @@
-/**
- * useShikiHighlight - 按代码字符串 shiki 高亮（非 URL）
- *
- * 与 code-preview 的 useCodeHighlight 区别：本 hook 接受内联代码字符串
- * （文章正文代码块），而非从 URL 拉取文件。复用共享 highlighter 单例（lib/highlighter），
- * 主题 github-dark，与 code-preview 视觉一致。
- *
- * 语言按白名单按需加载（shiki core + loadLanguage），不在白名单内的语言降级为纯文本。
- * bundle/full 不再进入构建产物。
- */
-import { useEffect, useState } from "react";
+/** 代码文本高亮的状态管理；资源与计算分别由共享 highlighter 和增强队列负责。 */
+import { type RefObject, useEffect, useState } from "react";
 import { highlightCode, highlightCodeAuto, highlightCodeLight } from "./lib/highlighter";
 
+/** 当前代码的增强结果；html 为空时由消费方保留纯文本。 */
 export interface UseShikiHighlightResult {
 	/** 高亮后的 HTML（shiki 输出 <pre class="shiki">），未完成时为空 */
 	html: string;
@@ -18,20 +10,27 @@ export interface UseShikiHighlightResult {
 	loading: boolean;
 }
 
+/** 高亮主题及可见任务优先级的宿主配置。 */
 export interface UseShikiHighlightOptions {
 	/**
-	 * 高亮主题：dark（默认，github-dark）| light（github-light）| auto（双主题，
-	 * token 颜色为 light-dark() 由 CSS 按站点明暗切换）
+	 * dark 使用 github-dark，light 使用 github-light，auto 通过 light-dark() 跟随站点配色。
 	 *
-	 * @default dark
+	 * @default auto
 	 */
 	theme?: "dark" | "light" | "auto";
+	/** 稳定的宿主 ref，仅用于计算优先级，不负责视口门控。 */
+	elementRef?: RefObject<HTMLElement | null>;
 }
 
 /**
- * @param code 原始代码字符串
- * @param language shiki 语言 ID（如 typescript / go / bash），未知传 "text"
- * @param options 可选主题，缺省 dark 保持既有调用行为
+ * 对已经挂载的代码安排高亮，并保留加载与纯文本降级状态。
+ *
+ * @param code - 原始代码字符串，始终由消费方负责纯文本展示。
+ * @param language - 语言标识；不在白名单中时按纯文本生成结果。
+ * @param options - 缺省使用自动明暗主题；宿主用于可见任务优先调度。
+ * @returns 当前高亮 HTML 与进行状态。
+ * @remarks SSR 不启动计算。结果绑定源码、语言和主题；新输入等待期间返回空 HTML，
+ * 让消费方立即展示当前纯文本。输入变化或卸载会取消排队任务，旧请求不会覆盖当前结果。
  */
 export function useShikiHighlight(
 	code: string,
@@ -39,36 +38,39 @@ export function useShikiHighlight(
 	options?: UseShikiHighlightOptions,
 ): UseShikiHighlightResult {
 	const theme = options?.theme ?? "auto";
-	const [html, setHtml] = useState("");
-	const [loading, setLoading] = useState(true);
+	const elementRef = options?.elementRef;
+	const [result, setResult] = useState<{
+		code: string;
+		language: string;
+		theme: typeof theme;
+		html: string;
+	} | null>(null);
 
 	useEffect(() => {
-		let cancelled = false;
-		setLoading(true);
+		const controller = new AbortController();
 		void (async () => {
 			try {
-				const out =
-					theme === "light"
-						? await highlightCodeLight(code, language)
-						: theme === "auto"
-							? await highlightCodeAuto(code, language)
-							: await highlightCode(code, language);
-				if (!cancelled) {
-					setHtml(out);
-					setLoading(false);
+				const scheduleOptions = { element: elementRef?.current, signal: controller.signal };
+				const out = await (theme === "light"
+					? highlightCodeLight(code, language, scheduleOptions)
+					: theme === "auto"
+						? highlightCodeAuto(code, language, scheduleOptions)
+						: highlightCode(code, language, scheduleOptions));
+				if (!controller.signal.aborted) {
+					setResult({ code, language, theme, html: out });
 				}
 			} catch {
-				// 高亮失败降级为空（外层 pre 兜底）
-				if (!cancelled) {
-					setHtml("");
-					setLoading(false);
+				// 仅记录当前请求的失败，让调用方继续显示当前源码。
+				if (!controller.signal.aborted) {
+					setResult({ code, language, theme, html: "" });
 				}
 			}
 		})();
 		return () => {
-			cancelled = true;
+			controller.abort();
 		};
-	}, [code, language, theme]);
+	}, [code, language, theme, elementRef]);
 
-	return { html, loading };
+	const current = result?.code === code && result.language === language && result.theme === theme;
+	return { html: current ? result.html : "", loading: !current };
 }

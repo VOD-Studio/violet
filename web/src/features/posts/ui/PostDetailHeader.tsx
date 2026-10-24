@@ -8,6 +8,8 @@ import type { ReactNode } from "react";
 import { SharedElement } from "@/shared/lib/view-transition";
 import { RevisionChip } from "./RevisionChip";
 
+const COVER_WIDTHS = [360, 480, 720, 920, 1280, 1840, 2760] as const;
+
 export interface PostDetailHeaderProps {
 	post: PostDetail;
 	viewCount: number;
@@ -61,7 +63,9 @@ export function PostDetailHeader({ post, viewCount, children }: PostDetailHeader
 					{post.published_at ? (
 						<span className="inline-flex items-center gap-1.5">
 							<Calendar className="size-3.5" />
-							<span>{formatDate(post.published_at, "long-date")}</span>
+							<span>
+								{formatDate(post.published_at, "long-date", "—", "Asia/Shanghai")}
+							</span>
 							{post.edited_at ? <RevisionChip post={post} /> : null}
 						</span>
 					) : post.edited_at ? (
@@ -84,7 +88,11 @@ export function PostDetailHeader({ post, viewCount, children }: PostDetailHeader
 				>
 					<CroppedImage
 						src={post.cover_image}
-						width={1400}
+						width={920}
+						widths={COVER_WIDTHS}
+						aspect={2}
+						loading="eager"
+						fetchPriority="high"
 						alt={post.title}
 						className="aspect-2/1 w-full"
 					/>

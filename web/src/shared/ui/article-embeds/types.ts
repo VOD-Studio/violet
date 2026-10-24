@@ -217,6 +217,12 @@ export interface ArticleEmbedDefinition<Config = unknown> {
 	languages: readonly string[];
 	load(): Promise<ArticleEmbedModule<Config>>;
 	/**
+	 * 将整个嵌入延迟到接近视口；需要 SSR 语义内容的嵌入关闭此项，并在内部延迟重交互。
+	 *
+	 * @default true
+	 */
+	defer?: boolean;
+	/**
 	 * 编辑器里的插入入口。
 	 *
 	 * @default undefined — Slash 菜单里没有这一项，作者手写围栏块。

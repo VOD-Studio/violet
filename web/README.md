@@ -119,7 +119,7 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 | 站点音乐 | `features/admin-music`、`music-player`，共享模型在 `entities/music` |
 | 管理后台 | `features/admin-*`，公共后台布局与表格在 `admin-layout` / `admin-shared` |
 | 运行策略与代码执行 | `entities/runtime-policy`、`entities/code-runner`、`features/admin-settings` |
-| 首页组合与导航 | `widgets/` 与 `shared/config/nav.ts` |
+| 首页与阅读页组合、导航 | `widgets/` 与 `shared/config/nav.ts` |
 
 只在一个 feature 内使用的实现留在 feature。第二个 feature 需要同一业务能力时，提到 `entities/`；站点专用基础能力放 `shared/`，通用 React 组件放 `packages/ui/`。不要让 `shared` 反向导入业务 feature。
 
@@ -134,6 +134,24 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 编辑器和阅读端共用内容格式契约，源码模式与富文本维护同一份文档。内容块、Markdown / HTML 往返、脚注、图表导出等细节维护在[编辑器手册](src/features/editor/docs/README.md)，不在本 README 复制功能规格。
 
 修改内容块时同时检查编辑预览与阅读渲染。可运行代码依赖服务端有效策略；项目卡片与路线图读取当前项目数据，而非在文章里保存一份静态副本。
+
+#### 阅读端加载边界
+
+文章详情的路由参数、SSR loader 与 SEO 留在 `routes/blog/$slug.tsx`，阅读界面经 `widgets/BlogDetailPage` 的公开入口组合各 feature。浏览量登记复用 `features/posts/api/mutations` 的 `useIncrementView`，不在组合层拼接业务接口；mutation 状态变化和评论开关不重复提交统计，统计失败不影响正文，HTTP 客户端既有重试策略保持不变。
+
+正文与标题始终由 SSR 输出，不做整篇虚拟化。`useViewportPreparation` 共用视口观察器，按约一个视口的提前量启动代码、图表、大公式和所属手绘外框；准备后保持挂载，滚出再返回不会重建已完成结果。行内公式保留稳定的 LaTeX 语义载体，不逐个设置观察器。`scheduleEnhancement` 分批执行重计算，可见内容优先；外框只在尺寸、圆角或 seed 改变后重画，换色沿用 `currentColor`。
+
+Shiki 初始化、语言准备与分词在按需创建的 Web Worker 中执行，取消的调用丢弃晚回结果。Mermaid 使用独立串行队列，模块与字体下载不阻塞其他增强；图表测量与 SVG 处理仍在主线程，字体与 Inkline 准备完整后再展示。
+
+`createAsyncLoader` 统一模块与初始化任务的并发复用、成功缓存和失败清理，不自动重试、不用于参数化业务查询。富内容失败只显示局部反馈，源码与正文继续可读。同 URL 的模块下载失败可能被浏览器缓存，此时提供重新载入页面；样式下载与渲染失败支持局部重试，样式恢复以新 `<link>` 的 `load` 事件确认。
+
+展示图片由 `shared/lib/image-url` 按视口与 DPR 生成 `picture` 候选，不声明未经素材元数据证实的像素描述符。仅处理本站 `/uploads/` 地址，外链与动图保持原有语义。`CroppedImage` 按容器、DPR 与作者选区计算需求，不叠加服务端居中 `thumb`；同一源图固定首次几何基准，充足候选不降档重下。`ArticleImage` 保留作者尺寸、原生懒加载与异步解码；未知固有尺寸时只提供最小占位，不保证零布局偏移。灯箱占位复用已选候选，预览与下载仍用原图。
+
+`formatDate` 支持显式 IANA 时区；文章发布时间与修订日期使用 `Asia/Shanghai`，SSR 与浏览器使用同一输入与时区。纯 `YYYY-MM-DD` 按日历日期保留，不套用时区偏移；未指定时区的既有调用行为不变。
+
+文章目录将跟随目标限制在真实滚动范围内；进度、轨迹弹簧与展开状态收敛后停止排帧，滚动或尺寸变化再唤醒。正文尺寸读取与 SVG 写入分开，已完成几何不重复写入；目录滚动层为聚焦环保留空间。
+
+评论区接近时加载，抽屉首次打开时加载并保留实例；划线工具加载期间保留原生选区，绘制完成后再接管高亮。段评加载或失败时仍可关闭，失败不替换正文。Google SDK 随登录入口准备，就绪前禁用对应按钮，失败保留表单与其他登录方式。文章方向键不接管灯箱等模态对话框内的交互。
 
 ## 样式与组件
 

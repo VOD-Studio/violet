@@ -26,12 +26,31 @@ Object.defineProperty(globalThis, "ResizeObserver", {
 });
 
 /**
- * jsdom 未实现 IntersectionObserver，DecryptedText 等可见性动效组件在挂载时依赖。
+ * jsdom 无布局；语义测试默认把挂载元素视为可见，视口边界测试需使用受控观察器。
  */
 class IntersectionObserverMock {
-	observe = vi.fn();
-	unobserve = vi.fn();
-	disconnect = vi.fn();
+	private targets = new Set<Element>();
+
+	constructor(private callback: IntersectionObserverCallback) {}
+
+	observe = vi.fn((target: Element) => {
+		this.targets.add(target);
+		queueMicrotask(() => {
+			if (!this.targets.has(target)) return;
+			this.callback(
+				[
+					{
+						target,
+						isIntersecting: true,
+						intersectionRatio: 1,
+					} as IntersectionObserverEntry,
+				],
+				this as unknown as IntersectionObserver,
+			);
+		});
+	});
+	unobserve = vi.fn((target: Element) => this.targets.delete(target));
+	disconnect = vi.fn(() => this.targets.clear());
 }
 
 Object.defineProperty(globalThis, "IntersectionObserver", {

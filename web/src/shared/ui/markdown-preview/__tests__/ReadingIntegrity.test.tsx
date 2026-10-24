@@ -1,5 +1,5 @@
 import { CodeRunner } from "@entities/code-runner/ui/CodeRunner";
-import { RunnableCodeContext } from "@shared/ui/markdown-preview/code-renderer-context";
+import { RunnableCodeLoaderContext } from "@shared/ui/markdown-preview/code-renderer-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
@@ -11,10 +11,12 @@ vi.mock("@shared/api/request", () => ({
 	apiGet: vi.fn().mockResolvedValue({ version: 1, enabled: true, languages: ["node"] }),
 }));
 
+const loadCodeRunner = () => Promise.resolve({ default: CodeRunner });
+
 function RunnerProvider({ children }: { children: ReactNode }) {
 	return (
 		<QueryClientProvider client={new QueryClient()}>
-			<RunnableCodeContext value={CodeRunner}>{children}</RunnableCodeContext>
+			<RunnableCodeLoaderContext value={loadCodeRunner}>{children}</RunnableCodeLoaderContext>
 		</QueryClientProvider>
 	);
 }

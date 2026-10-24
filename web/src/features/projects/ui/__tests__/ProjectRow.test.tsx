@@ -175,7 +175,6 @@ describe("ProjectRow", () => {
 		rerender(<ProjectRow project={project({ image_url: "/uploads/cover.png" })} />);
 		const image = container.querySelector("img") as HTMLImageElement;
 		expect(image.getAttribute("alt")).toBe("");
-		expect(image.getAttribute("src")).toBe("/uploads/cover.png?w=240&format=webp");
 		expect(screen.queryByTestId("project-cover-placeholder")).toBeNull();
 
 		fireEvent.error(image);

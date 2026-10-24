@@ -22,6 +22,7 @@ const schema: Schema = {
 			["dataAlertType", "NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"],
 		],
 		details: [...(defaultSchema.attributes?.details ?? []), "open"],
+		img: [...(defaultSchema.attributes?.img ?? []), "style"],
 		code: [
 			...(defaultSchema.attributes?.code ?? []).filter(
 				(attribute) =>
@@ -116,6 +117,12 @@ function cleanStyle(element: Element) {
 				(element.tagName === "mark" &&
 					(property === "color" || property === "background-color"))) &&
 			color.test(value)
+		) {
+			declarations.push(`${property}:${value}`);
+		} else if (
+			element.tagName === "img" &&
+			(property === "width" || property === "height") &&
+			/^(?:auto|0|(?:\d+(?:\.\d+)?|\.\d+)(?:px|rem|em|%|vw|vh))$/u.test(value)
 		) {
 			declarations.push(`${property}:${value}`);
 		}

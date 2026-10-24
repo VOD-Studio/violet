@@ -15,6 +15,14 @@ describe("date display formatting", () => {
 		expect(formatDate("2026-09-07", "year")).toBe("2026年");
 	});
 
+	it("uses the publication timezone across the UTC calendar boundary", () => {
+		const instant = "2026-09-07T23:29:41Z";
+		expect(formatDate(instant, "long-date", "—", "Asia/Shanghai")).toBe("2026年9月8日");
+		expect(formatDate(instant, "long-date", "—", "UTC")).toBe("2026年9月7日");
+		expect(formatDate("2026-09-07", "long-date", "—", "Asia/Shanghai")).toBe("2026年9月7日");
+		expect(formatDate("invalid", "long-date", "—", "Asia/Shanghai")).toBe("—");
+	});
+
 	it("uses the shared date-time precision", () => {
 		const value = new Date(2026, 8, 7, 9, 5, 4);
 

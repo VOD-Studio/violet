@@ -9,11 +9,13 @@ import { useOAuthVisibility } from "@features/auth/hooks/use-oauth-visibility";
 import { openLinkConfirmFromError } from "@features/auth/lib/open-link-confirm";
 import { safeRedirectTarget } from "@features/auth/lib/safe-redirect";
 import { type LoginFormData, loginSchema } from "@features/auth/model/schemas";
+import { GoogleOAuthGate } from "@features/auth/ui/GoogleOAuthGate";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useGoogleLogin } from "@react-oauth/google";
+import { useGoogleLogin, useGoogleOAuth } from "@react-oauth/google";
 import { ApiError } from "@shared/api/error";
 import { createFileRoute, Link, redirect, useNavigate, useSearch } from "@tanstack/react-router";
 import { Button, GithubIcon, GoogleIcon, Input, Label } from "@violet/ui";
+import type { ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -58,6 +60,14 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
+	return (
+		<GoogleOAuthGate>
+			{(googleError) => <LoginForm googleError={googleError} />}
+		</GoogleOAuthGate>
+	);
+}
+
+function LoginForm({ googleError }: { googleError: ReactNode }) {
 	const { redirect, email: prefilledEmail } = useSearch({ from: "/login" });
 	const navigate = useNavigate();
 
@@ -75,6 +85,7 @@ function LoginPage() {
 	const githubLogin = useGithubLoginMutation(csrfToken);
 	const googleLogin = useGoogleLoginMutation(csrfToken);
 	const { showGoogle, showGithub, showOAuth } = useOAuthVisibility();
+	const { scriptLoadedSuccessfully } = useGoogleOAuth();
 
 	const handleGoogleLogin = useGoogleLogin({
 		flow: "implicit",
@@ -227,8 +238,12 @@ function LoginPage() {
 										variant="outline"
 										size="icon"
 										className="size-12 rounded-full"
-										onClick={() => handleGoogleLogin()}
-										disabled={googleLogin.isPending}
+										onClick={() => {
+											if (scriptLoadedSuccessfully) handleGoogleLogin();
+										}}
+										disabled={
+											googleLogin.isPending || !scriptLoadedSuccessfully
+										}
 									>
 										<GoogleIcon title="Google" className="size-6" />
 									</Button>
@@ -246,6 +261,7 @@ function LoginPage() {
 									</Button>
 								) : null}
 							</div>
+							{showGoogle && googleError}
 						</div>
 					) : null}
 				</form>

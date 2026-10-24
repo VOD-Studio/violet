@@ -6,42 +6,25 @@
  * 不依赖 @tailwindcss/typography 插件（项目未全局启用 prose）。
  */
 
+import { DeferredContent } from "@shared/ui/deferred-content/DeferredContent";
+import { InlineMathContent } from "@shared/ui/katex/InlineMathContent";
+import { loadBlockMathFormula } from "@shared/ui/katex/math-formula-loader";
 import { RunnableCodeRenderer } from "@shared/ui/markdown-preview/code-renderer-context";
+import { ArticleImage } from "@shared/ui/markdown-preview/components/ArticleImage";
 import { cn } from "cn";
-import { type CSSProperties, lazy, type ReactNode, Suspense } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type { Components } from "react-markdown";
-import { contentImageUrl } from "@/shared/lib/image-url";
 import { AnchoredHeading } from "@/shared/ui/anchored-heading";
 import codeScrollbar from "@/shared/ui/code-scrollbar.module.css";
 import type { ArticleContentContext } from "../../article-embeds/types";
-import { DiagramPlaceholder } from "../../diagram/DiagramPlaceholder";
 // 直连 renderers.ts（不经 diagram/index barrel）：barrel 会静态 re-export
 // DiagramBlock/renderMermaid，把 mermaid 依赖树拉进文章正文主 chunk；直连仅注册
 // 注册表 + lazy factory，mermaid 留在 DiagramBlock 的 lazy chunk（PRD 懒加载决策）。
 import { diagramRenderers } from "../../diagram/renderers";
 import { SketchFrame } from "../../sketch-frame/SketchFrame";
+import { nodeToText } from "../node-to-text";
 import { proseElements } from "./prose-elements";
 import { createRichCodeRenderer } from "./rich-code-renderer";
-
-/** 公式组件懒加载：KaTeX + 字体只在含公式的文章页拉取 */
-const LazyInlineMathFormula = lazy(() =>
-	import("../../katex/MathFormula").then((m) => ({ default: m.InlineMathFormula })),
-);
-const LazyBlockMathFormula = lazy(() =>
-	import("../../katex/MathFormula").then((m) => ({ default: m.BlockMathFormula })),
-);
-
-/** 把 react-markdown 传入的 React 节点递归提取为纯文本 */
-function nodeToText(node: React.ReactNode): string {
-	if (node == null || typeof node === "boolean") return "";
-	if (typeof node === "string" || typeof node === "number") return String(node);
-	if (Array.isArray(node)) return node.map(nodeToText).join("");
-	if (typeof node === "object" && "props" in node) {
-		const props = (node as React.ReactElement<{ children?: React.ReactNode }>).props;
-		return nodeToText(props.children);
-	}
-	return "";
-}
 
 /**
  * 正文标题渲染:h2-h4 渲染管线都会补 slug id,有 id 时复用悬停锚点
@@ -87,6 +70,8 @@ function ProseHeading({ as, id, style, className, children }: ProseHeadingProps)
 function DiagramSourceFallback({ source }: { source: string }) {
 	return (
 		<pre
+			data-type="diagram-block"
+			data-source={source}
 			className={cn(
 				codeScrollbar.scrollbar,
 				"my-6 overflow-x-auto rounded-lg border border-edge-hairline bg-[#24292e] px-4 py-3 text-sm leading-relaxed text-white/90",
@@ -97,26 +82,6 @@ function DiagramSourceFallback({ source }: { source: string }) {
 	);
 }
 
-/**
- * DiagramLoadingFallback - 图块懒加载/异步渲染期间的占位
- *
- * 与 DiagramBlock 的渲染中占位复用同一面板（DiagramPlaceholder），保证 chunk
- * 加载 → mermaid 渲染两段等待视觉一致。引入路径深连 diagram/DiagramPlaceholder
- * 直连（同 renderers.ts 的 barrel 规避，见本文件头部 import 注释）。无 JS 环境下
- * React 不渲染此占位，源码作为 <noscript> 内文本降级可见。
- */
-function DiagramLoadingFallback({ source }: { source: string }) {
-	return (
-		<div className="my-6">
-			<DiagramPlaceholder />
-			<noscript>
-				<pre className={cn(codeScrollbar.scrollbar, "overflow-x-auto px-4 py-3")}>
-					<code>{source}</code>
-				</pre>
-			</noscript>
-		</div>
-	);
-}
 export const markdownComponents: Components = {
 	...proseElements,
 	h1: ({ children, style, className, id }) => (
@@ -192,17 +157,7 @@ export const markdownComponents: Components = {
 		const p = props as Record<string, unknown>;
 		if (p["data-type"] === "inline-math") {
 			const latex = String(p["data-latex"] ?? "");
-			return (
-				<Suspense
-					fallback={
-						<span data-type="inline-math" data-latex={latex}>
-							{latex}
-						</span>
-					}
-				>
-					<LazyInlineMathFormula latex={latex} />
-				</Suspense>
-			);
+			return <InlineMathContent latex={latex} />;
 		}
 		return (
 			<span id={id} style={style}>
@@ -222,25 +177,28 @@ export const markdownComponents: Components = {
 			if (!renderer) {
 				return <DiagramSourceFallback source={source} />;
 			}
-			const ReaderComponent = renderer.ReaderComponent;
 			return (
-				<Suspense fallback={<DiagramLoadingFallback source={source} />}>
-					<ReaderComponent format={format} source={source} />
-				</Suspense>
+				<DeferredContent
+					load={renderer.load}
+					componentProps={{ format, source }}
+					fallback={<DiagramSourceFallback source={source} />}
+					label="图表"
+				/>
 			);
 		}
 		if (p["data-type"] === "block-math") {
 			const latex = String(p["data-latex"] ?? "");
 			return (
-				<Suspense
+				<DeferredContent
+					load={loadBlockMathFormula}
+					componentProps={{ latex }}
+					label="公式"
 					fallback={
 						<div data-type="block-math" data-latex={latex}>
 							{latex}
 						</div>
 					}
-				>
-					<LazyBlockMathFormula latex={latex} />
-				</Suspense>
+				/>
 			);
 		}
 		return (
@@ -274,40 +232,16 @@ export const markdownComponents: Components = {
 			const rawSource = p["data-source"];
 			const source = typeof rawSource === "string" ? rawSource : nodeToText(children);
 			return (
-				<Suspense
-					fallback={
-						<pre
-							data-runnable="true"
-							data-source={source}
-							data-lang={lang}
-							className={cn(
-								codeScrollbar.scrollbar,
-								"my-6 overflow-x-auto rounded-lg border border-edge-hairline bg-[#24292e] px-4 py-3 text-sm leading-relaxed text-white/90",
-							)}
-						>
-							<code>{source}</code>
-						</pre>
-					}
-				>
-					<RunnableCodeRenderer
-						language={lang}
-						source={source}
-						overridesJson={overrides ? JSON.stringify(overrides) : undefined}
-					/>
-				</Suspense>
+				<RunnableCodeRenderer
+					language={lang}
+					source={source}
+					overridesJson={overrides ? JSON.stringify(overrides) : undefined}
+				/>
 			);
 		}
 		return <>{children}</>;
 	},
-	img: ({ src, alt }) => (
-		// 内容图统一走 w=1200 缩略(GIF 剥参数保动画),原图只在点开预览时加载
-		<img
-			src={typeof src === "string" ? contentImageUrl(src, { width: 1200 }) : undefined}
-			alt={alt ?? ""}
-			className="my-8 max-w-full rounded-2xl ring-1 ring-border shadow-[0_4px_24px_rgb(0_0_0/0.05)]"
-			loading="lazy"
-		/>
-	),
+	img: ArticleImage,
 };
 
 const contextComponents = new WeakMap<ArticleContentContext, Components>();

@@ -8,7 +8,7 @@ import { useGithubOAuth } from "@features/auth/hooks/use-github-oauth";
 import { useOAuthVisibility } from "@features/auth/hooks/use-oauth-visibility";
 import { openLinkConfirmFromError } from "@features/auth/lib/open-link-confirm";
 import type { LoginRequest } from "@features/auth/model/types";
-import { useGoogleLogin } from "@react-oauth/google";
+import { useGoogleLogin, useGoogleOAuth } from "@react-oauth/google";
 import { ApiError } from "@shared/api/error";
 import { toast } from "sonner";
 
@@ -40,7 +40,7 @@ export interface UseLoginFlowsOptions {
 /**
  * 三种登录方式（Google、GitHub、账号密码）的统一流程，登录弹窗与内嵌登录共用。
  *
- * @returns 各方式的发起函数、进行中状态与第三方登录可见性
+ * @returns 各方式的发起函数、进行中状态、Google SDK 就绪状态与第三方登录可见性
  */
 export function useLoginFlows({ onSuccess, enabled = true }: UseLoginFlowsOptions) {
 	const csrfToken = useCsrfToken({ enabled });
@@ -48,6 +48,7 @@ export function useLoginFlows({ onSuccess, enabled = true }: UseLoginFlowsOption
 	const googleLogin = useGoogleLoginMutation(csrfToken);
 	const githubLogin = useGithubLoginMutation(csrfToken);
 	const visibility = useOAuthVisibility();
+	const { scriptLoadedSuccessfully } = useGoogleOAuth();
 
 	const done = () => {
 		toast.success("登录成功");
@@ -83,11 +84,14 @@ export function useLoginFlows({ onSuccess, enabled = true }: UseLoginFlowsOption
 
 	return {
 		csrfToken,
-		startGoogle: () => startGoogle(),
+		startGoogle: () => {
+			if (scriptLoadedSuccessfully) startGoogle();
+		},
 		startGithub: () => startGithub(),
 		submitPassword,
 		passwordPending: login.isPending,
 		googlePending: googleLogin.isPending,
+		googleReady: scriptLoadedSuccessfully,
 		githubPending: githubLogin.isPending,
 		...visibility,
 	};

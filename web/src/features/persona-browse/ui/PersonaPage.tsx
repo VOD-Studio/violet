@@ -6,7 +6,7 @@ import {
 	splitPersonaDisplayName,
 } from "@features/persona-browse/model/presentation";
 import { useArticleImagePreview } from "@shared/hooks/use-article-image-preview";
-import { contentImageSrcSet, contentImageUrl } from "@shared/lib/image-url";
+import { contentImageSources, contentImageUrl } from "@shared/lib/image-url";
 import { BackToTop } from "@shared/ui/back-to-top";
 import { ImagePreview } from "@shared/ui/image-preview";
 import { localeLabel } from "@shared/ui/locale-switcher";
@@ -33,7 +33,7 @@ interface PersonaPageProps {
 
 const CLOSED_LIGHTBOX: LightboxState = { open: false, index: 0, trigger: null };
 const DISPLAY_IMAGE_WIDTH = 2048;
-const DISPLAY_SRCSET_WIDTHS = [640, 1024, 1600, 2048] as const;
+const DISPLAY_IMAGE_WIDTHS = [640, 1024, 1600, 2048] as const;
 const PLATE_EASE = [0.22, 1, 0.36, 1] as const;
 
 /**
@@ -302,29 +302,36 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 														}
 														aria-label={`预览 ${galleryAlts[index]}`}
 													>
-														<img
-															srcSet={contentImageSrcSet(
+														<picture>
+															{contentImageSources(
 																image.url,
-																DISPLAY_SRCSET_WIDTHS,
-															)}
-															sizes="(min-width: 1280px) 68rem, calc(100vw - 2.5rem)"
-															src={contentImageUrl(image.url, {
-																width: DISPLAY_IMAGE_WIDTH,
-															})}
-															alt={galleryAlts[index]}
-															width={
-																image.width > 0
-																	? image.width
-																	: undefined
-															}
-															height={
-																image.height > 0
-																	? image.height
-																	: undefined
-															}
-															className={styles.plateImage}
-															loading="lazy"
-														/>
+																DISPLAY_IMAGE_WIDTHS,
+																1088,
+															).map((source) => (
+																<source
+																	key={source.media}
+																	{...source}
+																/>
+															))}
+															<img
+																src={contentImageUrl(image.url, {
+																	width: DISPLAY_IMAGE_WIDTH,
+																})}
+																alt={galleryAlts[index]}
+																width={
+																	image.width > 0
+																		? image.width
+																		: undefined
+																}
+																height={
+																	image.height > 0
+																		? image.height
+																		: undefined
+																}
+																className={styles.plateImage}
+																loading="lazy"
+															/>
+														</picture>
 													</button>
 												</article>
 											</motion.li>

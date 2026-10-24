@@ -1,31 +1,9 @@
-/**
- * DiagramBlock - 图块阅读端渲染组件（浏览时渲染）
- *
- * 由阅读端注册表（renderers.ts）经 React.lazy 引入，仅在文章真含
- * diagram-block 节点时 Suspense 触发拉取 mermaid chunk（PRD 懒加载决策）。
- *
- * 渲染流程：持 ref 容器 → useEffect 调 renderMermaid(source, theme) →
- * 清理后的 SVG 经 innerHTML 写入容器。mermaid 把颜色烘焙进 SVG，切主题
- * 无法 CSS 跟随，故监听 <html>.classList 变化重新 render（参照 particle-field
- * 的 MutationObserver 先例 + herczeg 2025-01 mermaid theming 实践）。
- *
- * 加载体验：chunk 懒加载与 mermaid 渲染两段等待统一为 DiagramPlaceholder 占位
- * 面板（无旋转 spinner）；SVG 就绪后纯 opacity 淡入（不用 transform 动画——
- * transform 会触发 SVG 按当前倍率重栅格化，放大后发虚）。
- *
- * 失败降级：renderMermaid 返回 { error } → 直接复用 CodeCard 呈现源码。
- * 失败 = 退化回代码呈现，不做错误装饰（告警/边线/提示行都去掉），与文章围栏
- * 代码块同视觉（shiki 高亮 + 语言标签 + 复制按钮），让源码本身成为内容。
- * 不向读者暴露详细错误（作者在编辑弹层看）。
- *
- * 布局：根容器用 block（不 flex）——失败态 CodeCard 在 flex 容器里会被
- * 收缩为内容宽度（xychart 源码行短时整块仅 ~368px），block 容器让失败态自然
- * 占满父宽。成功态 SVG 居中改在内层 flex wrapper 内部，保留视觉。
- */
+/** 图表完成 Mermaid 与 Inkline 后整体显示，失败保留源码并提供恢复入口。 */
 
+import { EnhancementFailure } from "@shared/ui/deferred-content/DeferredContent";
 import { cn } from "cn";
 import { AnimatePresence } from "motion/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { subscribeThemeRerender } from "@/shared/lib/theme-rerender";
 import { CodeCard } from "@/shared/ui/code-preview/components/CodeCard";
 import { DiagramFullscreen } from "./DiagramFullscreen";
@@ -35,6 +13,11 @@ import { extractDiagramLabel } from "./label";
 import type { DiagramTheme, RenderMermaidResult } from "./render-mermaid";
 import { renderMermaid } from "./render-mermaid";
 
+/**
+ * 阅读端图块的原始内容。
+ *
+ * @remarks source 不接受预渲染 HTML；净化与手绘处理均在渲染管线中完成。
+ */
 export interface DiagramBlockProps {
 	/** 图表格式（首期仅 "mermaid"，预留多格式） */
 	format: string;
@@ -48,12 +31,35 @@ function readCurrentTheme(): DiagramTheme {
 	return document.documentElement.classList.contains("dark") ? "dark" : "light";
 }
 
-function DiagramError({ format, source }: { format: string; source: string }) {
-	return <CodeCard code={source} language={format} />;
+interface DiagramErrorProps extends DiagramBlockProps {
+	cause: unknown;
+	onRetry: () => void;
 }
 
+function DiagramError({ format, source, cause, onRetry }: DiagramErrorProps) {
+	return (
+		<>
+			<CodeCard code={source} language={format} collapseLines={0} />
+			<EnhancementFailure
+				error={cause}
+				message="图表渲染失败，源码仍可阅读。"
+				onRetry={onRetry}
+				retryLabel="重试图表"
+			/>
+		</>
+	);
+}
+
+/**
+ * 展示完整手绘图表，并在局部失败时提供源码与恢复入口。
+ *
+ * @remarks 调用方在近视口后加载本组件；主题重绘保留上一帧，离开视口不卸载结果。
+ * 新渲染或卸载取消旧任务的等待，过期结果不会覆盖当前图表。
+ */
 export function DiagramBlock({ format, source }: DiagramBlockProps) {
 	const containerRef = useRef<HTMLDivElement>(null);
+	const hostRef = useRef<HTMLDivElement>(null);
+	const pendingRender = useRef<AbortController | null>(null);
 	/** 全屏打开前保存焦点元素，关闭后回归（PRD 焦点管理） */
 	const fullscreenTriggerRef = useRef<HTMLElement | null>(null);
 	const [fullscreen, setFullscreen] = useState(false);
@@ -76,22 +82,46 @@ export function DiagramBlock({ format, source }: DiagramBlockProps) {
 	// 避免切主题瞬间整块变白。
 	const doRender = useCallback(
 		async (t: DiagramTheme) => {
+			pendingRender.current?.abort();
+			const controller = new AbortController();
+			pendingRender.current = controller;
 			const seq = ++renderSeqRef.current;
 			setResult(null);
-			const r = await renderMermaid(source, t);
-			if (seq !== renderSeqRef.current) return;
-			setResult(r);
-			if ("svg" in r) {
-				setHasRendered(true);
-				if (containerRef.current) containerRef.current.innerHTML = r.svg;
+			try {
+				const r = await renderMermaid(source, t, {
+					element: hostRef.current,
+					signal: controller.signal,
+				});
+				if (seq !== renderSeqRef.current || controller.signal.aborted) return;
+				setResult(r);
+				if ("svg" in r) {
+					setHasRendered(true);
+				}
+			} catch (error) {
+				if (!controller.signal.aborted) {
+					setResult({
+						error: error instanceof Error ? error.message : String(error),
+						cause: error,
+					});
+				}
 			}
 		},
 		[source],
 	);
+	// 失败态会卸载画布；重试后等待画布重新挂载，再提交已完成且净化过的 SVG，不在此计算图表。
+	useLayoutEffect(() => {
+		if (result && "svg" in result && containerRef.current) {
+			containerRef.current.innerHTML = result.svg;
+		}
+	}, [result]);
 
 	// 首渲染与 source 变化（用当前主题）
 	useEffect(() => {
 		void doRender(themeRef.current);
+		return () => {
+			pendingRender.current?.abort();
+			renderSeqRef.current++;
+		};
 	}, [doRender]);
 
 	// 主题跟随：mermaid 颜色烘焙进 SVG，切主题必须重新 render。
@@ -131,7 +161,7 @@ export function DiagramBlock({ format, source }: DiagramBlockProps) {
 	// select-none 使图内文字（SVG text / foreignObject HTML）不可选，从源头
 	// 消除划线批注选区与拖拽时的误选。
 	return (
-		<div className="relative my-6" data-type="diagram-block">
+		<div ref={hostRef} className="relative my-6" data-type="diagram-block">
 			{errored ? null : (
 				<div className="flex justify-center">
 					<DiagramViewport
@@ -148,7 +178,7 @@ export function DiagramBlock({ format, source }: DiagramBlockProps) {
 							ref={containerRef}
 							className={cn(
 								"flex min-h-64 w-full min-w-max select-none justify-center",
-								hasRendered && "animate-diagram-enter",
+								hasRendered && "motion-safe:animate-diagram-enter",
 							)}
 							role="img"
 							aria-label={extractDiagramLabel(source)}
@@ -157,7 +187,14 @@ export function DiagramBlock({ format, source }: DiagramBlockProps) {
 				</div>
 			)}
 			{initialLoading ? <DiagramPlaceholder className="absolute inset-0" /> : null}
-			{errored ? <DiagramError format={format} source={source} /> : null}
+			{errored ? (
+				<DiagramError
+					format={format}
+					source={source}
+					cause={result.cause}
+					onRetry={() => void doRender(themeRef.current)}
+				/>
+			) : null}
 			<AnimatePresence>
 				{fullscreen && result && "svg" in result ? (
 					<DiagramFullscreen

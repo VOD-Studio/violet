@@ -1,20 +1,25 @@
 import { handleTocLinkClick } from "@shared/hooks/use-toc";
 import { cn } from "cn";
 import { useReducedMotion } from "motion/react";
-import { type ReactNode, type RefObject, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, type RefObject, useMemo, useRef, useState } from "react";
 import { ArticleTocFocusShell } from "./ArticleTocFocusShell";
 import type { ArticleTocRailItem } from "./article-toc-rail-motion";
 import { CompactArticleToc } from "./CompactArticleToc";
+import { useArticleTocIndicator } from "./use-article-toc-indicator";
 
+/** 按正文顺序排列并复用正文标题 ID 的目录节点。 */
 export interface SegmentedTocNode {
 	id: string;
 	title: string;
 	children?: SegmentedTocNode[];
 }
 
+/** 连接标题树、正文定位与目录展示形态。 */
 export interface SegmentedArticleTocProps {
+	/** 正文未变化时应复用数组引用，避免重建目录几何缓存与观察器。 */
 	nodes: SegmentedTocNode[];
 	activeId: string | null;
+	/** 仅处理无修饰键点击；由调用方更新哈希并定位正文。 */
 	onNavigate: (id: string) => void;
 	compact?: boolean;
 	isRailCollapsedAtRest?: boolean;
@@ -37,27 +42,6 @@ function flattenNodes(nodes: SegmentedTocNode[], depth = 0, prefix = "", topId =
 			...flattenNodes(node.children ?? [], depth + 1, indexLabel, rootId),
 		];
 	});
-}
-
-interface TocAnchor {
-	pageY: number;
-	top: number;
-	height: number;
-}
-
-function tocPositionAt(anchors: TocAnchor[], pageY: number, edge: "top" | "bottom"): number {
-	let previous = anchors[0];
-	const position = (anchor: TocAnchor) => anchor.top + (edge === "bottom" ? anchor.height : 0);
-	if (pageY <= previous.pageY) return position(previous);
-	for (let index = 1; index < anchors.length; index++) {
-		const next = anchors[index];
-		if (pageY < next.pageY) {
-			const progress = (pageY - previous.pageY) / (next.pageY - previous.pageY);
-			return position(previous) + (position(next) - position(previous)) * progress;
-		}
-		previous = next;
-	}
-	return position(previous);
 }
 
 /** 实验室与博客详情共用的文章目录。 */
@@ -87,121 +71,16 @@ export function SegmentedArticleToc({
 	const reduced = useReducedMotion();
 	const [railActive, setRailActive] = useState(true);
 
-	// 以正文标题的文档位置为锚，视口上下沿在相邻目录行间连续插值。
-	useLayoutEffect(() => {
-		const body = contentRef?.current;
-		const list = listRef.current;
-		const indicator = indicatorRef.current;
-		if (!body || !list || !indicator) return;
-		const listRows = list.querySelectorAll<HTMLElement>("li");
-		const rows = flatItems
-			.map((item, index) => ({
-				heading: body.querySelector<HTMLElement>(`[id="${CSS.escape(item.id)}"]`),
-				row: listRows[index] ?? null,
-			}))
-			.filter((entry): entry is { heading: HTMLElement; row: HTMLElement } =>
-				Boolean(entry.heading && entry.row),
-			);
-		if (rows.length === 0) {
-			indicator.style.opacity = "0";
-			return;
-		}
-
-		let anchors: TocAnchor[] = [];
-		let frame = 0;
-		let needsMeasure = false;
-		let listTarget: number | null = null;
-		let followFrame = 0;
-		let shouldSnapList = !railActive;
-		const followStep = () => {
-			followFrame = 0;
-			const scroll = scrollRef.current;
-			if (!scroll || listTarget === null) return;
-			const delta = listTarget - scroll.scrollTop;
-			if (Math.abs(delta) < 0.5) {
-				scroll.scrollTop = listTarget;
-				return;
-			}
-			scroll.scrollTop += delta * 0.16;
-			followFrame = requestAnimationFrame(followStep);
-		};
-		const startFollow = () => {
-			if (!followFrame) followFrame = requestAnimationFrame(followStep);
-		};
-		// 用户手动滚动目录时让位：取消趋近，避免与滚轮/触摸抢滚动条。
-		const onUserListScroll = () => {
-			listTarget = null;
-			if (followFrame) {
-				cancelAnimationFrame(followFrame);
-				followFrame = 0;
-			}
-		};
-		const measureAnchors = () => {
-			const scrollY = window.scrollY;
-			anchors = rows.map(({ heading, row }) => ({
-				pageY: heading.getBoundingClientRect().top + scrollY,
-				top: row.offsetTop,
-				height: row.offsetHeight,
-			}));
-		};
-		const update = () => {
-			// 正文标题使用 80px scroll-margin-top；阅读线也从这个视口高度起算。
-			const start = tocPositionAt(anchors, window.scrollY + 80, "top");
-			const end = tocPositionAt(anchors, window.scrollY + window.innerHeight, "bottom");
-			indicator.style.transform = `translateY(${start}px)`;
-			indicator.style.height = `${Math.max(0, end - start)}px`;
-			indicator.style.opacity = "1";
-			const snap = shouldSnapList;
-			shouldSnapList = false;
-			const scroll = scrollRef.current;
-			if (!isRailCollapsedAtRest || !scroll || scroll.scrollHeight <= scroll.clientHeight)
-				return;
-			// 展开后只在进入瞬间对齐一次，之后让位给用户滚动，否则页面滚动会把列表拉回阅读位置。
-			if (!railActive && !snap) return;
-			const center = (start + end) / 2;
-			const visibleCenter = center - scroll.scrollTop;
-			if (
-				visibleCenter < scroll.clientHeight * 0.3 ||
-				visibleCenter > scroll.clientHeight * 0.7
-			) {
-				listTarget = center - scroll.clientHeight / 2;
-				if (snap || reduced) scroll.scrollTop = listTarget;
-				// 目标持续更新，不反复重启浏览器的 smooth scroll。
-				else startFollow();
-			}
-		};
-		measureAnchors();
-		update();
-		const schedule = (measure = false) => {
-			needsMeasure ||= measure;
-			if (frame) return;
-			frame = requestAnimationFrame(() => {
-				frame = 0;
-				if (needsMeasure) {
-					needsMeasure = false;
-					measureAnchors();
-				}
-				update();
-			});
-		};
-		const onScroll = () => schedule();
-		const onResize = () => schedule(true);
-		const resizeObserver = new ResizeObserver(onResize);
-		resizeObserver.observe(body);
-		resizeObserver.observe(list);
-		window.addEventListener("scroll", onScroll, { passive: true });
-		window.addEventListener("resize", onResize, { passive: true });
-		const listScroller = scrollRef.current;
-		listScroller?.addEventListener("wheel", onUserListScroll, { passive: true });
-		return () => {
-			resizeObserver.disconnect();
-			window.removeEventListener("scroll", onScroll);
-			window.removeEventListener("resize", onResize);
-			listScroller?.removeEventListener("wheel", onUserListScroll);
-			if (frame) cancelAnimationFrame(frame);
-			if (followFrame) cancelAnimationFrame(followFrame);
-		};
-	}, [contentRef, flatItems, isRailCollapsedAtRest, railActive, reduced]);
+	useArticleTocIndicator({
+		contentRef,
+		listRef,
+		scrollRef,
+		indicatorRef,
+		items: flatItems,
+		isRailCollapsedAtRest,
+		railActive,
+		reduced: Boolean(reduced),
+	});
 
 	if (compact) {
 		return (
@@ -224,7 +103,7 @@ export function SegmentedArticleToc({
 			data-toc-accordion
 			ref={scrollRef}
 			className={cn(
-				"py-1",
+				"-mx-1 scroll-p-1 p-1",
 				isRailCollapsedAtRest &&
 					"scrollbar-none min-h-0 max-h-[calc(55vh-4rem)] overflow-y-auto",
 			)}

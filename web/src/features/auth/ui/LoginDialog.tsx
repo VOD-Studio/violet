@@ -7,14 +7,30 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { Button, GithubIcon, GoogleIcon, Input, Label, Modal } from "@violet/ui";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
+import { GoogleOAuthGate } from "./GoogleOAuthGate";
 
 /**
  * 用户主动登录或已登录会话收到 401 时打开。
  *
- * 取消时清理认证缓存和会话状态；若当前在受保护页则回首页。
+ * @remarks 首次打开才准备登录 SDK，之后保留表单实例；取消时清理认证缓存和会话状态，
+ * 若当前在受保护页则回首页。
  */
 export function LoginDialog() {
+	const isOpen = useLoginDialogStore((s) => s.isOpen);
+	const [hasOpened, setHasOpened] = useState(isOpen);
+	useEffect(() => {
+		if (isOpen) setHasOpened(true);
+	}, [isOpen]);
+	if (!isOpen && !hasOpened) return null;
+	return (
+		<GoogleOAuthGate>
+			{(googleError) => <LoginDialogContent googleError={googleError} />}
+		</GoogleOAuthGate>
+	);
+}
+
+function LoginDialogContent({ googleError }: { googleError: ReactNode }) {
 	const isOpen = useLoginDialogStore((s) => s.isOpen);
 	const open = useLoginDialogStore((s) => s.open);
 	const close = useLoginDialogStore((s) => s.close);
@@ -30,6 +46,7 @@ export function LoginDialog() {
 		submitPassword,
 		passwordPending,
 		googlePending,
+		googleReady,
 		githubPending,
 		showGoogle,
 		showGithub,
@@ -165,7 +182,7 @@ export function LoginDialog() {
 									size="icon"
 									className="size-12 rounded-full"
 									onClick={startGoogle}
-									disabled={googlePending}
+									disabled={googlePending || !googleReady}
 								>
 									<GoogleIcon title="Google" className="size-6" />
 								</Button>
@@ -183,6 +200,7 @@ export function LoginDialog() {
 								</Button>
 							) : null}
 						</div>
+						{showGoogle && googleError}
 					</>
 				) : null}
 			</form>

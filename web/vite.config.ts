@@ -64,6 +64,7 @@ const config = defineConfig({
 			},
 		},
 	},
+	worker: { format: "es" },
 	// dev 反向代理：浏览器同源请求 /api/* 和 /uploads/* 由 Vite 转发到 Go 后端，
 	// 目标地址可通过 VITE_API_PROXY_TARGET 配置，默认 localhost:9090。
 	// 与生产 nginx 反代行为一致（避免 dev 时跨域 Cookie/CSRF 边界问题）。

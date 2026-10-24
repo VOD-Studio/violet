@@ -38,6 +38,13 @@
 	--annotation-select-capr-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%238b5cf6' fill-opacity='.2' d='M0 2.4C4 2 8 3.2 9.2 7.4 10.1 11 9.4 14.6 8 17.2 6.6 19.2 3 18.2 0 18.6Z'/%3E%3C/svg%3E");
 }
 
+/* 仅在笔触已经绘制后隐藏原生底色，懒加载期间与失败时保留可见选区。 */
+:root [data-article-content] [data-selection-painted]::selection,
+:root [data-article-content] [data-selection-painted] ::selection {
+	background-color: transparent;
+	color: var(--foreground);
+}
+
 .annotation-mark,
 .annotation-draft-mark {
 	margin-inline: -0.2em;
