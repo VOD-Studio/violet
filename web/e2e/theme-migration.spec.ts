@@ -98,36 +98,4 @@ for (const appearance of ["light", "dark"] as const) {
 		}
 		await context.close();
 	});
-
-	test(`自定义光标的品牌色与悬停混色实际生效 ${appearance}`, async ({ browser }) => {
-		const context = await appearanceContext(browser, appearance);
-		const page = await context.newPage();
-		await page.goto("/");
-		const cursor = page.locator('[aria-hidden][style*="mix-blend-mode: difference"]');
-		await expect(cursor).toHaveCount(1);
-		const brand = await scopeColors(page, "html", ["decoration"]);
-		await page.mouse.move(5, 5);
-		await expect
-			.poll(() => cursor.evaluate((element) => getComputedStyle(element).backgroundColor))
-			.toBe(brand.decoration.value);
-		const hoverColor = await page.evaluate(() => {
-			const button = document.createElement("button");
-			button.id = "magnetic-contract";
-			button.dataset.cursor = "magnetic";
-			button.textContent = "磁性按钮";
-			button.style.cssText = "position:fixed;left:150px;top:150px;z-index:9999";
-			document.body.append(button);
-			const probe = document.createElement("span");
-			probe.style.color = "color-mix(in oklab, var(--decoration) 50%, transparent)";
-			document.body.append(probe);
-			const value = getComputedStyle(probe).color;
-			probe.remove();
-			return value;
-		});
-		await page.locator("#magnetic-contract").hover();
-		await expect
-			.poll(() => cursor.evaluate((element) => getComputedStyle(element).backgroundColor))
-			.toBe(hoverColor);
-		await context.close();
-	});
 }
