@@ -13,7 +13,9 @@ import HeaderIsland from "../HeaderIsland";
 function renderAt(path: string) {
 	const root = createRootRoute({
 		// 面板里的主题选择读取根路由上下文
-		beforeLoad: () => ({ theme: { preference: "follow" as const, preset: "autumn" as const } }),
+		beforeLoad: () => ({
+			theme: { preference: "follow" as const, preset: "autumn" as const, custom: null },
+		}),
 		component: () => (
 			<>
 				<HeaderIsland />
