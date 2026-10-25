@@ -1,10 +1,11 @@
-import { expect, type Page, test } from "@playwright/test";
-import { generateScales } from "@violetjs/theme";
+import { expect, test } from "@playwright/test";
+import { generateScales, normalizeTheme } from "@violetjs/theme";
 import { SEASONS, type Season, THEME_COOKIE_NAME } from "../src/shared/lib/theme-preference";
 import { THEME_PRESETS } from "../src/shared/lib/theme-presets";
 import {
 	appearanceContext,
 	CONTRACT_ORIGIN,
+	canonicalColor,
 	contrastRatio,
 	type ScopeColors,
 	SEMANTIC_TOKENS,
@@ -65,18 +66,6 @@ function expectReadableText(colors: ScopeColors) {
 			`${text} 对 ${background}`,
 		).toBeGreaterThanOrEqual(4.5);
 	}
-}
-
-/** 浏览器规范化后的颜色字符串，用于比对生成值。 */
-function canonicalColor(page: Page, value: string) {
-	return page.evaluate((color) => {
-		const probe = document.createElement("span");
-		probe.style.color = color;
-		document.body.append(probe);
-		const computed = getComputedStyle(probe).color;
-		probe.remove();
-		return computed;
-	}, value);
 }
 
 for (const theme of SEASONS) {
@@ -180,6 +169,98 @@ for (const theme of SEASONS) {
 		}
 	}
 }
+
+/** 极浅、极深、高饱和浅黄与高饱和红的种子，覆盖实色档被收进门槛区间的两端。 */
+const CUSTOM_SEEDS = ["#fffef0", "#05060a", "#ffeb3b", "#ff2d55"];
+
+for (const seed of CUSTOM_SEEDS) {
+	for (const appearance of ["light", "dark"] as const) {
+		for (const contrast of ["no-preference", "more"] as const) {
+			test(`自定义主题首帧：${seed} / ${appearance} / ${contrast}`, async ({ browser }) => {
+				const custom = normalizeTheme({ version: 1, seed });
+				const firstContext = await appearanceContext(browser, appearance, {
+					blockScripts: true,
+					contrast,
+					custom,
+				});
+				const firstPage = await firstContext.newPage();
+				await firstPage.goto("/", { waitUntil: "load" });
+				await expect(firstPage.locator("html")).toHaveAttribute("data-theme", "custom");
+				const firstPublic = await scopeColors(firstPage, ".dialect-public");
+				const brand = await scopeColors(firstPage, ".dialect-public", ["brand-9"]);
+				expect(brand["brand-9"].value, "品牌实色来自自定义种子").toBe(
+					await canonicalColor(
+						firstPage,
+						generateScales(custom, {
+							appearance,
+							contrast: contrast === "more" ? "more" : "standard",
+						}).brand.steps[9],
+					),
+				);
+				expectReadableText(firstPublic);
+				await firstContext.close();
+
+				const hydratedContext = await appearanceContext(browser, appearance, {
+					contrast,
+					custom,
+				});
+				const page = await hydratedContext.newPage();
+				const hydrationErrors: string[] = [];
+				page.on("pageerror", (error) => {
+					if (/hydration|hydrated|React error #418/i.test(error.message))
+						hydrationErrors.push(error.message);
+				});
+				await page.goto("/", { waitUntil: "load" });
+				await expect(page.locator("html")).toHaveAttribute("data-theme", "custom");
+				expect(
+					await scopeColors(page, ".dialect-public"),
+					"自定义主题首帧与水合一致",
+				).toEqual(firstPublic);
+				expect(hydrationErrors, "水合不报错").toEqual([]);
+				await hydratedContext.close();
+			});
+		}
+	}
+}
+
+for (const appearance of ["light", "dark"] as const) {
+	test(`自定义主题在工具方言：后台 ${appearance}`, async ({ browser }) => {
+		const custom = normalizeTheme({ version: 1, seed: "#ffeb3b" });
+		const context = await appearanceContext(browser, appearance, { admin: true, custom });
+		const page = await context.newPage();
+		await page.goto("/admin", { waitUntil: "load" });
+		await expect(page.locator(".dialect-tool")).toBeVisible();
+		await expect(page.locator("html")).toHaveAttribute("data-theme", "custom");
+		const scope = await scopeColors(page, ".dialect-tool");
+		const root = await scopeColors(page, "html", ["action-neutral-9", "brand-11"]);
+		expect(scope.primary.value).toBe(root["action-neutral-9"].value);
+		expect(scope.link.value).toBe(root["brand-11"].value);
+		expectReadableText(scope);
+		await context.close();
+	});
+}
+
+test("非法的自定义主题不生效，按原来的预设渲染", async ({ browser }) => {
+	const context = await appearanceContext(browser, "light", { blockScripts: true });
+	await context.addCookies([
+		{
+			name: THEME_COOKIE_NAME,
+			value: encodeURIComponent(
+				JSON.stringify({
+					v: 1,
+					theme: "summer",
+					custom: { version: 1, seed: "#fff;}html{display:none" },
+				}),
+			),
+			url: CONTRACT_ORIGIN,
+		},
+	]);
+	const page = await context.newPage();
+	await page.goto("/", { waitUntil: "load" });
+	await expect(page.locator("html")).toHaveAttribute("data-theme", "summer");
+	expect(await page.locator("#theme-custom").evaluate((element) => element.textContent)).toBe("");
+	await context.close();
+});
 
 test("没有主题 cookie 时跟随站点时区的当前季节", async ({ browser }) => {
 	const context = await appearanceContext(browser, "light", { blockScripts: true });

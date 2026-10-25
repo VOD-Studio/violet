@@ -1,4 +1,5 @@
 import type { Browser, Page } from "@playwright/test";
+import type { NormalizedTheme } from "@violetjs/theme";
 import {
 	serializeThemePreference,
 	THEME_COOKIE_NAME,
@@ -71,6 +72,8 @@ export async function appearanceContext(
 		contrast?: "more" | "no-preference";
 		/** 写入主题偏好 cookie；省略时不写，按跟随季节渲染 */
 		theme?: ThemePreference;
+		/** 写入自定义主题，与 theme 一起保存在同一 cookie */
+		custom?: NormalizedTheme;
 	} = {},
 ) {
 	const context = await browser.newContext({
@@ -82,11 +85,11 @@ export async function appearanceContext(
 		await context.addCookies([{ name: "appearance", value: appearance, url: CONTRACT_ORIGIN }]);
 		await context.addInitScript((value) => localStorage.setItem("theme", value), appearance);
 	}
-	if (options.theme)
+	if (options.theme || options.custom)
 		await context.addCookies([
 			{
 				name: THEME_COOKIE_NAME,
-				value: serializeThemePreference(options.theme),
+				value: serializeThemePreference(options.theme ?? "follow", options.custom ?? null),
 				url: CONTRACT_ORIGIN,
 			},
 		]);
@@ -150,4 +153,16 @@ export function contrastRatio(a: { luminance: number }, b: { luminance: number }
 	return (
 		(Math.max(a.luminance, b.luminance) + 0.05) / (Math.min(a.luminance, b.luminance) + 0.05)
 	);
+}
+
+/** 浏览器规范化后的颜色字符串，用于比对生成值。 */
+export function canonicalColor(page: Page, value: string) {
+	return page.evaluate((color) => {
+		const probe = document.createElement("span");
+		probe.style.color = color;
+		document.body.append(probe);
+		const computed = getComputedStyle(probe).color;
+		probe.remove();
+		return computed;
+	}, value);
 }

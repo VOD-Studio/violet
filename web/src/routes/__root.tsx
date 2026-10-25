@@ -1,6 +1,7 @@
 import { SiteMusicPlayer } from "@features/music-player/ui/SiteMusicPlayer";
 import { getClientAppearance } from "@shared/lib/appearance-cookie";
-import { getClientThemeState } from "@shared/lib/theme-preference";
+import { CUSTOM_THEME_STYLE_ID, generateCustomThemeCss } from "@shared/lib/theme-css";
+import { getClientThemeState, renderedTheme } from "@shared/lib/theme-preference";
 import { SystemAppearanceTransition } from "@shared/ui/appearance-transition";
 import NotFound from "@shared/ui/not-found";
 import RouteError from "@shared/ui/route-error";
@@ -190,13 +191,22 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 	return (
 		<html
 			className={appearance}
-			data-theme={theme.preset}
+			data-theme={renderedTheme(theme)}
+			data-season={theme.preset}
 			lang="zh-CN"
 			data-scrollbar="none"
 			suppressHydrationWarning
 		>
 			<head>
 				<HeadContent />
+				{/* 自定义主题在 SSR 现算并内联；元素常驻，客户端切换时先写入样式再改 data-theme */}
+				<style
+					id={CUSTOM_THEME_STYLE_ID}
+					// biome-ignore lint/security/noDangerouslySetInnerHtml: 内容由规范化后的种子色生成，不含访客原始输入
+					dangerouslySetInnerHTML={{
+						__html: theme.custom ? generateCustomThemeCss(theme.custom) : "",
+					}}
+				/>
 			</head>
 			<body>
 				{children}
