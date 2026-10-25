@@ -201,6 +201,10 @@ CLI fixture 使用临时 Git 仓库，可通过 `pnpm test scripts/check-colors.
 
 切换入口是 `@features/theme-switcher` 的 `ThemeMenu`，挂在顶栏工具区外观开关旁；移动端底部导航的「更多」面板用 `ThemePicker` 提供同样的选择。两处都有「自定义」，在 `CustomThemeDialog` 里取色或输入十六进制种子色，实时预览浅深两种外观下的按钮、链接、选中态与主色文字后应用。选中后即时改写 `data-theme`、写入偏好 cookie，渲染的主题变化时复用外观切换的圆形扩散，`e2e/theme-switcher.spec.ts` 覆盖切换、刷新保持、键盘操作与自定义流程。
 
+### 装饰偏好
+
+装饰偏好由 `shared/lib/decoration-preference.ts` 解析，与主题偏好分存在 `decoration-preference` cookie：跟随主题、无或指定某一季。`resolveDecoration` 给出实际投放的季节，跟随主题时取预设主题的季节，自定义主题下为无。SSR 通过 `getSSRDecoration` 在 `<html>` 上输出 `data-decoration`（季节或 `none`），首帧即为访客的装饰；组件与工具界面插槽只以这个属性为 CSS 钩子，`@violet/ui` 不依赖任何主题。`e2e/decoration.spec.ts` 覆盖各偏好组合的首帧与水合一致性。
+
 ### 独立包与文档站
 
 | 包 | 文档站 / 站内用途 | 开发依据 |
