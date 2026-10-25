@@ -1,5 +1,7 @@
 import { type NormalizedTheme, normalizeTheme } from "@violetjs/theme";
 
+import { readCookieValue, writePreferenceCookie } from "./preference-cookie";
+
 /** 四季预设主题的标识，按春夏秋冬排列。 */
 export const SEASONS = ["spring", "summer", "autumn", "winter"] as const;
 
@@ -24,8 +26,6 @@ export const renderedTheme = ({ preset, custom }: ThemeState): Season | "custom"
 
 /** 主题偏好 cookie 名；旧的 `theme` cookie 保存外观，不能复用。 */
 export const THEME_COOKIE_NAME = "theme-preference";
-/** 有效期一年，与外观偏好一致。 */
-const THEME_COOKIE_MAX_AGE = 31536000;
 /** Cookie 数据版本；结构不兼容地变化时递增，旧值回落为跟随季节。 */
 const THEME_COOKIE_VERSION = 1;
 
@@ -37,7 +37,7 @@ const isPreference = (value: unknown): value is ThemePreference =>
 
 /** 当前版本的 cookie 数据；缺失、编码或 JSON 损坏、版本不符时为 null。 */
 function readThemeCookie(cookie: string): Record<string, unknown> | null {
-	const raw = cookie.match(new RegExp(`(?:^|;\\s*)${THEME_COOKIE_NAME}=([^;]*)`))?.[1];
+	const raw = readCookieValue(cookie, THEME_COOKIE_NAME);
 	if (raw === undefined) return null;
 	try {
 		const data: unknown = JSON.parse(decodeURIComponent(raw));
@@ -132,29 +132,13 @@ export function getClientThemeState(): ThemeState {
 }
 
 /**
- * 写入一年有效的主题偏好 cookie，供后续 SSR 确定首帧主题；写入完成后才 resolve。
+ * 写入主题偏好 cookie，供后续 SSR 确定首帧主题；写入完成后才 resolve。
  *
  * @param custom - 自定义主题；省略即清除，回到预设偏好
  */
-export async function persistThemePreference(
+export function persistThemePreference(
 	preference: ThemePreference,
 	custom: NormalizedTheme | null = null,
 ): Promise<void> {
-	const value = serializeThemePreference(preference, custom);
-	if (typeof cookieStore !== "undefined") {
-		try {
-			await cookieStore.set({
-				name: THEME_COOKIE_NAME,
-				value,
-				path: "/",
-				sameSite: "lax",
-				expires: Date.now() + THEME_COOKIE_MAX_AGE * 1000,
-			});
-			return;
-		} catch {
-			// 写入失败时退回 document.cookie，避免路由重读到旧偏好而与画面不符
-		}
-	}
-	// biome-ignore lint/suspicious/noDocumentCookie: 不支持或写入失败时仍需同步 SSR 主题
-	document.cookie = `${THEME_COOKIE_NAME}=${value}; path=/; SameSite=Lax; Max-Age=${THEME_COOKIE_MAX_AGE}`;
+	return writePreferenceCookie(THEME_COOKIE_NAME, serializeThemePreference(preference, custom));
 }
