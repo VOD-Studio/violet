@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
 	getClientThemeState,
+	parseCustomThemeCookie,
 	parseThemeCookie,
 	persistThemePreference,
 	resolvePresetTheme,
@@ -62,6 +63,7 @@ describe("parseThemeCookie", () => {
 describe("客户端主题状态", () => {
 	afterEach(() => {
 		delete document.documentElement.dataset.theme;
+		delete document.documentElement.dataset.season;
 		// biome-ignore lint/suspicious/noDocumentCookie: jsdom 的 cookie jar 模拟浏览器偏好
 		document.cookie = `${THEME_COOKIE_NAME}=; path=/; Max-Age=0`;
 		vi.unstubAllGlobals();
@@ -71,13 +73,27 @@ describe("客户端主题状态", () => {
 		document.documentElement.dataset.theme = "summer";
 		// biome-ignore lint/suspicious/noDocumentCookie: jsdom 的 cookie jar 模拟浏览器偏好
 		document.cookie = `${THEME_COOKIE_NAME}=${serializeThemePreference("follow")}; path=/`;
-		expect(getClientThemeState()).toEqual({ preference: "follow", preset: "summer" });
+		expect(getClientThemeState()).toEqual({
+			preference: "follow",
+			preset: "summer",
+			custom: null,
+		});
+	});
+
+	it("自定义主题生效时季节取自首帧的 data-season", () => {
+		document.documentElement.dataset.theme = "custom";
+		document.documentElement.dataset.season = "winter";
+		expect(getClientThemeState().preset).toBe("winter");
 	});
 
 	it("没有首帧主题时按 cookie 解析预设", () => {
 		// biome-ignore lint/suspicious/noDocumentCookie: jsdom 的 cookie jar 模拟浏览器偏好
 		document.cookie = `${THEME_COOKIE_NAME}=${serializeThemePreference("winter")}; path=/`;
-		expect(getClientThemeState()).toEqual({ preference: "winter", preset: "winter" });
+		expect(getClientThemeState()).toEqual({
+			preference: "winter",
+			preset: "winter",
+			custom: null,
+		});
 	});
 
 	it("写入的偏好在下次读取时生效", async () => {
@@ -95,5 +111,66 @@ describe("seasonMonths", () => {
 		["winter", "12–2 月"],
 	] as const)("%s 显示为 %s", (season, label) => {
 		expect(seasonMonths(season)).toBe(label);
+	});
+});
+
+describe("自定义主题", () => {
+	const cookie = (data: unknown) =>
+		`${THEME_COOKIE_NAME}=${encodeURIComponent(JSON.stringify(data))}`;
+	const theme = { version: 1, seed: "#ff8800", knobs: { neutralChroma: 0.015 } } as const;
+
+	it("读出规范化后的种子色与旋钮，同时保留原来的预设偏好", () => {
+		const value = cookie({
+			v: 1,
+			theme: "winter",
+			custom: { version: 1, seed: "#3A7BD5", knobs: { neutralChroma: 0.02 } },
+		});
+		expect(parseCustomThemeCookie(value)).toEqual({
+			version: 1,
+			seed: "#3a7bd5",
+			knobs: { neutralChroma: 0.02 },
+		});
+		expect(parseThemeCookie(value)).toBe("winter");
+	});
+
+	it("丢弃未知旋钮，越界旋钮回落为默认值", () => {
+		expect(
+			parseCustomThemeCookie(
+				cookie({
+					v: 1,
+					theme: "follow",
+					custom: { version: 1, seed: "#3a7bd5", knobs: { neutralChroma: 9, glow: 1 } },
+				}),
+			),
+		).toEqual({ version: 1, seed: "#3a7bd5", knobs: { neutralChroma: 0.015 } });
+	});
+
+	it.each([
+		["没有自定义主题", undefined],
+		["种子色非法", { version: 1, seed: "red" }],
+		["种子色试图注入样式", { version: 1, seed: "#fff;}body{display:none" }],
+		["主题版本不符", { version: 2, seed: "#3a7bd5" }],
+	])("%s时不生效，回落为原来的预设偏好", (_, custom) => {
+		const value = cookie({ v: 1, theme: "summer", custom });
+		expect(parseCustomThemeCookie(value)).toBeNull();
+		expect(parseThemeCookie(value)).toBe("summer");
+	});
+
+	it("cookie 版本不符时自定义主题也不生效", () => {
+		expect(parseCustomThemeCookie(cookie({ v: 2, theme: "follow", custom: theme }))).toBeNull();
+	});
+
+	it("写出的自定义主题能被读回", () => {
+		const value = `${THEME_COOKIE_NAME}=${serializeThemePreference("autumn", theme)}`;
+		expect(parseCustomThemeCookie(value)).toEqual(theme);
+		expect(parseThemeCookie(value)).toBe("autumn");
+	});
+
+	it("客户端状态带出自定义主题", () => {
+		// biome-ignore lint/suspicious/noDocumentCookie: jsdom 的 cookie jar 模拟浏览器偏好
+		document.cookie = `${THEME_COOKIE_NAME}=${serializeThemePreference("follow", theme)}; path=/`;
+		expect(getClientThemeState().custom).toEqual(theme);
+		// biome-ignore lint/suspicious/noDocumentCookie: jsdom 的 cookie jar 模拟浏览器偏好
+		document.cookie = `${THEME_COOKIE_NAME}=; path=/; Max-Age=0`;
 	});
 });

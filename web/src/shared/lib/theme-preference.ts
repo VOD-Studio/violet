@@ -1,3 +1,5 @@
+import { type NormalizedTheme, normalizeTheme } from "@violetjs/theme";
+
 /** 四季预设主题的标识，按春夏秋冬排列。 */
 export const SEASONS = ["spring", "summer", "autumn", "winter"] as const;
 
@@ -7,11 +9,18 @@ export type Season = (typeof SEASONS)[number];
 /** 访客的主题偏好：跟随季节或指定某一季。 */
 export type ThemePreference = "follow" | Season;
 
-/** 路由上下文中的主题：访客的选择与实际渲染的预设。 */
+/** 路由上下文中的主题：访客的选择、季节与自定义主题。 */
 export interface ThemeState {
 	preference: ThemePreference;
+	/** 偏好解析出的季节；自定义主题生效时仍供寄语等季节内容使用 */
 	preset: Season;
+	/** 规范化后的自定义主题；存在时优先于预设，选回任何预设即清除 */
+	custom: NormalizedTheme | null;
 }
+
+/** `<html data-theme>` 的值：自定义主题为 `custom`，否则为预设季节。 */
+export const renderedTheme = ({ preset, custom }: ThemeState): Season | "custom" =>
+	custom ? "custom" : preset;
 
 /** 主题偏好 cookie 名；旧的 `theme` cookie 保存外观，不能复用。 */
 export const THEME_COOKIE_NAME = "theme-preference";
@@ -26,30 +35,57 @@ const isSeason = (value: unknown): value is Season =>
 const isPreference = (value: unknown): value is ThemePreference =>
 	value === "follow" || isSeason(value);
 
-/** 读取主题偏好 cookie；缺失、版本不符或任何非法值都回落为跟随季节。 */
-export function parseThemeCookie(cookie: string): ThemePreference {
+/** 当前版本的 cookie 数据；缺失、编码或 JSON 损坏、版本不符时为 null。 */
+function readThemeCookie(cookie: string): Record<string, unknown> | null {
 	const raw = cookie.match(new RegExp(`(?:^|;\\s*)${THEME_COOKIE_NAME}=([^;]*)`))?.[1];
-	if (raw === undefined) return "follow";
+	if (raw === undefined) return null;
 	try {
 		const data: unknown = JSON.parse(decodeURIComponent(raw));
 		if (
 			typeof data === "object" &&
 			data !== null &&
+			!Array.isArray(data) &&
 			"v" in data &&
-			data.v === THEME_COOKIE_VERSION &&
-			"theme" in data &&
-			isPreference(data.theme)
+			data.v === THEME_COOKIE_VERSION
 		)
-			return data.theme;
+			return data as Record<string, unknown>;
 	} catch {
-		// 编码或 JSON 损坏同样回落
+		// 编码或 JSON 损坏同样视为没有偏好
 	}
-	return "follow";
+	return null;
+}
+
+/** 读取主题偏好 cookie；缺失、版本不符或任何非法值都回落为跟随季节。 */
+export function parseThemeCookie(cookie: string): ThemePreference {
+	const theme = readThemeCookie(cookie)?.theme;
+	return isPreference(theme) ? theme : "follow";
+}
+
+/** 规范化失败的标记：normalizeTheme 回落时沿用这里的空种子色。 */
+const INVALID_THEME: NormalizedTheme = { ...normalizeTheme(undefined), seed: "" };
+
+/**
+ * 读取自定义主题；没有或非法时为 null，此时按预设偏好渲染。
+ *
+ * @returns 只含规范化种子色与已知旋钮的新对象，可安全地拼进 CSS
+ */
+export function parseCustomThemeCookie(cookie: string): NormalizedTheme | null {
+	const theme = normalizeTheme(readThemeCookie(cookie)?.custom, INVALID_THEME);
+	return theme.seed === "" ? null : theme;
 }
 
 /** 主题偏好 cookie 的值（已 URL 编码的版本化 JSON）。 */
-export function serializeThemePreference(preference: ThemePreference): string {
-	return encodeURIComponent(JSON.stringify({ v: THEME_COOKIE_VERSION, theme: preference }));
+export function serializeThemePreference(
+	preference: ThemePreference,
+	custom: NormalizedTheme | null = null,
+): string {
+	return encodeURIComponent(
+		JSON.stringify({
+			v: THEME_COOKIE_VERSION,
+			theme: preference,
+			...(custom ? { custom } : {}),
+		}),
+	);
 }
 
 /** 跟随季节按站点时区判定月份，SSR 与浏览器得出同一季节。 */
@@ -83,19 +119,28 @@ export function seasonMonths(season: Season): string {
 	return `${start}–${((start + 1) % 12) + 1} 月`;
 }
 
-/** 客户端路由读取主题：预设沿用首帧的 data-theme，水合后不随客户端时钟跨季翻转。 */
+/** 客户端路由读取主题：季节沿用首帧的 data-season，水合后不随客户端时钟跨季翻转。 */
 export function getClientThemeState(): ThemeState {
 	const preference = parseThemeCookie(document.cookie);
-	const rendered = document.documentElement.dataset.theme;
+	const { season, theme } = document.documentElement.dataset;
+	const rendered = season ?? theme;
 	return {
 		preference,
 		preset: isSeason(rendered) ? rendered : resolvePresetTheme(preference, new Date()),
+		custom: parseCustomThemeCookie(document.cookie),
 	};
 }
 
-/** 写入一年有效的主题偏好 cookie，供后续 SSR 确定首帧主题；写入完成后才 resolve。 */
-export async function persistThemePreference(preference: ThemePreference): Promise<void> {
-	const value = serializeThemePreference(preference);
+/**
+ * 写入一年有效的主题偏好 cookie，供后续 SSR 确定首帧主题；写入完成后才 resolve。
+ *
+ * @param custom - 自定义主题；省略即清除，回到预设偏好
+ */
+export async function persistThemePreference(
+	preference: ThemePreference,
+	custom: NormalizedTheme | null = null,
+): Promise<void> {
+	const value = serializeThemePreference(preference, custom);
 	if (typeof cookieStore !== "undefined") {
 		try {
 			await cookieStore.set({
