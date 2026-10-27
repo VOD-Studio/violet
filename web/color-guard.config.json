@@ -1,7 +1,7 @@
 {
 	"roots": ["src", "packages"],
 	"baseline": "color-guard-baseline.json",
-	"initialRevision": "4d1b87acf592bb805d259072a9a9ce3b0c1dfa91",
+	"initialRevision": "12b83e7849bac9aaf86030ed82a7efbb686585df",
 	"exemptions": [
 		{ "pattern": "**/node_modules/**", "reason": "安装依赖" },
 		{ "pattern": "**/dist/**", "reason": "构建产物" },
