@@ -14,13 +14,13 @@ const CASES: {
 	decoration?: DecorationPreference;
 	expected: string;
 }[] = [
-		{ name: "默认跟随主题，投放当季装饰", expected: season },
-		{ name: "跟随主题时随所选预设", theme: "summer", expected: "summer" },
-		{ name: "关闭装饰", theme: "summer", decoration: "none", expected: "none" },
-		{ name: "自定义主题默认不显示装饰", custom, expected: "none" },
-		{ name: "自定义主题另选一季装饰", custom, decoration: "winter", expected: "winter" },
-		{ name: "预设主题另选一季装饰", theme: "spring", decoration: "autumn", expected: "autumn" },
-	];
+	{ name: "默认跟随主题，投放当季装饰", expected: season },
+	{ name: "跟随主题时随所选预设", theme: "summer", expected: "summer" },
+	{ name: "关闭装饰", theme: "summer", decoration: "none", expected: "none" },
+	{ name: "自定义主题默认不显示装饰", custom, expected: "none" },
+	{ name: "自定义主题另选一季装饰", custom, decoration: "winter", expected: "winter" },
+	{ name: "预设主题另选一季装饰", theme: "spring", decoration: "autumn", expected: "autumn" },
+];
 
 for (const { name, expected, ...options } of CASES) {
 	test(`装饰首帧：${name}`, async ({ browser }) => {

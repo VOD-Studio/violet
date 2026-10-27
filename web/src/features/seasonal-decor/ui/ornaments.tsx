@@ -24,6 +24,7 @@ export function CapsuleOrnament({ variant = 0 }: { variant?: number }) {
 					className={`${styles.ornament} pointer-events-none absolute -top-1.5 right-4 left-4 h-2.5`}
 				>
 					<svg
+						aria-hidden="true"
 						viewBox="0 0 100 10"
 						preserveAspectRatio="none"
 						className="block size-full"
