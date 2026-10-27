@@ -251,9 +251,6 @@ jobs:
       - name: UI architecture and package tests
         run: pnpm --filter @violet/ui check && pnpm --filter @violet/ui typecheck && pnpm --filter @violet/ui test
 
-      - name: UI independent tarball consumer
-        run: pnpm --filter @violet/ui consumer
-
       - name: Public library types and tests
         run: |
           pnpm --filter @violetjs/inkline typecheck
@@ -296,6 +293,10 @@ jobs:
       # 需要 Chromium 验证浏览器导入，故排在安装 Chromium 之后
       - name: Theme independent tarball consumer
         run: pnpm --filter @violetjs/theme consumer
+
+      # consumer 的主题对比度验收需要 Chromium，故排在安装 Chromium 之后
+      - name: UI independent tarball consumer
+        run: pnpm --filter @violet/ui consumer
 
       - name: Setup Docker Buildx
         if: ${{ !inputs.ref || inputs.build_images }}
