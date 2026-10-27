@@ -1,3 +1,4 @@
+import { ClosingVignette } from "@features/seasonal-decor/ui/ClosingVignette";
 import type { Season } from "@shared/lib/theme-preference";
 import { Heart, Mail, Rss } from "lucide-react";
 import { motion } from "motion/react";
@@ -40,6 +41,8 @@ export function HomeClosing({ identity, season }: HomeClosingProps) {
 				transition={{ type: "spring", stiffness: 130, damping: 22, mass: 0.9 }}
 				className="mx-auto max-w-4xl px-5 text-center sm:px-8"
 			>
+				{/* 季节装饰的点缀位 */}
+				<ClosingVignette />
 				<div className="space-y-2">
 					<p className="font-serif text-2xl font-normal tracking-widest text-foreground/90 sm:text-3xl">
 						{greeting.title}

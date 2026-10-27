@@ -1,3 +1,4 @@
+import { SeasonBackdrop } from "@features/seasonal-decor/ui/SeasonBackdrop";
 import { useReducedMotion } from "@shared/lib/motion";
 import { useEffect, useRef } from "react";
 
@@ -75,6 +76,8 @@ export default function SiteBackdrop() {
 			<div className={`${styles.wash} ${styles.washEmber}`} />
 			<div className={styles.grid} />
 			<canvas ref={lifeRef} className={styles.life} />
+			{/* 季节装饰的背景层：角落插画与飘落粒子 */}
+			<SeasonBackdrop />
 			<div ref={litRef} className={styles.lit} />
 			<div className={styles.grain} />
 		</div>

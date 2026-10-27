@@ -7,6 +7,7 @@ import { useChatUnreadCount } from "@features/chat/api/queries";
 import { useChatUnreadTitle } from "@features/chat/hooks/use-chat-unread-title";
 import { useChatStream } from "@features/chat/hooks/useChatStream";
 import NotificationBell from "@features/notifications/ui/NotificationBell";
+import { CapsuleOrnament } from "@features/seasonal-decor/ui/ornaments";
 import { ThemeMenu } from "@features/theme-switcher";
 import { ApiError } from "@shared/api/error";
 import { avatarUrl } from "@shared/lib/image-url";
@@ -93,8 +94,10 @@ const HeaderActions = ({ user, children }: HeaderActionsProps) => {
 	return (
 		<div
 			data-pinned={actionsPinned || undefined}
-			className="group pointer-events-auto flex h-10 items-center rounded-full border border-border/60 bg-background/80 p-1 shadow-xs backdrop-blur-md transition-colors dark:bg-card/85"
+			className="group pointer-events-auto relative flex h-10 items-center rounded-full border border-border/60 bg-background/80 p-1 shadow-xs backdrop-blur-md transition-colors dark:bg-card/85"
 		>
+			{/* 季节装饰的组件插槽挂件 */}
+			<CapsuleOrnament variant={3} />
 			{/* 工具区随悬停或键盘聚焦展开，通知、用户或主题菜单打开时保持展开；-mx-1 px-1 给聚焦环留出不被裁剪的空间。 */}
 			<div className="pointer-events-none -mx-1 hidden max-w-0 items-center gap-3 overflow-hidden px-1 py-2 opacity-0 transition-[max-width,opacity] duration-300 ease-out lg:flex lg:group-focus-within:pointer-events-auto lg:group-focus-within:max-w-72 lg:group-focus-within:opacity-100 lg:group-hover:pointer-events-auto lg:group-hover:max-w-72 lg:group-hover:opacity-100 lg:group-data-[pinned]:pointer-events-auto lg:group-data-[pinned]:max-w-72 lg:group-data-[pinned]:opacity-100">
 				{/* 搜索命令面板按钮 */}
