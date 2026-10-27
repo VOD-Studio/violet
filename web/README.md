@@ -203,7 +203,9 @@ CLI fixture 使用临时 Git 仓库，可通过 `pnpm test scripts/check-colors.
 
 ### 装饰偏好
 
-装饰偏好由 `shared/lib/decoration-preference.ts` 解析，与主题偏好分存在 `decoration-preference` cookie：跟随主题、无或指定某一季。`resolveDecoration` 给出实际投放的季节，跟随主题时取预设主题的季节，自定义主题下为无。SSR 通过 `getSSRDecoration` 在 `<html>` 上输出 `data-decoration`（季节或 `none`），首帧即为访客的装饰；组件与工具界面插槽只以这个属性为 CSS 钩子，`@violet/ui` 不依赖任何主题。`e2e/decoration.spec.ts` 覆盖各偏好组合的首帧与水合一致性。
+装饰偏好由 `shared/lib/decoration-preference.ts` 解析，与主题偏好分存在 `decoration-preference` cookie：跟随主题、无或指定某一季。`resolveDecoration` 给出实际投放的季节，跟随主题时取预设主题的季节，自定义主题下为无。SSR 通过 `getSSRDecoration` 在 `<html>` 上输出 `data-decoration`（季节或 `none`），首帧即为访客的装饰。
+
+装饰内容由 `@features/seasonal-decor` 投放：背景层（`SeasonBackdrop` 挂在 SiteBackdrop 内：视口角落的程序生成插画与飘落粒子画布）、点缀位（首页收尾寄语上方的小幅插画）与组件插槽挂件（顶栏三个胶囊与页脚上沿的物候小物）。插画只用主题 token 混出的色板着色、固定随机种子保证 SSR 与客户端一致；粒子先画进离屏精灵逐帧贴图。飘落粒子是方向性运动，AGENTS 的动效约束为其写明例外；减弱动态时插画直接显示最终画面、粒子只画一帧。工具与沉浸方言内挂件由 `scene.module.css` 的方言钩子隐藏，工具界面插槽只保留 `data-decoration` 这个 CSS 钩子，`@violet/ui` 不依赖任何主题。切换入口是 ThemeMenu 的「季节装饰」子菜单，`e2e/decoration.spec.ts` 覆盖各偏好组合的首帧与水合一致性、装饰投放与方言隐藏、减弱动态静止及 UI 切换后刷新一致。
 
 ### 独立包与文档站
 
