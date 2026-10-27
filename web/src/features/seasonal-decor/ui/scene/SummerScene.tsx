@@ -2,28 +2,24 @@
  * 夏：荷塘。荷叶从叶心铺开，茎沿路径抽出，荷花与花苞相继绽放，花苞上停一只蜻蜓。
  */
 import styles from "../../scene.module.css";
-import { RoughFilter, timing } from "./parts";
+import { GrowReveal, RoughFilter, timing } from "./parts";
 
-/** 荷叶：带缺口的椭圆叶面与放射叶脉，从叶心向外铺开（裁剪揭开，不缩放）。 */
-function LotusLeaf({
-	cx,
-	cy,
-	rx,
-	ry,
-	notch,
-	time,
-	prefix,
-	id,
-}: {
+export interface LotusLeafProps {
 	cx: number;
 	cy: number;
 	rx: number;
 	ry: number;
+	/** 叶面缺口的起始角（弧度） */
 	notch: number;
+	/** 入场延迟（秒） */
 	time: number;
 	prefix: string;
+	/** 叶面渐变 id，同屏须唯一 */
 	id: string;
-}) {
+}
+
+/** 荷叶：带缺口的椭圆叶面与放射叶脉，从叶心向外铺开（裁剪揭开，不缩放）。 */
+function LotusLeaf({ cx, cy, rx, ry, notch, time, prefix, id }: LotusLeafProps) {
 	const points: [number, number][] = [];
 	const gap = 0.07;
 	for (let i = 0; i <= 72; i++) {
@@ -71,19 +67,17 @@ function LotusLeaf({
 }
 
 /** 半开的荷花：后排四瓣、前排五瓣，瓣尖带一点粉。 */
-function LotusFlower({
-	x,
-	y,
-	size,
-	time,
-	prefix,
-}: {
+export interface LotusFlowerProps {
 	x: number;
 	y: number;
+	/** 花瓣长度 */
 	size: number;
+	/** 入场延迟（秒） */
 	time: number;
 	prefix: string;
-}) {
+}
+
+function LotusFlower({ x, y, size, time, prefix }: LotusFlowerProps) {
 	const back = [-52, -18, 18, 52];
 	const front = [-66, -34, 0, 34, 66];
 	const petal = (angle: number, k: number, scale: number, row: string) => (
@@ -103,20 +97,18 @@ function LotusFlower({
 	);
 }
 
-/** 蜻蜓：常驻的只有翅膀轻颤。 */
-function Dragonfly({
-	x,
-	y,
-	rotate,
-	scale = 1,
-	time,
-}: {
+export interface DragonflyProps {
 	x: number;
 	y: number;
 	rotate: number;
+	/** 体型缩放，静态变换非动效 */
 	scale?: number;
+	/** 入场延迟（秒） */
 	time: number;
-}) {
+}
+
+/** 蜻蜓：常驻的只有翅膀轻颤。 */
+function Dragonfly({ x, y, rotate, scale = 1, time }: DragonflyProps) {
 	const wing = (d: string, key: string) => (
 		<path
 			key={key}
@@ -149,24 +141,16 @@ function Dragonfly({
 /** 夏景：compact 用于点缀位的小幅插画。 */
 export function SummerScene({ prefix, compact }: { prefix: string; compact?: boolean }) {
 	const stem = (d: string, start: number, duration: number, key: string) => (
-		<g key={key}>
-			<mask id={`${prefix}-${key}`}>
-				<path
-					d={d}
-					pathLength={1}
-					className={styles.grow}
-					style={{
-						...timing(start, duration),
-						fill: "none",
-						stroke: "var(--background)",
-						strokeWidth: 8,
-						strokeDasharray: "1 1",
-					}}
-				/>
-			</mask>
+		<GrowReveal
+			key={key}
+			d={d}
+			id={`${prefix}-${key}`}
+			strokeWidth={8}
+			start={start}
+			duration={duration}
+		>
 			<path
 				d={d}
-				mask={`url(#${prefix}-${key})`}
 				style={{
 					fill: "none",
 					stroke: "var(--sprout-deep)",
@@ -174,7 +158,7 @@ export function SummerScene({ prefix, compact }: { prefix: string; compact?: boo
 					strokeLinecap: "round",
 				}}
 			/>
-		</g>
+		</GrowReveal>
 	);
 	return (
 		<>

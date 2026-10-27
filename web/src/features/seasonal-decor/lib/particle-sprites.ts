@@ -11,7 +11,32 @@ const SPRITE = 64;
 export const SPRITE_SIZE = SPRITE;
 
 /** 远、中、近三层的模糊半径；索引即层号。 */
-export const SPRITE_BLURS = [0, 1.2, 2.6] as const;
+const SPRITE_BLURS = [0, 1.2, 2.6] as const;
+
+/** 每个模糊档内的精灵数；精灵按层连续排列，层号乘它得到该层起始索引。 */
+export const SPRITES_PER_BLUR: Record<"spring" | "summer" | "autumn" | "winter", number> = {
+	spring: 3,
+	summer: 1,
+	autumn: 4,
+	winter: 1,
+};
+
+/**
+ * 探针色，依次为花瓣浅、中、深，萤火，落叶金、琥珀、赭红、灰绿，雪。
+ *
+ * 只引用 scene.module.css 的调色板变量，配方单源；探针元素需挂在带 .palette 类的容器内。
+ */
+export const PARTICLE_PROBES = [
+	"var(--petal-light)",
+	"var(--petal-mid)",
+	"var(--petal-deep)",
+	"var(--firefly)",
+	"var(--leaf-gold)",
+	"var(--leaf-amber)",
+	"var(--leaf-rust)",
+	"var(--leaf-sage)",
+	"var(--flake)",
+] as const;
 
 /** 给计算出的颜色加透明度；canvas 不一定认 color-mix()。 */
 function withAlpha(color: string, alpha: number) {

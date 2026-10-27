@@ -1,7 +1,7 @@
 /**
- * 四季插画共用的原子：入场时序打包、有机边缘滤镜、生长中的枝条、桃花部件与嫩叶。
+ * 四季插画共用的原子：入场时序打包、有机边缘滤镜、沿路径生长的揭开、桃花部件与嫩叶。
  */
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 import { centerline, type Limb, taperedPath } from "../../model/geometry";
 import { leafPath, petalPath } from "../../model/shapes";
@@ -44,36 +44,62 @@ export function RoughFilter({
 	);
 }
 
-/** 收细的枝条，用沿主干推进的描边遮罩揭开；遮罩描边只需不透明，颜色取背景档。 */
-export function GrowingLimb({
-	limb,
-	id,
-	fill,
-	filter,
-}: {
-	limb: Limb;
+export interface GrowRevealProps {
+	/** 揭开进度沿这条 path 推进 */
+	d: string;
+	/** 遮罩 id，同屏多组揭开时须唯一 */
 	id: string;
-	fill: string;
-	filter?: string;
-}) {
+	/** 遮罩描边宽，需盖住被揭开的笔划或轮廓 */
+	strokeWidth: number;
+	/** 开始生长的延迟与持续时长（秒） */
+	start: number;
+	duration: number;
+	children: ReactNode;
+}
+
+/** 沿 path 推进的描边遮罩揭开 children；遮罩描边只需不透明，颜色取背景档。 */
+export function GrowReveal({ d, id, strokeWidth, start, duration, children }: GrowRevealProps) {
 	return (
 		<g>
 			<mask id={id}>
 				<path
-					d={centerline(limb.points)}
+					d={d}
 					pathLength={1}
 					className={styles.grow}
 					style={{
-						...timing(limb.start, limb.duration),
+						...timing(start, duration),
 						fill: "none",
 						stroke: "var(--background)",
-						strokeWidth: limb.widths[0] * 1.6 + 8,
+						strokeWidth,
 						strokeDasharray: "1 1",
 					}}
 				/>
 			</mask>
-			<path d={taperedPath(limb)} mask={`url(#${id})`} filter={filter} style={{ fill }} />
+			<g mask={`url(#${id})`}>{children}</g>
 		</g>
+	);
+}
+
+export interface GrowingLimbProps {
+	limb: Limb;
+	id: string;
+	fill: string;
+	/** SVG filter 的 url，如有机边缘 */
+	filter?: string;
+}
+
+/** 收细的枝条，用沿主干推进的描边遮罩揭开。 */
+export function GrowingLimb({ limb, id, fill, filter }: GrowingLimbProps) {
+	return (
+		<GrowReveal
+			d={centerline(limb.points)}
+			id={id}
+			strokeWidth={limb.widths[0] * 1.6 + 8}
+			start={limb.start}
+			duration={limb.duration}
+		>
+			<path d={taperedPath(limb)} filter={filter} style={{ fill }} />
+		</GrowReveal>
 	);
 }
 
@@ -105,26 +131,23 @@ export function PetalGradients({ prefix }: { prefix: string }) {
 	);
 }
 
-/** 一朵桃花：五瓣盛开或三瓣初开，盛开后浮现花蕊。 */
-export function Blossom({
-	x,
-	y,
-	r,
-	rotate,
-	time,
-	variant,
-	prefix,
-	open = 5,
-}: {
+export interface BlossomProps {
 	x: number;
 	y: number;
+	/** 花瓣长度 */
 	r: number;
 	rotate: number;
+	/** 入场延迟（秒） */
 	time: number;
+	/** 花瓣渐变档位 0–2 */
 	variant: number;
 	prefix: string;
+	/** 瓣数：5 盛开并带花蕊，3 初开 */
 	open?: number;
-}) {
+}
+
+/** 一朵桃花：五瓣盛开或三瓣初开，盛开后浮现花蕊。 */
+export function Blossom({ x, y, r, rotate, time, variant, prefix, open = 5 }: BlossomProps) {
 	const angles = open === 5 ? [0, 72, 144, 216, 288] : [-58, 0, 58];
 	return (
 		<g transform={`translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${rotate.toFixed(1)})`}>
@@ -174,22 +197,18 @@ export function Blossom({
 	);
 }
 
-/** 花苞：萼片托着一片压扁的花瓣。 */
-export function Bud({
-	x,
-	y,
-	r,
-	rotate,
-	time,
-	prefix,
-}: {
+export interface BudProps {
 	x: number;
 	y: number;
 	r: number;
 	rotate: number;
+	/** 入场延迟（秒） */
 	time: number;
 	prefix: string;
-}) {
+}
+
+/** 花苞：萼片托着一片压扁的花瓣。 */
+export function Bud({ x, y, r, rotate, time, prefix }: BudProps) {
 	return (
 		<g transform={`translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${rotate.toFixed(1)})`}>
 			<path
@@ -212,24 +231,20 @@ export function Bud({
 	);
 }
 
-/** 对生的两片嫩叶从叶柄处展开。 */
-export function SproutLeaf({
-	x,
-	y,
-	length,
-	rotate,
-	time,
-	prefix,
-	fold,
-}: {
+export interface SproutLeafProps {
 	x: number;
 	y: number;
 	length: number;
 	rotate: number;
+	/** 入场延迟（秒） */
 	time: number;
 	prefix: string;
+	/** 入场自该角度展开至 0 度 */
 	fold: number;
-}) {
+}
+
+/** 对生的两片嫩叶从叶柄处展开。 */
+export function SproutLeaf({ x, y, length, rotate, time, prefix, fold }: SproutLeafProps) {
 	return (
 		<g transform={`translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${rotate.toFixed(1)})`}>
 			<path

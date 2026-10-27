@@ -25,7 +25,6 @@ const HeaderLogo = () => {
 					aria-label={`${siteName} 站长开源档案与简介`}
 					className="dialect-public group pointer-events-auto relative flex h-10 items-center gap-2 rounded-full border border-border/60 bg-background/80 px-3 backdrop-blur-md transition-colors hover:border-border hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[state=open]:border-border data-[state=open]:bg-muted/50 dark:bg-card/85"
 				>
-					{/* 季节装饰的组件插槽挂件 */}
 					<CapsuleOrnament variant={0} />
 					<span
 						aria-hidden="true"

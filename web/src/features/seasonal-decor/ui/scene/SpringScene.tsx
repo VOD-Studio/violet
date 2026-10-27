@@ -4,6 +4,24 @@
 import { deg, growTree, mulberry32, type Pt } from "../../model/geometry";
 import { Blossom, Bud, GrowingLimb, PetalGradients, RoughFilter, SproutLeaf } from "./parts";
 
+export interface PeachBranchProps {
+	seed: number;
+	/** 枝条根部坐标 */
+	origin: Pt;
+	/** 主干生长方向（弧度） */
+	angle: number;
+	length: number;
+	width: number;
+	/** 分叉层数 */
+	depth: number;
+	/** 揭开遮罩 id 前缀，同屏须唯一 */
+	prefix: string;
+	/** 渐变 id 前缀，指向场景级 defs */
+	gradients: string;
+	/** 远景枝：更稀疏且更晚入场 */
+	far?: boolean;
+}
+
 function PeachBranch({
 	seed,
 	origin,
@@ -14,17 +32,7 @@ function PeachBranch({
 	prefix,
 	gradients,
 	far = false,
-}: {
-	seed: number;
-	origin: Pt;
-	angle: number;
-	length: number;
-	width: number;
-	depth: number;
-	prefix: string;
-	gradients: string;
-	far?: boolean;
-}) {
+}: PeachBranchProps) {
 	const tree = growTree(seed, origin, angle, length, width, depth, 3, far ? 0.5 : 0.2);
 	const r = mulberry32(seed + 7);
 	const flowers = [

@@ -21,7 +21,6 @@ const Footer = () => {
 
 	return (
 		<footer className="relative z-1 bg-[color-mix(in_oklab,var(--decoration)_7%,var(--background))] pb-4 pt-8 text-foreground transition-colors">
-			{/* 季节装饰的组件插槽挂件 */}
 			<FooterOrnament />
 			{/* 顶部自然消融渐变带：主色低占比晕染，随 palette 自适应，无生硬边框切线 */}
 			<div

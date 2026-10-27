@@ -4,7 +4,8 @@
  * 动画只用路径揭开、透明度与旋转，不用缩放；最终状态写在默认样式里，减弱动态时直接显示。
  */
 
-.scene {
+.scene,
+.palette {
 	--ink: light-dark(
 		color-mix(in oklch, var(--neutral-12) 74%, transparent),
 		color-mix(in oklch, var(--neutral-9) 80%, transparent)
@@ -48,14 +49,30 @@
 		var(--neutral-4),
 		color-mix(in oklch, var(--neutral-9) 70%, transparent)
 	);
+	/* 粒子色：canvas 读探针的计算值，配方只在此维护 */
+	--firefly: light-dark(
+		color-mix(in oklch, var(--brand-9) 60%, var(--category-2-8)),
+		color-mix(in oklch, var(--brand-11) 70%, var(--category-2-10))
+	);
+	--leaf-gold: color-mix(in oklch, var(--brand-8) 75%, var(--neutral-7));
+	--leaf-amber: color-mix(in oklch, var(--category-2-8) 55%, var(--neutral-7));
+	--leaf-rust: color-mix(in oklch, var(--category-6-8) 50%, var(--neutral-7));
+	--leaf-sage: color-mix(in oklch, var(--category-3-8) 45%, var(--neutral-7));
+	--flake: light-dark(
+		color-mix(in oklch, var(--neutral-6) 70%, var(--brand-5)),
+		var(--neutral-12)
+	);
+}
 
+.scene {
 	position: absolute;
 	pointer-events: none;
 	/* 浅色下正片叠底，像印在纸上；深色下保持原样 */
 	mix-blend-mode: multiply;
 }
 
-[class~="dark"] .scene {
+/* biome-ignore lint/correctness/noUnknownPseudoClass: CSS Modules 的全局类引用，非标准伪类 */
+:global(.dark) .scene {
 	mix-blend-mode: normal;
 }
 

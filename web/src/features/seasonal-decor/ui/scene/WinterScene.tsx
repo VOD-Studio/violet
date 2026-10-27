@@ -6,6 +6,19 @@ import { growTree, mulberry32, type Pt, snowPath } from "../../model/geometry";
 import styles from "../../scene.module.css";
 import { GrowingLimb, RoughFilter, timing } from "./parts";
 
+export interface SnowyBranchProps {
+	seed: number;
+	/** 枝条根部坐标 */
+	origin: Pt;
+	/** 主干生长方向（弧度） */
+	angle: number;
+	length: number;
+	width: number;
+	prefix: string;
+	/** 枝头是否带红果；compact 场景省去 */
+	berries?: boolean;
+}
+
 function SnowyBranch({
 	seed,
 	origin,
@@ -14,15 +27,7 @@ function SnowyBranch({
 	width,
 	prefix,
 	berries = true,
-}: {
-	seed: number;
-	origin: Pt;
-	angle: number;
-	length: number;
-	width: number;
-	prefix: string;
-	berries?: boolean;
-}) {
+}: SnowyBranchProps) {
 	const tree = growTree(seed, origin, angle, length, width, 2, 3);
 	const r = mulberry32(seed + 5);
 	const last = Math.max(...tree.limbs.map((limb) => limb.start + limb.duration));

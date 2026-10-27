@@ -7,7 +7,7 @@ import { useReducedMotion } from "@shared/lib/motion";
 import type { Season } from "@shared/lib/theme-preference";
 import { useEffect, useRef } from "react";
 
-import { buildParticleSprites, SPRITE_SIZE } from "../lib/particle-sprites";
+import { buildParticleSprites, SPRITE_SIZE, SPRITES_PER_BLUR } from "../lib/particle-sprites";
 
 interface Particle {
 	x: number;
@@ -23,19 +23,6 @@ interface Particle {
 }
 
 const COUNT: Record<Season, number> = { spring: 22, summer: 20, autumn: 12, winter: 110 };
-
-/** 探针：花瓣浅、中、深，萤火，落叶金、琥珀、赭红、灰绿，雪。 */
-export const PARTICLE_PROBES = [
-	"light-dark(color-mix(in oklch, var(--brand-4) 70%, var(--neutral-1)), color-mix(in oklch, var(--brand-8) 70%, var(--neutral-6)))",
-	"light-dark(color-mix(in oklch, var(--brand-6) 85%, var(--neutral-4)), color-mix(in oklch, var(--brand-9) 70%, var(--neutral-7)))",
-	"light-dark(color-mix(in oklch, var(--brand-9) 70%, var(--category-6-8)), color-mix(in oklch, var(--brand-10) 75%, var(--category-6-7)))",
-	"light-dark(color-mix(in oklch, var(--brand-9) 60%, var(--category-2-8)), color-mix(in oklch, var(--brand-11) 70%, var(--category-2-10)))",
-	"color-mix(in oklch, var(--brand-8) 75%, var(--neutral-7))",
-	"color-mix(in oklch, var(--category-2-8) 55%, var(--neutral-7))",
-	"color-mix(in oklch, var(--category-6-8) 50%, var(--neutral-7))",
-	"color-mix(in oklch, var(--category-3-8) 45%, var(--neutral-7))",
-	"light-dark(color-mix(in oklch, var(--neutral-6) 70%, var(--brand-5)), var(--neutral-12))",
-];
 
 /**
  * 挂到画布与颜色探针元素上的 ref。
@@ -56,8 +43,7 @@ export function useSeasonParticles(season: Season | null) {
 		let width = 0;
 		let height = 0;
 		let sprites: HTMLCanvasElement[] = [];
-		// 每个模糊档内的精灵数；精灵按层连续排列，层号乘它得到起始索引
-		const perBlur = { spring: 3, summer: 1, autumn: 4, winter: 1 }[season];
+		const perBlur = SPRITES_PER_BLUR[season];
 		const readColors = () => {
 			const colors = Array.from(probe.children).map((child) => getComputedStyle(child).color);
 			sprites = buildParticleSprites(season, colors);

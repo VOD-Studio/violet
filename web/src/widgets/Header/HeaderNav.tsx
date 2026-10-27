@@ -56,7 +56,6 @@ const HeaderNav = () => {
 
 	return (
 		<nav aria-label="主导航" className="pointer-events-auto relative hidden lg:block">
-			{/* 季节装饰的组件插槽挂件 */}
 			<CapsuleOrnament variant={1} />
 			<DropdownGroup>
 				<Segmented

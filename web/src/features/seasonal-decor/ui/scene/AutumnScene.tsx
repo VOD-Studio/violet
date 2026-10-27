@@ -28,6 +28,19 @@ function Floret({ x, y, r, time }: { x: number; y: number; r: number; time: numb
 	);
 }
 
+export interface OsmanthusSprigProps {
+	seed: number;
+	/** 枝条根部坐标 */
+	origin: Pt;
+	/** 主干生长方向（弧度） */
+	angle: number;
+	length: number;
+	width: number;
+	prefix: string;
+	/** 整枝缩放，compact 场景用它缩小叶片与花簇 */
+	scale?: number;
+}
+
 /** 一小枝桂花：枝条、披针叶与散生的花簇。 */
 function OsmanthusSprig({
 	seed,
@@ -37,15 +50,7 @@ function OsmanthusSprig({
 	width,
 	prefix,
 	scale = 1,
-}: {
-	seed: number;
-	origin: Pt;
-	angle: number;
-	length: number;
-	width: number;
-	prefix: string;
-	scale?: number;
-}) {
+}: OsmanthusSprigProps) {
 	const tree = growTree(seed, origin, angle, length, width, 1, 2, 0.6);
 	const r = mulberry32(seed + 3);
 	return (
