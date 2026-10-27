@@ -1,3 +1,5 @@
+import { FooterOrnament } from "@features/seasonal-decor/ui/ornaments";
+
 import { useSettings } from "@features/settings/api/queries";
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight } from "lucide-react";
@@ -18,11 +20,12 @@ const Footer = () => {
 		`© ${year} ${siteName}. All rights reserved.`;
 
 	return (
-		<footer className="relative z-1 bg-[color-mix(in_oklab,var(--primary-base)_7%,var(--background))] pb-4 pt-8 text-foreground transition-colors">
+		<footer className="relative z-1 bg-[color-mix(in_oklab,var(--decoration)_7%,var(--background))] pb-4 pt-8 text-foreground transition-colors">
+			<FooterOrnament />
 			{/* 顶部自然消融渐变带：主色低占比晕染，随 palette 自适应，无生硬边框切线 */}
 			<div
 				aria-hidden="true"
-				className="pointer-events-none absolute inset-x-0 -top-16 h-16 bg-[linear-gradient(to_bottom,transparent,color-mix(in_oklab,var(--primary-base)_7%,var(--background)))]"
+				className="pointer-events-none absolute inset-x-0 -top-16 h-16 bg-[linear-gradient(to_bottom,transparent,color-mix(in_oklab,var(--decoration)_7%,var(--background)))]"
 			/>
 			<div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
 				{/* 主内容双栏：左侧品牌与格言，右侧三列导航 */}

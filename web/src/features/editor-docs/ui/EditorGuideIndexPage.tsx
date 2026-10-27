@@ -24,7 +24,7 @@ export function EditorGuideIndexPage() {
 							<Link
 								to="/editor-guide/$chapter"
 								params={{ chapter: chapter.id }}
-								className="flex h-full flex-col gap-2 rounded-2xl border border-border p-5 motion-safe:transition-colors hover:border-primary/60"
+								className="flex h-full flex-col gap-2 rounded-2xl border border-border p-5 motion-safe:transition-colors hover:border-selected-foreground"
 							>
 								<span className="text-xs tabular-nums text-muted-foreground">
 									{String(index + 1).padStart(2, "0")}

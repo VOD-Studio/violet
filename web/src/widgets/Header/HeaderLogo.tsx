@@ -1,4 +1,5 @@
 import { useActivePersona } from "@entities/persona/api/queries";
+import { CapsuleOrnament } from "@features/seasonal-decor/ui/ornaments";
 import { useSettings } from "@features/settings/api/queries";
 import { Dropdown, DropdownContent, DropdownTrigger } from "@violet/ui";
 
@@ -22,11 +23,12 @@ const HeaderLogo = () => {
 				<button
 					type="button"
 					aria-label={`${siteName} 站长开源档案与简介`}
-					className="dialect-public group pointer-events-auto flex h-10 items-center gap-2 rounded-full border border-border/60 bg-background/80 px-3 backdrop-blur-md transition-colors hover:border-border hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[state=open]:border-border data-[state=open]:bg-muted/50 dark:bg-card/85"
+					className="dialect-public group pointer-events-auto relative flex h-10 items-center gap-2 rounded-full border border-border/60 bg-background/80 px-3 backdrop-blur-md transition-colors hover:border-border hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[state=open]:border-border data-[state=open]:bg-muted/50 dark:bg-card/85"
 				>
+					<CapsuleOrnament variant={0} />
 					<span
 						aria-hidden="true"
-						className="flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-primary ring-1 ring-border/50 transition-colors group-hover:bg-primary/15"
+						className="flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-selected text-selected-foreground ring-1 ring-border/50 transition-colors group-hover:bg-selected-hover"
 					>
 						{personaAvatar ? (
 							<img src={personaAvatar} alt="" className="size-full object-cover" />

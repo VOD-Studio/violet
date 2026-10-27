@@ -62,18 +62,12 @@
 		pointer-events: none;
 	}
 
-	.v-button--default {
+	.v-button--default,
+	.v-button--primary {
 		--v-button-bg: var(--primary);
 		--v-button-fg: var(--primary-foreground);
-		--v-button-hover-bg: color-mix(in oklab, var(--primary) 90%, var(--background));
-		--v-button-active-bg: color-mix(in oklab, var(--primary) 80%, var(--background));
-	}
-
-	.v-button--primary {
-		--v-button-bg: var(--primary-base);
-		--v-button-fg: var(--primary-base-foreground);
-		--v-button-hover-bg: var(--primary-base-hover);
-		--v-button-active-bg: color-mix(in oklab, var(--primary-base-hover) 90%, var(--foreground));
+		--v-button-hover-bg: var(--primary-hover);
+		--v-button-active-bg: var(--primary-hover);
 	}
 
 	.v-button--secondary {
@@ -84,14 +78,10 @@
 	}
 
 	.v-button--soft {
-		--v-button-bg: var(--primary-base-soft);
-		--v-button-fg: var(--primary-base-soft-foreground);
-		--v-button-hover-bg: color-mix(in oklab, var(--primary-base-soft) 85%, var(--primary-base));
-		--v-button-active-bg: color-mix(
-			in oklab,
-			var(--primary-base-soft) 75%,
-			var(--primary-base)
-		);
+		--v-button-bg: var(--selected);
+		--v-button-fg: var(--selected-foreground);
+		--v-button-hover-bg: var(--selected-hover);
+		--v-button-active-bg: var(--selected-hover);
 	}
 
 	.v-button--outline {
@@ -100,7 +90,7 @@
 	}
 
 	.v-button--link {
-		--v-button-fg: var(--primary);
+		--v-button-fg: var(--link);
 		--v-button-hover-bg: transparent;
 		--v-button-active-bg: transparent;
 		--v-button-padding-inline: 0;
@@ -116,8 +106,8 @@
 	.v-button--destructive {
 		--v-button-bg: var(--destructive);
 		--v-button-fg: var(--destructive-foreground);
-		--v-button-hover-bg: color-mix(in oklab, var(--destructive) 90%, var(--foreground));
-		--v-button-active-bg: color-mix(in oklab, var(--destructive) 80%, var(--foreground));
+		--v-button-hover-bg: var(--destructive-hover);
+		--v-button-active-bg: var(--destructive-hover);
 	}
 
 	.v-button--xs,

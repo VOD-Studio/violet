@@ -74,23 +74,23 @@ const tweetSources: NotificationSourceType[] = [
 	"tweet_comment_replied",
 ];
 
-/** source_type → 颜色映射：走行为状态与主色语义（新增/注册=主色、审核类=warning/success、失败/拒绝=destructive） */
+/** 失败与审核使用状态色，通知来源使用分类色。 */
 const sourceColor: Record<NotificationSourceType, string> = {
 	subscription_failed: "text-destructive",
 	subscription_succeeded: "text-success",
 	friendlink_applied: "text-warning",
 	friendlink_reviewed: "text-success",
 	comment_approved: "text-success",
-	comment_created: "text-primary-base",
+	comment_created: "text-category-1",
 	comment_pending: "text-warning",
 	comment_rejected: "text-destructive",
-	user_registered: "text-primary-base",
+	user_registered: "text-category-2",
 	account_security: "text-warning",
-	chat_room_invited: "text-neon-cyan",
-	tweet_liked: "text-neon-pink",
-	tweet_quoted: "text-neon-green",
-	tweet_commented: "text-neon-blue",
-	tweet_comment_replied: "text-primary-base",
+	chat_room_invited: "text-category-3",
+	tweet_liked: "text-category-4",
+	tweet_quoted: "text-category-5",
+	tweet_commented: "text-category-1",
+	tweet_comment_replied: "text-category-6",
 };
 
 /**
@@ -216,7 +216,7 @@ const NotificationBell = ({ onOpenChange }: NotificationBellProps) => {
 									"shrink-0 text-xs transition-colors disabled:opacity-60",
 									push.subscribed
 										? "text-muted-foreground hover:text-foreground"
-										: "text-primary-base hover:underline",
+										: "text-link hover:text-link-hover hover:underline",
 								)}
 							>
 								{push.busy ? "处理中…" : push.subscribed ? "已开启，关闭" : "开启"}

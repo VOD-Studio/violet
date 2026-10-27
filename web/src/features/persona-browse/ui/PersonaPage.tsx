@@ -19,6 +19,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 import { PersonaLocaleTabs } from "./PersonaLocaleTabs";
 import styles from "./PersonaPage.module.css";
+import "./persona-identity.generated.css";
 
 interface LightboxState {
 	open: boolean;
@@ -48,7 +49,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 	const reduceMotion = useReducedMotion();
 	if (isPending) {
 		return (
-			<main className={styles.page}>
+			<main className={`identity-theme ${styles.page}`}>
 				<RuaLoading label="正在整理人设档案…" />
 			</main>
 		);
@@ -56,7 +57,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 
 	if (isError) {
 		return (
-			<main className={`${styles.page} ${styles.empty}`}>
+			<main className={`identity-theme ${styles.page} ${styles.empty}`}>
 				<div>
 					<h1>人设档案暂时无法抵达</h1>
 					<p>请稍后再试。</p>
@@ -67,7 +68,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 
 	if (!persona) {
 		return (
-			<main className={`${styles.page} ${styles.empty}`}>
+			<main className={`identity-theme ${styles.page} ${styles.empty}`}>
 				<div>
 					<h1>人设档案尚未公开</h1>
 					<p>当前没有已激活的角色资料。</p>
@@ -94,7 +95,10 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 	const allAlts = heroAsset ? [heroAlt, ...galleryAlts] : [];
 
 	return (
-		<main className={styles.page} data-stale={isPlaceholderData || undefined}>
+		<main
+			className={`identity-theme ${styles.page}`}
+			data-stale={isPlaceholderData || undefined}
+		>
 			{/* --- Hero: 画报封面非对称构图 --- */}
 			<section className={styles.hero} aria-labelledby="persona-name">
 				<div className={styles.heroGlow} aria-hidden />

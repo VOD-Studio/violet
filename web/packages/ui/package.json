@@ -282,8 +282,8 @@
 		"./components/tabs.css": "./src/components/tabs/tabs.css",
 		"./components/textarea.css": "./src/components/textarea/textarea.css",
 		"./components/upload-tile.css": "./src/components/upload-tile/upload-tile.css",
-		"./palettes/violet.css": "./src/styles/palettes/violet.css",
-		"./palettes/coral.css": "./src/styles/palettes/coral.css",
+		"./palettes/violet.css": "./src/styles/palettes/violet.generated.css",
+		"./palettes/coral.css": "./src/styles/palettes/coral.generated.css",
 		"./component-manifest.json": "./component-manifest.json",
 		"./package.json": "./package.json"
 	},
@@ -595,11 +595,14 @@
 		"tailwind-variants": "^3.3.1"
 	},
 	"devDependencies": {
+		"@biomejs/biome": "2.5.2",
+		"@playwright/test": "^1.63.0",
 		"@testing-library/dom": "^10.4.1",
 		"@testing-library/react": "^16.3.0",
 		"@types/node": "^22.10.2",
 		"@types/react": "^19.2.0",
 		"@types/react-dom": "^19.2.0",
+		"@violetjs/theme": "workspace:*",
 		"esbuild": "^0.28.1",
 		"jsdom": "^28.1.0",
 		"react": "^19.2.0",

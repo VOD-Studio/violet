@@ -63,7 +63,7 @@ pnpm --filter @violet/ui sync
 pnpm --filter @violet/ui check
 ```
 
-`sync` 更新由清单派生的入口与清单文件；阅读 diff，确认没有带入不相关组件。`check` 只读检查，适合提交前与 CI 使用。根入口继续服务已有消费方，叶子入口用于明确取用，`@violet/ui/legacy` 标明尚未重建的单元。
+`sync` 更新清单派生入口和算法生成的颜色 CSS；`check` 只读校验两者，适合提交前与 CI 使用。颜色输入在 `scripts/theme.mjs` 维护，组件 CSS 只引用语义 token。根入口继续服务已有消费方，叶子入口用于明确取用，`@violet/ui/legacy` 标明尚未重建的单元。
 
 如果导出 recipe，将它接入 `@violet/ui/variants`，该入口只允许样式依赖。不要让 recipe 导入组件 barrel。CSS 汇集入口和叶子入口从相同源文件构建；组合组件 CSS 需引入它使用的子组件 CSS，不能要求消费方猜测依赖。纯 CSS 应能直接加载，不依赖宿主扫描组件 TSX。
 

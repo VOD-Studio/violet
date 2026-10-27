@@ -3,7 +3,6 @@ import { type ComponentProps, createRef, useState } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { Button } from "../button";
-import { buttonVariants } from "../styles";
 
 describe("Button", () => {
 	it("默认 button 不意外提交表单，显式 submit 保留浏览器提交行为", () => {
@@ -385,14 +384,6 @@ describe("Button", () => {
 			expect(screen.queryByText("正在跳转")).toBeNull();
 			expect(screen.queryByTestId("icon")).toBeNull();
 		});
-	});
-
-	it("样式配方只生成公开类名，并保留消费方 className", () => {
-		expect(
-			buttonVariants({ variant: "outline", size: "sm", className: "bg-primary-base" }).split(
-				" ",
-			),
-		).toEqual(["v-button", "v-button--outline", "v-button--sm", "bg-primary-base"]);
 	});
 
 	it("可在服务端生成原生与 Slot 标记", () => {

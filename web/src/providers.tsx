@@ -14,17 +14,14 @@ export interface AppProviderProps {
 	children: ReactNode;
 }
 
-/**
- * 站点主题桥接的 toast 容器：@violet/ui 不绑定主题库，
- * 由宿主把 next-themes 当前值传给 Toaster。
- */
-function ThemedToaster() {
-	const { theme } = useTheme();
-	return <Toaster theme={theme as VioletToasterProps["theme"]} />;
+/** 将站点外观传给不绑定 next-themes 的 toast 容器。 */
+function AppearanceToaster() {
+	const { theme: appearance } = useTheme();
+	return <Toaster theme={appearance as VioletToasterProps["theme"]} />;
 }
 
 /**
- * 站点级主题、toast 与表情交互。
+ * 站点级外观、toast 与表情交互。
  * 查询缓存由外层 Router–Query SSR 集成提供。
  */
 const AppProvider = ({ children }: AppProviderProps) => {
@@ -33,7 +30,7 @@ const AppProvider = ({ children }: AppProviderProps) => {
 			<RunnableCodeLoaderContext value={loadCodeRunner}>
 				<CustomEmojiContextMenu>{children}</CustomEmojiContextMenu>
 			</RunnableCodeLoaderContext>
-			<ThemedToaster />
+			<AppearanceToaster />
 		</ThemeProvider>
 	);
 };

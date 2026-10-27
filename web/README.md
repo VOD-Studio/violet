@@ -48,6 +48,7 @@ pnpm dev
 | `pnpm generate-routes` | 通过官方 `tsr generate` 生成路由树 |
 | `pnpm typecheck` | 生成路由后执行 TypeScript 检查 |
 | `pnpm check` | Biome 代码与格式检查 |
+| `pnpm check:colors` | 检查新增颜色违规与白名单增长 |
 | `pnpm format --write .` | 写入 Biome 格式化结果 |
 | `pnpm test` | 生成路由后执行 Vitest |
 | `pnpm test:contract` | 执行 Playwright 浏览器契约 |
@@ -117,6 +118,8 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 | 项目与路线图 | `features/projects`、`admin-projects` |
 | 上传、媒体与表情 | `features/upload`、`media`、`emojis`、`customemoji` |
 | 站点音乐 | `features/admin-music`、`music-player`，共享模型在 `entities/music` |
+| 明暗外观切换 | `features/appearance`，SSR 与 cookie 桥接在 `shared/` |
+| 主题切换 | `features/theme-switcher`，预设、偏好解析与 SSR 在 `shared/` |
 | 管理后台 | `features/admin-*`，公共后台布局与表格在 `admin-layout` / `admin-shared` |
 | 运行策略与代码执行 | `entities/runtime-policy`、`entities/code-runner`、`features/admin-settings` |
 | 首页与阅读页组合、导航 | `widgets/` 与 `shared/config/nav.ts` |
@@ -159,12 +162,50 @@ Shiki 初始化、语言准备与分词在按需创建的 Web Worker 中执行�
 
 | 样式内容 | 归属 |
 | --- | --- |
-| 基础语义 token、色板与通用组件 CSS | `packages/ui/` |
+| 生成色阶、基础语义 token 与通用组件 CSS | `packages/theme/` 生成算法，`packages/ui/` 构建期接入 |
 | 站点字体、装饰与主题适配 | `src/styles/` |
 | 公开内容、工具界面、沉浸舞台的方言 | `src/styles/dialects/` |
 | feature 私有样式 | 所属组件旁的样式文件 |
 
-页面分别使用 `.dialect-public`、`.dialect-tool`、`.dialect-immersive`，通过语义 token 适配明暗主题，不锁定色板值。通用组件从 `@violet/ui` 使用；组件的公开入口与成熟度以 [component-manifest.json](packages/ui/component-manifest.json) 为准。
+页面分别使用 `.dialect-public`、`.dialect-tool`、`.dialect-immersive`，只描述语义到色阶的映射：公开主要动作为品牌色，工具主要动作为高对比中性色，沉浸舞台使用固定深色灰阶；状态色不被方言改写。Button 悬停使用 `primary-hover`，链接、选中、焦点、进度、装饰和分类各有独立语义。通用组件从 `@violet/ui` 使用；组件的公开入口与成熟度以 [component-manifest.json](packages/ui/component-manifest.json) 为准。
+
+包颜色由 `pnpm --filter @violet/ui sync` 生成、`check` 校验。人设身份色只在 `.identity-theme` 内生效，修改种子后运行 `pnpm colors:persona`，`pnpm check:persona-colors` 校验提交的静态 CSS。四季预设主题的种子色与旋钮在 `src/shared/lib/theme-presets.ts`，修改后运行 `pnpm colors:themes` 重新生成 `src/styles/theme-presets.generated.css`，`pnpm check:theme-colors` 校验；每季一个 `[data-theme]` 规则，只含品牌与中性色阶，状态色与分类色沿用默认色板。
+
+站点公共层提供 `shared/ui/announcement-severity` 状态色和 `shared/hooks/use-banner-ticker` 轮播节拍。终端、阅读进度等公共界面只消费用途语义色。
+
+公告横幅与卡片共享公共状态色，不依赖实验页面。lab 的固定实验色与旧 utility 仅限 `.lab-scope`，包括其 portal 内容；离开实验路由后不改变正式页面。
+
+### 颜色守门
+
+`make web-lint` 依次执行 Biome、颜色守门，以及人设颜色与四季预设主题的生成一致性检查。检查范围是 `src/`、`packages/` 内的 TSX 与 CSS，包括未加入 Git 的文件；新增裸色值、Tailwind 原生色板类或旧颜色类会失败，输出文件、行号和规则。`hover:bg-primary/90` 等透明主色悬停、CSS hover 中相同的透明混色也会失败；主要动作用 `primary-hover`，浅选中反馈用 `selected-hover`。带 `-text` 后缀的角色颜色类（如 `text-destructive-text`）会失败，文字直接写 `text-destructive`；CSS 的 `color`、`caret-color`、TSX 行内样式的 `color`，以及 `text-[var(--primary)]` 这类任意值类读取 `--primary`、`--destructive` 等实色角色也会失败，应读 `--primary-text` 等文字档。非 hover 的合法透明语义颜色、注释、链接锚点和 CSS ID 不误报。
+
+[color-guard.config.json](color-guard.config.json) 维护扫描根目录与带理由的豁免：颜色算法包、vendor、lab、构建产物、`*.generated.css` 和组件清单生成的 CSS 入口。手写的主题 CSS 与色板不豁免。
+
+[color-guard-baseline.json](color-guard-baseline.json) 记录现有违规的文件、规则、值和次数，不绑定行号。白名单只能删减，不能新增记录、增加次数或将额度移到其他文件；删除违规时须同步减少次数，归零则删除记录，不保留空闲额度。新增违规应改用语义 token，不重新生成或扩充白名单。
+
+本地默认对照 `HEAD` 检查未提交改动；检查已提交的整条分支时，执行 `pnpm check:colors --base origin/release/2.0`。CI 的 PR 对照目标分支提交，push 对照推送前提交，精确提交验收对照其父提交。基准尚无白名单时，仅接纳配置中固定 `initialRevision` 已有的违规；不会将新代码自动计入存量。基准不可读会失败，需要先获取对应 Git 历史。
+
+CLI fixture 使用临时 Git 仓库，可通过 `pnpm test scripts/check-colors.test.ts` 单独运行。
+
+### 外观偏好
+
+`shared/lib/appearance-cookie.ts` 提供 SSR 与客户端共用的外观解析规则：`appearance` cookie 保存已解析的 `light` / `dark`，有效期一年。只有缺少新 cookie 时才读取旧 `theme` 值；SSR 通过 `getSSRAppearance` 的响应头补写，客户端路由读取时也会补写。新 cookie 存在但值非法时按浅色解析，不回退旧值。
+
+`next-themes` 的 `useTheme`、`setTheme` 等 API 与默认 localStorage 键保持不变，已保存的 `light` / `dark` / `system` 选择继续生效。
+
+站点切换器与 hook 从 `@features/appearance` 引入 `AppearanceToggle`、`useAppearanceSwitcher`。Header、后台顶栏、命令面板和 `/lab/theme` 演示共用这一入口，正式页面不依赖 lab 实现。
+
+### 主题偏好
+
+主题偏好由 `shared/lib/theme-preference.ts` 解析，SSR 通过 `getSSRThemeState` 在 `<html>` 上输出 `data-theme`，首帧即为访客的预设主题；自定义主题按规范化后的种子色在 SSR 现算，内联进 `<head>` 的 `#theme-custom` 样式，`data-theme` 为 `custom`，`data-season` 仍给出偏好对应的季节；规则与术语见 CONTEXT「主题与色彩」。主题契约（`e2e/theme-contract.spec.ts`）覆盖「主题 × 外观 × 视口」的首帧与水合一致性，并在浏览器中实测关键文字组合的对比度。
+
+切换入口是 `@features/theme-switcher` 的 `ThemeMenu`，挂在顶栏工具区外观开关旁；移动端底部导航的「更多」面板用 `ThemePicker` 提供同样的选择。两处都有「自定义」，在 `CustomThemeDialog` 里取色或输入十六进制种子色，实时预览浅深两种外观下的按钮、链接、选中态与主色文字后应用。选中后即时改写 `data-theme`、写入偏好 cookie，渲染的主题变化时复用外观切换的圆形扩散，`e2e/theme-switcher.spec.ts` 覆盖切换、刷新保持、键盘操作与自定义流程。
+
+### 装饰偏好
+
+装饰偏好由 `shared/lib/decoration-preference.ts` 解析，与主题偏好分存在 `decoration-preference` cookie：跟随主题、无或指定某一季。`resolveDecoration` 给出实际投放的季节，跟随主题时取预设主题的季节，自定义主题下为无。SSR 通过 `getSSRDecoration` 在 `<html>` 上输出 `data-decoration`（季节或 `none`），首帧即为访客的装饰。
+
+装饰内容由 `@features/seasonal-decor` 投放：背景层（`SeasonBackdrop` 挂在 SiteBackdrop 内：视口角落的程序生成插画与飘落粒子画布）、点缀位（首页收尾寄语上方的小幅插画）与组件插槽挂件（顶栏三个胶囊与页脚上沿的物候小物）。插画只用主题 token 混出的色板着色、固定随机种子保证 SSR 与客户端一致；粒子先画进离屏精灵逐帧贴图。飘落粒子是方向性运动，AGENTS 的动效约束为其写明例外；减弱动态时插画直接显示最终画面、粒子只画一帧。工具与沉浸方言内挂件由 `scene.module.css` 的方言钩子隐藏，工具界面插槽只保留 `data-decoration` 这个 CSS 钩子，`@violet/ui` 不依赖任何主题。切换入口是 ThemeMenu 的「季节装饰」子菜单，`e2e/decoration.spec.ts` 覆盖各偏好组合的首帧与水合一致性、装饰投放与方言隐藏、减弱动态静止及 UI 切换后刷新一致。
 
 ### 独立包与文档站
 
@@ -174,6 +215,7 @@ Shiki 初始化、语言准备与分词在按需创建的 Web Worker 中执行�
 | `@violetjs/kanban` | `/kanban`，项目路线图看板与画布 | [使用说明](packages/kanban/README.zh-CN.md)、[维护指南](packages/kanban/DEVELOPMENT.md) |
 | `@violetjs/inkline` | `/inkline`，手绘工作台与文章图表 | [使用说明](packages/inkline/README.zh-CN.md)、[维护指南](packages/inkline/DEVELOPMENT.md) |
 | `@violetjs/react-tweet` | 文章引用与推文页面 | [使用说明](packages/react-tweet/README.zh-CN.md)、[维护指南](packages/react-tweet/DEVELOPMENT.md) |
+| `@violetjs/theme` | 构建期生成组件色阶与站点局部身份色 | [使用说明](packages/theme/README.zh-CN.md)、[维护指南](packages/theme/DEVELOPMENT.md) |
 
 文档站复用包内正文与示例，不维护第二套 API 说明。修改包实现时按包内流程做构建和真实 tarball 消费验证；站点 workspace 能运行不能替代独立包验收。安装方式与发布状态见各包 README。
 

@@ -1,3 +1,5 @@
+import { ClosingVignette } from "@features/seasonal-decor/ui/ClosingVignette";
+import type { Season } from "@shared/lib/theme-preference";
 import { Heart, Mail, Rss } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -7,20 +9,20 @@ import type { SiteIdentity } from "./types";
 
 interface HomeClosingProps {
 	identity: SiteIdentity;
+	/** 当前预设主题的季节，寄语与主题一致 */
+	season: Season;
 }
 
-/** 依月份生成温润应季寄语。 */
-function getSeasonalGreeting(): { title: string; subtitle: string } {
-	const month = new Date().getMonth() + 1;
-	if (month >= 3 && month <= 5) return { title: "花朝如约", subtitle: "春山可望" };
-	if (month >= 6 && month <= 8) return { title: "熏风入弦", subtitle: "荷风送香" };
-	if (month >= 9 && month <= 11) return { title: "桂月流光", subtitle: "掬光以待" };
-	return { title: "梅信岁寒", subtitle: "围炉夜话" };
-}
+const SEASONAL_GREETINGS: Record<Season, { title: string; subtitle: string }> = {
+	spring: { title: "花朝如约", subtitle: "春山可望" },
+	summer: { title: "熏风入弦", subtitle: "荷风送香" },
+	autumn: { title: "桂月流光", subtitle: "掬光以待" },
+	winter: { title: "初雪映窗", subtitle: "静候春来" },
+};
 
 /** 首页收尾：季节寄语、匿名印记与服务端声明的订阅渠道。 */
-export function HomeClosing({ identity }: HomeClosingProps) {
-	const greeting = getSeasonalGreeting();
+export function HomeClosing({ identity, season }: HomeClosingProps) {
+	const greeting = SEASONAL_GREETINGS[season];
 	const impressionQuery = useSiteImpression();
 	const impressionMutation = useLeaveSiteImpression();
 	const impression = impressionMutation.data ?? impressionQuery.data;
@@ -39,6 +41,7 @@ export function HomeClosing({ identity }: HomeClosingProps) {
 				transition={{ type: "spring", stiffness: 130, damping: 22, mass: 0.9 }}
 				className="mx-auto max-w-4xl px-5 text-center sm:px-8"
 			>
+				<ClosingVignette />
 				<div className="space-y-2">
 					<p className="font-serif text-2xl font-normal tracking-widest text-foreground/90 sm:text-3xl">
 						{greeting.title}

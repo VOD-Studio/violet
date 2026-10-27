@@ -31,7 +31,7 @@
 }
 
 .trigger:hover {
-	color: var(--primary);
+	color: var(--primary-text);
 	text-decoration-color: var(--primary);
 }
 
@@ -135,7 +135,7 @@
 	justify-content: flex-end;
 	gap: 0.3rem;
 	margin-top: 0.8rem;
-	color: var(--primary);
+	color: var(--primary-text);
 	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 	font-size: 0.65rem;
 	letter-spacing: 0.04em;

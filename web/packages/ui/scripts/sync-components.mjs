@@ -1,11 +1,12 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { generatedPackageFields, generatedSources, packageRoot, validateManifest } from "./registry.mjs";
+import { generatedThemeSources } from "./theme.mjs";
 
 validateManifest();
 const check = process.argv.includes("--check");
 const stale = [];
-for (const [path, content] of generatedSources()) {
+for (const [path, content] of [...generatedSources(), ...await generatedThemeSources()]) {
 	const target = resolve(packageRoot, path);
 	let actual;
 	try {
@@ -31,4 +32,4 @@ if (JSON.stringify(packageJson.exports) !== JSON.stringify(sourceExports) || JSO
 	}
 }
 if (stale.length) throw new Error(`Generated files are stale: ${stale.join(", ")}. Run pnpm --filter @violet/ui sync.`);
-console.log(check ? "Component registry outputs are current." : "Component registry outputs synchronized.");
+console.log(check ? "Component registry and theme outputs are current." : "Component registry and theme outputs synchronized.");

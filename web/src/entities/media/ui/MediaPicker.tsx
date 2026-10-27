@@ -219,8 +219,8 @@ export function MediaPicker({
 									className={cn(
 										"group relative aspect-square overflow-hidden rounded-lg border bg-muted transition-all",
 										isSel
-											? "border-primary ring-2 ring-primary"
-											: "border-edge-hairline hover:border-primary/50",
+											? "border-selected-foreground ring-2 ring-ring"
+											: "border-edge-hairline hover:border-selected-foreground",
 									)}
 								>
 									<MediaThumb file={file} />

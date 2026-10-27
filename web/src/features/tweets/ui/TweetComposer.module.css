@@ -80,7 +80,7 @@
 	font-family: inherit;
 	font-size: 0.875rem;
 	line-height: 1.65;
-	caret-color: var(--primary);
+	caret-color: var(--primary-text);
 	field-sizing: content;
 	resize: none;
 }
@@ -148,7 +148,7 @@
 .action[aria-pressed="true"],
 .action:hover:not(:disabled),
 .action:active:not(:disabled) {
-	color: var(--primary);
+	color: var(--primary-text);
 }
 
 .action:focus-visible {
@@ -189,7 +189,7 @@
 }
 
 .submit:hover:not(:disabled) .submitLabel {
-	background: color-mix(in oklab, var(--primary) 90%, var(--foreground));
+	background: var(--primary-hover);
 }
 
 @media (prefers-reduced-motion: reduce) {

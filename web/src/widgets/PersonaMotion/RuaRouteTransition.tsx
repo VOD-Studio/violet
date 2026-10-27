@@ -59,7 +59,7 @@ const RuaRouteTransition = () => {
 						className="absolute inset-x-0 top-0 h-px overflow-hidden bg-border/45"
 					>
 						<motion.span
-							className="absolute inset-y-0 left-0 w-1/3 bg-linear-to-r from-transparent via-(--persona-violet) to-(--persona-gold)"
+							className="absolute inset-y-0 left-0 w-1/3 bg-linear-to-r from-transparent via-decoration-muted to-decoration"
 							initial={reduceMotion ? { x: "0%" } : { x: "-110%" }}
 							animate={reduceMotion ? { x: "0%" } : { x: "310%" }}
 							transition={{
@@ -69,7 +69,7 @@ const RuaRouteTransition = () => {
 							}}
 						/>
 						<motion.span
-							className="absolute top-1/2 left-0 size-2 -translate-y-1/2 bg-(--persona-gold)"
+							className="absolute top-1/2 left-0 size-2 -translate-y-1/2 bg-decoration"
 							style={{ clipPath: STAR_PATH }}
 							initial={reduceMotion ? { x: "50vw" } : { x: "-2vw" }}
 							animate={reduceMotion ? { x: "50vw" } : { x: "102vw" }}

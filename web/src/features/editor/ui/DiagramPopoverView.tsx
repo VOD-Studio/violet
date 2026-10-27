@@ -26,7 +26,7 @@ import { NodeViewWrapper } from "@tiptap/react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useFloatingMathPanel } from "../hooks/useFloatingMathPanel";
-import { useIsDarkTheme } from "../hooks/useIsDarkTheme";
+import { useIsDarkAppearance } from "../hooks/useIsDarkAppearance";
 import { useMermaidSvg } from "../hooks/useMermaidSvg";
 import { updateDiagramSource } from "../lib/update-diagram-source";
 import { DiagramEditPanel } from "./DiagramEditPanel";
@@ -47,7 +47,7 @@ function findScrollContainer(el: HTMLElement | null): HTMLElement | null {
 export function DiagramPopoverView({ node, selected, editor, getPos }: NodeViewProps) {
 	const source = node.attrs.source as string;
 	const format = (node.attrs.format as string) || "mermaid";
-	const isDark = useIsDarkTheme();
+	const isDark = useIsDarkAppearance();
 	// 文档内渲染与面板预览共用同一份渲染结果（同一 source+theme）：
 	// 一次 renderMermaid 同时供给 NodeViewWrapper 占位与 DiagramEditPanel 预览。
 	const render = useMermaidSvg(source, isDark ? "dark" : "light");

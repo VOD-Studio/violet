@@ -147,7 +147,7 @@ function InlineLoginContent({
 							type="submit"
 							disabled={!valid || passwordPending || !csrfToken}
 							tabIndex={passwordOpen ? 0 : -1}
-							className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-primary py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+							className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-primary py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							{passwordPending && <Loader2 className="size-4 animate-spin" />}
 							{passwordPending ? "登录中…" : "登录"}

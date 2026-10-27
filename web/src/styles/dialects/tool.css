@@ -1,15 +1,32 @@
-/*
- * 工具方言作用域（Tool Dialect）。
- *
- * 消费入口：给后台、编辑器、设置、个人中心与聊天等工具界面的主容器加
- * .dialect-tool（后台布局已挂载）。
- *
- * 工具方言沿用基础 token 的默认形态：主要动作色为高对比中性色，避免大面积
- * 彩色动作按钮保持克制；主色源工具类只用于焦点、选中、当前导航、链接和进度，
- * 保持与公开站点的视觉连续性。
- */
+/* 工具界面：中性主要动作，品牌色只承担焦点、选中、链接和进度反馈。 */
 .dialect-tool {
-	--ring: var(--primary-base-ring);
+	--background: var(--neutral-1);
+	--foreground: var(--neutral-12);
+	--card: var(--neutral-2);
+	--card-foreground: var(--neutral-12);
+	--popover: var(--neutral-2);
+	--popover-foreground: var(--neutral-12);
+	--primary: var(--action-neutral-9);
+	--primary-hover: var(--action-neutral-10);
+	--primary-foreground: var(--action-neutral-contrast);
+	--primary-text: var(--action-neutral-9);
+	--secondary: var(--neutral-3);
+	--secondary-foreground: var(--neutral-12);
+	--muted: var(--neutral-3);
+	--muted-foreground: var(--neutral-11);
+	--accent: var(--neutral-3);
+	--accent-foreground: var(--neutral-12);
+	--link: var(--brand-11);
+	--link-hover: var(--brand-12);
+	--selected: var(--brand-3);
+	--selected-hover: var(--brand-4);
+	--selected-foreground: var(--brand-11);
+	--progress: var(--brand-9);
+	--border: var(--neutral-6);
+	--input: var(--neutral-7);
+	--ring: var(--brand-8);
+	--edge-hairline: var(--neutral-a6);
+	--surface-glass: var(--neutral-a2);
 }
 
 .dialect-tool :focus-visible {

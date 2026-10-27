@@ -173,7 +173,7 @@ function resolveTechnology(technology: string, fallbackDescription: string): Tec
 		technologyDetails[technology.toLowerCase()] ?? {
 			Icon: Code2,
 			description: fallbackDescription,
-			color: "var(--primary)",
+			color: "var(--primary-text)",
 		}
 	);
 }

@@ -29,6 +29,7 @@
 - [Inkline 开发说明](../web/packages/inkline/DEVELOPMENT.md)：示例图、双语 README 同步和 tarball 消费验证。
 - [React Tweet 开发说明](../web/packages/react-tweet/DEVELOPMENT.md)：推文示例生成、样式入口和独立消费验证。
 - [Kanban 使用说明](../web/packages/kanban/README.zh-CN.md)、[API 文档](../web/packages/kanban/docs/api.md)与[开发说明](../web/packages/kanban/DEVELOPMENT.md)：同源示例、全入口 tarball 消费验收和发布前清单；尚未发布 npm。
+- [Theme 开发说明](../web/packages/theme/DEVELOPMENT.md)：门槛遍历测试、算法调参与 tarball 的 Node / Chromium 消费验证；尚未发布 npm。
 
 ## 使用约定
 

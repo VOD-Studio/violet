@@ -152,7 +152,7 @@
 	border-radius: 0.25rem;
 	font-family: var(--font-mono);
 	font-size: 0.85em;
-	color: var(--color-primary);
+	color: var(--primary-text);
 }
 
 .ProseMirror pre code {

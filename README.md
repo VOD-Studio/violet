@@ -20,6 +20,10 @@
 - 项目路线图：条目分三阶段，支持阻塞/修复/扩展关系；公开画布页，文章可嵌入随项目实时更新的路线图块
 - 可运行代码块：Python / Node / Go / Rust / Bun 沙箱执行，结果回流正文
 
+### 外观
+
+- 主题：明暗跟随系统；四季预设默认随季节切换，也可输入种子色生成自定义主题，任何颜色都调到满足对比度门槛，首帧即生效
+
 ### 社区
 
 - 批注评论：评论可锚定到段落或选中文本，支持 GIF 表情与图片上传，带审核工作流
@@ -147,7 +151,7 @@ violet/
 │   ├── migrations/         数据库迁移（golang-migrate）
 │   └── config.yaml         入库配置（全量配置文档，敏感值走根 .env）
 ├── web/                    React 前端应用（TanStack Start SSR）
-│   ├── packages/           可独立使用的组件包（ui / react-tweet / kanban / inkline）
+│   ├── packages/           可独立使用的组件包（ui / react-tweet / kanban / inkline / theme）
 │   ├── src/
 │   │   ├── routes/         文件路由
 │   │   ├── features/       业务模块（feature-sliced）
@@ -177,6 +181,7 @@ violet/
 - [@violetjs/react-tweet](web/packages/react-tweet/README.zh-CN.md)：原生 X 推文展示与服务端数据获取。
 - [@violetjs/kanban](web/packages/kanban/README.zh-CN.md)：受控看板、画布与关系图。
 - [@violetjs/inkline](web/packages/inkline/README.zh-CN.md)：手绘矢量图、SVG / Canvas 渲染与绘制动画。
+- [@violetjs/theme](web/packages/theme/README.zh-CN.md)：由种子色生成通过 WCAG 与 APCA 门槛的明暗色阶。
 
 ## 文档
 

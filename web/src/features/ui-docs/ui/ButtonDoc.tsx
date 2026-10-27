@@ -29,7 +29,7 @@ const BUTTON_PROPS: PropRow[] = [
 		type: '"default" | "primary" | "secondary" | "soft" | "outline" | "ghost" | "link" | "destructive"',
 		defaultValue: '"default"',
 		meaning:
-			"视觉层级变体，严格绑定 Violet 语义 Token（primary / primary-base / secondary 等）。",
+			"default 与 primary 遵循当前方言的主要动作及悬停色；soft 使用选择语义，link 使用链接语义。",
 	},
 	{
 		name: "size",

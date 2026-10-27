@@ -99,9 +99,9 @@ export function ProfileCoverSection({ user }: { user: UserDTO }) {
 					}}
 					className={cn(
 						"flex w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed text-muted-foreground transition-colors",
-						"hover:border-primary/50 hover:bg-primary/5 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60",
+						"hover:border-selected-foreground hover:bg-selected-hover hover:text-selected-foreground disabled:cursor-not-allowed disabled:opacity-60",
 						dragging
-							? "border-primary bg-primary/10 text-foreground"
+							? "border-selected-foreground bg-selected text-selected-foreground"
 							: "border-border bg-muted/40",
 						COVER_FRAME_CLASS,
 					)}

@@ -180,7 +180,7 @@ export function ChangelogPage() {
 																								}
 																								target="_blank"
 																								rel="noreferrer"
-																								className="ml-1.5 align-baseline text-xs font-medium text-muted-foreground/70 underline decoration-muted-foreground/30 underline-offset-2 transition-colors hover:text-primary hover:decoration-primary/50"
+																								className="ml-1.5 align-baseline text-xs font-medium text-muted-foreground/70 underline decoration-muted-foreground/30 underline-offset-2 transition-colors hover:text-link-hover hover:decoration-link-hover"
 																							>
 																								{
 																									ref.label

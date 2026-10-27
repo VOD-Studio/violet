@@ -13,8 +13,7 @@ export interface MagneticProps extends React.HTMLAttributes<HTMLSpanElement> {
  *
  * spec「靠近核心可点击元素产生轻微磁力吸附与形变」。
  * 用 useMagnetic 写 --mx/--my，本元素 translate 跟随，位移在自身
- * box 内（不引起周围 reflow）。配合 CustomCursor 的放大形变共构
- * 完整磁力效果。
+ * box 内（不引起周围 reflow）。
  */
 function Magnetic({ strength, className, children, ...props }: MagneticProps) {
 	const { onMouseMove, onMouseLeave } = useMagnetic(strength);

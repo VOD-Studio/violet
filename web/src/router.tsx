@@ -14,7 +14,7 @@ import { clientQueryClient, createQueryClient } from "./shared/api/query-client"
 import { reconcileIntent, resolveViewTransitionTypes } from "./shared/lib/view-transition";
 
 /**
- * 根路由填充鉴权与主题；查询缓存由路由工厂按运行环境创建。
+ * 根路由填充鉴权与外观；查询缓存由路由工厂按运行环境创建。
  */
 export interface RouterContext {
 	/** loader、SSR 渲染与浏览器接管使用同一份路由缓存。 */
@@ -26,8 +26,8 @@ export interface RouterContext {
 		/** /auth/session 返回的 claims（未登录为 null） */
 		claims: SessionClaims | null;
 	};
-	/** SSR 已 resolve 的主题（"light"/"dark"），用于 <html> class 防 FOUC */
-	theme: "light" | "dark";
+	/** SSR 已解析的外观，用于 <html> 首帧 class。 */
+	appearance: "light" | "dark";
 }
 
 /** SSR 每请求隔离查询缓存，浏览器复用会话层使用的单例。 */
@@ -60,7 +60,7 @@ export const getRouter = () => {
 		context: {
 			queryClient,
 			auth: { isAuthenticated: false, claims: null },
-			theme: "light",
+			appearance: "light",
 		},
 	});
 	setupRouterSsrQueryIntegration({ router, queryClient });

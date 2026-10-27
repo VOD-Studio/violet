@@ -141,7 +141,7 @@ export function MessageEditComposer({
 							className={cn(
 								"rounded-full transition-colors",
 								canSave
-									? "bg-primary text-primary-foreground hover:bg-primary/90"
+									? "bg-primary text-primary-foreground hover:bg-primary-hover"
 									: "bg-secondary text-muted-foreground",
 							)}
 						>

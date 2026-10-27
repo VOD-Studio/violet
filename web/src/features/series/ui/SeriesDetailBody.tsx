@@ -67,7 +67,7 @@ export function SeriesDetailBody({ detail }: { detail: SeriesDetail }) {
 							<Link
 								to="/blog/$slug"
 								params={{ slug: firstChapter.slug }}
-								className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm transition-colors"
+								className="bg-primary text-primary-foreground hover:bg-primary-hover inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm transition-colors"
 							>
 								<BookOpen className="size-4" />
 								从第 {firstChapter.chapter_no} 章开始读

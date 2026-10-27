@@ -7,6 +7,7 @@ import { dirname, resolve, sep } from "node:path";
 import { gzipSync } from "node:zlib";
 import { build } from "esbuild";
 import { manifest, packageRoot } from "./registry.mjs";
+import { checkConsumerTheme } from "./consumer-theme.mjs";
 
 const workspaceRequire = createRequire(resolve(packageRoot, "../../package.json"));
 const packageRequire = createRequire(resolve(packageRoot, "package.json"));
@@ -115,6 +116,14 @@ try {
 	assert.ok(css.segmented.bytes < css.all.bytes, "Segmented CSS did not reduce the style payload.");
 	assert.match(cssText.segmented, /\.v-segmented\s*\{/);
 	assert.match(cssText.all, /\.v-segmented\s*\{/);
+	const themeCss = await build({
+		absWorkingDir: consumerRoot,
+		stdin: { contents: '@import "@violet/ui/palettes/coral.css";\n@import "@violet/ui/tokens.css";\n@import "@violet/ui/classes.css";', resolveDir: consumerRoot, loader: "css" },
+		bundle: true,
+		write: false,
+		logLevel: "silent",
+	});
+	await checkConsumerTheme(themeCss.outputFiles[0].text, readFileSync(resolve(consumerRoot, "plain.html"), "utf8"));
 	run(["exec", "vite", "build"], consumerRoot);
 	writeFileSync(resolve(consumerRoot, "bundle-report.json"), JSON.stringify({ installedEntry, graphs, css }, null, 2));
 	console.log(JSON.stringify({ consumerRoot, installedEntry, js: Object.fromEntries(Object.entries(graphs).map(([name, value]) => [name, { bytes: value.bytes, gzipBytes: value.gzipBytes }])), css }, null, 2));

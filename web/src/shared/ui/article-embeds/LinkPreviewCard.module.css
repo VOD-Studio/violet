@@ -18,7 +18,7 @@
 }
 
 .card:is(:hover, :focus-visible) {
-	border-color: color-mix(in oklab, var(--primary) 42%, transparent);
+	border-color: var(--selected-foreground);
 	box-shadow: 0 0.9rem 2.6rem color-mix(in oklab, var(--foreground) 7%, transparent);
 	transform: translateY(-0.1rem);
 }
@@ -28,7 +28,7 @@
 }
 
 .card:focus-visible {
-	outline: 2px solid color-mix(in oklab, var(--primary) 60%, transparent);
+	outline: 2px solid var(--ring);
 	outline-offset: 3px;
 }
 
@@ -65,7 +65,7 @@
 
 .source {
 	overflow: hidden;
-	color: var(--primary);
+	color: var(--primary-text);
 	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 	font-size: 0.62rem;
 	font-weight: 600;

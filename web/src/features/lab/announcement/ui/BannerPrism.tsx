@@ -1,8 +1,8 @@
 import type { Announcement } from "@features/settings/model/types";
+import { useBannerTicker, usePrefersReducedMotion } from "@shared/hooks/use-banner-ticker";
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { BannerFace, BannerStage } from "./BannerStage";
-import { useBannerTicker, usePrefersReducedMotion } from "./use-banner-ticker";
 
 // 正交投影（无 perspective）的滚筒翻面——机场翻牌显示屏的做法：
 // 3D 结构感来自 N 面滚筒与遮挡关系，旋转只是垂直压扁再展开，
