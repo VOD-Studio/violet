@@ -7,6 +7,67 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.18.0](https://github.com/VOD-Studio/violet/compare/v2.17.2...v2.18.0) (2026-10-27)
+
+
+### 新增
+
+* **color-guard:** 禁止主色透明度悬停 ([3f19382](https://github.com/VOD-Studio/violet/commit/3f193827a720b5db71c8c785bc32016e6ae3ea94))
+* **color-guard:** 禁止把角色实色当文字色 ([1f14d76](https://github.com/VOD-Studio/violet/commit/1f14d765bcb0d093a24b8116c2e9732a84a6514d)), closes [#650](https://github.com/VOD-Studio/violet/issues/650)
+* **color-guard:** 阻止新增颜色违规与白名单扩张 ([e4020cc](https://github.com/VOD-Studio/violet/commit/e4020cc83839dfc4aadbadab9203db379368180b)), closes [#636](https://github.com/VOD-Studio/violet/issues/636)
+* **command-palette:** 新增主题切换命令 ([03a4d54](https://github.com/VOD-Studio/violet/commit/03a4d54db905a3188af276ec9ed9d9dc0471dfb6)), closes [#647](https://github.com/VOD-Studio/violet/issues/647)
+* **decor:** 新增四季装饰的插画粒子与挂件 ([54e9b29](https://github.com/VOD-Studio/violet/commit/54e9b291e8b8e6a679c426aa41af3f7642849673)), closes [#649](https://github.com/VOD-Studio/violet/issues/649)
+* **decor:** 站点投放季节装饰插槽 ([62f8e21](https://github.com/VOD-Studio/violet/commit/62f8e21ffb4365b70e35311885ddaa4d9497bf03)), closes [#649](https://github.com/VOD-Studio/violet/issues/649)
+* **header:** 接入主题切换入口 ([0fd643c](https://github.com/VOD-Studio/violet/commit/0fd643cc1232477ac3efbc33dd4b48878e466713)), closes [#647](https://github.com/VOD-Studio/violet/issues/647)
+* **home:** 冬季寄语改为初雪映窗 ([bcb3c9a](https://github.com/VOD-Studio/violet/commit/bcb3c9a3df8a210d9a62f8db1b79d57f5ebec634))
+* **home:** 季节寄语跟随当前主题 ([fd796c0](https://github.com/VOD-Studio/violet/commit/fd796c0c078c9108b695e5ab1877a3f9ab7f5c5a)), closes [#646](https://github.com/VOD-Studio/violet/issues/646)
+* **theme-switcher:** 主题菜单支持切换季节装饰 ([f0929ee](https://github.com/VOD-Studio/violet/commit/f0929eeb6838d12dfba5534afa2dd77ff1138fd2)), closes [#649](https://github.com/VOD-Studio/violet/issues/649)
+* **theme-switcher:** 支持自定义主题 ([494d18b](https://github.com/VOD-Studio/violet/commit/494d18b6709cf6e5ed6f04f1b97f95c5f660a0c7)), closes [#648](https://github.com/VOD-Studio/violet/issues/648)
+* **theme-switcher:** 新增主题切换入口组件 ([4d02381](https://github.com/VOD-Studio/violet/commit/4d02381a026dd3eb8e236fcf982d8b96b053fe27)), closes [#647](https://github.com/VOD-Studio/violet/issues/647)
+* **theme:** 为主题切换提供共享状态 ([ae15924](https://github.com/VOD-Studio/violet/commit/ae15924fbcecfb4fb1536889e0f6aa8886422c83)), closes [#647](https://github.com/VOD-Studio/violet/issues/647)
+* **theme:** 主题偏好支持自定义主题 ([c7410bb](https://github.com/VOD-Studio/violet/commit/c7410bb5292f5a854a7e471037d5e886fcd5c3a0)), closes [#648](https://github.com/VOD-Studio/violet/issues/648)
+* **theme:** 支持提高对比度档位 ([5dba594](https://github.com/VOD-Studio/violet/commit/5dba594300089e746f09851c71509bf9ac8e70af))
+* **theme:** 文字工具类改取角色的可读文字档 ([33feca7](https://github.com/VOD-Studio/violet/commit/33feca718702c623840518806ee553ea896a0cec)), closes [#650](https://github.com/VOD-Studio/violet/issues/650)
+* **theme:** 新增品牌与中性的透明度色阶 ([c9b7388](https://github.com/VOD-Studio/violet/commit/c9b738857b9706233d2bd12cc3e4ee49da0b770e))
+* **theme:** 新增种子色生成明暗色阶的算法包 ([12b83e7](https://github.com/VOD-Studio/violet/commit/12b83e7849bac9aaf86030ed82a7efbb686585df))
+* **theme:** 新增色相固定的状态色阶 ([2c421ff](https://github.com/VOD-Studio/violet/commit/2c421ffb30f33c7370b37bf61e556686c922eb43))
+* **theme:** 新增装饰偏好 ([3e27815](https://github.com/VOD-Studio/violet/commit/3e278159567f58f5902cf4f2a12f56caada48e7b)), closes [#649](https://github.com/VOD-Studio/violet/issues/649)
+* **theme:** 新增近等亮度且色盲可辨的分类色阶 ([d80ed5c](https://github.com/VOD-Studio/violet/commit/d80ed5c23c0d7e64d55c535ccbd32242d97c0e2c))
+* **theme:** 方言提供主色文字映射 ([38c0a3d](https://github.com/VOD-Studio/violet/commit/38c0a3d8684dcd35d1561f2c70c64c6a61093f12)), closes [#650](https://github.com/VOD-Studio/violet/issues/650)
+* **theme:** 生成四季预设主题样式 ([9185595](https://github.com/VOD-Studio/violet/commit/91855959044c13e3fb1546a55cae62c494b4423c)), closes [#646](https://github.com/VOD-Studio/violet/issues/646)
+* **theme:** 由生成色阶提供组件语义色 ([4e8503d](https://github.com/VOD-Studio/violet/commit/4e8503df4a5bdafec73b321bda1337745f58cc2f))
+* **theme:** 种子色生成全站主题与四季装饰 ([b088f91](https://github.com/VOD-Studio/violet/commit/b088f912f4f38c8efc1f373e4b8b705534a2e9f8))
+* **theme:** 自定义主题在 SSR 首帧生效 ([ee7454c](https://github.com/VOD-Studio/violet/commit/ee7454cd0abbabe02297342927391cbc24821e4c)), closes [#648](https://github.com/VOD-Studio/violet/issues/648)
+* **theme:** 装饰偏好在 SSR 首帧生效 ([4eb4907](https://github.com/VOD-Studio/violet/commit/4eb4907ff87e25d81aa798226d48a6a0c0ddd4a4)), closes [#649](https://github.com/VOD-Studio/violet/issues/649)
+* **theme:** 解析主题偏好与跟随季节 ([9c41827](https://github.com/VOD-Studio/violet/commit/9c4182754276d73bdd756846bf2650d909028a8b)), closes [#646](https://github.com/VOD-Studio/violet/issues/646)
+* **theme:** 预设主题在 SSR 首帧生效 ([aecc02f](https://github.com/VOD-Studio/violet/commit/aecc02ff935e34e7d7ab27a0a1afcb2d94b37a8c)), closes [#646](https://github.com/VOD-Studio/violet/issues/646)
+
+
+### 修复
+
+* **color-guard:** 初始基准改为远程可达的提交 ([5b11e84](https://github.com/VOD-Studio/violet/commit/5b11e84c35a9c99674e5bd71852949543fa94c72)), closes [#649](https://github.com/VOD-Studio/violet/issues/649)
+* **cursor:** 移除跟随指针的自定义光标 ([fc3ffcc](https://github.com/VOD-Studio/violet/commit/fc3ffcceeae0e3e686aec9f06340ddfad079b85f))
+
+
+### 性能优化
+
+* **theme:** 色度在色域内时跳过二分查找 ([81f6d44](https://github.com/VOD-Studio/violet/commit/81f6d44c361a26311f405ea721a1108f3eb5e004))
+
+
+### 重构
+
+* **appearance:** 将外观切换迁入正式功能层 ([107e76a](https://github.com/VOD-Studio/violet/commit/107e76ad986498c379de4454277e56af678d868a)), closes [#635](https://github.com/VOD-Studio/violet/issues/635)
+* **appearance:** 将站点消费方切换到语义色 ([3de1b5d](https://github.com/VOD-Studio/violet/commit/3de1b5d45607d1ef5ccb439f50558eacc90c472f))
+* **appearance:** 提供外观命名的共享状态桥接 ([724f5f0](https://github.com/VOD-Studio/violet/commit/724f5f071d1ce99a42e445cf5c89d2a5c223069d))
+* **appearance:** 迁移站点公共层颜色语义 ([5d0df2f](https://github.com/VOD-Studio/violet/commit/5d0df2f60968dfd6ce7ea396768210f472c97aa5))
+* **decor:** 按评审收拢装饰模块的重复与形态 ([df041b7](https://github.com/VOD-Studio/violet/commit/df041b792781a7433ac44c7c0c3c31239f6bd4c2)), closes [#649](https://github.com/VOD-Studio/violet/issues/649)
+* **theme:** 公共层文字改取角色可读档 ([fa31cf2](https://github.com/VOD-Studio/violet/commit/fa31cf2362274811cb8b0fcba1bae0cd04f44cd6)), closes [#650](https://github.com/VOD-Studio/violet/issues/650)
+* **theme:** 删除带 -text 后缀的颜色工具类 ([738f5ae](https://github.com/VOD-Studio/violet/commit/738f5ae0d0ce6ce96cfcae8224e27b43b1a9f378)), closes [#650](https://github.com/VOD-Studio/violet/issues/650)
+* **theme:** 删除组件包旧颜色接口 ([3fb1280](https://github.com/VOD-Studio/violet/commit/3fb128003f42b4924628964060091654ae530b43))
+* **theme:** 抽出偏好 cookie 的读写 ([23a06de](https://github.com/VOD-Studio/violet/commit/23a06decda10d8a36af52aed643c0701b3c4c3b0)), closes [#649](https://github.com/VOD-Studio/violet/issues/649)
+* **theme:** 抽出单个主题样式的生成 ([6f5d377](https://github.com/VOD-Studio/violet/commit/6f5d37784b5c1637a326c7a1969791e55b0940a5)), closes [#648](https://github.com/VOD-Studio/violet/issues/648)
+* **theme:** 站点消费方文字改取角色可读档 ([0437995](https://github.com/VOD-Studio/violet/commit/04379954d2a41141a344b94432553f4ff2f70b08)), closes [#650](https://github.com/VOD-Studio/violet/issues/650)
+
 ## [2.17.2](https://github.com/VOD-Studio/violet/compare/v2.17.1...v2.17.2) (2026-10-24)
 
 
