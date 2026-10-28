@@ -82,7 +82,7 @@ func NormalizeURL(raw string) string {
 		if err != nil {
 			return ""
 		}
-		if !(scheme == "http" && number == 80 || scheme == "https" && number == 443) {
+		if (scheme != "http" || number != 80) && (scheme != "https" || number != 443) {
 			host += ":" + strconv.FormatUint(number, 10)
 		}
 	}
@@ -137,7 +137,7 @@ func validHostname(host string) bool {
 			return false
 		}
 		for _, c := range label {
-			if !(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '-') {
+			if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && (c < '0' || c > '9') && c != '-' {
 				return false
 			}
 		}

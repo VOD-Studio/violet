@@ -134,7 +134,7 @@ func scanLinkEnd(text string, from int) int {
 	query := false
 	for end < len(text) {
 		r, size := utf8.DecodeRuneInString(text[end:])
-		if !(unicode.IsLetter(r) || unicode.IsNumber(r) || unicode.IsMark(r) || strings.ContainsRune("._~:/?#[]@!$&'()*+,;=%{}^-", r)) || strings.ContainsRune("。，；：！？、（）【】《》「」『』“”‘’", r) {
+		if !unicode.IsLetter(r) && !unicode.IsNumber(r) && !unicode.IsMark(r) && !strings.ContainsRune("._~:/?#[]@!$&'()*+,;=%{}^-", r) || strings.ContainsRune("。，；：！？、（）【】《》「」『』“”‘’", r) {
 			break
 		}
 		if r == '?' {
