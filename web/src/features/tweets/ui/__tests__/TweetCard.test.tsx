@@ -51,9 +51,10 @@ vi.mock("@violet/ui/confirm-dialog", () => ({
 		) : null,
 }));
 
-// ImageGrid 含 ImagePreview（重），mock 掉避免 Radix portal 干扰
-vi.mock("@shared/ui/image-grid", () => ({
-	ImageGrid: () => <img src="/photo.png" alt="推文配图" />,
+// TweetPhotos 含灯箱交互（重），mock 掉避免 DOM portal 干扰
+vi.mock("@violetjs/react-tweet", async (importOriginal) => ({
+	...(await importOriginal<object>()),
+	TweetPhotos: () => <img src="/photo.png" alt="推文配图" />,
 }));
 
 import TweetCard from "../TweetCard";
