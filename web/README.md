@@ -129,6 +129,8 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 
 ### 音乐播放器接入
 
+站点使用 `@violetjs/kite-player` 的自定义 `DataSource`，对接本站 `/api/v1/music/**`，不改用包内直连外站的数据源。公开歌单按页载入；凭据模式变化时重建队列，刷新恢复队列与进度但不自动播放。
+
 播放器通过公开 `position` 属性默认靠左。宿主只设置 `--kite-blob`、`--kite-blob-icon` 按钮颜色和层级、边距、移动端导航避让，保留播放器原生外观与开合动效；不要通过部件 CSS 重写圆角、阴影或动画。
 
 升级播放器依赖时同步 `pnpm-workspace.yaml` 中 `minimumReleaseAgeExclude` 的精确版本，并验证生产 Docker 构建；其余依赖保留默认的 24 小时发布冷却期。
