@@ -1,4 +1,6 @@
+import type { PresenceReceipt } from "@features/presence/lib/presence";
 import { DEFAULT_DECORATION_LAYERS } from "@shared/lib/decoration-preference";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
 	createMemoryHistory,
 	createRootRoute,
@@ -11,7 +13,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { afterEach, describe, expect, it } from "vitest";
 import HeaderIsland from "../HeaderIsland";
 
-function renderAt(path: string) {
+function renderAt(path: string, presence?: PresenceReceipt) {
 	const root = createRootRoute({
 		// 面板里的主题选择读取根路由上下文
 		beforeLoad: () => ({
@@ -35,7 +37,13 @@ function renderAt(path: string) {
 		),
 		history: createMemoryHistory({ initialEntries: [path] }),
 	});
-	render(<RouterProvider router={router} />);
+	const queryClient = new QueryClient();
+	if (presence) queryClient.setQueryData(["presence", "current"], presence);
+	render(
+		<QueryClientProvider client={queryClient}>
+			<RouterProvider router={router} />
+		</QueryClientProvider>,
+	);
 	return router;
 }
 
@@ -93,6 +101,48 @@ describe("HeaderIsland", () => {
 		fireEvent.click(more);
 		const selected = await screen.findByRole("link", { name: label });
 		expect(selected.getAttribute("aria-current")).toBe("page");
+	});
+
+	it("有在线设备时，展开面板顶部列出此刻的媒体、应用与窗口", async () => {
+		const now = Date.now();
+		renderAt("/", {
+			receivedAt: now,
+			presence: {
+				generated_at: new Date(now).toISOString(),
+				devices: [
+					{
+						id: "10000000-0000-4000-8000-000000000001",
+						display_name: "MacBook Pro",
+						updated_at: new Date(now).toISOString(),
+						expires_at: new Date(now + 45_000).toISOString(),
+						sources: {
+							application: { display_name: "Code" },
+							window: { title: "HeaderIsland.tsx — violet" },
+							media: {
+								session_id: "30000000-0000-4000-8000-000000000003",
+								player_name: "QQ 音乐",
+								title: "晴天",
+								artist: "周杰伦",
+								album: "叶惠美",
+								state: "playing",
+								duration_ms: 269_000,
+								position_ms: 102_000,
+								rate: 1,
+							},
+						},
+					},
+				],
+			},
+		});
+		const more = await screen.findByRole("button", { name: "展开全部导航" });
+		await act(async () => {});
+		fireEvent.click(more);
+		const card = await screen.findByRole("region", { name: "此刻" });
+		expect(within(card).getByText("晴天")).toBeTruthy();
+		expect(within(card).getByText("正在播放 · QQ 音乐")).toBeTruthy();
+		expect(within(card).getByText("Code")).toBeTruthy();
+		expect(within(card).getByText("HeaderIsland.tsx — violet")).toBeTruthy();
+		expect(within(card).getByRole("progressbar", { name: "播放进度" })).toBeTruthy();
 	});
 
 	it("聊天全屏页不显示，避免盖住输入栏", async () => {

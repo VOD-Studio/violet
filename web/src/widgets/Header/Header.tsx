@@ -1,3 +1,4 @@
+import { usePresenceStream } from "@features/presence";
 import { useSessionStore } from "@shared/api/session";
 import { useMe } from "@/features/auth/api/queries";
 
@@ -24,6 +25,7 @@ const Header = ({ isAuthenticated }: HeaderProps) => {
 	const sessionActive = useSessionStore((s) => s.sessionActive);
 	const enabled = isAuthenticated || sessionActive;
 	const { data: user } = useMe({ enabled });
+	usePresenceStream();
 
 	return (
 		<header

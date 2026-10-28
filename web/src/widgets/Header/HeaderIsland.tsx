@@ -1,3 +1,11 @@
+import {
+	describeActivity,
+	deviceActivities,
+	type LivePresence,
+	PresenceCard,
+	PresenceTicker,
+	useLivePresence,
+} from "@features/presence";
 import { ThemePicker } from "@features/theme-switcher";
 import {
 	flattenNavLinks,
@@ -28,6 +36,8 @@ const COMPACT_AFTER_PX = 80;
 /** 单次滚动方向判定的最小位移，过滤抖动 */
 const SCROLL_DELTA_PX = 6;
 const COMPACT_SIZE = 44;
+/** 活动胶囊左右内边距之和 */
+const PILL_PADDING = 28;
 /** 胶囊为全圆；展开成面板后收到功能性圆角上限 */
 const EXPANDED_RADIUS = 16;
 
@@ -133,6 +143,13 @@ function Island() {
 		SLOT_COUNT * 44 + labelWidth + TRACK_PADDING * 2,
 	);
 	const expandedWidth = Math.min(viewport - SIDE_GAP * 1.5, EXPANDED_MAX_WIDTH);
+	const presence = useLivePresence();
+	const [activity] = presence.lead ? deviceActivities(presence.lead) : [];
+	const [tickerWidth, setTickerWidth] = useState(0);
+	// 滚动收起后有活动时，圆钮换成活动胶囊；点开直接展开面板查看详情
+	const compactWidth = activity
+		? Math.min(viewport - SIDE_GAP * 2, Math.max(COMPACT_SIZE, tickerWidth + PILL_PADDING))
+		: COMPACT_SIZE;
 	/** 仅在路径真正变化时收起；挂载时的 effect 不能冲掉同步打开的面板（测试/极速点击） */
 	const prevPathnameRef = useRef(pathname);
 
@@ -163,7 +180,7 @@ function Island() {
 		mode === "panel"
 			? { width: expandedWidth, height: "auto" as const, borderRadius: EXPANDED_RADIUS }
 			: mode === "compact"
-				? { width: COMPACT_SIZE, height: COMPACT_SIZE, borderRadius: COMPACT_SIZE / 2 }
+				? { width: compactWidth, height: COMPACT_SIZE, borderRadius: COMPACT_SIZE / 2 }
 				: {
 						width: collapsedWidth,
 						height: COLLAPSED_HEIGHT,
@@ -198,7 +215,7 @@ function Island() {
 				initial={false}
 				animate={{
 					...size,
-					x: mode === "compact" ? (viewport - SIDE_GAP * 2 - COMPACT_SIZE) / 2 : 0,
+					x: mode === "compact" ? (viewport - SIDE_GAP * 2 - compactWidth) / 2 : 0,
 				}}
 				style={{ viewTransitionName: "site-island" }}
 				transition={spring}
@@ -214,10 +231,28 @@ function Island() {
 						<motion.div key="panel" {...content}>
 							<Panel
 								activeTo={activeTo}
+								presence={presence}
 								onClose={() => setOpen(false)}
 								reduced={reduced}
 							/>
 						</motion.div>
+					) : mode === "compact" && presence.lead && activity ? (
+						<motion.button
+							key="compact-presence"
+							type="button"
+							aria-label={`此刻${describeActivity(activity)}，展开详情与导航`}
+							onClick={() => setOpen(true)}
+							{...content}
+							className="flex h-11 w-full items-center justify-center px-3.5 text-sm text-foreground"
+						>
+							<PresenceTicker
+								device={presence.lead}
+								clockOffset={presence.clockOffset}
+								showElapsed
+								primaryClassName="max-w-32"
+								onWidthChange={setTickerWidth}
+							/>
+						</motion.button>
 					) : mode === "compact" ? (
 						<motion.button
 							key="compact"
@@ -545,10 +580,12 @@ function SlotButton({
 /** 展开态面板：全部目的地的图标网格，逐项淡入。 */
 function Panel({
 	activeTo,
+	presence,
 	onClose,
 	reduced,
 }: {
 	activeTo: string | undefined;
+	presence: LivePresence;
 	onClose: () => void;
 	reduced: boolean;
 }) {
@@ -569,6 +606,14 @@ function Panel({
 			</div>
 
 			<div className="-m-1 max-h-[min(60vh,28rem)] overflow-y-auto p-1">
+				{presence.lead ? (
+					<PresenceCard
+						devices={presence.devices}
+						lead={presence.lead}
+						clockOffset={presence.clockOffset}
+						className="mb-4 rounded-2xl bg-muted/50 p-4"
+					/>
+				) : null}
 				<Grid links={PANEL_LINKS} activeTo={activeTo} reduced={reduced} startIndex={0} />
 				{PANEL_GROUPS.map((group) => (
 					<div key={group.label} className="mt-4">
