@@ -39,6 +39,7 @@ import (
 	releaseshttp "blog-api/internal/interfaces/http/handler/releases"
 	roadmaphttp "blog-api/internal/interfaces/http/handler/roadmap"
 	rolehttp "blog-api/internal/interfaces/http/handler/role"
+	linkpreviewhttp "blog-api/internal/interfaces/http/handler/linkpreview"
 	serieshttp "blog-api/internal/interfaces/http/handler/series"
 	settingshttp "blog-api/internal/interfaces/http/handler/settings"
 	siteidentityhttp "blog-api/internal/interfaces/http/handler/siteidentity"
@@ -107,6 +108,7 @@ type Deps struct {
 	Image                  *imagehttp.Handler
 	Tweet                  *tweethttp.Handler
 	FriendLink             *friendlinkhttp.Handler
+	LinkPreview            *linkpreviewhttp.Handler
 	Series                 *serieshttp.Handler
 	Gallery                *galleryhttp.Handler
 	Note                   *notehttp.Handler

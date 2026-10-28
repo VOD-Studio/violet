@@ -154,6 +154,7 @@ func buildRoutingDeps(cfg *config.Config, redisClient *redis.Client, c *Containe
 		Image:                  c.Image.ImageHandler,
 		Tweet:                  c.Tweet.TweetHandler,
 		FriendLink:             c.FriendLink.FriendLinkHandler,
+		LinkPreview:            c.LinkPreview.LinkCardHandler,
 		Series:                 c.Series.SeriesHandler,
 		Gallery:                c.Gallery.Handler,
 		Note:                   c.Note.Handler,

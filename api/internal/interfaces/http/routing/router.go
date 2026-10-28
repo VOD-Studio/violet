@@ -91,6 +91,9 @@ func RegisterRoutes(r chi.Router, d *Deps) {
 		// 友链（前台公开：列表 + 申请 + 发码）
 		registerFriendLinkRoutes(v1, d)
 
+		// 链接卡片（公开批量取卡片；IP 限流）
+		registerLinkCardRoutes(v1, d)
+
 		// 系列书（前台公开：书架 + 详情 + 章节上下文）
 		registerSeriesRoutes(v1, d)
 
@@ -433,6 +436,17 @@ func registerFriendLinkRoutes(v1 chi.Router, d *Deps) {
 		).Post("/", friendLinkH.Apply)
 		r.With(d.limit("friendlink_code", "POST /api/v1/friend-links/code")).
 			Post("/code", friendLinkH.SendCode)
+	})
+}
+
+// registerLinkCardRoutes 注册链接卡片通用公开路由。
+//
+// POST /link-cards/lookup：批量取 OG 卡片（IP 限流防滥用——该端点可驱动
+// 服务端外站抓取）。卡片 miss/过期由服务端后台异步补抓，下次请求生效。
+func registerLinkCardRoutes(v1 chi.Router, d *Deps) {
+	v1.Route("/link-cards", func(r chi.Router) {
+		r.With(d.limit("link_cards", "POST /api/v1/link-cards/lookup")).
+			Post("/lookup", d.LinkPreview.Lookup)
 	})
 }
 
