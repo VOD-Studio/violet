@@ -14,6 +14,35 @@ import { Dropdown, DropdownContent, DropdownGroup, DropdownItem, DropdownTrigger
 import { Dropdown as LeafDropdown, DropdownContent as LeafDropdownContent, DropdownGroup as LeafDropdownGroup, DropdownItem as LeafDropdownItem, DropdownTrigger as LeafDropdownTrigger, type DropdownContentProps as LeafDropdownContentProps, type DropdownGroupProps as LeafDropdownGroupProps, type DropdownItemProps as LeafDropdownItemProps, type DropdownProps as LeafDropdownProps, type DropdownTriggerProps as LeafDropdownTriggerProps } from "@violet/ui/dropdown";
 import { Segmented, type SegmentedItem, type SegmentedProps } from "@violet/ui";
 import { Segmented as LeafSegmented, type SegmentedProps as LeafSegmentedProps } from "@violet/ui/segmented";
+import { LinkCard, type LinkCardProps } from "@violet/ui";
+import { LinkCard as LeafLinkCard, type LinkCardProps as LeafLinkCardProps } from "@violet/ui/link-card";
+
+const linkCardProps: LinkCardProps = {
+	href: "https://example.com/guide#native",
+	title: "组件设计指南",
+	description: "原生交互与独立样式",
+	siteName: "Example Journal",
+	imageSrc: "https://example.com/logo.png",
+	imageAlt: "Example logo",
+	ref: createRef<HTMLAnchorElement>(),
+	target: "_self",
+	rel: "author",
+	onClick: (event) => {
+		const anchor: HTMLAnchorElement = event.currentTarget;
+		void anchor.href;
+		event.preventDefault();
+	},
+};
+const leafLinkCardProps: LeafLinkCardProps = linkCardProps;
+export const linkCardExamples = <><LinkCard {...linkCardProps} /><LeafLinkCard {...leafLinkCardProps} ref={(anchor) => { anchor?.focus(); }} /></>;
+// @ts-expect-error LinkCard 的 ref 指向原生 anchor。
+export const invalidLinkCardRef = <LinkCard href="/guide" title="指南" ref={createRef<HTMLButtonElement>()} />;
+// @ts-expect-error LinkCard 必须提供导航地址。
+export const invalidLinkCardHref = <LeafLinkCard title="指南" />;
+// @ts-expect-error LinkCard 的标题是必填展示内容。
+export const invalidLinkCardTitle = <LinkCard href="/guide" />;
+// @ts-expect-error 组件拥有预览结构，不接受可能嵌套交互元素的 children。
+export const invalidLinkCardChildren = <LinkCard href="/guide" title="指南"><button type="button">嵌套按钮</button></LinkCard>;
 
 const uploadTileRef = createRef<HTMLButtonElement>();
 const uploadTileProps: UploadTileProps = {
