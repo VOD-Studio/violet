@@ -1,0 +1,43 @@
+.equalizer {
+	display: inline-flex;
+	align-items: flex-end;
+	gap: 2px;
+	width: 12px;
+	height: 12px;
+	flex: none;
+}
+
+.bar {
+	width: 2.5px;
+	height: 45%;
+	border-radius: 1px;
+	background: currentColor;
+	animation: presence-level 1.1s ease-in-out infinite;
+}
+
+.bar:nth-child(2) {
+	height: 80%;
+	animation-delay: -0.45s;
+}
+
+.bar:nth-child(3) {
+	height: 60%;
+	animation-delay: -0.75s;
+}
+
+/* 音量起伏用高度表达，不用 scale；减弱动态时停在静态电平 */
+@keyframes presence-level {
+	0%,
+	100% {
+		height: 30%;
+	}
+	50% {
+		height: 100%;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.bar {
+		animation: none;
+	}
+}
