@@ -118,7 +118,7 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 | 项目与路线图 | `features/projects`、`admin-projects` |
 | 上传、媒体与表情 | `features/upload`、`media`、`emojis`、`customemoji` |
 | 站点音乐 | `features/admin-music`、`music-player`，共享模型在 `entities/music` |
-| 实时状态（Nowbeam） | `features/presence`，顶栏 Logo 胶囊与移动端底部岛在 `widgets/Header` 接入 |
+| 实时状态（Nowbeam） | `features/presence`、`admin-presence`，顶栏 Logo 胶囊与移动端底部岛在 `widgets/Header` 接入 |
 | 网页链接预览 | `entities/link-preview` 管请求与回填，`shared/lib/linkify` 识别正文 URL，`@violet/ui` 提供展示组件 |
 | 明暗外观切换 | `features/appearance`，SSR 与 cookie 桥接在 `shared/` |
 | 主题切换 | `features/theme-switcher`，预设、偏好解析与 SSR 在 `shared/` |

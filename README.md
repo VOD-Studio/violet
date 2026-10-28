@@ -46,6 +46,7 @@
 - 系统面板：服务状态、受控 SQL 控制台、流式导出、定时备份与恢复
 - 运行策略：限流、日配额、图片编码、上传队列与沙箱资源，版本化保存
 - 站点音乐：连接网易云维护展示歌单，公开页经 Kite 播放器播放
+- 实时状态：接收 Nowbeam 上报，顶栏展示站长正在播放的音乐与正在使用的应用
 
 ## 技术栈
 
@@ -108,6 +109,7 @@ make docker-dev
 
 - [可运行代码块](docs/deploy/manual-deploy.md#代码运行器可运行代码块沙箱执行)：需要容器运行时与对应语言的 runner 镜像。
 - [站点音乐](docs/deploy/manual-deploy.md#kite-音乐服务可选)：需要 Kite 服务及凭据配置；播放范围受账号权益和上游接口限制。
+- [实时状态](docs/guides/nowbeam.md)：需要在 Mac 上运行 Nowbeam，反向代理为上报端点转发 WebSocket。
 
 ## 常用命令
 
