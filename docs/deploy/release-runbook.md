@@ -118,7 +118,7 @@ Runner 不可用时通过 SSH 调用同一个事务入口，详见 [手动部署
 
 Go 检查与漏洞扫描从 `api/go.mod` 读取工具链版本；生产与开发镜像固定同一补丁版本。升级 Go 时同步更新 `go.mod` 和两份 API Dockerfile。
 
-可修复的可达 Go 漏洞会阻断；`Fixed in: N/A` 仍作为告警，前端 `pnpm audit` 仍为 advisory。因此 CI 通过不代表依赖零漏洞，无修复版本的风险仍需单独跟踪。
+依赖漏洞（Go 的 `govulncheck` 与前端 `pnpm audit --prod`）只告警、不阻断 CI 与发版：发现项写入注解与任务摘要，升级走 dependabot 或人工；只有扫描工具自身执行失败才使 `Dependency Scan` 失败。因此 CI 通过不代表依赖零漏洞，风险需单独跟踪。
 
 工作流文件之外还需维护分支规则、tag 规则、production 环境与 runner 权限。此次代码改造不修改这些仓库设置：
 

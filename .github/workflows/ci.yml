@@ -480,11 +480,12 @@ jobs:
 
   # ============================================================
   # 依赖漏洞扫描
-  # govulncheck 做 reachability 分析;有修复版本的漏洞阻断 CI,Fixed-in-N/A 的(上游未发版)
-  # 降级为 warning——docker/docker 的 daemon 端漏洞(v1 +incompatible 永不修复,v2 尚在 beta),
+  # 漏洞只告警、不阻断 CI 与发版:修复要升级依赖,不应卡住无关改动;发现项进注解与任务摘要,
+  # 升级走 dependabot 或人工。只有扫描工具自身执行失败才让本任务失败。
+  # govulncheck 做 reachability 分析;Fixed-in-N/A 的(上游未发版)另行标注——
+  # docker/docker 的 daemon 端漏洞(v1 +incompatible 永不修复,v2 尚在 beta),
   # violet 作为 client 不触发,属于模块级假阳性。
-  # pnpm audit 无 reachability 分析,高危漏洞未必被实际调用,初期仅告警不阻断。
-  # 待前端生产依赖基线清理后,升级为阻断。
+  # pnpm audit 无 reachability 分析,高危漏洞未必被实际调用。
   # 按变更侧裁剪:govulncheck 只查 api 依赖,pnpm audit 只查 web 依赖。
   # ============================================================
   dependency-scan:
@@ -529,14 +530,14 @@ jobs:
             echo "::error::govulncheck 执行失败(exit ${code}),输出无漏洞报告特征,疑为工具自身错误"
             exit 1
           fi
+          { echo '### govulncheck'; echo; echo '```'; echo "$output" | grep -E "^Vulnerability #|Module:|Fixed in:"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
           # 提取有修复版本的漏洞(Fixed in: 非 N/A)
           fixable=$(echo "$output" | grep "Fixed in:" | grep -v "N/A" || true)
           if [ -n "$fixable" ]; then
-            echo "::error::发现可修复的漏洞,请升级依赖:"
-            echo "$fixable"
-            exit 1
+            echo "::warning::发现可修复的可达漏洞(仅告警,不阻断),请升级依赖: $(echo "$fixable" | sed 's/^ *Fixed in: //' | sort -u | paste -sd ' ' -)"
+          else
+            echo "::warning::所有漏洞均为 Fixed-in-N/A,降级为 advisory"
           fi
-          echo "::warning::所有漏洞均为 Fixed-in-N/A,降级为 advisory"
 
       - name: Setup pnpm
         if: needs.changes.outputs.web == 'true'
