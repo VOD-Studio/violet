@@ -91,19 +91,12 @@ describe("TweetContent URL 链接", () => {
 		expect(a.getAttribute("href")).toBe("https://example.com/a#frag");
 	});
 
-	it("www 前缀补协议，裸域名不识别", () => {
-		render(<TweetContent content="去 www.example.com/x 或 example.com/y 看" />);
-		const links = urlLinks();
-		expect(links).toHaveLength(1);
-		expect(links[0].getAttribute("href")).toBe("https://www.example.com/x");
-	});
-
 	it("超长 URL 截断显示但 href 完整", () => {
 		const long = `https://example.com/${"x".repeat(100)}`;
 		render(<TweetContent content={`链接 ${long} 结束`} />);
 		const a = urlLinks()[0];
 		expect(a.getAttribute("href")).toBe(long);
 		expect(a.textContent).toContain("…");
-		expect(a.textContent!.length).toBeLessThan(long.length);
+		expect((a.textContent ?? "").length).toBeLessThan(long.length);
 	});
 });

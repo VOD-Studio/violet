@@ -50,7 +50,7 @@ describe("QuotedTweetThumbs", () => {
 		render(
 			// biome-ignore lint/a11y/useKeyWithClickEvents: 仅验证冒泡被阻止
 			<div onClick={outer}>
-			<QuotedTweetThumbs images={refs} />
+				<QuotedTweetThumbs images={refs} />
 			</div>,
 		);
 		fireEvent.click(screen.getByRole("button", { name: "查看第 3 张图片，共 6 张" }));

@@ -1,7 +1,7 @@
-import type { TweetImageRef } from "@/entities/tweet/model/types";
 import { contentImageUrl } from "@shared/lib/image-url";
 import { ImagePreview, useImagePreview } from "@shared/ui/image-preview";
 import { cn } from "cn";
+import type { TweetImageRef } from "@/entities/tweet/model/types";
 
 /** 引用卡片缩略图最多展示的张数，其余折叠为最后一格上的「+N」。 */
 const MAX_VISIBLE = 4;

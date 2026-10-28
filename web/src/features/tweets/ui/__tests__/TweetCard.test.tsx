@@ -228,7 +228,11 @@ describe("TweetCard — 整卡导航边界", () => {
 
 	it("点击图片和更多菜单不会触发详情导航", async () => {
 		meDataOverride = { id: "u-author" };
-		render(<TweetCard tweet={makeTweet({ images: [{ url: "/photo.png", width: null, height: null }] })} />);
+		render(
+			<TweetCard
+				tweet={makeTweet({ images: [{ url: "/photo.png", width: null, height: null }] })}
+			/>,
+		);
 		fireEvent.click(screen.getByRole("img", { name: "推文配图" }));
 		await openMoreMenu();
 		expect(navigateMock).not.toHaveBeenCalled();

@@ -1,9 +1,9 @@
-import type { TweetImageRef } from "@/entities/tweet/model/types";
 import { contentImageUrl } from "@shared/lib/image-url";
 import { ImagePreview, useImagePreview } from "@shared/ui/image-preview";
 import { cn } from "cn";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
+import type { TweetImageRef } from "@/entities/tweet/model/types";
 
 export interface TweetDetailMediaProps {
 	/** 本站推文图片，按发布顺序。 */

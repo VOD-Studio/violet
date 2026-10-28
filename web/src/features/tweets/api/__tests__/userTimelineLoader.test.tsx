@@ -40,8 +40,8 @@ describe("userTimeline loader prefetching compatibility", () => {
 					comment_count: 0,
 					quote_count: 0,
 					is_liked: false,
-				created_at: "2026-01-01T00:00:00Z",
-				link_cards: [],
+					created_at: "2026-01-01T00:00:00Z",
+					link_cards: [],
 				},
 			],
 			pagination: {
@@ -87,8 +87,8 @@ describe("userTimeline loader prefetching compatibility", () => {
 					comment_count: 0,
 					quote_count: 0,
 					is_liked: false,
-				created_at: "2026-01-01T00:00:00Z",
-				link_cards: [],
+					created_at: "2026-01-01T00:00:00Z",
+					link_cards: [],
 				},
 			],
 			pagination: {

@@ -4,6 +4,7 @@ import TweetCard from "@features/tweets/ui/TweetCard";
 import TweetCommentSection from "@features/tweets/ui/TweetCommentSection";
 import { TweetDetailMedia } from "@features/tweets/ui/TweetDetailMedia";
 import { TweetDetailSources } from "@features/tweets/ui/TweetDetailSources";
+import { SITE_URL } from "@shared/config/env";
 import { HistoryBack } from "@shared/ui/history-back";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Empty, PageShell, ShimmerSkeleton } from "@violet/ui";
@@ -118,14 +119,35 @@ export const Route = createFileRoute("/tweets/$id")({
 	head: ({ loaderData }) => {
 		const tweet = loaderData;
 		if (!tweet) return { meta: [{ title: "推文不存在" }] };
-		const excerpt = tweet.content || `@${tweet.author.username} 的推文`;
+		const source =
+			tweet.external_tweet?.availability === "available"
+				? tweet.external_tweet.snapshot
+				: null;
+		const quote = tweet.quoted_tweet;
+		const quotedSource =
+			quote?.external_tweet?.availability === "available"
+				? quote.external_tweet.snapshot
+				: null;
+		const excerpt =
+			tweet.content ||
+			source?.text ||
+			quote?.content ||
+			quotedSource?.text ||
+			`@${tweet.author.username} 的推文`;
+		const image =
+			tweet.images[0]?.url ||
+			source?.media?.[0]?.url ||
+			quote?.images[0]?.url ||
+			quotedSource?.media?.[0]?.url;
 		return {
 			meta: [
 				{ title: `${tweet.author.username} 的推文` },
 				{ name: "description", content: excerpt.slice(0, 140) },
 				{ property: "og:title", content: `${tweet.author.username} 的推文` },
 				{ property: "og:description", content: excerpt.slice(0, 140) },
-				...(tweet.images[0] ? [{ property: "og:image", content: tweet.images[0].url }] : []),
+				...(image
+					? [{ property: "og:image", content: new URL(image, SITE_URL).href }]
+					: []),
 			],
 		};
 	},

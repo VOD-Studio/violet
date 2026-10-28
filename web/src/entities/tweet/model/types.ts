@@ -8,6 +8,8 @@
  * 字段 snake_case 与后端 json tag 一一对应，避免映射层。
  */
 
+import type { LinkPreviewCard } from "@entities/link-preview/model/types";
+
 /**
  * TweetAuthor - 推文作者资料卡
  *
@@ -40,15 +42,6 @@ export interface TweetImageRef {
 	height: number | null;
 }
 
-/** TweetLinkCard - 推文正文内嵌的 OG 链接卡片，对应后端 linkpreview LinkCardDTO。 */
-export interface TweetLinkCard {
-	url: string;
-	title: string;
-	description: string;
-	site_name: string;
-	image_url: string;
-}
-
 /**
  * QuotedTweet - 被引用的推文读模型
  *
@@ -71,7 +64,7 @@ export interface QuotedTweet {
 	created_at: string;
 	external_tweet?: ExternalTweet | null;
 	/** 正文 URL 逐个对应的链接卡片；后端保证为数组，边界处 ?? [] */
-	link_cards: TweetLinkCard[];
+	link_cards: LinkPreviewCard[];
 }
 
 /**
@@ -105,7 +98,7 @@ export interface Tweet {
 	created_at: string;
 	external_tweet?: ExternalTweet | null;
 	/** 正文 URL 逐个对应的链接卡片；后端保证为数组，边界处 ?? [] */
-	link_cards: TweetLinkCard[];
+	link_cards: LinkPreviewCard[];
 }
 
 /** 共享的 X 原文；不可用时不携带旧正文或媒体。 */

@@ -64,14 +64,13 @@ function renderChunk(
 ): React.ReactNode[] {
 	const elements: React.ReactNode[] = [];
 	let lastIndex = 0;
-	let match: RegExpExecArray | null;
-
-	// 共享正则实例，进入前重置 lastIndex（与原实现一致）
+	// 共享正则实例，进入前重置 lastIndex，避免上一次调用残留游标
 	HASHTAG_REGEX.lastIndex = 0;
+	let match: RegExpExecArray | null = HASHTAG_REGEX.exec(chunk);
 
-	while ((match = HASHTAG_REGEX.exec(chunk)) !== null) {
+	while (match !== null) {
 		const matchStart = match.index;
-		const matchEnd = HASHTAG_REGEX.lastIndex;
+		const matchEnd = match.index + match[0].length;
 		const fullMatch = match[0];
 		const tagName = match[1];
 
@@ -97,10 +96,15 @@ function renderChunk(
 		);
 
 		lastIndex = matchEnd;
+		match = HASHTAG_REGEX.exec(chunk);
 	}
 	if (lastIndex < chunk.length) {
 		elements.push(
-			<EmojiText key={`text-${base + lastIndex}`} text={chunk.slice(lastIndex)} emote={emote} />,
+			<EmojiText
+				key={`text-${base + lastIndex}`}
+				text={chunk.slice(lastIndex)}
+				emote={emote}
+			/>,
 		);
 	}
 	return elements;
