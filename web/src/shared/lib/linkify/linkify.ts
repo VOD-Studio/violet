@@ -1,125 +1,223 @@
-/**
- * linkify - 通用 URL 识别 tokenizer
- *
- * 从纯文本中切出 URL 段：识别 `http(s)://`、`www.` 前缀的链接（裸域名不做，
- * 误判率高），支持中文等 Unicode 路径，尾部标点剥离，超长显示截断。
- *
- * 与后端 `application/tweet/urls.go` 的 ExtractURLs 保持同一规则集
- * （PRD-0038：后端按此提取正文 URL 关联 OG 卡片）。
- */
+import { parse as parseDomain } from "tldts";
 
-/** 单个 URL 段：原文起止偏移与展示/跳转地址。 */
+/** A link span; offsets use JavaScript UTF-16 code units. */
 export interface LinkifyMatch {
-	/** URL 在原文中的起始偏移（含） */
 	start: number;
-	/** URL 在原文中的结束偏移（不含；已剥离尾部标点） */
 	end: number;
-	/** 跳转地址：无协议时补 https:// */
 	href: string;
-	/** 展示文本原文（未截断） */
 	text: string;
 }
 
-/** URL 主体允许的字符：ASCII URL 保留字 + 非 ASCII（Unicode 路径） */
-const URL_BODY = /[\p{L}\p{N}._~:/?#[\]@!$&'()*+,;=%-]/u;
-const TRAILING_PUNCT = /[.,;:!?)\]}'"]+$/u;
-/** 域名段字符：ASCII 字母数字与连字符 */
-const HOST = /[A-Za-z0-9-]/;
+const HTTP = /^https?:\/\//i;
+const AUTHORITY = /^[\p{L}\p{N}\p{M}.\-:[\]@%_]+/iu;
+const BARE_HOST = /^[a-z0-9.-]+(?::[0-9]+)?/i;
+const INTERNATIONAL_HOST = /^[\p{L}\p{N}\p{M}.-]+(?::[0-9]+)?/u;
+const SCHEME = /^[a-z][a-z0-9+.-]*:/i;
+const BLOCKED_PREVIOUS = /[a-z0-9_@./:+-]/i;
+const BODY = /^[\p{L}\p{N}\p{M}._~:/?#[\]@!$&'()*+,;=%{}^-]$/u;
+const FILE_SUFFIX =
+	/\.(?:md|js|ts|tsx|jsx|css|json|txt|html?|xml|pdf|png|jpe?g|gif|svg|webp|ya?ml|log)$/i;
+const PUNCTUATION = /[.,;:!?'"`]$/;
+const EMOTE = /^\[[a-z0-9_\p{L}-]+\]/iu;
+const USERINFO = /^[^/?#\s<>。，；：！？、（）【】《》「」『』“”‘’]*@/u;
 
-const PROTOCOL_RE = /^https?:\/\//i;
-const WWW_RE = /^www\./i;
+function knownDomain(host: string): boolean {
+	const domain = parseDomain(host, { allowPrivateDomains: false });
+	return domain.isIcann === true && domain.domain !== null;
+}
+
+function validHostname(host: string): boolean {
+	if (host.startsWith("[")) return host.endsWith("]");
+	if (/^[0-9.]+$/.test(host)) {
+		const parts = host.split(".");
+		return (
+			parts.length === 4 &&
+			parts.every((part) => /^(?:0|[1-9][0-9]{0,2})$/.test(part) && Number(part) <= 255)
+		);
+	}
+	return (
+		host.length <= 253 &&
+		host
+			.split(".")
+			.every(
+				(label) => label.length <= 63 && /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i.test(label),
+			)
+	);
+}
 
 /**
- * 扫描纯文本，返回按出现顺序排列的 URL 段。
+ * Returns the shared HTTP cache key, omitting fragments; invalid input returns an empty string.
  *
- * 识别规则：
- * - `http://`、`https://`（大小写不敏感）或 `www.`（前一个字符不属于 URL 主体，
- *   避免 `awww.example.com` 中段误起）开头
- * - 主机须为 `.` 分隔的至少两段域名段
- * - 路径/query/fragment 宽松延伸到首个非 URL 字符；Unicode 字符属于 URL
- * - 尾部标点（句号、逗号、右括号等）剥离回原文
+ * @param raw - HTTP URL or a bare domain with an ICANN suffix.
+ * @returns Lowercase scheme/host, default port removed, and an explicit root path.
+ */
+export function normalizeLinkUrl(raw: string): string {
+	let source = raw.replace(/^\p{White_Space}+|\p{White_Space}+$/gu, "");
+	if (!HTTP.test(source)) {
+		if (!knownDomain(source.split(/[/?#]/, 1)[0])) return "";
+		source = `https://${source}`;
+	}
+	if (/[\p{White_Space}\\\p{Cc}]/u.test(source) || /%(?![a-f0-9]{2})/i.test(source)) return "";
+	const authority = /^https?:\/\/([^/?#]+)/i.exec(source)?.[1];
+	if (!authority || authority.includes("@") || authority.includes("%")) return "";
+	const port = authority.startsWith("[")
+		? authority.slice(authority.indexOf("]") + 1)
+		: authority.slice(authority.indexOf(":") < 0 ? authority.length : authority.indexOf(":"));
+	if (port && (!/^:[0-9]+$/.test(port) || Number(port.slice(1)) > 65535)) return "";
+	try {
+		const parsed = new URL(source);
+		// Reject legacy numeric-host coercions such as 127.1 and 0x7f000001.
+		const rawHost = authority.startsWith("[")
+			? authority.slice(0, authority.indexOf("]") + 1)
+			: authority.split(":", 1)[0];
+		if (
+			!validHostname(parsed.hostname) ||
+			(/^[0-9.]+$/.test(rawHost) && !validHostname(rawHost))
+		)
+			return "";
+		if (/^(?:[0-9]+\.)*[0-9]+$/.test(parsed.hostname) && parsed.hostname !== rawHost) return "";
+		parsed.hash = "";
+		return parsed.href;
+	} catch {
+		return "";
+	}
+}
+
+function skipTextToken(text: string, from: number): number {
+	let end = from;
+	while (end < text.length && !/[\s<>。，；：！？、（）【】《》「」『』“”‘’]/u.test(text[end]))
+		end++;
+	return end;
+}
+
+function scanEnd(text: string, from: number): number {
+	let end = from;
+	let query = false;
+	while (end < text.length) {
+		const character = String.fromCodePoint(text.codePointAt(end) ?? 0);
+		if (!BODY.test(character) || /[。，；：！？、（）【】《》「」『』“”‘’]/u.test(character))
+			break;
+		if (character === "?") query = true;
+		if (character === "#" && /^#[^#\s/]+#/u.test(text.slice(end))) break;
+		if (character === "[" && !query && EMOTE.test(text.slice(end))) break;
+		end += character.length;
+	}
+	return end;
+}
+
+function trimEnd(text: string, start: number, end: number): number {
+	while (end > start) {
+		const last = text[end - 1];
+		if (PUNCTUATION.test(last)) {
+			end--;
+			continue;
+		}
+		const open = last === ")" ? "(" : last === "]" ? "[" : last === "}" ? "{" : "";
+		if (!open) break;
+		let balance = 0;
+		for (let index = start; index < end; index++) {
+			if (text[index] === open) balance++;
+			if (text[index] === last) balance--;
+		}
+		if (balance >= 0) break;
+		end--;
+	}
+	return end;
+}
+
+/**
+ * Finds HTTP URLs and bare ICANN domains, preserving the original href fragment.
  *
- * @param text 待扫描纯文本
- * @returns URL 段数组；无链接为空数组
- * @example
- * tokenizeLinks("看这篇 https://example.com/文章/1。") // 句号剥离
- * tokenizeLinks("去 www.example.com 看看") // href 补 https://
+ * @param text - Plain text containing URLs, topics, or emoji.
+ * @returns Ordered, non-overlapping spans with UTF-16 offsets.
  */
 export function tokenizeLinks(text: string): LinkifyMatch[] {
 	const matches: LinkifyMatch[] = [];
-	let i = 0;
-	while (i < text.length) {
-		const rest = text.slice(i);
-		const proto = PROTOCOL_RE.exec(rest);
-		const www = !proto && WWW_RE.exec(rest);
-		const prev = i > 0 ? text[i - 1] : "";
-		let bodyStart: number;
-		if (proto) {
-			bodyStart = i + proto[0].length;
-		} else if (www && (i === 0 || !URL_BODY.test(prev))) {
-			bodyStart = i + www[0].length;
-		} else {
-			i++;
+	let start = 0;
+	while (start < text.length) {
+		const previous = start > 0 ? text[start - 1] : "";
+		if (BLOCKED_PREVIOUS.test(previous)) {
+			start++;
 			continue;
 		}
-		let end = stripTrailing(text, scanBody(text, bodyStart));
-		if (end > bodyStart && hasHost(text.slice(bodyStart, end))) {
-			const raw = text.slice(i, end);
-			const href = PROTOCOL_RE.test(raw) ? raw : `https://${raw}`;
-			matches.push({ start: i, end, href, text: raw });
-			i = end;
-		} else {
-			i = bodyStart; // 不是链接，从主体处继续扫描
+		const rest = text.slice(start);
+		const protocol = HTTP.exec(rest)?.[0] ?? "";
+		const scheme = SCHEME.exec(rest)?.[0] ?? "";
+		const barePort =
+			scheme !== "" &&
+			knownDomain(scheme.slice(0, -1)) &&
+			/^[0-9]/.test(rest.slice(scheme.length));
+		if (!protocol && scheme && !barePort) {
+			start = skipTextToken(text, start);
+			continue;
 		}
+		const authorityStart = start + protocol.length;
+		if (protocol && USERINFO.test(text.slice(authorityStart))) {
+			start = skipTextToken(text, start);
+			continue;
+		}
+		let authority = (protocol ? AUTHORITY : BARE_HOST).exec(text.slice(authorityStart))?.[0];
+		if (!protocol) {
+			const international = INTERNATIONAL_HOST.exec(text.slice(authorityStart))?.[0] ?? "";
+			const internationalHost = international.split(":", 1)[0];
+			const firstLabel = internationalHost.split(".", 1)[0];
+			if (
+				/[^\p{ASCII}]/u.test(internationalHost) &&
+				knownDomain(internationalHost) &&
+				(/^[a-z0-9]/i.test(internationalHost) || !/[a-z]/i.test(firstLabel))
+			) {
+				authority = international;
+			}
+		}
+		if (!authority) {
+			start++;
+			continue;
+		}
+		let hostEnd = authorityStart + authority.length;
+		while (text[hostEnd - 1] === ".") hostEnd--;
+		const unicodeAuthority = text.slice(authorityStart, hostEnd);
+		if (/[^\p{ASCII}]/u.test(unicodeAuthority) && !knownDomain(unicodeAuthority)) {
+			let candidateEnd = hostEnd;
+			while (candidateEnd > authorityStart && /[^\p{ASCII}]/u.test(text[candidateEnd - 1])) {
+				candidateEnd--;
+				if (knownDomain(text.slice(authorityStart, candidateEnd))) {
+					hostEnd = candidateEnd;
+					break;
+				}
+			}
+		}
+		const rawAuthority = text.slice(authorityStart, hostEnd);
+		let end = hostEnd;
+		if (hostEnd === authorityStart + authority.length && /[/?#]/.test(text[hostEnd] ?? " ")) {
+			end = scanEnd(text, hostEnd);
+		}
+		end = trimEnd(text, start, end);
+		if (text[end] === "\\") {
+			start = skipTextToken(text, end);
+			continue;
+		}
+		const raw = text.slice(start, end);
+		const href = protocol ? raw : `https://${raw}`;
+		const bareHost = rawAuthority.split(":", 1)[0];
+		if (
+			normalizeLinkUrl(href) &&
+			(protocol || (knownDomain(bareHost) && !FILE_SUFFIX.test(bareHost)))
+		) {
+			matches.push({ start, end, href, text: raw });
+		}
+		// Invalid authorities must not expose an embedded www/domain as a second candidate.
+		start = Math.max(start + 1, end);
 	}
 	return matches;
 }
 
-/** 从 from 起扫描 URL 主体（主机+路径），停在首个不属于 URL 主体的字符。 */
-function scanBody(text: string, from: number): number {
-	let i = from;
-	while (i < text.length && URL_BODY.test(text[i])) i++;
-	return i;
-}
-
-/** 剥离末尾标点后的结束偏移。 */
-function stripTrailing(text: string, end: number): number {
-	const m = TRAILING_PUNCT.exec(text.slice(0, end));
-	return m ? end - m[0].length : end;
-}
-
-/** 校验主体存在 `.` 分隔的至少两段非空域名段（首个 `/` 前的部分）。 */
-function hasHost(body: string): boolean {
-	const host = body.slice(0, body.indexOf("/") === -1 ? undefined : body.indexOf("/"));
-	let seg = 0;
-	let sawDot = false;
-	for (const ch of host) {
-		if (ch === ".") {
-			if (seg === 0) return false;
-			sawDot = true;
-			seg = 0;
-		} else if (HOST.test(ch)) {
-			seg++;
-		} else if (sawDot && seg > 0) {
-			return true; // 端口等后续字符，主机已完整
-		} else {
-			return false;
-		}
-	}
-	return sawDot && seg > 0;
-}
-
-/** 展示截断阈值：超过则头尾保留、中间省略。 */
-const DISPLAY_MAX = 60;
-const HEAD = 30;
-const TAIL = 20;
-
 /**
- * 超长 URL 的展示形态：头 30 + … + 尾 20；不超长原样返回。
+ * Truncates long display text to 30 leading and 20 trailing characters.
  *
- * @param raw URL 原文
+ * @param raw - Original URL text; the navigation href remains unchanged.
+ * @returns Display text of at most 60 characters.
  */
 export function displayUrl(raw: string): string {
-	if (raw.length <= DISPLAY_MAX) return raw;
-	return `${raw.slice(0, HEAD)}…${raw.slice(-TAIL)}`;
+	if (raw.length <= 60) return raw;
+	return `${raw.slice(0, 30)}…${raw.slice(-20)}`;
 }

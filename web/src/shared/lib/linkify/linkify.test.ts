@@ -1,76 +1,91 @@
+// @vitest-environment node
+
+import { readFileSync } from "node:fs";
+import { displayUrl, normalizeLinkUrl, tokenizeLinks } from "@shared/lib/linkify";
 import { describe, expect, it } from "vitest";
-import { displayUrl, tokenizeLinks } from "./linkify";
 
-describe("tokenizeLinks", () => {
-	it("识别 http/https 并剥离尾部句号", () => {
-		const text = "看这篇 https://example.com/a。";
-		const m = tokenizeLinks(text);
-		expect(m).toHaveLength(1);
-		expect(m[0].text).toBe("https://example.com/a");
-		expect(m[0].href).toBe("https://example.com/a");
-		expect(text.slice(m[0].start, m[0].end)).toBe(m[0].text);
-	});
+interface SharedURLFixtures {
+	tokenization: {
+		name: string;
+		input: string;
+		matches: {
+			text: string;
+			href: string;
+			key: string;
+			startUtf16: number;
+			endUtf16: number;
+			startByte: number;
+			endByte: number;
+			startRune: number;
+			endRune: number;
+		}[];
+	}[];
+	normalization: {
+		name: string;
+		input: string;
+		key: string;
+	}[];
+}
 
-	it("中文路径完整保留", () => {
-		const m = tokenizeLinks("https://example.com/文章/第一篇?q=关键词");
-		expect(m[0].text).toBe("https://example.com/文章/第一篇?q=关键词");
-	});
+const fixtures: SharedURLFixtures = JSON.parse(
+	readFileSync(
+		new URL(
+			"../../../../../api/internal/domain/linkpreview/testdata/urls.json",
+			import.meta.url,
+		),
+		"utf8",
+	),
+);
 
-	it("www 前缀补 https 协议", () => {
-		const m = tokenizeLinks("去 www.example.com/x 看看");
-		expect(m[0].text).toBe("www.example.com/x");
-		expect(m[0].href).toBe("https://www.example.com/x");
-	});
+describe("tokenizeLinks shared Go/TS fixtures", () => {
+	for (const sample of fixtures.tokenization) {
+		it(sample.name, () => {
+			const matches = tokenizeLinks(sample.input);
+			expect(matches).toEqual(
+				sample.matches.map((match) => ({
+					start: match.startUtf16,
+					end: match.endUtf16,
+					href: match.href,
+					text: match.text,
+				})),
+			);
+			expect(matches.map((match) => normalizeLinkUrl(match.href))).toEqual(
+				sample.matches.map((match) => match.key),
+			);
+			for (let index = 0; index < matches.length; index++) {
+				const match = matches[index];
+				const expected = sample.matches[index];
+				expect(sample.input.slice(match.start, match.end)).toBe(match.text);
+				expect(new TextEncoder().encode(sample.input.slice(0, match.start)).length).toBe(
+					expected.startByte,
+				);
+				expect(new TextEncoder().encode(sample.input.slice(0, match.end)).length).toBe(
+					expected.endByte,
+				);
+				expect(Array.from(sample.input.slice(0, match.start)).length).toBe(
+					expected.startRune,
+				);
+				expect(Array.from(sample.input.slice(0, match.end)).length).toBe(expected.endRune);
+			}
+		});
+	}
+});
 
-	it("www 前是 URL 字符时不误起（awww.example.com 不是链接）", () => {
-		expect(tokenizeLinks("awww.example.com")).toHaveLength(0);
-	});
-
-	it("括号包裹的链接右括号剥离、左括号不吞", () => {
-		const m = tokenizeLinks("(https://example.com/a)");
-		expect(m[0].text).toBe("https://example.com/a");
-	});
-
-	it("多链接保序且互不吞并", () => {
-		const m = tokenizeLinks("先 https://a.example/1 再 https://b.example/2");
-		expect(m.map((x) => x.text)).toEqual(["https://a.example/1", "https://b.example/2"]);
-	});
-
-	it("URL 内 fragment 的 # 不与话题标记冲突", () => {
-		const m = tokenizeLinks("https://example.com/a#sec1");
-		expect(m[0].text).toBe("https://example.com/a#sec1");
-	});
-
-	it("裸域名与 javascript: 不识别", () => {
-		expect(tokenizeLinks("example.com/a")).toHaveLength(0);
-		expect(tokenizeLinks("javascript:alert(1)")).toHaveLength(0);
-	});
-
-	it("大写协议识别", () => {
-		const m = tokenizeLinks("HTTPS://EXAMPLE.COM/A");
-		expect(m[0].text).toBe("HTTPS://EXAMPLE.COM/A");
-	});
-
-	it("无主机（https:///path）不识别", () => {
-		expect(tokenizeLinks("https:///only-path")).toHaveLength(0);
-	});
-
-	it("无链接文本返回空数组", () => {
-		expect(tokenizeLinks("今天天气不错 #话题#")).toHaveLength(0);
-	});
+describe("normalizeLinkUrl shared Go/TS fixtures", () => {
+	for (const sample of fixtures.normalization) {
+		it(sample.name, () => {
+			expect(normalizeLinkUrl(sample.input)).toBe(sample.key);
+		});
+	}
 });
 
 describe("displayUrl", () => {
-	it("不超长原样返回", () => {
+	it("keeps short URLs unchanged", () => {
 		expect(displayUrl("https://example.com/a")).toBe("https://example.com/a");
 	});
 
-	it("超长头尾保留中间省略", () => {
+	it("preserves the first 30 and last 20 code units", () => {
 		const raw = `https://example.com/${"x".repeat(80)}`;
-		const out = displayUrl(raw);
-		expect(out.startsWith("https://example.com/")).toBe(true);
-		expect(out).toContain("…");
-		expect(out.length).toBeLessThan(raw.length);
-		expect(out.endsWith(raw.slice(-20))).toBe(true);
+		expect(displayUrl(raw)).toBe(`${raw.slice(0, 30)}…${raw.slice(-20)}`);
 	});
 });

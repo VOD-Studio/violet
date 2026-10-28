@@ -720,7 +720,12 @@ func (s *Service) lookupLinkCards(ctx context.Context, tweets []*domaintweet.Twe
 	}
 	for i := 0; i < len(all); i += applp.MaxLookupURLs {
 		end := min(i+applp.MaxLookupURLs, len(all))
-		for u, c := range s.linkCards.Lookup(ctx, all[i:end]) {
+		result, err := s.linkCards.Lookup(ctx, all[i:end])
+		if err != nil {
+			log.Warn().Err(err).Msg("推文链接预览查询失败")
+			continue
+		}
+		for u, c := range result.Cards {
 			cards[u] = c
 		}
 	}

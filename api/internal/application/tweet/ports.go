@@ -30,7 +30,7 @@ type ImageMetaLookup interface {
 
 // LinkCardLookup 链接卡片端口（读时批量查询、发布时登记，实现为 linkpreview.Service）。
 type LinkCardLookup interface {
-	Lookup(ctx context.Context, urls []string) map[string]*applp.LinkCardDTO
+	Lookup(ctx context.Context, urls []string) (applp.LookupResultDTO, error)
 	Register(ctx context.Context, urls []string)
 }
 

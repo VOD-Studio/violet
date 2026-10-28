@@ -413,12 +413,12 @@ type fakeLinkCards struct {
 	registered []string
 }
 
-func (f *fakeLinkCards) Lookup(_ context.Context, urls []string) map[string]*applp.LinkCardDTO {
+func (f *fakeLinkCards) Lookup(_ context.Context, urls []string) (applp.LookupResultDTO, error) {
 	cards := make(map[string]*applp.LinkCardDTO, len(urls))
 	for _, u := range urls {
 		cards[u] = &applp.LinkCardDTO{URL: u, Title: "卡片：" + u}
 	}
-	return cards
+	return applp.LookupResultDTO{Cards: cards, Pending: []string{}, Unavailable: []string{}}, nil
 }
 
 func (f *fakeLinkCards) Register(_ context.Context, urls []string) {

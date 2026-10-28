@@ -1,6 +1,10 @@
 package linkpreview
 
-import "testing"
+import (
+	"encoding/json"
+	"os"
+	"testing"
+)
 
 func TestNormalizeURL(t *testing.T) {
 	cases := []struct {
@@ -41,5 +45,51 @@ func TestNormalizeURLs_DedupPreservesOrder(t *testing.T) {
 		if got[i] != want[i] {
 			t.Fatalf("got %v, want %v", got, want)
 		}
+	}
+}
+
+type sharedURLFixtures struct {
+	Normalization []struct {
+		Name  string `json:"name"`
+		Input string `json:"input"`
+		Key   string `json:"key"`
+	} `json:"normalization"`
+	Tokenization []struct {
+		Name    string `json:"name"`
+		Input   string `json:"input"`
+		Matches []struct {
+			Text       string `json:"text"`
+			Href       string `json:"href"`
+			Key        string `json:"key"`
+			StartUTF16 int    `json:"startUtf16"`
+			EndUTF16   int    `json:"endUtf16"`
+			StartByte  int    `json:"startByte"`
+			EndByte    int    `json:"endByte"`
+			StartRune  int    `json:"startRune"`
+			EndRune    int    `json:"endRune"`
+		} `json:"matches"`
+	} `json:"tokenization"`
+}
+
+func readSharedURLFixtures(t *testing.T) sharedURLFixtures {
+	t.Helper()
+	data, err := os.ReadFile("testdata/urls.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var fixtures sharedURLFixtures
+	if err := json.Unmarshal(data, &fixtures); err != nil {
+		t.Fatal(err)
+	}
+	return fixtures
+}
+
+func TestNormalizeURL_SharedFixtures(t *testing.T) {
+	for _, sample := range readSharedURLFixtures(t).Normalization {
+		t.Run(sample.Name, func(t *testing.T) {
+			if got := NormalizeURL(sample.Input); got != sample.Key {
+				t.Errorf("NormalizeURL(%q) = %q, want %q", sample.Input, got, sample.Key)
+			}
+		})
 	}
 }
