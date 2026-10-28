@@ -7,6 +7,16 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.18.1](https://github.com/VOD-Studio/violet/compare/v2.18.0...v2.18.1) (2026-10-28)
+
+
+### 修复
+
+* **decoration:** 持久化独立图层偏好 ([20ec781](https://github.com/VOD-Studio/violet/commit/20ec7818f40c19dbefe84fcd3b3fd1f3a58fe4ef))
+* **music-player:** 升级 Kite Player 至 0.4.1 ([78242f3](https://github.com/VOD-Studio/violet/commit/78242f30718bfc8ed5182a91a834848256043135))
+* **seasonal-decor:** 补齐独立装饰控制 ([32bdbdd](https://github.com/VOD-Studio/violet/commit/32bdbddceaaf3d7b470af56fd97289cea27e6b78))
+* **seasonal-decor:** 补齐独立装饰控制 ([e631b20](https://github.com/VOD-Studio/violet/commit/e631b208dfa8b652ea5ef2cda6f1a30db9fbe5cf))
+
 ## [2.18.0](https://github.com/VOD-Studio/violet/compare/v2.17.2...v2.18.0) (2026-10-27)
 
 
