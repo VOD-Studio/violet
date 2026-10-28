@@ -1,8 +1,9 @@
+import type { TweetImageRef } from "@/entities/tweet/model/types";
 import { contentImageUrl } from "@shared/lib/image-url";
 import { ImageGrid } from "@shared/ui/image-grid";
 
 /** 本站推文图片网格，点击打开灯箱而不触发卡片导航。 */
-export function TweetCardImages({ images }: { images: string[] }) {
+export function TweetCardImages({ images }: { images: TweetImageRef[] }) {
 	if (images.length === 0) return null;
 
 	return (
@@ -16,10 +17,10 @@ export function TweetCardImages({ images }: { images: string[] }) {
 			className="w-full mt-2"
 		>
 			<ImageGrid
-				images={images.map((url) => ({
-					url,
+				images={images.map((img) => ({
+					url: img.url,
 					// 灯箱保留原图，卡片只下载缩略图。
-					thumbnail: contentImageUrl(url, { width: 400 }),
+					thumbnail: contentImageUrl(img.url, { width: 400 }),
 				}))}
 			/>
 		</div>

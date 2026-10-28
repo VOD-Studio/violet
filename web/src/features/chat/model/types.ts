@@ -62,7 +62,7 @@ export interface SharedTweet {
 	id: string;
 	author?: ChatUser;
 	content?: string;
-	images?: string[];
+	images?: TweetImageRef[];
 	created_at?: string;
 	is_deleted: boolean;
 	external_tweet?: ExternalTweet | null;
@@ -205,4 +205,4 @@ export interface ChatUnreadCount {
 	unread_count: number;
 }
 
-import type { ExternalTweet, QuotedTweet } from "@entities/tweet/model/types";
+import type { ExternalTweet, QuotedTweet, TweetImageRef } from "@entities/tweet/model/types";

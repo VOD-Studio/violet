@@ -69,6 +69,7 @@ function makeTweet(overrides: Partial<Tweet> = {}): Tweet {
 		comment_count: 0,
 		quote_count: 0,
 		created_at: "2026-01-01T00:00:00Z",
+		link_cards: [],
 		...overrides,
 	};
 }
@@ -226,7 +227,7 @@ describe("TweetCard — 整卡导航边界", () => {
 
 	it("点击图片和更多菜单不会触发详情导航", async () => {
 		meDataOverride = { id: "u-author" };
-		render(<TweetCard tweet={makeTweet({ images: ["/photo.png"] })} />);
+		render(<TweetCard tweet={makeTweet({ images: [{ url: "/photo.png", width: null, height: null }] })} />);
 		fireEvent.click(screen.getByRole("img", { name: "推文配图" }));
 		await openMoreMenu();
 		expect(navigateMock).not.toHaveBeenCalled();

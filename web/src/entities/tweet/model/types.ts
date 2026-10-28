@@ -27,6 +27,29 @@ export interface TweetAuthor {
 }
 
 /**
+ * TweetImageRef - 推文图片引用
+ *
+ * 对应后端 application/tweet TweetImageDTO：发布时快照的访问 URL 与尺寸。
+ */
+export interface TweetImageRef {
+	/** 图片访问 URL（/uploads/...） */
+	url: string;
+	/** 宽（px）；null=历史数据缺尺寸，展示层退方格 */
+	width: number | null;
+	/** 高（px）；null=历史数据缺尺寸，展示层退方格 */
+	height: number | null;
+}
+
+/** TweetLinkCard - 推文正文内嵌的 OG 链接卡片，对应后端 linkpreview LinkCardDTO。 */
+export interface TweetLinkCard {
+	url: string;
+	title: string;
+	description: string;
+	site_name: string;
+	image_url: string;
+}
+
+/**
  * QuotedTweet - 被引用的推文读模型
  *
  * 对应后端 application/tweet QuotedTweetDTO。
@@ -38,8 +61,8 @@ export interface QuotedTweet {
 	author: TweetAuthor;
 	/** 正文 */
 	content: string;
-	/** 图片 URL 列表 */
-	images: string[];
+	/** 图片引用（≤4 张）；纯文本推文为空数组 */
+	images: TweetImageRef[];
 	/** 表情映射表。key 为 [name]（含方括号），渲染时查表替换为 img。对应后端 QuotedTweetDTO.emote。 */
 	emote?: Record<string, TweetCommentEmoteRef>;
 	/** 引用计数 */
@@ -47,6 +70,8 @@ export interface QuotedTweet {
 	/** 创建时间，RFC3339 字符串 */
 	created_at: string;
 	external_tweet?: ExternalTweet | null;
+	/** 正文 URL 逐个对应的链接卡片；后端保证为数组，边界处 ?? [] */
+	link_cards: TweetLinkCard[];
 }
 
 /**
@@ -61,8 +86,8 @@ export interface Tweet {
 	author: TweetAuthor;
 	/** 本站正文，≤500 rune；纯图或纯 X 转发时为空串。 */
 	content: string;
-	/** 图片 URL 列表（/uploads/...），≤4 张；纯文本推文为空数组 */
-	images: string[];
+	/** 图片引用（≤4 张，带发布时快照的尺寸）；纯文本推文为空数组 */
+	images: TweetImageRef[];
 	/** 表情映射表。key 为 [name]（含方括号），渲染时查表替换为 img。对应后端 TweetDTO.emote。 */
 	emote?: Record<string, TweetCommentEmoteRef>;
 	/** 赞数（冗余计数，列表页性能用；点赞数据源见 tweet_likes） */
@@ -79,6 +104,8 @@ export interface Tweet {
 	/** 创建时间，RFC3339 字符串 */
 	created_at: string;
 	external_tweet?: ExternalTweet | null;
+	/** 正文 URL 逐个对应的链接卡片；后端保证为数组，边界处 ?? [] */
+	link_cards: TweetLinkCard[];
 }
 
 /** 共享的 X 原文；不可用时不携带旧正文或媒体。 */

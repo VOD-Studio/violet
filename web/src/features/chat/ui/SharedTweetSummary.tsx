@@ -1,4 +1,4 @@
-import type { ExternalTweet } from "@entities/tweet/model/types";
+import type { ExternalTweet, TweetImageRef } from "@entities/tweet/model/types";
 import { ExternalTweetCard } from "@entities/tweet/ui/ExternalTweetCard";
 import { formatDateTime, formatRelativeTime } from "@shared/lib/date";
 import { avatarUrl, contentImageUrl } from "@shared/lib/image-url";
@@ -51,13 +51,13 @@ function Thumbs({ urls, className }: { urls: string[]; className?: string }) {
 export interface SharedTweetSummaryData {
 	author: { username: string; avatar_url: string };
 	content?: string;
-	images?: string[];
+	images?: TweetImageRef[];
 	created_at?: string;
 	external_tweet?: ExternalTweet | null;
 	quoted_tweet?: {
 		author: { username: string };
 		content?: string;
-		images?: string[];
+		images?: TweetImageRef[];
 		external_tweet?: ExternalTweet | null;
 	} | null;
 }
@@ -76,7 +76,7 @@ export interface SharedTweetSummaryProps {
  */
 export function SharedTweetSummary({ tweet, renderAuthor, className }: SharedTweetSummaryProps) {
 	const { author } = tweet;
-	const images = tweet.images ?? [];
+	const imageUrls = (tweet.images ?? []).map((img) => img.url);
 	const quote = tweet.quoted_tweet;
 	return (
 		<div className={cn("flex flex-col gap-2", className)}>
@@ -105,7 +105,7 @@ export function SharedTweetSummary({ tweet, renderAuthor, className }: SharedTwe
 					</time>
 				)}
 			</div>
-			{(tweet.content || images.length > 0) && (
+		{(tweet.content || imageUrls.length > 0) && (
 				<div className="flex items-start gap-3">
 					{tweet.content ? (
 						<p className="line-clamp-3 min-w-0 flex-1 whitespace-pre-wrap wrap-break-word text-sm leading-relaxed text-foreground/90">
@@ -114,7 +114,7 @@ export function SharedTweetSummary({ tweet, renderAuthor, className }: SharedTwe
 					) : (
 						<span className="flex-1" />
 					)}
-					<Thumbs urls={images} />
+				<Thumbs urls={imageUrls} />
 				</div>
 			)}
 			{tweet.external_tweet && <ExternalTweetCard tweet={tweet.external_tweet} quoted />}
@@ -130,7 +130,7 @@ export function SharedTweetSummary({ tweet, renderAuthor, className }: SharedTwe
 							</p>
 						)}
 					</div>
-					<Thumbs urls={quote.images ?? []} className="size-14" />
+				<Thumbs urls={(quote.images ?? []).map((img) => img.url)} className="size-14" />
 				</div>
 			)}
 			{quote?.external_tweet && <ExternalTweetCard tweet={quote.external_tweet} quoted />}

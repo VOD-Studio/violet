@@ -90,7 +90,7 @@ const TweetCard = ({
 			id: tweet.id,
 			authorUsername: tweet.author.username,
 			content: tweet.content,
-			imageUrl: tweet.images[0],
+			imageUrl: tweet.images[0]?.url,
 			externalTweet: tweet.external_tweet,
 			quotedTweet: tweet.quoted_tweet,
 		});

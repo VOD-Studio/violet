@@ -25,6 +25,7 @@ vi.mock("@shared/ui/image-preview", () => ({
 import { QuotedTweetThumbs } from "../QuotedTweetThumbs";
 
 const urls = ["a", "b", "c", "d", "e", "f"].map((n) => `/uploads/${n}.png`);
+const refs = urls.map((url) => ({ url, width: null, height: null }));
 
 describe("QuotedTweetThumbs", () => {
 	afterEach(() => {
@@ -38,7 +39,7 @@ describe("QuotedTweetThumbs", () => {
 	});
 
 	it("最多 4 格，多出的以 +N 提示在最后一格", () => {
-		const { container } = render(<QuotedTweetThumbs images={urls} />);
+		const { container } = render(<QuotedTweetThumbs images={refs} />);
 		expect(container.querySelector("[data-count]")?.getAttribute("data-count")).toBe("4");
 		expect(container.querySelectorAll("button.v-tweet__photo")).toHaveLength(4);
 		expect(screen.getByText("+2")).toBeTruthy();
@@ -49,7 +50,7 @@ describe("QuotedTweetThumbs", () => {
 		render(
 			// biome-ignore lint/a11y/useKeyWithClickEvents: 仅验证冒泡被阻止
 			<div onClick={outer}>
-				<QuotedTweetThumbs images={urls} />
+			<QuotedTweetThumbs images={refs} />
 			</div>,
 		);
 		fireEvent.click(screen.getByRole("button", { name: "查看第 3 张图片，共 6 张" }));

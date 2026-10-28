@@ -125,7 +125,7 @@ export const Route = createFileRoute("/tweets/$id")({
 				{ name: "description", content: excerpt.slice(0, 140) },
 				{ property: "og:title", content: `${tweet.author.username} 的推文` },
 				{ property: "og:description", content: excerpt.slice(0, 140) },
-				...(tweet.images[0] ? [{ property: "og:image", content: tweet.images[0] }] : []),
+				...(tweet.images[0] ? [{ property: "og:image", content: tweet.images[0].url }] : []),
 			],
 		};
 	},
