@@ -560,8 +560,9 @@ jobs:
           echo "::warning::生产依赖存在 high 及以上漏洞(仅告警,不阻断): ${counts:-审计未能完成}"
           { echo '### pnpm audit (production)'; echo; echo "${counts:-审计未能完成}"; } >> "$GITHUB_STEP_SUMMARY"
 
-  security:
-    name: Dependency Security
+  # 总门禁:汇总变更检测、runner、基础设施与各侧结果,是唯一核对「被选中的任务必须 success」的地方。
+  gate:
+    name: CI Gate
     needs: [changes, runner, backend, frontend, dependency-scan, infrastructure]
     if: always()
     runs-on: ubuntu-latest
