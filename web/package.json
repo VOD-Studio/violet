@@ -10,6 +10,7 @@
 		"build:analyze": "pnpm generate-routes && ANALYZE=true vite build",
 		"preview": "vite preview",
 		"test": "pnpm generate-routes && vitest run",
+		"test:site": "pnpm generate-routes && vitest run --exclude 'packages/{ui,react-tweet,kanban,theme}/**'",
 		"test:contract": "playwright test",
 		"format": "biome format",
 		"lint": "biome lint",

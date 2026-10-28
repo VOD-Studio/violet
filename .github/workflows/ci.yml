@@ -44,6 +44,7 @@ jobs:
     outputs:
       api: ${{ inputs.full && 'true' || steps.filter.outputs.api }}
       web: ${{ inputs.full && 'true' || steps.filter.outputs.web }}
+      web_image: ${{ inputs.full && 'true' || steps.filter.outputs.web_image }}
       infrastructure: ${{ inputs.full && 'true' || steps.filter.outputs.infrastructure }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -67,13 +68,29 @@ jobs:
               - '.github/workflows/ci.yml'
               - 'scripts/check-ci-results.py'
               - 'scripts/tests/test_ci_results.py'
+              - 'scripts/check-job-group.py'
+              - 'scripts/tests/test_job_group.py'
             'web':
               - 'web/**'
               - '!web/README.md'
               - '.github/workflows/ci.yml'
               - '.github/workflows/publish-npm.yml'
+              - '.github/actions/setup-web/**'
               - 'scripts/check-ci-results.py'
               - 'scripts/tests/test_ci_results.py'
+              - 'scripts/check-job-group.py'
+              - 'scripts/tests/test_job_group.py'
+            # 镜像校验只覆盖 Dockerfile、依赖与锁文件漂移；源码构建由契约任务验证。
+            'web_image':
+              - 'web/Dockerfile'
+              - 'web/.dockerignore'
+              - 'web/package.json'
+              - 'web/pnpm-lock.yaml'
+              - 'web/pnpm-workspace.yaml'
+              - 'web/server.mjs'
+              - 'web/packages/*/package.json'
+              - '.github/workflows/ci.yml'
+              - '.github/actions/setup-web/**'
             'infrastructure':
               - '.github/workflows/**'
               - '.github/actions/**'
@@ -196,15 +213,14 @@ jobs:
 
   # ============================================================
   # 前端检查（TypeScript）
+  # 静态检查、站点单测、独立包、浏览器契约与镜像互不依赖，各自占一个 runner 并行；
+  # frontend 汇总它们，保持既有 required check 名称。
   # ============================================================
-  frontend:
-    name: Frontend (React)
+  web-static:
+    name: Web static checks
     needs: [changes, runner]
     if: needs.changes.outputs.web == 'true'
-    timeout-minutes: ${{ contains(fromJSON(needs.runner.outputs.labels), 'self-hosted') && 40 || 20 }}
-    permissions:
-      actions: write   # buildx type=gha 缓存读写;同 backend job
-      contents: read
+    timeout-minutes: ${{ contains(fromJSON(needs.runner.outputs.labels), 'self-hosted') && 25 || 15 }}
     runs-on: ${{ fromJSON(needs.runner.outputs.labels) }}
     defaults:
       run:
@@ -214,23 +230,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ inputs.ref || github.sha }}
+          # Color guard 从基线提交读取白名单
           fetch-depth: 0
           filter: blob:none
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
-        with:
-          version: 10
-
-      - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version: "22"
-          cache: pnpm
-          cache-dependency-path: web/pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup-web
 
       # biome check = lint + format + import 排序;
       # 此前跑 pnpm lint(biome lint)不查格式,CI 与本地红绿不一致(#140)
@@ -245,67 +249,159 @@ jobs:
       - name: Generated theme colors
         run: pnpm check:theme-colors
 
+      - name: Generated persona colors
+        run: pnpm check:persona-colors
+
       - name: TypeScript check
         run: pnpm typecheck
 
-      - name: UI architecture and package tests
-        run: pnpm --filter @violet/ui check && pnpm --filter @violet/ui typecheck && pnpm --filter @violet/ui test
+  # 站点测试按文件分片；带独立配置的包由 web-package 运行，不在此重复。
+  web-unit:
+    name: Web unit (${{ matrix.shard }}/${{ strategy.job-total }})
+    needs: [changes, runner]
+    if: needs.changes.outputs.web == 'true'
+    timeout-minutes: ${{ contains(fromJSON(needs.runner.outputs.labels), 'self-hosted') && 25 || 15 }}
+    runs-on: ${{ fromJSON(needs.runner.outputs.labels) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    defaults:
+      run:
+        working-directory: web
 
-      - name: Public library types and tests
-        run: |
-          pnpm --filter @violetjs/inkline typecheck
-          pnpm --filter @violetjs/inkline test
-          pnpm --filter @violetjs/react-tweet typecheck
-          pnpm --filter @violetjs/react-tweet test
-          pnpm --filter @violetjs/kanban typecheck
-          pnpm --filter @violetjs/kanban test
-          pnpm --filter @violetjs/theme typecheck
-          pnpm --filter @violetjs/theme test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.ref || github.sha }}
 
-      - name: Public library independent tarball consumers
-        run: |
-          pnpm --filter @violetjs/inkline consumer
-          pnpm --filter @violetjs/react-tweet consumer
-          pnpm --filter @violetjs/kanban consumer
+      - uses: ./.github/actions/setup-web
 
       - name: Vitest
-        run: pnpm test
+        run: pnpm test:site --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+
+  # 公开包按发布边界独立验证：类型、测试与 tarball 消费；需要浏览器的包安装 Chromium。
+  # inkline 的测试沿用站点 Vitest 配置，已在 web-unit 中运行。
+  web-package:
+    name: Web package (${{ matrix.package }})
+    needs: [changes, runner]
+    if: needs.changes.outputs.web == 'true'
+    timeout-minutes: ${{ contains(fromJSON(needs.runner.outputs.labels), 'self-hosted') && 25 || 15 }}
+    runs-on: ${{ fromJSON(needs.runner.outputs.labels) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - package: ui
+            filter: '@violet/ui'
+            check: true
+            test: true
+            chromium: true
+          - package: inkline
+            filter: '@violetjs/inkline'
+          - package: react-tweet
+            filter: '@violetjs/react-tweet'
+            test: true
+          - package: kanban
+            filter: '@violetjs/kanban'
+            test: true
+            browser: true
+            chromium: true
+          - package: theme
+            filter: '@violetjs/theme'
+            test: true
+            chromium: true
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+
+      - uses: ./.github/actions/setup-web
+        with:
+          chromium: ${{ matrix.chromium && 'true' || 'false' }}
+
+      - name: Architecture check
+        if: matrix.check
+        run: pnpm --filter "${{ matrix.filter }}" check
+
+      - name: Typecheck
+        run: pnpm --filter "${{ matrix.filter }}" typecheck
+
+      - name: Test
+        if: matrix.test
+        run: pnpm --filter "${{ matrix.filter }}" test
+
+      - name: Real-browser tests
+        if: matrix.browser
+        run: pnpm --filter "${{ matrix.filter }}" browser
+
+      - name: Independent tarball consumer
+        run: pnpm --filter "${{ matrix.filter }}" consumer
+
+  # 契约测试跑生产构建产物（server.mjs 读取 dist），各分片自行构建，构建本身仅十余秒。
+  web-contract:
+    name: Web contract (${{ matrix.shard }}/${{ strategy.job-total }})
+    needs: [changes, runner]
+    if: needs.changes.outputs.web == 'true'
+    timeout-minutes: ${{ contains(fromJSON(needs.runner.outputs.labels), 'self-hosted') && 25 || 15 }}
+    runs-on: ${{ fromJSON(needs.runner.outputs.labels) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+
+      - uses: ./.github/actions/setup-web
+        with:
+          chromium: 'true'
 
       - name: Build
         run: pnpm build
 
-      - name: Install Chromium
-        env:
-          RUNNER_ENVIRONMENT: ${{ runner.environment }}
-        run: |
-          if [[ "$RUNNER_ENVIRONMENT" == self-hosted ]]; then
-            pnpm exec playwright install chromium
-          else
-            pnpm exec playwright install --with-deps chromium
-          fi
-
       - name: Browser contracts
-        run: pnpm test:contract --workers=2
+        run: pnpm test:contract --workers=2 --shard=${{ matrix.shard }}/${{ strategy.job-total }}
 
-      - name: Kanban real-browser tests
-        run: pnpm --filter @violetjs/kanban browser
+      - name: Upload Playwright traces
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: playwright-traces-${{ matrix.shard }}
+          path: web/test-results
+          retention-days: 7
+          if-no-files-found: ignore
 
-      # 需要 Chromium 验证浏览器导入，故排在安装 Chromium 之后
-      - name: Theme independent tarball consumer
-        run: pnpm --filter @violetjs/theme consumer
+  # 镜像校验:Dockerfile COPY 引用失效文件、lockfile 与依赖漂移等问题
+  # 在此拦截,避免流入生产部署才暴露。只在相关文件变化、PR 之外的精确验证请求镜像时运行。
+  web-image:
+    name: Web image
+    needs: [changes, runner]
+    if: needs.changes.outputs.web == 'true' && (inputs.build_images || (!inputs.ref && needs.changes.outputs.web_image == 'true'))
+    timeout-minutes: ${{ contains(fromJSON(needs.runner.outputs.labels), 'self-hosted') && 25 || 15 }}
+    permissions:
+      actions: write   # buildx type=gha 缓存读写;workflow 级仅 contents:read 会把 actions 收为 none
+      contents: read
+    runs-on: ${{ fromJSON(needs.runner.outputs.labels) }}
 
-      # consumer 的主题对比度验收需要 Chromium，故排在安装 Chromium 之后
-      - name: UI independent tarball consumer
-        run: pnpm --filter @violet/ui consumer
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.ref || github.sha }}
 
       - name: Setup Docker Buildx
-        if: ${{ !inputs.ref || inputs.build_images }}
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
-      # 镜像构建验证:Dockerfile COPY 引用失效文件、lockfile 与依赖漂移等问题
-      # 在此拦截,避免流入生产部署才暴露
       - name: Docker 镜像构建验证
-        if: ${{ !inputs.ref || inputs.build_images }}
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: ./web
@@ -313,6 +409,24 @@ jobs:
           tags: violet-web:ci
           cache-from: type=gha,scope=violet-web
           cache-to: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release/2.0') && 'type=gha,mode=max,scope=violet-web' || '' }}
+
+  frontend:
+    name: Frontend (React)
+    needs: [changes, web-static, web-unit, web-package, web-contract, web-image]
+    if: ${{ !cancelled() && needs.changes.outputs.web == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          sparse-checkout: scripts/check-job-group.py
+          sparse-checkout-cone-mode: false
+
+      - name: Require frontend jobs
+        env:
+          CI_NEEDS_JSON: ${{ toJSON(needs) }}
+        run: python3 scripts/check-job-group.py --optional web-image <<< "$CI_NEEDS_JSON"
 
   # ============================================================
   # 依赖漏洞扫描
