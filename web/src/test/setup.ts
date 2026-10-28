@@ -1,5 +1,8 @@
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
+
+/** 默认 1 秒的异步查询超时在 CI 的 2 核 runner 与满载机器上会让懒加载组件的用例偶发失败。 */
+configure({ asyncUtilTimeout: 5000 });
 
 /**
  * vitest 未开 globals 时 RTL 不会自动卸载组件，跨用例残留的 mounted 树会
