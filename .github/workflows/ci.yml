@@ -136,13 +136,16 @@ jobs:
           check-latest: true
           cache-dependency-path: api/go.sum
 
-      # govet 已在 .golangci.yml 启用并覆盖测试文件,不再单独跑 go vet
+      # govet 已在 .golangci.yml 启用并覆盖测试文件,不再单独跑 go vet。
+      # 不用 action 的结果缓存:仅约 1MB 且恢复后仍需近 100 秒;go.sum 变化的 PR 会写出 PR 级缓存,
+      # 之后同一份代码出现 staticcheck SA5011 误报(t.Fatal 后的空指针),删除缓存即恢复。
       - name: golangci-lint
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9
         with:
           version: v2.12.2
           working-directory: api
           args: --timeout 5m
+          skip-cache: true
 
       - name: Go build
         run: go build ./...
