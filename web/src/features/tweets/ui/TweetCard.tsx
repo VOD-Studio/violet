@@ -7,6 +7,7 @@ import { useDeleteTweet, useToggleLikeTweet } from "@features/tweets/api/mutatio
 import { useNavigate } from "@tanstack/react-router";
 import { ConfirmDialog, Modal } from "@violet/ui";
 import { TweetCard as TweetCardLayout } from "@violetjs/react-tweet";
+import { LinkCard } from "@shared/ui/link-card";
 import { AlertCircle } from "lucide-react";
 import { type MouseEvent, useState } from "react";
 import { toast } from "sonner";
@@ -121,34 +122,34 @@ const TweetCard = ({
 					isDetail
 						? undefined
 						: (event) => {
-								const target = event.target;
-								if (
-									!(target instanceof Element) ||
-									!event.currentTarget.contains(target)
+							const target = event.target;
+							if (
+								!(target instanceof Element) ||
+								!event.currentTarget.contains(target)
+							)
+								return;
+							if (
+								target.closest(
+									"a, button, input, textarea, select, video, audio, [role='button'], [role='menu'], [role='menuitem'], [contenteditable='true']",
 								)
-									return;
-								if (
-									target.closest(
-										"a, button, input, textarea, select, video, audio, [role='button'], [role='menu'], [role='menuitem'], [contenteditable='true']",
-									)
-								)
-									return;
-								if (window.getSelection()?.toString()) return;
-								openDetail();
-							}
+							)
+								return;
+							if (window.getSelection()?.toString()) return;
+							openDetail();
+						}
 				}
 				onKeyDown={
 					isDetail
 						? undefined
 						: (event) => {
-								if (
-									event.target === event.currentTarget &&
-									(event.key === "Enter" || event.key === " ")
-								) {
-									event.preventDefault();
-									openDetail();
-								}
+							if (
+								event.target === event.currentTarget &&
+								(event.key === "Enter" || event.key === " ")
+							) {
+								event.preventDefault();
+								openDetail();
 							}
+						}
 				}
 				headerSlot={
 					<TweetCardHeader
@@ -177,10 +178,22 @@ const TweetCard = ({
 						}
 					/>
 				}
-				mediaSlot={detachMedia ? undefined : <TweetCardImages images={tweet.images} />}
+				mediaSlot={
+					<>
+						{/* 链接卡片属于正文内容，详情页左右分栏（detachMedia）时仍留在卡内。 */}
+						{tweet.link_cards.length > 0 && (
+							<div className="mt-2 space-y-2">
+								{tweet.link_cards.map((card) => (
+									<LinkCard key={card.url} card={card} />
+								))}
+							</div>
+						)}
+						{!detachMedia && <TweetCardImages images={tweet.images} />}
+					</>
+				}
 				quoteSlot={
 					!detachMedia &&
-					(tweet.external_tweet || tweet.quoted_tweet || tweet.quote_of) ? (
+						(tweet.external_tweet || tweet.quoted_tweet || tweet.quote_of) ? (
 						<div className="space-y-2">
 							{tweet.external_tweet && (
 								<ExternalTweetCard tweet={tweet.external_tweet} />
