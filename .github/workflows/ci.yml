@@ -484,7 +484,7 @@ jobs:
   # 降级为 warning——docker/docker 的 daemon 端漏洞(v1 +incompatible 永不修复,v2 尚在 beta),
   # violet 作为 client 不触发,属于模块级假阳性。
   # pnpm audit 无 reachability 分析,高危漏洞未必被实际调用,初期仅告警不阻断。
-  # 待前端依赖基线清理后,移除 continue-on-error 升级为阻断。
+  # 待前端生产依赖基线清理后,升级为阻断。
   # 按变更侧裁剪:govulncheck 只查 api 依赖,pnpm audit 只查 web 依赖。
   # ============================================================
   dependency-scan:
@@ -544,11 +544,20 @@ jobs:
         with:
           version: 10
 
+      # 只审计随站点发布的生产依赖;开发工具链的漏洞不进镜像。
+      # 结果写入注解与任务摘要,避免 continue-on-error 让漏洞藏在绿色步骤里。
       - name: pnpm audit (frontend)
         if: needs.changes.outputs.web == 'true'
         working-directory: web
-        run: pnpm audit --audit-level=high
-        continue-on-error: true
+        run: |
+          if pnpm audit --prod --audit-level=high > "$RUNNER_TEMP/audit.txt" 2>&1; then
+            cat "$RUNNER_TEMP/audit.txt"
+            exit 0
+          fi
+          cat "$RUNNER_TEMP/audit.txt"
+          counts=$(grep -E "vulnerabilities found|Severity:" "$RUNNER_TEMP/audit.txt" | paste -sd ' ' -)
+          echo "::warning::生产依赖存在 high 及以上漏洞(仅告警,不阻断): ${counts:-审计未能完成}"
+          { echo '### pnpm audit (production)'; echo; echo "${counts:-审计未能完成}"; } >> "$GITHUB_STEP_SUMMARY"
 
   security:
     name: Dependency Security
