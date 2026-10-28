@@ -7,6 +7,35 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.19.0](https://github.com/VOD-Studio/violet/compare/v2.18.1...v2.19.0) (2026-10-28)
+
+
+### 新增
+
+* **linkpreview:** 独立 OG 链接卡片模块 ([c77f9f5](https://github.com/VOD-Studio/violet/commit/c77f9f50ec2cdffaac77359f40e231cb5210acc4))
+* **music-player:** 播放器默认收起为圆盘 ([49c994e](https://github.com/VOD-Studio/violet/commit/49c994eca4c6c9ab905e6a89a8bf6bbaa5cda571))
+* **react-tweet:** 导出 TweetPhotos 与本地化构造 ([63cca56](https://github.com/VOD-Studio/violet/commit/63cca56852c5fddd3cbe3dd9711db1b0876556ca))
+* **shared:** OG 链接卡片展示组件 ([100caeb](https://github.com/VOD-Studio/violet/commit/100caebcab4513e59e495320c66f371c4bc66d8c))
+* **shared:** 通用链接识别 tokenizer linkify ([1a8f5a0](https://github.com/VOD-Studio/violet/commit/1a8f5a092b8a641ccddf6e4486b73276081cd742))
+* **tweets:** 前端适配推文图片引用与链接卡片类型 ([5638980](https://github.com/VOD-Studio/violet/commit/5638980cbc7fca592e01499a77ea60a505de4173))
+* **tweets:** 推文卡片接入 OG 链接卡片 ([ec597bf](https://github.com/VOD-Studio/violet/commit/ec597bf208666408b2308539cdecc7a6be5f70a1))
+* **tweets:** 推文图片布局切换 TweetPhotos ([2c7cec3](https://github.com/VOD-Studio/violet/commit/2c7cec3c2f65332f29523a41df31e8079af4b6da))
+* **tweets:** 推文媒体与链接展示 ([b39e377](https://github.com/VOD-Studio/violet/commit/b39e3779f4d78ed8df704941aa5149fbc56bc98c))
+* **tweets:** 正文 URL 渲染为可点击链接 ([f0182e1](https://github.com/VOD-Studio/violet/commit/f0182e1fed27da3bd2db70702d6d781893c95311))
+* **tweet:** 推文图片带尺寸快照并内嵌链接卡片 ([171b4f2](https://github.com/VOD-Studio/violet/commit/171b4f29620a8c7f6bf763e8c768489dc878bb0e))
+
+
+### 修复
+
+* **ci:** 禁用 golangci-lint 结果缓存 ([644c1dc](https://github.com/VOD-Studio/violet/commit/644c1dc7673b8fcdc93ef079b7c013cd16d10d0b))
+* **linkpreview:** 按 De Morgan 定律化简条件 ([047a304](https://github.com/VOD-Studio/violet/commit/047a304fc09eac1cacaf4540f49af59665b4447d))
+* **linkpreview:** 补全抓取终态落库与封面校验 ([2eb2023](https://github.com/VOD-Studio/violet/commit/2eb20239b58dfcb8970240609b0d542368de6c49))
+* **music-player:** 升级 Kite Player 至 0.4.2 ([5239d9c](https://github.com/VOD-Studio/violet/commit/5239d9ca9c77056ce6eddfed8ec57b59f366d864))
+* **shared:** 统一前后端 URL 识别与规范化规则 ([897dadd](https://github.com/VOD-Studio/violet/commit/897dadd10d302ec3737e98adb595b0c8415e2530))
+* **tweets:** 链接预览异步回填与小卡片接入 ([7b8f86c](https://github.com/VOD-Studio/violet/commit/7b8f86c33c36eb57da06f7c7b46f8c0133b75d19))
+* **ui-docs:** 链接卡片示例改用站内图片资源 ([01f3547](https://github.com/VOD-Studio/violet/commit/01f3547944a33ff8fc30bb9eb57662c9cd5af999))
+* **ui:** LinkCard 改为 X 式小卡片 ([a3b5994](https://github.com/VOD-Studio/violet/commit/a3b599482e651660431f82c537cea756af47afcb))
+
 ## [2.18.1](https://github.com/VOD-Studio/violet/compare/v2.18.0...v2.18.1) (2026-10-28)
 
 
