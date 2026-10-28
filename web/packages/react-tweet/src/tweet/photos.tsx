@@ -59,19 +59,19 @@ function PhotoLink({
 	const photo = photos[index];
 	const activate = onOpenPhoto
 		? (event: MouseEvent<HTMLAnchorElement>) => {
-			// 修饰键与非主键点击保留链接的原生行为。
-			if (
-				event.defaultPrevented ||
-				event.button !== 0 ||
-				event.metaKey ||
-				event.ctrlKey ||
-				event.shiftKey ||
-				event.altKey
-			)
-				return;
-			event.preventDefault();
-			onOpenPhoto(photos, index, event.currentTarget);
-		}
+				// 修饰键与非主键点击保留链接的原生行为。
+				if (
+					event.defaultPrevented ||
+					event.button !== 0 ||
+					event.metaKey ||
+					event.ctrlKey ||
+					event.shiftKey ||
+					event.altKey
+				)
+					return;
+				event.preventDefault();
+				onOpenPhoto(photos, index, event.currentTarget);
+			}
 		: undefined;
 	return (
 		<TweetLink
@@ -154,7 +154,7 @@ export function MediaRail({
 			left: Math.max(0, target ?? (direction === 1 ? element.scrollWidth : 0)),
 			behavior:
 				typeof matchMedia === "function" &&
-					matchMedia("(prefers-reduced-motion: reduce)").matches
+				matchMedia("(prefers-reduced-motion: reduce)").matches
 					? "auto"
 					: "smooth",
 		});
