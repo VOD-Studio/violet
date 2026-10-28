@@ -8,6 +8,7 @@ require (
 	github.com/PuerkitoBio/goquery v1.9.2
 	github.com/SherClockHolmes/webpush-go v1.4.0
 	github.com/alicebob/miniredis/v2 v2.38.0
+	github.com/coder/websocket v1.8.15
 	github.com/disintegration/imaging v1.6.2
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/getkin/kin-openapi v0.142.0

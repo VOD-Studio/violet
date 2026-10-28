@@ -118,6 +118,7 @@ SSR 使用 `GET /auth/session` 只读探活，**不续期、不写 Cookie**。�
 | 站点 | `settings`、`announcement`、`friendlink`、`stats` | 配置、公告、友链与统计 |
 | 首页资源 | `publication`、`siteidentity`、`siteimpression` | 发布物投影、公开身份与匿名印记 |
 | 外部内容 | `subscription`、`github`、`releases`、`music`、`linkpreview` | RSS、GitHub、版本记录、Kite 音乐与共享网页预览 |
+| 实时状态 | `presence` | Nowbeam 上报接收、设备凭证与公开推送 |
 | 开放与运营 | `mcp`、`coderunner`、`audit`、`system` | MCP、沙箱、审计、数据库运维 |
 
 ### 正文与媒体
@@ -172,6 +173,21 @@ SSR 使用 `GET /auth/session` 只读探活，**不续期、不写 Cookie**。�
 | GET | `/music/songs/{id}/lyric` | 原文、翻译与音译歌词 |
 
 Cookie 由 `MUSIC_CREDENTIAL_KEY` 加密保存，凭据不交给前端。账号模式的取链仅允许已启用展示歌单中的曲目；无连接或账号失效时匿名解析。播放地址不持久化，JSON 与重定向响应均不缓存。
+
+### 实时状态接口（Nowbeam）
+
+站点是 `nowbeam.v1` 接收端，协议状态机移植自 Nowbeam 独立接收服务，决策见 [ADR-0025](../docs/adr/0025-presence-native-receiver.md)。读取管理接口需 `presence:view`；写入需 `presence:manage` 与 CSRF。
+
+| 方法 | 路径 | 用途 |
+| --- | --- | --- |
+| GET | `/presence/ingest` | 设备 WebSocket 上报：`Authorization: Bearer violet_nb_…` + 子协议 `nowbeam.v1`，拒绝任何 Origin |
+| GET | `/presence` | 公开当前状态，只含租约内在线的设备；公开读取关闭时 `devices` 为空 |
+| GET | `/presence/stream` | SSE，连上即推一次，之后每次变化推完整状态（`event: presence`） |
+| GET、POST | `/admin/presence/devices` | 设备与连接诊断；签发凭证（明文只返回一次） |
+| DELETE | `/admin/presence/devices/{id}` | 撤销凭证，立即断开并清除活动 |
+| GET、PUT | `/admin/presence/settings` | 公开读取开关，默认关闭 |
+
+快照只在 API 进程内存，服务重启即清空，因此 API 需单实例运行。反向代理要为上报端点转发 `Upgrade` / `Connection` 头，空闲超时大于 45 秒租约，见 `deploy/nginx/xunrua.top`。
 
 扫码挑战三分钟过期、一次性消费；关闭管理弹窗时取消，确认或过期后停止轮询。退出先断开本地连接，上游退出失败仍返回明确说明。续期任务在进程启动 24 小时后首次运行，此后每 24 小时执行；登录过期转 `expired` 并切匿名播放，网络故障不冒充账号失效。
 

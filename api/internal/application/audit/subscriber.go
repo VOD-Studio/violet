@@ -23,6 +23,7 @@ import (
 	domainfriendlink "blog-api/internal/domain/friendlink"
 	domaingallery "blog-api/internal/domain/gallery"
 	domainpost "blog-api/internal/domain/post"
+	domainpresence "blog-api/internal/domain/presence"
 	domainrole "blog-api/internal/domain/role"
 	domainsettings "blog-api/internal/domain/settings"
 	"blog-api/internal/domain/shared"
@@ -537,6 +538,40 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "api_token", ID: e.AggregateID().String(), Name: e.Name},
 			Summary:    fmt.Sprintf("删除访问令牌「%s」", e.Name),
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainpresence.DeviceAuthorized:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionCreate,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "presence_device", ID: e.AggregateID().String(), Name: e.DisplayName},
+			Summary:    fmt.Sprintf("签发实时状态设备凭证「%s」", e.DisplayName),
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainpresence.DeviceRevoked:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionDelete,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "presence_device", ID: e.AggregateID().String(), Name: e.DisplayName},
+			Summary:    fmt.Sprintf("撤销实时状态设备「%s」", e.DisplayName),
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainpresence.PublicReadChanged:
+		summary := "关闭实时状态公开读取"
+		if e.Enabled {
+			summary = "开启实时状态公开读取"
+		}
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionUpdateConfig,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "presence_settings"},
+			Summary:    summary,
 			OccurredAt: e.OccurredAt(),
 		}, true
 

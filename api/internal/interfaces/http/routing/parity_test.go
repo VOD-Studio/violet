@@ -11,6 +11,7 @@ import (
 
 	"blog-api/config"
 	musichttp "blog-api/internal/interfaces/http/handler/music"
+	presencehttp "blog-api/internal/interfaces/http/handler/presence"
 	publicationhttp "blog-api/internal/interfaces/http/handler/publication"
 	settingshttp "blog-api/internal/interfaces/http/handler/settings"
 	siteidentityhttp "blog-api/internal/interfaces/http/handler/siteidentity"
@@ -49,6 +50,8 @@ func fullRouterDeps() *Deps {
 		SiteImpression:         &siteimpressionhttp.Handler{},
 		Publication:            &publicationhttp.Handler{},
 		Music:                  &musichttp.Handler{},
+		Presence:               &presencehttp.Handler{},
+		PresenceIngest:         &presencehttp.IngestHandler{},
 	}
 }
 

@@ -47,6 +47,8 @@ var rateBindings = map[string]rateBinding{
 	"music_playback":    {"音乐播放取链", "ip", 60, 20},
 	"music_resolve":     {"站点音乐解析总额度", "shared", 60, 30},
 	"site-impressions":  {"站点印象投票", "hashed_ip", 60, 10},
+	"presence-ingest":   {"实时状态上报握手", "ip", 60, 30},
+	"presence-stream":   {"实时状态推送连接", "ip", 60, 30},
 	"image_processing":  {"图片处理与读取", "ip", 60, 60},
 }
 

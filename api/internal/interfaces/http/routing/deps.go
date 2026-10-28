@@ -34,6 +34,7 @@ import (
 	notehttp "blog-api/internal/interfaces/http/handler/note"
 	notificationhttp "blog-api/internal/interfaces/http/handler/notification"
 	personahttp "blog-api/internal/interfaces/http/handler/persona"
+	presencehttp "blog-api/internal/interfaces/http/handler/presence"
 	posthttp "blog-api/internal/interfaces/http/handler/post"
 	publicationhttp "blog-api/internal/interfaces/http/handler/publication"
 	releaseshttp "blog-api/internal/interfaces/http/handler/releases"
@@ -93,6 +94,8 @@ type Deps struct {
 	Content                *contenthttp.Handler
 	Roadmap                *roadmaphttp.Handler
 	Music                  *musichttp.Handler
+	Presence               *presencehttp.Handler
+	PresenceIngest         *presencehttp.IngestHandler
 	RoadmapRelations       *roadmaphttp.RelationHandler
 	Comment                *commenthttp.Handler
 	CommentReaction        *crhttp.Handler

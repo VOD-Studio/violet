@@ -54,6 +54,7 @@ type Container struct {
 	Chat            *ChatContainer
 	CustomEmoji     *CustomEmojiContainer
 	LinkPreview     *LinkPreviewContainer
+	Presence        *PresenceContainer
 }
 
 // 跨模块依赖（装配顺序即依赖序）：
@@ -105,6 +106,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	content := NewContentContainer(db, bus)
 	roadmap := NewRoadmapContainer(db, permissionChecker, bus)
 	music := NewMusicContainer(db, cfg.Music)
+	presence := NewPresenceContainer(db, bus)
 	comment := NewCommentContainer(db, rdb, emailSender, settings.Service, customEmoji.Service, bus)
 	post := NewPostContainer(db, permissionChecker, settings.Store, bus)
 	tag := NewTagContainer(db)
@@ -147,7 +149,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 		APIToken: apiToken, Subscription: subscription, MCP: mcp, System: system,
 		Media: media, CodeRunner: codeRunner, Image: image, Tweet: tweet, FriendLink: friendLink,
 		Series: series, Gallery: gallery, Note: note, Publication: publication, Persona: persona, Notification: notification, Chat: chat, CustomEmoji: customEmoji,
-		LinkPreview: linkPreview,
+		LinkPreview: linkPreview, Presence: presence,
 	}
 	return c, roleCleanup, nil
 }
