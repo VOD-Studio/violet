@@ -30,3 +30,7 @@ export type { TweetDisplayOptions, TweetMessages } from "./tweet/localization.ts
 export type { TweetMediaRenderers } from "./tweet/media-renderers.ts";
 export type { TweetProps } from "./tweet/tweet.tsx";
 export { Tweet } from "./tweet/tweet.tsx";
+export type { TweetPhotosProps } from "./tweet/photos.tsx";
+export { TweetPhotos } from "./tweet/photos.tsx";
+export { resolveLocalization } from "./tweet/localization.ts";
+export type { TweetLocalization } from "./tweet/localization.ts";
