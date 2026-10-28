@@ -100,6 +100,8 @@ SSR 使用 `GET /auth/session` 只读探活，**不续期、不写 Cookie**。�
 
 新增 Handler 复用 [response](internal/interfaces/http/response/) 的响应与错误辅助函数，分页规则复用 [domain/shared](internal/domain/shared/)。
 
+`POST /api/v1/link-cards/lookup` 公开批量读取最多 10 个 URL 的网页预览，仍需 CSRF cookie。返回 `cards`、`pending`、`unavailable`：仅 pending 继续查询；上游 403 不绕过防护，失败退避期间不重复抓取。成功快照默认缓存 7 天，过期惰性刷新；封面校验后缓存到本站。
+
 ## 业务模块
 
 按用例定位 [internal/application/](internal/application/)，再查看对应领域与适配器；不是每个模块都具有完全同名的四层目录。
@@ -115,7 +117,7 @@ SSR 使用 `GET /auth/session` 只读探活，**不续期、不写 Cookie**。�
 | 媒体 | `media`、`image`、`customemoji` | 上传、表情目录、图片处理与个人表情 |
 | 站点 | `settings`、`announcement`、`friendlink`、`stats` | 配置、公告、友链与统计 |
 | 首页资源 | `publication`、`siteidentity`、`siteimpression` | 发布物投影、公开身份与匿名印记 |
-| 外部内容 | `subscription`、`github`、`releases`、`music` | RSS、GitHub、版本记录与 Kite 音乐 |
+| 外部内容 | `subscription`、`github`、`releases`、`music`、`linkpreview` | RSS、GitHub、版本记录、Kite 音乐与共享网页预览 |
 | 开放与运营 | `mcp`、`coderunner`、`audit`、`system` | MCP、沙箱、审计、数据库运维 |
 
 ### 正文与媒体

@@ -118,6 +118,7 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 | 项目与路线图 | `features/projects`、`admin-projects` |
 | 上传、媒体与表情 | `features/upload`、`media`、`emojis`、`customemoji` |
 | 站点音乐 | `features/admin-music`、`music-player`，共享模型在 `entities/music` |
+| 网页链接预览 | `entities/link-preview` 管请求与回填，`shared/lib/linkify` 识别正文 URL，`@violet/ui` 提供展示组件 |
 | 明暗外观切换 | `features/appearance`，SSR 与 cookie 桥接在 `shared/` |
 | 主题切换 | `features/theme-switcher`，预设、偏好解析与 SSR 在 `shared/` |
 | 四季装饰与图层控制 | `features/seasonal-decor`，入口在 `theme-switcher` 与命令面板 |
@@ -126,6 +127,8 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 | 首页与阅读页组合、导航 | `widgets/` 与 `shared/config/nav.ts` |
 
 只在一个 feature 内使用的实现留在 feature。第二个 feature 需要同一业务能力时，提到 `entities/`；站点专用基础能力放 `shared/`，通用 React 组件放 `packages/ui/`。不要让 `shared` 反向导入业务 feature。
+
+链接预览先显示 SSR 快照；客户端按规范 URL 共用缓存，只轮询服务端明确标记为 pending 的链接，完成、失败或离开页面后停止。首个消费方是推文；其他 feature 复用 `entities/link-preview`，不要在 `shared` 里导入推文 DTO。
 
 ### 音乐播放器接入
 
