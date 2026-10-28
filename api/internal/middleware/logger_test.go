@@ -72,6 +72,26 @@ func TestResponseWriter_Flush_DelegatesToUnderlying(t *testing.T) {
 	})
 }
 
+// TestLogger_AllowsHijack 防回归：WebSocket 升级经 http.ResponseController 劫持连接，
+// Logger 包装后必须仍能通过 Unwrap 取到底层 Hijacker。
+func TestLogger_AllowsHijack(t *testing.T) {
+	hijacked := make(chan error, 1)
+	srv := httptest.NewServer(Logger(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, _, err := http.NewResponseController(w).Hijack()
+		if err == nil {
+			_ = conn.Close()
+		}
+		hijacked <- err
+	})))
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL)
+	if err == nil {
+		_ = resp.Body.Close()
+	}
+	assert.NoError(t, <-hijacked)
+}
+
 // nilFlusherlessWriter 一个既不是 Flusher、也不写任何东西的最小 ResponseWriter，
 // 仅用于覆盖 Flush 转发的「底层不支持」分支。
 type nilFlusherlessWriter struct{}

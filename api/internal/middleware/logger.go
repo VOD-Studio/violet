@@ -32,6 +32,11 @@ func (rw *responseWriter) Flush() {
 	}
 }
 
+// Unwrap 让 http.ResponseController 取到底层 writer；WebSocket 升级依赖它 Hijack 连接。
+func (rw *responseWriter) Unwrap() http.ResponseWriter {
+	return rw.ResponseWriter
+}
+
 // Logger 请求日志中间件
 // 记录每个请求的 HTTP 方法、路径、状态码和处理耗时
 func Logger(next http.Handler) http.Handler {
