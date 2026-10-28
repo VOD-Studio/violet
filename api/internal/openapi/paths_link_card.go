@@ -33,13 +33,15 @@ func registerLinkCardPaths(t *openapi3.T) {
 	}}
 
 	registerSchema(t, "LinkCardLookupData", openapi3.Schemas{
-		"cards": {Ref: "#/components/schemas/LinkCardMap"},
-	})
+		"cards":       {Ref: "#/components/schemas/LinkCardMap"},
+		"pending":     strArray("尚未完成的规范化 URL；非空时客户端继续查询，完成后停止"),
+		"unavailable": strArray("已经结束且没有可展示快照的规范化 URL；403 等失败仅保留正文链接"),
+	}, "cards", "pending", "unavailable")
 
 	post(t, "/link-cards/lookup", &openapi3.Operation{
 		Tags:        []string{"链接卡片"},
 		Summary:     "批量取链接卡片",
-		Description: "公开端点，IP 限流。返回当前可展示的卡片快照；miss 或 TTL 过期的在后台异步抓取，本次响应不含。",
+		Description: "返回缓存快照与 pending、unavailable 状态。pending 尚未完成，可继续查询；成功或失败后停止。过期快照可先展示，刷新结果在后续查询中替换。",
 		Security:    &openapi3.SecurityRequirements{},
 		Parameters:  openapi3.Parameters{csrfHeaderParam()},
 		RequestBody: jsonBody("LinkCardLookupRequest", true, "URL 列表"),

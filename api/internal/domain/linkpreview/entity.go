@@ -41,6 +41,7 @@ const (
 //   - expiresAt 兼作重抓调度点：成功后为 now+TTL，失败后为 now+退避
 //   - 重抓失败不删除已有快照：status=ok 的卡片保留旧数据继续展示
 type LinkCard struct {
+	// id 预览缓存记录的唯一标识，不随刷新改变。
 	id shared.ID
 	// url 规范化后的原文 URL（小写主机、去默认端口），全局唯一键
 	url string
@@ -84,7 +85,7 @@ func NewLinkCard(id shared.ID, url string, now time.Time) (*LinkCard, error) {
 	}, nil
 }
 
-// ReconstructLinkCard 从持久化数据重建（宽高字段由仓储层保证语义）。
+// ReconstructLinkCard 从持久化快照恢复抓取状态与调度时间。
 func ReconstructLinkCard(
 	id shared.ID, url, title, description, siteName, imageURL string,
 	status Status, fetchedAt, expiresAt time.Time, lastError string, failCount int,
@@ -118,7 +119,7 @@ func (c *LinkCard) Displayable() bool {
 
 // RecordSuccess 记录一次成功抓取：写入快照、清零失败计数、按 ttl 顺延有效期。
 func (c *LinkCard) RecordSuccess(title, description, siteName, imageURL string, now time.Time, ttl time.Duration) {
-	c.title, c.description, c.siteName, c.imageURL = title, description, siteName, imageURL
+	c.title, c.description, c.siteName, c.imageURL = title, description, truncate(siteName, 120), imageURL
 	c.status = StatusOK
 	c.failCount = 0
 	c.lastError = ""
@@ -171,8 +172,12 @@ func (c *LinkCard) String() string {
 
 func truncate(s string, max int) string {
 	s = strings.TrimSpace(s)
-	if len(s) <= max {
-		return s
+	count := 0
+	for index := range s {
+		if count == max {
+			return s[:index]
+		}
+		count++
 	}
-	return s[:max]
+	return s
 }

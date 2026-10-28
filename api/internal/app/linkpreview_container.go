@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"gorm.io/gorm"
 
 	"blog-api/config"
@@ -24,12 +25,14 @@ type LinkPreviewContainer struct {
 
 // NewLinkPreviewContainer 装配链接卡片模块。
 func NewLinkPreviewContainer(
+	ctx context.Context,
 	db *gorm.DB,
 	cfg *config.Config,
 	policies domainimage.PolicyProvider,
 	encoder *infraimage.Encoder,
 ) *LinkPreviewContainer {
 	svc := applp.NewService(
+		ctx,
 		gormrepo.NewLinkCardRepository(db),
 		infralp.NewFetcher(nil),
 		infralp.NewCoverStore(cfg.UploadDir, cfg.UploadPathPrefix, infraimage.NewProcessor(cfg.UploadDir, cfg.UploadPathPrefix, policies, encoder), nil),

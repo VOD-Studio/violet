@@ -18,6 +18,15 @@ type LinkCardDTO struct {
 	ImageURL string `json:"image_url"`
 }
 
+// LookupResultDTO 同时返回可展示快照与待完成、不可展示的链接；三组均按规范化 URL 标识。
+type LookupResultDTO struct {
+	Cards map[string]*LinkCardDTO `json:"cards"`
+	// Pending 下次查询仍需等待的链接，包含保留旧快照的后台刷新。
+	Pending []string `json:"pending"`
+	// Unavailable 本轮已结束且无可展示快照的链接，客户端停止等待。
+	Unavailable []string `json:"unavailable"`
+}
+
 func toDTO(c *domainlink.LinkCard) *LinkCardDTO {
 	return &LinkCardDTO{
 		URL:         c.URL(),
@@ -31,6 +40,8 @@ func toDTO(c *domainlink.LinkCard) *LinkCardDTO {
 // FetchResult 页面元数据抓取结果（PageFetcher 端口的返回契约，
 // 由 infrastructure 实现；字段全部可空，兜底由领域/应用层决定）。
 type FetchResult struct {
+	// PageURL 重定向后的页面地址，用于解析相对封面地址。
+	PageURL string
 	// Title og:title / twitter:title / <title> 逐级回退
 	Title string
 	// Description og:description / twitter:description / meta description 回退

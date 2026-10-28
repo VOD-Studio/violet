@@ -22,8 +22,7 @@ func NewLinkCardRepository(db *gorm.DB) *LinkCardRepository {
 	return &LinkCardRepository{db: db}
 }
 
-// Save 保存卡片。并发抓取同一 URL 时按 url 冲突合并：后写者整体覆盖
-// （应用层 singleflight 已合并绝大多数并发，这里兜底跨进程竞态）。
+// Save 按 URL 合并缓存，应用层合并同进程的并发读取。
 func (r *LinkCardRepository) Save(ctx context.Context, card *domainlink.LinkCard) error {
 	po := linkCardToPO(card)
 	return r.db.WithContext(ctx).Clauses(clause.OnConflict{

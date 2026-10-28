@@ -6,12 +6,15 @@
 package linkpreview
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"mime"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -60,7 +63,8 @@ func NewFetcher(client *http.Client) *Fetcher {
 	c := http.Client{}
 	if client != nil {
 		c = *client
-	} else {
+	}
+	if c.Transport == nil {
 		c.Transport = ssrf.NewSafeTransport()
 	}
 	c.Timeout = fetchTimeout
@@ -73,15 +77,32 @@ func redirectPolicy(req *http.Request, via []*http.Request) error {
 		return errors.New("too many redirects")
 	}
 	// 每跳复检协议白名单（SafeTransport 已在连接层拦截私网）。
-	if _, err := ssrf.ValidateURL(req.URL.String()); err != nil {
+	if _, err := validateTarget(req.URL.String()); err != nil {
 		return err
 	}
 	return nil
 }
 
+func validateTarget(raw string) (*url.URL, error) {
+	target, err := ssrf.ValidateURL(raw)
+	if err != nil {
+		return nil, err
+	}
+	if target.User != nil {
+		return nil, errors.New("userinfo is not allowed")
+	}
+	if port := target.Port(); port != "" {
+		value, err := strconv.Atoi(port)
+		if err != nil || value < 1 || value > 65535 {
+			return nil, errors.New("invalid port")
+		}
+	}
+	return target, nil
+}
+
 // Fetch 抓取 url 并解析 meta。仅接受 HTML 响应。
 func (f *Fetcher) Fetch(ctx context.Context, rawURL string) (PageMeta, error) {
-	parsed, err := ssrf.ValidateURL(rawURL)
+	parsed, err := validateTarget(rawURL)
 	if err != nil {
 		return PageMeta{}, &FetchError{Reason: "url rejected", Err: err}
 	}
@@ -113,12 +134,13 @@ func (f *Fetcher) Fetch(ctx context.Context, rawURL string) (PageMeta, error) {
 	if err != nil {
 		return PageMeta{}, &FetchError{Reason: "parse html", Err: err}
 	}
+	meta.PageURL = res.Request.URL.String()
 	return meta, nil
 }
 
 // parseMeta 从 HTML 提取 og/twitter meta 与 <title>。
 func parseMeta(body []byte) (PageMeta, error) {
-	root, err := html.Parse(strings.NewReader(string(body)))
+	root, err := html.Parse(bytes.NewReader(body))
 	if err != nil {
 		return PageMeta{}, err
 	}
@@ -145,8 +167,8 @@ func parseMeta(body []byte) (PageMeta, error) {
 				setFirst(&ogDesc, content)
 			case prop == "og:site_name":
 				setFirst(&m.SiteName, content)
-			case strings.HasPrefix(prop, "og:image"):
-				// og:image / og:image:secure_url 等变体取第一个。
+			case prop == "og:image" || prop == "og:image:url" || prop == "og:image:secure_url":
+				// 宽高等 og:image:* 属性不是图片地址。
 				setFirst(&ogImage, content)
 			case name == "twitter:title" || prop == "twitter:title":
 				setFirst(&twitterTitle, content)

@@ -5,268 +5,235 @@ import (
 	"errors"
 	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	domainlink "blog-api/internal/domain/linkpreview"
 	"blog-api/internal/domain/shared"
 )
 
-// stubRepo 内存仓储：记录 Save 调用供异步刷新断言。
-type stubRepo struct {
-	mu    sync.Mutex
-	cards map[string]*domainlink.LinkCard
-	saves []string
+type memoryCards struct {
+	mu   sync.Mutex
+	rows map[string]*domainlink.LinkCard
+	err  error
 }
 
-func (r *stubRepo) Save(_ context.Context, card *domainlink.LinkCard) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	if r.cards == nil {
-		r.cards = map[string]*domainlink.LinkCard{}
+func copyCard(c *domainlink.LinkCard) *domainlink.LinkCard {
+	return domainlink.ReconstructLinkCard(c.ID(), c.URL(), c.Title(), c.Description(), c.SiteName(), c.ImageURL(), c.Status(), c.FetchedAt(), c.ExpiresAt(), c.LastError(), c.FailCount(), c.CreatedAt(), c.UpdatedAt())
+}
+
+func (r *memoryCards) Save(ctx context.Context, card *domainlink.LinkCard) error {
+	if err := ctx.Err(); err != nil {
+		return err
 	}
-	r.cards[card.URL()] = card
-	r.saves = append(r.saves, card.URL())
-	return nil
-}
-
-func (r *stubRepo) FindByURLs(_ context.Context, urls []string) ([]*domainlink.LinkCard, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	var out []*domainlink.LinkCard
+	r.rows[card.URL()] = copyCard(card)
+	return r.err
+}
+
+func (r *memoryCards) FindByURLs(ctx context.Context, urls []string) ([]*domainlink.LinkCard, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	rows := make([]*domainlink.LinkCard, 0, len(urls))
 	for _, u := range urls {
-		if card, ok := r.cards[u]; ok {
-			out = append(out, card)
+		if c := r.rows[u]; c != nil {
+			rows = append(rows, copyCard(c))
 		}
 	}
-	return out, nil
+	return rows, r.err
 }
 
-func (r *stubRepo) saved(url string) int {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	n := 0
-	for _, s := range r.saves {
-		if s == url {
-			n++
-		}
-	}
-	return n
-}
-
-// stubFetcher 可编程抓取器：按 URL 返回结果或错误，计数调用；
-// block 非 nil 时计数后阻塞到 close，用于并发窗口控制。
-type stubFetcher struct {
+type gatedFetcher struct {
 	mu     sync.Mutex
 	calls  map[string]int
-	result map[string]FetchResult
-	err    map[string]error
-	block  map[string]chan struct{}
+	gate   <-chan struct{}
+	result FetchResult
+	err    error
 }
 
-func (f *stubFetcher) Fetch(_ context.Context, url string) (FetchResult, error) {
+func (f *gatedFetcher) Fetch(ctx context.Context, u string) (FetchResult, error) {
 	f.mu.Lock()
-	f.calls[url]++
-	block := f.block[url]
+	f.calls[u]++
 	f.mu.Unlock()
-	if block != nil {
-		<-block
-	}
-	if err, ok := f.err[url]; ok {
-		return FetchResult{}, err
-	}
-	return f.result[url], nil
-}
-
-func (f *stubFetcher) callCount(url string) int {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	return f.calls[url]
-}
-
-type stubCovers struct {
-	url string
-	err error
-}
-
-func (c *stubCovers) Save(_ context.Context, _, _ string) (string, error) {
-	if c.err != nil {
-		return "", c.err
-	}
-	return c.url, nil
-}
-
-// eventually 等待异步刷新落库（refresh 是 go 出去的）。
-func eventually(t *testing.T, timeout time.Duration, cond func() bool) {
-	t.Helper()
-	deadline := time.Now().Add(timeout)
-	for time.Now().Before(deadline) {
-		if cond() {
-			return
+	if f.gate != nil {
+		select {
+		case <-f.gate:
+		case <-ctx.Done():
+			return FetchResult{}, ctx.Err()
 		}
-		time.Sleep(5 * time.Millisecond)
 	}
-	t.Fatal("condition not met before timeout")
+	return f.result, f.err
 }
 
-func newTestService(t *testing.T, repo *stubRepo, fetcher *stubFetcher, covers *stubCovers, now func() time.Time) *Service {
-	t.Helper()
-	return NewService(repo, fetcher, covers, 2, WithClock(now))
+func TestLookupPreservesStaleSnapshotAndRetriesOnlyAfterBackoff(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		u := "https://example.com/post"
+		card, err := domainlink.NewLinkCard(shared.NewID(), u, time.Now())
+		if err != nil {
+			t.Fatal(err)
+		}
+		card.RecordSuccess("旧标题", "旧描述", "Example", "/uploads/old.png", time.Now().Add(-domainlink.DefaultTTL), domainlink.DefaultTTL)
+		repo := &memoryCards{rows: map[string]*domainlink.LinkCard{u: card}}
+		fetcher := &gatedFetcher{calls: map[string]int{}, err: errors.New("HTTP 403")}
+		svc := NewService(context.Background(), repo, fetcher, nil, 2)
+
+		first, err := svc.Lookup(context.Background(), []string{u})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(first.Pending) != 1 || first.Cards[u].Title != "旧标题" {
+			t.Fatalf("过期时先保留旧快照并报告等待: %+v", first)
+		}
+		synctest.Wait()
+		settled, err := svc.Lookup(context.Background(), []string{u})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(settled.Pending) != 0 || settled.Cards[u].ImageURL != "/uploads/old.png" {
+			t.Fatalf("刷新失败不应丢失旧快照或一直等待: %+v", settled)
+		}
+		synctest.Wait()
+		if fetcher.calls[u] != 1 {
+			t.Fatal("退避期不能继续访问上游")
+		}
+
+		time.Sleep(domainlink.FailureBackoffBase)
+		fetcher.err = nil
+		fetcher.result = FetchResult{Title: "更新的标题"}
+		if _, err := svc.Lookup(context.Background(), []string{u}); err != nil {
+			t.Fatal(err)
+		}
+		synctest.Wait()
+		updated, err := svc.Lookup(context.Background(), []string{u})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if updated.Cards[u].Title != "更新的标题" || len(updated.Pending) != 0 {
+			t.Fatalf("退避后应能更新: %+v", updated)
+		}
+	})
 }
 
-func TestLookup_MissTriggersBackgroundFetch(t *testing.T) {
-	var now = time.Now()
-	repo := &stubRepo{}
-	fetcher := &stubFetcher{calls: map[string]int{}, result: map[string]FetchResult{
-		"https://example.com/a": {Title: "标题", SiteName: "Example"},
-	}}
-	fetcher.calls = map[string]int{}
-	svc := newTestService(t, repo, fetcher, &stubCovers{}, func() time.Time { return now })
-
-	// 首次：miss，无卡片返回，后台抓取。
-	got := svc.Lookup(context.Background(), []string{"https://example.com/a"})
-	if len(got) != 0 {
-		t.Fatalf("miss 时不应有卡片, got %v", got)
-	}
-	eventually(t, 2*time.Second, func() bool { return repo.saved("https://example.com/a") == 1 })
-
-	// 时间前进到 TTL 内：命中缓存，不再抓取。
-	now = now.Add(time.Minute)
-	got = svc.Lookup(context.Background(), []string{"https://example.com/a"})
-	if got["https://example.com/a"] == nil || got["https://example.com/a"].Title != "标题" {
-		t.Fatalf("应命中缓存: %v", got)
-	}
-	if fetcher.callCount("https://example.com/a") != 1 {
-		t.Errorf("TTL 内不应重抓, calls = %d", fetcher.callCount("https://example.com/a"))
-	}
-
-	// TTL 过期：返回旧快照 + 触发重抓。
-	now = now.Add(domainlink.DefaultTTL + time.Minute)
-	got = svc.Lookup(context.Background(), []string{"https://example.com/a"})
-	if got["https://example.com/a"] == nil {
-		t.Fatal("过期后仍应返回旧快照")
-	}
-	eventually(t, 2*time.Second, func() bool { return fetcher.callCount("https://example.com/a") == 2 })
+func TestLookupBoundsOutstandingWorkAndDeduplicatesConcurrentReaders(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		gate := make(chan struct{})
+		fetcher := &gatedFetcher{calls: map[string]int{}, gate: gate, result: FetchResult{Title: "卡片"}}
+		repo := &memoryCards{rows: map[string]*domainlink.LinkCard{}}
+		svc := NewService(context.Background(), repo, fetcher, nil, 2)
+		urls := []string{"https://example.com/a", "https://example.com/b", "https://example.com/c"}
+		for range 8 {
+			if _, err := svc.Lookup(context.Background(), urls); err != nil {
+				t.Fatal(err)
+			}
+		}
+		synctest.Wait()
+		if fetcher.calls[urls[0]] != 1 || fetcher.calls[urls[1]] != 1 || fetcher.calls[urls[2]] != 0 {
+			t.Fatalf("准入必须合并重复请求并限制整个抓取: %+v", fetcher.calls)
+		}
+		close(gate)
+		synctest.Wait()
+		if _, err := svc.Lookup(context.Background(), urls); err != nil {
+			t.Fatal(err)
+		}
+		synctest.Wait()
+		result, err := svc.Lookup(context.Background(), urls)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, u := range urls {
+			if result.Cards[u] == nil || fetcher.calls[u] != 1 {
+				t.Fatalf("待获取链接必须最终完成且不重复抓取: %+v / %+v", result, fetcher.calls)
+			}
+		}
+		if len(result.Pending) != 0 {
+			t.Fatalf("全部完成后应停止等待: %+v", result)
+		}
+	})
 }
 
-func TestLookup_FailureBackoff(t *testing.T) {
-	var now = time.Now()
-	repo := &stubRepo{}
-	fetcher := &stubFetcher{
-		calls:  map[string]int{},
-		result: map[string]FetchResult{},
-		err:    map[string]error{"https://down.example/": errors.New("connection refused")},
-	}
-	svc := newTestService(t, repo, fetcher, &stubCovers{}, func() time.Time { return now })
-
-	svc.Lookup(context.Background(), []string{"https://down.example/"})
-	eventually(t, 2*time.Second, func() bool { return fetcher.callCount("https://down.example/") == 1 })
-
-	// 退避期内（24h）：lookup 不再触发抓取，也没有卡片。
-	now = now.Add(time.Hour)
-	got := svc.Lookup(context.Background(), []string{"https://down.example/"})
-	if len(got) != 0 {
-		t.Fatalf("failed 卡片不可展示: %v", got)
-	}
-	if fetcher.callCount("https://down.example/") != 1 {
-		t.Errorf("退避期内不应重抓")
-	}
-
-	// 退避结束：再次触发。
-	now = now.Add(domainlink.FailureBackoffBase + time.Minute)
-	svc.Lookup(context.Background(), []string{"https://down.example/"})
-	eventually(t, 2*time.Second, func() bool { return fetcher.callCount("https://down.example/") == 2 })
+type captureCover struct {
+	source string
+	err    error
 }
 
-func TestLookup_CoverFailureDegradesToTextCard(t *testing.T) {
-	var now = time.Now()
-	repo := &stubRepo{}
-	fetcher := &stubFetcher{calls: map[string]int{}, result: map[string]FetchResult{
-		"https://example.com/a": {Title: "有封面页", ImageURL: "https://cdn.example/c.png"},
-	}}
-	svc := newTestService(t, repo, fetcher, &stubCovers{err: errors.New("403")}, func() time.Time { return now })
-
-	svc.Lookup(context.Background(), []string{"https://example.com/a"})
-	eventually(t, 2*time.Second, func() bool { return repo.saved("https://example.com/a") == 1 })
-
-	now = now.Add(time.Second)
-	got := svc.Lookup(context.Background(), []string{"https://example.com/a"})
-	card := got["https://example.com/a"]
-	if card == nil {
-		t.Fatal("封面失败应降级为纯文本卡")
-	}
-	if card.Title != "有封面页" || card.ImageURL != "" {
-		t.Errorf("降级卡 = %+v", card)
-	}
+func (s *captureCover) Save(_ context.Context, _, source string) (string, error) {
+	s.source = source
+	return "/uploads/cover.png", s.err
 }
 
-func TestLookup_RelativeImageResolved(t *testing.T) {
-	var now = time.Now()
-	repo := &stubRepo{}
-	fetcher := &stubFetcher{calls: map[string]int{}, result: map[string]FetchResult{
-		"https://example.com/a": {Title: "T", ImageURL: "/static/c.png"},
-	}}
-	covers := &stubCovers{url: "/uploads/link-previews/x/c.png"}
-	svc := newTestService(t, repo, fetcher, covers, func() time.Time { return now })
-
-	svc.Lookup(context.Background(), []string{"https://example.com/a"})
-	eventually(t, 2*time.Second, func() bool { return repo.saved("https://example.com/a") == 1 })
-
-	now = now.Add(time.Second)
-	card := svc.Lookup(context.Background(), []string{"https://example.com/a"})["https://example.com/a"]
-	if card == nil || card.ImageURL != "/uploads/link-previews/x/c.png" {
-		t.Fatalf("相对封面未解析: %+v", card)
-	}
+func TestRelativeCoverUsesFinalRedirectedPage(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		repo := &memoryCards{rows: map[string]*domainlink.LinkCard{}}
+		fetcher := &gatedFetcher{calls: map[string]int{}, result: FetchResult{Title: "标题", PageURL: "https://example.com/moved/page/", ImageURL: "../cover.png"}}
+		cover := &captureCover{}
+		svc := NewService(context.Background(), repo, fetcher, cover, 1)
+		if _, err := svc.Lookup(context.Background(), []string{"https://example.com/original"}); err != nil {
+			t.Fatal(err)
+		}
+		synctest.Wait()
+		if cover.source != "https://example.com/moved/cover.png" {
+			t.Fatalf("相对封面必须相对最终页面解析，得到 %q", cover.source)
+		}
+	})
 }
 
-func TestRefresh_SingleflightMergesConcurrent(t *testing.T) {
-	var now = time.Now()
-	repo := &stubRepo{}
-	block := make(chan struct{})
-	fetcher := &stubFetcher{
-		calls:  map[string]int{},
-		result: map[string]FetchResult{"https://slow.example/": {Title: "慢"}},
-		block:  map[string]chan struct{}{"https://slow.example/": block},
-	}
-	svc := newTestService(t, repo, fetcher, &stubCovers{}, func() time.Time { return now })
-
-	// 并发 5 次 refresh 同一 URL：第一个进入 Fetch 并阻塞，
-	// 其余在 singleflight 上等待——窗口期内网络调用只有一次。
-	var wg sync.WaitGroup
-	for range 5 {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			svc.refresh("https://slow.example/", nil)
-		}()
-	}
-	eventually(t, 2*time.Second, func() bool { return fetcher.callCount("https://slow.example/") == 1 })
-	time.Sleep(50 * time.Millisecond)
-	if got := fetcher.callCount("https://slow.example/"); got != 1 {
-		t.Fatalf("singleflight 未合并, fetch calls = %d", got)
-	}
-	close(block)
-	wg.Wait()
-	if got := fetcher.callCount("https://slow.example/"); got != 1 {
-		t.Errorf("合并窗口后 calls = %d, want 1", got)
-	}
-	if repo.saved("https://slow.example/") != 1 {
-		t.Errorf("应恰好保存一次")
-	}
+func TestLookupPropagatesRepositoryFailureWithoutCallingUpstream(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		failure := errors.New("database unavailable")
+		fetcher := &gatedFetcher{calls: map[string]int{}}
+		svc := NewService(context.Background(), &memoryCards{err: failure}, fetcher, nil, 1)
+		_, err := svc.Lookup(context.Background(), []string{"https://example.com/"})
+		if !errors.Is(err, failure) {
+			t.Fatalf("缓存读取失败不能伪装成空快照: %v", err)
+		}
+		synctest.Wait()
+		if len(fetcher.calls) != 0 {
+			t.Fatal("查库失败不应触发上游抓取风暴")
+		}
+	})
 }
 
-func TestLookup_NormalizesAndCaps(t *testing.T) {
-	var now = time.Now()
-	svc := newTestService(t, &stubRepo{}, &stubFetcher{calls: map[string]int{}, result: map[string]FetchResult{}}, &stubCovers{}, func() time.Time { return now })
-
-	// 大小写主机归一后去重；非法项丢弃。
-	got := svc.Lookup(context.Background(), []string{"HTTPS://Example.COM:443/a", "https://example.com/a", "not-a-url"})
-	if len(got) != 0 {
-		t.Fatalf("无缓存时结果应为空: %v", got)
-	}
+func TestShutdownCancelsOutstandingFetch(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		fetcher := &gatedFetcher{calls: map[string]int{}, gate: make(chan struct{})}
+		svc := NewService(ctx, &memoryCards{rows: map[string]*domainlink.LinkCard{}}, fetcher, nil, 1)
+		if _, err := svc.Lookup(context.Background(), []string{"https://example.com/"}); err != nil {
+			t.Fatal(err)
+		}
+		synctest.Wait()
+		cancel()
+		synctest.Wait()
+		svc.mu.Lock()
+		active := len(svc.active)
+		svc.mu.Unlock()
+		if active != 0 {
+			t.Fatal("关停后仍有抓取占用名额")
+		}
+	})
 }
 
-// 编译期确认 stub 满足端口。
-var _ PageFetcher = (*stubFetcher)(nil)
-var _ CoverSaver = (*stubCovers)(nil)
-var _ domainlink.LinkCardRepository = (*stubRepo)(nil)
-var _ = shared.NewID
+func TestFetchDeadlineSettlesAsUnavailable(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		u := "https://example.com/slow"
+		fetcher := &gatedFetcher{calls: map[string]int{}, gate: make(chan struct{})}
+		svc := NewService(context.Background(), &memoryCards{rows: map[string]*domainlink.LinkCard{}}, fetcher, nil, 1)
+		if _, err := svc.Lookup(context.Background(), []string{u}); err != nil {
+			t.Fatal(err)
+		}
+		synctest.Wait()
+		time.Sleep(30 * time.Second)
+		synctest.Wait()
+		result, err := svc.Lookup(context.Background(), []string{u})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(result.Pending) != 0 || len(result.Unavailable) != 1 || result.Unavailable[0] != u {
+			t.Fatalf("上游超时必须落下失败终态，不能让页面永久等待: %+v", result)
+		}
+	})
+}

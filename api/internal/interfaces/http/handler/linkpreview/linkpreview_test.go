@@ -18,12 +18,13 @@ type stubLookup struct {
 	last  []string
 }
 
-func (s *stubLookup) Lookup(_ context.Context, urls []string) map[string]*applp.LinkCardDTO {
+func (s *stubLookup) Lookup(_ context.Context, urls []string) (applp.LookupResultDTO, error) {
 	s.calls++
 	s.last = urls
-	return map[string]*applp.LinkCardDTO{
-		"https://example.com/a": {URL: "https://example.com/a", Title: "标题"},
-	}
+	return applp.LookupResultDTO{
+		Cards:   map[string]*applp.LinkCardDTO{"https://example.com/a": {URL: "https://example.com/a", Title: "标题"}},
+		Pending: []string{}, Unavailable: []string{},
+	}, nil
 }
 
 func newLookupServer(t *testing.T) (*stubLookup, *httptest.Server) {
