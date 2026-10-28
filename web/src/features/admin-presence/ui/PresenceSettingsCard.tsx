@@ -25,7 +25,7 @@ export function PresenceSettingsCard() {
 	};
 
 	return (
-		<Card className="rounded-2xl p-5 shadow-[0_4px_24px_rgba(0,0,0,0.05)]">
+		<Card className="gap-0 rounded-2xl p-5 shadow-[0_4px_24px_rgba(0,0,0,0.05)]">
 			<div className="flex items-start justify-between gap-6">
 				<div className="min-w-0">
 					<h3 className="text-base font-medium" id="presence-public-read">
@@ -42,7 +42,7 @@ export function PresenceSettingsCard() {
 					onCheckedChange={toggle}
 				/>
 			</div>
-			<div className="mt-5 border-t border-border/60 pt-4">
+			<div className="mt-4 border-t border-border/60 pt-4">
 				<p className="text-sm font-medium">上报地址</p>
 				<p className="mt-1 mb-2 text-sm text-muted-foreground">
 					在 Nowbeam 设置的「接收端」里添加此地址，并填入下方签发的设备凭证。

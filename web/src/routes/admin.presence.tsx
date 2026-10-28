@@ -15,7 +15,7 @@ function AdminPresencePage() {
 			title="实时状态"
 			description="接收 Nowbeam 上报的设备状态，管理设备凭证与是否向访客公开。"
 		>
-			<div className="grid gap-4">
+			<div className="grid grid-cols-1 gap-4">
 				<PresenceSettingsCard />
 				<PresenceDevicesCard onIssue={() => setIssueOpen(true)} />
 			</div>

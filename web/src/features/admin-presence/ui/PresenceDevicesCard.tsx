@@ -29,7 +29,7 @@ export function PresenceDevicesCard({ onIssue }: { onIssue: () => void }) {
 	};
 
 	return (
-		<Card className="rounded-2xl p-5 shadow-[0_4px_24px_rgba(0,0,0,0.05)]">
+		<Card className="gap-0 rounded-2xl p-5 shadow-[0_4px_24px_rgba(0,0,0,0.05)]">
 			<div className="flex items-center justify-between gap-4 border-b border-border/60 pb-3">
 				<h3 className="text-base font-medium">设备</h3>
 				{canManage ? (

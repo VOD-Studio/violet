@@ -73,7 +73,7 @@ export function IssueDeviceDialog({
 								<p className="text-sm font-medium">设备凭证</p>
 								<CopyField label="设备凭证" value={issued.token} />
 							</div>
-							<ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
+							<ol className="list-decimal space-y-1 pl-7 text-sm text-muted-foreground">
 								<li>
 									在 Nowbeam 设置的「接收端」里添加接收端，填入上面的地址与凭证。
 								</li>
