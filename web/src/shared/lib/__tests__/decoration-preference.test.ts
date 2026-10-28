@@ -3,8 +3,10 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
 	DECORATION_COOKIE_NAME,
+	DECORATION_LAYERS_COOKIE_NAME,
 	getClientDecoration,
 	parseDecorationCookie,
+	parseDecorationLayersCookie,
 	persistDecorationPreference,
 	resolveDecoration,
 } from "../decoration-preference";
@@ -70,5 +72,43 @@ describe("客户端装饰偏好", () => {
 		expect(getClientDecoration()).toBe("none");
 		await persistDecorationPreference("summer");
 		expect(getClientDecoration()).toBe("summer");
+	});
+});
+
+describe("装饰层 Cookie 边界", () => {
+	const cookie = (value: string) => `${DECORATION_LAYERS_COOKIE_NAME}=${value}`;
+
+	it("部分关闭不会重新启用已关闭的层", () => {
+		expect(parseDecorationLayersCookie(cookie("illustration,ornaments"))).toEqual({
+			illustration: true,
+			particles: false,
+			ornaments: true,
+		});
+	});
+
+	it("全部关闭与未保存偏好具有不同含义", () => {
+		expect(parseDecorationLayersCookie(cookie("none"))).toEqual({
+			illustration: false,
+			particles: false,
+			ornaments: false,
+		});
+		expect(parseDecorationLayersCookie("appearance=dark")).toEqual({
+			illustration: true,
+			particles: true,
+			ornaments: true,
+		});
+	});
+
+	it.each([
+		"",
+		"snow",
+		"particles,unknown",
+		"none,ornaments",
+	])("非法层列表 %s 回落为全部启用", (value) => {
+		expect(parseDecorationLayersCookie(cookie(value))).toEqual({
+			illustration: true,
+			particles: true,
+			ornaments: true,
+		});
 	});
 });

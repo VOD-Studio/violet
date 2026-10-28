@@ -64,6 +64,48 @@
 	);
 }
 
+.backdrop,
+.illustration,
+.particles {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+
+.backdrop {
+	display: none;
+}
+
+@media (min-width: 64rem) {
+	.backdrop {
+		display: block;
+	}
+}
+
+.particles {
+	width: 100%;
+	height: 100%;
+	/* 只保护 56rem 阅读带，避免较窄桌面的粒子全被大插画遮罩裁掉。 */
+	mask-image: linear-gradient(
+		to right,
+		var(--foreground) calc(50% - 36rem),
+		transparent calc(50% - 28rem),
+		transparent calc(50% + 28rem),
+		var(--foreground) calc(50% + 36rem)
+	);
+}
+
+.illustration {
+	/* 避开首页最宽的 80rem 内容栏。 */
+	mask-image: linear-gradient(
+		to right,
+		var(--foreground) calc(50% - 48rem),
+		transparent calc(50% - 40rem),
+		transparent calc(50% + 40rem),
+		var(--foreground) calc(50% + 48rem)
+	);
+}
+
 .scene {
 	position: absolute;
 	pointer-events: none;
@@ -180,9 +222,9 @@
 	}
 }
 
-/* 点缀位进入视口才开始生长 */
+/* 未由客户端进入视口触发时显示最终态；禁用脚本也不会停在空白起点。 */
 .scene:not([data-play]) * {
-	animation-play-state: paused;
+	animation: none;
 }
 
 /*
@@ -194,7 +236,19 @@
 }
 
 /* biome-ignore lint/correctness/noUnknownPseudoClass: CSS Modules 的全局类引用，非标准伪类 */
-:global(.dialect-tool) .ornament,
+:global(.dialect-tool) .backdrop,
+/* biome-ignore lint/correctness/noUnknownPseudoClass: CSS Modules 的全局类引用，非标准伪类 */
+	:global(.dialect-tool)
+	.accent,
+/* biome-ignore lint/correctness/noUnknownPseudoClass: CSS Modules 的全局类引用，非标准伪类 */
+	:global(.dialect-tool)
+	.ornament,
+/* biome-ignore lint/correctness/noUnknownPseudoClass: CSS Modules 的全局类引用，非标准伪类 */
+	:global(.dialect-immersive)
+	.backdrop,
+/* biome-ignore lint/correctness/noUnknownPseudoClass: CSS Modules 的全局类引用，非标准伪类 */
+	:global(.dialect-immersive)
+	.accent,
 /* biome-ignore lint/correctness/noUnknownPseudoClass: CSS Modules 的全局类引用，非标准伪类 */
 	:global(.dialect-immersive)
 	.ornament {

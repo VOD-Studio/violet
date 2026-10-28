@@ -1,8 +1,15 @@
 import { useAppearanceSwitcher } from "@features/appearance";
 import { useSearchPosts } from "@features/posts/api/queries";
-import { THEME_CHOICES, themeChoiceTitle, useThemeSwitcher } from "@features/theme-switcher";
+import { useDecorationSwitcher } from "@features/seasonal-decor/hooks/useDecorationSwitcher";
+import {
+	decorationChoiceTitle,
+	THEME_CHOICES,
+	themeChoiceTitle,
+	useThemeSwitcher,
+} from "@features/theme-switcher";
 import { flattenNavLinks } from "@shared/config/nav";
 import { type CmdItem, filterCommands } from "@shared/lib/cmd-filter";
+import { DECORATION_PREFERENCES } from "@shared/lib/decoration-preference";
 import { THEME_PRESETS } from "@shared/lib/theme-presets";
 import { useNavigate } from "@tanstack/react-router";
 import { CommandList } from "@violet/ui";
@@ -16,13 +23,14 @@ const GROUP_LABELS: Record<string, string> = {
 	navigation: "导航",
 	appearance: "外观",
 	theme: "主题",
+	decoration: "装饰",
 };
 
 /**
  * CommandPalette - 全局 Cmd/Ctrl+K 搜索 + 命令面板
  *
  * 双模态：输入 ≥ 2 字符触发服务端文章搜索（debounce 250ms），同时本地过滤
- * 导航、外观与主题命令。文章结果来自服务端（已按 query 检索），不再经 filterCommands
+ * 导航、外观、主题与装饰命令。文章结果来自服务端（已按 query 检索），不再经 filterCommands
  * 二次过滤——query 可能命中正文而非标题，本地过滤会误删结果。
  * - Cmd/Ctrl+K 打开（也可由 HeaderActions 搜索按钮 open()）
  * - 导航命令派生自 NAV_ITEMS（与 Header nav 同源）；外观切换为面板独有，主题命令与顶栏菜单共用选项
@@ -38,6 +46,7 @@ const CommandPalette = () => {
 	const navigate = useNavigate();
 	const { appearance, switchAppearance } = useAppearanceSwitcher();
 	const { switchTheme } = useThemeSwitcher();
+	const { switchDecoration } = useDecorationSwitcher();
 	const { data: searchData, isFetching } = useSearchPosts(debouncedQuery);
 
 	// 输入防抖：避免每次击键都打后端
@@ -65,7 +74,7 @@ const CommandPalette = () => {
 		}
 	}, [isOpen]);
 
-	// 本地命令：导航、外观与主题（经 filterCommands 子串过滤）
+	// 本地命令经 filterCommands 子串过滤。
 	const localCommands: CmdItem[] = useMemo(
 		() => [
 			...flattenNavLinks().map((item) => ({
@@ -116,8 +125,15 @@ const CommandPalette = () => {
 							],
 				run: () => void switchTheme(preference),
 			})),
+			...DECORATION_PREFERENCES.map((preference) => ({
+				id: `decoration-${preference}`,
+				label: `装饰：${decorationChoiceTitle(preference)}`,
+				group: "decoration",
+				keywords: ["decoration", "season", "装饰", "季节"],
+				run: () => void switchDecoration(preference),
+			})),
 		],
-		[navigate, switchAppearance, appearance, switchTheme],
+		[navigate, switchAppearance, appearance, switchTheme, switchDecoration],
 	);
 
 	const filtered = useMemo(() => {

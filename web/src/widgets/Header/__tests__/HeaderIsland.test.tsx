@@ -1,3 +1,4 @@
+import { DEFAULT_DECORATION_LAYERS } from "@shared/lib/decoration-preference";
 import {
 	createMemoryHistory,
 	createRootRoute,
@@ -15,6 +16,8 @@ function renderAt(path: string) {
 		// 面板里的主题选择读取根路由上下文
 		beforeLoad: () => ({
 			theme: { preference: "follow" as const, preset: "autumn" as const, custom: null },
+			decoration: "theme" as const,
+			decorationLayers: DEFAULT_DECORATION_LAYERS,
 		}),
 		component: () => (
 			<>

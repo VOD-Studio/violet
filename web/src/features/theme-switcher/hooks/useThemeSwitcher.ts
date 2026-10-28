@@ -1,3 +1,4 @@
+import { getClientDecoration, resolveDecoration } from "@shared/lib/decoration-preference";
 import { CUSTOM_THEME_STYLE_ID, generateCustomThemeCss } from "@shared/lib/theme-css";
 import {
 	persistThemePreference,
@@ -51,6 +52,8 @@ export function useThemeSwitcher() {
 				}
 				root.dataset.theme = target;
 				root.dataset.season = preset;
+				root.dataset.decoration =
+					resolveDecoration(getClientDecoration(), { ...next, preset }) ?? "none";
 			};
 			let updated: Promise<unknown> = Promise.resolve();
 			if (target === current && target !== "custom") {

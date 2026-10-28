@@ -14,6 +14,46 @@ export const DECORATION_PREFERENCES = [
 /** 装饰偏好 cookie 名，与主题偏好分开保存。 */
 export const DECORATION_COOKIE_NAME = "decoration-preference";
 
+/** 可独立启停的装饰层；插画同时控制角落大图与首页点缀。 */
+export const DECORATION_LAYERS = ["illustration", "particles", "ornaments"] as const;
+
+export type DecorationLayer = (typeof DECORATION_LAYERS)[number];
+export type DecorationLayers = Readonly<Record<DecorationLayer, boolean>>;
+
+export const DEFAULT_DECORATION_LAYERS: DecorationLayers = {
+	illustration: true,
+	particles: true,
+	ornaments: true,
+};
+
+export const DECORATION_LAYERS_COOKIE_NAME = "decoration-layers";
+
+/** 缺失或含未知层的 cookie 回落为全部启用，none 表示全部关闭。 */
+export function parseDecorationLayersCookie(cookie: string): DecorationLayers {
+	const value = readCookieValue(cookie, DECORATION_LAYERS_COOKIE_NAME);
+	if (value === undefined) return DEFAULT_DECORATION_LAYERS;
+	if (value === "none") return { illustration: false, particles: false, ornaments: false };
+	const enabled = value.split(",");
+	if (!enabled.every((layer) => (DECORATION_LAYERS as readonly string[]).includes(layer)))
+		return DEFAULT_DECORATION_LAYERS;
+	return {
+		illustration: enabled.includes("illustration"),
+		particles: enabled.includes("particles"),
+		ornaments: enabled.includes("ornaments"),
+	};
+}
+
+/** 只保存启用层，固定顺序供 Cookie 与首帧属性共用。 */
+export const serializeDecorationLayers = (layers: DecorationLayers): string =>
+	DECORATION_LAYERS.filter((layer) => layers[layer]).join(",") || "none";
+
+export const getClientDecorationLayers = (): DecorationLayers =>
+	parseDecorationLayersCookie(document.cookie);
+
+/** 开关不改装饰季节；写入完成后路由与下次 SSR 才能读到同一状态。 */
+export const persistDecorationLayers = (layers: DecorationLayers): Promise<void> =>
+	writePreferenceCookie(DECORATION_LAYERS_COOKIE_NAME, serializeDecorationLayers(layers));
+
 const isDecorationPreference = (value: unknown): value is DecorationPreference =>
 	(DECORATION_PREFERENCES as readonly unknown[]).includes(value);
 

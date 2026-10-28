@@ -33,7 +33,8 @@ export function HomeClosing({ identity, season }: HomeClosingProps) {
 			: "留下印记";
 
 	return (
-		<section className="relative overflow-hidden pt-28 pb-16 sm:pt-32 sm:pb-20 lg:pt-36 lg:pb-24">
+		<section className="relative pt-28 pb-16 sm:pt-32 sm:pb-20 lg:pt-36 lg:pb-24">
+			<ClosingVignette />
 			<motion.div
 				initial={false}
 				whileInView={{ opacity: 1, y: 0 }}
@@ -41,7 +42,6 @@ export function HomeClosing({ identity, season }: HomeClosingProps) {
 				transition={{ type: "spring", stiffness: 130, damping: 22, mass: 0.9 }}
 				className="mx-auto max-w-4xl px-5 text-center sm:px-8"
 			>
-				<ClosingVignette />
 				<div className="space-y-2">
 					<p className="font-serif text-2xl font-normal tracking-widest text-foreground/90 sm:text-3xl">
 						{greeting.title}

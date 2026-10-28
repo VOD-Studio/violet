@@ -120,6 +120,7 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 | 站点音乐 | `features/admin-music`、`music-player`，共享模型在 `entities/music` |
 | 明暗外观切换 | `features/appearance`，SSR 与 cookie 桥接在 `shared/` |
 | 主题切换 | `features/theme-switcher`，预设、偏好解析与 SSR 在 `shared/` |
+| 四季装饰与图层控制 | `features/seasonal-decor`，入口在 `theme-switcher` 与命令面板 |
 | 管理后台 | `features/admin-*`，公共后台布局与表格在 `admin-layout` / `admin-shared` |
 | 运行策略与代码执行 | `entities/runtime-policy`、`entities/code-runner`、`features/admin-settings` |
 | 首页与阅读页组合、导航 | `widgets/` 与 `shared/config/nav.ts` |
@@ -127,6 +128,8 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 只在一个 feature 内使用的实现留在 feature。第二个 feature 需要同一业务能力时，提到 `entities/`；站点专用基础能力放 `shared/`，通用 React 组件放 `packages/ui/`。不要让 `shared` 反向导入业务 feature。
 
 ### 音乐播放器接入
+
+站点使用 `@violetjs/kite-player` 的自定义 `DataSource`，对接本站 `/api/v1/music/**`，不改用包内直连外站的数据源。公开歌单按页载入；凭据模式变化时重建队列，刷新恢复队列与进度但不自动播放。
 
 播放器通过公开 `position` 属性默认靠左。宿主只设置 `--kite-blob`、`--kite-blob-icon` 按钮颜色和层级、边距、移动端导航避让，保留播放器原生外观与开合动效；不要通过部件 CSS 重写圆角、阴影或动画。
 
@@ -203,9 +206,13 @@ CLI fixture 使用临时 Git 仓库，可通过 `pnpm test scripts/check-colors.
 
 ### 装饰偏好
 
-装饰偏好由 `shared/lib/decoration-preference.ts` 解析，与主题偏好分存在 `decoration-preference` cookie：跟随主题、无或指定某一季。`resolveDecoration` 给出实际投放的季节，跟随主题时取预设主题的季节，自定义主题下为无。SSR 通过 `getSSRDecoration` 在 `<html>` 上输出 `data-decoration`（季节或 `none`），首帧即为访客的装饰。
+装饰偏好由 `shared/lib/decoration-preference.ts` 解析，单独保存在 `decoration-preference` cookie：跟随主题、无或指定某一季。`resolveDecoration` 给出实际投放的季节，跟随主题时取预设主题的季节，自定义主题下为无。SSR 通过 `getSSRDecoration` 在 `<html>` 上输出 `data-decoration`（季节或 `none`），首帧即为访客的装饰。
 
-装饰内容由 `@features/seasonal-decor` 投放：背景层（`SeasonBackdrop` 挂在 SiteBackdrop 内：视口角落的程序生成插画与飘落粒子画布）、点缀位（首页收尾寄语上方的小幅插画）与组件插槽挂件（顶栏三个胶囊与页脚上沿的物候小物）。插画只用主题 token 混出的色板着色、固定随机种子保证 SSR 与客户端一致；粒子先画进离屏精灵逐帧贴图。飘落粒子是方向性运动，AGENTS 的动效约束为其写明例外；减弱动态时插画直接显示最终画面、粒子只画一帧。工具与沉浸方言内挂件由 `scene.module.css` 的方言钩子隐藏，工具界面插槽只保留 `data-decoration` 这个 CSS 钩子，`@violet/ui` 不依赖任何主题。切换入口是 ThemeMenu 的「季节装饰」子菜单，`e2e/decoration.spec.ts` 覆盖各偏好组合的首帧与水合一致性、装饰投放与方言隐藏、减弱动态静止及 UI 切换后刷新一致。
+插画、飘落与挂件的开关保存在独立的 `decoration-layers` cookie，SSR 输出 `data-decoration-layers`。关闭的图层卸载对应内容；插画与飘落同时关闭时，不保留空背景插槽。
+
+装饰内容统一由 `@features/seasonal-decor` 投放：背景层是视口角落插画与飘落画布，点缀位是首页收尾寄语上方的小幅插画，组件挂件保留在顶栏三个胶囊与页脚。背景避开正文与首页内容栏，点缀位采用绝对定位，不参与布局。插画用主题 token 混色、固定随机种子保证 SSR 与客户端一致；粒子先画进离屏精灵再贴图。背景仅在桌面公开页显示；隐藏、零尺寸、窄屏或离屏时停止逐帧绘制，减弱动态时仅显示静态画面。工具与沉浸方言不显示装饰，`@violet/ui` 不依赖装饰实现。
+
+桌面在 ThemeMenu 的「季节装饰」子菜单选择季节及图层，连续配置时菜单保持打开；移动端「更多」面板提供相同选择，命令面板支持选择装饰季节或关闭装饰。三个入口共用现有 `useDecorationSwitcher`，装饰变化不改主题。`e2e/decoration.spec.ts` 覆盖首帧与水合一致性、图层持久化、连续配置、布局不变与减弱动态静止。
 
 ### 独立包与文档站
 

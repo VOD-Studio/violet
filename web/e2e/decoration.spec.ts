@@ -1,6 +1,9 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 import { normalizeTheme } from "@violetjs/theme";
-import type { DecorationPreference } from "../src/shared/lib/decoration-preference";
+import {
+	DECORATION_LAYERS_COOKIE_NAME,
+	type DecorationPreference,
+} from "../src/shared/lib/decoration-preference";
 import { resolvePresetTheme, type ThemePreference } from "../src/shared/lib/theme-preference";
 import { appearanceContext, CONTRACT_ORIGIN } from "./theme-harness";
 
@@ -64,88 +67,110 @@ test("非法的装饰 cookie 回落为跟随主题", async ({ browser }) => {
 	await context.close();
 });
 
-/** 背景层插画（按季节的 viewBox 区分）与粒子画布。 */
-function backdropArt(page: import("@playwright/test").Page) {
-	return {
-		scene: page.locator("div[class*='backdrop'] svg[class*='scene']"),
-		particleCanvas: page.locator("div[class*='backdrop'] canvas[class*='absolute']"),
-	};
+async function openDecorationMenu(page: Page) {
+	const header = page.locator("header").first();
+	await header.getByRole("link", { name: "登录", exact: true }).hover();
+	await header.getByRole("button", { name: /^主题：/ }).click();
+	await page.getByRole("menuitem").filter({ hasText: "季节装饰" }).hover();
+	const menu = page.getByRole("menu", { name: /季节装饰/ });
+	await expect(menu).toBeVisible();
+	const entry = await menu.getByRole("menuitemradio").first().boundingBox();
+	if (!entry) throw new Error("装饰子菜单没有可用选项");
+	// Radix 依赖父菜单内的指针方向；连续移动避免跨 Portal 直跳被当作离开。
+	await page.mouse.move(entry.x + entry.width / 2, entry.y + entry.height / 2, { steps: 8 });
+	return menu;
 }
 
-for (const { decoration, expectShown } of [
-	{ decoration: "winter" as const, expectShown: true },
-	{ decoration: "none" as const, expectShown: false },
-]) {
-	test(`装饰投放：${expectShown ? "冬季" : "关闭"}时背景层与挂件${expectShown ? "渲染" : "不渲染"}`, async ({
-		browser,
-	}) => {
-		const context = await appearanceContext(browser, "light", { decoration });
-		const page = await context.newPage();
-		await page.goto("/", { waitUntil: "load" });
+for (const appearance of ["light", "dark"] as const) {
+	for (const decoration of ["spring", "summer", "autumn", "winter"] as const) {
+		test(`三类插槽：${appearance} ${decoration} 不改变正文和页脚位置`, async ({ browser }) => {
+			const context = await appearanceContext(browser, appearance, { decoration });
+			const page = await context.newPage();
+			await page.setViewportSize({ width: 1440, height: 900 });
+			await page.goto("/", { waitUntil: "load" });
+			await expect(page.locator("[data-season-backdrop]")).toHaveAttribute(
+				"data-season-backdrop",
+				decoration,
+			);
+			await expect(page.locator("[data-season-particles]")).toBeVisible();
+			await expect(page.locator("[data-decoration-slot='accent'] svg")).toBeVisible();
+			await expect(page.locator("header [data-season-ornament]")).toHaveCount(3);
+			const menu = await openDecorationMenu(page);
+			await page.evaluate(() => document.fonts.ready);
+			const titleBefore = await page.locator("main h1").first().boundingBox();
+			const footerBefore = await page.locator("footer").boundingBox();
+			const slots = await page.locator("[data-decoration-slot]").evaluateAll((nodes) =>
+				nodes.map((node) => ({
+					hidden: node.getAttribute("aria-hidden"),
+					pointerEvents: getComputedStyle(node).pointerEvents,
+				})),
+			);
+			for (const slot of slots)
+				expect(slot).toEqual({ hidden: "true", pointerEvents: "none" });
 
-		const { scene, particleCanvas } = backdropArt(page);
-		const ornaments = page.locator("[class*='ornament']");
-		if (expectShown) {
-			// 冬季背景层插画的 viewBox 是四季里唯一的 600x430
-			await expect(scene).toHaveAttribute("viewBox", "0 0 600 430");
-			await expect(particleCanvas).toBeVisible();
-			// 顶栏三个胶囊 + 页脚上沿
-			await expect(ornaments).toHaveCount(4);
-		} else {
-			await expect(scene).toHaveCount(0);
-			await expect(particleCanvas).toHaveCount(0);
-			await expect(ornaments).toHaveCount(0);
-		}
-		await context.close();
+			await menu.getByRole("menuitemradio", { name: /^无/ }).click();
+			await expect(page.locator("html")).toHaveAttribute("data-decoration", "none");
+			await expect(page.locator("[data-decoration-slot]")).toHaveCount(0);
+			expect(await page.locator("main h1").first().boundingBox()).toEqual(titleBefore);
+			expect(await page.locator("footer").boundingBox()).toEqual(footerBefore);
+			await context.close();
+		});
+	}
+}
+
+test("SSR 首帧按图层开关卸载插画与粒子，不留下空背景", async ({ browser }) => {
+	const context = await appearanceContext(browser, "light", {
+		blockScripts: true,
+		decoration: "winter",
+		decorationLayers: { illustration: false, particles: false, ornaments: true },
 	});
-}
-
-test("装饰投放：点缀位随寄语出现在首页底部", async ({ browser }) => {
-	const context = await appearanceContext(browser, "light", { decoration: "spring" });
 	const page = await context.newPage();
 	await page.goto("/", { waitUntil: "load" });
-	const vignette = page.locator("main svg[class*='scene'][viewBox='0 0 230 110']");
-	await vignette.scrollIntoViewIfNeeded();
-	await expect(vignette).toBeVisible();
+	await expect(page.locator("html")).toHaveAttribute("data-decoration-layers", "ornaments");
+	await expect(page.locator("[data-season-backdrop]")).toHaveCount(0);
+	await expect(page.locator("[data-decoration-slot='accent']")).toHaveCount(0);
+	await expect(page.locator("header [data-season-ornament]")).toHaveCount(3);
 	await context.close();
 });
 
-test("装饰投放：工具方言内挂件隐藏", async ({ browser }) => {
+test("工具页面不显示装饰", async ({ browser }) => {
 	const context = await appearanceContext(browser, "light", { decoration: "autumn" });
 	const page = await context.newPage();
 	await page.goto("/inkline", { waitUntil: "load" });
-	// 工具方言仍渲染顶栏挂件（3 枚，无页脚），全部被方言钩子隐藏
-	await expect(page.locator("[class*='ornament']")).toHaveCount(3);
-	const hidden = await page.evaluate(() =>
-		Array.from(document.querySelectorAll("[class*='ornament']")).map(
-			(el) => getComputedStyle(el).display,
-		),
+	const shown = await page.locator("[data-decoration-slot]").evaluateAll(
+		(nodes) =>
+			nodes.filter((node) => {
+				const style = getComputedStyle(node);
+				return (
+					style.display !== "none" &&
+					style.visibility !== "hidden" &&
+					node.getClientRects().length
+				);
+			}).length,
 	);
-	expect(hidden).toEqual(["none", "none", "none"]);
+	expect(shown).toBe(0);
 	await context.close();
 });
 
-test("减弱动态时粒子画布静止", async ({ browser }) => {
+test("减弱动态时粒子有静态画面且不持续重绘", async ({ browser }) => {
 	const context = await appearanceContext(browser, "light", { decoration: "winter" });
 	const page = await context.newPage();
 	await page.goto("/", { waitUntil: "load" });
-	await page.waitForTimeout(600);
+	await expect(page.locator("[data-season-particles]")).toBeVisible();
+	await page.waitForTimeout(300);
 	const { still, hasInk } = await page.evaluate(async () => {
-		const canvas = document.querySelector<HTMLCanvasElement>(
-			"div[class*='backdrop'] canvas[class*='absolute']",
-		);
+		const canvas = document.querySelector<HTMLCanvasElement>("[data-season-particles]");
 		if (!canvas) throw new Error("粒子画布未渲染");
 		const context = canvas.getContext("2d", { willReadFrequently: true });
 		if (!context) throw new Error("不支持 canvas 2d");
-		const snap = () => JSON.stringify(Array.from(context.getImageData(0, 0, 120, 120).data));
-		const first = snap();
+		const first = context.getImageData(0, 0, canvas.width, canvas.height).data;
 		const { promise, resolve } = Promise.withResolvers<void>();
-		setTimeout(resolve, 800);
+		setTimeout(resolve, 400);
 		await promise;
+		const second = context.getImageData(0, 0, canvas.width, canvas.height).data;
 		return {
-			still: first === snap(),
-			// 画布上有内容（非全透明），静止的不是空画布
-			hasInk: first.replace(/0/g, "").length > 0,
+			still: first.every((value, index) => value === second[index]),
+			hasInk: first.some((value, index) => index % 4 === 3 && value > 0),
 		};
 	});
 	expect(hasInk, "静止帧有内容").toBe(true);
@@ -153,45 +178,123 @@ test("减弱动态时粒子画布静止", async ({ browser }) => {
 	await context.close();
 });
 
-test("切换装饰偏好后刷新，首帧与切换后一致", async ({ browser }) => {
-	const context = await appearanceContext(browser, "light", { decoration: "spring" });
+test("延迟 CookieStore 时连续关闭图层，刷新禁用脚本仍保持全部关闭", async ({ browser }) => {
+	const context = await appearanceContext(browser, "light", { decoration: "winter" });
+	await context.addInitScript(() => {
+		const state = window as typeof window & { layerWritesFinished: number };
+		state.layerWritesFinished = 0;
+		const original = cookieStore.set.bind(cookieStore);
+		let started = 0;
+		cookieStore.set = async (...args: [string, string] | [CookieInit]) => {
+			if (args.length === 2) return original(...args);
+			const [options] = args;
+			if (options.name !== "decoration-layers") return original(options);
+			const { promise, resolve } = Promise.withResolvers<void>();
+			setTimeout(resolve, ++started === 1 ? 250 : 10);
+			await promise;
+			await original(options);
+			state.layerWritesFinished += 1;
+		};
+	});
 	const page = await context.newPage();
 	await page.goto("/", { waitUntil: "load" });
+	const menu = await openDecorationMenu(page);
+	for (const name of ["插画", "飘落", "挂件"]) {
+		await menu.getByRole("menuitemcheckbox", { name, exact: true }).click();
+		await expect(menu).toBeVisible();
+	}
+	await expect
+		.poll(() =>
+			page.evaluate(
+				() =>
+					(window as typeof window & { layerWritesFinished: number }).layerWritesFinished,
+			),
+		)
+		.toBe(3);
+	expect(
+		(await context.cookies()).find((cookie) => cookie.name === DECORATION_LAYERS_COOKIE_NAME)
+			?.value,
+	).toBe("none");
+	await expect(page.locator("html")).toHaveAttribute("data-decoration-layers", "none");
+	await expect(page.locator("[data-decoration-slot]")).toHaveCount(0);
+	await page.keyboard.press("Escape");
+	await expect(menu).toBeHidden();
+	await context.route("**/*", (route) =>
+		["script", "fetch", "xhr"].includes(route.request().resourceType())
+			? route.abort()
+			: route.fallback(),
+	);
+	await page.reload({ waitUntil: "load" });
+	await expect(page.locator("html")).toHaveAttribute("data-decoration", "winter");
+	await expect(page.locator("html")).toHaveAttribute("data-decoration-layers", "none");
+	await expect(page.locator("[data-decoration-slot]")).toHaveCount(0);
+	await context.close();
+});
 
-	// 顶栏主题菜单 → 季节装饰子菜单 → 无；工具区默认收起，悬停用户槽位后展开
+test("移动端季节与图层可独立配置并持久化", async ({ browser }) => {
+	const context = await appearanceContext(browser, "dark", {
+		theme: "winter",
+		decoration: "winter",
+	});
+	const page = await context.newPage();
+	await page.setViewportSize({ width: 390, height: 844 });
+	await page.goto("/", { waitUntil: "load" });
+	await page.getByRole("button", { name: "展开全部导航", exact: true }).click();
+	const group = page.getByRole("radiogroup", { name: "装饰", exact: true });
+	await group.getByRole("radio", { name: /^春(?:\s|$)/ }).click();
+	await page.getByRole("checkbox", { name: "飘落", exact: true }).click();
+	await page.getByRole("checkbox", { name: "挂件", exact: true }).click();
+	await expect(page.locator("html")).toHaveAttribute("data-theme", "winter");
+	await expect(page.locator("html")).toHaveAttribute("data-decoration", "spring");
+	await expect(page.locator("html")).toHaveAttribute("data-decoration-layers", "illustration");
+	await page.reload({ waitUntil: "load" });
+	await expect(page.locator("html")).toHaveAttribute("data-decoration", "spring");
+	await expect(page.locator("html")).toHaveAttribute("data-decoration-layers", "illustration");
+	await expect(page.locator("[data-season-particles]")).toHaveCount(0);
+	await expect(page.locator("[data-season-ornament]")).toHaveCount(0);
+	await expect(page.locator("[data-season-backdrop]")).toBeHidden();
+	await context.close();
+});
+
+test("指定装饰不随主题变化，恢复跟随后与主题一致", async ({ browser }) => {
+	const context = await appearanceContext(browser, "light", {
+		theme: "spring",
+		decoration: "winter",
+	});
+	const page = await context.newPage();
+	await page.goto("/", { waitUntil: "load" });
 	const header = page.locator("header").first();
 	await header.getByRole("link", { name: "登录", exact: true }).hover();
 	await header.getByRole("button", { name: /^主题：/ }).click();
-	await page.getByRole("menuitem").filter({ hasText: "季节装饰" }).hover();
-	const noneOption = page.getByRole("menuitemradio", { name: /^无/ });
-	await expect(noneOption).toBeVisible();
-	await noneOption.click();
-
-	await expect(page.locator("html")).toHaveAttribute("data-decoration", "none");
-	await expect(page.locator("[class*='ornament']")).toHaveCount(0);
-	await expect(backdropArt(page).scene).toHaveCount(0);
-
-	// 刷新：SSR 依据 cookie 输出同一首帧
-	await page.reload({ waitUntil: "load" });
-	await expect(page.locator("html"), "刷新后首帧保持关闭").toHaveAttribute(
-		"data-decoration",
-		"none",
-	);
-	await expect(page.locator("[class*='ornament']")).toHaveCount(0);
-
-	// 再选回一季，刷新后首帧恢复冬季装饰
-	await header.getByRole("link", { name: "登录", exact: true }).hover();
-	await header.getByRole("button", { name: /^主题：/ }).click();
-	await page.getByRole("menuitem").filter({ hasText: "季节装饰" }).hover();
-	const winterOption = page.getByRole("menuitemradio", { name: /^冬 12/ });
-	await expect(winterOption).toBeVisible();
-	await winterOption.click();
+	await page.getByRole("menuitemradio", { name: /^夏(?:\s|$)/ }).click();
+	await expect(page.locator("html")).toHaveAttribute("data-theme", "summer");
 	await expect(page.locator("html")).toHaveAttribute("data-decoration", "winter");
+	await expect(page.getByRole("menu")).toBeHidden();
+	const menu = await openDecorationMenu(page);
+	await menu.getByRole("menuitemradio", { name: /^跟随主题/ }).click();
+	await expect(page.locator("html")).toHaveAttribute("data-decoration", "summer");
 	await page.reload({ waitUntil: "load" });
-	await expect(page.locator("html"), "刷新后首帧恢复冬季").toHaveAttribute(
-		"data-decoration",
-		"winter",
-	);
-	await expect(backdropArt(page).scene).toHaveAttribute("viewBox", "0 0 600 430");
+	await expect(page.locator("html")).toHaveAttribute("data-decoration", "summer");
+	await context.close();
+});
+
+test("命令面板切换装饰不改变主题", async ({ browser }) => {
+	const context = await appearanceContext(browser, "light", {
+		theme: "summer",
+		decoration: "spring",
+	});
+	const page = await context.newPage();
+	await page.goto("/", { waitUntil: "load" });
+	const header = page.locator("header").first();
+	await header.getByRole("link", { name: "登录", exact: true }).hover();
+	await header.getByRole("button", { name: /^搜索/ }).click();
+	const dialog = page.getByRole("dialog");
+	await dialog.getByRole("textbox").fill("装饰");
+	await dialog.getByRole("button", { name: "装饰：无", exact: true }).click();
+	await expect(page.locator("html")).toHaveAttribute("data-theme", "summer");
+	await expect(page.locator("html")).toHaveAttribute("data-decoration", "none");
+	await expect(page.locator("[data-decoration-slot]")).toHaveCount(0);
+	await page.reload({ waitUntil: "load" });
+	await expect(page.locator("html")).toHaveAttribute("data-decoration", "none");
 	await context.close();
 });

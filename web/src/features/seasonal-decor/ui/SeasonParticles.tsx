@@ -17,7 +17,13 @@ export function SeasonParticles({ season }: { season: Season }) {
 					<span key={color} style={{ color }} />
 				))}
 			</span>
-			<canvas ref={canvasRef} className="absolute inset-0 size-full" />
+			<canvas
+				ref={canvasRef}
+				aria-hidden="true"
+				tabIndex={-1}
+				data-season-particles={season}
+				className={styles.particles}
+			/>
 		</>
 	);
 }
