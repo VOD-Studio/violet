@@ -105,7 +105,7 @@ export function SharedTweetSummary({ tweet, renderAuthor, className }: SharedTwe
 					</time>
 				)}
 			</div>
-		{(tweet.content || imageUrls.length > 0) && (
+			{(tweet.content || imageUrls.length > 0) && (
 				<div className="flex items-start gap-3">
 					{tweet.content ? (
 						<p className="line-clamp-3 min-w-0 flex-1 whitespace-pre-wrap wrap-break-word text-sm leading-relaxed text-foreground/90">
@@ -114,7 +114,7 @@ export function SharedTweetSummary({ tweet, renderAuthor, className }: SharedTwe
 					) : (
 						<span className="flex-1" />
 					)}
-				<Thumbs urls={imageUrls} />
+					<Thumbs urls={imageUrls} />
 				</div>
 			)}
 			{tweet.external_tweet && <ExternalTweetCard tweet={tweet.external_tweet} quoted />}
@@ -130,7 +130,7 @@ export function SharedTweetSummary({ tweet, renderAuthor, className }: SharedTwe
 							</p>
 						)}
 					</div>
-				<Thumbs urls={(quote.images ?? []).map((img) => img.url)} className="size-14" />
+					<Thumbs urls={(quote.images ?? []).map((img) => img.url)} className="size-14" />
 				</div>
 			)}
 			{quote?.external_tweet && <ExternalTweetCard tweet={quote.external_tweet} quoted />}

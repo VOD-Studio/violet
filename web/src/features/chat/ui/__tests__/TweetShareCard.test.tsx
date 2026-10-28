@@ -64,7 +64,11 @@ describe("TweetShareCard — 分享的推文存在", () => {
 
 	it("点击缩略图区域同样进入详情页", () => {
 		const { container } = render(
-			<TweetShareCard tweet={makeSharedTweet({ images: [{ url: "/uploads/a.png", width: null, height: null }] })} />,
+			<TweetShareCard
+				tweet={makeSharedTweet({
+					images: [{ url: "/uploads/a.png", width: null, height: null }],
+				})}
+			/>,
 		);
 		fireEvent.click(container.querySelector("[data-count]") as HTMLElement);
 		expect(navigateMock).toHaveBeenCalledWith({ to: "/tweets/$id", params: { id: "tweet-1" } });

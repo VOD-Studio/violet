@@ -297,9 +297,9 @@ export function MessageComposer({
 								display_name: pendingShare.tweet.authorUsername,
 								avatar_url: "",
 							},
-						images: pendingShare.tweet.imageUrl
-							? [{ url: pendingShare.tweet.imageUrl, width: null, height: null }]
-							: [],
+							images: pendingShare.tweet.imageUrl
+								? [{ url: pendingShare.tweet.imageUrl, width: null, height: null }]
+								: [],
 						}
 					: undefined,
 			},
