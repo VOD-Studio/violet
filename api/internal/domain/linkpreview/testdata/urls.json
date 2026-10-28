@@ -1,0 +1,685 @@
+{
+  "offsets": "start/end: UTF-16 code units in JS, UTF-8 bytes in Go; rune offsets are also recorded for cross-runtime inspection.",
+  "bareDomains": "ICANN suffix required; file-like extensions stay text. Explicit HTTP URLs are not subject to the bare-domain file exclusion.",
+  "tokenization": [
+    {
+      "name": "bare npm domain",
+      "input": "去 npmjs.com 看看",
+      "matches": [
+        {
+          "text": "npmjs.com",
+          "href": "https://npmjs.com",
+          "key": "https://npmjs.com/",
+          "startUtf16": 2,
+          "endUtf16": 11,
+          "startByte": 4,
+          "endByte": 13,
+          "startRune": 2,
+          "endRune": 11
+        }
+      ]
+    },
+    {
+      "name": "bare international domain and path",
+      "input": "例子.中国/文章",
+      "matches": [
+        {
+          "text": "例子.中国/文章",
+          "href": "https://例子.中国/文章",
+          "key": "https://xn--fsqu00a.xn--fiqs8s/%E6%96%87%E7%AB%A0",
+          "startUtf16": 0,
+          "endUtf16": 8,
+          "startByte": 0,
+          "endByte": 20,
+          "startRune": 0,
+          "endRune": 8
+        }
+      ]
+    },
+    {
+      "name": "www retains its own subdomain",
+      "input": "打开 www.Example.com/a#frag",
+      "matches": [
+        {
+          "text": "www.Example.com/a#frag",
+          "href": "https://www.Example.com/a#frag",
+          "key": "https://www.example.com/a",
+          "startUtf16": 3,
+          "endUtf16": 25,
+          "startByte": 7,
+          "endByte": 29,
+          "startRune": 3,
+          "endRune": 25
+        }
+      ]
+    },
+    {
+      "name": "full bare host not embedded www",
+      "input": "awww.example.com",
+      "matches": [
+        {
+          "text": "awww.example.com",
+          "href": "https://awww.example.com",
+          "key": "https://awww.example.com/",
+          "startUtf16": 0,
+          "endUtf16": 16,
+          "startByte": 0,
+          "endByte": 16,
+          "startRune": 0,
+          "endRune": 16
+        }
+      ]
+    },
+    {
+      "name": "Chinese directly adjacent to bare domain",
+      "input": "看example.com后面",
+      "matches": [
+        {
+          "text": "example.com",
+          "href": "https://example.com",
+          "key": "https://example.com/",
+          "startUtf16": 1,
+          "endUtf16": 12,
+          "startByte": 3,
+          "endByte": 14,
+          "startRune": 1,
+          "endRune": 12
+        }
+      ]
+    },
+    {
+      "name": "UTF16 and UTF8 differ before Unicode path",
+      "input": "🙂看 https://example.com/文章/第一篇?q=关键词。",
+      "matches": [
+        {
+          "text": "https://example.com/文章/第一篇?q=关键词",
+          "href": "https://example.com/文章/第一篇?q=关键词",
+          "key": "https://example.com/%E6%96%87%E7%AB%A0/%E7%AC%AC%E4%B8%80%E7%AF%87?q=%E5%85%B3%E9%94%AE%E8%AF%8D",
+          "startUtf16": 4,
+          "endUtf16": 36,
+          "startByte": 8,
+          "endByte": 56,
+          "startRune": 3,
+          "endRune": 35
+        }
+      ]
+    },
+    {
+      "name": "topic before and emoji after fragment",
+      "input": "前#话题#https://example.com/中文#片段🙂后",
+      "matches": [
+        {
+          "text": "https://example.com/中文#片段",
+          "href": "https://example.com/中文#片段",
+          "key": "https://example.com/%E4%B8%AD%E6%96%87",
+          "startUtf16": 5,
+          "endUtf16": 30,
+          "startByte": 11,
+          "endByte": 44,
+          "startRune": 5,
+          "endRune": 30
+        }
+      ]
+    },
+    {
+      "name": "adjacent topic remains text",
+      "input": "https://example.com/a#话题#[doge]",
+      "matches": [
+        {
+          "text": "https://example.com/a",
+          "href": "https://example.com/a",
+          "key": "https://example.com/a",
+          "startUtf16": 0,
+          "endUtf16": 21,
+          "startByte": 0,
+          "endByte": 21,
+          "startRune": 0,
+          "endRune": 21
+        }
+      ]
+    },
+    {
+      "name": "adjacent bracketed emote remains text",
+      "input": "https://example.com/a[doge]",
+      "matches": [
+        {
+          "text": "https://example.com/a",
+          "href": "https://example.com/a",
+          "key": "https://example.com/a",
+          "startUtf16": 0,
+          "endUtf16": 21,
+          "startByte": 0,
+          "endByte": 21,
+          "startRune": 0,
+          "endRune": 21
+        }
+      ]
+    },
+    {
+      "name": "nested balanced parentheses retained",
+      "input": "(https://example.com/a_(b(c))).",
+      "matches": [
+        {
+          "text": "https://example.com/a_(b(c))",
+          "href": "https://example.com/a_(b(c))",
+          "key": "https://example.com/a_(b(c))",
+          "startUtf16": 1,
+          "endUtf16": 29,
+          "startByte": 1,
+          "endByte": 29,
+          "startRune": 1,
+          "endRune": 29
+        }
+      ]
+    },
+    {
+      "name": "balanced bracket path retained",
+      "input": "https://example.com/a[1/2]]。",
+      "matches": [
+        {
+          "text": "https://example.com/a[1/2]",
+          "href": "https://example.com/a[1/2]",
+          "key": "https://example.com/a[1/2]",
+          "startUtf16": 0,
+          "endUtf16": 26,
+          "startByte": 0,
+          "endByte": 26,
+          "startRune": 0,
+          "endRune": 26
+        }
+      ]
+    },
+    {
+      "name": "query arrays and parentheses retained",
+      "input": "https://example.com/?a[]=1&b=(x)",
+      "matches": [
+        {
+          "text": "https://example.com/?a[]=1&b=(x)",
+          "href": "https://example.com/?a[]=1&b=(x)",
+          "key": "https://example.com/?a[]=1&b=(x)",
+          "startUtf16": 0,
+          "endUtf16": 32,
+          "startByte": 0,
+          "endByte": 32,
+          "startRune": 0,
+          "endRune": 32
+        }
+      ]
+    },
+    {
+      "name": "emails versions and files stay text",
+      "input": "mail me@example.com v1.2.3 README.md notes.txt index.js package.json",
+      "matches": []
+    },
+    {
+      "name": "unsafe schemes cannot expose inner www",
+      "input": "javascript:alert('www.example.com') javascript:123(www.example.com) ftp://www.example.com file:///www.example.com data:text/html,www.example.com",
+      "matches": []
+    },
+    {
+      "name": "invalid HTTP and credentials stay text",
+      "input": "https:///only-path https://user:pass@example.com/x https://u!ser:pa🙂ss@example.com/x https://example.com:70000/x https://example.com\\evil",
+      "matches": []
+    },
+    {
+      "name": "query order plus and escapes stay distinct",
+      "input": "https://example.com/search?q=a+b&x=%2f&x=%2F#frag",
+      "matches": [
+        {
+          "text": "https://example.com/search?q=a+b&x=%2f&x=%2F#frag",
+          "href": "https://example.com/search?q=a+b&x=%2f&x=%2F#frag",
+          "key": "https://example.com/search?q=a+b&x=%2f&x=%2F",
+          "startUtf16": 0,
+          "endUtf16": 49,
+          "startByte": 0,
+          "endByte": 49,
+          "startRune": 0,
+          "endRune": 49
+        }
+      ]
+    },
+    {
+      "name": "IPv6 brackets and default port",
+      "input": "HTTP://[2001:0DB8:0:0:0:0:0:1]:80/中文#x",
+      "matches": [
+        {
+          "text": "HTTP://[2001:0DB8:0:0:0:0:0:1]:80/中文#x",
+          "href": "HTTP://[2001:0DB8:0:0:0:0:0:1]:80/中文#x",
+          "key": "http://[2001:db8::1]/%E4%B8%AD%E6%96%87",
+          "startUtf16": 0,
+          "endUtf16": 38,
+          "startByte": 0,
+          "endByte": 42,
+          "startRune": 0,
+          "endRune": 38
+        }
+      ]
+    },
+    {
+      "name": "unknown bare TLD stays text",
+      "input": "www.example.invalid example.invalid v1.2.3",
+      "matches": []
+    },
+    {
+      "name": "duplicate fragment links retain href but share key",
+      "input": "https://example.com/a#one https://example.com/a#two",
+      "matches": [
+        {
+          "text": "https://example.com/a#one",
+          "href": "https://example.com/a#one",
+          "key": "https://example.com/a",
+          "startUtf16": 0,
+          "endUtf16": 25,
+          "startByte": 0,
+          "endByte": 25,
+          "startRune": 0,
+          "endRune": 25
+        },
+        {
+          "text": "https://example.com/a#two",
+          "href": "https://example.com/a#two",
+          "key": "https://example.com/a",
+          "startUtf16": 26,
+          "endUtf16": 51,
+          "startByte": 26,
+          "endByte": 51,
+          "startRune": 26,
+          "endRune": 51
+        }
+      ]
+    },
+    {
+      "name": "explicit unknown TLD allowed",
+      "input": "https://a.example/1",
+      "matches": [
+        {
+          "text": "https://a.example/1",
+          "href": "https://a.example/1",
+          "key": "https://a.example/1",
+          "startUtf16": 0,
+          "endUtf16": 19,
+          "startByte": 0,
+          "endByte": 19,
+          "startRune": 0,
+          "endRune": 19
+        }
+      ]
+    },
+    {
+      "name": "bare host nondefault port",
+      "input": "example.com:8080/路径",
+      "matches": [
+        {
+          "text": "example.com:8080/路径",
+          "href": "https://example.com:8080/路径",
+          "key": "https://example.com:8080/%E8%B7%AF%E5%BE%84",
+          "startUtf16": 0,
+          "endUtf16": 19,
+          "startByte": 0,
+          "endByte": 23,
+          "startRune": 0,
+          "endRune": 19
+        }
+      ]
+    },
+    {
+      "name": "uppercase scheme and default port",
+      "input": "HTTPS://EXAMPLE.COM:443/x",
+      "matches": [
+        {
+          "text": "HTTPS://EXAMPLE.COM:443/x",
+          "href": "HTTPS://EXAMPLE.COM:443/x",
+          "key": "https://example.com/x",
+          "startUtf16": 0,
+          "endUtf16": 25,
+          "startByte": 0,
+          "endByte": 25,
+          "startRune": 0,
+          "endRune": 25
+        }
+      ]
+    },
+    {
+      "name": "fullwidth punctuation boundary",
+      "input": "点https://EXAMPLE.COM：之后",
+      "matches": [
+        {
+          "text": "https://EXAMPLE.COM",
+          "href": "https://EXAMPLE.COM",
+          "key": "https://example.com/",
+          "startUtf16": 1,
+          "endUtf16": 20,
+          "startByte": 3,
+          "endByte": 22,
+          "startRune": 1,
+          "endRune": 20
+        }
+      ]
+    },
+    {
+      "name": "explicit IDN host",
+      "input": "https://例子.中国/中文",
+      "matches": [
+        {
+          "text": "https://例子.中国/中文",
+          "href": "https://例子.中国/中文",
+          "key": "https://xn--fsqu00a.xn--fiqs8s/%E4%B8%AD%E6%96%87",
+          "startUtf16": 0,
+          "endUtf16": 16,
+          "startByte": 0,
+          "endByte": 28,
+          "startRune": 0,
+          "endRune": 16
+        }
+      ]
+    },
+    {
+      "name": "Chinese directly adjacent to explicit host",
+      "input": "https://example.com后面",
+      "matches": [
+        {
+          "text": "https://example.com",
+          "href": "https://example.com",
+          "key": "https://example.com/",
+          "startUtf16": 0,
+          "endUtf16": 19,
+          "startByte": 0,
+          "endByte": 19,
+          "startRune": 0,
+          "endRune": 19
+        }
+      ]
+    },
+    {
+      "name": "combining mark path",
+      "input": "https://example.com/café🙂",
+      "matches": [
+        {
+          "text": "https://example.com/café",
+          "href": "https://example.com/café",
+          "key": "https://example.com/cafe%CC%81",
+          "startUtf16": 0,
+          "endUtf16": 25,
+          "startByte": 0,
+          "endByte": 26,
+          "startRune": 0,
+          "endRune": 25
+        }
+      ]
+    },
+    {
+      "name": "invalid DNS labels stay text",
+      "input": "https://-bad.example.com https://a..example.com example.com.invalid",
+      "matches": []
+    },
+    {
+      "name": "multi-label public suffix",
+      "input": "docs.example.co.uk/a",
+      "matches": [
+        {
+          "text": "docs.example.co.uk/a",
+          "href": "https://docs.example.co.uk/a",
+          "key": "https://docs.example.co.uk/a",
+          "startUtf16": 0,
+          "endUtf16": 20,
+          "startByte": 0,
+          "endByte": 20,
+          "startRune": 0,
+          "endRune": 20
+        }
+      ]
+    },
+    {
+      "name": "Chinese delimiters keep two links separate",
+      "input": "https://example.com/a，npmjs.com。",
+      "matches": [
+        {
+          "text": "https://example.com/a",
+          "href": "https://example.com/a",
+          "key": "https://example.com/a",
+          "startUtf16": 0,
+          "endUtf16": 21,
+          "startByte": 0,
+          "endByte": 21,
+          "startRune": 0,
+          "endRune": 21
+        },
+        {
+          "text": "npmjs.com",
+          "href": "https://npmjs.com",
+          "key": "https://npmjs.com/",
+          "startUtf16": 22,
+          "endUtf16": 31,
+          "startByte": 24,
+          "endByte": 33,
+          "startRune": 22,
+          "endRune": 31
+        }
+      ]
+    },
+    {
+      "name": "encoded parentheses retained",
+      "input": "https://example.com/a%28b%29).",
+      "matches": [
+        {
+          "text": "https://example.com/a%28b%29",
+          "href": "https://example.com/a%28b%29",
+          "key": "https://example.com/a%28b%29",
+          "startUtf16": 0,
+          "endUtf16": 28,
+          "startByte": 0,
+          "endByte": 28,
+          "startRune": 0,
+          "endRune": 28
+        }
+      ]
+    }
+  ],
+  "normalization": [
+    {
+      "name": "scheme and host lowercase",
+      "input": "HTTP://Example.COM/A?b=1#c",
+      "key": "http://example.com/A?b=1"
+    },
+    {
+      "name": "empty path gains slash",
+      "input": "https://Example.COM",
+      "key": "https://example.com/"
+    },
+    {
+      "name": "fragment does not change root key",
+      "input": "https://example.com#frag",
+      "key": "https://example.com/"
+    },
+    {
+      "name": "bare domain accepted",
+      "input": "npmjs.com",
+      "key": "https://npmjs.com/"
+    },
+    {
+      "name": "www bare domain accepted",
+      "input": "www.npmjs.com",
+      "key": "https://www.npmjs.com/"
+    },
+    {
+      "name": "leading zero default port",
+      "input": "http://example.com:00080",
+      "key": "http://example.com/"
+    },
+    {
+      "name": "nondefault port is decimal",
+      "input": "https://example.com:08080",
+      "key": "https://example.com:8080/"
+    },
+    {
+      "name": "IPv6 canonical brackets",
+      "input": "HTTPS://[2001:0DB8:0:0:0:0:0:1]:443",
+      "key": "https://[2001:db8::1]/"
+    },
+    {
+      "name": "IPv4 mapped IPv6 uses hex",
+      "input": "http://[::ffff:192.0.2.1]/",
+      "key": "http://[::ffff:c000:201]/"
+    },
+    {
+      "name": "unicode IDN and path",
+      "input": "https://例子.中国/文章?q=关键词",
+      "key": "https://xn--fsqu00a.xn--fiqs8s/%E6%96%87%E7%AB%A0?q=%E5%85%B3%E9%94%AE%E8%AF%8D"
+    },
+    {
+      "name": "query is not decoded or reordered",
+      "input": "https://example.com?z=a+b&a=%20&z=%2f",
+      "key": "https://example.com/?z=a+b&a=%20&z=%2f"
+    },
+    {
+      "name": "query apostrophe is escaped",
+      "input": "https://example.com/?q=it's",
+      "key": "https://example.com/?q=it%27s"
+    },
+    {
+      "name": "empty query retained",
+      "input": "https://example.com?",
+      "key": "https://example.com/?"
+    },
+    {
+      "name": "percent-encoded dot segments resolved",
+      "input": "https://example.com/a/%2e%2E/b/./c/../",
+      "key": "https://example.com/b/"
+    },
+    {
+      "name": "repeated slashes retained",
+      "input": "https://example.com/a//b",
+      "key": "https://example.com/a//b"
+    },
+    {
+      "name": "outer whitespace trimmed",
+      "input": "  https://example.com/a  ",
+      "key": "https://example.com/a"
+    },
+    {
+      "name": "IPv4 accepted",
+      "input": "http://127.0.0.1:80/a",
+      "key": "http://127.0.0.1/a"
+    },
+    {
+      "name": "explicit localhost is syntactically valid",
+      "input": "http://localhost:8080",
+      "key": "http://localhost:8080/"
+    },
+    {
+      "name": "reject ftp://example.com/a",
+      "input": "ftp://example.com/a",
+      "key": ""
+    },
+    {
+      "name": "reject javascript:alert(1)",
+      "input": "javascript:alert(1)",
+      "key": ""
+    },
+    {
+      "name": "reject //example.com/a",
+      "input": "//example.com/a",
+      "key": ""
+    },
+    {
+      "name": "reject 不是链接",
+      "input": "不是链接",
+      "key": ""
+    },
+    {
+      "name": "reject https:///path",
+      "input": "https:///path",
+      "key": ""
+    },
+    {
+      "name": "reject https://user:pass@example.com/a",
+      "input": "https://user:pass@example.com/a",
+      "key": ""
+    },
+    {
+      "name": "reject https://user@example.com",
+      "input": "https://user@example.com",
+      "key": ""
+    },
+    {
+      "name": "reject https://example.com:",
+      "input": "https://example.com:",
+      "key": ""
+    },
+    {
+      "name": "reject https://example.com:65536",
+      "input": "https://example.com:65536",
+      "key": ""
+    },
+    {
+      "name": "reject https://example.com:-1",
+      "input": "https://example.com:-1",
+      "key": ""
+    },
+    {
+      "name": "reject https://a..com/",
+      "input": "https://a..com/",
+      "key": ""
+    },
+    {
+      "name": "reject https://-a.com/",
+      "input": "https://-a.com/",
+      "key": ""
+    },
+    {
+      "name": "reject https://example.com/%GG",
+      "input": "https://example.com/%GG",
+      "key": ""
+    },
+    {
+      "name": "reject https://example.com/?q=%",
+      "input": "https://example.com/?q=%",
+      "key": ""
+    },
+    {
+      "name": "reject https://example.com/a b",
+      "input": "https://example.com/a b",
+      "key": ""
+    },
+    {
+      "name": "reject https://example.com\\evil",
+      "input": "https://example.com\\evil",
+      "key": ""
+    },
+    {
+      "name": "reject https://%65xample.com",
+      "input": "https://%65xample.com",
+      "key": ""
+    },
+    {
+      "name": "reject http://127.1/",
+      "input": "http://127.1/",
+      "key": ""
+    },
+    {
+      "name": "reject http://0177.0.0.1/",
+      "input": "http://0177.0.0.1/",
+      "key": ""
+    },
+    {
+      "name": "reject http://0x7f000001/",
+      "input": "http://0x7f000001/",
+      "key": ""
+    },
+    {
+      "name": "reject http://example.08/",
+      "input": "http://example.08/",
+      "key": ""
+    },
+    {
+      "name": "reject http://[::1%25eth0]/",
+      "input": "http://[::1%25eth0]/",
+      "key": ""
+    },
+    {
+      "name": "reject http://[invalid]/",
+      "input": "http://[invalid]/",
+      "key": ""
+    }
+  ]
+}

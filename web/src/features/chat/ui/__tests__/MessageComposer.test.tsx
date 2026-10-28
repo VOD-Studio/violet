@@ -591,7 +591,7 @@ describe("乐观提交", () => {
 				shared_tweet: {
 					id: "tweet",
 					content: "推文原文",
-					images: ["/tweet.png"],
+					images: [{ url: "/tweet.png", width: null, height: null }],
 					author: { username: "bob" },
 				},
 			},

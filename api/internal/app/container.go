@@ -53,6 +53,7 @@ type Container struct {
 	Notification    *NotificationContainer
 	Chat            *ChatContainer
 	CustomEmoji     *CustomEmojiContainer
+	LinkPreview     *LinkPreviewContainer
 }
 
 // 跨模块依赖（装配顺序即依赖序）：
@@ -133,7 +134,8 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	codeRunner := NewCodeRunnerContainer(rdb, policies, cfg.CodeRunner)
 	image := NewImageContainer(cfg.UploadDir, cfg.UploadPathPrefix, policies, encoder)
 	policies.SetImageMaintenanceStatus(image.DiskCache.Status)
-	tweet := NewTweetContainer(db, rdb, cfg, permissionChecker, customEmoji.Service, bus, policies, encoder)
+	linkPreview := NewLinkPreviewContainer(ctx, db, cfg, policies, encoder)
+	tweet := NewTweetContainer(db, rdb, cfg, permissionChecker, customEmoji.Service, bus, policies, encoder, linkPreview)
 	chat := NewChatContainer(db, cfg, customEmoji.Service, media.UploadService, bus)
 	chat.ChatService.WithTweetReader(tweet.TweetService)
 
@@ -145,6 +147,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 		APIToken: apiToken, Subscription: subscription, MCP: mcp, System: system,
 		Media: media, CodeRunner: codeRunner, Image: image, Tweet: tweet, FriendLink: friendLink,
 		Series: series, Gallery: gallery, Note: note, Publication: publication, Persona: persona, Notification: notification, Chat: chat, CustomEmoji: customEmoji,
+		LinkPreview: linkPreview,
 	}
 	return c, roleCleanup, nil
 }

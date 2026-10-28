@@ -30,6 +30,16 @@
 				<input id="plain-checkbox" type="checkbox" name="updates" value="weekly" checked class="v-checkbox v-checkbox--primary" />
 				<button type="reset" class="v-button">重置选择</button>
 			</form>
+			<a id="plain-link-card" href="https://example.com/guide" target="_blank" rel="noopener noreferrer nofollow" class="v-link-card">
+				<span class="v-link-card__thumbnail">
+					<img class="v-link-card__image" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Crect width='160' height='160' fill='%23684dda'/%3E%3C/svg%3E" alt="" width="72" height="72" />
+				</span>
+				<span class="v-link-card__body">
+					<span class="v-link-card__title">原生 HTML 的链接预览</span>
+					<span class="v-link-card__description">与 React 使用同一 BEM CSS，缩略图保留完整比例。</span>
+					<span class="v-link-card__meta"><span class="v-link-card__host">example.com</span></span>
+				</span>
+			</a>
 		</main>
 	</body>
 </html>

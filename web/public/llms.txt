@@ -32,6 +32,7 @@
 - [SearchInput](https://xunrua.top/ui/components/search-input): 独立组合 Input 的搜索单元，复用四变体、尺寸与样式槽；防抖、回车立即搜索、清除与加载反馈。
 - [Tabs](https://xunrua.top/ui/components/tabs)
 - [ImagePixelReveal](https://xunrua.top/ui/components/image-pixel-reveal): 静止原图、瓦片裁剪拼合、逐轮随机洗牌、悬停重播与减弱动态；自包含 SVG 同源示例。
+- [LinkCard](https://xunrua.top/ui/components/link-card): 独立原生链接预览，左侧完整缩略图、重复信息去重、坏图回退与内容更新恢复；明暗和窄屏同源示例，不依赖业务 DTO 或请求。
 - [UploadTile](https://xunrua.top/ui/components/upload-tile): 方形原生按钮、busy/disabled、原生 ref 与键盘；同源示例只记录激活次数，文件选择和上传由宿主负责。
 - [Dropdown](https://xunrua.top/ui/components/dropdown): 悬停与键盘聚焦展开的面板，点击不开合、触屏不展开；asChild 链接触发器与同组互斥切换。
 - [Segmented](https://xunrua.top/ui/components/segmented): 横纵方向与 soft/ink/line 变体的分段控制，指示器合成层平移；等尺寸与收起选中项模式，render 可承载链接与 Dropdown 触发器。

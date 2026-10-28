@@ -118,6 +118,7 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 | 项目与路线图 | `features/projects`、`admin-projects` |
 | 上传、媒体与表情 | `features/upload`、`media`、`emojis`、`customemoji` |
 | 站点音乐 | `features/admin-music`、`music-player`，共享模型在 `entities/music` |
+| 网页链接预览 | `entities/link-preview` 管请求与回填，`shared/lib/linkify` 识别正文 URL，`@violet/ui` 提供展示组件 |
 | 明暗外观切换 | `features/appearance`，SSR 与 cookie 桥接在 `shared/` |
 | 主题切换 | `features/theme-switcher`，预设、偏好解析与 SSR 在 `shared/` |
 | 四季装饰与图层控制 | `features/seasonal-decor`，入口在 `theme-switcher` 与命令面板 |
@@ -127,11 +128,13 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 
 只在一个 feature 内使用的实现留在 feature。第二个 feature 需要同一业务能力时，提到 `entities/`；站点专用基础能力放 `shared/`，通用 React 组件放 `packages/ui/`。不要让 `shared` 反向导入业务 feature。
 
+链接预览先显示 SSR 快照；客户端按规范 URL 共用缓存，只轮询服务端明确标记为 pending 的链接，完成、失败或离开页面后停止。首个消费方是推文；其他 feature 复用 `entities/link-preview`，不要在 `shared` 里导入推文 DTO。
+
 ### 音乐播放器接入
 
 站点使用 `@violetjs/kite-player` 的自定义 `DataSource`，对接本站 `/api/v1/music/**`，不改用包内直连外站的数据源。公开歌单按页载入；凭据模式变化时重建队列，刷新恢复队列与进度但不自动播放。
 
-播放器通过公开 `position` 属性默认靠左。宿主只设置 `--kite-blob`、`--kite-blob-icon` 按钮颜色和层级、边距、移动端导航避让，保留播放器原生外观与开合动效；不要通过部件 CSS 重写圆角、阴影或动画。
+播放器通过公开 `position` 属性默认靠左，并以 `initial="orb"` 首次载入即收成圆盘，点击后展开；该属性只在挂载时读取一次，页面向下滚动时仍按 `collapse` 默认值自动收起。宿主只设置 `--kite-blob`、`--kite-blob-icon` 按钮颜色和层级、边距、移动端导航避让，保留播放器原生外观与开合动效；不要通过部件 CSS 重写圆角、阴影或动画。
 
 升级播放器依赖时同步 `pnpm-workspace.yaml` 中 `minimumReleaseAgeExclude` 的精确版本，并验证生产 Docker 构建；其余依赖保留默认的 24 小时发布冷却期。
 

@@ -45,6 +45,7 @@ const mockTweet: Tweet = {
 	quote_count: 0,
 	is_liked: false,
 	created_at: "2026-08-20T00:00:00Z",
+	link_cards: [],
 };
 
 let mockTweetDetailResult = {

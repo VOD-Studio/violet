@@ -117,6 +117,11 @@
 			"import": "./src/components/label/index.ts",
 			"default": "./src/components/label/index.ts"
 		},
+		"./link-card": {
+			"types": "./src/components/link-card/index.ts",
+			"import": "./src/components/link-card/index.ts",
+			"default": "./src/components/link-card/index.ts"
+		},
 		"./modal": {
 			"types": "./src/components/modal/index.ts",
 			"import": "./src/components/modal/index.ts",
@@ -273,6 +278,7 @@
 		"./components/image-pixel-reveal.css": "./src/components/image-pixel-reveal/image-pixel-reveal.css",
 		"./components/input.css": "./src/components/input/input.css",
 		"./components/label.css": "./src/components/label/label.css",
+		"./components/link-card.css": "./src/components/link-card/link-card.css",
 		"./components/overlay-scroll.css": "./src/components/overlay-scroll/overlay-scroll.css",
 		"./components/search-input.css": "./src/components/search-input/search-input.css",
 		"./components/segmented.css": "./src/components/segmented/segmented.css",
@@ -407,6 +413,11 @@
 				"types": "./dist/components/label/index.d.ts",
 				"import": "./dist/components/label/index.js",
 				"default": "./dist/components/label/index.js"
+			},
+			"./link-card": {
+				"types": "./dist/components/link-card/index.d.ts",
+				"import": "./dist/components/link-card/index.js",
+				"default": "./dist/components/link-card/index.js"
 			},
 			"./modal": {
 				"types": "./dist/components/modal/index.d.ts",
@@ -564,6 +575,7 @@
 			"./components/image-pixel-reveal.css": "./dist/components/image-pixel-reveal.css",
 			"./components/input.css": "./dist/components/input.css",
 			"./components/label.css": "./dist/components/label.css",
+			"./components/link-card.css": "./dist/components/link-card.css",
 			"./components/overlay-scroll.css": "./dist/components/overlay-scroll.css",
 			"./components/search-input.css": "./dist/components/search-input.css",
 			"./components/segmented.css": "./dist/components/segmented.css",

@@ -47,6 +47,7 @@ function makeTweet(overrides: Partial<Tweet> = {}): Tweet {
 		comment_count: 0,
 		quote_count: 0,
 		created_at: "2026-01-01T00:00:00Z",
+		link_cards: [],
 		...overrides,
 	};
 }

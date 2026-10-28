@@ -39,7 +39,7 @@ func setupTweetTestDB(t *testing.T) *gorm.DB {
 func mustSeedTweet(t *testing.T, repo *TweetRepository, authorID domainshared.ID, content string, createdAt time.Time) *domaintweet.Tweet {
 	t.Helper()
 	ts := createdAt.UTC().Truncate(time.Microsecond)
-	tw := domaintweet.ReconstructTweet(domainshared.NewID(), authorID, content, []string{}, nil, 0, ts, ts)
+	tw := domaintweet.ReconstructTweet(domainshared.NewID(), authorID, content, nil, nil, 0, ts, ts)
 	require.NoError(t, repo.Save(context.Background(), tw))
 	return tw
 }
@@ -50,7 +50,7 @@ func TestTweetRepository_SaveAndFindByID(t *testing.T) {
 	ctx := context.Background()
 	authorID := domainshared.NewID()
 
-	tw, err := domaintweet.NewTweet(authorID, "第一条推文", []string{"/uploads/tweet/a.webp"}, nil)
+	tw, err := domaintweet.NewTweet(authorID, "第一条推文", []domaintweet.ImageRef{domaintweet.NewImageRef("/uploads/tweet/a.webp", nil, nil)}, nil)
 	require.NoError(t, err)
 	require.NoError(t, repo.Save(ctx, tw))
 
@@ -59,7 +59,7 @@ func TestTweetRepository_SaveAndFindByID(t *testing.T) {
 	assert.Equal(t, tw.ID(), got.ID())
 	assert.Equal(t, authorID, got.AuthorID())
 	assert.Equal(t, "第一条推文", got.Content())
-	assert.Equal(t, []string{"/uploads/tweet/a.webp"}, got.Images())
+	assert.Equal(t, []string{"/uploads/tweet/a.webp"}, domaintweet.ImageURLs(got.Images()))
 	assert.Equal(t, 0, got.LikeCount())
 	assert.False(t, got.CreatedAt().IsZero())
 }

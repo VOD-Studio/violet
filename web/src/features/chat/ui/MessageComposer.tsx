@@ -298,7 +298,7 @@ export function MessageComposer({
 								avatar_url: "",
 							},
 							images: pendingShare.tweet.imageUrl
-								? [pendingShare.tweet.imageUrl]
+								? [{ url: pendingShare.tweet.imageUrl, width: null, height: null }]
 								: [],
 						}
 					: undefined,

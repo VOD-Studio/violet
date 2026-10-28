@@ -54,7 +54,8 @@ describe("TweetShareCard — 分享的推文存在", () => {
 
 	it("图片是固定大小的小拼图，最多 4 格并以 +N 提示其余，不展开大图", () => {
 		const urls = ["a", "b", "c", "d", "e", "f"].map((n) => `/uploads/${n}.png`);
-		const { container } = render(<TweetShareCard tweet={makeSharedTweet({ images: urls })} />);
+		const refs = urls.map((url) => ({ url, width: null, height: null }));
+		const { container } = render(<TweetShareCard tweet={makeSharedTweet({ images: refs })} />);
 		const thumbs = container.querySelector("[data-count]");
 		expect(thumbs?.getAttribute("data-count")).toBe("4");
 		expect(thumbs?.querySelectorAll("img")).toHaveLength(4);
@@ -63,7 +64,11 @@ describe("TweetShareCard — 分享的推文存在", () => {
 
 	it("点击缩略图区域同样进入详情页", () => {
 		const { container } = render(
-			<TweetShareCard tweet={makeSharedTweet({ images: ["/uploads/a.png"] })} />,
+			<TweetShareCard
+				tweet={makeSharedTweet({
+					images: [{ url: "/uploads/a.png", width: null, height: null }],
+				})}
+			/>,
 		);
 		fireEvent.click(container.querySelector("[data-count]") as HTMLElement);
 		expect(navigateMock).toHaveBeenCalledWith({ to: "/tweets/$id", params: { id: "tweet-1" } });

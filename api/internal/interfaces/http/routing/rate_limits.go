@@ -30,6 +30,7 @@ var rateBindings = map[string]rateBinding{
 	"x-preview-day":     {"外部推文预览滚动日额度", "user", 86400, 50},
 	"x-refresh":         {"刷新外部推文", "user", 60, 5},
 	"x-video":           {"外部推文视频", "ip", 60, 600},
+	"link_cards":        {"链接卡片查询", "ip", 60, 30},
 	"chat-appearance":   {"聊天外观更新", "ip", 60, 30},
 	"mcp":               {"文章 MCP", "ip", 60, 60},
 	"mcp-scraper":       {"抓取 MCP", "ip", 60, 30},

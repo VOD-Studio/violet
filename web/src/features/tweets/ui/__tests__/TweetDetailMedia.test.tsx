@@ -25,6 +25,7 @@ vi.mock("@shared/ui/image-preview", () => ({
 import { TweetDetailMedia } from "../TweetDetailMedia";
 
 const urls = ["/uploads/a.png", "/uploads/b.png", "/uploads/c.png"];
+const refs = urls.map((url) => ({ url, width: null, height: null }));
 const shown = () => screen.getByRole("img", { name: /推文图片 \d/ }).getAttribute("alt");
 
 describe("TweetDetailMedia", () => {
@@ -39,14 +40,14 @@ describe("TweetDetailMedia", () => {
 	});
 
 	it("单张图片不显示切换控件与缩略图条", () => {
-		render(<TweetDetailMedia images={[urls[0]]} />);
+		render(<TweetDetailMedia images={[refs[0]]} />);
 		expect(screen.queryByRole("button", { name: "下一张" })).toBeNull();
 		expect(screen.queryByText(/ \/ /)).toBeNull();
 		expect(shown()).toBe("推文图片 1");
 	});
 
 	it("多张图片：箭头与缩略图切换，循环，并显示计数", () => {
-		render(<TweetDetailMedia images={urls} />);
+		render(<TweetDetailMedia images={refs} />);
 		expect(screen.getByText("1 / 3")).toBeTruthy();
 		fireEvent.click(screen.getByRole("button", { name: "下一张" }));
 		expect(shown()).toBe("推文图片 2");
@@ -61,7 +62,7 @@ describe("TweetDetailMedia", () => {
 	});
 
 	it("方向键切换图片", () => {
-		render(<TweetDetailMedia images={urls} />);
+		render(<TweetDetailMedia images={refs} />);
 		const stage = screen.getByRole("group", { name: /推文图片，共 3 张/ });
 		fireEvent.keyDown(stage, { key: "ArrowRight" });
 		expect(shown()).toBe("推文图片 2");
@@ -71,7 +72,7 @@ describe("TweetDetailMedia", () => {
 	});
 
 	it("点击大图以当前图片打开灯箱，并带上全部原图", () => {
-		render(<TweetDetailMedia images={urls} />);
+		render(<TweetDetailMedia images={refs} />);
 		fireEvent.click(screen.getByRole("button", { name: "下一张" }));
 		fireEvent.click(screen.getByRole("button", { name: "放大查看第 2 张图片" }));
 		const [images, index] = previewState.lastOpen as [string[], number];

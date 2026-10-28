@@ -160,6 +160,7 @@ function MusicPlayerSession({ playlists, mode, theme, onRetry }: MusicPlayerSess
 				className="site-music-player"
 				playlists={playlists.map((item) => item.id).join(",")}
 				position="left"
+				initial="orb"
 				theme={theme}
 			/>
 		</>

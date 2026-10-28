@@ -1,9 +1,11 @@
+import { LinkPreviews } from "@entities/link-preview/ui/LinkPreviews";
 import { useShareTweetStore } from "@entities/tweet/model/share-store";
 import type { Tweet } from "@entities/tweet/model/types";
 import { ExternalTweetCard } from "@entities/tweet/ui/ExternalTweetCard";
 import { useMe } from "@features/auth/api/queries";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useDeleteTweet, useToggleLikeTweet } from "@features/tweets/api/mutations";
+import { tokenizeLinks } from "@shared/lib/linkify";
 import { useNavigate } from "@tanstack/react-router";
 import { ConfirmDialog, Modal } from "@violet/ui";
 import { TweetCard as TweetCardLayout } from "@violetjs/react-tweet";
@@ -58,6 +60,7 @@ const TweetCard = ({
 	const openShareTweet = useShareTweetStore((state) => state.open);
 	const isDetail = variant === "detail";
 	const canDelete = !!me.data && (me.data.id === tweet.author.id || canDeleteAny);
+	const linkUrls = tokenizeLinks(tweet.content).map((link) => link.href);
 
 	const handleLikeClick = (event: MouseEvent<HTMLButtonElement>) => {
 		event.stopPropagation();
@@ -90,7 +93,7 @@ const TweetCard = ({
 			id: tweet.id,
 			authorUsername: tweet.author.username,
 			content: tweet.content,
-			imageUrl: tweet.images[0],
+			imageUrl: tweet.images[0]?.url,
 			externalTweet: tweet.external_tweet,
 			quotedTweet: tweet.quoted_tweet,
 		});
@@ -177,7 +180,14 @@ const TweetCard = ({
 						}
 					/>
 				}
-				mediaSlot={detachMedia ? undefined : <TweetCardImages images={tweet.images} />}
+				mediaSlot={
+					<>
+						{linkUrls.length > 0 && (
+							<LinkPreviews urls={linkUrls} snapshots={tweet.link_cards ?? []} />
+						)}
+						{!detachMedia && <TweetCardImages images={tweet.images} />}
+					</>
+				}
 				quoteSlot={
 					!detachMedia &&
 					(tweet.external_tweet || tweet.quoted_tweet || tweet.quote_of) ? (

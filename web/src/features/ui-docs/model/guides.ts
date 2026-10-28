@@ -153,6 +153,12 @@ export const UI_DOCS_CATALOG: readonly CatalogGroup[] = [
 						description: "图片揭示 · 静止原图与瓦片拼合",
 					},
 					{
+						id: "link-card",
+						title: "LinkCard",
+						to: "/ui/components/link-card",
+						description: "链接预览 · 紧凑缩略图、原生导航与图片降级",
+					},
+					{
 						id: "upload-tile",
 						title: "UploadTile",
 						to: "/ui/components/upload-tile",

@@ -63,7 +63,7 @@ export async function checkConsumerTheme(css, html) {
 					assert.ok(ratio(focused.actualText, focused.background) >= 4.5, `${appearance}/${contrast}: focused label, invalid=${invalid}`);
 				}
 				const root = await colors(page.locator("main"));
-				const namedLink = await page.locator("a").evaluate((el) => getComputedStyle(el).color);
+				const namedLink = await page.locator("a.v-button--link").evaluate((el) => getComputedStyle(el).color);
 				assert.notEqual(namedLink, root.link.value, "Named theme inherited the root's already-resolved link color.");
 			}
 		}
