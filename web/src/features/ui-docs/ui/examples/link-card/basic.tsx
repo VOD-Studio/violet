@@ -1,8 +1,8 @@
 import { Button, LinkCard } from "@violet/ui";
 import { useRef, useState } from "react";
 
-const logo = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><rect width="160" height="160" fill="#f0edf8"/><path d="m40 44 40 76 40-76H98l-18 36-18-36Z" fill="#684dda"/></svg>')}`;
-const cover = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="240" viewBox="0 0 400 240"><rect width="400" height="240" fill="#dbe8e9"/><path d="m0 210 130-160 100 120 80-100 90 140v30H0Z" fill="#406c83"/><circle cx="310" cy="48" r="24" fill="#f7d58b"/></svg>')}`;
+const LOGO_SRC = "/logo.png";
+const COVER_SRC = "/ai-personas/unknown-cover.webp";
 
 /** 独立资源展示完整图片、错误回退与内容更新，不调用预览 API。 */
 export function LinkCardBasicDemo() {
@@ -13,9 +13,9 @@ export function LinkCardBasicDemo() {
 	const ref = useRef<HTMLAnchorElement>(null);
 	const imageSrc =
 		image === "logo"
-			? logo
+			? LOGO_SRC
 			: image === "cover"
-				? cover
+				? COVER_SRC
 				: image === "broken"
 					? "data:image/png;base64,broken"
 					: undefined;
@@ -57,7 +57,7 @@ export function LinkCardBasicDemo() {
 						description="从原生语义开始，让封面、Logo、长标题和窄容器各自保持稳定，不依赖宿主补充卡片样式。"
 						siteName="Example Journal"
 						imageSrc={imageSrc}
-						imageAlt={image === "cover" ? "山间风景" : ""}
+						imageAlt={image === "cover" ? "抱着枕头的灰发角色插画" : ""}
 					/>
 					<LinkCard
 						href="https://example.com/profile"
