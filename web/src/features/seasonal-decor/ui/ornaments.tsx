@@ -5,6 +5,7 @@
  * 挂件只取主题色阶着色，`data-decoration` 控制投放，工具与沉浸方言由
  * scene.module.css 的钩子隐藏。
  */
+import { useDecorationLayers } from "../hooks/useDecorationLayers";
 import { useDecorationSeason } from "../hooks/useDecorationSeason";
 import styles from "../scene.module.css";
 
@@ -14,13 +15,16 @@ const SNOW = "light-dark(var(--neutral-1), var(--neutral-12))";
 /** 顶栏胶囊挂件；variant 区分同一页面上的多枚胶囊，避免图形完全一样。 */
 export function CapsuleOrnament({ variant = 0 }: { variant?: number }) {
 	const season = useDecorationSeason();
-	if (!season) return null;
+	const layers = useDecorationLayers();
+	if (!season || !layers.ornaments) return null;
 	switch (season) {
 		case "winter":
 			// 外层 span 锚定两侧：svg 是替换元素，left+right 同时设定时按固有比例取宽而非拉伸
 			return (
 				<span
 					aria-hidden="true"
+					data-decoration-slot="component"
+					data-season-ornament={season}
 					className={`${styles.ornament} pointer-events-none absolute -top-1.5 right-4 left-4 h-2.5`}
 				>
 					<svg
@@ -45,6 +49,8 @@ export function CapsuleOrnament({ variant = 0 }: { variant?: number }) {
 			return (
 				<svg
 					aria-hidden="true"
+					data-decoration-slot="component"
+					data-season-ornament={season}
 					viewBox="0 0 24 16"
 					className={`${styles.ornament} pointer-events-none absolute -top-2 right-5 h-4 w-6`}
 				>
@@ -56,6 +62,8 @@ export function CapsuleOrnament({ variant = 0 }: { variant?: number }) {
 			return (
 				<svg
 					aria-hidden="true"
+					data-decoration-slot="component"
+					data-season-ornament={season}
 					viewBox="0 0 10 14"
 					className={`${styles.ornament} pointer-events-none absolute -bottom-3 h-3.5 w-2.5 ${variant % 2 ? "right-8" : "left-7"}`}
 				>
@@ -74,6 +82,8 @@ export function CapsuleOrnament({ variant = 0 }: { variant?: number }) {
 			return (
 				<span
 					aria-hidden="true"
+					data-decoration-slot="component"
+					data-season-ornament={season}
 					className={`${styles.ornament} pointer-events-none absolute -top-2.5 size-5 ${variant % 2 ? "-right-1.5 rotate-24" : "-left-1.5 -rotate-28"}`}
 				>
 					<MapleLeaf />
@@ -130,11 +140,14 @@ const FALLEN: [number, number, number][] = [
 /** 页脚上沿挂件；夏季没有页脚小物。 */
 export function FooterOrnament() {
 	const season = useDecorationSeason();
-	if (!season || season === "summer") return null;
+	const layers = useDecorationLayers();
+	if (!season || !layers.ornaments || season === "summer") return null;
 	if (season === "winter") {
 		return (
 			<svg
 				aria-hidden="true"
+				data-decoration-slot="component"
+				data-season-ornament={season}
 				viewBox="0 0 1200 24"
 				preserveAspectRatio="none"
 				className={`${styles.ornament} pointer-events-none absolute inset-x-0 -top-4 h-6 w-full`}
@@ -150,6 +163,8 @@ export function FooterOrnament() {
 	return (
 		<div
 			aria-hidden="true"
+			data-decoration-slot="component"
+			data-season-ornament={season}
 			className={`${styles.ornament} pointer-events-none absolute inset-x-0 top-0 h-0`}
 		>
 			{FALLEN.map(([x, y, rotate]) => (

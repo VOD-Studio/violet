@@ -6,10 +6,11 @@ import { useState } from "react";
 import { originOf, useThemeSwitcher } from "../hooks/useThemeSwitcher";
 import { THEME_CHOICES, themeChoiceTitle } from "../model/choices";
 import { CustomThemeDialog } from "./CustomThemeDialog";
+import { DecorationPicker } from "./DecorationPicker";
 import { CustomThemeSwatch, ThemeSwatch } from "./ThemeSwatch";
 
 const OPTION_CLASS =
-	"flex flex-col items-center gap-1.5 rounded-xl py-2.5 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring aria-checked:bg-selected aria-checked:text-selected-foreground";
+	"flex flex-col items-center gap-1.5 rounded-xl py-2.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring aria-checked:bg-selected aria-checked:text-selected-foreground";
 
 /**
  * 内联的主题单选，用于移动端导航面板等不能悬停展开菜单的位置。
@@ -57,6 +58,7 @@ export function ThemePicker({ className }: { className?: string }) {
 					自定义
 				</button>
 			</div>
+			<DecorationPicker className={cn("mt-3", className)} />
 			<CustomThemeDialog open={customOpen} onOpenChange={setCustomOpen} />
 		</>
 	);

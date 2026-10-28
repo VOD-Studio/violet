@@ -1,36 +1,113 @@
 import {
+	DECORATION_LAYERS,
+	type DecorationLayer,
+	type DecorationLayers,
 	type DecorationPreference,
+	getClientDecorationLayers,
+	persistDecorationLayers,
 	persistDecorationPreference,
 	resolveDecoration,
+	serializeDecorationLayers,
 } from "@shared/lib/decoration-preference";
+import type { Season } from "@shared/lib/theme-preference";
 import { useRouteContext, useRouter } from "@tanstack/react-router";
-import { useCallback } from "react";
+import { useCallback, useRef, useState } from "react";
 
-/**
- * 读取并切换装饰偏好。
- *
- * 切换时先同步改写 `<html data-decoration>`（CSS 钩子立即生效），cookie 写入后
- * 刷新路由上下文，依赖装饰的组件随之更新。
- */
-export function useDecorationSwitcher() {
+interface DecorationSwitcher {
+	preference: DecorationPreference;
+	season: Season | null;
+	layers: DecorationLayers;
+	switchDecoration: (preference: DecorationPreference) => Promise<void>;
+	setLayer: (layer: DecorationLayer, enabled: boolean) => Promise<void>;
+}
+
+// Cookie Store 写入是异步的；所有入口共用写入队列，防止旧写入最后落盘。
+let pendingWrite: Promise<void> = Promise.resolve();
+let latestUpdate: Promise<void> = Promise.resolve();
+let writeVersion = 0;
+
+function persistInOrder(
+	write: () => Promise<void>,
+	invalidate: () => Promise<void>,
+): Promise<void> {
+	const version = ++writeVersion;
+	const persisted = pendingWrite.then(write);
+	pendingWrite = persisted.catch(() => undefined);
+	const done = persisted.then(async () => {
+		if (version === writeVersion) await invalidate();
+		if (version !== writeVersion) await latestUpdate;
+	});
+	latestUpdate = done.catch(() => undefined);
+	return done;
+}
+
+/** 先同步装饰季节和图层，再于 cookie 落盘后刷新路由上下文。 */
+export function useDecorationSwitcher(): DecorationSwitcher {
 	const router = useRouter();
-	const { theme, decoration } = useRouteContext({ from: "__root__" });
+	const { theme, decoration, decorationLayers } = useRouteContext({ from: "__root__" });
+	const [pendingPreference, setPendingPreference] = useState<DecorationPreference | null>(null);
+	const [pendingLayers, setPendingLayers] = useState<DecorationLayers | null>(null);
+	const preferenceVersion = useRef(0);
+	const layersVersion = useRef(0);
+	const latestLayers = useRef<DecorationLayers | null>(null);
 
-	/** 选择跟随主题、关闭或某一季。 */
 	const switchDecoration = useCallback(
 		async (preference: DecorationPreference) => {
-			if (preference === decoration) return;
+			const version = ++preferenceVersion.current;
+			setPendingPreference(preference);
 			document.documentElement.dataset.decoration =
 				resolveDecoration(preference, theme) ?? "none";
-			await persistDecorationPreference(preference);
-			await router.invalidate();
+			try {
+				await persistInOrder(
+					() => persistDecorationPreference(preference),
+					() => router.invalidate(),
+				);
+			} finally {
+				if (version === preferenceVersion.current) setPendingPreference(null);
+			}
 		},
-		[decoration, theme, router],
+		[router, theme],
 	);
 
+	const setLayer = useCallback(
+		async (layer: DecorationLayer, enabled: boolean) => {
+			const version = ++layersVersion.current;
+			const root = document.documentElement;
+			const active = root.dataset.decorationLayers?.split(",");
+			const next = {
+				...(latestLayers.current ?? getClientDecorationLayers()),
+				[layer]: enabled,
+			};
+			// 同次连续点击优先用 ref；其他入口尚未落盘的选择从 DOM 合并。
+			if (!latestLayers.current && active) {
+				for (const key of DECORATION_LAYERS) {
+					if (key !== layer) next[key] = active.includes(key);
+				}
+			}
+			latestLayers.current = next;
+			setPendingLayers(next);
+			root.dataset.decorationLayers = serializeDecorationLayers(next);
+			try {
+				await persistInOrder(
+					() => persistDecorationLayers(next),
+					() => router.invalidate(),
+				);
+			} finally {
+				if (version === layersVersion.current) {
+					latestLayers.current = null;
+					setPendingLayers(null);
+				}
+			}
+		},
+		[router],
+	);
+
+	const preference = pendingPreference ?? decoration;
 	return {
-		preference: decoration,
-		season: resolveDecoration(decoration, theme),
+		preference,
+		season: resolveDecoration(preference, theme),
+		layers: pendingLayers ?? decorationLayers,
 		switchDecoration,
+		setLayer,
 	};
 }

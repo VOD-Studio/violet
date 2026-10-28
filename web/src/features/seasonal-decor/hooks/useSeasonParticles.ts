@@ -25,9 +25,10 @@ interface Particle {
 const COUNT: Record<Season, number> = { spring: 22, summer: 20, autumn: 12, winter: 110 };
 
 /**
- * 挂到画布与颜色探针元素上的 ref。
+ * 渲染当前季节的粒子；隐藏、零尺寸、窄屏或离屏时停止逐帧绘制。
  *
  * @param season - 要投放的季节；null 时不动画布
+ * @returns 画布与颜色探针的 ref
  */
 export function useSeasonParticles(season: Season | null) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -43,18 +44,33 @@ export function useSeasonParticles(season: Season | null) {
 		let width = 0;
 		let height = 0;
 		let sprites: HTMLCanvasElement[] = [];
+		let particles: Particle[] = [];
+		let frame = 0;
+		let last = 0;
+		let intersects = false;
+		let cssVisible = false;
+		let needsStaticFrame = true;
 		const perBlur = SPRITES_PER_BLUR[season];
 		const readColors = () => {
 			const colors = Array.from(probe.children).map((child) => getComputedStyle(child).color);
 			sprites = buildParticleSprites(season, colors);
+			needsStaticFrame = true;
 		};
 		const fitCanvas = () => {
 			const dpr = Math.min(window.devicePixelRatio || 1, 2);
 			width = canvas.clientWidth;
 			height = canvas.clientHeight;
-			canvas.width = Math.round(width * dpr);
-			canvas.height = Math.round(height * dpr);
-			context.setTransform(dpr, 0, 0, dpr, 0, 0);
+			cssVisible =
+				getComputedStyle(canvas).visibility === "visible" &&
+				canvas.getClientRects().length > 0;
+			const pixelWidth = Math.round(width * dpr);
+			const pixelHeight = Math.round(height * dpr);
+			if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+				canvas.width = pixelWidth;
+				canvas.height = pixelHeight;
+				context.setTransform(dpr, 0, 0, dpr, 0, 0);
+				needsStaticFrame = true;
+			}
 		};
 
 		const spawn = (initial: boolean): Particle => {
@@ -110,10 +126,6 @@ export function useSeasonParticles(season: Season | null) {
 			}
 		};
 
-		let particles: Particle[] = [];
-		let frame = 0;
-		let last = performance.now();
-
 		const draw = (now: number) => {
 			context.clearRect(0, 0, width, height);
 			for (const p of particles) {
@@ -135,6 +147,10 @@ export function useSeasonParticles(season: Season | null) {
 		};
 
 		const step = (now: number) => {
+			if (!visible()) {
+				frame = 0;
+				return;
+			}
 			const dt = Math.min(0.05, (now - last) / 1000);
 			last = now;
 			for (let i = 0; i < particles.length; i++) {
@@ -165,43 +181,85 @@ export function useSeasonParticles(season: Season | null) {
 			frame = requestAnimationFrame(step);
 		};
 
+		const visible = () =>
+			width > 0 && height > 0 && intersects && cssVisible && !document.hidden;
+		const restart = () => {
+			cancelAnimationFrame(frame);
+			frame = 0;
+			if (!visible()) return;
+			if (reduceMotion) {
+				if (needsStaticFrame) draw(0);
+				needsStaticFrame = false;
+				return;
+			}
+			last = performance.now();
+			frame = requestAnimationFrame(step);
+		};
+		const populate = () => {
+			particles = Array.from({ length: COUNT[season] }, () => spawn(true));
+			needsStaticFrame = true;
+		};
+		const onResize = () => {
+			const oldWidth = width;
+			const oldHeight = height;
+			fitCanvas();
+			if (oldWidth !== width || oldHeight !== height) populate();
+			restart();
+		};
+		const refresh = () => {
+			readColors();
+			onResize();
+		};
+
 		fitCanvas();
 		readColors();
-		particles = Array.from({ length: COUNT[season] }, () => spawn(true));
+		populate();
 
-		const observer = new MutationObserver(() => {
-			readColors();
-			if (reduceMotion) draw(0);
+		const intersectionObserver = new IntersectionObserver(([entry]) => {
+			intersects = entry.isIntersecting;
+			restart();
 		});
-		observer.observe(document.documentElement, { attributes: true });
-		const onResize = () => {
-			fitCanvas();
-			if (reduceMotion) draw(0);
-		};
-		window.addEventListener("resize", onResize);
+		intersectionObserver.observe(canvas);
+		const resizeObserver = new ResizeObserver(onResize);
+		resizeObserver.observe(canvas);
 
-		if (reduceMotion) {
-			draw(0);
-		} else {
-			frame = requestAnimationFrame((now) => {
-				last = now;
-				step(now);
-			});
+		// 只观察颜色与可见性的继承链，不随正文变化反复重建精灵。
+		const observer = new MutationObserver(refresh);
+		observer.observe(canvas, {
+			attributes: true,
+			attributeFilter: ["class", "style", "hidden"],
+		});
+		for (
+			let ancestor: Element | null = canvas.parentElement;
+			ancestor;
+			ancestor = ancestor.parentElement
+		) {
+			observer.observe(ancestor, { attributes: true });
 		}
-		const onVisibility = () => {
-			cancelAnimationFrame(frame);
-			if (!document.hidden && !reduceMotion) {
-				last = performance.now();
-				frame = requestAnimationFrame(step);
-			}
-		};
-		document.addEventListener("visibilitychange", onVisibility);
+		// 自定义主题可只替换动态样式，并不一定改 html 属性。
+		const styleObserver = new MutationObserver(refresh);
+		styleObserver.observe(document.head, {
+			childList: true,
+			subtree: true,
+			characterData: true,
+		});
+		const contrast = window.matchMedia("(prefers-contrast: more)");
+		const colorScheme = window.matchMedia("(prefers-color-scheme: dark)");
+		contrast.addEventListener("change", refresh);
+		colorScheme.addEventListener("change", refresh);
+		window.addEventListener("resize", onResize);
+		document.addEventListener("visibilitychange", restart);
 
 		return () => {
 			cancelAnimationFrame(frame);
 			observer.disconnect();
+			styleObserver.disconnect();
+			intersectionObserver.disconnect();
+			resizeObserver.disconnect();
+			contrast.removeEventListener("change", refresh);
+			colorScheme.removeEventListener("change", refresh);
 			window.removeEventListener("resize", onResize);
-			document.removeEventListener("visibilitychange", onVisibility);
+			document.removeEventListener("visibilitychange", restart);
 		};
 	}, [season, reduceMotion]);
 

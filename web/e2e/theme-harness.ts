@@ -2,7 +2,10 @@ import type { Browser, Page } from "@playwright/test";
 import type { NormalizedTheme } from "@violetjs/theme";
 import {
 	DECORATION_COOKIE_NAME,
+	DECORATION_LAYERS_COOKIE_NAME,
+	type DecorationLayers,
 	type DecorationPreference,
+	serializeDecorationLayers,
 } from "../src/shared/lib/decoration-preference";
 import {
 	serializeThemePreference,
@@ -80,6 +83,7 @@ export async function appearanceContext(
 		custom?: NormalizedTheme;
 		/** 写入装饰偏好 cookie；省略时不写，按跟随主题渲染 */
 		decoration?: DecorationPreference;
+		decorationLayers?: DecorationLayers;
 	} = {},
 ) {
 	const context = await browser.newContext({
@@ -102,6 +106,14 @@ export async function appearanceContext(
 	if (options.decoration)
 		await context.addCookies([
 			{ name: DECORATION_COOKIE_NAME, value: options.decoration, url: CONTRACT_ORIGIN },
+		]);
+	if (options.decorationLayers)
+		await context.addCookies([
+			{
+				name: DECORATION_LAYERS_COOKIE_NAME,
+				value: serializeDecorationLayers(options.decorationLayers),
+				url: CONTRACT_ORIGIN,
+			},
 		]);
 	if (options.admin)
 		await context.addCookies([{ name: "contract_admin", value: "1", url: CONTRACT_ORIGIN }]);
