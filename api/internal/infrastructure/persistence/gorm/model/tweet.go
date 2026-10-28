@@ -12,22 +12,29 @@ import (
 // 多用户微博短内容（PRD-0013）：纯文本 + 最多 4 张图，即发即出、
 // 不可编辑（无更新路径，updated_at 恒等于 created_at）、物理删除。
 type Tweet struct {
-	ID                       uuid.UUID                   `gorm:"type:uuid;primaryKey" json:"id"`
-	AuthorID                 uuid.UUID                   `gorm:"type:uuid;column:author_id;not null;uniqueIndex:idx_tweets_author_request" json:"author_id"`
-	Content                  string                      `gorm:"type:text;not null;default:''" json:"content"`
-	Images                   datatypes.JSONSlice[string] `gorm:"type:jsonb;not null;default:'[]'" json:"images"`
-	QuoteOf                  *uuid.UUID                  `gorm:"type:uuid;column:quote_of" json:"quote_of,omitempty"`
-	ExternalTweetID          *uuid.UUID                  `gorm:"type:uuid;column:external_tweet_id" json:"external_tweet_id,omitempty"`
-	ClientRequestID          *uuid.UUID                  `gorm:"type:uuid;column:client_request_id;uniqueIndex:idx_tweets_author_request" json:"-"`
-	RequestHash              string                      `gorm:"not null;default:''" json:"-"`
-	ExternalPreviewTokenHash *string                     `gorm:"uniqueIndex:idx_tweets_preview_token" json:"-"`
-	LikeCount                int                         `gorm:"column:like_count;not null;default:0" json:"like_count"`
-	CreatedAt                time.Time                   `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
-	UpdatedAt                time.Time                   `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
+	ID                       uuid.UUID                         `gorm:"type:uuid;primaryKey" json:"id"`
+	AuthorID                 uuid.UUID                         `gorm:"type:uuid;column:author_id;not null;uniqueIndex:idx_tweets_author_request" json:"author_id"`
+	Content                  string                            `gorm:"type:text;not null;default:''" json:"content"`
+	Images                   datatypes.JSONSlice[TweetImagePO] `gorm:"type:jsonb;not null;default:'[]'" json:"images"`
+	QuoteOf                  *uuid.UUID                        `gorm:"type:uuid;column:quote_of" json:"quote_of,omitempty"`
+	ExternalTweetID          *uuid.UUID                        `gorm:"type:uuid;column:external_tweet_id" json:"external_tweet_id,omitempty"`
+	ClientRequestID          *uuid.UUID                        `gorm:"type:uuid;column:client_request_id;uniqueIndex:idx_tweets_author_request" json:"-"`
+	RequestHash              string                            `gorm:"not null;default:''" json:"-"`
+	ExternalPreviewTokenHash *string                           `gorm:"uniqueIndex:idx_tweets_preview_token" json:"-"`
+	LikeCount                int                               `gorm:"column:like_count;not null;default:0" json:"like_count"`
+	CreatedAt                time.Time                         `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt                time.Time                         `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
 // TableName 显式指定表名
 func (Tweet) TableName() string { return "tweets" }
+
+// TweetImagePO 推文图片 JSON 元素（url + 发布时快照的尺寸，nil=未知）。
+type TweetImagePO struct {
+	URL    string `json:"url"`
+	Width  *int   `json:"width"`
+	Height *int   `json:"height"`
+}
 
 // TweetLike 推文点赞关系持久化模型（对应 tweet_likes 表，migration 072）。
 type TweetLike struct {

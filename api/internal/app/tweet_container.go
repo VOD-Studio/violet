@@ -36,6 +36,7 @@ func NewTweetContainer(
 	bus appshared.EventBus,
 	policies domainimage.PolicyProvider,
 	encoder *infraimage.Encoder,
+	linkPrev *LinkPreviewContainer,
 ) *TweetContainer {
 	tweetRepo := gormrepo.NewTweetRepository(db)
 	commentRepo := gormrepo.NewTweetCommentRepository(db)
@@ -52,6 +53,8 @@ func NewTweetContainer(
 		commentRepo,
 		userRepo,
 		&tweetImageCheckerAdapter{repo: fileRepo},
+		&tweetImageMetaAdapter{repo: fileRepo},
+		linkPrev.Service,
 		perm,
 		&tweetEmojiLookupAdapter{repo: emojiRepo, customEmojiSvc: customEmojiSvc},
 		bus,
@@ -122,6 +125,27 @@ type tweetImageCheckerAdapter struct {
 }
 
 var _ apptweet.TweetImageChecker = (*tweetImageCheckerAdapter)(nil)
+
+var _ apptweet.ImageMetaLookup = (*tweetImageMetaAdapter)(nil)
+
+// tweetImageMetaAdapter 将 upload.FileRepository 适配为 ImageMetaLookup 端口
+// （发布时快照图片宽高，与 tweetImageCheckerAdapter 同一依赖、不同用途）。
+type tweetImageMetaAdapter struct {
+	repo domainupload.FileRepository
+}
+
+// FindByURLs 返回 url → [width, height]；文件未记录尺寸或未命中时对应值为 nil / 缺席。
+func (a *tweetImageMetaAdapter) FindByURLs(ctx context.Context, urls []string) (map[string][2]*int, error) {
+	files, err := a.repo.FindByURLs(ctx, urls)
+	if err != nil {
+		return nil, err
+	}
+	meta := make(map[string][2]*int, len(files))
+	for _, f := range files {
+		meta[f.URL()] = [2]*int{f.Width(), f.Height()}
+	}
+	return meta, nil
+}
 
 // CheckImagesOwnedBy 校验所有 URL 命中就绪文件且归属 authorID。
 // 不存在/未就绪/非本人统一报 Forbidden，不区分（不暴露他人文件存在性）。

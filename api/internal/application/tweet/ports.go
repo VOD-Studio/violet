@@ -5,6 +5,7 @@ import (
 	"io"
 	"time"
 
+	applp "blog-api/internal/application/linkpreview"
 	"blog-api/internal/domain/shared"
 	domaintweet "blog-api/internal/domain/tweet"
 )
@@ -17,6 +18,20 @@ type TweetImageChecker interface {
 	// CheckImagesOwnedBy 校验 urls 全部存在、就绪且 owner 为 authorID。
 	// 任一不满足返回错误（不存在/未就绪/非本人同错，不暴露他人文件存在性）。
 	CheckImagesOwnedBy(ctx context.Context, urls []string, authorID shared.ID) error
+}
+
+// ImageMetaLookup 图片尺寸批量查找端口（发布时快照 ImageRef 的宽高）。
+//
+// value 为 [width, height]；nil 元素表示该维度未知，URL 缺失（未上传/未就绪）
+// 不出现在 map 中（实现方适配 upload.FileRepository）。
+type ImageMetaLookup interface {
+	FindByURLs(ctx context.Context, urls []string) (map[string][2]*int, error)
+}
+
+// LinkCardLookup 链接卡片端口（读时批量查询、发布时登记，实现为 linkpreview.Service）。
+type LinkCardLookup interface {
+	Lookup(ctx context.Context, urls []string) map[string]*applp.LinkCardDTO
+	Register(ctx context.Context, urls []string)
 }
 
 // TweetPermissionChecker 检查当前角色的推文权限。

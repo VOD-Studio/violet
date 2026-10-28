@@ -22,6 +22,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	applp "blog-api/internal/application/linkpreview"
 	appshared "blog-api/internal/application/shared"
 	"blog-api/internal/domain/shared"
 	domaintweet "blog-api/internal/domain/tweet"
@@ -38,6 +39,8 @@ type Service struct {
 	commentRepo domaintweet.CommentRepository
 	userRepo    domainuser.UserRepository
 	checker     TweetImageChecker
+	metaLookup  ImageMetaLookup
+	linkCards   LinkCardLookup
 	perm        TweetPermissionChecker
 	emojiLookup EmojiLookup
 	bus         appshared.EventBus
@@ -48,6 +51,8 @@ func (s *Service) WithExternal(external *ExternalService) *Service { s.external 
 
 // NewService 构造服务。
 // checker 为 nil 时跳过图片归属校验（仅限测试场景；生产容器必须注入）。
+// metaLookup 为 nil 时图片尺寸快照为 nil（仅限测试场景；生产容器必须注入）。
+// linkCards 为 nil 时跳过链接卡片查询与登记，DTO LinkCards 恒空数组（测试可降级）。
 // commentRepo 为 nil 时跳过评论相关用例与评论数填充（仅限推文单测场景）。
 // perm 为 nil 时仅作者本人可删（无权限码放行路径）。
 // emojiLookup 为 nil 时跳过评论 emote 富化（仅限测试场景；生产容器必须注入）。
@@ -56,11 +61,13 @@ func NewService(
 	commentRepo domaintweet.CommentRepository,
 	userRepo domainuser.UserRepository,
 	checker TweetImageChecker,
+	metaLookup ImageMetaLookup,
+	linkCards LinkCardLookup,
 	perm TweetPermissionChecker,
 	emojiLookup EmojiLookup,
 	bus appshared.EventBus,
 ) *Service {
-	return &Service{repo: repo, commentRepo: commentRepo, userRepo: userRepo, checker: checker, perm: perm, emojiLookup: emojiLookup, bus: bus}
+	return &Service{repo: repo, commentRepo: commentRepo, userRepo: userRepo, checker: checker, metaLookup: metaLookup, linkCards: linkCards, perm: perm, emojiLookup: emojiLookup, bus: bus}
 }
 
 // --- 输入/输出 DTO ---
@@ -105,11 +112,21 @@ type QuotedTweetDTO struct {
 	ID            string              `json:"id"`
 	Author        AuthorDTO           `json:"author"`
 	Content       string              `json:"content"`
-	Images        []string            `json:"images"`
+	Images        []TweetImageDTO     `json:"images"`
 	Emote         map[string]EmojiRef `json:"emote,omitempty"`
 	QuoteCount    int                 `json:"quote_count"`
 	CreatedAt     string              `json:"created_at"`
 	ExternalTweet *ExternalTweetDTO   `json:"external_tweet,omitempty"`
+	// LinkCards 正文 URL 逐个对应的链接卡片，可为空数组
+	LinkCards []*applp.LinkCardDTO `json:"link_cards"`
+}
+
+// TweetImageDTO 推文图片读模型。
+type TweetImageDTO struct {
+	URL string `json:"url"`
+	// Width/Height 像素尺寸；nil=历史数据缺尺寸，展示层退方格
+	Width  *int `json:"width"`
+	Height *int `json:"height"`
 }
 
 // TweetDTO 推文读模型（序列化跨层传输）。
@@ -117,7 +134,7 @@ type TweetDTO struct {
 	ID            string              `json:"id"`
 	Author        AuthorDTO           `json:"author"`
 	Content       string              `json:"content"`
-	Images        []string            `json:"images"`
+	Images        []TweetImageDTO     `json:"images"`
 	Emote         map[string]EmojiRef `json:"emote,omitempty"`
 	LikeCount     int                 `json:"like_count"`
 	IsLiked       bool                `json:"is_liked"`
@@ -127,6 +144,8 @@ type TweetDTO struct {
 	QuotedTweet   *QuotedTweetDTO     `json:"quoted_tweet,omitempty"`
 	CreatedAt     string              `json:"created_at"`
 	ExternalTweet *ExternalTweetDTO   `json:"external_tweet,omitempty"`
+	// LinkCards 正文 URL 逐个对应的链接卡片，可为空数组
+	LinkCards []*applp.LinkCardDTO `json:"link_cards"`
 }
 
 // --- 写用例 ---
@@ -218,13 +237,17 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (TweetDTO, error) 
 		quoteOf = &qid
 	}
 
-	tw, err := domaintweet.NewTweet(authorID, in.Content, in.Images, quoteOf, pub)
+	imageRefs, err := s.buildImageRefs(ctx, in.Images)
+	if err != nil {
+		return TweetDTO{}, err
+	}
+	tw, err := domaintweet.NewTweet(authorID, in.Content, imageRefs, quoteOf, pub)
 	if err != nil {
 		return TweetDTO{}, err
 	}
 
 	if s.checker != nil && len(tw.Images()) > 0 {
-		if err := s.checker.CheckImagesOwnedBy(ctx, tw.Images(), tw.AuthorID()); err != nil {
+		if err := s.checker.CheckImagesOwnedBy(ctx, domaintweet.ImageURLs(tw.Images()), tw.AuthorID()); err != nil {
 			return TweetDTO{}, err
 		}
 	}
@@ -251,6 +274,10 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (TweetDTO, error) 
 		}
 	}
 	s.publishEvents(ctx, events)
+	if s.linkCards != nil {
+		// 发布成功后台登记正文链接（不阻塞响应；卡片异步首抓，下次读取生效）
+		go s.linkCards.Register(context.WithoutCancel(ctx), ExtractURLs(tw.Content()))
+	}
 
 	return s.toDTOs(ctx, []*domaintweet.Tweet{tw})[0], nil
 }
@@ -597,6 +624,9 @@ func (s *Service) toDTOs(ctx context.Context, tweets []*domaintweet.Tweet) []Twe
 		}
 	}
 
+	// 批量查链接卡片：本页推文与被引用推文的正文 URL 合并去重后分批 Lookup
+	linkCardsMap := s.lookupLinkCards(ctx, tweets, quotedTweetsMap)
+
 	dtos := make([]TweetDTO, 0, len(tweets))
 	for _, tw := range tweets {
 		var quoteOfStr *string
@@ -609,11 +639,12 @@ func (s *Service) toDTOs(ctx context.Context, tweets []*domaintweet.Tweet) []Twe
 					ID:            qt.ID().String(),
 					Author:        authors[qt.AuthorID().String()],
 					Content:       qt.Content(),
-					Images:        qt.Images(),
+					Images:        ImageRefsToDTOs(qt.Images()),
 					Emote:         filterEmoteForBody(qt.Content(), allEmoteMap),
 					QuoteCount:    int(quoteCountMap[qt.ID().String()]),
 					CreatedAt:     qt.CreatedAt().UTC().Format(time.RFC3339),
 					ExternalTweet: sourceView(qt, externalViews),
+					LinkCards:     linkCardsForBody(qt.Content(), linkCardsMap),
 				}
 			}
 		}
@@ -622,7 +653,7 @@ func (s *Service) toDTOs(ctx context.Context, tweets []*domaintweet.Tweet) []Twe
 			ID:            tw.ID().String(),
 			Author:        authors[tw.AuthorID().String()],
 			Content:       tw.Content(),
-			Images:        tw.Images(),
+			Images:        ImageRefsToDTOs(tw.Images()),
 			Emote:         filterEmoteForBody(tw.Content(), allEmoteMap),
 			LikeCount:     tw.LikeCount(),
 			IsLiked:       likedMap[tw.ID().String()],
@@ -632,7 +663,86 @@ func (s *Service) toDTOs(ctx context.Context, tweets []*domaintweet.Tweet) []Twe
 			QuotedTweet:   quotedTweetDTO,
 			CreatedAt:     tw.CreatedAt().UTC().Format(time.RFC3339),
 			ExternalTweet: sourceView(tw, externalViews),
+			LinkCards:     linkCardsForBody(tw.Content(), linkCardsMap),
 		})
+	}
+	return dtos
+}
+
+// buildImageRefs 请求图片 URL → 带尺寸快照的 ImageRef。
+// metaLookup 为 nil 或 URL 缺失时尺寸为 nil（未知）；查询失败降级为缺尺寸不阻断发布。
+func (s *Service) buildImageRefs(ctx context.Context, urls []string) ([]domaintweet.ImageRef, error) {
+	refs := make([]domaintweet.ImageRef, 0, len(urls))
+	if len(urls) == 0 {
+		return refs, nil
+	}
+	var meta map[string][2]*int
+	if s.metaLookup != nil {
+		m, err := s.metaLookup.FindByURLs(ctx, urls)
+		if err != nil {
+			log.Warn().Err(err).Msg("推文图片尺寸查询失败，降级为缺尺寸")
+		} else {
+			meta = m
+		}
+	}
+	for _, u := range urls {
+		var w, h *int
+		if dims, ok := meta[u]; ok {
+			w, h = dims[0], dims[1]
+		}
+		refs = append(refs, domaintweet.NewImageRef(u, w, h))
+	}
+	return refs, nil
+}
+
+// lookupLinkCards 合并本页全部正文 URL，按 applp.MaxLookupURLs 分批查询，
+// 返回规范化 URL → 卡片；linkCards 为 nil（测试降级）时返回空 map。
+func (s *Service) lookupLinkCards(ctx context.Context, tweets []*domaintweet.Tweet, quotedTweetsMap map[string]*domaintweet.Tweet) map[string]*applp.LinkCardDTO {
+	cards := make(map[string]*applp.LinkCardDTO)
+	if s.linkCards == nil {
+		return cards
+	}
+	seen := make(map[string]bool)
+	var all []string
+	add := func(content string) {
+		for _, u := range ExtractURLs(content) {
+			if !seen[u] {
+				seen[u] = true
+				all = append(all, u)
+			}
+		}
+	}
+	for _, tw := range tweets {
+		add(tw.Content())
+	}
+	for _, qt := range quotedTweetsMap {
+		add(qt.Content())
+	}
+	for i := 0; i < len(all); i += applp.MaxLookupURLs {
+		end := min(i+applp.MaxLookupURLs, len(all))
+		for u, c := range s.linkCards.Lookup(ctx, all[i:end]) {
+			cards[u] = c
+		}
+	}
+	return cards
+}
+
+// linkCardsForBody 按正文 URL 出现顺序填充卡片；Lookup 不含不可展示项，按存在性填。
+func linkCardsForBody(content string, cards map[string]*applp.LinkCardDTO) []*applp.LinkCardDTO {
+	out := make([]*applp.LinkCardDTO, 0)
+	for _, u := range ExtractURLs(content) {
+		if c, ok := cards[u]; ok {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+// ImageRefsToDTOs 领域图片引用 → 读模型（chat 分享等跨模块复用）。
+func ImageRefsToDTOs(refs []domaintweet.ImageRef) []TweetImageDTO {
+	dtos := make([]TweetImageDTO, 0, len(refs))
+	for _, r := range refs {
+		dtos = append(dtos, TweetImageDTO{URL: r.URL(), Width: r.Width(), Height: r.Height()})
 	}
 	return dtos
 }
