@@ -38,6 +38,7 @@ var rateBindings = map[string]rateBinding{
 	"mcp-roadmap":       {"路线图 MCP", "ip", 60, 60},
 	"mcp-reader":        {"公开阅读 MCP", "ip", 60, 120},
 	"mcp-comments":      {"评论 MCP", "ip", 60, 60},
+	"omp-usage":         {"OMP 用量上报", "user", 60, 60},
 	"chat-bot-commands": {"机器人指令更新", "user", 60, 30},
 	"chat-bot-media":    {"机器人媒体上传", "user", 60, 20},
 	"chat-bot-send":     {"机器人发送消息", "user", 60, 60},

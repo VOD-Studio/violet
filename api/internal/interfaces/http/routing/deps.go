@@ -33,6 +33,7 @@ import (
 	musichttp "blog-api/internal/interfaces/http/handler/music"
 	notehttp "blog-api/internal/interfaces/http/handler/note"
 	notificationhttp "blog-api/internal/interfaces/http/handler/notification"
+	ompusagehttp "blog-api/internal/interfaces/http/handler/omp_usage"
 	personahttp "blog-api/internal/interfaces/http/handler/persona"
 	presencehttp "blog-api/internal/interfaces/http/handler/presence"
 	posthttp "blog-api/internal/interfaces/http/handler/post"
@@ -105,6 +106,8 @@ type Deps struct {
 	Audit                  *audithttp.Handler
 	UserAdmin              *useradminhttp.Handler
 	APIToken               *apitokenhttp.Handler
+	OMPUsage               *ompusagehttp.Handler
+	OMPUsageAuth           func(http.Handler) http.Handler
 	Subscription           *subscriptionhttp.Handler
 	CodeRunner             *codehttp.Handler
 	System                 *systemhttp.Handler

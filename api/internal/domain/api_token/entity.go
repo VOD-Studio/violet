@@ -7,7 +7,7 @@ import (
 	domainshared "blog-api/internal/domain/shared"
 )
 
-// PAT scope 枚举。固定十三个：文章读/写/发布、抓取、订阅读/写、评论读/写、笔记读/写/发布、路线图读/写，创建时多选。
+// PAT 权限采用 REST 与 MCP 共用的显式白名单。
 const (
 	ScopePostsRead          = "posts:read"
 	ScopePostsWrite         = "posts:write"
@@ -22,6 +22,7 @@ const (
 	ScopeNotesPublish       = "notes:publish"       // 以 published 状态建笔记（直发；draft 不需要）
 	ScopeRoadmapRead        = "roadmap:read"        // 列项目与读路线图（MCP violet-roadmap server）
 	ScopeRoadmapWrite       = "roadmap:write"       // 写条目与关系；还需要持有人自己有 project:update 权限
+	ScopeUsageWrite         = "usage:write"
 )
 
 // validScopes 合法 scope 集合，校验与新增 scope 时同步此处 + 前端 PAT_SCOPES 常量
@@ -40,6 +41,7 @@ var validScopes = map[string]struct{}{
 	ScopeNotesPublish:       {},
 	ScopeRoadmapRead:        {},
 	ScopeRoadmapWrite:       {},
+	ScopeUsageWrite:         {},
 }
 
 // AllScopes 返回全部合法 scope（升序）。供需要手写白名单的边界（请求校验的 oneof 标签）做一致性核对，

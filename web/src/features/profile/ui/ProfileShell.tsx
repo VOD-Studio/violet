@@ -4,25 +4,35 @@ import { useUpdateProfile } from "@features/auth/api/mutations";
 import { CropUploadDialog, type CropUploadResult } from "@features/upload/ui/CropUploadDialog";
 import { avatarUrl } from "@shared/lib/image-url";
 import { Link } from "@tanstack/react-router";
-import { Button, PageShell, Tabs, TabsContent, TabsList, TabsTrigger } from "@violet/ui";
-
+import {
+	PageShell,
+	Tabs,
+	TabsContent,
+	TabsList,
+	TabsTrigger,
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@violet/ui";
 import { cn } from "cn";
-import { Camera, ExternalLink, ShieldCheck, User as UserIcon } from "lucide-react";
+import { ArrowUpRight, Camera, Gauge, ShieldCheck, User as UserIcon } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface ProfileShellProps {
 	user: UserDTO;
 	defaultTab?: ProfileTab;
 	profile: ReactNode;
 	security: ReactNode;
+	usage: ReactNode;
 }
 
 /**
  * ProfileTab - 个人中心 Tab 标识
  */
-export type ProfileTab = "profile" | "security";
+export type ProfileTab = "profile" | "security" | "usage";
 
 /**
  * ProfileShell - 个人中心布局壳
@@ -37,14 +47,25 @@ export const ProfileShell = ({
 	defaultTab = "profile",
 	profile,
 	security,
+	usage,
 }: ProfileShellProps) => {
 	// 受控 tabs：滑动指示块（layoutId 共享元素）需要感知激活项
 	const [tab, setTab] = useState<ProfileTab>(defaultTab);
+	const [orientation, setOrientation] = useState<"horizontal" | "vertical">("horizontal");
+
+	useEffect(() => {
+		const desktop = window.matchMedia("(min-width: 48rem)");
+		const updateOrientation = () => setOrientation(desktop.matches ? "vertical" : "horizontal");
+		updateOrientation();
+		desktop.addEventListener("change", updateOrientation);
+		return () => desktop.removeEventListener("change", updateOrientation);
+	}, []);
+
 	return (
 		<Tabs
 			value={tab}
 			onValueChange={(v) => setTab(v as ProfileTab)}
-			orientation="vertical"
+			orientation={orientation}
 			className="gap-0"
 		>
 			<PageShell>
@@ -65,6 +86,12 @@ export const ProfileShell = ({
 								className="mt-0 outline-none data-[state=active]:animate-tab-panel-in"
 							>
 								{security}
+							</TabsContent>
+							<TabsContent
+								value="usage"
+								className="mt-0 outline-none data-[state=active]:animate-tab-panel-in"
+							>
+								{usage}
 							</TabsContent>
 						</div>
 					</div>
@@ -127,24 +154,38 @@ const ProfileSidebar = ({ user, activeTab }: { user: UserDTO; activeTab: Profile
 					/>
 				</label>
 
-				<h1 className="mt-4 text-lg font-semibold">{getDisplayName(user)}</h1>
+				<h1 className="mt-4 max-w-full text-lg font-semibold">
+					<TooltipProvider>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Link
+									to="/users/$username"
+									params={{ username: user.username }}
+									className="group/public inline-flex min-h-8 max-w-full items-center gap-1.5 rounded-sm align-middle text-foreground underline-offset-4 transition-colors hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+								>
+									<span className="truncate">{getDisplayName(user)}</span>
+									<ArrowUpRight
+										aria-hidden
+										className="size-3.5 shrink-0 text-muted-foreground transition-colors group-hover/public:text-primary group-focus-visible/public:text-primary"
+									/>
+								</Link>
+							</TooltipTrigger>
+							<TooltipContent side="top" sideOffset={6} className="animate-none!">
+								查看公开主页
+							</TooltipContent>
+						</Tooltip>
+					</TooltipProvider>
+				</h1>
 				<p className="mt-0.5 truncate text-sm text-muted-foreground">{user.email}</p>
 				<p className="mt-1 text-xs text-muted-foreground">
 					{user.is_root ? "root" : user.role_description || user.role}
 				</p>
 			</div>
 
-			<Button asChild variant="outline" size="sm" className="mt-5 w-full">
-				<Link to="/users/$username" params={{ username: user.username }}>
-					<ExternalLink className="size-3.5" />
-					查看公开主页
-				</Link>
-			</Button>
-
 			{/* Tab 列表：default 分段式（自带激活态过渡），移动端横排可滚动 */}
 			<TabsList
 				className={cn(
-					"mt-6 h-auto w-full justify-start",
+					"mt-6 h-auto w-full justify-start p-1",
 					"flex-row overflow-x-auto md:flex-col md:items-stretch md:overflow-visible",
 				)}
 			>
@@ -159,6 +200,12 @@ const ProfileSidebar = ({ user, activeTab }: { user: UserDTO; activeTab: Profile
 					active={activeTab === "security"}
 					icon={<ShieldCheck className="size-4" />}
 					label="账户与安全"
+				/>
+				<ProfileSidebarTab
+					value="usage"
+					active={activeTab === "usage"}
+					icon={<Gauge className="size-4" />}
+					label="用量"
 				/>
 			</TabsList>
 

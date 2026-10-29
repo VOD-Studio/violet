@@ -37,6 +37,7 @@ type Container struct {
 	UserAdmin       *UserAdminContainer
 	CommentReaction *CommentReactionContainer
 	APIToken        *APITokenContainer
+	OMPUsage        *OMPUsageContainer
 	Subscription    *SubscriptionContainer
 	MCP             *MCPContainer
 	System          *SystemContainer
@@ -116,6 +117,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	stats := NewStatsContainer(db)
 	userAdmin := NewUserAdminContainer(db, authcmd.NewBcryptHasher(), bus, auth.SessionStore)
 	apiToken := NewAPITokenContainer(db, bus)
+	ompUsage := NewOMPUsageContainer(db, apiToken.TokenLookup)
 	subscription := NewSubscriptionContainer(db, post.PostService, bus, cfg.FeedProxyURL)
 	commentReaction := NewCommentReactionContainer(db)
 	friendLink := NewFriendLinkContainer(db, rdb, emailSender, bus)
@@ -147,7 +149,8 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 		Post: post, Tag: tag, GitHub: github, Releases: releases, Audit: audit,
 		Stats: stats, UserAdmin: userAdmin, CommentReaction: commentReaction,
 		APIToken: apiToken, Subscription: subscription, MCP: mcp, System: system,
-		Media: media, CodeRunner: codeRunner, Image: image, Tweet: tweet, FriendLink: friendLink,
+		OMPUsage: ompUsage,
+		Media:    media, CodeRunner: codeRunner, Image: image, Tweet: tweet, FriendLink: friendLink,
 		Series: series, Gallery: gallery, Note: note, Publication: publication, Persona: persona, Notification: notification, Chat: chat, CustomEmoji: customEmoji,
 		LinkPreview: linkPreview, Presence: presence,
 	}

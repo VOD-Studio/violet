@@ -31,6 +31,11 @@
 - [Kanban 使用说明](../web/packages/kanban/README.zh-CN.md)、[API 文档](../web/packages/kanban/docs/api.md)与[开发说明](../web/packages/kanban/DEVELOPMENT.md)：同源示例、全入口 tarball 消费验收和发布前清单；尚未发布 npm。
 - [Theme 开发说明](../web/packages/theme/DEVELOPMENT.md)：门槛遍历测试、算法调参与 tarball 的 Node / Chromium 消费验证；尚未发布 npm。
 
+## OMP 用量接入
+
+- [采集扩展安装与隐私说明](./guides/omp-usage.md)：OMP 原生 Marketplace 安装与管理、PAT、目标站点、离线队列和看板统计口径。
+- [共享 PostgreSQL 契约](../api/pkg/ompusage/README.md)：参数绑定、原生宿主职责、独立打包与 Rust 消费验收；不依赖 Violet 的鉴权或 UI。
+
 ## 使用约定
 
 - PRD 主文件直接放在 `prd/` 根目录。

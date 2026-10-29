@@ -65,6 +65,44 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe("PATDialog", () => {
+	it("创建仅含用量上报权限的令牌", async () => {
+		const created: PATDTO = { ...existingToken, scopes: ["usage:write"], token: "new-token" };
+		vi.mocked(apiPost).mockResolvedValue(created);
+		const { props } = renderDialog({ token: null });
+		fireEvent.change(nameInput(), { target: { value: "用量客户端" } });
+		fireEvent.click(screen.getByRole("checkbox", { name: "posts:read" }));
+		fireEvent.click(screen.getByRole("checkbox", { name: "usage:write" }));
+		submitForm();
+		await waitFor(() => expect(props.onCreated).toHaveBeenCalledWith(created));
+		expect(apiPost).toHaveBeenCalledWith("/admin/api-tokens", {
+			name: "用量客户端",
+			scopes: ["usage:write"],
+			expires_at: "",
+			interactive: true,
+		});
+	});
+
+	it("回填用量权限并可替换现有权限后保存", async () => {
+		const { rerenderDialog } = renderDialog({
+			token: { ...existingToken, scopes: ["usage:write"] },
+		});
+		expect(
+			screen.getByRole("checkbox", { name: "usage:write" }).getAttribute("aria-checked"),
+		).toBe("true");
+		rerenderDialog({ token: existingToken });
+		fireEvent.click(screen.getByRole("checkbox", { name: "posts:read" }));
+		fireEvent.click(screen.getByRole("checkbox", { name: "comments:write" }));
+		fireEvent.click(screen.getByRole("checkbox", { name: "usage:write" }));
+		submitForm();
+		await waitFor(() =>
+			expect(apiPatch).toHaveBeenCalledWith("/admin/api-tokens/pat-existing", {
+				name: existingToken.name,
+				scopes: ["usage:write"],
+				interactive: false,
+			}),
+		);
+	});
+
 	it("回填现有权限与 false 偏好，改名不发送有效期，过期令牌也无需续期", async () => {
 		const { props } = renderDialog();
 		expect(nameInput().value).toBe(existingToken.name);

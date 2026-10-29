@@ -90,6 +90,8 @@ make api
 
 SSR 使用 `GET /auth/session` 只读探活，**不续期、不写 Cookie**。不要用会续期的客户端探活接口替换它。MCP 和 Bot 使用独立的令牌认证，不与浏览器 Cookie / CSRF 混用。
 
+REST 端点可用 `middleware.PATAuth` 复用 MCP 的 `PATVerifier`，再用 `RequireScope` 精确断言权限。成功后上下文包含持有人 ID 和 scopes，异步更新令牌最近使用时间；伪造、缺失或过期令牌返回 401 JSON，权限不足返回 403 JSON，存储故障返回 500。`usage:write` 只授予用量上报，不包含其他写权限。
+
 ### 响应与分页
 
 普通 JSON 成功响应使用 `data` 信封；分页信息位于 `meta.pagination`。错误响应使用 `error`、`message`，可附带 `request_id` 与字段错误 `details`。
@@ -120,6 +122,7 @@ SSR 使用 `GET /auth/session` 只读探活，**不续期、不写 Cookie**。�
 | 外部内容 | `subscription`、`github`、`releases`、`music`、`linkpreview` | RSS、GitHub、版本记录、Kite 音乐与共享网页预览 |
 | 实时状态 | `presence` | Nowbeam 上报接收、设备凭证与公开推送 |
 | 开放与运营 | `mcp`、`coderunner`、`audit`、`system` | MCP、沙箱、审计、数据库运维 |
+| 个人用量 | `omp_usage` | PAT 批量摄取、个人会话聚合与跨语言同源 PostgreSQL 契约 |
 
 ### 正文与媒体
 
@@ -143,6 +146,23 @@ SSR 使用 `GET /auth/session` 只读探活，**不续期、不写 Cookie**。�
 | `/admin/settings/code-runner` | 沙箱启停、语言、资源和任务生命周期 |
 
 更新携带 `expected_version`，冲突返回 409；`reset: true` 清除整组覆盖。**保存版本和当前实例有效版本是两回事**，应读取 `runtime.status`，不能只看 HTTP 200。429 保留 `Retry-After`；上传与运行器的消费端分别读取 `/uploads/policy` 和 `/code-runner/policy`，其中上传策略要求登录。
+
+### OMP 个人用量
+
+| 方法 | 路径 | 鉴权与用途 |
+| --- | --- | --- |
+| POST | `/omp-usage/batch` | Bearer PAT + `usage:write`；顶层注册，不经过 Cookie/CSRF |
+| GET | `/omp-usage/summary` | Session；本人汇总 |
+| GET | `/omp-usage/models` | Session；按 provider/model 聚合 |
+| GET | `/omp-usage/timeseries` | Session；UTC 时间桶，缺失桶补零 |
+
+摄取请求为 `{ "events": [...] }`，最多 200 项、512 KiB。未知字段、缺少必填字段或任意无效事件返回整批 400，不保留有效前缀；`user_id` 仅取认证身份。重复 `(user_id, client_event_id)` 返回 `duplicated`，不覆盖原事件。独立 `omp-usage` 限流默认为每用户每分钟 60 次，支持运行策略调整。
+
+事件仅保留模型用量元数据，不接收 prompt、正文、路径、cwd 或原始 session ID。provider/model/omp_version/stop_reason 分别限 128/256/64/32 UTF-8 字节；不透明事件 ID 限 128 字节，使用字母、数字、`._:-`。Token 为非负安全整数；USD API 等价估算限 `0..1e12`，不代表实际订阅账单。duration/TTFT 为可空非负毫秒，不缺省为零；UTC occurred_at 不能超过服务器时间五分钟，无任意历史保留期限限制。
+
+查询支持 `range=7d|30d|90d`（默认 30d），时间序列支持 `bucket=day|hour`（默认 day），拒绝 user_id 和未知参数。范围从 UTC 当天及此前 N−1 天的零点到当前时刻，私有响应禁止共享缓存。Token 总量不重复加 reasoning；缓存率分母为 input+cache_read+cache_write；吞吐均值只计非错误、已记录耗时且 duration>TTFT 的调用。
+
+SQL、schema 与列绑定来自独立 [pkg/ompusage](pkg/ompusage/README.md)，Violet 的迁移146为其初始快照。Go 与 Rust 可执行同一 SQL，认证、路由与展示由各宿主实现；这不表示 Yggdrasil 已完成接入。扩展安装见 [OMP 用量指南](../docs/guides/omp-usage.md)。
 
 ### 站点音乐接口（Kite）
 

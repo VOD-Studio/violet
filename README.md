@@ -38,6 +38,7 @@
 - MCP：按权限分域的六个 server（公开读取 / 评论 / 文章读写 / 抓取订阅 / 笔记 / 路线图），见 [MCP 使用指南](docs/guides/mcp-servers.md)
 - REST API 与 OpenAPI 文档，个人访问令牌自主管理
 - 聊天 Bot：外部程序以独立 token 参与聊天，收发图片、Markdown 回复与命令目录
+- OMP 用量：原生插件安装、私有上报与个人看板，展示模型、Token 和 API 等价成本；[接入指南](docs/guides/omp-usage.md)
 
 ### 站点管理
 
@@ -152,6 +153,7 @@ violet/
 │   │   ├── app/            依赖注入容器（手工装配，每模块一个 *_container.go）
 │   │   └── middleware/     HTTP 中间件（session/CSRF/限流/审计）
 │   ├── migrations/         数据库迁移（golang-migrate）
+│   ├── pkg/ompusage/        可独立分发的用量 SQL / JSON 契约（Go / Rust 同源消费）
 │   └── config.yaml         入库配置（全量配置文档，敏感值走根 .env）
 ├── web/                    React 前端应用（TanStack Start SSR）
 │   ├── packages/           可独立使用的组件包（ui / react-tweet / kanban / inkline / theme）
@@ -164,6 +166,7 @@ violet/
 │   └── server.mjs          SSR 生产服务器
 ├── docs/                   项目文档（索引见 docs/README.md）
 ├── scripts/                工具脚本（Git 钩子、部署、冒烟测试）
+├── tools/omp-violet-usage/  独立 OMP 用量采集扩展
 ├── docker-compose.yml      开发基础服务编排
 └── docker-compose.prod.yml 生产环境编排
 ```
