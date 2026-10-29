@@ -73,7 +73,7 @@ function PreviewCard({ appearance }: { appearance: "light" | "dark" }) {
  * @remarks 每次打开都从当前生效的主题开始；预览与应用都只用规范化后的种子色，任何种子都会被调到满足对比度门槛。
  */
 export function CustomThemeDialog({ open, onOpenChange }: CustomThemeDialogProps) {
-	const { preset, custom, applyCustomTheme } = useThemeSwitcher();
+	const { preset, custom, applyCustomTheme } = useThemeSwitcher("instant");
 	const initialSeed = custom?.seed ?? THEME_PRESETS[preset].seed;
 	const [draft, setDraft] = useState(initialSeed);
 	const [wasOpen, setWasOpen] = useState(open);

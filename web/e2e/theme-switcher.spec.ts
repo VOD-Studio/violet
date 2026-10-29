@@ -11,11 +11,11 @@ const cookieHeader = async (page: Page) =>
 	(await page.context().cookies()).map((cookie) => `${cookie.name}=${cookie.value}`).join("; ");
 
 /** 顶栏工具区默认收起，悬停用户槽位后展开。 */
-async function openThemeMenu(page: Page) {
+async function openThemePanel(page: Page) {
 	const header = page.locator("header").first();
 	await header.getByRole("link", { name: "登录", exact: true }).hover();
 	await header.getByRole("button", { name: /^主题：/ }).click();
-	await expect(page.getByRole("menu")).toBeVisible();
+	await expect(page.getByRole("dialog", { name: "主题与装饰", exact: true })).toBeVisible();
 }
 
 test("切换主题后即时生效，刷新与再次访问后保持", async ({ browser }) => {
@@ -27,8 +27,11 @@ test("切换主题后即时生效，刷新与再次访问后保持", async ({ br
 
 	const target = season === "winter" ? "spring" : "winter";
 	const title = target === "winter" ? "冬 · 初雪" : "春 · 花朝";
-	await openThemeMenu(page);
-	await page.getByRole("menuitemradio", { name: new RegExp(title) }).click();
+	await openThemePanel(page);
+	await page
+		.getByRole("radiogroup", { name: "主题", exact: true })
+		.getByRole("radio", { name: title, exact: true })
+		.click();
 	await expect(page.locator("html")).toHaveAttribute("data-theme", target);
 	await expect
 		.poll(async () =>
@@ -55,13 +58,14 @@ test("切换主题后即时生效，刷新与再次访问后保持", async ({ br
 		target,
 	);
 	await revisit.close();
-	await openThemeMenu(page);
-	await expect(page.getByRole("menuitemradio", { name: new RegExp(title) })).toHaveAttribute(
-		"aria-checked",
-		"true",
-	);
+	await openThemePanel(page);
+	await expect(
+		page
+			.getByRole("radiogroup", { name: "主题", exact: true })
+			.getByRole("radio", { name: title, exact: true }),
+	).toHaveAttribute("aria-checked", "true");
 
-	await page.getByRole("menuitemradio", { name: /跟随季节/ }).click();
+	await page.getByRole("radio", { name: "跟随季节", exact: true }).click();
 	await expect(page.locator("html")).toHaveAttribute("data-theme", season);
 	await page.reload({ waitUntil: "load" });
 	await expect(page.locator("html")).toHaveAttribute("data-theme", season);
@@ -74,7 +78,7 @@ test("切换主题后即时生效，刷新与再次访问后保持", async ({ br
 	await context.close();
 });
 
-test("键盘可以 Tab 到主题菜单并选择季节", async ({ browser }) => {
+test("键盘可打开设置并切换主题，Escape 关闭后焦点回到入口", async ({ browser }) => {
 	const context = await appearanceContext(browser, "dark");
 	const page = await context.newPage();
 	await page.goto("/", { waitUntil: "load" });
@@ -99,24 +103,29 @@ test("键盘可以 Tab 到主题菜单并选择季节", async ({ browser }) => {
 		)
 		.toBe("1");
 	await page.keyboard.press("Enter");
-	const menu = page.getByRole("menu");
-	await expect(menu).toBeVisible();
-	await expect(page.getByRole("menuitemradio", { name: /跟随季节/ })).toHaveAttribute(
-		"aria-checked",
-		"true",
-	);
-	// 菜单项依次为跟随季节、春、夏、秋、冬；键盘打开时焦点落在第一项
-	const items = page.getByRole("menuitemradio");
-	const index = ["follow", "spring", "summer", "autumn", "winter"].indexOf(target);
-	await expect(items.nth(0)).toBeFocused();
-	for (let step = 1; step <= index; step++) {
-		await page.keyboard.press("ArrowDown");
-		await expect(items.nth(step)).toBeFocused();
+	const panel = page.getByRole("dialog", { name: "主题与装饰", exact: true });
+	await expect(panel).toBeVisible();
+	const group = panel.getByRole("radiogroup", { name: "主题", exact: true });
+	const current = group.getByRole("radio", { name: "跟随季节", exact: true });
+	await expect(current).toHaveAttribute("aria-checked", "true");
+	for (let step = 0; step < 6; step++) {
+		if (await current.evaluate((element) => element === document.activeElement)) break;
+		await page.keyboard.press("Tab");
 	}
-	await expect(items.nth(index)).toHaveAccessibleName(new RegExp(title));
-	await page.keyboard.press("Enter");
+	await expect(current).toBeFocused();
+	const option = group.getByRole("radio", { name: title, exact: true });
+	for (let step = 0; step < 5; step++) {
+		if (await option.evaluate((element) => element === document.activeElement)) break;
+		await page.keyboard.press("ArrowRight");
+	}
+	await expect(option).toBeFocused();
+	await page.keyboard.press("Space");
 	await expect(page.locator("html")).toHaveAttribute("data-theme", target);
-	await expect(menu).toBeHidden();
+	await expect(option).toHaveAttribute("aria-checked", "true");
+	await expect(panel).toBeVisible();
+	await page.keyboard.press("Escape");
+	await expect(panel).toBeHidden();
+	await expect(trigger).toBeFocused();
 	await context.close();
 });
 
@@ -146,7 +155,7 @@ test("移动端导航面板可以选择主题", async ({ browser }) => {
 		.getByRole("button", { name: /展开全部导航$/ })
 		.first()
 		.click();
-	await page.getByRole("radio", { name: "自定义主题" }).click();
+	await page.getByRole("button", { name: "自定义主题", exact: true }).click();
 	await expect(page.getByRole("dialog", { name: "自定义主题" })).toBeVisible();
 	await context.close();
 });
@@ -157,8 +166,8 @@ test("自定义主题：实时预览，应用后刷新仍生效，选回预设�
 	await page.goto("/", { waitUntil: "load" });
 	const season = resolvePresetTheme("follow", new Date());
 
-	await openThemeMenu(page);
-	await page.getByRole("menuitemradio", { name: /自定义/ }).click();
+	await openThemePanel(page);
+	await page.getByRole("button", { name: "自定义主题", exact: true }).click();
 	const dialog = page.getByRole("dialog", { name: "自定义主题" });
 	await expect(dialog).toBeVisible();
 	const input = dialog.getByLabel("种子色", { exact: true });
@@ -193,12 +202,12 @@ test("自定义主题：实时预览，应用后刷新仍生效，选回预设�
 	await expect(
 		page.locator("header").first().getByRole("button", { name: "主题：自定义 #2b6cb0" }),
 	).toBeAttached();
-	await openThemeMenu(page);
-	await expect(page.getByRole("menuitemradio", { name: /自定义/ })).toHaveAttribute(
-		"aria-checked",
+	await openThemePanel(page);
+	await expect(page.getByRole("button", { name: "自定义主题", exact: true })).toHaveAttribute(
+		"aria-pressed",
 		"true",
 	);
-	await page.getByRole("menuitemradio", { name: /跟随季节/ }).click();
+	await page.getByRole("radio", { name: "跟随季节", exact: true }).click();
 	await expect(page.locator("html")).toHaveAttribute("data-theme", season);
 	await expect.poll(async () => parseCustomThemeCookie(await cookieHeader(page))).toBeNull();
 	expect(parseThemeCookie(await cookieHeader(page))).toBe("follow");
