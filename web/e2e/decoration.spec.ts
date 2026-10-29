@@ -67,18 +67,13 @@ test("非法的装饰 cookie 回落为跟随主题", async ({ browser }) => {
 	await context.close();
 });
 
-async function openDecorationMenu(page: Page) {
+async function openDecorationPanel(page: Page) {
 	const header = page.locator("header").first();
 	await header.getByRole("link", { name: "登录", exact: true }).hover();
 	await header.getByRole("button", { name: /^主题：/ }).click();
-	await page.getByRole("menuitem").filter({ hasText: "季节装饰" }).hover();
-	const menu = page.getByRole("menu", { name: /季节装饰/ });
-	await expect(menu).toBeVisible();
-	const entry = await menu.getByRole("menuitemradio").first().boundingBox();
-	if (!entry) throw new Error("装饰子菜单没有可用选项");
-	// Radix 依赖父菜单内的指针方向；连续移动避免跨 Portal 直跳被当作离开。
-	await page.mouse.move(entry.x + entry.width / 2, entry.y + entry.height / 2, { steps: 8 });
-	return menu;
+	const panel = page.getByRole("dialog", { name: "主题与装饰", exact: true });
+	await expect(panel).toBeVisible();
+	return panel;
 }
 
 for (const appearance of ["light", "dark"] as const) {
@@ -95,7 +90,7 @@ for (const appearance of ["light", "dark"] as const) {
 			await expect(page.locator("[data-season-particles]")).toBeVisible();
 			await expect(page.locator("[data-decoration-slot='accent'] svg")).toBeVisible();
 			await expect(page.locator("header [data-season-ornament]")).toHaveCount(3);
-			const menu = await openDecorationMenu(page);
+			const menu = await openDecorationPanel(page);
 			await page.evaluate(() => document.fonts.ready);
 			const titleBefore = await page.locator("main h1").first().boundingBox();
 			const footerBefore = await page.locator("footer").boundingBox();
@@ -108,7 +103,10 @@ for (const appearance of ["light", "dark"] as const) {
 			for (const slot of slots)
 				expect(slot).toEqual({ hidden: "true", pointerEvents: "none" });
 
-			await menu.getByRole("menuitemradio", { name: /^无/ }).click();
+			await menu
+				.getByRole("group", { name: "装饰", exact: true })
+				.getByRole("button", { name: "无", exact: true })
+				.click();
 			await expect(page.locator("html")).toHaveAttribute("data-decoration", "none");
 			await expect(page.locator("[data-decoration-slot]")).toHaveCount(0);
 			expect(await page.locator("main h1").first().boundingBox()).toEqual(titleBefore);
@@ -198,9 +196,9 @@ test("延迟 CookieStore 时连续关闭图层，刷新禁用脚本仍保持全�
 	});
 	const page = await context.newPage();
 	await page.goto("/", { waitUntil: "load" });
-	const menu = await openDecorationMenu(page);
+	const menu = await openDecorationPanel(page);
 	for (const name of ["插画", "飘落", "挂件"]) {
-		await menu.getByRole("menuitemcheckbox", { name, exact: true }).click();
+		await menu.getByRole("switch", { name, exact: true }).click();
 		await expect(menu).toBeVisible();
 	}
 	await expect
@@ -240,10 +238,10 @@ test("移动端季节与图层可独立配置并持久化", async ({ browser }) 
 	await page.setViewportSize({ width: 390, height: 844 });
 	await page.goto("/", { waitUntil: "load" });
 	await page.getByRole("button", { name: "展开全部导航", exact: true }).click();
-	const group = page.getByRole("radiogroup", { name: "装饰", exact: true });
-	await group.getByRole("radio", { name: /^春(?:\s|$)/ }).click();
-	await page.getByRole("checkbox", { name: "飘落", exact: true }).click();
-	await page.getByRole("checkbox", { name: "挂件", exact: true }).click();
+	const group = page.getByRole("group", { name: "装饰", exact: true });
+	await group.getByRole("button", { name: "春", exact: true }).click();
+	await page.getByRole("switch", { name: "飘落", exact: true }).click();
+	await page.getByRole("switch", { name: "挂件", exact: true }).click();
 	await expect(page.locator("html")).toHaveAttribute("data-theme", "winter");
 	await expect(page.locator("html")).toHaveAttribute("data-decoration", "spring");
 	await expect(page.locator("html")).toHaveAttribute("data-decoration-layers", "illustration");
@@ -256,22 +254,40 @@ test("移动端季节与图层可独立配置并持久化", async ({ browser }) 
 	await context.close();
 });
 
-test("指定装饰不随主题变化，恢复跟随后与主题一致", async ({ browser }) => {
+test("切换配色后可立即恢复装饰跟随", async ({ browser }) => {
 	const context = await appearanceContext(browser, "light", {
 		theme: "spring",
 		decoration: "winter",
 	});
 	const page = await context.newPage();
+	await page.emulateMedia({ reducedMotion: "no-preference" });
 	await page.goto("/", { waitUntil: "load" });
+	// 若回归为整页转场，延长快照以稳定暴露被吞掉的点击。
+	await page.addStyleTag({
+		content: "::view-transition-new(root) { animation-duration: 60s; }",
+	});
 	const header = page.locator("header").first();
 	await header.getByRole("link", { name: "登录", exact: true }).hover();
 	await header.getByRole("button", { name: /^主题：/ }).click();
-	await page.getByRole("menuitemradio", { name: /^夏(?:\s|$)/ }).click();
+	const panel = page.getByRole("dialog", { name: "主题与装饰", exact: true });
+	await panel
+		.getByRole("radiogroup", { name: "主题", exact: true })
+		.getByRole("radio", { name: /^夏(?:\s|$)/ })
+		.click();
 	await expect(page.locator("html")).toHaveAttribute("data-theme", "summer");
 	await expect(page.locator("html")).toHaveAttribute("data-decoration", "winter");
-	await expect(page.getByRole("menu")).toBeHidden();
-	const menu = await openDecorationMenu(page);
-	await menu.getByRole("menuitemradio", { name: /^跟随主题/ }).click();
+	await expect(panel).toBeVisible();
+	await page.evaluate(() => {
+		const { promise, resolve } = Promise.withResolvers<void>();
+		requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+		return promise;
+	});
+	const follow = panel
+		.getByRole("group", { name: "装饰", exact: true })
+		.getByRole("button", { name: "跟随", exact: true });
+	const box = await follow.boundingBox();
+	if (!box) throw new Error("装饰跟随按钮没有可点击区域");
+	await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2, { delay: 80 });
 	await expect(page.locator("html")).toHaveAttribute("data-decoration", "summer");
 	await page.reload({ waitUntil: "load" });
 	await expect(page.locator("html")).toHaveAttribute("data-decoration", "summer");

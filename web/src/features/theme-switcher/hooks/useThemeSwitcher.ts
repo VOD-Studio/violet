@@ -1,3 +1,4 @@
+import { runAppearanceRerender } from "@shared/lib/appearance-rerender";
 import { getClientDecoration, resolveDecoration } from "@shared/lib/decoration-preference";
 import { CUSTOM_THEME_STYLE_ID, generateCustomThemeCss } from "@shared/lib/theme-css";
 import {
@@ -17,22 +18,17 @@ export interface ThemeSwitchOrigin {
 	py: number;
 }
 
-/** 以元素中心为扩散原点，用于从被选中的选项开始扩散。 */
-export function originOf(element: Element): ThemeSwitchOrigin {
-	const rect = element.getBoundingClientRect();
-	return { px: rect.left + rect.width / 2, py: rect.top + rect.height / 2 };
-}
-
 const sameTheme = (a: NormalizedTheme | null, b: NormalizedTheme | null) =>
 	JSON.stringify(a) === JSON.stringify(b);
 
 /**
  * 读取并切换主题偏好。
  *
- * 切换时先同步改写 `<html data-theme>`（自定义主题先写入样式），渲染结果变化则复用外观切换的圆形扩散；
  * cookie 写入且 DOM 更新后再刷新路由上下文，依赖主题的组件随之更新。
+ *
+ * @param motion - instant 不创建整页快照，适用于需要连续操作的设置面板。
  */
-export function useThemeSwitcher() {
+export function useThemeSwitcher(motion: "ripple" | "instant" = "ripple") {
 	const router = useRouter();
 	const { theme } = useRouteContext({ from: "__root__" });
 	const current = renderedTheme(theme);
@@ -56,8 +52,11 @@ export function useThemeSwitcher() {
 					resolveDecoration(getClientDecoration(), { ...next, preset }) ?? "none";
 			};
 			let updated: Promise<unknown> = Promise.resolve();
-			if (target === current && target !== "custom") {
+			if (motion === "instant" || (target === current && target !== "custom")) {
 				apply();
+				if (motion === "instant") {
+					void runAppearanceRerender(root.classList.contains("dark") ? "dark" : "light");
+				}
 			} else {
 				const transition = animateAppearanceRipple(
 					origin ?? { px: window.innerWidth / 2, py: window.innerHeight / 2 },
@@ -70,7 +69,7 @@ export function useThemeSwitcher() {
 			await Promise.all([persistThemePreference(next.preference, next.custom), updated]);
 			await router.invalidate();
 		},
-		[router, current],
+		[router, current, motion],
 	);
 
 	/** 选择跟随季节或某一季；同时清除自定义主题。 */

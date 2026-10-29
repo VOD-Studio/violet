@@ -629,9 +629,6 @@ function Panel({
 					</div>
 				))}
 				<div className="mt-4">
-					<p className="mb-2 px-1 font-mono text-[10px] font-semibold tracking-[0.16em] text-muted-foreground uppercase">
-						主题
-					</p>
 					<ThemePicker />
 				</div>
 			</div>

@@ -65,7 +65,6 @@
 }
 
 .backdrop,
-.illustration,
 .particles {
 	position: absolute;
 	inset: 0;
@@ -92,17 +91,6 @@
 		transparent calc(50% - 28rem),
 		transparent calc(50% + 28rem),
 		var(--foreground) calc(50% + 36rem)
-	);
-}
-
-.illustration {
-	/* 避开首页最宽的 80rem 内容栏。 */
-	mask-image: linear-gradient(
-		to right,
-		var(--foreground) calc(50% - 48rem),
-		transparent calc(50% - 40rem),
-		transparent calc(50% + 40rem),
-		var(--foreground) calc(50% + 48rem)
 	);
 }
 
