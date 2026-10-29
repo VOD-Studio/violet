@@ -18,9 +18,9 @@ def main():
     root = Path(__file__).resolve().parents[1]
     source = root / "api/pkg/ompusage"
     schema = source / "schema.sql"
-    migration = root / "api/migrations/143_create_omp_usage_events.up.sql"
-    if migration.exists() and schema.read_bytes() != migration.read_bytes():
-        parser.error("迁移143与共享schema不一致；按包说明重新生成未发布的迁移快照")
+    migration = root / "api/migrations/146_create_omp_usage_events.up.sql"
+    if schema.read_bytes() != migration.read_bytes():
+        parser.error("迁移146与共享schema不一致；按包说明重新生成未发布的迁移快照")
     if args.consumer and not os.environ.get("BLOG_TEST_PG_DSN"):
         parser.error("--consumer 需要 BLOG_TEST_PG_DSN；不会跳过真实数据库验收")
     files = [schema, *sorted((source / "queries").glob("*.sql")), *sorted(source.glob("*.json")), source / "README.md"]

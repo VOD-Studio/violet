@@ -52,7 +52,7 @@ cp api/pkg/ompusage/schema.sql api/migrations/146_create_omp_usage_events.up.sql
 cmp api/pkg/ompusage/schema.sql api/migrations/146_create_omp_usage_events.up.sql
 ```
 
-发布后升级 provider 版本并新增宿主迁移，不修改已发布的迁移146。`make omp-usage-sql-pack` 检查快照一致性，将 SQL、JSON schema、README 和许可证打入归档；下列验收入口另外从仓库复制 Rust 消费者到外部临时目录，以解包后的共享资源编译并运行验收：
+发布后升级 provider 版本并新增宿主迁移，不修改已发布的迁移146。`make omp-usage-sql-pack` 必须校验该快照，缺失或内容不一致时中止打包；成功时将 SQL、JSON schema、README 和许可证打入归档。下列验收入口另外从仓库复制 Rust 消费者到外部临时目录，以解包后的共享资源编译并运行验收：
 
 ```sh
 make omp-usage-sql-consumer
