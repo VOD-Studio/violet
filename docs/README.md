@@ -9,7 +9,7 @@
 | `adr/` | 架构决策记录（Architecture Decision Records），包含已被采纳或 superseded 的决策。 |
 | `archive/` | 已过时或过渡性的文档，保留历史上下文但不再作为当前依据。 |
 | `deploy/` | 部署、运维、发布手册：含 [发布手册](./deploy/release-runbook.md)、[手动部署](./deploy/manual-deploy.md)、[runner 搭建](./deploy/runner-setup.md)。 |
-| `guides/` | 开发规范、风格指南、最佳实践。含 [前端代码规范](./guides/frontend-style-guide.md)、[Go 测试规范](./guides/go-testing-guide.md)、[MCP Server 使用指南](./guides/mcp-servers.md)、[页面转场指南](./guides/view-transitions.md)。 |
+| `guides/` | 开发规范、风格指南、最佳实践。含 [前端代码规范](./guides/frontend-style-guide.md)、[Go 测试规范](./guides/go-testing-guide.md)、[MCP Server 使用指南](./guides/mcp-servers.md)、[页面转场指南](./guides/view-transitions.md)、[Nowbeam 接入指南](./guides/nowbeam.md)。 |
 | `issues/` | 按 PRD 或功能主题分组的历史任务/issue 记录。 |
 | `prd/` | 产品需求文档（Product Requirements Documents）。 |
 | `research/` | 基于一手来源的接入与技术可行性分析，含 [Kite 接入分析](./research/kite-integration.md)。 |

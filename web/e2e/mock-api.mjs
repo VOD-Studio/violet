@@ -14,7 +14,7 @@ const server = createServer((req, res) => {
 	const url = new URL(req.url, `http://127.0.0.1:${PORT}`);
 	const result = handle(req.method, url.pathname, url.search, req.headers.cookie ?? "");
 	res.writeHead(result.status, {
-		"content-type": "application/json; charset=utf-8",
+		"content-type": result.contentType ?? "application/json; charset=utf-8",
 		"access-control-allow-origin": "*",
 	});
 	res.end(result.body);

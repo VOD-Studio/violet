@@ -22,6 +22,7 @@ func NewAdminRouter(d *Deps) chi.Router {
 	r.Use(d.SessionAuth)
 	r.Use(middleware.AdminRequired(perm))
 	registerMusicAdminRoutes(r, d)
+	registerPresenceAdminRoutes(r, d)
 
 	roleH := d.Role
 	settingsH := d.Settings

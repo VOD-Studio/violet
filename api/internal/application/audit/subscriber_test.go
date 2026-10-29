@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
@@ -16,6 +17,7 @@ import (
 	domainannouncement "blog-api/internal/domain/announcement"
 	domainapitoken "blog-api/internal/domain/api_token"
 	domainaudit "blog-api/internal/domain/audit"
+	domainpresence "blog-api/internal/domain/presence"
 	domainchat "blog-api/internal/domain/chat"
 	domaincomment "blog-api/internal/domain/comment"
 	domaingallery "blog-api/internal/domain/gallery"
@@ -409,6 +411,26 @@ func TestSubscriber_PATCreated_RecordsCreateWithName(t *testing.T) {
 	assert.Equal(t, "api_token", e.Resource.Type)
 	assert.Equal(t, "ci-token", e.Resource.Name)
 	assert.Contains(t, e.Summary, "创建访问令牌")
+}
+
+func TestSubscriber_PresenceDeviceLifecycle_RecordsNameSnapshot(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	device, _, err := domainpresence.NewDevice("MacBook Pro", time.Now())
+	require.NoError(t, err)
+	require.NoError(t, sub.Handle(ctx, domainpresence.NewDeviceAuthorized(device)))
+	require.NoError(t, sub.Handle(ctx, domainpresence.NewDeviceRevoked(device)))
+	require.NoError(t, sub.Handle(ctx, domainpresence.NewPublicReadChanged(shared.NewID(), true)))
+
+	require.Len(t, store.appended, 3)
+	assert.Equal(t, domainaudit.ActionCreate, store.appended[0].Action)
+	assert.Equal(t, domainaudit.ResourceRef{Type: "presence_device", ID: device.ID().String(), Name: "MacBook Pro"}, store.appended[0].Resource)
+	assert.Equal(t, domainaudit.ActionDelete, store.appended[1].Action)
+	assert.Equal(t, "撤销实时状态设备「MacBook Pro」", store.appended[1].Summary)
+	assert.Equal(t, domainaudit.ActionUpdateConfig, store.appended[2].Action)
+	assert.Equal(t, "开启实时状态公开读取", store.appended[2].Summary)
 }
 
 func TestSubscriber_SettingsUpdated_RecordsChangedKeys(t *testing.T) {

@@ -4,7 +4,12 @@ export declare function handle(
 	pathname: string,
 	search?: string,
 	cookie?: string,
-): { status: number; body: string };
+): {
+	status: number;
+	body: string;
+	/** 省略时为 JSON */
+	contentType?: string;
+};
 
 /** 项目列表契约用数据：站主顺序，含完整摘要、封面失效、空路线图与读不到摘要四种。 */
 export declare const PROJECTS_FIXTURE: Array<{

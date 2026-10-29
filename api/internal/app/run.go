@@ -40,6 +40,7 @@ func Run(ctx context.Context, cfg *config.Config) error {
 	}
 	go container.Settings.RuntimePolicies.Run(ctx)
 	go container.Image.RunMaintenance(ctx)
+	go container.Presence.Service.Run(ctx)
 	startJobs(ctx, container, infra.Gorm, cfg.UploadDir)
 
 	if cfg.SuperAdmin.Enabled {
@@ -139,6 +140,8 @@ func buildRoutingDeps(cfg *config.Config, redisClient *redis.Client, c *Containe
 		Content:                c.Content.ContentHandler,
 		Roadmap:                c.Roadmap.Handler,
 		Music:                  c.Music.Handler,
+		Presence:               c.Presence.Handler,
+		PresenceIngest:         c.Presence.IngestHandler,
 		RoadmapRelations:       c.Roadmap.Relations,
 		Comment:                c.Comment.CommentHandler,
 		CommentReaction:        c.CommentReaction.CommentReactionHandler,

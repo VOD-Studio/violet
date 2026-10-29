@@ -93,6 +93,7 @@ func build() (*openapi3.T, error) {
 	registerSiteIdentityPaths(t)
 	registerSiteImpressionPaths(t)
 	registerMusicPaths(t)
+	registerPresencePaths(t)
 	registerAuthPaths(t)
 	registerPostPaths(t)
 	registerTagPaths(t)
