@@ -9,7 +9,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { Button } from "@violet/ui";
 import { cn } from "cn";
 import { differenceInDays } from "date-fns";
-import { CalendarDays, Check, Copy, MessageCircle, PenSquare, Share2 } from "lucide-react";
+import { CalendarDays, Check, Copy, Gauge, MessageCircle, PenSquare, Share2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -47,7 +47,7 @@ async function copyText(text: string, message: string): Promise<boolean> {
 /**
  * 公开用户页左侧的资料栏：头像、名称、简介、操作与资料行。
  *
- * 本人显示「编辑资料」，访客显示「发起私聊」；未登录访客点击私聊会先去登录。
+ * 本人显示「编辑资料」与「用量」入口，访客显示「发起私聊」；未登录访客点击私聊会先去登录。
  */
 export function UserProfilePanel({
 	profile,
@@ -165,6 +165,15 @@ export function UserProfilePanel({
 					)}
 				</Button>
 			</div>
+
+			{isSelf && (
+				<Button variant="ghost" className="mt-2 justify-start" asChild>
+					<Link to="/users/$username/usage" params={{ username: profile.username }}>
+						<Gauge className="size-4" />
+						用量
+					</Link>
+				</Button>
+			)}
 
 			<ul className="mt-6 grid grid-cols-3 divide-x divide-border rounded-xl bg-muted/60 py-3 text-center">
 				{stats.map(({ label, value }) => (

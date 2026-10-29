@@ -91,8 +91,11 @@ function LoginDialogContent({ googleError }: { googleError: ReactNode }) {
 		close();
 		setForm((f) => ({ ...f, password: "" }));
 
-		// 在受保护页（profile/admin）取消重登 → 回首页
-		const needsAuth = pathname.startsWith("/profile") || pathname.startsWith("/admin");
+		// 在受保护页（profile/用量/admin）取消重登 → 回首页
+		const needsAuth =
+			pathname.startsWith("/profile") ||
+			pathname.startsWith("/admin") ||
+			/^\/users\/[^/]+\/usage(\/|$)/.test(pathname);
 		if (needsAuth) {
 			navigate({ to: "/", replace: true }).catch(() => {});
 		}

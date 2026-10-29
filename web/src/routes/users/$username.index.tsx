@@ -130,7 +130,7 @@ function UserPublicProfilePage() {
 	);
 }
 
-export const Route = createFileRoute("/users/$username")({
+export const Route = createFileRoute("/users/$username/")({
 	loader: async ({ context, params }) => {
 		try {
 			// 并行预取资料卡与首页推文

@@ -8,6 +8,13 @@ interface UsageHost {
     event: "session_start" | "message_end" | "session_shutdown",
     handler: (event: unknown, context: unknown) => void | Promise<void>,
   ): void;
+  registerCommand(
+    name: string,
+    options: {
+      description?: string;
+      handler: (args: string, context: { ui: { notify(text: string, level?: string): void } }) => void | Promise<void>;
+    },
+  ): void;
 }
 
 export default function violetUsage(pi: UsageHost): void {
