@@ -453,6 +453,9 @@ export const PROJECTS_FIXTURE = [
 	},
 ];
 
+/** 实时状态未公开或无人在线时的应答：顶栏不显示活动。 */
+const NO_PRESENCE = { generated_at: "2026-10-01T00:00:00Z", devices: [] };
+
 /** 与后端 envelope 语义一致的路由表；浏览器侧 page.route 复用同一份数据。
  * cookie 含 contract_admin=1 时按已登录 root 应答会话与后台数据（工具方言契约用）。 */
 export function handle(method, pathname, search, cookie = "") {
@@ -623,6 +626,15 @@ export function handle(method, pathname, search, cookie = "") {
 	}
 	if (pathname === "/api/v1/galleries/contract-gallery") {
 		return { status: 200, body: envelope(CONTRACT_GALLERY) };
+	}
+	if (pathname === "/api/v1/presence") return { status: 200, body: envelope(NO_PRESENCE) };
+	if (pathname === "/api/v1/presence/stream") {
+		// route.fetch 要等响应结束，所以推一条快照就收尾；retry 拉长，用例期间不重连。
+		return {
+			status: 200,
+			contentType: "text/event-stream",
+			body: `retry: 3600000\nevent: presence\ndata: ${JSON.stringify(NO_PRESENCE)}\n\n`,
+		};
 	}
 	return { status: 404, body: JSON.stringify({ error: "NOT_FOUND", message: pathname }) };
 }
