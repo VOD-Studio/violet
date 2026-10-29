@@ -7,6 +7,20 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.22.0](https://github.com/VOD-Studio/violet/compare/v2.21.0...v2.22.0) (2026-10-29)
+
+
+### 新增
+
+* **omp-usage:** 支持补传历史会话用量 ([9f52ee0](https://github.com/VOD-Studio/violet/commit/9f52ee0dfe8cad9a50cd3d25b8b961f857be38f7))
+* **omp-usage:** 支持补传历史会话用量 ([7c1b7ae](https://github.com/VOD-Studio/violet/commit/7c1b7aeabfb819f5c648c9884340121dbf3a82e7))
+* **profile:** 用量迁移到用户主页子路由 ([8fa2f20](https://github.com/VOD-Studio/violet/commit/8fa2f208c92c622537c6529c4e414816a3c42247))
+
+
+### 重构
+
+* **auth:** 抽出路由登录守卫 requireLogin ([f520388](https://github.com/VOD-Studio/violet/commit/f5203882e306745abfa1d9e4e78a2609afd8d364))
+
 ## [2.21.0](https://github.com/VOD-Studio/violet/compare/v2.20.0...v2.21.0) (2026-10-29)
 
 
