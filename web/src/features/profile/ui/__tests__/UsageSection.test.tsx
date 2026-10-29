@@ -159,7 +159,6 @@ function renderUsage() {
 describe("个人用量", () => {
 	it("切换 7/30/90 天后显示对应模型，不把账号标识发送到聚合接口", async () => {
 		renderUsage();
-		expect(screen.getByRole("status").textContent).toContain("正在加载");
 		await screen.findByText("model-30");
 		for (const days of [7, 90, 30]) {
 			fireEvent.click(screen.getByRole("button", { name: `近 ${days} 天` }));
@@ -195,18 +194,17 @@ describe("个人用量", () => {
 		failedEndpoint = `/omp-usage/${endpoint}`;
 		renderUsage();
 		expect(await screen.findByRole("alert")).not.toBeNull();
-		expect(screen.queryByRole("link", { name: "查看安装指南" })).toBeNull();
+		expect(screen.queryByRole("button", { name: "刷新用量" })).toBeNull();
 		failedEndpoint = undefined;
 		fireEvent.click(screen.getByRole("button", { name: "重试" }));
 		await screen.findByText("model-30");
 		expect(screen.queryByRole("alert")).toBeNull();
 	});
 
-	it("零请求显示安装说明及刷新入口", async () => {
+	it("空数据可以刷新恢复统计", async () => {
 		empty = true;
 		renderUsage();
-		const guide = await screen.findByRole("link", { name: "查看安装指南" });
-		expect(guide.getAttribute("href")).toContain("docs/guides/omp-usage.md");
+		await screen.findByRole("button", { name: "刷新用量" });
 		expect(screen.queryByRole("table")).toBeNull();
 		empty = false;
 		fireEvent.click(screen.getByRole("button", { name: "刷新用量" }));

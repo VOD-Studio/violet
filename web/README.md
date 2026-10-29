@@ -112,7 +112,7 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 
 页面沿用个人中心的客户端渲染，选中页签后通过 Session 请求 `/omp-usage/summary`、`/omp-usage/models`、`/omp-usage/timeseries`。查询按账号、会话版本和窗口隔离，统一标记 `meta.sessionScoped: true`；登出或会话失效时取消请求并清除缓存，不发送可选用户 ID，也不通过 SSR 预取私人用量。
 
-空记录提供[OMP 扩展安装指南](../docs/guides/omp-usage.md)。访问令牌表单的「用量上报」分组可单独选择 `usage:write`；该权限仅用于客户端上报，不授予读取其他用户统计的能力。模型、API 与展示模块均保留在 `features/profile/`，不引入通用统计组件包。
+空记录的「接入 OMP」面板直接提供原生 Marketplace 安装命令与本站配置模板，无需跳转文档；令牌不在面板中填写或保存。访问令牌表单的「用量上报」分组可单独选择 `usage:write`；该权限仅用于客户端上报，不授予读取其他用户统计的能力。[扩展指南](../docs/guides/omp-usage.md)补充升级、卸载与环境变量配置。
 
 ## 模块定位
 
