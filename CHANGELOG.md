@@ -7,6 +7,23 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.21.0](https://github.com/VOD-Studio/violet/compare/v2.20.0...v2.21.0) (2026-10-29)
+
+
+### 新增
+
+* **omp-usage:** 接入个人 OMP 用量看板 ([4ed3615](https://github.com/VOD-Studio/violet/commit/4ed36157bae57285329225507e53d535f55159dd))
+* **omp-usage:** 支持原生 Marketplace 安装 ([ce12179](https://github.com/VOD-Studio/violet/commit/ce12179820c48445fcef64fd0c236815aecbe099))
+* **profile:** 在用量页提供 OMP 接入面板 ([ec4b2bc](https://github.com/VOD-Studio/violet/commit/ec4b2bc4fdd28d08d22799221db9347c4627928d))
+
+
+### 修复
+
+* **ompusage:** 排除亚纳秒间隔的速率统计 ([cf2473e](https://github.com/VOD-Studio/violet/commit/cf2473ec15ca9e66ce0ba420e4ff0247ac146a2e))
+* **ompusage:** 校验重编号后的迁移快照 ([850b0c2](https://github.com/VOD-Studio/violet/commit/850b0c27cba29da2715e6c1d01c4c7faefc63111))
+* **profile:** 修正用量趋势的错误色 ([3789fa5](https://github.com/VOD-Studio/violet/commit/3789fa51a097eacd50b304643b96e9db0d1f91de))
+* **profile:** 整理个人中心侧栏交互 ([8bf83e5](https://github.com/VOD-Studio/violet/commit/8bf83e58875fd7cb8fbc3cb53740ad72586cbeda))
+
 ## [2.20.0](https://github.com/VOD-Studio/violet/compare/v2.19.0...v2.20.0) (2026-10-29)
 
 
