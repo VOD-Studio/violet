@@ -7,6 +7,19 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.22.1](https://github.com/VOD-Studio/violet/compare/v2.22.0...v2.22.1) (2026-10-29)
+
+
+### 修复
+
+* **seasonal-decor:** 修复角落插画被大幅裁切 ([85a025e](https://github.com/VOD-Studio/violet/commit/85a025e4c8cfb5a1dd0d53d2095dddcfeb4e696d))
+
+
+### 重构
+
+* **theme-switcher:** 将主题设置整合为单层面板 ([0df9ee5](https://github.com/VOD-Studio/violet/commit/0df9ee5f9ffce87e1fd28621bc8727a0cdfe4823))
+* **theme-switcher:** 整合主题与装饰设置面板 ([6eda9bc](https://github.com/VOD-Studio/violet/commit/6eda9bcea2dc08cc8db9811d94a1621ae5e87790))
+
 ## [2.22.0](https://github.com/VOD-Studio/violet/compare/v2.21.0...v2.22.0) (2026-10-29)
 
 
