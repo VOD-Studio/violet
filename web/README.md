@@ -196,6 +196,8 @@ Shiki 初始化、语言准备与分词在按需创建的 Web Worker 中执行�
 
 `make web-lint` 依次执行 Biome、颜色守门，以及人设颜色与四季预设主题的生成一致性检查。检查范围是 `src/`、`packages/` 内的 TSX 与 CSS，包括未加入 Git 的文件；新增裸色值、Tailwind 原生色板类或旧颜色类会失败，输出文件、行号和规则。`hover:bg-primary/90` 等透明主色悬停、CSS hover 中相同的透明混色也会失败；主要动作用 `primary-hover`，浅选中反馈用 `selected-hover`。带 `-text` 后缀的角色颜色类（如 `text-destructive-text`）会失败，文字直接写 `text-destructive`；CSS 的 `color`、`caret-color`、TSX 行内样式的 `color`，以及 `text-[var(--primary)]` 这类任意值类读取 `--primary`、`--destructive` 等实色角色也会失败，应读 `--primary-text` 等文字档。非 hover 的合法透明语义颜色、注释、链接锚点和 CSS ID 不误报。
 
+图表配置对象的 `color` 也会被检查；错误系列使用 `var(--destructive-text)`，保留错误语义并避免直接读取实色档。
+
 [color-guard.config.json](color-guard.config.json) 维护扫描根目录与带理由的豁免：颜色算法包、vendor、lab、构建产物、`*.generated.css` 和组件清单生成的 CSS 入口。手写的主题 CSS 与色板不豁免。
 
 [color-guard-baseline.json](color-guard-baseline.json) 记录现有违规的文件、规则、值和次数，不绑定行号。白名单只能删减，不能新增记录、增加次数或将额度移到其他文件；删除违规时须同步减少次数，归零则删除记录，不保留空闲额度。新增违规应改用语义 token，不重新生成或扩充白名单。

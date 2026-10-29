@@ -12,7 +12,7 @@ import { SectionCard } from "./SectionCard";
 
 const chartConfig = {
 	requests: { label: "请求数", color: "var(--chart-1)" },
-	errors: { label: "错误数", color: "var(--destructive)" },
+	errors: { label: "错误数", color: "var(--destructive-text)" },
 } satisfies ChartConfig;
 
 /** 按 UTC 自然日展示全部请求及其中的错误请求。 */
