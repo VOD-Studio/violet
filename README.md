@@ -38,7 +38,7 @@
 - MCP：按权限分域的六个 server（公开读取 / 评论 / 文章读写 / 抓取订阅 / 笔记 / 路线图），见 [MCP 使用指南](docs/guides/mcp-servers.md)
 - REST API 与 OpenAPI 文档，个人访问令牌自主管理
 - 聊天 Bot：外部程序以独立 token 参与聊天，收发图片、Markdown 回复与命令目录
-- OMP 用量：私有上报与个人看板，展示模型、Token 和 API 等价成本；[安装指南](docs/guides/omp-usage.md)
+- OMP 用量：原生插件安装、私有上报与个人看板，展示模型、Token 和 API 等价成本；[接入指南](docs/guides/omp-usage.md)
 
 ### 站点管理
 

@@ -1,0 +1,14 @@
+{
+  "name": "violet",
+  "owner": {
+    "name": "VOD Studio"
+  },
+  "plugins": [
+    {
+      "name": "omp-usage",
+      "source": "./tools/omp-violet-usage",
+      "version": "1.0.0",
+      "description": "Local OMP usage collector for compatible personal usage endpoints"
+    }
+  ]
+}

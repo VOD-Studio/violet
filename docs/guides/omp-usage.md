@@ -4,46 +4,65 @@
 
 **费用是 USD API 等价估算，不是订阅实际账单。** 扩展沿用 OMP 在该条消息上记录的 `usage.cost.total`，不读取订阅付款记录，也不重新计算供应商价格。免费额度、套餐、网关折扣与供应商最终结算可能不同。
 
-## 独立安装
+## 安装与管理
 
-扩展位于 `tools/omp-violet-usage/`，是 `private: true` 的本地包，通过 `package.json` 的 `omp.extensions` 声明入口 `violet-usage.ts`。运行时只导入 Node 内置模块；不依赖 Violet 前端、React、Go 服务代码或 npm 注册表，也不需要安装完整 OMP SDK。
+使用 OMP 原生 Marketplace 安装，无需复制文件、安装完整 SDK 或发布 npm 包。需要支持 Marketplace 扩展加载的 OMP；本指南的安装命令依据 OMP **18.13.2** 的官方文档，采集实现仍依据 **18.12.1**（上游 `291e055`）的消息 API。
 
-从 Violet 仓库根目录复制**整个目录**，而不是只复制 `.ts` 入口：
-
-```sh
-mkdir -p ~/.omp/agent/extensions
-cp -R tools/omp-violet-usage ~/.omp/agent/extensions/omp-violet-usage
-```
-
-或使用指向整个目录的符号链接，方便随仓库版本更新：
+**发布状态：**以下远程命令依赖 PR [#633](https://github.com/VOD-Studio/violet/pull/633) 合入并让远程默认分支包含 catalog；合入前请使用下方本地安装，不能将远程源视为已可用。
 
 ```sh
-mkdir -p ~/.omp/agent/extensions
-ln -s "$PWD/tools/omp-violet-usage" ~/.omp/agent/extensions/omp-violet-usage
+# 注册插件源并查看可安装插件
+omp plugin marketplace add VOD-Studio/violet
+omp plugin discover violet
+
+# 安装到当前 OMP profile，默认对该 profile 的所有项目生效
+omp install omp-usage@violet
 ```
 
-两种方式二选一；不要同时从不同链接、配置路径或副本加载同一个扩展。`runtime.mjs`、`events.mjs`、`spool.mjs` 都必须保留在入口旁边。使用 OMP profile 时，安装到该 profile 的 agent 扩展目录；`PI_CONFIG_DIR` / `PI_CODING_AGENT_DIR` 的发现规则由 OMP 决定，但本扩展的配置与 spool 始终在当前用户的 `~/.omp/` 下，便于同一用户的主会话、子会话和多个 OMP 进程共享队列。
+安装后退出并重新启动 OMP；扩展模块不能仅靠 `/reload-plugins` 完成加载。**安装不等于授权上传：**未配置站点和 PAT 时不采集、不建队列、不发送；接着按下文配置才会开始采集。
 
-也可以不安装，显式指定入口：
+升级前退出使用该扩展的 OMP 进程，更新源与插件后重新启动：
 
 ```sh
-omp -e "$PWD/tools/omp-violet-usage/violet-usage.ts"
+omp plugin marketplace update violet
+omp plugin upgrade --scope user omp-usage@violet
 ```
 
-`-e` 指定额外扩展。隔离扩展发现时可使用 `--no-extensions -e <入口>`；它只关闭环境中的扩展发现，不代表关闭所有 MCP、规则或其他能力。
+卸载同样需要退出并重启 OMP，命令不会删除独立保存的配置与待发队列：
 
-### 版本与更新
+```sh
+omp plugin uninstall --scope user omp-usage@violet
 
-本实现依据 OMP **18.12.1**（上游 `291e055`）的扩展与消息 API 编写。行为测试使用 Node 24+ 原生 TypeScript 类型擦除，不需要 Bun 命令或依赖安装：
+# 可选：不再使用该源时，移除源注册
+omp plugin marketplace remove violet
+```
+
+移除源不会代替卸载插件。需要仅在当前项目启用时，安装命令加 `--scope project`，升级、卸载也相应使用 `--scope project`。使用命名 profile 时，为这些命令选择与运行会话相同的 profile；插件状态由 OMP 管理，但本扩展的配置与队列固定在当前用户的 `~/.omp/` 下。
+
+### 本地开发
+
+在 Violet 仓库根目录使用原生本地安装；它链接整个扩展目录，不需要手动创建软链接：
+
+```sh
+omp install ./tools/omp-violet-usage
+```
+
+本地目录更新后重启 OMP 即可；不要对本地链接执行 Marketplace 升级。卸载使用包名：
+
+```sh
+omp plugin uninstall @violet/omp-usage
+```
+
+本地链接和 Marketplace 安装二选一，不要与旧的手动副本、`-e` 参数或其他配置重复加载。扩展的 `package.json` 以 `omp.extensions` 声明 `violet-usage.ts`；`runtime.mjs`、`events.mjs`、`spool.mjs` 必须与入口一起保留，运行时仅依赖 Node 内置模块。
+
+维护者可运行以下命令，行为测试需要 Node 24+：
 
 ```sh
 make omp-usage-extension-test
 make omp-usage-extension-pack
 ```
 
-打包默认输出到 `/tmp/`，可用 `OMP_USAGE_PACK_DEST` 指定目录；解包后仍须保留整个 `package/` 目录。该命令不向 npm 发布。
-
-升级时先退出使用该副本的 OMP 进程，再更新整个目录并重新启动。符号链接安装同样需要重启，以便 OMP 重新加载模块图。配置与待发队列不在包目录内，替换代码不会删除它们。卸载时移除扩展目录或其配置引用即可停止采集；不要为了卸载自动删除尚未送达的队列。
+打包默认输出到 `/tmp/`，可用 `OMP_USAGE_PACK_DEST` 指定目录；归档包含完整 `package/`，不向 npm 发布。安装与升级行为参见 OMP **18.13.2** 官方 [Marketplace 文档](https://github.com/can1357/oh-my-pi/blob/v18.13.2/docs/marketplace.md)与[插件安装机制](https://github.com/can1357/oh-my-pi/blob/v18.13.2/docs/plugin-manager-installer-plumbing.md)。
 
 ## 创建 PAT
 

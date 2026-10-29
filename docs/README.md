@@ -33,7 +33,7 @@
 
 ## OMP 用量接入
 
-- [采集扩展安装与隐私说明](./guides/omp-usage.md)：PAT、目标站点、离线队列和看板统计口径。
+- [采集扩展安装与隐私说明](./guides/omp-usage.md)：OMP 原生 Marketplace 安装与管理、PAT、目标站点、离线队列和看板统计口径。
 - [共享 PostgreSQL 契约](../api/pkg/ompusage/README.md)：参数绑定、原生宿主职责、独立打包与 Rust 消费验收；不依赖 Violet 的鉴权或 UI。
 
 ## 使用约定
