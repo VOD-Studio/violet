@@ -276,7 +276,9 @@ function TocItem({
 				aria-hidden
 				className={cn(
 					"min-w-4 flex-1 self-center border-b border-dotted transition-colors",
-					active ? "border-primary/50" : "border-border/70 group-hover:border-primary/40",
+					active
+						? "border-selected-foreground"
+						: "border-border/70 group-hover:border-selected-foreground",
 				)}
 			/>
 			<span className="font-mono text-[10px] text-muted-foreground/60 tabular-nums">

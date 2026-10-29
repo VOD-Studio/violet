@@ -62,6 +62,7 @@ function useAdminTitle(): string {
 	if (pathname.startsWith("/admin/series")) return "系列书管理";
 	if (pathname.startsWith("/admin/galleries")) return "图集管理";
 	if (pathname.startsWith("/admin/notes")) return "笔记管理";
+	if (pathname.startsWith("/admin/presence")) return "实时状态";
 	if (pathname.startsWith("/admin/settings/rate-limit")) return "请求限流";
 	if (pathname.startsWith("/admin/settings/image")) return "图片与缓存";
 	if (pathname.startsWith("/admin/settings/upload-queue")) return "上传队列";

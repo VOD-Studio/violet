@@ -3,10 +3,11 @@ import { ImagePreview, useImagePreview } from "@shared/ui/image-preview";
 import { cn } from "cn";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
+import type { TweetImageRef } from "@/entities/tweet/model/types";
 
 export interface TweetDetailMediaProps {
 	/** 本站推文图片，按发布顺序。 */
-	images: string[];
+	images: TweetImageRef[];
 	className?: string;
 }
 
@@ -20,6 +21,7 @@ export function TweetDetailMedia({ images, className }: TweetDetailMediaProps) {
 	const [index, setIndex] = useState(0);
 	const preview = useImagePreview();
 	if (images.length === 0) return null;
+	const urls = images.map((img) => img.url);
 	const current = Math.min(index, images.length - 1);
 	const many = images.length > 1;
 	const go = (next: number) => setIndex((next + images.length) % images.length);
@@ -33,13 +35,8 @@ export function TweetDetailMedia({ images, className }: TweetDetailMediaProps) {
 				tabIndex={many ? 0 : undefined}
 				onKeyDown={(event) => {
 					if (!many) return;
-					if (event.key === "ArrowLeft") {
-						event.preventDefault();
-						go(current - 1);
-					} else if (event.key === "ArrowRight") {
-						event.preventDefault();
-						go(current + 1);
-					}
+					if (event.key === "ArrowLeft") go(current - 1);
+					if (event.key === "ArrowRight") go(current + 1);
 				}}
 				className="group/stage relative flex min-h-56 items-center justify-center overflow-hidden rounded-xl bg-muted/50 lg:h-[min(72svh,760px)] ring-1 ring-border ring-inset outline-none focus-visible:ring-2 focus-visible:ring-ring"
 			>
@@ -48,16 +45,16 @@ export function TweetDetailMedia({ images, className }: TweetDetailMediaProps) {
 					aria-label={`放大查看第 ${current + 1} 张图片`}
 					onClick={(event) =>
 						preview.openPreview(
-							images,
+							urls,
 							current,
 							event.currentTarget,
-							images.map((url) => contentImageUrl(url, { width: 400 })),
+							urls.map((url) => contentImageUrl(url, { width: 400 })),
 						)
 					}
 					className="flex size-full cursor-zoom-in items-center justify-center"
 				>
 					<img
-						src={contentImageUrl(images[current], { width: 1200 })}
+						src={contentImageUrl(urls[current], { width: 1200 })}
 						alt={`推文图片 ${current + 1}`}
 						className="max-h-[75svh] max-w-full object-contain lg:max-h-full"
 					/>
@@ -88,8 +85,8 @@ export function TweetDetailMedia({ images, className }: TweetDetailMediaProps) {
 			</div>
 			{many && (
 				<ul className="-m-1 flex gap-2 overflow-x-auto p-1">
-					{images.map((url, i) => (
-						<li key={`${url}:${i}`} className="shrink-0">
+					{images.map((img, i) => (
+						<li key={`${img.url}:${i}`} className="shrink-0">
 							<button
 								type="button"
 								aria-label={`查看第 ${i + 1} 张图片`}
@@ -103,7 +100,7 @@ export function TweetDetailMedia({ images, className }: TweetDetailMediaProps) {
 								)}
 							>
 								<img
-									src={contentImageUrl(url, { width: 200 })}
+									src={contentImageUrl(img.url, { width: 200 })}
 									alt=""
 									loading="lazy"
 									className="size-full object-cover"

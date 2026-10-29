@@ -407,7 +407,7 @@ func tweetToPO(t *domaintweet.Tweet) model.Tweet {
 		ID:        t.ID().UUID(),
 		AuthorID:  t.AuthorID().UUID(),
 		Content:   t.Content(),
-		Images:    datatypes.JSONSlice[string](t.Images()),
+		Images:    imageRefsToPO(t.Images()),
 		LikeCount: t.LikeCount(),
 	}
 	if q := t.QuoteOf(); q != nil {
@@ -454,13 +454,31 @@ func tweetToDomain(po model.Tweet) (*domaintweet.Tweet, error) {
 		domainshared.MustParseID(po.ID.String()),
 		domainshared.MustParseID(po.AuthorID.String()),
 		po.Content,
-		[]string(po.Images),
+		imageRefsFromPO(po.Images),
 		quoteOf,
 		po.LikeCount,
 		po.CreatedAt,
 		po.UpdatedAt,
 		pub,
 	), nil
+}
+
+// imageRefsToPO 领域图片引用 → 持久化 JSON 元素。
+func imageRefsToPO(refs []domaintweet.ImageRef) datatypes.JSONSlice[model.TweetImagePO] {
+	pos := make(datatypes.JSONSlice[model.TweetImagePO], 0, len(refs))
+	for _, r := range refs {
+		pos = append(pos, model.TweetImagePO{URL: r.URL(), Width: r.Width(), Height: r.Height()})
+	}
+	return pos
+}
+
+// imageRefsFromPO 持久化 JSON 元素 → 领域图片引用。
+func imageRefsFromPO(pos datatypes.JSONSlice[model.TweetImagePO]) []domaintweet.ImageRef {
+	refs := make([]domaintweet.ImageRef, 0, len(pos))
+	for _, p := range pos {
+		refs = append(refs, domaintweet.NewImageRef(p.URL, p.Width, p.Height))
+	}
+	return refs
 }
 
 // 编译期断言：仓储实现满足领域接口。

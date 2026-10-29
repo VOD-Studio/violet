@@ -19,7 +19,7 @@ func TestNewTweet_Valid(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, authorID, tw.AuthorID())
 		assert.Equal(t, "今天天气不错", tw.Content())
-		assert.Equal(t, []string{}, tw.Images(), "默认 images 应空切片非 nil")
+		assert.Equal(t, []ImageRef{}, tw.Images(), "默认 images 应空切片非 nil")
 		assert.Nil(t, tw.QuoteOf())
 		assert.Equal(t, 0, tw.LikeCount())
 		assert.False(t, tw.ID().IsZero())
@@ -27,7 +27,7 @@ func TestNewTweet_Valid(t *testing.T) {
 	})
 
 	t.Run("纯图片", func(t *testing.T) {
-		tw, err := NewTweet(authorID, "", []string{"/uploads/tweet/a.webp"}, nil)
+		tw, err := NewTweet(authorID, "", []ImageRef{NewImageRef("/uploads/tweet/a.webp", nil, nil)}, nil)
 		require.NoError(t, err)
 		assert.Equal(t, "", tw.Content())
 		assert.Len(t, tw.Images(), 1)
@@ -81,20 +81,20 @@ func TestNewTweet_ImageBoundary(t *testing.T) {
 	authorID := shared.NewID()
 
 	t.Run("4 张图通过", func(t *testing.T) {
-		imgs := []string{"/u/1.webp", "/u/2.webp", "/u/3.webp", "/u/4.webp"}
+		imgs := []ImageRef{NewImageRef("/u/1.webp", nil, nil), NewImageRef("/u/2.webp", nil, nil), NewImageRef("/u/3.webp", nil, nil), NewImageRef("/u/4.webp", nil, nil)}
 		tw, err := NewTweet(authorID, "", imgs, nil)
 		require.NoError(t, err)
 		assert.Len(t, tw.Images(), 4)
 	})
 
 	t.Run("5 张图拒绝", func(t *testing.T) {
-		imgs := []string{"/u/1.webp", "/u/2.webp", "/u/3.webp", "/u/4.webp", "/u/5.webp"}
+		imgs := []ImageRef{NewImageRef("/u/1.webp", nil, nil), NewImageRef("/u/2.webp", nil, nil), NewImageRef("/u/3.webp", nil, nil), NewImageRef("/u/4.webp", nil, nil), NewImageRef("/u/5.webp", nil, nil)}
 		_, err := NewTweet(authorID, "", imgs, nil)
 		require.Error(t, err)
 	})
 
 	t.Run("空 URL 元素拒绝", func(t *testing.T) {
-		_, err := NewTweet(authorID, "", []string{"  "}, nil)
+		_, err := NewTweet(authorID, "", []ImageRef{NewImageRef("  ", nil, nil)}, nil)
 		require.Error(t, err)
 	})
 }
@@ -105,10 +105,10 @@ func TestNewTweet_EmptyContentAndImages(t *testing.T) {
 	cases := []struct {
 		name    string
 		content string
-		images  []string
+		images  []ImageRef
 	}{
 		{"空内容 + nil 图片", "", nil},
-		{"空内容 + 空图片切片", "", []string{}},
+		{"空内容 + 空图片切片", "", []ImageRef{}},
 		{"纯空白内容 trim 后视同空", "  \n\t ", nil},
 	}
 	for _, c := range cases {
@@ -147,7 +147,7 @@ func TestNewTweetCreated_ExcerptTruncation(t *testing.T) {
 func TestReconstructTweet(t *testing.T) {
 	id := shared.NewID()
 	authorID := shared.NewID()
-	images := []string{"/u/a.webp"}
+	images := []ImageRef{NewImageRef("/u/a.webp", nil, nil)}
 	now := time.Now()
 	quoteID := shared.NewID()
 	tw := ReconstructTweet(id, authorID, "重建", images, &quoteID, 7, now, now)

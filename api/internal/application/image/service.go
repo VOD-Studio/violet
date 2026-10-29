@@ -180,5 +180,9 @@ func cacheKey(source []byte, params domainimage.TransformParams, policy domainse
 	h := sha256.New()
 	h.Write(source)
 	fmt.Fprintf(h, "\x00%s\x00%d\x00%+v", params.Key(), version, policy)
+	if params.Format == "webp" && params.Quality > 0 {
+		// 旧缓存中的 WebP 忽略请求质量，不能复用为有损展示派生图。
+		h.Write([]byte("\x00webp-request-quality-v1"))
+	}
 	return hex.EncodeToString(h.Sum(nil))
 }

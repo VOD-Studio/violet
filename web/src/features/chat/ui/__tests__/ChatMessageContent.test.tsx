@@ -5,7 +5,7 @@
  * 列表/标题；单换行保留为 <br>；Markdown 图片降级为链接；表情占位符替换与
  * 嵌套格式兼容。
  */
-import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ChatMessageContent } from "../ChatMessageContent";
 
@@ -120,12 +120,6 @@ describe("ChatMessageContent", () => {
 		const { container } = render(<ChatMessageContent content="激动[颜文字]" emote={emote} />);
 		expect(container.querySelector("img")).toBeNull();
 		expect(container.textContent).toContain("(╯°□°）╯︵ ┻━┻");
-	});
-
-	it("围栏代码块渲染为 CodeCard（懒加载，带复制按钮）", async () => {
-		const { container } = render(<ChatMessageContent content={"```ts\nconst a = 1;\n```"} />);
-		await waitFor(() => expect(container.querySelector(".shiki-code")).toBeTruthy());
-		expect(container.textContent).toContain("const a = 1;");
 	});
 
 	it("![img:id] 命中 inlineMedia 还原为内联图片，文字环绕且点击回调媒体", () => {

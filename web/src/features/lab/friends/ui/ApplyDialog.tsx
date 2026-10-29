@@ -73,6 +73,7 @@ export function ApplyDialog({
 
 	return (
 		<Modal
+			className="lab-scope"
 			open={open}
 			onOpenChange={(v) => {
 				onOpenChange(v);

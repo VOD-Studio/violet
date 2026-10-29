@@ -1,5 +1,8 @@
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
+
+/** 默认 1 秒的异步查询超时在 CI 的 2 核 runner 与满载机器上会让懒加载组件的用例偶发失败。 */
+configure({ asyncUtilTimeout: 5000 });
 
 /**
  * vitest 未开 globals 时 RTL 不会自动卸载组件，跨用例残留的 mounted 树会
@@ -26,12 +29,31 @@ Object.defineProperty(globalThis, "ResizeObserver", {
 });
 
 /**
- * jsdom 未实现 IntersectionObserver，DecryptedText 等可见性动效组件在挂载时依赖。
+ * jsdom 无布局；语义测试默认把挂载元素视为可见，视口边界测试需使用受控观察器。
  */
 class IntersectionObserverMock {
-	observe = vi.fn();
-	unobserve = vi.fn();
-	disconnect = vi.fn();
+	private targets = new Set<Element>();
+
+	constructor(private callback: IntersectionObserverCallback) {}
+
+	observe = vi.fn((target: Element) => {
+		this.targets.add(target);
+		queueMicrotask(() => {
+			if (!this.targets.has(target)) return;
+			this.callback(
+				[
+					{
+						target,
+						isIntersecting: true,
+						intersectionRatio: 1,
+					} as IntersectionObserverEntry,
+				],
+				this as unknown as IntersectionObserver,
+			);
+		});
+	});
+	unobserve = vi.fn((target: Element) => this.targets.delete(target));
+	disconnect = vi.fn(() => this.targets.clear());
 }
 
 Object.defineProperty(globalThis, "IntersectionObserver", {

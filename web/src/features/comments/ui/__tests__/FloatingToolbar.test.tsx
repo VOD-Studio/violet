@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { useRef } from "react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { FloatingToolbar } from "../FloatingToolbar";
@@ -19,14 +19,14 @@ const paragraph = "选中文字在滚动和编辑期间仍然保持原来的讨�
 let rangeTop = 120;
 let client: QueryClient;
 
-function Harness() {
+function Harness({ toolbar = true }: { toolbar?: boolean }) {
 	const contentRef = useRef<HTMLDivElement>(null);
 	return (
 		<>
 			<div ref={contentRef} role="region" aria-label="文章正文">
 				<p>{paragraph}</p>
 			</div>
-			<FloatingToolbar contentRef={contentRef} postId="post-1" isLoggedIn />
+			{toolbar && <FloatingToolbar contentRef={contentRef} postId="post-1" isLoggedIn />}
 		</>
 	);
 }
@@ -50,12 +50,44 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+	vi.useRealTimers();
 	client.clear();
 	window.getSelection()?.removeAllRanges();
 	if (originalRect) Object.defineProperty(Range.prototype, "getBoundingClientRect", originalRect);
 	else Reflect.deleteProperty(Range.prototype, "getBoundingClientRect");
 	if (originalRects) Object.defineProperty(Range.prototype, "getClientRects", originalRects);
 	else Reflect.deleteProperty(Range.prototype, "getClientRects");
+});
+
+it("延迟挂载时接管已有选区，同帧滚动不能取消批注入口", async () => {
+	const view = render(
+		<QueryClientProvider client={client}>
+			<Harness toolbar={false} />
+		</QueryClientProvider>,
+	);
+	const block = screen.getByLabelText("文章正文").querySelector("p");
+	if (!block?.firstChild) throw new Error("缺少正文夹具");
+	const range = document.createRange();
+	range.setStart(block.firstChild, 0);
+	range.setEnd(block.firstChild, 4);
+	window.getSelection()?.addRange(range);
+	const { promise, resolve } = Promise.withResolvers<void>();
+	setTimeout(resolve, 0);
+	await promise;
+
+	vi.useFakeTimers({ toFake: ["requestAnimationFrame", "cancelAnimationFrame"] });
+	view.rerender(
+		<QueryClientProvider client={client}>
+			<Harness />
+		</QueryClientProvider>,
+	);
+	fireEvent.scroll(window);
+	await act(() => vi.advanceTimersToNextFrame());
+	const annotate = await screen.findByRole("button", { name: "划线批注" });
+	fireEvent.click(annotate);
+	const toolbar = screen.getByRole("toolbar", { name: "批注工具" });
+	expect(within(toolbar).getByText("选中文字")).toBeTruthy();
+	expect(within(toolbar).getByRole("textbox", { name: "评论内容" })).toBeTruthy();
 });
 
 it("划线编辑离屏后不可交互，滚回恢复同一草稿且提交原选区", async () => {

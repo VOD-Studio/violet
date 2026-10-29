@@ -12,6 +12,23 @@ import { Dropdown as LeafDropdown, DropdownContent as LeafDropdownContent, Dropd
 import { Segmented } from "@violet/ui";
 import { Segmented as LeafSegmented } from "@violet/ui/segmented";
 import { UploadTile as LeafUploadTile } from "@violet/ui/upload-tile";
+import { LinkCard } from "@violet/ui";
+import { LinkCard as LeafLinkCard } from "@violet/ui/link-card";
+
+const cardProps = { href: "https://www.example.com/guide#native", title: "y_defect的推文", description: "@y_defect的推文", siteName: "EXAMPLE.COM", imageSrc: "https://example.com/logo.png", imageAlt: "Example logo" };
+const card = renderToString(<LinkCard {...cardProps} />);
+assert.equal(card, renderToString(<LeafLinkCard {...cardProps} />));
+assert.match(card, /<a\b[^>]*href="https:\/\/www\.example\.com\/guide#native"/);
+assert.match(card, /class="v-link-card"/);
+assert.match(card, /target="_blank"/);
+assert.match(card, /rel="noopener noreferrer nofollow"/);
+assert.match(card, /<img\b[^>]*alt="Example logo"/);
+assert.doesNotMatch(card, /@y_defect的推文|EXAMPLE\.COM/);
+assert.equal((card.match(/>example\.com</g) ?? []).length, 1);
+const textCard = renderToString(<LeafLinkCard href="/guide" title="本地指南" target="_self" />);
+assert.doesNotMatch(textCard, /<img|v-link-card__thumbnail|v-link-card__host/);
+assert.match(textCard, /target="_self"/);
+assert.match(textCard, /本地指南/);
 
 const uploadTile = renderToString(<UploadTile aria-label="添加图片" name="action" value="upload" />);
 assert.equal(uploadTile, renderToString(<LeafUploadTile aria-label="添加图片" name="action" value="upload" />));

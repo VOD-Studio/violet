@@ -137,6 +137,9 @@ var (
 	PersonaManage = MustParse("persona:manage") // 创建、保存、激活与删除人设档案
 	MusicView     = MustParse("music:view")
 	MusicManage   = MustParse("music:manage")
+	// presence
+	PresenceView   = MustParse("presence:view")   // Nowbeam 设备列表、连接诊断与公开设置
+	PresenceManage = MustParse("presence:manage") // 签发与撤销设备凭证、切换公开读取
 )
 
 // ============================================================

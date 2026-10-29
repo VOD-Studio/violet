@@ -1,7 +1,8 @@
+import { SITE_URL } from "@shared/config/env";
 import { describe, expect, it } from "vitest";
 import {
 	avatarUrl,
-	contentImageSrcSet,
+	contentImageSources,
 	contentImageUrl,
 	imageUrl,
 	originalImageUrl,
@@ -69,7 +70,7 @@ describe("imageUrl 合并已有查询参数", () => {
 describe("contentImageUrl", () => {
 	it("静态图走 w 档 + webp", () => {
 		expect(contentImageUrl("/uploads/a.jpg", { width: 1200 })).toBe(
-			"/uploads/a.jpg?w=1200&format=webp",
+			"/uploads/a.jpg?w=1200&format=webp&quality=80",
 		);
 	});
 
@@ -84,17 +85,64 @@ describe("contentImageUrl", () => {
 		expect(u).toContain("w=800");
 		expect(decodeURIComponent(u)).toContain("crop=0.1,0.2,0.5,0.5");
 	});
+
+	it("展示图移除旧 thumb/h，但保留作者 crop", () => {
+		const url = contentImageUrl("/uploads/a.png?thumb=200x200&h=200&crop=0.1,0.2,0.5,0.5", {
+			width: 920,
+		});
+		const params = new URL(url, SITE_URL).searchParams;
+		expect(params.get("thumb")).toBeNull();
+		expect(params.get("h")).toBeNull();
+		expect(params.get("crop")).toBe("0.1,0.2,0.5,0.5");
+		expect(params.get("quality")).toBe("80");
+	});
+
+	it("本站绝对地址可缩放，外链和数据地址不套用本站编码协议", () => {
+		expect(contentImageUrl(`${SITE_URL}/uploads/a.png`, { width: 360 })).toBe(
+			`${SITE_URL}/uploads/a.png?w=360&format=webp&quality=80`,
+		);
+		for (const src of [
+			"https://external.example/uploads/a.png?w=200&quality=95",
+			"//external.example/uploads/a.png",
+			"data:image/png;base64,abc",
+		]) {
+			expect(contentImageUrl(src, { width: 360 })).toBe(src);
+			expect(contentImageSources(src, [360, 720])).toEqual([]);
+			expect(originalImageUrl(src)).toBe(src);
+		}
+	});
+
+	it("已带转换参数的 GIF 还原原图，避免动画变成静态首帧", () => {
+		expect(contentImageUrl("/uploads/a.gif?w=920&format=webp&quality=80", { width: 360 })).toBe(
+			"/uploads/a.gif",
+		);
+	});
 });
 
-describe("contentImageSrcSet", () => {
-	it("静态图按候选宽度生成可选档位", () => {
-		expect(contentImageSrcSet("/uploads/a.jpg", [640, 1024])).toBe(
-			"/uploads/a.jpg?w=640&format=webp 640w, /uploads/a.jpg?w=1024&format=webp 1024w",
-		);
+describe("contentImageSources", () => {
+	it("候选按视口和 DPR 选择，但不谎报后端实际输出宽度", () => {
+		const sources = contentImageSources("/uploads/a.jpg", [360, 720, 1200], 600);
+		expect(sources[0]).toEqual({
+			media: expect.stringContaining("(max-resolution: 1dppx) and (max-width: 360px)"),
+			srcSet: "/uploads/a.jpg?w=360&format=webp&quality=80",
+		});
+		expect(sources[1]).toEqual({
+			media: expect.stringContaining("(max-resolution: 1dppx)"),
+			srcSet: "/uploads/a.jpg?w=720&format=webp&quality=80",
+		});
+		for (const source of sources) {
+			expect(source.srcSet).not.toMatch(/\s\d+(?:w|x)(?:,|$)/);
+		}
 	});
 
 	it("GIF 不生成无法区分的重复候选", () => {
-		expect(contentImageSrcSet("/uploads/a.gif", [640, 1024])).toBeUndefined();
+		expect(contentImageSources("/uploads/a.gif", [640, 1024])).toEqual([]);
+	});
+
+	it("请求档位超过接口上限时钳制并去重", () => {
+		const sources = contentImageSources("/uploads/a.png", [4096, 8192]);
+		expect(sources).toHaveLength(1);
+		expect(sources.every((source) => source.srcSet.includes("w=4096&"))).toBe(true);
 	});
 });
 

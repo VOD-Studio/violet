@@ -4,16 +4,21 @@ import { cn } from "cn";
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import defaultPalette from "../../../../../packages/ui/src/styles/palettes/violet.css?raw";
-import themeMapping from "../../../../../packages/ui/src/styles/theme.css?raw";
-import baseTokens from "../../../../../packages/ui/src/styles/tokens.css?raw";
+import labTokens from "../../lab-tokens.css?raw";
 
 export interface TokenExportSectionProps {
 	className?: string;
 }
 
-const CSS_SNIPPET = `${baseTokens}\n\n${defaultPalette}`;
-const TAILWIND_SNIPPET = themeMapping;
+const CSS_SNIPPET = labTokens;
+const TAILWIND_SNIPPET = `<!-- 在 .lab-scope 内使用局部变量，不注册全局 @theme 颜色。 -->
+<div class="lab-scope">
+  <span class="text-(--primary-base)">紫罗兰主色</span>
+  <span class="bg-(--primary-base-soft) text-(--primary-base-soft-foreground)">
+    柔和表面
+  </span>
+  <span class="text-(--neon-blue)">霓虹蓝</span>
+</div>`;
 
 const JSON_SNIPPET = `{
   "name": "Violet Cold Fragrance Palette",
@@ -96,7 +101,7 @@ export function TokenExportSection({ className }: TokenExportSectionProps) {
 			>
 				<TabsList className="mb-4">
 					<TabsTrigger value="css">CSS Variables</TabsTrigger>
-					<TabsTrigger value="tailwind">Tailwind v4 @theme</TabsTrigger>
+					<TabsTrigger value="tailwind">Tailwind v4 局部变量</TabsTrigger>
 					<TabsTrigger value="json">JSON Tokens</TabsTrigger>
 				</TabsList>
 

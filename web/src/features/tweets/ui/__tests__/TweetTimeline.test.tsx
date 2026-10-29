@@ -17,7 +17,10 @@ const globalQuery = {
 		pages: [
 			{
 				data: [
-					fixture("global-one", { content: "#开发# 今天", images: ["/uploads/a.png"] }),
+					fixture("global-one", {
+						content: "#开发# 今天",
+						images: [{ url: "/uploads/a.png", width: 800, height: 600 }],
+					}),
 				],
 			},
 			{ data: [fixture("global-two", { content: "#开发# 再来" })] },

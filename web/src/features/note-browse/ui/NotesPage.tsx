@@ -198,7 +198,7 @@ function FieldNoteTicket({ note, index }: { note: PublicNote; index: number }) {
 		>
 			{/* 顶部左上悬浮装饰角标 */}
 			<div className="absolute top-0 right-0 h-10 w-10 overflow-hidden">
-				<div className="absolute top-[-20px] right-[-20px] size-10 rotate-45 bg-edge-hairline transition-colors group-hover:bg-primary/30" />
+				<div className="absolute -top-5 -right-5 size-10 rotate-45 bg-edge-hairline transition-colors group-hover:bg-decoration-muted" />
 			</div>
 			<div>
 				{/* 工单顶栏：编号 + 日期 + 格式标识 */}

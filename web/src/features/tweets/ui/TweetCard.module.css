@@ -21,13 +21,13 @@
 	background: var(--card);
 }
 
-.interactive {
-	cursor: pointer;
-	transition: border-color 160ms ease;
+:is(.card, .references) a[data-slot="link-card"] {
+	color: var(--card-foreground);
+	text-decoration: none;
 }
 
-.interactive:hover {
-	border-color: var(--border);
+.interactive {
+	cursor: pointer;
 }
 
 .interactive:focus-visible {
@@ -38,11 +38,5 @@
 @media (width < 40rem) {
 	.card {
 		padding: 1rem;
-	}
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.interactive {
-		transition: none;
 	}
 }

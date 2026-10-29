@@ -53,7 +53,14 @@ describe("summarizeFeed", () => {
 		} as unknown as Tweet["external_tweet"];
 		const { photos } = summarizeFeed([
 			tweet({ id: "2", external_tweet: external }),
-			tweet({ id: "1", images: Array.from({ length: 12 }, (_, i) => `/uploads/${i}.png`) }),
+			tweet({
+				id: "1",
+				images: Array.from({ length: 12 }, (_, i) => ({
+					url: `/uploads/${i}.png`,
+					width: null,
+					height: null,
+				})),
+			}),
 		]);
 		expect(photos).toHaveLength(9);
 		expect(photos[0]).toEqual({ src: "/x/1-t.png", tweetId: "2" });

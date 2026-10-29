@@ -1,5 +1,5 @@
 /* Pure CSS variables; no Tailwind directives or reset. */
 @layer theme, base, components, utilities;
 @import "./styles/tokens.css";
-@import "./styles/palettes/violet.css";
+@import "./styles/palettes/violet.generated.css";
 @import "./styles/foundation.css";

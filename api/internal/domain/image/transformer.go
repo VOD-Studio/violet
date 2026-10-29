@@ -20,10 +20,13 @@ type TransformParams struct {
 	// thumbW 缩略图宽度(px);需与 thumbH 同时 >0 才生效,强制裁剪到精确尺寸
 	ThumbW int
 	// thumbH 缩略图高度(px);需与 thumbW 同时 >0 才生效,强制裁剪到精确尺寸
-	ThumbH  int
-	Rotate  int    // 0|90|180|270
-	Format  string // jpeg|png|webp
-	Quality int    // 1-100
+	ThumbH int
+	// rotate 旋转角度：0、90、180 或 270。
+	Rotate int
+	// format 输出格式：jpeg、png 或 webp；动画源图保持原格式。
+	Format string
+	// quality 为 0 时使用运行策略；1-100 指定 JPEG 或请求级有损 WebP 质量。
+	Quality int
 }
 
 // Key 返回用于缓存 key 的参数序列化。

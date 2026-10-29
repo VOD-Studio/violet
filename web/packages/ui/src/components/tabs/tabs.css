@@ -97,7 +97,7 @@
 .v-tabs__list--line .v-tabs__tab[aria-selected="true"] {
 	background-color: transparent;
 	border-color: transparent;
-	color: var(--primary);
+	color: var(--primary-text);
 	box-shadow: none;
 }
 

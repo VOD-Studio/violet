@@ -1,6 +1,6 @@
 /*
  * 人设公开档案页 —— 日系高级画报与展板交错排版系统（Atelier & Spec Dossier）
- * 贯通全站公共方言与主题强调色（var(--primary) 暖珊瑚），提供自然比例的大幅交错设定展板。
+ * 身份点缀色由人设局部色阶生成，页面表面沿用站点公共方言。
  */
 
 .page {
@@ -9,9 +9,9 @@
 	--persona-muted: color-mix(in oklab, var(--persona-ink) 58%, var(--persona-canvas));
 	--persona-faint: color-mix(in oklab, var(--persona-ink) 3.5%, var(--persona-canvas));
 	--persona-hairline: color-mix(in oklab, var(--persona-ink) 11%, transparent);
-	--persona-accent: var(--primary);
-	--persona-accent-soft: color-mix(in oklab, var(--primary) 36%, transparent);
-	--persona-accent-glint: color-mix(in oklab, var(--primary) 12%, transparent);
+	--persona-accent: var(--identity-text);
+	--persona-accent-soft: var(--identity-border);
+	--persona-accent-glint: color-mix(in oklab, var(--identity-decoration) 12%, transparent);
 
 	min-height: calc(100dvh - 4rem);
 	background: var(--persona-canvas);
@@ -27,8 +27,8 @@
 }
 
 .page ::selection {
-	background: color-mix(in oklab, var(--persona-accent) 26%, transparent);
-	color: var(--persona-ink);
+	background: var(--identity-surface);
+	color: var(--identity-text);
 }
 
 /* ==========================================================================
@@ -54,8 +54,8 @@
 	border-radius: 50%;
 	background: radial-gradient(
 		circle,
-		color-mix(in oklab, var(--persona-accent) 8%, transparent) 0%,
-		color-mix(in oklab, var(--persona-accent) 2%, transparent) 60%,
+		color-mix(in oklab, var(--identity-decoration) 8%, transparent) 0%,
+		color-mix(in oklab, var(--identity-decoration) 2%, transparent) 60%,
 		transparent 100%
 	);
 	filter: blur(6.5rem);
@@ -97,7 +97,7 @@
 }
 
 .visualButton:hover {
-	border-color: color-mix(in oklab, var(--persona-accent) 48%, var(--persona-hairline));
+	border-color: var(--identity-border);
 	box-shadow:
 		0 1.5rem 4rem color-mix(in oklab, var(--persona-ink) 11%, transparent),
 		0 0 3.5rem var(--persona-accent-glint);
@@ -106,7 +106,7 @@
 .visualButton:focus-visible,
 .plateButton:focus-visible,
 .continueLink:focus-visible {
-	outline: 2px solid var(--persona-accent);
+	outline: 2px solid var(--identity-border);
 	outline-offset: 4px;
 }
 
@@ -198,7 +198,7 @@
 }
 
 .localeBtn:focus-visible {
-	outline: 2px solid var(--persona-accent);
+	outline: 2px solid var(--identity-border);
 	outline-offset: 3px;
 	border-radius: 2px;
 }
@@ -241,7 +241,7 @@
 	width: 0.4rem;
 	height: 0.4rem;
 	border-radius: 50%;
-	background: var(--persona-accent);
+	background: var(--identity-decoration);
 	opacity: 0.8;
 	flex-shrink: 0;
 }
@@ -261,7 +261,7 @@
 	max-width: 34rem;
 	margin: 2.1rem 0 0;
 	padding: 0.15rem 0 0.15rem 1.4rem;
-	border-left: 2.5px solid var(--persona-accent);
+	border-left: 2.5px solid var(--identity-border);
 }
 
 .summaryBlock p {
@@ -332,7 +332,7 @@
 	font-size: 2.4rem;
 	font-style: italic;
 	line-height: 1;
-	color: color-mix(in oklab, var(--persona-accent) 72%, transparent);
+	color: var(--identity-text);
 }
 
 .sectionKicker {
@@ -385,7 +385,7 @@
 }
 
 .specRow:hover {
-	border-bottom-color: color-mix(in oklab, var(--persona-accent) 48%, var(--persona-hairline));
+	border-bottom-color: var(--identity-border);
 }
 
 .specKey {
@@ -514,7 +514,7 @@
 }
 
 .plateButton:hover {
-	border-color: color-mix(in oklab, var(--persona-accent) 48%, var(--persona-hairline));
+	border-color: var(--identity-border);
 	box-shadow:
 		0 1.5rem 4rem color-mix(in oklab, var(--persona-ink) 10%, transparent),
 		0 0 3.5rem var(--persona-accent-glint);

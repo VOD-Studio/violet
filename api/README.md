@@ -102,6 +102,8 @@ REST 端点可用 `middleware.PATAuth` 复用 MCP 的 `PATVerifier`，再用 `Re
 
 新增 Handler 复用 [response](internal/interfaces/http/response/) 的响应与错误辅助函数，分页规则复用 [domain/shared](internal/domain/shared/)。
 
+`POST /api/v1/link-cards/lookup` 公开批量读取最多 10 个 URL 的网页预览，仍需 CSRF cookie。返回 `cards`、`pending`、`unavailable`：仅 pending 继续查询；上游 403 不绕过防护，失败退避期间不重复抓取。成功快照默认缓存 7 天，过期惰性刷新；封面校验后缓存到本站。
+
 ## 业务模块
 
 按用例定位 [internal/application/](internal/application/)，再查看对应领域与适配器；不是每个模块都具有完全同名的四层目录。
@@ -117,7 +119,8 @@ REST 端点可用 `middleware.PATAuth` 复用 MCP 的 `PATVerifier`，再用 `Re
 | 媒体 | `media`、`image`、`customemoji` | 上传、表情目录、图片处理与个人表情 |
 | 站点 | `settings`、`announcement`、`friendlink`、`stats` | 配置、公告、友链与统计 |
 | 首页资源 | `publication`、`siteidentity`、`siteimpression` | 发布物投影、公开身份与匿名印记 |
-| 外部内容 | `subscription`、`github`、`releases`、`music` | RSS、GitHub、版本记录与 Kite 音乐 |
+| 外部内容 | `subscription`、`github`、`releases`、`music`、`linkpreview` | RSS、GitHub、版本记录、Kite 音乐与共享网页预览 |
+| 实时状态 | `presence` | Nowbeam 上报接收、设备凭证与公开推送 |
 | 开放与运营 | `mcp`、`coderunner`、`audit`、`system` | MCP、沙箱、审计、数据库运维 |
 | 个人用量 | `omp_usage` | PAT 批量摄取、个人会话聚合与跨语言同源 PostgreSQL 契约 |
 
@@ -126,6 +129,10 @@ REST 端点可用 `middleware.PATAuth` 复用 MCP 的 `PATVerifier`，再用 `Re
 文章只提交 `content_md` 时，由 Goldmark 生成 HTML；Mermaid、可运行围栏与内容卡片保留对应语义载体。HTML 与 Markdown 的往返边界、脚注和表格等格式规则见[编辑器存储说明](../web/src/features/editor/docs/storage.md)，不在这里维护第二份语法手册。
 
 上传支持分片、秒传与会话续传。`clientUploadId` 用于复用同一次文件上传；取消和合并有明确的竞争结果，不能把“取消已受理”理解为“正式文件已删除”。秒传还会确认磁盘文件存在，数据库记录不能替代丢失的文件字节。
+
+展示派生图可显式请求 `/uploads/<path>?w=920&format=webp&quality=80`：`quality` 为 1–100，此请求使用对应质量的有损 WebP，不修改上传编码或后台全局策略；未指定质量时继续使用有效策略。宽高适配只缩小、不放大原图，`thumb` 裁剪仍是独立语义；GIF 与动画 WebP 保留原字节，WebP 透明通道不丢失。
+
+显式 WebP 质量请求的缓存身份包含派生编码契约版本，避免复用旧版忽略质量参数时生成的无损文件。图片响应保留 `ETag` 与 `public, no-cache`，条件请求可返回 304；不把可替换的素材 URL 声明为不可变缓存。
 
 ### 运行策略
 
@@ -155,7 +162,7 @@ REST 端点可用 `middleware.PATAuth` 复用 MCP 的 `PATVerifier`，再用 `Re
 
 查询支持 `range=7d|30d|90d`（默认 30d），时间序列支持 `bucket=day|hour`（默认 day），拒绝 user_id 和未知参数。范围从 UTC 当天及此前 N−1 天的零点到当前时刻，私有响应禁止共享缓存。Token 总量不重复加 reasoning；缓存率分母为 input+cache_read+cache_write；吞吐均值只计非错误、已记录耗时且 duration>TTFT 的调用。
 
-SQL、schema 与列绑定来自独立 [pkg/ompusage](pkg/ompusage/README.md)，Violet 的迁移143为其初始快照。Go 与 Rust 可执行同一 SQL，认证、路由与展示由各宿主实现；这不表示 Yggdrasil 已完成接入。扩展安装见 [OMP 用量指南](../docs/guides/omp-usage.md)。
+SQL、schema 与列绑定来自独立 [pkg/ompusage](pkg/ompusage/README.md)，Violet 的迁移146为其初始快照。Go 与 Rust 可执行同一 SQL，认证、路由与展示由各宿主实现；这不表示 Yggdrasil 已完成接入。扩展安装见 [OMP 用量指南](../docs/guides/omp-usage.md)。
 
 ### 站点音乐接口（Kite）
 
@@ -186,6 +193,21 @@ SQL、schema 与列绑定来自独立 [pkg/ompusage](pkg/ompusage/README.md)，V
 | GET | `/music/songs/{id}/lyric` | 原文、翻译与音译歌词 |
 
 Cookie 由 `MUSIC_CREDENTIAL_KEY` 加密保存，凭据不交给前端。账号模式的取链仅允许已启用展示歌单中的曲目；无连接或账号失效时匿名解析。播放地址不持久化，JSON 与重定向响应均不缓存。
+
+### 实时状态接口（Nowbeam）
+
+站点是 `nowbeam.v1` 接收端，协议状态机移植自 Nowbeam 独立接收服务，决策见 [ADR-0025](../docs/adr/0025-presence-native-receiver.md)。读取管理接口需 `presence:view`；写入需 `presence:manage` 与 CSRF。
+
+| 方法 | 路径 | 用途 |
+| --- | --- | --- |
+| GET | `/presence/ingest` | 设备 WebSocket 上报：`Authorization: Bearer violet_nb_…` + 子协议 `nowbeam.v1`，拒绝任何 Origin |
+| GET | `/presence` | 公开当前状态，只含租约内在线的设备；公开读取关闭时 `devices` 为空 |
+| GET | `/presence/stream` | SSE，连上即推一次，之后每次变化推完整状态（`event: presence`） |
+| GET、POST | `/admin/presence/devices` | 设备与连接诊断；签发凭证（明文只返回一次） |
+| DELETE | `/admin/presence/devices/{id}` | 撤销凭证，立即断开并清除活动 |
+| GET、PUT | `/admin/presence/settings` | 公开读取开关，默认关闭 |
+
+快照只在 API 进程内存，服务重启即清空，因此 API 需单实例运行。反向代理要为上报端点转发 `Upgrade` / `Connection` 头，空闲超时大于 45 秒租约，见 `deploy/nginx/xunrua.top`。
 
 扫码挑战三分钟过期、一次性消费；关闭管理弹窗时取消，确认或过期后停止轮询。退出先断开本地连接，上游退出失败仍返回明确说明。续期任务在进程启动 24 小时后首次运行，此后每 24 小时执行；登录过期转 `expired` 并切匿名播放，网络故障不冒充账号失效。
 

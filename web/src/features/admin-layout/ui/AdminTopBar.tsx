@@ -1,4 +1,4 @@
-import ThemeToggle from "@features/lab/theme/ui/ThemeToggle";
+import { AppearanceToggle } from "@features/appearance";
 import NotificationBell from "@features/notifications/ui/NotificationBell";
 import { useSessionStore } from "@shared/api/session";
 import { AdminMobileNav } from "./AdminMobileNav";
@@ -11,7 +11,7 @@ interface AdminTopBarProps {
 /**
  * AdminTopBar - 顶部栏
  *
- * 左侧：移动端汉堡（AdminMobileNav）+ 页面标题；右侧：通知铃铛、主题切换等操作位。
+ * 左侧：移动端汉堡（AdminMobileNav）+ 页面标题；右侧：通知铃铛、外观切换等操作位。
  * 高度对齐侧边栏 header（h-14），语义色 token。
  */
 export function AdminTopBar({ title }: AdminTopBarProps) {
@@ -24,7 +24,7 @@ export function AdminTopBar({ title }: AdminTopBarProps) {
 			<h1 className="text-base font-semibold">{title}</h1>
 			<div className="ml-auto flex items-center gap-1">
 				{sessionActive && <NotificationBell />}
-				<ThemeToggle />
+				<AppearanceToggle />
 			</div>
 		</header>
 	);

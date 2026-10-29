@@ -7,6 +7,153 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.20.0](https://github.com/VOD-Studio/violet/compare/v2.19.0...v2.20.0) (2026-10-29)
+
+
+### 新增
+
+* **admin-presence:** 后台管理 Nowbeam 设备与公开展示 ([6369a4a](https://github.com/VOD-Studio/violet/commit/6369a4af59894dcd26c352122434aaaad6daf9d6))
+* **header:** 顶栏与底部岛展示实时状态 ([64d425c](https://github.com/VOD-Studio/violet/commit/64d425c3fafb4caa477c15527d625775795344ed))
+* **presence:** 实时状态展示组件与推送订阅 ([7b05132](https://github.com/VOD-Studio/violet/commit/7b05132dd2631603037f3c9afa86598f8e482e49))
+* **presence:** 实现 Nowbeam 实时状态接收端 ([27ceb2f](https://github.com/VOD-Studio/violet/commit/27ceb2fb0ebbb4b4b7d654f7d882504543cf1776))
+* **presence:** 接入 Nowbeam 实时状态 ([b3430fb](https://github.com/VOD-Studio/violet/commit/b3430fb461e37f758559830d2760f8d62a46d416))
+
+
+### 修复
+
+* **admin-layout:** 顶栏显示实时状态页标题 ([5de63ab](https://github.com/VOD-Studio/violet/commit/5de63ab74b0477c2d603ed93d565595f3a4f378e))
+* **admin-presence:** 修正后台页布局 ([c0f587b](https://github.com/VOD-Studio/violet/commit/c0f587bb4d382cb5acddee406f20516aa80cc2dd))
+* **middleware:** Logger 包装器补齐 Unwrap ([289e497](https://github.com/VOD-Studio/violet/commit/289e4970bacbf4bf58a0083ca71e85a73f1e5804))
+
+## [2.19.0](https://github.com/VOD-Studio/violet/compare/v2.18.1...v2.19.0) (2026-10-28)
+
+
+### 新增
+
+* **linkpreview:** 独立 OG 链接卡片模块 ([c77f9f5](https://github.com/VOD-Studio/violet/commit/c77f9f50ec2cdffaac77359f40e231cb5210acc4))
+* **music-player:** 播放器默认收起为圆盘 ([49c994e](https://github.com/VOD-Studio/violet/commit/49c994eca4c6c9ab905e6a89a8bf6bbaa5cda571))
+* **react-tweet:** 导出 TweetPhotos 与本地化构造 ([63cca56](https://github.com/VOD-Studio/violet/commit/63cca56852c5fddd3cbe3dd9711db1b0876556ca))
+* **shared:** OG 链接卡片展示组件 ([100caeb](https://github.com/VOD-Studio/violet/commit/100caebcab4513e59e495320c66f371c4bc66d8c))
+* **shared:** 通用链接识别 tokenizer linkify ([1a8f5a0](https://github.com/VOD-Studio/violet/commit/1a8f5a092b8a641ccddf6e4486b73276081cd742))
+* **tweets:** 前端适配推文图片引用与链接卡片类型 ([5638980](https://github.com/VOD-Studio/violet/commit/5638980cbc7fca592e01499a77ea60a505de4173))
+* **tweets:** 推文卡片接入 OG 链接卡片 ([ec597bf](https://github.com/VOD-Studio/violet/commit/ec597bf208666408b2308539cdecc7a6be5f70a1))
+* **tweets:** 推文图片布局切换 TweetPhotos ([2c7cec3](https://github.com/VOD-Studio/violet/commit/2c7cec3c2f65332f29523a41df31e8079af4b6da))
+* **tweets:** 推文媒体与链接展示 ([b39e377](https://github.com/VOD-Studio/violet/commit/b39e3779f4d78ed8df704941aa5149fbc56bc98c))
+* **tweets:** 正文 URL 渲染为可点击链接 ([f0182e1](https://github.com/VOD-Studio/violet/commit/f0182e1fed27da3bd2db70702d6d781893c95311))
+* **tweet:** 推文图片带尺寸快照并内嵌链接卡片 ([171b4f2](https://github.com/VOD-Studio/violet/commit/171b4f29620a8c7f6bf763e8c768489dc878bb0e))
+
+
+### 修复
+
+* **ci:** 禁用 golangci-lint 结果缓存 ([644c1dc](https://github.com/VOD-Studio/violet/commit/644c1dc7673b8fcdc93ef079b7c013cd16d10d0b))
+* **linkpreview:** 按 De Morgan 定律化简条件 ([047a304](https://github.com/VOD-Studio/violet/commit/047a304fc09eac1cacaf4540f49af59665b4447d))
+* **linkpreview:** 补全抓取终态落库与封面校验 ([2eb2023](https://github.com/VOD-Studio/violet/commit/2eb20239b58dfcb8970240609b0d542368de6c49))
+* **music-player:** 升级 Kite Player 至 0.4.2 ([5239d9c](https://github.com/VOD-Studio/violet/commit/5239d9ca9c77056ce6eddfed8ec57b59f366d864))
+* **shared:** 统一前后端 URL 识别与规范化规则 ([897dadd](https://github.com/VOD-Studio/violet/commit/897dadd10d302ec3737e98adb595b0c8415e2530))
+* **tweets:** 链接预览异步回填与小卡片接入 ([7b8f86c](https://github.com/VOD-Studio/violet/commit/7b8f86c33c36eb57da06f7c7b46f8c0133b75d19))
+* **ui-docs:** 链接卡片示例改用站内图片资源 ([01f3547](https://github.com/VOD-Studio/violet/commit/01f3547944a33ff8fc30bb9eb57662c9cd5af999))
+* **ui:** LinkCard 改为 X 式小卡片 ([a3b5994](https://github.com/VOD-Studio/violet/commit/a3b599482e651660431f82c537cea756af47afcb))
+
+## [2.18.1](https://github.com/VOD-Studio/violet/compare/v2.18.0...v2.18.1) (2026-10-28)
+
+
+### 修复
+
+* **decoration:** 持久化独立图层偏好 ([20ec781](https://github.com/VOD-Studio/violet/commit/20ec7818f40c19dbefe84fcd3b3fd1f3a58fe4ef))
+* **music-player:** 升级 Kite Player 至 0.4.1 ([78242f3](https://github.com/VOD-Studio/violet/commit/78242f30718bfc8ed5182a91a834848256043135))
+* **seasonal-decor:** 补齐独立装饰控制 ([32bdbdd](https://github.com/VOD-Studio/violet/commit/32bdbddceaaf3d7b470af56fd97289cea27e6b78))
+* **seasonal-decor:** 补齐独立装饰控制 ([e631b20](https://github.com/VOD-Studio/violet/commit/e631b208dfa8b652ea5ef2cda6f1a30db9fbe5cf))
+
+## [2.18.0](https://github.com/VOD-Studio/violet/compare/v2.17.2...v2.18.0) (2026-10-27)
+
+
+### 新增
+
+* **color-guard:** 禁止主色透明度悬停 ([3f19382](https://github.com/VOD-Studio/violet/commit/3f193827a720b5db71c8c785bc32016e6ae3ea94))
+* **color-guard:** 禁止把角色实色当文字色 ([1f14d76](https://github.com/VOD-Studio/violet/commit/1f14d765bcb0d093a24b8116c2e9732a84a6514d)), closes [#650](https://github.com/VOD-Studio/violet/issues/650)
+* **color-guard:** 阻止新增颜色违规与白名单扩张 ([e4020cc](https://github.com/VOD-Studio/violet/commit/e4020cc83839dfc4aadbadab9203db379368180b)), closes [#636](https://github.com/VOD-Studio/violet/issues/636)
+* **command-palette:** 新增主题切换命令 ([03a4d54](https://github.com/VOD-Studio/violet/commit/03a4d54db905a3188af276ec9ed9d9dc0471dfb6)), closes [#647](https://github.com/VOD-Studio/violet/issues/647)
+* **decor:** 新增四季装饰的插画粒子与挂件 ([54e9b29](https://github.com/VOD-Studio/violet/commit/54e9b291e8b8e6a679c426aa41af3f7642849673)), closes [#649](https://github.com/VOD-Studio/violet/issues/649)
+* **decor:** 站点投放季节装饰插槽 ([62f8e21](https://github.com/VOD-Studio/violet/commit/62f8e21ffb4365b70e35311885ddaa4d9497bf03)), closes [#649](https://github.com/VOD-Studio/violet/issues/649)
+* **header:** 接入主题切换入口 ([0fd643c](https://github.com/VOD-Studio/violet/commit/0fd643cc1232477ac3efbc33dd4b48878e466713)), closes [#647](https://github.com/VOD-Studio/violet/issues/647)
+* **home:** 冬季寄语改为初雪映窗 ([bcb3c9a](https://github.com/VOD-Studio/violet/commit/bcb3c9a3df8a210d9a62f8db1b79d57f5ebec634))
+* **home:** 季节寄语跟随当前主题 ([fd796c0](https://github.com/VOD-Studio/violet/commit/fd796c0c078c9108b695e5ab1877a3f9ab7f5c5a)), closes [#646](https://github.com/VOD-Studio/violet/issues/646)
+* **theme-switcher:** 主题菜单支持切换季节装饰 ([f0929ee](https://github.com/VOD-Studio/violet/commit/f0929eeb6838d12dfba5534afa2dd77ff1138fd2)), closes [#649](https://github.com/VOD-Studio/violet/issues/649)
+* **theme-switcher:** 支持自定义主题 ([494d18b](https://github.com/VOD-Studio/violet/commit/494d18b6709cf6e5ed6f04f1b97f95c5f660a0c7)), closes [#648](https://github.com/VOD-Studio/violet/issues/648)
+* **theme-switcher:** 新增主题切换入口组件 ([4d02381](https://github.com/VOD-Studio/violet/commit/4d02381a026dd3eb8e236fcf982d8b96b053fe27)), closes [#647](https://github.com/VOD-Studio/violet/issues/647)
+* **theme:** 为主题切换提供共享状态 ([ae15924](https://github.com/VOD-Studio/violet/commit/ae15924fbcecfb4fb1536889e0f6aa8886422c83)), closes [#647](https://github.com/VOD-Studio/violet/issues/647)
+* **theme:** 主题偏好支持自定义主题 ([c7410bb](https://github.com/VOD-Studio/violet/commit/c7410bb5292f5a854a7e471037d5e886fcd5c3a0)), closes [#648](https://github.com/VOD-Studio/violet/issues/648)
+* **theme:** 支持提高对比度档位 ([5dba594](https://github.com/VOD-Studio/violet/commit/5dba594300089e746f09851c71509bf9ac8e70af))
+* **theme:** 文字工具类改取角色的可读文字档 ([33feca7](https://github.com/VOD-Studio/violet/commit/33feca718702c623840518806ee553ea896a0cec)), closes [#650](https://github.com/VOD-Studio/violet/issues/650)
+* **theme:** 新增品牌与中性的透明度色阶 ([c9b7388](https://github.com/VOD-Studio/violet/commit/c9b738857b9706233d2bd12cc3e4ee49da0b770e))
+* **theme:** 新增种子色生成明暗色阶的算法包 ([12b83e7](https://github.com/VOD-Studio/violet/commit/12b83e7849bac9aaf86030ed82a7efbb686585df))
+* **theme:** 新增色相固定的状态色阶 ([2c421ff](https://github.com/VOD-Studio/violet/commit/2c421ffb30f33c7370b37bf61e556686c922eb43))
+* **theme:** 新增装饰偏好 ([3e27815](https://github.com/VOD-Studio/violet/commit/3e278159567f58f5902cf4f2a12f56caada48e7b)), closes [#649](https://github.com/VOD-Studio/violet/issues/649)
+* **theme:** 新增近等亮度且色盲可辨的分类色阶 ([d80ed5c](https://github.com/VOD-Studio/violet/commit/d80ed5c23c0d7e64d55c535ccbd32242d97c0e2c))
+* **theme:** 方言提供主色文字映射 ([38c0a3d](https://github.com/VOD-Studio/violet/commit/38c0a3d8684dcd35d1561f2c70c64c6a61093f12)), closes [#650](https://github.com/VOD-Studio/violet/issues/650)
+* **theme:** 生成四季预设主题样式 ([9185595](https://github.com/VOD-Studio/violet/commit/91855959044c13e3fb1546a55cae62c494b4423c)), closes [#646](https://github.com/VOD-Studio/violet/issues/646)
+* **theme:** 由生成色阶提供组件语义色 ([4e8503d](https://github.com/VOD-Studio/violet/commit/4e8503df4a5bdafec73b321bda1337745f58cc2f))
+* **theme:** 种子色生成全站主题与四季装饰 ([b088f91](https://github.com/VOD-Studio/violet/commit/b088f912f4f38c8efc1f373e4b8b705534a2e9f8))
+* **theme:** 自定义主题在 SSR 首帧生效 ([ee7454c](https://github.com/VOD-Studio/violet/commit/ee7454cd0abbabe02297342927391cbc24821e4c)), closes [#648](https://github.com/VOD-Studio/violet/issues/648)
+* **theme:** 装饰偏好在 SSR 首帧生效 ([4eb4907](https://github.com/VOD-Studio/violet/commit/4eb4907ff87e25d81aa798226d48a6a0c0ddd4a4)), closes [#649](https://github.com/VOD-Studio/violet/issues/649)
+* **theme:** 解析主题偏好与跟随季节 ([9c41827](https://github.com/VOD-Studio/violet/commit/9c4182754276d73bdd756846bf2650d909028a8b)), closes [#646](https://github.com/VOD-Studio/violet/issues/646)
+* **theme:** 预设主题在 SSR 首帧生效 ([aecc02f](https://github.com/VOD-Studio/violet/commit/aecc02ff935e34e7d7ab27a0a1afcb2d94b37a8c)), closes [#646](https://github.com/VOD-Studio/violet/issues/646)
+
+
+### 修复
+
+* **color-guard:** 初始基准改为远程可达的提交 ([5b11e84](https://github.com/VOD-Studio/violet/commit/5b11e84c35a9c99674e5bd71852949543fa94c72)), closes [#649](https://github.com/VOD-Studio/violet/issues/649)
+* **cursor:** 移除跟随指针的自定义光标 ([fc3ffcc](https://github.com/VOD-Studio/violet/commit/fc3ffcceeae0e3e686aec9f06340ddfad079b85f))
+
+
+### 性能优化
+
+* **theme:** 色度在色域内时跳过二分查找 ([81f6d44](https://github.com/VOD-Studio/violet/commit/81f6d44c361a26311f405ea721a1108f3eb5e004))
+
+
+### 重构
+
+* **appearance:** 将外观切换迁入正式功能层 ([107e76a](https://github.com/VOD-Studio/violet/commit/107e76ad986498c379de4454277e56af678d868a)), closes [#635](https://github.com/VOD-Studio/violet/issues/635)
+* **appearance:** 将站点消费方切换到语义色 ([3de1b5d](https://github.com/VOD-Studio/violet/commit/3de1b5d45607d1ef5ccb439f50558eacc90c472f))
+* **appearance:** 提供外观命名的共享状态桥接 ([724f5f0](https://github.com/VOD-Studio/violet/commit/724f5f071d1ce99a42e445cf5c89d2a5c223069d))
+* **appearance:** 迁移站点公共层颜色语义 ([5d0df2f](https://github.com/VOD-Studio/violet/commit/5d0df2f60968dfd6ce7ea396768210f472c97aa5))
+* **decor:** 按评审收拢装饰模块的重复与形态 ([df041b7](https://github.com/VOD-Studio/violet/commit/df041b792781a7433ac44c7c0c3c31239f6bd4c2)), closes [#649](https://github.com/VOD-Studio/violet/issues/649)
+* **theme:** 公共层文字改取角色可读档 ([fa31cf2](https://github.com/VOD-Studio/violet/commit/fa31cf2362274811cb8b0fcba1bae0cd04f44cd6)), closes [#650](https://github.com/VOD-Studio/violet/issues/650)
+* **theme:** 删除带 -text 后缀的颜色工具类 ([738f5ae](https://github.com/VOD-Studio/violet/commit/738f5ae0d0ce6ce96cfcae8224e27b43b1a9f378)), closes [#650](https://github.com/VOD-Studio/violet/issues/650)
+* **theme:** 删除组件包旧颜色接口 ([3fb1280](https://github.com/VOD-Studio/violet/commit/3fb128003f42b4924628964060091654ae530b43))
+* **theme:** 抽出偏好 cookie 的读写 ([23a06de](https://github.com/VOD-Studio/violet/commit/23a06decda10d8a36af52aed643c0701b3c4c3b0)), closes [#649](https://github.com/VOD-Studio/violet/issues/649)
+* **theme:** 抽出单个主题样式的生成 ([6f5d377](https://github.com/VOD-Studio/violet/commit/6f5d37784b5c1637a326c7a1969791e55b0940a5)), closes [#648](https://github.com/VOD-Studio/violet/issues/648)
+* **theme:** 站点消费方文字改取角色可读档 ([0437995](https://github.com/VOD-Studio/violet/commit/04379954d2a41141a344b94432553f4ff2f70b08)), closes [#650](https://github.com/VOD-Studio/violet/issues/650)
+
+## [2.17.2](https://github.com/VOD-Studio/violet/compare/v2.17.1...v2.17.2) (2026-10-24)
+
+
+### 修复
+
+* **date:** 支持明确时区的日历日期格式化 ([b6bc640](https://github.com/VOD-Studio/violet/commit/b6bc640ba95506189a70923e1f261817afc55603))
+* **image:** 让 WebP 展示请求应用质量参数 ([aeec90f](https://github.com/VOD-Studio/violet/commit/aeec90f1a1205b8a0630db62768cb1ad7d356e7d))
+* **posts:** 统一文章日期的水合时区 ([27504ad](https://github.com/VOD-Studio/violet/commit/27504ad69d4a0da0d9cde2c7ffbf2ae2b2d5f916))
+
+
+### 性能优化
+
+* **article-toc:** 让目录进度收敛后停止排帧 ([0a6bde6](https://github.com/VOD-Studio/violet/commit/0a6bde6b8d7bac37704f8efd8cfe80fe7a436161))
+* **auth:** 按登录入口准备 Google SDK ([0bdd009](https://github.com/VOD-Studio/violet/commit/0bdd009f7a45b36ed7a0169ed0834bea5776b5e6))
+* **comments:** 按交互准备批注工具 ([cf20a7f](https://github.com/VOD-Studio/violet/commit/cf20a7f17bfd9c6b657c514df738e4aba64c0531))
+* **image:** 按实际展示需求选择派生图片 ([f38116a](https://github.com/VOD-Studio/violet/commit/f38116ae10587806fa8cf1633695549ce6411722))
+* **image:** 接入文章与资源页响应式选图 ([ff318f0](https://github.com/VOD-Studio/violet/commit/ff318f0cd1fe3e53e2b8444bc4e38ff7e2c44141))
+* **posts:** 优化文章富内容加载与渲染时序 ([fade111](https://github.com/VOD-Studio/violet/commit/fade111bed29a85cf1c18befc01418c6ec241d5d))
+* **posts:** 接入按需阅读交互 ([6d65e3c](https://github.com/VOD-Studio/violet/commit/6d65e3c30348cb2ba289ab55ea196bfd7b4c528a))
+* **rich-content:** 按视口分批准备正文增强 ([1ad74d1](https://github.com/VOD-Studio/violet/commit/1ad74d1a65cf66312caa4e695b7a4c80bfd10358))
+* **roadmap:** 延后画布并保留嵌入语义内容 ([e1425f5](https://github.com/VOD-Studio/violet/commit/e1425f5efce46a9da195e75b18969bb78a83fb6e))
+
+
+### 重构
+
+* **async-loader:** 统一异步任务的并发复用 ([260467b](https://github.com/VOD-Studio/violet/commit/260467b188ba2005abe2c2af5110d47c6f52e25b))
+* **blog-detail:** 收紧文章阅读页模块边界 ([723133f](https://github.com/VOD-Studio/violet/commit/723133f7602b40d1d5d32e5b18375a9e0c8362da))
+* **rich-content:** 切换应用层模块加载入口 ([38b8e75](https://github.com/VOD-Studio/violet/commit/38b8e75363a2dd96167f1f50aeb66b25785498d1))
+
 ## [2.17.1](https://github.com/VOD-Studio/violet/compare/v2.17.0...v2.17.1) (2026-10-23)
 
 

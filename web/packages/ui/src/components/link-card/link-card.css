@@ -1,0 +1,115 @@
+@layer components {
+	.v-link-card {
+		box-sizing: border-box;
+		container-type: inline-size;
+		display: flex;
+		align-items: stretch;
+		inline-size: 100%;
+		min-inline-size: 0;
+		max-inline-size: 100%;
+		padding: 0;
+		border: 1px solid var(--border);
+		border-radius: min(var(--radius, 0.75rem), 1rem);
+		background: var(--card);
+		color: var(--card-foreground);
+		font: inherit;
+		text-align: start;
+		text-decoration: none;
+		transition: background-color var(--v-duration-fast, 150ms) ease-out;
+	}
+
+	.v-link-card:hover {
+		background: var(--muted);
+		text-decoration: none;
+	}
+
+	.v-link-card:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+
+	.v-link-card__thumbnail {
+		position: relative;
+		flex: 0 0 6rem;
+		min-block-size: 6rem;
+		overflow: hidden;
+		border-start-start-radius: min(var(--radius, 0.75rem), 1rem);
+		border-end-start-radius: min(var(--radius, 0.75rem), 1rem);
+		background: var(--muted);
+	}
+
+	.v-link-card__image {
+		position: absolute;
+		inset: 0;
+		display: block;
+		inline-size: 100%;
+		block-size: 100%;
+		object-fit: cover;
+	}
+
+	.v-link-card__body {
+		display: flex;
+		flex: 1;
+		flex-direction: column;
+		justify-content: center;
+		gap: 0.25rem;
+		min-inline-size: 0;
+		padding: 0.75rem;
+	}
+
+	.v-link-card__title,
+	.v-link-card__description {
+		display: -webkit-box;
+		overflow: hidden;
+		overflow-wrap: anywhere;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+	}
+
+	.v-link-card__title {
+		color: var(--foreground);
+		font-size: 0.9375rem;
+		font-weight: 600;
+		line-height: 1.4;
+	}
+
+	.v-link-card__description {
+		color: var(--muted-foreground);
+		font-size: 0.8125rem;
+		line-height: 1.5;
+	}
+
+	.v-link-card__meta {
+		display: flex;
+		align-items: baseline;
+		gap: 0.375rem;
+		min-inline-size: 0;
+		color: var(--muted-foreground);
+		font-size: 0.75rem;
+		line-height: 1.5;
+	}
+
+	.v-link-card__site,
+	.v-link-card__host {
+		min-inline-size: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	@container (max-width: 24rem) {
+		.v-link-card__thumbnail {
+			flex-basis: 5rem;
+			min-block-size: 5rem;
+		}
+		.v-link-card__body {
+			padding: 0.625rem;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-link-card {
+			transition: none;
+		}
+	}
+}

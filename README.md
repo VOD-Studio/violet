@@ -20,10 +20,15 @@
 - 项目路线图：条目分三阶段，支持阻塞/修复/扩展关系；公开画布页，文章可嵌入随项目实时更新的路线图块
 - 可运行代码块：Python / Node / Go / Rust / Bun 沙箱执行，结果回流正文
 
+### 外观
+
+- 主题：明暗跟随系统；四季预设默认随季节切换，也可输入种子色生成自定义主题，任何颜色都调到满足对比度门槛，首帧即生效
+- 装饰：季节可跟随主题或独立选择；插画、飘落与挂件分别启停，不改变正文布局
+
 ### 社区
 
 - 批注评论：评论可锚定到段落或选中文本，支持 GIF 表情与图片上传，带审核工作流
-- 推文与主页：图文推文、免凭据转发 X 内容、个人主页与封面
+- 推文与主页：原比例图片、可点击正文链接与异步网页预览、免凭据转发 X 内容、个人主页与封面
 - 聊天：私聊与私有房间、乐观发送与失败重试、表情反应、@提及、SSE 实时事件、Web Push
 - 通知中心：互动提醒实时推送，浏览器与站内同步未读
 - 自定义表情：评论、推文与聊天共用，管理员可统一下架违规内容
@@ -42,6 +47,7 @@
 - 系统面板：服务状态、受控 SQL 控制台、流式导出、定时备份与恢复
 - 运行策略：限流、日配额、图片编码、上传队列与沙箱资源，版本化保存
 - 站点音乐：连接网易云维护展示歌单，公开页经 Kite 播放器播放
+- 实时状态：接收 Nowbeam 上报，顶栏展示站长正在播放的音乐与正在使用的应用
 
 ## 技术栈
 
@@ -104,6 +110,7 @@ make docker-dev
 
 - [可运行代码块](docs/deploy/manual-deploy.md#代码运行器可运行代码块沙箱执行)：需要容器运行时与对应语言的 runner 镜像。
 - [站点音乐](docs/deploy/manual-deploy.md#kite-音乐服务可选)：需要 Kite 服务及凭据配置；播放范围受账号权益和上游接口限制。
+- [实时状态](docs/guides/nowbeam.md)：需要在 Mac 上运行 Nowbeam，反向代理为上报端点转发 WebSocket。
 
 ## 常用命令
 
@@ -149,7 +156,7 @@ violet/
 │   ├── pkg/ompusage/        可独立分发的用量 SQL / JSON 契约（Go / Rust 同源消费）
 │   └── config.yaml         入库配置（全量配置文档，敏感值走根 .env）
 ├── web/                    React 前端应用（TanStack Start SSR）
-│   ├── packages/           可独立使用的组件包（ui / react-tweet / kanban / inkline）
+│   ├── packages/           可独立使用的组件包（ui / react-tweet / kanban / inkline / theme）
 │   ├── src/
 │   │   ├── routes/         文件路由
 │   │   ├── features/       业务模块（feature-sliced）
@@ -180,6 +187,7 @@ violet/
 - [@violetjs/react-tweet](web/packages/react-tweet/README.zh-CN.md)：原生 X 推文展示与服务端数据获取。
 - [@violetjs/kanban](web/packages/kanban/README.zh-CN.md)：受控看板、画布与关系图。
 - [@violetjs/inkline](web/packages/inkline/README.zh-CN.md)：手绘矢量图、SVG / Canvas 渲染与绘制动画。
+- [@violetjs/theme](web/packages/theme/README.zh-CN.md)：由种子色生成通过 WCAG 与 APCA 门槛的明暗色阶。
 
 ## 文档
 

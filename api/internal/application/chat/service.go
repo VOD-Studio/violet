@@ -234,8 +234,8 @@ type SharedTweetDTO struct {
 	Author *UserDTO `json:"author,omitempty"`
 	// Content 推文正文；推文已删除时为空。
 	Content string `json:"content,omitempty"`
-	// Images 推文图片 URL 列表；推文已删除时为空。
-	Images []string `json:"images,omitempty"`
+	// Images 推文图片（url + 尺寸快照，尺寸可为 nil）；推文已删除时为空。
+	Images []apptweet.TweetImageDTO `json:"images,omitempty"`
 	// CreatedAt 推文创建时间；推文已删除时为空。
 	CreatedAt string `json:"created_at,omitempty"`
 	// IsDeleted 被分享的推文是否已被物理删除。
@@ -1787,7 +1787,7 @@ func (s *Service) sharedTweetDTO(ctx context.Context, tweetID domainshared.ID, v
 	}
 	authorDTO := userToDTO(author)
 	return &SharedTweetDTO{
-		ID: t.ID().String(), Author: &authorDTO, Content: t.Content(), Images: t.Images(),
+		ID: t.ID().String(), Author: &authorDTO, Content: t.Content(), Images: apptweet.ImageRefsToDTOs(t.Images()),
 		CreatedAt: t.CreatedAt().Format(time.RFC3339Nano),
 	}, nil
 }

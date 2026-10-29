@@ -43,7 +43,7 @@ export function summarizeFeed(tweets: Tweet[]): FeedInsights {
 
 		if (photos.length >= MAX_PHOTOS) continue;
 		const sources = [
-			...tweet.images.map((url) => contentImageUrl(url, { width: 200 })),
+			...tweet.images.map((img) => contentImageUrl(img.url, { width: 200 })),
 			...(tweet.external_tweet?.snapshot?.media ?? [])
 				.filter((media) => media.kind === "photo")
 				.map((media) => media.thumbnail_url || media.url),

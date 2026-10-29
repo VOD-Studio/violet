@@ -1,7 +1,16 @@
-import { useThemeSwitcher } from "@features/lab/theme/ui/use-theme-switcher";
+import { useAppearanceSwitcher } from "@features/appearance";
 import { useSearchPosts } from "@features/posts/api/queries";
+import { useDecorationSwitcher } from "@features/seasonal-decor/hooks/useDecorationSwitcher";
+import {
+	decorationChoiceTitle,
+	THEME_CHOICES,
+	themeChoiceTitle,
+	useThemeSwitcher,
+} from "@features/theme-switcher";
 import { flattenNavLinks } from "@shared/config/nav";
 import { type CmdItem, filterCommands } from "@shared/lib/cmd-filter";
+import { DECORATION_PREFERENCES } from "@shared/lib/decoration-preference";
+import { THEME_PRESETS } from "@shared/lib/theme-presets";
 import { useNavigate } from "@tanstack/react-router";
 import { CommandList } from "@violet/ui";
 import { useEffect, useMemo, useState } from "react";
@@ -12,17 +21,19 @@ import { useCommandUIStore } from "./command-ui-store";
 const GROUP_LABELS: Record<string, string> = {
 	posts: "文章",
 	navigation: "导航",
+	appearance: "外观",
 	theme: "主题",
+	decoration: "装饰",
 };
 
 /**
  * CommandPalette - 全局 Cmd/Ctrl+K 搜索 + 命令面板
  *
  * 双模态：输入 ≥ 2 字符触发服务端文章搜索（debounce 250ms），同时本地过滤
- * 导航/主题命令。文章结果来自服务端（已按 query 检索），不再经 filterCommands
+ * 导航、外观、主题与装饰命令。文章结果来自服务端（已按 query 检索），不再经 filterCommands
  * 二次过滤——query 可能命中正文而非标题，本地过滤会误删结果。
  * - Cmd/Ctrl+K 打开（也可由 HeaderActions 搜索按钮 open()）
- * - 导航命令派生自 NAV_ITEMS（与 Header nav 同源）；主题切换为面板独有
+ * - 导航命令派生自 NAV_ITEMS（与 Header nav 同源）；外观切换为面板独有，主题命令与顶栏菜单共用选项
  *
  * 显隐状态走 useCommandUIStore（与 HeaderActions 共享）。
  */
@@ -33,7 +44,9 @@ const CommandPalette = () => {
 	const [query, setQuery] = useState("");
 	const [debouncedQuery, setDebouncedQuery] = useState("");
 	const navigate = useNavigate();
-	const { theme, switchTheme } = useThemeSwitcher();
+	const { appearance, switchAppearance } = useAppearanceSwitcher();
+	const { switchTheme } = useThemeSwitcher();
+	const { switchDecoration } = useDecorationSwitcher();
 	const { data: searchData, isFetching } = useSearchPosts(debouncedQuery);
 
 	// 输入防抖：避免每次击键都打后端
@@ -61,7 +74,7 @@ const CommandPalette = () => {
 		}
 	}, [isOpen]);
 
-	// 本地命令：导航 + 主题（经 filterCommands 子串过滤）
+	// 本地命令经 filterCommands 子串过滤。
 	const localCommands: CmdItem[] = useMemo(
 		() => [
 			...flattenNavLinks().map((item) => ({
@@ -71,34 +84,56 @@ const CommandPalette = () => {
 				run: () => navigate({ to: item.to }),
 			})),
 			{
-				id: "theme-light",
-				label: "切换亮色主题",
-				group: "theme",
+				id: "appearance-light",
+				label: "切换亮色外观",
+				group: "appearance",
 				keywords: ["light", "day", "亮色"],
 				run: () => {
-					if (theme !== "light") switchTheme("light");
+					if (appearance !== "light") switchAppearance("light");
 				},
 			},
 			{
-				id: "theme-dark",
-				label: "切换暗黑主题",
-				group: "theme",
+				id: "appearance-dark",
+				label: "切换暗黑外观",
+				group: "appearance",
 				keywords: ["dark", "night", "暗黑"],
 				run: () => {
-					if (theme !== "dark") switchTheme("dark");
+					if (appearance !== "dark") switchAppearance("dark");
 				},
 			},
 			{
-				id: "theme-system",
-				label: "跟随系统主题",
-				group: "theme",
+				id: "appearance-system",
+				label: "跟随系统外观",
+				group: "appearance",
 				keywords: ["system", "auto", "跟随系统"],
 				run: () => {
-					if (theme !== "system") switchTheme("system");
+					if (appearance !== "system") switchAppearance("system");
 				},
 			},
+			...THEME_CHOICES.map((preference) => ({
+				id: `theme-${preference}`,
+				label: `主题：${themeChoiceTitle(preference)}`,
+				group: "theme",
+				keywords:
+					preference === "follow"
+						? ["theme", "season", "主题", "季节"]
+						: [
+								"theme",
+								"主题",
+								THEME_PRESETS[preference].label,
+								THEME_PRESETS[preference].name,
+							],
+				run: () => void switchTheme(preference),
+			})),
+			...DECORATION_PREFERENCES.map((preference) => ({
+				id: `decoration-${preference}`,
+				label: `装饰：${decorationChoiceTitle(preference)}`,
+				group: "decoration",
+				keywords: ["decoration", "season", "装饰", "季节"],
+				run: () => void switchDecoration(preference),
+			})),
 		],
-		[navigate, switchTheme, theme],
+		[navigate, switchAppearance, appearance, switchTheme, switchDecoration],
 	);
 
 	const filtered = useMemo(() => {

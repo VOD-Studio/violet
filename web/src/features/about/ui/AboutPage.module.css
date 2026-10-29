@@ -83,11 +83,11 @@
 }
 
 .stateAction:hover {
-	background: color-mix(in oklab, var(--primary), var(--foreground) 12%);
+	background: var(--primary-hover);
 }
 
 .stateAction:focus-visible {
-	outline: 2px solid color-mix(in oklab, var(--primary) 58%, transparent);
+	outline: 2px solid var(--ring);
 	outline-offset: 3px;
 }
 

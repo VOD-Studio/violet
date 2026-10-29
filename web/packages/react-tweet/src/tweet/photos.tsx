@@ -10,7 +10,7 @@ import { TweetImage, TweetLink } from "./primitives.tsx";
 
 type OpenPhoto = (photos: TweetPhoto[], index: number, trigger: HTMLElement) => void;
 
-interface TweetPhotosProps {
+export interface TweetPhotosProps {
 	/** 一组连续照片，保留来源顺序。 */
 	photos: TweetPhoto[];
 	localization: TweetLocalization;

@@ -208,7 +208,7 @@ export function CommentForm({
 							}
 							title="发送"
 							aria-label="发送"
-							className="inline-flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+							className="inline-flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							{createComment.isPending ? (
 								<Loader2 className="size-3.5 animate-spin" />

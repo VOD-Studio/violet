@@ -33,8 +33,8 @@ export default function Hero() {
 					style={{ background: "var(--surface-glass)" }}
 				>
 					<span className="relative flex size-2">
-						<span className="absolute inline-flex size-full animate-ping rounded-full bg-neon-green opacity-75" />
-						<span className="relative inline-flex size-2 rounded-full bg-neon-green" />
+						<span className="absolute inline-flex size-full animate-ping rounded-full bg-decoration opacity-75" />
+						<span className="relative inline-flex size-2 rounded-full bg-decoration" />
 					</span>
 					<span className="font-mono text-xs tracking-widest text-muted-foreground uppercase">
 						Open Source

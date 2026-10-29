@@ -11,7 +11,7 @@ export const badgeVariants = tv({
 			destructive: "bg-destructive text-destructive-foreground dark:text-background",
 			outline: "border-border text-foreground",
 			ghost: "text-foreground",
-			link: "text-primary underline underline-offset-4",
+			link: "text-link underline underline-offset-4",
 		},
 		size: {
 			default: "px-2 py-0.5 text-xs",

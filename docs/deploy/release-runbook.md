@@ -23,7 +23,7 @@ flowchart LR
 
 检查、API 构建和 Web 构建并行。只有生产事务使用 Actions concurrency，服务器另用文件锁防止 SSH 部署并发。Actions concurrency 不是 FIFO 队列，等待中的旧运行可能被新运行替换；进入生产锁后仍检查提交祖先关系，已被线上双侧版本包含的旧候选会跳过。
 
-每次正常发布验证同一个提交的完整 CI，并构建双侧镜像；不再等待可能被新 push 取消的主干 CI，也不以空检查充当部署门禁。PR 的旧运行可取消，不同提交的主干运行互不取消。API、Web、依赖扫描并行；既有 required check `Dependency Security` 在最后核对变更检测、runner、基础设施及各侧执行结果。
+每次正常发布验证同一个提交的完整 CI，并构建双侧镜像；不再等待可能被新 push 取消的主干 CI，也不以空检查充当部署门禁。PR 的旧运行可取消，不同提交的主干运行互不取消。API、Web、依赖扫描并行；API 内部拆为静态检查（golangci-lint 已含 vet）、数据库测试（仅此任务启动 PostgreSQL）与镜像校验，`Backend (Go)` 汇总它们；Web 内部再拆为静态检查、站点单测（3 分片）、独立包（ui、inkline、react-tweet、kanban、theme 各一）、浏览器契约（2 分片）与镜像校验，各占一个 runner。`Frontend (React)` 汇总这些任务，总门禁 `CI Gate` 在最后核对变更检测、runner、基础设施及各侧执行结果。
 
 CI 包含 PostgreSQL 仓储与迁移集成测试、前端构建及 Playwright 契约测试，以及工作流、部署脚本和 Compose 校验。镜像用提交标签保存，实际部署只使用构建产出的 `ghcr.io/...@sha256:...`，不读取或改写 `latest`。
 
@@ -35,7 +35,11 @@ Omarchy 自托管 CI 的镜像更新须先通过 `Runner acceptance`：同一份
 
 纯介绍文档只运行变更检测、runner 选择、轻量基础设施步骤和最终门禁，不启动 PostgreSQL，也不安装应用工具链或构建镜像。Infrastructure 保留 PR 版本意图检查；工作流、复合 action、脚本、部署配置等变化才执行其重校验。发布与 Runner acceptance 的 `full=true` 强制完整检查，不受文档排除影响。
 
-三个 required check 名称保持不变。未选中的应用任务以 skipped 结束；被选中的任务必须 success。检测结果缺失、runner 选择失败、必要任务失败或取消都会使 `Dependency Security` 失败，不能把前置失败造成的跳过当成无变更。
+Web 镜像校验只在 `web/Dockerfile`、`.dockerignore`、`server.mjs`、依赖声明、锁文件或 workspace 包清单变化时运行；源码构建由契约任务验证。正常发布的检查不构建镜像，镜像由 `build-web` 产出；Runner acceptance 强制构建。
+
+站点单测用 `pnpm test:site` 分片，排除自带 Vitest 配置、由独立包任务运行的 ui、react-tweet、kanban、theme；本地 `make web-test` 仍运行全部。新增带独立测试配置的包时，需同时加入 `web-package` 矩阵与 `test:site` 排除列表。
+
+三个 required check 为 `Backend (Go)`、`Frontend (React)` 与 `CI Gate`。未选中的应用任务以 skipped 结束；被选中的任务必须 success。检测结果缺失、runner 选择失败、必要任务失败或取消都会使 `CI Gate` 失败，不能把前置失败造成的跳过当成无变更。
 
 本地验证最终门禁的退出码与失败传播：
 
@@ -114,11 +118,11 @@ Runner 不可用时通过 SSH 调用同一个事务入口，详见 [手动部署
 
 Go 检查与漏洞扫描从 `api/go.mod` 读取工具链版本；生产与开发镜像固定同一补丁版本。升级 Go 时同步更新 `go.mod` 和两份 API Dockerfile。
 
-可修复的可达 Go 漏洞会阻断；`Fixed in: N/A` 仍作为告警，前端 `pnpm audit` 仍为 advisory。因此 CI 通过不代表依赖零漏洞，无修复版本的风险仍需单独跟踪。
+依赖漏洞（Go 的 `govulncheck` 与前端 `pnpm audit --prod`）只告警、不阻断 CI 与发版：发现项写入注解与任务摘要，升级走 dependabot 或人工；只有扫描工具自身执行失败才使 `Dependency Scan` 失败。因此 CI 通过不代表依赖零漏洞，风险需单独跟踪。
 
 工作流文件之外还需维护分支规则、tag 规则、production 环境与 runner 权限。此次代码改造不修改这些仓库设置：
 
-- `release/2.0` 必须要求 Backend、Frontend、Dependency Security 通过；建议启用合并前更新分支，避免旧绿色检查绕过新基线。
+- `release/2.0` 必须要求 `Backend (Go)`、`Frontend (React)`、`CI Gate` 通过；更名 required check 时，含新名称的提交推送后立即更新 ruleset，并让其他开放 PR 同步基线，否则它们会一直等待旧名称；建议启用合并前更新分支，避免旧绿色检查绕过新基线。
 - production 应限制允许部署的引用与执行者，并按团队需要设置审批；公开仓库的 self-hosted runner 不应用于不可信 PR 代码。
 - 保护发布 tag，限制创建、修改与删除权限。Actions 固定完整 SHA，由 Dependabot 提供升级 PR。
 

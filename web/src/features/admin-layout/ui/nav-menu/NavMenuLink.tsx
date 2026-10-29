@@ -9,7 +9,7 @@ export const NAV_ITEM_BASE =
 /** 激活态：底色高亮 + 左侧指示条（before 伪元素，不挤压布局）。
  * 工具方言下主要动作是中性色，当前导航的指示条用主色保持视觉连续性 */
 export const NAV_ITEM_ACTIVE =
-	"bg-accent text-accent-foreground before:absolute before:left-0 before:top-1/2 before:h-4 before:w-0.5 before:-translate-y-1/2 before:rounded-full before:bg-primary-base before:content-['']";
+	"bg-selected text-selected-foreground before:absolute before:left-0 before:top-1/2 before:h-4 before:w-0.5 before:-translate-y-1/2 before:rounded-full before:bg-progress before:content-['']";
 
 /**
  * 单个菜单项（顶级项与分组项共用渲染）；collapsed 时仅图标 + 右侧 Tooltip。

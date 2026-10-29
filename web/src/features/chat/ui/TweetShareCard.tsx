@@ -27,7 +27,7 @@ export function TweetShareCard({ tweet }: TweetShareCardProps) {
 	return (
 		<div
 			aria-label="查看推文"
-			className="w-80 max-w-full cursor-pointer rounded-xl border border-border bg-card/80 p-3 text-left backdrop-blur-md transition-colors hover:border-neon-cyan/50 hover:bg-card/95"
+			className="w-80 max-w-full cursor-pointer rounded-xl border border-border bg-card/80 p-3 text-left backdrop-blur-md transition-colors hover:border-ring hover:bg-card/95"
 			onClick={openDetail}
 			onKeyDown={(e) => {
 				if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {

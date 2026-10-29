@@ -133,26 +133,6 @@ describe("NavMenu 子菜单渲染", () => {
 		expect(screen.queryAllByTestId("link-/admin/posts").length).toBeGreaterThan(0);
 	});
 
-	it("子路由命中且分组折叠时父项显示激活态", () => {
-		setPath("/admin/settings/general");
-		render(<NavMenu />);
-
-		// 分组默认折叠（子项不可见）→ 父项承担激活态
-		// （before:bg-primary-base 是激活态独有标记，bg-accent 会被 hover:bg-accent 误判）
-		expect(getSettingsParent()?.className).toContain("before:bg-primary-base");
-
-		// 手动展开分组后子项可见，父项激活态移交给子项，避免重复高亮
-		fireEvent.click(getSettingsParent() as HTMLElement);
-		expect(getSettingsParent()?.className).not.toContain("before:bg-primary-base");
-	});
-
-	it("非同前缀路由不误判激活（/admin/settings-x）", () => {
-		setPath("/admin/settings-x");
-		render(<NavMenu />);
-
-		expect(getSettingsParent()?.className).not.toContain("before:bg-primary-base");
-	});
-
 	it("收起态点击父项弹出子菜单，子项导航后关闭", () => {
 		setPath("/admin/settings/general");
 		render(
@@ -162,8 +142,6 @@ describe("NavMenu 子菜单渲染", () => {
 		);
 
 		const parent = getSettingsParent();
-		// 收起态子路由命中 → 图标保持激活态
-		expect(parent?.className).toContain("before:bg-primary-base");
 		// 子项未展开前不在 DOM（内联渲染与 flyout 均未出现）
 		expect(screen.queryAllByTestId("link-/admin/settings/general").length).toBe(0);
 

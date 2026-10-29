@@ -22,6 +22,7 @@ import { useExclusivePanel } from "./use-exclusive-panel";
 /** 草稿划线 mark 的 class：展开输入区时用暖色荧光笔标出正在批注的文字。 */
 const DRAFT_MARK_CLASS = "annotation-draft-mark";
 
+/** 划词交互所需的正文范围与登录快照。 */
 export interface FloatingToolbarProps {
 	/** 正文容器 ref（选区必须在此容器内才显示工具条） */
 	contentRef: React.RefObject<HTMLElement | null>;
@@ -38,6 +39,11 @@ interface ToolbarPos {
 	offscreen: boolean;
 }
 
+/**
+ * 接管正文选区并提供划线批注入口。
+ *
+ * @remarks 挂载时处理已有选区；滚动只重新定位，不改变讨论范围。
+ */
 export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingToolbarProps) {
 	const [pos, setPos] = useState<ToolbarPos | null>(null);
 	const [anchor, setAnchor] = useState<Anchor | null>(null);
@@ -81,7 +87,7 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
 		});
 	}, []);
 
-	// 监听选区变化 + 滚动跟随。
+	// 选区处理优先于位置跟随，滚动不能取消尚未执行的首次选区接管。
 	useEffect(() => {
 		let rafId = 0;
 		const handleSelectionChange = () => {
@@ -89,6 +95,7 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
 			if (showInput) return;
 			cancelAnimationFrame(rafId);
 			rafId = requestAnimationFrame(async () => {
+				rafId = 0;
 				const root = contentRef.current;
 				if (!root) return;
 
@@ -141,8 +148,9 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
 		// capture: true 捕获阶段监听，避免被正文里的 stopPropagation 拦截。
 		// 注意：scroll handler 不受 showInput 影响——输入面板展开时也要跟随滚动。
 		const handleScroll = () => {
-			cancelAnimationFrame(rafId);
+			if (rafId) return;
 			rafId = requestAnimationFrame(() => {
+				rafId = 0;
 				if (lastRangeRef.current) {
 					// 输入面板展开时定位到选区下方（与 handleAnnotate 一致），否则上方
 					updatePosFromRange(lastRangeRef.current, showInput ? "below" : "above");
@@ -153,6 +161,7 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
 		document.addEventListener("selectionchange", handleSelectionChange);
 		window.addEventListener("scroll", handleScroll, { passive: true, capture: true });
 		window.addEventListener("resize", handleScroll);
+		handleSelectionChange();
 		return () => {
 			document.removeEventListener("selectionchange", handleSelectionChange);
 			window.removeEventListener("scroll", handleScroll, { capture: true });

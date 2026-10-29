@@ -298,7 +298,7 @@ export function MessageComposer({
 								avatar_url: "",
 							},
 							images: pendingShare.tweet.imageUrl
-								? [pendingShare.tweet.imageUrl]
+								? [{ url: pendingShare.tweet.imageUrl, width: null, height: null }]
 								: [],
 						}
 					: undefined,
@@ -459,7 +459,7 @@ export function MessageComposer({
 							className={cn(
 								"rounded-full transition-colors",
 								canSend
-									? "bg-primary text-primary-foreground hover:bg-primary/90"
+									? "bg-primary text-primary-foreground hover:bg-primary-hover"
 									: "bg-secondary text-muted-foreground",
 							)}
 						>

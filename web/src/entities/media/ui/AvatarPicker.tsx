@@ -62,7 +62,7 @@ export function AvatarPicker({
 					aria-label={value ? "更换头像" : "选择头像"}
 					onClick={() => setPickerOpen(true)}
 					className={cn(
-						"absolute inset-0 grid place-items-center overflow-hidden border border-edge-hairline bg-muted/45 transition-colors hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60",
+						"absolute inset-0 grid place-items-center overflow-hidden border border-edge-hairline bg-muted/45 transition-colors hover:border-selected-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60",
 						rounded,
 					)}
 				>

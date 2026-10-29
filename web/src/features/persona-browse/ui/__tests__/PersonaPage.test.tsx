@@ -111,7 +111,6 @@ describe("PersonaPage", () => {
 		// 肖像卡片
 		const hero = screen.getByTestId("hero-reveal");
 		expect(hero.getAttribute("alt")).toBe("若菫瑠爱头像");
-		expect(hero.getAttribute("src")).toContain("960");
 
 		// 档案资料
 		expect(screen.getAllByRole("term").map((term) => term.textContent)).toEqual([

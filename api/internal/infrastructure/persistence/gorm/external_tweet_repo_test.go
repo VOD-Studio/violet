@@ -108,7 +108,7 @@ func externalHarness(t *testing.T, fetcher apptweet.ExternalFetcher) (*gorm.DB, 
 	repo := NewExternalTweetRepository(db)
 	external := apptweet.NewExternalService(repo, fetcher, media, xtweet.NewPreviewStore(client))
 	bus := &externalBus{}
-	service := apptweet.NewService(NewTweetRepository(db), nil, externalUserRepo{}, nil, nil, nil, bus).WithExternal(external)
+	service := apptweet.NewService(NewTweetRepository(db), nil, externalUserRepo{}, nil, nil, nil, nil, nil, bus).WithExternal(external)
 	return db, service, external, repo, media, rds, bus
 }
 

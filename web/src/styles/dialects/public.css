@@ -1,44 +1,43 @@
-/*
- * 公开内容方言作用域（Public Content Dialect）。
- *
- * 消费入口：给公开页面（首页、博客、系列、图库、人设、About、登录入口等）
- * 的主容器加 .dialect-public。
- *
- * 方言职责：把主要动作色（--primary 系）映射到主色源，并让光标、滚动条、
- * 选区与焦点跟随主色；画布与表面采用温润白瓷／玄曜夜色。
- * 明暗成对取值以 light-dark() 单声明表达，暗色支由 html 上的 .dark 激活。
- */
+/* 公开内容：主要动作用品牌实色，悬停档与前景保持成对。 */
 .dialect-public {
-	--background: light-dark(oklch(0.992 0.003 286), oklch(0.138 0.012 286));
-	--foreground: light-dark(oklch(0.19 0.015 286), oklch(0.955 0.008 286));
-	--card: light-dark(oklch(1 0 0), oklch(0.185 0.015 286));
-	--card-foreground: var(--foreground);
-	--popover: light-dark(oklch(1 0 0), oklch(0.185 0.015 286));
-	--popover-foreground: var(--foreground);
-	/* 主要动作 → 稳定主色源（区别于工具方言的高对比中性动作） */
-	--primary: var(--primary-base);
-	--primary-foreground: var(--primary-base-foreground);
-	--secondary: light-dark(oklch(0.958 0.008 286), oklch(0.225 0.016 286));
-	--secondary-foreground: var(--foreground);
-	--muted: light-dark(oklch(0.962 0.006 286), oklch(0.225 0.016 286));
-	--muted-foreground: light-dark(oklch(0.52 0.02 286), oklch(0.68 0.022 286));
-	/* hover 薄雾表面 → 主色浅染 */
-	--accent: var(--primary-base-soft);
-	--accent-foreground: var(--primary-base-soft-foreground);
-	--border: light-dark(oklch(0.908 0.008 286), oklch(0.92 0.012 286 / 12%));
-	--input: light-dark(oklch(0.895 0.01 286), oklch(0.92 0.012 286 / 18%));
-	--ring: var(--primary-base-ring);
-	caret-color: var(--primary);
-	scrollbar-color: color-mix(in oklch, var(--primary), transparent 55%) transparent;
+	--background: var(--neutral-1);
+	--foreground: var(--neutral-12);
+	--card: var(--neutral-2);
+	--card-foreground: var(--neutral-12);
+	--popover: var(--neutral-2);
+	--popover-foreground: var(--neutral-12);
+	--primary: var(--brand-9);
+	--primary-hover: var(--brand-10);
+	--primary-foreground: var(--brand-contrast);
+	--primary-text: var(--brand-11);
+	--secondary: var(--neutral-3);
+	--secondary-foreground: var(--neutral-12);
+	--muted: var(--neutral-3);
+	--muted-foreground: var(--neutral-11);
+	--accent: var(--brand-3);
+	--accent-foreground: var(--brand-11);
+	--link: var(--brand-11);
+	--link-hover: var(--brand-12);
+	--selected: var(--brand-3);
+	--selected-hover: var(--brand-4);
+	--selected-foreground: var(--brand-11);
+	--progress: var(--brand-9);
+	--border: var(--neutral-6);
+	--input: var(--neutral-7);
+	--ring: var(--brand-8);
+	--edge-hairline: var(--neutral-a6);
+	--surface-glass: var(--neutral-a2);
+	caret-color: var(--link);
+	scrollbar-color: var(--brand-a7) transparent;
 	background: var(--background);
 	color: var(--foreground);
 }
 
 .dialect-public ::selection {
-	background: var(--primary);
-	color: var(--primary-foreground);
+	background: var(--selected);
+	color: var(--selected-foreground);
 }
 
 .dialect-public :focus-visible {
-	outline-color: var(--primary);
+	outline-color: var(--ring);
 }

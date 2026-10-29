@@ -217,8 +217,9 @@ export function ComponentPlaygroundSection({ className }: ComponentPlaygroundSec
 								::selection 选区紫罗兰微光体验
 							</h4>
 							<p className="text-sm leading-relaxed select-all">
-								拖动鼠标选中这段文字：全站已配置全局柔和紫罗兰高亮选区（::selection
-								绑定 --primary-base），在浅色白瓷与深色玄曜下均能呈现丝滑冷香触感。
+								拖动鼠标选中这段文字：实验室局部选区使用柔和紫罗兰高亮（::selection
+								绑定
+								--primary-base），仅在实验稿作用域内保留浅色白瓷与深色玄曜的外观。
 							</p>
 						</div>
 

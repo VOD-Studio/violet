@@ -1,5 +1,5 @@
 /*
- * 网点纸：前台固定背景点缀。颜色全部取自主色源、人设金与前景色，跟随 palette 与明暗主题。
+ * 网点纸：前台固定背景点缀。颜色取品牌装饰与前景语义，跟随明暗主题。
  */
 
 .backdrop {
@@ -7,8 +7,8 @@
 		color-mix(in oklch, var(--foreground) 15%, transparent),
 		color-mix(in oklch, var(--foreground) 11%, transparent)
 	);
-	--orn-lit: color-mix(in oklch, var(--primary-base) 80%, transparent);
-	--orn-gold: var(--persona-gold);
+	--orn-lit: color-mix(in oklch, var(--decoration) 80%, transparent);
+	--orn-gold: var(--decoration);
 	/* 阅读区居中，点阵与指针点亮都从视口中心向边缘渐显 */
 	--orn-edge: radial-gradient(ellipse 62% 68% at 50% 46%, transparent 34%, #000 96%);
 	--orn-lit-edge: radial-gradient(ellipse 62% 68% at 50% 46%, rgb(0 0 0 / 28%) 34%, #000 96%);
@@ -23,7 +23,7 @@
 	view-transition-name: site-backdrop;
 }
 
-/* —— 角落天光：主色压右上，人设金托左下 —— */
+/* —— 角落天光：品牌装饰色托起两角 —— */
 .wash {
 	position: absolute;
 	inset: 0;
@@ -33,8 +33,8 @@
 	background: radial-gradient(
 		54rem 40rem at 100% 0%,
 		light-dark(
-			color-mix(in oklch, var(--primary-base) 10%, transparent),
-			color-mix(in oklch, var(--primary-base) 17%, transparent)
+			color-mix(in oklch, var(--decoration) 10%, transparent),
+			color-mix(in oklch, var(--decoration) 17%, transparent)
 		),
 		transparent 72%
 	);
@@ -104,12 +104,12 @@
 	height: 100%;
 	/* useLifeCanvas 读取这两个计算值作稳定细胞与新生细胞的颜色 */
 	color: light-dark(
-		color-mix(in oklch, var(--primary-base) 50%, transparent),
-		color-mix(in oklch, var(--primary-base) 62%, transparent)
+		color-mix(in oklch, var(--decoration) 50%, transparent),
+		color-mix(in oklch, var(--decoration) 62%, transparent)
 	);
-	/* 人设金在浅色纸面上发褐，浅色主题的新生细胞改用饱满主色 */
+	/* 新生细胞提高装饰色占比，与稳定细胞区分。 */
 	outline-color: light-dark(
-		color-mix(in oklch, var(--primary-base) 92%, transparent),
+		color-mix(in oklch, var(--decoration) 92%, transparent),
 		color-mix(in oklch, var(--orn-gold) 80%, transparent)
 	);
 	mask-image: var(--orn-edge);

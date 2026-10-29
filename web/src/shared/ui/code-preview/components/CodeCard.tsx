@@ -1,12 +1,3 @@
-/**
- * CodeCard - 静态代码展示卡（shiki 高亮 + 标题栏 + 复制按钮）
- *
- * 接受内联代码字符串渲染只读代码块，跨 feature 复用（文章正文 / 图块降级 /
- * MCP 接入示例 / SDK 文档 / 组件文档页演示）。外边距由调用方通过 className 控制。
- *
- * @remarks 走懒加载消费时与 shiki 高亮链同 chunk 拉取，不进宿主主包。
- */
-
 import { cn } from "cn";
 import { Check, ChevronDown, Copy } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
@@ -15,19 +6,29 @@ import codeScrollbar from "@/shared/ui/code-scrollbar.module.css";
 import "../component-code.css";
 import { useShikiHighlight } from "../use-shiki-highlight";
 
+/**
+ * 可复制的代码卡片参数。
+ *
+ * @remarks 代码原文不等待高亮；正文需保持 SSR 阅读高度时传 collapseLines=0。
+ */
 export interface CodeCardProps {
-	/** 原始代码字符串 */
+	/** 未经 HTML 编码的代码原文。 */
 	code: string;
 	/** shiki 语言 ID，未知传 text */
 	language: string;
-	/** 标题栏文案，缺省显示 language */
+	/**
+	 * 标题栏文案。
+	 *
+	 * @default 使用 language
+	 */
 	title?: string;
 	/** 根容器类名，控制外边距等布局属性 */
 	className?: string;
 	/**
-	 * 高亮与配色主题。dark 恒深底 GitHub 风，light 恒浅底；
-	 * 缺省为 auto：卡底走语义 token，token 颜色经 shiki 双主题输出
-	 * light-dark() 随站点明暗由 CSS 切换。
+	 * dark 固定使用深色高亮，light 固定使用浅色高亮；
+	 * 跟随站点时输出双主题 token，由 CSS 切换，无需重新高亮。
+	 *
+	 * @default 跟随站点明暗
 	 */
 	theme?: "dark" | "light";
 	/** 显示 CSS counter 行号 */
@@ -53,7 +54,6 @@ interface CardSkin {
 	title: string;
 	copy: string;
 	check: string;
-	spin: string;
 	fade: string;
 	toggle: string;
 	plain: string;
@@ -67,7 +67,6 @@ const SKINS: Record<"dark" | "light" | "auto", CardSkin> = {
 		title: "text-white/70",
 		copy: "text-white/60 hover:bg-white/10 hover:text-white",
 		check: "text-green-400",
-		spin: "border-white/20 border-t-white",
 		fade: "from-[#24292e] via-[#24292e]/90",
 		toggle: "border-white/15 bg-[#24292e] text-white/85 hover:text-white",
 		plain: "text-white/90",
@@ -79,7 +78,6 @@ const SKINS: Record<"dark" | "light" | "auto", CardSkin> = {
 		title: "text-slate-500",
 		copy: "text-slate-500 hover:bg-slate-100 hover:text-slate-900",
 		check: "text-emerald-600",
-		spin: "border-slate-300 border-t-slate-600",
 		fade: "from-white via-white/90",
 		toggle: "border-slate-200 bg-white text-slate-700 hover:bg-slate-100",
 		plain: "text-slate-900",
@@ -91,7 +89,6 @@ const SKINS: Record<"dark" | "light" | "auto", CardSkin> = {
 		title: "text-muted-foreground",
 		copy: "text-muted-foreground hover:bg-muted hover:text-foreground",
 		check: "text-success",
-		spin: "border-muted-foreground/20 border-t-muted-foreground",
 		fade: "from-card via-card/90",
 		toggle: "border-border/70 bg-card text-foreground hover:bg-muted",
 		plain: "text-foreground",
@@ -99,9 +96,10 @@ const SKINS: Record<"dark" | "light" | "auto", CardSkin> = {
 };
 
 /**
- * CodeCard - 静态代码展示卡
+ * 展示可复制的代码原文，资源就绪后分批添加高亮。
  *
- * @param props - 见 {@link CodeCardProps}
+ * @remarks 本组件不负责模块下载前的视口门控；正文消费方须先通过 DeferredContent 加载。
+ * SSR 与高亮失败时保留纯文本，配色变化通过 CSS 生效，不重新计算自动主题 token。
  */
 export function CodeCard({
 	code,
@@ -114,7 +112,8 @@ export function CodeCard({
 	children,
 }: CodeCardProps) {
 	const skin = SKINS[theme ?? "auto"];
-	const { html, loading } = useShikiHighlight(code, language, { theme });
+	const hostRef = useRef<HTMLDivElement>(null);
+	const { html } = useShikiHighlight(code, language, { theme, elementRef: hostRef });
 	const [copied, setCopied] = useState(false);
 	const shouldCollapse = collapseLines > 0 && code.split("\n").length > collapseLines;
 	const [expanded, setExpanded] = useState(!shouldCollapse);
@@ -161,7 +160,7 @@ export function CodeCard({
 	};
 
 	return (
-		<div data-toc-ignore="" className={cn(skin.root, className)}>
+		<div ref={hostRef} data-toc-ignore="" className={cn(skin.root, className)}>
 			{children && (
 				<div
 					className={cn(
@@ -216,23 +215,14 @@ export function CodeCard({
 							shouldCollapse && "pb-12",
 						)}
 					>
-						{loading ? (
-							<div className="flex h-24 items-center justify-center">
-								<div
-									className={cn(
-										"size-5 animate-spin rounded-full border-2",
-										skin.spin,
-									)}
-								/>
-							</div>
-						) : html ? (
+						{html ? (
 							<div
 								className="shiki-code [&_code]:font-mono! [&_code]:text-sm! [&_pre]:m-0! [&_pre]:bg-transparent! [&_pre]:p-0!"
 								// biome-ignore lint/security/noDangerouslySetInnerHtml: shiki codeToHtml 对代码文本做 HTML 实体转义（<script> 渲染为 &#x3C;script&#x3E; 纯文本，实测无裸标签），输出属性仅 class/style/tabindex 受控集合，无 href/src/on*；代码块内容不可能注入可执行 HTML
 								dangerouslySetInnerHTML={{ __html: html }}
 							/>
 						) : (
-							// 高亮失败降级：纯文本
+							// 高亮尚未完成或失败时始终保留源码，避免增强接管期间把正文换成加载动画。
 							<pre className={skin.plain}>
 								<code>{code}</code>
 							</pre>

@@ -40,6 +40,21 @@ location = /feed.xml {
     proxy_set_header X-Forwarded-Proto $scheme;
 }
 
+# Nowbeam 设备上报：WebSocket 长连接，空闲超时须大于 45 秒租约；不记录 Authorization
+location = /api/v1/presence/ingest {
+    proxy_pass http://blog-api:9090;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $proxy_connection;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_buffering off;
+    proxy_read_timeout 90s;
+    proxy_send_timeout 90s;
+}
+
 location ^~ /api/ {
     proxy_pass http://blog-api:9090;
     proxy_set_header Host $host;

@@ -9,16 +9,13 @@ interface ArticleTocRailGeometryInput {
 	dynamicBend: number;
 	height: number;
 	progressY: number;
-	reduced: boolean;
-	timestamp: number;
 }
 
 const BASE_BEND = 10.4;
-const BEND_WAVE = 0.6;
 const BASE_BEND_RANGE = 56;
 
-/** 轨迹强调色引用主色源 token：跟随配色预设与明暗模式，不写死色值。 */
-export const ARTICLE_TOC_RAIL_ACCENT = "var(--primary-base)";
+/** 阅读轨迹使用进度语义色，跟随配色预设与明暗模式。 */
+export const ARTICLE_TOC_RAIL_ACCENT = "var(--progress)";
 export const ARTICLE_TOC_RAIL_X = 8;
 
 export function clamp(value: number, min: number, max: number) {
@@ -31,8 +28,6 @@ export function getArticleTocRailGeometry({
 	dynamicBend,
 	height,
 	progressY,
-	reduced,
-	timestamp,
 }: ArticleTocRailGeometryInput): ArticleTocRailGeometry {
 	const bendRange = BASE_BEND_RANGE + 2.2 * dynamicBend;
 	const edgeFactor = clamp(
@@ -40,10 +35,7 @@ export function getArticleTocRailGeometry({
 		0,
 		1,
 	);
-	const breathingBend = reduced
-		? BASE_BEND
-		: BASE_BEND + BEND_WAVE * Math.sin((timestamp / 9000) * Math.PI * 2);
-	const bend = activation * (breathingBend + dynamicBend) * edgeFactor;
+	const bend = activation * (BASE_BEND + dynamicBend) * edgeFactor;
 	const bendX = ARTICLE_TOC_RAIL_X + bend;
 	const bendStart = Math.max(0, progressY - bendRange);
 	const bendEnd = Math.min(height, progressY + bendRange);

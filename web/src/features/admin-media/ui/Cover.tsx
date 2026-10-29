@@ -83,7 +83,7 @@ export function Cover({
 				<button
 					type="button"
 					onClick={() => setPickerOpen(true)}
-					className="flex aspect-video w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-edge-hairline text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+					className="flex aspect-video w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-edge-hairline text-sm text-muted-foreground transition-colors hover:border-selected-foreground hover:text-link"
 				>
 					<ImagePlus className="size-5" />
 					选择封面图

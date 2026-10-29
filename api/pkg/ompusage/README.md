@@ -45,14 +45,14 @@ Token 求和先使用 PostgreSQL `numeric`，输出再转浮点数；单次计�
 
 ## 迁移快照与分发验收
 
-`schema.sql` 是提供方初始 schema 的唯一来源。Violet 的 `api/migrations/143_create_omp_usage_events.up.sql` 是其逐字节一致的不可变快照。仅在首次建立该迁移时，从仓库根目录生成并比对：
+`schema.sql` 是提供方初始 schema 的唯一来源。Violet 的 `api/migrations/146_create_omp_usage_events.up.sql` 是其逐字节一致的不可变快照。仅在首次建立该迁移时，从仓库根目录生成并比对：
 
 ```sh
-cp api/pkg/ompusage/schema.sql api/migrations/143_create_omp_usage_events.up.sql
-cmp api/pkg/ompusage/schema.sql api/migrations/143_create_omp_usage_events.up.sql
+cp api/pkg/ompusage/schema.sql api/migrations/146_create_omp_usage_events.up.sql
+cmp api/pkg/ompusage/schema.sql api/migrations/146_create_omp_usage_events.up.sql
 ```
 
-发布后升级 provider 版本并新增宿主迁移，不修改已发布的迁移143。`make omp-usage-sql-pack` 检查快照一致性，将 SQL、JSON schema、README 和许可证打入归档；下列验收入口另外从仓库复制 Rust 消费者到外部临时目录，以解包后的共享资源编译并运行验收：
+发布后升级 provider 版本并新增宿主迁移，不修改已发布的迁移146。`make omp-usage-sql-pack` 检查快照一致性，将 SQL、JSON schema、README 和许可证打入归档；下列验收入口另外从仓库复制 Rust 消费者到外部临时目录，以解包后的共享资源编译并运行验收：
 
 ```sh
 make omp-usage-sql-consumer

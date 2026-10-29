@@ -5,15 +5,19 @@ import { useState } from "react";
 
 export interface ChartAndNeonSectionProps {
 	mode: "light" | "dark" | "dual";
-	resolvedTheme?: "light" | "dark";
+	resolvedAppearance?: "light" | "dark";
 	className?: string;
 }
 
 /**
  * ChartAndNeonSection - 协调图表 5 色光谱与霓虹发光材质展台。
  */
-export function ChartAndNeonSection({ mode, resolvedTheme, className }: ChartAndNeonSectionProps) {
-	const activeMode = mode === "dual" ? (resolvedTheme ?? "light") : mode;
+export function ChartAndNeonSection({
+	mode,
+	resolvedAppearance,
+	className,
+}: ChartAndNeonSectionProps) {
+	const activeMode = mode === "dual" ? (resolvedAppearance ?? "light") : mode;
 	const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
 	// 模拟图表比例数据

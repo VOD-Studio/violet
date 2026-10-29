@@ -104,6 +104,42 @@ func excerpt(content string) string {
 	return string(runes[:excerptLen]) + "…"
 }
 
+// ImageRef 推文图片引用：发布时快照的访问 URL 与尺寸。
+//
+// 尺寸来自 uploads 表（上传时已解码），随推文一起快照——推文不可编辑，
+// 后续文件替换不改变已发推文的展示；历史数据可能缺尺寸（nil），展示层退方格。
+type ImageRef struct {
+	// url 上传文件的访问 URL（/uploads/...），发布时校验归属作者
+	url string
+	// width 图片宽度像素；历史数据可能为 nil
+	width *int
+	// height 图片高度像素；历史数据可能为 nil
+	height *int
+}
+
+// NewImageRef 构造带尺寸的图片引用。
+func NewImageRef(url string, width, height *int) ImageRef {
+	return ImageRef{url: url, width: width, height: height}
+}
+
+// URL 图片访问地址。
+func (r ImageRef) URL() string { return r.url }
+
+// Width 图片宽度像素，可为 nil。
+func (r ImageRef) Width() *int { return r.width }
+
+// Height 图片高度像素，可为 nil。
+func (r ImageRef) Height() *int { return r.height }
+
+// ImageURLs 提取图片引用的 URL 列表（归属校验等只关心地址的场景）。
+func ImageURLs(images []ImageRef) []string {
+	urls := make([]string, 0, len(images))
+	for _, img := range images {
+		urls = append(urls, img.url)
+	}
+	return urls
+}
+
 // Tweet 推文聚合根。
 //
 // 不变量：
@@ -119,8 +155,8 @@ type Tweet struct {
 	authorID shared.ID
 	// content 纯文本正文（trim 后存储；可与 images/quoteOf 其一为空）
 	content string
-	// images 图片访问 URL 列表（≤4 张；发布时由应用层校验归属作者）
-	images []string
+	// images 图片引用列表（≤4 张；URL 与尺寸在发布时快照，归属校验在应用层）
+	images []ImageRef
 	// quoteOf 转发引用的推文 ID（可选）
 	quoteOf *shared.ID
 	// publication 外部来源关联与本次发布的幂等标识，创建后固定。
@@ -135,7 +171,7 @@ type Tweet struct {
 //
 // content 先 trim 再校验：纯空白正文视为空，无图片无引用时拒绝。
 // 创建成功记录 TweetCreated 事件（应用层 Save 后发布）。
-func NewTweet(authorID shared.ID, content string, images []string, quoteOf *shared.ID, publication ...Publication) (*Tweet, error) {
+func NewTweet(authorID shared.ID, content string, images []ImageRef, quoteOf *shared.ID, publication ...Publication) (*Tweet, error) {
 	var pub Publication
 	if len(publication) > 0 {
 		pub = publication[0]
@@ -154,12 +190,12 @@ func NewTweet(authorID shared.ID, content string, images []string, quoteOf *shar
 		return nil, shared.Validation("推文图片最多 4 张")
 	}
 	for _, img := range images {
-		if strings.TrimSpace(img) == "" {
+		if strings.TrimSpace(img.url) == "" {
 			return nil, shared.Validation("推文图片 URL 不能为空")
 		}
 	}
 	if images == nil {
-		images = []string{}
+		images = []ImageRef{}
 	}
 
 	now := time.Now()
@@ -180,7 +216,7 @@ func NewTweet(authorID shared.ID, content string, images []string, quoteOf *shar
 func ReconstructTweet(
 	id, authorID shared.ID,
 	content string,
-	images []string,
+	images []ImageRef,
 	quoteOf *shared.ID,
 	likeCount int,
 	createdAt, updatedAt time.Time,
@@ -191,7 +227,7 @@ func ReconstructTweet(
 		pub = publication[0]
 	}
 	if images == nil {
-		images = []string{}
+		images = []ImageRef{}
 	}
 	return &Tweet{
 		id:          id,
@@ -209,7 +245,7 @@ func ReconstructTweet(
 func (t *Tweet) ID() shared.ID               { return t.id }
 func (t *Tweet) AuthorID() shared.ID         { return t.authorID }
 func (t *Tweet) Content() string             { return t.content }
-func (t *Tweet) Images() []string            { return t.images }
+func (t *Tweet) Images() []ImageRef          { return t.images }
 func (t *Tweet) QuoteOf() *shared.ID         { return t.quoteOf }
 func (t *Tweet) LikeCount() int              { return t.likeCount }
 func (t *Tweet) CreatedAt() time.Time        { return t.timestamps.CreatedAt }

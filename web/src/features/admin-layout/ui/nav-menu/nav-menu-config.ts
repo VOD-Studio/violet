@@ -19,6 +19,7 @@ import {
 	MessageSquare,
 	Music,
 	NotebookText,
+	RadioTower,
 	Rss,
 	ScrollText,
 	Settings,
@@ -183,6 +184,13 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 		icon: Music,
 		group: "assets",
 		permissions: ["music:view"],
+	},
+	{
+		label: "实时状态",
+		to: "/admin/presence",
+		icon: RadioTower,
+		group: "platform",
+		permissions: ["presence:view"],
 	},
 	{
 		label: "用户管理",

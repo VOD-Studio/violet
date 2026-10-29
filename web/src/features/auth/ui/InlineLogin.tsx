@@ -2,7 +2,8 @@ import { useLoginFlows } from "@features/auth/hooks/use-login-flows";
 import { GithubIcon, GoogleIcon, Input } from "@violet/ui";
 import { cn } from "cn";
 import { ChevronDown, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
+import { GoogleOAuthGate } from "./GoogleOAuthGate";
 
 export interface InlineLoginProps {
 	/** 任一方式登录成功后调用 */
@@ -16,12 +17,24 @@ const PROVIDER_BUTTON =
 	"inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-background py-2 text-sm font-medium text-foreground shadow-[0_4px_24px_rgb(0_0_0/0.05)] transition-colors hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50";
 
 /**
- * InlineLogin - 内嵌在批注面板、评论区里的登录区，不弹窗、不离开当前页。
+ * 在批注面板或评论区内登录，不弹窗、不离开当前页。
  *
- * 第三方登录（GitHub / Google）一键完成，账号密码收在折叠区里；登录成功后由调用方接着完成
- * 原本的动作（发送批注、刷新评论区）。
+ * @remarks 随登录区域挂载准备 SDK；成功后调用方继续发送批注或刷新评论。
  */
-export function InlineLogin({ onSuccess, description, className }: InlineLoginProps) {
+export function InlineLogin(props: InlineLoginProps) {
+	return (
+		<GoogleOAuthGate>
+			{(googleError) => <InlineLoginContent {...props} googleError={googleError} />}
+		</GoogleOAuthGate>
+	);
+}
+
+function InlineLoginContent({
+	onSuccess,
+	description,
+	className,
+	googleError,
+}: InlineLoginProps & { googleError: ReactNode }) {
 	const {
 		csrfToken,
 		startGoogle,
@@ -29,6 +42,7 @@ export function InlineLogin({ onSuccess, description, className }: InlineLoginPr
 		submitPassword,
 		passwordPending,
 		googlePending,
+		googleReady,
 		githubPending,
 		showGoogle,
 		showGithub,
@@ -64,7 +78,7 @@ export function InlineLogin({ onSuccess, description, className }: InlineLoginPr
 						<button
 							type="button"
 							onClick={startGoogle}
-							disabled={googlePending}
+							disabled={googlePending || !googleReady}
 							className={PROVIDER_BUTTON}
 						>
 							{googlePending ? (
@@ -77,6 +91,7 @@ export function InlineLogin({ onSuccess, description, className }: InlineLoginPr
 					)}
 				</div>
 			)}
+			{showGoogle && googleError}
 
 			{showOAuth && (
 				<button
@@ -132,7 +147,7 @@ export function InlineLogin({ onSuccess, description, className }: InlineLoginPr
 							type="submit"
 							disabled={!valid || passwordPending || !csrfToken}
 							tabIndex={passwordOpen ? 0 : -1}
-							className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-primary py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+							className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-primary py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							{passwordPending && <Loader2 className="size-4 animate-spin" />}
 							{passwordPending ? "登录中…" : "登录"}

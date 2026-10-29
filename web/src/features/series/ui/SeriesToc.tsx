@@ -69,7 +69,7 @@ export function SeriesTocFab({
 				type="button"
 				onClick={() => setOpen(true)}
 				aria-label="打开全书目录"
-				className="flex size-11 items-center justify-center rounded-full border border-edge-hairline bg-background/80 text-muted-foreground shadow-lg backdrop-blur transition-colors duration-300 hover:border-primary/50 hover:bg-accent hover:text-foreground"
+				className="flex size-11 items-center justify-center rounded-full border border-edge-hairline bg-background/80 text-muted-foreground shadow-lg backdrop-blur transition-colors duration-300 hover:border-selected-foreground hover:bg-accent hover:text-foreground"
 			>
 				<BookOpen className="size-5" />
 			</button>

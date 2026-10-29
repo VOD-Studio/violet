@@ -12,6 +12,7 @@ import (
 	"blog-api/config"
 	musichttp "blog-api/internal/interfaces/http/handler/music"
 	ompusagehttp "blog-api/internal/interfaces/http/handler/omp_usage"
+	presencehttp "blog-api/internal/interfaces/http/handler/presence"
 	publicationhttp "blog-api/internal/interfaces/http/handler/publication"
 	settingshttp "blog-api/internal/interfaces/http/handler/settings"
 	siteidentityhttp "blog-api/internal/interfaces/http/handler/siteidentity"
@@ -52,6 +53,8 @@ func fullRouterDeps() *Deps {
 		Music:                  &musichttp.Handler{},
 		OMPUsage:               &ompusagehttp.Handler{},
 		OMPUsageAuth:           identity,
+		Presence:               &presencehttp.Handler{},
+		PresenceIngest:         &presencehttp.IngestHandler{},
 	}
 }
 

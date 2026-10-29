@@ -30,6 +30,7 @@ var rateBindings = map[string]rateBinding{
 	"x-preview-day":     {"外部推文预览滚动日额度", "user", 86400, 50},
 	"x-refresh":         {"刷新外部推文", "user", 60, 5},
 	"x-video":           {"外部推文视频", "ip", 60, 600},
+	"link_cards":        {"链接卡片查询", "ip", 60, 30},
 	"chat-appearance":   {"聊天外观更新", "ip", 60, 30},
 	"mcp":               {"文章 MCP", "ip", 60, 60},
 	"mcp-scraper":       {"抓取 MCP", "ip", 60, 30},
@@ -47,6 +48,8 @@ var rateBindings = map[string]rateBinding{
 	"music_playback":    {"音乐播放取链", "ip", 60, 20},
 	"music_resolve":     {"站点音乐解析总额度", "shared", 60, 30},
 	"site-impressions":  {"站点印象投票", "hashed_ip", 60, 10},
+	"presence-ingest":   {"实时状态上报握手", "ip", 60, 30},
+	"presence-stream":   {"实时状态推送连接", "ip", 60, 30},
 	"image_processing":  {"图片处理与读取", "ip", 60, 60},
 }
 

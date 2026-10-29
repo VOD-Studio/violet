@@ -1,13 +1,11 @@
-import { contentImageUrl, originalImageUrl } from "@shared/lib/image-url";
+import { originalImageUrl } from "@shared/lib/image-url";
 import { useCallback, useRef, useState } from "react";
 import { ImagePreview } from "@/shared/ui/image-preview";
 
 /**
  * 拦截正文容器内的图片点击与键盘聚焦事件，驱动 {@link ImagePreview} 展开大图轮播预览。
  *
- * @remarks
- * 正文 `<img>` 标签通过 `w=1200` 缩略展示，本 Hook 自动还原原图 URL 供画廊加载，
- * 并以正文缓存缩略图作为平滑飞入占位。
+ * @remarks 原图预览剥离展示变换参数；过渡占位复用浏览器实际选中的响应式候选。
  *
  * @returns 包含容器绑定属性 `bind` 与弹窗 JSX 节点 `preview` 的对象
  *
@@ -36,16 +34,16 @@ export function useArticleImagePreview() {
 	const openPreview = useCallback((target: HTMLElement) => {
 		const container = target.closest("[data-article-content]") as HTMLElement | null;
 		if (!container) return;
-		const imgs = Array.from(container.querySelectorAll("img"));
-		const srcs = imgs.map((img) => img.getAttribute("src") || "").filter(Boolean);
+		const imgs = Array.from(container.querySelectorAll("img")).filter((img) =>
+			img.getAttribute("src"),
+		);
+		const srcs = imgs.map((img) => img.getAttribute("src") || "");
 		const idx = imgs.indexOf(target as HTMLImageElement);
 		if (srcs.length === 0) return;
 		setState({
 			open: true,
-			// DOM src 已是 w=1200 缩略，还原原图供预览加载
 			images: srcs.map(originalImageUrl),
-			// 飞入占位：与正文同档 w=1200（已缓存），防原图过大预览卡顿
-			thumbnails: srcs.map((s) => contentImageUrl(originalImageUrl(s), { width: 1200 })),
+			thumbnails: imgs.map((img) => img.currentSrc || img.src),
 			index: Math.max(0, idx),
 			trigger: target as HTMLImageElement,
 		});

@@ -57,7 +57,7 @@ export function PostVersionsSheet({
 							versions.map((v, index) => (
 								<div
 									key={v.id}
-									className="group relative overflow-hidden rounded-xl border bg-background p-4 transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg dark:hover:shadow-primary/5 animate-in slide-in-from-bottom-4 fade-in fill-mode-backwards"
+									className="group relative overflow-hidden rounded-xl border bg-background p-4 transition-all duration-300 hover:-translate-y-1 hover:border-selected-foreground hover:shadow-lg dark:hover:shadow-decoration/5 animate-in slide-in-from-bottom-4 fade-in fill-mode-backwards"
 									style={{ animationDelay: `${index * 50}ms` }}
 								>
 									<div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />

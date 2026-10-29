@@ -1,14 +1,18 @@
-import ThemeToggle, { type ThemeSize, type ThemeVariant } from "@features/lab/theme/ui";
+import {
+	type AppearanceSize,
+	AppearanceToggle,
+	type AppearanceVariant,
+} from "@features/appearance";
 import { LabHeader } from "@features/lab/ui/LabHeader";
 import { createFileRoute } from "@tanstack/react-router";
 import { Segmented } from "@violet/ui";
 import { useState } from "react";
 
-const DIRECTIONS: { value: ThemeVariant; label: string; intent: string }[] = [
+const DIRECTIONS: { value: AppearanceVariant; label: string; intent: string }[] = [
 	{
 		value: "segmented",
 		label: "三段拨动",
-		intent: "三段胶囊滑块，滑块滑移指示当前主题，图标加文字。生产 Header 现役方案，最稳。",
+		intent: "三段胶囊滑块，滑块滑移指示当前外观，图标加文字。生产 Header 现役方案，最稳。",
 	},
 	{
 		value: "cyclic",
@@ -28,21 +32,21 @@ const DIRECTIONS: { value: ThemeVariant; label: string; intent: string }[] = [
 ];
 
 /** 尺寸陈列档位：lg 是展示位大尺寸，sm 是 Header 生产尺寸 */
-const SIZE_LADDER: { size: ThemeSize; label: string }[] = [
+const SIZE_LADDER: { size: AppearanceSize; label: string }[] = [
 	{ size: "lg", label: "大" },
 	{ size: "default", label: "默认" },
 	{ size: "sm", label: "小" },
 ];
 
 /**
- * /lab/theme - 主题切换器实验室
+ * /lab/theme - 外观切换器实验室
  *
  * 与其他 lab 同构：方向切换 Segmented + Intent 行 + 近生产预览框。
- * theme 的预览是尺寸陈列：当前方向按 大 / 默认 / 小 三档纵向排列，
+ * 外观切换器的预览是尺寸陈列：当前方向按 大 / 默认 / 小 三档纵向排列，
  * 标签右对齐成阶梯读出比例关系。控件无数据态，不设骨架/空态切换。
  */
-function ThemeLab() {
-	const [direction, setDirection] = useState<ThemeVariant>("segmented");
+function AppearanceLab() {
+	const [direction, setDirection] = useState<AppearanceVariant>("segmented");
 	const active = DIRECTIONS.find((d) => d.value === direction) ?? DIRECTIONS[0];
 
 	return (
@@ -77,7 +81,7 @@ function ThemeLab() {
 								<span className="w-8 text-right font-mono text-[10px] tracking-[0.2em] text-muted-foreground/70">
 									{label}
 								</span>
-								<ThemeToggle variant={direction} size={size} />
+								<AppearanceToggle variant={direction} size={size} />
 							</div>
 						))}
 					</div>
@@ -88,5 +92,5 @@ function ThemeLab() {
 }
 
 export const Route = createFileRoute("/lab/theme")({
-	component: ThemeLab,
+	component: AppearanceLab,
 });

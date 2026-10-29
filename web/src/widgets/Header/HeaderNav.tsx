@@ -1,3 +1,5 @@
+import { CapsuleOrnament } from "@features/seasonal-decor/ui/ornaments";
+
 import { NAV_ITEMS, resolveActiveNav } from "@shared/config/nav";
 import { useRouterState } from "@tanstack/react-router";
 import { DropdownGroup, Segmented, type SegmentedItem } from "@violet/ui";
@@ -53,7 +55,8 @@ const HeaderNav = () => {
 	});
 
 	return (
-		<nav aria-label="主导航" className="pointer-events-auto hidden lg:block">
+		<nav aria-label="主导航" className="pointer-events-auto relative hidden lg:block">
+			<CapsuleOrnament variant={1} />
 			<DropdownGroup>
 				<Segmented
 					value={active?.item.label ?? ""}

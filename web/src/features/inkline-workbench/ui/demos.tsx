@@ -11,13 +11,13 @@ import {
 	type SceneItem,
 } from "@violetjs/inkline";
 import { Shuffle } from "lucide-react";
-import { type ReactNode, Suspense, useMemo } from "react";
+import { lazy, type ReactNode, Suspense, useMemo } from "react";
 import * as fillsExample from "../../../../packages/inkline/examples/fills";
 import * as handsExample from "../../../../packages/inkline/examples/hands";
 import * as lineWashExample from "../../../../packages/inkline/examples/line-wash";
 import * as pensExample from "../../../../packages/inkline/examples/pens";
 import * as quickStart from "../../../../packages/inkline/examples/quick-start";
-import { useSiteTheme } from "../hooks/useSiteTheme";
+import { useSiteAppearance } from "../hooks/useSiteAppearance";
 import { MERMAID_DIAGRAM } from "../lib/examples";
 import { type DemoTheme, themedPalette } from "../lib/theme-palette";
 import { useWorkbenchStore } from "../model/workbench-store";
@@ -57,12 +57,12 @@ function Figure({ children, className }: { children: ReactNode; className?: stri
 const quickStartLabel = "带排线填充的圆角卡片";
 
 export function QuickStartStage() {
-	const theme = useSiteTheme();
+	const appearance = useSiteAppearance();
 	return (
 		<Figure className="mx-auto w-full max-w-xl">
 			<DrawingView
 				drawing={quickStart.drawing}
-				palette={themedPalette(quickStart.palette, theme)}
+				palette={themedPalette(quickStart.palette, appearance)}
 				label={quickStartLabel}
 				className="aspect-240/150"
 			/>
@@ -85,7 +85,7 @@ const PEN_CAPTIONS = [
 
 export function PensStage() {
 	const pressure = useWorkbenchStore((s) => s.pressure);
-	const theme = useSiteTheme();
+	const appearance = useSiteAppearance();
 	const drawing = useMemo(() => {
 		const items = pensExample.scene.items.map((item): SceneItem => {
 			const factory = item.style?.pen && PEN_FACTORIES[item.style.pen.id];
@@ -99,7 +99,7 @@ export function PensStage() {
 		<Figure>
 			<DrawingView
 				drawing={drawing}
-				palette={themedPalette(pensExample.palette, theme)}
+				palette={themedPalette(pensExample.palette, appearance)}
 				label={`四支笔，压感 ${pressure.toFixed(2)}`}
 				className="aspect-530/120"
 			/>
@@ -150,7 +150,7 @@ const HAND_CAPTIONS = [
 
 export function HandsStage() {
 	const seed = useWorkbenchStore((s) => s.seed);
-	const theme = useSiteTheme();
+	const appearance = useSiteAppearance();
 	const drawing = useMemo(
 		() => draw(handsExample.scene, { ...handsExample.options, seed }),
 		[seed],
@@ -159,7 +159,7 @@ export function HandsStage() {
 		<Figure>
 			<DrawingView
 				drawing={drawing}
-				palette={themedPalette(handsExample.palette, theme)}
+				palette={themedPalette(handsExample.palette, appearance)}
 				label={`四种手法，seed ${seed}`}
 				className="aspect-530/120"
 			/>
@@ -207,7 +207,7 @@ export function HandsParams() {
 }
 
 export function FillsStage() {
-	const theme = useSiteTheme();
+	const appearance = useSiteAppearance();
 	const fills = useMemo(() => draw(fillsExample.scene, fillsExample.options), []);
 	const lineWash = useMemo(() => draw(lineWashExample.scene, lineWashExample.options), []);
 	return (
@@ -215,7 +215,7 @@ export function FillsStage() {
 			<Figure className="grid gap-2">
 				<DrawingView
 					drawing={fills}
-					palette={themedPalette(fillsExample.palette, theme)}
+					palette={themedPalette(fillsExample.palette, appearance)}
 					label="八种填充"
 					className="aspect-530/230"
 				/>
@@ -226,7 +226,7 @@ export function FillsStage() {
 			<Figure className="grid gap-2">
 				<DrawingView
 					drawing={lineWash}
-					palette={themedPalette(lineWashExample.palette, theme)}
+					palette={themedPalette(lineWashExample.palette, appearance)}
 					label="线描淡彩风格的房子与太阳"
 					className="aspect-400/280"
 				/>
@@ -238,8 +238,7 @@ export function FillsStage() {
 	);
 }
 
-// 图块组件依赖 DOMPurify 与 Mermaid，只能在浏览器里加载；注册表里是懒加载版本
-const MermaidDiagram = diagramRenderers.mermaid.ReaderComponent;
+const MermaidDiagram = lazy(diagramRenderers.mermaid.load);
 
 export function RedrawStage() {
 	const hydrated = useHydrated();
@@ -269,7 +268,7 @@ const PALETTE_THEMES = [
 
 function usePaletteTheme(): DemoTheme {
 	const choice = useWorkbenchStore((s) => s.paletteTheme);
-	const site = useSiteTheme();
+	const site = useSiteAppearance();
 	return choice === "site" ? site : choice;
 }
 

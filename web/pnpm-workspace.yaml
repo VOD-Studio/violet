@@ -12,7 +12,7 @@ minimumReleaseAgeExclude:
   - exsolve
   - isbot
   - systeminformation
-  - '@violetjs/kite-player@0.3.0'
+  - '@violetjs/kite-player@0.4.2'
   - '@typescript/typescript-aix-ppc64@7.0.2'
   - '@typescript/typescript-darwin-arm64@7.0.2'
   - '@typescript/typescript-darwin-x64@7.0.2'

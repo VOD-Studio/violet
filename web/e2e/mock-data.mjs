@@ -57,6 +57,38 @@ const CONTRACT_POST = {
 	updated_at: "2026-08-11T10:00:00Z",
 };
 
+const RICH_CONTENT_POSTS = ["code", "diagram", "toc", "image", "toc-copy", "worker", "image-hydration"].map((kind, index) => ({
+	...CONTRACT_POST,
+	id: `10000000-0000-0000-0000-00000000001${index + 1}`,
+	slug: `contract-rich-${kind}`,
+	title: `富内容故障契约：${kind}`,
+	...(kind === "image-hydration" ? { cover_image: "/uploads/contract-cover.png" } : {}),
+	content_html: [
+		"<h2>富内容局部恢复</h2>",
+		"<p>增强加载失败时，这段正文始终保留。</p>",
+		kind === "diagram"
+			? '<div data-type="diagram-block" data-format="mermaid" data-source="flowchart LR\n  A[开始阅读] --&gt; B[完整图表]"></div>'
+			: '<pre><code class="language-typescript">const recoveryMessage = "正文仍可阅读";</code></pre>',
+		"<p>增强恢复后，这段结尾仍是原来的节点。</p>",
+		kind === "image"
+			? '<p><img src="/uploads/contract-article.png" alt="可预览的正文图片" width="400" height="240"></p>'
+			: "",
+		kind === "worker"
+			? '<pre><code class="language-python">print("线程结果独立")</code></pre>'
+			: "",
+		kind === "image-hydration"
+			? '<p><img src="/uploads/contract-small.png" alt="水合前小图"></p><p><img src="/uploads/contract-small.gif" alt="水合前动图"></p>'
+			: "",
+		kind === "toc" || kind === "toc-copy"
+			? Array.from(
+					{ length: 20 },
+					(_, index) =>
+						`<h2>目录章节 ${index + 1}</h2><p>键盘焦点保持可见，不被滚动区域裁剪。</p>`,
+				).join("")
+			: "",
+	].join(""),
+}));
+
 const CONTRACT_NOTE = {
 	id: "41000000-0000-0000-0000-000000000001",
 	title: "缓存接管笔记",
@@ -84,6 +116,23 @@ const CONTRACT_SERIES = {
 			published_at: CONTRACT_POST.published_at,
 		},
 	],
+};
+
+const RICH_CONTENT_SERIES = {
+	...CONTRACT_SERIES,
+	id: "42000000-0000-0000-0000-000000000002",
+	slug: "contract-rich-series",
+	title: "富内容阅读交互",
+	chapter_count: 3,
+	root_chapters: RICH_CONTENT_POSTS.filter(
+		(post) => post.slug === "contract-rich-toc" || post.slug === "contract-rich-toc-copy",
+	).concat(RICH_CONTENT_POSTS.filter((post) => post.slug === "contract-rich-image")).map((post, index) => ({
+		post_id: post.id,
+		slug: post.slug,
+		title: post.title,
+		chapter_no: index + 1,
+		published_at: post.published_at,
+	})),
 };
 
 const envelope = (data) => JSON.stringify({ data });
@@ -404,12 +453,22 @@ export const PROJECTS_FIXTURE = [
 	},
 ];
 
-/** 与后端 envelope 语义一致的只读路由表；浏览器侧 page.route 复用同一份数据。
+/** 实时状态未公开或无人在线时的应答：顶栏不显示活动。 */
+const NO_PRESENCE = { generated_at: "2026-10-01T00:00:00Z", devices: [] };
+
+/** 与后端 envelope 语义一致的路由表；浏览器侧 page.route 复用同一份数据。
  * cookie 含 contract_admin=1 时按已登录 root 应答会话与后台数据（工具方言契约用）。 */
 export function handle(method, pathname, search, cookie = "") {
 	const params = new URLSearchParams(search || "");
 	const isAdminActor = /(?:^|;\s*)contract_admin=1(?:;|$)/.test(cookie);
+	if (
+		method === "POST" &&
+		RICH_CONTENT_POSTS.some((post) => pathname === `/api/v1/posts/${post.id}/view`)
+	) {
+		return { status: 200, body: envelope(null) };
+	}
 	if (method !== "GET") return { status: 405, body: JSON.stringify({ error: "METHOD_NOT_ALLOWED" }) };
+	if (pathname === "/api/v1/emojis") return { status: 200, body: envelope([]) };
 	if (pathname === "/api/v1/site-identity") return { status: 200, body: envelope(SITE_IDENTITY) };
 	if (pathname === "/api/v1/music/playback") return { status: 200, body: envelope({ mode: "anonymous" }) };
 	if (pathname === "/api/v1/music/playlists") return { status: 200, body: envelope([]) };
@@ -435,6 +494,46 @@ export function handle(method, pathname, search, cookie = "") {
 	if (pathname === "/api/v1/posts/contract-post-1") {
 		return { status: 200, body: envelope(CONTRACT_POST) };
 	}
+	const richContentPost = RICH_CONTENT_POSTS.find(
+		(post) => pathname === `/api/v1/posts/${post.slug}`,
+	);
+	if (richContentPost) return { status: 200, body: envelope(richContentPost) };
+	if (
+		RICH_CONTENT_POSTS.some(
+			(post) => pathname === `/api/v1/posts/${post.id}/annotations/summary`,
+		)
+	) {
+		return { status: 200, body: envelope([]) };
+	}
+	if (
+		RICH_CONTENT_POSTS.some((post) => pathname === `/api/v1/posts/${post.id}/comments`)
+	) {
+		return { status: 200, body: paged([], Number(params.get("limit") || 20)) };
+	}
+	const richChapterIndex = RICH_CONTENT_SERIES.root_chapters.findIndex(
+		(chapter) => pathname === `/api/v1/series/context/${chapter.slug}`,
+	);
+	if (richChapterIndex >= 0) {
+		const navigation = (chapter) =>
+			chapter ? { slug: chapter.slug, title: chapter.title } : null;
+		return {
+			status: 200,
+			body: envelope({
+				series: { slug: RICH_CONTENT_SERIES.slug, title: RICH_CONTENT_SERIES.title },
+				chapter_no: richChapterIndex + 1,
+				total_chapters: RICH_CONTENT_SERIES.chapter_count,
+				prev_chapter: navigation(RICH_CONTENT_SERIES.root_chapters[richChapterIndex - 1]),
+				next_chapter: navigation(RICH_CONTENT_SERIES.root_chapters[richChapterIndex + 1]),
+			}),
+		};
+	}
+	if (
+		RICH_CONTENT_POSTS.some(
+			(post) => pathname === `/api/v1/series/context/${post.slug}`,
+		)
+	) {
+		return { status: 200, body: envelope(null) };
+	}
 	if (
 		pathname === `/api/v1/posts/${CONTRACT_POST.id}/annotations/summary` ||
 		pathname === `/api/v1/posts/${ROADMAP_EMBED_POST.id}/annotations/summary` ||
@@ -452,6 +551,9 @@ export function handle(method, pathname, search, cookie = "") {
 	}
 	if (pathname === `/api/v1/notes/${CONTRACT_NOTE.id}`) {
 		return { status: 200, body: envelope(CONTRACT_NOTE) };
+	}
+	if (pathname === "/api/v1/series/contract-rich-series") {
+		return { status: 200, body: envelope(RICH_CONTENT_SERIES) };
 	}
 	if (pathname === "/api/v1/series/contract-series") {
 		return { status: 200, body: envelope(CONTRACT_SERIES) };
@@ -524,6 +626,15 @@ export function handle(method, pathname, search, cookie = "") {
 	}
 	if (pathname === "/api/v1/galleries/contract-gallery") {
 		return { status: 200, body: envelope(CONTRACT_GALLERY) };
+	}
+	if (pathname === "/api/v1/presence") return { status: 200, body: envelope(NO_PRESENCE) };
+	if (pathname === "/api/v1/presence/stream") {
+		// route.fetch 要等响应结束，所以推一条快照就收尾；retry 拉长，用例期间不重连。
+		return {
+			status: 200,
+			contentType: "text/event-stream",
+			body: `retry: 3600000\nevent: presence\ndata: ${JSON.stringify(NO_PRESENCE)}\n\n`,
+		};
 	}
 	return { status: 404, body: JSON.stringify({ error: "NOT_FOUND", message: pathname }) };
 }

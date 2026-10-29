@@ -114,10 +114,10 @@
 
 /* 选中后相关的线着色：阻塞用警示色，其余用品牌色 */
 .roadmap-board .v-kanban .v-kanban__relation[data-state="active"] {
-	color: var(--primary);
+	color: var(--primary-text);
 }
 .roadmap-board .v-kanban .v-kanban__relation[data-state="active"][data-line="blocker"] {
-	color: var(--destructive);
+	color: var(--destructive-text);
 }
 
 /* 筛选时禁拖的说明由筛选栏统一给出（画布外、紧挨着筛选控件）；看板自带的同一句不再重复显示 */

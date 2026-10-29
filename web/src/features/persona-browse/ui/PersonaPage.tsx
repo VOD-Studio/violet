@@ -6,7 +6,7 @@ import {
 	splitPersonaDisplayName,
 } from "@features/persona-browse/model/presentation";
 import { useArticleImagePreview } from "@shared/hooks/use-article-image-preview";
-import { contentImageSrcSet, contentImageUrl } from "@shared/lib/image-url";
+import { contentImageSources, contentImageUrl } from "@shared/lib/image-url";
 import { BackToTop } from "@shared/ui/back-to-top";
 import { ImagePreview } from "@shared/ui/image-preview";
 import { localeLabel } from "@shared/ui/locale-switcher";
@@ -19,6 +19,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 import { PersonaLocaleTabs } from "./PersonaLocaleTabs";
 import styles from "./PersonaPage.module.css";
+import "./persona-identity.generated.css";
 
 interface LightboxState {
 	open: boolean;
@@ -33,7 +34,7 @@ interface PersonaPageProps {
 
 const CLOSED_LIGHTBOX: LightboxState = { open: false, index: 0, trigger: null };
 const DISPLAY_IMAGE_WIDTH = 2048;
-const DISPLAY_SRCSET_WIDTHS = [640, 1024, 1600, 2048] as const;
+const DISPLAY_IMAGE_WIDTHS = [640, 1024, 1600, 2048] as const;
 const PLATE_EASE = [0.22, 1, 0.36, 1] as const;
 
 /**
@@ -48,7 +49,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 	const reduceMotion = useReducedMotion();
 	if (isPending) {
 		return (
-			<main className={styles.page}>
+			<main className={`identity-theme ${styles.page}`}>
 				<RuaLoading label="正在整理人设档案…" />
 			</main>
 		);
@@ -56,7 +57,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 
 	if (isError) {
 		return (
-			<main className={`${styles.page} ${styles.empty}`}>
+			<main className={`identity-theme ${styles.page} ${styles.empty}`}>
 				<div>
 					<h1>人设档案暂时无法抵达</h1>
 					<p>请稍后再试。</p>
@@ -67,7 +68,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 
 	if (!persona) {
 		return (
-			<main className={`${styles.page} ${styles.empty}`}>
+			<main className={`identity-theme ${styles.page} ${styles.empty}`}>
 				<div>
 					<h1>人设档案尚未公开</h1>
 					<p>当前没有已激活的角色资料。</p>
@@ -94,7 +95,10 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 	const allAlts = heroAsset ? [heroAlt, ...galleryAlts] : [];
 
 	return (
-		<main className={styles.page} data-stale={isPlaceholderData || undefined}>
+		<main
+			className={`identity-theme ${styles.page}`}
+			data-stale={isPlaceholderData || undefined}
+		>
 			{/* --- Hero: 画报封面非对称构图 --- */}
 			<section className={styles.hero} aria-labelledby="persona-name">
 				<div className={styles.heroGlow} aria-hidden />
@@ -302,29 +306,36 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 														}
 														aria-label={`预览 ${galleryAlts[index]}`}
 													>
-														<img
-															srcSet={contentImageSrcSet(
+														<picture>
+															{contentImageSources(
 																image.url,
-																DISPLAY_SRCSET_WIDTHS,
-															)}
-															sizes="(min-width: 1280px) 68rem, calc(100vw - 2.5rem)"
-															src={contentImageUrl(image.url, {
-																width: DISPLAY_IMAGE_WIDTH,
-															})}
-															alt={galleryAlts[index]}
-															width={
-																image.width > 0
-																	? image.width
-																	: undefined
-															}
-															height={
-																image.height > 0
-																	? image.height
-																	: undefined
-															}
-															className={styles.plateImage}
-															loading="lazy"
-														/>
+																DISPLAY_IMAGE_WIDTHS,
+																1088,
+															).map((source) => (
+																<source
+																	key={source.media}
+																	{...source}
+																/>
+															))}
+															<img
+																src={contentImageUrl(image.url, {
+																	width: DISPLAY_IMAGE_WIDTH,
+																})}
+																alt={galleryAlts[index]}
+																width={
+																	image.width > 0
+																		? image.width
+																		: undefined
+																}
+																height={
+																	image.height > 0
+																		? image.height
+																		: undefined
+																}
+																className={styles.plateImage}
+																loading="lazy"
+															/>
+														</picture>
 													</button>
 												</article>
 											</motion.li>

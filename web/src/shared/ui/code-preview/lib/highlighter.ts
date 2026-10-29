@@ -1,224 +1,131 @@
-/**
- * shiki 单例 highlighter（核心 + 按需语言加载）
- *
- * 刻意绕开 shiki/bundle/full（默认入口会内联 200+ 语言的 import 工厂索引），
- * 改用 shiki/core 拿裸 HighlighterCore，再按白名单 loadLanguage 精细加载。
- * 这样 emacs-lisp / wolfram / angular-ts 等博客永不会出现的语言 grammar
- * 不会进入构建产物，只有白名单内的语言会生成独立 chunk 且按需加载。
- *
- * 与编辑器（features/editor，走 lowlight + highlight.js）的区别：
- * 前台展示统一用 shiki，主题 github-dark，与编辑时实时高亮视觉一致即可。
- */
-import { getSingletonHighlighterCore, type HighlighterCore } from "shiki/core";
-import { createOnigurumaEngine } from "shiki/engine/oniguruma";
+import { type EnhancementOptions, scheduleEnhancement } from "@shared/lib/schedule-enhancement";
+import type { HighlightRequest, HighlightResponse } from "./highlighter.worker";
+import type { HighlightTheme } from "./highlighter-engine";
 
-/**
- * 语言包加载器静态映射：键即白名单语言 id。
- *
- * 必须用字面量 import：vite 才能静态解析并预构建/分包，运行时按需拉取。
- * 此前用模板 import + @vite-ignore（`shiki/dist/langs/${lang}.mjs`），裸
- * specifier 原样进入浏览器直接抛 TypeError，白名单内语言全部静默降级
- * 为纯文本（无语法高亮）。独立 chunk 只含映射内语言，未列出语言不进构建。
- */
-const LANG_LOADERS = {
-	html: () => import("shiki/dist/langs/html.mjs"),
-	css: () => import("shiki/dist/langs/css.mjs"),
-	scss: () => import("shiki/dist/langs/scss.mjs"),
-	less: () => import("shiki/dist/langs/less.mjs"),
-	javascript: () => import("shiki/dist/langs/javascript.mjs"),
-	typescript: () => import("shiki/dist/langs/typescript.mjs"),
-	jsx: () => import("shiki/dist/langs/jsx.mjs"),
-	tsx: () => import("shiki/dist/langs/tsx.mjs"),
-	vue: () => import("shiki/dist/langs/vue.mjs"),
-	json: () => import("shiki/dist/langs/json.mjs"),
-	yaml: () => import("shiki/dist/langs/yaml.mjs"),
-	markdown: () => import("shiki/dist/langs/markdown.mjs"),
-	bash: () => import("shiki/dist/langs/bash.mjs"),
-	shell: () => import("shiki/dist/langs/shell.mjs"),
-	powershell: () => import("shiki/dist/langs/powershell.mjs"),
-	dockerfile: () => import("shiki/dist/langs/dockerfile.mjs"),
-	nginx: () => import("shiki/dist/langs/nginx.mjs"),
-	makefile: () => import("shiki/dist/langs/makefile.mjs"),
-	ini: () => import("shiki/dist/langs/ini.mjs"),
-	diff: () => import("shiki/dist/langs/diff.mjs"),
-	go: () => import("shiki/dist/langs/go.mjs"),
-	rust: () => import("shiki/dist/langs/rust.mjs"),
-	python: () => import("shiki/dist/langs/python.mjs"),
-	java: () => import("shiki/dist/langs/java.mjs"),
-	kotlin: () => import("shiki/dist/langs/kotlin.mjs"),
-	swift: () => import("shiki/dist/langs/swift.mjs"),
-	ruby: () => import("shiki/dist/langs/ruby.mjs"),
-	php: () => import("shiki/dist/langs/php.mjs"),
-	c: () => import("shiki/dist/langs/c.mjs"),
-	cpp: () => import("shiki/dist/langs/cpp.mjs"),
-	csharp: () => import("shiki/dist/langs/csharp.mjs"),
-	"objective-c": () => import("shiki/dist/langs/objective-c.mjs"),
-	lua: () => import("shiki/dist/langs/lua.mjs"),
-	r: () => import("shiki/dist/langs/r.mjs"),
-	perl: () => import("shiki/dist/langs/perl.mjs"),
-	graphql: () => import("shiki/dist/langs/graphql.mjs"),
-	sql: () => import("shiki/dist/langs/sql.mjs"),
-	xml: () => import("shiki/dist/langs/xml.mjs"),
-	wasm: () => import("shiki/dist/langs/wasm.mjs"),
-} satisfies Record<string, () => Promise<unknown>>;
-
-/** 白名单语言 id（= LANG_LOADERS 键） */
-type SupportedLanguage = keyof typeof LANG_LOADERS;
-
-/** 主题（前台展示固定 github-dark，与原 useShikiHighlight/useCodeHighlight 一致） */
-const THEME = "github-dark";
-
-/** 浅色主题（组件文档页代码区使用，与页面底色自然衔接） */
-const THEME_LIGHT = "github-light";
-
-/** 语言别名 → 白名单 id（处理 sh/bash、yml/yaml 等常见等价写法） */
-const LANG_ALIAS: Record<string, string> = {
-	js: "javascript",
-	mjs: "javascript",
-	cjs: "javascript",
-	ts: "typescript",
-	mts: "typescript",
-	cts: "typescript",
-	sh: "bash",
-	zsh: "bash",
-	shellsession: "shell",
-	ps1: "powershell",
-	py: "python",
-	rb: "ruby",
-	rs: "rust",
-	kt: "kotlin",
-	"c++": "cpp",
-	h: "c",
-	hh: "c",
-	cc: "cpp",
-	cxx: "cpp",
-	hpp: "cpp",
-	hxx: "cpp",
-	cs: "csharp",
-	golang: "go",
-	docker: "dockerfile",
-	mak: "makefile",
-	toml: "ini",
-	conf: "ini",
-	arduino: "cpp",
-	yml: "yaml",
-	md: "markdown",
-};
-
-/**
- * 把任意 lang id 规整为白名单内 id；不在白名单内返回 null（调用方降级纯文本）。
- */
-export function resolveSupportedLanguage(lang: string): SupportedLanguage | null {
-	if (!lang) return null;
-	const lower = lang.toLowerCase();
-	const aliased = LANG_ALIAS[lower] ?? lower;
-	if (aliased in LANG_LOADERS) return aliased as SupportedLanguage;
-	return null;
+interface PendingHighlight {
+	resolve: (html: string) => void;
+	reject: (error: unknown) => void;
+	cleanup: () => void;
 }
 
-let highlighterPromise: Promise<HighlighterCore> | null = null;
+const pending = new Map<number, PendingHighlight>();
+let worker: Worker | undefined;
+let nextRequestId = 0;
 
-/**
- * getHighlighter - 获取单例 highlighter（懒初始化）
- *
- * 首次调用时创建：engine 用 oniguruma（wasm，与原 shiki/bundle/full 一致），
- * 预加载 github-dark 主题，不预加载任何语言（按需 loadLanguage）。
- */
-export function getHighlighter(): Promise<HighlighterCore> {
-	if (!highlighterPromise) {
-		// engine 传入内联 wasm（shiki/wasm re-export @shikijs/engine-oniguruma/wasm-inlined，
-		// base64 内联，无需运行时 fetch），与 shiki/bundle/full 的 engine 装配方式一致。
-		highlighterPromise = getSingletonHighlighterCore({
-			engine: createOnigurumaEngine(import("shiki/wasm")),
-			themes: [
-				() => import("shiki/dist/themes/github-dark.mjs"),
-				() => import("shiki/dist/themes/github-light.mjs"),
-			],
-		});
-	}
-	return highlighterPromise;
+function settle(id: number, result: { html: string } | { error: unknown }) {
+	const request = pending.get(id);
+	if (!request) return;
+	pending.delete(id);
+	request.cleanup();
+	if ("html" in result) request.resolve(result.html);
+	else request.reject(result.error);
 }
 
-const loadingLanguages = new Map<string, Promise<void>>();
-
-/**
- * ensureLanguage - 确保指定语言已加载到 highlighter（去重并发加载）。
- *
- * @param lang 白名单内语言 id（外部应先用 resolveSupportedLanguage 校验）
- */
-export function ensureLanguage(lang: SupportedLanguage): Promise<void> {
-	const pending = loadingLanguages.get(lang);
-	if (pending) return pending;
-	// 已加载直接返回（getLoadedLanguages 同步可查）
-	const hl = highlighterPromise;
-	const p = (async () => {
-		const highlighter = await (hl ?? getHighlighter());
-		if (highlighter.getLoadedLanguages().includes(lang)) return;
-		await highlighter.loadLanguage(LANG_LOADERS[lang]);
-	})();
-	loadingLanguages.set(lang, p);
-	return p;
-}
-
-/**
- * highlightCode - 高亮代码字符串为 HTML
- *
- * @param code 原始代码
- * @param lang 任意 lang id（自动别名解析；不在白名单内降级为 plaintext 纯文本，
- *             仍带主题背景但不做语法上色）
- * @returns 高亮 HTML（shiki 输出）
- */
-export async function highlightCode(code: string, lang: string): Promise<string> {
-	const resolved = resolveSupportedLanguage(lang);
-	const highlighter = await getHighlighter();
-	// 不在白名单内的语言用 plaintext 兜底（shiki 内置，无需 loadLanguage）
-	const finalLang = resolved ?? "plaintext";
-	if (resolved) {
-		await ensureLanguage(resolved);
-	}
-	return highlighter.codeToHtml(code, { lang: finalLang, theme: THEME });
-}
-
-/**
- * highlightCodeLight - 以浅色主题高亮代码字符串
- *
- * @param code - 原始代码
- * @param lang - 任意 lang id（解析与降级策略同 {@link highlightCode}）
- * @returns 高亮 HTML（shiki 输出）
- */
-export async function highlightCodeLight(code: string, lang: string): Promise<string> {
-	const resolved = resolveSupportedLanguage(lang);
-	const highlighter = await getHighlighter();
-	const finalLang = resolved ?? "plaintext";
-	if (resolved) {
-		await ensureLanguage(resolved);
-	}
-	return highlighter.codeToHtml(code, { lang: finalLang, theme: THEME_LIGHT });
-}
-
-/**
- * highlightCodeAuto - 双主题高亮，token 颜色输出 light-dark() 由 CSS 自动切换
- *
- * 无需 JS 感知站点明暗：跟随元素 color-scheme 取对应主题取值，与组件库
- * 语义 token 的明暗机制一致。
- *
- * @param code - 原始代码
- * @param lang - 任意 lang id（解析与降级策略同 {@link highlightCode}）
- * @returns 高亮 HTML（shiki 输出）
- */
-export async function highlightCodeAuto(code: string, lang: string): Promise<string> {
-	const resolved = resolveSupportedLanguage(lang);
-	const highlighter = await getHighlighter();
-	const finalLang = resolved ?? "plaintext";
-	if (resolved) {
-		await ensureLanguage(resolved);
-	}
-	return highlighter.codeToHtml(code, {
-		lang: finalLang,
-		themes: { light: THEME_LIGHT, dark: THEME },
-		defaultColor: "light-dark()",
+function getWorker(): Worker {
+	if (worker) return worker;
+	const current = new Worker(new URL("./highlighter.worker.ts", import.meta.url), {
+		type: "module",
+		name: "violet-code-highlight",
 	});
+	worker = current;
+	const fail = (error: Error) => {
+		if (worker !== current) return;
+		worker = undefined;
+		current.terminate();
+		for (const id of pending.keys()) settle(id, { error });
+	};
+	current.addEventListener("message", ({ data }: MessageEvent<HighlightResponse>) => {
+		settle(data.id, "html" in data ? data : { error: new Error(data.error) });
+	});
+	current.addEventListener("error", (event) => {
+		fail(new Error(event.message ? event.message : "代码高亮线程加载失败"));
+	});
+	current.addEventListener("messageerror", () => fail(new Error("无法读取代码高亮结果")));
+	return current;
 }
 
-/** Theme 名导出，供外部复用样式约定 */
-export { THEME as SHIKI_THEME, THEME_LIGHT as SHIKI_THEME_LIGHT };
+function requestHighlight(
+	code: string,
+	language: string,
+	theme: HighlightTheme,
+	signal?: AbortSignal,
+): Promise<string> {
+	signal?.throwIfAborted();
+	const current = getWorker();
+	const id = nextRequestId++;
+	const result = Promise.withResolvers<string>();
+	const abort = () => settle(id, { error: signal?.reason });
+	pending.set(id, {
+		resolve: result.resolve,
+		reject: result.reject,
+		cleanup: () => signal?.removeEventListener("abort", abort),
+	});
+	signal?.addEventListener("abort", abort, { once: true });
+	try {
+		current.postMessage({ id, code, language, theme } satisfies HighlightRequest);
+	} catch (error) {
+		settle(id, { error });
+	}
+	return result.promise;
+}
+
+async function highlight(
+	code: string,
+	language: string,
+	theme: HighlightTheme,
+	options?: EnhancementOptions,
+): Promise<string> {
+	// 共享队列只安排线程投递，不能等待线程的下载或计算，否则会阻塞其他可见增强。
+	const { result } = await scheduleEnhancement(
+		() => ({ result: requestHighlight(code, language, theme, options?.signal) }),
+		options,
+	);
+	return result;
+}
+
+/**
+ * 在按需启动的共享 Worker 中生成固定深色主题的高亮 HTML。
+ *
+ * @param lang - 支持白名单及别名；未知语言按纯文本处理。
+ * @param options - 投递前优先处理可见宿主；取消立即拒绝等待，不终止其他代码块。
+ * @returns 完整 HTML；线程或计算失败时拒绝，由消费方保留源码。
+ * @remarks SSR 不调用此函数。已投递的计算不会被强行中断，取消后的回复会被丢弃。
+ * 线程故障不会自动重试；后续调用可重新建立线程。
+ */
+export function highlightCode(
+	code: string,
+	lang: string,
+	options?: EnhancementOptions,
+): Promise<string> {
+	return highlight(code, lang, "dark", options);
+}
+
+/**
+ * 在共享 Worker 中生成固定浅色主题的高亮 HTML。
+ *
+ * @param lang - 语言解析与降级策略同 {@link highlightCode}。
+ * @param options - 可见宿主优先级与取消信号。
+ * @returns 完整 HTML；失败时保留当前源码，不复用其他请求的结果。
+ */
+export function highlightCodeLight(
+	code: string,
+	lang: string,
+	options?: EnhancementOptions,
+): Promise<string> {
+	return highlight(code, lang, "light", options);
+}
+
+/**
+ * 在共享 Worker 中生成随 color-scheme 切换的双主题高亮 HTML。
+ *
+ * @param lang - 语言解析与降级策略同 {@link highlightCode}。
+ * @param options - 可见宿主优先级与取消信号。
+ * @returns 同时包含明暗配色的完整 HTML；切换主题不需要重新计算。
+ */
+export function highlightCodeAuto(
+	code: string,
+	lang: string,
+	options?: EnhancementOptions,
+): Promise<string> {
+	return highlight(code, lang, "auto", options);
+}

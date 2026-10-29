@@ -6,10 +6,11 @@ import {
 import { useCsrfToken } from "@features/auth/api/queries";
 import { useGithubOAuth } from "@features/auth/hooks/use-github-oauth";
 import { useOAuthVisibility } from "@features/auth/hooks/use-oauth-visibility";
-import { useGoogleLogin } from "@react-oauth/google";
+import { GoogleOAuthGate } from "@features/auth/ui/GoogleOAuthGate";
+import { useGoogleLogin, useGoogleOAuth } from "@react-oauth/google";
 import { GithubIcon } from "@violet/ui";
 import { CheckCircle2, KeyRound, Link2, Link2Off, Loader2, Mail } from "lucide-react";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { toast } from "sonner";
 
 import { SectionCard } from "./SectionCard";
@@ -19,17 +20,29 @@ interface ConnectionsSectionProps {
 }
 
 /**
- * ConnectionsSection - 登录方式卡片
+ * 展示登录方式并管理第三方账号绑定。
  *
  * 展示并管理登录途径（密码 / Google / GitHub）：未绑定的 provider 提供绑定
  * 入口（OAuth 流后 POST /auth/connections），已绑定的提供解绑（带确认，
  * 后端校验解绑后至少保留一种登录方式）。
  */
-export const ConnectionsSection = ({ user }: ConnectionsSectionProps) => {
+export function ConnectionsSection({ user }: ConnectionsSectionProps) {
+	return (
+		<GoogleOAuthGate>
+			{(googleError) => <ConnectionsContent user={user} googleError={googleError} />}
+		</GoogleOAuthGate>
+	);
+}
+
+function ConnectionsContent({
+	user,
+	googleError,
+}: ConnectionsSectionProps & { googleError: ReactNode }) {
 	const csrfToken = useCsrfToken();
 	const bindConnection = useBindConnectionMutation(csrfToken);
 	const unbindConnection = useUnbindConnectionMutation(csrfToken);
 	const { showGoogle, showGithub } = useOAuthVisibility();
+	const { scriptLoadedSuccessfully } = useGoogleOAuth();
 	const [pendingProvider, setPendingProvider] = useState<"google" | "github" | null>(null);
 	const openGithubWindow = useGithubOAuth({
 		bindIntent: true,
@@ -109,8 +122,10 @@ export const ConnectionsSection = ({ user }: ConnectionsSectionProps) => {
 								/>
 							) : (
 								<BindButton
-									onClick={() => googleLogin()}
-									disabled={pending("google")}
+									onClick={() => {
+										if (scriptLoadedSuccessfully) googleLogin();
+									}}
+									disabled={pending("google") || !scriptLoadedSuccessfully}
 								/>
 							)
 						}
@@ -139,9 +154,10 @@ export const ConnectionsSection = ({ user }: ConnectionsSectionProps) => {
 					/>
 				) : null}
 			</dl>
+			{showGoogle && !user.google_bound && googleError}
 		</SectionCard>
 	);
-};
+}
 
 const BindButton = ({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) => (
 	<button

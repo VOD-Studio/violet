@@ -69,10 +69,12 @@ func (s *stubTweetRepo) Delete(_ context.Context, id shared.ID) error {
 	s.deleted = append(s.deleted, id)
 	return nil
 }
-func (s *stubTweetRepo) Like(_ context.Context, _, _ shared.ID) error { return nil }
-func (s *stubTweetRepo) Unlike(_ context.Context, _, _ shared.ID) error { return nil }
+func (s *stubTweetRepo) Like(_ context.Context, _, _ shared.ID) error            { return nil }
+func (s *stubTweetRepo) Unlike(_ context.Context, _, _ shared.ID) error          { return nil }
 func (s *stubTweetRepo) IsLiked(_ context.Context, _, _ shared.ID) (bool, error) { return false, nil }
-func (s *stubTweetRepo) FindLikedTweetIDs(_ context.Context, _ shared.ID, _ []shared.ID) (map[string]bool, error) { return map[string]bool{}, nil }
+func (s *stubTweetRepo) FindLikedTweetIDs(_ context.Context, _ shared.ID, _ []shared.ID) (map[string]bool, error) {
+	return map[string]bool{}, nil
+}
 
 // stubUserRepo 只覆盖 FindByIDs（作者资料填充）。
 type stubUserRepo struct {
@@ -195,7 +197,7 @@ var (
 func sampleTweet() *domaintweet.Tweet {
 	return domaintweet.ReconstructTweet(
 		shared.MustParseID("00000000-0000-0000-0000-000000000001"),
-		authorID, "示例推文", []string{}, nil, 0, sampleTime, sampleTime,
+		authorID, "示例推文", nil, nil, 0, sampleTime, sampleTime,
 	)
 }
 
@@ -204,7 +206,7 @@ func newTestHandler(repo *stubTweetRepo) *Handler {
 	uname, _ := domainuser.ParseUsername("alice")
 	email, _ := domainuser.ParseEmail("alice@example.com")
 	users.users[authorID.String()] = domainuser.NewUser(authorID, email, uname, domainuser.NewPasswordHash("x"))
-	svc := apptweet.NewService(repo, nil, users, nil, nil, nil, appshared.NoopEventBus{})
+	svc := apptweet.NewService(repo, nil, users, nil, nil, nil, nil, nil, appshared.NoopEventBus{})
 	return NewHandler(svc)
 }
 
@@ -214,7 +216,7 @@ func newCommentTestHandler(repo *stubTweetRepo, comments *stubCommentRepo) *Hand
 	uname, _ := domainuser.ParseUsername("alice")
 	email, _ := domainuser.ParseEmail("alice@example.com")
 	users.users[authorID.String()] = domainuser.NewUser(authorID, email, uname, domainuser.NewPasswordHash("x"))
-	svc := apptweet.NewService(repo, comments, users, nil, nil, nil, appshared.NoopEventBus{})
+	svc := apptweet.NewService(repo, comments, users, nil, nil, nil, nil, nil, appshared.NoopEventBus{})
 	return NewHandler(svc)
 }
 

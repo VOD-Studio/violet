@@ -4,7 +4,7 @@ import { mountSvg, seekSvg } from "@violetjs/inkline/svg";
 import { Pause, Play, RotateCcw } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useInkedArtwork } from "../hooks/useInkedArtwork";
-import { useSiteTheme } from "../hooks/useSiteTheme";
+import { useSiteAppearance } from "../hooks/useSiteAppearance";
 import { phasedSchedule } from "../lib/artwork";
 import { ARTWORKS } from "../model/artworks";
 import { useWorkbenchStore } from "../model/workbench-store";
@@ -18,7 +18,7 @@ export function ArtworkStage() {
 	const mode = useWorkbenchStore((s) => s.mode);
 	const rate = useWorkbenchStore((s) => s.rate);
 	const artwork = useInkedArtwork(key);
-	const theme = useSiteTheme();
+	const appearance = useSiteAppearance();
 	const schedule = useMemo(
 		() => (artwork ? phasedSchedule(artwork.drawing, artwork.phases, mode) : null),
 		[artwork, mode],
@@ -61,10 +61,10 @@ export function ArtworkStage() {
 		if (player.current) player.current.rate = rate;
 	}, [rate]);
 
-	// 主题切换后时间条以新 key 重建，把播放头放回当前时刻
+	// 明暗切换后时间条以新 key 重建，把播放头放回当前时刻。
 	useEffect(() => {
-		if (theme && player.current) timeline.current?.setTime(player.current.time);
-	}, [theme]);
+		if (appearance && player.current) timeline.current?.setTime(player.current.time);
+	}, [appearance]);
 
 	// 播放中跳到结尾会被播放器当作「从头重播」，先暂停再跳
 	const seek = (time: number) => {
@@ -98,7 +98,7 @@ export function ArtworkStage() {
 			{schedule && artwork && (
 				<div className="grid gap-2">
 					<Timeline
-						key={theme}
+						key={appearance}
 						ref={timeline}
 						schedule={schedule}
 						phases={artwork.phases}

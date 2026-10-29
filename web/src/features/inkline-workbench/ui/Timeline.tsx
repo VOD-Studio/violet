@@ -24,8 +24,8 @@ export interface TimelineProps {
 	className?: string;
 }
 
-// 依次给底纸、线稿、上色三段；工具方言的 --primary 是中性色，进度用主色源 --primary-base
-const LANE_COLORS = ["--muted-foreground", "--foreground", "--primary-base"];
+// 依次给底纸、线稿、上色三段；上色轨与播放头使用进度语义色。
+const LANE_COLORS = ["--muted-foreground", "--foreground", "--progress"];
 // 键盘每次跳转的秒数；Shift 加大到 5 倍
 const KEY_STEP = 0.5;
 
@@ -73,7 +73,7 @@ function renderLanes(
 			ctx.fillRect(x0, row * laneHeight + dpr, x1 - x0, laneHeight - 2 * dpr);
 		}
 	});
-	return { image, playhead: resolveColor(element, "--primary-base") };
+	return { image, playhead: resolveColor(element, "--progress") };
 }
 
 /**

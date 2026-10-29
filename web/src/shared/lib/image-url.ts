@@ -1,3 +1,21 @@
+import { SITE_URL } from "@shared/config/env";
+
+// 与 /uploads 动态处理接口的宽度上限保持一致；极小 crop 不应生成 400 请求。
+const MAX_IMAGE_WIDTH = 4096;
+
+interface ImageOpts {
+	w?: number;
+	h?: number;
+	thumb?: string; // "WxH"
+	format?: "jpeg" | "png" | "webp";
+	/** 1–100；WebP 显式质量采用请求级有损编码，不改变上传策略。 */
+	quality?: number;
+	rotate?: 0 | 90 | 180 | 270;
+}
+
+/** 后端动态处理参数全集(originalImageUrl 剥离用)。 */
+const PROCESSING_PARAMS = ["w", "h", "thumb", "format", "quality", "rotate"] as const;
+
 /**
  * 生成带动态处理参数的图片 URL。
  * 配合后端 GET /uploads/{path}?w&h&thumb&format&quality&rotate。
@@ -11,18 +29,6 @@
  * imageUrl("/uploads/a.jpg?crop=0.1,0.2,0.5,0.5", { w: 800 })
  * // => "/uploads/a.jpg?crop=0.1%2C0.2%2C0.5%2C0.5&w=800"(crop 经 URLSearchParams 往返不丢失)
  */
-interface ImageOpts {
-	w?: number;
-	h?: number;
-	thumb?: string; // "WxH"
-	format?: "jpeg" | "png" | "webp";
-	quality?: number;
-	rotate?: 0 | 90 | 180 | 270;
-}
-
-/** 后端动态处理参数全集(originalImageUrl 剥离用)。 */
-const PROCESSING_PARAMS = ["w", "h", "thumb", "format", "quality", "rotate"] as const;
-
 export function imageUrl(path: string, opts: ImageOpts = {}): string {
 	const [base, search = ""] = path.split("?");
 	const params = new URLSearchParams(search);
@@ -37,36 +43,77 @@ export function imageUrl(path: string, opts: ImageOpts = {}): string {
 }
 
 /**
- * 内容图缩略约定:展示层(正文/评论/封面/编辑器等)统一走 w 档缩略 + webp,
- * 只有预览查看详情才加载原图。
+ * 为本站上传图生成保留完整画面的 WebP 展示派生图（quality=80）。
  *
- * GIF 特判:剥除所有后端处理参数(format=webp 会让后端解码 GIF 只取第一帧,
- * 动画静默丢失),直接返回原 path(含已有的 ?crop=)——与 avatarUrl 同一约定。
+ * @remarks GIF 直接使用原图；动画 WebP 由服务端检测并原样返回。
+ * 外链不附加本站处理参数。原图预览与下载使用 {@link originalImageUrl}。
+ * @param opts - 目标像素宽度，按调用方展示宽度与 DPR 选择；最大为接口上限 4096。
  */
 export function contentImageUrl(path: string, opts: { width: number }): string {
-	if (!path) return path;
-	if (isGifPath(path)) {
-		return path;
-	}
-	return imageUrl(path, { w: opts.width, format: "webp" });
-}
-
-/** 为内容图生成响应式宽度候选。GIF 保持原图 URL，不生成 srcset。 */
-export function contentImageSrcSet(path: string, widths: readonly number[]): string | undefined {
-	if (!path || widths.length === 0 || isGifPath(path)) return undefined;
-	return widths.map((width) => `${contentImageUrl(path, { width })} ${width}w`).join(", ");
+	if (!isUploadedImage(path)) return path;
+	if (isGifPath(path)) return originalImageUrl(path);
+	const [base, search = ""] = path.split("?");
+	const params = new URLSearchParams(search);
+	// 展示层只缩放全图；作者 crop 由 CSS 复现，不能再次居中裁切。
+	params.delete("thumb");
+	params.delete("h");
+	const query = params.toString();
+	return imageUrl(query ? `${base}?${query}` : base, {
+		w: Math.min(MAX_IMAGE_WIDTH, opts.width),
+		format: "webp",
+		quality: 80,
+	});
 }
 
 /**
- * 剥离后端动态处理参数(w/h/thumb/format/quality/rotate),还原原图 URL。
- * 保留 crop 等纯前端参数。预览层从已缩略的 DOM src 还原原图用
- * (内容图显示 w 档缩略,点开预览必须加载原图)。
+ * 为未知素材尺寸生成按视口与 DPR 选择的 picture 候选。
+ *
+ * @remarks 每个 source 只有一个 URL，不声明未经素材元数据证实的像素宽度或密度。
+ * 后端只缩不放大或原样返回动画时，浏览器仍使用资源本身的自然尺寸。
+ * @param widths - 从小到大的请求宽度档位。
+ * @param maxDisplayWidth - 展示列宽上界；省略时按整个视口估计。
+ * @returns GIF 与外链返回空数组；其余结果可直接展开到 picture 的 source。
+ */
+export function contentImageSources(
+	path: string,
+	widths: readonly number[],
+	maxDisplayWidth = Number.POSITIVE_INFINITY,
+): { media: string; srcSet: string }[] {
+	if (!isUploadedImage(path) || widths.length === 0 || isGifPath(path)) return [];
+	const candidates = [
+		...new Set([...widths.map((width) => Math.min(MAX_IMAGE_WIDTH, width)), MAX_IMAGE_WIDTH]),
+	].sort((a, b) => a - b);
+	const conditions = new Map<number, string[]>();
+	for (const density of [1, 1.5, 2, 3, 4]) {
+		for (const width of candidates) {
+			const coversColumn = width >= maxDisplayWidth * density;
+			const media = `(max-resolution: ${density}dppx)${coversColumn ? "" : ` and (max-width: ${width / density}px)`}`;
+			const matches = conditions.get(width) ?? [];
+			matches.push(media);
+			conditions.set(width, matches);
+			if (coversColumn) break;
+		}
+	}
+	return candidates
+		.filter((width) => width === MAX_IMAGE_WIDTH || conditions.has(width))
+		.map((width) => ({
+			media: width === MAX_IMAGE_WIDTH ? "" : (conditions.get(width) ?? []).join(", "),
+			srcSet: contentImageUrl(path, { width }),
+		}));
+}
+
+/**
+ * 剥离本站动态处理参数，恢复灯箱与下载使用的原图 URL。
+ *
+ * @remarks 保留作者 crop；外站查询参数属于其资源契约，不作修改。
  */
 export function originalImageUrl(path: string): string {
+	if (!isUploadedImage(path)) return path;
 	const i = path.indexOf("?");
 	if (i < 0) return path;
 	const base = path.slice(0, i);
 	const params = new URLSearchParams(path.slice(i + 1));
+	if (!PROCESSING_PARAMS.some((key) => params.has(key))) return path;
 	for (const k of PROCESSING_PARAMS) {
 		params.delete(k);
 	}
@@ -75,12 +122,9 @@ export function originalImageUrl(path: string): string {
 }
 
 /**
- * 头像专用:200x200 缩略图 + WebP
- * 如果 path 为空或无效，返回默认头像（使用 UI Avatars 生成）
+ * 生成头像缩略地址，缺少头像时使用默认头像服务。
  *
- * GIF 特判:剥除所有后端处理参数(format=webp 会让后端解码 GIF 只取第一帧,
- * 动画静默丢失),直接返回原 path(含已有的 ?crop=)。GIF 动画保留的必要条件
- * 是「不走任何后端图片处理参数,只用 ?crop + CSS 视觉裁剪」(见 CroppedImage)。
+ * @remarks GIF 保留原地址；其他格式沿用头像专用裁剪，不套用正文展示质量策略。
  */
 export function avatarUrl(path: string, username?: string): string {
 	if (!path || path.trim() === "") {
@@ -97,4 +141,15 @@ export function avatarUrl(path: string, username?: string): string {
 /** 判断 path(剥离查询参数后)是否 .gif 后缀(大小写不敏感) */
 function isGifPath(path: string): boolean {
 	return path.split("?")[0].toLowerCase().endsWith(".gif");
+}
+
+function isUploadedImage(path: string): boolean {
+	if (!path) return false;
+	if (path.startsWith("/uploads/")) return true;
+	try {
+		const url = new URL(path);
+		return url.origin === new URL(SITE_URL).origin && url.pathname.startsWith("/uploads/");
+	} catch {
+		return false;
+	}
 }

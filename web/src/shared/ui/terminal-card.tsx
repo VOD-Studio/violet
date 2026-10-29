@@ -20,7 +20,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 /**
  * TerminalCard — 终端风格玻璃拟态卡片，带打字机循环引言
  *
- * 视觉：信号灯 + 毛玻璃 + neon 渐变提示符 + 闪烁光标
+ * 视觉：信号灯 + 毛玻璃 + 品牌提示符 + 闪烁光标
  * 行为：逐字打出引言 → 停留 5s → 清空 → 下一条，循环
  * prefers-reduced-motion：直接显示完整文本，不打字
  */
@@ -123,7 +123,7 @@ export function TerminalCard({
 			{/* 终端正文 */}
 			<div className="flex flex-1 flex-col px-4 pb-4 pt-3.5 font-mono text-[13px] leading-7">
 				<p className="m-0">
-					<span className="bg-linear-to-br from-neon-blue to-neon-purple bg-clip-text font-medium text-transparent">
+					<span className="bg-linear-to-br from-link to-link-hover bg-clip-text font-medium text-transparent">
 						violet@blog
 					</span>
 					<span className="ml-px text-muted-foreground">:~$</span>

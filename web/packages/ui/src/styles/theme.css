@@ -26,6 +26,7 @@
 	--color-popover: var(--popover);
 	--color-popover-foreground: var(--popover-foreground);
 	--color-primary: var(--primary);
+	--color-primary-hover: var(--primary-hover);
 	--color-primary-foreground: var(--primary-foreground);
 	--color-secondary: var(--secondary);
 	--color-secondary-foreground: var(--secondary-foreground);
@@ -34,6 +35,7 @@
 	--color-accent: var(--accent);
 	--color-accent-foreground: var(--accent-foreground);
 	--color-destructive: var(--destructive);
+	--color-destructive-hover: var(--destructive-hover);
 	--color-destructive-foreground: var(--destructive-foreground);
 	--color-warning: var(--warning);
 	--color-warning-foreground: var(--warning-foreground);
@@ -42,14 +44,36 @@
 	--color-border: var(--border);
 	--color-input: var(--input);
 	--color-ring: var(--ring);
-
-	/* 主色源：值由 palettes/ 提供，语义 primary 可按页面方言映射到这一层 */
-	--color-primary-base: var(--primary-base);
-	--color-primary-base-foreground: var(--primary-base-foreground);
-	--color-primary-base-hover: var(--primary-base-hover);
-	--color-primary-base-soft: var(--primary-base-soft);
-	--color-primary-base-soft-foreground: var(--primary-base-soft-foreground);
-	--color-primary-base-ring: var(--primary-base-ring);
+	--color-link: var(--link);
+	--color-link-hover: var(--link-hover);
+	--color-selected: var(--selected);
+	--color-selected-hover: var(--selected-hover);
+	--color-selected-foreground: var(--selected-foreground);
+	--color-progress: var(--progress);
+	--color-decoration: var(--decoration);
+	--color-decoration-hover: var(--decoration-hover);
+	--color-decoration-muted: var(--decoration-muted);
+	--color-decoration-foreground: var(--decoration-foreground);
+	--color-edge-hairline: var(--edge-hairline);
+	--color-surface-glass: var(--surface-glass);
+	--color-category-1: var(--category-1);
+	--color-category-1-muted: var(--category-1-muted);
+	--color-category-1-foreground: var(--category-1-foreground);
+	--color-category-2: var(--category-2);
+	--color-category-2-muted: var(--category-2-muted);
+	--color-category-2-foreground: var(--category-2-foreground);
+	--color-category-3: var(--category-3);
+	--color-category-3-muted: var(--category-3-muted);
+	--color-category-3-foreground: var(--category-3-foreground);
+	--color-category-4: var(--category-4);
+	--color-category-4-muted: var(--category-4-muted);
+	--color-category-4-foreground: var(--category-4-foreground);
+	--color-category-5: var(--category-5);
+	--color-category-5-muted: var(--category-5-muted);
+	--color-category-5-foreground: var(--category-5-foreground);
+	--color-category-6: var(--category-6);
+	--color-category-6-muted: var(--category-6-muted);
+	--color-category-6-foreground: var(--category-6-foreground);
 
 	--radius-lg: var(--radius);
 	--radius-md: calc(var(--radius) - 2px);
@@ -60,6 +84,21 @@
 	--color-chart-3: var(--chart-3);
 	--color-chart-4: var(--chart-4);
 	--color-chart-5: var(--chart-5);
+
+	/*
+	 * 角色色在文字上取可读档：Tailwind 的 text- 先查 --text-color-*，
+	 * 所以 text-primary、text-destructive 是可读文字，bg-、border-、fill- 等回落到 --color-* 的实色。
+	 */
+	--text-color-primary: var(--primary-text);
+	--text-color-destructive: var(--destructive-text);
+	--text-color-warning: var(--warning-text);
+	--text-color-success: var(--success-text);
+	--text-color-category-1: var(--category-1-text);
+	--text-color-category-2: var(--category-2-text);
+	--text-color-category-3: var(--category-3-text);
+	--text-color-category-4: var(--category-4-text);
+	--text-color-category-5: var(--category-5-text);
+	--text-color-category-6: var(--category-6-text);
 }
 
 /* —— 主题动画 token 引用的 keyframes（全局注册，随映射层一起维护）—— */

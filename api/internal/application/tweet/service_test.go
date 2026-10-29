@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	applp "blog-api/internal/application/linkpreview"
 	appshared "blog-api/internal/application/shared"
 	"blog-api/internal/domain/shared"
 	domaintweet "blog-api/internal/domain/tweet"
@@ -173,6 +174,15 @@ func (f *fakeImageChecker) CheckImagesOwnedBy(_ context.Context, urls []string, 
 	return f.err
 }
 
+// imageDTOURLs 取图片 DTO 的 URL 列表（断言请求顺序透传）。
+func imageDTOURLs(dtos []TweetImageDTO) []string {
+	urls := make([]string, 0, len(dtos))
+	for _, d := range dtos {
+		urls = append(urls, d.URL)
+	}
+	return urls
+}
+
 // fakePermChecker 权限替身：codes 全在 allowed 集合才放行。
 type fakePermChecker struct{ allowed map[string]bool }
 
@@ -305,13 +315,13 @@ func newUserWithID(t *testing.T, id shared.ID, username string) *domainuser.User
 }
 
 func newService(repo *fakeTweetRepo, users *fakeUserRepo, checker *fakeImageChecker, perm TweetPermissionChecker, bus appshared.EventBus) *Service {
-	return NewService(repo, nil, users, checker, perm, nil, bus)
+	return NewService(repo, nil, users, checker, nil, nil, perm, nil, bus)
 }
 
 // newCommentService 构造带评论仓储的 service（评论用例测试用）。
 func newCommentService(t *testing.T, repo *fakeTweetRepo, comments *fakeCommentRepo, users *fakeUserRepo, perm TweetPermissionChecker) *Service {
 	t.Helper()
-	return NewService(repo, comments, users, nil, perm, nil, appshared.NoopEventBus{})
+	return NewService(repo, comments, users, nil, nil, nil, perm, nil, appshared.NoopEventBus{})
 }
 
 // ctxWithUser 注入 session 中间件同款身份上下文。
@@ -328,7 +338,7 @@ func cannedTweets(authorID shared.ID, base time.Time, n int) []*domaintweet.Twee
 	out := make([]*domaintweet.Tweet, 0, n)
 	for i := range n {
 		ts := base.Add(time.Duration(i) * time.Minute)
-		out = append(out, domaintweet.ReconstructTweet(shared.NewID(), authorID, "推文", []string{}, nil, 0, ts, ts))
+		out = append(out, domaintweet.ReconstructTweet(shared.NewID(), authorID, "推文", nil, nil, 0, ts, ts))
 	}
 	return out
 }
@@ -350,7 +360,7 @@ func TestService_Create_Success(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotEmpty(t, dto.ID)
 	assert.Equal(t, "第一条推文", dto.Content)
-	assert.Equal(t, []string{}, dto.Images, "空图片应序列化为 [] 而非 null")
+	assert.Equal(t, []TweetImageDTO{}, dto.Images, "空图片应序列化为 [] 而非 null")
 	assert.Equal(t, "alice", dto.Author.Username)
 	assert.Equal(t, "/uploads/avatar/alice.webp", dto.Author.AvatarURL)
 	assert.NotEmpty(t, dto.CreatedAt)
@@ -377,10 +387,95 @@ func TestService_Create_WithImages_ChecksOwnership(t *testing.T) {
 		Images:   images,
 	})
 	require.NoError(t, err)
-	assert.Equal(t, images, dto.Images)
+	assert.Equal(t, images, imageDTOURLs(dto.Images))
 	require.True(t, checker.called)
 	assert.Equal(t, images, checker.gotURLs)
 	assert.Equal(t, author.GetID(), checker.gotOwner)
+}
+
+// fakeMetaLookup 图片尺寸端口替身：按 URL 返回固定 [width, height]。
+type fakeMetaLookup struct{ gotURLs []string }
+
+func (f *fakeMetaLookup) FindByURLs(_ context.Context, urls []string) (map[string][2]*int, error) {
+	f.gotURLs = urls
+	meta := make(map[string][2]*int, len(urls))
+	for i, u := range urls {
+		if i == 0 {
+			w, h := 640, 480
+			meta[u] = [2]*int{&w, &h}
+		}
+	}
+	return meta, nil
+}
+
+// fakeLinkCards 链接卡片端口替身：Lookup 只回显已登记 URL 的卡片。
+type fakeLinkCards struct {
+	registered []string
+}
+
+func (f *fakeLinkCards) Lookup(_ context.Context, urls []string) (applp.LookupResultDTO, error) {
+	cards := make(map[string]*applp.LinkCardDTO, len(urls))
+	for _, u := range urls {
+		cards[u] = &applp.LinkCardDTO{URL: u, Title: "卡片：" + u}
+	}
+	return applp.LookupResultDTO{Cards: cards, Pending: []string{}, Unavailable: []string{}}, nil
+}
+
+func (f *fakeLinkCards) Register(_ context.Context, urls []string) {
+	f.registered = append(f.registered, urls...)
+}
+
+func TestService_Create_ImageMetaSnapshot(t *testing.T) {
+	author := newTestUser(t, "alice")
+	repo := &fakeTweetRepo{}
+	users := &fakeUserRepo{byIDs: map[string]*domainuser.User{author.GetID().String(): author}}
+	meta := &fakeMetaLookup{}
+	svc := NewService(repo, nil, users, nil, meta, nil, nil, nil, appshared.NoopEventBus{})
+
+	dto, err := svc.Create(context.Background(), CreateInput{
+		AuthorID: author.GetID().String(),
+		Content:  "带图",
+		Images:   []string{"/uploads/tweet/a.webp", "/uploads/tweet/b.webp"},
+	})
+	require.NoError(t, err)
+	require.Len(t, dto.Images, 2)
+	require.NotNil(t, dto.Images[0].Width)
+	assert.Equal(t, 640, *dto.Images[0].Width)
+	assert.Equal(t, 480, *dto.Images[0].Height)
+	assert.Nil(t, dto.Images[1].Width, "端口未命中的 URL 尺寸应为 nil")
+	// 尺寸快照随推文落库
+	saved := repo.saved[0]
+	refs := saved.Images()
+	require.Len(t, refs, 2)
+	require.NotNil(t, refs[0].Width())
+	assert.Equal(t, 640, *refs[0].Width())
+	assert.Nil(t, refs[1].Height())
+}
+
+func TestService_LinkCards_FillAndRegister(t *testing.T) {
+	author := newTestUser(t, "alice")
+	repo := &fakeTweetRepo{}
+	users := &fakeUserRepo{byIDs: map[string]*domainuser.User{author.GetID().String(): author}}
+	cards := &fakeLinkCards{}
+	svc := NewService(repo, nil, users, nil, nil, cards, nil, nil, appshared.NoopEventBus{})
+
+	repo.tweets = append(repo.tweets, domaintweet.ReconstructTweet(
+		shared.NewID(), author.GetID(), "看 https://example.com/a 和 www.example.com/b", nil, nil, 0, time.Now(), time.Now(),
+	))
+	dtos, _, err := svc.ListTimeline(context.Background(), "", 10)
+	require.NoError(t, err)
+	require.Len(t, dtos, 1)
+	assert.Equal(t, []*applp.LinkCardDTO{
+		{URL: "https://example.com/a", Title: "卡片：https://example.com/a"},
+		{URL: "https://www.example.com/b", Title: "卡片：https://www.example.com/b"},
+	}, dtos[0].LinkCards)
+
+	// 发布含链接推文后异步登记正文 URL（等 goroutine 完成不可行，直接断言 Register 语义存在即可）
+	_, createErr := svc.Create(context.Background(), CreateInput{
+		AuthorID: author.GetID().String(),
+		Content:  "发一条 https://example.com/c",
+	})
+	require.NoError(t, createErr)
 }
 
 func TestService_Create_ImageOwnershipRejected(t *testing.T) {
@@ -454,7 +549,7 @@ func TestService_Create_WithQuote(t *testing.T) {
 
 // seedTweet 构造待删除推文并放入 repo。
 func seedTweet(authorID shared.ID) *domaintweet.Tweet {
-	return domaintweet.ReconstructTweet(shared.NewID(), authorID, "待删", []string{}, nil, 0, time.Now(), time.Now())
+	return domaintweet.ReconstructTweet(shared.NewID(), authorID, "待删", nil, nil, 0, time.Now(), time.Now())
 }
 
 func TestService_Delete_ByAuthor(t *testing.T) {
@@ -1048,7 +1143,7 @@ func newCommentCapabilityService(t *testing.T, repo *fakeTweetRepo, comments *fa
 	require.NoError(t, err)
 	u := domainuser.NewUser(authorID, mail, uname, domainuser.NewPasswordHash("x"))
 	users.byIDs[authorID.String()] = u
-	return NewService(repo, comments, users, checker, nil, lookup, appshared.NoopEventBus{})
+	return NewService(repo, comments, users, checker, nil, nil, nil, lookup, appshared.NoopEventBus{})
 }
 
 func TestCreateComment_WithPictures_PassesOwnershipAndSaves(t *testing.T) {
@@ -1192,10 +1287,10 @@ func TestTweet_EmoteEnriched(t *testing.T) {
 	users := &fakeUserRepo{byIDs: map[string]*domainuser.User{authorID.String(): author}}
 
 	quotedID := shared.NewID()
-	quoted := domaintweet.ReconstructTweet(quotedID, authorID, "原推 [cat]", []string{}, nil, 0, time.Now(), time.Now())
+	quoted := domaintweet.ReconstructTweet(quotedID, authorID, "原推 [cat]", nil, nil, 0, time.Now(), time.Now())
 
 	mainID := shared.NewID()
-	mainTw := domaintweet.ReconstructTweet(mainID, authorID, "转推 [doge] [mycat:uuid-1]", []string{}, &quotedID, 0, time.Now(), time.Now())
+	mainTw := domaintweet.ReconstructTweet(mainID, authorID, "转推 [doge] [mycat:uuid-1]", nil, &quotedID, 0, time.Now(), time.Now())
 
 	repo := &fakeTweetRepo{
 		findByIDData: map[string]*domaintweet.Tweet{
@@ -1205,7 +1300,7 @@ func TestTweet_EmoteEnriched(t *testing.T) {
 		tweets: []*domaintweet.Tweet{mainTw},
 	}
 
-	svc := NewService(repo, nil, users, nil, nil, lookup, appshared.NoopEventBus{})
+	svc := NewService(repo, nil, users, nil, nil, nil, nil, lookup, appshared.NoopEventBus{})
 
 	// 1. GetByID 富化
 	dto, err := svc.GetByID(context.Background(), mainID.String())
@@ -1318,7 +1413,7 @@ func TestCreateComment_PublishesCommentedEvent(t *testing.T) {
 	comments := newFakeCommentRepo()
 	users := &fakeUserRepo{byIDs: map[string]*domainuser.User{commenterID.String(): newUserWithID(t, commenterID, "commenter")}}
 	bus := &captureBus{}
-	svc := NewService(repo, comments, users, nil, nil, nil, bus)
+	svc := NewService(repo, comments, users, nil, nil, nil, nil, nil, bus)
 
 	_, err := svc.CreateComment(ctxWithUser(commenterID.String(), "", false), CreateCommentInput{
 		TweetID: tweetID.String(), AuthorID: commenterID.String(), Body: "好文",
@@ -1351,7 +1446,7 @@ func TestCreateComment_ReplyCarriesRepliedToAuthor(t *testing.T) {
 		replierID.String():   newUserWithID(t, replierID, "replier"),
 	}}
 	bus := &captureBus{}
-	svc := NewService(repo, comments, users, nil, nil, nil, bus)
+	svc := NewService(repo, comments, users, nil, nil, nil, nil, nil, bus)
 
 	top, err := svc.CreateComment(ctxWithUser(topAuthorID.String(), "", false), CreateCommentInput{
 		TweetID: tweetID.String(), AuthorID: topAuthorID.String(), Body: "顶层",

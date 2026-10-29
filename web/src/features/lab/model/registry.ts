@@ -4,8 +4,7 @@
  * 新增实验室三步：features/lab/<name>/ 建目录（小 lab 也可路由内自包含）、
  * routes/lab.<name>.tsx 建路由（createFileRoute("/lab/<name>")）、在此追加
  * 一条注册。lab 是原型工作台，不进主导航，选定方向后生产实现按此落地。
- * 生产组件可直接引用 lab 内的原型件（如 Header 用 @features/lab/theme/ui
- * 的默认 segmented 变体），选定的方案升为现役。
+ * 选定的生产实现移入正式 feature，lab 通过该 feature 的公开入口展示。
  */
 export const LABS = [
 	{
@@ -31,9 +30,9 @@ export const LABS = [
 	},
 	{
 		to: "/lab/theme",
-		en: "Theme",
-		title: "主题切换器实验室",
-		description: "主题切换键的样子没定，控件和尺寸都开着候选，挑顺手的那个。",
+		en: "Appearance",
+		title: "外观切换器实验室",
+		description: "外观切换器的四种样式与尺寸并列展示。",
 		meta: "切换器 ×4",
 	},
 	{

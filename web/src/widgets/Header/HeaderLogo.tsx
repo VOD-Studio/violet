@@ -1,4 +1,12 @@
 import { useActivePersona } from "@entities/persona/api/queries";
+import {
+	describeActivity,
+	deviceActivities,
+	PresenceCard,
+	PresenceTicker,
+	useLivePresence,
+} from "@features/presence";
+import { CapsuleOrnament } from "@features/seasonal-decor/ui/ornaments";
 import { useSettings } from "@features/settings/api/queries";
 import { Dropdown, DropdownContent, DropdownTrigger } from "@violet/ui";
 
@@ -15,18 +23,24 @@ const HeaderLogo = () => {
 	const rawName = settings?.site_name?.trim();
 	const siteName = !rawName || rawName === "My Blog" || rawName === "Blog" ? "Violet" : rawName;
 	const personaAvatar = persona?.avatar.thumbnail || persona?.avatar.url;
+	const { devices, lead, clockOffset } = useLivePresence();
+	const [activity] = lead ? deviceActivities(lead) : [];
+	const label = activity
+		? `${siteName} 站长档案，此刻${describeActivity(activity)}`
+		: `${siteName} 站长开源档案与简介`;
 
 	return (
 		<Dropdown open={open} onOpenChange={setOpen}>
 			<DropdownTrigger asChild>
 				<button
 					type="button"
-					aria-label={`${siteName} 站长开源档案与简介`}
-					className="dialect-public group pointer-events-auto flex h-10 items-center gap-2 rounded-full border border-border/60 bg-background/80 px-3 backdrop-blur-md transition-colors hover:border-border hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[state=open]:border-border data-[state=open]:bg-muted/50 dark:bg-card/85"
+					aria-label={label}
+					className="dialect-public group pointer-events-auto relative flex h-10 items-center gap-2 rounded-full border border-border/60 bg-background/80 px-3 backdrop-blur-md transition-colors hover:border-border hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[state=open]:border-border data-[state=open]:bg-muted/50 dark:bg-card/85"
 				>
+					<CapsuleOrnament variant={0} />
 					<span
 						aria-hidden="true"
-						className="flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-primary ring-1 ring-border/50 transition-colors group-hover:bg-primary/15"
+						className="flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-selected text-selected-foreground ring-1 ring-border/50 transition-colors group-hover:bg-selected-hover"
 					>
 						{personaAvatar ? (
 							<img src={personaAvatar} alt="" className="size-full object-cover" />
@@ -46,9 +60,23 @@ const HeaderLogo = () => {
 							</svg>
 						)}
 					</span>
-					<span className="truncate font-mono text-xs font-bold uppercase tracking-[0.14em] text-foreground transition-colors group-hover:text-primary">
+					<span
+						className={cn(
+							"truncate font-mono text-xs font-bold uppercase tracking-[0.14em] text-foreground transition-colors group-hover:text-primary",
+							activity && "lg:hidden",
+						)}
+					>
 						{siteName}
 					</span>
+					{lead && activity ? (
+						// 桌面顶栏用 Logo 胶囊承载此刻状态；移动端由底部岛展示
+						<PresenceTicker
+							device={lead}
+							clockOffset={clockOffset}
+							secondaryClassName="hidden xl:inline"
+							className="hidden text-xs text-foreground lg:inline-flex"
+						/>
+					) : null}
 					<ChevronDown
 						aria-hidden="true"
 						className={cn(
@@ -66,6 +94,14 @@ const HeaderLogo = () => {
 				sideOffset={10}
 				className="dialect-public pointer-events-auto w-121 max-w-[calc(100vw-1rem)] border-border/80 bg-popover/95 p-4 backdrop-blur-xl"
 			>
+				{lead ? (
+					<PresenceCard
+						devices={devices}
+						lead={lead}
+						clockOffset={clockOffset}
+						className="mb-4 hidden border-b border-border/60 pb-4 lg:block"
+					/>
+				) : null}
 				<HeaderContributionCard
 					persona={persona ?? undefined}
 					onNavigate={() => setOpen(false)}

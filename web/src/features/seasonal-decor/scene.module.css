@@ -1,0 +1,256 @@
+/*
+ * 四季装饰的色板与动画；色板全部由主题 token 混出：品牌色为主，掺中性色去饱和，
+ * 再借分类色补花蕊、嫩叶的异色。
+ * 动画只用路径揭开、透明度与旋转，不用缩放；最终状态写在默认样式里，减弱动态时直接显示。
+ */
+
+.scene,
+.palette {
+	--ink: light-dark(
+		color-mix(in oklch, var(--neutral-12) 74%, transparent),
+		color-mix(in oklch, var(--neutral-9) 80%, transparent)
+	);
+	--ink-soft: light-dark(
+		color-mix(in oklch, var(--neutral-11) 45%, transparent),
+		color-mix(in oklch, var(--neutral-8) 55%, transparent)
+	);
+	--petal-light: light-dark(
+		color-mix(in oklch, var(--brand-4) 70%, var(--neutral-1)),
+		color-mix(in oklch, var(--brand-8) 70%, var(--neutral-6))
+	);
+	--petal-mid: light-dark(
+		color-mix(in oklch, var(--brand-6) 85%, var(--neutral-4)),
+		color-mix(in oklch, var(--brand-9) 70%, var(--neutral-7))
+	);
+	--petal-deep: light-dark(
+		color-mix(in oklch, var(--brand-9) 70%, var(--category-6-8)),
+		color-mix(in oklch, var(--brand-10) 75%, var(--category-6-7))
+	);
+	--anther: color-mix(in oklch, var(--category-2-8) 60%, var(--brand-8));
+	--sprout: light-dark(
+		color-mix(in oklch, var(--category-3-7) 75%, var(--neutral-4)),
+		color-mix(in oklch, var(--category-3-7) 70%, var(--neutral-6))
+	);
+	--sprout-deep: light-dark(
+		color-mix(in oklch, var(--category-3-9) 70%, var(--neutral-9)),
+		color-mix(in oklch, var(--category-3-9) 60%, var(--neutral-7))
+	);
+	--water: light-dark(
+		color-mix(in oklch, var(--brand-a4) 80%, transparent),
+		color-mix(in oklch, var(--brand-a5) 80%, transparent)
+	);
+	--moon: light-dark(
+		color-mix(in oklch, var(--brand-4) 75%, var(--neutral-1)),
+		color-mix(in oklch, var(--brand-11) 26%, transparent)
+	);
+	--moon-halo: light-dark(var(--brand-a3), var(--brand-a4));
+	--snow: light-dark(var(--neutral-1), color-mix(in oklch, var(--neutral-12) 88%, transparent));
+	--snow-shade: light-dark(
+		var(--neutral-4),
+		color-mix(in oklch, var(--neutral-9) 70%, transparent)
+	);
+	/* 粒子色：canvas 读探针的计算值，配方只在此维护 */
+	--firefly: light-dark(
+		color-mix(in oklch, var(--brand-9) 60%, var(--category-2-8)),
+		color-mix(in oklch, var(--brand-11) 70%, var(--category-2-10))
+	);
+	--leaf-gold: color-mix(in oklch, var(--brand-8) 75%, var(--neutral-7));
+	--leaf-amber: color-mix(in oklch, var(--category-2-8) 55%, var(--neutral-7));
+	--leaf-rust: color-mix(in oklch, var(--category-6-8) 50%, var(--neutral-7));
+	--leaf-sage: color-mix(in oklch, var(--category-3-8) 45%, var(--neutral-7));
+	--flake: light-dark(
+		color-mix(in oklch, var(--neutral-6) 70%, var(--brand-5)),
+		var(--neutral-12)
+	);
+}
+
+.backdrop,
+.illustration,
+.particles {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+
+.backdrop {
+	display: none;
+}
+
+@media (min-width: 64rem) {
+	.backdrop {
+		display: block;
+	}
+}
+
+.particles {
+	width: 100%;
+	height: 100%;
+	/* 只保护 56rem 阅读带，避免较窄桌面的粒子全被大插画遮罩裁掉。 */
+	mask-image: linear-gradient(
+		to right,
+		var(--foreground) calc(50% - 36rem),
+		transparent calc(50% - 28rem),
+		transparent calc(50% + 28rem),
+		var(--foreground) calc(50% + 36rem)
+	);
+}
+
+.illustration {
+	/* 避开首页最宽的 80rem 内容栏。 */
+	mask-image: linear-gradient(
+		to right,
+		var(--foreground) calc(50% - 48rem),
+		transparent calc(50% - 40rem),
+		transparent calc(50% + 40rem),
+		var(--foreground) calc(50% + 48rem)
+	);
+}
+
+.scene {
+	position: absolute;
+	pointer-events: none;
+	/* 浅色下正片叠底，像印在纸上；深色下保持原样 */
+	mix-blend-mode: multiply;
+}
+
+/* biome-ignore lint/correctness/noUnknownPseudoClass: CSS Modules 的全局类引用，非标准伪类 */
+:global(.dark) .scene {
+	mix-blend-mode: normal;
+}
+
+/* —— 入场：枝条沿主干生长 —— */
+.grow {
+	stroke-dashoffset: 0;
+	animation: grow var(--duration, 1s) cubic-bezier(0.33, 0.1, 0.25, 1) var(--delay, 0s) backwards;
+}
+
+@keyframes grow {
+	from {
+		stroke-dashoffset: 1;
+	}
+}
+
+/* —— 入场：花瓣逐瓣淡入并舒展 —— */
+.petal {
+	transform-box: fill-box;
+	transform-origin: 50% 100%;
+	animation: unfold 0.7s ease-out var(--delay, 0s) backwards;
+}
+
+@keyframes unfold {
+	from {
+		opacity: 0;
+		transform: rotate(-18deg);
+	}
+}
+
+/* —— 入场：淡入（月亮、积雪、叶片、蜻蜓） —— */
+.fade {
+	animation: fade var(--duration, 0.9s) ease-out var(--delay, 0s) backwards;
+}
+
+@keyframes fade {
+	from {
+		opacity: 0;
+	}
+}
+
+/* —— 入场：叶片从叶柄处展开 —— */
+.leaf {
+	transform-box: fill-box;
+	transform-origin: 50% 100%;
+	animation: leaf 0.8s ease-out var(--delay, 0s) backwards;
+}
+
+@keyframes leaf {
+	from {
+		opacity: 0;
+		transform: rotate(var(--fold, 30deg));
+	}
+}
+
+/* —— 入场：荷叶从叶心向外铺开（裁剪揭开，不缩放） —— */
+.spread {
+	animation: spread 1.4s cubic-bezier(0.25, 0.1, 0.25, 1) var(--delay, 0s) backwards;
+}
+
+@keyframes spread {
+	from {
+		clip-path: circle(0 at var(--hub-x, 50%) var(--hub-y, 50%));
+	}
+	to {
+		clip-path: circle(150% at var(--hub-x, 50%) var(--hub-y, 50%));
+	}
+}
+
+/* —— 入场：积雪自下而上堆起（裁剪揭开） —— */
+.settle {
+	animation: settle 1.2s ease-out var(--delay, 0s) backwards;
+}
+
+@keyframes settle {
+	from {
+		clip-path: inset(100% 0 0 0);
+		opacity: 0;
+	}
+	to {
+		clip-path: inset(0);
+		opacity: 1;
+	}
+}
+
+/* —— 常驻：蜻蜓翅膀轻颤 —— */
+.wing {
+	transform-box: fill-box;
+	transform-origin: 0% 50%;
+	animation: flutter 2.6s ease-in-out infinite;
+}
+
+@keyframes flutter {
+	0%,
+	100% {
+		transform: rotate(0deg);
+	}
+	50% {
+		transform: rotate(-6deg);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.scene * {
+		animation: none;
+	}
+}
+
+/* 未由客户端进入视口触发时显示最终态；禁用脚本也不会停在空白起点。 */
+.scene:not([data-play]) * {
+	animation: none;
+}
+
+/*
+ * 组件插槽的方言钩子：挂件随 html[data-decoration] 投放，
+ * 工具与沉浸方言内一律隐藏，两类界面只保留钩子不投放内容。
+ */
+.ornament {
+	pointer-events: none;
+}
+
+/* biome-ignore lint/correctness/noUnknownPseudoClass: CSS Modules 的全局类引用，非标准伪类 */
+:global(.dialect-tool) .backdrop,
+/* biome-ignore lint/correctness/noUnknownPseudoClass: CSS Modules 的全局类引用，非标准伪类 */
+	:global(.dialect-tool)
+	.accent,
+/* biome-ignore lint/correctness/noUnknownPseudoClass: CSS Modules 的全局类引用，非标准伪类 */
+	:global(.dialect-tool)
+	.ornament,
+/* biome-ignore lint/correctness/noUnknownPseudoClass: CSS Modules 的全局类引用，非标准伪类 */
+	:global(.dialect-immersive)
+	.backdrop,
+/* biome-ignore lint/correctness/noUnknownPseudoClass: CSS Modules 的全局类引用，非标准伪类 */
+	:global(.dialect-immersive)
+	.accent,
+/* biome-ignore lint/correctness/noUnknownPseudoClass: CSS Modules 的全局类引用，非标准伪类 */
+	:global(.dialect-immersive)
+	.ornament {
+	display: none;
+}

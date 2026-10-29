@@ -83,7 +83,7 @@ export function PostEditorSidebar({ control, register }: PostEditorSidebarProps)
 										type="button"
 										key={t.id}
 										onClick={() => field.onChange([...field.value, t.name])}
-										className="rounded-full border border-edge-hairline px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+										className="rounded-full border border-edge-hairline px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-selected-foreground hover:text-link"
 									>
 										+ {t.name}
 									</button>

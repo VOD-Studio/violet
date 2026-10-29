@@ -107,6 +107,13 @@
 			"documentation": "web/src/features/ui-docs/ui/library-guides/content/composition.md"
 		},
 		{
+			"name": "link-card",
+			"status": "foundation",
+			"entry": "src/components/link-card/index.ts",
+			"css": "src/components/link-card/link-card.css",
+			"documentation": "web/src/features/ui-docs/ui/LinkCardDoc.tsx"
+		},
+		{
 			"name": "modal",
 			"status": "legacy",
 			"entry": "src/components/modal/index.ts"
@@ -289,6 +296,9 @@
 		"tokens": "src/styles/tokens.css",
 		"foundation": "src/styles/foundation.css",
 		"utilities": ["src/styles/scrollbar.css"],
-		"palettes": ["src/styles/palettes/violet.css", "src/styles/palettes/coral.css"]
+		"palettes": [
+			"src/styles/palettes/violet.generated.css",
+			"src/styles/palettes/coral.generated.css"
+		]
 	}
 }

@@ -5,6 +5,57 @@ import { SearchInput as LeafSearchInput } from "@violet/ui/search-input";
 import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
+import { LinkCard } from "@violet/ui";
+import { LinkCard as LeafLinkCard } from "@violet/ui/link-card";
+
+const linkCardLogo = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><rect width="160" height="160" fill="#f0edf8"/><path d="m40 44 40 76 40-76H98l-18 36-18-36Z" fill="#684dda"/></svg>')}`;
+const linkCardCover = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="240"><rect width="400" height="240" fill="#dbe8e9"/><path d="m0 210 130-160 100 120 80-100 90 140v30H0Z" fill="#406c83"/></svg>')}`;
+
+function LinkCardPreview() {
+	const [image, setImage] = useState("logo");
+	const [version, setVersion] = useState(1);
+	const [narrow, setNarrow] = useState(false);
+	const [dark, setDark] = useState(document.documentElement.classList.contains("dark"));
+	const [clicks, setClicks] = useState(0);
+	const ref = useRef<HTMLAnchorElement>(null);
+	const imageSrc = image === "logo" ? linkCardLogo : image === "cover" ? linkCardCover : image === "broken" ? "data:image/png;base64,broken" : undefined;
+	return <main style={{ maxWidth: narrow ? "20rem" : "40rem" }}>
+		<h1>LinkCard · 独立安装包</h1>
+		<div className="image-reveal-controls">
+			<label htmlFor="link-card-image">图片</label>
+			<select id="link-card-image" value={image} onChange={(event) => setImage(event.currentTarget.value)}>
+				<option value="logo">Logo</option>
+				<option value="cover">封面</option>
+				<option value="broken">损坏图片</option>
+				<option value="none">无图</option>
+			</select>
+			<Button id="link-card-update" onClick={() => setVersion(version + 1)}>更新内容</Button>
+			<Button id="link-card-narrow" onClick={() => setNarrow(!narrow)}>切换宽窄</Button>
+			<Button id="link-card-theme" onClick={() => {
+				document.documentElement.classList.toggle("dark", !dark);
+				setDark(!dark);
+			}}>切换明暗</Button>
+			<Button id="link-card-focus" onClick={() => ref.current?.focus()}>聚焦卡片</Button>
+		</div>
+		<section aria-label="链接预览">
+			<LinkCard
+				ref={ref}
+				id="link-card-preview"
+				href={`#link-card-destination-${version}`}
+				target="_self"
+				title={`组件设计指南 · 第 ${version} 版：保持原生链接与完整图片内容`}
+				description="长描述在两行内截断，Logo 和横向封面不裁主要内容；错误图片降级为纯文字卡片，内容更新可恢复。"
+				siteName="Example Journal"
+				imageSrc={imageSrc}
+				imageAlt={image === "cover" ? "山间风景" : ""}
+				onClick={() => setClicks((value) => value + 1)}
+			/>
+			<LeafLinkCard id="link-card-duplicate" href="https://www.example.com/profile" title="y_defect的推文" description="@y_defect的推文" siteName="EXAMPLE.COM" />
+			<LeafLinkCard id="link-card-long" href="https://example.com/long-path" title={"AnUnbrokenTitle".repeat(16)} description={"LongUnbrokenDescription".repeat(20)} imageSrc={linkCardCover} />
+		</section>
+		<output id={`link-card-destination-${version}`}>原生链接激活：{clicks}</output>
+	</main>;
+}
 
 function OverlayScrollPreview() {
 	const [enabled, setEnabled] = useState(true);
@@ -387,4 +438,4 @@ function App() {
 const root = document.getElementById("root");
 if (!root) throw new Error("Consumer root is missing.");
 const preview = new URLSearchParams(window.location.search).get("preview");
-createRoot(root).render(preview === "input" ? <InputPreview /> : preview === "overlay-scroll" ? <OverlayScrollPreview /> : preview === "image-pixel-reveal" ? <ImagePixelRevealPreview /> : preview === "upload-tile" ? <UploadTilePreview /> : preview === "dropdown" ? <DropdownPreview /> : preview === "segmented" ? <SegmentedPreview /> : <App />);
+createRoot(root).render(preview === "input" ? <InputPreview /> : preview === "overlay-scroll" ? <OverlayScrollPreview /> : preview === "image-pixel-reveal" ? <ImagePixelRevealPreview /> : preview === "upload-tile" ? <UploadTilePreview /> : preview === "dropdown" ? <DropdownPreview /> : preview === "segmented" ? <SegmentedPreview /> : preview === "link-card" ? <LinkCardPreview /> : <App />);

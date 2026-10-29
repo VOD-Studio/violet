@@ -83,6 +83,7 @@ describe("getThemeVariables", () => {
 		expect(vars.primaryTextColor).toMatch(/^#[0-9a-f]{6}$/);
 		expect(vars.lineColor).toMatch(/^#[0-9a-f]{6}$/);
 		expect(vars.primaryBorderColor).toMatch(/^#[0-9a-f]{6}$/);
+		expect(vars.primaryTextColor).toBe("#252525");
 	});
 
 	it("isDark=true → 仅背景对齐站点（内置 dark 主题自带节点/文字配对）", () => {
@@ -93,6 +94,7 @@ describe("getThemeVariables", () => {
 		expect(vars.primaryTextColor).toBeUndefined();
 		expect(vars.lineColor).toBeUndefined();
 		expect(vars.primaryBorderColor).toBeUndefined();
+		expect(vars.background).toBe("#252525");
 	});
 
 	it("浅色与暗色的背景不同（证明 isDark 分支生效）", () => {

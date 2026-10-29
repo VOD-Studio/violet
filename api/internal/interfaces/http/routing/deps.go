@@ -35,11 +35,13 @@ import (
 	notificationhttp "blog-api/internal/interfaces/http/handler/notification"
 	ompusagehttp "blog-api/internal/interfaces/http/handler/omp_usage"
 	personahttp "blog-api/internal/interfaces/http/handler/persona"
+	presencehttp "blog-api/internal/interfaces/http/handler/presence"
 	posthttp "blog-api/internal/interfaces/http/handler/post"
 	publicationhttp "blog-api/internal/interfaces/http/handler/publication"
 	releaseshttp "blog-api/internal/interfaces/http/handler/releases"
 	roadmaphttp "blog-api/internal/interfaces/http/handler/roadmap"
 	rolehttp "blog-api/internal/interfaces/http/handler/role"
+	linkpreviewhttp "blog-api/internal/interfaces/http/handler/linkpreview"
 	serieshttp "blog-api/internal/interfaces/http/handler/series"
 	settingshttp "blog-api/internal/interfaces/http/handler/settings"
 	siteidentityhttp "blog-api/internal/interfaces/http/handler/siteidentity"
@@ -93,6 +95,8 @@ type Deps struct {
 	Content                *contenthttp.Handler
 	Roadmap                *roadmaphttp.Handler
 	Music                  *musichttp.Handler
+	Presence               *presencehttp.Handler
+	PresenceIngest         *presencehttp.IngestHandler
 	RoadmapRelations       *roadmaphttp.RelationHandler
 	Comment                *commenthttp.Handler
 	CommentReaction        *crhttp.Handler
@@ -110,6 +114,7 @@ type Deps struct {
 	Image                  *imagehttp.Handler
 	Tweet                  *tweethttp.Handler
 	FriendLink             *friendlinkhttp.Handler
+	LinkPreview            *linkpreviewhttp.Handler
 	Series                 *serieshttp.Handler
 	Gallery                *galleryhttp.Handler
 	Note                   *notehttp.Handler

@@ -4,14 +4,14 @@
 	position: relative;
 	height: 1px;
 	overflow: visible;
-	background: color-mix(in oklab, var(--persona-violet) 14%, transparent);
+	background: var(--decoration-muted);
 }
 
 .inkStroke {
 	position: absolute;
 	inset: 0;
 	transform-origin: left;
-	background: linear-gradient(90deg, var(--persona-violet), var(--persona-gold));
+	background: linear-gradient(90deg, var(--decoration-muted), var(--decoration));
 	animation: inkWrite var(--duration, 3s) cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }
 
@@ -22,8 +22,8 @@
 	width: 9px;
 	height: 9px;
 	clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
-	background: var(--persona-gold);
-	filter: drop-shadow(0 0 5px color-mix(in oklab, var(--persona-gold) 64%, transparent));
+	background: var(--decoration);
+	filter: drop-shadow(0 0 5px color-mix(in oklab, var(--decoration) 64%, transparent));
 	animation: inkGlint var(--duration, 3s) cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }
 

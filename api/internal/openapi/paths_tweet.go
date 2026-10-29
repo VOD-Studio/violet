@@ -22,11 +22,18 @@ func registerTweetPaths(t *openapi3.T) {
 		"relation":        optStr("附加关系标记"),
 	})
 
+	registerSchema(t, "TweetImageDTO", openapi3.Schemas{
+		"url":    reqStr("图片访问 URL"),
+		"width":  optInt("宽（px）；null=历史数据缺尺寸"),
+		"height": optInt("高（px）；null=历史数据缺尺寸"),
+	})
+
 	registerSchema(t, "QuotedTweetDTO", openapi3.Schemas{
 		"id":             reqStr("被引用推文 ID"),
 		"author":         optRef("被引用推文作者", "TweetAuthorDTO"),
 		"content":        reqStr("正文"),
-		"images":         strArray("配图 URL"),
+		"images":         refArray("配图（≤4 张）", "TweetImageDTO"),
+		"link_cards":     refArray("正文链接卡片（按 URL 出现顺序，可为空数组）", "LinkCardDTO"),
 		"quote_count":    optInt("被引用推文自身的引用数"),
 		"created_at":     reqStr("发布时间（RFC3339）"),
 		"external_tweet": optRef("当前共享 X 原文，失效时仅有来源占位", "ExternalTweetDTO"),
@@ -36,7 +43,8 @@ func registerTweetPaths(t *openapi3.T) {
 		"id":             reqStr("推文 ID（UUID）"),
 		"author":         optRef("作者", "TweetAuthorDTO"),
 		"content":        reqStr("正文（≤500 字）"),
-		"images":         strArray("配图 URL（≤4 张）"),
+		"images":         refArray("配图（≤4 张）", "TweetImageDTO"),
+		"link_cards":     refArray("正文链接卡片（按 URL 出现顺序，可为空数组）", "LinkCardDTO"),
 		"like_count":     optInt("点赞数"),
 		"is_liked":       optBool("当前用户是否已点赞（匿名恒 false）"),
 		"comment_count":  optInt("评论数"),

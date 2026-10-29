@@ -32,7 +32,7 @@ export function RevisionChip({ post, standalone }: RevisionChipProps) {
 	const editedDate = post.edited_at ?? "";
 	if (!editedDate) return null;
 
-	const formattedEditDate = formatDate(editedDate, "long-date");
+	const formattedEditDate = formatDate(editedDate, "long-date", "—", "Asia/Shanghai");
 
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
@@ -72,7 +72,9 @@ export function RevisionChip({ post, standalone }: RevisionChipProps) {
 					{post.published_at ? (
 						<div className="flex items-center justify-between text-muted-foreground">
 							<span>首次发布</span>
-							<span>{formatDate(post.published_at, "long-date")}</span>
+							<span>
+								{formatDate(post.published_at, "long-date", "—", "Asia/Shanghai")}
+							</span>
 						</div>
 					) : null}
 					<div className="flex items-center justify-between text-foreground">
