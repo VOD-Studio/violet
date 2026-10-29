@@ -7,6 +7,24 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.20.0](https://github.com/VOD-Studio/violet/compare/v2.19.0...v2.20.0) (2026-10-29)
+
+
+### 新增
+
+* **admin-presence:** 后台管理 Nowbeam 设备与公开展示 ([6369a4a](https://github.com/VOD-Studio/violet/commit/6369a4af59894dcd26c352122434aaaad6daf9d6))
+* **header:** 顶栏与底部岛展示实时状态 ([64d425c](https://github.com/VOD-Studio/violet/commit/64d425c3fafb4caa477c15527d625775795344ed))
+* **presence:** 实时状态展示组件与推送订阅 ([7b05132](https://github.com/VOD-Studio/violet/commit/7b05132dd2631603037f3c9afa86598f8e482e49))
+* **presence:** 实现 Nowbeam 实时状态接收端 ([27ceb2f](https://github.com/VOD-Studio/violet/commit/27ceb2fb0ebbb4b4b7d654f7d882504543cf1776))
+* **presence:** 接入 Nowbeam 实时状态 ([b3430fb](https://github.com/VOD-Studio/violet/commit/b3430fb461e37f758559830d2760f8d62a46d416))
+
+
+### 修复
+
+* **admin-layout:** 顶栏显示实时状态页标题 ([5de63ab](https://github.com/VOD-Studio/violet/commit/5de63ab74b0477c2d603ed93d565595f3a4f378e))
+* **admin-presence:** 修正后台页布局 ([c0f587b](https://github.com/VOD-Studio/violet/commit/c0f587bb4d382cb5acddee406f20516aa80cc2dd))
+* **middleware:** Logger 包装器补齐 Unwrap ([289e497](https://github.com/VOD-Studio/violet/commit/289e4970bacbf4bf58a0083ca71e85a73f1e5804))
+
 ## [2.19.0](https://github.com/VOD-Studio/violet/compare/v2.18.1...v2.19.0) (2026-10-28)
 
 
