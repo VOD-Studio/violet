@@ -54,7 +54,7 @@ function springProgress(seconds: number): number {
 	return (
 		1 -
 		Math.exp(-18 * seconds) *
-		(Math.cos(frequency * seconds) + (18 / frequency) * Math.sin(frequency * seconds))
+			(Math.cos(frequency * seconds) + (18 / frequency) * Math.sin(frequency * seconds))
 	);
 }
 const BLUR_OUT = { opacity: 0, filter: "blur(6px)" };
@@ -182,10 +182,10 @@ function Island() {
 			: mode === "compact"
 				? { width: compactWidth, height: COMPACT_SIZE, borderRadius: COMPACT_SIZE / 2 }
 				: {
-					width: collapsedWidth,
-					height: COLLAPSED_HEIGHT,
-					borderRadius: COLLAPSED_HEIGHT / 2,
-				};
+						width: collapsedWidth,
+						height: COLLAPSED_HEIGHT,
+						borderRadius: COLLAPSED_HEIGHT / 2,
+					};
 	const content = {
 		initial: BLUR_OUT,
 		animate: { ...BLUR_IN, transition: fade(0.08, 0.22) },
