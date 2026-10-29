@@ -18,6 +18,9 @@ const card = (page: Page, number: number) => page.locator(`[data-card-id="${idOf
 async function open(page: Page, slug = SLUG) {
 	const response = await openClientPage(page, `/projects/${slug}`);
 	await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+	// 探活只说明 React 根已接管，路由内容可能尚未水合：那之前点击卡片/按钮事件会丢失，
+	// dialog 永不出现。等重新拉取发出即证明路线图查询观察者已订阅（水合完成）。
+	await refocusUntilRequest(page, `**/api/v1/projects/by-slug/${slug}/roadmap`);
 	return response;
 }
 
