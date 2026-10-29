@@ -1,30 +1,10 @@
-import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
+import { backfill } from "./backfill.mjs";
 import { captureEvent, validEvent } from "./events.mjs";
 import { acknowledge, appendEvent, pendingCount, pendingEvents } from "./spool.mjs";
-
-function configuration(root) {
-  let file = {};
-  try {
-    file = JSON.parse(readFileSync(join(root, "omp-usage.json"), "utf8"));
-  } catch (error) {
-    if (error.code !== "ENOENT") throw new Error("Invalid usage configuration");
-  }
-  const url = process.env.OMP_USAGE_URL ?? file.url;
-  const pat = process.env.OMP_USAGE_PAT ?? file.pat;
-  if (!url && !pat) return undefined;
-  if (typeof url !== "string" || typeof pat !== "string" || !pat || /[\r\n]/.test(pat)) throw new Error("Incomplete usage configuration");
-  const base = new URL(url);
-  if (base.username || base.password || base.search || base.hash || !["https:", "http:"].includes(base.protocol)) throw new Error("Invalid usage URL");
-  if (base.protocol === "http:" && !["localhost", "127.0.0.1", "[::1]"].includes(base.hostname)) throw new Error("Usage URL requires HTTPS");
-  const endpoint = `${base.href.replace(/\/$/, "")}/api/v1/omp-usage/batch`;
-  // 本机摘要同时绑定目标与凭据，不上传。切换 PAT 不能把旧账号队列发给新账号。
-  const destination = createHash("sha256").update(JSON.stringify([endpoint, pat])).digest("hex");
-  return { endpoint, pat, destination };
-}
+import { configuration, batchSize, uploadBatch } from "./transport.mjs";
 
 export default function usageExtension(pi) {
   const root = join(homedir(), ".omp");
@@ -38,6 +18,7 @@ export default function usageExtension(pi) {
   let failures = 0;
   let retryAt = 0;
   let appended = false;
+  let backfilling;
 
   function notice(code, text) {
     if (notices.has(code)) return;
@@ -64,31 +45,15 @@ export default function usageExtension(pi) {
     const pending = pendingEvents(path, config.destination, validEvent);
     if (pending.foreign) notice("foreign", "本地用量队列包含其他目标或 PAT 的记录，已保留且不会混发。恢复原配置后可继续上报。");
     if (pending.damaged) notice("damaged", "用量队列包含不完整或无效文件。有效事件仍会发送，无法识别的文件保留本地。");
-    for (let offset = 0; offset < pending.events.length && !stopped; offset += 200) {
+    for (let offset = 0; offset < pending.events.length && !stopped; offset += batchSize) {
       // 每批重新核对，包括 await 返回后，避免配置切换时发送到另一目标。
       if (loadConfiguration()?.destination !== config.destination) return;
-      const events = pending.events.slice(offset, offset + 200);
+      const events = pending.events.slice(offset, offset + batchSize);
       controller = new AbortController();
       const timeout = setTimeout(() => controller?.abort(), 10_000);
       timeout.unref?.();
       try {
-        const response = await fetch(config.endpoint, {
-          method: "POST",
-          redirect: "error",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.pat}` },
-          body: JSON.stringify({ events }),
-          signal: controller.signal,
-        });
-        if (!response.ok) {
-          await response.body?.cancel();
-          throw new Error("Usage upload rejected");
-        }
-        const body = await response.json();
-        const ack = body?.data;
-        if (body?.error !== undefined || !Number.isSafeInteger(ack?.accepted) || !Number.isSafeInteger(ack?.duplicated)
-          || ack.accepted < 0 || ack.duplicated < 0 || ack.accepted + ack.duplicated !== events.length) {
-          throw new Error("Invalid usage acknowledgement");
-        }
+        await uploadBatch(config, events, controller.signal);
         acknowledge(path, config.destination, events.map((event) => event.client_event_id));
       } finally {
         clearTimeout(timeout);
@@ -154,6 +119,41 @@ export default function usageExtension(pi) {
       stopped = true;
       clearTimeout(deadline);
       controller?.abort();
+      backfilling?.abort();
     }
+  });
+
+  pi.registerCommand("violet-usage-backfill", {
+    description: "补传本机历史会话的用量；不带参数仅预览，apply 才上传",
+    handler: async (args, ctx) => {
+      context = ctx;
+      const mode = args.trim();
+      if (mode !== "" && mode !== "apply") return ctx.ui.notify("用法：/violet-usage-backfill [apply]", "warning");
+      if (backfilling) return ctx.ui.notify("历史用量补传正在进行。", "warning");
+      let config;
+      try {
+        config = configuration(root);
+      } catch {
+        // 无效配置按未配置处理。
+      }
+      if (!config) return ctx.ui.notify("用量上报未配置或配置无效：请检查目标 URL 与 PAT。", "warning");
+      const apply = mode === "apply";
+      backfilling = new AbortController();
+      try {
+        const stats = await backfill(config, { directory: join(process.env.PI_CODING_AGENT_DIR ?? join(root, "agent"), "sessions"), apply, signal: backfilling.signal });
+        const range = stats.first ? `，${stats.first.slice(0, 10)} 至 ${stats.last.slice(0, 10)}` : "";
+        const target = new URL(config.endpoint).host;
+        if (stats.failure) {
+          const reason = stats.failure.status ? `HTTP ${stats.failure.status}` : stats.failure.message;
+          ctx.ui.notify(`历史用量补传中断（${reason}）：已新增 ${stats.accepted}、已存在 ${stats.duplicated}。可重新运行继续，重复事件会被忽略。`, "warning");
+        } else if (apply) {
+          ctx.ui.notify(`历史用量补传完成：新增 ${stats.accepted}、已存在 ${stats.duplicated}，共 ${stats.events} 条${range}。`, "info");
+        } else {
+          ctx.ui.notify(`历史用量预览：${stats.files} 个会话中有 ${stats.events} 条可上报（跳过 ${stats.skipped} 条）${range}。运行 /violet-usage-backfill apply 上传到 ${target}。`, "info");
+        }
+      } finally {
+        backfilling = undefined;
+      }
+    },
   });
 }

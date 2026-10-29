@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Local OMP usage collector for compatible personal usage endpoints",
-  "files": ["violet-usage.ts", "runtime.mjs", "events.mjs", "spool.mjs"],
+  "files": ["violet-usage.ts", "runtime.mjs", "events.mjs", "spool.mjs", "transport.mjs", "backfill.mjs"],
   "omp": {
     "extensions": ["./violet-usage.ts"]
   },

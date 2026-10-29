@@ -34,18 +34,24 @@ export function host({ session = "private-session-id", kind = "main" } = {}) {
     setInterval(fn, ms) { assert.equal(ms, 60_000); const timer = {}; timers.set(timer, fn); return timer; },
     clearTimer(timer) { timers.delete(timer); },
   };
-  extension({ pi: { VERSION: "18.12.1" }, on: (event, handler) => handlers.set(event, handler) });
+  const commands = new Map();
+  extension({
+    pi: { VERSION: "18.12.1" },
+    on: (event, handler) => handlers.set(event, handler),
+    registerCommand: (name, options) => commands.set(name, options.handler),
+  });
   return {
     notices,
     async start() { await handlers.get("session_start")({}, context); await this.tick(); },
     emit(message) { return handlers.get("message_end")({ message }, context); },
+    command(name, args = "") { return commands.get(name)(args, context); },
     async tick() { for (const callback of timers.values()) await callback(); },
     async shutdown() { await handlers.get("session_shutdown")({}, context); },
   };
 }
 
 export async function environment(t, { respond } = {}) {
-  const saved = Object.fromEntries(["HOME", "OMP_USAGE_URL", "OMP_USAGE_PAT"].map((key) => [key, process.env[key]]));
+  const saved = Object.fromEntries(["HOME", "OMP_USAGE_URL", "OMP_USAGE_PAT", "PI_CODING_AGENT_DIR"].map((key) => [key, process.env[key]]));
   const home = await mkdtemp(join(tmpdir(), "omp-usage-test-"));
   const requests = [];
   const seen = new Set();
@@ -67,6 +73,7 @@ export async function environment(t, { respond } = {}) {
   });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   process.env.HOME = home;
+  delete process.env.PI_CODING_AGENT_DIR;
   process.env.OMP_USAGE_URL = `http://127.0.0.1:${server.address().port}`;
   process.env.OMP_USAGE_PAT = "private-test-pat";
   t.after(async () => {

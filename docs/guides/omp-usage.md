@@ -53,7 +53,7 @@ omp install ./tools/omp-violet-usage
 omp plugin uninstall @violet/omp-usage
 ```
 
-本地链接和 Marketplace 安装二选一，不要与旧的手动副本、`-e` 参数或其他配置重复加载。扩展的 `package.json` 以 `omp.extensions` 声明 `violet-usage.ts`；`runtime.mjs`、`events.mjs`、`spool.mjs` 必须与入口一起保留，运行时仅依赖 Node 内置模块。
+本地链接和 Marketplace 安装二选一，不要与旧的手动副本、`-e` 参数或其他配置重复加载。扩展的 `package.json` 以 `omp.extensions` 声明 `violet-usage.ts`；`runtime.mjs`、`events.mjs`、`spool.mjs`、`transport.mjs`、`backfill.mjs` 必须与入口一起保留，运行时仅依赖 Node 内置模块。
 
 维护者可运行以下命令，行为测试需要 Node 24+：
 
@@ -117,7 +117,7 @@ set -gx OMP_USAGE_PAT YOUR_PERSONAL_ACCESS_TOKEN
 
 ## 采集字段与隐私边界
 
-只处理 `message_end` 的 `role === "assistant"`。不处理用户消息、工具结果或 streaming delta，也不会扫描历史会话补录。子会话复用扩展工厂，使用 `ctx.agent.kind === "sub"` 标识；不能用 `depth > 0`，因为某些子会话的 depth 为 0。
+实时采集只处理 `message_end` 的 `role === "assistant"`。不处理用户消息、工具结果或 streaming delta；安装前的历史会话不会自动上报，需要手动执行[补传历史用量](#补传历史用量)。子会话复用扩展工厂，使用 `ctx.agent.kind === "sub"` 标识；不能用 `depth > 0`，因为某些子会话的 depth 为 0。
 
 每个事件仅包含以下字段。HTTP 请求体只有 `events` 数组：
 
@@ -180,6 +180,21 @@ OMP 18.12.1 的 `MessageEndEvent` 只有 detached message，不带 entry ID；�
 
 轮换前最好先让旧 PAT 的队列送达；已有残留时恢复原站点与仍有效的原 PAT即可继续发送。原 PAT 已撤销或丢失时，需要用户在核对账号归属后另行处理旧数据，扩展不自动迁移分区。不要随意把分区内文件移到另一账号下面。每个配置只向一个站点发送，不提供多站点 fanout。
 
+## 补传历史用量
+
+扩展注册斜杠命令 `/violet-usage-backfill`，读取本机 `~/.omp/agent/sessions/`（设置了 `PI_CODING_AGENT_DIR` 时读其下的 `sessions/`）里已保存的会话，补传安装前产生的用量。
+
+```text
+/violet-usage-backfill          # 仅预览：扫描会话并显示可上报条数与日期范围，不联网
+/violet-usage-backfill apply    # 确认后上传
+```
+
+- 事件由与实时采集相同的函数生成，`client_event_id` 一致，服务端按 `(user_id, client_event_id)` 去重。重复执行、或与实时上报重叠的部分记入「已存在」，不会重复计数。
+- 子会话按会话内 `session_init.agent` 标记为 `is_subagent`；`omp_version` 取消息所在记录的 `runtime.version`。
+- 不经过本地队列，每批 200 条直接上传，批间隔约 1.1 秒以避开每分钟 60 次的限流。任一批被拒绝（如 401、403、429、5xx）或确认计数不符即停止并显示状态码，修正后重新运行即可继续。
+- 只读取字段白名单所需的元数据，隐私边界与实时采集一致。会话文件被 `omp gc` 压缩归档为 `.jsonl.gz` 的部分不会被读取；已被回退（rewind）丢弃的消息也不在历史文件里，因此补传结果可能略少于当时实际请求数。
+- 目标站点与 PAT 沿用上文配置；未配置或配置无效时拒绝执行。
+
 ## 看板统计口径
 
 - **总 Token** = input + output + cache read + cache write；reasoning 已包含在 output，不重复相加。OMP 原始 `totalTokens` 可能含供应商 orchestration 用量，不作为这里的总数来源。
@@ -188,7 +203,7 @@ OMP 18.12.1 的 `MessageEndEvent` 只有 detached message，不带 entry ID；�
 - **tokens/s**：逐次计算 output / ((duration_ms − ttft_ms) / 1000)，再取平均。只包含非错误且两项计时存在、duration > ttft 的请求；缺计时不伪装成 0 速度。
 - 平均耗时和 TTFT 忽略 null，真正记录的 0 是有效样本。
 - 窗口按 UTC 日历计算：包含当日及前 N−1 日，截止当前时间；按天/小时缺失的时间桶补 0，不展示未来小时。
-- 一条 assistant `message_end` 是一条请求记录。包括失败尝试和 tool-use 轮次，不等同于用户发送次数。没有经过这个生命周期的后台请求、历史记录、未加载扩展的会话不在采集范围内。
+- 一条 assistant `message_end` 是一条请求记录。包括失败尝试和 tool-use 轮次，不等同于用户发送次数。没有经过这个生命周期的后台请求（如标题生成、compaction 的 `model_usage`）、未加载扩展的会话不在采集范围内。
 
 ## 其他站点接入
 
