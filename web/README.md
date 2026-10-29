@@ -75,7 +75,7 @@ pnpm dev
 | `/tweets`、`/tweets/:id` | 推文时间线与讨论 |
 | `/projects`、`/projects/:slug` | 项目与路线图 |
 | `/chat` | 私聊、房间与 Bot 会话 |
-| `/users/:username`、`/profile` | 公开主页与个人中心（资料、安全、用量） |
+| `/users/:username`、`/users/:username/usage`、`/profile` | 公开主页、本人用量与个人中心（资料、安全） |
 | `/persona`、`/about`、`/friends`、`/changelog` | 人设、关于、友链与更新日志 |
 | `/login`、`/register`、`/forgot-password` | 认证流程 |
 | `/admin/*` | 内容与站点管理 |
@@ -108,9 +108,11 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 
 个人中心在桌面使用纵向页签，窄屏切换为横向页签。资料卡中的姓名链接进入公开主页，旁边的外跳图标与悬停、键盘聚焦提示标识这一入口。
 
-`/profile` 的「用量」页签展示当前账号的 OMP 请求数、token、缓存率、生成速度、错误率和 API 等价成本，并提供 7 / 30 / 90 天窗口、UTC 每日请求趋势与模型分布。成本以 USD 估算，不代表订阅实际账单；总 token 不重复计入推理 token。
+### 个人用量
 
-页面沿用个人中心的客户端渲染，选中页签后通过 Session 请求 `/omp-usage/summary`、`/omp-usage/models`、`/omp-usage/timeseries`。查询按账号、会话版本和窗口隔离，统一标记 `meta.sessionScoped: true`；登出或会话失效时取消请求并清除缓存，不发送可选用户 ID，也不通过 SSR 预取私人用量。
+`/users/:username/usage` 仅本人可见，入口是自己公开主页资料栏的「用量」；未登录跳转登录页，路径用户名与登录用户不一致时按未找到处理。页面展示当前账号的 OMP 请求数、token、缓存率、生成速度、错误率和 API 等价成本，并提供 7 / 30 / 90 天窗口、UTC 每日请求趋势与模型分布。成本以 USD 估算，不代表订阅实际账单；总 token 不重复计入推理 token。
+
+页面客户端渲染，进入后通过 Session 请求 `/omp-usage/summary`、`/omp-usage/models`、`/omp-usage/timeseries`。查询按账号、会话版本和窗口隔离，统一标记 `meta.sessionScoped: true`；登出或会话失效时取消请求并清除缓存，不发送可选用户 ID，也不通过 SSR 预取私人用量。
 
 空记录的「接入 OMP」面板直接提供原生 Marketplace 安装命令与本站配置模板，无需跳转文档；令牌不在面板中填写或保存。访问令牌表单的「用量上报」分组可单独选择 `usage:write`；该权限仅用于客户端上报，不授予读取其他用户统计的能力。[扩展指南](../docs/guides/omp-usage.md)补充升级、卸载与环境变量配置。
 

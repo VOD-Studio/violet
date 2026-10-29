@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react";
 import type { AnchorHTMLAttributes, ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { Route } from "../$username";
+import { Route } from "../$username.index";
 
 vi.mock("@shared/api/request", () => ({
 	apiGet: vi.fn(),
