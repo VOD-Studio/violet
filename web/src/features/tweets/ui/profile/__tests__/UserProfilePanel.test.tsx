@@ -58,13 +58,20 @@ describe("UserProfilePanel", () => {
 		expect(screen.getByText("7+").parentElement?.textContent).toContain("获赞");
 	});
 
-	it("本人看到编辑资料而不是私聊", () => {
+	it("本人看到编辑资料与用量入口而不是私聊", () => {
 		me.current = { id: "u1" };
 		render(<UserProfilePanel profile={profile} tweetCount="0" mediaCount={0} likeCount="0" />);
 		expect(screen.getByRole("link", { name: /编辑资料/ }).getAttribute("href")).toBe(
 			"/profile",
 		);
+		expect(screen.getByRole("link", { name: /用量/ })).toBeTruthy();
 		expect(screen.queryByRole("button", { name: /发起私聊/ })).toBeNull();
+	});
+
+	it("访客与未登录者看不到用量入口", () => {
+		me.current = { id: "u2" };
+		render(<UserProfilePanel profile={profile} tweetCount="0" mediaCount={0} likeCount="0" />);
+		expect(screen.queryByRole("link", { name: /用量/ })).toBeNull();
 	});
 
 	it("未登录访客点击私聊先去登录，不创建会话", () => {

@@ -16,7 +16,7 @@ import {
 	TooltipTrigger,
 } from "@violet/ui";
 import { cn } from "cn";
-import { ArrowUpRight, Camera, Gauge, ShieldCheck, User as UserIcon } from "lucide-react";
+import { ArrowUpRight, Camera, ShieldCheck, User as UserIcon } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
@@ -26,13 +26,12 @@ interface ProfileShellProps {
 	defaultTab?: ProfileTab;
 	profile: ReactNode;
 	security: ReactNode;
-	usage: ReactNode;
 }
 
 /**
  * ProfileTab - 个人中心 Tab 标识
  */
-export type ProfileTab = "profile" | "security" | "usage";
+export type ProfileTab = "profile" | "security";
 
 /**
  * ProfileShell - 个人中心布局壳
@@ -47,7 +46,6 @@ export const ProfileShell = ({
 	defaultTab = "profile",
 	profile,
 	security,
-	usage,
 }: ProfileShellProps) => {
 	// 受控 tabs：滑动指示块（layoutId 共享元素）需要感知激活项
 	const [tab, setTab] = useState<ProfileTab>(defaultTab);
@@ -86,12 +84,6 @@ export const ProfileShell = ({
 								className="mt-0 outline-none data-[state=active]:animate-tab-panel-in"
 							>
 								{security}
-							</TabsContent>
-							<TabsContent
-								value="usage"
-								className="mt-0 outline-none data-[state=active]:animate-tab-panel-in"
-							>
-								{usage}
 							</TabsContent>
 						</div>
 					</div>
@@ -200,12 +192,6 @@ const ProfileSidebar = ({ user, activeTab }: { user: UserDTO; activeTab: Profile
 					active={activeTab === "security"}
 					icon={<ShieldCheck className="size-4" />}
 					label="账户与安全"
-				/>
-				<ProfileSidebarTab
-					value="usage"
-					active={activeTab === "usage"}
-					icon={<Gauge className="size-4" />}
-					label="用量"
 				/>
 			</TabsList>
 
