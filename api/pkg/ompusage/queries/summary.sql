@@ -12,6 +12,7 @@ SELECT count(*)::bigint AS requests,
     COALESCE(avg(duration_ms), 0)::double precision AS avg_duration_ms,
     COALESCE(avg(ttft_ms), 0)::double precision AS avg_ttft_ms,
     COALESCE(avg(output_tokens::double precision / NULLIF((duration_ms - ttft_ms) / 1000.0, 0))
-        FILTER (WHERE NOT is_error AND duration_ms > ttft_ms), 0)::double precision AS avg_tokens_per_second
+        -- 差值下限 1ns：极小正差值会让 float8 除法溢出，一条坏事件炸掉整个窗口的聚合
+        FILTER (WHERE NOT is_error AND duration_ms - ttft_ms >= 1e-6), 0)::double precision AS avg_tokens_per_second
 FROM omp_usage_events
 WHERE user_id = $1::text AND occurred_at >= $2::timestamptz AND occurred_at <= $3::timestamptz;

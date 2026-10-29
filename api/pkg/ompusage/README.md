@@ -39,7 +39,7 @@ Token 求和先使用 PostgreSQL `numeric`，输出再转浮点数；单次计�
 
 - `total_tokens = input + output + cache_read + cache_write`；reasoning 已是 output 子集，不重复相加。
 - `cache_rate = cache_read / (input + cache_read + cache_write)`；`error_rate = errors / requests`。零分母返回零，数值为比率而非百分数。
-- `avg_tokens_per_second` 是**单次调用速率的平均值**：`output_tokens / ((duration_ms - ttft_ms) / 1000)`。仅计非错误、两项耗时均存在且生成间隔为正的调用；缺测或无效间隔被排除，不当作零插入。
+- `avg_tokens_per_second` 是**单次调用速率的平均值**：`output_tokens / ((duration_ms - ttft_ms) / 1000)`。仅计非错误、两项耗时均存在且生成间隔不小于 1 纳秒的调用；缺测或过短间隔（避免 float8 除法溢出炸掉整个窗口）被排除，不当作零插入。
 - 耗时均值包含实测零值，忽略缺测值；无有效测量时返回零。
 - 成本为运行时上报的 **API 等价美元估算**，不是实际订阅账单或发票金额。
 

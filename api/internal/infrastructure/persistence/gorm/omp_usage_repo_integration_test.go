@@ -140,3 +140,28 @@ func TestOMPUsageRepositoryIntegrationConcurrentDedupAndModelOrdering(t *testing
 	require.Equal(t, "z", models[1].Model)
 	require.Zero(t, models[0].AvgTokensPerSecond)
 }
+
+// 极小正耗时差（亚纳秒）会让速率除法溢出 float8 并炸掉整个窗口聚合；1ns 下限只排除这类异常行。
+func TestOMPUsageRepositoryIntegrationSubNanosecondSpanRateGuard(t *testing.T) {
+	repo := NewOMPUsageRepository(setupIntegrationDB(t))
+	ctx := context.Background()
+	start := time.Date(2026, 10, 17, 0, 0, 0, 0, time.UTC)
+	end := start.Add(24 * time.Hour)
+	overflow := usageEvent("overflow", start)
+	overflow.InputTokens, overflow.CacheReadTokens, overflow.CacheWriteTokens, overflow.ReasoningTokens = 0, 0, 0, 0
+	overflow.OutputTokens, overflow.CostTotal = 9007199254740991, 0
+	overflow.DurationMS, overflow.TTFTMS = new(1e-300), new(float64(0))
+	normal := usageEvent("normal", start.Add(time.Hour))
+	result, err := repo.Ingest(ctx, "carol", []domain.UsageEvent{overflow, normal})
+	require.NoError(t, err)
+	require.Equal(t, domain.IngestResult{Accepted: 2}, result)
+
+	summary, err := repo.Summary(ctx, "carol", start, end)
+	require.NoError(t, err)
+	require.EqualValues(t, 2, summary.Requests)
+	require.Equal(t, float64(20), summary.AvgTokensPerSecond, "亚纳秒间隔行被排除，速率只来自正常行")
+	models, err := repo.Models(ctx, "carol", start, end)
+	require.NoError(t, err)
+	require.Len(t, models, 1)
+	require.Equal(t, float64(20), models[0].AvgTokensPerSecond)
+}
