@@ -23,11 +23,7 @@ export function SeasonBackdrop() {
 			data-season-backdrop={season}
 			className={styles.backdrop}
 		>
-			{layers.illustration && (
-				<div className={styles.illustration}>
-					<CornerIllustration season={season} />
-				</div>
-			)}
+			{layers.illustration && <CornerIllustration season={season} />}
 			{layers.particles && <SeasonParticles key={season} season={season} />}
 		</div>
 	);
