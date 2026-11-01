@@ -64,7 +64,7 @@
 	},
 	"devDependencies": {
 		"@playwright/test": "^1.63.0",
-		"@types/node": "^22.20.0",
+		"@types/node": "^26.6.6",
 		"apca-w3": "0.1.9",
 		"colorjs.io": "0.7.1",
 		"esbuild": "^0.28.1",
