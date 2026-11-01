@@ -63,11 +63,11 @@
 		"prepack": "pnpm build"
 	},
 	"devDependencies": {
-		"@playwright/test": "^1.63.0",
+		"@playwright/test": "^1.64.1",
 		"@types/node": "^22.20.0",
 		"apca-w3": "0.1.9",
 		"colorjs.io": "0.7.1",
-		"esbuild": "^0.28.1",
+		"esbuild": "^0.28.2",
 		"typescript": "^7.0.2",
 		"vitest": "^4.1.9"
 	}
