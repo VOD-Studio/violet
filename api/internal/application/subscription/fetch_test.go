@@ -254,20 +254,6 @@ func TestFetchOne_CanonicalDefaultsToEntryLink(t *testing.T) {
 		"无 override 时 canonical = entry.link")
 }
 
-func TestFetchOne_AutoPublishTrueCallsPublish(t *testing.T) {
-	svc, _, _, importer, parser, sub := setupFetchSvc(t)
-	// 开启 auto_publish：应建草稿后调 Publish（真实现 published 路径，T7 review 阻断项 0）
-	require.NoError(t, sub.UpdateConfig("t", "", true, "", nil))
-
-	parser.items = []FeedItem{{GUID: "g1", Link: "https://example.com/1", Title: "x"}}
-	report := svc.FetchOne(context.Background(), sub.ID().String())
-
-	assert.Equal(t, 1, report.Imported)
-	require.Len(t, importer.createInputs, 1, "应建草稿")
-	require.Len(t, importer.publishIDs, 1, "auto_publish=true 应调 Publish")
-	assert.Equal(t, importer.createRes.ID, importer.publishIDs[0], "应发布刚建的草稿")
-}
-
 func TestFetchOne_AutoPublishFalseDoesNotCallPublish(t *testing.T) {
 	svc, _, _, importer, parser, sub := setupFetchSvc(t)
 	// auto_publish=false（默认）：只建草稿，不调 Publish

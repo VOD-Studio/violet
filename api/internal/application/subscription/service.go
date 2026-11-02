@@ -16,9 +16,10 @@ import (
 	"github.com/rs/zerolog/log"
 
 	appshared "blog-api/internal/application/shared"
+	"blog-api/internal/domain/shared"
 	domainsubscription "blog-api/internal/domain/subscription"
 	domainentry "blog-api/internal/domain/subscription_entry"
-	"blog-api/internal/domain/shared"
+	"blog-api/internal/middleware"
 
 	apppost "blog-api/internal/application/post"
 )
@@ -658,6 +659,8 @@ func (s *Service) fetchAndImport(ctx context.Context, sub *domainsubscription.Su
 	}
 	// auto_publish=true：发布草稿（订阅创建时已校验 PAT 持 posts:publish scope，见 T6 review 意见 2）
 	if sub.AutoPublish() {
+		// 后台抓取没有登录会话；仅以订阅归属用户校验新建文章的所有权。
+		ctx = context.WithValue(ctx, middleware.UserIDKey, sub.UserID().String())
 		if err := s.importer.Publish(ctx, dto.ID); err != nil {
 			return fmt.Errorf("自动发布失败: %w", err)
 		}
