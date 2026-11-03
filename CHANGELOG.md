@@ -7,6 +7,14 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.22.2](https://github.com/VOD-Studio/violet/compare/v2.22.1...v2.22.2) (2026-11-03)
+
+
+### 修复
+
+* **ci:** 修复版本意图检查吞掉尾注 ([#687](https://github.com/VOD-Studio/violet/issues/687)) ([68a982f](https://github.com/VOD-Studio/violet/commit/68a982f1df39fe21acd25e4250b54f460909da8e))
+* **subscription:** 修复后台导入的自动发布鉴权 ([#684](https://github.com/VOD-Studio/violet/issues/684)) ([d50f76d](https://github.com/VOD-Studio/violet/commit/d50f76d07e806dc4d1ffa82ed02abb968a8a4c08))
+
 ## [2.22.1](https://github.com/VOD-Studio/violet/compare/v2.22.0...v2.22.1) (2026-10-29)
 
 
