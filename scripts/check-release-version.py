@@ -41,7 +41,9 @@ def check(base: str, head: str, release_pr: bool = False, cwd: Path = Path("."))
             raise ValueError(f"Release manifest {target} must be newer than base {published}")
     # Exclude every commit already reachable from base, including old Release-As trailers.
     messages = git("log", "--format=%B%x00", f"{base}..{head}", cwd=cwd)
-    for requested in RELEASE_AS.findall(messages):
+    # %x00 分隔符紧贴不以换行结尾的提交体（GitHub 合并产物）时会被 \S+ 吞掉，
+    # 归一成换行才能按行匹配尾注。
+    for requested in RELEASE_AS.findall(messages.replace("\x00", "\n")):
         if version(requested) <= baseline:
             raise ValueError(f"Release-As {requested} is already published (base {published})")
     print(f"Release version intent is valid against {published}")
