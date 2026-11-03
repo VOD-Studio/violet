@@ -54,6 +54,20 @@ class ReleaseVersionTests(unittest.TestCase):
         self.commit("fix: feature two\n\nRelease-As: v2.8.52")
         self.check()
 
+    def test_accepts_footer_without_trailing_newline(self):
+        # GitHub 合并产生的提交体不以换行结尾，%x00 分隔符会紧贴版本文本
+        tree = self.git("rev-parse", "HEAD^{tree}")
+        head = subprocess.run(
+            ["git", "commit-tree", tree, "-p", "HEAD"],
+            cwd=self.repo,
+            input="fix: feature one\n\nRelease-As: v2.8.52",
+            text=True,
+            capture_output=True,
+            check=True,
+        ).stdout.strip()
+        self.git("update-ref", "HEAD", head)
+        self.check()
+
     def test_rejects_already_published_same_version(self):
         self.commit("fix: stale task\n\nRelease-As: v2.8.51")
         with self.assertRaisesRegex(ValueError, "already published"):
