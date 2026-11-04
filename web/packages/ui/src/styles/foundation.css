@@ -2,6 +2,31 @@
 	--v-control-height-sm: 2rem;
 	--v-control-height-md: 2.25rem;
 	--v-control-height-lg: 2.5rem;
-	--v-duration-fast: 150ms;
-	--v-easing: ease-out;
+
+	/* 功能圆角档：4、8、12、16 与 胶囊 */
+	--radius-4: 4px;
+	--radius-8: 8px;
+	--radius-12: 12px;
+	--radius-16: 16px;
+	--radius-full: 9999px;
+
+	/* 动效时长 token（设计稿「基础」页） */
+	--duration-hover: 120ms;
+	--duration-popover-in: 180ms;
+	--duration-popover-out: 120ms;
+	--duration-drawer-in: 320ms;
+	--duration-drawer-out: 220ms;
+	--duration-draw: 1s;
+	--duration-skeleton: 1.8s;
+
+	/* 动效曲线 token（设计稿「基础」页） */
+	--ease-hover: ease-out;
+	--ease-popover: ease-out;
+	--ease-drawer-in: cubic-bezier(0.22, 1, 0.36, 1);
+	--ease-drawer-out: cubic-bezier(0.4, 0, 0.2, 1);
+	--ease-draw: cubic-bezier(0.45, 0.05, 0.25, 1);
+	--ease-skeleton: ease-in-out;
+
+	--v-duration-fast: var(--duration-hover);
+	--v-easing: var(--ease-hover);
 }
