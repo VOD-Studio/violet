@@ -1466,3 +1466,164 @@ func TestCreateComment_ReplyCarriesRepliedToAuthor(t *testing.T) {
 	assert.Equal(t, topAuthorID, *commented.RepliedToAuthorID)
 	assert.Equal(t, tweetAuthorID, commented.TweetAuthorID)
 }
+
+// --- bot 身份与评论幂等 ---
+
+func newBotUser(t *testing.T, id shared.ID) *domainuser.User {
+	t.Helper()
+	email, err := domainuser.ParseEmail("bot+" + id.String() + "@" + domainuser.BotUserEmailDomain)
+	require.NoError(t, err)
+	username, err := domainuser.ParseUsername("helperbot")
+	require.NoError(t, err)
+	return domainuser.NewUser(id, email, username, domainuser.NewPasswordHash(""))
+}
+
+func TestAuthorDTO_IsBot(t *testing.T) {
+	botID := shared.NewID()
+	humanID := shared.NewID()
+	users := &fakeUserRepo{byIDs: map[string]*domainuser.User{
+		botID.String():   newBotUser(t, botID),
+		humanID.String(): newUserWithID(t, humanID, "human"),
+	}}
+	repo := &fakeTweetRepo{findByIDData: map[string]*domaintweet.Tweet{}}
+	botTweet := domaintweet.ReconstructTweet(shared.NewID(), botID, "bot 说", nil, nil, 0, time.Now(), time.Now())
+	humanTweet := domaintweet.ReconstructTweet(shared.NewID(), humanID, "人说", nil, nil, 0, time.Now(), time.Now())
+	repo.findByIDData[botTweet.ID().String()] = botTweet
+	repo.findByIDData[humanTweet.ID().String()] = humanTweet
+	svc := newService(repo, users, nil, nil, appshared.NoopEventBus{})
+
+	botDTO, err := svc.GetByID(context.Background(), botTweet.ID().String())
+	require.NoError(t, err)
+	assert.True(t, botDTO.Author.IsBot)
+
+	humanDTO, err := svc.GetByID(context.Background(), humanTweet.ID().String())
+	require.NoError(t, err)
+	assert.False(t, humanDTO.Author.IsBot)
+}
+
+func TestGetUserProfile_IsBot(t *testing.T) {
+	botID := shared.NewID()
+	bot := newBotUser(t, botID)
+	users := &fakeUserRepo{byUsername: map[string]*domainuser.User{"helperbot": bot}}
+	svc := newService(&fakeTweetRepo{findByIDData: map[string]*domaintweet.Tweet{}}, users, nil, nil, appshared.NoopEventBus{})
+
+	dto, err := svc.GetUserProfile(context.Background(), "helperbot")
+	require.NoError(t, err)
+	assert.True(t, dto.IsBot)
+}
+
+func TestGetComment(t *testing.T) {
+	botID := shared.NewID()
+	tweetID := shared.NewID()
+	svc, repo, _, _ := setupCommentService(t, botID)
+	repo.findByIDData[tweetID.String()] = domaintweet.ReconstructTweet(tweetID, shared.NewID(), "hi", nil, nil, 0, time.Now(), time.Now())
+
+	created, err := svc.CreateComment(ctxWithUser(botID.String(), "", false), CreateCommentInput{
+		TweetID: tweetID.String(), AuthorID: botID.String(), Body: "好文",
+	})
+	require.NoError(t, err)
+
+	got, err := svc.GetComment(context.Background(), created.ID)
+	require.NoError(t, err)
+	assert.Equal(t, created.ID, got.ID)
+	assert.Equal(t, "好文", got.Body)
+	assert.Equal(t, tweetID.String(), got.TweetID)
+	assert.Equal(t, "commenter", got.Author.Username)
+
+	_, err = svc.GetComment(context.Background(), shared.NewID().String())
+	require.ErrorIs(t, err, domaintweet.ErrCommentNotFound)
+	_, err = svc.GetComment(context.Background(), "bad-id")
+	assert.Equal(t, shared.CodeBadRequest, asDomainError(t, err).Code)
+}
+
+func asDomainError(t *testing.T, err error) *shared.DomainError {
+	t.Helper()
+	var de *shared.DomainError
+	require.ErrorAs(t, err, &de)
+	return de
+}
+
+func TestCreateComment_IdempotentReplay(t *testing.T) {
+	botID := shared.NewID()
+	tweetID := shared.NewID()
+	svc, repo, comments, _ := setupCommentService(t, botID)
+	repo.findByIDData[tweetID.String()] = domaintweet.ReconstructTweet(tweetID, shared.NewID(), "hi", nil, nil, 0, time.Now(), time.Now())
+
+	key := shared.NewID().String()
+	in := CreateCommentInput{
+		TweetID: tweetID.String(), AuthorID: botID.String(), Body: " 幂等评论 ", CommentID: key,
+	}
+	first, err := svc.CreateComment(ctxWithUser(botID.String(), "", false), in)
+	require.NoError(t, err)
+	assert.Equal(t, key, first.ID, "Idempotency-Key 即评论 ID")
+	require.Len(t, comments.saved, 1)
+
+	second, err := svc.CreateComment(ctxWithUser(botID.String(), "", false), in)
+	require.NoError(t, err)
+	assert.Equal(t, first.ID, second.ID)
+	assert.Len(t, comments.saved, 1, "重放不应再写一条")
+
+	in.Body = "换了内容"
+	_, err = svc.CreateComment(ctxWithUser(botID.String(), "", false), in)
+	require.Error(t, err)
+	assert.Equal(t, shared.CodeConflict, asDomainError(t, err).Code)
+	assert.Len(t, comments.saved, 1)
+	assert.Equal(t, "幂等评论", comments.byID[first.ID].Body(), "冲突请求不得修改已存评论")
+}
+
+func TestCreateComment_ReplayBypassesImageCheck(t *testing.T) {
+	botID := shared.NewID()
+	tweetID := shared.NewID()
+	repo := &fakeTweetRepo{findByIDData: map[string]*domaintweet.Tweet{}}
+	comments := newFakeCommentRepo()
+	users := &fakeUserRepo{byIDs: map[string]*domainuser.User{botID.String(): newUserWithID(t, botID, "commenter")}}
+	checker := &fakeImageChecker{}
+	svc := NewService(repo, comments, users, checker, nil, nil, nil, nil, appshared.NoopEventBus{})
+	repo.findByIDData[tweetID.String()] = domaintweet.ReconstructTweet(tweetID, shared.NewID(), "hi", nil, nil, 0, time.Now(), time.Now())
+
+	in := CreateCommentInput{
+		TweetID:   tweetID.String(),
+		AuthorID:  botID.String(),
+		Body:      "带图评论",
+		Pictures:  []domaintweet.Picture{{URL: "/uploads/tweet/a.webp", Width: 10, Height: 10, Size: 100}},
+		CommentID: shared.NewID().String(),
+	}
+	first, err := svc.CreateComment(context.Background(), in)
+	require.NoError(t, err)
+	require.True(t, checker.called, "新插入应校验图片归属")
+
+	// 上传文件已失效（就绪状态变化）：重放仍应返回已存在评论，不再走归属校验。
+	checker.called = false
+	checker.err = shared.Forbidden("推文图片不存在或不属于当前用户")
+	second, err := svc.CreateComment(context.Background(), in)
+	require.NoError(t, err)
+	assert.Equal(t, first.ID, second.ID)
+	assert.False(t, checker.called, "幂等重放不应触及图片归属校验")
+	assert.Len(t, comments.saved, 1)
+}
+
+func TestCreateComment_ReplayComparesParent(t *testing.T) {
+	botID := shared.NewID()
+	tweetID := shared.NewID()
+	svc, repo, comments, _ := setupCommentService(t, botID)
+	repo.findByIDData[tweetID.String()] = domaintweet.ReconstructTweet(tweetID, shared.NewID(), "hi", nil, nil, 0, time.Now(), time.Now())
+
+	top, err := svc.CreateComment(ctxWithUser(botID.String(), "", false), CreateCommentInput{
+		TweetID: tweetID.String(), AuthorID: botID.String(), Body: "顶层",
+	})
+	require.NoError(t, err)
+
+	key := shared.NewID().String()
+	reply := CreateCommentInput{
+		TweetID: tweetID.String(), AuthorID: botID.String(), Body: "回复", ParentID: top.ID, CommentID: key,
+	}
+	first, err := svc.CreateComment(ctxWithUser(botID.String(), "", false), reply)
+	require.NoError(t, err)
+	assert.Equal(t, int16(1), first.Depth)
+
+	reply.ParentID = ""
+	_, err = svc.CreateComment(ctxWithUser(botID.String(), "", false), reply)
+	require.Error(t, err)
+	assert.Equal(t, shared.CodeConflict, asDomainError(t, err).Code)
+	assert.Len(t, comments.saved, 2)
+}

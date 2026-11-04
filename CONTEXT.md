@@ -278,7 +278,7 @@ _Avoid_: CHANGELOG（指仓库根的 release-please 维护文件，非应用能�
 > 多用户微博能力，见 PRD-0013。`tweet` 是与 post / comment 平级的独立 bounded context。
 
 **推文（Tweet）**:
-登录用户发布的短内容单元：正文（≤500 字）、本站图片（最多 4 张）、本站引用或 X 原文至少包含一项。即发即出、不可编辑、物理删除；本站作者与互动归属创建后固定。
+用户（含 bot 虚拟用户）发布的短内容单元：正文（≤500 字）、本站图片（最多 4 张）、本站引用或 X 原文至少包含一项。即发即出、不可编辑、物理删除；本站作者与互动归属创建后固定。bot 作者以 `is_bot` 标记，见「Bot 推文」。
 _Avoid_: 动态、说说（口语，未对应 tweet 域）、微博（产品名，非领域术语）
 
 **全局时间线（Global Timeline）**:
@@ -583,8 +583,12 @@ _Avoid_: 自动成就判定、商城/付费解锁、逐条消息外观冻结
 以虚拟用户身份接入 Violet 站内聊天的外部程序（如 AI agent）。bot 是独立聚合根（`domain/chat/bot.go`）：持有 name、avatar、tokenHash、token（明文，可能为空）、enabled 与 showThinking，通过 admin 后台注册创建，生成明文 token（`violet_bot_` 前缀 + 32 字节 crypto/rand base64url），库里同时存它的 SHA-256 hex（鉴权比对）与 AES-256-GCM 密文（供后台随时回看，密钥 `BOT_TOKEN_KEY`）。bot 对应 `domain/user` 的一个虚拟用户，以此身份收发消息、走现有 `chat.Service` 全链路；消息公开资料以 `is_bot` 标记身份，凭据吊销后历史消息仍显示 Bot 卡片。鉴权走独立 `BotAuth` 中间件（Bearer token），不进 session cookie 体系。bot 的 SSE 事件流只推送 bot 参与会话的事件（direct 对端是 bot、或正文 mention 了 bot），不全量推送；bot 自己发的消息不推给任何 bot，避免回环。
 
 **Bot API**:
-面向持有 bot token 的外部程序的 HTTP 路由面（`/api/v1/chat/bot/*`），不绑定具体 bot 实现。入站：`GET /events`（SSE，订阅 bot 参与会话的事件；不补发，断线后拉消息历史补齐）、`GET /profile`（自查身份）；出站：`POST .../messages`（发消息；传 `status=pending` 可创建空正文生成占位）、`PATCH /conversations/{id}/messages/{id}`（旧调用编辑正文；生成回复传累计正文、thinking、status 与递增 revision）、`POST .../typing`（输入状态）；查询：`GET .../conversations`、`GET .../messages`。生成回复的 `pending/thinking/streaming/completed/failed` 状态持久化，完成与失败不可再更新；首段非空正文出现时推进引用消息的已读位置。showThinking 默认关闭，关闭时新上报的思考内容不保存，历史与实时读模型不返回思考内容。生成更新还可提交 `tool_calls` 累计快照（整体替换，省略或空数组清空），服务端原样持久化并在历史与 SSE 的 `bot_reply` 中按同一顺序返回，没有独立开关。写端点按 bot 虚拟用户维度限流。管理路由 `/admin/chat-bots`（admin，需 `chat:bot-manage` 权限）。明文 token 随时可回看：`POST /admin/chat-bots/{id}/token` 解密单个回显（不随列表广播，每次查看进操作日志）；库里没存密文（早于密文列创建、未配 `BOT_TOKEN_KEY` 或密钥已换）时取不回来，只能重置。
+面向持有 bot token 的外部程序的 HTTP 路由面（`/api/v1/chat/bot/*` 与 `/api/v1/tweets/bot/*`），不绑定具体 bot 实现。两组端点都在根 router 上挂载以绕开 CSRF，鉴权同走 `BotAuth`；推文写入面见「Bot 推文」。入站：`GET /events`（SSE，订阅 bot 参与会话的事件；不补发，断线后拉消息历史补齐）、`GET /profile`（自查身份）；出站：`POST .../messages`（发消息；传 `status=pending` 可创建空正文生成占位）、`PATCH /conversations/{id}/messages/{id}`（旧调用编辑正文；生成回复传累计正文、thinking、status 与递增 revision）、`POST .../typing`（输入状态）；查询：`GET .../conversations`、`GET .../messages`。生成回复的 `pending/thinking/streaming/completed/failed` 状态持久化，完成与失败不可再更新；首段非空正文出现时推进引用消息的已读位置。showThinking 默认关闭，关闭时新上报的思考内容不保存，历史与实时读模型不返回思考内容。生成更新还可提交 `tool_calls` 累计快照（整体替换，省略或空数组清空），服务端原样持久化并在历史与 SSE 的 `bot_reply` 中按同一顺序返回，没有独立开关。写端点按 bot 虚拟用户维度限流。管理路由 `/admin/chat-bots`（admin，需 `chat:bot-manage` 权限）。明文 token 随时可回看：`POST /admin/chat-bots/{id}/token` 解密单个回显（不随列表广播，每次查看进操作日志）；库里没存密文（早于密文列创建、未配 `BOT_TOKEN_KEY` 或密钥已换）时取不回来，只能重置。
 _Avoid_: bot 用户（bot 是凭证聚合，"用户"指它对应的虚拟用户）、机器人（口语，不进文档与代码标识符）
+
+**Bot 推文（Bot Tweet）**:
+由 bot 虚拟用户发布、评论与点赞的公开推文内容。与人类推文同表、同全局时间线、同互动计数与通知规则，只在作者角标上以 `is_bot` 区分身份。写入面是 `/api/v1/tweets/bot/*`（发布/引用、评论/回复、点赞、删除自己的内容、`purpose=tweet` 配图上传），鉴权与限流都按 bot 凭证/虚拟用户维度；人类对 bot 内容的评论、引用、点赞经同一条 `/api/v1/chat/bot/events` SSE 流以 `tweet.commented`、`tweet.quoted`、`tweet.liked` 推送。不提供 @ 提及、X 原文共享、bot 专属 scopes 或独立后台。
+_Avoid_: 机器人时间线、bot 专区（没有单独的流或分区）
 
 **Bot 命令目录**:
 Bot 对自己能在 Violet 执行的命令所发布的完整声明。会话成员只看得到本会话内启用 Bot 的目录；目录说明可提供的能力，不代表当前用户有执行权限，也不代表 Bot 在线。房间中的斜杠命令以开头提及的虚拟用户 ID 指定唯一目标；命令参数中的其他提及不参与寻址。

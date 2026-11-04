@@ -1224,14 +1224,32 @@ type BotMediaDTO struct {
 
 // SaveBotMedia 校验并保存 bot 上传的聊天图片。
 func (s *UploadService) SaveBotMedia(ctx context.Context, in SaveBotMediaInput) (BotMediaDTO, error) {
-	ext, ok := SniffImageExt(in.Data)
-	if !ok {
-		return BotMediaDTO{}, shared.BadRequest("仅支持 png、jpeg、gif、webp 图片")
-	}
-	if in.MIMEType != imageMIMEByExt[ext] {
-		return BotMediaDTO{}, shared.BadRequest("图片 MIME 类型与文件内容不一致")
+	ext, err := validateBotImage(in)
+	if err != nil {
+		return BotMediaDTO{}, err
 	}
 	return s.saveImageDTO(ctx, in.OwnerID, domainupload.PurposeChat, in.OriginalName, ext, in.Data)
+}
+
+// SaveBotTweetImage 校验并保存 bot 上传的推文配图（purpose=tweet）。
+func (s *UploadService) SaveBotTweetImage(ctx context.Context, in SaveBotMediaInput) (BotMediaDTO, error) {
+	ext, err := validateBotImage(in)
+	if err != nil {
+		return BotMediaDTO{}, err
+	}
+	return s.saveImageDTO(ctx, in.OwnerID, domainupload.PurposeTweet, in.OriginalName, ext, in.Data)
+}
+
+// validateBotImage 按内容嗅探图片格式，并要求声明的 MIME 与之一致。
+func validateBotImage(in SaveBotMediaInput) (string, error) {
+	ext, ok := SniffImageExt(in.Data)
+	if !ok {
+		return "", shared.BadRequest("仅支持 png、jpeg、gif、webp 图片")
+	}
+	if in.MIMEType != imageMIMEByExt[ext] {
+		return "", shared.BadRequest("图片 MIME 类型与文件内容不一致")
+	}
+	return ext, nil
 }
 
 // SavePostImageInput 是 MCP 为文章上传配图的用例入参。

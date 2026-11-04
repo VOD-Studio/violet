@@ -2079,7 +2079,7 @@ func userToDTO(user *domainuser.User) UserDTO {
 	if displayName == "" {
 		displayName = username
 	}
-	return UserDTO{ID: user.GetID().String(), Username: username, DisplayName: displayName, AvatarURL: user.AvatarURL(), IsBot: isBotVirtualUser(user)}
+	return UserDTO{ID: user.GetID().String(), Username: username, DisplayName: displayName, AvatarURL: user.AvatarURL(), IsBot: user.IsBot()}
 }
 
 func memberIDs(members []*domainchat.Member) []domainshared.ID {

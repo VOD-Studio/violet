@@ -182,6 +182,8 @@ chat.Service.SendMessage (senderID = 用户)
 | PATCH | `/conversations/{conversationId}/messages/{messageId}` | 编辑自己的消息（流式回复） |
 | POST | `/conversations/{conversationId}/typing` | 上报输入状态 |
 
+推文发布/评论/点赞与推文互动事件不在本 PRD 内，见 [PRD-0039](0039-bot-tweet-api.md)（同一套 bot token 与 SSE 流）。
+
 两点与直觉不同，实现时容易踩：
 
 - **挂在 v1 组外**。`/api/v1` 组对全部写方法做 CSRF 的 cookie+header 配对校验，
@@ -223,6 +225,10 @@ data: {"type":"message.created","version":1,"occurred_at":"2026-09-22T10:00:00Z"
 浏览器看的引用形态（只有 message_id），与 bot 侧的自带正文形态不同形状；两套形状
 塞进同一条流，外部实现就得两边都兼容。bot 的恢复路径是重连后按 `created_at`
 拉一次消息历史。
+
+同一条 `/events` 流也承载推文互动事件（`tweet.commented`、`tweet.quoted`、
+`tweet.liked`），载荷与触发规则见 [PRD-0039](0039-bot-tweet-api.md)；bot 的推文读写
+端点同样挂在根 router 绕开 CSRF，限流按 bot 虚拟用户计。
 
 
 ## 前端

@@ -134,7 +134,9 @@ func registerBotPaths(t *openapi3.T) {
 		Tags: []string{"聊天 Bot"}, Summary: "bot 事件流",
 		Description: "SSE。帧的事件名即类型（message.created、typing.updated），data 自带消息全文。" +
 			"只推本 bot 参与会话的事件：私聊对端消息全推，群聊仅推被 @ 到的；bot 自己发的消息不推。" +
-			"不支持 Last-Event-ID 补发，断线后用消息历史接口补齐。",
+			"同一条流也承载推文互动事件：tweet.commented（data.reason 为 comment_on_tweet 或 reply_to_comment）、" +
+			"tweet.quoted、tweet.liked，载荷见 PRD-0039；bot 自己作的互动不产生事件。" +
+			"流是有损的（缓冲满即丢），不支持 Last-Event-ID 补发：断线后用消息历史与公开推文读取接口补齐。",
 		Security:  secure,
 		Responses: responses(200, &openapi3.ResponseRef{Value: &openapi3.Response{Description: strPtr("text/event-stream")}}),
 	})

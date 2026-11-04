@@ -12,7 +12,8 @@ import (
 // 时间线的 cursor 分页不同，见 PRD-0013 难逆决策）。顶层评论列表按 created_at
 // 倒序（最新在前），回复按 created_at 正序（对话时间线），均带 id tiebreaker。
 type CommentRepository interface {
-	// Save 保存评论（按主键 upsert；评论无更新路径，upsert 服务重建场景）
+	// Save 插入评论（仅创建路径，无更新语义）。主键重复须返回错误，
+	// 供 bot 幂等重试回查后返回已有评论或报告内容冲突。
 	Save(ctx context.Context, c *Comment) error
 	// FindByID 按 ID 查找评论
 	FindByID(ctx context.Context, id shared.ID) (*Comment, error)

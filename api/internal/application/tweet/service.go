@@ -93,6 +93,8 @@ type AuthorDTO struct {
 	Provider string `json:"provider,omitempty"`
 	// ProfileURL 第三方主页链接，仅 GitHub 有；Google 无公开个人主页省略
 	ProfileURL string `json:"profile_url,omitempty"`
+	// IsBot 作者是否为 bot 虚拟用户，前端据此标注机器人身份
+	IsBot bool `json:"is_bot"`
 }
 
 // UserProfileDTO 用户公开资料卡（公开，仅包含不敏感的非私域字段）。
@@ -105,6 +107,8 @@ type UserProfileDTO struct {
 	Bio         string `json:"bio"`
 	// CreatedAt RFC3339 格式
 	CreatedAt string `json:"created_at"`
+	// IsBot 该主页是否为 bot 虚拟用户
+	IsBot bool `json:"is_bot"`
 }
 
 // QuotedTweetDTO 被引用推文读模型。
@@ -443,6 +447,7 @@ func (s *Service) GetUserProfile(ctx context.Context, username string) (UserProf
 		CoverURL:    u.CoverURL(),
 		Bio:         u.Bio(),
 		CreatedAt:   u.CreatedAt().Format(time.RFC3339),
+		IsBot:       u.IsBot(),
 	}, nil
 }
 
@@ -565,6 +570,7 @@ func (s *Service) toDTOs(ctx context.Context, tweets []*domaintweet.Tweet) []Twe
 				AvatarURL:  u.AvatarURL(),
 				Provider:   provider,
 				ProfileURL: profileURL,
+				IsBot:      u.IsBot(),
 			}
 		}
 	}
@@ -814,6 +820,8 @@ type CreateCommentInput struct {
 	Pictures []domaintweet.Picture
 	// ParentID 被回复的评论 id；空串=顶层评论
 	ParentID string
+	// CommentID 调用方指定的评论 ID（bot 幂等键）；空串=服务端随机生成
+	CommentID string
 }
 
 // PictureInput 评论附图请求 DTO（handler 层接收的 JSON 形态，转成 domain.Picture）。
@@ -838,7 +846,11 @@ func PicturesToDomain(in []PictureInput) []domaintweet.Picture {
 
 // CreateComment 创建评论或回复（登录，即发即出：无审核状态机）。
 //
-// 编排：校验推文存在 → 领域工厂（不变量）→ 若有 parent 校验同推文且设回复层级 → Save。
+// 编排：校验推文存在 → 领域工厂（不变量）→ 若有 parent 校验同推文且设回复层级
+// → 幂等重放判定 → Save。
+//
+// CommentID 非空时（bot 路径）把它当主键：同 ID 已存在则比对本次请求的
+// 作者/推文/正文/父评论/附图，一致返回已有评论，不一致 409。
 func (s *Service) CreateComment(ctx context.Context, in CreateCommentInput) (CommentDTO, error) {
 	if s.commentRepo == nil {
 		return CommentDTO{}, errCommentRepoNotInjected
@@ -851,13 +863,21 @@ func (s *Service) CreateComment(ctx context.Context, in CreateCommentInput) (Com
 	if err != nil {
 		return CommentDTO{}, shared.BadRequest("非法的用户 ID")
 	}
+	var commentID *shared.ID
+	if in.CommentID != "" {
+		id, perr := shared.ParseID(in.CommentID)
+		if perr != nil || id.IsZero() {
+			return CommentDTO{}, shared.BadRequest("非法的评论 ID")
+		}
+		commentID = &id
+	}
 	// 推文必须存在（评论挂推文下，推文删了不可评论）
 	tw, err := s.repo.FindByID(ctx, tweetID)
 	if err != nil {
 		return CommentDTO{}, err
 	}
 
-	c, err := domaintweet.NewComment(tweetID, authorID, in.Body)
+	c, err := newComment(commentID, tweetID, authorID, in.Body)
 	if err != nil {
 		return CommentDTO{}, err
 	}
@@ -866,15 +886,6 @@ func (s *Service) CreateComment(ctx context.Context, in CreateCommentInput) (Com
 	// （防越权引用他人上传文件，与发推文 Create 的 checker 校验同构）。
 	if err := c.SetPictures(in.Pictures); err != nil {
 		return CommentDTO{}, err
-	}
-	if s.checker != nil && len(c.Pictures()) > 0 {
-		urls := make([]string, len(c.Pictures()))
-		for i, p := range c.Pictures() {
-			urls[i] = p.URL
-		}
-		if err := s.checker.CheckImagesOwnedBy(ctx, urls, authorID); err != nil {
-			return CommentDTO{}, err
-		}
 	}
 
 	// repliedToAuthorID 留给通知订阅者区分「推文收到评论」与「评论收到回复」
@@ -901,7 +912,37 @@ func (s *Service) CreateComment(ctx context.Context, in CreateCommentInput) (Com
 		_ = c.SetParent(nil)
 	}
 
+	if commentID != nil {
+		dto, found, rerr := s.findCommentRequest(ctx, *commentID, c)
+		if rerr != nil {
+			return CommentDTO{}, rerr
+		}
+		if found {
+			return dto, nil
+		}
+	}
+
+	// 归属校验只服务新插入：幂等重放要能在配图文件已失效时仍返回原评论。
+	if s.checker != nil && len(c.Pictures()) > 0 {
+		urls := make([]string, len(c.Pictures()))
+		for i, p := range c.Pictures() {
+			urls[i] = p.URL
+		}
+		if err := s.checker.CheckImagesOwnedBy(ctx, urls, authorID); err != nil {
+			return CommentDTO{}, err
+		}
+	}
+
 	if err := s.commentRepo.Save(ctx, c); err != nil {
+		// 并发重试可能撞上同一主键：回查后按同一比对规则收敛，
+		// 内容一致当成功返回，不一致仍是 409。
+		if commentID != nil {
+			if dto, found, rerr := s.findCommentRequest(ctx, *commentID, c); rerr != nil {
+				return CommentDTO{}, rerr
+			} else if found {
+				return dto, nil
+			}
+		}
 		return CommentDTO{}, err
 	}
 	s.publishEvents(ctx, []shared.DomainEvent{domaintweet.NewTweetCommented(c, tw.AuthorID(), repliedToAuthorID)})
@@ -1001,6 +1042,79 @@ func (s *Service) ListReplies(ctx context.Context, parentIDStr string, page, lim
 	return dtos, result.Total, nil
 }
 
+// GetComment 按 ID 读取单条评论（公开）：事件载荷需要评论快照。
+func (s *Service) GetComment(ctx context.Context, id string) (CommentDTO, error) {
+	if s.commentRepo == nil {
+		return CommentDTO{}, errCommentRepoNotInjected
+	}
+	cid, err := shared.ParseID(id)
+	if err != nil {
+		return CommentDTO{}, shared.BadRequest("非法的评论 ID")
+	}
+	c, err := s.commentRepo.FindByID(ctx, cid)
+	if err != nil {
+		return CommentDTO{}, err
+	}
+	dto := s.commentsToDTOs(ctx, []*domaintweet.Comment{c})[0]
+	if err := s.enrichSingleEmote(ctx, &dto); err != nil {
+		return CommentDTO{}, err
+	}
+	return dto, nil
+}
+
+// newComment 按是否带客户端 ID 选择领域工厂。
+func newComment(id *shared.ID, tweetID, authorID shared.ID, body string) (*domaintweet.Comment, error) {
+	if id == nil {
+		return domaintweet.NewComment(tweetID, authorID, body)
+	}
+	return domaintweet.NewCommentWithID(*id, tweetID, authorID, body)
+}
+
+// findCommentRequest 查同 ID 的已有评论并与本次请求比对。
+//
+// found=true 时返回可直接响应的 DTO；内容不一致返回冲突错误。
+func (s *Service) findCommentRequest(ctx context.Context, id shared.ID, c *domaintweet.Comment) (CommentDTO, bool, error) {
+	existing, err := s.commentRepo.FindByID(ctx, id)
+	if errors.Is(err, domaintweet.ErrCommentNotFound) {
+		return CommentDTO{}, false, nil
+	}
+	if err != nil {
+		return CommentDTO{}, false, err
+	}
+	if !sameCommentRequest(existing, c) {
+		return CommentDTO{}, true, shared.Conflict("同一评论请求不能更换内容")
+	}
+	dto := s.commentsToDTOs(ctx, []*domaintweet.Comment{existing})[0]
+	if err := s.enrichSingleEmote(ctx, &dto); err != nil {
+		return CommentDTO{}, false, err
+	}
+	return dto, true, nil
+}
+
+// sameCommentRequest 判定两条评论是否来自同一次请求：作者、推文、正文、
+// 父评论与附图顺序都必须一致。
+func sameCommentRequest(a, b *domaintweet.Comment) bool {
+	if a.AuthorID() != b.AuthorID() || a.TweetID() != b.TweetID() || a.Body() != b.Body() {
+		return false
+	}
+	ap, bp := a.ParentID(), b.ParentID()
+	switch {
+	case ap == nil && bp == nil:
+	case ap == nil || bp == nil || *ap != *bp:
+		return false
+	}
+	apics, bpics := a.Pictures(), b.Pictures()
+	if len(apics) != len(bpics) {
+		return false
+	}
+	for i := range apics {
+		if apics[i] != bpics[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // commentsToDTOs 领域评论 → DTO，批量填充作者资料（FindByIDs 一次查询避免 N+1）。
 func (s *Service) commentsToDTOs(ctx context.Context, comments []*domaintweet.Comment) []CommentDTO {
 	authorIDs := make([]shared.ID, 0, len(comments))
@@ -1026,7 +1140,7 @@ func (s *Service) commentsToDTOs(ctx context.Context, comments []*domaintweet.Co
 			provider, profileURL := u.OAuthIdentity()
 			authors[u.GetID().String()] = AuthorDTO{
 				ID: u.GetID().String(), Username: u.Username().String(), AvatarURL: u.AvatarURL(),
-				Provider: provider, ProfileURL: profileURL,
+				Provider: provider, ProfileURL: profileURL, IsBot: u.IsBot(),
 			}
 		}
 	}

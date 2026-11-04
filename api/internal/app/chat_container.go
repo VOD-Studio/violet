@@ -12,6 +12,7 @@ import (
 	appcustomemoji "blog-api/internal/application/customemoji"
 	appmedia "blog-api/internal/application/media"
 	appshared "blog-api/internal/application/shared"
+	domainchat "blog-api/internal/domain/chat"
 	domainshared "blog-api/internal/domain/shared"
 	"blog-api/internal/infrastructure/crypto"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
@@ -28,6 +29,11 @@ type ChatContainer struct {
 	BotService      *appchat.BotService
 	BotHandler      *chathttp.BotHandler
 	BotAdminHandler *chathttp.BotAdminHandler
+	// BotConnections 与 /chat/bot/events 共用同一条 SSE 流；
+	// 推文互动事件订阅者向它投递。
+	BotConnections *appchat.BotConnectionManager
+	// BotRepository 按虚拟用户反查 bot 凭证（推文事件判定收件人）。
+	BotRepository domainchat.BotRepository
 }
 
 // NewChatContainer 装配聊天领域、持久化与浏览器推送。
@@ -61,6 +67,8 @@ func NewChatContainer(db *gorm.DB, cfg *config.Config, customEmojiSvc *appcustom
 		BotService:      botService,
 		BotHandler:      chathttp.NewBotHandler(svc, botService, botConnections, uploadSvc, cfg.BotMediaMaxBytes).WithBotCommands(botCommands),
 		BotAdminHandler: chathttp.NewBotAdminHandler(botService),
+		BotConnections:  botConnections,
+		BotRepository:   botRepo,
 	}
 }
 

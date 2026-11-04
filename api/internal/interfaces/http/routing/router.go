@@ -122,6 +122,7 @@ func RegisterRoutes(r chi.Router, d *Deps) {
 
 	// Bot API（同样顶层挂载绕开 CSRF；鉴权走 Bearer bot token，见 registerBotRoutes）
 	registerBotRoutes(r, d)
+	registerTweetBotRoutes(r, d)
 	registerOMPUsageIngestRoute(r, d)
 
 	// 图片服务（动态 resize/转码 + 二级缓存 + ETag/304）

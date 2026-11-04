@@ -15,10 +15,6 @@ import (
 	domainuser "blog-api/internal/domain/user"
 )
 
-// botUserEmailDomain bot 虚拟用户的邮箱域。`.invalid` 是 RFC 2606 保留 TLD，
-// 永不解析：邮箱字段被误用于发信也不会投递出去。
-const botUserEmailDomain = "bot.violet.invalid"
-
 // BotDTO bot 读模型。
 //
 // Token 为明文凭据：仅创建、重置与「查看凭据」三个响应携带，列表恒为空。
@@ -134,7 +130,7 @@ func (s *BotService) CreateBot(ctx context.Context, in CreateBotInput) (BotDTO, 
 	user := shell
 	if freshUser {
 		userID := domainshared.NewID()
-		email, perr := domainuser.ParseEmail("bot+" + userID.String() + "@" + botUserEmailDomain)
+		email, perr := domainuser.ParseEmail("bot+" + userID.String() + "@" + domainuser.BotUserEmailDomain)
 		if perr != nil {
 			return BotDTO{}, domainshared.Internal("构造 bot 虚拟用户邮箱失败", perr)
 		}
@@ -188,7 +184,7 @@ func (s *BotService) reclaimableShell(ctx context.Context, username domainuser.U
 	if err != nil {
 		return nil, err
 	}
-	if !isBotVirtualUser(occupant) {
+	if !occupant.IsBot() {
 		return nil, domainuser.ErrUsernameExists
 	}
 	_, berr := s.bots.FindByUserID(ctx, occupant.GetID())
@@ -200,15 +196,6 @@ func (s *BotService) reclaimableShell(ctx context.Context, username domainuser.U
 	default:
 		return nil, berr
 	}
-}
-
-// isBotVirtualUser 账号是否为系统为 bot 建的虚拟用户。
-//
-// 邮箱形态是 bot+<自身用户 ID>@bot.violet.invalid，连本地部分的 ID 一起核对：
-// 只看后缀会把真用户误判成可回收的空壳，等于给注册开放抢名。
-func isBotVirtualUser(u *domainuser.User) bool {
-	local, domain, found := strings.Cut(u.Email().String(), "@")
-	return found && domain == botUserEmailDomain && local == "bot+"+u.GetID().String()
 }
 
 // GetBot 查询 bot 详情。
