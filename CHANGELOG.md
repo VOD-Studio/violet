@@ -7,6 +7,13 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [Unreleased]
+
+### 新增
+
+- **chat:** Bot Token 可上传 PNG/JPEG/GIF/WebP 图片更换自身头像（最多 10 MiB），资料与素材引用原子提交；拒绝指定其他账号或现有素材 ID。
+
+
 ## [2.22.2](https://github.com/VOD-Studio/violet/compare/v2.22.1...v2.22.2) (2026-11-03)
 
 

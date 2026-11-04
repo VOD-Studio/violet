@@ -74,7 +74,7 @@ make api
 | `/api/v1/admin` | 管理接口，使用会话、管理员身份与具体权限点校验 |
 | `/uploads/` | 默认媒体路径，由图片服务处理 |
 | MCP | 按 PAT 权限开放，地址和客户端配置见 [MCP 指南](../docs/guides/mcp-servers.md) |
-| `/api/v1/chat/bot` | 独立 Bearer Bot token 鉴权，不使用浏览器 Session |
+| `/api/v1/chat/bot` | 独立 Bearer Bot token 鉴权；`POST /avatar` 上传并更新自身头像，`GET /profile` 读取当前资料；不使用浏览器 Session |
 
 完整字段、参数和状态码以 OpenAPI 为准；定义在 [internal/openapi/](internal/openapi/)，路由注册在 [internal/interfaces/http/routing/](internal/interfaces/http/routing/)。
 

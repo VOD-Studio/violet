@@ -245,13 +245,22 @@ func (s *BotService) ListBots(ctx context.Context, q domainshared.PageQuery) (do
 
 // UpdateBot 改名、换头像与启停。未提供任何待改字段时只回读，不写库。
 func (s *BotService) UpdateBot(ctx context.Context, in UpdateBotInput) (BotDTO, error) {
-	bot, err := s.bots.FindByID(ctx, in.ID)
+	dto, events, err := s.updateBot(ctx, in)
 	if err != nil {
 		return BotDTO{}, err
 	}
+	s.publishEvents(ctx, events)
+	return dto, nil
+}
+
+func (s *BotService) updateBot(ctx context.Context, in UpdateBotInput) (BotDTO, []domainshared.DomainEvent, error) {
+	bot, err := s.bots.FindByID(ctx, in.ID)
+	if err != nil {
+		return BotDTO{}, nil, err
+	}
 	user, err := s.users.FindByID(ctx, bot.UserID())
 	if err != nil {
-		return BotDTO{}, err
+		return BotDTO{}, nil, err
 	}
 	now := s.now()
 	changed := false
@@ -259,7 +268,7 @@ func (s *BotService) UpdateBot(ctx context.Context, in UpdateBotInput) (BotDTO, 
 	if in.Name != nil {
 		previous := bot.Name()
 		if err := bot.Rename(*in.Name, now); err != nil {
-			return BotDTO{}, err
+			return BotDTO{}, nil, err
 		}
 		if displayName, derr := domainuser.ParseDisplayName(strings.TrimSpace(*in.Name)); derr == nil {
 			user.UpdateDisplayName(displayName)
@@ -269,7 +278,7 @@ func (s *BotService) UpdateBot(ctx context.Context, in UpdateBotInput) (BotDTO, 
 	if in.AvatarID != nil {
 		avatarID, avatar, err := s.parseAvatarID(ctx, *in.AvatarID)
 		if err != nil {
-			return BotDTO{}, err
+			return BotDTO{}, nil, err
 		}
 		bot.SetAvatar(avatarID, now)
 		if avatar != nil {
@@ -295,16 +304,17 @@ func (s *BotService) UpdateBot(ctx context.Context, in UpdateBotInput) (BotDTO, 
 		bot.SetThinkingDefaultExpanded(*in.ThinkingDefaultExpanded, now)
 		changed = true
 	}
-	if changed {
-		if err := s.bots.Save(ctx, bot); err != nil {
-			return BotDTO{}, err
-		}
-		if err := s.users.Save(ctx, user); err != nil {
-			return BotDTO{}, err
-		}
-		s.publishEvents(ctx, bot.PullEvents(), user.PullEvents())
+	if !changed {
+		return newBotDTO(bot, user), nil, nil
 	}
-	return newBotDTO(bot, user), nil
+	if err := s.bots.Save(ctx, bot); err != nil {
+		return BotDTO{}, nil, err
+	}
+	if err := s.users.Save(ctx, user); err != nil {
+		return BotDTO{}, nil, err
+	}
+	events := append(bot.PullEvents(), user.PullEvents()...)
+	return newBotDTO(bot, user), events, nil
 }
 
 // RegenerateToken 重置 token，旧 token 立即失效。返回的 DTO.Token 是新明文。
