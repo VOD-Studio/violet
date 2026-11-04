@@ -13,6 +13,17 @@ v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/go
 
 - **chat:** Bot Token 可上传 PNG/JPEG/GIF/WebP 图片更换自身头像（最多 10 MiB），资料与素材引用原子提交；拒绝指定其他账号或现有素材 ID。
 
+## [2.23.0](https://github.com/VOD-Studio/violet/compare/v2.22.2...v2.23.0) (2026-11-04)
+
+
+### 新增
+
+* **chat:** 完善 Bot 接入能力 ([3f4f740](https://github.com/VOD-Studio/violet/commit/3f4f740173e08cb88014ce9737f80e09d4afb81c))
+* **chat:** 展示可展开的工具调用 ([bcb5b84](https://github.com/VOD-Studio/violet/commit/bcb5b843f5e36dea520a935aa7ddbab082f42c99))
+* **chat:** 支持 Bot 回复上报工具调用 ([936153d](https://github.com/VOD-Studio/violet/commit/936153d8d77b44eafcc18ec31819d91d312a3101))
+* **chat:** 支持 Bot 表情目录与收藏 ([0cd48da](https://github.com/VOD-Studio/violet/commit/0cd48da0db331ade1275d418898e804d528694d0))
+* **tweet:** 支持 Bot 发布与互动推文 ([0ef1b62](https://github.com/VOD-Studio/violet/commit/0ef1b62cd9c11bbdd7603bb365324f3dbcd5d431))
+* **tweet:** 标注 Bot 推文与评论身份 ([cc8a087](https://github.com/VOD-Studio/violet/commit/cc8a0879044d623dcf2e4aecc5c14905217c4ed0))
 
 ## [2.22.2](https://github.com/VOD-Studio/violet/compare/v2.22.1...v2.22.2) (2026-11-03)
 
