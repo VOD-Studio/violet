@@ -144,7 +144,7 @@ function RootComponent() {
 	const isFullscreenRoute = isChatRoute || isWorkbenchRoute;
 	const isProfileRoute = pathname.startsWith("/profile");
 	const isLabRoute = pathname.startsWith("/lab");
-	// 组件库文档的示例需要中性画布，星图点缀只铺在公开内容页
+	// 组件库文档的示例需要中性画布，窗只铺在公开内容页
 	const isUiDocsRoute = pathname === "/ui" || pathname.startsWith("/ui/");
 	const showBackdrop = !isProfileRoute && !isFullscreenRoute && !isLabRoute && !isUiDocsRoute;
 
@@ -170,7 +170,7 @@ function RootComponent() {
 						showBackdrop && "isolate",
 					)}
 				>
-					{showBackdrop && <SiteBackdrop />}
+					{showBackdrop && <SiteBackdrop dense={pathname !== "/"} />}
 					<AnnouncementBar />
 					<Header isAuthenticated={auth.isAuthenticated} />
 					<main

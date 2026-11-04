@@ -1700,30 +1700,6 @@
 			"count": 1
 		},
 		{
-			"file": "src/widgets/SiteBackdrop/SiteBackdrop.module.css",
-			"rule": "raw-color",
-			"value": "#000",
-			"count": 5
-		},
-		{
-			"file": "src/widgets/SiteBackdrop/SiteBackdrop.module.css",
-			"rule": "raw-color",
-			"value": "rgb(0 0 0 / 28%)",
-			"count": 2
-		},
-		{
-			"file": "src/widgets/SiteBackdrop/SiteBackdrop.module.css",
-			"rule": "raw-color",
-			"value": "rgb(0 0 0 / 4.5%)",
-			"count": 1
-		},
-		{
-			"file": "src/widgets/SiteBackdrop/SiteBackdrop.module.css",
-			"rule": "raw-color",
-			"value": "rgb(255 255 255 / 5%)",
-			"count": 1
-		},
-		{
 			"file": "packages/kanban/src/board/board.css",
 			"rule": "raw-color",
 			"value": "#171717",
