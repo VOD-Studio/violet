@@ -18,6 +18,7 @@ import (
 	domainsubscription "blog-api/internal/domain/subscription"
 	domaintweet "blog-api/internal/domain/tweet"
 	domainuser "blog-api/internal/domain/user"
+	domainwindow "blog-api/internal/domain/window"
 )
 
 // --- fakes ---
@@ -407,6 +408,26 @@ func TestSubscriber_UserRegistered_NotifiesAdmins(t *testing.T) {
 	assert.Equal(t, adminID, store.saved[0].UserID())
 	assert.Equal(t, domainnotification.SourceUserRegistered, store.saved[0].SourceType())
 	assert.Equal(t, "new@example.com", store.saved[0].Body())
+}
+
+func TestSubscriber_WindowKnocked_NotifiesAdmins(t *testing.T) {
+	store := &fakeStoreCorrect{}
+	a, b := newID(), newID()
+	sub := newTestSubscriber(store,
+		&fakeSubLookup{},
+		&fakeCommentLookup{},
+		&fakeAdminLookup{ids: []domainshared.ID{a, b}},
+		&fakeFriendlinkLookup{},
+		&fakePostAuthorLookup{},
+	)
+
+	require.NoError(t, sub.Handle(context.Background(), domainwindow.NewKnocked("/")))
+	require.NoError(t, sub.Handle(context.Background(), domainwindow.NewKnocked("/posts/saber")))
+	require.Len(t, store.saved, 4)
+	assert.Equal(t, domainnotification.SourceWindowKnocked, store.saved[0].SourceType())
+	assert.Equal(t, "有人敲了敲窗", store.saved[0].Title())
+	assert.Equal(t, "在首页", store.saved[0].Body())
+	assert.Equal(t, "在 /posts/saber", store.saved[2].Body())
 }
 
 func mustEmail(t *testing.T, raw string) domainuser.Email {

@@ -16,6 +16,7 @@ import (
 	domainsubscription "blog-api/internal/domain/subscription"
 	domaintweet "blog-api/internal/domain/tweet"
 	domainuser "blog-api/internal/domain/user"
+	domainwindow "blog-api/internal/domain/window"
 )
 
 // --- 接收者解析端口（由 wiring 层适配现有仓储实现）---
@@ -188,6 +189,9 @@ func (s *Subscriber) mapEvent(ctx context.Context, event domainshared.DomainEven
 
 	case domaintweet.TweetCommented:
 		return s.handleTweetCommented(ctx, e)
+
+	case domainwindow.Knocked:
+		return s.handleWindowKnocked(ctx, e)
 
 	case domainchat.RoomInvited:
 		return []notifyAction{{
@@ -430,6 +434,31 @@ func (s *Subscriber) handleUserRegistered(ctx context.Context, e domainuser.User
 			title:      "新用户注册",
 			body:       e.Email.String(),
 			payload:    map[string]any{"user_id": e.AggregateID().String(), "email": e.Email.String()},
+		})
+	}
+	return actions, true
+}
+
+// handleWindowKnocked 访客敲窗 → 通知全部管理员（站长）；频率已在路由层按访客限制。
+func (s *Subscriber) handleWindowKnocked(ctx context.Context, e domainwindow.Knocked) ([]notifyAction, bool) {
+	adminIDs, err := s.adminLookup.FindAdminIDs(ctx)
+	if err != nil {
+		s.log.Warn().Err(err).Msg("解析管理员用户失败")
+		return nil, false
+	}
+	where := "首页"
+	if e.Page != "/" {
+		where = " " + e.Page
+	}
+	actions := make([]notifyAction, 0, len(adminIDs))
+	for _, adminID := range adminIDs {
+		actions = append(actions, notifyAction{
+			userID:     adminID,
+			sourceType: domainnotification.SourceWindowKnocked,
+			sourceID:   e.AggregateID(),
+			title:      "有人敲了敲窗",
+			body:       "在" + where,
+			payload:    map[string]any{"page": e.Page},
 		})
 	}
 	return actions, true
