@@ -58,6 +58,7 @@ export function Modal({
 	onEscapeKeyDown,
 	onInteractOutside,
 	className,
+	overlayClassName,
 }: ModalProps) {
 	return (
 		<DialogPrimitive.Root open={open} onOpenChange={onOpenChange} modal={modal}>
@@ -67,7 +68,7 @@ export function Modal({
 						{/* 遮罩：渐入渐出 */}
 						<DialogPrimitive.Overlay asChild forceMount>
 							<motion.div
-								className="fixed inset-0 z-50 bg-black/50"
+								className={cn("fixed inset-0 z-50 bg-black/50", overlayClassName)}
 								initial={{ opacity: 0 }}
 								animate={{ opacity: 1 }}
 								exit={{ opacity: 0 }}

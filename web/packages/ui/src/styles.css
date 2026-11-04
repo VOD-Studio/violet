@@ -1,4 +1,4 @@
-/* Import after tailwindcss; site dialects remain in the consuming application. */
+/* Import after tailwindcss. */
 @import "./styles/theme.css";
 @import "./styles/tokens.css";
 @import "./styles/foundation.css";

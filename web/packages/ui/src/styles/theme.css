@@ -56,6 +56,10 @@
 	--color-decoration-foreground: var(--decoration-foreground);
 	--color-edge-hairline: var(--edge-hairline);
 	--color-surface-glass: var(--surface-glass);
+	--color-rule2: var(--rule2);
+	--color-sheet-border: var(--sheet-border);
+	--color-sheet-translucent: var(--sheet-translucent);
+	--shadow-soft: var(--shadow-soft);
 	--color-category-1: var(--category-1);
 	--color-category-1-muted: var(--category-1-muted);
 	--color-category-1-foreground: var(--category-1-foreground);

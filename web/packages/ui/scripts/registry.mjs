@@ -69,7 +69,7 @@ export function generatedSources() {
 		],
 		[
 			"src/styles.css",
-			`/* Import after tailwindcss; site dialects remain in the consuming application. */\n${[manifest.styles.theme, manifest.styles.tokens, manifest.styles.foundation, ...manifest.styles.utilities, manifest.styles.palettes[0]].map((path) => cssImport(path)).join("\n")}\n@import "./classes.css";\n\n/* Legacy components still use complete Tailwind utilities. */\n@source "./";\n`,
+			`/* Import after tailwindcss. */\n${[manifest.styles.theme, manifest.styles.tokens, manifest.styles.foundation, ...manifest.styles.utilities, manifest.styles.palettes[0]].map((path) => cssImport(path)).join("\n")}\n@import "./classes.css";\n\n/* Legacy components still use complete Tailwind utilities. */\n@source "./";\n`,
 		],
 	]);
 }

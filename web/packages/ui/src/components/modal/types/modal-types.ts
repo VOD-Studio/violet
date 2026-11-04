@@ -68,4 +68,6 @@ export interface ModalProps {
 	onInteractOutside?: (e: Event) => void;
 	/** 透传到内容容器的额外 className（lightbox 自定义 max-w/背景等） */
 	className?: string;
+	/** 透传到遮罩容器的额外 className（lightbox/media-viewer 自定义纸色模糊遮罩） */
+	overlayClassName?: string;
 }
