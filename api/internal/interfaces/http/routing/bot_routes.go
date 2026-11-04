@@ -15,6 +15,7 @@ func registerBotRoutes(r chi.Router, d *Deps) {
 	r.Route("/api/v1/chat/bot", func(br chi.Router) {
 		br.Use(d.BotAuth)
 		br.Get("/profile", h.Profile)
+		br.With(d.limit("chat-bot-media", "POST /api/v1/chat/bot/avatar")).Post("/avatar", h.UploadAvatar)
 		br.With(d.limit("chat-bot-commands", "PUT /api/v1/chat/bot/commands")).Put("/commands", h.PutCommands)
 		br.Get("/events", h.Stream)
 		br.With(d.limit("chat-bot-media", "POST /api/v1/chat/bot/media")).Post("/media", h.UploadMedia)

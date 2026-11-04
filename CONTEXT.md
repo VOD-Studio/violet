@@ -586,6 +586,9 @@ _Avoid_: 自动成就判定、商城/付费解锁、逐条消息外观冻结
 面向持有 bot token 的外部程序的 HTTP 路由面（`/api/v1/chat/bot/*` 与 `/api/v1/tweets/bot/*`），不绑定具体 bot 实现。两组端点都在根 router 上挂载以绕开 CSRF，鉴权同走 `BotAuth`；推文写入面见「Bot 推文」。入站：`GET /events`（SSE，订阅 bot 参与会话的事件；不补发，断线后拉消息历史补齐）、`GET /profile`（自查身份）；出站：`POST .../messages`（发消息；传 `status=pending` 可创建空正文生成占位）、`PATCH /conversations/{id}/messages/{id}`（旧调用编辑正文；生成回复传累计正文、thinking、status 与递增 revision）、`POST .../typing`（输入状态）；查询：`GET .../conversations`、`GET .../messages`。生成回复的 `pending/thinking/streaming/completed/failed` 状态持久化，完成与失败不可再更新；首段非空正文出现时推进引用消息的已读位置。showThinking 默认关闭，关闭时新上报的思考内容不保存，历史与实时读模型不返回思考内容。生成更新还可提交 `tool_calls` 累计快照（整体替换，省略或空数组清空），服务端原样持久化并在历史与 SSE 的 `bot_reply` 中按同一顺序返回，没有独立开关。写端点按 bot 虚拟用户维度限流。管理路由 `/admin/chat-bots`（admin，需 `chat:bot-manage` 权限）。明文 token 随时可回看：`POST /admin/chat-bots/{id}/token` 解密单个回显（不随列表广播，每次查看进操作日志）；库里没存密文（早于密文列创建、未配 `BOT_TOKEN_KEY` 或密钥已换）时取不回来，只能重置。
 _Avoid_: bot 用户（bot 是凭证聚合，"用户"指它对应的虚拟用户）、机器人（口语，不进文档与代码标识符）
 
+**Bot 头像**:
+`POST /api/v1/chat/bot/avatar` 接受单个 multipart `file`（PNG/JPEG/GIF/WebP，最多 10 MiB），只修改当前 Bot Token 对应账号，不接受 `bot_id`、`user_id`、`avatar_id`、其他表单字段或查询参数。图片归 bot 虚拟用户所有，保存为 `purpose=avatar`；上传成功后，在同一事务中更新 bot 的头像文件引用、虚拟用户 `avatar_url` 与素材引用计数。`GET /api/v1/chat/bot/profile` 返回最新头像。上传或资料提交失败时保留原头像；已上传但未引用的素材沿用素材库清理规则。此端点不提供清除头像。
+
 **Bot 表情（Bot Emoji）**:
 bot 发送正文表情的发现与授权面（`GET /api/v1/chat/bot/emojis` 及收藏/取消收藏）。系统表情只下发可直接发送的 `[name]` token；自定义表情保持私有默认，bot 仅能看到自己上传与已收藏的表情，须先收藏才能发送 `[name:id]`，校验仍走 `customemoji.ValidateContent`。不新增消息类型，表情仍是正文内联占位符。
 

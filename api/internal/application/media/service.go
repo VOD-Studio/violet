@@ -9,6 +9,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -1242,6 +1245,18 @@ func (s *UploadService) SaveBotTweetImage(ctx context.Context, in SaveBotMediaIn
 		return BotMediaDTO{}, err
 	}
 	return s.saveImageDTO(ctx, in.OwnerID, domainupload.PurposeTweet, in.OriginalName, ext, in.Data)
+}
+
+// SaveBotAvatar 校验并保存 bot 自身头像（purpose=avatar，最多 10 MiB）。
+func (s *UploadService) SaveBotAvatar(ctx context.Context, in SaveBotMediaInput) (BotMediaDTO, error) {
+	if in.OwnerID.IsZero() || len(in.Data) == 0 || len(in.Data) > 10<<20 {
+		return BotMediaDTO{}, shared.BadRequest("头像归属无效、内容为空或超过 10 MiB")
+	}
+	ext, err := validateBotImage(in)
+	if err != nil {
+		return BotMediaDTO{}, err
+	}
+	return s.saveImageDTO(ctx, in.OwnerID, domainupload.PurposeAvatar, in.OriginalName, ext, in.Data)
 }
 
 // validateBotImage 按内容嗅探图片格式，并要求声明的 MIME 与之一致。

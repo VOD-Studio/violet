@@ -84,6 +84,20 @@ func registerBotPaths(t *openapi3.T) {
 		Responses:   responses(201, dataResponse("BotMediaDTO", "已上传媒体", 201), 400, errorResponse("图片格式非法"), 401, errorResponse("token 无效"), 403, errorResponse("bot 已禁用"), 413, errorResponse("图片超过大小上限")),
 	})
 
+	post(t, "/chat/bot/avatar", &openapi3.Operation{
+		Tags: []string{"聊天 Bot"}, Summary: "更换本 bot 头像", Security: secure,
+		Description: "仅接受一个 multipart file（PNG/JPEG/GIF/WebP，最多 10 MiB）。Bot Token 只能修改自身；不接受查询参数、bot_id、user_id、avatar_id 或其他表单字段。上传成功后原子更新 bot 头像引用和虚拟用户 avatar_url。",
+		RequestBody: &openapi3.RequestBodyRef{Value: &openapi3.RequestBody{
+			Required: true,
+			Content: openapi3.Content{"multipart/form-data": {Schema: &openapi3.SchemaRef{Value: &openapi3.Schema{
+				Type:       &openapi3.Types{openapi3.TypeObject},
+				Properties: openapi3.Schemas{"file": {Value: &openapi3.Schema{Type: &openapi3.Types{openapi3.TypeString}, Format: "binary"}}},
+				Required:   []string{"file"}, AdditionalProperties: openapi3.AdditionalProperties{Has: openapi3.Ptr(false)},
+			}}}},
+		}},
+		Responses: responses(200, dataResponse("BotDTO", "更新后的自身资料，含 avatar_url", 200), 400, errorResponse("图片或表单格式非法"), 401, errorResponse("token 无效或已失效"), 403, errorResponse("bot 已禁用"), 413, errorResponse("头像超过 10 MiB"), 500, errorResponse("上传或资料提交失败；原头像不变")),
+	})
+
 	get(t, "/chat/bot/conversations", &openapi3.Operation{
 		Tags: []string{"聊天 Bot"}, Summary: "参与的会话列表", Security: secure,
 		Parameters: openapi3.Parameters{queryStrParam("cursor", "会话游标"), limitParam(50)},
