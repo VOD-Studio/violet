@@ -124,5 +124,6 @@ func build() (*openapi3.T, error) {
 	registerAdminAPITokenPaths(t)
 	registerAdminSubscriptionPaths(t)
 	registerAdminSystemPaths(t)
+	registerWindowPaths(t)
 	return t, nil
 }

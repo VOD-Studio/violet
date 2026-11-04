@@ -17,6 +17,7 @@ import (
 	settingshttp "blog-api/internal/interfaces/http/handler/settings"
 	siteidentityhttp "blog-api/internal/interfaces/http/handler/siteidentity"
 	siteimpressionhttp "blog-api/internal/interfaces/http/handler/siteimpression"
+	windowhttp "blog-api/internal/interfaces/http/handler/window"
 	"blog-api/internal/openapi"
 )
 
@@ -55,6 +56,7 @@ func fullRouterDeps() *Deps {
 		OMPUsageAuth:           identity,
 		Presence:               &presencehttp.Handler{},
 		PresenceIngest:         &presencehttp.IngestHandler{},
+		Window:                 &windowhttp.Handler{},
 	}
 }
 

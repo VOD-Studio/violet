@@ -121,6 +121,7 @@ REST 端点可用 `middleware.PATAuth` 复用 MCP 的 `PATVerifier`，再用 `Re
 | 首页资源 | `publication`、`siteidentity`、`siteimpression` | 发布物投影、公开身份与匿名印记 |
 | 外部内容 | `subscription`、`github`、`releases`、`music`、`linkpreview` | RSS、GitHub、版本记录、Kite 音乐与共享网页预览 |
 | 实时状态 | `presence` | Nowbeam 上报接收、设备凭证与公开推送 |
+| 窗 | `window` | 站长城市的天气（Open-Meteo）、窗外照片与敲窗通知 |
 | 开放与运营 | `mcp`、`coderunner`、`audit`、`system` | MCP、沙箱、审计、数据库运维 |
 | 个人用量 | `omp_usage` | PAT 批量摄取、个人会话聚合与跨语言同源 PostgreSQL 契约 |
 
@@ -208,6 +209,17 @@ Cookie 由 `MUSIC_CREDENTIAL_KEY` 加密保存，凭据不交给前端。账号�
 | GET、PUT | `/admin/presence/settings` | 公开读取开关，默认关闭 |
 
 快照只在 API 进程内存，服务重启即清空，因此 API 需单实例运行。反向代理要为上报端点转发 `Upgrade` / `Connection` 头，空闲超时大于 45 秒租约，见 `deploy/nginx/xunrua.top`。
+
+### 窗接口
+
+全站背景「窗」的数据。城市与照片存在站点设置的 key-value 表（`window_city`、`window_photo_<槽位>`）；天气按城市坐标在 Redis 缓存 15 分钟，上游失败时退回 6 小时内的旧数据。后台读取需 `settings:view`，写入需 `settings:update` 与 CSRF。
+
+| 方法 | 路径 | 用途 |
+| --- | --- | --- |
+| GET | `/window` | 公开窗状态：城市、时区、天气状况、昼夜、气温、此刻的照片槽位与照片；未配置城市时 `enabled` 为 false |
+| POST | `/window/knock` | 敲窗，给管理员发一条 `window_knocked` 站内通知；按摘要后的 IP 每小时一次 |
+| GET、PUT | `/admin/window` | 读取、整体替换城市与五个照片槽位（晴、阴与雾、雨、雪、夜） |
+| GET | `/admin/window/cities?q=` | 代理 Open-Meteo 地理编码搜索城市，最多 8 个 |
 
 扫码挑战三分钟过期、一次性消费；关闭管理弹窗时取消，确认或过期后停止轮询。退出先断开本地连接，上游退出失败仍返回明确说明。续期任务在进程启动 24 小时后首次运行，此后每 24 小时执行；登录过期转 `expired` 并切匿名播放，网络故障不冒充账号失效。
 

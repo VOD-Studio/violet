@@ -142,6 +142,7 @@ func buildRoutingDeps(cfg *config.Config, redisClient *redis.Client, c *Containe
 		Music:                  c.Music.Handler,
 		Presence:               c.Presence.Handler,
 		PresenceIngest:         c.Presence.IngestHandler,
+		Window:                 c.Window.Handler,
 		RoadmapRelations:       c.Roadmap.Relations,
 		Comment:                c.Comment.CommentHandler,
 		CommentReaction:        c.CommentReaction.CommentReactionHandler,

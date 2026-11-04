@@ -52,6 +52,7 @@ import (
 	taghttp "blog-api/internal/interfaces/http/handler/tag"
 	tweethttp "blog-api/internal/interfaces/http/handler/tweet"
 	useradminhttp "blog-api/internal/interfaces/http/handler/useradmin"
+	windowhttp "blog-api/internal/interfaces/http/handler/window"
 
 	"blog-api/internal/middleware"
 )
@@ -97,6 +98,7 @@ type Deps struct {
 	Music                  *musichttp.Handler
 	Presence               *presencehttp.Handler
 	PresenceIngest         *presencehttp.IngestHandler
+	Window                 *windowhttp.Handler
 	RoadmapRelations       *roadmaphttp.RelationHandler
 	Comment                *commenthttp.Handler
 	CommentReaction        *crhttp.Handler
