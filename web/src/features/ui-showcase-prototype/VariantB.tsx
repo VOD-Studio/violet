@@ -14,7 +14,7 @@ function Vitrine({ e, no, total, s, set }: { e: Exhibit; no: number; total: numb
 	const [ref, fit] = useFit<HTMLDivElement>();
 	const wide = e.zone === "banner";
 	return (
-		<figure className={`m-0 flex min-w-0 flex-col justify-end ${wide ? "xl:col-span-2" : ""}`}>
+		<figure className={`m-0 flex min-w-0 flex-col justify-end ${wide ? "col-span-full" : ""}`}>
 			<div
 				role="button"
 				tabIndex={0}
@@ -71,7 +71,7 @@ export function VariantB({ s, set, exhibits }: VariantProps) {
 	let n = 0;
 	return (
 		<ProtoRoot s={s} paper={false}>
-			<div className="mx-auto w-full max-w-[1300px] px-5 pt-12 pb-32 sm:px-10">
+			<div className="mx-auto w-full max-w-[3200px] px-5 pt-12 pb-32 sm:px-10">
 				<header className="mb-14 border-b border-(--rule2) pb-8">
 					<p className="font-mono text-[11px] tracking-[0.3em] text-(--muted) uppercase">Violet UED · 馆藏目录</p>
 					<h1 className="mt-3 text-[44px] leading-[1.1] font-normal sm:text-[60px]">组件陈列室</h1>
@@ -94,7 +94,7 @@ export function VariantB({ s, set, exhibits }: VariantProps) {
 								</h2>
 								<p className="text-[13px] text-(--muted)">{z.rule}</p>
 							</div>
-							<div className="grid grid-cols-1 items-end gap-x-10 gap-y-12 xl:grid-cols-2">
+							<div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,624px),1fr))] items-end gap-x-10 gap-y-12">
 								{list.map((e) => {
 									n += 1;
 									return <Vitrine key={e.id} e={e} no={n} total={exhibits.length} s={s} set={set} />;
