@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-/** 通过 html class 观察站点明暗，供编辑器 NodeView 使用。 */
+/** 通过 html class 观察站点明暗；明暗切换时重渲染。 */
 export function useIsDarkAppearance(): boolean {
 	const [isDark, setIsDark] = useState<boolean>(() =>
 		typeof document !== "undefined"
