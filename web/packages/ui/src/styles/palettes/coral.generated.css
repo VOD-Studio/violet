@@ -237,6 +237,18 @@
 	--category-6-11: light-dark(oklch(0.4546 0.18 10), oklch(0.8749 0.0681 10));
 	--category-6-12: light-dark(oklch(0.3182 0.1 10), oklch(0.9503 0.0252 10));
 	--category-6-contrast: light-dark(oklch(1 0 0), oklch(0.2 0.02 10));
+	--material-page: light-dark(oklch(0.968 0.006 25.37), oklch(0.17 0.0087 25.37));
+	--material-sheet: light-dark(oklch(0.994 0.0028 25.37), oklch(0.235 0.011 25.37));
+	--material-sunk: light-dark(oklch(0.945 0.007 25.37), oklch(0.29 0.012 25.37));
+	--material-rule: light-dark(
+		oklch(0.3334 0.0105 25.37 / 0.11),
+		oklch(0.9378 0.009 25.37 / 0.12)
+	);
+	--material-rule2: light-dark(oklch(0.3334 0.0105 25.37 / 0.3), oklch(0.9378 0.009 25.37 / 0.3));
+	--material-deco: light-dark(#e65853, #e65853);
+	--material-accent: light-dark(oklch(0.4739 0.0974 25.37), oklch(0.8589 0.0761 25.37));
+	--material-danger: light-dark(oklch(0.52 0.16 27), oklch(0.74 0.14 25));
+	--material-ok: light-dark(oklch(0.4874 0.1204 155), oklch(0.74 0.15 155));
 }
 
 @media (prefers-contrast: more) {
@@ -478,5 +490,20 @@
 		--category-6-11: light-dark(oklch(0.2979 0.1191 10), oklch(0.9503 0.0252 10));
 		--category-6-12: light-dark(oklch(0.1 0.0399 10), oklch(1 0 0));
 		--category-6-contrast: light-dark(oklch(1 0 0), oklch(0.2 0.02 10));
+		--material-page: light-dark(oklch(0.968 0.006 25.37), oklch(0.17 0.0087 25.37));
+		--material-sheet: light-dark(oklch(0.994 0.0028 25.37), oklch(0.235 0.011 25.37));
+		--material-sunk: light-dark(oklch(0.945 0.007 25.37), oklch(0.29 0.012 25.37));
+		--material-rule: light-dark(
+			oklch(0.1 0.0105 25.37 / 0.11),
+			oklch(0.9983 0.0008 25.37 / 0.12)
+		);
+		--material-rule2: light-dark(
+			oklch(0.1 0.0105 25.37 / 0.3),
+			oklch(0.9983 0.0008 25.37 / 0.3)
+		);
+		--material-deco: light-dark(#e65853, #e65853);
+		--material-accent: light-dark(oklch(0.4104 0.0974 25.37), oklch(0.8589 0.0761 25.37));
+		--material-danger: light-dark(oklch(0.4075 0.16 27), oklch(0.8072 0.1093 25));
+		--material-ok: light-dark(oklch(0.3772 0.0932 155), oklch(0.7775 0.15 155));
 	}
 }

@@ -16,9 +16,10 @@ import {
 	RULES,
 	STATUS_SEEDS,
 	type StatusName,
+	type SurfaceRule,
 	type Targets,
 } from "./rules.ts";
-import { normalizeSeed, resolveKnobs, type Theme } from "./theme.ts";
+import { type Knobs, normalizeSeed, resolveKnobs, type Theme } from "./theme.ts";
 
 export type { Appearance, ContrastLevel, StatusName } from "./rules.ts";
 
@@ -73,6 +74,33 @@ export interface ThemeScales {
 	status: Readonly<Record<StatusName, Scale>>;
 	/** 色相固定、不随主题变化、近等亮度且色盲可辨的分类色阶，顺序固定 */
 	categorical: readonly Scale[];
+	/** 材质：纸面、纸片、凹陷三层表面，发丝线、季节色，以及强调字与状态文字色 */
+	material: Material;
+}
+
+/**
+ * 材质与点缀色，取值来自 UED 设计稿「基础」页。颜色是 CSS `oklch()` 字符串，`deco` 例外，是种子色的十六进制。
+ * 表面、线与强调字的色相随种子色，表面的色度不超过种子色本身的色度；危险色与成功色的色相固定。
+ */
+export interface Material {
+	/** 纸面：页面底 */
+	page: string;
+	/** 纸片：卡片、面板、浮层、当前项 */
+	sheet: string;
+	/** 凹陷：输入框、分段轨道、键帽、骨架、次要按钮 */
+	sunk: string;
+	/** 发丝线：正文色的低透明度，分隔线、表格线 */
+	rule: string;
+	/** 强线：正文色的中等透明度，时间线、尺寸标注 */
+	rule2: string;
+	/** 季节色：种子色本身，只做装饰、进度与选中点，不承载文字也不做按钮底 */
+	deco: string;
+	/** 强调字：链接、聚焦环、季节色着色底上的文字，在三层表面与季节色 16% 着色底上满足 WCAG 对比度 */
+	accent: string;
+	/** 危险色：文字与图标，在纸面、纸片、凹陷与自身着色底上都满足 WCAG 对比度 */
+	danger: string;
+	/** 成功色：文字与图标，规则同危险色；浅色下为通过 AA 会比设计稿的取值略暗 */
+	ok: string;
 }
 
 // 相邻档的最小亮度差（OKLab），保证单调且悬停、按下可辨
@@ -402,11 +430,118 @@ const toAlphaSteps = (colors: Oklch[], background: Oklch, gamut: Gamut) =>
 		STEPS.map((step) => [step, toAlpha(colors[step - 1] as Oklch, background, gamut)]),
 	) as Record<Step, string>;
 
+const surface = ({ l, c }: SurfaceRule, seed: Oklch, gamut: Gamut) =>
+	fitGamut(l, Math.min(c, seed.c), seed.h, gamut);
+
+const withAlpha = (color: Oklch, alpha: number) => `${formatOklch(color).slice(0, -1)} / ${alpha})`;
+
+// 材质上文字色的目标留 2% 余量，吸收取整与 8 位量化
+const MATERIAL_MARGIN = 1.02;
+// 强调字的色度不超过种子色色度的这个倍数，近灰的种子色不会凭空染色
+const ACCENT_SEED_CHROMA_LIMIT = 3;
+
+const RADIAN = Math.PI / 180;
+
+/** 在 OKLab 中把 `top` 按比例 `amount` 混进 `base`，等同 CSS 的 `color-mix(in oklab, …)`。 */
+function mixOklab(base: Oklch, top: Oklch, amount: number): Oklch {
+	const a =
+		base.c * Math.cos(base.h * RADIAN) * (1 - amount) +
+		top.c * Math.cos(top.h * RADIAN) * amount;
+	const b =
+		base.c * Math.sin(base.h * RADIAN) * (1 - amount) +
+		top.c * Math.sin(top.h * RADIAN) * amount;
+	return {
+		l: base.l + (top.l - base.l) * amount,
+		c: Math.hypot(a, b),
+		h: (Math.atan2(b, a) / RADIAN + 360) % 360,
+	};
+}
+
+interface LegibleText {
+	/** 起始明度、色度与色相；色度会被色域收窄 */
+	start: { l: number; c: number; h: number };
+	/** 文字色要放在其上的表面 */
+	surfaces: Oklch[];
+	/** 着色底：`color` 按 `amount` 混进每个 `bases` 得到的底也要求达标；`color` 缺省时取文字色自身 */
+	tint?: { bases: Oklch[]; amount: number; color?: Oklch };
+}
+
+/** 从起始明度沿远离背景的方向移动，返回第一个在全部表面与着色底上都达到 `target` 的颜色。 */
+function legibleText(
+	{ start, surfaces, tint }: LegibleText,
+	limit: number,
+	target: number,
+	gamut: Gamut,
+): Oklch {
+	const luminances = surfaces.map(relativeLuminance);
+	// 强调字的底色由季节色决定，二分亮度时无需反复混色
+	const tintColor = tint?.color;
+	const fixedTintLuminances =
+		tint && tintColor
+			? tint.bases.map((base) => relativeLuminance(mixOklab(base, tintColor, tint.amount)))
+			: undefined;
+	const at = (l: number) => fitGamut(l, start.c, start.h, gamut);
+	const passes = (l: number) => {
+		const color = at(l);
+		if (worstContrast(color, luminances) < target) return false;
+		if (fixedTintLuminances) return worstContrast(color, fixedTintLuminances) >= target;
+		if (!tint) return true;
+		const own = relativeLuminance(color);
+		return tint.bases.every(
+			(base) =>
+				contrastRatio(own, relativeLuminance(mixOklab(base, color, tint.amount))) >= target,
+		);
+	};
+	return at(search(start.l, limit, passes));
+}
+
+function buildMaterial(
+	rules: AppearanceRules,
+	seed: Oklch,
+	seedHex: string,
+	text: Oklch,
+	knobs: Knobs,
+	contrast: ContrastLevel,
+	gamut: Gamut,
+): Material {
+	const { page, sheet, sunk, rule, rule2, accent, danger, ok, tint, textContrast } =
+		rules.material;
+	const surfaces = [
+		surface(page, seed, gamut),
+		surface(sheet, seed, gamut),
+		surface(sunk, seed, gamut),
+	];
+	// 着色底叠在纸面与纸片上
+	const bases = [surfaces[0], surfaces[1]] as Oklch[];
+	const target = textContrast[contrast] * MATERIAL_MARGIN;
+	const accentChroma = Math.min(
+		knobs.accentChroma * accent.chromaScale,
+		seed.c * ACCENT_SEED_CHROMA_LIMIT,
+	);
+	const solve = (start: LegibleText["start"], tinted: LegibleText["tint"]) =>
+		formatOklch(legibleText({ start, surfaces, tint: tinted }, rules.limit, target, gamut));
+	return {
+		page: formatOklch(surfaces[0] as Oklch),
+		sheet: formatOklch(surfaces[1] as Oklch),
+		sunk: formatOklch(surfaces[2] as Oklch),
+		rule: withAlpha(text, rule),
+		rule2: withAlpha(text, rule2),
+		deco: seedHex,
+		accent: solve(
+			{ l: accent.l, c: accentChroma, h: seed.h },
+			{ bases, amount: tint.accent, color: seed },
+		),
+		danger: solve(danger, { bases, amount: tint.status }),
+		ok: solve(ok, { bases, amount: tint.status }),
+	};
+}
+
 /**
- * 由主题生成某一外观与对比度档位下的全部色阶：品牌与中性（各带透明度色阶）、状态色与分类色。
+ * 由主题生成某一外观与对比度档位下的全部色阶：品牌与中性（各带透明度色阶）、状态色与分类色，以及材质。
  *
- * 背景、边框与文字档按对背景的目标对比度反解亮度并单调远离背景；实色档锚定种子色。文字、实色前景与控件边界
- * 同时满足 WCAG 2.2 AA 与 APCA 门槛，全部颜色落在目标色域内。纯函数，相同输入得到逐字相同的输出。
+ * 背景、边框与文字档按对背景的目标对比度反解亮度并单调远离背景；实色档锚定种子色。文字、实色前景、控件边界
+ * 与材质上的强调字、状态文字满足 WCAG 2.2 AA（提高对比度档取 AAA）；APCA 不是约束，只在测试里作参考告警。
+ * 全部颜色落在目标色域内。纯函数，相同输入得到逐字相同的输出。
  *
  * @param theme - 不可信输入请先经 {@link normalizeTheme}；缺省的旋钮取默认值
  * @throws TypeError 种子色不是 `#rgb` / `#rrggbb`
@@ -445,6 +580,15 @@ export function generateScales(theme: Theme, options: GenerateOptions): ThemeSca
 		appearance,
 		contrast,
 		gamut,
+		material: buildMaterial(
+			rules,
+			seed,
+			seedHex,
+			neutralBuilt.colors[11] as Oklch,
+			knobs,
+			contrast,
+			gamut,
+		),
 		brand: { ...brandBuilt.scale, alpha: toAlphaSteps(brandBuilt.colors, background, gamut) },
 		neutral: {
 			...neutralBuilt.scale,

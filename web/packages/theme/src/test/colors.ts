@@ -100,6 +100,20 @@ export const hueDistance = (a: number, b: number) => Math.abs(((a - b + 540) % 3
 export const deltaE = (a: string | Color, b: string | Color) =>
 	(typeof a === "string" ? parse(a) : a).deltaE(typeof b === "string" ? parse(b) : b, "OK");
 
+/** 设计稿里的色值在屏幕上实际显示的颜色：超出 sRGB 的坐标按 CSS Color 4 做色域映射（只降色度）。 */
+export const displayed = (css: string) =>
+	parse(css).clone().toGamut({ space: "srgb", method: "css" });
+
+/**
+ * 文字色按比例混进底色得到的着色底，与浏览器的 `color-mix(in oklab, 文字色 amount, 底色)` 一样在 OKLab 中混合，
+ * 再转成包内测试能解析的 sRGB。
+ */
+export const tintedOn = (base: string, text: string, amount: number) =>
+	parse(base)
+		.mix(parse(text), amount, { space: "oklab" })
+		.to("srgb")
+		.toString({ precision: 10, inGamut: false });
+
 /** 半透明色叠在不透明背景上的结果，与浏览器一样在编码后的 sRGB 中合成。 */
 export const composite = (foreground: string, background: string) => {
 	const top = parse(foreground).to("srgb");

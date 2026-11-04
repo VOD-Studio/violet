@@ -117,18 +117,26 @@ describe("seasonMonths", () => {
 describe("自定义主题", () => {
 	const cookie = (data: unknown) =>
 		`${THEME_COOKIE_NAME}=${encodeURIComponent(JSON.stringify(data))}`;
-	const theme = { version: 1, seed: "#ff8800", knobs: { neutralChroma: 0.015 } } as const;
+	const theme = {
+		version: 1,
+		seed: "#ff8800",
+		knobs: { neutralChroma: 0.015, accentChroma: 0.11 },
+	} as const;
 
 	it("读出规范化后的种子色与旋钮，同时保留原来的预设偏好", () => {
 		const value = cookie({
 			v: 1,
 			theme: "winter",
-			custom: { version: 1, seed: "#3A7BD5", knobs: { neutralChroma: 0.02 } },
+			custom: {
+				version: 1,
+				seed: "#3A7BD5",
+				knobs: { neutralChroma: 0.02, accentChroma: 0.13 },
+			},
 		});
 		expect(parseCustomThemeCookie(value)).toEqual({
 			version: 1,
 			seed: "#3a7bd5",
-			knobs: { neutralChroma: 0.02 },
+			knobs: { neutralChroma: 0.02, accentChroma: 0.13 },
 		});
 		expect(parseThemeCookie(value)).toBe("winter");
 	});
@@ -139,10 +147,18 @@ describe("自定义主题", () => {
 				cookie({
 					v: 1,
 					theme: "follow",
-					custom: { version: 1, seed: "#3a7bd5", knobs: { neutralChroma: 9, glow: 1 } },
+					custom: {
+						version: 1,
+						seed: "#3a7bd5",
+						knobs: { neutralChroma: 9, accentChroma: 0.13, glow: 1 },
+					},
 				}),
 			),
-		).toEqual({ version: 1, seed: "#3a7bd5", knobs: { neutralChroma: 0.015 } });
+		).toEqual({
+			version: 1,
+			seed: "#3a7bd5",
+			knobs: { neutralChroma: 0.015, accentChroma: 0.13 },
+		});
 	});
 
 	it.each([

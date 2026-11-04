@@ -2,7 +2,7 @@
 
 [English](./README.md)
 
-用一个种子色生成浅色与深色两种外观下的 12 档色阶：带透明度版本的品牌与中性色阶、色相固定的危险、警告与成功色阶，以及供图表系列等分类场景使用的 6 条分类色阶。任何种子色生成的文字、实色前景与控件边界都同时通过 WCAG 2.2 AA 与 APCA 门槛，另有供 `prefers-contrast: more` 使用的提高对比度档位；全部颜色落在 sRGB 内，相同输入总是得到相同输出。零依赖，不使用 Node API，浏览器、SSR 与构建脚本都能运行。
+用一个种子色生成浅色与深色两种外观下的 12 档色阶：带透明度版本的品牌与中性色阶、色相固定的危险、警告与成功色阶，以及供图表系列等分类场景使用的 6 条分类色阶。任何种子色生成的文字、实色前景与控件边界都通过 WCAG 2.2 AA；APCA 按文字用途分级告警，不作硬约束。另有供 `prefers-contrast: more` 使用的提高对比度档位；全部颜色落在 sRGB 内，相同输入总是得到相同输出。`material` 提供有名字的角色：三层表面、两种线、装饰色，以及在这些表面上保持可读的强调字与状态文字。零依赖，不使用 Node API，浏览器、SSR 与构建脚本都能运行。
 
 ```sh
 pnpm add @violetjs/theme
@@ -17,7 +17,7 @@ import { generateScales, normalizeTheme, toCssVariables } from "@violetjs/theme"
 
 // 1. 规范化不可信输入（Cookie、表单字段）；非法输入回落为默认主题。
 const theme = normalizeTheme({ version: 1, seed: "#3A7BD5" });
-// { version: 1, seed: "#3a7bd5", knobs: { neutralChroma: 0.015 } }
+// { version: 1, seed: "#3a7bd5", knobs: { neutralChroma: 0.015, accentChroma: 0.0974 } }
 
 // 2. 按外观生成色阶，可选提高对比度档位。
 const light = generateScales(theme, { appearance: "light" });
@@ -29,6 +29,7 @@ light.brand.contrast; // 第 9、10 档上的文字色
 light.brand.alpha[3]; // "color(srgb … / …)"：叠在页面背景上等同第 3 档的半透明色
 light.status.danger.steps[11]; // 危险文字
 light.categorical[0].steps[9]; // 第一个图表系列
+light.material.accent; // 链接与聚焦环文字，在纸面、纸片、凹陷上都可读
 
 // 3. 序列化为 CSS 自定义属性。
 const css = toCssVariables([light, dark, lightMore, darkMore]);
@@ -49,6 +50,7 @@ const css = toCssVariables([light, dark, lightMore, darkMore]);
 | `--neutral-1` … `--neutral-12`、`--neutral-contrast`、`--neutral-a1` … `--neutral-a12` | 中性，带种子色的色相 |
 | `--danger-*`、`--warning-*`、`--success-*` | 状态色，色相固定 |
 | `--category-1-*` … `--category-6-*` | 分类色，色相固定，按图表系列顺序排列 |
+| `--material-page`、`--material-sheet`、`--material-sunk`、`--material-rule`、`--material-rule2`、`--material-deco`、`--material-accent`、`--material-danger`、`--material-ok` | 材质，见下文 |
 
 ## 主题
 
@@ -57,6 +59,7 @@ const css = toCssVariables([light, dark, lightMore, darkMore]);
 | `version` | 数据版本，目前为 `1`；其他版本回落为默认主题。 |
 | `seed` | `#rgb` 或 `#rrggbb`。品牌色阶保持其色相，并尽量保留色度。 |
 | `knobs.neutralChroma` | 中性色阶最强几档的色度，`0`–`0.05`，默认 `0.015`；不超过种子色本身的色度，`0` 为纯灰。 |
+| `knobs.accentChroma` | 强调字（`material.accent`）的色度，`0`–`0.2`，默认 `0.0974`，深色下乘以 1.0585；不超过种子色色度的 3 倍，近灰的种子色不会凭空得到带色的强调字。 |
 
 种子色格式不对时 `generateScales` 抛出 `TypeError`。`normalizeTheme(input, fallback?)` 从不抛错：不是对象、版本不符或种子色非法时返回 `fallback`，单个旋钮非法时只回落该旋钮，未知旋钮被丢弃，因此结果可以安全地拼进 CSS。
 
@@ -69,12 +72,12 @@ const css = toCssVariables([light, dark, lightMore, darkMore]);
 | 1–2 | 页面背景、表面 | | |
 | 3–5 | 组件底色：常态、悬停、按下 | | |
 | 6 | 装饰性分隔线 | | |
-| 7–8 | 控件边界、焦点环 | WCAG 3:1，APCA Lc 30 | WCAG 4.5:1，Lc 45 |
-| 9–10 | 实色及其悬停 | 对背景 APCA Lc 15（[WCAG 1.4.11](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast) 不要求带文字按钮的填充色与页面对比）；其上的 `contrast`：WCAG 4.5:1，Lc 60 | Lc 30；`contrast`：WCAG 7:1，Lc 75 |
-| 11 | 次要文字、链接 | WCAG 4.5:1，APCA Lc 75；在第 3–5 档上 Lc 60 | WCAG 7:1，Lc 90；在第 3–5 档上 Lc 75 |
-| 12 | 正文 | WCAG 4.5:1，APCA Lc 90；在第 3–5 档上 Lc 75 | WCAG 7:1，Lc 100；在第 3–5 档上 Lc 90 |
+| 7–8 | 控件边界、焦点环 | WCAG 3:1 | WCAG 4.5:1 |
+| 9–10 | 实色及其悬停 | [WCAG 1.4.11](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast) 不要求带文字按钮的填充色与页面对比；其上文字 `contrast`：WCAG 4.5:1 | 其上文字：WCAG 7:1 |
+| 11 | 次要文字、链接 | WCAG 4.5:1 | WCAG 7:1 |
+| 12 | 正文 | WCAG 4.5:1 | WCAG 7:1 |
 
-标准档的 APCA 档位取自其用途分档：Lc 90 是字号表对 16px/400 正文的要求，Lc 75 是正文的最低值，Lc 60 用于标签、按钮等其余可读内容，Lc 30 用于有语义的非文字元素，Lc 15 是大面积按钮可辨的下限。`"more"` 档整体上调 Lc 15（APCA 对 AAA 的换算），正文在近白背景上至多做到 Lc 100，文字的 WCAG 门槛取 AAA 的 7:1。
+仅文字有 APCA 告警参考值：正文 Lc 90、次要文字 75、状态文字 45；组件底色上的正文与次要文字分别取 75 与 60，实色上的文字取 60。`"more"` 档各上调 15，页面背景上的正文上限为 100。装饰、边框与图表图形不检查 APCA（ADR-0029）。
 
 近白或近黑文字能在种子色上达标时，第 9 档就是种子色本身；否则只把它的亮度移到最近的可行值。`contrast` 取所需移动更小的那种文字色，两种外观一致：中等亮度的饱和色在深色下同样配白字，黄色这类亮种子保持明亮并配近黑字。第 10 档（悬停）朝文字对比度更高的方向偏移：白字时变暗，近黑字时变亮。
 
@@ -83,7 +86,23 @@ const css = toCssVariables([light, dark, lightMore, darkMore]);
 状态色与分类色不随主题变化。
 
 - **状态色**：危险、警告与成功的种子固定，生成规则与品牌色阶相同。
-- **分类色**：6 个色相两两至少相差 45°（蓝、琥珀、绿、紫、青、红），相邻两色差异最大，红绿不相邻。同一外观与档位下，6 色的实色档亮度相差不超过 0.1，其余各档亮度相同；实色对背景至少 WCAG 3:1、APCA Lc 30，满足 [WCAG 1.4.11](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast) 对图表图形的要求。色相与亮度由离线搜索得出，在正常视觉与 [Machado 等 2009](https://www.inf.ufrgs.br/~oliveira/pubs_files/CVD_Simulation/CVD_Simulation.html) 的红、绿、蓝色盲模拟下使两两最小色差最大；任意两色至少相差 ΔE<sub>OK</sub> 0.04，即 CSS Color 4 可察觉阈值的两倍。
+- **分类色**：6 个色相两两至少相差 45°（蓝、琥珀、绿、紫、青、红），相邻两色差异最大，红绿不相邻。同一外观与档位下，6 色的实色档亮度相差不超过 0.1，其余各档亮度相同；图表图形的实色对背景至少 WCAG 3:1，满足 [WCAG 1.4.11](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast) 的要求。色相与亮度由离线搜索得出，在正常视觉与 [Machado 等 2009](https://www.inf.ufrgs.br/~oliveira/pubs_files/CVD_Simulation/CVD_Simulation.html) 的红、绿、蓝色盲模拟下使两两最小色差最大；任意两色至少相差 ΔE<sub>OK</sub> 0.04，即 CSS Color 4 可察觉阈值的两倍。
+
+## 材质
+
+`material` 给设计里直接使用的角色起名字，不按档位编号。表面、线与强调字使用随种子色相变化的 CSS `oklch()` 值；`deco` 是原始十六进制种子色，`danger` 与 `ok` 的色相固定。
+
+| 角色 | 用途 |
+| --- | --- |
+| `page` | 纸面：页面背景。 |
+| `sheet` | 纸片：卡片、面板、浮层、当前项。浅色下比 `page` 更亮，所以不属于中性色阶。 |
+| `sunk` | 凹陷：输入框、分段轨道、键帽、骨架。 |
+| `rule`、`rule2` | 发丝线与强线：正文色（中性第 12 档）取固定透明度。 |
+| `deco` | 种子色本身，只做装饰、进度与选中标记，不承载文字。 |
+| `accent` | 链接、聚焦环、季节色着色底上的文字。 |
+| `danger`、`ok` | 错误与成功的文字和图标。 |
+
+表面明度在各外观下固定，色度不超过种子色本身的色度。三种文字角色从固定明度出发，沿远离背景的方向移动，直到在三层表面上都达到 WCAG 4.5:1（`"more"` 档 7:1）。强调字还需在季节色着色底（`color-mix(in oklab, deco 16%, sheet)`）上达标；`danger` 与 `ok` 还需在自身色的 12% 着色底上达标，底色取 `page` 和 `sheet`。因此浅色下的 `ok` 会比起始值略暗。
 
 ## 透明度色阶
 
@@ -91,9 +110,9 @@ const css = toCssVariables([light, dark, lightMore, darkMore]);
 
 ## 原理
 
-在 OKLCH 中计算。每档的亮度由对背景的目标 WCAG 对比度反解（思路同 [Adobe Leonardo](https://leonardocolor.io/)）。APCA 在部分区间（尤其深色）比 WCAG 2 更严，求解时把各 APCA 档位折算成 WCAG 比值目标。超出目标色域的颜色保持亮度和色相、只降色度，与 [CSS Color 4 色域映射](https://www.w3.org/TR/css-color-4/#gamut-mapping)一致。输出的亮度与色度保留四位小数，取整后仍在色域内。
+在 OKLCH 中计算。每档的亮度由固定 WCAG 对比度目标反解（思路同 [Adobe Leonardo](https://leonardocolor.io/)）；保留的目标数值也复现设计稿的正文与说明文字色（中性第 12、11 档）。APCA 不参与求解。超出目标色域的颜色保持亮度和色相、只降色度，与 [CSS Color 4 色域映射](https://www.w3.org/TR/css-color-4/#gamut-mapping)一致。输出的亮度与色度保留四位小数，取整后仍在色域内。
 
-运行时不包含 APCA。测试以 1° 步长遍历全部色相，覆盖整个色度范围、多档种子亮度与旋钮两端，两种外观与两个对比度档位都跑一遍，对精确值与 8 位量化值都用官方 [`apca-w3`](https://github.com/Myndex/apca-w3) 和 WCAG 2.2 逐对校验。
+运行时不包含 APCA。测试以 1° 步长遍历全部色相，覆盖整个色度范围、多档种子亮度与旋钮两端，两种外观与两个对比度档位都跑一遍，对精确值与 8 位量化值都用 WCAG 2.2 逐对校验：低于 WCAG 门槛判失败；通过 WCAG 但低于官方 [`apca-w3`](https://github.com/Myndex/apca-w3) 对应档位的组合只告警，APCA 在这里是参考而非约束。
 
 ## 许可证
 

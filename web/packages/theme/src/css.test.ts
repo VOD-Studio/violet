@@ -53,6 +53,9 @@ const NAMES = [
 		...steps(`category-${index + 1}`),
 		`--category-${index + 1}-contrast`,
 	]),
+	...["page", "sheet", "sunk", "rule", "rule2", "deco", "accent", "danger", "ok"].map(
+		(role) => `--material-${role}`,
+	),
 ];
 
 describe("toCssVariables", () => {
@@ -66,6 +69,8 @@ describe("toCssVariables", () => {
 		expect(declarations["--neutral-12"]).toBe(light.neutral.steps[12]);
 		expect(declarations["--danger-9"]).toBe(light.status.danger.steps[9]);
 		expect(declarations["--category-2-11"]).toBe(light.categorical[1]?.steps[11]);
+		expect(declarations["--material-sheet"]).toBe(light.material.sheet);
+		expect(declarations["--material-deco"]).toBe(light.material.deco);
 	});
 
 	it("同时给出浅色与深色时以 light-dark() 合并，与传入顺序无关", () => {
@@ -78,6 +83,9 @@ describe("toCssVariables", () => {
 		);
 		expect(declarations["--neutral-contrast"]).toBe(
 			`light-dark(${light.neutral.contrast}, ${dark.neutral.contrast})`,
+		);
+		expect(declarations["--material-accent"]).toBe(
+			`light-dark(${light.material.accent}, ${dark.material.accent})`,
 		);
 		expect(declarations["--success-a1"]).toBeUndefined();
 	});

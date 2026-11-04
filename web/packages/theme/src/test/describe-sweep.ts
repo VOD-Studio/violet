@@ -1,5 +1,5 @@
 import Color from "colorjs.io";
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { type Appearance, type ContrastLevel, generateScales, type Scale } from "../index.ts";
 import {
 	apca,
@@ -7,12 +7,14 @@ import {
 	coords,
 	deltaE,
 	hueDistance,
+	PRECISIONS,
 	parse,
 	simulate,
+	tintedOn,
 	VISIONS,
 	wcag,
 } from "./colors.ts";
-import { GATES, gateFailures, type MeasuredScale, measureSample } from "./gates.ts";
+import { evaluateGate, GATES, type MeasuredScale, measureSample } from "./gates.ts";
 import {
 	DEFAULT_NEUTRAL_CHROMA,
 	describeTheme,
@@ -54,22 +56,97 @@ export function describeSweep(appearance: Appearance, contrast: ContrastLevel) {
 			expect(samples).toHaveLength(THEMES.length);
 		});
 
+		// APCA 低于参考值只告警（ADR-0029）：只保留总数与前三条示例
+		let advisoryCount = 0;
+		const advisoryExamples: string[] = [];
+		afterAll(() => {
+			if (advisoryCount === 0) return;
+			console.warn(
+				`[APCA 告警] ${appearance} ${contrast} 档有 ${advisoryCount} 个组合达到 WCAG 但低于 APCA 参考值，例如：\n${advisoryExamples.join("\n")}`,
+			);
+		});
+
 		it.each(GATES)(
-			"$name 同时通过 WCAG 2.2 与 APCA",
-			(gate) => expectNoFailures(gateFailures(gate, samples, measured, contrast)),
+			"$name 通过 WCAG 2.2 AA",
+			(gate) => {
+				const result = evaluateGate(gate, samples, measured, contrast);
+				advisoryCount += result.advisoryCount;
+				for (const line of result.advisories) {
+					if (advisoryExamples.length >= 3) break;
+					advisoryExamples.push(`${gate.name}：${line}`);
+				}
+				expectNoFailures(result.failures);
+			},
+			SWEEP_TIMEOUT,
+		);
+
+		it(
+			"材质的强调字、危险色与成功色在全部表面与着色底上达到 WCAG",
+			() => {
+				const ratio = contrast === "more" ? 7 : 4.5;
+				// APCA 参考下限按用途分级（ADR-0029）：强调字按次要文字，状态文字更低；提高档各上调
+				const apcaReference = {
+					accent: contrast === "more" ? 90 : 75,
+					danger: contrast === "more" ? 60 : 45,
+					ok: contrast === "more" ? 60 : 45,
+				};
+				const failures: string[] = [];
+				for (const { theme, scales } of samples) {
+					const { material } = scales;
+					// 设计稿里文字放在 color-mix(着色色 N%, 底色) 上：强调字的着色色是季节色，N 为 16；
+					// 危险色与成功色的着色色是自身，N 为 5–12 与 12，取上限
+					for (const [role, tint, amount] of [
+						["accent", material.deco, 0.16],
+						["danger", material.danger, 0.12],
+						["ok", material.ok, 0.12],
+					] as const) {
+						const text = material[role];
+						const surfaces = [
+							material.page,
+							material.sheet,
+							material.sunk,
+							tintedOn(material.page, tint, amount),
+							tintedOn(material.sheet, tint, amount),
+						];
+						for (const surface of surfaces)
+							for (const precision of PRECISIONS) {
+								const value = wcag(text, surface, precision);
+								const lc = apca(text, surface, precision);
+								if (value < ratio) {
+									failures.push(
+										`${describeTheme(theme)} ${role} ${text} on ${surface} (${precision}): WCAG ${value.toFixed(2)}, APCA ${lc.toFixed(1)}`,
+									);
+								} else if (lc < apcaReference[role]) {
+									advisoryCount++;
+									if (advisoryExamples.length < 3)
+										advisoryExamples.push(
+											`材质：${describeTheme(theme)} ${role} ${text} on ${surface} (${precision}): WCAG ${value.toFixed(2)}, APCA ${lc.toFixed(1)}`,
+										);
+								}
+							}
+					}
+				}
+				expectNoFailures(failures);
+			},
 			SWEEP_TIMEOUT,
 		);
 
 		it(
 			"全部颜色落在 sRGB 内",
 			() => {
-				const failures = samples.flatMap((sample) =>
-					namedScales(sample.scales).flatMap(([name, scale]) =>
+				const failures = samples.flatMap((sample) => [
+					...namedScales(sample.scales).flatMap(([name, scale]) =>
 						allColors(scale)
 							.filter((css) => !parse(css).inGamut("srgb"))
 							.map((css) => `${describeTheme(sample.theme)} ${name} ${css}`),
 					),
-				);
+					...Object.entries(sample.scales.material)
+						.filter(([, css]) => !new Color(css).inGamut("srgb"))
+						.map(
+							([role, css]) =>
+								`${describeTheme(sample.theme)} material.${role} ${css}`,
+						),
+				]);
 				expectNoFailures(failures);
 			},
 			SWEEP_TIMEOUT,
