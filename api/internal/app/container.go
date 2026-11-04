@@ -140,7 +140,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	policies.SetImageMaintenanceStatus(image.DiskCache.Status)
 	linkPreview := NewLinkPreviewContainer(ctx, db, cfg, policies, encoder)
 	tweet := NewTweetContainer(db, rdb, cfg, permissionChecker, customEmoji.Service, bus, policies, encoder, linkPreview, media.UploadService)
-	chat := NewChatContainer(db, cfg, customEmoji.Service, media.UploadService, bus)
+	chat := NewChatContainer(db, cfg, customEmoji.Service, media.EmojiService, media.UploadService, bus)
 	chat.ChatService.WithTweetReader(tweet.TweetService)
 	// 推文互动事件复用 bot 的聊天 SSE 流，须在 ChatContainer 装配后订阅。
 	NewTweetBotEventSubscriber(

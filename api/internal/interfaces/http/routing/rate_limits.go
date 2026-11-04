@@ -44,6 +44,7 @@ var rateBindings = map[string]rateBinding{
 	"chat-bot-send":     {"机器人发送消息", "user", 60, 60},
 	"chat-bot-edit":     {"机器人编辑消息", "user", 60, 300},
 	"chat-bot-typing":   {"机器人输入状态", "user", 60, 120},
+	"chat-bot-emoji":    {"机器人表情收藏", "user", 60, 30},
 	"tweet-bot":         {"机器人发推文", "user", 3600, 10},
 	"tweet-bot-comment": {"机器人推文评论", "user", 60, 10},
 	"tweet-bot-like":    {"机器人推文点赞", "user", 60, 30},

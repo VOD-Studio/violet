@@ -8,6 +8,23 @@ import (
 	domainshared "blog-api/internal/domain/shared"
 )
 
+// EmojiToken 把系统表情名称规范化为可直接发进正文的 [name] token。
+// 已带方括号的名称原样返回（B 站目录里既有裸名也有带括号的颜文字），空名返回空串。
+func EmojiToken(name string) string {
+	if name == "" {
+		return ""
+	}
+	if strings.HasPrefix(name, "[") && strings.HasSuffix(name, "]") {
+		return name
+	}
+	return "[" + name + "]"
+}
+
+// FormatCustomEmojiToken 构造自定义表情的 [name:id] 正文 token。
+func FormatCustomEmojiToken(name string, id domainshared.ID) string {
+	return "[" + name + ":" + id.String() + "]"
+}
+
 // CustomEmojiTokens 将一批正文占位符拆分为系统表情名称与自定义表情 ID。
 type CustomEmojiTokens struct {
 	SystemNames map[string]bool

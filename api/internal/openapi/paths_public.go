@@ -95,6 +95,7 @@ func registerPublicPaths(t *openapi3.T) {
 		"group_id":     optInt32("所属分组 ID"),
 		"name":         reqStr("表情名称"),
 		"url":          reqStr("表情图片 URL"),
+		"token":        reqStr("可直接发进正文的系统表情占位符，形如 [name]"),
 		"source_url":   optStr("来源 URL"),
 		"gif_url":      optStr("GIF 动图 URL"),
 		"text_content": optStr("文字内容（文字表情）"),

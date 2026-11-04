@@ -42,6 +42,9 @@ func TestBotAPIRoutesBypassCSRF(t *testing.T) {
 		"POST /api/v1/chat/bot/conversations/{conversationId}/messages",
 		"PATCH /api/v1/chat/bot/conversations/{conversationId}/messages/{messageId}",
 		"POST /api/v1/chat/bot/conversations/{conversationId}/typing",
+		"GET /api/v1/chat/bot/emojis",
+		"POST /api/v1/chat/bot/emojis/{customEmojiId}/favorite",
+		"DELETE /api/v1/chat/bot/emojis/{customEmojiId}/favorite",
 	} {
 		require.Contains(t, routes, want)
 	}
@@ -52,6 +55,11 @@ func TestBotAPIRoutesBypassCSRF(t *testing.T) {
 	router.ServeHTTP(rec, req)
 	// 401 = 穿过 CSRF 到了 bot 鉴权；403 = CSRF 先拦（豁免失效）。
 	require.Equal(t, http.StatusUnauthorized, rec.Code)
+
+	favoriteReq := httptest.NewRequest(http.MethodPost, "/api/v1/chat/bot/emojis/22222222-2222-2222-2222-222222222222/favorite", nil)
+	favoriteRec := httptest.NewRecorder()
+	router.ServeHTTP(favoriteRec, favoriteReq)
+	require.Equal(t, http.StatusUnauthorized, favoriteRec.Code)
 }
 
 func TestAdminBotRoutesGateOnBotManagePermission(t *testing.T) {

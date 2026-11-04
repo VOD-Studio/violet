@@ -140,4 +140,45 @@ func registerBotPaths(t *openapi3.T) {
 		Security:  secure,
 		Responses: responses(200, &openapi3.ResponseRef{Value: &openapi3.Response{Description: strPtr("text/event-stream")}}),
 	})
+
+	registerSchema(t, "BotCustomEmojiDTO", openapi3.Schemas{
+		"id":     reqStr("自定义表情 ID"),
+		"name":   reqStr("表情名称"),
+		"token":  reqStr("可直接发进正文的 [name:id] token"),
+		"url":    reqStr("表情图片 URL"),
+		"source": strEnum("来源：owned 本 bot 上传，favorited 已收藏", "owned", "favorited"),
+	}, "id", "name", "token", "url", "source")
+	registerSchema(t, "BotEmojiCatalogDTO", openapi3.Schemas{
+		"groups": refArray("启用中的系统表情分组，每个表情的 token 可直接发送", "EmojiGroupDTO"),
+		"custom": refArray("本 bot 上传与已收藏的自定义表情，按 owned 后 favorited 去重", "BotCustomEmojiDTO"),
+	}, "groups", "custom")
+
+	get(t, "/chat/bot/emojis", &openapi3.Operation{
+		Tags: []string{"聊天 Bot"}, Summary: "表情目录",
+		Description: "groups 只含启用分组，每个表情的 token 为 [name]；custom 是本 bot 上传（目前恒为空）与已收藏的自定义表情，token 为 [name:id]。" +
+			"自定义表情私有：没有全站目录，bot 只能收藏它在内容里实际见到的表情。",
+		Security:  secure,
+		Responses: responses(200, dataResponse("BotEmojiCatalogDTO", "表情目录", 200), 401, errorResponse("token 无效"), 403, errorResponse("bot 已禁用")),
+	})
+
+	post(t, "/chat/bot/emojis/{customEmojiId}/favorite", &openapi3.Operation{
+		Tags: []string{"聊天 Bot"}, Summary: "收藏自定义表情",
+		Description: "收藏后本 bot 才能在正文里发送 [name:id]；重复收藏幂等。不能收藏自己上传的表情，且受站点自定义表情份额上限约束。",
+		Security:    secure,
+		Parameters:  openapi3.Parameters{pathStrParam("customEmojiId", "自定义表情 ID")},
+		Responses: responses(
+			204, noContentResponse("已收藏"),
+			400, errorResponse("表情 ID 非法"),
+			403, errorResponse("不能收藏自己的表情或份额已满"),
+			404, errorResponse("表情不存在或已下架"),
+		),
+	})
+
+	del(t, "/chat/bot/emojis/{customEmojiId}/favorite", &openapi3.Operation{
+		Tags: []string{"聊天 Bot"}, Summary: "取消收藏自定义表情",
+		Description: "幂等：未收藏时取消也不报错；取消后本 bot 不能再发送该 [name:id]。",
+		Security:    secure,
+		Parameters:  openapi3.Parameters{pathStrParam("customEmojiId", "自定义表情 ID")},
+		Responses:   responses(204, noContentResponse("已取消收藏"), 400, errorResponse("表情 ID 非法")),
+	})
 }

@@ -37,8 +37,8 @@ type ChatContainer struct {
 }
 
 // NewChatContainer 装配聊天领域、持久化与浏览器推送。
-// customEmojiSvc 解析消息正文中的 [name:uuid] 自定义表情占位符。
-func NewChatContainer(db *gorm.DB, cfg *config.Config, customEmojiSvc *appcustomemoji.Service, uploadSvc *appmedia.UploadService, bus appshared.EventBus) *ChatContainer {
+// customEmojiSvc 解析消息正文中的 [name:uuid] 自定义表情占位符；emojiSvc 供 Bot API 下发系统表情目录。
+func NewChatContainer(db *gorm.DB, cfg *config.Config, customEmojiSvc *appcustomemoji.Service, emojiSvc *appmedia.EmojiService, uploadSvc *appmedia.UploadService, bus appshared.EventBus) *ChatContainer {
 	repo := gormrepo.NewChatRepository(db)
 	reactionStore := gormrepo.NewChatMessageReactionStore(db)
 	userRepo := gormrepo.NewUserRepository(db)
@@ -65,7 +65,7 @@ func NewChatContainer(db *gorm.DB, cfg *config.Config, customEmojiSvc *appcustom
 		ChatHandler:     chathttp.NewHandler(svc).WithAppearanceService(appappearance.NewService(appearanceStore, appearanceStore)).WithBotCommands(botCommands),
 		StreamHandler:   chathttp.NewStreamHandler(manager, svc),
 		BotService:      botService,
-		BotHandler:      chathttp.NewBotHandler(svc, botService, botConnections, uploadSvc, cfg.BotMediaMaxBytes).WithBotCommands(botCommands),
+		BotHandler:      chathttp.NewBotHandler(svc, botService, botConnections, uploadSvc, cfg.BotMediaMaxBytes).WithBotCommands(botCommands).WithEmojiCatalog(emojiSvc, customEmojiSvc),
 		BotAdminHandler: chathttp.NewBotAdminHandler(botService),
 		BotConnections:  botConnections,
 		BotRepository:   botRepo,
