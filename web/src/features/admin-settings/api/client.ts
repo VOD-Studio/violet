@@ -8,6 +8,8 @@ import type {
 	OAuthCredentialsInput,
 	OAuthProviderStatus,
 	ProfileSettingsDTO,
+	WindowCityDTO,
+	WindowSettingsDTO,
 } from "../model/types";
 
 const BASE = "/admin/settings";
@@ -69,3 +71,9 @@ export const updateOAuthCredentials = (body: OAuthCredentialsInput) =>
 /** 探测 provider 侧凭据有效性（假 code 打 token 端点读错误码） */
 export const verifyOAuthCredentials = (provider: string) =>
 	apiPost<{ valid: boolean; detail: string }>(`${OAUTH_BASE}/verify`, { provider });
+
+export const getWindowSettings = () => apiGet<WindowSettingsDTO>("/admin/window");
+export const updateWindowSettings = (body: WindowSettingsDTO) =>
+	apiPut<WindowSettingsDTO>("/admin/window", body);
+export const searchWindowCities = (q: string) =>
+	apiGet<WindowCityDTO[]>("/admin/window/cities", { params: { q } });

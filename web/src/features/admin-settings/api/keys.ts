@@ -20,4 +20,8 @@ export const settingsKeys = {
 	llm: () => [...settingsKeys.all, "llm"] as const,
 	/** OAuth 凭据（env 域，独立端点） */
 	oauth: () => [...settingsKeys.all, "oauth"] as const,
+	/** 窗（独立端点 /admin/window） */
+	window: () => [...settingsKeys.all, "window"] as const,
+	/** 窗的城市搜索 */
+	windowCities: (q: string) => [...settingsKeys.all, "window", "cities", q] as const,
 };

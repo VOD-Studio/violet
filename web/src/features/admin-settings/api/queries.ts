@@ -8,6 +8,7 @@ import type {
 	LlmSettingsDTO,
 	OAuthCredentialsInput,
 	ProfileSettingsDTO,
+	WindowSettingsDTO,
 } from "../model/types";
 import * as api from "./client";
 import { settingsKeys } from "./keys";
@@ -139,3 +140,37 @@ export const useVerifyOAuth = () => {
 		onError: (e: Error) => toast.error(`检测失败：${e.message}`),
 	});
 };
+
+// ---- 窗 ----
+export const useWindowSettings = () =>
+	useQuery({ queryKey: settingsKeys.window(), queryFn: api.getWindowSettings });
+export const useUpdateWindowSettings = () => {
+	const qc = useQueryClient();
+	return useMutation({
+		// 后端整体替换：缺省的城市视为清除，缺省的槽位视为改回默认景
+		mutationFn: (body: Partial<WindowSettingsDTO>) =>
+			api.updateWindowSettings({
+				city: body.city ?? null,
+				photos: { clear: "", cloudy: "", rain: "", snow: "", night: "", ...body.photos },
+			}),
+		onSuccess: (data) => {
+			qc.setQueryData(settingsKeys.window(), data);
+			toast.success("窗的设置已保存");
+		},
+		onError: (e: Error) => toast.error(`保存失败：${e.message}`),
+	});
+};
+
+/**
+ * 按名称搜索城市。
+ *
+ * @remarks 空串不发请求；调用方负责防抖。
+ */
+export const useWindowCitySearch = (q: string) =>
+	useQuery({
+		queryKey: settingsKeys.windowCities(q),
+		queryFn: () => api.searchWindowCities(q),
+		enabled: q.length > 0,
+		staleTime: 60 * 60_000,
+		retry: false,
+	});

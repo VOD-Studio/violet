@@ -3,6 +3,7 @@ import type { LucideIcon } from "lucide-react";
 import {
 	Activity,
 	Bot,
+	CloudSun,
 	ContactRound,
 	Cpu,
 	FileText,
@@ -248,6 +249,12 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 				label: "关于页配置",
 				to: "/admin/settings/about",
 				icon: LayoutPanelLeft,
+				permissions: ["settings:view"],
+			},
+			{
+				label: "窗",
+				to: "/admin/settings/window",
+				icon: CloudSun,
 				permissions: ["settings:view"],
 			},
 			{
