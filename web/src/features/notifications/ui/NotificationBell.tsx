@@ -24,6 +24,7 @@ import {
 	Bell,
 	BellRing,
 	CheckCheck,
+	Hand,
 	Heart,
 	Inbox,
 	Link2,
@@ -64,6 +65,7 @@ const sourceIcon: Record<NotificationSourceType, typeof Bell> = {
 	tweet_quoted: Repeat2,
 	tweet_commented: MessageCircle,
 	tweet_comment_replied: MessageCircleReply,
+	window_knocked: Hand,
 };
 
 /** 推文互动来源：source_id 是推文，点击落到推文详情页 */
@@ -91,6 +93,7 @@ const sourceColor: Record<NotificationSourceType, string> = {
 	tweet_quoted: "text-category-5",
 	tweet_commented: "text-category-1",
 	tweet_comment_replied: "text-category-6",
+	window_knocked: "text-category-3",
 };
 
 /**

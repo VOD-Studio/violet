@@ -16,7 +16,8 @@ export type NotificationSourceType =
 	| "tweet_liked"
 	| "tweet_quoted"
 	| "tweet_commented"
-	| "tweet_comment_replied";
+	| "tweet_comment_replied"
+	| "window_knocked";
 
 /** 通知读模型（后端 NotificationDTO 对应） */
 export interface NotificationItem {
