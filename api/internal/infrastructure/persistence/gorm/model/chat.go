@@ -46,23 +46,24 @@ func (ChatDirectPair) TableName() string { return "chat_direct_pairs" }
 
 // ChatMessage 聊天消息持久化模型。
 type ChatMessage struct {
-	ID             uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
-	ConversationID uuid.UUID  `gorm:"type:uuid;column:conversation_id;not null" json:"conversation_id"`
-	SenderID       uuid.UUID  `gorm:"type:uuid;column:sender_id;not null" json:"sender_id"`
-	MessageType    string     `gorm:"type:varchar(16);column:message_type;not null" json:"message_type"`
-	Content        string     `gorm:"type:text;not null;default:''" json:"content"`
-	SharedTweetID  *uuid.UUID `gorm:"type:uuid;column:shared_tweet_id" json:"shared_tweet_id,omitempty"`
-	ReplyToID      *uuid.UUID `gorm:"type:uuid;column:reply_to_id" json:"reply_to_id,omitempty"`
-	IdempotencyKey string     `gorm:"type:varchar(128);column:idempotency_key;not null" json:"-"`
-	DeletedAt      *time.Time `gorm:"column:deleted_at" json:"deleted_at,omitempty"`
-	DeletedBy      *uuid.UUID `gorm:"type:uuid;column:deleted_by" json:"deleted_by,omitempty"`
-	EditedAt       *time.Time `gorm:"column:edited_at" json:"edited_at,omitempty"`
-	BotStatus      *string    `gorm:"column:bot_status" json:"bot_status,omitempty"`
-	BotThinking    string     `gorm:"column:bot_thinking" json:"-"`
-	BotRevision    int64      `gorm:"column:bot_revision" json:"bot_revision"`
-	BotUpdatedAt   *time.Time `gorm:"column:bot_updated_at" json:"bot_updated_at,omitempty"`
-	CreatedAt      time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
-	UpdatedAt      time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
+	ID             uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
+	ConversationID uuid.UUID      `gorm:"type:uuid;column:conversation_id;not null" json:"conversation_id"`
+	SenderID       uuid.UUID      `gorm:"type:uuid;column:sender_id;not null" json:"sender_id"`
+	MessageType    string         `gorm:"type:varchar(16);column:message_type;not null" json:"message_type"`
+	Content        string         `gorm:"type:text;not null;default:''" json:"content"`
+	SharedTweetID  *uuid.UUID     `gorm:"type:uuid;column:shared_tweet_id" json:"shared_tweet_id,omitempty"`
+	ReplyToID      *uuid.UUID     `gorm:"type:uuid;column:reply_to_id" json:"reply_to_id,omitempty"`
+	IdempotencyKey string         `gorm:"type:varchar(128);column:idempotency_key;not null" json:"-"`
+	DeletedAt      *time.Time     `gorm:"column:deleted_at" json:"deleted_at,omitempty"`
+	DeletedBy      *uuid.UUID     `gorm:"type:uuid;column:deleted_by" json:"deleted_by,omitempty"`
+	EditedAt       *time.Time     `gorm:"column:edited_at" json:"edited_at,omitempty"`
+	BotStatus      *string        `gorm:"column:bot_status" json:"bot_status,omitempty"`
+	BotThinking    string         `gorm:"column:bot_thinking" json:"-"`
+	BotToolCalls   datatypes.JSON `gorm:"column:bot_tool_calls;type:jsonb;not null;default:'[]'" json:"-"`
+	BotRevision    int64          `gorm:"column:bot_revision" json:"bot_revision"`
+	BotUpdatedAt   *time.Time     `gorm:"column:bot_updated_at" json:"bot_updated_at,omitempty"`
+	CreatedAt      time.Time      `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt      time.Time      `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
 // TableName 显式指定表名。

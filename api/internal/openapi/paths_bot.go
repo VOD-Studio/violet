@@ -47,10 +47,11 @@ func registerBotPaths(t *openapi3.T) {
 		"status":      optStr("pending 创建可恢复的文本生成回复；图片消息必须省略"),
 	})
 	registerSchema(t, "BotEditMessageRequest", openapi3.Schemas{
-		"content":  optStr("累计正文，整体替换原文"),
-		"thinking": optStr("累计思考内容；后台关闭展示时不保存"),
-		"status":   optStr("pending、thinking、streaming、completed 或 failed；省略时兼容旧版编辑"),
-		"revision": optInt64("生成更新递增版本，首次为 1"),
+		"content":    optStr("累计正文，整体替换原文"),
+		"thinking":   optStr("累计思考内容；后台关闭展示时不保存"),
+		"tool_calls": refArray("工具调用累计快照：整体替换已存列表，空数组清空；最多 32 项、序列化后 ≤64 KiB。name 必填且 ≤64 字符，id ≤128 字符且非空时唯一，status 为 running、completed 或 failed（空值按 completed），arguments/result/error 各 ≤8000 字符，duration_ms 0..86400000。终态回复可保留 running 调用，前端渲染为中断", "ChatBotToolCallDTO"),
+		"status":     optStr("pending、thinking、streaming、completed 或 failed；省略时兼容旧版编辑"),
+		"revision":   optInt64("生成更新递增版本，首次为 1"),
 	})
 	registerSchema(t, "BotTypingRequest", openapi3.Schemas{
 		"is_typing": optBool("true 表示正在输入，false 显式结束"),

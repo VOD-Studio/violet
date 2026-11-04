@@ -277,10 +277,11 @@ func (h *BotHandler) EditMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Content  string `json:"content"`
-		Thinking string `json:"thinking"`
-		Status   string `json:"status"`
-		Revision int64  `json:"revision"`
+		Content   string                   `json:"content"`
+		Thinking  string                   `json:"thinking"`
+		ToolCalls []domainchat.BotToolCall `json:"tool_calls"`
+		Status    string                   `json:"status"`
+		Revision  int64                    `json:"revision"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		response.RespondError(w, r, err)
@@ -290,7 +291,8 @@ func (h *BotHandler) EditMessage(w http.ResponseWriter, r *http.Request) {
 	if req.Status != "" {
 		dto, err = h.chat.UpdateBotReply(r.Context(), appchat.UpdateBotReplyInput{
 			UserID: bot.UserID(), ConversationID: conversationID, MessageID: messageID,
-			Content: req.Content, Thinking: req.Thinking, Status: domainchat.BotReplyStatus(req.Status), Revision: req.Revision,
+			Content: req.Content, Thinking: req.Thinking, ToolCalls: req.ToolCalls,
+			Status: domainchat.BotReplyStatus(req.Status), Revision: req.Revision,
 		})
 	} else {
 		dto, err = h.chat.EditMessage(r.Context(), appchat.EditMessageInput{

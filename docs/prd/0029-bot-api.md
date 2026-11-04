@@ -356,6 +356,57 @@ PATCH /api/v1/chat/bot/conversations/{conversationId}/messages/{messageId}
 Violet 端的状态、迁移、后台开关、卡片和 SSE 契约测试已接入；真实 Bot 的状态与 thinking 上报需要对接方实现并联调。
 
 
+## V11：Bot 工具调用快照
+
+生成协议在同一个 PATCH 上传 `tool_calls`。它和 `content`、`thinking` 一样是**累计快照**：每次提交整份列表，服务端整体替换已存值；省略字段或传空数组即清空已有调用。
+
+```http
+PATCH /api/v1/chat/bot/conversations/{conversationId}/messages/{messageId}
+
+{
+  "content": "累计正文",
+  "thinking": "累计思考",
+  "tool_calls": [
+    {
+      "id": "call_abc",
+      "name": "web_search",
+      "status": "running",
+      "arguments": "{\"q\":\"x\"}",
+      "result": "",
+      "error": "",
+      "duration_ms": 3120
+    }
+  ],
+  "status": "streaming",
+  "revision": 7
+}
+```
+
+- `name` 必填，去除首尾空白后 1–64 字符。`id` 可选，≤128 字符，非空时在本条回复内必须唯一；调用方重试快照时用它对齐同一次调用。
+- `status` 可选，取值 `running`、`completed`、`failed`；省略或空串按 `completed` 保存。读模型的 `status` 恒有值。
+- `arguments`、`result`、`error` 是原样保存的字符串，各 ≤8000 字符；服务端不解析工具方言。`duration_ms` 可选，0–86400000（24 小时）。
+- 单条回复最多 32 项，序列化后的数组 ≤64 KiB。超限、状态非法、ID 重复等返回 400，且不写入任何字段。
+- 终态（`completed`/`failed`）回复里仍可保留 `running` 调用，服务端不拒绝也不改写；前端把它渲染成「已中断」。
+- 没有独立的工具调用开关：Bot 发了就存、读模型就返回，与 `show_thinking` 无关。
+
+读模型 `bot_reply` 增加同形状的 `tool_calls` 数组，为空时省略该字段；历史接口与实时 SSE 的 `message.updated` 帧共用这份 DTO：
+
+```json
+{
+  "bot_reply": {
+    "status": "streaming",
+    "tool_calls": [
+      {"id": "call_abc", "name": "web_search", "status": "completed", "arguments": "{\"q\":\"x\"}", "result": "…", "duration_ms": 3120}
+    ],
+    "revision": 7,
+    "updated_at": "2026-11-04T00:00:00Z"
+  }
+}
+```
+
+工具调用参与幂等判定：同 `revision`、同正文与思考、同调用列表的重试返回当前快照；`revision` 相同但调用列表不同的请求按过期版本拒绝，避免旧快照覆盖新列表。
+
+
 ## 对接方
 
 本 API 不绑定 Saber。任何持有 bot token 的外部程序均可：
