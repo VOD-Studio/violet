@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -393,7 +394,8 @@ func (r *ChatRepository) UpdateBotReply(ctx context.Context, message *domainchat
 				[]string{string(domainchat.BotReplyPending), string(domainchat.BotReplyThinking), string(domainchat.BotReplyStreaming)}).
 			Updates(map[string]any{
 				"content": message.Content(), "bot_thinking": reply.Thinking(), "bot_status": string(reply.Status()),
-				"bot_revision": reply.Revision(), "bot_updated_at": reply.UpdatedAt(), "updated_at": message.UpdatedAt,
+				"bot_tool_calls": botToolCallsToJSON(reply.ToolCalls()),
+				"bot_revision":   reply.Revision(), "bot_updated_at": reply.UpdatedAt(), "updated_at": message.UpdatedAt,
 			})
 		if result.Error != nil {
 			return result.Error
@@ -607,12 +609,14 @@ func messageToPO(m *domainchat.Message) *model.ChatMessage {
 		ID: m.ID().UUID(), ConversationID: m.ConversationID().UUID(), SenderID: m.SenderID().UUID(),
 		MessageType: string(m.Type()), Content: m.Content(), SharedTweetID: sharedTweetID, ReplyToID: replyToID, IdempotencyKey: m.IdempotencyKey(),
 		DeletedAt: m.DeletedAt(), DeletedBy: deletedBy, EditedAt: m.EditedAt(), CreatedAt: m.CreatedAt(), UpdatedAt: m.UpdatedAt,
+		BotToolCalls: datatypes.JSON([]byte("[]")),
 	}
 	if reply := m.BotReply(); reply != nil {
 		status := string(reply.Status())
 		updatedAt := reply.UpdatedAt()
 		po.BotStatus = &status
 		po.BotThinking = reply.Thinking()
+		po.BotToolCalls = botToolCallsToJSON(reply.ToolCalls())
 		po.BotRevision = reply.Revision()
 		po.BotUpdatedAt = &updatedAt
 	}
@@ -645,9 +649,35 @@ func messageToDomain(po model.ChatMessage, mediaIDs []domainshared.ID) *domainch
 	}
 	var botReply *domainchat.BotReply
 	if po.BotStatus != nil && po.BotUpdatedAt != nil {
-		botReply = domainchat.ReconstructBotReply(domainchat.BotReplyStatus(*po.BotStatus), po.BotThinking, po.BotRevision, *po.BotUpdatedAt)
+		botReply = domainchat.ReconstructBotReply(domainchat.BotReplyStatus(*po.BotStatus), po.BotThinking, botToolCallsFromJSON(po.BotToolCalls), po.BotRevision, *po.BotUpdatedAt)
 	}
 	return domainchat.ReconstructMessage(domainshared.IDFromUUID(po.ID), domainshared.IDFromUUID(po.ConversationID), domainshared.IDFromUUID(po.SenderID), domainchat.MessageType(po.MessageType), po.Content, mediaIDs, sharedTweetID, replyToID, po.IdempotencyKey, po.DeletedAt, deletedBy, po.EditedAt, botReply, po.CreatedAt, po.UpdatedAt)
+}
+
+// botToolCallsToJSON 序列化工具调用快照；空列表落库为 '[]'。
+func botToolCallsToJSON(calls []domainchat.BotToolCall) datatypes.JSON {
+	if len(calls) == 0 {
+		return datatypes.JSON([]byte("[]"))
+	}
+	encoded, err := json.Marshal(calls)
+	if err != nil {
+		log.Warn().Err(err).Msg("Bot 工具调用序列化失败，按空列表保存")
+		return datatypes.JSON([]byte("[]"))
+	}
+	return datatypes.JSON(encoded)
+}
+
+// botToolCallsFromJSON 反序列化工具调用快照；数据损坏时降级为空列表，不阻断消息读取。
+func botToolCallsFromJSON(raw datatypes.JSON) []domainchat.BotToolCall {
+	if len(raw) == 0 {
+		return []domainchat.BotToolCall{}
+	}
+	var calls []domainchat.BotToolCall
+	if err := json.Unmarshal(raw, &calls); err != nil {
+		log.Warn().Err(err).Msg("Bot 工具调用数据损坏，按空列表读取")
+		return []domainchat.BotToolCall{}
+	}
+	return calls
 }
 
 // listMessageMedia 批量加载消息的图片媒体引用，按 position 升序。

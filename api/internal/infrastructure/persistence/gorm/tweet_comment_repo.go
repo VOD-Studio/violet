@@ -6,10 +6,10 @@ import (
 	"errors"
 	"strings"
 
-	"gorm.io/gorm"
 	domainshared "blog-api/internal/domain/shared"
 	domaintweet "blog-api/internal/domain/tweet"
 	"blog-api/internal/infrastructure/persistence/gorm/model"
+	"gorm.io/gorm"
 )
 
 // TweetCommentRepository 推文评论 GORM 实现。
@@ -22,10 +22,11 @@ func NewTweetCommentRepository(db *gorm.DB) *TweetCommentRepository {
 	return &TweetCommentRepository{db: db}
 }
 
-// Save 保存评论（按主键 upsert）。
+// Save 插入评论。评论无更新路径，仅创建期调用；主键冲突返回错误，
+// 由调用方（bot 幂等重试）回查已有记录后再决定返回还是报冲突。
 func (r *TweetCommentRepository) Save(ctx context.Context, c *domaintweet.Comment) error {
 	po := tweetCommentToPO(c)
-	if err := r.db.WithContext(ctx).Save(&po).Error; err != nil {
+	if err := r.db.WithContext(ctx).Create(&po).Error; err != nil {
 		return domainshared.Internal("保存推文评论失败", err)
 	}
 	return nil

@@ -1,10 +1,15 @@
 package user
 
 import (
+	"strings"
 	"time"
 
 	"blog-api/internal/domain/shared"
 )
+
+// BotUserEmailDomain bot 虚拟用户的邮箱域。`.invalid` 是 RFC 2606 保留 TLD，
+// 永不解析：邮箱字段被误用于发信也不会投递出去。
+const BotUserEmailDomain = "bot.violet.invalid"
 
 // ============================================================
 // 领域事件
@@ -605,6 +610,16 @@ func (u *User) MatchPassword(_ string) bool {
 // ============================================================
 
 func (u *User) Email() Email { return u.email }
+
+// IsBot 账号是否为系统为 bot 凭证创建的虚拟用户。
+//
+// 规范形态是 bot+<自身用户 ID>@bot.violet.invalid。本地部分的 ID 必须一起核对：
+// 只看域名会把任何伪造该域邮箱的普通账号判成 bot，让「谁是机器人」由用户改邮箱
+// 自行决定。该规则同时被 bot 注册回收空壳用户名与内容作者身份展示依赖。
+func (u *User) IsBot() bool {
+	local, domain, found := strings.Cut(u.email.String(), "@")
+	return found && domain == BotUserEmailDomain && local == "bot+"+u.GetID().String()
+}
 
 func (u *User) Username() Username { return u.username }
 

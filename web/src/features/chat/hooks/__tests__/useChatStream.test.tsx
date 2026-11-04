@@ -172,6 +172,65 @@ it("Bot 生成快照同步正文、thinking 与完成状态", async () => {
 	expect(result?.edited_at).toBeUndefined();
 });
 
+it("工具调用快照写入查询缓存并丢弃畸形条目", async () => {
+	const { client, wrapper, emit } = setupStream();
+	const key = chatKeys.messages("c1");
+	client.setQueryData(key, cacheWith(""));
+	renderHook(useChatStream, { wrapper });
+	act(() =>
+		emit("2", {
+			conversation_id: "c1",
+			message_id: "m1",
+			content: "最终回复",
+			bot_reply: {
+				status: "completed",
+				revision: 2,
+				updated_at: "2026-09-23T10:00:01Z",
+				tool_calls: [
+					{
+						id: "call-1",
+						name: "web_search",
+						status: "completed",
+						arguments: '{"q":"violet"}',
+						result: "三条结果",
+						duration_ms: 3100,
+					},
+					"not-an-object",
+					{ name: "" },
+					{ status: "completed" },
+					{ name: "web_fetch", status: "bogus" },
+					{
+						name: "js_sandbox",
+						status: "failed",
+						error: "语法错误",
+						duration_ms: -1,
+						id: 42,
+						arguments: 12,
+					},
+				],
+			},
+		}),
+	);
+	await waitFor(() =>
+		expect(
+			client.getQueryData<MessagesCache>(key)?.pages[0].data[0].bot_reply?.tool_calls,
+		).toBeDefined(),
+	);
+	expect(client.getQueryData<MessagesCache>(key)?.pages[0].data[0].bot_reply?.tool_calls).toEqual(
+		[
+			{
+				id: "call-1",
+				name: "web_search",
+				status: "completed",
+				arguments: '{"q":"violet"}',
+				result: "三条结果",
+				duration_ms: 3100,
+			},
+			{ name: "js_sandbox", status: "failed", error: "语法错误" },
+		],
+	);
+});
+
 it("含自定义表情的编辑回查按查看者解析的映射", () => {
 	const { client, wrapper, emit } = setupStream();
 	const key = chatKeys.messages("c1");

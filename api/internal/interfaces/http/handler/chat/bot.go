@@ -13,6 +13,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	appchat "blog-api/internal/application/chat"
+	appcustomemoji "blog-api/internal/application/customemoji"
 	appmedia "blog-api/internal/application/media"
 	domainchat "blog-api/internal/domain/chat"
 	domainshared "blog-api/internal/domain/shared"
@@ -33,6 +34,16 @@ type botMessageSender interface {
 	SendBotMessage(context.Context, appchat.SendMessageInput) (appchat.MessageDTO, error)
 }
 
+type botEmojiCatalog interface {
+	GetAll(context.Context) ([]appmedia.EmojiGroupDTO, error)
+}
+
+type botCustomEmojiLibrary interface {
+	ListMine(context.Context, domainshared.ID) (appcustomemoji.MineDTO, error)
+	Favorite(context.Context, domainshared.ID, domainshared.ID) error
+	Unfavorite(context.Context, domainshared.ID, domainshared.ID) error
+}
+
 type BotHandler struct {
 	chat          *appchat.Service
 	messageSender botMessageSender
@@ -41,6 +52,8 @@ type BotHandler struct {
 	commands      *appchat.BotCommandService
 	media         botMediaSaver
 	mediaMaxBytes int64
+	emojiCatalog  botEmojiCatalog
+	customEmojis  botCustomEmojiLibrary
 }
 
 // NewBotHandler 构造 bot 聊天适配器。conns 为 nil 时事件流端点不可用。
@@ -277,10 +290,11 @@ func (h *BotHandler) EditMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Content  string `json:"content"`
-		Thinking string `json:"thinking"`
-		Status   string `json:"status"`
-		Revision int64  `json:"revision"`
+		Content   string                   `json:"content"`
+		Thinking  string                   `json:"thinking"`
+		ToolCalls []domainchat.BotToolCall `json:"tool_calls"`
+		Status    string                   `json:"status"`
+		Revision  int64                    `json:"revision"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		response.RespondError(w, r, err)
@@ -290,7 +304,8 @@ func (h *BotHandler) EditMessage(w http.ResponseWriter, r *http.Request) {
 	if req.Status != "" {
 		dto, err = h.chat.UpdateBotReply(r.Context(), appchat.UpdateBotReplyInput{
 			UserID: bot.UserID(), ConversationID: conversationID, MessageID: messageID,
-			Content: req.Content, Thinking: req.Thinking, Status: domainchat.BotReplyStatus(req.Status), Revision: req.Revision,
+			Content: req.Content, Thinking: req.Thinking, ToolCalls: req.ToolCalls,
+			Status: domainchat.BotReplyStatus(req.Status), Revision: req.Revision,
 		})
 	} else {
 		dto, err = h.chat.EditMessage(r.Context(), appchat.EditMessageInput{

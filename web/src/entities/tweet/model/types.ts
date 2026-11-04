@@ -26,6 +26,8 @@ export interface TweetAuthor {
 	provider?: "github" | "google";
 	/** 第三方主页 URL；仅 GitHub 有（角标可点击跳转），Google 省略 */
 	profile_url?: string;
+	/** 自动化 Bot 虚拟用户；缺省=人类账号 */
+	is_bot?: boolean;
 }
 
 /**

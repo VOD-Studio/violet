@@ -47,10 +47,11 @@ func registerBotPaths(t *openapi3.T) {
 		"status":      optStr("pending 创建可恢复的文本生成回复；图片消息必须省略"),
 	})
 	registerSchema(t, "BotEditMessageRequest", openapi3.Schemas{
-		"content":  optStr("累计正文，整体替换原文"),
-		"thinking": optStr("累计思考内容；后台关闭展示时不保存"),
-		"status":   optStr("pending、thinking、streaming、completed 或 failed；省略时兼容旧版编辑"),
-		"revision": optInt64("生成更新递增版本，首次为 1"),
+		"content":    optStr("累计正文，整体替换原文"),
+		"thinking":   optStr("累计思考内容；后台关闭展示时不保存"),
+		"tool_calls": refArray("工具调用累计快照：整体替换已存列表，空数组清空；最多 32 项、序列化后 ≤64 KiB。name 必填且 ≤64 字符，id ≤128 字符且非空时唯一，status 为 running、completed 或 failed（空值按 completed），arguments/result/error 各 ≤8000 字符，duration_ms 0..86400000。终态回复可保留 running 调用，前端渲染为中断", "ChatBotToolCallDTO"),
+		"status":     optStr("pending、thinking、streaming、completed 或 failed；省略时兼容旧版编辑"),
+		"revision":   optInt64("生成更新递增版本，首次为 1"),
 	})
 	registerSchema(t, "BotTypingRequest", openapi3.Schemas{
 		"is_typing": optBool("true 表示正在输入，false 显式结束"),
@@ -133,8 +134,51 @@ func registerBotPaths(t *openapi3.T) {
 		Tags: []string{"聊天 Bot"}, Summary: "bot 事件流",
 		Description: "SSE。帧的事件名即类型（message.created、typing.updated），data 自带消息全文。" +
 			"只推本 bot 参与会话的事件：私聊对端消息全推，群聊仅推被 @ 到的；bot 自己发的消息不推。" +
-			"不支持 Last-Event-ID 补发，断线后用消息历史接口补齐。",
+			"同一条流也承载推文互动事件：tweet.commented（data.reason 为 comment_on_tweet 或 reply_to_comment）、" +
+			"tweet.quoted、tweet.liked，载荷见 PRD-0039；bot 自己作的互动不产生事件。" +
+			"流是有损的（缓冲满即丢），不支持 Last-Event-ID 补发：断线后用消息历史与公开推文读取接口补齐。",
 		Security:  secure,
 		Responses: responses(200, &openapi3.ResponseRef{Value: &openapi3.Response{Description: strPtr("text/event-stream")}}),
+	})
+
+	registerSchema(t, "BotCustomEmojiDTO", openapi3.Schemas{
+		"id":     reqStr("自定义表情 ID"),
+		"name":   reqStr("表情名称"),
+		"token":  reqStr("可直接发进正文的 [name:id] token"),
+		"url":    reqStr("表情图片 URL"),
+		"source": strEnum("来源：owned 本 bot 上传，favorited 已收藏", "owned", "favorited"),
+	}, "id", "name", "token", "url", "source")
+	registerSchema(t, "BotEmojiCatalogDTO", openapi3.Schemas{
+		"groups": refArray("启用中的系统表情分组，每个表情的 token 可直接发送", "EmojiGroupDTO"),
+		"custom": refArray("本 bot 上传与已收藏的自定义表情，按 owned 后 favorited 去重", "BotCustomEmojiDTO"),
+	}, "groups", "custom")
+
+	get(t, "/chat/bot/emojis", &openapi3.Operation{
+		Tags: []string{"聊天 Bot"}, Summary: "表情目录",
+		Description: "groups 只含启用分组，每个表情的 token 为 [name]；custom 是本 bot 上传（目前恒为空）与已收藏的自定义表情，token 为 [name:id]。" +
+			"自定义表情私有：没有全站目录，bot 只能收藏它在内容里实际见到的表情。",
+		Security:  secure,
+		Responses: responses(200, dataResponse("BotEmojiCatalogDTO", "表情目录", 200), 401, errorResponse("token 无效"), 403, errorResponse("bot 已禁用")),
+	})
+
+	post(t, "/chat/bot/emojis/{customEmojiId}/favorite", &openapi3.Operation{
+		Tags: []string{"聊天 Bot"}, Summary: "收藏自定义表情",
+		Description: "收藏后本 bot 才能在正文里发送 [name:id]；重复收藏幂等。不能收藏自己上传的表情，且受站点自定义表情份额上限约束。",
+		Security:    secure,
+		Parameters:  openapi3.Parameters{pathStrParam("customEmojiId", "自定义表情 ID")},
+		Responses: responses(
+			204, noContentResponse("已收藏"),
+			400, errorResponse("表情 ID 非法"),
+			403, errorResponse("不能收藏自己的表情或份额已满"),
+			404, errorResponse("表情不存在或已下架"),
+		),
+	})
+
+	del(t, "/chat/bot/emojis/{customEmojiId}/favorite", &openapi3.Operation{
+		Tags: []string{"聊天 Bot"}, Summary: "取消收藏自定义表情",
+		Description: "幂等：未收藏时取消也不报错；取消后本 bot 不能再发送该 [name:id]。",
+		Security:    secure,
+		Parameters:  openapi3.Parameters{pathStrParam("customEmojiId", "自定义表情 ID")},
+		Responses:   responses(204, noContentResponse("已取消收藏"), 400, errorResponse("表情 ID 非法")),
 	})
 }

@@ -139,9 +139,13 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	image := NewImageContainer(cfg.UploadDir, cfg.UploadPathPrefix, policies, encoder)
 	policies.SetImageMaintenanceStatus(image.DiskCache.Status)
 	linkPreview := NewLinkPreviewContainer(ctx, db, cfg, policies, encoder)
-	tweet := NewTweetContainer(db, rdb, cfg, permissionChecker, customEmoji.Service, bus, policies, encoder, linkPreview)
-	chat := NewChatContainer(db, cfg, customEmoji.Service, media.UploadService, bus)
+	tweet := NewTweetContainer(db, rdb, cfg, permissionChecker, customEmoji.Service, bus, policies, encoder, linkPreview, media.UploadService)
+	chat := NewChatContainer(db, cfg, customEmoji.Service, media.EmojiService, media.UploadService, bus)
 	chat.ChatService.WithTweetReader(tweet.TweetService)
+	// 推文互动事件复用 bot 的聊天 SSE 流，须在 ChatContainer 装配后订阅。
+	NewTweetBotEventSubscriber(
+		tweet.TweetService, chat.BotRepository, gormrepo.NewUserRepository(db), chat.BotConnections, log.Logger,
+	).Subscribe(bus)
 
 	c := &Container{
 		Music: music,

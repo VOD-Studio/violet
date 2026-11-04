@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -126,8 +127,10 @@ type UpdateBotReplyInput struct {
 	MessageID      domainshared.ID
 	Content        string
 	Thinking       string
-	Status         domainchat.BotReplyStatus
-	Revision       int64
+	// ToolCalls 工具调用累计快照；空列表清空已存调用。
+	ToolCalls []domainchat.BotToolCall
+	Status    domainchat.BotReplyStatus
+	Revision  int64
 }
 
 // EditMessageInput 编辑消息入参。
@@ -197,13 +200,33 @@ type UserDTO struct {
 	IsBot     bool   `json:"is_bot"`
 }
 
+// BotToolCallDTO 工具调用读模型。
+type BotToolCallDTO struct {
+	// ID 调用方稳定标识；未上报时为空。
+	ID string `json:"id,omitempty"`
+	// Name 工具名。
+	Name string `json:"name"`
+	// Status running、completed 或 failed；已存记录恒有值。
+	Status string `json:"status"`
+	// Arguments 调用参数原文。
+	Arguments string `json:"arguments,omitempty"`
+	// Result 返回内容原文。
+	Result string `json:"result,omitempty"`
+	// Error 失败原因原文。
+	Error string `json:"error,omitempty"`
+	// DurationMS 调用耗时（毫秒）。
+	DurationMS int64 `json:"duration_ms,omitempty"`
+}
+
 // BotReplyDTO 提供可恢复的生成状态。
 type BotReplyDTO struct {
 	Status                  string `json:"status"`
 	Thinking                string `json:"thinking,omitempty"`
 	ThinkingDefaultExpanded bool   `json:"thinking_default_expanded"`
-	Revision                int64  `json:"revision"`
-	UpdatedAt               string `json:"updated_at"`
+	// ToolCalls 工具调用累计快照；为空时省略。
+	ToolCalls []BotToolCallDTO `json:"tool_calls,omitempty"`
+	Revision  int64            `json:"revision"`
+	UpdatedAt string           `json:"updated_at"`
 }
 
 // MediaDTO 图片媒体读模型。
@@ -990,6 +1013,11 @@ func (s *Service) UpdateBotReply(ctx context.Context, in UpdateBotReplyInput) (M
 	if _, err := s.validateMentions(ctx, in.ConversationID, in.Content, conversation.Kind()); err != nil {
 		return MessageDTO{}, err
 	}
+	toolCalls, err := domainchat.NormalizeBotToolCalls(in.ToolCalls)
+	if err != nil {
+		return MessageDTO{}, err
+	}
+	in.ToolCalls = toolCalls
 	firstVisibleContent := message.Content() == "" && strings.TrimSpace(in.Content) != ""
 	previousRevision := int64(0)
 	if reply := message.BotReply(); reply != nil {
@@ -998,7 +1026,7 @@ func (s *Service) UpdateBotReply(ctx context.Context, in UpdateBotReplyInput) (M
 			return s.messageDTOWithReadState(ctx, message, in.UserID)
 		}
 	}
-	if err := message.AdvanceBotReply(in.Content, in.Thinking, in.Status, in.Revision, s.now()); err != nil {
+	if err := message.AdvanceBotReply(in.Content, in.Thinking, in.ToolCalls, in.Status, in.Revision, s.now()); err != nil {
 		return MessageDTO{}, err
 	}
 	members, err := s.repo.ListMembers(ctx, in.ConversationID, false)
@@ -1038,7 +1066,8 @@ func (s *Service) UpdateBotReply(ctx context.Context, in UpdateBotReplyInput) (M
 func sameBotReplySnapshot(message *domainchat.Message, in UpdateBotReplyInput) bool {
 	reply := message.BotReply()
 	return reply != nil && message.DeletedAt() == nil && in.Revision == reply.Revision() && in.Status == reply.Status() &&
-		strings.TrimSpace(in.Content) == message.Content() && in.Thinking == reply.Thinking()
+		strings.TrimSpace(in.Content) == message.Content() && in.Thinking == reply.Thinking() &&
+		slices.Equal(in.ToolCalls, reply.ToolCalls())
 }
 
 // dispatchBotMessage 新消息落库后向相关 bot 投递自带正文的事件快照。
@@ -1565,7 +1594,10 @@ func (s *Service) messageDTOWithReactions(ctx context.Context, message *domainch
 		return dto, nil
 	}
 	if reply := message.BotReply(); reply != nil {
-		botReply := &BotReplyDTO{Status: string(reply.Status()), Revision: reply.Revision(), UpdatedAt: reply.UpdatedAt().Format(time.RFC3339Nano)}
+		botReply := &BotReplyDTO{
+			Status: string(reply.Status()), Revision: reply.Revision(), UpdatedAt: reply.UpdatedAt().Format(time.RFC3339Nano),
+			ToolCalls: botToolCallDTOs(reply.ToolCalls()),
+		}
 		if s.botRepo != nil {
 			bot, err := s.botRepo.FindByUserID(ctx, message.SenderID())
 			if err != nil && !errors.Is(err, domainchat.ErrBotNotFound) {
@@ -1710,6 +1742,20 @@ func (s *Service) validateMentions(ctx context.Context, conversationID domainsha
 		}
 	}
 	return ids, nil
+}
+
+func botToolCallDTOs(calls []domainchat.BotToolCall) []BotToolCallDTO {
+	if len(calls) == 0 {
+		return nil
+	}
+	out := make([]BotToolCallDTO, 0, len(calls))
+	for _, call := range calls {
+		out = append(out, BotToolCallDTO{
+			ID: call.ID, Name: call.Name, Status: string(call.Status),
+			Arguments: call.Arguments, Result: call.Result, Error: call.Error, DurationMS: call.DurationMS,
+		})
+	}
+	return out
 }
 
 func messageReactionDTOs(reactions []domainchatreaction.AggregatedReaction) []MessageReactionDTO {
@@ -2033,7 +2079,7 @@ func userToDTO(user *domainuser.User) UserDTO {
 	if displayName == "" {
 		displayName = username
 	}
-	return UserDTO{ID: user.GetID().String(), Username: username, DisplayName: displayName, AvatarURL: user.AvatarURL(), IsBot: isBotVirtualUser(user)}
+	return UserDTO{ID: user.GetID().String(), Username: username, DisplayName: displayName, AvatarURL: user.AvatarURL(), IsBot: user.IsBot()}
 }
 
 func memberIDs(members []*domainchat.Member) []domainshared.ID {

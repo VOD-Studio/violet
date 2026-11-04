@@ -76,3 +76,39 @@ func TestSaveBotMediaRejectsMIMEOrContentMismatch(t *testing.T) {
 		t.Fatal("rejected media must not be saved")
 	}
 }
+
+func TestSaveBotTweetImage(t *testing.T) {
+	tmp := t.TempDir()
+	repo := &botMediaRepo{}
+	svc := NewUploadService(repo, nil, storage.NewLocalStorage(tmp, "/uploads/"), nil, filepath.Join(tmp, "chunks"), tmp, "/uploads/")
+	ownerID := domainshared.NewID()
+
+	got, err := svc.SaveBotTweetImage(context.Background(), SaveBotMediaInput{
+		OwnerID: ownerID, OriginalName: "pic.png", MIMEType: "image/png", Data: validPNG(t),
+	})
+	if err != nil {
+		t.Fatalf("SaveBotTweetImage() error = %v", err)
+	}
+	if repo.saved == nil || repo.saved.Purpose() != domainupload.PurposeTweet || !repo.saved.OwnerID().Equal(ownerID) {
+		t.Fatalf("saved file = %#v", repo.saved)
+	}
+	if !strings.HasPrefix(got.URL, "/uploads/tweet/") {
+		t.Fatalf("url = %q, want tweet purpose prefix", got.URL)
+	}
+}
+
+func TestSaveBotTweetImageRejectsMismatch(t *testing.T) {
+	tmp := t.TempDir()
+	repo := &botMediaRepo{}
+	svc := NewUploadService(repo, nil, storage.NewLocalStorage(tmp, "/uploads/"), nil, filepath.Join(tmp, "chunks"), tmp, "/uploads/")
+
+	_, err := svc.SaveBotTweetImage(context.Background(), SaveBotMediaInput{
+		OwnerID: domainshared.NewID(), MIMEType: "image/jpeg", Data: validPNG(t),
+	})
+	if err == nil {
+		t.Fatal("expected MIME mismatch error")
+	}
+	if repo.saved != nil {
+		t.Fatal("rejected media must not be saved")
+	}
+}

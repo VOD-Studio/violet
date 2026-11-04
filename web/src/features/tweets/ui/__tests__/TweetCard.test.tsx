@@ -254,3 +254,23 @@ describe("TweetCard — 整卡导航边界", () => {
 		});
 	});
 });
+
+describe("TweetCard — Bot 作者标识", () => {
+	afterEach(() => cleanup());
+
+	it("Bot 作者在作者名旁展示 BOT 徽章", () => {
+		render(
+			<TweetCard
+				tweet={makeTweet({
+					author: { id: "u-bot", username: "bot", avatar_url: "", is_bot: true },
+				})}
+			/>,
+		);
+		expect(screen.getByText("BOT")).toBeTruthy();
+	});
+
+	it("人类作者不展示 BOT 徽章", () => {
+		render(<TweetCard tweet={makeTweet()} />);
+		expect(screen.queryByText("BOT")).toBeNull();
+	});
+});

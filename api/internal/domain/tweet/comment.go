@@ -71,6 +71,18 @@ type Picture struct {
 // 兜底校验——body 与 pictures 至少其一非空）。创建后需调用 SetParent 设置层级
 // 与物化路径（SetParent(nil) 标记顶层，SetParent(parent) 标记回复）。
 func NewComment(tweetID, authorID shared.ID, body string) (*Comment, error) {
+	return NewCommentWithID(shared.NewID(), tweetID, authorID, body)
+}
+
+// NewCommentWithID 用调用方指定的 ID 创建评论。
+//
+// 供外部 bot 的幂等重试使用：请求键即评论 ID，重试覆盖同一条而不是再发一条。
+// 除主键外与 NewComment 完全一致（校验、时间戳、空图起步）。ID 必须非零，
+// 否则插入会撞上与「生成 ID」无法区分的占位主键。
+func NewCommentWithID(id, tweetID, authorID shared.ID, body string) (*Comment, error) {
+	if id.IsZero() {
+		return nil, shared.Validation("评论 ID 不能为空")
+	}
 	body = strings.TrimSpace(body)
 	if utf8.RuneCountInString(body) > MaxCommentBodyLen {
 		return nil, shared.Validation("评论内容不能超过 500 字")
@@ -78,7 +90,7 @@ func NewComment(tweetID, authorID shared.ID, body string) (*Comment, error) {
 
 	now := time.Now()
 	return &Comment{
-		id:         shared.NewID(),
+		id:         id,
 		tweetID:    tweetID,
 		authorID:   authorID,
 		body:       body,

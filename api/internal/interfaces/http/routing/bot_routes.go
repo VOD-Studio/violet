@@ -28,5 +28,11 @@ func registerBotRoutes(r chi.Router, d *Deps) {
 			Patch("/conversations/{conversationId}/messages/{messageId}", h.EditMessage)
 		br.With(d.limit("chat-bot-typing", "POST /api/v1/chat/bot/conversations/{conversationId}/typing")).
 			Post("/conversations/{conversationId}/typing", h.SetTyping)
+		// 目录只读，无需限流；收藏是写操作，按 bot 虚拟用户计数。
+		br.Get("/emojis", h.ListEmojis)
+		br.With(d.limit("chat-bot-emoji", "POST /api/v1/chat/bot/emojis/{customEmojiId}/favorite")).
+			Post("/emojis/{customEmojiId}/favorite", h.FavoriteEmoji)
+		br.With(d.limit("chat-bot-emoji", "DELETE /api/v1/chat/bot/emojis/{customEmojiId}/favorite")).
+			Delete("/emojis/{customEmojiId}/favorite", h.UnfavoriteEmoji)
 	})
 }

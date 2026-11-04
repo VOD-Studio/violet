@@ -29,19 +29,19 @@ import (
 	galleryhttp "blog-api/internal/interfaces/http/handler/gallery"
 	githubhttp "blog-api/internal/interfaces/http/handler/github"
 	imagehttp "blog-api/internal/interfaces/http/handler/image"
+	linkpreviewhttp "blog-api/internal/interfaces/http/handler/linkpreview"
 	mediahttp "blog-api/internal/interfaces/http/handler/media"
 	musichttp "blog-api/internal/interfaces/http/handler/music"
 	notehttp "blog-api/internal/interfaces/http/handler/note"
 	notificationhttp "blog-api/internal/interfaces/http/handler/notification"
 	ompusagehttp "blog-api/internal/interfaces/http/handler/omp_usage"
 	personahttp "blog-api/internal/interfaces/http/handler/persona"
-	presencehttp "blog-api/internal/interfaces/http/handler/presence"
 	posthttp "blog-api/internal/interfaces/http/handler/post"
+	presencehttp "blog-api/internal/interfaces/http/handler/presence"
 	publicationhttp "blog-api/internal/interfaces/http/handler/publication"
 	releaseshttp "blog-api/internal/interfaces/http/handler/releases"
 	roadmaphttp "blog-api/internal/interfaces/http/handler/roadmap"
 	rolehttp "blog-api/internal/interfaces/http/handler/role"
-	linkpreviewhttp "blog-api/internal/interfaces/http/handler/linkpreview"
 	serieshttp "blog-api/internal/interfaces/http/handler/series"
 	settingshttp "blog-api/internal/interfaces/http/handler/settings"
 	siteidentityhttp "blog-api/internal/interfaces/http/handler/siteidentity"
@@ -113,17 +113,19 @@ type Deps struct {
 	System                 *systemhttp.Handler
 	Image                  *imagehttp.Handler
 	Tweet                  *tweethttp.Handler
-	FriendLink             *friendlinkhttp.Handler
-	LinkPreview            *linkpreviewhttp.Handler
-	Series                 *serieshttp.Handler
-	Gallery                *galleryhttp.Handler
-	Note                   *notehttp.Handler
-	Publication            *publicationhttp.Handler
-	Persona                *personahttp.Handler
-	Notification           *notificationhttp.Handler
-	NotificationStream     *notificationhttp.StreamHandler
-	Chat                   *chathttp.Handler
-	ChatStream             *chathttp.StreamHandler
+	// TweetBot 外部 bot 的推文写入面（与 ChatBot 一样挂根 router 绕开 CSRF）。
+	TweetBot           *tweethttp.BotHandler
+	FriendLink         *friendlinkhttp.Handler
+	LinkPreview        *linkpreviewhttp.Handler
+	Series             *serieshttp.Handler
+	Gallery            *galleryhttp.Handler
+	Note               *notehttp.Handler
+	Publication        *publicationhttp.Handler
+	Persona            *personahttp.Handler
+	Notification       *notificationhttp.Handler
+	NotificationStream *notificationhttp.StreamHandler
+	Chat               *chathttp.Handler
+	ChatStream         *chathttp.StreamHandler
 	// Bot API（外部程序以 Bearer bot token 收发消息）与其后台管理。
 	BotAuth      func(http.Handler) http.Handler
 	ChatBot      *chathttp.BotHandler

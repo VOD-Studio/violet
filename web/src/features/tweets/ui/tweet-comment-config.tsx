@@ -8,6 +8,7 @@
  *   - renderExpandedReplies：包装 useTweetReplies（展开时才挂载 → 懒加载，
  *     修复旧实现顶层评论挂载即拉回复的 N+1）
  *   - 作者徽章：comment.author.id === tweetAuthorId（后端无 is_author，前端推导）
+ *   - renderMetaBadges：Bot 作者标识（author.is_bot）
  */
 import type { TweetComment, TweetCommentPicture } from "@entities/tweet/model/types";
 import { contentImageUrl, imageUrl } from "@shared/lib/image-url";
@@ -20,6 +21,7 @@ import { EmojiText } from "@shared/ui/emoji-text";
 import { ImageGrid } from "@shared/ui/image-grid";
 import { Trash2 } from "lucide-react";
 import { useTweetReplies } from "../api/queries";
+import { BotBadge } from "./BotBadge";
 import { TweetCommentForm } from "./TweetCommentForm";
 
 export interface BuildTweetCommentConfigArgs {
@@ -82,6 +84,7 @@ export function buildTweetCommentConfig({
 			raw: c,
 		}),
 		repliesMode: "toggle",
+		renderMetaBadges: (item) => <BotBadge show={!!item.raw.author.is_bot} />,
 		renderBody: (item) => (
 			<>
 				<p className="mt-2 whitespace-pre-wrap wrap-break-word text-sm text-foreground">

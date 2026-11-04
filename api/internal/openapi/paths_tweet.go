@@ -12,6 +12,7 @@ func registerTweetPaths(t *openapi3.T) {
 		"id":         reqStr("作者用户 ID"),
 		"username":   reqStr("用户名"),
 		"avatar_url": reqStr("头像 URL"),
+		"is_bot":     optBool("作者是否为 bot 虚拟用户"),
 	})
 
 	registerSchema(t, "TweetEmojiRef", openapi3.Schemas{
@@ -74,6 +75,7 @@ func registerTweetPaths(t *openapi3.T) {
 		"cover_url":    reqStr("主页封面 URL，未设置时为空串"),
 		"bio":          reqStr("个人简介"),
 		"created_at":   reqStr("注册时间（RFC3339）"),
+		"is_bot":       optBool("该主页是否为 bot 虚拟用户"),
 	})
 
 	registerSchema(t, "CreateTweetRequest", openapi3.Schemas{
