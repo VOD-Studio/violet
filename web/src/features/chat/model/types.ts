@@ -12,12 +12,26 @@ export interface ChatUser {
 	is_bot?: boolean;
 }
 
+export interface BotToolCall {
+	id?: string;
+	name: string;
+	status: "running" | "completed" | "failed";
+	/** 原始 JSON/文本，按原样展示。 */
+	arguments?: string;
+	result?: string;
+	error?: string;
+	/** 毫秒。 */
+	duration_ms?: number;
+}
+
 export interface BotReply {
 	status: "pending" | "thinking" | "streaming" | "completed" | "failed";
 	thinking?: string;
 	thinking_default_expanded?: boolean;
 	revision: number;
 	updated_at: string;
+	/** 每次快照都是完整累积列表，省略或空数组表示没有工具调用。 */
+	tool_calls?: BotToolCall[];
 }
 
 export interface ChatMember {

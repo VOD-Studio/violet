@@ -7,6 +7,7 @@ import { chatKeys } from "../api/keys";
 import { useChatTypingStore } from "../model/chat-typing-store";
 import type {
 	BotReply,
+	BotToolCall,
 	ChatConversation,
 	ChatEvent,
 	ChatMessage,
@@ -216,15 +217,59 @@ function hasCustomEmojiToken(content: string): boolean {
 	return /\[[^\]]+:[0-9a-fA-F-]{36}\]/.test(content);
 }
 
+const BOT_REPLY_STATUSES = ["pending", "thinking", "streaming", "completed", "failed"];
+const TOOL_CALL_STATUSES = ["running", "completed", "failed"];
+const MAX_TOOL_CALLS = 32;
+
+function parseBotToolCalls(value: unknown): BotToolCall[] | undefined {
+	if (!Array.isArray(value)) return undefined;
+	const calls: BotToolCall[] = [];
+	for (const item of value) {
+		if (calls.length >= MAX_TOOL_CALLS) break;
+		if (!item || typeof item !== "object") continue;
+		const call = item as Record<string, unknown>;
+		if (typeof call.name !== "string" || call.name === "") continue;
+		// 缺省状态按 completed 收口；显式出现未知状态则丢弃该条，避免把未知语义画成成功。
+		const status = call.status ?? "completed";
+		if (typeof status !== "string" || !TOOL_CALL_STATUSES.includes(status)) continue;
+		const parsed: BotToolCall = {
+			name: call.name,
+			status: status as BotToolCall["status"],
+		};
+		if (typeof call.id === "string" && call.id !== "") parsed.id = call.id;
+		if (typeof call.arguments === "string") parsed.arguments = call.arguments;
+		if (typeof call.result === "string") parsed.result = call.result;
+		if (typeof call.error === "string") parsed.error = call.error;
+		if (
+			typeof call.duration_ms === "number" &&
+			Number.isFinite(call.duration_ms) &&
+			call.duration_ms >= 0
+		)
+			parsed.duration_ms = call.duration_ms;
+		calls.push(parsed);
+	}
+	return calls.length > 0 ? calls : undefined;
+}
+
 function parseBotReply(value: unknown): BotReply | undefined {
 	if (!value || typeof value !== "object") return undefined;
 	const reply = value as Record<string, unknown>;
 	if (
 		typeof reply.status !== "string" ||
-		!["pending", "thinking", "streaming", "completed", "failed"].includes(reply.status) ||
+		!BOT_REPLY_STATUSES.includes(reply.status) ||
 		typeof reply.revision !== "number" ||
 		typeof reply.updated_at !== "string"
 	)
 		return undefined;
-	return reply as unknown as BotReply;
+	const parsed: BotReply = {
+		status: reply.status as BotReply["status"],
+		revision: reply.revision,
+		updated_at: reply.updated_at,
+	};
+	if (typeof reply.thinking === "string") parsed.thinking = reply.thinking;
+	if (typeof reply.thinking_default_expanded === "boolean")
+		parsed.thinking_default_expanded = reply.thinking_default_expanded;
+	const toolCalls = parseBotToolCalls(reply.tool_calls);
+	if (toolCalls) parsed.tool_calls = toolCalls;
+	return parsed;
 }
