@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Violet 登录</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&family=Noto+Serif+SC:wght@400;500;600;700&family=Alex+Brush&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Maple Mono";font-weight:400;font-style:normal;src:url(/_blob/a3ecea3add4961def4d089b95f486230) format("woff2")}
+@font-face{font-family:"Maple Mono";font-weight:500;font-style:normal;src:url(/_blob/1ba23035f8e49762aeac0a2a66f83fa0) format("woff2")}
+body{margin:0}
+a{color:inherit;text-decoration:none}
+.paper-l{position:absolute;inset:0;background-image:url(/_blob/66391f4a5c5b623abcbda5bc91818ab0);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.paper-d{position:absolute;inset:0;background-image:url(/_blob/b0a1c287fd95586fcb700c431de8f4c5);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.num{font-family:"Maple Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.mono{font-family:"Maple Mono",ui-monospace,monospace}
+.sheet{background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);border:1px solid var(--ol)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;height:36px;padding:0 16px;border:0;border-radius:999px;font-family:inherit;font-size:14px;font-weight:500;white-space:nowrap;background:var(--sunk);color:var(--fg);cursor:pointer}
+.btn.sm{height:32px;padding:0 12px}.btn.lg{height:40px;font-size:16px}
+.btn.pri{background:var(--fg);color:var(--bg)}.btn.gho{background:transparent}
+.btn.ic{width:32px;padding:0}
+.seg{display:inline-flex;padding:2px;border-radius:999px;background:var(--sunk)}
+.sg{display:inline-flex;align-items:center;gap:6px;box-sizing:border-box;height:32px;padding:0 12px;border-radius:999px;font-size:14px;color:var(--muted)}
+.sg i{font-style:normal;font-size:12px;opacity:.7}
+.sg.on{background:var(--sheet);color:var(--fg);font-weight:500;box-shadow:0 4px 24px rgb(0 0 0 / .05)}
+.chip{display:inline-flex;align-items:center;gap:4px;box-sizing:border-box;height:24px;padding:0 10px;border-radius:999px;background:var(--sunk);font-size:12px;font-weight:500;color:var(--muted)}
+.chip.ac{background:color-mix(in oklab,var(--deco) 16%,var(--sheet));color:var(--accent)}
+.chip.ok{background:color-mix(in oklab,var(--ok) 12%,var(--sheet));color:var(--ok)}
+.fld{display:flex;align-items:center;gap:8px;box-sizing:border-box;height:36px;padding:0 12px;border-radius:12px;background:var(--sunk);font-size:14px;color:var(--muted)}
+.lab{display:block;margin-bottom:8px;font-size:14px;font-weight:600}
+.h1{margin:0;font-size:52px;font-weight:600;line-height:1.15;letter-spacing:-0.01em}
+
+.or{display:flex;align-items:center;gap:12px;margin:24px 0;font-size:13px;color:var(--muted)}.or::before,.or::after{content:"";flex:1;height:1px;background:var(--rule)}
+
+</style>
+</helmet>
+<div style="{{vars}}position:relative;overflow:hidden;width:1440px;height:900px;display:flex;flex-direction:column;background:var(--bg);color:var(--fg);font-family:'Songti SC','Noto Serif SC','Source Han Serif SC',STSong,SimSun,serif;font-size:15px;line-height:1.8">
+<div class="paper-l" style="display:{{showLight}}"></div>
+<div class="paper-d" style="display:{{showDark}}"></div>
+
+
+<a href="#" style="position:absolute;z-index:3;left:48px;top:28px;font:700 13px 'Maple Mono',monospace;letter-spacing:.2em">VIOLET</a>
+<img src="{{art}}" alt="" style="position:absolute;z-index:1;left:0;top:0;width:900px;height:900px;object-fit:cover;object-position:100% 0;transform:scaleX(-1);mix-blend-mode:{{blend}};-webkit-mask-image:radial-gradient(circle at 0% 0%,#000 50%,transparent 85%);mask-image:radial-gradient(circle at 0% 0%,#000 50%,transparent 85%)">
+<div style="position:absolute;z-index:2;left:120px;bottom:96px;max-width:420px"><p style="margin:0;font-size:28px;line-height:1.6">一花一叶，<br>皆成文章。</p><p style="margin:16px 0 0;font:400 30px/1 'Alex Brush',cursive;color:var(--muted)">xunrua</p></div>
+<main style="position:absolute;z-index:3;left:780px;top:50%;width:400px;transform:translateY(-50%)">
+  <h1 style="margin:0;font-size:32px;font-weight:600">登录</h1>
+  <p style="margin:8px 0 0;font-size:15px;color:var(--muted)">评论、批注和聊天需要登录。</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:32px"><button class="btn" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>GitHub</button><button class="btn" type="button"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z" fill="#4285F4"/><path d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z" fill="#34A853"/><path d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1a10 10 0 0 0 0 9.2z" fill="#FBBC05"/><path d="M12 6c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.4L6.4 10C7.2 7.8 9.4 6 12 6z" fill="#EA4335"/></svg>Google</button></div>
+  <div class="or">或用邮箱</div>
+  <label style="display:block"><span class="lab">邮箱</span><span class="fld" style="color:var(--fg)">linjian@example.com</span></label>
+  <label style="display:block;margin-top:16px"><span class="lab" style="display:flex;justify-content:space-between">密码<a href="#" style="font-weight:400;font-size:13px;color:var(--accent)">忘记密码？</a></span><span class="fld" style="color:var(--fg);letter-spacing:.2em"><span style="flex:1">••••••••••</span><button class="btn gho ic" aria-label="显示密码" style="margin-right:-8px;letter-spacing:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg></button></span></label>
+  <label style="display:flex;align-items:center;gap:8px;margin-top:16px;font-size:14px"><span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:6px;background:var(--fg)"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--bg)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg></span>保持登录 30 天</label>
+  <button class="btn pri lg" type="button" style="width:100%;margin-top:28px">登录</button>
+  <p style="margin:24px 0 0;text-align:center;font-size:14px;color:var(--muted)">还没有账号？<a href="#" style="color:var(--fg);font-weight:600">注册</a></p>
+</main>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"season":{"editor":"enum","options":["春","夏","秋","冬"],"default":"春"},"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const S = {
+      '春': { seed: '#f47983', h: 16.6, l: '/_blob/d8aaad66118cac26d5af34610af527bf', d: '/_blob/0cfa75d49c85d4df8e63d591ce6c7ea1' },
+      '夏': { seed: '#2f9e7a', h: 162, l: '/_blob/c0353bf8edad55e8130fb95826b3799f', d: '/_blob/8ab23c87229ff622bac13566cfb665fd' },
+      '秋': { seed: '#d9a21b', h: 82.95, l: '/_blob/d837ab2ada8c6a3cbb1a71fea71be6e2', d: '/_blob/8a07e26da1a24b8a9f19bf09a30aca11' },
+      '冬': { seed: '#7d8ea3', h: 252, l: '/_blob/eb4210561b3c04659b349b6813d7ba9c', d: '/_blob/f4961af0e552cbba606908f217a44b37' },
+    };
+    const season = S[this.props.season] ? this.props.season : '春';
+    const dark = !!this.props.dark;
+    const s = S[season], h = s.h;
+    const vars = dark
+      ? `--bg:oklch(0.17 0.0087 ${h});--sheet:oklch(0.235 0.011 ${h});--sunk:oklch(0.29 0.012 ${h});--fg:oklch(0.9373 0.015 ${h});--muted:oklch(0.8573 0.0225 ${h});--rule:oklch(0.9373 0.015 ${h} / .12);--rule2:oklch(0.9373 0.015 ${h} / .3);--deco:${s.seed};--accent:oklch(0.8589 0.1031 ${h});--danger:oklch(0.74 0.14 25);--ok:oklch(0.74 0.15 155);--ol:rgb(255 255 255 / .08);`
+      : `--bg:oklch(0.968 0.006 ${h});--sheet:oklch(0.994 0.003 ${h});--sunk:oklch(0.945 0.007 ${h});--fg:oklch(0.3331 0.0175 ${h});--muted:oklch(0.4717 0.0225 ${h});--rule:oklch(0.3331 0.0175 ${h} / .11);--rule2:oklch(0.3331 0.0175 ${h} / .3);--deco:${s.seed};--accent:oklch(0.4739 0.0974 ${h});--danger:oklch(0.52 0.16 27);--ok:oklch(0.52 0.13 155);--ol:transparent;`;
+    const base = { vars, season, dark, art: dark ? s.d : s.l, blend: dark ? 'normal' : 'multiply', showLight: dark ? 'none' : 'block', showDark: dark ? 'block' : 'none' };
+    const extra = {};
+    return Object.assign(base, extra);
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Violet 首页（新背景材质与题签导航）</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Noto+Serif+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Maple Mono";font-weight:400;font-style:normal;src:url(/_blob/a3ecea3add4961def4d089b95f486230) format("woff2")}
+@font-face{font-family:"Maple Mono";font-weight:500;font-style:normal;src:url(/_blob/1ba23035f8e49762aeac0a2a66f83fa0) format("woff2")}
+@font-face{font-family:"Maple Mono";font-weight:700;font-style:normal;src:url(/_blob/bf99f5c378937eca7117785bf1df1b55) format("woff2")}
+body{margin:0}
+a{color:inherit;text-decoration:none}
+.paper-l{position:absolute;inset:0;background-image:url(/_blob/66391f4a5c5b623abcbda5bc91818ab0);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.paper-d{position:absolute;inset:0;background-image:url(/_blob/b0a1c287fd95586fcb700c431de8f4c5);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.lk{display:inline-flex;align-items:center;gap:8px;box-sizing:border-box;height:36px;padding:0 16px;border-radius:999px;background:var(--card);box-shadow:0 4px 24px rgb(0 0 0 / .05);font-size:14px;font-weight:500;color:var(--fg)}
+.soc{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:999px;color:var(--muted)}
+</style>
+</helmet>
+<div style="{{vars}}position:relative;overflow:hidden;width:1440px;height:900px;background:var(--bg);color:var(--fg);font-family:'Songti SC','Noto Serif SC','Source Han Serif SC',STSong,SimSun,serif">
+
+<div class="paper-l" style="display:{{showLight}}"></div>
+<div class="paper-d" style="display:{{showDark}}"></div>
+<div style="position:absolute;left:50%;top:34%;width:720px;height:460px;margin-left:-360px;border-radius:999px;background:var(--deco);opacity:.06;filter:blur(130px);pointer-events:none"></div>
+<img src="{{art}}" alt="" style="position:absolute;top:0;right:0;width:633px;pointer-events:none;mix-blend-mode:{{blend}};-webkit-mask-image:radial-gradient(circle at 100% 0%,#000 62%,transparent 96%);mask-image:radial-gradient(circle at 100% 0%,#000 62%,transparent 96%)">
+
+<div style="position:absolute;z-index:20;top:0;left:0;right:0">
+  <dc-import name="Header" state="rest" section="首页" presence="music" announce="{{ true }}" bare="{{ true }}" season="{{season}}" dark="{{dark}}" hint-size="1440px,100px"></dc-import>
+</div>
+
+<section aria-label="首页序章" style="position:absolute;z-index:2;left:0;right:0;top:40px;bottom:46px;display:flex;align-items:center;justify-content:center">
+  <div style="width:1024px;padding:0 48px;box-sizing:border-box;display:grid;grid-template-columns:240px 1fr;gap:64px;align-items:center">
+    <div style="width:240px;height:240px;border-radius:12px;overflow:hidden;background:var(--card)"><img src="/_blob/5f28c4bf59a4c2a6947f80a6b4b0bc2f" alt="xunrua 的头像" style="display:block;width:100%;height:100%;object-fit:cover"></div>
+    <div style="max-width:576px;display:flex;flex-direction:column;gap:20px">
+      <h1 style="margin:0;font-family:'Maple Mono',ui-monospace,monospace;font-size:60px;font-weight:400;line-height:1.12;letter-spacing:-0.03em">Hi, I'm <span style="font-weight:500;color:var(--nameColor);text-decoration:underline wavy;text-decoration-color:color-mix(in oklab,var(--deco) 35%,transparent);text-underline-offset:10px">xunrua</span>.</h1>
+      <div style="position:relative;padding-left:18px">
+        <span style="position:absolute;left:0;top:2px;bottom:2px;width:2px;border-radius:2px;background:color-mix(in oklab,var(--deco) 70%,transparent)"></span>
+        <p style="margin:0;font:italic 400 18px/1.6 Georgia,'Noto Serif SC',serif">“We can only see a short distance ahead, but we can see plenty there that needs to be done.”</p>
+        <p style="margin:2px 0 0;font:400 15px/1.7 Georgia,'Noto Serif SC',serif;color:var(--muted)">「我们只能看清眼前的一小段路，但已足以看清有无数的事亟待完成。」</p>
+        <p style="margin:6px 0 0;text-align:right;font:400 28px/1 'Alex Brush',cursive;color:var(--muted)">– Alan Turing</p>
+      </div>
+      <p style="margin:0;font:400 16px/1.8 Georgia,'Noto Serif SC',serif;color:var(--fg);opacity:.82">写代码的人，也写字。<span style="color:var(--muted)">全栈工程师，正在写 violet 与 kite。</span></p>
+      <nav aria-label="站长的链接" style="display:flex;align-items:center;gap:8px">
+        <a href="#" class="lk"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>GitHub</a>
+        <a href="#" class="lk"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16M5 19h.01"/></svg>订阅</a>
+        <a href="#" class="lk"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/><path d="M8 7h6M8 11h8"/></svg>API 文档</a>
+      </nav>
+    </div>
+  </div>
+</section>
+
+<div style="position:absolute;z-index:3;left:0;right:0;bottom:0;height:46px;box-sizing:border-box;border-top:1px solid var(--hair);background:color-mix(in oklab,var(--bg) 50%,transparent);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:space-between;padding:0 160px;font-size:12px;color:var(--muted)">
+  <a href="#" style="display:flex;align-items:center;gap:10px"><span style="width:6px;height:6px;border-radius:50%;background:var(--deco)"></span><span style="font-weight:500;color:var(--fg)">最新发布</span><span style="color:var(--border)">/</span><span>测试发送</span><span style="opacity:.7">文心 · 2026.10.10</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+  <a href="#" style="display:flex;align-items:center;gap:6px"><span>开卷漫游</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg></a>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"season":{"editor":"enum","options":["春","夏","秋","冬"],"default":"春"},"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const S = {
+      '春': { seed: '#f47983', h: 16.6, l: '/_blob/d8aaad66118cac26d5af34610af527bf', d: '/_blob/0cfa75d49c85d4df8e63d591ce6c7ea1' },
+      '夏': { seed: '#2f9e7a', h: 162, l: '/_blob/c0353bf8edad55e8130fb95826b3799f', d: '/_blob/8ab23c87229ff622bac13566cfb665fd' },
+      '秋': { seed: '#d9a21b', h: 82.95, l: '/_blob/d837ab2ada8c6a3cbb1a71fea71be6e2', d: '/_blob/8a07e26da1a24b8a9f19bf09a30aca11' },
+      '冬': { seed: '#7d8ea3', h: 252, l: '/_blob/eb4210561b3c04659b349b6813d7ba9c', d: '/_blob/f4961af0e552cbba606908f217a44b37' },
+    };
+    const season = S[this.props.season] ? this.props.season : '春';
+    const dark = !!this.props.dark;
+    const s = S[season], h = s.h;
+    const vars = dark
+      ? `--bg:oklch(0.17 0.0087 ${h});--card:oklch(0.205 0.0112 ${h});--fg:oklch(0.9373 0.015 ${h});--muted:oklch(0.8573 0.0225 ${h});--border:oklch(0.345 0.0175 ${h});--hair:oklch(0.9373 0.015 ${h} / .16);--deco:${s.seed};--nameColor:oklch(0.8589 0.1031 ${h});`
+      : `--bg:oklch(0.975 0.0055 ${h});--card:oklch(0.985 0.0065 ${h});--fg:oklch(0.3331 0.0175 ${h});--muted:oklch(0.4717 0.0225 ${h});--border:oklch(0.882 0.0175 ${h});--hair:oklch(0.3331 0.0175 ${h} / .14);--deco:${s.seed};--nameColor:oklch(0.4739 0.0974 ${h});`;
+    return {
+      vars, season, dark,
+      art: dark ? s.d : s.l,
+      blend: dark ? 'normal' : 'multiply',
+      showLight: dark ? 'none' : 'block',
+      showDark: dark ? 'block' : 'none',
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Violet 控件</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Maple Mono";font-weight:400;font-style:normal;src:url(/_blob/a3ecea3add4961def4d089b95f486230) format("woff2")}
+@font-face{font-family:"Maple Mono";font-weight:500;font-style:normal;src:url(/_blob/1ba23035f8e49762aeac0a2a66f83fa0) format("woff2")}
+@font-face{font-family:"Maple Mono";font-weight:700;font-style:normal;src:url(/_blob/bf99f5c378937eca7117785bf1df1b55) format("woff2")}
+body{margin:0}
+a{color:inherit;text-decoration:none}
+.paper-l{position:absolute;inset:0;background-image:url(/_blob/66391f4a5c5b623abcbda5bc91818ab0);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.paper-d{position:absolute;inset:0;background-image:url(/_blob/b0a1c287fd95586fcb700c431de8f4c5);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.blk{display:grid;grid-template-columns:240px minmax(0,1fr);gap:56px;padding:56px 0;border-top:1px solid var(--rule)}
+.blk h2{margin:0;font-size:28px;font-weight:400;letter-spacing:-0.02em;line-height:1.2}
+.blk .lead{margin:12px 0 0;font-size:13px;line-height:1.8;color:var(--muted)}
+.cap{font-size:12px;color:var(--muted)}
+.num{font-family:"Maple Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.row{display:flex;align-items:center;flex-wrap:wrap;gap:12px}
+.stack{display:flex;flex-direction:column;gap:32px}
+.spec{width:100%;border-collapse:collapse;font-size:13.5px}
+.spec th{padding:0 0 12px;text-align:left;font-size:12px;font-weight:400;color:var(--muted);border-bottom:1px solid var(--rule)}
+.spec td{padding:16px 16px 16px 0;border-bottom:1px solid var(--rule);vertical-align:middle}
+.spec td:last-child{color:var(--muted);padding-right:0}
+/* 按钮：小 32 / 中 36 / 大 40，触屏各加 4 */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;height:36px;padding:0 16px;border:0;border-radius:999px;font-family:inherit;font-size:14px;font-weight:500;line-height:1;white-space:nowrap;cursor:pointer;background:transparent;color:var(--fg)}
+.btn.sm{height:32px;padding:0 12px}
+.btn.lg{height:40px;padding:0 16px;font-size:16px}
+.btn.ic{width:36px;padding:0}.btn.ic.sm{width:32px}.btn.ic.lg{width:40px}
+.pri{background:var(--fg);color:var(--bg)}.pri.hov{background:color-mix(in oklab,var(--fg) 86%,var(--bg))}.pri.prs{background:color-mix(in oklab,var(--fg) 76%,var(--bg))}
+.sec{background:var(--sunk)}.sec.hov{background:color-mix(in oklab,var(--sunk) 90%,var(--fg))}.sec.prs{background:color-mix(in oklab,var(--sunk) 82%,var(--fg))}
+.gho.hov{background:var(--sunk)}.gho.prs{background:color-mix(in oklab,var(--sunk) 90%,var(--fg))}
+.dan{background:color-mix(in oklab,var(--danger) 12%,var(--sheet));color:var(--danger)}
+.lnk{height:auto;padding:0;border-radius:0;color:var(--accent);text-decoration:underline;text-decoration-color:color-mix(in oklab,var(--accent) 40%,transparent);text-underline-offset:4px}
+.foc{outline:2px solid var(--accent);outline-offset:2px}
+.dis{opacity:.42;cursor:not-allowed}
+.dim{display:flex;align-items:center;gap:10px}
+.dim i{position:relative;display:block;width:7px;border:1px solid var(--rule2);border-left:0;box-sizing:border-box}
+/* 输入 */
+.lab{display:block;margin-bottom:8px;font-size:14px;font-weight:500}
+.fld{display:flex;align-items:center;gap:8px;box-sizing:border-box;height:36px;padding:0 12px;border-radius:12px;background:var(--sunk);font-size:14px;color:var(--fg);transition:background-color .16s ease-out,box-shadow .16s ease-out}
+.fld:hover{background:color-mix(in oklab,var(--sunk) 92%,var(--fg))}
+.fld .ph{color:var(--muted)}
+.fld.f{background:var(--sheet);box-shadow:0 0 0 1px color-mix(in oklab,var(--fg) 28%,transparent),0 0 0 4px color-mix(in oklab,var(--deco) 18%,transparent)}
+.fld.e{background:color-mix(in oklab,var(--danger) 5%,var(--sheet));box-shadow:0 0 0 1px color-mix(in oklab,var(--danger) 60%,transparent),0 0 0 4px color-mix(in oklab,var(--danger) 12%,transparent)}
+.fld.d{opacity:.5}
+.hint{margin-top:6px;font-size:12px;color:var(--muted)}.hint.e{color:var(--danger)}
+/* 选择与切换 */
+.cb{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;width:16px;height:16px;border-radius:6px;box-shadow:inset 0 0 0 1px var(--rule2);background:var(--sheet);flex:none}
+.cb.on{background:var(--fg);box-shadow:none}
+.rd{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;width:16px;height:16px;border-radius:50%;box-shadow:inset 0 0 0 1px var(--rule2);background:var(--sheet);flex:none}
+.rd.on{background:var(--fg);box-shadow:none}.rd.on::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--bg)}
+.sw{position:relative;box-sizing:border-box;width:36px;height:20px;border-radius:999px;background:color-mix(in oklab,var(--sunk) 80%,var(--fg));flex:none}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05)}
+.sw.on{background:var(--fg)}.sw.on::after{left:18px;background:var(--bg)}
+.opt{display:inline-flex;align-items:center;gap:8px;font-size:14px}
+.seg{display:inline-flex;padding:2px;border-radius:999px;background:var(--sunk)}
+.sg{display:inline-flex;align-items:center;gap:6px;box-sizing:border-box;height:32px;padding:0 12px;border-radius:999px;font-size:14px;color:var(--muted)}
+.sg i{font-style:normal;font-size:12px;opacity:.7}
+.sg.on{background:var(--sheet);color:var(--fg);font-weight:500;box-shadow:0 4px 24px rgb(0 0 0 / .05)}
+.chip{display:inline-flex;align-items:center;gap:4px;box-sizing:border-box;height:24px;padding:0 10px;border-radius:999px;background:var(--sunk);font-size:12px;font-weight:500;color:var(--muted)}
+.chip.sm{height:20px;padding:0 8px}.chip.lg{height:28px;padding:0 12px;font-size:14px}
+.chip.ac{background:color-mix(in oklab,var(--deco) 16%,var(--sheet));color:var(--accent)}
+.chip.dg{background:color-mix(in oklab,var(--danger) 11%,var(--sheet));color:var(--danger)}
+.chip.ok{background:color-mix(in oklab,var(--ok) 12%,var(--sheet));color:var(--ok)}
+/* 键帽（HeroUI Kbd）：组合键一个键帽 */
+.kbd{display:inline-flex;align-items:center;justify-content:center;gap:2px;box-sizing:border-box;min-width:24px;height:24px;padding:0 8px;border-radius:8px;background:var(--sunk);font:500 14px Inter,"Noto Sans SC",system-ui,sans-serif;color:var(--muted);white-space:nowrap}
+.kbd > *{text-box:trim-both cap alphabetic}
+.kbd abbr{text-decoration:none}
+.kbd.light{background:transparent;padding:0 2px}
+/* 浮层 */
+.pnl{box-sizing:border-box;background:var(--sheet);border-radius:16px;box-shadow:0 4px 24px rgb(0 0 0 / .05);border:1px solid var(--ol)}
+.mi{display:flex;align-items:center;gap:12px;box-sizing:border-box;min-height:36px;padding:0 8px;border-radius:12px;font-size:14px}
+.mi.on{background:var(--sunk)}
+.mi .k{margin-left:auto;font:500 12px Inter,sans-serif;color:var(--muted)}
+.tile{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;background:var(--sunk);color:var(--muted);flex:none}
+.mrow{display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:12px}
+.mrow.on{background:var(--sunk)}.mrow.on .tile{background:var(--sheet)}
+.tip{display:inline-block;padding:8px;border-radius:8px;background:var(--fg);color:var(--bg);font-size:12px;line-height:1.4}
+.arc{animation:rot 1.6s linear infinite}
+.arc .a{animation:dash 1.4s ease-in-out infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+@keyframes dash{0%{stroke-dasharray:4 100;stroke-dashoffset:0}50%{stroke-dasharray:60 100;stroke-dashoffset:-18}100%{stroke-dasharray:4 100;stroke-dashoffset:-96}}
+@media (prefers-reduced-motion: reduce){.arc,.arc .a{animation:none}.arc .a{stroke-dasharray:62 100}}
+</style>
+</helmet>
+<div style="{{vars}}position:relative;overflow:hidden;width:1440px;min-height:3400px;background:var(--bg);color:var(--fg);font-family:'Songti SC','Noto Serif SC','Source Han Serif SC',STSong,SimSun,serif;font-size:14px;line-height:1.6">
+<div class="paper-l" style="display:{{showLight}}"></div>
+<div class="paper-d" style="display:{{showDark}}"></div>
+<div style="position:relative;z-index:2;padding:96px 160px 120px">
+
+<h1 style="margin:0;font-size:52px;font-weight:400;line-height:1.1;letter-spacing:-0.03em">控件</h1>
+<p style="margin:16px 0 64px;max-width:640px;font-size:15px;line-height:1.8;color:var(--muted)">尺寸、变体与状态对齐 HeroUI：大、中、小三档，桌面端 40、36、32，触屏端各加 4。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"season":{"editor":"enum","options":["春","夏","秋","冬"],"default":"春"},"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":3400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const S = { '春': ['#f47983', 16.6], '夏': ['#2f9e7a', 162], '秋': ['#d9a21b', 82.95], '冬': ['#7d8ea3', 252] };
+    const season = S[this.props.season] ? this.props.season : '春';
+    const [seed, h] = S[season];
+    const dark = !!this.props.dark;
+    const vars = dark
+      ? `--bg:oklch(0.17 0.0087 ${h});--sheet:oklch(0.235 0.011 ${h});--sunk:oklch(0.29 0.012 ${h});--fg:oklch(0.9373 0.015 ${h});--muted:oklch(0.8573 0.0225 ${h});--rule:oklch(0.9373 0.015 ${h} / .12);--rule2:oklch(0.9373 0.015 ${h} / .3);--deco:${seed};--accent:oklch(0.8589 0.1031 ${h});--danger:oklch(0.74 0.14 25);--ok:oklch(0.74 0.15 155);--ol:rgb(255 255 255 / .08);`
+      : `--bg:oklch(0.968 0.006 ${h});--sheet:oklch(0.994 0.003 ${h});--sunk:oklch(0.945 0.007 ${h});--fg:oklch(0.3331 0.0175 ${h});--muted:oklch(0.4717 0.0225 ${h});--rule:oklch(0.3331 0.0175 ${h} / .11);--rule2:oklch(0.3331 0.0175 ${h} / .3);--deco:${seed};--accent:oklch(0.4739 0.0974 ${h});--danger:oklch(0.52 0.16 27);--ok:oklch(0.52 0.13 155);--ol:transparent;`;
+    return { vars, showLight: dark ? 'none' : 'block', showDark: dark ? 'block' : 'none' };
+  }
+}
+</script>
+</body>
+</html>

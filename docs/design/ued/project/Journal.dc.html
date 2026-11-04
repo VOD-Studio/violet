@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Violet 手记</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&family=Noto+Serif+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Maple Mono";font-weight:400;font-style:normal;src:url(/_blob/a3ecea3add4961def4d089b95f486230) format("woff2")}
+@font-face{font-family:"Maple Mono";font-weight:500;font-style:normal;src:url(/_blob/1ba23035f8e49762aeac0a2a66f83fa0) format("woff2")}
+body{margin:0}
+a{color:inherit;text-decoration:none}
+.paper-l{position:absolute;inset:0;background-image:url(/_blob/66391f4a5c5b623abcbda5bc91818ab0);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.paper-d{position:absolute;inset:0;background-image:url(/_blob/b0a1c287fd95586fcb700c431de8f4c5);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.serif{font-family:Georgia,"Noto Serif SC","Songti SC",serif}
+.mono{font-family:"Maple Mono",ui-monospace,monospace}
+.seg{display:inline-flex;padding:2px;border-radius:999px;background:var(--sunk)}.sg{display:inline-flex;align-items:center;box-sizing:border-box;height:32px;padding:0 12px;border-radius:999px;font-size:14px;color:var(--muted)}.sg.on{background:var(--sheet);color:var(--fg);font-weight:500;box-shadow:0 4px 24px rgb(0 0 0 / .05)}
+.tl{margin-top:40px}
+.tr{display:grid;grid-template-columns:92px 24px minmax(0,1fr);column-gap:16px}
+.tr .dt{padding-top:15px}
+.tr .dt .d{font:500 30px/1 "Maple Mono",monospace;letter-spacing:-0.03em}
+.tr .dt .m{margin-top:7px;font-size:12px;color:var(--muted)}
+.tr .rl{position:relative}
+.tr .rl::before{content:"";position:absolute;left:11.5px;top:0;bottom:0;width:1px;background:var(--rule2)}
+.tr.first .rl::before{top:29px}
+.tr.last .rl::before{bottom:auto;height:29px}
+.tr .rl i{position:absolute;left:5px;top:22px;box-sizing:border-box;width:14px;height:14px;border-radius:50%;border:3px solid var(--bg);background:var(--deco)}
+.tr .rl i.bug{background:var(--danger)}
+.tr .cd{padding-bottom:14px;min-width:0}
+.tr.dayend .cd{padding-bottom:44px}
+.ent{box-sizing:border-box;padding:18px 22px 18px;background:var(--sheet);border-radius:12px;box-shadow:0 4px 24px rgb(0 0 0 / .05);border:1px solid var(--ol)}
+.hd{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.ty{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:999px;font-size:12px;font-weight:500}
+.ty.prog{background:color-mix(in oklab,var(--deco) 16%,var(--sheet));color:var(--nameColor)}
+.ty.bug{background:color-mix(in oklab,var(--danger) 11%,var(--sheet));color:var(--danger)}
+.chip{display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;background:var(--sunk);font-size:12px;color:var(--muted)}
+.ok{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--ok)}
+.t{margin-top:10px;font-size:17px;font-weight:500;line-height:1.5;letter-spacing:-0.01em}
+.ln{display:flex;gap:14px;margin-top:8px;font-size:14px;line-height:1.75}
+.ln b{flex:none;width:30px;font-size:12px;font-weight:400;line-height:24.5px;color:var(--muted)}
+.ln span{flex:1;min-width:0}
+.cmd{display:flex;align-items:center;gap:10px;margin-top:10px;padding:8px 12px;border-radius:8px;background:var(--sunk);font:400 13px "Maple Mono",monospace}
+.cm{display:flex;align-items:baseline;gap:10px;padding:5px 0;font-size:13.5px;line-height:1.6}
+.cm i{flex:none;width:58px;font:400 11.5px "Maple Mono",monospace;font-style:normal;color:var(--muted)}
+.ver{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;background:var(--sunk);font:500 11.5px Inter,sans-serif;color:var(--fg)}
+</style>
+</helmet>
+<div style="{{vars}}position:relative;overflow:hidden;width:1440px;min-height:2000px;display:flex;flex-direction:column;background:var(--bg);color:var(--fg);font-family:'Songti SC','Noto Serif SC','Source Han Serif SC',STSong,SimSun,serif;font-size:14px;line-height:1.6">
+
+<div class="paper-l" style="display:{{showLight}}"></div>
+<div class="paper-d" style="display:{{showDark}}"></div>
+<img src="{{art}}" alt="" style="position:absolute;top:0;right:0;width:520px;opacity:.7;pointer-events:none;mix-blend-mode:{{blend}};-webkit-mask-image:radial-gradient(circle at 100% 0%,#000 58%,transparent 96%);mask-image:radial-gradient(circle at 100% 0%,#000 58%,transparent 96%)">
+
+<div style="position:absolute;z-index:20;top:0;left:0;right:0">
+  <dc-import name="Header" state="rest" section="手记" presence="app" bare="{{ true }}" season="{{season}}" dark="{{dark}}" hint-size="1440px,70px"></dc-import>
+</div>
+
+<main style="position:relative;z-index:2;width:1120px;margin:0 auto;padding:120px 0 0">
+
+<div style="display:flex;align-items:flex-end;justify-content:space-between">
+  <h1 style="margin:0;font-size:52px;font-weight:400;line-height:1.1;letter-spacing:-0.03em">手记</h1>
+  <div style="display:flex;align-items:center;gap:10px"><span class="seg"><span class="sg on">全部</span><span class="sg">进展</span><span class="sg">踩坑</span><span class="sg">想法</span><span class="sg">摘录</span></span>
+    <button style="display:flex;align-items:center;gap:6px;height:36px;padding:0 16px;border:0;border-radius:999px;background:var(--sunk);font:inherit;font-size:14px;font-weight:500;color:var(--fg);cursor:pointer">全部项目<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div>
+</div>
+
+<div class="tl">
+<div class="tr first dayend"><div class="dt"><div class="d">29</div><div class="m">10 月 · 周四</div></div><div class="rl"><i class="prog"></i></div><div class="cd"><article class="ent">
+      <div class="hd"><span class="ty prog"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M3 12h5M16 12h5"/></svg>进展</span><span class="chip">violet</span><span style="flex:1"></span><span class="mono">00:24 – 18:24　21 个提交 · 4 次发布</span></div>
+      <div class="t">实时状态接入，发布 2.20.0 至 2.22.1</div>
+      <div style="margin-top:8px">
+        <div class="cm"><i>feat</i><span>实现 Nowbeam 实时状态接收端</span></div>
+        <div class="cm"><i>feat</i><span>顶栏与底部岛展示实时状态</span></div>
+        <div class="cm"><i>feat</i><span>后台管理 Nowbeam 设备与公开展示</span></div>
+        <div class="cm"><i>feat</i><span>用量迁移到用户主页子路由</span></div>
+        <div class="cm"><i>refactor</i><span>将主题设置整合为单层面板</span></div>
+        <div class="cm"><i>fix</i><span>修复角落插画被大幅裁切</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--rule)"><span class="ver">v2.20.0</span><span class="ver">v2.21.0</span><span class="ver">v2.22.0</span><span class="ver">v2.22.1</span><span style="flex:1"></span><a href="#" style="font-size:12.5px;color:var(--muted)">另 15 个提交</a></div>
+    </article></div></div>
+<div class="tr"><div class="dt"><div class="d">03</div><div class="m">9 月 · 周四</div></div><div class="rl"><i class="bug"></i></div><div class="cd"><article class="ent">
+      <div class="hd"><span class="ty bug"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 8v4M12 16h.01"/><circle cx="12" cy="12" r="9"/></svg>踩坑</span><span class="chip">macOS · zsh</span><span class="ok"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>已解决</span><span style="flex:1"></span><span class="mono">#shell #macos</span></div>
+      <div class="t">macOS 的 zsh 把 === 当命令查找</div>
+      <div class="ln"><b>现象</b><span class="serif">shell 脚本里用 echo 输出 === 当分隔符，直接报错。</span></div>
+      <div class="ln"><b>根因</b><span class="serif">zsh 把以 = 开头的词当作命令路径去展开。</span></div>
+      <div class="ln"><b>修法</b><span class="serif">分隔符换成普通字符串，或拆成两条命令。</span></div>
+      <div class="cmd"><span style="flex:1">echo "--SEP--"</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="复制"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg></div>
+    </article></div></div>
+<div class="tr"><div class="dt"></div><div class="rl"><i class="bug"></i></div><div class="cd"><article class="ent">
+      <div class="hd"><span class="ty bug"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 8v4M12 16h.01"/><circle cx="12" cy="12" r="9"/></svg>踩坑</span><span class="chip">Biome · React</span><span class="ok"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>已解决</span><span style="flex:1"></span><span class="mono">#biome #react</span></div>
+      <div class="t">biome check --unsafe 会删掉语义必要的 effect 依赖</div>
+      <div class="ln"><b>现象</b><span class="serif">useEffect 的 [activeTag] 依赖被判为多余，自动修复直接删掉，标签切换后旧游标页混进新流。</span></div>
+      <div class="ln"><b>修法</b><span class="serif">这类 effect 不用 --unsafe 自动修复，保留依赖并写明原因。</span></div>
+    </article></div></div>
+<div class="tr last"><div class="dt"></div><div class="rl"><i class="bug"></i></div><div class="cd"><article class="ent">
+      <div class="hd"><span class="ty bug"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 8v4M12 16h.01"/><circle cx="12" cy="12" r="9"/></svg>踩坑</span><span class="chip">SQLite</span><span class="ok"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>已解决</span><span style="flex:1"></span><span class="mono">#sqlite #testing</span></div>
+      <div class="t">SQLite CURRENT_TIMESTAMP 只有秒级分辨率</div>
+      <div class="ln"><b>现象</b><span class="serif">仓储契约测试按插入顺序断言 created_at DESC，偶发翻转。</span></div>
+      <div class="ln"><b>根因</b><span class="serif">默认精度是秒，同秒插入的行排序退化为 id（uuid）排序。</span></div>
+    </article></div></div>
+</div>
+
+</main>
+
+<div style="position:relative;z-index:2;margin-top:auto;padding-top:96px">
+  <dc-import name="Footer" season="{{season}}" dark="{{dark}}" hint-size="1440px,320px"></dc-import>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"season":{"editor":"enum","options":["春","夏","秋","冬"],"default":"春"},"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":2000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const S = {
+      '春': { seed: '#f47983', h: 16.6, l: '/_blob/d8aaad66118cac26d5af34610af527bf', d: '/_blob/0cfa75d49c85d4df8e63d591ce6c7ea1' },
+      '夏': { seed: '#2f9e7a', h: 162, l: '/_blob/c0353bf8edad55e8130fb95826b3799f', d: '/_blob/8ab23c87229ff622bac13566cfb665fd' },
+      '秋': { seed: '#d9a21b', h: 82.95, l: '/_blob/d837ab2ada8c6a3cbb1a71fea71be6e2', d: '/_blob/8a07e26da1a24b8a9f19bf09a30aca11' },
+      '冬': { seed: '#7d8ea3', h: 252, l: '/_blob/eb4210561b3c04659b349b6813d7ba9c', d: '/_blob/f4961af0e552cbba606908f217a44b37' },
+    };
+    const season = S[this.props.season] ? this.props.season : '春';
+    const dark = !!this.props.dark;
+    const s = S[season], h = s.h;
+    const vars = dark
+      ? `--bg:oklch(0.17 0.0087 ${h});--sheet:oklch(0.235 0.011 ${h});--sunk:oklch(0.29 0.012 ${h});--fg:oklch(0.9373 0.015 ${h});--muted:oklch(0.8573 0.0225 ${h});--rule:oklch(0.9373 0.015 ${h} / .12);--rule2:oklch(0.9373 0.015 ${h} / .3);--deco:${s.seed};--nameColor:oklch(0.8589 0.1031 ${h});--danger:oklch(0.74 0.14 25);--ok:oklch(0.74 0.15 155);--ol:rgb(255 255 255 / .08);`
+      : `--bg:oklch(0.968 0.006 ${h});--sheet:oklch(0.994 0.003 ${h});--sunk:oklch(0.945 0.007 ${h});--fg:oklch(0.3331 0.0175 ${h});--muted:oklch(0.4717 0.0225 ${h});--rule:oklch(0.3331 0.0175 ${h} / .11);--rule2:oklch(0.3331 0.0175 ${h} / .3);--deco:${s.seed};--nameColor:oklch(0.4739 0.0974 ${h});--danger:oklch(0.52 0.16 27);--ok:oklch(0.52 0.13 155);--ol:transparent;`;
+    return {
+      vars, season, dark,
+      art: dark ? s.d : s.l,
+      blend: dark ? 'normal' : 'multiply',
+      showLight: dark ? 'none' : 'block', showDark: dark ? 'block' : 'none',
+    };
+  }
+}
+</script>
+</body>
+</html>

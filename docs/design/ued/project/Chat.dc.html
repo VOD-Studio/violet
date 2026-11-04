@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Violet 聊天</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&family=Noto+Serif+SC:wght@400;500;600;700&family=Alex+Brush&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Maple Mono";font-weight:400;font-style:normal;src:url(/_blob/a3ecea3add4961def4d089b95f486230) format("woff2")}
+@font-face{font-family:"Maple Mono";font-weight:500;font-style:normal;src:url(/_blob/1ba23035f8e49762aeac0a2a66f83fa0) format("woff2")}
+body{margin:0}
+a{color:inherit;text-decoration:none}
+.paper-l{position:absolute;inset:0;background-image:url(/_blob/66391f4a5c5b623abcbda5bc91818ab0);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.paper-d{position:absolute;inset:0;background-image:url(/_blob/b0a1c287fd95586fcb700c431de8f4c5);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.num{font-family:"Maple Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.mono{font-family:"Maple Mono",ui-monospace,monospace}
+.sheet{background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);border:1px solid var(--ol)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;height:36px;padding:0 16px;border:0;border-radius:999px;font-family:inherit;font-size:14px;font-weight:500;white-space:nowrap;background:var(--sunk);color:var(--fg);cursor:pointer}
+.btn.sm{height:32px;padding:0 12px}.btn.lg{height:40px;font-size:16px}
+.btn.pri{background:var(--fg);color:var(--bg)}.btn.gho{background:transparent}
+.btn.ic{width:32px;padding:0}
+.seg{display:inline-flex;padding:2px;border-radius:999px;background:var(--sunk)}
+.sg{display:inline-flex;align-items:center;gap:6px;box-sizing:border-box;height:32px;padding:0 12px;border-radius:999px;font-size:14px;color:var(--muted)}
+.sg i{font-style:normal;font-size:12px;opacity:.7}
+.sg.on{background:var(--sheet);color:var(--fg);font-weight:500;box-shadow:0 4px 24px rgb(0 0 0 / .05)}
+.chip{display:inline-flex;align-items:center;gap:4px;box-sizing:border-box;height:24px;padding:0 10px;border-radius:999px;background:var(--sunk);font-size:12px;font-weight:500;color:var(--muted)}
+.chip.ac{background:color-mix(in oklab,var(--deco) 16%,var(--sheet));color:var(--accent)}
+.chip.ok{background:color-mix(in oklab,var(--ok) 12%,var(--sheet));color:var(--ok)}
+.fld{display:flex;align-items:center;gap:8px;box-sizing:border-box;height:36px;padding:0 12px;border-radius:12px;background:var(--sunk);font-size:14px;color:var(--muted)}
+.lab{display:block;margin-bottom:8px;font-size:14px;font-weight:600}
+.h1{margin:0;font-size:52px;font-weight:600;line-height:1.15;letter-spacing:-0.01em}
+
+.c-ws{position:absolute;z-index:2;left:160px;right:160px;top:84px;bottom:24px;display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px}
+.c-card{display:flex;flex-direction:column;min-height:0;border-radius:16px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);border:1px solid var(--ol);overflow:hidden}
+.c-ib{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--muted);cursor:pointer;flex:none}
+.c-ib:hover,.c-ib.on{background:var(--sunk);color:var(--fg)}
+.c-row{display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;align-items:center;width:100%;box-sizing:border-box;padding:10px;border:0;border-radius:12px;background:transparent;font-family:inherit;color:var(--fg);text-align:left;cursor:pointer}
+.c-row:hover{background:color-mix(in oklab,var(--sunk) 55%,transparent)}
+.c-row.on{background:var(--sunk)}
+.c-l1,.c-l2{display:flex;align-items:center;gap:6px;min-width:0}
+.c-l1 b{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-l1 .t{margin-left:auto;font:400 12px "Maple Mono",monospace;color:var(--muted);flex:none}
+.c-l2{margin-top:2px}.c-l2 .pv{flex:1;min-width:0;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-unread{min-width:20px;height:20px;box-sizing:border-box;padding:0 6px;border-radius:999px;background:var(--fg);color:var(--bg);font:600 11px/20px Inter,sans-serif;text-align:center;flex:none}
+.c-unread.mute{background:var(--rule2);color:var(--sheet)}
+.c-av{display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;object-fit:cover;background:var(--sunk);font-size:16px;font-weight:600;color:var(--muted);flex:none}
+.c-chan{border-radius:12px;font:500 18px "Maple Mono",monospace}
+.c-duo{position:relative;width:44px;height:44px}.c-duo img{position:absolute;width:30px;height:30px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 2px var(--sheet)}
+.c-tag{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:999px;background:color-mix(in oklab,var(--deco) 16%,var(--sheet));font-size:11px;font-weight:500;color:var(--accent);flex:none}
+.c-head{display:flex;align-items:center;gap:12px;height:64px;padding:0 12px 0 20px;box-shadow:inset 0 -1px 0 var(--rule);flex:none}
+.c-wall-l{background-color:var(--bg);background-image:url(/_blob/66391f4a5c5b623abcbda5bc91818ab0);background-size:1440px 1600px}
+.c-wall-d{background-color:var(--bg);background-image:url(/_blob/b0a1c287fd95586fcb700c431de8f4c5);background-size:1440px 1600px}
+.c-msgs{position:relative;flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;padding:16px 24px 8px;-webkit-mask-image:linear-gradient(to bottom,transparent,#000 56px);mask-image:linear-gradient(to bottom,transparent,#000 56px)}
+.c-date{align-self:center;margin:6px 0;padding:2px 10px;border-radius:999px;background:color-mix(in oklab,var(--sheet) 85%,transparent);font-size:12px;color:var(--muted)}
+.c-sys{align-self:center;margin:6px 0;font-size:12px;color:var(--muted)}
+.c-grp{display:grid;grid-template-columns:36px minmax(0,1fr);gap:8px;align-items:end;max-width:78%}
+.c-grp > img,.c-grp > .c-av{width:36px;height:36px;font-size:13px}
+.c-col{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0}
+.c-b{position:relative;max-width:100%;box-sizing:border-box;padding:7px 12px 6px;border-radius:16px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);font-size:15px;line-height:1.7}
+.c-grp .c-b.end{border-bottom-left-radius:4px}
+.c-nm{display:flex;align-items:center;gap:6px;margin-bottom:2px;font-size:13px;font-weight:600;color:var(--accent)}
+.c-meta{display:inline-flex;align-items:center;gap:4px;margin-left:10px;vertical-align:-1px;font:400 11px "Maple Mono",monospace;color:var(--muted);line-height:1;white-space:nowrap}
+.c-mine{align-self:flex-end;display:flex;flex-direction:column;align-items:flex-end;gap:2px;max-width:70%}
+.c-mine .c-b{box-shadow:none}
+.c-mine .c-hov{left:auto;right:100%;margin:0 6px 0 0}
+.c-mine .c-b.end{border-bottom-right-radius:4px}
+.c-rq{display:block;margin:2px -4px 6px;padding:5px 10px;border-radius:8px;background:color-mix(in oklab,var(--fg) 6%,transparent);font-size:13px;line-height:1.5}
+.c-rq b{display:block;color:var(--accent);font-weight:600}
+.c-rq span{display:block;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-rx{display:flex;gap:4px;margin:2px 0 4px}
+.c-chip{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 8px;border:0;border-radius:999px;background:var(--sheet);box-shadow:0 0 0 1px var(--rule);font:500 12px Inter,sans-serif;color:var(--muted);cursor:pointer}
+.c-chip.on{background:color-mix(in oklab,var(--deco) 16%,var(--sheet));box-shadow:0 0 0 1px color-mix(in oklab,var(--deco) 55%,transparent);color:var(--accent)}
+.c-hov{position:absolute;top:2px;left:100%;margin-left:6px;display:none;gap:2px;padding:2px;border-radius:999px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05),0 0 0 1px var(--rule);z-index:5}
+.c-b:hover .c-hov,.c-b.show .c-hov{display:flex}
+.c-hov button{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--muted);cursor:pointer}
+.c-hov button:hover{background:var(--sunk);color:var(--fg)}
+.c-pop{position:absolute;z-index:31;padding:6px;border-radius:16px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05),0 0 0 1px var(--rule)}
+.c-mi{display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;min-height:36px;padding:6px 10px;border:0;border-radius:12px;background:transparent;font-family:inherit;font-size:14px;color:var(--fg);text-align:left;cursor:pointer}
+.c-mi:hover{background:var(--sunk)}
+.c-foot{position:relative;padding:8px 16px 16px;flex:none}
+.c-reply{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 14px;box-shadow:inset 0 -1px 0 var(--rule);font-size:13px}
+.c-box{border-radius:16px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);border:1px solid var(--ol);overflow:hidden}
+.c-input{display:flex;align-items:center;gap:2px;height:52px;padding:0 8px}
+.c-send{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;padding:0;border:0;border-radius:50%;background:var(--fg);color:var(--bg);cursor:pointer;flex:none}
+.c-drawer{position:absolute;z-index:40;top:64px;right:0;bottom:0;width:300px;box-sizing:border-box;padding:18px 20px;background:var(--sheet);box-shadow:inset 1px 0 0 var(--rule);overflow:hidden}
+.c-mem{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:14px}
+.c-sw{position:relative;width:36px;height:20px;border-radius:999px;background:var(--fg);flex:none}.c-sw::after{content:"";position:absolute;top:2px;left:18px;width:16px;height:16px;border-radius:50%;background:var(--bg)}
+.c-scrim{position:fixed;inset:0;z-index:60;background:rgb(20 16 14 / .32);display:flex;align-items:center;justify-content:center}
+.c-skin{display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 8px;border:0;border-radius:12px;background:transparent;font-family:inherit;font-size:13px;color:var(--fg);cursor:pointer}
+.c-skin.on{background:var(--sunk);box-shadow:inset 0 0 0 1.5px var(--fg)}
+.c-skin i{display:block;width:72px;height:30px;border-radius:12px 12px 4px 12px}
+.washi{background-image:url(/_blob/66391f4a5c5b623abcbda5bc91818ab0);background-size:720px 800px;background-color:#f1eadf;color:#3a302b}
+.c-dots{display:inline-flex;gap:4px;padding:6px 2px}.c-dots i{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:cdt 1.2s ease-in-out infinite}.c-dots i:nth-child(2){animation-delay:.2s}.c-dots i:nth-child(3){animation-delay:.4s}
+@keyframes cdt{0%,100%{opacity:.25}50%{opacity:1}}
+@media (prefers-reduced-motion: reduce){.c-dots i{animation:none}}
+
+</style>
+</helmet>
+<div style="{{vars}}position:relative;overflow:hidden;width:1440px;height:900px;display:flex;flex-direction:column;background:var(--bg);color:var(--fg);font-family:'Songti SC','Noto Serif SC','Source Han Serif SC',STSong,SimSun,serif;font-size:15px;line-height:1.8">
+<div class="paper-l" style="display:{{showLight}}"></div>
+<div class="paper-d" style="display:{{showDark}}"></div>
+
+<div style="position:absolute;z-index:20;top:0;left:0;right:0"><dc-import name="Header" state="child" title="聊天" user="{{ true }}" bare="{{ true }}" season="{{season}}" dark="{{dark}}" hint-size="1440px,70px"></dc-import></div>
+<div class="c-ws">
+<aside class="c-card" style="padding:14px 10px 10px">
+  <div style="display:flex;align-items:center;gap:2px;padding:0 6px 12px"><span style="flex:1;font-size:20px;font-weight:600">聊天</span><button class="c-ib" aria-label="聊天外观" onClick="{{openSkin}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a10 10 0 1 1 10-10c0 2.8-2.2 4-4 4h-2.2a1.8 1.8 0 0 0-1.3 3.1A1.8 1.8 0 0 1 12 22zM7.5 11.5h.01M10.5 7.5h.01M15 8h.01M17 12h.01"/></svg></button><button class="c-ib" aria-label="新建会话"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div>
+  <div class="fld" style="margin:0 6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-3.5-3.5"/></svg>搜索</div>
+  <div style="padding:12px 6px 6px"><span class="seg" style="display:flex"><span class="sg {{tabAll}}" onClick="{{fAll}}" role="tab" style="flex:1;justify-content:center">全部</span><span class="sg {{tabCh}}" onClick="{{fCh}}" role="tab" style="flex:1;justify-content:center">频道</span><span class="sg {{tabDm}}" onClick="{{fDm}}" role="tab" style="flex:1;justify-content:center">私信</span></span></div>
+  <div style="display:flex;flex-direction:column;gap:2px;padding-top:4px">
+  <button class="c-row {{cls_lobby}}" onClick="{{go_lobby}}" style="{{vis_lobby}}"><span class="c-av c-chan">#</span><span style="min-width:0"><span class="c-l1"><b>大厅</b><span class="t">10:26</span></span><span class="c-l2"><span class="pv">Rua：下雨天的话，听这首吧。</span><span style="display:inline-flex;gap:4px;color:var(--muted);flex:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg></span></span></span></button>
+  <button class="c-row {{cls_lin}}" onClick="{{go_lin}}" style="{{vis_lin}}"><img class="c-av" src="/_blob/6088255c64459277009c55192955e1ab" alt=""><span style="min-width:0"><span class="c-l1"><b>林间</b><span class="t">09:05</span></span><span class="c-l2"><span class="pv">是我，改了一周的花瓣。</span><span style="display:inline-flex;gap:4px;color:var(--muted);flex:none"></span></span></span></button>
+  <button class="c-row {{cls_night}}" onClick="{{go_night}}" style="{{vis_night}}"><span class="c-duo"><img src="/_blob/bd780c99ea55c8b0149ef2e3317e821a" alt="" style="left:0;top:0"><img src="/_blob/cdd807830934caef57a440ae48a88d9b" alt="" style="right:0;bottom:0"></span><span style="min-width:0"><span class="c-l1"><b>夜猫子</b><span class="t">01:12</span></span><span class="c-l2"><span class="pv">你：在，刚改完 bug</span><span style="display:inline-flex;gap:4px;color:var(--muted);flex:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4zM22 9l-6 6M16 9l6 6"/></svg></span><span class="c-unread mute">12</span></span></span></button>
+  <button class="c-row {{cls_tech}}" onClick="{{go_tech}}" style="{{vis_tech}}"><span class="c-av c-chan">#</span><span style="min-width:0"><span class="c-l1"><b>技术</b><span class="t">09:40</span></span><span class="c-l2"><span class="pv">Saber：可以用 errgroup 收敛错误</span><span style="display:inline-flex;gap:4px;color:var(--muted);flex:none"></span><span class="c-unread">3</span></span></span></button>
+  <button class="c-row {{cls_claude}}" onClick="{{go_claude}}" style="{{vis_claude}}"><img class="c-av" src="/_blob/b3ae72d1e224675f174984d3a42b756c" alt=""><span style="min-width:0"><span class="c-l1"><b>Claude</b><span class="c-tag">角色</span><span class="t">周一</span></span><span class="c-l2"><span class="pv">这段代码的问题在于闭包捕获…</span><span style="display:inline-flex;gap:4px;color:var(--muted);flex:none"></span></span></span></button>
+  <button class="c-row {{cls_momo}}" onClick="{{go_momo}}" style="{{vis_momo}}"><img class="c-av" src="/_blob/52d0254b3d8852ff951bf4de8eec6a57" alt=""><span style="min-width:0"><span class="c-l1"><b>Momo</b><span class="t">周二</span></span><span class="c-l2"><span class="pv">好的</span><span style="display:inline-flex;gap:4px;color:var(--muted);flex:none"></span></span></span></button>
+  <button class="c-row {{cls_photo}}" onClick="{{go_photo}}" style="{{vis_photo}}"><span class="c-av c-chan">#</span><span style="min-width:0"><span class="c-l1"><b>摄影</b><span class="t">周日</span></span><span class="c-l2"><span class="pv">雾里：D76 一比一稀释的颗粒</span><span style="display:inline-flex;gap:4px;color:var(--muted);flex:none"></span></span></span></button>
+  </div>
+</aside>
+
+<section class="c-card" style="position:relative">
+  <sc-if value="{{isLobby}}" hint-placeholder-val="{{ true }}"><div class="c-head"><span class="c-av c-chan" style="width:40px;height:40px">#</span><div style="flex:1;min-width:0"><div style="font-size:16px;font-weight:600;line-height:1.35">大厅</div><div style="font-size:13px;color:var(--muted)"><span class="num">23</span> 人在线 · 3 个角色在场</div></div><span style="display:flex;margin-right:6px"><img src="/_blob/e799d2070872161b3559fcc279c8c47a" alt="" style="width:26px;height:26px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 2px var(--sheet);margin-left:-6px"><img src="/_blob/b3ae72d1e224675f174984d3a42b756c" alt="" style="width:26px;height:26px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 2px var(--sheet);margin-left:-6px"><span class="c-av" style="width:26px;height:26px;font-size:11px;box-shadow:0 0 0 2px var(--sheet);margin-left:-6px">S</span></span><button class="c-ib" aria-label="搜索消息"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-3.5-3.5"/></svg></button><button class="c-ib {{infoCls}}" aria-label="详情" onClick="{{toggleInfo}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18v16H3zM15 4v16"/></svg></button></div></sc-if>
+  <sc-if value="{{isDm}}" hint-placeholder-val="{{ false }}"><div class="c-head"><img class="c-av" src="/_blob/6088255c64459277009c55192955e1ab" alt="" style="width:40px;height:40px"><div style="flex:1;min-width:0"><div style="font-size:16px;font-weight:600;line-height:1.35">林间</div><div style="font-size:13px;color:var(--ok)">在线</div></div><button class="c-ib" aria-label="搜索消息"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-3.5-3.5"/></svg></button><button class="c-ib {{infoCls}}" aria-label="详情" onClick="{{toggleInfo}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18v16H3zM15 4v16"/></svg></button></div></sc-if>
+  <sc-if value="{{isNight}}" hint-placeholder-val="{{ false }}"><div class="c-head"><span class="c-duo" style="width:40px;height:40px"><img src="/_blob/bd780c99ea55c8b0149ef2e3317e821a" alt="" style="left:0;top:0;width:28px;height:28px"><img src="/_blob/cdd807830934caef57a440ae48a88d9b" alt="" style="right:0;bottom:0;width:28px;height:28px"></span><div style="flex:1;min-width:0"><div style="font-size:16px;font-weight:600;line-height:1.35">夜猫子</div><div style="font-size:13px;color:var(--muted)"><span class="num">6</span> 位成员 · 已静音</div></div><button class="c-ib" aria-label="搜索消息"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-3.5-3.5"/></svg></button><button class="c-ib {{infoCls}}" aria-label="详情" onClick="{{toggleInfo}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18v16H3zM15 4v16"/></svg></button></div></sc-if>
+  <div class="{{wall}}" style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column">
+    <div class="c-msgs">
+      <sc-if value="{{isLobby}}" hint-placeholder-val="{{ true }}"><span class="c-date">今天</span>
+<div class="c-grp"><img src="/_blob/6088255c64459277009c55192955e1ab" alt="" style="border-radius:50%;object-fit:cover"><div class="c-col"><div class="c-b  end"><span class="c-nm">林间</span>Saber 是怎么记住上下文的？换个房间它还认得我吗？<span class="c-meta">10:21</span></div></div></div>
+<div class="c-grp"><span class="c-av">S</span><div class="c-col"><div class="c-b show"><span class="c-hov"><button aria-label="回应" onClick="{{react_saber}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg></button><button aria-label="回复" onClick="{{reply_saber}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 17l-5-5 5-5M4 12h11a5 5 0 0 1 5 5v2"/></svg></button><button aria-label="更多"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg></button></span><span class="c-nm">Saber<span class="c-tag">角色</span></span>我会把较早的对话压成摘要，和最近 20 条消息一起放进上下文。<span class="c-meta">10:21</span></div><div class="c-b  end">摘要存在数据库里，所以换个房间也找得回来。<span class="c-meta">10:21</span></div><div class="c-rx"><button class="c-chip {{rxA.cls}}" onClick="{{rxA.toggle}}">👍 <span>{{rxA.n}}</span></button><button class="c-chip {{rxB.cls}}" onClick="{{rxB.toggle}}">💡 <span>{{rxB.n}}</span></button></div></div></div>
+<div class="c-mine"><div class="c-b end {{myCls}}" style="{{myBubble}}"><span class="c-rq"><b>Saber</b><span>我会把较早的对话压成摘要…</span></span>补一句：摘要每 40 条滚动一次，所以它偶尔会把细节记混。<span class="c-meta">10:24<span style="position:relative;display:inline-flex"><button onClick="{{toggleRead}}" style="display:inline-flex;align-items:center;gap:3px;padding:0;border:0;background:none;font:inherit;color:var(--accent);cursor:pointer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12l5 5L18 6M9 15l2 2 11-11"/></svg>已读 12</button><sc-if value="{{readOpen}}" hint-placeholder-val="{{ false }}"><span class="c-pop" style="right:-12px;bottom:22px;width:200px;font-family:'Songti SC','Noto Serif SC',serif"><span style="display:block;padding:6px 10px;font-size:12px;color:var(--muted)">已读 12 · 未读 11</span><span class="c-mi"><img src="/_blob/6088255c64459277009c55192955e1ab" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:cover">林间</span><span class="c-mi"><img src="/_blob/52d0254b3d8852ff951bf4de8eec6a57" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:cover">Momo</span><span class="c-mi"><img src="/_blob/cdd807830934caef57a440ae48a88d9b" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:cover">雾里</span><span style="display:block;padding:4px 10px 6px;font-size:12px;color:var(--muted)">还有 9 人</span></span></sc-if></span></span></div></div>
+<span class="c-sys">Momo 加入了频道</span>
+<div class="c-grp"><img src="/_blob/52d0254b3d8852ff951bf4de8eec6a57" alt="" style="border-radius:50%;object-fit:cover"><div class="c-col"><div class="c-b  end"><span class="c-nm">Momo</span>@Rua 今天推荐一首歌？<span class="c-meta">10:26</span></div></div></div>
+<div class="c-grp"><img src="/_blob/e799d2070872161b3559fcc279c8c47a" alt="" style="border-radius:50%;object-fit:cover"><div class="c-col"><div class="c-b  end"><span class="c-hov"><button aria-label="回应" onClick="{{react_rua}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg></button><button aria-label="回复" onClick="{{reply_rua}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 17l-5-5 5-5M4 12h11a5 5 0 0 1 5 5v2"/></svg></button><button aria-label="更多"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg></button></span><span class="c-nm">Rua<span class="c-tag">角色</span></span>下雨天的话，听这首吧。<span style="display:flex;align-items:center;gap:12px;width:280px;margin:6px 0 2px;padding:8px;border-radius:12px;background:var(--sunk)"><span style="width:44px;height:44px;border-radius:8px;background:conic-gradient(from 210deg at 35% 65%,#2b2a4a,#c9573d,#f0b861,#2b2a4a);flex:none"></span><span style="flex:1;min-width:0;line-height:1.5"><b style="display:block;font-size:14px;font-weight:600">Merry Christmas Mr. Lawrence</b><span style="font-size:12px;color:var(--muted)">坂本龙一 · 4:57</span></span><button class="c-ib" aria-label="播放" style="background:var(--sheet);color:var(--fg)"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button></span><span class="c-meta">10:26</span></div><div class="c-rx"><button class="c-chip {{rxC.cls}}" onClick="{{rxC.toggle}}">❤️ <span>{{rxC.n}}</span></button></div></div></div>
+<sc-for list="{{sent}}" as="m" hint-placeholder-count="0"><div class="c-mine"><div class="c-b end {{myCls}}" style="{{myBubble}}"><sc-if value="{{m.q}}" hint-placeholder-val="{{ false }}"><span class="c-rq"><b>{{m.qn}}</b><span>{{m.qt}}</span></span></sc-if>{{m.text}}<span class="c-meta">{{m.time}}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12l5 5L18 6M9 15l2 2 11-11"/></svg></span></div></div></sc-for>
+<div class="c-grp" style="max-width:none"><span class="c-av" style="width:36px;height:36px;font-size:13px">S</span><div class="c-col"><div class="c-b" style="border-bottom-left-radius:4px"><span class="c-dots" aria-label="Saber 正在输入"><i></i><i></i><i></i></span></div></div></div></sc-if>
+      <sc-if value="{{isDm}}" hint-placeholder-val="{{ false }}"><span class="c-date">昨天</span>
+<div class="c-grp"><img src="/_blob/6088255c64459277009c55192955e1ab" alt="" style="border-radius:50%;object-fit:cover"><div class="c-col"><div class="c-b  end">你那篇 Saber 我看完了，摘要压缩那段能再展开讲讲吗？<span class="c-meta">22:10</span></div></div></div>
+<div class="c-mine"><div class="c-b end {{myCls}}" style="{{myBubble}}">可以，下周单独写一篇。<span class="c-meta">22:14<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12l5 5L18 6M9 15l2 2 11-11"/></svg></span></div></div>
+<span class="c-date">今天</span>
+<div class="c-grp"><img src="/_blob/6088255c64459277009c55192955e1ab" alt="" style="border-radius:50%;object-fit:cover"><div class="c-col"><div class="c-b "><span class="c-hov"><button aria-label="回应" onClick="{{react_lin}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg></button><button aria-label="回复" onClick="{{reply_lin}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 17l-5-5 5-5M4 12h11a5 5 0 0 1 5 5v2"/></svg></button><button aria-label="更多"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg></button></span>这条是你发的吧<span style="display:block;width:280px;margin:6px 0 2px;padding:10px 12px;border-radius:12px;background:var(--sunk)"><span style="display:flex;align-items:center;gap:8px;font-size:13px"><img src="/_blob/5f28c4bf59a4c2a6947f80a6b4b0bc2f" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:cover"><b style="font-weight:600">xunrua</b><span style="color:var(--muted)">推文</span></span><span style="display:block;margin-top:4px;font-size:14px;line-height:1.7">给博客加了季节。春天落桃花，秋天落桂花……</span><img src="/_blob/e799d2070872161b3559fcc279c8c47a" alt="" style="display:block;width:100%;height:110px;margin-top:8px;border-radius:8px;object-fit:cover"></span><span class="c-meta">09:02</span></div><div class="c-b  end">哈哈哈<span class="c-meta">09:02</span></div></div></div>
+<div class="c-mine"><div class="c-b end {{myCls}}" style="{{myBubble}}">是我，改了一周的花瓣。<span class="c-meta">09:05<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12l5 5L18 6M9 15l2 2 11-11"/></svg></span></div></div>
+<sc-for list="{{sent}}" as="m" hint-placeholder-count="0"><div class="c-mine"><div class="c-b end {{myCls}}" style="{{myBubble}}"><sc-if value="{{m.q}}" hint-placeholder-val="{{ false }}"><span class="c-rq"><b>{{m.qn}}</b><span>{{m.qt}}</span></span></sc-if>{{m.text}}<span class="c-meta">{{m.time}}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12l5 5L18 6M9 15l2 2 11-11"/></svg></span></div></div></sc-for></sc-if>
+      <sc-if value="{{isNight}}" hint-placeholder-val="{{ false }}"><span class="c-date">今天</span>
+<div class="c-grp"><img src="/_blob/bd780c99ea55c8b0149ef2e3317e821a" alt="" style="border-radius:50%;object-fit:cover"><div class="c-col"><div class="c-b  end"><span class="c-nm">阿七</span>今晚谁还在线<span class="c-meta">00:58</span></div></div></div>
+<span class="c-sys">林间 邀请 雾里 加入了群聊</span>
+<div class="c-grp"><img src="/_blob/cdd807830934caef57a440ae48a88d9b" alt="" style="border-radius:50%;object-fit:cover"><div class="c-col"><div class="c-b "><span class="c-hov"><button aria-label="回应" onClick="{{react_wu}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg></button><button aria-label="回复" onClick="{{reply_wu}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 17l-5-5 5-5M4 12h11a5 5 0 0 1 5 5v2"/></svg></button><button aria-label="更多"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg></button></span><span class="c-nm">雾里</span>刚冲完一卷<img src="/_blob/cdd807830934caef57a440ae48a88d9b" alt="湖上的雾" style="display:block;width:300px;height:200px;margin:4px -6px 4px;border-radius:12px;object-fit:cover"><span class="c-meta">01:04</span></div><div class="c-b  end">没修，颗粒是 D76 一比一<span class="c-meta">01:04</span></div></div></div>
+<div class="c-grp"><img src="/_blob/6088255c64459277009c55192955e1ab" alt="" style="border-radius:50%;object-fit:cover"><div class="c-col"><div class="c-b  end"><span class="c-nm">林间</span>这个雾太好看了<span class="c-meta">01:06</span></div></div></div>
+<div class="c-mine"><div class="c-b end {{myCls}}" style="{{myBubble}}">在，刚改完 bug<span class="c-meta">01:12<span>已读 4</span></span></div></div>
+<sc-for list="{{sent}}" as="m" hint-placeholder-count="0"><div class="c-mine"><div class="c-b end {{myCls}}" style="{{myBubble}}"><sc-if value="{{m.q}}" hint-placeholder-val="{{ false }}"><span class="c-rq"><b>{{m.qn}}</b><span>{{m.qt}}</span></span></sc-if>{{m.text}}<span class="c-meta">{{m.time}}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12l5 5L18 6M9 15l2 2 11-11"/></svg></span></div></div></sc-for></sc-if>
+    </div>
+    <div class="c-foot">
+      <sc-if value="{{cmdOpen}}" hint-placeholder-val="{{ false }}"><div class="c-pop" style="left:16px;bottom:76px;width:340px">
+        <div style="padding:6px 10px;font-size:12px;color:var(--muted)">召唤角色</div>
+        <button class="c-mi" onClick="{{cmdSong}}"><img src="/_blob/e799d2070872161b3559fcc279c8c47a" alt="" style="width:28px;height:28px;border-radius:50%;object-fit:cover"><span><b class="mono" style="font-weight:500">/song</b><span style="display:block;font-size:12px;color:var(--muted)">Rua · 按心情推荐一首歌</span></span></button>
+        <button class="c-mi" onClick="{{cmdExplain}}"><span class="c-av" style="width:28px;height:28px;font-size:12px">S</span><span><b class="mono" style="font-weight:500">/explain</b><span style="display:block;font-size:12px;color:var(--muted)">Saber · 解释一段代码</span></span></button>
+        <button class="c-mi" onClick="{{cmdSum}}"><img src="/_blob/b3ae72d1e224675f174984d3a42b756c" alt="" style="width:28px;height:28px;border-radius:50%"><span><b class="mono" style="font-weight:500">/summary</b><span style="display:block;font-size:12px;color:var(--muted)">Claude · 总结最近 50 条</span></span></button>
+      </div></sc-if>
+      <div class="c-box"><sc-if value="{{replying}}" hint-placeholder-val="{{ false }}"><div class="c-reply"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 17l-5-5 5-5M4 12h11a5 5 0 0 1 5 5v2"/></svg><span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><b style="color:var(--accent);font-weight:600">{{replyName}}</b>　{{replyText}}</span><button class="c-ib" aria-label="取消回复" onClick="{{cancelReply}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div></sc-if>
+      <div class="c-input">
+        <button class="c-ib" aria-label="添加附件"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+        <button class="c-ib {{cmdCls}}" aria-label="召唤角色" onClick="{{toggleCmd}}"><span class="mono" style="font-size:15px">/</span></button>
+        <span style="flex:1;padding:0 6px;font-size:15px;{{draftStyle}}">{{draft}}</span>
+        <button class="c-ib" aria-label="提及"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM16 12v1.5a2.5 2.5 0 0 0 5 0V12a9 9 0 1 0-3.5 7.1"/></svg></button><button class="c-ib" aria-label="表情"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg></button>
+        <button class="c-send" aria-label="发送" onClick="{{send}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg></button>
+      </div></div>
+    </div>
+  </div>
+  <sc-if value="{{infoOpen}}" hint-placeholder-val="{{ false }}"><aside class="c-drawer" aria-label="详情">
+    <div style="font-size:12px;color:var(--muted)">在场的角色</div>
+    <div class="c-mem"><img src="/_blob/e799d2070872161b3559fcc279c8c47a" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover"><span style="flex:1"><b style="display:block;font-weight:600;line-height:1.3">Rua</b><span style="font-size:12px;color:var(--muted)">看板娘，爱推荐歌</span></span><span class="c-sw" role="switch" aria-checked="true" aria-label="允许 Rua 发言"></span></div>
+    <div class="c-mem"><span class="c-av" style="width:32px;height:32px;font-size:13px">S</span><span style="flex:1"><b style="display:block;font-weight:600;line-height:1.3">Saber</b><span style="font-size:12px;color:var(--muted)">技术问答</span></span><span class="c-sw" role="switch" aria-checked="true"></span></div>
+    <div class="c-mem"><img src="/_blob/b3ae72d1e224675f174984d3a42b756c" alt="" style="width:32px;height:32px;border-radius:50%"><span style="flex:1"><b style="display:block;font-weight:600;line-height:1.3">Claude</b><span style="font-size:12px;color:var(--muted)">长文与代码</span></span><span class="c-sw" role="switch" aria-checked="true"></span></div>
+    <div style="margin-top:18px;font-size:12px;color:var(--muted)">成员 <span class="num">23</span></div>
+    <div class="c-mem"><img src="/_blob/5f28c4bf59a4c2a6947f80a6b4b0bc2f" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover">xunrua<span class="chip" style="height:20px;padding:0 8px;margin-left:auto">站长</span></div><div class="c-mem"><img src="/_blob/6088255c64459277009c55192955e1ab" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover">林间</div><div class="c-mem"><img src="/_blob/52d0254b3d8852ff951bf4de8eec6a57" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover">Momo</div><div class="c-mem"><img src="/_blob/cdd807830934caef57a440ae48a88d9b" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover">雾里</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:14px;border-top:1px solid var(--rule);font-size:14px">消息通知<span class="c-sw" role="switch" aria-checked="true"></span></div>
+    <button class="btn" style="width:100%;margin-top:14px;color:var(--danger);background:color-mix(in oklab,var(--danger) 10%,var(--sheet))">离开</button>
+  </aside></sc-if>
+</section>
+</div>
+
+<sc-if value="{{skinOpen}}" hint-placeholder-val="{{ false }}"><div class="c-scrim" onClick="{{closeSkin}}"><div class="c-card" role="dialog" aria-label="聊天外观" onClick="{{stop}}" style="width:600px">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 12px 0 24px"><b style="font-size:17px;font-weight:600">聊天外观</b><button class="c-ib" aria-label="关闭" onClick="{{closeSkin}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;padding:20px 24px">
+    <div><div style="font-size:13px;color:var(--muted)">我的气泡</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px"><sc-for list="{{skins}}" as="k" hint-placeholder-count="4"><button class="c-skin {{k.cls}}" onClick="{{k.pick}}"><i class="{{k.icls}}" style="{{k.style}}"></i>{{k.name}}</button></sc-for></div>
+      <div style="margin-top:18px;font-size:13px;color:var(--muted)">聊天背景</div>
+      <div style="display:flex;gap:8px;margin-top:10px"><span class="c-wall-l" style="width:56px;height:40px;border-radius:8px;box-shadow:0 0 0 2px var(--fg)"></span><span style="width:56px;height:40px;border-radius:8px;background:var(--sunk)"></span><span style="width:56px;height:40px;border-radius:8px;background:color-mix(in oklab,var(--deco) 14%,var(--sheet))"></span></div></div>
+    <div class="{{wall}}" style="padding:16px;border-radius:12px;display:flex;flex-direction:column;gap:6px"><span style="font-size:12px;color:var(--muted)">预览</span>
+      <div class="c-grp" style="max-width:none"><img src="/_blob/6088255c64459277009c55192955e1ab" alt="" style="border-radius:50%;object-fit:cover"><div class="c-col"><div class="c-b" style="font-size:14px;border-bottom-left-radius:4px">新皮肤好看吗<span class="c-meta">09:02</span></div></div></div>
+      <div class="c-mine"><div class="c-b end {{myCls}}" style="{{myBubble}};font-size:14px">刚换的<span class="c-meta">09:03<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12l5 5L18 6M9 15l2 2 11-11"/></svg></span></div></div></div>
+  </div>
+  <div style="display:flex;justify-content:flex-end;gap:8px;padding:0 24px 20px"><button class="btn" onClick="{{closeSkin}}">取消</button><button class="btn pri" onClick="{{closeSkin}}">保存</button></div>
+</div></div></sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"season":{"editor":"enum","options":["春","夏","秋","冬"],"default":"春"},"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  state = { conv: 'lobby', tab: 'all', reply: null, rx: { a: false, b: false, c: true }, read: false, cmd: false, draft: '', info: false, skin: 'season', skinOpen: false, sent: {} };
+  renderVals() {
+    const S = {
+      '春': { seed: '#f47983', h: 16.6, l: '/_blob/d8aaad66118cac26d5af34610af527bf', d: '/_blob/0cfa75d49c85d4df8e63d591ce6c7ea1' },
+      '夏': { seed: '#2f9e7a', h: 162, l: '/_blob/c0353bf8edad55e8130fb95826b3799f', d: '/_blob/8ab23c87229ff622bac13566cfb665fd' },
+      '秋': { seed: '#d9a21b', h: 82.95, l: '/_blob/d837ab2ada8c6a3cbb1a71fea71be6e2', d: '/_blob/8a07e26da1a24b8a9f19bf09a30aca11' },
+      '冬': { seed: '#7d8ea3', h: 252, l: '/_blob/eb4210561b3c04659b349b6813d7ba9c', d: '/_blob/f4961af0e552cbba606908f217a44b37' },
+    };
+    const season = S[this.props.season] ? this.props.season : '春';
+    const dark = !!this.props.dark;
+    const s = S[season], h = s.h;
+    const vars = dark
+      ? `--bg:oklch(0.17 0.0087 ${h});--sheet:oklch(0.235 0.011 ${h});--sunk:oklch(0.29 0.012 ${h});--fg:oklch(0.9373 0.015 ${h});--muted:oklch(0.8573 0.0225 ${h});--rule:oklch(0.9373 0.015 ${h} / .12);--rule2:oklch(0.9373 0.015 ${h} / .3);--deco:${s.seed};--accent:oklch(0.8589 0.1031 ${h});--danger:oklch(0.74 0.14 25);--ok:oklch(0.74 0.15 155);--ol:rgb(255 255 255 / .08);`
+      : `--bg:oklch(0.968 0.006 ${h});--sheet:oklch(0.994 0.003 ${h});--sunk:oklch(0.945 0.007 ${h});--fg:oklch(0.3331 0.0175 ${h});--muted:oklch(0.4717 0.0225 ${h});--rule:oklch(0.3331 0.0175 ${h} / .11);--rule2:oklch(0.3331 0.0175 ${h} / .3);--deco:${s.seed};--accent:oklch(0.4739 0.0974 ${h});--danger:oklch(0.52 0.16 27);--ok:oklch(0.52 0.13 155);--ol:transparent;`;
+    const base = { vars, season, dark, art: dark ? s.d : s.l, blend: dark ? 'normal' : 'multiply', showLight: dark ? 'none' : 'block', showDark: dark ? 'block' : 'none' };
+    const st = this.state, set = (o) => this.setState(o);
+    const conv = st.conv;
+    const RX = { a: 4, b: 2, c: 3 }, rxv = (k) => ({ n: RX[k] + (st.rx[k] ? 1 : 0) - (k === 'c' ? 1 : 0), cls: st.rx[k] ? 'on' : '', toggle: () => set({ rx: Object.assign({}, st.rx, { [k]: !st.rx[k] }) }) });
+    const SK = { season: ['季节', 'background:color-mix(in oklab,var(--deco) 22%,var(--sheet))', ''], ink: ['墨色', 'background:var(--fg);color:var(--bg)', ''], paper: ['纸片', 'background:var(--sheet);box-shadow:0 0 0 1px var(--rule)', ''], washi: ['和纸', '', 'washi'] };
+    const sk = SK[st.skin] || SK.season;
+    const skins = Object.keys(SK).map((k) => ({ name: SK[k][0], style: SK[k][1], icls: SK[k][2], cls: st.skin === k ? 'on' : '', pick: () => set({ skin: k }) }));
+    const now = () => { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+    const R = (n, t) => () => set({ reply: [n, t] });
+    const extra = {
+      isLobby: conv === 'lobby', isDm: conv === 'lin', isNight: conv === 'night', wall: dark ? 'c-wall-d' : 'c-wall-l',
+      infoOpen: st.info, infoCls: st.info ? 'on' : '', toggleInfo: () => set({ info: !st.info }),
+      rxA: rxv('a'), rxB: rxv('b'), rxC: rxv('c'),
+      react_saber: () => set({ rx: Object.assign({}, st.rx, { a: !st.rx.a }) }), react_rua: () => set({ rx: Object.assign({}, st.rx, { c: !st.rx.c }) }), react_lin: () => {}, react_wu: () => {},
+      reply_saber: R('Saber', '我会把较早的对话压成摘要，和最近 20 条消息一起放进上下文。'), reply_rua: R('Rua', '下雨天的话，听这首吧。'), reply_lin: R('林间', '这条是你发的吧'), reply_wu: R('雾里', '刚冲完一卷'),
+      replying: !!st.reply, replyName: st.reply ? st.reply[0] : '', replyText: st.reply ? st.reply[1] : '', cancelReply: () => set({ reply: null }),
+      readOpen: st.read, toggleRead: () => set({ read: !st.read }),
+      cmdOpen: st.cmd, cmdCls: st.cmd ? 'on' : '', toggleCmd: () => set({ cmd: !st.cmd }),
+      cmdSong: () => set({ cmd: false, draft: '/song 下雨天' }), cmdExplain: () => set({ cmd: false, draft: '/explain memory/summary.go' }), cmdSum: () => set({ cmd: false, draft: '/summary' }),
+      draft: st.draft || (conv === 'lobby' ? '在 #大厅 说点什么，输入 / 召唤角色' : conv === 'lin' ? '发消息给 林间' : '发消息到 夜猫子'), draftStyle: st.draft ? 'color:var(--fg)' : 'color:var(--muted)',
+      send: () => { const text = st.draft || '好的，晚点我也试试。'; const s2 = Object.assign({}, st.sent); s2[conv] = (s2[conv] || []).concat([{ text, time: now(), q: !!st.reply, qn: st.reply ? st.reply[0] : '', qt: st.reply ? st.reply[1] : '' }]); set({ sent: s2, draft: '', reply: null, cmd: false }); },
+      sent: st.sent[conv] || [], myBubble: sk[2] === 'washi' ? 'box-shadow:0 0 0 1px rgb(0 0 0 / .06)' : sk[1], myCls: sk[2], skins, skinOpen: st.skinOpen, openSkin: () => set({ skinOpen: true }), closeSkin: () => set({ skinOpen: false }), stop: (e) => e.stopPropagation(),
+      tabAll: st.tab === 'all' ? 'on' : '', tabCh: st.tab === 'ch' ? 'on' : '', tabDm: st.tab === 'dm' ? 'on' : '', fAll: () => set({ tab: 'all' }), fCh: () => set({ tab: 'ch' }), fDm: () => set({ tab: 'dm' }),
+    };
+    const KIND = { lobby: 'ch', tech: 'ch', photo: 'ch', lin: 'dm', night: 'dm', claude: 'dm', momo: 'dm' };
+    Object.keys(KIND).forEach((k) => { const live = ['lobby', 'lin', 'night'].includes(k); extra['go_' + k] = live ? () => set({ conv: k, reply: null, info: false, cmd: false, read: false }) : () => {}; extra['cls_' + k] = k === conv ? 'on' : ''; extra['vis_' + k] = (st.tab === 'all' || st.tab === KIND[k]) ? '' : 'display:none'; });
+    return Object.assign(base, extra);
+  }
+}
+</script>
+</body>
+</html>

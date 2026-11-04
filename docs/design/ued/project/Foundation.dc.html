@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Violet 基础规范</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&family=Alex+Brush&family=Noto+Serif+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Maple Mono";font-weight:400;font-style:normal;src:url(/_blob/a3ecea3add4961def4d089b95f486230) format("woff2")}
+@font-face{font-family:"Maple Mono";font-weight:500;font-style:normal;src:url(/_blob/1ba23035f8e49762aeac0a2a66f83fa0) format("woff2")}
+@font-face{font-family:"Maple Mono";font-weight:700;font-style:normal;src:url(/_blob/bf99f5c378937eca7117785bf1df1b55) format("woff2")}
+body{margin:0}
+a{color:inherit;text-decoration:none}
+.paper-l{position:absolute;inset:0;background-image:url(/_blob/66391f4a5c5b623abcbda5bc91818ab0);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.paper-d{position:absolute;inset:0;background-image:url(/_blob/b0a1c287fd95586fcb700c431de8f4c5);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.zoom-l{background-image:url(/_blob/66391f4a5c5b623abcbda5bc91818ab0);background-size:4320px 4800px;background-position:-1200px -900px}
+.zoom-d{background-image:url(/_blob/b0a1c287fd95586fcb700c431de8f4c5);background-size:4320px 4800px;background-position:-1200px -900px}
+.blk{display:grid;grid-template-columns:240px minmax(0,1fr);gap:56px;padding:64px 0;border-top:1px solid var(--rule)}
+.blk h2{margin:0;font-size:28px;font-weight:400;letter-spacing:-0.02em;line-height:1.2}
+.blk .lead{margin:12px 0 0;font-size:13px;line-height:1.8;color:var(--muted)}
+.cap{font-size:12px;color:var(--muted);line-height:1.7}
+.num{font-family:"Maple Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.spec{width:100%;border-collapse:collapse;font-size:13.5px}
+.spec th{padding:0 16px 12px 0;text-align:left;font-size:12px;font-weight:400;color:var(--muted);border-bottom:1px solid var(--rule)}
+.spec td{padding:14px 16px 14px 0;border-bottom:1px solid var(--rule);vertical-align:middle}
+.spec td.u{color:var(--muted)}
+.sw{display:inline-block;width:40px;height:28px;border-radius:8px;vertical-align:middle;box-shadow:inset 0 0 0 1px rgb(0 0 0 / .06)}
+.val{margin-left:10px;font:400 11.5px "Maple Mono",monospace;color:var(--muted);vertical-align:middle}
+.ssn{position:relative;height:300px;border-radius:16px;overflow:hidden}
+.ssn img{position:absolute;top:0;right:0;width:118%;pointer-events:none;-webkit-mask-image:radial-gradient(circle at 100% 0%,#000 55%,transparent 92%);mask-image:radial-gradient(circle at 100% 0%,#000 55%,transparent 92%)}
+.ssn .tx{position:absolute;left:24px;bottom:22px}
+.mat{position:relative;height:200px;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;padding:18px 20px;box-sizing:border-box}
+.rad{display:flex;align-items:flex-end;justify-content:center;height:88px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);border:1px solid var(--ol)}
+.bar{height:12px;border-radius:2px;background:color-mix(in oklab,var(--deco) 55%,var(--sheet))}
+.ico{display:flex;flex-direction:column;align-items:center;gap:10px;width:72px;font-size:12px;color:var(--muted)}
+.ico span{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;background:var(--sunk);color:var(--fg)}
+</style>
+</helmet>
+<div style="{{vars}}position:relative;overflow:hidden;width:1440px;min-height:4300px;background:var(--bg);color:var(--fg);font-family:'Songti SC','Noto Serif SC','Source Han Serif SC',STSong,SimSun,serif;font-size:14px;line-height:1.6">
+<div class="paper-l" style="display:{{showLight}}"></div>
+<div class="paper-d" style="display:{{showDark}}"></div>
+<div style="position:relative;z-index:2;padding:96px 160px 120px">
+
+<h1 style="margin:0;font-size:52px;font-weight:400;line-height:1.1;letter-spacing:-0.03em">基础</h1>
+<p style="margin:16px 0 64px;max-width:640px;font-size:15px;line-height:1.8;color:var(--muted)">一个季节种子色生成全站色彩；纸面、纸片、凹陷三层材质；一种阴影。所有页面与后台共用。</p>
+
+<section class="blk"><div><h2>季节</h2><p class="lead">访客或站长选季节，种子色随之切换；插画、飘落与页脚点缀跟着换。默认春。</p></div>
+<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px">
+  <sc-for list="{{seasons}}" as="s" hint-placeholder-count="4">
+    <div class="ssn" style="{{s.style}}"><img src="{{s.art}}" alt="" style="mix-blend-mode:{{blend}}">
+      <div class="tx"><div style="font-size:26px;letter-spacing:-0.01em;color:{{s.fg}}">{{s.name}}</div><div class="num" style="margin-top:4px;font-size:12px;color:{{s.muted}}">{{s.season}} · {{s.hex}}</div></div>
+      <span aria-hidden="true" style="position:absolute;right:22px;bottom:26px;width:14px;height:14px;border-radius:50%;background:{{s.hex}}"></span>
+    </div>
+  </sc-for>
+</div></section>
+
+<section class="blk"><div><h2>色彩</h2><p class="lead">只用语义名，不写死色值。季节色只做装饰、进度与选中点；需要可读的强调文字用「强调字」。</p></div>
+<table class="spec">
+  <thead><tr><th style="width:120px">名称</th><th style="width:118px">变量</th><th style="width:250px">浅色</th><th style="width:250px">深色</th><th>用于</th></tr></thead>
+  <tbody>
+    <sc-for list="{{tokens}}" as="t" hint-placeholder-count="11">
+      <tr><td>{{t.name}}</td><td class="num" style="font-size:12px;color:var(--muted)">{{t.v}}</td><td><span class="sw" style="{{t.ls}}"></span><span class="val">{{t.lv}}</span></td><td><span class="sw" style="{{t.ds}}"></span><span class="val">{{t.dv}}</span></td><td class="u">{{t.use}}</td></tr>
+    </sc-for>
+  </tbody>
+</table></section>
+
+<section class="blk"><div><h2>材质</h2><p class="lead">页面铺纸面，内容浮在纸片上，可输入的地方是凹陷。浮起只有一种阴影；深色下纸片加 1px 描边分界。</p></div>
+<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px">
+  <div><div class="mat {{zoomCls}}" style="box-shadow:inset 0 0 0 1px var(--rule)"></div><div style="margin-top:14px;font-size:14px;font-weight:500">纸面</div><div class="cap">罗纹纸，程序生成，1440 × 1600 纵向平铺（此处放大 3 倍）</div></div>
+  <div><div class="mat" style="background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);border:1px solid var(--ol)"><span class="num" style="font-size:12px;color:var(--muted)">0 4px 24px rgb(0 0 0 / .05)</span></div><div style="margin-top:14px;font-size:14px;font-weight:500">纸片</div><div class="cap">卡片、面板、浮层、选中项</div></div>
+  <div><div class="mat" style="padding:0;justify-content:center;align-items:center"><img src="{{art}}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:100% 0;mix-blend-mode:{{blend}}"><span style="position:relative;display:flex;align-items:center;gap:2px;box-sizing:border-box;height:40px;padding:4px;border-radius:999px;background:color-mix(in oklab,var(--sheet) 90%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 4px 24px rgb(0 0 0 / .05);border:1px solid var(--ol)"><span style="display:flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;background:var(--sheet);font-size:14px;font-weight:500">博客</span><span style="display:flex;align-items:center;height:32px;padding:0 12px;font-size:14px;font-weight:500;color:var(--muted)">手记</span></span></div><div style="margin-top:14px;font-size:14px;font-weight:500">半透纸片</div><div class="cap">只给浮在内容上的导航与提示：纸片 90% 加 12px 背景模糊</div></div>
+  <div><div class="mat" style="background:var(--sunk);gap:10px"><span style="display:flex;align-items:center;height:36px;padding:0 12px;border-radius:12px;background:var(--sheet);font-size:14px;color:var(--muted)">搜索文章与手记</span></div><div style="margin-top:14px;font-size:14px;font-weight:500">凹陷</div><div class="cap">输入框、分段轨道、键帽、骨架、次要按钮</div></div>
+</div></section>
+
+<section class="blk"><div><h2>字体</h2><p class="lead">默认宋体：界面、标题、正文都用它。Maple Mono 只给需要等宽或品牌感的地方。</p></div>
+<table class="spec">
+  <thead><tr><th style="width:150px">角色</th><th style="width:250px">字族</th><th>示例</th></tr></thead>
+  <tbody>
+    <tr><td>默认</td><td class="num" style="font-size:12px;color:var(--muted)">Songti SC · Noto Serif SC</td><td><span style="font-size:20px">博客 · 手记 · 推文</span><span style="display:block;margin-top:6px;font-size:17px;line-height:1.95;letter-spacing:.02em">把 LLM 塞进聊天室只需二十行胶水代码；但要让它活下去，需要的是一整个工程。</span></td></tr>
+    <tr><td>品牌</td><td class="num" style="font-size:12px;color:var(--muted)">Maple Mono</td><td style="font-family:'Maple Mono',ui-monospace,monospace;font-size:24px;letter-spacing:-0.02em">Hi, I'm xunrua.<span style="margin-left:20px;font-size:12px;font-weight:700;letter-spacing:.2em">VIOLET</span></td></tr>
+    <tr><td>代码与数值</td><td class="num" style="font-size:12px;color:var(--muted)">Maple Mono</td><td style="font-family:'Maple Mono',ui-monospace,monospace;font-size:14px">2026.08.16 · 21 分钟 · v2.22.1 · /blog/:slug · echo "--SEP--"</td></tr>
+    <tr><td>西文引言</td><td class="num" style="font-size:12px;color:var(--muted)">Georgia</td><td style="font:italic 400 17px/1.6 Georgia,serif">“We can only see a short distance ahead.”</td></tr>
+    <tr><td>签名</td><td class="num" style="font-size:12px;color:var(--muted)">Alex Brush</td><td style="font:400 32px/1 'Alex Brush',cursive;color:var(--muted)">– Alan Turing</td></tr>
+    <tr><td>键帽</td><td class="num" style="font-size:12px;color:var(--muted)">Inter</td><td style="font:500 16px Inter,sans-serif">⌘K · ⇧⌘P</td></tr>
+  </tbody>
+</table></section>
+
+<section class="blk"><div><h2>字号</h2><p class="lead">十档，够用就停。界面最小 12；正文 17 只给文章。</p></div>
+<table class="spec">
+  <thead><tr><th style="width:96px">字号</th><th style="width:96px">字重 · 行高</th><th style="width:150px">用于</th><th>示例</th></tr></thead>
+  <tbody>
+    <tr><td class="num">60</td><td class="num u">400 · 1.12</td><td>首页问候</td><td style="font-family:'Maple Mono',ui-monospace,monospace;font-size:60px;line-height:1.12;letter-spacing:-0.03em">Hi, I'm xunrua.</td></tr>
+    <tr><td class="num">52</td><td class="num u">400 · 1.1</td><td>页面标题</td><td style="font-size:52px;line-height:1.1;letter-spacing:-0.03em">博客</td></tr>
+    <tr><td class="num">36</td><td class="num u">700 · 1.3</td><td>文章标题</td><td style="font-size:36px;font-weight:700;line-height:1.3;letter-spacing:-0.02em">拆解 Saber</td></tr>
+    <tr><td class="num">28</td><td class="num u">400 · 1.2</td><td>规范分节、错误页</td><td style="font-size:28px;line-height:1.2;letter-spacing:-0.02em">这一页不在这里</td></tr>
+    <tr><td class="num">22</td><td class="num u">600 · 1.4</td><td>正文二级标题</td><td style="font-size:22px;font-weight:600;line-height:1.4">二、分层架构</td></tr>
+    <tr><td class="num">19</td><td class="num u">500 · 1.5</td><td>文字卡标题</td><td style="font-size:19px;font-weight:500;line-height:1.5">全栈 Rust 系统的 CI/CD 架构</td></tr>
+    <tr><td class="num">17</td><td class="num u">400 · 1.95</td><td>文章正文、手记标题</td><td style="font-size:17px;line-height:1.95;letter-spacing:.02em">理解了编译架构，来看运行时。</td></tr>
+    <tr><td class="num">14</td><td class="num u">400 / 500 · 1.6</td><td>界面正文、控件</td><td style="font-size:14px">保存 · 搜索文章与手记</td></tr>
+    <tr><td class="num">13</td><td class="num u">400 · 1.8</td><td>摘要、说明</td><td style="font-size:13px;color:var(--muted)">它可能被移动或删除了。</td></tr>
+    <tr><td class="num">12</td><td class="num u">400 · 1.6</td><td>元信息、标签</td><td style="font-size:12px;color:var(--muted)">Go · <span class="num">2026.08.16 · 21</span> 分钟</td></tr>
+  </tbody>
+</table></section>
+
+<section class="blk"><div><h2>圆角</h2><p class="lead">功能圆角最大 16；胶囊是形态，不算超限。</p></div>
+<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:20px">
+  <div><div class="rad" style="border-radius:4px"></div><div class="num" style="margin-top:14px;font-size:14px">4</div><div class="cap">相框卡、正文图片</div></div>
+  <div><div class="rad" style="border-radius:8px"></div><div class="num" style="margin-top:14px;font-size:14px">8</div><div class="cap">键帽、代码块、气泡提示</div></div>
+  <div><div class="rad" style="border-radius:12px"></div><div class="num" style="margin-top:14px;font-size:14px">12</div><div class="cap">输入框、菜单项、时间线卡</div></div>
+  <div><div class="rad" style="border-radius:16px"></div><div class="num" style="margin-top:14px;font-size:14px">16</div><div class="cap">面板、浮层、对话框、精选大图</div></div>
+  <div><div class="rad" style="border-radius:999px;height:40px;margin-top:48px"></div><div style="margin-top:14px;font-size:14px">胶囊</div><div class="cap">按钮、导航、标签、分段</div></div>
+</div></section>
+
+<section class="blk"><div><h2>间距与栅格</h2><p class="lead">以 4 为单位。1440 宽时正文栏 1120，两侧各 160；导航两端对齐正文栏；文章阅读栏 720。</p></div>
+<div style="display:grid;grid-template-columns:300px minmax(0,1fr);gap:48px;align-items:start">
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <sc-for list="{{space}}" as="g" hint-placeholder-count="9"><div style="display:flex;align-items:center;gap:14px"><span class="num" style="width:28px;font-size:12px;color:var(--muted);text-align:right">{{g.n}}</span><span class="bar" style="width:{{g.w}}px"></span></div></sc-for>
+  </div>
+  <div>
+    <div style="position:relative;height:330px;border-radius:12px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);border:1px solid var(--ol);overflow:hidden">
+      <span style="position:absolute;top:0;bottom:0;left:11.1%;right:11.1%;background:color-mix(in oklab,var(--deco) 8%,transparent);box-shadow:inset 1px 0 0 color-mix(in oklab,var(--deco) 45%,transparent),inset -1px 0 0 color-mix(in oklab,var(--deco) 45%,transparent)"></span>
+      <span style="position:absolute;top:0;bottom:0;left:25%;right:25%;box-shadow:inset 1px 0 0 var(--rule2),inset -1px 0 0 var(--rule2)"></span>
+      <span style="position:absolute;top:14px;left:11.1%;width:14%;height:16px;border-radius:999px;background:var(--sunk)"></span>
+      <span style="position:absolute;top:14px;left:34%;right:34%;height:16px;border-radius:999px;background:var(--sunk)"></span>
+      <span style="position:absolute;top:14px;right:11.1%;width:8%;height:16px;border-radius:999px;background:var(--sunk)"></span>
+      <span class="num" style="position:absolute;bottom:12px;left:11.1%;font-size:11.5px;color:var(--accent);padding-left:8px">正文栏 1120</span>
+      <span class="num" style="position:absolute;bottom:36px;left:25%;font-size:11.5px;color:var(--muted);padding-left:8px">阅读栏 720</span>
+      <span class="num" style="position:absolute;bottom:12px;left:0;width:11.1%;text-align:center;font-size:11.5px;color:var(--muted)">160</span>
+      <span class="num" style="position:absolute;bottom:12px;right:0;width:11.1%;text-align:center;font-size:11.5px;color:var(--muted)">160</span>
+    </div>
+    <div class="cap" style="margin-top:12px">窄屏：正文栏两侧留 16；导航收成底部药丸</div>
+  </div>
+</div></section>
+
+<section class="blk"><div><h2>动效</h2><p class="lead">只动颜色、透明度、描线与裁切。不缩放，不做方向滑入；背景的季节飘落是唯一例外。减弱动态时一律静止。</p></div>
+<table class="spec">
+  <thead><tr><th style="width:170px">场景</th><th style="width:150px">时长</th><th style="width:220px">曲线</th><th>属性</th></tr></thead>
+  <tbody>
+    <tr><td>悬停、按下</td><td class="num">120ms</td><td class="num u">ease-out</td><td class="u">背景、颜色</td></tr>
+    <tr><td>浮层出现 / 消失</td><td class="num">180 / 120ms</td><td class="num u">ease-out</td><td class="u">透明度</td></tr>
+    <tr><td>目录展开 / 收起</td><td class="num">320 / 220ms</td><td class="num u">(.22,1,.36,1) / (.4,0,.2,1)</td><td class="u">从阅读位置裁切揭开</td></tr>
+    <tr><td>路由进度</td><td class="num">跟随加载</td><td class="num u">linear</td><td class="u">导航药丸下沿进度线，完成后淡出</td></tr>
+    <tr><td>骨架</td><td class="num">1.8s 循环</td><td class="num u">ease-in-out</td><td class="u">透明度起伏，不加扫光</td></tr>
+    <tr><td>描线、生长</td><td class="num">0.8–1.2s</td><td class="num u">(.45,.05,.25,1)</td><td class="u">签名、加载花形、插画枝条</td></tr>
+    <tr><td>季节飘落</td><td class="num">持续</td><td class="num u">linear</td><td class="u">仅背景层的位移与旋转</td></tr>
+  </tbody>
+</table></section>
+
+<section class="blk"><div><h2>图标</h2><p class="lead">线性图标，24 栅格、描边 2、圆头。导航与按钮 16，圆钮 18；品牌标志用官方实心图形。</p></div>
+<div style="display:flex;flex-wrap:wrap;gap:20px 8px">
+  <sc-for list="{{icons}}" as="i" hint-placeholder-count="10"><div class="ico"><span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{i.d}}"/></svg></span>{{i.n}}</div></sc-for>
+  <div class="ico"><span><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg></span>GitHub</div>
+</div></section>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"season":{"editor":"enum","options":["春","夏","秋","冬"],"default":"春"},"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":4300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const S = {
+      '春': { name: '花朝', seed: '#f47983', h: 16.6, l: '/_blob/d8aaad66118cac26d5af34610af527bf', d: '/_blob/0cfa75d49c85d4df8e63d591ce6c7ea1' },
+      '夏': { name: '荷风', seed: '#2f9e7a', h: 162, l: '/_blob/c0353bf8edad55e8130fb95826b3799f', d: '/_blob/8ab23c87229ff622bac13566cfb665fd' },
+      '秋': { name: '桂月', seed: '#d9a21b', h: 82.95, l: '/_blob/d837ab2ada8c6a3cbb1a71fea71be6e2', d: '/_blob/8a07e26da1a24b8a9f19bf09a30aca11' },
+      '冬': { name: '初雪', seed: '#7d8ea3', h: 252, l: '/_blob/eb4210561b3c04659b349b6813d7ba9c', d: '/_blob/f4961af0e552cbba606908f217a44b37' },
+    };
+    const season = S[this.props.season] ? this.props.season : '春';
+    const dark = !!this.props.dark;
+    const s = S[season], h = s.h;
+    const L = (hh) => ({ bg: `oklch(0.968 0.006 ${hh})`, sheet: `oklch(0.994 0.003 ${hh})`, sunk: `oklch(0.945 0.007 ${hh})`, fg: `oklch(0.3331 0.0175 ${hh})`, muted: `oklch(0.4717 0.0225 ${hh})`, rule: `oklch(0.3331 0.0175 ${hh} / .11)`, rule2: `oklch(0.3331 0.0175 ${hh} / .3)`, accent: `oklch(0.4739 0.0974 ${hh})`, danger: 'oklch(0.52 0.16 27)', ok: 'oklch(0.52 0.13 155)' });
+    const D = (hh) => ({ bg: `oklch(0.17 0.0087 ${hh})`, sheet: `oklch(0.235 0.011 ${hh})`, sunk: `oklch(0.29 0.012 ${hh})`, fg: `oklch(0.9373 0.015 ${hh})`, muted: `oklch(0.8573 0.0225 ${hh})`, rule: `oklch(0.9373 0.015 ${hh} / .12)`, rule2: `oklch(0.9373 0.015 ${hh} / .3)`, accent: `oklch(0.8589 0.1031 ${hh})`, danger: 'oklch(0.74 0.14 25)', ok: 'oklch(0.74 0.15 155)' });
+    const l = L(h), d = D(h), c = dark ? d : l;
+    const vars = `--bg:${c.bg};--sheet:${c.sheet};--sunk:${c.sunk};--fg:${c.fg};--muted:${c.muted};--rule:${c.rule};--rule2:${c.rule2};--deco:${s.seed};--accent:${c.accent};--danger:${c.danger};--ok:${c.ok};--ol:${dark ? 'rgb(255 255 255 / .08)' : 'transparent'};`;
+    const rows = [
+      ['纸面', '--bg', 'bg', '页面底，上面铺罗纹纸'],
+      ['纸片', '--sheet', 'sheet', '卡片、面板、浮层、当前项'],
+      ['凹陷', '--sunk', 'sunk', '输入框、分段轨道、键帽、骨架、次要按钮'],
+      ['墨色', '--fg', 'fg', '正文、主要按钮'],
+      ['次要', '--muted', 'muted', '说明、元信息、未选中项'],
+      ['发丝线', '--rule', 'rule', '分隔线、表格线'],
+      ['强线', '--rule2', 'rule2', '时间线、尺寸标注'],
+      ['季节色', '--deco', null, '装饰、进度、选中点；不做按钮底与正文字色'],
+      ['强调字', '--accent', 'accent', '链接、聚焦环、季节色上的文字'],
+      ['危险', '--danger', 'danger', '错误、删除、踩坑'],
+      ['成功', '--ok', 'ok', '成功、已解决、运行中'],
+    ];
+    const lay = (v, base) => `background:linear-gradient(${v},${v}),${base};`;
+    const tokens = rows.map(([name, v, k, use]) => {
+      const lv = k ? l[k] : s.seed, dv = k ? d[k] : s.seed;
+      return { name, v, use, lv, dv, ls: lay(lv, l.sheet), ds: lay(dv, d.sheet) + 'box-shadow:inset 0 0 0 1px rgb(255 255 255 / .08);' };
+    });
+    const seasons = ['春', '夏', '秋', '冬'].map((k) => {
+      const x = S[k], p = dark ? D(x.h) : L(x.h);
+      return { name: x.name, season: k, hex: x.seed, art: dark ? x.d : x.l, fg: p.fg, muted: p.muted, style: `background:${p.bg};box-shadow:0 4px 24px rgb(0 0 0 / .05)${dark ? ',inset 0 0 0 1px rgb(255 255 255 / .08)' : ''};` };
+    });
+    const space = [4, 8, 12, 16, 24, 32, 48, 64, 96].map((n) => ({ n, w: n * 2.4 }));
+    const icons = [
+      ['首页', 'M3 11l9-8 9 8M5 10v10h14V10'], ['博客', 'M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16M5 19h.01'],
+      ['手记', 'M5 4h11l3 3v13H5zM9 10h6M9 14h6'], ['推文', 'M20.2 12.2a6 6 0 0 0-8.5-8.5L5 10.5V19h8.5zM16 8 2 22M17.5 15H9'],
+      ['项目', 'M3 7h18v13H3zM8 7V4h8v3'], ['更多', 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z'],
+      ['搜索', 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-3.5-3.5'], ['通知', 'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0'],
+      ['评论', 'M4 4h16v12H5.2L4 17.2z'], ['链接', 'M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7'],
+    ].map(([n, d]) => ({ n, d }));
+    return {
+      vars, seasons, tokens, space, icons,
+      art: dark ? s.d : s.l, blend: dark ? 'normal' : 'multiply',
+      zoomCls: dark ? 'zoom-d' : 'zoom-l',
+      showLight: dark ? 'none' : 'block', showDark: dark ? 'block' : 'none',
+    };
+  }
+}
+</script>
+</body>
+</html>

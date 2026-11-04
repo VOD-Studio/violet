@@ -1,0 +1,1144 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "AboutGrowth.dc.html": {
+      "expand": "fill",
+      "h": 2200,
+      "page": "site",
+      "title": "关于",
+      "w": 1440,
+      "x": 4560,
+      "y": 2420
+    },
+    "Accordion.dc.html": {
+      "h": 2700,
+      "is_interactive": true,
+      "page": "components",
+      "title": "折叠面板",
+      "w": 1440,
+      "x": 9120,
+      "y": 23400
+    },
+    "Admin.dc.html": {
+      "expand": "fill",
+      "h": 1240,
+      "is_interactive": true,
+      "page": "admin",
+      "title": "后台 · 概览",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "AdminAI.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "admin",
+      "title": "后台 · 人设与 Bot",
+      "w": 1440,
+      "x": 0,
+      "y": 3060
+    },
+    "AdminComments.dc.html": {
+      "expand": "fill",
+      "h": 1100,
+      "is_interactive": true,
+      "page": "admin",
+      "title": "后台 · 评论",
+      "w": 1440,
+      "x": 0,
+      "y": 1640
+    },
+    "AdminEditor.dc.html": {
+      "expand": "fill",
+      "h": 1500,
+      "is_interactive": true,
+      "page": "admin",
+      "title": "后台 · 写文章",
+      "w": 1440,
+      "x": 3040,
+      "y": 0
+    },
+    "AdminEmoji.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "admin",
+      "title": "后台 · 表情",
+      "w": 1440,
+      "x": 6080,
+      "y": 1640
+    },
+    "AdminFeeds.dc.html": {
+      "expand": "fill",
+      "h": 860,
+      "is_interactive": true,
+      "page": "admin",
+      "title": "后台 · 转载订阅",
+      "w": 1440,
+      "x": 12160,
+      "y": 0
+    },
+    "AdminFriends.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "admin",
+      "title": "后台 · 友链",
+      "w": 1440,
+      "x": 1520,
+      "y": 1640
+    },
+    "AdminGalleries.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "page": "admin",
+      "title": "后台 · 图集",
+      "w": 1440,
+      "x": 7600,
+      "y": 0
+    },
+    "AdminJournal.dc.html": {
+      "expand": "fill",
+      "h": 1150,
+      "is_interactive": true,
+      "page": "admin",
+      "title": "后台 · 手记",
+      "w": 1440,
+      "x": 4560,
+      "y": 0
+    },
+    "AdminMedia.dc.html": {
+      "expand": "fill",
+      "h": 1280,
+      "is_interactive": true,
+      "page": "admin",
+      "title": "后台 · 素材",
+      "w": 1440,
+      "x": 4560,
+      "y": 1640
+    },
+    "AdminMusic.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "page": "admin",
+      "title": "后台 · 音乐",
+      "w": 1440,
+      "x": 7600,
+      "y": 1640
+    },
+    "AdminNotices.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "admin",
+      "title": "后台 · 公告",
+      "w": 1440,
+      "x": 3040,
+      "y": 1640
+    },
+    "AdminPeople.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "page": "admin",
+      "title": "后台 · 成员与权限",
+      "w": 1440,
+      "x": 1520,
+      "y": 3060
+    },
+    "AdminPosts.dc.html": {
+      "expand": "fill",
+      "h": 1300,
+      "is_interactive": true,
+      "page": "admin",
+      "title": "后台 · 文章",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "AdminProjects.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "admin",
+      "title": "后台 · 项目",
+      "w": 1440,
+      "x": 9120,
+      "y": 0
+    },
+    "AdminSettings.dc.html": {
+      "expand": "fill",
+      "h": 1100,
+      "is_interactive": true,
+      "page": "admin",
+      "title": "后台 · 设置",
+      "w": 1440,
+      "x": 3040,
+      "y": 3060
+    },
+    "AdminSystem.dc.html": {
+      "expand": "fill",
+      "h": 1300,
+      "is_interactive": true,
+      "page": "admin",
+      "title": "后台 · 系统",
+      "w": 1440,
+      "x": 4560,
+      "y": 3060
+    },
+    "AdminTags.dc.html": {
+      "expand": "fill",
+      "h": 1150,
+      "is_interactive": true,
+      "page": "admin",
+      "title": "后台 · 标签",
+      "w": 1440,
+      "x": 10640,
+      "y": 0
+    },
+    "AdminTweets.dc.html": {
+      "expand": "fill",
+      "h": 1150,
+      "is_interactive": true,
+      "page": "admin",
+      "title": "后台 · 推文",
+      "w": 1440,
+      "x": 6080,
+      "y": 0
+    },
+    "Alert.dc.html": {
+      "h": 2300,
+      "is_interactive": true,
+      "page": "components",
+      "title": "内联提示",
+      "w": 1440,
+      "x": 6080,
+      "y": 26900
+    },
+    "Annotation.dc.html": {
+      "h": 2500,
+      "is_interactive": true,
+      "page": "components",
+      "title": "批注",
+      "w": 1440,
+      "x": 1520,
+      "y": 31400
+    },
+    "Announce.dc.html": {
+      "h": 1400,
+      "is_interactive": true,
+      "page": "components",
+      "title": "公告栏",
+      "w": 1440,
+      "x": 4560,
+      "y": 35000
+    },
+    "Avatar.dc.html": {
+      "h": 3100,
+      "is_interactive": true,
+      "page": "components",
+      "title": "头像",
+      "w": 1440,
+      "x": 1520,
+      "y": 23400
+    },
+    "Badge.dc.html": {
+      "h": 3300,
+      "is_interactive": true,
+      "page": "components",
+      "title": "徽章与标签",
+      "w": 1440,
+      "x": 0,
+      "y": 23400
+    },
+    "Blog.dc.html": {
+      "expand": "fill",
+      "h": 2300,
+      "page": "site",
+      "title": "博客",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "Breadcrumbs.dc.html": {
+      "h": 2000,
+      "is_interactive": true,
+      "page": "components",
+      "title": "面包屑",
+      "w": 1440,
+      "x": 3040,
+      "y": 26900
+    },
+    "Card.dc.html": {
+      "h": 3000,
+      "is_interactive": true,
+      "page": "components",
+      "title": "卡片",
+      "w": 1440,
+      "x": 4560,
+      "y": 23400
+    },
+    "Cascader.dc.html": {
+      "h": 3900,
+      "is_interactive": true,
+      "page": "components",
+      "title": "级联选择",
+      "w": 1440,
+      "x": 9120,
+      "y": 13000
+    },
+    "Chat.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "site",
+      "title": "聊天",
+      "w": 1440,
+      "x": 1520,
+      "y": 5640
+    },
+    "Checkbox.dc.html": {
+      "h": 3400,
+      "is_interactive": true,
+      "page": "components",
+      "title": "复选框",
+      "w": 1440,
+      "x": 1520,
+      "y": 18400
+    },
+    "CodeBlock.dc.html": {
+      "h": 2900,
+      "is_interactive": true,
+      "page": "components",
+      "title": "代码块",
+      "w": 1440,
+      "x": 4560,
+      "y": 31400
+    },
+    "ColorPicker.dc.html": {
+      "h": 2350,
+      "is_interactive": true,
+      "page": "components",
+      "title": "取色",
+      "w": 1440,
+      "x": 12160,
+      "y": 440
+    },
+    "Combobox.dc.html": {
+      "h": 2900,
+      "is_interactive": true,
+      "page": "components",
+      "title": "组合框",
+      "w": 1440,
+      "x": 6080,
+      "y": 13000
+    },
+    "Command.dc.html": {
+      "h": 4400,
+      "is_interactive": true,
+      "page": "components",
+      "title": "浮层 · 命令面板",
+      "w": 1440,
+      "x": 12160,
+      "y": 6900
+    },
+    "Comment.dc.html": {
+      "h": 3200,
+      "is_interactive": true,
+      "page": "components",
+      "title": "评论",
+      "w": 1440,
+      "x": 0,
+      "y": 31400
+    },
+    "ConfirmDialog.dc.html": {
+      "h": 4700,
+      "is_interactive": true,
+      "page": "components",
+      "title": "浮层 · 确认框",
+      "w": 1440,
+      "x": 1520,
+      "y": 6900
+    },
+    "ContentKit.dc.html": {
+      "h": 5600,
+      "is_interactive": true,
+      "page": "components",
+      "title": "内容组件",
+      "w": 1440,
+      "x": 7600,
+      "y": 440
+    },
+    "Controls.dc.html": {
+      "h": 3400,
+      "page": "components",
+      "title": "控件",
+      "w": 1440,
+      "x": 1520,
+      "y": 440
+    },
+    "CtlButton.dc.html": {
+      "h": 4800,
+      "is_interactive": true,
+      "page": "components",
+      "title": "按钮",
+      "w": 1440,
+      "x": 0,
+      "y": 18400
+    },
+    "DatePicker.dc.html": {
+      "h": 4400,
+      "is_interactive": true,
+      "page": "components",
+      "title": "日期选择",
+      "w": 1440,
+      "x": 12160,
+      "y": 13000
+    },
+    "Dialog.dc.html": {
+      "h": 4950,
+      "is_interactive": true,
+      "page": "components",
+      "title": "浮层 · 对话框",
+      "w": 1440,
+      "x": 0,
+      "y": 6900
+    },
+    "Display.dc.html": {
+      "h": 6300,
+      "is_interactive": true,
+      "page": "components",
+      "title": "展示",
+      "w": 1440,
+      "x": 6080,
+      "y": 440
+    },
+    "Drawer.dc.html": {
+      "h": 4900,
+      "is_interactive": true,
+      "page": "components",
+      "title": "浮层 · 抽屉",
+      "w": 1440,
+      "x": 4560,
+      "y": 6900
+    },
+    "Dropdown.dc.html": {
+      "h": 4300,
+      "is_interactive": true,
+      "page": "components",
+      "title": "浮层 · 下拉菜单",
+      "w": 1440,
+      "x": 7600,
+      "y": 6900
+    },
+    "DropdownMenu.dc.html": {
+      "h": 4450,
+      "is_interactive": true,
+      "page": "components",
+      "title": "浮层 · 操作菜单",
+      "w": 1440,
+      "x": 9120,
+      "y": 6900
+    },
+    "EmojiPicker.dc.html": {
+      "h": 5600,
+      "is_interactive": true,
+      "page": "components",
+      "title": "表情选择器",
+      "w": 1440,
+      "x": 15200,
+      "y": 440
+    },
+    "Feedback.dc.html": {
+      "h": 2100,
+      "page": "states",
+      "title": "空状态与错误",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "Field.dc.html": {
+      "h": 3900,
+      "is_interactive": true,
+      "page": "components",
+      "title": "表单项",
+      "w": 1440,
+      "x": 13680,
+      "y": 13000
+    },
+    "Footer.dc.html": {
+      "h": 320,
+      "page": "components",
+      "title": "页脚（组件）",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "Forms.dc.html": {
+      "h": 4350,
+      "is_interactive": true,
+      "page": "components",
+      "title": "表单",
+      "w": 1440,
+      "x": 3040,
+      "y": 440
+    },
+    "Foundation.dc.html": {
+      "h": 4300,
+      "page": "foundation",
+      "title": "基础规范",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "Friends.dc.html": {
+      "expand": "fill",
+      "h": 2200,
+      "page": "site",
+      "title": "友链",
+      "w": 1440,
+      "x": 0,
+      "y": 5640
+    },
+    "Galleries.dc.html": {
+      "expand": "fill",
+      "h": 2300,
+      "page": "site",
+      "title": "图集",
+      "w": 1440,
+      "x": 3040,
+      "y": 2420
+    },
+    "Header-States.dc.html": {
+      "h": 4800,
+      "page": "components",
+      "title": "导航 · 状态",
+      "w": 1440,
+      "x": 0,
+      "y": 440
+    },
+    "Header.dc.html": {
+      "h": 200,
+      "page": "components",
+      "title": "导航（组件）",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "Icons.dc.html": {
+      "h": 8000,
+      "is_interactive": true,
+      "page": "icons",
+      "title": "图标",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "ImageGrid.dc.html": {
+      "h": 2400,
+      "is_interactive": true,
+      "page": "components",
+      "title": "图片网格",
+      "w": 1440,
+      "x": 6080,
+      "y": 31400
+    },
+    "Inbox.dc.html": {
+      "h": 1700,
+      "is_interactive": true,
+      "page": "components",
+      "title": "消息面板",
+      "w": 1440,
+      "x": 6080,
+      "y": 35000
+    },
+    "Input.dc.html": {
+      "h": 5200,
+      "is_interactive": true,
+      "page": "components",
+      "title": "输入框",
+      "w": 1440,
+      "x": 0,
+      "y": 13000
+    },
+    "InputNumber.dc.html": {
+      "h": 4000,
+      "is_interactive": true,
+      "page": "components",
+      "title": "数字输入",
+      "w": 1440,
+      "x": 3040,
+      "y": 13000
+    },
+    "Journal.dc.html": {
+      "expand": "fill",
+      "h": 2000,
+      "page": "site",
+      "title": "手记",
+      "w": 1440,
+      "x": 4560,
+      "y": 0
+    },
+    "Kbd.dc.html": {
+      "h": 2900,
+      "is_interactive": true,
+      "page": "components",
+      "title": "键帽",
+      "w": 1440,
+      "x": 3040,
+      "y": 23400
+    },
+    "Lightbox.dc.html": {
+      "h": 3800,
+      "is_interactive": true,
+      "page": "components",
+      "title": "浮层 · 图片预览",
+      "w": 1440,
+      "x": 15200,
+      "y": 6900
+    },
+    "List.dc.html": {
+      "h": 2700,
+      "is_interactive": true,
+      "page": "components",
+      "title": "列表",
+      "w": 1440,
+      "x": 6080,
+      "y": 23400
+    },
+    "Loading.dc.html": {
+      "h": 4500,
+      "page": "states",
+      "title": "加载",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "Login.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "page": "site",
+      "title": "登录",
+      "w": 1440,
+      "x": 3040,
+      "y": 5640
+    },
+    "Main.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "page": "site",
+      "title": "首页",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "Mention.dc.html": {
+      "h": 2300,
+      "is_interactive": true,
+      "page": "components",
+      "title": "提及",
+      "w": 1440,
+      "x": 7600,
+      "y": 31400
+    },
+    "MorphingPopover.dc.html": {
+      "h": 5400,
+      "is_interactive": true,
+      "page": "components",
+      "title": "浮层 · 变形弹出层",
+      "w": 1440,
+      "x": 16720,
+      "y": 6900
+    },
+    "Motion.dc.html": {
+      "h": 4900,
+      "is_interactive": true,
+      "page": "components",
+      "title": "动效",
+      "w": 1440,
+      "x": 9120,
+      "y": 440
+    },
+    "Navbar.dc.html": {
+      "h": 1500,
+      "is_interactive": true,
+      "page": "components",
+      "title": "导航栏",
+      "w": 1440,
+      "x": 0,
+      "y": 35000
+    },
+    "Notification.dc.html": {
+      "h": 2300,
+      "is_interactive": true,
+      "page": "components",
+      "title": "通知",
+      "w": 1440,
+      "x": 9120,
+      "y": 31400
+    },
+    "Otp.dc.html": {
+      "h": 2300,
+      "is_interactive": true,
+      "page": "components",
+      "title": "验证码",
+      "w": 1440,
+      "x": 10640,
+      "y": 31400
+    },
+    "PageHeader.dc.html": {
+      "h": 2900,
+      "is_interactive": true,
+      "page": "components",
+      "title": "页头",
+      "w": 1440,
+      "x": 4560,
+      "y": 26900
+    },
+    "Popover.dc.html": {
+      "h": 4700,
+      "is_interactive": true,
+      "page": "components",
+      "title": "浮层 · 弹出层",
+      "w": 1440,
+      "x": 6080,
+      "y": 6900
+    },
+    "Presence.dc.html": {
+      "h": 1400,
+      "is_interactive": true,
+      "page": "components",
+      "title": "实时状态",
+      "w": 1440,
+      "x": 1520,
+      "y": 35000
+    },
+    "Profile.dc.html": {
+      "expand": "fill",
+      "h": 2000,
+      "is_interactive": true,
+      "page": "site",
+      "title": "个人主页",
+      "w": 1440,
+      "x": 4560,
+      "y": 5640
+    },
+    "ProfileCard.dc.html": {
+      "h": 1900,
+      "is_interactive": true,
+      "page": "components",
+      "title": "站长卡片",
+      "w": 1440,
+      "x": 3040,
+      "y": 35000
+    },
+    "Progress.dc.html": {
+      "h": 2900,
+      "is_interactive": true,
+      "page": "components",
+      "title": "进度与统计",
+      "w": 1440,
+      "x": 10640,
+      "y": 23400
+    },
+    "Projects.dc.html": {
+      "expand": "fill",
+      "h": 1900,
+      "page": "site",
+      "title": "项目",
+      "w": 1440,
+      "x": 1520,
+      "y": 2420
+    },
+    "Quote.dc.html": {
+      "h": 2500,
+      "is_interactive": true,
+      "page": "components",
+      "title": "引用与外链",
+      "w": 1440,
+      "x": 3040,
+      "y": 31400
+    },
+    "Radio.dc.html": {
+      "h": 3100,
+      "is_interactive": true,
+      "page": "components",
+      "title": "单选",
+      "w": 1440,
+      "x": 3040,
+      "y": 18400
+    },
+    "Reaction.dc.html": {
+      "h": 4400,
+      "is_interactive": true,
+      "page": "components",
+      "title": "回应",
+      "w": 1440,
+      "x": 13680,
+      "y": 440
+    },
+    "ScrollArea.dc.html": {
+      "h": 2600,
+      "is_interactive": true,
+      "page": "components",
+      "title": "分隔与滚动",
+      "w": 1440,
+      "x": 12160,
+      "y": 23400
+    },
+    "Segmented.dc.html": {
+      "h": 3300,
+      "is_interactive": true,
+      "page": "components",
+      "title": "分段控件",
+      "w": 1440,
+      "x": 6080,
+      "y": 18400
+    },
+    "Select.dc.html": {
+      "h": 4300,
+      "is_interactive": true,
+      "page": "components",
+      "title": "选择器",
+      "w": 1440,
+      "x": 7600,
+      "y": 13000
+    },
+    "Sheet.dc.html": {
+      "h": 4300,
+      "is_interactive": true,
+      "page": "components",
+      "title": "浮层 · 侧边面板",
+      "w": 1440,
+      "x": 3040,
+      "y": 6900
+    },
+    "Showcase.dc.html": {
+      "h": 4000,
+      "is_interactive": true,
+      "page": "showcase",
+      "title": "组件展示",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "Sitemap.dc.html": {
+      "h": 3300,
+      "page": "foundation",
+      "title": "站点结构",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "Slider.dc.html": {
+      "h": 2900,
+      "is_interactive": true,
+      "page": "components",
+      "title": "滑块",
+      "w": 1440,
+      "x": 9120,
+      "y": 18400
+    },
+    "Sonner.dc.html": {
+      "h": 5700,
+      "is_interactive": true,
+      "page": "components",
+      "title": "浮层 · 轻提示",
+      "w": 1440,
+      "x": 13680,
+      "y": 6900
+    },
+    "Sortable.dc.html": {
+      "h": 2500,
+      "is_interactive": true,
+      "page": "components",
+      "title": "拖拽排序",
+      "w": 1440,
+      "x": 13680,
+      "y": 23400
+    },
+    "Spinner.dc.html": {
+      "h": 4300,
+      "is_interactive": true,
+      "page": "components",
+      "title": "指示器",
+      "w": 1440,
+      "x": 7600,
+      "y": 26900
+    },
+    "Steps.dc.html": {
+      "h": 2400,
+      "is_interactive": true,
+      "page": "components",
+      "title": "步骤",
+      "w": 1440,
+      "x": 1520,
+      "y": 26900
+    },
+    "Switch.dc.html": {
+      "h": 3200,
+      "is_interactive": true,
+      "page": "components",
+      "title": "开关",
+      "w": 1440,
+      "x": 4560,
+      "y": 18400
+    },
+    "Table.dc.html": {
+      "h": 2700,
+      "is_interactive": true,
+      "page": "components",
+      "title": "表格",
+      "w": 1440,
+      "x": 10640,
+      "y": 440
+    },
+    "Tabs.dc.html": {
+      "h": 2600,
+      "is_interactive": true,
+      "page": "components",
+      "title": "标签页",
+      "w": 1440,
+      "x": 0,
+      "y": 26900
+    },
+    "TagInput.dc.html": {
+      "h": 2800,
+      "is_interactive": true,
+      "page": "components",
+      "title": "标签输入",
+      "w": 1440,
+      "x": 4560,
+      "y": 13000
+    },
+    "Textarea.dc.html": {
+      "h": 3300,
+      "is_interactive": true,
+      "page": "components",
+      "title": "多行输入",
+      "w": 1440,
+      "x": 1520,
+      "y": 13000
+    },
+    "ToggleGroup.dc.html": {
+      "h": 2800,
+      "is_interactive": true,
+      "page": "components",
+      "title": "开关组",
+      "w": 1440,
+      "x": 7600,
+      "y": 18400
+    },
+    "Tooltip.dc.html": {
+      "h": 4400,
+      "is_interactive": true,
+      "page": "components",
+      "title": "浮层 · 文字提示",
+      "w": 1440,
+      "x": 10640,
+      "y": 6900
+    },
+    "Tree.dc.html": {
+      "h": 2800,
+      "is_interactive": true,
+      "page": "components",
+      "title": "树",
+      "w": 1440,
+      "x": 7600,
+      "y": 23400
+    },
+    "TreeSelect.dc.html": {
+      "h": 4100,
+      "is_interactive": true,
+      "page": "components",
+      "title": "树选择",
+      "w": 1440,
+      "x": 10640,
+      "y": 13000
+    },
+    "TweetDetail.dc.html": {
+      "expand": "fill",
+      "h": 2000,
+      "is_interactive": true,
+      "page": "site",
+      "title": "推文详情",
+      "w": 1440,
+      "x": 6080,
+      "y": 2420
+    },
+    "Tweets.dc.html": {
+      "expand": "fill",
+      "h": 2900,
+      "is_interactive": true,
+      "page": "site",
+      "title": "推文",
+      "w": 1440,
+      "x": 0,
+      "y": 2420
+    },
+    "Upload.dc.html": {
+      "h": 6750,
+      "is_interactive": true,
+      "page": "components",
+      "title": "上传",
+      "w": 1440,
+      "x": 16720,
+      "y": 440
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-31T10:30:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "page": "site",
+    "view": "canvas"
+  },
+  "notes": {},
+  "order": [
+    "Main.dc.html",
+    "Blog.dc.html",
+    "Journal.dc.html",
+    "Header.dc.html",
+    "Footer.dc.html",
+    "Header-States.dc.html",
+    "Controls.dc.html",
+    "Dialog.dc.html",
+    "ConfirmDialog.dc.html",
+    "Sheet.dc.html",
+    "Drawer.dc.html",
+    "Popover.dc.html",
+    "Dropdown.dc.html",
+    "DropdownMenu.dc.html",
+    "Tooltip.dc.html",
+    "Command.dc.html",
+    "Sonner.dc.html",
+    "Lightbox.dc.html",
+    "MorphingPopover.dc.html",
+    "Display.dc.html",
+    "ContentKit.dc.html",
+    "Motion.dc.html",
+    "Forms.dc.html",
+    "Input.dc.html",
+    "Table.dc.html",
+    "ColorPicker.dc.html",
+    "Reaction.dc.html",
+    "EmojiPicker.dc.html",
+    "Upload.dc.html",
+    "CtlButton.dc.html",
+    "Loading.dc.html",
+    "InputNumber.dc.html",
+    "Select.dc.html",
+    "Cascader.dc.html",
+    "TreeSelect.dc.html",
+    "DatePicker.dc.html",
+    "Spinner.dc.html",
+    "Checkbox.dc.html",
+    "Radio.dc.html",
+    "Switch.dc.html",
+    "Segmented.dc.html",
+    "Badge.dc.html",
+    "Avatar.dc.html",
+    "Kbd.dc.html",
+    "Feedback.dc.html",
+    "Foundation.dc.html",
+    "Sitemap.dc.html",
+    "Icons.dc.html",
+    "Showcase.dc.html",
+    "AboutGrowth.dc.html",
+    "Tweets.dc.html",
+    "TweetDetail.dc.html",
+    "Projects.dc.html",
+    "Galleries.dc.html",
+    "Friends.dc.html",
+    "Chat.dc.html",
+    "Login.dc.html",
+    "Profile.dc.html",
+    "Admin.dc.html",
+    "AdminPosts.dc.html",
+    "AdminEditor.dc.html",
+    "AdminComments.dc.html",
+    "AdminMedia.dc.html",
+    "AdminPeople.dc.html",
+    "AdminSettings.dc.html",
+    "AdminSystem.dc.html",
+    "AdminJournal.dc.html",
+    "AdminTweets.dc.html",
+    "AdminProjects.dc.html",
+    "AdminTags.dc.html",
+    "AdminFeeds.dc.html",
+    "AdminFriends.dc.html",
+    "AdminNotices.dc.html",
+    "AdminGalleries.dc.html",
+    "AdminEmoji.dc.html",
+    "AdminMusic.dc.html",
+    "AdminAI.dc.html",
+    "Textarea.dc.html",
+    "TagInput.dc.html",
+    "Combobox.dc.html",
+    "Field.dc.html",
+    "ToggleGroup.dc.html",
+    "Slider.dc.html",
+    "Card.dc.html",
+    "List.dc.html",
+    "Tree.dc.html",
+    "Accordion.dc.html",
+    "Progress.dc.html",
+    "ScrollArea.dc.html",
+    "Sortable.dc.html",
+    "Tabs.dc.html",
+    "Steps.dc.html",
+    "Breadcrumbs.dc.html",
+    "PageHeader.dc.html",
+    "Alert.dc.html",
+    "Comment.dc.html",
+    "Annotation.dc.html",
+    "Quote.dc.html",
+    "CodeBlock.dc.html",
+    "ImageGrid.dc.html",
+    "Mention.dc.html",
+    "Notification.dc.html",
+    "Otp.dc.html",
+    "Navbar.dc.html",
+    "Presence.dc.html",
+    "ProfileCard.dc.html",
+    "Announce.dc.html",
+    "Inbox.dc.html"
+  ],
+  "pages": [
+    {
+      "id": "foundation",
+      "name": "基础"
+    },
+    {
+      "id": "icons",
+      "name": "图标"
+    },
+    {
+      "id": "showcase",
+      "name": "组件展示"
+    },
+    {
+      "id": "components",
+      "name": "组件"
+    },
+    {
+      "id": "site",
+      "name": "页面"
+    },
+    {
+      "id": "admin",
+      "name": "后台"
+    },
+    {
+      "id": "states",
+      "name": "状态"
+    }
+  ],
+  "title": "Violet UED 设计"
+}

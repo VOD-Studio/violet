@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Violet 表单</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;family=Alex+Brush&amp;display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Maple Mono";font-weight:400;font-style:normal;src:url(/_blob/a3ecea3add4961def4d089b95f486230) format("woff2")}
+@font-face{font-family:"Maple Mono";font-weight:500;font-style:normal;src:url(/_blob/1ba23035f8e49762aeac0a2a66f83fa0) format("woff2")}
+body{margin:0}
+a{color:inherit;text-decoration:none}
+.paper-l{position:absolute;inset:0;background-image:url(/_blob/66391f4a5c5b623abcbda5bc91818ab0);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.paper-d{position:absolute;inset:0;background-image:url(/_blob/b0a1c287fd95586fcb700c431de8f4c5);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.num{font-family:"Maple Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.mono{font-family:"Maple Mono",ui-monospace,monospace}
+.sheet{background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);border:1px solid var(--ol)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;height:36px;padding:0 16px;border:0;border-radius:999px;font-family:inherit;font-size:14px;font-weight:500;white-space:nowrap;background:var(--sunk);color:var(--fg);cursor:pointer}
+.btn.sm{height:32px;padding:0 12px}.btn.lg{height:40px;font-size:16px}
+.btn.pri{background:var(--fg);color:var(--bg)}.btn.gho{background:transparent}
+.btn.ic{width:32px;padding:0}
+.seg{display:inline-flex;padding:2px;border-radius:999px;background:var(--sunk)}
+.sg{display:inline-flex;align-items:center;gap:6px;box-sizing:border-box;height:32px;padding:0 12px;border-radius:999px;font-size:14px;color:var(--muted)}
+.sg i{font-style:normal;font-size:12px;opacity:.7}
+.sg.on{background:var(--sheet);color:var(--fg);font-weight:500;box-shadow:0 4px 24px rgb(0 0 0 / .05)}
+.chip{display:inline-flex;align-items:center;gap:4px;box-sizing:border-box;height:24px;padding:0 10px;border-radius:999px;background:var(--sunk);font-size:12px;font-weight:500;color:var(--muted)}
+.chip.ac{background:color-mix(in oklab,var(--deco) 16%,var(--sheet));color:var(--accent)}
+.chip.ok{background:color-mix(in oklab,var(--ok) 12%,var(--sheet));color:var(--ok)}
+.fld{display:flex;align-items:center;gap:8px;box-sizing:border-box;height:36px;padding:0 12px;border-radius:12px;background:var(--sunk);font-size:14px;color:var(--muted)}
+.lab{display:block;margin-bottom:8px;font-size:14px;font-weight:600}
+.h1{margin:0;font-size:52px;font-weight:600;line-height:1.15;letter-spacing:-0.01em}
+
+.k-blk{display:grid;grid-template-columns:240px minmax(0,1fr);gap:56px;padding:56px 0;border-top:1px solid var(--rule)}
+.k-blk h2{margin:0;font-size:24px;font-weight:600;line-height:1.3}
+.k-uid{display:block;margin-top:6px;font:400 12px "Maple Mono",monospace;color:var(--muted)}
+.k-lead{margin:12px 0 0;font-size:13px;line-height:1.85;color:var(--muted)}
+.k-cap{margin-top:10px;font-size:12px;line-height:1.7;color:var(--muted)}
+.k-row{display:flex;flex-wrap:wrap;align-items:flex-start;gap:28px}
+.k-pnl{border-radius:12px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);border:1px solid var(--ol)}
+.k-ib{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--muted);cursor:pointer;flex:none}
+.k-ib:hover{background:var(--sunk);color:var(--fg)}
+.k-mi{display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;min-height:36px;padding:6px 10px;border:0;border-radius:8px;background:transparent;font-family:inherit;font-size:14px;color:var(--fg);text-align:left;cursor:pointer;white-space:nowrap}
+.k-mi:hover,.k-mi.hl{background:var(--sunk)}
+.k-mi .k{margin-left:auto;font:500 12px Inter,sans-serif;color:var(--muted)}
+.k-mi svg{color:var(--muted);flex:none}
+.k-sep{height:1px;margin:6px 8px;background:var(--rule)}
+.k-lbl{padding:6px 10px 4px;font-size:12px;color:var(--muted)}
+.k-av{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;object-fit:cover;background:var(--sunk);font-weight:600;color:var(--muted);flex:none}
+.k-scrim{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgb(20 16 14 / .32)}
+.k-sw{position:relative;display:inline-block;width:36px;height:20px;border-radius:999px;background:var(--fg);flex:none}.k-sw::after{content:"";position:absolute;top:2px;left:18px;width:16px;height:16px;border-radius:50%;background:var(--bg)}
+.k-sw.off{background:color-mix(in oklab,var(--sunk) 80%,var(--fg))}.k-sw.off::after{left:2px;background:var(--sheet)}
+.k-arc{animation:k-rot 1.6s linear infinite;flex:none}.k-arc .a{animation:k-dash 1.4s ease-in-out infinite}
+@keyframes k-rot{to{transform:rotate(360deg)}}
+@keyframes k-dash{0%{stroke-dasharray:4 100;stroke-dashoffset:0}50%{stroke-dasharray:60 100;stroke-dashoffset:-18}100%{stroke-dasharray:4 100;stroke-dashoffset:-96}}
+@media (prefers-reduced-motion: reduce){.k-arc,.k-arc .a{animation:none}.k-arc .a{stroke-dasharray:62 100}}
+.k-fade{animation:k-in .18s ease-out both}@keyframes k-in{from{opacity:0}to{opacity:1}}
+
+.k-hlw{position:relative;display:flex;flex-direction:column;gap:2px}
+.k-hlw:has(> .k-li){gap:4px}
+.k-hlw > .k-mi,.k-hlw > .k-li,.k-hlw > .k-opt{position:relative;z-index:1}
+.k-hlw > .k-mi:hover,.k-hlw > .k-li:hover,.k-hlw > .k-opt:hover{background:transparent}
+.k-hlw > .k-mi.on,.k-hlw > .k-li.on,.k-hlw > .k-mi.on:hover,.k-hlw > .k-li.on:hover{background:color-mix(in oklab,var(--deco) 13%,var(--sheet))}
+.k-hlw > .k-mi.on:hover,.k-hlw > .k-li.on:hover{background:color-mix(in oklab,var(--deco) 18%,var(--sheet))}
+.k-hlw > .k-mi.on{color:var(--accent);font-weight:600}.k-hlw > .k-mi.on svg{color:var(--accent)}
+.k-hlw > .k-li.on b{color:var(--accent)}
+.k-hl{position:absolute;left:0;top:0;z-index:0;border-radius:8px;background:var(--sunk);pointer-events:none;opacity:0}
+.k-reveal{animation:k-reveal calc(200ms*var(--k,1)) cubic-bezier(.32,.72,0,1) backwards}
+.k-reveal.out{animation:k-sink calc(140ms*var(--k,1)) ease-in forwards}
+@keyframes k-reveal{from{opacity:0;transform:translateY(-6px)}}
+@keyframes k-sink{to{opacity:0;transform:translateY(-4px)}}
+.k-ovl{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center}
+.k-ovl > :not(.k-scr):not(.k-lbs){position:relative}
+.k-scr{position:absolute;inset:0;background:rgb(20 16 14 / .28)}
+[data-scroll]{overflow-y:auto;overscroll-behavior:contain}
+.k-scrim.in,.k-scr.in{animation:k-fi calc(200ms*var(--k,1)) ease-out backwards}
+.k-scrim.out,.k-scr.out{animation:k-fo calc(160ms*var(--k,1)) ease-in forwards}
+.k-dlg.in{animation:k-dlg-in calc(220ms*var(--k,1)) cubic-bezier(.32,.72,0,1) backwards}
+.k-dlg.out{animation:k-dlg-out calc(140ms*var(--k,1)) ease-in forwards}
+.k-shr.in{animation:k-from-r calc(360ms*var(--k,1)) cubic-bezier(.32,.72,0,1) backwards}
+.k-shr.out{animation:k-to-r calc(240ms*var(--k,1)) cubic-bezier(.4,0,1,1) forwards}
+.k-shb.in{animation:k-from-b calc(400ms*var(--k,1)) cubic-bezier(.32,.72,0,1) backwards}
+.k-shb.out{animation:k-to-b calc(240ms*var(--k,1)) cubic-bezier(.4,0,1,1) forwards}
+.k-pop.in{animation:k-reveal calc(200ms*var(--k,1)) cubic-bezier(.32,.72,0,1) backwards}
+.k-pop.out{animation:k-sink calc(140ms*var(--k,1)) ease-in forwards}
+.k-cmd.in{animation:k-fi calc(160ms*var(--k,1)) ease-out backwards}
+.k-cmd.out{animation:k-fo calc(100ms*var(--k,1)) ease-in forwards}
+.k-lbs.in{animation:k-fi calc(240ms*var(--k,1)) ease-out backwards}
+.k-lbs.out{animation:k-fo calc(240ms*var(--k,1)) ease-in calc(40ms*var(--k,1)) forwards}
+@keyframes k-fi{from{opacity:0}}
+@keyframes k-fo{to{opacity:0}}
+@keyframes k-dlg-in{from{opacity:0;filter:blur(6px)}}
+@keyframes k-dlg-out{to{opacity:0;filter:blur(4px)}}
+@keyframes k-from-r{from{transform:translateX(calc(100% + 16px))}}
+@keyframes k-to-r{to{transform:translateX(calc(100% + 16px))}}
+@keyframes k-from-b{from{transform:translateY(100%)}}
+@keyframes k-to-b{to{transform:translateY(100%)}}
+.k-fld{display:flex;align-items:center;gap:8px;box-sizing:border-box;height:36px;padding:0 12px;border-radius:12px;background:var(--sunk);font-size:14px;color:var(--fg);transition:background-color .16s ease-out,box-shadow .16s ease-out}
+.k-fld:hover{background:color-mix(in oklab,var(--sunk) 92%,var(--fg))}
+.k-fld:focus-within,.k-fld.f{background:var(--sheet);box-shadow:0 0 0 1px color-mix(in oklab,var(--fg) 28%,transparent),0 0 0 4px color-mix(in oklab,var(--deco) 18%,transparent)}
+.k-fld.e{background:color-mix(in oklab,var(--danger) 5%,var(--sheet));box-shadow:0 0 0 1px color-mix(in oklab,var(--danger) 60%,transparent),0 0 0 4px color-mix(in oklab,var(--danger) 12%,transparent)}
+.k-fld input,.k-fld textarea{flex:1;min-width:0;height:100%;padding:0;border:0;outline:0;background:transparent;font:inherit;color:inherit}
+.k-fld input::placeholder,.k-fld textarea::placeholder{color:var(--muted)}
+.k-seg{position:relative;display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:2px;border-radius:999px;background:var(--sunk)}
+.k-seg > button{position:relative;z-index:1;height:32px;padding:0 14px;border:0;border-radius:999px;background:transparent;font-family:inherit;font-size:14px;color:var(--muted);cursor:pointer;transition:color .2s ease-out}
+.k-seg > button.on{color:var(--fg);font-weight:500}
+.k-seg > i{position:absolute;top:2px;bottom:2px;left:2px;border-radius:999px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);transition:transform .28s cubic-bezier(.32,.72,0,1)}
+.k-tog{position:relative;display:inline-block;width:36px;height:20px;padding:0;border:0;border-radius:999px;background:color-mix(in oklab,var(--sunk) 80%,var(--fg));cursor:pointer;transition:background-color .2s ease-out;flex:none}
+.k-tog::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--sheet);box-shadow:0 1px 2px rgb(0 0 0 / .12);transition:transform .28s cubic-bezier(.32,.72,0,1),background-color .2s}
+.k-tog.on{background:var(--fg)}.k-tog.on::after{transform:translateX(16px);background:var(--bg)}
+.k-chk{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;padding:0;border:0;border-radius:6px;background:var(--sheet);box-shadow:inset 0 0 0 1.5px var(--rule2);cursor:pointer;transition:background-color .16s ease-out,box-shadow .16s ease-out;flex:none}
+.k-chk path{stroke-dasharray:24;stroke-dashoffset:24;transition:stroke-dashoffset .22s cubic-bezier(.32,.72,0,1) .04s}
+.k-chk.on{background:var(--fg);box-shadow:none}.k-chk.on path{stroke-dashoffset:0}
+.k-acc{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s cubic-bezier(.32,.72,0,1)}
+.k-acc > div{overflow:hidden}
+.k-acc.open{grid-template-rows:1fr}
+.k-chev{transition:transform .28s cubic-bezier(.32,.72,0,1)}.k-chev.open{transform:rotate(180deg)}
+@media (prefers-reduced-motion: reduce){.k-hl,.k-seg > i,.k-tog::after,.k-acc,.k-chev,.k-chk path{transition:none!important}.k-reveal{animation:k-fi .1s ease-out backwards}.k-reveal.out{animation:k-fo .1s ease-out forwards}
+  .k-dlg.in,.k-shr.in,.k-shb.in,.k-pop.in,.k-cmd.in{animation:k-fi .1s ease-out backwards}
+  .k-dlg.out,.k-shr.out,.k-shb.out,.k-pop.out,.k-cmd.out{animation:k-fo .1s ease-out forwards}}
+
+.k-df{display:flex;align-items:center;box-sizing:border-box;height:36px;padding:0 4px 0 9px;border-radius:12px;background:var(--sunk);font-size:14px;color:var(--fg);transition:background-color .16s ease-out,box-shadow .16s ease-out}
+.k-df:hover{background:color-mix(in oklab,var(--sunk) 92%,var(--fg))}
+.k-df.open{background:var(--sheet);box-shadow:0 0 0 1px var(--rule2)}
+.k-df:has(.k-ds:focus),.k-df.f{background:var(--sheet);box-shadow:0 0 0 1px color-mix(in oklab,var(--fg) 28%,transparent),0 0 0 4px color-mix(in oklab,var(--deco) 18%,transparent)}
+.k-df.e{background:color-mix(in oklab,var(--danger) 5%,var(--sheet));box-shadow:0 0 0 1px color-mix(in oklab,var(--danger) 60%,transparent),0 0 0 4px color-mix(in oklab,var(--danger) 12%,transparent)}
+.k-df.dis{opacity:.5;pointer-events:none}
+.k-ds{display:inline-flex;align-items:center;height:24px;padding:0 3px;border-radius:6px;font:400 14px "Maple Mono",monospace;font-variant-numeric:tabular-nums;outline:none;cursor:default;transition:background-color .12s ease-out;white-space:nowrap}
+.k-ds[tabindex]:focus,.k-ds.on{background:color-mix(in oklab,var(--deco) 26%,transparent)}
+.k-ds.ph{font-family:inherit;font-size:13px;color:var(--muted)}
+.k-df i{font-style:normal;font:400 13px "Maple Mono",monospace;color:var(--muted);opacity:.55}
+.k-dr{display:grid;grid-template-columns:minmax(0,1fr) 1px minmax(0,1fr) auto auto;gap:0;align-items:center}
+.k-dh{display:flex;align-items:center;gap:10px;height:28px;margin:0 2px;padding:0 10px;border-radius:8px;cursor:pointer;transition:background-color .16s ease-out,box-shadow .16s ease-out}
+.k-dh:hover{background:color-mix(in oklab,var(--sheet) 60%,transparent)}
+.k-dh.act{background:var(--sheet);box-shadow:0 0 0 1px var(--rule)}
+.k-df.open .k-dh.act{background:color-mix(in oklab,var(--deco) 10%,var(--sheet));box-shadow:0 0 0 1px color-mix(in oklab,var(--deco) 30%,transparent)}
+.k-dl{font-size:12px;color:var(--muted);flex:none}
+.k-dv{display:flex;align-items:center;min-width:0}
+.k-dsep{width:1px;height:16px;background:var(--rule2)}
+.k-dn{padding:0 10px 0 6px;font-size:12px;color:var(--muted);white-space:nowrap}
+.k-dn:empty{padding:0}
+.k-wd{margin-left:8px;font-size:13px;color:var(--muted);white-space:nowrap}
+.k-cb{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;margin-left:auto;padding:0;border:0;border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;transition:background-color .16s ease-out,color .16s ease-out;flex:none}
+.k-cb:hover,.k-df.open .k-cb{background:var(--sunk);color:var(--fg)}
+.k-err{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12px;color:var(--danger)}
+.k-dpop{width:fit-content;margin-top:8px;padding:14px 16px 10px}
+.k-calh{display:flex;align-items:center;gap:2px;height:32px;margin-bottom:4px}
+.k-calt{display:inline-flex;align-items:center;gap:4px;height:32px;margin-left:-6px;padding:0 8px 0 6px;border:0;border-radius:10px;background:transparent;font-family:inherit;font-size:15px;font-weight:600;color:var(--fg);cursor:pointer;transition:background-color .16s ease-out}
+button.k-calt:hover{background:var(--sunk)}
+.k-calt .num{font-weight:500}
+.k-ib28{width:28px;height:28px}
+.k-wk{display:grid;grid-template-columns:repeat(7,36px);font-size:12px;color:var(--muted);text-align:center}
+.k-wk span{height:28px;line-height:28px}
+.k-days{display:grid;grid-template-columns:repeat(7,36px);grid-auto-rows:36px;row-gap:2px}
+.k-day{position:relative;z-index:0;width:36px;height:36px;padding:0;border:0;background:transparent;font:400 13px "Maple Mono",monospace;font-variant-numeric:tabular-nums;color:var(--fg);cursor:pointer;outline:none}
+.k-day::before{content:"";position:absolute;inset:2px;z-index:-1;border-radius:50%;transition:background-color .16s ease-out,box-shadow .16s ease-out}
+.k-day:hover::before{background:var(--sunk)}
+.k-day:focus-visible::before{box-shadow:0 0 0 1px color-mix(in oklab,var(--fg) 28%,transparent),0 0 0 3px color-mix(in oklab,var(--deco) 22%,transparent)}
+.k-day.out{color:var(--muted);opacity:.4;cursor:default}
+.k-day.out:hover::before{background:transparent}
+.k-day.hide{visibility:hidden}
+.k-day.today::after{content:"";position:absolute;left:50%;bottom:6px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--deco)}
+.k-day.sel,.k-day.rs,.k-day.re{color:var(--bg)}
+.k-day.sel::before,.k-day.rs::before,.k-day.re::before{background:var(--fg)}
+.k-day.sel.today::after,.k-day.rs.today::after,.k-day.re.today::after{background:var(--bg)}
+.k-day.mid{background:var(--sunk)}
+.k-day.pv{background:color-mix(in oklab,var(--sunk) 60%,transparent)}
+.k-day.mid:hover::before,.k-day.pv:hover::before{background:transparent;box-shadow:inset 0 0 0 1.5px var(--rule2)}
+.k-day.rs{background:linear-gradient(to right,transparent 50%,var(--sunk) 50%)}
+.k-day.re{background:linear-gradient(to left,transparent 50%,var(--sunk) 50%)}
+.k-day.pve::before{box-shadow:inset 0 0 0 1.5px var(--fg)}
+.k-days .mid:nth-child(7n+1),.k-days .pv:nth-child(7n+1){border-radius:18px 0 0 18px}
+.k-days .mid:nth-child(7n),.k-days .pv:nth-child(7n){border-radius:0 18px 18px 0}
+.k-days .rs:nth-child(7n),.k-days .re:nth-child(7n+1){background:none}
+.k-mons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr));gap:4px;height:254px}
+.k-mon{border:0;border-radius:12px;background:transparent;font-family:inherit;font-size:14px;color:var(--fg);cursor:pointer;transition:background-color .16s ease-out}
+.k-mon:hover{background:var(--sunk)}
+.k-mon.on{background:var(--fg);color:var(--bg)}
+.k-mon.now:not(.on){color:var(--accent);font-weight:600}
+.k-calf{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:10px -8px 0;padding-top:10px;box-shadow:inset 0 1px 0 var(--rule)}
+.k-tm{display:flex;box-shadow:inset 1px 0 0 var(--rule)}
+.k-tc{display:flex;flex-direction:column;width:68px;padding:14px 4px 0}
+.k-tc > b{height:32px;line-height:32px;margin-bottom:4px;text-align:center;font-size:12px;font-weight:400;color:var(--muted)}
+.k-tl{height:282px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;-webkit-mask-image:linear-gradient(transparent,#000 20px,#000 calc(100% - 20px),transparent);mask-image:linear-gradient(transparent,#000 20px,#000 calc(100% - 20px),transparent)}
+.k-tl::-webkit-scrollbar{display:none}
+.k-tl .k-hlw{padding:8px 0}
+.k-opt{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;width:52px;height:32px;margin:0 auto;padding:0;border:0;border-radius:10px;background:transparent;font:400 13px "Maple Mono",monospace;color:var(--muted);cursor:pointer;transition:color .16s ease-out}
+.k-hlw > .k-opt:hover{color:var(--fg)}
+.k-opt.on,.k-hlw > .k-opt.on:hover{background:var(--fg);color:var(--bg)}
+
+.k-mk{background:color-mix(in oklab,var(--deco) 30%,transparent);color:inherit;padding:0 1px;border-radius:2px}
+.k-range{-webkit-appearance:none;appearance:none;width:100%;height:4px;margin:8px 0;border-radius:2px;outline:none;cursor:pointer}
+.k-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;background:var(--sheet);box-shadow:0 0 0 1px var(--rule2),0 1px 3px rgb(0 0 0 / .12);transition:box-shadow .16s ease-out}
+.k-range:active::-webkit-slider-thumb,.k-range:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 1px var(--fg),0 0 0 6px color-mix(in oklab,var(--deco) 22%,transparent)}
+.k-range::-moz-range-thumb{width:20px;height:20px;border:0;border-radius:50%;background:var(--sheet);box-shadow:0 0 0 1px var(--rule2)}
+.k-thumb{position:absolute;top:0;width:20px;height:20px;margin-left:-10px;border-radius:50%;background:var(--sheet);box-shadow:0 0 0 1px var(--rule2),0 1px 3px rgb(0 0 0 / .12)}
+.k-fmt{min-width:36px;height:32px;padding:0 10px;border:0;border-radius:999px;background:transparent;font-family:inherit;font-size:14px;color:var(--muted);cursor:pointer;transition:background-color .16s ease-out,color .16s ease-out}
+.k-fmt.on{background:var(--sheet);color:var(--fg);box-shadow:0 4px 24px rgb(0 0 0 / .05)}
+.k-sw2{width:28px;height:28px;padding:0;border:0;border-radius:50%;cursor:pointer;transition:box-shadow .16s ease-out}
+.k-sw2.on{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--fg)}
+
+</style>
+</helmet>
+<div style="{{vars}}position:relative;overflow:hidden;width:1440px;min-height:4350px;display:flex;flex-direction:column;background:var(--bg);color:var(--fg);font-family:'Songti SC','Noto Serif SC','Source Han Serif SC',STSong,SimSun,serif;font-size:15px;line-height:1.8">
+<div class="paper-l" style="display:{{showLight}}"></div>
+<div class="paper-d" style="display:{{showDark}}"></div>
+
+
+<main style="position:relative;z-index:2;padding:96px 160px 120px"><h1 class="h1">表单</h1><p style="margin:16px 0 56px;max-width:680px;font-size:15px;line-height:1.8;color:var(--muted)">选择、日期、时间、数字、滑块、标签输入与开关组。所有输入共用一个聚焦效果：纸片底、1px 墨色环、外面一圈 4px 季节色柔光；出错时换成危险色。</p></main>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"season":{"editor":"enum","options":["春","夏","秋","冬"],"default":"春"},"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":4350}}'>
+class Component extends DCLogic {
+  state = { sel: true, selVal: '已发布', tags: ['Go', 'Rust'], d1: { y: 2026, m: 10, d: 31 }, ym1: [2026, 10], v1: 'd', dt: { y: 2026, m: 11, d: 2, hh: 9, mm: 30 }, ym4: [2026, 11], rs: '2026-10-12', re: '2026-10-18', hov: null, ymR: [2026, 10], open: { 1: true, 2: true, 4: true }, num: 10, size: 17, view: 0, fmt: { b: true }, sw: 0 };
+  renderVals() {
+    const S = {
+      '春': { seed: '#f47983', h: 16.6, l: '/_blob/d8aaad66118cac26d5af34610af527bf', d: '/_blob/0cfa75d49c85d4df8e63d591ce6c7ea1' },
+      '夏': { seed: '#2f9e7a', h: 162, l: '/_blob/c0353bf8edad55e8130fb95826b3799f', d: '/_blob/8ab23c87229ff622bac13566cfb665fd' },
+      '秋': { seed: '#d9a21b', h: 82.95, l: '/_blob/d837ab2ada8c6a3cbb1a71fea71be6e2', d: '/_blob/8a07e26da1a24b8a9f19bf09a30aca11' },
+      '冬': { seed: '#7d8ea3', h: 252, l: '/_blob/eb4210561b3c04659b349b6813d7ba9c', d: '/_blob/f4961af0e552cbba606908f217a44b37' },
+    };
+    const season = S[this.props.season] ? this.props.season : '春';
+    const dark = !!this.props.dark;
+    const s = S[season], h = s.h;
+    const vars = dark
+      ? `--bg:oklch(0.17 0.0087 ${h});--sheet:oklch(0.235 0.011 ${h});--sunk:oklch(0.29 0.012 ${h});--fg:oklch(0.9373 0.015 ${h});--muted:oklch(0.8573 0.0225 ${h});--rule:oklch(0.9373 0.015 ${h} / .12);--rule2:oklch(0.9373 0.015 ${h} / .3);--deco:${s.seed};--accent:oklch(0.8589 0.1031 ${h});--danger:oklch(0.74 0.14 25);--ok:oklch(0.74 0.15 155);--ol:rgb(255 255 255 / .08);`
+      : `--bg:oklch(0.968 0.006 ${h});--sheet:oklch(0.994 0.003 ${h});--sunk:oklch(0.945 0.007 ${h});--fg:oklch(0.3331 0.0175 ${h});--muted:oklch(0.4717 0.0225 ${h});--rule:oklch(0.3331 0.0175 ${h} / .11);--rule2:oklch(0.3331 0.0175 ${h} / .3);--deco:${s.seed};--accent:oklch(0.4739 0.0974 ${h});--danger:oklch(0.52 0.16 27);--ok:oklch(0.52 0.13 155);--ol:transparent;`;
+    const base = { vars, season, dark, art: dark ? s.d : s.l, blend: dark ? 'normal' : 'multiply', showLight: dark ? 'none' : 'block', showDark: dark ? 'block' : 'none' };
+    
+    const HL = (key) => { const cur = this.state['hl_' + key];
+      const style = cur ? `transform:translate(${cur.x}px,${cur.y}px);width:${cur.w}px;height:${cur.h}px;opacity:${cur.on ? 1 : 0};transition:${cur.jump ? 'opacity .12s ease' : 'transform .28s cubic-bezier(.32,.72,0,1),width .28s cubic-bezier(.32,.72,0,1),height .28s cubic-bezier(.32,.72,0,1),opacity .12s ease'}` : 'opacity:0';
+      return { style,
+        enter: (e) => { const el = e.currentTarget; if (el.getAttribute('aria-disabled') === 'true') return; const prev = this.state['hl_' + key]; this.setState({ ['hl_' + key]: { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight, on: true, jump: !prev || !prev.on } }); },
+        leave: () => { const prev = this.state['hl_' + key]; if (prev) this.setState({ ['hl_' + key]: Object.assign({}, prev, { on: false }) }); } }; };
+    base.keepFocus = (e) => { const t = e.target; if (t.closest && t.closest('input,textarea,select,button,a,[tabindex]')) return; const c = e.currentTarget.querySelector('input,textarea,select'); if (!c || c.disabled) return; e.preventDefault(); if (document.activeElement !== c) c.focus(); };
+    const SLOW = () => (this.state.slow ? 4 : 1);
+    const OUT_MS = { dialog: 240, confirm: 160, prompt: 160, sheet: 240, side: 240, bottom: 240, pop: 150, menu: 150, ctx: 150, cmd: 160, lb: 280 };
+    const flip = (el, thumb, dur, back) => { const a = thumb.getBoundingClientRect(), b = el.getBoundingClientRect(); if (!b.width || !a.width) return Promise.resolve();
+      const s = Math.max(a.width / b.width, a.height / b.height), dx = a.left + a.width / 2 - (b.left + b.width / 2), dy = a.top + a.height / 2 - (b.top + b.height / 2);
+      const ix = Math.max(0, (b.width - a.width / s) / 2), iy = Math.max(0, (b.height - a.height / s) / 2);
+      const from = { transform: `translate(${dx}px,${dy}px) scale(${s})`, clipPath: `inset(${iy}px ${ix}px round ${8 / s}px)` }, to = { transform: 'translate(0px,0px) scale(1)', clipPath: 'inset(0px 0px round 4px)' };
+      return el.animate(back ? [to, from] : [from, to], { duration: dur, easing: 'cubic-bezier(.32,.72,0,1)', fill: back ? 'forwards' : 'none' }).finished.catch(() => {}); };
+    const ovOpen = (name, extra) => () => { clearTimeout(this._ovT); this.setState(Object.assign({ ov: name, ph: 'in', run: (this.state.run || 0) + 1, last: name, drag: 0, dragging: false }, extra || {})); };
+    const ovClose = () => { const name = this.state.ov; if (!name || this.state.ph === 'out') return; this.setState({ ph: 'out', run: (this.state.run || 0) + 1 }); clearTimeout(this._ovT);
+      const done = () => { if (this.state.ph === 'out') this.setState({ ov: null, drag: 0 }); };
+      const thumb = name === 'lb' && this._thumbs ? this._thumbs[this.state.lb || 0] : null;
+      if (thumb && this._lbEl && !matchMedia('(prefers-reduced-motion: reduce)').matches) flip(this._lbEl, thumb, 280 * SLOW(), true).then(done);
+      else this._ovT = setTimeout(done, (OUT_MS[name] || 160) * SLOW() + 40); };
+    const MODAL = { dialog: 1, confirm: 1, prompt: 1, sheet: 1, bottom: 1, cmd: 1, lb: 1 };
+    const lockRef = (always) => (el) => { if (!el || el.__lk) return; el.__lk = 1;
+      const h = (e) => { if (!always && !MODAL[this.state.ov]) return; const dy = e.deltaY || 0;
+        for (let n = e.target; n && n !== el.parentNode; n = n.parentNode) { if (n.hasAttribute && n.hasAttribute('data-scroll')) { if (e.type === 'touchmove' || (dy < 0 ? n.scrollTop > 0 : n.scrollTop + n.clientHeight < n.scrollHeight - 1)) return; break; } }
+        e.preventDefault(); };
+      el.addEventListener('wheel', h, { passive: false }); el.addEventListener('touchmove', h, { passive: false }); };
+    this._esc = ovClose;
+    const ovPh = (name) => (this.state.ov === name ? this.state.ph : '');
+    const thumbRef = (i) => (el) => { if (el) { this._thumbs = this._thumbs || {}; this._thumbs[i] = el; } };
+    const lbRef = (el) => { if (!el) return; this._lbEl = el; if (this._lbRun === this.state.run) return; this._lbRun = this.state.run;
+      const thumb = this._thumbs ? this._thumbs[this.state.lb || 0] : null; if (this.state.ph !== 'in' || !thumb || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const go = () => { el.style.visibility = ''; flip(el, thumb, 360 * SLOW(), false); };
+      if (el.complete && el.naturalWidth) go(); else { el.style.visibility = 'hidden'; el.addEventListener('load', go, { once: true }); } };
+    const focusRef = (ms) => (el) => { if (!el || this._fr === this.state.run || this.state.ph !== 'in') return; this._fr = this.state.run; setTimeout(() => { try { el.focus({ preventScroll: true }); } catch (e) {} }, ms * SLOW()); };
+    const st = this.state, set = (o) => this.setState(o);
+    const OPTS = [['草稿', ''], ['已发布', ''], ['定时发布', '先设置时间'], ['已下线', '']];
+    const TAGS = [['Go', 21], ['Rust', 14], ['Postgres', 9], ['骑行', 5], ['写作', 8]];
+
+    const pad = (n) => String(n).padStart(2, '0'), K = (y, m, d) => `${y}-${pad(m)}-${pad(d)}`, TODAY = '2026-10-31';
+    const dim = (y, m) => new Date(y, m, 0).getDate();
+    const wdOf = (y, m, d) => '周' + '日一二三四五六'[new Date(y, m - 1, d).getDay()];
+    const shift = (ym, n) => { const t = ym[0] * 12 + (ym[1] - 1) + n; return [Math.floor(t / 12), (t % 12) + 1]; };
+    const parse = (k) => k.split('-').map(Number);
+    const grid = (ym, cls, pick, hover, hideOut) => { const [y, m] = ym, lead = (new Date(y, m - 1, 1).getDay() + 6) % 7, n = dim(y, m), pn = dim(...shift(ym, -1)), out = [];
+      for (let i = lead; i > 0; i--) out.push({ d: pn - i + 1, out: true });
+      for (let d = 1; d <= n; d++) out.push({ d, k: K(y, m, d) });
+      while (out.length < 42) out.push({ d: out.length - lead - n + 1, out: true });
+      return out.map((c) => ({ d: c.d, label: c.k || '', tab: c.out ? -1 : 0, cls: c.out ? (hideOut ? 'out hide' : 'out') : cls(c.k) + (c.k === TODAY ? ' today' : ''),
+        pick: c.out ? null : () => pick(c.k), hover: c.out || !hover ? null : () => hover(c.k) })); };
+    const segKey = (field, part) => (e) => { const k = e.key, list = () => Array.from(e.currentTarget.parentElement.querySelectorAll('.k-ds[tabindex]'));
+      if (k === 'ArrowLeft' || k === 'ArrowRight') { e.preventDefault(); const l = list(), n = l[l.indexOf(e.currentTarget) + (k === 'ArrowRight' ? 1 : -1)]; if (n) n.focus(); return; }
+      if (k === 'Backspace' && field === 'd1') { e.preventDefault(); set({ d1: null }); return; }
+      const v = this.state[field] || { y: 2026, m: 10, d: 31 }, lim = { y: [1970, 2099], m: [1, 12], d: [1, dim(v.y, v.m)], hh: [0, 23], mm: [0, 59] }[part];
+      const put = (n) => { const nv = Object.assign({}, v, { [part]: n }); nv.d = Math.min(nv.d, dim(nv.y, nv.m)); set({ [field]: nv, [field === 'd1' ? 'ym1' : 'ym4']: [nv.y, nv.m] }); };
+      if (k === 'ArrowUp' || k === 'ArrowDown') { e.preventDefault(); let n = v[part] + (k === 'ArrowUp' ? 1 : -1); if (n > lim[1]) n = lim[0]; if (n < lim[0]) n = lim[1]; put(n); return; }
+      if (/^[0-9]$/.test(k)) { e.preventDefault(); const tag = field + part; this._buf = this._bufTag === tag ? this._buf + k : k; this._bufTag = tag;
+        const len = part === 'y' ? 4 : 2, raw = +this._buf, full = this._buf.length >= len || (part !== 'y' && raw * 10 > lim[1]);
+        if (part === 'y' && !full) return; put(Math.min(Math.max(raw, lim[0]), lim[1]));
+        if (full) { this._buf = ''; this._bufTag = ''; const l = list(), n = l[l.indexOf(e.currentTarget) + 1]; if (n) n.focus(); } } };
+    const segs = (field, v, parts) => { const o = {}; parts.forEach((p) => { const has = !!v; o[p] = has ? v[p] : ''; o[p + 't'] = has ? (p === 'y' ? v[p] : pad(v[p])) : { y: '年', m: '月', d: '日', hh: '时', mm: '分' }[p]; o[p + 'c'] = has ? '' : 'ph'; o['k' + p] = segKey(field, p); }); return o; };
+    const toggleOpen = (i) => () => set({ open: Object.assign({}, st.open, { [i]: !st.open[i] }) });
+    const dates = () => {
+      const d1 = st.d1, k1 = d1 ? K(d1.y, d1.m, d1.d) : null, dt = st.dt, k4 = K(dt.y, dt.m, dt.d);
+      const f1 = Object.assign(segs('d1', d1, ['y', 'm', 'd']), { cls: st.open[1] ? 'open' : '', open: !!st.open[1], toggle: toggleOpen(1),
+        wd: d1 ? (k1 === TODAY ? '今天' : wdOf(d1.y, d1.m, d1.d)) : '', today: () => set({ d1: { y: 2026, m: 10, d: 31 }, ym1: [2026, 10], v1: 'd' }), clear: () => set({ d1: null }) });
+      const isD = st.v1 === 'd';
+      const c1 = { y: isD ? st.ym1[0] : st.ym1[0], m: st.ym1[1], isD, isM: !isD, chev: isD ? '' : 'open', view: () => set({ v1: isD ? 'm' : 'd' }),
+        prev: () => set({ ym1: isD ? shift(st.ym1, -1) : [st.ym1[0] - 1, st.ym1[1]] }), next: () => set({ ym1: isD ? shift(st.ym1, 1) : [st.ym1[0] + 1, st.ym1[1]] }),
+        days: grid(st.ym1, (k) => (k === k1 ? 'sel' : ''), (k) => { const [y, m, d] = parse(k); set({ d1: { y, m, d } }); }),
+        mons: Array.from({ length: 12 }, (_, i) => ({ n: i + 1, cls: (d1 && d1.y === st.ym1[0] && d1.m === i + 1 ? 'on' : '') + (st.ym1[0] === 2026 && i === 9 ? ' now' : ''), pick: () => set({ ym1: [st.ym1[0], i + 1], v1: 'd' }) })) };
+      const f4 = Object.assign(segs('dt', dt, ['y', 'm', 'd', 'hh', 'mm']), { cls: st.open[4] ? 'open' : '', open: !!st.open[4], toggle: toggleOpen(4), wd: wdOf(dt.y, dt.m, dt.d),
+        now: () => set({ dt: { y: 2026, m: 10, d: 31, hh: 20, mm: 46 }, ym4: [2026, 10] }), sum: `${dt.m} 月 ${dt.d} 日 ${pad(dt.hh)}:${pad(dt.mm)}` });
+      const c4 = { y: st.ym4[0], m: st.ym4[1], prev: () => set({ ym4: shift(st.ym4, -1) }), next: () => set({ ym4: shift(st.ym4, 1) }),
+        days: grid(st.ym4, (k) => (k === k4 ? 'sel' : ''), (k) => { const [y, m, d] = parse(k); set({ dt: Object.assign({}, dt, { y, m, d }) }); }) };
+      const scrollTo = (idx) => (el) => { if (el && !el.__init) { el.__init = 1; el.scrollTop = Math.max(0, idx * 34 - 102); } };
+      const hrs = Array.from({ length: 24 }, (_, h) => ({ v: pad(h), cls: h === dt.hh ? 'on' : '', pick: () => set({ dt: Object.assign({}, dt, { hh: h }) }) }));
+      const mis = Array.from({ length: 60 }, (_, m) => ({ v: pad(m), cls: m === dt.mm ? 'on' : '', pick: () => set({ dt: Object.assign({}, dt, { mm: m }) }) }));
+      const a = st.rs, b = st.re, h = st.hov;
+      const rcls = (k) => { if (a && b) return k === a && k === b ? 'sel' : k === a ? 'rs' : k === b ? 're' : k > a && k < b ? 'mid' : '';
+        if (a) { const live = h && h > a; if (k === a) return live ? 'rs' : 'sel'; if (live && k === h) return 'pve'; if (live && k > a && k < h) return 'pv'; } return ''; };
+      const rpick = (k) => { if (!a || b) set({ rs: k, re: null, hov: null }); else if (k < a) set({ rs: k }); else set({ re: k, hov: null }); };
+      const rhov = (k) => { if (a && !b && k !== this.state.hov) set({ hov: k }); };
+      const span = a && b ? Math.round((new Date(b) - new Date(a)) / 864e5) + 1 : 0;
+      const PRE = [['最近 7 天', '2026-10-25', '2026-10-31'], ['最近 30 天', '2026-10-02', '2026-10-31'], ['本月', '2026-10-01', '2026-10-31'], ['上个月', '2026-09-01', '2026-09-30'], ['今年', '2026-01-01', '2026-10-31']];
+      const [ay, am, ad] = a ? parse(a) : ['', '', ''], [by, bm, bd] = b ? parse(b) : [];
+      const fR = { aAct: st.open[2] && (!a || (a && b)) ? 'act' : '', bAct: st.open[2] && a && !b ? 'act' : '', cls: st.open[2] ? 'open' : '', open: !!st.open[2], toggle: toggleOpen(2), ay, am: a ? pad(am) : '', ad: a ? pad(ad) : '',
+        by: b ? by : '年', bm: b ? pad(bm) : '月', bd: b ? pad(bd) : '日', bc: b ? '' : 'ph', n: span ? `${span} 天` : '',
+        sum: a && b ? `${am} 月 ${ad} 日 – ${bm} 月 ${bd} 日，共 ${span} 天` : a ? '再点一个结束日期' : '点一个开始日期' };
+      const cA = { y: st.ymR[0], m: st.ymR[1], prev: () => set({ ymR: shift(st.ymR, -1) }), days: grid(st.ymR, rcls, rpick, rhov, true) };
+      const ymB = shift(st.ymR, 1), cB = { y: ymB[0], m: ymB[1], next: () => set({ ymR: shift(st.ymR, 1) }), days: grid(ymB, rcls, rpick, rhov, true) };
+      const presets = PRE.map(([name, s, e]) => ({ name, on: a === s && b === e, pick: () => { const sm = parse(s), em = parse(e), gap = (em[0] - sm[0]) * 12 + em[1] - sm[1];
+        set({ rs: s, re: e, hov: null, ymR: gap <= 1 ? [sm[0], sm[1]] : shift([em[0], em[1]], -1) }); } }));
+      return { f1, c1, f4, c4, fR, cA, cB, presets, hrs, mis, hrRef: scrollTo(dt.hh), miRef: scrollTo(dt.mm), hlHr: HL('hr'), hlMi: HL('mi') }; };
+    const SW = ['#f47983', '#2f9e7a', '#d9a21b', '#7d8ea3', '#8b6fd6'];
+    const extra = { ...dates(), hlSel: HL('sel'), hlMul: HL('mul'), hlCb: HL('cb'), hlPre: HL('pre'),
+      selOpen: st.sel, selT: () => set({ sel: !st.sel }), selVal: st.selVal, selChev: st.sel ? 'open' : '', selFocus: st.sel ? 'background:var(--sheet);box-shadow:0 0 0 1px color-mix(in oklab,var(--fg) 28%,transparent),0 0 0 4px color-mix(in oklab,var(--deco) 18%,transparent)' : '',
+      opts: OPTS.map(([name, note]) => ({ name, note, on: st.selVal === name, dis: !!note, style: note ? 'opacity:.45;cursor:not-allowed' : '', pick: () => { if (!note) set({ selVal: name, sel: false }); } })),
+      chosen: st.tags.map((name) => ({ name, drop: () => set({ tags: st.tags.filter((t) => t !== name) }) })),
+      tagOpts: TAGS.map(([name, n]) => { const on = st.tags.includes(name); return { name, n, on, cls: on ? 'on' : '', toggle: () => set({ tags: on ? st.tags.filter((t) => t !== name) : st.tags.concat([name]) }) }; }),
+      num: st.num, inc: () => set({ num: Math.min(50, st.num + 5) }), dec: () => set({ num: Math.max(5, st.num - 5) }),
+      size: st.size, sizePct: ((st.size - 14) / 8 * 100).toFixed(1), setSize: (e) => set({ size: +e.target.value }),
+      viewX: st.view * 100, views: ['卡片', '列表', '紧凑'].map((name, i) => ({ name, cls: st.view === i ? 'on' : '', go: () => set({ view: i }) })),
+      fmts: [['b', 'B', 'font-weight:700'], ['i', 'I', 'font-style:italic'], ['u', 'U', 'text-decoration:underline']].map(([k, name, s]) => ({ name, on: !!st.fmt[k], cls: st.fmt[k] ? 'on' : '', style: s, toggle: () => set({ fmt: Object.assign({}, st.fmt, { [k]: !st.fmt[k] }) }) })),
+      swColor: SW[st.sw] };
+    SW.forEach((_, i) => { extra['sw_' + i] = st.sw === i ? 'on' : ''; extra['pickSw_' + i] = () => set({ sw: i }); });
+    return Object.assign(base, extra);
+  }
+}
+</script>
+</body>
+</html>

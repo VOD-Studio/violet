@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Violet 命令面板</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;family=Alex+Brush&amp;display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Maple Mono";font-weight:400;font-style:normal;src:url(/_blob/a3ecea3add4961def4d089b95f486230) format("woff2")}
+@font-face{font-family:"Maple Mono";font-weight:500;font-style:normal;src:url(/_blob/1ba23035f8e49762aeac0a2a66f83fa0) format("woff2")}
+body{margin:0}
+a{color:inherit;text-decoration:none}
+.paper-l{position:absolute;inset:0;background-image:url(/_blob/66391f4a5c5b623abcbda5bc91818ab0);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.paper-d{position:absolute;inset:0;background-image:url(/_blob/b0a1c287fd95586fcb700c431de8f4c5);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.num{font-family:"Maple Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.mono{font-family:"Maple Mono",ui-monospace,monospace}
+.sheet{background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);border:1px solid var(--ol)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;height:36px;padding:0 16px;border:0;border-radius:999px;font-family:inherit;font-size:14px;font-weight:500;white-space:nowrap;background:var(--sunk);color:var(--fg);cursor:pointer}
+.btn.sm{height:32px;padding:0 12px}.btn.lg{height:40px;font-size:16px}
+.btn.pri{background:var(--fg);color:var(--bg)}.btn.gho{background:transparent}
+.btn.ic{width:32px;padding:0}
+.seg{display:inline-flex;padding:2px;border-radius:999px;background:var(--sunk)}
+.sg{display:inline-flex;align-items:center;gap:6px;box-sizing:border-box;height:32px;padding:0 12px;border-radius:999px;font-size:14px;color:var(--muted)}
+.sg i{font-style:normal;font-size:12px;opacity:.7}
+.sg.on{background:var(--sheet);color:var(--fg);font-weight:500;box-shadow:0 4px 24px rgb(0 0 0 / .05)}
+.chip{display:inline-flex;align-items:center;gap:4px;box-sizing:border-box;height:24px;padding:0 10px;border-radius:999px;background:var(--sunk);font-size:12px;font-weight:500;color:var(--muted)}
+.chip.ac{background:color-mix(in oklab,var(--deco) 16%,var(--sheet));color:var(--accent)}
+.chip.ok{background:color-mix(in oklab,var(--ok) 12%,var(--sheet));color:var(--ok)}
+.fld{display:flex;align-items:center;gap:8px;box-sizing:border-box;height:36px;padding:0 12px;border-radius:12px;background:var(--sunk);font-size:14px;color:var(--muted)}
+.lab{display:block;margin-bottom:8px;font-size:14px;font-weight:600}
+.h1{margin:0;font-size:52px;font-weight:600;line-height:1.15;letter-spacing:-0.01em}
+
+.k-blk{display:grid;grid-template-columns:240px minmax(0,1fr);gap:56px;padding:56px 0;border-top:1px solid var(--rule)}
+.k-blk h2{margin:0;font-size:24px;font-weight:600;line-height:1.3}
+.k-uid{display:block;margin-top:6px;font:400 12px "Maple Mono",monospace;color:var(--muted)}
+.k-lead{margin:12px 0 0;font-size:13px;line-height:1.85;color:var(--muted)}
+.k-cap{margin-top:10px;font-size:12px;line-height:1.7;color:var(--muted)}
+.k-row{display:flex;flex-wrap:wrap;align-items:flex-start;gap:28px}
+.k-pnl{border-radius:12px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);border:1px solid var(--ol)}
+.k-ib{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--muted);cursor:pointer;flex:none}
+.k-ib:hover{background:var(--sunk);color:var(--fg)}
+.k-mi{display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;min-height:36px;padding:6px 10px;border:0;border-radius:8px;background:transparent;font-family:inherit;font-size:14px;color:var(--fg);text-align:left;cursor:pointer;white-space:nowrap}
+.k-mi:hover,.k-mi.hl{background:var(--sunk)}
+.k-mi .k{margin-left:auto;font:500 12px Inter,sans-serif;color:var(--muted)}
+.k-mi svg{color:var(--muted);flex:none}
+.k-sep{height:1px;margin:6px 8px;background:var(--rule)}
+.k-lbl{padding:6px 10px 4px;font-size:12px;color:var(--muted)}
+.k-av{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;object-fit:cover;background:var(--sunk);font-weight:600;color:var(--muted);flex:none}
+.k-scrim{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgb(20 16 14 / .32)}
+.k-sw{position:relative;display:inline-block;width:36px;height:20px;border-radius:999px;background:var(--fg);flex:none}.k-sw::after{content:"";position:absolute;top:2px;left:18px;width:16px;height:16px;border-radius:50%;background:var(--bg)}
+.k-sw.off{background:color-mix(in oklab,var(--sunk) 80%,var(--fg))}.k-sw.off::after{left:2px;background:var(--sheet)}
+.k-arc{animation:k-rot 1.6s linear infinite;flex:none}.k-arc .a{animation:k-dash 1.4s ease-in-out infinite}
+@keyframes k-rot{to{transform:rotate(360deg)}}
+@keyframes k-dash{0%{stroke-dasharray:4 100;stroke-dashoffset:0}50%{stroke-dasharray:60 100;stroke-dashoffset:-18}100%{stroke-dasharray:4 100;stroke-dashoffset:-96}}
+@media (prefers-reduced-motion: reduce){.k-arc,.k-arc .a{animation:none}.k-arc .a{stroke-dasharray:62 100}}
+.k-fade{animation:k-in .18s ease-out both}@keyframes k-in{from{opacity:0}to{opacity:1}}
+
+.k-hlw{position:relative;display:flex;flex-direction:column;gap:2px}
+.k-hlw:has(> .k-li){gap:4px}
+.k-hlw > .k-mi,.k-hlw > .k-li,.k-hlw > .k-opt{position:relative;z-index:1}
+.k-hlw > .k-mi:hover,.k-hlw > .k-li:hover,.k-hlw > .k-opt:hover{background:transparent}
+.k-hlw > .k-mi.on,.k-hlw > .k-li.on,.k-hlw > .k-mi.on:hover,.k-hlw > .k-li.on:hover{background:color-mix(in oklab,var(--deco) 13%,var(--sheet))}
+.k-hlw > .k-mi.on:hover,.k-hlw > .k-li.on:hover{background:color-mix(in oklab,var(--deco) 18%,var(--sheet))}
+.k-hlw > .k-mi.on{color:var(--accent);font-weight:600}.k-hlw > .k-mi.on svg{color:var(--accent)}
+.k-hlw > .k-li.on b{color:var(--accent)}
+.k-hl{position:absolute;left:0;top:0;z-index:0;border-radius:8px;background:var(--sunk);pointer-events:none;opacity:0}
+.k-reveal{animation:k-reveal calc(200ms*var(--k,1)) cubic-bezier(.32,.72,0,1) backwards}
+.k-reveal.out{animation:k-sink calc(140ms*var(--k,1)) ease-in forwards}
+@keyframes k-reveal{from{opacity:0;transform:translateY(-6px)}}
+@keyframes k-sink{to{opacity:0;transform:translateY(-4px)}}
+.k-ovl{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center}
+.k-ovl > :not(.k-scr):not(.k-lbs){position:relative}
+.k-scr{position:absolute;inset:0;background:rgb(20 16 14 / .28)}
+[data-scroll]{overflow-y:auto;overscroll-behavior:contain}
+.k-scrim.in,.k-scr.in{animation:k-fi calc(200ms*var(--k,1)) ease-out backwards}
+.k-scrim.out,.k-scr.out{animation:k-fo calc(160ms*var(--k,1)) ease-in forwards}
+.k-dlg.in{animation:k-dlg-in calc(220ms*var(--k,1)) cubic-bezier(.32,.72,0,1) backwards}
+.k-dlg.out{animation:k-dlg-out calc(140ms*var(--k,1)) ease-in forwards}
+.k-shr.in{animation:k-from-r calc(360ms*var(--k,1)) cubic-bezier(.32,.72,0,1) backwards}
+.k-shr.out{animation:k-to-r calc(240ms*var(--k,1)) cubic-bezier(.4,0,1,1) forwards}
+.k-shb.in{animation:k-from-b calc(400ms*var(--k,1)) cubic-bezier(.32,.72,0,1) backwards}
+.k-shb.out{animation:k-to-b calc(240ms*var(--k,1)) cubic-bezier(.4,0,1,1) forwards}
+.k-pop.in{animation:k-reveal calc(200ms*var(--k,1)) cubic-bezier(.32,.72,0,1) backwards}
+.k-pop.out{animation:k-sink calc(140ms*var(--k,1)) ease-in forwards}
+.k-cmd.in{animation:k-fi calc(160ms*var(--k,1)) ease-out backwards}
+.k-cmd.out{animation:k-fo calc(100ms*var(--k,1)) ease-in forwards}
+.k-lbs.in{animation:k-fi calc(240ms*var(--k,1)) ease-out backwards}
+.k-lbs.out{animation:k-fo calc(240ms*var(--k,1)) ease-in calc(40ms*var(--k,1)) forwards}
+@keyframes k-fi{from{opacity:0}}
+@keyframes k-fo{to{opacity:0}}
+@keyframes k-dlg-in{from{opacity:0;filter:blur(6px)}}
+@keyframes k-dlg-out{to{opacity:0;filter:blur(4px)}}
+@keyframes k-from-r{from{transform:translateX(calc(100% + 16px))}}
+@keyframes k-to-r{to{transform:translateX(calc(100% + 16px))}}
+@keyframes k-from-b{from{transform:translateY(100%)}}
+@keyframes k-to-b{to{transform:translateY(100%)}}
+.k-fld{display:flex;align-items:center;gap:8px;box-sizing:border-box;height:36px;padding:0 12px;border-radius:12px;background:var(--sunk);font-size:14px;color:var(--fg);transition:background-color .16s ease-out,box-shadow .16s ease-out}
+.k-fld:hover{background:color-mix(in oklab,var(--sunk) 92%,var(--fg))}
+.k-fld:focus-within,.k-fld.f{background:var(--sheet);box-shadow:0 0 0 1px color-mix(in oklab,var(--fg) 28%,transparent),0 0 0 4px color-mix(in oklab,var(--deco) 18%,transparent)}
+.k-fld.e{background:color-mix(in oklab,var(--danger) 5%,var(--sheet));box-shadow:0 0 0 1px color-mix(in oklab,var(--danger) 60%,transparent),0 0 0 4px color-mix(in oklab,var(--danger) 12%,transparent)}
+.k-fld input,.k-fld textarea{flex:1;min-width:0;height:100%;padding:0;border:0;outline:0;background:transparent;font:inherit;color:inherit}
+.k-fld input::placeholder,.k-fld textarea::placeholder{color:var(--muted)}
+.k-seg{position:relative;display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:2px;border-radius:999px;background:var(--sunk)}
+.k-seg > button{position:relative;z-index:1;height:32px;padding:0 14px;border:0;border-radius:999px;background:transparent;font-family:inherit;font-size:14px;color:var(--muted);cursor:pointer;transition:color .2s ease-out}
+.k-seg > button.on{color:var(--fg);font-weight:500}
+.k-seg > i{position:absolute;top:2px;bottom:2px;left:2px;border-radius:999px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);transition:transform .28s cubic-bezier(.32,.72,0,1)}
+.k-tog{position:relative;display:inline-block;width:36px;height:20px;padding:0;border:0;border-radius:999px;background:color-mix(in oklab,var(--sunk) 80%,var(--fg));cursor:pointer;transition:background-color .2s ease-out;flex:none}
+.k-tog::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--sheet);box-shadow:0 1px 2px rgb(0 0 0 / .12);transition:transform .28s cubic-bezier(.32,.72,0,1),background-color .2s}
+.k-tog.on{background:var(--fg)}.k-tog.on::after{transform:translateX(16px);background:var(--bg)}
+.k-chk{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;padding:0;border:0;border-radius:6px;background:var(--sheet);box-shadow:inset 0 0 0 1.5px var(--rule2);cursor:pointer;transition:background-color .16s ease-out,box-shadow .16s ease-out;flex:none}
+.k-chk path{stroke-dasharray:24;stroke-dashoffset:24;transition:stroke-dashoffset .22s cubic-bezier(.32,.72,0,1) .04s}
+.k-chk.on{background:var(--fg);box-shadow:none}.k-chk.on path{stroke-dashoffset:0}
+.k-acc{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s cubic-bezier(.32,.72,0,1)}
+.k-acc > div{overflow:hidden}
+.k-acc.open{grid-template-rows:1fr}
+.k-chev{transition:transform .28s cubic-bezier(.32,.72,0,1)}.k-chev.open{transform:rotate(180deg)}
+@media (prefers-reduced-motion: reduce){.k-hl,.k-seg > i,.k-tog::after,.k-acc,.k-chev,.k-chk path{transition:none!important}.k-reveal{animation:k-fi .1s ease-out backwards}.k-reveal.out{animation:k-fo .1s ease-out forwards}
+  .k-dlg.in,.k-shr.in,.k-shb.in,.k-pop.in,.k-cmd.in{animation:k-fi .1s ease-out backwards}
+  .k-dlg.out,.k-shr.out,.k-shb.out,.k-pop.out,.k-cmd.out{animation:k-fo .1s ease-out forwards}}
+
+.k-toaster{position:absolute;right:16px;bottom:16px;z-index:8;width:356px;height:0;outline:none}
+.k-thit{position:absolute;left:-16px;right:-16px;bottom:-16px}
+.k-to{position:absolute;left:0;right:0;bottom:0;box-sizing:border-box;border-radius:12px;background:var(--sheet);border:1px solid var(--ol);box-shadow:0 4px 24px rgb(0 0 0 / .05);touch-action:none;user-select:none;transform-origin:50% 50%;
+  transition:transform calc(.4s*var(--k,1)) ease,opacity calc(.4s*var(--k,1)) ease,height calc(.4s*var(--k,1)) ease}
+.k-to.in0{animation:k-tup0 calc(400ms*var(--k,1)) ease backwards}
+.k-to.in1{animation:k-tup1 calc(400ms*var(--k,1)) ease backwards}
+@keyframes k-tup0{from{transform:translateY(100%);opacity:0}}
+@keyframes k-tup1{from{transform:translateY(100%);opacity:0}}
+.k-to.drag{transition:height calc(.4s*var(--k,1)) ease;cursor:grabbing}
+.k-to.swo{transition:transform calc(.2s*var(--k,1)) ease-out,opacity calc(.2s*var(--k,1)) ease-out}
+.k-ti{display:flex;align-items:center;gap:14px;min-height:54px;box-sizing:border-box;padding:14px 40px 14px 18px;transition:opacity calc(.2s*var(--k,1)) ease}
+.k-to.back .k-ti{opacity:0;pointer-events:none}
+.k-tic{position:relative;width:18px;height:18px;flex:none}
+.k-tic > span{position:absolute;inset:0;display:inline-flex;opacity:0;transition:opacity .2s ease-out}
+.k-tic.ok .i-ok,.k-tic.err .i-err,.k-tic.warn .i-warn,.k-tic.info .i-info,.k-tic.load .i-load{opacity:1}
+.k-tic .i-ok{color:var(--ok)}.k-tic .i-err{color:var(--danger)}.k-tic .i-warn{color:oklch(0.68 0.14 70)}.k-tic .i-info{color:var(--muted)}.k-tic .i-load{color:var(--deco)}
+.k-tic .ck{stroke-dasharray:12;stroke-dashoffset:12;transition:stroke-dashoffset .3s cubic-bezier(.32,.72,0,1) .1s}
+.k-tic.ok .ck{stroke-dashoffset:0}
+.k-tt{font-size:13.5px;line-height:1.5;color:var(--fg)}
+.k-tn{display:inline-block;margin-left:6px;padding:0 6px;border-radius:999px;background:var(--sunk);font-size:11px;line-height:18px;color:var(--muted);vertical-align:1px}
+.k-tn.b0{animation:k-bump0 .6s ease-out}.k-tn.b1{animation:k-bump1 .6s ease-out}.k-tn.b-{animation:none}
+@keyframes k-bump0{from{background:color-mix(in oklab,var(--deco) 35%,var(--sheet));color:var(--accent)}}
+@keyframes k-bump1{from{background:color-mix(in oklab,var(--deco) 35%,var(--sheet));color:var(--accent)}}
+.k-td{font-size:12px;line-height:1.6;color:var(--muted)}
+.k-ta{flex:none;height:32px;padding:0 12px;border:0;border-radius:999px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05),0 0 0 1px var(--ol);font:500 14px inherit;font-family:inherit;color:var(--fg);cursor:pointer;transition:background-color .16s ease-out}
+.k-ta:hover{background:var(--sunk)}
+.k-tx{position:absolute;top:8px;right:8px;display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--muted);cursor:pointer;opacity:.7;transition:opacity .16s ease-out,background-color .16s ease-out,color .16s ease-out}
+.k-tx:hover,.k-tx:focus-visible{opacity:1;background:var(--sunk);color:var(--fg)}
+.k-to.back .k-tx{opacity:0;pointer-events:none}
+@media (prefers-reduced-motion: reduce){.k-to{transition:opacity .1s ease-out}.k-to.in0,.k-to.in1{animation:k-fi .1s ease-out backwards}}
+
+.od-fam{display:flex;flex-wrap:wrap;gap:4px;margin-top:-24px}
+.od-fam a{display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:999px;font-size:13px;color:var(--muted);transition:background-color .16s ease-out,color .16s ease-out}
+.od-fam a:hover{background:var(--sunk);color:var(--fg)}
+.od-fam a[aria-current]{background:var(--sheet);color:var(--fg);font-weight:600;box-shadow:0 4px 24px rgb(0 0 0 / .05),0 0 0 1px var(--ol)}
+.od-sub{max-width:720px;margin:20px 0 0;font-size:16px;line-height:1.85;color:color-mix(in oklab,var(--fg) 82%,transparent)}
+.od-sec{margin-top:64px;padding-top:48px;border-top:1px solid var(--rule)}
+.od-sh{display:flex;align-items:baseline;gap:14px}
+.od-sh h2{margin:0;font-size:24px;font-weight:600;line-height:1.3}
+.od-lead{max-width:760px;margin:12px 0 0;font-size:14px;line-height:1.85;color:var(--muted)}
+.od-spec,.od-pick{width:100%;margin-top:24px;border-collapse:collapse;font-size:14px;line-height:1.8}
+.od-spec th{width:128px;padding:12px 16px 12px 0;text-align:left;vertical-align:top;font-weight:600;box-shadow:inset 0 -1px 0 var(--rule)}
+.od-spec td{padding:12px 0;color:color-mix(in oklab,var(--fg) 85%,transparent);box-shadow:inset 0 -1px 0 var(--rule)}
+.od-pick th{padding:0 16px 10px 0;text-align:left;font-size:12px;font-weight:400;color:var(--muted);box-shadow:inset 0 -1px 0 var(--rule)}
+.od-pick td{padding:12px 16px 12px 0;vertical-align:top;box-shadow:inset 0 -1px 0 var(--rule);color:color-mix(in oklab,var(--fg) 85%,transparent)}
+.od-pick td:first-child{width:120px;white-space:nowrap}.od-pick td:last-child{width:340px;color:var(--muted)}
+.od-pick a{font-weight:600;color:var(--fg)}.od-pick a:hover{color:var(--accent)}
+.od-pick tr.cur td{background:color-mix(in oklab,var(--sunk) 55%,transparent)}.od-pick tr.cur td:first-child{padding-left:12px;border-radius:8px 0 0 8px}.od-pick tr.cur td:last-child{border-radius:0 8px 8px 0}
+.od-pick tr.cur a{color:var(--accent)}
+.od-ctl{display:flex;flex-wrap:wrap;align-items:center;gap:12px 28px;margin:28px 0 16px}
+.od-cg{display:inline-flex;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
+.od-win{position:relative;width:1120px;height:600px;border-radius:16px;background:var(--bg);box-shadow:inset 0 0 0 1px var(--rule);overflow:hidden}
+.od-phone{position:relative;width:360px;height:720px;border-radius:16px;background:var(--bg);box-shadow:inset 0 0 0 1px var(--rule);overflow:hidden;flex:none}
+.od-win .k-scr,.od-phone .k-scr{z-index:4}
+.od-ctr{position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.od-ctr > *{pointer-events:auto}
+.od-catch{position:absolute;inset:0;z-index:3}
+.od-site{position:absolute;inset:0}
+.od-hd{display:flex;align-items:center;gap:8px;height:64px;padding:0 24px}
+.od-pill{display:inline-flex;align-items:center;gap:4px;height:36px;padding:0 14px;border-radius:999px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05),0 0 0 1px var(--ol);font-size:14px}
+.od-nav{margin:0 auto;padding:0 4px}.od-nav > span{display:inline-flex;align-items:center;height:28px;padding:0 12px;border-radius:999px;color:var(--muted)}
+.od-rb{width:36px;padding:0;justify-content:center;color:var(--muted)}
+.od-art{width:640px;margin:28px auto 0}
+.od-at{margin-top:6px;font-size:30px;font-weight:600;line-height:1.35}
+.od-acts{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 22px}
+.od-art p{margin:0 0 14px;font-size:15px;line-height:1.95;color:color-mix(in oklab,var(--fg) 88%,transparent)}
+.od-cap{margin-top:12px;font-size:13px;line-height:1.7;color:var(--muted)}
+.od-anat{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:56px;align-items:center;margin-top:28px}
+.od-fig{position:relative;display:flex;align-items:center;justify-content:center;min-height:400px;padding:48px 64px;border-radius:16px;background:color-mix(in oklab,var(--sunk) 55%,var(--bg))}
+.od-mk{position:absolute;z-index:3;display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;margin-top:-10px;border-radius:50%;background:var(--fg);color:var(--bg);font:500 11px/1 "Maple Mono",monospace;font-style:normal}
+.od-mk.s{position:static;margin:2px 0 0;flex:none}
+.od-parts{display:flex;flex-direction:column;gap:18px;margin:0;padding:0;list-style:none}
+.od-parts li{display:flex;gap:14px}
+.od-parts b{display:block;font-size:15px;font-weight:600;line-height:1.5}
+.od-parts span{display:block;margin-top:2px;font-size:13px;line-height:1.75;color:var(--muted)}
+.od-rel{position:relative}
+.od-tl{display:grid;grid-template-columns:1fr 1fr;gap:48px;margin-top:24px}
+.od-tlr{display:grid;grid-template-columns:52px minmax(0,1fr) 230px;align-items:center;gap:12px;height:30px}
+.od-tlr.ax{height:22px}
+.od-nm{font-size:13px;color:var(--muted);white-space:nowrap}
+.od-tr{position:relative;height:100%;background:repeating-linear-gradient(to right,var(--rule) 0 1px,transparent 1px 25%)}
+.od-tk{position:absolute;top:2px;transform:translateX(-50%);font:400 11px "Maple Mono",monospace;color:var(--muted)}
+.od-bar{position:absolute;top:9px;height:12px;border-radius:6px}
+.od-bar.scr{background:color-mix(in oklab,var(--fg) 16%,transparent)}
+.od-bar.pnl{background:var(--fg)}
+.od-bar.aux{background:color-mix(in oklab,var(--deco) 70%,transparent)}
+.od-bar.mark{top:10px;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:var(--sheet);box-shadow:inset 0 0 0 2px var(--deco)}
+.od-meta{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.od-meta .num{color:var(--fg)}
+.od-lgs{display:flex;gap:20px;margin-top:14px;font-size:12px;color:var(--muted)}
+.od-lg{display:inline-flex;align-items:center;gap:6px}
+.od-lg .od-bar{position:static;display:inline-block;width:18px;height:8px;margin:0}
+.od-lg .od-bar.mark{width:10px;height:10px}
+.od-kbd{display:inline-flex;align-items:center;height:24px;padding:0 8px;border-radius:8px;background:var(--sunk);font:500 12px Inter,sans-serif;color:var(--muted);white-space:nowrap}
+.od-x{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--muted);cursor:pointer;flex:none}
+.od-x:hover{background:var(--sunk);color:var(--fg)}
+.od-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 48px;margin-top:28px}
+.od-two b{display:block;font-size:15px;font-weight:600}
+.od-two p{margin:6px 0 0;font-size:14px;line-height:1.85;color:var(--muted)}
+.od-do{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;margin-top:28px}
+.od-do > div{padding:24px;border-radius:16px;background:color-mix(in oklab,var(--sunk) 55%,var(--bg))}
+.od-do .tag{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600}
+.od-do .tag.y{color:var(--ok)}.od-do .tag.n{color:var(--danger)}
+.od-do p{margin:12px 0 0;font-size:13px;line-height:1.8;color:var(--muted)}
+
+.cm{position:absolute;left:50%;top:90px;z-index:5;width:560px;margin-left:-280px;display:flex;flex-direction:column;max-height:440px;overflow:hidden}
+.cm-in{display:flex;align-items:center;gap:10px;height:52px;padding:0 16px;box-shadow:inset 0 -1px 0 var(--rule);flex:none}
+.cm-si{display:inline-flex;color:var(--muted)}
+.cm-in input{flex:1;min-width:0;height:100%;padding:0;border:0;outline:0;background:transparent;font-family:inherit;font-size:16px;color:var(--fg)}
+.cm-in input::placeholder{color:var(--muted)}
+.cm-crumb{display:inline-flex;align-items:center;height:26px;padding:0 10px;border:0;border-radius:999px;background:var(--sunk);font-family:inherit;font-size:13px;color:var(--fg);cursor:pointer}
+.cm-crumb::after{content:"›";margin-left:6px;color:var(--muted)}
+.cm-lw{flex:none;overflow-y:auto;overscroll-behavior:contain;transition:height calc(.2s*var(--k,1)) cubic-bezier(.32,.72,0,1)}
+.cm-list{padding:6px}
+.k-cmd.cm.in{animation:cm-in calc(220ms*var(--k,1)) cubic-bezier(.32,.72,0,1) backwards}
+.k-cmd.cm.out{animation:cm-out calc(120ms*var(--k,1)) ease-in forwards}
+@keyframes cm-in{from{opacity:0;transform:translateY(-8px);filter:blur(4px)}}
+@keyframes cm-out{to{opacity:0;transform:translateY(-4px)}}
+.cm.fresh .cm-it{animation:cm-it calc(200ms*var(--k,1)) cubic-bezier(.32,.72,0,1) backwards;animation-delay:calc((80ms + var(--i,0) * 16ms) * var(--k,1))}
+@keyframes cm-it{from{opacity:0;transform:translateY(-4px)}}
+.cm-list.pf0{animation:cm-pf0 calc(200ms*var(--k,1)) cubic-bezier(.32,.72,0,1) backwards}.cm-list.pf1{animation:cm-pf1 calc(200ms*var(--k,1)) cubic-bezier(.32,.72,0,1) backwards}
+.cm-list.pb0{animation:cm-pb0 calc(200ms*var(--k,1)) cubic-bezier(.32,.72,0,1) backwards}.cm-list.pb1{animation:cm-pb1 calc(200ms*var(--k,1)) cubic-bezier(.32,.72,0,1) backwards}
+@keyframes cm-pf0{from{opacity:0;transform:translateX(16px)}}@keyframes cm-pf1{from{opacity:0;transform:translateX(16px)}}
+@keyframes cm-pb0{from{opacity:0;transform:translateX(-16px)}}@keyframes cm-pb1{from{opacity:0;transform:translateX(-16px)}}
+.cm-it.fire{animation:cm-fire calc(160ms*var(--k,1)) ease-out}
+@keyframes cm-fire{0%{background:color-mix(in oklab,var(--deco) 34%,var(--sheet))}100%{background:var(--sunk)}}
+.cm-crumb{animation:k-fi .16s ease-out backwards}
+@media (prefers-reduced-motion: reduce){.k-cmd.cm.in{animation:k-fi .1s ease-out backwards}.k-cmd.cm.out{animation:k-fo .1s ease-out forwards}.cm.fresh .cm-it,.cm-list[class*=" p"]{animation:none}.cm-lw{transition:none}}
+.cm-g + .cm-g{margin-top:4px}
+.cm-it{display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;height:40px;padding:0 10px;border:0;border-radius:8px;background:transparent;font-family:inherit;font-size:14px;color:var(--fg);text-align:left;cursor:pointer}
+.cm-it.on{background:var(--sunk)}
+.cm-ic{display:inline-flex;color:var(--muted);flex:none}
+.cm-it.on .cm-ic{color:var(--fg)}
+.cm-tx{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.cm-tx mark{padding:0 1px;border-radius:3px;background:color-mix(in oklab,var(--deco) 28%,transparent);color:inherit}
+.cm-tx mark:empty{display:none}
+.cm-sub{margin-left:8px;font-size:12px;color:var(--muted)}
+.cm-kb{height:22px;padding:0 7px;font-size:12px}
+.cm-path{font-size:12px;color:var(--muted)}
+.od-kbd.sm{height:20px;padding:0 6px;border-radius:6px;font-size:11px}
+.cm-ld{padding:8px 10px}.cm-ld i{display:block;width:68%;height:10px;border-radius:5px;background:var(--sunk);animation:cm-pulse 1.2s ease-in-out infinite}.cm-ld i + i{margin-top:10px}
+@keyframes cm-pulse{50%{opacity:.5}}
+@media (prefers-reduced-motion: reduce){.cm-ld i{animation:none}}
+.cm-empty{padding:18px 10px 6px;font-size:14px;color:var(--muted)}
+.cm-ft{display:flex;align-items:center;gap:16px;height:36px;padding:0 16px;box-shadow:inset 0 1px 0 var(--rule);font-size:12px;color:var(--muted);flex:none}
+.cm-ft span{display:inline-flex;align-items:center;gap:4px}
+
+</style>
+</helmet>
+<div style="{{vars}}position:relative;overflow:hidden;width:1440px;min-height:4400px;display:flex;flex-direction:column;background:var(--bg);color:var(--fg);font-family:'Songti SC','Noto Serif SC','Source Han Serif SC',STSong,SimSun,serif;font-size:15px;line-height:1.8">
+<div class="paper-l" style="display:{{showLight}}"></div>
+<div class="paper-d" style="display:{{showDark}}"></div>
+
+
+<main style="position:relative;z-index:2;padding:96px 160px 120px"><nav class="od-fam" aria-label="浮层组件"><a href="Dialog.dc.html">对话框</a><a href="ConfirmDialog.dc.html">确认框</a><a href="Sheet.dc.html">侧边面板</a><a href="Drawer.dc.html">抽屉</a><a href="Popover.dc.html">弹出层</a><a href="Dropdown.dc.html">下拉菜单</a><a href="DropdownMenu.dc.html">操作菜单</a><a href="Tooltip.dc.html">文字提示</a><a href="Command.dc.html" aria-current="page">命令面板</a><a href="Sonner.dc.html">轻提示</a><a href="Lightbox.dc.html">图片预览</a><a href="MorphingPopover.dc.html">变形弹出层</a></nav><h1 class="h1" style="margin-top:40px">命令面板</h1><span class="k-uid" style="margin-top:10px;font-size:13px">command</span><p class="od-sub">⌘K 打开，同一个输入框搜文章、跳页面、执行命令。给熟悉键盘的人一条最短的路，所有操作都能不碰鼠标完成。</p><section class="od-sec"><div class="od-sh"><h2>演示</h2><span class="k-uid" style="margin:0">Command · CommandList</span></div><p class="od-lead">按 ⌘K（Windows 上 Ctrl K），或者点右上角的搜索。不输入时是最近与常用；输入后三类结果一起筛，匹配的字加底色，两个字以上还会去正文里搜。方向键选择，回车执行；进入「切换主题」后，在空输入框里按退格回到上一级。</p><div class="od-ctl"><span class="od-cg">速度<span class="k-seg" style="grid-template-columns:repeat(2,1fr)"><i style="width:calc((100% - 4px) / 2);transform:translateX({{sx_slow}}%)"></i><button class="{{s_slow0}}" onClick="{{ss_slow0}}">原速</button><button class="{{s_slow1}}" onClick="{{ss_slow1}}">慢 4 倍</button></span></span><span class="od-cg">最近一次<b class="num" style="font-size:13px;font-weight:500;color:var(--fg)">{{lastAct}}</b></span></div><div style="--k:{{kk}}"><div class="od-win" ref="{{lockStage}}"><div class="od-site"><div class="od-hd"><span class="od-pill mono" style="font-weight:700">Violet</span><span class="od-pill od-nav"><span>博客</span><span>手记</span><span>推文</span><span>更多</span></span><span class="od-pill od-rb" onClick="{{openCmd}}" style="cursor:pointer" role="button" aria-label="搜索"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-3.5-3.5"></path></svg></span></div><div class="od-art"><div class="num" style="font-size:12px;color:var(--muted)">2026-10-12 · 骑行</div><div class="od-at">独库公路，六天</div><div class="od-acts"><button class="btn sm" onClick="{{openCmd}}">打开命令面板<kbd class="od-kbd sm" style="margin-left:4px">⌘K</kbd></button></div><p>从独山子出发，第一天就爬升两千米。哈希勒根达坂的风把手套吹透，下坡时手指已经握不住刹车。晚上在乔尔玛的兵站借宿，老板说明天的雪要等中午才化。</p><p>第二天推车翻过玉希莫勒盖，隧道里很冷，出口的阳光几乎让人睁不开眼。到那拉提已经是傍晚，草场上的牛羊在往回走。</p><p>第三天下雨，在巴音布鲁克住了一整天，把相机里的照片整理了一遍。</p></div></div><sc-if value="{{cmOn}}" hint-placeholder-val="{{ false }}"><div class="k-scr {{cmPh}}" style="background:rgb(20 16 14 / .18)" onClick="{{ovClose}}"></div><div class="k-pnl k-cmd cm {{cmPh}} {{freshCls}}" role="dialog" aria-label="命令面板"><div class="cm-in"><span class="cm-si"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-3.5-3.5"></path></svg></span><sc-if value="{{inSub}}" hint-placeholder-val="{{ false }}"><button class="cm-crumb" onClick="{{back}}" aria-label="返回上一级">主题</button></sc-if><input ref="{{focusIn}}" value="{{q}}" onInput="{{setQ}}" onKeyDown="{{cmKey}}" placeholder="{{ph}}" role="combobox" aria-expanded="true" aria-controls="cm-list" aria-activedescendant="{{activeId}}" autocomplete="off" spellcheck="false"><kbd class="od-kbd">Esc</kbd></div><div class="cm-lw" style="height:{{cmLH}}px" data-scroll="" ref="{{listRef}}"><div class="cm-list {{pgCls}}" id="cm-list" role="listbox" ref="{{measRef}}"><sc-for list="{{groups}}" as="g" hint-placeholder-count="3"><div class="cm-g" role="group" aria-label="{{g.name}}"><div class="k-lbl">{{g.name}}</div><sc-for list="{{g.items}}" as="it" hint-placeholder-count="3"><button class="cm-it {{it.cls}}" style="--i:{{it.si}}" role="option" id="{{it.id}}" aria-selected="{{it.on}}" ref="{{it.ref}}" onMouseMove="{{it.hover}}" onClick="{{it.run}}"><sc-if value="{{it.k_post}}" hint-placeholder-val="{{ true }}"><span class="cm-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5zM4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"></path></svg></span></sc-if><sc-if value="{{it.k_page}}" hint-placeholder-val="{{ false }}"><span class="cm-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7M10 14 21 3M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path></svg></span></sc-if><sc-if value="{{it.k_cmd}}" hint-placeholder-val="{{ false }}"><span class="cm-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18 15 12 9 6"></path></svg></span></sc-if><sc-if value="{{it.k_theme}}" hint-placeholder-val="{{ false }}"><span class="cm-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"></path></svg></span></sc-if><sc-if value="{{it.k_full}}" hint-placeholder-val="{{ false }}"><span class="cm-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-3.5-3.5M8 11h6"></path></svg></span></sc-if><span class="cm-tx">{{it.a}}<mark>{{it.m}}</mark>{{it.b}}<sc-if value="{{it.hasSub}}" hint-placeholder-val="{{ false }}"><span class="cm-sub">{{it.sub}}</span></sc-if></span><sc-if value="{{it.hasKb}}" hint-placeholder-val="{{ false }}"><kbd class="od-kbd cm-kb">{{it.kb}}</kbd></sc-if><sc-if value="{{it.hasPath}}" hint-placeholder-val="{{ false }}"><span class="mono cm-path">{{it.path}}</span></sc-if></button></sc-for></div></sc-for><sc-if value="{{loading}}" hint-placeholder-val="{{ false }}"><div class="cm-g"><div class="k-lbl">全文</div><div class="cm-ld"><i></i><i style="width:46%"></i></div></div></sc-if><sc-if value="{{empty}}" hint-placeholder-val="{{ false }}"><div class="cm-empty">没有找到「{{q}}」</div></sc-if></div></div><div class="cm-ft"><span><kbd class="od-kbd sm">↑</kbd><kbd class="od-kbd sm">↓</kbd>选择</span><span><kbd class="od-kbd sm">↵</kbd>打开</span><span><kbd class="od-kbd sm">⌘↵</kbd>新标签打开</span><span style="margin-left:auto">{{ftHint}}</span></div></div></sc-if><div class="k-toaster {{tst.cls}}" role="region" aria-label="通知（⌥T）" tabindex="-1" ref="{{tst.ref}}" onMouseEnter="{{tst.enter}}" onMouseLeave="{{tst.leave}}" onFocus="{{tst.focus}}" onBlur="{{tst.blur}}" style="right:16px;bottom:16px"><span class="k-thit" style="{{tst.hit}}"></span><sc-for list="{{tst.slots}}" as="s" hint-placeholder-count="0"><div class="k-to {{s.cls}}" role="{{s.role}}" style="{{s.style}}" onPointerDown="{{s.down}}" onPointerMove="{{s.move}}" onPointerUp="{{s.up}}" onPointerCancel="{{s.up}}"><div class="k-ti" ref="{{s.ref}}"><span class="k-tic {{s.type}}"><span class="i-ok"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"></path><path class="ck" d="m8.5 12.5 2.5 2.5 4.5-5"></path></svg></span><span class="i-err"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 8v4M12 16h.01"></path></svg></span><span class="i-warn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"></path></svg></span><span class="i-info"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16v-4M12 8h.01"></path></svg></span><span class="i-load"><svg class="k-arc" width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" style="color:currentColor"><circle cx="8" cy="8" r="6.1" fill="none" stroke="currentColor" stroke-opacity=".22" stroke-width="1.75"></circle><circle class="a" cx="8" cy="8" r="6.1" pathLength="100" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" transform="rotate(-90 8 8)"></circle></svg></span></span><div style="flex:1;min-width:0"><div class="k-tt">{{s.title}}<sc-if value="{{s.multi}}" hint-placeholder-val="{{ false }}"><span class="k-tn num {{s.bump}}">×{{s.count}}</span></sc-if></div><sc-if value="{{s.hasDesc}}" hint-placeholder-val="{{ false }}"><div class="k-td">{{s.desc}}</div></sc-if></div><sc-if value="{{s.hasAct}}" hint-placeholder-val="{{ false }}"><button class="k-ta" onClick="{{s.act}}">{{s.action}}</button></sc-if></div><button class="k-tx" aria-label="关闭" onClick="{{s.close}}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg></button></div></sc-for></div></div></div></section><section class="od-sec"><div class="od-sh"><h2>结构</h2></div><div class="od-anat"><div class="od-fig" style="min-height:460px"><div class="k-pnl od-rel" style="width:520px;overflow:visible"><i class="od-mk" style="left:-34px;top:26px">1</i><div class="cm-in od-rel"><span class="cm-si"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-3.5-3.5"></path></svg></span><span style="flex:1;font-size:16px">rust</span><kbd class="od-kbd">Esc</kbd></div><div style="padding:6px"><div class="k-lbl od-rel">文章<i class="od-mk" style="left:-40px;top:50%">2</i></div><div class="cm-it on od-rel"><span class="cm-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5zM4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"></path></svg></span><span class="cm-tx"><mark>Rust</mark> 全栈笔记 · 第 4 章 · 实时推送</span><i class="od-mk" style="left:auto;right:-34px;top:50%">3</i></div><div class="cm-it od-rel"><span class="cm-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5zM4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"></path></svg></span><span class="cm-tx"><mark>Rust</mark> 全栈笔记 · 第 3 章 · 评论与批注</span></div><div class="k-lbl">命令</div><div class="cm-it od-rel"><span class="cm-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18 15 12 9 6"></path></svg></span><span class="cm-tx">打开系列「<mark>Rust</mark> 全栈笔记」</span><kbd class="od-kbd cm-kb">⌘⇧R</kbd><i class="od-mk" style="left:auto;right:-34px;top:50%">4</i></div></div><div class="cm-ft od-rel"><span><kbd class="od-kbd sm">↑</kbd><kbd class="od-kbd sm">↓</kbd>选择</span><span><kbd class="od-kbd sm">↵</kbd>打开</span><i class="od-mk" style="left:-34px;top:50%">5</i></div></div></div><ol class="od-parts"><li><i class="od-mk s">1</i><div><b>输入框</b><span>高 52，字号 16；打开就聚焦；子页面时左边多一个可点的层级</span></div></li><li><i class="od-mk s">2</i><div><b>分组</b><span>文章、页面、命令三组，组名 12 浅色；每组最多 5 项</span></div></li><li><i class="od-mk s">3</i><div><b>当前项</b><span>浅底，没有滑动：键盘连按时必须跟得上；滚出可视区时自动滚到它</span></div></li><li><i class="od-mk s">4</i><div><b>快捷键与路径</b><span>命令右侧是快捷键，页面右侧是路径，都靠右、浅色</span></div></li><li><i class="od-mk s">5</i><div><b>底栏</b><span>键位提示，高 36；右侧写当前子页面或结果数</span></div></li></ol></div></section><section class="od-sec"><div class="od-sh"><h2>键盘</h2></div><table class="od-spec"><tr><th>⌘K / Ctrl K</th><td>任意页面打开；已经打开时关闭</td></tr><tr><th>↑ ↓</th><td>在所有结果之间移动，跨过分组，到头循环；只有指针真的移动时才改当前项，滚动列表不会改</td></tr><tr><th>↵</th><td>当前项亮一下（季节色底 140ms）后执行并收起；⌘↵ 在新标签页打开（文章与页面）</td></tr><tr><th>Esc</th><td>有输入时先清空；在子页面时回到上一级；都没有时关闭</td></tr><tr><th>退格</th><td>输入框为空且在子页面时回到上一级</td></tr><tr><th>读屏</th><td>输入框 role="combobox"，aria-activedescendant 指向当前项；列表 role="listbox"，分组 role="group"</td></tr></table></section><section class="od-sec"><div class="od-sh"><h2>结果</h2></div><table class="od-spec"><tr><th>不输入</th><td>最近打开的 3 篇文章、常用页面、常用命令</td></tr><tr><th>匹配</th><td>标题、路径、命令名里包含输入的字就算，不区分大小写；匹配到的字加浅季节色底</td></tr><tr><th>排序</th><td>组的顺序固定为文章、页面、命令；组内标题开头就匹配的排前面</td></tr><tr><th>全文</th><td>输入两个字以上时，去正文里搜，等待时在最后一组显示两行骨架；结果回来后插在最后</td></tr><tr><th>没有结果</th><td>一句「没有找到」，下面给「在全文里搜索」作为唯一一项，回车即可</td></tr><tr><th>子页面</th><td>「切换主题」这类需要再选一次的命令进入子页面，输入框左边显示层级</td></tr></table></section><section class="od-sec"><div class="od-sh"><h2>动效</h2></div><p class="od-lead">命令面板是用键盘叫出来的，没有按钮可以长出来，所以按它自己的用法设计：先是一个输入框，然后才是结果。输入框从上方 8px 处落下并由虚变实，列表随后往下展开，前 8 项依次浮现；之后列表的高度跟着结果数量变化。进入「切换主题」这类下一级时，列表往左推进，退回时往右。执行时当前项亮一下再收起。遮罩、曲线与对话框共用，面板不缩放。</p><div class="od-tl"><div><div class="od-tlr ax"><span class="od-nm" style="font-weight:600;color:var(--fg)">进入</span><span class="od-tr" style="background:none"><span class="od-tk" style="left:0%">0</span><span class="od-tk" style="left:25%">100</span><span class="od-tk" style="left:50%">200</span><span class="od-tk" style="left:75%">300</span><span class="od-tk" style="left:100%">400</span></span><span></span></div><div class="od-tlr"><span class="od-nm">遮罩</span><span class="od-tr"><i class="od-bar scr" style="left:0.0%;width:40.0%"></i></span><span class="od-meta"><span class="num">160ms</span> · 透明度 · ease-out</span></div><div class="od-tlr"><span class="od-nm">面板</span><span class="od-tr"><i class="od-bar pnl" style="left:0.0%;width:55.0%"></i></span><span class="od-meta"><span class="num">220ms</span> · 从上方 8px 落下并由虚变实 · (.32,.72,0,1)</span></div><div class="od-tlr"><span class="od-nm">列表</span><span class="od-tr"><i class="od-bar aux" style="left:15.0%;width:65.0%"></i></span><span class="od-meta"><span class="num">260ms</span> · 高度从 0 展开，前 8 项依次浮现</span></div><div class="od-tlr"><span class="od-nm">焦点</span><span class="od-tr"><i class="od-bar mark" style="left:0.0%"></i></span><span class="od-meta">直接进输入框</span></div></div><div><div class="od-tlr ax"><span class="od-nm" style="font-weight:600;color:var(--fg)">退出</span><span class="od-tr" style="background:none"><span class="od-tk" style="left:0%">0</span><span class="od-tk" style="left:25%">100</span><span class="od-tk" style="left:50%">200</span><span class="od-tk" style="left:75%">300</span><span class="od-tk" style="left:100%">400</span></span><span></span></div><div class="od-tlr"><span class="od-nm">执行</span><span class="od-tr"><i class="od-bar aux" style="left:0.0%;width:35.0%"></i></span><span class="od-meta"><span class="num">140ms</span> · 当前项亮一下</span></div><div class="od-tlr"><span class="od-nm">面板</span><span class="od-tr"><i class="od-bar pnl" style="left:35.0%;width:30.0%"></i></span><span class="od-meta"><span class="num">120ms</span> · 往上退 4px 并淡出 · ease-in</span></div><div class="od-tlr"><span class="od-nm">遮罩</span><span class="od-tr"><i class="od-bar scr" style="left:35.0%;width:40.0%"></i></span><span class="od-meta"><span class="num">160ms</span> · 透明度 · ease-in</span></div><div class="od-tlr"><span class="od-nm">焦点</span><span class="od-tr"><i class="od-bar mark" style="left:65.0%"></i></span><span class="od-meta">回到打开前的位置</span></div></div></div><div class="od-lgs"><span class="od-lg"><i class="od-bar scr"></i>遮罩</span><span class="od-lg"><i class="od-bar pnl"></i>面板</span><span class="od-lg"><i class="od-bar aux"></i>列表与执行</span><span class="od-lg"><i class="od-bar mark"></i>焦点</span><span style="margin-left:auto">刻度 0–400ms；开启减弱动态时只保留 100ms 透明度</span></div></section><section class="od-sec"><div class="od-sh"><h2>规格</h2></div><table class="od-spec"><tr><th>宽度</th><td>560；窄屏为屏宽减 16，从顶部 8 开始</td></tr><tr><th>位置</th><td>水平居中，距窗口顶 15%；列表高度随结果变化，200ms 过渡；面板最高 440，超出在列表里滚动</td></tr><tr><th>输入框</th><td>高 52，左右 16，图标 18，字号 16，底部一条细线</td></tr><tr><th>项</th><td>高 40，左右 10，圆角 8；图标 16；字号 14</td></tr><tr><th>底栏</th><td>高 36，键位提示 12，顶上一条细线</td></tr><tr><th>遮罩</th><td>rgb(20 16 14 / .18)，比对话框浅</td></tr><tr><th>层级</th><td>80，盖在所有浮层上面</td></tr></table></section><section class="od-sec"><div class="od-sh"><h2>怎么选</h2></div><table class="od-pick"><tr><th>组件</th><th>什么时候用</th><th>例子</th></tr><tr class="cur"><td><a href="Command.dc.html">命令面板</a></td><td>知道要去哪、要做什么，用键盘最快</td><td>跳到某篇文章、切换主题、新建文章</td></tr><tr class="cur"><td><a href="Command.dc.html">搜索页</a></td><td>要浏览、比较大量结果</td><td>全文搜索结果页</td></tr><tr><td><a href="DropdownMenu.dc.html">操作菜单</a></td><td>针对某一项的几个命令</td><td>一篇文章的编辑、删除</td></tr></table></section></main>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"season":{"editor":"enum","options":["春","夏","秋","冬"],"default":"春"},"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":4400}}'>
+class Component extends DCLogic {
+  state = { ov: null, ph: '', run: 0, slow: false, toasts: [], tex: false, tdrag: null, q: '', sub: null, ai: 0, loading: false, fullQ: '', lastAct: '—', cmH: 0, fresh: false, pgDir: '', pgGen: 0, fire: -1 };
+  componentDidUpdate() { const lock = !!{ dialog: 1, confirm: 1, prompt: 1, sheet: 1, bottom: 1, cmd: 1, lb: 1 }[this.state.ov]; if (lock === !!this._locked) return; this._locked = lock;
+    const de = document.documentElement, b = document.body;
+    if (lock) { const w = window.innerWidth - de.clientWidth; de.style.overflow = 'hidden'; b.style.overflow = 'hidden'; de.style.paddingRight = w > 0 ? w + 'px' : ''; }
+    else { de.style.overflow = ''; b.style.overflow = ''; de.style.paddingRight = ''; } }
+  componentDidMount() { this._altT = (e) => { if (e.altKey && e.code === 'KeyT' && this._toasterEl) { e.preventDefault(); this._toasterEl.focus(); } else if ((e.metaKey || e.ctrlKey) && (e.key || '').toLowerCase() === 'k' && this._openCmd) { e.preventDefault(); this._openCmd(); } else if (e.key === 'Escape' && this._esc) this._esc(); else if (this.state.ov === 'lb' && this._lbNav && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) this._lbNav(e.key === 'ArrowRight' ? 1 : -1); else if (this._pageKey && !this.state.ov) this._pageKey(e); }; window.addEventListener('keydown', this._altT); }
+  componentWillUnmount() { window.removeEventListener('keydown', this._altT); Object.values(this._tm || {}).forEach((x) => clearTimeout(x.t)); document.documentElement.style.overflow = ''; document.body.style.overflow = ''; }
+  renderVals() {
+    const S = {
+      '春': { seed: '#f47983', h: 16.6, l: '/_blob/d8aaad66118cac26d5af34610af527bf', d: '/_blob/0cfa75d49c85d4df8e63d591ce6c7ea1' },
+      '夏': { seed: '#2f9e7a', h: 162, l: '/_blob/c0353bf8edad55e8130fb95826b3799f', d: '/_blob/8ab23c87229ff622bac13566cfb665fd' },
+      '秋': { seed: '#d9a21b', h: 82.95, l: '/_blob/d837ab2ada8c6a3cbb1a71fea71be6e2', d: '/_blob/8a07e26da1a24b8a9f19bf09a30aca11' },
+      '冬': { seed: '#7d8ea3', h: 252, l: '/_blob/eb4210561b3c04659b349b6813d7ba9c', d: '/_blob/f4961af0e552cbba606908f217a44b37' },
+    };
+    const season = S[this.props.season] ? this.props.season : '春';
+    const dark = !!this.props.dark;
+    const s = S[season], h = s.h;
+    const vars = dark
+      ? `--bg:oklch(0.17 0.0087 ${h});--sheet:oklch(0.235 0.011 ${h});--sunk:oklch(0.29 0.012 ${h});--fg:oklch(0.9373 0.015 ${h});--muted:oklch(0.8573 0.0225 ${h});--rule:oklch(0.9373 0.015 ${h} / .12);--rule2:oklch(0.9373 0.015 ${h} / .3);--deco:${s.seed};--accent:oklch(0.8589 0.1031 ${h});--danger:oklch(0.74 0.14 25);--ok:oklch(0.74 0.15 155);--ol:rgb(255 255 255 / .08);`
+      : `--bg:oklch(0.968 0.006 ${h});--sheet:oklch(0.994 0.003 ${h});--sunk:oklch(0.945 0.007 ${h});--fg:oklch(0.3331 0.0175 ${h});--muted:oklch(0.4717 0.0225 ${h});--rule:oklch(0.3331 0.0175 ${h} / .11);--rule2:oklch(0.3331 0.0175 ${h} / .3);--deco:${s.seed};--accent:oklch(0.4739 0.0974 ${h});--danger:oklch(0.52 0.16 27);--ok:oklch(0.52 0.13 155);--ol:transparent;`;
+    const base = { vars, season, dark, art: dark ? s.d : s.l, blend: dark ? 'normal' : 'multiply', showLight: dark ? 'none' : 'block', showDark: dark ? 'block' : 'none' };
+    
+    const HL = (key) => { const cur = this.state['hl_' + key];
+      const style = cur ? `transform:translate(${cur.x}px,${cur.y}px);width:${cur.w}px;height:${cur.h}px;opacity:${cur.on ? 1 : 0};transition:${cur.jump ? 'opacity .12s ease' : 'transform .28s cubic-bezier(.32,.72,0,1),width .28s cubic-bezier(.32,.72,0,1),height .28s cubic-bezier(.32,.72,0,1),opacity .12s ease'}` : 'opacity:0';
+      return { style,
+        enter: (e) => { const el = e.currentTarget; if (el.getAttribute('aria-disabled') === 'true') return; const prev = this.state['hl_' + key]; this.setState({ ['hl_' + key]: { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight, on: true, jump: !prev || !prev.on } }); },
+        leave: () => { const prev = this.state['hl_' + key]; if (prev) this.setState({ ['hl_' + key]: Object.assign({}, prev, { on: false }) }); } }; };
+    base.keepFocus = (e) => { const t = e.target; if (t.closest && t.closest('input,textarea,select,button,a,[tabindex]')) return; const c = e.currentTarget.querySelector('input,textarea,select'); if (!c || c.disabled) return; e.preventDefault(); if (document.activeElement !== c) c.focus(); };
+    const SLOW = () => (this.state.slow ? 4 : 1);
+    const OUT_MS = { dialog: 200, confirm: 160, prompt: 160, sheet: 240, side: 240, bottom: 240, pop: 150, menu: 150, ctx: 150, cmd: 160, lb: 280 };
+    const flip = (el, thumb, dur, back) => { const a = thumb.getBoundingClientRect(), b = el.getBoundingClientRect(); if (!b.width || !a.width) return Promise.resolve();
+      const s = Math.max(a.width / b.width, a.height / b.height), dx = a.left + a.width / 2 - (b.left + b.width / 2), dy = a.top + a.height / 2 - (b.top + b.height / 2);
+      const ix = Math.max(0, (b.width - a.width / s) / 2), iy = Math.max(0, (b.height - a.height / s) / 2);
+      const from = { transform: `translate(${dx}px,${dy}px) scale(${s})`, clipPath: `inset(${iy}px ${ix}px round ${8 / s}px)` }, to = { transform: 'translate(0px,0px) scale(1)', clipPath: 'inset(0px 0px round 4px)' };
+      return el.animate(back ? [to, from] : [from, to], { duration: dur, easing: 'cubic-bezier(.32,.72,0,1)', fill: back ? 'forwards' : 'none' }).finished.catch(() => {}); };
+    const ovOpen = (name, extra) => () => { clearTimeout(this._ovT); this.setState(Object.assign({ ov: name, ph: 'in', run: (this.state.run || 0) + 1, last: name, drag: 0, dragging: false }, extra || {})); };
+    const ovClose = () => { const name = this.state.ov; if (!name || this.state.ph === 'out') return; this.setState({ ph: 'out', run: (this.state.run || 0) + 1 }); clearTimeout(this._ovT);
+      const done = () => { if (this.state.ph === 'out') this.setState({ ov: null, drag: 0 }); };
+      const thumb = name === 'lb' && this._thumbs ? this._thumbs[this.state.lb || 0] : null;
+      if (thumb && this._lbEl && !matchMedia('(prefers-reduced-motion: reduce)').matches) flip(this._lbEl, thumb, 280 * SLOW(), true).then(done);
+      else this._ovT = setTimeout(done, (OUT_MS[name] || 160) * SLOW() + 40); };
+    const MODAL = { dialog: 1, confirm: 1, prompt: 1, sheet: 1, bottom: 1, cmd: 1, lb: 1 };
+    const lockRef = (always) => (el) => { if (!el || el.__lk) return; el.__lk = 1;
+      const h = (e) => { if (!always && !MODAL[this.state.ov]) return; const dy = e.deltaY || 0;
+        for (let n = e.target; n && n !== el.parentNode; n = n.parentNode) { if (n.hasAttribute && n.hasAttribute('data-scroll')) { if (e.type === 'touchmove' || (dy < 0 ? n.scrollTop > 0 : n.scrollTop + n.clientHeight < n.scrollHeight - 1)) return; break; } }
+        e.preventDefault(); };
+      el.addEventListener('wheel', h, { passive: false }); el.addEventListener('touchmove', h, { passive: false }); };
+    this._esc = ovClose;
+    const ovPh = (name) => (this.state.ov === name ? this.state.ph : '');
+    const thumbRef = (i) => (el) => { if (el) { this._thumbs = this._thumbs || {}; this._thumbs[i] = el; } };
+    const lbRef = (el) => { if (!el) return; this._lbEl = el; if (this._lbRun === this.state.run) return; this._lbRun = this.state.run;
+      const thumb = this._thumbs ? this._thumbs[this.state.lb || 0] : null; if (this.state.ph !== 'in' || !thumb || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const go = () => { el.style.visibility = ''; flip(el, thumb, 360 * SLOW(), false); };
+      if (el.complete && el.naturalWidth) go(); else { el.style.visibility = 'hidden'; el.addEventListener('load', go, { once: true }); } };
+    const focusRef = (ms) => (el) => { if (!el || this._fr === this.state.run || this.state.ph !== 'in') return; this._fr = this.state.run; setTimeout(() => { try { el.focus({ preventScroll: true }); } catch (e) {} }, ms * SLOW()); };
+    const st = this.state, set = (o) => this.setState(o);
+    // 动法照 Sonner：从底边升起、后层上移 14px 并缩 5%、悬停展开间距 14、移除时向下落回、划走阈值 45px 或 0.11px/ms
+    const T_GAP = 14, T_LIFT = 14, T_SC = 0.05, T_MAX = 3, T_DUR = { ok: 4000, info: 4000, warn: 6000, err: Infinity, load: Infinity };
+    this._tm = this._tm || {}; this._th = this._th || {}; this._tpos = this._tpos || {};
+    const tl = () => this.state.toasts || [];
+    const tMap = (fn) => this.setState((p) => ({ toasts: (p.toasts || []).map(fn) }));
+    const tDur = (o) => (o.action && o.type !== 'err' && o.type !== 'load' ? 8000 : T_DUR[o.type || 'ok']);
+    const tDismiss = (id, sw) => { const t = tl().find((x) => x.id === id); if (!t || t.ph === 'out') return; const tm = this._tm[id]; if (tm) clearTimeout(tm.t); delete this._tm[id];
+      const exOut = !!this.state.tex && !sw; tMap((x) => (x.id === id ? Object.assign({}, x, { ph: 'out', sw: sw || null, exOut }) : x)); if (this._onToast) this._onToast('out');
+      setTimeout(() => this.setState((p) => { const rest = (p.toasts || []).filter((x) => x.id !== id), any = rest.some((x) => x.ph !== 'out'); if (!any) this._tfocus = false; return any ? { toasts: rest } : { toasts: rest, tex: false }; }), (sw || exOut ? 200 : 400) * SLOW() + 60); };
+    const tArm = (id, ms) => { const o = this._tm[id]; if (o) clearTimeout(o.t); if (!isFinite(ms)) { delete this._tm[id]; return; } const x = { start: Date.now(), left: ms, t: null }; this._tm[id] = x; if (!this.state.tex) x.t = setTimeout(() => tDismiss(id), ms); };
+    const tPause = () => Object.keys(this._tm).forEach((k) => { const x = this._tm[k]; if (x.t) { clearTimeout(x.t); x.t = null; x.left -= Date.now() - x.start; } });
+    const tResume = () => Object.keys(this._tm).forEach((k) => { const x = this._tm[k]; if (!x.t) { x.start = Date.now(); x.t = setTimeout(() => tDismiss(+k), Math.max(800, x.left)); } });
+    const toast = (o) => { const list = tl(), same = list.find((x) => x.ph !== 'out' && (o.key ? x.key === o.key : x.title === o.title && (x.type || 'ok') === (o.type || 'ok') && (x.desc || '') === (o.desc || '')));
+      if (same) { tMap((x) => (x.id === same.id ? Object.assign({}, x, { count: x.count + 1, gen: x.gen + 1 }) : x)); tArm(same.id, same.dur); if (this._onToast) this._onToast('in'); return same.id; }
+      const used = list.map((x) => x.slot); let slot = [0, 1, 2, 3, 4, 5].find((s2) => used.indexOf(s2) < 0), keep = list;
+      if (slot == null) { const old = list.slice().sort((a, b) => a.id - b.id)[0]; slot = old.slot; keep = list.filter((x) => x !== old); delete this._tm[old.id]; }
+      const id = (this._tid = Math.max(this._tid || 0, ...list.map((x) => x.id)) + 1), t = Object.assign({ id, slot, ph: 'in', count: 1, gen: 0, type: 'ok', sw: null }, o); t.dur = tDur(t); this._sgen = this._sgen || {}; t.sg = (this._sgen[slot] = (this._sgen[slot] || 0) + 1) % 2;
+      this.setState({ toasts: keep.concat([t]) }); tArm(id, t.dur); if (this._onToast) this._onToast('in'); return id; };
+    const tUpdate = (id, o) => { const t = tl().find((x) => x.id === id); if (!t || t.ph === 'out') return; const n = Object.assign({}, t, o); n.dur = tDur(n); tMap((x) => (x.id === id ? n : x)); tArm(id, n.dur); };
+    const T_SAMPLES = ['已保存草稿', '已发布「秋天的桂花酿」', '已加入系列「Rust 全栈笔记」', '已通过林间的评论', '已更新封面', '已移到回收站', '已导出 文章列表.csv', '已置顶这条推文'];
+    const tNext = () => { this._tsi = ((this._tsi == null ? -1 : this._tsi) + 1) % T_SAMPLES.length; return T_SAMPLES[this._tsi]; };
+    const tTest = { one: () => toast({ type: 'ok', title: tNext() }), burst: () => [0, 1, 2].forEach((i) => setTimeout(() => toast({ type: i === 1 ? 'info' : 'ok', title: tNext() }), i * 180)),
+      same: () => toast({ type: 'ok', title: '已复制链接' }), clear: () => tl().filter((x) => x.ph !== 'out').forEach((x) => tDismiss(x.id)) };
+    const damp = (d) => d / (1.5 + Math.abs(d) / 20);
+    const toaster = () => { const list = tl(), ex = !!this.state.tex, drag = this.state.tdrag, live = list.filter((x) => x.ph !== 'out').sort((a, b) => b.id - a.id);
+      const hOf = (t) => this._th[t.id] || 56, fh = live[0] ? hOf(live[0]) : 56;
+      const pos = (t) => { const i = live.indexOf(t), c = Math.min(i, T_MAX); let y = 0; if (ex) { for (let j = 0; j < c; j++) y -= hOf(live[j]) + T_GAP; } else y = -c * T_LIFT; return { y, sc: ex ? 1 : +(1 - c * T_SC).toFixed(3), h: ex || i === 0 ? hOf(t) : fh, i }; };
+      const slots = [0, 1, 2, 3, 4, 5].map((s2) => { const t = list.find((x) => x.slot === s2); if (!t) return { cls: '', style: 'display:none', type: '' };
+        const on = t.ph !== 'out'; const p = on ? pos(t) : this._tpos[t.id] || { y: 0, sc: 1, h: hOf(t), i: 0 }; if (on) this._tpos[t.id] = p;
+        const dragging = !!(drag && drag.id === t.id), hidden = on && p.i >= T_MAX, sw = t.sw;
+        let tf;
+        if (!on && sw) tf = `translate(calc(${sw.x}px + ${sw.dir === 'r' ? '100%' : '0px'}),calc(${p.y + sw.y}px + ${sw.dir === 'd' ? '100%' : '0px'})) scale(${p.sc})`;
+        else if (!on && t.exOut) tf = `translate(0px,${p.y}px) scale(${p.sc})`;
+        else if (!on) tf = `translate(0px,calc(${p.y}px + 100%)) scale(${p.sc})`;
+        else if (dragging) tf = `translate(${drag.x}px,${p.y + drag.y}px) scale(${p.sc})`;
+        else tf = `translate(0px,${p.y}px) scale(${p.sc})`;
+        const style = `transform:${tf};height:${p.h}px;opacity:${!on || hidden ? 0 : 1};z-index:${20 - p.i};pointer-events:${hidden || !on ? 'none' : 'auto'};`;
+        return { cls: 'in' + (t.sg || 0) + (on && p.i > 0 && !ex ? ' back' : '') + (dragging ? ' drag' : '') + (!on && (sw || t.exOut) ? ' swo' : ''), style, bump: 'b' + (t.gen % 2) + (t.gen ? '' : ' b-'), role: t.type === 'err' ? 'alert' : 'status', type: t.type, title: t.title, desc: t.desc || '', hasDesc: !!t.desc,
+          action: t.action || '', hasAct: !!t.action, multi: t.count > 1, count: t.count,
+          act: () => { const f = t.onAct; tDismiss(t.id); if (f) f(); }, close: () => tDismiss(t.id),
+          ref: (el) => { if (!el) return; const h = el.offsetHeight; if (h && this._th[t.id] !== h) { this._th[t.id] = h; this.setState((q) => ({ thv: (q.thv || 0) + 1 })); } },
+          down: (e) => { if (e.target.closest && e.target.closest('button')) return; this._tx0 = e.clientX; this._ty0 = e.clientY; this._tt0 = performance.now(); this._tax = null; try { e.currentTarget.setPointerCapture(e.pointerId); } catch (x) {} this.setState({ tdrag: { id: t.id, x: 0, y: 0 } }); },
+          move: (e) => { const d = this.state.tdrag; if (!d || d.id !== t.id) return; const rx = e.clientX - this._tx0, ry = e.clientY - this._ty0;
+            if (!this._tax && Math.max(Math.abs(rx), Math.abs(ry)) > 4) this._tax = Math.abs(rx) >= Math.abs(ry) ? 'x' : 'y';
+            const ax = this._tax; this.setState({ tdrag: { id: t.id, x: ax === 'x' ? (rx > 0 ? rx : damp(rx)) : 0, y: ax === 'y' ? (ry > 0 ? ry : damp(ry)) : 0 } }); },
+          up: () => { const d = this.state.tdrag; if (!d || d.id !== t.id) return; const amt = this._tax === 'y' ? d.y : d.x, v = Math.abs(amt) / Math.max(1, performance.now() - this._tt0);
+            this.setState({ tdrag: null }); if (amt >= 45 || (v > 0.11 && amt > 10)) tDismiss(t.id, { x: d.x, y: d.y, dir: this._tax === 'y' ? 'd' : 'r' }); } }; });
+      const vis = live.slice(0, T_MAX); let H = 0; if (ex) vis.forEach((t, j) => { H += hOf(t) + (j ? T_GAP : 0); }); else if (vis.length) H = fh + (vis.length - 1) * T_LIFT;
+      if (ex) this._hitMax = Math.max(this._hitMax || 0, H); else this._hitMax = 0;
+      const hitH = ex ? this._hitMax : H;
+      return { cls: ex ? 'ex' : '', hit: `height:${hitH ? hitH + 32 : 0}px`, slots, ref: (el) => { if (el) this._toasterEl = el; },
+        enter: () => { if (!this.state.tex && live.length) { this.setState({ tex: true }); tPause(); } },
+        leave: () => { if (this.state.tex && !this._tfocus) { this.setState({ tex: false }); tResume(); } },
+        focus: () => { this._tfocus = true; if (!this.state.tex && live.length) { this.setState({ tex: true }); tPause(); } },
+        blur: (e) => { if (e.relatedTarget && e.currentTarget.contains(e.relatedTarget)) return; this._tfocus = false; if (this.state.tex) { this.setState({ tex: false }); tResume(); } } }; };
+    const SEG = (key, vals) => { const i = Math.max(0, vals.indexOf(st[key])), o = { ['sx_' + key]: i * 100 };
+      vals.forEach((v, j) => { o['s_' + key + j] = j === i ? 'on' : ''; o['ss_' + key + j] = () => set({ [key]: v }); }); return o; };
+    const POSTS = ['独库公路，六天', '拆解 Saber —— 一个用 Go 写就的聊天机器人', 'Rust 全栈笔记 · 第 4 章 · 实时推送', 'Rust 全栈笔记 · 第 3 章 · 评论与批注', '秋天的桂花酿', '把落花写进 CSS', '在 Go 里优雅地关掉一个 goroutine', 'SQLite 也能做全文搜索'];
+    const PAGES = [['博客', '/blog'], ['手记', '/journal'], ['推文', '/tweets'], ['图集', '/galleries'], ['项目', '/projects'], ['友链', '/friends'], ['关于', '/about'], ['后台', '/admin']];
+    const CMDS = [['新建文章', 'N'], ['新建手记', '⌘⇧J'], ['切换主题', ''], ['复制当前链接', '⌘⇧C'], ['退出登录', '']];
+    const THEMES = [['跟随系统', '现在是浅色'], ['浅色', ''], ['深色', ''], ['春', '季节色'], ['夏', '季节色'], ['秋', '季节色'], ['冬', '季节色']];
+    const BODY = '从独山子出发，第一天就爬升两千米。哈希勒根达坂的风把手套吹透。晚上在乔尔玛的兵站借宿。评论写进数据库之后，往文章的频道里发一条事件。桂花要挑刚开的，摘下来当天就得腌上。';
+    const cmOn = st.ov === 'cmd', q = st.q, ql = q.trim().toLowerCase(), SL = st.slow ? 4 : 1;
+    const close = () => { clearTimeout(this._ldT); ovClose(); };
+    const done = (msg, toastMsg) => { if (this._fireT) return; set({ fire: this.state.ai, lastAct: msg }); this._fireT = setTimeout(() => { this._fireT = null; close(); if (toastMsg) toast(toastMsg); }, 140 * SL); };
+    const split = (s) => { if (!ql) return { a: s, m: '', b: '' }; const i = s.toLowerCase().indexOf(ql); if (i < 0) return { a: s, m: '', b: '' }; return { a: s.slice(0, i), m: s.slice(i, i + ql.length), b: s.slice(i + ql.length) }; };
+    const has = (s) => !ql || s.toLowerCase().indexOf(ql) >= 0;
+    const rank = (list, f) => list.filter((x) => has(f(x))).sort((a, b) => (f(a).toLowerCase().indexOf(ql) === 0 ? 0 : 1) - (f(b).toLowerCase().indexOf(ql) === 0 ? 0 : 1));
+    let groups = [], fallback = false;
+    if (st.sub === 'theme') groups = [{ name: '主题', items: rank(THEMES, (x) => x[0]).map(([n, s]) => ({ k: 'theme', label: n, sub: s, run: () => done('主题：' + n, { type: 'ok', title: '已切换到「' + n + '」' }) })) }];
+    else {
+      const posts = (ql ? rank(POSTS, (x) => x) : POSTS.slice(0, 3)).slice(0, 5).map((t) => ({ k: 'post', label: t, run: (e) => done((e && e.metaKey ? '新标签打开：' : '打开：') + t, null) }));
+      const pages = (ql ? rank(PAGES, (x) => x[0] + ' ' + x[1]) : PAGES.slice(0, 4)).slice(0, 5).map(([n, p]) => ({ k: 'page', label: n, path: p, run: () => done('跳到 ' + p, null) }));
+      const cmds = (ql ? rank(CMDS, (x) => x[0]) : CMDS.slice(0, 4)).slice(0, 5).map(([n, kb]) => ({ k: 'cmd', label: n + (n === '切换主题' ? '…' : ''), kb, run: () => { if (n === '切换主题') { set({ sub: 'theme', q: '', ai: 0, loading: false, pgDir: 'f', pgGen: st.pgGen + 1 }); return; } done(n, n === '复制当前链接' ? { type: 'ok', title: '已复制链接' } : n === '退出登录' ? { type: 'info', title: '已退出登录' } : { type: 'info', title: '打开「' + n + '」' }); } }));
+      if (!ql) groups = [{ name: '最近', items: posts }, { name: '跳转', items: pages }, { name: '命令', items: cmds }];
+      else { groups = [{ name: '文章', items: posts }, { name: '页面', items: pages }, { name: '命令', items: cmds }].filter((g) => g.items.length);
+        if (!st.loading && st.fullQ === q && q.trim().length >= 2) { const i = BODY.toLowerCase().indexOf(ql); if (i >= 0) groups.push({ name: '全文', items: [{ k: 'full', label: '…' + BODY.slice(Math.max(0, i - 8), i + ql.length + 10) + '…', sub: '独库公路，六天', run: () => done('打开全文结果', null) }] }); }
+        if (!groups.length && !st.loading) { fallback = true; groups = [{ name: '', items: [{ k: 'full', label: '在全文里搜索「' + q.trim() + '」', run: () => done('全文搜索：' + q.trim(), { type: 'info', title: '打开搜索结果页' }) }] }]; } } }
+    const flat = []; groups.forEach((g) => g.items.forEach((it) => flat.push(it)));
+    const ai = flat.length ? ((st.ai % flat.length) + flat.length) % flat.length : 0;
+    const open = () => { clearTimeout(this._ovT); clearTimeout(this._frT); clearTimeout(this._fireT); this._fireT = null; set({ ov: 'cmd', ph: 'in', run: (st.run || 0) + 1, q: '', sub: null, ai: 0, loading: false, fullQ: '', cmH: 0, fresh: true, pgDir: '', fire: -1 });
+      this._frT = setTimeout(() => this.setState({ fresh: false }), 480 * SL); };
+    this._openCmd = () => { if (cmOn && st.ph !== 'out') close(); else open(); };
+    const back = () => set({ sub: null, q: '', ai: 0, pgDir: 'b', pgGen: st.pgGen + 1 });
+    this._esc = () => { if (!cmOn) return; if (q) { set({ q: '', ai: 0, loading: false }); return; } if (st.sub) { back(); return; } close(); };
+    let n = 0;
+    const extra = Object.assign({}, SEG('slow', [false, true]), {
+      kk: st.slow ? 4 : 1, lockStage: lockRef(false), tst: toaster(), lastAct: st.lastAct,
+      openCmd: open, cmOn, cmPh: cmOn ? st.ph : '', freshCls: st.fresh ? 'fresh' : '', cmLH: Math.min(st.cmH || 0, 352), pgCls: st.pgDir ? 'p' + st.pgDir + (st.pgGen % 2) : '',
+      measRef: (el) => { if (!el) return; const hh = el.offsetHeight; if (hh && Math.abs(hh - (this.state.cmH || 0)) > 1) this.setState({ cmH: hh }); }, q, inSub: st.sub === 'theme', back, focusIn: focusRef(0),
+      ph: st.sub === 'theme' ? '选一个主题' : '搜文章、跳页面、执行命令', loading: st.loading, empty: fallback,
+      ftHint: st.sub === 'theme' ? '主题 · 退格返回' : ql ? flat.length + ' 个结果' : '',
+      activeId: 'cm-' + ai, listRef: (el) => { if (el) this._listEl = el; },
+      setQ: (e) => { const v = e.target.value; clearTimeout(this._ldT); const need = !st.sub && v.trim().length >= 2; set({ q: v, ai: 0, loading: need, fullQ: '' });
+        if (need) this._ldT = setTimeout(() => this.setState({ loading: false, fullQ: v }), 600 * SL); },
+      cmKey: (e) => { if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); if (flat.length) set({ ai: ai + (e.key === 'ArrowDown' ? 1 : -1) }); }
+        else if (e.key === 'Enter') { e.preventDefault(); if (flat[ai]) flat[ai].run(e); }
+        else if (e.key === 'Backspace' && !q && st.sub) { e.preventDefault(); back(); } },
+      groups: groups.map((g) => ({ name: g.name, items: g.items.map((it) => { const i = n++, s = split(it.label), on = i === ai;
+        const o = Object.assign({ id: 'cm-' + i, si: Math.min(i, 8), cls: (on ? 'on' : '') + (st.fire === i ? ' fire' : ''), on: on ? 'true' : 'false', run: it.run, sub: it.sub || '', hasSub: !!it.sub, kb: it.kb || '', hasKb: !!it.kb, path: it.path || '', hasPath: !!it.path,
+          hover: () => { if (this.state.ai !== i) this.setState({ ai: i }); },
+          ref: (el) => { if (el && on && this._listEl && el.scrollIntoView) { const lr = this._listEl.getBoundingClientRect ? this._listEl.getBoundingClientRect() : null, er = el.getBoundingClientRect ? el.getBoundingClientRect() : null; if (lr && er && (er.top < lr.top || er.bottom > lr.bottom)) el.scrollIntoView({ block: 'nearest' }); } } }, s);
+        Object.keys({ post: 1, page: 1, cmd: 1, theme: 1, full: 1 }).forEach((k) => { o['k_' + k] = it.k === k; }); return o; }) })),
+    });
+    return Object.assign(base, extra);
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Violet 图集</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&family=Noto+Serif+SC:wght@400;500;600;700&family=Alex+Brush&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Maple Mono";font-weight:400;font-style:normal;src:url(/_blob/a3ecea3add4961def4d089b95f486230) format("woff2")}
+@font-face{font-family:"Maple Mono";font-weight:500;font-style:normal;src:url(/_blob/1ba23035f8e49762aeac0a2a66f83fa0) format("woff2")}
+body{margin:0}
+a{color:inherit;text-decoration:none}
+.paper-l{position:absolute;inset:0;background-image:url(/_blob/66391f4a5c5b623abcbda5bc91818ab0);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.paper-d{position:absolute;inset:0;background-image:url(/_blob/b0a1c287fd95586fcb700c431de8f4c5);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.num{font-family:"Maple Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.mono{font-family:"Maple Mono",ui-monospace,monospace}
+.sheet{background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);border:1px solid var(--ol)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;height:36px;padding:0 16px;border:0;border-radius:999px;font-family:inherit;font-size:14px;font-weight:500;white-space:nowrap;background:var(--sunk);color:var(--fg);cursor:pointer}
+.btn.sm{height:32px;padding:0 12px}.btn.lg{height:40px;font-size:16px}
+.btn.pri{background:var(--fg);color:var(--bg)}.btn.gho{background:transparent}
+.btn.ic{width:32px;padding:0}
+.seg{display:inline-flex;padding:2px;border-radius:999px;background:var(--sunk)}
+.sg{display:inline-flex;align-items:center;gap:6px;box-sizing:border-box;height:32px;padding:0 12px;border-radius:999px;font-size:14px;color:var(--muted)}
+.sg i{font-style:normal;font-size:12px;opacity:.7}
+.sg.on{background:var(--sheet);color:var(--fg);font-weight:500;box-shadow:0 4px 24px rgb(0 0 0 / .05)}
+.chip{display:inline-flex;align-items:center;gap:4px;box-sizing:border-box;height:24px;padding:0 10px;border-radius:999px;background:var(--sunk);font-size:12px;font-weight:500;color:var(--muted)}
+.chip.ac{background:color-mix(in oklab,var(--deco) 16%,var(--sheet));color:var(--accent)}
+.chip.ok{background:color-mix(in oklab,var(--ok) 12%,var(--sheet));color:var(--ok)}
+.fld{display:flex;align-items:center;gap:8px;box-sizing:border-box;height:36px;padding:0 12px;border-radius:12px;background:var(--sunk);font-size:14px;color:var(--muted)}
+.lab{display:block;margin-bottom:8px;font-size:14px;font-weight:600}
+.h1{margin:0;font-size:52px;font-weight:600;line-height:1.15;letter-spacing:-0.01em}
+
+.al{display:block}
+.stk{position:relative;padding-top:14px}
+.stk::before,.stk::after{content:"";position:absolute;left:8%;right:8%;top:0;height:20px;border-radius:10px;background:color-mix(in oklab,var(--sheet) 70%,var(--sunk));box-shadow:0 4px 24px rgb(0 0 0 / .05)}
+.stk::after{left:4%;right:4%;top:7px}
+.stk img{position:relative;display:block;width:100%;aspect-ratio:4/3;border-radius:12px;object-fit:cover}
+.al .t{margin-top:16px;font-size:18px;font-weight:600}
+.al .m{margin-top:4px;font-size:13px;color:var(--muted)}
+
+</style>
+</helmet>
+<div style="{{vars}}position:relative;overflow:hidden;width:1440px;min-height:2300px;display:flex;flex-direction:column;background:var(--bg);color:var(--fg);font-family:'Songti SC','Noto Serif SC','Source Han Serif SC',STSong,SimSun,serif;font-size:15px;line-height:1.8">
+<div class="paper-l" style="display:{{showLight}}"></div>
+<div class="paper-d" style="display:{{showDark}}"></div>
+<img src="{{art}}" alt="" style="position:absolute;top:0;right:0;width:460px;opacity:0.6;pointer-events:none;mix-blend-mode:{{blend}};-webkit-mask-image:radial-gradient(circle at 100% 0%,#000 55%,transparent 92%);mask-image:radial-gradient(circle at 100% 0%,#000 55%,transparent 92%)">
+<div style="position:absolute;z-index:20;top:0;left:0;right:0"><dc-import name="Header" state="child" title="图集" presence="music" bare="{{ true }}" season="{{season}}" dark="{{dark}}" hint-size="1440px,70px"></dc-import></div>
+<main style="position:relative;z-index:2;width:1120px;margin:0 auto;padding:120px 0 0">
+<div style="display:flex;align-items:flex-end;justify-content:space-between"><h1 class="h1">图集</h1><span style="font-size:14px;color:var(--muted)"><span class="num">7</span> 个相册 · <span class="num">112</span> 张</span></div>
+<a href="#" style="display:block;margin-top:40px">
+  <div style="display:grid;grid-template-columns:3fr 2fr;grid-template-rows:1fr 1fr;gap:8px;height:520px;border-radius:16px;overflow:hidden">
+    <img src="/_blob/4bfc16b19a177812744604d69bfa3fbc" alt="雪山与峡谷" style="grid-row:span 2;width:100%;height:100%;object-fit:cover">
+    <img src="/_blob/3e47ffb528f89474554575be227acf8f" alt="山谷里的徒步者" style="width:100%;height:100%;object-fit:cover">
+    <img src="/_blob/fc0dfd2db5525fe1dcf85d29dc6157d6" alt="草原落日" style="width:100%;height:100%;object-fit:cover">
+  </div>
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:40px;align-items:end;margin-top:24px">
+    <div><div style="font-size:30px;font-weight:600;line-height:1.3">独库公路，六天</div><p style="margin:10px 0 0;max-width:560px;font-size:15px;line-height:1.9;color:var(--muted)">从独山子到库车，五百六十公里，四座达坂。每天骑不到一百公里，停下来的时间比骑的时间多。</p></div>
+    <div style="text-align:right"><div style="font-size:13px;color:var(--muted)"><span class="num">2026.08</span> · 新疆 · <span class="num">32</span> 张</div><span class="btn" style="margin-top:12px">看全部</span></div>
+  </div>
+</a>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:56px 32px;margin-top:80px;padding-top:56px;border-top:1px solid var(--rule)">
+<a href="#" class="al"><div class="stk"><img src="/_blob/6ea5545459a03270ac6ad193def6ee0e" alt=""></div><div class="t">海边的一周</div><div class="m"><span class="num">2026.07</span> · 青岛 · <span class="num">24</span> 张</div></a>
+<a href="#" class="al"><div class="stk"><img src="/_blob/d8ebab215c9ca83fc6a9beda0c4d31cc" alt=""></div><div class="t">旧街</div><div class="m"><span class="num">2026.05</span> · 布鲁日 · <span class="num">18</span> 张</div></a>
+<a href="#" class="al"><div class="stk"><img src="/_blob/cdd807830934caef57a440ae48a88d9b" alt=""></div><div class="t">雾</div><div class="m"><span class="num">2026.10</span> · 千岛湖 · <span class="num">14</span> 张</div></a>
+<a href="#" class="al"><div class="stk"><img src="/_blob/e799d2070872161b3559fcc279c8c47a" alt=""></div><div class="t">花朝</div><div class="m"><span class="num">2026.04</span> · 楼下花坛 · <span class="num">15</span> 张</div></a>
+<a href="#" class="al"><div class="stk"><img src="/_blob/52d0254b3d8852ff951bf4de8eec6a57" alt=""></div><div class="t">桌边</div><div class="m"><span class="num">2026.09</span> · 常去的咖啡馆 · <span class="num">9</span> 张</div></a>
+<a href="#" class="al"><div class="stk"><img src="/_blob/8103f2e9cb8005233db7d9427fc7e661" alt=""></div><div class="t">胶片</div><div class="m"><span class="num">2026.06</span> · 双反相机 · <span class="num">12</span> 张</div></a>
+</div>
+</main>
+<div style="position:relative;z-index:2;margin-top:auto;padding-top:96px"><dc-import name="Footer" season="{{season}}" dark="{{dark}}" hint-size="1440px,320px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"season":{"editor":"enum","options":["春","夏","秋","冬"],"default":"春"},"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":2300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const S = {
+      '春': { seed: '#f47983', h: 16.6, l: '/_blob/d8aaad66118cac26d5af34610af527bf', d: '/_blob/0cfa75d49c85d4df8e63d591ce6c7ea1' },
+      '夏': { seed: '#2f9e7a', h: 162, l: '/_blob/c0353bf8edad55e8130fb95826b3799f', d: '/_blob/8ab23c87229ff622bac13566cfb665fd' },
+      '秋': { seed: '#d9a21b', h: 82.95, l: '/_blob/d837ab2ada8c6a3cbb1a71fea71be6e2', d: '/_blob/8a07e26da1a24b8a9f19bf09a30aca11' },
+      '冬': { seed: '#7d8ea3', h: 252, l: '/_blob/eb4210561b3c04659b349b6813d7ba9c', d: '/_blob/f4961af0e552cbba606908f217a44b37' },
+    };
+    const season = S[this.props.season] ? this.props.season : '春';
+    const dark = !!this.props.dark;
+    const s = S[season], h = s.h;
+    const vars = dark
+      ? `--bg:oklch(0.17 0.0087 ${h});--sheet:oklch(0.235 0.011 ${h});--sunk:oklch(0.29 0.012 ${h});--fg:oklch(0.9373 0.015 ${h});--muted:oklch(0.8573 0.0225 ${h});--rule:oklch(0.9373 0.015 ${h} / .12);--rule2:oklch(0.9373 0.015 ${h} / .3);--deco:${s.seed};--accent:oklch(0.8589 0.1031 ${h});--danger:oklch(0.74 0.14 25);--ok:oklch(0.74 0.15 155);--ol:rgb(255 255 255 / .08);`
+      : `--bg:oklch(0.968 0.006 ${h});--sheet:oklch(0.994 0.003 ${h});--sunk:oklch(0.945 0.007 ${h});--fg:oklch(0.3331 0.0175 ${h});--muted:oklch(0.4717 0.0225 ${h});--rule:oklch(0.3331 0.0175 ${h} / .11);--rule2:oklch(0.3331 0.0175 ${h} / .3);--deco:${s.seed};--accent:oklch(0.4739 0.0974 ${h});--danger:oklch(0.52 0.16 27);--ok:oklch(0.52 0.13 155);--ol:transparent;`;
+    const base = { vars, season, dark, art: dark ? s.d : s.l, blend: dark ? 'normal' : 'multiply', showLight: dark ? 'none' : 'block', showDark: dark ? 'block' : 'none' };
+    const extra = {};
+    return Object.assign(base, extra);
+  }
+}
+</script>
+</body>
+</html>
