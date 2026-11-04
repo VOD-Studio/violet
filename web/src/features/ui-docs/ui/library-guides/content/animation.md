@@ -7,7 +7,7 @@
 | 名称 | 用途 | 归属 |
 | --- | --- | --- |
 | `caret-blink` | OTP 插字符 | 组件库 |
-| `nexus-shimmer` | Skeleton 指示加载 | 组件库 |
+| `skeleton-pulse` | Skeleton 呼吸起伏 | 组件库 |
 | `tab-panel-in` | 仅透明度淡入 | 组件库 |
 | `blob`、`diagram-enter`、`marquee` | 站点装饰或内容展示 | `web/src/styles/site-theme.css` |
 

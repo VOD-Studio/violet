@@ -110,6 +110,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 			{ title: "Violet" },
 		],
 		links: [
+			{ rel: "preconnect", href: "https://cdn.jsdelivr.net", crossOrigin: "anonymous" },
 			{ rel: "stylesheet", href: appCss },
 			{ rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
 			{ rel: "icon", type: "image/png", sizes: "256x256", href: "/favicon.png" },
