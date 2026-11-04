@@ -12,6 +12,7 @@ import { differenceInDays } from "date-fns";
 import { CalendarDays, Check, Copy, Gauge, MessageCircle, PenSquare, Share2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { BotBadge } from "../BotBadge";
 
 export interface UserProfilePanelProps {
 	profile: UserProfile;
@@ -111,7 +112,10 @@ export function UserProfilePanel({
 				style={sharedAvatar.style}
 			/>
 
-			<h1 className="mt-4 truncate text-2xl font-bold tracking-tight">{displayName}</h1>
+			<h1 className="mt-4 flex max-w-full min-w-0 items-center gap-2 text-2xl font-bold tracking-tight">
+				<span className="truncate">{displayName}</span>
+				<BotBadge show={profile.is_bot} />
+			</h1>
 			<div className="mt-1 flex items-center gap-1">
 				<span className="font-mono text-sm text-muted-foreground">@{profile.username}</span>
 				<Button

@@ -64,3 +64,19 @@ describe("buildTweetCommentConfig.renderBody", () => {
 		expect(screen.queryByRole("button")).toBeNull();
 	});
 });
+
+describe("buildTweetCommentConfig.renderMetaBadges", () => {
+	it("Bot 评论作者展示 BOT 徽章", () => {
+		const config = buildConfig();
+		const item = config.map(makeComment({ author: { ...author, is_bot: true } }));
+		render(config.renderMetaBadges?.(item));
+		expect(screen.getByText("BOT")).toBeTruthy();
+	});
+
+	it("人类评论作者不展示 BOT 徽章", () => {
+		const config = buildConfig();
+		const item = config.map(makeComment());
+		const { container } = render(config.renderMetaBadges?.(item));
+		expect(container.textContent).toBe("");
+	});
+});

@@ -76,6 +76,8 @@ export interface UserProfile {
 	bio: string;
 	/** 注册时间（RFC3339） */
 	created_at: string;
+	/** 自动化 Bot 虚拟用户；缺省=人类账号 */
+	is_bot?: boolean;
 }
 
 /**
