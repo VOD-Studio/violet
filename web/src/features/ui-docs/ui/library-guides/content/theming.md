@@ -1,9 +1,9 @@
-组件使用语义变量表达用色；主题提供色阶，方言决定每个用途取哪一档。组件结构与分发边界见[组件库架构](/ui/guides/architecture)。
+组件使用语义变量表达用色；主题提供色阶与材质角色。组件结构与分发边界见[组件库架构](/ui/guides/architecture)。
 
 ## 三层颜色接口
 
 1. **生成色阶**：`@violetjs/theme` 根据种子色生成品牌、中性、状态和分类色阶。品牌与中性另有透明度色阶。静态产物位于包内 `src/styles/palettes/*.generated.css`。
-2. **语义映射**：`src/styles/tokens.css` 只声明用途到色阶的映射。本站的三种方言位于 `web/src/styles/dialects/`，不随组件包发布。
+2. **语义映射**：`src/styles/tokens.css` 声明用途到色阶与材质角色的映射。单一材质覆盖全站。
 3. **Tailwind 映射**：`theme.css` 用 `@theme inline` 注册语义工具类，在使用元素的作用域读取变量。色阶本身不注册为工具类。
 
 默认主题沿用 violet 种子 `#684dda`，另提供 coral。`scripts/theme.mjs` 是包内种子和生成选项的维护入口：
@@ -46,7 +46,7 @@ Tailwind v4 宿主先导入 Tailwind，再导入完整包样式：
 
 SSR 宿主必须在首屏输出与持久化外观一致的类。使用 next-themes 时，设置 `attribute="class"` 与 `enableColorScheme={false}`，不要用内联 `color-scheme` 覆盖类规则。包级 `useTheme` 也可管理 light / dark / system 与 localStorage；详细用法见[深色模式](/ui/guides/dark-mode)。
 
-## 用途与方言
+## 用途与材质
 
 | 用途 | 语义变量 | 映射 |
 | --- | --- | --- |
@@ -67,15 +67,15 @@ SSR 宿主必须在首屏输出与持久化外观一致的类。使用 next-them
 
 ### 同一角色的实色与文字
 
-同一个角色名在背景和文字上取不同的档。`bg-primary` 是主要动作的实色；`text-primary` 是同色相的可读文字档，public 方言取品牌第 11 档。实色档在亮色种子下不保证能当文字读。
+同一个角色名在背景和文字上取不同的档。`bg-primary` 是主要动作的实色，取墨色；`text-primary` 是同色相的可读文字档。
 
 包在 Tailwind 的 `--text-color-*` 命名空间里映射了主色、状态色与分类色，所以 `text-` 工具类取到的都是文字档：`text-destructive`、`text-warning`、`text-success`、`text-category-1` 都是可读文字。`border-`、`fill-`、`ring-` 等仍取实色。原生 CSS 里对应的变量是 `--primary-text`、`--destructive-text`、`--warning-text`、`--success-text` 与 `--category-N-text`。
 
-Button 的 `default` 与 `primary` 变体都遵守当前方言，悬停使用 `primary-hover`；`soft` 使用选中底色与文字，`link` 使用链接文字色。主要动作悬停不会把实色往背景混，前景文字对比度不低于常态。
+Button 的 `default` 与 `primary` 变体均为墨色主要动作，悬停使用 `primary-hover`；`soft` 使用选中底色与文字，`link` 使用链接文字色。主要动作悬停不会把实色往背景混，前景文字对比度不低于常态。
 
 状态实色用于填充，说明文字直接写 `text-destructive`、`text-warning` 或 `text-success`。危险按钮使用配对的 `destructive-hover`。Input 的聚焦描边取 `ring`，标签取可读的 `link` 文字档。
 
-本站 `.dialect-public` 为阅读与展示页提供品牌动作；`.dialect-tool` 为后台、编辑器与聊天保留中性主要动作，焦点、选择、导航、链接与进度仍跟随品牌。`.dialect-immersive` 使用独立生成的固定深色灰阶，包括焦点环在内都不随主题或外观变化；它不改 `color-scheme`，状态色仍与页面其余部分一致。
+本站采用单一材质系统：页面铺纸面，内容浮在纸片上，可输入的地方是凹陷。主要动作全站取墨色，季节色只做装饰、进度与选中点，不做按钮底与正文字色。
 
 ## 命名主题
 
@@ -102,7 +102,7 @@ Button 的 `default` 与 `primary` 变体都遵守当前方言，悬停使用 `p
 </section>
 ```
 
-`[data-theme]` 边界会重新绑定包内语义，避免继承父级已经求值的颜色。本站局部主题需要同时在边界选择方言，例如 `class="dialect-public" data-theme="coral"`；后代只改色阶不会自动重新求值祖先的语义变量。
+`[data-theme]` 边界会重新绑定包内语义，避免继承父级已经求值的颜色。局部主题直接使用 `data-theme="coral"`；后代只改色阶不会自动重新求值祖先的语义变量。
 
 ## 从种子生成自己的主题
 

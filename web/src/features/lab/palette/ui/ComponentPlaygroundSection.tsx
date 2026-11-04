@@ -11,7 +11,7 @@ import {
 	Textarea,
 } from "@violet/ui";
 import { cn } from "cn";
-import { BookOpen, ChevronLeft, ChevronRight, MousePointer, Sparkles } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, MousePointer } from "lucide-react";
 import { useState } from "react";
 
 export interface ComponentPlaygroundSectionProps {
@@ -62,31 +62,6 @@ export function ComponentPlaygroundSection({ className }: ComponentPlaygroundSec
 							<Button variant="outline">边框轮廓 (Outline)</Button>
 							<Button variant="ghost">幽灵悬停 (Ghost)</Button>
 							<Button variant="destructive">危险操作 (Destructive)</Button>
-						</div>
-
-						{/* 公开内容方言对照 */}
-						<div className="mt-8 rounded-xl border border-edge-hairline/80 bg-background/50 p-5 dialect-public">
-							<div className="mb-2 flex items-center justify-between">
-								<span className="font-mono text-xs font-semibold text-primary-base">
-									.dialect-public 方言作用域对照
-								</span>
-								<span className="font-mono text-[11px] text-muted-foreground">
-									--primary → var(--primary-base)
-								</span>
-							</div>
-							<p className="mb-4 text-xs text-muted-foreground">
-								在公开内容方言内，标准{" "}
-								<code className="font-mono">variant="default"</code>{" "}
-								按钮自动继承紫罗兰主色：
-							</p>
-							<div className="flex flex-wrap items-center gap-3">
-								<Button variant="default">
-									<Sparkles className="size-4" />
-									公开主按钮 (Follows Primary)
-								</Button>
-								<Button variant="outline">公开边框</Button>
-								<Button variant="ghost">公开悬停</Button>
-							</div>
 						</div>
 					</div>
 				</TabsContent>

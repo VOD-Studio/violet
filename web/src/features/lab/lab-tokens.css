@@ -1,6 +1,5 @@
 /* 实验稿的固定明暗色板；不注册全局 Tailwind token，SPA 离开后不影响正式页面。 */
-.lab-scope,
-.lab-scope .dialect-public {
+.lab-scope {
 	--background: light-dark(oklch(0.992 0.003 286), oklch(0.138 0.012 286));
 	--foreground: light-dark(oklch(0.19 0.015 286), oklch(0.955 0.008 286));
 	--card: light-dark(oklch(1 0 0), oklch(0.185 0.015 286));
@@ -81,27 +80,6 @@
 	) {
 	--v-input-accent: var(--destructive);
 	--v-input-label-color: var(--destructive);
-}
-
-.lab-scope .dialect-public {
-	--background: light-dark(oklch(0.992 0.003 286), oklch(0.138 0.012 286));
-	--foreground: light-dark(oklch(0.19 0.015 286), oklch(0.955 0.008 286));
-	--card: light-dark(oklch(1 0 0), oklch(0.185 0.015 286));
-	--card-foreground: var(--foreground);
-	--popover: var(--card);
-	--popover-foreground: var(--foreground);
-	--primary: var(--primary-base);
-	--primary-foreground: var(--primary-base-foreground);
-	--primary-hover: color-mix(in oklab, var(--primary) 90%, var(--background));
-	--secondary: light-dark(oklch(0.958 0.008 286), oklch(0.225 0.016 286));
-	--secondary-foreground: var(--foreground);
-	--muted: light-dark(oklch(0.962 0.006 286), oklch(0.225 0.016 286));
-	--muted-foreground: light-dark(oklch(0.52 0.02 286), oklch(0.68 0.022 286));
-	--accent: var(--primary-base-soft);
-	--accent-foreground: var(--primary-base-soft-foreground);
-	--border: light-dark(oklch(0.908 0.008 286), oklch(0.92 0.012 286 / 12%));
-	--input: light-dark(oklch(0.895 0.01 286), oklch(0.92 0.012 286 / 18%));
-	--ring: var(--primary-base-ring);
 }
 
 /* 固定实验稿的按钮配色，不覆盖系统高对比度模式。 */

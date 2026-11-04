@@ -14,8 +14,20 @@
 	color: var(--selected-foreground);
 }
 
+:root {
+	--paper-texture: url("/textures/paper-light.webp");
+}
+
+.dark {
+	--paper-texture: url("/textures/paper-dark.webp");
+}
+
 body {
 	background-color: var(--color-background);
+	background-image: var(--paper-texture);
+	background-repeat: repeat;
+	background-position: top center;
+	background-attachment: fixed;
 	color: var(--color-foreground);
 }
 

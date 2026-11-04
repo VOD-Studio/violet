@@ -215,30 +215,6 @@
 	animation: none;
 }
 
-/*
- * 组件插槽的方言钩子：挂件随 html[data-decoration] 投放，
- * 工具与沉浸方言内一律隐藏，两类界面只保留钩子不投放内容。
- */
 .ornament {
 	pointer-events: none;
-}
-
-/* biome-ignore lint/correctness/noUnknownPseudoClass: CSS Modules 的全局类引用，非标准伪类 */
-:global(.dialect-tool) .backdrop,
-/* biome-ignore lint/correctness/noUnknownPseudoClass: CSS Modules 的全局类引用，非标准伪类 */
-	:global(.dialect-tool)
-	.accent,
-/* biome-ignore lint/correctness/noUnknownPseudoClass: CSS Modules 的全局类引用，非标准伪类 */
-	:global(.dialect-tool)
-	.ornament,
-/* biome-ignore lint/correctness/noUnknownPseudoClass: CSS Modules 的全局类引用，非标准伪类 */
-	:global(.dialect-immersive)
-	.backdrop,
-/* biome-ignore lint/correctness/noUnknownPseudoClass: CSS Modules 的全局类引用，非标准伪类 */
-	:global(.dialect-immersive)
-	.accent,
-/* biome-ignore lint/correctness/noUnknownPseudoClass: CSS Modules 的全局类引用，非标准伪类 */
-	:global(.dialect-immersive)
-	.ornament {
-	display: none;
 }

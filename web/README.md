@@ -177,17 +177,15 @@ Shiki 初始化、语言准备与分词在按需创建的 Web Worker 中执行�
 
 ## 样式与组件
 
-全局入口是 [src/styles.css](src/styles.css)：Tailwind v4 后导入 `@violet/ui/styles.css`，再加载站点主题、方言和转场。
+全局入口是 [src/styles.css](src/styles.css)：Tailwind v4 后导入 `@violet/ui/styles.css`，再加载站点主题与转场。
 
 | 样式内容 | 归属 |
 | --- | --- |
 | 生成色阶、基础语义 token 与通用组件 CSS | `packages/theme/` 生成算法，`packages/ui/` 构建期接入 |
 | 站点字体、装饰与主题适配 | `src/styles/` |
-| 公开内容、工具界面、沉浸舞台的方言 | `src/styles/dialects/` |
 | feature 私有样式 | 所属组件旁的样式文件 |
 
-页面分别使用 `.dialect-public`、`.dialect-tool`、`.dialect-immersive`，只描述语义到色阶的映射：公开主要动作为品牌色，工具主要动作为高对比中性色，沉浸舞台使用固定深色灰阶；状态色不被方言改写。Button 悬停使用 `primary-hover`，链接、选中、焦点、进度、装饰和分类各有独立语义。通用组件从 `@violet/ui` 使用；组件的公开入口与成熟度以 [component-manifest.json](packages/ui/component-manifest.json) 为准。
-
+站点采用单一材质：页面铺纸面，内容浮在纸片上，可输入的地方是凹陷。主要动作全站取墨色，季节色只做装饰、进度与选中点。Button 悬停使用 `primary-hover`，链接、选中、焦点、进度、装饰和分类各有独立语义。通用组件从 `@violet/ui` 使用；组件的公开入口与成熟度以 [component-manifest.json](packages/ui/component-manifest.json) 为准。
 包颜色由 `pnpm --filter @violet/ui sync` 生成、`check` 校验。人设身份色只在 `.identity-theme` 内生效，修改种子后运行 `pnpm colors:persona`，`pnpm check:persona-colors` 校验提交的静态 CSS。四季预设主题的种子色与旋钮在 `src/shared/lib/theme-presets.ts`，修改后运行 `pnpm colors:themes` 重新生成 `src/styles/theme-presets.generated.css`，`pnpm check:theme-colors` 校验；每季一个 `[data-theme]` 规则，只含品牌与中性色阶，状态色与分类色沿用默认色板。
 
 站点公共层提供 `shared/ui/announcement-severity` 状态色和 `shared/hooks/use-banner-ticker` 轮播节拍。终端、阅读进度等公共界面只消费用途语义色。

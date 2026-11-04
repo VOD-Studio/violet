@@ -8,26 +8,12 @@ import {
 	canonicalColor,
 	contrastRatio,
 	type ScopeColors,
-	SEMANTIC_TOKENS,
 	scopeColors,
 } from "./theme-harness";
 
 const VIEWPORTS = [
 	{ width: 390, height: 844 },
 	{ width: 1440, height: 900 },
-];
-/** 沉浸舞台不随主题变化的中性 token。 */
-const FIXED_TOKENS = [
-	"background",
-	"foreground",
-	"card",
-	"primary",
-	"primary-foreground",
-	"primary-text",
-	"link",
-	"ring",
-	"input",
-	"border",
 ];
 const STATUS_TOKENS = [
 	"destructive",
@@ -90,17 +76,19 @@ for (const theme of SEASONS) {
 					);
 					await expect(firstPage.locator("html")).toHaveAttribute("data-theme", theme);
 					const firstRoot = await scopeColors(firstPage, "html");
-					const firstPublic = await scopeColors(firstPage, ".dialect-public");
-					const brand = await scopeColors(firstPage, ".dialect-public", [
+					const brand = await scopeColors(firstPage, "html", [
 						"brand-9",
 						"brand-10",
 						"brand-11",
 						"brand-8",
+						"material-page",
+						"material-sheet",
+						"material-sunk",
+						"material-accent",
 					]);
-					expect(firstPublic.primary.value).toBe(brand["brand-9"].value);
-					expect(firstPublic["primary-hover"].value).toBe(brand["brand-10"].value);
-					expect(firstPublic.link.value).toBe(brand["brand-11"].value);
-					expect(firstPublic.ring.value).toBe(brand["brand-8"].value);
+					expect(firstRoot.primary.value).toBe(firstRoot.foreground.value);
+					expect(firstRoot.link.value).toBe(brand["material-accent"].value);
+					expect(firstRoot.ring.value).toBe(brand["material-accent"].value);
 					const { seed, knobs } = THEME_PRESETS[theme];
 					const expected = generateScales(
 						{ version: 1, seed, knobs },
@@ -112,11 +100,8 @@ for (const theme of SEASONS) {
 					expect(brand["brand-9"].value, "品牌实色来自定稿种子").toBe(
 						await canonicalColor(firstPage, expected.brand.steps[9]),
 					);
-					expect(firstPublic["primary-text"].value).toBe(brand["brand-11"].value);
-					expect(firstRoot.primary.value).not.toBe(firstPublic.primary.value);
-					for (const token of STATUS_TOKENS)
-						expect(firstPublic[token]).toEqual(firstRoot[token]);
-					expectReadableText(firstPublic);
+					for (const token of STATUS_TOKENS) expect(firstRoot[token]).toBeDefined();
+					expectReadableText(firstRoot);
 					expect(
 						await firstPage.evaluate(
 							() => document.documentElement.scrollWidth <= innerWidth,
@@ -154,10 +139,6 @@ for (const theme of SEASONS) {
 						firstRoot,
 					);
 					expect(
-						await scopeColors(page, ".dialect-public"),
-						"公开 token 首帧与水合一致",
-					).toEqual(firstPublic);
-					expect(
 						await page.evaluate(
 							() => document.documentElement.scrollWidth <= innerWidth,
 						),
@@ -186,8 +167,8 @@ for (const seed of CUSTOM_SEEDS) {
 				const firstPage = await firstContext.newPage();
 				await firstPage.goto("/", { waitUntil: "load" });
 				await expect(firstPage.locator("html")).toHaveAttribute("data-theme", "custom");
-				const firstPublic = await scopeColors(firstPage, ".dialect-public");
-				const brand = await scopeColors(firstPage, ".dialect-public", ["brand-9"]);
+				const firstRoot = await scopeColors(firstPage, "html");
+				const brand = await scopeColors(firstPage, "html", ["brand-9"]);
 				expect(brand["brand-9"].value, "品牌实色来自自定义种子").toBe(
 					await canonicalColor(
 						firstPage,
@@ -197,7 +178,8 @@ for (const seed of CUSTOM_SEEDS) {
 						}).brand.steps[9],
 					),
 				);
-				expectReadableText(firstPublic);
+				expect(firstRoot.primary.value).toBe(firstRoot.foreground.value);
+				expectReadableText(firstRoot);
 				await firstContext.close();
 
 				const hydratedContext = await appearanceContext(browser, appearance, {
@@ -212,10 +194,9 @@ for (const seed of CUSTOM_SEEDS) {
 				});
 				await page.goto("/", { waitUntil: "load" });
 				await expect(page.locator("html")).toHaveAttribute("data-theme", "custom");
-				expect(
-					await scopeColors(page, ".dialect-public"),
-					"自定义主题首帧与水合一致",
-				).toEqual(firstPublic);
+				expect(await scopeColors(page, "html"), "自定义主题首帧与水合一致").toEqual(
+					firstRoot,
+				);
 				expect(hydrationErrors, "水合不报错").toEqual([]);
 				await hydratedContext.close();
 			});
@@ -224,17 +205,16 @@ for (const seed of CUSTOM_SEEDS) {
 }
 
 for (const appearance of ["light", "dark"] as const) {
-	test(`自定义主题在工具方言：后台 ${appearance}`, async ({ browser }) => {
+	test(`自定义主题单一材质：后台 ${appearance}`, async ({ browser }) => {
 		const custom = normalizeTheme({ version: 1, seed: "#ffeb3b" });
 		const context = await appearanceContext(browser, appearance, { admin: true, custom });
 		const page = await context.newPage();
 		await page.goto("/admin", { waitUntil: "load" });
-		await expect(page.locator(".dialect-tool")).toBeVisible();
+		await expect(page.locator(".dialect-tool")).toHaveCount(0);
 		await expect(page.locator("html")).toHaveAttribute("data-theme", "custom");
-		const scope = await scopeColors(page, ".dialect-tool");
-		const root = await scopeColors(page, "html", ["action-neutral-9", "brand-11"]);
-		expect(scope.primary.value).toBe(root["action-neutral-9"].value);
-		expect(scope.link.value).toBe(root["brand-11"].value);
+		const scope = await scopeColors(page, "html");
+		expect(scope.primary.value).toBe(scope.foreground.value);
+		expect(scope.link.value).toBe(scope["material-accent"].value);
 		expectReadableText(scope);
 		await context.close();
 	});
@@ -284,7 +264,7 @@ for (const value of ["garbage", encodeURIComponent('{"v":9,"theme":"spring"}')])
 for (const appearance of ["light", "dark"] as const) {
 	for (const theme of SEASONS) {
 		for (const viewport of VIEWPORTS) {
-			test(`工具方言契约：后台 ${theme} / ${appearance} @ ${viewport.width}`, async ({
+			test(`单一材质契约：后台 ${theme} / ${appearance} @ ${viewport.width}`, async ({
 				browser,
 			}) => {
 				const context = await appearanceContext(browser, appearance, {
@@ -294,25 +274,13 @@ for (const appearance of ["light", "dark"] as const) {
 				const page = await context.newPage();
 				await page.setViewportSize(viewport);
 				await page.goto("/admin", { waitUntil: "load" });
-				await expect(page.locator(".dialect-tool")).toBeVisible();
+				await expect(page.locator(".dialect-tool")).toHaveCount(0);
 				await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
-				const scope = await scopeColors(page, ".dialect-tool");
-				const root = await scopeColors(page, "html", [
-					...SEMANTIC_TOKENS,
-					"action-neutral-9",
-					"brand-8",
-					"brand-11",
-					"brand-3",
-				]);
-				expect(scope.primary.value).toBe(root["action-neutral-9"].value);
-				expect(scope["primary-text"].value).toBe(root["action-neutral-9"].value);
-				expect(contrastRatio(scope.primary, scope["primary-foreground"])).toBeGreaterThan(
-					10,
-				);
-				expect(scope.ring.value).toBe(root["brand-8"].value);
-				expect(scope.link.value).toBe(root["brand-11"].value);
-				expect(scope.selected.value).toBe(root["brand-3"].value);
-				for (const token of STATUS_TOKENS) expect(scope[token]).toEqual(root[token]);
+				const scope = await scopeColors(page, "html");
+				expect(scope.primary.value).toBe(scope.foreground.value);
+				expect(scope.link.value).toBe(scope["material-accent"].value);
+				expect(scope.ring.value).toBe(scope["material-accent"].value);
+				for (const token of STATUS_TOKENS) expect(scope[token]).toBeDefined();
 				expectReadableText(scope);
 				expect(
 					await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
@@ -322,9 +290,8 @@ for (const appearance of ["light", "dark"] as const) {
 		}
 	}
 
-	test(`沉浸方言契约：图库灯箱 ${appearance}，不随主题变化`, async ({ browser }) => {
+	test(`灯箱遮罩契约：图库灯箱 ${appearance} 纸色遮罩跟随外观`, async ({ browser }) => {
 		test.setTimeout(120_000);
-		let previous: ScopeColors | undefined;
 		for (const theme of SEASONS) {
 			const context = await appearanceContext(browser, appearance, { theme });
 			const page = await context.newPage();
@@ -332,20 +299,13 @@ for (const appearance of ["light", "dark"] as const) {
 			await page.locator('a[href="/galleries/contract-gallery"]').first().click();
 			await page.waitForURL("**/galleries/contract-gallery");
 			await page.locator("figure button").first().click();
-			const immersive = page.locator(".dialect-immersive");
-			await expect(immersive).toBeVisible();
-			const stage = await scopeColors(page, ".dialect-immersive", FIXED_TOKENS);
-			const root = await scopeColors(page, "html");
-			expect(stage.background.luminance).toBeLessThan(0.01);
-			expect(contrastRatio(stage.primary, stage["primary-foreground"])).toBeGreaterThan(10);
-			const stageStatus = await scopeColors(page, ".dialect-immersive", STATUS_TOKENS);
-			for (const token of STATUS_TOKENS) expect(stageStatus[token]).toEqual(root[token]);
-			if (previous) expect(stage, `${theme} 的沉浸舞台与其他主题一致`).toEqual(previous);
-			previous = stage;
+			const dialog = page.locator('[role="dialog"][aria-label="图片预览"]');
+			await expect(dialog).toBeVisible();
+			await expect(page.locator(".dialect-immersive")).toHaveCount(0);
+			const overlay = dialog.locator(".backdrop-blur-\\[20px\\]");
+			await expect(overlay).toBeVisible();
 			await page.keyboard.press("Escape");
-			await expect(immersive).toHaveCount(0);
-			const surface = await scopeColors(page, ".dialect-public", ["primary", "brand-9"]);
-			expect(surface.primary.value).toBe(surface["brand-9"].value);
+			await expect(dialog).toHaveCount(0);
 			await context.close();
 		}
 	});

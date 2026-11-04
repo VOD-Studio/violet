@@ -8,7 +8,7 @@ export function SiteMusicPlayer() {
 	useEffect(() => setMounted(true), []);
 	if (!mounted) return null;
 	return createPortal(
-		<div className="dialect-public relative z-50">
+		<div className="relative z-50">
 			<MusicPlayerClient />
 		</div>,
 		document.body,

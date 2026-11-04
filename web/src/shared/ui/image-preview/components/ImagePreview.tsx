@@ -281,14 +281,14 @@ function ImagePreviewDialog({
 					initial={{ opacity: 0 }}
 					animate={{ opacity: 1 }}
 					transition={{ duration: 0.25 }}
-					className="dialect-immersive fixed inset-0 z-9999 overflow-hidden outline-none"
+					className="fixed inset-0 z-9999 overflow-hidden outline-none"
 					// Radix modal 会禁用 body 指针事件；只有当前会话恢复交互。
 					style={{ pointerEvents: isPresent ? "auto" : "none" }}
 					onClick={onClose}
 				>
 					<DialogPrimitive.Title className="sr-only">图片预览</DialogPrimitive.Title>
 					<motion.div
-						className="absolute inset-0 bg-black/70"
+						className="absolute inset-0 bg-background/90 backdrop-blur-[20px]"
 						style={{ opacity: chromeOpacity }}
 					/>
 					<motion.div

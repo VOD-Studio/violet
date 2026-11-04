@@ -41,7 +41,7 @@ export function ThemeMenu({ onOpenChange }: ThemeMenuProps) {
 					onInteractOutside={(event) => {
 						if (customOpen) event.preventDefault();
 					}}
-					className="dialect-public max-h-(--radix-popover-content-available-height) w-80 max-w-[calc(100vw-1rem)] animate-none! overflow-y-auto rounded-2xl border-edge-hairline p-4 shadow-none"
+					className="max-h-(--radix-popover-content-available-height) w-80 max-w-[calc(100vw-1rem)] animate-none! overflow-y-auto rounded-2xl border-edge-hairline p-4 shadow-none"
 				>
 					<ThemeSettings onCustomize={() => setCustomOpen(true)} />
 				</PopoverContent>

@@ -44,7 +44,7 @@ function PreviewCard({ appearance }: { appearance: "light" | "dark" }) {
 			// 预览须独立于页面外观，显式指定明暗取值
 			style={{ colorScheme: appearance }}
 			className={cn(
-				"dialect-public space-y-3 rounded-xl border border-border bg-background p-4 text-foreground",
+				"space-y-3 rounded-xl border border-border bg-background p-4 text-foreground",
 				appearance === "dark" && "dark",
 			)}
 		>
@@ -87,7 +87,7 @@ export function CustomThemeDialog({ open, onOpenChange }: CustomThemeDialogProps
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="dialect-public rounded-2xl">
+			<DialogContent className="rounded-2xl">
 				<DialogHeader>
 					<DialogTitle>自定义主题</DialogTitle>
 					<DialogDescription>

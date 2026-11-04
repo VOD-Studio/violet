@@ -142,18 +142,10 @@ function RootComponent() {
 	const isWorkbenchRoute = pathname === "/inkline" || pathname.startsWith("/inkline/");
 	const isFullscreenRoute = isChatRoute || isWorkbenchRoute;
 	const isProfileRoute = pathname.startsWith("/profile");
-	// 工具方言：个人中心、聊天与包演示页（.dialect-tool）；/lab 实验豁免保持根作用域
-	// 中性，实验样式不得反向改写正式页面 token
 	const isLabRoute = pathname.startsWith("/lab");
-	const shellDialect =
-		isProfileRoute || isChatRoute || isWorkbenchRoute
-			? "dialect-tool"
-			: isLabRoute
-				? null
-				: "dialect-public";
 	// 组件库文档的示例需要中性画布，星图点缀只铺在公开内容页
 	const isUiDocsRoute = pathname === "/ui" || pathname.startsWith("/ui/");
-	const showBackdrop = shellDialect === "dialect-public" && !isUiDocsRoute;
+	const showBackdrop = !isProfileRoute && !isFullscreenRoute && !isLabRoute && !isUiDocsRoute;
 
 	// 首次 hydration 复用 SSR claims，不一定重跑客户端 beforeLoad。
 	useEffect(() => {
@@ -173,9 +165,6 @@ function RootComponent() {
 					className={cn(
 						"flex min-h-screen flex-col",
 						isFullscreenRoute && "h-dvh overflow-hidden",
-						// 公开壳层挂 Public Content 方言；/profile 与 /chat 挂 Tool 方言；
-						// /admin 独立布局不经过这里
-						shellDialect,
 						// 独立层叠上下文让背景点缀的负 z-index 落在壳层画布之上
 						showBackdrop && "isolate",
 					)}

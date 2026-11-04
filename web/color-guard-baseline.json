@@ -1358,36 +1358,6 @@
 			"count": 1
 		},
 		{
-			"file": "src/shared/ui/image-preview/components/ImagePreview.tsx",
-			"rule": "tailwind-palette",
-			"value": "bg-black",
-			"count": 1
-		},
-		{
-			"file": "src/shared/ui/image-preview/components/ImagePreviewControls.tsx",
-			"rule": "tailwind-palette",
-			"value": "from-black",
-			"count": 1
-		},
-		{
-			"file": "src/shared/ui/image-preview/components/ImagePreviewControls.tsx",
-			"rule": "tailwind-palette",
-			"value": "text-white",
-			"count": 26
-		},
-		{
-			"file": "src/shared/ui/image-preview/components/ImagePreviewControls.tsx",
-			"rule": "tailwind-palette",
-			"value": "bg-white",
-			"count": 15
-		},
-		{
-			"file": "src/shared/ui/image-preview/components/ImagePreviewControls.tsx",
-			"rule": "tailwind-palette",
-			"value": "ring-white",
-			"count": 1
-		},
-		{
 			"file": "src/shared/ui/image-preview/components/ImagePreviewImage.tsx",
 			"rule": "tailwind-palette",
 			"value": "text-white",
@@ -1403,24 +1373,6 @@
 			"file": "src/shared/ui/image-preview/components/ImagePreviewImage.tsx",
 			"rule": "tailwind-palette",
 			"value": "border-t-white",
-			"count": 1
-		},
-		{
-			"file": "src/shared/ui/image-preview/components/ImagePreviewThumbnails.tsx",
-			"rule": "tailwind-palette",
-			"value": "bg-black",
-			"count": 2
-		},
-		{
-			"file": "src/shared/ui/image-preview/components/ImagePreviewThumbnails.tsx",
-			"rule": "tailwind-palette",
-			"value": "border-white",
-			"count": 3
-		},
-		{
-			"file": "src/shared/ui/image-preview/components/ImagePreviewThumbnails.tsx",
-			"rule": "tailwind-palette",
-			"value": "ring-white",
 			"count": 1
 		},
 		{
@@ -2129,12 +2081,6 @@
 			"file": "packages/react-tweet/src/tweet/tweet.css",
 			"rule": "raw-color",
 			"value": "#42dba0",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/card/card.css",
-			"rule": "raw-color",
-			"value": "rgb(0 0 0 / 5%)",
 			"count": 1
 		},
 		{
