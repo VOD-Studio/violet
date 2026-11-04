@@ -1,10 +1,17 @@
 /*
  * web/src/styles.css —— 站点全局样式入口。
  *
- * 导入顺序即层叠顺序：Tailwind → 字体 → @violet/ui → 四季预设主题 → @violetjs/kanban（站点 token 映射见 kanban.css）→ 站点主题 →
+ * 导入顺序即层叠顺序：Tailwind → @violet/ui → 四季预设主题 → @violetjs/kanban（站点 token 映射见 kanban.css）→ 站点主题 →
  * 全局基础行为 → 页面转场。@violet/ui 持有 Tailwind 映射、基础 token 与
  * Violet 默认 palette；单一材质覆盖全站。
+ *
+ * 远程字体 @import 不会被 PostCSS 内联，必须保持在本文件最前；
+ * 排在任何已展开的规则之后会违反 @import 前置规则，构建直接失败。
  */
+@import "https://cdn.jsdelivr.net/npm/@fontsource/noto-serif-sc/400.css";
+@import "https://cdn.jsdelivr.net/npm/@fontsource/noto-serif-sc/500.css";
+@import "https://cdn.jsdelivr.net/npm/@fontsource/noto-serif-sc/600.css";
+@import "https://cdn.jsdelivr.net/npm/@fontsource/noto-serif-sc/700.css";
 @import "tailwindcss";
 @import "@violet/ui/styles.css";
 @import "./styles/theme-presets.generated.css";

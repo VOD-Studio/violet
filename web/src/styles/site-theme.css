@@ -1,9 +1,8 @@
-@import "https://cdn.jsdelivr.net/npm/@fontsource/noto-serif-sc/400.css";
-@import "https://cdn.jsdelivr.net/npm/@fontsource/noto-serif-sc/500.css";
-@import "https://cdn.jsdelivr.net/npm/@fontsource/noto-serif-sc/600.css";
-@import "https://cdn.jsdelivr.net/npm/@fontsource/noto-serif-sc/700.css";
-
-/* 宿主字体与装饰动效；在 @violet/ui/styles.css 之后导入。 */
+/*
+ * 宿主字体与装饰动效；在 @violet/ui/styles.css 之后导入。
+ * Noto Serif SC 远程分片 @import 位于入口 styles.css 最前：PostCSS 不内联远程 URL，
+ * 留在本文件会落在已展开规则之后，违反 @import 前置规则。
+ */
 @theme inline {
 	--font-sans: "Songti SC", "Noto Serif SC", "Source Han Serif SC", STSong, SimSun, serif;
 	--font-reading: "Songti SC", "Noto Serif SC", "Source Han Serif SC", STSong, SimSun, serif;
