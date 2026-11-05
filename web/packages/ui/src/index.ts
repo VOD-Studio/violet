@@ -23,6 +23,7 @@ export * from "./components/radio/index";
 export * from "./components/search-input/index";
 export * from "./components/segmented/index";
 export * from "./components/separator/index";
+export * from "./components/sheet/index";
 export * from "./components/skeleton/index";
 export * from "./components/sonner/index";
 export * from "./components/switch/index";

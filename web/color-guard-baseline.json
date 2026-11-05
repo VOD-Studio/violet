@@ -2154,12 +2154,6 @@
 			"rule": "raw-color",
 			"value": "#34a853",
 			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/sheet/sheet.tsx",
-			"rule": "tailwind-palette",
-			"value": "bg-black",
-			"count": 1
 		}
 	]
 }

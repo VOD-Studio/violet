@@ -222,8 +222,9 @@
 		},
 		{
 			"name": "sheet",
-			"status": "legacy",
-			"entry": "src/components/sheet/index.ts"
+			"status": "foundation",
+			"entry": "src/components/sheet/index.ts",
+			"css": "src/components/sheet/sheet.css"
 		},
 		{
 			"name": "skeleton",

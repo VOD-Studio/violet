@@ -17,6 +17,7 @@ import { popoverExhibit } from "./popover";
 import { radioExhibit } from "./radio";
 import { searchInputExhibit } from "./search-input";
 import { segmentedExhibit } from "./segmented";
+import { sheetExhibit } from "./sheet";
 import { sonnerExhibit } from "./sonner";
 import { switchExhibit } from "./switch";
 import { tabsExhibit } from "./tabs";
@@ -78,15 +79,7 @@ export const EXHIBITS: Exhibit[] = [
 	dropdownMenuExhibit,
 	sonnerExhibit,
 	dialogExhibit,
-	{
-		id: "sheet",
-		name: "侧边面板",
-		units: ["sheet"],
-		zone: "stage",
-		category: "overlay",
-		footprint: { width: 560, height: 420 },
-		issue: 703,
-	},
+	sheetExhibit,
 	drawerExhibit,
 	{
 		id: "command",
