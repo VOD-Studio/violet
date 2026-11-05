@@ -16,7 +16,7 @@
 @import "./components/segmented/segmented.css";
 @import "./components/separator/separator.css";
 @import "./components/skeleton/skeleton.css";
-@import "./components/switch/switch.css" layer(components);
+@import "./components/switch/switch.css";
 @import "./components/tabs/tabs.css" layer(components);
 @import "./components/textarea/textarea.css";
 @import "./components/upload-tile/upload-tile.css";

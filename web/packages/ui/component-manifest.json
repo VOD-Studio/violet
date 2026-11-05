@@ -224,7 +224,7 @@
 		},
 		{
 			"name": "switch",
-			"status": "legacy",
+			"status": "foundation",
 			"entry": "src/components/switch/index.ts",
 			"css": "src/components/switch/switch.css"
 		},

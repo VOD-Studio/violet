@@ -12,6 +12,7 @@ import { kbdExhibit } from "./kbd";
 import { linkCardExhibit } from "./link-card";
 import { searchInputExhibit } from "./search-input";
 import { segmentedExhibit } from "./segmented";
+import { switchExhibit } from "./switch";
 import { textareaExhibit } from "./textarea";
 import { uploadTileExhibit } from "./upload-tile";
 
@@ -161,15 +162,7 @@ export const EXHIBITS: Exhibit[] = [
 	badgeExhibit,
 	avatarExhibit,
 	kbdExhibit,
-	{
-		id: "switch",
-		name: "开关与单选",
-		units: ["switch", "radio", "toggle-group"],
-		zone: "shelf",
-		category: "form",
-		footprint: { width: 320, height: 140 },
-		issue: 701,
-	},
+	switchExhibit,
 	{
 		id: "tabs",
 		name: "标签页",

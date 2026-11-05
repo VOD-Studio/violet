@@ -1,74 +1,189 @@
 /*
- * Switch 组件的 BEM 类名样式（.v-switch 及 __thumb）。
+ * Switch 组件的 BEM 类名样式（.v-switch、__thumb、__indicator）。
  * 需先导入 @violet/ui/tokens.css 或 styles.css。
- * 状态双轨：[data-state]（Radix 风格）与 [aria-checked]（role="switch" 元素）等价生效。
+ * 位移使用物理属性（left / translateX），与圆钮的绝对定位同一坐标系。
  */
 
-.v-switch {
-	box-sizing: border-box;
-	display: inline-flex;
-	flex-shrink: 0;
-	align-items: center;
-	width: 2rem;
-	height: 1.15rem;
-	padding: 0;
-	border: 1px solid transparent;
-	border-radius: 9999px;
-	background-color: var(--input);
-	box-shadow: 0 1px 2px 0 rgb(0 0 0 / 5%);
-	cursor: pointer;
-	transition: background-color 150ms ease-out;
-}
+@layer components {
+	.v-switch {
+		--v-switch-width: 2.25rem;
+		--v-switch-height: 1.25rem;
+		--v-switch-inset: 0.125rem;
+		--v-switch-thumb: calc(var(--v-switch-height) - var(--v-switch-inset) * 2);
+		--v-switch-glide: 200ms;
+		--v-switch-glide-ease: cubic-bezier(0.32, 0.72, 0, 1);
+		--v-switch-tint: 200ms;
+		--v-switch-tint-ease: ease-out;
+		--v-switch-off: color-mix(in oklab, var(--muted) 80%, var(--foreground));
+		--v-switch-off-hover: color-mix(in oklab, var(--muted) 68%, var(--foreground));
+		--v-switch-on: var(--foreground);
+		--v-switch-on-hover: color-mix(in oklab, var(--foreground) 88%, var(--background));
+		--v-switch-draw: 2.4s;
+		box-sizing: border-box;
+		position: relative;
+		display: inline-flex;
+		flex-shrink: 0;
+		align-items: center;
+		width: var(--v-switch-width);
+		height: var(--v-switch-height);
+		margin: 0;
+		padding: 0;
+		border: 0;
+		border-radius: 9999px;
+		background-color: var(--v-switch-off);
+		cursor: pointer;
+		transition: background-color var(--v-switch-tint) var(--v-switch-tint-ease);
+	}
 
-.v-switch:focus-visible {
-	outline: 2px solid var(--ring);
-	outline-offset: 2px;
-}
+	.v-switch:where(button) {
+		appearance: none;
+	}
 
-.v-switch__thumb {
-	display: block;
-	box-sizing: border-box;
-	width: 1rem;
-	height: 1rem;
-	margin: 0;
-	border-radius: 9999px;
-	background-color: var(--background);
-	transition: transform 150ms ease-out;
-}
+	.v-switch[data-size="sm"] {
+		--v-switch-width: 1.75rem;
+		--v-switch-height: 1rem;
+	}
 
-.v-switch[data-state="checked"],
-.v-switch[aria-checked="true"] {
-	background-color: var(--primary);
-}
+	.v-switch[data-size="lg"] {
+		--v-switch-width: 2.75rem;
+		--v-switch-height: 1.5rem;
+	}
 
-.v-switch[data-state="checked"] .v-switch__thumb,
-.v-switch[aria-checked="true"] .v-switch__thumb {
-	transform: translateX(calc(100% - 2px));
-}
+	.v-switch:where(:not(:disabled)):hover {
+		background-color: var(--v-switch-off-hover);
+	}
 
-/* —— 尺寸 —— */
+	.v-switch[data-state="checked"] {
+		background-color: var(--v-switch-on);
+	}
 
-.v-switch--sm {
-	width: 1.5rem;
-	height: 0.875rem;
-}
+	.v-switch[data-state="checked"]:where(:not(:disabled)):hover {
+		background-color: var(--v-switch-on-hover);
+	}
 
-.v-switch--sm .v-switch__thumb {
-	width: 0.75rem;
-	height: 0.75rem;
-}
+	.v-switch:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
 
-.v-switch--sm[data-state="checked"] .v-switch__thumb,
-.v-switch--sm[aria-checked="true"] .v-switch__thumb {
-	/* 位移相对滑块自身宽度：100% - 2px 恰好贴住轨道右缘 */
-	transform: translateX(calc(100% - 2px));
-}
+	.v-switch[aria-busy="true"] {
+		cursor: progress;
+	}
 
-/* —— 状态 —— */
+	.v-switch:disabled {
+		cursor: not-allowed;
+		opacity: 0.45;
+	}
 
-.v-switch:disabled,
-.v-switch[data-disabled="true"],
-.v-switch[aria-disabled="true"] {
-	cursor: not-allowed;
-	opacity: 0.5;
+	.v-switch__thumb {
+		position: absolute;
+		top: var(--v-switch-inset);
+		left: var(--v-switch-inset);
+		box-sizing: border-box;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: var(--v-switch-thumb);
+		height: var(--v-switch-thumb);
+		border-radius: 9999px;
+		background-color: var(--card);
+		box-shadow: var(--shadow-soft);
+		pointer-events: none;
+		transition: transform var(--v-switch-glide) var(--v-switch-glide-ease);
+	}
+
+	.v-switch__thumb[data-state="checked"],
+	.v-switch[data-state="checked"] > .v-switch__thumb,
+	.v-switch[aria-checked="true"] > .v-switch__thumb {
+		box-shadow: none;
+		transform: translateX(calc(var(--v-switch-width) - var(--v-switch-height)));
+	}
+
+	.v-switch__indicator {
+		width: 70%;
+		height: 70%;
+		fill: none;
+		stroke: var(--foreground);
+		stroke-width: 2;
+	}
+
+	.v-switch__indicator circle {
+		stroke-dasharray: 1 1;
+		stroke-dashoffset: 1;
+		animation: v-switch-draw var(--v-switch-draw) ease-in-out infinite;
+		animation-delay: calc(var(--i) * 0.16s);
+	}
+
+	@keyframes v-switch-draw {
+		0% {
+			stroke-dashoffset: 1;
+			opacity: 1;
+		}
+		26%,
+		72% {
+			stroke-dashoffset: 0;
+			opacity: 1;
+		}
+		100% {
+			stroke-dashoffset: 0;
+			opacity: 0;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-switch,
+		.v-switch__thumb {
+			transition: none;
+		}
+
+		/* 停在花开的一帧，不循环 */
+		.v-switch__indicator circle {
+			animation: none;
+			stroke-dashoffset: 0;
+		}
+	}
+
+	@media (forced-colors: active) {
+		.v-switch {
+			forced-color-adjust: none;
+			background-color: Canvas;
+			box-shadow: inset 0 0 0 1px ButtonText;
+		}
+
+		.v-switch[data-state="checked"],
+		.v-switch[data-state="checked"]:where(:not(:disabled)):hover {
+			background-color: Highlight;
+			box-shadow: none;
+		}
+
+		.v-switch:where(:not(:disabled)):hover {
+			background-color: Canvas;
+		}
+
+		.v-switch__thumb {
+			background-color: ButtonText;
+			box-shadow: none;
+		}
+
+		.v-switch[data-state="checked"] .v-switch__thumb {
+			background-color: HighlightText;
+		}
+
+		.v-switch__indicator {
+			stroke: Canvas;
+		}
+
+		.v-switch:focus-visible {
+			outline-color: Highlight;
+		}
+
+		.v-switch:disabled {
+			opacity: 1;
+			box-shadow: inset 0 0 0 1px GrayText;
+		}
+
+		.v-switch:disabled .v-switch__thumb {
+			background-color: GrayText;
+		}
+	}
 }
