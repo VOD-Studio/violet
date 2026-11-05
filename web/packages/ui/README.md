@@ -4,7 +4,7 @@ React 19 组件库，使用原生 HTML 与 Radix 提供交互行为，用类型�
 
 ## 当前范围
 
-`component-manifest.json` 记录每个组件的入口、样式和成熟度。Button、Checkbox、Dropdown、ImagePixelReveal、Input、Label、LinkCard、SearchInput、Segmented、Textarea、UploadTile 是当前 11 个 `foundation` 单元；其余 34 个单元保留 API，并标为 `legacy`。兼容入口不代表已经重建所有组件。
+`component-manifest.json` 记录每个组件的入口、样式和成熟度。Avatar、Badge、Button、Card、Checkbox、Dropdown、ImagePixelReveal、Indicator、Input、Kbd、Label、LinkCard、SearchInput、Segmented、Separator、Skeleton、Textarea、UploadTile 是当前 18 个 `foundation` 单元；其余 29 个单元保留 API，并标为 `legacy`。兼容入口不代表已经重建所有组件。
 
 所有组件都放在 `src/components/<name>/`，实现、有变体时的 `styles.ts`、CSS、入口和测试就近维护。`src/legacy.ts` 只汇总兼容导出；`src/lib/` 只放有实际消费方的复用能力。
 
@@ -81,6 +81,8 @@ Dropdown 是指针悬停与键盘聚焦展开的披露面板，不是点击菜�
 Segmented 是带滑动指示器的分段控制：`orientation` 选横向或竖向，`variant` 选 `soft`、`ink`、`line`，`value` 受控，`segments` 描述各段。指示器位移走 transform，不缩放；设置 `itemSize` 进入不做 JS 测量的等尺寸布局，再加 `expandSelected` 让选中项占满剩余长度、其余收成只剩图标。方向键在启用项之间移动焦点，不改变选中值；`aria-label` 让容器带 `role="group"`，默认按钮分段带 `aria-pressed`，`render` 可把属性展开到链接或 Dropdown 触发器上。从 `@violet/ui` 或 `@violet/ui/segmented` 导入；按需样式为 `@violet/ui/components/segmented.css`。[陈列室展品](https://xunrua.top/ui?open=segmented)陈列三种变体与图标分段，独立 consumer 的 `?preview=segmented` 可操作选中收起、主题和窄屏状态。
 
 `OverlayScroll` 为受限高度的元素提供覆盖式滚动条，ref 与原生 div 属性仍指向滚动视口。整页使用 `<DocumentScrollbar />`，每个文档挂载一次，不包裹正文、不接管 `window` 滚动；弹层锁定文档滚动时滑块同步隐藏，卸载恢复原有滚动条。SSR 宿主可在 `<html data-scrollbar="none">` 上提前取消原生占位。两者从 `@violet/ui` 或 `@violet/ui/overlay-scroll` 导入；按需 CSS 为 `@violet/ui/components/overlay-scroll.css`，独立 consumer 的 `?preview=overlay-scroll` 可验证文档滚动、元素内横纵拖拽与卸载恢复。
+
+`badge` 单元包含 `Tag`、`TagToggle`、`Badge`、`Count`、`Dot` 与 `BadgeAnchor`：Tag 给内容分类，TagToggle 是带 `aria-pressed` 的筛选标签，Badge 以 `tone` 表示记录状态且文字本身就是信息，Count 与 Dot 提示未读。胶囊 Count 与 Dot 对读屏隐藏，数量要写进宿主的可访问名称；为 0 时 Count 不渲染，超过 `max` 显示 `99+`。`avatar` 单元的 Avatar 在图片未到时呼吸占位、失败退回首字，`alt` 默认取 `name`，`alt=""` 表示装饰，在线状态与作者标记写进可访问名称；AvatarGroup 超出 `max` 折成「+N」，指针悬停时展开压叠，触屏不展开，减弱动态下直接切换。Kbd 渲染原生 `<kbd>`，一个组合键一个键帽，未传 `platform` 时水合后才按访客系统切换符号。`card` 单元保留 `Card*` 复合结构并新增相框卡 `CardFrame*`，只有 `CardFrameTitle asChild` 的链接承载点击并扩到整张卡；Separator 装饰用法为 `role="none"`，区块之间传 `decorative={false}` 得到 `<hr>`；Skeleton 默认 `aria-hidden`，只用凹陷色起伏，不加扫光。以上单元均从 `@violet/ui` 或同名叶子入口导入，按需 CSS 为 `@violet/ui/components/<name>.css`，[陈列室展品](https://xunrua.top/ui?open=badge)可逐态查看，独立 consumer 的 `?preview=display` 覆盖头像加载失败、计数、标签、键帽平台与相框卡点击。
 
 ## 开发与验证
 

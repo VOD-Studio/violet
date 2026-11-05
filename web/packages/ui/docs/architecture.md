@@ -2,7 +2,7 @@
 
 Violet/UI 的包名是 `@violet/ui`。React 组件、CSS 和类型声明在同一个包里交付；本目录维护组件库的架构与设计规范。
 
-先看 `web/packages/ui/component-manifest.json`。`foundation` 表示已按新结构实现；`legacy` 表示保留兼容入口、尚未重建。当前 11 个基础单元是 Button、Checkbox、Dropdown、ImagePixelReveal、Input、Label、LinkCard、SearchInput、Segmented、Textarea、UploadTile。其余 34 个单元，包括 Dialog、Tabs，仍属于 legacy；旧页面能运行不代表已经完成新架构改造。
+先看 `web/packages/ui/component-manifest.json`。`foundation` 表示已按新结构实现；`legacy` 表示保留兼容入口、尚未重建。当前 18 个基础单元是 Avatar、Badge、Button、Card、Checkbox、Dropdown、ImagePixelReveal、Indicator、Input、Kbd、Label、LinkCard、SearchInput、Segmented、Separator、Skeleton、Textarea、UploadTile。其余 29 个单元，包括 Dialog、Tabs，仍属于 legacy；旧页面能运行不代表已经完成新架构改造。
 
 ```text
 web/packages/ui/
@@ -130,6 +130,8 @@ SearchInput 是独立的 `search-input` 组合单元，依赖 `input`，不反�
 状态有明确归属：原生属性表达 disabled、required 和 invalid；Button 的 `data-loading` 表达加载；Radix 控件沿用其 `data-state`。`data-slot` 标识结构部件。组件不得为每次 hover 创建全局状态，也不得用 CSS 外观冒充键盘行为。
 
 ImagePixelReveal 的 `className` 属于根容器，用于约束尺寸；`imgClassName` 属于默认图片，`children` 可替换默认内容。单一 BEM CSS 驱动 SVG 遮罩中的瓦片裁剪展开，原图和自定义内容保持静止，不复制图片背景或切换图像合成层。默认 random 每轮重新洗牌；单格 320ms，延迟跨度 380ms，悬停重播同样的瓦片拼合。根节点以 `data-state="loading|revealing|revealed"` 表达生命周期，`src` 改变开始独立周期；减弱动态直接显示，播放中开启该偏好也会完成当前周期。
+
+展示类单元（`badge`、`avatar`、`kbd`、`card`、`separator`、`skeleton`）的状态由调用方持有，组件只承诺读屏契约。胶囊 `Count` 与 `Dot` 对读屏隐藏，数量或「有新动态」必须写进宿主的可访问名称；`Count` 为 0 时不渲染，超过 `max` 显示 `99+`。`Avatar` 的 `alt` 默认取 `name`，`alt=""` 表示名字已在旁边显示的装饰用法，在线状态与作者标记写进可访问名称；图片未到时只有底色呼吸，失败退回首字，换 `src` 重新加载。`AvatarGroup` 压叠排列，指针悬停时展开（设计稿没有设计，沿用站点既有行为），展开只在 `(hover: hover)` 下生效，减弱动态下直接切换。`Kbd` 未传 `platform` 时，服务端与水合首帧按非 macOS 输出，水合后再切换为符号，避免水合差异。`CardFrameTitle asChild` 的链接用伪元素把点击区扩到整张卡，卡内其他按钮层级更高，仍可单独点击。`Skeleton` 默认 `aria-hidden`，忙碌状态由所在区域的 `aria-busy` 表达，只用凹陷色做透明度起伏，不加扫光。
 
 ## Violet 的设计规则
 
