@@ -20,6 +20,7 @@ import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { formatDateTime } from "@shared/lib/date";
 import { createFileRoute } from "@tanstack/react-router";
 import {
+	Avatar,
 	Badge,
 	Button,
 	ConfirmDialog,
@@ -49,7 +50,7 @@ import {
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useMe } from "@/features/auth/api/queries";
-import { AvatarGroup } from "@/shared/ui/avatar-group/AvatarGroup";
+import { toAvatarItem } from "@/shared/lib/avatar-user";
 
 export const Route = createFileRoute("/admin/users")({
 	component: AdminUsers,
@@ -201,15 +202,7 @@ function AdminUsers() {
 			width: "72px",
 			align: "center",
 			cell: (row) => (
-				<AvatarGroup
-					users={[
-						{
-							username: row.username,
-							avatar_url: row.avatar_url,
-						},
-					]}
-					size="md"
-				/>
+				<Avatar {...toAvatarItem(row)} size={32} imgProps={{ loading: "lazy" }} />
 			),
 		},
 		{

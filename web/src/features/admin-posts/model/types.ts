@@ -6,7 +6,7 @@
  */
 import type { PostDetail } from "@entities/post/model/types";
 import type { PageQuery } from "@shared/api/types";
-import type { AvatarUser } from "@shared/ui/avatar-group";
+import type { AvatarUser } from "@shared/lib/avatar-user";
 
 /**
  * AdminPostListQuery - 后台文章列表查询参数

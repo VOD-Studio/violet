@@ -1,7 +1,8 @@
+import { toAvatarItem } from "@shared/lib/avatar-user";
 import { formatDateTime } from "@shared/lib/date";
-import { AvatarGroup } from "@shared/ui/avatar-group";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import {
+	Avatar,
 	Button,
 	Dialog,
 	DialogContent,
@@ -84,7 +85,11 @@ export function PostVersionsSheet({
 											</div>
 											{v.editor ? (
 												<div className="flex items-center gap-1.5 rounded-full bg-muted/40 px-2.5 py-1">
-													<AvatarGroup users={[v.editor]} size="xs" />
+													<Avatar
+														{...toAvatarItem(v.editor)}
+														alt=""
+														size={24}
+													/>
 													{v.editor.display_name || v.editor.username}
 												</div>
 											) : null}

@@ -5,9 +5,10 @@ import {
 import type { AdminCustomEmoji } from "@features/admin-customemojis/model/types";
 import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { DataTable, usePagedQuery } from "@features/admin-shared/ui/data-table";
+import { toAvatarItem } from "@shared/lib/avatar-user";
 import { formatDateTime } from "@shared/lib/date";
-import { AvatarGroup } from "@shared/ui/avatar-group/AvatarGroup";
 import {
+	Avatar,
 	Button,
 	ConfirmDialog,
 	SearchInput,
@@ -59,14 +60,11 @@ export function CustomEmojiAdminSection() {
 			ellipsis: true,
 			cell: (row) => (
 				<div className="flex min-w-0 items-center gap-2">
-					<AvatarGroup
-						users={[
-							{
-								username: row.owner.username,
-								avatar_url: row.owner.avatar_url,
-							},
-						]}
-						size="sm"
+					<Avatar
+						{...toAvatarItem(row.owner)}
+						alt=""
+						size={24}
+						imgProps={{ loading: "lazy" }}
 					/>
 					<span className="truncate">{row.owner.display_name || row.owner.username}</span>
 				</div>

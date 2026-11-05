@@ -1,8 +1,9 @@
 import type { PostDetail } from "@entities/post/model/types";
+import { toAvatarItem } from "@shared/lib/avatar-user";
 import { formatDate } from "@shared/lib/date";
-import { AvatarGroup } from "@shared/ui/avatar-group";
 import { BackLink } from "@shared/ui/back-link";
 import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
+import { AvatarGroup } from "@violet/ui";
 import { Calendar, ExternalLink, Eye } from "lucide-react";
 import type { ReactNode } from "react";
 import { SharedElement } from "@/shared/lib/view-transition";
@@ -54,8 +55,10 @@ export function PostDetailHeader({ post, viewCount, children }: PostDetailHeader
 					{post.author ? (
 						<span className="inline-flex items-center gap-1.5">
 							<AvatarGroup
-								users={[post.author, ...(post.collaborators ?? [])]}
-								size="sm"
+								items={[post.author, ...(post.collaborators ?? [])].map(
+									toAvatarItem,
+								)}
+								size={24}
 							/>
 							<span>{post.author.username}</span>
 						</span>

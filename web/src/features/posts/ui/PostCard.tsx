@@ -1,10 +1,10 @@
 import { getDisplayName } from "@entities/user/model/display-name";
+import { toAvatarItem } from "@shared/lib/avatar-user";
 import { formatRelativeTime } from "@shared/lib/date";
-import { AvatarGroup } from "@shared/ui/avatar-group";
 import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
 import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { Link } from "@tanstack/react-router";
-import { Tag } from "@violet/ui";
+import { AvatarGroup, Tag } from "@violet/ui";
 import { ImageOff, Star } from "lucide-react";
 import { BLOG_SCOPE, markSharedSource, SharedElement } from "@/shared/lib/view-transition";
 
@@ -108,8 +108,10 @@ const PostCard = ({ post, size = "md" }: PostCardProps) => {
 					<div className="flex items-center gap-1.5">
 						{post.author ? (
 							<AvatarGroup
-								users={[post.author, ...(post.collaborators ?? [])]}
-								highlightFirst
+								items={[post.author, ...(post.collaborators ?? [])].map(
+									toAvatarItem,
+								)}
+								size={24}
 							/>
 						) : null}
 						{post.author ? getDisplayName(post.author) : null}
