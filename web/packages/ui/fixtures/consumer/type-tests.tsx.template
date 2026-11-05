@@ -26,6 +26,11 @@ import { Switch as LeafSwitch } from "@violet/ui/switch";
 import { Tabs as LeafTabs, TabsContent as LeafTabsContent, TabsCount as LeafTabsCount, TabsList as LeafTabsList, TabsTrigger as LeafTabsTrigger } from "@violet/ui/tabs";
 import { ToggleGroupItem as LeafToggleGroupItem } from "@violet/ui/toggle-group";
 import { LinkCard as LeafLinkCard, type LinkCardProps as LeafLinkCardProps } from "@violet/ui/link-card";
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger, HoverCard, HoverCardContent, HoverCardTrigger, Popover, PopoverContent, PopoverTrigger, Toaster, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, type DropdownMenuContentProps, type HoverCardContentProps, type PopoverContentProps, type TooltipContentProps, type VioletToasterProps } from "@violet/ui";
+import { DropdownMenu as LeafDropdownMenu, DropdownMenuContent as LeafDropdownMenuContent, DropdownMenuItem as LeafDropdownMenuItem, DropdownMenuTrigger as LeafDropdownMenuTrigger } from "@violet/ui/dropdown-menu";
+import { Popover as LeafPopover, PopoverContent as LeafPopoverContent, PopoverTrigger as LeafPopoverTrigger } from "@violet/ui/popover";
+import { Toaster as LeafToaster } from "@violet/ui/sonner";
+import { Tooltip as LeafTooltip, TooltipContent as LeafTooltipContent, TooltipTrigger as LeafTooltipTrigger } from "@violet/ui/tooltip";
 
 const linkCardProps: LinkCardProps = {
 	href: "https://example.com/guide#native",
@@ -327,3 +332,63 @@ export const invalidToggleSingleValue = <ToggleGroup type="single" value={["bold
 export const invalidToggleRole = <ToggleGroup type="multiple" role="radiogroup" aria-label="格式"><ToggleGroupItem value="bold">B</ToggleGroupItem></ToggleGroup>;
 // @ts-expect-error TabsList 尺寸只有两档。
 export const invalidTabsListSize = <Tabs defaultValue="a"><TabsList size="xl"><TabsTrigger value="a">甲</TabsTrigger></TabsList><TabsContent value="a">面板</TabsContent></Tabs>;
+
+const popoverContentRef = createRef<HTMLDivElement>();
+const popoverContentProps: PopoverContentProps = { side: "top", align: "end", sideOffset: 8, container: null, "aria-label": "标签筛选" };
+const hoverCardContentProps: HoverCardContentProps = { side: "bottom", container: null };
+const tooltipContentProps: TooltipContentProps = { arrow: false, shortcut: ["shift", "enter"], container: null, side: "right" };
+const menuContentProps: DropdownMenuContentProps = { align: "end", container: null, loop: true };
+const toasterProps: VioletToasterProps = { theme: "dark", position: "bottom-right", closeButton: true };
+export const overlayExamples = <>
+	<Popover defaultOpen onOpenChange={(open: boolean) => void open}>
+		<PopoverTrigger asChild><button type="button">标签</button></PopoverTrigger>
+		<PopoverContent ref={popoverContentRef} {...popoverContentProps}>筛选</PopoverContent>
+	</Popover>
+	<LeafPopover>
+		<LeafPopoverTrigger asChild><button type="button">分享</button></LeafPopoverTrigger>
+		<LeafPopoverContent>链接</LeafPopoverContent>
+	</LeafPopover>
+	<HoverCard openDelay={500} closeDelay={200}>
+		<HoverCardTrigger asChild><a href="/u/linjian">@林间</a></HoverCardTrigger>
+		<HoverCardContent {...hoverCardContentProps}>林间的名片</HoverCardContent>
+	</HoverCard>
+	<TooltipProvider delayDuration={0} skipDelayDuration={180}>
+		<Tooltip truncatedOnly onOpenChange={(open: boolean) => void open}>
+			<TooltipTrigger asChild><span>长标题</span></TooltipTrigger>
+			<TooltipContent {...tooltipContentProps}>完整标题</TooltipContent>
+		</Tooltip>
+		<LeafTooltip>
+			<LeafTooltipTrigger asChild><button type="button" aria-label="加粗">B</button></LeafTooltipTrigger>
+			<LeafTooltipContent shortcut={["shift", "b"]}>加粗</LeafTooltipContent>
+		</LeafTooltip>
+	</TooltipProvider>
+	<DropdownMenu>
+		<DropdownMenuTrigger asChild><button type="button">更多</button></DropdownMenuTrigger>
+		<DropdownMenuContent {...menuContentProps}>
+			<DropdownMenuItem variant="destructive" reason="草稿不能置顶" disabled inset>置顶</DropdownMenuItem>
+			<DropdownMenuCheckboxItem checked closeOnSelect onCheckedChange={(checked: boolean) => void checked}>显示摘要</DropdownMenuCheckboxItem>
+			<DropdownMenuSub>
+				<DropdownMenuSubTrigger>移动到系列</DropdownMenuSubTrigger>
+				<DropdownMenuSubContent><DropdownMenuItem>新建系列…</DropdownMenuItem></DropdownMenuSubContent>
+			</DropdownMenuSub>
+		</DropdownMenuContent>
+	</DropdownMenu>
+	<ContextMenu>
+		<ContextMenuTrigger asChild><div>右键这里</div></ContextMenuTrigger>
+		<ContextMenuContent container={null}>
+			<ContextMenuItem variant="destructive" reason="不可恢复">删除</ContextMenuItem>
+		</ContextMenuContent>
+	</ContextMenu>
+	<LeafDropdownMenu>
+		<LeafDropdownMenuTrigger asChild><button type="button">排序</button></LeafDropdownMenuTrigger>
+		<LeafDropdownMenuContent><LeafDropdownMenuItem>最新</LeafDropdownMenuItem></LeafDropdownMenuContent>
+	</LeafDropdownMenu>
+	<Toaster {...toasterProps} />
+	<LeafToaster hotkey={["altKey", "KeyT"]} visibleToasts={3} />
+</>;
+// @ts-expect-error 提示的快捷键是键名数组，不是字符串。
+export const invalidTooltipShortcut = <TooltipContent shortcut="⌘B">加粗</TooltipContent>;
+// @ts-expect-error 菜单项的 variant 只有 default 与 destructive。
+export const invalidMenuVariant = <DropdownMenuItem variant="danger">删除</DropdownMenuItem>;
+// @ts-expect-error 悬停卡片的延迟是毫秒数。
+export const invalidHoverDelay = <HoverCard openDelay="500" />;

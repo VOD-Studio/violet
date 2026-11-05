@@ -27,6 +27,13 @@ import { RadioGroup as LeafRadioGroup, Radio as LeafRadio } from "@violet/ui/rad
 import { Switch as LeafSwitch } from "@violet/ui/switch";
 import { Tabs as LeafTabs, TabsContent as LeafTabsContent, TabsCount as LeafTabsCount, TabsList as LeafTabsList, TabsTrigger as LeafTabsTrigger } from "@violet/ui/tabs";
 import { ToggleGroup as LeafToggleGroup, ToggleGroupItem as LeafToggleGroupItem } from "@violet/ui/toggle-group";
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, HoverCard, HoverCardContent, HoverCardTrigger, Popover, PopoverContent, PopoverTrigger, Toaster, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@violet/ui";
+import { ContextMenu as LeafContextMenu, ContextMenuContent as LeafContextMenuContent, ContextMenuItem as LeafContextMenuItem, ContextMenuTrigger as LeafContextMenuTrigger } from "@violet/ui/context-menu";
+import { DropdownMenu as LeafDropdownMenu, DropdownMenuContent as LeafDropdownMenuContent, DropdownMenuItem as LeafDropdownMenuItem, DropdownMenuTrigger as LeafDropdownMenuTrigger } from "@violet/ui/dropdown-menu";
+import { HoverCard as LeafHoverCard, HoverCardContent as LeafHoverCardContent, HoverCardTrigger as LeafHoverCardTrigger } from "@violet/ui/hover-card";
+import { Popover as LeafPopover, PopoverContent as LeafPopoverContent, PopoverTrigger as LeafPopoverTrigger } from "@violet/ui/popover";
+import { Toaster as LeafToaster } from "@violet/ui/sonner";
+import { Tooltip as LeafTooltip, TooltipContent as LeafTooltipContent, TooltipProvider as LeafTooltipProvider, TooltipTrigger as LeafTooltipTrigger } from "@violet/ui/tooltip";
 
 const cardProps = { href: "https://www.example.com/guide#native", title: "y_defect的推文", description: "@y_defect的推文", siteName: "EXAMPLE.COM", imageSrc: "https://example.com/logo.png", imageAlt: "Example logo" };
 const card = renderToString(<LinkCard {...cardProps} />);
@@ -233,4 +240,51 @@ const skeleton = renderToString(<Skeleton className="h-4" />);
 assert.equal(skeleton, renderToString(<LeafSkeleton className="h-4" />));
 assert.match(skeleton, /aria-hidden="true"/);
 assert.match(skeleton, /class="v-skeleton h-4"/);
-console.log("Independent root/leaf SSR, Input, Checkbox, ImagePixelReveal, UploadTile, Dropdown, Segmented, Avatar, Badge, Kbd, Card, Separator and Skeleton semantics passed.");
+
+const popoverTree = (Root: typeof Popover, Trigger: typeof PopoverTrigger, Content: typeof PopoverContent) => (
+	<Root><Trigger asChild><button type="button">标签</button></Trigger><Content>标签筛选面板</Content></Root>
+);
+const popover = renderToString(popoverTree(Popover, PopoverTrigger, PopoverContent));
+assert.equal(popover, renderToString(popoverTree(LeafPopover, LeafPopoverTrigger, LeafPopoverContent)));
+assert.match(popover, /aria-haspopup="dialog"/);
+assert.match(popover, /aria-expanded="false"/);
+assert.doesNotMatch(popover, /标签筛选面板/);
+
+const hoverCardTree = (Root: typeof HoverCard, Trigger: typeof HoverCardTrigger, Content: typeof HoverCardContent) => (
+	<Root><Trigger asChild><a href="/u/linjian">@林间</a></Trigger><Content>林间的名片</Content></Root>
+);
+const hoverCard = renderToString(hoverCardTree(HoverCard, HoverCardTrigger, HoverCardContent));
+assert.equal(hoverCard, renderToString(hoverCardTree(LeafHoverCard, LeafHoverCardTrigger, LeafHoverCardContent)));
+assert.match(hoverCard, /<a\b[^>]*href="\/u\/linjian"/);
+assert.doesNotMatch(hoverCard, /林间的名片/);
+
+const tooltipTree = (Provider: typeof TooltipProvider, Root: typeof Tooltip, Trigger: typeof TooltipTrigger, Content: typeof TooltipContent) => (
+	<Provider><Root><Trigger asChild><button type="button" aria-label="加粗">B</button></Trigger><Content shortcut={["shift", "b"]}>加粗</Content></Root></Provider>
+);
+const tooltip = renderToString(tooltipTree(TooltipProvider, Tooltip, TooltipTrigger, TooltipContent));
+assert.equal(tooltip, renderToString(tooltipTree(LeafTooltipProvider, LeafTooltip, LeafTooltipTrigger, LeafTooltipContent)));
+assert.match(tooltip, /aria-label="加粗"/);
+assert.match(tooltip, /data-state="closed"/);
+assert.doesNotMatch(tooltip, /role="tooltip"/);
+
+const menuTree = (Root: typeof DropdownMenu, Trigger: typeof DropdownMenuTrigger, Content: typeof DropdownMenuContent, Item: typeof DropdownMenuItem) => (
+	<Root><Trigger asChild><button type="button">更多</button></Trigger><Content><Item>编辑</Item></Content></Root>
+);
+const menu = renderToString(menuTree(DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem));
+assert.equal(menu, renderToString(menuTree(LeafDropdownMenu, LeafDropdownMenuTrigger, LeafDropdownMenuContent, LeafDropdownMenuItem)));
+assert.match(menu, /aria-haspopup="menu"/);
+assert.match(menu, /aria-expanded="false"/);
+assert.doesNotMatch(menu, /编辑/);
+
+const contextMenuTree = (Root: typeof ContextMenu, Trigger: typeof ContextMenuTrigger, Content: typeof ContextMenuContent, Item: typeof ContextMenuItem) => (
+	<Root><Trigger asChild><div>右键这里</div></Trigger><Content><Item>复制</Item></Content></Root>
+);
+const contextMenu = renderToString(contextMenuTree(ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem));
+assert.equal(contextMenu, renderToString(contextMenuTree(LeafContextMenu, LeafContextMenuTrigger, LeafContextMenuContent, LeafContextMenuItem)));
+assert.match(contextMenu, /右键这里/);
+assert.doesNotMatch(contextMenu, /复制/);
+
+const toaster = renderToString(<Toaster />);
+assert.equal(toaster, renderToString(<LeafToaster />));
+assert.match(toaster, /<section\b[^>]*aria-label="通知/);
+console.log("Independent root/leaf SSR, Input, Checkbox, ImagePixelReveal, UploadTile, Dropdown, Segmented, Avatar, Badge, Kbd, Card, Separator, Skeleton, Popover, HoverCard, Tooltip, DropdownMenu, ContextMenu and Toaster semantics passed.");

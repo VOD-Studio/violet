@@ -9,6 +9,7 @@ import { LinkCard } from "@violet/ui";
 import { LinkCard as LeafLinkCard } from "@violet/ui/link-card";
 import { Avatar, AvatarGroup, Badge, BadgeAnchor, Card, CardContent, CardFooter, CardFrame, CardFrameBody, CardFrameExcerpt, CardFrameImage, CardFrameMeta, CardFrameTitle, CardHeader, CardTitle, Count, Dot, Kbd, KbdSeparator, Radio, RadioGroup, Separator, Skeleton, Switch, Tabs, TabsContent, TabsCount, TabsList, TabsTrigger, Tag, TagToggle, ToggleGroup, ToggleGroupItem } from "@violet/ui";
 import { Avatar as LeafAvatar } from "@violet/ui/avatar";
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, HoverCard, HoverCardContent, HoverCardTrigger, Popover, PopoverContent, PopoverTrigger, Toaster, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@violet/ui";
 
 const linkCardLogo = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><rect width="160" height="160" fill="#f0edf8"/><path d="m40 44 40 76 40-76H98l-18 36-18-36Z" fill="#684dda"/></svg>')}`;
 const linkCardCover = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="240"><rect width="400" height="240" fill="#dbe8e9"/><path d="m0 210 130-160 100 120 80-100 90 140v30H0Z" fill="#406c83"/></svg>')}`;
@@ -548,7 +549,44 @@ function DisplayPreview() {
 	</main>;
 }
 
+function OverlayPreview() {
+	const [log, setLog] = useState<string[]>([]);
+	const note = (entry: string) => setLog((items) => [...items, entry]);
+	return <main>
+		<h1>浮层</h1>
+		<TooltipProvider>
+			<section aria-label="浮层" className="display-row">
+				<Popover onOpenChange={(open) => note(`popover:${open}`)}>
+					<PopoverTrigger asChild><Button id="overlay-popover-trigger" variant="outline">标签</Button></PopoverTrigger>
+					<PopoverContent><input id="overlay-popover-input" aria-label="找标签" /></PopoverContent>
+				</Popover>
+				<HoverCard>
+					<HoverCardTrigger asChild><a id="overlay-hover-trigger" href="#linjian">@林间</a></HoverCardTrigger>
+					<HoverCardContent>林间的名片</HoverCardContent>
+				</HoverCard>
+				<Tooltip>
+					<TooltipTrigger asChild><Button id="overlay-tooltip-trigger" variant="ghost" aria-label="加粗">B</Button></TooltipTrigger>
+					<TooltipContent shortcut={["shift", "b"]}>加粗</TooltipContent>
+				</Tooltip>
+				<DropdownMenu onOpenChange={(open) => note(`menu:${open}`)}>
+					<DropdownMenuTrigger asChild><Button id="overlay-menu-trigger" variant="outline">更多</Button></DropdownMenuTrigger>
+					<DropdownMenuContent>
+						<DropdownMenuItem onSelect={() => note("menu:edit")}>编辑</DropdownMenuItem>
+						<DropdownMenuItem variant="destructive" reason="不可恢复" disabled>删除</DropdownMenuItem>
+					</DropdownMenuContent>
+				</DropdownMenu>
+				<ContextMenu>
+					<ContextMenuTrigger asChild><div id="overlay-context-trigger" className="display-field">右键这里</div></ContextMenuTrigger>
+					<ContextMenuContent><ContextMenuItem onSelect={() => note("context:copy")}>复制</ContextMenuItem></ContextMenuContent>
+				</ContextMenu>
+			</section>
+		</TooltipProvider>
+		<output id="overlay-log">{log.join(",")}</output>
+		<Toaster />
+	</main>;
+}
+
 const root = document.getElementById("root");
 if (!root) throw new Error("Consumer root is missing.");
 const preview = new URLSearchParams(window.location.search).get("preview");
-createRoot(root).render(preview === "input" ? <InputPreview /> : preview === "overlay-scroll" ? <OverlayScrollPreview /> : preview === "image-pixel-reveal" ? <ImagePixelRevealPreview /> : preview === "upload-tile" ? <UploadTilePreview /> : preview === "dropdown" ? <DropdownPreview /> : preview === "segmented" ? <SegmentedPreview /> : preview === "link-card" ? <LinkCardPreview /> : preview === "display" ? <DisplayPreview /> : <App />);
+createRoot(root).render(preview === "input" ? <InputPreview /> : preview === "overlay-scroll" ? <OverlayScrollPreview /> : preview === "image-pixel-reveal" ? <ImagePixelRevealPreview /> : preview === "upload-tile" ? <UploadTilePreview /> : preview === "dropdown" ? <DropdownPreview /> : preview === "segmented" ? <SegmentedPreview /> : preview === "link-card" ? <LinkCardPreview /> : preview === "display" ? <DisplayPreview /> : preview === "overlay" ? <OverlayPreview /> : <App />);
