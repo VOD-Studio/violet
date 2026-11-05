@@ -85,6 +85,12 @@
 			"css": "src/components/image-pixel-reveal/image-pixel-reveal.css"
 		},
 		{
+			"name": "indicator",
+			"status": "foundation",
+			"entry": "src/components/indicator/index.ts",
+			"css": "src/components/indicator/indicator.css"
+		},
+		{
 			"name": "inline-error",
 			"status": "legacy",
 			"entry": "src/components/inline-error/index.ts"

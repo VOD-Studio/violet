@@ -1,0 +1,218 @@
+/*
+ * 指示器单元样式：块状花形（.v-flower）与控件内细圆弧（.v-spinner）。
+ * 需先导入 @violet/ui/tokens.css 或 styles.css。
+ * 颜色一律 currentColor，不带底色与轨道；减弱动态停在花完全开放的一帧。
+ */
+
+.v-flower {
+	--v-flower-size: 24px;
+	/* 一个循环 2.4 秒：描线（依 index 错开 0.16s）→ 停留 → 淡去 */
+	--v-flower-period: 2.4s;
+
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: none;
+	width: var(--v-flower-size);
+	height: var(--v-flower-size);
+	color: inherit;
+	vertical-align: middle;
+}
+
+.v-flower svg {
+	display: block;
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.4;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+/* 雪花整体缓慢旋转 */
+.v-flower--snow svg {
+	animation: v-flower-rotate calc(7s) linear infinite;
+}
+
+.v-flower__base {
+	opacity: 0.3;
+}
+
+.v-flower__stem {
+	stroke-width: 1.5;
+}
+
+.v-flower__draw {
+	stroke-dasharray: 1 1;
+	stroke-dashoffset: 1;
+	animation: v-flower-draw var(--v-flower-period) ease-in-out infinite;
+	animation-delay: calc(var(--v-flower-index) * 0.16s);
+}
+
+.v-flower__pop {
+	opacity: 0;
+	animation: v-flower-pop var(--v-flower-period) ease-out infinite;
+	animation-delay: calc(var(--v-flower-index) * 0.16s);
+}
+
+.v-flower__dot {
+	fill: currentColor;
+	stroke: none;
+}
+
+@keyframes v-flower-draw {
+	0% {
+		stroke-dashoffset: 1;
+		opacity: 1;
+	}
+	26% {
+		stroke-dashoffset: 0;
+		opacity: 1;
+	}
+	72% {
+		stroke-dashoffset: 0;
+		opacity: 1;
+	}
+	100% {
+		stroke-dashoffset: 0;
+		opacity: 0;
+	}
+}
+
+@keyframes v-flower-pop {
+	0%,
+	28% {
+		opacity: 0;
+	}
+	40%,
+	72% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+	}
+}
+
+@keyframes v-flower-rotate {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+/* 梅枝：宽是高的三倍 */
+.v-flower--branch {
+	--v-flower-size: 24px;
+	width: calc(var(--v-flower-size) * 3);
+}
+
+.v-flower--branch .v-flower__stem {
+	animation-duration: 2.6s;
+	animation-name: v-flower-grow;
+}
+
+.v-flower--branch .v-flower__pop {
+	animation-duration: 2.6s;
+}
+
+@keyframes v-flower-grow {
+	0% {
+		stroke-dashoffset: 1;
+		opacity: 1;
+	}
+	60% {
+		stroke-dashoffset: 0;
+		opacity: 1;
+	}
+	88% {
+		stroke-dashoffset: 0;
+		opacity: 1;
+	}
+	100% {
+		stroke-dashoffset: 0;
+		opacity: 0;
+	}
+}
+
+/* —— 控件内加载：细圆弧，与控件板一致 —— */
+
+.v-spinner {
+	--v-spinner-size: 16px;
+
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: none;
+	width: var(--v-spinner-size);
+	height: var(--v-spinner-size);
+	color: inherit;
+	vertical-align: middle;
+	animation: v-spinner-rotate 1.6s linear infinite;
+}
+
+.v-spinner svg {
+	display: block;
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+}
+
+.v-spinner__arc {
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.75;
+	stroke-linecap: round;
+	/* pathLength=100 归一化，虚线动画按百分比推进 */
+	stroke-dasharray: 4 100;
+	animation: v-spinner-dash 1.4s ease-in-out infinite;
+}
+
+@keyframes v-spinner-rotate {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@keyframes v-spinner-dash {
+	0% {
+		stroke-dasharray: 4 100;
+		stroke-dashoffset: 0;
+	}
+	50% {
+		stroke-dasharray: 60 100;
+		stroke-dashoffset: -18;
+	}
+	100% {
+		stroke-dasharray: 4 100;
+		stroke-dashoffset: -96;
+	}
+}
+
+/* 减弱动态：一律静止；花形停在完全开放的一帧 */
+@media (prefers-reduced-motion: reduce) {
+	.v-flower,
+	.v-flower svg,
+	.v-flower__draw,
+	.v-flower__pop,
+	.v-flower--snow svg,
+	.v-flower--branch .v-flower__stem,
+	.v-flower--branch .v-flower__pop,
+	.v-spinner,
+	.v-spinner__arc {
+		animation: none;
+	}
+
+	.v-flower__draw {
+		stroke-dashoffset: 0;
+		opacity: 1;
+	}
+
+	.v-flower__pop {
+		opacity: 1;
+	}
+
+	.v-spinner__arc {
+		stroke-dasharray: 62 100;
+	}
+}

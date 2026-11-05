@@ -3,6 +3,7 @@ export * from "./components/button/index";
 export * from "./components/checkbox/index";
 export * from "./components/dropdown/index";
 export * from "./components/image-pixel-reveal/index";
+export * from "./components/indicator/index";
 export * from "./components/input/index";
 export * from "./components/label/index";
 export * from "./components/link-card/index";

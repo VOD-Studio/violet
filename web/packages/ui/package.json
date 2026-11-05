@@ -102,6 +102,11 @@
 			"import": "./src/components/image-pixel-reveal/index.ts",
 			"default": "./src/components/image-pixel-reveal/index.ts"
 		},
+		"./indicator": {
+			"types": "./src/components/indicator/index.ts",
+			"import": "./src/components/indicator/index.ts",
+			"default": "./src/components/indicator/index.ts"
+		},
 		"./inline-error": {
 			"types": "./src/components/inline-error/index.ts",
 			"import": "./src/components/inline-error/index.ts",
@@ -276,6 +281,7 @@
 		"./components/checkbox.css": "./src/components/checkbox/checkbox.css",
 		"./components/dropdown.css": "./src/components/dropdown/dropdown.css",
 		"./components/image-pixel-reveal.css": "./src/components/image-pixel-reveal/image-pixel-reveal.css",
+		"./components/indicator.css": "./src/components/indicator/indicator.css",
 		"./components/input.css": "./src/components/input/input.css",
 		"./components/label.css": "./src/components/label/label.css",
 		"./components/link-card.css": "./src/components/link-card/link-card.css",
@@ -398,6 +404,11 @@
 				"types": "./dist/components/image-pixel-reveal/index.d.ts",
 				"import": "./dist/components/image-pixel-reveal/index.js",
 				"default": "./dist/components/image-pixel-reveal/index.js"
+			},
+			"./indicator": {
+				"types": "./dist/components/indicator/index.d.ts",
+				"import": "./dist/components/indicator/index.js",
+				"default": "./dist/components/indicator/index.js"
 			},
 			"./inline-error": {
 				"types": "./dist/components/inline-error/index.d.ts",
@@ -573,6 +584,7 @@
 			"./components/checkbox.css": "./dist/components/checkbox.css",
 			"./components/dropdown.css": "./dist/components/dropdown.css",
 			"./components/image-pixel-reveal.css": "./dist/components/image-pixel-reveal.css",
+			"./components/indicator.css": "./dist/components/indicator.css",
 			"./components/input.css": "./dist/components/input.css",
 			"./components/label.css": "./dist/components/label.css",
 			"./components/link-card.css": "./dist/components/link-card.css",
