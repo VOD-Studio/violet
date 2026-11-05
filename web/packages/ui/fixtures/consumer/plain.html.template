@@ -40,6 +40,15 @@
 					<span class="v-link-card__meta"><span class="v-link-card__host">example.com</span></span>
 				</span>
 			</a>
+			<div id="plain-display" style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem">
+				<span class="v-tag">#shell</span>
+				<span class="v-badge v-badge--ok"><span class="v-badge__dot"></span>已发布</span>
+				<kbd class="v-kbd"><span class="v-kbd__key">Esc</span></kbd>
+				<span class="v-avatar" data-size="40" data-state="fallback"><span class="v-avatar__glyph">林</span></span>
+			</div>
+			<div class="v-card"><div class="v-card__header"><div class="v-card__title">纯 CSS 卡片</div></div></div>
+			<hr class="v-separator" />
+			<div class="v-skeleton" style="height: 1rem"></div>
 		</main>
 	</body>
 </html>

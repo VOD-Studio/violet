@@ -7,6 +7,8 @@ import { createRoot } from "react-dom/client";
 import "./style.css";
 import { LinkCard } from "@violet/ui";
 import { LinkCard as LeafLinkCard } from "@violet/ui/link-card";
+import { Avatar, AvatarGroup, Badge, BadgeAnchor, Card, CardContent, CardFooter, CardFrame, CardFrameBody, CardFrameExcerpt, CardFrameImage, CardFrameMeta, CardFrameTitle, CardHeader, CardTitle, Count, Dot, Kbd, KbdSeparator, Separator, Skeleton, Tag, TagToggle } from "@violet/ui";
+import { Avatar as LeafAvatar } from "@violet/ui/avatar";
 
 const linkCardLogo = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><rect width="160" height="160" fill="#f0edf8"/><path d="m40 44 40 76 40-76H98l-18 36-18-36Z" fill="#684dda"/></svg>')}`;
 const linkCardCover = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="240"><rect width="400" height="240" fill="#dbe8e9"/><path d="m0 210 130-160 100 120 80-100 90 140v30H0Z" fill="#406c83"/></svg>')}`;
@@ -435,7 +437,83 @@ function App() {
 	);
 }
 
+const portrait = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96"><rect width="96" height="96" fill="#dbe8e9"/><circle cx="48" cy="38" r="18" fill="#406c83"/><path d="M14 96c4-26 20-34 34-34s30 8 34 34Z" fill="#406c83"/></svg>')}`;
+
+function DisplayPreview() {
+	const [broken, setBroken] = useState(false);
+	const [unread, setUnread] = useState(3);
+	const [tags, setTags] = useState(["shell", "violet"]);
+	const [filter, setFilter] = useState("前端");
+	const [mac, setMac] = useState(false);
+	const [dark, setDark] = useState(document.documentElement.classList.contains("dark"));
+	return <main>
+		<h1>头像、徽章、键帽、卡片、分隔与骨架 · 独立安装包</h1>
+		<div className="image-reveal-controls">
+			<Button id="display-theme" onClick={() => { document.documentElement.classList.toggle("dark", !dark); setDark(!dark); }}>切换明暗</Button>
+			<Button id="display-broken" onClick={() => setBroken(!broken)}>图片{broken ? "恢复" : "损坏"}</Button>
+			<Button id="display-unread" onClick={() => setUnread(unread + 60)}>未读 +60</Button>
+			<Button id="display-reset-unread" onClick={() => setUnread(0)}>未读清零</Button>
+			<Button id="display-platform" onClick={() => setMac(!mac)}>平台：{mac ? "macOS" : "其他"}</Button>
+		</div>
+		<section aria-label="头像">
+			<h2>Avatar</h2>
+			<div className="display-row">
+				<LeafAvatar id="display-avatar" name="Rua" src={broken ? "data:image/png;base64,broken" : portrait} status="online" />
+				<Avatar name="林" size={48} tone="season" />
+				<Avatar name="频道" shape="square" icon={<span>#</span>} size={32} />
+				<Avatar name="站长" src={portrait} ring crown size={64} />
+				<AvatarGroup items={["Rua", "Mika", "Noa", "Ken", "Yui"].map((name) => ({ name, src: portrait }))} label="5 人点了赞" />
+			</div>
+		</section>
+		<section aria-label="徽章与标签">
+			<h2>Badge · Tag · Count</h2>
+			<div className="display-row">
+				<BadgeAnchor badge={<Count value={unread} />}><Button id="display-bell" aria-label={`消息，${unread} 条未读`}>消息</Button></BadgeAnchor>
+				<BadgeAnchor placement="edge" badge={<Dot />}><Avatar name="Rua" alt="Rua，有新动态" src={portrait} /></BadgeAnchor>
+				<span>评论 <Count variant="inline" value={unread} /></span>
+			</div>
+			<div className="display-row">
+				{(["neutral", "ok", "accent", "warning", "off", "danger"] as const).map((tone) => <Badge key={tone} tone={tone}>{tone}</Badge>)}
+			</div>
+			<div className="display-row">
+				{tags.map((tag) => <Tag key={tag} onRemove={() => setTags(tags.filter((item) => item !== tag))}>#{tag}</Tag>)}
+				<output id="display-tags">{tags.join(",")}</output>
+			</div>
+			<div className="display-row" role="group" aria-label="按栏目筛选">
+				{["全部", "前端", "后端"].map((name) => <TagToggle key={name} pressed={filter === name} onPressedChange={() => setFilter(name)}>{name}</TagToggle>)}
+			</div>
+		</section>
+		<section aria-label="键帽">
+			<h2>Kbd</h2>
+			<div className="display-row">
+				<Kbd keys={["mod", "K"]} platform={mac ? "mac" : "other"} />
+				<Kbd>Esc</Kbd><KbdSeparator>或</KbdSeparator><Kbd keys={["shift", "enter"]} platform={mac ? "mac" : "other"} />
+			</div>
+		</section>
+		<section aria-label="卡片">
+			<h2>Card · Separator · Skeleton</h2>
+			<Card>
+				<CardHeader><CardTitle>同步到 Mastodon</CardTitle></CardHeader>
+				<CardContent>已连接账号。</CardContent>
+				<CardFooter><Button>断开</Button></CardFooter>
+			</Card>
+			<CardFrame>
+				<CardFrameImage><img src={portrait} alt="" /></CardFrameImage>
+				<CardFrameBody>
+					<CardFrameTitle asChild><a id="display-frame-link" href="#display-frame-destination">给博客加了季节</a></CardFrameTitle>
+					<CardFrameMeta>2026-11-02 · 技术</CardFrameMeta>
+					<CardFrameExcerpt>整张卡由标题链接承载点击，卡内按钮仍可单独点击。</CardFrameExcerpt>
+					<Button id="display-frame-button">收藏</Button>
+				</CardFrameBody>
+			</CardFrame>
+			<span id="display-frame-destination">链接目标</span>
+			<Separator>或</Separator>
+			<div aria-busy="true"><Skeleton className="display-skeleton" /></div>
+		</section>
+	</main>;
+}
+
 const root = document.getElementById("root");
 if (!root) throw new Error("Consumer root is missing.");
 const preview = new URLSearchParams(window.location.search).get("preview");
-createRoot(root).render(preview === "input" ? <InputPreview /> : preview === "overlay-scroll" ? <OverlayScrollPreview /> : preview === "image-pixel-reveal" ? <ImagePixelRevealPreview /> : preview === "upload-tile" ? <UploadTilePreview /> : preview === "dropdown" ? <DropdownPreview /> : preview === "segmented" ? <SegmentedPreview /> : preview === "link-card" ? <LinkCardPreview /> : <App />);
+createRoot(root).render(preview === "input" ? <InputPreview /> : preview === "overlay-scroll" ? <OverlayScrollPreview /> : preview === "image-pixel-reveal" ? <ImagePixelRevealPreview /> : preview === "upload-tile" ? <UploadTilePreview /> : preview === "dropdown" ? <DropdownPreview /> : preview === "segmented" ? <SegmentedPreview /> : preview === "link-card" ? <LinkCardPreview /> : preview === "display" ? <DisplayPreview /> : <App />);

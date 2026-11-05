@@ -15,6 +15,11 @@ import { Dropdown as LeafDropdown, DropdownContent as LeafDropdownContent, Dropd
 import { Segmented, type SegmentedItem, type SegmentedProps } from "@violet/ui";
 import { Segmented as LeafSegmented, type SegmentedProps as LeafSegmentedProps } from "@violet/ui/segmented";
 import { LinkCard, type LinkCardProps } from "@violet/ui";
+import { Avatar, AvatarGroup, Badge, BadgeAnchor, CardFrameTitle, Count, Kbd, Separator, Skeleton, Tag, TagToggle, type AvatarProps, type BadgeProps, type KbdProps, type TagProps } from "@violet/ui";
+import { Avatar as LeafAvatar } from "@violet/ui/avatar";
+import { Tag as LeafTag } from "@violet/ui/badge";
+import { Kbd as LeafKbd } from "@violet/ui/kbd";
+import { badgeVariants, countVariants, kbdVariants, tagVariants, type BadgeVariantProps, type KbdVariantProps, type TagVariantProps } from "@violet/ui/variants";
 import { LinkCard as LeafLinkCard, type LinkCardProps as LeafLinkCardProps } from "@violet/ui/link-card";
 
 const linkCardProps: LinkCardProps = {
@@ -232,3 +237,43 @@ export const invalidSegmentedOrientation = <Segmented value="a" segments={segmen
 export const invalidSegmentedVariant = <Segmented value="a" segments={segments} variant="solid" />;
 // @ts-expect-error 叶子入口保留相同的方向约束。
 export const invalidLeafSegmentedOrientation = <LeafSegmented value="a" segments={segments} orientation="diagonal" />;
+
+const avatarRef = createRef<HTMLSpanElement>();
+const frameTitleRef = createRef<HTMLAnchorElement>();
+const avatarProps: AvatarProps = { name: "Rua", src: "/rua.png", size: 48, shape: "square", status: "away", ring: true, crown: true, tone: "season", imgProps: { loading: "lazy" } };
+const tagProps: TagProps = { size: "sm", tone: "accent", icon: null, onRemove: () => undefined, removeLabel: "移除 shell", children: "shell" };
+const badgeProps: BadgeProps = { tone: "warning", icon: null, children: "审核中" };
+const kbdProps: KbdProps = { keys: ["mod", "shift", "K"], size: "lg", variant: "light", platform: "mac" };
+const tagVariantProps: TagVariantProps = { size: "xs", tone: "neutral" };
+const badgeVariantProps: BadgeVariantProps = { tone: "off" };
+const kbdVariantProps: KbdVariantProps = { size: "sm", variant: "onButton" };
+export const displayRecipes = [tagVariants(tagVariantProps), badgeVariants(badgeVariantProps), kbdVariants(kbdVariantProps), countVariants({ variant: "inline" })];
+export const displayExamples = <>
+	<Avatar ref={avatarRef} {...avatarProps} />
+	<LeafAvatar name="频道" icon={null} shape="square" alt="" />
+	<AvatarGroup items={[{ name: "Rua" }, { name: "Mika", src: "/mika.png" }]} max={3} size={32} label="2 人点了赞" />
+	<Tag {...tagProps} />
+	<Tag asChild><a href="/tags/shell">shell</a></Tag>
+	<TagToggle size="lg" defaultPressed onPressedChange={(pressed) => { const next: boolean = pressed; void next; }}>前端</TagToggle>
+	<Badge {...badgeProps} />
+	<BadgeAnchor placement="edge" badge={<Count value={3} max={9} variant="capsule" />}><button type="button">消息</button></BadgeAnchor>
+	<Kbd {...kbdProps} />
+	<LeafKbd>Esc</LeafKbd>
+	<CardFrameTitle asChild ref={frameTitleRef}><a href="/posts/season">给博客加了季节</a></CardFrameTitle>
+	<Separator orientation="vertical" decorative={false} spacing="section" />
+	<Skeleton className="h-4" />
+</>;
+// @ts-expect-error asChild 的 Tag 把图标放进子元素，不接受 icon。
+export const invalidTagAsChildIcon = <Tag asChild icon={null}><a href="/tags/shell">shell</a></Tag>;
+// @ts-expect-error Kbd 的 children 与 keys 二选一。
+export const invalidKbdBoth = <Kbd keys={["mod", "K"]}>K</Kbd>;
+// @ts-expect-error Avatar 尺寸只有六档。
+export const invalidAvatarSize = <Avatar size={50} />;
+// @ts-expect-error Badge 色调只接受设计稿的六种。
+export const invalidBadgeTone = <Badge tone="primary" />;
+// @ts-expect-error Count 的 value 必填。
+export const invalidCountValue = <Count />;
+// @ts-expect-error BadgeAnchor 不再支持右下角位置。
+export const invalidAnchorPlacement = <BadgeAnchor placement="bottom-corner" badge={null}><span /></BadgeAnchor>;
+// @ts-expect-error 叶子入口保留相同的色调约束。
+export const invalidLeafTagTone = <LeafTag tone="ok">x</LeafTag>;
