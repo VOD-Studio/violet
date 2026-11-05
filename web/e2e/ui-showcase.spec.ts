@@ -114,7 +114,7 @@ test("检视台里每种状态都在占地内", async ({ page, context }) => {
 		await page.waitForLoadState("networkidle");
 		await page.evaluate(() => document.fonts.ready);
 		const dialog = page.getByRole("dialog");
-		const states = dialog.getByRole("group", { name: "展品状态" }).getByRole("button");
+		const states = dialog.getByRole("radiogroup", { name: "展品状态" }).getByRole("radio");
 		const count = Math.max(1, await states.count());
 		for (let index = 0; index < count; index++) {
 			if ((await states.count()) > 0) await states.nth(index).click();
@@ -159,10 +159,16 @@ test("检视台可用键盘走近、切换、调整外观并在离开后归还�
 	}
 
 	const scope = page.locator("body > [data-theme]");
-	await dialog.getByRole("group", { name: "明暗" }).getByRole("button", { name: "深色" }).click();
+	await dialog
+		.getByRole("radiogroup", { name: "明暗" })
+		.getByRole("radio", { name: "深色" })
+		.click();
 	await expect(scope).toHaveClass(/\bdark\b/);
 	await expect(page.locator("main [data-theme]").first()).toHaveClass(/\bdark\b/);
-	await dialog.getByRole("group", { name: "季节" }).getByRole("button", { name: "荷风" }).click();
+	await dialog
+		.getByRole("radiogroup", { name: "季节" })
+		.getByRole("radio", { name: "荷风" })
+		.click();
 	await expect(scope).toHaveAttribute("data-theme", "summer");
 	const reduced = dialog.getByRole("button", { name: "减弱动态" });
 	await reduced.click();
@@ -173,8 +179,8 @@ test("检视台可用键盘走近、切换、调整外观并在离开后归还�
 	await expect(dialog.getByText("440 × 136", { exact: true }).first()).toBeVisible();
 
 	await dialog
-		.getByRole("group", { name: "展品状态" })
-		.getByRole("button", { name: "加载" })
+		.getByRole("radiogroup", { name: "展品状态" })
+		.getByRole("radio", { name: "加载" })
 		.click();
 	await expect(dialog.locator("[data-inspector-stage] [aria-busy='true']").first()).toBeVisible();
 
@@ -209,7 +215,10 @@ test("用途筛选只保留同类展品，空展厅不显示", async ({ page, co
 	await page.setViewportSize({ width: 1440, height: 900 });
 	await page.goto("/ui");
 	await page.waitForLoadState("networkidle");
-	await page.getByRole("group", { name: "用途" }).getByRole("button", { name: "浮层" }).click();
+	await page
+		.getByRole("radiogroup", { name: "用途" })
+		.getByRole("radio", { name: "浮层" })
+		.click();
 	await expect(page).toHaveURL(/category=overlay/);
 	await expect(page.getByRole("heading", { level: 2, name: /浮层舞台/ })).toBeVisible();
 	await expect(page.getByRole("heading", { level: 2, name: /微件架/ })).toHaveCount(0);
@@ -247,8 +256,8 @@ test("头像组悬停时展开，移开收回，减弱动态下直接切换", as
 		await page.waitForLoadState("networkidle");
 		const dialog = page.getByRole("dialog");
 		await dialog
-			.getByRole("group", { name: "展品状态" })
-			.getByRole("button", { name: "一组头像", exact: true })
+			.getByRole("radiogroup", { name: "展品状态" })
+			.getByRole("radio", { name: "一组头像", exact: true })
 			.click();
 		const collapsed = await widthOf();
 		await dialog.locator(".v-avatar-group").hover();

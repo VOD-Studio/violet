@@ -104,8 +104,8 @@ for (const appearance of ["light", "dark"] as const) {
 				expect(slot).toEqual({ hidden: "true", pointerEvents: "none" });
 
 			await menu
-				.getByRole("group", { name: "装饰", exact: true })
-				.getByRole("button", { name: "无", exact: true })
+				.getByRole("radiogroup", { name: "装饰", exact: true })
+				.getByRole("radio", { name: "无", exact: true })
 				.click();
 			await expect(page.locator("html")).toHaveAttribute("data-decoration", "none");
 			await expect(page.locator("[data-decoration-slot]")).toHaveCount(0);
@@ -238,8 +238,8 @@ test("移动端季节与图层可独立配置并持久化", async ({ browser }) 
 	await page.setViewportSize({ width: 390, height: 844 });
 	await page.goto("/", { waitUntil: "load" });
 	await page.getByRole("button", { name: "展开全部导航", exact: true }).click();
-	const group = page.getByRole("group", { name: "装饰", exact: true });
-	await group.getByRole("button", { name: "春", exact: true }).click();
+	const group = page.getByRole("radiogroup", { name: "装饰", exact: true });
+	await group.getByRole("radio", { name: "春", exact: true }).click();
 	await page.getByRole("switch", { name: "飘落", exact: true }).click();
 	await page.getByRole("switch", { name: "挂件", exact: true }).click();
 	await expect(page.locator("html")).toHaveAttribute("data-theme", "winter");
@@ -283,8 +283,8 @@ test("切换配色后可立即恢复装饰跟随", async ({ browser }) => {
 		return promise;
 	});
 	const follow = panel
-		.getByRole("group", { name: "装饰", exact: true })
-		.getByRole("button", { name: "跟随", exact: true });
+		.getByRole("radiogroup", { name: "装饰", exact: true })
+		.getByRole("radio", { name: "跟随", exact: true });
 	const box = await follow.boundingBox();
 	if (!box) throw new Error("装饰跟随按钮没有可点击区域");
 	await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2, { delay: 80 });

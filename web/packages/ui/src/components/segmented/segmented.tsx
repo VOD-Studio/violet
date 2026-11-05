@@ -15,6 +15,7 @@ import {
 /**
  * `render` 回调拿到的属性，与默认 `<button>` 上展开的是同一份；
  * 自定义元素（路由链接、被 Dropdown 触发器包裹的元素）必须展开它们，指示器与键盘导航依赖其中的数据属性。
+ * 一旦存在 render 项，组退回普通 group、项保留自身语义（aria-current 等）。
  */
 export interface SegmentedItemRenderProps {
 	className: string;
@@ -28,8 +29,6 @@ export interface SegmentedItemRenderProps {
 	/** 该项（或整体）被禁用时出现；元素自行决定是否同步原生禁用或 aria-disabled */
 	"data-disabled"?: "";
 	"aria-disabled"?: true;
-	/** 只在默认 button 上出现；链接项用 aria-current 自行表达 */
-	"aria-pressed"?: boolean;
 	/** 等尺寸布局下携带该项的 --v-segmented-weight；自定义元素必须一并展开 */
 	style?: CSSProperties;
 }
@@ -91,6 +90,7 @@ export interface SegmentedProps<V extends string = string> {
 	/** 需要 itemSize：选中项占满剩余长度，其余收为只剩 icon，整体主轴总尺寸不变 */
 	expandSelected?: boolean;
 	"aria-label"?: string;
+	"aria-labelledby"?: string;
 	/** 自定义类名 */
 	className?: string;
 	/** 滑块指示器自定义类名 */
@@ -116,12 +116,13 @@ const DISABLED_SELECTOR = ":disabled, [data-disabled], [aria-disabled='true']";
 /**
  * Segmented - 分段控制器（带滑块平移动画）
  *
- * 受控组件。指示器位移走 transform（合成层），只有尺寸是布局过渡：
+ * 受控组件。默认项组成 radiogroup：整个控件只占一个 Tab 停靠点（当前项 0，
+ * 其余 -1），←/→（竖排 ↑/↓）与 Home/End 在启用项之间移动并选中，不循环；
+ * 存在 render 项时组退回普通 group，方向键只移动焦点，选中由链接自身导航。
+ *
+ * 指示器位移走 transform（合成层），只有尺寸是布局过渡：
  * 默认按激活项的实际 DOM 尺寸测量（各段文字长度不同时仍能精确包裹），
  * 设置 itemSize 后改为纯 CSS 变量驱动，不做任何测量。
- *
- * 方向键在启用项之间移动焦点（不改变选中值，也不改 tab 停靠点）：
- * 横向用 ←/→，竖向用 ↑/↓，Home/End 跳到首尾。
  */
 export function Segmented<V extends string = string>({
 	value,
@@ -137,6 +138,7 @@ export function Segmented<V extends string = string>({
 	collapsedSize = "2.25rem",
 	expandSelected,
 	"aria-label": ariaLabel,
+	"aria-labelledby": ariaLabelledBy,
 	className,
 	indicatorClassName,
 	itemClassName,
@@ -148,6 +150,17 @@ export function Segmented<V extends string = string>({
 	const vertical = orientation === "vertical";
 	const equal = itemSize !== undefined;
 	const expanded = equal ? expandSelected : undefined;
+	// 存在自定义元素时退回普通 group 语义：导航类切换器由链接自身表达选中
+	const hasCustomRender = segments.some((segment) => segment.render !== undefined);
+	const isItemDisabled = (segment: SegmentedItem<V>) => disabled || segment.disabled === true;
+	// radiogroup 的唯一 Tab 停靠点：当前项；当前项不可用时落到首个启用项
+	const activeEnabled = activeIndex >= 0 && !isItemDisabled(segments[activeIndex]);
+	const tabStop = activeEnabled
+		? activeIndex
+		: Math.max(
+				segments.findIndex((segment) => !isItemDisabled(segment)),
+				0,
+			);
 
 	const trackRef = useRef<HTMLDivElement>(null);
 	// 仅测量模式使用：激活项的几何。首次测量前指示器隐形，激活项退化为自含底色，
@@ -220,22 +233,29 @@ export function Segmented<V extends string = string>({
 			: ["ArrowLeft", "ArrowRight"];
 		if (![prevKey, nextKey, "Home", "End"].includes(event.key)) return;
 
+		const enabledSegments = segments.filter((segment) => !isItemDisabled(segment));
 		const items = Array.from(
 			event.currentTarget.querySelectorAll<HTMLElement>(ITEM_SELECTOR),
 		).filter((item) => !item.matches(DISABLED_SELECTOR));
 		const current = items.findIndex(
 			(item) => item === event.target || item.contains(event.target as Node),
 		);
-		if (current < 0) return;
+		if (current < 0 || items.length === 0) return;
 
 		let next = current;
-		if (event.key === nextKey) next = (current + 1) % items.length;
-		else if (event.key === prevKey) next = (current - 1 + items.length) % items.length;
+		if (event.key === nextKey) next = Math.min(current + 1, items.length - 1);
+		else if (event.key === prevKey) next = Math.max(current - 1, 0);
 		else if (event.key === "Home") next = 0;
 		else next = items.length - 1;
 
 		event.preventDefault();
-		items[next]?.focus();
+		const target = items[next];
+		target?.focus();
+		// 停在原地（边界）时没有移动，不重复请求当前值；
+		// 自定义元素（链接/触发器）自己表达选中，方向键不代为切换
+		if (!hasCustomRender && target && next !== current && enabledSegments[next]) {
+			onValueChange?.(enabledSegments[next].value);
+		}
 	};
 
 	const indicatorStyle: CSSProperties | undefined =
@@ -265,7 +285,16 @@ export function Segmented<V extends string = string>({
 		<div
 			ref={ref}
 			data-slot="segmented"
-			{...(ariaLabel ? { role: "group", "aria-label": ariaLabel } : {})}
+			{...(hasCustomRender
+				? ariaLabel
+					? { role: "group", "aria-label": ariaLabel }
+					: {}
+				: {
+						role: "radiogroup",
+						"aria-label": ariaLabel ?? (ariaLabelledBy ? undefined : "分段选择"),
+						...(ariaLabelledBy ? { "aria-labelledby": ariaLabelledBy } : {}),
+						...(vertical ? { "aria-orientation": "vertical" } : {}),
+					})}
 			data-orientation={orientation}
 			data-variant={variant}
 			data-size={size}
@@ -288,7 +317,7 @@ export function Segmented<V extends string = string>({
 				/>
 				{segments.map((seg, i) => {
 					const active = i === activeIndex;
-					const itemDisabled = disabled || seg.disabled === true;
+					const segDisabled = isItemDisabled(seg);
 					const labelled = seg.label != null && seg.label !== false && seg.label !== "";
 					const composed = equal || seg.icon != null || seg.trailing != null;
 					const weight = seg.weight ?? 1;
@@ -319,7 +348,7 @@ export function Segmented<V extends string = string>({
 						),
 						title: seg.title,
 						onClick: () => {
-							if (!itemDisabled) onValueChange?.(seg.value);
+							if (!segDisabled) onValueChange?.(seg.value);
 						},
 						"data-segment-item": "",
 						"data-active": active ? "true" : "false",
@@ -336,10 +365,10 @@ export function Segmented<V extends string = string>({
 								{seg.render(
 									{
 										...props,
-										"data-disabled": itemDisabled ? "" : undefined,
-										"aria-disabled": itemDisabled ? true : undefined,
+										"data-disabled": segDisabled ? "" : undefined,
+										"aria-disabled": segDisabled ? true : undefined,
 									},
-									{ active, disabled: itemDisabled },
+									{ active, disabled: segDisabled },
 								)}
 							</Fragment>
 						);
@@ -350,8 +379,14 @@ export function Segmented<V extends string = string>({
 							key={seg.value}
 							{...props}
 							type="button"
-							aria-pressed={active}
-							disabled={itemDisabled}
+							{...(hasCustomRender
+								? { "aria-pressed": active }
+								: {
+										role: "radio",
+										"aria-checked": active,
+										tabIndex: i === tabStop ? 0 : -1,
+									})}
+							disabled={segDisabled}
 						/>
 					);
 				})}

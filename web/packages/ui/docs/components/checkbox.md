@@ -15,7 +15,7 @@ import { Checkbox, Label } from "@violet/ui";
 </div>
 ```
 
-Space 切换状态；Enter 不切换，也不提交外层表单。点击半选项会请求 `true`。组件维护勾选指示器，因此不提供 `children` 或 `asChild`。文字标签放在 Root 外，由关联属性连接。
+Space 切换状态；Enter 不切换，也不提交外层表单。点击半选项会请求 `true`。组件维护勾选指示器，因此不提供 `children` 或 `asChild`。文字标签放在 Root 外，由关联属性连接。指示器是一枚常驻的 SVG：选中时对勾从左下往右上描出（180ms、晚 40ms 开始），取消时 100ms 擦回，底色 140ms 过渡；半选短横 120ms 淡入。悬停只加深框线，不改底色；`prefers-reduced-motion: reduce` 下全部直接切换，不缩放、不弹跳。
 
 外部 `onClick` 调用 `preventDefault()` 可以取消内部切换；`onKeyDown` 取消 Space 的默认行为时，不发生浏览器按钮激活。`disabled` 使用真实 button 禁用属性，禁止点击和键盘聚焦。`aria-invalid` 表达错误状态，错误说明由调用方通过 `aria-describedby` 关联。
 
@@ -49,12 +49,36 @@ reset 按控件的实际 DOM 作用域捕获，支持 ShadowRoot 内的表单与
 | `defaultChecked` | `boolean \| "indeterminate"` | `false` | 非受控初值 |
 | `onCheckedChange` | `(checked: boolean \| "indeterminate") => void` | — | 请求最新状态 |
 | `variant` | `"default" \| "primary"` | `"default"` | default 使用主要动作色；primary 使用 `selected` / `selected-foreground` 选中语义 |
-| `size` | `"sm" \| "default" \| "lg"` | `"default"` | 盒面为 14、16、20px；触摸场景通过关联标签扩大操作范围 |
+| `size` | `"sm" \| "default" \| "lg"` | `"default"` | 盒面为 14、16、20px；稿面只定义 16（表单与列表）与 20（触屏），14 是紧凑表格的扩展档 |
 | `disabled` / `required` | `boolean` | `false` | 保留 primitive 的表单和可访问性语义 |
 | `id` / `name` / `value` / `form` | button / Root 对应属性 | — | 命名与表单归属；value 默认 `"on"` |
 | `ref` | `Ref<HTMLButtonElement>` | — | 指向 Root |
 
 其余可访问性属性和 button 事件继续透传。变体与尺寸类型由 `checkboxVariants` 推导，它只输出 BEM 类名；组件内部不再维护 Tailwind 外观。
+
+## 勾选卡片
+
+选项本身需要说明又要并排时使用卡片形态：凹陷底，选中后变纸色底并加一圈墨色细线，框仍在左上。卡片不是独立组件，由包装元素组合：包装层携带 `data-state="checked"` 驱动外观，点击整卡切换；内部 Checkbox 的点击调用 `stopPropagation`，避免包装层双触发。键盘焦点与切换仍归 Checkbox。
+
+```tsx
+<div
+  className="v-checkbox-card"
+  data-state={subscribed ? "checked" : "unchecked"}
+  onClick={() => setSubscribed(!subscribed)}
+>
+  <Checkbox
+    checked={subscribed}
+    onCheckedChange={setSubscribed}
+    aria-label="RSS 订阅"
+    onClick={(event) => event.stopPropagation()}
+  />
+  <span className="v-checkbox-card__text">
+    <span className="v-checkbox-card__title">RSS 订阅</span>
+    <span className="v-checkbox-card__description">新文章出现在你的阅读器里</span>
+  </span>
+</div>
+```
+
 
 ## CSS 与 HTML
 
@@ -74,10 +98,10 @@ Tailwind 宿主在 Tailwind 后导入 `@violet/ui/styles.css`。普通 CSS 宿�
 
 原生 input 保留浏览器勾选图形与 `accent-color`，没有 Indicator 子节点，也不承诺与 React 的 SVG 指示器逐像素一致。原生半选通过 `input.indeterminate = true` 设置，不能把 `data-state` 当成原生勾选值。自定义 `role="checkbox"` 的 HTML 需要自行实现状态、键盘和表单行为，CSS 只提供外观。
 
-CSS 支持 `data-state="checked|unchecked|indeterminate"`、原生 `:checked` / `:indeterminate`、disabled、焦点和错误状态。反馈使用颜色与透明度；减弱动态关闭过渡和指示器动画，高对比模式使用系统颜色。尺寸与语义色通过局部变量或 utilities layer 调整，保留焦点和错误提示。
+CSS 支持 `data-state="checked|unchecked|indeterminate"`、原生 `:checked` / `:indeterminate`、disabled、焦点和错误状态，另有 `v-checkbox-card` 一族包装类供卡片形态与纯 CSS 消费使用。反馈使用颜色与透明度；减弱动态关闭过渡和指示器动画，高对比模式使用系统颜色。尺寸与语义色通过局部变量或 utilities layer 调整，保留焦点和错误提示。
 
 ## 验证范围
 
-组件契约测试覆盖关联标签、受控与非受控状态、半选、同批次连续激活、事件取消、object / callback ref 与 React 19 清理、FormData、正常与取消 reset、ShadowRoot 与独立容器的表单、同值不重复通知、required 校验焦点、外部 form 换绑、晚挂载与替换表单、已移除表单的 reset 和 SSR 输出。Space 激活、无效提交后的焦点与原生表单行为需在真实浏览器检查；安装包通过独立 tarball 消费验收公开类型、Root 入口和叶子 CSS。
+组件契约测试覆盖关联标签、受控与非受控状态、半选、同批次连续激活、事件取消、object / callback ref 与 React 19 清理、FormData、正常与取消 reset、ShadowRoot 与独立容器的表单、同值不重复通知、required 校验焦点、外部 form 换绑、晚挂载与替换表单、已移除表单的 reset、指示器常驻与 SSR 输出。Space 激活、无效提交后的焦点与原生表单行为需在真实浏览器检查；安装包通过独立 tarball 消费验收公开类型、Root 入口和叶子 CSS。
 
 `web/e2e/ui-checkbox.spec.ts` 永久覆盖 reset 按钮的指针、Space 与 Enter 激活，检查取消和正常复位后的 Root、隐藏 input、FormData 与回调次数，并覆盖晚挂表单、ShadowRoot 和受控拒绝复位。该测试通过 `pnpm test:contract` 进入现有浏览器验收。

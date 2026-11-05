@@ -34,20 +34,61 @@ afterEach(() => {
 	vi.restoreAllMocks();
 });
 
-describe("Segmented 默认按钮语义", () => {
-	it("以 aria-pressed 表达选中，点击非禁用项触发 onValueChange", () => {
+describe("Segmented 单选语义", () => {
+	it("轨道是带名称的 radiogroup，每项是 radio 并以 aria-checked 表达选中", () => {
 		const onValueChange = vi.fn();
-		render(<Segmented value="a" onValueChange={onValueChange} segments={base} />);
-
-		expect(screen.getByRole("button", { name: "甲" }).getAttribute("aria-pressed")).toBe(
-			"true",
+		render(
+			<Segmented
+				aria-label="文章范围"
+				value="a"
+				onValueChange={onValueChange}
+				segments={base}
+			/>,
 		);
-		expect(screen.getByRole("button", { name: "乙" }).getAttribute("aria-pressed")).toBe(
+
+		expect(screen.getByRole("radiogroup", { name: "文章范围" })).toBeTruthy();
+		expect(screen.getByRole("radio", { name: "甲" }).getAttribute("aria-checked")).toBe("true");
+		expect(screen.getByRole("radio", { name: "乙" }).getAttribute("aria-checked")).toBe(
 			"false",
 		);
 
-		fireEvent.click(screen.getByRole("button", { name: "乙" }));
+		fireEvent.click(screen.getByRole("radio", { name: "乙" }));
 		expect(onValueChange).toHaveBeenCalledExactlyOnceWith("b");
+	});
+
+	it("整个控件只占一个 Tab 停靠点：当前项 0，其余 -1", () => {
+		render(<Segmented value="b" segments={base} />);
+		const stops = screen.getAllByRole("radio").map((item) => item.getAttribute("tabindex"));
+		expect(stops).toEqual(["-1", "0", "-1"]);
+	});
+
+	it("没有选中项时首个启用项承担 Tab 停靠点", () => {
+		render(
+			<Segmented
+				value={"none"}
+				segments={[
+					base[0] as SegmentedItem,
+					{ value: "b", label: "乙", disabled: true },
+					base[2] as SegmentedItem,
+				]}
+			/>,
+		);
+		expect(screen.getByRole("radio", { name: "甲" }).getAttribute("tabindex")).toBe("0");
+		expect(screen.getByRole("radio", { name: "丙" }).getAttribute("tabindex")).toBe("-1");
+	});
+
+	it("选中项被禁用时停靠点落到首个启用项", () => {
+		render(
+			<Segmented
+				value="b"
+				segments={[
+					base[0] as SegmentedItem,
+					{ value: "b", label: "乙", disabled: true },
+					base[2] as SegmentedItem,
+				]}
+			/>,
+		);
+		expect(screen.getByRole("radio", { name: "甲" }).getAttribute("tabindex")).toBe("0");
 	});
 
 	it("禁用项与整体禁用都不触发回调", () => {
@@ -59,40 +100,49 @@ describe("Segmented 默认按钮语义", () => {
 				segments={[base[0] as SegmentedItem, { value: "b", label: "乙", disabled: true }]}
 			/>,
 		);
-		fireEvent.click(screen.getByRole("button", { name: "乙" }));
+		fireEvent.click(screen.getByRole("radio", { name: "乙" }));
 		expect(onValueChange).not.toHaveBeenCalled();
 
 		rerender(<Segmented value="a" onValueChange={onValueChange} segments={base} disabled />);
-		for (const button of screen.getAllByRole("button")) {
-			expect((button as HTMLButtonElement).disabled).toBe(true);
-			fireEvent.click(button);
+		for (const item of screen.getAllByRole("radio")) {
+			expect((item as HTMLButtonElement).disabled).toBe(true);
+			fireEvent.click(item);
 		}
 		expect(onValueChange).not.toHaveBeenCalled();
 	});
 
 	it("onValueChange 可省略", () => {
 		render(<Segmented value="a" segments={base} />);
-		expect(() => fireEvent.click(screen.getByRole("button", { name: "乙" }))).not.toThrow();
+		expect(() => fireEvent.click(screen.getByRole("radio", { name: "乙" }))).not.toThrow();
 	});
 
 	it("值不匹配任何项时无选中且标记 data-has-active=false", () => {
 		render(<Segmented value={"none"} segments={base} />);
 		expect(container().dataset.hasActive).toBe("false");
-		for (const button of screen.getAllByRole("button")) {
-			expect(button.getAttribute("aria-pressed")).toBe("false");
+		for (const item of screen.getAllByRole("radio")) {
+			expect(item.getAttribute("aria-checked")).toBe("false");
 		}
 	});
 
 	it("无 icon、无 itemSize 的项直接渲染 label，不包 label 容器", () => {
 		render(<Segmented value="a" segments={base} />);
 		expect(container().querySelector(".v-segmented__label")).toBeNull();
-		expect(screen.getByRole("button", { name: "甲" }).textContent).toBe("甲");
+		expect(screen.getByRole("radio", { name: "甲" }).textContent).toBe("甲");
 	});
 
 	it("等尺寸模式下激活项始终套用 activeItemClassName，其余项不套用", () => {
 		render(<Segmented value="a" segments={base} itemSize="3rem" activeItemClassName="lit" />);
-		expect(screen.getByRole("button", { name: "甲" }).className).toContain("lit");
-		expect(screen.getByRole("button", { name: "乙" }).className).not.toContain("lit");
+		expect(screen.getByRole("radio", { name: "甲" }).className).toContain("lit");
+		expect(screen.getByRole("radio", { name: "乙" }).className).not.toContain("lit");
+	});
+
+	it("竖排 radiogroup 声明 aria-orientation", () => {
+		render(
+			<Segmented aria-label="统计区间" value="a" segments={base} orientation="vertical" />,
+		);
+		expect(
+			screen.getByRole("radiogroup", { name: "统计区间" }).getAttribute("aria-orientation"),
+		).toBe("vertical");
 	});
 });
 
@@ -193,12 +243,12 @@ describe("Segmented 等尺寸布局", () => {
 		expect(el.style.getPropertyValue("--v-segmented-active-weight")).toBe("1");
 		expect(
 			screen
-				.getByRole("button", { name: "乙" })
+				.getByRole("radio", { name: "乙" })
 				.style.getPropertyValue("--v-segmented-weight"),
 		).toBe("1.5");
 		expect(
 			screen
-				.getByRole("button", { name: "甲" })
+				.getByRole("radio", { name: "甲" })
 				.style.getPropertyValue("--v-segmented-weight"),
 		).toBe("");
 
@@ -218,7 +268,7 @@ describe("Segmented 等尺寸布局", () => {
 			/>,
 		);
 		expect(container().style.marginTop).toBe("4px");
-		expect(screen.getByRole("button", { name: "甲" }).className).toContain("lit");
+		expect(screen.getByRole("radio", { name: "甲" }).className).toContain("lit");
 		expect(container().dataset.measured).toBeUndefined();
 	});
 
@@ -235,7 +285,7 @@ describe("Segmented 等尺寸布局", () => {
 			/>,
 		);
 		expect(container().dataset.expanded).toBe("true");
-		const inactive = screen.getByRole("button", { name: "甲" });
+		const inactive = screen.getByRole("radio", { name: "甲" });
 		expect(inactive.querySelector('[data-testid="icon-a"]')).not.toBeNull();
 		expect(inactive.querySelector(".v-segmented__label")?.textContent).toBe("甲");
 	});
@@ -260,10 +310,10 @@ describe("Segmented 等尺寸布局", () => {
 				]}
 			/>,
 		);
-		const full = screen.getAllByRole("button")[0] as HTMLElement;
+		const full = screen.getAllByRole("radio")[0] as HTMLElement;
 		expect(full.querySelector(".v-segmented__trailing [data-testid='chev']")).not.toBeNull();
 		expect(full.hasAttribute("data-icon-only")).toBe(false);
-		const iconOnly = screen.getAllByRole("button")[1] as HTMLElement;
+		const iconOnly = screen.getAllByRole("radio")[1] as HTMLElement;
 		expect(iconOnly.hasAttribute("data-icon-only")).toBe(true);
 		expect(iconOnly.querySelector(".v-segmented__label")).toBeNull();
 	});
@@ -315,21 +365,34 @@ describe("Segmented 键盘导航", () => {
 	];
 	const press = (key: string) =>
 		fireEvent.keyDown(document.activeElement as HTMLElement, { key });
-	const focusItem = (name: string) => act(() => screen.getByRole("button", { name }).focus());
+	const focusItem = (name: string) => act(() => screen.getByRole("radio", { name }).focus());
 
-	it("横向用左右键移动焦点，跳过禁用项并循环，且不改变选中值", () => {
+	it("横向用左右键移动并选中，跳过禁用项，到边界停留不循环", () => {
 		const onValueChange = vi.fn();
 		render(<Segmented value="a" onValueChange={onValueChange} segments={items} />);
 
 		focusItem("甲");
 		press("ArrowRight");
 		expect(focused()).toBe("丙");
+		expect(onValueChange).toHaveBeenCalledExactlyOnceWith("c");
 		press("ArrowRight");
 		expect(focused()).toBe("丁");
+		expect(onValueChange).toHaveBeenNthCalledWith(2, "d");
 		press("ArrowRight");
-		expect(focused()).toBe("甲");
+		expect(focused()).toBe("丁");
+		expect(onValueChange).toHaveBeenCalledTimes(2);
 		press("ArrowLeft");
-		expect(focused()).toBe("丁");
+		expect(focused()).toBe("丙");
+		expect(onValueChange).toHaveBeenNthCalledWith(3, "c");
+	});
+
+	it("首个启用项上按左键停在原地但仍选中它", () => {
+		const onValueChange = vi.fn();
+		render(<Segmented value="a" onValueChange={onValueChange} segments={items} />);
+		focusItem("甲");
+		press("ArrowLeft");
+		expect(focused()).toBe("甲");
+		// 停在当前项时不重复请求同一个值
 		expect(onValueChange).not.toHaveBeenCalled();
 	});
 
@@ -353,13 +416,23 @@ describe("Segmented 键盘导航", () => {
 		expect(focused()).toBe("甲");
 	});
 
-	it("Home 与 End 跳到首个与末个启用项", () => {
-		render(<Segmented value="a" segments={items} orientation="vertical" />);
+	it("Home 与 End 跳到首个与末个启用项并选中", () => {
+		const onValueChange = vi.fn();
+		render(
+			<Segmented
+				value="a"
+				onValueChange={onValueChange}
+				segments={items}
+				orientation="vertical"
+			/>,
+		);
 		focusItem("丙");
 		press("End");
 		expect(focused()).toBe("丁");
+		expect(onValueChange).toHaveBeenCalledExactlyOnceWith("d");
 		press("Home");
 		expect(focused()).toBe("甲");
+		expect(onValueChange).toHaveBeenNthCalledWith(2, "a");
 	});
 
 	it("仅在处理时 preventDefault，并尊重已取消的事件", () => {
@@ -378,10 +451,12 @@ describe("Segmented 键盘导航", () => {
 		expect(focused()).toBe("甲");
 	});
 
-	it("对 render 出的链接同样生效", () => {
+	it("对 render 出的链接移动焦点但不代为选中", () => {
+		const onValueChange = vi.fn();
 		render(
 			<Segmented
 				value="a"
+				onValueChange={onValueChange}
 				segments={["a", "b", "c"].map((value) => ({
 					value,
 					label: value.toUpperCase(),
@@ -394,13 +469,25 @@ describe("Segmented 键盘导航", () => {
 		expect(focused()).toBe("B");
 		press("End");
 		expect(focused()).toBe("C");
+		expect(onValueChange).not.toHaveBeenCalled();
 	});
 
-	it("不改变 tab 停靠点", () => {
-		render(<Segmented value="a" segments={items} />);
-		for (const button of screen.getAllByRole("button")) {
-			expect(button.hasAttribute("tabindex")).toBe(false);
-		}
+	it("混合 render 项的组保持普通按钮语义与自然 Tab 顺序", () => {
+		render(
+			<Segmented
+				aria-label="混合"
+				value="a"
+				segments={[
+					{ value: "a", label: "甲" },
+					{ value: "b", label: "乙", render: (props) => <a href="#b" {...props} /> },
+				]}
+			/>,
+		);
+		expect(screen.getByRole("group", { name: "混合" })).toBeTruthy();
+		expect(screen.getByRole("button", { name: "甲" }).getAttribute("aria-pressed")).toBe(
+			"true",
+		);
+		expect(screen.getByRole("button", { name: "甲" }).hasAttribute("tabindex")).toBe(false);
 	});
 });
 
@@ -445,7 +532,7 @@ describe("Segmented 测量模式", () => {
 	it("测量模式下激活项套用 activeItemClassName", () => {
 		mockOffsets({ left: 0, width: 20, top: 0, height: 0 });
 		render(<Segmented value="a" segments={base} activeItemClassName="lit" />);
-		expect(screen.getByRole("button", { name: "甲" }).className).toContain("lit");
+		expect(screen.getByRole("radio", { name: "甲" }).className).toContain("lit");
 	});
 
 	it("无选中项时不测量", () => {

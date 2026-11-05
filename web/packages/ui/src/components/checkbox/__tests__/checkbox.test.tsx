@@ -793,6 +793,25 @@ describe("Checkbox", () => {
 		]);
 	});
 
+	it("勾选描线与半选短横常驻 Root 且对辅助技术隐藏，切换时同一节点继续描绘", () => {
+		const { rerender } = render(<Checkbox defaultChecked aria-label="常驻指示器" />);
+		const control = screen.getByRole("checkbox", { name: "常驻指示器" });
+		const tick = control.querySelector("svg[aria-hidden='true'] path");
+		const dash = control.querySelector("span[aria-hidden='true']");
+		expect(tick).not.toBeNull();
+		expect(dash).not.toBeNull();
+		expect(tick?.getAttribute("d")).toBe("M3.6 8.3 6.6 11.2 12.4 4.9");
+
+		rerender(<Checkbox checked="indeterminate" aria-label="常驻指示器" />);
+		expect(screen.getByRole("checkbox", { name: "常驻指示器" }).querySelector("svg path")).toBe(
+			tick,
+		);
+		rerender(<Checkbox checked={false} aria-label="常驻指示器" />);
+		expect(screen.getByRole("checkbox", { name: "常驻指示器" }).querySelector("svg path")).toBe(
+			tick,
+		);
+	});
+
 	it("SSR 输出三态名称、关联 ID 与可提交的非受控初值", () => {
 		const html = renderToString(
 			<form>
@@ -806,6 +825,8 @@ describe("Checkbox", () => {
 		expect(html).toContain('name="terms"');
 		expect(html).toContain('checked=""');
 		expect(html).toContain('aria-checked="mixed"');
+		expect(html).toContain('d="M3.6 8.3 6.6 11.2 12.4 4.9"');
+		expect(html).toContain('pathLength="1"');
 	});
 
 	it("SSR hydration 保留宿主生成的关联 ID 与表单初值", async () => {

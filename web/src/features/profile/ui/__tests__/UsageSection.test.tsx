@@ -161,10 +161,10 @@ describe("个人用量", () => {
 		renderUsage();
 		await screen.findByText("model-30");
 		for (const days of [7, 90, 30]) {
-			fireEvent.click(screen.getByRole("button", { name: `近 ${days} 天` }));
+			fireEvent.click(screen.getByRole("radio", { name: `近 ${days} 天` }));
 			await screen.findByText(`model-${days}`);
 			expect(
-				screen.getByRole("button", { name: `近 ${days} 天` }).getAttribute("aria-pressed"),
+				screen.getByRole("radio", { name: `近 ${days} 天` }).getAttribute("aria-checked"),
 			).toBe("true");
 		}
 		const usageRequests = requests.filter((request) => request.url?.startsWith("/omp-usage/"));
