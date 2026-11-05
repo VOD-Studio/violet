@@ -257,6 +257,11 @@
 			"import": "./src/components/textarea/index.ts",
 			"default": "./src/components/textarea/index.ts"
 		},
+		"./toggle-group": {
+			"types": "./src/components/toggle-group/index.ts",
+			"import": "./src/components/toggle-group/index.ts",
+			"default": "./src/components/toggle-group/index.ts"
+		},
 		"./tooltip": {
 			"types": "./src/components/tooltip/index.ts",
 			"import": "./src/components/tooltip/index.ts",
@@ -306,6 +311,7 @@
 		"./components/switch.css": "./src/components/switch/switch.css",
 		"./components/tabs.css": "./src/components/tabs/tabs.css",
 		"./components/textarea.css": "./src/components/textarea/textarea.css",
+		"./components/toggle-group.css": "./src/components/toggle-group/toggle-group.css",
 		"./components/upload-tile.css": "./src/components/upload-tile/upload-tile.css",
 		"./palettes/violet.css": "./src/styles/palettes/violet.generated.css",
 		"./palettes/coral.css": "./src/styles/palettes/coral.generated.css",
@@ -573,6 +579,11 @@
 				"import": "./dist/components/textarea/index.js",
 				"default": "./dist/components/textarea/index.js"
 			},
+			"./toggle-group": {
+				"types": "./dist/components/toggle-group/index.d.ts",
+				"import": "./dist/components/toggle-group/index.js",
+				"default": "./dist/components/toggle-group/index.js"
+			},
 			"./tooltip": {
 				"types": "./dist/components/tooltip/index.d.ts",
 				"import": "./dist/components/tooltip/index.js",
@@ -622,6 +633,7 @@
 			"./components/switch.css": "./dist/components/switch.css",
 			"./components/tabs.css": "./dist/components/tabs.css",
 			"./components/textarea.css": "./dist/components/textarea.css",
+			"./components/toggle-group.css": "./dist/components/toggle-group.css",
 			"./components/upload-tile.css": "./dist/components/upload-tile.css",
 			"./palettes/violet.css": "./dist/palettes/violet.css",
 			"./palettes/coral.css": "./dist/palettes/coral.css",

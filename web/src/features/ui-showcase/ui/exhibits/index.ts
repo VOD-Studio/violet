@@ -15,6 +15,7 @@ import { searchInputExhibit } from "./search-input";
 import { segmentedExhibit } from "./segmented";
 import { switchExhibit } from "./switch";
 import { textareaExhibit } from "./textarea";
+import { toggleGroupExhibit } from "./toggle-group";
 import { uploadTileExhibit } from "./upload-tile";
 
 /** 馆藏目录：顺序即铭牌编号，待建展品随对应工单落地后换成真实组件。 */
@@ -165,6 +166,7 @@ export const EXHIBITS: Exhibit[] = [
 	kbdExhibit,
 	switchExhibit,
 	radioExhibit,
+	toggleGroupExhibit,
 	{
 		id: "tabs",
 		name: "标签页",

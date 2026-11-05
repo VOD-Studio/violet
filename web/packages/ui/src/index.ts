@@ -18,5 +18,6 @@ export * from "./components/separator/index";
 export * from "./components/skeleton/index";
 export * from "./components/switch/index";
 export * from "./components/textarea/index";
+export * from "./components/toggle-group/index";
 export * from "./components/upload-tile/index";
 export * from "./legacy";

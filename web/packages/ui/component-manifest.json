@@ -257,6 +257,12 @@
 			"css": "src/components/textarea/textarea.css"
 		},
 		{
+			"name": "toggle-group",
+			"status": "foundation",
+			"entry": "src/components/toggle-group/index.ts",
+			"css": "src/components/toggle-group/toggle-group.css"
+		},
+		{
 			"name": "tooltip",
 			"status": "legacy",
 			"entry": "src/components/tooltip/index.ts"
