@@ -3,6 +3,7 @@
 import { Slot } from "radix-ui";
 import type * as React from "react";
 import { Children, cloneElement, isValidElement } from "react";
+import { Spinner } from "../indicator";
 import { type ButtonVariantProps, buttonVariants } from "./styles";
 
 interface ButtonOptions extends ButtonVariantProps {
@@ -94,6 +95,17 @@ export function Button({
 		};
 
 		// Slot 先执行子元素事件，因此禁用拦截必须替换子元素的捕获 handler。
+		const originalChildren = child.props.children;
+		const slottedChildren = loading ? (
+			<>
+				{originalChildren}
+				<span aria-hidden="true" className="v-button__overlay">
+					<Spinner size={16} />
+				</span>
+			</>
+		) : (
+			originalChildren
+		);
 		const slottedChild = cloneElement(child, {
 			"aria-disabled": childDisabled || undefined,
 			"aria-busy": loading || props["aria-busy"] || child.props["aria-busy"],
@@ -121,8 +133,8 @@ export function Button({
 				child.props.onKeyUpCapture?.(event);
 				onKeyUpCapture?.(event);
 			},
+			children: slottedChildren,
 		});
-
 		return (
 			<Slot.Root
 				{...props}
@@ -165,20 +177,32 @@ export function Button({
 			{isIconOnly ? (
 				<span data-slot="icon" className="v-button__icon">
 					<span className="v-button__icon-content">{children}</span>
-					{loading && <span aria-hidden="true" className="v-button__spinner" />}
+					{loading && (
+						<span aria-hidden="true" className="v-button__overlay">
+							<Spinner size={16} />
+						</span>
+					)}
 				</span>
 			) : (
 				<>
+					{loading && !leftIcon && !hasInlineSpinner && (
+						<span aria-hidden="true" className="v-button__overlay">
+							<Spinner size={16} />
+						</span>
+					)}
 					{hasInlineSpinner && (
-						<span
-							aria-hidden="true"
-							className="v-button__spinner v-button__spinner--inline"
-						/>
+						<span aria-hidden="true" className="v-button__spinner--inline">
+							<Spinner size={16} />
+						</span>
 					)}
 					{leftIcon && (
 						<span aria-hidden="true" data-slot="start-icon" className="v-button__icon">
 							<span className="v-button__icon-content">{leftIcon}</span>
-							{loading && <span className="v-button__spinner" />}
+							{loading && (
+								<span aria-hidden="true" className="v-button__overlay">
+									<Spinner size={16} />
+								</span>
+							)}
 						</span>
 					)}
 					<span data-slot="label" className="v-button__label">

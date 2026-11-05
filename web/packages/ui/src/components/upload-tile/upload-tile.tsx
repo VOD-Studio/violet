@@ -1,6 +1,7 @@
 import { cn } from "cn";
-import { Loader2, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import type { ComponentProps } from "react";
+import { Spinner } from "../indicator";
 
 /** 原生上传入口按钮；文件选择与上传状态由消费方管理。 */
 export interface UploadTileProps extends ComponentProps<"button"> {
@@ -30,7 +31,7 @@ export function UploadTile({
 			className={cn("v-upload-tile", className)}
 		>
 			{busy ? (
-				<Loader2 aria-hidden="true" className="v-upload-tile__spinner" />
+				<Spinner aria-hidden="true" size={20} />
 			) : (
 				<Plus aria-hidden="true" className="v-upload-tile__icon" />
 			)}

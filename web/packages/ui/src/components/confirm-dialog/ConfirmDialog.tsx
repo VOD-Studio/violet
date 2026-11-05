@@ -1,4 +1,3 @@
-import { Loader2 } from "lucide-react";
 import { Button } from "../button";
 import { Modal } from "../modal";
 
@@ -45,8 +44,7 @@ export function ConfirmDialog({
 					>
 						{cancelLabel}
 					</Button>
-					<Button variant="destructive" onClick={onConfirm} disabled={loading}>
-						{loading && <Loader2 className="mr-1 size-4 animate-spin" />}
+					<Button variant="destructive" onClick={onConfirm} loading={loading}>
 						{confirmLabel}
 					</Button>
 				</>

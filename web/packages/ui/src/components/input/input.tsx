@@ -12,6 +12,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { Spinner } from "../indicator";
 import { type InputVariantProps, inputVariants } from "./styles";
 
 /** Input 样式槽；root/control 管理布局，input 对应原生输入节点。 */
@@ -43,6 +44,8 @@ export interface InputProps extends ComponentProps<"input">, InputVariantProps {
 	errorMessage?: ReactNode;
 	/** 显式值优先于 aria-invalid。 */
 	invalid?: boolean;
+	/** 后缀加载中状态；为 true 时显示细圆弧 Spinner，并关联 aria-busy。 */
+	loading?: boolean;
 	classNames?: InputClassNames;
 }
 
@@ -59,6 +62,7 @@ export function Input({
 	controlSize,
 	leading,
 	trailing,
+	loading = false,
 	clearable = false,
 	clearLabel = "清除输入",
 	passwordToggle = false,
@@ -186,6 +190,7 @@ export function Input({
 					disabled={disabled}
 					readOnly={readOnly}
 					aria-invalid={invalid === undefined ? ariaInvalid : invalid}
+					aria-busy={loading || props["aria-busy"]}
 					aria-describedby={accessibleDescription}
 					data-slot="input"
 					className={cn("v-input", classNames?.input, className)}
@@ -194,12 +199,18 @@ export function Input({
 						onChange?.(event);
 					}}
 				/>
-				{hasContent(trailing) && (
+				{loading ? (
 					<span className={cn("v-input-control__trailing", classNames?.trailing)}>
-						{trailing}
+						<Spinner size={16} aria-hidden="true" />
 					</span>
+				) : (
+					hasContent(trailing) && (
+						<span className={cn("v-input-control__trailing", classNames?.trailing)}>
+							{trailing}
+						</span>
+					)
 				)}
-				{canClear && (
+				{!loading && canClear && (
 					<button
 						type="button"
 						className={cn("v-input-control__action", classNames?.action)}

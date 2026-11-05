@@ -43,31 +43,16 @@
 		cursor: progress;
 	}
 
-	.v-upload-tile__icon,
-	.v-upload-tile__spinner {
+	.v-upload-tile__icon {
 		inline-size: 1.25rem;
 		block-size: 1.25rem;
 		flex-shrink: 0;
 		pointer-events: none;
 	}
 
-	.v-upload-tile__spinner {
-		animation: v-upload-tile-spin 1s linear infinite;
-	}
-
-	@keyframes v-upload-tile-spin {
-		to {
-			transform: rotate(360deg);
-		}
-	}
-
 	@media (prefers-reduced-motion: reduce) {
 		.v-upload-tile {
 			transition: none;
-		}
-
-		.v-upload-tile__spinner {
-			animation: none;
 		}
 	}
 }

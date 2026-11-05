@@ -33,24 +33,9 @@
 	.v-search-input__clear:disabled {
 		cursor: not-allowed;
 	}
-
-	.v-search-input__loading {
-		animation: v-search-input-spin 1s linear infinite;
-	}
-
 	@media (prefers-reduced-motion: reduce) {
 		.v-search-input__clear {
 			transition: none;
 		}
-
-		.v-search-input__loading {
-			animation: none;
-		}
-	}
-}
-
-@keyframes v-search-input-spin {
-	to {
-		transform: rotate(360deg);
 	}
 }

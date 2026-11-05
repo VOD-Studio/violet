@@ -450,4 +450,14 @@ describe("Input", () => {
 			container.remove();
 		}
 	});
+
+	it("loading 渲染 Spinner 后缀并关联 aria-busy", () => {
+		const { container, rerender } = render(<Input label="搜索" loading />);
+		const input = screen.getByRole("textbox", { name: "搜索" });
+		expect(input.getAttribute("aria-busy")).toBe("true");
+		expect(container.querySelector(".v-spinner")).toBeTruthy();
+		rerender(<Input label="搜索" loading={false} />);
+		expect(input.getAttribute("aria-busy")).toBeNull();
+		expect(container.querySelector(".v-spinner")).toBeNull();
+	});
 });

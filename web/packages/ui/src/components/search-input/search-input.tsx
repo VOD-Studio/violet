@@ -1,10 +1,11 @@
 "use client";
 
 import { cn } from "cn";
-import { Loader2, Search, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useComposedRefs } from "radix-ui/internal";
 import { useCallback, useRef, useState } from "react";
 import { useDebouncedCallback } from "../../lib/use-debounced-callback";
+import { Spinner } from "../indicator";
 import { Input, type InputProps } from "../input";
 
 /** 组合 Input 的搜索行为；原生属性、变体、尺寸与样式槽沿用 Input 契约。 */
@@ -125,7 +126,7 @@ export function SearchInput({
 			leading={<Search aria-hidden="true" />}
 			trailing={
 				loading ? (
-					<Loader2 aria-hidden="true" className="v-search-input__loading" />
+					<Spinner aria-hidden="true" size={16} />
 				) : showClear ? (
 					<button
 						type="button"

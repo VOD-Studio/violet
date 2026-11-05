@@ -76,6 +76,7 @@ describe("Button", () => {
 		expect(button.disabled).toBe(true);
 		expect(button.getAttribute("aria-busy")).toBe("true");
 		expect(button.getAttribute("aria-disabled")).toBe("true");
+		expect(button.querySelector(".v-spinner")).toBeTruthy();
 		expect(screen.getByRole("button", { name: "保存" })).toBe(button);
 		fireEvent.click(button);
 		expect(click).not.toHaveBeenCalled();
