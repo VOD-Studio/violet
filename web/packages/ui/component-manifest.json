@@ -45,8 +45,9 @@
 		},
 		{
 			"name": "command",
-			"status": "legacy",
-			"entry": "src/components/command/index.ts"
+			"status": "foundation",
+			"entry": "src/components/command/index.ts",
+			"css": "src/components/command/command.css"
 		},
 		{
 			"name": "confirm-dialog",

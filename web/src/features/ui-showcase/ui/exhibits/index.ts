@@ -4,6 +4,7 @@ import { badgeExhibit } from "./badge";
 import { buttonExhibit } from "./button";
 import { cardExhibit } from "./card";
 import { checkboxExhibit } from "./checkbox";
+import { commandExhibit } from "./command";
 import { dialogExhibit } from "./dialog";
 import { drawerExhibit } from "./drawer";
 import { dropdownExhibit } from "./dropdown";
@@ -81,15 +82,7 @@ export const EXHIBITS: Exhibit[] = [
 	dialogExhibit,
 	sheetExhibit,
 	drawerExhibit,
-	{
-		id: "command",
-		name: "命令面板",
-		units: ["command"],
-		zone: "stage",
-		category: "overlay",
-		footprint: { width: 560, height: 420 },
-		issue: 703,
-	},
+	commandExhibit,
 	{
 		id: "morphing-popover",
 		name: "变形弹出层",

@@ -8,34 +8,31 @@ import {
 	useThemeSwitcher,
 } from "@features/theme-switcher";
 import { flattenNavLinks } from "@shared/config/nav";
-import { type CmdItem, filterCommands } from "@shared/lib/cmd-filter";
 import { DECORATION_PREFERENCES } from "@shared/lib/decoration-preference";
 import { THEME_PRESETS } from "@shared/lib/theme-presets";
 import { useNavigate } from "@tanstack/react-router";
-import { CommandList } from "@violet/ui";
+import { type CommandGroup, type CommandItem, CommandList } from "@violet/ui";
+import { Compass, FileText, Palette, Sparkles, SunMoon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { useCommandUIStore } from "./command-ui-store";
 
-/** 分组中文名映射 */
-const GROUP_LABELS: Record<string, string> = {
-	posts: "文章",
-	navigation: "导航",
-	appearance: "外观",
-	theme: "主题",
-	decoration: "装饰",
-};
+const GROUPS: CommandGroup[] = [
+	{ id: "posts", label: "文章" },
+	{ id: "pages", label: "页面" },
+	{ id: "commands", label: "命令" },
+	{ id: "fulltext", label: "全文" },
+];
+
+/** 输入停顿多久才去服务端搜，避免每次击键都打后端。 */
+const SEARCH_DEBOUNCE_MS = 250;
+/** 两个字以上才去正文里搜。 */
+const FULL_TEXT_MIN = 2;
 
 /**
- * CommandPalette - 全局 Cmd/Ctrl+K 搜索 + 命令面板
+ * 全局 ⌘K / Ctrl K 命令面板：同一个输入框搜文章、跳页面、切换外观主题与装饰。
  *
- * 双模态：输入 ≥ 2 字符触发服务端文章搜索（debounce 250ms），同时本地过滤
- * 导航、外观、主题与装饰命令。文章结果来自服务端（已按 query 检索），不再经 filterCommands
- * 二次过滤——query 可能命中正文而非标题，本地过滤会误删结果。
- * - Cmd/Ctrl+K 打开（也可由 HeaderActions 搜索按钮 open()）
- * - 导航命令派生自 NAV_ITEMS（与 Header nav 同源）；外观切换为面板独有，主题命令与顶栏菜单共用选项
- *
- * 显隐状态走 useCommandUIStore（与 HeaderActions 共享）。
+ * @remarks 显隐状态走 useCommandUIStore，与顶栏的搜索按钮共享。服务端结果标题含输入的归入「文章」，只在正文命中的归入「全文」。
  */
 const CommandPalette = () => {
 	const isOpen = useCommandUIStore((s) => s.isOpen);
@@ -49,16 +46,15 @@ const CommandPalette = () => {
 	const { switchDecoration } = useDecorationSwitcher();
 	const { data: searchData, isFetching } = useSearchPosts(debouncedQuery);
 
-	// 输入防抖：避免每次击键都打后端
 	useEffect(() => {
-		const t = setTimeout(() => setDebouncedQuery(query), 250);
-		return () => clearTimeout(t);
+		const timer = setTimeout(() => setDebouncedQuery(query), SEARCH_DEBOUNCE_MS);
+		return () => clearTimeout(timer);
 	}, [query]);
 
 	useEffect(() => {
-		const onKey = (e: KeyboardEvent) => {
-			if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-				e.preventDefault();
+		const onKey = (event: KeyboardEvent) => {
+			if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+				event.preventDefault();
 				toggleOpen();
 			}
 		};
@@ -66,7 +62,7 @@ const CommandPalette = () => {
 		return () => window.removeEventListener("keydown", onKey);
 	}, [toggleOpen]);
 
-	// 关闭时清空输入，避免下次打开残留上次查询
+	// 关闭时清空输入，下次打开不残留上次查询
 	useEffect(() => {
 		if (!isOpen) {
 			setQuery("");
@@ -74,92 +70,112 @@ const CommandPalette = () => {
 		}
 	}, [isOpen]);
 
-	// 本地命令经 filterCommands 子串过滤。
-	const localCommands: CmdItem[] = useMemo(
+	const localItems = useMemo<CommandItem[]>(
 		() => [
-			...flattenNavLinks().map((item) => ({
-				id: `nav-${item.to}`,
-				label: item.label,
-				group: "navigation",
-				run: () => navigate({ to: item.to }),
+			...flattenNavLinks().map((link) => ({
+				id: `page-${link.to}`,
+				label: link.label,
+				group: "pages",
+				hint: link.to,
+				icon: <Compass />,
+				onSelect: ({ newTab }: { newTab: boolean }) => {
+					if (newTab) window.open(link.to, "_blank", "noopener");
+					else void navigate({ to: link.to });
+				},
 			})),
 			{
-				id: "appearance-light",
-				label: "切换亮色外观",
-				group: "appearance",
-				keywords: ["light", "day", "亮色"],
-				run: () => {
-					if (appearance !== "light") switchAppearance("light");
-				},
+				id: "cmd-appearance",
+				label: "切换明暗",
+				group: "commands",
+				keywords: ["appearance", "dark", "light", "外观", "亮色", "暗黑"],
+				icon: <SunMoon />,
+				children: (
+					[
+						["light", "亮色"],
+						["dark", "暗黑"],
+						["system", "跟随系统"],
+					] as const
+				).map(([value, label]) => ({
+					id: `appearance-${value}`,
+					label,
+					group: "",
+					onSelect: () => {
+						if (appearance !== value) switchAppearance(value);
+					},
+				})),
 			},
 			{
-				id: "appearance-dark",
-				label: "切换暗黑外观",
-				group: "appearance",
-				keywords: ["dark", "night", "暗黑"],
-				run: () => {
-					if (appearance !== "dark") switchAppearance("dark");
-				},
+				id: "cmd-theme",
+				label: "切换主题",
+				group: "commands",
+				keywords: ["theme", "season", "主题", "季节"],
+				icon: <Palette />,
+				children: THEME_CHOICES.map((preference) => ({
+					id: `theme-${preference}`,
+					label: themeChoiceTitle(preference),
+					group: "",
+					keywords:
+						preference === "follow"
+							? ["follow"]
+							: [THEME_PRESETS[preference].label, THEME_PRESETS[preference].name],
+					onSelect: () => void switchTheme(preference),
+				})),
 			},
 			{
-				id: "appearance-system",
-				label: "跟随系统外观",
-				group: "appearance",
-				keywords: ["system", "auto", "跟随系统"],
-				run: () => {
-					if (appearance !== "system") switchAppearance("system");
-				},
+				id: "cmd-decoration",
+				label: "切换装饰",
+				group: "commands",
+				keywords: ["decoration", "装饰", "落花"],
+				icon: <Sparkles />,
+				children: DECORATION_PREFERENCES.map((preference) => ({
+					id: `decoration-${preference}`,
+					label: decorationChoiceTitle(preference),
+					group: "",
+					onSelect: () => void switchDecoration(preference),
+				})),
 			},
-			...THEME_CHOICES.map((preference) => ({
-				id: `theme-${preference}`,
-				label: `主题：${themeChoiceTitle(preference)}`,
-				group: "theme",
-				keywords:
-					preference === "follow"
-						? ["theme", "season", "主题", "季节"]
-						: [
-								"theme",
-								"主题",
-								THEME_PRESETS[preference].label,
-								THEME_PRESETS[preference].name,
-							],
-				run: () => void switchTheme(preference),
-			})),
-			...DECORATION_PREFERENCES.map((preference) => ({
-				id: `decoration-${preference}`,
-				label: `装饰：${decorationChoiceTitle(preference)}`,
-				group: "decoration",
-				keywords: ["decoration", "season", "装饰", "季节"],
-				run: () => void switchDecoration(preference),
-			})),
 		],
-		[navigate, switchAppearance, appearance, switchTheme, switchDecoration],
+		[navigate, appearance, switchAppearance, switchTheme, switchDecoration],
 	);
 
-	const filtered = useMemo(() => {
-		// 文章结果来自服务端搜索，不经本地过滤
-		const posts: CmdItem[] = (searchData?.data ?? []).map((p) => ({
-			id: `post-${p.id}`,
-			label: p.title,
-			group: "posts",
-			description: p.snippet,
-			run: () => navigate({ to: "/blog/$slug", params: { slug: p.slug } }),
-		}));
-		// 文章结果在前，本地命令在后
-		return [...posts, ...filterCommands(localCommands, query)];
-	}, [localCommands, query, searchData, navigate]);
-	// 文章搜索请求飞行中（关键词达查询阈值且请求未完成）
-	const isSearching = debouncedQuery.trim().length >= 2 && isFetching;
+	const items = useMemo<CommandItem[]>(() => {
+		const needle = query.trim().toLowerCase();
+		const posts = (searchData?.data ?? []).map((post) => {
+			const inTitle = post.title.toLowerCase().includes(needle);
+			return {
+				id: `post-${post.id}`,
+				label: post.title,
+				// 标题含输入的按标题匹配，只在正文命中的归入全文并带上摘要
+				group: inTitle ? "posts" : "fulltext",
+				filter: inTitle,
+				description: inTitle ? undefined : post.snippet,
+				icon: <FileText />,
+				onSelect: ({ newTab }: { newTab: boolean }) => {
+					if (newTab) window.open(`/blog/${post.slug}`, "_blank", "noopener");
+					else void navigate({ to: "/blog/$slug", params: { slug: post.slug } });
+				},
+			};
+		});
+		return [...posts, ...localItems];
+	}, [localItems, query, searchData, navigate]);
+
+	// 防抖等待与请求都算在搜
+	const searching =
+		query.trim().length >= FULL_TEXT_MIN &&
+		(isFetching || query.trim() !== debouncedQuery.trim());
 
 	return (
 		<CommandList
 			open={isOpen}
-			onOpenChange={(v) => (v ? null : close())}
-			items={filtered}
+			onOpenChange={(next) => {
+				if (!next) close();
+			}}
+			items={items}
+			groups={GROUPS}
+			fullTextGroup="fulltext"
 			query={query}
 			onQueryChange={setQuery}
-			loading={isSearching}
-			groupLabels={GROUP_LABELS}
+			searching={searching}
 		/>
 	);
 };

@@ -4,6 +4,7 @@ export * from "./components/badge/index";
 export * from "./components/button/index";
 export * from "./components/card/index";
 export * from "./components/checkbox/index";
+export * from "./components/command/index";
 export * from "./components/confirm-dialog/index";
 export * from "./components/context-menu/index";
 export * from "./components/dialog/index";
