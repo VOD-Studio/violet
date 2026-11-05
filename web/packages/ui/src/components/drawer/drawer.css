@@ -126,7 +126,7 @@
 	}
 
 	.v-drawer[data-state="closed"] {
-		animation: v-drawer-fall 240ms cubic-bezier(0.4, 0, 1, 1) forwards;
+		animation: v-drawer-fall 180ms cubic-bezier(0.4, 0, 1, 1) forwards;
 	}
 
 	@keyframes v-drawer-rise {
