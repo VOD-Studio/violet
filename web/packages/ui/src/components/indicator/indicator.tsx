@@ -50,7 +50,7 @@ function FlowerNodeView({ node }: { node: NodeProps }) {
 }
 
 /**
- * 块状等待花形：逐瓣描线，淡淡染上花色，停留后淡去，循环。
+ * 块状等待花形：花瓣实心无描边，依序绽开，停留后淡去，循环；茎与雪花枝为线，描线生长。
  *
  * @remarks 花色随花形固定（樱花粉、荷花绿、桂花金、梅花与雪花冷灰蓝），可用 `--v-flower-color` 覆盖。
  * 装饰性用法由调用方标 `aria-hidden`；承载语义时容器挂 `role="status"` 与
@@ -86,9 +86,9 @@ export function FlowerBloom({
 						r="11"
 						gradientUnits="userSpaceOnUse"
 					>
-						<stop offset="0" className="v-flower__stop" stopOpacity="0.55" />
-						<stop offset="0.6" className="v-flower__stop" stopOpacity="0.28" />
-						<stop offset="1" className="v-flower__stop" stopOpacity="0.1" />
+						<stop offset="0" className="v-flower__stop" stopOpacity="1" />
+						<stop offset="0.6" className="v-flower__stop" stopOpacity="0.95" />
+						<stop offset="1" className="v-flower__stop" stopOpacity="0.85" />
 					</radialGradient>
 				</defs>
 				{FLOWERS[kind].map((node, i) => (

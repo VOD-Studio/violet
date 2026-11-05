@@ -1,7 +1,7 @@
 /*
  * 指示器单元样式：块状花形（.v-flower）与控件内细圆弧（.v-spinner）。
  * 需先导入 @violet/ui/tokens.css 或 styles.css。
- * 花形取各自的花色（--v-flower-color）：描线为花色混墨，填充为花色渐变；细圆弧取 currentColor，不带底色与轨道。
+ * 花形取各自的花色（--v-flower-color）：花瓣为花色实心（无描边），茎与枝为线；细圆弧取 currentColor，不带底色与轨道。
  */
 
 .v-flower {
@@ -58,44 +58,47 @@
 	animation: v-flower-rotate calc(7s) linear infinite;
 }
 
+/* 花瓣是实物：纯色填充，无描边，依序绽开 */
+.v-flower__draw {
+	stroke: none;
+	fill: var(--v-flower-fill);
+	opacity: 0;
+	animation: v-flower-bloom var(--v-flower-period) ease-out infinite;
+	animation-delay: calc(var(--v-flower-index) * 0.16s);
+}
+
+/* 茎、水面线与雪花枝本身就是线，沿用描线生长 */
+.v-flower__stem,
+.v-flower__base,
+.v-flower--snow .v-flower__draw {
+	fill: none;
+	stroke: currentColor;
+	stroke-dasharray: 1 1;
+	stroke-dashoffset: 1;
+	opacity: 1;
+	animation: v-flower-draw var(--v-flower-period) cubic-bezier(0.45, 0.05, 0.25, 1) infinite;
+	animation-delay: calc(var(--v-flower-index) * 0.16s);
+}
+
 .v-flower__base {
-	opacity: 0.3;
+	stroke-opacity: 0.4;
 }
 
 .v-flower__stem {
 	stroke-width: 1.5;
 }
 
-.v-flower__draw {
-	stroke-dasharray: 1 1;
-	stroke-dashoffset: 1;
-	fill: var(--v-flower-fill);
-	fill-opacity: 0;
-	animation:
-		v-flower-draw var(--v-flower-period) cubic-bezier(0.45, 0.05, 0.25, 1) infinite,
-		v-flower-wash var(--v-flower-period) ease-in-out infinite;
-	animation-delay: calc(var(--v-flower-index) * 0.16s), calc(var(--v-flower-index) * 0.16s);
-}
-
-/* 茎与单线不填充 */
-.v-flower__stem,
-.v-flower__base,
-.v-flower--snow .v-flower__draw {
-	fill: none;
-}
-
 .v-flower__pop {
 	opacity: 0;
+	stroke: none;
 	fill: var(--v-flower-color);
-	fill-opacity: 0.35;
 	animation: v-flower-pop var(--v-flower-period) ease-out infinite;
 	animation-delay: calc(var(--v-flower-index) * 0.16s);
 }
 
+/* 花心比花瓣深一档 */
 .v-flower__dot {
-	fill: var(--v-flower-color);
-	fill-opacity: 1;
-	stroke: none;
+	fill: color-mix(in oklab, var(--v-flower-color) 55%, var(--foreground));
 }
 
 @keyframes v-flower-draw {
@@ -121,18 +124,17 @@
 	}
 }
 
-@keyframes v-flower-wash {
+@keyframes v-flower-bloom {
 	0%,
-	26% {
-		fill-opacity: 0;
+	8% {
+		opacity: 0;
 	}
-	42%,
+	34%,
 	72% {
-		fill-opacity: 1;
+		opacity: 1;
 	}
-	88%,
 	100% {
-		fill-opacity: 0;
+		opacity: 0;
 	}
 }
 
