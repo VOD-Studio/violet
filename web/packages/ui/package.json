@@ -177,6 +177,11 @@
 			"import": "./src/components/prompt-dialog/index.ts",
 			"default": "./src/components/prompt-dialog/index.ts"
 		},
+		"./radio": {
+			"types": "./src/components/radio/index.ts",
+			"import": "./src/components/radio/index.ts",
+			"default": "./src/components/radio/index.ts"
+		},
 		"./resend-button": {
 			"types": "./src/components/resend-button/index.ts",
 			"import": "./src/components/resend-button/index.ts",
@@ -293,6 +298,7 @@
 		"./components/label.css": "./src/components/label/label.css",
 		"./components/link-card.css": "./src/components/link-card/link-card.css",
 		"./components/overlay-scroll.css": "./src/components/overlay-scroll/overlay-scroll.css",
+		"./components/radio.css": "./src/components/radio/radio.css",
 		"./components/search-input.css": "./src/components/search-input/search-input.css",
 		"./components/segmented.css": "./src/components/segmented/segmented.css",
 		"./components/separator.css": "./src/components/separator/separator.css",
@@ -487,6 +493,11 @@
 				"import": "./dist/components/prompt-dialog/index.js",
 				"default": "./dist/components/prompt-dialog/index.js"
 			},
+			"./radio": {
+				"types": "./dist/components/radio/index.d.ts",
+				"import": "./dist/components/radio/index.js",
+				"default": "./dist/components/radio/index.js"
+			},
 			"./resend-button": {
 				"types": "./dist/components/resend-button/index.d.ts",
 				"import": "./dist/components/resend-button/index.js",
@@ -603,6 +614,7 @@
 			"./components/label.css": "./dist/components/label.css",
 			"./components/link-card.css": "./dist/components/link-card.css",
 			"./components/overlay-scroll.css": "./dist/components/overlay-scroll.css",
+			"./components/radio.css": "./dist/components/radio.css",
 			"./components/search-input.css": "./dist/components/search-input.css",
 			"./components/segmented.css": "./dist/components/segmented.css",
 			"./components/separator.css": "./dist/components/separator.css",

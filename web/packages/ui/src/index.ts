@@ -11,6 +11,7 @@ export * from "./components/input/index";
 export * from "./components/kbd/index";
 export * from "./components/label/index";
 export * from "./components/link-card/index";
+export * from "./components/radio/index";
 export * from "./components/search-input/index";
 export * from "./components/segmented/index";
 export * from "./components/separator/index";

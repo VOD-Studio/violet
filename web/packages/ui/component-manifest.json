@@ -168,6 +168,12 @@
 			"entry": "src/components/prompt-dialog/index.ts"
 		},
 		{
+			"name": "radio",
+			"status": "foundation",
+			"entry": "src/components/radio/index.ts",
+			"css": "src/components/radio/radio.css"
+		},
+		{
 			"name": "resend-button",
 			"status": "legacy",
 			"entry": "src/components/resend-button/index.ts"

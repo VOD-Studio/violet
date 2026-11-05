@@ -10,6 +10,7 @@ import { indicatorExhibit } from "./indicator";
 import { inputExhibit } from "./input";
 import { kbdExhibit } from "./kbd";
 import { linkCardExhibit } from "./link-card";
+import { radioExhibit } from "./radio";
 import { searchInputExhibit } from "./search-input";
 import { segmentedExhibit } from "./segmented";
 import { switchExhibit } from "./switch";
@@ -163,6 +164,7 @@ export const EXHIBITS: Exhibit[] = [
 	avatarExhibit,
 	kbdExhibit,
 	switchExhibit,
+	radioExhibit,
 	{
 		id: "tabs",
 		name: "标签页",

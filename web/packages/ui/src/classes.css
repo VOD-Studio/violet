@@ -12,6 +12,7 @@
 @import "./components/label/label.css";
 @import "./components/link-card/link-card.css";
 @import "./components/overlay-scroll/overlay-scroll.css" layer(components);
+@import "./components/radio/radio.css";
 @import "./components/search-input/search-input.css";
 @import "./components/segmented/segmented.css";
 @import "./components/separator/separator.css";

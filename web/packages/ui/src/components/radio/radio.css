@@ -1,0 +1,189 @@
+/*
+ * Radio 组件的 BEM 类名样式（.v-radio-group、.v-radio、__control）。
+ * 需先导入 @violet/ui/tokens.css 或 styles.css。
+ */
+
+@layer components {
+	.v-radio-group {
+		box-sizing: border-box;
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem; /* 竖排项间距 12px */
+		min-width: 0;
+		margin: 0;
+		padding: 0;
+		border: 0;
+	}
+
+	.v-radio-group[data-orientation="horizontal"] {
+		flex-direction: row;
+		gap: 1.5rem; /* 横排项间距 24px */
+	}
+
+	.v-radio-group[data-appearance="card"] {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 0.75rem;
+	}
+
+	/* 组名视觉隐藏，只服务读屏 */
+	.v-radio-group__legend {
+		position: absolute;
+		overflow: hidden;
+		width: 1px;
+		height: 1px;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	.v-radio {
+		--v-radio-size: 1rem; /* 16px；卡片与触屏 20px */
+		--v-radio-dot: 0.375rem; /* 选中后中心留的纸色点 */
+		--v-radio-duration: 180ms;
+		--v-radio-ease: cubic-bezier(0.32, 0.72, 0, 1);
+		box-sizing: border-box;
+		position: relative;
+		display: inline-flex;
+		align-items: flex-start;
+		gap: 0.625rem; /* 圆与文字间距 10px */
+		color: var(--foreground);
+		font-size: 0.875rem;
+		line-height: 1.6;
+		cursor: pointer;
+	}
+
+	/* 真实 input 盖在控制圆上：透明但可聚焦可点击 */
+	.v-radio__input,
+	.v-radio > input[type="radio"] {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: var(--v-radio-size);
+		height: var(--v-radio-size);
+		margin: 0;
+		opacity: 0;
+		cursor: inherit;
+	}
+
+	.v-radio__control {
+		flex: none;
+		box-sizing: border-box;
+		width: var(--v-radio-size);
+		height: var(--v-radio-size);
+		/* 圆对齐文字第一行的中线 */
+		margin-top: calc((1.6em - var(--v-radio-size)) / 2);
+		border-radius: 50%;
+		background-color: var(--card);
+		box-shadow: inset 0 0 0 1px var(--rule2);
+		transition: box-shadow var(--v-radio-duration) var(--v-radio-ease);
+	}
+
+	/* 悬停只加深外圈线，不引入新颜色 */
+	.v-radio:not(:has(input:disabled)):hover .v-radio__control {
+		box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--foreground) 50%, transparent);
+	}
+
+	/* 选中：外圈向内变粗成墨色，中心留纸色点；不缩放 */
+	.v-radio:has(input:checked) .v-radio__control,
+	.v-radio:has(input:checked):not(:has(input:disabled)):hover .v-radio__control {
+		box-shadow: inset 0 0 0 calc((var(--v-radio-size) - var(--v-radio-dot)) / 2)
+			var(--foreground);
+	}
+
+	/* 键盘聚焦：2px 强调色环，offset 2px，不被裁切 */
+	.v-radio:has(input:focus-visible) .v-radio__control {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+
+	.v-radio:has(input:disabled) {
+		opacity: 0.45;
+		cursor: not-allowed;
+	}
+
+	.v-radio__text {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+	}
+
+	.v-radio__description {
+		color: var(--muted-foreground);
+		font-size: 0.8125rem; /* 13px */
+		line-height: 1.6;
+	}
+
+	/* 选项卡片：凹陷底，选中变纸底加一圈墨色细线 */
+	.v-radio[data-appearance="card"] {
+		--v-radio-size: 1.25rem; /* 卡片用 20px 圆 */
+		--v-radio-card-duration: 140ms;
+		--v-radio-card-ease: ease-out;
+		display: flex;
+		gap: 0.75rem;
+		padding: 0.875rem 1rem; /* 14 × 16 */
+		border-radius: var(--radius-12);
+		background-color: var(--muted);
+		transition:
+			background-color var(--v-radio-card-duration) var(--v-radio-card-ease),
+			box-shadow var(--v-radio-card-duration) var(--v-radio-card-ease);
+	}
+
+	.v-radio[data-appearance="card"] > input[type="radio"] {
+		top: 0.875rem;
+		left: 1rem;
+	}
+
+	.v-radio[data-appearance="card"] .v-radio__control {
+		margin-top: 0.0625rem; /* 20px 圆与首行中线只差 1px */
+	}
+
+	.v-radio[data-appearance="card"] .v-radio__label {
+		font-weight: 600;
+	}
+
+	.v-radio[data-appearance="card"]:not(:has(input:disabled)):hover {
+		background-color: color-mix(in oklab, var(--muted) 90%, var(--foreground));
+	}
+
+	.v-radio[data-appearance="card"]:has(input:checked),
+	.v-radio[data-appearance="card"]:has(input:checked):not(:has(input:disabled)):hover {
+		background-color: var(--card);
+		box-shadow: 0 0 0 1.5px var(--foreground);
+	}
+
+	/* 触屏：圆放大到 20px，整行不低于 44px */
+	@media (pointer: coarse) {
+		.v-radio {
+			--v-radio-size: 1.25rem;
+			min-height: 2.75rem;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-radio__control,
+		.v-radio[data-appearance="card"] {
+			transition: none;
+		}
+	}
+
+	@media (forced-colors: active) {
+		.v-radio__control {
+			background-color: Canvas;
+			box-shadow: inset 0 0 0 1px ButtonText;
+		}
+
+		.v-radio:has(input:checked) .v-radio__control,
+		.v-radio:has(input:checked):not(:has(input:disabled)):hover .v-radio__control {
+			box-shadow: inset 0 0 0 calc((var(--v-radio-size) - var(--v-radio-dot)) / 2) Highlight;
+		}
+
+		.v-radio:has(input:focus-visible) .v-radio__control {
+			outline-color: Highlight;
+		}
+
+		.v-radio[data-appearance="card"]:has(input:checked) {
+			background-color: Canvas;
+			box-shadow: 0 0 0 1.5px Highlight;
+		}
+	}
+}
