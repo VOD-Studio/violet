@@ -5,6 +5,7 @@ export * from "./components/button/index";
 export * from "./components/card/index";
 export * from "./components/checkbox/index";
 export * from "./components/context-menu/index";
+export * from "./components/dialog/index";
 export * from "./components/dropdown/index";
 export * from "./components/dropdown-menu/index";
 export * from "./components/hover-card/index";

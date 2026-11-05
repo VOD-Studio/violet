@@ -6,9 +6,9 @@
  */
 import { useEffect, useState } from "react";
 import { Button } from "../button";
+import { Modal } from "../dialog";
 import { Input } from "../input";
 import { Label } from "../label";
-import { Modal } from "../modal";
 import { Textarea } from "../textarea";
 
 export interface PromptDialogProps {

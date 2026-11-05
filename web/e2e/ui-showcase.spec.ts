@@ -115,7 +115,10 @@ test("检视台里每种状态都在占地内", async ({ page, context }) => {
 		await page.goto(`/ui?open=${id}`);
 		await page.waitForLoadState("networkidle");
 		await page.evaluate(() => document.fonts.ready);
-		const dialog = page.getByRole("dialog");
+		// 展品自己也可能陈列对话框，检视台以舞台识别
+		const dialog = page
+			.getByRole("dialog")
+			.filter({ has: page.locator("[data-inspector-stage]") });
 		const states = dialog.getByRole("radiogroup", { name: "展品状态" }).getByRole("radio");
 		const count = Math.max(1, await states.count());
 		for (let index = 0; index < count; index++) {

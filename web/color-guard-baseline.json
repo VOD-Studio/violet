@@ -2132,12 +2132,6 @@
 			"count": 1
 		},
 		{
-			"file": "packages/ui/src/components/dialog/dialog.tsx",
-			"rule": "tailwind-palette",
-			"value": "bg-black",
-			"count": 1
-		},
-		{
 			"file": "packages/ui/src/components/icons/google.tsx",
 			"rule": "raw-color",
 			"value": "#ea4335",
@@ -2159,12 +2153,6 @@
 			"file": "packages/ui/src/components/icons/google.tsx",
 			"rule": "raw-color",
 			"value": "#34a853",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/modal/components/Modal.tsx",
-			"rule": "tailwind-palette",
-			"value": "bg-black",
 			"count": 1
 		},
 		{

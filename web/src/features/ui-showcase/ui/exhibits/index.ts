@@ -4,6 +4,7 @@ import { badgeExhibit } from "./badge";
 import { buttonExhibit } from "./button";
 import { cardExhibit } from "./card";
 import { checkboxExhibit } from "./checkbox";
+import { dialogExhibit } from "./dialog";
 import { dropdownExhibit } from "./dropdown";
 import { dropdownMenuExhibit } from "./dropdown-menu";
 import { imagePixelRevealExhibit } from "./image-pixel-reveal";
@@ -75,15 +76,7 @@ export const EXHIBITS: Exhibit[] = [
 	tooltipExhibit,
 	dropdownMenuExhibit,
 	sonnerExhibit,
-	{
-		id: "dialog",
-		name: "对话框",
-		units: ["dialog", "confirm-dialog", "prompt-dialog"],
-		zone: "stage",
-		category: "overlay",
-		footprint: { width: 520, height: 360 },
-		issue: 703,
-	},
+	dialogExhibit,
 	{
 		id: "sheet",
 		name: "侧边面板与抽屉",

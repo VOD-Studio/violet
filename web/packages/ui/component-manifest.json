@@ -61,8 +61,9 @@
 		},
 		{
 			"name": "dialog",
-			"status": "legacy",
-			"entry": "src/components/dialog/index.ts"
+			"status": "foundation",
+			"entry": "src/components/dialog/index.ts",
+			"css": "src/components/dialog/dialog.css"
 		},
 		{
 			"name": "dropdown",
@@ -133,11 +134,6 @@
 			"entry": "src/components/link-card/index.ts",
 			"css": "src/components/link-card/link-card.css",
 			"documentation": "web/packages/ui/docs/components/link-card.md"
-		},
-		{
-			"name": "modal",
-			"status": "legacy",
-			"entry": "src/components/modal/index.ts"
 		},
 		{
 			"name": "otp",

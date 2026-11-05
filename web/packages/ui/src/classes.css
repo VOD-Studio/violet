@@ -5,6 +5,7 @@
 @import "./components/card/card.css";
 @import "./components/checkbox/checkbox.css";
 @import "./components/context-menu/context-menu.css";
+@import "./components/dialog/dialog.css";
 @import "./components/dropdown/dropdown.css";
 @import "./components/dropdown-menu/dropdown-menu.css";
 @import "./components/hover-card/hover-card.css";

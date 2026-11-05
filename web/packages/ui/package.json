@@ -142,11 +142,6 @@
 			"import": "./src/components/link-card/index.ts",
 			"default": "./src/components/link-card/index.ts"
 		},
-		"./modal": {
-			"types": "./src/components/modal/index.ts",
-			"import": "./src/components/modal/index.ts",
-			"default": "./src/components/modal/index.ts"
-		},
 		"./otp": {
 			"types": "./src/components/otp/index.ts",
 			"import": "./src/components/otp/index.ts",
@@ -301,6 +296,7 @@
 		"./components/card.css": "./src/components/card/card.css",
 		"./components/checkbox.css": "./src/components/checkbox/checkbox.css",
 		"./components/context-menu.css": "./src/components/context-menu/context-menu.css",
+		"./components/dialog.css": "./src/components/dialog/dialog.css",
 		"./components/dropdown.css": "./src/components/dropdown/dropdown.css",
 		"./components/dropdown-menu.css": "./src/components/dropdown-menu/dropdown-menu.css",
 		"./components/hover-card.css": "./src/components/hover-card/hover-card.css",
@@ -475,11 +471,6 @@
 				"import": "./dist/components/link-card/index.js",
 				"default": "./dist/components/link-card/index.js"
 			},
-			"./modal": {
-				"types": "./dist/components/modal/index.d.ts",
-				"import": "./dist/components/modal/index.js",
-				"default": "./dist/components/modal/index.js"
-			},
 			"./otp": {
 				"types": "./dist/components/otp/index.d.ts",
 				"import": "./dist/components/otp/index.js",
@@ -634,6 +625,7 @@
 			"./components/card.css": "./dist/components/card.css",
 			"./components/checkbox.css": "./dist/components/checkbox.css",
 			"./components/context-menu.css": "./dist/components/context-menu.css",
+			"./components/dialog.css": "./dist/components/dialog.css",
 			"./components/dropdown.css": "./dist/components/dropdown.css",
 			"./components/dropdown-menu.css": "./dist/components/dropdown-menu.css",
 			"./components/hover-card.css": "./dist/components/hover-card.css",
