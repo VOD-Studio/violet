@@ -17,6 +17,16 @@
 		opacity: 0;
 	}
 
+	.v-image-pixel-reveal__placeholder {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: var(--muted-foreground);
+		pointer-events: none;
+	}
+
 	.v-image-pixel-reveal__image {
 		display: block;
 		width: 100%;

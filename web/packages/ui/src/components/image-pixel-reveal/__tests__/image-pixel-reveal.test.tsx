@@ -67,4 +67,11 @@ describe("ImagePixelReveal", () => {
 		expect(imageGroup.getAttribute("data-state")).toBe("revealed");
 		expect(screen.getByLabelText("揭示完成次数").textContent).toBe("1");
 	});
+
+	it("加载未完成前在占位区渲染桂花，加载完成后占位卸载", () => {
+		const { container } = render(<ImagePixelReveal src="/landscape.png" alt="山水" />);
+		expect(container.querySelector(".v-flower--osmanthus")).toBeTruthy();
+		fireEvent.load(screen.getByRole("img", { name: "山水" }));
+		expect(container.querySelector(".v-flower--osmanthus")).toBeNull();
+	});
 });
