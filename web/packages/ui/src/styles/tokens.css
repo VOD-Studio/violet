@@ -58,6 +58,8 @@
 	--sheet-translucent: color-mix(in oklab, var(--card) 90%, transparent);
 	--surface-glass: var(--sheet-translucent);
 	--shadow-soft: var(--fixed-shadow-soft);
+	--scrim: var(--fixed-scrim);
+	--scrim-soft: var(--fixed-scrim-soft);
 	--scrollbar-thumb: var(--neutral-a7);
 	--scrollbar-width: thin;
 	--scrollbar-gutter: auto;

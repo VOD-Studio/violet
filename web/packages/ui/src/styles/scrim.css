@@ -1,0 +1,63 @@
+/*
+ * 模态浮层共用的遮罩：只把页面推远，透明度进出，不虚化背后。
+ * 对话框、确认框与抽屉用 --scrim，侧边面板与命令面板背后的页面还有参考价值，用浅一档的 --soft；
+ * --clear 去掉颜色但仍挡住点击；叠在另一层遮罩上时（data-stacked）也不再加深。
+ * 选择器全部用 :where() 归零优先级，单元可直接覆盖。
+ *
+ * 可由单元覆盖的变量：
+ *   --v-scrim-in / --v-scrim-out   进入与退出时长
+ *   --v-scrim-ease-out             退出曲线（进入固定 ease-out）
+ */
+
+@layer components {
+	:where(.v-scrim) {
+		--v-scrim-in: 200ms;
+		--v-scrim-out: 160ms;
+		--v-scrim-ease-out: ease-in;
+
+		position: fixed;
+		inset: 0;
+		z-index: var(--layer-modal);
+		background-color: var(--scrim);
+	}
+
+	:where(.v-scrim--soft) {
+		background-color: var(--scrim-soft);
+	}
+
+	:where(.v-scrim--clear, .v-scrim[data-stacked]) {
+		background-color: transparent;
+	}
+
+	:where(.v-scrim[data-state="open"]) {
+		animation: v-scrim-in var(--v-scrim-in) ease-out backwards;
+	}
+
+	:where(.v-scrim[data-state="closed"]) {
+		animation: v-scrim-out var(--v-scrim-out) var(--v-scrim-ease-out) forwards;
+	}
+
+	@keyframes v-scrim-in {
+		from {
+			opacity: 0;
+		}
+	}
+
+	@keyframes v-scrim-out {
+		to {
+			opacity: 0;
+		}
+	}
+
+	/* 减弱动态：只保留 100ms 的透明度变化 */
+	@media (prefers-reduced-motion: reduce) {
+		:where(.v-scrim[data-state="open"]) {
+			animation-duration: 100ms;
+		}
+
+		:where(.v-scrim[data-state="closed"]) {
+			animation-duration: 100ms;
+			animation-timing-function: ease-out;
+		}
+	}
+}
