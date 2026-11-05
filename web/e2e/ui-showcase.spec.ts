@@ -126,6 +126,31 @@ test("检视台里每种状态都在占地内", async ({ page, context }) => {
 						stage.scrollHeight > stage.clientHeight + 1,
 				);
 			expect(overflow, `${id} 第 ${index + 1} 种状态溢出占地`).toBe(false);
+			const overlays = await dialog.locator("[data-stage]").evaluate((stage) => {
+				const box = stage.getBoundingClientRect();
+				const outside = (element: Element) => {
+					const rect = element.getBoundingClientRect();
+					return (
+						rect.width > 0 &&
+						(rect.left < box.left - 1 ||
+							rect.top < box.top - 1 ||
+							rect.right > box.right + 1 ||
+							rect.bottom > box.bottom + 1)
+					);
+				};
+				const selector = "[data-radix-popper-content-wrapper], [data-sonner-toaster]";
+				return {
+					escaped: Array.from(stage.querySelectorAll(selector)).filter(outside).length,
+					// Portal 到 body 的浮层不随检视台的明暗、季节与减弱动态变化
+					leaked: document.querySelectorAll(
+						"body > [data-radix-popper-content-wrapper], body > [data-sonner-toaster]",
+					).length,
+				};
+			});
+			expect(overlays, `${id} 第 ${index + 1} 种状态的浮层越出占地或挂到了舞台之外`).toEqual({
+				escaped: 0,
+				leaked: 0,
+			});
 		}
 	}
 });

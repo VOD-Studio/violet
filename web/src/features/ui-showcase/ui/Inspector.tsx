@@ -37,6 +37,14 @@ export interface InspectorProps {
 
 const EDITABLE = "input, textarea, select, [contenteditable]:not([contenteditable='false'])";
 
+/** 舞台里仍展开着的浮层：触发器的展开态，或挂在 Popper 外壳里、处于打开态的内容。 */
+const OPEN_OVERLAY = [
+	'[aria-expanded="true"]',
+	...["open", "delayed-open", "instant-open"].map(
+		(state) => `[data-radix-popper-content-wrapper] > [data-state="${state}"]`,
+	),
+].join(", ");
+
 /** 打开期间让页面其余部分不可聚焦、不可滚动；之后由 Portal 新增的浮层不受影响。 */
 function useModalIsolation(ref: React.RefObject<HTMLElement | null>) {
 	useEffect(() => {
@@ -95,15 +103,19 @@ function InspectorDialog({
 	}, []);
 
 	const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-		if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+		if (event.altKey || event.ctrlKey || event.metaKey) return;
 		const target = event.target as HTMLElement;
+		const stage = stageRef.current;
 		if (event.key === "Escape") {
 			// 展品自己的浮层还开着时，这次 Esc 归它
-			if (stageRef.current?.querySelector('[aria-expanded="true"]')) return;
+			if (stage?.querySelector(OPEN_OVERLAY)) return;
+			// 展厅里常开的浮层会在文档层先吃掉 Esc 并标记 defaultPrevented；只有舞台内的处理才算数
+			if (event.defaultPrevented && stage?.contains(target)) return;
 			event.preventDefault();
 			onClose();
 			return;
 		}
+		if (event.defaultPrevented) return;
 		if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
 		if (stageRef.current?.contains(target) || target.closest(EDITABLE)) return;
 		event.preventDefault();
