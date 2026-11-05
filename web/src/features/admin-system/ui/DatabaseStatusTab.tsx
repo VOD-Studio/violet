@@ -4,9 +4,9 @@ import {
 	useClientPagination,
 } from "@features/admin-shared/ui/data-table";
 import { formatDate, formatDateTime } from "@shared/lib/date";
-import { Badge, Button, Switch } from "@violet/ui";
+import { Badge, Button, Spinner, Switch } from "@violet/ui";
 
-import { Database, Loader2, RefreshCw } from "lucide-react";
+import { Database, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { useDatabaseSchema, useDatabaseStatus } from "../api/queries";
 import type { DatabaseActivityDTO, DatabaseIndexDTO, DatabaseTableDTO } from "../model/types";
@@ -97,7 +97,7 @@ export function DatabaseStatusTab({ onUseQuery }: DatabaseStatusTabProps) {
 	if (query.isLoading) {
 		return (
 			<div className="text-muted-foreground flex flex-1 items-center justify-center gap-2 py-20">
-				<Loader2 className="size-4 animate-spin" />
+				<Spinner size={16} aria-hidden="true" />
 				正在读取 PostgreSQL 统计视图
 			</div>
 		);
@@ -208,7 +208,7 @@ function DatabaseRelationshipSection({ onUseQuery }: { onUseQuery: (sql: string)
 	if (query.isLoading) {
 		return (
 			<div className="text-muted-foreground flex h-28 items-center justify-center gap-2 rounded-xl border border-primary/10 bg-primary/3 text-sm">
-				<Loader2 className="size-4 animate-spin" />
+				<Spinner size={16} aria-hidden="true" />
 				正在编排关系星图
 			</div>
 		);

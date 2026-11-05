@@ -15,7 +15,6 @@ import {
 	Switch,
 } from "@violet/ui";
 
-import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -145,10 +144,9 @@ export function EmojiGroupFormDialog({
 					<Button
 						type="submit"
 						form="group-form"
-						disabled={submitting}
+						loading={submitting}
 						className="w-full sm:w-auto"
 					>
-						{submitting && <Loader2 className="mr-1 size-4 animate-spin" />}
 						{editingGroup ? "更新" : "创建"}
 					</Button>
 				</>

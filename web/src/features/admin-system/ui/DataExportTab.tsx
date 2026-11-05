@@ -10,7 +10,7 @@ import {
 	Switch,
 } from "@violet/ui";
 
-import { Download, FileDown, Loader2, SquareTerminal, Table2 } from "lucide-react";
+import { Download, FileDown, SquareTerminal, Table2 } from "lucide-react";
 import { useState } from "react";
 import { useExportData } from "../api/mutations";
 import { useDatabaseSchema } from "../api/queries";
@@ -151,12 +151,13 @@ export function DataExportTab() {
 								size="sm"
 							/>
 						</div>
-						<Button className="w-full" disabled={disabled} onClick={handleExport}>
-							{exportMutation.isPending ? (
-								<Loader2 className="size-4 animate-spin" />
-							) : (
-								<Download className="size-4" />
-							)}
+						<Button
+							className="w-full"
+							disabled={disabled}
+							loading={exportMutation.isPending}
+							leftIcon={<Download className="size-4" />}
+							onClick={handleExport}
+						>
 							下载 {format === "csv" ? "CSV" : "SQL"}
 						</Button>
 						{exportMutation.error && (

@@ -29,9 +29,10 @@ import {
 	SheetFooter,
 	SheetHeader,
 	SheetTitle,
+	Spinner,
 } from "@violet/ui";
 import { cn } from "cn";
-import { ExternalLink, Loader2, Maximize2, Plus, Tag as TagIcon, Trash2, X } from "lucide-react";
+import { ExternalLink, Maximize2, Plus, Tag as TagIcon, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -250,7 +251,7 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 				{/* 中间表单主区 */}
 				{isEdit && isLoading ? (
 					<div className="flex flex-1 items-center justify-center">
-						<Loader2 className="text-muted-foreground size-6 animate-spin" />
+						<Spinner size={24} className="text-muted-foreground" aria-hidden="true" />
 					</div>
 				) : (
 					<div className="flex min-h-0 flex-1 flex-col space-y-4 overflow-y-auto px-6 py-5">
@@ -430,12 +431,10 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 								type="button"
 								variant="outline"
 								size="sm"
-								disabled={publishNote.isPending || saving}
+								disabled={saving}
+								loading={publishNote.isPending}
 								onClick={() => void handlePublish()}
 							>
-								{publishNote.isPending ? (
-									<Loader2 className="mr-1.5 size-3.5 animate-spin" />
-								) : null}
 								发布
 							</Button>
 						)}
@@ -444,12 +443,9 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 							<Button
 								type="button"
 								size="sm"
-								disabled={saving}
+								loading={saving}
 								onClick={() => void handleSave()}
 							>
-								{saving ? (
-									<Loader2 className="mr-1.5 size-3.5 animate-spin" />
-								) : null}
 								{isEdit ? "保存" : "创建"}
 							</Button>
 						)}

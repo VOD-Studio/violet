@@ -28,7 +28,7 @@ import {
 	TabsList,
 	TabsTrigger,
 } from "@violet/ui";
-import { CheckCircle, Layers, Loader2, Plus, Power, PowerOff, Search } from "lucide-react";
+import { CheckCircle, Layers, Plus, Power, PowerOff, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -295,26 +295,20 @@ function EmojisPage() {
 										variant="outline"
 										size="sm"
 										onClick={handleBatchEnable}
-										disabled={batchPending || isLoading || stats.disabled === 0}
+										disabled={isLoading || stats.disabled === 0}
+										loading={batchPending}
+										leftIcon={<Power className="size-3.5" />}
 									>
-										{batchPending ? (
-											<Loader2 className="mr-1 size-3.5 animate-spin" />
-										) : (
-											<Power className="mr-1 size-3.5" />
-										)}
 										批量启用
 									</Button>
 									<Button
 										variant="outline"
 										size="sm"
 										onClick={handleBatchDisable}
-										disabled={batchPending || isLoading || stats.enabled === 0}
+										disabled={isLoading || stats.enabled === 0}
+										loading={batchPending}
+										leftIcon={<PowerOff className="size-3.5" />}
 									>
-										{batchPending ? (
-											<Loader2 className="mr-1 size-3.5 animate-spin" />
-										) : (
-											<PowerOff className="mr-1 size-3.5" />
-										)}
 										批量禁用
 									</Button>
 								</>

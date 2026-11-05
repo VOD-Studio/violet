@@ -1,7 +1,7 @@
 import { emojiKeys } from "@features/emojis/api/keys";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button, PromptDialog } from "@violet/ui";
-import { Loader2, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { adminEmojiKeys } from "../api/keys";
@@ -65,13 +65,10 @@ export const RefetchBilibiliButton = () => {
 				variant="outline"
 				size="sm"
 				disabled={isRunning || refetch.isPending}
+				loading={isRunning || refetch.isPending}
+				leftIcon={<RefreshCw className="size-3.5" />}
 				onClick={handleClick}
 			>
-				{isRunning ? (
-					<Loader2 className="size-3.5 animate-spin" />
-				) : (
-					<RefreshCw className="size-3.5" />
-				)}
 				{isRunning
 					? `拉取中 ${status?.groups_done ?? 0}/${status?.groups_total ?? 0}`
 					: "重新拉取"}

@@ -13,7 +13,6 @@ import {
 	Textarea,
 } from "@violet/ui";
 
-import { Loader2 } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useAdminPermissions, useCreatePermission, useUpdatePermission } from "../api/queries";
@@ -147,8 +146,7 @@ export function CreatePermissionDialog({
 					>
 						取消
 					</Button>
-					<Button type="submit" form="permission-form" disabled={pending}>
-						{pending && <Loader2 className="mr-1 size-4 animate-spin" />}
+					<Button type="submit" form="permission-form" loading={pending}>
 						{isEdit ? "保存" : "创建"}
 					</Button>
 				</>

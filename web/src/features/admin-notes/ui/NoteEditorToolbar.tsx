@@ -2,7 +2,7 @@ import type { AdminNote } from "@features/admin-notes/model/types";
 import { NOTE_STATUS_LABELS } from "@features/admin-notes/model/types";
 import { Badge, Button, ConfirmDialog } from "@violet/ui";
 
-import { ArrowLeft, ExternalLink, Loader2, SlidersHorizontal, Trash2 } from "lucide-react";
+import { ArrowLeft, ExternalLink, SlidersHorizontal, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 interface NoteEditorToolbarProps {
@@ -126,18 +126,17 @@ export function NoteEditorToolbar({
 					<Button
 						variant="outline"
 						size="sm"
-						disabled={publishing || saving}
+						disabled={saving}
+						loading={publishing}
 						onClick={onPublish}
 					>
-						{publishing ? <Loader2 className="mr-1.5 size-3.5 animate-spin" /> : null}
 						发布
 					</Button>
 				) : null}
 
 				{/* 保存/创建按钮 */}
 				{canManage ? (
-					<Button size="sm" disabled={saving} onClick={onSave}>
-						{saving ? <Loader2 className="mr-1.5 size-3.5 animate-spin" /> : null}
+					<Button size="sm" loading={saving} onClick={onSave}>
 						{isEdit ? "保存" : "创建"}
 					</Button>
 				) : null}

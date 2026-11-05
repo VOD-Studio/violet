@@ -14,7 +14,6 @@ import {
 	SelectValue,
 } from "@violet/ui";
 
-import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 
@@ -111,8 +110,7 @@ export function EmojiEditDialog({
 					>
 						取消
 					</Button>
-					<Button type="submit" form="emoji-edit-form" disabled={isSaving}>
-						{isSaving && <Loader2 className="mr-2 size-4 animate-spin" />}
+					<Button type="submit" form="emoji-edit-form" loading={isSaving}>
 						保存
 					</Button>
 				</>

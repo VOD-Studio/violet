@@ -1,14 +1,6 @@
-import { Button, Switch } from "@violet/ui";
+import { Button, Spinner, Switch } from "@violet/ui";
 
-import {
-	AlertTriangle,
-	DatabaseZap,
-	Info,
-	Loader2,
-	Play,
-	RotateCcw,
-	TableProperties,
-} from "lucide-react";
+import { AlertTriangle, DatabaseZap, Info, Play, RotateCcw, TableProperties } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { useExecuteSQL } from "../api/mutations";
 import { useDatabaseSchema } from "../api/queries";
@@ -98,13 +90,10 @@ export function SQLConsoleTab({
 							<Button
 								size="sm"
 								disabled={!hasSQL || execute.isPending}
+								loading={execute.isPending}
+								leftIcon={<Play className="size-3.5" />}
 								onClick={handleExecute}
 							>
-								{execute.isPending ? (
-									<Loader2 className="size-3.5 animate-spin" />
-								) : (
-									<Play className="size-3.5" />
-								)}
 								执行
 							</Button>
 						</div>
@@ -224,7 +213,7 @@ function SchemaPanel({ loading, tables }: { loading: boolean; tables: DatabaseSc
 			<div className="max-h-96 space-y-1 overflow-auto p-2 xl:max-h-96">
 				{loading ? (
 					<p className="text-muted-foreground flex items-center gap-2 px-2 py-4 text-xs">
-						<Loader2 className="size-3.5 animate-spin" />
+						<Spinner size={16} aria-hidden="true" />
 						读取结构
 					</p>
 				) : (

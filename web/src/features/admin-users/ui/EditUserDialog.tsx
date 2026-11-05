@@ -12,7 +12,6 @@ import {
 	SelectValue,
 	Switch,
 } from "@violet/ui";
-import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 
@@ -141,8 +140,7 @@ export function EditUserDialog({
 					>
 						取消
 					</Button>
-					<Button type="submit" form="edit-user-form" disabled={updateUser.isPending}>
-						{updateUser.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
+					<Button type="submit" form="edit-user-form" loading={updateUser.isPending}>
 						保存
 					</Button>
 				</>

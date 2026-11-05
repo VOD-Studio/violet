@@ -24,7 +24,7 @@ import {
 } from "@violet/ui";
 
 import { addDays, addHours, endOfDay, format, startOfDay, startOfHour } from "date-fns";
-import { Loader2, Lock } from "lucide-react";
+import { Lock } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import type { DateTimeRange, DateTimeRangePreset } from "@/shared/ui/date-time-picker";
@@ -498,8 +498,7 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
 					>
 						取消
 					</Button>
-					<Button type="submit" form="announcement-form" disabled={pending}>
-						{pending && <Loader2 className="mr-1 size-4 animate-spin" />}
+					<Button type="submit" form="announcement-form" loading={pending}>
 						{isEdit ? "保存" : "创建"}
 					</Button>
 				</SheetFooter>

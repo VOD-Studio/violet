@@ -5,8 +5,9 @@ import {
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
+	Spinner,
 } from "@violet/ui";
-import { CheckCircle2, QrCode, RefreshCw, Smartphone } from "lucide-react";
+import { CheckCircle2, QrCode, Smartphone } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -119,7 +120,7 @@ function MusicQrSession({ onRetry, onConfirmed }: MusicQrSessionProps) {
 						role="status"
 						className="flex flex-col items-center gap-2 text-muted-foreground text-xs"
 					>
-						<RefreshCw className="size-6 animate-spin text-primary" />
+						<Spinner size={24} className="text-primary" aria-hidden="true" />
 						正在生成二维码…
 					</div>
 				) : qrState === "expired" ? (

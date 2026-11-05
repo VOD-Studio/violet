@@ -13,6 +13,7 @@ import {
 	SheetDescription,
 	SheetHeader,
 	SheetTitle,
+	Spinner,
 } from "@violet/ui";
 import { Clock, History } from "lucide-react";
 import { useState } from "react";
@@ -51,7 +52,7 @@ export function PostVersionsSheet({
 					<div className="flex flex-col gap-3 px-6 pb-6">
 						{isLoading ? (
 							<div className="flex justify-center p-8">
-								<div className="size-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+								<Spinner size={24} className="text-primary" aria-hidden="true" />
 							</div>
 						) : versions?.length ? (
 							versions.map((v, index) => (
@@ -155,7 +156,7 @@ function VersionPreviewDialog({
 					{isLoading ? (
 						<div className="flex h-full items-center justify-center p-12">
 							<div className="flex flex-col items-center gap-4 animate-in fade-in duration-500">
-								<div className="size-8 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
+								<Spinner size={32} className="text-primary" aria-hidden="true" />
 								<p className="text-sm text-muted-foreground">正在加载版本内容...</p>
 							</div>
 						</div>

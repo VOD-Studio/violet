@@ -16,9 +16,8 @@ import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { RichTextEditor } from "@features/editor";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "@tanstack/react-router";
-import { Input, Sheet, SheetContent, SheetHeader, SheetTitle } from "@violet/ui";
+import { Input, Sheet, SheetContent, SheetHeader, SheetTitle, Spinner } from "@violet/ui";
 import { cn } from "cn";
-import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -157,7 +156,7 @@ export function NoteEditor({ id }: NoteEditorProps) {
 	if (!isCreate && isLoading) {
 		return (
 			<div className="flex h-full items-center justify-center">
-				<Loader2 className="text-muted-foreground size-6 animate-spin" />
+				<Spinner size={24} className="text-muted-foreground" aria-hidden="true" />
 			</div>
 		);
 	}
