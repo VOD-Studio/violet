@@ -1,0 +1,96 @@
+/*
+ * 浮层共用的出现与消失：从触发器一侧浮出并淡入，收起时往触发器方向退并淡出，不缩放。
+ * 浮层内容元素带上 .v-float 即可，data-state 与 data-side 由 Radix 或 Popper 提供。
+ * 选择器全部用 :where() 归零优先级，各单元的同名变量与 animation 声明无需关心导入顺序。
+ *
+ * 可由单元覆盖的变量：
+ *   --v-float-in / --v-float-out          进入与退出时长
+ *   --v-float-ease                        进入曲线（退出固定 ease-in）
+ *   --v-float-dist-in / --v-float-dist-out  进入与退出的位移
+ */
+
+@layer components {
+	:where(.v-float) {
+		--v-float-in: 200ms;
+		--v-float-out: 140ms;
+		--v-float-ease: cubic-bezier(0.32, 0.72, 0, 1);
+		--v-float-dist-in: 6px;
+		--v-float-dist-out: 4px;
+		--v-float-from-x: 0px;
+		--v-float-from-y: calc(var(--v-float-dist-in) * -1);
+		--v-float-to-x: 0px;
+		--v-float-to-y: calc(var(--v-float-dist-out) * -1);
+	}
+
+	:where(.v-float[data-side="top"]) {
+		--v-float-from-y: var(--v-float-dist-in);
+		--v-float-to-y: var(--v-float-dist-out);
+	}
+
+	:where(.v-float[data-side="right"]) {
+		--v-float-from-x: calc(var(--v-float-dist-in) * -1);
+		--v-float-from-y: 0px;
+		--v-float-to-x: calc(var(--v-float-dist-out) * -1);
+		--v-float-to-y: 0px;
+	}
+
+	:where(.v-float[data-side="left"]) {
+		--v-float-from-x: var(--v-float-dist-in);
+		--v-float-from-y: 0px;
+		--v-float-to-x: var(--v-float-dist-out);
+		--v-float-to-y: 0px;
+	}
+
+	:where(
+		.v-float:is([data-state="open"], [data-state="delayed-open"], [data-state="instant-open"])
+	) {
+		animation: v-float-in var(--v-float-in) var(--v-float-ease) backwards;
+	}
+
+	:where(.v-float[data-state="closed"]) {
+		animation: v-float-out var(--v-float-out) ease-in forwards;
+	}
+
+	@keyframes v-float-in {
+		from {
+			opacity: 0;
+			transform: translate(var(--v-float-from-x), var(--v-float-from-y));
+		}
+	}
+
+	@keyframes v-float-out {
+		to {
+			opacity: 0;
+			transform: translate(var(--v-float-to-x), var(--v-float-to-y));
+		}
+	}
+
+	@keyframes v-float-fade-in {
+		from {
+			opacity: 0;
+		}
+	}
+
+	@keyframes v-float-fade-out {
+		to {
+			opacity: 0;
+		}
+	}
+
+	/* 减弱动态：只保留 100ms 的透明度变化 */
+	@media (prefers-reduced-motion: reduce) {
+		:where(
+				.v-float:is(
+					[data-state="open"],
+					[data-state="delayed-open"],
+					[data-state="instant-open"]
+				)
+			) {
+			animation: v-float-fade-in 100ms ease-out backwards;
+		}
+
+		:where(.v-float[data-state="closed"]) {
+			animation: v-float-fade-out 100ms ease-out forwards;
+		}
+	}
+}

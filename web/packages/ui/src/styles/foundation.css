@@ -27,6 +27,12 @@
 	--ease-draw: cubic-bezier(0.45, 0.05, 0.25, 1);
 	--ease-skeleton: ease-in-out;
 
+	/* 浮层层级（设计稿「组件·浮层」）：对话框与侧边面板 50；挂到 body 的弹出层与菜单需盖住它们，文字提示再高，轻提示最高 */
+	--layer-dropdown: 40;
+	--layer-float: 60;
+	--layer-tooltip: 70;
+	--layer-toast: 90;
+
 	--v-duration-fast: var(--duration-hover);
 	--v-easing: var(--ease-hover);
 }
