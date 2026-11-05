@@ -1,5 +1,6 @@
 import type { Exhibit } from "../../model/exhibit";
 import { avatarExhibit } from "./avatar";
+import { badgeExhibit } from "./badge";
 import { buttonExhibit } from "./button";
 import { cardExhibit } from "./card";
 import { checkboxExhibit } from "./checkbox";
@@ -157,15 +158,7 @@ export const EXHIBITS: Exhibit[] = [
 	checkboxExhibit,
 	uploadTileExhibit,
 	indicatorExhibit,
-	{
-		id: "badge",
-		name: "徽章与头像",
-		units: ["badge", "avatar", "kbd"],
-		zone: "shelf",
-		category: "display",
-		footprint: { width: 360, height: 140 },
-		issue: 700,
-	},
+	badgeExhibit,
 	avatarExhibit,
 	kbdExhibit,
 	{

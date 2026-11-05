@@ -1,6 +1,6 @@
 import { formatDateTime } from "@shared/lib/date";
 import { useQueryClient } from "@tanstack/react-query";
-import { Badge, Button, ConfirmDialog, Input, Modal, Spinner, Switch } from "@violet/ui";
+import { Button, ConfirmDialog, Input, Modal, Spinner, Switch, Tag } from "@violet/ui";
 import {
 	Archive,
 	CalendarClock,
@@ -125,7 +125,7 @@ export function BackupRestoreTab() {
 								备份与恢复同一时间只运行一个任务
 							</p>
 						</div>
-						<Badge variant="outline">pg_dump / psql</Badge>
+						<Tag>pg_dump / psql</Tag>
 					</div>
 					<div className="mt-5 flex items-center justify-between gap-3 rounded-lg border px-3.5 py-3">
 						<span>
@@ -443,7 +443,7 @@ function BackupTable({
 								</p>
 							</td>
 							<td className="px-4 py-3">
-								<Badge variant="outline">{originLabels[backup.origin]}</Badge>
+								<Tag>{originLabels[backup.origin]}</Tag>
 							</td>
 							<td className="px-4 py-3 whitespace-nowrap">
 								{formatDateTime(backup.created_at, "second")}

@@ -30,9 +30,10 @@ import {
 	SheetHeader,
 	SheetTitle,
 	Spinner,
+	Tag,
 } from "@violet/ui";
 import { cn } from "cn";
-import { ExternalLink, Maximize2, Plus, Tag as TagIcon, Trash2, X } from "lucide-react";
+import { ExternalLink, Maximize2, Plus, Tag as TagIcon, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -210,14 +211,7 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 							{isEdit ? "编辑笔记" : "新建笔记"}
 						</SheetTitle>
 						{note ? (
-							<Badge variant="outline" className="gap-1.5 py-0.5 text-xs">
-								<span
-									className={
-										note.status === "published"
-											? "size-1.5 rounded-full bg-success"
-											: "size-1.5 rounded-full bg-muted-foreground/40"
-									}
-								/>
+							<Badge tone={note.status === "published" ? "ok" : "neutral"}>
 								{NOTE_STATUS_LABELS[note.status]}
 							</Badge>
 						) : null}
@@ -285,21 +279,14 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 							{/* 已选标签 */}
 							<div className="flex flex-wrap gap-1.5">
 								{currentTags.map((t) => (
-									<Badge
+									<Tag
 										key={t}
-										variant="secondary"
-										className="gap-1 py-0.5 text-xs font-mono"
+										size="sm"
+										onRemove={() => handleRemoveTag(t)}
+										removeLabel={`移除标签 ${t}`}
 									>
 										#{t}
-										<button
-											type="button"
-											onClick={() => handleRemoveTag(t)}
-											className="hover:text-destructive transition-colors"
-											aria-label={`移除标签 ${t}`}
-										>
-											<X className="size-3" />
-										</button>
-									</Badge>
+									</Tag>
 								))}
 								{currentTags.length === 0 ? (
 									<span className="text-xs text-muted-foreground/60">

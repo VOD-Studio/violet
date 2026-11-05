@@ -1,6 +1,5 @@
 import type { MusicPlaylist } from "@entities/music/model/types";
 import {
-	Badge,
 	Button,
 	Dialog,
 	DialogContent,
@@ -10,6 +9,7 @@ import {
 	Input,
 	Segmented,
 	type SegmentedItem,
+	Tag,
 } from "@violet/ui";
 import {
 	ChevronLeft,
@@ -415,12 +415,9 @@ export function AddPlaylistDialog({
 																</a>
 															</div>
 															<div className="flex items-center gap-2 text-muted-foreground text-xs">
-																<Badge
-																	variant="outline"
-																	className="font-normal text-xs"
-																>
+																<Tag size="sm">
 																	{item.track_count} 首
-																</Badge>
+																</Tag>
 																<span>·</span>
 																<span>{item.creator}</span>
 															</div>

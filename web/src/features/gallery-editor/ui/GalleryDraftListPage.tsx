@@ -14,6 +14,7 @@ import { formatDateTime } from "@shared/lib/date";
 import { useNavigate } from "@tanstack/react-router";
 import {
 	Badge,
+	type BadgeProps,
 	Button,
 	ConfirmDialog,
 	SearchInput,
@@ -30,6 +31,14 @@ import {
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+
+/** 图集状态对应的徽章色调：有未发布修改需要关注，已撤回视为停用。 */
+const GALLERY_STATUS_TONES: Record<GalleryStatus, NonNullable<BadgeProps["tone"]>> = {
+	draft: "neutral",
+	published: "ok",
+	modified: "warning",
+	unpublished: "off",
+};
 
 const STATUS_FILTER_OPTIONS: Array<{ value: string; label: string }> = [
 	{ value: "all", label: "全部状态" },
@@ -98,15 +107,7 @@ export function GalleryDraftListPage() {
 			header: "状态",
 			width: "110px",
 			cell: (row) => (
-				<Badge
-					variant={
-						row.status === "published"
-							? "default"
-							: row.status === "modified"
-								? "secondary"
-								: "outline"
-					}
-				>
+				<Badge tone={GALLERY_STATUS_TONES[row.status]}>
 					{GALLERY_STATUS_LABELS[row.status]}
 				</Badge>
 			),

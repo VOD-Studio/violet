@@ -1,7 +1,6 @@
 import type { EmojiGroup } from "@entities/emoji/model/types";
 import { useUpdateEmojiGroup } from "@features/admin-emojis/api/mutations";
 import {
-	Badge,
 	Button,
 	Card,
 	CardContent,
@@ -9,18 +8,12 @@ import {
 	CardHeader,
 	CardTitle,
 	Switch,
+	Tag,
 } from "@violet/ui";
 
 import { cn } from "cn";
-import { Hash, Pencil, Smile, SortAsc, Tag, Trash2 } from "lucide-react";
+import { Hash, Pencil, Smile, SortAsc, Tag as TagIcon, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-
-/** 来源标签使用分类色，不与审核状态或站点品牌混用。 */
-const SOURCE_COLORS: Record<string, string> = {
-	system: "bg-category-1-muted text-category-1 border-category-1/20",
-	bilibili: "bg-category-2-muted text-category-2 border-category-2/20",
-	custom: "bg-category-3-muted text-category-3 border-category-3/20",
-};
 
 /** 来源标签的中文映射 */
 const SOURCE_LABELS: Record<string, string> = {
@@ -44,7 +37,6 @@ interface EmojiGroupCardProps {
  */
 export function EmojiGroupCard({ group, onEdit, onDelete, onManageEmojis }: EmojiGroupCardProps) {
 	const updateGroup = useUpdateEmojiGroup();
-	const sourceColor = SOURCE_COLORS[group.source] ?? SOURCE_COLORS.custom;
 	const sourceLabel = SOURCE_LABELS[group.source] ?? group.source;
 	const isDisabled = !group.is_enabled;
 	const isToggling = updateGroup.isPending;
@@ -97,17 +89,14 @@ export function EmojiGroupCard({ group, onEdit, onDelete, onManageEmojis }: Emoj
 								{group.name}
 							</CardTitle>
 						</div>
-						<Badge
-							variant="outline"
-							className={cn(
-								"w-fit gap-1 border px-2 py-0.5 text-xs font-medium",
-								sourceColor,
-								isDisabled && "opacity-50",
-							)}
+						<Tag
+							size="sm"
+							tone={group.source === "system" ? "accent" : "neutral"}
+							icon={<TagIcon />}
+							className="w-fit"
 						>
-							<Tag className="size-3" />
 							{sourceLabel}
-						</Badge>
+						</Tag>
 					</div>
 					<div className="flex flex-col items-end gap-1">
 						<Switch

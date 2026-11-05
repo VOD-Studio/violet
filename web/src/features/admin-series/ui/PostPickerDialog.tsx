@@ -134,11 +134,15 @@ export function PostPickerDialog({
 										</span>
 									</span>
 									{excluded ? (
-										<Badge variant="secondary">已在书内</Badge>
+										<Badge tone="off">已在书内</Badge>
 									) : (
 										<Badge
-											variant={
-												post.status === "published" ? "default" : "outline"
+											tone={
+												post.status === "published"
+													? "ok"
+													: post.status === "draft"
+														? "neutral"
+														: "off"
 											}
 										>
 											{post.status === "published"

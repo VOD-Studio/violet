@@ -48,7 +48,7 @@ export function SortableChapterRow({ chapter, onRemove }: SortableChapterRowProp
 				</span>
 			</span>
 			{chapter.status && chapter.status !== "published" && (
-				<Badge variant="outline">
+				<Badge tone={chapter.status === "draft" ? "neutral" : "off"}>
 					{chapter.status === "draft" ? "草稿（书页隐藏）" : "已归档（书页隐藏）"}
 				</Badge>
 			)}

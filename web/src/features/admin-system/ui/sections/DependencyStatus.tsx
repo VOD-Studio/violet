@@ -50,7 +50,7 @@ function DepCard({ name, dep }: { name: string; dep: SystemDepStatusDTO["postgre
 		<div className="border-border bg-card rounded-lg border p-3">
 			<div className="mb-2 flex items-center justify-between">
 				<span className="text-sm font-medium">{name}</span>
-				<Badge variant={ok ? "secondary" : "destructive"}>{ok ? "正常" : "异常"}</Badge>
+				<Badge tone={ok ? "ok" : "danger"}>{ok ? "正常" : "异常"}</Badge>
 			</div>
 			<dl className="text-muted-foreground grid grid-cols-2 gap-x-3 gap-y-1 text-xs tabular-nums">
 				<dt>延迟</dt>

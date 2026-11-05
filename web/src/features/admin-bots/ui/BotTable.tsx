@@ -112,7 +112,7 @@ export function BotTable({ bots, pagination, loading, onTokenRevealed }: BotTabl
 							update.mutate({ id: row.id, body: { enabled } })
 						}
 					/>
-					<Badge variant={row.enabled ? "secondary" : "outline"}>
+					<Badge tone={row.enabled ? "ok" : "off"}>
 						{row.enabled ? "已启用" : "已禁用"}
 					</Badge>
 				</div>

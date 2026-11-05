@@ -86,12 +86,9 @@ function AdminSubscriptionsPage() {
 				const paused = row.status === "paused";
 				return (
 					<div className="flex flex-wrap items-center gap-1">
-						<Badge variant={paused ? "destructive" : "default"}>
-							{paused ? "已暂停" : "活跃"}
-						</Badge>
+						<Badge tone={paused ? "danger" : "ok"}>{paused ? "已暂停" : "活跃"}</Badge>
 						{row.consecutive_failures > 0 && !paused && (
-							<Badge variant="outline" className="text-yellow-600">
-								<AlertTriangle className="mr-0.5 size-3" />
+							<Badge tone="warning" icon={<AlertTriangle />}>
 								{row.consecutive_failures}
 							</Badge>
 						)}

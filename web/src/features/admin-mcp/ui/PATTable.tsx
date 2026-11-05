@@ -6,14 +6,7 @@ import {
 	type DataTablePagination,
 } from "@features/admin-shared/ui/data-table";
 import { formatDate, formatDateTime } from "@shared/lib/date";
-import {
-	Badge,
-	Button,
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@violet/ui";
+import { Button, Tag, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@violet/ui";
 
 import { Cable, Pencil, Trash2 } from "lucide-react";
 
@@ -41,9 +34,9 @@ export function PATTable({ tokens, pagination, loading, onConnect, onEdit }: PAT
 			cell: (row) => (
 				<div className="flex flex-wrap gap-1">
 					{row.scopes.map((s) => (
-						<Badge key={s} variant="secondary" className="font-mono text-xs">
+						<Tag key={s} size="sm">
 							{s}
-						</Badge>
+						</Tag>
 					))}
 				</div>
 			),

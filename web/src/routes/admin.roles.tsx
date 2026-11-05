@@ -10,9 +10,9 @@ import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { formatDate } from "@shared/lib/date";
 import { createFileRoute } from "@tanstack/react-router";
 import {
-	Badge,
 	Button,
 	ConfirmDialog,
+	Tag,
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
@@ -124,9 +124,7 @@ function AdminRolesPage() {
 			cell: (row) => {
 				const count = row.permission_codes?.length ?? 0;
 				return (
-					<Badge variant="secondary">
-						{row.permission_codes?.includes("*") ? "全部" : `${count} 个权限`}
-					</Badge>
+					<Tag>{row.permission_codes?.includes("*") ? "全部" : `${count} 个权限`}</Tag>
 				);
 			},
 		},

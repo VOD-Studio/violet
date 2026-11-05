@@ -97,14 +97,7 @@ export function NotesAdminListPage() {
 			header: "状态",
 			width: "96px",
 			cell: (row) => (
-				<Badge variant="outline" className="gap-1.5">
-					<span
-						className={
-							row.status === "published"
-								? "size-1.5 rounded-full bg-success"
-								: "size-1.5 rounded-full bg-muted-foreground/40"
-						}
-					/>
+				<Badge tone={row.status === "published" ? "ok" : "neutral"}>
 					{NOTE_STATUS_LABELS[row.status]}
 				</Badge>
 			),

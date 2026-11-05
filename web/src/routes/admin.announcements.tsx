@@ -17,6 +17,7 @@ import {
 	Badge,
 	Button,
 	ConfirmDialog,
+	Tag,
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
@@ -110,14 +111,14 @@ function AdminAnnouncementsPage() {
 			header: "形态",
 			sortable: true,
 			width: "80px",
-			cell: (row) => <Badge variant="secondary">{DISPLAY_LABEL[row.display]}</Badge>,
+			cell: (row) => <Tag>{DISPLAY_LABEL[row.display]}</Tag>,
 		},
 		{
 			key: "type",
 			header: "类型",
 			sortable: true,
 			width: "80px",
-			cell: (row) => <Badge variant="outline">{TYPE_LABEL[row.type]}</Badge>,
+			cell: (row) => <Tag>{TYPE_LABEL[row.type]}</Tag>,
 		},
 		{
 			key: "range",
@@ -137,9 +138,7 @@ function AdminAnnouncementsPage() {
 			sortable: true,
 			width: "80px",
 			cell: (row) => (
-				<Badge variant={row.is_active ? "default" : "secondary"}>
-					{row.is_active ? "启用" : "停用"}
-				</Badge>
+				<Badge tone={row.is_active ? "ok" : "off"}>{row.is_active ? "启用" : "停用"}</Badge>
 			),
 		},
 		{

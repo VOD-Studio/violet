@@ -13,8 +13,8 @@ import { ApiError } from "@shared/api/error";
 import { avatarUrl } from "@shared/lib/image-url";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
-	Badge,
 	BadgeAnchor,
+	Count,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
@@ -111,15 +111,7 @@ const HeaderActions = ({ user, children }: HeaderActionsProps) => {
 
 				{user && <NotificationBell onOpenChange={setNotificationOpen} />}
 				{user && (
-					<BadgeAnchor
-						badge={
-							unreadChatCount > 0 ? (
-								<Badge size="count" variant="default">
-									{unreadChatCount > 99 ? "99+" : unreadChatCount}
-								</Badge>
-							) : null
-						}
-					>
+					<BadgeAnchor badge={<Count value={unreadChatCount} />}>
 						<Link
 							aria-label={
 								unreadChatCount > 0 ? `聊天，${unreadChatCount} 条未读` : "聊天"

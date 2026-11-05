@@ -39,6 +39,7 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
+	Tag,
 } from "@violet/ui";
 import {
 	Archive,
@@ -51,7 +52,7 @@ import {
 	Send,
 	Star,
 	StarOff,
-	Tag,
+	Tag as TagIcon,
 	Trash2,
 	Undo2,
 } from "lucide-react";
@@ -69,12 +70,11 @@ export const Route = createFileRoute("/admin/posts/")({
 	component: AdminPostsPage,
 });
 
-const STATUS_META: Record<string, { label: string; variant: "default" | "secondary" | "outline" }> =
-	{
-		draft: { label: "草稿", variant: "secondary" },
-		published: { label: "已发布", variant: "default" },
-		archived: { label: "已归档", variant: "outline" },
-	};
+const STATUS_META: Record<string, { label: string; tone: "neutral" | "ok" | "off" }> = {
+	draft: { label: "草稿", tone: "neutral" },
+	published: { label: "已发布", tone: "ok" },
+	archived: { label: "已归档", tone: "off" },
+};
 
 const STATUS_OPTIONS = [
 	{ value: "all", label: "全部状态" },
@@ -221,13 +221,13 @@ function AdminPostsPage() {
 			width: "100px",
 			cell: (row) => {
 				if (status === "trashed") {
-					return <Badge variant="destructive">已删除</Badge>;
+					return <Badge tone="danger">已删除</Badge>;
 				}
 				const meta = STATUS_META[row.status] ?? {
 					label: row.status,
-					variant: "outline" as const,
+					tone: "off" as const,
 				};
-				return <Badge variant={meta.variant}>{meta.label}</Badge>;
+				return <Badge tone={meta.tone}>{meta.label}</Badge>;
 			},
 		},
 		{
@@ -237,10 +237,7 @@ function AdminPostsPage() {
 			align: "center",
 			cell: (row) =>
 				row.is_featured ? (
-					<Badge variant="default">
-						<Star className="size-3" />
-						精选
-					</Badge>
+					<Tag icon={<Star />}>精选</Tag>
 				) : (
 					<span className="text-xs text-muted-foreground">—</span>
 				),
@@ -252,9 +249,9 @@ function AdminPostsPage() {
 				row.tags.length > 0 ? (
 					<div className="flex flex-wrap gap-1">
 						{row.tags.slice(0, 3).map((t) => (
-							<Badge key={t} variant="outline" className="text-[10px]">
+							<Tag key={t} size="xs">
 								{t}
-							</Badge>
+							</Tag>
 						))}
 						{row.tags.length > 3 ? (
 							<span className="text-xs text-muted-foreground">
@@ -670,7 +667,7 @@ function TagFilter({
 		<Popover open={open} onOpenChange={setOpen}>
 			<PopoverTrigger asChild>
 				<Button variant="outline" size="sm" className="h-9 gap-1.5">
-					<Tag className="size-3.5" />
+					<TagIcon className="size-3.5" />
 					{selected.length > 0 ? `标签 (${selected.length})` : "标签筛选"}
 					<ChevronDown className="size-3 opacity-50" />
 				</Button>

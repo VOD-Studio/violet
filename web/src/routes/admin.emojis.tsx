@@ -16,7 +16,6 @@ import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { createFileRoute } from "@tanstack/react-router";
 import {
-	Badge,
 	Button,
 	Card,
 	CardContent,
@@ -27,6 +26,7 @@ import {
 	TabsContent,
 	TabsList,
 	TabsTrigger,
+	Tag,
 } from "@violet/ui";
 import { CheckCircle, Layers, Plus, Power, PowerOff, Search } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -316,9 +316,9 @@ function EmojisPage() {
 						</div>
 
 						{searchQuery && (
-							<Badge variant="secondary" className="ml-auto">
+							<Tag className="ml-auto">
 								显示 {filteredGroups.length} / {groups?.length ?? 0} 个分组
-							</Badge>
+							</Tag>
 						)}
 					</div>
 				)

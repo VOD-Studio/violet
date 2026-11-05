@@ -81,7 +81,7 @@ function AdminSeriesPage() {
 			sortable: true,
 			width: "90px",
 			cell: (row) => (
-				<Badge variant={row.status === "published" ? "default" : "secondary"}>
+				<Badge tone={row.status === "published" ? "ok" : "neutral"}>
 					{row.status === "published" ? "已发布" : "草稿"}
 				</Badge>
 			),

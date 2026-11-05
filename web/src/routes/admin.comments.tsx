@@ -22,7 +22,14 @@ import {
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { formatDateTime } from "@shared/lib/date";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Badge, Button, ConfirmDialog, Segmented, type SegmentedItem } from "@violet/ui";
+import {
+	Badge,
+	type BadgeProps,
+	Button,
+	ConfirmDialog,
+	Segmented,
+	type SegmentedItem,
+} from "@violet/ui";
 import { Ban, Check, Trash2 } from "lucide-react";
 import { useState } from "react";
 
@@ -46,13 +53,13 @@ const STATUS_BADGE: Record<
 	CommentStatus,
 	{
 		label: string;
-		variant: "default" | "secondary" | "destructive" | "outline";
+		tone: NonNullable<BadgeProps["tone"]>;
 	}
 > = {
-	pending: { label: "待审核", variant: "secondary" },
-	approved: { label: "已通过", variant: "default" },
-	spam: { label: "垃圾", variant: "destructive" },
-	deleted: { label: "已删除", variant: "outline" },
+	pending: { label: "待审核", tone: "warning" },
+	approved: { label: "已通过", tone: "ok" },
+	spam: { label: "垃圾", tone: "danger" },
+	deleted: { label: "已删除", tone: "off" },
 };
 
 /**
@@ -152,9 +159,7 @@ function AdminCommentsPage() {
 			key: "status",
 			header: "状态",
 			cell: (row) => (
-				<Badge variant={STATUS_BADGE[row.status].variant}>
-					{STATUS_BADGE[row.status].label}
-				</Badge>
+				<Badge tone={STATUS_BADGE[row.status].tone}>{STATUS_BADGE[row.status].label}</Badge>
 			),
 		},
 		{

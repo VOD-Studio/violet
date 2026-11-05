@@ -24,7 +24,14 @@ import {
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { formatDateTime } from "@shared/lib/date";
 import { createFileRoute } from "@tanstack/react-router";
-import { Badge, Button, ConfirmDialog, Segmented, type SegmentedItem } from "@violet/ui";
+import {
+	Badge,
+	type BadgeProps,
+	Button,
+	ConfirmDialog,
+	Segmented,
+	type SegmentedItem,
+} from "@violet/ui";
 import { Check, ExternalLink, EyeOff, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
 import { useState } from "react";
 
@@ -45,13 +52,13 @@ const STATUS_BADGE: Record<
 	FriendLinkStatus,
 	{
 		label: string;
-		variant: "default" | "secondary" | "destructive" | "outline";
+		tone: NonNullable<BadgeProps["tone"]>;
 	}
 > = {
-	pending: { label: "待审核", variant: "secondary" },
-	approved: { label: "已通过", variant: "default" },
-	rejected: { label: "已拒绝", variant: "destructive" },
-	disabled: { label: "已下柜", variant: "outline" },
+	pending: { label: "待审核", tone: "warning" },
+	approved: { label: "已通过", tone: "ok" },
+	rejected: { label: "已拒绝", tone: "danger" },
+	disabled: { label: "已下柜", tone: "off" },
 };
 
 function AdminFriendLinksPage() {
@@ -93,9 +100,7 @@ function AdminFriendLinksPage() {
 			header: "状态",
 			width: "100px",
 			cell: (row) => (
-				<Badge variant={STATUS_BADGE[row.status].variant}>
-					{STATUS_BADGE[row.status].label}
-				</Badge>
+				<Badge tone={STATUS_BADGE[row.status].tone}>{STATUS_BADGE[row.status].label}</Badge>
 			),
 		},
 		{

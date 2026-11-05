@@ -1,6 +1,6 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { useAllRoles } from "@features/admin-roles/api/queries";
-import { getRoleBadgeVariant, getRoleDisplayName } from "@features/admin-roles/lib/utils";
+import { getRoleDisplayName, getRoleTagTone } from "@features/admin-roles/lib/utils";
 import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
 import { DataTable, exportToCsv, usePagedQuery } from "@features/admin-shared/ui/data-table";
 import {
@@ -29,6 +29,7 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
+	Tag,
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
@@ -232,16 +233,16 @@ function AdminUsers() {
 			header: "角色",
 			sortable: true,
 			cell: (row) => {
-				const variant = getRoleBadgeVariant(row.role, row.is_root);
+				const tone = getRoleTagTone(row.role, row.is_root);
 				const label = getRoleDisplayName(roles, row.role, row.role, row.is_root);
-				return <Badge variant={variant}>{label}</Badge>;
+				return <Tag tone={tone}>{label}</Tag>;
 			},
 		},
 		{
 			key: "is_active",
 			header: "状态",
 			cell: (row) => (
-				<Badge variant={row.is_active ? "outline" : "destructive"}>
+				<Badge tone={row.is_active ? "ok" : "danger"}>
 					{row.is_active ? "正常" : "已禁用"}
 				</Badge>
 			),
@@ -250,7 +251,7 @@ function AdminUsers() {
 			key: "email_verified",
 			header: "邮箱验证",
 			cell: (row) => (
-				<Badge variant={row.email_verified ? "default" : "secondary"}>
+				<Badge tone={row.email_verified ? "ok" : "off"}>
 					{row.email_verified ? "已验证" : "未验证"}
 				</Badge>
 			),

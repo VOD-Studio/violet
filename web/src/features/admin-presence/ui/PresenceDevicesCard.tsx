@@ -65,21 +65,9 @@ export function PresenceDevicesCard({ onIssue }: { onIssue: () => void }) {
 										<span className="truncate font-medium">
 											{device.display_name}
 										</span>
-										{device.online ? (
-											<Badge
-												variant="outline"
-												className="border-success/30 text-success"
-											>
-												在线
-											</Badge>
-										) : (
-											<Badge
-												variant="outline"
-												className="text-muted-foreground"
-											>
-												离线
-											</Badge>
-										)}
+										<Badge tone={device.online ? "ok" : "off"}>
+											{device.online ? "在线" : "离线"}
+										</Badge>
 									</div>
 									<div className="mt-1 space-y-0.5 text-sm text-muted-foreground">
 										{device.online ? (

@@ -1,5 +1,5 @@
 import { useAdminPermissions } from "@features/admin-permissions/api/queries";
-import { Badge, Button, Checkbox, Label, Modal } from "@violet/ui";
+import { Button, Checkbox, Label, Modal, Tag } from "@violet/ui";
 
 import { useEffect, useState } from "react";
 import { useRoleDetail, useUpdateRolePermissions } from "../api/queries";
@@ -154,9 +154,9 @@ export function RolePermissionsDialog({
 									>
 										{menu.name}
 									</Label>
-									<Badge variant="secondary">
+									<Tag size="sm">
 										{selectedCount}/{groupCodes.length}
-									</Badge>
+									</Tag>
 								</div>
 							</div>
 

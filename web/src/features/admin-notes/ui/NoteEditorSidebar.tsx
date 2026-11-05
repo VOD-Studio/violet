@@ -1,9 +1,9 @@
 import type { AdminNote } from "@features/admin-notes/model/types";
 import { useTags } from "@features/tags/api/queries";
 import { formatDate } from "@shared/lib/date";
-import { Badge, Input, Label } from "@violet/ui";
+import { Input, Label, Tag } from "@violet/ui";
 
-import { Clock, FileText, Hash, Info, Plus, Tag as TagIcon, X } from "lucide-react";
+import { Clock, FileText, Hash, Info, Plus, Tag as TagIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
 interface NoteEditorSidebarProps {
@@ -61,17 +61,14 @@ export function NoteEditorSidebar({
 				{/* 已选标签 */}
 				<div className="mb-3 flex flex-wrap gap-1.5">
 					{tags.map((t) => (
-						<Badge key={t} variant="secondary" className="gap-1 py-0.5 text-xs">
+						<Tag
+							key={t}
+							size="sm"
+							onRemove={() => handleRemoveTag(t)}
+							removeLabel={`移除标签 ${t}`}
+						>
 							#{t}
-							<button
-								type="button"
-								onClick={() => handleRemoveTag(t)}
-								className="hover:text-destructive transition-colors"
-								aria-label={`移除标签 ${t}`}
-							>
-								<X className="size-3" />
-							</button>
-						</Badge>
+						</Tag>
 					))}
 					{tags.length === 0 ? (
 						<span className="text-xs text-muted-foreground/70">暂无标签</span>

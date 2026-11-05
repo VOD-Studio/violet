@@ -10,9 +10,9 @@ import type { NotificationItem, NotificationSourceType } from "@shared/api/notif
 import { formatRelativeTime } from "@shared/lib/date";
 import { useNavigate } from "@tanstack/react-router";
 import {
-	Badge,
 	BadgeAnchor,
 	Button,
+	Count,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
@@ -146,15 +146,7 @@ const NotificationBell = ({ onOpenChange }: NotificationBellProps) => {
 				onOpenChange?.(nextOpen);
 			}}
 		>
-			<BadgeAnchor
-				badge={
-					unread > 0 ? (
-						<Badge size="count" variant="destructive">
-							{unread > 99 ? "99+" : unread}
-						</Badge>
-					) : null
-				}
-			>
+			<BadgeAnchor badge={<Count value={unread} />}>
 				<DropdownMenuTrigger asChild>
 					<Button
 						variant="ghost"

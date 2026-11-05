@@ -10,7 +10,7 @@
 		},
 		{
 			"name": "badge",
-			"status": "legacy",
+			"status": "foundation",
 			"entry": "src/components/badge/index.ts",
 			"css": "src/components/badge/badge.css"
 		},
@@ -283,6 +283,17 @@
 		}
 	],
 	"recipes": [
+		{
+			"entry": "src/components/badge/styles.ts",
+			"symbols": [
+				"type BadgeVariantProps",
+				"badgeVariants",
+				"type CountVariantProps",
+				"countVariants",
+				"type TagVariantProps",
+				"tagVariants"
+			]
+		},
 		{
 			"entry": "src/components/button/styles.ts",
 			"symbols": ["type ButtonVariantProps", "buttonVariants"]

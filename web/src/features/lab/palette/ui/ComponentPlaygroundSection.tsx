@@ -74,10 +74,12 @@ export function ComponentPlaygroundSection({ className }: ComponentPlaygroundSec
 						</h4>
 
 						<div className="flex flex-wrap items-center gap-3">
-							<Badge variant="default">主要状态 (Default)</Badge>
-							<Badge variant="secondary">中性次级 (Secondary)</Badge>
-							<Badge variant="outline">发丝边框 (Outline)</Badge>
-							<Badge variant="destructive">阻断警告 (Destructive)</Badge>
+							<Badge tone="ok">正常 (ok)</Badge>
+							<Badge tone="neutral">草稿 (neutral)</Badge>
+							<Badge tone="accent">已定时 (accent)</Badge>
+							<Badge tone="warning">待审 (warning)</Badge>
+							<Badge tone="off">已停用 (off)</Badge>
+							<Badge tone="danger">异常 (danger)</Badge>
 						</div>
 					</div>
 				</TabsContent>

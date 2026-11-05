@@ -1,5 +1,4 @@
 import {
-	Badge,
 	Button,
 	Card,
 	ConfirmDialog,
@@ -10,6 +9,7 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow,
+	Tag,
 } from "@violet/ui";
 import {
 	ArrowDown,
@@ -264,12 +264,7 @@ export function FeaturedPlaylistsTable({
 
 											{/* 曲目数 */}
 											<TableCell className="text-center font-mono text-sm">
-												<Badge
-													variant="outline"
-													className="font-normal text-xs"
-												>
-													{item.track_count} 首
-												</Badge>
+												<Tag size="sm">{item.track_count} 首</Tag>
 											</TableCell>
 
 											{/* 公开展示 Switch */}

@@ -6,7 +6,7 @@ import ArchiveSkeleton from "@features/archive/ui/ArchiveSkeleton";
 import ArchiveYearSkeleton from "@features/archive/ui/ArchiveYearSkeleton";
 import { formatDate } from "@shared/lib/date";
 import { createFileRoute } from "@tanstack/react-router";
-import { Badge, Empty, PageShell } from "@violet/ui";
+import { Empty, PageShell, Tag } from "@violet/ui";
 import { useEffect, useRef, useState } from "react";
 
 /** 按月分组：{ [month]: items[] }，月份倒序（items 已倒序，仅 key 排序） */
@@ -93,13 +93,9 @@ function YearSection({
 											{item.tags.length > 0 && (
 												<div className="mt-1 flex flex-wrap gap-1">
 													{item.tags.map((t) => (
-														<Badge
-															key={t}
-															variant="outline"
-															className="text-xs"
-														>
+														<Tag key={t} size="sm">
 															{t}
-														</Badge>
+														</Tag>
 													))}
 												</div>
 											)}

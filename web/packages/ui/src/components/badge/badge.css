@@ -1,78 +1,353 @@
 /*
- * Badge 组件的 BEM 类名样式（.v-badge）。
+ * 标签、状态徽章、计数与圆点（.v-tag / .v-badge / .v-count / .v-dot / .v-badge-anchor）。
  * 需先导入 @violet/ui/tokens.css 或 styles.css。
- * --count/--dot 尺寸修饰仅控制形态，角标定位由宿主布局负责。
  */
 
-.v-badge {
-	display: inline-flex;
-	width: fit-content;
-	flex-shrink: 0;
-	align-items: center;
-	justify-content: center;
-	gap: 0.25rem;
-	padding: 0.125rem 0.5rem;
-	border: 1px solid transparent;
-	border-radius: 9999px;
-	font-size: 0.75rem;
-	line-height: 1rem;
-	font-weight: 500;
-	white-space: nowrap;
+@layer components {
+	/* —— 标签 —— */
+
+	.v-tag {
+		--v-tag-height: 1.5rem;
+		--v-tag-padding-inline: 0.625rem;
+		--v-tag-font-size: 0.75rem;
+		--v-tag-bg: var(--muted);
+		--v-tag-fg: var(--muted-foreground);
+
+		box-sizing: border-box;
+		display: inline-flex;
+		flex-shrink: 0;
+		align-items: center;
+		gap: 0.25rem;
+		block-size: var(--v-tag-height);
+		margin: 0;
+		padding: 0 var(--v-tag-padding-inline);
+		border: 0;
+		border-radius: var(--radius-full);
+		background-color: var(--v-tag-bg);
+		color: var(--v-tag-fg);
+		font-family: inherit;
+		font-size: var(--v-tag-font-size);
+		font-weight: 500;
+		line-height: 1;
+		text-decoration: none;
+		white-space: nowrap;
+	}
+
+	.v-tag--xs {
+		--v-tag-height: 1.125rem;
+		--v-tag-padding-inline: 0.375rem;
+		--v-tag-font-size: 0.6875rem;
+	}
+
+	.v-tag--sm {
+		--v-tag-height: 1.25rem;
+		--v-tag-padding-inline: 0.5rem;
+		--v-tag-font-size: 0.71875rem;
+	}
+
+	.v-tag--lg {
+		--v-tag-height: 1.75rem;
+		--v-tag-padding-inline: 0.75rem;
+		--v-tag-font-size: 0.8125rem;
+	}
+
+	/* 季节淡底加强调色字：只给「当前筛选」与项目归属 */
+	.v-tag--accent {
+		--v-tag-bg: var(--selected);
+		--v-tag-fg: var(--selected-foreground);
+	}
+
+	.v-tag[data-removable] {
+		padding-inline-end: 0.25rem;
+	}
+
+	.v-tag__icon {
+		display: inline-flex;
+		flex-shrink: 0;
+	}
+
+	.v-tag__icon > :where(svg) {
+		inline-size: 0.75rem;
+		block-size: 0.75rem;
+		pointer-events: none;
+	}
+
+	/* × 是独立按钮：18px 点击区，默认偏淡，悬停与聚焦才清楚 */
+	.v-tag__remove {
+		display: inline-flex;
+		flex-shrink: 0;
+		align-items: center;
+		justify-content: center;
+		inline-size: 1.125rem;
+		block-size: 1.125rem;
+		padding: 0;
+		border: 0;
+		border-radius: var(--radius-full);
+		background-color: transparent;
+		color: var(--muted-foreground);
+		opacity: 0.7;
+		cursor: pointer;
+		transition:
+			background-color var(--duration-hover) var(--ease-hover),
+			color var(--duration-hover) var(--ease-hover),
+			opacity var(--duration-hover) var(--ease-hover);
+	}
+
+	.v-tag__remove:hover,
+	.v-tag__remove:focus-visible {
+		background-color: color-mix(in oklab, var(--foreground) 10%, transparent);
+		color: var(--foreground);
+		opacity: 1;
+	}
+
+	.v-tag__remove > :where(svg) {
+		pointer-events: none;
+	}
+
+	/* 链接标签（asChild 包裹 a） */
+	a.v-tag[href] {
+		cursor: pointer;
+	}
+
+	a.v-tag[href]:hover {
+		color: var(--foreground);
+	}
+
+	/* 筛选标签：按下态换成强调色外观，颜色过渡 140ms（设计稿给筛选标签的专用时长） */
+	.v-tag--toggle {
+		cursor: pointer;
+		transition:
+			background-color 140ms var(--ease-hover),
+			color 140ms var(--ease-hover);
+	}
+
+	.v-tag--toggle:hover {
+		color: var(--foreground);
+	}
+
+	.v-tag--toggle[aria-pressed="true"] {
+		background-color: var(--selected);
+		color: var(--selected-foreground);
+	}
+
+	.v-tag--toggle:disabled {
+		cursor: not-allowed;
+		opacity: 0.5;
+	}
+
+	.v-tag--toggle:disabled:hover {
+		color: var(--v-tag-fg);
+	}
+
+	.v-tag--toggle:disabled[aria-pressed="true"]:hover {
+		color: var(--selected-foreground);
+	}
+
+	.v-tag:focus-visible,
+	.v-tag__remove:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+
+	/* —— 状态徽章 —— */
+
+	.v-badge {
+		--v-badge-bg: var(--muted);
+		--v-badge-fg: var(--foreground);
+		--v-badge-dot: var(--muted-foreground);
+
+		box-sizing: border-box;
+		display: inline-flex;
+		flex-shrink: 0;
+		align-items: center;
+		gap: 0.375rem;
+		block-size: 1.5rem;
+		padding: 0 0.625rem;
+		border-radius: var(--radius-full);
+		background-color: var(--v-badge-bg);
+		color: var(--v-badge-fg);
+		font-size: 0.75rem;
+		font-weight: 500;
+		line-height: 1;
+		white-space: nowrap;
+	}
+
+	.v-badge__dot {
+		inline-size: 0.375rem;
+		block-size: 0.375rem;
+		flex-shrink: 0;
+		border-radius: 50%;
+		background-color: var(--v-badge-dot);
+	}
+
+	.v-badge__icon {
+		display: inline-flex;
+		flex-shrink: 0;
+		color: var(--v-badge-dot);
+	}
+
+	.v-badge__icon > :where(svg) {
+		inline-size: 0.75rem;
+		block-size: 0.75rem;
+	}
+
+	.v-badge--ok {
+		--v-badge-bg: color-mix(in oklab, var(--success) 10%, var(--card));
+		--v-badge-dot: var(--success);
+	}
+
+	.v-badge--accent {
+		--v-badge-bg: var(--selected);
+		--v-badge-fg: var(--selected-foreground);
+		--v-badge-dot: var(--selected-foreground);
+	}
+
+	.v-badge--warning {
+		--v-badge-bg: color-mix(in oklab, var(--warning) 14%, var(--card));
+		--v-badge-dot: var(--warning);
+	}
+
+	.v-badge--off {
+		--v-badge-fg: var(--muted-foreground);
+	}
+
+	.v-badge--off .v-badge__dot {
+		background-color: transparent;
+		box-shadow: inset 0 0 0 1.5px var(--muted-foreground);
+	}
+
+	.v-badge--danger {
+		--v-badge-bg: color-mix(in oklab, var(--destructive) 10%, var(--card));
+		--v-badge-fg: var(--destructive-text);
+		--v-badge-dot: var(--destructive);
+	}
+
+	/* —— 计数与圆点 —— */
+
+	/* 墨色胶囊；2px 页面色描边把它从宿主图标上切出来，所以整体最小 20×20 */
+	.v-count {
+		box-sizing: border-box;
+		display: inline-block;
+		min-inline-size: 1.25rem;
+		block-size: 1.25rem;
+		padding: 0 0.3125rem;
+		border: 2px solid var(--background);
+		border-radius: var(--radius-full);
+		background-color: var(--foreground);
+		color: var(--background);
+		font-size: 0.65625rem;
+		font-weight: 600;
+		line-height: 1rem;
+		font-variant-numeric: tabular-nums;
+		text-align: center;
+		white-space: nowrap;
+		animation: v-badge-fade-in var(--duration-hover) var(--ease-hover);
+	}
+
+	/* 行内计数：跟在文字后的小号数字，没有胶囊 */
+	.v-count--inline {
+		min-inline-size: 0;
+		block-size: auto;
+		padding: 0;
+		border: 0;
+		border-radius: 0;
+		background: none;
+		color: var(--muted-foreground);
+		font-size: 0.75rem;
+		font-weight: inherit;
+		line-height: inherit;
+		animation: none;
+	}
+
+	.v-dot {
+		box-sizing: border-box;
+		display: inline-block;
+		inline-size: 0.75rem;
+		block-size: 0.75rem;
+		border: 2px solid var(--background);
+		border-radius: 50%;
+		background-color: var(--destructive);
+		animation: v-badge-fade-in var(--duration-hover) var(--ease-hover);
+	}
+
+	.v-badge-anchor {
+		position: relative;
+		display: inline-flex;
+		flex-shrink: 0;
+	}
+
+	.v-badge-anchor__badge {
+		position: absolute;
+		display: flex;
+		pointer-events: none;
+	}
+
+	/* 胶囊压在宿主右上角：顶部上提 2px，左缘在宿主右缘内 16px */
+	.v-badge-anchor__badge[data-placement="corner"] {
+		inset-block-start: -2px;
+		inset-inline-start: calc(100% - 1rem);
+	}
+
+	.v-badge-anchor__badge[data-placement="edge"] {
+		inset-block-start: 0;
+		inset-inline-end: 0;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-tag--toggle,
+		.v-tag__remove {
+			transition: none;
+		}
+
+		.v-count,
+		.v-dot {
+			animation: none;
+		}
+	}
+
+	@media (forced-colors: active) {
+		.v-tag,
+		.v-badge {
+			border: 1px solid CanvasText;
+		}
+
+		.v-tag--toggle[aria-pressed="true"] {
+			background-color: Highlight;
+			color: HighlightText;
+			forced-color-adjust: none;
+		}
+
+		.v-tag__remove:hover,
+		.v-tag__remove:focus-visible {
+			background-color: Highlight;
+			color: HighlightText;
+		}
+
+		.v-count,
+		.v-dot {
+			forced-color-adjust: none;
+		}
+
+		.v-count {
+			background-color: CanvasText;
+			color: Canvas;
+			border-color: Canvas;
+		}
+
+		.v-count--inline {
+			background: none;
+			color: CanvasText;
+		}
+
+		.v-dot {
+			background-color: Highlight;
+			border-color: Canvas;
+		}
+	}
 }
 
-.v-badge svg {
-	pointer-events: none;
-	width: 0.75rem;
-	height: 0.75rem;
-}
-
-/* —— 变体 —— */
-
-.v-badge--default {
-	background-color: var(--primary);
-	color: var(--primary-foreground);
-}
-
-.v-badge--secondary {
-	background-color: var(--secondary);
-	color: var(--secondary-foreground);
-}
-
-.v-badge--destructive {
-	background-color: var(--destructive);
-	color: var(--destructive-foreground);
-}
-
-.v-badge--outline {
-	border-color: var(--border);
-	color: var(--foreground);
-}
-
-.v-badge--ghost {
-	color: var(--foreground);
-}
-
-.v-badge--link {
-	/* link 形态贴合文字宽度，去掉胶囊内边距 */
-	padding: 0;
-	color: var(--link);
-	text-decoration: underline;
-	text-underline-offset: 4px;
-}
-
-/* —— 尺寸 —— */
-
-.v-badge--count {
-	min-width: 1rem;
-	height: 1rem;
-	padding: 0 0.25rem;
-	font-size: 10px;
-	line-height: 1;
-	font-variant-numeric: tabular-nums;
-}
-
-.v-badge--dot {
-	width: 0.625rem;
-	height: 0.625rem;
-	padding: 0;
+@keyframes v-badge-fade-in {
+	from {
+		opacity: 0;
+	}
 }

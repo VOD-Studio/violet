@@ -1,11 +1,11 @@
 import {
-	Badge,
 	Button,
 	Dialog,
 	DialogContent,
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
+	Tag,
 } from "@violet/ui";
 import { ExternalLink, Lock, Pencil, Trash2, X } from "lucide-react";
 import { useId, useState } from "react";
@@ -195,7 +195,7 @@ export function RoadmapItemDialog({
 							<ul className="flex flex-wrap gap-1.5" aria-label="条目标签">
 								{item.tags.map((tag) => (
 									<li key={tag}>
-										<Badge variant="secondary">{tag}</Badge>
+										<Tag size="sm">{tag}</Tag>
 									</li>
 								))}
 							</ul>

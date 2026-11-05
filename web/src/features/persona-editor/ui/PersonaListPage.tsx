@@ -96,7 +96,7 @@ export function PersonaListPage() {
 			width: "150px",
 			cell: (row) => (
 				<div className="flex items-center gap-2">
-					<Badge variant={row.is_complete ? "secondary" : "outline"}>
+					<Badge tone={row.is_complete ? "ok" : "off"}>
 						{row.is_complete ? "完整" : "待补全"}
 					</Badge>
 					<span className="text-xs tabular-nums text-muted-foreground">
@@ -116,7 +116,7 @@ export function PersonaListPage() {
 			header: "当前状态",
 			width: "110px",
 			cell: (row) => (
-				<Badge variant={row.is_active ? "default" : "outline"}>
+				<Badge tone={row.is_active ? "ok" : "off"}>
 					{row.is_active ? "当前人设" : "未激活"}
 				</Badge>
 			),

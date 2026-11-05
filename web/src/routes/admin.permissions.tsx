@@ -7,9 +7,9 @@ import { DataTable, useClientPagination } from "@features/admin-shared/ui/data-t
 import { useIsSuperAdmin } from "@features/auth/hooks/usePermissions";
 import { createFileRoute } from "@tanstack/react-router";
 import {
-	Badge,
 	Button,
 	ConfirmDialog,
+	Tag,
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
@@ -150,9 +150,9 @@ function AdminPermissionsPage() {
 			key: "type",
 			header: "类型",
 			cell: (r) => (
-				<Badge variant={r.row.type === "menu" ? "default" : "outline"}>
+				<Tag tone={r.row.type === "menu" ? "accent" : "neutral"}>
 					{r.row.type === "menu" ? "分组" : "操作"}
-				</Badge>
+				</Tag>
 			),
 		},
 		{
@@ -164,12 +164,7 @@ function AdminPermissionsPage() {
 		{
 			key: "builtin",
 			header: "内置",
-			cell: (r) =>
-				r.row.is_builtin ? (
-					<Badge variant="secondary">
-						<Lock className="size-3" /> 内置
-					</Badge>
-				) : null,
+			cell: (r) => (r.row.is_builtin ? <Tag icon={<Lock />}>内置</Tag> : null),
 		},
 		{
 			key: "actions_col",

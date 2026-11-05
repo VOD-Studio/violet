@@ -1,6 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-	Badge,
 	Button,
 	Input,
 	Label,
@@ -10,6 +9,7 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
+	Tag,
 	Textarea,
 } from "@violet/ui";
 
@@ -180,7 +180,7 @@ export function CreatePermissionDialog({
 					/>
 					{isBuiltin && (
 						<p className="text-muted-foreground text-xs">
-							<Badge variant="secondary">内置</Badge> 类型不可更改
+							<Tag size="sm">内置</Tag> 类型不可更改
 						</p>
 					)}
 				</div>

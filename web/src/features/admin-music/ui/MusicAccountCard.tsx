@@ -114,19 +114,9 @@ export function MusicAccountCard({
 					<div className="flex items-center justify-between">
 						<span className="text-muted-foreground">配置状态</span>
 						{status?.configured ? (
-							<Badge
-								variant="outline"
-								className="border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-							>
-								已配置服务地址与令牌
-							</Badge>
+							<Badge tone="ok">已配置服务地址与令牌</Badge>
 						) : (
-							<Badge
-								variant="outline"
-								className="border-amber-500/30 text-amber-600 dark:text-amber-400"
-							>
-								未配置
-							</Badge>
+							<Badge tone="warning">未配置</Badge>
 						)}
 					</div>
 
@@ -159,26 +149,10 @@ export function MusicAccountCard({
 						<h3 className="font-medium text-base">站点网易云账号</h3>
 					</div>
 
-					{account?.state === "connected" && (
-						<Badge
-							variant="outline"
-							className="border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-						>
-							已连接
-						</Badge>
-					)}
-					{account?.state === "expired" && (
-						<Badge
-							variant="outline"
-							className="border-amber-500/30 text-amber-600 dark:text-amber-400"
-						>
-							凭据已失效
-						</Badge>
-					)}
+					{account?.state === "connected" && <Badge tone="ok">已连接</Badge>}
+					{account?.state === "expired" && <Badge tone="warning">凭据已失效</Badge>}
 					{(!account || account.state === "disconnected") && (
-						<Badge variant="outline" className="text-muted-foreground">
-							未连接
-						</Badge>
+						<Badge tone="off">未连接</Badge>
 					)}
 				</div>
 

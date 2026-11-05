@@ -4,7 +4,7 @@ import { AvatarGroup } from "@shared/ui/avatar-group";
 import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
 import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { Link } from "@tanstack/react-router";
-import { Badge } from "@violet/ui";
+import { Tag } from "@violet/ui";
 import { ImageOff, Star } from "lucide-react";
 import { BLOG_SCOPE, markSharedSource, SharedElement } from "@/shared/lib/view-transition";
 
@@ -72,10 +72,9 @@ const PostCard = ({ post, size = "md" }: PostCardProps) => {
 					</Link>
 				)}
 				{post.is_featured && (
-					<Badge variant="default" className="absolute top-2 left-2 z-10 gap-1">
-						<Star className="size-3" />
+					<Tag icon={<Star className="size-3" />} className="absolute top-2 left-2 z-10">
 						精选
-					</Badge>
+					</Tag>
 				)}
 			</div>
 

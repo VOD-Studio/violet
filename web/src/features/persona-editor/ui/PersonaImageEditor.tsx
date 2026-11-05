@@ -2,7 +2,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { PersonaAdminImage } from "@entities/persona/model/types";
 import { contentImageUrl } from "@shared/lib/image-url";
-import { Badge, Button, Input, Label, Textarea } from "@violet/ui";
+import { Button, Input, Label, Tag, Textarea } from "@violet/ui";
 
 import { ArrowDown, ArrowUp, GripVertical, Trash2 } from "lucide-react";
 
@@ -58,7 +58,11 @@ export function PersonaImageEditor({
 						loading="lazy"
 					/>
 				</button>
-				{index === 0 ? <Badge className="w-fit">公开主视觉</Badge> : null}
+				{index === 0 ? (
+					<Tag tone="accent" className="w-fit">
+						公开主视觉
+					</Tag>
+				) : null}
 			</div>
 
 			<div className="min-w-0 space-y-4">

@@ -40,7 +40,7 @@ export function PersonaEditorToolbar({
 					</Link>
 				</Button>
 				<PersonaSaveIndicator state={saveState} />
-				{!canManage ? <Badge variant="outline">只读</Badge> : null}
+				{!canManage ? <Badge tone="off">只读</Badge> : null}
 			</div>
 
 			<div className="flex flex-wrap items-center justify-end gap-2">

@@ -70,7 +70,7 @@ const tableColumns: DataTableColumn<DatabaseTableDTO>[] = [
 		width: "180px",
 		cell: (row) => (
 			<div className="flex items-center gap-2">
-				<Badge variant={row.statistics_fresh ? "secondary" : "outline"}>
+				<Badge tone={row.statistics_fresh ? "ok" : "neutral"}>
 					{row.statistics_fresh ? "7 日内已分析" : "待分析"}
 				</Badge>
 				{row.last_analyze && (
@@ -167,7 +167,7 @@ export function DatabaseStatusTab({ onUseQuery }: DatabaseStatusTabProps) {
 							<span className="font-mono text-lg font-semibold tabular-nums">
 								v{status.migration.version}
 							</span>
-							<Badge variant={status.migration.dirty ? "destructive" : "secondary"}>
+							<Badge tone={status.migration.dirty ? "danger" : "ok"}>
 								{status.migration.dirty ? "DIRTY" : "CLEAN"}
 							</Badge>
 						</div>

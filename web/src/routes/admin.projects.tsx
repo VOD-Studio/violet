@@ -18,11 +18,11 @@ import { useProjects, useProjectsPaged } from "@features/projects/api/queries";
 import type { Project } from "@features/projects/model/types";
 import { createFileRoute } from "@tanstack/react-router";
 import {
-	Badge,
 	Button,
 	ConfirmDialog,
 	Input,
 	Modal,
+	Tag,
 	Textarea,
 	Tooltip,
 	TooltipContent,
@@ -105,9 +105,9 @@ function AdminProjectsPage() {
 			header: "技术栈",
 			cell: (row) =>
 				row.tech_stack?.map((t) => (
-					<Badge key={t} variant="secondary" className="mr-1">
+					<Tag key={t} className="mr-1">
 						{t}
-					</Badge>
+					</Tag>
 				)),
 		},
 		{

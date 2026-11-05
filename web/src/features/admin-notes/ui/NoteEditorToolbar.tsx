@@ -47,14 +47,7 @@ export function NoteEditorToolbar({
 					{isEdit ? "编辑笔记" : "新建笔记"}
 				</h1>
 				{note ? (
-					<Badge variant="outline" className="gap-1.5 py-0.5">
-						<span
-							className={
-								note.status === "published"
-									? "size-1.5 rounded-full bg-success"
-									: "size-1.5 rounded-full bg-muted-foreground/40"
-							}
-						/>
+					<Badge tone={note.status === "published" ? "ok" : "neutral"}>
 						{NOTE_STATUS_LABELS[note.status]}
 					</Badge>
 				) : null}
