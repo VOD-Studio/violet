@@ -41,7 +41,7 @@ export function ComponentPlaygroundSection({ className }: ComponentPlaygroundSec
 			</div>
 
 			<Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-				<TabsList className="mb-6 flex-wrap">
+				<TabsList className="mb-6">
 					<TabsTrigger value="buttons">按钮组 Buttons</TabsTrigger>
 					<TabsTrigger value="badges">徽章组 Badges</TabsTrigger>
 					<TabsTrigger value="timeline">步骤光脉 PhysicalSteps</TabsTrigger>

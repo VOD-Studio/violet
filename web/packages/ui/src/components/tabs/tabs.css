@@ -1,136 +1,231 @@
-/*
- * Tabs 组件的 BEM 类名样式（.v-tabs / __list / __tab / __panel）。
- * 需先导入 @violet/ui/tokens.css 或 styles.css。
- * 选中态双轨：[data-state="active"]（Radix 风格）与 [aria-selected="true"] 等价生效；
- * __list--line 切换为下划线风格，选中指示线经 __tab 的 ::after 绘制。
- */
+@layer components {
+	/*
+	 * Tabs 标签页（UED 设计稿 Tabs.dc.html 的 .tb 系列）。
+	 * 尺寸、时长与曲线是设计稿给定的单元局部值，颜色只用语义 token。
+	 */
+	.v-tabs {
+		--v-tabs-indicator-duration: 280ms;
+		--v-tabs-indicator-ease: cubic-bezier(0.32, 0.72, 0, 1);
+		--v-tabs-color-duration: 140ms;
+		--v-tabs-panel-duration: 180ms;
+		--v-tabs-item-height: 2.5rem;
+		display: flex;
+		flex-direction: column;
+	}
 
-.v-tabs {
-	display: flex;
-	flex-direction: column;
-	gap: 0.5rem;
-}
+	/* 竖排时标签列与内容左右并排 */
+	.v-tabs[data-orientation="vertical"] {
+		flex-direction: row;
+		gap: 1.5rem;
+	}
 
-.v-tabs[data-orientation="vertical"] {
-	flex-direction: row;
-}
+	.v-tabs__list-wrap {
+		position: relative;
+		min-width: 0;
+		max-width: 100%;
+	}
 
-.v-tabs__list {
-	display: inline-flex;
-	width: fit-content;
-	height: 2.25rem;
-	align-items: center;
-	justify-content: center;
-	padding: 0.1875rem;
-	border-radius: var(--radius);
-	background-color: var(--muted);
-	color: var(--muted-foreground);
-}
+	.v-tabs__list {
+		position: relative;
+		display: flex;
+		gap: 1.5rem;
+		max-width: 100%;
+		overflow-x: auto;
+		font-size: 0.875rem;
+		scrollbar-width: none;
+	}
 
-.v-tabs[data-orientation="vertical"] .v-tabs__list {
-	height: fit-content;
-	flex-direction: column;
-}
+	.v-tabs__list::-webkit-scrollbar {
+		display: none;
+	}
 
-.v-tabs__list--line {
-	gap: 0.25rem;
-	padding: 0;
-	border-radius: 0;
-	background-color: transparent;
-}
+	.v-tabs__list[data-size="lg"] {
+		--v-tabs-item-height: 3rem;
+		font-size: 1rem;
+	}
 
-.v-tabs__tab {
-	position: relative;
-	display: inline-flex;
-	flex: 1 1 0%;
-	height: calc(100% - 1px);
-	align-items: center;
-	justify-content: center;
-	gap: 0.375rem;
-	padding: 0.25rem 0.5rem;
-	border: 1px solid transparent;
-	border-radius: calc(var(--radius) - 2px);
-	font-size: 0.875rem;
-	font-weight: 500;
-	white-space: nowrap;
-	color: color-mix(in oklab, var(--foreground) 60%, transparent);
-	background-color: transparent;
-	cursor: pointer;
-	transition:
-		color 150ms ease-out,
-		background-color 150ms ease-out,
-		border-color 150ms ease-out,
-		box-shadow 150ms ease-out;
-}
+	.v-tabs[data-orientation="vertical"] .v-tabs__list {
+		flex-direction: column;
+		gap: 0.25rem;
+		overflow: visible;
+	}
 
-.v-tabs[data-orientation="vertical"] .v-tabs__tab {
-	width: 100%;
-	justify-content: flex-start;
-}
+	.v-tabs__tab {
+		position: relative;
+		display: inline-flex;
+		flex: none;
+		height: var(--v-tabs-item-height);
+		align-items: center;
+		gap: 0.375rem;
+		margin: 0;
+		padding: 0 0.25rem;
+		border: 0;
+		border-radius: 6px; /* 设计稿给定的焦点环拐角，非视觉圆角 */
+		background-color: transparent;
+		color: var(--muted-foreground);
+		font: inherit;
+		white-space: nowrap;
+		cursor: pointer;
+		transition: color var(--v-tabs-color-duration) ease-out;
+	}
 
-.v-tabs__tab svg {
-	pointer-events: none;
-	flex-shrink: 0;
-	width: 1rem;
-	height: 1rem;
-}
+	.v-tabs__tab > svg {
+		flex: none;
+		width: 1rem;
+		height: 1rem;
+		pointer-events: none;
+	}
 
-.v-tabs__tab:hover {
-	color: var(--foreground);
-}
+	.v-tabs__tab:hover:not(:disabled):not([data-disabled]) {
+		color: var(--foreground);
+	}
 
-.v-tabs__tab:focus-visible {
-	outline: 2px solid var(--ring);
-	outline-offset: 2px;
-}
+	.v-tabs__tab[aria-selected="true"] {
+		color: var(--foreground);
+		font-weight: 500;
+	}
 
-/* 选中态：胶囊风格（默认）实底浮起，下划线风格走 ::after 指示线 */
-.v-tabs__tab[data-state="active"],
-.v-tabs__tab[aria-selected="true"] {
-	background-color: var(--background);
-	border-color: var(--input);
-	color: var(--foreground);
-	box-shadow: 0 1px 2px 0 rgb(0 0 0 / 5%);
-}
+	.v-tabs__tab:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: -2px;
+	}
 
-.v-tabs__list--line .v-tabs__tab[data-state="active"],
-.v-tabs__list--line .v-tabs__tab[aria-selected="true"] {
-	background-color: transparent;
-	border-color: transparent;
-	color: var(--primary-text);
-	box-shadow: none;
-}
+	.v-tabs__tab:disabled,
+	.v-tabs__tab[data-disabled] {
+		cursor: not-allowed;
+		opacity: 0.5;
+	}
 
-.v-tabs__list--line .v-tabs__tab[data-state="active"]::after,
-.v-tabs__list--line .v-tabs__tab[aria-selected="true"]::after {
-	position: absolute;
-	left: 0;
-	right: 0;
-	bottom: -0.3125rem;
-	height: 0.125rem;
-	border-radius: 9999px;
-	background-color: var(--primary);
-	content: "";
-}
+	.v-tabs__count {
+		font-size: 0.75rem;
+		font-weight: 400;
+		font-variant-numeric: tabular-nums;
+		color: var(--muted-foreground);
+	}
 
-/* 垂直方向的下划线指示线贴右缘 */
-.v-tabs[data-orientation="vertical"] .v-tabs__list--line .v-tabs__tab[data-state="active"]::after,
-.v-tabs[data-orientation="vertical"] .v-tabs__list--line .v-tabs__tab[aria-selected="true"]::after {
-	top: 0;
-	bottom: 0;
-	right: -0.25rem;
-	left: auto;
-	width: 0.125rem;
-	height: auto;
-}
+	.v-tabs__tab[aria-selected="true"] .v-tabs__count {
+		color: color-mix(in oklab, var(--foreground) 70%, transparent);
+	}
 
-.v-tabs__tab:disabled,
-.v-tabs__tab[data-disabled="true"] {
-	pointer-events: none;
-	opacity: 0.5;
-}
+	/* 共享底线：宽度等于当前项宽度，位置与尺寸由测量写入的变量驱动；
+	   底线在滚动内容坐标系里，随列表一起滚动 */
+	.v-tabs__indicator {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		width: var(--v-tabs-indicator-size, 0px);
+		height: 2px;
+		border-radius: 1px;
+		background-color: var(--foreground);
+		transform: translate3d(var(--v-tabs-indicator-offset, 0px), 0, 0);
+		pointer-events: none;
+		will-change: transform;
+	}
 
-.v-tabs__panel {
-	flex: 1 1 0%;
-	outline: none;
+	/* 首次定位（data-animated 出现）后才启用滑动，避免从第一项滑进来 */
+	.v-tabs__list[data-animated] .v-tabs__indicator {
+		transition:
+			transform var(--v-tabs-indicator-duration) var(--v-tabs-indicator-ease),
+			width var(--v-tabs-indicator-duration) var(--v-tabs-indicator-ease);
+	}
+
+	/* 竖排：底线变成贴 inline-end 边缘的 2px 竖条，沿同一条曲线滑动 */
+	.v-tabs[data-orientation="vertical"] .v-tabs__indicator {
+		top: 0;
+		bottom: auto;
+		left: auto;
+		inset-inline-end: 0;
+		width: 2px;
+		height: var(--v-tabs-indicator-size, 0px);
+		transform: translate3d(0, var(--v-tabs-indicator-offset, 0px), 0);
+	}
+
+	.v-tabs[data-orientation="vertical"] .v-tabs__list[data-animated] .v-tabs__indicator {
+		transition:
+			transform var(--v-tabs-indicator-duration) var(--v-tabs-indicator-ease),
+			height var(--v-tabs-indicator-duration) var(--v-tabs-indicator-ease);
+	}
+
+	.v-tabs[data-orientation="vertical"] .v-tabs__tab {
+		justify-content: flex-start;
+		width: 100%;
+	}
+
+	/* 两端渐隐：页面色到透明的 32px 渐变，随滚动位置显隐；竖排不滚动也不渐隐 */
+	.v-tabs__fade {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		width: 2rem;
+		opacity: 0;
+		pointer-events: none;
+		transition: opacity var(--v-tabs-color-duration) ease-out;
+	}
+
+	.v-tabs__fade--start {
+		left: 0;
+		background: linear-gradient(to right, var(--background), transparent);
+	}
+
+	.v-tabs__fade--end {
+		right: 0;
+		background: linear-gradient(to left, var(--background), transparent);
+	}
+
+	.v-tabs__list-wrap[data-overflow-start] .v-tabs__fade--start {
+		opacity: 1;
+	}
+
+	.v-tabs__list-wrap[data-overflow-end] .v-tabs__fade--end {
+		opacity: 1;
+	}
+
+	.v-tabs[data-orientation="vertical"] .v-tabs__fade {
+		display: none;
+	}
+
+	/* 面板：标签与内容之间 20；可聚焦，Tab 从当前标签直接进入内容 */
+	.v-tabs__panel {
+		flex: 1 1 0%;
+		min-width: 0;
+		margin-block-start: 1.25rem;
+		border-radius: var(--radius-8); /* 焦点环拐角 */
+		outline: none;
+		animation: v-tabs-panel-in var(--v-tabs-panel-duration) ease-out;
+	}
+
+	.v-tabs__panel:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 4px;
+	}
+
+	/* forceMount 保留在 DOM 中的未激活面板必须不可见（Radix 不再补 hidden） */
+	.v-tabs__panel[data-state="inactive"] {
+		display: none;
+	}
+
+	.v-tabs[data-orientation="vertical"] .v-tabs__panel {
+		margin-block-start: 0;
+	}
+
+	@keyframes v-tabs-panel-in {
+		from {
+			opacity: 0;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-tabs {
+			--v-tabs-indicator-duration: 0s;
+			--v-tabs-color-duration: 0s;
+			--v-tabs-panel-duration: 0s;
+		}
+	}
+
+	@media (forced-colors: active) {
+		.v-tabs__indicator {
+			background-color: Highlight;
+			forced-color-adjust: none;
+		}
+	}
 }

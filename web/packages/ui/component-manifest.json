@@ -241,7 +241,7 @@
 		},
 		{
 			"name": "tabs",
-			"status": "legacy",
+			"status": "foundation",
 			"entry": "src/components/tabs/index.ts",
 			"css": "src/components/tabs/tabs.css"
 		},

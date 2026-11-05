@@ -233,18 +233,18 @@ export function EmojiManageDialog({ open, onOpenChange, group }: EmojiManageDial
 					>
 						<TabsList className="shrink-0">
 							<TabsTrigger value="manage">
-								<Images className="mr-1 size-4" />
+								<Images className="size-4" />
 								管理
 							</TabsTrigger>
 							<TabsTrigger value="upload">
-								<Upload className="mr-1 size-4" />
+								<Upload className="size-4" />
 								上传
 							</TabsTrigger>
 						</TabsList>
 
 						<TabsContent
 							value="manage"
-							className="mt-4 flex flex-1 flex-col overflow-hidden"
+							className="flex flex-1 flex-col overflow-hidden"
 						>
 							<EmojiToolbar
 								searchQuery={searchQuery}

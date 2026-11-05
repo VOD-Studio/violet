@@ -14,6 +14,7 @@ import { radioExhibit } from "./radio";
 import { searchInputExhibit } from "./search-input";
 import { segmentedExhibit } from "./segmented";
 import { switchExhibit } from "./switch";
+import { tabsExhibit } from "./tabs";
 import { textareaExhibit } from "./textarea";
 import { toggleGroupExhibit } from "./toggle-group";
 import { uploadTileExhibit } from "./upload-tile";
@@ -167,15 +168,7 @@ export const EXHIBITS: Exhibit[] = [
 	switchExhibit,
 	radioExhibit,
 	toggleGroupExhibit,
-	{
-		id: "tabs",
-		name: "标签页",
-		units: ["tabs"],
-		zone: "shelf",
-		category: "navigation",
-		footprint: { width: 400, height: 180 },
-		issue: 701,
-	},
+	tabsExhibit,
 	inputExhibit,
 	searchInputExhibit,
 	textareaExhibit,

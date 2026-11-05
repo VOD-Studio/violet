@@ -24,7 +24,6 @@ export * from "./components/sheet/index";
 export * from "./components/sonner/index";
 export * from "./components/steps/index";
 export * from "./components/table/index";
-export * from "./components/tabs/index";
 export * from "./components/text-underline/index";
 export * from "./components/tooltip/index";
 export { useDebouncedCallback } from "./lib/use-debounced-callback";
