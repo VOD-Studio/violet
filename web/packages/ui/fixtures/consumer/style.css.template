@@ -133,3 +133,6 @@ section {
 	width: 60%;
 	height: 1rem;
 }
+.display-field {
+	font-size: 0.875rem;
+}

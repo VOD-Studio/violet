@@ -7,7 +7,7 @@ import { createRoot } from "react-dom/client";
 import "./style.css";
 import { LinkCard } from "@violet/ui";
 import { LinkCard as LeafLinkCard } from "@violet/ui/link-card";
-import { Avatar, AvatarGroup, Badge, BadgeAnchor, Card, CardContent, CardFooter, CardFrame, CardFrameBody, CardFrameExcerpt, CardFrameImage, CardFrameMeta, CardFrameTitle, CardHeader, CardTitle, Count, Dot, Kbd, KbdSeparator, Separator, Skeleton, Tag, TagToggle } from "@violet/ui";
+import { Avatar, AvatarGroup, Badge, BadgeAnchor, Card, CardContent, CardFooter, CardFrame, CardFrameBody, CardFrameExcerpt, CardFrameImage, CardFrameMeta, CardFrameTitle, CardHeader, CardTitle, Count, Dot, Kbd, KbdSeparator, Radio, RadioGroup, Separator, Skeleton, Switch, Tabs, TabsContent, TabsCount, TabsList, TabsTrigger, Tag, TagToggle, ToggleGroup, ToggleGroupItem } from "@violet/ui";
 import { Avatar as LeafAvatar } from "@violet/ui/avatar";
 
 const linkCardLogo = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><rect width="160" height="160" fill="#f0edf8"/><path d="m40 44 40 76 40-76H98l-18 36-18-36Z" fill="#684dda"/></svg>')}`;
@@ -489,6 +489,41 @@ function DisplayPreview() {
 				<Kbd keys={["mod", "K"]} platform={mac ? "mac" : "other"} />
 				<Kbd>Esc</Kbd><KbdSeparator>或</KbdSeparator><Kbd keys={["shift", "enter"]} platform={mac ? "mac" : "other"} />
 			</div>
+		</section>
+		<section aria-label="控件">
+			<h2>Switch · Radio · ToggleGroup · Tabs</h2>
+			<div className="display-row">
+				<label className="display-field" htmlFor="consumer-switch">深色模式</label>
+				<Switch id="consumer-switch" checked={dark} onCheckedChange={setDark} />
+				<Switch id="consumer-switch-loading" loading aria-label="同步中" />
+				<Switch size="sm" aria-label="小号开关" />
+			</div>
+			<RadioGroup legend="谁可以评论" defaultValue="all" name="audience">
+				<Radio value="all" label="所有人" description="登录后即可评论" />
+				<Radio value="friends" label="仅友链与订阅者" />
+			</RadioGroup>
+			<RadioGroup legend="发布方式" defaultValue="now" name="publish" appearance="card">
+				<Radio value="now" label="立即发布" description="出现在首页「最近」" />
+				<Radio value="draft" label="存为草稿" description="不出现在任何列表里" />
+			</RadioGroup>
+			<div className="display-row">
+				<ToggleGroup type="multiple" aria-label="文字格式" defaultValue={["bold"]}>
+					<ToggleGroupItem value="bold" aria-label="加粗" title="加粗">B</ToggleGroupItem>
+					<ToggleGroupItem value="italic" aria-label="斜体" title="斜体">I</ToggleGroupItem>
+				</ToggleGroup>
+				<ToggleGroup type="single" aria-label="列表显示" variant="bare" role="toolbar">
+					<ToggleGroupItem value="summary">摘要</ToggleGroupItem>
+					<ToggleGroupItem value="cover">封面</ToggleGroupItem>
+				</ToggleGroup>
+			</div>
+			<Tabs defaultValue="articles">
+				<TabsList>
+					<TabsTrigger value="articles">文章</TabsTrigger>
+					<TabsTrigger value="comments">评论<TabsCount>12</TabsCount></TabsTrigger>
+				</TabsList>
+				<TabsContent value="articles">3 篇文章</TabsContent>
+				<TabsContent value="comments">12 条评论</TabsContent>
+			</Tabs>
 		</section>
 		<section aria-label="卡片">
 			<h2>Card · Separator · Skeleton</h2>

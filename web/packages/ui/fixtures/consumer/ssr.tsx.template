@@ -22,6 +22,11 @@ import { Kbd as LeafKbd } from "@violet/ui/kbd";
 import { Separator as LeafSeparator } from "@violet/ui/separator";
 import { Skeleton as LeafSkeleton } from "@violet/ui/skeleton";
 import { badgeVariants, countVariants, kbdVariants, tagVariants } from "@violet/ui/variants";
+import { Radio, RadioGroup, Switch, Tabs, TabsContent, TabsCount, TabsList, TabsTrigger, ToggleGroup, ToggleGroupItem, ToggleGroupSeparator } from "@violet/ui";
+import { RadioGroup as LeafRadioGroup, Radio as LeafRadio } from "@violet/ui/radio";
+import { Switch as LeafSwitch } from "@violet/ui/switch";
+import { Tabs as LeafTabs, TabsContent as LeafTabsContent, TabsCount as LeafTabsCount, TabsList as LeafTabsList, TabsTrigger as LeafTabsTrigger } from "@violet/ui/tabs";
+import { ToggleGroup as LeafToggleGroup, ToggleGroupItem as LeafToggleGroupItem } from "@violet/ui/toggle-group";
 
 const cardProps = { href: "https://www.example.com/guide#native", title: "y_defect的推文", description: "@y_defect的推文", siteName: "EXAMPLE.COM", imageSrc: "https://example.com/logo.png", imageAlt: "Example logo" };
 const card = renderToString(<LinkCard {...cardProps} />);
@@ -109,14 +114,50 @@ const viewSegments = [{ value: "grid", label: "网格" }, { value: "table", labe
 const segmentedTree = (Root: typeof Segmented, equal: boolean) => <Root aria-label="视图" value="grid" segments={viewSegments} {...(equal ? { itemSize: "5rem" } : {})} />;
 const segmented = renderToString(segmentedTree(Segmented, false));
 assert.equal(segmented, renderToString(segmentedTree(LeafSegmented, false)));
-assert.match(segmented, /role="group"/);
-assert.match(segmented, /aria-pressed="true"/);
-assert.match(segmented, /aria-pressed="false"/);
+assert.match(segmented, /role="radiogroup"/);
+assert.match(segmented, /aria-checked="true"/);
+assert.match(segmented, /aria-checked="false"/);
 assert.doesNotMatch(segmented, /data-layout="equal"/);
 const segmentedEqual = renderToString(segmentedTree(Segmented, true));
 assert.equal(segmentedEqual, renderToString(segmentedTree(LeafSegmented, true)));
 assert.match(segmentedEqual, /data-layout="equal"/);
 assert.match(segmentedEqual, /--v-segmented-item-size:\s*5rem/);
+const switchNode = renderToString(<Switch checked aria-labelledby="sw-label" id="consumer-switch" />);
+assert.equal(switchNode, renderToString(<LeafSwitch checked aria-labelledby="sw-label" id="consumer-switch" />));
+assert.match(switchNode, /role="switch"/);
+assert.match(switchNode, /aria-checked="true"/);
+assert.match(switchNode, /type="button"/);
+const busySwitch = renderToString(<LeafSwitch defaultChecked loading aria-label="同步中" />);
+assert.match(busySwitch, /aria-busy="true"/);
+assert.match(busySwitch, /data-loading=""/);
+
+const radioGroup = renderToString(<RadioGroup legend="谁可以评论" defaultValue="all" name="audience"><Radio value="all" label="所有人" /><Radio value="friends" label="仅友链" description="其余人只能看" /></RadioGroup>);
+assert.equal(radioGroup, renderToString(<LeafRadioGroup legend="谁可以评论" defaultValue="all" name="audience"><LeafRadio value="all" label="所有人" /><LeafRadio value="friends" label="仅友链" description="其余人只能看" /></LeafRadioGroup>));
+assert.match(radioGroup, /<fieldset\b/);
+assert.match(radioGroup, /type="radio"/);
+assert.match(radioGroup, /checked/);
+assert.match(radioGroup, /aria-describedby=/);
+
+const toggleGroup = renderToString(<ToggleGroup type="multiple" aria-label="文字格式" defaultValue={["bold"]}><ToggleGroupItem value="bold" aria-label="加粗">B</ToggleGroupItem><ToggleGroupItem value="italic" aria-label="斜体">I</ToggleGroupItem></ToggleGroup>);
+assert.equal(toggleGroup, renderToString(<LeafToggleGroup type="multiple" aria-label="文字格式" defaultValue={["bold"]}><LeafToggleGroupItem value="bold" aria-label="加粗">B</LeafToggleGroupItem><LeafToggleGroupItem value="italic" aria-label="斜体">I</LeafToggleGroupItem></LeafToggleGroup>));
+assert.match(toggleGroup, /role="group"/);
+assert.equal((toggleGroup.match(/aria-pressed="true"/g) ?? []).length, 1);
+assert.match(renderToString(<ToggleGroupSeparator />), /aria-hidden="true"/);
+
+const tabsTree = (Root: typeof Tabs, List: typeof TabsList, Trigger: typeof TabsTrigger, Panel: typeof TabsContent, Count: typeof TabsCount) => (
+	<Root defaultValue="articles" aria-label="内容分区">
+		<List><Trigger value="articles">文章</Trigger><Trigger value="comments">评论<Count>12</Count></Trigger></List>
+		<Panel value="articles">文章面板</Panel>
+		<Panel value="comments">评论面板</Panel>
+	</Root>
+);
+const tabs = renderToString(tabsTree(Tabs, TabsList, TabsTrigger, TabsContent, TabsCount));
+assert.equal(tabs, renderToString(tabsTree(LeafTabs, LeafTabsList, LeafTabsTrigger, LeafTabsContent, LeafTabsCount)));
+assert.match(tabs, /role="tablist"/);
+assert.match(tabs, /role="tab"[^>]*aria-selected="true"/);
+assert.match(tabs, /role="tabpanel"/);
+assert.match(tabs, /评论<span[^>]*data-slot="tabs-count"[^>]*>12<\/span>/);
+assert.match(tabs, /v-tabs__indicator/);
 
 const avatarProps = { name: "Rua", src: "https://example.com/rua.png", status: "online" as const };
 const avatar = renderToString(<Avatar {...avatarProps} />);

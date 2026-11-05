@@ -49,6 +49,15 @@
 			<div class="v-card"><div class="v-card__header"><div class="v-card__title">纯 CSS 卡片</div></div></div>
 			<hr class="v-separator" />
 			<div class="v-skeleton" style="height: 1rem"></div>
+			<button id="plain-switch" type="button" role="switch" aria-checked="true" class="v-switch" data-state="checked" aria-label="深色模式"><span class="v-switch__thumb"></span></button>
+			<fieldset class="v-radio-group">
+				<label class="v-radio"><input type="radio" class="v-radio__input" name="plain-sort" value="new" checked /><span class="v-radio__control" aria-hidden="true"></span><span class="v-radio__text"><span class="v-radio__label">最新</span></span></label>
+			</fieldset>
+			<div class="v-toggle-group" role="group" aria-label="文字格式">
+				<button type="button" class="v-toggle-group__item" aria-pressed="true">B</button>
+				<button type="button" class="v-toggle-group__item" aria-pressed="false">I</button>
+			</div>
+			<div class="v-tabs"><div class="v-tabs__list-wrap"><div class="v-tabs__list" role="tablist"><button type="button" role="tab" aria-selected="true" class="v-tabs__tab" data-state="active">文章</button><button type="button" role="tab" aria-selected="false" class="v-tabs__tab">评论</button><span class="v-tabs__indicator" aria-hidden="true" style="--v-tabs-indicator-offset: 0px; --v-tabs-indicator-size: 32px"></span></div></div></div>
 		</main>
 	</body>
 </html>

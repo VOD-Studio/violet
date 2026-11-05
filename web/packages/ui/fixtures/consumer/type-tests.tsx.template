@@ -20,6 +20,11 @@ import { Avatar as LeafAvatar } from "@violet/ui/avatar";
 import { Tag as LeafTag } from "@violet/ui/badge";
 import { Kbd as LeafKbd } from "@violet/ui/kbd";
 import { badgeVariants, countVariants, kbdVariants, tagVariants, type BadgeVariantProps, type KbdVariantProps, type TagVariantProps } from "@violet/ui/variants";
+import { Radio, RadioGroup, Switch, Tabs, TabsContent, TabsCount, TabsList, TabsTrigger, ToggleGroup, ToggleGroupItem, ToggleGroupSeparator, type RadioGroupProps, type RadioProps, type SwitchProps, type ToggleGroupProps } from "@violet/ui";
+import { Radio as LeafRadio, RadioGroup as LeafRadioGroup } from "@violet/ui/radio";
+import { Switch as LeafSwitch } from "@violet/ui/switch";
+import { Tabs as LeafTabs, TabsContent as LeafTabsContent, TabsCount as LeafTabsCount, TabsList as LeafTabsList, TabsTrigger as LeafTabsTrigger } from "@violet/ui/tabs";
+import { ToggleGroupItem as LeafToggleGroupItem } from "@violet/ui/toggle-group";
 import { LinkCard as LeafLinkCard, type LinkCardProps as LeafLinkCardProps } from "@violet/ui/link-card";
 
 const linkCardProps: LinkCardProps = {
@@ -277,3 +282,48 @@ export const invalidCountValue = <Count />;
 export const invalidAnchorPlacement = <BadgeAnchor placement="bottom-corner" badge={null}><span /></BadgeAnchor>;
 // @ts-expect-error 叶子入口保留相同的色调约束。
 export const invalidLeafTagTone = <LeafTag tone="ok">x</LeafTag>;
+
+const switchRef = createRef<HTMLButtonElement>();
+const radioRef = createRef<HTMLInputElement>();
+const fieldsetRef = createRef<HTMLFieldSetElement>();
+const switchProps: SwitchProps = { checked: true, defaultChecked: false, onCheckedChange: (checked: boolean) => void checked, size: "lg", loading: true, name: "dark", value: "on", form: "settings" };
+const radioGroupProps: RadioGroupProps = { legend: "谁可以评论", name: "audience", value: "all", defaultValue: "all", onValueChange: (value: string) => void value, orientation: "horizontal", appearance: "card", disabled: false, required: true };
+const radioProps: RadioProps = { value: "all", label: "所有人", description: "登录后即可评论", disabled: false };
+const toggleSingle: ToggleGroupProps = { type: "single", value: "left", defaultValue: "left", onValueChange: (value: string) => void value, variant: "bare", role: "toolbar", orientation: "horizontal", disabled: false, children: <ToggleGroupItem value="left">L</ToggleGroupItem> };
+const toggleMultiple: ToggleGroupProps = { type: "multiple", value: ["bold"], defaultValue: ["bold"], onValueChange: (value: string[]) => void value.length, variant: "track", children: <ToggleGroupItem value="bold">B</ToggleGroupItem> };
+export const controlExamples = <>
+	<Switch ref={switchRef} id="consumer-switch" {...switchProps} />
+	<LeafSwitch size="sm" />
+	<RadioGroup ref={fieldsetRef} {...radioGroupProps}>
+		<Radio ref={radioRef} {...radioProps} />
+		<LeafRadio value="friends" label="仅友链" />
+	</RadioGroup>
+	<LeafRadioGroup legend="排序" defaultValue="new"><LeafRadio value="new" label="最新" /></LeafRadioGroup>
+	<ToggleGroup aria-label="对齐" {...toggleSingle}>
+		<ToggleGroupItem value="left" aria-label="左对齐" title="左对齐" />
+		<ToggleGroupItem value="right" aria-label="右对齐" disabled />
+		<ToggleGroupSeparator />
+	</ToggleGroup>
+	<ToggleGroup aria-label="文字格式" {...toggleMultiple}>
+		<LeafToggleGroupItem value="bold" aria-label="加粗">B</LeafToggleGroupItem>
+	</ToggleGroup>
+	<Tabs defaultValue="articles" orientation="vertical" onValueChange={(value: string) => void value}>
+		<TabsList size="lg"><TabsTrigger value="articles" disabled>文章</TabsTrigger><TabsTrigger value="comments">评论<TabsCount>12</TabsCount></TabsTrigger></TabsList>
+		<TabsContent value="articles" forceMount>文章面板</TabsContent>
+		<TabsContent value="comments">评论面板</TabsContent>
+	</Tabs>
+</>;
+// @ts-expect-error Switch 尺寸只有三档。
+export const invalidSwitchSize = <Switch size="default" />;
+// @ts-expect-error Switch 不存在 busy 属性。
+export const invalidSwitchBusy = <Switch busy />;
+// @ts-expect-error RadioGroup 的朝向只有两值。
+export const invalidRadioOrientation = <RadioGroup legend="排序" orientation="diagonal"><Radio value="a" label="甲" /></RadioGroup>;
+// @ts-expect-error Radio 的 value 必填。
+export const invalidRadioValue = <Radio label="甲" />;
+// @ts-expect-error ToggleGroup 的 value 类型随 type 区分。
+export const invalidToggleSingleValue = <ToggleGroup type="single" value={["bold"]}><ToggleGroupItem value="bold">B</ToggleGroupItem></ToggleGroup>;
+// @ts-expect-error ToggleGroup 的 role 只接受 group 与 toolbar。
+export const invalidToggleRole = <ToggleGroup type="multiple" role="radiogroup" aria-label="格式"><ToggleGroupItem value="bold">B</ToggleGroupItem></ToggleGroup>;
+// @ts-expect-error TabsList 尺寸只有两档。
+export const invalidTabsListSize = <Tabs defaultValue="a"><TabsList size="xl"><TabsTrigger value="a">甲</TabsTrigger></TabsList><TabsContent value="a">面板</TabsContent></Tabs>;
