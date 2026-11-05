@@ -3,6 +3,7 @@ import { buttonExhibit } from "./button";
 import { checkboxExhibit } from "./checkbox";
 import { dropdownExhibit } from "./dropdown";
 import { imagePixelRevealExhibit } from "./image-pixel-reveal";
+import { indicatorExhibit } from "./indicator";
 import { inputExhibit } from "./input";
 import { linkCardExhibit } from "./link-card";
 import { searchInputExhibit } from "./search-input";
@@ -152,15 +153,7 @@ export const EXHIBITS: Exhibit[] = [
 	segmentedExhibit,
 	checkboxExhibit,
 	uploadTileExhibit,
-	{
-		id: "indicator",
-		name: "指示器",
-		units: ["indicator"],
-		zone: "shelf",
-		category: "feedback",
-		footprint: { width: 360, height: 120 },
-		issue: 696,
-	},
+	indicatorExhibit,
 	{
 		id: "badge",
 		name: "徽章与头像",
