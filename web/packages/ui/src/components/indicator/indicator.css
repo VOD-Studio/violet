@@ -47,37 +47,70 @@
 .v-flower__draw {
 	stroke-dasharray: 1 1;
 	stroke-dashoffset: 1;
-	animation: v-flower-draw var(--v-flower-period) ease-in-out infinite;
-	animation-delay: calc(var(--v-flower-index) * 0.16s);
+	fill: currentColor;
+	fill-opacity: 0;
+	animation:
+		v-flower-draw var(--v-flower-period) cubic-bezier(0.45, 0.05, 0.25, 1) infinite,
+		v-flower-wash var(--v-flower-period) ease-in-out infinite;
+	animation-delay: calc(var(--v-flower-index) * 0.16s), calc(var(--v-flower-index) * 0.16s);
+}
+
+/* 茎与单线不填充 */
+.v-flower__stem,
+.v-flower__base,
+.v-flower--snow .v-flower__draw {
+	fill: none;
 }
 
 .v-flower__pop {
 	opacity: 0;
+	fill: currentColor;
+	fill-opacity: 0.22;
 	animation: v-flower-pop var(--v-flower-period) ease-out infinite;
 	animation-delay: calc(var(--v-flower-index) * 0.16s);
 }
 
 .v-flower__dot {
 	fill: currentColor;
+	fill-opacity: 1;
 	stroke: none;
 }
 
 @keyframes v-flower-draw {
 	0% {
 		stroke-dashoffset: 1;
-		opacity: 1;
+		stroke-opacity: 1;
 	}
 	26% {
 		stroke-dashoffset: 0;
-		opacity: 1;
+		stroke-opacity: 1;
 	}
 	72% {
 		stroke-dashoffset: 0;
-		opacity: 1;
+		stroke-opacity: 1;
+	}
+	88% {
+		stroke-dashoffset: 0;
+		stroke-opacity: 0;
 	}
 	100% {
 		stroke-dashoffset: 0;
-		opacity: 0;
+		stroke-opacity: 0;
+	}
+}
+
+@keyframes v-flower-wash {
+	0%,
+	26% {
+		fill-opacity: 0;
+	}
+	42%,
+	72% {
+		fill-opacity: 0.22;
+	}
+	88%,
+	100% {
+		fill-opacity: 0;
 	}
 }
 
