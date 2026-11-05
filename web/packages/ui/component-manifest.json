@@ -16,7 +16,7 @@
 		},
 		{
 			"name": "card",
-			"status": "legacy",
+			"status": "foundation",
 			"entry": "src/components/card/index.ts",
 			"css": "src/components/card/card.css"
 		},
@@ -185,7 +185,7 @@
 		},
 		{
 			"name": "separator",
-			"status": "legacy",
+			"status": "foundation",
 			"entry": "src/components/separator/index.ts",
 			"css": "src/components/separator/separator.css"
 		},
@@ -201,7 +201,7 @@
 		},
 		{
 			"name": "skeleton",
-			"status": "legacy",
+			"status": "foundation",
 			"entry": "src/components/skeleton/index.ts",
 			"css": "src/components/skeleton/skeleton.css"
 		},

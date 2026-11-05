@@ -1,69 +1,160 @@
 /*
- * Card 组件的 BEM 类名样式（.v-card 及其元素）。
+ * Card：基础卡（.v-card）与相框卡（.v-card-frame）。
  * 需先导入 @violet/ui/tokens.css 或 styles.css。
- * 卡片圆角比控件级 var(--radius) 大一档，浮层表面感来自 --card 面 + 细边框。
+ * 浅色无描边，深色由 --ol 提供 1px 发丝边；可点击的卡片不浮起、不位移。
  */
 
-.v-card {
-	display: flex;
-	flex-direction: column;
-	gap: 1.5rem;
-	padding: 1.5rem 0;
-	border: 1px solid var(--sheet-border, var(--border));
-	border-radius: calc(var(--radius) + 0.125rem);
-	background-color: var(--card);
-	color: var(--card-foreground);
-	box-shadow: var(--shadow-soft);
-}
+@layer components {
+	.v-card,
+	.v-card-frame {
+		box-sizing: border-box;
+		display: flex;
+		flex-direction: column;
+		border: 1px solid var(--ol);
+		border-radius: var(--radius-12, 12px);
+		background-color: var(--card);
+		color: var(--card-foreground);
+		box-shadow: var(--shadow-soft);
+	}
 
-.v-card__header {
-	display: grid;
-	grid-auto-rows: min-content;
-	grid-template-rows: auto auto;
-	align-items: start;
-	gap: 0.5rem;
-	padding: 0 1.5rem;
-}
+	.v-card {
+		gap: 12px;
+		padding: 20px 24px;
+	}
 
-/* 挂载 __action 时头部分两列，动作区靠右跨两行 */
-.v-card__header:has(.v-card__action) {
-	grid-template-columns: 1fr auto;
-}
+	.v-card__header {
+		display: grid;
+		grid-template-rows: auto auto;
+		align-items: start;
+		gap: 4px;
+	}
 
-.v-card__title {
-	font-weight: 600;
-	line-height: 1;
-}
+	/* 挂载 __action 时头部分两列，动作区靠右跨两行 */
+	.v-card__header:has(.v-card__action) {
+		grid-template-columns: 1fr auto;
+	}
 
-.v-card__description {
-	font-size: 0.875rem;
-	color: var(--muted-foreground);
-}
+	.v-card__title {
+		font-size: 1rem;
+		font-weight: 600;
+		line-height: 1.5;
+	}
 
-.v-card__action {
-	grid-column: 2;
-	grid-row: 1 / span 2;
-	align-self: start;
-	justify-self: end;
-}
+	.v-card__description {
+		font-size: 0.8125rem;
+		color: var(--muted-foreground);
+	}
 
-.v-card__content {
-	padding: 0 1.5rem;
-}
+	.v-card__action {
+		grid-column: 2;
+		grid-row: 1 / span 2;
+		align-self: start;
+		justify-self: end;
+	}
 
-.v-card__footer {
-	display: flex;
-	align-items: center;
-	padding: 0 1.5rem;
-}
+	.v-card__footer {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 8px;
+	}
 
-/* 分隔线修饰：需要头尾与内容拉开时使用，边框走向与卡片留白配套 */
-.v-card__header--divided {
-	padding-block: 0 1.5rem;
-	border-block-end: 1px solid var(--border);
-}
+	/* —— 相框卡 —— */
 
-.v-card__footer--divided {
-	padding-block: 1.5rem 0;
-	border-block-start: 1px solid var(--border);
+	.v-card-frame {
+		position: relative;
+		padding: 8px;
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.v-card-frame__image {
+		display: block;
+		aspect-ratio: 16 / 10;
+		overflow: hidden;
+		border-radius: var(--radius-4, 4px);
+		background-color: var(--muted);
+	}
+
+	.v-card-frame__image :is(img, picture, svg) {
+		display: block;
+		inline-size: 100%;
+		block-size: 100%;
+		object-fit: cover;
+		transition: filter 160ms var(--ease-hover, ease-out);
+	}
+
+	.v-card-frame:hover .v-card-frame__image img {
+		filter: brightness(1.04);
+	}
+
+	.v-card-frame__body {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		padding: 12px 8px 8px;
+	}
+
+	.v-card-frame__meta {
+		order: -1;
+		font-size: 0.75rem;
+		color: var(--muted-foreground);
+	}
+
+	.v-card-frame__title {
+		color: inherit;
+		font-size: 1rem;
+		font-weight: 600;
+		line-height: 1.5;
+		text-decoration: underline;
+		text-decoration-color: transparent;
+		text-underline-offset: 4px;
+		transition: text-decoration-color 160ms var(--ease-hover, ease-out);
+	}
+
+	.v-card-frame__title:is(a) {
+		outline: none;
+	}
+
+	/* 链接覆盖层把点击区扩展到整张卡 */
+	.v-card-frame__title:is(a)::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+		z-index: 1;
+		border-radius: inherit;
+	}
+
+	.v-card-frame :is(button, input, select, textarea, [role="button"]) {
+		position: relative;
+		z-index: 2;
+	}
+
+	.v-card-frame:hover .v-card-frame__title,
+	.v-card-frame__title:focus-visible {
+		text-decoration-color: color-mix(in oklab, var(--foreground) 40%, transparent);
+	}
+
+	/* 键盘焦点：2px 强调色环包住整张卡，根节点不裁剪 */
+	.v-card-frame:has(.v-card-frame__title:focus-visible) {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+
+	.v-card-frame__excerpt {
+		display: -webkit-box;
+		overflow: hidden;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		font-size: 0.8125rem;
+		line-height: 1.7;
+		color: var(--muted-foreground);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-card-frame__image :is(img, picture, svg),
+		.v-card-frame__title {
+			transition: none;
+		}
+	}
 }

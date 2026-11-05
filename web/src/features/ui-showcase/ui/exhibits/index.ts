@@ -1,5 +1,6 @@
 import type { Exhibit } from "../../model/exhibit";
 import { buttonExhibit } from "./button";
+import { cardExhibit } from "./card";
 import { checkboxExhibit } from "./checkbox";
 import { dropdownExhibit } from "./dropdown";
 import { imagePixelRevealExhibit } from "./image-pixel-reveal";
@@ -222,15 +223,7 @@ export const EXHIBITS: Exhibit[] = [
 	},
 	linkCardExhibit,
 	imagePixelRevealExhibit,
-	{
-		id: "card",
-		name: "卡片与骨架",
-		units: ["card", "separator", "skeleton"],
-		zone: "content",
-		category: "display",
-		footprint: { width: 400, height: 240 },
-		issue: 700,
-	},
+	cardExhibit,
 	{
 		id: "list",
 		name: "列表与树",

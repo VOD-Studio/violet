@@ -1,1 +1,16 @@
-export * from "./card";
+export {
+	Card,
+	CardAction,
+	CardContent,
+	CardDescription,
+	CardFooter,
+	CardFrame,
+	CardFrameBody,
+	CardFrameExcerpt,
+	CardFrameImage,
+	CardFrameMeta,
+	CardFrameTitle,
+	type CardFrameTitleProps,
+	CardHeader,
+	CardTitle,
+} from "./card";

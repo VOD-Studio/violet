@@ -1,17 +1,30 @@
 /*
- * Skeleton 组件的 BEM 类名样式（.v-skeleton）。
+ * Skeleton：只用凹陷底色，透明度 1 ⇄ .55 缓慢起伏，不加扫光。
  * 需先导入 @violet/ui/tokens.css 或 styles.css。
- * 占位底色取 --muted（凹陷材质）；动画为 1.8s ease-in-out 透明度起伏，不加扫光。
  */
 
-.v-skeleton {
-	border-radius: var(--radius-8, calc(var(--radius) - 2px));
-	background-color: var(--muted);
-	animation: skeleton-pulse 1.8s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
+@layer components {
 	.v-skeleton {
-		animation: none;
+		display: block;
+		border-radius: var(--radius-4, 4px);
+		background-color: var(--muted);
+		animation: v-skeleton-breathe var(--duration-skeleton, 1.8s)
+			var(--ease-skeleton, ease-in-out) infinite;
+	}
+
+	@keyframes v-skeleton-breathe {
+		0%,
+		100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.55;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-skeleton {
+			animation: none;
+		}
 	}
 }
