@@ -2,7 +2,7 @@
 
 Violet/UI 的包名是 `@violet/ui`。React 组件、CSS 和类型声明在同一个包里交付；本目录维护组件库的架构与设计规范。
 
-先看 `web/packages/ui/component-manifest.json`。`foundation` 表示已按新结构实现；`legacy` 表示保留兼容入口、尚未重建。当前 22 个基础单元是 Avatar、Badge、Button、Card、Checkbox、Dropdown、ImagePixelReveal、Indicator、Input、Kbd、Label、LinkCard、Radio、SearchInput、Segmented、Separator、Skeleton、Switch、Tabs、Textarea、ToggleGroup、UploadTile。其余 27 个单元，包括 Dialog，仍属于 legacy；旧页面能运行不代表已经完成新架构改造。
+先看 `web/packages/ui/component-manifest.json`。`foundation` 表示已按新结构实现；`legacy` 表示保留兼容入口、尚未重建。当前 28 个基础单元是 Avatar、Badge、Button、Card、Checkbox、ContextMenu、Dropdown、DropdownMenu、HoverCard、ImagePixelReveal、Indicator、Input、Kbd、Label、LinkCard、Popover、Radio、SearchInput、Segmented、Separator、Skeleton、Sonner、Switch、Tabs、Textarea、ToggleGroup、Tooltip、UploadTile。其余 22 个单元，包括 Dialog，仍属于 legacy；旧页面能运行不代表已经完成新架构改造。
 
 ```text
 web/packages/ui/
@@ -134,6 +134,12 @@ ImagePixelReveal 的 `className` 属于根容器，用于约束尺寸；`imgClas
 展示类单元（`badge`、`avatar`、`kbd`、`card`、`separator`、`skeleton`）的状态由调用方持有，组件只承诺读屏契约。胶囊 `Count` 与 `Dot` 对读屏隐藏，数量或「有新动态」必须写进宿主的可访问名称；`Count` 为 0 时不渲染，超过 `max` 显示 `99+`。`Avatar` 的 `alt` 默认取 `name`，`alt=""` 表示名字已在旁边显示的装饰用法，在线状态与作者标记写进可访问名称；图片未到时只有底色呼吸，失败退回首字，换 `src` 重新加载。`AvatarGroup` 压叠排列，指针悬停时展开（设计稿没有设计，沿用站点既有行为），展开只在 `(hover: hover)` 下生效，减弱动态下直接切换。`Kbd` 未传 `platform` 时，服务端与水合首帧按非 macOS 输出，水合后再切换为符号，避免水合差异。`CardFrameTitle asChild` 的链接用伪元素把点击区扩到整张卡，卡内其他按钮层级更高，仍可单独点击。`Skeleton` 默认 `aria-hidden`，忙碌状态由所在区域的 `aria-busy` 表达，只用凹陷色做透明度起伏，不加扫光。
 
 选择类单元（`switch`、`radio`、`toggle-group`、`tabs`、`segmented`）共用一套键盘契约：整组只占一个 Tab 停靠位，方向键在启用项之间移动，跳过禁用项。Switch 与 ToggleGroup 的每项是原生 button（Space/Enter 激活）；RadioGroup 用原生 radio 的方向键换选；Tabs 沿用 Radix 的自动激活。Segmented 默认项是 `role="radio"` 的 button、容器 `role="radiogroup"`，带 `render` 的导航类分段保持普通 group 语义。加载中的 Switch 挂 `aria-busy` 并忽略激活，视觉仍跟随宿主的 `checked`；失败回退由宿主翻转状态完成，圆钮自动滑回。Tabs 的底线指示器与渐隐层对读屏隐藏，测量在客户端完成，SSR 不输出位置。
+
+浮层类单元（`popover`、`hover-card`、`tooltip`、`dropdown`、`dropdown-menu`、`context-menu`、`sonner`）共用一套出场：从触发器一侧浮出并淡入，收起往触发器方向退并淡出，不缩放。时长与位移按各自的组件稿：弹出层 200/140ms、6/4px，悬停卡片 200/120ms、4px，文字提示 150/120ms，下拉面板 220/140ms，操作菜单 200/140ms，右键菜单 180/120ms 且收起原地淡出，子菜单 180/140ms。共用关键帧在 `src/styles/float.css`，内容元素带 `.v-float`，选择器零优先级，单元用 `--v-float-*` 变量覆盖；减弱动态下只剩 100ms 透明度。挂到 body 的内容层级是 `--layer-float`（60，盖过 50 的对话框与侧边面板），原位渲染的下拉是 `--layer-dropdown`（40），文字提示 `--layer-tooltip`（70），轻提示 `--layer-toast`（90）。需要 Portal 的内容都接受 `container`，陈列室据此把浮层收进展品舞台，随检视台的明暗、季节与减弱动态变化。
+
+Popover 非模态：无遮罩，背后可滚动；点外面、Esc、再点触发器关闭，焦点回到触发器，点到别的可聚焦元素时尊重那次聚焦；触发器滚出视野时自动关闭。面板 `role="dialog"`，默认用触发器命名，传 `aria-label` 时以它为准。触发器是 Button 时，打开期间的按下态由 `aria-expanded` 驱动。HoverCard 悬停 500ms 出现、离开 200ms 消失，指针从触发词移到卡片上不消失，键盘聚焦同样延迟出现，Esc 立即消失，触屏不出现；卡片只做预览，不放按钮。Tooltip 的 `TooltipProvider` 默认 0 延迟，指针离开 60ms 后才退回，按下触发器、Esc 与失焦立即收起；相邻触发器之间同一个气泡滑过去（180ms），所以相邻触发器要在同一个 Provider 下；`truncatedOnly` 只在文字确实被截断时出现；气泡不接收指针，不放链接和按钮。
+
+DropdownMenu 与 ContextMenu 共用一套项：键盘打开焦点进第一项，指针打开不预先高亮；↑↓ 循环、Home/End 到两端；不可用项带 `aria-disabled`、被键盘跳过，原因写在右侧（`reason`）；多选项默认点了不收起（`closeOnSelect` 可覆盖），单选项与普通项执行后收起。子菜单悬停 100ms 打开，离开触发项后有 120ms 宽限，← 与 Esc 只收起子菜单、焦点回到触发项，只用一层。汉字标签的前缀预测按拼音声母匹配（取 GB2312 一级字表，生僻字与繁体字按原字匹配，多音字取表中读音），英文标签按字面前缀。Toaster 以 sonner 为引擎，调用方继续 `import { toast } from "sonner"`：成功与信息 4 秒、警告 6 秒、带操作 8 秒，出错与加载中不自动关，调用方传 `duration` 时以它为准；每个通知区最多保留 6 条；加载中的图标用指示器单元的控件圆弧，卡片本身就是「正在……」的证据，圆弧不再叠加 200ms 延迟。稿里的这些点没有实现：同一条消息合并为 ×N；卡片 `role="alert"` 与 `role="status"` 之分；加载中通知的关闭钮；退场受 sonner 200ms 卸载所限；抽屉打开时把通知区抬到抽屉上方——前四点来自 sonner 本身，末点需要跨特性协调，均待后续工单。
 
 ## Violet 的设计规则
 
