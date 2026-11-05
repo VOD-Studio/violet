@@ -272,9 +272,10 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 				<PromptDialog
 					open={linkDialogOpen}
 					onOpenChange={setLinkDialogOpen}
-					title="插入链接"
+					title={linkDefault ? "编辑链接" : "插入链接"}
 					label="链接地址"
 					defaultValue={linkDefault}
+					confirmLabel={linkDefault ? "保存" : "插入"}
 					placeholder="https://"
 					onConfirm={handleLinkConfirm}
 				/>
