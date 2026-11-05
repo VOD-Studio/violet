@@ -39,7 +39,7 @@ describe("UserProfileFeed", () => {
 	it("图文视图为空但还有下一页时，可以继续加载", () => {
 		const onLoadMore = vi.fn();
 		render(<UserProfileFeed {...base} hasNextPage onLoadMore={onLoadMore} />);
-		fireEvent.click(screen.getByRole("button", { name: /图文/ }));
+		fireEvent.click(screen.getByRole("radio", { name: /图文/ }));
 		expect(screen.getByText("还没有图文推文")).toBeTruthy();
 		fireEvent.click(screen.getByRole("button", { name: "继续加载" }));
 		expect(onLoadMore).toHaveBeenCalledTimes(1);

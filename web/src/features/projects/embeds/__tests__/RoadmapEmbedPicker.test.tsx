@@ -62,12 +62,12 @@ describe("路线图选择表单", () => {
 		choose("条目", "#2 建立领域模型");
 		expect(lastSource(onChange)).toBe('{"project":"kite","item":2}');
 
-		fireEvent.click(screen.getByRole("button", { name: "关系画布" }));
+		fireEvent.click(screen.getByRole("radio", { name: "关系画布" }));
 		expect(lastSource(onChange)).toBe(
 			'{"project":"kite","display":"canvas","view":"graph","item":2}',
 		);
 
-		fireEvent.click(screen.getByRole("button", { name: "看板画布" }));
+		fireEvent.click(screen.getByRole("radio", { name: "看板画布" }));
 		expect(lastSource(onChange)).toBe('{"project":"kite","display":"canvas"}');
 		expect((screen.getByRole("combobox", { name: "条目" }) as HTMLButtonElement).disabled).toBe(
 			true,

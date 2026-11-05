@@ -215,11 +215,11 @@ describe("个人用量", () => {
 		qc.setQueryData(["public-catalog"], ["public"]);
 		renderUsage();
 		await screen.findByText("model-30");
-		fireEvent.click(screen.getByRole("button", { name: "近 7 天" }));
+		fireEvent.click(screen.getByRole("radio", { name: "近 7 天" }));
 		await screen.findByText("model-7");
 		const { promise, resolve: finish } = Promise.withResolvers<void>();
 		pending = promise;
-		fireEvent.click(screen.getByRole("button", { name: "近 90 天" }));
+		fireEvent.click(screen.getByRole("radio", { name: "近 90 天" }));
 		await waitFor(() =>
 			expect(requests.filter((request) => request.params?.range === "90d")).toHaveLength(3),
 		);
