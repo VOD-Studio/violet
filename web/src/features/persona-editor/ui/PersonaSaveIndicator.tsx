@@ -1,5 +1,6 @@
 import type { PersonaSaveState } from "@features/persona-editor/model/types";
-import { AlertTriangle, Check, Loader2 } from "lucide-react";
+import { Spinner } from "@violet/ui";
+import { AlertTriangle, Check } from "lucide-react";
 
 interface PersonaSaveIndicatorProps {
 	state: PersonaSaveState;
@@ -13,7 +14,7 @@ export function PersonaSaveIndicator({ state }: PersonaSaveIndicatorProps) {
 				className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"
 				role="status"
 			>
-				<Loader2 className="size-3.5 animate-spin" />
+				<Spinner size={16} aria-hidden="true" />
 				正在保存
 			</span>
 		);

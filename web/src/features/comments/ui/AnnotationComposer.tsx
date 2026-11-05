@@ -1,6 +1,7 @@
 import { InlineLogin } from "@features/auth/ui/InlineLogin";
+import { Spinner } from "@violet/ui";
 import { cn } from "cn";
-import { Loader2, LogIn, Send, X } from "lucide-react";
+import { LogIn, Send, X } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { RichCommentInput } from "./RichCommentInput";
 
@@ -104,7 +105,7 @@ export function AnnotationComposer({
 						)}
 					>
 						{pending ? (
-							<Loader2 className="size-3.5 animate-spin" />
+							<Spinner size={16} aria-hidden="true" />
 						) : loginRequired ? (
 							<LogIn className="size-3.5" />
 						) : (

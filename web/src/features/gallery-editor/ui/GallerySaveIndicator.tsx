@@ -1,5 +1,6 @@
 import type { GalleryDraftSaveState } from "@features/gallery-editor/hooks/useGalleryDraftDocument";
-import { AlertTriangle, Check, Loader2 } from "lucide-react";
+import { Spinner } from "@violet/ui";
+import { AlertTriangle, Check } from "lucide-react";
 
 interface GallerySaveIndicatorProps {
 	state: GalleryDraftSaveState;
@@ -10,7 +11,7 @@ export function GallerySaveIndicator({ state }: GallerySaveIndicatorProps) {
 	const content: Record<GalleryDraftSaveState, { label: string; icon?: React.ReactNode }> = {
 		saved: { label: "已保存", icon: <Check className="size-3.5" /> },
 		dirty: { label: "等待自动保存" },
-		saving: { label: "保存中", icon: <Loader2 className="size-3.5 animate-spin" /> },
+		saving: { label: "保存中", icon: <Spinner size={16} aria-hidden="true" /> },
 		error: { label: "自动保存失败" },
 		conflict: { label: "版本冲突", icon: <AlertTriangle className="size-3.5" /> },
 	};

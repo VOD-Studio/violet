@@ -27,7 +27,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@violet/ui";
-import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -217,13 +217,10 @@ export function GalleryDraftListPage() {
 						<Button
 							size="sm"
 							disabled={createDraft.isPending}
+							loading={createDraft.isPending}
+							leftIcon={<Plus className="size-4" />}
 							onClick={() => void handleCreate()}
 						>
-							{createDraft.isPending ? (
-								<Loader2 className="size-4 animate-spin" />
-							) : (
-								<Plus className="size-4" />
-							)}
 							新建工作稿
 						</Button>
 					) : null

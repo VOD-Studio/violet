@@ -11,10 +11,11 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 	ScrollArea,
+	Spinner,
 	TooltipProvider,
 } from "@violet/ui";
 import { cn } from "cn";
-import { ChevronLeft, ChevronRight, Heart, Loader2, Smile } from "lucide-react";
+import { ChevronLeft, ChevronRight, Heart, Smile } from "lucide-react";
 import { type KeyboardEvent, type ReactNode, useEffect, useId, useRef, useState } from "react";
 
 /** 评论、推文和聊天共用的表情选择入口。 */
@@ -259,7 +260,7 @@ function EmojiPickerSession({
 								role="status"
 								className="flex items-center justify-center py-8 text-muted-foreground"
 							>
-								<Loader2 className="mr-2 size-4 animate-spin motion-reduce:animate-none" />
+								<Spinner size={16} className="mr-2" aria-hidden="true" />
 								加载中…
 							</div>
 						) : isError && !data ? (

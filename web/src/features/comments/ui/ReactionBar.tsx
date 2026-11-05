@@ -8,9 +8,15 @@ import type { Emoji } from "@entities/emoji/model/types";
 import { useAddReaction, useRemoveReaction } from "@features/comments/api/mutations";
 import { EmojiPicker } from "@features/emojis/ui/EmojiPicker";
 import { isImageURL } from "@shared/lib/url";
-import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@violet/ui";
-
-import { Loader2, Smile } from "lucide-react";
+import {
+	Button,
+	Spinner,
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@violet/ui";
+import { Smile } from "lucide-react";
 import { useMemo } from "react";
 import type { Reaction } from "../model/types";
 import { useReactionsFromContext } from "./ReactionProvider";
@@ -51,8 +57,8 @@ export function ReactionBar({ commentId, isLoggedIn = false }: ReactionBarProps)
 
 	if (isLoading) {
 		return (
-			<div className="flex items-center gap-1 text-xs text-muted-foreground">
-				<Loader2 className="size-3 animate-spin" />
+			<div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+				<Spinner size={16} aria-hidden="true" />
 				加载表情…
 			</div>
 		);

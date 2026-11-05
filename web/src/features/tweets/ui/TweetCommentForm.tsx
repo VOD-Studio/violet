@@ -15,7 +15,7 @@ import { type PictureInput, RichCommentInput } from "@features/comments/ui/RichC
 import { ApiError } from "@shared/api/error";
 import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@violet/ui";
-import { Loader2, LogIn, Send } from "lucide-react";
+import { LogIn, Send } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { useCreateTweetComment } from "../api/mutations";
@@ -113,13 +113,10 @@ export function TweetCommentForm({
 						ref={submitRef}
 						type="submit"
 						size="sm"
-						disabled={createComment.isPending || isUploading || overLimit}
+						disabled={isUploading || overLimit}
+						loading={createComment.isPending}
+						leftIcon={<Send className="size-3.5" />}
 					>
-						{createComment.isPending ? (
-							<Loader2 className="size-3.5 animate-spin" />
-						) : (
-							<Send className="size-3.5" />
-						)}
 						{compact ? "回复" : "评论"}
 					</Button>
 				}

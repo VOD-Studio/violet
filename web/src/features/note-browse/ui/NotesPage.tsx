@@ -3,7 +3,7 @@ import type { PublicNote } from "@entities/note/model/types";
 import { formatDate } from "@shared/lib/date";
 import { Link } from "@tanstack/react-router";
 import { Button, Empty, PageShell, ShimmerSkeleton } from "@violet/ui";
-import { ArrowRight, Calendar, Filter, Loader2 } from "lucide-react";
+import { ArrowRight, Calendar, Filter } from "lucide-react";
 import { useMemo } from "react";
 import { noteExcerpt, notePlainLength, noteTitle } from "../model/display";
 
@@ -76,12 +76,10 @@ export function NotesPage({ tag }: NotesPageProps) {
 							<Button
 								variant="outline"
 								disabled={feed.loadingMore}
+								loading={feed.loadingMore}
 								onClick={feed.loadMore}
 								className="h-9 rounded-md border-dashed px-6 font-mono text-xs tracking-wider uppercase"
 							>
-								{feed.loadingMore ? (
-									<Loader2 className="mr-2 size-3.5 animate-spin" />
-								) : null}
 								{feed.loadMoreFailed ? "重新加载下页" : "读取更多档案记录 >>"}
 							</Button>
 						</div>

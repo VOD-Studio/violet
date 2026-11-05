@@ -43,6 +43,7 @@ import {
 	ConfirmDialog,
 	Input,
 	Label,
+	Spinner,
 	Textarea,
 } from "@violet/ui";
 import {
@@ -50,7 +51,6 @@ import {
 	ExternalLink,
 	EyeOff,
 	ImagePlus,
-	Loader2,
 	RefreshCw,
 	Save,
 	Send,
@@ -198,7 +198,7 @@ export function GalleryDraftEditor({ id }: GalleryDraftEditorProps) {
 	if (isLoading || !draft) {
 		return (
 			<div className="flex h-full items-center justify-center text-muted-foreground">
-				<Loader2 className="mr-2 size-5 animate-spin" />
+				<Spinner size={20} className="mr-2" aria-hidden="true" />
 				正在载入工作稿
 			</div>
 		);
@@ -241,13 +241,10 @@ export function GalleryDraftEditor({ id }: GalleryDraftEditorProps) {
 							size="sm"
 							variant="outline"
 							disabled={maintenanceDisabled}
+							loading={publish.isPending}
+							leftIcon={<Send className="size-4" />}
 							onClick={() => void handlePublish()}
 						>
-							{publish.isPending ? (
-								<Loader2 className="size-4 animate-spin" />
-							) : (
-								<Send className="size-4" />
-							)}
 							{publishLabel}
 						</Button>
 					) : null}
@@ -277,13 +274,10 @@ export function GalleryDraftEditor({ id }: GalleryDraftEditorProps) {
 						<Button
 							size="sm"
 							disabled={disabled || saveState === "saving"}
+							loading={saveState === "saving"}
+							leftIcon={<Save className="size-4" />}
 							onClick={() => void save(true)}
 						>
-							{saveState === "saving" ? (
-								<Loader2 className="size-4 animate-spin" />
-							) : (
-								<Save className="size-4" />
-							)}
 							保存工作稿
 						</Button>
 					) : null}

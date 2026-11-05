@@ -22,7 +22,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@violet/ui";
-import { Eye, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -193,13 +193,10 @@ export function PersonaListPage() {
 						<Button
 							size="sm"
 							disabled={createPersona.isPending}
+							loading={createPersona.isPending}
+							leftIcon={<Plus className="size-4" />}
 							onClick={() => void handleCreate()}
 						>
-							{createPersona.isPending ? (
-								<Loader2 className="size-4 animate-spin" />
-							) : (
-								<Plus className="size-4" />
-							)}
 							新建档案
 						</Button>
 					) : null

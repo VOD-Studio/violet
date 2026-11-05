@@ -5,7 +5,6 @@ import { formatDate } from "@shared/lib/date";
 import { PhotoStack } from "@shared/ui/photo-stack";
 import { Link } from "@tanstack/react-router";
 import { Button, Empty, PageHeader, PageShell, ShimmerSkeleton } from "@violet/ui";
-import { Loader2 } from "lucide-react";
 
 export const PUBLISHED_GALLERY_PAGE_LIMIT = 12;
 
@@ -123,12 +122,9 @@ export function GalleryBrowsePage() {
 								) : null}
 								<Button
 									variant="outline"
-									disabled={feed.loadingMore}
+									loading={feed.loadingMore}
 									onClick={feed.loadMore}
 								>
-									{feed.loadingMore ? (
-										<Loader2 className="size-4 animate-spin" />
-									) : null}
 									{feed.loadMoreFailed ? "重试加载" : "加载更多"}
 								</Button>
 							</div>

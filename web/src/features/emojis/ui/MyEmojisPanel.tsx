@@ -3,8 +3,7 @@ import { useCreateCustomEmoji, useMyCustomEmojis } from "@features/customemoji/a
 import { useUploadEmoji } from "@features/emojis/api/mutations";
 import { EmojiTile } from "@features/emojis/ui/EmojiTile";
 import { useFileSelection } from "@features/upload/hooks/use-file-selection";
-import { Button, UploadTile } from "@violet/ui";
-import { Loader2 } from "lucide-react";
+import { Button, Spinner, UploadTile } from "@violet/ui";
 import { toast } from "sonner";
 
 const MAX_EMOJI_SIZE = 10 * 1024 * 1024;
@@ -77,7 +76,7 @@ export function MyEmojisPanel({ onSelect }: MyEmojisPanelProps) {
 					role="status"
 					className="flex items-center justify-center py-4 text-sm text-muted-foreground"
 				>
-					<Loader2 className="mr-2 size-4 animate-spin motion-reduce:animate-none" />
+					<Spinner size={16} className="mr-2" aria-hidden="true" />
 					加载中…
 				</div>
 			) : isError && !mine ? (

@@ -8,8 +8,8 @@ import { useGithubOAuth } from "@features/auth/hooks/use-github-oauth";
 import { useOAuthVisibility } from "@features/auth/hooks/use-oauth-visibility";
 import { GoogleOAuthGate } from "@features/auth/ui/GoogleOAuthGate";
 import { useGoogleLogin, useGoogleOAuth } from "@react-oauth/google";
-import { GithubIcon } from "@violet/ui";
-import { CheckCircle2, KeyRound, Link2, Link2Off, Loader2, Mail } from "lucide-react";
+import { Button, GithubIcon } from "@violet/ui";
+import { CheckCircle2, KeyRound, Link2, Link2Off, Mail } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { toast } from "sonner";
 
@@ -160,31 +160,31 @@ function ConnectionsContent({
 }
 
 const BindButton = ({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) => (
-	<button
+	<Button
 		type="button"
+		variant="link"
+		size="sm"
 		onClick={onClick}
-		disabled={disabled}
-		className="inline-flex items-center gap-1 text-sm text-primary hover:underline disabled:opacity-50"
+		loading={disabled}
+		leftIcon={<Link2 className="size-3.5" />}
+		className="h-auto p-0 text-sm text-primary"
 	>
-		{disabled ? <Loader2 className="size-3.5 animate-spin" /> : <Link2 className="size-3.5" />}
 		绑定
-	</button>
+	</Button>
 );
 
 const UnbindButton = ({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) => (
-	<button
+	<Button
 		type="button"
+		variant="link"
+		size="sm"
 		onClick={onClick}
-		disabled={disabled}
-		className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-destructive hover:underline disabled:opacity-50"
+		loading={disabled}
+		leftIcon={<Link2Off className="size-3.5" />}
+		className="h-auto p-0 text-sm text-muted-foreground hover:text-destructive"
 	>
-		{disabled ? (
-			<Loader2 className="size-3.5 animate-spin" />
-		) : (
-			<Link2Off className="size-3.5" />
-		)}
 		解绑
-	</button>
+	</Button>
 );
 
 const Row = ({

@@ -6,7 +6,6 @@ import { ApiError } from "@shared/api/error";
 import { useLoginDialogStore } from "@shared/api/login-dialog-store";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { Button, Input, Label, Modal } from "@violet/ui";
-import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -117,11 +116,8 @@ export function LinkConfirmDialog() {
 						<Button
 							type="submit"
 							form="link-confirm-form"
-							disabled={confirmLink.isPending}
+							loading={confirmLink.isPending}
 						>
-							{confirmLink.isPending && (
-								<Loader2 className="mr-2 size-4 animate-spin" />
-							)}
 							确认绑定
 						</Button>
 					</>

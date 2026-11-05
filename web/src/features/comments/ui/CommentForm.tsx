@@ -16,9 +16,8 @@
 import { useCreateComment, useSendCommentCode } from "@features/comments/api/mutations";
 import type { Comment, CreateComment } from "@features/comments/model/types";
 import { ApiError } from "@shared/api/error";
-import { Input, InputOTP, InputOTPGroup, InputOTPSlot, ResendButton } from "@violet/ui";
-
-import { Loader2, MailCheck, Send } from "lucide-react";
+import { Input, InputOTP, InputOTPGroup, InputOTPSlot, ResendButton, Spinner } from "@violet/ui";
+import { MailCheck, Send } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { type PictureInput, RichCommentInput } from "./RichCommentInput";
@@ -211,7 +210,7 @@ export function CommentForm({
 							className="inline-flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							{createComment.isPending ? (
-								<Loader2 className="size-3.5 animate-spin" />
+								<Spinner size={16} aria-hidden="true" />
 							) : (
 								<Send className="size-3.5" />
 							)}

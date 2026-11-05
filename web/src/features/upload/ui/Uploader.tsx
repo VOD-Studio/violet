@@ -2,9 +2,8 @@ import { useChunkedUpload } from "@features/upload/hooks/use-chunked-upload";
 import { useFileSelection } from "@features/upload/hooks/use-file-selection";
 import { useUploadQueue } from "@features/upload/hooks/use-upload-queue";
 import { imageUrl } from "@shared/lib/image-url";
-import { Button } from "@violet/ui";
-
-import { AlertCircle, FileText, Film, Loader2, Music, Upload, X } from "lucide-react";
+import { Button, Spinner } from "@violet/ui";
+import { AlertCircle, FileText, Film, Music, Upload, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -220,7 +219,11 @@ export function Uploader<T extends UploadResult>({
 									) : (
 										<div className="flex size-10 items-center justify-center rounded bg-muted">
 											{item.status === "uploading" && (
-												<Loader2 className="size-4 animate-spin text-primary" />
+												<Spinner
+													size={16}
+													className="text-primary"
+													aria-hidden="true"
+												/>
 											)}
 											{item.status === "error" && (
 												<AlertCircle className="size-4 text-destructive" />

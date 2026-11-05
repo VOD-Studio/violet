@@ -1,7 +1,7 @@
 import { useLoginFlows } from "@features/auth/hooks/use-login-flows";
-import { GithubIcon, GoogleIcon, Input } from "@violet/ui";
+import { Button, GithubIcon, GoogleIcon, Input } from "@violet/ui";
 import { cn } from "cn";
-import { ChevronDown, Loader2 } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { GoogleOAuthGate } from "./GoogleOAuthGate";
 
@@ -60,34 +60,30 @@ function InlineLoginContent({
 			{showOAuth && (
 				<div className="flex gap-2">
 					{showGithub && (
-						<button
+						<Button
 							type="button"
+							variant="outline"
 							onClick={startGithub}
 							disabled={githubPending}
+							loading={githubPending}
 							className={PROVIDER_BUTTON}
+							leftIcon={<GithubIcon className="size-4" />}
 						>
-							{githubPending ? (
-								<Loader2 className="size-4 animate-spin" />
-							) : (
-								<GithubIcon className="size-4" />
-							)}
 							GitHub
-						</button>
+						</Button>
 					)}
 					{showGoogle && (
-						<button
+						<Button
 							type="button"
+							variant="outline"
 							onClick={startGoogle}
 							disabled={googlePending || !googleReady}
+							loading={googlePending}
 							className={PROVIDER_BUTTON}
+							leftIcon={<GoogleIcon className="size-4" />}
 						>
-							{googlePending ? (
-								<Loader2 className="size-4 animate-spin" />
-							) : (
-								<GoogleIcon className="size-4" />
-							)}
 							Google
-						</button>
+						</Button>
 					)}
 				</div>
 			)}
@@ -143,15 +139,16 @@ function InlineLoginContent({
 							autoComplete="current-password"
 							tabIndex={passwordOpen ? 0 : -1}
 						/>
-						<button
+						<Button
 							type="submit"
-							disabled={!valid || passwordPending || !csrfToken}
+							disabled={!valid || !csrfToken}
+							loading={passwordPending}
+							loadingText="登录中…"
 							tabIndex={passwordOpen ? 0 : -1}
-							className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-primary py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+							className="w-full rounded-full"
 						>
-							{passwordPending && <Loader2 className="size-4 animate-spin" />}
-							{passwordPending ? "登录中…" : "登录"}
-						</button>
+							登录
+						</Button>
 					</form>
 				</div>
 			</div>

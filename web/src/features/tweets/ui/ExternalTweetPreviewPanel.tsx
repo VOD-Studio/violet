@@ -1,6 +1,5 @@
 import { ExternalTweetCard } from "@entities/tweet/ui/ExternalTweetCard";
-import { Input } from "@violet/ui";
-import { Loader2 } from "lucide-react";
+import { Button, Input } from "@violet/ui";
 import { useId } from "react";
 import type { ExternalTweetPreviewState } from "../hooks/useExternalTweetPreview";
 import cardStyles from "./TweetCard.module.css";
@@ -30,14 +29,16 @@ export function ExternalTweetPreviewPanel({ state, disabled }: ExternalTweetPrev
 						<p role="alert" className="text-xs text-destructive">
 							预览已过期，请重新预览后确认。
 						</p>
-						<button
+						<Button
 							type="button"
 							className={styles.action}
-							disabled={disabled || state.loading}
+							disabled={disabled}
+							loading={state.loading}
+							loadingText="获取中…"
 							onClick={() => void state.load()}
 						>
 							重新预览
-						</button>
+						</Button>
 					</div>
 				)}
 			</section>
@@ -65,17 +66,17 @@ export function ExternalTweetPreviewPanel({ state, disabled }: ExternalTweetPrev
 						}
 					}}
 				/>
-				<button
+				<Button
 					type="button"
 					aria-label="预览原文"
-					aria-busy={state.loading}
 					className={styles.action}
-					disabled={disabled || state.loading || !state.url.trim()}
+					disabled={disabled || !state.url.trim()}
+					loading={state.loading}
+					loadingText="获取中…"
 					onClick={() => void state.load()}
 				>
-					{state.loading && <Loader2 className="size-3 animate-spin" />}
-					{state.loading ? "获取中…" : "预览"}
-				</button>
+					预览
+				</Button>
 			</div>
 			{state.loading && (
 				<p role="status" className="text-xs text-muted-foreground">

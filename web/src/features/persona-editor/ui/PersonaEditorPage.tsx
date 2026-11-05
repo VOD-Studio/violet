@@ -12,8 +12,8 @@ import {
 } from "@features/persona-editor/model/document";
 import { ApiError } from "@shared/api/error";
 import { useNavigate } from "@tanstack/react-router";
-import { Button } from "@violet/ui";
-import { Loader2, RefreshCw } from "lucide-react";
+import { Button, Spinner } from "@violet/ui";
+import { RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { PersonaAvatarField } from "./PersonaAvatarField";
@@ -174,7 +174,7 @@ export function PersonaEditorPage({ id }: PersonaEditorPageProps) {
 	if (isLoading || !document || !detail || !localization || !defaultLocalization) {
 		return (
 			<div className="flex h-full items-center justify-center text-muted-foreground">
-				<Loader2 className="mr-2 size-5 animate-spin" />
+				<Spinner size={20} className="mr-2" aria-hidden="true" />
 				正在载入人设档案
 			</div>
 		);
