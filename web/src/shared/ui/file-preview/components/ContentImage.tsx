@@ -6,8 +6,8 @@
  *   避免全屏层嵌在 modal Dialog 内被锁定而无法交互。
  * - 未传 onImageClick 时（向后兼容），本组件自渲染全屏 ImagePreview。
  */
-
-import { AlertCircle, Loader2 } from "lucide-react";
+import { Spinner } from "@violet/ui";
+import { AlertCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ImagePreview, useImagePreview } from "@/shared/ui/image-preview";
 import type { ImagePreviewProps } from "../types/file-preview-types";
@@ -54,7 +54,7 @@ export function ContentImage({
 			) : null}
 			{/* 加载态（无缩略图且原图未解码完成时显示） */}
 			{!thumbnailUrl && !decoded && !hasError ? (
-				<Loader2 className="size-8 animate-spin text-muted-foreground" />
+				<Spinner size={32} className="text-muted-foreground" aria-hidden="true" />
 			) : null}
 			{/* 错误态 */}
 			{hasError ? (

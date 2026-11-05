@@ -19,8 +19,8 @@
  * → FilePlaceholder 下载占位。
  */
 
+import { Spinner } from "@violet/ui";
 import { cn } from "cn";
-import { Loader2 } from "lucide-react";
 import { lazy, Suspense } from "react";
 import { FilePreviewVariantContext } from "../file-preview-context";
 import type { FilePreviewComponentProps } from "../types/file-preview-types";
@@ -58,7 +58,7 @@ const MarkdownPreview = lazy(() =>
 function PreviewFallback() {
 	return (
 		<div className="flex h-40 items-center justify-center">
-			<Loader2 className="size-6 animate-spin text-muted-foreground" />
+			<Spinner size={24} className="text-muted-foreground" aria-hidden="true" />
 		</div>
 	);
 }

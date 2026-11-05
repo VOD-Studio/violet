@@ -1,7 +1,6 @@
 import { contentImageUrl } from "@shared/lib/image-url";
 import { normalizeLinkUrl } from "@shared/lib/linkify";
-import { LinkCard } from "@violet/ui";
-import { LoaderCircle } from "lucide-react";
+import { LinkCard, Spinner } from "@violet/ui";
 import { useLinkPreviews } from "../api/queries";
 import type { LinkPreviewCard } from "../model/types";
 
@@ -41,10 +40,7 @@ export function LinkPreviews({ urls, snapshots = [] }: LinkPreviewsProps) {
 					role="status"
 					className="flex items-center gap-2 py-1 text-xs text-muted-foreground"
 				>
-					<LoaderCircle
-						className="size-3.5 animate-spin motion-reduce:animate-none"
-						aria-hidden="true"
-					/>
+					<Spinner size={16} aria-hidden="true" />
 					正在读取链接预览…
 				</p>
 			)}

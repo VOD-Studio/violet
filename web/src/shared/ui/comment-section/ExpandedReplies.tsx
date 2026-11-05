@@ -5,7 +5,8 @@
  * feature 只负责把它的 React Query hook 结果拍平成 CommentRepliesQuery 传入，
  * 去重 / 标注推导 / 分页按钮 / 加载效果全部在本组件内。
  */
-import { ChevronDown, Loader2 } from "lucide-react";
+import { Spinner } from "@violet/ui";
+import { ChevronDown } from "lucide-react";
 import { CommentItem } from "./CommentItem";
 import type { CommentDisplayItem, CommentRaw, CommentSectionConfig } from "./types";
 
@@ -68,8 +69,8 @@ export function ExpandedReplies<T extends CommentRaw>({
 
 			{/* 首次加载效果（展开后第一页还在路上） */}
 			{(isLoading || isFetchingNextPage) && mapped.length === 0 && (
-				<div className="flex items-center gap-1 py-1 pl-1 text-xs text-muted-foreground">
-					<Loader2 className="size-3 animate-spin" />
+				<div className="flex items-center gap-1.5 py-1 pl-1 text-xs text-muted-foreground">
+					<Spinner size={16} aria-hidden="true" />
 					加载中...
 				</div>
 			)}
@@ -84,7 +85,7 @@ export function ExpandedReplies<T extends CommentRaw>({
 				>
 					{isFetchingNextPage ? (
 						<>
-							<Loader2 className="size-3 animate-spin" />
+							<Spinner size={16} aria-hidden="true" />
 							加载中...
 						</>
 					) : (
