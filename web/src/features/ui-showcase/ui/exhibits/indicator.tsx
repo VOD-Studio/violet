@@ -54,10 +54,8 @@ function IndicatorFamily({ state }: ExhibitRenderProps) {
 			</div>
 		);
 	}
-	const kinds: FlowerKind[] =
-		state === "season"
-			? ["sakura", "lotus", "osmanthus", "plum"]
-			: FLOWER_KINDS.map(([k]) => k);
+	const variant = state === "outline" ? "outline" : "solid";
+	const tone = state === "season" ? "season" : "natural";
 	return (
 		<div className="flex flex-col items-start gap-5">
 			{state === "sizes" ? (
@@ -71,11 +69,12 @@ function IndicatorFamily({ state }: ExhibitRenderProps) {
 				</div>
 			) : (
 				<div className="flex flex-wrap items-center gap-6">
-					{kinds.map((k) => (
+					{FLOWER_KINDS.map(([kind]) => (
 						<FlowerBloom
-							key={k}
-							kind={k}
-							size={state === "season" ? 32 : 24}
+							key={kind}
+							kind={kind}
+							variant={variant}
+							tone={tone}
 							aria-hidden="true"
 						/>
 					))}
@@ -83,7 +82,7 @@ function IndicatorFamily({ state }: ExhibitRenderProps) {
 			)}
 			{state === "season" && (
 				<span className="text-muted-foreground text-xs">
-					春樱 · 夏荷 · 秋桂 · 冬梅，跟随季节切换
+					tone="season"：六款都取当前主题的季节色，切换季节即变色
 				</span>
 			)}
 		</div>
@@ -98,8 +97,9 @@ export const indicatorExhibit: Exhibit = {
 	category: "feedback",
 	footprint: { width: 460, height: 132 },
 	states: [
-		{ id: "default", label: "六款花形" },
-		{ id: "season", label: "当季花形" },
+		{ id: "default", label: "实体" },
+		{ id: "outline", label: "描边态" },
+		{ id: "season", label: "跟随季节" },
 		{ id: "sizes", label: "五档尺寸" },
 		{ id: "control", label: "控件圆弧" },
 	],

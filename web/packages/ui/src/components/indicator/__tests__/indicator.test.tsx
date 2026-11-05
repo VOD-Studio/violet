@@ -43,6 +43,25 @@ describe("FlowerBloom", () => {
 		expect(SEASON_FLOWER.winter).toBe("plum");
 	});
 
+	it("默认实体与花本色，可切换描边态与取色方式", () => {
+		const { container, rerender } = render(<FlowerBloom kind="sakura" />);
+		const root = () => container.querySelector(".v-flower") as HTMLElement;
+		expect(root().dataset.variant).toBe("solid");
+		expect(root().dataset.tone).toBe("natural");
+		rerender(<FlowerBloom kind="sakura" variant="outline" tone="season" />);
+		expect(root().dataset.variant).toBe("outline");
+		expect(root().dataset.tone).toBe("season");
+	});
+
+	it("茎、水面线与雪花枝按线处理，花瓣按实体处理", () => {
+		const lotus = render(<FlowerBloom kind="lotus" />).container;
+		expect(lotus.querySelectorAll(".v-flower__line")).toHaveLength(1);
+		expect(lotus.querySelectorAll(".v-flower__draw")).toHaveLength(5);
+		const snow = render(<FlowerBloom kind="snow" />).container;
+		expect(snow.querySelectorAll(".v-flower__draw")).toHaveLength(0);
+		expect(snow.querySelectorAll(".v-flower__line")).toHaveLength(6);
+	});
+
 	it("容器挂 role=status 时读屏可感知", () => {
 		render(
 			<span role="status" aria-live="polite">

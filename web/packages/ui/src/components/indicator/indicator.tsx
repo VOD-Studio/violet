@@ -6,13 +6,28 @@ import { FLOWER_VIEWBOX, FLOWERS, type FlowerKind } from "./flower-paths";
 /** 五档尺寸：16、20、24、32、48；梅枝宽度为三倍。 */
 export type IndicatorSize = 16 | 20 | 24 | 32 | 48;
 
+/** 花形形态：solid 实体（纯色实心，无描边），outline 描边（逐瓣描线，淡淡上色）。 */
+export type FlowerVariant = "solid" | "outline";
+
+/**
+ * 花形取色：
+ * - natural：花自己的颜色（樱花粉、荷花绿、桂花金、梅花雪花冷灰蓝）；
+ * - season：跟随当前主题的季节色（`--decoration`），自定义主题同样生效；
+ * - current：沿用父级文字色 `currentColor`。
+ */
+export type FlowerTone = "natural" | "season" | "current";
+
 const DEFAULT_SIZE: IndicatorSize = 24;
 
 export interface FlowerBloomProps extends Omit<ComponentProps<"span">, "children"> {
-	/** 花形；省略时由站点季节决定 */
+	/** 花形 */
 	kind?: FlowerKind;
 	/** 尺寸档；默认 24 */
 	size?: IndicatorSize;
+	/** 形态；默认 solid */
+	variant?: FlowerVariant;
+	/** 取色；默认 natural。其余颜色可直接覆盖 `--v-flower-color` */
+	tone?: FlowerTone;
 }
 
 interface NodeProps {
@@ -22,7 +37,13 @@ interface NodeProps {
 	children?: NodeProps[];
 }
 
-function FlowerNodeView({ node }: { node: NodeProps }) {
+/** 茎、水面线与雪花枝本身就是线，不参与填充。 */
+function isLine(node: NodeProps, flower: FlowerKind) {
+	const className = String(node.props.className ?? "");
+	return node.kind === "draw" && (flower === "snow" || /v-flower__(stem|base)/.test(className));
+}
+
+function FlowerNodeView({ node, flower }: { node: NodeProps; flower: FlowerKind }) {
 	if (node.children) {
 		return (
 			<g
@@ -30,14 +51,18 @@ function FlowerNodeView({ node }: { node: NodeProps }) {
 				style={{ "--v-flower-index": node.index } as CSSProperties}
 			>
 				{node.children.map((child, i) => (
-					<FlowerNodeView key={i} node={child} />
+					<FlowerNodeView key={i} node={child} flower={flower} />
 				))}
 			</g>
 		);
 	}
 	const { className, ...rest } = node.props;
 	const cls = cn(
-		node.kind === "draw" ? "v-flower__draw" : "v-flower__pop",
+		node.kind === "pop"
+			? "v-flower__pop"
+			: isLine(node, flower)
+				? "v-flower__line"
+				: "v-flower__draw",
 		className as string | undefined,
 	);
 	const style = { "--v-flower-index": node.index } as CSSProperties;
@@ -50,16 +75,17 @@ function FlowerNodeView({ node }: { node: NodeProps }) {
 }
 
 /**
- * 块状等待花形：花瓣实心无描边，依序绽开，停留后淡去，循环；茎与雪花枝为线，描线生长。
+ * 块状等待花形：依序绽开（solid）或逐瓣描线（outline），停留后淡去，循环。
  *
- * @remarks 花色随花形固定（樱花粉、荷花绿、桂花金、梅花与雪花冷灰蓝），可用 `--v-flower-color` 覆盖。
- * 装饰性用法由调用方标 `aria-hidden`；承载语义时容器挂 `role="status"` 与
+ * @remarks 装饰性用法由调用方标 `aria-hidden`；承载语义时容器挂 `role="status"` 与
  * `aria-live="polite"`，配合 `useDelayedBusy` 做 200ms 延迟显示与 400ms 最短停留。
  * 作为活性状态反馈，指示器持续运转，不受减弱动态抑制。
  */
 export function FlowerBloom({
 	kind = "plum",
 	size = DEFAULT_SIZE,
+	variant = "solid",
+	tone = "natural",
 	className,
 	...props
 }: FlowerBloomProps) {
@@ -68,6 +94,8 @@ export function FlowerBloom({
 	return (
 		<span
 			{...props}
+			data-variant={variant}
+			data-tone={tone}
 			className={cn("v-flower", `v-flower--${kind}`, className)}
 			style={
 				{
@@ -86,13 +114,13 @@ export function FlowerBloom({
 						r="11"
 						gradientUnits="userSpaceOnUse"
 					>
-						<stop offset="0" className="v-flower__stop" stopOpacity="1" />
-						<stop offset="0.6" className="v-flower__stop" stopOpacity="0.95" />
-						<stop offset="1" className="v-flower__stop" stopOpacity="0.85" />
+						<stop offset="0" className="v-flower__stop" />
+						<stop offset="0.6" className="v-flower__stop" />
+						<stop offset="1" className="v-flower__stop" />
 					</radialGradient>
 				</defs>
 				{FLOWERS[kind].map((node, i) => (
-					<FlowerNodeView key={i} node={node as NodeProps} />
+					<FlowerNodeView key={i} node={node as NodeProps} flower={kind} />
 				))}
 			</svg>
 		</span>
