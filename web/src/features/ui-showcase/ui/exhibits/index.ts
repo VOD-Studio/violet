@@ -1,4 +1,5 @@
 import type { Exhibit } from "../../model/exhibit";
+import { avatarExhibit } from "./avatar";
 import { buttonExhibit } from "./button";
 import { cardExhibit } from "./card";
 import { checkboxExhibit } from "./checkbox";
@@ -164,6 +165,7 @@ export const EXHIBITS: Exhibit[] = [
 		footprint: { width: 360, height: 140 },
 		issue: 700,
 	},
+	avatarExhibit,
 	{
 		id: "switch",
 		name: "开关与单选",

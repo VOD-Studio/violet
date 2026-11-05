@@ -233,3 +233,28 @@ test("旧组件库文档与设计系统路径已下线", async ({ request }) => 
 		expect(response.status(), path).toBe(404);
 	}
 });
+
+test("头像组悬停时展开，移开收回，减弱动态下直接切换", async ({ page, context }) => {
+	await loadClient(context);
+	await page.setViewportSize({ width: 1440, height: 900 });
+	const widthOf = () =>
+		page
+			.locator('[role="dialog"] .v-avatar-group')
+			.evaluate((group) => group.getBoundingClientRect().width);
+	for (const reducedMotion of ["no-preference", "reduce"] as const) {
+		await page.emulateMedia({ reducedMotion });
+		await page.goto("/ui?open=avatar");
+		await page.waitForLoadState("networkidle");
+		const dialog = page.getByRole("dialog");
+		await dialog
+			.getByRole("group", { name: "展品状态" })
+			.getByRole("button", { name: "一组头像", exact: true })
+			.click();
+		const collapsed = await widthOf();
+		await dialog.locator(".v-avatar-group").hover();
+		if (reducedMotion === "reduce") expect(await widthOf()).toBeGreaterThan(collapsed);
+		await expect.poll(widthOf, { message: reducedMotion }).toBeGreaterThan(collapsed + 20);
+		await page.mouse.move(2, 2);
+		await expect.poll(widthOf, { message: reducedMotion }).toBe(collapsed);
+	}
+});

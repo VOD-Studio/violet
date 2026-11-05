@@ -1,0 +1,200 @@
+@layer components {
+	.v-avatar {
+		--v-avatar-size: 40px;
+		--v-avatar-radius: 10px;
+		--v-avatar-dot: 12px;
+		--v-avatar-bg: var(--muted);
+		--v-avatar-fg: var(--muted-foreground);
+		position: relative;
+		box-sizing: border-box;
+		flex: none;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		inline-size: var(--v-avatar-size);
+		block-size: var(--v-avatar-size);
+		border-radius: 50%;
+		color: var(--v-avatar-fg);
+		font: inherit;
+		vertical-align: middle;
+	}
+
+	.v-avatar[data-size="24"] {
+		--v-avatar-size: 24px;
+		--v-avatar-radius: 6px;
+		--v-avatar-dot: 8px;
+	}
+	.v-avatar[data-size="32"] {
+		--v-avatar-size: 32px;
+		--v-avatar-radius: 8px;
+		--v-avatar-dot: 10px;
+	}
+	.v-avatar[data-size="40"] {
+		--v-avatar-size: 40px;
+		--v-avatar-radius: 10px;
+		--v-avatar-dot: 12px;
+	}
+	.v-avatar[data-size="48"] {
+		--v-avatar-size: 48px;
+		--v-avatar-radius: 12px;
+		--v-avatar-dot: 12px;
+	}
+	.v-avatar[data-size="64"] {
+		--v-avatar-size: 64px;
+		--v-avatar-radius: 12px;
+		--v-avatar-dot: 16px;
+	}
+	.v-avatar[data-size="96"] {
+		--v-avatar-size: 96px;
+		--v-avatar-radius: 16px;
+		--v-avatar-dot: 20px;
+	}
+
+	.v-avatar--square {
+		border-radius: var(--v-avatar-radius);
+	}
+
+	.v-avatar--season {
+		--v-avatar-bg: var(--selected);
+		--v-avatar-fg: var(--selected-foreground);
+	}
+
+	/* 底色放在伪元素上：加载中只让底色呼吸，状态点与皇冠保持不动 */
+	.v-avatar::before {
+		content: "";
+		position: absolute;
+		inset: 0;
+		border-radius: inherit;
+		background: var(--v-avatar-bg);
+	}
+
+	.v-avatar[data-state="loading"]::before {
+		animation: v-avatar-breathe var(--duration-skeleton, 1.8s) var(--ease-skeleton, ease-in-out)
+			infinite;
+	}
+
+	@keyframes v-avatar-breathe {
+		50% {
+			opacity: 0.5;
+		}
+	}
+
+	.v-avatar--ring {
+		box-shadow:
+			0 0 0 2px var(--background),
+			0 0 0 4px var(--decoration);
+	}
+
+	.v-avatar__image {
+		position: absolute;
+		inset: 0;
+		inline-size: 100%;
+		block-size: 100%;
+		border-radius: inherit;
+		object-fit: cover;
+	}
+
+	.v-avatar[data-state="loading"] > .v-avatar__image {
+		opacity: 0;
+	}
+
+	.v-avatar__glyph {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		font-size: calc(var(--v-avatar-size) * 0.42);
+		font-weight: 600;
+		line-height: 1;
+	}
+
+	.v-avatar__glyph > svg {
+		inline-size: 50%;
+		block-size: 50%;
+	}
+
+	.v-avatar__dot {
+		position: absolute;
+		inset-inline-end: 0;
+		inset-block-end: 0;
+		box-sizing: border-box;
+		inline-size: var(--v-avatar-dot);
+		block-size: var(--v-avatar-dot);
+		border: 2px solid var(--background);
+		border-radius: 50%;
+		background: var(--success);
+	}
+
+	.v-avatar__dot[data-status="away"] {
+		background: var(--background);
+		box-shadow: inset 0 0 0 2px var(--warning-text);
+	}
+
+	.v-avatar__dot[data-status="busy"] {
+		background: var(--destructive);
+	}
+
+	.v-avatar__dot[data-status="busy"]::after {
+		content: "";
+		position: absolute;
+		inset-inline: 22%;
+		inset-block-start: 50%;
+		block-size: 2px;
+		margin-block-start: -1px;
+		border-radius: 1px;
+		background: var(--background);
+	}
+
+	.v-avatar__crown {
+		position: absolute;
+		inset-block-start: -6px;
+		inset-inline-end: -6px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		inline-size: 20px;
+		block-size: 20px;
+		border-radius: 50%;
+		background: var(--card);
+		box-shadow: 0 0 0 2px var(--background);
+		color: var(--warning-text);
+	}
+
+	.v-avatar-group {
+		display: inline-flex;
+		vertical-align: middle;
+	}
+
+	/* 每个头像用 2px 底色环与相邻者隔开；后一个压在前一个上，重叠量取头像自身尺寸的四分之一 */
+	.v-avatar-group > .v-avatar {
+		box-shadow: 0 0 0 2px var(--background);
+	}
+
+	.v-avatar-group > .v-avatar + .v-avatar {
+		margin-inline-start: calc(var(--v-avatar-size) * -0.25);
+		transition: margin-inline-start var(--duration-popover-in, 180ms)
+			var(--ease-popover, ease-out);
+	}
+
+	.v-avatar-group__more {
+		font-size: calc(var(--v-avatar-size) * 0.33);
+		font-variant-numeric: tabular-nums;
+	}
+
+	/* 悬停展开：重叠换成 6px 间隙，仅指针设备；触屏点按不会停在展开态 */
+	@media (hover: hover) {
+		.v-avatar-group:hover > .v-avatar + .v-avatar {
+			margin-inline-start: 0.375rem;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-avatar[data-state="loading"]::before {
+			animation: none;
+		}
+
+		.v-avatar-group > .v-avatar + .v-avatar {
+			transition: none;
+		}
+	}
+}

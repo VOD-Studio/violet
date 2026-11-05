@@ -3,6 +3,12 @@
 	"package": "@violet/ui",
 	"components": [
 		{
+			"name": "avatar",
+			"status": "foundation",
+			"entry": "src/components/avatar/index.ts",
+			"css": "src/components/avatar/avatar.css"
+		},
+		{
 			"name": "badge",
 			"status": "legacy",
 			"entry": "src/components/badge/index.ts",
