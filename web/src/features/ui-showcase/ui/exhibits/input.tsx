@@ -24,6 +24,7 @@ function InputFields({ state }: ExhibitRenderProps) {
 					description={state === "invalid" ? undefined : "只用于回复通知"}
 					invalid={state === "invalid"}
 					errorMessage="邮箱缺少域名"
+					loading={state === "loading"}
 					disabled={state === "disabled"}
 					readOnly={state === "readonly"}
 				/>
@@ -41,6 +42,7 @@ export const inputExhibit: Exhibit = {
 	footprint: { width: 520, height: 216 },
 	states: [
 		{ id: "default", label: "默认" },
+		{ id: "loading", label: "加载中" },
 		{ id: "invalid", label: "错误" },
 		{ id: "disabled", label: "禁用" },
 		{ id: "readonly", label: "只读" },
