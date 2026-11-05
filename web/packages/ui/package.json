@@ -97,6 +97,11 @@
 			"import": "./src/components/empty/index.ts",
 			"default": "./src/components/empty/index.ts"
 		},
+		"./hover-card": {
+			"types": "./src/components/hover-card/index.ts",
+			"import": "./src/components/hover-card/index.ts",
+			"default": "./src/components/hover-card/index.ts"
+		},
 		"./icons": {
 			"types": "./src/components/icons/index.ts",
 			"import": "./src/components/icons/index.ts",
@@ -296,6 +301,7 @@
 		"./components/card.css": "./src/components/card/card.css",
 		"./components/checkbox.css": "./src/components/checkbox/checkbox.css",
 		"./components/dropdown.css": "./src/components/dropdown/dropdown.css",
+		"./components/hover-card.css": "./src/components/hover-card/hover-card.css",
 		"./components/image-pixel-reveal.css": "./src/components/image-pixel-reveal/image-pixel-reveal.css",
 		"./components/indicator.css": "./src/components/indicator/indicator.css",
 		"./components/input.css": "./src/components/input/input.css",
@@ -303,6 +309,7 @@
 		"./components/label.css": "./src/components/label/label.css",
 		"./components/link-card.css": "./src/components/link-card/link-card.css",
 		"./components/overlay-scroll.css": "./src/components/overlay-scroll/overlay-scroll.css",
+		"./components/popover.css": "./src/components/popover/popover.css",
 		"./components/radio.css": "./src/components/radio/radio.css",
 		"./components/search-input.css": "./src/components/search-input/search-input.css",
 		"./components/segmented.css": "./src/components/segmented/segmented.css",
@@ -418,6 +425,11 @@
 				"types": "./dist/components/empty/index.d.ts",
 				"import": "./dist/components/empty/index.js",
 				"default": "./dist/components/empty/index.js"
+			},
+			"./hover-card": {
+				"types": "./dist/components/hover-card/index.d.ts",
+				"import": "./dist/components/hover-card/index.js",
+				"default": "./dist/components/hover-card/index.js"
 			},
 			"./icons": {
 				"types": "./dist/components/icons/index.d.ts",
@@ -618,6 +630,7 @@
 			"./components/card.css": "./dist/components/card.css",
 			"./components/checkbox.css": "./dist/components/checkbox.css",
 			"./components/dropdown.css": "./dist/components/dropdown.css",
+			"./components/hover-card.css": "./dist/components/hover-card.css",
 			"./components/image-pixel-reveal.css": "./dist/components/image-pixel-reveal.css",
 			"./components/indicator.css": "./dist/components/indicator.css",
 			"./components/input.css": "./dist/components/input.css",
@@ -625,6 +638,7 @@
 			"./components/label.css": "./dist/components/label.css",
 			"./components/link-card.css": "./dist/components/link-card.css",
 			"./components/overlay-scroll.css": "./dist/components/overlay-scroll.css",
+			"./components/popover.css": "./dist/components/popover.css",
 			"./components/radio.css": "./dist/components/radio.css",
 			"./components/search-input.css": "./dist/components/search-input.css",
 			"./components/segmented.css": "./dist/components/segmented.css",

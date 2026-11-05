@@ -542,6 +542,12 @@
 			"count": 1
 		},
 		{
+			"file": "packages/ui/src/components/dropdown/dropdown.css",
+			"rule": "raw-color",
+			"value": "rgb(0 0 0 / 0.05)",
+			"count": 1
+		},
+		{
 			"file": "packages/ui/src/components/icons/google.tsx",
 			"rule": "raw-color",
 			"value": "#ea4335",
@@ -1364,6 +1370,12 @@
 			"count": 1
 		},
 		{
+			"file": "src/features/notifications/ui/NotificationBell.tsx",
+			"rule": "tailwind-palette",
+			"value": "shadow-black",
+			"count": 2
+		},
+		{
 			"file": "src/features/persona-editor/ui/PersonaSaveIndicator.tsx",
 			"rule": "tailwind-palette",
 			"value": "text-amber-600",
@@ -2082,6 +2094,12 @@
 			"rule": "tailwind-palette",
 			"value": "text-white",
 			"count": 1
+		},
+		{
+			"file": "src/widgets/Header/HeaderActions.tsx",
+			"rule": "tailwind-palette",
+			"value": "shadow-black",
+			"count": 2
 		},
 		{
 			"file": "src/widgets/Header/HeaderIsland.tsx",

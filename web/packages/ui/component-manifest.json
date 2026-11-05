@@ -80,6 +80,12 @@
 			"entry": "src/components/empty/index.ts"
 		},
 		{
+			"name": "hover-card",
+			"status": "foundation",
+			"entry": "src/components/hover-card/index.ts",
+			"css": "src/components/hover-card/hover-card.css"
+		},
+		{
 			"name": "icons",
 			"status": "legacy",
 			"entry": "src/components/icons/index.ts"
@@ -159,8 +165,9 @@
 		},
 		{
 			"name": "popover",
-			"status": "legacy",
-			"entry": "src/components/popover/index.ts"
+			"status": "foundation",
+			"entry": "src/components/popover/index.ts",
+			"css": "src/components/popover/popover.css"
 		},
 		{
 			"name": "prompt-dialog",
@@ -279,27 +286,19 @@
 			"name": "use-debounced-callback",
 			"status": "legacy",
 			"entry": "src/lib/use-debounced-callback.ts",
-			"symbols": [
-				"useDebouncedCallback"
-			]
+			"symbols": ["useDebouncedCallback"]
 		},
 		{
 			"name": "use-theme",
 			"status": "legacy",
 			"entry": "src/lib/use-theme.ts",
-			"symbols": [
-				"type ThemeChoice",
-				"type UseThemeResult",
-				"useTheme"
-			]
+			"symbols": ["type ThemeChoice", "type UseThemeResult", "useTheme"]
 		},
 		{
 			"name": "decrypted-text",
 			"status": "legacy",
 			"entry": "src/vendor/DecryptedText.tsx",
-			"symbols": [
-				"default as DecryptedText"
-			]
+			"symbols": ["default as DecryptedText"]
 		}
 	],
 	"recipes": [
@@ -316,40 +315,26 @@
 		},
 		{
 			"entry": "src/components/button/styles.ts",
-			"symbols": [
-				"type ButtonVariantProps",
-				"buttonVariants"
-			]
+			"symbols": ["type ButtonVariantProps", "buttonVariants"]
 		},
 		{
 			"entry": "src/components/checkbox/styles.ts",
-			"symbols": [
-				"type CheckboxVariantProps",
-				"checkboxVariants"
-			]
+			"symbols": ["type CheckboxVariantProps", "checkboxVariants"]
 		},
 		{
 			"entry": "src/components/input/styles.ts",
-			"symbols": [
-				"type InputVariantProps",
-				"inputVariants"
-			]
+			"symbols": ["type InputVariantProps", "inputVariants"]
 		},
 		{
 			"entry": "src/components/kbd/styles.ts",
-			"symbols": [
-				"type KbdVariantProps",
-				"kbdVariants"
-			]
+			"symbols": ["type KbdVariantProps", "kbdVariants"]
 		}
 	],
 	"styles": {
 		"theme": "src/styles/theme.css",
 		"tokens": "src/styles/tokens.css",
 		"foundation": "src/styles/foundation.css",
-		"utilities": [
-			"src/styles/scrollbar.css"
-		],
+		"utilities": ["src/styles/scrollbar.css"],
 		"palettes": [
 			"src/styles/palettes/violet.generated.css",
 			"src/styles/palettes/coral.generated.css"

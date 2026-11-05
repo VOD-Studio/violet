@@ -103,7 +103,12 @@ export function NavMenuGroupItem({
 		return (
 			<Popover open={flyoutOpen} onOpenChange={setFlyoutOpen}>
 				<PopoverTrigger asChild>{trigger}</PopoverTrigger>
-				<PopoverContent side="right" align="start" sideOffset={8} className="w-44 p-1.5">
+				<PopoverContent
+					side="right"
+					align="start"
+					sideOffset={8}
+					className="w-44 min-w-0 p-1.5"
+				>
 					<p className="text-muted-foreground/60 px-3 pt-1.5 pb-1 text-xs font-medium tracking-wider">
 						{item.label}
 					</p>

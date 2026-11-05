@@ -5,6 +5,7 @@
 @import "./components/card/card.css";
 @import "./components/checkbox/checkbox.css";
 @import "./components/dropdown/dropdown.css";
+@import "./components/hover-card/hover-card.css";
 @import "./components/image-pixel-reveal/image-pixel-reveal.css";
 @import "./components/indicator/indicator.css";
 @import "./components/input/input.css";
@@ -12,6 +13,7 @@
 @import "./components/label/label.css";
 @import "./components/link-card/link-card.css";
 @import "./components/overlay-scroll/overlay-scroll.css" layer(components);
+@import "./components/popover/popover.css";
 @import "./components/radio/radio.css";
 @import "./components/search-input/search-input.css";
 @import "./components/segmented/segmented.css";

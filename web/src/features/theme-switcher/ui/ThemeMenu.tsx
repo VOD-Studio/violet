@@ -36,12 +36,10 @@ export function ThemeMenu({ onOpenChange }: ThemeMenuProps) {
 				<PopoverContent
 					aria-label="主题与装饰"
 					align="end"
-					sideOffset={14}
-					collisionPadding={8}
 					onInteractOutside={(event) => {
 						if (customOpen) event.preventDefault();
 					}}
-					className="max-h-(--radix-popover-content-available-height) w-80 max-w-[calc(100vw-1rem)] animate-none! overflow-y-auto rounded-2xl border-edge-hairline p-4 shadow-none"
+					className="max-h-(--radix-popover-content-available-height) w-80 max-w-[calc(100vw-1rem)] overflow-y-auto"
 				>
 					<ThemeSettings onCustomize={() => setCustomOpen(true)} />
 				</PopoverContent>

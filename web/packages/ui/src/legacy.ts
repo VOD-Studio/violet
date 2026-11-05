@@ -15,7 +15,6 @@ export * from "./components/overlay-scroll/index";
 export * from "./components/page-header/index";
 export * from "./components/page-shell/index";
 export * from "./components/pagination/index";
-export * from "./components/popover/index";
 export * from "./components/prompt-dialog/index";
 export * from "./components/resend-button/index";
 export * from "./components/scroll-area/index";

@@ -10,6 +10,7 @@ import { indicatorExhibit } from "./indicator";
 import { inputExhibit } from "./input";
 import { kbdExhibit } from "./kbd";
 import { linkCardExhibit } from "./link-card";
+import { popoverExhibit } from "./popover";
 import { radioExhibit } from "./radio";
 import { searchInputExhibit } from "./search-input";
 import { segmentedExhibit } from "./segmented";
@@ -67,13 +68,14 @@ export const EXHIBITS: Exhibit[] = [
 		issue: 712,
 	},
 	dropdownExhibit,
+	popoverExhibit,
 	{
-		id: "popover",
-		name: "弹出层",
-		units: ["popover", "tooltip", "hover-card"],
+		id: "tooltip",
+		name: "文字提示",
+		units: ["tooltip"],
 		zone: "stage",
 		category: "overlay",
-		footprint: { width: 360, height: 280 },
+		footprint: { width: 360, height: 200 },
 		issue: 702,
 	},
 	{

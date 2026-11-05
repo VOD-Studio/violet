@@ -65,8 +65,7 @@ export function SchemaTablePicker({
 			</PopoverTrigger>
 			<PopoverContent
 				align="start"
-				sideOffset={6}
-				className="w-(--radix-popover-trigger-width) min-w-72 p-0 data-[state=closed]:animate-none! data-[state=open]:animate-none!"
+				className="w-(--radix-popover-trigger-width) min-w-72 p-0"
 			>
 				<div className="border-b p-2">
 					<Input

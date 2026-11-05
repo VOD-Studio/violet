@@ -58,7 +58,7 @@ export function RevisionChip({ post, standalone }: RevisionChipProps) {
 				side="top"
 				sideOffset={8}
 				align="center"
-				className="w-64 rounded-xl border border-border/80 bg-popover/95 p-3 text-popover-foreground shadow-[0_4px_24px_rgba(0,0,0,0.05)] backdrop-blur-md"
+				className="w-64"
 				onMouseEnter={handleOpen}
 				onMouseLeave={handleClose}
 			>

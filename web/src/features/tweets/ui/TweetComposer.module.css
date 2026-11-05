@@ -31,11 +31,7 @@
 .sourcePopover {
 	width: 20rem;
 	max-width: calc(100vw - 2rem);
-	padding: 0.75rem;
-	border-radius: 0.75rem;
-	box-shadow: 0 4px 24px rgb(0 0 0 / 0.05);
 	font-family: var(--font-reading);
-	animation: none;
 }
 
 .sourcePopover input:focus-visible {

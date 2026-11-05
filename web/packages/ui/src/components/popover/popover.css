@@ -1,0 +1,18 @@
+@import "../../styles/float.css";
+
+@layer components {
+	.v-popover {
+		box-sizing: border-box;
+		z-index: var(--layer-float);
+		inline-size: max-content;
+		min-inline-size: 15rem;
+		max-inline-size: min(22.5rem, calc(100vw - 1rem));
+		padding: 14px 16px;
+		border: 1px solid var(--ol);
+		border-radius: var(--radius-12, 12px);
+		background-color: var(--popover);
+		color: var(--popover-foreground);
+		box-shadow: var(--shadow-soft);
+		outline: none;
+	}
+}

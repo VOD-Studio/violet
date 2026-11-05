@@ -97,8 +97,6 @@ export function TweetComposerToolbar({
 							</PopoverTrigger>
 							<PopoverContent
 								align="start"
-								sideOffset={6}
-								collisionPadding={16}
 								className={styles.sourcePopover}
 								aria-label="添加 X 原文"
 							>

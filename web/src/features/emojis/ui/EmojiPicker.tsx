@@ -1,6 +1,5 @@
 import type { Emoji } from "@entities/emoji/model/types";
 import { useAllEmojis } from "@features/emojis/api/queries";
-import styles from "@features/emojis/ui/EmojiPicker.module.css";
 import { EmojiTile } from "@features/emojis/ui/EmojiTile";
 import { MyEmojisPanel } from "@features/emojis/ui/MyEmojisPanel";
 import { useSessionStore } from "@shared/api/session";
@@ -138,11 +137,10 @@ function EmojiPickerSession({
 			</PopoverTrigger>
 			<PopoverContent
 				align={align}
-				sideOffset={4}
 				aria-label="表情选择器"
 				inert={disabled || !open}
 				aria-hidden={disabled || !open ? true : undefined}
-				className={cn("w-85 max-w-[calc(100vw-2rem)] p-0", styles.panel)}
+				className="w-85 max-w-[calc(100vw-2rem)] p-0"
 				onOpenAutoFocus={(event) => event.preventDefault()}
 				onFocusOutside={(event) => {
 					if (!closeOnSelect) event.preventDefault();

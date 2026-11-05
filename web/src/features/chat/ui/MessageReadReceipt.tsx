@@ -57,7 +57,7 @@ export function MessageReadReceipt({
 			</PopoverTrigger>
 			<PopoverContent
 				align="end"
-				className="w-56 p-1.5"
+				className="w-56 min-w-0 p-1.5"
 				onCloseAutoFocus={(event) => {
 					if (!mentioning.current) return;
 					// 提及时输入框已获得焦点，关闭浮层不能再把焦点抢回回执按钮。

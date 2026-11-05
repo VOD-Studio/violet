@@ -1,0 +1,20 @@
+@import "../../styles/float.css";
+
+@layer components {
+	.v-hover-card {
+		--v-float-in: 200ms;
+		--v-float-out: 120ms;
+		--v-float-dist-in: 4px;
+
+		box-sizing: border-box;
+		z-index: var(--layer-float);
+		inline-size: min(300px, calc(100vw - 1rem));
+		padding: 16px 18px;
+		border: 1px solid var(--ol);
+		border-radius: var(--radius-12, 12px);
+		background-color: var(--popover);
+		color: var(--popover-foreground);
+		box-shadow: var(--shadow-soft);
+		outline: none;
+	}
+}
