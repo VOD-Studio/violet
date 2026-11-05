@@ -18,6 +18,7 @@ import { switchExhibit } from "./switch";
 import { tabsExhibit } from "./tabs";
 import { textareaExhibit } from "./textarea";
 import { toggleGroupExhibit } from "./toggle-group";
+import { tooltipExhibit } from "./tooltip";
 import { uploadTileExhibit } from "./upload-tile";
 
 /** 馆藏目录：顺序即铭牌编号，待建展品随对应工单落地后换成真实组件。 */
@@ -69,15 +70,7 @@ export const EXHIBITS: Exhibit[] = [
 	},
 	dropdownExhibit,
 	popoverExhibit,
-	{
-		id: "tooltip",
-		name: "文字提示",
-		units: ["tooltip"],
-		zone: "stage",
-		category: "overlay",
-		footprint: { width: 360, height: 200 },
-		issue: 702,
-	},
+	tooltipExhibit,
 	{
 		id: "dropdown-menu",
 		name: "操作菜单",

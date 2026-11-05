@@ -52,6 +52,7 @@ export function EmojiTile({ emoji, selected = false, onSelect }: EmojiTileProps)
 			<TooltipContent
 				aria-label={`${emoji.name}预览`}
 				side="top"
+				arrow={false}
 				sideOffset={8}
 				collisionPadding={12}
 				className={styles.preview}

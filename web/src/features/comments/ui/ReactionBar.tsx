@@ -65,7 +65,7 @@ export function ReactionBar({ commentId, isLoggedIn = false }: ReactionBarProps)
 	}
 
 	return (
-		<TooltipProvider delayDuration={200}>
+		<TooltipProvider>
 			<div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
 				{isLoggedIn && (
 					<EmojiPicker
@@ -118,9 +118,7 @@ export function ReactionBar({ commentId, isLoggedIn = false }: ReactionBarProps)
 									</span>
 								</button>
 							</TooltipTrigger>
-							<TooltipContent side="bottom" sideOffset={4}>
-								<p className="text-xs">{reaction.emoji_name}</p>
-							</TooltipContent>
+							<TooltipContent side="bottom">{reaction.emoji_name}</TooltipContent>
 						</Tooltip>
 					);
 				})}

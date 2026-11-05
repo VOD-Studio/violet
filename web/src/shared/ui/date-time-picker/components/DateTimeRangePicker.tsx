@@ -146,7 +146,7 @@ export function DateTimeRangePicker({
 							</Button>
 						</TooltipTrigger>
 					</PopoverTrigger>
-					<TooltipContent className="max-w-xs">{displayText}</TooltipContent>
+					<TooltipContent>{displayText}</TooltipContent>
 				</Tooltip>
 			</TooltipProvider>
 			<PopoverContent className="w-auto min-w-80 p-4" align="start">

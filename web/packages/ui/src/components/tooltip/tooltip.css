@@ -1,0 +1,76 @@
+/*
+ * 文字提示单元样式：.v-tooltip（气泡）、.v-tooltip__text、.v-tooltip__keys（快捷键键帽）、.v-tooltip__arrow。
+ * 需先导入 @violet/ui/tokens.css 或 styles.css。
+ * 纸色底加唯一软影，不加描边；深色下 1px var(--ol) 只作辅助分界。
+ * 出现 150ms、收起 120ms 往触发器退 4px，其余动效见 float.css。
+ */
+
+@import "../../styles/float.css";
+@import "../kbd/kbd.css";
+
+@layer components {
+	.v-tooltip {
+		--v-float-in: 150ms;
+		--v-float-out: 120ms;
+		--v-float-dist-in: 4px;
+		--v-float-dist-out: 4px;
+
+		box-sizing: border-box;
+		position: relative;
+		z-index: var(--layer-tooltip);
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		min-block-size: 28px;
+		max-inline-size: 15rem;
+		padding: 4px 10px;
+		border-radius: 8px;
+		background-color: var(--popover);
+		color: var(--popover-foreground);
+		box-shadow:
+			var(--shadow-soft),
+			0 0 0 1px var(--ol);
+		font-size: 0.8125rem;
+		line-height: 1.5;
+		overflow-wrap: break-word;
+		pointer-events: none;
+		transform-origin: var(--radix-tooltip-content-transform-origin);
+	}
+
+	/* Popper 的定位外壳与气泡同大，不压掉它下面的点击 */
+	[data-radix-popper-content-wrapper]:has(> .v-tooltip) {
+		pointer-events: none;
+	}
+
+	.v-tooltip__text {
+		min-inline-size: 0;
+	}
+
+	.v-tooltip .v-tooltip__keys {
+		flex: none;
+		font-size: 0.6875rem;
+	}
+
+	/* 9×9 的方块转 45°，中心落在气泡边上：尖端伸出约 6px，离触发器约 3px */
+	.v-tooltip__arrow {
+		box-sizing: border-box;
+		display: block;
+		inline-size: 9px;
+		block-size: 9px;
+		border: 0 solid var(--ol);
+		border-inline-end-width: 1px;
+		border-block-end-width: 1px;
+		border-end-end-radius: 1px;
+		background-color: var(--popover);
+		transform: translateY(-50%) rotate(45deg);
+	}
+
+	/* 相邻切换：新气泡从上一个的位置滑过来，不再播出现动画 */
+	.v-tooltip[data-sliding]:is(
+		[data-state="open"],
+		[data-state="delayed-open"],
+		[data-state="instant-open"]
+	) {
+		animation: none;
+	}
+}

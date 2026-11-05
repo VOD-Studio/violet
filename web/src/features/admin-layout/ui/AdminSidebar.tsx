@@ -62,7 +62,7 @@ export function AdminSidebar() {
 	};
 
 	return (
-		<TooltipProvider delayDuration={200}>
+		<TooltipProvider>
 			<aside
 				className={cn(
 					"relative hidden shrink-0 flex-col border-r bg-card md:flex",

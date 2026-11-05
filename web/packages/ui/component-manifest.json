@@ -271,8 +271,9 @@
 		},
 		{
 			"name": "tooltip",
-			"status": "legacy",
-			"entry": "src/components/tooltip/index.ts"
+			"status": "foundation",
+			"entry": "src/components/tooltip/index.ts",
+			"css": "src/components/tooltip/tooltip.css"
 		},
 		{
 			"name": "upload-tile",

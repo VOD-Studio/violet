@@ -111,7 +111,7 @@ export function ClientConnectPanel({ token, scopes }: ClientConnectPanelProps) {
 			</div>
 
 			<div className="flex gap-4">
-				<TooltipProvider delayDuration={200}>
+				<TooltipProvider>
 					<nav className="flex w-11 shrink-0 flex-col gap-1 md:w-44">
 						{MCP_CLIENTS.map((c) => {
 							const Icon = c.icon;

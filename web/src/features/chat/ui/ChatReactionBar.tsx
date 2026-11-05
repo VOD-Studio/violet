@@ -29,7 +29,7 @@ export function ChatReactionBar({ reactions, onToggle, disabled = false }: ChatR
 	const hiddenCount = reactions.length - visibleReactions.length;
 
 	return (
-		<TooltipProvider delayDuration={200}>
+		<TooltipProvider>
 			<div className="flex flex-wrap items-center gap-1.5 pt-1">
 				{visibleReactions.map((reaction) => {
 					const emojiURL =
@@ -61,9 +61,7 @@ export function ChatReactionBar({ reactions, onToggle, disabled = false }: ChatR
 									</span>
 								</button>
 							</TooltipTrigger>
-							<TooltipContent side="bottom" sideOffset={4}>
-								<p className="text-xs">{reaction.emoji_name}</p>
-							</TooltipContent>
+							<TooltipContent side="bottom">{reaction.emoji_name}</TooltipContent>
 						</Tooltip>
 					);
 				})}

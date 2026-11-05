@@ -23,4 +23,5 @@
 @import "./components/tabs/tabs.css";
 @import "./components/textarea/textarea.css";
 @import "./components/toggle-group/toggle-group.css";
+@import "./components/tooltip/tooltip.css";
 @import "./components/upload-tile/upload-tile.css";

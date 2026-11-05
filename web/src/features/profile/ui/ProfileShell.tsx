@@ -160,9 +160,7 @@ const ProfileSidebar = ({ user }: { user: UserDTO }) => {
 									/>
 								</Link>
 							</TooltipTrigger>
-							<TooltipContent side="top" sideOffset={6} className="animate-none!">
-								查看公开主页
-							</TooltipContent>
+							<TooltipContent side="top">查看公开主页</TooltipContent>
 						</Tooltip>
 					</TooltipProvider>
 				</h1>

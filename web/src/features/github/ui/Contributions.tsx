@@ -44,9 +44,7 @@ const ContributionCell = ({ contribution }: ContributionCellProps) => {
 				/>
 			</TooltipTrigger>
 			<TooltipContent side="top">
-				<p className="font-mono text-[11px]">
-					{contribution.date} · {contribution.count} 次贡献
-				</p>
+				{contribution.date} · {contribution.count} 次贡献
 			</TooltipContent>
 		</Tooltip>
 	);

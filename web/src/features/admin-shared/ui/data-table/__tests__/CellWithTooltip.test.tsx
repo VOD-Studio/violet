@@ -1,11 +1,14 @@
 import { render } from "@testing-library/react";
+import { TooltipProvider } from "@violet/ui";
 import { describe, expect, it } from "vitest";
 import { CellWithTooltip } from "../components/CellWithTooltip";
 
 describe("CellWithTooltip", () => {
 	it("字符串子节点开启 ellipsis 时渲染带 truncate 的测量元素", () => {
 		const { container } = render(
-			<CellWithTooltip ellipsis>Very long text content</CellWithTooltip>,
+			<TooltipProvider>
+				<CellWithTooltip ellipsis>Very long text content</CellWithTooltip>
+			</TooltipProvider>,
 		);
 
 		const measure = container.querySelector("span.min-w-0.max-w-full.truncate");
@@ -15,9 +18,11 @@ describe("CellWithTooltip", () => {
 
 	it("单一元素子节点开启 ellipsis 时被克隆并附加 truncate 类", () => {
 		const { container } = render(
-			<CellWithTooltip ellipsis>
-				<button type="button">Long title</button>
-			</CellWithTooltip>,
+			<TooltipProvider>
+				<CellWithTooltip ellipsis>
+					<button type="button">Long title</button>
+				</CellWithTooltip>
+			</TooltipProvider>,
 		);
 
 		const button = container.querySelector("button");

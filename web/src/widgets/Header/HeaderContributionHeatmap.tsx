@@ -140,10 +140,8 @@ export function HeaderContributionHeatmap({
 												)}
 											/>
 										</TooltipTrigger>
-										<TooltipContent side="top" sideOffset={4}>
-											<p className="font-mono text-[11px]">
-												{formatDayTooltip(day.key, day.count)}
-											</p>
+										<TooltipContent side="top">
+											{formatDayTooltip(day.key, day.count)}
 										</TooltipContent>
 									</Tooltip>
 								);

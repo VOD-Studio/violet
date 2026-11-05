@@ -57,10 +57,7 @@ export function PolicyHelp({ label, children }: { label: string; children: React
 						<CircleHelp className="size-4" />
 					</Button>
 				</TooltipTrigger>
-				<TooltipContent
-					className="max-w-80 animate-none"
-					onEscapeKeyDown={() => setOpen(false)}
-				>
+				<TooltipContent className="max-w-80" onEscapeKeyDown={() => setOpen(false)}>
 					{children}
 				</TooltipContent>
 			</Tooltip>
