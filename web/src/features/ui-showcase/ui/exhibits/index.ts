@@ -7,6 +7,7 @@ import { dropdownExhibit } from "./dropdown";
 import { imagePixelRevealExhibit } from "./image-pixel-reveal";
 import { indicatorExhibit } from "./indicator";
 import { inputExhibit } from "./input";
+import { kbdExhibit } from "./kbd";
 import { linkCardExhibit } from "./link-card";
 import { searchInputExhibit } from "./search-input";
 import { segmentedExhibit } from "./segmented";
@@ -166,6 +167,7 @@ export const EXHIBITS: Exhibit[] = [
 		issue: 700,
 	},
 	avatarExhibit,
+	kbdExhibit,
 	{
 		id: "switch",
 		name: "开关与单选",

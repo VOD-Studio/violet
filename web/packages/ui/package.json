@@ -122,6 +122,11 @@
 			"import": "./src/components/input/index.ts",
 			"default": "./src/components/input/index.ts"
 		},
+		"./kbd": {
+			"types": "./src/components/kbd/index.ts",
+			"import": "./src/components/kbd/index.ts",
+			"default": "./src/components/kbd/index.ts"
+		},
 		"./label": {
 			"types": "./src/components/label/index.ts",
 			"import": "./src/components/label/index.ts",
@@ -284,6 +289,7 @@
 		"./components/image-pixel-reveal.css": "./src/components/image-pixel-reveal/image-pixel-reveal.css",
 		"./components/indicator.css": "./src/components/indicator/indicator.css",
 		"./components/input.css": "./src/components/input/input.css",
+		"./components/kbd.css": "./src/components/kbd/kbd.css",
 		"./components/label.css": "./src/components/label/label.css",
 		"./components/link-card.css": "./src/components/link-card/link-card.css",
 		"./components/overlay-scroll.css": "./src/components/overlay-scroll/overlay-scroll.css",
@@ -425,6 +431,11 @@
 				"types": "./dist/components/input/index.d.ts",
 				"import": "./dist/components/input/index.js",
 				"default": "./dist/components/input/index.js"
+			},
+			"./kbd": {
+				"types": "./dist/components/kbd/index.d.ts",
+				"import": "./dist/components/kbd/index.js",
+				"default": "./dist/components/kbd/index.js"
 			},
 			"./label": {
 				"types": "./dist/components/label/index.d.ts",
@@ -588,6 +599,7 @@
 			"./components/image-pixel-reveal.css": "./dist/components/image-pixel-reveal.css",
 			"./components/indicator.css": "./dist/components/indicator.css",
 			"./components/input.css": "./dist/components/input.css",
+			"./components/kbd.css": "./dist/components/kbd.css",
 			"./components/label.css": "./dist/components/label.css",
 			"./components/link-card.css": "./dist/components/link-card.css",
 			"./components/overlay-scroll.css": "./dist/components/overlay-scroll.css",

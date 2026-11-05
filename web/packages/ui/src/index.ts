@@ -7,6 +7,7 @@ export * from "./components/dropdown/index";
 export * from "./components/image-pixel-reveal/index";
 export * from "./components/indicator/index";
 export * from "./components/input/index";
+export * from "./components/kbd/index";
 export * from "./components/label/index";
 export * from "./components/link-card/index";
 export * from "./components/search-input/index";

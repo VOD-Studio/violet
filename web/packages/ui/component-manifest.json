@@ -108,6 +108,12 @@
 			"css": "src/components/input/input.css"
 		},
 		{
+			"name": "kbd",
+			"status": "foundation",
+			"entry": "src/components/kbd/index.ts",
+			"css": "src/components/kbd/kbd.css"
+		},
+		{
 			"name": "label",
 			"status": "foundation",
 			"entry": "src/components/label/index.ts",
@@ -288,6 +294,10 @@
 		{
 			"entry": "src/components/input/styles.ts",
 			"symbols": ["type InputVariantProps", "inputVariants"]
+		},
+		{
+			"entry": "src/components/kbd/styles.ts",
+			"symbols": ["type KbdVariantProps", "kbdVariants"]
 		}
 	],
 	"styles": {

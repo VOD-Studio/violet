@@ -8,6 +8,7 @@
 @import "./components/image-pixel-reveal/image-pixel-reveal.css";
 @import "./components/indicator/indicator.css";
 @import "./components/input/input.css";
+@import "./components/kbd/kbd.css";
 @import "./components/label/label.css";
 @import "./components/link-card/link-card.css";
 @import "./components/overlay-scroll/overlay-scroll.css" layer(components);
