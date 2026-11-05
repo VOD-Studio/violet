@@ -79,7 +79,7 @@ pnpm dev
 | `/persona`、`/about`、`/friends`、`/changelog` | 人设、关于、友链与更新日志 |
 | `/login`、`/register`、`/forgot-password` | 认证流程 |
 | `/admin/*` | 内容与站点管理 |
-| `/editor-guide`、`/ui`、`/kanban`、`/inkline` | 编辑器手册、组件与工具文档 |
+| `/editor-guide`、`/ui`、`/kanban`、`/inkline` | 编辑器手册、组件陈列室与工具文档 |
 | `/pet` | 电子宠物演示 |
 
 `/pet` 的 SDK 不入库；开发该页面时需准备 [kodama](https://github.com/VOD-Studio/kodama)，再执行 `pnpm pet:sync`。脚本默认读取并排检出的仓库，也可通过 `PET_REPO` 指定。
@@ -235,7 +235,7 @@ CLI fixture 使用临时 Git 仓库，可通过 `pnpm test scripts/check-colors.
 
 | 包 | 文档站 / 站内用途 | 开发依据 |
 | --- | --- | --- |
-| `@violet/ui` | `/ui`，通用 UI 与主题 | [架构](packages/ui/docs/architecture.md)、[组件设计](packages/ui/docs/component-design.md) |
+| `@violet/ui` | `/ui` 组件陈列室，通用 UI 与主题 | [架构](packages/ui/docs/architecture.md)、[组件设计](packages/ui/docs/component-design.md) |
 | `@violetjs/kanban` | `/kanban`，项目路线图看板与画布 | [使用说明](packages/kanban/README.zh-CN.md)、[维护指南](packages/kanban/DEVELOPMENT.md) |
 | `@violetjs/inkline` | `/inkline`，手绘工作台与文章图表 | [使用说明](packages/inkline/README.zh-CN.md)、[维护指南](packages/inkline/DEVELOPMENT.md) |
 | `@violetjs/react-tweet` | 文章引用与推文页面 | [使用说明](packages/react-tweet/README.zh-CN.md)、[维护指南](packages/react-tweet/DEVELOPMENT.md) |

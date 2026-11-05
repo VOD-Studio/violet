@@ -1,6 +1,6 @@
 ---
 name: violet-ui
-description: 在 violet 仓库使用、扩展 @violet/ui 或编写包内规范与组件库文档示例时，核对组件清单、原生行为、样式入口、同源示例与真实 tarball 消费。
+description: 在 violet 仓库使用、扩展 @violet/ui、编写包内规范或在 /ui 陈列室上架展品时，核对组件清单、原生行为、样式入口、展品占地与真实 tarball 消费。
 ---
 
 # 使用与扩展 @violet/ui
@@ -12,9 +12,9 @@ description: 在 violet 仓库使用、扩展 @violet/ui 或编写包内规范�
 5. 保留 native 属性、ref、受控与非受控值、FormData/reset、SSR ID 和事件取消语义。TextField 的 className/style/ref 属于 input，根布局用 `classNames.root`；描述和错误只关联实际 DOM。Button asChild 保留子内容，禁用或忙碌时拦截子 handlers，自定义 Link 必须透传 props 和 ref。
 6. 增加或迁移组件时登记清单，再运行 `pnpm --filter @violet/ui sync` 与只读 `check`。清单驱动根入口、组件入口、legacy 汇总、包 exports 与 CSS 列表；不要维护第二套列表。`@violet/ui/variants` 保持纯 recipe，不依赖 React。
 7. 常规 React 消费从 `@violet/ui` 或组件入口导入，Tailwind v4 之后加载 `@violet/ui/styles.css`。普通 CSS 消费先加载 `tokens.css`，再加载 `classes.css` 或 `components/<name>.css`。JS 与 CSS 的按需加载分别核对。工作区入口指向源码，pack 后由 publishConfig 指向 dist。
-8. 在 `web/src/features/ui-docs/ui/examples/<component>/` 写真实 TSX 示例，文档同时 import 组件预览与 `.tsx?raw`。指南路由为 `/ui/guides/<slug>`，组件路由为 `/ui/components/<name>`；新增页面同步 route、catalog、lazy registry、llms.txt，并按 docs-map 同步负责的 README/AGENTS。页面按清单明确成熟度，架构与设计规范直接读取包内正文。
-9. 执行包的 `check`、`typecheck`、`test`、`build`、`check:dist`、`consumer`。最后一步把真实 tarball 安装到工作区外，验证类型、SSR、Vite 构建与模块可达性。补充明暗、窄屏、键盘与 reduced motion 预览，再交给独立 verifier；作者 pass 不自称批准。
+8. 在 `web/src/features/ui-showcase/ui/exhibits/<id>.tsx` 上架展品并登记到馆藏目录：声明含展开态的占地、展区、用途与可检视状态，渲染真实组件；展品状态由清单推导，规格正文不进陈列室。按 docs-map 同步负责的 README/AGENTS。
+9. 执行包的 `check`、`typecheck`、`test`、`build`、`check:dist`、`consumer`。最后一步把真实 tarball 安装到工作区外，验证类型、SSR、Vite 构建与模块可达性。在站点跑 `e2e/ui-showcase.spec.ts` 的展柜契约，再用检视台逐态核对明暗、季节、窄屏、键盘与减弱动态，交给独立 verifier；作者 pass 不自称批准。
 
 架构指南在 `web/packages/ui/docs/architecture.md`，逐步流程在同目录 `component-design.md`，包边界见 `web/packages/ui/AGENTS.md`。
 
-包尚未发布 npm；外部安装先 build/pack，再用实际 tarball 文件名。没有专用组件 CLI 或 MCP；智能体可读取 `/llms.txt`、组件源码和此 skill。遵循仓库中文本地 commit 与不推送规则。
+包尚未发布 npm；外部安装先 build/pack，再用实际 tarball 文件名。没有专用组件 CLI 或 MCP；智能体可读取 `/llms.txt`、包内 `docs/`、组件源码和此 skill。遵循仓库中文本地 commit 与不推送规则。

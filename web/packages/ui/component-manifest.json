@@ -12,8 +12,7 @@
 			"name": "button",
 			"status": "foundation",
 			"entry": "src/components/button/index.ts",
-			"css": "src/components/button/button.css",
-			"documentation": "web/src/features/ui-docs/ui/ButtonDoc.tsx"
+			"css": "src/components/button/button.css"
 		},
 		{
 			"name": "card",
@@ -62,8 +61,7 @@
 			"name": "dropdown",
 			"status": "foundation",
 			"entry": "src/components/dropdown/index.ts",
-			"css": "src/components/dropdown/dropdown.css",
-			"documentation": "web/src/features/ui-docs/ui/DropdownDoc.tsx"
+			"css": "src/components/dropdown/dropdown.css"
 		},
 		{
 			"name": "dropdown-menu",
@@ -84,8 +82,7 @@
 			"name": "image-pixel-reveal",
 			"status": "foundation",
 			"entry": "src/components/image-pixel-reveal/index.ts",
-			"css": "src/components/image-pixel-reveal/image-pixel-reveal.css",
-			"documentation": "web/src/features/ui-docs/ui/ImagePixelRevealDoc.tsx"
+			"css": "src/components/image-pixel-reveal/image-pixel-reveal.css"
 		},
 		{
 			"name": "inline-error",
@@ -96,22 +93,20 @@
 			"name": "input",
 			"status": "foundation",
 			"entry": "src/components/input/index.ts",
-			"css": "src/components/input/input.css",
-			"documentation": "web/src/features/ui-docs/ui/InputDoc.tsx"
+			"css": "src/components/input/input.css"
 		},
 		{
 			"name": "label",
 			"status": "foundation",
 			"entry": "src/components/label/index.ts",
-			"css": "src/components/label/label.css",
-			"documentation": "web/src/features/ui-docs/ui/library-guides/content/composition.md"
+			"css": "src/components/label/label.css"
 		},
 		{
 			"name": "link-card",
 			"status": "foundation",
 			"entry": "src/components/link-card/index.ts",
 			"css": "src/components/link-card/link-card.css",
-			"documentation": "web/src/features/ui-docs/ui/LinkCardDoc.tsx"
+			"documentation": "web/packages/ui/docs/components/link-card.md"
 		},
 		{
 			"name": "modal",
@@ -169,14 +164,13 @@
 			"status": "foundation",
 			"entry": "src/components/search-input/index.ts",
 			"css": "src/components/search-input/search-input.css",
-			"documentation": "web/src/features/ui-docs/ui/SearchInputDoc.tsx"
+			"documentation": "web/packages/ui/docs/components/search-input.md"
 		},
 		{
 			"name": "segmented",
 			"status": "foundation",
 			"entry": "src/components/segmented/index.ts",
-			"css": "src/components/segmented/segmented.css",
-			"documentation": "web/src/features/ui-docs/ui/SegmentedDoc.tsx"
+			"css": "src/components/segmented/segmented.css"
 		},
 		{
 			"name": "select",
@@ -241,8 +235,7 @@
 			"name": "textarea",
 			"status": "foundation",
 			"entry": "src/components/textarea/index.ts",
-			"css": "src/components/textarea/textarea.css",
-			"documentation": "web/src/features/ui-docs/ui/library-guides/content/composition.md"
+			"css": "src/components/textarea/textarea.css"
 		},
 		{
 			"name": "tooltip",
@@ -253,8 +246,7 @@
 			"name": "upload-tile",
 			"status": "foundation",
 			"entry": "src/components/upload-tile/index.ts",
-			"css": "src/components/upload-tile/upload-tile.css",
-			"documentation": "web/src/features/ui-docs/ui/UploadTileDoc.tsx"
+			"css": "src/components/upload-tile/upload-tile.css"
 		}
 	],
 	"additionalExports": [

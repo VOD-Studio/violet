@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { flattenNavLinks, NAV_ITEMS, resolveActiveNav } from "../nav";
 
-describe("NAV_ITEMS 组件库入口", () => {
+describe("NAV_ITEMS 组件陈列室入口", () => {
 	const more = NAV_ITEMS.find((item) => item.label === "更多");
-	const uiDocs = more?.children?.find((link) => link.to === "/ui");
+	const showcase = more?.children?.find((link) => link.to === "/ui");
 
-	it("更多菜单提供组件库文档入口", () => {
+	it("更多菜单提供组件陈列室入口", () => {
 		expect(more?.to).toBeUndefined();
-		expect(uiDocs?.label).toBe("组件库");
-		expect(uiDocs?.description).toBe("查阅 violet/ui 组件用法与开发文档");
+		expect(showcase?.label).toBe("组件陈列室");
+		expect(showcase?.description).toBe("按占地陈列组件的真实实现");
 	});
 });
 

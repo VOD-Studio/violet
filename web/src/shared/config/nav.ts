@@ -136,10 +136,10 @@ export const NAV_ITEMS: NavItem[] = [
 				description: "探索原型与交互实验",
 			},
 			{
-				label: "组件库",
+				label: "组件陈列室",
 				to: "/ui",
 				icon: Component,
-				description: "查阅 violet/ui 组件用法与开发文档",
+				description: "按占地陈列组件的真实实现",
 			},
 			{
 				label: "编辑器手册",

@@ -59,12 +59,11 @@ describe("resolveTransitionKind", () => {
 			expect(resolveTransitionKind(from, to), `${from} → ${to}`).toBe("fade");
 	});
 
-	it("后台、实验页与文档站内部不做转场；进出文档站仍有淡入淡出", () => {
+	it("后台与实验页不做转场；进出组件陈列室仍有淡入淡出", () => {
 		expect(resolveTransitionKind("/", "/admin")).toBe("none");
 		expect(resolveTransitionKind("/admin/posts", "/")).toBe("none");
 		expect(resolveTransitionKind("/admin/posts", "/admin/users")).toBe("none");
 		expect(resolveTransitionKind("/", "/lab/blog")).toBe("none");
-		expect(resolveTransitionKind("/ui/components/button", "/ui/guides/theming")).toBe("none");
 		expect(resolveTransitionKind("/", "/ui")).toBe("fade");
 		expect(resolveTransitionKind("/ui", "/blog")).toBe("fade");
 	});

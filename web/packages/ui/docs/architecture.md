@@ -44,7 +44,7 @@ web/packages/ui/
 | 生成色阶、语义 token 和 Tailwind 映射 | `web/packages/ui/src/styles/` | `@violetjs/theme` 只用于构建；组件只消费语义，不引用色阶 |
 | 字体、博客方言和站点装饰动画 | `web/src/styles/` | 宿主负责加载字体和装饰资源 |
 | 公开单元、状态、CSS、文档路径 | `component-manifest.json` | 派生入口通过同步命令生成 |
-| 组件库文档与示例 | `web/src/features/ui-docs/` | 架构与设计规范读取包内正文，预览与复制代码使用同一 TSX 文件 |
+| 组件陈列（展品） | `web/src/features/ui-showcase/` | `/ui` 按占地陈列真实组件，不复制规格正文 |
 
 组件单元的依赖方向如下。结构、按需 recipe、CSS、导出与测试放在同一目录，修改一个组件时能看到它的完整契约。`src/legacy.ts` 只是兼容 barrel，不保存另一份组件实现。`lib/` 只接收已经被多个组件使用的能力。
 
@@ -149,15 +149,15 @@ ImagePixelReveal 的 `className` 属于根容器，用于约束尺寸；`imgClas
 
 ## 清单如何防止入口漂移
 
-组件清单的每一项登记 `name`、`status`、`entry`，按需要提供 `css` 与 `documentation`。例如新增组件时：
+组件清单的每一项登记 `name`、`status`、`entry`，按需要提供 `css` 与 `documentation`；`documentation` 只指向包内 `docs/components/` 的契约正文。例如新增组件时：
 
 ```json
 {
-  "name": "input",
+  "name": "checkbox",
   "status": "foundation",
-  "entry": "src/components/input/index.ts",
-  "css": "src/components/input/input.css",
-  "documentation": "web/src/features/ui-docs/ui/InputDoc.tsx"
+  "entry": "src/components/checkbox/index.ts",
+  "css": "src/components/checkbox/checkbox.css",
+  "documentation": "web/packages/ui/docs/components/checkbox.md"
 }
 ```
 

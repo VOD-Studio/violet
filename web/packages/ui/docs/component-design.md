@@ -30,7 +30,7 @@ web/packages/ui/src/components/<name>/
   __tests__/     行为与消费契约
 ```
 
-组件只有两三个文件时保持平铺，测试与实现共置；站点示例放 `web/src/features/ui-docs/ui/examples/<name>/`，不能把业务请求、路由和 validation schema 放进包。legacy 组件也放在 `src/components/<name>/`，迁移状态由清单表达，不另建一套目录。
+组件只有两三个文件时保持平铺，测试与实现共置；展品放 `web/src/features/ui-showcase/ui/exhibits/<id>.tsx`，不能把业务请求、路由和 validation schema 放进包。legacy 组件也放在 `src/components/<name>/`，迁移状态由清单表达，不另建一套目录。
 
 没有变体时直接使用稳定 BEM 类名，不建立空 recipe。需要 variant / size 时，recipe 负责选择 `.v-<name>`、`.v-<name>--<variant>` 等稳定类名。尺寸、色值、状态反馈统一写在组件 CSS，使用语义 token。组件 props 从原生属性或行为 primitive 推导，variant 类型从 recipe 推导，避免在 props、文档和样式中各维护一份枚举。
 
@@ -67,22 +67,32 @@ pnpm --filter @violet/ui check
 
 如果导出 recipe，将它接入 `@violet/ui/variants`，该入口只允许样式依赖。不要让 recipe 导入组件 barrel。CSS 汇集入口和叶子入口从相同源文件构建；组合组件 CSS 需引入它使用的子组件 CSS，不能要求消费方猜测依赖。纯 CSS 应能直接加载，不依赖宿主扫描组件 TSX。
 
-## 用同源示例解释 API
+## 在陈列室上架展品
 
-一个示例文件同时提供预览与复制代码。文档页按已有 `CodeCard` 模式引入：
+组件落地后在 `/ui` 陈列室上架一件展品。展品文件导出一个 `Exhibit`，登记到 `ui/exhibits/index.ts` 的馆藏目录，顺序即铭牌编号；状态由清单推导，不在展品里另写：
 
 ```tsx
-import { InputBasicDemo } from "@features/ui-docs/ui/examples/input/basic";
-import basicSource from "@features/ui-docs/ui/examples/input/basic.tsx?raw";
-
-<CodeCard code={basicSource} language="tsx" lineNumbers>
-  <InputBasicDemo />
-</CodeCard>
+export const inputExhibit: Exhibit = {
+  id: "input",
+  name: "输入框",
+  units: ["input", "label"],
+  zone: "field",
+  category: "form",
+  footprint: { width: 520, height: 216 },
+  states: [
+    { id: "default", label: "默认" },
+    { id: "invalid", label: "错误" },
+  ],
+  Render: InputFields,
+};
 ```
 
-示例必须有真实名称、初值和回调。只展示组件支持的能力；Input 不支持异步请求，就把请求状态留在示例消费方。Button 至少展示动作、禁用、loading 与链接；Input 展示四变体、尺寸、说明、错误、清除、密码显隐、原生字段属性与表单 reset。
+- `zone` 按占地选展区：整幅橱窗放真实宽度独占一行的展品，浮层舞台放带触发器的浮层，微件架一个展柜放一整族，字段带标签与提示，内容放进正文语境。`category` 只用于筛选。
+- `footprint` 是所有状态与展开态的最小舞台。舞台按它固定尺寸，内容超出即判为溢出；菜单、对话框展开后也必须留在框内，用检视台的占地框逐态核对。
+- `states` 的第一项是展柜里的陈列态，`Render` 按 `state` 渲染真实组件，名称、初值与回调写成真实场景。只展示组件支持的能力，请求状态留在展品里模拟。
+- 待建单元先登记占地与 `issue`，不写 `Render`；落地时补上 `Render` 并删去 `issue`。
 
-文档的权威正文留在包内 `docs/`，`web/src/features/ui-docs/` 直接 raw import 包文档。指南发布在 `/ui/guides/<slug>`，组件 API 与示例发布在 `/ui/components/<name>`。预览与复制源码遵循同源 CodeCard 模式。
+`src/features/ui-showcase/model/__tests__/exhibit.test.ts` 要求每个 foundation 单元都有真实展品；`e2e/ui-showcase.spec.ts` 在 390 至 3440 七个宽度下断言展柜不裁切、只在放不下占地时横向滑动，并在检视台逐态检查占地。
 
 ## 跑源码检查与真实消费者
 

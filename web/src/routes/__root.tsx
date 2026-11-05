@@ -144,9 +144,9 @@ function RootComponent() {
 	const isFullscreenRoute = isChatRoute || isWorkbenchRoute;
 	const isProfileRoute = pathname.startsWith("/profile");
 	const isLabRoute = pathname.startsWith("/lab");
-	// 组件库文档的示例需要中性画布，窗只铺在公开内容页
-	const isUiDocsRoute = pathname === "/ui" || pathname.startsWith("/ui/");
-	const showBackdrop = !isProfileRoute && !isFullscreenRoute && !isLabRoute && !isUiDocsRoute;
+	// 组件陈列室自带柜内聚光与明暗，窗只铺在公开内容页
+	const isShowcaseRoute = pathname === "/ui";
+	const showBackdrop = !isProfileRoute && !isFullscreenRoute && !isLabRoute && !isShowcaseRoute;
 
 	// 首次 hydration 复用 SSR claims，不一定重跑客户端 beforeLoad。
 	useEffect(() => {

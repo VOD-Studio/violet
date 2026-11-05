@@ -1,0 +1,20 @@
+/* 柜内聚光：顶部一束季节色，向四角落到凹陷色 */
+.case {
+	background: radial-gradient(
+		75% 85% at 50% 0%,
+		color-mix(in oklab, var(--decoration) 20%, var(--card)) 0%,
+		var(--card) 62%,
+		var(--muted) 100%
+	);
+	scrollbar-width: thin;
+}
+
+/* 范围内的减弱动态：CSS 动画与过渡直接停在终态，脚本动画由 useMotionFreeze 处理 */
+.reduced *,
+.reduced *::before,
+.reduced *::after {
+	/* biome-ignore lint/complexity/noImportantStyles: 要压过各组件自身的动画声明 */
+	animation: none !important;
+	/* biome-ignore lint/complexity/noImportantStyles: 同上 */
+	transition: none !important;
+}

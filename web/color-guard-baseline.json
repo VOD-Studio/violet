@@ -956,66 +956,6 @@
 			"count": 1
 		},
 		{
-			"file": "src/features/ui-docs/ui/examples/image-pixel-reveal/basic.tsx",
-			"rule": "raw-color",
-			"value": "#e9c7a2",
-			"count": 1
-		},
-		{
-			"file": "src/features/ui-docs/ui/examples/image-pixel-reveal/basic.tsx",
-			"rule": "raw-color",
-			"value": "#fff0cb",
-			"count": 1
-		},
-		{
-			"file": "src/features/ui-docs/ui/examples/image-pixel-reveal/basic.tsx",
-			"rule": "raw-color",
-			"value": "#856982",
-			"count": 1
-		},
-		{
-			"file": "src/features/ui-docs/ui/examples/image-pixel-reveal/basic.tsx",
-			"rule": "raw-color",
-			"value": "#494e6b",
-			"count": 1
-		},
-		{
-			"file": "src/features/ui-docs/ui/examples/image-pixel-reveal/basic.tsx",
-			"rule": "raw-color",
-			"value": "#a3c5d2",
-			"count": 1
-		},
-		{
-			"file": "src/features/ui-docs/ui/examples/image-pixel-reveal/basic.tsx",
-			"rule": "raw-color",
-			"value": "#edf8f0",
-			"count": 1
-		},
-		{
-			"file": "src/features/ui-docs/ui/examples/image-pixel-reveal/basic.tsx",
-			"rule": "raw-color",
-			"value": "#587e88",
-			"count": 1
-		},
-		{
-			"file": "src/features/ui-docs/ui/examples/image-pixel-reveal/basic.tsx",
-			"rule": "raw-color",
-			"value": "#334f63",
-			"count": 1
-		},
-		{
-			"file": "src/features/ui-docs/ui/examples/image-pixel-reveal/basic.tsx",
-			"rule": "tailwind-palette",
-			"value": "bg-black",
-			"count": 1
-		},
-		{
-			"file": "src/features/ui-docs/ui/examples/image-pixel-reveal/basic.tsx",
-			"rule": "tailwind-palette",
-			"value": "text-white",
-			"count": 1
-		},
-		{
 			"file": "src/routes/admin.emojis.tsx",
 			"rule": "tailwind-palette",
 			"value": "text-green-500",
