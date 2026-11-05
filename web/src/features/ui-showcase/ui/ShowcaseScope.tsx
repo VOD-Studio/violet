@@ -16,7 +16,7 @@ export interface ShowcaseScopeProps extends ComponentProps<"div"> {
 }
 
 /**
- * 在子树内重新绑定主题与明暗，不改动站点偏好；自带底色，与站点外观不同也能独立成画。
+ * 在子树内重新绑定主题与明暗，不改动站点偏好；不强加背景色，沿用全站纸面底色与罗纹纸。
  */
 export function ShowcaseScope({
 	appearance,
@@ -34,7 +34,7 @@ export function ShowcaseScope({
 			data-theme={appearance.theme}
 			data-motion={appearance.reduced ? "reduce" : undefined}
 			className={cn(
-				"bg-background text-foreground",
+				"text-foreground",
 				appearance.mode === "dark" && "dark",
 				appearance.reduced && styles.reduced,
 				className,
