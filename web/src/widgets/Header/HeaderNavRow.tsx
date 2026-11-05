@@ -18,7 +18,7 @@ const HeaderNavRow = ({ link, current, className, ...props }: HeaderNavRowProps)
 			activeOptions={{ exact: link.exact }}
 			aria-current={current ? "page" : undefined}
 			className={cn(
-				"group/row flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors duration-200 not-data-[slot=dropdown-item]:outline-none not-data-[slot=dropdown-item]:hover:bg-foreground/5 not-data-[slot=dropdown-item]:focus-visible:bg-foreground/5",
+				"group/row flex w-full items-center gap-3 text-left transition-colors duration-200 not-data-[slot=dropdown-item]:rounded-xl not-data-[slot=dropdown-item]:p-2 not-data-[slot=dropdown-item]:outline-none not-data-[slot=dropdown-item]:hover:bg-foreground/5 not-data-[slot=dropdown-item]:focus-visible:bg-foreground/5",
 				className,
 			)}
 			{...props}
@@ -30,7 +30,7 @@ const HeaderNavRow = ({ link, current, className, ...props }: HeaderNavRowProps)
 				<Icon className="size-4" />
 			</span>
 			<span className="min-w-0 flex-1">
-				<span className="block text-[13px] leading-none font-medium text-foreground">
+				<span className="block text-[13px] leading-none font-medium text-foreground group-data-[slot=dropdown-item]/row:text-sm group-data-[slot=dropdown-item]/row:font-semibold">
 					{link.label}
 				</span>
 				<span className="mt-1.5 block truncate text-xs leading-none text-muted-foreground">

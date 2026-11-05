@@ -38,12 +38,7 @@ const HeaderNavCell = ({ item, segment, current, activeTo }: HeaderNavCellProps)
 					<Link to={item.to} aria-current={ariaCurrent} {...segment} />
 				</DropdownTrigger>
 			)}
-			<DropdownContent
-				role="group"
-				aria-label={`${item.label}二级菜单`}
-				className="w-74"
-				sideOffset={10}
-			>
+			<DropdownContent role="group" aria-label={`${item.label}二级菜单`} className="w-74">
 				{item.children.map((child) => (
 					<DropdownItem asChild key={child.to}>
 						<HeaderNavRow link={child} current={activeTo === child.to} />

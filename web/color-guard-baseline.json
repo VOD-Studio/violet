@@ -2,588 +2,6 @@
 	"version": 1,
 	"entries": [
 		{
-			"file": "packages/kanban/src/board/board.css",
-			"rule": "raw-color",
-			"value": "#171717",
-			"count": 2
-		},
-		{
-			"file": "packages/kanban/src/board/board.css",
-			"rule": "raw-color",
-			"value": "#ededed",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/board/board.css",
-			"rule": "raw-color",
-			"value": "#737373",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/board/board.css",
-			"rule": "raw-color",
-			"value": "#a3a3a3",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/board/board.css",
-			"rule": "raw-color",
-			"value": "#e5e5e5",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/board/board.css",
-			"rule": "raw-color",
-			"value": "#2e2e2e",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/board/board.css",
-			"rule": "raw-color",
-			"value": "#fafafa",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/board/board.css",
-			"rule": "raw-color",
-			"value": "#ffffff",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/board/board.css",
-			"rule": "raw-color",
-			"value": "#0a0a0a",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/board/board.css",
-			"rule": "raw-color",
-			"value": "#b91c1c",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/board/board.css",
-			"rule": "raw-color",
-			"value": "#f87171",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/board/board.css",
-			"rule": "raw-color",
-			"value": "#2563eb",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/board/board.css",
-			"rule": "raw-color",
-			"value": "#60a5fa",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/board/board.css",
-			"rule": "raw-color",
-			"value": "rgb(0 0 0 / 0.05)",
-			"count": 3
-		},
-		{
-			"file": "packages/kanban/src/board/relations/relations.css",
-			"rule": "raw-color",
-			"value": "#737373",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/board/relations/relations.css",
-			"rule": "raw-color",
-			"value": "#a3a3a3",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/canvas/canvas.css",
-			"rule": "raw-color",
-			"value": "#171717",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/canvas/canvas.css",
-			"rule": "raw-color",
-			"value": "#ededed",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/canvas/canvas.css",
-			"rule": "raw-color",
-			"value": "#737373",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/canvas/canvas.css",
-			"rule": "raw-color",
-			"value": "#a3a3a3",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/canvas/canvas.css",
-			"rule": "raw-color",
-			"value": "#e5e5e5",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/canvas/canvas.css",
-			"rule": "raw-color",
-			"value": "#2e2e2e",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/canvas/canvas.css",
-			"rule": "raw-color",
-			"value": "#fafafa",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/canvas/canvas.css",
-			"rule": "raw-color",
-			"value": "#0f0f0f",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/canvas/canvas.css",
-			"rule": "raw-color",
-			"value": "#ffffff",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/canvas/canvas.css",
-			"rule": "raw-color",
-			"value": "#0a0a0a",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/canvas/canvas.css",
-			"rule": "raw-color",
-			"value": "#2563eb",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/canvas/canvas.css",
-			"rule": "raw-color",
-			"value": "#60a5fa",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/history/history.css",
-			"rule": "raw-color",
-			"value": "#171717",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/history/history.css",
-			"rule": "raw-color",
-			"value": "#ededed",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/history/history.css",
-			"rule": "raw-color",
-			"value": "#737373",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/history/history.css",
-			"rule": "raw-color",
-			"value": "#a3a3a3",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/history/history.css",
-			"rule": "raw-color",
-			"value": "#e5e5e5",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/history/history.css",
-			"rule": "raw-color",
-			"value": "#2e2e2e",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/history/history.css",
-			"rule": "raw-color",
-			"value": "#ffffff",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/history/history.css",
-			"rule": "raw-color",
-			"value": "#0a0a0a",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/history/history.css",
-			"rule": "raw-color",
-			"value": "#2563eb",
-			"count": 1
-		},
-		{
-			"file": "packages/kanban/src/history/history.css",
-			"rule": "raw-color",
-			"value": "#60a5fa",
-			"count": 1
-		},
-		{
-			"file": "packages/react-tweet/examples/themes.tsx",
-			"rule": "raw-color",
-			"value": "#f0f1f3",
-			"count": 1
-		},
-		{
-			"file": "packages/react-tweet/src/tweet/media.css",
-			"rule": "raw-color",
-			"value": "#000",
-			"count": 9
-		},
-		{
-			"file": "packages/react-tweet/src/tweet/media.css",
-			"rule": "raw-color",
-			"value": "#fff",
-			"count": 6
-		},
-		{
-			"file": "packages/react-tweet/src/tweet/tweet.css",
-			"rule": "raw-color",
-			"value": "#ffffff",
-			"count": 1
-		},
-		{
-			"file": "packages/react-tweet/src/tweet/tweet.css",
-			"rule": "raw-color",
-			"value": "#0a0a0a",
-			"count": 1
-		},
-		{
-			"file": "packages/react-tweet/src/tweet/tweet.css",
-			"rule": "raw-color",
-			"value": "#171717",
-			"count": 2
-		},
-		{
-			"file": "packages/react-tweet/src/tweet/tweet.css",
-			"rule": "raw-color",
-			"value": "#ededed",
-			"count": 1
-		},
-		{
-			"file": "packages/react-tweet/src/tweet/tweet.css",
-			"rule": "raw-color",
-			"value": "#737373",
-			"count": 1
-		},
-		{
-			"file": "packages/react-tweet/src/tweet/tweet.css",
-			"rule": "raw-color",
-			"value": "#a3a3a3",
-			"count": 1
-		},
-		{
-			"file": "packages/react-tweet/src/tweet/tweet.css",
-			"rule": "raw-color",
-			"value": "#e5e5e5",
-			"count": 1
-		},
-		{
-			"file": "packages/react-tweet/src/tweet/tweet.css",
-			"rule": "raw-color",
-			"value": "#333333",
-			"count": 1
-		},
-		{
-			"file": "packages/react-tweet/src/tweet/tweet.css",
-			"rule": "raw-color",
-			"value": "#0866d9",
-			"count": 1
-		},
-		{
-			"file": "packages/react-tweet/src/tweet/tweet.css",
-			"rule": "raw-color",
-			"value": "#75b6ff",
-			"count": 1
-		},
-		{
-			"file": "packages/react-tweet/src/tweet/tweet.css",
-			"rule": "raw-color",
-			"value": "#fafafa",
-			"count": 1
-		},
-		{
-			"file": "packages/react-tweet/src/tweet/tweet.css",
-			"rule": "raw-color",
-			"value": "#1d9bf0",
-			"count": 1
-		},
-		{
-			"file": "packages/react-tweet/src/tweet/tweet.css",
-			"rule": "raw-color",
-			"value": "#829aab",
-			"count": 1
-		},
-		{
-			"file": "packages/react-tweet/src/tweet/tweet.css",
-			"rule": "raw-color",
-			"value": "#c41665",
-			"count": 1
-		},
-		{
-			"file": "packages/react-tweet/src/tweet/tweet.css",
-			"rule": "raw-color",
-			"value": "#ff69a8",
-			"count": 1
-		},
-		{
-			"file": "packages/react-tweet/src/tweet/tweet.css",
-			"rule": "raw-color",
-			"value": "#0879be",
-			"count": 1
-		},
-		{
-			"file": "packages/react-tweet/src/tweet/tweet.css",
-			"rule": "raw-color",
-			"value": "#59b8f7",
-			"count": 1
-		},
-		{
-			"file": "packages/react-tweet/src/tweet/tweet.css",
-			"rule": "raw-color",
-			"value": "#008557",
-			"count": 1
-		},
-		{
-			"file": "packages/react-tweet/src/tweet/tweet.css",
-			"rule": "raw-color",
-			"value": "#42dba0",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/chart/chart.tsx",
-			"rule": "raw-color",
-			"value": "#ccc",
-			"count": 3
-		},
-		{
-			"file": "packages/ui/src/components/chart/chart.tsx",
-			"rule": "raw-color",
-			"value": "#fff",
-			"count": 2
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#ef4444",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#f97316",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#f59e0b",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#eab308",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#84cc16",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#22c55e",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#10b981",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#14b8a6",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#06b6d4",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#0ea5e9",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#3b82f6",
-			"count": 2
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#6366f1",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#8b5cf6",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#a855f7",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#d946ef",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#ec4899",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#64748b",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#0f172a",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
-			"rule": "tailwind-palette",
-			"value": "from-white",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
-			"rule": "tailwind-palette",
-			"value": "from-black",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
-			"rule": "tailwind-palette",
-			"value": "border-white",
-			"count": 2
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
-			"rule": "raw-color",
-			"value": "#f00",
-			"count": 2
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
-			"rule": "raw-color",
-			"value": "#ff0",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
-			"rule": "raw-color",
-			"value": "#0f0",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
-			"rule": "raw-color",
-			"value": "#0ff",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
-			"rule": "raw-color",
-			"value": "#00f",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
-			"rule": "raw-color",
-			"value": "#f0f",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/dialog/dialog.tsx",
-			"rule": "tailwind-palette",
-			"value": "bg-black",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/dropdown/dropdown.css",
-			"rule": "raw-color",
-			"value": "rgb(0 0 0 / 0.05)",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/icons/google.tsx",
-			"rule": "raw-color",
-			"value": "#ea4335",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/icons/google.tsx",
-			"rule": "raw-color",
-			"value": "#4285f4",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/icons/google.tsx",
-			"rule": "raw-color",
-			"value": "#fbbc05",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/icons/google.tsx",
-			"rule": "raw-color",
-			"value": "#34a853",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/modal/components/Modal.tsx",
-			"rule": "tailwind-palette",
-			"value": "bg-black",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/sheet/sheet.tsx",
-			"rule": "tailwind-palette",
-			"value": "bg-black",
-			"count": 1
-		},
-		{
 			"file": "src/entities/code-runner/ui/CodeRunner.tsx",
 			"rule": "raw-color",
 			"value": "#24292e",
@@ -716,12 +134,6 @@
 			"count": 1
 		},
 		{
-			"file": "src/entities/comment/ui/AICommentProfile.module.css",
-			"rule": "raw-color",
-			"value": "rgb(0 0 0 / 0.05)",
-			"count": 1
-		},
-		{
 			"file": "src/entities/comment/ui/ai-personas.css",
 			"rule": "raw-color",
 			"value": "oklch(0.43 0.1 160)",
@@ -815,6 +227,12 @@
 			"file": "src/entities/comment/ui/ai-personas.css",
 			"rule": "raw-color",
 			"value": "oklch(0.77 0.045 305)",
+			"count": 1
+		},
+		{
+			"file": "src/entities/comment/ui/AICommentProfile.module.css",
+			"rule": "raw-color",
+			"value": "rgb(0 0 0 / 0.05)",
 			"count": 1
 		},
 		{
@@ -1418,13 +836,13 @@
 			"count": 1
 		},
 		{
-			"file": "src/features/projects/ui/RoadmapFilterBar.tsx",
+			"file": "src/features/projects/ui/roadmap-board.css",
 			"rule": "raw-color",
 			"value": "rgb(0 0 0 / 0.05)",
 			"count": 1
 		},
 		{
-			"file": "src/features/projects/ui/roadmap-board.css",
+			"file": "src/features/projects/ui/RoadmapFilterBar.tsx",
 			"rule": "raw-color",
 			"value": "rgb(0 0 0 / 0.05)",
 			"count": 1
@@ -1826,6 +1244,12 @@
 			"count": 8
 		},
 		{
+			"file": "src/shared/ui/image-grid/__tests__/ImageGrid.test.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-black",
+			"count": 2
+		},
+		{
 			"file": "src/shared/ui/image-grid/ImageGrid.tsx",
 			"rule": "tailwind-palette",
 			"value": "bg-black",
@@ -1836,12 +1260,6 @@
 			"rule": "tailwind-palette",
 			"value": "text-white",
 			"count": 1
-		},
-		{
-			"file": "src/shared/ui/image-grid/__tests__/ImageGrid.test.tsx",
-			"rule": "tailwind-palette",
-			"value": "bg-black",
-			"count": 2
 		},
 		{
 			"file": "src/shared/ui/image-preview/components/ImagePreviewImage.tsx",
@@ -1910,18 +1328,6 @@
 			"count": 1
 		},
 		{
-			"file": "src/shared/ui/markdown-preview/components/MarkdownPreview.tsx",
-			"rule": "tailwind-palette",
-			"value": "text-green-500",
-			"count": 1
-		},
-		{
-			"file": "src/shared/ui/markdown-preview/components/MarkdownPreview.tsx",
-			"rule": "tailwind-palette",
-			"value": "text-red-500",
-			"count": 1
-		},
-		{
 			"file": "src/shared/ui/markdown-preview/components/markdown-components.tsx",
 			"rule": "raw-color",
 			"value": "#24292e",
@@ -1931,6 +1337,18 @@
 			"file": "src/shared/ui/markdown-preview/components/markdown-components.tsx",
 			"rule": "tailwind-palette",
 			"value": "text-white",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/markdown-preview/components/MarkdownPreview.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-green-500",
+			"count": 1
+		},
+		{
+			"file": "src/shared/ui/markdown-preview/components/MarkdownPreview.tsx",
+			"rule": "tailwind-palette",
+			"value": "text-red-500",
 			"count": 1
 		},
 		{
@@ -2177,6 +1595,582 @@
 			"file": "src/widgets/Hero/Hero.tsx",
 			"rule": "raw-color",
 			"value": "rgba(34,211,238,0.12)",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/board/board.css",
+			"rule": "raw-color",
+			"value": "#171717",
+			"count": 2
+		},
+		{
+			"file": "packages/kanban/src/board/board.css",
+			"rule": "raw-color",
+			"value": "#ededed",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/board/board.css",
+			"rule": "raw-color",
+			"value": "#737373",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/board/board.css",
+			"rule": "raw-color",
+			"value": "#a3a3a3",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/board/board.css",
+			"rule": "raw-color",
+			"value": "#e5e5e5",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/board/board.css",
+			"rule": "raw-color",
+			"value": "#2e2e2e",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/board/board.css",
+			"rule": "raw-color",
+			"value": "#fafafa",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/board/board.css",
+			"rule": "raw-color",
+			"value": "#ffffff",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/board/board.css",
+			"rule": "raw-color",
+			"value": "#0a0a0a",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/board/board.css",
+			"rule": "raw-color",
+			"value": "#b91c1c",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/board/board.css",
+			"rule": "raw-color",
+			"value": "#f87171",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/board/board.css",
+			"rule": "raw-color",
+			"value": "#2563eb",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/board/board.css",
+			"rule": "raw-color",
+			"value": "#60a5fa",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/board/board.css",
+			"rule": "raw-color",
+			"value": "rgb(0 0 0 / 0.05)",
+			"count": 3
+		},
+		{
+			"file": "packages/kanban/src/board/relations/relations.css",
+			"rule": "raw-color",
+			"value": "#737373",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/board/relations/relations.css",
+			"rule": "raw-color",
+			"value": "#a3a3a3",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/canvas/canvas.css",
+			"rule": "raw-color",
+			"value": "#171717",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/canvas/canvas.css",
+			"rule": "raw-color",
+			"value": "#ededed",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/canvas/canvas.css",
+			"rule": "raw-color",
+			"value": "#737373",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/canvas/canvas.css",
+			"rule": "raw-color",
+			"value": "#a3a3a3",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/canvas/canvas.css",
+			"rule": "raw-color",
+			"value": "#e5e5e5",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/canvas/canvas.css",
+			"rule": "raw-color",
+			"value": "#2e2e2e",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/canvas/canvas.css",
+			"rule": "raw-color",
+			"value": "#fafafa",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/canvas/canvas.css",
+			"rule": "raw-color",
+			"value": "#0f0f0f",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/canvas/canvas.css",
+			"rule": "raw-color",
+			"value": "#ffffff",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/canvas/canvas.css",
+			"rule": "raw-color",
+			"value": "#0a0a0a",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/canvas/canvas.css",
+			"rule": "raw-color",
+			"value": "#2563eb",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/canvas/canvas.css",
+			"rule": "raw-color",
+			"value": "#60a5fa",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/history/history.css",
+			"rule": "raw-color",
+			"value": "#171717",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/history/history.css",
+			"rule": "raw-color",
+			"value": "#ededed",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/history/history.css",
+			"rule": "raw-color",
+			"value": "#737373",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/history/history.css",
+			"rule": "raw-color",
+			"value": "#a3a3a3",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/history/history.css",
+			"rule": "raw-color",
+			"value": "#e5e5e5",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/history/history.css",
+			"rule": "raw-color",
+			"value": "#2e2e2e",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/history/history.css",
+			"rule": "raw-color",
+			"value": "#ffffff",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/history/history.css",
+			"rule": "raw-color",
+			"value": "#0a0a0a",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/history/history.css",
+			"rule": "raw-color",
+			"value": "#2563eb",
+			"count": 1
+		},
+		{
+			"file": "packages/kanban/src/history/history.css",
+			"rule": "raw-color",
+			"value": "#60a5fa",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/examples/themes.tsx",
+			"rule": "raw-color",
+			"value": "#f0f1f3",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/media.css",
+			"rule": "raw-color",
+			"value": "#000",
+			"count": 9
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/media.css",
+			"rule": "raw-color",
+			"value": "#fff",
+			"count": 6
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#ffffff",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#0a0a0a",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#171717",
+			"count": 2
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#ededed",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#737373",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#a3a3a3",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#e5e5e5",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#333333",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#0866d9",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#75b6ff",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#fafafa",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#1d9bf0",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#829aab",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#c41665",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#ff69a8",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#0879be",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#59b8f7",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#008557",
+			"count": 1
+		},
+		{
+			"file": "packages/react-tweet/src/tweet/tweet.css",
+			"rule": "raw-color",
+			"value": "#42dba0",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/chart/chart.tsx",
+			"rule": "raw-color",
+			"value": "#ccc",
+			"count": 3
+		},
+		{
+			"file": "packages/ui/src/components/chart/chart.tsx",
+			"rule": "raw-color",
+			"value": "#fff",
+			"count": 2
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#ef4444",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#f97316",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#f59e0b",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#eab308",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#84cc16",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#22c55e",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#10b981",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#14b8a6",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#06b6d4",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#0ea5e9",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#3b82f6",
+			"count": 2
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#6366f1",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#8b5cf6",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#a855f7",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#d946ef",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#ec4899",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#64748b",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
+			"rule": "raw-color",
+			"value": "#0f172a",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
+			"rule": "tailwind-palette",
+			"value": "from-white",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
+			"rule": "tailwind-palette",
+			"value": "from-black",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
+			"rule": "tailwind-palette",
+			"value": "border-white",
+			"count": 2
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
+			"rule": "raw-color",
+			"value": "#f00",
+			"count": 2
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
+			"rule": "raw-color",
+			"value": "#ff0",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
+			"rule": "raw-color",
+			"value": "#0f0",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
+			"rule": "raw-color",
+			"value": "#0ff",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
+			"rule": "raw-color",
+			"value": "#00f",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
+			"rule": "raw-color",
+			"value": "#f0f",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/dialog/dialog.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-black",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/icons/google.tsx",
+			"rule": "raw-color",
+			"value": "#ea4335",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/icons/google.tsx",
+			"rule": "raw-color",
+			"value": "#4285f4",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/icons/google.tsx",
+			"rule": "raw-color",
+			"value": "#fbbc05",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/icons/google.tsx",
+			"rule": "raw-color",
+			"value": "#34a853",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/modal/components/Modal.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-black",
+			"count": 1
+		},
+		{
+			"file": "packages/ui/src/components/sheet/sheet.tsx",
+			"rule": "tailwind-palette",
+			"value": "bg-black",
 			"count": 1
 		}
 	]

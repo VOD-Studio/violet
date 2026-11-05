@@ -91,8 +91,7 @@ const HeaderLogo = () => {
 				role="region"
 				aria-label="站长开源档案与简介"
 				align="start"
-				sideOffset={10}
-				className="pointer-events-auto w-121 max-w-[calc(100vw-1rem)] border-border/80 bg-popover/95 p-4 backdrop-blur-xl"
+				className="pointer-events-auto w-121 max-w-[calc(100vw-1rem)] bg-popover/95 p-4 backdrop-blur-xl"
 			>
 				{lead ? (
 					<PresenceCard

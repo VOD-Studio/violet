@@ -429,9 +429,9 @@ export interface DropdownContentProps extends React.ComponentProps<"div"> {
 /**
  * 悬停面板。内容紧随触发器渲染（不入 Portal），Tab 顺序从触发器自然进入面板。
  *
- * 单个面板按实际上下方位裁剪展开与收拢，不改变透明度。
+ * 单个面板按实际上下方位浮出：展开时从触发器一侧淡入，收起时往回退并淡出。
  * 同组仅在相同方位间接力；内部内容不做独立动画。
- * 动画不缩放，减弱动态时直接显示。
+ * 动画不缩放，减弱动态只保留 100ms 透明度。
  */
 export function DropdownContent({ ref, ...props }: DropdownContentProps) {
 	const context = useDropdown("DropdownContent");
@@ -519,7 +519,9 @@ function DropdownContentImpl({
 		}
 		source.release();
 		cancel();
-		if (typeof element.animate !== "function" || prefersReducedMotion()) return true;
+		if (typeof element.animate !== "function") return true;
+		// 减弱动态不变形，新面板只做 100ms 透明度
+		if (prefersReducedMotion()) return false;
 		const to = element.getBoundingClientRect();
 		const start = source.rect;
 		const inner = innerRef.current;

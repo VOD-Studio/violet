@@ -1,5 +1,18 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 import { loadClient } from "./client";
+
+interface RecordedAnimation {
+	duration: number;
+	keys: string[];
+	moves: boolean;
+}
+
+declare global {
+	interface Window {
+		__float?: Animation;
+		__anims?: RecordedAnimation[];
+	}
+}
 
 /** 在陈列室的检视台里走近下拉面板展品，返回检视台对话框。 */
 async function openDropdownExhibit(page: Page) {
@@ -26,7 +39,56 @@ function pauseExit(element: Element) {
 	});
 }
 
-test("Dropdown 关闭中重入立即续开，不经过完全收起的帧", async ({ page, context }) => {
+/** 把进行中的浮出动画停在一半，并留一个引用以便之后核对没有被重建。 */
+function pauseFloatAtHalf(element: Element) {
+	const animation = element
+		.getAnimations()
+		.find(
+			(candidate) =>
+				candidate.effect instanceof KeyframeEffect &&
+				candidate.effect.getKeyframes().some((frame) => "opacity" in frame) &&
+				candidate.effect.getKeyframes().every((frame) => !("width" in frame)),
+		);
+	if (!animation?.effect) throw new Error("没有进行中的浮出动画");
+	animation.pause();
+	animation.currentTime = Number(animation.effect.getComputedTiming().duration) / 2;
+	window.__float = animation;
+}
+
+/** 面板此刻的透明度与竖直位移（含正在播放的动画）。 */
+const pose = (content: Locator) =>
+	content.evaluate((element) => {
+		const style = getComputedStyle(element);
+		return { opacity: Number(style.opacity), y: new DOMMatrix(style.transform).m42 };
+	});
+
+/** 记录页面里此后创建的所有 Web Animation，用来核对短暂的动画时长。 */
+async function recordAnimations(page: Page) {
+	await page.evaluate(() => {
+		const log: RecordedAnimation[] = [];
+		window.__anims = log;
+		const original = Element.prototype.animate;
+		Element.prototype.animate = function (keyframes, options) {
+			const frames = keyframes as Keyframe[];
+			const duration = typeof options === "number" ? options : Number(options?.duration);
+			log.push({
+				duration,
+				keys: [...new Set(frames.flatMap((frame) => Object.keys(frame)))],
+				moves: frames.some(
+					(frame) => frame.transform !== undefined && frame.transform !== "none",
+				),
+			});
+			return original.call(this, keyframes, options);
+		};
+	});
+}
+
+const recordedAnimations = (page: Page) => page.evaluate(() => window.__anims ?? []);
+
+test("Dropdown 关闭中重入立即续开：从当前位置和透明度续播，不跳回起点", async ({
+	page,
+	context,
+}) => {
 	await loadClient(context);
 	await page.emulateMedia({ reducedMotion: "no-preference" });
 	const stage = await openDropdownExhibit(page);
@@ -47,38 +109,21 @@ test("Dropdown 关闭中重入立即续开，不经过完全收起的帧", async
 
 	await page.mouse.move(1300, 800);
 	await expect(trigger).toHaveAttribute("aria-expanded", "false");
-	await content.evaluate((element) => {
-		const closing = element
-			.getAnimations()
-			.find(
-				(animation) =>
-					animation.effect instanceof KeyframeEffect &&
-					animation.effect.getKeyframes().some((frame) => "clipPath" in frame),
-			);
-		if (!closing?.effect) throw new Error("关闭期间没有可续接的裁剪动画");
-		closing.pause();
-		closing.currentTime = Number(closing.effect.getComputedTiming().duration) / 2;
-	});
+	await content.evaluate(pauseFloatAtHalf);
+	const mid = await pose(content);
+	expect(mid.opacity).toBeGreaterThan(0);
+	expect(mid.opacity).toBeLessThan(1);
 
-	const visibleHeight = () =>
-		content.evaluate((element) => {
-			const rect = element.getBoundingClientRect();
-			let visible = 0;
-			for (let y = Math.ceil(rect.top); y < rect.bottom; y++) {
-				const hit = document.elementFromPoint(rect.left + rect.width / 2, y);
-				if (hit && element.contains(hit)) visible++;
-			}
-			return visible;
-		});
-	const before = await visibleHeight();
-	expect(before).toBeGreaterThan(0);
 	await trigger.hover();
 	await page.evaluate(
 		() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
 	);
 	expect(await trigger.getAttribute("aria-expanded")).toBe("true");
-	expect(await visibleHeight()).toBeGreaterThanOrEqual(before - 2);
-	await expect.poll(visibleHeight).toBeGreaterThan(before);
+	const resumed = await pose(content);
+	// 不经过完全透明的起点帧：续播后的透明度不会低于被打断时的值
+	expect(resumed.opacity).toBeGreaterThanOrEqual(mid.opacity - 0.05);
+	await expect.poll(() => pose(content).then((p) => p.opacity)).toBe(1);
+	expect((await pose(content)).y).toBe(0);
 	await page.mouse.move(1300, 800);
 	await expect(content).toHaveCount(0);
 });
@@ -135,7 +180,10 @@ test("Dropdown 同方向接力后的旧面板不再截获新面板的悬停", as
 	await expect(more).toHaveAttribute("aria-expanded", "true");
 });
 
-test("Dropdown 关闭期间开启减弱动态会立即释放面板", async ({ page, context }) => {
+test("Dropdown 关闭期间开启减弱动态会立即释放面板，之后只做 100ms 透明度", async ({
+	page,
+	context,
+}) => {
 	await loadClient(context);
 	await page.emulateMedia({ reducedMotion: "no-preference" });
 	const stage = await openDropdownExhibit(page);
@@ -152,14 +200,22 @@ test("Dropdown 关闭期间开启减弱动态会立即释放面板", async ({ pa
 	});
 	await page.emulateMedia({ reducedMotion: "reduce" });
 	await expect(content).toHaveCount(0);
+	await recordAnimations(page);
 	await trigger.hover();
 	await expect(trigger).toHaveAttribute("aria-expanded", "true");
-	expect(await content.evaluate((element) => element.getAnimations().length)).toBe(0);
+	await expect(content).toBeVisible();
+	const recorded = await recordedAnimations(page);
+	const floats = recorded.filter((item) => item.keys.includes("opacity"));
+	expect(floats.length).toBeGreaterThan(0);
+	for (const item of floats) {
+		expect(item.duration).toBe(100);
+		expect(item.moves).toBe(false);
+	}
 	await page.mouse.move(1300, 800);
 	await expect(content).toHaveCount(0);
 });
 
-test("Dropdown 播放中碰撞翻转后沿实际方位裁剪，不重启动画", async ({ page, context }) => {
+test("Dropdown 播放中碰撞翻转后沿实际方位浮出，不重启动画", async ({ page, context }) => {
 	await loadClient(context);
 	await page.setViewportSize({ width: 1440, height: 1000 });
 	await page.emulateMedia({ reducedMotion: "no-preference" });
@@ -173,38 +229,26 @@ test("Dropdown 播放中碰撞翻转后沿实际方位裁剪，不重启动画",
 	if (!contentId) throw new Error("指南面板缺少关联");
 	const content = page.locator(`[id="${contentId}"]`);
 	await expect(content).toHaveAttribute("data-side", "bottom");
-	await content.evaluate((element) => {
-		const animation = element
-			.getAnimations()
-			.find(
-				(animation) =>
-					animation.effect instanceof KeyframeEffect &&
-					animation.effect.getKeyframes().some((frame) => "clipPath" in frame),
-			);
-		if (!animation?.effect) throw new Error("展开期间没有裁剪动画");
-		animation.pause();
-		animation.currentTime = Number(animation.effect.getComputedTiming().duration) / 2;
-	});
-	const visibleEnds = () =>
-		content.evaluate((element) => {
-			const rect = element.getBoundingClientRect();
-			const hit = (y: number) => {
-				const target = document.elementFromPoint(rect.left + rect.width / 2, y);
-				return target !== null && element.contains(target);
-			};
-			return {
-				upper: hit(rect.top + rect.height * 0.2),
-				lower: hit(rect.bottom - rect.height * 0.2),
-			};
-		});
-	expect(await visibleEnds()).toEqual({ upper: true, lower: false });
+	await content.evaluate(pauseFloatAtHalf);
+	const before = await pose(content);
+	expect(before.opacity).toBeGreaterThan(0);
+	expect(before.opacity).toBeLessThan(1);
+	expect(before.y).toBeLessThan(0);
 	const bottom = await trigger.evaluate((element) => element.getBoundingClientRect().bottom);
 	await page.setViewportSize({ width: 1440, height: Math.ceil(bottom + 110) });
 	await expect(content).toHaveAttribute("data-side", "top");
-	expect(await visibleEnds()).toEqual({ upper: false, lower: true });
+	const after = await pose(content);
+	expect(after.y).toBeGreaterThan(0);
+	expect(after.opacity).toBeCloseTo(before.opacity, 2);
+	const same = await content.evaluate((element) =>
+		element.getAnimations().some((animation) => animation === window.__float),
+	);
+	expect(same, "翻转没有重建动画").toBe(true);
 	await content.evaluate((element) => {
 		for (const animation of element.getAnimations()) animation.play();
 	});
+	await expect.poll(() => pose(content).then((p) => p.opacity)).toBe(1);
+	expect((await pose(content)).y).toBe(0);
 	await page.mouse.move(1300, 50);
 	await expect(content).toHaveCount(0);
 });
@@ -246,7 +290,7 @@ test("Dropdown 变形中跨方向快速折返后回到当前锚点，不保留�
 	if (!guideId) throw new Error("指南面板缺少关联");
 	const guideContent = page.locator(`[id="${guideId}"]`);
 	const bottom = await guide.evaluate((element) => element.getBoundingClientRect().bottom);
-	await page.setViewportSize({ width: 1440, height: Math.ceil(bottom + 120) });
+	await page.setViewportSize({ width: 1440, height: Math.ceil(bottom + 170) });
 	await expect(guideContent).toHaveAttribute("data-side", "top");
 	await expect(content).toHaveAttribute("data-side", "bottom");
 	await more.hover();
@@ -277,9 +321,17 @@ test("Dropdown 共享高亮在快速折返中续接当前位置，菜单行保�
 	const contentId = await trigger.getAttribute("aria-controls");
 	if (!contentId) throw new Error("指南面板缺少关联");
 	const content = page.locator(`[id="${contentId}"]`);
-	const first = content.getByRole("link", { name: "快速入门", exact: true });
-	const second = content.getByRole("link", { name: "设计原则", exact: true });
-	const third = content.getByRole("link", { name: "版本记录", exact: true });
+	// 入场浮出还在位移时量不到静止的行位置
+	await expect
+		.poll(() =>
+			content.evaluate((element) =>
+				element.getAnimations().some((a) => a.playState === "running"),
+			),
+		)
+		.toBe(false);
+	const first = content.getByRole("link", { name: /^快速入门/ });
+	const second = content.getByRole("link", { name: /^设计原则/ });
+	const third = content.getByRole("link", { name: /^版本记录/ });
 	const highlight = content.locator('[data-slot="dropdown-highlight"]');
 	const offsetFrom = async (y: number) => {
 		const rect = await highlight.boundingBox();
@@ -368,8 +420,8 @@ test("Dropdown 减弱动态下高亮立即跟随，并忽略禁用项", async ({
 	const contentId = await trigger.getAttribute("aria-controls");
 	if (!contentId) throw new Error("指南面板缺少关联");
 	const content = page.locator(`[id="${contentId}"]`);
-	const first = content.getByRole("link", { name: "快速入门", exact: true });
-	const third = content.getByRole("link", { name: "版本记录", exact: true });
+	const first = content.getByRole("link", { name: /^快速入门/ });
+	const third = content.getByRole("link", { name: /^版本记录/ });
 	const highlight = content.locator('[data-slot="dropdown-highlight"]');
 	await first.hover();
 	await third.hover();
@@ -407,8 +459,8 @@ test("Dropdown 穿过项间空隙与面板留白时保留高亮，真正离开�
 	const contentId = await trigger.getAttribute("aria-controls");
 	if (!contentId) throw new Error("指南面板缺少关联");
 	const content = page.locator(`[id="${contentId}"]`);
-	const first = content.getByRole("link", { name: "快速入门", exact: true });
-	const second = content.getByRole("link", { name: "设计原则", exact: true });
+	const first = content.getByRole("link", { name: /^快速入门/ });
+	const second = content.getByRole("link", { name: /^设计原则/ });
 	const highlight = content.locator('[data-slot="dropdown-highlight"]');
 	await first.hover();
 	await expect(highlight).toHaveCSS("opacity", "1");

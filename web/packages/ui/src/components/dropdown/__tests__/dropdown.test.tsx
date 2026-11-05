@@ -446,4 +446,102 @@ describe("Dropdown", () => {
 		expect(html).toContain('aria-expanded="false"');
 		expect(html).not.toContain("博客一");
 	});
+
+	describe("浮出动画", () => {
+		interface FakeAnimation {
+			keyframes: Keyframe[];
+			options: KeyframeAnimationOptions;
+			onfinish: (() => void) | null;
+			cancel: () => void;
+		}
+		let animations: FakeAnimation[];
+
+		beforeEach(() => {
+			animations = [];
+			Object.defineProperty(HTMLElement.prototype, "animate", {
+				configurable: true,
+				writable: true,
+				value(keyframes: Keyframe[], options: KeyframeAnimationOptions) {
+					const animation: FakeAnimation = {
+						keyframes,
+						options,
+						onfinish: null,
+						cancel: vi.fn(),
+					};
+					animations.push(animation);
+					return animation;
+				},
+			});
+		});
+		afterEach(() => {
+			Reflect.deleteProperty(HTMLElement.prototype, "animate");
+		});
+
+		/** 展开并等定位完成；动画在面板定位之后才开始。 */
+		const open = async () => {
+			render(<Menu label="博客" />);
+			const trigger = screen.getByRole("link", { name: "博客" });
+			hover(trigger);
+			advance(80);
+			await act(async () => {
+				await vi.advanceTimersByTimeAsync(50);
+			});
+			return trigger;
+		};
+		const finish = (animation: FakeAnimation) => act(() => animation.onfinish?.());
+
+		it("展开 220ms 从触发器一侧淡入并位移，不再裁切揭开", async () => {
+			await open();
+			expect(animations).toHaveLength(1);
+			const [from, to] = animations[0].keyframes;
+			expect(animations[0].options.duration).toBe(220);
+			expect(from.opacity).toBe(0);
+			expect(to.opacity).toBe(1);
+			expect(String(from.transform)).toContain("var(--v-dropdown-from-y)");
+			expect(animations[0].keyframes.some((frame) => "clipPath" in frame)).toBe(false);
+		});
+
+		it("收起 140ms 退后并淡出，动画结束后才释放面板", async () => {
+			const trigger = await open();
+			finish(animations[0]);
+			unhover(trigger);
+			advance(140);
+			const closing = animations.at(-1) as FakeAnimation;
+			expect(closing.options.duration).toBe(140);
+			expect(closing.options.easing).toBe("ease-in");
+			expect(closing.keyframes.at(-1)?.opacity).toBe(0);
+			expect(panel("博客")).not.toBeNull();
+			finish(closing);
+			expect(panel("博客")).toBeNull();
+		});
+
+		it("关闭中重入立即续开：取消收起动画并从当前值重新淡入", async () => {
+			const trigger = await open();
+			finish(animations[0]);
+			unhover(trigger);
+			advance(140);
+			const closing = animations.at(-1) as FakeAnimation;
+			hover(trigger);
+			advance(80);
+			expect(closing.cancel).toHaveBeenCalled();
+			expect(animations.at(-1)?.keyframes.at(-1)?.opacity).toBe(1);
+			expect(panel("博客")).not.toBeNull();
+		});
+
+		it("减弱动态只保留 100ms 透明度，没有位移", async () => {
+			vi.spyOn(window, "matchMedia").mockImplementation(
+				(query) =>
+					({
+						matches: query.includes("reduce"),
+						addEventListener: vi.fn(),
+						removeEventListener: vi.fn(),
+					}) as unknown as MediaQueryList,
+			);
+			await open();
+			expect(animations[0].options.duration).toBe(100);
+			for (const frame of animations[0].keyframes) {
+				expect(frame.transform === undefined || frame.transform === "none").toBe(true);
+			}
+		});
+	});
 });
