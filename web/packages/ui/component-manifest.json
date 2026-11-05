@@ -229,8 +229,9 @@
 		},
 		{
 			"name": "sonner",
-			"status": "legacy",
-			"entry": "src/components/sonner/index.ts"
+			"status": "foundation",
+			"entry": "src/components/sonner/index.ts",
+			"css": "src/components/sonner/sonner.css"
 		},
 		{
 			"name": "steps",

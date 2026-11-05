@@ -15,6 +15,7 @@ import { popoverExhibit } from "./popover";
 import { radioExhibit } from "./radio";
 import { searchInputExhibit } from "./search-input";
 import { segmentedExhibit } from "./segmented";
+import { sonnerExhibit } from "./sonner";
 import { switchExhibit } from "./switch";
 import { tabsExhibit } from "./tabs";
 import { textareaExhibit } from "./textarea";
@@ -73,15 +74,7 @@ export const EXHIBITS: Exhibit[] = [
 	popoverExhibit,
 	tooltipExhibit,
 	dropdownMenuExhibit,
-	{
-		id: "sonner",
-		name: "轻提示",
-		units: ["sonner"],
-		zone: "stage",
-		category: "feedback",
-		footprint: { width: 400, height: 220 },
-		issue: 702,
-	},
+	sonnerExhibit,
 	{
 		id: "dialog",
 		name: "对话框",
