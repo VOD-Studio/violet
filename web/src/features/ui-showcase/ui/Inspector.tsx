@@ -109,8 +109,13 @@ function InspectorDialog({
 		if (event.key === "Escape") {
 			// 展品自己的浮层还开着时，这次 Esc 归它
 			if (stage?.querySelector(OPEN_OVERLAY)) return;
-			// 展厅里常开的浮层会在文档层先吃掉 Esc 并标记 defaultPrevented；只有舞台内的处理才算数
-			if (event.defaultPrevented && stage?.contains(target)) return;
+			// 展厅里常开的浮层会在文档层先吃掉 Esc 并标记 defaultPrevented；只有舞台内、
+			// 或展品挂到作用域上的全屏浮层（焦点不在检视台本身）里的处理才算数
+			if (
+				event.defaultPrevented &&
+				(stage?.contains(target) || !dialogRef.current?.contains(target))
+			)
+				return;
 			event.preventDefault();
 			onClose();
 			return;
@@ -125,126 +130,131 @@ function InspectorDialog({
 	return (
 		<ShowcaseScope
 			appearance={appearance}
-			className="fixed inset-0 z-50 overflow-y-auto bg-background/90 backdrop-blur-xl"
+			className="fixed inset-0 z-50 bg-background/90 backdrop-blur-xl"
 		>
-			<div
-				ref={dialogRef}
-				role="dialog"
-				aria-modal="true"
-				aria-labelledby={titleId}
-				tabIndex={-1}
-				onKeyDown={handleKeyDown}
-				className="mx-auto flex min-h-full w-full max-w-7xl flex-col gap-6 px-5 py-6 outline-none sm:px-10"
-			>
-				<div className="flex items-center justify-between gap-4">
-					<p className="font-mono text-12 tracking-widest text-muted-foreground">
-						走近 · № {plateNumber(number)} / {plateNumber(total)}
-					</p>
-					<div className="flex items-center gap-2">
-						<Button
-							size="icon-sm"
-							variant="secondary"
-							aria-label="上一件"
-							aria-keyshortcuts="ArrowLeft"
-							onClick={() => onStep(-1)}
-						>
-							<ChevronLeft aria-hidden="true" />
-						</Button>
-						<Button
-							size="icon-sm"
-							variant="secondary"
-							aria-label="下一件"
-							aria-keyshortcuts="ArrowRight"
-							onClick={() => onStep(1)}
-						>
-							<ChevronRight aria-hidden="true" />
-						</Button>
-						<Button
-							size="icon-sm"
-							variant="secondary"
-							aria-label="离开"
-							aria-keyshortcuts="Escape"
-							onClick={onClose}
-						>
-							<X aria-hidden="true" />
-						</Button>
-					</div>
-				</div>
-				<div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-					<h2 id={titleId} className="text-28 font-normal">
-						{exhibit.name}
-					</h2>
-					<span className="font-mono text-12 text-muted-foreground">
-						{exhibit.units.join(" / ")}
-					</span>
-					<span className="rounded-full bg-muted px-2 text-12 text-muted-foreground">
-						{STATUS_LABEL[status]}
-					</span>
-				</div>
-				<div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-					{states.length > 1 && (
-						<Segmented
-							aria-label="展品状态"
-							size="sm"
-							variant="ink"
-							value={state}
-							onValueChange={(value) =>
-								setSelection({ exhibit: exhibit.id, state: value })
-							}
-							segments={states.map(({ id, label }) => ({ value: id, label }))}
-						/>
-					)}
-					<ShowcaseToolbar
-						season={season}
-						mode={appearance.mode}
-						outline={outline}
-						reduced={appearance.reduced}
-						onChange={onChange}
-					/>
-				</div>
+			{/* 滚动放在内层：展品挂到作用域上的全屏浮层才贴住视口，不随检视台滚动 */}
+			<div className="size-full overflow-y-auto">
 				<div
-					ref={fitRef}
-					data-case=""
-					className={cn(
-						styles.case,
-						"flex overflow-auto rounded-2xl outline-1 -outline-offset-1 outline-rule2",
-					)}
-					style={{ padding: CASE_PADDING }}
+					ref={dialogRef}
+					role="dialog"
+					aria-modal="true"
+					aria-labelledby={titleId}
+					tabIndex={-1}
+					onKeyDown={handleKeyDown}
+					className="mx-auto flex min-h-full w-full max-w-7xl flex-col gap-6 px-5 py-6 outline-none sm:px-10"
 				>
-					<div ref={stageRef} data-inspector-stage="" className="mx-auto self-center">
-						<ExhibitStage exhibit={exhibit} state={state} outline={outline} />
+					<div className="flex items-center justify-between gap-4">
+						<p className="font-mono text-12 tracking-widest text-muted-foreground">
+							走近 · № {plateNumber(number)} / {plateNumber(total)}
+						</p>
+						<div className="flex items-center gap-2">
+							<Button
+								size="icon-sm"
+								variant="secondary"
+								aria-label="上一件"
+								aria-keyshortcuts="ArrowLeft"
+								onClick={() => onStep(-1)}
+							>
+								<ChevronLeft aria-hidden="true" />
+							</Button>
+							<Button
+								size="icon-sm"
+								variant="secondary"
+								aria-label="下一件"
+								aria-keyshortcuts="ArrowRight"
+								onClick={() => onStep(1)}
+							>
+								<ChevronRight aria-hidden="true" />
+							</Button>
+							<Button
+								size="icon-sm"
+								variant="secondary"
+								aria-label="离开"
+								aria-keyshortcuts="Escape"
+								onClick={onClose}
+							>
+								<X aria-hidden="true" />
+							</Button>
+						</div>
 					</div>
+					<div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+						<h2 id={titleId} className="text-28 font-normal">
+							{exhibit.name}
+						</h2>
+						<span className="font-mono text-12 text-muted-foreground">
+							{exhibit.units.join(" / ")}
+						</span>
+						<span className="rounded-full bg-muted px-2 text-12 text-muted-foreground">
+							{STATUS_LABEL[status]}
+						</span>
+					</div>
+					<div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+						{states.length > 1 && (
+							<Segmented
+								aria-label="展品状态"
+								size="sm"
+								variant="ink"
+								value={state}
+								onValueChange={(value) =>
+									setSelection({ exhibit: exhibit.id, state: value })
+								}
+								segments={states.map(({ id, label }) => ({ value: id, label }))}
+							/>
+						)}
+						<ShowcaseToolbar
+							season={season}
+							mode={appearance.mode}
+							outline={outline}
+							reduced={appearance.reduced}
+							onChange={onChange}
+						/>
+					</div>
+					<div
+						ref={fitRef}
+						data-case=""
+						className={cn(
+							styles.case,
+							"flex overflow-auto rounded-2xl outline-1 -outline-offset-1 outline-rule2",
+						)}
+						style={{ padding: CASE_PADDING }}
+					>
+						<div ref={stageRef} data-inspector-stage="" className="mx-auto self-center">
+							<ExhibitStage exhibit={exhibit} state={state} outline={outline} />
+						</div>
+					</div>
+					<dl className="grid grid-cols-[max-content_1fr] gap-x-8 gap-y-2 text-13">
+						<dt className="text-muted-foreground">展区</dt>
+						<dd>{ZONES.find((zone) => zone.id === exhibit.zone)?.name}</dd>
+						<dt className="text-muted-foreground">用途</dt>
+						<dd>
+							{CATEGORIES.find((category) => category.id === exhibit.category)?.name}
+						</dd>
+						<dt className="text-muted-foreground">占地</dt>
+						<dd className="font-mono">
+							{exhibit.footprint.width} × {exhibit.footprint.height}
+							<span className="ml-2 font-sans text-muted-foreground">含展开态</span>
+						</dd>
+						<dt className="text-muted-foreground">裁切检查</dt>
+						<dd>
+							<CaseFitBadge fit={fit} className="bg-muted" />
+						</dd>
+						{exhibit.issue !== undefined && (
+							<>
+								<dt className="text-muted-foreground">上架工单</dt>
+								<dd>
+									<a
+										href={`https://github.com/VOD-Studio/violet/issues/${exhibit.issue}`}
+										target="_blank"
+										rel="noreferrer"
+										className="font-mono text-link underline-offset-4 hover:underline"
+									>
+										#{exhibit.issue}
+									</a>
+								</dd>
+							</>
+						)}
+					</dl>
 				</div>
-				<dl className="grid grid-cols-[max-content_1fr] gap-x-8 gap-y-2 text-13">
-					<dt className="text-muted-foreground">展区</dt>
-					<dd>{ZONES.find((zone) => zone.id === exhibit.zone)?.name}</dd>
-					<dt className="text-muted-foreground">用途</dt>
-					<dd>{CATEGORIES.find((category) => category.id === exhibit.category)?.name}</dd>
-					<dt className="text-muted-foreground">占地</dt>
-					<dd className="font-mono">
-						{exhibit.footprint.width} × {exhibit.footprint.height}
-						<span className="ml-2 font-sans text-muted-foreground">含展开态</span>
-					</dd>
-					<dt className="text-muted-foreground">裁切检查</dt>
-					<dd>
-						<CaseFitBadge fit={fit} className="bg-muted" />
-					</dd>
-					{exhibit.issue !== undefined && (
-						<>
-							<dt className="text-muted-foreground">上架工单</dt>
-							<dd>
-								<a
-									href={`https://github.com/VOD-Studio/violet/issues/${exhibit.issue}`}
-									target="_blank"
-									rel="noreferrer"
-									className="font-mono text-link underline-offset-4 hover:underline"
-								>
-									#{exhibit.issue}
-								</a>
-							</dd>
-						</>
-					)}
-				</dl>
 			</div>
 		</ShowcaseScope>
 	);

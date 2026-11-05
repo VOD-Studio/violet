@@ -31,6 +31,7 @@ export function ShowcaseScope({
 		<div
 			{...props}
 			ref={ref}
+			data-showcase-scope=""
 			data-theme={appearance.theme}
 			data-motion={appearance.reduced ? "reduce" : undefined}
 			className={cn(
