@@ -1,4 +1,5 @@
-import { Copy, LoaderCircle } from "lucide-react";
+import { Spinner } from "@violet/ui";
+import { Copy } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type ReactNode, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -90,9 +91,7 @@ export function BotReplyCard({
 						role="status"
 						aria-live="polite"
 					>
-						{active && !stalled && (
-							<LoaderCircle aria-hidden="true" className="size-3 animate-spin" />
-						)}
+						{active && !stalled && <Spinner size={16} aria-hidden="true" />}
 						{status}
 					</span>
 				)}

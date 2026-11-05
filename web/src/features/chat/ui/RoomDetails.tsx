@@ -4,7 +4,7 @@
 
 import { Button, Input } from "@violet/ui";
 
-import { Bell, BellOff, LoaderCircle, LogOut, Plus, ShieldCheck, Users, X } from "lucide-react";
+import { Bell, BellOff, LogOut, Plus, ShieldCheck, Users, X } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -263,19 +263,14 @@ function NotificationSettings({
 					<Button
 						className="mt-2.5 h-7.5 w-full rounded-lg text-xs font-medium"
 						disabled={push.busy || !push.enabled || !push.supported}
+						loading={push.busy}
 						onClick={() =>
 							subscribed ? void push.disable() : void push.enable(showPreview)
 						}
 						size="sm"
 						variant={subscribed ? "outline" : "default"}
 					>
-						{push.busy ? (
-							<LoaderCircle className="size-3 animate-spin" />
-						) : subscribed ? (
-							"关闭浏览器通知"
-						) : (
-							"启用浏览器通知"
-						)}
+						{subscribed ? "关闭浏览器通知" : "启用浏览器通知"}
 					</Button>
 				</div>
 			</div>

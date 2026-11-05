@@ -1,7 +1,7 @@
 import { Button, Input } from "@violet/ui";
 
 import { cn } from "cn";
-import { Check, LoaderCircle, Search, Users, X } from "lucide-react";
+import { Check, Search, Users, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useDeferredValue, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -192,16 +192,11 @@ export function NewConversationForm({ onCreated, onClose }: NewConversationFormP
 				<Button
 					className="h-11 w-full rounded-xl text-sm font-semibold"
 					disabled={busy || selectedUsers.length === 0}
+					loading={busy}
+					leftIcon={<Users className="size-4" />}
 					onClick={() => void submit()}
 				>
-					{busy ? (
-						<LoaderCircle className="size-4 animate-spin" />
-					) : (
-						<>
-							<Users className="size-4" />
-							{isRoom ? "创建群聊" : "发起私聊"}
-						</>
-					)}
+					{isRoom ? "创建群聊" : "发起私聊"}
 				</Button>
 			</div>
 		</motion.div>

@@ -7,7 +7,7 @@ import { type PictureInput, RichCommentInput } from "@features/comments/ui/RichC
 import { Button } from "@violet/ui";
 
 import { cn } from "cn";
-import { Check, LoaderCircle, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { type KeyboardEvent, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useEditChatMessage } from "../api/queries";
@@ -136,6 +136,7 @@ export function MessageEditComposer({
 									: "保存（Enter），Shift+Enter 换行"
 							}
 							disabled={!canSave}
+							loading={edit.isPending}
 							onClick={save}
 							size="icon"
 							className={cn(
@@ -145,11 +146,7 @@ export function MessageEditComposer({
 									: "bg-secondary text-muted-foreground",
 							)}
 						>
-							{edit.isPending ? (
-								<LoaderCircle className="size-4 animate-spin" />
-							) : (
-								<Check className="size-4" />
-							)}
+							<Check className="size-4" />
 						</Button>
 					</>
 				}

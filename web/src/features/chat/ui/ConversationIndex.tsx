@@ -5,7 +5,7 @@
 import { Button, Input } from "@violet/ui";
 
 import { cn } from "cn";
-import { LoaderCircle, MessageCircle, Plus, Search } from "lucide-react";
+import { MessageCircle, Plus, Search } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { type ReactNode, useDeferredValue, useState } from "react";
 import { toast } from "sonner";
@@ -224,15 +224,12 @@ function SearchResults({
 									<Button
 										aria-label={`发起与${user.display_name}的私聊`}
 										disabled={busyID !== null}
+										loading={busyID === user.id}
 										onClick={() => void startPrivateChat(user)}
 										size="sm"
 										className="h-8 shrink-0 px-2.5 text-xs shadow-xs"
+										leftIcon={<MessageCircle className="size-3.5" />}
 									>
-										{busyID === user.id ? (
-											<LoaderCircle className="size-3.5 animate-spin" />
-										) : (
-											<MessageCircle className="size-3.5" />
-										)}
 										<span className="sr-only sm:not-sr-only sm:ml-1">私聊</span>
 									</Button>
 								</div>

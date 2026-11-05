@@ -8,9 +8,9 @@ import type { RichCommentInputHandle } from "@features/comments/ui/RichCommentIn
 import { formatDate } from "@shared/lib/date";
 import { ImagePreview, useImagePreview } from "@shared/ui/image-preview";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button } from "@violet/ui";
+import { Button, Spinner } from "@violet/ui";
 import { cn } from "cn";
-import { ArrowDown, ArrowLeft, LoaderCircle, MoreVertical } from "lucide-react";
+import { ArrowDown, ArrowLeft, MoreVertical } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -460,7 +460,7 @@ export function ConversationPanel({
 										>
 											{isFetchingNextPage && (
 												<>
-													<LoaderCircle className="size-3.5 animate-spin" />
+													<Spinner size={16} aria-hidden="true" />
 													加载更早的消息…
 												</>
 											)}

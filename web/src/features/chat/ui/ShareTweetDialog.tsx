@@ -16,8 +16,8 @@ import {
 } from "@features/chat/api/queries";
 import type { ChatUser } from "@features/chat/model/types";
 import { useNavigate } from "@tanstack/react-router";
-import { Input, Modal } from "@violet/ui";
-import { LoaderCircle, Search } from "lucide-react";
+import { Input, Modal, Spinner } from "@violet/ui";
+import { Search } from "lucide-react";
 import { useDeferredValue, useState } from "react";
 import { toast } from "sonner";
 import { conversationLabel, conversationTargetUser } from "../lib/conversation";
@@ -138,7 +138,11 @@ export function ShareTweetDialog() {
 										{user.display_name || user.username}
 									</span>
 									{creatingUserID === user.id && (
-										<LoaderCircle className="size-4 shrink-0 animate-spin text-muted-foreground" />
+										<Spinner
+											size={16}
+											className="shrink-0 text-muted-foreground"
+											aria-hidden="true"
+										/>
 									)}
 								</button>
 							))}

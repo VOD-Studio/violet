@@ -4,17 +4,9 @@
 import type { Emoji } from "@entities/emoji/model/types";
 import { stripPlaceholdersForPreview } from "@features/comments/hooks/use-rich-text-input";
 import { EmojiPicker } from "@features/emojis/ui/EmojiPicker";
+import { Spinner } from "@violet/ui";
 import { cn } from "cn";
-import {
-	AlertTriangle,
-	Check,
-	Copy,
-	LoaderCircle,
-	Pencil,
-	Reply,
-	Smile,
-	Trash2,
-} from "lucide-react";
+import { AlertTriangle, Check, Copy, Pencil, Reply, Smile, Trash2 } from "lucide-react";
 import { motion } from "motion/react";
 import type { PointerEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -417,10 +409,7 @@ export function MessageBubble({
 									</>
 								) : (
 									<>
-										<LoaderCircle
-											className="size-3.5 shrink-0 animate-spin"
-											aria-hidden="true"
-										/>
+										<Spinner size={16} aria-hidden="true" />
 										<span>
 											{sending.status === "uploading"
 												? `图片上传中 ${sending.progress}%`
