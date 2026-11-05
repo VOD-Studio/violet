@@ -5,6 +5,7 @@ import { buttonExhibit } from "./button";
 import { cardExhibit } from "./card";
 import { checkboxExhibit } from "./checkbox";
 import { dialogExhibit } from "./dialog";
+import { drawerExhibit } from "./drawer";
 import { dropdownExhibit } from "./dropdown";
 import { dropdownMenuExhibit } from "./dropdown-menu";
 import { imagePixelRevealExhibit } from "./image-pixel-reveal";
@@ -79,13 +80,14 @@ export const EXHIBITS: Exhibit[] = [
 	dialogExhibit,
 	{
 		id: "sheet",
-		name: "侧边面板与抽屉",
-		units: ["sheet", "drawer"],
+		name: "侧边面板",
+		units: ["sheet"],
 		zone: "stage",
 		category: "overlay",
 		footprint: { width: 560, height: 420 },
 		issue: 703,
 	},
+	drawerExhibit,
 	{
 		id: "command",
 		name: "命令面板",

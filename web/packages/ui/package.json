@@ -82,6 +82,11 @@
 			"import": "./src/components/dialog/index.ts",
 			"default": "./src/components/dialog/index.ts"
 		},
+		"./drawer": {
+			"types": "./src/components/drawer/index.ts",
+			"import": "./src/components/drawer/index.ts",
+			"default": "./src/components/drawer/index.ts"
+		},
 		"./dropdown": {
 			"types": "./src/components/dropdown/index.ts",
 			"import": "./src/components/dropdown/index.ts",
@@ -298,6 +303,7 @@
 		"./components/confirm-dialog.css": "./src/components/confirm-dialog/confirm-dialog.css",
 		"./components/context-menu.css": "./src/components/context-menu/context-menu.css",
 		"./components/dialog.css": "./src/components/dialog/dialog.css",
+		"./components/drawer.css": "./src/components/drawer/drawer.css",
 		"./components/dropdown.css": "./src/components/dropdown/dropdown.css",
 		"./components/dropdown-menu.css": "./src/components/dropdown-menu/dropdown-menu.css",
 		"./components/hover-card.css": "./src/components/hover-card/hover-card.css",
@@ -412,6 +418,11 @@
 				"types": "./dist/components/dialog/index.d.ts",
 				"import": "./dist/components/dialog/index.js",
 				"default": "./dist/components/dialog/index.js"
+			},
+			"./drawer": {
+				"types": "./dist/components/drawer/index.d.ts",
+				"import": "./dist/components/drawer/index.js",
+				"default": "./dist/components/drawer/index.js"
 			},
 			"./dropdown": {
 				"types": "./dist/components/dropdown/index.d.ts",
@@ -629,6 +640,7 @@
 			"./components/confirm-dialog.css": "./dist/components/confirm-dialog.css",
 			"./components/context-menu.css": "./dist/components/context-menu.css",
 			"./components/dialog.css": "./dist/components/dialog.css",
+			"./components/drawer.css": "./dist/components/drawer.css",
 			"./components/dropdown.css": "./dist/components/dropdown.css",
 			"./components/dropdown-menu.css": "./dist/components/dropdown-menu.css",
 			"./components/hover-card.css": "./dist/components/hover-card.css",

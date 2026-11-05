@@ -7,6 +7,7 @@ export * from "./components/checkbox/index";
 export * from "./components/confirm-dialog/index";
 export * from "./components/context-menu/index";
 export * from "./components/dialog/index";
+export * from "./components/drawer/index";
 export * from "./components/dropdown/index";
 export * from "./components/dropdown-menu/index";
 export * from "./components/hover-card/index";

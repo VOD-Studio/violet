@@ -67,6 +67,12 @@
 			"css": "src/components/dialog/dialog.css"
 		},
 		{
+			"name": "drawer",
+			"status": "foundation",
+			"entry": "src/components/drawer/index.ts",
+			"css": "src/components/drawer/drawer.css"
+		},
+		{
 			"name": "dropdown",
 			"status": "foundation",
 			"entry": "src/components/dropdown/index.ts",
