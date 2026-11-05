@@ -22,7 +22,6 @@ export * from "./components/resend-button/index";
 export * from "./components/scroll-area/index";
 export * from "./components/select/index";
 export * from "./components/sheet/index";
-export * from "./components/shimmer-skeleton/index";
 export * from "./components/sonner/index";
 export * from "./components/steps/index";
 export * from "./components/switch/index";

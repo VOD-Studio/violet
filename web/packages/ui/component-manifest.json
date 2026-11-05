@@ -195,11 +195,6 @@
 			"entry": "src/components/sheet/index.ts"
 		},
 		{
-			"name": "shimmer-skeleton",
-			"status": "legacy",
-			"entry": "src/components/shimmer-skeleton/index.ts"
-		},
-		{
 			"name": "skeleton",
 			"status": "foundation",
 			"entry": "src/components/skeleton/index.ts",

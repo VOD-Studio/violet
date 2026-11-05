@@ -4,7 +4,7 @@
  * 文章评论与推文评论共用：loading 骨架 / 空态 / 列表 / 加载更多。
  * 文章侧在外层包 ReactionProvider 批量拉反应（展开回复不在此范围，由 ReactionBar 自行降级）。
  */
-import { Button, Empty, ShimmerSkeleton } from "@violet/ui";
+import { Button, Empty, Skeleton } from "@violet/ui";
 
 import { CommentItem } from "./CommentItem";
 import type { CommentRaw, CommentSectionConfig } from "./types";
@@ -35,8 +35,8 @@ export function CommentList<T extends CommentRaw>({
 	if (isLoading) {
 		return (
 			<div className="space-y-3">
-				<ShimmerSkeleton className="h-20 w-full rounded-2xl" />
-				<ShimmerSkeleton className="h-20 w-full rounded-2xl" />
+				<Skeleton className="h-20 w-full rounded-2xl" />
+				<Skeleton className="h-20 w-full rounded-2xl" />
 			</div>
 		);
 	}

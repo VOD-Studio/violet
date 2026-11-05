@@ -4,7 +4,7 @@ import type { PublishedGallery } from "@entities/gallery/model/types";
 import { formatDate } from "@shared/lib/date";
 import { PhotoStack } from "@shared/ui/photo-stack";
 import { Link } from "@tanstack/react-router";
-import { Button, Empty, PageHeader, PageShell, ShimmerSkeleton } from "@violet/ui";
+import { Button, Empty, PageHeader, PageShell, Skeleton } from "@violet/ui";
 
 export const PUBLISHED_GALLERY_PAGE_LIMIT = 12;
 
@@ -52,9 +52,9 @@ function GalleryBrowseSkeleton() {
 		<div className="grid gap-x-10 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
 			{Array.from({ length: 6 }).map((_, index) => (
 				<div key={index} className="space-y-4">
-					<ShimmerSkeleton className="aspect-3/4 w-full rounded-2xl" />
-					<ShimmerSkeleton className="h-5 w-2/3 rounded-md" />
-					<ShimmerSkeleton className="h-4 w-full rounded-md" />
+					<Skeleton className="aspect-3/4 w-full rounded-2xl" />
+					<Skeleton className="h-5 w-2/3 rounded-md" />
+					<Skeleton className="h-4 w-full rounded-md" />
 				</div>
 			))}
 		</div>

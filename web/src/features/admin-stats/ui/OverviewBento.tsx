@@ -1,4 +1,4 @@
-import { ShimmerSkeleton } from "@violet/ui";
+import { Skeleton } from "@violet/ui";
 
 import { useDashboardStats, useViewTrends } from "../api/queries";
 import { ActivityTicker } from "./ActivityTicker";
@@ -63,14 +63,14 @@ export function OverviewBento() {
 function BentoSkeleton() {
 	return (
 		<div className="flex flex-col gap-4" aria-busy>
-			<ShimmerSkeleton className="h-36 w-full" />
+			<Skeleton className="h-36 w-full" />
 			<div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-				<ShimmerSkeleton className="h-80 lg:col-span-8" />
-				<ShimmerSkeleton className="h-80 lg:col-span-4" />
-				<ShimmerSkeleton className="h-56 lg:col-span-7" />
-				<ShimmerSkeleton className="h-56 lg:col-span-5" />
+				<Skeleton className="h-80 lg:col-span-8" />
+				<Skeleton className="h-80 lg:col-span-4" />
+				<Skeleton className="h-56 lg:col-span-7" />
+				<Skeleton className="h-56 lg:col-span-5" />
 			</div>
-			<ShimmerSkeleton className="h-64 w-full" />
+			<Skeleton className="h-64 w-full" />
 		</div>
 	);
 }

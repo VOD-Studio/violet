@@ -1,7 +1,7 @@
 import { BlogSkeleton } from "@features/lab/blog/ui/BlogSkeleton";
 import { CascadeFlow } from "@features/lab/blog/ui/CascadeFlow";
 import { useQueries } from "@tanstack/react-query";
-import { Empty, ShimmerSkeleton } from "@violet/ui";
+import { Empty, Skeleton } from "@violet/ui";
 import { useEffect, useRef, useState } from "react";
 import { postKeys } from "../api/keys";
 import { fetchPosts, usePosts } from "../api/queries";
@@ -90,7 +90,7 @@ export default function BlogCascade({ limit = 12 }: { limit?: number }) {
 		<div>
 			{/* hero + 跨页统一瀑布容器：分页边界不断列流 */}
 			<CascadeFlow posts={[firstItems[0], ...rest]} />
-			{loadingLast ? <ShimmerSkeleton className="mx-auto mt-6 h-4 w-40" /> : null}
+			{loadingLast ? <Skeleton className="mx-auto mt-6 h-4 w-40" /> : null}
 			{hasMore && !loadingLast ? <div ref={sentinelRef} aria-hidden className="h-4" /> : null}
 		</div>
 	);

@@ -1,6 +1,6 @@
 import { usePublicStats } from "@features/about/api/queries";
 import { useCountUp } from "@shared/hooks/use-count-up";
-import { ShimmerSkeleton } from "@violet/ui";
+import { Skeleton } from "@violet/ui";
 
 import { AboutChapter } from "./AboutChapter";
 import { AboutSectionState } from "./AboutSectionState";
@@ -21,8 +21,8 @@ export function LiveStatsSection(_: AboutSectionProps) {
 				<div className={styles.loadingRows} role="status" aria-label="正在加载站点统计">
 					{["posts", "words", "comments", "uptime"].map((key) => (
 						<div key={key} className={styles.loadingCell}>
-							<ShimmerSkeleton className={styles.loadingValue} />
-							<ShimmerSkeleton className={styles.loadingLabel} />
+							<Skeleton className={styles.loadingValue} />
+							<Skeleton className={styles.loadingLabel} />
 						</div>
 					))}
 				</div>

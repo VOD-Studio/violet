@@ -2,7 +2,7 @@ import { usePublishedNotesFeed } from "@entities/note/api/queries";
 import type { PublicNote } from "@entities/note/model/types";
 import { formatDate } from "@shared/lib/date";
 import { Link } from "@tanstack/react-router";
-import { Button, Empty, PageShell, ShimmerSkeleton } from "@violet/ui";
+import { Button, Empty, PageShell, Skeleton } from "@violet/ui";
 import { ArrowRight, Calendar, Filter } from "lucide-react";
 import { useMemo } from "react";
 import { noteExcerpt, notePlainLength, noteTitle } from "../model/display";
@@ -268,16 +268,16 @@ function DossierGridSkeleton() {
 					className="border-edge-hairline bg-card/20 flex h-40 flex-col justify-between rounded-xl border p-5"
 				>
 					<div className="flex justify-between border-b border-edge-hairline pb-3">
-						<ShimmerSkeleton className="h-3 w-16" />
-						<ShimmerSkeleton className="h-3 w-20" />
+						<Skeleton className="h-3 w-16" />
+						<Skeleton className="h-3 w-20" />
 					</div>
 					<div className="space-y-2 py-2">
-						<ShimmerSkeleton className="h-4 w-3/4" />
-						<ShimmerSkeleton className="h-3 w-full" />
+						<Skeleton className="h-4 w-3/4" />
+						<Skeleton className="h-3 w-full" />
 					</div>
 					<div className="flex justify-between border-t border-edge-hairline pt-3">
-						<ShimmerSkeleton className="h-3.5 w-24" />
-						<ShimmerSkeleton className="h-3 w-12" />
+						<Skeleton className="h-3.5 w-24" />
+						<Skeleton className="h-3 w-12" />
 					</div>
 				</div>
 			))}

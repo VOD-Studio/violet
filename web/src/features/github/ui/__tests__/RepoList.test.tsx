@@ -35,9 +35,7 @@ describe("RepoList", () => {
 	it("加载态时渲染骨架", () => {
 		useRepos.mockReturnValue({ data: undefined, isLoading: true, isError: false });
 		const { container } = render(<RepoList />);
-		expect(container.querySelectorAll('[data-slot="shimmer-skeleton"]').length).toBeGreaterThan(
-			0,
-		);
+		expect(container.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThan(0);
 	});
 
 	it("错误态时渲染错误提示", () => {

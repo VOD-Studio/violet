@@ -1,4 +1,4 @@
-import { ShimmerSkeleton } from "@violet/ui";
+import { Skeleton } from "@violet/ui";
 
 import { cn } from "cn";
 
@@ -16,13 +16,13 @@ const ContributionsSkeleton = ({ className }: ContributionsSkeletonProps) => {
 		<div className={cn("flex flex-col gap-4", className)}>
 			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
 				<div className="flex flex-col gap-1">
-					<ShimmerSkeleton className="h-4 w-32 rounded-md" />
-					<ShimmerSkeleton className="h-8 w-48 rounded-md" />
+					<Skeleton className="h-4 w-32 rounded-md" />
+					<Skeleton className="h-8 w-48 rounded-md" />
 				</div>
 				<div className="flex items-center gap-2 text-[11px] text-muted-foreground font-mono">
 					<span>少</span>
 					{Array.from({ length: 5 }, (_, i) => (
-						<ShimmerSkeleton key={i} className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-sm" />
+						<Skeleton key={i} className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-sm" />
 					))}
 					<span>多</span>
 				</div>
@@ -32,10 +32,7 @@ const ContributionsSkeleton = ({ className }: ContributionsSkeletonProps) => {
 				{weeks.map((week) => (
 					<div key={week} className="flex flex-col flex-1 min-w-0 gap-1">
 						{Array.from({ length: WEEK_DAYS }, (_, day) => (
-							<ShimmerSkeleton
-								key={day}
-								className="w-full aspect-square rounded-sm"
-							/>
+							<Skeleton key={day} className="w-full aspect-square rounded-sm" />
 						))}
 					</div>
 				))}

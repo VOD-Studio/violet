@@ -202,11 +202,6 @@
 			"import": "./src/components/sheet/index.ts",
 			"default": "./src/components/sheet/index.ts"
 		},
-		"./shimmer-skeleton": {
-			"types": "./src/components/shimmer-skeleton/index.ts",
-			"import": "./src/components/shimmer-skeleton/index.ts",
-			"default": "./src/components/shimmer-skeleton/index.ts"
-		},
 		"./skeleton": {
 			"types": "./src/components/skeleton/index.ts",
 			"import": "./src/components/skeleton/index.ts",
@@ -504,11 +499,6 @@
 				"types": "./dist/components/sheet/index.d.ts",
 				"import": "./dist/components/sheet/index.js",
 				"default": "./dist/components/sheet/index.js"
-			},
-			"./shimmer-skeleton": {
-				"types": "./dist/components/shimmer-skeleton/index.d.ts",
-				"import": "./dist/components/shimmer-skeleton/index.js",
-				"default": "./dist/components/shimmer-skeleton/index.js"
 			},
 			"./skeleton": {
 				"types": "./dist/components/skeleton/index.d.ts",

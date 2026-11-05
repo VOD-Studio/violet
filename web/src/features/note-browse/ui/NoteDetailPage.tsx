@@ -4,7 +4,7 @@ import { formatDate } from "@shared/lib/date";
 import { FloatingBack } from "@shared/ui/floating-back";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { Link } from "@tanstack/react-router";
-import { Empty, PageShell, ShimmerSkeleton } from "@violet/ui";
+import { Empty, PageShell, Skeleton } from "@violet/ui";
 import { ArrowLeft, Calendar, CheckCircle2, Copy, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -183,21 +183,21 @@ function DossierDetailSkeleton() {
 		<div className="mx-auto max-w-3xl">
 			<div className="border-edge-hairline bg-card/20 rounded-xl border p-6 sm:p-10 space-y-6">
 				<div className="flex justify-between border-b border-edge-hairline pb-4">
-					<ShimmerSkeleton className="h-3 w-28" />
-					<ShimmerSkeleton className="h-3 w-20" />
+					<Skeleton className="h-3 w-28" />
+					<Skeleton className="h-3 w-20" />
 				</div>
-				<ShimmerSkeleton className="h-4 w-36" />
-				<ShimmerSkeleton className="h-7 w-4/5" />
+				<Skeleton className="h-4 w-36" />
+				<Skeleton className="h-7 w-4/5" />
 				<div className="flex justify-between border-b border-edge-hairline pb-4">
-					<ShimmerSkeleton className="h-3 w-40" />
-					<ShimmerSkeleton className="h-3 w-24" />
+					<Skeleton className="h-3 w-40" />
+					<Skeleton className="h-3 w-24" />
 				</div>
 				<div className="space-y-3 pt-4">
-					<ShimmerSkeleton className="h-4 w-full" />
-					<ShimmerSkeleton className="h-4 w-11/12" />
-					<ShimmerSkeleton className="h-4 w-4/5" />
-					<ShimmerSkeleton className="h-4 w-full" />
-					<ShimmerSkeleton className="h-4 w-2/3" />
+					<Skeleton className="h-4 w-full" />
+					<Skeleton className="h-4 w-11/12" />
+					<Skeleton className="h-4 w-4/5" />
+					<Skeleton className="h-4 w-full" />
+					<Skeleton className="h-4 w-2/3" />
 				</div>
 			</div>
 		</div>

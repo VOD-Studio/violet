@@ -17,7 +17,7 @@ import type { PagedResponse } from "@shared/api/types";
 import { avatarUrl } from "@shared/lib/image-url";
 import { UserProfileCover } from "@shared/ui/profile-cover/UserProfileCover";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { Button, PageShell, ShimmerSkeleton } from "@violet/ui";
+import { Button, PageShell, Skeleton } from "@violet/ui";
 import { useMemo } from "react";
 
 /**
@@ -49,17 +49,17 @@ function UserPublicProfilePage() {
 		return (
 			<PageShell>
 				<div className="mx-auto w-full max-w-7xl">
-					<ShimmerSkeleton className="h-32 w-full rounded-2xl sm:h-40" />
+					<Skeleton className="h-32 w-full rounded-2xl sm:h-40" />
 					<div className="grid gap-8 px-1 lg:grid-cols-[17rem_minmax(0,1fr)]">
 						<div className="-mt-20 space-y-3">
-							<ShimmerSkeleton className="size-28 rounded-full" />
-							<ShimmerSkeleton className="h-8 w-40 rounded-lg" />
-							<ShimmerSkeleton className="h-4 w-24 rounded-lg" />
-							<ShimmerSkeleton className="h-16 w-full rounded-lg" />
+							<Skeleton className="size-28 rounded-full" />
+							<Skeleton className="h-8 w-40 rounded-lg" />
+							<Skeleton className="h-4 w-24 rounded-lg" />
+							<Skeleton className="h-16 w-full rounded-lg" />
 						</div>
 						<div className="flex flex-col gap-4 lg:pt-6">
 							{Array.from({ length: 2 }).map((_, index) => (
-								<ShimmerSkeleton key={index} className="h-48 w-full rounded-2xl" />
+								<Skeleton key={index} className="h-48 w-full rounded-2xl" />
 							))}
 						</div>
 					</div>

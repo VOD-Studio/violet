@@ -1,4 +1,4 @@
-import { ShimmerSkeleton } from "@violet/ui";
+import { Skeleton } from "@violet/ui";
 
 export interface ArchiveYearSkeletonProps {
 	year: number;
@@ -13,16 +13,16 @@ const ArchiveYearSkeleton = ({ year }: ArchiveYearSkeletonProps) => {
 			<div className="space-y-6">
 				{Array.from({ length: 2 }, (_, monthIndex) => (
 					<div key={monthIndex}>
-						<ShimmerSkeleton className="mb-2 h-5 w-16 rounded-md" />
+						<Skeleton className="mb-2 h-5 w-16 rounded-md" />
 						<ul className="space-y-2 border-l-2 border-border pl-4">
 							{Array.from({ length: 3 }, (_, itemIndex) => (
 								<li key={itemIndex} className="flex items-start gap-3">
-									<ShimmerSkeleton className="mt-0.5 h-4 w-10 rounded-md" />
+									<Skeleton className="mt-0.5 h-4 w-10 rounded-md" />
 									<div className="flex flex-1 flex-col gap-1">
-										<ShimmerSkeleton className="h-4 w-full rounded-md" />
+										<Skeleton className="h-4 w-full rounded-md" />
 										<div className="flex flex-wrap gap-1">
 											{Array.from({ length: 2 }, (_, tagIndex) => (
-												<ShimmerSkeleton
+												<Skeleton
 													key={tagIndex}
 													className="h-5 w-12 rounded-full"
 												/>

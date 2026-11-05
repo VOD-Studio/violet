@@ -8,8 +8,6 @@
  * 方言作用域覆盖失效（首页黑白回归的根因）。
  */
 @theme inline {
-	--animate-skeleton: skeleton-pulse 1.8s ease-in-out infinite;
-
 	/* 十档字号（设计稿「基础」页） */
 	--text-60: 3.75rem;
 	--text-60--line-height: 1.12;
@@ -149,16 +147,6 @@
 }
 
 /* —— 主题动画 token 引用的 keyframes（全局注册，随映射层一起维护）—— */
-
-@keyframes skeleton-pulse {
-	0%,
-	100% {
-		opacity: 1;
-	}
-	50% {
-		opacity: 0.45;
-	}
-}
 
 @keyframes tab-panel-in {
 	from {

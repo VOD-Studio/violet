@@ -1,4 +1,4 @@
-import { ShimmerSkeleton } from "@violet/ui";
+import { Skeleton } from "@violet/ui";
 
 import { cn } from "cn";
 
@@ -17,15 +17,15 @@ const RepoListSkeleton = ({ className }: RepoListSkeletonProps) => {
 					className="flex flex-col gap-3 rounded-lg border border-edge-hairline bg-background p-5"
 				>
 					<div className="flex items-start justify-between gap-3">
-						<ShimmerSkeleton className="h-5 w-3/4 rounded-md" />
-						<ShimmerSkeleton className="h-4 w-12 rounded-full" />
+						<Skeleton className="h-5 w-3/4 rounded-md" />
+						<Skeleton className="h-4 w-12 rounded-full" />
 					</div>
-					<ShimmerSkeleton className="h-4 w-full rounded-md" />
-					<ShimmerSkeleton className="h-4 w-5/6 rounded-md" />
+					<Skeleton className="h-4 w-full rounded-md" />
+					<Skeleton className="h-4 w-5/6 rounded-md" />
 					<div className="mt-auto flex items-center gap-4 pt-2">
-						<ShimmerSkeleton className="h-3 w-14 rounded-md" />
-						<ShimmerSkeleton className="h-3 w-14 rounded-md" />
-						<ShimmerSkeleton className="ml-auto h-3 w-4 rounded-md" />
+						<Skeleton className="h-3 w-14 rounded-md" />
+						<Skeleton className="h-3 w-14 rounded-md" />
+						<Skeleton className="ml-auto h-3 w-4 rounded-md" />
 					</div>
 				</div>
 			))}
