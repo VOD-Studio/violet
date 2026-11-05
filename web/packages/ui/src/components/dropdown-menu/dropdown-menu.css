@@ -1,4 +1,5 @@
 @import "../../styles/float.css";
+@import "../list-highlight/list-highlight.css";
 
 @layer components {
 	/*
@@ -64,11 +65,6 @@
 		outline: none;
 		user-select: none;
 		-webkit-tap-highlight-color: transparent;
-	}
-
-	.v-dropdown-menu__item:focus-visible {
-		outline: 2px solid var(--ring);
-		outline-offset: -2px;
 	}
 
 	.v-dropdown-menu__item > :where(svg) {
@@ -215,37 +211,7 @@
 		stroke-dashoffset: 0;
 	}
 
-	/* 当前项的底色块：悬停与键盘焦点共用，换项时滑过去，刚出现时直接落位 */
-	.v-dropdown-menu__highlight {
-		position: absolute;
-		z-index: 0;
-		inset-block-start: 0;
-		inset-inline-start: 0;
-		inline-size: var(--v-menu-hl-w);
-		block-size: var(--v-menu-hl-h);
-		transform: translate(var(--v-menu-hl-x), var(--v-menu-hl-y));
-		border-radius: var(--v-menu-item-radius);
-		background-color: var(--muted);
-		opacity: 0;
-		pointer-events: none;
-		transition: opacity 120ms ease;
-	}
-
-	.v-dropdown-menu__highlight[data-visible="true"] {
-		opacity: 1;
-	}
-
-	.v-dropdown-menu__highlight[data-visible="true"]:not([data-jump="true"]) {
-		transition:
-			transform 280ms cubic-bezier(0.32, 0.72, 0, 1),
-			width 280ms cubic-bezier(0.32, 0.72, 0, 1),
-			height 280ms cubic-bezier(0.32, 0.72, 0, 1),
-			opacity 120ms ease;
-	}
-
 	@media (prefers-reduced-motion: reduce) {
-		.v-dropdown-menu__highlight,
-		.v-dropdown-menu__highlight[data-visible="true"]:not([data-jump="true"]),
 		.v-dropdown-menu__box,
 		.v-dropdown-menu__box .v-dropdown-menu__check path {
 			transition: none;

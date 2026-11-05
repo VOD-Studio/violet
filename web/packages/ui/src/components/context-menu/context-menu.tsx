@@ -13,7 +13,8 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { createMenuParts, MenuSurfaceBody, useMenuSurface } from "../../lib/menu-parts";
+import { createMenuParts, MenuSurfaceBody } from "../../lib/menu-parts";
+import { ListHighlight } from "../list-highlight";
 
 const parts = createMenuParts("context-menu", ContextMenuPrimitive);
 
@@ -95,9 +96,8 @@ export function ContextMenuContent({
 	...props
 }: ContextMenuContentProps) {
 	const origin = useContext(PointerOriginContext);
-	const surface = useMenuSurface({ ref, onFocus });
 	const [node, setNode] = useState<HTMLDivElement | null>(null);
-	const composedRef = useComposedRefs(surface.ref, setNode);
+	const composedRef = useComposedRefs(ref, setNode);
 
 	// 垂直方向被推回窗口内时，菜单整体在指针上方：浮出方向要朝向指针，才是从指针那一角出来
 	useEffect(() => {
@@ -118,20 +118,22 @@ export function ContextMenuContent({
 
 	return (
 		<ContextMenuPrimitive.Portal container={container}>
-			<ContextMenuPrimitive.Content
-				data-slot="context-menu-content"
-				collisionPadding={collisionPadding}
-				loop={loop}
-				className={cn(
-					"v-float v-dropdown-menu__content v-context-menu__content",
-					className,
-				)}
-				{...props}
-				ref={composedRef}
-				onFocus={surface.onFocus}
-			>
-				<MenuSurfaceBody surface={surface}>{children}</MenuSurfaceBody>
-			</ContextMenuPrimitive.Content>
+			<ListHighlight mode="focus">
+				<ContextMenuPrimitive.Content
+					data-slot="context-menu-content"
+					collisionPadding={collisionPadding}
+					loop={loop}
+					className={cn(
+						"v-float v-dropdown-menu__content v-context-menu__content",
+						className,
+					)}
+					{...props}
+					ref={composedRef}
+					onFocus={onFocus}
+				>
+					<MenuSurfaceBody>{children}</MenuSurfaceBody>
+				</ContextMenuPrimitive.Content>
+			</ListHighlight>
 		</ContextMenuPrimitive.Portal>
 	);
 }

@@ -21,6 +21,7 @@ import {
 } from "../../lib/modal-opener";
 import { Spinner, useDelayedBusy } from "../indicator";
 import { Kbd } from "../kbd";
+import { ListHighlight, ListHighlightItem } from "../list-highlight";
 import { Skeleton } from "../skeleton";
 import { type CommandGroup, type CommandItem, type CommandMatch, matchCommands } from "./match";
 
@@ -312,151 +313,171 @@ export function CommandList({
 						)}
 					</div>
 					<div ref={viewportRef} className="v-command__viewport">
-						<div
-							ref={listRef}
-							key={trail.length}
-							id={listboxId}
-							role="listbox"
-							aria-label={level ? level.label : "结果"}
-							aria-busy={searching || undefined}
-							data-push={push}
-							className="v-command__list"
-						>
-							{sections.map(({ group, matches }) => {
-								const labelId = `${baseId}-group-${group.id}`;
-								return (
-									<div
-										key={group.id}
-										role="group"
-										aria-labelledby={group.label ? labelId : undefined}
-										className="v-command__group"
-									>
-										{group.label && (
-											<div id={labelId} className="v-command__group-label">
-												{group.label}
-											</div>
-										)}
-										{matches.map((match) => {
-											index += 1;
-											const itemIndex = index;
-											const { item } = match;
-											return (
-												// biome-ignore lint/a11y/useKeyWithClickEvents: 键盘由输入框经 aria-activedescendant 操作
+						<ListHighlight mode="active" key={trail.length}>
+							<div
+								ref={listRef}
+								id={listboxId}
+								role="listbox"
+								aria-label={level ? level.label : "结果"}
+								aria-busy={searching || undefined}
+								data-push={push}
+								className="v-command__list"
+							>
+								{sections.map(({ group, matches }) => {
+									const labelId = `${baseId}-group-${group.id}`;
+									return (
+										<div
+											key={group.id}
+											role="group"
+											aria-labelledby={group.label ? labelId : undefined}
+											className="v-command__group"
+										>
+											{group.label && (
+												<div
+													id={labelId}
+													className="v-command__group-label"
+												>
+													{group.label}
+												</div>
+											)}
+											{matches.map((match) => {
+												index += 1;
+												const itemIndex = index;
+												const { item } = match;
+												return (
+													<ListHighlightItem
+														key={item.id}
+														active={itemIndex === active}
+													>
+														{/* biome-ignore lint/a11y/useKeyWithClickEvents: 键盘由输入框经 aria-activedescendant 操作 */}
+														<div
+															tabIndex={-1}
+															id={optionId(itemIndex)}
+															role="option"
+															aria-selected={itemIndex === active}
+															data-active={
+																itemIndex === active || undefined
+															}
+															data-flash={
+																flashing === item.id || undefined
+															}
+															data-stagger={
+																(entering &&
+																	itemIndex < STAGGER_COUNT) ||
+																undefined
+															}
+															style={
+																{
+																	"--v-command-i": itemIndex,
+																} as CSSProperties
+															}
+															className="v-command__item"
+															onPointerMove={() => {
+																if (active !== itemIndex)
+																	setActive(itemIndex);
+															}}
+															onPointerDown={(event) =>
+																event.preventDefault()
+															}
+															onClick={(event) =>
+																run(
+																	itemIndex,
+																	event.metaKey || event.ctrlKey,
+																)
+															}
+														>
+															{item.icon && (
+																<span
+																	aria-hidden="true"
+																	className="v-command__item-icon"
+																>
+																	{item.icon}
+																</span>
+															)}
+															<span className="v-command__item-text">
+																<span className="v-command__item-label">
+																	<Highlight
+																		label={item.label}
+																		ranges={match.ranges}
+																	/>
+																</span>
+																{item.description && (
+																	<span className="v-command__item-description">
+																		{item.description}
+																	</span>
+																)}
+															</span>
+															{item.shortcut ? (
+																<Kbd
+																	size="sm"
+																	keys={item.shortcut}
+																/>
+															) : item.hint ? (
+																<span className="v-command__item-hint">
+																	{item.hint}
+																</span>
+															) : item.children ? (
+																<span className="v-command__item-hint">
+																	›
+																</span>
+															) : null}
+														</div>
+													</ListHighlightItem>
+												);
+											})}
+											{showSkeleton && group.id === fullTextGroup && (
+												<FullTextSkeleton />
+											)}
+										</div>
+									);
+								})}
+								{showSkeleton &&
+									!sections.some(({ group }) => group.id === fullTextGroup) && (
+										<div
+											role="group"
+											aria-label="全文"
+											className="v-command__group"
+										>
+											<div className="v-command__group-label">全文</div>
+											<FullTextSkeleton />
+										</div>
+									)}
+								{empty && (
+									<div className="v-command__empty">
+										<p className="v-command__empty-text">
+											没有找到「{query.trim()}」
+										</p>
+										{searchAll && (
+											<ListHighlightItem active={active === 0}>
+												{/* biome-ignore lint/a11y/useKeyWithClickEvents: 键盘由输入框经 aria-activedescendant 操作 */}
 												<div
 													tabIndex={-1}
-													key={item.id}
-													id={optionId(itemIndex)}
+													id={optionId(0)}
 													role="option"
-													aria-selected={itemIndex === active}
-													data-active={itemIndex === active || undefined}
-													data-flash={flashing === item.id || undefined}
-													data-stagger={
-														(entering && itemIndex < STAGGER_COUNT) ||
-														undefined
-													}
-													style={
-														{
-															"--v-command-i": itemIndex,
-														} as CSSProperties
-													}
+													aria-selected="true"
+													data-active=""
 													className="v-command__item"
-													onPointerMove={() => {
-														if (active !== itemIndex)
-															setActive(itemIndex);
-													}}
 													onPointerDown={(event) =>
 														event.preventDefault()
 													}
-													onClick={(event) =>
-														run(
-															itemIndex,
-															event.metaKey || event.ctrlKey,
-														)
-													}
+													onClick={() => run(0, false)}
 												>
-													{item.icon && (
-														<span
-															aria-hidden="true"
-															className="v-command__item-icon"
-														>
-															{item.icon}
-														</span>
-													)}
-													<span className="v-command__item-text">
-														<span className="v-command__item-label">
-															<Highlight
-																label={item.label}
-																ranges={match.ranges}
-															/>
-														</span>
-														{item.description && (
-															<span className="v-command__item-description">
-																{item.description}
-															</span>
-														)}
+													<span
+														aria-hidden="true"
+														className="v-command__item-icon"
+													>
+														<Search />
 													</span>
-													{item.shortcut ? (
-														<Kbd size="sm" keys={item.shortcut} />
-													) : item.hint ? (
-														<span className="v-command__item-hint">
-															{item.hint}
-														</span>
-													) : item.children ? (
-														<span className="v-command__item-hint">
-															›
-														</span>
-													) : null}
+													<span className="v-command__item-label">
+														在全文里搜索
+													</span>
 												</div>
-											);
-										})}
-										{showSkeleton && group.id === fullTextGroup && (
-											<FullTextSkeleton />
+											</ListHighlightItem>
 										)}
 									</div>
-								);
-							})}
-							{showSkeleton &&
-								!sections.some(({ group }) => group.id === fullTextGroup) && (
-									<div
-										role="group"
-										aria-label="全文"
-										className="v-command__group"
-									>
-										<div className="v-command__group-label">全文</div>
-										<FullTextSkeleton />
-									</div>
 								)}
-							{empty && (
-								<div className="v-command__empty">
-									<p className="v-command__empty-text">
-										没有找到「{query.trim()}」
-									</p>
-									{searchAll && (
-										// biome-ignore lint/a11y/useKeyWithClickEvents: 键盘由输入框经 aria-activedescendant 操作
-										<div
-											tabIndex={-1}
-											id={optionId(0)}
-											role="option"
-											aria-selected="true"
-											data-active=""
-											className="v-command__item"
-											onPointerDown={(event) => event.preventDefault()}
-											onClick={() => run(0, false)}
-										>
-											<span
-												aria-hidden="true"
-												className="v-command__item-icon"
-											>
-												<Search />
-											</span>
-											<span className="v-command__item-label">
-												在全文里搜索
-											</span>
-										</div>
-									)}
-								</div>
-							)}
-						</div>
+							</div>
+						</ListHighlight>
 					</div>
 					<div className="v-command__footer">
 						<span className="v-command__keys">

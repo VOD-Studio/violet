@@ -24,6 +24,8 @@ import {
 	DropdownMenuSubContent,
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
+	ListHighlight,
+	ListHighlightItem,
 } from "@violet/ui";
 import {
 	ArrowDownUp,
@@ -272,62 +274,61 @@ function ArticleRow({
 	return (
 		<ContextMenu modal={false}>
 			<ContextMenuTrigger asChild>
-				<li
-					ref={rowRef}
-					className="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-muted/60 data-[state=open]:bg-muted"
-				>
-					<div className="min-w-0 flex-1">
-						<div className="flex items-center gap-1.5">
-							{article.pinned && (
-								<Pin
-									aria-label="已置顶"
-									className="size-3.5 text-selected-foreground"
-								/>
+				<ListHighlightItem>
+					<li ref={rowRef} className="flex items-center gap-3 rounded-xl px-3 py-2">
+						<div className="min-w-0 flex-1">
+							<div className="flex items-center gap-1.5">
+								{article.pinned && (
+									<Pin
+										aria-label="已置顶"
+										className="size-3.5 text-selected-foreground"
+									/>
+								)}
+								<b className="truncate text-14 font-semibold">{article.title}</b>
+							</div>
+							{visible.has("excerpt") && (
+								<p className="mt-0.5 truncate text-13 text-muted-foreground">
+									{article.excerpt}
+								</p>
 							)}
-							<b className="truncate text-14 font-semibold">{article.title}</b>
-						</div>
-						{visible.has("excerpt") && (
-							<p className="mt-0.5 truncate text-13 text-muted-foreground">
-								{article.excerpt}
+							<p className="mt-1 flex gap-3 text-12 text-muted-foreground">
+								<span>{article.status === "draft" ? "草稿" : "已发布"}</span>
+								<span>{article.series}</span>
+								{visible.has("date") && <span>{article.date}</span>}
+								{visible.has("views") && <span>{article.views} 次浏览</span>}
 							</p>
-						)}
-						<p className="mt-1 flex gap-3 text-12 text-muted-foreground">
-							<span>{article.status === "draft" ? "草稿" : "已发布"}</span>
-							<span>{article.series}</span>
-							{visible.has("date") && <span>{article.date}</span>}
-							{visible.has("views") && <span>{article.views} 次浏览</span>}
-						</p>
-					</div>
-					<DropdownMenu
-						modal={false}
-						defaultOpen={autoOpen === "menu" || autoOpen === "submenu"}
-					>
-						<DropdownMenuTrigger asChild>
-							<Button
-								type="button"
-								variant="ghost"
-								size="icon-sm"
-								aria-label={`${article.title}的更多操作`}
-							>
-								<MoreHorizontal />
-							</Button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent
-							align="end"
-							aria-label="文章操作"
-							container={container}
-							collisionBoundary={boundary}
-							onOpenAutoFocus={keepFocus}
+						</div>
+						<DropdownMenu
+							modal={false}
+							defaultOpen={autoOpen === "menu" || autoOpen === "submenu"}
 						>
-							<ArticleItems
-								kit={dropdownKit}
-								article={article}
-								actions={actions}
-								boundary={boundary}
-							/>
-						</DropdownMenuContent>
-					</DropdownMenu>
-				</li>
+							<DropdownMenuTrigger asChild>
+								<Button
+									type="button"
+									variant="ghost"
+									size="icon-sm"
+									aria-label={`${article.title}的更多操作`}
+								>
+									<MoreHorizontal />
+								</Button>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent
+								align="end"
+								aria-label="文章操作"
+								container={container}
+								collisionBoundary={boundary}
+								onOpenAutoFocus={keepFocus}
+							>
+								<ArticleItems
+									kit={dropdownKit}
+									article={article}
+									actions={actions}
+									boundary={boundary}
+								/>
+							</DropdownMenuContent>
+						</DropdownMenu>
+					</li>
+				</ListHighlightItem>
 			</ContextMenuTrigger>
 			<ContextMenuContent
 				aria-label="文章操作"
@@ -485,18 +486,20 @@ function ArticleScene({ state }: ExhibitRenderProps) {
 				</div>
 			</header>
 			{sorted.length > 0 ? (
-				<ul className="m-0 flex list-none flex-col gap-1 p-0">
-					{sorted.map((article) => (
-						<ArticleRow
-							key={article.id}
-							article={article}
-							visible={visible}
-							actions={actions}
-							autoOpen={rowAutoOpen(article)}
-							container={container}
-						/>
-					))}
-				</ul>
+				<ListHighlight>
+					<ul className="m-0 flex list-none flex-col gap-1 p-0">
+						{sorted.map((article) => (
+							<ArticleRow
+								key={article.id}
+								article={article}
+								visible={visible}
+								actions={actions}
+								autoOpen={rowAutoOpen(article)}
+								container={container}
+							/>
+						))}
+					</ul>
+				</ListHighlight>
 			) : (
 				<div className="flex items-center gap-3 px-3 py-6 text-14 text-muted-foreground">
 					都移到回收站了。

@@ -1,4 +1,5 @@
 @import "../../styles/scrim.css";
+@import "../list-highlight/list-highlight.css";
 @import "../indicator/indicator.css";
 @import "../kbd/kbd.css";
 @import "../skeleton/skeleton.css";
@@ -131,7 +132,6 @@
 		font-size: var(--text-12);
 	}
 
-	/* 当前项浅底，没有滑动：键盘连按时必须跟得上 */
 	.v-command__item {
 		display: flex;
 		align-items: center;
@@ -141,10 +141,6 @@
 		border-radius: var(--radius-8);
 		cursor: pointer;
 		user-select: none;
-	}
-
-	.v-command__item[data-active] {
-		background-color: var(--muted);
 	}
 
 	.v-command__item[data-flash] {

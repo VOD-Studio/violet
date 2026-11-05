@@ -32,6 +32,13 @@ import { Popover as LeafPopover, PopoverContent as LeafPopoverContent, PopoverTr
 import { Toaster as LeafToaster } from "@violet/ui/sonner";
 import { type CommandItem, CommandList, ConfirmDialog, Dialog, DialogBody, DialogClose, DialogContent, type DialogContentProps, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, Drawer, DrawerBody, DrawerContent, DrawerHeader, DrawerTitle, Modal, PromptDialog, Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@violet/ui";
 import { Tooltip as LeafTooltip, TooltipContent as LeafTooltipContent, TooltipTrigger as LeafTooltipTrigger } from "@violet/ui/tooltip";
+import { ListHighlight, ListHighlightItem, type ListHighlightProps } from "@violet/ui";
+import { ListHighlight as LeafListHighlight, ListHighlightItem as LeafListHighlightItem } from "@violet/ui/list-highlight";
+
+export function HighlightedActions() {
+	const props: Pick<ListHighlightProps, "mode"> = { mode: "pointer" };
+	return <><ListHighlight {...props}><ul><li><ListHighlightItem><button type="button">复制链接</button></ListHighlightItem></li></ul></ListHighlight><LeafListHighlight mode="active"><div><LeafListHighlightItem active><button type="button">存为图片</button></LeafListHighlightItem></div></LeafListHighlight></>;
+}
 
 const linkCardProps: LinkCardProps = {
 	href: "https://example.com/guide#native",

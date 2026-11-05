@@ -147,6 +147,11 @@
 			"import": "./src/components/link-card/index.ts",
 			"default": "./src/components/link-card/index.ts"
 		},
+		"./list-highlight": {
+			"types": "./src/components/list-highlight/index.ts",
+			"import": "./src/components/list-highlight/index.ts",
+			"default": "./src/components/list-highlight/index.ts"
+		},
 		"./otp": {
 			"types": "./src/components/otp/index.ts",
 			"import": "./src/components/otp/index.ts",
@@ -314,12 +319,14 @@
 		"./components/kbd.css": "./src/components/kbd/kbd.css",
 		"./components/label.css": "./src/components/label/label.css",
 		"./components/link-card.css": "./src/components/link-card/link-card.css",
+		"./components/list-highlight.css": "./src/components/list-highlight/list-highlight.css",
 		"./components/overlay-scroll.css": "./src/components/overlay-scroll/overlay-scroll.css",
 		"./components/popover.css": "./src/components/popover/popover.css",
 		"./components/prompt-dialog.css": "./src/components/prompt-dialog/prompt-dialog.css",
 		"./components/radio.css": "./src/components/radio/radio.css",
 		"./components/search-input.css": "./src/components/search-input/search-input.css",
 		"./components/segmented.css": "./src/components/segmented/segmented.css",
+		"./components/select.css": "./src/components/select/select.css",
 		"./components/separator.css": "./src/components/separator/separator.css",
 		"./components/sheet.css": "./src/components/sheet/sheet.css",
 		"./components/skeleton.css": "./src/components/skeleton/skeleton.css",
@@ -485,6 +492,11 @@
 				"types": "./dist/components/link-card/index.d.ts",
 				"import": "./dist/components/link-card/index.js",
 				"default": "./dist/components/link-card/index.js"
+			},
+			"./list-highlight": {
+				"types": "./dist/components/list-highlight/index.d.ts",
+				"import": "./dist/components/list-highlight/index.js",
+				"default": "./dist/components/list-highlight/index.js"
 			},
 			"./otp": {
 				"types": "./dist/components/otp/index.d.ts",
@@ -653,12 +665,14 @@
 			"./components/kbd.css": "./dist/components/kbd.css",
 			"./components/label.css": "./dist/components/label.css",
 			"./components/link-card.css": "./dist/components/link-card.css",
+			"./components/list-highlight.css": "./dist/components/list-highlight.css",
 			"./components/overlay-scroll.css": "./dist/components/overlay-scroll.css",
 			"./components/popover.css": "./dist/components/popover.css",
 			"./components/prompt-dialog.css": "./dist/components/prompt-dialog.css",
 			"./components/radio.css": "./dist/components/radio.css",
 			"./components/search-input.css": "./dist/components/search-input.css",
 			"./components/segmented.css": "./dist/components/segmented.css",
+			"./components/select.css": "./dist/components/select.css",
 			"./components/separator.css": "./dist/components/separator.css",
 			"./components/sheet.css": "./dist/components/sheet.css",
 			"./components/skeleton.css": "./dist/components/skeleton.css",

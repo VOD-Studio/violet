@@ -144,6 +144,12 @@
 			"documentation": "web/packages/ui/docs/components/link-card.md"
 		},
 		{
+			"name": "list-highlight",
+			"status": "foundation",
+			"entry": "src/components/list-highlight/index.ts",
+			"css": "src/components/list-highlight/list-highlight.css"
+		},
+		{
 			"name": "otp",
 			"status": "legacy",
 			"entry": "src/components/otp/index.ts"
@@ -213,7 +219,8 @@
 		{
 			"name": "select",
 			"status": "legacy",
-			"entry": "src/components/select/index.ts"
+			"entry": "src/components/select/index.ts",
+			"css": "src/components/select/select.css"
 		},
 		{
 			"name": "separator",

@@ -256,7 +256,7 @@ function CommandStage({ state }: ExhibitRenderProps) {
 export const commandExhibit: Exhibit = {
 	id: "command",
 	name: "命令面板",
-	units: ["command"],
+	units: ["command", "list-highlight"],
 	zone: "stage",
 	category: "overlay",
 	footprint: { width: 560, height: 420 },

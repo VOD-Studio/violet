@@ -8,6 +8,8 @@ import {
 	DrawerHeader,
 	type DrawerProps,
 	DrawerTitle,
+	ListHighlight,
+	ListHighlightItem,
 	TagToggle,
 	Textarea,
 } from "@violet/ui";
@@ -72,32 +74,38 @@ function ShareDrawer({ container, root, content }: DrawerSlotProps) {
 					<DrawerTitle>分享</DrawerTitle>
 				</DrawerHeader>
 				<DrawerBody className="px-2">
-					<ul className="m-0 flex list-none flex-col p-0">
-						{SHARE_ACTIONS.map(({ label, icon: Icon }) => (
-							<li key={label}>
-								<button
-									type="button"
-									className="flex min-h-11 w-full items-center gap-3.5 rounded-lg bg-transparent px-3 text-14 outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
-								>
-									<Icon
-										className="size-5 text-muted-foreground"
-										aria-hidden="true"
-									/>
-									{label}
-								</button>
+					<ListHighlight>
+						<ul className="m-0 flex list-none flex-col p-0">
+							{SHARE_ACTIONS.map(({ label, icon: Icon }) => (
+								<li key={label}>
+									<ListHighlightItem>
+										<button
+											type="button"
+											className="flex min-h-11 w-full items-center gap-3.5 rounded-lg bg-transparent px-3 text-14 outline-none"
+										>
+											<Icon
+												className="size-5 text-muted-foreground"
+												aria-hidden="true"
+											/>
+											{label}
+										</button>
+									</ListHighlightItem>
+								</li>
+							))}
+							<li className="my-1.5 border-border border-t" aria-hidden="true" />
+							<li>
+								<ListHighlightItem>
+									<button
+										type="button"
+										className="flex min-h-11 w-full items-center gap-3.5 rounded-lg bg-transparent px-3 text-14 text-destructive outline-none"
+									>
+										<Flag className="size-5" aria-hidden="true" />
+										举报
+									</button>
+								</ListHighlightItem>
 							</li>
-						))}
-						<li className="my-1.5 border-border border-t" aria-hidden="true" />
-						<li>
-							<button
-								type="button"
-								className="flex min-h-11 w-full items-center gap-3.5 rounded-lg bg-transparent px-3 text-14 text-destructive outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
-							>
-								<Flag className="size-5" aria-hidden="true" />
-								举报
-							</button>
-						</li>
-					</ul>
+						</ul>
+					</ListHighlight>
 				</DrawerBody>
 			</DrawerContent>
 		</Drawer>

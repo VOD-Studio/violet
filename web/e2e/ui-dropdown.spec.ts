@@ -62,6 +62,34 @@ const pose = (content: Locator) =>
 		return { opacity: Number(style.opacity), y: new DOMMatrix(style.transform).m42 };
 	});
 
+const highlightOpacity = (highlight: Locator) =>
+	highlight.evaluate((element) => getComputedStyle(element, "::before").opacity);
+
+const highlightBox = (highlight: Locator) =>
+	highlight.evaluate((element) => {
+		const bounds = element.getBoundingClientRect();
+		const style = getComputedStyle(element, "::before");
+		const transform = new DOMMatrix(style.transform);
+		return {
+			x: bounds.x + element.clientLeft - element.scrollLeft + transform.m41,
+			y: bounds.y + element.clientTop - element.scrollTop + transform.m42,
+			width: Number.parseFloat(style.width),
+			height: Number.parseFloat(style.height),
+		};
+	});
+
+function boxDistance(
+	actual: { x: number; y: number; width: number; height: number },
+	expected: { x: number; y: number; width: number; height: number },
+) {
+	return Math.max(
+		Math.abs(actual.x - expected.x),
+		Math.abs(actual.y - expected.y),
+		Math.abs(actual.width - expected.width),
+		Math.abs(actual.height - expected.height),
+	);
+}
+
 /** 记录页面里此后创建的所有 Web Animation，用来核对短暂的动画时长。 */
 async function recordAnimations(page: Page) {
 	await page.evaluate(() => {
@@ -332,10 +360,10 @@ test("Dropdown 共享高亮在快速折返中续接当前位置，菜单行保�
 	const first = content.getByRole("link", { name: /^快速入门/ });
 	const second = content.getByRole("link", { name: /^设计原则/ });
 	const third = content.getByRole("link", { name: /^版本记录/ });
-	const highlight = content.locator('[data-slot="dropdown-highlight"]');
+	const highlight = content.locator(".v-list-highlight");
 	const offsetFrom = async (y: number) => {
-		const rect = await highlight.boundingBox();
-		return rect ? Math.abs(rect.y - y) : Infinity;
+		const rect = await highlightBox(highlight);
+		return Math.abs(rect.y - y);
 	};
 	await first.hover();
 	await expect(first).toHaveAttribute("data-highlighted", "");
@@ -352,7 +380,7 @@ test("Dropdown 共享高亮在快速折返中续接当前位置，菜单行保�
 	await third.hover();
 	await highlight.evaluate((element) => {
 		const movement = element
-			.getAnimations()
+			.getAnimations({ subtree: true })
 			.find(
 				(animation) =>
 					animation.effect instanceof KeyframeEffect &&
@@ -362,14 +390,13 @@ test("Dropdown 共享高亮在快速折返中续接当前位置，菜单行保�
 		movement.pause();
 		movement.currentTime = Number(movement.effect.getComputedTiming().duration) / 2;
 	});
-	const middle = await highlight.boundingBox();
-	if (!middle) throw new Error("共享高亮缺少可见几何");
+	const middle = await highlightBox(highlight);
 	expect(middle.y).toBeGreaterThan(firstRect.y + 1);
 	expect(middle.y).toBeLessThan(thirdRect.y - 1);
 	await second.hover();
 	await highlight.evaluate((element) => {
 		const movement = element
-			.getAnimations()
+			.getAnimations({ subtree: true })
 			.find(
 				(animation) =>
 					animation.effect instanceof KeyframeEffect &&
@@ -379,11 +406,10 @@ test("Dropdown 共享高亮在快速折返中续接当前位置，菜单行保�
 		movement.pause();
 		movement.currentTime = 0;
 	});
-	const resumed = await highlight.boundingBox();
-	if (!resumed) throw new Error("折返高亮缺少可见几何");
+	const resumed = await highlightBox(highlight);
 	expect(Math.abs(resumed.y - middle.y)).toBeLessThan(1);
 	await highlight.evaluate((element) => {
-		for (const animation of element.getAnimations()) animation.play();
+		for (const animation of element.getAnimations({ subtree: true })) animation.play();
 	});
 	const secondRect = await second.boundingBox();
 	if (!secondRect) throw new Error("目标行缺少可见几何");
@@ -397,7 +423,7 @@ test("Dropdown 共享高亮在快速折返中续接当前位置，菜单行保�
 	await page.keyboard.press("Tab");
 	await expect(first).toBeFocused();
 	await expect.poll(() => offsetFrom(firstRect.y)).toBeLessThan(1);
-	await expect(highlight).toHaveCSS("opacity", "1");
+	await expect.poll(() => highlightOpacity(highlight)).toBe("1");
 	await expect(first).toHaveAttribute("data-highlighted", "");
 	await expect(second).not.toHaveAttribute("data-highlighted");
 	await page.keyboard.press("Tab");
@@ -422,26 +448,28 @@ test("Dropdown 减弱动态下高亮立即跟随，并忽略禁用项", async ({
 	const content = page.locator(`[id="${contentId}"]`);
 	const first = content.getByRole("link", { name: /^快速入门/ });
 	const third = content.getByRole("link", { name: /^版本记录/ });
-	const highlight = content.locator('[data-slot="dropdown-highlight"]');
+	const highlight = content.locator(".v-list-highlight");
 	await first.hover();
 	await third.hover();
 	const row = await third.boundingBox();
-	const background = await highlight.boundingBox();
-	if (!row || !background) throw new Error("高亮缺少可见几何");
+	const background = await highlightBox(highlight);
+	if (!row) throw new Error("菜单行缺少可见几何");
 	expect(Math.abs(row.y - background.y)).toBeLessThan(1);
-	expect(await highlight.evaluate((element) => element.getAnimations().length)).toBe(0);
+	expect(
+		await highlight.evaluate((element) => element.getAnimations({ subtree: true }).length),
+	).toBe(0);
 	await third.evaluate((element) => element.setAttribute("aria-disabled", "true"));
-	await expect(highlight).toHaveCSS("opacity", "0");
+	await expect.poll(() => highlightOpacity(highlight)).toBe("0");
 	await expect(third).not.toHaveAttribute("data-highlighted");
 	await first.hover();
 	await third.hover();
-	await expect(highlight).toHaveCSS("opacity", "0");
+	await expect.poll(() => highlightOpacity(highlight)).toBe("0");
 	await trigger.focus();
 	await page.keyboard.press("Tab");
 	await expect(first).toBeFocused();
-	await expect(highlight).toHaveCSS("opacity", "1");
+	await expect.poll(() => highlightOpacity(highlight)).toBe("1");
 	await first.evaluate((element) => element.setAttribute("aria-disabled", "true"));
-	await expect(highlight).toHaveCSS("opacity", "0");
+	await expect.poll(() => highlightOpacity(highlight)).toBe("0");
 	await expect(first).not.toHaveAttribute("data-highlighted");
 	await expect(trigger).toHaveAttribute("aria-expanded", "true");
 });
@@ -461,9 +489,9 @@ test("Dropdown 穿过项间空隙与面板留白时保留高亮，真正离开�
 	const content = page.locator(`[id="${contentId}"]`);
 	const first = content.getByRole("link", { name: /^快速入门/ });
 	const second = content.getByRole("link", { name: /^设计原则/ });
-	const highlight = content.locator('[data-slot="dropdown-highlight"]');
+	const highlight = content.locator(".v-list-highlight");
 	await first.hover();
-	await expect(highlight).toHaveCSS("opacity", "1");
+	await expect.poll(() => highlightOpacity(highlight)).toBe("1");
 	const firstRect = await first.boundingBox();
 	const secondRect = await second.boundingBox();
 	const panelRect = await content.boundingBox();
@@ -474,24 +502,24 @@ test("Dropdown 穿过项间空隙与面板留白时保留高亮，真正离开�
 	const firstBottom = firstRect.y + firstRect.height;
 	expect(secondRect.y).toBeGreaterThan(firstBottom);
 	await page.mouse.move(firstRect.x + firstRect.width / 2, (firstBottom + secondRect.y) / 2);
-	await expect(highlight).toHaveCSS("opacity", "1");
+	await expect.poll(() => highlightOpacity(highlight)).toBe("1");
 	await expect(first).toHaveAttribute("data-highlighted", "");
-	expect(await highlight.boundingBox()).toEqual(firstRect);
+	expect(boxDistance(await highlightBox(highlight), firstRect)).toBeLessThan(1);
 	await page.mouse.move((panelRect.x + firstRect.x) / 2, firstRect.y + firstRect.height / 2);
-	await expect(highlight).toHaveCSS("opacity", "1");
-	expect(await highlight.boundingBox()).toEqual(firstRect);
+	await expect.poll(() => highlightOpacity(highlight)).toBe("1");
+	expect(boxDistance(await highlightBox(highlight), firstRect)).toBeLessThan(1);
 	await second.hover();
 	await expect(second).toHaveAttribute("data-highlighted", "");
 	await expect(first).not.toHaveAttribute("data-highlighted");
-	await expect(highlight).toHaveCSS("opacity", "1");
-	expect(await highlight.boundingBox()).toEqual(secondRect);
+	await expect.poll(() => highlightOpacity(highlight)).toBe("1");
+	expect(boxDistance(await highlightBox(highlight), secondRect)).toBeLessThan(1);
 	const triggerBottom = triggerRect.y + triggerRect.height;
 	expect(panelRect.y).toBeGreaterThan(triggerBottom);
 	await page.mouse.move(triggerRect.x + triggerRect.width / 2, (triggerBottom + panelRect.y) / 2);
 	await trigger.hover();
-	await expect(highlight).toHaveCSS("opacity", "1");
+	await expect.poll(() => highlightOpacity(highlight)).toBe("1");
 	await expect(second).toHaveAttribute("data-highlighted", "");
-	expect(await highlight.boundingBox()).toEqual(secondRect);
+	expect(boxDistance(await highlightBox(highlight), secondRect)).toBeLessThan(1);
 	await expect(trigger).toHaveAttribute("aria-expanded", "true");
 	await page.emulateMedia({ reducedMotion: "no-preference" });
 	await content.evaluate((element) => {
@@ -506,7 +534,7 @@ test("Dropdown 穿过项间空隙与面板留白时保留高亮，真正离开�
 	await page.mouse.move(1300, 800);
 	await expect(content).toHaveAttribute("data-state", "closed");
 	await expect(content).toHaveCount(1);
-	await expect(highlight).toHaveCSS("opacity", "0");
+	await expect.poll(() => highlightOpacity(highlight)).toBe("0");
 	await expect(second).not.toHaveAttribute("data-highlighted");
 	await content.evaluate((element) => {
 		for (const animation of element.getAnimations()) animation.play();

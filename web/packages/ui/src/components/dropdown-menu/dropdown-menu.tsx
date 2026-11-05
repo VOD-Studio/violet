@@ -4,7 +4,8 @@ import { cn } from "cn";
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
 import { composeEventHandlers, useComposedRefs } from "radix-ui/internal";
 import { type ComponentProps, createContext, type RefObject, useContext, useRef } from "react";
-import { createMenuParts, MenuSurfaceBody, useMenuSurface } from "../../lib/menu-parts";
+import { createMenuParts, MenuSurfaceBody } from "../../lib/menu-parts";
+import { ListHighlight } from "../list-highlight";
 
 const parts = createMenuParts("dropdown-menu", DropdownMenuPrimitive);
 
@@ -73,28 +74,29 @@ export function DropdownMenuContent({
 	...props
 }: DropdownMenuContentProps) {
 	const triggerRef = useContext(TriggerRefContext);
-	const surface = useMenuSurface({ ref, onFocus });
 	return (
 		<DropdownMenuPrimitive.Portal container={container}>
-			<DropdownMenuPrimitive.Content
-				data-slot="dropdown-menu-content"
-				sideOffset={sideOffset}
-				collisionPadding={collisionPadding}
-				loop={loop}
-				className={cn("v-float v-dropdown-menu__content", className)}
-				{...props}
-				ref={surface.ref}
-				onFocus={surface.onFocus}
-				// Radix 点外面关闭时不还焦点；没有别的元素接走焦点时，设计稿要求回到触发器
-				onCloseAutoFocus={composeEventHandlers(onCloseAutoFocus, (event) => {
-					const active = document.activeElement;
-					if (active && active !== document.body) return;
-					event.preventDefault();
-					triggerRef?.current?.focus();
-				})}
-			>
-				<MenuSurfaceBody surface={surface}>{children}</MenuSurfaceBody>
-			</DropdownMenuPrimitive.Content>
+			<ListHighlight mode="focus">
+				<DropdownMenuPrimitive.Content
+					data-slot="dropdown-menu-content"
+					sideOffset={sideOffset}
+					collisionPadding={collisionPadding}
+					loop={loop}
+					className={cn("v-float v-dropdown-menu__content", className)}
+					{...props}
+					ref={ref}
+					onFocus={onFocus}
+					// Radix 点外面关闭时不还焦点；没有别的元素接走焦点时，设计稿要求回到触发器
+					onCloseAutoFocus={composeEventHandlers(onCloseAutoFocus, (event) => {
+						const active = document.activeElement;
+						if (active && active !== document.body) return;
+						event.preventDefault();
+						triggerRef?.current?.focus();
+					})}
+				>
+					<MenuSurfaceBody>{children}</MenuSurfaceBody>
+				</DropdownMenuPrimitive.Content>
+			</ListHighlight>
 		</DropdownMenuPrimitive.Portal>
 	);
 }

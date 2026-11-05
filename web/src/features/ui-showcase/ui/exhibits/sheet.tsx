@@ -1,5 +1,7 @@
 import {
 	Button,
+	ListHighlight,
+	ListHighlightItem,
 	Sheet,
 	SheetBody,
 	SheetClose,
@@ -12,7 +14,6 @@ import {
 	Tag,
 	TagToggle,
 } from "@violet/ui";
-import { cn } from "cn";
 import { SlidersHorizontal } from "lucide-react";
 import { useState } from "react";
 import { useStageContainer } from "../../hooks/use-stage-container";
@@ -186,26 +187,27 @@ function SheetStage({ state }: ExhibitRenderProps) {
 					筛选
 				</Button>
 			</div>
-			<ul className="m-0 list-none px-3">
-				{POSTS.map((item, index) => (
-					<li key={item.title}>
-						<button
-							type="button"
-							aria-current={row === index || undefined}
-							onClick={() => setRow(index)}
-							className={cn(
-								"grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg bg-transparent px-3 py-2.5 text-left text-14 outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring",
-								row === index && "bg-muted",
-							)}
-						>
-							<span className="truncate">{item.title}</span>
-							<span className="font-mono text-12 text-muted-foreground">
-								{item.date}
-							</span>
-						</button>
-					</li>
-				))}
-			</ul>
+			<ListHighlight>
+				<ul className="m-0 list-none px-3">
+					{POSTS.map((item, index) => (
+						<li key={item.title}>
+							<ListHighlightItem active={row === index}>
+								<button
+									type="button"
+									aria-current={row === index || undefined}
+									onClick={() => setRow(index)}
+									className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg bg-transparent px-3 py-2.5 text-left text-14 outline-none"
+								>
+									<span className="truncate">{item.title}</span>
+									<span className="font-mono text-12 text-muted-foreground">
+										{item.date}
+									</span>
+								</button>
+							</ListHighlightItem>
+						</li>
+					))}
+				</ul>
+			</ListHighlight>
 			<Sheet
 				modal={false}
 				open={post !== null}

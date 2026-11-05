@@ -18,12 +18,14 @@
 @import "./components/kbd/kbd.css";
 @import "./components/label/label.css";
 @import "./components/link-card/link-card.css";
+@import "./components/list-highlight/list-highlight.css";
 @import "./components/overlay-scroll/overlay-scroll.css" layer(components);
 @import "./components/popover/popover.css";
 @import "./components/prompt-dialog/prompt-dialog.css";
 @import "./components/radio/radio.css";
 @import "./components/search-input/search-input.css";
 @import "./components/segmented/segmented.css";
+@import "./components/select/select.css" layer(components);
 @import "./components/separator/separator.css";
 @import "./components/sheet/sheet.css";
 @import "./components/skeleton/skeleton.css";

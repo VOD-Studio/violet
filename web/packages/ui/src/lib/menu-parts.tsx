@@ -6,20 +6,19 @@ import type { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
 import { composeEventHandlers, useComposedRefs, useControllableState } from "radix-ui/internal";
 import {
 	type ComponentProps,
-	type CSSProperties,
 	createContext,
 	isValidElement,
 	type MutableRefObject,
 	type PointerEvent,
 	type ReactElement,
 	type ReactNode,
-	type Ref,
 	useContext,
 	useEffect,
 	useMemo,
 	useRef,
 	useState,
 } from "react";
+import { ListHighlight, ListHighlightItem } from "../components/list-highlight";
 import { pinyinInitials } from "./pinyin-initials";
 
 /** 操作菜单与右键菜单共用的 Radix 菜单部件；两个单元的 Root、Trigger、Content 各自封装。 */
@@ -91,102 +90,11 @@ function useSubGrace(onPointerMove: ((event: PointerEvent<HTMLDivElement>) => vo
 	});
 }
 
-/** 面板内当前项的底色块：随悬停与键盘焦点滑动，几何由测量写入 CSS 变量。 */
-interface HighlightMark {
-	x: number;
-	y: number;
-	width: number;
-	height: number;
-	visible: boolean;
-	/** 色块刚出现或刚从隐藏恢复：直接落位，不从旧位置滑过来。 */
-	jump: boolean;
-}
-
-const ITEM_SELECTOR = '[role^="menuitem"]';
-
-/** 面板的内部状态，由 {@link useMenuSurface} 创建、交给 {@link MenuSurfaceBody} 渲染。 */
-export interface MenuSurface {
-	ref: (node: HTMLDivElement | null) => void;
-	onFocus: NonNullable<ComponentProps<"div">["onFocus"]>;
-	mark: HighlightMark | null;
-	grace: GraceState;
-}
-
-/**
- * 面板（含子菜单）共用的内部状态：当前项底色块、宽限计时。
- * 底色块依赖焦点：Radix 悬停时会聚焦项，离开项时把焦点还给面板，键盘也走同一条路径。
- */
-export function useMenuSurface({
-	ref,
-	onFocus,
-}: {
-	ref?: Ref<HTMLDivElement>;
-	onFocus?: ComponentProps<"div">["onFocus"];
-}): MenuSurface {
-	const surfaceRef = useRef<HTMLDivElement | null>(null);
-	const composedRef = useComposedRefs(ref, surfaceRef);
-	const [mark, setMark] = useState<HighlightMark | null>(null);
+/** 每层面板各自持有子菜单指针宽限，并在卸载时清理计时器。 */
+export function MenuSurfaceBody({ children }: { children?: ReactNode }) {
 	const [grace] = useState(createGrace);
-
 	useEffect(() => () => clearTimeout(grace.timer), [grace]);
-
-	const handleFocus = composeEventHandlers(onFocus, (event: React.FocusEvent<HTMLDivElement>) => {
-		const surface = surfaceRef.current;
-		if (!surface || !(event.target instanceof HTMLElement)) return;
-		// React 事件会穿过 Portal 与内嵌的子菜单冒泡上来，只处理本面板自己的项
-		const owner = event.target.closest("[data-radix-menu-content]");
-		if (owner !== surface) return;
-		const item = event.target.closest<HTMLElement>(ITEM_SELECTOR);
-		if (!item || item.hasAttribute("data-disabled")) {
-			setMark((previous) => (previous?.visible ? { ...previous, visible: false } : previous));
-			return;
-		}
-		// 用包围盒相减而不是 offsetTop：项可能在带自己定位或滚动的包裹元素里；同属一个变换，差值不受浮出动画影响
-		const box = surface.getBoundingClientRect();
-		const rect = item.getBoundingClientRect();
-		setMark((previous) => ({
-			x: rect.left - box.left - surface.clientLeft + surface.scrollLeft,
-			y: rect.top - box.top - surface.clientTop + surface.scrollTop,
-			width: rect.width,
-			height: rect.height,
-			visible: true,
-			jump: !previous?.visible,
-		}));
-	});
-
-	return { ref: composedRef, onFocus: handleFocus, mark, grace };
-}
-
-/** 面板内容：底色块与宽限上下文，放在 Content 的 children 最前。 */
-export function MenuSurfaceBody({
-	surface,
-	children,
-}: {
-	surface: MenuSurface;
-	children?: ReactNode;
-}) {
-	const { mark, grace } = surface;
-	return (
-		<GraceContext.Provider value={grace}>
-			{mark && (
-				<span
-					aria-hidden="true"
-					className="v-dropdown-menu__highlight"
-					data-visible={mark.visible ? "true" : "false"}
-					data-jump={mark.jump ? "true" : undefined}
-					style={
-						{
-							"--v-menu-hl-x": `${mark.x}px`,
-							"--v-menu-hl-y": `${mark.y}px`,
-							"--v-menu-hl-w": `${mark.width}px`,
-							"--v-menu-hl-h": `${mark.height}px`,
-						} as CSSProperties
-					}
-				/>
-			)}
-			{children}
-		</GraceContext.Provider>
-	);
+	return <GraceContext.Provider value={grace}>{children}</GraceContext.Provider>;
 }
 
 /** 各单元的 Shortcut 组件：它们的文字是快捷键提示，不属于项的标签。 */
@@ -284,25 +192,27 @@ export function createMenuParts(slot: MenuSlot, Primitive: MenuPrimitive): MenuP
 	}: MenuItemProps) {
 		const handlePointerMove = useSubGrace(onPointerMove);
 		return (
-			<Primitive.Item
-				data-slot={`${slot}-item`}
-				data-inset={inset ? "" : undefined}
-				data-variant={variant}
-				className={cn("v-dropdown-menu__item", className)}
-				textValue={typeaheadValue(textValue, children)}
-				onPointerMove={handlePointerMove}
-				{...props}
-			>
-				{/* 没有原因时只传 children 本身：asChild 要求单个子元素 */}
-				{reason ? (
-					<>
-						{children}
-						<span className="v-dropdown-menu__reason">{reason}</span>
-					</>
-				) : (
-					children
-				)}
-			</Primitive.Item>
+			<ListHighlightItem>
+				<Primitive.Item
+					data-slot={`${slot}-item`}
+					data-inset={inset ? "" : undefined}
+					data-variant={variant}
+					className={cn("v-dropdown-menu__item", className)}
+					textValue={typeaheadValue(textValue, children)}
+					onPointerMove={handlePointerMove}
+					{...props}
+				>
+					{/* 没有原因时只传 children 本身：asChild 要求单个子元素 */}
+					{reason ? (
+						<>
+							{children}
+							<span className="v-dropdown-menu__reason">{reason}</span>
+						</>
+					) : (
+						children
+					)}
+				</Primitive.Item>
+			</ListHighlightItem>
 		);
 	}
 
@@ -317,26 +227,28 @@ export function createMenuParts(slot: MenuSlot, Primitive: MenuPrimitive): MenuP
 	}: MenuCheckboxItemProps) {
 		const handlePointerMove = useSubGrace(onPointerMove);
 		return (
-			<Primitive.CheckboxItem
-				data-slot={`${slot}-checkbox-item`}
-				className={cn("v-dropdown-menu__item", className)}
-				textValue={typeaheadValue(textValue, children)}
-				onPointerMove={handlePointerMove}
-				onSelect={(event) => {
-					if (!closeOnSelect) event.preventDefault();
-					onSelect?.(event);
-				}}
-				{...props}
-			>
-				<span className="v-dropdown-menu__mark" aria-hidden="true">
-					<span className="v-dropdown-menu__box">
-						<Primitive.ItemIndicator forceMount className="v-dropdown-menu__check">
-							<CheckIcon />
-						</Primitive.ItemIndicator>
+			<ListHighlightItem>
+				<Primitive.CheckboxItem
+					data-slot={`${slot}-checkbox-item`}
+					className={cn("v-dropdown-menu__item", className)}
+					textValue={typeaheadValue(textValue, children)}
+					onPointerMove={handlePointerMove}
+					onSelect={(event) => {
+						if (!closeOnSelect) event.preventDefault();
+						onSelect?.(event);
+					}}
+					{...props}
+				>
+					<span className="v-dropdown-menu__mark" aria-hidden="true">
+						<span className="v-dropdown-menu__box">
+							<Primitive.ItemIndicator forceMount className="v-dropdown-menu__check">
+								<CheckIcon />
+							</Primitive.ItemIndicator>
+						</span>
 					</span>
-				</span>
-				{children}
-			</Primitive.CheckboxItem>
+					{children}
+				</Primitive.CheckboxItem>
+			</ListHighlightItem>
 		);
 	}
 
@@ -362,20 +274,22 @@ export function createMenuParts(slot: MenuSlot, Primitive: MenuPrimitive): MenuP
 	}: ComponentProps<typeof DropdownMenuPrimitive.RadioItem>) {
 		const handlePointerMove = useSubGrace(onPointerMove);
 		return (
-			<Primitive.RadioItem
-				data-slot={`${slot}-radio-item`}
-				className={cn("v-dropdown-menu__item", className)}
-				textValue={typeaheadValue(textValue, children)}
-				onPointerMove={handlePointerMove}
-				{...props}
-			>
-				<span className="v-dropdown-menu__mark" aria-hidden="true">
-					<Primitive.ItemIndicator forceMount className="v-dropdown-menu__check">
-						<CheckIcon />
-					</Primitive.ItemIndicator>
-				</span>
-				{children}
-			</Primitive.RadioItem>
+			<ListHighlightItem>
+				<Primitive.RadioItem
+					data-slot={`${slot}-radio-item`}
+					className={cn("v-dropdown-menu__item", className)}
+					textValue={typeaheadValue(textValue, children)}
+					onPointerMove={handlePointerMove}
+					{...props}
+				>
+					<span className="v-dropdown-menu__mark" aria-hidden="true">
+						<Primitive.ItemIndicator forceMount className="v-dropdown-menu__check">
+							<CheckIcon />
+						</Primitive.ItemIndicator>
+					</span>
+					{children}
+				</Primitive.RadioItem>
+			</ListHighlightItem>
 		);
 	}
 
@@ -478,19 +392,21 @@ export function createMenuParts(slot: MenuSlot, Primitive: MenuPrimitive): MenuP
 			},
 		);
 		return (
-			<Primitive.SubTrigger
-				data-slot={`${slot}-sub-trigger`}
-				data-inset={inset ? "" : undefined}
-				className={cn("v-dropdown-menu__item v-dropdown-menu__sub-trigger", className)}
-				textValue={typeaheadValue(textValue, children)}
-				ref={composedRef}
-				onPointerMove={handlePointerMove}
-				onPointerLeave={handlePointerLeave}
-				{...props}
-			>
-				{children}
-				<ChevronRightIcon className="v-dropdown-menu__chevron" aria-hidden="true" />
-			</Primitive.SubTrigger>
+			<ListHighlightItem>
+				<Primitive.SubTrigger
+					data-slot={`${slot}-sub-trigger`}
+					data-inset={inset ? "" : undefined}
+					className={cn("v-dropdown-menu__item v-dropdown-menu__sub-trigger", className)}
+					textValue={typeaheadValue(textValue, children)}
+					ref={composedRef}
+					onPointerMove={handlePointerMove}
+					onPointerLeave={handlePointerLeave}
+					{...props}
+				>
+					{children}
+					<ChevronRightIcon className="v-dropdown-menu__chevron" aria-hidden="true" />
+				</Primitive.SubTrigger>
+			</ListHighlightItem>
 		);
 	}
 
@@ -506,30 +422,33 @@ export function createMenuParts(slot: MenuSlot, Primitive: MenuPrimitive): MenuP
 	}: ComponentProps<typeof DropdownMenuPrimitive.SubContent>) {
 		const parentGrace = useContext(GraceContext);
 		const sub = useContext(SubContext);
-		const surface = useMenuSurface({ ref, onFocus });
 		return (
-			<Primitive.SubContent
-				data-slot={`${slot}-sub-content`}
-				sideOffset={sideOffset}
-				className={cn(
-					"v-float v-dropdown-menu__content v-dropdown-menu__sub-content",
-					slot === "context-menu" && "v-context-menu__sub-content",
-					className,
-				)}
-				{...props}
-				ref={surface.ref}
-				onFocus={surface.onFocus}
-				onPointerMove={composeEventHandlers(onPointerMove, () => resetGrace(parentGrace))}
-				// Radix 的子菜单 Esc 会收起整个菜单；设计稿要求只收起子菜单，焦点回到触发项。
-				// 子菜单已在退场时（连按两次 Esc）交还给 Radix，才能收起整个菜单
-				onEscapeKeyDown={composeEventHandlers(onEscapeKeyDown, (event) => {
-					if (!sub?.isOpen()) return;
-					event.preventDefault();
-					sub.close();
-				})}
-			>
-				<MenuSurfaceBody surface={surface}>{children}</MenuSurfaceBody>
-			</Primitive.SubContent>
+			<ListHighlight mode="focus">
+				<Primitive.SubContent
+					data-slot={`${slot}-sub-content`}
+					sideOffset={sideOffset}
+					className={cn(
+						"v-float v-dropdown-menu__content v-dropdown-menu__sub-content",
+						slot === "context-menu" && "v-context-menu__sub-content",
+						className,
+					)}
+					{...props}
+					ref={ref}
+					onFocus={onFocus}
+					onPointerMove={composeEventHandlers(onPointerMove, () =>
+						resetGrace(parentGrace),
+					)}
+					// Radix 的子菜单 Esc 会收起整个菜单；设计稿要求只收起子菜单，焦点回到触发项。
+					// 子菜单已在退场时（连按两次 Esc）交还给 Radix，才能收起整个菜单
+					onEscapeKeyDown={composeEventHandlers(onEscapeKeyDown, (event) => {
+						if (!sub?.isOpen()) return;
+						event.preventDefault();
+						sub.close();
+					})}
+				>
+					<MenuSurfaceBody>{children}</MenuSurfaceBody>
+				</Primitive.SubContent>
+			</ListHighlight>
 		);
 	}
 
