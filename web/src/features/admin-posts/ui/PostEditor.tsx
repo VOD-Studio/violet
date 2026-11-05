@@ -37,6 +37,7 @@ import {
 	ConfirmDialog,
 	Input,
 	Sheet,
+	SheetBody,
 	SheetContent,
 	SheetHeader,
 	SheetTitle,
@@ -571,13 +572,13 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 							<PostEditorSidebar control={control} register={register} />
 						</div>
 						<Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
-							<SheetContent side="right" className="w-[85vw] max-w-sm lg:hidden">
+							<SheetContent className="lg:hidden" aria-describedby={undefined}>
 								<SheetHeader>
 									<SheetTitle>文章设置</SheetTitle>
 								</SheetHeader>
-								<div className="flex-1 overflow-y-auto">
+								<SheetBody>
 									<PostEditorSidebar control={control} register={register} />
-								</div>
+								</SheetBody>
 							</SheetContent>
 						</Sheet>
 					</>

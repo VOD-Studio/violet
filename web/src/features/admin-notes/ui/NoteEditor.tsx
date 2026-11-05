@@ -16,7 +16,15 @@ import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { RichTextEditor } from "@features/editor";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "@tanstack/react-router";
-import { Input, Sheet, SheetContent, SheetHeader, SheetTitle, Spinner } from "@violet/ui";
+import {
+	Input,
+	Sheet,
+	SheetBody,
+	SheetContent,
+	SheetHeader,
+	SheetTitle,
+	Spinner,
+} from "@violet/ui";
 import { cn } from "cn";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -239,16 +247,18 @@ export function NoteEditor({ id }: NoteEditorProps) {
 
 				{/* 移动端侧滑抽屉 */}
 				<Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
-					<SheetContent side="right" className="w-[85vw] max-w-sm overflow-y-auto">
-						<SheetHeader className="mb-4">
+					<SheetContent aria-describedby={undefined}>
+						<SheetHeader>
 							<SheetTitle>笔记设置</SheetTitle>
 						</SheetHeader>
-						<NoteEditorSidebar
-							note={note}
-							contentLength={contentMD.length}
-							tags={currentTags}
-							onTagsChange={handleTagsChange}
-						/>
+						<SheetBody>
+							<NoteEditorSidebar
+								note={note}
+								contentLength={contentMD.length}
+								tags={currentTags}
+								onTagsChange={handleTagsChange}
+							/>
+						</SheetBody>
 					</SheetContent>
 				</Sheet>
 			</div>

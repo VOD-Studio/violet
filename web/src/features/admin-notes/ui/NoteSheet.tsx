@@ -200,12 +200,9 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 
 	return (
 		<Sheet open={open} onOpenChange={onOpenChange}>
-			<SheetContent
-				side="right"
-				className="flex h-full w-full flex-col gap-0 overflow-hidden sm:max-w-2xl lg:max-w-3xl"
-			>
+			<SheetContent className="[--v-sheet-width:42rem] lg:[--v-sheet-width:48rem]">
 				{/* 顶栏头部 */}
-				<SheetHeader className="border-edge-hairline flex flex-row items-center justify-between border-b px-6 py-4 pr-12">
+				<SheetHeader className="flex-row items-center justify-between border-b border-edge-hairline">
 					<div className="flex items-center gap-3">
 						<SheetTitle className="text-lg font-semibold tracking-tight">
 							{isEdit ? "编辑笔记" : "新建笔记"}

@@ -1,6 +1,6 @@
 import type { SeriesDetail } from "@features/series/model/types";
 import { Link } from "@tanstack/react-router";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@violet/ui";
+import { Sheet, SheetBody, SheetContent, SheetHeader, SheetTitle } from "@violet/ui";
 import { BookOpen } from "lucide-react";
 import { useState } from "react";
 
@@ -73,19 +73,17 @@ export function SeriesTocFab({
 			>
 				<BookOpen className="size-5" />
 			</button>
-			<SheetContent side="right" className="flex w-80 max-w-[85vw] flex-col p-0">
-				<SheetHeader className="border-b border-edge-hairline">
-					<SheetTitle className="font-mono text-xs tracking-wider text-muted-foreground uppercase">
-						《{detail.title}》目录
-					</SheetTitle>
+			<SheetContent size="sm" aria-describedby={undefined}>
+				<SheetHeader>
+					<SheetTitle>《{detail.title}》目录</SheetTitle>
 				</SheetHeader>
-				<div className="scrollbar-none min-h-0 flex-1 overflow-y-auto px-4 py-4">
+				<SheetBody className="scrollbar-none">
 					<ChapterList
 						detail={detail}
 						currentSlug={currentSlug}
 						onNavigate={() => setOpen(false)}
 					/>
-				</div>
+				</SheetBody>
 			</SheetContent>
 		</Sheet>
 	);

@@ -223,12 +223,11 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
 	return (
 		<Sheet open={open} onOpenChange={onOpenChange}>
 			<SheetContent
-				side="right"
-				className="w-full gap-0 overflow-hidden sm:max-w-2xl lg:max-w-4xl h-full"
+				className="[--v-sheet-width:42rem] lg:[--v-sheet-width:56rem]"
 				onInteractOutside={blockIfFloatingActive}
 				onPointerDownOutside={blockIfFloatingActive}
 			>
-				<SheetHeader className="border-b border-edge-hairline pr-12">
+				<SheetHeader className="border-b border-edge-hairline">
 					<SheetTitle>{isEdit ? "编辑公告" : "创建公告"}</SheetTitle>
 					<SheetDescription>
 						{isEdit ? "修改公告内容与生效设置" : "新建一条站点公告"}

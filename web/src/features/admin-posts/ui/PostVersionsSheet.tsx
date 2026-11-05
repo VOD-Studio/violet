@@ -11,6 +11,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 	Sheet,
+	SheetBody,
 	SheetContent,
 	SheetDescription,
 	SheetHeader,
@@ -42,8 +43,8 @@ export function PostVersionsSheet({
 	return (
 		<>
 			<Sheet open={open} onOpenChange={onOpenChange}>
-				<SheetContent className="w-100 sm:w-120 overflow-y-auto">
-					<SheetHeader className="px-6 pt-6 pb-4">
+				<SheetContent size="lg">
+					<SheetHeader>
 						<SheetTitle className="flex items-center gap-2">
 							<History className="size-5" />
 							历史版本
@@ -51,17 +52,16 @@ export function PostVersionsSheet({
 						<SheetDescription>查看并恢复之前的文章快照</SheetDescription>
 					</SheetHeader>
 
-					<div className="flex flex-col gap-3 px-6 pb-6">
+					<SheetBody className="flex flex-col gap-3">
 						{isLoading ? (
 							<div className="flex justify-center p-8">
 								<Spinner size={24} className="text-primary" aria-hidden="true" />
 							</div>
 						) : versions?.length ? (
-							versions.map((v, index) => (
+							versions.map((v) => (
 								<div
 									key={v.id}
-									className="group relative overflow-hidden rounded-xl border bg-background p-4 transition-all duration-300 hover:-translate-y-1 hover:border-selected-foreground hover:shadow-lg dark:hover:shadow-decoration/5 animate-in slide-in-from-bottom-4 fade-in fill-mode-backwards"
-									style={{ animationDelay: `${index * 50}ms` }}
+									className="group relative overflow-hidden rounded-xl border bg-background p-4 transition-colors duration-300 hover:border-selected-foreground"
 								>
 									<div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
@@ -101,7 +101,7 @@ export function PostVersionsSheet({
 						) : (
 							<p className="text-sm text-muted-foreground">暂无历史版本记录</p>
 						)}
-					</div>
+					</SheetBody>
 				</SheetContent>
 			</Sheet>
 
