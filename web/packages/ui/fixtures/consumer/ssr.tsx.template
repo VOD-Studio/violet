@@ -34,6 +34,13 @@ import { HoverCard as LeafHoverCard, HoverCardContent as LeafHoverCardContent, H
 import { Popover as LeafPopover, PopoverContent as LeafPopoverContent, PopoverTrigger as LeafPopoverTrigger } from "@violet/ui/popover";
 import { Toaster as LeafToaster } from "@violet/ui/sonner";
 import { Tooltip as LeafTooltip, TooltipContent as LeafTooltipContent, TooltipProvider as LeafTooltipProvider, TooltipTrigger as LeafTooltipTrigger } from "@violet/ui/tooltip";
+import { CommandList, ConfirmDialog, Dialog, DialogContent, DialogTitle, DialogTrigger, Drawer, DrawerContent, DrawerTitle, DrawerTrigger, Modal, PromptDialog, Sheet, SheetContent, SheetTitle, SheetTrigger } from "@violet/ui";
+import { CommandList as LeafCommandList } from "@violet/ui/command";
+import { ConfirmDialog as LeafConfirmDialog } from "@violet/ui/confirm-dialog";
+import { Dialog as LeafDialog, DialogContent as LeafDialogContent, DialogTitle as LeafDialogTitle, DialogTrigger as LeafDialogTrigger, Modal as LeafModal } from "@violet/ui/dialog";
+import { Drawer as LeafDrawer, DrawerContent as LeafDrawerContent, DrawerTitle as LeafDrawerTitle, DrawerTrigger as LeafDrawerTrigger } from "@violet/ui/drawer";
+import { PromptDialog as LeafPromptDialog } from "@violet/ui/prompt-dialog";
+import { Sheet as LeafSheet, SheetContent as LeafSheetContent, SheetTitle as LeafSheetTitle, SheetTrigger as LeafSheetTrigger } from "@violet/ui/sheet";
 
 const cardProps = { href: "https://www.example.com/guide#native", title: "y_defect的推文", description: "@y_defect的推文", siteName: "EXAMPLE.COM", imageSrc: "https://example.com/logo.png", imageAlt: "Example logo" };
 const card = renderToString(<LinkCard {...cardProps} />);
@@ -287,4 +294,31 @@ assert.doesNotMatch(contextMenu, /复制/);
 const toaster = renderToString(<Toaster />);
 assert.equal(toaster, renderToString(<LeafToaster />));
 assert.match(toaster, /<section\b[^>]*aria-label="通知/);
-console.log("Independent root/leaf SSR, Input, Checkbox, ImagePixelReveal, UploadTile, Dropdown, Segmented, Avatar, Badge, Kbd, Card, Separator, Skeleton, Popover, HoverCard, Tooltip, DropdownMenu, ContextMenu and Toaster semantics passed.");
+
+const modalTree = (Root: typeof Dialog, Trigger: typeof DialogTrigger, Content: typeof DialogContent, Title: typeof DialogTitle, name: string) => (
+	<Root><Trigger asChild><button type="button">{name}</button></Trigger><Content aria-describedby={undefined}><Title>{name}</Title>框里的内容</Content></Root>
+);
+const dialog = renderToString(modalTree(Dialog, DialogTrigger, DialogContent, DialogTitle, "编辑资料"));
+assert.equal(dialog, renderToString(modalTree(LeafDialog, LeafDialogTrigger, LeafDialogContent, LeafDialogTitle, "编辑资料")));
+assert.match(dialog, /aria-haspopup="dialog"/);
+assert.match(dialog, /aria-expanded="false"/);
+assert.doesNotMatch(dialog, /框里的内容/);
+const sheet = renderToString(modalTree(Sheet as typeof Dialog, SheetTrigger as typeof DialogTrigger, SheetContent as typeof DialogContent, SheetTitle as typeof DialogTitle, "筛选"));
+assert.equal(sheet, renderToString(modalTree(LeafSheet as typeof Dialog, LeafSheetTrigger as typeof DialogTrigger, LeafSheetContent as typeof DialogContent, LeafSheetTitle as typeof DialogTitle, "筛选")));
+assert.match(sheet, /aria-haspopup="dialog"/);
+assert.doesNotMatch(sheet, /框里的内容/);
+const drawer = renderToString(modalTree(Drawer as typeof Dialog, DrawerTrigger as typeof DialogTrigger, DrawerContent as typeof DialogContent, DrawerTitle as typeof DialogTitle, "分享"));
+assert.equal(drawer, renderToString(modalTree(LeafDrawer as typeof Dialog, LeafDrawerTrigger as typeof DialogTrigger, LeafDrawerContent as typeof DialogContent, LeafDrawerTitle as typeof DialogTitle, "分享")));
+assert.match(drawer, /aria-haspopup="dialog"/);
+assert.doesNotMatch(drawer, /框里的内容/);
+// 关闭的模态单元在服务端不输出任何内容
+for (const [name, node, leaf] of [
+	["Modal", <Modal open={false} onOpenChange={() => {}} title="新建角色">表单</Modal>, <LeafModal open={false} onOpenChange={() => {}} title="新建角色">表单</LeafModal>],
+	["ConfirmDialog", <ConfirmDialog open={false} onOpenChange={() => {}} title="永久删除？" onConfirm={() => {}} />, <LeafConfirmDialog open={false} onOpenChange={() => {}} title="永久删除？" onConfirm={() => {}} />],
+	["PromptDialog", <PromptDialog open={false} onOpenChange={() => {}} title="重命名" onConfirm={() => {}} />, <LeafPromptDialog open={false} onOpenChange={() => {}} title="重命名" onConfirm={() => {}} />],
+	["CommandList", <CommandList open={false} onOpenChange={() => {}} items={[]} groups={[]} query="" onQueryChange={() => {}} />, <LeafCommandList open={false} onOpenChange={() => {}} items={[]} groups={[]} query="" onQueryChange={() => {}} />],
+] as const) {
+	assert.equal(renderToString(node), "", `${name} rendered while closed.`);
+	assert.equal(renderToString(leaf), "", `Leaf ${name} rendered while closed.`);
+}
+console.log("Independent root/leaf SSR, Input, Checkbox, ImagePixelReveal, UploadTile, Dropdown, Segmented, Avatar, Badge, Kbd, Card, Separator, Skeleton, Popover, HoverCard, Tooltip, DropdownMenu, ContextMenu, Toaster, Dialog, Modal, ConfirmDialog, PromptDialog, Sheet, Drawer and CommandList semantics passed.");

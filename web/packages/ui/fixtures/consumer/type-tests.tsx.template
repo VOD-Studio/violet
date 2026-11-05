@@ -2,7 +2,7 @@ import { ImagePixelReveal, Input, Label, Textarea, type ButtonProps, type Checkb
 import { Button } from "@violet/ui/button";
 import { Checkbox } from "@violet/ui/checkbox";
 import { ImagePixelReveal as LeafImagePixelReveal, type ImagePixelRevealProps as LeafImagePixelRevealProps, type PixelRevealVariant as LeafPixelRevealVariant } from "@violet/ui/image-pixel-reveal";
-import { Modal } from "@violet/ui/legacy";
+import { Pagination } from "@violet/ui/legacy";
 import { Input as LeafInput, type InputProps as LeafInputProps } from "@violet/ui/input";
 import { SearchInput, type SearchInputProps } from "@violet/ui";
 import { SearchInput as LeafSearchInput, type SearchInputProps as LeafSearchInputProps } from "@violet/ui/search-input";
@@ -30,6 +30,7 @@ import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, D
 import { DropdownMenu as LeafDropdownMenu, DropdownMenuContent as LeafDropdownMenuContent, DropdownMenuItem as LeafDropdownMenuItem, DropdownMenuTrigger as LeafDropdownMenuTrigger } from "@violet/ui/dropdown-menu";
 import { Popover as LeafPopover, PopoverContent as LeafPopoverContent, PopoverTrigger as LeafPopoverTrigger } from "@violet/ui/popover";
 import { Toaster as LeafToaster } from "@violet/ui/sonner";
+import { type CommandItem, CommandList, ConfirmDialog, Dialog, DialogBody, DialogClose, DialogContent, type DialogContentProps, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, Drawer, DrawerBody, DrawerContent, DrawerHeader, DrawerTitle, Modal, PromptDialog, Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@violet/ui";
 import { Tooltip as LeafTooltip, TooltipContent as LeafTooltipContent, TooltipTrigger as LeafTooltipTrigger } from "@violet/ui/tooltip";
 
 const linkCardProps: LinkCardProps = {
@@ -137,7 +138,7 @@ buttonVariants({ variant: "primary", className: "consumer-class" });
 // @ts-expect-error Unsupported variants must stay compile-time errors.
 buttonVariants({ variant: "unknown" });
 export const example = <><Button {...button}>保存</Button><Input {...field} /><LeafInput {...leafField} /><Input /><Label>名称</Label><Textarea /></>;
-export const legacy = Modal;
+export const legacy = Pagination;
 
 const checkbox: CheckboxProps = {
 	ref: createRef<HTMLButtonElement>(), name: "updates", value: "weekly", required: true,
@@ -386,6 +387,48 @@ export const overlayExamples = <>
 	<Toaster {...toasterProps} />
 	<LeafToaster hotkey={["altKey", "KeyT"]} visibleToasts={3} />
 </>;
+const dialogContentProps: DialogContentProps = { size: "lg", entrance: "settle", overlay: false, dirty: true, container: null };
+const commandItems: CommandItem[] = [
+	{ id: "post-1", label: "独库公路，六天", group: "posts", onSelect: ({ newTab }) => void newTab },
+	{ id: "cmd-theme", label: "切换主题", group: "commands", shortcut: ["mod", "shift", "t"], children: [{ id: "spring", label: "花朝", group: "" }] },
+];
+export const dialogFamily = <>
+	<Dialog onOpenChange={(open: boolean) => void open}>
+		<DialogTrigger asChild><button type="button">编辑资料</button></DialogTrigger>
+		<DialogContent {...dialogContentProps}>
+			<DialogHeader><DialogTitle>编辑资料</DialogTitle><DialogDescription>名字和简介会显示在评论旁边</DialogDescription></DialogHeader>
+			<DialogBody><input aria-label="昵称" /></DialogBody>
+			<DialogFooter><DialogClose asChild><button type="button">取消</button></DialogClose></DialogFooter>
+		</DialogContent>
+	</Dialog>
+	<Modal open onOpenChange={() => {}} title="新建角色" size="sm" footer={<button type="submit" form="role">创建</button>} dirty={false}>表单</Modal>
+	<ConfirmDialog open onOpenChange={() => {}} title="永久删除？" confirmLabel="永久删除" loading loadingLabel="正在删除…" error="网络中断" confirmText="Rust 全栈笔记" onConfirm={() => {}} />
+	<PromptDialog open onOpenChange={() => {}} title="重命名" maxLength={24} onConfirm={(value: string) => value.length > 0} />
+	<Sheet modal={false}>
+		<SheetContent side="left" size="sm" contentKey={1}>
+			<SheetHeader><SheetTitle>筛选</SheetTitle></SheetHeader>
+			<SheetBody>标签</SheetBody>
+			<SheetFooter><button type="button">重置</button></SheetFooter>
+		</SheetContent>
+	</Sheet>
+	<Drawer>
+		<DrawerContent snapPoints="half-full">
+			<DrawerHeader><DrawerTitle>筛选</DrawerTitle></DrawerHeader>
+			<DrawerBody>标签</DrawerBody>
+		</DrawerContent>
+	</Drawer>
+	<CommandList open onOpenChange={() => {}} items={commandItems} groups={[{ id: "posts", label: "文章" }]} query="" onQueryChange={() => {}} searching fullTextGroup="fulltext" onSearchAll={(query: string) => void query} />
+</>;
+// @ts-expect-error 对话框宽度只有 sm、md、lg、xl 四档。
+export const invalidDialogSize = <DialogContent size="huge" />;
+// @ts-expect-error 侧边面板只从左右两侧滑出，底部用抽屉。
+export const invalidSheetSide = <SheetContent side="bottom" />;
+// @ts-expect-error 抽屉只有随内容与半屏全屏两种高度档。
+export const invalidDrawerSnap = <DrawerContent snapPoints="three" />;
+// @ts-expect-error 确认框必须给出执行动作。
+export const invalidConfirm = <ConfirmDialog open onOpenChange={() => {}} title="永久删除？" />;
+// @ts-expect-error 命令项必须声明所属分组。
+export const invalidCommandItem: CommandItem = { id: "orphan", label: "无组" };
 // @ts-expect-error 提示的快捷键是键名数组，不是字符串。
 export const invalidTooltipShortcut = <TooltipContent shortcut="⌘B">加粗</TooltipContent>;
 // @ts-expect-error 菜单项的 variant 只有 default 与 destructive。
