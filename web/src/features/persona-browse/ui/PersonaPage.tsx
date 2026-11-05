@@ -11,9 +11,9 @@ import { BackToTop } from "@shared/ui/back-to-top";
 import { ImagePreview } from "@shared/ui/image-preview";
 import { localeLabel } from "@shared/ui/locale-switcher";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
+import { PageLoading } from "@shared/ui/page-loading";
 import { PhotoStack } from "@shared/ui/photo-stack";
 import { ImagePixelReveal } from "@violet/ui";
-import { RuaLoading } from "@widgets/PersonaMotion";
 import { ArrowDown } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
@@ -50,7 +50,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 	if (isPending) {
 		return (
 			<main className={`identity-theme ${styles.page}`}>
-				<RuaLoading label="正在整理人设档案…" />
+				<PageLoading label="正在整理人设档案…" />
 			</main>
 		);
 	}
