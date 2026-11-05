@@ -580,7 +580,7 @@ function RowActions({
 								})
 							}
 						>
-							<Pencil className="size-3.5" />
+							<Pencil />
 							编辑
 						</DropdownMenuItem>
 					) : null}
@@ -589,19 +589,19 @@ function RowActions({
 							<DropdownMenuSeparator />
 							{row.status !== "published" ? (
 								<DropdownMenuItem onClick={() => changeStatus("published")}>
-									<Send className="size-3.5" />
+									<Send />
 									发布
 								</DropdownMenuItem>
 							) : null}
 							{row.status !== "draft" ? (
 								<DropdownMenuItem onClick={() => changeStatus("draft")}>
-									<FileEdit className="size-3.5" />
+									<FileEdit />
 									移至草稿
 								</DropdownMenuItem>
 							) : null}
 							{row.status !== "archived" ? (
 								<DropdownMenuItem onClick={() => changeStatus("archived")}>
-									<Archive className="size-3.5" />
+									<Archive />
 									归档
 								</DropdownMenuItem>
 							) : null}
@@ -611,7 +611,7 @@ function RowActions({
 						<>
 							<DropdownMenuSeparator />
 							<DropdownMenuItem onClick={toggleFeatured}>
-								<Star className="size-3.5" />
+								<Star />
 								{row.is_featured ? "取消加精" : "加精"}
 							</DropdownMenuItem>
 						</>
@@ -620,7 +620,7 @@ function RowActions({
 						<>
 							<DropdownMenuSeparator />
 							<DropdownMenuItem variant="destructive" onClick={() => onDelete(row)}>
-								<Trash2 className="size-3.5" />
+								<Trash2 />
 								删除
 							</DropdownMenuItem>
 						</>

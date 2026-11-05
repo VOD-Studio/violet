@@ -5,6 +5,7 @@ import { buttonExhibit } from "./button";
 import { cardExhibit } from "./card";
 import { checkboxExhibit } from "./checkbox";
 import { dropdownExhibit } from "./dropdown";
+import { dropdownMenuExhibit } from "./dropdown-menu";
 import { imagePixelRevealExhibit } from "./image-pixel-reveal";
 import { indicatorExhibit } from "./indicator";
 import { inputExhibit } from "./input";
@@ -71,15 +72,7 @@ export const EXHIBITS: Exhibit[] = [
 	dropdownExhibit,
 	popoverExhibit,
 	tooltipExhibit,
-	{
-		id: "dropdown-menu",
-		name: "操作菜单",
-		units: ["dropdown-menu", "context-menu"],
-		zone: "stage",
-		category: "overlay",
-		footprint: { width: 320, height: 320 },
-		issue: 702,
-	},
+	dropdownMenuExhibit,
 	{
 		id: "sonner",
 		name: "轻提示",

@@ -269,7 +269,7 @@ function ColumnControlButton<T>({
 					<Columns3 className="size-3.5" />
 				</Button>
 			</DropdownMenuTrigger>
-			<DropdownMenuContent align="end" className="w-44">
+			<DropdownMenuContent align="end">
 				<DropdownMenuLabel className="flex items-center justify-between">
 					<span>显示列</span>
 					{anyHidden && onResetColumns && (
@@ -288,7 +288,6 @@ function ColumnControlButton<T>({
 					<DropdownMenuCheckboxItem
 						key={col.key}
 						checked={!hiddenKeys.has(col.key)}
-						onSelect={(e) => e.preventDefault()}
 						onCheckedChange={() => onToggleColumn(col.key)}
 					>
 						{labelOf(col.header)}

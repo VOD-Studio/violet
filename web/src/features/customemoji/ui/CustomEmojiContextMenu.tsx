@@ -15,9 +15,24 @@ interface CustomEmojiTarget {
 }
 
 /**
+ * 目标在自己的 ContextMenu 触发区内（如列表行上的行菜单）：事件留给那个菜单。
+ * 它打开时会 preventDefault，外层 Radix 触发器随之跳过，不会同时弹出两个菜单。
+ *
+ * 用最近的触发器是否就是外层这个来判断，而不是 DOM 包含关系：
+ * Portal 渲染（如陈列室的走近检视台）的内容不在这个 DOM 子树里，但 React 事件仍会穿过来。
+ */
+function insideNestedContextMenu(event: React.MouseEvent<HTMLDivElement>) {
+	if (!(event.target instanceof Element)) return false;
+	const selector = '[data-slot="context-menu-trigger"]';
+	const nearest = event.target.closest(selector);
+	return nearest !== null && nearest !== event.currentTarget.closest(selector);
+}
+
+/**
  * 全局自定义表情右键菜单：只有带 data-custom-emoji-id 的图片拦截浏览器菜单。
  *
- * 系统表情与普通内容在捕获阶段停止冒泡但不阻止默认行为，继续使用浏览器原生菜单。
+ * 系统表情与普通内容在捕获阶段停止冒泡但不阻止默认行为，继续使用浏览器原生菜单；
+ * 页面里自带 ContextMenu 的区域例外，事件照常交给它。
  */
 export function CustomEmojiContextMenu({ children }: { children: ReactNode }) {
 	const [target, setTarget] = useState<CustomEmojiTarget | null>(null);
@@ -33,7 +48,7 @@ export function CustomEmojiContextMenu({ children }: { children: ReactNode }) {
 				? eventTarget.closest<HTMLImageElement>("img[data-custom-emoji-id]")
 				: null;
 		if (!image || !event.currentTarget.contains(image)) {
-			event.stopPropagation();
+			if (!insideNestedContextMenu(event)) event.stopPropagation();
 			setTarget(null);
 			return;
 		}

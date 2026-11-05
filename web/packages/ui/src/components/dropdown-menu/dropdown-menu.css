@@ -1,0 +1,254 @@
+@import "../../styles/float.css";
+
+@layer components {
+	/*
+	 * 操作菜单与右键菜单共用的面板与项（UED 设计稿 DropdownMenu.dc.html 的 .k-mi / .k-sep / .k-lbl / .k-hl）。
+	 * 尺寸、时长与曲线是设计稿给定的单元局部值，颜色只用语义 token。
+	 * 出现与消失的位移、时长走 float.css 的 --v-float-* 变量。
+	 */
+	.v-dropdown-menu__content {
+		--v-menu-radius: var(--radius-12, 12px);
+		--v-menu-item-radius: 0.5rem;
+		--v-menu-mark-size: 1rem;
+		--v-menu-item-gap: 0.75rem;
+		--v-menu-item-inline: 0.625rem;
+		box-sizing: border-box;
+		position: relative;
+		isolation: isolate;
+		z-index: var(--layer-float, 60);
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		min-inline-size: 12.5rem;
+		max-inline-size: min(17.5rem, calc(100vw - 1rem));
+		max-block-size: var(--radix-popper-available-height);
+		padding: 0.375rem;
+		overflow-x: hidden;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		border: 1px solid var(--ol);
+		border-radius: var(--v-menu-radius);
+		background-color: var(--popover);
+		color: var(--popover-foreground);
+		box-shadow: var(--shadow-soft);
+		outline: none;
+	}
+
+	/* 子菜单比父菜单高一层，180ms 从父菜单一侧浮出 */
+	.v-dropdown-menu__sub-content {
+		--v-float-in: 180ms;
+		z-index: calc(var(--layer-float, 60) + 1);
+	}
+
+	.v-dropdown-menu__group {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.v-dropdown-menu__item {
+		position: relative;
+		z-index: 1;
+		box-sizing: border-box;
+		display: flex;
+		flex: none;
+		align-items: center;
+		gap: var(--v-menu-item-gap);
+		min-block-size: 2.25rem;
+		padding: 0.375rem var(--v-menu-item-inline);
+		border-radius: var(--v-menu-item-radius);
+		color: inherit;
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+		cursor: pointer;
+		outline: none;
+		user-select: none;
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	.v-dropdown-menu__item:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: -2px;
+	}
+
+	.v-dropdown-menu__item > :where(svg) {
+		flex: none;
+		inline-size: 1rem;
+		block-size: 1rem;
+		color: var(--muted-foreground);
+		pointer-events: none;
+	}
+
+	/* 没有图标或标记的项留出标记列，文字与同组带标记的项对齐 */
+	.v-dropdown-menu__item[data-inset] {
+		padding-inline-start: calc(
+			var(--v-menu-item-inline) +
+			var(--v-menu-mark-size) +
+			var(--v-menu-item-gap)
+		);
+	}
+
+	/* 不可用：变淡，悬停与键盘都不进入（Radix 不聚焦它，底色块不出现） */
+	.v-dropdown-menu__item:is([data-disabled], [aria-disabled="true"]) {
+		opacity: 0.45;
+		cursor: not-allowed;
+	}
+
+	.v-dropdown-menu__item[data-variant="destructive"],
+	.v-dropdown-menu__item[data-variant="destructive"] > :where(svg) {
+		color: var(--destructive-text);
+	}
+
+	.v-dropdown-menu__reason {
+		flex: none;
+		margin-inline-start: auto;
+		font-size: 0.75rem;
+		line-height: 1rem;
+		color: var(--muted-foreground);
+		white-space: nowrap;
+	}
+
+	.v-dropdown-menu__shortcut {
+		flex: none;
+		margin-inline-start: auto;
+		padding-inline-start: var(--v-menu-item-gap);
+		font-family: var(--font-sans, inherit);
+		font-size: 0.75rem;
+		font-weight: 500;
+		line-height: 1rem;
+		color: var(--muted-foreground);
+		white-space: nowrap;
+	}
+
+	.v-dropdown-menu__chevron {
+		margin-inline-start: auto;
+	}
+
+	.v-dropdown-menu__label {
+		padding: 0.375rem var(--v-menu-item-inline) 0.25rem;
+		font-size: 0.75rem;
+		line-height: 1rem;
+		color: var(--muted-foreground);
+		user-select: none;
+	}
+
+	.v-dropdown-menu__label[data-inset] {
+		padding-inline-start: calc(
+			var(--v-menu-item-inline) +
+			var(--v-menu-mark-size) +
+			var(--v-menu-item-gap)
+		);
+	}
+
+	/* 容器的 gap 已占 2，补到上下各 6 */
+	.v-dropdown-menu__separator {
+		block-size: 1px;
+		margin: 0.25rem 0.5rem;
+		background-color: var(--border);
+	}
+
+	/* 标记列：单选对勾与多选方框，固定 16 宽 */
+	.v-dropdown-menu__mark {
+		display: inline-flex;
+		flex: none;
+		align-items: center;
+		justify-content: center;
+		inline-size: var(--v-menu-mark-size);
+		block-size: var(--v-menu-mark-size);
+	}
+
+	.v-dropdown-menu__check {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.v-dropdown-menu__check[data-state="unchecked"] {
+		visibility: hidden;
+	}
+
+	.v-dropdown-menu__check > svg {
+		inline-size: 1rem;
+		block-size: 1rem;
+		stroke-width: 2.2;
+	}
+
+	.v-dropdown-menu__box {
+		box-sizing: border-box;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		inline-size: var(--v-menu-mark-size);
+		block-size: var(--v-menu-mark-size);
+		border-radius: 0.375rem;
+		background-color: var(--popover);
+		box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--foreground) 30%, transparent);
+		color: var(--primary-foreground);
+		transition:
+			background-color 160ms ease-out,
+			box-shadow 160ms ease-out;
+	}
+
+	.v-dropdown-menu__item[aria-checked="true"] .v-dropdown-menu__box {
+		background-color: var(--primary);
+		box-shadow: none;
+	}
+
+	/* 对勾在方框里描出：路径始终存在，未选中时不描 */
+	.v-dropdown-menu__box .v-dropdown-menu__check[data-state="unchecked"] {
+		visibility: visible;
+	}
+
+	.v-dropdown-menu__box .v-dropdown-menu__check > svg {
+		inline-size: 0.625rem;
+		block-size: 0.625rem;
+		stroke-width: 4;
+	}
+
+	.v-dropdown-menu__box .v-dropdown-menu__check path {
+		stroke-dasharray: 24;
+		stroke-dashoffset: 24;
+		transition: stroke-dashoffset 220ms cubic-bezier(0.32, 0.72, 0, 1) 40ms;
+	}
+
+	.v-dropdown-menu__box .v-dropdown-menu__check[data-state="checked"] path {
+		stroke-dashoffset: 0;
+	}
+
+	/* 当前项的底色块：悬停与键盘焦点共用，换项时滑过去，刚出现时直接落位 */
+	.v-dropdown-menu__highlight {
+		position: absolute;
+		z-index: 0;
+		inset-block-start: 0;
+		inset-inline-start: 0;
+		inline-size: var(--v-menu-hl-w);
+		block-size: var(--v-menu-hl-h);
+		transform: translate(var(--v-menu-hl-x), var(--v-menu-hl-y));
+		border-radius: var(--v-menu-item-radius);
+		background-color: var(--muted);
+		opacity: 0;
+		pointer-events: none;
+		transition: opacity 120ms ease;
+	}
+
+	.v-dropdown-menu__highlight[data-visible="true"] {
+		opacity: 1;
+	}
+
+	.v-dropdown-menu__highlight[data-visible="true"]:not([data-jump="true"]) {
+		transition:
+			transform 280ms cubic-bezier(0.32, 0.72, 0, 1),
+			width 280ms cubic-bezier(0.32, 0.72, 0, 1),
+			height 280ms cubic-bezier(0.32, 0.72, 0, 1),
+			opacity 120ms ease;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-dropdown-menu__highlight,
+		.v-dropdown-menu__highlight[data-visible="true"]:not([data-jump="true"]),
+		.v-dropdown-menu__box,
+		.v-dropdown-menu__box .v-dropdown-menu__check path {
+			transition: none;
+		}
+	}
+}

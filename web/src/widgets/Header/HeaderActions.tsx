@@ -149,11 +149,7 @@ const HeaderActions = ({ user, children }: HeaderActionsProps) => {
 								/>
 							</button>
 						</DropdownMenuTrigger>
-						<DropdownMenuContent
-							align="end"
-							sideOffset={10}
-							className="w-72 overflow-hidden rounded-xl border-border/40 p-0 shadow-xl shadow-black/5 backdrop-blur-xl dark:shadow-black/40"
-						>
+						<DropdownMenuContent align="end" className="w-72 max-w-72 p-0">
 							{/* 用户信息卡：头像 + 邮箱 + 角色徽章 */}
 							<div className="relative border-b border-border/40 bg-linear-to-br from-accent/40 via-transparent to-transparent px-4 pb-4 pt-4">
 								<div className="flex items-start gap-3">
@@ -195,7 +191,7 @@ const HeaderActions = ({ user, children }: HeaderActionsProps) => {
 								<DropdownMenuItem asChild>
 									<Link
 										to="/profile"
-										className="flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2"
+										className="flex items-center gap-2.5 rounded-md px-2.5 py-2"
 									>
 										<span className="flex size-7 items-center justify-center rounded-md bg-muted/60 text-muted-foreground">
 											<User className="size-3.5" />
@@ -207,7 +203,7 @@ const HeaderActions = ({ user, children }: HeaderActionsProps) => {
 									<DropdownMenuItem asChild>
 										<Link
 											to="/admin"
-											className="flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2"
+											className="flex items-center gap-2.5 rounded-md px-2.5 py-2"
 										>
 											<span className="flex size-7 items-center justify-center rounded-md bg-muted/60 text-muted-foreground">
 												<LayoutDashboard className="size-3.5" />
@@ -224,7 +220,7 @@ const HeaderActions = ({ user, children }: HeaderActionsProps) => {
 								<DropdownMenuItem
 									onClick={handleLogout}
 									disabled={logout.isPending}
-									className="cursor-pointer rounded-md px-2.5 py-2"
+									className="rounded-md px-2.5 py-2"
 								>
 									<span className="flex size-7 items-center justify-center rounded-md bg-muted/60 text-muted-foreground">
 										<LogOut className="size-3.5" />

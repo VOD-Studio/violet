@@ -1,0 +1,22 @@
+@import "../dropdown-menu/dropdown-menu.css";
+
+@layer components {
+	/*
+	 * 右键菜单只改出现与消失：180ms 从指针那一角斜着浮出 4px，收起 120ms 原地淡出。
+	 * 垂直方向的浮出符号由组件按菜单在指针上方或下方写入 --v-context-from-y；
+	 * 水平方向由 float.css 按 data-side 取值。减弱动态沿用 float.css 的 100ms 透明度。
+	 */
+	.v-context-menu__content {
+		--v-float-in: 180ms;
+		--v-float-out: 120ms;
+		--v-float-dist-in: 4px;
+		--v-float-from-y: var(--v-context-from-y, -4px);
+		--v-float-to-x: 0px;
+		--v-float-to-y: 0px;
+	}
+
+	/* 子菜单与右键菜单一起退出 */
+	.v-context-menu__sub-content {
+		--v-float-out: 120ms;
+	}
+}

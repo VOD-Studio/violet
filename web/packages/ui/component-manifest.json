@@ -55,8 +55,9 @@
 		},
 		{
 			"name": "context-menu",
-			"status": "legacy",
-			"entry": "src/components/context-menu/index.ts"
+			"status": "foundation",
+			"entry": "src/components/context-menu/index.ts",
+			"css": "src/components/context-menu/context-menu.css"
 		},
 		{
 			"name": "dialog",
@@ -71,8 +72,9 @@
 		},
 		{
 			"name": "dropdown-menu",
-			"status": "legacy",
-			"entry": "src/components/dropdown-menu/index.ts"
+			"status": "foundation",
+			"entry": "src/components/dropdown-menu/index.ts",
+			"css": "src/components/dropdown-menu/dropdown-menu.css"
 		},
 		{
 			"name": "empty",

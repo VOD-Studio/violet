@@ -134,11 +134,11 @@ export function EditorToolbar({
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="end">
 						<DropdownMenuItem onClick={onPickImage}>
-							<ImagePlus className="size-3.5" />
+							<ImagePlus />
 							从素材库选择
 						</DropdownMenuItem>
 						<DropdownMenuItem onClick={onUploadImage}>
-							<Upload className="size-3.5" />
+							<Upload />
 							上传本地图片
 						</DropdownMenuItem>
 					</DropdownMenuContent>

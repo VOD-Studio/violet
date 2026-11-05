@@ -158,11 +158,7 @@ const NotificationBell = ({ onOpenChange }: NotificationBellProps) => {
 					</Button>
 				</DropdownMenuTrigger>
 			</BadgeAnchor>
-			<DropdownMenuContent
-				align="end"
-				sideOffset={10}
-				className="w-80 overflow-hidden rounded-xl border-border/40 p-0 shadow-xl shadow-black/5 backdrop-blur-xl dark:shadow-black/40"
-			>
+			<DropdownMenuContent align="end" className="w-80 max-w-80 p-0">
 				<div className="flex items-center justify-between px-4 py-3">
 					<span className="text-sm font-semibold">通知</span>
 					{unread > 0 && (
@@ -230,10 +226,7 @@ const NotificationRow = ({ item, onSelect }: { item: NotificationItem; onSelect:
 	const color = sourceColor[item.source_type] ?? "text-muted-foreground";
 
 	return (
-		<DropdownMenuItem
-			className="flex cursor-pointer items-start gap-3 px-4 py-3 focus:bg-accent/40"
-			onSelect={onSelect}
-		>
+		<DropdownMenuItem className="flex items-start gap-3 px-4 py-3" onSelect={onSelect}>
 			<Icon className={cn("mt-0.5 size-4 shrink-0", color)} />
 			<div className="min-w-0 flex-1">
 				<p className={cn("text-sm", !item.is_read && "font-medium")}>{item.title}</p>

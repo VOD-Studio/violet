@@ -34,7 +34,6 @@ export function TweetMoreMenu({ children, dangerSlot, disabled, onDelete }: Twee
 			</DropdownMenuTrigger>
 			<DropdownMenuContent
 				align="end"
-				className="min-w-48 rounded-xl shadow-none animate-none!"
 				onClick={(event) => event.stopPropagation()}
 				onKeyDown={(event) => event.stopPropagation()}
 			>
