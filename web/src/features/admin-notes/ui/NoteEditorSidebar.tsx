@@ -1,7 +1,7 @@
 import type { AdminNote } from "@features/admin-notes/model/types";
 import { useTags } from "@features/tags/api/queries";
 import { formatDate } from "@shared/lib/date";
-import { Input, Label, Tag } from "@violet/ui";
+import { Input, Kbd, Label, Tag } from "@violet/ui";
 
 import { Clock, FileText, Hash, Info, Plus, Tag as TagIcon } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -177,8 +177,7 @@ export function NoteEditorSidebar({
 				</p>
 				<ul className="space-y-1 text-[11px] leading-relaxed">
 					<li>
-						• 按 <kbd className="bg-muted rounded px-1 font-mono">⌘ S</kbd>{" "}
-						随时快捷保存。
+						• 按 <Kbd size="sm" keys={["mod", "S"]} /> 随时快捷保存。
 					</li>
 					<li>• 标题留空时，系统自动提取首行作为索引摘要。</li>
 					<li>• 正文推荐使用「现象 / 根因 / 修法」三段式排版。</li>
