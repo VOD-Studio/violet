@@ -102,10 +102,7 @@ export function SchemaRelationshipGraph({ schema, onUseQuery }: SchemaRelationsh
 				</DialogTrigger>
 			</section>
 
-			<DialogContent
-				className="flex h-[calc(100dvh-2rem)] max-w-[calc(100vw-2rem)] grid-rows-none flex-col gap-0 overflow-hidden border-primary/15 p-0 sm:max-w-[calc(100vw-2rem)]"
-				style={{ animation: "none" }}
-			>
+			<DialogContent className="h-[calc(100dvh-2rem)] max-h-none w-[calc(100vw-2rem)] overflow-hidden border-primary/15">
 				<DialogHeader className="relative shrink-0 overflow-hidden border-b border-primary/15 bg-primary/5 px-5 py-4 pr-14 text-left">
 					<div
 						aria-hidden

@@ -5,6 +5,7 @@ import {
 	Avatar,
 	Button,
 	Dialog,
+	DialogBody,
 	DialogContent,
 	DialogFooter,
 	DialogHeader,
@@ -150,14 +151,14 @@ function VersionPreviewDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={(val) => !val && onClose()}>
-			<DialogContent className="max-w-4xl sm:max-w-4xl lg:max-w-5xl h-[100dvh] sm:h-[85vh] flex flex-col gap-0 overflow-hidden p-0 sm:rounded-2xl border-border/50 shadow-2xl">
-				<DialogHeader className="border-b bg-muted/20 p-6">
-					<DialogTitle className="text-xl font-semibold flex items-center gap-2">
+			<DialogContent size="xl" className="h-[85dvh]" aria-describedby={undefined}>
+				<DialogHeader>
+					<DialogTitle className="flex items-center gap-2">
 						<History className="size-5 text-primary" />
 						版本内容预览
 					</DialogTitle>
 				</DialogHeader>
-				<div className="flex-1 min-h-0 overflow-y-auto p-6 bg-background/50">
+				<DialogBody>
 					{isLoading ? (
 						<div className="flex h-full items-center justify-center p-12">
 							<div className="flex flex-col items-center gap-4 animate-in fade-in duration-500">
@@ -166,7 +167,7 @@ function VersionPreviewDialog({
 							</div>
 						</div>
 					) : (
-						<div className="prose prose-sm md:prose-base dark:prose-invert max-w-none animate-in fade-in slide-in-from-bottom-2 duration-500">
+						<div className="prose prose-sm md:prose-base dark:prose-invert max-w-none">
 							{data?.content_md ? (
 								<ArticleContent content={data.content_md} contentType="markdown" />
 							) : (
@@ -174,21 +175,12 @@ function VersionPreviewDialog({
 							)}
 						</div>
 					)}
-				</div>
-				<DialogFooter className="border-t bg-muted/20 p-4 px-6 mt-0">
-					<Button
-						variant="ghost"
-						onClick={onClose}
-						disabled={restoreMut.isPending}
-						className="rounded-full"
-					>
+				</DialogBody>
+				<DialogFooter>
+					<Button variant="secondary" onClick={onClose} disabled={restoreMut.isPending}>
 						取消
 					</Button>
-					<Button
-						onClick={handleRestore}
-						disabled={isLoading || restoreMut.isPending}
-						className="rounded-full shadow-md transition-all hover:shadow-lg"
-					>
+					<Button onClick={handleRestore} disabled={isLoading || restoreMut.isPending}>
 						{restoreMut.isPending ? "恢复中..." : "恢复至此版本"}
 					</Button>
 				</DialogFooter>

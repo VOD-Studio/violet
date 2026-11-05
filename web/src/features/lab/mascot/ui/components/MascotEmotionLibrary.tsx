@@ -176,9 +176,10 @@ export function MascotEmotionLibrary({
 						</DialogTrigger>
 						<DialogContent
 							data-lab-scope
-							className="lab-scope max-h-[82dvh] gap-0! overflow-hidden rounded-lg border-edge-hairline bg-background p-0! text-foreground shadow-xl sm:max-w-2xl"
+							size="lg"
+							className="lab-scope overflow-hidden"
 						>
-							<DialogHeader className="border-b border-edge-hairline px-4 pt-4 pr-12 pb-3 text-left">
+							<DialogHeader className="border-b border-edge-hairline">
 								<DialogTitle className="text-lg tracking-tight">
 									状态图鉴
 								</DialogTitle>

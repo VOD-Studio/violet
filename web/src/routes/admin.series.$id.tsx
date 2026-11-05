@@ -35,6 +35,7 @@ import {
 	Button,
 	ConfirmDialog,
 	Dialog,
+	DialogBody,
 	DialogContent,
 	DialogDescription,
 	DialogFooter,
@@ -263,18 +264,21 @@ function AdminSeriesEditPage() {
 			<SeriesSheet open={metaOpen} onOpenChange={setMetaOpen} editing={series} />
 
 			<Dialog open={addSectionOpen} onOpenChange={setAddSectionOpen}>
-				<DialogContent className="sm:max-w-md">
+				<DialogContent size="sm">
 					<DialogHeader>
 						<DialogTitle>新建卷 / 部</DialogTitle>
 						<DialogDescription>
 							卷会排到末尾，可拖拽调整顺序；章节可挂入卷或直接挂书根。
 						</DialogDescription>
 					</DialogHeader>
-					<Input
-						value={sectionTitle}
-						onChange={(e) => setSectionTitle(e.target.value)}
-						placeholder="如：第一部 · 语言地基"
-					/>
+					<DialogBody>
+						<Input
+							aria-label="卷名"
+							value={sectionTitle}
+							onChange={(e) => setSectionTitle(e.target.value)}
+							placeholder="如：第一部 · 语言地基"
+						/>
+					</DialogBody>
 					<DialogFooter>
 						<Button
 							disabled={!sectionTitle.trim() || addSection.isPending}

@@ -2,6 +2,7 @@ import type { MusicPlaylist, MusicSong } from "@entities/music/model/types";
 import {
 	Button,
 	Dialog,
+	DialogBody,
 	DialogContent,
 	DialogDescription,
 	DialogHeader,
@@ -63,7 +64,7 @@ export function PlaylistTracksDrawer({ playlist, open, onOpenChange }: PlaylistT
 				onOpenChange(val);
 			}}
 		>
-			<DialogContent className="flex h-[620px] max-h-[90dvh] w-full flex-col overflow-hidden sm:max-w-3xl">
+			<DialogContent size="xl" className="h-155">
 				<DialogHeader>
 					<div className="flex items-center gap-3">
 						{playlist?.cover_url && (
@@ -96,120 +97,122 @@ export function PlaylistTracksDrawer({ playlist, open, onOpenChange }: PlaylistT
 						</div>
 					</div>
 				</DialogHeader>
-
-				<div className="mt-2 min-h-0 flex-1 overflow-auto rounded-xl border border-border/50">
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead className="w-12 text-center">#</TableHead>
-								<TableHead className="min-w-48">歌曲标题</TableHead>
-								<TableHead className="min-w-32">歌手</TableHead>
-								<TableHead className="min-w-36">专辑</TableHead>
-								<TableHead className="w-20 text-right">时长</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{isLoading ? (
-								Array.from({ length: 5 }).map((_, idx) => (
-									<TableRow key={`skeleton-${idx}`}>
-										<TableCell className="text-center">
-											<div className="mx-auto h-4 w-4 animate-pulse rounded bg-muted" />
-										</TableCell>
-										<TableCell>
-											<div className="h-4 w-36 animate-pulse rounded bg-muted" />
-										</TableCell>
-										<TableCell>
-											<div className="h-4 w-24 animate-pulse rounded bg-muted" />
-										</TableCell>
-										<TableCell>
-											<div className="h-4 w-28 animate-pulse rounded bg-muted" />
-										</TableCell>
-										<TableCell className="text-right">
-											<div className="ml-auto h-4 w-10 animate-pulse rounded bg-muted" />
-										</TableCell>
-									</TableRow>
-								))
-							) : (data?.data?.length ?? 0) === 0 ? (
+				<DialogBody className="flex flex-col overflow-hidden">
+					<div className="mt-2 min-h-0 flex-1 overflow-auto rounded-xl border border-border/50">
+						<Table>
+							<TableHeader>
 								<TableRow>
-									<TableCell
-										colSpan={5}
-										className="h-32 text-center text-muted-foreground text-xs"
-									>
-										该歌单暂无曲目数据或未授权公开读取
-									</TableCell>
+									<TableHead className="w-12 text-center">#</TableHead>
+									<TableHead className="min-w-48">歌曲标题</TableHead>
+									<TableHead className="min-w-32">歌手</TableHead>
+									<TableHead className="min-w-36">专辑</TableHead>
+									<TableHead className="w-20 text-right">时长</TableHead>
 								</TableRow>
-							) : (
-								data?.data?.map((song: MusicSong, idx: number) => {
-									const artistNames =
-										song.artists?.map((a) => a.name).join(" / ") || "未知歌手";
-									const songIndex = (page - 1) * limit + idx + 1;
-
-									return (
-										<TableRow key={song.id} className="text-sm">
-											<TableCell className="text-center font-mono text-muted-foreground text-xs">
-												{songIndex}
+							</TableHeader>
+							<TableBody>
+								{isLoading ? (
+									Array.from({ length: 5 }).map((_, idx) => (
+										<TableRow key={`skeleton-${idx}`}>
+											<TableCell className="text-center">
+												<div className="mx-auto h-4 w-4 animate-pulse rounded bg-muted" />
 											</TableCell>
-											<TableCell className="font-medium">
-												<div className="flex items-center gap-1.5">
-													<span>{song.name}</span>
-													<a
-														href={`https://music.163.com/#/song?id=${song.id}`}
-														target="_blank"
-														rel="noopener noreferrer"
-														className="text-muted-foreground hover:text-foreground"
-														title="在网易云查看歌曲"
-													>
-														<ExternalLink className="size-3" />
-													</a>
-												</div>
+											<TableCell>
+												<div className="h-4 w-36 animate-pulse rounded bg-muted" />
 											</TableCell>
-											<TableCell className="text-muted-foreground">
-												{artistNames}
+											<TableCell>
+												<div className="h-4 w-24 animate-pulse rounded bg-muted" />
 											</TableCell>
-											<TableCell className="text-muted-foreground">
-												{song.album?.name || "—"}
+											<TableCell>
+												<div className="h-4 w-28 animate-pulse rounded bg-muted" />
 											</TableCell>
-											<TableCell className="text-right font-mono text-muted-foreground text-xs">
-												{formatDuration(song.duration_ms)}
+											<TableCell className="text-right">
+												<div className="ml-auto h-4 w-10 animate-pulse rounded bg-muted" />
 											</TableCell>
 										</TableRow>
-									);
-								})
-							)}
-						</TableBody>
-					</Table>
-				</div>
+									))
+								) : (data?.data?.length ?? 0) === 0 ? (
+									<TableRow>
+										<TableCell
+											colSpan={5}
+											className="h-32 text-center text-muted-foreground text-xs"
+										>
+											该歌单暂无曲目数据或未授权公开读取
+										</TableCell>
+									</TableRow>
+								) : (
+									data?.data?.map((song: MusicSong, idx: number) => {
+										const artistNames =
+											song.artists?.map((a) => a.name).join(" / ") ||
+											"未知歌手";
+										const songIndex = (page - 1) * limit + idx + 1;
 
-				{/* 分页控制 */}
-				{total > limit && (
-					<div className="flex items-center justify-between border-t border-border/40 pt-3 text-xs">
-						<span className="text-muted-foreground">
-							第 {page} 页 / 共 {totalPages} 页（共 {total} 首）
-						</span>
-						<div className="flex items-center gap-1">
-							<Button
-								size="sm"
-								variant="outline"
-								className="h-7 px-2"
-								disabled={page <= 1}
-								onClick={() => setPage((p) => p - 1)}
-							>
-								<ChevronLeft className="size-3.5" />
-								上一页
-							</Button>
-							<Button
-								size="sm"
-								variant="outline"
-								className="h-7 px-2"
-								disabled={page >= totalPages}
-								onClick={() => setPage((p) => p + 1)}
-							>
-								下一页
-								<ChevronRight className="size-3.5" />
-							</Button>
-						</div>
+										return (
+											<TableRow key={song.id} className="text-sm">
+												<TableCell className="text-center font-mono text-muted-foreground text-xs">
+													{songIndex}
+												</TableCell>
+												<TableCell className="font-medium">
+													<div className="flex items-center gap-1.5">
+														<span>{song.name}</span>
+														<a
+															href={`https://music.163.com/#/song?id=${song.id}`}
+															target="_blank"
+															rel="noopener noreferrer"
+															className="text-muted-foreground hover:text-foreground"
+															title="在网易云查看歌曲"
+														>
+															<ExternalLink className="size-3" />
+														</a>
+													</div>
+												</TableCell>
+												<TableCell className="text-muted-foreground">
+													{artistNames}
+												</TableCell>
+												<TableCell className="text-muted-foreground">
+													{song.album?.name || "—"}
+												</TableCell>
+												<TableCell className="text-right font-mono text-muted-foreground text-xs">
+													{formatDuration(song.duration_ms)}
+												</TableCell>
+											</TableRow>
+										);
+									})
+								)}
+							</TableBody>
+						</Table>
 					</div>
-				)}
+
+					{/* 分页控制 */}
+					{total > limit && (
+						<div className="flex items-center justify-between border-t border-border/40 pt-3 text-xs">
+							<span className="text-muted-foreground">
+								第 {page} 页 / 共 {totalPages} 页（共 {total} 首）
+							</span>
+							<div className="flex items-center gap-1">
+								<Button
+									size="sm"
+									variant="outline"
+									className="h-7 px-2"
+									disabled={page <= 1}
+									onClick={() => setPage((p) => p - 1)}
+								>
+									<ChevronLeft className="size-3.5" />
+									上一页
+								</Button>
+								<Button
+									size="sm"
+									variant="outline"
+									className="h-7 px-2"
+									disabled={page >= totalPages}
+									onClick={() => setPage((p) => p + 1)}
+								>
+									下一页
+									<ChevronRight className="size-3.5" />
+								</Button>
+							</div>
+						</div>
+					)}
+				</DialogBody>
 			</DialogContent>
 		</Dialog>
 	);

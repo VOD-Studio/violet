@@ -1,6 +1,7 @@
 import {
 	Button,
 	Dialog,
+	DialogBody,
 	DialogContent,
 	DialogDescription,
 	DialogFooter,
@@ -52,7 +53,7 @@ export function IssueDeviceDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={close}>
-			<DialogContent className="sm:max-w-lg">
+			<DialogContent>
 				{issued ? (
 					<>
 						<DialogHeader>
@@ -61,7 +62,7 @@ export function IssueDeviceDialog({
 								凭证只显示这一次，关闭后无法再查看。丢失了就撤销这台设备，重新签发。
 							</DialogDescription>
 						</DialogHeader>
-						<div className="space-y-4">
+						<DialogBody className="space-y-4">
 							<div className="space-y-1.5">
 								<p className="text-sm font-medium">上报地址</p>
 								<CopyField
@@ -80,7 +81,7 @@ export function IssueDeviceDialog({
 								<li>检查连接通过后启用这个接收端。</li>
 								<li>在「分享与预览」确认内容，再恢复分享。</li>
 							</ol>
-						</div>
+						</DialogBody>
 						<DialogFooter>
 							<Button onClick={() => close(false)}>完成</Button>
 						</DialogFooter>
@@ -93,7 +94,7 @@ export function IssueDeviceDialog({
 								每台电脑一份凭证。凭证只能上报这台设备的状态，不能登录后台。
 							</DialogDescription>
 						</DialogHeader>
-						<div className="my-5 space-y-1.5">
+						<DialogBody className="space-y-1.5">
 							<Label htmlFor="presence-device-name">设备名称</Label>
 							<Input
 								id="presence-device-name"
@@ -106,9 +107,9 @@ export function IssueDeviceDialog({
 							<p className="text-xs text-muted-foreground">
 								名称会随状态公开显示，不要填主机名或个人信息。
 							</p>
-						</div>
+						</DialogBody>
 						<DialogFooter>
-							<Button type="button" variant="outline" onClick={() => close(false)}>
+							<Button type="button" variant="secondary" onClick={() => close(false)}>
 								取消
 							</Button>
 							<Button type="submit" disabled={!name.trim() || issue.isPending}>

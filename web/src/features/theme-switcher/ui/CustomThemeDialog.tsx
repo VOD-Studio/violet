@@ -3,6 +3,7 @@ import { THEME_PRESETS } from "@shared/lib/theme-presets";
 import {
 	Button,
 	Dialog,
+	DialogBody,
 	DialogContent,
 	DialogDescription,
 	DialogFooter,
@@ -87,45 +88,51 @@ export function CustomThemeDialog({ open, onOpenChange }: CustomThemeDialogProps
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="rounded-2xl">
+			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>自定义主题</DialogTitle>
 					<DialogDescription>
 						选一个种子色生成整套配色，按钮与文字会自动调到可读。
 					</DialogDescription>
 				</DialogHeader>
-				<style>
-					{generateThemeCss(
-						normalizeTheme({ version: 1, seed: previewSeed }),
-						`[data-theme="${PREVIEW_SCOPE}"]`,
-					)}
-				</style>
-				<div className="flex items-end gap-3">
-					<input
-						type="color"
-						aria-label="选择种子色"
-						value={previewSeed}
-						onChange={(event) => setDraft(event.target.value)}
-						className="size-10 shrink-0 cursor-pointer rounded-lg border border-input bg-transparent p-0.5"
-					/>
-					<Input
-						label="种子色"
-						value={draft}
-						onChange={(event) => setDraft(event.target.value)}
-						invalid={!theme}
-						errorMessage="请输入 #rgb 或 #rrggbb"
-						spellCheck={false}
-						autoComplete="off"
-						className="font-mono"
-						classNames={{ root: "flex-1" }}
-					/>
-				</div>
-				<div role="group" aria-label="生成结果预览" className="grid gap-3 sm:grid-cols-2">
-					<PreviewCard appearance="light" />
-					<PreviewCard appearance="dark" />
-				</div>
+				<DialogBody className="flex flex-col gap-4">
+					<style>
+						{generateThemeCss(
+							normalizeTheme({ version: 1, seed: previewSeed }),
+							`[data-theme="${PREVIEW_SCOPE}"]`,
+						)}
+					</style>
+					<div className="flex items-end gap-3">
+						<input
+							type="color"
+							aria-label="选择种子色"
+							value={previewSeed}
+							onChange={(event) => setDraft(event.target.value)}
+							className="size-10 shrink-0 cursor-pointer rounded-lg border border-input bg-transparent p-0.5"
+						/>
+						<Input
+							label="种子色"
+							value={draft}
+							onChange={(event) => setDraft(event.target.value)}
+							invalid={!theme}
+							errorMessage="请输入 #rgb 或 #rrggbb"
+							spellCheck={false}
+							autoComplete="off"
+							className="font-mono"
+							classNames={{ root: "flex-1" }}
+						/>
+					</div>
+					<div
+						role="group"
+						aria-label="生成结果预览"
+						className="grid gap-3 sm:grid-cols-2"
+					>
+						<PreviewCard appearance="light" />
+						<PreviewCard appearance="dark" />
+					</div>
+				</DialogBody>
 				<DialogFooter>
-					<Button variant="outline" onClick={() => onOpenChange(false)}>
+					<Button variant="secondary" onClick={() => onOpenChange(false)}>
 						取消
 					</Button>
 					<Button

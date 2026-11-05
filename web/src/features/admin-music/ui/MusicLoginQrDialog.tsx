@@ -1,6 +1,7 @@
 import {
 	Button,
 	Dialog,
+	DialogBody,
 	DialogContent,
 	DialogDescription,
 	DialogHeader,
@@ -29,7 +30,7 @@ export function MusicLoginQrDialog({ open, onOpenChange, onSuccess }: MusicLogin
 	const [attempt, setAttempt] = useState(0);
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-md">
+			<DialogContent size="sm">
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
 						<QrCode className="size-5 text-primary" />
@@ -39,19 +40,21 @@ export function MusicLoginQrDialog({ open, onOpenChange, onSuccess }: MusicLogin
 						全站统一使用该账号访问歌单库；不会代表访客获取付费歌曲播放权。
 					</DialogDescription>
 				</DialogHeader>
-				{open && (
-					<MusicQrSession
-						key={attempt}
-						onRetry={() => setAttempt((value) => value + 1)}
-						onConfirmed={(account) => {
-							toast.success(
-								`网易云账号「${account.profile?.nickname ?? "已连接"}」连接成功`,
-							);
-							onSuccess?.(account);
-							onOpenChange(false);
-						}}
-					/>
-				)}
+				<DialogBody>
+					{open && (
+						<MusicQrSession
+							key={attempt}
+							onRetry={() => setAttempt((value) => value + 1)}
+							onConfirmed={(account) => {
+								toast.success(
+									`网易云账号「${account.profile?.nickname ?? "已连接"}」连接成功`,
+								);
+								onSuccess?.(account);
+								onOpenChange(false);
+							}}
+						/>
+					)}
+				</DialogBody>
 			</DialogContent>
 		</Dialog>
 	);
