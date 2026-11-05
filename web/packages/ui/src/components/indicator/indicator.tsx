@@ -53,7 +53,7 @@ function FlowerNodeView({ node }: { node: NodeProps }) {
  *
  * @remarks 装饰性用法由调用方标 `aria-hidden`；承载语义时容器挂 `role="status"` 与
  * `aria-live="polite"`，配合 `useDelayedBusy` 做 200ms 延迟显示与 400ms 最短停留。
- * 减弱动态时 CSS 停在花完全开放的一帧。
+ * 作为活性状态反馈，指示器持续运转，不受减弱动态抑制。
  */
 export function FlowerBloom({
 	kind = "plum",

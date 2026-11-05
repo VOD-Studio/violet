@@ -188,31 +188,3 @@
 		stroke-dashoffset: -96;
 	}
 }
-
-/* 减弱动态：一律静止；花形停在完全开放的一帧 */
-@media (prefers-reduced-motion: reduce) {
-	.v-flower,
-	.v-flower svg,
-	.v-flower__draw,
-	.v-flower__pop,
-	.v-flower--snow svg,
-	.v-flower--branch .v-flower__stem,
-	.v-flower--branch .v-flower__pop,
-	.v-spinner,
-	.v-spinner__arc {
-		animation: none;
-	}
-
-	.v-flower__draw {
-		stroke-dashoffset: 0;
-		opacity: 1;
-	}
-
-	.v-flower__pop {
-		opacity: 1;
-	}
-
-	.v-spinner__arc {
-		stroke-dasharray: 62 100;
-	}
-}
