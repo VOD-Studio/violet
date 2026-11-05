@@ -2,6 +2,10 @@
 :root {
 	--fixed-shadow-soft: 0 4px 24px rgb(0 0 0 / 0.05);
 	--fixed-sheet-border: light-dark(transparent, rgb(255 255 255 / 0.08));
+	--seed-spring: #f47983;
+	--seed-summer: #2f9e7a;
+	--seed-autumn: #d9a21b;
+	--seed-winter: #7d8ea3;
 }
 
 :root {

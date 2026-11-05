@@ -1,5 +1,6 @@
 import { cn } from "cn";
 import type { ComponentProps, CSSProperties } from "react";
+import { useId } from "react";
 import { FLOWER_VIEWBOX, FLOWERS, type FlowerKind } from "./flower-paths";
 
 /** 五档尺寸：16、20、24、32、48；梅枝宽度为三倍。 */
@@ -49,9 +50,10 @@ function FlowerNodeView({ node }: { node: NodeProps }) {
 }
 
 /**
- * 块状等待花形：逐瓣描线、停留、淡去，循环；颜色取 currentColor。
+ * 块状等待花形：逐瓣描线，淡淡染上花色，停留后淡去，循环。
  *
- * @remarks 装饰性用法由调用方标 `aria-hidden`；承载语义时容器挂 `role="status"` 与
+ * @remarks 花色随花形固定（樱花粉、荷花绿、桂花金、梅花与雪花冷灰蓝），可用 `--v-flower-color` 覆盖。
+ * 装饰性用法由调用方标 `aria-hidden`；承载语义时容器挂 `role="status"` 与
  * `aria-live="polite"`，配合 `useDelayedBusy` 做 200ms 延迟显示与 400ms 最短停留。
  * 作为活性状态反馈，指示器持续运转，不受减弱动态抑制。
  */
@@ -62,13 +64,33 @@ export function FlowerBloom({
 	...props
 }: FlowerBloomProps) {
 	const viewBox = FLOWER_VIEWBOX[kind];
+	const gradientId = `v-flower-${useId().replace(/:/g, "")}`;
 	return (
 		<span
 			{...props}
 			className={cn("v-flower", `v-flower--${kind}`, className)}
-			style={{ "--v-flower-size": `${size}px`, ...props.style } as CSSProperties}
+			style={
+				{
+					"--v-flower-size": `${size}px`,
+					"--v-flower-fill": `url(#${gradientId})`,
+					...props.style,
+				} as CSSProperties
+			}
 		>
 			<svg viewBox={viewBox} aria-hidden="true" focusable="false">
+				<defs>
+					<radialGradient
+						id={gradientId}
+						cx="12"
+						cy="12"
+						r="11"
+						gradientUnits="userSpaceOnUse"
+					>
+						<stop offset="0" className="v-flower__stop" stopOpacity="0.55" />
+						<stop offset="0.6" className="v-flower__stop" stopOpacity="0.28" />
+						<stop offset="1" className="v-flower__stop" stopOpacity="0.1" />
+					</radialGradient>
+				</defs>
 				{FLOWERS[kind].map((node, i) => (
 					<FlowerNodeView key={i} node={node as NodeProps} />
 				))}

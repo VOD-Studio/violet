@@ -1,11 +1,12 @@
 /*
  * 指示器单元样式：块状花形（.v-flower）与控件内细圆弧（.v-spinner）。
  * 需先导入 @violet/ui/tokens.css 或 styles.css。
- * 颜色一律 currentColor，不带底色与轨道；减弱动态停在花完全开放的一帧。
+ * 花形取各自的花色（--v-flower-color）：描线为花色混墨，填充为花色渐变；细圆弧取 currentColor，不带底色与轨道。
  */
 
 .v-flower {
 	--v-flower-size: 24px;
+	--v-flower-color: var(--seed-winter);
 	/* 一个循环 2.4 秒：描线（依 index 错开 0.16s）→ 停留 → 淡去 */
 	--v-flower-period: 2.4s;
 
@@ -15,7 +16,7 @@
 	flex: none;
 	width: var(--v-flower-size);
 	height: var(--v-flower-size);
-	color: inherit;
+	color: color-mix(in oklab, var(--v-flower-color) 66%, var(--foreground));
 	vertical-align: middle;
 }
 
@@ -31,7 +32,28 @@
 	stroke-linejoin: round;
 }
 
-/* 雪花整体缓慢旋转 */
+.v-flower--sakura {
+	--v-flower-color: var(--seed-spring);
+}
+
+.v-flower--lotus {
+	--v-flower-color: var(--seed-summer);
+}
+
+.v-flower--osmanthus {
+	--v-flower-color: var(--seed-autumn);
+}
+
+.v-flower--plum,
+.v-flower--snow,
+.v-flower--branch {
+	--v-flower-color: var(--seed-winter);
+}
+
+.v-flower__stop {
+	stop-color: var(--v-flower-color);
+}
+
 .v-flower--snow svg {
 	animation: v-flower-rotate calc(7s) linear infinite;
 }
@@ -47,7 +69,7 @@
 .v-flower__draw {
 	stroke-dasharray: 1 1;
 	stroke-dashoffset: 1;
-	fill: currentColor;
+	fill: var(--v-flower-fill);
 	fill-opacity: 0;
 	animation:
 		v-flower-draw var(--v-flower-period) cubic-bezier(0.45, 0.05, 0.25, 1) infinite,
@@ -64,14 +86,14 @@
 
 .v-flower__pop {
 	opacity: 0;
-	fill: currentColor;
-	fill-opacity: 0.22;
+	fill: var(--v-flower-color);
+	fill-opacity: 0.35;
 	animation: v-flower-pop var(--v-flower-period) ease-out infinite;
 	animation-delay: calc(var(--v-flower-index) * 0.16s);
 }
 
 .v-flower__dot {
-	fill: currentColor;
+	fill: var(--v-flower-color);
 	fill-opacity: 1;
 	stroke: none;
 }
@@ -106,7 +128,7 @@
 	}
 	42%,
 	72% {
-		fill-opacity: 0.22;
+		fill-opacity: 1;
 	}
 	88%,
 	100% {
