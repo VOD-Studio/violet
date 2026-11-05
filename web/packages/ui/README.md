@@ -4,7 +4,7 @@ React 19 组件库，使用原生 HTML 与 Radix 提供交互行为，用类型�
 
 ## 当前范围
 
-`component-manifest.json` 记录每个组件的入口、样式和成熟度。Avatar、Badge、Button、Card、Checkbox、Dropdown、ImagePixelReveal、Indicator、Input、Kbd、Label、LinkCard、SearchInput、Segmented、Separator、Skeleton、Textarea、UploadTile 是当前 18 个 `foundation` 单元；其余 29 个单元保留 API，并标为 `legacy`。兼容入口不代表已经重建所有组件。
+`component-manifest.json` 记录每个组件的入口、样式和成熟度。Avatar、Badge、Button、Card、Checkbox、Dropdown、ImagePixelReveal、Indicator、Input、Kbd、Label、LinkCard、Radio、SearchInput、Segmented、Separator、Skeleton、Switch、Tabs、Textarea、ToggleGroup、UploadTile 是当前 22 个 `foundation` 单元；其余 27 个单元保留 API，并标为 `legacy`。兼容入口不代表已经重建所有组件。
 
 所有组件都放在 `src/components/<name>/`，实现、有变体时的 `styles.ts`、CSS、入口和测试就近维护。`src/legacy.ts` 只汇总兼容导出；`src/lib/` 只放有实际消费方的复用能力。
 
@@ -78,11 +78,13 @@ Dropdown 是指针悬停与键盘聚焦展开的披露面板，不是点击菜�
 
 当前共享高亮的 `DropdownItem` 自动带 `data-highlighted`，宿主可据此同步图标或文字的强调样式；经过项间空隙与触发器间隙仍保留，切换目标、禁用或真正离开时更新。该状态表示 hover / 键盘焦点目标，不表示路由或业务选中。
 
-Segmented 是带滑动指示器的分段控制：`orientation` 选横向或竖向，`variant` 选 `soft`、`ink`、`line`，`value` 受控，`segments` 描述各段。指示器位移走 transform，不缩放；设置 `itemSize` 进入不做 JS 测量的等尺寸布局，再加 `expandSelected` 让选中项占满剩余长度、其余收成只剩图标。方向键在启用项之间移动焦点，不改变选中值；`aria-label` 让容器带 `role="group"`，默认按钮分段带 `aria-pressed`，`render` 可把属性展开到链接或 Dropdown 触发器上。从 `@violet/ui` 或 `@violet/ui/segmented` 导入；按需样式为 `@violet/ui/components/segmented.css`。[陈列室展品](https://xunrua.top/ui?open=segmented)陈列三种变体与图标分段，独立 consumer 的 `?preview=segmented` 可操作选中收起、主题和窄屏状态。
+Segmented 是带滑动指示器的分段控制：`orientation` 选横向或竖向，`variant` 选 `soft`、`ink`、`line`，`value` 受控，`segments` 描述各段。纸片滑动 280ms，不缩放；设置 `itemSize` 进入不做 JS 测量的等尺寸布局，再加 `expandSelected` 让选中项占满剩余长度、其余收成只剩图标。方向键在启用项之间移动并同时选中；容器为 `role="radiogroup"`，默认按钮分段带 `aria-checked`，`render` 可把属性展开到链接或 Dropdown 触发器上并保持普通 group 语义。从 `@violet/ui` 或 `@violet/ui/segmented` 导入；按需样式为 `@violet/ui/components/segmented.css`。[陈列室展品](https://xunrua.top/ui?open=segmented)陈列三种变体与图标分段，独立 consumer 的 `?preview=segmented` 可操作选中收起、主题和窄屏状态。
 
 `OverlayScroll` 为受限高度的元素提供覆盖式滚动条，ref 与原生 div 属性仍指向滚动视口。整页使用 `<DocumentScrollbar />`，每个文档挂载一次，不包裹正文、不接管 `window` 滚动；弹层锁定文档滚动时滑块同步隐藏，卸载恢复原有滚动条。SSR 宿主可在 `<html data-scrollbar="none">` 上提前取消原生占位。两者从 `@violet/ui` 或 `@violet/ui/overlay-scroll` 导入；按需 CSS 为 `@violet/ui/components/overlay-scroll.css`，独立 consumer 的 `?preview=overlay-scroll` 可验证文档滚动、元素内横纵拖拽与卸载恢复。
 
 `badge` 单元包含 `Tag`、`TagToggle`、`Badge`、`Count`、`Dot` 与 `BadgeAnchor`：Tag 给内容分类，TagToggle 是带 `aria-pressed` 的筛选标签，Badge 以 `tone` 表示记录状态且文字本身就是信息，Count 与 Dot 提示未读。胶囊 Count 与 Dot 对读屏隐藏，数量要写进宿主的可访问名称；为 0 时 Count 不渲染，超过 `max` 显示 `99+`。`avatar` 单元的 Avatar 在图片未到时呼吸占位、失败退回首字，`alt` 默认取 `name`，`alt=""` 表示装饰，在线状态与作者标记写进可访问名称；AvatarGroup 超出 `max` 折成「+N」，指针悬停时展开压叠，触屏不展开，减弱动态下直接切换。Kbd 渲染原生 `<kbd>`，一个组合键一个键帽，未传 `platform` 时水合后才按访客系统切换符号。`card` 单元保留 `Card*` 复合结构并新增相框卡 `CardFrame*`，只有 `CardFrameTitle asChild` 的链接承载点击并扩到整张卡；Separator 装饰用法为 `role="none"`，区块之间传 `decorative={false}` 得到 `<hr>`；Skeleton 默认 `aria-hidden`，只用凹陷色起伏，不加扫光。以上单元均从 `@violet/ui` 或同名叶子入口导入，按需 CSS 为 `@violet/ui/components/<name>.css`，[陈列室展品](https://xunrua.top/ui?open=badge)可逐态查看，独立 consumer 的 `?preview=display` 覆盖头像加载失败、计数、标签、键帽平台与相框卡点击。
+
+`switch`、`radio`、`toggle-group`、`tabs` 四个控件单元沿用同一套键盘与读屏契约。Switch 是 `role="switch"` 的原生按钮，`loading` 期间圆钮显示梅花指示器并忽略激活，`aria-busy` 立即生效；尺寸 sm/md/lg 三档。RadioGroup/Radio 用原生 `<input type="radio">` 放进 `fieldset`，`legend` 视觉隐藏但命名整组，一组一个 Tab 位，方向键换选并同时选中；`appearance="card"` 提供选项卡片。ToggleGroup 的每一项都是原生 button 加 `aria-pressed`（单选也不用 radio），整组一个 Tab 位，方向键只移焦点不改按下态，单选再点归零、多选各自开关；`variant="bare"` 是工具栏形，`ToggleGroupSeparator` 分隔组段。Tabs 保留 Radix 语义（←→ 移动即切换、Home/End 到首尾、面板可聚焦），当前项下方一条墨色 2px 底线滑动 280ms 到新位置，`TabsCount` 的计数是标签名称的一部分，放不下时横向滚动且当前项自动滚入可见区；竖排为个人主页侧栏保留，设计稿没有该形态。Segmented 默认项改为 `role="radiogroup"`/`role="radio"` 语义、纸片滑动 280ms；带 `render` 的导航类分段仍是普通 group。以上单元均从 `@violet/ui` 或同名叶子入口导入，按需 CSS 为 `@violet/ui/components/<name>.css`，[陈列室](https://xunrua.top/ui?open=switch)可逐态操作。
 
 ## 开发与验证
 
