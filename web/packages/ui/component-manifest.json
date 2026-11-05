@@ -50,8 +50,9 @@
 		},
 		{
 			"name": "confirm-dialog",
-			"status": "legacy",
-			"entry": "src/components/confirm-dialog/index.ts"
+			"status": "foundation",
+			"entry": "src/components/confirm-dialog/index.ts",
+			"css": "src/components/confirm-dialog/confirm-dialog.css"
 		},
 		{
 			"name": "context-menu",
@@ -169,8 +170,9 @@
 		},
 		{
 			"name": "prompt-dialog",
-			"status": "legacy",
-			"entry": "src/components/prompt-dialog/index.ts"
+			"status": "foundation",
+			"entry": "src/components/prompt-dialog/index.ts",
+			"css": "src/components/prompt-dialog/prompt-dialog.css"
 		},
 		{
 			"name": "radio",

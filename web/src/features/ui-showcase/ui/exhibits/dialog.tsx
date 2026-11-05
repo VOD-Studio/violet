@@ -1,5 +1,6 @@
 import {
 	Button,
+	ConfirmDialog,
 	Dialog,
 	DialogBody,
 	DialogClose,
@@ -19,10 +20,11 @@ import {
 	Input,
 	Kbd,
 	Label,
+	PromptDialog,
 	Textarea,
 } from "@violet/ui";
 import { ChevronDown } from "lucide-react";
-import { type KeyboardEvent, type ReactNode, useId, useRef, useState } from "react";
+import { type KeyboardEvent, type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { useStageContainer } from "../../hooks/use-stage-container";
 import type { Exhibit, ExhibitRenderProps } from "../../model/exhibit";
 
@@ -56,13 +58,117 @@ const SHORTCUTS = [
 
 type DialogKind = "profile" | "changelog" | "shortcuts";
 
-/** 展柜里的陈列态：舞台里常开一个非模态的对话框，点舞台里的按钮会打开真正的模态对话框。 */
-const STATES: { id: string; label: string; kind: DialogKind; overlay: boolean }[] = [
+/**
+ * 展柜里的陈列态：舞台里常开一个非模态的对话框，点舞台里的按钮会打开真正的模态对话框。
+ * 确认框总是模态，不做常开陈列；「删除失败」状态下删除会失败，看出错的写法。
+ */
+const STATES: { id: string; label: string; kind?: DialogKind; overlay: boolean }[] = [
 	{ id: "profile", label: "表单", kind: "profile", overlay: true },
 	{ id: "changelog", label: "长内容滚动", kind: "changelog", overlay: true },
 	{ id: "shortcuts", label: "落位", kind: "shortcuts", overlay: true },
 	{ id: "clear", label: "无遮罩", kind: "profile", overlay: false },
+	{ id: "fail", label: "删除失败", overlay: true },
 ];
+
+const SERIES = "Rust 全栈笔记";
+const TAKEN_SERIES = ["前端札记", "独库公路骑行记"];
+const DELETE_MS = 900;
+
+type Confirming = "post" | "series" | null;
+
+/** 永久删除与删除系列：执行中转圈，「删除失败」状态下停在出错。 */
+function DeleteConfirms({
+	container,
+	confirming,
+	onConfirmingChange,
+	fail,
+}: {
+	container: HTMLElement | null;
+	confirming: Confirming;
+	onConfirmingChange: (next: Confirming) => void;
+	fail: boolean;
+}) {
+	const [busy, setBusy] = useState(false);
+	const [error, setError] = useState<string>();
+	const timer = useRef<number | undefined>(undefined);
+	useEffect(() => () => window.clearTimeout(timer.current), []);
+
+	const run = () => {
+		setBusy(true);
+		setError(undefined);
+		timer.current = window.setTimeout(() => {
+			setBusy(false);
+			if (fail) setError("没有删除：网络中断，文章还在。可以再试一次。");
+			else onConfirmingChange(null);
+		}, DELETE_MS);
+	};
+	const bind = (kind: Exclude<Confirming, null>) => ({
+		open: confirming === kind,
+		onOpenChange: (next: boolean) => {
+			if (!next) setError(undefined);
+			onConfirmingChange(next ? kind : null);
+		},
+		loading: busy,
+		error,
+		onConfirm: run,
+		container,
+	});
+
+	return (
+		<>
+			<ConfirmDialog
+				{...bind("post")}
+				title="永久删除「独库公路，六天」？"
+				description="12 条评论和 3 条批注会一起删除，无法恢复。"
+				confirmLabel="永久删除"
+				loadingLabel="正在删除…"
+			/>
+			<ConfirmDialog
+				{...bind("series")}
+				title={`删除系列「${SERIES}」？`}
+				description="6 篇文章会退回散篇，系列页与目录一起删除，无法恢复。"
+				confirmLabel="删除系列"
+				loadingLabel="正在删除…"
+				confirmText={SERIES}
+			/>
+		</>
+	);
+}
+
+/** 重命名系列：名称没变时保存直接关闭，空值与重名写在输入框下方。 */
+function RenameSeries({
+	container,
+	open,
+	onOpenChange,
+}: {
+	container: HTMLElement | null;
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+}) {
+	const [error, setError] = useState("");
+	return (
+		<PromptDialog
+			open={open}
+			onOpenChange={(next) => {
+				setError("");
+				onOpenChange(next);
+			}}
+			title="重命名系列"
+			defaultValue={SERIES}
+			maxLength={24}
+			error={error}
+			onValueChange={() => setError("")}
+			onConfirm={(value) => {
+				const name = value.trim();
+				if (!name) setError("名称不能为空");
+				else if (TAKEN_SERIES.includes(name)) setError("已有同名系列");
+				else return;
+				return false;
+			}}
+			container={container}
+		/>
+	);
+}
 
 interface DialogSlotProps {
 	container: HTMLElement | null;
@@ -255,13 +361,15 @@ function isEditable(target: EventTarget) {
 	return target instanceof HTMLElement && target.closest("input, textarea, [contenteditable]");
 }
 
-/** 贴近真实文章页的舞台：两个按钮打开模态对话框，按 ? 打开快捷键说明；常开的那个是非模态陈列。 */
+/** 贴近真实文章页的舞台：按钮打开铺满视口的真实对话框、确认框与输入确认框，按 ? 打开快捷键说明；常开的那个是展柜里的非模态陈列。 */
 function DialogStage({ state }: ExhibitRenderProps) {
 	const current = STATES.find((item) => item.id === state) ?? STATES[0];
-	const { ref, container } = useStageContainer();
-	const [resting, setResting] = useState(true);
+	const { ref, container, host } = useStageContainer();
+	const [resting, setResting] = useState(current.kind !== undefined);
 	const [shortcuts, setShortcuts] = useState(false);
-	const Resting = DIALOGS[current.kind];
+	const [confirming, setConfirming] = useState<Confirming>(null);
+	const [renaming, setRenaming] = useState(false);
+	const Resting = current.kind ? DIALOGS[current.kind] : null;
 	const insideStage = (target: EventTarget | null) =>
 		target instanceof Node && container?.contains(target);
 
@@ -297,7 +405,7 @@ function DialogStage({ state }: ExhibitRenderProps) {
 			</div>
 			<div className="mt-4 flex gap-2 px-8">
 				<ProfileDialog
-					container={container}
+					container={host}
 					overlay={current.overlay}
 					trigger={
 						<Button variant="secondary" size="sm" onClick={() => setResting(false)}>
@@ -306,7 +414,7 @@ function DialogStage({ state }: ExhibitRenderProps) {
 					}
 				/>
 				<ChangelogDialog
-					container={container}
+					container={host}
 					overlay={current.overlay}
 					trigger={
 						<Button variant="secondary" size="sm" onClick={() => setResting(false)}>
@@ -314,6 +422,38 @@ function DialogStage({ state }: ExhibitRenderProps) {
 						</Button>
 					}
 				/>
+				<Button
+					variant="secondary"
+					size="sm"
+					onClick={() => {
+						setResting(false);
+						setRenaming(true);
+					}}
+				>
+					重命名系列
+				</Button>
+				<Button
+					variant="secondary"
+					size="sm"
+					className="text-destructive"
+					onClick={() => {
+						setResting(false);
+						setConfirming("post");
+					}}
+				>
+					永久删除
+				</Button>
+				<Button
+					variant="secondary"
+					size="sm"
+					className="text-destructive"
+					onClick={() => {
+						setResting(false);
+						setConfirming("series");
+					}}
+				>
+					删除系列
+				</Button>
 			</div>
 			<p className="m-0 mt-5 px-8 text-14 leading-relaxed text-foreground/90">
 				从独山子出发，第一天就爬升两千米。哈希勒根达坂的风把手套吹透，下坡时手指已经握不住刹车。晚上在乔尔玛的兵站借宿，老板说明天的雪要等中午才化。
@@ -322,19 +462,28 @@ function DialogStage({ state }: ExhibitRenderProps) {
 				按 <Kbd>?</Kbd> 看快捷键
 			</p>
 			<ShortcutsDialog
-				container={container}
+				container={host}
 				overlay={current.overlay}
 				root={{ open: shortcuts, onOpenChange: setShortcuts }}
 			/>
-			{resting && current.overlay && (
+			<DeleteConfirms
+				container={host}
+				confirming={confirming}
+				onConfirmingChange={setConfirming}
+				fail={current.id === "fail"}
+			/>
+			<RenameSeries container={host} open={renaming} onOpenChange={setRenaming} />
+			{Resting && resting && current.overlay && (
 				<div aria-hidden="true" data-state="open" className="v-scrim v-dialog-overlay" />
 			)}
-			<Resting
-				container={container}
-				overlay={current.overlay}
-				root={{ open: resting, onOpenChange: setResting, modal: false }}
-				content={{ ...restingContent, entrance: "settle" }}
-			/>
+			{Resting && (
+				<Resting
+					container={container}
+					overlay={current.overlay}
+					root={{ open: resting, onOpenChange: setResting, modal: false }}
+					content={{ ...restingContent, entrance: "settle" }}
+				/>
+			)}
 		</div>
 	);
 }

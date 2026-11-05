@@ -1,0 +1,84 @@
+@import "../dialog/dialog.css";
+@import "../input/input.css";
+
+@layer components {
+	/* 确认框与输入确认框：对话框的外壳与出场，固定 400 宽、紧凑内边距；两级选择器防止再次导入 dialog.css 时被顶掉 */
+	.v-dialog.v-confirm {
+		--v-dialog-width: 25rem;
+
+		padding: 22px 24px 24px;
+		overflow-y: auto;
+	}
+
+	.v-dialog__title.v-confirm__title {
+		line-height: 1.45;
+	}
+
+	.v-dialog__description.v-confirm__description {
+		margin-block-start: 8px;
+		line-height: 1.8;
+	}
+
+	.v-confirm__field {
+		margin-block-start: 16px;
+	}
+
+	.v-confirm__field b {
+		font-weight: 600;
+	}
+
+	.v-confirm__error {
+		display: flex;
+		align-items: flex-start;
+		gap: 8px;
+		margin-block-start: 16px;
+		padding: 10px 12px;
+		border-radius: var(--radius-8);
+		background-color: color-mix(in oklab, var(--destructive) 8%, var(--popover));
+		color: var(--destructive-text);
+		font-size: var(--text-13);
+		line-height: 1.7;
+	}
+
+	.v-confirm__error svg {
+		flex: none;
+		inline-size: 16px;
+		block-size: 16px;
+		margin-block-start: 3px;
+	}
+
+	.v-confirm__actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 8px;
+		margin-block-start: 24px;
+	}
+
+	/* 点了遮罩：焦点回到「取消」时圈出来 */
+	.v-confirm__actions > [data-nudged] {
+		box-shadow:
+			0 0 0 1px color-mix(in oklab, var(--foreground) 28%, transparent),
+			0 0 0 4px color-mix(in oklab, var(--decoration) 22%, transparent);
+	}
+
+	.v-confirm__hint {
+		margin: 12px 0 0;
+		color: var(--muted-foreground);
+		font-size: var(--text-12);
+		text-align: end;
+	}
+
+	/* 窄屏：按钮纵向铺满，动作按钮在上，按触屏加高 4 */
+	@media (max-width: 639.98px) {
+		.v-confirm__actions {
+			flex-direction: column-reverse;
+			align-items: stretch;
+		}
+
+		.v-confirm__actions > .v-button {
+			block-size: var(--v-control-height-lg, 2.5rem);
+		}
+	}
+}
