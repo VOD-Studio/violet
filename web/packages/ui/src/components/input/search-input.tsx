@@ -1,14 +1,12 @@
 "use client";
 
-import { cn } from "cn";
-import { Search, X } from "lucide-react";
-import { useComposedRefs } from "radix-ui/internal";
-import { useCallback, useRef, useState } from "react";
+import { Search } from "lucide-react";
+import { useCallback, useState } from "react";
 import { useDebouncedCallback } from "../../lib/use-debounced-callback";
-import { Spinner } from "../indicator";
-import { Input, type InputProps } from "../input";
+import { Kbd, type KbdKey } from "../kbd";
+import { Input, type InputProps } from "./input";
 
-/** 组合 Input 的搜索行为；原生属性、变体、尺寸与样式槽沿用 Input 契约。 */
+/** 搜索框：沿用 Input 的变体、尺寸与样式槽，增加防抖搜索；查询请求与结果由调用方管理。 */
 export interface SearchInputProps
 	extends Omit<
 		InputProps,
@@ -20,8 +18,10 @@ export interface SearchInputProps
 		| "trailing"
 		| "clearable"
 		| "passwordToggle"
-		| "showPasswordLabel"
-		| "hidePasswordLabel"
+		| "passwordToggleLabel"
+		| "copyable"
+		| "copyLabel"
+		| "onCopied"
 	> {
 	/** 受控值；传则受控，须配 onValueChange 回写 */
 	value?: string;
@@ -33,35 +33,37 @@ export interface SearchInputProps
 	onSearch?: (value: string) => void;
 	/** 防抖延迟，默认 300ms */
 	delay?: number;
-	/** 是否显示加载中 spinner（覆盖清除按钮） */
-	loading?: boolean;
-	/** 清除回调（点击 × 时额外触发，onSearch("") 仍会调用） */
+	/** 清除回调（点击清除钮时额外触发，onSearch("") 仍会调用） */
 	onClear?: () => void;
+	/** 清除钮的可访问名称，默认「清除搜索」。 */
+	clearLabel?: string;
+	/** 输入区为空时在后置槽显示的快捷键；默认不显示。 */
+	shortcut?: readonly KbdKey[];
 }
 
-/** 调用方的 onKeyDown 先执行，preventDefault 可取消内部的回车搜索。 */
+/**
+ * 带搜索图标、清除钮与防抖的 Input：`type="search"`、`inputMode="search"`。
+ *
+ * @remarks 调用方的 onKeyDown 先执行，preventDefault 可取消内部的回车搜索。
+ */
 export function SearchInput({
 	value,
 	defaultValue = "",
 	onValueChange,
 	onSearch,
 	delay = 300,
-	loading = false,
 	onClear,
 	clearLabel = "清除搜索",
-	classNames,
+	shortcut,
 	placeholder,
 	onKeyDown,
 	disabled,
 	readOnly,
-	ref,
 	...rest
 }: SearchInputProps) {
 	const [inner, setInner] = useState(defaultValue);
 	const isControlled = value !== undefined;
 	const currentValue = value ?? inner;
-	const inputRef = useRef<HTMLInputElement>(null);
-	const composedRef = useComposedRefs(ref, inputRef);
 
 	const debounced = useDebouncedCallback(
 		(v: string) => {
@@ -100,22 +102,17 @@ export function SearchInput({
 		debounced.flush();
 	};
 
+	// Input 的清除先派发 input 事件（排入防抖），这里取消它并立即以空文本搜索。
 	const handleClear = () => {
-		if (disabled || readOnly) return;
 		debounced.cancel();
-		if (!isControlled) setInner("");
-		onValueChange?.("");
 		onSearch?.("");
 		onClear?.();
-		inputRef.current?.focus();
 	};
-
-	const showClear = !loading && currentValue.length > 0;
 
 	return (
 		<Input
+			inputMode="search"
 			{...rest}
-			ref={composedRef}
 			type="search"
 			value={currentValue}
 			onChange={handleChange}
@@ -125,24 +122,13 @@ export function SearchInput({
 			placeholder={placeholder ?? "搜索…"}
 			leading={<Search aria-hidden="true" />}
 			trailing={
-				loading ? (
-					<Spinner aria-hidden="true" size={16} />
-				) : showClear ? (
-					<button
-						type="button"
-						onClick={handleClear}
-						className={cn("v-search-input__clear", classNames?.action)}
-						aria-label={clearLabel}
-						disabled={disabled || readOnly}
-					>
-						<X aria-hidden="true" />
-					</button>
+				shortcut && currentValue === "" ? (
+					<Kbd keys={shortcut} aria-hidden="true" />
 				) : undefined
 			}
-			classNames={{
-				...classNames,
-				root: cn("v-search-input", classNames?.root),
-			}}
+			clearable
+			clearLabel={clearLabel}
+			onClear={handleClear}
 		/>
 	);
 }

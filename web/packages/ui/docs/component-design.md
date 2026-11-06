@@ -2,16 +2,16 @@
 
 本流程用于给 `@violet/ui` 新增通用组件，或把 legacy 单元迁入新架构。先打开[架构指南](./architecture.md)和 `web/packages/ui/component-manifest.json`，确认是否已有同类能力。
 
-给场景写一段最小调用代码，再列出谁拥有状态、需要哪些 DOM 语义、什么时候不用该组件。Input 是原生输入，可选 label、说明和错误；值、校验与请求状态由调用方管理。不要因为一个字段示例而增加表单引擎。
+给场景写一段最小调用代码，再列出谁拥有状态、需要哪些 DOM 语义、什么时候不用该组件。Input 是原生输入的外壳；标签、错误文案属于表单项，值、校验与请求状态由调用方管理。不要因为一个字段示例而增加表单引擎。
 
 ```tsx
 <Input
-  label="显示名称"
+  aria-label="显示名称"
   name="displayName"
   value={name}
   onChange={(event) => setName(event.target.value)}
   invalid={name.trim().length < 2}
-  errorMessage="至少输入两个非空白字符"
+  aria-describedby="displayName-error"
 />
 ```
 
@@ -44,10 +44,10 @@ web/packages/ui/src/components/<name>/
 | Button loading | 调用方 | `aria-busy`、`data-loading`；点击和子 handler 不触发 |
 | Input 输入 / readonly / required | 原生控件与调用方 | 保留值、事件、ref 和表单提交语义 |
 | Checkbox 选择与表单复位 | 组件或调用方 | 可见状态与 FormData 一致；尊重 reset 取消，校验焦点落可见控件 |
-| Input invalid | 调用方 | 显式 invalid 优先于 aria-invalid；错误显示时才加入 describedby |
+| Input invalid / valid | 调用方 | 显式 invalid 优先于 aria-invalid 并写入 aria-invalid；valid 只改外观，不写 ARIA |
 | Dialog 打开 / 关闭 | Radix 或调用方 | 关闭语义、焦点回退和滚动边界按真实能力验收 |
 
-复合组件先确定 ref 与 `className` 落在哪个元素。Input 的两者都落 input，`classNames.root` 是外层布局，`classNames.control` 是视觉外壳。显式属性优先于组件内部默认值；事件合并要明确 `preventDefault` 是否取消内部行为。输入与内部操作按钮共享焦点范围，只有真正离开再进入才重新播放聚焦反馈。
+复合组件先确定 ref 与 `className` 落在哪个元素。Input 的两者都落 input，外壳就是根元素，`classNames.control` 调整它。显式属性优先于组件内部默认值；事件合并要明确 `preventDefault` 是否取消内部行为。输入与内部操作按钮共享焦点范围，只有真正离开再进入才重新播放聚焦反馈。
 
 公开类型必须与这些 DOM 归属一致。Button 的原生模式使用 `HTMLButtonElement`，asChild 模式使用 `HTMLElement`，不能把链接事件声明为 button 事件。类型检查同时覆盖合法的 anchor ref 和应被拒绝的原生按钮 anchor ref；运行测试验证合并后的实际节点与卸载清理。
 
@@ -75,7 +75,7 @@ pnpm --filter @violet/ui check
 export const inputExhibit: Exhibit = {
   id: "input",
   name: "输入框",
-  units: ["input", "label"],
+  units: ["input"],
   zone: "field",
   category: "form",
   footprint: { width: 520, height: 216 },
@@ -119,7 +119,7 @@ pnpm add /tmp/violet-ui-0.1.0.tgz
 
 版本号以 package.json 和 pack 输出为准。包尚未发布 npm，文档不使用未存在的 registry 安装流程。
 
-行为测试按组件能力取用：Button 检查 Enter/Space、disabled/loading、asChild 子 handler 和 object/callback ref；Input 检查可访问名称、ID 去重、原生 onChange、FormData/reset、受控更新、复合焦点、清除、密码显隐和 SSR hydration。真实浏览器检查明暗主题、焦点、错误与减弱动态；弹层增加焦点回退和点击外部。测试断言用户能观察的契约，避免只复述内部实现。
+行为测试按组件能力取用：Button 检查 Enter/Space、disabled/loading、asChild 子 handler 和 object/callback ref；Input 检查可访问名称、ID、原生 onChange、FormData/reset、受控更新、复合焦点、清除与 Esc、密码显隐与光标保持、复制和 SSR hydration。真实浏览器检查明暗主题、焦点、错误与减弱动态；弹层增加焦点回退和点击外部。测试断言用户能观察的契约，避免只复述内部实现。
 
 组件库文档改动还要运行根 Makefile 的 `make web-lint`、`make web-typecheck` 和相关 `make web-test`。检查结果记录实际执行的命令与限制，由独立 reviewer/verifier 复核，作者不自行批准交付。
 

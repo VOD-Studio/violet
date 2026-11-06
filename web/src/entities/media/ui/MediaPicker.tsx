@@ -185,7 +185,6 @@ export function MediaPicker({
 				) : null}
 				<SearchInput
 					aria-label="搜索素材文件名"
-					variant="soft"
 					controlSize="sm"
 					defaultValue={keyword}
 					onSearch={(v) => {
@@ -193,7 +192,7 @@ export function MediaPicker({
 						setPage(1);
 					}}
 					placeholder="搜索文件名…"
-					classNames={{ root: "max-w-64 flex-1" }}
+					classNames={{ control: "max-w-64 flex-1" }}
 				/>
 			</div>
 

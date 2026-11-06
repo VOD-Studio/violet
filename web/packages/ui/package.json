@@ -207,11 +207,6 @@
 			"import": "./src/components/scroll-area/index.ts",
 			"default": "./src/components/scroll-area/index.ts"
 		},
-		"./search-input": {
-			"types": "./src/components/search-input/index.ts",
-			"import": "./src/components/search-input/index.ts",
-			"default": "./src/components/search-input/index.ts"
-		},
 		"./segmented": {
 			"types": "./src/components/segmented/index.ts",
 			"import": "./src/components/segmented/index.ts",
@@ -330,7 +325,6 @@
 		"./components/popover.css": "./src/components/popover/popover.css",
 		"./components/prompt-dialog.css": "./src/components/prompt-dialog/prompt-dialog.css",
 		"./components/radio.css": "./src/components/radio/radio.css",
-		"./components/search-input.css": "./src/components/search-input/search-input.css",
 		"./components/segmented.css": "./src/components/segmented/segmented.css",
 		"./components/select.css": "./src/components/select/select.css",
 		"./components/separator.css": "./src/components/separator/separator.css",
@@ -559,11 +553,6 @@
 				"import": "./dist/components/scroll-area/index.js",
 				"default": "./dist/components/scroll-area/index.js"
 			},
-			"./search-input": {
-				"types": "./dist/components/search-input/index.d.ts",
-				"import": "./dist/components/search-input/index.js",
-				"default": "./dist/components/search-input/index.js"
-			},
 			"./segmented": {
 				"types": "./dist/components/segmented/index.d.ts",
 				"import": "./dist/components/segmented/index.js",
@@ -682,7 +671,6 @@
 			"./components/popover.css": "./dist/components/popover.css",
 			"./components/prompt-dialog.css": "./dist/components/prompt-dialog.css",
 			"./components/radio.css": "./dist/components/radio.css",
-			"./components/search-input.css": "./dist/components/search-input.css",
 			"./components/segmented.css": "./dist/components/segmented.css",
 			"./components/select.css": "./dist/components/select.css",
 			"./components/separator.css": "./dist/components/separator.css",

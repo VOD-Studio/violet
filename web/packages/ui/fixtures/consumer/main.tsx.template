@@ -1,7 +1,7 @@
 import { Button, Checkbox, DocumentScrollbar, Dropdown, DropdownContent, DropdownGroup, DropdownItem, DropdownTrigger, ImagePixelReveal, Input, Label, OverlayScroll, SearchInput, Segmented, UploadTile, type PixelRevealVariant } from "@violet/ui";
 import { buttonVariants } from "@violet/ui/variants";
 import checkboxCss from "@violet/ui/components/checkbox.css?raw";
-import { SearchInput as LeafSearchInput } from "@violet/ui/search-input";
+import { SearchInput as LeafSearchInput } from "@violet/ui/input";
 import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
@@ -266,35 +266,45 @@ function InputPreview() {
 			{(["sm", "md", "lg"] as const).map((size) => <Button key={size} aria-pressed={controlSize === size} onClick={() => setControlSize(size)}>{size}</Button>)}
 		</div>
 		<section className="input-grid" aria-label="四种输入外观">
-			{(["outline", "soft", "ghost", "underline"] as const).map((variant) => <Input
-				key={variant} id={`consumer-input-${variant}`} label={variant} name={variant}
-				variant={variant} controlSize={controlSize} leading={leading}
-				trailing={variant === "underline" ? ".violet.dev" : undefined}
-				defaultValue="Violet" clearable description="可输入、清除与切换焦点"
-				invalid={state === "invalid"} errorMessage="请检查输入内容"
-				readOnly={state === "readonly"} disabled={state === "disabled"}
-			/>)}
+			{(["filled", "outline", "underline", "plain"] as const).map((variant) => <div key={variant}>
+				<Label htmlFor={`consumer-input-${variant}`}>{variant}</Label>
+				<Input
+					id={`consumer-input-${variant}`} name={variant} aria-describedby={`consumer-input-${variant}-error`}
+					variant={variant} controlSize={controlSize} leading={leading}
+					trailing={variant === "underline" ? ".violet.dev" : undefined}
+					defaultValue="Violet" clearable
+					invalid={state === "invalid"}
+					readOnly={state === "readonly"} disabled={state === "disabled"}
+				/>
+				{state === "invalid" ? <p id={`consumer-input-${variant}-error`}>请检查输入内容</p> : null}
+			</div>)}
 		</section>
 		<section aria-label="输入表单">
 			<form id="input-form" onReset={(event) => { if (cancelReset) event.preventDefault(); }} onSubmit={(event) => {
 				event.preventDefault();
 				setSubmitted(JSON.stringify(Array.from(new FormData(event.currentTarget).entries())));
 			}}>
-				<Input id="consumer-input-name" name="name" label="显示名称" defaultValue="初始名称" clearable />
-				<Input id="consumer-input-password" name="password" label="密码" type="password" defaultValue="violet-password" passwordToggle clearable />
-				<Input id="consumer-input-readonly" name="readonly" label="只读字段" defaultValue="保留内容" readOnly clearable />
-				<Input id="consumer-input-disabled" name="disabled" label="禁用字段" defaultValue="不会提交" disabled clearable />
+				<Label htmlFor="consumer-input-name">显示名称</Label>
+				<Input id="consumer-input-name" name="name" defaultValue="初始名称" clearable />
+				<Label htmlFor="consumer-input-password">密码</Label>
+				<Input id="consumer-input-password" name="password" type="password" defaultValue="violet-password" passwordToggle clearable />
+				<Label htmlFor="consumer-input-readonly">只读字段</Label>
+				<Input id="consumer-input-readonly" name="readonly" defaultValue="保留内容" readOnly clearable />
+				<Label htmlFor="consumer-input-disabled">禁用字段</Label>
+				<Input id="consumer-input-disabled" name="disabled" defaultValue="不会提交" disabled clearable />
 				<div className="input-controls">
 					<Button type="submit">提交 Input 表单</Button>
 					<Button type="reset">重置 Input 表单</Button>
 					<label><input type="checkbox" checked={cancelReset} onChange={(event) => setCancelReset(event.currentTarget.checked)} />取消表单重置</label>
 				</div>
 			</form>
-			<Input id="consumer-input-external" form="input-form" name="external" label="表单外字段" defaultValue="外部初值" clearable />
+			<Label htmlFor="consumer-input-external">表单外字段</Label>
+			<Input id="consumer-input-external" form="input-form" name="external" defaultValue="外部初值" clearable />
 			<output id="input-submitted">{submitted}</output>
 		</section>
 		<section aria-label="受控拒绝更新">
-			<Input id="consumer-input-controlled" label="固定受控值" value="固定值" clearable onChange={(event) => {
+			<Label htmlFor="consumer-input-controlled">固定受控值</Label>
+			<Input id="consumer-input-controlled" value="固定值" clearable onChange={(event) => {
 				const value = event.currentTarget.value;
 				setRequests((current) => [...current, value]);
 			}} />
@@ -357,8 +367,12 @@ function App() {
 				<Button id="react-button" variant="primary" onClick={() => setCount(count + 1)}>
 					保存 {count}
 				</Button>
-				<Input id="email" label="邮箱" description="用于发送更新" type="email" />
-				<Input id="invalid-email" label="错误状态" invalid errorMessage="请输入正确邮箱" />
+				<Label htmlFor="email">邮箱</Label>
+				<Input id="email" type="email" aria-describedby="email-hint" />
+				<p id="email-hint">用于发送更新</p>
+				<Label htmlFor="invalid-email">错误状态</Label>
+				<Input id="invalid-email" invalid aria-describedby="invalid-email-error" />
+				<p id="invalid-email-error">请输入正确邮箱</p>
 			</section>
 			<section aria-label="纯 HTML 样式">
 				<h2>HTML</h2>
@@ -366,7 +380,7 @@ function App() {
 					保存
 				</button>
 				<label htmlFor="html-email" className="v-label">邮箱</label>
-				<div className="v-input-control v-input-control--outline v-input-control--md">
+				<div className="v-input-control v-input-control--filled v-input-control--md">
 					<input id="html-email" type="email" className="v-input" />
 				</div>
 			</section>
@@ -430,7 +444,7 @@ function App() {
 			</section>
 			<section aria-label="搜索交互">
 				<h2>SearchInput</h2>
-				<LeafSearchInput id="search-query" aria-label="搜索文章" variant="soft" controlSize="sm" className="search-text" classNames={{ root: "search-layout" }} defaultValue="violet" onKeyDown={(event) => setKeys((keys) => [...keys, event.key])} onSearch={(query) => setSearches((searches) => [...searches, query])} />
+				<LeafSearchInput id="search-query" aria-label="搜索文章" variant="filled" controlSize="sm" className="search-text" classNames={{ control: "search-layout" }} shortcut={["mod", "K"]} defaultValue="violet" onKeyDown={(event) => setKeys((keys) => [...keys, event.key])} onSearch={(query) => setSearches((searches) => [...searches, query])} />
 				<output id="search-keys">{JSON.stringify(keys)}</output>
 				<output id="search-queries">{JSON.stringify(searches)}</output>
 				<SearchInput id="readonly-query" aria-label="只读搜索" readOnly defaultValue="保留文本" />

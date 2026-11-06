@@ -1,57 +1,34 @@
+/*
+ * Input 与 SearchInput 的 BEM 类名样式：外壳 .v-input-control（四种变体 × 三档尺寸）、
+ * 原生输入 .v-input 与前置 / 状态 / 后置 / 圆钮四类槽。需先导入 @violet/ui/tokens.css 或 styles.css。
+ *
+ * 外壳只认 --v-input-* 自定义属性：尺寸档与触屏改的是高度、内边距、字号与图标，变体与状态改的是
+ * 底色与 box-shadow 三组变量，没有逐变体 × 逐状态的特例类。焦点色 --v-input-fc 取季节色混 40% 墨色，
+ * 出错与通过只替换这一个变量，环、光晕与涟漪一起跟随。
+ */
+@import "../indicator/indicator.css";
+@import "../kbd/kbd.css";
+
 @layer components {
-	.v-input-field {
-		--v-input-accent: var(--ring);
-		--v-input-label-color: var(--link);
-		display: flex;
-		inline-size: 100%;
-		min-inline-size: 0;
-		flex-direction: column;
-		gap: 0.5rem;
-	}
-
-	.v-input-field:has(.v-input:is([type="hidden"], [hidden])) {
-		display: none;
-	}
-
-	.v-input-field:has(
-		.v-input:is([aria-invalid="true"], [aria-invalid="grammar"], [aria-invalid="spelling"])
-	) {
-		--v-input-accent: var(--destructive);
-		--v-input-label-color: var(--destructive-text);
-	}
-
-	.v-input-field__label {
-		color: var(--foreground);
-		font-size: 0.875rem;
-		font-weight: 500;
-		line-height: 1.5;
-		transition: color 320ms ease;
-	}
-
-	.v-input-field:has(.v-input-control:focus-within) > .v-input-field__label,
-	.v-input-field:has(
-			.v-input:is([aria-invalid="true"], [aria-invalid="grammar"], [aria-invalid="spelling"])
-		)
-		> .v-input-field__label {
-		color: var(--v-input-label-color);
-	}
-
-	.v-input-field__description,
-	.v-input-field__error {
-		margin: 0;
-		font-size: 0.8125rem;
-		line-height: 1.5;
-	}
-
-	.v-input-field__description {
-		color: var(--muted-foreground);
-	}
-
-	.v-input-field__error {
-		color: var(--destructive-text);
-	}
-
 	.v-input-control {
+		--v-input-h-base: 2.25rem;
+		--v-input-px: 0.75rem;
+		--v-input-fs-base: 0.875rem;
+		--v-input-icon: 1rem;
+		--v-input-h: var(--v-input-h-base);
+		--v-input-fs: var(--v-input-fs-base);
+		--v-input-fc: color-mix(in oklab, var(--decoration) 60%, var(--foreground));
+		--v-input-glow: color-mix(in oklab, var(--v-input-fc) 16%, transparent);
+		--v-input-ring-focus: 0 0 0 1px var(--v-input-fc), 0 0 0 4px var(--v-input-glow);
+		--v-input-ring-valid: 0 0 0 1px var(--v-input-fc);
+		--v-input-ripple-from: 0 0 0 3px color-mix(in oklab, var(--v-input-fc) 32%, transparent);
+		--v-input-ripple-to: 0 0 0 5px transparent;
+		--v-input-bg: var(--secondary);
+		--v-input-bg-hover: var(--v-input-bg);
+		--v-input-bg-focus: var(--card);
+		--v-input-shadow: 0 0 0 1px transparent;
+		--v-input-shadow-hover: var(--v-input-shadow);
+
 		position: relative;
 		display: flex;
 		box-sizing: border-box;
@@ -59,28 +36,186 @@
 		gap: 0.5rem;
 		inline-size: 100%;
 		min-inline-size: 0;
-		block-size: var(--v-input-height-md, 2.5rem);
-		padding-inline: 0.75rem;
-		border: 1px solid transparent;
-		border-radius: var(--v-control-radius, min(var(--radius), 1rem));
-		background-color: transparent;
-		color: var(--muted-foreground);
+		block-size: var(--v-input-h);
+		padding-inline: var(--v-input-px);
+		border: 0;
+		border-radius: var(--radius-8);
+		background-color: var(--v-input-bg);
+		box-shadow: var(--v-input-shadow);
+		color: var(--foreground);
+		font-size: var(--v-input-fs);
+		line-height: 1.4;
+		cursor: text;
 		transition:
-			border-color 320ms ease,
-			background-color 320ms ease,
-			color 320ms ease;
+			background-color 140ms ease-out,
+			box-shadow 120ms ease-out;
+	}
+
+	.v-input-control:has(.v-input:is([type="hidden"], [hidden])) {
+		display: none;
 	}
 
 	.v-input-control--sm {
-		block-size: var(--v-input-height-sm, 2rem);
-		padding-inline: 0.625rem;
+		--v-input-h-base: 2rem;
+		--v-input-px: 0.625rem;
 	}
 
 	.v-input-control--lg {
-		block-size: var(--v-input-height-lg, 3rem);
-		padding-inline: 0.875rem;
+		--v-input-h-base: 2.5rem;
+		--v-input-px: 0.875rem;
+		--v-input-fs-base: 1rem;
+		--v-input-icon: 1.25rem;
 	}
 
+	.v-input-control[data-copyable] {
+		--v-input-fs-base: 0.8125rem;
+	}
+
+	/* 触屏：高度各加 4，字号一律 16，避免 iOS 聚焦时放大页面 */
+	@media (pointer: coarse) {
+		.v-input-control {
+			--v-input-h: calc(var(--v-input-h-base) + 4px);
+			--v-input-fs: 1rem;
+		}
+	}
+
+	/* 画层：涟漪在外壳之外扩 2–5px，内容压在它之上 */
+	.v-input-control::before {
+		position: absolute;
+		inset: 0;
+		border-radius: inherit;
+		box-shadow: 0 0 0 0 transparent;
+		pointer-events: none;
+		content: "";
+	}
+
+	.v-input-control > * {
+		position: relative;
+		z-index: 1;
+	}
+
+	/* 变体：只给出各状态的底色与 box-shadow 变量 */
+	.v-input-control--filled {
+		--v-input-bg: var(--secondary);
+		--v-input-bg-hover: color-mix(in oklab, var(--secondary) 92%, var(--foreground));
+	}
+
+	.v-input-control--outline {
+		--v-input-bg: var(--card);
+		--v-input-shadow: 0 0 0 1px color-mix(in oklab, var(--foreground) 22%, transparent);
+		--v-input-shadow-hover: 0 0 0 1px var(--v-input-fc);
+	}
+
+	.v-input-control--underline {
+		--v-input-bg: transparent;
+		--v-input-shadow: 0 1px 0 0 color-mix(in oklab, var(--foreground) 28%, transparent);
+		--v-input-shadow-hover: 0 1px 0 0 var(--v-input-fc);
+		--v-input-ring-focus: 0 2px 0 0 var(--v-input-fc), 0 5px 0 0 var(--v-input-glow);
+		--v-input-ring-valid: 0 2px 0 0 var(--v-input-fc);
+		--v-input-ripple-from: 0 5px 0 0 color-mix(in oklab, var(--v-input-fc) 32%, transparent);
+		--v-input-ripple-to: 0 7px 0 0 transparent;
+
+		border-radius: 6px 6px 0 0;
+	}
+
+	.v-input-control--plain {
+		--v-input-bg: transparent;
+		--v-input-bg-hover: color-mix(in oklab, var(--secondary) 60%, transparent);
+	}
+
+	/* 状态：悬停、聚焦、出错、通过共用变量；进入用弹性过冲，退出 120ms 直接收回 */
+	.v-input-control:where(:not([data-disabled], [data-readonly])):hover,
+	.v-input-control:focus-within,
+	.v-input-control[data-invalid],
+	.v-input-control[data-valid] {
+		transition:
+			background-color 140ms ease-out,
+			box-shadow 240ms cubic-bezier(0.34, 1.3, 0.64, 1);
+	}
+
+	@media (hover: hover) {
+		.v-input-control:where(:not([data-disabled], [data-readonly])):hover {
+			background-color: var(--v-input-bg-hover);
+			box-shadow: var(--v-input-shadow-hover);
+		}
+	}
+
+	.v-input-control:focus-within {
+		background-color: var(--v-input-bg-focus);
+		box-shadow: var(--v-input-ring-focus);
+	}
+
+	.v-input-control[data-invalid] {
+		--v-input-fc: var(--destructive);
+	}
+
+	.v-input-control[data-valid] {
+		--v-input-fc: var(--success);
+	}
+
+	.v-input-control[data-invalid] {
+		box-shadow: var(--v-input-ring-focus);
+	}
+
+	/* 通过态未聚焦只有单线描边；聚焦时用成功色算出的完整聚焦环（含光晕） */
+	.v-input-control[data-valid]:where(:not(:focus-within)) {
+		box-shadow: var(--v-input-ring-valid);
+	}
+
+	/* 只读：无底色、一圈细线，不响应悬停与聚焦，也不播动效 */
+	.v-input-control[data-readonly] {
+		--v-input-bg: transparent;
+		--v-input-bg-hover: transparent;
+		--v-input-bg-focus: transparent;
+		--v-input-shadow: inset 0 0 0 1px var(--border);
+		--v-input-shadow-hover: var(--v-input-shadow);
+		--v-input-ring-focus: var(--v-input-shadow);
+		--v-input-ring-valid: var(--v-input-shadow);
+
+		cursor: default;
+	}
+
+	.v-input-control--underline[data-readonly] {
+		--v-input-shadow: 0 1px 0 0 var(--border);
+	}
+
+	.v-input-control--plain[data-readonly] {
+		--v-input-shadow: none;
+	}
+
+	.v-input-control[data-readonly]::before {
+		display: none;
+	}
+
+	.v-input-control[data-disabled] {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	/* 涟漪：进入聚焦、变成出错、变成通过时各播一次；出错或通过的控件再获得焦点也重播。减弱动态下不声明 */
+	@media (prefers-reduced-motion: no-preference) {
+		.v-input-control:focus-within::before {
+			animation: v-input-ripple 500ms cubic-bezier(0.2, 0.7, 0.2, 1);
+		}
+
+		.v-input-control[data-invalid]::before {
+			animation: v-input-ripple-invalid 500ms cubic-bezier(0.2, 0.7, 0.2, 1);
+		}
+
+		.v-input-control[data-valid]::before {
+			animation: v-input-ripple-valid 500ms cubic-bezier(0.2, 0.7, 0.2, 1);
+		}
+
+		.v-input-control[data-invalid]:focus-within::before {
+			animation: v-input-ripple-invalid-focus 500ms cubic-bezier(0.2, 0.7, 0.2, 1);
+		}
+
+		.v-input-control[data-valid]:focus-within::before {
+			animation: v-input-ripple-valid-focus 500ms cubic-bezier(0.2, 0.7, 0.2, 1);
+		}
+	}
+
+	/* 输入区 */
 	.v-input {
 		display: block;
 		box-sizing: border-box;
@@ -93,15 +228,19 @@
 		border-radius: inherit;
 		outline: none;
 		background-color: transparent;
-		color: var(--foreground);
-		caret-color: var(--v-input-accent, var(--ring));
-		font-family: inherit;
-		font-size: 1rem;
-		line-height: 1.5;
+		color: inherit;
+		caret-color: var(--ring);
+		font: inherit;
+		cursor: inherit;
+	}
+
+	.v-input-control[data-copyable] .v-input {
+		font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
 	}
 
 	.v-input::placeholder {
 		color: var(--muted-foreground);
+		opacity: 1;
 	}
 
 	.v-input::selection {
@@ -127,211 +266,219 @@
 		cursor: pointer;
 	}
 
+	.v-input:disabled {
+		cursor: not-allowed;
+	}
+
+	/* 槽 */
 	.v-input-control__leading,
 	.v-input-control__trailing,
+	.v-input-control__status,
 	.v-input-control__action {
 		display: inline-flex;
 		flex: 0 0 auto;
 		align-items: center;
 		justify-content: center;
-		color: inherit;
+		color: var(--muted-foreground);
 	}
 
+	.v-input-control svg {
+		flex: none;
+		stroke-width: 1.75;
+	}
+
+	.v-input-control__leading svg {
+		inline-size: var(--v-input-icon);
+		block-size: var(--v-input-icon);
+	}
+
+	.v-input-control__trailing svg,
+	.v-input-control__status svg,
+	.v-input-control__action svg {
+		inline-size: 1rem;
+		block-size: 1rem;
+	}
+
+	/* 一小段文字：前置的是等宽的协议、前缀，后置的是单位、域名 */
+	.v-input-control__leading[data-text],
+	.v-input-control__trailing[data-text] {
+		font-size: 0.8125rem;
+	}
+
+	.v-input-control__leading[data-text] {
+		font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+	}
+
+	.v-input-control__status[data-status="invalid"] {
+		color: var(--destructive-text);
+	}
+
+	.v-input-control__status[data-status="valid"] {
+		color: var(--success-text);
+	}
+
+	/* 圆钮：清除、显隐、复制，固定 24px，不随 lg 放大 */
 	.v-input-control__action {
-		inline-size: 1.75rem;
-		block-size: 1.75rem;
+		box-sizing: border-box;
+		inline-size: 1.5rem;
+		block-size: 1.5rem;
 		padding: 0;
 		border: 0;
-		border-radius: 0.375rem;
+		border-radius: 0.75rem;
 		background-color: transparent;
 		font: inherit;
 		cursor: pointer;
-		transition: color 320ms ease;
+		transition:
+			background-color 140ms ease-out,
+			color 140ms ease-out,
+			opacity 120ms ease-out;
+	}
+
+	.v-input-control__action:hover:not(:disabled) {
+		background-color: var(--secondary);
+		color: var(--foreground);
 	}
 
 	.v-input-control__action:focus-visible {
-		outline: 2px solid var(--v-input-accent, var(--ring));
-		outline-offset: 1px;
+		outline: 2px solid var(--ring);
+		outline-offset: -1px;
 	}
 
 	.v-input-control__action:disabled {
 		cursor: not-allowed;
 	}
 
-	.v-input-control__leading svg,
-	.v-input-control__trailing svg,
-	.v-input-control__action svg {
-		inline-size: 1rem;
-		block-size: 1rem;
-		stroke-width: 2px;
-		opacity: 1;
+	.v-input-control__action[data-copied] {
+		color: var(--success-text);
 	}
 
-	.v-input-control:focus-within,
-	.v-input-control:has(
-		.v-input:is([aria-invalid="true"], [aria-invalid="grammar"], [aria-invalid="spelling"])
-	) {
-		color: var(--v-input-accent, var(--ring));
-	}
-
-	.v-input-control--outline {
-		border-color: var(--input);
-	}
-
-	.v-input-control--outline::before,
-	.v-input-control--outline::after {
-		position: absolute;
-		inset: -1px;
-		border-radius: inherit;
-		pointer-events: none;
-		content: "";
-	}
-
-	.v-input-control--outline::before {
-		box-shadow: 0 0 4px 2px
-			color-mix(in oklab, var(--v-input-accent, var(--ring)) 10%, transparent);
+	/* 清除钮常驻 DOM 以便 Tab 到达，视觉上只在悬停或焦点在控件内时出现 */
+	.v-input-control__action--clear {
 		opacity: 0;
-		transition: opacity 320ms ease;
-	}
-
-	.v-input-control--outline::after {
-		opacity: 0;
-	}
-
-	.v-input-control--outline:focus-within {
-		border-color: var(--v-input-accent, var(--ring));
-	}
-
-	.v-input-control--outline:focus-within::before {
-		opacity: 1;
-	}
-
-	.v-input-control--outline:focus-within::after {
-		animation: v-input-ripple 620ms ease-out both;
-	}
-
-	.v-input-control--outline:has(.v-input[readonly])::after {
-		animation: none;
-	}
-
-	.v-input-control--outline:has(
-		.v-input:is([aria-invalid="true"], [aria-invalid="grammar"], [aria-invalid="spelling"])
-	) {
-		border-color: var(--v-input-accent, var(--destructive));
-	}
-
-	.v-input-control--soft {
-		background-color: var(--muted);
-	}
-
-	.v-input-control--soft:focus-within,
-	.v-input-control--soft:has(
-		.v-input:is([aria-invalid="true"], [aria-invalid="grammar"], [aria-invalid="spelling"])
-	) {
-		background-color: color-mix(in oklab, var(--v-input-accent, var(--ring)) 6%, var(--muted));
-	}
-
-	.v-input-control--underline {
-		border: 0;
-		border-block-end: 1px solid var(--input);
-		border-radius: 0;
-	}
-
-	.v-input-control--underline::after {
-		position: absolute;
-		inset-inline: 0;
-		inset-block-end: -1px;
-		block-size: 2px;
-		background-color: var(--v-input-accent, var(--ring));
-		clip-path: inset(0 100% 0 0);
 		pointer-events: none;
-		content: "";
-		transition:
-			clip-path 560ms cubic-bezier(0.22, 1, 0.36, 1),
-			background-color 320ms ease;
 	}
 
-	.v-input-control--underline:focus-within::after,
-	.v-input-control--underline:has(
-		.v-input:is([aria-invalid="true"], [aria-invalid="grammar"], [aria-invalid="spelling"])
-	)::after {
-		clip-path: inset(0);
+	.v-input-control__action--clear svg {
+		inline-size: 0.875rem;
+		block-size: 0.875rem;
 	}
 
-	.v-input-control:has(.v-input:disabled),
-	.v-input-field:has(.v-input:disabled) > .v-input-field__label {
-		cursor: not-allowed;
-		opacity: 0.5;
-	}
-
-	.v-input:disabled {
-		cursor: not-allowed;
+	.v-input-control:focus-within .v-input-control__action--clear {
+		opacity: 1;
+		pointer-events: auto;
 	}
 
 	@media (hover: hover) {
-		.v-input-control:not(:focus-within):not(:has(.v-input:disabled)):hover {
-			color: var(--v-input-accent, var(--ring));
-		}
-
-		.v-input-control--outline:not(:focus-within):not(:has(.v-input:disabled)):hover,
-		.v-input-control--underline:not(:focus-within):not(:has(.v-input:disabled)):hover {
-			border-color: color-mix(in oklab, var(--v-input-accent, var(--ring)) 45%, var(--input));
-		}
-
-		.v-input-control--soft:not(:focus-within):not(:has(.v-input:disabled)):hover {
-			background-color: color-mix(
-				in oklab,
-				var(--v-input-accent, var(--ring)) 6%,
-				var(--muted)
-			);
+		.v-input-control:hover .v-input-control__action--clear {
+			opacity: 1;
+			pointer-events: auto;
 		}
 	}
 
-	@media (min-width: 48rem) {
-		.v-input {
-			font-size: 0.875rem;
-		}
-	}
-
+	/* 选择器与进入态同级且排在其后，才压得过聚焦、悬停时的过渡 */
 	@media (prefers-reduced-motion: reduce) {
-		.v-input-field__label,
 		.v-input-control,
-		.v-input-control::before,
-		.v-input-control::after,
-		.v-input-control__action,
-		.v-input-control--outline:focus-within::after {
-			animation: none;
+		.v-input-control:is(:hover, :focus-within, [data-invalid], [data-valid]),
+		.v-input-control__action {
 			transition: none;
 		}
 	}
 
 	@media (forced-colors: active) {
 		.v-input-control {
-			border-color: ButtonText;
+			outline: 1px solid ButtonText;
 			background-color: Canvas;
 			color: CanvasText;
 		}
 
 		.v-input-control:focus-within {
 			outline: 2px solid Highlight;
-			outline-offset: 2px;
+			outline-offset: 1px;
 		}
 
-		.v-input-control:has(.v-input:disabled) {
-			border-color: GrayText;
+		.v-input-control[data-disabled] {
+			outline-color: GrayText;
 			color: GrayText;
 			opacity: 1;
+		}
+
+		.v-input-control__action:focus-visible {
+			outline-color: Highlight;
 		}
 	}
 }
 
+/* 涟漪关键帧五份同形：状态组合变化时只换动画名，已有的状态再获得焦点也会重播 */
 @keyframes v-input-ripple {
 	from {
-		box-shadow: 0 0 0 0 var(--v-input-accent, var(--ring));
-		opacity: 0.32;
+		box-shadow: var(--v-input-ripple-from);
 	}
+
 	to {
-		box-shadow: 0 0 0 8px var(--v-input-accent, var(--ring));
-		opacity: 0;
+		box-shadow: var(--v-input-ripple-to);
 	}
+}
+
+@keyframes v-input-ripple-invalid {
+	from {
+		box-shadow: var(--v-input-ripple-from);
+	}
+
+	to {
+		box-shadow: var(--v-input-ripple-to);
+	}
+}
+
+@keyframes v-input-ripple-valid {
+	from {
+		box-shadow: var(--v-input-ripple-from);
+	}
+
+	to {
+		box-shadow: var(--v-input-ripple-to);
+	}
+}
+
+@keyframes v-input-ripple-invalid-focus {
+	from {
+		box-shadow: var(--v-input-ripple-from);
+	}
+
+	to {
+		box-shadow: var(--v-input-ripple-to);
+	}
+}
+
+@keyframes v-input-ripple-valid-focus {
+	from {
+		box-shadow: var(--v-input-ripple-from);
+	}
+
+	to {
+		box-shadow: var(--v-input-ripple-to);
+	}
+}
+
+/*
+ * 加载细圆弧来自 indicator.css（不在 @layer 内），减弱动态时要在同样的层外才压得住：
+ * 系统偏好，以及陈列室等宿主用 data-motion="reduce" 标出的作用域，都停在静止虚线。
+ */
+@media (prefers-reduced-motion: reduce) {
+	.v-input-control .v-spinner,
+	.v-input-control .v-spinner__arc {
+		animation: none;
+	}
+
+	.v-input-control .v-spinner__arc {
+		stroke-dasharray: 62 100;
+	}
+}
+
+[data-motion="reduce"] .v-input-control .v-spinner,
+[data-motion="reduce"] .v-input-control .v-spinner__arc {
+	animation: none;
+}
+
+[data-motion="reduce"] .v-input-control .v-spinner__arc {
+	stroke-dasharray: 62 100;
 }

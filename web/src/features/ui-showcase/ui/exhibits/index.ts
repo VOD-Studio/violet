@@ -20,7 +20,6 @@ import { navbarExhibit } from "./navbar";
 import { popoverExhibit } from "./popover";
 import { presenceExhibit } from "./presence";
 import { radioExhibit } from "./radio";
-import { searchInputExhibit } from "./search-input";
 import { segmentedExhibit } from "./segmented";
 import { separatorExhibit } from "./separator";
 import { sheetExhibit } from "./sheet";
@@ -105,7 +104,6 @@ export const EXHIBITS: Exhibit[] = [
 	toggleGroupExhibit,
 	tabsExhibit,
 	inputExhibit,
-	searchInputExhibit,
 	textareaExhibit,
 	{
 		id: "select",

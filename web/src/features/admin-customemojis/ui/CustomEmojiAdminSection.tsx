@@ -119,9 +119,8 @@ export function CustomEmojiAdminSection() {
 				emptyDescription="还没有用户上传自定义表情"
 				toolbar={
 					<SearchInput
-						variant="soft"
 						controlSize="sm"
-						classNames={{ root: "min-w-50 max-w-100" }}
+						classNames={{ control: "min-w-50 max-w-100" }}
 						aria-label="搜索自定义表情名称或上传者"
 						placeholder="搜索表情名或上传者..."
 						defaultValue=""

@@ -79,7 +79,7 @@ export function RoadmapRelationForm({ item, items, onRelate }: RoadmapRelationFo
 					aria-label="搜索要关联的条目"
 					placeholder="搜索编号或标题"
 					controlSize="sm"
-					classNames={{ root: "min-w-0 flex-1" }}
+					classNames={{ control: "min-w-0 flex-1" }}
 					leading={<Search className="size-4" aria-hidden="true" />}
 					value={query}
 					onChange={(event) => {

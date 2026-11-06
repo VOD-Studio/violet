@@ -29,6 +29,12 @@ export function RoadmapItemForm({ item, onSave, onCancel }: RoadmapItemFormProps
 	const [error, setError] = useState<string | null>(null);
 	const [titleMissing, setTitleMissing] = useState(false);
 	const descriptionId = useId();
+	const titleId = useId();
+	const titleErrorId = useId();
+	const tagsId = useId();
+	const tagsHintId = useId();
+	const versionId = useId();
+	const dateId = useId();
 	const completed = item.stage === "completed";
 
 	const patch = (next: Partial<RoadmapDraft>) => setDraft((current) => ({ ...current, ...next }));
@@ -62,17 +68,25 @@ export function RoadmapItemForm({ item, onSave, onCancel }: RoadmapItemFormProps
 
 	return (
 		<form onSubmit={submit} className="space-y-5" aria-label={`编辑 #${item.number}`}>
-			<Input
-				label="标题"
-				value={draft.title}
-				maxLength={200}
-				invalid={titleMissing}
-				errorMessage="标题不能为空"
-				onChange={(event) => {
-					patch({ title: event.target.value });
-					setTitleMissing(false);
-				}}
-			/>
+			<div className={SECTION}>
+				<Label htmlFor={titleId}>标题</Label>
+				<Input
+					id={titleId}
+					value={draft.title}
+					maxLength={200}
+					invalid={titleMissing}
+					aria-describedby={titleMissing ? titleErrorId : undefined}
+					onChange={(event) => {
+						patch({ title: event.target.value });
+						setTitleMissing(false);
+					}}
+				/>
+				{titleMissing ? (
+					<p id={titleErrorId} role="alert" className="text-xs text-destructive">
+						标题不能为空
+					</p>
+				) : null}
+			</div>
 			<div className={SECTION}>
 				<Label htmlFor={descriptionId}>简介</Label>
 				<Textarea
@@ -82,12 +96,18 @@ export function RoadmapItemForm({ item, onSave, onCancel }: RoadmapItemFormProps
 					onChange={(event) => patch({ description: event.target.value })}
 				/>
 			</div>
-			<Input
-				label="标签"
-				description="用逗号分隔"
-				value={draft.tags}
-				onChange={(event) => patch({ tags: event.target.value })}
-			/>
+			<div className={SECTION}>
+				<Label htmlFor={tagsId}>标签</Label>
+				<Input
+					id={tagsId}
+					aria-describedby={tagsHintId}
+					value={draft.tags}
+					onChange={(event) => patch({ tags: event.target.value })}
+				/>
+				<p id={tagsHintId} className="text-xs text-muted-foreground">
+					用逗号分隔
+				</p>
+			</div>
 
 			<fieldset className={SECTION}>
 				<legend className={LEGEND}>关联链接</legend>
@@ -98,14 +118,14 @@ export function RoadmapItemForm({ item, onSave, onCancel }: RoadmapItemFormProps
 							aria-label={`链接 ${index + 1} 的名称`}
 							placeholder="名称（可选）"
 							value={link.label}
-							classNames={{ root: "w-36 shrink-0" }}
+							classNames={{ control: "w-36 shrink-0" }}
 							onChange={(event) => setLink(index, { label: event.target.value })}
 						/>
 						<Input
 							aria-label={`链接 ${index + 1} 的地址`}
 							placeholder="https:// 或 /站内路径"
 							value={link.url}
-							classNames={{ root: "min-w-0 flex-1" }}
+							classNames={{ control: "min-w-0 flex-1" }}
 							onChange={(event) => setLink(index, { url: event.target.value })}
 						/>
 						<Button
@@ -148,7 +168,7 @@ export function RoadmapItemForm({ item, onSave, onCancel }: RoadmapItemFormProps
 							aria-label={`子项 ${index + 1}`}
 							value={entry.text}
 							maxLength={500}
-							classNames={{ root: "min-w-0 flex-1" }}
+							classNames={{ control: "min-w-0 flex-1" }}
 							onChange={(event) => setStep(index, { text: event.target.value })}
 						/>
 						<Button
@@ -181,17 +201,23 @@ export function RoadmapItemForm({ item, onSave, onCancel }: RoadmapItemFormProps
 
 			{completed ? (
 				<div className="grid gap-4 sm:grid-cols-2">
-					<Input
-						label="交付版本"
-						value={draft.deliveredVersion}
-						onChange={(event) => patch({ deliveredVersion: event.target.value })}
-					/>
-					<Input
-						label="完成日期"
-						type="date"
-						value={draft.completionDate}
-						onChange={(event) => patch({ completionDate: event.target.value })}
-					/>
+					<div className={SECTION}>
+						<Label htmlFor={versionId}>交付版本</Label>
+						<Input
+							id={versionId}
+							value={draft.deliveredVersion}
+							onChange={(event) => patch({ deliveredVersion: event.target.value })}
+						/>
+					</div>
+					<div className={SECTION}>
+						<Label htmlFor={dateId}>完成日期</Label>
+						<Input
+							id={dateId}
+							type="date"
+							value={draft.completionDate}
+							onChange={(event) => patch({ completionDate: event.target.value })}
+						/>
+					</div>
 				</div>
 			) : null}
 

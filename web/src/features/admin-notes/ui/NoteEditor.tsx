@@ -190,7 +190,7 @@ export function NoteEditor({ id }: NoteEditorProps) {
 			/>
 
 			{/* 主编辑工作区与侧栏 */}
-			<div className="grid flex-1 grid-cols-1 gap-4 overflow-hidden lg:grid-cols-[1fr_280px]">
+			<div className="-m-1 grid flex-1 grid-cols-1 gap-4 overflow-hidden p-1 lg:grid-cols-[1fr_280px]">
 				{/* 左侧创作主区 */}
 				<div className="flex min-h-0 min-w-0 flex-col gap-2">
 					{/* 无边框大标题输入 */}
@@ -198,7 +198,7 @@ export function NoteEditor({ id }: NoteEditorProps) {
 						{...register("title")}
 						placeholder="无标题笔记（可留空）…"
 						aria-label="笔记标题"
-						variant="ghost"
+						variant="plain"
 						controlSize="lg"
 						classNames={{ control: "px-2" }}
 						className={cn(

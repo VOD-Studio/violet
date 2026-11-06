@@ -54,13 +54,12 @@ export async function checkConsumerTheme(css, html) {
 					readings.push({ appearance, contrast, id, normalRatio, hoverRatio });
 				}
 				const input = page.locator("#plain-input");
-				const label = page.locator('[for="plain-input"]');
-				await label.evaluate((el) => { el.style.transition = "none"; });
+				const shell = page.locator("#plain-shell");
 				for (const invalid of [false, true]) {
-					await input.evaluate((el, value) => el.setAttribute("aria-invalid", String(value)), invalid);
+					await shell.evaluate((el, value) => el.toggleAttribute("data-invalid", value), invalid);
 					await input.focus();
-					const focused = await colors(label);
-					assert.ok(ratio(focused.actualText, focused.background) >= 4.5, `${appearance}/${contrast}: focused label, invalid=${invalid}`);
+					const focused = await colors(shell);
+					assert.ok(ratio(focused.actualText, focused.actualBackground) >= 4.5, `${appearance}/${contrast}: focused input text, invalid=${invalid}`);
 				}
 				const root = await colors(page.locator("main"));
 				const namedLink = await page.locator("a.v-button--link").evaluate((el) => getComputedStyle(el).color);

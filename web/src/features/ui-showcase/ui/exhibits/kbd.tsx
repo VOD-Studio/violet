@@ -184,14 +184,17 @@ function TryIt() {
 
 	return (
 		<div className="flex flex-col items-center gap-4">
-			<div className="w-65">
+			<div className="flex w-65 flex-col gap-1.5">
 				<Input
 					readOnly
 					aria-label="按下快捷键"
+					aria-describedby="kbd-capture-hint"
 					placeholder="点这里，然后按键"
-					description="Tab 与 Esc 用来离开输入框"
 					onKeyDown={capture}
 				/>
+				<p id="kbd-capture-hint" className="m-0 text-12 text-muted-foreground">
+					Tab 与 Esc 用来离开输入框
+				</p>
 			</div>
 			<output className="flex min-h-8 items-center" aria-live="polite">
 				{keys.length > 0 ? (

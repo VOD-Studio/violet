@@ -277,7 +277,6 @@ function EmojisPage() {
 						<div className="min-w-50 max-w-100 flex-1">
 							<Input
 								type="search"
-								variant="soft"
 								controlSize="sm"
 								aria-label="搜索表情分组名称"
 								leading={<Search className="size-4" />}

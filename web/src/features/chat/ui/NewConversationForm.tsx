@@ -95,7 +95,6 @@ export function NewConversationForm({ onCreated, onClose }: NewConversationFormP
 					placeholder="搜索用户名或展示名"
 					ref={searchRef}
 					value={memberSearch}
-					variant="soft"
 				/>
 			</div>
 
@@ -183,7 +182,7 @@ export function NewConversationForm({ onCreated, onClose }: NewConversationFormP
 				{isRoom && (
 					<Input
 						aria-label="群聊名称"
-						classNames={{ root: "mb-2" }}
+						classNames={{ control: "mb-2" }}
 						onChange={(event) => setTitle(event.target.value)}
 						placeholder="群聊名称（可选）"
 						value={title}

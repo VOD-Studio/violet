@@ -116,10 +116,10 @@ export function HsvColorPicker({ value, onChange }: HsvColorPickerProps) {
 				/>
 				<Input
 					aria-label="十六进制颜色值"
-					variant="soft"
+					variant="filled"
 					controlSize="sm"
 					classNames={{
-						root: "min-w-0 flex-1",
+						control: "min-w-0 flex-1",
 						input: "font-mono text-xs uppercase",
 					}}
 					value={currentHex}

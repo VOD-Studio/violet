@@ -231,7 +231,6 @@ export function GalleryDraftListPage() {
 						<div className="min-w-50 max-w-80 flex-1">
 							<SearchInput
 								aria-label="按作者用户名筛选图集"
-								variant="soft"
 								controlSize="sm"
 								defaultValue=""
 								placeholder="按作者用户名筛选..."

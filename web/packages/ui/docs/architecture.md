@@ -2,7 +2,7 @@
 
 Violet/UI 的包名是 `@violet/ui`。React 组件、CSS 和类型声明在同一个包里交付；本目录维护组件库的架构与设计规范。
 
-先看 `web/packages/ui/component-manifest.json`。`foundation` 表示已按新结构实现；`legacy` 表示保留兼容入口、尚未重建。当前 36 个基础单元是 Avatar、Badge、Button、Card、Checkbox、CommandList、ConfirmDialog、ContextMenu、Dialog、Drawer、Dropdown、DropdownMenu、HoverCard、ImagePixelReveal、Indicator、Input、Kbd、Label、LinkCard、ListHighlight、MorphingPopover、Popover、PromptDialog、Radio、SearchInput、Segmented、Separator、Sheet、Skeleton、Sonner、Switch、Tabs、Textarea、ToggleGroup、Tooltip、UploadTile。其余 16 个单元，包括 Select 与 Table，仍属于 legacy；旧页面能运行不代表已经完成新架构改造。
+先看 `web/packages/ui/component-manifest.json`。`foundation` 表示已按新结构实现；`legacy` 表示保留兼容入口、尚未重建。当前 35 个基础单元是 Avatar、Badge、Button、Card、Checkbox、CommandList、ConfirmDialog、ContextMenu、Dialog、Drawer、Dropdown、DropdownMenu、HoverCard、ImagePixelReveal、Indicator、Input（含 SearchInput）、Kbd、Label、LinkCard、ListHighlight、MorphingPopover、Popover、PromptDialog、Radio、Segmented、Separator、Sheet、Skeleton、Sonner、Switch、Tabs、Textarea、ToggleGroup、Tooltip、UploadTile。其余 16 个单元，包括 Select 与 Table，仍属于 legacy；旧页面能运行不代表已经完成新架构改造。
 
 ```text
 web/packages/ui/
@@ -100,30 +100,31 @@ Button 的主要动作变体统一消费 `primary`、`primary-hover` 和 `primar
 
 `asChild` 同时划定类型边界。原生模式保留 `HTMLButtonElement` 的 ref、事件与表单属性；`asChild={true}` 使用 `HTMLElement` 的通用属性、ref 和事件，可接收链接的 object/callback ref。`href`、`target` 等子元素专属属性放在子元素上；需要访问链接专属属性的事件也放在链接上。React 19 的 callback ref cleanup 继续参与 Slot 的引用合并与卸载清理。
 
-Input 可选地组合名称、说明和错误信息。它不接管值、校验规则或请求状态：
+Input 是原生输入的外壳，不接管值、校验规则或请求状态，也不渲染标签与错误文案：
 
 ```tsx
 import { Input } from "@violet/ui";
 
 <Input
-  label="邮箱"
+  aria-label="邮箱"
   name="email"
   type="email"
+  inputMode="email"
   autoComplete="email"
   required
 />
 ```
 
-`className`、`style`、事件与 ref 继续属于 input；外层通过 `classNames.root` 调整布局，视觉外壳使用 `classNames.control`。未传 `id` 时使用 `useId` 生成 SSR 稳定的关联标识。`aria-describedby` 合并并去重宿主 ID 和实际存在的说明、错误节点；错误只在 invalid 时显示。`variant` 与 `controlSize` 由 typed recipe 推导，原生 `size` 仍为数字。清除与密码显隐按钮属于同一个复合焦点范围，不因焦点在内部转移而重播聚焦反馈；hover 仅在该范围没有焦点时生效。
+`className`、`style`、事件、ref 与 `id` 继续属于 input；外壳就是根元素，视觉槽通过 `classNames.control` 调整。输入框不渲染标签、提示、错误与字数，它们属于表单项：单独使用必须写 `aria-label`，`aria-describedby`、`aria-invalid` 由表单项传入并原样透传。未传 `id` 时使用 `useId` 生成 SSR 稳定的标识。`variant`（filled 默认、outline、underline、plain）与 `controlSize` 由 typed recipe 推导，原生 `size` 仍为数字。外壳只认 `--v-input-*` 自定义属性：尺寸档与触屏（`pointer: coarse`）改高度、内边距、字号与图标，变体与状态改底色与 box-shadow 三组变量，焦点色 `--v-input-fc` 在出错与通过时整体替换，不写逐变体 × 逐状态的特例类。清除、显隐、复制钮属于同一个复合焦点范围，焦点在内部转移不重播聚焦反馈。
 
-SearchInput 是独立的 `search-input` 组合单元，依赖 `input`，不反向把搜索状态或样式塞入基础单元。它复用 Input 的变体、尺寸、字段信息和样式槽，仅增加防抖、回车搜索、清除时序与加载反馈；查询请求仍由调用方管理。搜索单元的叶子 CSS 引入 Input CSS，基础 Input 的叶子入口不包含搜索行为或样式。只有图标或即时本地筛选时，使用 `Input type="search"`，不引入 SearchInput 的调度。
+SearchInput 并入 `input` 单元（`components/input/search-input.tsx`），共用 `input.css`，没有独立的清单条目或 CSS。它是 Input 加搜索图标、清除钮与防抖的组合，仅增加防抖、回车搜索、清除时序与可选的 `shortcut` 键帽；查询请求仍由调用方管理。只有图标或即时本地筛选时，使用 `Input type="search"`，不引入 SearchInput 的调度。
 
 | 输入场景 | 外观选择 |
 | --- | --- |
-| 独立表单、账号、配置及确认字段 | 默认 outline，保留明确字段边界 |
-| 列表工具栏筛选、聊天搜索 | soft；紧凑工具栏使用 controlSize="sm" |
-| 已有容器边界的弹层搜索、大标题编辑、页码 | ghost，避免重复描边 |
+| 页面与表单中的字段、搜索 | 默认 filled，凹陷底，聚焦转纸色 |
+| 在纸面卡片、对话框内需要明确边界 | outline |
 | 用户资料或表格中的行内改名 | underline，编辑线与展示内容衔接 |
+| 已有容器边界的大标题编辑、页码 | plain，静止时什么都没有 |
 
 外观不决定状态所有权：即时过滤仍可用 Input，防抖搜索使用 SearchInput。文件选择、range、checkbox、OTP 及行为 primitive 自己管理的输入，不套文本 Input 的外壳。
 

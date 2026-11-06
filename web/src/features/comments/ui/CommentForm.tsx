@@ -133,7 +133,7 @@ export function CommentForm({
 							<Input
 								type="email"
 								aria-label="邮箱"
-								classNames={{ root: "min-w-0 flex-1" }}
+								classNames={{ control: "min-w-0 flex-1" }}
 								placeholder="邮箱 *"
 								value={email}
 								onChange={(e) => {

@@ -319,7 +319,6 @@ function AdminPostsPage() {
 				<div className="flex flex-wrap items-center gap-3 pt-1">
 					<div className="min-w-50 max-w-80 flex-1">
 						<SearchInput
-							variant="soft"
 							controlSize="sm"
 							aria-label="搜索文章标题或正文"
 							defaultValue=""
@@ -676,7 +675,7 @@ function TagFilter({
 				<div className="border-b p-2">
 					<Input
 						type="search"
-						variant="ghost"
+						variant="plain"
 						aria-label="搜索标签"
 						placeholder="搜索标签..."
 						value={query}

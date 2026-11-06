@@ -252,7 +252,7 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 								{...register("title")}
 								placeholder="无标题笔记（可留空）…"
 								aria-label="笔记标题"
-								variant="ghost"
+								variant="plain"
 								classNames={{ control: "px-0" }}
 								className={cn(
 									"text-xl font-bold tracking-tight placeholder:text-muted-foreground/40 md:text-2xl",
@@ -308,7 +308,7 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 											}}
 											placeholder="输入标签名按回车…"
 											className="text-xs"
-											classNames={{ root: "min-w-0 flex-1" }}
+											classNames={{ control: "min-w-0 flex-1" }}
 										/>
 										<Button
 											type="button"

@@ -10,10 +10,11 @@ import {
 	DialogHeader,
 	DialogTitle,
 	Input,
+	Label,
 } from "@violet/ui";
 import { type NormalizedTheme, normalizeTheme } from "@violetjs/theme";
 import { cn } from "cn";
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import { useThemeSwitcher } from "../hooks/useThemeSwitcher";
 
@@ -77,6 +78,8 @@ export function CustomThemeDialog({ open, onOpenChange }: CustomThemeDialogProps
 	const { preset, custom, applyCustomTheme } = useThemeSwitcher("instant");
 	const initialSeed = custom?.seed ?? THEME_PRESETS[preset].seed;
 	const [draft, setDraft] = useState(initialSeed);
+	const seedId = useId();
+	const seedErrorId = useId();
 	const [wasOpen, setWasOpen] = useState(open);
 	// 每次打开时丢弃上次未应用的输入
 	if (open !== wasOpen) {
@@ -110,17 +113,28 @@ export function CustomThemeDialog({ open, onOpenChange }: CustomThemeDialogProps
 							onChange={(event) => setDraft(event.target.value)}
 							className="size-10 shrink-0 cursor-pointer rounded-lg border border-input bg-transparent p-0.5"
 						/>
-						<Input
-							label="种子色"
-							value={draft}
-							onChange={(event) => setDraft(event.target.value)}
-							invalid={!theme}
-							errorMessage="请输入 #rgb 或 #rrggbb"
-							spellCheck={false}
-							autoComplete="off"
-							className="font-mono"
-							classNames={{ root: "flex-1" }}
-						/>
+						<div className="flex-1 space-y-2">
+							<Label htmlFor={seedId}>种子色</Label>
+							<Input
+								id={seedId}
+								value={draft}
+								onChange={(event) => setDraft(event.target.value)}
+								invalid={!theme}
+								aria-describedby={theme ? undefined : seedErrorId}
+								spellCheck={false}
+								autoComplete="off"
+								className="font-mono"
+							/>
+							{theme ? null : (
+								<p
+									id={seedErrorId}
+									role="alert"
+									className="text-xs text-destructive"
+								>
+									请输入 #rgb 或 #rrggbb
+								</p>
+							)}
+						</div>
 					</div>
 					<div
 						role="group"

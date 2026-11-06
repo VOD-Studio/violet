@@ -189,6 +189,8 @@ function ProfileDialog({ container, overlay, trigger, root, content }: DialogSlo
 	const nickRef = useRef<HTMLInputElement>(null);
 	const dirty = nick !== PROFILE.nick || bio !== PROFILE.bio || home !== PROFILE.home;
 	const bioId = useId();
+	const nickId = useId();
+	const nickErrorId = useId();
 
 	const reset = () => {
 		setNick(PROFILE.nick);
@@ -219,18 +221,26 @@ function ProfileDialog({ container, overlay, trigger, root, content }: DialogSlo
 					<DialogDescription>名字和简介会显示在你的评论旁边</DialogDescription>
 				</DialogHeader>
 				<DialogBody className="flex flex-col gap-4">
-					<Input
-						ref={nickRef}
-						label="昵称"
-						maxLength={20}
-						value={nick}
-						invalid={error}
-						errorMessage="昵称不能为空"
-						onChange={(event) => {
-							setNick(event.currentTarget.value);
-							setError(false);
-						}}
-					/>
+					<div className="flex flex-col gap-2">
+						<Label htmlFor={nickId}>昵称</Label>
+						<Input
+							ref={nickRef}
+							id={nickId}
+							maxLength={20}
+							value={nick}
+							invalid={error}
+							aria-describedby={error ? nickErrorId : undefined}
+							onChange={(event) => {
+								setNick(event.currentTarget.value);
+								setError(false);
+							}}
+						/>
+						{error ? (
+							<p id={nickErrorId} className="m-0 text-12 text-destructive">
+								昵称不能为空
+							</p>
+						) : null}
+					</div>
 					<div className="flex flex-col gap-2">
 						<Label htmlFor={bioId}>简介</Label>
 						<Textarea

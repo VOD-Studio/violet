@@ -284,7 +284,7 @@ function EditableBotName({ name, disabled, onCommit }: EditableBotNameProps) {
 			maxLength={BOT_NAME_MAX}
 			value={draft}
 			className="text-sm font-medium"
-			classNames={{ root: "w-40" }}
+			classNames={{ control: "w-40" }}
 			onFocus={(e) => e.currentTarget.select()}
 			onChange={(e) => setDraft(e.target.value)}
 			onKeyDown={(e) => {

@@ -5,7 +5,7 @@ import { ImagePixelReveal as LeafImagePixelReveal, type ImagePixelRevealProps as
 import { Pagination } from "@violet/ui/legacy";
 import { Input as LeafInput, type InputProps as LeafInputProps } from "@violet/ui/input";
 import { SearchInput, type SearchInputProps } from "@violet/ui";
-import { SearchInput as LeafSearchInput, type SearchInputProps as LeafSearchInputProps } from "@violet/ui/search-input";
+import { SearchInput as LeafSearchInput, type SearchInputProps as LeafSearchInputProps } from "@violet/ui/input";
 import { buttonVariants, checkboxVariants, inputVariants, type ButtonVariantProps, type InputVariantProps } from "@violet/ui/variants";
 import { createRef, type Ref } from "react";
 import { UploadTile, type UploadTileProps } from "@violet/ui";
@@ -110,14 +110,15 @@ export const invalidNativeRef = <Button ref={anchorRef}>保存</Button>;
 const invalidSlottedProps: ButtonProps = { asChild: true, href: "/settings" };
 void invalidSlottedProps;
 const field: InputProps = {
-	label: "邮箱", description: "接收通知", type: "email", size: 24, controlSize: "lg",
-	variant: "soft", clearable: true, leading: <span>@</span>, trailing: <span>.com</span>,
+	"aria-label": "邮箱", type: "email", size: 24, controlSize: "lg",
+	variant: "outline", clearable: true, valid: true, leading: <span>@</span>, trailing: <span>.com</span>,
+	passwordToggleLabel: "显示密码", copyLabel: "复制", onCopied: (value) => { const copied: string = value; void copied; },
 	ref: (input) => { input?.focus(); },
 	onChange: (event) => {
 		const target: HTMLInputElement = event.currentTarget;
 		void target.value;
 	},
-	classNames: { root: "field-layout", control: "field-surface" },
+	classNames: { control: "field-surface", action: "field-action" },
 };
 const leafField: LeafInputProps = field;
 const inputRecipe: InputVariantProps = { variant: "underline", controlSize: "sm" };
@@ -128,9 +129,16 @@ export const invalidInputSize = <Input size="lg" />;
 export const invalidInputRef = <Input ref={createRef<HTMLButtonElement>()} />;
 // @ts-expect-error 视觉变体限定为公开的四种。
 inputVariants({ variant: "unknown" });
+// @ts-expect-error 旧变体名 soft 已更名为 filled。
+inputVariants({ variant: "soft" });
+// @ts-expect-error 标签、提示与错误属于表单项，输入框不再接收。
+export const invalidInputLabel = <Input label="邮箱" />;
+// @ts-expect-error 外壳就是根元素，不再有 root 槽。
+export const invalidInputRoot = <Input classNames={{ root: "layout" }} />;
 const search: SearchInputProps = {
-	label: "搜索文章", name: "query", size: 24, controlSize: "sm", variant: "soft",
-	defaultValue: "violet", classNames: { root: "search-layout", control: "search-surface" },
+	"aria-label": "搜索文章", name: "query", size: 24, controlSize: "sm", variant: "filled",
+	defaultValue: "violet", classNames: { control: "search-surface", action: "search-clear" },
+	shortcut: ["mod", "K"], clearLabel: "清除搜索",
 	ref: (input) => { input?.select(); },
 	onValueChange: (value) => { const query: string = value; void query; },
 	onSearch: (value) => { const query: string = value; void query; },

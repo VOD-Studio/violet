@@ -219,7 +219,7 @@ export function ApplyDialog({
 													onChange={(e) =>
 														set("contact_email")(e.target.value)
 													}
-													classNames={{ root: "min-w-0 flex-1" }}
+													classNames={{ control: "min-w-0 flex-1" }}
 												/>
 												<ResendButton
 													variant="outline"

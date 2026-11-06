@@ -144,7 +144,7 @@ const UsernameField = ({ user }: { user: UserDTO }) => {
 							value={value}
 							onChange={(e) => setValue(e.target.value)}
 							leading={<AtSign className="size-3.5" />}
-							classNames={{ root: "min-w-0 flex-1" }}
+							classNames={{ control: "min-w-0 flex-1" }}
 							placeholder="请输入用户名"
 							aria-invalid={!!error}
 							autoFocus
@@ -235,7 +235,7 @@ const DisplayNameField = ({ user }: { user: UserDTO }) => {
 						<Input
 							aria-label="显示名"
 							variant="underline"
-							classNames={{ root: "min-w-0 flex-1" }}
+							classNames={{ control: "min-w-0 flex-1" }}
 							value={value}
 							onChange={(e) => setValue(e.target.value)}
 							placeholder="留空显示用户名"

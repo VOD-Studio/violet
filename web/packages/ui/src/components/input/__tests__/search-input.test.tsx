@@ -77,7 +77,7 @@ describe("SearchInput", () => {
 		expect(keyDown).toHaveBeenCalledOnce();
 	});
 
-	it.each([{ disabled: true }, { readOnly: true }])("不可编辑时清除按钮也不可用：%j", (state) => {
+	it.each([{ disabled: true }, { readOnly: true }])("不可编辑时不出现清除按钮：%j", (state) => {
 		const search = vi.fn();
 		const change = vi.fn();
 		const clear = vi.fn();
@@ -90,10 +90,10 @@ describe("SearchInput", () => {
 				onClear={clear}
 			/>,
 		);
-		const button = screen.getByRole("button", { name: "清除搜索" }) as HTMLButtonElement;
-		expect(button.disabled).toBe(true);
-		fireEvent.click(button);
-		expect((screen.getByRole("searchbox") as HTMLInputElement).value).toBe("保留文本");
+		expect(screen.queryByRole("button", { name: "清除搜索" })).toBeNull();
+		const input = screen.getByRole("searchbox") as HTMLInputElement;
+		fireEvent.keyDown(input, { key: "Escape" });
+		expect(input.value).toBe("保留文本");
 		expect(change).not.toHaveBeenCalled();
 		expect(search).not.toHaveBeenCalled();
 		expect(clear).not.toHaveBeenCalled();
@@ -184,5 +184,47 @@ describe("SearchInput", () => {
 		unmount();
 		act(() => vi.advanceTimersByTime(300));
 		expect(search).not.toHaveBeenCalled();
+	});
+
+	it("Esc 清空搜索并立即以空文本搜索，已空时不拦截", () => {
+		const search = vi.fn();
+		render(<SearchInput defaultValue="violet" onSearch={search} />);
+		const input = screen.getByRole("searchbox") as HTMLInputElement;
+		expect(fireEvent.keyDown(input, { key: "Escape" })).toBe(false);
+		expect(input.value).toBe("");
+		expect(search.mock.calls).toEqual([[""]]);
+		expect(fireEvent.keyDown(input, { key: "Escape" })).toBe(true);
+	});
+
+	it("loading 与清除钮并存，并关联 aria-busy", () => {
+		const { container } = render(<SearchInput defaultValue="violet" loading />);
+		expect(screen.getByRole("searchbox").getAttribute("aria-busy")).toBe("true");
+		expect(container.querySelector(".v-spinner")).toBeTruthy();
+		expect(screen.getByRole("button", { name: "清除搜索" })).toBeTruthy();
+	});
+
+	it("inputmode 为 search，调用方可覆盖；占位默认「搜索…」", () => {
+		const { rerender } = render(<SearchInput />);
+		const input = screen.getByRole("searchbox") as HTMLInputElement;
+		expect(input.inputMode).toBe("search");
+		expect(input.placeholder).toBe("搜索…");
+		rerender(<SearchInput inputMode="text" placeholder="找文章" />);
+		expect(input.inputMode).toBe("text");
+		expect(input.placeholder).toBe("找文章");
+	});
+
+	it("shortcut 只在输入区为空时显示键帽，默认不显示", () => {
+		const { container, rerender } = render(<SearchInput />);
+		expect(container.querySelector("kbd")).toBeNull();
+		rerender(<SearchInput shortcut={["mod", "K"]} />);
+		expect(container.querySelector("kbd")).toBeTruthy();
+		fireEvent.change(screen.getByRole("searchbox"), { target: { value: "v" } });
+		expect(container.querySelector("kbd")).toBeNull();
+		expect(screen.getByRole("button", { name: "清除搜索" })).toBeTruthy();
+	});
+
+	it("clearLabel 可覆盖默认名称", () => {
+		render(<SearchInput defaultValue="v" clearLabel="清空" />);
+		expect(screen.getByRole("button", { name: "清空" })).toBeTruthy();
 	});
 });

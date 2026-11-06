@@ -122,7 +122,8 @@
 			"name": "input",
 			"status": "foundation",
 			"entry": "src/components/input/index.ts",
-			"css": "src/components/input/input.css"
+			"css": "src/components/input/input.css",
+			"documentation": "web/packages/ui/docs/components/input.md"
 		},
 		{
 			"name": "kbd",
@@ -208,13 +209,6 @@
 			"name": "scroll-area",
 			"status": "legacy",
 			"entry": "src/components/scroll-area/index.ts"
-		},
-		{
-			"name": "search-input",
-			"status": "foundation",
-			"entry": "src/components/search-input/index.ts",
-			"css": "src/components/search-input/search-input.css",
-			"documentation": "web/packages/ui/docs/components/search-input.md"
 		},
 		{
 			"name": "segmented",

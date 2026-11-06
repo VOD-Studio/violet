@@ -100,7 +100,7 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 					{conversation.kind === "room" && isOwner && (
 						<Input
 							aria-label="房间名称"
-							classNames={{ root: "mt-2" }}
+							classNames={{ control: "mt-2" }}
 							onBlur={() => void saveTitle()}
 							onChange={(event) => setTitle(event.target.value)}
 							value={title}
@@ -160,7 +160,7 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 						<div className="flex gap-2">
 							<Input
 								aria-label="邀请用户名"
-								classNames={{ root: "min-w-0 flex-1" }}
+								classNames={{ control: "min-w-0 flex-1" }}
 								onChange={(event) => setInviteUsername(event.target.value)}
 								onKeyDown={(event) => event.key === "Enter" && void inviteUser()}
 								placeholder="username"

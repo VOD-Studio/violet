@@ -51,9 +51,8 @@ export function RoadmapFilterBar({
 				type="search"
 				aria-label="搜索条目"
 				placeholder="搜索标题或简介"
-				variant="soft"
 				controlSize="sm"
-				classNames={{ root: "min-w-0 flex-[1_1_16rem] sm:max-w-80" }}
+				classNames={{ control: "min-w-0 flex-[1_1_16rem] sm:max-w-80" }}
 				leading={<Search className="size-4" aria-hidden="true" />}
 				clearable
 				value={filters.q ?? ""}

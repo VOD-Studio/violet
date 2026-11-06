@@ -1,8 +1,9 @@
 import { CircleAlert } from "lucide-react";
-import { type ReactNode, useRef, useState } from "react";
+import { type ReactNode, useId, useRef, useState } from "react";
 import { Button } from "../button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "../dialog";
 import { Input } from "../input";
+import { Label } from "../label";
 
 /** 不可逆操作前的一次确认：标题写后果，按钮写动作本身。 */
 export interface ConfirmDialogProps {
@@ -57,6 +58,7 @@ export function ConfirmDialog({
 	container,
 }: ConfirmDialogProps) {
 	const cancelRef = useRef<HTMLButtonElement>(null);
+	const fieldId = useId();
 	const inputRef = useRef<HTMLInputElement>(null);
 	const [typed, setTyped] = useState("");
 	const [nudged, setNudged] = useState(false);
@@ -110,26 +112,26 @@ export function ConfirmDialog({
 					</DialogDescription>
 				)}
 				{confirmText !== undefined && (
-					<Input
-						ref={inputRef}
-						label={
-							<>
-								输入 <b>{confirmText}</b> 继续
-							</>
-						}
-						classNames={{ root: "v-confirm__field" }}
-						value={typed}
-						autoComplete="off"
-						spellCheck={false}
-						disabled={loading}
-						onChange={(event) => setTyped(event.currentTarget.value)}
-						onKeyDown={(event) => {
-							if (event.key === "Enter") {
-								event.preventDefault();
-								confirm();
-							}
-						}}
-					/>
+					<div className="v-confirm__field">
+						<Label htmlFor={fieldId}>
+							输入 <b>{confirmText}</b> 继续
+						</Label>
+						<Input
+							ref={inputRef}
+							id={fieldId}
+							value={typed}
+							autoComplete="off"
+							spellCheck={false}
+							disabled={loading}
+							onChange={(event) => setTyped(event.currentTarget.value)}
+							onKeyDown={(event) => {
+								if (event.key === "Enter") {
+									event.preventDefault();
+									confirm();
+								}
+							}}
+						/>
+					</div>
 				)}
 				{error && (
 					<div role="alert" className="v-confirm__error">

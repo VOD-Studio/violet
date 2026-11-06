@@ -69,19 +69,6 @@
 	background-color: var(--background);
 }
 
-.lab-scope .v-input-field {
-	--v-input-accent: var(--primary);
-	--v-input-label-color: var(--primary);
-}
-
-.lab-scope
-	.v-input-field:has(
-		.v-input:is([aria-invalid="true"], [aria-invalid="grammar"], [aria-invalid="spelling"])
-	) {
-	--v-input-accent: var(--destructive);
-	--v-input-label-color: var(--destructive);
-}
-
 /* 固定实验稿的按钮配色，不覆盖系统高对比度模式。 */
 @media (forced-colors: none) {
 	.lab-scope .v-button--default {

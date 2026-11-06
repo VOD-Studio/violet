@@ -77,7 +77,6 @@ export function PostPickerDialog({
 				</DialogHeader>
 				<DialogBody className="flex flex-col gap-3 overflow-hidden">
 					<SearchInput
-						variant="soft"
 						controlSize="sm"
 						aria-label="搜索可挂入的文章标题"
 						value={keyword}

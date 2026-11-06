@@ -138,7 +138,7 @@ export function LatexSourceField({
 					rows={Math.min(8, Math.max(2, latex.split("\n").length))}
 				/>
 			) : (
-				<Input {...sharedProps} variant="soft" controlSize="sm" />
+				<Input {...sharedProps} controlSize="sm" />
 			)}
 			{open && (
 				<LatexSuggestionList

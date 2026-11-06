@@ -70,13 +70,12 @@ function LibraryFilters({
 				leading={<Search aria-hidden="true" />}
 				clearable
 				clearLabel="清除搜索"
-				variant="soft"
 				controlSize="sm"
 				value={query}
 				onChange={(event) => onQueryChange(event.target.value)}
 				placeholder="搜索表情、状态或编号"
 				aria-label="搜索表情、状态或编号"
-				classNames={{ root: "mt-2.5" }}
+				classNames={{ control: "mt-2.5" }}
 			/>
 		</>
 	);

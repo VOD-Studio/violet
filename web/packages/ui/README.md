@@ -4,7 +4,7 @@ React 19 组件库，使用原生 HTML 与 Radix 提供交互行为，用类型�
 
 ## 当前范围
 
-`component-manifest.json` 记录每个组件的入口、样式和成熟度。Avatar、Badge、Button、Card、Checkbox、CommandList、ConfirmDialog、ContextMenu、Dialog、Drawer、Dropdown、DropdownMenu、HoverCard、ImagePixelReveal、Indicator、Input、Kbd、Label、LinkCard、ListHighlight、MorphingPopover、Popover、PromptDialog、Radio、SearchInput、Segmented、Separator、Sheet、Skeleton、Sonner、Switch、Tabs、Textarea、ToggleGroup、Tooltip、UploadTile 是当前 36 个 `foundation` 单元；其余 16 个单元保留 API，并标为 `legacy`。兼容入口不代表已经重建所有组件。
+`component-manifest.json` 记录每个组件的入口、样式和成熟度。Avatar、Badge、Button、Card、Checkbox、CommandList、ConfirmDialog、ContextMenu、Dialog、Drawer、Dropdown、DropdownMenu、HoverCard、ImagePixelReveal、Indicator、Input（含 SearchInput）、Kbd、Label、LinkCard、ListHighlight、MorphingPopover、Popover、PromptDialog、Radio、Segmented、Separator、Sheet、Skeleton、Sonner、Switch、Tabs、Textarea、ToggleGroup、Tooltip、UploadTile 是当前 35 个 `foundation` 单元；其余 16 个单元保留 API，并标为 `legacy`。兼容入口不代表已经重建所有组件。
 
 所有组件都放在 `src/components/<name>/`，实现、有变体时的 `styles.ts`、CSS、入口和测试就近维护。`src/legacy.ts` 只汇总兼容导出；`src/lib/` 只放有实际消费方的复用能力。
 
@@ -58,9 +58,9 @@ export function ProfileForm() {
 
 也可以从 `@violet/ui/button`、`@violet/ui/input` 等组件入口导入。`@violet/ui/variants` 只导出类名 recipe，不依赖 React；`@violet/ui/legacy` 提供存量兼容入口。
 
-Input 的 `className`、`style`、原生属性、事件和 `ref` 属于 input；根布局通过 `classNames.root` 设置，视觉外壳通过 `classNames.control` 设置。可选 `label`、`description`、`errorMessage` 与 `invalid` 提供字段关联，不接管值或校验。`variant` 支持 outline / soft / ghost / underline，`controlSize` 支持 sm / md / lg，原生 `size` 仍是数字。`clearable` 产生真实输入事件，`passwordToggle` 仅用于密码输入；内部按钮共享控件焦点，不重播波纹。保留 FormData、reset、受控/非受控及 SSR ID 语义。[陈列室展品](https://xunrua.top/ui?open=input)可逐态查看四种外观的默认、错误、禁用与只读。
+Input 是原生输入的外壳，不渲染标签、提示、错误与字数，这些属于表单项；单独使用必须写 `aria-label`。`className`、`style`、`ref`、`id`、`name` 与原生事件都属于 input，`aria-describedby`、`aria-invalid` 原样透传，`classNames` 只有 `control`（外壳，即根元素）、`input`、`leading`、`trailing`、`action`。`variant` 支持 filled（默认）/ outline / underline / plain，`controlSize` 支持 sm / md / lg（32 / 36 / 40，触屏各加 4），原生 `size` 仍是数字。`invalid`、`valid`、`loading` 在状态位显示警示、对勾或细圆弧；`clearable`（Esc 同样清空）、`passwordToggle`（光标位置保持）、`copyable` 提供 24px 圆钮，清除派发真实输入事件。保留 FormData、reset、受控/非受控及 SSR ID 语义。[输入框契约](docs/components/input.md)逐项说明，[陈列室展品](https://xunrua.top/ui?open=input)按四种变体 × 九种状态逐格查看。
 
-SearchInput 是独立单元，组合 Input 并复用其 `variant`、`controlSize`、字段信息和 `classNames`，只增加防抖、回车搜索、清除与加载反馈；基础 Input 不依赖搜索单元。`className` 仍属于真实 input，布局使用 `classNames.root`。仅需即时筛选时使用 `Input type="search"`。从 `@violet/ui` 或 `@violet/ui/search-input` 导入，按需样式为 `@violet/ui/components/search-input.css`，包含 Input CSS 依赖。[搜索契约](docs/components/search-input.md)说明时序和样式归属，[陈列室展品](https://xunrua.top/ui?open=search-input)可查看搜索中与禁用态。
+SearchInput 并入 input 单元，是 Input 加搜索图标、清除钮与防抖的组合，只增加防抖、回车搜索与可选的 `shortcut` 键帽；仅需即时筛选时使用 `Input type="search"`。从 `@violet/ui` 或 `@violet/ui/input` 导入，按需样式为 `@violet/ui/components/input.css`，已含键帽与加载指示器的依赖样式。
 
 Button 的 `asChild` 保留子元素内容，禁用或加载时阻止交互；自定义 Link 必须透传 DOM 属性和 ref。公开契约以组件类型与测试为准；[陈列室展品](https://xunrua.top/ui?open=button)陈列各变体与尺寸的默认、加载与禁用态。
 

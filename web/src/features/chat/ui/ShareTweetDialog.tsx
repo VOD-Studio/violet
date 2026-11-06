@@ -97,7 +97,6 @@ export function ShareTweetDialog() {
 					onChange={(e) => setSearch(e.target.value)}
 					placeholder="搜索会话或用户"
 					value={search}
-					variant="soft"
 				/>
 				<div className="max-h-80 space-y-1 overflow-y-auto">
 					{conversationsLoading ? (

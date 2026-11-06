@@ -297,3 +297,55 @@ test("头像组悬停时展开，移开收回，减弱动态下直接切换", as
 		await expect.poll(widthOf, { message: reducedMotion }).toBe(collapsed);
 	}
 });
+
+test("输入框展品选中「悬停」后点击任一格得到真实聚焦样式，而不是悬停演示", async ({
+	page,
+	context,
+}) => {
+	await loadClient(context);
+	await page.setViewportSize({ width: 1440, height: 900 });
+	await page.emulateMedia({ reducedMotion: "reduce" });
+	await page.goto("/ui?open=input");
+	await page.waitForLoadState("networkidle");
+	const dialog = page.getByRole("dialog").filter({ has: page.locator("[data-inspector-stage]") });
+	await dialog
+		.getByRole("radiogroup", { name: "展品状态" })
+		.getByRole("radio", { name: "悬停", exact: true })
+		.click();
+	const outline = dialog.getByRole("textbox", { name: "描边输入框", exact: true });
+	await outline.click();
+	await expect(outline).toBeFocused();
+	const shell = outline.locator("..");
+	const sheet = await page.evaluate(() => {
+		const probe = document.createElement("span");
+		probe.style.backgroundColor = "var(--card)";
+		document.body.append(probe);
+		const value = getComputedStyle(probe).backgroundColor;
+		probe.remove();
+		return value;
+	});
+	const style = await shell.evaluate((element) => {
+		const computed = getComputedStyle(element);
+		return { shadow: computed.boxShadow, background: computed.backgroundColor };
+	});
+	expect(style.shadow).toContain("0px 0px 0px 4px");
+	expect(style.background).toBe(sheet);
+});
+
+test("输入框展品的减弱动态作用域内，加载中的细圆弧静止", async ({ page, context }) => {
+	await loadClient(context);
+	await page.setViewportSize({ width: 1440, height: 900 });
+	await page.goto("/ui?open=input&reduced=true");
+	await page.waitForLoadState("networkidle");
+	const dialog = page.getByRole("dialog").filter({ has: page.locator("[data-inspector-stage]") });
+	await dialog
+		.getByRole("radiogroup", { name: "展品状态" })
+		.getByRole("radio", { name: "加载", exact: true })
+		.click();
+	const spinner = dialog.locator('[data-slot="input-control"] .v-spinner').first();
+	await expect(spinner).toBeVisible();
+	const animations = await spinner.evaluate((element) => [
+		...element.getAnimations({ subtree: true }).map((animation) => animation.playState),
+	]);
+	expect(animations).toEqual([]);
+});

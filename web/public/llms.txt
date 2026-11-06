@@ -12,8 +12,8 @@
 ## 组件契约
 
 - [Checkbox](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/ui/docs/components/checkbox.md)
+- [Input 与 SearchInput](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/ui/docs/components/input.md)
 - [LinkCard](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/ui/docs/components/link-card.md)
-- [SearchInput](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/ui/docs/components/search-input.md)
 
 ## 组件陈列室
 

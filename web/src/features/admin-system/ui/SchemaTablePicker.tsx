@@ -70,7 +70,7 @@ export function SchemaTablePicker({
 				<div className="border-b p-2">
 					<Input
 						type="search"
-						variant="ghost"
+						variant="plain"
 						aria-label="搜索 schema 或数据表名称"
 						leading={<Search className="size-4" />}
 						clearable

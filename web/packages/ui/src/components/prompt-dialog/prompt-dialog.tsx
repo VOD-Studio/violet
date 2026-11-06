@@ -109,7 +109,7 @@ export function PromptDialog({
 					</DialogDescription>
 				)}
 				<div className="v-prompt__field">
-					{label && multiline && <Label htmlFor={fieldId}>{label}</Label>}
+					{label && <Label htmlFor={fieldId}>{label}</Label>}
 					{multiline ? (
 						<Textarea
 							ref={fieldRef}
@@ -126,7 +126,6 @@ export function PromptDialog({
 					) : (
 						<Input
 							ref={fieldRef}
-							label={label}
 							{...fieldProps}
 							invalid={invalid}
 							onChange={(event) => update(event.currentTarget.value)}

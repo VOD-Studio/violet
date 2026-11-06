@@ -88,7 +88,6 @@ export function ConversationIndex({
 						onChange={(event) => onSearch(event.target.value)}
 						placeholder="搜索"
 						value={search}
-						variant="soft"
 					/>
 				</div>
 			</header>

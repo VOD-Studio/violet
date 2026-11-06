@@ -23,7 +23,6 @@ export * from "./components/morphing-popover/index";
 export * from "./components/popover/index";
 export * from "./components/prompt-dialog/index";
 export * from "./components/radio/index";
-export * from "./components/search-input/index";
 export * from "./components/segmented/index";
 export * from "./components/separator/index";
 export * from "./components/sheet/index";
