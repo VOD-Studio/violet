@@ -349,16 +349,13 @@ export function GalleryDraftEditor({ id }: GalleryDraftEditorProps) {
 								/>
 							</div>
 							<div className="space-y-2">
-								<div className="flex items-center justify-between gap-4">
-									<Label htmlFor="gallery-summary">摘要</Label>
-									<span className="text-xs tabular-nums text-muted-foreground">
-										{draft.summary.length}/500
-									</span>
-								</div>
+								<Label htmlFor="gallery-summary">摘要</Label>
 								<Textarea
 									id="gallery-summary"
 									value={draft.summary}
 									maxLength={500}
+									showCount
+									autoSize={{ minRows: 2, maxRows: 8 }}
 									disabled={disabled}
 									placeholder="可选，写一段图集简介"
 									onChange={(event) =>

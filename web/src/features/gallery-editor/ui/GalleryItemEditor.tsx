@@ -105,7 +105,7 @@ export function GalleryItemEditor({
 						maxLength={500}
 						disabled={disabled}
 						placeholder="可选，补充图片的上下文"
-						className="min-h-18 resize-y"
+						autoSize={{ minRows: 2, maxRows: 6 }}
 						onChange={(event) =>
 							onChange({
 								caption: event.target.value,
