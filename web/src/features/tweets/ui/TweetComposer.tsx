@@ -110,15 +110,15 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 				<Textarea
 					id={contentId}
 					ref={textareaRef}
+					variant="outline"
+					autoSize={{ minRows: 2, maxRows: 10 }}
 					value={content}
 					onChange={(event) => setContent(event.target.value)}
 					onPaste={handlePaste}
 					placeholder="有什么新鲜事？"
 					disabled={submission.isPending}
-					rows={2}
 					aria-invalid={overLimit || !!submission.error}
 					aria-describedby={`${countId}${overLimit || submission.error ? ` ${errorId}` : ""}`}
-					className={styles.field}
 					onKeyDown={(event) => {
 						if (
 							event.key === "Enter" &&

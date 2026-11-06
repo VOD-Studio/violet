@@ -11,10 +11,6 @@
 	font-family: var(--font-reading);
 }
 
-.composer:has(.field:focus-visible) {
-	border-color: var(--ring);
-}
-
 .avatar {
 	width: 2.5rem;
 	height: 2.5rem;
@@ -64,37 +60,11 @@
 	font-variant-numeric: tabular-nums;
 }
 
-.composer .field {
-	display: block;
-	width: 100%;
-	min-height: 4.5rem;
-	max-height: 18rem;
-	padding: 0.125rem 0;
-	border: 0;
-	background: transparent;
-	box-shadow: none;
-	font-family: inherit;
-	font-size: 0.875rem;
-	line-height: 1.65;
-	caret-color: var(--primary-text);
-	field-sizing: content;
-	resize: none;
-}
-
-.composer .field:focus-visible {
-	outline: none;
-}
-
 .quotedComposer {
 	padding: 0;
 	border: 0;
 	border-radius: 0;
 	background: transparent;
-}
-
-.quotedComposer .field:focus-visible {
-	outline: 2px solid var(--ring);
-	outline-offset: 3px;
 }
 
 @media (width < 40rem) {
@@ -113,12 +83,9 @@
 		grid-column: 1 / -1;
 	}
 
-	.composer .field {
+	/* 触屏与窄窗口下的可读性：输入区字号提到 16，避免 iOS 聚焦放大页面 */
+	.editor :is(textarea) {
 		font-size: 1rem;
-	}
-
-	.quotedComposer {
-		padding: 0;
 	}
 }
 
