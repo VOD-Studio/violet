@@ -1,0 +1,115 @@
+/*
+ * MorphingPopover：触发器长成面板。外形的 clip-path 与底色由脚本播放，这里只写静止时的样子、
+ * 锚点定位，以及不做变形时的淡入淡出。需先导入 @violet/ui/tokens.css 或 styles.css。
+ */
+
+@layer components {
+	/* 触发器与面板共同的定位参照；面板是绝对定位，根的盒子就是触发器的盒子。 */
+	.v-morph {
+		position: relative;
+		display: inline-flex;
+	}
+
+	/* 触发器的按下态：50ms 内底色加深 4%。叠一层前景色的伪元素，不必知道触发器自己的底色。 */
+	.v-morph > [data-slot="morphing-popover-trigger"] {
+		position: relative;
+	}
+
+	.v-morph > [data-slot="morphing-popover-trigger"]::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+		border-radius: inherit;
+		background-color: var(--foreground);
+		opacity: 0;
+		pointer-events: none;
+		transition: opacity 50ms ease-out;
+	}
+
+	.v-morph > [data-slot="morphing-popover-trigger"]:active::after {
+		opacity: 0.04;
+	}
+
+	/* 固定触发器的一个角，默认左上；脚本按空间把 data-anchor 写成 "top left" 等四种之一。 */
+	.v-morph__layer {
+		position: absolute;
+		inset-block-start: calc(var(--v-morph-outset, 0px) * -1);
+		inset-inline-start: calc(var(--v-morph-outset, 0px) * -1);
+		z-index: var(--layer-dropdown, 40);
+	}
+
+	.v-morph__layer[data-anchor~="right"] {
+		inset-inline: auto calc(var(--v-morph-outset, 0px) * -1);
+	}
+
+	.v-morph__layer[data-anchor~="bottom"] {
+		inset-block: auto calc(var(--v-morph-outset, 0px) * -1);
+	}
+
+	/* clip-path 会裁掉面板自己的阴影，所以软影是面板下面单独的一层，外形到位后才浮起。 */
+	.v-morph__shadow {
+		position: absolute;
+		inset: 0;
+		border-radius: var(--v-morph-radius, 16px);
+		box-shadow:
+			0 0 0 1px var(--ol),
+			var(--shadow-soft);
+		pointer-events: none;
+	}
+
+	.v-morph__panel {
+		position: relative;
+		box-sizing: border-box;
+		inline-size: max-content;
+		min-inline-size: 15rem;
+		max-inline-size: min(25rem, calc(100vw - 1rem));
+		border-radius: var(--v-morph-radius, 16px);
+		background-color: var(--popover);
+		color: var(--popover-foreground);
+		outline: none;
+	}
+
+	.v-morph__body {
+		position: relative;
+	}
+
+	/* 起点那张东西的副本：压在内容上方，平时看不见；位置与大小由脚本写在 style 上。 */
+	.v-morph__ghost {
+		position: absolute;
+		z-index: 1;
+		box-sizing: border-box;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		overflow: hidden;
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	/* 触发器上的字副本落在触发器原来的位置，点它收起；接力时的副本是旧面板，不拦截点击。 */
+	.v-morph__ghost[data-from="trigger"] {
+		cursor: pointer;
+		pointer-events: auto;
+	}
+
+	/* 不做变形（减弱动态，或浏览器没有 Web Animations）时直接淡入淡出。 */
+	.v-morph__layer[data-motion="fade"][data-state="open"] {
+		animation: v-morph-fade-in 100ms ease-out backwards;
+	}
+
+	.v-morph__layer[data-motion="fade"][data-state="closed"] {
+		animation: v-morph-fade-out 100ms ease-out forwards;
+	}
+
+	@keyframes v-morph-fade-in {
+		from {
+			opacity: 0;
+		}
+	}
+
+	@keyframes v-morph-fade-out {
+		to {
+			opacity: 0;
+		}
+	}
+}

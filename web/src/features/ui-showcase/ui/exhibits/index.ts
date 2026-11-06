@@ -14,6 +14,7 @@ import { indicatorExhibit } from "./indicator";
 import { inputExhibit } from "./input";
 import { kbdExhibit } from "./kbd";
 import { linkCardExhibit } from "./link-card";
+import { morphingPopoverExhibit } from "./morphing-popover";
 import { popoverExhibit } from "./popover";
 import { radioExhibit } from "./radio";
 import { searchInputExhibit } from "./search-input";
@@ -84,15 +85,7 @@ export const EXHIBITS: Exhibit[] = [
 	sheetExhibit,
 	drawerExhibit,
 	commandExhibit,
-	{
-		id: "morphing-popover",
-		name: "变形弹出层",
-		units: ["morphing-popover"],
-		zone: "stage",
-		category: "overlay",
-		footprint: { width: 480, height: 400 },
-		issue: 704,
-	},
+	morphingPopoverExhibit,
 	{
 		id: "presence",
 		name: "实时状态与站长卡片",

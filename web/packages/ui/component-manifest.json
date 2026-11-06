@@ -150,6 +150,12 @@
 			"css": "src/components/list-highlight/list-highlight.css"
 		},
 		{
+			"name": "morphing-popover",
+			"status": "foundation",
+			"entry": "src/components/morphing-popover/index.ts",
+			"css": "src/components/morphing-popover/morphing-popover.css"
+		},
+		{
 			"name": "otp",
 			"status": "legacy",
 			"entry": "src/components/otp/index.ts"

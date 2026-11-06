@@ -19,6 +19,7 @@
 @import "./components/label/label.css";
 @import "./components/link-card/link-card.css";
 @import "./components/list-highlight/list-highlight.css";
+@import "./components/morphing-popover/morphing-popover.css";
 @import "./components/overlay-scroll/overlay-scroll.css" layer(components);
 @import "./components/popover/popover.css";
 @import "./components/prompt-dialog/prompt-dialog.css";

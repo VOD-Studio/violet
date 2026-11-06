@@ -19,6 +19,7 @@ export * from "./components/kbd/index";
 export * from "./components/label/index";
 export * from "./components/link-card/index";
 export * from "./components/list-highlight/index";
+export * from "./components/morphing-popover/index";
 export * from "./components/popover/index";
 export * from "./components/prompt-dialog/index";
 export * from "./components/radio/index";

@@ -4,7 +4,7 @@ React 19 组件库，使用原生 HTML 与 Radix 提供交互行为，用类型�
 
 ## 当前范围
 
-`component-manifest.json` 记录每个组件的入口、样式和成熟度。Avatar、Badge、Button、Card、Checkbox、CommandList、ConfirmDialog、ContextMenu、Dialog、Drawer、Dropdown、DropdownMenu、HoverCard、ImagePixelReveal、Indicator、Input、Kbd、Label、LinkCard、ListHighlight、Popover、PromptDialog、Radio、SearchInput、Segmented、Separator、Sheet、Skeleton、Sonner、Switch、Tabs、Textarea、ToggleGroup、Tooltip、UploadTile 是当前 35 个 `foundation` 单元；其余 16 个单元保留 API，并标为 `legacy`。兼容入口不代表已经重建所有组件。
+`component-manifest.json` 记录每个组件的入口、样式和成熟度。Avatar、Badge、Button、Card、Checkbox、CommandList、ConfirmDialog、ContextMenu、Dialog、Drawer、Dropdown、DropdownMenu、HoverCard、ImagePixelReveal、Indicator、Input、Kbd、Label、LinkCard、ListHighlight、MorphingPopover、Popover、PromptDialog、Radio、SearchInput、Segmented、Separator、Sheet、Skeleton、Sonner、Switch、Tabs、Textarea、ToggleGroup、Tooltip、UploadTile 是当前 36 个 `foundation` 单元；其余 16 个单元保留 API，并标为 `legacy`。兼容入口不代表已经重建所有组件。
 
 所有组件都放在 `src/components/<name>/`，实现、有变体时的 `styles.ts`、CSS、入口和测试就近维护。`src/legacy.ts` 只汇总兼容导出；`src/lib/` 只放有实际消费方的复用能力。
 
@@ -110,6 +110,8 @@ Segmented 是带滑动指示器的分段控制：`orientation` 选横向或竖�
 分隔线的圆点、带字与区块形态可在[独立展品](https://xunrua.top/ui?open=separator)中并排查看；卡片与骨架留在[卡片展品](https://xunrua.top/ui?open=card)。
 
 `switch`、`radio`、`toggle-group`、`tabs` 四个控件单元沿用同一套键盘与读屏契约。Switch 是 `role="switch"` 的原生按钮，`loading` 期间圆钮显示梅花指示器并忽略激活，`aria-busy` 立即生效；尺寸 sm/md/lg 三档。RadioGroup/Radio 用原生 `<input type="radio">` 放进 `fieldset`，`legend` 视觉隐藏但命名整组，一组一个 Tab 位，方向键换选并同时选中；`appearance="card"` 提供选项卡片。ToggleGroup 的每一项都是原生 button 加 `aria-pressed`（单选也不用 radio），整组一个 Tab 位，方向键只移焦点不改按下态，单选再点归零、多选各自开关；`variant="bare"` 是工具栏形，`ToggleGroupSeparator` 分隔组段。Tabs 保留 Radix 语义（←→ 移动即切换、Home/End 到首尾、面板可聚焦），当前项下方一条墨色 2px 底线滑动 280ms 到新位置，`TabsCount` 的计数是标签名称的一部分，放不下时横向滚动且当前项自动滚入可见区；竖排为个人主页侧栏保留，设计稿没有该形态。Segmented 默认项改为 `role="radiogroup"`/`role="radio"` 语义、纸片滑动 280ms；带 `render` 的导航类分段仍是普通 group。以上单元均从 `@violet/ui` 或同名叶子入口导入，按需 CSS 为 `@violet/ui/components/<name>.css`，[陈列室](https://xunrua.top/ui?open=switch)可逐态操作。
+
+`morphing-popover` 单元的 `MorphingPopover`、`MorphingPopoverTrigger`、`MorphingPopoverContent` 让一个有底色的胶囊或圆钮自己长成面板：外形从按钮的位置、大小与圆角长出，内容晚一拍浮现，收起时缩回；同一个根里换一块 `key` 不同的面板即接力，新面板从旧面板长出，关闭直接缩回最初的按钮。`ghost` 放触发器上字的副本，`outset` 让面板的角比按钮外扩，`radius` 是展开后的圆角；Esc、点外面、焦点离开都会收起，开启减弱动态时只做 100ms 淡入淡出。从 `@violet/ui` 或 `@violet/ui/morphing-popover` 导入，按需 CSS 为 `@violet/ui/components/morphing-popover.css`；[陈列室展品](https://xunrua.top/ui?open=morphing-popover)可操作灵动岛展开卡与回应选择器的接力。
 
 ## 开发与验证
 

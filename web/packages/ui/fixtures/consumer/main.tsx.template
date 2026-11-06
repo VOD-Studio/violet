@@ -10,6 +10,7 @@ import { LinkCard as LeafLinkCard } from "@violet/ui/link-card";
 import { Avatar, AvatarGroup, Badge, BadgeAnchor, Card, CardContent, CardFooter, CardFrame, CardFrameBody, CardFrameExcerpt, CardFrameImage, CardFrameMeta, CardFrameTitle, CardHeader, CardTitle, Count, Dot, Kbd, KbdSeparator, Radio, RadioGroup, Separator, Skeleton, Switch, Tabs, TabsContent, TabsCount, TabsList, TabsTrigger, Tag, TagToggle, ToggleGroup, ToggleGroupItem } from "@violet/ui";
 import { Avatar as LeafAvatar } from "@violet/ui/avatar";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, HoverCard, HoverCardContent, HoverCardTrigger, Popover, PopoverContent, PopoverTrigger, Toaster, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@violet/ui";
+import { MorphingPopover, MorphingPopoverContent, MorphingPopoverTrigger } from "@violet/ui";
 import { CommandList, ConfirmDialog, Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, Drawer, DrawerBody, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, Sheet, SheetBody, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@violet/ui";
 
 const linkCardLogo = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><rect width="160" height="160" fill="#f0edf8"/><path d="m40 44 40 76 40-76H98l-18 36-18-36Z" fill="#684dda"/></svg>')}`;
@@ -579,6 +580,10 @@ function OverlayPreview() {
 					<PopoverTrigger asChild><Button id="overlay-popover-trigger" variant="outline">标签</Button></PopoverTrigger>
 					<PopoverContent><input id="overlay-popover-input" aria-label="找标签" /></PopoverContent>
 				</Popover>
+				<MorphingPopover onOpenChange={(open) => note(`morph:${open}`)}>
+					<MorphingPopoverTrigger id="overlay-morph-trigger" className="display-field">此刻</MorphingPopoverTrigger>
+					<MorphingPopoverContent aria-label="此刻" ghost="此刻"><input id="overlay-morph-input" aria-label="想说点什么" /></MorphingPopoverContent>
+				</MorphingPopover>
 				<HoverCard>
 					<HoverCardTrigger asChild><a id="overlay-hover-trigger" href="#linjian">@林间</a></HoverCardTrigger>
 					<HoverCardContent>林间的名片</HoverCardContent>

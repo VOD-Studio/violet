@@ -152,6 +152,11 @@
 			"import": "./src/components/list-highlight/index.ts",
 			"default": "./src/components/list-highlight/index.ts"
 		},
+		"./morphing-popover": {
+			"types": "./src/components/morphing-popover/index.ts",
+			"import": "./src/components/morphing-popover/index.ts",
+			"default": "./src/components/morphing-popover/index.ts"
+		},
 		"./otp": {
 			"types": "./src/components/otp/index.ts",
 			"import": "./src/components/otp/index.ts",
@@ -320,6 +325,7 @@
 		"./components/label.css": "./src/components/label/label.css",
 		"./components/link-card.css": "./src/components/link-card/link-card.css",
 		"./components/list-highlight.css": "./src/components/list-highlight/list-highlight.css",
+		"./components/morphing-popover.css": "./src/components/morphing-popover/morphing-popover.css",
 		"./components/overlay-scroll.css": "./src/components/overlay-scroll/overlay-scroll.css",
 		"./components/popover.css": "./src/components/popover/popover.css",
 		"./components/prompt-dialog.css": "./src/components/prompt-dialog/prompt-dialog.css",
@@ -498,6 +504,11 @@
 				"import": "./dist/components/list-highlight/index.js",
 				"default": "./dist/components/list-highlight/index.js"
 			},
+			"./morphing-popover": {
+				"types": "./dist/components/morphing-popover/index.d.ts",
+				"import": "./dist/components/morphing-popover/index.js",
+				"default": "./dist/components/morphing-popover/index.js"
+			},
 			"./otp": {
 				"types": "./dist/components/otp/index.d.ts",
 				"import": "./dist/components/otp/index.js",
@@ -666,6 +677,7 @@
 			"./components/label.css": "./dist/components/label.css",
 			"./components/link-card.css": "./dist/components/link-card.css",
 			"./components/list-highlight.css": "./dist/components/list-highlight.css",
+			"./components/morphing-popover.css": "./dist/components/morphing-popover.css",
 			"./components/overlay-scroll.css": "./dist/components/overlay-scroll.css",
 			"./components/popover.css": "./dist/components/popover.css",
 			"./components/prompt-dialog.css": "./dist/components/prompt-dialog.css",

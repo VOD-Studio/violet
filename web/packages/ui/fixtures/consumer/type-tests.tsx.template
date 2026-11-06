@@ -29,6 +29,8 @@ import { LinkCard as LeafLinkCard, type LinkCardProps as LeafLinkCardProps } fro
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger, HoverCard, HoverCardContent, HoverCardTrigger, Popover, PopoverContent, PopoverTrigger, Toaster, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, type DropdownMenuContentProps, type HoverCardContentProps, type PopoverContentProps, type TooltipContentProps, type VioletToasterProps } from "@violet/ui";
 import { DropdownMenu as LeafDropdownMenu, DropdownMenuContent as LeafDropdownMenuContent, DropdownMenuItem as LeafDropdownMenuItem, DropdownMenuTrigger as LeafDropdownMenuTrigger } from "@violet/ui/dropdown-menu";
 import { Popover as LeafPopover, PopoverContent as LeafPopoverContent, PopoverTrigger as LeafPopoverTrigger } from "@violet/ui/popover";
+import { MorphingPopover, MorphingPopoverContent, type MorphingPopoverContentProps, type MorphingPopoverProps, MorphingPopoverTrigger } from "@violet/ui";
+import { MorphingPopover as LeafMorphingPopover, MorphingPopoverContent as LeafMorphingPopoverContent, MorphingPopoverTrigger as LeafMorphingPopoverTrigger } from "@violet/ui/morphing-popover";
 import { Toaster as LeafToaster } from "@violet/ui/sonner";
 import { type CommandItem, CommandList, ConfirmDialog, Dialog, DialogBody, DialogClose, DialogContent, type DialogContentProps, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, Drawer, DrawerBody, DrawerContent, DrawerHeader, DrawerTitle, Modal, PromptDialog, Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@violet/ui";
 import { Tooltip as LeafTooltip, TooltipContent as LeafTooltipContent, TooltipTrigger as LeafTooltipTrigger } from "@violet/ui/tooltip";
@@ -442,3 +444,21 @@ export const invalidTooltipShortcut = <TooltipContent shortcut="⌘B">加粗</To
 export const invalidMenuVariant = <DropdownMenuItem variant="danger">删除</DropdownMenuItem>;
 // @ts-expect-error 悬停卡片的延迟是毫秒数。
 export const invalidHoverDelay = <HoverCard openDelay="500" />;
+
+const morphRootProps: MorphingPopoverProps = { defaultOpen: false, onOpenChange: (open: boolean) => void open, className: "pill" };
+const morphContentRef = createRef<HTMLDivElement>();
+const morphContentProps: MorphingPopoverContentProps = { role: "listbox", "aria-label": "回应", radius: 20, outset: 6, ghost: <span>＋</span>, ghostClassName: "pointer-events-none" };
+export const morphingExamples = <>
+	<MorphingPopover {...morphRootProps}>
+		<MorphingPopoverTrigger asChild><button type="button">添加回应</button></MorphingPopoverTrigger>
+		<MorphingPopoverContent ref={morphContentRef} {...morphContentProps}>表情</MorphingPopoverContent>
+	</MorphingPopover>
+	<LeafMorphingPopover open onOpenChange={() => {}}>
+		<LeafMorphingPopoverTrigger>状态</LeafMorphingPopoverTrigger>
+		<LeafMorphingPopoverContent>内容</LeafMorphingPopoverContent>
+	</LeafMorphingPopover>
+</>;
+// @ts-expect-error 圆角是像素数，不是 CSS 字符串。
+export const invalidMorphRadius = <MorphingPopoverContent radius="16px" />;
+// @ts-expect-error 展开与否的回调接收布尔值。
+export const invalidMorphChange = <MorphingPopover onOpenChange={(open: string) => void open} />;

@@ -32,6 +32,8 @@ import { ContextMenu as LeafContextMenu, ContextMenuContent as LeafContextMenuCo
 import { DropdownMenu as LeafDropdownMenu, DropdownMenuContent as LeafDropdownMenuContent, DropdownMenuItem as LeafDropdownMenuItem, DropdownMenuTrigger as LeafDropdownMenuTrigger } from "@violet/ui/dropdown-menu";
 import { HoverCard as LeafHoverCard, HoverCardContent as LeafHoverCardContent, HoverCardTrigger as LeafHoverCardTrigger } from "@violet/ui/hover-card";
 import { Popover as LeafPopover, PopoverContent as LeafPopoverContent, PopoverTrigger as LeafPopoverTrigger } from "@violet/ui/popover";
+import { MorphingPopover, MorphingPopoverContent, MorphingPopoverTrigger } from "@violet/ui";
+import { MorphingPopover as LeafMorphingPopover, MorphingPopoverContent as LeafMorphingPopoverContent, MorphingPopoverTrigger as LeafMorphingPopoverTrigger } from "@violet/ui/morphing-popover";
 import { Toaster as LeafToaster } from "@violet/ui/sonner";
 import { Tooltip as LeafTooltip, TooltipContent as LeafTooltipContent, TooltipProvider as LeafTooltipProvider, TooltipTrigger as LeafTooltipTrigger } from "@violet/ui/tooltip";
 import { CommandList, ConfirmDialog, Dialog, DialogContent, DialogTitle, DialogTrigger, Drawer, DrawerContent, DrawerTitle, DrawerTrigger, Modal, PromptDialog, Sheet, SheetContent, SheetTitle, SheetTrigger } from "@violet/ui";
@@ -321,4 +323,20 @@ for (const [name, node, leaf] of [
 	assert.equal(renderToString(node), "", `${name} rendered while closed.`);
 	assert.equal(renderToString(leaf), "", `Leaf ${name} rendered while closed.`);
 }
-console.log("Independent root/leaf SSR, Input, Checkbox, ImagePixelReveal, UploadTile, Dropdown, Segmented, Avatar, Badge, Kbd, Card, Separator, Skeleton, Popover, HoverCard, Tooltip, DropdownMenu, ContextMenu, Toaster, Dialog, Modal, ConfirmDialog, PromptDialog, Sheet, Drawer and CommandList semantics passed.");
+const morphTree = (Root: typeof MorphingPopover, Trigger: typeof MorphingPopoverTrigger, Content: typeof MorphingPopoverContent, open: boolean) => (
+	<Root defaultOpen={open}><Trigger asChild><button type="button">状态</button></Trigger><Content aria-label="状态详情"><b>此刻在听</b></Content></Root>
+);
+const morph = renderToString(morphTree(MorphingPopover, MorphingPopoverTrigger, MorphingPopoverContent, false));
+assert.equal(morph, renderToString(morphTree(LeafMorphingPopover, LeafMorphingPopoverTrigger, LeafMorphingPopoverContent, false)));
+assert.match(morph, /aria-expanded="false"/);
+assert.match(morph, /aria-controls="[^"]+"/);
+assert.doesNotMatch(morph, /此刻在听/);
+// 默认展开时服务端就输出面板；锚点与动效模式由脚本在客户端写，服务端不输出
+const morphOpen = renderToString(morphTree(MorphingPopover, MorphingPopoverTrigger, MorphingPopoverContent, true));
+assert.equal(morphOpen, renderToString(morphTree(LeafMorphingPopover, LeafMorphingPopoverTrigger, LeafMorphingPopoverContent, true)));
+assert.match(morphOpen, /aria-expanded="true"/);
+assert.match(morphOpen, /role="dialog"/);
+assert.match(morphOpen, /aria-label="状态详情"/);
+assert.match(morphOpen, /此刻在听/);
+assert.doesNotMatch(morphOpen, /data-anchor|data-motion/);
+console.log("Independent root/leaf SSR, Input, Checkbox, ImagePixelReveal, UploadTile, Dropdown, Segmented, Avatar, Badge, Kbd, Card, Separator, Skeleton, Popover, HoverCard, Tooltip, DropdownMenu, ContextMenu, Toaster, Dialog, Modal, ConfirmDialog, PromptDialog, Sheet, Drawer, CommandList and MorphingPopover semantics passed.");
