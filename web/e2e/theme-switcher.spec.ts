@@ -5,17 +5,17 @@ import {
 	parseThemeCookie,
 	resolvePresetTheme,
 } from "../src/shared/lib/theme-preference";
+import { THEME_PRESETS } from "../src/shared/lib/theme-presets";
 import { appearanceContext, canonicalColor } from "./theme-harness";
 
 const cookieHeader = async (page: Page) =>
 	(await page.context().cookies()).map((cookie) => `${cookie.name}=${cookie.value}`).join("; ");
 
-/** 顶栏工具区默认收起，悬停用户槽位后展开。 */
+/** 「季节与外观」入口常驻在顶栏右药丸，直接点开面板。 */
 async function openThemePanel(page: Page) {
 	const header = page.locator("header").first();
-	await header.getByRole("link", { name: "登录", exact: true }).hover();
-	await header.getByRole("button", { name: /^主题：/ }).click();
-	await expect(page.getByRole("dialog", { name: "主题与装饰", exact: true })).toBeVisible();
+	await header.getByRole("button", { name: /^季节与外观：/ }).click();
+	await expect(page.getByRole("dialog", { name: "季节与外观", exact: true })).toBeVisible();
 }
 
 test("切换主题后即时生效，刷新与再次访问后保持", async ({ browser }) => {
@@ -46,7 +46,7 @@ test("切换主题后即时生效，刷新与再次访问后保持", async ({ br
 		page
 			.locator("header")
 			.first()
-			.getByRole("button", { name: `主题：${title}` }),
+			.getByRole("button", { name: `季节与外观：${THEME_PRESETS[target].name}` }),
 	).toBeAttached();
 
 	await page.reload({ waitUntil: "load" });
@@ -73,7 +73,7 @@ test("切换主题后即时生效，刷新与再次访问后保持", async ({ br
 		page
 			.locator("header")
 			.first()
-			.getByRole("button", { name: /^主题：跟随季节/ }),
+			.getByRole("button", { name: `季节与外观：${THEME_PRESETS[season].name}` }),
 	).toBeAttached();
 	await context.close();
 });
@@ -86,29 +86,24 @@ test("键盘可打开设置并切换主题，Escape 关闭后焦点回到入口"
 	const target = season === "summer" ? "autumn" : "summer";
 	const title = target === "summer" ? "夏 · 荷风" : "秋 · 桂月";
 
-	// 从工具区第一个按钮开始 Tab，工具区须随键盘聚焦展开
+	// 入口常驻在右药丸，从中药丸末尾的搜索按钮 Tab 过去，键盘可达
 	const header = page.locator("header").first();
-	const trigger = header.getByRole("button", { name: /^主题：/ });
-	await header.getByRole("button", { name: "搜索 (⌘K)" }).focus();
+	const trigger = header.getByRole("button", { name: /^季节与外观：/ });
+	await header.getByRole("button", { name: /^搜索/ }).focus();
 	for (let step = 0; step < 6; step++) {
 		if (await trigger.evaluate((element) => element === document.activeElement)) break;
 		await page.keyboard.press("Tab");
 	}
 	await expect(trigger).toBeFocused();
-	await expect
-		.poll(() =>
-			trigger.evaluate(
-				(element) => getComputedStyle(element.parentElement as Element).opacity,
-			),
-		)
-		.toBe("1");
+	await expect(trigger).toBeVisible();
 	await page.keyboard.press("Enter");
-	const panel = page.getByRole("dialog", { name: "主题与装饰", exact: true });
+	const panel = page.getByRole("dialog", { name: "季节与外观", exact: true });
 	await expect(panel).toBeVisible();
 	const group = panel.getByRole("radiogroup", { name: "主题", exact: true });
 	const current = group.getByRole("radio", { name: "跟随季节", exact: true });
 	await expect(current).toHaveAttribute("aria-checked", "true");
-	for (let step = 0; step < 6; step++) {
+	// 面板顶部先是外观三段与「自定义」按钮，再到主题单选组，Tab 要多走几步
+	for (let step = 0; step < 10; step++) {
 		if (await current.evaluate((element) => element === document.activeElement)) break;
 		await page.keyboard.press("Tab");
 	}
@@ -200,7 +195,7 @@ test("自定义主题：实时预览，应用后刷新仍生效，选回预设�
 	await page.reload({ waitUntil: "load" });
 	await expect(page.locator("html")).toHaveAttribute("data-theme", "custom");
 	await expect(
-		page.locator("header").first().getByRole("button", { name: "主题：自定义 #2b6cb0" }),
+		page.locator("header").first().getByRole("button", { name: "季节与外观：自定义" }),
 	).toBeAttached();
 	await openThemePanel(page);
 	await expect(page.getByRole("button", { name: "自定义主题", exact: true })).toHaveAttribute(

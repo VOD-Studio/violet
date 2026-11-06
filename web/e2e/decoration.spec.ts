@@ -69,9 +69,8 @@ test("非法的装饰 cookie 回落为跟随主题", async ({ browser }) => {
 
 async function openDecorationPanel(page: Page) {
 	const header = page.locator("header").first();
-	await header.getByRole("link", { name: "登录", exact: true }).hover();
-	await header.getByRole("button", { name: /^主题：/ }).click();
-	const panel = page.getByRole("dialog", { name: "主题与装饰", exact: true });
+	await header.getByRole("button", { name: /^季节与外观：/ }).click();
+	const panel = page.getByRole("dialog", { name: "季节与外观", exact: true });
 	await expect(panel).toBeVisible();
 	return panel;
 }
@@ -267,9 +266,8 @@ test("切换配色后可立即恢复装饰跟随", async ({ browser }) => {
 		content: "::view-transition-new(root) { animation-duration: 60s; }",
 	});
 	const header = page.locator("header").first();
-	await header.getByRole("link", { name: "登录", exact: true }).hover();
-	await header.getByRole("button", { name: /^主题：/ }).click();
-	const panel = page.getByRole("dialog", { name: "主题与装饰", exact: true });
+	await header.getByRole("button", { name: /^季节与外观：/ }).click();
+	const panel = page.getByRole("dialog", { name: "季节与外观", exact: true });
 	await panel
 		.getByRole("radiogroup", { name: "主题", exact: true })
 		.getByRole("radio", { name: /^夏(?:\s|$)/ })
@@ -302,7 +300,6 @@ test("命令面板切换装饰不改变主题", async ({ browser }) => {
 	const page = await context.newPage();
 	await page.goto("/", { waitUntil: "load" });
 	const header = page.locator("header").first();
-	await header.getByRole("link", { name: "登录", exact: true }).hover();
 	await header.getByRole("button", { name: /^搜索/ }).click();
 	const dialog = page.getByRole("dialog");
 	await dialog.getByRole("textbox").fill("装饰");

@@ -109,9 +109,16 @@ const openChatConversation = (conversationID: string) => {
 
 interface NotificationBellProps {
 	onOpenChange?: (open: boolean) => void;
+	/**
+	 * 并入角标与可访问名称的额外未读数，默认 0。
+	 *
+	 * 顶栏的聊天未读从这里传入：面板里暂无聊天标签，T24 会把聊天并入面板；
+	 * 面板内的「全部已读」与列表仍只针对通知。
+	 */
+	extraUnread?: number;
 }
 
-const NotificationBell = ({ onOpenChange }: NotificationBellProps) => {
+const NotificationBell = ({ onOpenChange, extraUnread = 0 }: NotificationBellProps) => {
 	useNotificationStream();
 	const navigate = useNavigate();
 	const [open, setOpen] = useState(false);
@@ -122,6 +129,7 @@ const NotificationBell = ({ onOpenChange }: NotificationBellProps) => {
 	const markAllRead = useMarkAllRead();
 
 	const unread = unreadData?.unread_count ?? 0;
+	const totalUnread = unread + Math.max(0, extraUnread);
 	const items = notifPage?.data ?? [];
 
 	const handleSelect = (item: NotificationItem) => {
@@ -146,15 +154,19 @@ const NotificationBell = ({ onOpenChange }: NotificationBellProps) => {
 				onOpenChange?.(nextOpen);
 			}}
 		>
-			<BadgeAnchor badge={<Count value={unread} />}>
+			<BadgeAnchor badge={<Count value={totalUnread} />}>
 				<DropdownMenuTrigger asChild>
 					<Button
 						variant="ghost"
 						size="icon-sm"
-						aria-label={unread > 0 ? `通知，${unread} 条未读` : "通知"}
+						aria-label={totalUnread > 0 ? `消息，${totalUnread} 条未读` : "消息"}
 						className="rounded-full text-muted-foreground hover:bg-muted/70 hover:text-foreground"
 					>
-						{unread > 0 ? <BellRing className="size-4" /> : <Bell className="size-4" />}
+						{totalUnread > 0 ? (
+							<BellRing className="size-4.25" />
+						) : (
+							<Bell className="size-4.25" />
+						)}
 					</Button>
 				</DropdownMenuTrigger>
 			</BadgeAnchor>

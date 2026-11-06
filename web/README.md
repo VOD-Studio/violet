@@ -138,7 +138,8 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 | 四季装饰与图层控制 | `features/seasonal-decor`，入口在 `theme-switcher` 与命令面板 |
 | 管理后台 | `features/admin-*`，公共后台布局与表格在 `admin-layout` / `admin-shared` |
 | 运行策略与代码执行 | `entities/runtime-policy`、`entities/code-runner`、`features/admin-settings` |
-| 首页与阅读页组合、导航 | `widgets/` 与 `shared/config/nav.ts` |
+| 首页与阅读页组合 | `widgets/` |
+| 顶栏、移动端底部岛与页脚 | 展示层在 `shared/ui/site-navbar`、`site-island`、`site-footer`（props 驱动，陈列室直接渲染），接线层在 `widgets/Header`、`widgets/Footer`；一级入口与登录态可见性在 `shared/config/nav.ts` 的 `getNavItems` |
 
 只在一个 feature 内使用的实现留在 feature。第二个 feature 需要同一业务能力时，提到 `entities/`；站点专用基础能力放 `shared/`，通用 React 组件放 `packages/ui/`。不要让 `shared` 反向导入业务 feature。
 
@@ -219,7 +220,7 @@ CLI fixture 使用临时 Git 仓库，可通过 `pnpm test scripts/check-colors.
 
 主题偏好由 `shared/lib/theme-preference.ts` 解析，SSR 通过 `getSSRThemeState` 在 `<html>` 上输出 `data-theme`，首帧即为访客的预设主题；自定义主题按规范化后的种子色在 SSR 现算，内联进 `<head>` 的 `#theme-custom` 样式，`data-theme` 为 `custom`，`data-season` 仍给出偏好对应的季节；规则与术语见 CONTEXT「主题与色彩」。主题契约（`e2e/theme-contract.spec.ts`）覆盖「主题 × 外观 × 视口」的首帧与水合一致性，并在浏览器中实测关键文字组合的对比度。
 
-切换入口是 `@features/theme-switcher` 的 `ThemeMenu`，挂在顶栏工具区外观开关旁，打开单层「主题与装饰」面板；移动端底部导航的「更多」面板用 `ThemePicker` 承载同一份 `ThemeSettings`。跟随季节与四季色卡用底色、描边表达单选状态，不另加对号；「自定义」打开 `CustomThemeDialog`，取色或输入十六进制种子色，实时预览浅深两种外观下的按钮、链接、选中态与主色文字后应用。设置面板内即时换色，不创建会阻塞点击的整页快照；命令面板保留原有扩散效果。偏好 cookie 写入且 DOM 更新完成后刷新路由上下文，`e2e/theme-switcher.spec.ts` 覆盖切换、刷新保持、键盘操作与自定义流程。
+切换入口是 `@features/theme-switcher` 的 `ThemeMenu`，顶栏右药丸里以当季花形图标呈现为「季节与外观」，打开单层面板：顶部是明暗外观，其后是主题配色与装饰；移动端底部导航的「更多」面板用 `ThemePicker` 承载同一份 `ThemeSettings`。跟随季节与四季色卡用底色、描边表达单选状态，不另加对号；「自定义」打开 `CustomThemeDialog`，取色或输入十六进制种子色，实时预览浅深两种外观下的按钮、链接、选中态与主色文字后应用。设置面板内即时换色，不创建会阻塞点击的整页快照；命令面板保留原有扩散效果。偏好 cookie 写入且 DOM 更新完成后刷新路由上下文，`e2e/theme-switcher.spec.ts` 覆盖切换、刷新保持、键盘操作与自定义流程。
 
 ### 装饰偏好
 
@@ -229,7 +230,7 @@ CLI fixture 使用临时 Git 仓库，可通过 `pnpm test scripts/check-colors.
 
 装饰内容统一由 `@features/seasonal-decor` 投放：背景层是视口角落插画与飘落画布，点缀位是首页收尾寄语上方的小幅插画，组件挂件保留在顶栏三个胶囊与页脚。角落插画按自身边界径向淡出，飘落画布避开正文阅读带；点缀位采用绝对定位，不参与布局。插画用主题 token 混色、固定随机种子保证 SSR 与客户端一致；粒子先画进离屏精灵再贴图。背景仅在桌面公开页显示；隐藏、零尺寸、窄屏或离屏时停止逐帧绘制，减弱动态时仅显示静态画面。工具与沉浸方言不显示装饰，`@violet/ui` 不依赖装饰实现。
 
-桌面在「主题与装饰」面板内用 `@violet/ui` 的 `Segmented` 选择装饰季节，并用独立开关配置插画、飘落与挂件，不再使用子菜单；切换后面板保持打开，方便连续配置。移动端「更多」面板提供相同选择，命令面板支持选择装饰季节或关闭装饰。三个入口共用现有 `useDecorationSwitcher`，装饰变化不改主题。`e2e/decoration.spec.ts` 覆盖首帧与水合一致性、图层持久化、连续配置、布局不变与减弱动态静止，并在启用动效时验证切换配色后可立即点击装饰。
+桌面在「季节与外观」面板内用 `@violet/ui` 的 `Segmented` 选择装饰季节，并用独立开关配置插画、飘落与挂件，不再使用子菜单；切换后面板保持打开，方便连续配置。移动端「更多」面板提供相同选择，命令面板支持选择装饰季节或关闭装饰。三个入口共用现有 `useDecorationSwitcher`，装饰变化不改主题。`e2e/decoration.spec.ts` 覆盖首帧与水合一致性、图层持久化、连续配置、布局不变与减弱动态静止，并在启用动效时验证切换配色后可立即点击装饰。
 
 ### 独立包与文档站
 

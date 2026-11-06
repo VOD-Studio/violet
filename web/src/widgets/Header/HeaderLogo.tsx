@@ -6,12 +6,9 @@ import {
 	PresenceTicker,
 	useLivePresence,
 } from "@features/presence";
-import { CapsuleOrnament } from "@features/seasonal-decor/ui/ornaments";
 import { useSettings } from "@features/settings/api/queries";
+import { NAVBAR_BRAND_CLASS, NavbarBrand } from "@shared/ui/site-navbar";
 import { Dropdown, DropdownContent, DropdownTrigger } from "@violet/ui";
-
-import { cn } from "cn";
-import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { HeaderContributionCard } from "./HeaderContributionCard";
 
@@ -32,57 +29,23 @@ const HeaderLogo = () => {
 	return (
 		<Dropdown open={open} onOpenChange={setOpen}>
 			<DropdownTrigger asChild>
-				<button
-					type="button"
-					aria-label={label}
-					className="group pointer-events-auto relative flex h-10 items-center gap-2 rounded-full border border-border/60 bg-background/80 px-3 backdrop-blur-md transition-colors hover:border-border hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[state=open]:border-border data-[state=open]:bg-muted/50 dark:bg-card/85"
-				>
-					<CapsuleOrnament variant={0} />
-					<span
-						aria-hidden="true"
-						className="flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-selected text-selected-foreground ring-1 ring-border/50 transition-colors group-hover:bg-selected-hover"
-					>
-						{personaAvatar ? (
-							<img src={personaAvatar} alt="" className="size-full object-cover" />
-						) : (
-							<svg
-								aria-hidden="true"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="2"
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								className="size-3"
-							>
-								<circle cx="12" cy="12" r="3" fill="currentColor" stroke="none" />
-								<path d="M12 3v3M12 18v3M3 12h3M18 12h3" />
-							</svg>
-						)}
-					</span>
-					<span
-						className={cn(
-							"truncate font-mono text-xs font-bold uppercase tracking-[0.14em] text-foreground transition-colors group-hover:text-primary",
-							activity && "lg:hidden",
-						)}
-					>
-						{siteName}
-					</span>
-					{lead && activity ? (
-						// 桌面顶栏用 Logo 胶囊承载此刻状态；移动端由底部岛展示
-						<PresenceTicker
-							device={lead}
-							clockOffset={clockOffset}
-							secondaryClassName="hidden xl:inline"
-							className="hidden text-xs text-foreground lg:inline-flex"
-						/>
-					) : null}
-					<ChevronDown
-						aria-hidden="true"
-						className={cn(
-							"size-3 text-muted-foreground/60 transition-transform duration-200 group-hover:text-foreground",
-							open && "rotate-180 text-foreground",
-						)}
+				<button type="button" aria-label={label} className={NAVBAR_BRAND_CLASS}>
+					<NavbarBrand
+						name={siteName}
+						avatar={personaAvatar}
+						open={open}
+						nameClassName={activity ? "lg:hidden" : undefined}
+						trailing={
+							lead && activity ? (
+								// 桌面顶栏用 Logo 胶囊承载此刻状态；移动端由底部岛展示
+								<PresenceTicker
+									device={lead}
+									clockOffset={clockOffset}
+									secondaryClassName="hidden xl:inline"
+									className="hidden text-xs text-foreground lg:inline-flex"
+								/>
+							) : null
+						}
 					/>
 				</button>
 			</DropdownTrigger>

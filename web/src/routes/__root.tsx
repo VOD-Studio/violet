@@ -23,7 +23,6 @@ import AnnouncementBar from "@widgets/AnnouncementBar";
 import CommandPalette from "@widgets/CommandPalette";
 import Footer from "@widgets/Footer";
 import Header from "@widgets/Header";
-import { RuaRouteTransition } from "@widgets/PersonaMotion";
 import SiteBackdrop from "@widgets/SiteBackdrop";
 import { cn } from "cn";
 import { useEffect } from "react";
@@ -156,7 +155,6 @@ function RootComponent() {
 	return (
 		<AppProvider>
 			<SystemAppearanceTransition />
-			<RuaRouteTransition />
 			{isAdminRoute ? (
 				// 后台路由：完全独立的布局，不包含前台 Header/Footer
 				<Outlet />

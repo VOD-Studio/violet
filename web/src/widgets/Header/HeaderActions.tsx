@@ -7,55 +7,46 @@ import { useChatUnreadCount } from "@features/chat/api/queries";
 import { useChatUnreadTitle } from "@features/chat/hooks/use-chat-unread-title";
 import { useChatStream } from "@features/chat/hooks/useChatStream";
 import NotificationBell from "@features/notifications/ui/NotificationBell";
-import { CapsuleOrnament } from "@features/seasonal-decor/ui/ornaments";
 import { ThemeMenu } from "@features/theme-switcher";
 import { ApiError } from "@shared/api/error";
 import { avatarUrl } from "@shared/lib/image-url";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
-	BadgeAnchor,
-	Count,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
+	Separator,
 } from "@violet/ui";
-import { useCommandUIStore } from "@widgets/CommandPalette/command-ui-store";
 import { cn } from "cn";
-import { CheckCircle2, LayoutDashboard, LogOut, MessageCircle, Search, User } from "lucide-react";
-import { useEffect, useState } from "react";
+import { CheckCircle2, LayoutDashboard, LogOut, User } from "lucide-react";
+import { useEffect } from "react";
 import { toast } from "sonner";
 
-interface HeaderActionsProps {
-	user?: UserDTO | null;
-	children?: React.ReactNode;
-}
+/** 药丸里统一的 32px 圆形图标按钮：悬停与展开态用柔和底色，聚焦环由药丸内边距留出空间。 */
+const ICON_BUTTON =
+	"flex size-8 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-muted/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
 /**
- * HeaderActions - 右侧操作胶囊
+ * HeaderActions - 右药丸的内容
  *
- * - 桌面端默认只呈现用户槽位（未登录为登录入口，已登录为头像下拉），
- *   hover 时向左展开搜索、通知、聊天与外观工具区；移动端仅保留槽位与抽屉触发器。
- * - 用户槽位（size-8 圆形，宽度恒定）：
- *   未登录 → 用户剪影图标，点击跳 /login；已登录 → 真实头像下拉菜单。
+ * 药丸外壳（底、模糊、边、阴影）由顶栏外壳提供，这里只输出内容，全部常驻可见：
+ * 季节与外观（花形按钮，面板含明暗切换与主题配色）、分隔线、
+ * 消息铃铛（仅登录后，角标为通知与聊天未读之和）、账号。
+ * 账号为 size-8 圆形：登录后是头像下拉菜单，未登录是人形图标，点击跳 /login。
  *
  * 注意：LoginDialog 是**被动**的——仅在受保护请求收到 401 时由 http 拦截器自动
  * 弹出。主动登录走 /login 页面（完整表单 + redirect 回跳）。
  */
-const HeaderActions = ({ user, children }: HeaderActionsProps) => {
+const HeaderActions = ({ user }: { user?: UserDTO | null }) => {
 	const logout = useLogout();
 	const navigate = useNavigate();
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
-	const openCommand = useCommandUIStore((s) => s.open);
 	const { data: chatUnread } = useChatUnreadCount(Boolean(user));
 	const unreadChatCount = chatUnread?.unread_count ?? 0;
 	useChatUnreadTitle(user ? unreadChatCount : 0);
-	const [notificationOpen, setNotificationOpen] = useState(false);
-	const [userMenuOpen, setUserMenuOpen] = useState(false);
-	const [themeMenuOpen, setThemeMenuOpen] = useState(false);
-	const actionsPinned = notificationOpen || userMenuOpen || themeMenuOpen;
-	// 聊天事件流全局挂载：任意页面收到新消息，聊天图标未读角标即时刷新
+	// 聊天事件流全局挂载：任意页面收到新消息，消息铃铛的未读角标即时刷新
 	useChatStream();
 	useEffect(() => {
 		if (user) return; // 已登录不注册快捷键
@@ -92,163 +83,117 @@ const HeaderActions = ({ user, children }: HeaderActionsProps) => {
 	const isAdmin = useHasPermission("admin:access");
 
 	return (
-		<div
-			data-pinned={actionsPinned || undefined}
-			className="group pointer-events-auto relative flex h-10 items-center rounded-full border border-border/60 bg-background/80 p-1 shadow-xs backdrop-blur-md transition-colors dark:bg-card/85"
-		>
-			<CapsuleOrnament variant={3} />
-			{/* 工具区随悬停或键盘聚焦展开，通知、用户或主题菜单打开时保持展开；-mx-1 px-1 给聚焦环留出不被裁剪的空间。 */}
-			<div className="pointer-events-none -mx-1 hidden max-w-0 items-center gap-3 overflow-hidden px-1 py-2 opacity-0 transition-[max-width,opacity] duration-300 ease-out lg:flex lg:group-focus-within:pointer-events-auto lg:group-focus-within:max-w-72 lg:group-focus-within:opacity-100 lg:group-hover:pointer-events-auto lg:group-hover:max-w-72 lg:group-hover:opacity-100 lg:group-data-[pinned]:pointer-events-auto lg:group-data-[pinned]:max-w-72 lg:group-data-[pinned]:opacity-100">
-				{/* 搜索命令面板按钮 */}
-				<button
-					type="button"
-					aria-label="搜索 (⌘K)"
-					onClick={openCommand}
-					className="flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
-				>
-					<Search className="size-4" />
-				</button>
-
-				{user && <NotificationBell onOpenChange={setNotificationOpen} />}
-				{user && (
-					<BadgeAnchor badge={<Count value={unreadChatCount} />}>
-						<Link
-							aria-label={
-								unreadChatCount > 0 ? `聊天，${unreadChatCount} 条未读` : "聊天"
-							}
-							className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
-							to="/chat"
+		<div className="flex items-center gap-0.5">
+			<ThemeMenu appearance={<AppearanceToggle size="default" />} />
+			<Separator orientation="vertical" className="h-4 bg-rule2" />
+			{user && <NotificationBell extraUnread={unreadChatCount} />}
+			{user ? (
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<button
+							type="button"
+							aria-label="用户菜单"
+							className={cn(ICON_BUTTON, "data-[state=open]:bg-muted/70")}
 						>
-							<MessageCircle className="size-4" />
-						</Link>
-					</BadgeAnchor>
-				)}
-
-				<AppearanceToggle size="sm" />
-				<ThemeMenu onOpenChange={setThemeMenuOpen} />
-			</div>
-			{/* 用户槽位：登录/未登录均为 size-8 圆形，宽度恒定 */}
-			<div className="flex size-8 items-center justify-center">
-				{user ? (
-					<DropdownMenu open={userMenuOpen} onOpenChange={setUserMenuOpen}>
-						<DropdownMenuTrigger asChild>
-							<button
-								type="button"
-								aria-label="用户菜单"
-								className={cn(
-									"group relative flex items-center justify-center rounded-full border border-transparent size-8",
-									"transition-all duration-200 hover:border-border/60 hover:bg-accent/40",
-									"focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:outline-1",
-									"data-[state=open]:border-border/80 data-[state=open]:bg-accent/50",
-								)}
-							>
+							<img
+								src={avatarUrl(user.avatar_url, user.username)}
+								alt=""
+								className="size-8 rounded-full object-cover"
+							/>
+						</button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="end" className="w-72 max-w-72 p-0">
+						{/* 用户信息卡：头像 + 邮箱 + 角色徽章 */}
+						<div className="relative border-b border-border/40 bg-linear-to-br from-accent/40 via-transparent to-transparent px-4 pb-4 pt-4">
+							<div className="flex items-start gap-3">
 								<img
 									src={avatarUrl(user.avatar_url, user.username)}
 									alt={user.username}
-									className="size-7 rounded-full object-cover ring-1 ring-border/40"
+									className="size-12 shrink-0 rounded-full object-cover ring-1 ring-border/50"
 								/>
-							</button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align="end" className="w-72 max-w-72 p-0">
-							{/* 用户信息卡：头像 + 邮箱 + 角色徽章 */}
-							<div className="relative border-b border-border/40 bg-linear-to-br from-accent/40 via-transparent to-transparent px-4 pb-4 pt-4">
-								<div className="flex items-start gap-3">
-									<img
-										src={avatarUrl(user.avatar_url, user.username)}
-										alt={user.username}
-										className="size-12 shrink-0 rounded-full object-cover ring-1 ring-border/50"
-									/>
-									<div className="min-w-0 flex-1">
-										<p className="truncate font-mono text-sm font-semibold tracking-tight text-foreground">
-											{getDisplayName(user)}
-										</p>
-										<p className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground">
-											<span className="truncate">{user.email}</span>
-											{/* root 用户必有邮箱，无需重复显示；仅普通用户显示验证勾 */}
-											{!user.is_root && user.email_verified && (
-												<CheckCircle2
-													className="size-3 shrink-0 text-success"
-													aria-label="邮箱已验证"
-												/>
-											)}
-										</p>
-										<div className="mt-2 flex items-center gap-1.5">
-											{user.is_root ? (
-												<span className="inline-flex items-center rounded-full bg-foreground px-2 py-0.5 font-mono text-[10px] font-medium tracking-wide text-background uppercase">
-													root
-												</span>
-											) : (
-												<span className="inline-flex items-center rounded-full border border-border/60 bg-background/60 px-2 py-0.5 text-[10px] font-medium tracking-wide text-foreground/80 uppercase backdrop-blur-sm">
-													{user.role_description || user.role}
-												</span>
-											)}
-										</div>
+								<div className="min-w-0 flex-1">
+									<p className="truncate font-mono text-sm font-semibold tracking-tight text-foreground">
+										{getDisplayName(user)}
+									</p>
+									<p className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground">
+										<span className="truncate">{user.email}</span>
+										{/* root 用户必有邮箱，无需重复显示；仅普通用户显示验证勾 */}
+										{!user.is_root && user.email_verified && (
+											<CheckCircle2
+												className="size-3 shrink-0 text-success"
+												aria-label="邮箱已验证"
+											/>
+										)}
+									</p>
+									<div className="mt-2 flex items-center gap-1.5">
+										{user.is_root ? (
+											<span className="inline-flex items-center rounded-full bg-foreground px-2 py-0.5 font-mono text-[10px] font-medium tracking-wide text-background uppercase">
+												root
+											</span>
+										) : (
+											<span className="inline-flex items-center rounded-full border border-border/60 bg-background/60 px-2 py-0.5 text-[10px] font-medium tracking-wide text-foreground/80 uppercase backdrop-blur-sm">
+												{user.role_description || user.role}
+											</span>
+										)}
 									</div>
 								</div>
 							</div>
-							{/* 菜单分组 */}
-							<div className="p-1.5">
+						</div>
+						{/* 菜单分组 */}
+						<div className="p-1.5">
+							<DropdownMenuItem asChild>
+								<Link
+									to="/profile"
+									className="flex items-center gap-2.5 rounded-md px-2.5 py-2"
+								>
+									<span className="flex size-7 items-center justify-center rounded-md bg-muted/60 text-muted-foreground">
+										<User className="size-3.5" />
+									</span>
+									<span className="flex-1 text-sm">个人中心</span>
+								</Link>
+							</DropdownMenuItem>
+							{isAdmin && (
 								<DropdownMenuItem asChild>
 									<Link
-										to="/profile"
+										to="/admin"
 										className="flex items-center gap-2.5 rounded-md px-2.5 py-2"
 									>
 										<span className="flex size-7 items-center justify-center rounded-md bg-muted/60 text-muted-foreground">
-											<User className="size-3.5" />
+											<LayoutDashboard className="size-3.5" />
 										</span>
-										<span className="flex-1 text-sm">个人中心</span>
+										<span className="flex-1 text-sm">后台管理</span>
 									</Link>
 								</DropdownMenuItem>
-								{isAdmin && (
-									<DropdownMenuItem asChild>
-										<Link
-											to="/admin"
-											className="flex items-center gap-2.5 rounded-md px-2.5 py-2"
-										>
-											<span className="flex size-7 items-center justify-center rounded-md bg-muted/60 text-muted-foreground">
-												<LayoutDashboard className="size-3.5" />
-											</span>
-											<span className="flex-1 text-sm">后台管理</span>
-										</Link>
-									</DropdownMenuItem>
-								)}
-							</div>
+							)}
+						</div>
 
-							<DropdownMenuSeparator className="mx-3 bg-border/40" />
+						<DropdownMenuSeparator className="mx-3 bg-border/40" />
 
-							<div className="p-1.5">
-								<DropdownMenuItem
-									onClick={handleLogout}
-									disabled={logout.isPending}
-									className="rounded-md px-2.5 py-2"
-								>
-									<span className="flex size-7 items-center justify-center rounded-md bg-muted/60 text-muted-foreground">
-										<LogOut className="size-3.5" />
-									</span>
-									<span className="flex-1 text-sm">
-										{logout.isPending ? "登出中..." : "登出"}
-									</span>
-								</DropdownMenuItem>
-							</div>
-						</DropdownMenuContent>
-					</DropdownMenu>
-				) : (
-					<Link
-						to="/login"
-						aria-label="登录"
-						className={cn(
-							"group flex items-center justify-center rounded-full border border-transparent bg-muted/60 size-8",
-							"transition-all duration-200 hover:border-border/60 hover:bg-muted",
-							"focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:outline-1",
-						)}
-					>
-						<User className="size-4 text-muted-foreground transition-colors group-hover:text-foreground" />
-					</Link>
-				)}
-			</div>
-
-			{/* 移动端菜单触发槽位（lg:hidden） */}
-			{children}
+						<div className="p-1.5">
+							<DropdownMenuItem
+								onClick={handleLogout}
+								disabled={logout.isPending}
+								className="rounded-md px-2.5 py-2"
+							>
+								<span className="flex size-7 items-center justify-center rounded-md bg-muted/60 text-muted-foreground">
+									<LogOut className="size-3.5" />
+								</span>
+								<span className="flex-1 text-sm">
+									{logout.isPending ? "登出中..." : "登出"}
+								</span>
+							</DropdownMenuItem>
+						</div>
+					</DropdownMenuContent>
+				</DropdownMenu>
+			) : (
+				<Link
+					to="/login"
+					aria-label="登录"
+					className={cn(ICON_BUTTON, "text-muted-foreground hover:text-foreground")}
+				>
+					<User className="size-4.25" />
+				</Link>
+			)}
 		</div>
 	);
 };

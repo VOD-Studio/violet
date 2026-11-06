@@ -1508,24 +1508,6 @@
 			"count": 1
 		},
 		{
-			"file": "src/widgets/Header/HeaderIsland.tsx",
-			"rule": "tailwind-palette",
-			"value": "ring-white",
-			"count": 1
-		},
-		{
-			"file": "src/widgets/Header/HeaderIsland.tsx",
-			"rule": "tailwind-palette",
-			"value": "bg-white",
-			"count": 1
-		},
-		{
-			"file": "src/widgets/Header/HeaderIsland.tsx",
-			"rule": "tailwind-palette",
-			"value": "text-neutral-950",
-			"count": 1
-		},
-		{
 			"file": "src/widgets/Hero/Hero.tsx",
 			"rule": "raw-color",
 			"value": "rgba(96,165,250,0.32)",
