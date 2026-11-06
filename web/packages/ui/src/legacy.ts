@@ -3,7 +3,6 @@ export * from "./components/chart/index";
 export * from "./components/color-picker/index";
 export * from "./components/empty/index";
 export * from "./components/icons/index";
-export * from "./components/inline-error/index";
 export * from "./components/otp/index";
 export * from "./components/overlay-scroll/index";
 export * from "./components/page-header/index";

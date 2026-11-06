@@ -11,12 +11,12 @@
 @import "./components/drawer/drawer.css";
 @import "./components/dropdown/dropdown.css";
 @import "./components/dropdown-menu/dropdown-menu.css";
+@import "./components/field/field.css";
 @import "./components/hover-card/hover-card.css";
 @import "./components/image-pixel-reveal/image-pixel-reveal.css";
 @import "./components/indicator/indicator.css";
 @import "./components/input/input.css";
 @import "./components/kbd/kbd.css";
-@import "./components/label/label.css";
 @import "./components/link-card/link-card.css";
 @import "./components/list-highlight/list-highlight.css";
 @import "./components/morphing-popover/morphing-popover.css";

@@ -9,6 +9,7 @@ import { dialogExhibit } from "./dialog";
 import { drawerExhibit } from "./drawer";
 import { dropdownExhibit } from "./dropdown";
 import { dropdownMenuExhibit } from "./dropdown-menu";
+import { fieldExhibit } from "./field";
 import { footerExhibit } from "./footer";
 import { imagePixelRevealExhibit } from "./image-pixel-reveal";
 import { indicatorExhibit } from "./indicator";
@@ -104,6 +105,7 @@ export const EXHIBITS: Exhibit[] = [
 	toggleGroupExhibit,
 	tabsExhibit,
 	inputExhibit,
+	fieldExhibit,
 	textareaExhibit,
 	{
 		id: "select",

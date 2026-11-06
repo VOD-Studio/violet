@@ -1,7 +1,8 @@
-import { ImagePixelReveal, Input, Label, Textarea, type ButtonProps, type CheckboxProps, type ImagePixelRevealProps, type PixelRevealVariant, type InputProps } from "@violet/ui";
+import { Field, FieldSet, FieldSummary, focusField, useFieldCheck, useFieldControl, type FieldProps, type FieldSetProps, type FieldSummaryProps, ImagePixelReveal, Input, Label, Textarea, type ButtonProps, type CheckboxProps, type ImagePixelRevealProps, type PixelRevealVariant, type InputProps } from "@violet/ui";
 import { Button } from "@violet/ui/button";
 import { Checkbox } from "@violet/ui/checkbox";
 import { ImagePixelReveal as LeafImagePixelReveal, type ImagePixelRevealProps as LeafImagePixelRevealProps, type PixelRevealVariant as LeafPixelRevealVariant } from "@violet/ui/image-pixel-reveal";
+import { Field as LeafField, Label as LeafLabel, type FieldProps as LeafFieldProps } from "@violet/ui/field";
 import { Pagination } from "@violet/ui/legacy";
 import { Input as LeafInput, type InputProps as LeafInputProps } from "@violet/ui/input";
 import { SearchInput, type SearchInputProps } from "@violet/ui";
@@ -156,6 +157,41 @@ buttonVariants({ variant: "primary", className: "consumer-class" });
 buttonVariants({ variant: "unknown" });
 export const example = <><Button {...button}>保存</Button><Input {...field} /><LeafInput {...leafField} /><Input /><Label>名称</Label><Textarea /></>;
 export const legacy = Pagination;
+
+const fieldProps: FieldProps = {
+	label: "邮箱", optional: true, hint: "只用于回复通知", error: "邮箱格式不正确", success: "可以使用", checking: "正在检查…",
+	count: { value: 10, max: 40 }, orientation: "horizontal", controlSize: "lg", htmlFor: "email", className: "layout", children: <Input id="email" />,
+};
+const leafFieldProps: LeafFieldProps = fieldProps;
+const fieldSetProps: FieldSetProps = { legend: "通知方式", optional: true, description: "至少选一种", hint: "已选 1 种", error: "至少选一种", children: <Input aria-label="邮件" /> };
+const summaryProps: FieldSummaryProps = { errors: [{ id: "title", label: "标题" }], title: (count: number) => `还有 ${count} 处` };
+// @ts-expect-error 标签必填。
+export const invalidFieldLabel = <Field><Input /></Field>;
+// @ts-expect-error 排法只有纵向与横排。
+export const invalidFieldOrientation = <Field label="邮箱" orientation="diagonal"><Input /></Field>;
+// @ts-expect-error 组名必填。
+export const invalidFieldSet = <FieldSet><Input aria-label="邮件" /></FieldSet>;
+// @ts-expect-error 汇总必须给出错误列表。
+export const invalidSummary = <FieldSummary />;
+export function FieldProbe({ value }: { value: string }) {
+	const control = useFieldControl();
+	const check = useFieldCheck({
+		value,
+		validate: (next) => (next.includes("@") ? undefined : "缺少 @"),
+		validateAsync: async (next, signal: AbortSignal) => (signal.aborted || next === "taken" ? "已被占用" : undefined),
+		asyncDelay: 300,
+		revealOn: "change",
+	});
+	const error: string | undefined = check.error;
+	const valid: boolean = check.valid;
+	const checking: boolean = check.checking;
+	const focused: boolean = focusField("email");
+	check.touch();
+	check.reset();
+	void [error, valid, checking, focused];
+	return <Field {...fieldProps} {...leafFieldProps} error={check.error} checking={check.checking ? "正在检查…" : undefined}><Input {...control} {...check.fieldProps} /><LeafLabel>名称</LeafLabel></Field>;
+}
+export const fieldSetExample = <><FieldSet {...fieldSetProps} /><FieldSummary {...summaryProps} /><LeafField label="名称"><Input /></LeafField></>;
 
 const checkbox: CheckboxProps = {
 	ref: createRef<HTMLButtonElement>(), name: "updates", value: "weekly", required: true,

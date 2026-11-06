@@ -107,7 +107,7 @@ function CheckboxFamily({ state }: ExhibitRenderProps) {
 export const checkboxExhibit: Exhibit = {
 	id: "checkbox",
 	name: "复选框",
-	units: ["checkbox", "label"],
+	units: ["checkbox"],
 	zone: "field",
 	category: "form",
 	footprint: { width: 560, height: 260 },

@@ -29,7 +29,7 @@ function TextareaField({ state }: ExhibitRenderProps) {
 export const textareaExhibit: Exhibit = {
 	id: "textarea",
 	name: "多行输入",
-	units: ["textarea", "label"],
+	units: ["textarea"],
 	zone: "field",
 	category: "form",
 	footprint: { width: 320, height: 168 },

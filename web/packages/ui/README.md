@@ -4,7 +4,7 @@ React 19 组件库，使用原生 HTML 与 Radix 提供交互行为，用类型�
 
 ## 当前范围
 
-`component-manifest.json` 记录每个组件的入口、样式和成熟度。Avatar、Badge、Button、Card、Checkbox、CommandList、ConfirmDialog、ContextMenu、Dialog、Drawer、Dropdown、DropdownMenu、HoverCard、ImagePixelReveal、Indicator、Input（含 SearchInput）、Kbd、Label、LinkCard、ListHighlight、MorphingPopover、Popover、PromptDialog、Radio、Segmented、Separator、Sheet、Skeleton、Sonner、Switch、Tabs、Textarea、ToggleGroup、Tooltip、UploadTile 是当前 35 个 `foundation` 单元；其余 16 个单元保留 API，并标为 `legacy`。兼容入口不代表已经重建所有组件。
+`component-manifest.json` 记录每个组件的入口、样式和成熟度。Avatar、Badge、Button、Card、Checkbox、CommandList、ConfirmDialog、ContextMenu、Dialog、Drawer、Dropdown、DropdownMenu、Field（含 Label、FieldSet、FieldSummary）、HoverCard、ImagePixelReveal、Indicator、Input（含 SearchInput）、Kbd、LinkCard、ListHighlight、MorphingPopover、Popover、PromptDialog、Radio、Segmented、Separator、Sheet、Skeleton、Sonner、Switch、Tabs、Textarea、ToggleGroup、Tooltip、UploadTile 是当前 35 个 `foundation` 单元；其余 15 个单元保留 API，并标为 `legacy`。兼容入口不代表已经重建所有组件。
 
 所有组件都放在 `src/components/<name>/`，实现、有变体时的 `styles.ts`、CSS、入口和测试就近维护。`src/legacy.ts` 只汇总兼容导出；`src/lib/` 只放有实际消费方的复用能力。
 
@@ -59,6 +59,8 @@ export function ProfileForm() {
 也可以从 `@violet/ui/button`、`@violet/ui/input` 等组件入口导入。`@violet/ui/variants` 只导出类名 recipe，不依赖 React；`@violet/ui/legacy` 提供存量兼容入口。
 
 Input 是原生输入的外壳，不渲染标签、提示、错误与字数，这些属于表单项；单独使用必须写 `aria-label`。`className`、`style`、`ref`、`id`、`name` 与原生事件都属于 input，`aria-describedby`、`aria-invalid` 原样透传，`classNames` 只有 `control`（外壳，即根元素）、`input`、`leading`、`trailing`、`action`。`variant` 支持 filled（默认）/ outline / underline / plain，`controlSize` 支持 sm / md / lg（32 / 36 / 40，触屏各加 4），原生 `size` 仍是数字。`invalid`、`valid`、`loading` 在状态位显示警示、对勾或细圆弧；`clearable`（Esc 同样清空）、`passwordToggle`（光标位置保持）、`copyable` 提供 24px 圆钮，清除派发真实输入事件。保留 FormData、reset、受控/非受控及 SSR ID 语义。[输入框契约](docs/components/input.md)逐项说明，[陈列室展品](https://xunrua.top/ui?open=input)按四种变体 × 九种状态逐格查看。
+
+Field 把一个控件包成表单项：标签（`Label` 并入本单元）、提示与错误同一个消息行（`aria-live="polite"`，恒占一行高）、字数；单个元素子节点自动接线 `id`、`aria-describedby`、`aria-invalid`，组合控件用 `useFieldControl()`。`orientation="horizontal"` 在容器宽于 36rem 时横排，窄时回到纵向。另有 `FieldSet`（fieldset/legend）、`FieldSummary`（提交汇总）、`focusField` 与纯逻辑的 `useFieldCheck`（失焦后才显示错误、异步检查停手 600ms 后才发），见 [Field 契约](docs/components/field.md)。
 
 SearchInput 并入 input 单元，是 Input 加搜索图标、清除钮与防抖的组合，只增加防抖、回车搜索与可选的 `shortcut` 键帽；仅需即时筛选时使用 `Input type="search"`。从 `@violet/ui` 或 `@violet/ui/input` 导入，按需样式为 `@violet/ui/components/input.css`，已含键帽与加载指示器的依赖样式。
 

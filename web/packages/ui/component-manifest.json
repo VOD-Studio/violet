@@ -91,6 +91,13 @@
 			"entry": "src/components/empty/index.ts"
 		},
 		{
+			"name": "field",
+			"status": "foundation",
+			"entry": "src/components/field/index.ts",
+			"css": "src/components/field/field.css",
+			"documentation": "web/packages/ui/docs/components/field.md"
+		},
+		{
 			"name": "hover-card",
 			"status": "foundation",
 			"entry": "src/components/hover-card/index.ts",
@@ -114,11 +121,6 @@
 			"css": "src/components/indicator/indicator.css"
 		},
 		{
-			"name": "inline-error",
-			"status": "legacy",
-			"entry": "src/components/inline-error/index.ts"
-		},
-		{
 			"name": "input",
 			"status": "foundation",
 			"entry": "src/components/input/index.ts",
@@ -130,12 +132,6 @@
 			"status": "foundation",
 			"entry": "src/components/kbd/index.ts",
 			"css": "src/components/kbd/kbd.css"
-		},
-		{
-			"name": "label",
-			"status": "foundation",
-			"entry": "src/components/label/index.ts",
-			"css": "src/components/label/label.css"
 		},
 		{
 			"name": "link-card",

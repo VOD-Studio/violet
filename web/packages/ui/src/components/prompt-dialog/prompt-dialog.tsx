@@ -1,8 +1,8 @@
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { Button } from "../button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "../dialog";
+import { Label } from "../field";
 import { Input } from "../input";
-import { Label } from "../label";
 import { Textarea } from "../textarea";
 
 /** 只要一个值的确认：重命名、新建标签、插入链接。 */

@@ -2,8 +2,8 @@ import { CircleAlert } from "lucide-react";
 import { type ReactNode, useId, useRef, useState } from "react";
 import { Button } from "../button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "../dialog";
+import { Label } from "../field";
 import { Input } from "../input";
-import { Label } from "../label";
 
 /** 不可逆操作前的一次确认：标题写后果，按钮写动作本身。 */
 export interface ConfirmDialogProps {

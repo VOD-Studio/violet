@@ -2,7 +2,7 @@
 
 Violet/UI 的包名是 `@violet/ui`。React 组件、CSS 和类型声明在同一个包里交付；本目录维护组件库的架构与设计规范。
 
-先看 `web/packages/ui/component-manifest.json`。`foundation` 表示已按新结构实现；`legacy` 表示保留兼容入口、尚未重建。当前 35 个基础单元是 Avatar、Badge、Button、Card、Checkbox、CommandList、ConfirmDialog、ContextMenu、Dialog、Drawer、Dropdown、DropdownMenu、HoverCard、ImagePixelReveal、Indicator、Input（含 SearchInput）、Kbd、Label、LinkCard、ListHighlight、MorphingPopover、Popover、PromptDialog、Radio、Segmented、Separator、Sheet、Skeleton、Sonner、Switch、Tabs、Textarea、ToggleGroup、Tooltip、UploadTile。其余 16 个单元，包括 Select 与 Table，仍属于 legacy；旧页面能运行不代表已经完成新架构改造。
+先看 `web/packages/ui/component-manifest.json`。`foundation` 表示已按新结构实现；`legacy` 表示保留兼容入口、尚未重建。当前 35 个基础单元是 Avatar、Badge、Button、Card、Checkbox、CommandList、ConfirmDialog、ContextMenu、Dialog、Drawer、Dropdown、DropdownMenu、Field（含 Label、FieldSet、FieldSummary）、HoverCard、ImagePixelReveal、Indicator、Input（含 SearchInput）、Kbd、LinkCard、ListHighlight、MorphingPopover、Popover、PromptDialog、Radio、Segmented、Separator、Sheet、Skeleton、Sonner、Switch、Tabs、Textarea、ToggleGroup、Tooltip、UploadTile。其余 15 个单元，包括 Select 与 Table，仍属于 legacy；旧页面能运行不代表已经完成新架构改造。
 
 ```text
 web/packages/ui/
@@ -117,6 +117,8 @@ import { Input } from "@violet/ui";
 
 `className`、`style`、事件、ref 与 `id` 继续属于 input；外壳就是根元素，视觉槽通过 `classNames.control` 调整。输入框不渲染标签、提示、错误与字数，它们属于表单项：单独使用必须写 `aria-label`，`aria-describedby`、`aria-invalid` 由表单项传入并原样透传。未传 `id` 时使用 `useId` 生成 SSR 稳定的标识。`variant`（filled 默认、outline、underline、plain）与 `controlSize` 由 typed recipe 推导，原生 `size` 仍为数字。外壳只认 `--v-input-*` 自定义属性：尺寸档与触屏（`pointer: coarse`）改高度、内边距、字号与图标，变体与状态改底色与 box-shadow 三组变量，焦点色 `--v-input-fc` 在出错与通过时整体替换，不写逐变体 × 逐状态的特例类。清除、显隐、复制钮属于同一个复合焦点范围，焦点在内部转移不重播聚焦反馈。
 
+`field` 单元包含 Field、FieldSet、FieldSummary、`Label`、`focusField` 与纯逻辑 hook `useFieldCheck`，旧的 `label` 单元并入其中，导出名与行为不变；内容区错误组件 InlineError 已删除，字段错误一律走 Field 的消息行。Field 只通过 `id`、`aria-describedby`、`aria-invalid` 与控件接线，不依赖 Input 的实现；横排用容器查询（Field 根自成 `inline-size` 容器）在 36rem 以下回到纵向。详见 [Field 契约](./components/field.md)。
+
 SearchInput 并入 `input` 单元（`components/input/search-input.tsx`），共用 `input.css`，没有独立的清单条目或 CSS。它是 Input 加搜索图标、清除钮与防抖的组合，仅增加防抖、回车搜索、清除时序与可选的 `shortcut` 键帽；查询请求仍由调用方管理。只有图标或即时本地筛选时，使用 `Input type="search"`，不引入 SearchInput 的调度。
 
 | 输入场景 | 外观选择 |
@@ -162,7 +164,7 @@ DropdownMenu 与 ContextMenu 共用一套项：键盘打开焦点进第一项，
 
 用户直接提出的约束继续生效：常规交互不用 scale 或方向性滑入滑出，功能圆角不超过 16px，浮起只用 `0 4px 24px / 0.05` 软影。通用主题保持系统字体与可覆盖的语义 token，宿主的品牌预设不成为基础控件依赖。
 
-能力由实际需求推动：Button 与 Input 需要变体，所以有 `styles.ts`；Label 等无变体单元直接使用稳定类名。出现多个真实复用方后再提取 lib，避免让架构承担尚不存在的状态和场景。
+能力由实际需求推动：Button 与 Input 需要变体，所以有 `styles.ts`；Field 等无变体单元直接使用稳定类名。出现多个真实复用方后再提取 lib，避免让架构承担尚不存在的状态和场景。
 
 ## 清单如何防止入口漂移
 

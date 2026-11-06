@@ -3,7 +3,7 @@ import { createRef, useId, useState } from "react";
 import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { Label } from "../../label";
+import { Label } from "../../field";
 import { Checkbox } from "../checkbox";
 import { checkboxVariants } from "../styles";
 

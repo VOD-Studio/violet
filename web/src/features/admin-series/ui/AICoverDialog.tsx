@@ -22,7 +22,6 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-	InlineError,
 	Input,
 	Label,
 } from "@violet/ui";
@@ -137,11 +136,24 @@ export function AICoverDialog({
 						) : null}
 
 						{generate.isError && generate.error ? (
-							<InlineError
-								message={generate.error.message}
-								onRetry={() => handleGenerate()}
-								retrying={generate.isPending}
-							/>
+							<div
+								role="alert"
+								className="flex items-center justify-between gap-3 border-b border-edge-hairline py-3"
+							>
+								<p className="min-w-0 text-destructive text-sm">
+									{generate.error.message}
+								</p>
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									loading={generate.isPending}
+									loadingText="进行中…"
+									onClick={() => handleGenerate()}
+								>
+									重试
+								</Button>
+							</div>
 						) : null}
 
 						{!generate.isPending && urls.length > 0 ? (

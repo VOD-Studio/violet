@@ -1,6 +1,6 @@
 @import "../dialog/dialog.css";
 @import "../input/input.css";
-@import "../label/label.css";
+@import "../field/field.css";
 
 @layer components {
 	/* 确认框与输入确认框：对话框的外壳与出场，固定 400 宽、紧凑内边距；两级选择器防止再次导入 dialog.css 时被顶掉 */

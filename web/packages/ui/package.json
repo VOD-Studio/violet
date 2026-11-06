@@ -102,6 +102,11 @@
 			"import": "./src/components/empty/index.ts",
 			"default": "./src/components/empty/index.ts"
 		},
+		"./field": {
+			"types": "./src/components/field/index.ts",
+			"import": "./src/components/field/index.ts",
+			"default": "./src/components/field/index.ts"
+		},
 		"./hover-card": {
 			"types": "./src/components/hover-card/index.ts",
 			"import": "./src/components/hover-card/index.ts",
@@ -122,11 +127,6 @@
 			"import": "./src/components/indicator/index.ts",
 			"default": "./src/components/indicator/index.ts"
 		},
-		"./inline-error": {
-			"types": "./src/components/inline-error/index.ts",
-			"import": "./src/components/inline-error/index.ts",
-			"default": "./src/components/inline-error/index.ts"
-		},
 		"./input": {
 			"types": "./src/components/input/index.ts",
 			"import": "./src/components/input/index.ts",
@@ -136,11 +136,6 @@
 			"types": "./src/components/kbd/index.ts",
 			"import": "./src/components/kbd/index.ts",
 			"default": "./src/components/kbd/index.ts"
-		},
-		"./label": {
-			"types": "./src/components/label/index.ts",
-			"import": "./src/components/label/index.ts",
-			"default": "./src/components/label/index.ts"
 		},
 		"./link-card": {
 			"types": "./src/components/link-card/index.ts",
@@ -312,12 +307,12 @@
 		"./components/drawer.css": "./src/components/drawer/drawer.css",
 		"./components/dropdown.css": "./src/components/dropdown/dropdown.css",
 		"./components/dropdown-menu.css": "./src/components/dropdown-menu/dropdown-menu.css",
+		"./components/field.css": "./src/components/field/field.css",
 		"./components/hover-card.css": "./src/components/hover-card/hover-card.css",
 		"./components/image-pixel-reveal.css": "./src/components/image-pixel-reveal/image-pixel-reveal.css",
 		"./components/indicator.css": "./src/components/indicator/indicator.css",
 		"./components/input.css": "./src/components/input/input.css",
 		"./components/kbd.css": "./src/components/kbd/kbd.css",
-		"./components/label.css": "./src/components/label/label.css",
 		"./components/link-card.css": "./src/components/link-card/link-card.css",
 		"./components/list-highlight.css": "./src/components/list-highlight/list-highlight.css",
 		"./components/morphing-popover.css": "./src/components/morphing-popover/morphing-popover.css",
@@ -448,6 +443,11 @@
 				"import": "./dist/components/empty/index.js",
 				"default": "./dist/components/empty/index.js"
 			},
+			"./field": {
+				"types": "./dist/components/field/index.d.ts",
+				"import": "./dist/components/field/index.js",
+				"default": "./dist/components/field/index.js"
+			},
 			"./hover-card": {
 				"types": "./dist/components/hover-card/index.d.ts",
 				"import": "./dist/components/hover-card/index.js",
@@ -468,11 +468,6 @@
 				"import": "./dist/components/indicator/index.js",
 				"default": "./dist/components/indicator/index.js"
 			},
-			"./inline-error": {
-				"types": "./dist/components/inline-error/index.d.ts",
-				"import": "./dist/components/inline-error/index.js",
-				"default": "./dist/components/inline-error/index.js"
-			},
 			"./input": {
 				"types": "./dist/components/input/index.d.ts",
 				"import": "./dist/components/input/index.js",
@@ -482,11 +477,6 @@
 				"types": "./dist/components/kbd/index.d.ts",
 				"import": "./dist/components/kbd/index.js",
 				"default": "./dist/components/kbd/index.js"
-			},
-			"./label": {
-				"types": "./dist/components/label/index.d.ts",
-				"import": "./dist/components/label/index.js",
-				"default": "./dist/components/label/index.js"
 			},
 			"./link-card": {
 				"types": "./dist/components/link-card/index.d.ts",
@@ -658,12 +648,12 @@
 			"./components/drawer.css": "./dist/components/drawer.css",
 			"./components/dropdown.css": "./dist/components/dropdown.css",
 			"./components/dropdown-menu.css": "./dist/components/dropdown-menu.css",
+			"./components/field.css": "./dist/components/field.css",
 			"./components/hover-card.css": "./dist/components/hover-card.css",
 			"./components/image-pixel-reveal.css": "./dist/components/image-pixel-reveal.css",
 			"./components/indicator.css": "./dist/components/indicator.css",
 			"./components/input.css": "./dist/components/input.css",
 			"./components/kbd.css": "./dist/components/kbd.css",
-			"./components/label.css": "./dist/components/label.css",
 			"./components/link-card.css": "./dist/components/link-card.css",
 			"./components/list-highlight.css": "./dist/components/list-highlight.css",
 			"./components/morphing-popover.css": "./dist/components/morphing-popover.css",
