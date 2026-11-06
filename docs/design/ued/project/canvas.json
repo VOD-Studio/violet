@@ -235,7 +235,7 @@
       "title": "公告栏",
       "w": 1440,
       "x": 4560,
-      "y": 35000
+      "y": 36400
     },
     "Avatar.dc.html": {
       "h": 3100,
@@ -311,7 +311,7 @@
       "y": 18400
     },
     "CodeBlock.dc.html": {
-      "h": 2900,
+      "h": 4600,
       "is_interactive": true,
       "page": "components",
       "title": "代码块",
@@ -554,7 +554,7 @@
       "title": "消息面板",
       "w": 1440,
       "x": 6080,
-      "y": 35000
+      "y": 36400
     },
     "Input.dc.html": {
       "h": 5200,
@@ -670,7 +670,7 @@
       "title": "导航栏",
       "w": 1440,
       "x": 0,
-      "y": 35000
+      "y": 36400
     },
     "Notification.dc.html": {
       "h": 2300,
@@ -715,7 +715,7 @@
       "title": "实时状态",
       "w": 1440,
       "x": 1520,
-      "y": 35000
+      "y": 36400
     },
     "Profile.dc.html": {
       "expand": "fill",
@@ -734,7 +734,7 @@
       "title": "站长卡片",
       "w": 1440,
       "x": 3040,
-      "y": 35000
+      "y": 36400
     },
     "Progress.dc.html": {
       "h": 2900,
@@ -988,6 +988,15 @@
       "w": 1440,
       "x": 16720,
       "y": 440
+    },
+    "Backdrop.dc.html": {
+      "page": "foundation",
+      "x": 3040,
+      "y": 0,
+      "w": 1440,
+      "h": 5800,
+      "title": "背景",
+      "is_interactive": true
     }
   },
   "createdOnFiles": {
@@ -1048,6 +1057,7 @@
     "Feedback.dc.html",
     "Foundation.dc.html",
     "Sitemap.dc.html",
+    "Backdrop.dc.html",
     "Icons.dc.html",
     "Showcase.dc.html",
     "AboutGrowth.dc.html",

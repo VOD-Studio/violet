@@ -1,17 +1,18 @@
 # Violet UED 设计稿
 
-Claude Design 画布「Violet UED 设计」的原稿快照，2026-11-04 导出。在线稿是只读分享链接，随时可能失效或被改动；本目录是实现时的依据。
+Claude Design 画布「Violet UED 设计」的原稿快照，2026-11-06 导出。在线稿是只读分享链接，随时可能失效或被改动；本目录是实现时的依据。
 
 - 来源：<https://claude.ai/artifact/SfoRCyVtWY1reJd1mkQXU2>
-- 上游版本：`1793774805-94e0`（见 `manifest.json`）
+- 导出自：<https://claude.ai/artifact/1wmjWasieMjQjBJYDoX8b8>（来源画布的副本，2026-11-06 复制；来源属于其他账号，无法直接读取）
+- 上游版本：`1793923319-b913`，指副本的版本（见 `manifest.json`）
 - 画布创建于 2026-10-31
 
 ## 内容
 
 | 路径 | 说明 |
 |---|---|
-| `project/canvas.json` | 画布索引：7 个页面、108 个画板的坐标、尺寸、标题与所属页面 |
-| `project/*.dc.html` | 108 个画板原稿，每个文件一个画板 |
+| `project/canvas.json` | 画布索引：7 个页面、109 个画板的坐标、尺寸、标题与所属页面 |
+| `project/*.dc.html` | 109 个画板原稿，每个文件一个画板 |
 | `_blob/` | 画板引用的 47 个资源：亮/暗两张纸面纹理（webp）、3 个字重的 Maple Mono（woff2）、插画 SVG、示例图。文件名是上游资源 ID，原稿以 `/_blob/<id>` 引用 |
 | `manifest.json` | 上游版本、每个 `project/` 文件的 sha256（上游清单）、每个 `_blob/` 资源的类型与 sha256（导出时计算） |
 
@@ -19,7 +20,7 @@ Claude Design 画布「Violet UED 设计」的原稿快照，2026-11-04 导出�
 
 | 页面 | `canvas.json` 的 `page` | 画板数 |
 |---|---|---|
-| 基础 | `foundation` | 2（基础规范、站点结构） |
+| 基础 | `foundation` | 3（基础规范、站点结构、背景） |
 | 图标 | `icons` | 1 |
 | 组件展示 | `showcase` | 1 |
 | 组件 | `components` | 71 |
