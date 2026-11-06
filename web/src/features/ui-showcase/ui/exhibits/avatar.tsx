@@ -2,16 +2,7 @@ import { Avatar, AvatarGroup, type AvatarSize, Segmented } from "@violet/ui";
 import { Hash } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import type { Exhibit, ExhibitRenderProps } from "../../model/exhibit";
-
-/** 内联 SVG 肖像：纯色底加简化人形，不依赖网络，也不使用真人照片。 */
-function portrait(hue: number, shape: "person" | "bot" = "person") {
-	const body =
-		shape === "bot"
-			? `<rect x="22" y="26" width="52" height="44" rx="12" fill="oklch(0.97 0.02 ${hue})"/><circle cx="38" cy="46" r="5" fill="oklch(0.45 0.1 ${hue})"/><circle cx="58" cy="46" r="5" fill="oklch(0.45 0.1 ${hue})"/><rect x="40" y="58" width="16" height="4" rx="2" fill="oklch(0.45 0.1 ${hue})"/>`
-			: `<circle cx="48" cy="38" r="17" fill="oklch(0.97 0.02 ${hue})"/><path d="M14 96c2-20 16-30 34-30s32 10 34 30z" fill="oklch(0.97 0.02 ${hue})"/>`;
-	const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><rect width="96" height="96" fill="oklch(0.62 0.1 ${hue})"/>${body}</svg>`;
-	return `data:image/svg+xml,${encodeURIComponent(svg)}`;
-}
+import { portrait } from "./art";
 
 const RUA = portrait(200);
 const AWAY = portrait(70);

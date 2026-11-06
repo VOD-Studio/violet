@@ -15,12 +15,7 @@ import {
 	Skeleton,
 } from "@violet/ui";
 import type { Exhibit, ExhibitRenderProps } from "../../model/exhibit";
-
-/** 离线封面：渐变天空与远山，颜色由色相生成，避免展品依赖网络。 */
-function cover(hue: number) {
-	const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="oklch(0.88 0.06 ${hue})"/><stop offset="1" stop-color="oklch(0.96 0.02 ${hue})"/></linearGradient></defs><rect width="320" height="200" fill="url(#g)"/><circle cx="230" cy="62" r="24" fill="oklch(0.98 0.01 ${hue})"/><path d="M0 200V140q60-48 120-12t110-20 90 20v72z" fill="oklch(0.72 0.08 ${hue})" opacity=".7"/><path d="M0 200v-36q80-34 160-4t160-12v52z" fill="oklch(0.55 0.09 ${hue})"/></svg>`;
-	return `data:image/svg+xml,${encodeURIComponent(svg)}`;
-}
+import { cover } from "./art";
 
 const COVER = cover(350);
 
