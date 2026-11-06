@@ -14,6 +14,7 @@ import {
 	type NavLink,
 	resolveActiveNav,
 } from "@shared/config/nav";
+import { useScrollCompact } from "@shared/hooks/use-scroll-compact";
 import { useReducedMotion } from "@shared/lib/motion";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { cn } from "cn";
@@ -31,10 +32,6 @@ const EXPANDED_MAX_WIDTH = 400;
 const SIDE_GAP = 16;
 const TRACK_PADDING = 4;
 const ISLAND_LINKS = flattenNavLinks();
-/** 向下滚动超过此距离才会收成小圆标 */
-const COMPACT_AFTER_PX = 80;
-/** 单次滚动方向判定的最小位移，过滤抖动 */
-const SCROLL_DELTA_PX = 6;
 const COMPACT_SIZE = 44;
 /** 活动胶囊左右内边距之和 */
 const PILL_PADDING = 28;
@@ -54,7 +51,7 @@ function springProgress(seconds: number): number {
 	return (
 		1 -
 		Math.exp(-18 * seconds) *
-			(Math.cos(frequency * seconds) + (18 / frequency) * Math.sin(frequency * seconds))
+		(Math.cos(frequency * seconds) + (18 / frequency) * Math.sin(frequency * seconds))
 	);
 }
 const BLUR_OUT = { opacity: 0, filter: "blur(6px)" };
@@ -83,33 +80,6 @@ function useViewportWidth(): number {
 		return () => window.removeEventListener("resize", update);
 	}, []);
 	return width;
-}
-
-/** 向下滚动收成小圆标，向上滚动或回到顶部恢复 */
-function useScrollCompact(): [boolean, (value: boolean) => void] {
-	const [compact, setCompact] = useState(false);
-	useEffect(() => {
-		let last = window.scrollY;
-		let frame = 0;
-		const update = () => {
-			frame = 0;
-			const y = window.scrollY;
-			const delta = y - last;
-			if (y <= COMPACT_AFTER_PX) setCompact(false);
-			else if (delta > SCROLL_DELTA_PX) setCompact(true);
-			else if (delta < -SCROLL_DELTA_PX) setCompact(false);
-			if (Math.abs(delta) > SCROLL_DELTA_PX) last = y;
-		};
-		const onScroll = () => {
-			if (frame === 0) frame = requestAnimationFrame(update);
-		};
-		window.addEventListener("scroll", onScroll, { passive: true });
-		return () => {
-			if (frame !== 0) cancelAnimationFrame(frame);
-			window.removeEventListener("scroll", onScroll);
-		};
-	}, []);
-	return [compact, setCompact];
 }
 
 /**
@@ -182,10 +152,10 @@ function Island() {
 			: mode === "compact"
 				? { width: compactWidth, height: COMPACT_SIZE, borderRadius: COMPACT_SIZE / 2 }
 				: {
-						width: collapsedWidth,
-						height: COLLAPSED_HEIGHT,
-						borderRadius: COLLAPSED_HEIGHT / 2,
-					};
+					width: collapsedWidth,
+					height: COLLAPSED_HEIGHT,
+					borderRadius: COLLAPSED_HEIGHT / 2,
+				};
 	const content = {
 		initial: BLUR_OUT,
 		animate: { ...BLUR_IN, transition: fade(0.08, 0.22) },
