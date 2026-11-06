@@ -9,7 +9,7 @@ import {
 import { ThemePicker } from "@features/theme-switcher";
 import {
 	flattenNavLinks,
-	NAV_ITEMS,
+	getNavItems,
 	type NavItem,
 	type NavLink,
 	resolveActiveNav,
@@ -20,7 +20,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { cn } from "cn";
 import { LayoutGrid, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 /** 收起时常驻的主要入口，其余收进「更多」展开的面板 */
@@ -31,7 +31,6 @@ const COLLAPSED_HEIGHT = 52;
 const EXPANDED_MAX_WIDTH = 400;
 const SIDE_GAP = 16;
 const TRACK_PADDING = 4;
-const ISLAND_LINKS = flattenNavLinks();
 const COMPACT_SIZE = 44;
 /** 活动胶囊左右内边距之和 */
 const PILL_PADDING = 28;
@@ -51,7 +50,7 @@ function springProgress(seconds: number): number {
 	return (
 		1 -
 		Math.exp(-18 * seconds) *
-		(Math.cos(frequency * seconds) + (18 / frequency) * Math.sin(frequency * seconds))
+			(Math.cos(frequency * seconds) + (18 / frequency) * Math.sin(frequency * seconds))
 	);
 }
 const BLUR_OUT = { opacity: 0, filter: "blur(6px)" };
@@ -61,16 +60,35 @@ type IslandMode = "tabs" | "compact" | "panel";
 
 type RoutableNavItem = NavItem & { to: string };
 
-const ROUTABLE_ITEMS = NAV_ITEMS.filter((item): item is RoutableNavItem => item.to !== undefined);
-const PRIMARY_TABS = ROUTABLE_ITEMS.slice(0, PRIMARY_TAB_COUNT);
-/** 面板「全部」区：有目标的顶层项在前，不与父项重复的二级项（如「归档」）排在其后 */
-const PANEL_LINKS: NavLink[] = [
-	...ROUTABLE_ITEMS.map((item) => ({ ...item, to: item.to })),
-	...ROUTABLE_ITEMS.flatMap((item) =>
-		(item.children ?? []).filter((child) => child.to !== item.to),
-	),
-];
-const PANEL_GROUPS = NAV_ITEMS.filter((item) => item.to === undefined && item.children);
+/** 岛上随登录态变化的导航数据。 */
+interface IslandNav {
+	/** 当前登录态下可见的顶层项。 */
+	items: NavItem[];
+	/** 全部可跳转目标（含二级项，按 `to` 去重）。 */
+	links: NavLink[];
+	/** 收起态常驻的主要入口。 */
+	primaryTabs: RoutableNavItem[];
+	/** 面板「全部」区：有目标的顶层项在前，不与父项重复的二级项（如「归档」）排在其后。 */
+	panelLinks: NavLink[];
+	/** 面板里按分组列出的纯分组项。 */
+	panelGroups: NavItem[];
+}
+
+function buildIslandNav(items: NavItem[]): IslandNav {
+	const routable = items.filter((item): item is RoutableNavItem => item.to !== undefined);
+	return {
+		items,
+		links: flattenNavLinks(items),
+		primaryTabs: routable.slice(0, PRIMARY_TAB_COUNT),
+		panelLinks: [
+			...routable,
+			...routable.flatMap((item) =>
+				(item.children ?? []).filter((child) => child.to !== item.to),
+			),
+		],
+		panelGroups: items.filter((item) => item.to === undefined && item.children),
+	};
+}
 
 function useViewportWidth(): number {
 	const [width, setWidth] = useState(() => window.innerWidth);
@@ -88,22 +106,23 @@ function useViewportWidth(): number {
  * 展开时居中，向下滚动收成右侧圆钮；选中入口显示文字，透镜内显示实心图标。
  * 导航独立于页面转场快照，不随正文淡入淡出。
  */
-const HeaderIsland = () => {
+const HeaderIsland = ({ authenticated }: { authenticated: boolean }) => {
 	const [mounted, setMounted] = useState(false);
 	useEffect(() => setMounted(true), []);
 	if (!mounted) return null;
-	return createPortal(<Island />, document.body);
+	return createPortal(<Island authenticated={authenticated} />, document.body);
 };
 
-function Island() {
+function Island({ authenticated }: { authenticated: boolean }) {
 	const [open, setOpen] = useState(false);
 	const [compact, setCompact] = useScrollCompact();
 	/** 点击入口后立刻让药丸滑过去，不等路由加载完成 */
 	const [optimisticTo, setOptimisticTo] = useState<string | null>(null);
 	const pathname = useRouterState({ select: (state) => state.location.pathname });
-	const routedTo = resolveActiveNav(pathname)?.link.to;
+	const nav = useMemo(() => buildIslandNav(getNavItems({ authenticated })), [authenticated]);
+	const routedTo = resolveActiveNav(pathname, nav.items)?.link.to;
 	const activeTo = optimisticTo ?? routedTo;
-	const currentLink = ISLAND_LINKS.find((link) => link.to === activeTo);
+	const currentLink = nav.links.find((link) => link.to === activeTo);
 	// 站点菜单均为全角中文：text-sm 字宽加图标与文字间的留白。
 	const labelWidth = (currentLink?.label.length ?? 2) * 14 + 12;
 	const reduced = useReducedMotion();
@@ -152,10 +171,10 @@ function Island() {
 			: mode === "compact"
 				? { width: compactWidth, height: COMPACT_SIZE, borderRadius: COMPACT_SIZE / 2 }
 				: {
-					width: collapsedWidth,
-					height: COLLAPSED_HEIGHT,
-					borderRadius: COLLAPSED_HEIGHT / 2,
-				};
+						width: collapsedWidth,
+						height: COLLAPSED_HEIGHT,
+						borderRadius: COLLAPSED_HEIGHT / 2,
+					};
 	const content = {
 		initial: BLUR_OUT,
 		animate: { ...BLUR_IN, transition: fade(0.08, 0.22) },
@@ -200,6 +219,7 @@ function Island() {
 					{mode === "panel" ? (
 						<motion.div key="panel" {...content}>
 							<Panel
+								nav={nav}
 								activeTo={activeTo}
 								presence={presence}
 								onClose={() => setOpen(false)}
@@ -233,11 +253,12 @@ function Island() {
 							className="flex size-12 items-center justify-center text-foreground"
 							style={{ width: COMPACT_SIZE, height: COMPACT_SIZE }}
 						>
-							<ActiveGlyph activeTo={activeTo} />
+							<ActiveGlyph links={nav.links} activeTo={activeTo} />
 						</motion.button>
 					) : (
 						<motion.div key="tabs" {...content}>
 							<Tabs
+								nav={nav}
 								activeTo={activeTo}
 								currentLink={currentLink}
 								labelWidth={labelWidth}
@@ -255,8 +276,8 @@ function Island() {
 }
 
 /** 收起圆钮沿用当前菜单图标，未命中导航时显示全部菜单入口。 */
-function ActiveGlyph({ activeTo }: { activeTo: string | undefined }) {
-	const current = ISLAND_LINKS.find((item) => item.to === activeTo);
+function ActiveGlyph({ links, activeTo }: { links: NavLink[]; activeTo: string | undefined }) {
+	const current = links.find((item) => item.to === activeTo);
 	const Icon = current?.icon ?? LayoutGrid;
 	return <Icon className="size-5" />;
 }
@@ -269,18 +290,21 @@ interface Slot {
 	to?: string;
 }
 
-const SLOTS: Slot[] = [
-	...PRIMARY_TABS.map((item) => ({
-		key: item.to,
-		label: item.label,
-		icon: item.icon,
-		to: item.to,
-	})),
-	{ key: "more", label: "更多", icon: LayoutGrid },
-];
+function buildSlots(primaryTabs: RoutableNavItem[]): Slot[] {
+	return [
+		...primaryTabs.map((item) => ({
+			key: item.to,
+			label: item.label,
+			icon: item.icon,
+			to: item.to,
+		})),
+		{ key: "more", label: "更多", icon: LayoutGrid },
+	];
+}
 
 /** 透镜与反向平移的实心副本相互抵消位移，只在透镜经过处反色。 */
 function Tabs({
+	nav,
 	activeTo,
 	currentLink,
 	labelWidth,
@@ -289,6 +313,7 @@ function Tabs({
 	onSelect,
 	onMore,
 }: {
+	nav: IslandNav;
 	activeTo: string | undefined;
 	currentLink: NavLink | undefined;
 	labelWidth: number;
@@ -299,11 +324,11 @@ function Tabs({
 }) {
 	const trackWidth = width - TRACK_PADDING * 2;
 	const slotWidth = (trackWidth - labelWidth) / SLOT_COUNT;
-	const primaryIndex = PRIMARY_TABS.findIndex((item) => item.to === activeTo);
+	const primaryIndex = nav.primaryTabs.findIndex((item) => item.to === activeTo);
 	// 当前页不在主要入口（如笔记）时药丸落在「更多」上，提示它在更多里；没有命中任何页面则隐藏
 	const activeIndex =
 		activeTo === undefined ? -1 : primaryIndex >= 0 ? primaryIndex : SLOT_COUNT - 1;
-	const slots = SLOTS.map((slot) =>
+	const slots = buildSlots(nav.primaryTabs).map((slot) =>
 		slot.key === "more" && activeIndex === SLOT_COUNT - 1 && currentLink
 			? { ...slot, label: currentLink.label, icon: currentLink.icon }
 			: slot,
@@ -549,11 +574,13 @@ function SlotButton({
 
 /** 展开态面板：全部目的地的图标网格，逐项淡入。 */
 function Panel({
+	nav,
 	activeTo,
 	presence,
 	onClose,
 	reduced,
 }: {
+	nav: IslandNav;
 	activeTo: string | undefined;
 	presence: LivePresence;
 	onClose: () => void;
@@ -584,8 +611,8 @@ function Panel({
 						className="mb-4 rounded-2xl bg-muted/50 p-4"
 					/>
 				) : null}
-				<Grid links={PANEL_LINKS} activeTo={activeTo} reduced={reduced} startIndex={0} />
-				{PANEL_GROUPS.map((group) => (
+				<Grid links={nav.panelLinks} activeTo={activeTo} reduced={reduced} startIndex={0} />
+				{nav.panelGroups.map((group) => (
 					<div key={group.label} className="mt-4">
 						<p className="mb-2 px-1 font-mono text-[10px] font-semibold tracking-[0.16em] text-muted-foreground uppercase">
 							{group.label}
@@ -594,7 +621,7 @@ function Panel({
 							links={group.children ?? []}
 							activeTo={activeTo}
 							reduced={reduced}
-							startIndex={PANEL_LINKS.length}
+							startIndex={nav.panelLinks.length}
 						/>
 					</div>
 				))}

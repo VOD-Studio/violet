@@ -1,6 +1,6 @@
 import { CapsuleOrnament } from "@features/seasonal-decor/ui/ornaments";
 
-import { NAV_ITEMS, resolveActiveNav } from "@shared/config/nav";
+import { getNavItems, resolveActiveNav } from "@shared/config/nav";
 import { useRouterState } from "@tanstack/react-router";
 import { DropdownGroup, Segmented, type SegmentedItem } from "@violet/ui";
 import { ChevronDown } from "lucide-react";
@@ -13,19 +13,20 @@ import { useNavTitle } from "./use-nav-title";
  *
  * 阅读态下整岛宽度不变，其余项收为图标，避免标题把导航撑宽造成抖动。
  */
-const HeaderNav = () => {
+const HeaderNav = ({ authenticated }: { authenticated: boolean }) => {
 	const pathname = useRouterState({ select: (state) => state.location.pathname });
 	const navTitle = useNavTitle();
 
-	const active = resolveActiveNav(pathname);
+	const items = getNavItems({ authenticated });
+	const active = resolveActiveNav(pathname, items);
 	// location 先于 matches 更新：标题只在它所属页面仍是当前导航位置时生效
 	const title =
-		active && navTitle && resolveActiveNav(navTitle.path)?.item === active.item
+		active && navTitle && resolveActiveNav(navTitle.path, items)?.item === active.item
 			? navTitle.title
 			: null;
 	const reading = title !== null;
 
-	const segments: SegmentedItem[] = NAV_ITEMS.map((item) => {
+	const segments: SegmentedItem[] = items.map((item) => {
 		const current = active?.item === item;
 		const expanded = reading && current;
 		const Icon = expanded && active ? active.link.icon : item.icon;

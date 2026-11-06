@@ -1,12 +1,40 @@
 import { describe, expect, it } from "vitest";
-import { flattenNavLinks, NAV_ITEMS, resolveActiveNav } from "../nav";
+import { flattenNavLinks, getNavItems, resolveActiveNav } from "../nav";
+
+const labels = (authenticated: boolean) => getNavItems({ authenticated }).map((item) => item.label);
+
+describe("getNavItems 一级入口", () => {
+	it("游客：首页、博客、手记、推文、更多", () => {
+		expect(labels(false)).toEqual(["首页", "博客", "手记", "推文", "更多"]);
+	});
+
+	it("登录后聊天成为一级入口，位于推文与更多之间", () => {
+		expect(labels(true)).toEqual(["首页", "博客", "手记", "推文", "聊天", "更多"]);
+	});
+
+	it("手记指向现有 /notes", () => {
+		const journal = getNavItems({ authenticated: false }).find((item) => item.label === "手记");
+		expect(journal?.to).toBe("/notes");
+	});
+
+	it("聊天不再藏在更多里", () => {
+		const more = getNavItems({ authenticated: true }).find((item) => item.label === "更多");
+		expect(more?.children?.some((link) => link.to === "/chat")).toBe(false);
+	});
+
+	it("更多收纳项目、系列与图集", () => {
+		const more = getNavItems({ authenticated: false }).find((item) => item.label === "更多");
+		expect(more?.to).toBeUndefined();
+		const targets = more?.children?.map((link) => link.to);
+		expect(targets).toEqual(expect.arrayContaining(["/projects", "/series", "/galleries"]));
+	});
+});
 
 describe("NAV_ITEMS 组件陈列室入口", () => {
-	const more = NAV_ITEMS.find((item) => item.label === "更多");
+	const more = getNavItems({ authenticated: false }).find((item) => item.label === "更多");
 	const showcase = more?.children?.find((link) => link.to === "/ui");
 
 	it("更多菜单提供组件陈列室入口", () => {
-		expect(more?.to).toBeUndefined();
 		expect(showcase?.label).toBe("组件陈列室");
 		expect(showcase?.description).toBe("按占地陈列组件的真实实现");
 	});
@@ -14,48 +42,63 @@ describe("NAV_ITEMS 组件陈列室入口", () => {
 
 describe("NAV_ITEMS 看板入口", () => {
 	it("更多菜单提供看板文档与演示入口，/kanban 归它", () => {
-		const more = NAV_ITEMS.find((item) => item.label === "更多");
+		const items = getNavItems({ authenticated: false });
+		const more = items.find((item) => item.label === "更多");
 		expect(more?.children?.find((link) => link.to === "/kanban")?.label).toBe("看板");
-		expect(resolveActiveNav("/kanban")?.link.label).toBe("看板");
+		expect(resolveActiveNav("/kanban", items)?.link.label).toBe("看板");
 	});
 });
 
 describe("resolveActiveNav", () => {
+	const items = getNavItems({ authenticated: true });
+
 	it("详情页仍归属其列表项", () => {
-		const active = resolveActiveNav("/blog/my-first-post");
+		const active = resolveActiveNav("/blog/my-first-post", items);
 		expect(active?.item.label).toBe("博客");
 		expect(active?.link.to).toBe("/blog");
 	});
 
 	it("取最长命中：归档不被博客吞掉", () => {
-		const active = resolveActiveNav("/blog/archive");
+		const active = resolveActiveNav("/blog/archive", items);
 		expect(active?.item.label).toBe("博客");
 		expect(active?.link.label).toBe("归档");
 	});
 
 	it("等长命中时二级项优先，列表页标记「全部文章」", () => {
-		expect(resolveActiveNav("/blog")?.link.label).toBe("全部文章");
+		expect(resolveActiveNav("/blog", items)?.link.label).toBe("全部文章");
 	});
 
-	it("二级项命中时归属其父分组", () => {
-		const active = resolveActiveNav("/notes/12");
+	it("手记详情页归属手记", () => {
+		const active = resolveActiveNav("/notes/12", items);
+		expect(active?.item.label).toBe("手记");
+		expect(active?.link.to).toBe("/notes");
+	});
+
+	it("更多里的子页归属更多分组", () => {
+		const active = resolveActiveNav("/projects", items);
 		expect(active?.item.label).toBe("更多");
-		expect(active?.link.label).toBe("笔记");
+		expect(active?.link.label).toBe("项目");
+	});
+
+	it("聊天子页归属聊天一级入口", () => {
+		expect(resolveActiveNav("/chat/personas", items)?.item.label).toBe("聊天");
 	});
 
 	it("首页只精确命中", () => {
-		expect(resolveActiveNav("/")?.item.label).toBe("首页");
-		expect(resolveActiveNav("/profile")).toBeNull();
+		expect(resolveActiveNav("/", items)?.item.label).toBe("首页");
+		expect(resolveActiveNav("/profile", items)).toBeNull();
 	});
 
 	it("前缀按路径段匹配，/blogging 不属于 /blog", () => {
-		expect(resolveActiveNav("/blogging")).toBeNull();
+		expect(resolveActiveNav("/blogging", items)).toBeNull();
 	});
 });
 
 describe("flattenNavLinks", () => {
 	it("目标不重复，且包含二级项", () => {
-		const targets = flattenNavLinks().map((link) => link.to);
+		const targets = flattenNavLinks(getNavItems({ authenticated: true })).map(
+			(link) => link.to,
+		);
 		expect(new Set(targets).size).toBe(targets.length);
 		expect(targets).toContain("/blog/archive");
 		expect(targets).toContain("/ui");

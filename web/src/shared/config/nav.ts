@@ -39,6 +39,8 @@ export interface NavLink {
 export interface NavItem extends Omit<NavLink, "to"> {
 	to?: string;
 	children?: NavLink[];
+	/** 仅登录后显示；可见性由 `getNavItems` 统一过滤，调用方不要自行判断。 */
+	requiresAuth?: boolean;
 }
 
 /** 当前路径命中的导航位置：顶层项，及其下实际命中的目标（顶层项自身或某个二级项）。 */
@@ -77,16 +79,10 @@ export const NAV_ITEMS: NavItem[] = [
 		],
 	},
 	{
-		label: "系列",
-		to: "/series",
-		icon: Library,
-		description: "按专题连续阅读",
-	},
-	{
-		label: "图集",
-		to: "/galleries",
-		icon: Images,
-		description: "浏览已经发布的视觉作品",
+		label: "手记",
+		to: "/notes",
+		icon: NotebookText,
+		description: "浏览知识笔记与踩坑记录",
 	},
 	{
 		label: "推文",
@@ -95,27 +91,34 @@ export const NAV_ITEMS: NavItem[] = [
 		description: "查看短内容动态",
 	},
 	{
+		label: "聊天",
+		to: "/chat",
+		icon: MessageCircle,
+		description: "进入站内聊天室",
+		requiresAuth: true,
+	},
+	{
 		label: "更多",
 		icon: LayoutGrid,
-		description: "笔记、聊天、项目与其他页面",
+		description: "项目、系列、图集与其他页面",
 		children: [
-			{
-				label: "笔记",
-				to: "/notes",
-				icon: NotebookText,
-				description: "浏览知识笔记与踩坑记录",
-			},
-			{
-				label: "聊天",
-				to: "/chat",
-				icon: MessageCircle,
-				description: "进入站内聊天室",
-			},
 			{
 				label: "项目",
 				to: "/projects",
 				icon: FolderKanban,
 				description: "查看开源与实验项目",
+			},
+			{
+				label: "系列",
+				to: "/series",
+				icon: Library,
+				description: "按专题连续阅读",
+			},
+			{
+				label: "图集",
+				to: "/galleries",
+				icon: Images,
+				description: "浏览已经发布的视觉作品",
 			},
 			{
 				label: "友链",
@@ -162,6 +165,16 @@ export const NAV_ITEMS: NavItem[] = [
 		],
 	},
 ];
+
+/**
+ * 按登录态得到可见的导航项。
+ *
+ * `authenticated` 必须取 SSR 已知的登录态（根路由 context），而不是客户端才到达的用户数据，
+ * 否则首帧与水合结果不一致。
+ */
+export function getNavItems({ authenticated }: { authenticated: boolean }): NavItem[] {
+	return NAV_ITEMS.filter((item) => authenticated || !item.requiresAuth);
+}
 
 const matchesLink = (pathname: string, link: NavLink) =>
 	link.exact ? pathname === link.to : pathname === link.to || pathname.startsWith(`${link.to}/`);

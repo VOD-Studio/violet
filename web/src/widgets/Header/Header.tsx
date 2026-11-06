@@ -23,8 +23,8 @@ const Header = ({ isAuthenticated }: HeaderProps) => {
 	// 单用 isAuthenticated 会导致登录成功后 useMe 仍 enabled:false，读不到新写入的 me，
 	// Header 不刷新成"个人中心"。sessionActive 是 Zustand 响应式，登录/登出立即触发 re-render。
 	const sessionActive = useSessionStore((s) => s.sessionActive);
-	const enabled = isAuthenticated || sessionActive;
-	const { data: user } = useMe({ enabled });
+	const authenticated = isAuthenticated || sessionActive;
+	const { data: user } = useMe({ enabled: authenticated });
 	usePresenceStream();
 
 	return (
@@ -40,7 +40,7 @@ const Header = ({ isAuthenticated }: HeaderProps) => {
 
 				{/* 中段：主导航船坞胶囊（相对页面绝对居中，不受左右胶囊宽度影响） */}
 				<div className="absolute top-1/2 left-1/2 hidden -translate-x-1/2 -translate-y-1/2 lg:block">
-					<HeaderNav />
+					<HeaderNav authenticated={authenticated} />
 				</div>
 
 				{/* 右段：工具与鉴权操作胶囊 */}
@@ -50,7 +50,7 @@ const Header = ({ isAuthenticated }: HeaderProps) => {
 			</div>
 
 			{/* 移动端底部灵动岛导航（portal 到 body，lg 以上隐藏） */}
-			<HeaderIsland />
+			<HeaderIsland authenticated={authenticated} />
 		</header>
 	);
 };
