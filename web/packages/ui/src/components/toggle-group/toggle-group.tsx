@@ -78,6 +78,10 @@ export function ToggleGroup(props: ToggleGroupProps) {
 		children,
 		className,
 		onKeyDown,
+		// 值与回调由组内状态消费，不透传给 DOM
+		value,
+		defaultValue,
+		onValueChange,
 		ref,
 		...native
 	} = props;
