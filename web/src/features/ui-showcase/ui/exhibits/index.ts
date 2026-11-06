@@ -9,6 +9,7 @@ import { dialogExhibit } from "./dialog";
 import { drawerExhibit } from "./drawer";
 import { dropdownExhibit } from "./dropdown";
 import { dropdownMenuExhibit } from "./dropdown-menu";
+import { footerExhibit } from "./footer";
 import { imagePixelRevealExhibit } from "./image-pixel-reveal";
 import { indicatorExhibit } from "./indicator";
 import { inputExhibit } from "./input";
@@ -67,15 +68,7 @@ export const EXHIBITS: Exhibit[] = [
 		footprint: { width: 1120, height: 380 },
 		issue: 708,
 	},
-	{
-		id: "footer",
-		name: "页脚",
-		units: ["footer"],
-		zone: "banner",
-		category: "layout",
-		footprint: { width: 1120, height: 320 },
-		issue: 712,
-	},
+	footerExhibit,
 	dropdownExhibit,
 	popoverExhibit,
 	tooltipExhibit,
