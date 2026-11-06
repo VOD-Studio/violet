@@ -16,6 +16,7 @@ import { inputExhibit } from "./input";
 import { kbdExhibit } from "./kbd";
 import { linkCardExhibit } from "./link-card";
 import { morphingPopoverExhibit } from "./morphing-popover";
+import { navbarExhibit } from "./navbar";
 import { popoverExhibit } from "./popover";
 import { radioExhibit } from "./radio";
 import { searchInputExhibit } from "./search-input";
@@ -32,15 +33,7 @@ import { uploadTileExhibit } from "./upload-tile";
 
 /** 馆藏目录：顺序即铭牌编号，待建展品随对应工单落地后换成真实组件。 */
 export const EXHIBITS: Exhibit[] = [
-	{
-		id: "navbar",
-		name: "导航栏",
-		units: ["navbar"],
-		zone: "banner",
-		category: "navigation",
-		footprint: { width: 1120, height: 360 },
-		issue: 712,
-	},
+	navbarExhibit,
 	{
 		id: "announcement-bar",
 		name: "公告浮条",
