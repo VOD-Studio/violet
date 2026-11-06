@@ -1,4 +1,4 @@
-import { Button, Checkbox, Input, Label, Textarea } from "@violet/ui";
+import { Button, Checkbox, Field, Input, Label, Textarea } from "@violet/ui";
 import { Plus, X } from "lucide-react";
 import { type FormEvent, useId, useState } from "react";
 import {
@@ -29,12 +29,6 @@ export function RoadmapItemForm({ item, onSave, onCancel }: RoadmapItemFormProps
 	const [error, setError] = useState<string | null>(null);
 	const [titleMissing, setTitleMissing] = useState(false);
 	const descriptionId = useId();
-	const titleId = useId();
-	const titleErrorId = useId();
-	const tagsId = useId();
-	const tagsHintId = useId();
-	const versionId = useId();
-	const dateId = useId();
 	const completed = item.stage === "completed";
 
 	const patch = (next: Partial<RoadmapDraft>) => setDraft((current) => ({ ...current, ...next }));
@@ -68,25 +62,16 @@ export function RoadmapItemForm({ item, onSave, onCancel }: RoadmapItemFormProps
 
 	return (
 		<form onSubmit={submit} className="space-y-5" aria-label={`编辑 #${item.number}`}>
-			<div className={SECTION}>
-				<Label htmlFor={titleId}>标题</Label>
+			<Field label="标题" error={titleMissing ? "标题不能为空" : undefined}>
 				<Input
-					id={titleId}
 					value={draft.title}
 					maxLength={200}
-					invalid={titleMissing}
-					aria-describedby={titleMissing ? titleErrorId : undefined}
 					onChange={(event) => {
 						patch({ title: event.target.value });
 						setTitleMissing(false);
 					}}
 				/>
-				{titleMissing ? (
-					<p id={titleErrorId} role="alert" className="text-xs text-destructive">
-						标题不能为空
-					</p>
-				) : null}
-			</div>
+			</Field>
 			<div className={SECTION}>
 				<Label htmlFor={descriptionId}>简介</Label>
 				<Textarea
@@ -96,18 +81,12 @@ export function RoadmapItemForm({ item, onSave, onCancel }: RoadmapItemFormProps
 					onChange={(event) => patch({ description: event.target.value })}
 				/>
 			</div>
-			<div className={SECTION}>
-				<Label htmlFor={tagsId}>标签</Label>
+			<Field label="标签" hint="用逗号分隔">
 				<Input
-					id={tagsId}
-					aria-describedby={tagsHintId}
 					value={draft.tags}
 					onChange={(event) => patch({ tags: event.target.value })}
 				/>
-				<p id={tagsHintId} className="text-xs text-muted-foreground">
-					用逗号分隔
-				</p>
-			</div>
+			</Field>
 
 			<fieldset className={SECTION}>
 				<legend className={LEGEND}>关联链接</legend>
@@ -201,23 +180,19 @@ export function RoadmapItemForm({ item, onSave, onCancel }: RoadmapItemFormProps
 
 			{completed ? (
 				<div className="grid gap-4 sm:grid-cols-2">
-					<div className={SECTION}>
-						<Label htmlFor={versionId}>交付版本</Label>
+					<Field label="交付版本">
 						<Input
-							id={versionId}
 							value={draft.deliveredVersion}
 							onChange={(event) => patch({ deliveredVersion: event.target.value })}
 						/>
-					</div>
-					<div className={SECTION}>
-						<Label htmlFor={dateId}>完成日期</Label>
+					</Field>
+					<Field label="完成日期">
 						<Input
-							id={dateId}
 							type="date"
 							value={draft.completionDate}
 							onChange={(event) => patch({ completionDate: event.target.value })}
 						/>
-					</div>
+					</Field>
 				</div>
 			) : null}
 

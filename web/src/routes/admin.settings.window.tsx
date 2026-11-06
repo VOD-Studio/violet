@@ -14,7 +14,7 @@ import { Field } from "@features/admin-settings/ui/settings-fields";
 import { useSettingsForm } from "@features/admin-settings/ui/use-settings-form";
 import { useDebouncedValue } from "@shared/hooks/use-debounced-value";
 import { createFileRoute } from "@tanstack/react-router";
-import { Button, Input } from "@violet/ui";
+import { Button, Input, useFieldControl } from "@violet/ui";
 import { useState } from "react";
 
 const SLOTS: { slot: WindowPhotoSlot; label: string }[] = [
@@ -29,6 +29,7 @@ const describeCity = (c: WindowCityDTO) =>
 	[c.name, c.region, c.country].filter(Boolean).join(" · ");
 
 function CitySearch({ onPick }: { onPick: (city: WindowCityDTO) => void }) {
+	const control = useFieldControl();
 	const [q, setQ] = useState("");
 	const debounced = useDebouncedValue(q.trim(), 300);
 	const { data, isFetching, isError } = useWindowCitySearch(debounced);
@@ -36,6 +37,7 @@ function CitySearch({ onPick }: { onPick: (city: WindowCityDTO) => void }) {
 	return (
 		<div className="space-y-2">
 			<Input
+				{...control}
 				value={q}
 				onChange={(e) => setQ(e.target.value)}
 				placeholder="输入城市名，如 杭州"

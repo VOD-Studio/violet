@@ -20,6 +20,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
 	Button,
 	ConfirmDialog,
+	Field,
 	Input,
 	Modal,
 	Tag,
@@ -307,20 +308,21 @@ function ProjectDialog({
 					</label>
 					<Input id="project-title" {...register("title", { required: true })} />
 				</div>
-				<div className="space-y-1.5">
-					<label htmlFor="project-slug" className="text-sm font-medium">
-						网址标识
-					</label>
+				<Field
+					label="网址标识"
+					hint={
+						isEditing
+							? "仅限小写字母、数字和单连字符；修改后原网址将失效。"
+							: "仅限小写字母、数字和单连字符；留空按标题生成。"
+					}
+					error={errors.slug?.message}
+				>
 					<Input
 						id="project-slug"
 						placeholder="violet"
-						aria-describedby={
-							errors.slug ? "project-slug-error" : "project-slug-description"
-						}
 						maxLength={255}
 						required={isEditing}
 						pattern="[a-z0-9]+(-[a-z0-9]+)*"
-						invalid={!!errors.slug}
 						{...register("slug", {
 							required: isEditing ? "请输入网址标识" : false,
 							pattern: {
@@ -329,22 +331,7 @@ function ProjectDialog({
 							},
 						})}
 					/>
-					{errors.slug ? (
-						<p
-							id="project-slug-error"
-							role="alert"
-							className="text-xs text-destructive"
-						>
-							{errors.slug.message}
-						</p>
-					) : (
-						<p id="project-slug-description" className="text-xs text-muted-foreground">
-							{isEditing
-								? "仅限小写字母、数字和单连字符；修改后原网址将失效。"
-								: "仅限小写字母、数字和单连字符；留空按标题生成。"}
-						</p>
-					)}
-				</div>
+				</Field>
 				<div className="space-y-1.5">
 					<label htmlFor="project-desc" className="text-sm font-medium">
 						描述

@@ -136,7 +136,7 @@ function GeneralSettingsPage() {
 
 			<section className="space-y-4">
 				<h3 className="text-sm font-semibold">表情</h3>
-				<Field label="单用户自定义表情上限（自传 + 收藏合计，0=使用部署默认值）">
+				<Field label="自定义表情上限" hint="单用户自传加收藏合计，0 表示使用部署默认值">
 					<Input
 						type="number"
 						min={0}

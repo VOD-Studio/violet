@@ -1,7 +1,7 @@
 import {
 	Button,
+	Field,
 	Input,
-	Label,
 	Switch,
 	Tooltip,
 	TooltipContent,
@@ -78,39 +78,37 @@ function displayValue(value: unknown) {
 	return value === undefined ? "—" : String(value);
 }
 
-/** 保持草稿值、保存值、实例实际值和来源同时可见。 */
+/** 提示行并列保存值、实例实际值和来源；校验出错时同一位置让位给错误文案。 */
 export function PolicyField({ name, label, help, children }: PolicyFieldProps) {
 	const id = useId();
 	const state = useContext(RuntimeFieldContext);
 	const error = state.error(name);
 	const source = state.sources[name];
 	return (
-		<div className="space-y-2">
-			<div className="flex items-center gap-1">
-				<Label htmlFor={id}>{label}</Label>
-				<PolicyHelp label={label}>{help}</PolicyHelp>
-			</div>
-			{children(id, state)}
-			<div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-				<span>保存值：{displayValue(state.saved[name])}</span>
-				<span>实例值：{displayValue(state.effective[name])}</span>
-				<span>
-					来源：
-					{source === "override"
-						? "站点覆盖"
-						: source === "deployment"
-							? "部署默认"
-							: source === "application"
-								? "应用默认"
-								: "—"}
+		<Field
+			label={label}
+			htmlFor={id}
+			labelEnd={<PolicyHelp label={label}>{help}</PolicyHelp>}
+			error={error}
+			hint={
+				<span className="flex flex-wrap gap-x-4 gap-y-1">
+					<span>保存值：{displayValue(state.saved[name])}</span>
+					<span>实例值：{displayValue(state.effective[name])}</span>
+					<span>
+						来源：
+						{source === "override"
+							? "站点覆盖"
+							: source === "deployment"
+								? "部署默认"
+								: source === "application"
+									? "应用默认"
+									: "—"}
+					</span>
 				</span>
-			</div>
-			{error && (
-				<p id={`${id}-error`} role="alert" className="text-sm text-destructive">
-					{error}
-				</p>
-			)}
-		</div>
+			}
+		>
+			{children(id, state)}
+		</Field>
 	);
 }
 
@@ -147,8 +145,6 @@ export function PolicyNumber({
 					required
 					value={Number.isFinite(value) ? value : ""}
 					disabled={state.disabled}
-					aria-invalid={!!state.error(name)}
-					aria-describedby={state.error(name) ? `${id}-error` : undefined}
 					onChange={(event) =>
 						onChange(
 							event.target.value === "" ? Number.NaN : event.target.valueAsNumber,
@@ -176,8 +172,6 @@ export function PolicySwitch({ name, label, help, value, onChange }: PolicySwitc
 					checked={value}
 					disabled={state.disabled}
 					onCheckedChange={onChange}
-					aria-invalid={!!state.error(name)}
-					aria-describedby={state.error(name) ? `${id}-error` : undefined}
 				/>
 			)}
 		</PolicyField>
