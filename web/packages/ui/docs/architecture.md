@@ -130,6 +130,8 @@ SearchInput 并入 `input` 单元（`components/input/search-input.tsx`），共
 
 外观不决定状态所有权：即时过滤仍可用 Input，防抖搜索使用 SearchInput。文件选择、range、checkbox、OTP 及行为 primitive 自己管理的输入，不套文本 Input 的外壳。
 
+`textarea` 单元复用 `Input` 的外壳与变体类（`v-input-control` + 变体类加 `.v-textarea` 修饰），四种形态：自动增高（`autoSize`，默认 3–8 行，输入事件直接驱动、不依赖重渲染）、固定行数（原生 `rows`）、带字数（`showCount` + `maxLength`，外壳内右下角 `n / max`，≥ 90% 变危险色且读稿从这时开始，`aria-live="polite"`）、带操作栏（`toolbar`，外壳底部一行高 32，开启字数时排到栏右端）。行高 24、上下内边距 10 固定，无尺寸档，不显示拖拽柄，增高不做过渡。Enter 始终换行，⌘↵ 发送由调用方处理并写进操作栏。详见 [Textarea 契约](./components/textarea.md)。
+
 状态有明确归属：原生属性表达 disabled、required 和 invalid；Button 的 `data-loading` 表达加载；Radix 控件沿用其 `data-state`。`data-slot` 标识结构部件。组件不得为每次 hover 创建全局状态，也不得用 CSS 外观冒充键盘行为。
 
 ImagePixelReveal 的 `className` 属于根容器，用于约束尺寸；`imgClassName` 属于默认图片，`children` 可替换默认内容。单一 BEM CSS 驱动 SVG 遮罩中的瓦片裁剪展开，原图和自定义内容保持静止，不复制图片背景或切换图像合成层。默认 random 每轮重新洗牌；单格 320ms，延迟跨度 380ms，悬停重播同样的瓦片拼合。根节点以 `data-state="loading|revealing|revealed"` 表达生命周期，`src` 改变开始独立周期；减弱动态直接显示，播放中开启该偏好也会完成当前周期。

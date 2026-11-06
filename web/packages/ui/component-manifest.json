@@ -295,7 +295,8 @@
 			"name": "textarea",
 			"status": "foundation",
 			"entry": "src/components/textarea/index.ts",
-			"css": "src/components/textarea/textarea.css"
+			"css": "src/components/textarea/textarea.css",
+			"documentation": "web/packages/ui/docs/components/textarea.md"
 		},
 		{
 			"name": "toggle-group",
@@ -370,6 +371,10 @@
 		{
 			"entry": "src/components/kbd/styles.ts",
 			"symbols": ["type KbdVariantProps", "kbdVariants"]
+		},
+		{
+			"entry": "src/components/textarea/styles.ts",
+			"symbols": ["type TextareaVariantProps", "textareaVariants"]
 		}
 	],
 	"styles": {

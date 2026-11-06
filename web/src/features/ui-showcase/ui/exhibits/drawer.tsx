@@ -179,6 +179,7 @@ function CommentDrawer({ container, root, content }: DrawerSlotProps) {
 						aria-label="评论内容"
 						rows={4}
 						maxLength={COMMENT_LIMIT}
+						showCount
 						placeholder="说点什么"
 						value={text}
 						onChange={(event) => setText(event.currentTarget.value)}
