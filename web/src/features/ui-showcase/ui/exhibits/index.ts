@@ -18,6 +18,7 @@ import { linkCardExhibit } from "./link-card";
 import { morphingPopoverExhibit } from "./morphing-popover";
 import { navbarExhibit } from "./navbar";
 import { popoverExhibit } from "./popover";
+import { presenceExhibit } from "./presence";
 import { radioExhibit } from "./radio";
 import { searchInputExhibit } from "./search-input";
 import { segmentedExhibit } from "./segmented";
@@ -72,15 +73,7 @@ export const EXHIBITS: Exhibit[] = [
 	drawerExhibit,
 	commandExhibit,
 	morphingPopoverExhibit,
-	{
-		id: "presence",
-		name: "实时状态与站长卡片",
-		units: ["presence", "profile-card"],
-		zone: "stage",
-		category: "navigation",
-		footprint: { width: 420, height: 520 },
-		issue: 713,
-	},
+	presenceExhibit,
 	{
 		id: "inbox",
 		name: "消息面板",

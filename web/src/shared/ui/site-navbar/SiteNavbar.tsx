@@ -16,6 +16,12 @@ const TITLE_SLOT = "14.875rem";
 const PILL =
 	"pointer-events-auto relative flex h-10 items-center rounded-full border border-sheet-border shadow-soft backdrop-blur-md";
 
+/**
+ * 左药丸外壳：底色、边、软影与模糊。左容器本身只负责定位，外壳由 logo 触发器自己套用，
+ * 因为变形弹出层从触发器长成面板，触发器必须是有底色的药丸，不能是外面再套一层药丸的透明按钮。
+ */
+export const NAVBAR_PILL_CLASS = `${PILL} bg-sheet-translucent`;
+
 export interface SiteNavbarProps {
 	/** 当前登录态下可见的一级入口。 */
 	items: NavItem[];
@@ -29,7 +35,7 @@ export interface SiteNavbarProps {
 	routing?: number | null;
 	/** 向下滚动后的收起态：导航只剩图标，右药丸淡出且不可交互。 */
 	collapsed?: boolean;
-	/** 左药丸内容；药丸外壳由本组件提供。 */
+	/** 左药丸内容；药丸外壳不由本组件提供，logo 自己套用 {@link NAVBAR_PILL_CLASS}。 */
 	logo: ReactNode;
 	/** 右药丸内容；药丸外壳由本组件提供。 */
 	actions: ReactNode;
@@ -165,7 +171,10 @@ export function SiteNavbar({
 				className,
 			)}
 		>
-			<div data-slot="navbar-left" className={cn(PILL, "bg-sheet-translucent")}>
+			<div
+				data-slot="navbar-left"
+				className="pointer-events-auto relative flex h-10 items-center has-[[data-slot=morphing-popover-trigger][aria-expanded=true]]:z-20"
+			>
 				{ornaments?.left}
 				{logo}
 			</div>

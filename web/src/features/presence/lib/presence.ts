@@ -6,11 +6,48 @@ import type {
 	PresenceWindow,
 } from "../model/types";
 
+/** 暂停超过这么久，封面从药丸里收起，媒体不再展示。 */
+export const PAUSED_MEDIA_TTL_MS = 5 * 60_000;
+
 /** 收到的一份公开状态，附本机接收时刻用于换算服务端时间。 */
 export interface PresenceReceipt {
 	presence: Presence;
 	/** 本机 Date.now()，与 presence.generated_at 对应同一时刻 */
 	receivedAt: number;
+	/**
+	 * 暂停中的媒体会话 → 本机首次收到它处于暂停的时刻。
+	 * 心跳会刷新快照时间，服务端没有暂停起点，所以由前端从首次观察起算；省略表示没有在追踪。
+	 */
+	pausedSince?: Record<string, number>;
+}
+
+/** 媒体会话在 {@link PresenceReceipt.pausedSince} 里的键。 */
+const pausedKey = (device: PresenceDevice, media: PresenceMedia) =>
+	`${device.id}/${media.session_id}`;
+
+/**
+ * 根据上一份收据与新快照，算出新快照的 pausedSince：
+ * 继续暂停的保留最早时刻，恢复播放、换曲或消失的丢弃，新进入暂停的从 `receivedAt` 起算。
+ */
+export function trackPausedSince(
+	previous: PresenceReceipt | undefined,
+	presence: Presence,
+	receivedAt: number,
+): Record<string, number> {
+	const since: Record<string, number> = {};
+	for (const device of presence.devices) {
+		const media = device.sources.media;
+		if (media?.state !== "paused") continue;
+		const key = pausedKey(device, media);
+		since[key] = previous?.pausedSince?.[key] ?? receivedAt;
+	}
+	return since;
+}
+
+/** 各暂停媒体的超时时刻（本机时钟），供排程到点重算。 */
+export function pausedExpiryTimes(receipt: PresenceReceipt | undefined): number[] {
+	if (!receipt?.pausedSince) return [];
+	return Object.values(receipt.pausedSince).map((since) => since + PAUSED_MEDIA_TTL_MS);
 }
 
 /** 一条可单独展示的活动，按展示优先级排列。 */
@@ -28,11 +65,26 @@ export function serverNow(receipt: PresenceReceipt, now: number): number {
 	return Date.parse(receipt.presence.generated_at) + (now - receipt.receivedAt);
 }
 
-/** 过滤掉租约已到期的设备；推送中断时也要按期停止展示。 */
+/** 去掉已暂停超时的媒体，其余来源原样保留。没有追踪记录的暂停媒体视为未超时。 */
+function withoutExpiredPause(
+	device: PresenceDevice,
+	receipt: PresenceReceipt,
+	now: number,
+): PresenceDevice {
+	const media = device.sources.media;
+	if (media?.state !== "paused") return device;
+	const since = receipt.pausedSince?.[pausedKey(device, media)];
+	if (since === undefined || now - since < PAUSED_MEDIA_TTL_MS) return device;
+	return { ...device, sources: { ...device.sources, media: null } };
+}
+
+/** 过滤掉租约已到期的设备，并去掉暂停超时的媒体；推送中断时也要按期停止展示。 */
 export function liveDevices(receipt: PresenceReceipt | undefined, now: number): PresenceDevice[] {
 	if (!receipt) return [];
 	const current = serverNow(receipt, now);
-	return receipt.presence.devices.filter((device) => Date.parse(device.expires_at) > current);
+	return receipt.presence.devices
+		.filter((device) => Date.parse(device.expires_at) > current)
+		.map((device) => withoutExpiredPause(device, receipt, now));
 }
 
 /**

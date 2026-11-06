@@ -2,7 +2,7 @@ import { getNavItems, type NavItem, resolveActiveNav } from "@shared/config/nav"
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { SiteNavbar, type SiteNavbarProps } from "../SiteNavbar";
+import { NAVBAR_PILL_CLASS, SiteNavbar, type SiteNavbarProps } from "../SiteNavbar";
 
 /** 测试用的普通锚点：同时验证 LinkComponent 注入契约（href、ref 与其余属性透传）。 */
 function PlainLink({ href, ...props }: ComponentProps<"a"> & { href: string }) {
@@ -138,5 +138,30 @@ describe("SiteNavbar", () => {
 	it("展开态右药丸可交互", () => {
 		setup({});
 		expect(screen.getByText("右药丸内容").closest("[inert]")).toBeNull();
+	});
+
+	it("左容器只负责定位，药丸外壳归 logo；左挂件仍渲染在容器内", () => {
+		setup({
+			logo: (
+				<button type="button" className={NAVBAR_PILL_CLASS}>
+					左药丸内容
+				</button>
+			),
+			ornaments: { left: <i>左挂件</i> },
+		});
+		const left = document.querySelector<HTMLElement>('[data-slot="navbar-left"]');
+		expect(left?.className).not.toMatch(/\bborder\b|bg-sheet-translucent|shadow-soft/);
+		expect(left?.contains(screen.getByText("左挂件"))).toBe(true);
+		const logo = screen.getByRole("button", { name: "左药丸内容" });
+		expect(logo.className).toMatch(/\bborder\b/);
+		expect(logo.className).toContain("bg-sheet-translucent");
+	});
+
+	it("logo 里有展开中的变形触发器时，左容器抬到中药丸之上", () => {
+		setup({});
+		const left = document.querySelector<HTMLElement>('[data-slot="navbar-left"]');
+		expect(left?.className).toContain(
+			"has-[[data-slot=morphing-popover-trigger][aria-expanded=true]]:z-20",
+		);
 	});
 });

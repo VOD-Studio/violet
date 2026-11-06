@@ -25,37 +25,41 @@ test("Header 博客二级菜单只标记精确命中的当前页", async ({ page
 	}
 });
 
-test("Header 品牌档案由 hover 与键盘展开，点击不切换面板", async ({ page, context }) => {
+test("Header logo 药丸点击展开站长卡片，Esc 与点外面收起并归还焦点", async ({ page, context }) => {
 	await loadClient(context);
 	await page.setViewportSize({ width: 1440, height: 900 });
 	await page.emulateMedia({ reducedMotion: "reduce" });
 	await page.goto("/blog");
 	await page.waitForLoadState("networkidle");
-	const trigger = page.getByRole("button", { name: /站长开源档案与简介/ });
-	const panel = page.getByRole("region", { name: "站长开源档案与简介" });
+	const trigger = page.getByRole("button", { name: /站长档案/ });
+	const card = page.getByRole("dialog", { name: "站长与此刻" });
+
+	// 悬停不再展开，点击才展开
 	await trigger.hover();
-	await expect(panel).toBeVisible();
+	await expect(card).toHaveCount(0);
 	await trigger.click();
 	await expect(trigger).toHaveAttribute("aria-expanded", "true");
-	await expect(panel.getByRole("link", { name: /开源项目/ })).toHaveAttribute(
-		"href",
-		"/projects",
-	);
-	await expect(panel.getByRole("link", { name: /人设/ })).toHaveAttribute("href", "/persona");
+	await expect(card).toBeVisible();
+	await expect(card.getByRole("link", { name: "关于我" })).toHaveAttribute("href", "/about");
+	await expect(card.getByRole("link", { name: "人设" })).toHaveAttribute("href", "/persona");
+	await expect(card.getByRole("link", { name: "友链" })).toHaveAttribute("href", "/friends");
+	// 最新文章与最新手记各一条，取自站点数据
+	await expect(card.getByText("新文章")).toBeVisible();
+	await expect(card.getByText("新手记")).toBeVisible();
+
 	await page.keyboard.press("Escape");
-	await expect(panel).toHaveCount(0);
-	await page.mouse.move(1300, 800);
-	await trigger.focus();
-	await page.keyboard.press("Tab");
-	await page.keyboard.press("Shift+Tab");
-	await expect(panel).toBeVisible();
-	await page.keyboard.press("Tab");
-	await expect
-		.poll(() => panel.evaluate((element) => element.contains(document.activeElement)))
-		.toBe(true);
-	await panel.getByRole("link", { name: /人设/ }).click();
+	await expect(card).toHaveCount(0);
+	await expect(trigger).toBeFocused();
+
+	await trigger.click();
+	await expect(card).toBeVisible();
+	await page.mouse.click(1300, 700);
+	await expect(card).toHaveCount(0);
+
+	await trigger.click();
+	await card.getByRole("link", { name: "人设" }).click();
 	await expect(page).toHaveURL(/\/persona$/);
-	await expect(panel).toHaveCount(0);
+	await expect(card).toHaveCount(0);
 });
 
 test("Header 右药丸的控件常驻可见，游客只有季节与外观和登录", async ({ page, context }) => {

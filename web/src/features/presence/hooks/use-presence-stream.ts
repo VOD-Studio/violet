@@ -2,7 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { PRESENCE_STREAM_URL } from "../api/client";
 import { presenceKeys } from "../api/keys";
-import type { PresenceReceipt } from "../lib/presence";
+import { type PresenceReceipt, trackPausedSince } from "../lib/presence";
 import type { Presence } from "../model/types";
 
 /** 推送连接被拒（限流或已满）后的重试间隔；EventSource 对非 200 响应不会自动重连。 */
@@ -32,9 +32,12 @@ export function usePresenceStream(): void {
 			source.addEventListener("presence", (event) => {
 				try {
 					const presence = JSON.parse((event as MessageEvent<string>).data) as Presence;
+					const receivedAt = Date.now();
+					const previous = qc.getQueryData<PresenceReceipt>(presenceKeys.current());
 					qc.setQueryData<PresenceReceipt>(presenceKeys.current(), {
 						presence,
-						receivedAt: Date.now(),
+						receivedAt,
+						pausedSince: trackPausedSince(previous, presence, receivedAt),
 					});
 				} catch {
 					// 单条坏数据不影响后续推送

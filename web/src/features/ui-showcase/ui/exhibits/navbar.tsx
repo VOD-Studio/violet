@@ -2,8 +2,14 @@ import { getNavItems, resolveActiveNav } from "@shared/config/nav";
 import { SEASONS, type Season } from "@shared/lib/theme-preference";
 import { SeasonGlyph } from "@shared/ui/icons";
 import { SiteIsland } from "@shared/ui/site-island";
-import { NAVBAR_BRAND_CLASS, NavbarBrand, SiteNavbar } from "@shared/ui/site-navbar";
+import {
+	NAVBAR_BRAND_CLASS,
+	NAVBAR_PILL_CLASS,
+	NavbarBrand,
+	SiteNavbar,
+} from "@shared/ui/site-navbar";
 import { BadgeAnchor, Count, Separator } from "@violet/ui";
+import { cn } from "cn";
 import { Bell, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useStageContainer } from "../../hooks/use-stage-container";
@@ -39,7 +45,11 @@ function useScopeSeason(host: HTMLElement | null): Season {
 
 function Logo() {
 	return (
-		<button type="button" aria-label="Violet 站长档案" className={NAVBAR_BRAND_CLASS}>
+		<button
+			type="button"
+			aria-label="Violet 站长档案"
+			className={cn(NAVBAR_PILL_CLASS, NAVBAR_BRAND_CLASS)}
+		>
 			<NavbarBrand name="Violet" avatar={AVATAR} />
 		</button>
 	);

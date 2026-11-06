@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { getPresence } from "../api/client";
 import { presenceKeys } from "../api/keys";
-import { leadDevice, liveDevices, type PresenceReceipt } from "../lib/presence";
+import { leadDevice, liveDevices, type PresenceReceipt, pausedExpiryTimes } from "../lib/presence";
 import type { PresenceDevice } from "../model/types";
 
 export interface LivePresence {
@@ -33,19 +33,24 @@ export function useLivePresence(): LivePresence {
 	});
 	const [now, setNow] = useState(() => Date.now());
 
-	// 推送中断时也要按期隐藏：在最近一台设备到期时重算
+	// 推送中断时也要按期隐藏：在最近一次租约到期或暂停超时时重算
 	useEffect(() => {
 		if (!receipt) return;
 		const generatedAt = Date.parse(receipt.presence.generated_at);
 		const current = Date.now();
-		const upcoming = receipt.presence.devices
-			.map((device) => receipt.receivedAt + (Date.parse(device.expires_at) - generatedAt))
-			.filter((expiry) => expiry > current);
-		if (upcoming.length === 0) {
-			// 已全部到期但 now 仍停在旧值时补算一次，之后不再排程
-			if (liveDevices(receipt, now).length > 0) setNow(current);
+		const expiries = [
+			...receipt.presence.devices.map(
+				(device) => receipt.receivedAt + (Date.parse(device.expires_at) - generatedAt),
+			),
+			...pausedExpiryTimes(receipt),
+		];
+		// now 停在旧值（定时器被冻结、新快照刚到）时，已经过去的到期时刻要立即反映出来
+		if (expiries.some((expiry) => expiry > now && expiry <= current)) {
+			setNow(current);
 			return;
 		}
+		const upcoming = expiries.filter((expiry) => expiry > current);
+		if (upcoming.length === 0) return;
 		const timer = window.setTimeout(
 			() => setNow(Date.now()),
 			Math.min(...upcoming) - current + 50,
