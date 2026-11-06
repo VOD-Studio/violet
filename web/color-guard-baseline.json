@@ -842,12 +842,6 @@
 			"count": 1
 		},
 		{
-			"file": "src/features/projects/ui/RoadmapFilterBar.tsx",
-			"rule": "raw-color",
-			"value": "rgb(0 0 0 / 0.05)",
-			"count": 1
-		},
-		{
 			"file": "src/features/series/ui/BookCover.tsx",
 			"rule": "tailwind-palette",
 			"value": "bg-black",

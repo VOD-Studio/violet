@@ -4,7 +4,7 @@ React 19 组件库，使用原生 HTML 与 Radix 提供交互行为，用类型�
 
 ## 当前范围
 
-`component-manifest.json` 记录每个组件的入口、样式和成熟度。Avatar、Badge、Button、Card、Checkbox、CommandList、ConfirmDialog、ContextMenu、Dialog、Drawer、Dropdown、DropdownMenu、Field（含 Label、FieldSet、FieldSummary）、HoverCard、ImagePixelReveal、Indicator、Input（含 SearchInput）、Kbd、LinkCard、ListHighlight、MorphingPopover、Popover、PromptDialog、Radio、Segmented、Separator、Sheet、Skeleton、Sonner、Switch、Tabs、Textarea、ToggleGroup、Tooltip、UploadTile 是当前 35 个 `foundation` 单元；其余 15 个单元保留 API，并标为 `legacy`。兼容入口不代表已经重建所有组件。
+`component-manifest.json` 记录每个组件的入口、样式和成熟度。Avatar、Badge、Button、Card、Checkbox、CommandList、ConfirmDialog、ContextMenu、Dialog、Drawer、Dropdown、DropdownMenu、Field（含 Label、FieldSet、FieldSummary）、HoverCard、ImagePixelReveal、Indicator、Input（含 SearchInput）、Kbd、LinkCard、ListHighlight、MorphingPopover、Popover、PromptDialog、Radio、Segmented、Select、Separator、Sheet、Skeleton、Sonner、Switch、Tabs、Textarea、ToggleGroup、Tooltip、UploadTile 是当前 36 个 `foundation` 单元；其余 14 个单元保留 API，并标为 `legacy`。兼容入口不代表已经重建所有组件。
 
 所有组件都放在 `src/components/<name>/`，实现、有变体时的 `styles.ts`、CSS、入口和测试就近维护。`src/legacy.ts` 只汇总兼容导出；`src/lib/` 只放有实际消费方的复用能力。
 
@@ -80,7 +80,7 @@ Dropdown 是指针悬停与键盘聚焦展开的披露面板，不是点击菜�
 
 当前共享高亮的 `DropdownItem` 自动带 `data-highlighted`，宿主可据此同步图标或文字的强调样式；经过项间空隙与触发器间隙仍保留，切换目标、禁用或真正离开时更新。该状态表示 hover / 键盘焦点目标，不表示路由或业务选中。
 
-Dropdown、DropdownMenu、ContextMenu、命令面板、Select 候选与自定义动作列表共享高亮实现：280ms、`cubic-bezier(0.32, 0.72, 0, 1)`，文字和图标不移动，首次进入直接落位，减弱动态直接切换。条目通过底色表示悬停与焦点，不再叠加边框；输入框和独立触发按钮的聚焦环不受影响。Select 仍为 legacy，此处只补齐候选项的高亮，不代表完成组件重建。
+Dropdown、DropdownMenu、ContextMenu、命令面板、Select 选项与自定义动作列表共享高亮实现：280ms、`cubic-bezier(0.32, 0.72, 0, 1)`，文字和图标不移动，首次进入直接落位，减弱动态直接切换。条目通过底色表示悬停与焦点，不再叠加边框；输入框和独立触发按钮的聚焦环不受影响。
 
 自定义列表从 `@violet/ui` 导入 `ListHighlight` 和 `ListHighlightItem`。两者都把属性与 ref 合并到唯一子元素，不增加 DOM 包裹；点击、选值、焦点与键盘导航仍由宿主管理：
 
@@ -102,6 +102,8 @@ export function Actions() {
 `mode="pointer"`（默认）跟随悬停与可见键盘焦点，指针离开后退回带 `active` 的条目；`mode="focus"` 跟随真实焦点，用于 Radix 菜单与选择器，不绕过其子菜单宽限；`mode="active"` 只读取条目的 `active`，适合焦点留在输入框的命令列表。原生属性与 ref 必须由自定义子组件继续透传。
 
 从 `@violet/ui/list-highlight` 也可按需导入；叶子 CSS 是 `@violet/ui/components/list-highlight.css`，完整样式入口已包含它。容器 `::before` 留给底色，条目保持透明背景，不额外添加当前行背景。禁用项不高亮，嵌套列表各自管理，尺寸变化重新测量；内部 Hook 不公开，不要求消费方维护选择器或观察器。
+
+Select 从固定的几项里选一个或几个：组合式 `Select`、`SelectTrigger`、`SelectValue`、`SelectContent`、`SelectItem`，多选加 `multiple`、值是 `string[]`。触发器是复用输入框外壳的 `role="combobox"` 按钮，`variant`、`controlSize`、`invalid`、`valid`、`loading` 与 Input 一致，焦点始终在触发器、高亮项由 `aria-activedescendant` 指出；↑↓ Home End 跳过禁用项且不循环，字母键按前缀跳转（汉字按拼音声母），Enter 选中，Esc 收起（在对话框里只收起面板），Tab 去下一个控件。多选以芯片显示已选项，超过 `maxChips`（默认 2）折成「+N」，有「清除全部」。`name` 渲染隐藏输入参与 FormData，表单复位回到 `defaultValue`。面板与选项行是选择器族（combobox、tag-input、cascader、tree-select）共用的 `lib/picker-panel.tsx` 与 `lib/use-listbox.ts`。需要输入筛选或自由输入时用 combobox，不要给 Select 加搜索。契约见 [docs/components/select.md](docs/components/select.md)，[陈列室展品](https://xunrua.top/ui?open=select)含单选、分组与说明、多选、状态与无选项。从 `@violet/ui` 或 `@violet/ui/select` 导入；按需样式为 `@violet/ui/components/select.css`。
 
 Segmented 是带滑动指示器的分段控制：`orientation` 选横向或竖向，`variant` 选 `soft`、`ink`、`line`，`value` 受控，`segments` 描述各段。纸片滑动 280ms，不缩放；设置 `itemSize` 进入不做 JS 测量的等尺寸布局，再加 `expandSelected` 让选中项占满剩余长度、其余收成只剩图标。方向键在启用项之间移动并同时选中；容器为 `role="radiogroup"`，默认按钮分段带 `aria-checked`，`render` 可把属性展开到链接或 Dropdown 触发器上并保持普通 group 语义。从 `@violet/ui` 或 `@violet/ui/segmented` 导入；按需样式为 `@violet/ui/components/segmented.css`。[陈列室展品](https://xunrua.top/ui?open=segmented)陈列三种变体与图标分段，独立 consumer 的 `?preview=segmented` 可操作选中收起、主题和窄屏状态。
 

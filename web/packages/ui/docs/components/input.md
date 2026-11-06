@@ -81,3 +81,5 @@ import { SearchInput } from "@violet/ui";
 ## 导入
 
 React 从 `@violet/ui` 或 `@violet/ui/input` 导入 `Input`、`SearchInput` 及其类型；recipe `inputVariants` 从 `@violet/ui/variants` 导入。按需 CSS 使用 `@violet/ui/components/input.css`，已含键帽与加载指示器的依赖样式。
+
+外壳对派生控件开放：`select` 的触发器直接使用 `v-input-control` 家族类名与同一套 `data-invalid`、`data-valid`、`data-disabled`、`data-readonly` 属性约定（`inputVariants` 生成类名），聚焦用外壳自身的 `:focus-within`，不另起一份外壳样式。

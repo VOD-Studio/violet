@@ -24,6 +24,8 @@ import { badgeVariants, countVariants, kbdVariants, tagVariants, type BadgeVaria
 import { Radio, RadioGroup, Switch, Tabs, TabsContent, TabsCount, TabsList, TabsTrigger, ToggleGroup, ToggleGroupItem, ToggleGroupSeparator, type RadioGroupProps, type RadioProps, type SwitchProps, type ToggleGroupProps } from "@violet/ui";
 import { Radio as LeafRadio, RadioGroup as LeafRadioGroup } from "@violet/ui/radio";
 import { Switch as LeafSwitch } from "@violet/ui/switch";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue, type SelectProps, type SelectTriggerProps } from "@violet/ui";
+import { Select as LeafSelect, SelectContent as LeafSelectContent, SelectItem as LeafSelectItem, SelectTrigger as LeafSelectTrigger, SelectValue as LeafSelectValue } from "@violet/ui/select";
 import { Tabs as LeafTabs, TabsContent as LeafTabsContent, TabsCount as LeafTabsCount, TabsList as LeafTabsList, TabsTrigger as LeafTabsTrigger } from "@violet/ui/tabs";
 import { ToggleGroupItem as LeafToggleGroupItem } from "@violet/ui/toggle-group";
 import { LinkCard as LeafLinkCard, type LinkCardProps as LeafLinkCardProps } from "@violet/ui/link-card";
@@ -372,6 +374,34 @@ export const controlExamples = <>
 		<TabsContent value="comments">评论面板</TabsContent>
 	</Tabs>
 </>;
+const selectRef = createRef<HTMLButtonElement>();
+const selectProps: SelectProps = { id: "status", "aria-describedby": "hint", "aria-invalid": true, value: "draft", onValueChange: (value: string) => void value, name: "status", disabled: false, readOnly: false, required: true, loading: false, open: true, onOpenChange: (open: boolean) => void open };
+const multiSelectProps: SelectProps = { multiple: true, value: ["Go"], defaultValue: ["Go"], onValueChange: (value: string[]) => void value.length };
+const selectTriggerProps: SelectTriggerProps = { variant: "outline", controlSize: "sm", invalid: true, valid: false, loading: false, maxChips: 3, id: "status", "aria-label": "状态", "aria-describedby": "hint" };
+export const selectExamples = <>
+	<Select {...selectProps}>
+		<SelectTrigger ref={selectRef} {...selectTriggerProps}><SelectValue placeholder="选择状态">已选</SelectValue></SelectTrigger>
+		<SelectContent container={null} collisionBoundary={null} empty="无选项" loading={false}>
+			<SelectGroup><SelectLabel>状态</SelectLabel><SelectItem value="draft" textValue="草稿" icon={<span />} description="未发布" meta="3 篇">草稿</SelectItem></SelectGroup>
+			<SelectSeparator />
+			<SelectItem value="published" disabled>已发布</SelectItem>
+		</SelectContent>
+	</Select>
+	<Select {...multiSelectProps}><SelectTrigger aria-label="标签"><SelectValue placeholder="添加标签" /></SelectTrigger><SelectContent><SelectItem value="Go">Go</SelectItem></SelectContent></Select>
+	<LeafSelect defaultValue="a"><LeafSelectTrigger aria-label="叶子"><LeafSelectValue /></LeafSelectTrigger><LeafSelectContent><LeafSelectItem value="a">甲</LeafSelectItem></LeafSelectContent></LeafSelect>
+</>;
+// @ts-expect-error 多选的值必须是数组。
+export const invalidMultipleValue = <Select multiple value="Go"><SelectTrigger aria-label="标签" /></Select>;
+// @ts-expect-error 单选的值是字符串，不是数组。
+export const invalidSingleValue = <Select value={["Go"]}><SelectTrigger aria-label="标签" /></Select>;
+// @ts-expect-error 多选的 onValueChange 收到数组。
+export const invalidMultipleChange = <Select multiple onValueChange={(value: string) => void value}><SelectTrigger aria-label="标签" /></Select>;
+// @ts-expect-error 触发器尺寸改用 controlSize，且只有三档。
+export const invalidSelectSize = <SelectTrigger aria-label="状态" controlSize="xl" />;
+// @ts-expect-error 旧的 size 属性已删除。
+export const invalidLegacySelectSize = <SelectTrigger aria-label="状态" size="sm" />;
+// @ts-expect-error SelectItem 的 value 必填。
+export const invalidSelectItem = <SelectItem>草稿</SelectItem>;
 // @ts-expect-error Switch 尺寸只有三档。
 export const invalidSwitchSize = <Switch size="default" />;
 // @ts-expect-error Switch 不存在 busy 属性。

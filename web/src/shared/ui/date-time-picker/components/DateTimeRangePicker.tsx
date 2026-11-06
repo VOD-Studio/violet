@@ -246,7 +246,7 @@ function RangeTimeInput({ label, value = "00:00", onChange, disabled }: RangeTim
 					<SelectTrigger className="h-8 flex-1 px-2 text-xs">
 						<SelectValue />
 					</SelectTrigger>
-					<SelectContent className="max-h-60">
+					<SelectContent>
 						{HOURS.map((h) => (
 							<SelectItem key={h} value={h} className="text-xs">
 								{h}
@@ -263,7 +263,7 @@ function RangeTimeInput({ label, value = "00:00", onChange, disabled }: RangeTim
 					<SelectTrigger className="h-8 flex-1 px-2 text-xs">
 						<SelectValue />
 					</SelectTrigger>
-					<SelectContent className="max-h-60">
+					<SelectContent>
 						{MINUTES.map((m) => (
 							<SelectItem key={m} value={m} className="text-xs">
 								{m}

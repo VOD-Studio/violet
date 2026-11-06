@@ -38,7 +38,7 @@ export function TimePicker({
 					<SelectTrigger className="h-8 w-20">
 						<SelectValue />
 					</SelectTrigger>
-					<SelectContent className="max-h-60">
+					<SelectContent>
 						{HOURS.map((h) => (
 							<SelectItem key={h} value={h}>
 								{h}
@@ -55,7 +55,7 @@ export function TimePicker({
 					<SelectTrigger className="h-8 w-20">
 						<SelectValue />
 					</SelectTrigger>
-					<SelectContent className="max-h-60">
+					<SelectContent>
 						{MINUTES.map((m) => (
 							<SelectItem key={m} value={m}>
 								{m}

@@ -123,6 +123,10 @@ section {
 	display: grid;
 	gap: 1.5rem;
 }
+.consumer-select {
+	inline-size: 14rem;
+}
+
 .display-row {
 	display: flex;
 	flex-wrap: wrap;

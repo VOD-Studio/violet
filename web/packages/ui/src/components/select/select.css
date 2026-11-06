@@ -1,1 +1,158 @@
-@import "../list-highlight/list-highlight.css";
+/*
+ * Select：触发器复用 input 单元的外壳（.v-input-control 家族），面板与选项行来自选择器族共用的 lib/picker.css。
+ * 需先导入 @violet/ui/tokens.css 或 styles.css。
+ */
+@import "../input/input.css";
+@import "../../lib/picker.css";
+
+@layer components {
+	/* 触发器是 button：去掉原生外观，值靠左，整块可点 */
+	.v-input-control.v-select-trigger {
+		appearance: none;
+		margin: 0;
+		font-family: inherit;
+		text-align: start;
+		cursor: pointer;
+	}
+
+	.v-select-trigger[data-readonly] {
+		cursor: default;
+	}
+
+	.v-select-trigger[data-disabled] {
+		cursor: not-allowed;
+	}
+
+	.v-select-value {
+		flex: 1 1 auto;
+		min-inline-size: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	/* 只给读屏：芯片已经呈现了值，这里的文字是展开钮的可访问名称与已选摘要 */
+	.v-select-sr {
+		position: absolute;
+		inline-size: 1px;
+		block-size: 1px;
+		margin: -1px;
+		padding: 0;
+		overflow: hidden;
+		border: 0;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	.v-select-value[data-placeholder] {
+		color: var(--muted-foreground);
+	}
+
+	.v-select-separator {
+		block-size: 0;
+		margin-block: 2px;
+	}
+
+	/* 多选：外壳随芯片换行变高，展开钮占剩余宽度 */
+	.v-input-control.v-select-trigger--multiple {
+		flex-wrap: wrap;
+		block-size: auto;
+		min-block-size: var(--v-input-h);
+		padding-block: 4px;
+		gap: 4px;
+		cursor: default;
+	}
+
+	.v-select-trigger__toggle {
+		display: flex;
+		flex: 1 1 0;
+		align-items: center;
+		box-sizing: border-box;
+		min-inline-size: 48px;
+		block-size: calc(var(--v-input-h) - 8px);
+		margin: 0;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		text-align: start;
+		cursor: pointer;
+		outline: none;
+	}
+
+	.v-select-trigger--multiple[data-disabled] .v-select-trigger__toggle {
+		cursor: not-allowed;
+	}
+
+	.v-select-trigger--multiple[data-readonly] .v-select-trigger__toggle {
+		cursor: default;
+	}
+
+	.v-select-chip {
+		display: inline-flex;
+		flex: none;
+		align-items: center;
+		box-sizing: border-box;
+		block-size: 24px;
+		padding: 0 3px 0 8px;
+		border-radius: 6px;
+		background-color: color-mix(in oklab, var(--foreground) 8%, transparent);
+		font-size: 0.8125rem;
+		font-weight: 400;
+		line-height: 1;
+	}
+
+	.v-select-chip--more {
+		padding-inline-end: 8px;
+		color: var(--muted-foreground);
+	}
+
+	.v-select-chip__label {
+		max-inline-size: 12rem;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.v-select-chip__remove {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		box-sizing: border-box;
+		inline-size: 18px;
+		block-size: 18px;
+		margin: 0 0 0 2px;
+		padding: 0;
+		border: 0;
+		border-radius: 5px;
+		background-color: transparent;
+		color: inherit;
+		opacity: 0.7;
+		cursor: pointer;
+		transition:
+			background-color 140ms ease-out,
+			opacity 120ms ease-out;
+	}
+
+	.v-select-chip__remove:hover {
+		background-color: color-mix(in oklab, var(--foreground) 12%, transparent);
+		opacity: 1;
+	}
+
+	.v-select-chip__remove:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: -1px;
+	}
+
+	.v-select-chip__remove svg {
+		inline-size: 12px;
+		block-size: 12px;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-select-chip__remove {
+			transition: none;
+		}
+	}
+}

@@ -22,6 +22,7 @@ import { popoverExhibit } from "./popover";
 import { presenceExhibit } from "./presence";
 import { radioExhibit } from "./radio";
 import { segmentedExhibit } from "./segmented";
+import { selectExhibit } from "./select";
 import { separatorExhibit } from "./separator";
 import { sheetExhibit } from "./sheet";
 import { sonnerExhibit } from "./sonner";
@@ -107,13 +108,41 @@ export const EXHIBITS: Exhibit[] = [
 	inputExhibit,
 	fieldExhibit,
 	textareaExhibit,
+	selectExhibit,
 	{
-		id: "select",
-		name: "选择器",
-		units: ["select", "combobox", "cascader", "tree-select", "tag-input"],
+		id: "combobox",
+		name: "组合框",
+		units: ["combobox"],
 		zone: "field",
 		category: "form",
 		footprint: { width: 360, height: 340 },
+		issue: 705,
+	},
+	{
+		id: "cascader",
+		name: "级联选择",
+		units: ["cascader"],
+		zone: "field",
+		category: "form",
+		footprint: { width: 640, height: 340 },
+		issue: 705,
+	},
+	{
+		id: "tree-select",
+		name: "树选择",
+		units: ["tree-select"],
+		zone: "field",
+		category: "form",
+		footprint: { width: 360, height: 380 },
+		issue: 705,
+	},
+	{
+		id: "tag-input",
+		name: "标签输入",
+		units: ["tag-input"],
+		zone: "field",
+		category: "form",
+		footprint: { width: 400, height: 340 },
 		issue: 705,
 	},
 	{

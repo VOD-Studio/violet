@@ -46,7 +46,11 @@ export function DataTableFooter({
 				</span>
 				{showSizeSelect && (
 					<Select value={String(pageSize)} onValueChange={(v) => onChange(1, Number(v))}>
-						<SelectTrigger size="sm" className="h-7 w-28 text-xs" aria-label="每页条数">
+						<SelectTrigger
+							controlSize="sm"
+							className="h-7 w-28 text-xs"
+							aria-label="每页条数"
+						>
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>

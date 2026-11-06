@@ -542,7 +542,7 @@ function AdminUsers() {
 										selectedHasProtected
 									}
 								>
-									<SelectTrigger size="sm" className="w-40">
+									<SelectTrigger controlSize="sm" className="w-40">
 										<UserCog className="size-3.5 mr-1" />
 										修改角色
 									</SelectTrigger>

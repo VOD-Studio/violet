@@ -11,6 +11,8 @@ import { Avatar, AvatarGroup, Badge, BadgeAnchor, Card, CardContent, CardFooter,
 import { Avatar as LeafAvatar } from "@violet/ui/avatar";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, HoverCard, HoverCardContent, HoverCardTrigger, Popover, PopoverContent, PopoverTrigger, Toaster, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@violet/ui";
 import { MorphingPopover, MorphingPopoverContent, MorphingPopoverTrigger } from "@violet/ui";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@violet/ui";
+import { Select as LeafSelect, SelectContent as LeafSelectContent, SelectItem as LeafSelectItem, SelectTrigger as LeafSelectTrigger, SelectValue as LeafSelectValue } from "@violet/ui/select";
 import { CommandList, ConfirmDialog, Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, Drawer, DrawerBody, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, Sheet, SheetBody, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@violet/ui";
 
 const linkCardLogo = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><rect width="160" height="160" fill="#f0edf8"/><path d="m40 44 40 76 40-76H98l-18 36-18-36Z" fill="#684dda"/></svg>')}`;
@@ -523,6 +525,27 @@ function DisplayPreview() {
 				<Radio value="now" label="立即发布" description="出现在首页「最近」" />
 				<Radio value="draft" label="存为草稿" description="不出现在任何列表里" />
 			</RadioGroup>
+			<div className="display-row">
+				<Select name="status" defaultValue="draft">
+					<SelectTrigger aria-label="文章状态" className="consumer-select"><SelectValue placeholder="选择状态" /></SelectTrigger>
+					<SelectContent>
+						<SelectGroup>
+							<SelectLabel>状态</SelectLabel>
+							<SelectItem value="draft">草稿</SelectItem>
+							<SelectItem value="published" description="出现在首页「最近」">已发布</SelectItem>
+							<SelectItem value="removed" disabled>已删除</SelectItem>
+						</SelectGroup>
+					</SelectContent>
+				</Select>
+				<Select multiple name="tags" defaultValue={["Go", "Rust", "React"]}>
+					<SelectTrigger aria-label="文章标签" className="consumer-select"><SelectValue placeholder="添加标签" /></SelectTrigger>
+					<SelectContent>{["Go", "Rust", "React", "Postgres"].map((tag) => <SelectItem key={tag} value={tag}>{tag}</SelectItem>)}</SelectContent>
+				</Select>
+				<LeafSelect defaultValue="a">
+					<LeafSelectTrigger aria-label="叶子入口" className="consumer-select"><LeafSelectValue /></LeafSelectTrigger>
+					<LeafSelectContent><LeafSelectItem value="a">甲</LeafSelectItem><LeafSelectItem value="b">乙</LeafSelectItem></LeafSelectContent>
+				</LeafSelect>
+			</div>
 			<div className="display-row">
 				<ToggleGroup type="multiple" aria-label="文字格式" defaultValue={["bold"]}>
 					<ToggleGroupItem value="bold" aria-label="加粗" title="加粗">B</ToggleGroupItem>

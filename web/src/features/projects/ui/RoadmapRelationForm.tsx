@@ -63,7 +63,7 @@ export function RoadmapRelationForm({ item, items, onRelate }: RoadmapRelationFo
 		<div className="space-y-2">
 			<div className="flex flex-wrap items-center gap-2">
 				<Select value={kindKey} onValueChange={setKindKey}>
-					<SelectTrigger aria-label="关系类型" size="sm" className="w-28 shrink-0">
+					<SelectTrigger aria-label="关系类型" controlSize="sm" className="w-28 shrink-0">
 						<SelectValue />
 					</SelectTrigger>
 					<SelectContent>

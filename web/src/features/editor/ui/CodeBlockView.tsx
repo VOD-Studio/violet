@@ -394,17 +394,17 @@ function CodeBlockViewComponent({
 					disabled={registering}
 					onValueChange={handleLanguageChange}
 				>
-					<SelectTrigger className="h-6 w-36 border-none bg-white/5 px-1 font-mono text-xs text-white/70 transition-colors hover:bg-white/10 hover:text-white focus:ring-0">
+					<SelectTrigger
+						variant="plain"
+						controlSize="sm"
+						className="h-6 w-36 bg-white/5 px-1 font-mono text-xs text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+					>
 						<SelectValue />
 					</SelectTrigger>
 					<SelectContent>
 						<SelectGroup>
 							{options.map((l) => (
-								<SelectItem
-									key={l.value}
-									value={l.value}
-									className="focus:bg-accent focus:text-accent-foreground"
-								>
+								<SelectItem key={l.value} value={l.value}>
 									{l.label}
 								</SelectItem>
 							))}

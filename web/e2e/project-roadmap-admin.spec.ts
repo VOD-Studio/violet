@@ -547,6 +547,26 @@ test.describe("管理员维护条目关系", () => {
 		return dialog;
 	}
 
+	test("关系类型在对话框中 Esc 先收起面板，选完后立刻 Esc 关闭对话框", async ({
+		page,
+		context,
+	}) => {
+		await roadmapBackend(context);
+		await openEditable(page);
+		const dialog = await openDetails(page, 5);
+		const trigger = dialog.getByRole("combobox", { name: "关系类型" });
+		await trigger.click();
+		await expect(page.getByRole("option", { name: "阻塞", exact: true })).toBeVisible();
+		await page.keyboard.press("Escape");
+		await expect(dialog).toBeVisible();
+		await expect(page.getByRole("option", { name: "阻塞", exact: true })).toHaveCount(0);
+
+		await trigger.click();
+		await page.getByRole("option", { name: "阻塞", exact: true }).click();
+		await page.keyboard.press("Escape");
+		await expect(dialog).toHaveCount(0);
+	});
+
 	async function relate(page: Page, number: number, kind: string, query: string, target: number) {
 		const dialog = await openDetails(page, number);
 		await dialog.getByRole("combobox", { name: "关系类型" }).click();
@@ -582,6 +602,7 @@ test.describe("管理员维护条目关系", () => {
 		);
 
 		await page.keyboard.press("Escape");
+		await expect(page.getByRole("dialog", { name: titleOf(5) })).toHaveCount(0);
 		await expect(historyButton(page, "撤销")).toHaveAttribute("aria-disabled", "false");
 		await page.keyboard.press("ControlOrMeta+z");
 		await expect

@@ -10,7 +10,6 @@ export * from "./components/page-shell/index";
 export * from "./components/pagination/index";
 export * from "./components/resend-button/index";
 export * from "./components/scroll-area/index";
-export * from "./components/select/index";
 export * from "./components/steps/index";
 export * from "./components/table/index";
 export * from "./components/text-underline/index";

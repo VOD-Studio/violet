@@ -214,9 +214,10 @@
 		},
 		{
 			"name": "select",
-			"status": "legacy",
+			"status": "foundation",
 			"entry": "src/components/select/index.ts",
-			"css": "src/components/select/select.css"
+			"css": "src/components/select/select.css",
+			"documentation": "web/packages/ui/docs/components/select.md"
 		},
 		{
 			"name": "separator",
