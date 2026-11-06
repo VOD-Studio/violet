@@ -47,6 +47,11 @@
 			"import": "./src/components/card/index.ts",
 			"default": "./src/components/card/index.ts"
 		},
+		"./cascader": {
+			"types": "./src/components/cascader/index.ts",
+			"import": "./src/components/cascader/index.ts",
+			"default": "./src/components/cascader/index.ts"
+		},
 		"./chart": {
 			"types": "./src/components/chart/index.ts",
 			"import": "./src/components/chart/index.ts",
@@ -61,6 +66,11 @@
 			"types": "./src/components/color-picker/index.ts",
 			"import": "./src/components/color-picker/index.ts",
 			"default": "./src/components/color-picker/index.ts"
+		},
+		"./combobox": {
+			"types": "./src/components/combobox/index.ts",
+			"import": "./src/components/combobox/index.ts",
+			"default": "./src/components/combobox/index.ts"
 		},
 		"./command": {
 			"types": "./src/components/command/index.ts",
@@ -252,6 +262,11 @@
 			"import": "./src/components/tabs/index.ts",
 			"default": "./src/components/tabs/index.ts"
 		},
+		"./tag-input": {
+			"types": "./src/components/tag-input/index.ts",
+			"import": "./src/components/tag-input/index.ts",
+			"default": "./src/components/tag-input/index.ts"
+		},
 		"./text-underline": {
 			"types": "./src/components/text-underline/index.ts",
 			"import": "./src/components/text-underline/index.ts",
@@ -271,6 +286,11 @@
 			"types": "./src/components/tooltip/index.ts",
 			"import": "./src/components/tooltip/index.ts",
 			"default": "./src/components/tooltip/index.ts"
+		},
+		"./tree-select": {
+			"types": "./src/components/tree-select/index.ts",
+			"import": "./src/components/tree-select/index.ts",
+			"default": "./src/components/tree-select/index.ts"
 		},
 		"./upload-tile": {
 			"types": "./src/components/upload-tile/index.ts",
@@ -299,7 +319,9 @@
 		"./components/badge.css": "./src/components/badge/badge.css",
 		"./components/button.css": "./src/components/button/button.css",
 		"./components/card.css": "./src/components/card/card.css",
+		"./components/cascader.css": "./src/components/cascader/cascader.css",
 		"./components/checkbox.css": "./src/components/checkbox/checkbox.css",
+		"./components/combobox.css": "./src/components/combobox/combobox.css",
 		"./components/command.css": "./src/components/command/command.css",
 		"./components/confirm-dialog.css": "./src/components/confirm-dialog/confirm-dialog.css",
 		"./components/context-menu.css": "./src/components/context-menu/context-menu.css",
@@ -328,9 +350,11 @@
 		"./components/sonner.css": "./src/components/sonner/sonner.css",
 		"./components/switch.css": "./src/components/switch/switch.css",
 		"./components/tabs.css": "./src/components/tabs/tabs.css",
+		"./components/tag-input.css": "./src/components/tag-input/tag-input.css",
 		"./components/textarea.css": "./src/components/textarea/textarea.css",
 		"./components/toggle-group.css": "./src/components/toggle-group/toggle-group.css",
 		"./components/tooltip.css": "./src/components/tooltip/tooltip.css",
+		"./components/tree-select.css": "./src/components/tree-select/tree-select.css",
 		"./components/upload-tile.css": "./src/components/upload-tile/upload-tile.css",
 		"./palettes/violet.css": "./src/styles/palettes/violet.generated.css",
 		"./palettes/coral.css": "./src/styles/palettes/coral.generated.css",
@@ -388,6 +412,11 @@
 				"import": "./dist/components/card/index.js",
 				"default": "./dist/components/card/index.js"
 			},
+			"./cascader": {
+				"types": "./dist/components/cascader/index.d.ts",
+				"import": "./dist/components/cascader/index.js",
+				"default": "./dist/components/cascader/index.js"
+			},
 			"./chart": {
 				"types": "./dist/components/chart/index.d.ts",
 				"import": "./dist/components/chart/index.js",
@@ -402,6 +431,11 @@
 				"types": "./dist/components/color-picker/index.d.ts",
 				"import": "./dist/components/color-picker/index.js",
 				"default": "./dist/components/color-picker/index.js"
+			},
+			"./combobox": {
+				"types": "./dist/components/combobox/index.d.ts",
+				"import": "./dist/components/combobox/index.js",
+				"default": "./dist/components/combobox/index.js"
 			},
 			"./command": {
 				"types": "./dist/components/command/index.d.ts",
@@ -593,6 +627,11 @@
 				"import": "./dist/components/tabs/index.js",
 				"default": "./dist/components/tabs/index.js"
 			},
+			"./tag-input": {
+				"types": "./dist/components/tag-input/index.d.ts",
+				"import": "./dist/components/tag-input/index.js",
+				"default": "./dist/components/tag-input/index.js"
+			},
 			"./text-underline": {
 				"types": "./dist/components/text-underline/index.d.ts",
 				"import": "./dist/components/text-underline/index.js",
@@ -612,6 +651,11 @@
 				"types": "./dist/components/tooltip/index.d.ts",
 				"import": "./dist/components/tooltip/index.js",
 				"default": "./dist/components/tooltip/index.js"
+			},
+			"./tree-select": {
+				"types": "./dist/components/tree-select/index.d.ts",
+				"import": "./dist/components/tree-select/index.js",
+				"default": "./dist/components/tree-select/index.js"
 			},
 			"./upload-tile": {
 				"types": "./dist/components/upload-tile/index.d.ts",
@@ -640,7 +684,9 @@
 			"./components/badge.css": "./dist/components/badge.css",
 			"./components/button.css": "./dist/components/button.css",
 			"./components/card.css": "./dist/components/card.css",
+			"./components/cascader.css": "./dist/components/cascader.css",
 			"./components/checkbox.css": "./dist/components/checkbox.css",
+			"./components/combobox.css": "./dist/components/combobox.css",
 			"./components/command.css": "./dist/components/command.css",
 			"./components/confirm-dialog.css": "./dist/components/confirm-dialog.css",
 			"./components/context-menu.css": "./dist/components/context-menu.css",
@@ -669,9 +715,11 @@
 			"./components/sonner.css": "./dist/components/sonner.css",
 			"./components/switch.css": "./dist/components/switch.css",
 			"./components/tabs.css": "./dist/components/tabs.css",
+			"./components/tag-input.css": "./dist/components/tag-input.css",
 			"./components/textarea.css": "./dist/components/textarea.css",
 			"./components/toggle-group.css": "./dist/components/toggle-group.css",
 			"./components/tooltip.css": "./dist/components/tooltip.css",
+			"./components/tree-select.css": "./dist/components/tree-select.css",
 			"./components/upload-tile.css": "./dist/components/upload-tile.css",
 			"./palettes/violet.css": "./dist/palettes/violet.css",
 			"./palettes/coral.css": "./dist/palettes/coral.css",

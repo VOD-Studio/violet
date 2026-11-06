@@ -14,6 +14,15 @@ import { MorphingPopover, MorphingPopoverContent, MorphingPopoverTrigger } from 
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@violet/ui";
 import { Select as LeafSelect, SelectContent as LeafSelectContent, SelectItem as LeafSelectItem, SelectTrigger as LeafSelectTrigger, SelectValue as LeafSelectValue } from "@violet/ui/select";
 import { CommandList, ConfirmDialog, Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, Drawer, DrawerBody, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, Sheet, SheetBody, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@violet/ui";
+import { Cascader, Combobox, TagInput, TreeSelect, type CascaderOption, type ComboboxOption, type TreeSelectOption } from "@violet/ui";
+import { Cascader as LeafCascader } from "@violet/ui/cascader";
+import { Combobox as LeafCombobox } from "@violet/ui/combobox";
+import { TagInput as LeafTagInput } from "@violet/ui/tag-input";
+import { TreeSelect as LeafTreeSelect } from "@violet/ui/tree-select";
+
+const comboOptions: ComboboxOption[] = [{ value: "hz", label: "杭州", description: "浙江" }, { value: "sh", label: "上海" }, { value: "bj", label: "北京", disabled: true }];
+const cascaderOptions: CascaderOption[] = [{ value: "zj", label: "浙江", children: [{ value: "hz", label: "杭州" }, { value: "nb", label: "宁波" }] }, { value: "js", label: "江苏", children: [{ value: "nj", label: "南京" }] }];
+const treeOptions: TreeSelectOption[] = [{ value: "a", label: "文档", children: [{ value: "a1", label: "指南" }, { value: "a2", label: "参考" }] }, { value: "b", label: "图片" }];
 
 const linkCardLogo = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><rect width="160" height="160" fill="#f0edf8"/><path d="m40 44 40 76 40-76H98l-18 36-18-36Z" fill="#684dda"/></svg>')}`;
 const linkCardCover = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="240"><rect width="400" height="240" fill="#dbe8e9"/><path d="m0 210 130-160 100 120 80-100 90 140v30H0Z" fill="#406c83"/></svg>')}`;
@@ -545,6 +554,19 @@ function DisplayPreview() {
 					<LeafSelectTrigger aria-label="叶子入口" className="consumer-select"><LeafSelectValue /></LeafSelectTrigger>
 					<LeafSelectContent><LeafSelectItem value="a">甲</LeafSelectItem><LeafSelectItem value="b">乙</LeafSelectItem></LeafSelectContent>
 				</LeafSelect>
+			</div>
+			<div className="display-row">
+				<Combobox aria-label="城市" className="consumer-select" name="city" options={comboOptions} placeholder="搜索城市" />
+				<LeafCombobox aria-label="叶子入口" className="consumer-select" options={comboOptions} />
+				<TagInput aria-label="文章标签" className="consumer-select" name="topics" defaultValue={["Go", "Rust"]} suggestions={["React", "Postgres"]} />
+				<LeafTagInput aria-label="叶子入口" className="consumer-select" defaultValue={["a"]} />
+			</div>
+			<div className="display-row">
+				<Cascader aria-label="地区" className="consumer-select" name="region" options={cascaderOptions} defaultValue={["zj", "hz"]} />
+				<LeafCascader aria-label="叶子入口" className="consumer-select" options={cascaderOptions} />
+				<TreeSelect aria-label="目录" className="consumer-select" name="dir" options={treeOptions} defaultValue="a1" />
+				<TreeSelect multiple aria-label="多选目录" className="consumer-select" options={treeOptions} defaultValue={["a1"]} />
+				<LeafTreeSelect aria-label="叶子入口" className="consumer-select" options={treeOptions} />
 			</div>
 			<div className="display-row">
 				<ToggleGroup type="multiple" aria-label="文字格式" defaultValue={["bold"]}>

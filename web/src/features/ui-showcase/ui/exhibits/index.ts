@@ -3,7 +3,9 @@ import { avatarExhibit } from "./avatar";
 import { badgeExhibit } from "./badge";
 import { buttonExhibit } from "./button";
 import { cardExhibit } from "./card";
+import { cascaderExhibit } from "./cascader";
 import { checkboxExhibit } from "./checkbox";
+import { comboboxExhibit } from "./combobox";
 import { commandExhibit } from "./command";
 import { dialogExhibit } from "./dialog";
 import { drawerExhibit } from "./drawer";
@@ -28,9 +30,11 @@ import { sheetExhibit } from "./sheet";
 import { sonnerExhibit } from "./sonner";
 import { switchExhibit } from "./switch";
 import { tabsExhibit } from "./tabs";
+import { tagInputExhibit } from "./tag-input";
 import { textareaExhibit } from "./textarea";
 import { toggleGroupExhibit } from "./toggle-group";
 import { tooltipExhibit } from "./tooltip";
+import { treeSelectExhibit } from "./tree-select";
 import { uploadTileExhibit } from "./upload-tile";
 
 /** 馆藏目录：顺序即铭牌编号，待建展品随对应工单落地后换成真实组件。 */
@@ -109,42 +113,10 @@ export const EXHIBITS: Exhibit[] = [
 	fieldExhibit,
 	textareaExhibit,
 	selectExhibit,
-	{
-		id: "combobox",
-		name: "组合框",
-		units: ["combobox"],
-		zone: "field",
-		category: "form",
-		footprint: { width: 360, height: 340 },
-		issue: 705,
-	},
-	{
-		id: "cascader",
-		name: "级联选择",
-		units: ["cascader"],
-		zone: "field",
-		category: "form",
-		footprint: { width: 640, height: 340 },
-		issue: 705,
-	},
-	{
-		id: "tree-select",
-		name: "树选择",
-		units: ["tree-select"],
-		zone: "field",
-		category: "form",
-		footprint: { width: 360, height: 380 },
-		issue: 705,
-	},
-	{
-		id: "tag-input",
-		name: "标签输入",
-		units: ["tag-input"],
-		zone: "field",
-		category: "form",
-		footprint: { width: 400, height: 340 },
-		issue: 705,
-	},
+	comboboxExhibit,
+	cascaderExhibit,
+	treeSelectExhibit,
+	tagInputExhibit,
 	{
 		id: "date-picker",
 		name: "日期与取值",

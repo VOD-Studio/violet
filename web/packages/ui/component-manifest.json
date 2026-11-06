@@ -27,6 +27,13 @@
 			"css": "src/components/card/card.css"
 		},
 		{
+			"name": "cascader",
+			"status": "foundation",
+			"entry": "src/components/cascader/index.ts",
+			"css": "src/components/cascader/cascader.css",
+			"documentation": "web/packages/ui/docs/components/cascader.md"
+		},
+		{
 			"name": "chart",
 			"status": "legacy",
 			"entry": "src/components/chart/index.ts"
@@ -42,6 +49,13 @@
 			"name": "color-picker",
 			"status": "legacy",
 			"entry": "src/components/color-picker/index.ts"
+		},
+		{
+			"name": "combobox",
+			"status": "foundation",
+			"entry": "src/components/combobox/index.ts",
+			"css": "src/components/combobox/combobox.css",
+			"documentation": "web/packages/ui/docs/components/combobox.md"
 		},
 		{
 			"name": "command",
@@ -266,6 +280,13 @@
 			"css": "src/components/tabs/tabs.css"
 		},
 		{
+			"name": "tag-input",
+			"status": "foundation",
+			"entry": "src/components/tag-input/index.ts",
+			"css": "src/components/tag-input/tag-input.css",
+			"documentation": "web/packages/ui/docs/components/tag-input.md"
+		},
+		{
 			"name": "text-underline",
 			"status": "legacy",
 			"entry": "src/components/text-underline/index.ts"
@@ -287,6 +308,13 @@
 			"status": "foundation",
 			"entry": "src/components/tooltip/index.ts",
 			"css": "src/components/tooltip/tooltip.css"
+		},
+		{
+			"name": "tree-select",
+			"status": "foundation",
+			"entry": "src/components/tree-select/index.ts",
+			"css": "src/components/tree-select/tree-select.css",
+			"documentation": "web/packages/ui/docs/components/tree-select.md"
 		},
 		{
 			"name": "upload-tile",

@@ -26,6 +26,11 @@ import { Radio as LeafRadio, RadioGroup as LeafRadioGroup } from "@violet/ui/rad
 import { Switch as LeafSwitch } from "@violet/ui/switch";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue, type SelectProps, type SelectTriggerProps } from "@violet/ui";
 import { Select as LeafSelect, SelectContent as LeafSelectContent, SelectItem as LeafSelectItem, SelectTrigger as LeafSelectTrigger, SelectValue as LeafSelectValue } from "@violet/ui/select";
+import { Cascader, Combobox, TagInput, TreeSelect, type CascaderLoadData, type CascaderOption, type CascaderProps, type ComboboxFilter, type ComboboxInputReason, type ComboboxOption, type ComboboxProps, type TagInputProps, type TagRejection, type TagRejectionReason, type TreeSelectMultipleProps, type TreeSelectOption, type TreeSelectProps, type TreeSelectSingleProps } from "@violet/ui";
+import { Cascader as LeafCascader } from "@violet/ui/cascader";
+import { Combobox as LeafCombobox } from "@violet/ui/combobox";
+import { TagInput as LeafTagInput } from "@violet/ui/tag-input";
+import { TreeSelect as LeafTreeSelect } from "@violet/ui/tree-select";
 import { Tabs as LeafTabs, TabsContent as LeafTabsContent, TabsCount as LeafTabsCount, TabsList as LeafTabsList, TabsTrigger as LeafTabsTrigger } from "@violet/ui/tabs";
 import { ToggleGroupItem as LeafToggleGroupItem } from "@violet/ui/toggle-group";
 import { LinkCard as LeafLinkCard, type LinkCardProps as LeafLinkCardProps } from "@violet/ui/link-card";
@@ -390,6 +395,43 @@ export const selectExamples = <>
 	<Select {...multiSelectProps}><SelectTrigger aria-label="标签"><SelectValue placeholder="添加标签" /></SelectTrigger><SelectContent><SelectItem value="Go">Go</SelectItem></SelectContent></Select>
 	<LeafSelect defaultValue="a"><LeafSelectTrigger aria-label="叶子"><LeafSelectValue /></LeafSelectTrigger><LeafSelectContent><LeafSelectItem value="a">甲</LeafSelectItem></LeafSelectContent></LeafSelect>
 </>;
+const comboboxRef = createRef<HTMLInputElement>();
+const comboboxOptions: ComboboxOption[] = [{ value: "hz", label: "杭州", description: "浙江", icon: <span />, meta: "3", disabled: false, group: "城市" }];
+const comboboxFilter: ComboboxFilter = (option, query) => option.label.includes(query);
+const comboboxProps: ComboboxProps = { options: comboboxOptions, value: "hz", onValueChange: (value: string) => void value, inputValue: "杭", onInputChange: (text: string, reason: ComboboxInputReason) => void [text, reason], onSearch: (query: string) => void query, filter: comboboxFilter, loading: false, name: "city", invalid: true, controlSize: "sm", variant: "outline", "aria-label": "城市" };
+const tagInputProps: TagInputProps = { value: ["Go"], onValueChange: (value: string[]) => void value.length, max: 5, suggestions: ["Rust"], validate: (tag: string) => (tag ? null : "不能为空"), normalize: (raw: string) => raw.trim(), onReject: (rejection: TagRejection) => void (rejection.reason satisfies TagRejectionReason), name: "topics", "aria-label": "标签" };
+const cascaderLoad: CascaderLoadData = async (path) => path.length ? [{ value: "x", label: "x", isLeaf: true }] : [];
+const cascaderOptions: CascaderOption[] = [{ value: "zj", label: "浙江", children: [{ value: "hz", label: "杭州" }], disabled: false }];
+const cascaderProps: CascaderProps = { options: cascaderOptions, value: ["zj", "hz"], onValueChange: (path: string[], nodes: CascaderOption[]) => void [path, nodes], changeOnSelect: true, loadData: cascaderLoad, searchable: true, name: "region", "aria-label": "地区" };
+const treeSelectOptions: TreeSelectOption[] = [{ value: "a", label: "文档", children: [{ value: "a1", label: "指南" }], meta: "1", lazy: false }];
+const treeSelectSingle: TreeSelectSingleProps = { options: treeSelectOptions, value: "a1", onValueChange: (value: string) => void value, leafOnly: true, "aria-label": "目录" };
+const treeSelectMultiple: TreeSelectMultipleProps = { multiple: true, options: treeSelectOptions, value: ["a1"], onValueChange: (value: string[]) => void value.length, "aria-label": "目录" };
+const treeSelectUnion: TreeSelectProps = treeSelectSingle;
+export const pickerFamilyExamples = <>
+	<Combobox ref={comboboxRef} {...comboboxProps} />
+	<LeafCombobox options={comboboxOptions} aria-label="叶子" />
+	<TagInput {...tagInputProps} />
+	<LeafTagInput defaultValue={["a"]} aria-label="叶子" />
+	<Cascader {...cascaderProps} />
+	<LeafCascader options={cascaderOptions} aria-label="叶子" />
+	<TreeSelect {...treeSelectUnion} />
+	<TreeSelect {...treeSelectMultiple} />
+	<LeafTreeSelect options={treeSelectOptions} aria-label="叶子" />
+</>;
+// @ts-expect-error Combobox 的值是字符串。
+export const invalidComboboxValue = <Combobox options={comboboxOptions} value={["hz"]} aria-label="城市" />;
+// @ts-expect-error Combobox 必须提供 options。
+export const invalidComboboxOptions = <Combobox aria-label="城市" />;
+// @ts-expect-error TagInput 的值必须是字符串数组。
+export const invalidTagInputValue = <TagInput value="Go" aria-label="标签" />;
+// @ts-expect-error Cascader 的值必须是字符串路径数组。
+export const invalidCascaderValue = <Cascader options={cascaderOptions} value="zj" aria-label="地区" />;
+// @ts-expect-error TreeSelect 多选的值必须是数组。
+export const invalidTreeSelectMultiple = <TreeSelect multiple options={treeSelectOptions} value="a1" aria-label="目录" />;
+// @ts-expect-error TreeSelect 单选的值是字符串。
+export const invalidTreeSelectSingle = <TreeSelect options={treeSelectOptions} value={["a1"]} aria-label="目录" />;
+// @ts-expect-error leafOnly 只属于单选。
+export const invalidTreeSelectLeafOnly = <TreeSelect multiple leafOnly options={treeSelectOptions} aria-label="目录" />;
 // @ts-expect-error 多选的值必须是数组。
 export const invalidMultipleValue = <Select multiple value="Go"><SelectTrigger aria-label="标签" /></Select>;
 // @ts-expect-error 单选的值是字符串，不是数组。

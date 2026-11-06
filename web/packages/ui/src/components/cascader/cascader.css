@@ -1,0 +1,196 @@
+/*
+ * Cascader：触发器复用 input 单元的外壳（.v-input-control 家族），面板的外壳与行来自选择器族共用的 lib/picker.css。
+ * 面板按列横排：每列 184px、最高 264px 竖向滚动，整体 max-content、横向超出时滚动。
+ * 需先导入 @violet/ui/tokens.css 或 styles.css。
+ */
+@import "../input/input.css";
+@import "../../lib/picker.css";
+
+@layer components {
+	/* 触发器是 button（或 searchable 时的 div 外壳）：去掉原生外观，值靠左，整块可点 */
+	.v-input-control.v-cascader-trigger {
+		appearance: none;
+		margin: 0;
+		font-family: inherit;
+		text-align: start;
+		cursor: pointer;
+	}
+
+	.v-input-control.v-cascader-trigger--search {
+		cursor: text;
+	}
+
+	.v-cascader-trigger[data-readonly] {
+		cursor: default;
+	}
+
+	.v-cascader-trigger[data-disabled] {
+		cursor: not-allowed;
+	}
+
+	.v-cascader-value {
+		flex: 1 1 auto;
+		min-inline-size: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.v-cascader-value[data-placeholder] {
+		color: var(--muted-foreground);
+	}
+
+	.v-cascader-sep {
+		color: var(--muted-foreground);
+	}
+
+	/* 只给读屏的完整路径；折叠后的可见文字是 aria-hidden */
+	.v-cascader-sr {
+		position: absolute;
+		inline-size: 1px;
+		block-size: 1px;
+		margin: -1px;
+		padding: 0;
+		overflow: hidden;
+		border: 0;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	.v-picker-panel.v-cascader-content {
+		inline-size: max-content;
+		min-inline-size: 0;
+		max-inline-size: calc(100vw - 80px);
+	}
+
+	.v-cascader-tree {
+		display: flex;
+		align-items: stretch;
+		gap: 4px;
+		overflow-x: auto;
+		overscroll-behavior-x: contain;
+		outline: none;
+	}
+
+	.v-cascader-col {
+		box-sizing: border-box;
+		flex: none;
+		inline-size: 184px;
+		max-block-size: min(
+			264px,
+			max(96px, calc(var(--radix-popover-content-available-height, 264px) - 14px))
+		);
+		overflow-y: auto;
+		overscroll-behavior: contain;
+	}
+
+	/* 键盘光标用行自身的底色，悬停滑动的那块底色此时让位 */
+	.v-cascader-col.v-list-highlight[data-mode="keyboard"]::before {
+		opacity: 0;
+	}
+
+	.v-cascader-col--results {
+		inline-size: max-content;
+		min-inline-size: 280px;
+		max-inline-size: 420px;
+	}
+
+	.v-cascader-row .v-picker-option__meta {
+		display: inline-flex;
+		align-items: center;
+		color: var(--muted-foreground);
+		font-size: inherit;
+	}
+
+	.v-cascader-end {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+	}
+
+	.v-cascader-end svg {
+		inline-size: 16px;
+		block-size: 16px;
+		stroke-width: 1.75;
+	}
+
+	.v-cascader-end .v-cascader-check {
+		color: var(--foreground);
+	}
+
+	/* 加载失败：整行换危险色，点一下重试 */
+	.v-cascader-row[data-error],
+	.v-cascader-row[data-error] .v-picker-option__meta {
+		color: var(--destructive-text);
+	}
+
+	.v-cascader-back {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		box-sizing: border-box;
+		inline-size: 100%;
+		min-block-size: 44px;
+		margin-block-end: 4px;
+		padding: 6px 10px;
+		border: 0;
+		border-radius: var(--radius-8, 8px);
+		background-color: transparent;
+		color: var(--muted-foreground);
+		font: inherit;
+		font-size: 0.875rem;
+		text-align: start;
+		cursor: pointer;
+	}
+
+	.v-cascader-back:hover {
+		background-color: var(--muted);
+	}
+
+	/* 触屏：不并排多列，一次只显示当前这一级，行放大到 44px */
+	@media (pointer: coarse) {
+		.v-picker-panel.v-cascader-content {
+			min-inline-size: min(280px, calc(100vw - 80px));
+		}
+
+		.v-cascader-tree[data-drill] .v-cascader-col {
+			inline-size: 100%;
+		}
+
+		.v-cascader-row {
+			min-block-size: 44px;
+		}
+	}
+}
+
+/*
+ * 悬停滑动底色与加载细圆弧的过渡来自层内样式与 indicator.css；减弱动态时要在同样的层外压住：
+ * 系统偏好，以及陈列室等宿主用 data-motion="reduce" 标出的作用域，都静止。
+ */
+@media (prefers-reduced-motion: reduce) {
+	.v-cascader-col.v-list-highlight::before {
+		transition: none;
+	}
+
+	.v-cascader-content .v-spinner,
+	.v-cascader-content .v-spinner__arc {
+		animation: none;
+	}
+
+	.v-cascader-content .v-spinner__arc {
+		stroke-dasharray: 62 100;
+	}
+}
+
+[data-motion="reduce"] .v-cascader-col.v-list-highlight::before {
+	transition: none;
+}
+
+[data-motion="reduce"] .v-cascader-content .v-spinner,
+[data-motion="reduce"] .v-cascader-content .v-spinner__arc {
+	animation: none;
+}
+
+[data-motion="reduce"] .v-cascader-content .v-spinner__arc {
+	stroke-dasharray: 62 100;
+}

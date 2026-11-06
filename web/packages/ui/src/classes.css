@@ -3,7 +3,9 @@
 @import "./components/badge/badge.css";
 @import "./components/button/button.css";
 @import "./components/card/card.css";
+@import "./components/cascader/cascader.css";
 @import "./components/checkbox/checkbox.css";
+@import "./components/combobox/combobox.css";
 @import "./components/command/command.css";
 @import "./components/confirm-dialog/confirm-dialog.css";
 @import "./components/context-menu/context-menu.css";
@@ -32,7 +34,9 @@
 @import "./components/sonner/sonner.css";
 @import "./components/switch/switch.css";
 @import "./components/tabs/tabs.css";
+@import "./components/tag-input/tag-input.css";
 @import "./components/textarea/textarea.css";
 @import "./components/toggle-group/toggle-group.css";
 @import "./components/tooltip/tooltip.css";
+@import "./components/tree-select/tree-select.css";
 @import "./components/upload-tile/upload-tile.css";

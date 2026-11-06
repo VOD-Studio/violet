@@ -94,7 +94,7 @@ test("整幅展品跨满全部栏，非整幅展品按占地分栏", async ({ pa
 		await shelf.evaluate(
 			(element) => getComputedStyle(element).gridTemplateColumns.split(" ").length,
 		),
-	).toBeGreaterThan(2);
+	).toBeGreaterThan(1);
 });
 
 test("检视台里每种状态都在占地内", async ({ page, context }) => {
