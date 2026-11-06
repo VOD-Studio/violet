@@ -18,6 +18,7 @@ import { popoverExhibit } from "./popover";
 import { radioExhibit } from "./radio";
 import { searchInputExhibit } from "./search-input";
 import { segmentedExhibit } from "./segmented";
+import { separatorExhibit } from "./separator";
 import { sheetExhibit } from "./sheet";
 import { sonnerExhibit } from "./sonner";
 import { switchExhibit } from "./switch";
@@ -173,6 +174,7 @@ export const EXHIBITS: Exhibit[] = [
 	linkCardExhibit,
 	imagePixelRevealExhibit,
 	cardExhibit,
+	separatorExhibit,
 	{
 		id: "list",
 		name: "列表与树",
