@@ -129,6 +129,23 @@ describe("DateRangePicker 端点与预览", () => {
 		expect(change).toHaveBeenCalledExactlyOnceWith({ start: "2026-11-03", end: "2026-11-12" });
 	});
 
+	it("点击控件的箭头与空白处也会展开，并聚焦靠近的一端", () => {
+		render(
+			<DateRangePicker
+				aria-label="区间"
+				defaultValue={{ start: "2026-11-03", end: "2026-11-07" }}
+			/>,
+		);
+		const shell = start().closest(".v-date-picker") as HTMLElement;
+		const arrow = shell.querySelector(".v-date-picker__to") as Element;
+		fireEvent.mouseDown(shell, { clientX: -10 });
+		expect(screen.getByRole("dialog")).toBeTruthy();
+		expect(document.activeElement).toBe(start());
+		fireEvent.mouseDown(arrow, { clientX: 10 });
+		expect(document.activeElement).toBe(end());
+		expect(shell.getAttribute("data-endpoint")).toBe("end");
+	});
+
 	it("键入一个端点规范化并对调；非法输入恢复端点", () => {
 		const change = vi.fn();
 		render(

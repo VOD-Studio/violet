@@ -20,30 +20,38 @@
 		font-size: var(--v-input-fs);
 		font-variant-numeric: tabular-nums;
 	}
-	/* 范围的两个输入按字符数定宽，箭头才落在两段文字正中 */
+	/*
+	 * 范围外壳分成两段等宽的格子，日期在各自格子里靠左，与普通输入框一致；右侧图标脱离文档流，
+	 * 不占格子的宽度。当前编辑的一端由衬在后面的纸片标出，纸片盖住那一端整块可输入的区域。
+	 * 区间符号右侧多留 12px，整体比外壳正中略偏左，挨着开始日期。
+	 */
+	.v-date-picker[data-range] {
+		padding-inline: 4px;
+	}
 	.v-date-picker[data-range] .v-date-picker__input {
-		flex: 0 1 calc(var(--v-date-picker-chars) * 1ch);
+		flex: 1 1 calc(var(--v-date-picker-chars) * 1ch + 1rem);
+		padding-inline: 0.5rem;
 	}
 	.v-date-picker .v-date-picker__to {
 		flex: none;
-		inline-size: 1.5rem;
-		block-size: 0.5rem;
-		margin-inline: 0.75rem;
+		inline-size: 1rem;
+		block-size: 1rem;
+		margin-inline-end: 1.5rem;
 		color: var(--muted-foreground);
 		fill: none;
 		stroke: currentColor;
-		stroke-width: 1;
+		stroke-width: 1.75;
 		stroke-linecap: round;
 		stroke-linejoin: round;
 	}
 	.v-date-picker > .v-date-picker__indicator {
 		position: absolute;
-		inset-block-end: 4px;
+		z-index: 0;
+		inset-block: 3px;
 		inset-inline-start: 0;
 		inline-size: var(--v-date-picker-bar-w);
-		block-size: 2px;
-		border-radius: 1px;
-		background: var(--foreground);
+		border-radius: calc(var(--radius-8) - 3px);
+		background: color-mix(in oklab, var(--foreground) 7%, transparent);
 		opacity: 0;
 		transform: translateX(var(--v-date-picker-bar-x));
 		transition:
@@ -61,11 +69,13 @@
 		flex: none;
 		place-items: center;
 	}
-	.v-date-picker[data-range] .v-date-picker__tail {
-		margin-inline-start: auto;
-	}
 	.v-date-picker__tail > * {
 		grid-area: 1 / 1;
+	}
+	.v-date-picker[data-range] > .v-date-picker__tail {
+		position: absolute;
+		inset-block: 0;
+		inset-inline-end: var(--v-input-px);
 	}
 	.v-date-picker__icon {
 		color: var(--muted-foreground);

@@ -148,6 +148,20 @@ describe("DatePicker 键入与原生表单", () => {
 		fireEvent.click(field());
 		expect(screen.queryByRole("dialog")).toBeNull();
 	});
+
+	it("点击输入框以外的外壳空白处也会展开，只读与禁用不展开", () => {
+		const { rerender } = render(<DatePicker aria-label="日期" defaultValue="2026-11-03" />);
+		const shell = () => field().closest(".v-date-picker") as HTMLElement;
+		fireEvent.mouseDown(shell());
+		expect(screen.getByRole("dialog")).toBeTruthy();
+		expect(document.activeElement).toBe(field());
+		rerender(<DatePicker key="ro" aria-label="日期" readOnly defaultValue="2026-11-03" />);
+		fireEvent.mouseDown(shell());
+		expect(screen.queryByRole("dialog")).toBeNull();
+		rerender(<DatePicker key="off" aria-label="日期" disabled defaultValue="2026-11-03" />);
+		fireEvent.mouseDown(shell());
+		expect(screen.queryByRole("dialog")).toBeNull();
+	});
 });
 
 describe("DatePicker 面板焦点", () => {

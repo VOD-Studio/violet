@@ -7,6 +7,16 @@ import { type CSSProperties, useLayoutEffect, useRef, useState } from "react";
 import { inputVariants } from "../input/styles";
 import type { DateTriggerProps } from "./types";
 
+/** 范围两端之间的区间符号：一条细线两端各一道短竖，像尺寸标注，只表示「从这里到那里」，不带方向。 */
+function RangeIcon() {
+	return (
+		<svg className="v-date-picker__to" viewBox="0 0 24 24" aria-hidden="true">
+			<title>至</title>
+			<path d="M3 12h18M3 7v10M21 7v10" />
+		</svg>
+	);
+}
+
 export function DateTrigger({
 	inputProps,
 	endInputProps,
@@ -63,6 +73,21 @@ export function DateTrigger({
 			data-mode={mode}
 			data-endpoint={isRange ? endpoint : undefined}
 			data-open={open || undefined}
+			onMouseDown={(event) => {
+				const target = event.target as HTMLElement;
+				if (disabled || readOnly || event.button !== 0 || target.closest("input, button"))
+					return;
+				event.preventDefault();
+				const inputs = event.currentTarget.querySelectorAll<HTMLInputElement>(
+					"input.v-date-picker__input",
+				);
+				const arrow = event.currentTarget.querySelector(".v-date-picker__to");
+				const middle = arrow
+					? arrow.getBoundingClientRect().left + arrow.getBoundingClientRect().width / 2
+					: Number.POSITIVE_INFINITY;
+				(inputs[1] && event.clientX > middle ? inputs[1] : inputs[0])?.focus();
+				onOpen();
+			}}
 		>
 			<input
 				{...inputProps}
@@ -76,10 +101,7 @@ export function DateTrigger({
 			/>
 			{endInputProps && (
 				<>
-					<svg className="v-date-picker__to" viewBox="0 0 24 8" aria-hidden="true">
-						<title>至</title>
-						<path d="M1 4h22M19 1l4 3-4 3" />
-					</svg>
+					<RangeIcon />
 					<input
 						{...endInputProps}
 						type="text"
