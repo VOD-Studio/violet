@@ -1,7 +1,8 @@
-const EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
+const EASE = "cubic-bezier(0.2, 0, 0.2, 1)";
 const MORPH_ID = "v-dialog-morph";
 const EXPAND_MS = 400;
 const COLLAPSE_MS = 220;
+const CONTENT_OUT_MS = 60; // 与 dialog.css 的内容淡出时长一致。
 /** 收回按钮之后按钮上的字淡入的时长，与 dialog.css 的 v-dialog-origin-in 一致。 */
 const ORIGIN_RETURN_MS = 120;
 
@@ -24,8 +25,8 @@ function reducedMotion() {
 	return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 }
 
-function originBackground(origin: HTMLElement, panel: HTMLElement) {
-	const color = getComputedStyle(origin).backgroundColor;
+function originBackground(style: CSSStyleDeclaration, panel: HTMLElement) {
+	const color = style.backgroundColor;
 	// 幽灵按钮没有底色，从透明长出来会先露出背后的页面，改从凹陷色开始。
 	if (color === "transparent" || /(?:,|\/)\s*0\)$/.test(color)) {
 		return getComputedStyle(panel).getPropertyValue("--muted").trim() || color;
@@ -47,6 +48,15 @@ export function morph(panel: HTMLElement, origin: HTMLElement, back: boolean): A
 	// 开发模式下 ref 回调会再执行一次：展开已在播放就沿用，否则会把按钮的底色量成面板的底色
 	const expanding = playing.find((animation) => animation.playState === "running");
 	if (!back && expanding) return expanding;
+	const style = back && playing.length ? getComputedStyle(panel) : null;
+	const current = style
+		? {
+				transform: style.transform,
+				clipPath: style.clipPath,
+				backgroundColor: style.backgroundColor,
+				boxShadow: style.boxShadow,
+			}
+		: null;
 	// 收回前取消残留的展开，量到的才是面板本来的位置与底色
 	for (const animation of playing) animation.cancel();
 	const from = origin.getBoundingClientRect();
@@ -57,11 +67,12 @@ export function morph(panel: HTMLElement, origin: HTMLElement, back: boolean): A
 	const ix = Math.max(0, (to.width - from.width) / 2);
 	const iy = Math.max(0, (to.height - from.height) / 2);
 	const { backgroundColor: panelColor, boxShadow: panelShadow } = getComputedStyle(panel);
+	const originStyle = getComputedStyle(origin);
 	const noShadow = "0 4px 24px transparent";
 	const button = {
 		transform: `translate(${dx}px, ${dy}px)`,
-		clipPath: `inset(${iy}px ${ix}px round ${from.height / 2}px)`,
-		backgroundColor: originBackground(origin, panel),
+		clipPath: `inset(${iy}px ${ix}px round ${originStyle.borderRadius})`,
+		backgroundColor: originBackground(originStyle, panel),
 		boxShadow: noShadow,
 	};
 	const flush = {
@@ -77,21 +88,26 @@ export function morph(panel: HTMLElement, origin: HTMLElement, back: boolean): A
 		backgroundColor: panelColor,
 		boxShadow: panelShadow === "none" ? noShadow : panelShadow,
 	};
+	// offset 表示实际时间；缓动放在各段，避免整段缓动把外形终点提前。
 	const frames = back
 		? [
-				{ offset: 0, ...free },
-				{ offset: 0.08, ...flush },
+				{ offset: 0, ...free, ...current, easing: "ease-out" },
+				{
+					offset: CONTENT_OUT_MS / COLLAPSE_MS,
+					...(current ? { ...current, boxShadow: noShadow } : flush),
+					easing: EASE,
+				},
 				{ offset: 1, ...button },
 			]
 		: [
-				{ offset: 0, ...button },
-				{ offset: 0.86, ...flush },
+				{ offset: 0, ...button, easing: EASE },
+				{ offset: 0.86, ...flush, easing: "ease-out" },
 				{ offset: 1, ...free },
 			];
 	return panel.animate(frames, {
 		id: MORPH_ID,
 		duration: back ? COLLAPSE_MS : EXPAND_MS,
-		easing: EASE,
+		easing: "linear",
 		fill: back ? "forwards" : "none",
 	});
 }
