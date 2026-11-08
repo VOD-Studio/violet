@@ -5,8 +5,10 @@ import { buttonExhibit } from "./button";
 import { cardExhibit } from "./card";
 import { cascaderExhibit } from "./cascader";
 import { checkboxExhibit } from "./checkbox";
+import { colorPickerExhibit } from "./color-picker";
 import { comboboxExhibit } from "./combobox";
 import { commandExhibit } from "./command";
+import { datePickerExhibit } from "./date-picker";
 import { dialogExhibit } from "./dialog";
 import { drawerExhibit } from "./drawer";
 import { dropdownExhibit } from "./dropdown";
@@ -20,6 +22,8 @@ import { kbdExhibit } from "./kbd";
 import { linkCardExhibit } from "./link-card";
 import { morphingPopoverExhibit } from "./morphing-popover";
 import { navbarExhibit } from "./navbar";
+import { numberInputExhibit } from "./number-input";
+import { otpExhibit } from "./otp";
 import { popoverExhibit } from "./popover";
 import { presenceExhibit } from "./presence";
 import { radioExhibit } from "./radio";
@@ -27,6 +31,7 @@ import { segmentedExhibit } from "./segmented";
 import { selectExhibit } from "./select";
 import { separatorExhibit } from "./separator";
 import { sheetExhibit } from "./sheet";
+import { sliderExhibit } from "./slider";
 import { sonnerExhibit } from "./sonner";
 import { switchExhibit } from "./switch";
 import { tabsExhibit } from "./tabs";
@@ -117,15 +122,11 @@ export const EXHIBITS: Exhibit[] = [
 	cascaderExhibit,
 	treeSelectExhibit,
 	tagInputExhibit,
-	{
-		id: "date-picker",
-		name: "日期与取值",
-		units: ["date-picker", "number-input", "slider", "color-picker", "otp"],
-		zone: "field",
-		category: "form",
-		footprint: { width: 360, height: 420 },
-		issue: 706,
-	},
+	datePickerExhibit,
+	numberInputExhibit,
+	sliderExhibit,
+	colorPickerExhibit,
+	otpExhibit,
 	{
 		id: "upload",
 		name: "上传队列",
