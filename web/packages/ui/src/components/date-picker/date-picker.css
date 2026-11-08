@@ -3,6 +3,7 @@
 
 @layer components {
 	.v-date-picker__input {
+		min-inline-size: 0;
 		font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 		font-size: calc(var(--v-input-fs) - 1px);
 		font-variant-numeric: tabular-nums;
@@ -21,7 +22,7 @@
 		inline-size: var(--v-input-icon);
 		block-size: var(--v-input-icon);
 	}
-	.v-date-picker__panel {
+	.v-picker-panel.v-date-picker__panel {
 		inline-size: max-content;
 		min-inline-size: 0;
 		max-inline-size: min(
@@ -106,6 +107,7 @@
 	.v-date-picker__title svg {
 		inline-size: 14px;
 		block-size: 14px;
+		color: var(--muted-foreground);
 		transition: transform 140ms ease-out;
 	}
 	.v-date-picker__title svg[data-expanded] {
@@ -115,7 +117,7 @@
 		display: grid;
 		grid-template-columns: repeat(7, 36px);
 		color: var(--muted-foreground);
-		font-size: 0.75rem;
+		font-size: 0.6875rem;
 		line-height: 28px;
 		text-align: center;
 	}
@@ -204,7 +206,7 @@
 		display: none;
 	}
 	.v-date-picker__grid[data-preview] .v-date-picker__day::after {
-		opacity: 0.55;
+		opacity: 0.6;
 	}
 	.v-date-picker__day[data-preview-end]::before {
 		background: transparent;
@@ -263,10 +265,12 @@
 		justify-content: flex-end;
 		gap: 8px;
 		margin-block-start: 12px;
+		padding-block-start: 12px;
+		border-block-start: 1px solid var(--border);
 	}
 	.v-date-picker__summary {
 		flex: 1;
-		min-inline-size: 100px;
+		min-inline-size: 0;
 		overflow-wrap: anywhere;
 		color: var(--muted-foreground);
 		font-size: 0.8125rem;
@@ -307,6 +311,13 @@
 		scrollbar-width: none;
 		padding: 4px;
 		margin: -4px;
+		mask-image: linear-gradient(
+			to bottom,
+			transparent 0,
+			#000 14px,
+			#000 calc(100% - 14px),
+			transparent 100%
+		);
 	}
 	.v-date-picker__time-scroll::-webkit-scrollbar {
 		display: none;
@@ -315,7 +326,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 2px;
-		padding: 0 4px 6px;
+		padding: 10px 4px;
 	}
 	.v-date-picker__time-option {
 		position: relative;
@@ -334,27 +345,44 @@
 		color: var(--background);
 	}
 	.v-date-picker__range-times {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: space-around;
-		gap: 28px;
-		padding: 12px 4px 4px;
-		margin: 12px -4px -4px;
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 20px;
+		margin-block-start: 12px;
+		padding-block-start: 12px;
 		border-block-start: 1px solid var(--border);
 	}
 	.v-date-picker__endpoint-time {
-		display: flex;
-		flex: none;
-		flex-direction: column;
-		gap: 4px;
+		display: grid;
+		grid-template-columns: auto 1fr;
+		align-items: center;
+		column-gap: 16px;
 		font-size: 0.8125rem;
 	}
+	.v-date-picker__endpoint-time > span:first-child {
+		color: var(--muted-foreground);
+	}
+	.v-date-picker__endpoint-time .v-date-picker__time {
+		justify-self: end;
+	}
+	.v-date-picker__endpoint-time .v-date-picker__time-column {
+		inline-size: 64px;
+	}
+	.v-date-picker__endpoint-time .v-date-picker__time-label {
+		block-size: 24px;
+		line-height: 24px;
+	}
 	.v-date-picker__range-times .v-date-picker__time-scroll {
-		block-size: 64px;
+		block-size: 108px;
 	}
 	.v-date-picker__days,
 	.v-date-picker__months {
 		animation: v-date-picker-month 180ms ease-out;
+	}
+	/* 退场副本是整块克隆，里面的入场动画会从透明重新开始，叠在整体淡出上形成闪烁。 */
+	.v-picker-exit .v-date-picker__days,
+	.v-picker-exit .v-date-picker__months {
+		animation: none;
 	}
 	.v-date-picker__panel :is(button):focus-visible {
 		outline: 2px solid var(--ring);
