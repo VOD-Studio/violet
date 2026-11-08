@@ -10,18 +10,6 @@ import { useState } from "react";
 import { useStageContainer } from "../../hooks/use-stage-container";
 import type { Exhibit, ExhibitRenderProps } from "../../model/exhibit";
 
-function paperContrast(hex: string) {
-	const luminance = (color: string) => {
-		const channels = [1, 3, 5]
-			.map((offset) => Number.parseInt(color.slice(offset, offset + 2), 16) / 255)
-			.map((value) => (value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4));
-		return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
-	};
-	const paper = luminance("#fbf8f6");
-	const color = luminance(hex);
-	return (Math.max(paper, color) + 0.05) / (Math.min(paper, color) + 0.05);
-}
-
 function ColorPanel(props: HsvColorPickerProps) {
 	const field = useFieldControl();
 	return (
@@ -33,10 +21,10 @@ function ColorPanel(props: HsvColorPickerProps) {
 
 function ColorSpecimen({ state }: ExhibitRenderProps) {
 	const stage = useStageContainer();
-	const [value, setValue] = useState(state === "low-contrast" ? "#e7c5b5" : "#2e4e9a");
+	const [value, setValue] = useState("#2e4e9a");
 	const [recent, setRecent] = useState(["#2e4e9a", "#c63c26", "#2f7d4f"]);
 	const [cleared, setCleared] = useState(false);
-	const text = state === "text" || state === "custom" || state === "low-contrast";
+	const text = state === "text" || state === "custom";
 	return (
 		<div ref={stage.ref} className="relative h-full w-full p-5">
 			{text ? (
@@ -49,7 +37,6 @@ function ColorSpecimen({ state }: ExhibitRenderProps) {
 						container={stage.container}
 						collisionBoundary={stage.container}
 						recentColors={recent}
-						contrast={cleared ? undefined : { ratio: paperContrast(value) }}
 						onChange={(hex) => {
 							setValue(hex);
 							setCleared(false);
@@ -62,7 +49,7 @@ function ColorSpecimen({ state }: ExhibitRenderProps) {
 						onClear={() => setCleared(true)}
 					/>
 					<p
-						className="absolute top-5 right-5 m-0 w-60 rounded-xl p-3 text-base leading-7"
+						className="absolute top-5 right-5 m-0 w-44 rounded-xl p-3 text-sm leading-6"
 						style={{ backgroundColor: "#fbf8f6", color: "#2f2a28" }}
 					>
 						落花的轨迹用三次贝塞尔曲线模拟，
@@ -73,7 +60,7 @@ function ColorSpecimen({ state }: ExhibitRenderProps) {
 					</p>
 				</>
 			) : (
-				<div className="flex flex-col gap-5">
+				<div className="flex flex-col items-start gap-5">
 					<Field
 						label="种子色"
 						error={
@@ -120,7 +107,6 @@ export const colorPickerExhibit: Exhibit = {
 		{ id: "panel", label: "取色面板" },
 		{ id: "text", label: "文字预设与最近使用" },
 		{ id: "custom", label: "自定义展开" },
-		{ id: "low-contrast", label: "纸面对比度提醒" },
 		{ id: "invalid", label: "HEX 错误" },
 		{ id: "readonly", label: "只读" },
 		{ id: "disabled", label: "禁用" },

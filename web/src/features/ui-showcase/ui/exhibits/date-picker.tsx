@@ -93,7 +93,7 @@ function DatePickerStage({ state }: ExhibitRenderProps) {
 					/>
 				</div>
 			) : rangeMode ? (
-				<div className="w-160">
+				<div className={datetime ? "w-110" : "w-96"}>
 					<DateRangePicker
 						key={state}
 						aria-label="统计区间"
@@ -117,7 +117,7 @@ function DatePickerStage({ state }: ExhibitRenderProps) {
 					/>
 				</div>
 			) : (
-				<div className={datetime ? "w-110" : "w-80"}>
+				<div className={datetime ? "w-80" : state === "time" ? "w-56" : "w-72"}>
 					<DatePicker
 						key={state}
 						aria-label="发布日期"
