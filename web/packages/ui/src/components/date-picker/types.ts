@@ -96,4 +96,8 @@ export interface DateTriggerProps {
 	onOpen: () => void;
 	mode: DatePickerMode;
 	hasValue: boolean;
+	/** 范围触发器当前正在编辑的端点；单值触发器不传。 */
+	endpoint?: "start" | "end";
+	/** 面板是否展开：展开时端点指示条保持显示。 */
+	open?: boolean;
 }

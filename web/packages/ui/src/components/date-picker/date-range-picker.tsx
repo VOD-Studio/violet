@@ -162,6 +162,8 @@ export function DateRangePicker(props: DateRangePickerProps) {
 				hasValue={!!state.value.start || !!state.value.end}
 				clearable={clearable}
 				clearLabel={clearLabel}
+				endpoint={state.endpoint}
+				open={picker.open}
 				onOpen={() => picker.setOpen(true)}
 				onClear={() => {
 					state.input.current?.focus();

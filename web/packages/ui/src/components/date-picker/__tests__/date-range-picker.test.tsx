@@ -208,4 +208,38 @@ describe("DateRangePicker 时间与原生表单", () => {
 		expect(end().validity.customError).toBe(true);
 		expect(start().validationMessage).toBe("请选择完整的日期范围");
 	});
+
+	it("日期时间范围的输入显示空格分隔，原生提交的两端仍是规范 T 格式", () => {
+		render(
+			<form aria-label="报表">
+				<DateRangePicker
+					aria-label="区间"
+					mode="datetime"
+					name="period"
+					defaultValue={{ start: "2026-11-03T09:30", end: "2026-11-07T18:00" }}
+				/>
+			</form>,
+		);
+		expect(start().value).toBe("2026-11-03 09:30");
+		expect(end().value).toBe("2026-11-07 18:00");
+		const form = screen.getByRole<HTMLFormElement>("form", { name: "报表" });
+		expect([...new FormData(form)]).toEqual([
+			["period.start", "2026-11-03T09:30"],
+			["period.end", "2026-11-07T18:00"],
+		]);
+	});
+
+	it("触发器的端点标记随正在编辑的输入切换，样式据此显示开始还是结束", () => {
+		render(
+			<DateRangePicker
+				aria-label="区间"
+				defaultValue={{ start: "2026-11-03", end: "2026-11-07" }}
+			/>,
+		);
+		const shell = start().closest(".v-date-picker") as HTMLElement;
+		fireEvent.focus(start());
+		expect(shell.getAttribute("data-endpoint")).toBe("start");
+		fireEvent.focus(end());
+		expect(shell.getAttribute("data-endpoint")).toBe("end");
+	});
 });

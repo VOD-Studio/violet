@@ -2,25 +2,73 @@
 @import "../../lib/picker.css";
 
 @layer components {
+	.v-date-picker {
+		position: relative;
+	}
 	.v-date-picker__input {
 		min-inline-size: 0;
 		font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 		font-size: calc(var(--v-input-fs) - 1px);
 		font-variant-numeric: tabular-nums;
 	}
+	.v-date-picker[data-range] .v-date-picker__input {
+		flex: 1 1 0;
+	}
 	.v-date-picker__to {
 		flex: none;
+		inline-size: 1.25rem;
+		block-size: 1rem;
 		color: var(--muted-foreground);
-		font-size: 0.8125rem;
+		stroke-width: 1.5;
+	}
+	.v-date-picker > .v-date-picker__indicator {
+		position: absolute;
+		inset-block-end: 4px;
+		inset-inline-start: 0;
+		inline-size: var(--v-date-picker-bar-w);
+		block-size: 2px;
+		border-radius: 1px;
+		background: var(--foreground);
+		opacity: 0;
+		transform: translateX(var(--v-date-picker-bar-x));
+		transition:
+			transform 220ms cubic-bezier(0.32, 0.72, 0, 1),
+			inline-size 220ms cubic-bezier(0.32, 0.72, 0, 1),
+			opacity 140ms ease-out;
+		pointer-events: none;
+	}
+	.v-date-picker:is(:focus-within, [data-open]) .v-date-picker__indicator {
+		opacity: 1;
+	}
+	/* 清除钮与日历图标共用一格：悬停或聚焦时清除钮顶替图标，没有值时只有图标 */
+	.v-date-picker__tail {
+		display: inline-grid;
+		flex: none;
+		place-items: center;
+	}
+	.v-date-picker__tail > * {
+		grid-area: 1 / 1;
 	}
 	.v-date-picker__icon {
-		display: inline-flex;
-		flex: none;
 		color: var(--muted-foreground);
 	}
 	.v-date-picker__icon svg {
 		inline-size: var(--v-input-icon);
 		block-size: var(--v-input-icon);
+	}
+	.v-input-control:focus-within
+		.v-date-picker__tail:has(.v-input-control__action--clear)
+		.v-date-picker__icon {
+		opacity: 0;
+		pointer-events: none;
+	}
+	@media (hover: hover) {
+		.v-input-control:hover
+			.v-date-picker__tail:has(.v-input-control__action--clear)
+			.v-date-picker__icon {
+			opacity: 0;
+			pointer-events: none;
+		}
 	}
 	.v-picker-panel.v-date-picker__panel {
 		inline-size: max-content;
