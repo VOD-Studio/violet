@@ -13,7 +13,6 @@ import { ColorSwatch, HsvColorPicker } from "@violet/ui";
   onClear={restoreBodyColor}
   recentColors={recentColors}
   onColorCommit={rememberColor}
-  contrast={{ ratio: contrastOnActualPaper }}
 />
 ```
 
@@ -49,7 +48,6 @@ Tab 依次进入 SV、色相、HEX、支持时的吸管，最后是恢复原色�
 `TEXT_COLOR_PRESETS` 是设计稿十二个 `{name,value}` 传统色：朱砂、赭石、琥珀、苔绿、竹青、石青、靛蓝、藏青、紫棠、胭脂、檀褐、墨灰。颜色是用户可选的数据，不是组件品牌 token；色块读颜色名，最近色无法匹配传统色时读完整 HEX。色块 24px、列间距至少 6px，hover 细环、选中纸色间隔与墨色双环，不缩放或位移。
 
 - `recentColors` 由宿主管理，组件规范化、去重并显示最多六个。使用 `onColorCommit` 更新最近记录，避免拖动过程产生大量历史色。
-- `contrast={{ratio,minimum}}` 由实际文字前景和实际纸面计算；低于 `minimum`（默认 4.5）显示读屏可感知提醒。组件不会以白底或主题种子推测纸面，不在包里保存编辑器状态。
 - 「自定义」默认收起，以 280ms 的 grid 行展开；收起区域带 `inert` 与 `aria-hidden`。减弱动态下立即切换。`defaultCustomOpen` 用于需要直接展开的消费场景。
 - 浮层复用非模态 Popover，不使用会抢走文本输入焦点的 menu。`open/defaultOpen/onOpenChange` 管理展开，`container/collisionBoundary` 接入宿主或陈列室舞台。Popover 沿用 `.v-float` 的 200ms / 140ms 出入场及焦点恢复。
 - `triggerProps` 原样传触发按钮，可保存编辑器选区；取消其点击或指针事件时尊重 Radix 的事件取消约定。

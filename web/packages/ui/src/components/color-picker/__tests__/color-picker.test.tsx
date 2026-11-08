@@ -490,15 +490,8 @@ describe("ColorSwatch", () => {
 		expect(clear).toHaveBeenCalledOnce();
 	});
 
-	it("自定义默认不可聚焦，展开后 HEX 可编辑且不关闭面板；低对比提醒由纸面数据驱动", () => {
-		render(
-			<ColorSwatch
-				defaultOpen
-				contrast={{ ratio: 2.3 }}
-				onChange={vi.fn()}
-				onClear={vi.fn()}
-			/>,
-		);
+	it("自定义默认不可聚焦，展开后 HEX 可编辑且不关闭面板", () => {
+		render(<ColorSwatch defaultOpen onChange={vi.fn()} onClear={vi.fn()} />);
 		expect(screen.queryByRole("textbox")).toBeNull();
 		fireEvent.click(screen.getByRole("button", { name: "自定义" }));
 		const input = screen.getByRole("textbox") as HTMLInputElement;
@@ -506,6 +499,5 @@ describe("ColorSwatch", () => {
 		expect(document.activeElement).toBe(input);
 		fireEvent.change(input, { target: { value: "ABC" } });
 		expect(screen.getByRole("dialog")).toBeTruthy();
-		expect(screen.getByRole("status").textContent).toContain("2.3:1");
 	});
 });

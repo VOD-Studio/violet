@@ -294,24 +294,6 @@
 	.v-color-swatch__custom-inner {
 		padding-block: 10px;
 	}
-	.v-color-swatch__warning {
-		display: flex;
-		align-items: flex-start;
-		gap: 8px;
-		margin-block-start: 10px;
-		padding: 8px 10px;
-		border-radius: 10px;
-		background: color-mix(in oklab, var(--destructive) 7%, var(--card));
-		color: var(--destructive);
-		font-size: 12px;
-		line-height: 1.6;
-	}
-	.v-color-swatch__warning > svg {
-		flex: none;
-		inline-size: 14px;
-		block-size: 14px;
-		margin-block-start: 2px;
-	}
 	.v-color-swatch__clear {
 		display: flex;
 		align-items: center;

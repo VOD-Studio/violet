@@ -1,5 +1,5 @@
 import { cn } from "cn";
-import { Baseline, ChevronDown, CircleAlert } from "lucide-react";
+import { Baseline, ChevronDown } from "lucide-react";
 import { type ComponentProps, useId, useState } from "react";
 import { Popover, PopoverContent, type PopoverContentProps, PopoverTrigger } from "../popover";
 import { HsvColorPicker } from "./HsvColorPicker";
@@ -29,8 +29,6 @@ export interface ColorSwatchProps
 	onClear: () => void;
 	onColorCommit?: (color: string) => void;
 	recentColors?: readonly string[];
-	/** 调用方按实际纸面计算，不使用主题种子或按钮对比度代替。 */
-	contrast?: { ratio: number; minimum?: number };
 	disabled?: boolean;
 	readOnly?: boolean;
 	open?: boolean;
@@ -48,7 +46,6 @@ export function ColorSwatch({
 	onClear,
 	onColorCommit,
 	recentColors = [],
-	contrast,
 	disabled = false,
 	readOnly = false,
 	open,
@@ -158,17 +155,6 @@ export function ColorSwatch({
 						</div>
 					</div>
 				</div>
-				{contrast &&
-					Number.isFinite(contrast.ratio) &&
-					contrast.ratio < (contrast.minimum ?? 4.5) && (
-						<div className="v-color-swatch__warning" role="status">
-							<CircleAlert aria-hidden="true" />
-							<span>
-								在纸面上对比度 {contrast.ratio.toFixed(1)}:1，正文读起来吃力，建议{" "}
-								{contrast.minimum ?? 4.5} 以上
-							</span>
-						</div>
-					)}
 				<button
 					type="button"
 					className="v-color-swatch__clear"
