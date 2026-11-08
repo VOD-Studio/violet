@@ -111,11 +111,11 @@ describe("Textarea 自动增高", () => {
 		const textarea = container.querySelector("textarea") as HTMLTextAreaElement;
 
 		stubScrollHeight(textarea, LINE_HEIGHT);
-		rerender(<Textarea aria-label="正文" autoSize value="一行" onChange={() => { }} />);
+		rerender(<Textarea aria-label="正文" autoSize value="一行" onChange={() => {}} />);
 		expect(textarea.style.height).toBe(`${3 * LINE_HEIGHT}px`);
 
 		stubScrollHeight(textarea, 20 * LINE_HEIGHT);
-		rerender(<Textarea aria-label="正文" autoSize value="很长" onChange={() => { }} />);
+		rerender(<Textarea aria-label="正文" autoSize value="很长" onChange={() => {}} />);
 		expect(textarea.style.height).toBe(`${8 * LINE_HEIGHT}px`);
 	});
 
@@ -130,7 +130,7 @@ describe("Textarea 自动增高", () => {
 				aria-label="正文"
 				autoSize={{ minRows: 2, maxRows: 4 }}
 				value="很多"
-				onChange={() => { }}
+				onChange={() => {}}
 			/>,
 		);
 		expect(textarea.style.height).toBe(`${4 * LINE_HEIGHT}px`);
@@ -171,7 +171,7 @@ describe("Textarea 字数", () => {
 	});
 
 	it("读稿只在接近上限时开始：90% 之前 live region 为空", () => {
-		render(<Textarea aria-label="简介" showCount maxLength={60} onChange={() => { }} />);
+		render(<Textarea aria-label="简介" showCount maxLength={60} onChange={() => {}} />);
 		const live = document.querySelector('[aria-live="polite"]') as HTMLElement;
 		expect(live.textContent).toBe("");
 
@@ -196,7 +196,7 @@ describe("Textarea 操作栏与状态", () => {
 				showCount
 				maxLength={500}
 				toolbar={<button type="button">插入图片</button>}
-				onChange={() => { }}
+				onChange={() => {}}
 			/>,
 		);
 		const bar = container.querySelector(".v-textarea__bar") as HTMLElement;
