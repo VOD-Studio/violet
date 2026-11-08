@@ -1,0 +1,39 @@
+@import "../button/button.css";
+
+@layer components {
+	.v-resend-button.v-button {
+		font-size: 0.8125rem;
+		font-weight: 400;
+		line-height: 1.5;
+	}
+
+	.v-resend-button.v-button--link {
+		block-size: auto;
+		padding: 0;
+		border: 0;
+		border-radius: 0;
+		text-decoration-line: underline;
+		text-underline-offset: 3px;
+	}
+
+	.v-resend-button[data-cooling] {
+		block-size: auto;
+		padding: 0;
+		border-color: transparent;
+		background: transparent;
+		color: var(--muted-foreground);
+		text-decoration: none;
+		opacity: 1;
+	}
+
+	.v-resend-button__seconds {
+		font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+		font-variant-numeric: tabular-nums;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-resend-button {
+			transition: none;
+		}
+	}
+}

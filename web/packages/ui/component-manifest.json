@@ -230,8 +230,10 @@
 		},
 		{
 			"name": "resend-button",
-			"status": "legacy",
-			"entry": "src/components/resend-button/index.ts"
+			"status": "foundation",
+			"entry": "src/components/resend-button/index.ts",
+			"css": "src/components/resend-button/resend-button.css",
+			"documentation": "web/packages/ui/docs/components/resend-button.md"
 		},
 		{
 			"name": "scroll-area",

@@ -29,6 +29,7 @@ export * from "./components/otp/index";
 export * from "./components/popover/index";
 export * from "./components/prompt-dialog/index";
 export * from "./components/radio/index";
+export * from "./components/resend-button/index";
 export * from "./components/segmented/index";
 export * from "./components/select/index";
 export * from "./components/separator/index";
