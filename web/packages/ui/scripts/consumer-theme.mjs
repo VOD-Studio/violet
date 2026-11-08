@@ -37,6 +37,7 @@ export async function checkConsumerTheme(css, html) {
 			await page.locator("html").evaluate((el, value) => { el.className = value; }, appearance);
 			for (const contrast of ["no-preference", "more"]) {
 				await page.emulateMedia({ contrast });
+				const minimumRatio = contrast === "more" ? 7 : 4.5;
 				for (const id of ["plain-button", "plain-scoped-button"]) {
 					const button = page.locator(`#${id}`);
 					await page.mouse.move(0, 0);
@@ -44,13 +45,13 @@ export async function checkConsumerTheme(css, html) {
 					const normal = await colors(button);
 					assert.equal(normal.actualBackground.value, normal.primary.value);
 					const normalRatio = ratio(normal.actualText, normal.actualBackground);
-					assert.ok(normalRatio >= 4.5, `${appearance}/${contrast}/${id}: normal contrast ${normalRatio}`);
+					assert.ok(normalRatio >= minimumRatio, `${appearance}/${contrast}/${id}: normal contrast ${normalRatio} < ${minimumRatio}`);
 					await button.hover();
 					const hover = await colors(button);
 					assert.equal(hover.actualBackground.value, normal["primary-hover"].value);
 					assert.equal(hover.actualText.value, normal["primary-foreground"].value);
 					const hoverRatio = ratio(hover.actualText, hover.actualBackground);
-					assert.ok(hoverRatio >= normalRatio, `${appearance}/${contrast}/${id}: hover contrast ${hoverRatio} < ${normalRatio}`);
+					assert.ok(hoverRatio >= minimumRatio, `${appearance}/${contrast}/${id}: hover contrast ${hoverRatio} < ${minimumRatio}`);
 					readings.push({ appearance, contrast, id, normalRatio, hoverRatio });
 				}
 				const input = page.locator("#plain-input");

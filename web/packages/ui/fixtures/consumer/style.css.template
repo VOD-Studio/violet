@@ -19,9 +19,9 @@ section {
 }
 .preview-scope {
 	--radius: 0.25rem;
-	--primary: var(--decoration);
-	--primary-hover: var(--decoration-hover);
-	--primary-foreground: var(--decoration-foreground);
+	--primary: var(--success-9);
+	--primary-hover: var(--success-10);
+	--primary-foreground: var(--success-contrast);
 }
 .checkbox-row {
 	display: flex;

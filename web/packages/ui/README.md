@@ -135,6 +135,8 @@ pnpm --filter @violet/ui consumer
 
 `sync` 根据清单更新公开入口与样式列表，并根据种子与算法生成静态颜色；`check` 只读校验一致性。构建保留 ESM 模块并生成类型声明。`consumer` 将真实 tarball 安装到工作区外，检查类型、SSR、Vite 构建与入口模块可达性，并在禁用 JavaScript 的 Chromium 中验证纯 CSS 的明暗、提高对比度、命名主题、Button 悬停对比度与 Input 聚焦标签；工作区能运行不能替代这一步。
 
+纯 CSS 消费者按 [ADR-0029](../../../docs/adr/0029-contrast-gate-wcag-hard-apca-advisory.md) 分别检查常态与悬停态的文字对比度：标准档至少 4.5:1，提高对比度档至少 7:1，不要求悬停比常态更高。
+
 开发方法以包内 [架构指南](docs/architecture.md)与[组件设计流程](docs/component-design.md)为权威。站点的 `/ui` 陈列室按占地陈列各单元的真实组件，不复制规格正文。
 
 MIT License。

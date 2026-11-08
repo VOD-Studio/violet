@@ -8,7 +8,7 @@
 		<style>
 			body { margin: 2rem; background: var(--background); color: var(--foreground); font-family: system-ui, sans-serif; }
 			main { max-width: 30rem; display: grid; gap: 1.5rem; }
-			.preview-scope { --radius: 0.25rem; --primary: var(--decoration); --primary-hover: var(--decoration-hover); --primary-foreground: var(--decoration-foreground); }
+			.preview-scope { --radius: 0.25rem; --primary: var(--success-9); --primary-hover: var(--success-10); --primary-foreground: var(--success-contrast); }
 		</style>
 	</head>
 	<body>
