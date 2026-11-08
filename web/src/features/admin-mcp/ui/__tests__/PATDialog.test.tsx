@@ -1,7 +1,7 @@
 import type { PATDTO } from "@features/admin-mcp/model/types";
 import { apiPatch, apiPost } from "@shared/api/request";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PATDialog } from "../PATDialog";
@@ -127,12 +127,10 @@ describe("PATDialog", () => {
 		expect(apiPost).not.toHaveBeenCalled();
 	});
 
-	it("明确选择永不过期才发送 never，不提供含混的清除操作", async () => {
+	it("明确勾选永不过期才发送 never，日期输入不提供含混的清除操作", async () => {
 		renderDialog();
-		fireEvent.click(within(screen.getByRole("group", { name: "有效期" })).getByRole("button"));
 		expect(screen.queryByRole("button", { name: "清除" })).toBeNull();
-		fireEvent.click(screen.getByRole("button", { name: "永不过期" }));
-		fireEvent.click(screen.getByRole("button", { name: "确定" }));
+		fireEvent.click(screen.getByRole("checkbox", { name: "永不过期" }));
 		submitForm();
 		await waitFor(() =>
 			expect(apiPatch).toHaveBeenCalledWith(
@@ -191,10 +189,8 @@ describe("PATDialog", () => {
 			screen.getByRole("checkbox", { name: "notes:read" }).getAttribute("aria-checked"),
 		).toBe("true");
 		expect(
-			within(screen.getByRole("group", { name: "有效期" })).getByRole("button", {
-				name: "永不过期",
-			}),
-		).toBeTruthy();
+			screen.getByRole("checkbox", { name: "永不过期" }).getAttribute("aria-checked"),
+		).toBe("true");
 		expect(apiPatch).not.toHaveBeenCalled();
 	});
 

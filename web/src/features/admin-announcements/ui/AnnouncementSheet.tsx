@@ -6,8 +6,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
 	Button,
 	Checkbox,
+	type DateRange,
+	DateRangePicker,
+	type DateRangePreset,
+	Field,
 	Input,
 	Label,
+	NumberInput,
 	Select,
 	SelectContent,
 	SelectItem,
@@ -27,8 +32,6 @@ import { addDays, addHours, endOfDay, format, startOfDay, startOfHour } from "da
 import { Lock } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import type { DateTimeRange, DateTimeRangePreset } from "@/shared/ui/date-time-picker";
-import { DateTimeRangePickerField } from "@/shared/ui/date-time-picker";
 import { useCreateAnnouncement, useUpdateAnnouncement } from "../api/queries";
 import {
 	AFFECTS_OPTIONS,
@@ -209,11 +212,11 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
 	const isBanner = display === "banner";
 
 	const now = startOfHour(new Date());
-	const formatRange = (start: Date, end: Date): DateTimeRange => ({
+	const formatRange = (start: Date, end: Date): DateRange => ({
 		start: format(start, "yyyy-MM-dd'T'HH:mm"),
 		end: format(end, "yyyy-MM-dd'T'HH:mm"),
 	});
-	const rangePresets: DateTimeRangePreset[] = [
+	const rangePresets: DateRangePreset[] = [
 		{ label: "最近1小时", value: formatRange(now, addHours(now, 1)) },
 		{ label: "今天", value: formatRange(startOfDay(now), endOfDay(now)) },
 		{ label: "最近7天", value: formatRange(addDays(now, -7), now) },
@@ -375,9 +378,8 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
 						<div className="grid grid-cols-2 gap-3">
 							<div className="space-y-2">
 								<Label htmlFor="ann-sort">排序</Label>
-								<Input
+								<NumberInput
 									id="ann-sort"
-									type="number"
 									min={0}
 									disabled={pending}
 									{...register("sortOrder", { valueAsNumber: true })}
@@ -474,15 +476,21 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
 							control={control}
 							name="timeRange"
 							render={({ field }) => (
-								<DateTimeRangePickerField
-									label="生效区间"
-									value={field.value}
-									onChange={field.onChange}
-									disabled={pending}
-									placeholder="选择生效时间区间"
-									presets={rangePresets}
-									error={errors.timeRange?.end?.message}
-								/>
+								<Field label="生效区间" error={errors.timeRange?.end?.message}>
+									<DateRangePicker
+										mode="datetime"
+										value={field.value}
+										onChange={(range) =>
+											field.onChange({
+												start: range.start ?? "",
+												end: range.end ?? "",
+											})
+										}
+										disabled={pending}
+										placeholder="选择生效时间区间"
+										presets={rangePresets}
+									/>
+								</Field>
 							)}
 						/>
 					</aside>
