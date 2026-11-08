@@ -78,7 +78,7 @@ export const invalidSliderMark = <LeafSlider marks={[{ value: "low", label: "低
 export const colors = <>
 	<HsvColorPicker value="#cc6633" onChange={(value) => { const hex: string = value; void hex; }} onValidityChange={(valid) => { const ready: boolean = valid; void ready; }} hexInputProps={{ ref: createRef<HTMLInputElement>(), name: "accent", "aria-label": "自定义颜色" }} />
 	<LeafColorPicker value="#2f9e7a" onChange={() => {}} />
-	<ColorSwatch value="#cc6633" onChange={() => {}} onClear={() => {}} recentColors={["#1d7286"]} contrast={{ ratio: 4.6 }} />
+	<ColorSwatch value="#cc6633" onChange={() => {}} onClear={() => {}} recentColors={["#1d7286"]} />
 	<LeafColorSwatch onChange={() => {}} onClear={() => {}} />
 </>;
 // @ts-expect-error 取色器的值必须是颜色字符串。
