@@ -10,13 +10,19 @@ import {
 	DialogHeader,
 	DialogTitle,
 	Field,
+	HsvColorPicker,
 	Input,
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+	useFieldControl,
 } from "@violet/ui";
-import { type NormalizedTheme, normalizeTheme } from "@violetjs/theme";
-import { cn } from "cn";
-import { useState } from "react";
+import { type ComponentProps, useId, useMemo } from "react";
+import { toast } from "sonner";
 
+import { useCustomThemeDraft } from "../hooks/useCustomThemeDraft";
 import { useThemeSwitcher } from "../hooks/useThemeSwitcher";
+import { CUSTOM_PREVIEW_SCOPE, CustomThemePreview } from "./CustomThemePreview";
 
 /** 自定义主题对话框的属性。 */
 export interface CustomThemeDialogProps {
@@ -24,68 +30,26 @@ export interface CustomThemeDialogProps {
 	onOpenChange: (open: boolean) => void;
 }
 
-const PREVIEW_SCOPE = "custom-preview";
-/** 输入允许省略 `#`；规范化与安全校验仍由 normalizeTheme 完成。 */
-const HEX_INPUT = /^#?(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
-
-/** 合法时返回规范化主题；只开放种子色，旋钮取默认值。 */
-function parseDraft(value: string): NormalizedTheme | null {
-	const trimmed = value.trim();
-	if (!HEX_INPUT.test(trimmed)) return null;
-	return normalizeTheme({
-		version: 1,
-		seed: trimmed.startsWith("#") ? trimmed : `#${trimmed}`,
-	});
-}
-
-/** 一种外观下的实际生成结果：主要按钮、链接、选中态与主色文字。 */
-function PreviewCard({ appearance }: { appearance: "light" | "dark" }) {
+function SeedPanel({ hexInputProps, ...props }: ComponentProps<typeof HsvColorPicker>) {
+	const control = useFieldControl();
 	return (
-		<div
-			data-theme={PREVIEW_SCOPE}
-			// 预览须独立于页面外观，显式指定明暗取值
-			style={{ colorScheme: appearance }}
-			className={cn(
-				"space-y-3 rounded-xl border border-border bg-background p-4 text-foreground",
-				appearance === "dark" && "dark",
-			)}
-		>
-			<p className="text-xs text-muted-foreground">
-				{appearance === "light" ? "浅色" : "深色"}
-			</p>
-			<p className="font-serif text-base leading-6">
-				正文里的<span className="text-link underline underline-offset-4">链接</span>与
-				<span className="text-primary">强调</span>
-			</p>
-			<div className="flex flex-wrap items-center gap-2">
-				<Button size="sm" tabIndex={-1}>
-					主要按钮
-				</Button>
-				<span className="inline-flex h-6 items-center rounded-full bg-selected px-2.5 text-xs text-selected-foreground">
-					已选中
-				</span>
-			</div>
-		</div>
+		<HsvColorPicker
+			{...props}
+			id={undefined}
+			hexInputProps={{ ...control, ...hexInputProps }}
+		/>
 	);
 }
 
-/**
- * 自定义主题：取色或输入十六进制种子色，实时预览浅色与深色下的生成结果后应用。
- *
- * @remarks 每次打开都从当前生效的主题开始；预览与应用都只用规范化后的种子色，任何种子都会被调到满足对比度门槛。
- */
+/** 种子只做格式规范化，实际明暗配色与可读性由现有色阶生成器求解。 */
 export function CustomThemeDialog({ open, onOpenChange }: CustomThemeDialogProps) {
 	const { preset, custom, applyCustomTheme } = useThemeSwitcher("instant");
-	const initialSeed = custom?.seed ?? THEME_PRESETS[preset].seed;
-	const [draft, setDraft] = useState(initialSeed);
-	const [wasOpen, setWasOpen] = useState(open);
-	// 每次打开时丢弃上次未应用的输入
-	if (open !== wasOpen) {
-		setWasOpen(open);
-		if (open) setDraft(initialSeed);
-	}
-	const theme = parseDraft(draft);
-	const previewSeed = theme?.seed ?? initialSeed;
+	const draft = useCustomThemeDraft(open, custom?.seed ?? THEME_PRESETS[preset].seed);
+	const pickerHexId = useId();
+	const css = useMemo(
+		() => generateThemeCss(draft.theme, `[data-theme="${CUSTOM_PREVIEW_SCOPE}"]`),
+		[draft.theme],
+	);
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -97,28 +61,91 @@ export function CustomThemeDialog({ open, onOpenChange }: CustomThemeDialogProps
 					</DialogDescription>
 				</DialogHeader>
 				<DialogBody className="flex flex-col gap-4">
-					<style>
-						{generateThemeCss(
-							normalizeTheme({ version: 1, seed: previewSeed }),
-							`[data-theme="${PREVIEW_SCOPE}"]`,
-						)}
-					</style>
-					<div className="flex items-start gap-3">
-						<input
-							type="color"
-							aria-label="选择种子色"
-							value={previewSeed}
-							onChange={(event) => setDraft(event.target.value)}
-							className="mt-6.5 size-10 shrink-0 cursor-pointer rounded-lg border border-input bg-transparent p-0.5"
-						/>
+					<style>{css}</style>
+					<div className="flex items-start gap-3 p-1">
+						<Popover open={draft.pickerOpen} onOpenChange={draft.setPickerOpen}>
+							<PopoverTrigger asChild>
+								<Button
+									variant="outline"
+									size="icon"
+									aria-label="打开种子色取色面板"
+									className="mt-6.5 shrink-0"
+								>
+									<span
+										aria-hidden="true"
+										className="size-6 rounded-md border border-edge-hairline"
+										style={{ backgroundColor: draft.theme.seed }}
+									/>
+								</Button>
+							</PopoverTrigger>
+							<PopoverContent
+								aria-label="种子色取色面板"
+								className="max-h-(--radix-popover-content-available-height) w-72 overflow-y-auto p-4"
+								collisionPadding={12}
+							>
+								<div
+									role="group"
+									aria-label="四季种子色"
+									className="mb-3 grid grid-cols-4 gap-1 p-1"
+								>
+									{Object.entries(THEME_PRESETS).map(([season, theme]) => (
+										<Button
+											key={season}
+											variant="ghost"
+											aria-label={`${theme.label} · ${theme.name}`}
+											aria-pressed={draft.theme.seed === theme.seed}
+											className="h-auto flex-col gap-1 px-1 py-2"
+											onClick={() => draft.pickColor(theme.seed)}
+										>
+											<span
+												aria-hidden="true"
+												className="size-6 rounded-full border border-edge-hairline"
+												style={{ backgroundColor: theme.seed }}
+											/>
+											<span className="text-xs">{theme.name}</span>
+										</Button>
+									))}
+								</div>
+								<div className="p-1">
+									<Field
+										label="面板种子色"
+										htmlFor={pickerHexId}
+										error={
+											draft.showError ? "请输入 #rgb 或 #rrggbb" : undefined
+										}
+									>
+										<SeedPanel
+											value={draft.theme.seed}
+											originalValue={draft.originalSeed}
+											onChange={draft.pickColor}
+											onValidityChange={draft.setValidity}
+											hexInputProps={{
+												id: pickerHexId,
+												name: "theme-seed",
+												onInput: (event) =>
+													draft.changeDraft(event.currentTarget.value),
+												onBlur: draft.validate,
+												onKeyDown: (event) => {
+													if (event.key === "Enter") draft.validate();
+												},
+											}}
+											onEyeDropperError={() =>
+												toast.error("屏幕取色失败，请重试或输入颜色")
+											}
+										/>
+									</Field>
+								</div>
+							</PopoverContent>
+						</Popover>
 						<Field
 							label="种子色"
 							className="flex-1"
-							error={theme ? undefined : "请输入 #rgb 或 #rrggbb"}
+							error={draft.showError ? "请输入 #rgb 或 #rrggbb" : undefined}
 						>
 							<Input
-								value={draft}
-								onChange={(event) => setDraft(event.target.value)}
+								value={draft.draft}
+								onChange={(event) => draft.changeDraft(event.target.value)}
+								onBlur={draft.validate}
 								spellCheck={false}
 								autoComplete="off"
 								className="font-mono"
@@ -130,8 +157,8 @@ export function CustomThemeDialog({ open, onOpenChange }: CustomThemeDialogProps
 						aria-label="生成结果预览"
 						className="grid gap-3 sm:grid-cols-2"
 					>
-						<PreviewCard appearance="light" />
-						<PreviewCard appearance="dark" />
+						<CustomThemePreview appearance="light" seed={draft.theme.seed} />
+						<CustomThemePreview appearance="dark" seed={draft.theme.seed} />
 					</div>
 				</DialogBody>
 				<DialogFooter>
@@ -139,11 +166,11 @@ export function CustomThemeDialog({ open, onOpenChange }: CustomThemeDialogProps
 						取消
 					</Button>
 					<Button
-						disabled={!theme}
+						disabled={!draft.valid}
 						onClick={() => {
-							if (!theme) return;
+							if (!draft.valid) return;
 							onOpenChange(false);
-							void applyCustomTheme(theme);
+							void applyCustomTheme(draft.theme);
 						}}
 					>
 						应用
