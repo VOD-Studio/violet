@@ -11,4 +11,8 @@ export { type ButtonVariantProps, buttonVariants } from "./components/button/sty
 export { type CheckboxVariantProps, checkboxVariants } from "./components/checkbox/styles";
 export { type InputVariantProps, inputVariants } from "./components/input/styles";
 export { type KbdVariantProps, kbdVariants } from "./components/kbd/styles";
+export {
+	type NumberInputVariantProps,
+	numberInputVariants,
+} from "./components/number-input/styles";
 export { type TextareaVariantProps, textareaVariants } from "./components/textarea/styles";

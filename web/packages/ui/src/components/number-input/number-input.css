@@ -1,0 +1,121 @@
+@import "../input/input.css";
+
+@layer components {
+	.v-number-input__input {
+		font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+		font-size: calc(var(--v-input-fs) - 1px);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.v-number-input--sides {
+		gap: 0;
+		padding-inline: 4px;
+	}
+
+	.v-number-input--sides .v-number-input__input {
+		text-align: center;
+	}
+
+	.v-number-input__step {
+		position: relative;
+		display: inline-flex;
+		flex: none;
+		align-items: center;
+		justify-content: center;
+		inline-size: max(32px, calc(var(--v-input-h) - 8px));
+		block-size: 100%;
+		padding: 0;
+		border: 0;
+		border-radius: 999px;
+		background: transparent;
+		color: var(--muted-foreground);
+		cursor: pointer;
+		touch-action: none;
+		user-select: none;
+		transition: color 120ms ease-out;
+	}
+
+	.v-number-input__step::before {
+		position: absolute;
+		inset-block: 4px;
+		inset-inline-start: 50%;
+		inline-size: calc(var(--v-input-h) - 8px);
+		transform: translateX(-50%);
+		border-radius: inherit;
+		background: transparent;
+		content: "";
+		transition: background-color 120ms ease-out;
+	}
+
+	.v-number-input__step svg {
+		position: relative;
+		inline-size: 14px;
+		block-size: 14px;
+		pointer-events: none;
+	}
+
+	@media (hover: hover) {
+		.v-number-input__step:enabled:hover {
+			color: var(--foreground);
+		}
+
+		.v-number-input__step:enabled:hover::before {
+			background: var(--secondary);
+		}
+	}
+
+	.v-number-input__step:enabled:active::before {
+		background: color-mix(in oklab, var(--secondary) 85%, var(--foreground));
+		transition-duration: 60ms;
+	}
+
+	.v-number-input__step:disabled {
+		opacity: 0.35;
+		cursor: not-allowed;
+	}
+
+	.v-number-input__stack {
+		display: flex;
+		flex: none;
+		flex-direction: column;
+		align-self: stretch;
+		inline-size: 32px;
+		margin-inline-end: -6px;
+		padding-block: 4px;
+	}
+
+	.v-number-input__stack .v-number-input__step {
+		flex: 1;
+		inline-size: 100%;
+		min-block-size: 0;
+		block-size: 0;
+		border-radius: 6px;
+	}
+
+	.v-number-input__stack .v-number-input__step::before {
+		inset: 0;
+		inline-size: auto;
+		transform: none;
+	}
+
+	.v-number-input--sides:is(.v-input-control--underline, .v-input-control--plain) {
+		padding-inline: 2px;
+	}
+
+	@media (pointer: coarse) {
+		.v-number-input__step {
+			inline-size: max(36px, calc(var(--v-input-h) - 8px));
+		}
+
+		.v-number-input__stack {
+			inline-size: 36px;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-number-input__step,
+		.v-number-input__step::before {
+			transition: none;
+		}
+	}
+}

@@ -167,6 +167,11 @@
 			"import": "./src/components/morphing-popover/index.ts",
 			"default": "./src/components/morphing-popover/index.ts"
 		},
+		"./number-input": {
+			"types": "./src/components/number-input/index.ts",
+			"import": "./src/components/number-input/index.ts",
+			"default": "./src/components/number-input/index.ts"
+		},
 		"./otp": {
 			"types": "./src/components/otp/index.ts",
 			"import": "./src/components/otp/index.ts",
@@ -344,6 +349,7 @@
 		"./components/link-card.css": "./src/components/link-card/link-card.css",
 		"./components/list-highlight.css": "./src/components/list-highlight/list-highlight.css",
 		"./components/morphing-popover.css": "./src/components/morphing-popover/morphing-popover.css",
+		"./components/number-input.css": "./src/components/number-input/number-input.css",
 		"./components/overlay-scroll.css": "./src/components/overlay-scroll/overlay-scroll.css",
 		"./components/popover.css": "./src/components/popover/popover.css",
 		"./components/prompt-dialog.css": "./src/components/prompt-dialog/prompt-dialog.css",
@@ -538,6 +544,11 @@
 				"import": "./dist/components/morphing-popover/index.js",
 				"default": "./dist/components/morphing-popover/index.js"
 			},
+			"./number-input": {
+				"types": "./dist/components/number-input/index.d.ts",
+				"import": "./dist/components/number-input/index.js",
+				"default": "./dist/components/number-input/index.js"
+			},
 			"./otp": {
 				"types": "./dist/components/otp/index.d.ts",
 				"import": "./dist/components/otp/index.js",
@@ -715,6 +726,7 @@
 			"./components/link-card.css": "./dist/components/link-card.css",
 			"./components/list-highlight.css": "./dist/components/list-highlight.css",
 			"./components/morphing-popover.css": "./dist/components/morphing-popover.css",
+			"./components/number-input.css": "./dist/components/number-input.css",
 			"./components/overlay-scroll.css": "./dist/components/overlay-scroll.css",
 			"./components/popover.css": "./dist/components/popover.css",
 			"./components/prompt-dialog.css": "./dist/components/prompt-dialog.css",
