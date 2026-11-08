@@ -59,6 +59,16 @@ function DatePickerStage({ state }: ExhibitRenderProps) {
 							collisionBoundary={container}
 						/>
 					))}
+					{(["filled", "outline", "underline", "plain"] as const).map((variant) => (
+						<DateRangePicker
+							key={`range-${variant}`}
+							aria-label={`${variant} 区间`}
+							variant={variant}
+							defaultValue={{ start: "2026-10-28", end: "2026-11-03" }}
+							container={container}
+							collisionBoundary={container}
+						/>
+					))}
 				</div>
 			) : state === "sizes" ? (
 				<div className="flex w-80 flex-col gap-4">
@@ -148,7 +158,7 @@ export const datePickerExhibit: Exhibit = {
 	units: ["date-picker"],
 	zone: "stage",
 	category: "form",
-	footprint: { width: 800, height: 640 },
+	footprint: { width: 800, height: 720 },
 	states: [
 		{ id: "date", label: "单日期 · 展开" },
 		{ id: "range", label: "范围 · 双月与预设" },
