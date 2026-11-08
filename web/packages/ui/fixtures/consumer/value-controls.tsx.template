@@ -1,0 +1,131 @@
+import { useState, type FormEvent } from "react";
+import {
+	Button,
+	ColorSwatch,
+	DatePicker,
+	DateRangePicker,
+	Field,
+	HsvColorPicker,
+	InputOTP,
+	InputOTPGroup,
+	InputOTPSlot,
+	NumberInput,
+	ResendButton,
+	Slider,
+	type DateRange,
+} from "@violet/ui";
+import { DatePicker as LeafDatePicker } from "@violet/ui/date-picker";
+import { NumberInput as LeafNumberInput } from "@violet/ui/number-input";
+import { Slider as LeafSlider } from "@violet/ui/slider";
+import { HsvColorPicker as LeafColorPicker } from "@violet/ui/color-picker";
+import { InputOTP as LeafOTP } from "@violet/ui/otp";
+import { ResendButton as LeafResendButton } from "@violet/ui/resend-button";
+
+interface PreviewState {
+	disabled: boolean;
+	readOnly: boolean;
+}
+
+function DateControls({ disabled, readOnly }: PreviewState) {
+	const [range, setRange] = useState<DateRange>({ start: "2026-11-03", end: "2026-11-07" });
+	return (
+		<section aria-label="日期选择">
+			<Field label="发布日期">
+				<DatePicker name="published" defaultValue="2026-11-03" min="2026-10-15" max="2026-11-30" disabled={disabled} readOnly={readOnly} />
+			</Field>
+			<Field label="发布时间">
+				<LeafDatePicker name="scheduled" mode="datetime" defaultValue="2026-11-03T09:30" disabled={disabled} readOnly={readOnly} />
+			</Field>
+			<Field label="统计区间">
+				<DateRangePicker name="period" value={range} onChange={setRange} disabled={disabled} readOnly={readOnly} />
+			</Field>
+			<output id="date-range-value">{JSON.stringify(range)}</output>
+		</section>
+	);
+}
+
+function NumericControls({ disabled, readOnly }: PreviewState) {
+	const [volume, setVolume] = useState([40]);
+	const [range, setRange] = useState([20, 80]);
+	const [committed, setCommitted] = useState<number | null>(1.5);
+	return (
+		<section aria-label="数字与滑块">
+			<Field label="价格" hint="步长 0.1，最多两位小数">
+				<NumberInput name="price" defaultValue={1.5} min={0} max={100} step={0.1} precision={2} controls="stacked" leading="¥" disabled={disabled} readOnly={readOnly} onValueCommit={setCommitted} />
+			</Field>
+			<output id="number-committed">{committed === null ? "未设置" : committed}</output>
+			<Field label="音量">
+				<Slider name="volume" value={volume} onValueChange={setVolume} min={0} max={100} thumbLabels={["音量"]} formatValue={(value) => `${value}%`} disabled={disabled} readOnly={readOnly} />
+			</Field>
+			<LeafNumberInput aria-label="精确音量" value={volume[0]} min={0} max={100} controls="none" onChange={(event) => setVolume([Number(event.currentTarget.value)])} disabled={disabled} readOnly={readOnly} trailing="%" />
+			<Field label="阅读区间">
+				<LeafSlider name="reading" value={range} onValueChange={setRange} min={0} max={100} thumbLabels={["起点", "终点"]} disabled={disabled} readOnly={readOnly} />
+			</Field>
+			<Slider aria-label="装饰密度" defaultValue={[50]} min={0} max={100} marks={[{ value: 0, label: "无" }, { value: 25, label: "稀" }, { value: 50, label: "适中" }, { value: 75, label: "密" }, { value: 100, label: "满" }]} disabled={disabled} readOnly={readOnly} />
+			<output id="slider-values">{JSON.stringify({ volume, range })}</output>
+		</section>
+	);
+}
+
+function ColorControls({ disabled, readOnly }: PreviewState) {
+	const [color, setColor] = useState("#CC6633");
+	const [leafColor, setLeafColor] = useState("#2F9E7A");
+	return (
+		<section aria-label="取色器">
+			<HsvColorPicker aria-label="主色面板" value={color} onChange={setColor} disabled={disabled} readOnly={readOnly} hexInputProps={{ "aria-label": "主色十六进制" }} />
+			<ColorSwatch value={color} onChange={setColor} onClear={() => setColor("")} disabled={disabled} readOnly={readOnly} recentColors={["#1D7286", "#B0365A"]} />
+			<LeafColorPicker aria-label="叶子入口取色" value={leafColor} onChange={setLeafColor} disabled={disabled} readOnly={readOnly} hexInputProps={{ "aria-label": "叶子十六进制" }} />
+			<output id="color-value">{color}</output>
+		</section>
+	);
+}
+
+function VerificationControls({ disabled, readOnly }: PreviewState) {
+	const [code, setCode] = useState("");
+	const [status, setStatus] = useState<"idle" | "invalid" | "valid">("idle");
+	const [sent, setSent] = useState(0);
+	const [email, setEmail] = useState("first@example.com");
+	return (
+		<section aria-label="验证码与重发">
+			<Field label="邮箱验证码" error={status === "invalid" ? "验证码不正确" : undefined} success={status === "valid" ? "验证通过" : undefined}>
+				<InputOTP name="verification" value={code} onChange={(next) => { setCode(next); if (next.length > 0) setStatus("idle"); }} onComplete={(next) => setStatus(next === "482916" ? "valid" : "invalid")} invalid={status === "invalid"} valid={status === "valid"} maxLength={6} disabled={disabled} readOnly={readOnly}>
+					<InputOTPGroup>{Array.from({ length: 6 }, (_, index) => <InputOTPSlot key={index} index={index} />)}</InputOTPGroup>
+				</InputOTP>
+			</Field>
+			<ResendButton id="resend-success" resetKey={email} cooldownSeconds={3} disabled={disabled} onResend={async () => { setSent((value) => value + 1); return true; }} />
+			<LeafResendButton id="resend-failed" label="发送失败示例" cooldownSeconds={3} disabled={disabled} onResend={async () => false} />
+			<Button id="verification-email" onClick={() => setEmail((value) => value === "first@example.com" ? "second@example.com" : "first@example.com")}>切换邮箱</Button>
+			<output id="resend-count">{sent}</output>
+			<output id="verification-value">{code}</output>
+			<Field label="叶子入口验证码"><LeafOTP name="leaf-code" maxLength={6} defaultValue="123" disabled={disabled} readOnly={readOnly} /></Field>
+		</section>
+	);
+}
+
+export function ValueControlsPreview() {
+	const [disabled, setDisabled] = useState(false);
+	const [readOnly, setReadOnly] = useState(false);
+	const [submitted, setSubmitted] = useState("");
+	const submit = (event: FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+		setSubmitted(JSON.stringify(Array.from(new FormData(event.currentTarget).entries())));
+	};
+	return (
+		<main className="value-controls-page">
+			<h1>日期与取值 · 独立安装包</h1>
+			<div className="input-controls">
+				<Button id="values-disabled" aria-pressed={disabled} onClick={() => setDisabled(!disabled)}>禁用</Button>
+				<Button id="values-readonly" aria-pressed={readOnly} onClick={() => setReadOnly(!readOnly)}>只读</Button>
+				<Button id="values-theme" onClick={() => document.documentElement.classList.toggle("dark")}>切换明暗</Button>
+			</div>
+			<form id="value-controls-form" onSubmit={submit}>
+				<DateControls disabled={disabled} readOnly={readOnly} />
+				<NumericControls disabled={disabled} readOnly={readOnly} />
+				<ColorControls disabled={disabled} readOnly={readOnly} />
+				<VerificationControls disabled={disabled} readOnly={readOnly} />
+				<div className="input-controls"><Button type="submit">读取表单</Button><Button type="reset" variant="secondary">重置表单</Button></div>
+			</form>
+			<output id="values-submitted">{submitted}</output>
+		</main>
+	);
+}

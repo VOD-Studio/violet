@@ -1,0 +1,68 @@
+import assert from "node:assert/strict";
+import { renderToString } from "react-dom/server";
+import { DatePicker, DateRangePicker, NumberInput, Slider, HsvColorPicker, InputOTP, InputOTPGroup, InputOTPSlot, ResendButton } from "@violet/ui";
+import { DatePicker as LeafDatePicker, DateRangePicker as LeafDateRangePicker } from "@violet/ui/date-picker";
+import { NumberInput as LeafNumberInput } from "@violet/ui/number-input";
+import { Slider as LeafSlider } from "@violet/ui/slider";
+import { HsvColorPicker as LeafColorPicker } from "@violet/ui/color-picker";
+import { InputOTP as LeafOTP, InputOTPGroup as LeafOTPGroup, InputOTPSlot as LeafOTPSlot } from "@violet/ui/otp";
+import { ResendButton as LeafResendButton } from "@violet/ui/resend-button";
+
+const date = renderToString(<DatePicker name="published" defaultValue="2026-11-03" aria-label="发布日期" />);
+assert.match(date, /<input\b/);
+assert.match(date, /name="published"/);
+assert.match(date, /value="2026-11-03"/);
+assert.match(date, /aria-label="发布日期"/);
+const datetime = renderToString(<LeafDatePicker mode="datetime" defaultValue="2026-11-03T09:30" name="scheduled" />);
+assert.match(datetime, /name="scheduled"/);
+assert.match(datetime, /09:30/);
+for (const Component of [DateRangePicker, LeafDateRangePicker]) {
+	const range = renderToString(<Component name="period" defaultValue={{ start: "2026-11-03", end: "2026-11-07" }} />);
+	assert.match(range, /name="period\.start"/);
+	assert.match(range, /name="period\.end"/);
+	assert.match(range, /2026-11-03/);
+	assert.match(range, /2026-11-07/);
+}
+
+for (const Component of [NumberInput, LeafNumberInput]) {
+	const amount = renderToString(<Component name="amount" defaultValue={1.5} min={0} max={100} step={0.1} precision={2} aria-label="金额" />);
+	assert.match(amount, /role="spinbutton"/);
+	assert.match(amount, /type="text"/);
+	assert.match(amount, /inputMode="decimal"|inputmode="decimal"/);
+	assert.match(amount, /aria-valuemin="0"/);
+	assert.match(amount, /aria-valuemax="100"/);
+	assert.match(amount, /name="amount"/);
+	assert.match(amount, /value="1\.50"/);
+}
+for (const Component of [Slider, LeafSlider]) {
+	const range = renderToString(<Component defaultValue={[20, 80]} min={0} max={100} thumbLabels={["起点", "终点"]} formatValue={(value) => `${value} 分钟`} />);
+	assert.equal((range.match(/role="slider"/g) ?? []).length, 2);
+	assert.match(range, /aria-valuemin="0"[^>]*aria-valuemax="80"/);
+	assert.match(range, /aria-valuemin="20"[^>]*aria-valuemax="100"/);
+	assert.match(range, /aria-label="起点"/);
+	assert.match(range, /aria-label="终点"/);
+	assert.match(range, /aria-valuetext="20 分钟"/);
+}
+for (const Component of [HsvColorPicker, LeafColorPicker]) {
+	const color = renderToString(<Component value="#cc6633" onChange={() => {}} hexInputProps={{ "aria-label": "十六进制颜色", name: "accent" }} />);
+	assert.match(color, /aria-label="饱和度与明度"/);
+	assert.match(color, /aria-label="色相"/);
+	assert.equal((color.match(/role="slider"/g) ?? []).length, 2);
+	assert.match(color, /name="accent"/);
+	assert.match(color, /value="CC6633"/);
+}
+const code = renderToString(<InputOTP name="verification" defaultValue="482" maxLength={6}><InputOTPGroup>{Array.from({ length: 6 }, (_, index) => <InputOTPSlot key={index} index={index} />)}</InputOTPGroup></InputOTP>);
+assert.match(code, /role="group"/);
+assert.equal((code.match(/inputMode="numeric"|inputmode="numeric"/g) ?? []).length, 6);
+assert.match(code, /aria-label="第\s*1\s*位"/);
+assert.match(code, /aria-label="第\s*6\s*位"/);
+assert.match(code, /name="verification"/);
+assert.match(code, /value="482"/);
+const leafCode = renderToString(<LeafOTP name="leaf-code" maxLength={6}><LeafOTPGroup>{Array.from({ length: 6 }, (_, index) => <LeafOTPSlot key={index} index={index} />)}</LeafOTPGroup></LeafOTP>);
+assert.equal((leafCode.match(/inputMode="numeric"|inputmode="numeric"/g) ?? []).length, 6);
+for (const Component of [ResendButton, LeafResendButton]) {
+	const disabled = renderToString(<Component onResend={() => true} disabled />);
+	assert.match(disabled, /<button\b/);
+	assert.match(disabled, /disabled=""/);
+}
+console.log("Installed date, number, slider, color, six-input OTP and resend root/leaf SSR semantics passed.");
