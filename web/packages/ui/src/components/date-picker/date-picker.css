@@ -210,6 +210,8 @@
 		position: absolute;
 		z-index: -2;
 		inset: 2px 0;
+		background: transparent;
+		transition: background-color 140ms ease-out;
 		content: "";
 	}
 	.v-date-picker__day[data-outside] {
@@ -394,38 +396,71 @@
 	}
 	.v-date-picker__range-times {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 20px;
+		grid-template-columns: 252px 252px;
+		column-gap: 28px;
 		margin-block-start: 12px;
 		padding-block-start: 12px;
 		border-block-start: 1px solid var(--border);
 	}
+	.v-date-picker__range-times[data-presets] {
+		padding-inline-start: 148px;
+	}
 	.v-date-picker__endpoint-time {
 		display: grid;
-		grid-template-columns: auto 1fr;
-		align-items: center;
-		column-gap: 16px;
+		gap: 6px;
+	}
+	.v-date-picker__endpoint-head {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		padding-inline: 4px;
 		font-size: 0.8125rem;
 	}
-	.v-date-picker__endpoint-time > span:first-child {
+	.v-date-picker__endpoint-head > span {
 		color: var(--muted-foreground);
 	}
+	.v-date-picker__endpoint-head > strong {
+		font:
+			600 0.875rem ui-monospace,
+			SFMono-Regular,
+			Menlo,
+			monospace;
+		font-variant-numeric: tabular-nums;
+	}
 	.v-date-picker__endpoint-time .v-date-picker__time {
-		justify-self: end;
+		inline-size: 100%;
 	}
 	.v-date-picker__endpoint-time .v-date-picker__time-column {
-		inline-size: 64px;
+		flex: 1;
+		inline-size: auto;
 	}
 	.v-date-picker__endpoint-time .v-date-picker__time-label {
 		block-size: 24px;
 		line-height: 24px;
 	}
 	.v-date-picker__range-times .v-date-picker__time-scroll {
-		block-size: 108px;
+		block-size: 112px;
+	}
+	.v-date-picker__time-empty {
+		margin: 0;
+		padding-block: 28px;
+		color: var(--muted-foreground);
+		font-size: 0.75rem;
+		text-align: center;
+	}
+	.v-date-picker__viewport {
+		overflow-x: clip;
 	}
 	.v-date-picker__days,
 	.v-date-picker__months {
 		animation: v-date-picker-month 180ms ease-out;
+	}
+	/* 换月沿时间方向平移 20px 并淡入，只表达前后月，不做整页滑动 */
+	.v-date-picker__days[data-direction="next"] {
+		animation: v-date-picker-next 240ms cubic-bezier(0.32, 0.72, 0, 1);
+	}
+	.v-date-picker__days[data-direction="prev"] {
+		animation: v-date-picker-prev 240ms cubic-bezier(0.32, 0.72, 0, 1);
 	}
 	/* 退场副本是整块克隆，里面的入场动画会从透明重新开始，叠在整体淡出上形成闪烁。 */
 	.v-picker-exit .v-date-picker__days,
@@ -453,10 +488,13 @@
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.v-date-picker__days,
+		.v-date-picker__days[data-direction],
 		.v-date-picker__months {
 			animation: none;
 		}
 		.v-date-picker__day::before,
+		.v-date-picker__day::after,
+		.v-date-picker > .v-date-picker__indicator,
 		.v-date-picker__title svg {
 			transition: none;
 		}
@@ -467,6 +505,26 @@
 		}
 		to {
 			opacity: 1;
+		}
+	}
+	@keyframes v-date-picker-next {
+		from {
+			opacity: 0;
+			transform: translateX(20px);
+		}
+		to {
+			opacity: 1;
+			transform: none;
+		}
+	}
+	@keyframes v-date-picker-prev {
+		from {
+			opacity: 0;
+			transform: translateX(-20px);
+		}
+		to {
+			opacity: 1;
+			transform: none;
 		}
 	}
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { useRef } from "react";
 import {
 	addDays,
 	addMonths,
@@ -47,6 +48,11 @@ export function Calendar({
 }: CalendarProps) {
 	const today = new Date();
 	const first = startOfMonth(month);
+	const monthKey = formatPickerValue(first, "date");
+	const last = useRef<{ key: string; direction?: "next" | "prev" }>({ key: monthKey });
+	if (last.current.key !== monthKey) {
+		last.current = { key: monthKey, direction: monthKey > last.current.key ? "next" : "prev" };
+	}
 	const start = addDays(first, -((first.getDay() + 6) % 7));
 	const rangeEnd = preview ?? range?.end;
 	const rangeStart = range?.start;
@@ -129,99 +135,116 @@ export function Calendar({
 					))}
 				</div>
 			) : (
-				<div className="v-date-picker__days" key={formatPickerValue(first, "date")}>
-					<div className="v-date-picker__week" aria-hidden>
-						{["一", "二", "三", "四", "五", "六", "日"].map((day) => (
-							<span key={day}>{day}</span>
-						))}
-					</div>
+				<div className="v-date-picker__viewport">
 					<div
-						role="grid"
-						aria-label={`${month.getFullYear()} 年 ${month.getMonth() + 1} 月`}
-						className="v-date-picker__grid"
-						data-preview={preview ? "" : undefined}
-						onPointerLeave={() => onPreview?.(null)}
+						className="v-date-picker__days"
+						key={monthKey}
+						data-direction={last.current.direction}
 					>
-						{Array.from({ length: 6 }, (_, week) => (
-							<div role="row" tabIndex={-1} className="v-date-picker__row" key={week}>
-								{Array.from({ length: 7 }, (_, weekday) => {
-									const day = addDays(start, week * 7 + weekday);
-									const key = formatPickerValue(day, "date");
-									const inMonth = day.getMonth() === month.getMonth();
-									const disabled =
-										day.getFullYear() < 1 ||
-										day.getFullYear() > 9999 ||
-										isDisabled(day);
-									const endpoint =
-										inMonth &&
-										(sameDay(day, range?.start) ||
-											(!preview && sameDay(day, range?.end)));
-									const pressed = inMonth && (sameDay(day, selected) || endpoint);
-									return (
-										<div
-											role="gridcell"
-											tabIndex={-1}
-											id={inMonth ? `${id}-${key}` : undefined}
-											aria-label={fullDateName(day)}
-											aria-selected={pressed}
-											key={key}
-										>
-											<button
-												type="button"
+						<div className="v-date-picker__week" aria-hidden>
+							{["一", "二", "三", "四", "五", "六", "日"].map((day) => (
+								<span key={day}>{day}</span>
+							))}
+						</div>
+						<div
+							role="grid"
+							aria-label={`${month.getFullYear()} 年 ${month.getMonth() + 1} 月`}
+							className="v-date-picker__grid"
+							data-preview={preview ? "" : undefined}
+							onPointerLeave={() => onPreview?.(null)}
+						>
+							{Array.from({ length: 6 }, (_, week) => (
+								<div
+									role="row"
+									tabIndex={-1}
+									className="v-date-picker__row"
+									key={week}
+								>
+									{Array.from({ length: 7 }, (_, weekday) => {
+										const day = addDays(start, week * 7 + weekday);
+										const key = formatPickerValue(day, "date");
+										const inMonth = day.getMonth() === month.getMonth();
+										const disabled =
+											day.getFullYear() < 1 ||
+											day.getFullYear() > 9999 ||
+											isDisabled(day);
+										const endpoint =
+											inMonth &&
+											(sameDay(day, range?.start) ||
+												(!preview && sameDay(day, range?.end)));
+										const pressed =
+											inMonth && (sameDay(day, selected) || endpoint);
+										return (
+											<div
+												role="gridcell"
 												tabIndex={-1}
+												id={inMonth ? `${id}-${key}` : undefined}
 												aria-label={fullDateName(day)}
-												aria-pressed={pressed}
-												aria-current={
-													sameDay(day, today) ? "date" : undefined
-												}
-												disabled={disabled}
-												className="v-date-picker__day"
-												data-outside={!inMonth || undefined}
-												data-today={
-													(inMonth && sameDay(day, today)) || undefined
-												}
-												data-selected={pressed || undefined}
-												data-active={
-													(inMonth && keyboard && sameDay(day, active)) ||
-													undefined
-												}
-												data-start={
-													(inMonth &&
-														firstKey === key &&
-														lastKey !== key) ||
-													undefined
-												}
-												data-end={
-													(inMonth &&
-														lastKey === key &&
-														firstKey !== key) ||
-													undefined
-												}
-												data-middle={
-													(inMonth &&
-														firstKey &&
-														lastKey &&
-														key > firstKey &&
-														key < lastKey) ||
-													undefined
-												}
-												data-preview-end={
-													(inMonth &&
-														preview &&
-														sameDay(day, preview) &&
-														!sameDay(day, range?.start)) ||
-													undefined
-												}
-												onPointerEnter={() => !disabled && onPreview?.(day)}
-												onClick={() => onSelect(day)}
+												aria-selected={pressed}
+												key={key}
 											>
-												{day.getDate()}
-											</button>
-										</div>
-									);
-								})}
-							</div>
-						))}
+												<button
+													type="button"
+													tabIndex={-1}
+													aria-label={fullDateName(day)}
+													aria-pressed={pressed}
+													aria-current={
+														sameDay(day, today) ? "date" : undefined
+													}
+													disabled={disabled}
+													className="v-date-picker__day"
+													data-outside={!inMonth || undefined}
+													data-today={
+														(inMonth && sameDay(day, today)) ||
+														undefined
+													}
+													data-selected={pressed || undefined}
+													data-active={
+														(inMonth &&
+															keyboard &&
+															sameDay(day, active)) ||
+														undefined
+													}
+													data-start={
+														(inMonth &&
+															firstKey === key &&
+															lastKey !== key) ||
+														undefined
+													}
+													data-end={
+														(inMonth &&
+															lastKey === key &&
+															firstKey !== key) ||
+														undefined
+													}
+													data-middle={
+														(inMonth &&
+															firstKey &&
+															lastKey &&
+															key > firstKey &&
+															key < lastKey) ||
+														undefined
+													}
+													data-preview-end={
+														(inMonth &&
+															preview &&
+															sameDay(day, preview) &&
+															!sameDay(day, range?.start)) ||
+														undefined
+													}
+													onPointerEnter={() =>
+														!disabled && onPreview?.(day)
+													}
+													onClick={() => onSelect(day)}
+												>
+													{day.getDate()}
+												</button>
+											</div>
+										);
+									})}
+								</div>
+							))}
+						</div>
 					</div>
 				</div>
 			)}

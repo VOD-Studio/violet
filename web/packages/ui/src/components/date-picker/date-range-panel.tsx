@@ -102,15 +102,24 @@ export function DateRangePanel({ state, props, panelId, calendarId }: DateRangeP
 					</div>
 				</div>
 				{mode === "datetime" && (
-					<div className="v-date-picker__range-times">
+					<div
+						className="v-date-picker__range-times"
+						data-presets={options.length > 0 || undefined}
+					>
 						{(["start", "end"] as const).map((side) => {
 							const date = side === "start" ? startDate : endDate;
+							const label = side === "start" ? "开始时间" : "结束时间";
 							return (
 								<div key={side} className="v-date-picker__endpoint-time">
-									<span>{side === "start" ? "开始时间" : "结束时间"}</span>
+									<div className="v-date-picker__endpoint-head">
+										<span>{label}</span>
+										<strong>
+											{date ? formatPickerValue(date, "time") : "未设置"}
+										</strong>
+									</div>
 									{date ? (
 										<TimeColumns
-											label={side === "start" ? "开始时间" : "结束时间"}
+											label={label}
 											value={formatPickerValue(date, "time")}
 											isDisabled={(time) => {
 												const next = parsePickerValue(
@@ -132,7 +141,7 @@ export function DateRangePanel({ state, props, panelId, calendarId }: DateRangeP
 											}}
 										/>
 									) : (
-										<span className="v-date-picker__summary">先选择日期</span>
+										<p className="v-date-picker__time-empty">先选择日期</p>
 									)}
 								</div>
 							);
