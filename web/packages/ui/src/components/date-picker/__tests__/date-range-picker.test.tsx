@@ -116,7 +116,7 @@ describe("DateRangePicker 端点与预览", () => {
 		expect(end().value).toBe("");
 	});
 
-	it("受控更新后端点与表单保持一致，取消临时选择不提交", () => {
+	it("受控更新后端点与表单保持一致，Esc 放弃临时选择不提交", () => {
 		function ControlledRange() {
 			const [value, setValue] = useState<DateRange>({
 				start: "2026-11-03",
@@ -127,7 +127,9 @@ describe("DateRangePicker 端点与预览", () => {
 		render(<ControlledRange />);
 		fireEvent.focus(start());
 		fireEvent.click(novemberDay("2026 年 11 月 10 日 星期二"));
-		fireEvent.click(screen.getByRole("button", { name: "取消" }));
+		expect(document.querySelector(".v-date-picker__footer")).toBeNull();
+		fireEvent.keyDown(start(), { key: "Escape" });
+		expect(screen.queryByRole("dialog")).toBeNull();
 		expect(start().value).toBe("2026-11-03");
 		expect(end().value).toBe("2026-11-07");
 		fireEvent.focus(end());

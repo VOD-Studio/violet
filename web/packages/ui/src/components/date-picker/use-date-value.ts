@@ -141,18 +141,13 @@ export function useDateValue(props: DatePickerProps): DateValueState {
 	};
 	const now = () => {
 		const current = new Date();
-		const next = formatPickerValue(current, mode);
 		if (!isAllowed(current, constraints)) return;
-		if (mode === "date") {
-			commit(next);
-			picker.setOpen(false);
-		} else {
-			setPending(next);
-			setText(next);
-			setDirty(false);
-			picker.setActive(current);
-			picker.setMonth(startOfMonth(current));
-		}
+		const next = formatPickerValue(current, mode);
+		setPending(next);
+		setText(next);
+		setDirty(false);
+		picker.setActive(current);
+		picker.setMonth(startOfMonth(current));
 	};
 	return {
 		picker,

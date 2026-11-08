@@ -2,7 +2,7 @@
 
 import { PickerPanel } from "../../lib/picker-panel";
 import { ListHighlight, ListHighlightItem } from "../list-highlight";
-import { Calendar } from "./calendar";
+import { CalendarStrip } from "./calendar";
 import { formatPickerValue, isAllowed, parsePickerValue } from "./date-utils";
 import { TimeColumns } from "./time-columns";
 import type { DatePickerProps } from "./types";
@@ -32,6 +32,7 @@ export function DatePanel({ state, props, panelId, calendarId }: DatePanelProps)
 			<div
 				role="dialog"
 				aria-label={mode === "time" ? "选择时间" : "选择日期"}
+				className="v-date-picker__surface"
 				onBlur={(event) => {
 					const target = event.relatedTarget as Node | null;
 					if (
@@ -72,7 +73,8 @@ export function DatePanel({ state, props, panelId, calendarId }: DatePanelProps)
 						</ListHighlight>
 					) : null}
 					{mode !== "time" && (
-						<Calendar
+						<CalendarStrip
+							count={1}
 							id={calendarId}
 							month={picker.month}
 							onMonthChange={(month) => {
@@ -99,19 +101,16 @@ export function DatePanel({ state, props, panelId, calendarId }: DatePanelProps)
 						/>
 					)}
 				</div>
-				<div className="v-date-picker__footer">
-					<button
-						type="button"
-						className="v-date-picker__action"
-						disabled={!isAllowed(new Date(), state.constraints)}
-						onClick={state.now}
-					>
-						{mode === "date" ? "今天" : "现在"}
-					</button>
-					<span className="v-date-picker__summary">
-						{state.pending.replace("T", " ")}
-					</span>
-					{mode !== "date" && (
+				{mode !== "date" && (
+					<div className="v-date-picker__footer">
+						<button
+							type="button"
+							className="v-date-picker__action"
+							disabled={!isAllowed(new Date(), state.constraints)}
+							onClick={state.now}
+						>
+							现在
+						</button>
 						<button
 							type="button"
 							className="v-date-picker__confirm"
@@ -128,8 +127,8 @@ export function DatePanel({ state, props, panelId, calendarId }: DatePanelProps)
 						>
 							确定
 						</button>
-					)}
-				</div>
+					</div>
+				)}
 			</div>
 		</PickerPanel>
 	);

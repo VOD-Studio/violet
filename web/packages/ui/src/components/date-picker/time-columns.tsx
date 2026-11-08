@@ -63,12 +63,18 @@ function TimeColumn({ label, count, value, onChange, isDisabled }: TimeColumnPro
 	const options = Array.from({ length: count }, (_, index) => String(index).padStart(2, "0"));
 	const tabValue = isDisabled(value) ? options.find((option) => !isDisabled(option)) : value;
 	useLayoutEffect(() => {
-		const selected = list.current?.querySelector<HTMLElement>(`[data-value="${value}"]`);
-		if (list.current && selected)
-			list.current.scrollTop = Math.max(
-				0,
-				selected.offsetTop - (list.current.clientHeight - selected.offsetHeight) / 2,
-			);
+		const center = () => {
+			const container = list.current;
+			const selected = container?.querySelector<HTMLElement>(`[data-value="${value}"]`);
+			if (!container || !selected) return;
+			// 用相对位置而不是 offsetTop：不依赖谁是 offsetParent，面板定位完成后再校正一次
+			const gap =
+				selected.getBoundingClientRect().top - container.getBoundingClientRect().top;
+			container.scrollTop += gap - (container.clientHeight - selected.offsetHeight) / 2;
+		};
+		center();
+		const frame = requestAnimationFrame(center);
+		return () => cancelAnimationFrame(frame);
 	}, [value]);
 	return (
 		<div className="v-date-picker__time-column">

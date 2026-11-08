@@ -306,7 +306,7 @@ describe("DatePicker 日历与时间", () => {
 		expect(change).toHaveBeenCalledExactlyOnceWith("09:31");
 	});
 
-	it("今天即时提交，现在暂存到确定，并遵守分钟上下界", () => {
+	it("日期形态没有底栏，现在暂存到确定，并遵守分钟上下界", () => {
 		vi.useFakeTimers({ toFake: ["Date"] });
 		vi.setSystemTime(new Date(2026, 10, 8, 14, 23));
 		const change = vi.fn();
@@ -314,8 +314,9 @@ describe("DatePicker 日历与时间", () => {
 			<DatePicker aria-label="日期" defaultValue="2026-11-03" onChange={change} />,
 		);
 		open();
-		fireEvent.click(day("今天"));
-		expect(change).toHaveBeenLastCalledWith("2026-11-08");
+		expect(screen.queryByRole("button", { name: "今天" })).toBeNull();
+		expect(screen.queryByRole("button", { name: "确定" })).toBeNull();
+		expect(document.querySelector(".v-date-picker__footer")).toBeNull();
 		rerender(
 			<DatePicker
 				key="datetime"
@@ -329,12 +330,25 @@ describe("DatePicker 日历与时间", () => {
 		);
 		open();
 		expect(day("2026 年 11 月 7 日 星期六").hasAttribute("disabled")).toBe(true);
+		const footer = document.querySelector(".v-date-picker__footer") as HTMLElement;
+		expect(footer.textContent).toBe("现在确定");
 		fireEvent.click(day("现在"));
-		expect(change).toHaveBeenCalledTimes(1);
+		expect(change).not.toHaveBeenCalled();
 		expect(day("时间：分 19").hasAttribute("disabled")).toBe(true);
 		expect(day("时间：分 26").hasAttribute("disabled")).toBe(true);
 		fireEvent.click(day("确定"));
-		expect(change).toHaveBeenLastCalledWith("2026-11-08T14:23");
+		expect(change).toHaveBeenCalledExactlyOnceWith("2026-11-08T14:23");
+	});
+
+	it("翻月只有当前月留在 DOM 里，年份视图两侧的箭头换成上一年与下一年", () => {
+		render(<DatePicker aria-label="日期" defaultValue="2026-11-03" />);
+		open();
+		fireEvent.click(screen.getByRole("button", { name: "下个月" }));
+		expect(screen.getAllByRole("grid")).toHaveLength(1);
+		expect(screen.getByRole("grid", { name: "2026 年 12 月" })).toBeTruthy();
+		fireEvent.click(screen.getByRole("button", { name: "选择月份与年份" }));
+		fireEvent.click(screen.getByRole("button", { name: "下一年" }));
+		expect(screen.getByRole("button", { name: "2027 年 12 月" })).toBeTruthy();
 	});
 
 	it.each([

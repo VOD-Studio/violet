@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "cn";
-import { ArrowRight, CalendarDays, Clock, X } from "lucide-react";
+import { CalendarDays, Clock, X } from "lucide-react";
 import { useComposedRefs } from "radix-ui/internal";
 import { type CSSProperties, useLayoutEffect, useRef, useState } from "react";
 import { inputVariants } from "../input/styles";
@@ -60,6 +60,7 @@ export function DateTrigger({
 			data-invalid={invalid || undefined}
 			data-valid={(valid && !invalid) || undefined}
 			data-range={isRange || undefined}
+			data-mode={mode}
 			data-endpoint={isRange ? endpoint : undefined}
 			data-open={open || undefined}
 		>
@@ -75,7 +76,10 @@ export function DateTrigger({
 			/>
 			{endInputProps && (
 				<>
-					<ArrowRight className="v-date-picker__to" aria-hidden />
+					<svg className="v-date-picker__to" viewBox="0 0 24 8" aria-hidden="true">
+						<title>至</title>
+						<path d="M1 4h22M19 1l4 3-4 3" />
+					</svg>
 					<input
 						{...endInputProps}
 						type="text"

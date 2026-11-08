@@ -2,9 +2,8 @@
 
 import { PickerPanel } from "../../lib/picker-panel";
 import { ListHighlight, ListHighlightItem } from "../list-highlight";
-import { Calendar } from "./calendar";
+import { CalendarStrip } from "./calendar";
 import {
-	addMonths,
 	formatPickerValue,
 	isAllowed,
 	orderRange,
@@ -42,6 +41,7 @@ export function DateRangePanel({ state, props, panelId, calendarId }: DateRangeP
 			<div
 				role="dialog"
 				aria-label="选择日期范围"
+				className="v-date-picker__surface"
 				onBlur={(event) => {
 					const target = event.relatedTarget as Node | null;
 					if (
@@ -73,33 +73,27 @@ export function DateRangePanel({ state, props, panelId, calendarId }: DateRangeP
 							</div>
 						</ListHighlight>
 					)}
-					<div className="v-date-picker__calendars">
-						{[0, 1].map((offset) => (
-							<Calendar
-								key={offset}
-								id={picker.months && offset ? `${calendarId}-second` : calendarId}
-								month={addMonths(picker.month, offset)}
-								onMonthChange={(month) => {
-									picker.setMonth(addMonths(month, -offset));
-									picker.setActive(month);
-								}}
-								active={picker.active}
-								keyboard={picker.keyboard}
-								months={picker.months}
-								onMonthsChange={(next, month) => {
-									picker.setMonth(month);
-									picker.changeMonths(next, month);
-								}}
-								range={{ start: startDate, end: endDate }}
-								preview={state.selecting ? state.preview : null}
-								onPreview={state.selecting ? state.setPreview : undefined}
-								isDisabled={picker.dayDisabled}
-								onSelect={state.choose}
-								previous={offset === 0}
-								next={offset === 1}
-							/>
-						))}
-					</div>
+					<CalendarStrip
+						count={2}
+						id={calendarId}
+						month={picker.month}
+						onMonthChange={(month) => {
+							picker.setMonth(month);
+							picker.setActive(month);
+						}}
+						active={picker.active}
+						keyboard={picker.keyboard}
+						months={picker.months}
+						onMonthsChange={(next, month) => {
+							picker.setMonth(month);
+							picker.changeMonths(next, month);
+						}}
+						range={{ start: startDate, end: endDate }}
+						preview={state.selecting ? state.preview : null}
+						onPreview={state.selecting ? state.setPreview : undefined}
+						isDisabled={picker.dayDisabled}
+						onSelect={state.choose}
+					/>
 				</div>
 				{mode === "datetime" && (
 					<div
@@ -148,34 +142,32 @@ export function DateRangePanel({ state, props, panelId, calendarId }: DateRangeP
 						})}
 					</div>
 				)}
-				<div className="v-date-picker__footer">
-					<span className="v-date-picker__summary" role="status" aria-live="polite">
-						{state.selecting
-							? state.announcement
-							: state.pending.start || state.pending.end
-								? `${state.pending.start?.replace("T", " ") ?? "不限"} 至 ${state.pending.end?.replace("T", " ") ?? "不限"}`
-								: "点一个起点"}
-					</span>
-					<button
-						type="button"
-						className="v-date-picker__action"
-						onClick={() => picker.setOpen(false)}
-					>
-						取消
-					</button>
-					<button
-						type="button"
-						className="v-date-picker__confirm"
-						disabled={!state.validRange(state.pending)}
-						onClick={() => {
-							state.commit(orderRange(state.pending));
-							state.input.current?.focus({ preventScroll: true });
-							picker.setOpen(false);
-						}}
-					>
-						确定
-					</button>
-				</div>
+				<span className="v-date-picker__live" role="status" aria-live="polite">
+					{state.selecting ? state.announcement : ""}
+				</span>
+				{mode === "datetime" && (
+					<div className="v-date-picker__footer v-date-picker__footer--end">
+						<button
+							type="button"
+							className="v-date-picker__action"
+							onClick={() => picker.setOpen(false)}
+						>
+							取消
+						</button>
+						<button
+							type="button"
+							className="v-date-picker__confirm"
+							disabled={!state.validRange(state.pending)}
+							onClick={() => {
+								state.commit(orderRange(state.pending));
+								state.input.current?.focus({ preventScroll: true });
+								picker.setOpen(false);
+							}}
+						>
+							确定
+						</button>
+					</div>
+				)}
 			</div>
 		</PickerPanel>
 	);

@@ -1,253 +1,103 @@
 "use client";
 
-import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
-import { useRef } from "react";
-import {
-	addDays,
-	addMonths,
-	formatPickerValue,
-	fullDateName,
-	sameDay,
-	startOfMonth,
-} from "./date-utils";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useLayoutEffect, useRef, useState } from "react";
+import { addMonths, startOfMonth } from "./date-utils";
+import { MonthView, type MonthViewProps } from "./month-view";
 
-interface CalendarProps {
-	id: string;
+const SLIDE_MS = 320;
+const SLIDE_EASING = "cubic-bezier(0.32, 0.72, 0, 1)";
+
+interface CalendarStripProps extends Omit<MonthViewProps, "month"> {
+	/** 并排的月数：单日期 1，范围 2。 */
+	count: 1 | 2;
+	/** 条带第一个月。 */
 	month: Date;
-	onMonthChange: (month: Date) => void;
-	active: Date;
-	keyboard: boolean;
-	months: boolean;
-	onMonthsChange: (open: boolean, month: Date) => void;
-	selected?: Date | null;
-	range?: { start?: Date | null; end?: Date | null };
-	preview?: Date | null;
-	onPreview?: (date: Date | null) => void;
-	onSelect: (date: Date) => void;
-	isDisabled: (date: Date) => boolean;
-	previous?: boolean;
-	next?: boolean;
 }
 
-export function Calendar({
-	id,
-	month,
-	onMonthChange,
-	active,
-	keyboard,
-	months,
-	onMonthsChange,
-	selected,
-	range,
-	preview,
-	onPreview,
-	onSelect,
-	isDisabled,
-	previous = true,
-	next = true,
-}: CalendarProps) {
-	const today = new Date();
+const monthIndex = (date: Date) => date.getFullYear() * 12 + date.getMonth();
+const shift = (months: number) => `translateX(calc(var(--v-date-picker-pitch) * ${-months}))`;
+
+/**
+ * 并排的月历，月份整体在窗口里横向平移：翻一个月时旧月滑出、新月滑入，标题跟着月份走，
+ * 箭头固定在窗口两侧。一次跳过多个月、年份视图与减弱动态下不平移。
+ */
+export function CalendarStrip({ count, month, ...view }: CalendarStripProps) {
+	const { months: yearView, onMonthChange } = view;
 	const first = startOfMonth(month);
-	const monthKey = formatPickerValue(first, "date");
-	const last = useRef<{ key: string; direction?: "next" | "prev" }>({ key: monthKey });
-	if (last.current.key !== monthKey) {
-		last.current = { key: monthKey, direction: monthKey > last.current.key ? "next" : "prev" };
-	}
-	const start = addDays(first, -((first.getDay() + 6) % 7));
-	const rangeEnd = preview ?? range?.end;
-	const rangeStart = range?.start;
-	const lo =
-		rangeStart && rangeEnd ? (rangeStart < rangeEnd ? rangeStart : rangeEnd) : rangeStart;
-	const hi = rangeStart && rangeEnd ? (rangeStart < rangeEnd ? rangeEnd : rangeStart) : rangeEnd;
-	const firstKey = lo && formatPickerValue(lo, "date");
-	const lastKey = hi && formatPickerValue(hi, "date");
+	const index = monthIndex(first);
+	const [motion, setMotion] = useState({ index, from: index });
+	if (motion.index !== index) setMotion({ index, from: motion.index });
+	const sliding = !yearView && Math.abs(index - motion.from) === 1;
+	const lowest = sliding ? Math.min(motion.from, index) : index;
+	const highest = sliding ? Math.max(motion.from, index) : index;
+	const track = useRef<HTMLDivElement>(null);
+
+	useLayoutEffect(() => {
+		if (!sliding) return;
+		const node = track.current;
+		const settle = () =>
+			setMotion((current) => (current.index === index ? { index, from: index } : current));
+		const reduced =
+			!node ||
+			node.closest('[data-motion="reduce"]') !== null ||
+			window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+		if (!node || reduced || typeof node.animate !== "function") {
+			settle();
+			return;
+		}
+		const animation = node.animate(
+			[{ transform: shift(motion.from - lowest) }, { transform: shift(index - lowest) }],
+			{ duration: SLIDE_MS, easing: SLIDE_EASING },
+		);
+		animation.onfinish = settle;
+		return () => animation.cancel();
+	}, [index, sliding, motion.from, lowest]);
+
+	const shown = Array.from({ length: highest - lowest + count }, (_, position) =>
+		addMonths(first, lowest - index + position),
+	);
+	const last = addMonths(first, count - 1);
 	return (
-		<section
-			className="v-date-picker__calendar"
-			aria-label={`${month.getFullYear()} 年 ${month.getMonth() + 1} 月`}
-		>
-			<div className="v-date-picker__heading">
-				<button
-					type="button"
-					tabIndex={-1}
-					className="v-date-picker__nav"
-					aria-label={months ? "上一年" : "上个月"}
-					disabled={
-						!previous ||
-						(month.getFullYear() <= 1 && (months || month.getMonth() === 0))
-					}
-					data-hidden={!previous || undefined}
-					onClick={() => onMonthChange(addMonths(month, months ? -12 : -1))}
-				>
-					<ChevronLeft aria-hidden />
-				</button>
-				<button
-					type="button"
-					tabIndex={-1}
-					className="v-date-picker__title"
-					aria-label={months ? "返回日期选择" : "选择月份与年份"}
-					aria-expanded={months}
-					onClick={() => onMonthsChange(!months, month)}
-				>
-					{month.getFullYear()} 年{!months && ` ${month.getMonth() + 1} 月`}
-					<ChevronDown aria-hidden data-expanded={months || undefined} />
-				</button>
-				<button
-					type="button"
-					tabIndex={-1}
-					className="v-date-picker__nav"
-					aria-label={months ? "下一年" : "下个月"}
-					disabled={
-						!next ||
-						(month.getFullYear() >= 9999 && (months || month.getMonth() === 11))
-					}
-					data-hidden={!next || undefined}
-					onClick={() => onMonthChange(addMonths(month, months ? 12 : 1))}
-				>
-					<ChevronRight aria-hidden />
-				</button>
+		<div className="v-date-picker__strip" data-count={count}>
+			<button
+				type="button"
+				tabIndex={-1}
+				className="v-date-picker__nav v-date-picker__nav--prev"
+				aria-label={yearView ? "上一年" : "上个月"}
+				disabled={first.getFullYear() <= 1 && (yearView || first.getMonth() === 0)}
+				onClick={() => onMonthChange(addMonths(first, yearView ? -12 : -1))}
+			>
+				<ChevronLeft aria-hidden />
+			</button>
+			<button
+				type="button"
+				tabIndex={-1}
+				className="v-date-picker__nav v-date-picker__nav--next"
+				aria-label={yearView ? "下一年" : "下个月"}
+				disabled={last.getFullYear() >= 9999 && (yearView || last.getMonth() === 11)}
+				onClick={() => onMonthChange(addMonths(first, yearView ? 12 : 1))}
+			>
+				<ChevronRight aria-hidden />
+			</button>
+			<div
+				ref={track}
+				className="v-date-picker__track"
+				style={sliding ? { transform: shift(index - lowest) } : undefined}
+			>
+				{shown.map((shownMonth, position) => {
+					const offset = monthIndex(shownMonth) - index;
+					return (
+						<MonthView
+							{...view}
+							key={monthIndex(shownMonth)}
+							id={yearView && position ? `${view.id}-second` : view.id}
+							month={shownMonth}
+							onMonthChange={(next) => onMonthChange(addMonths(next, -offset))}
+						/>
+					);
+				})}
 			</div>
-			{months ? (
-				<div className="v-date-picker__months" key={`months-${month.getFullYear()}`}>
-					{Array.from({ length: 12 }, (_, index) => (
-						<button
-							key={index}
-							id={`${id}-month-${month.getFullYear()}-${index}`}
-							type="button"
-							tabIndex={-1}
-							className="v-date-picker__month"
-							data-active={
-								(keyboard &&
-									active.getFullYear() === month.getFullYear() &&
-									active.getMonth() === index) ||
-								undefined
-							}
-							aria-pressed={month.getMonth() === index}
-							aria-label={`${month.getFullYear()} 年 ${index + 1} 月`}
-							onClick={() => {
-								const next = addMonths(first, index - month.getMonth());
-								onMonthChange(next);
-								onMonthsChange(false, next);
-							}}
-						>
-							{index + 1} 月
-						</button>
-					))}
-				</div>
-			) : (
-				<div className="v-date-picker__viewport">
-					<div
-						className="v-date-picker__days"
-						key={monthKey}
-						data-direction={last.current.direction}
-					>
-						<div className="v-date-picker__week" aria-hidden>
-							{["一", "二", "三", "四", "五", "六", "日"].map((day) => (
-								<span key={day}>{day}</span>
-							))}
-						</div>
-						<div
-							role="grid"
-							aria-label={`${month.getFullYear()} 年 ${month.getMonth() + 1} 月`}
-							className="v-date-picker__grid"
-							data-preview={preview ? "" : undefined}
-							onPointerLeave={() => onPreview?.(null)}
-						>
-							{Array.from({ length: 6 }, (_, week) => (
-								<div
-									role="row"
-									tabIndex={-1}
-									className="v-date-picker__row"
-									key={week}
-								>
-									{Array.from({ length: 7 }, (_, weekday) => {
-										const day = addDays(start, week * 7 + weekday);
-										const key = formatPickerValue(day, "date");
-										const inMonth = day.getMonth() === month.getMonth();
-										const disabled =
-											day.getFullYear() < 1 ||
-											day.getFullYear() > 9999 ||
-											isDisabled(day);
-										const endpoint =
-											inMonth &&
-											(sameDay(day, range?.start) ||
-												(!preview && sameDay(day, range?.end)));
-										const pressed =
-											inMonth && (sameDay(day, selected) || endpoint);
-										return (
-											<div
-												role="gridcell"
-												tabIndex={-1}
-												id={inMonth ? `${id}-${key}` : undefined}
-												aria-label={fullDateName(day)}
-												aria-selected={pressed}
-												key={key}
-											>
-												<button
-													type="button"
-													tabIndex={-1}
-													aria-label={fullDateName(day)}
-													aria-pressed={pressed}
-													aria-current={
-														sameDay(day, today) ? "date" : undefined
-													}
-													disabled={disabled}
-													className="v-date-picker__day"
-													data-outside={!inMonth || undefined}
-													data-today={
-														(inMonth && sameDay(day, today)) ||
-														undefined
-													}
-													data-selected={pressed || undefined}
-													data-active={
-														(inMonth &&
-															keyboard &&
-															sameDay(day, active)) ||
-														undefined
-													}
-													data-start={
-														(inMonth &&
-															firstKey === key &&
-															lastKey !== key) ||
-														undefined
-													}
-													data-end={
-														(inMonth &&
-															lastKey === key &&
-															firstKey !== key) ||
-														undefined
-													}
-													data-middle={
-														(inMonth &&
-															firstKey &&
-															lastKey &&
-															key > firstKey &&
-															key < lastKey) ||
-														undefined
-													}
-													data-preview-end={
-														(inMonth &&
-															preview &&
-															sameDay(day, preview) &&
-															!sameDay(day, range?.start)) ||
-														undefined
-													}
-													onPointerEnter={() =>
-														!disabled && onPreview?.(day)
-													}
-													onClick={() => onSelect(day)}
-												>
-													{day.getDate()}
-												</button>
-											</div>
-										);
-									})}
-								</div>
-							))}
-						</div>
-					</div>
-				</div>
-			)}
-		</section>
+		</div>
 	);
 }
