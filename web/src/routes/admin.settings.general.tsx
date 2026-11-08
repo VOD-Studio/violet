@@ -9,7 +9,7 @@ import {
 	HOME_FOOTPRINT_AGGREGATION_MIN_DAYS,
 } from "@features/settings/model/types";
 import { createFileRoute } from "@tanstack/react-router";
-import { Input } from "@violet/ui";
+import { Input, NumberInput } from "@violet/ui";
 import { Controller } from "react-hook-form";
 
 /** 基础信息子页表单值（仅本页字段） */
@@ -66,8 +66,7 @@ function GeneralSettingsPage() {
 			<section className="space-y-4">
 				<h3 className="text-sm font-semibold">内容</h3>
 				<Field label="每页文章数">
-					<Input
-						type="number"
+					<NumberInput
 						{...register("posts_per_page", {
 							valueAsNumber: true,
 						})}
@@ -89,8 +88,7 @@ function GeneralSettingsPage() {
 					)}
 				/>
 				<Field label="节点聚合天数">
-					<Input
-						type="number"
+					<NumberInput
 						min={HOME_FOOTPRINT_AGGREGATION_MIN_DAYS}
 						max={HOME_FOOTPRINT_AGGREGATION_MAX_DAYS}
 						{...register("home_footprint_aggregation_days", {
@@ -137,8 +135,7 @@ function GeneralSettingsPage() {
 			<section className="space-y-4">
 				<h3 className="text-sm font-semibold">表情</h3>
 				<Field label="自定义表情上限" hint="单用户自传加收藏合计，0 表示使用部署默认值">
-					<Input
-						type="number"
+					<NumberInput
 						min={0}
 						{...register("custom_emoji_max_per_user", {
 							valueAsNumber: true,

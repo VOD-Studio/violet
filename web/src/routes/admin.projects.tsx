@@ -23,6 +23,7 @@ import {
 	Field,
 	Input,
 	Modal,
+	NumberInput,
 	Tag,
 	Textarea,
 	Tooltip,
@@ -406,9 +407,8 @@ function ProjectDialog({
 						<label htmlFor="project-sort" className="text-sm font-medium">
 							排序
 						</label>
-						<Input
+						<NumberInput
 							id="project-sort"
-							type="number"
 							{...register("sort_order", { valueAsNumber: true })}
 						/>
 					</div>

@@ -4,6 +4,7 @@ import {
 	Input,
 	Label,
 	Modal,
+	NumberInput,
 	Select,
 	SelectContent,
 	SelectItem,
@@ -292,9 +293,8 @@ export function CreatePermissionDialog({
 				{/* 排序 */}
 				<div className="space-y-2">
 					<Label htmlFor="sort">排序</Label>
-					<Input
+					<NumberInput
 						id="sort"
-						type="number"
 						min={0}
 						disabled={pending}
 						{...register("sort", { valueAsNumber: true })}

@@ -1,7 +1,7 @@
 import {
 	Button,
 	Field,
-	Input,
+	NumberInput,
 	Switch,
 	Tooltip,
 	TooltipContent,
@@ -135,10 +135,9 @@ export function PolicyNumber({
 	return (
 		<PolicyField name={name} label={label} help={help}>
 			{(id, state) => (
-				<Input
+				<NumberInput
 					id={id}
 					name={name}
-					type="number"
 					min={min}
 					max={max}
 					step={step}
@@ -147,7 +146,7 @@ export function PolicyNumber({
 					disabled={state.disabled}
 					onChange={(event) =>
 						onChange(
-							event.target.value === "" ? Number.NaN : event.target.valueAsNumber,
+							event.target.value === "" ? Number.NaN : Number(event.target.value),
 						)
 					}
 				/>

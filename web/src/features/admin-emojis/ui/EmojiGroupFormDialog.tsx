@@ -7,6 +7,7 @@ import {
 	Input,
 	Label,
 	Modal,
+	NumberInput,
 	Select,
 	SelectContent,
 	SelectItem,
@@ -259,9 +260,8 @@ export function EmojiGroupFormDialog({
 
 				<div className="space-y-2">
 					<Label htmlFor="group-sort">排序权重</Label>
-					<Input
+					<NumberInput
 						id="group-sort"
-						type="number"
 						min={0}
 						placeholder="数字越小越靠前"
 						disabled={submitting}

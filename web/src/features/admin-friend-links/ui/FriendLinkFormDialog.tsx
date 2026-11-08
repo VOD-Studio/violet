@@ -1,4 +1,4 @@
-import { Button, Input, Label, Modal } from "@violet/ui";
+import { Button, Input, Label, Modal, NumberInput } from "@violet/ui";
 
 import * as React from "react";
 import { toast } from "sonner";
@@ -176,9 +176,8 @@ export function FriendLinkFormDialog({
 				</div>
 				<div className="space-y-2">
 					<Label htmlFor="fl-sort">排序值</Label>
-					<Input
+					<NumberInput
 						id="fl-sort"
-						type="number"
 						value={sortOrder}
 						onChange={(e) => setSortOrder(e.target.value)}
 						disabled={loading}

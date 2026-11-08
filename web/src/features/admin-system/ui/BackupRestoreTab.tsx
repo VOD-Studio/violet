@@ -1,6 +1,6 @@
 import { formatDateTime } from "@shared/lib/date";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button, ConfirmDialog, Input, Modal, Spinner, Switch, Tag } from "@violet/ui";
+import { Button, ConfirmDialog, Input, Modal, NumberInput, Spinner, Switch, Tag } from "@violet/ui";
 import {
 	Archive,
 	CalendarClock,
@@ -332,9 +332,8 @@ function BackupSettings({
 				</label>
 				<label htmlFor="backup-retention-count" className="space-y-1.5 text-sm font-medium">
 					<span>保留份数</span>
-					<Input
+					<NumberInput
 						id="backup-retention-count"
-						type="number"
 						min={1}
 						max={365}
 						value={value?.retention_count ?? 30}
