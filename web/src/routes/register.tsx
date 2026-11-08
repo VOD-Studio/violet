@@ -4,31 +4,12 @@ import { type RegisterFormData, registerSchema } from "@features/auth/model/sche
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ApiError } from "@shared/api/error";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import {
-	Button,
-	Input,
-	InputOTP,
-	InputOTPGroup,
-	InputOTPSlot,
-	Label,
-	ResendButton,
-} from "@violet/ui";
+import { Button, Field, Input, InputOTP, Label, ResendButton } from "@violet/ui";
 import { MailCheck } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
-/**
- * /register - 注册页（分步验证）
- *
- * 流程：
- * 1. 填写邮箱/用户名/密码 → POST /auth/register → 后端发 6 位验证码到邮箱
- *    （开发环境验证码会同步打到后端日志，方便联调）
- * 2. 注册成功后原地展开验证码输入区（不跳页面），输满 6 位自动提交
- *    POST /auth/verify-email → 验证成功跳 /login
- *
- * 重发验证码：重新调 register 接口（后端会覆盖旧码并重发）。
- */
 export const Route = createFileRoute("/register")({
 	ssr: false,
 	component: RegisterPage,
@@ -39,6 +20,9 @@ function RegisterPage() {
 	const csrfToken = useCsrfToken();
 	const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
 	const [code, setCode] = useState("");
+	const [verificationError, setVerificationError] = useState("");
+	const [invalidCode, setInvalidCode] = useState(false);
+	const verifying = useRef(false);
 
 	const {
 		register: registerField,
@@ -74,62 +58,56 @@ function RegisterPage() {
 		);
 	});
 
-	// 步骤 2：验证码提交。必须用 useCallback 固定身份 + 在 onChange 里手动触发，
-	// 不能放进 useEffect 的依赖——useVerifyEmail 返回的 mutation 对象每次渲染
-	// 都是新引用，放进依赖会导致验证失败后 setCode("") → 重渲染 → mutation 新身份
-	// → useEffect 重跑 → 再次提交 → 死循环（800+ 次请求）。
-	//
-	// 依赖刻意只放稳定值：registeredEmail（string）、navigate（router 稳定引用）。
-	// verifyMutation 不放入——它是每次渲染的新引用，但 mutate 调用始终读取闭包内
-	// 最新的（TanStack Query 保证内部状态最新），不会产生 stale closure。
-	// biome-ignore lint/correctness/useExhaustiveDependencies: verifyMutation 引用不稳定，放入会导致死循环
-	const submitVerify = useCallback(
-		(codeValue: string) => {
-			if (!registeredEmail || codeValue.length !== 6) return;
-			verifyMutation.mutate(
-				{ email: registeredEmail, code: codeValue },
-				{
-					onSuccess: () => {
-						toast.success("邮箱验证成功，请登录");
-						navigate({
-							to: "/login",
-							replace: true,
-							search: { email: registeredEmail },
-						});
-					},
-					onError: (err) => {
-						const msg =
-							err instanceof ApiError
-								? err.message || "验证失败，请检查验证码"
-								: err.message || "验证失败";
-						toast.error(msg);
-						setCode("");
-					},
+	const submitVerify = (codeValue: string) => {
+		if (!registeredEmail || codeValue.length !== 6 || verifying.current) return;
+		verifying.current = true;
+		setVerificationError("");
+		setInvalidCode(false);
+		verifyMutation.mutate(
+			{ email: registeredEmail, code: codeValue },
+			{
+				onSuccess: () => {
+					toast.success("邮箱验证成功，请登录");
+					navigate({
+						to: "/login",
+						replace: true,
+						search: { email: registeredEmail },
+					});
 				},
-			);
-		},
-		[registeredEmail, navigate],
-	);
+				onError: (err) => {
+					const message = err.message || "验证失败，请稍后重试";
+					setVerificationError(message);
+					// 此端点仅在验证码不匹配时返回 UNAUTHORIZED，网络与服务异常保留已填验证码。
+					setInvalidCode(err instanceof ApiError && err.code === "UNAUTHORIZED");
+					toast.error(message);
+				},
+				onSettled: () => {
+					verifying.current = false;
+				},
+			},
+		);
+	};
 
-	// OTP 输入变化：更新 code，满 6 位时直接触发验证（不用 useEffect 自动提交）
 	const handleCodeChange = (value: string) => {
 		setCode(value);
-		if (value.length === 6) {
-			submitVerify(value);
-		}
+		setInvalidCode(false);
+		if (value) setVerificationError("");
 	};
 
 	// 重发验证码（重新调 register，后端会覆盖旧码）。
 	// 返回 false 表示未生效（ResendButton 不进入冷却），让用户能立即修正后重试。
 	const handleResend = async (): Promise<boolean> => {
 		const values = getValues();
-		if (!values.email) return false;
+		if (!registeredEmail) return false;
 		try {
 			await registerMutation.mutateAsync({
-				email: values.email,
+				email: registeredEmail,
 				username: values.username,
 				password: values.password,
 			});
+			setCode("");
+			setInvalidCode(false);
+			setVerificationError("");
 			toast.success("验证码已重新发送");
 			return true;
 		} catch (err) {
@@ -163,31 +141,36 @@ function RegisterPage() {
 							</p>
 						</div>
 
-						<div className="flex flex-col items-center gap-3">
+						<Field
+							label="邮箱验证码"
+							error={verificationError}
+							checking={verifyMutation.isPending ? "验证中…" : undefined}
+						>
 							<InputOTP
-								maxLength={6}
+								name="code"
 								value={code}
 								onChange={handleCodeChange}
+								onComplete={submitVerify}
+								invalid={invalidCode && !verifyMutation.isPending}
+								valid={verifyMutation.isSuccess}
+								required
+								disabled={verifyMutation.isPending || registerMutation.isPending}
+							/>
+						</Field>
+						{verificationError && !invalidCode && code.length === 6 ? (
+							<Button
+								onClick={() => submitVerify(code)}
 								disabled={verifyMutation.isPending}
 							>
-								<InputOTPGroup>
-									<InputOTPSlot index={0} />
-									<InputOTPSlot index={1} />
-									<InputOTPSlot index={2} />
-									<InputOTPSlot index={3} />
-									<InputOTPSlot index={4} />
-									<InputOTPSlot index={5} />
-								</InputOTPGroup>
-							</InputOTP>
-							{verifyMutation.isPending ? (
-								<p className="text-xs text-muted-foreground">验证中…</p>
-							) : null}
-						</div>
+								重新验证
+							</Button>
+						) : null}
 
 						<div className="text-center">
 							<ResendButton
 								onResend={handleResend}
-								disabled={registerMutation.isPending}
+								resetKey={registeredEmail}
+								disabled={verifyMutation.isPending}
 							/>
 						</div>
 					</div>
