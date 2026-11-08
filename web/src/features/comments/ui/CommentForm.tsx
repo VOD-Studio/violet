@@ -1,22 +1,9 @@
-/**
- * CommentForm - 评论输入表单（双模式）
- *
- * PRD-0001 双轨认证：
- *   - 登录态（isLoggedIn=true）：单步直发，作者信息从会话取（前端不传 author_*），
- *     提交成功后立即看到自己 pending 评论 + 「审批中」徽章。
- *   - 匿名态（isLoggedIn=false）：两步流
- *       1. 填昵称 + 邮箱 → 点「发送验证码」（useSendCommentCode）
- *       2. 收到邮箱 6 位码 → 用 InputOTP 收码 + 填评论内容 → 提交（带 code）
- *     提交成功后 toast（黑洞模式看不到自己刚提交的）。
- *     验证码错误 → 400；同一文章已留过言 → 409，均由 toast 反馈。
- *
- * 复用：InputOTP + ResendButton（匿名验证码两步流核心 UI 已就位）。
- */
+/** 登录用户直接评论；匿名用户先发送邮箱验证码，再随评论一起提交。 */
 
 import { useCreateComment, useSendCommentCode } from "@features/comments/api/mutations";
 import type { Comment, CreateComment } from "@features/comments/model/types";
 import { ApiError } from "@shared/api/error";
-import { Input, InputOTP, InputOTPGroup, InputOTPSlot, ResendButton, Spinner } from "@violet/ui";
+import { Field, Input, InputOTP, ResendButton, Spinner } from "@violet/ui";
 import { MailCheck, Send } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -57,6 +44,9 @@ export function CommentForm({
 	const [email, setEmail] = useState("");
 	const [code, setCode] = useState("");
 	const [codeSent, setCodeSent] = useState(false);
+	const [codeError, setCodeError] = useState("");
+	const [invalidCode, setInvalidCode] = useState(false);
+	const codeSession = useRef(0);
 
 	const sendCode = useSendCommentCode(postId);
 	const createComment = useCreateComment(postId);
@@ -67,12 +57,18 @@ export function CommentForm({
 			toast.error("请先填写邮箱");
 			return false;
 		}
+		const session = codeSession.current;
 		try {
 			await sendCode.mutateAsync({ email: email.trim() });
+			if (session !== codeSession.current) return false;
+			setCode("");
+			setCodeError("");
+			setInvalidCode(false);
 			setCodeSent(true);
 			toast.success("验证码已发送至邮箱");
 			return true;
 		} catch (err) {
+			if (session !== codeSession.current) return false;
 			toastError(err, "发送验证码失败");
 			return false;
 		}
@@ -94,6 +90,7 @@ export function CommentForm({
 			payload.author_email = email.trim();
 			payload.code = code.trim();
 		}
+		const session = codeSession.current;
 		createComment.mutate(payload, {
 			onSuccess: (newComment) => {
 				if (newComment.status === "pending") {
@@ -108,11 +105,26 @@ export function CommentForm({
 				setResetNonce((n) => n + 1);
 				setAuthorName("");
 				setEmail("");
+				codeSession.current += 1;
+				setCodeError("");
+				setInvalidCode(false);
 				setCode("");
 				setCodeSent(false);
 				onSuccess?.(newComment);
 			},
-			onError: (err) => toastError(err, "提交失败"),
+			onError: (err) => {
+				if (
+					!isLoggedIn &&
+					session === codeSession.current &&
+					err instanceof ApiError &&
+					err.code === "BAD_REQUEST" &&
+					err.message === "验证码错误或已过期"
+				) {
+					setCodeError(err.message);
+					setInvalidCode(true);
+				}
+				toastError(err, "提交失败");
+			},
 		});
 	};
 
@@ -138,21 +150,19 @@ export function CommentForm({
 								value={email}
 								onChange={(e) => {
 									setEmail(e.target.value);
-									if (codeSent) setCodeSent(false); // 换邮箱重置发码状态
+									codeSession.current += 1;
+									setCodeSent(false);
+									setCode("");
+									setCodeError("");
+									setInvalidCode(false);
 								}}
 								required
 							/>
 							<ResendButton
 								onResend={handleSendCode}
 								resetKey={email}
-								disabled={sendCode.isPending}
-								label={
-									sendCode.isPending
-										? "发送中…"
-										: codeSent
-											? "重新发送"
-											: "发送验证码"
-								}
+								disabled={createComment.isPending}
+								label={codeSent ? "重新发送" : "发送验证码"}
 							/>
 						</div>
 					</div>
@@ -162,16 +172,20 @@ export function CommentForm({
 								<MailCheck className="size-4" />
 								验证码已发送至 {email}
 							</div>
-							<InputOTP maxLength={6} value={code} onChange={setCode}>
-								<InputOTPGroup>
-									<InputOTPSlot index={0} />
-									<InputOTPSlot index={1} />
-									<InputOTPSlot index={2} />
-									<InputOTPSlot index={3} />
-									<InputOTPSlot index={4} />
-									<InputOTPSlot index={5} />
-								</InputOTPGroup>
-							</InputOTP>
+							<Field label="邮箱验证码" error={codeError}>
+								<InputOTP
+									name="code"
+									value={code}
+									onChange={(value) => {
+										setCode(value);
+										setInvalidCode(false);
+										if (value) setCodeError("");
+									}}
+									invalid={invalidCode && !createComment.isPending}
+									disabled={createComment.isPending}
+									required
+								/>
+							</Field>
 						</div>
 					)}
 				</div>
