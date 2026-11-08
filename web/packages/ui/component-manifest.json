@@ -76,6 +76,13 @@
 			"css": "src/components/context-menu/context-menu.css"
 		},
 		{
+			"name": "date-picker",
+			"status": "foundation",
+			"entry": "src/components/date-picker/index.ts",
+			"css": "src/components/date-picker/date-picker.css",
+			"documentation": "web/packages/ui/docs/components/date-picker.md"
+		},
+		{
 			"name": "dialog",
 			"status": "foundation",
 			"entry": "src/components/dialog/index.ts",

@@ -87,6 +87,11 @@
 			"import": "./src/components/context-menu/index.ts",
 			"default": "./src/components/context-menu/index.ts"
 		},
+		"./date-picker": {
+			"types": "./src/components/date-picker/index.ts",
+			"import": "./src/components/date-picker/index.ts",
+			"default": "./src/components/date-picker/index.ts"
+		},
 		"./dialog": {
 			"types": "./src/components/dialog/index.ts",
 			"import": "./src/components/dialog/index.ts",
@@ -325,6 +330,7 @@
 		"./components/command.css": "./src/components/command/command.css",
 		"./components/confirm-dialog.css": "./src/components/confirm-dialog/confirm-dialog.css",
 		"./components/context-menu.css": "./src/components/context-menu/context-menu.css",
+		"./components/date-picker.css": "./src/components/date-picker/date-picker.css",
 		"./components/dialog.css": "./src/components/dialog/dialog.css",
 		"./components/drawer.css": "./src/components/drawer/drawer.css",
 		"./components/dropdown.css": "./src/components/dropdown/dropdown.css",
@@ -451,6 +457,11 @@
 				"types": "./dist/components/context-menu/index.d.ts",
 				"import": "./dist/components/context-menu/index.js",
 				"default": "./dist/components/context-menu/index.js"
+			},
+			"./date-picker": {
+				"types": "./dist/components/date-picker/index.d.ts",
+				"import": "./dist/components/date-picker/index.js",
+				"default": "./dist/components/date-picker/index.js"
 			},
 			"./dialog": {
 				"types": "./dist/components/dialog/index.d.ts",
@@ -690,6 +701,7 @@
 			"./components/command.css": "./dist/components/command.css",
 			"./components/confirm-dialog.css": "./dist/components/confirm-dialog.css",
 			"./components/context-menu.css": "./dist/components/context-menu.css",
+			"./components/date-picker.css": "./dist/components/date-picker.css",
 			"./components/dialog.css": "./dist/components/dialog.css",
 			"./components/drawer.css": "./dist/components/drawer.css",
 			"./components/dropdown.css": "./dist/components/dropdown.css",

@@ -31,8 +31,10 @@ const visualUtilities = /["'`](?:[^"'`]*\s)?(?:bg-|text-(?:sm|xs|base|lg|xl|fore
 for (const component of manifest.components.filter((item) => item.status === "foundation")) {
 	const directory = resolve(packageRoot, component.entry, "..");
 	for (const path of filesUnder(directory).filter((file) => /\.[jt]sx?$/.test(file) && !/\.(test|spec)\./.test(file))) {
-		// `value: "grid"` 这类数据取值不是类名，先剔除再扫描
-		const code = readFileSync(path, "utf8").replace(/\bvalue:\s*(?:"[^"\n]*"|'[^'\n]*')/g, "");
+		// 数据取值与 ARIA 属性不是类名，不能把 role="grid" 误识别为视觉工具类。
+		const code = readFileSync(path, "utf8")
+			.replace(/\bvalue:\s*(?:"[^"\n]*"|'[^'\n]*')/g, "")
+			.replace(/\b(?:role|aria-[\w-]+)\s*=\s*(?:"[^"\n]*"|'[^'\n]*')/g, "");
 		assert.ok(!visualUtilities.test(code), `Foundation JSX contains visual utility classes: ${path}`);
 	}
 }
