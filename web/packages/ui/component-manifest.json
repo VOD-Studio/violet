@@ -47,8 +47,10 @@
 		},
 		{
 			"name": "color-picker",
-			"status": "legacy",
-			"entry": "src/components/color-picker/index.ts"
+			"status": "foundation",
+			"entry": "src/components/color-picker/index.ts",
+			"css": "src/components/color-picker/color-picker.css",
+			"documentation": "web/packages/ui/docs/components/color-picker.md"
 		},
 		{
 			"name": "combobox",

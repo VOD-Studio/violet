@@ -5,6 +5,7 @@ export * from "./components/button/index";
 export * from "./components/card/index";
 export * from "./components/cascader/index";
 export * from "./components/checkbox/index";
+export * from "./components/color-picker/index";
 export * from "./components/combobox/index";
 export * from "./components/command/index";
 export * from "./components/confirm-dialog/index";
