@@ -21,6 +21,7 @@ import { ChevronDown, ImagePlus, Upload } from "lucide-react";
 import type { MouseEvent } from "react";
 import { useMemo } from "react";
 
+import { useEditorTextColor } from "../hooks/useEditorTextColor";
 import type { ResolvedFeatures } from "../lib/features";
 import { buildToolbarItems, TOOLBAR_DIVIDER, type ToolbarItem } from "./toolbar-items";
 
@@ -36,13 +37,15 @@ interface EditorToolbarProps {
 	onInsertLink: () => void;
 }
 
-/**
- * 阻止工具栏按钮的默认 mousedown 行为，避免点击时编辑器失焦。
- * 这是 Tiptap 工具栏的标准做法：命令自身会 chain().focus()，但若 mousedown 让
- * ProseMirror 失去选区，命令仍会因选区丢失而失效。
- */
-function keepFocus(e: MouseEvent) {
-	e.preventDefault();
+/** 只拦工具栏内按钮；Portal 面板中的输入框必须能正常聚焦。 */
+function keepFocus(e: MouseEvent<HTMLElement>) {
+	if (
+		e.target instanceof Element &&
+		e.currentTarget.contains(e.target) &&
+		e.target.closest("button")
+	) {
+		e.preventDefault();
+	}
 }
 
 export function EditorToolbar({
@@ -56,6 +59,7 @@ export function EditorToolbar({
 		() => buildToolbarItems(onInsertLink, features),
 		[onInsertLink, features],
 	);
+	const textColor = useEditorTextColor(editor);
 	if (!editor) return null;
 
 	const renderItem = (item: ToolbarItem | typeof TOOLBAR_DIVIDER, idx: number) => {
@@ -91,7 +95,7 @@ export function EditorToolbar({
 	return (
 		<div
 			className="sticky top-0 z-10 flex flex-wrap items-center gap-0.5 border-b border-edge-hairline bg-background/80 px-2 py-1.5 backdrop-blur"
-			// 容器统一拦截 mousedown，避免按钮点击让编辑器失焦（#1）
+			// React Portal 仍向工具栏冒泡，但不属于工具栏的 DOM 子树。
 			onMouseDown={keepFocus}
 		>
 			{items.map(renderItem)}
@@ -100,9 +104,9 @@ export function EditorToolbar({
 					<span className="mx-0.5 h-5 w-px shrink-0 bg-edge-hairline" aria-hidden />
 					{/* 文字颜色色板（color 能力关闭时隐藏） */}
 					<ColorSwatch
-						value={editor.getAttributes("textStyle").color}
-						onChange={(c) => editor.chain().focus().setColor(c).run()}
-						onClear={() => editor.chain().focus().unsetColor().run()}
+						{...textColor}
+						onChange={(color) => editor.chain().setColor(color).run()}
+						onClear={() => editor.chain().unsetColor().run()}
 					/>
 				</>
 			)}
