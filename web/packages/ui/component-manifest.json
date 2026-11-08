@@ -184,8 +184,10 @@
 		},
 		{
 			"name": "otp",
-			"status": "legacy",
-			"entry": "src/components/otp/index.ts"
+			"status": "foundation",
+			"entry": "src/components/otp/index.ts",
+			"css": "src/components/otp/otp.css",
+			"documentation": "web/packages/ui/docs/components/otp.md"
 		},
 		{
 			"name": "overlay-scroll",

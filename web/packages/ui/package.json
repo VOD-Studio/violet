@@ -356,6 +356,7 @@
 		"./components/list-highlight.css": "./src/components/list-highlight/list-highlight.css",
 		"./components/morphing-popover.css": "./src/components/morphing-popover/morphing-popover.css",
 		"./components/number-input.css": "./src/components/number-input/number-input.css",
+		"./components/otp.css": "./src/components/otp/otp.css",
 		"./components/overlay-scroll.css": "./src/components/overlay-scroll/overlay-scroll.css",
 		"./components/popover.css": "./src/components/popover/popover.css",
 		"./components/prompt-dialog.css": "./src/components/prompt-dialog/prompt-dialog.css",
@@ -740,6 +741,7 @@
 			"./components/list-highlight.css": "./dist/components/list-highlight.css",
 			"./components/morphing-popover.css": "./dist/components/morphing-popover.css",
 			"./components/number-input.css": "./dist/components/number-input.css",
+			"./components/otp.css": "./dist/components/otp.css",
 			"./components/overlay-scroll.css": "./dist/components/overlay-scroll.css",
 			"./components/popover.css": "./dist/components/popover.css",
 			"./components/prompt-dialog.css": "./dist/components/prompt-dialog.css",
@@ -772,7 +774,6 @@
 	"dependencies": {
 		"@types/lodash": "4.17.25",
 		"cn": "^0.4.0",
-		"input-otp": "^1.4.2",
 		"lucide-react": "^1.21.0",
 		"motion": "^12.42.2",
 		"radix-ui": "^1.6.0",

@@ -1,88 +1,116 @@
-import { cn } from "cn";
-import { OTPInput, OTPInputContext, REGEXP_ONLY_DIGITS, type SlotProps } from "input-otp";
-import * as React from "react";
+"use client";
 
-/**
- * InputOTP - 验证码输入组件（基于 input-otp 库，shadcn 风格封装）
- *
- * 6 位数字分离输入框，支持粘贴、自动跳格、假光标。
- * 适配明暗主题（沿用项目 CSS 变量）。
- *
- * @example
- * <InputOTP maxLength={6} value={code} onChange={setCode} onComplete={handleSubmit} />
- */
-function InputOTP({
+import { cn } from "cn";
+import { type ComponentProps, useId, useImperativeHandle } from "react";
+import { useFieldControl } from "../field";
+import { OTPContext } from "./context";
+import { InputOTPSlot } from "./otp-slot";
+import type { InputOTPProps } from "./types";
+import { useOTP } from "./use-otp";
+
+/** 六个独立原生输入组成的验证码；校验请求与结果说明属于调用方。 */
+export function InputOTP({
+	ref,
+	children,
 	className,
 	containerClassName,
-	...props
-}: React.ComponentProps<typeof OTPInput>) {
-	return (
-		<OTPInput
-			data-slot="input-otp"
-			pattern={REGEXP_ONLY_DIGITS}
-			containerClassName={cn(
-				"flex items-center gap-2 has-disabled:opacity-50",
-				containerClassName,
-			)}
-			className={cn("disabled:cursor-not-allowed", className)}
-			{...props}
-		/>
-	);
-}
-
-/**
- * InputOTPGroup - 一组 OTP slot 容器
- */
-function InputOTPGroup({ className, ...props }: React.ComponentProps<"div">) {
-	return (
-		<div
-			data-slot="input-otp-group"
-			className={cn("flex items-center", className)}
-			{...props}
-		/>
-	);
-}
-
-/**
- * InputOTPSlot - 单个验证码输入格
- *
- * 通过 OTPInputContext 读取该 index 的 slot 状态（是否激活、字符、假光标）。
- */
-function InputOTPSlot({
-	index,
-	className,
-	...props
-}: React.ComponentProps<"div"> & {
-	/** 该格在整组中的位置（从 0 开始） */
-	index: number;
-}) {
-	const inputOTPContext = React.useContext(OTPInputContext);
-	const slot = inputOTPContext.slots[index] as SlotProps | undefined;
-	const char = slot?.char;
-	const hasFakeCaret = slot?.hasFakeCaret;
-	const isActive = slot?.isActive;
-
-	if (!inputOTPContext.slots) return null;
+	value,
+	defaultValue = "",
+	onChange,
+	onComplete,
+	maxLength = 6,
+	name,
+	form,
+	id: suppliedId,
+	disabled = false,
+	readOnly = false,
+	invalid,
+	valid = false,
+	"aria-label": label,
+	"aria-labelledby": labelledBy,
+	"aria-describedby": describedBy,
+	"aria-invalid": ariaInvalid,
+	...nativeProps
+}: InputOTPProps) {
+	const field = useFieldControl();
+	const generatedId = useId();
+	const id = suppliedId ?? field.id ?? generatedId;
+	const length = Math.max(1, Math.floor(maxLength));
+	const invalidAttribute = invalid ?? ariaInvalid ?? field["aria-invalid"];
+	const isInvalid =
+		invalidAttribute === true ||
+		invalidAttribute === "true" ||
+		invalidAttribute === "grammar" ||
+		invalidAttribute === "spelling";
+	const description = describedBy ?? field["aria-describedby"];
+	const groupLabelledBy = labelledBy ?? (label ? undefined : field["aria-labelledby"]);
+	const model = useOTP({
+		value,
+		defaultValue,
+		length,
+		disabled,
+		readOnly,
+		invalid: isInvalid,
+		onChange,
+		onComplete,
+	});
+	useImperativeHandle(ref, () => model.inputs.current[0] as HTMLInputElement);
 
 	return (
-		<div
-			data-slot="input-otp-slot"
-			data-active={isActive ? "" : undefined}
-			className={cn(
-				"relative flex size-10 items-center justify-center border-y border-r border-input text-sm shadow-sm transition-all first:rounded-l-md first:border-l last:rounded-r-md",
-				isActive && "z-10 ring-2 ring-ring ring-offset-background",
-				className,
-			)}
-			{...props}
+		<OTPContext.Provider
+			value={{
+				...model,
+				id,
+				length,
+				disabled,
+				readOnly,
+				invalid: invalidAttribute,
+				describedBy: description,
+				form,
+				nativeProps,
+			}}
 		>
-			{char}
-			{hasFakeCaret && (
-				<div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-					<div className="h-4 w-px animate-caret-blink bg-foreground duration-1000" />
-				</div>
-			)}
-		</div>
+			<div
+				id={`${id}-group`}
+				role="group"
+				aria-label={label ?? (groupLabelledBy ? undefined : `${length} 位验证码`)}
+				aria-labelledby={groupLabelledBy}
+				aria-describedby={description}
+				aria-invalid={invalidAttribute}
+				aria-disabled={disabled || undefined}
+				data-slot="input-otp"
+				data-invalid={isInvalid || undefined}
+				data-valid={valid && !isInvalid ? "" : undefined}
+				data-error-active={model.errorActive || undefined}
+				data-readonly={readOnly || undefined}
+				data-disabled={disabled || undefined}
+				className={cn("v-otp", className, containerClassName)}
+			>
+				{children ?? (
+					<InputOTPGroup>
+						{Array.from({ length }, (_, index) => (
+							<InputOTPSlot key={index} index={index} />
+						))}
+					</InputOTPGroup>
+				)}
+				{name ? (
+					<input
+						type="hidden"
+						name={name}
+						form={form}
+						value={model.cells.join("")}
+						disabled={disabled}
+					/>
+				) : null}
+			</div>
+		</OTPContext.Provider>
 	);
 }
 
-export { InputOTP, InputOTPGroup, InputOTPSlot };
+/** 自定义格子分组；组间的间距仍由 OTP 根维护。 */
+export function InputOTPGroup({ className, ...props }: ComponentProps<"div">) {
+	return <div {...props} data-slot="input-otp-group" className={cn("v-otp__group", className)} />;
+}
+
+export type { InputOTPProps, InputOTPSlotProps } from "./types";
+export { InputOTPSlot };

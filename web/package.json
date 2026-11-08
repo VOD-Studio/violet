@@ -100,7 +100,6 @@
 		"hast-util-sanitize": "^5.0.2",
 		"hast-util-to-jsx-runtime": "^2.3.6",
 		"highlight.js": "^11.11.1",
-		"input-otp": "^1.4.2",
 		"katex": "^0.17.0",
 		"lowlight": "^3.3.0",
 		"lucide-react": "^1.21.0",
