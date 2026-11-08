@@ -69,6 +69,10 @@ export function DateRangePicker(props: DateRangePickerProps) {
 	const explicitLabel = inputProps["aria-label"];
 	const labelledBy =
 		inputProps["aria-labelledby"] ?? (explicitLabel ? undefined : field["aria-labelledby"]);
+	const names = {
+		start: startName ?? (name ? `${name}.start` : undefined),
+		end: endName ?? (name ? `${name}.end` : undefined),
+	};
 	const endpointProps = (side: "start" | "end"): ComponentProps<"input"> => {
 		const extra = side === "end" ? endInputProps : undefined;
 		const endpointId = side === "start" ? inputId : (extra?.id ?? `${inputId}-end`);
@@ -77,10 +81,7 @@ export function DateRangePicker(props: DateRangePickerProps) {
 			...extra,
 			ref: side === "start" ? composedRef : endRef,
 			id: endpointId,
-			name:
-				side === "start"
-					? (startName ?? (name ? `${name}.start` : undefined))
-					: (endName ?? (name ? `${name}.end` : undefined)),
+			name: mode === "datetime" ? undefined : names[side],
 			form: inputProps.form,
 			disabled,
 			readOnly,
@@ -106,7 +107,7 @@ export function DateRangePicker(props: DateRangePickerProps) {
 			"aria-expanded": picker.open,
 			"aria-controls": picker.open ? panelId : undefined,
 			"aria-activedescendant": picker.open ? activeId : undefined,
-			value: state.text[side],
+			value: state.text[side].replace("T", " "),
 			placeholder:
 				extra?.placeholder ??
 				inputProps.placeholder ??
@@ -170,6 +171,19 @@ export function DateRangePicker(props: DateRangePickerProps) {
 				inputProps={endpointProps("start")}
 				endInputProps={endpointProps("end")}
 			/>
+			{mode === "datetime" &&
+				(["start", "end"] as const).map((side) =>
+					names[side] ? (
+						<input
+							key={side}
+							type="hidden"
+							name={names[side]}
+							form={inputProps.form}
+							value={state.value[side] ?? ""}
+							disabled={disabled}
+						/>
+					) : null,
+				)}
 			<DateRangePanel state={state} props={props} panelId={panelId} calendarId={calendarId} />
 		</>
 	);

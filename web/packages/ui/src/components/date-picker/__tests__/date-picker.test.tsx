@@ -289,7 +289,7 @@ describe("DatePicker 日历与时间", () => {
 		expect(screen.getByRole("dialog")).toBeTruthy();
 		fireEvent.click(day("确定"));
 		expect(change).toHaveBeenCalledExactlyOnceWith("2026-11-07T12:45");
-		expect(field().value).toBe("2026-11-07T12:45");
+		expect(field().value).toBe("2026-11-07 12:45");
 	});
 
 	it("仅时间受限小时自动选合法分钟，支持键盘步进并确定", () => {
@@ -353,7 +353,23 @@ describe("DatePicker 日历与时间", () => {
 		);
 		fireEvent.change(field(), { target: { value: text } });
 		fireEvent.blur(field());
-		expect(field().value).toBe("2026-11-03T09:30");
+		expect(field().value).toBe("2026-11-03 09:30");
 		expect(change).not.toHaveBeenCalled();
+	});
+
+	it("datetime 输入显示空格分隔，原生提交仍是规范的 T 格式且只有一个同名字段", () => {
+		render(
+			<form aria-label="发布">
+				<DatePicker
+					aria-label="日期"
+					mode="datetime"
+					name="when"
+					defaultValue="2026-11-03T09:30"
+				/>
+			</form>,
+		);
+		expect(field().value).toBe("2026-11-03 09:30");
+		const form = screen.getByRole<HTMLFormElement>("form", { name: "发布" });
+		expect([...new FormData(form)]).toEqual([["when", "2026-11-03T09:30"]]);
 	});
 });

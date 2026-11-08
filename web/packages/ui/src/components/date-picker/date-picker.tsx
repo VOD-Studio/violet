@@ -36,6 +36,7 @@ export function DatePicker(props: DatePickerProps) {
 		disabled,
 		readOnly,
 		id,
+		name,
 		onFocus,
 		onBlur,
 		onClick,
@@ -81,7 +82,8 @@ export function DatePicker(props: DatePickerProps) {
 					...inputProps,
 					ref: composedRef,
 					id: inputId,
-					value: state.text,
+					name: mode === "datetime" ? undefined : name,
+					value: state.text.replace("T", " "),
 					required,
 					disabled,
 					readOnly,
@@ -132,6 +134,15 @@ export function DatePicker(props: DatePickerProps) {
 					},
 				}}
 			/>
+			{mode === "datetime" && name ? (
+				<input
+					type="hidden"
+					name={name}
+					form={inputProps.form}
+					value={state.value}
+					disabled={disabled}
+				/>
+			) : null}
 			<DatePanel state={state} props={props} panelId={panelId} calendarId={calendarId} />
 		</>
 	);
