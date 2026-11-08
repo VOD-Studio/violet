@@ -143,7 +143,7 @@ export function DateRangePanel({ state, props, panelId, calendarId }: DateRangeP
 					</div>
 				)}
 				<span className="v-date-picker__live" role="status" aria-live="polite">
-					{state.selecting ? state.announcement : ""}
+					{state.announcement}
 				</span>
 				{mode === "datetime" && (
 					<div className="v-date-picker__footer v-date-picker__footer--end">

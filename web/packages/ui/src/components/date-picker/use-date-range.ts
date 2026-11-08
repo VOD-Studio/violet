@@ -16,6 +16,7 @@ import {
 	isAllowed,
 	orderRange,
 	parsePickerValue,
+	sameDay,
 	startOfMonth,
 	withDate,
 } from "./date-utils";
@@ -76,6 +77,7 @@ export function useDateRange(props: DateRangePickerProps): DateRangeState {
 	const [rejected, setRejected] = useState(false);
 	const input = useRef<HTMLInputElement>(null);
 	const endInput = useRef<HTMLInputElement>(null);
+	const programmatic = useRef(false);
 	const constraints = { mode, min, max, disabledDate };
 	const resetDraft = useCallback(() => {
 		setPending({ start, end });
@@ -92,6 +94,9 @@ export function useDateRange(props: DateRangePickerProps): DateRangeState {
 		},
 		resetDraft,
 	);
+	useEffect(() => {
+		if (!picker.open) setAnnouncement("");
+	}, [picker.open]);
 	useEffect(resetDraft, [resetDraft]);
 	usePickerReset(input, () => {
 		const next = controlledValue ?? defaultValue;
@@ -162,8 +167,42 @@ export function useDateRange(props: DateRangePickerProps): DateRangeState {
 			picker.setMonth(startOfMonth(date));
 		}
 	};
+	/** 点击面板选日时把输入框的焦点交给接收下一次点击的端点，焦点处理不重置选择进度。 */
+	const moveFocus = (side: Endpoint) => {
+		const target = (side === "start" ? input : endInput).current;
+		if (!target || target.ownerDocument.activeElement === target) return;
+		programmatic.current = true;
+		target.focus({ preventScroll: true });
+		programmatic.current = false;
+	};
 	const choose = (day: Date) => {
 		if (picker.dayDisabled(day)) return;
+		// 再点一次已选的起点或终点就是取消它：只清这一端，另一端保留；刚选完起点等终点时，同一天仍算当天的单日范围
+		if (!selecting) {
+			const hits = (["start", "end"] as const).filter((side) => {
+				const raw = pending[side];
+				return !!raw && sameDay(parsePickerValue(raw, mode), day);
+			});
+			if (hits.length > 0) {
+				const side = hits.includes(endpoint) ? endpoint : hits[0];
+				const rest: DateRange = { ...pending, [side]: undefined };
+				// 下一次点击落在还空着的那一端：起点没了就回到起点，只剩起点才轮到终点
+				const nextSide: Endpoint = rest.start ? "end" : "start";
+				setPending(rest);
+				setText({ start: rest.start ?? "", end: rest.end ?? "" });
+				setDirty({ start: false, end: false });
+				setEndpoint(nextSide);
+				setPreview(null);
+				setRejected(false);
+				picker.setActive(day);
+				setAnnouncement(
+					`已取消${side === "start" ? "起点" : "终点"} ${day.getMonth() + 1} 月 ${day.getDate()} 日`,
+				);
+				moveFocus(nextSide);
+				if (mode === "date" && validRange(rest)) commit(rest);
+				return;
+			}
+		}
 		let date = withDate(day, pending[endpoint] ?? "", mode);
 		const lower = min && parsePickerValue(min, mode);
 		const upper = max && parsePickerValue(max, mode);
@@ -183,6 +222,7 @@ export function useDateRange(props: DateRangePickerProps): DateRangeState {
 			setSelecting(true);
 			setPreview(null);
 			setAnnouncement(`已选起点 ${day.getMonth() + 1} 月 ${day.getDate()} 日，请选终点`);
+			moveFocus("end");
 		} else {
 			const range = orderRange(
 				endpoint === "start" ? { ...pending, start: next } : { ...pending, end: next },
@@ -205,6 +245,7 @@ export function useDateRange(props: DateRangePickerProps): DateRangeState {
 	};
 	const focus = (side: Endpoint) => {
 		setEndpoint(side);
+		if (programmatic.current) return;
 		setPreview(null);
 		setSelecting(false);
 		const date = parsePickerValue(pending[side] ?? "", mode);

@@ -53,6 +53,82 @@ describe("DateRangePicker 端点与预览", () => {
 		expect(end().value).toBe("2026-11-12");
 	});
 
+	it("再点一次已选的起点只取消起点，终点保留，补选后才完成范围", () => {
+		const change = vi.fn();
+		render(
+			<DateRangePicker
+				aria-label="区间"
+				defaultValue={{ start: "2026-11-03", end: "2026-11-07" }}
+				onChange={change}
+			/>,
+		);
+		fireEvent.focus(end());
+		fireEvent.click(novemberDay("2026 年 11 月 3 日 星期二"));
+		expect(start().value).toBe("");
+		expect(end().value).toBe("2026-11-07");
+		expect(change).toHaveBeenCalledExactlyOnceWith({ end: "2026-11-07" });
+		expect(screen.getByRole("dialog")).toBeTruthy();
+		expect(screen.getByRole("status").textContent).toBe("已取消起点 11 月 3 日");
+		fireEvent.click(novemberDay("2026 年 11 月 5 日 星期四"));
+		expect(change).toHaveBeenLastCalledWith({ start: "2026-11-05", end: "2026-11-07" });
+		expect(screen.queryByRole("dialog")).toBeNull();
+	});
+
+	it("起点与终点都取消后，下一次点击回到起点，输入框焦点也跟过去", () => {
+		render(
+			<DateRangePicker
+				aria-label="区间"
+				defaultValue={{ start: "2026-11-03", end: "2026-11-07" }}
+			/>,
+		);
+		const shell = start().closest(".v-date-picker") as HTMLElement;
+		fireEvent.focus(end());
+		fireEvent.click(novemberDay("2026 年 11 月 3 日 星期二"));
+		expect(document.activeElement).toBe(start());
+		fireEvent.click(novemberDay("2026 年 11 月 7 日 星期六"));
+		expect(start().value).toBe("");
+		expect(end().value).toBe("");
+		expect(shell.getAttribute("data-endpoint")).toBe("start");
+		fireEvent.click(novemberDay("2026 年 11 月 10 日 星期二"));
+		expect(start().value).toBe("2026-11-10");
+		expect(end().value).toBe("");
+		expect(shell.getAttribute("data-endpoint")).toBe("end");
+		expect(document.activeElement).toBe(end());
+		expect(screen.getByRole("status").textContent).toBe("已选起点 11 月 10 日，请选终点");
+	});
+
+	it("刚选完起点再点同一天仍是当天的单日范围，必填时取消一端不提交", () => {
+		const change = vi.fn();
+		const { rerender } = render(
+			<DateRangePicker
+				aria-label="区间"
+				defaultValue={{ start: "2026-11-03", end: "2026-11-07" }}
+				onChange={change}
+			/>,
+		);
+		fireEvent.focus(start());
+		fireEvent.click(novemberDay("2026 年 11 月 10 日 星期二"));
+		fireEvent.click(novemberDay("2026 年 11 月 10 日 星期二"));
+		expect(change).toHaveBeenCalledExactlyOnceWith({ start: "2026-11-10", end: "2026-11-10" });
+
+		change.mockClear();
+		rerender(
+			<DateRangePicker
+				key="required"
+				aria-label="区间"
+				required
+				defaultValue={{ start: "2026-11-03", end: "2026-11-07" }}
+				onChange={change}
+			/>,
+		);
+		fireEvent.focus(end());
+		fireEvent.click(novemberDay("2026 年 11 月 7 日 星期六"));
+		expect(end().value).toBe("");
+		expect(change).not.toHaveBeenCalled();
+		fireEvent.click(novemberDay("2026 年 11 月 12 日 星期四"));
+		expect(change).toHaveBeenCalledExactlyOnceWith({ start: "2026-11-03", end: "2026-11-12" });
+	});
+
 	it("键入一个端点规范化并对调；非法输入恢复端点", () => {
 		const change = vi.fn();
 		render(
