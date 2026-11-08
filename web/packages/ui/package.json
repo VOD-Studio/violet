@@ -247,6 +247,11 @@
 			"import": "./src/components/skeleton/index.ts",
 			"default": "./src/components/skeleton/index.ts"
 		},
+		"./slider": {
+			"types": "./src/components/slider/index.ts",
+			"import": "./src/components/slider/index.ts",
+			"default": "./src/components/slider/index.ts"
+		},
 		"./sonner": {
 			"types": "./src/components/sonner/index.ts",
 			"import": "./src/components/sonner/index.ts",
@@ -359,6 +364,7 @@
 		"./components/separator.css": "./src/components/separator/separator.css",
 		"./components/sheet.css": "./src/components/sheet/sheet.css",
 		"./components/skeleton.css": "./src/components/skeleton/skeleton.css",
+		"./components/slider.css": "./src/components/slider/slider.css",
 		"./components/sonner.css": "./src/components/sonner/sonner.css",
 		"./components/switch.css": "./src/components/switch/switch.css",
 		"./components/tabs.css": "./src/components/tabs/tabs.css",
@@ -624,6 +630,11 @@
 				"import": "./dist/components/skeleton/index.js",
 				"default": "./dist/components/skeleton/index.js"
 			},
+			"./slider": {
+				"types": "./dist/components/slider/index.d.ts",
+				"import": "./dist/components/slider/index.js",
+				"default": "./dist/components/slider/index.js"
+			},
 			"./sonner": {
 				"types": "./dist/components/sonner/index.d.ts",
 				"import": "./dist/components/sonner/index.js",
@@ -736,6 +747,7 @@
 			"./components/separator.css": "./dist/components/separator.css",
 			"./components/sheet.css": "./dist/components/sheet.css",
 			"./components/skeleton.css": "./dist/components/skeleton.css",
+			"./components/slider.css": "./dist/components/slider.css",
 			"./components/sonner.css": "./dist/components/sonner.css",
 			"./components/switch.css": "./dist/components/switch.css",
 			"./components/tabs.css": "./dist/components/tabs.css",

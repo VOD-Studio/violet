@@ -32,6 +32,7 @@ export * from "./components/select/index";
 export * from "./components/separator/index";
 export * from "./components/sheet/index";
 export * from "./components/skeleton/index";
+export * from "./components/slider/index";
 export * from "./components/sonner/index";
 export * from "./components/switch/index";
 export * from "./components/tabs/index";

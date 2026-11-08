@@ -266,6 +266,13 @@
 			"css": "src/components/skeleton/skeleton.css"
 		},
 		{
+			"name": "slider",
+			"status": "foundation",
+			"entry": "src/components/slider/index.ts",
+			"css": "src/components/slider/slider.css",
+			"documentation": "web/packages/ui/docs/components/slider.md"
+		},
+		{
 			"name": "sonner",
 			"status": "foundation",
 			"entry": "src/components/sonner/index.ts",
