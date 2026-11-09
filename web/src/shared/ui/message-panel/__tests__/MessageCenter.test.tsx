@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MessageCenter } from "../MessageCenter";
 import { MessageToast } from "../MessageToast";
@@ -41,6 +41,26 @@ describe("MessageCenter", () => {
 		expect(screen.getByRole("tab", { name: /^聊天/ }).getAttribute("aria-selected")).toBe(
 			"true",
 		);
+	});
+
+	it("账号菜单收起后把焦点还给它的触发器，面板不因此关闭；焦点去别处才关", () => {
+		render(
+			<>
+				<button type="button" aria-haspopup="menu">
+					用户菜单
+				</button>
+				<button type="button">别处</button>
+				<MessageCenter unread={0} {...PANEL} />
+			</>,
+		);
+		fireEvent.click(screen.getByRole("button", { name: "消息" }));
+		expect(screen.getByRole("dialog", { name: "消息" })).toBeTruthy();
+
+		act(() => screen.getByRole("button", { name: "用户菜单" }).focus());
+		expect(screen.getByRole("dialog", { name: "消息" })).toBeTruthy();
+
+		act(() => screen.getByRole("button", { name: "别处" }).focus());
+		expect(screen.queryByRole("dialog", { name: "消息" })).toBeNull();
 	});
 });
 

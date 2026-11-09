@@ -368,3 +368,56 @@ test("Header 消息铃铛：面板与药丸右缘对齐，通知与聊天两个�
 	await refreshed;
 	await expect(toast).toHaveCount(0);
 });
+
+test("Header 先开账号菜单再点铃铛：菜单收起归还焦点时，消息面板不会跟着消失", async ({
+	page,
+	context,
+}) => {
+	await loadClient(context);
+	await context.addCookies([
+		{ name: "contract_admin", value: "1", url: "http://127.0.0.1:4173" },
+	]);
+	await page.setViewportSize({ width: 1440, height: 900 });
+	await page.emulateMedia({ reducedMotion: "reduce" });
+	const json = (route: Route, body: unknown) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify(body),
+		});
+	const empty = {
+		data: [],
+		meta: { pagination: { page: 1, limit: 20, total: 0, total_pages: 1 } },
+	};
+	await page.route("**/api/v1/notifications?**", (route) => json(route, empty));
+	await page.route("**/api/v1/notifications/unread-count", (route) =>
+		json(route, { data: { unread_count: 0 } }),
+	);
+	await page.route("**/api/v1/notifications/push/config**", (route) =>
+		json(route, { data: { public_key: "", enabled: false, subscribed: false } }),
+	);
+	await page.route("**/api/v1/chat/conversations?**", (route) => json(route, empty));
+	await page.route("**/api/v1/chat/unread-count", (route) =>
+		json(route, { data: { unread_count: 0 } }),
+	);
+
+	await page.goto("/");
+	await page.waitForLoadState("networkidle");
+	const header = page.locator("header").first();
+	await header.getByRole("button", { name: "用户菜单" }).click();
+	await expect(page.getByRole("menu")).toBeVisible();
+
+	// 菜单打开时页面其余部分不可点，按坐标点铃铛，和真实鼠标一致
+	const bell = await header.locator('button[aria-label^="消息"]').boundingBox();
+	await page.mouse.click(
+		(bell?.x ?? 0) + (bell?.width ?? 0) / 2,
+		(bell?.y ?? 0) + (bell?.height ?? 0) / 2,
+	);
+	const panel = page.getByRole("dialog", { name: "消息" });
+	await expect(panel).toBeVisible();
+	await expect(page.getByRole("menu")).toHaveCount(0);
+	// 菜单收起后焦点回到账号按钮，面板要一直在
+	await expect(header.getByRole("button", { name: "用户菜单" })).toBeFocused();
+	await page.waitForTimeout(600);
+	await expect(panel).toBeVisible();
+});

@@ -87,6 +87,15 @@ export function MessageCenter({
 				alignOffset={-offset.overhang}
 				sideOffset={offset.gap}
 				container={container}
+				onFocusOutside={(event) => {
+					// 先开着账号菜单再点铃铛：菜单收起时把焦点还给自己的触发器，不算离开面板，否则面板刚开就被关掉
+					if (
+						event.target instanceof Element &&
+						event.target.closest('[aria-haspopup="menu"]')
+					) {
+						event.preventDefault();
+					}
+				}}
 				className="w-95 max-w-[calc(100vw-1rem)] rounded-2xl p-2"
 			>
 				<MessagePanel
