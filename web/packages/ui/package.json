@@ -27,6 +27,11 @@
 			"import": "./src/variants.ts",
 			"default": "./src/variants.ts"
 		},
+		"./accordion": {
+			"types": "./src/components/accordion/index.ts",
+			"import": "./src/components/accordion/index.ts",
+			"default": "./src/components/accordion/index.ts"
+		},
 		"./avatar": {
 			"types": "./src/components/avatar/index.ts",
 			"import": "./src/components/avatar/index.ts",
@@ -335,6 +340,7 @@
 		"./styles.css": "./src/styles.css",
 		"./tokens.css": "./src/tokens.css",
 		"./classes.css": "./src/classes.css",
+		"./components/accordion.css": "./src/components/accordion/accordion.css",
 		"./components/avatar.css": "./src/components/avatar/avatar.css",
 		"./components/badge.css": "./src/components/badge/badge.css",
 		"./components/button.css": "./src/components/button/button.css",
@@ -418,6 +424,11 @@
 				"types": "./dist/variants.d.ts",
 				"import": "./dist/variants.js",
 				"default": "./dist/variants.js"
+			},
+			"./accordion": {
+				"types": "./dist/components/accordion/index.d.ts",
+				"import": "./dist/components/accordion/index.js",
+				"default": "./dist/components/accordion/index.js"
 			},
 			"./avatar": {
 				"types": "./dist/components/avatar/index.d.ts",
@@ -727,6 +738,7 @@
 			"./styles.css": "./dist/styles.css",
 			"./tokens.css": "./dist/tokens.css",
 			"./classes.css": "./dist/classes.css",
+			"./components/accordion.css": "./dist/components/accordion.css",
 			"./components/avatar.css": "./dist/components/avatar.css",
 			"./components/badge.css": "./dist/components/badge.css",
 			"./components/button.css": "./dist/components/button.css",

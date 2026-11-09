@@ -3,6 +3,13 @@
 	"package": "@violet/ui",
 	"components": [
 		{
+			"name": "accordion",
+			"status": "foundation",
+			"entry": "src/components/accordion/index.ts",
+			"css": "src/components/accordion/accordion.css",
+			"documentation": "web/packages/ui/docs/components/accordion.md"
+		},
+		{
 			"name": "avatar",
 			"status": "foundation",
 			"entry": "src/components/avatar/index.ts",

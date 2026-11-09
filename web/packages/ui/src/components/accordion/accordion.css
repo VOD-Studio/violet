@@ -1,0 +1,167 @@
+/*
+ * Accordion：不依赖其它单元样式；需先导入 @violet/ui/tokens.css 或 styles.css。
+ */
+@layer components {
+	.v-accordion {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.v-accordion__item {
+		border-radius: var(--radius-12, 12px);
+		transition: background-color 160ms ease-out;
+	}
+
+	/* 展开时整项成一块凹陷色，内容在同一块底色里 */
+	.v-accordion__item[data-state="open"] {
+		background-color: var(--muted);
+	}
+
+	.v-accordion__heading {
+		margin: 0;
+		font: inherit;
+	}
+
+	.v-accordion__trigger {
+		box-sizing: border-box;
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		inline-size: 100%;
+		min-block-size: 52px;
+		margin: 0;
+		padding: 12px 16px;
+		border: 0;
+		border-radius: var(--radius-12, 12px);
+		background-color: transparent;
+		color: var(--foreground);
+		font: inherit;
+		font-size: 15px;
+		font-weight: 500;
+		text-align: start;
+		cursor: pointer;
+		transition: background-color 160ms ease-out;
+	}
+
+	.v-accordion__trigger:hover {
+		background-color: var(--muted);
+	}
+
+	/* 环画在标题行内侧：外侧是相邻项，不能指望那里有空间 */
+	.v-accordion__trigger:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: -2px;
+	}
+
+	.v-accordion__trigger:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.v-accordion__trigger:disabled:hover {
+		background-color: transparent;
+	}
+
+	.v-accordion__title {
+		flex: 1 1 auto;
+		min-inline-size: 0;
+	}
+
+	.v-accordion__summary {
+		flex: 0 1 auto;
+		min-inline-size: 0;
+		overflow: hidden;
+		color: var(--muted-foreground);
+		font-size: 13px;
+		font-weight: 400;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.v-accordion__chevron {
+		flex: none;
+		inline-size: 16px;
+		block-size: 16px;
+		color: var(--muted-foreground);
+		transition: transform 200ms cubic-bezier(0.32, 0.72, 0, 1);
+	}
+
+	.v-accordion__item[data-state="open"] .v-accordion__chevron {
+		transform: rotate(180deg);
+	}
+
+	/* 高度靠 0fr→1fr 展开；收起 200ms 比展开 280ms 快 */
+	.v-accordion__panel {
+		display: grid;
+		grid-template-rows: 0fr;
+		transition: grid-template-rows 200ms cubic-bezier(0.32, 0.72, 0, 1);
+	}
+
+	.v-accordion__item[data-state="open"] .v-accordion__panel {
+		grid-template-rows: 1fr;
+		transition-duration: 280ms;
+	}
+
+	/*
+	 * 裁剪层：内容里的聚焦环向外扩 4px，所以留 4px 内边距并用等量负外边距抵消；
+	 * 收起时内边距与负外边距相抵，轨道高度仍为 0。
+	 */
+	.v-accordion__clip {
+		min-block-size: 0;
+		margin: -4px;
+		padding: 4px;
+		overflow: hidden;
+		opacity: 0;
+		transition: opacity 120ms ease-out;
+	}
+
+	.v-accordion__item[data-state="open"] .v-accordion__clip {
+		opacity: 1;
+		transition: opacity 200ms ease-out 60ms;
+	}
+
+	.v-accordion__body {
+		padding: 0 16px 16px;
+		color: color-mix(in oklab, var(--foreground) 82%, transparent);
+		font-size: 14px;
+		line-height: 1.8;
+	}
+
+	.v-accordion__body > :first-child {
+		margin-block-start: 0;
+	}
+
+	.v-accordion__body > :last-child {
+		margin-block-end: 0;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-accordion__item,
+		.v-accordion__trigger,
+		.v-accordion__chevron,
+		.v-accordion__item[data-state] .v-accordion__panel,
+		.v-accordion__item[data-state] .v-accordion__clip {
+			transition: none;
+		}
+	}
+
+	[data-motion="reduce"] .v-accordion__item,
+	[data-motion="reduce"] .v-accordion__trigger,
+	[data-motion="reduce"] .v-accordion__chevron,
+	[data-motion="reduce"] .v-accordion__item[data-state] .v-accordion__panel,
+	[data-motion="reduce"] .v-accordion__item[data-state] .v-accordion__clip {
+		transition: none;
+	}
+
+	@media (forced-colors: active) {
+		.v-accordion__trigger:focus-visible {
+			outline-color: Highlight;
+		}
+
+		.v-accordion__trigger:disabled {
+			color: GrayText;
+			opacity: 1;
+		}
+	}
+}

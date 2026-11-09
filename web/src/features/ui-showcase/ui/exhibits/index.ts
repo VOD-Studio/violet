@@ -1,4 +1,5 @@
 import type { Exhibit } from "../../model/exhibit";
+import { accordionExhibit } from "./accordion";
 import { avatarExhibit } from "./avatar";
 import { badgeExhibit } from "./badge";
 import { buttonExhibit } from "./button";
@@ -145,12 +146,13 @@ export const EXHIBITS: Exhibit[] = [
 	{
 		id: "list",
 		name: "列表与树",
-		units: ["list", "tree", "accordion"],
+		units: ["list", "tree"],
 		zone: "content",
 		category: "display",
 		footprint: { width: 400, height: 320 },
 		issue: 708,
 	},
+	accordionExhibit,
 	{
 		id: "alert",
 		name: "提示与空状态",
