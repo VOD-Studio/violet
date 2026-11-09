@@ -9,11 +9,7 @@ import {
 } from "@features/admin-posts/api/mutations";
 import { useAdminPosts } from "@features/admin-posts/api/queries";
 import type { AdminPostListItem, PostBatchAction } from "@features/admin-posts/model/types";
-import {
-	DataTable,
-	type DataTableColumn,
-	usePagedQuery,
-} from "@features/admin-shared/ui/data-table";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { useMe } from "@features/auth/api/queries";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useTags } from "@features/tags/api/queries";
@@ -24,6 +20,8 @@ import {
 	Button,
 	Checkbox,
 	ConfirmDialog,
+	DataTable,
+	type DataTableColumn,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
@@ -524,7 +522,7 @@ function RowActions({
 
 	if (viewStatus === "trashed") {
 		return (
-			<div className="flex items-center justify-end gap-1">
+			<div className="v-table__row-actions items-center justify-end gap-1">
 				{canDelete ? (
 					<Button
 						variant="ghost"
@@ -555,7 +553,7 @@ function RowActions({
 	if (!canEdit && !canPublish && !canDelete && !canFeature) return null;
 
 	return (
-		<div className="flex items-center justify-end">
+		<div className="v-table__row-actions items-center justify-end">
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
 					<Button

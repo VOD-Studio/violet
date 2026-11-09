@@ -1,10 +1,6 @@
 import type { PersonaSummary } from "@entities/persona/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import {
-	DataTable,
-	type DataTableColumn,
-	usePagedQuery,
-} from "@features/admin-shared/ui/data-table";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useCreatePersona, useDeletePersona } from "@features/persona-editor/api/mutations";
 import { useAdminPersonas } from "@features/persona-editor/api/queries";
@@ -16,6 +12,8 @@ import {
 	Badge,
 	Button,
 	ConfirmDialog,
+	DataTable,
+	type DataTableColumn,
 	SearchInput,
 	Tooltip,
 	TooltipContent,
@@ -137,7 +135,7 @@ export function PersonaListPage() {
 			width: "96px",
 			sticky: "right",
 			cell: (row) => (
-				<div className="flex items-center gap-1">
+				<div className="v-table__row-actions items-center gap-1">
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<Button

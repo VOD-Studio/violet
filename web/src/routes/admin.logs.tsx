@@ -1,15 +1,13 @@
 import { useAdminAuditLogs } from "@features/admin-audit-logs/api/queries";
 import type { AuditEventDTO, FieldChangeDTO } from "@features/admin-audit-logs/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import {
-	DataTable,
-	type DataTableColumn,
-	usePagedQuery,
-} from "@features/admin-shared/ui/data-table";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { formatDateTime } from "@shared/lib/date";
 import { createFileRoute } from "@tanstack/react-router";
 import {
 	Button,
+	DataTable,
+	type DataTableColumn,
 	Input,
 	Modal,
 	Select,

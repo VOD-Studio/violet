@@ -3,14 +3,15 @@ import {
 	useAdminDeleteCustomEmoji,
 } from "@features/admin-customemojis/api/queries";
 import type { AdminCustomEmoji } from "@features/admin-customemojis/model/types";
-import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
-import { DataTable, usePagedQuery } from "@features/admin-shared/ui/data-table";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { toAvatarItem } from "@shared/lib/avatar-user";
 import { formatDateTime } from "@shared/lib/date";
+import type { DataTableColumn } from "@violet/ui";
 import {
 	Avatar,
 	Button,
 	ConfirmDialog,
+	DataTable,
 	SearchInput,
 	Tooltip,
 	TooltipContent,
@@ -86,7 +87,7 @@ export function CustomEmojiAdminSection() {
 			cell: (row) => (
 				<Tooltip>
 					<TooltipTrigger asChild>
-						<span>
+						<span className="v-table__row-actions">
 							<Button
 								variant="ghost"
 								size="icon-sm"

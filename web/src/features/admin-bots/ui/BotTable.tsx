@@ -7,13 +7,17 @@ import {
 } from "@features/admin-bots/api/queries";
 import { BOT_NAME_MAX } from "@features/admin-bots/model/constants";
 import type { BotDTO } from "@features/admin-bots/model/types";
+import { formatDateTime } from "@shared/lib/date";
 import {
+	Badge,
+	Button,
 	DataTable,
 	type DataTableColumn,
 	type DataTablePagination,
-} from "@features/admin-shared/ui/data-table";
-import { formatDateTime } from "@shared/lib/date";
-import { Badge, Button, Input, Modal, Switch } from "@violet/ui";
+	Input,
+	Modal,
+	Switch,
+} from "@violet/ui";
 
 import { Eye, KeyRound, Trash2 } from "lucide-react";
 import * as React from "react";
@@ -161,7 +165,7 @@ export function BotTable({ bots, pagination, loading, onTokenRevealed }: BotTabl
 			sticky: "right",
 			width: "128px",
 			cell: (row) => (
-				<div className="flex items-center gap-2">
+				<div className="v-table__row-actions items-center gap-2">
 					{/* 库里无密文（早于密文列创建、密钥已换）时置灰：撞错误不如直接说明为什么看不了 */}
 					<Button
 						variant="ghost"

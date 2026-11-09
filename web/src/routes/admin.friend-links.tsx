@@ -16,11 +16,7 @@ import type {
 import { FriendLinkCell } from "@features/admin-friend-links/ui/FriendLinkCell";
 import { FriendLinkFormDialog } from "@features/admin-friend-links/ui/FriendLinkFormDialog";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import {
-	DataTable,
-	type DataTableColumn,
-	usePagedQuery,
-} from "@features/admin-shared/ui/data-table";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { formatDateTime } from "@shared/lib/date";
 import { createFileRoute } from "@tanstack/react-router";
@@ -29,6 +25,8 @@ import {
 	type BadgeProps,
 	Button,
 	ConfirmDialog,
+	DataTable,
+	type DataTableColumn,
 	Segmented,
 	type SegmentedItem,
 } from "@violet/ui";

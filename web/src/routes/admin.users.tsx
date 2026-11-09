@@ -1,8 +1,7 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { useAllRoles } from "@features/admin-roles/api/queries";
 import { getRoleDisplayName, getRoleTagTone } from "@features/admin-roles/lib/utils";
-import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
-import { DataTable, exportToCsv, usePagedQuery } from "@features/admin-shared/ui/data-table";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import {
 	useAdminUsers,
 	useBatchUpdateRole,
@@ -19,11 +18,14 @@ import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { formatDateTime } from "@shared/lib/date";
 import { createFileRoute } from "@tanstack/react-router";
+import type { DataTableColumn, DataTableSort } from "@violet/ui";
 import {
 	Avatar,
 	Badge,
 	Button,
 	ConfirmDialog,
+	DataTable,
+	exportToCsv,
 	SearchInput,
 	Select,
 	SelectContent,
@@ -276,7 +278,7 @@ function AdminUsers() {
 					row.id === currentUserId;
 				return (
 					// 操作列点击不触发行点击：拦截在 DataTable 的 td 层（列声明 stopClickPropagation）
-					<div className="flex justify-center gap-2">
+					<div className="v-table__row-actions gap-2">
 						<PermissionGuard permission="user:list">
 							<Tooltip>
 								<TooltipTrigger asChild>

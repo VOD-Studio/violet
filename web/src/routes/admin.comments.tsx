@@ -14,11 +14,7 @@ import { CommentAuthor } from "@features/admin-comments/ui/CommentAuthor";
 import { CommentCell } from "@features/admin-comments/ui/CommentCell";
 import { CommentDetail } from "@features/admin-comments/ui/CommentDetail";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import {
-	DataTable,
-	type DataTableColumn,
-	usePagedQuery,
-} from "@features/admin-shared/ui/data-table";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { formatDateTime } from "@shared/lib/date";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -27,6 +23,8 @@ import {
 	type BadgeProps,
 	Button,
 	ConfirmDialog,
+	DataTable,
+	type DataTableColumn,
 	Segmented,
 	type SegmentedItem,
 } from "@violet/ui";

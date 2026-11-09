@@ -63,6 +63,25 @@ const rows: GallerySummary[] = [
 ];
 
 vi.mock("@features/admin-shared/ui/data-table", () => ({
+	usePagedQuery: (
+		useList: (query: Record<string, unknown>) => unknown,
+		baseQuery: Record<string, unknown>,
+	) => {
+		// 复刻真实行为:把筛选合并进查询并交给列表 hook,供断言
+		useList({ ...baseQuery, page: 1, limit: 20 });
+		return {
+			data: { data: rows },
+			isLoading: false,
+			error: null,
+			refetch: vi.fn(),
+			pagination: {},
+			setPage: vi.fn(),
+		};
+	},
+}));
+
+vi.mock("@violet/ui", async (importOriginal) => ({
+	...(await importOriginal<typeof import("@violet/ui")>()),
 	DataTable: ({
 		columns,
 		data,
@@ -80,21 +99,6 @@ vi.mock("@features/admin-shared/ui/data-table", () => ({
 			))}
 		</div>
 	),
-	usePagedQuery: (
-		useList: (query: Record<string, unknown>) => unknown,
-		baseQuery: Record<string, unknown>,
-	) => {
-		// 复刻真实行为:把筛选合并进查询并交给列表 hook,供断言
-		useList({ ...baseQuery, page: 1, limit: 20 });
-		return {
-			data: { data: rows },
-			isLoading: false,
-			error: null,
-			refetch: vi.fn(),
-			pagination: {},
-			setPage: vi.fn(),
-		};
-	},
 }));
 
 vi.mock("@features/admin-layout/ui/PageShell", () => ({

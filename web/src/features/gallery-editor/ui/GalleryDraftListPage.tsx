@@ -1,10 +1,6 @@
 import type { GalleryStatus, GallerySummary } from "@entities/gallery/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import {
-	DataTable,
-	type DataTableColumn,
-	usePagedQuery,
-} from "@features/admin-shared/ui/data-table";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { useMe } from "@features/auth/api/queries";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useCreateGalleryDraft, useDeleteGallery } from "@features/gallery-editor/api/mutations";
@@ -17,6 +13,8 @@ import {
 	type BadgeProps,
 	Button,
 	ConfirmDialog,
+	DataTable,
+	type DataTableColumn,
 	SearchInput,
 	Select,
 	SelectContent,
@@ -159,7 +157,7 @@ export function GalleryDraftListPage() {
 			width: "96px",
 			sticky: "right",
 			cell: (row) => (
-				<div className="flex items-center gap-2">
+				<div className="v-table__row-actions items-center gap-2">
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<span>

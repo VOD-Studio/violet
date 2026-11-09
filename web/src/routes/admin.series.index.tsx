@@ -3,15 +3,16 @@ import { useDeleteSeries } from "@features/admin-series/api/mutations";
 import { useAdminSeries } from "@features/admin-series/api/queries";
 import type { AdminSeriesListItem } from "@features/admin-series/model/types";
 import { SeriesSheet } from "@features/admin-series/ui/SeriesSheet";
-import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
-import { DataTable, usePagedQuery } from "@features/admin-shared/ui/data-table";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { formatDate } from "@shared/lib/date";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import type { DataTableColumn } from "@violet/ui";
 import {
 	Badge,
 	Button,
 	ConfirmDialog,
+	DataTable,
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,

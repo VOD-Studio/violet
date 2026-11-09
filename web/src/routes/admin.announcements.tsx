@@ -8,15 +8,16 @@ import type {
 	AnnouncementType,
 } from "@features/admin-announcements/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
-import { DataTable, usePagedQuery } from "@features/admin-shared/ui/data-table";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { formatDateTime } from "@shared/lib/date";
 import { createFileRoute } from "@tanstack/react-router";
+import type { DataTableColumn, DataTableSort } from "@violet/ui";
 import {
 	Badge,
 	Button,
 	ConfirmDialog,
+	DataTable,
 	Tag,
 	Tooltip,
 	TooltipContent,
@@ -147,7 +148,7 @@ function AdminAnnouncementsPage() {
 			sticky: "right",
 			width: "96px",
 			cell: (row) => (
-				<div className="flex items-center gap-2">
+				<div className="v-table__row-actions items-center gap-2">
 					<PermissionGuard permission="announcement:manage">
 						<Tooltip>
 							<TooltipTrigger asChild>

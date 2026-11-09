@@ -6,20 +6,17 @@ import {
 	useUpdateProject,
 } from "@features/admin-projects/api/mutations";
 import type { CreateProject } from "@features/admin-projects/model/types";
-import {
-	DataTable,
-	type DataTableColumn,
-	type DataTableSort,
-	usePagedQuery,
-} from "@features/admin-shared/ui/data-table";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useProjects, useProjectsPaged } from "@features/projects/api/queries";
-
 import type { Project } from "@features/projects/model/types";
 import { createFileRoute } from "@tanstack/react-router";
 import {
 	Button,
 	ConfirmDialog,
+	DataTable,
+	type DataTableColumn,
+	type DataTableSort,
 	Field,
 	Input,
 	Modal,

@@ -3,17 +3,15 @@ import { useDeleteNote } from "@features/admin-notes/api/mutations";
 import { useAdminNotes as useAdminNotesQuery } from "@features/admin-notes/api/queries";
 import type { AdminNoteSummary, NoteStatus } from "@features/admin-notes/model/types";
 import { NOTE_STATUS_LABELS } from "@features/admin-notes/model/types";
-import {
-	DataTable,
-	type DataTableColumn,
-	usePagedQuery,
-} from "@features/admin-shared/ui/data-table";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { formatDateTime } from "@shared/lib/date";
 import {
 	Badge,
 	Button,
 	ConfirmDialog,
+	DataTable,
+	type DataTableColumn,
 	Select,
 	SelectContent,
 	SelectItem,
@@ -122,7 +120,7 @@ export function NotesAdminListPage() {
 			header: "操作",
 			sticky: "right",
 			cell: (row) => (
-				<div className="flex items-center gap-2">
+				<div className="v-table__row-actions items-center gap-2">
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<span>

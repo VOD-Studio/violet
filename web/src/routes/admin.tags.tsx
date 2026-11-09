@@ -1,15 +1,16 @@
 import type { Tag } from "@entities/tag/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
-import { DataTable, usePagedQuery } from "@features/admin-shared/ui/data-table";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { TagDialog } from "@features/admin-tags/ui/TagDialog";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { useDeleteTag } from "@features/tags/api/mutations";
 import { useTagsPaged } from "@features/tags/api/queries";
 import { createFileRoute } from "@tanstack/react-router";
+import type { DataTableColumn, DataTableSort } from "@violet/ui";
 import {
 	Button,
 	ConfirmDialog,
+	DataTable,
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
@@ -95,7 +96,7 @@ function AdminTagsPage() {
 			sticky: "right",
 			width: "96px",
 			cell: (row) => (
-				<div className="flex items-center gap-2">
+				<div className="v-table__row-actions items-center gap-2">
 					<PermissionGuard permission="tag:update">
 						<Tooltip>
 							<TooltipTrigger asChild>

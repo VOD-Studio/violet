@@ -4,14 +4,15 @@ import type { RoleDTO } from "@features/admin-roles/model/types";
 import { CreateRoleDialog } from "@features/admin-roles/ui/CreateRoleDialog";
 import { EditRoleDialog } from "@features/admin-roles/ui/EditRoleDialog";
 import { RolePermissionsDialog } from "@features/admin-roles/ui/RolePermissionsDialog";
-import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
-import { DataTable, usePagedQuery } from "@features/admin-shared/ui/data-table";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { formatDate } from "@shared/lib/date";
 import { createFileRoute } from "@tanstack/react-router";
+import type { DataTableColumn, DataTableSort } from "@violet/ui";
 import {
 	Button,
 	ConfirmDialog,
+	DataTable,
 	Tag,
 	Tooltip,
 	TooltipContent,
@@ -144,7 +145,7 @@ function AdminRolesPage() {
 				// （重命名破坏 users.role 硬编码、删除会让依赖角色失权，后端仍守卫）
 				const isBuiltin = row.is_builtin;
 				return (
-					<div className="flex items-center gap-2">
+					<div className="v-table__row-actions items-center gap-2">
 						<PermissionGuard permission="role:manage">
 							<Tooltip>
 								<TooltipTrigger asChild>

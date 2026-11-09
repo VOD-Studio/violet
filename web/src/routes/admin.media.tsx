@@ -15,13 +15,7 @@ import { MediaGrid } from "@features/admin-media/ui/MediaGrid";
 import { MediaGridSkeleton } from "@features/admin-media/ui/MediaGridSkeleton";
 import { MediaLightbox } from "@features/admin-media/ui/MediaLightbox";
 import { type MediaViewMode, MediaViewSwitch } from "@features/admin-media/ui/MediaViewSwitch";
-import {
-	DataTable,
-	type DataTableColumn,
-	type DataTablePagination,
-	DEFAULT_PAGE_SIZE,
-	usePagedQuery,
-} from "@features/admin-shared/ui/data-table";
+import { DEFAULT_PAGE_SIZE, usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useReplaceMediaFile } from "@features/upload/api/mutations";
 import { useChunkedUpload } from "@features/upload/hooks/use-chunked-upload";
@@ -36,6 +30,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
 	Button,
 	ConfirmDialog,
+	DataTable,
+	type DataTableColumn,
+	type DataTablePagination,
 	Modal,
 	SearchInput,
 	Select,
@@ -609,7 +606,7 @@ function MediaTable({
 			width: "96px",
 			align: "center",
 			cell: (file) => (
-				<div className="flex justify-center gap-1">
+				<div className="v-table__row-actions gap-1">
 					{onEdit ? (
 						<Button
 							size="icon-sm"

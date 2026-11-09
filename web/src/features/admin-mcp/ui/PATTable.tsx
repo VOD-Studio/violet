@@ -1,12 +1,17 @@
 import { useDeletePAT } from "@features/admin-mcp/api/queries";
 import type { PATDTO } from "@features/admin-mcp/model/types";
+import { formatDate, formatDateTime } from "@shared/lib/date";
 import {
+	Button,
 	DataTable,
 	type DataTableColumn,
 	type DataTablePagination,
-} from "@features/admin-shared/ui/data-table";
-import { formatDate, formatDateTime } from "@shared/lib/date";
-import { Button, Tag, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@violet/ui";
+	Tag,
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@violet/ui";
 
 import { Cable, Pencil, Trash2 } from "lucide-react";
 
@@ -66,7 +71,7 @@ export function PATTable({ tokens, pagination, loading, onConnect, onEdit }: PAT
 			sticky: "right",
 			width: "136px",
 			cell: (row) => (
-				<div className="flex items-center gap-2">
+				<div className="v-table__row-actions items-center gap-2">
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<span>

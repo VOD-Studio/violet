@@ -1,10 +1,6 @@
-import {
-	DataTable,
-	type DataTableColumn,
-	useClientPagination,
-} from "@features/admin-shared/ui/data-table";
+import { useClientPagination } from "@features/admin-shared/ui/data-table";
 import { formatDate, formatDateTime } from "@shared/lib/date";
-import { Badge, Button, Spinner, Switch } from "@violet/ui";
+import { Badge, Button, DataTable, type DataTableColumn, Spinner, Switch } from "@violet/ui";
 
 import { Database, RefreshCw } from "lucide-react";
 import { useState } from "react";

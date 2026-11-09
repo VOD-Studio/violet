@@ -2,13 +2,14 @@ import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { useAdminPermissions, useDeletePermission } from "@features/admin-permissions/api/queries";
 import type { PermissionDTO } from "@features/admin-permissions/model/types";
 import { CreatePermissionDialog } from "@features/admin-permissions/ui/CreatePermissionDialog";
-import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
-import { DataTable, useClientPagination } from "@features/admin-shared/ui/data-table";
+import { useClientPagination } from "@features/admin-shared/ui/data-table";
 import { useIsSuperAdmin } from "@features/auth/hooks/usePermissions";
 import { createFileRoute } from "@tanstack/react-router";
+import type { DataTableColumn } from "@violet/ui";
 import {
 	Button,
 	ConfirmDialog,
+	DataTable,
 	Tag,
 	Tooltip,
 	TooltipContent,
@@ -174,7 +175,7 @@ function AdminPermissionsPage() {
 			cell: (r) => {
 				const isBuiltin = !!r.row.is_builtin;
 				return (
-					<div className="flex items-center gap-2">
+					<div className="v-table__row-actions items-center gap-2">
 						<Tooltip>
 							<TooltipTrigger asChild>
 								{/* span 包裹：让 Radix Tooltip 能附着到可能 disabled 的按钮上 */}
