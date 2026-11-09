@@ -24,15 +24,17 @@ func NewService(repo domainnotification.NotificationRepository, now func() time.
 
 // NotificationDTO 通知读模型。
 type NotificationDTO struct {
-	ID         string                 `json:"id"`
-	SourceType string                 `json:"source_type"`
-	SourceID   string                 `json:"source_id"`
-	Title      string                 `json:"title"`
-	Body       string                 `json:"body"`
-	Payload    map[string]any         `json:"payload"`
-	IsRead     bool                   `json:"is_read"`
-	ReadAt     *string                `json:"read_at,omitempty"`
-	CreatedAt  string                 `json:"created_at"`
+	ID         string         `json:"id"`
+	SourceType string         `json:"source_type"`
+	SourceID   string         `json:"source_id"`
+	Title      string         `json:"title"`
+	Body       string         `json:"body"`
+	Payload    map[string]any `json:"payload"`
+	// Structured 由 payload 保留键提升的结构化字段（旧通知为空）
+	Structured
+	IsRead    bool    `json:"is_read"`
+	ReadAt    *string `json:"read_at,omitempty"`
+	CreatedAt string  `json:"created_at"`
 }
 
 // ListByUser 分页列出某用户的通知（页码/条数取钳制后的回显值）。
@@ -77,6 +79,7 @@ func toDTO(n *domainnotification.Notification) NotificationDTO {
 		Title:      n.Title(),
 		Body:       n.Body(),
 		Payload:    n.Payload(),
+		Structured: structuredFromPayload(n.Payload()),
 		IsRead:     n.IsRead(),
 		CreatedAt:  n.CreatedAt().Format(time.RFC3339),
 	}

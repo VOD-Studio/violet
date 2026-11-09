@@ -51,15 +51,18 @@ func NewNotificationContainer(db *gorm.DB, cfg *config.Config, bus appshared.Eve
 	streamH := notificationhttp.NewStreamHandler(connMgr, svc)
 
 	// 接收者解析适配器（实现 application/notification 的 lookup 接口）
-	subLookup := &subscriptionOwnerAdapter{repo: gormrepo.NewSubscriptionRepository(db)}
-	commentLookup := &commentAuthorAdapter{repo: gormrepo.NewCommentRepository(db)}
-	adminLookup := &adminUserAdapter{db: db}
-	friendlinkLookup := &friendlinkApplicantAdapter{db: db}
-	postAuthorLookup := &commentPostAuthorAdapter{db: db}
-	actorLookup := &actorNameAdapter{db: db}
+	lookups := appnotification.Lookups{
+		SubscriptionOwner:   &subscriptionOwnerAdapter{repo: gormrepo.NewSubscriptionRepository(db)},
+		CommentAuthor:       &commentAuthorAdapter{repo: gormrepo.NewCommentRepository(db)},
+		AdminUsers:          &adminUserAdapter{db: db},
+		FriendLinkApplicant: &friendlinkApplicantAdapter{db: db},
+		CommentPostAuthor:   &commentPostAuthorAdapter{db: db},
+		Actor:               &actorAdapter{db: db},
+		CommentContext:      &commentContextAdapter{db: db},
+	}
 
 	// 通知 subscriber 订阅事件总线（SSE 推在线标签页 + Web Push 覆盖页面关闭场景）
-	subscriber := appnotification.NewPushingSubscriber(repo, subLookup, commentLookup, adminLookup, friendlinkLookup, postAuthorLookup, actorLookup, connMgr, pushSvc, log.Logger)
+	subscriber := appnotification.NewPushingSubscriber(repo, lookups, connMgr, pushSvc, log.Logger)
 	subscriber.Subscribe(bus)
 
 	return &NotificationContainer{
@@ -70,24 +73,59 @@ func NewNotificationContainer(db *gorm.DB, cfg *config.Config, bus appshared.Eve
 	}
 }
 
-// actorNameAdapter 查互动发起者的展示名（display_name 空则回落 username）。
-type actorNameAdapter struct {
+// actorAdapter 查行为人资料：展示名（display_name 空则回落 username）与头像 URL。
+// 头像原样返回 users.avatar_url，与用户接口口径一致。
+type actorAdapter struct {
 	db *gorm.DB
 }
 
-func (a *actorNameAdapter) FindDisplayName(ctx context.Context, userID domainshared.ID) string {
-	var name string
+func (a *actorAdapter) FindActor(ctx context.Context, userID domainshared.ID) appnotification.Actor {
+	var row struct {
+		Name      string
+		AvatarURL string
+	}
 	err := a.db.WithContext(ctx).
 		Table("users").
-		Select("COALESCE(NULLIF(display_name, ''), username)").
+		Select("COALESCE(NULLIF(display_name, ''), username) AS name, COALESCE(avatar_url, '') AS avatar_url").
 		Where("id = ?", userID.UUID()).
 		Limit(1).
-		Scan(&name).Error
+		Scan(&row).Error
 	if err != nil {
-		log.Warn().Err(err).Str("user_id", userID.String()).Msg("查询互动发起者展示名失败")
-		return ""
+		log.Warn().Err(err).Str("user_id", userID.String()).Msg("查询行为人资料失败")
+		return appnotification.Actor{}
 	}
-	return name
+	return appnotification.Actor{Name: row.Name, AvatarURL: row.AvatarURL}
+}
+
+// commentContextAdapter 查评论正文、评论者快照与所属文章标题。
+// 文章 LEFT JOIN 且排除软删：文章已删时仍返回评论本身，标题为空。
+type commentContextAdapter struct {
+	db *gorm.DB
+}
+
+func (a *commentContextAdapter) FindCommentContext(ctx context.Context, commentID domainshared.ID) (appnotification.CommentContext, error) {
+	var row struct {
+		AuthorName      string
+		AuthorAvatarURL string
+		PostTitle       string
+		Content         string
+	}
+	err := a.db.WithContext(ctx).
+		Table("comments").
+		Select("comments.author_name AS author_name, comments.avatar_url AS author_avatar_url, COALESCE(posts.title, '') AS post_title, comments.body AS content").
+		Joins("LEFT JOIN posts ON posts.id = comments.post_id AND posts.deleted_at IS NULL").
+		Where("comments.id = ?", commentID.UUID()).
+		Limit(1).
+		Scan(&row).Error
+	if err != nil {
+		return appnotification.CommentContext{}, domainshared.Internal("查询评论上下文失败", err)
+	}
+	return appnotification.CommentContext{
+		AuthorName:      row.AuthorName,
+		AuthorAvatarURL: row.AuthorAvatarURL,
+		PostTitle:       row.PostTitle,
+		Content:         row.Content,
+	}, nil
 }
 
 // --- lookup 适配器 ---

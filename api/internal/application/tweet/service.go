@@ -904,7 +904,7 @@ func (s *Service) CreateComment(ctx context.Context, in CreateCommentInput) (Com
 	if err := s.commentRepo.Save(ctx, c); err != nil {
 		return CommentDTO{}, err
 	}
-	s.publishEvents(ctx, []shared.DomainEvent{domaintweet.NewTweetCommented(c, tw.AuthorID(), repliedToAuthorID)})
+	s.publishEvents(ctx, []shared.DomainEvent{domaintweet.NewTweetCommented(c, tw, repliedToAuthorID)})
 	dto := s.commentsToDTOs(ctx, []*domaintweet.Comment{c})[0]
 	if err := s.enrichSingleEmote(ctx, &dto); err != nil {
 		return CommentDTO{}, err

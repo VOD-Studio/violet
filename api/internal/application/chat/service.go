@@ -478,7 +478,7 @@ func (s *Service) CreateConversation(ctx context.Context, in CreateConversationI
 		if err != nil {
 			return ConversationDTO{}, err
 		}
-		s.publishRoomInvites(ctx, conversation, participants)
+		s.publishRoomInvites(ctx, conversation, in.UserID, participants)
 		s.notifyEvents(ctx, events)
 	case domainchat.ConversationDirect:
 		// 对端不在场：没有会话创建事件就只能刷新才能看到新私聊。
@@ -556,7 +556,7 @@ func (s *Service) InviteMember(ctx context.Context, userID, conversationID, invi
 	if err != nil {
 		return err
 	}
-	s.publishRoomInvites(ctx, conversation, []domainshared.ID{inviteeID})
+	s.publishRoomInvites(ctx, conversation, userID, []domainshared.ID{inviteeID})
 	changed, err := s.repo.SaveEvent(ctx, recipients, domainchat.EventMemberChanged, map[string]any{"conversation_id": conversationID.String(), "user_id": inviteeID.String()})
 	if err != nil {
 		return err
@@ -565,13 +565,13 @@ func (s *Service) InviteMember(ctx context.Context, userID, conversationID, invi
 	return nil
 }
 
-func (s *Service) publishRoomInvites(ctx context.Context, conversation *domainchat.Conversation, inviteeIDs []domainshared.ID) {
+func (s *Service) publishRoomInvites(ctx context.Context, conversation *domainchat.Conversation, inviterID domainshared.ID, inviteeIDs []domainshared.ID) {
 	if s.bus == nil {
 		return
 	}
 	events := make([]domainshared.DomainEvent, 0, len(inviteeIDs))
 	for _, inviteeID := range inviteeIDs {
-		events = append(events, domainchat.NewRoomInvited(conversation.ID(), inviteeID, conversation.Title()))
+		events = append(events, domainchat.NewRoomInvited(conversation.ID(), inviterID, inviteeID, conversation.Title()))
 	}
 	if len(events) > 0 {
 		_ = s.bus.Publish(ctx, events)

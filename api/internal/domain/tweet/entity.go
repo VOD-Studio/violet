@@ -299,6 +299,8 @@ type TweetQuoted struct {
 	QuoteTweetID shared.ID
 	// Excerpt 被引用推文正文前缀快照
 	Excerpt string
+	// QuoteExcerpt 引用推文自身的正文前缀快照（纯转发无评论语时为空串）
+	QuoteExcerpt string
 }
 
 // NewTweetQuoted 构造推文被引用事件。
@@ -310,5 +312,6 @@ func NewTweetQuoted(quoted, quote *Tweet) TweetQuoted {
 		ActorID:      quote.authorID,
 		QuoteTweetID: quote.id,
 		Excerpt:      quoted.NotificationExcerpt(),
+		QuoteExcerpt: quote.NotificationExcerpt(),
 	}
 }

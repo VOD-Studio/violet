@@ -90,15 +90,7 @@ func (h *StreamHandler) Stream(w http.ResponseWriter, r *http.Request) {
 
 // writeNotificationSSE 写单条通知为 SSE 事件（补发用）。
 func writeNotificationSSE(w http.ResponseWriter, n *domainnotification.Notification) {
-	data := appnotification.EventToJSON(appnotification.SSEEvent{
-		ID:         n.GetID().String(),
-		SourceType: string(n.SourceType()),
-		SourceID:   n.SourceID().String(),
-		Title:      n.Title(),
-		Body:       n.Body(),
-		Payload:    n.Payload(),
-		CreatedAt:  n.CreatedAt().Format(time.RFC3339),
-	})
+	data := appnotification.EventToJSON(appnotification.NewSSEEvent(n))
 	_, _ = w.Write([]byte("id: " + n.GetID().String() + "\n"))
 	_, _ = w.Write([]byte("data: " + data + "\n\n"))
 }
