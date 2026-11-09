@@ -8,6 +8,7 @@
 
 import type { NotificationItem, NotificationSourceType } from "@shared/api/notifications";
 import { formatRelativeTime } from "@shared/lib/date";
+import { openChatConversation } from "@shared/lib/open-chat-conversation";
 import { useNavigate } from "@tanstack/react-router";
 import {
 	BadgeAnchor,
@@ -94,17 +95,6 @@ const sourceColor: Record<NotificationSourceType, string> = {
 	tweet_commented: "text-category-1",
 	tweet_comment_replied: "text-category-6",
 	window_knocked: "text-category-3",
-};
-
-/**
- * 跳转到聊天工作区并打开指定会话。
- *
- * 聊天页以 `?c=` 管理选中会话并监听 popstate（useChatSelection）；
- * 直接改 URL 再派发 popstate：已在 /chat 时切换选中，其他页面触发路由匹配挂载。
- */
-const openChatConversation = (conversationID: string) => {
-	window.history.pushState({}, "", `/chat?c=${encodeURIComponent(conversationID)}`);
-	window.dispatchEvent(new PopStateEvent("popstate"));
 };
 
 interface NotificationBellProps {
