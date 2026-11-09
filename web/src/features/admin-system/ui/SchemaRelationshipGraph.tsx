@@ -94,7 +94,7 @@ export function SchemaRelationshipGraph({ schema, onUseQuery }: SchemaRelationsh
 					</p>
 				</div>
 				<DialogTrigger asChild>
-					<Button size="sm">
+					<Button variant="primary" size="sm">
 						<Waypoints data-icon="inline-start" />
 						打开关系图
 						<Maximize2 data-icon="inline-end" className="opacity-70" />

@@ -9,12 +9,8 @@ export const buttonVariants = tv({
 	base: "v-button",
 	variants: {
 		variant: {
-			/** 旧默认变体，等同于 primary；调用方迁移后删除。 */
-			default: "v-button--primary",
 			primary: "v-button--primary",
 			secondary: "v-button--secondary",
-			/** 旧柔和变体，等同于 secondary；调用方迁移后删除。 */
-			soft: "v-button--secondary",
 			outline: "v-button--outline",
 			ghost: "v-button--ghost",
 			destructive: "v-button--destructive",
@@ -24,14 +20,6 @@ export const buttonVariants = tv({
 			sm: "v-button--sm",
 			md: "",
 			lg: "v-button--lg",
-			/** 以下旧尺寸在站点迁移期间保留，迁移完成后删除。 */
-			default: "",
-			xs: "v-button--sm",
-			xl: "v-button--lg",
-			icon: "v-button--icon",
-			"icon-xs": "v-button--icon-xs",
-			"icon-sm": "v-button--icon-sm",
-			"icon-lg": "v-button--icon-lg",
 		},
 	},
 	defaultVariants: {

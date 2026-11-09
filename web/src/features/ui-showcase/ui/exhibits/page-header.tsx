@@ -34,7 +34,7 @@ function ListHeader() {
 				</Button>
 			}
 			primaryAction={
-				<Button size="sm">
+				<Button variant="primary" size="sm">
 					<Plus className="size-4" />
 					写文章
 				</Button>
@@ -78,12 +78,12 @@ function DetailHeader() {
 						<Button variant="ghost" size="sm">
 							预览
 						</Button>
-						<Button variant="ghost" size="icon-sm" aria-label="更多操作">
+						<Button variant="ghost" iconOnly size="sm" aria-label="更多操作">
 							<Ellipsis className="size-4" />
 						</Button>
 					</>
 				}
-				primaryAction={<Button size="sm">发布</Button>}
+				primaryAction={<Button variant="primary" size="sm">发布</Button>}
 			/>
 			<p className="text-13 text-muted-foreground">正文从这里开始。</p>
 		</div>
@@ -98,7 +98,7 @@ function CompactHeader() {
 				description="共 270 篇，3 篇待发布"
 				compactSummary="270 篇"
 				primaryAction={
-					<Button size="sm">
+					<Button variant="primary" size="sm">
 						<Plus className="size-4" />
 						写文章
 					</Button>
@@ -133,6 +133,7 @@ function HorizontalSteps() {
 					上一步
 				</Button>
 				<Button
+					variant="primary"
 					size="sm"
 					onClick={() => setCurrent(Math.min(STEPS.length - 1, current + 1))}
 				>

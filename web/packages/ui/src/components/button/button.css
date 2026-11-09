@@ -217,31 +217,6 @@
 		inline-size: 2.5rem;
 	}
 
-	/* 迁移期别名：旧的 icon-* 尺寸仍渲染正圆，站点改用 iconOnly 后删除 */
-	.v-button--icon,
-	.v-button--icon-xs,
-	.v-button--icon-sm,
-	.v-button--icon-lg {
-		padding: 0;
-		aspect-ratio: 1;
-	}
-
-	.v-button--icon {
-		inline-size: 2.25rem;
-	}
-
-	.v-button--icon-xs {
-		inline-size: 2rem;
-	}
-
-	.v-button--icon-sm {
-		inline-size: 2rem;
-	}
-
-	.v-button--icon-lg {
-		inline-size: 2.5rem;
-	}
-
 	/* 触屏：各档高度加 4 */
 	@media (pointer: coarse) {
 		.v-button--sm {
