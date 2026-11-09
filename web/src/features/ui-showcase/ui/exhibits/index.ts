@@ -19,6 +19,7 @@ import { dropdownMenuExhibit } from "./dropdown-menu";
 import { fieldExhibit } from "./field";
 import { footerExhibit } from "./footer";
 import { imagePixelRevealExhibit } from "./image-pixel-reveal";
+import { inboxExhibit } from "./inbox";
 import { indicatorExhibit } from "./indicator";
 import { inputExhibit } from "./input";
 import { kbdExhibit } from "./kbd";
@@ -78,15 +79,7 @@ export const EXHIBITS: Exhibit[] = [
 	commandExhibit,
 	morphingPopoverExhibit,
 	presenceExhibit,
-	{
-		id: "inbox",
-		name: "消息面板",
-		units: ["inbox"],
-		zone: "stage",
-		category: "overlay",
-		footprint: { width: 400, height: 520 },
-		issue: 715,
-	},
+	inboxExhibit,
 	{
 		id: "lightbox",
 		name: "图片预览",

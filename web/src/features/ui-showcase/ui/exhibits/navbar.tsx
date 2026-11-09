@@ -1,5 +1,5 @@
 import { getNavItems, resolveActiveNav } from "@shared/config/nav";
-import { SEASONS, type Season } from "@shared/lib/theme-preference";
+import type { Season } from "@shared/lib/theme-preference";
 import { SeasonGlyph } from "@shared/ui/icons";
 import { SiteIsland } from "@shared/ui/site-island";
 import {
@@ -11,7 +11,8 @@ import {
 import { BadgeAnchor, Count, Separator } from "@violet/ui";
 import { cn } from "cn";
 import { Bell, User } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useScopeSeason } from "../../hooks/use-scope-season";
 import { useStageContainer } from "../../hooks/use-stage-container";
 import type { Exhibit, ExhibitRenderProps } from "../../model/exhibit";
 import { portrait } from "./art";
@@ -25,23 +26,6 @@ const PHONE_WIDTH = 390;
 
 const ICON_BUTTON =
 	"flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring";
-
-/** 展柜外观作用域里的季节；检视台切换季节时跟着变，自定义主题按秋处理。 */
-function useScopeSeason(host: HTMLElement | null): Season {
-	const [season, setSeason] = useState<Season>("autumn");
-	useEffect(() => {
-		if (!host) return;
-		const read = () => {
-			const theme = host.dataset.theme;
-			setSeason(SEASONS.find((item) => item === theme) ?? "autumn");
-		};
-		read();
-		const observer = new MutationObserver(read);
-		observer.observe(host, { attributes: true, attributeFilter: ["data-theme"] });
-		return () => observer.disconnect();
-	}, [host]);
-	return season;
-}
 
 function Logo() {
 	return (
