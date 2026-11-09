@@ -21,7 +21,7 @@ const columns: DataTableColumn<Post>[] = [
   { key: "actions", header: "", sticky: "right", hideable: false, stopClickPropagation: true,
     cell: (post) => (
       <span className="v-table__row-actions">
-        <Button variant="ghost" size="icon-sm" aria-label={`编辑 ${post.title}`}><Pencil /></Button>
+        <Button variant="ghost" iconOnly size="sm" aria-label={`编辑 ${post.title}`}><Pencil /></Button>
       </span>
     ) },
 ];

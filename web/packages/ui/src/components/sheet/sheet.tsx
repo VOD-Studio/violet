@@ -214,7 +214,8 @@ function SheetContent({
 						<SheetPrimitive.Close asChild>
 							<Button
 								variant="ghost"
-								size="icon-sm"
+								iconOnly
+								size="sm"
 								className="v-sheet__close"
 								aria-label="关闭"
 							>

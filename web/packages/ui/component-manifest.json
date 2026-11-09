@@ -39,7 +39,8 @@
 			"name": "button",
 			"status": "foundation",
 			"entry": "src/components/button/index.ts",
-			"css": "src/components/button/button.css"
+			"css": "src/components/button/button.css",
+			"documentation": "web/packages/ui/docs/components/button.md"
 		},
 		{
 			"name": "card",

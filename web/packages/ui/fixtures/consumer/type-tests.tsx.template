@@ -165,6 +165,21 @@ buttonVariants(recipe);
 buttonVariants({ variant: "primary", className: "consumer-class" });
 // @ts-expect-error Unsupported variants must stay compile-time errors.
 buttonVariants({ variant: "unknown" });
+export const buttonStates = <>
+	<Button variant="secondary" size="sm" leftIcon="★" rightIcon="›">取消</Button>
+	<Button variant="outline" size="md" loading loadingText="保存中…">保存</Button>
+	<Button variant="ghost" size="lg" loading aria-label="刷新" iconOnly>↻</Button>
+	<Button variant="destructive" done="已删除">删除</Button>
+	<Button variant="link" doneDuration={800} done="已完成">查看全部</Button>
+</>;
+// @ts-expect-error 旧的 default 变体已删除，主操作写 primary。
+export const invalidLegacyVariant = <Button variant="default">保存</Button>;
+// @ts-expect-error 旧的 soft 变体已删除，次要动作用 secondary。
+export const invalidSoftVariant = <Button variant="soft">取消</Button>;
+// @ts-expect-error 旧的 xs 尺寸已删除，最小档是 sm。
+export const invalidXsSize = <Button size="xs">保存</Button>;
+// @ts-expect-error 旧的 icon-sm 尺寸已删除，纯图标按钮写 iconOnly 加尺寸。
+export const invalidIconSize = <Button size="icon-sm" aria-label="新建">+</Button>;
 export const example = <><Button {...button}>保存</Button><Input {...field} /><LeafInput {...leafField} /><Input /><Label>名称</Label><Textarea /></>;
 export const legacy = PageShell;
 

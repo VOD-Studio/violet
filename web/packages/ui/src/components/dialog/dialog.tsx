@@ -319,7 +319,8 @@ function DialogContent({
 						<DialogPrimitive.Close asChild>
 							<Button
 								variant="ghost"
-								size="icon-sm"
+								iconOnly
+								size="sm"
 								className="v-dialog__close"
 								aria-label="关闭"
 							>

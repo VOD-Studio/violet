@@ -18,7 +18,7 @@ const colors = (locator) => locator.evaluate((element) => {
 	const result = { actualText: sample(style.color), actualBackground: sample(style.backgroundColor) };
 	const probe = document.createElement("span");
 	element.append(probe);
-	for (const name of ["background", "primary", "primary-hover", "primary-foreground", "link"]) {
+	for (const name of ["background", "foreground", "primary", "primary-hover", "primary-foreground", "link"]) {
 		probe.style.color = `var(--${name})`;
 		result[name] = sample(getComputedStyle(probe).color);
 	}
@@ -42,14 +42,16 @@ export async function checkConsumerTheme(css, html) {
 					const button = page.locator(`#${id}`);
 					await page.mouse.move(0, 0);
 					await button.evaluate((el) => { el.style.transition = "none"; });
+					// 主要按钮是墨色底、纸色字；季节色只出现在聚焦环与链接，不参与按钮底色
 					const normal = await colors(button);
-					assert.equal(normal.actualBackground.value, normal.primary.value);
+					assert.equal(normal.actualBackground.value, normal.foreground.value, `${appearance}/${contrast}/${id}: primary is not ink`);
+					assert.equal(normal.actualText.value, normal.background.value, `${appearance}/${contrast}/${id}: primary text is not paper`);
 					const normalRatio = ratio(normal.actualText, normal.actualBackground);
 					assert.ok(normalRatio >= minimumRatio, `${appearance}/${contrast}/${id}: normal contrast ${normalRatio} < ${minimumRatio}`);
 					await button.hover();
 					const hover = await colors(button);
-					assert.equal(hover.actualBackground.value, normal["primary-hover"].value);
-					assert.equal(hover.actualText.value, normal["primary-foreground"].value);
+					assert.notEqual(hover.actualBackground.value, normal.actualBackground.value, `${appearance}/${contrast}/${id}: hover keeps the base color`);
+					assert.equal(hover.actualText.value, normal.background.value);
 					const hoverRatio = ratio(hover.actualText, hover.actualBackground);
 					assert.ok(hoverRatio >= minimumRatio, `${appearance}/${contrast}/${id}: hover contrast ${hoverRatio} < ${minimumRatio}`);
 					readings.push({ appearance, contrast, id, normalRatio, hoverRatio });

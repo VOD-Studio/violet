@@ -103,6 +103,9 @@ try {
 		writeFileSync(resolve(consumerRoot, `${name}.css`), output);
 	}
 	assert.ok(css.button.bytes < css.all.bytes, "Per-component CSS did not reduce the style payload.");
+	assert.match(cssText.button, /\.v-button--primary\s*\{/);
+	assert.match(cssText.button, /\.v-button__overlay\s*\{/);
+	assert.match(cssText.all, /\.v-button--link\s*\{/);
 	assert.ok(css.checkbox.bytes < css.all.bytes, "Checkbox CSS did not reduce the style payload.");
 	assert.match(cssText.checkbox, /\.v-checkbox\s*\{/);
 	assert.match(cssText.checkbox, /\.v-checkbox__tick\s*\{/);
