@@ -21,6 +21,7 @@ import { indicatorExhibit } from "./indicator";
 import { inputExhibit } from "./input";
 import { kbdExhibit } from "./kbd";
 import { linkCardExhibit } from "./link-card";
+import { listExhibit } from "./list";
 import { morphingPopoverExhibit } from "./morphing-popover";
 import { navbarExhibit } from "./navbar";
 import { numberInputExhibit } from "./number-input";
@@ -143,10 +144,11 @@ export const EXHIBITS: Exhibit[] = [
 	imagePixelRevealExhibit,
 	cardExhibit,
 	separatorExhibit,
+	listExhibit,
 	{
-		id: "list",
-		name: "列表与树",
-		units: ["list", "tree"],
+		id: "tree",
+		name: "树",
+		units: ["tree"],
 		zone: "content",
 		category: "display",
 		footprint: { width: 400, height: 320 },

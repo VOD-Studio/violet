@@ -1,0 +1,186 @@
+/*
+ * 列表（.v-list）：成行的内容，悬停底色由 list-highlight 提供。需先导入 @violet/ui/tokens.css 或 styles.css。
+ * 头像用 avatar 单元，标签用 badge 单元，各自按需导入它们的 CSS。
+ */
+@import "../list-highlight/list-highlight.css";
+
+@layer components {
+	.v-list {
+		--v-list-row-height: 3.5rem;
+		--v-list-row-padding-block: 0.5rem;
+		--v-list-row-padding-inline: 0.75rem;
+		--v-list-icon-size: 2.25rem;
+		--v-list-icon-radius: 0.625rem;
+		--v-list-icon-bg: var(--muted);
+
+		display: flex;
+		flex-direction: column;
+		gap: 0.125rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.v-list[data-density="compact"] {
+		--v-list-row-height: 2.5rem;
+		--v-list-row-padding-block: 0.25rem;
+		--v-list-row-padding-inline: 0.625rem;
+		--v-list-icon-size: 1.75rem;
+		--v-list-icon-radius: 0.5rem;
+		--v-list-icon-bg: transparent;
+	}
+
+	.v-list__item {
+		margin: 0;
+		padding: 0;
+	}
+
+	.v-list__row {
+		box-sizing: border-box;
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		inline-size: 100%;
+		min-block-size: var(--v-list-row-height);
+		margin: 0;
+		padding: var(--v-list-row-padding-block) var(--v-list-row-padding-inline);
+		border: 0;
+		border-radius: 0.75rem;
+		background-color: transparent;
+		color: var(--foreground);
+		font: inherit;
+		text-align: start;
+		text-decoration: none;
+		cursor: default;
+	}
+
+	.v-list__row:is(button, a[href]) {
+		cursor: pointer;
+	}
+
+	/* 比 list-highlight 的 :focus { outline: none } 多一级，键盘焦点环落在行内，不会被外层裁掉 */
+	.v-list .v-list__row:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: -2px;
+	}
+
+	.v-list__row:is(:disabled, [aria-disabled="true"]) {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
+	.v-list__icon {
+		display: flex;
+		flex: none;
+		align-items: center;
+		justify-content: center;
+		inline-size: var(--v-list-icon-size);
+		block-size: var(--v-list-icon-size);
+		border-radius: var(--v-list-icon-radius);
+		background-color: var(--v-list-icon-bg);
+		color: var(--muted-foreground);
+	}
+
+	/* avatar 只有固定几档，列表里统一收成图标块大小 */
+	.v-list__row .v-avatar[data-size] {
+		--v-avatar-size: var(--v-list-icon-size);
+	}
+
+	.v-list__content {
+		display: flex;
+		flex: 1 1 0;
+		flex-direction: column;
+		min-inline-size: 0;
+	}
+
+	.v-list__title,
+	.v-list__description {
+		overflow: hidden;
+		line-height: 1.5;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.v-list__title {
+		font-size: 0.875rem;
+		font-weight: 500;
+	}
+
+	.v-list__description {
+		color: var(--muted-foreground);
+		font-size: 0.8125rem;
+	}
+
+	.v-list__title[data-mono] {
+		font-size: 0.84375rem;
+	}
+
+	.v-list__value {
+		flex: none;
+		color: var(--muted-foreground);
+		font-size: 0.8125rem;
+	}
+
+	.v-list__title[data-mono],
+	.v-list__description[data-mono],
+	.v-list__value[data-mono] {
+		font-family: var(--font-mono);
+		font-variant-numeric: tabular-nums;
+	}
+
+	/* 当前项：底色与滑块同色，悬停到它时滑块藏在它下面，不会闪 */
+	.v-list__row[aria-current]:not([aria-current="false"]) {
+		background-color: var(--muted);
+	}
+
+	.v-list__row[aria-current]:not([aria-current="false"]) .v-list__title {
+		font-weight: 600;
+	}
+
+	.v-list__row[aria-current]:not([aria-current="false"]) .v-list__icon {
+		color: var(--foreground);
+	}
+
+	.v-list__chevron {
+		flex: none;
+		color: var(--muted-foreground);
+	}
+
+	.v-list__action {
+		display: inline-flex;
+		flex: none;
+		align-items: center;
+		justify-content: center;
+		box-sizing: border-box;
+		inline-size: 2rem;
+		block-size: 2rem;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		border-radius: 50%;
+		background-color: transparent;
+		color: var(--muted-foreground);
+		cursor: pointer;
+	}
+
+	/* 行上的凹陷色滑块之上还要再深一档，否则圆钮的悬停底色与滑块融在一起 */
+	.v-list__action:hover {
+		background-color: color-mix(in oklab, var(--muted) 80%, var(--foreground));
+		color: var(--foreground);
+	}
+
+	.v-list__action:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 0;
+	}
+
+	.v-list__action:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
+	/* 行被滑块罩住时，中性标签换成纸色，才不会与滑块同色而消失；--v-tag-bg 由 badge 的 .v-tag 声明 */
+	.v-list__row[data-highlighted] .v-tag:not(.v-tag--accent) {
+		--v-tag-bg: var(--card);
+	}
+}

@@ -162,6 +162,11 @@
 			"import": "./src/components/link-card/index.ts",
 			"default": "./src/components/link-card/index.ts"
 		},
+		"./list": {
+			"types": "./src/components/list/index.ts",
+			"import": "./src/components/list/index.ts",
+			"default": "./src/components/list/index.ts"
+		},
 		"./list-highlight": {
 			"types": "./src/components/list-highlight/index.ts",
 			"import": "./src/components/list-highlight/index.ts",
@@ -364,6 +369,7 @@
 		"./components/input.css": "./src/components/input/input.css",
 		"./components/kbd.css": "./src/components/kbd/kbd.css",
 		"./components/link-card.css": "./src/components/link-card/link-card.css",
+		"./components/list.css": "./src/components/list/list.css",
 		"./components/list-highlight.css": "./src/components/list-highlight/list-highlight.css",
 		"./components/morphing-popover.css": "./src/components/morphing-popover/morphing-popover.css",
 		"./components/number-input.css": "./src/components/number-input/number-input.css",
@@ -559,6 +565,11 @@
 				"types": "./dist/components/link-card/index.d.ts",
 				"import": "./dist/components/link-card/index.js",
 				"default": "./dist/components/link-card/index.js"
+			},
+			"./list": {
+				"types": "./dist/components/list/index.d.ts",
+				"import": "./dist/components/list/index.js",
+				"default": "./dist/components/list/index.js"
 			},
 			"./list-highlight": {
 				"types": "./dist/components/list-highlight/index.d.ts",
@@ -762,6 +773,7 @@
 			"./components/input.css": "./dist/components/input.css",
 			"./components/kbd.css": "./dist/components/kbd.css",
 			"./components/link-card.css": "./dist/components/link-card.css",
+			"./components/list.css": "./dist/components/list.css",
 			"./components/list-highlight.css": "./dist/components/list-highlight.css",
 			"./components/morphing-popover.css": "./dist/components/morphing-popover.css",
 			"./components/number-input.css": "./dist/components/number-input.css",

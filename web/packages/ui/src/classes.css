@@ -23,6 +23,7 @@
 @import "./components/input/input.css";
 @import "./components/kbd/kbd.css";
 @import "./components/link-card/link-card.css";
+@import "./components/list/list.css";
 @import "./components/list-highlight/list-highlight.css";
 @import "./components/morphing-popover/morphing-popover.css";
 @import "./components/number-input/number-input.css";

@@ -171,6 +171,13 @@
 			"documentation": "web/packages/ui/docs/components/link-card.md"
 		},
 		{
+			"name": "list",
+			"status": "foundation",
+			"entry": "src/components/list/index.ts",
+			"css": "src/components/list/list.css",
+			"documentation": "web/packages/ui/docs/components/list.md"
+		},
+		{
 			"name": "list-highlight",
 			"status": "foundation",
 			"entry": "src/components/list-highlight/index.ts",

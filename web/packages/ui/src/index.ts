@@ -23,6 +23,7 @@ export * from "./components/indicator/index";
 export * from "./components/input/index";
 export * from "./components/kbd/index";
 export * from "./components/link-card/index";
+export * from "./components/list/index";
 export * from "./components/list-highlight/index";
 export * from "./components/morphing-popover/index";
 export * from "./components/number-input/index";
