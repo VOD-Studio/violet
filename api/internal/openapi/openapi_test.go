@@ -424,3 +424,22 @@ func TestSiteImpressionPath(t *testing.T) {
 	require.Contains(t, path.Post.Responses.Map(), "403")
 	require.Contains(t, path.Post.Responses.Map(), "429")
 }
+
+func TestBotAvatarPathUsesSelfBoundMultipart(t *testing.T) {
+	spec, err := Spec()
+	require.NoError(t, err)
+	path := spec.Paths.Find("/chat/bot/avatar")
+	require.NotNil(t, path)
+	require.NotNil(t, path.Post)
+	require.NotEmpty(t, path.Post.Security)
+	require.False(t, hasParam(path.Post.Parameters, "X-CSRF-Token"))
+	schema := path.Post.RequestBody.Value.Content["multipart/form-data"].Schema.Value
+	require.Equal(t, []string{"file"}, schema.Required)
+	require.Len(t, schema.Properties, 1)
+	require.Equal(t, "binary", schema.Properties["file"].Value.Format)
+	require.NotNil(t, schema.AdditionalProperties.Has)
+	require.False(t, *schema.AdditionalProperties.Has)
+	for _, status := range []string{"200", "400", "401", "403", "413", "500"} {
+		require.Contains(t, path.Post.Responses.Map(), status)
+	}
+}

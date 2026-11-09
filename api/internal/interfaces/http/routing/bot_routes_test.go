@@ -34,6 +34,7 @@ func TestBotAPIRoutesBypassCSRF(t *testing.T) {
 	routes := routeMethods(t, router)
 	for _, want := range []string{
 		"GET /api/v1/chat/bot/profile",
+		"POST /api/v1/chat/bot/avatar",
 		"PUT /api/v1/chat/bot/commands",
 		"GET /api/v1/chat/bot/events",
 		"POST /api/v1/chat/bot/media",
@@ -60,6 +61,11 @@ func TestBotAPIRoutesBypassCSRF(t *testing.T) {
 	favoriteRec := httptest.NewRecorder()
 	router.ServeHTTP(favoriteRec, favoriteReq)
 	require.Equal(t, http.StatusUnauthorized, favoriteRec.Code)
+
+	avatarReq := httptest.NewRequest(http.MethodPost, "/api/v1/chat/bot/avatar", nil)
+	avatarRec := httptest.NewRecorder()
+	router.ServeHTTP(avatarRec, avatarReq)
+	require.Equal(t, http.StatusUnauthorized, avatarRec.Code)
 }
 
 func TestAdminBotRoutesGateOnBotManagePermission(t *testing.T) {

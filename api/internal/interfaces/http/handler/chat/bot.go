@@ -51,6 +51,7 @@ type BotHandler struct {
 	conns         *appchat.BotConnectionManager
 	commands      *appchat.BotCommandService
 	media         botMediaSaver
+	avatars       *appchat.BotAvatarService
 	mediaMaxBytes int64
 	emojiCatalog  botEmojiCatalog
 	customEmojis  botCustomEmojiLibrary
