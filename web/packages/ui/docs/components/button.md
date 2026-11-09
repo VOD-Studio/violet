@@ -21,7 +21,7 @@ import { Button } from "@violet/ui";
 | `loading` | `aria-busy="true"`、仍可聚焦、点击与键盘激活被忽略；指示器盖在内容中央，宽度不变 |
 | `loadingText` | 加载时替换正文（「发布中…」），宽度跟随新文案；iconOnly 下不生效 |
 | `done` / `doneDuration` | 完成后的结果文案（「已保存」）：展示 `doneDuration`（默认 1600ms）后回到 children；期间可点击 |
-| `asChild` | 属性与 ref 合并到唯一子元素（自定义 Link）；加载时子元素不被禁用，标记 `aria-disabled` 并拦截激活 |
+| `asChild` | 属性与 ref 合并到唯一子元素（自定义 Link）；加载时子元素不被禁用，只标 `aria-busy` 并拦截激活 |
 | `type` | 默认 `type="button"`；表单主操作显式写 `submit` |
 | `disabled` | 原生 `disabled`，跳出 Tab 顺序，整体 42% 透明；要解释为什么不能点时改用可聚焦按钮并在旁边说明 |
 | `ref` / `className` | 原生模式指向 button；asChild 模式指向子元素 |

@@ -87,7 +87,7 @@ assert.equal(root, leaf);
 assert.match(root, /v-button--primary/);
 const loading = renderToString(<LeafButton variant="secondary" loading loadingText="保存中…">保存</LeafButton>);
 assert.match(loading, /aria-busy="true"/);
-assert.match(loading, /aria-disabled="true"/);
+assert.doesNotMatch(loading, /aria-disabled=/);
 assert.doesNotMatch(loading, /disabled=""/);
 assert.match(loading, /保存中…/);
 assert.match(loading, /v-spinner/);

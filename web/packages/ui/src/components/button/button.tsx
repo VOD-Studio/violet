@@ -87,11 +87,11 @@ export function Button({
 			throw new Error("Button asChild requires one React element.");
 		}
 
-		// 设计稿：加载不算禁用——子元素保持可聚焦，标记 aria-disabled/aria-busy，激活由守卫忽略
+		// 设计稿：加载不算禁用——子元素保持可聚焦，只报 aria-busy，激活由守卫忽略
 		const childUnavailable = loading || isDisabled;
 		const childDisabled = !loading && isDisabled;
 		const childAriaDisabled =
-			childUnavailable ||
+			childDisabled ||
 			child.props["aria-disabled"] === true ||
 			child.props["aria-disabled"] === "true";
 		const guardClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -116,9 +116,7 @@ export function Button({
 		const slottedChildren = loading ? (
 			<>
 				{originalChildren}
-				<span aria-hidden="true" className="v-button__overlay">
-					<Spinner size={16} />
-				</span>
+				<SpinnerOverlay />
 			</>
 		) : (
 			originalChildren
@@ -182,7 +180,7 @@ export function Button({
 			data-icon-only={iconOnly ? "true" : undefined}
 			data-disabled={isDisabled ? "true" : undefined}
 			aria-busy={loading || props["aria-busy"]}
-			aria-disabled={isDisabled || loading || props["aria-disabled"]}
+			aria-disabled={isDisabled || props["aria-disabled"]}
 			disabled={isDisabled}
 			className={classes}
 			onClickCapture={onClickCapture}
@@ -199,6 +197,15 @@ export function Button({
 		>
 			{children}
 		</NativeButton>
+	);
+}
+
+/** 加载指示器盖在内容中央：绝对定位、不占宽高，按钮宽度因此不变。 */
+function SpinnerOverlay() {
+	return (
+		<span aria-hidden="true" className="v-button__overlay">
+			<Spinner size={16} />
+		</span>
 	);
 }
 
@@ -263,22 +270,14 @@ function NativeButton({
 			{iconOnly ? (
 				<span data-slot="icon" className="v-button__icon">
 					<span className="v-button__icon-content">{children}</span>
-					{hasOverlay && (
-						<span aria-hidden="true" className="v-button__overlay">
-							<Spinner size={16} />
-						</span>
-					)}
+					{hasOverlay && <SpinnerOverlay />}
 				</span>
 			) : (
 				<>
 					{leftIcon && (
 						<span aria-hidden="true" data-slot="start-icon" className="v-button__icon">
 							<span className="v-button__icon-content">{leftIcon}</span>
-							{loading && (
-								<span aria-hidden="true" className="v-button__overlay">
-									<Spinner size={16} />
-								</span>
-							)}
+							{loading && <SpinnerOverlay />}
 						</span>
 					)}
 					{showDone && (
@@ -300,11 +299,7 @@ function NativeButton({
 							{rightIcon}
 						</span>
 					)}
-					{hasOverlay && (
-						<span aria-hidden="true" className="v-button__overlay">
-							<Spinner size={16} />
-						</span>
-					)}
+					{hasOverlay && <SpinnerOverlay />}
 				</>
 			)}
 		</button>

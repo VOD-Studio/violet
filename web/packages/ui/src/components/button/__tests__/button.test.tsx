@@ -170,7 +170,8 @@ describe("Button", () => {
 		);
 		const button = screen.getByRole("button", { name: "发布" });
 		expect(button.hasAttribute("disabled")).toBe(false);
-		expect(button.getAttribute("aria-disabled")).toBe("true");
+		expect(button.hasAttribute("aria-disabled")).toBe(false);
+		expect(button.getAttribute("aria-busy")).toBe("true");
 		button.focus();
 		expect(document.activeElement).toBe(button);
 		fireEvent.click(button);
@@ -229,7 +230,7 @@ describe("Button", () => {
 			expect(onButton).toHaveBeenCalledOnce();
 		});
 
-		it("loading 的原生子 button 不被禁用但标记不可用与忙碌", () => {
+		it("loading 的原生子 button 不被禁用，只报忙碌", () => {
 			render(
 				<Button asChild loading>
 					<button type="button" disabled={false}>
@@ -239,7 +240,7 @@ describe("Button", () => {
 			);
 			const child = screen.getByRole("button", { name: "保存" });
 			expect(child.hasAttribute("disabled")).toBe(false);
-			expect(child.getAttribute("aria-disabled")).toBe("true");
+			expect(child.getAttribute("aria-disabled")).toBeNull();
 			expect(child.getAttribute("aria-busy")).toBe("true");
 		});
 
@@ -253,7 +254,7 @@ describe("Button", () => {
 			);
 			const link = screen.getByRole("link", { name: "链接" });
 			expect(link.getAttribute("tabindex")).toBe("-3");
-			expect(link.getAttribute("aria-disabled")).toBe("true");
+			expect(link.getAttribute("aria-busy")).toBe("true");
 		});
 
 		it("Slot 合并子元素 object ref 与按钮 callback ref", () => {

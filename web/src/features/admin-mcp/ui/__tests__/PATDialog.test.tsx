@@ -206,7 +206,7 @@ describe("PATDialog", () => {
 		// 加载中的按钮仍可聚焦，用 aria-busy 与激活守卫阻止重复提交
 		const save = screen.getByRole("button", { name: "保存" });
 		expect(save.getAttribute("aria-busy")).toBe("true");
-		expect(save.getAttribute("aria-disabled")).toBe("true");
+		expect(save.hasAttribute("disabled")).toBe(false);
 		fireEvent.click(save);
 		await waitFor(() => expect(apiPatch).toHaveBeenCalledTimes(1));
 		fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });

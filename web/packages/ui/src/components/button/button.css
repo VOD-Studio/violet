@@ -50,12 +50,8 @@
 		opacity: 0.42;
 	}
 
-	/* 加载不算禁用：仍可聚焦，点击被忽略 */
-	.v-button[aria-disabled="true"]:where(:not(:disabled)) {
-		cursor: progress;
-	}
-
-	.v-button:disabled[aria-busy="true"] {
+	/* 加载不算禁用：仍可聚焦，点击被忽略，只报忙碌 */
+	.v-button[aria-busy="true"]:where(:not(:disabled)) {
 		cursor: progress;
 	}
 
