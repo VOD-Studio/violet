@@ -26,6 +26,7 @@ import { morphingPopoverExhibit } from "./morphing-popover";
 import { navbarExhibit } from "./navbar";
 import { numberInputExhibit } from "./number-input";
 import { otpExhibit } from "./otp";
+import { paginationExhibit } from "./pagination";
 import { popoverExhibit } from "./popover";
 import { presenceExhibit } from "./presence";
 import { radioExhibit } from "./radio";
@@ -70,12 +71,13 @@ export const EXHIBITS: Exhibit[] = [
 	{
 		id: "table",
 		name: "表格",
-		units: ["table", "pagination"],
+		units: ["table"],
 		zone: "banner",
 		category: "display",
 		footprint: { width: 1120, height: 380 },
 		issue: 708,
 	},
+	paginationExhibit,
 	footerExhibit,
 	dropdownExhibit,
 	popoverExhibit,

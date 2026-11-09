@@ -5,7 +5,6 @@ export * from "./components/icons/index";
 export * from "./components/overlay-scroll/index";
 export * from "./components/page-header/index";
 export * from "./components/page-shell/index";
-export * from "./components/pagination/index";
 export * from "./components/scroll-area/index";
 export * from "./components/steps/index";
 export * from "./components/table/index";

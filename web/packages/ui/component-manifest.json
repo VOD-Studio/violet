@@ -221,8 +221,10 @@
 		},
 		{
 			"name": "pagination",
-			"status": "legacy",
-			"entry": "src/components/pagination/index.ts"
+			"status": "foundation",
+			"entry": "src/components/pagination/index.ts",
+			"css": "src/components/pagination/pagination.css",
+			"documentation": "web/packages/ui/docs/components/pagination.md"
 		},
 		{
 			"name": "popover",
