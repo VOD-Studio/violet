@@ -144,6 +144,7 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 | 运行策略与代码执行 | `entities/runtime-policy`、`entities/code-runner`、`features/admin-settings` |
 | 首页与阅读页组合 | `widgets/` |
 | 顶栏、移动端底部岛与页脚 | 展示层在 `shared/ui/site-navbar`、`site-island`、`site-footer`（props 驱动，陈列室直接渲染），接线层在 `widgets/Header`、`widgets/Footer`；一级入口与登录态可见性在 `shared/config/nav.ts` 的 `getNavItems` |
+| 消息铃铛（通知与聊天面板） | 展示层在 `shared/ui/message-panel`（面板、通知行、聊天行；陈列室直接渲染）；`features/notifications` 取通知并整理成行（`lib/notice-entry`），`features/chat` 提供会话行的数据；`widgets/Header/HeaderMessages` 把两边合流进铃铛，后台顶栏的铃铛只有通知 |
 
 只在一个 feature 内使用的实现留在 feature。第二个 feature 需要同一业务能力时，提到 `entities/`；站点专用基础能力放 `shared/`，通用 React 组件放 `packages/ui/`。不要让 `shared` 反向导入业务 feature。
 

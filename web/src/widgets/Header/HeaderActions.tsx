@@ -6,7 +6,6 @@ import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useChatUnreadCount } from "@features/chat/api/queries";
 import { useChatUnreadTitle } from "@features/chat/hooks/use-chat-unread-title";
 import { useChatStream } from "@features/chat/hooks/useChatStream";
-import NotificationBell from "@features/notifications/ui/NotificationBell";
 import { ThemeMenu } from "@features/theme-switcher";
 import { ApiError } from "@shared/api/error";
 import { avatarUrl } from "@shared/lib/image-url";
@@ -23,6 +22,7 @@ import { cn } from "cn";
 import { CheckCircle2, LayoutDashboard, LogOut, User } from "lucide-react";
 import { useEffect } from "react";
 import { toast } from "sonner";
+import HeaderMessages from "./HeaderMessages";
 
 /** 药丸里统一的 32px 圆形图标按钮：悬停与展开态用柔和底色，聚焦环由药丸内边距留出空间。 */
 const ICON_BUTTON =
@@ -86,7 +86,7 @@ const HeaderActions = ({ user }: { user?: UserDTO | null }) => {
 		<div className="flex items-center gap-0.5">
 			<ThemeMenu appearance={<AppearanceToggle size="default" />} />
 			<Separator orientation="vertical" className="h-4 bg-rule2" />
-			{user && <NotificationBell extraUnread={unreadChatCount} />}
+			{user && <HeaderMessages user={user} />}
 			{user ? (
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>

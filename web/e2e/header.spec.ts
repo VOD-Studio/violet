@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Route, test } from "@playwright/test";
 import { loadClient } from "./client";
 
 test("Header 博客二级菜单只标记精确命中的当前页", async ({ page, context }) => {
@@ -187,4 +187,109 @@ test("Header 路由切换超过 300ms 才在导航下沿显示加载进度线，
 	release?.();
 	await expect(page).toHaveURL(/\/notes$/);
 	await expect(line).toHaveCount(0);
+});
+
+test("Header 消息铃铛：面板与药丸右缘对齐，通知与聊天两个标签", async ({ page, context }) => {
+	await loadClient(context);
+	await context.addCookies([
+		{ name: "contract_admin", value: "1", url: "http://127.0.0.1:4173" },
+	]);
+	await page.setViewportSize({ width: 1440, height: 900 });
+	await page.emulateMedia({ reducedMotion: "reduce" });
+
+	const envelope = (data: unknown) => JSON.stringify({ data });
+	const paged = (data: unknown[]) =>
+		JSON.stringify({
+			data,
+			meta: { pagination: { page: 1, limit: 20, total: data.length, total_pages: 1 } },
+		});
+	const ME = "30000000-0000-0000-0000-000000000001";
+	const CLAUDE = { id: "bot", username: "claude", display_name: "Claude", avatar_url: "" };
+	const message = (id: string, content: string) => ({
+		id,
+		conversation_id: "c1",
+		sender: CLAUDE,
+		type: "text",
+		content,
+		reactions: [],
+		is_deleted: false,
+		created_at: new Date().toISOString(),
+	});
+	const conversation = {
+		id: "c1",
+		kind: "direct",
+		title: "",
+		owner: CLAUDE,
+		members: [
+			{
+				user: { ...CLAUDE, id: ME, username: "contract" },
+				role: "owner",
+				joined_at: "",
+				is_muted: false,
+			},
+			{ user: CLAUDE, role: "member", joined_at: "", is_muted: false },
+		],
+		last_message: message("m0", "早上好"),
+		unread_count: 0,
+		created_at: "2026-11-01T00:00:00Z",
+		updated_at: new Date().toISOString(),
+	};
+	const json = (route: Route, body: string) =>
+		route.fulfill({ status: 200, contentType: "application/json", body });
+	await page.route("**/api/v1/notifications?**", (route) =>
+		json(
+			route,
+			paged([
+				{
+					id: "n1",
+					source_type: "comment_created",
+					source_id: "s1",
+					title: "林间 评论了你的文章",
+					body: "",
+					payload: {},
+					actor: { name: "林间" },
+					object_title: "拆解 Saber",
+					quote: "二十行是乐观估计吧",
+					is_read: false,
+					created_at: new Date().toISOString(),
+				},
+			]),
+		),
+	);
+	await page.route("**/api/v1/notifications/unread-count", (route) =>
+		json(route, envelope({ unread_count: 1 })),
+	);
+	await page.route("**/api/v1/notifications/push/config**", (route) =>
+		json(route, envelope({ public_key: "", enabled: false, subscribed: false })),
+	);
+	await page.route("**/api/v1/chat/conversations?**", (route) =>
+		json(route, paged([conversation])),
+	);
+	await page.route("**/api/v1/chat/unread-count", (route) =>
+		json(route, envelope({ unread_count: conversation.unread_count })),
+	);
+	await page.goto("/");
+	await page.waitForLoadState("networkidle");
+	const header = page.locator("header").first();
+	const bell = header.getByRole("button", { name: /^消息/ });
+	await expect(bell).toHaveAttribute("aria-label", "消息，1 条未读");
+
+	await bell.click();
+	const panel = page.getByRole("dialog", { name: "消息" });
+	await expect(panel).toBeVisible();
+	const pill = await header.locator('[data-slot="navbar-right"]').boundingBox();
+	const box = await panel.boundingBox();
+	const panelRight = (box?.x ?? 0) + (box?.width ?? 0);
+	const pillRight = (pill?.x ?? 0) + (pill?.width ?? 0);
+	expect(Math.abs(panelRight - pillRight)).toBeLessThan(3);
+	await expect(
+		panel.getByRole("button", {
+			name: /^林间 评论了你的文章《拆解 Saber》：二十行是乐观估计吧。.+，未读$/,
+		}),
+	).toBeVisible();
+	await panel.getByRole("tab", { name: /^聊天/ }).click();
+	await expect(panel.getByRole("button", { name: /^Claude，早上好/ })).toBeVisible();
+	await expect(panel.getByRole("link", { name: "进入聊天室" })).toHaveAttribute("href", "/chat");
+	await page.keyboard.press("Escape");
+	await expect(panel).toHaveCount(0);
 });
