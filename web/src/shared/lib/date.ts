@@ -1,4 +1,12 @@
-import { format, formatDistanceToNow, isValid, parseISO, toDate } from "date-fns";
+import {
+	differenceInCalendarDays,
+	differenceInMinutes,
+	format,
+	formatDistanceToNow,
+	isValid,
+	parseISO,
+	toDate,
+} from "date-fns";
 import { zhCN } from "date-fns/locale";
 
 type DateDisplayStyle =
@@ -141,4 +149,31 @@ export function formatRelativeTime(
 	if (value == null) return fallback;
 	const date = typeof value === "string" ? parseISO(value) : toDate(value);
 	return isValid(date) ? formatDistanceToNow(date, { addSuffix: true, locale: zhCN }) : fallback;
+}
+
+/**
+ * 消息面板里的相对时间：当天按「刚刚」「N 分钟前」「N 小时前」，隔天起按日历日数
+ * 「昨天」「前天」「N 天前」，满一周显示月日。
+ *
+ * @param value - Date、时间戳、ISO 8601 字符串或空值。
+ * @param fallback - 无效输入的返回值；默认保留字符串输入，否则显示破折号。
+ * @returns 紧凑的中文相对时间；时钟略快造成的未来时间按「刚刚」。
+ */
+export function formatMessageTime(
+	value: DateInput,
+	fallback = typeof value === "string" ? value : "—",
+): string {
+	if (value == null) return fallback;
+	const date = typeof value === "string" ? parseISO(value) : toDate(value);
+	if (!isValid(date)) return fallback;
+	const now = new Date();
+	const minutes = differenceInMinutes(now, date);
+	if (minutes < 1) return "刚刚";
+	const days = differenceInCalendarDays(now, date);
+	if (days === 0)
+		return minutes < 60 ? `${minutes} 分钟前` : `${Math.floor(minutes / 60)} 小时前`;
+	if (days === 1) return "昨天";
+	if (days === 2) return "前天";
+	if (days < 7) return `${days} 天前`;
+	return format(date, "M月d日", { locale: zhCN });
 }
