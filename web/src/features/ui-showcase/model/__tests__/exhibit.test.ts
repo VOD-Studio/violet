@@ -51,7 +51,7 @@ describe("exhibitStatus", () => {
 
 	it("全部单元为 foundation 才算新架构", () => {
 		expect(exhibitStatus(exhibit({ units: ["checkbox", "field"], Render }))).toBe("foundation");
-		expect(exhibitStatus(exhibit({ units: ["checkbox", "empty"], Render }))).toBe("legacy");
+		expect(exhibitStatus(exhibit({ units: ["checkbox", "scroll-area"], Render }))).toBe("legacy");
 	});
 
 	it("清单外的单元属于站点组件", () => {
