@@ -59,32 +59,36 @@ export function EditorBubbleMenu({ editor, scrollTarget, onInsertLink }: EditorB
 			onMouseDown={keepFocus}
 		>
 			<Button
+				iconOnly
 				variant="ghost"
-				size="icon-sm"
+				size="sm"
 				onClick={() => editor.chain().focus().toggleBold().run()}
 				className={cn(editor.isActive("bold") && "bg-accent")}
 			>
 				<Bold />
 			</Button>
 			<Button
+				iconOnly
 				variant="ghost"
-				size="icon-sm"
+				size="sm"
 				onClick={() => editor.chain().focus().toggleItalic().run()}
 				className={cn(editor.isActive("italic") && "bg-accent")}
 			>
 				<Italic />
 			</Button>
 			<Button
+				iconOnly
 				variant="ghost"
-				size="icon-sm"
+				size="sm"
 				onClick={() => editor.chain().focus().toggleCode().run()}
 				className={cn(editor.isActive("code") && "bg-accent")}
 			>
 				<Code />
 			</Button>
 			<Button
+				iconOnly
 				variant="ghost"
-				size="icon-sm"
+				size="sm"
 				onClick={onInsertLink}
 				className={cn(editor.isActive("link") && "bg-accent")}
 			>

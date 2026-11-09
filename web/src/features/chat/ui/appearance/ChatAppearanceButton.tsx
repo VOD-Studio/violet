@@ -10,7 +10,8 @@ interface ChatAppearanceButtonProps {
 export function ChatAppearanceButton({ active, onClick }: ChatAppearanceButtonProps) {
 	return (
 		<Button
-			size="icon"
+			iconOnly
+			size="md"
 			variant="ghost"
 			aria-label="聊天外观"
 			aria-pressed={active}

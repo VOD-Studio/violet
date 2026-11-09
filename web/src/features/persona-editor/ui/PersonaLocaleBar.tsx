@@ -178,9 +178,10 @@ export function PersonaLocaleBar({
 				</Popover>
 
 				<Button
+					iconOnly
 					type="button"
 					variant="ghost"
-					size="icon-sm"
+					size="sm"
 					disabled={disabled || locales.length === 1 || value === defaultLocale}
 					className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 					onClick={() => onRemove(value)}

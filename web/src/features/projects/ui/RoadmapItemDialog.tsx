@@ -160,9 +160,10 @@ export function RoadmapItemDialog({
 																		</span>
 																		{onUnrelate ? (
 																			<Button
+																				iconOnly
 																				type="button"
 																				variant="ghost"
-																				size="icon-xs"
+																				size="sm"
 																				aria-label={`删除关系：${group.label} #${other.number} ${other.title}`}
 																				onClick={() =>
 																					onUnrelate(

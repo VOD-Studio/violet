@@ -34,7 +34,8 @@ export function Filmstrip({ posts }: { posts: Post[] }) {
 				</p>
 				<div className="flex gap-1.5">
 					<Button
-						size="icon-sm"
+						iconOnly
+						size="sm"
 						variant="outline"
 						aria-label="向左滚动"
 						onClick={() => scrollBy(-1)}
@@ -42,7 +43,8 @@ export function Filmstrip({ posts }: { posts: Post[] }) {
 						<ChevronLeft className="size-4" />
 					</Button>
 					<Button
-						size="icon-sm"
+						iconOnly
+						size="sm"
 						variant="outline"
 						aria-label="向右滚动"
 						onClick={() => scrollBy(1)}

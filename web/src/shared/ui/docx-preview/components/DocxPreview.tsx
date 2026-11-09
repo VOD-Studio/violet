@@ -40,8 +40,9 @@ export function DocxPreview({ url, name, className }: DocxPreviewProps) {
 						{name ?? "Word 文档"}
 					</span>
 					<Button
+						iconOnly
 						type="button"
-						size="icon-sm"
+						size="sm"
 						variant="ghost"
 						onClick={handleDownload}
 						title="下载"

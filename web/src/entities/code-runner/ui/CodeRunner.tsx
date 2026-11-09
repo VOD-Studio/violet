@@ -154,8 +154,8 @@ export function CodeRunner({ language, source, overridesJson }: CodeRunnerProps)
 					</button>
 					<Button
 						type="button"
-						size="xs"
-						variant={isRunning ? "secondary" : "default"}
+						size="sm"
+						variant={isRunning ? "secondary" : "primary"}
 						onClick={handleRun}
 						disabled={isRunning || !availability.allowed}
 						className="gap-1"
@@ -173,7 +173,7 @@ export function CodeRunner({ language, source, overridesJson }: CodeRunnerProps)
 					<span>{availability.error.message}</span>
 					<Button
 						type="button"
-						size="xs"
+						size="sm"
 						variant="secondary"
 						onClick={() => void availability.refetch()}
 						disabled={availability.isFetching}

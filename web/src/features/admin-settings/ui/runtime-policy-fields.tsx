@@ -35,9 +35,10 @@ export function PolicyHelp({ label, children }: { label: string; children: React
 			<Tooltip open={open} onOpenChange={setOpen}>
 				<TooltipTrigger asChild>
 					<Button
+						iconOnly
 						type="button"
 						variant="ghost"
-						size="icon-sm"
+						size="sm"
 						aria-label={`${label}说明`}
 						aria-expanded={open}
 						onPointerDown={(event) => event.preventDefault()}

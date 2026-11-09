@@ -150,8 +150,9 @@ export function AudioControls({
 				{/* 音量 */}
 				<div className="group/volume flex items-center">
 					<Button
+						iconOnly
 						type="button"
-						size="icon-sm"
+						size="sm"
 						variant="ghost"
 						onClick={onToggleMute}
 						title="静音 (M)"
@@ -204,8 +205,9 @@ export function AudioControls({
 
 				{/* 循环 */}
 				<Button
+					iconOnly
 					type="button"
-					size="icon-sm"
+					size="sm"
 					variant={state.isLooping ? "secondary" : "ghost"}
 					onClick={onToggleLoop}
 					title={state.isLooping ? "关闭循环" : "单曲循环"}

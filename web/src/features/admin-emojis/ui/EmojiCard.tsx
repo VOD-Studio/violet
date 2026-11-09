@@ -68,8 +68,9 @@ export function EmojiCard({
 				<>
 					<div className="absolute right-1 top-1 hidden gap-1 transition-opacity group-hover:flex">
 						<Button
+							iconOnly
 							variant="ghost"
-							size="icon-xs"
+							size="sm"
 							className="bg-background/90 backdrop-blur-sm"
 							onClick={(e) => {
 								e.stopPropagation();
@@ -79,8 +80,9 @@ export function EmojiCard({
 							<Edit className="size-3" />
 						</Button>
 						<Button
+							iconOnly
 							variant="ghost"
-							size="icon-xs"
+							size="sm"
 							className="bg-background/90 text-destructive backdrop-blur-sm hover:text-destructive"
 							onClick={(e) => {
 								e.stopPropagation();

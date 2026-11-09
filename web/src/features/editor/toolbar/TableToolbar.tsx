@@ -38,7 +38,7 @@ export function TableToolbar({ editor }: TableToolbarProps) {
 			<span className="mx-0.5 h-4 w-px bg-edge-hairline" aria-hidden />
 			<Button
 				variant="ghost"
-				size="xs"
+				size="sm"
 				title="上方插入行"
 				onClick={() => editor.chain().focus().addRowBefore().run()}
 			>
@@ -46,7 +46,7 @@ export function TableToolbar({ editor }: TableToolbarProps) {
 			</Button>
 			<Button
 				variant="ghost"
-				size="xs"
+				size="sm"
 				title="下方插入行"
 				onClick={() => editor.chain().focus().addRowAfter().run()}
 			>
@@ -55,7 +55,7 @@ export function TableToolbar({ editor }: TableToolbarProps) {
 			<span className="mx-0.5 h-4 w-px bg-edge-hairline" aria-hidden />
 			<Button
 				variant="ghost"
-				size="xs"
+				size="sm"
 				title="左侧插入列"
 				onClick={() => editor.chain().focus().addColumnBefore().run()}
 			>
@@ -63,7 +63,7 @@ export function TableToolbar({ editor }: TableToolbarProps) {
 			</Button>
 			<Button
 				variant="ghost"
-				size="xs"
+				size="sm"
 				title="右侧插入列"
 				onClick={() => editor.chain().focus().addColumnAfter().run()}
 			>
@@ -72,7 +72,7 @@ export function TableToolbar({ editor }: TableToolbarProps) {
 			<span className="mx-0.5 h-4 w-px bg-edge-hairline" aria-hidden />
 			<Button
 				variant="ghost"
-				size="xs"
+				size="sm"
 				title="合并单元格"
 				disabled={!canMerge}
 				onClick={() => editor.chain().focus().mergeCells().run()}
@@ -81,7 +81,7 @@ export function TableToolbar({ editor }: TableToolbarProps) {
 			</Button>
 			<Button
 				variant="ghost"
-				size="xs"
+				size="sm"
 				title="拆分单元格"
 				disabled={!canSplit}
 				onClick={() => editor.chain().focus().splitCell().run()}
@@ -91,7 +91,7 @@ export function TableToolbar({ editor }: TableToolbarProps) {
 			<span className="mx-0.5 h-4 w-px bg-edge-hairline" aria-hidden />
 			<Button
 				variant="ghost"
-				size="xs"
+				size="sm"
 				title="删除当前行"
 				onClick={() => editor.chain().focus().deleteRow().run()}
 			>
@@ -99,7 +99,7 @@ export function TableToolbar({ editor }: TableToolbarProps) {
 			</Button>
 			<Button
 				variant="ghost"
-				size="xs"
+				size="sm"
 				title="删除当前列"
 				onClick={() => editor.chain().focus().deleteColumn().run()}
 			>
@@ -107,7 +107,7 @@ export function TableToolbar({ editor }: TableToolbarProps) {
 			</Button>
 			<Button
 				variant="ghost"
-				size="xs"
+				size="sm"
 				title="删除整张表格"
 				className={cn("text-destructive hover:text-destructive")}
 				onClick={() => editor.chain().focus().deleteTable().run()}

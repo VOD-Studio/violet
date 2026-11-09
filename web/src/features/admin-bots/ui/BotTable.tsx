@@ -168,8 +168,9 @@ export function BotTable({ bots, pagination, loading, onTokenRevealed }: BotTabl
 				<div className="v-table__row-actions items-center gap-2">
 					{/* 库里无密文（早于密文列创建、密钥已换）时置灰：撞错误不如直接说明为什么看不了 */}
 					<Button
+						iconOnly
 						variant="ghost"
-						size="icon-sm"
+						size="sm"
 						disabled={!row.token_viewable || reveal.isPending}
 						aria-label={`查看 ${row.name} 的 token`}
 						title={
@@ -182,8 +183,9 @@ export function BotTable({ bots, pagination, loading, onTokenRevealed }: BotTabl
 						<Eye className="size-3.5" />
 					</Button>
 					<Button
+						iconOnly
 						variant="ghost"
-						size="icon-sm"
+						size="sm"
 						aria-label={`重置 ${row.name} 的 token`}
 						title="重置 token"
 						onClick={() => setPending({ kind: "rotate", bot: row })}
@@ -191,8 +193,9 @@ export function BotTable({ bots, pagination, loading, onTokenRevealed }: BotTabl
 						<KeyRound className="size-3.5" />
 					</Button>
 					<Button
+						iconOnly
 						variant="ghost"
-						size="icon-sm"
+						size="sm"
 						className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 						aria-label={`吊销 ${row.name}`}
 						title="吊销 Bot"
@@ -231,7 +234,7 @@ export function BotTable({ bots, pagination, loading, onTokenRevealed }: BotTabl
 							取消
 						</Button>
 						<Button
-							variant={pending?.kind === "revoke" ? "destructive" : "default"}
+							variant={pending?.kind === "revoke" ? "destructive" : "primary"}
 							onClick={runPending}
 							disabled={rotate.isPending || del.isPending}
 						>

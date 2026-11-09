@@ -154,7 +154,8 @@ function AdminAnnouncementsPage() {
 							<TooltipTrigger asChild>
 								<span>
 									<Button
-										size="icon-sm"
+										iconOnly
+										size="sm"
 										variant="ghost"
 										onClick={() => handleEdit(row)}
 										aria-label={`编辑公告 ${row.title}`}
@@ -171,7 +172,8 @@ function AdminAnnouncementsPage() {
 							<TooltipTrigger asChild>
 								<span>
 									<Button
-										size="icon-sm"
+										iconOnly
+										size="sm"
 										variant="ghost"
 										className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 										onClick={() => handleDelete(row)}

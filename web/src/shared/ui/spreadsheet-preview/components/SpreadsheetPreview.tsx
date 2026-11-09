@@ -41,8 +41,9 @@ export function SpreadsheetPreview({ url, name, className }: SpreadsheetPreviewP
 						{name ?? "Excel 表格"}
 					</span>
 					<Button
+						iconOnly
 						type="button"
-						size="icon-sm"
+						size="sm"
 						variant="ghost"
 						onClick={handleDownload}
 						title="下载"

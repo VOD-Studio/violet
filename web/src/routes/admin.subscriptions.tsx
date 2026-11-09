@@ -134,8 +134,9 @@ function AdminSubscriptionsPage() {
 				return (
 					<div className="flex justify-center gap-1">
 						<Button
+							iconOnly
 							variant="ghost"
-							size="icon-sm"
+							size="sm"
 							title="立即抓取"
 							disabled={fetchingIds.has(row.id)}
 							onClick={() => handleFetch(row.id)}
@@ -145,8 +146,9 @@ function AdminSubscriptionsPage() {
 							/>
 						</Button>
 						<Button
+							iconOnly
 							variant="ghost"
-							size="icon-sm"
+							size="sm"
 							title={paused ? "恢复（清零失败计数）" : "暂停"}
 							onClick={() => (paused ? resumeMut : pauseMut).mutate(row.id)}
 						>
@@ -157,16 +159,18 @@ function AdminSubscriptionsPage() {
 							)}
 						</Button>
 						<Button
+							iconOnly
 							variant="ghost"
-							size="icon-sm"
+							size="sm"
 							title="编辑"
 							onClick={() => setEditing(row)}
 						>
 							<Pencil className="size-3.5" />
 						</Button>
 						<Button
+							iconOnly
 							variant="ghost"
-							size="icon-sm"
+							size="sm"
 							title="删除"
 							className="hover:bg-destructive/10 hover:text-destructive"
 							onClick={() => setDeleting(row)}

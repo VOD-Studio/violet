@@ -73,10 +73,11 @@ export function NewConversationForm({ onCreated, onClose }: NewConversationFormP
 		>
 			<header className="flex h-14 shrink-0 items-center gap-3 px-4">
 				<Button
+					iconOnly
 					aria-label="关闭新建会话"
 					className="size-9 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground"
 					onClick={onClose}
-					size="icon"
+					size="md"
 					variant="ghost"
 				>
 					<X className="size-5" />

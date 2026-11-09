@@ -162,8 +162,9 @@ export function GalleryDraftListPage() {
 						<TooltipTrigger asChild>
 							<span>
 								<Button
+									iconOnly
 									variant="ghost"
-									size="icon-sm"
+									size="sm"
 									onClick={() => openDraft(row.id)}
 									aria-label={`编辑图集 ${row.title || row.id.slice(0, 8)}`}
 								>
@@ -179,8 +180,9 @@ export function GalleryDraftListPage() {
 							<TooltipTrigger asChild>
 								<span>
 									<Button
+										iconOnly
 										variant="ghost"
-										size="icon-sm"
+										size="sm"
 										className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 										onClick={() => setDeleting(row)}
 										aria-label={`删除图集 ${row.title || row.id.slice(0, 8)}`}

@@ -115,7 +115,7 @@ export function SQLConsoleTab({
 						</span>
 						<Button
 							variant="ghost"
-							size="xs"
+							size="sm"
 							disabled={execute.isPending}
 							onClick={() => loadSQL(LIST_TABLES_SQL)}
 						>

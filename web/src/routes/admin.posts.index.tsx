@@ -525,8 +525,9 @@ function RowActions({
 			<div className="v-table__row-actions items-center justify-end gap-1">
 				{canDelete ? (
 					<Button
+						iconOnly
 						variant="ghost"
-						size="icon-sm"
+						size="sm"
 						title="恢复"
 						onClick={handleRestore}
 						disabled={restorePost.isPending}
@@ -536,8 +537,9 @@ function RowActions({
 				) : null}
 				{canHardDelete ? (
 					<Button
+						iconOnly
 						variant="ghost"
-						size="icon-sm"
+						size="sm"
 						title="彻底删除"
 						className="hover:bg-destructive/10 hover:text-destructive"
 						onClick={() => onDelete(row)}
@@ -557,8 +559,9 @@ function RowActions({
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
 					<Button
+						iconOnly
 						variant="ghost"
-						size="icon-sm"
+						size="sm"
 						title="更多操作"
 						className="w-auto min-w-8 px-1.5"
 					>

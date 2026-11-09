@@ -22,9 +22,10 @@ export function TweetMoreMenu({ children, dangerSlot, disabled, onDelete }: Twee
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
 				<Button
+					iconOnly
 					type="button"
 					variant="ghost"
-					size="icon"
+					size="md"
 					aria-label="更多推文操作"
 					className="size-11 shrink-0 text-muted-foreground"
 					onClick={(event) => event.stopPropagation()}

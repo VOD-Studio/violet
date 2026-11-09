@@ -115,7 +115,8 @@ function MediaCard({
 			<div className="absolute top-1 right-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
 				{isVideo && onPickCover ? (
 					<Button
-						size="icon-sm"
+						iconOnly
+						size="sm"
 						variant="secondary"
 						className="size-7 shadow-sm"
 						onClick={() => onPickCover(file)}
@@ -126,7 +127,8 @@ function MediaCard({
 				) : null}
 				{isImage && onCrop ? (
 					<Button
-						size="icon-sm"
+						iconOnly
+						size="sm"
 						variant="secondary"
 						className="size-7 shadow-sm"
 						onClick={() => onCrop(file)}
@@ -137,7 +139,8 @@ function MediaCard({
 				) : null}
 				{onEdit ? (
 					<Button
-						size="icon-sm"
+						iconOnly
+						size="sm"
 						variant="secondary"
 						className="size-7 shadow-sm"
 						onClick={() => onEdit(file)}
@@ -148,7 +151,8 @@ function MediaCard({
 				) : null}
 				{onDelete ? (
 					<Button
-						size="icon-sm"
+						iconOnly
+						size="sm"
 						variant="secondary"
 						className="size-7 shadow-sm hover:bg-destructive hover:text-destructive-foreground"
 						onClick={() => onDelete(file)}

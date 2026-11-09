@@ -206,9 +206,10 @@ function TokenBanner({ token, onDismiss }: { token: string; onDismiss: () => voi
 				</p>
 			</div>
 			<Button
+				iconOnly
 				type="button"
 				variant="ghost"
-				size="icon-sm"
+				size="sm"
 				className="shrink-0"
 				title="我已保存，关闭提示"
 				onClick={onDismiss}

@@ -35,7 +35,7 @@ function TagShelf() {
 					</Tag>
 				))}
 				{tags.length < ARTICLE_TAGS.length && (
-					<Button variant="link" size="xs" onClick={() => setTags(ARTICLE_TAGS)}>
+					<Button variant="link" size="sm" onClick={() => setTags(ARTICLE_TAGS)}>
 						恢复
 					</Button>
 				)}

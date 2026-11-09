@@ -220,7 +220,13 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 					{/* 扩展操作：全屏跳转 + 前台预览 */}
 					<div className="flex items-center gap-1">
 						{note?.status === "published" && (
-							<Button variant="ghost" size="icon-sm" asChild title="查看前台公开页">
+							<Button
+								iconOnly
+								variant="ghost"
+								size="sm"
+								asChild
+								title="查看前台公开页"
+							>
 								<a href={`/notes/${note.id}`} target="_blank" rel="noreferrer">
 									<ExternalLink className="size-4" />
 								</a>
@@ -228,8 +234,9 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 						)}
 						{isEdit && (
 							<Button
+								iconOnly
 								variant="ghost"
-								size="icon-sm"
+								size="sm"
 								onClick={handleOpenFullscreen}
 								title="展开为全屏独立工作台"
 							>

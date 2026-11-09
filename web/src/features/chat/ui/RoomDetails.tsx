@@ -77,7 +77,7 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 		>
 			<header className="flex h-16 shrink-0 items-center justify-between border-b border-border px-5">
 				<h3 className="text-sm font-semibold text-foreground">会话详情</h3>
-				<Button aria-label="关闭详情" onClick={onClose} size="icon-sm" variant="ghost">
+				<Button iconOnly aria-label="关闭详情" onClick={onClose} size="sm" variant="ghost">
 					<X className="size-4" />
 				</Button>
 			</header>
@@ -169,7 +169,8 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 							<Button
 								disabled={invite.isPending}
 								onClick={() => void inviteUser()}
-								size="icon-sm"
+								iconOnly
+								size="sm"
 								className="size-10 rounded-xl"
 							>
 								<Plus className="size-4" />
@@ -268,7 +269,7 @@ function NotificationSettings({
 							subscribed ? void push.disable() : void push.enable(showPreview)
 						}
 						size="sm"
-						variant={subscribed ? "outline" : "default"}
+						variant={subscribed ? "outline" : "primary"}
 					>
 						{subscribed ? "关闭浏览器通知" : "启用浏览器通知"}
 					</Button>

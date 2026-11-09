@@ -304,9 +304,10 @@ function ArticleRow({
 						>
 							<DropdownMenuTrigger asChild>
 								<Button
+									iconOnly
 									type="button"
 									variant="ghost"
-									size="icon-sm"
+									size="sm"
 									aria-label={`${article.title}的更多操作`}
 								>
 									<MoreHorizontal />

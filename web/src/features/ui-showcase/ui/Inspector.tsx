@@ -149,7 +149,8 @@ function InspectorDialog({
 						</p>
 						<div className="flex items-center gap-2">
 							<Button
-								size="icon-sm"
+								iconOnly
+								size="sm"
 								variant="secondary"
 								aria-label="上一件"
 								aria-keyshortcuts="ArrowLeft"
@@ -158,7 +159,8 @@ function InspectorDialog({
 								<ChevronLeft aria-hidden="true" />
 							</Button>
 							<Button
-								size="icon-sm"
+								iconOnly
+								size="sm"
 								variant="secondary"
 								aria-label="下一件"
 								aria-keyshortcuts="ArrowRight"
@@ -167,7 +169,8 @@ function InspectorDialog({
 								<ChevronRight aria-hidden="true" />
 							</Button>
 							<Button
-								size="icon-sm"
+								iconOnly
+								size="sm"
 								variant="secondary"
 								aria-label="离开"
 								aria-keyshortcuts="Escape"

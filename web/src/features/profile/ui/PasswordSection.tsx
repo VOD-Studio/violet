@@ -120,7 +120,8 @@ const ChangePasswordCard = () => {
 			action={
 				!isEditing ? (
 					<Button
-						size="icon-sm"
+						iconOnly
+						size="sm"
 						variant="ghost"
 						onClick={handleEdit}
 						aria-label="修改密码"

@@ -75,8 +75,9 @@ export function ImagePreviewControls({
 				<div className="flex min-w-0 items-center gap-1 sm:gap-2">
 					{/* 缩放 */}
 					<Button
+						iconOnly
 						variant="ghost"
-						size="icon-sm"
+						size="sm"
 						onClick={handleClick(onZoomOut)}
 						disabled={scale <= 0.5}
 						className="text-foreground hover:bg-muted active:scale-100 sm:size-9"
@@ -87,8 +88,9 @@ export function ImagePreviewControls({
 						{Math.round(scale * 100)}%
 					</span>
 					<Button
+						iconOnly
 						variant="ghost"
-						size="icon-sm"
+						size="sm"
 						onClick={handleClick(onZoomIn)}
 						disabled={scale >= 3}
 						className="text-foreground hover:bg-muted active:scale-100 sm:size-9"
@@ -102,8 +104,9 @@ export function ImagePreviewControls({
 					{/* 旋转 */}
 					{onRotateLeft ? (
 						<Button
+							iconOnly
 							variant="ghost"
-							size="icon-sm"
+							size="sm"
 							onClick={handleClick(onRotateLeft)}
 							className="text-foreground hover:bg-muted active:scale-100 sm:size-9"
 							title="左旋转"
@@ -113,8 +116,9 @@ export function ImagePreviewControls({
 					) : null}
 					{onRotateRight ? (
 						<Button
+							iconOnly
 							variant="ghost"
-							size="icon-sm"
+							size="sm"
 							onClick={handleClick(onRotateRight)}
 							className="text-foreground hover:bg-muted active:scale-100 sm:size-9"
 							title="右旋转"
@@ -126,8 +130,9 @@ export function ImagePreviewControls({
 					{/* 翻转 */}
 					{onFlipX ? (
 						<Button
+							iconOnly
 							variant="ghost"
-							size="icon-sm"
+							size="sm"
 							onClick={handleClick(onFlipX)}
 							className="text-foreground hover:bg-muted active:scale-100 sm:size-9"
 							title="水平翻转"
@@ -137,8 +142,9 @@ export function ImagePreviewControls({
 					) : null}
 					{onFlipY ? (
 						<Button
+							iconOnly
 							variant="ghost"
-							size="icon-sm"
+							size="sm"
 							onClick={handleClick(onFlipY)}
 							className="text-foreground hover:bg-muted active:scale-100 sm:size-9"
 							title="垂直翻转"
@@ -153,8 +159,9 @@ export function ImagePreviewControls({
 							{/* 分隔线 */}
 							<div className="mx-0.5 h-5 w-px bg-border sm:mx-1 sm:h-6" />
 							<Button
+								iconOnly
 								variant="ghost"
-								size="icon-sm"
+								size="sm"
 								onClick={handleClick(onReset)}
 								className="text-foreground hover:bg-muted active:scale-100 sm:size-9"
 								title="重置（也可双击图片）"
@@ -170,8 +177,9 @@ export function ImagePreviewControls({
 					{totalImages > 1 ? (
 						<>
 							<Button
+								iconOnly
 								variant="ghost"
-								size="icon-sm"
+								size="sm"
 								onClick={handleClick(onToggleList)}
 								aria-label={listVisible ? "收起图片列表" : "显示图片列表"}
 								aria-expanded={listVisible}
@@ -190,8 +198,9 @@ export function ImagePreviewControls({
 						</>
 					) : null}
 					<Button
+						iconOnly
 						variant="ghost"
-						size="icon-sm"
+						size="sm"
 						onClick={handleClick(onClose)}
 						className="text-foreground hover:bg-muted active:scale-100 sm:size-9"
 					>
@@ -204,16 +213,18 @@ export function ImagePreviewControls({
 			{totalImages > 1 ? (
 				<>
 					<Button
+						iconOnly
 						variant="ghost"
-						size="icon-sm"
+						size="sm"
 						onClick={handleClick(onPrevious)}
 						className="absolute top-1/2 left-2 z-50 hidden size-10 -translate-y-1/2 rounded-full border border-border bg-card text-foreground shadow-soft hover:bg-muted active:translate-y-[-50%]! sm:left-4 sm:flex sm:size-12"
 					>
 						<ChevronLeft className="h-6 w-6 sm:h-8 sm:w-8" />
 					</Button>
 					<Button
+						iconOnly
 						variant="ghost"
-						size="icon-sm"
+						size="sm"
 						onClick={handleClick(onNext)}
 						className="absolute top-1/2 right-2 z-50 hidden size-10 -translate-y-1/2 rounded-full border border-border bg-card text-foreground shadow-soft hover:bg-muted active:translate-y-[-50%]! sm:right-4 sm:flex sm:size-12"
 					>

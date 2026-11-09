@@ -89,8 +89,9 @@ export function CustomEmojiAdminSection() {
 					<TooltipTrigger asChild>
 						<span className="v-table__row-actions">
 							<Button
+								iconOnly
 								variant="ghost"
-								size="icon-sm"
+								size="sm"
 								className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 								onClick={() => setDeleting(row)}
 								aria-label={`下架表情 ${row.name}`}

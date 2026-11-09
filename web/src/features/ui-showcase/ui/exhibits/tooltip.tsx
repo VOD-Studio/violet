@@ -23,7 +23,7 @@ function DisabledPublish({ arrow, container }: { arrow: boolean; container: HTML
 		<Tooltip>
 			<TooltipTrigger asChild>
 				<span className="ml-auto inline-flex">
-					<Button aria-disabled="true" aria-describedby={reasonId} variant="soft">
+					<Button aria-disabled="true" aria-describedby={reasonId} variant="secondary">
 						发布
 					</Button>
 					<span id={reasonId} className="sr-only">
@@ -49,7 +49,7 @@ function TooltipStage({ state }: ExhibitRenderProps) {
 					{TOOLS.map(({ name, keys, Icon }, index) => (
 						<Tooltip key={name} defaultOpen={index === 0}>
 							<TooltipTrigger asChild>
-								<Button variant="ghost" size="icon" aria-label={name}>
+								<Button iconOnly variant="ghost" size="md" aria-label={name}>
 									<Icon size={16} />
 								</Button>
 							</TooltipTrigger>

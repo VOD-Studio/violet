@@ -75,9 +75,10 @@ export function ReactionBar({ commentId, isLoggedIn = false }: ReactionBarProps)
 						showMyEmojis={false}
 						trigger={
 							<Button
+								iconOnly
 								type="button"
 								variant="ghost"
-								size="icon-xs"
+								size="sm"
 								aria-label="添加表情"
 								disabled={isBusy}
 								className="text-muted-foreground hover:text-foreground disabled:opacity-50"

@@ -178,9 +178,10 @@ function LoginDialogContent({ googleError }: { googleError: ReactNode }) {
 						<div className="flex justify-center">
 							{showGoogle ? (
 								<Button
+									iconOnly
 									type="button"
 									variant="outline"
-									size="icon"
+									size="md"
 									className="size-12 rounded-full"
 									onClick={startGoogle}
 									disabled={googlePending || !googleReady}
@@ -190,9 +191,10 @@ function LoginDialogContent({ googleError }: { googleError: ReactNode }) {
 							) : null}
 							{showGithub ? (
 								<Button
+									iconOnly
 									type="button"
 									variant="outline"
-									size="icon"
+									size="md"
 									className="ml-4 size-12 rounded-full"
 									onClick={startGithub}
 									disabled={githubPending}

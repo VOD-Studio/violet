@@ -115,8 +115,9 @@ export function DiagramFullscreen({ svg, label, onClose, triggerRef }: DiagramFu
 				{/* 左侧：缩放/锁定/导出 */}
 				<div className="flex min-w-0 items-center gap-1 sm:gap-2">
 					<Button
+						iconOnly
 						variant="ghost"
-						size="icon-sm"
+						size="sm"
 						onClick={zoomOut}
 						aria-label="缩小"
 						className={BTN_CLS}
@@ -127,8 +128,9 @@ export function DiagramFullscreen({ svg, label, onClose, triggerRef }: DiagramFu
 						{Math.round(state.scale * 100)}%
 					</span>
 					<Button
+						iconOnly
 						variant="ghost"
-						size="icon-sm"
+						size="sm"
 						onClick={zoomIn}
 						aria-label="放大"
 						className={BTN_CLS}
@@ -137,8 +139,9 @@ export function DiagramFullscreen({ svg, label, onClose, triggerRef }: DiagramFu
 					</Button>
 					<div className="mx-0.5 h-5 w-px bg-white/20 sm:mx-1 sm:h-6" />
 					<Button
+						iconOnly
 						variant="ghost"
-						size="icon-sm"
+						size="sm"
 						onClick={reset}
 						aria-label="重置缩放"
 						title="重置缩放与位置"
@@ -147,8 +150,9 @@ export function DiagramFullscreen({ svg, label, onClose, triggerRef }: DiagramFu
 						<RotateCcw className="size-4 sm:size-5" />
 					</Button>
 					<Button
+						iconOnly
 						variant="ghost"
-						size="icon-sm"
+						size="sm"
 						onClick={toggleLock}
 						aria-label={state.locked ? "解锁缩放" : "锁定缩放"}
 						title={state.locked ? "解锁缩放（可平移放大）" : "锁定（恢复页面滚动）"}
@@ -162,8 +166,9 @@ export function DiagramFullscreen({ svg, label, onClose, triggerRef }: DiagramFu
 					</Button>
 					<div className="mx-0.5 h-5 w-px bg-white/20 sm:mx-1 sm:h-6" />
 					<Button
+						iconOnly
 						variant="ghost"
-						size="icon-sm"
+						size="sm"
 						onClick={() => {
 							exportSvgFile(svg).catch((error: unknown) => {
 								toast.error(
@@ -178,8 +183,9 @@ export function DiagramFullscreen({ svg, label, onClose, triggerRef }: DiagramFu
 						<FileCode className="size-4 sm:size-5" />
 					</Button>
 					<Button
+						iconOnly
 						variant="ghost"
-						size="icon-sm"
+						size="sm"
 						onClick={() => {
 							exportPng(svg).catch((error: unknown) => {
 								toast.error(
@@ -201,8 +207,9 @@ export function DiagramFullscreen({ svg, label, onClose, triggerRef }: DiagramFu
 						<span className="text-xs text-white/60 sm:text-sm">{label}</span>
 					) : null}
 					<Button
+						iconOnly
 						variant="ghost"
-						size="icon-sm"
+						size="sm"
 						onClick={onClose}
 						aria-label="关闭全屏"
 						className={BTN_CLS}

@@ -181,7 +181,8 @@ function AdminPermissionsPage() {
 								{/* span 包裹：让 Radix Tooltip 能附着到可能 disabled 的按钮上 */}
 								<span>
 									<Button
-										size="icon-sm"
+										iconOnly
+										size="sm"
 										variant="ghost"
 										onClick={() => handleEdit(r.row)}
 										disabled={!isSuperAdmin}
@@ -196,7 +197,8 @@ function AdminPermissionsPage() {
 							<TooltipTrigger asChild>
 								<span>
 									<Button
-										size="icon-sm"
+										iconOnly
+										size="sm"
 										variant="ghost"
 										onClick={() => handleDelete(r.row)}
 										disabled={isBuiltin || !isSuperAdmin}

@@ -72,9 +72,10 @@ export function AdminSidebar() {
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<Button
+							iconOnly
 							id="sidebar-toggle"
 							variant="outline"
-							size="icon"
+							size="md"
 							onClick={handleToggle}
 							aria-label={collapsed ? "展开侧边栏" : "收起侧边栏"}
 							className="bg-background absolute top-7 -right-3.5 z-40 size-7 -translate-y-1/2 rounded-full shadow-sm"

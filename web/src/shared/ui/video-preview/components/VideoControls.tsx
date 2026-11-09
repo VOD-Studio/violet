@@ -161,8 +161,9 @@ export function VideoControls({
 			<div className="mt-1 flex items-center gap-2 text-white">
 				{/* 播放/暂停/重播 */}
 				<Button
+					iconOnly
 					type="button"
-					size="icon-sm"
+					size="sm"
 					variant="ghost"
 					className="text-white hover:bg-white/20"
 					onClick={onTogglePlay}
@@ -180,8 +181,9 @@ export function VideoControls({
 				{/* 音量 */}
 				<div className="group/volume flex items-center">
 					<Button
+						iconOnly
 						type="button"
-						size="icon-sm"
+						size="sm"
 						variant="ghost"
 						className="text-white hover:bg-white/20"
 						onClick={onToggleMute}
@@ -245,8 +247,9 @@ export function VideoControls({
 
 				{/* 全屏 */}
 				<Button
+					iconOnly
 					type="button"
-					size="icon-sm"
+					size="sm"
 					variant="ghost"
 					className="text-white hover:bg-white/20"
 					onClick={onToggleFullscreen}

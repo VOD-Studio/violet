@@ -53,7 +53,7 @@ export function ShowcaseToolbar({
 			<div className="flex items-center gap-2">
 				<Button
 					size="sm"
-					variant={outline ? "default" : "secondary"}
+					variant={outline ? "primary" : "secondary"}
 					aria-pressed={outline}
 					onClick={() => onChange({ outline: !outline || undefined })}
 				>
@@ -61,7 +61,7 @@ export function ShowcaseToolbar({
 				</Button>
 				<Button
 					size="sm"
-					variant={reduced ? "default" : "secondary"}
+					variant={reduced ? "primary" : "secondary"}
 					aria-pressed={reduced}
 					onClick={() => onChange({ reduced: !reduced || undefined })}
 				>

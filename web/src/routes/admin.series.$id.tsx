@@ -153,7 +153,8 @@ function AdminSeriesEditPage() {
 							</Button>
 							{label !== null && (
 								<Button
-									size="icon-sm"
+									iconOnly
+									size="sm"
 									variant="ghost"
 									title="删除卷（须先移出全部章节）"
 									onClick={() => {
@@ -220,7 +221,7 @@ function AdminSeriesEditPage() {
 						</Button>
 						<Button
 							size="sm"
-							variant={series.status === "published" ? "outline" : "default"}
+							variant={series.status === "published" ? "outline" : "primary"}
 							disabled={publish.isPending}
 							onClick={() => publish.mutate(series.status !== "published")}
 						>

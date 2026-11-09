@@ -203,9 +203,12 @@ describe("PATDialog", () => {
 		submitForm();
 		submitForm();
 		await waitFor(() => expect(apiPatch).toHaveBeenCalledTimes(1));
-		expect((screen.getByRole("button", { name: "保存" }) as HTMLButtonElement).disabled).toBe(
-			true,
-		);
+		// 加载中的按钮仍可聚焦，用 aria-busy 与激活守卫阻止重复提交
+		const save = screen.getByRole("button", { name: "保存" });
+		expect(save.getAttribute("aria-busy")).toBe("true");
+		expect(save.getAttribute("aria-disabled")).toBe("true");
+		fireEvent.click(save);
+		await waitFor(() => expect(apiPatch).toHaveBeenCalledTimes(1));
 		fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
 		expect(props.onOpenChange).not.toHaveBeenCalled();
 		request.reject(new Error("暂时不可用"));

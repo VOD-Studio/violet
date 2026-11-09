@@ -174,7 +174,8 @@ function AdminCommentsPage() {
 				<div className="flex items-center gap-1">
 					{canApprove ? (
 						<Button
-							size="icon-sm"
+							iconOnly
+							size="sm"
 							variant="ghost"
 							title="通过"
 							onClick={() => approveMut.mutate(row.id)}
@@ -185,7 +186,8 @@ function AdminCommentsPage() {
 					) : null}
 					{canApprove ? (
 						<Button
-							size="icon-sm"
+							iconOnly
+							size="sm"
 							variant="ghost"
 							title="标为垃圾"
 							className="hover:bg-destructive/10 hover:text-destructive"
@@ -197,7 +199,8 @@ function AdminCommentsPage() {
 					) : null}
 					{canDelete ? (
 						<Button
-							size="icon-sm"
+							iconOnly
+							size="sm"
 							variant="ghost"
 							title="删除"
 							className="hover:bg-destructive/10 hover:text-destructive"

@@ -133,8 +133,9 @@ function AdminLogsPage() {
 			width: "64px",
 			cell: (row) => (
 				<Button
+					iconOnly
 					variant="ghost"
-					size="icon-sm"
+					size="sm"
 					title="查看详情"
 					onClick={() => setDetailLog(row)}
 				>

@@ -455,7 +455,7 @@ export function MessageComposer({
 							title="发送（Enter），Shift+Enter 换行"
 							disabled={!canSend}
 							onClick={() => void sendMessage()}
-							size="icon"
+							iconOnly
 							className={cn(
 								"rounded-full transition-colors",
 								canSend

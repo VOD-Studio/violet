@@ -163,8 +163,9 @@ function AdminFriendLinksPage() {
 							disabled 恢复；rejected 可改判批准（误拒纠正，PRD US16） */}
 						{row.status === "pending" || row.status === "rejected" ? (
 							<Button
+								iconOnly
 								variant="ghost"
-								size="icon-sm"
+								size="sm"
 								title={row.status === "rejected" ? "改判为通过" : "批准"}
 								disabled={approveMut.isPending}
 								onClick={() => approveMut.mutate(row.id)}
@@ -174,8 +175,9 @@ function AdminFriendLinksPage() {
 						) : null}
 						{row.status === "pending" ? (
 							<Button
+								iconOnly
 								variant="ghost"
-								size="icon-sm"
+								size="sm"
 								title="拒绝"
 								disabled={rejectMut.isPending}
 								onClick={() => rejectMut.mutate(row.id)}
@@ -185,8 +187,9 @@ function AdminFriendLinksPage() {
 						) : null}
 						{row.status === "approved" ? (
 							<Button
+								iconOnly
 								variant="ghost"
-								size="icon-sm"
+								size="sm"
 								title="下柜"
 								disabled={disableMut.isPending}
 								onClick={() => disableMut.mutate(row.id)}
@@ -196,8 +199,9 @@ function AdminFriendLinksPage() {
 						) : null}
 						{row.status === "disabled" ? (
 							<Button
+								iconOnly
 								variant="ghost"
-								size="icon-sm"
+								size="sm"
 								title="恢复"
 								disabled={restoreMut.isPending}
 								onClick={() => restoreMut.mutate(row.id)}
@@ -207,16 +211,18 @@ function AdminFriendLinksPage() {
 						) : null}
 						{/* 全部状态可编辑/删除 */}
 						<Button
+							iconOnly
 							variant="ghost"
-							size="icon-sm"
+							size="sm"
 							title="编辑"
 							onClick={() => setEditing(row)}
 						>
 							<Pencil className="size-3.5" />
 						</Button>
 						<Button
+							iconOnly
 							variant="ghost"
-							size="icon-sm"
+							size="sm"
 							title="删除"
 							className="hover:bg-destructive/10 hover:text-destructive"
 							onClick={() => setDeleting(row)}

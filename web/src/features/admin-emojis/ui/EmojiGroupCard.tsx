@@ -158,8 +158,9 @@ export function EmojiGroupCard({ group, onEdit, onDelete, onManageEmojis }: Emoj
 				<div className="flex gap-1">
 					{onEdit ? (
 						<Button
+							iconOnly
 							variant="ghost"
-							size="icon-sm"
+							size="sm"
 							onClick={() => onEdit(group)}
 							title="编辑"
 							disabled={isDisabled}
@@ -169,8 +170,9 @@ export function EmojiGroupCard({ group, onEdit, onDelete, onManageEmojis }: Emoj
 					) : null}
 					{onDelete ? (
 						<Button
+							iconOnly
 							variant="ghost"
-							size="icon-sm"
+							size="sm"
 							onClick={() => onDelete(group)}
 							title="删除"
 							className={cn(

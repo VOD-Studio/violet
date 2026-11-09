@@ -61,7 +61,7 @@ export function SchemaRelationshipInspector({
 					<div className="flex shrink-0 items-center gap-1">
 						<Button
 							variant="outline"
-							size="xs"
+							size="sm"
 							onClick={() => onUseQuery(buildTableSelectSQL(table))}
 						>
 							<DatabaseZap className="size-3" />
@@ -69,8 +69,9 @@ export function SchemaRelationshipInspector({
 						</Button>
 						{onClose && (
 							<Button
+								iconOnly
 								variant="ghost"
-								size="icon-xs"
+								size="sm"
 								aria-label="关闭关系详情"
 								onClick={onClose}
 							>
@@ -162,7 +163,7 @@ function RelationshipGroup({
 								</span>
 								<Button
 									variant="ghost"
-									size="xs"
+									size="sm"
 									onClick={() =>
 										onUseQuery(buildRelationshipJoinSQL(relationship))
 									}

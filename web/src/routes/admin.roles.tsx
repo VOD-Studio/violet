@@ -151,7 +151,8 @@ function AdminRolesPage() {
 								<TooltipTrigger asChild>
 									<span>
 										<Button
-											size="icon-sm"
+											iconOnly
+											size="sm"
 											variant="ghost"
 											onClick={() => handleConfigurePermissions(row)}
 											aria-label={`配置权限 ${row.name}`}
@@ -168,7 +169,8 @@ function AdminRolesPage() {
 								<TooltipTrigger asChild>
 									<span>
 										<Button
-											size="icon-sm"
+											iconOnly
+											size="sm"
 											variant="ghost"
 											onClick={() => handleEdit(row)}
 											aria-label={`编辑角色 ${row.name}`}
@@ -185,7 +187,8 @@ function AdminRolesPage() {
 								<TooltipTrigger asChild>
 									<span>
 										<Button
-											size="icon-sm"
+											iconOnly
+											size="sm"
 											variant="ghost"
 											className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 											onClick={() => handleDelete(row)}

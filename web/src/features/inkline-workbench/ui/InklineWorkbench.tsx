@@ -259,8 +259,9 @@ function Brand() {
 					{INSTALL}
 				</code>
 				<Button
+					iconOnly
 					variant="ghost"
-					size="icon-xs"
+					size="sm"
 					onClick={copy}
 					aria-label={copied ? "已复制" : "复制安装命令"}
 				>
@@ -386,7 +387,13 @@ function Overlay({
 			>
 				<div className="flex items-center justify-between">
 					<span className="text-sm font-medium">{title}</span>
-					<Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="关闭面板">
+					<Button
+						iconOnly
+						variant="ghost"
+						size="sm"
+						onClick={onClose}
+						aria-label="关闭面板"
+					>
 						<X aria-hidden />
 					</Button>
 				</div>

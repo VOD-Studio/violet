@@ -73,9 +73,10 @@ export function PersonaImageEditor({
 					{!disabled ? (
 						<div className="flex items-center gap-1">
 							<Button
+								iconOnly
 								type="button"
 								variant="ghost"
-								size="icon-sm"
+								size="sm"
 								disabled={index === 0}
 								onClick={() => onMove(index - 1)}
 								aria-label={`上移第 ${index + 1} 张设定图`}
@@ -83,9 +84,10 @@ export function PersonaImageEditor({
 								<ArrowUp className="size-4" />
 							</Button>
 							<Button
+								iconOnly
 								type="button"
 								variant="ghost"
-								size="icon-sm"
+								size="sm"
 								disabled={index === total - 1}
 								onClick={() => onMove(index + 1)}
 								aria-label={`下移第 ${index + 1} 张设定图`}
@@ -93,9 +95,10 @@ export function PersonaImageEditor({
 								<ArrowDown className="size-4" />
 							</Button>
 							<Button
+								iconOnly
 								type="button"
 								variant="ghost"
-								size="icon-sm"
+								size="sm"
 								className="cursor-grab active:cursor-grabbing"
 								aria-label={`拖动第 ${index + 1} 张设定图排序`}
 								{...attributes}
@@ -104,9 +107,10 @@ export function PersonaImageEditor({
 								<GripVertical className="size-4" />
 							</Button>
 							<Button
+								iconOnly
 								type="button"
 								variant="ghost"
-								size="icon-sm"
+								size="sm"
 								className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 								onClick={onRemove}
 								aria-label={`删除第 ${index + 1} 张设定图`}

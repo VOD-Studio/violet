@@ -31,7 +31,7 @@ export function ImportUrlButton({ onConfirm }: ImportUrlButtonProps) {
 			<Button
 				type="button"
 				variant="ghost"
-				size="xs"
+				size="sm"
 				title="导入远程链接文档"
 				onClick={() => {
 					setUrl("https://");

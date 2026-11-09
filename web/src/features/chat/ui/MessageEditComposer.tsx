@@ -119,16 +119,18 @@ export function MessageEditComposer({
 				toolbarEnd={
 					<>
 						<Button
+							iconOnly
 							aria-label="取消编辑"
 							title="取消（Esc）"
 							onClick={onClose}
-							size="icon"
+							size="md"
 							variant="ghost"
 							className="rounded-full"
 						>
 							<X className="size-4" />
 						</Button>
 						<Button
+							iconOnly
 							aria-label="保存编辑"
 							title={
 								isImage && mediaIDs.length === 0
@@ -138,7 +140,7 @@ export function MessageEditComposer({
 							disabled={!canSave}
 							loading={edit.isPending}
 							onClick={save}
-							size="icon"
+							size="md"
 							className={cn(
 								"rounded-full transition-colors",
 								canSave

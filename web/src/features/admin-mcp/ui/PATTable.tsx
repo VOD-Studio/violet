@@ -76,8 +76,9 @@ export function PATTable({ tokens, pagination, loading, onConnect, onEdit }: PAT
 						<TooltipTrigger asChild>
 							<span>
 								<Button
+									iconOnly
 									variant="ghost"
-									size="icon-sm"
+									size="sm"
 									onClick={() => onConnect(row)}
 									aria-label={`查看令牌 ${row.name} 接入配置`}
 								>
@@ -90,8 +91,9 @@ export function PATTable({ tokens, pagination, loading, onConnect, onEdit }: PAT
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<Button
+								iconOnly
 								variant="ghost"
-								size="icon-sm"
+								size="sm"
 								onClick={() => onEdit(row)}
 								aria-label={`编辑令牌 ${row.name}`}
 							>
@@ -104,8 +106,9 @@ export function PATTable({ tokens, pagination, loading, onConnect, onEdit }: PAT
 						<TooltipTrigger asChild>
 							<span>
 								<Button
+									iconOnly
 									variant="ghost"
-									size="icon-sm"
+									size="sm"
 									className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 									onClick={() => del.mutate(row.id)}
 									disabled={del.isPending}

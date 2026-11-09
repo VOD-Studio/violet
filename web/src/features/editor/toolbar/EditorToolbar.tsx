@@ -77,10 +77,11 @@ export function EditorToolbar({
 		const disabled = item.canRun ? !item.canRun(editor) : false;
 		return (
 			<Button
+				iconOnly
 				key={item.id}
 				type="button"
 				variant="ghost"
-				size="icon-sm"
+				size="sm"
 				title={item.title}
 				disabled={disabled}
 				onMouseDown={keepFocus}
@@ -114,9 +115,10 @@ export function EditorToolbar({
 			{/* 图片插入：imageLibrary 关闭时退化为单按钮本地上传 */}
 			{features?.imageLibrary === false ? (
 				<Button
+					iconOnly
 					type="button"
 					variant="ghost"
-					size="icon-sm"
+					size="sm"
 					title="上传图片"
 					onClick={onUploadImage}
 				>
@@ -126,9 +128,10 @@ export function EditorToolbar({
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
 						<Button
+							iconOnly
 							type="button"
 							variant="ghost"
-							size="icon-sm"
+							size="sm"
 							title="插入图片"
 							className="w-auto min-w-8 px-1.5"
 						>

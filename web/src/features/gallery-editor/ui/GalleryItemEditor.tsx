@@ -65,9 +65,10 @@ export function GalleryItemEditor({
 						<GripVertical className="size-4" />
 					</button>
 					<Button
+						iconOnly
 						type="button"
 						variant="outline"
-						size="icon-sm"
+						size="sm"
 						disabled={disabled || index === 0}
 						onClick={() => onMove(index - 1)}
 						aria-label={`将第 ${index + 1} 张图片前移`}
@@ -75,9 +76,10 @@ export function GalleryItemEditor({
 						<ArrowUp className="size-4" />
 					</Button>
 					<Button
+						iconOnly
 						type="button"
 						variant="outline"
-						size="icon-sm"
+						size="sm"
 						disabled={disabled || index === total - 1}
 						onClick={() => onMove(index + 1)}
 						aria-label={`将第 ${index + 1} 张图片后移`}

@@ -396,14 +396,19 @@ interface RowActionsProps {
 function RowActions({ post, container, onPatch, onRemove }: RowActionsProps) {
 	return (
 		<span className="v-table__row-actions">
-			<Button variant="ghost" size="icon-sm" aria-label={`编辑 ${post.title}`} asChild>
+			<Button iconOnly variant="ghost" size="sm" aria-label={`编辑 ${post.title}`} asChild>
 				<StayLink href={`/admin/posts/${post.id}`}>
 					<Pencil aria-hidden="true" />
 				</StayLink>
 			</Button>
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
-					<Button variant="ghost" size="icon-sm" aria-label={`更多操作 ${post.title}`}>
+					<Button
+						iconOnly
+						variant="ghost"
+						size="sm"
+						aria-label={`更多操作 ${post.title}`}
+					>
 						<Ellipsis aria-hidden="true" />
 					</Button>
 				</DropdownMenuTrigger>

@@ -157,8 +157,9 @@ const NotificationBell = ({ onOpenChange, extraUnread = 0 }: NotificationBellPro
 			<BadgeAnchor badge={<Count value={totalUnread} />}>
 				<DropdownMenuTrigger asChild>
 					<Button
+						iconOnly
 						variant="ghost"
-						size="icon-sm"
+						size="sm"
 						aria-label={totalUnread > 0 ? `消息，${totalUnread} 条未读` : "消息"}
 						className="rounded-full text-muted-foreground hover:bg-muted/70 hover:text-foreground"
 					>

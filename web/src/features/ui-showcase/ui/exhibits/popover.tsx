@@ -126,7 +126,7 @@ function TagFilter() {
 				</span>
 				<Button
 					variant="ghost"
-					size="xs"
+					size="sm"
 					disabled={picked.length === 0}
 					onClick={() => setPicked([])}
 				>

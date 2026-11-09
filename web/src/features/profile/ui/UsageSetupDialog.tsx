@@ -85,8 +85,9 @@ function SetupCode({ label, code }: { label: string; code: string }) {
 			<div className="flex items-center justify-between gap-3">
 				<h3 className="text-sm font-medium">{label}</h3>
 				<Button
+					iconOnly
 					variant="ghost"
-					size="icon-sm"
+					size="sm"
 					onClick={() => void copy()}
 					aria-label={copied ? `已复制${label}` : `复制${label}`}
 					title={copied ? `已复制${label}` : `复制${label}`}

@@ -130,7 +130,8 @@ function AdminSeriesPage() {
 						<TooltipTrigger asChild>
 							<span>
 								<Button
-									size="icon-sm"
+									iconOnly
+									size="sm"
 									variant="ghost"
 									onClick={() =>
 										void navigate({
@@ -151,7 +152,8 @@ function AdminSeriesPage() {
 							<TooltipTrigger asChild>
 								<span>
 									<Button
-										size="icon-sm"
+										iconOnly
+										size="sm"
 										variant="ghost"
 										onClick={() => handleEditMeta(row)}
 										aria-label={`编辑《${row.title}》信息`}
@@ -168,7 +170,8 @@ function AdminSeriesPage() {
 							<TooltipTrigger asChild>
 								<span>
 									<Button
-										size="icon-sm"
+										iconOnly
+										size="sm"
 										variant="ghost"
 										className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 										onClick={() => handleDelete(row)}

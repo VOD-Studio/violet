@@ -50,8 +50,9 @@ export function MarkdownPreview({ url, name, className }: MarkdownPreviewProps) 
 					</span>
 				) : null}
 				<Button
+					iconOnly
 					type="button"
-					size="icon-sm"
+					size="sm"
 					variant="ghost"
 					onClick={handleCopy}
 					disabled={loadStatus !== "ready"}

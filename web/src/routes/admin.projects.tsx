@@ -154,7 +154,8 @@ function AdminProjectsPage() {
 							<TooltipTrigger asChild>
 								<span>
 									<Button
-										size="icon-sm"
+										iconOnly
+										size="sm"
 										variant="ghost"
 										onClick={() => openEdit(row)}
 										aria-label={`编辑项目 ${row.title}`}
@@ -171,7 +172,8 @@ function AdminProjectsPage() {
 							<TooltipTrigger asChild>
 								<span>
 									<Button
-										size="icon-sm"
+										iconOnly
+										size="sm"
 										variant="ghost"
 										className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 										onClick={() => setDeleteId(row.id)}

@@ -23,7 +23,7 @@ export function ChatAppearanceWorkspace({ user, onClose }: ChatAppearanceWorkspa
 			transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
 		>
 			<header className="flex h-16 shrink-0 items-center gap-3 border-b border-border bg-card/60 px-4 md:px-8">
-				<Button size="icon" variant="ghost" aria-label="返回聊天" onClick={onClose}>
+				<Button iconOnly size="md" variant="ghost" aria-label="返回聊天" onClick={onClose}>
 					<ArrowLeft aria-hidden="true" className="size-5" />
 				</Button>
 				<h2 id="chat-appearance-title" className="text-lg font-semibold tracking-tight">

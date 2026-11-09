@@ -74,7 +74,7 @@ export function EmojiToolbar({
 				</div>
 
 				<Button
-					variant={isSelectMode ? "default" : "outline"}
+					variant={isSelectMode ? "primary" : "outline"}
 					size="sm"
 					onClick={onToggleSelectMode}
 				>

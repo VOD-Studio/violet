@@ -458,8 +458,9 @@ function BackupTable({
 							<td className="px-4 py-3">
 								<div className="flex justify-end gap-1">
 									<Button
+										iconOnly
 										variant="ghost"
-										size="icon-sm"
+										size="sm"
 										disabled={actionPending}
 										title="下载数据库"
 										aria-label={`下载 ${backup.filename}`}
@@ -469,8 +470,9 @@ function BackupTable({
 									</Button>
 									{backup.uploads_filename && (
 										<Button
+											iconOnly
 											variant="ghost"
-											size="icon-sm"
+											size="sm"
 											disabled={actionPending}
 											title="下载上传归档"
 											aria-label={`下载 ${backup.uploads_filename}`}
@@ -480,8 +482,9 @@ function BackupTable({
 										</Button>
 									)}
 									<Button
+										iconOnly
 										variant="ghost"
-										size="icon-sm"
+										size="sm"
 										disabled={actionPending}
 										title="恢复数据库"
 										aria-label={`恢复 ${backup.filename}`}
@@ -490,9 +493,10 @@ function BackupTable({
 										<RotateCcw className="size-3.5" />
 									</Button>
 									<Button
+										iconOnly
 										className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 										variant="ghost"
-										size="icon-sm"
+										size="sm"
 										disabled={actionPending}
 										title="删除备份"
 										aria-label={`删除 ${backup.filename}`}

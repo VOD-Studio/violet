@@ -264,7 +264,7 @@ export function AddPlaylistDialog({
 																	variant={
 																		isAdded
 																			? "ghost"
-																			: "default"
+																			: "primary"
 																	}
 																	disabled={
 																		isAdded ||
@@ -440,7 +440,7 @@ export function AddPlaylistDialog({
 
 														<Button
 															size="sm"
-															variant={isAdded ? "ghost" : "default"}
+															variant={isAdded ? "ghost" : "primary"}
 															disabled={
 																isAdded || addMutation.isPending
 															}

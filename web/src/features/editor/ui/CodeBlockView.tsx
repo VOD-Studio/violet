@@ -424,8 +424,8 @@ function CodeBlockViewComponent({
 				{isRunnable && (
 					<Button
 						type="button"
-						size="xs"
-						variant={runState === "running" ? "secondary" : "default"}
+						size="sm"
+						variant={runState === "running" ? "secondary" : "primary"}
 						onClick={handleRun}
 						disabled={runState === "running" || !availability?.allowed}
 						className="gap-1"
@@ -443,7 +443,7 @@ function CodeBlockViewComponent({
 					<span>{availability.error.message}</span>
 					<Button
 						type="button"
-						size="xs"
+						size="sm"
 						variant="secondary"
 						disabled={availability.isFetching}
 						onClick={() => void availability.refetch()}

@@ -114,7 +114,7 @@ export function AICoverDialog({
 										key={n}
 										type="button"
 										size="sm"
-										variant={count === n ? "default" : "outline"}
+										variant={count === n ? "primary" : "outline"}
 										disabled={generate.isPending}
 										onClick={() => setCount(n)}
 									>

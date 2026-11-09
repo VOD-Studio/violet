@@ -40,7 +40,7 @@ export function NoteEditorToolbar({
 		<div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
 			{/* 左侧：返回 + 标题 + 状态 Badge + 未保存提示 */}
 			<div className="flex shrink-0 items-center gap-3">
-				<Button variant="ghost" size="icon-sm" onClick={onBack} title="返回列表">
+				<Button iconOnly variant="ghost" size="sm" onClick={onBack} title="返回列表">
 					<ArrowLeft className="size-4" />
 				</Button>
 				<h1 className="text-lg font-semibold tracking-tight">

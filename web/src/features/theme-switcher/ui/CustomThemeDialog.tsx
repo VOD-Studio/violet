@@ -66,8 +66,9 @@ export function CustomThemeDialog({ open, onOpenChange }: CustomThemeDialogProps
 						<Popover open={draft.pickerOpen} onOpenChange={draft.setPickerOpen}>
 							<PopoverTrigger asChild>
 								<Button
+									iconOnly
 									variant="outline"
-									size="icon"
+									size="md"
 									aria-label="打开种子色取色面板"
 									className="mt-6.5 shrink-0"
 								>

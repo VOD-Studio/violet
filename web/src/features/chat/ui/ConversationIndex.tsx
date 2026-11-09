@@ -62,6 +62,7 @@ export function ConversationIndex({
 					<h1 className="mr-auto text-[1.35rem] font-semibold text-foreground">聊天</h1>
 					<ChatAppearanceButton active={appearanceOpen} onClick={onOpenAppearance} />
 					<Button
+						iconOnly
 						aria-label="新建会话"
 						className={cn(
 							"size-9 rounded-full text-muted-foreground transition-colors",
@@ -70,7 +71,7 @@ export function ConversationIndex({
 								: "hover:bg-secondary hover:text-foreground",
 						)}
 						onClick={onToggleNew}
-						size="icon"
+						size="md"
 						variant="ghost"
 					>
 						<Plus

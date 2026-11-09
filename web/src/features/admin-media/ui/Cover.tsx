@@ -67,13 +67,13 @@ export function Cover({
 						<Button
 							type="button"
 							variant="secondary"
-							size="xs"
+							size="sm"
 							onClick={() => setPickerOpen(true)}
 						>
 							更换
 						</Button>
 						{onClear ? (
-							<Button type="button" variant="secondary" size="xs" onClick={onClear}>
+							<Button type="button" variant="secondary" size="sm" onClick={onClear}>
 								移除
 							</Button>
 						) : null}

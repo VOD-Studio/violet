@@ -284,8 +284,9 @@ function AdminUsers() {
 								<TooltipTrigger asChild>
 									<span>
 										<Button
+											iconOnly
 											variant="ghost"
-											size="icon-sm"
+											size="sm"
 											onClick={(e) => {
 												e.stopPropagation();
 												setEditingUser(row);
@@ -305,8 +306,9 @@ function AdminUsers() {
 								<TooltipTrigger asChild>
 									<span>
 										<Button
+											iconOnly
 											variant="ghost"
-											size="icon-sm"
+											size="sm"
 											onClick={(e) => {
 												e.stopPropagation();
 												setBadgesUser(row);
@@ -327,8 +329,9 @@ function AdminUsers() {
 									<TooltipTrigger asChild>
 										<span>
 											<Button
+												iconOnly
 												variant="ghost"
-												size="icon-sm"
+												size="sm"
 												onClick={(e) => {
 													e.stopPropagation();
 													restoreUser.mutate(row.id);
@@ -348,8 +351,9 @@ function AdminUsers() {
 									<TooltipTrigger asChild>
 										<span>
 											<Button
+												iconOnly
 												variant="ghost"
-												size="icon-sm"
+												size="sm"
 												className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 												disabled={isProtected}
 												onClick={(e) => {
@@ -373,8 +377,9 @@ function AdminUsers() {
 								<TooltipTrigger asChild>
 									<span>
 										<Button
+											iconOnly
 											variant="ghost"
-											size="icon-sm"
+											size="sm"
 											disabled={deletedView === "deleted" || isProtected}
 											onClick={(e) => {
 												e.stopPropagation();

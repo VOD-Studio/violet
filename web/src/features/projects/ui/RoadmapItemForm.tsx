@@ -108,9 +108,10 @@ export function RoadmapItemForm({ item, onSave, onCancel }: RoadmapItemFormProps
 							onChange={(event) => setLink(index, { url: event.target.value })}
 						/>
 						<Button
+							iconOnly
 							type="button"
 							variant="ghost"
-							size="icon"
+							size="md"
 							aria-label={`删除链接 ${index + 1}`}
 							onClick={() =>
 								patch({ links: draft.links.filter((_, at) => at !== index) })
@@ -151,9 +152,10 @@ export function RoadmapItemForm({ item, onSave, onCancel }: RoadmapItemFormProps
 							onChange={(event) => setStep(index, { text: event.target.value })}
 						/>
 						<Button
+							iconOnly
 							type="button"
 							variant="ghost"
-							size="icon"
+							size="md"
 							aria-label={`删除子项 ${index + 1}`}
 							onClick={() =>
 								patch({

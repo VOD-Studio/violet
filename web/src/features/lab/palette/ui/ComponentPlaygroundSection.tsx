@@ -56,7 +56,7 @@ export function ComponentPlaygroundSection({ className }: ComponentPlaygroundSec
 						</h4>
 
 						<div className="flex flex-wrap items-center gap-3">
-							<Button variant="default">默认主操作 (Default)</Button>
+							<Button variant="primary">默认主操作 (Default)</Button>
 							<Button variant="secondary">次级操作 (Secondary)</Button>
 							<Button variant="outline">边框轮廓 (Outline)</Button>
 							<Button variant="ghost">幽灵悬停 (Ghost)</Button>
@@ -98,7 +98,7 @@ export function ComponentPlaygroundSection({ className }: ComponentPlaygroundSec
 
 							<div className="flex items-center gap-2">
 								<Button
-									size="xs"
+									size="sm"
 									variant="outline"
 									onClick={() => setCurrentStep((s) => Math.max(0, s - 1))}
 									disabled={currentStep === 0}
@@ -107,8 +107,8 @@ export function ComponentPlaygroundSection({ className }: ComponentPlaygroundSec
 									上一步
 								</Button>
 								<Button
-									size="xs"
-									variant="default"
+									size="sm"
+									variant="primary"
 									onClick={() => setCurrentStep((s) => Math.min(3, s + 1))}
 									disabled={currentStep === 3}
 								>

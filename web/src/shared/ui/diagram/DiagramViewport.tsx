@@ -139,8 +139,9 @@ export function DiagramViewport({
 					{!state.locked ? (
 						<>
 							<Button
+								iconOnly
 								variant="ghost"
-								size="icon-xs"
+								size="sm"
 								onClick={zoomIn}
 								aria-label="放大"
 								title="放大"
@@ -148,8 +149,9 @@ export function DiagramViewport({
 								<ZoomIn className="size-3.5" />
 							</Button>
 							<Button
+								iconOnly
 								variant="ghost"
-								size="icon-xs"
+								size="sm"
 								onClick={zoomOut}
 								aria-label="缩小"
 								title="缩小"
@@ -157,8 +159,9 @@ export function DiagramViewport({
 								<ZoomOut className="size-3.5" />
 							</Button>
 							<Button
+								iconOnly
 								variant="ghost"
-								size="icon-xs"
+								size="sm"
 								onClick={reset}
 								aria-label="重置缩放"
 								title="重置缩放与位置"
@@ -173,8 +176,9 @@ export function DiagramViewport({
 					) : null}
 					{onCopySource ? (
 						<Button
+							iconOnly
 							variant="ghost"
-							size="icon-xs"
+							size="sm"
 							onClick={onCopySource}
 							aria-label="复制 mermaid 源码"
 							title={copied ? "已复制" : "复制源码"}
@@ -189,8 +193,9 @@ export function DiagramViewport({
 					{exportSvg ? (
 						<div ref={exportMenuRef} className="relative">
 							<Button
+								iconOnly
 								variant="ghost"
-								size="icon-xs"
+								size="sm"
 								onClick={() => setExportMenuOpen((v) => !v)}
 								aria-label="导出图表"
 								aria-haspopup="menu"
@@ -245,8 +250,9 @@ export function DiagramViewport({
 						</div>
 					) : null}
 					<Button
+						iconOnly
 						variant="ghost"
-						size="icon-xs"
+						size="sm"
 						onClick={toggleLock}
 						aria-label={state.locked ? "解锁缩放" : "锁定缩放"}
 						title={state.locked ? "解锁缩放（可平移放大）" : "锁定（恢复页面滚动）"}
@@ -259,8 +265,9 @@ export function DiagramViewport({
 					</Button>
 					{onFullscreen ? (
 						<Button
+							iconOnly
 							variant="ghost"
-							size="icon-xs"
+							size="sm"
 							onClick={onFullscreen}
 							aria-label="全屏查看"
 							title="全屏查看"

@@ -391,10 +391,11 @@ export function ConversationPanel({
 				<header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border px-3 md:px-5">
 					<div className="flex min-w-0 items-center gap-2.5">
 						<Button
+							iconOnly
 							aria-label="返回会话列表"
 							className="size-9 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground md:hidden"
 							onClick={onBack}
-							size="icon"
+							size="md"
 							variant="ghost"
 						>
 							<ArrowLeft className="size-5" />
@@ -418,10 +419,11 @@ export function ConversationPanel({
 					</div>
 
 					<Button
+						iconOnly
 						aria-label="打开会话详情"
 						className="size-9 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground"
 						onClick={onToggleDetails}
-						size="icon"
+						size="md"
 						variant="ghost"
 					>
 						<MoreVertical className="size-5" />
@@ -546,7 +548,8 @@ export function ConversationPanel({
 										aria-label="回到底部"
 										className="pointer-events-auto size-8.5 rounded-full border border-border bg-card shadow-md"
 										onClick={() => scrollToBottom(true)}
-										size="icon-sm"
+										iconOnly
+										size="sm"
 										variant="outline"
 									>
 										<ArrowDown className="size-4" />

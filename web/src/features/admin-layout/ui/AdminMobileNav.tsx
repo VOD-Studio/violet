@@ -27,8 +27,9 @@ export function AdminMobileNav() {
 		<Sheet open={open} onOpenChange={setOpen}>
 			<SheetTrigger asChild>
 				<Button
+					iconOnly
 					variant="ghost"
-					size="icon-sm"
+					size="sm"
 					className="md:hidden"
 					aria-label="打开导航菜单"
 				>

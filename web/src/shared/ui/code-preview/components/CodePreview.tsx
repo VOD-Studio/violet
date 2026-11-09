@@ -60,8 +60,9 @@ export function CodePreview({
 					<span className="truncate font-mono text-xs text-white/70">{name ?? lang}</span>
 				) : null}
 				<Button
+					iconOnly
 					type="button"
-					size="icon-sm"
+					size="sm"
 					variant="ghost"
 					className="text-white/70 hover:bg-white/10 hover:text-white"
 					onClick={handleCopy}

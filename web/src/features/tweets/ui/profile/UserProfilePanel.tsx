@@ -115,8 +115,9 @@ export function UserProfilePanel({
 			<div className="mt-1 flex items-center gap-1">
 				<span className="font-mono text-sm text-muted-foreground">@{profile.username}</span>
 				<Button
+					iconOnly
 					variant="ghost"
-					size="icon-xs"
+					size="sm"
 					aria-label="复制用户名"
 					onClick={async () => {
 						if (await copyText(`@${profile.username}`, `已复制 @${profile.username}`))
@@ -150,8 +151,9 @@ export function UserProfilePanel({
 					</Button>
 				)}
 				<Button
+					iconOnly
 					variant="outline"
-					size="icon"
+					size="md"
 					aria-label="复制主页链接"
 					onClick={async () => {
 						if (await copyText(window.location.href, "主页链接已复制"))

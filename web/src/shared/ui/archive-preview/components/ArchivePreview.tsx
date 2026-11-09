@@ -48,8 +48,9 @@ export function ArchivePreview({ url, name, mimeType, className }: ArchivePrevie
 						{name ?? "压缩包"}
 					</span>
 					<Button
+						iconOnly
 						type="button"
-						size="icon-sm"
+						size="sm"
 						variant="ghost"
 						onClick={handleDownload}
 						title="下载"

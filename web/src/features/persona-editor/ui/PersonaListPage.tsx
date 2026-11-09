@@ -139,9 +139,10 @@ export function PersonaListPage() {
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<Button
+								iconOnly
 								type="button"
 								variant="ghost"
-								size="icon-sm"
+								size="sm"
 								onClick={() => openPersona(row.id)}
 								aria-label={`${canManage ? "编辑" : "查看"}人设 ${row.name || row.id.slice(0, 8)}`}
 							>
@@ -159,9 +160,10 @@ export function PersonaListPage() {
 							<TooltipTrigger asChild>
 								<span>
 									<Button
+										iconOnly
 										type="button"
 										variant="ghost"
-										size="icon-sm"
+										size="sm"
 										disabled={row.is_active}
 										className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 										onClick={() => setDeleting(row)}

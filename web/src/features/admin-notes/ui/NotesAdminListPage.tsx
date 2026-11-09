@@ -125,7 +125,8 @@ export function NotesAdminListPage() {
 						<TooltipTrigger asChild>
 							<span>
 								<Button
-									size="icon-sm"
+									iconOnly
+									size="sm"
 									variant="ghost"
 									onClick={() => openEdit(row.id)}
 									disabled={!canManage}
@@ -141,7 +142,8 @@ export function NotesAdminListPage() {
 						<TooltipTrigger asChild>
 							<span>
 								<Button
-									size="icon-sm"
+									iconOnly
+									size="sm"
 									variant="ghost"
 									className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 									onClick={() => setDeleting(row)}

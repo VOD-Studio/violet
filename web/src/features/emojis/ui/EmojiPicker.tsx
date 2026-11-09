@@ -125,9 +125,10 @@ function EmojiPickerSession({
 			<PopoverTrigger asChild disabled={disabled}>
 				{trigger ?? (
 					<Button
+						iconOnly
 						type="button"
 						variant="ghost"
-						size="icon-xs"
+						size="sm"
 						aria-label="添加表情"
 						className="text-muted-foreground hover:text-foreground"
 					>
@@ -212,8 +213,9 @@ function EmojiPickerSession({
 							</div>
 						</div>
 						<Button
+							iconOnly
 							variant="ghost"
-							size="icon-xs"
+							size="sm"
 							aria-label="上一组"
 							title="上一组"
 							disabled={activeIndex <= 0}
@@ -222,8 +224,9 @@ function EmojiPickerSession({
 							<ChevronLeft className="size-4" />
 						</Button>
 						<Button
+							iconOnly
 							variant="ghost"
-							size="icon-xs"
+							size="sm"
 							aria-label="下一组"
 							title="下一组"
 							disabled={activeIndex < 0 || activeIndex >= keys.length - 1}

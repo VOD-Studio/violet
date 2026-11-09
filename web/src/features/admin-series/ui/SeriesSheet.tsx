@@ -175,7 +175,7 @@ export function SeriesSheet({ open, onOpenChange, editing, onCreated }: SeriesSh
 								<Label>封面图</Label>
 								<Button
 									type="button"
-									size="xs"
+									size="sm"
 									variant="outline"
 									disabled={isSubmitting}
 									onClick={() => setAiCoverOpen(true)}

@@ -609,7 +609,8 @@ function MediaTable({
 				<div className="v-table__row-actions gap-1">
 					{onEdit ? (
 						<Button
-							size="icon-sm"
+							iconOnly
+							size="sm"
 							variant="ghost"
 							title="编辑"
 							onClick={() => onEdit(file)}
@@ -619,7 +620,8 @@ function MediaTable({
 					) : null}
 					{onDelete ? (
 						<Button
-							size="icon-sm"
+							iconOnly
+							size="sm"
 							variant="ghost"
 							title="删除"
 							className="hover:bg-destructive/10 hover:text-destructive"

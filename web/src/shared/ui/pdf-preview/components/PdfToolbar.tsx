@@ -37,8 +37,9 @@ export function PdfToolbar({
 	return (
 		<div className="flex items-center gap-1 border-b px-2 py-1.5">
 			<Button
+				iconOnly
 				type="button"
-				size="icon-sm"
+				size="sm"
 				variant="ghost"
 				onClick={onPrevPage}
 				disabled={currentPage <= 1}
@@ -64,8 +65,9 @@ export function PdfToolbar({
 				<span>/ {numPages || "-"}</span>
 			</div>
 			<Button
+				iconOnly
 				type="button"
-				size="icon-sm"
+				size="sm"
 				variant="ghost"
 				onClick={onNextPage}
 				disabled={currentPage >= numPages}
@@ -77,8 +79,9 @@ export function PdfToolbar({
 			<div className="mx-1 h-4 w-px bg-border" />
 
 			<Button
+				iconOnly
 				type="button"
-				size="icon-sm"
+				size="sm"
 				variant="ghost"
 				onClick={onZoomOut}
 				disabled={scale <= 0.5}
@@ -95,8 +98,9 @@ export function PdfToolbar({
 				{Math.round(scale * 100)}%
 			</button>
 			<Button
+				iconOnly
 				type="button"
-				size="icon-sm"
+				size="sm"
 				variant="ghost"
 				onClick={onZoomIn}
 				disabled={scale >= 3}
@@ -105,8 +109,9 @@ export function PdfToolbar({
 				<Plus className="size-4" />
 			</Button>
 			<Button
+				iconOnly
 				type="button"
-				size="icon-sm"
+				size="sm"
 				variant="ghost"
 				onClick={onResetZoom}
 				title="实际大小"
@@ -118,8 +123,9 @@ export function PdfToolbar({
 
 			{showDownload ? (
 				<Button
+					iconOnly
 					type="button"
-					size="icon-sm"
+					size="sm"
 					variant="ghost"
 					onClick={onDownload}
 					title="下载 PDF"

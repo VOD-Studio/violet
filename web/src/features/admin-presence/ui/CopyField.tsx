@@ -23,9 +23,10 @@ export function CopyField({ label, value }: { label: string; value: string }) {
 				{value}
 			</code>
 			<Button
+				iconOnly
 				type="button"
 				variant="ghost"
-				size="icon-sm"
+				size="sm"
 				aria-label={`复制${label}`}
 				onClick={copy}
 				className="shrink-0"

@@ -94,9 +94,10 @@ export function TweetComposerAttachments({
 						</div>
 						{onCancelQuote && (
 							<Button
+								iconOnly
 								type="button"
 								variant="ghost"
-								size="icon"
+								size="md"
 								aria-label="取消引用"
 								disabled={disabled}
 								onClick={onCancelQuote}

@@ -67,8 +67,9 @@ export function PostEditorToolbar({
 				{zenMode ? (
 					onToggleZen && (
 						<Button
+							iconOnly
 							variant="ghost"
-							size="icon-sm"
+							size="sm"
 							onClick={onToggleZen}
 							title="退出专注（Esc）"
 						>
@@ -76,7 +77,7 @@ export function PostEditorToolbar({
 						</Button>
 					)
 				) : (
-					<Button variant="ghost" size="icon-sm" onClick={onBack} title="返回列表">
+					<Button iconOnly variant="ghost" size="sm" onClick={onBack} title="返回列表">
 						<X />
 					</Button>
 				)}
@@ -89,8 +90,9 @@ export function PostEditorToolbar({
 				    文章设置仅移动端经「更多」打开侧滑抽屉（桌面右侧栏并排常显，无需入口） */}
 				{onToggleSidebar && zenMode && (
 					<Button
+						iconOnly
 						variant="ghost"
-						size="icon-sm"
+						size="sm"
 						className="hidden lg:flex"
 						onClick={onToggleSidebar}
 						title={sidebarCollapsed ? "展开侧边栏" : "收起侧边栏"}
@@ -133,7 +135,7 @@ export function PostEditorToolbar({
 						<History className="size-4" /> 历史版本
 					</Button>
 				)}
-				<Button asChild variant="ghost" size="icon-sm" className="hidden lg:flex">
+				<Button iconOnly asChild variant="ghost" size="sm" className="hidden lg:flex">
 					<a
 						href="/editor-guide"
 						target="_blank"
