@@ -32,6 +32,11 @@
 			"import": "./src/components/accordion/index.ts",
 			"default": "./src/components/accordion/index.ts"
 		},
+		"./alert": {
+			"types": "./src/components/alert/index.ts",
+			"import": "./src/components/alert/index.ts",
+			"default": "./src/components/alert/index.ts"
+		},
 		"./avatar": {
 			"types": "./src/components/avatar/index.ts",
 			"import": "./src/components/avatar/index.ts",
@@ -41,6 +46,11 @@
 			"types": "./src/components/badge/index.ts",
 			"import": "./src/components/badge/index.ts",
 			"default": "./src/components/badge/index.ts"
+		},
+		"./breadcrumbs": {
+			"types": "./src/components/breadcrumbs/index.ts",
+			"import": "./src/components/breadcrumbs/index.ts",
+			"default": "./src/components/breadcrumbs/index.ts"
 		},
 		"./button": {
 			"types": "./src/components/button/index.ts",
@@ -212,6 +222,11 @@
 			"import": "./src/components/popover/index.ts",
 			"default": "./src/components/popover/index.ts"
 		},
+		"./progress": {
+			"types": "./src/components/progress/index.ts",
+			"import": "./src/components/progress/index.ts",
+			"default": "./src/components/progress/index.ts"
+		},
 		"./prompt-dialog": {
 			"types": "./src/components/prompt-dialog/index.ts",
 			"import": "./src/components/prompt-dialog/index.ts",
@@ -351,11 +366,14 @@
 		"./tokens.css": "./src/tokens.css",
 		"./classes.css": "./src/classes.css",
 		"./components/accordion.css": "./src/components/accordion/accordion.css",
+		"./components/alert.css": "./src/components/alert/alert.css",
 		"./components/avatar.css": "./src/components/avatar/avatar.css",
 		"./components/badge.css": "./src/components/badge/badge.css",
+		"./components/breadcrumbs.css": "./src/components/breadcrumbs/breadcrumbs.css",
 		"./components/button.css": "./src/components/button/button.css",
 		"./components/card.css": "./src/components/card/card.css",
 		"./components/cascader.css": "./src/components/cascader/cascader.css",
+		"./components/chart.css": "./src/components/chart/chart.css",
 		"./components/checkbox.css": "./src/components/checkbox/checkbox.css",
 		"./components/color-picker.css": "./src/components/color-picker/color-picker.css",
 		"./components/combobox.css": "./src/components/combobox/combobox.css",
@@ -367,6 +385,7 @@
 		"./components/drawer.css": "./src/components/drawer/drawer.css",
 		"./components/dropdown.css": "./src/components/dropdown/dropdown.css",
 		"./components/dropdown-menu.css": "./src/components/dropdown-menu/dropdown-menu.css",
+		"./components/empty.css": "./src/components/empty/empty.css",
 		"./components/field.css": "./src/components/field/field.css",
 		"./components/hover-card.css": "./src/components/hover-card/hover-card.css",
 		"./components/image-pixel-reveal.css": "./src/components/image-pixel-reveal/image-pixel-reveal.css",
@@ -380,8 +399,10 @@
 		"./components/number-input.css": "./src/components/number-input/number-input.css",
 		"./components/otp.css": "./src/components/otp/otp.css",
 		"./components/overlay-scroll.css": "./src/components/overlay-scroll/overlay-scroll.css",
+		"./components/page-header.css": "./src/components/page-header/page-header.css",
 		"./components/pagination.css": "./src/components/pagination/pagination.css",
 		"./components/popover.css": "./src/components/popover/popover.css",
+		"./components/progress.css": "./src/components/progress/progress.css",
 		"./components/prompt-dialog.css": "./src/components/prompt-dialog/prompt-dialog.css",
 		"./components/radio.css": "./src/components/radio/radio.css",
 		"./components/resend-button.css": "./src/components/resend-button/resend-button.css",
@@ -392,6 +413,7 @@
 		"./components/skeleton.css": "./src/components/skeleton/skeleton.css",
 		"./components/slider.css": "./src/components/slider/slider.css",
 		"./components/sonner.css": "./src/components/sonner/sonner.css",
+		"./components/steps.css": "./src/components/steps/steps.css",
 		"./components/switch.css": "./src/components/switch/switch.css",
 		"./components/table.css": "./src/components/table/table.css",
 		"./components/tabs.css": "./src/components/tabs/tabs.css",
@@ -444,6 +466,11 @@
 				"import": "./dist/components/accordion/index.js",
 				"default": "./dist/components/accordion/index.js"
 			},
+			"./alert": {
+				"types": "./dist/components/alert/index.d.ts",
+				"import": "./dist/components/alert/index.js",
+				"default": "./dist/components/alert/index.js"
+			},
 			"./avatar": {
 				"types": "./dist/components/avatar/index.d.ts",
 				"import": "./dist/components/avatar/index.js",
@@ -453,6 +480,11 @@
 				"types": "./dist/components/badge/index.d.ts",
 				"import": "./dist/components/badge/index.js",
 				"default": "./dist/components/badge/index.js"
+			},
+			"./breadcrumbs": {
+				"types": "./dist/components/breadcrumbs/index.d.ts",
+				"import": "./dist/components/breadcrumbs/index.js",
+				"default": "./dist/components/breadcrumbs/index.js"
 			},
 			"./button": {
 				"types": "./dist/components/button/index.d.ts",
@@ -624,6 +656,11 @@
 				"import": "./dist/components/popover/index.js",
 				"default": "./dist/components/popover/index.js"
 			},
+			"./progress": {
+				"types": "./dist/components/progress/index.d.ts",
+				"import": "./dist/components/progress/index.js",
+				"default": "./dist/components/progress/index.js"
+			},
 			"./prompt-dialog": {
 				"types": "./dist/components/prompt-dialog/index.d.ts",
 				"import": "./dist/components/prompt-dialog/index.js",
@@ -763,11 +800,14 @@
 			"./tokens.css": "./dist/tokens.css",
 			"./classes.css": "./dist/classes.css",
 			"./components/accordion.css": "./dist/components/accordion.css",
+			"./components/alert.css": "./dist/components/alert.css",
 			"./components/avatar.css": "./dist/components/avatar.css",
 			"./components/badge.css": "./dist/components/badge.css",
+			"./components/breadcrumbs.css": "./dist/components/breadcrumbs.css",
 			"./components/button.css": "./dist/components/button.css",
 			"./components/card.css": "./dist/components/card.css",
 			"./components/cascader.css": "./dist/components/cascader.css",
+			"./components/chart.css": "./dist/components/chart.css",
 			"./components/checkbox.css": "./dist/components/checkbox.css",
 			"./components/color-picker.css": "./dist/components/color-picker.css",
 			"./components/combobox.css": "./dist/components/combobox.css",
@@ -779,6 +819,7 @@
 			"./components/drawer.css": "./dist/components/drawer.css",
 			"./components/dropdown.css": "./dist/components/dropdown.css",
 			"./components/dropdown-menu.css": "./dist/components/dropdown-menu.css",
+			"./components/empty.css": "./dist/components/empty.css",
 			"./components/field.css": "./dist/components/field.css",
 			"./components/hover-card.css": "./dist/components/hover-card.css",
 			"./components/image-pixel-reveal.css": "./dist/components/image-pixel-reveal.css",
@@ -792,8 +833,10 @@
 			"./components/number-input.css": "./dist/components/number-input.css",
 			"./components/otp.css": "./dist/components/otp.css",
 			"./components/overlay-scroll.css": "./dist/components/overlay-scroll.css",
+			"./components/page-header.css": "./dist/components/page-header.css",
 			"./components/pagination.css": "./dist/components/pagination.css",
 			"./components/popover.css": "./dist/components/popover.css",
+			"./components/progress.css": "./dist/components/progress.css",
 			"./components/prompt-dialog.css": "./dist/components/prompt-dialog.css",
 			"./components/radio.css": "./dist/components/radio.css",
 			"./components/resend-button.css": "./dist/components/resend-button.css",
@@ -804,6 +847,7 @@
 			"./components/skeleton.css": "./dist/components/skeleton.css",
 			"./components/slider.css": "./dist/components/slider.css",
 			"./components/sonner.css": "./dist/components/sonner.css",
+			"./components/steps.css": "./dist/components/steps.css",
 			"./components/switch.css": "./dist/components/switch.css",
 			"./components/table.css": "./dist/components/table.css",
 			"./components/tabs.css": "./dist/components/tabs.css",

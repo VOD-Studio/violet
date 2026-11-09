@@ -1,0 +1,129 @@
+/*
+ * Breadcrumbs：后台与文档里的位置层级，窄屏收成返回上一级。
+ * 折叠菜单沿用 dropdown-menu 的面板与项；叶子 CSS 一并引入。
+ * 需先导入 @violet/ui/tokens.css 或 styles.css。
+ */
+
+@import "../dropdown-menu/dropdown-menu.css";
+
+@layer components {
+	.v-breadcrumbs {
+		container-type: inline-size;
+		min-width: 0;
+	}
+
+	.v-breadcrumbs__nav {
+		min-width: 0;
+	}
+
+	.v-breadcrumbs__list {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		font-size: 13px;
+	}
+
+	.v-breadcrumbs__item {
+		display: inline-flex;
+		align-items: center;
+		min-width: 0;
+	}
+
+	.v-breadcrumbs__link {
+		color: var(--muted-foreground);
+		text-decoration: underline;
+		text-decoration-color: transparent;
+		text-underline-offset: 3px;
+		transition:
+			color var(--duration-hover) ease-out,
+			text-decoration-color var(--duration-hover) ease-out;
+	}
+
+	.v-breadcrumbs__link:hover {
+		color: var(--foreground);
+		text-decoration-color: color-mix(in oklab, var(--foreground) 40%, transparent);
+	}
+
+	.v-breadcrumbs__text {
+		color: var(--muted-foreground);
+	}
+
+	.v-breadcrumbs__link:focus-visible,
+	.v-breadcrumbs__more:focus-visible,
+	.v-breadcrumbs__back:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+		border-radius: var(--radius-4);
+	}
+
+	.v-breadcrumbs__separator {
+		margin-inline: 8px;
+		color: color-mix(in oklab, var(--muted-foreground) 50%, transparent);
+	}
+
+	.v-breadcrumbs__current {
+		max-inline-size: 360px;
+		overflow: hidden;
+		color: var(--foreground);
+		font-weight: 500;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+
+	.v-breadcrumbs__more {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		box-sizing: border-box;
+		inline-size: 28px;
+		block-size: 24px;
+		padding: 0;
+		border: 0;
+		border-radius: var(--radius-full);
+		background-color: transparent;
+		color: var(--muted-foreground);
+		font: inherit;
+		cursor: pointer;
+	}
+
+	.v-breadcrumbs__more:hover {
+		background-color: var(--muted);
+		color: var(--foreground);
+	}
+
+	.v-breadcrumbs__menu {
+		min-inline-size: 160px;
+	}
+
+	.v-breadcrumbs__back {
+		display: none;
+		align-items: center;
+		gap: 2px;
+		font-size: 14px;
+		color: var(--muted-foreground);
+		text-decoration: none;
+	}
+
+	.v-breadcrumbs__back:hover {
+		color: var(--foreground);
+	}
+
+	.v-breadcrumbs__back svg {
+		inline-size: 16px;
+		block-size: 16px;
+	}
+
+	@container (max-width: 23rem) {
+		.v-breadcrumbs__nav {
+			display: none;
+		}
+
+		.v-breadcrumbs__back {
+			display: inline-flex;
+		}
+	}
+}

@@ -3,7 +3,7 @@ import {
 	Badge,
 	Button,
 	Input,
-	PhysicalSteps,
+	Steps,
 	Tabs,
 	TabsContent,
 	TabsList,
@@ -35,8 +35,7 @@ export function ComponentPlaygroundSection({ className }: ComponentPlaygroundSec
 					<h3 className="mt-1 text-2xl font-bold tracking-tight">基础组件主题实装演练</h3>
 				</div>
 				<p className="max-w-md text-xs text-muted-foreground">
-					验证
-					Button、Badge、PhysicalSteps、SpotlightCard、古纸排版及选区焦点环在紫罗兰下的质感。
+					验证 Button、Badge、Steps、SpotlightCard、古纸排版及选区焦点环在紫罗兰下的质感。
 				</p>
 			</div>
 
@@ -44,7 +43,7 @@ export function ComponentPlaygroundSection({ className }: ComponentPlaygroundSec
 				<TabsList className="mb-6">
 					<TabsTrigger value="buttons">按钮组 Buttons</TabsTrigger>
 					<TabsTrigger value="badges">徽章组 Badges</TabsTrigger>
-					<TabsTrigger value="timeline">步骤光脉 PhysicalSteps</TabsTrigger>
+					<TabsTrigger value="timeline">步骤 Steps</TabsTrigger>
 					<TabsTrigger value="spotlight">聚光与典藏 Spotlight</TabsTrigger>
 					<TabsTrigger value="interactive">交互焦点 & 选区</TabsTrigger>
 				</TabsList>
@@ -84,16 +83,16 @@ export function ComponentPlaygroundSection({ className }: ComponentPlaygroundSec
 					</div>
 				</TabsContent>
 
-				{/* 物理时间轴 Steps 演练 */}
+				{/* 步骤流程演练 */}
 				<TabsContent value="timeline" className="space-y-6">
 					<div className="rounded-2xl border border-edge-hairline bg-card p-6 md:p-8">
 						<div className="mb-6 flex flex-wrap items-center justify-between gap-4">
 							<div>
 								<h4 className="text-xs font-semibold text-muted-foreground tracking-wider uppercase">
-									PhysicalSteps · 物理光脉流转演练
+									Steps · 流程演练
 								</h4>
 								<p className="mt-1 text-xs text-muted-foreground">
-									线条连接与节点依次点亮，激活态呈现紫罗兰色环与柔光微晕。
+									已完成打勾、当前一步墨色实心；连接线只画到走过的位置，已完成的步骤可以点回去。
 								</p>
 							</div>
 
@@ -120,7 +119,9 @@ export function ComponentPlaygroundSection({ className }: ComponentPlaygroundSec
 						</div>
 
 						<div className="max-w-xl py-2">
-							<PhysicalSteps
+							<Steps
+								orientation="vertical"
+								onStepClick={setCurrentStep}
 								steps={[
 									{
 										title: "色彩空间数学建模",

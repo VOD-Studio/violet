@@ -39,7 +39,6 @@ function SeriesDetailPage() {
 						</Button>
 					}
 					className="py-20"
-					size="lg"
 				/>
 			</PageShell>
 		);

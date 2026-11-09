@@ -1,0 +1,172 @@
+/*
+ * Alert：留在页面里的内联提示，四种语气；底色只淡淡染上语气色。
+ * 需先导入 @violet/ui/tokens.css 或 styles.css。
+ */
+
+@layer components {
+	.v-alert {
+		display: flex;
+		align-items: flex-start;
+		box-sizing: border-box;
+		gap: 12px;
+		inline-size: 100%;
+		padding: 12px 10px 12px 14px;
+		border-radius: var(--radius-12);
+		background-color: var(--muted);
+		animation: v-alert-in 180ms ease-out;
+		transition: opacity 180ms ease-out;
+	}
+
+	.v-alert[data-tone="success"] {
+		background-color: color-mix(in oklab, var(--success) 8%, var(--card));
+	}
+
+	.v-alert[data-tone="warning"] {
+		background-color: color-mix(in oklab, var(--warning) 12%, var(--card));
+	}
+
+	.v-alert[data-tone="danger"] {
+		background-color: color-mix(in oklab, var(--destructive) 8%, var(--card));
+	}
+
+	.v-alert__icon {
+		flex: none;
+		inline-size: 18px;
+		block-size: 18px;
+		margin-block-start: 1px;
+		color: var(--muted-foreground);
+	}
+
+	.v-alert[data-tone="success"] .v-alert__icon {
+		color: var(--success);
+	}
+
+	.v-alert[data-tone="warning"] .v-alert__icon {
+		color: var(--warning-text);
+	}
+
+	.v-alert[data-tone="danger"] .v-alert__icon {
+		color: var(--destructive);
+	}
+
+	.v-alert__body {
+		display: flex;
+		flex: 1;
+		flex-direction: column;
+		min-width: 0;
+	}
+
+	.v-alert__title {
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--foreground);
+	}
+
+	.v-alert__description {
+		font-size: 13px;
+		line-height: 1.7;
+		color: var(--muted-foreground);
+	}
+
+	.v-alert__action {
+		flex: none;
+		align-self: center;
+		padding: 0 4px;
+		border: 0;
+		background: transparent;
+		font: inherit;
+		font-size: 13px;
+		color: var(--link);
+		text-decoration: underline;
+		text-underline-offset: 3px;
+		cursor: pointer;
+	}
+
+	.v-alert__close {
+		display: inline-flex;
+		flex: none;
+		align-items: center;
+		justify-content: center;
+		inline-size: 28px;
+		block-size: 28px;
+		padding: 0;
+		border: 0;
+		border-radius: var(--radius-full);
+		background: transparent;
+		color: var(--muted-foreground);
+		cursor: pointer;
+	}
+
+	.v-alert__close svg {
+		inline-size: 16px;
+		block-size: 16px;
+	}
+
+	.v-alert__close:hover {
+		background-color: color-mix(in oklab, var(--foreground) 8%, transparent);
+		color: var(--foreground);
+	}
+
+	.v-alert__action:focus-visible,
+	.v-alert__close:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+
+	/* —— 紧凑一行 —— */
+
+	.v-alert[data-compact] {
+		align-items: center;
+		gap: 8px;
+		padding: 8px 12px;
+		font-size: 13px;
+	}
+
+	.v-alert[data-compact] .v-alert__icon {
+		inline-size: 16px;
+		block-size: 16px;
+		margin-block-start: 0;
+	}
+
+	.v-alert__inline {
+		min-width: 0;
+		font-size: 13px;
+		line-height: 1.6;
+	}
+
+	/* —— 关闭：淡出后高度收起，下面的内容跟着上移 —— */
+
+	.v-alert[data-state="closing"] {
+		opacity: 0;
+		transition:
+			opacity 140ms ease-out,
+			block-size 200ms ease-out,
+			padding-block 200ms ease-out,
+			margin-block 200ms ease-out;
+	}
+
+	.v-alert[data-state="collapsed"] {
+		display: none;
+	}
+
+	@keyframes v-alert-in {
+		from {
+			opacity: 0;
+		}
+
+		to {
+			opacity: 1;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-alert {
+			animation: none;
+			transition: none;
+		}
+
+		.v-alert[data-state="closing"] {
+			transition: none;
+		}
+	}
+}

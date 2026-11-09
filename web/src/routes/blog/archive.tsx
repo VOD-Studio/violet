@@ -149,12 +149,7 @@ function ArchivePage() {
 			{isLoading ? (
 				<ArchiveSkeleton />
 			) : years.length === 0 ? (
-				<Empty
-					title="暂无文章"
-					description="还没有发布任何内容"
-					className="py-20"
-					size="lg"
-				/>
+				<Empty title="暂无文章" description="还没有发布任何内容" className="py-20" />
 			) : (
 				<div className="space-y-12">
 					{years.map((y) => (

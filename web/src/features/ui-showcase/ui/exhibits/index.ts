@@ -1,10 +1,12 @@
 import type { Exhibit } from "../../model/exhibit";
 import { accordionExhibit } from "./accordion";
+import { alertExhibit } from "./alert";
 import { avatarExhibit } from "./avatar";
 import { badgeExhibit } from "./badge";
 import { buttonExhibit } from "./button";
 import { cardExhibit } from "./card";
 import { cascaderExhibit } from "./cascader";
+import { chartExhibit } from "./chart";
 import { checkboxExhibit } from "./checkbox";
 import { colorPickerExhibit } from "./color-picker";
 import { comboboxExhibit } from "./combobox";
@@ -26,6 +28,7 @@ import { morphingPopoverExhibit } from "./morphing-popover";
 import { navbarExhibit } from "./navbar";
 import { numberInputExhibit } from "./number-input";
 import { otpExhibit } from "./otp";
+import { pageHeaderExhibit } from "./page-header";
 import { paginationExhibit } from "./pagination";
 import { popoverExhibit } from "./popover";
 import { presenceExhibit } from "./presence";
@@ -60,15 +63,7 @@ export const EXHIBITS: Exhibit[] = [
 		footprint: { width: 1120, height: 56 },
 		issue: 714,
 	},
-	{
-		id: "page-header",
-		name: "页头与面包屑",
-		units: ["page-header", "breadcrumbs", "steps"],
-		zone: "banner",
-		category: "navigation",
-		footprint: { width: 1120, height: 160 },
-		issue: 709,
-	},
+	pageHeaderExhibit,
 	tableExhibit,
 	paginationExhibit,
 	footerExhibit,
@@ -143,24 +138,8 @@ export const EXHIBITS: Exhibit[] = [
 	listExhibit,
 	treeExhibit,
 	accordionExhibit,
-	{
-		id: "alert",
-		name: "提示与空状态",
-		units: ["progress", "alert", "empty"],
-		zone: "content",
-		category: "feedback",
-		footprint: { width: 520, height: 240 },
-		issue: 709,
-	},
-	{
-		id: "chart",
-		name: "图表",
-		units: ["chart"],
-		zone: "content",
-		category: "display",
-		footprint: { width: 520, height: 280 },
-		issue: 709,
-	},
+	alertExhibit,
+	chartExhibit,
 	{
 		id: "annotation",
 		name: "批注",

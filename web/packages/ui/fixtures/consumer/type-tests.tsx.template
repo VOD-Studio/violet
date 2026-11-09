@@ -6,7 +6,7 @@ import { Button } from "@violet/ui/button";
 import { Checkbox } from "@violet/ui/checkbox";
 import { ImagePixelReveal as LeafImagePixelReveal, type ImagePixelRevealProps as LeafImagePixelRevealProps, type PixelRevealVariant as LeafPixelRevealVariant } from "@violet/ui/image-pixel-reveal";
 import { Field as LeafField, Label as LeafLabel, type FieldProps as LeafFieldProps } from "@violet/ui/field";
-import { Empty } from "@violet/ui/legacy";
+import { PageShell } from "@violet/ui/legacy";
 import { Input as LeafInput, type InputProps as LeafInputProps } from "@violet/ui/input";
 import { SearchInput, type SearchInputProps } from "@violet/ui";
 import { SearchInput as LeafSearchInput, type SearchInputProps as LeafSearchInputProps } from "@violet/ui/input";
@@ -166,7 +166,7 @@ buttonVariants({ variant: "primary", className: "consumer-class" });
 // @ts-expect-error Unsupported variants must stay compile-time errors.
 buttonVariants({ variant: "unknown" });
 export const example = <><Button {...button}>保存</Button><Input {...field} /><LeafInput {...leafField} /><Input /><Label>名称</Label><Textarea /></>;
-export const legacy = Empty;
+export const legacy = PageShell;
 
 const fieldProps: FieldProps = {
 	label: "邮箱", optional: true, hint: "只用于回复通知", error: "邮箱格式不正确", success: "可以使用", checking: "正在检查…",

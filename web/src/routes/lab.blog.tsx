@@ -144,7 +144,6 @@ function BlogLab() {
 					{preview === "empty" ? (
 						<Empty
 							key={`empty-${direction}`}
-							size="lg"
 							title="NO POSTS YET"
 							description="还没有发布任何文章。写下第一篇，这个版面等你来填。"
 							className="py-16"
@@ -156,7 +155,6 @@ function BlogLab() {
 							<BlogSkeleton direction={direction} />
 						) : posts.length === 0 ? (
 							<Empty
-								size="lg"
 								title="NO POSTS YET"
 								description="还没有发布任何文章。"
 								className="py-16"

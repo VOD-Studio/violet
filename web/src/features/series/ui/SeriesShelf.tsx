@@ -119,9 +119,7 @@ export function SeriesShelf() {
 		);
 	}
 	if (!books.length) {
-		return (
-			<Empty title="暂无书籍" description="还没有发布的系列书" className="py-20" size="lg" />
-		);
+		return <Empty title="暂无书籍" description="还没有发布的系列书" className="py-20" />;
 	}
 
 	return (

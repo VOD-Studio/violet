@@ -2,7 +2,7 @@
 
 Violet/UI 的包名是 `@violet/ui`。React 组件、CSS 和类型声明在同一个包里交付；本目录维护组件库的架构与设计规范。
 
-先看 `web/packages/ui/component-manifest.json`。`foundation` 表示已按新结构实现；`legacy` 表示保留兼容入口、尚未重建。当前清单登记 52 个基础单元与 9 个 legacy 单元；完整组件列表与实际成熟度以清单为准。upload 单元提供纯展示 UploadQueue 和原生 UploadDropzone，upload-tile 单元提供方形入口；上传请求、文件与状态机留在宿主。旧页面能运行不代表已经完成新架构改造。
+先看 `web/packages/ui/component-manifest.json`。`foundation` 表示已按新结构实现；`legacy` 表示保留兼容入口、尚未重建。当前清单登记 59 个基础单元与 5 个 legacy 单元；完整组件列表与实际成熟度以清单为准。upload 单元提供纯展示 UploadQueue 和原生 UploadDropzone，upload-tile 单元提供方形入口；上传请求、文件与状态机留在宿主。旧页面能运行不代表已经完成新架构改造。
 
 ```text
 web/packages/ui/
@@ -137,6 +137,8 @@ SearchInput 并入 `input` 单元（`components/input/search-input.tsx`），共
 ImagePixelReveal 的 `className` 属于根容器，用于约束尺寸；`imgClassName` 属于默认图片，`children` 可替换默认内容。单一 BEM CSS 驱动 SVG 遮罩中的瓦片裁剪展开，原图和自定义内容保持静止，不复制图片背景或切换图像合成层。默认 random 每轮重新洗牌；单格 320ms，延迟跨度 380ms，悬停重播同样的瓦片拼合。根节点以 `data-state="loading|revealing|revealed"` 表达生命周期，`src` 改变开始独立周期；减弱动态直接显示，播放中开启该偏好也会完成当前周期。
 
 展示类单元（`badge`、`avatar`、`kbd`、`card`、`separator`、`skeleton`）的状态由调用方持有，组件只承诺读屏契约。胶囊 `Count` 与 `Dot` 对读屏隐藏，数量或「有新动态」必须写进宿主的可访问名称；`Count` 为 0 时不渲染，超过 `max` 显示 `99+`。`Avatar` 的 `alt` 默认取 `name`，`alt=""` 表示名字已在旁边显示的装饰用法，在线状态与作者标记写进可访问名称；图片未到时只有底色呼吸，失败退回首字，换 `src` 重新加载。`AvatarGroup` 压叠排列，指针悬停时展开（设计稿没有设计，沿用站点既有行为），展开只在 `(hover: hover)` 下生效，减弱动态下直接切换。`Kbd` 未传 `platform` 时，服务端与水合首帧按非 macOS 输出，水合后再切换为符号，避免水合差异。`CardFrameTitle asChild` 的链接用伪元素把点击区扩到整张卡，卡内其他按钮层级更高，仍可单独点击。`Skeleton` 默认 `aria-hidden`，忙碌状态由所在区域的 `aria-busy` 表达，只用凹陷色做透明度起伏，不加扫光。
+
+数据展示与反馈单元（`steps`、`breadcrumbs`、`page-header`、`progress`、`alert`、`empty`、`chart`）把状态与版式拆开：Steps 只按 `current` 推导完成/当前/未到，只有已完成的步骤可点回去；Breadcrumbs 超过四级把中间层折进菜单，窄容器只留返回上一级；PageHeader 的窄条与完整页头共用同一份 DOM，由宿主按滚动位置切换 `compact`，不复制标题与操作；Progress 的条形与圆环用 `aria-valuenow` / `aria-valuetext` 表达百分比与结果，颜色只做辅助；Alert 的危险语气用 `role="alert"`，关闭后退场动画结束才把焦点交给下一个可聚焦元素；Empty 只负责标题、说明、插画槽与出口，文案要求写「发生了什么、现在能做什么」。Chart 保留 Recharts 外壳并新增 `Stat` 与 `MiniBars`，分类色取 `--chart-1` 到 `--chart-5`，统计整项以一句完整的话作为读屏名称。
 
 选择类单元（`switch`、`radio`、`toggle-group`、`tabs`、`segmented`）共用一套键盘契约：整组只占一个 Tab 停靠位，方向键在启用项之间移动，跳过禁用项。Switch 与 ToggleGroup 的每项是原生 button（Space/Enter 激活）；RadioGroup 用原生 radio 的方向键换选；Tabs 沿用 Radix 的自动激活。Segmented 默认项是 `role="radio"` 的 button、容器 `role="radiogroup"`，带 `render` 的导航类分段保持普通 group 语义。加载中的 Switch 挂 `aria-busy` 并忽略激活，视觉仍跟随宿主的 `checked`；失败回退由宿主翻转状态完成，圆钮自动滑回。Tabs 的底线指示器与渐隐层对读屏隐藏，测量在客户端完成，SSR 不输出位置。
 

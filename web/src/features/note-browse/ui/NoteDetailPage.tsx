@@ -48,7 +48,6 @@ export function NoteDetailPage({ noteId }: NoteDetailPageProps) {
 					title="未检索到该工单档案"
 					description="可能已被删除、合并或处于非公开状态"
 					className="py-24"
-					size="lg"
 				/>
 			) : (
 				<div className="mx-auto max-w-3xl">

@@ -39,7 +39,6 @@ export function NotesPage({ tag }: NotesPageProps) {
 						</Button>
 					}
 					className="py-24"
-					size="lg"
 				/>
 			</PageShell>
 		);
@@ -60,7 +59,6 @@ export function NotesPage({ tag }: NotesPageProps) {
 					title={tag ? `没有 ${tag} 的笔记` : "暂无笔记"}
 					description={tag ? "换个标签看看" : "踩过的坑会在这里沉淀"}
 					className="py-24"
-					size="lg"
 				/>
 			) : (
 				<>

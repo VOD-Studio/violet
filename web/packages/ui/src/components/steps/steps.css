@@ -1,0 +1,181 @@
+/*
+ * Steps：三到五步的流程指示，横排与竖排共用圆点、连线与文字。
+ * 需先导入 @violet/ui/tokens.css 或 styles.css。
+ */
+
+@layer components {
+	.v-steps {
+		display: grid;
+		grid-template-columns: repeat(var(--v-steps-count, 1), minmax(0, 1fr));
+		box-sizing: border-box;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.v-steps[data-orientation="vertical"] {
+		display: flex;
+		flex-direction: column;
+		gap: 20px;
+	}
+
+	.v-steps__item {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		min-width: 0;
+		padding-inline-end: 12px;
+	}
+
+	.v-steps[data-orientation="vertical"] .v-steps__item {
+		flex-direction: row;
+		gap: 12px;
+		padding-inline-end: 0;
+	}
+
+	.v-steps__dot {
+		position: relative;
+		z-index: 1;
+		display: inline-flex;
+		flex: none;
+		align-items: center;
+		justify-content: center;
+		box-sizing: border-box;
+		inline-size: 24px;
+		block-size: 24px;
+		padding: 0;
+		border: 0;
+		border-radius: 50%;
+		background-color: var(--card);
+		box-shadow: inset 0 0 0 1px var(--rule2);
+		color: var(--muted-foreground);
+		font-family: var(--font-mono);
+		font-size: 12px;
+		font-weight: 500;
+		line-height: 1;
+		cursor: default;
+		transition:
+			background-color var(--duration-hover) ease-out,
+			color var(--duration-hover) ease-out,
+			box-shadow var(--duration-hover) ease-out;
+	}
+
+	.v-steps__dot svg {
+		inline-size: 14px;
+		block-size: 14px;
+	}
+
+	.v-steps__dot b {
+		font-family: var(--font-sans);
+		font-size: 13px;
+		font-weight: 700;
+	}
+
+	.v-steps__item[data-status="done"] .v-steps__dot,
+	.v-steps__item[data-status="current"] .v-steps__dot {
+		background-color: var(--foreground);
+		box-shadow: none;
+		color: var(--background);
+	}
+
+	.v-steps__item[data-status="done"] .v-steps__dot:is(button) {
+		cursor: pointer;
+	}
+
+	.v-steps__item[data-status="done"] .v-steps__dot:is(button):hover {
+		background-color: color-mix(in oklab, var(--foreground) 86%, var(--background));
+	}
+
+	.v-steps__item[data-status="error"] .v-steps__dot {
+		background-color: var(--destructive);
+		box-shadow: none;
+		color: var(--destructive-foreground);
+	}
+
+	.v-steps__dot:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+
+	.v-steps__line {
+		position: absolute;
+		inset-block-start: 11px;
+		inset-inline-start: 30px;
+		inset-inline-end: 6px;
+		block-size: 2px;
+		border-radius: 1px;
+		background-color: var(--muted);
+		background-image: linear-gradient(var(--foreground), var(--foreground));
+		background-repeat: no-repeat;
+		background-size: 0 100%;
+		transition: background-size 200ms ease-out;
+	}
+
+	.v-steps__item[data-status="done"] .v-steps__line {
+		background-size: 100% 100%;
+	}
+
+	.v-steps[data-orientation="vertical"] .v-steps__line {
+		inset-block-start: 30px;
+		inset-block-end: -14px;
+		inset-inline-start: 11px;
+		inset-inline-end: auto;
+		inline-size: 2px;
+		block-size: auto;
+		background-image: linear-gradient(var(--foreground), var(--foreground));
+		background-size: 100% 0;
+	}
+
+	.v-steps[data-orientation="vertical"] .v-steps__item[data-status="done"] .v-steps__line {
+		background-size: 100% 100%;
+	}
+
+	.v-steps__text {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+	}
+
+	.v-steps__title {
+		font-size: 14px;
+		font-weight: 500;
+		line-height: 1.5;
+		color: var(--foreground);
+	}
+
+	.v-steps__description {
+		font-size: 13px;
+		line-height: 1.6;
+		color: var(--muted-foreground);
+	}
+
+	.v-steps__item[data-status="upcoming"] .v-steps__title {
+		color: var(--muted-foreground);
+		font-weight: 400;
+	}
+
+	.v-steps__item[data-status="error"] .v-steps__title {
+		color: var(--destructive-text);
+	}
+
+	/* 状态文本只给读屏，视觉状态已由圆点与颜色表达 */
+	.v-steps__status {
+		position: absolute;
+		overflow: hidden;
+		inline-size: 1px;
+		block-size: 1px;
+		padding: 0;
+		border: 0;
+		margin: -1px;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-steps__dot,
+		.v-steps__line {
+			transition: none;
+		}
+	}
+}

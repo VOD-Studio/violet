@@ -1,0 +1,79 @@
+/*
+ * Empty：空状态与筛选无结果；插画由宿主提供，组件只负责编排与文字层级。
+ * 需先导入 @violet/ui/tokens.css 或 styles.css。
+ */
+
+@layer components {
+	.v-empty {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		box-sizing: border-box;
+		gap: 10px;
+		text-align: center;
+	}
+
+	.v-empty__illustration {
+		display: block;
+		max-inline-size: 170px;
+		max-block-size: 80px;
+	}
+
+	.v-empty__illustration > * {
+		display: block;
+		inline-size: 100%;
+		block-size: 100%;
+		object-fit: contain;
+	}
+
+	.v-empty__title {
+		margin: 0;
+		font-size: 16px;
+		font-weight: 500;
+		line-height: 1.5;
+		color: var(--foreground);
+	}
+
+	.v-empty__description {
+		margin: 0;
+		font-size: 13px;
+		line-height: 1.7;
+		color: var(--muted-foreground);
+	}
+
+	.v-empty__action {
+		margin-block-start: 6px;
+	}
+
+	/* —— 面板里的一行 —— */
+
+	.v-empty[data-variant="compact"] {
+		flex-direction: row;
+		gap: 8px;
+		font-size: 14px;
+	}
+
+	.v-empty__icon {
+		display: inline-flex;
+		flex: none;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.v-empty__icon svg {
+		inline-size: 20px;
+		block-size: 20px;
+		color: var(--muted-foreground);
+	}
+
+	.v-empty[data-variant="compact"] .v-empty__title {
+		font-size: 14px;
+		font-weight: 400;
+		color: var(--muted-foreground);
+	}
+
+	.v-empty[data-variant="compact"] .v-empty__description {
+		font-size: 13px;
+	}
+}

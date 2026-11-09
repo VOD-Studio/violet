@@ -29,9 +29,8 @@ function FriendsPage() {
 	return (
 		<PageShell>
 			<PageHeader
-				eyebrow="Friends"
 				title="友链"
-				action={
+				primaryAction={
 					!isEmpty ? (
 						<Button variant="outline" onClick={() => setApplyOpen(true)}>
 							<Plus className="size-4" />
@@ -47,7 +46,6 @@ function FriendsPage() {
 				<p className="text-muted-foreground">加载失败</p>
 			) : !links || links.length === 0 ? (
 				<Empty
-					size="lg"
 					title="NO LINKS YET"
 					description="还没有互换任何友链。递出你的名片，成为第一个。"
 					action={

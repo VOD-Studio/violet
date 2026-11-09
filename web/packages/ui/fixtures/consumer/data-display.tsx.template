@@ -2,9 +2,12 @@ import { useMemo, useState } from "react";
 import {
 	Accordion,
 	AccordionItem,
+	Alert,
 	Avatar,
+	Breadcrumbs,
 	Button,
 	DataTable,
+	Empty,
 	List,
 	ListItem,
 	ListItemAction,
@@ -14,7 +17,13 @@ import {
 	ListItemIcon,
 	ListItemTitle,
 	ListItemValue,
+	MiniBars,
+	PageHeader,
 	Pagination,
+	ProgressBar,
+	ProgressRing,
+	Stat,
+	Steps,
 	Tree,
 	type DataTableColumn,
 	type DataTableSort,
@@ -90,6 +99,32 @@ function Articles() {
 	);
 }
 
+const STEPS = [
+	{ title: "填写信息", description: "作者与标题" },
+	{ title: "验证站点", description: "检查域名与 RSS" },
+	{ title: "发布" },
+];
+
+const CRUMBS = [
+	{ label: "项目", href: "/projects" },
+	{ label: "Violet", href: "/projects/violet" },
+	{ label: "设计稿", href: "/projects/violet/design" },
+	{ label: "组件", href: "/projects/violet/design/components" },
+	{ label: "组件库", href: "/projects/violet/design/components/ui" },
+	{ label: "按钮" },
+];
+
+const BARS = [
+	{ label: "周一", value: 1200 },
+	{ label: "周二", value: 980 },
+	{ label: "周三", value: 1420 },
+	{ label: "周四", value: 1310 },
+	{ label: "周五", value: 1560 },
+	{ label: "周六", value: 1720 },
+	{ label: "周日", value: 1610 },
+];
+
+
 const NODES: TreeNodeData[] = [
 	{ value: "series", label: "系列", meta: 12, children: [{ value: "series/duku", label: "独库公路骑行记", meta: 6 }, { value: "series/rust", label: "Rust 全栈笔记", lazy: true }] },
 	{ value: "about", label: "关于" },
@@ -151,13 +186,128 @@ function Questions() {
 export function DataDisplayPreview() {
 	return (
 		<main className="data-display-page">
-			<h1>数据展示 · 独立安装包</h1>
+			<h1>数据展示与反馈 · 独立安装包</h1>
 			<div className="input-controls">
 				<Button id="data-display-theme" onClick={() => document.documentElement.classList.toggle("dark")}>切换明暗</Button>
 			</div>
 			<Articles />
 			<Navigation />
 			<Questions />
+			<FeedbackPanel />
 		</main>
+	);
+}
+
+function FeedbackPanel() {
+	const [current, setCurrent] = useState(1);
+	const [tone, setTone] = useState<"process" | "error">("process");
+	const [compact, setCompact] = useState(false);
+	const [progress, setProgress] = useState(24);
+	const [progressStatus, setProgressStatus] = useState<"process" | "success" | "error">("process");
+	const [alerts, setAlerts] = useState(4);
+	const [ring, setRing] = useState(13);
+	return (
+		<>
+			<section aria-label="步骤">
+				<Steps steps={STEPS} current={current} tone={tone} onStepClick={setCurrent} />
+				<div className="data-display-row">
+					<Button size="sm" variant="secondary" onClick={() => setCurrent(Math.max(0, current - 1))}>上一步</Button>
+					<Button size="sm" onClick={() => setCurrent(Math.min(STEPS.length - 1, current + 1))}>下一步</Button>
+					<Button size="sm" variant="ghost" onClick={() => setTone(tone === "error" ? "process" : "error")}>切换出错</Button>
+				</div>
+				<Steps steps={STEPS.slice(0, 3)} current={1} orientation="vertical" />
+			</section>
+
+			<section aria-label="面包屑与页头">
+				<Breadcrumbs items={CRUMBS} />
+				<PageHeader
+					title="文章"
+					compact={compact}
+					compactSummary="270 篇"
+					breadcrumbs={<Breadcrumbs items={CRUMBS.slice(-2)} />}
+					description="共 270 篇，3 篇待发布"
+					actions={<Button variant="ghost" size="sm">导出</Button>}
+					primaryAction={<Button size="sm">写文章</Button>}
+				/>
+				<div className="data-display-row">
+					<Button size="sm" variant="secondary" onClick={() => setCompact(!compact)}>切换窄条</Button>
+				</div>
+			</section>
+
+			<section aria-label="进度">
+				<ProgressBar
+					value={progress}
+					status={progressStatus}
+					label="上传 cover-season.webp"
+					hint={progressStatus === "success" ? "已完成" : progressStatus === "error" ? "网络中断" : "24 / 100 MB"}
+					segments={{ count: 5, active: Math.min(5, Math.floor(progress / 20)) }}
+				/>
+				<div className="data-display-row">
+					<Button size="sm" onClick={() => { const next = Math.min(100, progress + 26); setProgress(next); setProgressStatus(next === 100 ? "success" : "process"); }}>前进</Button>
+					<Button size="sm" variant="ghost" onClick={() => setProgressStatus("error")}>模拟失败</Button>
+					<Button size="sm" variant="ghost" onClick={() => { setProgress(0); setProgressStatus("process"); }}>重置</Button>
+				</div>
+				<ProgressRing
+					value={(ring / 20) * 100}
+					label="本月阅读目标"
+					description={`已读 ${ring} / 20 篇`}
+				/>
+				<Button size="sm" variant="secondary" onClick={() => setRing(Math.min(20, ring + 1))}>读完一篇</Button>
+			</section>
+
+			<section aria-label="内联提示">
+				<Alert
+					title="草稿已自动保存"
+					description="离开页面也不会丢失。"
+					onDismiss={() => setAlerts(alerts - 1)}
+				/>
+				<Alert
+					tone="success"
+					title="发布成功"
+					description="文章已出现在博客首页。"
+					action={{ label: "查看", href: "#published" }}
+				/>
+				<Alert
+					tone="warning"
+					title="封面尺寸偏小"
+					description="建议宽度不小于 1600px，否则分享卡片会模糊。"
+					action={{ label: "换一张", onClick: () => undefined }}
+				/>
+				<Alert
+					tone="danger"
+					title="同步失败"
+					description="GitHub 令牌已过期，推文没有同步过去。"
+					action={{ label: "重新授权", onClick: () => undefined }}
+					onDismiss={() => setAlerts(alerts - 1)}
+				/>
+				<Alert compact tone="warning" title="改了站点地址后，旧地址会跳转 30 天。" />
+				<Button size="sm" onClick={() => setAlerts(4)}>恢复全部</Button>
+				<output id="data-display-alerts">{alerts}</output>
+			</section>
+
+			<section aria-label="空状态">
+				<Empty
+					title="还没有想法"
+					description="写下第一条后会出现在这里。"
+					action={<Button size="sm">记一条</Button>}
+				/>
+				<Empty
+					variant="plain"
+					title="没有符合条件的文章"
+					description="标签「Rust」· 系列「Yggdrasil」"
+					action={<Button size="sm" variant="secondary">清除筛选</Button>}
+				/>
+				<Empty variant="compact" title="没有新消息" />
+			</section>
+
+			<section aria-label="统计与图表">
+				<div className="data-display-stats">
+					<Stat label="近 7 天访问" value="12,480" change={{ direction: "up", value: "18%" }} trend={[820, 940, 900, 1180, 1320, 1290, 1400]} />
+					<Stat label="新评论" value="86" change={{ direction: "up", value: "7%" }} />
+					<Stat label="跳出率" value="41%" change={{ direction: "down", value: "3%" }} />
+				</div>
+				<MiniBars data={BARS} unit="访问" />
+			</section>
+		</>
 	);
 }

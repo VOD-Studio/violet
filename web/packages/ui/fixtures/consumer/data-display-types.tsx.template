@@ -2,7 +2,11 @@ import { createRef } from "react";
 import {
 	Accordion,
 	AccordionItem,
+	Alert,
+	Breadcrumbs,
 	DataTable,
+	Empty,
+	exportToCsv,
 	List,
 	ListItem,
 	ListItemAction,
@@ -12,7 +16,13 @@ import {
 	ListItemIcon,
 	ListItemTitle,
 	ListItemValue,
+	MiniBars,
+	PageHeader,
 	Pagination,
+	ProgressBar,
+	ProgressRing,
+	Stat,
+	Steps,
 	Table,
 	TableBody,
 	TableCell,
@@ -20,12 +30,49 @@ import {
 	TableHeader,
 	TableRow,
 	Tree,
-	exportToCsv,
+	type AlertProps,
+	type AlertTone,
+	type BreadcrumbItem,
+	type BreadcrumbsProps,
 	type DataTableColumn,
 	type DataTableProps,
 	type DataTableSort,
+	type EmptyProps,
+	type EmptyVariant,
+	type MiniBarsDatum,
+	type MiniBarsProps,
+	type PageHeaderBack,
+	type PageHeaderProps,
+	type ProgressBarProps,
+	type ProgressRingProps,
+	type ProgressSegments,
+	type ProgressStatus,
+	type StatChange,
+	type StatProps,
+	type StepItem,
+	type StepsProps,
+	type StepsTone,
 	type TreeNodeData,
 } from "@violet/ui";
+
+import {
+	Alert as LeafAlert,
+	type AlertProps as LeafAlertProps,
+} from "@violet/ui/alert";
+import {
+	Breadcrumbs as LeafBreadcrumbs,
+	type BreadcrumbsProps as LeafBreadcrumbsProps,
+} from "@violet/ui/breadcrumbs";
+import { Empty as LeafEmpty, type EmptyProps as LeafEmptyProps } from "@violet/ui/empty";
+import {
+	PageHeader as LeafPageHeader,
+	type PageHeaderProps as LeafPageHeaderProps,
+} from "@violet/ui/page-header";
+import {
+	ProgressBar as LeafProgressBar,
+	type ProgressBarProps as LeafProgressBarProps,
+} from "@violet/ui/progress";
+import { Steps as LeafSteps, type StepsProps as LeafStepsProps } from "@violet/ui/steps";
 import { Accordion as LeafAccordion, AccordionItem as LeafAccordionItem } from "@violet/ui/accordion";
 import { List as LeafList, ListItem as LeafListItem } from "@violet/ui/list";
 import { Pagination as LeafPagination } from "@violet/ui/pagination";
@@ -144,3 +191,54 @@ export const primitives = <Table>
 	<TableBody><TableRow><TableCell>独库公路</TableCell></TableRow></TableBody>
 </Table>;
 export const leafPrimitives = <LeafTable aria-label="文章" />;
+
+export const stepItems: StepItem[] = [{ title: "填写信息", description: "作者与标题" }];
+export const stepsTone: StepsTone = "error";
+export const stepsProps: StepsProps = { steps: stepItems, current: 0, tone: stepsTone };
+export const leafStepsProps: LeafStepsProps = stepsProps;
+export const crumbs: BreadcrumbItem[] = [{ label: "内容", href: "/admin" }, { label: "文章" }];
+export const breadcrumbsProps: BreadcrumbsProps = { items: crumbs };
+export const leafBreadcrumbsProps: LeafBreadcrumbsProps = breadcrumbsProps;
+export const back: PageHeaderBack = { href: "/admin/posts", label: "文章" };
+export const pageHeaderProps: PageHeaderProps = { title: "文章", back, compact: true };
+export const leafPageHeaderProps: LeafPageHeaderProps = pageHeaderProps;
+export const segments: ProgressSegments = { count: 5, active: 3 };
+export const progressStatus: ProgressStatus = "success";
+export const progressBarProps: ProgressBarProps = { value: 100, label: "上传", segments };
+export const leafProgressBarProps: LeafProgressBarProps = progressBarProps;
+export const progressRingProps: ProgressRingProps = { value: 65, label: "目标", size: 32 };
+export const tones: AlertTone[] = ["info", "success", "warning", "danger"];
+export const alertProps: AlertProps = { tone: tones[3], title: "同步失败", action: { label: "重试", onClick: () => undefined } };
+export const leafAlertProps: LeafAlertProps = alertProps;
+export const emptyVariants: EmptyVariant[] = ["default", "plain", "compact"];
+export const emptyProps: EmptyProps = { title: "暂无内容", variant: emptyVariants[1], action: <a href="/new">新建</a> };
+export const leafEmptyProps: LeafEmptyProps = emptyProps;
+export const change: StatChange = { direction: "up", value: "18%" };
+export const statProps: StatProps = { label: "近 7 天访问", value: "12,480", change, trend: [1, 2, 3] };
+export const bars: MiniBarsDatum[] = [{ label: "周一", value: 1200 }];
+export const miniBarsProps: MiniBarsProps = { data: bars, unit: "访问" };
+
+// @ts-expect-error 未知语气
+export const badTone: AlertProps = { title: "x", tone: "notice" };
+// @ts-expect-error 步骤标题必须是纯文本
+export const badStep: StepsProps = { current: 0, steps: [{ title: <b>x</b> }] };
+// @ts-expect-error 圆环尺寸只有 32 与 48
+export const badRing: ProgressRingProps = { value: 1, size: 40 };
+
+export const components = [
+	<Steps {...stepsProps} />,
+	<Breadcrumbs {...breadcrumbsProps} />,
+	<PageHeader {...pageHeaderProps} />,
+	<ProgressBar {...progressBarProps} />,
+	<ProgressRing {...progressRingProps} />,
+	<Alert {...alertProps} />,
+	<Empty {...emptyProps} />,
+	<Stat {...statProps} />,
+	<MiniBars {...miniBarsProps} />,
+	<LeafSteps {...leafStepsProps} />,
+	<LeafBreadcrumbs {...leafBreadcrumbsProps} />,
+	<LeafPageHeader {...leafPageHeaderProps} />,
+	<LeafProgressBar {...leafProgressBarProps} />,
+	<LeafAlert {...leafAlertProps} />,
+	<LeafEmpty {...leafEmptyProps} />,
+];

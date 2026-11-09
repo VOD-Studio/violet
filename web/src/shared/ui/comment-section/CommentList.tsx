@@ -42,7 +42,7 @@ export function CommentList<T extends CommentRaw>({
 	}
 
 	if (comments.length === 0) {
-		return <Empty title="还没有评论" description="成为第一个评论的人" size="sm" />;
+		return <Empty title="还没有评论" description="成为第一个评论的人" />;
 	}
 
 	return (

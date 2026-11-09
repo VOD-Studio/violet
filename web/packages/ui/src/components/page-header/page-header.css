@@ -1,0 +1,195 @@
+/*
+ * PageHeader：页面的位置、标题、说明与操作；宿主按滚动位置切换到 56 高窄条。
+ * 需先导入 @violet/ui/tokens.css 或 styles.css。
+ */
+
+@layer components {
+	.v-page-header {
+		display: flex;
+		flex-direction: column;
+		box-sizing: border-box;
+		margin-block-end: 32px;
+	}
+
+	.v-page-header__back {
+		display: inline-flex;
+		align-items: center;
+		gap: 2px;
+		align-self: flex-start;
+		margin-block-end: 8px;
+		font-size: 13px;
+		color: var(--muted-foreground);
+		text-decoration: none;
+	}
+
+	.v-page-header__back:hover {
+		color: var(--foreground);
+	}
+
+	.v-page-header__back svg {
+		inline-size: 16px;
+		block-size: 16px;
+	}
+
+	.v-page-header__breadcrumbs {
+		margin-block-end: 8px;
+	}
+
+	.v-page-header__row {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 24px;
+	}
+
+	.v-page-header__heading {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+	}
+
+	.v-page-header__title-line {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		min-width: 0;
+	}
+
+	.v-page-header__title {
+		margin: 0;
+		font-size: 28px;
+		font-weight: 600;
+		letter-spacing: -0.02em;
+		line-height: 1.3;
+	}
+
+	.v-page-header__status {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		block-size: 24px;
+		padding-inline: 10px;
+		border-radius: var(--radius-full);
+		background-color: var(--muted);
+		color: var(--foreground);
+		font-size: 12px;
+		font-weight: 500;
+		white-space: nowrap;
+	}
+
+	.v-page-header__summary {
+		display: none;
+		font-family: var(--font-mono);
+		font-size: 13px;
+		color: var(--muted-foreground);
+		white-space: nowrap;
+	}
+
+	.v-page-header__meta {
+		margin: 4px 0 0;
+		font-size: 13px;
+		color: var(--muted-foreground);
+	}
+
+	.v-page-header__description {
+		margin: 4px 0 0;
+		font-size: 13px;
+		line-height: 1.7;
+		color: var(--muted-foreground);
+	}
+
+	.v-page-header__actions {
+		display: flex;
+		flex: none;
+		align-items: flex-start;
+		gap: 8px;
+	}
+
+	.v-page-header__secondary {
+		display: flex;
+		gap: 8px;
+	}
+
+	.v-page-header__tabs {
+		margin-block-start: 20px;
+	}
+
+	/* —— 滚动后的窄条 —— */
+
+	.v-page-header[data-compact] {
+		position: sticky;
+		inset-block-start: 0;
+		z-index: var(--layer-dropdown);
+		flex-direction: row;
+		align-items: center;
+		gap: 10px;
+		min-block-size: 56px;
+		margin-block-end: 0;
+		padding-inline: 24px;
+		background-color: var(--card);
+		box-shadow: var(--shadow-soft);
+	}
+
+	.v-page-header[data-compact] .v-page-header__back,
+	.v-page-header[data-compact] .v-page-header__breadcrumbs,
+	.v-page-header[data-compact] .v-page-header__meta,
+	.v-page-header[data-compact] .v-page-header__description,
+	.v-page-header[data-compact] .v-page-header__status,
+	.v-page-header[data-compact] .v-page-header__secondary,
+	.v-page-header[data-compact] .v-page-header__tabs {
+		display: none;
+	}
+
+	.v-page-header[data-compact] .v-page-header__row {
+		flex: 1;
+		align-items: center;
+		gap: 10px;
+	}
+
+	.v-page-header[data-compact] .v-page-header__heading {
+		display: flex;
+		min-width: 0;
+	}
+
+	.v-page-header[data-compact] .v-page-header__title-line {
+		align-items: center;
+		gap: 10px;
+		min-width: 0;
+	}
+
+	.v-page-header[data-compact] .v-page-header__title {
+		overflow: hidden;
+		font-size: 16px;
+		font-weight: 600;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+
+	.v-page-header[data-compact] .v-page-header__summary {
+		display: inline;
+	}
+
+	.v-page-header[data-compact] .v-page-header__actions {
+		align-items: center;
+	}
+
+	.v-page-header[data-compact] .v-page-header__title-line {
+		animation: v-page-header-compact 180ms ease-out;
+	}
+
+	@keyframes v-page-header-compact {
+		from {
+			opacity: 0;
+		}
+
+		to {
+			opacity: 1;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-page-header[data-compact] .v-page-header__title-line {
+			animation: none;
+		}
+	}
+}

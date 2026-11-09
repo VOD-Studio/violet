@@ -64,7 +64,6 @@ export function GalleryDetailPage({ slug }: GalleryDetailPageProps) {
 						</Button>
 					}
 					className="py-20"
-					size="lg"
 				/>
 			</PageShell>
 		);

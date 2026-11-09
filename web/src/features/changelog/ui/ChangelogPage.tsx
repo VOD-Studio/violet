@@ -80,12 +80,7 @@ export function ChangelogPage() {
 
 	return (
 		<main className="mx-auto w-full max-w-6xl px-6 py-20">
-			<PageHeader
-				eyebrow="Updates"
-				title="更新日志"
-				description="本站各版本的变更记录"
-				className="mb-16"
-			/>
+			<PageHeader title="更新日志" description="本站各版本的变更记录" className="mb-16" />
 
 			<div className="lg:grid lg:grid-cols-[10rem_minmax(0,1fr)] lg:gap-16">
 				<VersionNav items={navItems} current={current} activeId={activeId} />

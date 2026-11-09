@@ -13,18 +13,9 @@ export function ProjectsPage({ initialData }: ProjectsPageProps) {
 	const { data: projects } = useProjects({}, initialData);
 	return (
 		<PageShell>
-			<PageHeader
-				eyebrow="All Projects"
-				title="项目"
-				description="每个项目正在做什么、最近交付了什么。"
-			/>
+			<PageHeader title="项目" description="每个项目正在做什么、最近交付了什么。" />
 			{projects === undefined ? null : projects.length === 0 ? (
-				<Empty
-					title="暂无项目"
-					description="还没有发布任何项目"
-					className="py-20"
-					size="lg"
-				/>
+				<Empty title="暂无项目" description="还没有发布任何项目" className="py-20" />
 			) : (
 				<ul className="space-y-4">
 					{projects.map((project) => (

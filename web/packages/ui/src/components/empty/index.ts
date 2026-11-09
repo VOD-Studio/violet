@@ -1,2 +1,2 @@
-export type { EmptyProps } from "./Empty";
-export { default, default as Empty } from "./Empty";
+export type { EmptyProps, EmptyVariant } from "./empty";
+export { Empty } from "./empty";

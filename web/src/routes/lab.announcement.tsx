@@ -174,7 +174,6 @@ function AnnouncementLab() {
 					{preview === "empty" ? (
 						<Empty
 							key="empty"
-							size="lg"
 							title="NO EVENTS"
 							description="站点安静运行中，没有需要你知道的事。"
 							className="py-16"

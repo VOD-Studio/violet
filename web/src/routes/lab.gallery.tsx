@@ -124,7 +124,6 @@ function GalleryLab() {
 						</div>
 					) : (
 						<Empty
-							size="lg"
 							title="NO GALLERIES YET"
 							description="还没有公开图集。从素材库选几张图，第一本图集就从这里开始。"
 							className="py-16"
@@ -182,7 +181,6 @@ function GalleryLab() {
 						</div>
 					) : (
 						<Empty
-							size="lg"
 							title="EMPTY GALLERY"
 							description="图集没有内容项。添加图片或视频后，网格从这里长出来。"
 							className="py-16"

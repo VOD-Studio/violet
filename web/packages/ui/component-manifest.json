@@ -10,6 +10,13 @@
 			"documentation": "web/packages/ui/docs/components/accordion.md"
 		},
 		{
+			"name": "alert",
+			"status": "foundation",
+			"entry": "src/components/alert/index.ts",
+			"css": "src/components/alert/alert.css",
+			"documentation": "web/packages/ui/docs/components/alert.md"
+		},
+		{
 			"name": "avatar",
 			"status": "foundation",
 			"entry": "src/components/avatar/index.ts",
@@ -20,6 +27,13 @@
 			"status": "foundation",
 			"entry": "src/components/badge/index.ts",
 			"css": "src/components/badge/badge.css"
+		},
+		{
+			"name": "breadcrumbs",
+			"status": "foundation",
+			"entry": "src/components/breadcrumbs/index.ts",
+			"css": "src/components/breadcrumbs/breadcrumbs.css",
+			"documentation": "web/packages/ui/docs/components/breadcrumbs.md"
 		},
 		{
 			"name": "button",
@@ -42,8 +56,10 @@
 		},
 		{
 			"name": "chart",
-			"status": "legacy",
-			"entry": "src/components/chart/index.ts"
+			"status": "foundation",
+			"entry": "src/components/chart/index.ts",
+			"css": "src/components/chart/chart.css",
+			"documentation": "web/packages/ui/docs/components/chart.md"
 		},
 		{
 			"name": "checkbox",
@@ -117,8 +133,10 @@
 		},
 		{
 			"name": "empty",
-			"status": "legacy",
-			"entry": "src/components/empty/index.ts"
+			"status": "foundation",
+			"entry": "src/components/empty/index.ts",
+			"css": "src/components/empty/empty.css",
+			"documentation": "web/packages/ui/docs/components/empty.md"
 		},
 		{
 			"name": "field",
@@ -211,8 +229,10 @@
 		},
 		{
 			"name": "page-header",
-			"status": "legacy",
-			"entry": "src/components/page-header/index.ts"
+			"status": "foundation",
+			"entry": "src/components/page-header/index.ts",
+			"css": "src/components/page-header/page-header.css",
+			"documentation": "web/packages/ui/docs/components/page-header.md"
 		},
 		{
 			"name": "page-shell",
@@ -231,6 +251,13 @@
 			"status": "foundation",
 			"entry": "src/components/popover/index.ts",
 			"css": "src/components/popover/popover.css"
+		},
+		{
+			"name": "progress",
+			"status": "foundation",
+			"entry": "src/components/progress/index.ts",
+			"css": "src/components/progress/progress.css",
+			"documentation": "web/packages/ui/docs/components/progress.md"
 		},
 		{
 			"name": "prompt-dialog",
@@ -302,8 +329,10 @@
 		},
 		{
 			"name": "steps",
-			"status": "legacy",
-			"entry": "src/components/steps/index.ts"
+			"status": "foundation",
+			"entry": "src/components/steps/index.ts",
+			"css": "src/components/steps/steps.css",
+			"documentation": "web/packages/ui/docs/components/steps.md"
 		},
 		{
 			"name": "switch",
@@ -389,19 +418,27 @@
 			"name": "use-debounced-callback",
 			"status": "legacy",
 			"entry": "src/lib/use-debounced-callback.ts",
-			"symbols": ["useDebouncedCallback"]
+			"symbols": [
+				"useDebouncedCallback"
+			]
 		},
 		{
 			"name": "use-theme",
 			"status": "legacy",
 			"entry": "src/lib/use-theme.ts",
-			"symbols": ["type ThemeChoice", "type UseThemeResult", "useTheme"]
+			"symbols": [
+				"type ThemeChoice",
+				"type UseThemeResult",
+				"useTheme"
+			]
 		},
 		{
 			"name": "decrypted-text",
 			"status": "legacy",
 			"entry": "src/vendor/DecryptedText.tsx",
-			"symbols": ["default as DecryptedText"]
+			"symbols": [
+				"default as DecryptedText"
+			]
 		}
 	],
 	"recipes": [
@@ -418,34 +455,54 @@
 		},
 		{
 			"entry": "src/components/button/styles.ts",
-			"symbols": ["type ButtonVariantProps", "buttonVariants"]
+			"symbols": [
+				"type ButtonVariantProps",
+				"buttonVariants"
+			]
 		},
 		{
 			"entry": "src/components/checkbox/styles.ts",
-			"symbols": ["type CheckboxVariantProps", "checkboxVariants"]
+			"symbols": [
+				"type CheckboxVariantProps",
+				"checkboxVariants"
+			]
 		},
 		{
 			"entry": "src/components/input/styles.ts",
-			"symbols": ["type InputVariantProps", "inputVariants"]
+			"symbols": [
+				"type InputVariantProps",
+				"inputVariants"
+			]
 		},
 		{
 			"entry": "src/components/kbd/styles.ts",
-			"symbols": ["type KbdVariantProps", "kbdVariants"]
+			"symbols": [
+				"type KbdVariantProps",
+				"kbdVariants"
+			]
 		},
 		{
 			"entry": "src/components/number-input/styles.ts",
-			"symbols": ["type NumberInputVariantProps", "numberInputVariants"]
+			"symbols": [
+				"type NumberInputVariantProps",
+				"numberInputVariants"
+			]
 		},
 		{
 			"entry": "src/components/textarea/styles.ts",
-			"symbols": ["type TextareaVariantProps", "textareaVariants"]
+			"symbols": [
+				"type TextareaVariantProps",
+				"textareaVariants"
+			]
 		}
 	],
 	"styles": {
 		"theme": "src/styles/theme.css",
 		"tokens": "src/styles/tokens.css",
 		"foundation": "src/styles/foundation.css",
-		"utilities": ["src/styles/scrollbar.css"],
+		"utilities": [
+			"src/styles/scrollbar.css"
+		],
 		"palettes": [
 			"src/styles/palettes/violet.generated.css",
 			"src/styles/palettes/coral.generated.css"

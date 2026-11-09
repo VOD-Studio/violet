@@ -92,19 +92,13 @@ export function GalleryBrowsePage() {
 	return (
 		<PageShell>
 			<PageHeader
-				eyebrow="Photo Stories"
 				title="图集"
 				description="已经发布的视觉作品。"
 				className="mb-12 max-w-2xl"
 			/>
 
 			{feed.galleries.length === 0 ? (
-				<Empty
-					title="暂无图集"
-					description="还没有发布的图集"
-					className="py-20"
-					size="lg"
-				/>
+				<Empty title="暂无图集" description="还没有发布的图集" className="py-20" />
 			) : (
 				<>
 					<div className="grid gap-x-10 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">

@@ -56,12 +56,7 @@ export function ProjectDetailPage({
 		<PageShell>
 			<ProjectDetailHeader project={data.project} progress={data.progress} />
 			{data.items.length === 0 ? (
-				<Empty
-					title="暂无条目"
-					description="这个项目还没有路线图条目"
-					className="py-20"
-					size="lg"
-				/>
+				<Empty title="暂无条目" description="这个项目还没有路线图条目" className="py-20" />
 			) : (
 				<RoadmapBoard
 					items={data.items}
