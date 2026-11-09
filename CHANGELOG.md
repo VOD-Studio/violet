@@ -7,6 +7,13 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.24.0](https://github.com/VOD-Studio/violet/compare/v2.23.0...v2.24.0) (2026-11-09)
+
+
+### 新增
+
+* **chat:** 支持 Bot Token 更换自身头像 ([#722](https://github.com/VOD-Studio/violet/issues/722)) ([549a0df](https://github.com/VOD-Studio/violet/commit/549a0dfb797c4ed7bf2a6e547ad339084a183a5b))
+
 ## [Unreleased]
 
 ### 新增
