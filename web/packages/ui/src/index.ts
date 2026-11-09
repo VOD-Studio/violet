@@ -41,6 +41,7 @@ export * from "./components/skeleton/index";
 export * from "./components/slider/index";
 export * from "./components/sonner/index";
 export * from "./components/switch/index";
+export * from "./components/table/index";
 export * from "./components/tabs/index";
 export * from "./components/tag-input/index";
 export * from "./components/textarea/index";

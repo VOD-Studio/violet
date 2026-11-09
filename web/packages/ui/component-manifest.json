@@ -313,8 +313,10 @@
 		},
 		{
 			"name": "table",
-			"status": "legacy",
-			"entry": "src/components/table/index.ts"
+			"status": "foundation",
+			"entry": "src/components/table/index.ts",
+			"css": "src/components/table/table.css",
+			"documentation": "web/packages/ui/docs/components/table.md"
 		},
 		{
 			"name": "tabs",

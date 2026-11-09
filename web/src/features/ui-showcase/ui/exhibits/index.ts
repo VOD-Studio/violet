@@ -37,6 +37,7 @@ import { sheetExhibit } from "./sheet";
 import { sliderExhibit } from "./slider";
 import { sonnerExhibit } from "./sonner";
 import { switchExhibit } from "./switch";
+import { tableExhibit } from "./table";
 import { tabsExhibit } from "./tabs";
 import { tagInputExhibit } from "./tag-input";
 import { textareaExhibit } from "./textarea";
@@ -68,15 +69,7 @@ export const EXHIBITS: Exhibit[] = [
 		footprint: { width: 1120, height: 160 },
 		issue: 709,
 	},
-	{
-		id: "table",
-		name: "表格",
-		units: ["table"],
-		zone: "banner",
-		category: "display",
-		footprint: { width: 1120, height: 380 },
-		issue: 708,
-	},
+	tableExhibit,
 	paginationExhibit,
 	footerExhibit,
 	dropdownExhibit,

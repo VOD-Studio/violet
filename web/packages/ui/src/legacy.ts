@@ -7,7 +7,6 @@ export * from "./components/page-header/index";
 export * from "./components/page-shell/index";
 export * from "./components/scroll-area/index";
 export * from "./components/steps/index";
-export * from "./components/table/index";
 export * from "./components/text-underline/index";
 export { useDebouncedCallback } from "./lib/use-debounced-callback";
 export { type ThemeChoice, type UseThemeResult, useTheme } from "./lib/use-theme";
