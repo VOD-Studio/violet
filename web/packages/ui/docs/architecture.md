@@ -2,7 +2,7 @@
 
 Violet/UI 的包名是 `@violet/ui`。React 组件、CSS 和类型声明在同一个包里交付；本目录维护组件库的架构与设计规范。
 
-先看 `web/packages/ui/component-manifest.json`。`foundation` 表示已按新结构实现；`legacy` 表示保留兼容入口、尚未重建。当前 40 个基础单元是 Avatar、Badge、Button、Card、Cascader、Checkbox、Combobox、CommandList、ConfirmDialog、ContextMenu、Dialog、Drawer、Dropdown、DropdownMenu、Field（含 Label、FieldSet、FieldSummary）、HoverCard、ImagePixelReveal、Indicator、Input（含 SearchInput）、Kbd、LinkCard、ListHighlight、MorphingPopover、Popover、PromptDialog、Radio、Segmented、Select、Separator、Sheet、Skeleton、Sonner、Switch、Tabs、TagInput、Textarea、ToggleGroup、Tooltip、TreeSelect、UploadTile。其余 14 个单元，包括 Table，仍属于 legacy；旧页面能运行不代表已经完成新架构改造。
+先看 `web/packages/ui/component-manifest.json`。`foundation` 表示已按新结构实现；`legacy` 表示保留兼容入口、尚未重建。当前清单登记 47 个基础单元与 11 个 legacy 单元；完整组件列表与实际成熟度以清单为准。upload 单元提供纯展示 UploadQueue 和原生 UploadDropzone，upload-tile 单元提供方形入口；上传请求、文件与状态机留在宿主。旧页面能运行不代表已经完成新架构改造。
 
 ```text
 web/packages/ui/

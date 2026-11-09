@@ -44,5 +44,6 @@ export * from "./components/textarea/index";
 export * from "./components/toggle-group/index";
 export * from "./components/tooltip/index";
 export * from "./components/tree-select/index";
+export * from "./components/upload/index";
 export * from "./components/upload-tile/index";
 export * from "./legacy";

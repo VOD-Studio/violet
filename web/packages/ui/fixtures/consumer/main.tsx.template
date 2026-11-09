@@ -20,6 +20,7 @@ import { Combobox as LeafCombobox } from "@violet/ui/combobox";
 import { TagInput as LeafTagInput } from "@violet/ui/tag-input";
 import { TreeSelect as LeafTreeSelect } from "@violet/ui/tree-select";
 import { ValueControlsPreview } from "./value-controls.js";
+import { UploadPreview } from "./upload.js";
 
 const comboOptions: ComboboxOption[] = [{ value: "hz", label: "杭州", description: "浙江" }, { value: "sh", label: "上海" }, { value: "bj", label: "北京", disabled: true }];
 const cascaderOptions: CascaderOption[] = [{ value: "zj", label: "浙江", children: [{ value: "hz", label: "杭州" }, { value: "nb", label: "宁波" }] }, { value: "js", label: "江苏", children: [{ value: "nj", label: "南京" }] }];
@@ -673,4 +674,4 @@ function OverlayPreview() {
 const root = document.getElementById("root");
 if (!root) throw new Error("Consumer root is missing.");
 const preview = new URLSearchParams(window.location.search).get("preview");
-createRoot(root).render(preview === "value-controls" ? <ValueControlsPreview /> : preview === "input" ? <InputPreview /> : preview === "overlay-scroll" ? <OverlayScrollPreview /> : preview === "image-pixel-reveal" ? <ImagePixelRevealPreview /> : preview === "upload-tile" ? <UploadTilePreview /> : preview === "dropdown" ? <DropdownPreview /> : preview === "segmented" ? <SegmentedPreview /> : preview === "link-card" ? <LinkCardPreview /> : preview === "display" ? <DisplayPreview /> : preview === "overlay" ? <OverlayPreview /> : <App />);
+createRoot(root).render(preview === "upload" ? <UploadPreview /> : preview === "value-controls" ? <ValueControlsPreview /> : preview === "input" ? <InputPreview /> : preview === "overlay-scroll" ? <OverlayScrollPreview /> : preview === "image-pixel-reveal" ? <ImagePixelRevealPreview /> : preview === "upload-tile" ? <UploadTilePreview /> : preview === "dropdown" ? <DropdownPreview /> : preview === "segmented" ? <SegmentedPreview /> : preview === "link-card" ? <LinkCardPreview /> : preview === "display" ? <DisplayPreview /> : preview === "overlay" ? <OverlayPreview /> : <App />);

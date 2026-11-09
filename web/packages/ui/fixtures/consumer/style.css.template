@@ -140,3 +140,18 @@ section {
 .display-field {
 	font-size: 0.875rem;
 }
+
+.upload-stage {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 1rem;
+	padding: 1rem 0;
+}
+.upload-stage > .v-upload-dropzone {
+	width: min(100%, 22.5rem);
+}
+.upload-stage > .v-upload-queue {
+	display: block;
+	padding: 0;
+}

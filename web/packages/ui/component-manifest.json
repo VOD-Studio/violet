@@ -345,10 +345,18 @@
 			"documentation": "web/packages/ui/docs/components/tree-select.md"
 		},
 		{
+			"name": "upload",
+			"status": "foundation",
+			"entry": "src/components/upload/index.ts",
+			"css": "src/components/upload/upload.css",
+			"documentation": "web/packages/ui/docs/components/upload.md"
+		},
+		{
 			"name": "upload-tile",
 			"status": "foundation",
 			"entry": "src/components/upload-tile/index.ts",
-			"css": "src/components/upload-tile/upload-tile.css"
+			"css": "src/components/upload-tile/upload-tile.css",
+			"documentation": "web/packages/ui/docs/components/upload.md"
 		}
 	],
 	"additionalExports": [

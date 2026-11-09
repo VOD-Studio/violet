@@ -40,6 +40,7 @@ import { textareaExhibit } from "./textarea";
 import { toggleGroupExhibit } from "./toggle-group";
 import { tooltipExhibit } from "./tooltip";
 import { treeSelectExhibit } from "./tree-select";
+import { uploadExhibit } from "./upload";
 import { uploadTileExhibit } from "./upload-tile";
 
 /** 馆藏目录：顺序即铭牌编号，待建展品随对应工单落地后换成真实组件。 */
@@ -127,15 +128,7 @@ export const EXHIBITS: Exhibit[] = [
 	sliderExhibit,
 	colorPickerExhibit,
 	otpExhibit,
-	{
-		id: "upload",
-		name: "上传队列",
-		units: ["upload"],
-		zone: "field",
-		category: "form",
-		footprint: { width: 400, height: 280 },
-		issue: 707,
-	},
+	uploadExhibit,
 	{
 		id: "mention",
 		name: "提及",

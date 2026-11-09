@@ -1,0 +1,439 @@
+@import "../indicator/indicator.css";
+
+@layer components {
+	.v-upload-queue {
+		box-sizing: border-box;
+		inline-size: 22.5rem;
+		max-inline-size: 100%;
+		border: 0;
+		border-radius: 1rem;
+		background: var(--popover);
+		color: var(--foreground);
+		box-shadow: var(--shadow-soft);
+		font-family: inherit;
+	}
+
+	.v-upload-queue[data-floating="true"] {
+		position: fixed;
+		right: 1rem;
+		bottom: 1rem;
+		z-index: var(--layer-toast, 90);
+		max-inline-size: calc(100vw - 2rem);
+		max-block-size: calc(100dvh - 2rem);
+		contain: layout paint;
+		animation: v-upload-enter 200ms cubic-bezier(0.32, 0.72, 0, 1) both;
+	}
+
+	.v-upload-queue__header {
+		display: flex;
+		align-items: center;
+		gap: 0.625rem;
+		block-size: 3.5rem;
+		padding-inline: 0.875rem 0.5rem;
+	}
+
+	.v-upload-queue__ring {
+		inline-size: 2rem;
+		block-size: 2rem;
+		flex: none;
+		fill: none;
+		stroke-width: 2;
+	}
+
+	.v-upload-queue__ring-track {
+		stroke: var(--muted);
+	}
+	.v-upload-queue__ring-value {
+		stroke: var(--progress);
+		stroke-linecap: round;
+		transform: rotate(-90deg);
+		transform-origin: center;
+		transition: stroke-dasharray 200ms linear;
+	}
+	.v-upload-queue[data-state="done"] .v-upload-queue__ring-value {
+		stroke: var(--success);
+	}
+	.v-upload-queue[data-state="error"] .v-upload-queue__ring-value {
+		stroke: var(--destructive);
+	}
+
+	.v-upload-queue__heading {
+		flex: 1;
+		min-inline-size: 0;
+	}
+	.v-upload-queue__heading strong {
+		display: block;
+		font-size: 0.875rem;
+		font-weight: 600;
+		line-height: 1.4;
+	}
+	.v-upload-queue__heading > span {
+		display: block;
+		overflow: hidden;
+		color: var(--muted-foreground);
+		font-size: 0.75rem;
+		line-height: 1.5;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+
+	.v-upload-queue__action {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		flex: none;
+		inline-size: 1.75rem;
+		block-size: 1.75rem;
+		padding: 0;
+		border: 0;
+		border-radius: 0.5rem;
+		background: transparent;
+		color: var(--muted-foreground);
+		font: inherit;
+		font-size: 0.75rem;
+		cursor: pointer;
+		transition:
+			background-color 160ms ease-out,
+			color 160ms ease-out,
+			opacity 160ms ease-out;
+	}
+	.v-upload-queue__header > .v-upload-queue__action {
+		inline-size: 2rem;
+		block-size: 2rem;
+	}
+	.v-upload-queue__action svg {
+		inline-size: 1rem;
+		block-size: 1rem;
+	}
+	.v-upload-queue__action:where(:not(:disabled)):hover {
+		background: var(--muted);
+		color: var(--foreground);
+	}
+	.v-upload-queue__action:focus-visible,
+	.v-upload-dropzone:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+	.v-upload-queue__action:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+	.v-upload-queue__toggle svg {
+		transition: transform 200ms cubic-bezier(0.32, 0.72, 0, 1);
+	}
+	.v-upload-queue[data-collapsed="true"] .v-upload-queue__toggle svg {
+		transform: rotate(180deg);
+	}
+
+	.v-upload-queue__body {
+		display: grid;
+		grid-template-rows: 1fr;
+		transition: grid-template-rows 200ms cubic-bezier(0.32, 0.72, 0, 1);
+	}
+	.v-upload-queue[data-collapsed="true"] .v-upload-queue__body {
+		grid-template-rows: 0fr;
+	}
+	.v-upload-queue__crop {
+		min-block-size: 0;
+		overflow: hidden;
+	}
+	/* Keep four pixels around focus rings inside both the crop and scroll layers. */
+	.v-upload-queue__content {
+		padding: 0.25rem 0.375rem 0.375rem;
+	}
+	.v-upload-queue__list {
+		box-sizing: border-box;
+		max-block-size: 17.5rem;
+		margin: 0;
+		padding: 0.25rem;
+		list-style: none;
+		overflow-y: auto;
+		overflow-x: hidden;
+		overscroll-behavior: contain;
+		scroll-padding-block: 0.25rem;
+	}
+	.v-upload-queue[data-floating="true"] .v-upload-queue__list {
+		max-block-size: min(17.5rem, calc(100dvh - 12rem));
+	}
+	.v-upload-queue__row {
+		display: flex;
+		align-items: center;
+		gap: 0.625rem;
+		box-sizing: border-box;
+		block-size: 3.25rem;
+		padding-inline: 0.625rem;
+		border: 0;
+		border-radius: 0.625rem;
+		transition: background-color 160ms ease-out;
+	}
+	.v-upload-queue__row + .v-upload-queue__row {
+		margin-block-start: 0.125rem;
+	}
+	.v-upload-queue__row:hover {
+		background: color-mix(in oklab, var(--muted) 55%, transparent);
+	}
+	.v-upload-queue__thumbnail {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		flex: none;
+		inline-size: 2rem;
+		block-size: 2rem;
+		border-radius: 0.375rem;
+		background: var(--muted);
+		color: var(--muted-foreground);
+		overflow: hidden;
+	}
+	.v-upload-queue__thumbnail img {
+		inline-size: 100%;
+		block-size: 100%;
+		object-fit: cover;
+	}
+	.v-upload-queue__thumbnail svg {
+		inline-size: 1rem;
+		block-size: 1rem;
+	}
+	.v-upload-queue__row:is([data-state="queued"], [data-state="cancelled"])
+		.v-upload-queue__thumbnail
+		img {
+		opacity: 0.55;
+	}
+	.v-upload-queue__main {
+		position: relative;
+		flex: 1;
+		min-inline-size: 0;
+		padding-block-end: 0.25rem;
+	}
+	.v-upload-queue__file {
+		display: flex;
+		align-items: baseline;
+		gap: 0.5rem;
+	}
+	.v-upload-queue__name {
+		display: flex;
+		min-inline-size: 0;
+		font-size: 0.8125rem;
+		line-height: 1.5;
+		white-space: nowrap;
+	}
+	.v-upload-queue__name > span:first-child {
+		min-inline-size: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.v-upload-queue__extension {
+		flex: none;
+	}
+	.v-upload-queue__size {
+		flex: none;
+		font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+		font-variant-numeric: tabular-nums;
+		font-size: 0.6875rem;
+		color: var(--muted-foreground);
+	}
+	.v-upload-queue__status {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		min-inline-size: 0;
+		color: var(--muted-foreground);
+		font-size: 0.75rem;
+		line-height: 1.5;
+	}
+	.v-upload-queue__status > span:last-child {
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+	.v-upload-queue__status > :is(svg, .v-spinner, .v-flower) {
+		flex: none;
+	}
+	.v-upload-queue__status > svg {
+		inline-size: 0.875rem;
+		block-size: 0.875rem;
+		color: var(--success-text);
+	}
+	.v-upload-queue__row[data-state="error"] .v-upload-queue__status {
+		color: var(--destructive-text);
+	}
+	.v-upload-queue__row[data-cancelling="true"] .v-upload-queue__status {
+		color: var(--muted-foreground);
+	}
+	.v-upload-queue__progress {
+		position: absolute;
+		inset-inline: 0;
+		bottom: 0;
+		block-size: 2px;
+		border-radius: 1px;
+		background: var(--foreground);
+		transform-origin: left center;
+		transition:
+			transform 200ms linear,
+			opacity 300ms ease-out,
+			background-color 160ms ease-out;
+	}
+	.v-upload-queue__row:is(
+			[data-state="queued"],
+			[data-state="waiting"],
+			[data-state="done"],
+			[data-state="cancelled"]
+		)
+		.v-upload-queue__progress {
+		opacity: 0;
+	}
+	.v-upload-queue__row[data-state="error"] .v-upload-queue__progress {
+		background: var(--destructive);
+	}
+	.v-upload-queue__actions {
+		display: flex;
+		align-items: center;
+		gap: 0.125rem;
+		flex: none;
+	}
+	@media (hover: hover) {
+		.v-upload-queue__remove {
+			opacity: 0;
+		}
+		.v-upload-queue__row:hover .v-upload-queue__remove,
+		.v-upload-queue__row:focus-within .v-upload-queue__remove {
+			opacity: 1;
+		}
+	}
+	.v-upload-queue__policy {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.25rem 0.625rem;
+		color: var(--muted-foreground);
+		font-size: 0.75rem;
+	}
+	.v-upload-queue__policy > span {
+		flex: 1;
+		min-inline-size: 0;
+		overflow-wrap: anywhere;
+	}
+	.v-upload-queue[data-policy="error"] .v-upload-queue__policy {
+		color: var(--destructive-text);
+	}
+	.v-upload-queue__footer {
+		display: flex;
+		justify-content: flex-end;
+		gap: 0.25rem;
+		padding: 0.25rem;
+	}
+	.v-upload-queue__text-action {
+		inline-size: auto;
+		padding-inline: 0.625rem;
+		white-space: nowrap;
+	}
+	.v-upload-queue__empty {
+		margin: 0;
+		padding: 0.75rem;
+		color: var(--muted-foreground);
+		font-size: 0.75rem;
+	}
+
+	.v-upload-dropzone {
+		box-sizing: border-box;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 0.375rem;
+		inline-size: 100%;
+		min-inline-size: 0;
+		min-block-size: 7.5rem;
+		padding: 1.25rem;
+		border: 0;
+		border-radius: var(--v-upload-dropzone-radius, 1rem);
+		background: var(--muted);
+		color: var(--muted-foreground);
+		font: inherit;
+		cursor: pointer;
+		transition:
+			background-color 160ms ease-out,
+			color 160ms ease-out;
+	}
+	.v-upload-dropzone:where(:not(:disabled)):hover {
+		background: color-mix(in oklab, var(--muted) 92%, var(--foreground));
+		color: var(--foreground);
+	}
+	.v-upload-dropzone:where(:not(:disabled))[data-drag-active="true"] {
+		background: var(--decoration-muted);
+		color: var(--foreground);
+	}
+	.v-upload-dropzone:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+	.v-upload-dropzone__icon {
+		inline-size: 1.25rem;
+		block-size: 1.25rem;
+	}
+	.v-upload-dropzone__label {
+		font-size: 0.875rem;
+	}
+	.v-upload-dropzone__hint {
+		font-size: 0.75rem;
+		overflow-wrap: anywhere;
+	}
+}
+
+/* Indicator CSS is unlayered; scoped overrides must be unlayered too. */
+@media (prefers-reduced-motion: reduce) {
+	:is(.v-upload-queue, .v-upload-dropzone),
+	:is(.v-upload-queue, .v-upload-dropzone) *,
+	:is(.v-upload-queue, .v-upload-dropzone) *::before,
+	:is(.v-upload-queue, .v-upload-dropzone) *::after {
+		animation: none;
+		transition: none;
+	}
+	.v-upload-queue .v-flower__draw,
+	.v-upload-queue .v-flower[data-variant="outline"] .v-flower__draw,
+	.v-upload-queue .v-flower .v-flower__line {
+		animation: none;
+		stroke-dashoffset: 0;
+		opacity: 1;
+	}
+	.v-upload-queue .v-flower .v-flower__pop {
+		animation: none;
+		opacity: 1;
+	}
+	.v-upload-queue .v-spinner__arc,
+	.v-upload-dropzone .v-spinner__arc {
+		stroke-dasharray: 62 100;
+	}
+}
+
+[data-motion="reduce"] :is(.v-upload-queue, .v-upload-dropzone),
+[data-motion="reduce"] :is(.v-upload-queue, .v-upload-dropzone) *,
+[data-motion="reduce"] :is(.v-upload-queue, .v-upload-dropzone) *::before,
+[data-motion="reduce"] :is(.v-upload-queue, .v-upload-dropzone) *::after {
+	animation: none;
+	transition: none;
+}
+[data-motion="reduce"] .v-upload-queue .v-flower__draw,
+[data-motion="reduce"] .v-upload-queue .v-flower[data-variant="outline"] .v-flower__draw,
+[data-motion="reduce"] .v-upload-queue .v-flower .v-flower__line {
+	animation: none;
+	stroke-dashoffset: 0;
+	opacity: 1;
+}
+[data-motion="reduce"] .v-upload-queue .v-flower .v-flower__pop {
+	animation: none;
+	opacity: 1;
+}
+[data-motion="reduce"] :is(.v-upload-queue, .v-upload-dropzone) .v-spinner__arc {
+	stroke-dasharray: 62 100;
+}
+
+@keyframes v-upload-enter {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}

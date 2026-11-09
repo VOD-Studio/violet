@@ -1,3 +1,5 @@
+@import "../indicator/indicator.css";
+
 @layer components {
 	.v-upload-tile {
 		box-sizing: border-box;
@@ -10,8 +12,8 @@
 		min-inline-size: 0;
 		aspect-ratio: 1;
 		padding: 0.5rem;
-		border: 1px dashed var(--border);
-		border-radius: var(--v-control-radius, min(var(--radius), 1rem));
+		border: 0;
+		border-radius: var(--v-upload-tile-radius, 0.5rem);
 		background: var(--muted);
 		color: var(--muted-foreground);
 		font: inherit;
@@ -19,14 +21,17 @@
 		cursor: pointer;
 		transition:
 			background-color var(--v-duration-fast, 150ms) ease-out,
-			color var(--v-duration-fast, 150ms) ease-out,
-			border-color var(--v-duration-fast, 150ms) ease-out;
+			color var(--v-duration-fast, 150ms) ease-out;
 	}
 
 	.v-upload-tile:where(:not(:disabled)):hover {
-		border-color: var(--primary);
-		background: var(--accent);
+		background: color-mix(in oklab, var(--muted) 90%, var(--foreground));
 		color: var(--foreground);
+	}
+
+	.v-upload-tile:where(:not(:disabled))[data-drag-active="true"] {
+		background: var(--decoration-muted);
+		color: var(--decoration);
 	}
 
 	.v-upload-tile:focus-visible {
@@ -49,10 +54,28 @@
 		flex-shrink: 0;
 		pointer-events: none;
 	}
+}
 
-	@media (prefers-reduced-motion: reduce) {
-		.v-upload-tile {
-			transition: none;
-		}
+@media (prefers-reduced-motion: reduce) {
+	.v-upload-tile,
+	.v-upload-tile *,
+	.v-upload-tile *::before,
+	.v-upload-tile *::after {
+		animation: none;
+		transition: none;
 	}
+	.v-upload-tile .v-spinner__arc {
+		stroke-dasharray: 62 100;
+	}
+}
+
+[data-motion="reduce"] .v-upload-tile,
+[data-motion="reduce"] .v-upload-tile *,
+[data-motion="reduce"] .v-upload-tile *::before,
+[data-motion="reduce"] .v-upload-tile *::after {
+	animation: none;
+	transition: none;
+}
+[data-motion="reduce"] .v-upload-tile .v-spinner__arc {
+	stroke-dasharray: 62 100;
 }

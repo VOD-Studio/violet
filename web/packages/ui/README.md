@@ -4,7 +4,7 @@ React 19 组件库，使用原生 HTML 与 Radix 提供交互行为，用类型�
 
 ## 当前范围
 
-`component-manifest.json` 记录每个组件的入口、样式和成熟度。Avatar、Badge、Button、Card、Cascader、Checkbox、ColorPicker、Combobox、CommandList、ConfirmDialog、ContextMenu、DatePicker、Dialog、Drawer、Dropdown、DropdownMenu、Field（含 Label、FieldSet、FieldSummary）、HoverCard、ImagePixelReveal、Indicator、Input（含 SearchInput）、Kbd、LinkCard、ListHighlight、MorphingPopover、NumberInput、OTP、Popover、PromptDialog、Radio、ResendButton、Segmented、Select、Separator、Sheet、Skeleton、Slider、Sonner、Switch、Tabs、TagInput、Textarea、ToggleGroup、Tooltip、TreeSelect、UploadTile 是当前 46 个 `foundation` 单元；其余 11 个单元保留 API，并标为 `legacy`。兼容入口不代表已经重建所有组件。
+`component-manifest.json` 记录每个组件的入口、样式和成熟度。当前登记 47 个 `foundation` 单元（含 UploadQueue/UploadDropzone 所在的 upload 单元）与 11 个保留 API 的 `legacy` 单元；完整列表以清单为准。兼容入口不代表已经重建所有组件。
 
 所有组件都放在 `src/components/<name>/`，实现、有变体时的 `styles.ts`、CSS、入口和测试就近维护。`src/legacy.ts` 只汇总兼容导出；`src/lib/` 只放有实际消费方的复用能力。
 
@@ -72,7 +72,7 @@ Checkbox 的 ref 指向可聚焦的 button；名称使用关联 Label 或 `aria-
 
 ImagePixelReveal 让图片瓦片逐块裁剪展开，原图始终静止；默认 random 每轮重新洗牌，悬停可重播完整拼合，减弱动态时直接显示。`className` 约束根容器尺寸，`imgClassName` 调整默认图片；`children` 可替换内容，`src` 改变时重新开始独立周期。组件从 `@violet/ui` 导入，按需 CSS 为 `@violet/ui/components/image-pixel-reveal.css`；[陈列室展品](https://xunrua.top/ui?open=image-pixel-reveal)可切换四种揭示顺序并悬停重播。
 
-UploadTile 是由父容器决定尺寸的方形原生按钮，默认加号，`busy` 显示加载指示并禁止激活，`disabled` 保留原生禁用行为。纯图标用法需提供 `aria-label`，ref、事件和表单属性直接落在 button；默认 `type="button"`。它不选择或上传文件，不依赖站点 API、会话或通知。从 `@violet/ui` 或 `@violet/ui/upload-tile` 导入；按需样式为 `@violet/ui/components/upload-tile.css`。[陈列室展品](https://xunrua.top/ui?open=upload-tile)陈列默认、忙碌与禁用，独立 consumer 的 `?preview=upload-tile` 可操作忙碌、禁用、主题和窄屏状态。
+UploadTile 是由父容器决定尺寸的方形原生按钮：浅底、无虚线、默认 8px 圆角与 20px 加号，`dragActive` 显示季节浅底和上传箭头，`busy` 显示指示器并禁止激活。UploadDropzone 提供带标签和 hint 的原生选择按钮。UploadQueue 展示六种真实上传状态、取消确认、策略暂停/失败、重试冷却和字节加权进度；360px 面板支持内联或右下浮动、收起与焦点安全列表。三个组件不选择或上传文件，宿主持有队列、拖放、取消确认和 API。纯图标入口须提供 `aria-label`；原生 ref、事件和表单属性透传。[上传契约](docs/components/upload.md)说明状态、动作与按需 CSS；集成验收证据单独记录。
 
 LinkCard 是原生 anchor 的紧凑链接预览，接收 `href`、`title`、可选描述、站点名和图片，不依赖业务 DTO 或请求。左侧缩略图与卡片边缘相接，坏图退为文字卡，预览内容更新后可恢复；自动隐藏实质重复的标题/描述与站点/域名。ref、事件和导航策略属于整卡，默认安全新标签，调用方可覆盖。从 `@violet/ui` 或 `@violet/ui/link-card` 导入，按需 CSS 为 `@violet/ui/components/link-card.css`。[组件契约](docs/components/link-card.md)说明原生行为，[陈列室展品](https://xunrua.top/ui?open=link-card)可切换封面、Logo、无图与坏图，独立 consumer 的 `?preview=link-card` 覆盖图片降级、内容更新、主题和窄屏场景。
 

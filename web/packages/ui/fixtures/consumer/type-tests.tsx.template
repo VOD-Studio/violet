@@ -1,4 +1,5 @@
 import "./value-controls-types.js";
+import "./upload-types.js";
 import { Field, FieldSet, FieldSummary, focusField, useFieldCheck, useFieldControl, type FieldProps, type FieldSetProps, type FieldSummaryProps, ImagePixelReveal, Input, Label, Textarea, type ButtonProps, type CheckboxProps, type ImagePixelRevealProps, type PixelRevealVariant, type InputProps } from "@violet/ui";
 import { Button } from "@violet/ui/button";
 import { Checkbox } from "@violet/ui/checkbox";
