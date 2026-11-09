@@ -75,14 +75,18 @@ export class UploadQueue<T> {
 		this.schedule();
 	}
 
+	/** 返回与 files 同序的条目标识，供宿主管理本地预览。 */
 	add(files: File[], run: UploadExecutor<T>, onUploaded: (result: T, file: File) => void) {
+		const ids: string[] = [];
 		for (const file of files) {
 			const id = crypto.randomUUID();
+			ids.push(id);
 			this.tasks.set(id, { run, onUploaded });
 			this.items = [...this.items, { id, file, status: "queued", progress: 0 }];
 		}
 		this.emit();
 		this.schedule();
+		return ids;
 	}
 
 	/** 上传失败重试原任务；取消失败只重试确认取消。 */
