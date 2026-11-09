@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ChatConversation, ChatMessage, ChatUser } from "../../model/types";
-import { toChatEntry } from "../chat-inbox";
+import { toChatAlert, toChatEntry } from "../chat-inbox";
 
 const ME: ChatUser = { id: "me", username: "xunrua", display_name: "xunrua", avatar_url: "" };
 const CLAUDE: ChatUser = {
@@ -72,5 +72,27 @@ describe("toChatEntry", () => {
 		);
 		expect(entry.preview).toBe("还没有消息");
 		expect(entry.avatar).toBeUndefined();
+	});
+});
+
+describe("toChatAlert", () => {
+	it("回复的是我的消息：说回复了你", () => {
+		const reply = message({
+			reply_to: { id: "m0", sender: ME, type: "text", content: "你好", is_deleted: false },
+		});
+		expect(toChatAlert(conversation({ last_message: reply }), reply, ME.id)).toEqual({
+			conversationId: "c1",
+			name: "Claude",
+			avatar: "/claude.png",
+			action: "回复了你",
+			preview: "摘要已经整理好了",
+		});
+	});
+
+	it("私聊里普通消息：发来一条消息；房间里带房间名", () => {
+		const direct = conversation();
+		expect(toChatAlert(direct, message(), ME.id).action).toBe("发来一条消息");
+		const room = conversation({ kind: "room", title: "周末骑行" });
+		expect(toChatAlert(room, message(), ME.id).action).toBe("在「周末骑行」发言");
 	});
 });

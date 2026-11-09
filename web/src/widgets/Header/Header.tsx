@@ -4,6 +4,7 @@ import { useAuthenticated } from "@shared/api/use-authenticated";
 import { useMe } from "@/features/auth/api/queries";
 
 import HeaderActions from "./HeaderActions";
+import HeaderChatToast from "./HeaderChatToast";
 import HeaderIsland from "./HeaderIsland";
 import HeaderLogo from "./HeaderLogo";
 import HeaderNavbar from "./HeaderNavbar";
@@ -39,6 +40,7 @@ const Header = ({ isAuthenticated }: HeaderProps) => {
 					logo={<HeaderLogo />}
 					actions={<HeaderActions user={user} />}
 				/>
+				{user && <HeaderChatToast user={user} />}
 			</div>
 
 			{/* 移动端底部灵动岛导航（portal 到 body，lg 以上隐藏） */}

@@ -189,7 +189,10 @@ test("Header 路由切换超过 300ms 才在导航下沿显示加载进度线，
 	await expect(line).toHaveCount(0);
 });
 
-test("Header 消息铃铛：面板与药丸右缘对齐，通知与聊天两个标签", async ({ page, context }) => {
+test("Header 消息铃铛：面板与药丸右缘对齐，通知与聊天两个标签；不在聊天室时新消息弹轻提示", async ({
+	page,
+	context,
+}) => {
 	await loadClient(context);
 	await context.addCookies([
 		{ name: "contract_admin", value: "1", url: "http://127.0.0.1:4173" },
@@ -215,7 +218,7 @@ test("Header 消息铃铛：面板与药丸右缘对齐，通知与聊天两个�
 		is_deleted: false,
 		created_at: new Date().toISOString(),
 	});
-	const conversation = {
+	let conversation = {
 		id: "c1",
 		kind: "direct",
 		title: "",
@@ -268,6 +271,53 @@ test("Header 消息铃铛：面板与药丸右缘对齐，通知与聊天两个�
 	await page.route("**/api/v1/chat/unread-count", (route) =>
 		json(route, envelope({ unread_count: conversation.unread_count })),
 	);
+	// 两条事件流换成可手动推送的替身
+	await page.addInitScript(() => {
+		type Listener = (event: MessageEvent) => void;
+		const sources: StubEventSource[] = [];
+		class StubEventSource {
+			url: string;
+			listeners: Record<string, Listener[]> = {};
+			onopen: (() => void) | null = null;
+			constructor(url: string) {
+				this.url = url;
+				sources.push(this);
+			}
+			addEventListener(type: string, callback: Listener) {
+				this.listeners[type] = [...(this.listeners[type] ?? []), callback];
+			}
+			close() {}
+		}
+		Object.assign(window, {
+			EventSource: StubEventSource,
+			__emitChat: (payload: unknown) => {
+				for (const source of sources.filter((item) => item.url.endsWith("/chat/events"))) {
+					for (const callback of source.listeners.chat ?? []) {
+						callback(new MessageEvent("chat", { data: JSON.stringify(payload) }));
+					}
+				}
+			},
+		});
+	});
+	const emitIncoming = async () => {
+		conversation = {
+			...conversation,
+			last_message: message("m1", "摘要已经整理好了"),
+			unread_count: 1,
+		};
+		await page.evaluate((sender) => {
+			const emit = Reflect.get(window, "__emitChat");
+			if (typeof emit !== "function") throw new Error("事件流替身未就绪");
+			emit({
+				id: "1",
+				type: "message.created",
+				version: 1,
+				occurred_at: new Date().toISOString(),
+				data: { conversation_id: "c1", message_id: "m1", sender_id: sender },
+			});
+		}, CLAUDE.id);
+	};
+
 	await page.goto("/");
 	await page.waitForLoadState("networkidle");
 	const header = page.locator("header").first();
@@ -292,4 +342,29 @@ test("Header 消息铃铛：面板与药丸右缘对齐，通知与聊天两个�
 	await expect(panel.getByRole("link", { name: "进入聊天室" })).toHaveAttribute("href", "/chat");
 	await page.keyboard.press("Escape");
 	await expect(panel).toHaveCount(0);
+
+	// 不在聊天室：新消息弹轻提示、角标计入，几秒后提示收起而角标仍在
+	// 指针停在提示上会暂停计时（读不完不收），先把它移开
+	await page.mouse.move(600, 600);
+	const toast = page.getByRole("status").filter({ hasText: "Claude" });
+	await emitIncoming();
+	await expect(toast).toContainText("Claude 发来一条消息");
+	await expect(toast).toContainText("摘要已经整理好了");
+	await expect(bell).toHaveAttribute("aria-label", "消息，2 条未读");
+	await expect(toast).toHaveCount(0, { timeout: 9000 });
+	await expect(bell).toHaveAttribute("aria-label", "消息，2 条未读");
+
+	// 在聊天室里：同样的新消息不弹提示
+	await page
+		.getByRole("navigation", { name: "主导航" })
+		.getByRole("link", { name: "聊天" })
+		.click();
+	await expect(page).toHaveURL(/\/chat$/);
+	// 会话列表刷新到这条消息之后才会弹提示；等刷新完成再断言「没有弹」
+	const refreshed = page.waitForResponse((response) =>
+		response.url().includes("/api/v1/chat/conversations"),
+	);
+	await emitIncoming();
+	await refreshed;
+	await expect(toast).toHaveCount(0);
 });

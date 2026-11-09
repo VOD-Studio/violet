@@ -1,5 +1,6 @@
 import type { UserDTO } from "@entities/user/model/types";
 import { chatKeys } from "@features/chat/api/keys";
+import { useChatAlertStore } from "@features/chat/model/chat-alert-store";
 import type { ChatConversation, ChatMessage, ChatUser } from "@features/chat/model/types";
 import { notificationKeys } from "@features/notifications/api/keys";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -11,8 +12,9 @@ import {
 	Outlet,
 	RouterProvider,
 } from "@tanstack/react-router";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import HeaderChatToast from "../HeaderChatToast";
 import HeaderMessages from "../HeaderMessages";
 
 vi.mock("@features/notifications/hooks/useNotificationStream", () => ({
@@ -108,6 +110,7 @@ function renderAt(path: string, children: React.ReactNode) {
 
 afterEach(() => {
 	cleanup();
+	useChatAlertStore.getState().clear();
 });
 
 describe("HeaderMessages", () => {
@@ -119,5 +122,32 @@ describe("HeaderMessages", () => {
 		const row = await screen.findByRole("button", { name: /^Claude/ });
 		expect(row.getAttribute("aria-label")).toContain("摘要已经整理好了");
 		expect(row.getAttribute("aria-label")).toContain("2 条未读");
+	});
+});
+
+describe("HeaderChatToast", () => {
+	const raise = () =>
+		act(() => {
+			useChatAlertStore
+				.getState()
+				.raise({ conversationID: "c1", messageID: "m1", senderID: CLAUDE.id });
+		});
+
+	it("不在聊天室时，新消息弹出带回复的轻提示", async () => {
+		renderAt("/", <HeaderChatToast user={ME} />);
+		await act(async () => {});
+		raise();
+		await screen.findByRole("button", { name: "回复" });
+		expect(screen.getByRole("status").textContent).toContain("Claude 发来一条消息");
+		expect(screen.getByRole("status").textContent).toContain("摘要已经整理好了");
+	});
+
+	it("在聊天室内新消息不弹轻提示", async () => {
+		renderAt("/chat", <HeaderChatToast user={ME} />);
+		await act(async () => {});
+		raise();
+		await act(async () => {});
+		expect(screen.getByRole("status").textContent).toBe("");
+		expect(screen.queryByRole("button", { name: "回复" })).toBeNull();
 	});
 });

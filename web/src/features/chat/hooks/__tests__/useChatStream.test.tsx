@@ -10,6 +10,7 @@ import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, expect, it, vi } from "vitest";
 import { chatKeys } from "../../api/keys";
+import { useChatAlertStore } from "../../model/chat-alert-store";
 import type { ChatConversation, ChatMessage } from "../../model/types";
 import { useChatStream } from "../useChatStream";
 
@@ -264,4 +265,44 @@ it("首轮消息查询未完成时保留查询并应用最新片段", async () =
 		expect(client.getQueryData<MessagesCache>(key)?.pages[0].data[0].content).toBe("完整回复"),
 	);
 	unsubscribe();
+});
+
+it("刚发生的新消息记入轻提示候选；重连补发的旧消息不记", () => {
+	useChatAlertStore.getState().clear();
+	const listeners = new Map<string, (event: MessageEvent) => void>();
+	vi.stubGlobal(
+		"EventSource",
+		class {
+			addEventListener(name: string, callback: (event: MessageEvent) => void) {
+				listeners.set(name, callback);
+			}
+			close() {}
+		},
+	);
+	useSessionStore.setState({ sessionActive: true });
+	const client = new QueryClient();
+	const wrapper = ({ children }: { children: ReactNode }) => (
+		<QueryClientProvider client={client}>{children}</QueryClientProvider>
+	);
+	renderHook(useChatStream, { wrapper });
+	const emit = (occurredAt: string) =>
+		listeners.get("chat")?.(
+			new MessageEvent("chat", {
+				data: JSON.stringify({
+					id: "9",
+					type: "message.created",
+					occurred_at: occurredAt,
+					data: { conversation_id: "c1", message_id: "m9", sender_id: "bot" },
+				}),
+			}),
+		);
+	act(() => emit(new Date(Date.now() - 10 * 60_000).toISOString()));
+	expect(useChatAlertStore.getState().incoming).toBeNull();
+	act(() => emit(new Date().toISOString()));
+	expect(useChatAlertStore.getState().incoming).toEqual({
+		conversationID: "c1",
+		messageID: "m9",
+		senderID: "bot",
+	});
+	useChatAlertStore.getState().clear();
 });
