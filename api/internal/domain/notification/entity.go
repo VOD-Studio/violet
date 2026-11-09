@@ -51,6 +51,8 @@ const (
 	SourceTweetCommentReplied SourceType = "tweet_comment_replied"
 	// SourceWindowKnocked 访客敲了敲窗（通知管理员）
 	SourceWindowKnocked SourceType = "window_knocked"
+	// SourceAnnouncement 新公告生效（通知全部启用用户：公告创建时已处于生效期则每个启用用户写一行）
+	SourceAnnouncement SourceType = "announcement"
 )
 
 // validSourceTypes 合法来源类型集合，供校验与 DB CHECK 同步参照。
@@ -71,6 +73,7 @@ var validSourceTypes = map[SourceType]bool{
 	SourceTweetCommented:        true,
 	SourceTweetCommentReplied:   true,
 	SourceWindowKnocked:         true,
+	SourceAnnouncement:          true,
 }
 
 // IsValidSourceType 判断来源类型是否合法。

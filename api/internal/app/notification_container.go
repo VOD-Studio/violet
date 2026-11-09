@@ -59,6 +59,8 @@ func NewNotificationContainer(db *gorm.DB, cfg *config.Config, bus appshared.Eve
 		CommentPostAuthor:   &commentPostAuthorAdapter{db: db},
 		Actor:               &actorAdapter{db: db},
 		CommentContext:      &commentContextAdapter{db: db},
+		Announcement:        gormrepo.NewAnnouncementRepository(db),
+		EnabledUsers:        &enabledUserAdapter{db: db},
 	}
 
 	// 通知 subscriber 订阅事件总线（SSE 推在线标签页 + Web Push 覆盖页面关闭场景）
@@ -126,6 +128,27 @@ func (a *commentContextAdapter) FindCommentContext(ctx context.Context, commentI
 		PostTitle:       row.PostTitle,
 		Content:         row.Content,
 	}, nil
+}
+
+// enabledUserAdapter 查询全部启用中的注册用户（is_active 且未注销）。
+type enabledUserAdapter struct {
+	db *gorm.DB
+}
+
+func (a *enabledUserAdapter) FindEnabledUserIDs(ctx context.Context) ([]domainshared.ID, error) {
+	var ids []uuid.UUID
+	err := a.db.WithContext(ctx).
+		Table("users").
+		Where("is_active = true AND deleted_at IS NULL").
+		Pluck("id", &ids).Error
+	if err != nil {
+		return nil, domainshared.Internal("查询启用用户失败", err)
+	}
+	result := make([]domainshared.ID, 0, len(ids))
+	for _, u := range ids {
+		result = append(result, domainshared.IDFromUUID(u))
+	}
+	return result, nil
 }
 
 // --- lookup 适配器 ---

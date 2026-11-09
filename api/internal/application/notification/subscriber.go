@@ -3,10 +3,12 @@ package notification
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/rs/zerolog"
 
 	appshared "blog-api/internal/application/shared"
+	domainannouncement "blog-api/internal/domain/announcement"
 	domainapitoken "blog-api/internal/domain/api_token"
 	domainchat "blog-api/internal/domain/chat"
 	domaincomment "blog-api/internal/domain/comment"
@@ -62,6 +64,17 @@ type CommentContextLookup interface {
 	FindCommentContext(ctx context.Context, commentID domainshared.ID) (CommentContext, error)
 }
 
+// AnnouncementLookup 按主键读取公告（公告通知用；公告事件只携带主键）。
+type AnnouncementLookup interface {
+	FindByID(ctx context.Context, id int32) (*domainannouncement.Announcement, error)
+}
+
+// EnabledUserLookup 解析全部启用中的注册用户（公告通知的接收者集合）。
+type EnabledUserLookup interface {
+	// FindEnabledUserIDs 返回未停用、未注销的用户 ID。
+	FindEnabledUserIDs(ctx context.Context) ([]domainshared.ID, error)
+}
+
 // AdminUserLookup 解析管理员用户（友链申请等 admin 通知用）。
 type AdminUserLookup interface {
 	// FindAdminIDs 返回应接收管理通知的用户 ID 列表。
@@ -76,8 +89,8 @@ type FriendLinkApplicantLookup interface {
 
 // Lookups 通知 subscriber 依赖的全部解析端口（由 wiring 层装配）。
 //
-// Actor / CommentContext 可为 nil：对应通知降级为不带结构化字段（行为人、评论上下文），
-// 不影响其他类型。
+// Actor / CommentContext / Announcement / EnabledUsers 可为 nil：对应通知降级为
+// 不带结构化字段（行为人、评论上下文）或不产生（公告），不影响其他类型。
 type Lookups struct {
 	SubscriptionOwner   SubscriptionOwnerLookup
 	CommentAuthor       CommentAuthorLookup
@@ -86,6 +99,8 @@ type Lookups struct {
 	CommentPostAuthor   CommentPostAuthorLookup
 	Actor               ActorLookup
 	CommentContext      CommentContextLookup
+	Announcement        AnnouncementLookup
+	EnabledUsers        EnabledUserLookup
 }
 
 // Subscriber 通知订阅者：消费领域事件 → 计算接收者 → 写通知。
@@ -96,11 +111,12 @@ type Subscriber struct {
 	store   domainnotification.NotificationRepository
 	lookups Lookups
 	log     zerolog.Logger
+	now     func() time.Time
 }
 
 // NewSubscriber 构造通知订阅者。
 func NewSubscriber(store domainnotification.NotificationRepository, lookups Lookups, log zerolog.Logger) *Subscriber {
-	return &Subscriber{store: store, lookups: lookups, log: log}
+	return &Subscriber{store: store, lookups: lookups, log: log, now: time.Now}
 }
 
 // Subscribe 注册订阅者到事件总线（通配订阅，按事件类型分发）。
@@ -215,6 +231,9 @@ func (s *Subscriber) mapEvent(ctx context.Context, event domainshared.DomainEven
 
 	case domainchat.RoomInvited:
 		return s.handleRoomInvited(ctx, e), true
+
+	case domainannouncement.AnnouncementCreated:
+		return s.handleAnnouncementCreated(ctx, e)
 
 	default:
 		return nil, false
@@ -674,4 +693,52 @@ func (s *Subscriber) handleTweetCommented(ctx context.Context, e domaintweet.Twe
 		})
 	}
 	return actions, len(actions) > 0
+}
+
+// --- 公告通知 ---
+
+// handleAnnouncementCreated 新公告 → 通知全部启用用户（写时扇出，每人一行）。
+//
+// 只在公告创建时已处于生效期（启用且在时间窗内）才通知；定时公告与草稿不通知，
+// 后续再生效也不会补发。source_id 取事件 ID——公告主键是 int32，装不进 ID 类型，
+// 主键放 payload.announcement_id；同一事件的全部行共用该 source_id，由 (event_id, user_id) 唯一约束去重。
+func (s *Subscriber) handleAnnouncementCreated(ctx context.Context, e domainannouncement.AnnouncementCreated) ([]notifyAction, bool) {
+	if s.lookups.Announcement == nil || s.lookups.EnabledUsers == nil {
+		return nil, false
+	}
+	a, err := s.lookups.Announcement.FindByID(ctx, e.ID)
+	if err != nil {
+		s.log.Warn().Err(err).Int32("announcement_id", e.ID).Msg("解析公告失败")
+		return nil, false
+	}
+	if !a.IsCurrentlyActive(s.now()) {
+		return nil, false
+	}
+	userIDs, err := s.lookups.EnabledUsers.FindEnabledUserIDs(ctx)
+	if err != nil {
+		s.log.Warn().Err(err).Int32("announcement_id", e.ID).Msg("解析启用用户失败")
+		return nil, false
+	}
+
+	// article 形态的 content 可能只是占位，摘要优先取 content、为空回落 excerpt
+	summary := a.Content()
+	if summary == "" {
+		summary = a.Excerpt()
+	}
+	fields := structuredFields{objectTitle: a.Title(), quote: summary}
+	sourceID := domainshared.IDFromUUID(e.EventID())
+
+	actions := make([]notifyAction, 0, len(userIDs))
+	for _, userID := range userIDs {
+		actions = append(actions, notifyAction{
+			userID:     userID,
+			sourceType: domainnotification.SourceAnnouncement,
+			sourceID:   sourceID,
+			title:      fmt.Sprintf("新公告「%s」", a.Title()),
+			body:       oneLine(summary, quoteMaxRunes),
+			payload:    map[string]any{"announcement_id": a.ID()},
+			fields:     fields,
+		})
+	}
+	return actions, true
 }

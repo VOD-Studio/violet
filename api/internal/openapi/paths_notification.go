@@ -15,15 +15,15 @@ func registerNotificationPaths(t *openapi3.T) {
 			"comment_pending", "comment_rejected", "user_registered",
 			"account_security", "chat_room_invited",
 			"tweet_liked", "tweet_quoted", "tweet_commented", "tweet_comment_replied",
-			"window_knocked"),
-		"source_id": reqStr("来源对象 ID"),
+			"window_knocked", "announcement"),
+		"source_id": reqStr("来源对象 ID；announcement 类型取触发事件的 ID（公告主键是整数，见 payload.announcement_id）"),
 		"title":     reqStr("标题"),
 		"body":      reqStr("正文"),
 		"payload":   optRef("来源域附加数据", "NotificationPayload"),
 		"actor": optRef("行为人（谁触发了通知）。系统发起的通知、匿名行为（敲窗）与评论审核结果缺省；"+
 			"写入时的快照，之后改名换头像不回溯", "NotificationActor"),
-		"object_title": optStr("被操作对象的标题：文章标题、推文正文前缀、友链站点名、聊天房间名、订阅名；写入时的快照，缺省表示该类型无对象或事件未提供"),
-		"quote":        optStr("单行原文摘录：评论 / 推文正文等，空白与换行折叠为单个空格，最多 80 个字符，超出以「…」结尾；缺省表示无摘录"),
+		"object_title": optStr("被操作对象的标题：文章标题、推文正文前缀、友链站点名、聊天房间名、公告标题、订阅名；写入时的快照，缺省表示该类型无对象或事件未提供"),
+		"quote":        optStr("单行原文摘录：评论 / 推文 / 公告正文等，空白与换行折叠为单个空格，最多 80 个字符，超出以「…」结尾；缺省表示无摘录"),
 		"is_read":      optBool("是否已读"),
 		"read_at":      optStr("已读时间（RFC3339，未读缺省）"),
 		"created_at":   reqStr("产生时间（RFC3339）"),
@@ -35,7 +35,8 @@ func registerNotificationPaths(t *openapi3.T) {
 	}, "name")
 
 	// payload 各来源域结构不同，建模为自由 object（字段以 source_type 实现为准）。
-	// actor / object_title / quote 同时保留在 payload 内，顶层同名字段是它们的提升副本。
+	// actor / object_title / quote 同时保留在 payload 内，顶层同名字段是它们的提升副本；
+	// announcement 类型的 payload.announcement_id 为公告主键（数字）。
 	registerSchema(t, "NotificationPayload", openapi3.Schemas{})
 
 	registerSchema(t, "NotificationUnreadCount", openapi3.Schemas{
