@@ -1,0 +1,163 @@
+import { useMemo, useState } from "react";
+import {
+	Accordion,
+	AccordionItem,
+	Avatar,
+	Button,
+	DataTable,
+	List,
+	ListItem,
+	ListItemAction,
+	ListItemChevron,
+	ListItemContent,
+	ListItemDescription,
+	ListItemIcon,
+	ListItemTitle,
+	ListItemValue,
+	Pagination,
+	Tree,
+	type DataTableColumn,
+	type DataTableSort,
+	type TreeNodeData,
+} from "@violet/ui";
+import { Accordion as LeafAccordion, AccordionItem as LeafAccordionItem } from "@violet/ui/accordion";
+import { Tree as LeafTree } from "@violet/ui/tree";
+
+interface Article {
+	id: string;
+	title: string;
+	status: string;
+	views: number;
+}
+
+const ARTICLES: Article[] = Array.from({ length: 37 }, (_, index) => ({
+	id: String(index + 1),
+	title: index % 5 === 0 ? `一篇标题很长很长、需要被省略号截断才能放进这一列的文章 ${index + 1}` : `文章 ${index + 1}`,
+	status: index % 3 === 0 ? "草稿" : "已发布",
+	views: (index * 97) % 1000,
+}));
+
+const COLUMNS: DataTableColumn<Article>[] = [
+	{ key: "title", header: "标题", accessorKey: "title", sortable: true, ellipsis: true, width: "320px" },
+	{ key: "status", header: "状态", accessorKey: "status", width: "100px" },
+	{ key: "views", header: "浏览", accessorKey: "views", align: "right", sortable: true, width: "100px" },
+	{ key: "actions", header: "操作", sticky: "right", stopClickPropagation: true, cell: (row) => <Button size="sm" variant="ghost" aria-label={`编辑 ${row.title}`}>编辑</Button> },
+];
+
+type TableState = "data" | "loading" | "error" | "empty" | "filtered";
+
+function Articles() {
+	const [state, setState] = useState<TableState>("data");
+	const [page, setPage] = useState(1);
+	const [pageSize, setPageSize] = useState(10);
+	const [sort, setSort] = useState<DataTableSort | null>(null);
+	const rows = useMemo(() => {
+		const sorted = sort ? [...ARTICLES].sort((a, b) => (a[sort.key as "title" | "views"] > b[sort.key as "title" | "views"] ? 1 : -1) * (sort.order === "asc" ? 1 : -1)) : ARTICLES;
+		return sorted.slice((page - 1) * pageSize, page * pageSize);
+	}, [page, pageSize, sort]);
+	return (
+		<section aria-label="表格">
+			<div className="input-controls">
+				{(["data", "loading", "error", "empty", "filtered"] as const).map((next) => (
+					<Button key={next} aria-pressed={state === next} onClick={() => setState(next)}>{next}</Button>
+				))}
+			</div>
+			<DataTable
+				caption="文章"
+				columns={COLUMNS}
+				data={state === "data" ? rows : []}
+				keyExtractor={(row) => row.id}
+				loading={state === "loading"}
+				error={state === "error" ? new Error("502 · 上游超时，已经重试 2 次") : null}
+				onRetry={() => setState("data")}
+				filtered={state === "filtered"}
+				emptyTitle="还没有文章"
+				emptyDescription="写下第一篇，它会出现在这里"
+				emptyAction={<Button size="sm">写文章</Button>}
+				filteredAction={<Button size="sm" onClick={() => setState("data")}>清除筛选</Button>}
+				selectable
+				bulkActions={<Button size="sm">发布</Button>}
+				expandable
+				renderExpandedRow={(row) => <p>{row.title} 的摘要</p>}
+				sort={sort}
+				onSortChange={setSort}
+				pagination={{ page, pageSize, total: ARTICLES.length, onChange: (nextPage, nextSize) => { setPage(nextPage); setPageSize(nextSize); } }}
+				storageKey="consumer-articles"
+				resizable
+			/>
+			<Pagination page={page} totalPages={Math.ceil(ARTICLES.length / pageSize)} onPageChange={setPage} />
+		</section>
+	);
+}
+
+const NODES: TreeNodeData[] = [
+	{ value: "series", label: "系列", meta: 12, children: [{ value: "series/duku", label: "独库公路骑行记", meta: 6 }, { value: "series/rust", label: "Rust 全栈笔记", lazy: true }] },
+	{ value: "about", label: "关于" },
+];
+
+function Navigation() {
+	const [current, setCurrent] = useState("about");
+	const [attempt, setAttempt] = useState(0);
+	return (
+		<section aria-label="列表与树">
+			<List aria-label="设置">
+				<ListItem onClick={() => setCurrent("lang")} aria-current={current === "lang" ? "page" : undefined}>
+					<ListItemIcon>语</ListItemIcon>
+					<ListItemContent><ListItemTitle>语言</ListItemTitle><ListItemDescription>界面与日期格式</ListItemDescription></ListItemContent>
+					<ListItemValue>简体中文</ListItemValue>
+					<ListItemChevron />
+				</ListItem>
+				<ListItem>
+					<Avatar name="小径" alt="" />
+					<ListItemContent><ListItemTitle>小径</ListItemTitle><ListItemDescription>xiaojing@io.dev</ListItemDescription></ListItemContent>
+					<ListItemAction aria-label="小径 的更多操作">⋯</ListItemAction>
+				</ListItem>
+			</List>
+			<Tree
+				aria-label="文档目录"
+				nodes={NODES}
+				icons
+				value={current}
+				onValueChange={setCurrent}
+				defaultExpanded={["series"]}
+				loadChildren={async () => {
+					await new Promise((resolve) => setTimeout(resolve, 300));
+					setAttempt((value) => value + 1);
+					if (attempt === 0) throw new Error("第一次取回失败");
+					return [{ value: "series/rust/1", label: "第 1 章" }];
+				}}
+			/>
+			<LeafTree aria-label="叶子入口目录" nodes={NODES} defaultValue="series/duku" defaultExpanded={["series"]} />
+			<output id="tree-current">{current}</output>
+		</section>
+	);
+}
+
+function Questions() {
+	return (
+		<section aria-label="折叠面板">
+			<Accordion>
+				<AccordionItem value="review" title="评论需要审核吗？">首次评论需要审核，通过后同一账号不再审核。</AccordionItem>
+				<AccordionItem value="repost" title="可以转载这里的文章吗？">可以，署名并附原文链接即可。</AccordionItem>
+			</Accordion>
+			<LeafAccordion type="single" defaultValue="publish">
+				<LeafAccordionItem value="publish" title="发布设置" summary="立即发布 · 允许评论"><a href="#publish">发布方式在这里</a></LeafAccordionItem>
+				<LeafAccordionItem value="seo" title="搜索与分享" summary="已填写摘要">摘要建议 60 到 120 字。</LeafAccordionItem>
+			</LeafAccordion>
+		</section>
+	);
+}
+
+export function DataDisplayPreview() {
+	return (
+		<main className="data-display-page">
+			<h1>数据展示 · 独立安装包</h1>
+			<div className="input-controls">
+				<Button id="data-display-theme" onClick={() => document.documentElement.classList.toggle("dark")}>切换明暗</Button>
+			</div>
+			<Articles />
+			<Navigation />
+			<Questions />
+		</main>
+	);
+}

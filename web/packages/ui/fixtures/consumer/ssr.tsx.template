@@ -1,5 +1,6 @@
 import "./value-controls-ssr.js";
 import "./upload-ssr.js";
+import "./data-display-ssr.js";
 import assert from "node:assert/strict";
 import { Button, Checkbox, Field, FieldSet, FieldSummary, ImagePixelReveal, Input, SearchInput, type PixelRevealVariant } from "@violet/ui";
 import { Field as LeafField, FieldSet as LeafFieldSet, FieldSummary as LeafFieldSummary } from "@violet/ui/field";
