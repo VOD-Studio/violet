@@ -352,6 +352,13 @@
 			"css": "src/components/tooltip/tooltip.css"
 		},
 		{
+			"name": "tree",
+			"status": "foundation",
+			"entry": "src/components/tree/index.ts",
+			"css": "src/components/tree/tree.css",
+			"documentation": "web/packages/ui/docs/components/tree.md"
+		},
+		{
 			"name": "tree-select",
 			"status": "foundation",
 			"entry": "src/components/tree-select/index.ts",

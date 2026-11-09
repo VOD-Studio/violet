@@ -312,6 +312,11 @@
 			"import": "./src/components/tooltip/index.ts",
 			"default": "./src/components/tooltip/index.ts"
 		},
+		"./tree": {
+			"types": "./src/components/tree/index.ts",
+			"import": "./src/components/tree/index.ts",
+			"default": "./src/components/tree/index.ts"
+		},
 		"./tree-select": {
 			"types": "./src/components/tree-select/index.ts",
 			"import": "./src/components/tree-select/index.ts",
@@ -392,6 +397,7 @@
 		"./components/textarea.css": "./src/components/textarea/textarea.css",
 		"./components/toggle-group.css": "./src/components/toggle-group/toggle-group.css",
 		"./components/tooltip.css": "./src/components/tooltip/tooltip.css",
+		"./components/tree.css": "./src/components/tree/tree.css",
 		"./components/tree-select.css": "./src/components/tree-select/tree-select.css",
 		"./components/upload.css": "./src/components/upload/upload.css",
 		"./components/upload-tile.css": "./src/components/upload-tile/upload-tile.css",
@@ -716,6 +722,11 @@
 				"import": "./dist/components/tooltip/index.js",
 				"default": "./dist/components/tooltip/index.js"
 			},
+			"./tree": {
+				"types": "./dist/components/tree/index.d.ts",
+				"import": "./dist/components/tree/index.js",
+				"default": "./dist/components/tree/index.js"
+			},
 			"./tree-select": {
 				"types": "./dist/components/tree-select/index.d.ts",
 				"import": "./dist/components/tree-select/index.js",
@@ -796,6 +807,7 @@
 			"./components/textarea.css": "./dist/components/textarea.css",
 			"./components/toggle-group.css": "./dist/components/toggle-group.css",
 			"./components/tooltip.css": "./dist/components/tooltip.css",
+			"./components/tree.css": "./dist/components/tree.css",
 			"./components/tree-select.css": "./dist/components/tree-select.css",
 			"./components/upload.css": "./dist/components/upload.css",
 			"./components/upload-tile.css": "./dist/components/upload-tile.css",

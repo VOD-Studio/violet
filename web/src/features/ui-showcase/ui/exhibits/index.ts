@@ -41,6 +41,7 @@ import { tagInputExhibit } from "./tag-input";
 import { textareaExhibit } from "./textarea";
 import { toggleGroupExhibit } from "./toggle-group";
 import { tooltipExhibit } from "./tooltip";
+import { treeExhibit } from "./tree";
 import { treeSelectExhibit } from "./tree-select";
 import { uploadExhibit } from "./upload";
 import { uploadTileExhibit } from "./upload-tile";
@@ -145,15 +146,7 @@ export const EXHIBITS: Exhibit[] = [
 	cardExhibit,
 	separatorExhibit,
 	listExhibit,
-	{
-		id: "tree",
-		name: "树",
-		units: ["tree"],
-		zone: "content",
-		category: "display",
-		footprint: { width: 400, height: 320 },
-		issue: 708,
-	},
+	treeExhibit,
 	accordionExhibit,
 	{
 		id: "alert",

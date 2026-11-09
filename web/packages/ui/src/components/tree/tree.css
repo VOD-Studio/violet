@@ -1,0 +1,168 @@
+/*
+ * Tree：行、展开箭头与计数是本单元自己的（与 TreeSelect 的树行同源但不共享实现）；
+ * 悬停滑动底色来自 list-highlight.css，懒加载的梅花指示器来自 indicator.css。
+ * 需先导入 @violet/ui/tokens.css 或 styles.css。
+ */
+@import "../list-highlight/list-highlight.css";
+@import "../indicator/indicator.css";
+
+@layer components {
+	/* 焦点在容器上：整棵树一个 Tab 位置；容器自己的聚焦环向外画，不被裁剪 */
+	.v-tree {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		box-sizing: border-box;
+		max-inline-size: 26.25rem;
+		padding: 4px;
+		border-radius: 12px;
+		outline: none;
+		color: var(--foreground);
+		font-size: 0.875rem;
+	}
+
+	.v-tree:focus-visible {
+		box-shadow: 0 0 0 2px var(--ring);
+	}
+
+	/* 行高 32、圆角 8、每级缩进 20；当前项的底色盖在悬停高亮之上，所以当前项优先 */
+	.v-tree__row {
+		position: relative;
+		z-index: 1;
+		display: flex;
+		flex: none;
+		align-items: center;
+		gap: 4px;
+		box-sizing: border-box;
+		min-block-size: 32px;
+		padding-inline-start: calc(4px + var(--v-tree-depth, 0) * 20px);
+		padding-inline-end: 8px;
+		border-radius: 8px;
+		cursor: pointer;
+		user-select: none;
+	}
+
+	/* 箭头区 20、箭头 14；叶子用同宽空位对齐 */
+	.v-tree__chevron {
+		display: inline-flex;
+		flex: none;
+		align-items: center;
+		justify-content: center;
+		box-sizing: border-box;
+		inline-size: 20px;
+		block-size: 20px;
+		border-radius: 999px;
+		color: var(--muted-foreground);
+	}
+
+	.v-tree__row:not([aria-disabled="true"]) .v-tree__chevron:hover {
+		background-color: color-mix(in oklab, var(--muted) 80%, var(--foreground));
+		color: var(--foreground);
+	}
+
+	.v-tree__row[data-failed] .v-tree__chevron {
+		color: inherit;
+	}
+
+	.v-tree__chevron > svg {
+		inline-size: 14px;
+		block-size: 14px;
+		transition: transform 140ms ease-out;
+	}
+
+	.v-tree__row[aria-expanded="true"] .v-tree__chevron > svg {
+		transform: rotate(90deg);
+	}
+
+	.v-tree__spacer {
+		flex: none;
+		inline-size: 20px;
+	}
+
+	.v-tree__icon {
+		display: inline-flex;
+		flex: none;
+		margin-inline-end: 4px;
+		color: var(--muted-foreground);
+	}
+
+	.v-tree__icon svg {
+		inline-size: 16px;
+		block-size: 16px;
+	}
+
+	.v-tree__label {
+		flex: 1 1 auto;
+		min-inline-size: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	/* 计数：等宽 12，次级色，靠右 */
+	.v-tree__meta {
+		flex: none;
+		color: var(--muted-foreground);
+		font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+		font-size: 0.75rem;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.v-tree__row[data-current] {
+		background-color: var(--muted);
+		color: var(--foreground);
+	}
+
+	.v-tree__row[data-current] .v-tree__label {
+		font-weight: 600;
+	}
+
+	/* 键盘所在的行：只在键盘让容器聚焦时画环，行内描边不会被相邻行遮住 */
+	.v-tree:focus-visible .v-tree__row[data-active] {
+		box-shadow: inset 0 0 0 2px var(--ring);
+	}
+
+	.v-tree__row[aria-disabled="true"] {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
+	/* 取回失败：整行换危险色，点一下重试 */
+	.v-tree__row[data-failed] {
+		color: var(--destructive-text);
+	}
+
+	.v-tree__row[data-failed] .v-tree__icon,
+	.v-tree__row[data-failed] .v-tree__meta {
+		color: inherit;
+	}
+
+	@media (forced-colors: active) {
+		.v-tree:focus-visible .v-tree__row[data-active] {
+			outline: 2px solid Highlight;
+			outline-offset: -2px;
+		}
+	}
+}
+
+/*
+ * 减弱动态：箭头不转，高亮直接跳。悬停高亮与箭头的过渡在层内，要在同样的层外才压得住；
+ * 系统偏好，以及陈列室等宿主用 data-motion="reduce" 标出的作用域，都静止。
+ */
+@media (prefers-reduced-motion: reduce) {
+	.v-tree.v-list-highlight::before {
+		transition: none;
+	}
+
+	.v-tree .v-tree__chevron > svg {
+		transition: none;
+	}
+}
+
+[data-motion="reduce"] .v-tree.v-list-highlight::before {
+	transition: none;
+}
+
+[data-motion="reduce"] .v-tree .v-tree__chevron > svg {
+	transition: none;
+}
