@@ -206,7 +206,7 @@ test("检视台可用键盘走近、切换、调整外观并在离开后归还�
 	await expect(scope).toHaveAttribute("data-motion", "reduce");
 	const outline = dialog.getByRole("button", { name: "占地框" });
 	await outline.click();
-	await expect(dialog.getByText("440 × 136", { exact: true }).first()).toBeVisible();
+	await expect(dialog.getByText("420 × 638", { exact: true }).first()).toBeVisible();
 
 	await dialog
 		.getByRole("radiogroup", { name: "展品状态" })
