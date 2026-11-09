@@ -1,12 +1,20 @@
 import { BadgeAnchor, Button, Count, Popover, PopoverContent, PopoverTrigger } from "@violet/ui";
 import { Bell, BellRing } from "lucide-react";
-import { Popover as PopoverPrimitive } from "radix-ui";
-import { useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { MessagePanel, type MessagePanelProps } from "./MessagePanel";
 import type { MessageTab } from "./types";
 
 /** 站点顶栏的右药丸；铃铛在里面时，面板对齐整枚药丸而不是铃铛。 */
 const NAVBAR_PILL = '[data-slot="navbar-right"]';
+
+/** 面板与药丸（没有药丸时与铃铛）之间的间隙，px。 */
+const PANEL_GAP = 12;
+
+/** 面板相对铃铛的偏移：右缘多出的距离与到面板的距离。 */
+interface PanelOffset {
+	overhang: number;
+	gap: number;
+}
 
 /** 消息面板的内容加铃铛触发器与开合。 */
 export interface MessageCenterProps extends Omit<MessagePanelProps, "tab" | "onTabChange"> {
@@ -31,29 +39,34 @@ export function MessageCenter({
 	container,
 	...panel
 }: MessageCenterProps) {
+	const [innerOpen, setInnerOpen] = useState(false);
+	const isOpen = open ?? innerOpen;
 	const [innerTab, setInnerTab] = useState<MessageTab>("notice");
 	const tab = tabProp ?? innerTab;
 	const Icon = unread > 0 ? BellRing : Bell;
 
 	const trigger = useRef<HTMLButtonElement>(null);
-	// 每次定位时才量：药丸里的按钮增减后面板仍对齐药丸右缘
-	const anchor = useMemo(
-		() => ({
-			current: {
-				getBoundingClientRect: () =>
-					(
-						trigger.current?.closest(NAVBAR_PILL) ??
-						trigger.current ??
-						document.body
-					).getBoundingClientRect(),
-			},
-		}),
-		[],
-	);
+	const [offset, setOffset] = useState<PanelOffset>({ overhang: 0, gap: PANEL_GAP });
+	// 打开时量一次：药丸里铃铛右侧还有别的按钮，面板仍对齐药丸右缘，且离药丸而不是离铃铛固定间隙
+	useLayoutEffect(() => {
+		const bell = trigger.current;
+		if (!isOpen || !bell) return;
+		const pill = bell.closest(NAVBAR_PILL)?.getBoundingClientRect();
+		const own = bell.getBoundingClientRect();
+		setOffset({
+			overhang: pill ? pill.right - own.right : 0,
+			gap: PANEL_GAP + (pill ? pill.bottom - own.bottom : 0),
+		});
+	}, [isOpen]);
 
 	return (
-		<Popover open={open} onOpenChange={onOpenChange}>
-			<PopoverPrimitive.Anchor virtualRef={anchor} />
+		<Popover
+			open={isOpen}
+			onOpenChange={(next) => {
+				setInnerOpen(next);
+				onOpenChange?.(next);
+			}}
+		>
 			<BadgeAnchor badge={<Count value={unread} />}>
 				<PopoverTrigger asChild>
 					<Button
@@ -71,7 +84,8 @@ export function MessageCenter({
 			<PopoverContent
 				aria-label="消息"
 				align="end"
-				sideOffset={12}
+				alignOffset={-offset.overhang}
+				sideOffset={offset.gap}
 				container={container}
 				className="w-95 max-w-[calc(100vw-1rem)] rounded-2xl p-2"
 			>
