@@ -45,6 +45,7 @@ vi.mock("../../api/queries", () => ({
 	useEditChatMessage: () => ({ mutate: vi.fn(), isPending: false }),
 	useChatMessageReaders: () => receiptMocks.readers,
 	useChatMembers: () => ({ data: [] }),
+	useChatMessages: () => ({ data: undefined }),
 }));
 vi.mock("@features/upload/hooks/use-chunked-upload", () => ({
 	useChunkedUpload: () => ({ uploadFile: vi.fn() }),

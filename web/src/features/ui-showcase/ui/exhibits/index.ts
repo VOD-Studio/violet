@@ -26,6 +26,7 @@ import { inputExhibit } from "./input";
 import { kbdExhibit } from "./kbd";
 import { linkCardExhibit } from "./link-card";
 import { listExhibit } from "./list";
+import { mentionExhibit } from "./mention";
 import { morphingPopoverExhibit } from "./morphing-popover";
 import { navbarExhibit } from "./navbar";
 import { numberInputExhibit } from "./number-input";
@@ -108,15 +109,7 @@ export const EXHIBITS: Exhibit[] = [
 	colorPickerExhibit,
 	otpExhibit,
 	uploadExhibit,
-	{
-		id: "mention",
-		name: "提及",
-		units: ["mention"],
-		zone: "field",
-		category: "form",
-		footprint: { width: 360, height: 320 },
-		issue: 717,
-	},
+	mentionExhibit,
 	linkCardExhibit,
 	imagePixelRevealExhibit,
 	cardExhibit,
