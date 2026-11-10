@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { useEffect, useRef, useState } from "react";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { BlockCommentTrigger } from "../BlockCommentTrigger";
 
@@ -154,4 +155,13 @@ it("指针刚从正文留白移上入口时，滞后的鼠标移动回调不会�
 	act(() => vi.advanceTimersToNextFrame());
 	act(() => vi.advanceTimersByTime(3000));
 	expect(trigger.dataset.show).toBe("true");
+});
+
+it("服务端渲染不输出入口：样式随懒加载模块到位之前，它会露在正文左上角", () => {
+	expect(renderToString(<Harness />)).not.toContain("发表段评");
+});
+
+it("浏览器里水合之后入口照常挂载", () => {
+	render(<Harness />);
+	expect(screen.getByTitle("发表段评")).toBeTruthy();
 });

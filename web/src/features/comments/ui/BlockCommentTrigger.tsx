@@ -2,7 +2,7 @@ import { closestAnnotatableBlock } from "@features/comments/lib/selection-to-anc
 import { DeferredContent } from "@shared/ui/deferred-content/DeferredContent";
 import { MessageSquareText } from "lucide-react";
 import { Popover } from "radix-ui";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useAnnotationAnchorVisible } from "../hooks/use-annotation-anchor-visible";
 import { AnnotationPortal } from "./AnnotationPortal";
 import { AnnotationOverlayContext } from "./annotation-overlay-context";
@@ -20,6 +20,8 @@ const TOP_OFFSET_PX = 2;
 /** 输入面板与所批注段落底边的间距，px */
 const COMPOSER_GAP_PX = 8;
 const DRAFT_CLASS = "annotation-draft-highlight";
+/** 水合标记没有会变的外部来源，订阅什么也不做。 */
+const subscribeNever = () => () => {};
 
 /** 正文中的段评入口及其浮层定位上下文。 */
 export interface BlockCommentTriggerProps {
@@ -46,6 +48,11 @@ export function BlockCommentTrigger({
 	postId,
 }: BlockCommentTriggerProps) {
 	const [hovered, setHovered] = useState<HTMLElement | null>(null);
+	const hydrated = useSyncExternalStore(
+		subscribeNever,
+		() => true,
+		() => false,
+	);
 	const [top, setTop] = useState(0);
 	const [height, setHeight] = useState(0);
 	const [composerBlock, setComposerBlock] = useState<HTMLElement | null>(null);
@@ -124,6 +131,8 @@ export function BlockCommentTrigger({
 	};
 
 	const showTrigger = Boolean(visibleBlock && !annotatedBlocks.has(visibleBlock));
+	// 服务端渲染出的按钮会在样式随懒加载模块到位之前露在正文左上角，只在浏览器里渲染。
+	if (!hydrated) return null;
 	return (
 		<>
 			{showTrigger && (
