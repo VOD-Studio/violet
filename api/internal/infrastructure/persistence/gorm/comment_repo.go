@@ -330,8 +330,13 @@ func (r *CommentRepository) CountAnnotationsByBlock(ctx context.Context, postID 
 			continue
 		}
 		if row.StartOffset != nil && row.EndOffset != nil && len(results[i].Ranges) < comment.BlockRangeLimit {
+			var createdBy *domainshared.ID
+			if row.CreatedBy != nil {
+				id := domainshared.IDFromUUID(*row.CreatedBy)
+				createdBy = &id
+			}
 			results[i].Ranges = append(results[i].Ranges, comment.BlockRange{
-				Start: *row.StartOffset, End: *row.EndOffset, IsAI: row.IsAI, AuthorName: row.AuthorName,
+				Start: *row.StartOffset, End: *row.EndOffset, IsAI: row.IsAI, AuthorName: row.AuthorName, CreatedBy: createdBy,
 			})
 		}
 		if len(results[i].Authors) >= comment.BlockAuthorLimit {

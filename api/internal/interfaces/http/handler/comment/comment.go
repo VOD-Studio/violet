@@ -40,7 +40,7 @@ type commentService interface {
 	Approve(ctx context.Context, id string) error
 	MarkSpam(ctx context.Context, id string) error
 	Delete(ctx context.Context, id string) error
-	AnnotationSummary(ctx context.Context, postID, viewerUserID string) ([]appcomment.BlockCountDTO, error)
+	AnnotationSummary(ctx context.Context, postID, viewerUserID, postAuthorID string) ([]appcomment.BlockCountDTO, error)
 }
 
 // Handler 评论 HTTP 处理器。
@@ -77,17 +77,7 @@ func (h *Handler) ListByPost(w http.ResponseWriter, r *http.Request) {
 	// 解析 type → AnchorFilter；空串/未知值降级为 free（保守默认，避免误返批注到评论区）。
 	anchorFilter := mapCommentType(r.URL.Query().Get("type"))
 
-	// 查 post 拿 author_id，用于 service 计算 CommentDTO.is_author（作者高亮）。
-	// 查询失败时留空，is_author 恒为 false（不阻塞评论列表）。
-	var authorID string
-	if h.posts != nil {
-		pid, err := shared.ParseID(postID)
-		if err == nil {
-			if p, err := h.posts.FindByID(r.Context(), pid); err == nil {
-				authorID = p.AuthorID().String()
-			}
-		}
-	}
+	authorID := h.postAuthorID(r.Context(), postID)
 
 	// top_level query param：true 时只返回顶层评论（depth=0），配合「按需拉回复」分页策略。
 	// 默认 false（兼容老调用方，返回顶层+回复全部）。
@@ -106,12 +96,29 @@ func (h *Handler) ListByPost(w http.ResponseWriter, r *http.Request) {
 	response.RespondPaged(w, items, page, limit, total)
 }
 
+// postAuthorID 查文章作者 ID，用于 service 计算 is_author（作者高亮）。
+// 查询失败时返回空串，is_author 恒为 false，不阻塞响应。
+func (h *Handler) postAuthorID(ctx context.Context, postID string) string {
+	if h.posts == nil {
+		return ""
+	}
+	pid, err := shared.ParseID(postID)
+	if err != nil {
+		return ""
+	}
+	p, err := h.posts.FindByID(ctx, pid)
+	if err != nil {
+		return ""
+	}
+	return p.AuthorID().String()
+}
+
 // AnnotationSummary 按块聚合统计批注数量（轻量端点，不含正文/回复）。
 // 黑洞模式：匿名 viewer 返回空数组。
 func (h *Handler) AnnotationSummary(w http.ResponseWriter, r *http.Request) {
 	postID := r.PathValue("postId")
 	viewerID := interfacesmw.GetUserIDFromContext(r)
-	blocks, err := h.svc.AnnotationSummary(r.Context(), postID, viewerID)
+	blocks, err := h.svc.AnnotationSummary(r.Context(), postID, viewerID, h.postAuthorID(r.Context(), postID))
 	if err != nil {
 		response.RespondError(w, r, err)
 		return

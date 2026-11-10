@@ -78,6 +78,8 @@ type BlockRangeDTO struct {
 	End        int    `json:"end"`
 	IsAI       bool   `json:"is_ai"`
 	AuthorName string `json:"author_name"`
+	// IsAuthor 该划线是否由文章 Owner 本人发出：created_by == post.author_id；匿名恒为 false
+	IsAuthor bool `json:"is_author"`
 }
 
 // BlockAuthorDTO 批注块上的评论者
@@ -260,7 +262,7 @@ func (s *Service) ListByPost(ctx context.Context, postID, viewerUserID, postAuth
 
 // AnnotationSummary 按块聚合统计批注数量（轻量，不含正文/回复）。
 // 黑洞模式同 ListByPost：匿名 viewer 返回空数组。
-func (s *Service) AnnotationSummary(ctx context.Context, postID, viewerUserID string) ([]BlockCountDTO, error) {
+func (s *Service) AnnotationSummary(ctx context.Context, postID, viewerUserID, postAuthorID string) ([]BlockCountDTO, error) {
 	if viewerUserID == "" {
 		return []BlockCountDTO{}, nil
 	}
@@ -271,6 +273,12 @@ func (s *Service) AnnotationSummary(ctx context.Context, postID, viewerUserID st
 	viewerID, err := shared.ParseID(viewerUserID)
 	if err != nil {
 		return nil, err
+	}
+	var authorID *shared.ID
+	if postAuthorID != "" {
+		if aid, err := shared.ParseID(postAuthorID); err == nil {
+			authorID = &aid
+		}
 	}
 	blocks, err := s.commentRepo.CountAnnotationsByBlock(ctx, pid, domain.StatusApproved, &viewerID)
 	if err != nil {
@@ -284,7 +292,8 @@ func (s *Service) AnnotationSummary(ctx context.Context, postID, viewerUserID st
 		}
 		ranges := make([]BlockRangeDTO, 0, len(b.Ranges))
 		for _, r := range b.Ranges {
-			ranges = append(ranges, BlockRangeDTO{Start: r.Start, End: r.End, IsAI: r.IsAI, AuthorName: r.AuthorName})
+			isAuthor := r.CreatedBy != nil && authorID != nil && *r.CreatedBy == *authorID
+			ranges = append(ranges, BlockRangeDTO{Start: r.Start, End: r.End, IsAI: r.IsAI, AuthorName: r.AuthorName, IsAuthor: isAuthor})
 		}
 		dtos = append(dtos, BlockCountDTO{BlockID: b.BlockID, Count: b.Count, Authors: authors, Ranges: ranges})
 	}

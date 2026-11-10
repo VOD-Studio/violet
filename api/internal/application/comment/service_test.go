@@ -869,3 +869,43 @@ func TestCreate_RejectAnchoredParent_RejectsAnnotationParent(t *testing.T) {
 	assert.Contains(t, err.Error(), "自由评论不能回复划线批注")
 	repo.AssertExpectations(t)
 }
+
+func TestAnnotationSummary_MarksPostAuthorRanges(t *testing.T) {
+	owner, other, viewer := shared.NewID(), shared.NewID(), shared.NewID()
+	postID := shared.NewID()
+	blocks := []domain.BlockCount{{BlockID: "b1", Count: 3, Ranges: []domain.BlockRange{
+		{Start: 0, End: 1, CreatedBy: &owner},
+		{Start: 1, End: 2, CreatedBy: &other},
+		{Start: 2, End: 3, CreatedBy: nil},
+	}}}
+
+	cases := []struct {
+		name         string
+		postAuthorID string
+		want         []bool
+	}{
+		{"作者划线标记 is_author", owner.String(), []bool{true, false, false}},
+		{"作者 ID 为空时全部为 false", "", []bool{false, false, false}},
+		{"作者 ID 非法时全部为 false", "not-a-uuid", []bool{false, false, false}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			svc, repo, _, _ := newServiceWithMocks(nil)
+			repo.On("CountAnnotationsByBlock", mock.Anything, postID, domain.StatusApproved, mock.Anything).Return(blocks, nil).Once()
+			got, err := svc.AnnotationSummary(context.Background(), postID.String(), viewer.String(), tc.postAuthorID)
+			assert.NoError(t, err)
+			if assert.Len(t, got, 1) && assert.Len(t, got[0].Ranges, 3) {
+				for i, w := range tc.want {
+					assert.Equal(t, w, got[0].Ranges[i].IsAuthor, "range %d", i)
+				}
+			}
+		})
+	}
+}
+
+func TestAnnotationSummary_AnonymousViewerReturnsEmpty(t *testing.T) {
+	svc, _, _, _ := newServiceWithMocks(nil)
+	got, err := svc.AnnotationSummary(context.Background(), shared.NewID().String(), "", shared.NewID().String())
+	assert.NoError(t, err)
+	assert.Empty(t, got)
+}

@@ -149,6 +149,7 @@ func registerPostPaths(t *openapi3.T) {
 		"start":       optInt("起始偏移（块内字符位，0-based）"),
 		"end":         optInt("结束偏移（块内字符位，exclusive）"),
 		"is_ai":       optBool("是否为 AI 自署名批注"),
+		"is_author":   optBool("该划线是否由文章 Owner 本人发出；匿名批注恒为 false"),
 		"author_name": reqStr("发表时的原始署名；AI 用于对应模型展示颜色，不代表身份已验证"),
 	})
 	registerSchema(t, "AnnotationBlockCountDTO", openapi3.Schemas{

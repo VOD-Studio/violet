@@ -558,6 +558,7 @@ func TestCountAnnotationsByBlock_ReturnsDistinctAuthorsInOrder(t *testing.T) {
 	add("b1", "Bob", "", &bob, time.Minute)
 	add("b1", "Alice", "a.png", &alice, 2*time.Minute)
 	add("b2", "Alice", "a.png", &alice, 3*time.Minute)
+	add("b3", "游客", "", nil, 4*time.Minute)
 
 	got, err := repo.CountAnnotationsByBlock(context.Background(), fixedPostID, domaincomment.StatusApproved, nil)
 	require.NoError(t, err)
@@ -573,7 +574,10 @@ func TestCountAnnotationsByBlock_ReturnsDistinctAuthorsInOrder(t *testing.T) {
 	}, byBlock["b1"].Authors)
 	assert.Equal(t, []domaincomment.BlockAuthor{{Name: "Alice", AvatarURL: "a.png"}}, byBlock["b2"].Authors)
 	assert.Len(t, byBlock["b1"].Ranges, 3)
-	assert.Equal(t, domaincomment.BlockRange{Start: 0, End: 3, AuthorName: "Alice"}, byBlock["b1"].Ranges[0])
+	aliceID := domainshared.IDFromUUID(alice)
+	assert.Equal(t, domaincomment.BlockRange{Start: 0, End: 3, AuthorName: "Alice", CreatedBy: &aliceID}, byBlock["b1"].Ranges[0])
+	require.Len(t, byBlock["b3"].Ranges, 1)
+	assert.Nil(t, byBlock["b3"].Ranges[0].CreatedBy)
 }
 
 func TestCountAnnotationsByBlock_PreservesAISignatures(t *testing.T) {

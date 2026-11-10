@@ -65,7 +65,7 @@ func (s *stubCommentService) ListByPost(ctx context.Context, postID, viewerUserI
 	return s.listByPostResult, int64(len(s.listByPostResult)), nil
 }
 
-func (s *stubCommentService) AnnotationSummary(context.Context, string, string) ([]appcomment.BlockCountDTO, error) {
+func (s *stubCommentService) AnnotationSummary(context.Context, string, string, string) ([]appcomment.BlockCountDTO, error) {
 	return nil, nil
 }
 

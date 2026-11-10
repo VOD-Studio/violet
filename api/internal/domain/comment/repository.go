@@ -66,6 +66,8 @@ type BlockRange struct {
 	IsAI bool
 	// AuthorName 发表时的原始署名；AI 用于对应独立角色颜色，不表示来源已验证
 	AuthorName string
+	// CreatedBy 发表者登录 ID，匿名批注为 nil；应用层据此判断是否文章作者本人
+	CreatedBy *shared.ID
 }
 
 // BlockAuthorLimit 每个批注块返回的评论者上限；前端头像组只需展示前几位。
