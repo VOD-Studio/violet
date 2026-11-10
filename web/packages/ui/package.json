@@ -187,6 +187,11 @@
 			"import": "./src/components/list-highlight/index.ts",
 			"default": "./src/components/list-highlight/index.ts"
 		},
+		"./mention": {
+			"types": "./src/components/mention/index.ts",
+			"import": "./src/components/mention/index.ts",
+			"default": "./src/components/mention/index.ts"
+		},
 		"./morphing-popover": {
 			"types": "./src/components/morphing-popover/index.ts",
 			"import": "./src/components/morphing-popover/index.ts",
@@ -401,6 +406,7 @@
 		"./components/link-card.css": "./src/components/link-card/link-card.css",
 		"./components/list.css": "./src/components/list/list.css",
 		"./components/list-highlight.css": "./src/components/list-highlight/list-highlight.css",
+		"./components/mention.css": "./src/components/mention/mention.css",
 		"./components/morphing-popover.css": "./src/components/morphing-popover/morphing-popover.css",
 		"./components/number-input.css": "./src/components/number-input/number-input.css",
 		"./components/otp.css": "./src/components/otp/otp.css",
@@ -627,6 +633,11 @@
 				"import": "./dist/components/list-highlight/index.js",
 				"default": "./dist/components/list-highlight/index.js"
 			},
+			"./mention": {
+				"types": "./dist/components/mention/index.d.ts",
+				"import": "./dist/components/mention/index.js",
+				"default": "./dist/components/mention/index.js"
+			},
 			"./morphing-popover": {
 				"types": "./dist/components/morphing-popover/index.d.ts",
 				"import": "./dist/components/morphing-popover/index.js",
@@ -841,6 +852,7 @@
 			"./components/link-card.css": "./dist/components/link-card.css",
 			"./components/list.css": "./dist/components/list.css",
 			"./components/list-highlight.css": "./dist/components/list-highlight.css",
+			"./components/mention.css": "./dist/components/mention.css",
 			"./components/morphing-popover.css": "./dist/components/morphing-popover.css",
 			"./components/number-input.css": "./dist/components/number-input.css",
 			"./components/otp.css": "./dist/components/otp.css",

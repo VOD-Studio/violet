@@ -210,6 +210,13 @@
 			"css": "src/components/list-highlight/list-highlight.css"
 		},
 		{
+			"name": "mention",
+			"status": "foundation",
+			"entry": "src/components/mention/index.ts",
+			"css": "src/components/mention/mention.css",
+			"documentation": "web/packages/ui/docs/components/mention.md"
+		},
+		{
 			"name": "morphing-popover",
 			"status": "foundation",
 			"entry": "src/components/morphing-popover/index.ts",
