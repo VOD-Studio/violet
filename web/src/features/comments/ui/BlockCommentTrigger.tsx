@@ -50,12 +50,23 @@ export function BlockCommentTrigger({
 	const [height, setHeight] = useState(0);
 	const [composerBlock, setComposerBlock] = useState<HTMLElement | null>(null);
 	const hideTimer = useRef<number | undefined>(undefined);
+	/** 指针当前在入口或右侧热区上：此时不安排收起。 */
+	const overEntry = useRef(false);
 	const composerVisible = useAnnotationAnchorVisible(composerBlock, composerBlock !== null);
 
 	const scheduleHide = useCallback(() => {
+		if (overEntry.current) return;
 		clearTimeout(hideTimer.current);
 		hideTimer.current = window.setTimeout(() => setHovered(null), HIDE_DELAY_MS);
 	}, []);
+	const enterEntry = useCallback(() => {
+		overEntry.current = true;
+		clearTimeout(hideTimer.current);
+	}, []);
+	const leaveEntry = useCallback(() => {
+		overEntry.current = false;
+		scheduleHide();
+	}, [scheduleHide]);
 
 	useEffect(() => {
 		const root = contentRef.current;
@@ -74,13 +85,18 @@ export function BlockCommentTrigger({
 				setHovered((cur) => (cur === block ? cur : block));
 			});
 		};
+		// 离开正文时排在下一帧的移动回调作废，免得它在指针已到入口上之后才安排收起。
+		const onLeave = () => {
+			cancelAnimationFrame(frame);
+			scheduleHide();
+		};
 		root.addEventListener("mousemove", onMove);
-		root.addEventListener("mouseleave", scheduleHide);
+		root.addEventListener("mouseleave", onLeave);
 		return () => {
 			cancelAnimationFrame(frame);
 			clearTimeout(hideTimer.current);
 			root.removeEventListener("mousemove", onMove);
-			root.removeEventListener("mouseleave", scheduleHide);
+			root.removeEventListener("mouseleave", onLeave);
 		};
 	}, [contentRef, scheduleHide]);
 
@@ -115,8 +131,8 @@ export function BlockCommentTrigger({
 					data-trigger-rail
 					aria-hidden="true"
 					style={{ top, height }}
-					onMouseEnter={() => clearTimeout(hideTimer.current)}
-					onMouseLeave={scheduleHide}
+					onMouseEnter={enterEntry}
+					onMouseLeave={leaveEntry}
 					className="annotation-trigger-rail pointer-events-auto absolute"
 				/>
 			)}
@@ -124,8 +140,8 @@ export function BlockCommentTrigger({
 				type="button"
 				style={{ top }}
 				tabIndex={showTrigger ? 0 : -1}
-				onMouseEnter={() => clearTimeout(hideTimer.current)}
-				onMouseLeave={scheduleHide}
+				onMouseEnter={enterEntry}
+				onMouseLeave={leaveEntry}
 				onClick={open}
 				aria-label="发表段评"
 				aria-hidden={!showTrigger}

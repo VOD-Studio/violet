@@ -140,3 +140,18 @@ it("指针从段落右缘的任意高度移出，落进贴着段落的右侧热�
 	act(() => vi.advanceTimersByTime(1000));
 	expect(trigger.dataset.show).toBeUndefined();
 });
+
+it("指针刚从正文留白移上入口时，滞后的鼠标移动回调不会再安排收起", () => {
+	render(<Harness />);
+	const article = screen.getByRole("article", { name: "文章正文" });
+	hover(screen.getByText("可以反复悬停的段落。"));
+	const trigger = screen.getByRole("button", { name: "发表段评" });
+
+	// 最后一次留白上的移动还排在下一帧，指针已经走到入口上
+	fireEvent.mouseMove(article);
+	fireEvent.mouseLeave(article);
+	fireEvent.mouseEnter(trigger);
+	act(() => vi.advanceTimersToNextFrame());
+	act(() => vi.advanceTimersByTime(3000));
+	expect(trigger.dataset.show).toBe("true");
+});
