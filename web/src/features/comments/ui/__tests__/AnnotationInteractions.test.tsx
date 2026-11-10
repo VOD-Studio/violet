@@ -303,3 +303,124 @@ it("常驻段评输入可以添加表情，选择与关闭表情后仍保留段�
 	await waitFor(() => expect(screen.queryByRole("dialog", { name: "表情选择器" })).toBeNull());
 	expect(editor.textContent).toContain("我的段落看法");
 });
+
+function annotationReply(id: string, body: string, over: Partial<Comment> = {}): Comment {
+	return {
+		...comments[0],
+		id,
+		depth: 1,
+		parent_id: "comment-0",
+		thread_root_id: "comment-0",
+		author_name: "回复者",
+		body,
+		replies: undefined,
+		replies_total: undefined,
+		...over,
+	};
+}
+
+describe("批注卡回复的会话内可见性", () => {
+	it("已有 2 条回复时发第 3 条，新回复立即可见，不被折进「展开剩余」", async () => {
+		comments[0] = {
+			...comments[0],
+			replies_total: 2,
+			replies: [annotationReply("r1", "第一条回复"), annotationReply("r2", "第二条回复")],
+		};
+		requests.apiPost.mockResolvedValue(
+			annotationReply("r3", "刚发出的第三条", { status: "pending" }),
+		);
+		const dialog = await mount();
+		fireEvent.click(await within(dialog).findByRole("button", { name: "回复批注" }));
+		write(within(dialog).getByRole("textbox", { name: "评论内容" }), "刚发出的第三条");
+		fireEvent.click(within(dialog).getByRole("button", { name: "发送" }));
+
+		// 提交成功后回复表单收起；此后同一文本只可能来自已展示的回复条目，而非输入框草稿。
+		await waitFor(() =>
+			expect(within(dialog).queryByRole("textbox", { name: "评论内容" })).toBeNull(),
+		);
+		expect(within(dialog).getByText("刚发出的第三条")).toBeTruthy();
+		expect(within(dialog).getByText("第一条回复")).toBeTruthy();
+		expect(within(dialog).getByText("第二条回复")).toBeTruthy();
+		expect(within(dialog).queryByRole("button", { name: /展开剩余/ })).toBeNull();
+	});
+
+	it("提交后列表重拉把新回复带进服务端预览，新回复与已见回复仍全部可见", async () => {
+		const first = annotationReply("r1", "第一条回复");
+		const second = annotationReply("r2", "第二条回复");
+		const created = annotationReply("r3", "刚发出的第三条");
+		comments[0] = { ...comments[0], replies_total: 2, replies: [first, second] };
+		requests.apiPost.mockImplementation(async () => {
+			// 创建成功后，后续列表请求的回复预览即包含这条新回复。
+			comments[0] = { ...comments[0], replies_total: 3, replies: [first, second, created] };
+			return created;
+		});
+		const dialog = await mount();
+		fireEvent.click(await within(dialog).findByRole("button", { name: "回复批注" }));
+		write(within(dialog).getByRole("textbox", { name: "评论内容" }), "刚发出的第三条");
+		const listRequestsBeforeSubmit = requests.apiGetPaged.mock.calls.length;
+		fireEvent.click(within(dialog).getByRole("button", { name: "发送" }));
+
+		// 等重拉的响应落地并渲染后再断言，否则会在重拉前的乐观展示阶段提前通过。
+		await waitFor(() =>
+			expect(requests.apiGetPaged.mock.calls.length).toBeGreaterThan(
+				listRequestsBeforeSubmit,
+			),
+		);
+		await act(async () => {
+			await Promise.all(requests.apiGetPaged.mock.results.map((result) => result.value));
+		});
+
+		expect(within(dialog).getByText("刚发出的第三条")).toBeTruthy();
+		expect(within(dialog).getByText("第一条回复")).toBeTruthy();
+		expect(within(dialog).getByText("第二条回复")).toBeTruthy();
+		expect(within(dialog).queryByRole("button", { name: /展开剩余/ })).toBeNull();
+	});
+});
+
+describe("批注卡回复的目标标注", () => {
+	it("直接回复批注作者不标注目标，回复某条回复才显示「回复 @对方」", async () => {
+		comments[0] = {
+			...comments[0],
+			replies_total: 2,
+			replies: [
+				// 服务端对直接回复同样返回被回复者昵称，是否展示取决于它回复的是不是批注本身。
+				annotationReply("r1", "直接回复批注作者", {
+					author_name: "回复者甲",
+					reply_to_name: "读者甲",
+				}),
+				annotationReply("r2", "回复上一条回复", {
+					author_name: "回复者乙",
+					parent_id: "r1",
+					reply_to_name: "回复者甲",
+				}),
+			],
+		};
+		const dialog = await mount();
+		await within(dialog).findByText("回复上一条回复");
+
+		expect(within(dialog).getByText("@回复者甲")).toBeTruthy();
+		expect(within(dialog).queryByText("@读者甲")).toBeNull();
+	});
+
+	it("回复目标与批注作者同名时按实际回复对象标注，不因同名省略", async () => {
+		comments[0] = {
+			...comments[0],
+			replies_total: 2,
+			replies: [
+				annotationReply("r1", "同名读者直接回复批注", {
+					author_name: "读者甲",
+					reply_to_name: "读者甲",
+				}),
+				annotationReply("r2", "回复同名读者的那条回复", {
+					author_name: "回复者乙",
+					parent_id: "r1",
+					reply_to_name: "读者甲",
+				}),
+			],
+		};
+		const dialog = await mount();
+		await within(dialog).findByText("回复同名读者的那条回复");
+
+		expect(within(dialog).getAllByText("@读者甲")).toHaveLength(1);
+	});
+});

@@ -50,11 +50,15 @@ export function AnnotationCard({
 	// refetch 后新回复进了 node.replies，从 pendingReplies 去重移除
 	const replyIds = new Set(replies.map((r) => r.comment.id));
 	const visiblePending = pendingReplies.filter((r) => !replyIds.has(r.id));
+	// 只有进入时超出预览条数的回复参与折叠；此后新增（本次新发或重拉带回）与已展示的回复不再被折起。
+	const [collapsedIds] = useState(
+		() => new Set(replies.slice(REPLIES_PREVIEW_COUNT).map((r) => r.comment.id)),
+	);
 	const allReplies = [...replies, ...visiblePending.map((r) => ({ comment: r, replies: [] }))];
 	const visibleReplies = repliesExpanded
 		? allReplies
-		: allReplies.slice(0, REPLIES_PREVIEW_COUNT);
-	const hiddenCount = allReplies.length - REPLIES_PREVIEW_COUNT;
+		: allReplies.filter((r) => !collapsedIds.has(r.comment.id));
+	const hiddenCount = allReplies.filter((r) => collapsedIds.has(r.comment.id)).length;
 
 	return (
 		<article
@@ -112,7 +116,11 @@ export function AnnotationCard({
 			{allReplies.length > 0 && (
 				<div className="mt-3 space-y-2">
 					{visibleReplies.map((reply) => (
-						<AnnotationReply key={reply.comment.id} comment={reply.comment} />
+						<AnnotationReply
+							key={reply.comment.id}
+							comment={reply.comment}
+							annotationId={comment.id}
+						/>
 					))}
 					{hiddenCount > 0 && (
 						<button
@@ -130,7 +138,16 @@ export function AnnotationCard({
 }
 
 /** CommentMeta 批注元信息：头像 + 昵称 + 「回复 @yyy」+ 作者徽章 + 审批中徽章 + 时间 */
-function CommentMeta({ comment, time }: { comment: Comment; time: string }) {
+function CommentMeta({
+	comment,
+	time,
+	replyToName,
+}: {
+	comment: Comment;
+	time: string;
+	/** 要标注的回复目标；批注本身与直接回复批注的回复不传。 */
+	replyToName?: string;
+}) {
 	const { displayName } = getCommentAuthorPresentation(comment);
 	const isAuthor = !comment.is_ai && comment.is_author;
 	const nameClass = isAuthor ? AUTHOR_TIER.name : "font-medium text-foreground";
@@ -184,9 +201,9 @@ function CommentMeta({ comment, time }: { comment: Comment; time: string }) {
 					{displayName}
 				</span>
 			)}
-			{comment.reply_to_name && (
+			{replyToName && (
 				<span className="min-w-0 truncate text-xs text-muted-foreground">
-					回复 <span className="text-primary">@{comment.reply_to_name}</span>
+					回复 <span className="text-primary">@{replyToName}</span>
 				</span>
 			)}
 			{isAuthor && (
@@ -205,8 +222,10 @@ function CommentMeta({ comment, time }: { comment: Comment; time: string }) {
 }
 
 /** AnnotationReply 批注的扁平回复：更紧凑，无引言区 */
-function AnnotationReply({ comment }: { comment: Comment }) {
+function AnnotationReply({ comment, annotationId }: { comment: Comment; annotationId: string }) {
 	const { personaId } = getCommentAuthorPresentation(comment);
+	// 与评论区同口径按 id 判断：直接回复批注不标注目标，同名作者不代表同一条评论。
+	const replyToName = comment.parent_id === annotationId ? undefined : comment.reply_to_name;
 	return (
 		<div
 			className={cn(
@@ -216,7 +235,11 @@ function AnnotationReply({ comment }: { comment: Comment }) {
 			data-ai={comment.is_ai ? "true" : undefined}
 			data-ai-persona={personaId}
 		>
-			<CommentMeta comment={comment} time={formatTimeAgo(comment.created_at)} />
+			<CommentMeta
+				comment={comment}
+				time={formatTimeAgo(comment.created_at)}
+				replyToName={replyToName}
+			/>
 			<p className="mt-1 whitespace-pre-wrap wrap-break-word text-xs leading-relaxed text-foreground">
 				<EmojiText text={comment.body} emote={comment.emote} />
 			</p>
