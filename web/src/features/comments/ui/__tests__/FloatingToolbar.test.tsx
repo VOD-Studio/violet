@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { useRef } from "react";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FloatingToolbar } from "../FloatingToolbar";
 
 const requests = vi.hoisted(() => ({
@@ -31,10 +31,50 @@ function Harness({ toolbar = true }: { toolbar?: boolean }) {
 	);
 }
 
+function renderHarness() {
+	return render(
+		<QueryClientProvider client={client}>
+			<Harness />
+		</QueryClientProvider>,
+	);
+}
+
+function block() {
+	const el = screen.getByLabelText("文章正文").querySelector("p");
+	if (!el?.firstChild) throw new Error("缺少正文夹具");
+	return el;
+}
+
+/** 选中正文开头 4 个字「选中文字」。 */
+function select() {
+	const range = document.createRange();
+	range.setStart(block().firstChild as Text, 0);
+	range.setEnd(block().firstChild as Text, 4);
+	window.getSelection()?.removeAllRanges();
+	window.getSelection()?.addRange(range);
+	fireEvent(document, new Event("selectionchange"));
+}
+
+/** 等 requestAnimationFrame 与锚点计算落定。 */
+async function settle() {
+	await act(async () => {
+		const { promise, resolve } = Promise.withResolvers<void>();
+		setTimeout(resolve, 60);
+		await promise;
+	});
+}
+
+function write(editor: HTMLElement, text: string) {
+	editor.textContent = text;
+	fireEvent.input(editor);
+}
+
 beforeEach(() => {
 	rangeTop = 120;
 	requests.apiGet.mockResolvedValue([]);
-	client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+	client = new QueryClient({
+		defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+	});
 	Object.defineProperty(Range.prototype, "getBoundingClientRect", {
 		configurable: true,
 		value(this: Range) {
@@ -59,84 +99,163 @@ afterEach(() => {
 	else Reflect.deleteProperty(Range.prototype, "getClientRects");
 });
 
-it("延迟挂载时接管已有选区，同帧滚动不能取消批注入口", async () => {
-	const view = render(
-		<QueryClientProvider client={client}>
-			<Harness toolbar={false} />
-		</QueryClientProvider>,
-	);
-	const block = screen.getByLabelText("文章正文").querySelector("p");
-	if (!block?.firstChild) throw new Error("缺少正文夹具");
-	const range = document.createRange();
-	range.setStart(block.firstChild, 0);
-	range.setEnd(block.firstChild, 4);
-	window.getSelection()?.addRange(range);
-	const { promise, resolve } = Promise.withResolvers<void>();
-	setTimeout(resolve, 0);
-	await promise;
+describe("选区工具条", () => {
+	it("鼠标拖选期间不出现，松开后浮出「批注」与「复制」", async () => {
+		renderHarness();
+		fireEvent.pointerDown(block());
+		select();
+		await settle();
+		expect(screen.queryByRole("toolbar", { name: "批注工具" })).toBeNull();
 
-	vi.useFakeTimers({ toFake: ["requestAnimationFrame", "cancelAnimationFrame"] });
-	view.rerender(
-		<QueryClientProvider client={client}>
-			<Harness />
-		</QueryClientProvider>,
-	);
-	fireEvent.scroll(window);
-	await act(() => vi.advanceTimersToNextFrame());
-	const annotate = await screen.findByRole("button", { name: "划线批注" });
-	fireEvent.click(annotate);
-	const toolbar = screen.getByRole("toolbar", { name: "批注工具" });
-	expect(within(toolbar).getByText("选中文字")).toBeTruthy();
-	expect(within(toolbar).getByRole("textbox", { name: "评论内容" })).toBeTruthy();
+		fireEvent.pointerUp(block());
+		const toolbar = await screen.findByRole("toolbar", { name: "批注工具" });
+		expect(within(toolbar).getByRole("button", { name: "批注" })).toBeTruthy();
+		expect(within(toolbar).getByRole("button", { name: "复制" })).toBeTruthy();
+	});
+
+	it("在别处按下鼠标，工具条随即消失", async () => {
+		renderHarness();
+		select();
+		await screen.findByRole("toolbar", { name: "批注工具" });
+		fireEvent.pointerDown(block());
+		await waitFor(() => expect(screen.queryByRole("toolbar", { name: "批注工具" })).toBeNull());
+	});
+
+	it("键盘选中没有「松开」，选区一出现就显示，Tab 先到工具条", async () => {
+		renderHarness();
+		select();
+		const toolbar = await screen.findByRole("toolbar", { name: "批注工具" });
+		fireEvent.keyDown(document.body, { key: "Tab" });
+		expect(document.activeElement).toBe(within(toolbar).getByRole("button", { name: "批注" }));
+		fireEvent.keyDown(document.activeElement ?? document.body, { key: "Tab" });
+		expect(toolbar.contains(document.activeElement)).toBe(true);
+	});
+
+	it("点「复制」把选中的文字写进剪贴板并收起工具条", async () => {
+		const writeText = vi.fn().mockResolvedValue(undefined);
+		Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+		renderHarness();
+		select();
+		const toolbar = await screen.findByRole("toolbar", { name: "批注工具" });
+		fireEvent.click(within(toolbar).getByRole("button", { name: "复制" }));
+		await waitFor(() => expect(writeText).toHaveBeenCalledWith("选中文字"));
+		await waitFor(() => expect(screen.queryByRole("toolbar", { name: "批注工具" })).toBeNull());
+	});
 });
 
-it("划线编辑离屏后不可交互，滚回恢复同一草稿且提交原选区", async () => {
-	requests.apiPost.mockResolvedValue({ id: "created", status: "approved" });
-	render(
-		<QueryClientProvider client={client}>
-			<Harness />
-		</QueryClientProvider>,
-	);
-	const block = screen.getByLabelText("文章正文").querySelector("p");
-	if (!block?.firstChild) throw new Error("缺少正文夹具");
-	const range = document.createRange();
-	range.setStart(block.firstChild, 0);
-	range.setEnd(block.firstChild, 4);
-	window.getSelection()?.addRange(range);
-	fireEvent(document, new Event("selectionchange"));
-	const annotate = await screen.findByRole("button", { name: "划线批注" });
-	fireEvent.mouseDown(annotate);
-	fireEvent.click(annotate);
-	const toolbar = screen.getByRole("toolbar", { name: "批注工具" });
-	const editor = within(toolbar).getByRole("textbox", { name: "评论内容" });
-	editor.textContent = "始终保留的划线草稿";
-	fireEvent.input(editor);
-	// 草稿 mark 包装真实文本节点后再滚动，旧 Range 端点若失效，此处也会丢失面板。
-	await waitFor(() => expect(block.querySelector("mark")?.textContent).toBe("选中文字"));
-	fireEvent.scroll(window);
-	await waitFor(() => expect(screen.getByRole("toolbar", { name: "批注工具" })).toBe(toolbar));
-	rangeTop = -100;
-	fireEvent.scroll(window);
-	await waitFor(() => expect(screen.queryByRole("toolbar", { name: "批注工具" })).toBeNull());
-	expect(toolbar.hasAttribute("inert")).toBe(true);
-	rangeTop = 120;
-	fireEvent.scroll(window);
-	await waitFor(() => expect(screen.getByRole("toolbar", { name: "批注工具" })).toBe(toolbar));
-	expect(within(toolbar).getByRole("textbox", { name: "评论内容" })).toBe(editor);
-	expect(editor.textContent).toBe("始终保留的划线草稿");
-	fireEvent.click(within(toolbar).getByRole("button", { name: "提交批注" }));
-	await waitFor(() =>
-		expect(requests.apiPost).toHaveBeenCalledWith(
-			"/posts/post-1/comments",
-			expect.objectContaining({
-				body: "始终保留的划线草稿",
-				anchor: expect.objectContaining({
-					selected_text: "选中文字",
-					start_offset: 0,
-					end_offset: 4,
+describe("写批注", () => {
+	it("⌘⇧M 打开批注卡，回车以原选区发表，卡片随后收起", async () => {
+		requests.apiPost.mockResolvedValue({ id: "created", status: "approved" });
+		renderHarness();
+		select();
+		await screen.findByRole("toolbar", { name: "批注工具" });
+		fireEvent.keyDown(document, { key: "M", metaKey: true, shiftKey: true });
+		const card = await screen.findByRole("dialog", { name: "新批注" });
+		expect(screen.queryByRole("toolbar", { name: "批注工具" })).toBeNull();
+		expect(within(card).getByText("选中文字")).toBeTruthy();
+		const input = within(card).getByRole("textbox", { name: "批注内容" });
+		write(input, "键盘写下的批注");
+		fireEvent.keyDown(input, { key: "Enter" });
+		await waitFor(() =>
+			expect(requests.apiPost).toHaveBeenCalledWith(
+				"/posts/post-1/comments",
+				expect.objectContaining({
+					body: "键盘写下的批注",
+					anchor: expect.objectContaining({
+						selected_text: "选中文字",
+						start_offset: 0,
+						end_offset: 4,
+					}),
 				}),
-			}),
-		),
-	);
-	expect(block.textContent).toBe(paragraph);
+			),
+		);
+		await waitFor(() => expect(screen.queryByRole("dialog", { name: "新批注" })).toBeNull());
+		expect(block().textContent).toBe(paragraph);
+	});
+
+	it("Ctrl+Shift+M 同样可用；没有选区时不拦截按键", async () => {
+		renderHarness();
+		const idle = new KeyboardEvent("keydown", {
+			key: "M",
+			ctrlKey: true,
+			shiftKey: true,
+			cancelable: true,
+			bubbles: true,
+		});
+		document.dispatchEvent(idle);
+		expect(idle.defaultPrevented).toBe(false);
+
+		select();
+		await screen.findByRole("toolbar", { name: "批注工具" });
+		fireEvent.keyDown(document, { key: "M", ctrlKey: true, shiftKey: true });
+		expect(await screen.findByRole("dialog", { name: "新批注" })).toBeTruthy();
+	});
+
+	it("Escape 收起批注卡并丢弃草稿", async () => {
+		renderHarness();
+		select();
+		fireEvent.click(await screen.findByRole("button", { name: "批注" }));
+		const card = await screen.findByRole("dialog", { name: "新批注" });
+		write(within(card).getByRole("textbox", { name: "批注内容" }), "不要了");
+		fireEvent.keyDown(document, { key: "Escape" });
+		await waitFor(() => expect(screen.queryByRole("dialog", { name: "新批注" })).toBeNull());
+		expect(block().querySelector("mark")).toBeNull();
+	});
+
+	it("延迟挂载时接管已有选区", async () => {
+		const view = render(
+			<QueryClientProvider client={client}>
+				<Harness toolbar={false} />
+			</QueryClientProvider>,
+		);
+		select();
+		await settle();
+		view.rerender(
+			<QueryClientProvider client={client}>
+				<Harness />
+			</QueryClientProvider>,
+		);
+		const annotate = await screen.findByRole("button", { name: "批注" });
+		fireEvent.click(annotate);
+		const card = await screen.findByRole("dialog", { name: "新批注" });
+		expect(within(card).getByRole("textbox", { name: "批注内容" })).toBeTruthy();
+	});
+
+	it("批注卡离屏后不可交互，滚回恢复同一草稿且提交原选区", async () => {
+		requests.apiPost.mockResolvedValue({ id: "created", status: "approved" });
+		renderHarness();
+		select();
+		fireEvent.click(await screen.findByRole("button", { name: "批注" }));
+		const card = await screen.findByRole("dialog", { name: "新批注" });
+		const input = within(card).getByRole("textbox", { name: "批注内容" });
+		write(input, "始终保留的划线草稿");
+		// 草稿 mark 包装真实文本节点后再滚动，旧 Range 端点若失效，此处也会丢失卡片。
+		await waitFor(() => expect(block().querySelector("mark")?.textContent).toBe("选中文字"));
+		fireEvent.scroll(window);
+		await waitFor(() => expect(screen.getByRole("dialog", { name: "新批注" })).toBe(card));
+		rangeTop = -100;
+		fireEvent.scroll(window);
+		await waitFor(() => expect(screen.queryByRole("dialog", { name: "新批注" })).toBeNull());
+		expect(card.hasAttribute("inert")).toBe(true);
+		rangeTop = 120;
+		fireEvent.scroll(window);
+		await waitFor(() => expect(screen.getByRole("dialog", { name: "新批注" })).toBe(card));
+		expect(within(card).getByRole("textbox", { name: "批注内容" }).textContent).toBe(
+			"始终保留的划线草稿",
+		);
+		fireEvent.click(within(card).getByRole("button", { name: "提交批注" }));
+		await waitFor(() =>
+			expect(requests.apiPost).toHaveBeenCalledWith(
+				"/posts/post-1/comments",
+				expect.objectContaining({
+					body: "始终保留的划线草稿",
+					anchor: expect.objectContaining({
+						selected_text: "选中文字",
+						start_offset: 0,
+						end_offset: 4,
+					}),
+				}),
+			),
+		);
+	});
 });

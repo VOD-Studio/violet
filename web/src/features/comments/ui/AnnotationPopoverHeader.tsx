@@ -23,7 +23,7 @@ export function AnnotationPopoverHeader({
 			? target.authors.some((author) => author.is_ai)
 			: target.author.is_ai;
 	return (
-		<div className="flex h-14 shrink-0 items-center gap-2 px-4 py-2">
+		<div className="flex shrink-0 items-center gap-2">
 			<span className="shrink-0 whitespace-nowrap text-xs font-medium text-muted-foreground">
 				{target.count} 条批注
 			</span>

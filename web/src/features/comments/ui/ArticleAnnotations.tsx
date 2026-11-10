@@ -1,6 +1,6 @@
 import { DeferredContent } from "@shared/ui/deferred-content/DeferredContent";
 import type { RefObject } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { BlockCount } from "../model/types";
 
 const loadAnnotationLayer = () =>
@@ -30,6 +30,24 @@ export function ArticleAnnotations({
 	isLoggedIn,
 }: ArticleAnnotationsProps) {
 	const [selectionUsed, setSelectionUsed] = useState(false);
+	/** 鼠标是否按着：首次选择才加载工具条，模块到位时选区可能还在拖。 */
+	const pointerPressed = useRef(false);
+	useEffect(() => {
+		const press = (event: PointerEvent) => {
+			pointerPressed.current = event.pointerType !== "touch";
+		};
+		const release = () => {
+			pointerPressed.current = false;
+		};
+		document.addEventListener("pointerdown", press, true);
+		window.addEventListener("pointerup", release, true);
+		window.addEventListener("pointercancel", release, true);
+		return () => {
+			document.removeEventListener("pointerdown", press, true);
+			window.removeEventListener("pointerup", release, true);
+			window.removeEventListener("pointercancel", release, true);
+		};
+	}, []);
 	useEffect(() => {
 		if (selectionUsed) return;
 		const activate = () => {
@@ -61,7 +79,12 @@ export function ArticleAnnotations({
 				<DeferredContent
 					defer={false}
 					load={loadFloatingToolbar}
-					componentProps={{ contentRef, postId, isLoggedIn }}
+					componentProps={{
+						contentRef,
+						postId,
+						isLoggedIn,
+						pointerPressed,
+					}}
 					fallback={null}
 					label="批注工具"
 				/>

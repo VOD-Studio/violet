@@ -1,5 +1,6 @@
 import { getCommentAuthorPresentation } from "@entities/comment/lib/ai-personas";
 import { CommentAuthorAvatar } from "@entities/comment/ui/CommentAuthorAvatar";
+import { blockCountLabel } from "../lib/annotation-marks";
 import type { AnnotationAuthorFilter, BlockAuthor, BlockCount } from "../model/types";
 
 const MARKER_AVATAR_MAX = 3;
@@ -17,10 +18,13 @@ export function AnnotationMarker({ block, top, activeAuthor, onSelect }: Annotat
 	const authors = block.authors ?? [];
 	const shown = authors.slice(0, MARKER_AVATAR_MAX);
 	const extra = authors.length - shown.length;
-	const label = `${block.count} 条批注`;
+	const label = blockCountLabel(block.count);
 	return (
 		<div
+			role="group"
+			aria-label={label}
 			data-annotation-blockid={block.block_id}
+			data-open={activeAuthor !== undefined ? "true" : undefined}
 			style={{ top }}
 			className="annotation-marker pointer-events-auto absolute"
 		>

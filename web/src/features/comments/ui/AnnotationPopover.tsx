@@ -1,9 +1,11 @@
+import type { Comment } from "@entities/comment/model/types";
 import { Popover } from "radix-ui";
 import { useContext, useEffect, useRef } from "react";
 import { useBlockAnnotations } from "../api/queries";
 import { useAnnotationAnchorVisible } from "../hooks/use-annotation-anchor-visible";
+import { rangeKey } from "../lib/annotation-marks";
 import type { AnnotationAuthorFilter, BlockAuthor } from "../model/types";
-import { AnnotationCard } from "./AnnotationCard";
+import { AnnotationThread } from "./AnnotationCard";
 import { AnnotationPopoverHeader } from "./AnnotationPopoverHeader";
 import { AnnotationPortal } from "./AnnotationPortal";
 import { AnnotationOverlayContext } from "./annotation-overlay-context";
@@ -13,11 +15,15 @@ export interface AnnotationPopoverTarget {
 	blockId: string;
 	/** 真正关闭后再次打开属于新会话，不能复活离场尾帧中的草稿。 */
 	sessionId: number;
-	/** null 显示全部，身份对象只显示该评论者。 */
+	/** 划线区间的分组键；null 表示整段批注卡，列出该块全部批注。 */
+	rangeKey: string | null;
+	/** 整段批注卡的评论者筛选：null 显示全部，身份对象只显示该评论者。 */
 	author: AnnotationAuthorFilter;
-	/** 固定尺寸的角标组或划线，不随组内头像展开而移动。 */
+	/** 批注卡的定位参照：划线或固定尺寸的角标组，不随组内头像展开而移动。 */
 	anchorEl: HTMLElement;
-	/** 规范正文块；入口和编辑器不得写入此节点。 */
+	/** 从划线打开时，关闭后还焦点的划线按钮。 */
+	returnFocusEl: HTMLElement | null;
+	/** 规范正文块；段评以它计算锚点，入口和编辑器不得写入此节点。 */
 	blockEl: HTMLElement | null;
 	authors: BlockAuthor[];
 	count: number;
@@ -28,11 +34,26 @@ export interface AnnotationPopoverProps {
 	target: AnnotationPopoverTarget | null;
 	postId: string;
 	isLoggedIn: boolean;
+	/** 整段批注卡里切换评论者筛选 */
 	onFilter: (author: AnnotationAuthorFilter) => void;
 	onClose: () => void;
 }
 
-/** 段落批注浮层；滚动离屏只隐藏，真正关闭才结束当前编辑会话。 */
+/** 关闭后还焦点的元素：划线打开的还给划线按钮，角标打开的还给对应头像。 */
+function restoreFocus(target: AnnotationPopoverTarget): HTMLElement | null {
+	if (target.rangeKey !== null) return target.returnFocusEl;
+	const anchor = target.anchorEl;
+	const authorButton = Array.from(
+		anchor.querySelectorAll<HTMLElement>("[data-annotation-author]"),
+	).find((element) => element.dataset.annotationAuthor === JSON.stringify(target.author));
+	if (anchor.matches("button")) return anchor;
+	if (window.matchMedia("(max-width: 767.98px)").matches) {
+		return anchor.querySelector<HTMLElement>(".annotation-marker-mobile");
+	}
+	return authorButton ?? anchor.querySelector<HTMLElement>(".annotation-avatar");
+}
+
+/** 批注卡；滚动离屏只隐藏，真正关闭才结束当前编辑会话。 */
 export function AnnotationPopover({
 	open,
 	target,
@@ -66,37 +87,19 @@ export function AnnotationPopover({
 			<AnnotationPortal>
 				<Popover.Content
 					ref={contentRef}
-					aria-label="段落批注"
+					aria-label={target.rangeKey === null ? "段落批注" : "批注"}
 					aria-hidden={offscreen || !open ? true : undefined}
 					inert={offscreen || !open}
 					data-offscreen={offscreen ? "true" : undefined}
-					align="end"
+					align={target.rangeKey === null ? "end" : "start"}
 					side="bottom"
-					sideOffset={10}
+					sideOffset={8}
 					collisionPadding={16}
 					onOpenAutoFocus={(event) => event.preventDefault()}
 					onCloseAutoFocus={(event) => {
 						event.preventDefault();
 						if (pointerOutside.current || offscreen) return;
-						const authorButton = Array.from(
-							target.anchorEl.querySelectorAll<HTMLElement>(
-								"[data-annotation-author]",
-							),
-						).find(
-							(element) =>
-								element.dataset.annotationAuthor === JSON.stringify(target.author),
-						);
-						const button = target.anchorEl.matches("button")
-							? target.anchorEl
-							: window.matchMedia("(max-width: 767.98px)").matches
-								? target.anchorEl.querySelector<HTMLElement>(
-										".annotation-marker-mobile",
-									)
-								: (authorButton ??
-									target.anchorEl.querySelector<HTMLElement>(
-										".annotation-avatar",
-									));
-						button?.focus({ preventScroll: true });
+						restoreFocus(target)?.focus({ preventScroll: true });
 					}}
 					onInteractOutside={(event) => {
 						const node = event.target;
@@ -111,19 +114,16 @@ export function AnnotationPopover({
 						if (event.detail.originalEvent.type === "focusin") event.preventDefault();
 						else pointerOutside.current = true;
 					}}
-					className="annotation-popover z-50 flex w-100 max-w-[calc(100vw-2rem)] flex-col rounded-2xl bg-(--surface-glass) shadow-[0_4px_24px_rgb(0_0_0/0.05)] outline-none backdrop-blur-md dark:ring-1 dark:ring-white/10"
+					className="annotation-card v-float z-50 outline-none"
 				>
 					<AnnotationOverlayContext value={open && !offscreen}>
-						<AnnotationPopoverHeader
-							target={target}
-							onFilter={onFilter}
-							onClose={onClose}
-						/>
 						<PopoverBody
 							key={`${target.blockId}:${target.sessionId}`}
 							target={target}
 							postId={postId}
 							isLoggedIn={isLoggedIn}
+							onFilter={onFilter}
+							onClose={onClose}
 						/>
 					</AnnotationOverlayContext>
 				</Popover.Content>
@@ -132,62 +132,73 @@ export function AnnotationPopover({
 	);
 }
 
+/** 同一处划线的顶层批注归为一组，按首次出现的先后排列。 */
+interface CommentGroup {
+	key: string;
+	quote: string;
+	comments: Comment[];
+}
+
+function groupByRange(comments: Comment[]): CommentGroup[] {
+	const groups = new Map<string, CommentGroup>();
+	for (const comment of comments) {
+		if (!comment.anchor) continue;
+		const key = rangeKey(comment.anchor.start_offset, comment.anchor.end_offset);
+		const group = groups.get(key);
+		if (group) group.comments.push(comment);
+		else groups.set(key, { key, quote: comment.anchor.selected_text, comments: [comment] });
+	}
+	return [...groups.values()];
+}
+
 function PopoverBody({
 	target,
 	postId,
 	isLoggedIn,
+	onFilter,
+	onClose,
 }: {
 	target: AnnotationPopoverTarget;
 	postId: string;
 	isLoggedIn: boolean;
+	onFilter: (author: AnnotationAuthorFilter) => void;
+	onClose: () => void;
 }) {
 	const query = useBlockAnnotations(postId, target.blockId);
 	const overlayActive = useContext(AnnotationOverlayContext);
+	const all = groupByRange(query.data?.data ?? []);
+	const groups = target.rangeKey === null ? all : all.filter((g) => g.key === target.rangeKey);
+	/** 整段批注卡可按评论者筛选；被筛掉的批注只隐藏不卸载，回复草稿得以保留。 */
+	const matches = (comment: Comment) =>
+		target.author === null ||
+		(comment.author_name === target.author.name && !!comment.is_ai === target.author.is_ai);
+
 	return (
 		<>
-			<div className="annotation-scroll min-h-0 flex-1 space-y-2 overflow-y-auto overflow-x-hidden px-3 pt-1 pb-3">
+			{target.rangeKey === null && (
+				<AnnotationPopoverHeader target={target} onFilter={onFilter} onClose={onClose} />
+			)}
+			<div className="annotation-scroll annotation-card-list">
 				{query.isLoading && <PopoverSkeleton />}
 				{query.isError && (
-					<p role="alert" className="p-3 text-sm text-muted-foreground">
+					<p role="alert" className="text-sm text-muted-foreground">
 						批注加载失败，请稍后重试。
 					</p>
 				)}
-				{(query.data?.data ?? []).map((comment) => (
-					<div
-						key={comment.id}
-						className="mb-2"
-						hidden={
-							target.author !== null &&
-							(comment.author_name !== target.author.name ||
-								!!comment.is_ai !== target.author.is_ai)
-						}
-					>
-						<AnnotationOverlayContext
-							value={
-								overlayActive &&
-								(target.author === null ||
-									(comment.author_name === target.author.name &&
-										!!comment.is_ai === target.author.is_ai))
-							}
-						>
-							<AnnotationCard
-								node={{
-									comment,
-									replies: (comment.replies ?? []).map((reply) => ({
-										comment: reply,
-										replies: [],
-									})),
-								}}
-								selectedText={comment.anchor?.selected_text ?? ""}
-								postId={postId}
-								isLoggedIn={isLoggedIn}
-							/>
-						</AnnotationOverlayContext>
-					</div>
+				{groups.map((group) => (
+					<AnnotationThread
+						key={group.key}
+						quote={group.quote}
+						comments={group.comments}
+						postId={postId}
+						isLoggedIn={isLoggedIn}
+						isVisible={matches}
+						active={overlayActive}
+					/>
 				))}
 			</div>
 			{target.blockEl && (
-				<div role="group" aria-label="发表段评" className="shrink-0 px-3 pt-2 pb-3">
+				<div role="group" aria-label="发表段评">
 					<BlockAnnotationComposer
 						embedded
 						block={target.blockEl}
@@ -202,12 +213,14 @@ function PopoverBody({
 
 function PopoverSkeleton() {
 	return (
-		<div className="space-y-2">
+		<div aria-busy="true" className="space-y-2">
 			{[1, 2].map((i) => (
-				<div key={i} className="rounded-2xl bg-muted/40 p-3.5">
-					<div className="mb-2 h-3 w-2/3 animate-pulse rounded bg-muted" />
-					<div className="mb-1 h-2 w-1/2 animate-pulse rounded bg-muted" />
-					<div className="h-2 w-full animate-pulse rounded bg-muted" />
+				<div key={i} className="flex gap-2.5">
+					<div className="size-6 shrink-0 animate-pulse rounded-full bg-muted" />
+					<div className="flex-1 space-y-1.5">
+						<div className="h-3 w-1/3 animate-pulse rounded bg-muted" />
+						<div className="h-3 w-full animate-pulse rounded bg-muted" />
+					</div>
 				</div>
 			))}
 		</div>

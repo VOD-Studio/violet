@@ -126,14 +126,18 @@ export function BlockCommentTrigger({
 					<Popover.Anchor virtualRef={{ current: composerBlock }} />
 					<AnnotationPortal>
 						<Popover.Content
-							className="annotation-block-composer pointer-events-auto z-50 max-w-[calc(100vw-2rem)] rounded-2xl bg-background outline-none"
+							className="annotation-card annotation-block-composer v-float pointer-events-auto z-50 outline-none"
 							align="end"
 							side="bottom"
 							sideOffset={COMPOSER_GAP_PX}
 							collisionPadding={16}
 							onOpenAutoFocus={(event) => event.preventDefault()}
 							onCloseAutoFocus={(event) => event.preventDefault()}
-							onInteractOutside={(event) => event.preventDefault()}
+							onInteractOutside={(event) => {
+								// 聚焦移动不算离开；真正的外部按下才收起
+								if (event.detail.originalEvent.type === "focusin")
+									event.preventDefault();
+							}}
 							inert={!composerVisible}
 							aria-hidden={!composerVisible || undefined}
 							data-offscreen={!composerVisible ? "true" : undefined}
@@ -145,7 +149,7 @@ export function BlockCommentTrigger({
 									load={loadBlockComposer}
 									label="段评表单"
 									fallback={
-										<div className="p-4 text-sm">
+										<div className="text-sm">
 											<p role="status">正在准备段评…</p>
 											<button
 												type="button"
