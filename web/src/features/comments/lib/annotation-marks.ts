@@ -7,6 +7,10 @@ export interface RangeGroup {
 	start: number;
 	end: number;
 	count: number;
+	/** 划线上的批注全是 AI 自署名时为首位 AI 的署名，用于按角色着色；混有读者时为 null。 */
+	aiName: string | null;
+	/** 划线上有文章 Owner 本人的批注 */
+	byAuthor: boolean;
 }
 
 /** 批注锚点或摘要区间对应的分组键。 */
@@ -15,15 +19,34 @@ export function rangeKey(start: number, end: number): string {
 }
 
 /** 按区间归并摘要里的批注区间，保持首次出现的先后。 */
-export function groupRanges(ranges: readonly Pick<BlockRange, "start" | "end">[]): RangeGroup[] {
-	const groups = new Map<string, RangeGroup>();
-	for (const { start, end } of ranges) {
-		const key = rangeKey(start, end);
-		const group = groups.get(key);
-		if (group) group.count += 1;
-		else groups.set(key, { key, start, end, count: 1 });
+export function groupRanges(
+	ranges: readonly Pick<BlockRange, "start" | "end" | "is_ai" | "author_name" | "is_author">[],
+): RangeGroup[] {
+	const groups = new Map<string, { group: RangeGroup; ai: string[]; readers: number }>();
+	for (const range of ranges) {
+		const key = rangeKey(range.start, range.end);
+		let entry = groups.get(key);
+		if (!entry) {
+			const group = {
+				key,
+				start: range.start,
+				end: range.end,
+				count: 0,
+				aiName: null,
+				byAuthor: false,
+			};
+			entry = { group, ai: [], readers: 0 };
+			groups.set(key, entry);
+		}
+		entry.group.count += 1;
+		entry.group.byAuthor ||= !!range.is_author && !range.is_ai;
+		if (range.is_ai) entry.ai.push(range.author_name);
+		else entry.readers += 1;
 	}
-	return [...groups.values()];
+	return [...groups.values()].map(({ group, ai, readers }) => ({
+		...group,
+		aiName: readers === 0 ? (ai[0] ?? null) : null,
+	}));
 }
 
 /** 划线按钮的可访问名称，如「3 条批注：原文」。 */

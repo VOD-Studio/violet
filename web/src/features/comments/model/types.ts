@@ -88,6 +88,8 @@ export interface BlockRange {
 	end: number;
 	is_ai: boolean;
 	author_name: string;
+	/** 发表者是文章 Owner 本人；旧响应没有此字段时按 false。 */
+	is_author?: boolean;
 }
 
 /** BlockAuthor - 批注块上的评论者 */

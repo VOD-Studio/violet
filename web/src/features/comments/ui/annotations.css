@@ -72,6 +72,58 @@
 		var(--annotation-active-capl-b), var(--annotation-active-mid-b),
 		var(--annotation-active-capr-b);
 }
+/* 站长的划线是墨色笔触，读者的是季节色；颜色深浅的三态与读者一致。 */
+.annotation-mark[data-author="true"] {
+	background-image:
+		var(--annotation-author-capl-a), var(--annotation-author-mid-a),
+		var(--annotation-author-capr-a);
+}
+.annotation-mark[data-author="true"]:nth-of-type(even) {
+	background-image:
+		var(--annotation-author-capl-b), var(--annotation-author-mid-b),
+		var(--annotation-author-capr-b);
+}
+.annotation-mark[data-author="true"]:hover {
+	background-image:
+		var(--annotation-author-hover-capl-a), var(--annotation-author-hover-mid-a),
+		var(--annotation-author-hover-capr-a);
+}
+.annotation-mark[data-author="true"]:nth-of-type(even):hover {
+	background-image:
+		var(--annotation-author-hover-capl-b), var(--annotation-author-hover-mid-b),
+		var(--annotation-author-hover-capr-b);
+}
+.annotation-mark[data-author="true"][data-active="true"] {
+	background-image:
+		var(--annotation-author-active-capl-a), var(--annotation-author-active-mid-a),
+		var(--annotation-author-active-capr-a);
+}
+.annotation-mark[data-author="true"][data-active="true"]:nth-of-type(even) {
+	background-image:
+		var(--annotation-author-active-capl-b), var(--annotation-author-active-mid-b),
+		var(--annotation-author-active-capr-b);
+}
+
+/* AI 自署名的划线按角色着色：淡底加同色下划线，不用笔触，一眼与真人区分。 */
+.annotation-mark[data-ai="true"],
+.annotation-mark[data-ai="true"]:nth-of-type(even) {
+	background-image: none;
+	background-color: color-mix(in oklch, var(--ai-accent) 10%, transparent);
+	text-decoration-line: underline;
+	text-decoration-color: color-mix(in oklch, var(--ai-accent) 65%, transparent);
+	text-decoration-thickness: 1px;
+	text-underline-offset: 0.2em;
+}
+.annotation-mark[data-ai="true"]:hover,
+.annotation-mark[data-ai="true"]:nth-of-type(even):hover {
+	background-color: color-mix(in oklch, var(--ai-accent) 18%, transparent);
+	text-decoration-color: var(--ai-accent);
+}
+.annotation-mark[data-ai="true"][data-active="true"],
+.annotation-mark[data-ai="true"][data-active="true"]:nth-of-type(even) {
+	background-color: color-mix(in oklch, var(--ai-accent) 26%, transparent);
+	text-decoration-color: var(--ai-accent);
+}
 .annotation-mark:focus-visible {
 	outline: 2px solid var(--ring);
 	outline-offset: 2px;

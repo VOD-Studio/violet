@@ -26,13 +26,17 @@ const SHAPES = {
 const VIEWBOX = { capl: "0 0 10 20", mid: "0 0 100 20", capr: "0 0 10 20" } as const;
 
 /**
- * 笔触状态与颜色：季节色 22% 的底，悬停 34%，点开与写批注时 38%，选区用强调色 22%。
+ * 笔触状态与颜色：读者的划线是季节色 22% 的底，悬停 34%，点开与写批注时 38%；
+ * 站长的划线是墨色，三态 20%、30%、34%；选区用强调色 22%。
  * 自定义属性名为 `--annotation-<name>-<part>-<variant>`，如 `--annotation-saved-capl-a`。
  */
 const STATES = [
 	{ name: "saved", token: "--decoration", alpha: 0.22 },
 	{ name: "saved-hover", token: "--decoration", alpha: 0.34 },
 	{ name: "active", token: "--decoration", alpha: 0.38 },
+	{ name: "author", token: "--foreground", alpha: 0.2 },
+	{ name: "author-hover", token: "--foreground", alpha: 0.3 },
+	{ name: "author-active", token: "--foreground", alpha: 0.34 },
 	{ name: "select", token: "--link", alpha: 0.22 },
 ] as const;
 

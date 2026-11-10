@@ -1,3 +1,4 @@
+import { getCommentAuthorPresentation } from "@entities/comment/lib/ai-personas";
 import { type RefObject, useEffect, useState } from "react";
 import { describeMarks, groupRanges } from "../lib/annotation-marks";
 import { computeBlockId } from "../lib/block-id";
@@ -57,6 +58,18 @@ export function useAnnotationMarks(
 						const marks = wrapRange(el, mapped, MARK_CLASS, {
 							annotationBlock: block_id,
 							annotationRange: group.key,
+							...(group.aiName !== null
+								? {
+										ai: "true",
+										aiPersona:
+											getCommentAuthorPresentation({
+												author_name: group.aiName,
+												is_ai: true,
+											}).personaId ?? "unknown",
+									}
+								: group.byAuthor
+									? { author: "true" }
+									: {}),
 						});
 						describeMarks(marks, group.count);
 					}
