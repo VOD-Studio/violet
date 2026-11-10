@@ -1,3 +1,14 @@
+/* 媒体上的墨色蒙层与角标：属于图片本身的对比层，不随页面材质变化。 */
+.v-tweet {
+	--_tweet-overlay: var(--tweet-overlay, color-mix(in oklab, #000 62%, transparent));
+	--_tweet-overlay-soft: var(--tweet-overlay-soft, color-mix(in oklab, #000 52%, transparent));
+	--_tweet-overlay-strong: var(
+		--tweet-overlay-strong,
+		color-mix(in oklab, #000 78%, transparent)
+	);
+	--_tweet-overlay-foreground: var(--tweet-overlay-foreground, #fff);
+}
+
 .v-tweet__media {
 	display: grid;
 	gap: 8px;
@@ -22,7 +33,7 @@
 	min-height: 100px;
 	aspect-ratio: 1;
 	overflow: hidden;
-	border-radius: 8px;
+	border-radius: var(--_tweet-radius-inner);
 	background: var(--_tweet-soft);
 	color: var(--_tweet-muted);
 }
@@ -33,7 +44,7 @@
 	max-width: 100%;
 	min-height: 0;
 	aspect-ratio: auto;
-	border-radius: 12px;
+	border-radius: var(--_tweet-radius-media);
 	background: none;
 }
 .v-tweet__photos[data-count="3"] .v-tweet__photo:first-child {
@@ -51,7 +62,7 @@
 	max-width: 100%;
 	height: auto;
 	max-height: 520px;
-	border-radius: 12px;
+	border-radius: var(--_tweet-radius-media);
 	object-fit: contain;
 }
 /* 竖图为主的照片组：同高卡片横向滚动，宽度由各自宽高比决定。 */
@@ -71,7 +82,7 @@
 	/* 吸附后左侧露出上一张的边缘，提示可以回滑。 */
 	scroll-padding-inline: 24px;
 	scrollbar-width: none;
-	border-radius: 12px;
+	border-radius: var(--_tweet-radius-media);
 }
 .v-tweet__rail-track::-webkit-scrollbar {
 	display: none;
@@ -91,7 +102,7 @@
 	/* 横图同样限宽裁切，保证始终露出下一张。 */
 	max-width: 80%;
 	aspect-ratio: var(--_photo-ratio, 1);
-	border-radius: 12px;
+	border-radius: var(--_tweet-radius-media);
 	scroll-snap-align: start;
 }
 /*
@@ -115,8 +126,8 @@
 	place-items: center;
 	border: 0;
 	border-radius: 50%;
-	background: color-mix(in oklab, #000 62%, transparent);
-	color: #fff;
+	background: var(--_tweet-overlay);
+	color: var(--_tweet-overlay-foreground);
 	cursor: pointer;
 	opacity: 0;
 	pointer-events: none;
@@ -144,7 +155,7 @@
 	pointer-events: auto;
 }
 .v-tweet__rail-button:hover {
-	background: color-mix(in oklab, #000 78%, transparent);
+	background: var(--_tweet-overlay-strong);
 }
 .v-tweet__rail-button:focus-visible {
 	outline: 2px solid var(--_tweet-accent);
@@ -168,7 +179,7 @@
 	max-width: 100%;
 	height: auto;
 	max-height: 520px;
-	border-radius: 12px;
+	border-radius: var(--_tweet-radius-media);
 	background: #000;
 }
 .v-tweet__gif,
@@ -176,7 +187,7 @@
 	position: relative;
 	width: fit-content;
 	max-width: 100%;
-	border-radius: 12px;
+	border-radius: var(--_tweet-radius-media);
 }
 .v-tweet .v-tweet__video[data-kind="animated_gif"] {
 	cursor: pointer;
@@ -190,9 +201,9 @@
 	align-items: center;
 	gap: 4px;
 	padding: 2px 8px;
-	border-radius: 4px;
-	background: color-mix(in oklab, #000 62%, transparent);
-	color: #fff;
+	border-radius: var(--_tweet-radius-control);
+	background: var(--_tweet-overlay);
+	color: var(--_tweet-overlay-foreground);
 	font-size: 11px;
 	font-weight: 700;
 	pointer-events: none;
@@ -210,7 +221,7 @@
 	border: 0;
 	border-radius: inherit;
 	background: transparent;
-	color: #fff;
+	color: var(--_tweet-overlay-foreground);
 	cursor: pointer;
 }
 .v-tweet__play-button::before {
@@ -219,11 +230,11 @@
 	width: 56px;
 	height: 56px;
 	border-radius: 50%;
-	background: color-mix(in oklab, #000 62%, transparent);
+	background: var(--_tweet-overlay);
 	transition: background-color 140ms ease;
 }
 .v-tweet__play-button:hover::before {
-	background: color-mix(in oklab, #000 78%, transparent);
+	background: var(--_tweet-overlay-strong);
 }
 .v-tweet__play-button svg {
 	grid-area: 1 / 1;
@@ -252,7 +263,7 @@
 	width: fit-content;
 	max-width: 100%;
 	overflow: hidden;
-	border-radius: 12px;
+	border-radius: var(--_tweet-radius-media);
 	background: var(--_tweet-soft);
 }
 .v-tweet .v-tweet__video-fallback img {
@@ -269,9 +280,9 @@
 	inset-block-end: 8px;
 	inset-inline-start: 8px;
 	padding: 2px 10px;
-	border-radius: 9999px;
-	background: color-mix(in oklab, #000 62%, transparent);
-	color: #fff;
+	border-radius: var(--radius-full, 9999px);
+	background: var(--_tweet-overlay);
+	color: var(--_tweet-overlay-foreground);
 	font-size: 12px;
 }
 /* 已知宽高的单个视频、GIF 与封面：按比例预留尺寸，高不超过 520px，宽不超过整行。 */
@@ -335,7 +346,7 @@
 	grid-template-rows: repeat(2, minmax(0, 1fr));
 	gap: 2px;
 	overflow: hidden;
-	border-radius: 8px;
+	border-radius: var(--_tweet-radius-inner);
 	background: var(--_tweet-soft);
 }
 .v-tweet__thumbs[data-count="1"] {
@@ -373,8 +384,8 @@
 	inset: 0;
 	display: grid;
 	place-items: center;
-	background: color-mix(in oklab, #000 52%, transparent);
-	color: #fff;
+	background: var(--_tweet-overlay-soft);
+	color: var(--_tweet-overlay-foreground);
 	font-size: 16px;
 	font-weight: 600;
 }
@@ -384,7 +395,7 @@
 	width: var(--_thumb-size);
 	height: var(--_thumb-size);
 	overflow: hidden;
-	border-radius: 8px;
+	border-radius: var(--_tweet-radius-inner);
 	background: var(--_tweet-soft);
 }
 .v-tweet .v-tweet__video-thumb img {
@@ -401,7 +412,7 @@
 	height: 28px;
 	margin: auto;
 	border-radius: 50%;
-	background: color-mix(in oklab, #000 62%, transparent);
+	background: var(--_tweet-overlay);
 }
 .v-tweet__play::after {
 	content: "";
@@ -411,7 +422,7 @@
 	height: 0;
 	margin: auto;
 	border-block: 5px solid transparent;
-	border-inline-start: 9px solid #fff;
+	border-inline-start: 9px solid var(--_tweet-overlay-foreground);
 	translate: 2px 0;
 }
 @media (max-width: 480px) {
