@@ -1,6 +1,7 @@
 import type { Exhibit } from "../../model/exhibit";
 import { accordionExhibit } from "./accordion";
 import { alertExhibit } from "./alert";
+import { announcementBarExhibit } from "./announcement-bar";
 import { avatarExhibit } from "./avatar";
 import { badgeExhibit } from "./badge";
 import { buttonExhibit } from "./button";
@@ -55,15 +56,7 @@ import { uploadTileExhibit } from "./upload-tile";
 /** 馆藏目录：顺序即铭牌编号，待建展品随对应工单落地后换成真实组件。 */
 export const EXHIBITS: Exhibit[] = [
 	navbarExhibit,
-	{
-		id: "announcement-bar",
-		name: "公告浮条",
-		units: ["announcement-bar"],
-		zone: "banner",
-		category: "feedback",
-		footprint: { width: 1120, height: 56 },
-		issue: 714,
-	},
+	announcementBarExhibit,
 	pageHeaderExhibit,
 	tableExhibit,
 	paginationExhibit,

@@ -113,5 +113,9 @@ export interface Announcement {
 	content_html?: string;
 	cover_image?: string;
 	excerpt?: string;
+	/** 公告浮条的可选链接地址；后端尚未提供，有值才渲染 */
+	link_url?: string;
+	/** 链接文字；缺省时显示「查看详情」 */
+	link_text?: string;
 	created_at: string;
 }
