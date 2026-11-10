@@ -23,7 +23,9 @@ export const Route = createFileRoute("/blog/$slug")({
 			queryKey: postKeys.detail(params.slug),
 			queryFn: () => fetchPostBySlug(params.slug),
 		});
-		if (post?.id) {
+		// 批注摘要按访客身份过滤：服务端预取没有访客 cookie，只会拿到空表并作为新鲜数据脱水，
+		// 登录读者刷新后看不到已有批注。只在浏览器导航时预取。
+		if (post?.id && typeof window !== "undefined") {
 			void context.queryClient.prefetchQuery({
 				queryKey: commentKeys.annotationSummary(post.id),
 				queryFn: () => fetchAnnotationSummary(post.id),
