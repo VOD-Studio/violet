@@ -1,6 +1,6 @@
 import { Button, Spinner, Switch } from "@violet/ui";
 
-import { AlertTriangle, DatabaseZap, Info, Play, RotateCcw, TableProperties } from "lucide-react";
+import { DatabaseZap, Info, Play, RotateCcw, TableProperties, TriangleAlert } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { useExecuteSQL } from "../api/mutations";
 import { useDatabaseSchema } from "../api/queries";
@@ -152,7 +152,7 @@ export function SQLConsoleTab({
 
 			{execute.error && (
 				<div className="border-destructive/30 bg-destructive/5 text-destructive flex items-start gap-2 rounded-lg border px-4 py-3 text-sm">
-					<AlertTriangle className="mt-0.5 size-4 shrink-0" />
+					<TriangleAlert className="mt-0.5 size-4 shrink-0" />
 					<div>
 						<p className="font-medium">SQL 未执行</p>
 						<p className="mt-1 text-sm">{execute.error.message}</p>

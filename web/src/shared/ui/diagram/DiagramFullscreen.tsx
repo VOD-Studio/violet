@@ -14,7 +14,7 @@
  */
 
 import { Button } from "@violet/ui";
-import { FileCode, FileImage, Lock, RotateCcw, Unlock, X, ZoomIn, ZoomOut } from "lucide-react";
+import { FileCode, FileImage, Lock, LockOpen, RotateCcw, X, ZoomIn, ZoomOut } from "lucide-react";
 import { motion } from "motion/react";
 import type React from "react";
 import { useEffect, useRef } from "react";
@@ -161,7 +161,7 @@ export function DiagramFullscreen({ svg, label, onClose, triggerRef }: DiagramFu
 						{state.locked ? (
 							<Lock className="size-4 sm:size-5" />
 						) : (
-							<Unlock className="size-4 sm:size-5" />
+							<LockOpen className="size-4 sm:size-5" />
 						)}
 					</Button>
 					<div className="mx-0.5 h-5 w-px bg-white/20 sm:mx-1 sm:h-6" />

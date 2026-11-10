@@ -29,9 +29,9 @@ import {
 } from "@violet/ui";
 import {
 	ArrowDownUp,
+	Ellipsis,
 	FolderInput,
 	Link2,
-	MoreHorizontal,
 	Pencil,
 	Pin,
 	PinOff,
@@ -310,7 +310,7 @@ function ArticleRow({
 									size="sm"
 									aria-label={`${article.title}的更多操作`}
 								>
-									<MoreHorizontal />
+									<Ellipsis />
 								</Button>
 							</DropdownMenuTrigger>
 							<DropdownMenuContent

@@ -42,8 +42,8 @@ import {
 import {
 	Archive,
 	ChevronDown,
+	Ellipsis,
 	FileEdit,
-	MoreHorizontal,
 	Pencil,
 	Plus,
 	RotateCcw,
@@ -565,7 +565,7 @@ function RowActions({
 						title="更多操作"
 						className="w-auto min-w-8 px-1.5"
 					>
-						<MoreHorizontal />
+						<Ellipsis />
 						<ChevronDown className="size-3 opacity-50" />
 					</Button>
 				</DropdownMenuTrigger>

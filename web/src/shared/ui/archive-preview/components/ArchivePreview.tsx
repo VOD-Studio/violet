@@ -11,7 +11,7 @@
 
 import { Button } from "@violet/ui";
 import { cn } from "cn";
-import { AlertCircle, Download, FileArchive, RotateCcw } from "lucide-react";
+import { CircleAlert, Download, FileArchive, RotateCcw } from "lucide-react";
 import { useMemo } from "react";
 
 import { useFilePreviewVariant } from "@/shared/ui/file-preview/file-preview-context";
@@ -79,7 +79,7 @@ export function ArchivePreview({ url, name, mimeType, className }: ArchivePrevie
 					</div>
 				) : loadStatus === "error" ? (
 					<div className="flex h-40 flex-col items-center justify-center gap-2 text-muted-foreground">
-						<AlertCircle className="size-8 text-red-500" />
+						<CircleAlert className="size-8 text-red-500" />
 						<span className="text-sm">压缩包加载失败</span>
 						<Button type="button" variant="outline" size="sm" onClick={retry}>
 							<RotateCcw className="mr-1.5 size-3.5" />

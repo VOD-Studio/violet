@@ -3,7 +3,7 @@
  */
 
 import { Button } from "@violet/ui";
-import { AlertCircle, FileText, RotateCcw } from "lucide-react";
+import { CircleAlert, FileText, RotateCcw } from "lucide-react";
 
 import type { DocxLoadStatus } from "../types/docx-preview-types";
 
@@ -26,7 +26,7 @@ export function DocxOverlay({ loadStatus, onRetry }: DocxOverlayProps) {
 	if (loadStatus === "error") {
 		return (
 			<div className="flex h-60 flex-col items-center justify-center gap-3 text-muted-foreground">
-				<AlertCircle className="size-10 text-red-500" />
+				<CircleAlert className="size-10 text-red-500" />
 				<p className="text-sm">文档加载失败</p>
 				<Button type="button" variant="outline" size="sm" onClick={onRetry}>
 					<RotateCcw className="mr-1.5 size-3.5" />

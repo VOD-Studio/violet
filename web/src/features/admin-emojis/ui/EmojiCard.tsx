@@ -1,7 +1,7 @@
 import type { Emoji } from "@entities/emoji/model/types";
 import { Button } from "@violet/ui";
 
-import { Check, Edit, Link, Trash2, Type } from "lucide-react";
+import { Check, Link, SquarePen, Trash2, Type } from "lucide-react";
 import type { ReactNode } from "react";
 
 interface EmojiCardProps {
@@ -77,7 +77,7 @@ export function EmojiCard({
 								onEdit();
 							}}
 						>
-							<Edit className="size-3" />
+							<SquarePen className="size-3" />
 						</Button>
 						<Button
 							iconOnly

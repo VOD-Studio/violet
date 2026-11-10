@@ -3,7 +3,7 @@ import { formatRelativeTime } from "@shared/lib/date";
 import { avatarUrl, contentImageUrl } from "@shared/lib/image-url";
 import { TWEET_MESSAGES } from "@shared/lib/tweet-messages";
 import { Button, QuoteCard } from "@violet/ui";
-import { AlertCircle, X } from "lucide-react";
+import { CircleAlert, X } from "lucide-react";
 import type { TweetComposerImage } from "../hooks/useTweetComposerImages";
 import styles from "./TweetComposer.module.css";
 
@@ -61,7 +61,7 @@ export function TweetComposerAttachments({
 									role="alert"
 									className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-destructive text-destructive-foreground"
 								>
-									<AlertCircle className="size-4" />
+									<CircleAlert className="size-4" />
 									<span className="text-xs">上传失败</span>
 								</div>
 							)}

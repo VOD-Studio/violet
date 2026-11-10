@@ -33,7 +33,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@violet/ui";
-import { AlertTriangle, Pause, Pencil, Play, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { Pause, Pencil, Play, Plus, RefreshCw, Trash2, TriangleAlert } from "lucide-react";
 import * as React from "react";
 
 export const Route = createFileRoute("/admin/subscriptions")({
@@ -89,7 +89,7 @@ function AdminSubscriptionsPage() {
 					<div className="flex flex-wrap items-center gap-1">
 						<Badge tone={paused ? "danger" : "ok"}>{paused ? "已暂停" : "活跃"}</Badge>
 						{row.consecutive_failures > 0 && !paused && (
-							<Badge tone="warning" icon={<AlertTriangle />}>
+							<Badge tone="warning" icon={<TriangleAlert />}>
 								{row.consecutive_failures}
 							</Badge>
 						)}

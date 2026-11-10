@@ -8,7 +8,7 @@
  */
 
 import { Button } from "@violet/ui";
-import { AlertCircle, Play, RotateCcw } from "lucide-react";
+import { CircleAlert, Play, RotateCcw } from "lucide-react";
 
 import type { VideoLoadStatus } from "../types/video-preview-types";
 
@@ -40,7 +40,7 @@ export function VideoOverlay({
 	if (loadStatus === "error") {
 		return (
 			<div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-black/60 text-white">
-				<AlertCircle className="size-10 text-red-400" />
+				<CircleAlert className="size-10 text-red-400" />
 				<p className="text-sm">视频加载失败</p>
 				<Button type="button" variant="outline" size="sm" onClick={onRetry}>
 					<RotateCcw className="mr-1.5 size-3.5" />

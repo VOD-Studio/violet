@@ -8,7 +8,7 @@ import {
 	DialogTitle,
 	Spinner,
 } from "@violet/ui";
-import { CheckCircle2, QrCode, Smartphone } from "lucide-react";
+import { CircleCheck, QrCode, Smartphone } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -140,7 +140,7 @@ function MusicQrSession({ onRetry, onConfirmed }: MusicQrSessionProps) {
 					</div>
 				) : qrState === "confirmed" ? (
 					<div role="status" className="flex flex-col items-center gap-2">
-						<CheckCircle2 className="size-8 text-success" />
+						<CircleCheck className="size-8 text-success" />
 						登录成功
 					</div>
 				) : (

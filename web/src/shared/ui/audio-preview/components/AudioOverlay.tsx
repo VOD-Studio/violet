@@ -5,7 +5,7 @@
  */
 
 import { Button, Spinner } from "@violet/ui";
-import { AlertCircle, RotateCcw } from "lucide-react";
+import { CircleAlert, RotateCcw } from "lucide-react";
 
 import type { AudioLoadStatus } from "../types/audio-preview-types";
 
@@ -30,7 +30,7 @@ export function AudioOverlay({ loadStatus, onRetry }: AudioOverlayProps) {
 		return (
 			<div className="flex h-20 flex-col items-center justify-center gap-2 text-muted-foreground">
 				<div className="flex items-center gap-1.5 text-red-500">
-					<AlertCircle className="size-4" />
+					<CircleAlert className="size-4" />
 					<span className="text-xs">音频加载失败</span>
 				</div>
 				<Button type="button" variant="outline" size="sm" onClick={onRetry}>

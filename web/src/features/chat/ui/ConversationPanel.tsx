@@ -10,7 +10,7 @@ import { ImagePreview, useImagePreview } from "@shared/ui/image-preview";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button, Spinner } from "@violet/ui";
 import { cn } from "cn";
-import { ArrowDown, ArrowLeft, MoreVertical } from "lucide-react";
+import { ArrowDown, ArrowLeft, EllipsisVertical } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -426,7 +426,7 @@ export function ConversationPanel({
 						size="md"
 						variant="ghost"
 					>
-						<MoreVertical className="size-5" />
+						<EllipsisVertical className="size-5" />
 					</Button>
 				</header>
 

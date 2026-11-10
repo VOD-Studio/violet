@@ -1,6 +1,6 @@
 import type { PersonaSaveState } from "@features/persona-editor/model/types";
 import { Spinner } from "@violet/ui";
-import { AlertTriangle, Check } from "lucide-react";
+import { Check, TriangleAlert } from "lucide-react";
 
 interface PersonaSaveIndicatorProps {
 	state: PersonaSaveState;
@@ -39,7 +39,7 @@ export function PersonaSaveIndicator({ state }: PersonaSaveIndicatorProps) {
 			}
 			role="status"
 		>
-			<AlertTriangle className="size-3.5" />
+			<TriangleAlert className="size-3.5" />
 			{state === "dirty" ? "有未保存修改" : state === "conflict" ? "版本冲突" : "保存失败"}
 		</span>
 	);

@@ -9,7 +9,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { Button } from "@violet/ui";
 import { cn } from "cn";
 import { differenceInDays } from "date-fns";
-import { CalendarDays, Check, Copy, Gauge, MessageCircle, PenSquare, Share2 } from "lucide-react";
+import { CalendarDays, Check, Copy, Gauge, MessageCircle, Share2, SquarePen } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -140,7 +140,7 @@ export function UserProfilePanel({
 				{isSelf ? (
 					<Button variant="outline" className="flex-1" asChild>
 						<Link to="/profile">
-							<PenSquare className="size-4" />
+							<SquarePen className="size-4" />
 							编辑资料
 						</Link>
 					</Button>

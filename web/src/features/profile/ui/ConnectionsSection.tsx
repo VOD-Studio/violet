@@ -9,7 +9,7 @@ import { useOAuthVisibility } from "@features/auth/hooks/use-oauth-visibility";
 import { GoogleOAuthGate } from "@features/auth/ui/GoogleOAuthGate";
 import { useGoogleLogin, useGoogleOAuth } from "@react-oauth/google";
 import { Button, GithubIcon } from "@violet/ui";
-import { CheckCircle2, KeyRound, Link2, Link2Off, Mail } from "lucide-react";
+import { CircleCheck, KeyRound, Link2, Link2Off, Mail } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { toast } from "sonner";
 
@@ -211,7 +211,7 @@ const Row = ({
 			<dd className="flex items-center gap-3 text-sm">
 				{bound ? (
 					<>
-						<CheckCircle2 className="size-3.5 text-success" />
+						<CircleCheck className="size-3.5 text-success" />
 						<span>{boundText}</span>
 					</>
 				) : (

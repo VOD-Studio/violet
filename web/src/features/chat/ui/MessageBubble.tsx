@@ -6,7 +6,7 @@ import { stripPlaceholdersForPreview } from "@features/comments/hooks/use-rich-t
 import { EmojiPicker } from "@features/emojis/ui/EmojiPicker";
 import { Spinner } from "@violet/ui";
 import { cn } from "cn";
-import { AlertTriangle, Check, Copy, Pencil, Reply, Smile, Trash2 } from "lucide-react";
+import { Check, Copy, Pencil, Reply, Smile, Trash2, TriangleAlert } from "lucide-react";
 import { motion } from "motion/react";
 import type { PointerEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -222,7 +222,7 @@ export function MessageBubble({
 							/>
 						) : message.is_deleted ? (
 							<div className="rounded-xl border border-dashed border-destructive/30 bg-destructive/5 px-3 py-2 text-xs italic text-muted-foreground">
-								<AlertTriangle className="mr-1.5 inline size-3.5 text-destructive" />
+								<TriangleAlert className="mr-1.5 inline size-3.5 text-destructive" />
 								消息已被管理员删除
 							</div>
 						) : isBotReply ? (
@@ -395,7 +395,7 @@ export function MessageBubble({
 							>
 								{sending.status === "failed" ? (
 									<>
-										<AlertTriangle className="size-3.5 shrink-0 text-destructive" />
+										<TriangleAlert className="size-3.5 shrink-0 text-destructive" />
 										<span className="wrap-anywhere text-destructive">
 											{sending.error}
 										</span>

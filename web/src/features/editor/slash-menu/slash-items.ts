@@ -25,7 +25,7 @@ import {
 	SquareFunction,
 	Superscript,
 	Table as TableIcon,
-	Text,
+	TextAlignStart,
 	Workflow,
 } from "lucide-react";
 import { ALERT_TYPES } from "../extensions/alert";
@@ -76,7 +76,7 @@ export function buildSlashItems(
 			title: "正文",
 			description: "普通段落文本",
 			keywords: ["paragraph", "正文", "段落", "p"],
-			icon: Text,
+			icon: TextAlignStart,
 			group: "基础",
 			command: (e) => e.chain().focus().setParagraph().run(),
 		},

@@ -19,9 +19,9 @@ import {
 	FileCode,
 	FileImage,
 	Lock,
+	LockOpen,
 	Maximize,
 	RotateCcw,
-	Unlock,
 	ZoomIn,
 	ZoomOut,
 } from "lucide-react";
@@ -260,7 +260,7 @@ export function DiagramViewport({
 						{state.locked ? (
 							<Lock className="size-3.5" />
 						) : (
-							<Unlock className="size-3.5" />
+							<LockOpen className="size-3.5" />
 						)}
 					</Button>
 					{onFullscreen ? (

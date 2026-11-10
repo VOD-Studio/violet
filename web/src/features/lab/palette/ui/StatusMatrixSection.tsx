@@ -1,7 +1,7 @@
 import { STATUS_TOKENS } from "@features/lab/palette/model/tokens";
 import { ColorSwatch } from "@features/lab/palette/ui/ColorSwatch";
 import { cn } from "cn";
-import { AlertCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { CircleAlert, CircleCheck, TriangleAlert } from "lucide-react";
 
 export interface StatusMatrixSectionProps {
 	mode: "light" | "dark" | "dual";
@@ -73,7 +73,7 @@ export function StatusMatrixSection({ mode, className }: StatusMatrixSectionProp
 				{/* 错误 / 危险 */}
 				<div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-xs shadow-xs">
 					<div className="flex items-center gap-2 font-semibold text-destructive">
-						<AlertCircle className="size-4" />
+						<CircleAlert className="size-4" />
 						<span>危险操作拦截</span>
 					</div>
 					<p className="mt-1.5 leading-relaxed text-muted-foreground">
@@ -84,7 +84,7 @@ export function StatusMatrixSection({ mode, className }: StatusMatrixSectionProp
 				{/* 警告 / 注意 */}
 				<div className="rounded-xl border border-warning/20 bg-warning/5 p-4 text-xs shadow-xs">
 					<div className="flex items-center gap-2 font-semibold text-warning">
-						<AlertTriangle className="size-4" />
+						<TriangleAlert className="size-4" />
 						<span>草稿未同步提醒</span>
 					</div>
 					<p className="mt-1.5 leading-relaxed text-muted-foreground">
@@ -95,7 +95,7 @@ export function StatusMatrixSection({ mode, className }: StatusMatrixSectionProp
 				{/* 成功 / 达成 */}
 				<div className="rounded-xl border border-success/20 bg-success/5 p-4 text-xs shadow-xs">
 					<div className="flex items-center gap-2 font-semibold text-success">
-						<CheckCircle2 className="size-4" />
+						<CircleCheck className="size-4" />
 						<span>修订发布成功</span>
 					</div>
 					<p className="mt-1.5 leading-relaxed text-muted-foreground">

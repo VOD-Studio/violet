@@ -1,7 +1,7 @@
 import type { ArticleEmbedModule } from "@shared/ui/article-embeds";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { AlertCircle, ArrowUpRight, Lock } from "lucide-react";
+import { ArrowUpRight, CircleAlert, Lock } from "lucide-react";
 import { type ReactNode, Suspense, useRef, useState } from "react";
 import { roadmapEmbedQueryOptions } from "../api/queries";
 import { ROADMAP_STAGE_LABELS } from "../lib/roadmap-board";
@@ -45,7 +45,7 @@ function Notice({ children }: { children: ReactNode }) {
 	return (
 		<EmbedFrame variant="notice">
 			<p className="flex items-center gap-2 text-sm text-muted-foreground">
-				<AlertCircle className="size-4 shrink-0" aria-hidden="true" />
+				<CircleAlert className="size-4 shrink-0" aria-hidden="true" />
 				{children}
 			</p>
 		</EmbedFrame>

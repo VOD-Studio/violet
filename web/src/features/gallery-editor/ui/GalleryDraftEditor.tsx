@@ -47,7 +47,6 @@ import {
 	Textarea,
 } from "@violet/ui";
 import {
-	AlertTriangle,
 	ExternalLink,
 	EyeOff,
 	ImagePlus,
@@ -55,6 +54,7 @@ import {
 	Save,
 	Send,
 	Trash2,
+	TriangleAlert,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -287,7 +287,7 @@ export function GalleryDraftEditor({ id }: GalleryDraftEditorProps) {
 			{operationError ? (
 				<div className="flex flex-col gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between">
 					<div className="flex items-start gap-2 text-sm">
-						<AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
+						<TriangleAlert className="mt-0.5 size-4 shrink-0 text-destructive" />
 						<p>{operationError.message}</p>
 					</div>
 					{operationError.kind === "conflict" ? (
@@ -310,7 +310,7 @@ export function GalleryDraftEditor({ id }: GalleryDraftEditorProps) {
 			{saveState === "conflict" ? (
 				<div className="flex flex-col gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between">
 					<div className="flex items-start gap-2 text-sm">
-						<AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
+						<TriangleAlert className="mt-0.5 size-4 shrink-0 text-destructive" />
 						<p>服务器上的工作稿已更新。为避免覆盖他人的修改，请重新载入最新版本。</p>
 					</div>
 					<Button variant="outline" size="sm" onClick={() => void reload()}>

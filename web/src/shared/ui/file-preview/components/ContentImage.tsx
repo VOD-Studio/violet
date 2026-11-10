@@ -7,7 +7,7 @@
  * - 未传 onImageClick 时（向后兼容），本组件自渲染全屏 ImagePreview。
  */
 import { Spinner } from "@violet/ui";
-import { AlertCircle } from "lucide-react";
+import { CircleAlert } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ImagePreview, useImagePreview } from "@/shared/ui/image-preview";
 import type { ImagePreviewProps } from "../types/file-preview-types";
@@ -59,7 +59,7 @@ export function ContentImage({
 			{/* 错误态 */}
 			{hasError ? (
 				<div className="flex flex-col items-center gap-2 text-muted-foreground">
-					<AlertCircle className="size-8" />
+					<CircleAlert className="size-8" />
 					<span className="text-sm">图片加载失败</span>
 				</div>
 			) : null}

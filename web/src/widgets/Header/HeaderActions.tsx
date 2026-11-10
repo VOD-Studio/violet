@@ -19,7 +19,7 @@ import {
 	Separator,
 } from "@violet/ui";
 import { cn } from "cn";
-import { CheckCircle2, LayoutDashboard, LogOut, User } from "lucide-react";
+import { CircleCheck, LayoutDashboard, LogOut, User } from "lucide-react";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import HeaderMessages from "./HeaderMessages";
@@ -119,7 +119,7 @@ const HeaderActions = ({ user }: { user?: UserDTO | null }) => {
 										<span className="truncate">{user.email}</span>
 										{/* root 用户必有邮箱，无需重复显示；仅普通用户显示验证勾 */}
 										{!user.is_root && user.email_verified && (
-											<CheckCircle2
+											<CircleCheck
 												className="size-3 shrink-0 text-success"
 												aria-label="邮箱已验证"
 											/>

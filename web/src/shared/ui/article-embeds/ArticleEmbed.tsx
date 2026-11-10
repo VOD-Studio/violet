@@ -1,4 +1,4 @@
-import { AlertCircle } from "lucide-react";
+import { CircleAlert } from "lucide-react";
 import styles from "./ArticleEmbed.module.css";
 import type { ArticleContentContext, ArticleEmbedModule } from "./types";
 
@@ -24,7 +24,7 @@ export function ArticleEmbed({ kind, module, source, context }: ArticleEmbedProp
 		return (
 			<aside className={styles.invalid} role="note">
 				<p>
-					<AlertCircle aria-hidden />
+					<CircleAlert aria-hidden />
 					无法解析 {kind} 卡片配置
 				</p>
 				<pre>{source}</pre>

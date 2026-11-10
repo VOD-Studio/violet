@@ -11,7 +11,7 @@
 
 import { Button } from "@violet/ui";
 import { cn } from "cn";
-import { AlertCircle, Check, Copy, RotateCcw } from "lucide-react";
+import { Check, CircleAlert, Copy, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { copyText } from "@/shared/lib/clipboard";
 
@@ -83,7 +83,7 @@ export function CodePreview({
 					</div>
 				) : loadStatus === "error" ? (
 					<div className="flex h-40 flex-col items-center justify-center gap-2 text-white/60">
-						<AlertCircle className="size-8 text-red-400" />
+						<CircleAlert className="size-8 text-red-400" />
 						<span className="text-sm">代码加载失败</span>
 						<Button type="button" variant="outline" size="sm" onClick={retry}>
 							<RotateCcw className="mr-1.5 size-3.5" />

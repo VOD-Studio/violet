@@ -5,7 +5,7 @@ import { FloatingBack } from "@shared/ui/floating-back";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { Link } from "@tanstack/react-router";
 import { Empty, PageShell, Skeleton } from "@violet/ui";
-import { ArrowLeft, Calendar, CheckCircle2, Copy, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Calendar, CircleCheck, Copy, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { notePlainLength, noteTitle } from "../model/display";
@@ -71,7 +71,7 @@ export function NoteDetailPage({ noteId }: NoteDetailPageProps) {
 
 							<div className="flex items-center gap-3 tabular-nums">
 								<span className="flex items-center gap-1 text-success font-medium">
-									<CheckCircle2 className="size-3" />
+									<CircleCheck className="size-3" />
 									RESOLVED
 								</span>
 								<span className="text-muted-foreground/40">|</span>

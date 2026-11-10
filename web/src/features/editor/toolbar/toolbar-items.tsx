@@ -8,10 +8,7 @@
 import type { Editor } from "@tiptap/react";
 import type { LucideIcon } from "lucide-react";
 import {
-	AlignCenter,
 	AlignJustify,
-	AlignLeft,
-	AlignRight,
 	Bold,
 	ChevronsUpDown,
 	Code,
@@ -33,6 +30,9 @@ import {
 	Subscript,
 	Superscript,
 	Table as TableIcon,
+	TextAlignCenter,
+	TextAlignEnd,
+	TextAlignStart,
 	Underline,
 	Undo2,
 } from "lucide-react";
@@ -148,7 +148,7 @@ export const formatItems: ToolbarItem[] = [
 export const alignItems: ToolbarItem[] = [
 	{
 		id: "alignLeft",
-		icon: AlignLeft,
+		icon: TextAlignStart,
 		title: "左对齐",
 		run: (e) => e.chain().focus().setTextAlign("left").run(),
 		isActive: (e) => e.isActive({ textAlign: "left" }),
@@ -156,7 +156,7 @@ export const alignItems: ToolbarItem[] = [
 	},
 	{
 		id: "alignCenter",
-		icon: AlignCenter,
+		icon: TextAlignCenter,
 		title: "居中",
 		run: (e) => e.chain().focus().setTextAlign("center").run(),
 		isActive: (e) => e.isActive({ textAlign: "center" }),
@@ -164,7 +164,7 @@ export const alignItems: ToolbarItem[] = [
 	},
 	{
 		id: "alignRight",
-		icon: AlignRight,
+		icon: TextAlignEnd,
 		title: "右对齐",
 		run: (e) => e.chain().focus().setTextAlign("right").run(),
 		isActive: (e) => e.isActive({ textAlign: "right" }),

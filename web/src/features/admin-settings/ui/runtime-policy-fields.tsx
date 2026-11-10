@@ -8,7 +8,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@violet/ui";
-import { CircleHelp } from "lucide-react";
+import { CircleQuestionMark } from "lucide-react";
 import { createContext, type ReactNode, useContext, useId, useState } from "react";
 
 /** 字段展示上下文不决定表单结构或字段类型。 */
@@ -55,7 +55,7 @@ export function PolicyHelp({ label, children }: { label: string; children: React
 							}
 						}}
 					>
-						<CircleHelp className="size-4" />
+						<CircleQuestionMark className="size-4" />
 					</Button>
 				</TooltipTrigger>
 				<TooltipContent className="max-w-80" onEscapeKeyDown={() => setOpen(false)}>

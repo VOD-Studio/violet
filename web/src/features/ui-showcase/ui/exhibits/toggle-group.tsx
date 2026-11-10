@@ -1,8 +1,5 @@
 import { ToggleGroup, ToggleGroupItem, ToggleGroupSeparator } from "@violet/ui";
 import {
-	AlignCenter,
-	AlignLeft,
-	AlignRight,
 	Bold,
 	Code,
 	Italic,
@@ -10,6 +7,9 @@ import {
 	ListOrdered,
 	Quote,
 	Strikethrough,
+	TextAlignCenter,
+	TextAlignEnd,
+	TextAlignStart,
 	Underline,
 } from "lucide-react";
 import { type ReactNode, useState } from "react";
@@ -37,13 +37,13 @@ function ToggleGroupFamily({ state }: ExhibitRenderProps) {
 			return (
 				<ToggleGroup type="single" aria-label="对齐" value={align} onValueChange={setAlign}>
 					<ToggleGroupItem value="left" aria-label="左对齐" title="左对齐">
-						<AlignLeft size={16} />
+						<TextAlignStart size={16} />
 					</ToggleGroupItem>
 					<ToggleGroupItem value="center" aria-label="居中" title="居中">
-						<AlignCenter size={16} />
+						<TextAlignCenter size={16} />
 					</ToggleGroupItem>
 					<ToggleGroupItem value="right" aria-label="右对齐" title="右对齐">
-						<AlignRight size={16} />
+						<TextAlignEnd size={16} />
 					</ToggleGroupItem>
 				</ToggleGroup>
 			);
