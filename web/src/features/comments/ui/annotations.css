@@ -207,7 +207,7 @@
 	display: flex;
 	align-items: center;
 	gap: 0;
-	width: 112px;
+	width: 120px;
 	padding: 4px;
 	animation: annotation-fade-in 0.25s ease-out;
 }
@@ -254,8 +254,9 @@
 	margin-inline-start: -0.875rem;
 }
 .annotation-marker:is(:hover, :focus-within, [data-open="true"])
-	> :is(.annotation-avatar-wrap, .annotation-avatar) {
-	margin-inline-start: 0;
+	> :is(.annotation-avatar-wrap, .annotation-avatar)
+	+ :is(.annotation-avatar-wrap, .annotation-avatar) {
+	margin-inline-start: 0.25rem;
 }
 .annotation-marker > .annotation-marker-mobile + :is(.annotation-avatar-wrap, .annotation-avatar) {
 	margin-inline-start: 0;
