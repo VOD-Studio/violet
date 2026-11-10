@@ -908,7 +908,7 @@
 	"dependencies": {
 		"@types/lodash": "4.17.25",
 		"cn": "^0.4.0",
-		"lucide-react": "^1.21.0",
+		"lucide-react": "^1.23.0",
 		"motion": "^12.42.2",
 		"radix-ui": "^1.6.0",
 		"recharts": "2.15.4",

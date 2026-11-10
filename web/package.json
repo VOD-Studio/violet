@@ -102,7 +102,7 @@
 		"highlight.js": "^11.11.1",
 		"katex": "^0.17.0",
 		"lowlight": "^3.3.0",
-		"lucide-react": "^1.21.0",
+		"lucide-react": "^1.23.0",
 		"marked": "^18.0.5",
 		"marked-highlight": "^2.2.4",
 		"mdast-util-gfm-autolink-literal": "^2.0.1",

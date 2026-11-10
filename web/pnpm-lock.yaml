@@ -244,7 +244,7 @@ importers:
         specifier: ^3.3.0
         version: 3.3.0
       lucide-react:
-        specifier: ^1.21.0
+        specifier: ^1.23.0
         version: 1.23.0(react@19.2.7)
       marked:
         specifier: ^18.0.5
@@ -584,7 +584,7 @@ importers:
         specifier: ^0.4.0
         version: 0.4.0
       lucide-react:
-        specifier: ^1.21.0
+        specifier: ^1.23.0
         version: 1.23.0(react@19.2.7)
       motion:
         specifier: ^12.42.2
