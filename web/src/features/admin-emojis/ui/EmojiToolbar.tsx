@@ -136,6 +136,7 @@ export function EmojiToolbar({
 						variant="ghost"
 						className="h-9 shrink-0"
 						onClick={onToggleAddText}
+						aria-label="取消添加文本"
 					>
 						<X className="size-4" />
 					</Button>

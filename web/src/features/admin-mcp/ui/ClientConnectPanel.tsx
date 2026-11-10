@@ -211,6 +211,7 @@ function TokenBanner({ token, onDismiss }: { token: string; onDismiss: () => voi
 				variant="ghost"
 				size="sm"
 				className="shrink-0"
+				aria-label="我已保存，关闭提示"
 				title="我已保存，关闭提示"
 				onClick={onDismiss}
 			>

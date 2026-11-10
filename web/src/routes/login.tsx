@@ -245,6 +245,7 @@ function LoginForm({ googleError }: { googleError: ReactNode }) {
 										disabled={
 											googleLogin.isPending || !scriptLoadedSuccessfully
 										}
+										aria-label="使用 Google 登录"
 									>
 										<GoogleIcon title="Google" className="size-6" />
 									</Button>
@@ -257,6 +258,7 @@ function LoginForm({ googleError }: { googleError: ReactNode }) {
 										size="md"
 										className="ml-4 size-12 rounded-full"
 										onClick={openGithubWindow}
+										aria-label="使用 GitHub 登录"
 										disabled={githubLogin.isPending}
 									>
 										<GithubIcon title="GitHub" className="size-6" />

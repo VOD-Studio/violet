@@ -172,6 +172,7 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 								iconOnly
 								size="sm"
 								className="size-10 rounded-xl"
+								aria-label="邀请成员"
 							>
 								<Plus className="size-4" />
 							</Button>

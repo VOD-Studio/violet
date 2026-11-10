@@ -79,6 +79,7 @@ export function ImagePreviewControls({
 						variant="ghost"
 						size="sm"
 						onClick={handleClick(onZoomOut)}
+						aria-label="缩小"
 						disabled={scale <= 0.5}
 						className="text-foreground hover:bg-muted active:scale-100 sm:size-9"
 					>
@@ -92,6 +93,7 @@ export function ImagePreviewControls({
 						variant="ghost"
 						size="sm"
 						onClick={handleClick(onZoomIn)}
+						aria-label="放大"
 						disabled={scale >= 3}
 						className="text-foreground hover:bg-muted active:scale-100 sm:size-9"
 					>
@@ -202,6 +204,7 @@ export function ImagePreviewControls({
 						variant="ghost"
 						size="sm"
 						onClick={handleClick(onClose)}
+						aria-label="关闭"
 						className="text-foreground hover:bg-muted active:scale-100 sm:size-9"
 					>
 						<X className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -217,6 +220,7 @@ export function ImagePreviewControls({
 						variant="ghost"
 						size="sm"
 						onClick={handleClick(onPrevious)}
+						aria-label="上一张"
 						className="absolute top-1/2 left-2 z-50 hidden size-10 -translate-y-1/2 rounded-full border border-border bg-card text-foreground shadow-soft hover:bg-muted active:translate-y-[-50%]! sm:left-4 sm:flex sm:size-12"
 					>
 						<ChevronLeft className="h-6 w-6 sm:h-8 sm:w-8" />
@@ -226,6 +230,7 @@ export function ImagePreviewControls({
 						variant="ghost"
 						size="sm"
 						onClick={handleClick(onNext)}
+						aria-label="下一张"
 						className="absolute top-1/2 right-2 z-50 hidden size-10 -translate-y-1/2 rounded-full border border-border bg-card text-foreground shadow-soft hover:bg-muted active:translate-y-[-50%]! sm:right-4 sm:flex sm:size-12"
 					>
 						<ChevronRight className="h-6 w-6 sm:h-8 sm:w-8" />

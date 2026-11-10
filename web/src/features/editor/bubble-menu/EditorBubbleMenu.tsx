@@ -63,6 +63,7 @@ export function EditorBubbleMenu({ editor, scrollTarget, onInsertLink }: EditorB
 				variant="ghost"
 				size="sm"
 				onClick={() => editor.chain().focus().toggleBold().run()}
+				aria-label="加粗"
 				className={cn(editor.isActive("bold") && "bg-accent")}
 			>
 				<Bold />
@@ -72,6 +73,7 @@ export function EditorBubbleMenu({ editor, scrollTarget, onInsertLink }: EditorB
 				variant="ghost"
 				size="sm"
 				onClick={() => editor.chain().focus().toggleItalic().run()}
+				aria-label="斜体"
 				className={cn(editor.isActive("italic") && "bg-accent")}
 			>
 				<Italic />
@@ -81,6 +83,7 @@ export function EditorBubbleMenu({ editor, scrollTarget, onInsertLink }: EditorB
 				variant="ghost"
 				size="sm"
 				onClick={() => editor.chain().focus().toggleCode().run()}
+				aria-label="行内代码"
 				className={cn(editor.isActive("code") && "bg-accent")}
 			>
 				<Code />
@@ -90,6 +93,7 @@ export function EditorBubbleMenu({ editor, scrollTarget, onInsertLink }: EditorB
 				variant="ghost"
 				size="sm"
 				onClick={onInsertLink}
+				aria-label="插入链接"
 				className={cn(editor.isActive("link") && "bg-accent")}
 			>
 				<LinkIcon />

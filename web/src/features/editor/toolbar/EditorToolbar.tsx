@@ -119,6 +119,7 @@ export function EditorToolbar({
 					type="button"
 					variant="ghost"
 					size="sm"
+					aria-label="上传图片"
 					title="上传图片"
 					onClick={onUploadImage}
 				>

@@ -185,6 +185,7 @@ function AdminPermissionsPage() {
 										size="sm"
 										variant="ghost"
 										onClick={() => handleEdit(r.row)}
+										aria-label="编辑权限"
 										disabled={!isSuperAdmin}
 									>
 										<Pencil className="size-3.5" />
@@ -201,6 +202,7 @@ function AdminPermissionsPage() {
 										size="sm"
 										variant="ghost"
 										onClick={() => handleDelete(r.row)}
+										aria-label="删除权限"
 										disabled={isBuiltin || !isSuperAdmin}
 									>
 										<Trash2 className="size-3.5" />

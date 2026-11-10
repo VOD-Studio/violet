@@ -184,6 +184,7 @@ function LoginDialogContent({ googleError }: { googleError: ReactNode }) {
 									size="md"
 									className="size-12 rounded-full"
 									onClick={startGoogle}
+									aria-label="使用 Google 登录"
 									disabled={googlePending || !googleReady}
 								>
 									<GoogleIcon title="Google" className="size-6" />
@@ -197,6 +198,7 @@ function LoginDialogContent({ googleError }: { googleError: ReactNode }) {
 									size="md"
 									className="ml-4 size-12 rounded-full"
 									onClick={startGithub}
+									aria-label="使用 GitHub 登录"
 									disabled={githubPending}
 								>
 									<GithubIcon title="GitHub" className="size-6" />

@@ -71,13 +71,21 @@ export function PostEditorToolbar({
 							variant="ghost"
 							size="sm"
 							onClick={onToggleZen}
+							aria-label="退出专注"
 							title="退出专注（Esc）"
 						>
 							<Minimize2 />
 						</Button>
 					)
 				) : (
-					<Button iconOnly variant="ghost" size="sm" onClick={onBack} title="返回列表">
+					<Button
+						iconOnly
+						variant="ghost"
+						size="sm"
+						onClick={onBack}
+						aria-label="返回列表"
+						title="返回列表"
+					>
 						<X />
 					</Button>
 				)}
@@ -95,6 +103,7 @@ export function PostEditorToolbar({
 						size="sm"
 						className="hidden lg:flex"
 						onClick={onToggleSidebar}
+						aria-label={sidebarCollapsed ? "展开侧边栏" : "收起侧边栏"}
 						title={sidebarCollapsed ? "展开侧边栏" : "收起侧边栏"}
 					>
 						<PanelRight className={sidebarCollapsed ? "size-4 opacity-50" : "size-4"} />
@@ -140,6 +149,7 @@ export function PostEditorToolbar({
 						href="/editor-guide"
 						target="_blank"
 						rel="noreferrer"
+						aria-label="语法与功能手册（新标签页）"
 						title="语法与功能手册（新标签页）"
 					>
 						<BookOpen className="size-4" />

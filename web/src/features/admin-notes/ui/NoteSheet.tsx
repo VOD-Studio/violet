@@ -225,6 +225,7 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 								variant="ghost"
 								size="sm"
 								asChild
+								aria-label="查看前台公开页"
 								title="查看前台公开页"
 							>
 								<a href={`/notes/${note.id}`} target="_blank" rel="noreferrer">
@@ -238,6 +239,7 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 								variant="ghost"
 								size="sm"
 								onClick={handleOpenFullscreen}
+								aria-label="展开为全屏独立工作台"
 								title="展开为全屏独立工作台"
 							>
 								<Maximize2 className="size-4" />

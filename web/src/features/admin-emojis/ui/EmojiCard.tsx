@@ -76,6 +76,7 @@ export function EmojiCard({
 								e.stopPropagation();
 								onEdit();
 							}}
+							aria-label="编辑表情"
 						>
 							<SquarePen className="size-3" />
 						</Button>
@@ -88,6 +89,7 @@ export function EmojiCard({
 								e.stopPropagation();
 								onDelete();
 							}}
+							aria-label="删除表情"
 						>
 							<Trash2 className="size-3" />
 						</Button>
