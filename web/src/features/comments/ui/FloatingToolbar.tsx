@@ -17,7 +17,6 @@ import "./annotations.css";
 import { AnnotationComposer } from "./AnnotationComposer";
 import { AnnotationPortal } from "./AnnotationPortal";
 import { AnnotationOverlayContext } from "./annotation-overlay-context";
-import { SelectionHighlight } from "./SelectionHighlight";
 import { useExclusivePanel } from "./use-exclusive-panel";
 
 /** 草稿划线 mark 的 class：写批注时用选中态的深底标出正在批注的文字。 */
@@ -317,7 +316,6 @@ export function FloatingToolbar({
 
 	return (
 		<>
-			<SelectionHighlight contentRef={contentRef} />
 			{pos && !composing && (
 				<AnnotationPortal>
 					<div

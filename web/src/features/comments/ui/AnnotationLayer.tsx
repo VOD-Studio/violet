@@ -6,6 +6,7 @@ import type { AnnotationAuthorFilter, BlockCount } from "../model/types";
 import { AnnotationMarker } from "./AnnotationMarker";
 import type { AnnotationPopoverTarget } from "./AnnotationPopover";
 import { BlockCommentTrigger } from "./BlockCommentTrigger";
+import { SelectionHighlight } from "./SelectionHighlight";
 import { useExclusivePanel } from "./use-exclusive-panel";
 import "@entities/comment/ui/ai-personas.css";
 import "./annotations.css";
@@ -218,6 +219,7 @@ export function AnnotationLayer({
 
 	return (
 		<>
+			<SelectionHighlight contentRef={contentRef} />
 			<div ref={layerRef} className="pointer-events-none absolute inset-x-0 top-0 h-0">
 				<BlockCommentTrigger
 					contentRef={contentRef}
