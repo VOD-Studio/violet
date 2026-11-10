@@ -141,7 +141,20 @@
 	animation: annotation-wash-in 0.3s ease-out;
 }
 
-/* 悬停段落时右侧边距的段评入口：常驻挂载，靠透明度显隐，换段时纵向平滑滑到新位置 */
+/* 悬停段落时紧贴其右缘的透明热区，与段落等高：指针从段落右缘任意高度移出都落在上面，
+   再沿它移向入口，不会因为出口与入口不在同一高度而丢失悬停。 */
+.annotation-trigger-rail {
+	left: 100%;
+	width: 3rem;
+}
+@media (max-width: 1023.98px) {
+	.annotation-trigger-rail {
+		display: none;
+	}
+}
+
+/* 悬停段落时右侧边距的段评入口：与头像组同一条侧轨，圆钮，常驻挂载，靠透明度显隐，换段时纵向滑到新位置。
+   ::before 把可点区域向左伸向段落、四周各放大一圈，指针从段落移过来时不易掉出入口。 */
 .annotation-trigger {
 	left: calc(100% + 0.5rem);
 	display: inline-flex;
@@ -149,27 +162,34 @@
 	justify-content: center;
 	width: 1.75rem;
 	height: 1.75rem;
+	margin-top: 2px;
 	padding: 0;
 	border: 0;
-	border-radius: 0.75rem;
-	background-color: var(--selected);
-	color: var(--selected-foreground);
+	border-radius: 9999px;
+	background-color: var(--muted);
+	box-shadow: 0 0 0 2px var(--background);
+	color: var(--muted-foreground);
 	cursor: pointer;
 	opacity: 0;
 	pointer-events: none;
 	transition:
-		top 0.2s ease,
-		opacity 0.2s ease,
+		top 0.15s ease,
+		opacity 0.15s ease,
 		background-color 0.15s,
 		color 0.15s;
+}
+.annotation-trigger::before {
+	content: "";
+	position: absolute;
+	inset: -6px -6px -6px -14px;
 }
 .annotation-trigger[data-show="true"] {
 	opacity: 1;
 	pointer-events: auto;
 }
 .annotation-trigger:hover {
-	background-color: var(--selected-hover);
-	color: var(--selected-foreground);
+	background-color: color-mix(in oklab, var(--decoration) 16%, var(--card));
+	color: var(--link);
 }
 .annotation-trigger:focus-visible {
 	outline: 2px solid var(--ring);

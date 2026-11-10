@@ -107,15 +107,27 @@ function offsetWithinBlock(blockEl: HTMLElement, endNode: Node, endOffset: numbe
 /**
  * 悬停目标所属的可批注块；落在正文外或不可批注容器内返回 null。
  * 供「悬停段评入口」判断鼠标当前指向哪一段。
+ *
+ * 外层块的文字与内层块相同时（如只含一个段落的引用块）取最外层：块标识相同，
+ * 批注挂在最外层那一个上（findBlockElement 同口径），悬停引用块外框与段落文字不会指向两处。
  */
 export function closestAnnotatableBlock(
 	target: EventTarget | null,
 	root: HTMLElement,
 ): HTMLElement | null {
 	if (!(target instanceof Node)) return null;
-	const block = findClosestBlock(target);
-	if (!block || !root.contains(block)) return null;
-	if (block.closest(UNANNOTATABLE_SELECTOR)) return null;
+	const inner = findClosestBlock(target);
+	if (!inner || !root.contains(inner)) return null;
+	if (inner.closest(UNANNOTATABLE_SELECTOR)) return null;
+	const text = getBlockText(inner).trim();
+	let block = inner;
+	for (
+		let parent = block.parentElement?.closest<HTMLElement>(BLOCK_SELECTOR);
+		parent && root.contains(parent) && getBlockText(parent).trim() === text;
+		parent = block.parentElement?.closest<HTMLElement>(BLOCK_SELECTOR)
+	) {
+		block = parent;
+	}
 	return block;
 }
 

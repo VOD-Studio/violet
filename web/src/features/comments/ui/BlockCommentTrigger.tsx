@@ -13,8 +13,8 @@ const loadBlockComposer = () =>
 		default: module.BlockAnnotationComposer,
 	}));
 
-/** 鼠标离开正文后入口延迟隐藏的时间，留给指针移向入口按钮。 */
-const HIDE_DELAY_MS = 200;
+/** 指针离开段落后入口延迟隐藏的时间，留给指针经过留白移向入口按钮。 */
+const HIDE_DELAY_MS = 300;
 /** 入口纵向对齐块首行的偏移，px */
 const TOP_OFFSET_PX = 2;
 /** 输入面板与所批注段落底边的间距，px */
@@ -47,6 +47,7 @@ export function BlockCommentTrigger({
 }: BlockCommentTriggerProps) {
 	const [hovered, setHovered] = useState<HTMLElement | null>(null);
 	const [top, setTop] = useState(0);
+	const [height, setHeight] = useState(0);
 	const [composerBlock, setComposerBlock] = useState<HTMLElement | null>(null);
 	const hideTimer = useRef<number | undefined>(undefined);
 	const composerVisible = useAnnotationAnchorVisible(composerBlock, composerBlock !== null);
@@ -63,8 +64,13 @@ export function BlockCommentTrigger({
 		const onMove = (event: MouseEvent) => {
 			cancelAnimationFrame(frame);
 			frame = requestAnimationFrame(() => {
-				clearTimeout(hideTimer.current);
 				const block = closestAnnotatableBlock(event.target, root);
+				// 指针落在段落之间或段落与右缘的留白上，多半是在赶往右侧入口：保留当前段，延时再收起。
+				if (!block) {
+					scheduleHide();
+					return;
+				}
+				clearTimeout(hideTimer.current);
 				setHovered((cur) => (cur === block ? cur : block));
 			});
 		};
@@ -82,11 +88,9 @@ export function BlockCommentTrigger({
 	useEffect(() => {
 		const layer = layerRef.current;
 		if (!visibleBlock || !layer) return;
-		setTop(
-			visibleBlock.getBoundingClientRect().top -
-				layer.getBoundingClientRect().top +
-				TOP_OFFSET_PX,
-		);
+		const rect = visibleBlock.getBoundingClientRect();
+		setTop(rect.top - layer.getBoundingClientRect().top + TOP_OFFSET_PX);
+		setHeight(rect.height);
 	}, [visibleBlock, layerRef]);
 
 	const close = useCallback(() => {
@@ -106,6 +110,16 @@ export function BlockCommentTrigger({
 	const showTrigger = Boolean(visibleBlock && !annotatedBlocks.has(visibleBlock));
 	return (
 		<>
+			{showTrigger && (
+				<div
+					data-trigger-rail
+					aria-hidden="true"
+					style={{ top, height }}
+					onMouseEnter={() => clearTimeout(hideTimer.current)}
+					onMouseLeave={scheduleHide}
+					className="annotation-trigger-rail pointer-events-auto absolute"
+				/>
+			)}
 			<button
 				type="button"
 				style={{ top }}
@@ -119,7 +133,7 @@ export function BlockCommentTrigger({
 				data-show={showTrigger ? "true" : undefined}
 				className="annotation-trigger pointer-events-auto absolute"
 			>
-				<MessageSquareText className="size-4" />
+				<MessageSquareText className="size-3.5" />
 			</button>
 			{composerBlock && (
 				<Popover.Root open onOpenChange={(next) => !next && close()}>
