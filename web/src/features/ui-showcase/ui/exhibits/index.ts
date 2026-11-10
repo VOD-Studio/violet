@@ -19,6 +19,7 @@ import { dropdownExhibit } from "./dropdown";
 import { dropdownMenuExhibit } from "./dropdown-menu";
 import { fieldExhibit } from "./field";
 import { footerExhibit } from "./footer";
+import { iconsExhibit } from "./icons";
 import { imagePixelRevealExhibit } from "./image-pixel-reveal";
 import { inboxExhibit } from "./inbox";
 import { indicatorExhibit } from "./indicator";
@@ -107,6 +108,7 @@ export const EXHIBITS: Exhibit[] = [
 	mentionExhibit,
 	linkCardExhibit,
 	imagePixelRevealExhibit,
+	iconsExhibit,
 	cardExhibit,
 	separatorExhibit,
 	listExhibit,
