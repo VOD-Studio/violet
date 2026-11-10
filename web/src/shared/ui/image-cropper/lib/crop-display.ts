@@ -14,6 +14,34 @@ export interface CropTransform {
 	top: number;
 }
 
+/** 百分比数值:尺寸与偏移相对容器,焦点是 img 盒上的 object-position。 */
+export interface CropFrame {
+	width: number;
+	height: number;
+	left: number;
+	top: number;
+	focusX: number;
+	focusY: number;
+}
+
+/**
+ * 不依赖图片固有尺寸与容器像素尺寸的选区复现几何，可直接写进服务端首帧。
+ *
+ * @remarks img 需同时设 `object-fit: cover`：img 盒按选区占比放大容器后，
+ * 图片 cover 进该盒的缩放等于选区 cover 进容器的缩放；焦点取选区中心，
+ * 溢出维度即以选区中心居中。可见结果与 {@link coverCropTransform} 相同。
+ */
+export function coverCropFrame(rect: CropRect): CropFrame {
+	return {
+		width: 100 / rect.w,
+		height: 100 / rect.h,
+		left: (-rect.x / rect.w) * 100,
+		top: (-rect.y / rect.h) * 100,
+		focusX: (rect.x + rect.w / 2) * 100,
+		focusY: (rect.y + rect.h / 2) * 100,
+	};
+}
+
 /**
  * coverCropTransform - 计算「选区精确复现」的 img 几何。
  *
