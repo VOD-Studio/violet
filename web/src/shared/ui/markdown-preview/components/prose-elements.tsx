@@ -2,7 +2,6 @@ import { Checkbox } from "@violet/ui";
 import type { CSSProperties } from "react";
 import type { Components } from "react-markdown";
 import "../../article-blocks/article-blocks.css";
-import { SketchFrame } from "../../sketch-frame/SketchFrame";
 
 function cellAlignment(
 	align: string | undefined,
@@ -16,24 +15,27 @@ function cellAlignment(
 
 /** 保留阅读所需语义属性，不透传任意 DOM props。 */
 export const proseElements: Components = {
-	blockquote: ({ children, ...props }) => {
+	blockquote: ({ children, cite, ...props }) => {
 		const p = props as Record<string, unknown>;
 		const type = p["data-alert-type"];
 		const isAlert =
 			p["data-type"] === "alert" &&
 			typeof type === "string" &&
 			/^(NOTE|TIP|IMPORTANT|WARNING|CAUTION)$/u.test(type);
-		return isAlert ? (
-			<blockquote data-type="alert" data-alert-type={type}>
-				<span className="article-alert-title">{type}</span>
-				{children}
-			</blockquote>
-		) : (
-			<SketchFrame className="my-8" radius={18}>
-				<blockquote className="relative rounded-2xl border-0 bg-primary/5 px-6 py-4 pl-14 text-foreground/85 before:absolute before:left-4 before:top-1 before:font-serif before:text-5xl before:leading-none before:text-primary/40 before:content-['“'] [&>p]:my-3 [&>p:first-child]:mt-0 [&>p:last-child]:mb-0">
+		if (isAlert) {
+			return (
+				<blockquote data-type="alert" data-alert-type={type}>
+					<span className="article-alert-title">{type}</span>
 					{children}
 				</blockquote>
-			</SketchFrame>
+			);
+		}
+		return (
+			<blockquote cite={cite} className="article-blockquote">
+				{children}
+				{/* cite 属性只由清洗白名单放行 http(s) 出处；样式见 article-blocks.css */}
+				{cite ? <cite className="article-blockquote-cite">{cite}</cite> : null}
+			</blockquote>
 		);
 	},
 	details: ({ children, open, id }) => (
