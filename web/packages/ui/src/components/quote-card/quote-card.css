@@ -1,0 +1,198 @@
+/*
+ * QuoteCard：纸色引用卡，整卡的点击区由正文链接的伪元素覆盖。
+ * 需先导入 @violet/ui/tokens.css 或 styles.css。
+ * 根节点不裁剪，焦点环画在卡外，卡片自身不做位移或缩放。
+ */
+
+@layer components {
+	.v-quote-card {
+		position: relative;
+		box-sizing: border-box;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		inline-size: 100%;
+		min-inline-size: 0;
+		padding: 12px 14px;
+		border: 1px solid var(--ol);
+		border-radius: var(--radius-12, 12px);
+		background-color: var(--card);
+		box-shadow: var(--shadow-soft);
+		color: var(--card-foreground);
+		font: inherit;
+	}
+
+	.v-quote-card__header {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		min-inline-size: 0;
+		color: var(--muted-foreground);
+		font-size: 0.75rem;
+	}
+
+	.v-quote-card__author {
+		display: inline-flex;
+		flex: 0 1 auto;
+		align-items: center;
+		gap: 8px;
+		min-inline-size: 0;
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.v-quote-card__avatar {
+		flex: none;
+		inline-size: 20px;
+		block-size: 20px;
+		border-radius: 50%;
+		background-color: var(--muted);
+		object-fit: cover;
+	}
+
+	.v-quote-card__name {
+		overflow: hidden;
+		color: var(--foreground);
+		font-size: 0.8125rem;
+		font-weight: 600;
+		line-height: 1.4;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.v-quote-card__time {
+		flex: none;
+		white-space: nowrap;
+	}
+
+	.v-quote-card__action {
+		display: inline-flex;
+		flex: none;
+		align-items: center;
+		margin-inline-start: auto;
+	}
+
+	.v-quote-card__link,
+	.v-quote-card__body {
+		display: flex;
+		align-items: flex-start;
+		gap: 12px;
+		min-inline-size: 0;
+	}
+
+	.v-quote-card__link {
+		flex: 1;
+		color: inherit;
+		text-decoration: none;
+	}
+
+	/* 链接自身不定位，伪元素才能铺满整张卡 */
+	.v-quote-card__link::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+		z-index: 1;
+		border-radius: inherit;
+	}
+
+	.v-quote-card__link:focus-visible {
+		outline: none;
+	}
+
+	.v-quote-card:has(.v-quote-card__link:focus-visible) {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+
+	/* 作者链接与附加操作浮在覆盖层之上，各自保留点击 */
+	.v-quote-card :is(a, button, [role="button"]):not(.v-quote-card__link) {
+		position: relative;
+		z-index: 2;
+	}
+
+	.v-quote-card__column {
+		display: flex;
+		flex: 1;
+		flex-direction: column;
+		min-inline-size: 0;
+	}
+
+	.v-quote-card__text {
+		display: -webkit-box;
+		overflow: hidden;
+		overflow-wrap: anywhere;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		color: var(--foreground);
+		font-size: 0.875rem;
+		line-height: 1.7;
+		white-space: pre-wrap;
+	}
+
+	.v-quote-card__nested {
+		margin-block-start: 4px;
+		color: var(--muted-foreground);
+		font-size: 0.75rem;
+		line-height: 1.5;
+	}
+
+	.v-quote-card__image {
+		flex: none;
+		inline-size: 64px;
+		block-size: 64px;
+		border-radius: 8px;
+		background-color: var(--muted);
+		object-fit: cover;
+	}
+
+	/* 悬停只在文字上加下划线，卡片本身不位移 */
+	.v-quote-card__name,
+	.v-quote-card__text {
+		text-decoration: underline;
+		text-decoration-color: transparent;
+		text-underline-offset: 4px;
+		transition: text-decoration-color 160ms var(--ease-hover, ease-out);
+	}
+
+	.v-quote-card:hover .v-quote-card__name,
+	.v-quote-card:hover .v-quote-card__text {
+		text-decoration-color: color-mix(in oklab, var(--foreground) 40%, transparent);
+	}
+
+	/* —— 删除态 —— */
+
+	.v-quote-card--deleted {
+		background-color: var(--muted);
+		box-shadow: none;
+	}
+
+	.v-quote-card__deleted {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin: 0;
+		color: var(--muted-foreground);
+		font-size: 0.8125rem;
+		line-height: 1.5;
+	}
+
+	.v-quote-card__icon {
+		flex: none;
+		inline-size: 1rem;
+		block-size: 1rem;
+		/* 16px 图标按图标规范用 1.75 线宽（lucide 默认 2） */
+		stroke-width: 1.75;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-quote-card__name,
+		.v-quote-card__text {
+			transition: none;
+		}
+	}
+
+	[data-motion="reduce"] .v-quote-card__name,
+	[data-motion="reduce"] .v-quote-card__text {
+		transition: none;
+	}
+}

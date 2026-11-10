@@ -281,6 +281,13 @@
 			"css": "src/components/prompt-dialog/prompt-dialog.css"
 		},
 		{
+			"name": "quote-card",
+			"status": "foundation",
+			"entry": "src/components/quote-card/index.ts",
+			"css": "src/components/quote-card/quote-card.css",
+			"documentation": "web/packages/ui/docs/components/quote-card.md"
+		},
+		{
 			"name": "radio",
 			"status": "foundation",
 			"entry": "src/components/radio/index.ts",

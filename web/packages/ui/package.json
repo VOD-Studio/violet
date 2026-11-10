@@ -242,6 +242,11 @@
 			"import": "./src/components/prompt-dialog/index.ts",
 			"default": "./src/components/prompt-dialog/index.ts"
 		},
+		"./quote-card": {
+			"types": "./src/components/quote-card/index.ts",
+			"import": "./src/components/quote-card/index.ts",
+			"default": "./src/components/quote-card/index.ts"
+		},
 		"./radio": {
 			"types": "./src/components/radio/index.ts",
 			"import": "./src/components/radio/index.ts",
@@ -416,6 +421,7 @@
 		"./components/popover.css": "./src/components/popover/popover.css",
 		"./components/progress.css": "./src/components/progress/progress.css",
 		"./components/prompt-dialog.css": "./src/components/prompt-dialog/prompt-dialog.css",
+		"./components/quote-card.css": "./src/components/quote-card/quote-card.css",
 		"./components/radio.css": "./src/components/radio/radio.css",
 		"./components/resend-button.css": "./src/components/resend-button/resend-button.css",
 		"./components/segmented.css": "./src/components/segmented/segmented.css",
@@ -688,6 +694,11 @@
 				"import": "./dist/components/prompt-dialog/index.js",
 				"default": "./dist/components/prompt-dialog/index.js"
 			},
+			"./quote-card": {
+				"types": "./dist/components/quote-card/index.d.ts",
+				"import": "./dist/components/quote-card/index.js",
+				"default": "./dist/components/quote-card/index.js"
+			},
 			"./radio": {
 				"types": "./dist/components/radio/index.d.ts",
 				"import": "./dist/components/radio/index.js",
@@ -862,6 +873,7 @@
 			"./components/popover.css": "./dist/components/popover.css",
 			"./components/progress.css": "./dist/components/progress.css",
 			"./components/prompt-dialog.css": "./dist/components/prompt-dialog.css",
+			"./components/quote-card.css": "./dist/components/quote-card.css",
 			"./components/radio.css": "./dist/components/radio.css",
 			"./components/resend-button.css": "./dist/components/resend-button.css",
 			"./components/segmented.css": "./dist/components/segmented.css",

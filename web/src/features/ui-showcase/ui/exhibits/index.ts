@@ -35,6 +35,7 @@ import { pageHeaderExhibit } from "./page-header";
 import { paginationExhibit } from "./pagination";
 import { popoverExhibit } from "./popover";
 import { presenceExhibit } from "./presence";
+import { quoteCardExhibit } from "./quote-card";
 import { radioExhibit } from "./radio";
 import { segmentedExhibit } from "./segmented";
 import { selectExhibit } from "./select";
@@ -128,15 +129,7 @@ export const EXHIBITS: Exhibit[] = [
 		footprint: { width: 560, height: 240 },
 		issue: 716,
 	},
-	{
-		id: "quote-card",
-		name: "引用卡",
-		units: ["quote-card"],
-		zone: "content",
-		category: "content",
-		footprint: { width: 520, height: 180 },
-		issue: 718,
-	},
+	quoteCardExhibit,
 	{
 		id: "image-grid",
 		name: "图片网格",
