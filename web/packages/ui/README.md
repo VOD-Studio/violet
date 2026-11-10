@@ -4,7 +4,7 @@ React 19 组件库，使用原生 HTML 与 Radix 提供交互行为，用类型�
 
 ## 当前范围
 
-`component-manifest.json` 记录每个组件的入口、样式和成熟度。当前登记 60 个 `foundation` 单元（含 UploadQueue/UploadDropzone 所在的 upload 单元）与 5 个保留 API 的 `legacy` 单元；完整列表以清单为准。兼容入口不代表已经重建所有组件。
+`component-manifest.json` 记录每个组件的入口、样式和成熟度。当前登记 63 个 `foundation` 单元（含 UploadQueue/UploadDropzone 所在的 upload 单元）与 4 个保留 API 的 `legacy` 单元；完整列表以清单为准。兼容入口不代表已经重建所有组件。
 
 所有组件都放在 `src/components/<name>/`，实现、有变体时的 `styles.ts`、CSS、入口和测试就近维护。`src/legacy.ts` 只汇总兼容导出；`src/lib/` 只放有实际消费方的复用能力。
 

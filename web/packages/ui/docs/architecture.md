@@ -2,7 +2,7 @@
 
 Violet/UI 的包名是 `@violet/ui`。React 组件、CSS 和类型声明在同一个包里交付；本目录维护组件库的架构与设计规范。
 
-先看 `web/packages/ui/component-manifest.json`。`foundation` 表示已按新结构实现；`legacy` 表示保留兼容入口、尚未重建。当前清单登记 60 个基础单元与 5 个 legacy 单元；完整组件列表与实际成熟度以清单为准。upload 单元提供纯展示 UploadQueue 和原生 UploadDropzone，upload-tile 单元提供方形入口；上传请求、文件与状态机留在宿主。旧页面能运行不代表已经完成新架构改造。
+先看 `web/packages/ui/component-manifest.json`。`foundation` 表示已按新结构实现；`legacy` 表示保留兼容入口、尚未重建。当前清单登记 63 个基础单元与 4 个 legacy 单元；完整组件列表与实际成熟度以清单为准。upload 单元提供纯展示 UploadQueue 和原生 UploadDropzone，upload-tile 单元提供方形入口；上传请求、文件与状态机留在宿主。旧页面能运行不代表已经完成新架构改造。
 
 ```text
 web/packages/ui/
