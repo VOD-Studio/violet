@@ -24,6 +24,7 @@ import { inboxExhibit } from "./inbox";
 import { indicatorExhibit } from "./indicator";
 import { inputExhibit } from "./input";
 import { kbdExhibit } from "./kbd";
+import { lightboxExhibit } from "./lightbox";
 import { linkCardExhibit } from "./link-card";
 import { listExhibit } from "./list";
 import { mentionExhibit } from "./mention";
@@ -52,6 +53,7 @@ import { toggleGroupExhibit } from "./toggle-group";
 import { tooltipExhibit } from "./tooltip";
 import { treeExhibit } from "./tree";
 import { treeSelectExhibit } from "./tree-select";
+import { tweetEmbedExhibit } from "./tweet-embed";
 import { uploadExhibit } from "./upload";
 import { uploadTileExhibit } from "./upload-tile";
 
@@ -75,15 +77,7 @@ export const EXHIBITS: Exhibit[] = [
 	morphingPopoverExhibit,
 	presenceExhibit,
 	inboxExhibit,
-	{
-		id: "lightbox",
-		name: "图片预览",
-		units: ["image-preview"],
-		zone: "stage",
-		category: "overlay",
-		footprint: { width: 560, height: 400 },
-		issue: 720,
-	},
+	lightboxExhibit,
 	buttonExhibit,
 	segmentedExhibit,
 	checkboxExhibit,
@@ -148,13 +142,5 @@ export const EXHIBITS: Exhibit[] = [
 		footprint: { width: 560, height: 320 },
 		issue: 720,
 	},
-	{
-		id: "tweet-embed",
-		name: "外站推文",
-		units: ["react-tweet"],
-		zone: "content",
-		category: "content",
-		footprint: { width: 520, height: 440 },
-		issue: 720,
-	},
+	tweetEmbedExhibit,
 ];
