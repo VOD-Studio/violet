@@ -71,7 +71,7 @@ async function openFullscreen() {
 	fireEvent.click(zoomButton);
 	return waitFor(
 		() => {
-			const el = document.querySelector("[class*='z-9999']");
+			const el = document.querySelector('[role="dialog"][aria-label="图片预览"]');
 			expect(el).not.toBeNull();
 			return el as HTMLElement;
 		},
@@ -83,7 +83,7 @@ async function openFullscreen() {
 async function waitFullscreenGone() {
 	await waitFor(
 		() => {
-			expect(document.querySelector("[class*='z-9999']")).toBeNull();
+			expect(document.querySelector('[role="dialog"][aria-label="图片预览"]')).toBeNull();
 		},
 		{ timeout: 3000 },
 	);

@@ -1,4 +1,5 @@
 import { originalImageUrl } from "@shared/lib/image-url";
+import { cn } from "cn";
 import {
 	AnimatePresence,
 	animate,
@@ -25,6 +26,7 @@ function imageAspectRatio(image: HTMLImageElement | undefined): number | undefin
 
 /** 全屏图片查看器，每次打开独立初始化索引、入场方向与图像变换。 */
 export function ImagePreview(props: ImagePreviewProps) {
+	const { container } = props;
 	const [mounted, setMounted] = useState(false);
 	const [session, setSession] = useState({ open: props.open, key: 0, visible: props.open });
 	useEffect(() => {
@@ -41,7 +43,8 @@ export function ImagePreview(props: ImagePreviewProps) {
 	}
 
 	useEffect(() => {
-		if (!session.visible) return;
+		// 嵌在容器里时页面仍可滚动，不接管 body。
+		if (!session.visible || container) return;
 		const body = document.body;
 		const originalOverflow = body.style.overflow;
 		const originalPaddingRight = body.style.paddingRight;
@@ -54,7 +57,7 @@ export function ImagePreview(props: ImagePreviewProps) {
 			body.style.overflow = originalOverflow;
 			body.style.paddingRight = originalPaddingRight;
 		};
-	}, [session.visible]);
+	}, [session.visible, container]);
 
 	if (typeof document === "undefined" || !mounted) return null;
 	return createPortal(
@@ -68,7 +71,7 @@ export function ImagePreview(props: ImagePreviewProps) {
 		>
 			{props.open ? <ImagePreviewDialog key={session.key} {...props} /> : null}
 		</AnimatePresence>,
-		document.body,
+		container ?? document.body,
 	);
 }
 
@@ -82,6 +85,7 @@ function ImagePreviewDialog({
 	triggerElement,
 	triggerRect,
 	initialNaturalSize,
+	container,
 }: ImagePreviewProps) {
 	const [isPresent, safeToRemove] = usePresence();
 	const reducedMotion = useReducedMotion();
@@ -258,7 +262,12 @@ function ImagePreviewDialog({
 	}, [isPresent]);
 
 	return (
-		<DialogPrimitive.Root open={isPresent} onOpenChange={(open) => !open && onClose()}>
+		<DialogPrimitive.Root
+			open={isPresent}
+			// 嵌在容器里时不接管焦点与页面交互，页面其他区域仍可用。
+			modal={!container}
+			onOpenChange={(open) => !open && onClose()}
+		>
 			<DialogPrimitive.Content
 				asChild
 				forceMount
@@ -273,7 +282,7 @@ function ImagePreviewDialog({
 				<motion.div
 					ref={overlayRef}
 					role="dialog"
-					aria-modal="true"
+					aria-modal={container ? undefined : true}
 					aria-label="图片预览"
 					aria-hidden={!isPresent}
 					inert={!isPresent}
@@ -281,14 +290,17 @@ function ImagePreviewDialog({
 					initial={{ opacity: 0 }}
 					animate={{ opacity: 1 }}
 					transition={{ duration: 0.25 }}
-					className="fixed inset-0 z-9999 overflow-hidden outline-none"
+					className={cn(
+						"inset-0 overflow-hidden outline-none",
+						container ? "absolute" : "fixed z-(--layer-float)",
+					)}
 					// Radix modal 会禁用 body 指针事件；只有当前会话恢复交互。
 					style={{ pointerEvents: isPresent ? "auto" : "none" }}
 					onClick={onClose}
 				>
 					<DialogPrimitive.Title className="sr-only">图片预览</DialogPrimitive.Title>
 					<motion.div
-						className="absolute inset-0 bg-background/90 backdrop-blur-[20px]"
+						className="absolute inset-0 bg-scrim-paper backdrop-blur-scrim"
 						style={{ opacity: chromeOpacity }}
 					/>
 					<motion.div
@@ -338,6 +350,7 @@ function ImagePreviewDialog({
 								onSwipeLeft={images.length > 1 ? handleNext : undefined}
 								onSwipeRight={images.length > 1 ? handlePrevious : undefined}
 								resetKey={resetKey}
+								frame={container}
 							/>
 						) : null}
 					</AnimatePresence>

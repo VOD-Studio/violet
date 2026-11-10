@@ -41,6 +41,8 @@ export interface ImagePreviewImageProps {
 	onSwipeLeft?: () => void;
 	onSwipeRight?: () => void;
 	resetKey: number;
+	/** 嵌在容器里时的尺寸基准，省略时按窗口。 */
+	frame?: HTMLElement | null;
 }
 
 interface Gesture {
@@ -57,6 +59,16 @@ const slideVariants = {
 	center: { x: "0%" },
 	exit: (direction: number) => ({ x: `${-direction * 100}%` }),
 };
+
+/** 图片适配的可用尺寸：嵌在容器里时按容器，全屏时按窗口。 */
+function measureViewport(frame: HTMLElement | null | undefined) {
+	if (!frame) return { width: window.innerWidth, height: window.innerHeight };
+	const rect = frame.getBoundingClientRect();
+	return {
+		width: rect.width || frame.clientWidth || window.innerWidth,
+		height: rect.height || frame.clientHeight || window.innerHeight,
+	};
+}
 
 /** 每张图独立持有加载状态和显示盒，退场期间不接收下一张的尺寸。 */
 export function ImagePreviewImage({
@@ -78,6 +90,7 @@ export function ImagePreviewImage({
 	onSwipeLeft,
 	onSwipeRight,
 	resetKey,
+	frame,
 }: ImagePreviewImageProps) {
 	const isPresent = useIsPresent();
 	const reducedMotion = useReducedMotion();
@@ -85,10 +98,7 @@ export function ImagePreviewImage({
 	const naturalSize = initialNaturalSize ?? probedSize;
 	const [ready, setReady] = useState(false);
 	const [failed, setFailed] = useState(false);
-	const [viewport, setViewport] = useState(() => ({
-		width: window.innerWidth,
-		height: window.innerHeight,
-	}));
+	const [viewport, setViewport] = useState(() => measureViewport(frame));
 	const imgRef = useRef<HTMLImageElement>(null);
 	const stageRef = useRef<HTMLDivElement>(null);
 	const wheelActive = useRef(false);
@@ -168,10 +178,16 @@ export function ImagePreviewImage({
 	}, [isPresent, onWheelFollow]);
 
 	useEffect(() => {
-		const resize = () => setViewport({ width: window.innerWidth, height: window.innerHeight });
+		const resize = () => setViewport(measureViewport(frame));
 		window.addEventListener("resize", resize);
-		return () => window.removeEventListener("resize", resize);
-	}, []);
+		const observer =
+			frame && typeof ResizeObserver !== "undefined" ? new ResizeObserver(resize) : null;
+		if (frame) observer?.observe(frame);
+		return () => {
+			window.removeEventListener("resize", resize);
+			observer?.disconnect();
+		};
+	}, [frame]);
 
 	const fallbackAspectRatio =
 		placeholderAspectRatio ??
@@ -305,11 +321,21 @@ export function ImagePreviewImage({
 		settle();
 	};
 
+	// 嵌在容器里时入场起点相对容器中心，而不是视口中心。
+	const frameRect = frame?.getBoundingClientRect();
 	const origin =
 		box && triggerRect && triggerRect.width > 0 && triggerRect.height > 0
 			? {
-					x: triggerRect.left + triggerRect.width / 2 - viewport.width / 2,
-					y: triggerRect.top + triggerRect.height / 2 - viewport.height / 2,
+					x:
+						triggerRect.left +
+						triggerRect.width / 2 -
+						(frameRect?.left ?? 0) -
+						viewport.width / 2,
+					y:
+						triggerRect.top +
+						triggerRect.height / 2 -
+						(frameRect?.top ?? 0) -
+						viewport.height / 2,
 					scale: Math.min(triggerRect.width / box.width, triggerRect.height / box.height),
 				}
 			: { x: 0, y: 0, scale: 1 };
@@ -401,7 +427,7 @@ export function ImagePreviewImage({
 								onError={() => setFailed(true)}
 								decoding="async"
 								draggable={false}
-								className="absolute inset-0 h-full w-full select-none object-contain"
+								className="absolute inset-0 h-full w-full rounded-4 object-contain shadow-soft select-none"
 								style={{
 									opacity: ready ? 1 : 0,
 									transform: imageTransform,
@@ -443,7 +469,7 @@ export function ImagePreviewImage({
 			{failed ? (
 				<div
 					role="alert"
-					className="pointer-events-none absolute inset-0 flex items-center justify-center text-white"
+					className="pointer-events-none absolute inset-0 flex items-center justify-center text-foreground"
 				>
 					图片加载失败
 				</div>
@@ -453,7 +479,7 @@ export function ImagePreviewImage({
 					aria-label="正在加载图片"
 					className="pointer-events-none absolute inset-0 flex items-center justify-center"
 				>
-					<div className="size-10 animate-spin rounded-full border-4 border-white/20 border-t-white" />
+					<div className="size-10 animate-spin rounded-full border-4 border-foreground/20 border-t-foreground" />
 				</div>
 			) : null}
 		</motion.div>

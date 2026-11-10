@@ -60,6 +60,10 @@
 	--shadow-soft: var(--fixed-shadow-soft);
 	--scrim: var(--fixed-scrim);
 	--scrim-soft: var(--fixed-scrim-soft);
+	/* 纸色磨砂遮罩：图片预览这类沉浸层用纸色加模糊代替墨色，深浅与四季随页面材质 */
+	--scrim-paper: color-mix(in oklab, var(--background) 90%, transparent);
+	/* 磨砂半径（设计稿「图片预览」给 20px） */
+	--scrim-blur: 20px;
 	--scrollbar-thumb: var(--neutral-a7);
 	--scrollbar-width: thin;
 	--scrollbar-gutter: auto;

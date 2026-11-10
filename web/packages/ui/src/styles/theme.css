@@ -100,6 +100,9 @@
 	--color-rule2: var(--rule2);
 	--color-sheet-border: var(--sheet-border);
 	--color-sheet-translucent: var(--sheet-translucent);
+	/* 纸色磨砂遮罩：颜色与模糊半径都来自 token，组件不写魔法数 */
+	--color-scrim-paper: var(--scrim-paper);
+	--blur-scrim: var(--scrim-blur);
 	--shadow-soft: var(--shadow-soft);
 	--color-category-1: var(--category-1);
 	--color-category-1-muted: var(--category-1-muted);
