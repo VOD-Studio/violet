@@ -37,6 +37,11 @@
 			"import": "./src/components/alert/index.ts",
 			"default": "./src/components/alert/index.ts"
 		},
+		"./announcement-bar": {
+			"types": "./src/components/announcement-bar/index.ts",
+			"import": "./src/components/announcement-bar/index.ts",
+			"default": "./src/components/announcement-bar/index.ts"
+		},
 		"./avatar": {
 			"types": "./src/components/avatar/index.ts",
 			"import": "./src/components/avatar/index.ts",
@@ -367,6 +372,7 @@
 		"./classes.css": "./src/classes.css",
 		"./components/accordion.css": "./src/components/accordion/accordion.css",
 		"./components/alert.css": "./src/components/alert/alert.css",
+		"./components/announcement-bar.css": "./src/components/announcement-bar/announcement-bar.css",
 		"./components/avatar.css": "./src/components/avatar/avatar.css",
 		"./components/badge.css": "./src/components/badge/badge.css",
 		"./components/breadcrumbs.css": "./src/components/breadcrumbs/breadcrumbs.css",
@@ -470,6 +476,11 @@
 				"types": "./dist/components/alert/index.d.ts",
 				"import": "./dist/components/alert/index.js",
 				"default": "./dist/components/alert/index.js"
+			},
+			"./announcement-bar": {
+				"types": "./dist/components/announcement-bar/index.d.ts",
+				"import": "./dist/components/announcement-bar/index.js",
+				"default": "./dist/components/announcement-bar/index.js"
 			},
 			"./avatar": {
 				"types": "./dist/components/avatar/index.d.ts",
@@ -801,6 +812,7 @@
 			"./classes.css": "./dist/classes.css",
 			"./components/accordion.css": "./dist/components/accordion.css",
 			"./components/alert.css": "./dist/components/alert.css",
+			"./components/announcement-bar.css": "./dist/components/announcement-bar.css",
 			"./components/avatar.css": "./dist/components/avatar.css",
 			"./components/badge.css": "./dist/components/badge.css",
 			"./components/breadcrumbs.css": "./dist/components/breadcrumbs.css",

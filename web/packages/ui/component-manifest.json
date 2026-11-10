@@ -17,6 +17,13 @@
 			"documentation": "web/packages/ui/docs/components/alert.md"
 		},
 		{
+			"name": "announcement-bar",
+			"status": "foundation",
+			"entry": "src/components/announcement-bar/index.ts",
+			"css": "src/components/announcement-bar/announcement-bar.css",
+			"documentation": "web/packages/ui/docs/components/announcement-bar.md"
+		},
+		{
 			"name": "avatar",
 			"status": "foundation",
 			"entry": "src/components/avatar/index.ts",

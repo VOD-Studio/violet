@@ -1,0 +1,136 @@
+/*
+ * AnnouncementBar：悬在导航下方的站点级公告条，宽度跟着文字走。
+ * 需先导入 @violet/ui/tokens.css 或 styles.css。
+ */
+
+@layer components {
+	.v-announcement-bar {
+		box-sizing: border-box;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.625rem;
+		min-block-size: 2rem;
+		max-inline-size: min(35rem, 100%);
+		/* 右侧留 4px 给关闭钮自己的点击区，视觉上与左侧 16px 对齐 */
+		padding: 0 0.25rem 0 1rem;
+		border: 1px solid var(--border);
+		border-radius: min(var(--radius, 0.75rem), 1rem);
+		background-color: var(--surface-glass);
+		backdrop-filter: blur(12px);
+		box-shadow: var(--shadow-soft);
+		color: var(--foreground);
+		font-size: 0.78125rem;
+		line-height: 1.4;
+		animation: v-announcement-bar-in 180ms ease-out;
+	}
+
+	.v-announcement-bar__dot {
+		flex: none;
+		inline-size: 6px;
+		block-size: 6px;
+		border-radius: 50%;
+		background-color: var(--decoration);
+	}
+
+	.v-announcement-bar[data-severity="warning"] .v-announcement-bar__dot {
+		background-color: var(--warning);
+	}
+
+	.v-announcement-bar[data-severity="success"] .v-announcement-bar__dot {
+		background-color: var(--success);
+	}
+
+	.v-announcement-bar[data-severity="error"] .v-announcement-bar__dot {
+		background-color: var(--destructive);
+	}
+
+	.v-announcement-bar__label {
+		flex: none;
+		color: var(--muted-foreground);
+	}
+
+	.v-announcement-bar__text {
+		min-inline-size: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.v-announcement-bar__link {
+		flex: 0 1 auto;
+		min-inline-size: 0;
+		overflow: hidden;
+		color: var(--link);
+		text-decoration: underline;
+		text-overflow: ellipsis;
+		text-underline-offset: 3px;
+		white-space: nowrap;
+	}
+
+	.v-announcement-bar__link:hover {
+		color: var(--link-hover);
+		text-decoration-thickness: 2px;
+	}
+
+	.v-announcement-bar__close {
+		display: inline-flex;
+		flex: none;
+		align-items: center;
+		justify-content: center;
+		inline-size: 1.5rem;
+		block-size: 1.5rem;
+		padding: 0;
+		border: 0;
+		border-radius: 50%;
+		background: transparent;
+		color: var(--muted-foreground);
+		cursor: pointer;
+		transition:
+			background-color 150ms ease-out,
+			color 150ms ease-out;
+	}
+
+	.v-announcement-bar__close svg {
+		inline-size: 0.75rem;
+		block-size: 0.75rem;
+	}
+
+	.v-announcement-bar__close:hover {
+		background-color: color-mix(in oklab, var(--foreground) 8%, transparent);
+		color: var(--foreground);
+	}
+
+	.v-announcement-bar__link:focus-visible,
+	.v-announcement-bar__close:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+
+	@keyframes v-announcement-bar-in {
+		from {
+			opacity: 0;
+		}
+
+		to {
+			opacity: 1;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-announcement-bar {
+			animation: none;
+		}
+
+		.v-announcement-bar__close {
+			transition: none;
+		}
+	}
+
+	[data-motion="reduce"] .v-announcement-bar {
+		animation: none;
+	}
+
+	[data-motion="reduce"] .v-announcement-bar__close {
+		transition: none;
+	}
+}
