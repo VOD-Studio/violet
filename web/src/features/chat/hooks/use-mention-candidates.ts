@@ -1,5 +1,5 @@
 import { MENTION_ALL } from "@entities/user/model/mention-token";
-import type { MentionCandidate } from "@features/comments/ui/MentionSuggestions";
+import type { MentionCandidate } from "@violet/ui";
 import { useMemo } from "react";
 import { useChatMembers } from "../api/queries";
 import type { ConversationKind } from "../model/types";

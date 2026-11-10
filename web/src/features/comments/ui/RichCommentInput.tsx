@@ -10,7 +10,7 @@
  * onImagesChange 回调通知父组件已上传图片列表（供提交时读取）；inlineImages 模式下
  * 按图片在文字流中的位置排序，而非上传发起顺序。
  * onUploadingChange 回调通知父组件上传状态（供禁用提交按钮）。
- * mentionCandidates 非空时输入 `@` 触发提及候选浮层（成员列表由消费方给全量，筛选在本组件内做）。
+ * mentionCandidates 非空时输入 `@` 触发提及候选浮层（候选由消费方给全量，筛选与浮层来自组件库）。
  * resetNonce 变化时清空内部图片状态（供提交成功后重置）。
  */
 import { toEmojiToken } from "@entities/emoji/model/token";
@@ -23,6 +23,12 @@ import {
 	type ImageUploadTask,
 } from "@shared/lib/image-upload-task";
 import { isImageURL } from "@shared/lib/url";
+import {
+	filterMentionCandidates,
+	type MentionCandidate,
+	MentionList,
+	mentionOptionId,
+} from "@violet/ui";
 import { cn } from "cn";
 import { Image as ImageIcon, Smile, X } from "lucide-react";
 import {
@@ -31,6 +37,7 @@ import {
 	useCallback,
 	useContext,
 	useEffect,
+	useId,
 	useImperativeHandle,
 	useMemo,
 	useRef,
@@ -42,10 +49,6 @@ import {
 	useRichTextInput,
 } from "../hooks/use-rich-text-input";
 import { AnnotationOverlayContext } from "./annotation-overlay-context";
-import { type MentionCandidate, MentionSuggestions } from "./MentionSuggestions";
-
-/** 候选浮层最多展示的候选数：超出部分靠继续输入收窄，不指望滚动翻找。 */
-const mentionSuggestionLimit = 8;
 
 export interface PictureInput {
 	id?: string;
@@ -274,6 +277,7 @@ export function RichCommentInput({
 	);
 
 	const mentionEnabled = !!mentionCandidates?.length;
+	const mentionListboxId = useId();
 	const [mentionQuery, setMentionQuery] = useState<string | null>(null);
 	const [mentionIndex, setMentionIndex] = useState(0);
 	const resolveMention = useCallback(
@@ -344,16 +348,13 @@ export function RichCommentInput({
 
 	const mentionMatches = useMemo(() => {
 		if (mentionQuery === null || !mentionCandidates?.length) return [];
-		const query = mentionQuery.trim().toLowerCase();
-		const matched = query
-			? mentionCandidates.filter(
-					(item) =>
-						item.username.toLowerCase().includes(query) ||
-						item.displayName.toLowerCase().includes(query),
-				)
-			: mentionCandidates;
-		return matched.slice(0, mentionSuggestionLimit);
+		return filterMentionCandidates(mentionCandidates, mentionQuery);
 	}, [mentionCandidates, mentionQuery]);
+
+	const mentionOpen = mentionQuery !== null && mentionEnabled;
+	const activeMentionOptionId = mentionMatches[mentionIndex]
+		? mentionOptionId(mentionListboxId, mentionMatches[mentionIndex].id)
+		: undefined;
 
 	const selectMention = (candidate: MentionCandidate) => {
 		insertMention(candidate.id, candidate.username, candidate.displayName);
@@ -362,20 +363,22 @@ export function RichCommentInput({
 
 	/** 提及浮层优先吃掉方向键/回车/Esc；返回 true 表示按键已被消费，不再交给编辑区。 */
 	const handleMentionKeyDown = (event: React.KeyboardEvent): boolean => {
-		if (event.nativeEvent.isComposing || mentionMatches.length === 0) return false;
+		if (event.nativeEvent.isComposing || !mentionOpen) return false;
+		const count = mentionMatches.length;
 		switch (event.key) {
 			case "ArrowDown":
+				if (count === 0) return false;
 				event.preventDefault();
-				setMentionIndex((index) => (index + 1) % mentionMatches.length);
+				setMentionIndex((index) => (index + 1) % count);
 				return true;
 			case "ArrowUp":
+				if (count === 0) return false;
 				event.preventDefault();
-				setMentionIndex(
-					(index) => (index - 1 + mentionMatches.length) % mentionMatches.length,
-				);
+				setMentionIndex((index) => (index - 1 + count) % count);
 				return true;
 			case "Enter":
 			case "Tab":
+				if (count === 0) return false;
 				event.preventDefault();
 				selectMention(mentionMatches[mentionIndex] ?? mentionMatches[0]);
 				return true;
@@ -383,6 +386,7 @@ export function RichCommentInput({
 				event.preventDefault();
 				// 聊天 composer 的祖先监听 Esc 取消回复/分享，浮层开着时这一层先兜住。
 				event.stopPropagation();
+				// 只收浮层，已输入的文字留在编辑区
 				setMentionQuery(null);
 				return true;
 			default:
@@ -517,6 +521,7 @@ export function RichCommentInput({
 	);
 
 	const editor = (
+		// biome-ignore lint/a11y/useAriaPropsSupportedByRole: 设计稿要求可编辑输入区带 aria-expanded；查询方与既有键盘契约都按 role=textbox
 		<div
 			ref={contentRef}
 			contentEditable={!disabled && overlayActive}
@@ -539,8 +544,18 @@ export function RichCommentInput({
 			data-placeholder={placeholder}
 			role="textbox"
 			aria-label={editorLabel}
-			aria-controls={slashSuggestions ? slashListboxId : undefined}
-			aria-activedescendant={slashSuggestions ? slashActiveOptionId : undefined}
+			aria-autocomplete={mentionEnabled ? "list" : undefined}
+			aria-expanded={mentionEnabled ? mentionOpen : undefined}
+			aria-controls={
+				mentionOpen ? mentionListboxId : slashSuggestions ? slashListboxId : undefined
+			}
+			aria-activedescendant={
+				mentionOpen
+					? activeMentionOptionId
+					: slashSuggestions
+						? slashActiveOptionId
+						: undefined
+			}
 			tabIndex={0}
 			suppressContentEditableWarning
 			className={cn(
@@ -600,12 +615,16 @@ export function RichCommentInput({
 			onChange={handleFileSelect}
 		/>
 	);
-	const suggestions = mentionMatches.length > 0 && (
-		<MentionSuggestions
+	// 浮层贴在输入框（实际的输入容器）下方 6px；列表内容与筛选都在组件库里
+	const suggestions = mentionOpen && (
+		<MentionList
 			activeIndex={mentionIndex}
 			candidates={mentionMatches}
+			className="absolute inset-s-0 top-[calc(100%+6px)]"
+			id={mentionListboxId}
 			onActiveIndexChange={setMentionIndex}
 			onSelect={selectMention}
+			query={mentionQuery ?? ""}
 		/>
 	);
 
@@ -620,7 +639,6 @@ export function RichCommentInput({
 					className,
 				)}
 			>
-				{suggestions}
 				{slashSuggestions}
 				{fileInput}
 				{thumbnails}
@@ -632,6 +650,7 @@ export function RichCommentInput({
 					{editor}
 					<div className="shrink-0">{toolbarEnd}</div>
 				</div>
+				{suggestions}
 			</div>
 		);
 	}
@@ -646,11 +665,11 @@ export function RichCommentInput({
 				className,
 			)}
 		>
-			{suggestions}
 			{slashSuggestions}
 			{fileInput}
 			{editor}
 			{thumbnails}
+			{suggestions}
 			<div className="flex items-center justify-between px-2 py-1.5">
 				<div className="flex items-center gap-1">
 					{emojiButton}

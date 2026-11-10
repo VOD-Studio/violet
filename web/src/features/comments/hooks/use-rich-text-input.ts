@@ -27,6 +27,7 @@ import {
 } from "@entities/user/model/mention-token";
 import { useAllEmojis } from "@features/emojis/api/queries";
 import { isImageURL } from "@shared/lib/url";
+import { parseMentionTrigger } from "@violet/ui";
 import { cn } from "cn";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
@@ -611,11 +612,7 @@ function createMentionElement(userID: string, username: string, displayName: str
 	return span;
 }
 
-/**
- * 光标前正在输入的 `@查询词`；null 表示光标不处于提及触发态。
- *
- * 触发条件：`@` 位于文本节点开头或空白之后（词首），且其后到光标之间没有空白与第二个 `@`。
- */
+/** 光标前正在输入的 `@查询词`；null 表示光标不处于提及触发态。触发规则见 `parseMentionTrigger`。 */
 function activeMentionQuery(root: HTMLElement): string | null {
 	const selection = window.getSelection();
 	if (!selection?.isCollapsed || selection.rangeCount === 0) return null;
@@ -623,8 +620,7 @@ function activeMentionQuery(root: HTMLElement): string | null {
 	const container = range.startContainer;
 	if (container.nodeType !== Node.TEXT_NODE || !root.contains(container)) return null;
 	const before = (container.textContent ?? "").slice(0, range.startOffset);
-	const match = /(?:^|\s)@([^\s@]{0,32})$/.exec(before);
-	return match ? match[1] : null;
+	return parseMentionTrigger(before)?.query ?? null;
 }
 
 function createEmojiElement(name: string, display: string, size?: number): HTMLElement {
