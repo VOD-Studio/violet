@@ -1,5 +1,6 @@
 /** 分享预览：不出站导航，二级引用只留一行说明。 */
 import type { Tweet } from "@entities/tweet/model/types";
+import { ApiError } from "@shared/api/error";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -8,6 +9,7 @@ const query = vi.hoisted(() => ({
 	isPending: false,
 	isFetching: false,
 	isError: false,
+	error: null as Error | null,
 }));
 
 vi.mock("@entities/tweet/api/queries", () => ({
@@ -37,6 +39,7 @@ describe("TweetSharingPreview", () => {
 		cleanup();
 		query.data = null;
 		query.isError = false;
+		query.error = null;
 	});
 
 	it("预览只展示内容，不生成导航链接", () => {
@@ -75,10 +78,27 @@ describe("TweetSharingPreview", () => {
 		expect(screen.queryByText("更早的正文")).toBeNull();
 	});
 
-	it("被引用的推文已删除时写明删除，不显示作者与时间", () => {
+	it("下一层目标已删除仍保留当前卡作者、时间与引用关系", () => {
 		query.data = makeTweet({ quote_of: "q1" });
-		render(<TweetSharingPreview id="t1" />);
-		expect(screen.getByText("原推文已删除")).toBeTruthy();
+		const { container } = render(<TweetSharingPreview id="t1" />);
+		expect(screen.getByText("author")).toBeTruthy();
+		expect(screen.getByText("分享的正文")).toBeTruthy();
+		expect(container.querySelector("time")).not.toBeNull();
+		expect(container.querySelector(".v-quote-card__nested")).not.toBeNull();
+		expect(screen.queryByRole("link")).toBeNull();
+	});
+
+	it("当前推文读取为 404 时只保留不可点的删除态", () => {
+		query.data = makeTweet();
+		query.isError = true;
+		query.error = new ApiError({ error: "NOT_FOUND", message: "已删除", status: 404 });
+		const { container } = render(<TweetSharingPreview id="t1" />);
+		expect(screen.queryByText("author")).toBeNull();
+		expect(screen.queryByText("分享的正文")).toBeNull();
+		expect(screen.queryByRole("link")).toBeNull();
+		expect(screen.queryByRole("alert")).toBeNull();
+		expect(container.querySelector("[data-state='deleted']")).not.toBeNull();
+		expect(container.querySelector("time, img, button, [tabindex]")).toBeNull();
 	});
 
 	it("读取失败给出重试提示", () => {

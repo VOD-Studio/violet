@@ -2,8 +2,8 @@
  * 会话展示辅助：会话命名、对方解析与消息预览/时间格式化。
  */
 
-import { stripPlaceholdersForPreview } from "@features/comments/hooks/use-rich-text-input";
 import { formatTime as formatClockTime } from "@shared/lib/date";
+import { stripPlaceholdersForPreview } from "@shared/ui/rich-text-input/use-rich-text-input";
 import type { ChatConversation, ChatMessage } from "../model/types";
 
 export function conversationLabel(conversation: ChatConversation, currentUserID?: string) {

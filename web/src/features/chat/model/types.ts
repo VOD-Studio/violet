@@ -65,6 +65,8 @@ export interface SharedTweet {
 	images?: TweetImageRef[];
 	created_at?: string;
 	is_deleted: boolean;
+	/** 被分享推文的下一层引用 ID，目标删除后仍保留。 */
+	quote_of?: string;
 	external_tweet?: ExternalTweet | null;
 	quoted_tweet?: QuotedTweet | null;
 }

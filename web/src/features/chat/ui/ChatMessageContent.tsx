@@ -17,7 +17,7 @@
  */
 
 import type { CommentEmoteRef } from "@entities/comment/model/types";
-import { MENTION_ALL } from "@entities/user/model/mention-token";
+import { MENTION_ALL } from "@shared/lib/mention-token";
 import { Link } from "@tanstack/react-router";
 import { cn } from "cn";
 import type { ComponentProps, ReactElement, ReactNode } from "react";

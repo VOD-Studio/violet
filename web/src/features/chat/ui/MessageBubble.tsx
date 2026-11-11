@@ -2,8 +2,8 @@
  * 消息气泡与 Bot 回复卡片，承载操作条和表情反应。
  */
 import type { Emoji } from "@entities/emoji/model/types";
-import { stripPlaceholdersForPreview } from "@features/comments/hooks/use-rich-text-input";
 import { EmojiPicker } from "@features/emojis/ui/EmojiPicker";
+import { stripPlaceholdersForPreview } from "@shared/ui/rich-text-input/use-rich-text-input";
 import { Spinner } from "@violet/ui";
 import { cn } from "cn";
 import { Check, Copy, Pencil, Reply, Smile, Trash2, TriangleAlert } from "lucide-react";

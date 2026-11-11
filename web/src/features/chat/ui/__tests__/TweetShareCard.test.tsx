@@ -44,18 +44,10 @@ describe("TweetShareCard — 分享的推文存在", () => {
 		expect(screen.getByText("author")).toBeTruthy();
 		expect(screen.getByText("快来看这条推文")).toBeTruthy();
 		const links = screen.getAllByRole("link");
-		expect(links).toHaveLength(2);
+		expect(links).toHaveLength(1);
 		const card = screen.getByRole("link", { name: "查看 author 的这条推文" });
 		expect(card.getAttribute("href")).toBe("/tweets/tweet-1");
 		expect(card.classList.contains("v-quote-card__link")).toBe(true);
-	});
-
-	it("作者是独立的站内链接，浮在整卡链接之外", () => {
-		render(<TweetShareCard tweet={makeSharedTweet()} />);
-		const authorLink = screen.getByRole("link", { name: "author" });
-		expect(authorLink.getAttribute("href")).toBe("/users/author");
-		expect(authorLink.classList.contains("v-quote-card__link")).toBe(false);
-		expect(screen.getByRole("link", { name: "查看 author 的这条推文" })).toBeTruthy();
 	});
 
 	it("多张图片只留第一张缩略图，不再折叠成 +N", () => {
@@ -87,6 +79,16 @@ describe("TweetShareCard — 分享的推文存在", () => {
 		expect(screen.getByText("引用了一条推文")).toBeTruthy();
 		expect(container.querySelectorAll(".v-quote-card")).toHaveLength(1);
 		expect(screen.queryByText("更早的正文")).toBeNull();
+	});
+
+	it("下一层目标已删除也只展示引用关系，不把当前分享卡变为删除态", () => {
+		const { container } = render(
+			<TweetShareCard tweet={makeSharedTweet({ quote_of: "deleted-nested" })} />,
+		);
+		expect(screen.getAllByRole("link")).toHaveLength(1);
+		expect(screen.getByText("快来看这条推文")).toBeTruthy();
+		expect(container.querySelector(".v-quote-card__nested")).not.toBeNull();
+		expect(container.querySelector("time")).not.toBeNull();
 	});
 });
 

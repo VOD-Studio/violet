@@ -4,9 +4,9 @@
 
 import type { PendingChatShare } from "@entities/tweet/model/share-store";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
-import type { RichCommentInputHandle } from "@features/comments/ui/RichCommentInput";
 import { formatDate } from "@shared/lib/date";
 import { ImagePreview, useImagePreview } from "@shared/ui/image-preview";
+import type { RichTextInputHandle } from "@shared/ui/rich-text-input/RichTextInput";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button, Spinner } from "@violet/ui";
 import { cn } from "cn";
@@ -73,7 +73,7 @@ export function ConversationPanel({
 	const [replyTarget, setReplyTarget] = useState<ChatMessage | null>(null);
 	const [pendingFocusID, setPendingFocusID] = useState<string | null>(null);
 	const [highlightedID, setHighlightedID] = useState<string | null>(null);
-	const inputRef = useRef<RichCommentInputHandle>(null);
+	const inputRef = useRef<RichTextInputHandle>(null);
 	const handleMention = (user: ChatUser) => {
 		if (user.id === currentUserID) return;
 		if (!inputRef.current?.appendMention(user.id)) {

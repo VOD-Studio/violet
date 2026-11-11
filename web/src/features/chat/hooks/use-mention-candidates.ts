@@ -1,4 +1,4 @@
-import { MENTION_ALL } from "@entities/user/model/mention-token";
+import { MENTION_ALL } from "@shared/lib/mention-token";
 import type { MentionCandidate } from "@violet/ui";
 import { useMemo } from "react";
 import { useChatMembers, useChatMessages } from "../api/queries";

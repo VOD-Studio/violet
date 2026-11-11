@@ -29,7 +29,11 @@ export function TweetShareCard({ tweet }: TweetShareCardProps) {
 			timeTitle={tweet.created_at ? formatDateTime(tweet.created_at, "long") : undefined}
 			content={tweet.content}
 			imageSrc={thumbnail ? contentImageUrl(thumbnail.url, { width: 128 }) : undefined}
-			nested={tweet.quoted_tweet ? TWEET_MESSAGES.quoteNested : undefined}
+			nested={
+				tweet.quote_of || tweet.quoted_tweet || tweet.external_tweet
+					? TWEET_MESSAGES.quoteNested
+					: undefined
+			}
 			renderLink={({ className, children, ...linkProps }) => (
 				<Link
 					className={className}
@@ -38,18 +42,6 @@ export function TweetShareCard({ tweet }: TweetShareCardProps) {
 					to="/tweets/$id"
 				>
 					{children}
-				</Link>
-			)}
-			renderAuthor={({ name, avatar }) => (
-				<Link
-					className="v-quote-card__author"
-					params={{ username: name }}
-					to="/users/$username"
-				>
-					{avatar && (
-						<img alt="" className="v-quote-card__avatar" loading="lazy" src={avatar} />
-					)}
-					<span className="v-quote-card__name">{name}</span>
 				</Link>
 			)}
 		/>

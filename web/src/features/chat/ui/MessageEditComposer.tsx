@@ -2,10 +2,10 @@
  * 消息内联编辑器：在气泡原位修订消息，Enter 保存、Esc 取消。
  * 图片消息可增删图片但至少保留一张；推文分享消息只编辑配文。
  */
-import { extractImageIds } from "@features/comments/hooks/use-rich-text-input";
-import { type PictureInput, RichCommentInput } from "@features/comments/ui/RichCommentInput";
-import { Button } from "@violet/ui";
 
+import type { PictureInput } from "@shared/ui/rich-text-input/RichTextInput";
+import { extractImageIds } from "@shared/ui/rich-text-input/use-rich-text-input";
+import { Button } from "@violet/ui";
 import { cn } from "cn";
 import { Check, X } from "lucide-react";
 import { type KeyboardEvent, useMemo, useState } from "react";
@@ -14,6 +14,7 @@ import { useEditChatMessage } from "../api/queries";
 import { useMentionCandidates } from "../hooks/use-mention-candidates";
 import { imageBubbleContent } from "../lib/conversation";
 import type { ChatMessage, ConversationKind } from "../model/types";
+import { ChatRichInput } from "./ChatRichInput";
 
 interface MessageEditComposerProps {
 	message: ChatMessage;
@@ -98,7 +99,7 @@ export function MessageEditComposer({
 
 	return (
 		<div className="min-w-60" onKeyDown={handleKeyDown}>
-			<RichCommentInput
+			<ChatRichInput
 				autoFocus
 				value={value}
 				onChange={setValue}

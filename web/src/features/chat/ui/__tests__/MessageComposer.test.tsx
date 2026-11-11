@@ -592,6 +592,52 @@ describe("MessageComposer 提及候选", () => {
 		expect(screen.queryByRole("listbox")).toBeNull();
 		expect(box.getAttribute("aria-expanded")).toBe("false");
 	});
+
+	it.each(["Enter", "Tab"])("方向键选择成员后用 %s 插入且不发送", (key) => {
+		render(
+			<MessageComposer
+				conversationID="c_1"
+				conversationKind="room"
+				currentUserID={selfID}
+				onCancelReply={() => {}}
+				pendingShare={null}
+				replyTarget={null}
+			/>,
+		);
+		const box = screen.getByRole("textbox");
+		typeInto(box, "请看 @");
+		const options = screen.getAllByRole("option");
+		fireEvent.keyDown(box, { key: "ArrowDown" });
+		expect(box.getAttribute("aria-activedescendant")).toBe(options[1].id);
+		fireEvent.keyDown(box, { key: "ArrowUp" });
+		expect(box.getAttribute("aria-activedescendant")).toBe(options[0].id);
+		fireEvent.keyDown(box, { key: "ArrowDown" });
+		fireEvent.keyDown(box, { key });
+		expect(box.textContent).toBe("请看 @Carol\u00a0");
+		expect(screen.queryByRole("listbox")).toBeNull();
+		expect(sendMocks.mutateAsync).not.toHaveBeenCalled();
+	});
+
+	it("Esc 保留草稿，邮箱和超过二十字的查询不触发", () => {
+		render(
+			<MessageComposer
+				conversationID="c_1"
+				conversationKind="room"
+				currentUserID={selfID}
+				onCancelReply={() => {}}
+				pendingShare={null}
+				replyTarget={null}
+			/>,
+		);
+		const box = screen.getByRole("textbox");
+		typeInto(box, "请看 @lj");
+		fireEvent.keyDown(box, { key: "Escape" });
+		expect(box.textContent).toBe("请看 @lj");
+		typeInto(box, "person@example.com");
+		expect(screen.queryByRole("listbox")).toBeNull();
+		typeInto(box, `@${"字".repeat(21)}`);
+		expect(screen.queryByRole("listbox")).toBeNull();
+	});
 });
 
 describe("MessageEditComposer 全体提及", () => {
