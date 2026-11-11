@@ -166,6 +166,13 @@
 			"documentation": "web/packages/ui/docs/components/icons.md"
 		},
 		{
+			"name": "image-grid",
+			"status": "foundation",
+			"entry": "src/components/image-grid/index.ts",
+			"css": "src/components/image-grid/image-grid.css",
+			"documentation": "web/packages/ui/docs/components/image-grid.md"
+		},
+		{
 			"name": "image-pixel-reveal",
 			"status": "foundation",
 			"entry": "src/components/image-pixel-reveal/index.ts",

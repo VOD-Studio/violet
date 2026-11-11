@@ -1,0 +1,104 @@
+@layer components {
+	.v-image-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 2px;
+		inline-size: 100%;
+		min-inline-size: 0;
+		overflow: hidden;
+		border-radius: 12px;
+	}
+
+	.v-image-grid__cell {
+		position: relative;
+		display: block;
+		min-inline-size: 0;
+		min-block-size: 0;
+		aspect-ratio: 4 / 3;
+		overflow: hidden;
+		padding: 0;
+		border: 0;
+		background: var(--muted);
+		cursor: zoom-in;
+	}
+
+	.v-image-grid[data-count="1"] {
+		display: block;
+		inline-size: fit-content;
+		max-inline-size: 100%;
+	}
+
+	.v-image-grid[data-count="1"] .v-image-grid__cell {
+		--v-image-grid-ratio: 1.777777778;
+		inline-size: calc(360px * var(--v-image-grid-ratio));
+		max-inline-size: 100%;
+		aspect-ratio: var(--v-image-grid-ratio);
+	}
+
+	.v-image-grid[data-count="2"] .v-image-grid__cell {
+		aspect-ratio: 1;
+	}
+
+	.v-image-grid[data-count="3"] {
+		grid-template-rows: repeat(2, minmax(0, 1fr));
+		aspect-ratio: 4 / 3;
+	}
+
+	.v-image-grid[data-count="3"] .v-image-grid__cell {
+		aspect-ratio: auto;
+	}
+
+	.v-image-grid[data-count="3"] .v-image-grid__cell:first-child {
+		grid-row: span 2;
+	}
+
+	.v-image-grid__cell img {
+		position: absolute;
+		inset: 0;
+		display: block;
+		inline-size: 100%;
+		block-size: 100%;
+		object-fit: cover;
+		transition: filter 160ms ease-out;
+	}
+
+	.v-image-grid__cell:hover img {
+		filter: brightness(1.04);
+	}
+
+	.v-image-grid__cell:focus-visible {
+		outline: none;
+	}
+
+	.v-image-grid__cell:focus-visible::after {
+		position: absolute;
+		inset: 2px;
+		z-index: 1;
+		border: 2px solid var(--ring);
+		border-radius: 2px;
+		content: "";
+		pointer-events: none;
+	}
+
+	.v-image-grid__more {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--image-overlay);
+		color: var(--image-overlay-foreground);
+		font-size: 22px;
+		font-weight: 500;
+		pointer-events: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.v-image-grid__cell img {
+		transition: none;
+	}
+}
+[data-motion="reduce"] .v-image-grid__cell img {
+	transition: none;
+}

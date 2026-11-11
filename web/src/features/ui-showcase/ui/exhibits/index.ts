@@ -20,6 +20,7 @@ import { dropdownMenuExhibit } from "./dropdown-menu";
 import { fieldExhibit } from "./field";
 import { footerExhibit } from "./footer";
 import { iconsExhibit } from "./icons";
+import { imageGridExhibit } from "./image-grid";
 import { imagePixelRevealExhibit } from "./image-pixel-reveal";
 import { inboxExhibit } from "./inbox";
 import { indicatorExhibit } from "./indicator";
@@ -126,15 +127,7 @@ export const EXHIBITS: Exhibit[] = [
 		issue: 716,
 	},
 	quoteCardExhibit,
-	{
-		id: "image-grid",
-		name: "图片网格",
-		units: ["image-grid"],
-		zone: "content",
-		category: "content",
-		footprint: { width: 480, height: 360 },
-		issue: 719,
-	},
+	imageGridExhibit,
 	{
 		id: "code-block",
 		name: "代码块",

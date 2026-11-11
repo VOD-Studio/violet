@@ -152,6 +152,11 @@
 			"import": "./src/components/icons/index.ts",
 			"default": "./src/components/icons/index.ts"
 		},
+		"./image-grid": {
+			"types": "./src/components/image-grid/index.ts",
+			"import": "./src/components/image-grid/index.ts",
+			"default": "./src/components/image-grid/index.ts"
+		},
 		"./image-pixel-reveal": {
 			"types": "./src/components/image-pixel-reveal/index.ts",
 			"import": "./src/components/image-pixel-reveal/index.ts",
@@ -404,6 +409,7 @@
 		"./components/empty.css": "./src/components/empty/empty.css",
 		"./components/field.css": "./src/components/field/field.css",
 		"./components/hover-card.css": "./src/components/hover-card/hover-card.css",
+		"./components/image-grid.css": "./src/components/image-grid/image-grid.css",
 		"./components/image-pixel-reveal.css": "./src/components/image-pixel-reveal/image-pixel-reveal.css",
 		"./components/indicator.css": "./src/components/indicator/indicator.css",
 		"./components/input.css": "./src/components/input/input.css",
@@ -603,6 +609,11 @@
 				"types": "./dist/components/icons/index.d.ts",
 				"import": "./dist/components/icons/index.js",
 				"default": "./dist/components/icons/index.js"
+			},
+			"./image-grid": {
+				"types": "./dist/components/image-grid/index.d.ts",
+				"import": "./dist/components/image-grid/index.js",
+				"default": "./dist/components/image-grid/index.js"
 			},
 			"./image-pixel-reveal": {
 				"types": "./dist/components/image-pixel-reveal/index.d.ts",
@@ -856,6 +867,7 @@
 			"./components/empty.css": "./dist/components/empty.css",
 			"./components/field.css": "./dist/components/field.css",
 			"./components/hover-card.css": "./dist/components/hover-card.css",
+			"./components/image-grid.css": "./dist/components/image-grid.css",
 			"./components/image-pixel-reveal.css": "./dist/components/image-pixel-reveal.css",
 			"./components/indicator.css": "./dist/components/indicator.css",
 			"./components/input.css": "./dist/components/input.css",

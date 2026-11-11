@@ -24,6 +24,7 @@ export * from "./components/empty/index";
 export * from "./components/field/index";
 export * from "./components/hover-card/index";
 export * from "./components/icons/index";
+export * from "./components/image-grid/index";
 export * from "./components/image-pixel-reveal/index";
 export * from "./components/indicator/index";
 export * from "./components/input/index";

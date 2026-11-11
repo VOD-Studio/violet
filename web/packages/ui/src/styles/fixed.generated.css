@@ -4,6 +4,9 @@
 	--fixed-sheet-border: light-dark(transparent, rgb(255 255 255 / 0.08));
 	--fixed-scrim: rgb(20 16 14 / 0.28);
 	--fixed-scrim-soft: rgb(20 16 14 / 0.18);
+	--fixed-image-overlay: rgb(0 0 0 / 0.4);
+	--fixed-image-overlay-strong: rgb(0 0 0 / 0.6);
+	--fixed-image-overlay-foreground: #fff;
 	--seed-spring: #f47983;
 	--seed-summer: #2f9e7a;
 	--seed-autumn: #d9a21b;
