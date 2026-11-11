@@ -89,10 +89,10 @@ export function collectUnexpectedDiagnostics(page: Page, blockedUrls: Set<string
 			pending.push(
 				(argument
 					? argument
-						.evaluate((value: unknown) =>
-							value instanceof Error ? `${value.name}: ${value.message}` : null,
-						)
-						.catch(() => null)
+							.evaluate((value: unknown) =>
+								value instanceof Error ? `${value.name}: ${value.message}` : null,
+							)
+							.catch(() => null)
 					: Promise.resolve(null)
 				).then((error) => {
 					if (error === null || !expectedError(error)) {
