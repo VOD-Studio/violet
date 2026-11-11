@@ -451,19 +451,21 @@
 	padding-block-start: 12px;
 	border-block-start: 1px solid var(--border);
 }
-/* 被批注的原文：沿用正文引用的写法——衬线大引号取季节色，缩进，不画竖线、不加底色；最多两行。
-   引号在 ::before 里，不进无障碍树；限高的裁切放在内层，大引号不被裁。 */
+/* 被批注的原文：沿用正文引用的写法——衬线引号取季节色，不画竖线、不加底色；最多两行。
+   开头一个「“」、结尾一个「”」，成对才有「引了一段话」的收束；块收缩到文字宽度，结尾引号跟在文字后面。
+   引号在伪元素里，不进无障碍树；限高的裁切放在内层，引号不被裁。 */
 .annotation-quote {
 	position: relative;
+	align-self: flex-start;
+	max-inline-size: 100%;
 	margin: 0;
-	padding-inline-start: 1.5rem;
+	padding-inline: 1.5rem;
 	color: color-mix(in oklab, var(--foreground) 80%, transparent);
 }
-.annotation-quote::before {
-	content: "“";
+.annotation-quote::before,
+.annotation-quote::after {
 	position: absolute;
 	inset-block-start: -0.1em;
-	inset-inline-start: 0;
 	color: color-mix(in oklab, var(--decoration) 70%, transparent);
 	font-family: var(--font-serif);
 	font-size: 1.75rem;
@@ -471,6 +473,15 @@
 	line-height: 1;
 	pointer-events: none;
 	user-select: none;
+}
+.annotation-quote::before {
+	content: "“";
+	inset-inline-start: 0;
+}
+.annotation-quote::after {
+	content: "”";
+	inset-block: auto -0.1em;
+	inset-inline-end: 0;
 }
 .annotation-quote > span {
 	display: -webkit-box;
