@@ -3,6 +3,7 @@
 
 @layer components {
 	.v-sortable {
+		position: relative;
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
@@ -11,15 +12,23 @@
 		list-style: none;
 	}
 
+	.v-sortable__placeholder {
+		position: absolute;
+		inset-inline: 4px;
+		border-radius: 12px;
+		background: var(--muted);
+		pointer-events: none;
+	}
+
 	.v-sortable__slot {
 		position: relative;
 		min-inline-size: 0;
+		z-index: 1;
 		border-radius: 12px;
 	}
 
 	.v-sortable__slot[data-lifted] {
 		z-index: 3;
-		background: var(--muted);
 	}
 
 	.v-sortable__row {

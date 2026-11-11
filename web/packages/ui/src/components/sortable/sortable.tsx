@@ -15,8 +15,11 @@ import {
 import { cn } from "cn";
 import { useComposedRefs } from "radix-ui/internal";
 import { type ComponentProps, type ReactNode, useId } from "react";
+import { restrictToList } from "./restrict-to-list";
 import { SortableRow } from "./sortable-row";
 import { useSortableList } from "./use-sortable-list";
+
+const MODIFIERS = [restrictToList];
 
 /** 按稳定标识排序；调用方持有数据与持久化，表单内容更新不会被落位时的快照覆盖。 */
 export interface SortableProps<T> extends Omit<ComponentProps<"ol">, "children" | "onChange"> {
@@ -62,7 +65,9 @@ export function Sortable<T>({
 			id={id}
 			sensors={sensors}
 			collisionDetection={closestCenter}
+			modifiers={MODIFIERS}
 			onDragStart={drag.start}
+			onDragOver={drag.over}
 			onDragCancel={drag.cancel}
 			onDragEnd={drag.end}
 			accessibility={{
@@ -87,6 +92,13 @@ export function Sortable<T>({
 					className={cn("v-sortable", className)}
 					aria-busy={drag.settling ? true : undefined}
 				>
+					{drag.marker && (
+						<li
+							aria-hidden="true"
+							className="v-sortable__placeholder"
+							style={{ top: drag.marker.top, height: drag.marker.height }}
+						/>
+					)}
 					{items.map((item, index) => (
 						<SortableRow
 							key={getId(item)}

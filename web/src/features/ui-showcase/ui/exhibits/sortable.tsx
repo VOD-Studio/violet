@@ -4,10 +4,10 @@ import { useStageContainer } from "../../hooks/use-stage-container";
 import type { Exhibit, ExhibitRenderProps } from "../../model/exhibit";
 
 const CHAPTERS = [
-	{ id: "rain", title: "第 1 章 · 在雨停之前" },
-	{ id: "valley", title: "第 2 章 · 穿过河谷" },
-	{ id: "wind", title: "第 3 章 · 山口的风" },
-	{ id: "lake", title: "第 4 章 · 湖边的夜" },
+	{ id: "rain", title: "在雨停之前" },
+	{ id: "valley", title: "穿过河谷" },
+	{ id: "wind", title: "山口的风" },
+	{ id: "lake", title: "湖边的夜" },
 ];
 function SortableStage({ state }: ExhibitRenderProps) {
 	const [chapters, setChapters] = useState(CHAPTERS);

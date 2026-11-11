@@ -1,4 +1,4 @@
-import type { DragEndEvent, DragStartEvent, UniqueIdentifier } from "@dnd-kit/core";
+import type { DragEndEvent, DragOverEvent, DragStartEvent, UniqueIdentifier } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { type RefObject, useEffect, useRef, useState } from "react";
 import type { SortableProps } from "./sortable";
@@ -11,12 +11,19 @@ export interface SettlingItem {
 	height: number;
 }
 
+interface DropMarker {
+	top: number;
+	height: number;
+}
+
 interface SortableListState {
 	activeId: UniqueIdentifier | null;
 	settling: SettlingItem | null;
+	marker: DropMarker | null;
 	message: string;
 	root: RefObject<HTMLOListElement | null>;
 	start: (event: DragStartEvent) => void;
+	over: (event: DragOverEvent) => void;
 	cancel: () => void;
 	end: (event: DragEndEvent) => void;
 	move: (index: number, direction: number) => Promise<void>;
@@ -33,6 +40,7 @@ export function useSortableList<T>({
 }: SortableListOptions<T>): SortableListState {
 	const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
 	const [settling, setSettling] = useState<SettlingItem | null>(null);
+	const [marker, setMarker] = useState<DropMarker | null>(null);
 	const [message, setMessage] = useState("");
 	const root = useRef<HTMLOListElement>(null);
 	const activator = useRef<HTMLElement | null>(null);
@@ -57,10 +65,28 @@ export function useSortableList<T>({
 		setActiveId(active.id);
 	};
 
+	const over = ({ active, over }: DragOverEvent) => {
+		const initial = active.rect.current.initial;
+		const list = root.current;
+		if (!initial || !over || !list) return;
+
+		const from = items.findIndex((item) => getId(item) === active.id);
+		const to = items.findIndex((item) => getId(item) === over.id);
+		if (from < 0 || to < 0) return;
+
+		setMarker({
+			top:
+				(from < to ? over.rect.bottom - initial.height : over.rect.top) -
+				list.getBoundingClientRect().top,
+			height: initial.height,
+		});
+	};
+
 	const cancel = () => {
 		clearTimeout(timer.current);
 		setActiveId(null);
 		setSettling(null);
+		setMarker(null);
 	};
 
 	const commitOrder = async (order: UniqueIdentifier[], active: UniqueIdentifier) => {
@@ -84,18 +110,26 @@ export function useSortableList<T>({
 			setMessage("排序没有成功，已恢复原顺序");
 		} finally {
 			setSettling(null);
+			setMarker(null);
 		}
 	};
 
 	const end = ({ active, over }: DragEndEvent) => {
 		setActiveId(null);
-		if (!over) return;
+		if (!over) {
+			setMarker(null);
+			return;
+		}
 
 		const from = items.findIndex((item) => getId(item) === active.id);
 		const to = items.findIndex((item) => getId(item) === over.id);
 		const initial = active.rect.current.initial;
-		if (from < 0 || to < 0 || !initial) return;
+		if (from < 0 || to < 0 || !initial) {
+			setMarker(null);
+			return;
+		}
 		if (from === to) {
+			setMarker(null);
 			setMessage(`已放在第 ${to + 1} 位`);
 			return;
 		}
@@ -133,5 +167,5 @@ export function useSortableList<T>({
 		}
 	};
 
-	return { activeId, settling, message, root, start, cancel, end, move };
+	return { activeId, settling, marker, message, root, start, over, cancel, end, move };
 }
