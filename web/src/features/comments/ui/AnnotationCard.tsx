@@ -12,6 +12,7 @@ import { Link } from "@tanstack/react-router";
 import { MessageCircle } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { AnnotationAuthorProfile } from "./AnnotationAuthorProfile";
+import { AnnotationQuote } from "./AnnotationQuote";
 import { AnnotationOverlayContext } from "./annotation-overlay-context";
 import { CommentForm } from "./CommentForm";
 
@@ -42,7 +43,7 @@ export function AnnotationThread({
 	const shown = comments.map(isVisible);
 	return (
 		<section className="annotation-thread" hidden={!shown.some(Boolean)}>
-			<blockquote className="annotation-quote">{quote}</blockquote>
+			<AnnotationQuote>{quote}</AnnotationQuote>
 			<ul className="annotation-items">
 				{comments.map((comment, index) => (
 					<AnnotationOverlayContext key={comment.id} value={active && shown[index]}>
@@ -131,6 +132,7 @@ function AnnotationEntry({
 					{shownReplies.map((reply) => (
 						<li key={reply.id}>
 							<AnnotationItem
+								reply
 								comment={reply}
 								replyToName={
 									reply.parent_id === comment.id ? undefined : reply.reply_to_name
@@ -159,11 +161,15 @@ function AnnotationItem({
 	comment,
 	action,
 	replyToName,
+	reply = false,
 }: {
 	comment: Comment;
+	/** 署名行末尾的操作，如「回复」 */
 	action?: ReactNode;
 	/** 直接回复批注时不标注目标；回复其他回复时即使同名也要标注。 */
 	replyToName?: string;
+	/** 回复条目：头像小一号，与上方的批注拉开主次 */
+	reply?: boolean;
 }) {
 	const { displayName, personaId } = getCommentAuthorPresentation(comment);
 	const isAuthor = !comment.is_ai && comment.is_author;
@@ -172,6 +178,7 @@ function AnnotationItem({
 			name={comment.author_name}
 			avatarUrl={comment.avatar_url}
 			isAI={!!comment.is_ai}
+			className={reply ? "size-5 text-[9px]" : undefined}
 		/>
 	);
 	return (
@@ -198,15 +205,15 @@ function AnnotationItem({
 					)}
 					{isAuthor && <span className="annotation-author-tag">作者</span>}
 					<AIBadge show={!!comment.is_ai} name={comment.author_name} />
-					<PendingBadge show={comment.status === "pending"} />
+					<PendingBadge show={comment.status === "pending"} size="sm" />
 					<time className="annotation-item-time">
 						{formatTimeAgo(comment.created_at)}
 					</time>
+					{action}
 				</div>
 				<p className="annotation-item-text">
 					<EmojiText text={comment.body} emote={comment.emote} />
 				</p>
-				{action}
 			</div>
 		</div>
 	);

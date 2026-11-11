@@ -179,7 +179,7 @@ function PopoverBody({
 			{target.rangeKey === null && (
 				<AnnotationPopoverHeader target={target} onFilter={onFilter} onClose={onClose} />
 			)}
-			<div className="annotation-scroll annotation-card-list">
+			<div className="annotation-card-list">
 				{query.isLoading && <AnnotationPending label="批注加载中" className="py-6" />}
 				{query.isError && (
 					<p role="alert" className="text-sm text-muted-foreground">
@@ -199,7 +199,7 @@ function PopoverBody({
 				))}
 			</div>
 			{target.blockEl && (
-				<div role="group" aria-label="发表段评">
+				<div role="group" aria-label="发表段评" className="annotation-card-composer">
 					<BlockAnnotationComposer
 						block={target.blockEl}
 						postId={postId}

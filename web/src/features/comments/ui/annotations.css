@@ -422,11 +422,12 @@
 	pointer-events: none;
 }
 
-/* 列表可滚动；聚焦环向外扩，用等量内外边距避免被滚动层裁掉。 */
+/* 列表可滚动；聚焦环向外扩，用等量内外边距避免被滚动层裁掉。
+   滚动条沿用站点全局的细条，只在内容超出时出现，不预留槽位占掉右侧版心。 */
 .annotation-card-list {
 	display: flex;
 	flex-direction: column;
-	gap: 16px;
+	gap: 12px;
 	min-block-size: 0;
 	margin: -4px;
 	padding: 4px;
@@ -439,16 +440,37 @@
 .annotation-thread {
 	display: flex;
 	flex-direction: column;
-	gap: 12px;
+	gap: 10px;
 }
-/* 被批注的原文，最多两行 */
+/* 每处划线一组讨论，组与组之间一条细线；前面有可见的组才画，筛掉的组不留线 */
+.annotation-thread:not([hidden]) ~ .annotation-thread {
+	padding-block-start: 12px;
+	border-block-start: 1px solid var(--border);
+}
+/* 被批注的原文：沿用正文引用的写法——衬线大引号取季节色，缩进，不画竖线、不加底色；最多两行。
+   引号在 ::before 里，不进无障碍树；限高的裁切放在内层，大引号不被裁。 */
 .annotation-quote {
-	display: -webkit-box;
+	position: relative;
 	margin: 0;
-	padding-inline-start: 10px;
+	padding-inline-start: 1.5rem;
+	color: color-mix(in oklab, var(--foreground) 80%, transparent);
+}
+.annotation-quote::before {
+	content: "“";
+	position: absolute;
+	inset-block-start: -0.1em;
+	inset-inline-start: 0;
+	color: color-mix(in oklab, var(--decoration) 70%, transparent);
+	font-family: var(--font-serif);
+	font-size: 1.75rem;
+	font-weight: 400;
+	line-height: 1;
+	pointer-events: none;
+	user-select: none;
+}
+.annotation-quote > span {
+	display: -webkit-box;
 	overflow: hidden;
-	border-inline-start: 2px solid color-mix(in oklab, var(--decoration) 60%, transparent);
-	color: var(--muted-foreground);
 	font-size: 13px;
 	line-height: 1.7;
 	-webkit-box-orient: vertical;
@@ -466,11 +488,13 @@
 	display: flex;
 	gap: 10px;
 }
+/* 署名行：署名、身份标签、时间依次排开，「回复」靠到行尾 */
 .annotation-item-meta {
 	display: flex;
 	flex-wrap: wrap;
-	align-items: baseline;
-	gap: 6px;
+	align-items: center;
+	gap: 2px 6px;
+	min-block-size: 20px;
 	font-size: 12px;
 }
 .annotation-item-name {
@@ -484,7 +508,6 @@
 }
 .annotation-item-time {
 	color: var(--muted-foreground);
-	font-family: var(--font-mono, ui-monospace, monospace);
 	font-variant-numeric: tabular-nums;
 }
 .annotation-item-text {
@@ -497,16 +520,20 @@
 .annotation-entry {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
 }
 .annotation-entry[hidden],
 .annotation-thread[hidden] {
 	display: none;
 }
+/* 回复挂在批注正文的左缘之下，一条细线表示从属；头像小一号 */
 .annotation-replies {
+	margin-block-start: 8px;
 	margin-inline-start: 34px;
 	padding-inline-start: 10px;
 	border-inline-start: 1px solid var(--border);
+}
+.annotation-replies .annotation-item {
+	gap: 8px;
 }
 .annotation-reply-form {
 	margin-inline-start: 34px;
@@ -518,7 +545,6 @@
 	display: inline-flex;
 	align-items: center;
 	gap: 4px;
-	margin-top: 2px;
 	padding: 0;
 	border: 0;
 	border-radius: 4px;
@@ -529,12 +555,19 @@
 	cursor: pointer;
 	transition: color 0.14s ease-out;
 }
+.annotation-reply-button[aria-expanded="true"] {
+	color: var(--link);
+}
 .annotation-reply-button:hover {
 	color: var(--link);
 }
 .annotation-reply-button:focus-visible {
 	outline: 2px solid var(--ring);
 	outline-offset: 2px;
+}
+/* 署名行里的「回复」靠到行尾 */
+.annotation-item-meta > .annotation-reply-button {
+	margin-inline-start: auto;
 }
 .annotation-author-tag {
 	display: inline-flex;
@@ -546,6 +579,11 @@
 	color: var(--link);
 	font-size: 10.5px;
 	font-weight: 500;
+}
+/* 卡片底部常驻的段评输入：一条细线与上方可滚动的批注列表分开 */
+.annotation-card-composer {
+	padding-block-start: 12px;
+	border-block-start: 1px solid var(--border);
 }
 
 /* 评论区输入面板挂载时的淡入 */
@@ -597,7 +635,7 @@
 	}
 }
 
-/* 批注面板自定义滚动条：细条半透明，出现时不挤压内容 */
+/* 评论抽屉的滚动区：槽位常留，滚动条出现时不挤压内容 */
 .annotation-scroll {
 	scrollbar-gutter: stable;
 }

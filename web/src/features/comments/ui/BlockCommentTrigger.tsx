@@ -18,6 +18,7 @@ import {
 import { useAnnotationAnchorVisible } from "../hooks/use-annotation-anchor-visible";
 import { AnnotationPending } from "./AnnotationPending";
 import { AnnotationPortal } from "./AnnotationPortal";
+import { AnnotationQuote } from "./AnnotationQuote";
 import { AnnotationOverlayContext } from "./annotation-overlay-context";
 import { useExclusivePanel } from "./use-exclusive-panel";
 
@@ -324,9 +325,7 @@ export function BlockCommentTrigger({
 							aria-label="发表段评"
 						>
 							<AnnotationOverlayContext value={composerVisible}>
-								<blockquote className="annotation-quote">
-									{getBlockText(composerBlock)}
-								</blockquote>
+								<AnnotationQuote>{getBlockText(composerBlock)}</AnnotationQuote>
 								<DeferredContent
 									defer={false}
 									load={loadBlockComposer}

@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import "./annotations.css";
 import { AnnotationComposer } from "./AnnotationComposer";
 import { AnnotationPortal } from "./AnnotationPortal";
+import { AnnotationQuote } from "./AnnotationQuote";
 import { AnnotationOverlayContext } from "./annotation-overlay-context";
 import { useExclusivePanel } from "./use-exclusive-panel";
 
@@ -386,9 +387,7 @@ export function FloatingToolbar({
 							className="annotation-card v-float z-50 outline-none"
 						>
 							<AnnotationOverlayContext value={composing && cardVisible}>
-								<blockquote className="annotation-quote">
-									{draft.selectedText}
-								</blockquote>
+								<AnnotationQuote>{draft.selectedText}</AnnotationQuote>
 								<AnnotationComposer
 									autoFocus
 									body={body}
