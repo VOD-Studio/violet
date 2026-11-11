@@ -8,7 +8,7 @@ import { type FriendLinkDTO, hostOf } from "../model/mock";
  *
  * 设计意图：友链即 `$ ls ~/friends` 的输出——终端窗口里的 mono 目录学，
  * 每行一条记录，hover 行内展开详情（站长 / 描述），末尾是闪烁光标。
- * 与 TerminalCard / DecryptedText 使用同一终端语汇。
+ * 与 DecryptedText 使用同一终端语汇。
  */
 export function TerminalList({ links }: { links: FriendLinkDTO[] }) {
 	const [openId, setOpenId] = useState<string | null>(null);
@@ -22,7 +22,7 @@ export function TerminalList({ links }: { links: FriendLinkDTO[] }) {
 			className="overflow-hidden rounded-2xl border border-edge-hairline"
 			style={{ background: "var(--surface-glass)" }}
 		>
-			{/* 标题栏（TerminalCard 同款三灯） */}
+			{/* 标题栏：终端三灯 */}
 			<div className="flex items-center justify-between border-b border-edge-hairline px-4 py-2.5">
 				<div className="flex items-center gap-1.5">
 					<span className="size-2.5 rounded-full bg-red-500/90" />
