@@ -1,30 +1,32 @@
-import { PaperDialog } from "@shared/ui/paper-dialog";
-import { useEffect } from "react";
+import { AsyncContent } from "@shared/ui/deferred-content/DeferredContent";
+import { useEffect, useState } from "react";
 
 import { useApiDocsDialogStore } from "../model/store";
-import { ApiReference } from "./ApiReference";
 
 /** 键入序列彩蛋：非输入态下连敲 a-p-i 唤出纸弹窗 */
 const EASTER_EGG_SEQUENCE = "api";
 
-/** 在前台以手撕纯白纸弹窗呈现实时 API 参考文档。 */
+const loadPaper = () => import("./ApiDocsPaper");
+const NO_PROPS = {};
+
+/**
+ * 在前台以手撕纯白纸弹窗呈现实时 API 参考文档。
+ *
+ * @remarks 常驻的只有彩蛋按键监听；文档本体首次唤出才下载，之后保留实例。
+ */
 export function ApiDocsDialog() {
 	const isOpen = useApiDocsDialogStore((s) => s.isOpen);
-	const close = useApiDocsDialogStore((s) => s.close);
 	const open = useApiDocsDialogStore((s) => s.open);
+	const [hasOpened, setHasOpened] = useState(isOpen);
+	useEffect(() => {
+		if (isOpen) setHasOpened(true);
+	}, [isOpen]);
 
 	useEasterEgg(open);
 
+	if (!isOpen && !hasOpened) return null;
 	return (
-		<PaperDialog
-			open={isOpen}
-			onOpenChange={(next) => (next ? open() : close())}
-			titleSrOnly="API 参考文档手卷"
-			/* 滚动交给内部双栏（总目/正文各自独立滚动），纸壳内容区自身不滚 */
-			contentClassName="overflow-hidden"
-		>
-			<ApiReference />
-		</PaperDialog>
+		<AsyncContent load={loadPaper} componentProps={NO_PROPS} fallback={null} label="API 文档" />
 	);
 }
 
