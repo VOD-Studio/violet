@@ -46,8 +46,9 @@ const matches = trigger ? filterMentionCandidates(candidates, trigger.query) : [
 - 输入框侧提供 `aria-autocomplete="list"`、`aria-expanded`、`aria-controls` 与 `aria-activedescendant`；`aria-activedescendant` 用 `mentionOptionId(listboxID, candidate.id)`，筛选重排后仍指向同一行。
 - 键盘属于持有焦点的输入框，列表只显示：↑↓ 换高亮（宿主可循环），Enter 与 Tab 插入，Esc 收起但保留已输入的文字。
 - 列表是 `role="listbox"`，每项 `role="option"` 带 `aria-selected`；指针与键盘共用同一套高亮，滚动高亮项后静止指针不会劫持它，真实移动才恢复悬停选中。
-- 可提及人数写进 listbox 的 `aria-label`（「提及候选，共 N 人」），弹出即有名称可读，不额外挂 `aria-live` 节点。
+- 可提及对象数写进 listbox 的 `aria-label`，另由独立的 `aria-live="polite"` / `aria-atomic="true"` 状态区在挂载后宣布；筛选改变数量时更新，方向键换行不会重复宣布。全体成员是一项可选对象，其涵盖的成员人数显示在该行。
 - 高亮项变化用 `scrollIntoView({ block: "nearest" })` 滚进可视区。
+- 选项不进入 Tab 序列，焦点保持在编辑区；Tab 由宿主用于插入当前项。指针进入后即使不离开行，只要真实移动，也会重新选中该行。
 
 ## 视觉与边界
 
@@ -68,3 +69,13 @@ const matches = trigger ? filterMentionCandidates(candidates, trigger.query) : [
 Tailwind v4 宿主在 Tailwind 后导入 `@violet/ui/styles.css`。React 与纯 HTML 共用 `.v-mention` 以及 `__label`、`__list`、`__option`、`__all`、`__name`、`__handle`、`__tag`、`__empty` 类；头像样式随面板一起加载。
 
 站点在 `/ui?open=mention` 陈列评论与聊天房间两种语境，聊天房间比评论多「全体成员 · N 人」。
+
+## 站点集成与消费验收
+
+`shared/ui/rich-text-input` 持有真实 DOM 编辑、提及筛选、列表和键盘逻辑，不导入任何实体或 feature。编辑器只接收 `shared/lib/inline-emoji` 的 `token/src/text/size` 最小显示模型；评论与聊天通过 `entities/emoji/lib/inline-emoji` 投影表情分组与选择结果，注入选择器和上传回调。纯提及占位符协议位于 `shared/lib/mention-token`。批注的可交互上下文只留在评论业务适配器。聊天创建、编辑和预览均直接消费共享能力，不经过评论 feature。本单不为评论、推文评论或批注新增提及入口。
+
+底部固定的聊天输入把候选放进输入区下方的文档流；面板出现时输入区向上增高、消息列表缩短，候选不越过视口，也不翻到输入框上方。其他正文输入保留相距 6px 的浮层定位。
+
+本单元 `fixtures/consumer.tsx.template` 是独立消费片段，使用公开叶子 JS 入口；父级消费者需将其复制为 `mention.tsx`，在入口渲染 `MentionConsumer`，并加载 `tokens.css` 与 `components/mention.css`（或现有完整 `styles.css`）。SSR 入口渲染同一片段，类型入口导入公开 `MentionCandidate`；浏览器覆盖上下键、Tab/Enter、Esc 保留输入和读屏状态。片段不依赖工作区别名。
+
+展品固定占地为 360 × 330，包含输入标签、输入框、6px 间隙与六行候选；评论与房间两语境共用同一输入交互，光标位于正文中间时只替换触发片段，保留前后正文。

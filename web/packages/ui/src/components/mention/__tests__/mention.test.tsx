@@ -53,6 +53,32 @@ describe("MentionList", () => {
 		expect(options[1].getAttribute("aria-selected")).toBe("false");
 	});
 
+	it("弹出后宣布对象数，筛选后更新人数，方向键高亮不改变读稿", () => {
+		const props = {
+			id: "mentions",
+			activeIndex: 0,
+			onActiveIndexChange: () => {},
+			onSelect: () => {},
+		};
+		const { rerender } = render(<MentionList {...props} candidates={PEOPLE} />);
+		const announcement = screen.getByRole("status");
+		expect(announcement.textContent).toMatch(/3/);
+		rerender(<MentionList {...props} candidates={PEOPLE} activeIndex={1} />);
+		expect(announcement.textContent).toMatch(/3/);
+		rerender(<MentionList {...props} candidates={PEOPLE.slice(0, 1)} />);
+		expect(announcement.textContent).toMatch(/1/);
+		expect(screen.getByRole("option").tabIndex).toBe(-1);
+	});
+
+	it("指针不离开当前行也能从键盘高亮接回该行", () => {
+		render(<Harness />);
+		const options = screen.getAllByRole("option");
+		fireEvent.mouseMove(options[1]);
+		expect(options[1].getAttribute("aria-selected")).toBe("true");
+		fireEvent.mouseMove(options[0]);
+		expect(options[0].getAttribute("aria-selected")).toBe("true");
+	});
+
 	it("全体成员显示人数，角色与机器人各有标签", () => {
 		render(<Harness candidates={[BROADCAST, ...PEOPLE]} />);
 

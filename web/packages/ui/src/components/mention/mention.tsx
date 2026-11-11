@@ -2,7 +2,7 @@
 
 import { cn } from "cn";
 import { Users } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Avatar } from "../avatar/avatar";
 
 /** 一条可提及对象：人、机器人，或带人数的「全体成员」。 */
@@ -66,6 +66,10 @@ export function MentionList({
 	className,
 }: MentionListProps) {
 	const listRef = useRef<HTMLDivElement>(null);
+	const [announcement, setAnnouncement] = useState("");
+	useEffect(() => {
+		setAnnouncement(`可提及 ${candidates.length} 个对象`);
+	}, [candidates.length]);
 	/**
 	 * hover 选中许可：滚动高亮项后置否，鼠标真实移动（mousemove）时恢复。
 	 * 否则静止鼠标下的列表滚动会合成 mouseEnter，把方向键选中劫回鼠标悬停项。
@@ -77,10 +81,18 @@ export function MentionList({
 		listRef.current?.querySelectorAll('[role="option"]')[activeIndex]?.scrollIntoView({
 			block: "nearest",
 		});
-	}, [activeIndex]);
+	}, [activeIndex, candidates]);
 
 	return (
 		<div className={cn("v-mention", className)}>
+			<div
+				role="status"
+				aria-live="polite"
+				aria-atomic="true"
+				className="v-mention__announcement"
+			>
+				{announcement}
+			</div>
 			<div aria-hidden="true" className="v-mention__label">
 				提及
 			</div>
@@ -111,7 +123,9 @@ export function MentionList({
 							onMouseEnter={() => {
 								if (allowHover.current) onActiveIndexChange(index);
 							}}
+							onMouseMove={() => onActiveIndexChange(index)}
 							role="option"
+							tabIndex={-1}
 							type="button"
 						>
 							{candidate.memberCount === undefined ? (
