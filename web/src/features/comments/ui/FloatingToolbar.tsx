@@ -5,7 +5,7 @@ import { findBlockElement } from "@features/comments/lib/extract-blocks";
 import { clearMarks, wrapRange } from "@features/comments/lib/range-marks";
 import {
 	clearSelection,
-	isSelectionInUnannotatableContainer,
+	selectionCapability,
 	selectionToAnchor,
 } from "@features/comments/lib/selection-to-anchor";
 import type { Anchor } from "@features/comments/lib/types";
@@ -144,10 +144,8 @@ export function FloatingToolbar({
 					return;
 				}
 
-				// 不可批注容器（代码块/图块/块级公式）→ 直接隐藏，不置灰。
-				// 区别于跨块：跨块是用户选了多段（置灰 + 提示），这里选的是单个不可批注块，
-				// 置灰 tooltip "请在同一段落内选择" 会误导用户，应直接消失。
-				if (isSelectionInUnannotatableContainer(range)) {
+				const capability = selectionCapability(range, root);
+				if (capability === "unsupported") {
 					lastRangeRef.current = null;
 					setPos(null);
 					setAnchor(null);
@@ -157,16 +155,18 @@ export function FloatingToolbar({
 
 				// 缓存 Range 供滚动重定位用
 				lastRangeRef.current = range.cloneRange();
-
-				// 算 anchor（含跨块判定）
-				const result = await selectionToAnchor({ root });
-				if (result) {
-					setAnchor(result);
-					setIsCrossBlock(false);
-				} else {
+				// 只有跨文本块的选区显示置灰提示；其余无锚点结果直接隐藏。
+				const result =
+					capability === "annotatable" ? await selectionToAnchor({ root }) : null;
+				if (!result && capability !== "cross-block") {
+					lastRangeRef.current = null;
+					setPos(null);
 					setAnchor(null);
-					setIsCrossBlock(true);
+					setIsCrossBlock(false);
+					return;
 				}
+				setAnchor(result);
+				setIsCrossBlock(capability === "cross-block");
 
 				// 鼠标还按着说明仍在拖选，松开后再出现
 				if (pressedRef.current) return;
