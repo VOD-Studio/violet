@@ -132,7 +132,7 @@ function JoinDiscussionCard() {
 			</div>
 			{open && (
 				<InlineLogin
-					className="annotation-pop mt-4 bg-background/60"
+					className="annotation-pop mt-4 border-t border-border pt-4"
 					onSuccess={() => setOpen(false)}
 				/>
 			)}

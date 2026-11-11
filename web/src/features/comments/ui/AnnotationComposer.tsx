@@ -65,8 +65,8 @@ export function AnnotationComposer({
 			/>
 			{loginRequired && showLogin && (
 				<InlineLogin
-					className="annotation-pop mt-3"
-					description="登录后即可发送你的批注，内容已为你保留。"
+					className="annotation-pop mt-3 border-t border-border pt-3"
+					description="登录后发送，已写的内容会保留。"
 					onSuccess={() => onLoggedIn?.()}
 				/>
 			)}
