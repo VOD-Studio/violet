@@ -1,5 +1,7 @@
+import { setTimeout as delay } from "node:timers/promises";
 import type { Announcement } from "@features/settings/model/types";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AnnouncementBar from "../AnnouncementBar";
 
@@ -38,13 +40,15 @@ async function advance(ms: number) {
 		}
 	});
 	await act(async () => {
-		await new Promise((resolve) => setTimeout(resolve, 200));
+		await delay(200);
 	});
 }
 
 const dismiss = async () => {
 	fireEvent.click(screen.getByRole("button", { name: "关闭公告" }));
-	await new Promise((resolve) => setTimeout(resolve, 200));
+	await act(async () => {
+		await delay(200);
+	});
 };
 
 beforeEach(() => {
@@ -109,6 +113,51 @@ describe("AnnouncementBar", () => {
 		expect(screen.getByText("更新的公告")).toBeTruthy();
 	});
 
+	it("关闭淡出期间刷新的新 ID 不会被误标已读，刷新后仍可展示", async () => {
+		feed.data = [banner(7, "旧公告"), banner(8, "另一条旧公告")];
+		const { rerender } = render(<AnnouncementBar />);
+		fireEvent.click(screen.getByRole("button", { name: "关闭公告" }));
+		feed.data = [banner(7, "旧公告"), banner(8, "另一条旧公告"), banner(9, "刚发布")];
+		rerender(<AnnouncementBar />);
+		await act(async () => {
+			await delay(200);
+		});
+		expect(readIds()).toEqual([7, 8]);
+		expect(screen.getByText("刚发布")).toBeTruthy();
+		expect(screen.queryByText("旧公告")).toBeNull();
+	});
+
+	it("服务端不读取浏览器已读存储，也不输出待水合的公告空壳", () => {
+		const getItem = vi.spyOn(Storage.prototype, "getItem");
+		expect(renderToString(<AnnouncementBar />)).toBe("");
+		expect(getItem).not.toHaveBeenCalled();
+	});
+
+	it("客户端已读列表不渲染空壳，数据新增未读 ID 后出现", () => {
+		localStorage.setItem("announcement:read-ids", "[7]");
+		const { container, rerender } = render(<AnnouncementBar />);
+		expect(container.firstElementChild).toBeNull();
+		feed.data = [banner(7, "周日凌晨维护"), banner(9, "新公告")];
+		rerender(<AnnouncementBar />);
+		expect(screen.getByText("新公告")).toBeTruthy();
+	});
+
+	it("保留服务端顺序，列表收窄后显示剩余公告", async () => {
+		feed.data = [
+			banner(8, "后端第一条"),
+			banner(7, "后端第二条"),
+			banner(9, "非浮条公告", { display: "card" }),
+		];
+		const { rerender } = render(<AnnouncementBar />);
+		expect(screen.getByText("后端第一条")).toBeTruthy();
+		await advance(6200);
+		expect(screen.getByText("后端第二条")).toBeTruthy();
+		feed.data = [banner(8, "后端第一条")];
+		rerender(<AnnouncementBar />);
+		expect(screen.getByText("后端第一条")).toBeTruthy();
+		expect(screen.queryByText("非浮条公告")).toBeNull();
+	});
+
 	it("多条公告按驻留时长轮换", async () => {
 		feed.data = [banner(7, "第一条"), banner(8, "第二条")];
 		render(<AnnouncementBar />);
@@ -131,6 +180,31 @@ describe("AnnouncementBar", () => {
 		fireEvent.focus(screen.getByRole("button", { name: "关闭公告" }));
 		await advance(20000);
 		expect(screen.queryByText("第二条")).toBeNull();
+	});
+
+	it("鼠标离开后焦点仍暂停，链接与关闭钮之间切换不恢复，最终离开才续走", async () => {
+		feed.data = [
+			banner(7, "第一条", { link_url: "/announcements/7", link_text: "详情" }),
+			banner(8, "第二条"),
+		];
+		const { container } = render(<AnnouncementBar />);
+		const layer = container.firstElementChild as HTMLElement;
+		const link = screen.getByRole("link", { name: "详情" });
+		const close = screen.getByRole("button", { name: "关闭公告" });
+		await advance(3000);
+		fireEvent.mouseOver(layer);
+		act(() => link.focus());
+		fireEvent.mouseOut(layer);
+		await advance(10000);
+		expect(screen.getByText("第一条")).toBeTruthy();
+		act(() => close.focus());
+		await advance(10000);
+		expect(screen.getByText("第一条")).toBeTruthy();
+		act(() => close.blur());
+		await advance(2800);
+		expect(screen.getByText("第一条")).toBeTruthy();
+		await advance(400);
+		expect(screen.getByText("第二条")).toBeTruthy();
 	});
 
 	it("减弱动态下不轮换，内容与关闭钮都在", async () => {

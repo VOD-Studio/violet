@@ -6,7 +6,7 @@
  *
  * 不变约束：
  * - 排序权威是后端返回顺序（sort_order ASC, created_at DESC），前端不重排
- * - 关闭即把当前可见的公告 id 记为已读（localStorage，不跨设备同步），
+ * - 关闭即把点击关闭时列表中的全部公告 id 记为已读（localStorage，不跨设备同步），
  *   新 id 出现才重现
  * - WCAG 2.2.2：hover/focus 暂停轮换；prefers-reduced-motion 下不轮换，
  *   直接整条静态展示
@@ -49,22 +49,22 @@ function writeReadIds(ids: Set<number>) {
 }
 
 /** 淡出中要提交的动作：切到下一条，或关闭后记已读 */
-type Pending = number | "close";
+type Pending = number | { readIds: number[] };
 
 export default function AnnouncementBar() {
 	const { data } = useAnnouncements();
 	const reduced = usePrefersReducedMotion();
-	const [readIds, setReadIds] = useState<Set<number>>(() => readReadIds());
+	const [readIds, setReadIds] = useState<Set<number> | null>(null);
 	const [shownIndex, setShownIndex] = useState(0);
 	const [pending, setPending] = useState<Pending | null>(null);
 	// 已读标记在 localStorage（客户端概念），SSR 与 hydration 首帧不渲染
 	// 浮条——否则先渲染出的条会在 hydration 读到已读后被移除，闪现空壳
-	const [mounted, setMounted] = useState(false);
-	useEffect(() => setMounted(true), []);
+	useEffect(() => setReadIds(readReadIds()), []);
 
 	// useMemo 稳定引用：下面两个 effect 依赖它，不稳定的 filter 产物会反复重启
 	const banners = useMemo(
-		() => (data ?? []).filter((a) => a.display === "banner").filter((a) => !readIds.has(a.id)),
+		() =>
+			readIds ? (data ?? []).filter((a) => a.display === "banner" && !readIds.has(a.id)) : [],
 		[data, readIds],
 	);
 
@@ -88,8 +88,8 @@ export default function AnnouncementBar() {
 		if (pending === null) return;
 		const timer = setTimeout(
 			() => {
-				if (pending === "close") {
-					const ids = new Set([...readIds, ...banners.map((a) => a.id)]);
+				if (typeof pending !== "number") {
+					const ids = new Set([...(readIds ?? []), ...pending.readIds]);
 					setReadIds(ids);
 					writeReadIds(ids);
 					setShownIndex(0);
@@ -101,9 +101,9 @@ export default function AnnouncementBar() {
 			reduced ? 0 : LEAVE_MS,
 		);
 		return () => clearTimeout(timer);
-	}, [pending, readIds, banners, reduced]);
+	}, [pending, readIds, reduced]);
 
-	if (!mounted) return null;
+	if (readIds === null) return null;
 	const current = banners[Math.min(shownIndex, banners.length - 1)];
 	if (!current) return null;
 	const link = current.link_url
@@ -128,7 +128,7 @@ export default function AnnouncementBar() {
 				content={current.content}
 				link={link}
 				severity={current.severity}
-				onClose={() => setPending("close")}
+				onClose={() => setPending({ readIds: banners.map((a) => a.id) })}
 			/>
 		</div>
 	);
