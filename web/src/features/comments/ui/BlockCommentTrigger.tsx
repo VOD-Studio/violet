@@ -40,7 +40,7 @@ const COMPOSER_GAP_PX = 8;
 const LABEL_EXCERPT = 24;
 const DRAFT_CLASS = "annotation-draft-highlight";
 /** 水合标记没有会变的外部来源，订阅什么也不做。 */
-const subscribeNever = () => () => { };
+const subscribeNever = () => () => {};
 
 /**
  * 入口当前跟随哪种操作：鼠标悬停时落在段落右侧页边，触屏点按时落在段落右下方，
@@ -123,8 +123,6 @@ export function BlockCommentTrigger({
 		if (!root) return;
 		let frame = 0;
 		const onMove = (event: globalThis.MouseEvent) => {
-			// 触屏点按也会补发鼠标事件；键盘操作时入口跟随方向键，不跟指针。
-			if (focused) return;
 			cancelAnimationFrame(frame);
 			frame = requestAnimationFrame(() => {
 				const block = closestAnnotatableBlock(event.target, root);
@@ -310,16 +308,8 @@ export function BlockCommentTrigger({
 							}}
 							onInteractOutside={(event) => {
 								// 聚焦移动不算离开；真正的外部按下才收起
-								if (event.detail.originalEvent.type === "focusin") {
+								if (event.detail.originalEvent.type === "focusin")
 									event.preventDefault();
-									return;
-								}
-								// 鼠标/触屏唤出的面板被外部点击关闭：立即清掉入口跟随的段落，
-								// 不依赖 blur 时序，入口不会残留在旧位置等下一次指针移动
-								if (!returnFocus.current) {
-									setCurrent(null);
-									setMode("pointer");
-								}
 							}}
 							inert={!composerVisible}
 							aria-hidden={!composerVisible || undefined}

@@ -42,10 +42,13 @@ test("鼠标点开段评后点外部关闭，悬停照常跟随新段落", async
 	await entry.click();
 	const composer = page.getByRole("dialog", { name: "发表段评" });
 	await expect(composer).toBeVisible();
-	// 点面板之外：面板关闭，焦点不被程序化送回入口（否则悬停会被键盘接管挡住）
+	// 点面板之外：面板关闭，入口保持可见（不收起），焦点也不被程序化送回入口
 	await page.mouse.click(8, 200);
 	await expect(composer).toHaveCount(0);
+	await expect(entry).toHaveAttribute("data-show", "true");
+	await expect(entry).toHaveAccessibleName("发表段评：增强恢复后，这段结尾仍是原来的节点。");
 
+	// 悬停其他段落：入口立即跟随
 	await paragraph("键盘焦点保持可见").first().hover();
 	await expect(entry).toHaveAccessibleName(/发表段评：键盘焦点保持可见/);
 });
