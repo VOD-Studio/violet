@@ -5,7 +5,7 @@
  * 查询参数、请求体与领域边界常量。
  */
 
-import type { PictureInput } from "@features/comments/ui/RichCommentInput";
+import type { PictureInput } from "@shared/ui/rich-text-input/RichTextInput";
 
 /** 正文长度上限（rune 计，对齐后端聚合根不变量 content ≤500） */
 export const MAX_TWEET_LENGTH = 500;

@@ -1160,18 +1160,6 @@
 			"count": 1
 		},
 		{
-			"file": "src/features/comments/ui/RichCommentInput.tsx",
-			"rule": "tailwind-palette",
-			"value": "bg-black",
-			"count": 3
-		},
-		{
-			"file": "src/features/comments/ui/RichCommentInput.tsx",
-			"rule": "tailwind-palette",
-			"value": "text-white",
-			"count": 3
-		},
-		{
 			"file": "src/features/editor/RichTextEditor.tsx",
 			"rule": "raw-color",
 			"value": "hsl(240_10%_8%)",

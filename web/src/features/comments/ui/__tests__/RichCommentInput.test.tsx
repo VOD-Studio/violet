@@ -23,11 +23,8 @@ vi.mock("@features/upload/hooks/use-chunked-upload", () => ({
 	useChunkedUpload: () => ({ uploadFile: mockUploadFile }),
 }));
 
-import {
-	type PictureInput,
-	RichCommentInput,
-	type RichCommentInputHandle,
-} from "../RichCommentInput";
+import type { PictureInput, RichTextInputHandle } from "@shared/ui/rich-text-input/RichTextInput";
+import { RichCommentInput } from "../RichCommentInput";
 
 /** 受控包装：inlineImages 依赖 value 真正回灌才能驱动退格剔除等效果，镜像 chat 的用法。 */
 function Controlled({ onImagesChange }: { onImagesChange: (images: PictureInput[]) => void }) {
@@ -128,7 +125,7 @@ describe("RichCommentInput", () => {
 	});
 
 	it("外部追加提及保留草稿和图片，支持重复点击并聚焦到末尾", () => {
-		const ref = createRef<RichCommentInputHandle>();
+		const ref = createRef<RichTextInputHandle>();
 		const onChange = vi.fn();
 		const userID = "00000000-0000-0000-0000-000000000002";
 		render(
@@ -159,7 +156,7 @@ describe("RichCommentInput", () => {
 	});
 
 	it("禁用输入框或非候选用户不追加提及", () => {
-		const ref = createRef<RichCommentInputHandle>();
+		const ref = createRef<RichTextInputHandle>();
 		const onChange = vi.fn();
 		const props = {
 			ref,

@@ -11,8 +11,9 @@
  */
 
 import type { TweetComment } from "@entities/tweet/model/types";
-import { type PictureInput, RichCommentInput } from "@features/comments/ui/RichCommentInput";
+import { RichCommentInput } from "@features/comments/ui/RichCommentInput";
 import { ApiError } from "@shared/api/error";
+import type { PictureInput } from "@shared/ui/rich-text-input/RichTextInput";
 import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@violet/ui";
 import { LogIn, Send } from "lucide-react";

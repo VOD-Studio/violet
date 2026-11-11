@@ -3,11 +3,12 @@
 import { useCreateComment, useSendCommentCode } from "@features/comments/api/mutations";
 import type { Comment, CreateComment } from "@features/comments/model/types";
 import { ApiError } from "@shared/api/error";
+import type { PictureInput } from "@shared/ui/rich-text-input/RichTextInput";
 import { Button, Field, Input, InputOTP, ResendButton, Spinner } from "@violet/ui";
 import { MailCheck, Send } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { type PictureInput, RichCommentInput } from "./RichCommentInput";
+import { RichCommentInput } from "./RichCommentInput";
 
 export interface CommentFormProps {
 	/** 文章 id */
