@@ -252,12 +252,6 @@
 			"documentation": "web/packages/ui/docs/components/otp.md"
 		},
 		{
-			"name": "overlay-scroll",
-			"status": "legacy",
-			"entry": "src/components/overlay-scroll/index.ts",
-			"css": "src/components/overlay-scroll/overlay-scroll.css"
-		},
-		{
 			"name": "page-header",
 			"status": "foundation",
 			"entry": "src/components/page-header/index.ts",

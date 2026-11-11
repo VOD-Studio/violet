@@ -1,6 +1,6 @@
 import type { EmotionDef } from "@violet/mascot";
 import type { MascotHandle } from "@violet/mascot/react";
-import { OverlayScroll } from "@violet/ui";
+import { ScrollArea } from "@violet/ui";
 import { cn } from "cn";
 import {
 	Hand,
@@ -174,7 +174,7 @@ export function MascotDirectorPanel({ mascotRef, def, onAIMessage }: MascotDirec
 	};
 
 	return (
-		<OverlayScroll className="h-full min-h-0">
+		<ScrollArea aria-label="吉祥物导演控制台" className="h-full min-h-0">
 			<section className="border-b border-edge-hairline p-4">
 				<div className="mb-3 flex items-center justify-between gap-2">
 					<div className="flex items-center gap-2">
@@ -301,6 +301,6 @@ export function MascotDirectorPanel({ mascotRef, def, onAIMessage }: MascotDirec
 					</div>
 				</div>
 			</section>
-		</OverlayScroll>
+		</ScrollArea>
 	);
 }

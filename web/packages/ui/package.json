@@ -217,11 +217,6 @@
 			"import": "./src/components/otp/index.ts",
 			"default": "./src/components/otp/index.ts"
 		},
-		"./overlay-scroll": {
-			"types": "./src/components/overlay-scroll/index.ts",
-			"import": "./src/components/overlay-scroll/index.ts",
-			"default": "./src/components/overlay-scroll/index.ts"
-		},
 		"./page-header": {
 			"types": "./src/components/page-header/index.ts",
 			"import": "./src/components/page-header/index.ts",
@@ -427,7 +422,6 @@
 		"./components/morphing-popover.css": "./src/components/morphing-popover/morphing-popover.css",
 		"./components/number-input.css": "./src/components/number-input/number-input.css",
 		"./components/otp.css": "./src/components/otp/otp.css",
-		"./components/overlay-scroll.css": "./src/components/overlay-scroll/overlay-scroll.css",
 		"./components/page-header.css": "./src/components/page-header/page-header.css",
 		"./components/pagination.css": "./src/components/pagination/pagination.css",
 		"./components/popover.css": "./src/components/popover/popover.css",
@@ -682,11 +676,6 @@
 				"import": "./dist/components/otp/index.js",
 				"default": "./dist/components/otp/index.js"
 			},
-			"./overlay-scroll": {
-				"types": "./dist/components/overlay-scroll/index.d.ts",
-				"import": "./dist/components/overlay-scroll/index.js",
-				"default": "./dist/components/overlay-scroll/index.js"
-			},
 			"./page-header": {
 				"types": "./dist/components/page-header/index.d.ts",
 				"import": "./dist/components/page-header/index.js",
@@ -892,7 +881,6 @@
 			"./components/morphing-popover.css": "./dist/components/morphing-popover.css",
 			"./components/number-input.css": "./dist/components/number-input.css",
 			"./components/otp.css": "./dist/components/otp.css",
-			"./components/overlay-scroll.css": "./dist/components/overlay-scroll.css",
 			"./components/page-header.css": "./dist/components/page-header.css",
 			"./components/pagination.css": "./dist/components/pagination.css",
 			"./components/popover.css": "./dist/components/popover.css",

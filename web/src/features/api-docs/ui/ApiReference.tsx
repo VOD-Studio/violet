@@ -1,4 +1,4 @@
-import { Input, OverlayScroll } from "@violet/ui";
+import { Input, ScrollArea } from "@violet/ui";
 import { cn } from "cn";
 import { ArrowRight, ArrowUpRight, Search } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
@@ -157,7 +157,7 @@ export function ApiReference() {
 
 			<div
 				className={cn(
-					/* 始终 grid：过滤态单列也让 OverlayScroll 作为网格项被拉伸限高，否则高度随内容撑开无法滚动 */
+					/* 过滤态单列也保留 grid，让滚动区域在剩余空间内限高。 */
 					"mt-5 min-h-0 flex-1 grid",
 					showToc && "grid-cols-[13.5rem_minmax(0,1fr)] gap-10",
 				)}
@@ -171,13 +171,9 @@ export function ApiReference() {
 						onOpenAppendix={() => setAppendixOpen(true)}
 					/>
 				) : null}
-				{/* 站点统一覆盖式滚动条；单一根子节点供内部 ResizeObserver 跟踪内容增高 */}
-				<OverlayScroll
-					className="min-w-0 min-h-0"
-					style={{ overscrollBehavior: "contain" }}
-				>
-					<div>{endpointBody}</div>
-				</OverlayScroll>
+				<ScrollArea aria-label="接口正文" className="min-w-0 min-h-0">
+					{endpointBody}
+				</ScrollArea>
 			</div>
 		</div>
 	);
@@ -337,7 +333,7 @@ function TocRail({
 	};
 	return (
 		<nav aria-label="文档总目" className="min-h-0">
-			<OverlayScroll className="h-full">
+			<ScrollArea aria-label="接口文档目录" className="h-full">
 				<div className="pr-2">
 					<p className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground/60 uppercase">
 						Contents
@@ -388,7 +384,7 @@ function TocRail({
 						</>
 					) : null}
 				</div>
-			</OverlayScroll>
+			</ScrollArea>
 		</nav>
 	);
 }

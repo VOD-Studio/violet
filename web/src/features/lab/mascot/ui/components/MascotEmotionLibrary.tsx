@@ -7,7 +7,7 @@ import {
 	DialogTitle,
 	DialogTrigger,
 	Input,
-	OverlayScroll,
+	ScrollArea,
 	Segmented,
 } from "@violet/ui";
 import { Grid2X2, Search } from "lucide-react";
@@ -127,7 +127,11 @@ export function MascotEmotionLibrary({
 				/>
 			</div>
 
-			<OverlayScroll data-emotion-scroll className="hidden min-h-0 flex-1 lg:block">
+			<ScrollArea
+				aria-label="表情动作图库"
+				data-emotion-scroll
+				className="hidden min-h-0 flex-1 lg:block"
+			>
 				<div className="px-3 pb-3">
 					<div className="grid grid-cols-2 border-t border-l border-edge-hairline">
 						{visibleDefs.map((def) => (
@@ -152,7 +156,7 @@ export function MascotEmotionLibrary({
 						) : null}
 					</div>
 				</div>
-			</OverlayScroll>
+			</ScrollArea>
 
 			<div className="flex min-h-0 flex-1 flex-col lg:hidden">
 				<div className="flex items-center justify-between gap-3 border-b border-edge-hairline px-3 py-2.5">
@@ -196,7 +200,11 @@ export function MascotEmotionLibrary({
 									onQueryChange={setQuery}
 								/>
 							</div>
-							<OverlayScroll data-emotion-scroll className="min-h-0">
+							<ScrollArea
+								aria-label="全部表情动作"
+								data-emotion-scroll
+								className="min-h-0"
+							>
 								<div className="px-4 pb-4">
 									<div className="grid grid-cols-2 border-t border-l border-edge-hairline sm:grid-cols-3">
 										{visibleDefs.map((def) => (
@@ -223,12 +231,17 @@ export function MascotEmotionLibrary({
 										) : null}
 									</div>
 								</div>
-							</OverlayScroll>
+							</ScrollArea>
 						</DialogContent>
 					</Dialog>
 				</div>
 
-				<OverlayScroll data-emotion-scroll className="min-h-0 flex-1">
+				<ScrollArea
+					aria-label="状态胶片"
+					orientation="both"
+					data-emotion-scroll
+					className="min-h-0 flex-1"
+				>
 					<div className="p-3">
 						<div className="flex w-max gap-2" role="group" aria-label="状态胶片">
 							{visibleDefs.map((def) => (
@@ -247,7 +260,7 @@ export function MascotEmotionLibrary({
 							) : null}
 						</div>
 					</div>
-				</OverlayScroll>
+				</ScrollArea>
 			</div>
 		</div>
 	);
