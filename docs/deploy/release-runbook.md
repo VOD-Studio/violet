@@ -59,6 +59,10 @@ PR 检查拒绝小于或等于目标分支 manifest 的版本意图；release-pl
 
 公开入口由 `nginx-proxy` 提供 TLS，`/api/` 和 `/uploads/` 转发至 API，其余页面由 Web SSR 服务。带 hash 的静态资源由 nginx 的共享目录提供。PostgreSQL、Redis、上传和备份使用独立卷。
 
+文章页 `/blog/{slug}` 的匿名 GET（无查询参数、无会话及鉴权头）在 Web SSR 进程内缓存完整 HTML，按路径与外观/主题/装饰 cookie 区分：20 秒内命中，过期重渲染失败时旧版最多再兜底 120 秒。运行时文章更新最多等待 20 秒可见，后端故障时最多 140 秒；发布与回滚会重启 Web 进程并清空副本。
+
+带未知 cookie（可能是会话）、`Authorization`、`Set-Cookie`、禁止缓存响应、非 200 或非 HTML 都不会共享。文章 HTML 对浏览器/代理返回 `Cache-Control: private, no-store`，静态资源仍由 nginx 保持一年 `immutable`。验收可连续运行 `curl -sS -D - -o /dev/null https://<域名>/blog/<slug>`，对照 `x-ssr-cache: miss` / `hit`；再带登录 cookie 请求，应没有该响应头。
+
 音乐是可选后端模块。默认 Compose 自建空 `violet_music` 网络；同机接入 Kite 时由 `.env` 显式指定 `KITE_NETWORK_NAME=kite_network`、`KITE_NETWORK_EXTERNAL=true`，发布前确认该外部网络已存在。只有 API 加入 Kite 专网，服务令牌与 Cookie 加密密钥仅留在后端部署环境。前置配置及验收见 [Kite 音乐服务](manual-deploy.md#kite-音乐服务可选)。
 
 首次接入要求现有 API/Web 容器与 Compose 配置齐全、数据库迁移记录 clean。脚本先捕获实际镜像 ID 和配置，保存为 `bootstrap-*` 归档，再部署候选。它不是空服务器安装器。后续版本以 `/root/docker/violet/.releases/` 为准：
