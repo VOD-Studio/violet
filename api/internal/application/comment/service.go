@@ -12,6 +12,7 @@ import (
 
 	appshared "blog-api/internal/application/shared"
 	domain "blog-api/internal/domain/comment"
+	post "blog-api/internal/domain/post"
 	"blog-api/internal/domain/shared"
 	user "blog-api/internal/domain/user"
 )
@@ -158,11 +159,17 @@ type Service struct {
 	commentRepo domain.CommentRepository
 	// userRepo 富化评论作者第三方登录角标（author_provider/author_profile_url）
 	userRepo    user.UserRepository
+	articleRepo ArticleLookup
 	codeStore   appshared.CodeStore
 	emailSender EmailSender
 	emojiLookup EmojiLookup
 	sitePolicy  SitePolicy
 	bus         appshared.EventBus
+}
+
+// ArticleLookup 仅取公开可见文章正文，避免评论用例依赖整个文章仓储。
+type ArticleLookup interface {
+	FindActiveByID(ctx context.Context, id shared.ID) (*post.Post, error)
 }
 
 // SitePolicy 站点级评论策略端口（由 wiring 适配 settings 模块）。
@@ -177,8 +184,9 @@ type SitePolicy interface {
 // codeStore 和 emailSender 用于匿名评论的邮箱验证码两步流（PRD-0001）。
 // emojiLookup 用于 toDTO 后解析 body 中的 [name] 构建 emote 映射，nil 时跳过。
 // sitePolicy 用于 Create 时的开关/审核分流，nil 时按「开评论 + 需审核」兜底。
-func NewService(repo domain.CommentRepository, userRepo user.UserRepository, codeStore appshared.CodeStore, emailSender EmailSender, emojiLookup EmojiLookup, sitePolicy SitePolicy, bus appshared.EventBus) *Service {
-	return &Service{commentRepo: repo, userRepo: userRepo, codeStore: codeStore, emailSender: emailSender, emojiLookup: emojiLookup, sitePolicy: sitePolicy, bus: bus}
+// articles 供 Create 校验新批注锚点（读当前已发布正文）；nil 时带锚点的创建报内部错误。
+func NewService(repo domain.CommentRepository, userRepo user.UserRepository, codeStore appshared.CodeStore, emailSender EmailSender, emojiLookup EmojiLookup, sitePolicy SitePolicy, bus appshared.EventBus, articles ArticleLookup) *Service {
+	return &Service{commentRepo: repo, userRepo: userRepo, articleRepo: articles, codeStore: codeStore, emailSender: emailSender, emojiLookup: emojiLookup, sitePolicy: sitePolicy, bus: bus}
 }
 
 // 黑洞模式（PRD-0001）：匿名 viewer（viewerUserID 为空字符串）直接返回空数组，
@@ -628,6 +636,21 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CommentDTO, error
 			return CommentDTO{}, err
 		}
 		if err := s.checkAnonQuota(ctx, postID, in.IPHash, in.AuthorEmail); err != nil {
+			return CommentDTO{}, err
+		}
+	}
+	if in.Anchor != nil {
+		if s.articleRepo == nil {
+			return CommentDTO{}, shared.Internal("未配置文章正文查找", nil)
+		}
+		article, err := s.articleRepo.FindActiveByID(ctx, postID)
+		if err != nil {
+			return CommentDTO{}, err
+		}
+		if article == nil || !article.IsPublished() {
+			return CommentDTO{}, post.ErrNotFound
+		}
+		if err := EnsureAnchorMatchesArticle(ResolveArticleHTML(article.ContentHTML(), article.ContentMD()), in.Anchor); err != nil {
 			return CommentDTO{}, err
 		}
 	}

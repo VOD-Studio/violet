@@ -301,6 +301,8 @@ func NewCommentsServer(tools *CommentTools) *mcp.Server {
 	mcp.AddTool(s, &mcp.Tool{
 		Name: "list_annotation_blocks",
 		Description: "分页读取已发布文章可批注块的规范文本、块 ID、文本 hash 与 UTF-16 长度。" +
+			"只列可创建新锚点的文本块（p/h1–h6/li/blockquote，行内可含代码/链接/行内公式）；" +
+			"表格、图片、图注、块公式、图块、代码与可运行块、嵌入卡、折叠摘要不在其中。" +
 			"写批注前使用，避免手拼 DOM。传 post_id 或 slug；需 comments:read 或 comments:write 权限。",
 	}, tools.ListAnnotationBlocks)
 
@@ -313,7 +315,9 @@ func NewCommentsServer(tools *CommentTools) *mcp.Server {
 	mcp.AddTool(s, &mcp.Tool{
 		Name: "create_annotation",
 		Description: "发表划线批注（选区锚点五元组），可用 ai_name 自署名。" +
-			"可传 block_text 自动补齐 block_id/block_text_hash。需 comments:write 权限。",
+			"可传 block_text 自动补齐 block_id/block_text_hash。锚点按当前正文验收：仅指向" +
+			"list_annotation_blocks 列出的文本块；表格/图片/公式块/图块/代码块/嵌入卡/折叠摘要" +
+			"与同名重复块都会被拒。回复批注传 parent_id 即可继承锚点，不需选区参数。需 comments:write 权限。",
 	}, tools.CreateAnnotation)
 
 	mcp.AddTool(s, &mcp.Tool{

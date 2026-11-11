@@ -295,7 +295,8 @@ type createCommentRequest struct {
 // 双轨认证（PRD-0001）：
 //   - 登录（会话有 userID）：跳过验证码/配额，author_* 从 user 资料填充
 //   - 匿名：必须 author_name + author_email + 邮箱验证码 code；走一篇一次配额
-//   - 带 anchor（选区批注）：强制登录，否则 401
+//   - 带 anchor（选区批注）：强制登录，否则 401；锚点按当前已发布正文与可批注块
+//     种类在 service 层验收，不匹配返回 400/404
 //
 // ip_hash 一律由 handler 从 middleware.GetClientIP + SHA256 计算填充。
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {

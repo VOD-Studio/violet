@@ -13,17 +13,21 @@ import (
 	"blog-api/internal/domain/shared"
 )
 
-// 与前端 extract-blocks.ts BLOCK_SELECTOR 一致。
-const articleBlockSelector = "p, h2, h3, h4, h5, li, pre, blockquote, [data-runnable='true']"
+// 新锚点能力边界（与前端 selection-to-anchor 的 BLOCK_SELECTOR + 不可批注容器选择器
+// 各自维护同一契约，不共享字符串）。历史锚点的候选块由阅读端 extract-blocks 独立
+// 提取（含 pre/data-runnable），不受此选择器限制。
+const articleBlockSelector = "p, h1, h2, h3, h4, h5, h6, li, blockquote"
 
 // ArticleBlock 正文中的一个可锚定块（id = SHA-256(TrimSpace(text))[:8]）。
 type ArticleBlock struct {
 	ID   string
-	Text string // 对应 DOM textContent，供 offset 校验
+	Text string // 规范块文本，供 offset 校验
 }
 
-// ExtractArticleBlocks 从文章 ContentHTML 提取候选块，对齐前端 extractCandidateBlocks；
-// 块文本跳过阅读端 sanitize 会丢弃的标签子树（如 script），与可见 DOM 一致。
+// ExtractArticleBlocks 提取可创建新锚点的正文块：纯文本块 p/h1–h6/li/blockquote，
+// 行内可含 code/a/行内公式（data-latex）；表格、图片块、figure/figcaption、块公式、
+// 图块、pre/可运行块、嵌入卡与 details>summary 不返回。块文本跳过阅读端 sanitize
+// 会丢弃的标签子树（如 script），与可见 DOM 一致。
 func ExtractArticleBlocks(contentHTML string) ([]ArticleBlock, error) {
 	contentHTML = strings.TrimSpace(contentHTML)
 	if contentHTML == "" {
@@ -38,6 +42,9 @@ func ExtractArticleBlocks(contentHTML string) ([]ArticleBlock, error) {
 	var blocks []ArticleBlock
 	doc.Find(articleBlockSelector).Each(func(_ int, sel *goquery.Selection) {
 		n := sel.Get(0)
+		if !annotatableArticleNode(n) {
+			return
+		}
 		text := nodeTextContent(n)
 		id, err := ComputeBlockID(text)
 		if err != nil {
@@ -48,15 +55,52 @@ func ExtractArticleBlocks(contentHTML string) ([]ArticleBlock, error) {
 	return blocks, nil
 }
 
+// 源 HTML 中的布局与代码载体不可形成新锚点；段落内仅含图片时无文本。
+func annotatableArticleNode(n *html.Node) bool {
+	for parent := n.Parent; parent != nil; parent = parent.Parent {
+		if parent.Type != html.ElementNode {
+			continue
+		}
+		if parent.Data == "table" || parent.Data == "figure" || parent.Data == "figcaption" ||
+			parent.Data == "summary" || parent.Data == "pre" || parent.Data == "code" ||
+			attr(parent, "data-type") == "block-math" || attr(parent, "data-type") == "diagram-block" {
+			return false
+		}
+	}
+	return !containsExcludedArticleNode(n)
+}
+
+func containsExcludedArticleNode(n *html.Node) bool {
+	var visit func(*html.Node) bool
+	visit = func(node *html.Node) bool {
+		if node.Type == html.ElementNode {
+			switch node.Data {
+			case "table", "figure", "figcaption", "summary", "pre":
+				return true
+			}
+			switch attr(node, "data-type") {
+			case "block-math", "diagram-block":
+				return true
+			}
+		}
+		for child := node.FirstChild; child != nil; child = child.NextSibling {
+			if visit(child) {
+				return true
+			}
+		}
+		return false
+	}
+	for child := n.FirstChild; child != nil; child = child.NextSibling {
+		if visit(child) {
+			return true
+		}
+	}
+	return false
+}
+
 func nodeTextContent(n *html.Node) string {
 	if n == nil {
 		return ""
-	}
-	// 可运行 pre：与 HtmlContent/CodeRunner 一致，data-source 为权威源码（非高亮子树）。
-	if n.Type == html.ElementNode && n.Data == "pre" && attr(n, "data-runnable") == "true" {
-		if src := attr(n, "data-source"); src != "" {
-			return src
-		}
 	}
 	var b strings.Builder
 	var walk func(*html.Node)
@@ -68,20 +112,10 @@ func nodeTextContent(n *html.Node) string {
 			if node.Data == "script" {
 				return
 			}
-			switch attr(node, "data-type") {
-			case "inline-math", "block-math":
-				// 与阅读端 carrier 一致：用 data-latex 参与块文本（空 span 无子文本）。
+			// 行内公式 carrier：空 span 无子文本，与阅读端口径一致用 data-latex 计入。
+			if attr(node, "data-type") == "inline-math" {
 				b.WriteString(attr(node, "data-latex"))
 				return
-			case "diagram-block":
-				b.WriteString(attr(node, "data-source"))
-				return
-			}
-			if node.Data == "pre" && attr(node, "data-runnable") == "true" {
-				if src := attr(node, "data-source"); src != "" {
-					b.WriteString(src)
-					return
-				}
 			}
 		}
 		if node.Type == html.TextNode {

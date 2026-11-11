@@ -437,6 +437,28 @@ func TestCreate_LoggedIn_PassesAnchorAndPictures(t *testing.T) {
 	assert.Equal(t, "https://x/a.png", svc.createInput.Pictures[0].URL)
 	assert.Equal(t, int64(1024), svc.createInput.Pictures[0].Size)
 }
+func TestCreate_AnchorAdmissionErrorsUseSafeHTTPStatus(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		err  error
+		code int
+	}{
+		{"unsupportedBlock", domainshared.BadRequest("不支持的文章块"), http.StatusBadRequest},
+		{"articleUnavailable", domainshared.NotFound("文章"), http.StatusNotFound},
+		{"lookupFailure", domainshared.Internal("读取文章失败", nil), http.StatusInternalServerError},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			svc := &stubCommentService{createErr: tc.err}
+			h := newHandlerWithStub(svc)
+			body := `{"body":"note","anchor":{"block_id":"abc12345","start_offset":0,"end_offset":5,"selected_text":"hello","block_text_hash":"abc12345"}}`
+			req := withViewer(setPostID(newJSONRequest(t, "POST", "/posts/abc/comments", body), "post-1"), domainshared.NewID().String())
+			rr := httptest.NewRecorder()
+			h.Create(rr, req)
+			require.Equal(t, tc.code, rr.Code)
+			assert.True(t, svc.createCalled)
+		})
+	}
+}
 
 // 编译期断言：确保 stubCommentService 满足 commentService 接口。
 var _ commentService = (*stubCommentService)(nil)

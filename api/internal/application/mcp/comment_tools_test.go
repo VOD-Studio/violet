@@ -289,7 +289,6 @@ func TestCreateComment_ResolvesSlug(t *testing.T) {
 	require.False(t, res.IsError)
 	assert.Equal(t, "post-uuid-1", w.got.PostID)
 }
-
 func TestCreateAnnotation_BuildsAnchor(t *testing.T) {
 	w := &fakeCommentWriteService{dto: appcomment.CommentDTO{ID: "c1", IsAI: true}}
 	tools := NewCommentTools(nil, w, publishedP1())
@@ -304,6 +303,91 @@ func TestCreateAnnotation_BuildsAnchor(t *testing.T) {
 	require.NotNil(t, w.got.Anchor)
 	assert.Equal(t, "hello", w.got.Anchor.SelectedText)
 	assert.True(t, w.got.IsAI)
+}
+
+func TestCreateAnnotation_AcceptsHeadingAnchor(t *testing.T) {
+	w := &fakeCommentWriteService{dto: appcomment.CommentDTO{ID: "c1", IsAI: true}}
+	posts := &fakeCommentPostLookup{byID: map[string]apppost.PostDTO{
+		"h1": {ID: "h1", ContentHTML: "<h1>唯一标题</h1>"},
+	}}
+	tools := NewCommentTools(nil, w, posts)
+	res, _, err := tools.CreateAnnotation(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
+		createAnnotationArgs{
+			PostID: "h1", Body: "批注", SelectedText: "唯一标题",
+			StartOffset: intPtr(0), EndOffset: intPtr(4), BlockText: "唯一标题",
+		})
+	require.NoError(t, err)
+	require.False(t, res.IsError)
+	require.NotNil(t, w.got.Anchor)
+}
+
+func TestCreateAnnotation_RejectsUnannotatableNodes(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		html  string
+		block string
+	}{
+		{"table", "<table><tr><th>表头</th><td>单元格</td></tr></table>", "单元格"},
+		{"imageOnly", `<p><img alt="图片"></p>`, "图片"},
+		{"figure", "<figure><figcaption>图注</figcaption></figure>", "图注"},
+		{"blockMath", `<div data-type="block-math" data-latex="x^2"></div>`, "x^2"},
+		{"diagram", `<div data-type="diagram-block" data-source="flow"></div>`, "flow"},
+		{"code", "<pre><code>hello</code></pre>", "hello"},
+		{"runnable", `<pre data-runnable="true" data-source="print(1)"><code>print(1)</code></pre>`, "print(1)"},
+		{"embed", `<pre><code class="language-dialogue">{"text":"hi"}</code></pre>`, `{"text":"hi"}`},
+		{"summary", "<details><summary>摘要</summary><p>正文</p></details>", "摘要"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			w := &fakeCommentWriteService{}
+			posts := &fakeCommentPostLookup{byID: map[string]apppost.PostDTO{
+				"post-1": {ID: "post-1", ContentHTML: tc.html},
+			}}
+			tools := NewCommentTools(nil, w, posts)
+			blockID, err := appcomment.ComputeBlockID(tc.block)
+			require.NoError(t, err)
+			res, _, err := tools.CreateAnnotation(context.Background(),
+				reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
+				createAnnotationArgs{
+					PostID: "post-1", Body: "批注", SelectedText: tc.block,
+					StartOffset: intPtr(0), EndOffset: intPtr(1), BlockID: blockID, BlockTextHash: blockID,
+				})
+			require.NoError(t, err)
+			assert.True(t, res.IsError)
+			assert.Equal(t, 0, w.calls)
+		})
+	}
+}
+
+func TestCreateBlockComment_RejectsUnannotatableNodes(t *testing.T) {
+	w := &fakeCommentWriteService{}
+	posts := &fakeCommentPostLookup{byID: map[string]apppost.PostDTO{
+		"post-1": {ID: "post-1", ContentHTML: "<p>ok</p><pre>print(1)</pre>"},
+	}}
+	tools := NewCommentTools(nil, w, posts)
+	res, _, err := tools.CreateBlockComment(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeCommentsWrite}, uuidUser()),
+		createBlockCommentArgs{PostID: "post-1", Body: "段评", BlockText: "print(1)"})
+	require.NoError(t, err)
+	assert.True(t, res.IsError)
+	assert.Equal(t, 0, w.calls)
+}
+
+func TestListAnnotationBlocks_OnlyAdmittedNodeKinds(t *testing.T) {
+	posts := &fakeCommentPostLookup{byID: map[string]apppost.PostDTO{
+		"p1": {ID: "p1", ContentHTML: "<h2>标题</h2><p>文本</p><pre>code</pre>"},
+	}}
+	tools := NewCommentTools(nil, nil, posts)
+	res, _, err := tools.ListAnnotationBlocks(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeCommentsRead}, uuidUser()),
+		listAnnotationBlocksArgs{PostID: "p1"})
+	require.NoError(t, err)
+	require.False(t, res.IsError)
+	var page annotationBlocksResult
+	require.NoError(t, json.Unmarshal([]byte(textOf(t, res)), &page))
+	require.Len(t, page.Blocks, 2)
+	assert.Equal(t, "标题", page.Blocks[0].BlockText)
+	assert.Equal(t, "文本", page.Blocks[1].BlockText)
 }
 
 func TestCreateBlockComment_FullBlockAnchor(t *testing.T) {
