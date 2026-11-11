@@ -4,16 +4,17 @@
  * 为 CommentList 下的所有 CommentItem 提供统一的反应数据源：
  * - 首屏评论批量查询（避免 N+1）
  * - 不在批量范围内的评论（展开回复）降级为单条查询
- * - 加载态统一，避免批量查询期间各 ReactionBar 独立请求
+ * - 加载态统一，避免批量查询期间各 CommentReactions 独立请求
  */
+
+import type { AggregatedReaction } from "@entities/reaction/model/types";
 import { useCommentReactions } from "@features/comments/api/queries";
 import { createContext, type ReactNode, useContext, useMemo } from "react";
 import { useBatchReactions } from "../api/queries";
-import type { Reaction } from "../model/types";
 
 interface ReactionContextValue {
 	/** 评论 ID -> 反应列表 的映射 */
-	map: Map<string, Reaction[]>;
+	map: Map<string, AggregatedReaction[]>;
 	/** 批量查询是否仍在加载 */
 	isLoading: boolean;
 }
@@ -32,7 +33,7 @@ export function ReactionProvider({ commentIds, children }: ReactionProviderProps
 	const { data, isLoading } = useBatchReactions(commentIds);
 
 	const map = useMemo(() => {
-		const m = new Map<string, Reaction[]>();
+		const m = new Map<string, AggregatedReaction[]>();
 		if (data) {
 			for (const item of data) {
 				// 后端 nil slice 可能序列化为 null，统一归为空数组
@@ -56,12 +57,12 @@ export function ReactionProvider({ commentIds, children }: ReactionProviderProps
  * - 有上下文且批量查询完成：若 map 包含该评论 ID 则使用批量结果；否则降级单条查询（动态加载的回复）
  */
 export function useReactionsFromContext(commentId: string): {
-	reactions: Reaction[];
+	reactions: AggregatedReaction[];
 	isLoading: boolean;
 } {
 	const ctx = useContext(ReactionContext);
 
-	const shouldFetchIndividual = ctx !== null && !ctx.isLoading && !ctx.map.has(commentId);
+	const shouldFetchIndividual = ctx === null || (!ctx.isLoading && !ctx.map.has(commentId));
 	const { data: individual, isLoading: individualLoading } = useCommentReactions(commentId, {
 		enabled: shouldFetchIndividual,
 	});

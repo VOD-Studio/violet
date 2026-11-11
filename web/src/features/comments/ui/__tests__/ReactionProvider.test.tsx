@@ -5,10 +5,11 @@
  * - 批量查询返回的 reactions 为 null 时，useReactionsFromContext 返回空数组
  * - 批量查询正常返回时，子组件能读到对应评论的反应
  */
+import type { AggregatedReaction } from "@entities/reaction/model/types";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { BatchReactionResult, Reaction } from "../../model/types";
+import type { BatchReactionResult } from "../../model/types";
 import { ReactionProvider, useReactionsFromContext } from "../ReactionProvider";
 
 const batchReactions = vi.fn((_ids: string[]) => ({
@@ -16,7 +17,7 @@ const batchReactions = vi.fn((_ids: string[]) => ({
 	isLoading: false,
 }));
 const singleReactions = vi.fn((_id: string, _options: { enabled?: boolean }) => ({
-	data: undefined as Reaction[] | undefined,
+	data: undefined as AggregatedReaction[] | undefined,
 	isLoading: false,
 }));
 
@@ -53,7 +54,7 @@ describe("ReactionProvider", () => {
 
 	it("批量返回 null reactions 时按空数组处理，不报 is not iterable", () => {
 		batchReactions.mockReturnValue({
-			data: [{ comment_id: "c1", reactions: null as unknown as Reaction[] }],
+			data: [{ comment_id: "c1", reactions: null as unknown as AggregatedReaction[] }],
 			isLoading: false,
 		});
 
@@ -79,8 +80,9 @@ describe("ReactionProvider", () => {
 							emoji_url: "/1.png",
 							count: 3,
 							self: true,
+							recent_users: [],
 						},
-					] as Reaction[],
+					] as AggregatedReaction[],
 				},
 			],
 			isLoading: false,

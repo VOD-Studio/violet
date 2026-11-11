@@ -1,3 +1,4 @@
+import type { AggregatedReaction } from "@entities/reaction/model/types";
 import { apiGet, apiGetPaged, apiPost } from "@shared/api/request";
 import type { PagedResponse } from "@shared/api/types";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
@@ -8,7 +9,6 @@ import type {
 	BlockCount,
 	Comment,
 	CommentListQuery,
-	Reaction,
 	ReplyListQuery,
 } from "../model/types";
 import { commentKeys } from "./keys";
@@ -142,8 +142,8 @@ export const useReplies = (commentId: string, query: ReplyListQuery = {}) =>
 	});
 
 /** fetchCommentReactions - GET /comments/{commentId}/reactions 评论反应列表 */
-export const fetchCommentReactions = async (commentId: string): Promise<Reaction[]> =>
-	apiGet<Reaction[]>(`/comments/${commentId}/reactions`);
+export const fetchCommentReactions = async (commentId: string): Promise<AggregatedReaction[]> =>
+	apiGet<AggregatedReaction[]>(`/comments/${commentId}/reactions`);
 
 /** useCommentReactions - 单条评论反应列表 hook */
 export const useCommentReactions = (commentId: string, options: { enabled?: boolean } = {}) =>

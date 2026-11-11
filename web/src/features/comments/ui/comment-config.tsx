@@ -4,7 +4,7 @@
  * 把后端 Comment 归一化为 CommentDisplayItem，注入文章专属插槽：
  *   - renderMetaBadges：AI 身份徽章（feature 专属，不进 shared）
  *   - renderBody：EmojiText 表情 + 图片网格（ImageGrid）
- *   - renderActions：ReactionBar（评论反应）
+ *   - renderActions：CommentReactions（评论回应）
  *   - renderReplyForm：CommentForm（匿名两步流 / 富文本在表单内部）
  *   - renderExpandedReplies：包装 useReplies（展开时才挂载 → 懒加载）
  */
@@ -23,7 +23,7 @@ import { EmojiText } from "@shared/ui/emoji-text";
 import { ImageGrid } from "@shared/ui/image-grid";
 import { AnnotationAuthorProfile } from "./AnnotationAuthorProfile";
 import { CommentForm } from "./CommentForm";
-import { ReactionBar } from "./ReactionBar";
+import { CommentReactions } from "./CommentReactions";
 
 type CommentPictures = NonNullable<Comment["pictures"]>;
 
@@ -118,7 +118,7 @@ export function buildArticleCommentConfig({
 				)}
 			</>
 		),
-		renderActions: (item) => <ReactionBar commentId={item.id} isLoggedIn={isLoggedIn} />,
+		renderActions: (item) => <CommentReactions commentId={item.id} isLoggedIn={isLoggedIn} />,
 		renderReplyForm: (item, { onSuccess }) => (
 			<CommentForm
 				postId={postId}

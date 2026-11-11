@@ -2,7 +2,7 @@
  * CommentList - 评论列表（顶层扁平渲染，回复在 CommentItem 内按需展开）
  *
  * 文章评论与推文评论共用：loading 骨架 / 错误重试 / 空态 / 列表 / 加载更多。
- * 文章侧在外层包 ReactionProvider 批量拉反应（展开回复不在此范围，由 ReactionBar 自行降级）。
+ * 文章侧在外层包 ReactionProvider 批量拉反应（展开回复不在此范围，由 CommentReactions 自行降级）。
  */
 import { Button, Empty, Skeleton } from "@violet/ui";
 

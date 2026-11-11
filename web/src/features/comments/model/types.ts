@@ -6,31 +6,11 @@
  *
  * 字段来源：
  * - Comment / AdminComment 见 application/comment/service.go。
- * - Reaction / ReactionList 见 domain/commentreaction/entity.go。
+ * - AggregatedReaction / ReactionList 见 domain/commentreaction/entity.go。
  */
 import type { AdminComment, Comment, CommentPicture } from "@entities/comment/model/types";
+import type { AggregatedReaction } from "@entities/reaction/model/types";
 import type { PageQuery } from "@shared/api/types";
-
-/**
- * Reaction - 评论反应读模型（聚合后）
- *
- * 对应后端 domain/commentreaction/entity.go 的 AggregatedReaction，
- * 按 emoji 分组计数并携带当前用户是否已反应的标记。
- */
-export interface Reaction {
-	/** 表情 ID */
-	emoji_id: number;
-	/** 表情名称 */
-	emoji_name: string;
-	/** 表情图片 URL */
-	emoji_url: string;
-	/** 表情动图 URL */
-	gif_url?: string;
-	/** 反应总数 */
-	count: number;
-	/** 当前登录用户是否已反应 */
-	self: boolean;
-}
 
 /**
  * BatchReactionResult - 批量反应查询的单条结果
@@ -41,7 +21,7 @@ export interface BatchReactionResult {
 	/** 评论 ID */
 	comment_id: string;
 	/** 该评论的聚合反应列表 */
-	reactions: Reaction[];
+	reactions: AggregatedReaction[];
 }
 
 /**
