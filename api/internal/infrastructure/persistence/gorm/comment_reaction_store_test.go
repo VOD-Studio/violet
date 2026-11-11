@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -190,4 +191,105 @@ func findAggregatedReaction(reactions []domaincr.AggregatedReaction, emojiID int
 		}
 	}
 	return nil
+}
+
+func TestCommentReactionStore_RecentUsersAreBoundedOrderedAndPublic(t *testing.T) {
+	db := setupCommentReactionTestDB(t)
+	store := NewCommentReactionStore(db)
+	ctx := context.Background()
+	commentID, _, _, emoji1ID, emoji2ID := seedCommentReactionFixtures(t, db)
+	secondCommentID := uuid.New()
+	require.NoError(t, db.Create(&model.Comment{
+		ID:         secondCommentID,
+		PostID:     uuid.New(),
+		AuthorName: "second",
+		Body:       "body",
+	}).Error)
+	now := time.Date(2026, 11, 11, 10, 0, 0, 0, time.UTC)
+	userIDs := []uuid.UUID{uuid.New(), uuid.New(), uuid.New(), uuid.New()}
+	reactionIDs := []uuid.UUID{
+		uuid.MustParse("00000000-0000-0000-0000-000000000001"),
+		uuid.MustParse("00000000-0000-0000-0000-000000000002"),
+		uuid.MustParse("00000000-0000-0000-0000-000000000003"),
+		uuid.MustParse("00000000-0000-0000-0000-000000000004"),
+	}
+	names := []string{"最早", "第二", "第三", ""}
+	usernames := []string{"recent-1", "recent-2", "recent-3", "recent-4"}
+	for i, userID := range userIDs {
+		require.NoError(t, db.Create(&model.User{
+			BaseModel:    model.BaseModel{ID: userID},
+			Username:     usernames[i],
+			DisplayName:  names[i],
+			Email:        usernames[i] + "@test",
+			PasswordHash: "x",
+		}).Error)
+		offset := min(i, 2)
+		require.NoError(t, db.Create(&model.CommentReaction{
+			ID:        reactionIDs[i],
+			CommentID: parseUUID(commentID),
+			EmojiID:   emoji1ID,
+			UserID:    &userID,
+			CreatedAt: now.Add(time.Duration(offset) * time.Minute),
+		}).Error)
+	}
+	require.NoError(t, db.Create(&model.CommentReaction{
+		ID:        uuid.New(),
+		CommentID: parseUUID(commentID),
+		EmojiID:   emoji1ID,
+		IPHash:    "anonymous-newest",
+		CreatedAt: now.Add(10 * time.Minute),
+	}).Error)
+	require.NoError(t, db.Create(&model.CommentReaction{
+		ID:        uuid.New(),
+		CommentID: parseUUID(commentID),
+		EmojiID:   emoji2ID,
+		IPHash:    "anonymous-only",
+		CreatedAt: now,
+	}).Error)
+	require.NoError(t, db.Create(&model.CommentReaction{
+		ID:        uuid.New(),
+		CommentID: secondCommentID,
+		EmojiID:   emoji1ID,
+		UserID:    &userIDs[0],
+		CreatedAt: now,
+	}).Error)
+
+	queryCount := 0
+	require.NoError(t, db.Callback().Row().Before("gorm:row").Register("count_recent_comment_queries", func(*gorm.DB) {
+		queryCount++
+	}))
+	batch, err := store.BatchByComments(ctx, []string{commentID, secondCommentID.String()}, "")
+	require.NoError(t, err)
+	require.LessOrEqual(t, queryCount, 2, "all comments and emoji groups must use bounded queries")
+	require.Len(t, batch, 2)
+	reaction := findAggregatedReaction(batch[0].Reactions, emoji1ID)
+	require.NotNil(t, reaction)
+	require.Equal(t, int64(5), reaction.Count, "anonymous responses remain counted")
+	require.False(t, reaction.Self)
+	want := []domaincr.RecentUser{
+		{ID: userIDs[3].String(), Name: "recent-4"},
+		{ID: userIDs[2].String(), Name: "第三"},
+		{ID: userIDs[1].String(), Name: "第二"},
+	}
+	require.Equal(t, want, reaction.RecentUsers, "ties use reaction ID descending; empty display names use username")
+	anonymousOnly := findAggregatedReaction(batch[0].Reactions, emoji2ID)
+	require.NotNil(t, anonymousOnly)
+	require.Equal(t, int64(1), anonymousOnly.Count)
+	require.NotNil(t, anonymousOnly.RecentUsers)
+	require.Empty(t, anonymousOnly.RecentUsers)
+	require.Equal(t, []domaincr.RecentUser{{ID: userIDs[0].String(), Name: "最早"}}, batch[1].Reactions[0].RecentUsers)
+
+	list, err := store.ListByComment(ctx, commentID, userIDs[0].String())
+	require.NoError(t, err)
+	require.Equal(t, want, list[0].RecentUsers)
+	require.True(t, list[0].Self, "self remains true even when the viewer is outside the latest three")
+	require.NoError(t, store.Remove(ctx, commentID, userIDs[3].String(), "", emoji1ID))
+	list, err = store.ListByComment(ctx, commentID, "")
+	require.NoError(t, err)
+	require.Equal(t, []domaincr.RecentUser{
+		{ID: userIDs[2].String(), Name: "第三"},
+		{ID: userIDs[1].String(), Name: "第二"},
+		{ID: userIDs[0].String(), Name: "最早"},
+	}, list[0].RecentUsers)
+	require.Equal(t, int64(4), list[0].Count)
 }

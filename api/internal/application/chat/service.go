@@ -182,6 +182,8 @@ type MessageReactionDTO struct {
 	Count int64 `json:"count"`
 	// Self 当前用户是否已添加该表情。
 	Self bool `json:"self"`
+	// RecentUsers 最近的至多三位回应者，按回应时间倒序；空值为 []。
+	RecentUsers []domainchatreaction.RecentUser `json:"recent_users"`
 }
 
 // UserDTO 用户公开资料读模型。
@@ -1717,9 +1719,14 @@ func (s *Service) validateMentions(ctx context.Context, conversationID domainsha
 func messageReactionDTOs(reactions []domainchatreaction.AggregatedReaction) []MessageReactionDTO {
 	result := make([]MessageReactionDTO, 0, len(reactions))
 	for _, reaction := range reactions {
+		recentUsers := reaction.RecentUsers
+		if recentUsers == nil {
+			recentUsers = []domainchatreaction.RecentUser{}
+		}
 		result = append(result, MessageReactionDTO{
 			EmojiID: reaction.EmojiID, EmojiName: reaction.EmojiName, EmojiURL: reaction.EmojiURL,
 			GifURL: reaction.GifURL, Count: reaction.Count, Self: reaction.Self,
+			RecentUsers: recentUsers,
 		})
 	}
 	return result

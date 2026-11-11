@@ -179,14 +179,22 @@ func registerChatPaths(t *openapi3.T) {
 
 	// ---- 消息反应 / 已读回执 / 编辑 ----
 
+	registerSchema(t, "ChatReactionRecentUser", openapi3.Schemas{
+		"id":   reqStr("回应者用户 ID（UUID）"),
+		"name": reqStr("展示名；未设置时回退用户名"),
+	}, "id", "name")
+	recentUsers := refArray("最近至多 3 位回应者，按回应时间倒序、同时间按反应 ID 倒序；无可展示用户时返回 []。沿用会话成员访问权限", "ChatReactionRecentUser")
+	recentUsers.Value.MaxItems = new(uint64(3))
+
 	registerSchema(t, "ChatMessageReactionDTO", openapi3.Schemas{
-		"emoji_id":   optInt32("表情 ID"),
-		"emoji_name": reqStr("表情名称"),
-		"emoji_url":  reqStr("表情静态图 URL"),
-		"gif_url":    optStr("GIF 动图 URL（无动图时为空）"),
-		"count":      optInt64("该表情的反应数量"),
-		"self":       optBool("当前用户是否已添加该表情"),
-	})
+		"emoji_id":     optInt32("表情 ID"),
+		"emoji_name":   reqStr("表情名称"),
+		"emoji_url":    reqStr("表情静态图 URL"),
+		"gif_url":      optStr("GIF 动图 URL（无动图时为空）"),
+		"count":        optInt64("该表情的反应数量"),
+		"self":         optBool("当前用户是否已添加该表情"),
+		"recent_users": recentUsers,
+	}, "recent_users")
 
 	registerSchema(t, "ChatAddReactionRequest", openapi3.Schemas{
 		"emoji_id": optInt32("表情 ID"),

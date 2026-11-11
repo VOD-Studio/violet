@@ -78,15 +78,23 @@ func registerCommentPaths(t *openapi3.T) {
 		"status": strEnum("目标状态", "pending", "approved", "spam", "deleted"),
 	}, "ids", "status")
 
+	registerSchema(t, "CommentReactionRecentUser", openapi3.Schemas{
+		"id":   reqStr("回应者用户 ID（UUID）"),
+		"name": reqStr("展示名；未设置时回退用户名"),
+	}, "id", "name")
+	recentUsers := refArray("最近至多 3 位登录回应者，按回应时间倒序、同时间按反应 ID 倒序。访客同样可读；匿名反应计入 count 但不列名，无可展示用户时返回 []", "CommentReactionRecentUser")
+	recentUsers.Value.MaxItems = new(uint64(3))
+
 	// AggregatedReaction：聚合后的评论反应
 	registerSchema(t, "AggregatedReaction", openapi3.Schemas{
-		"emoji_id":   optInt32("表情 ID"),
-		"emoji_name": reqStr("表情名称"),
-		"emoji_url":  reqStr("表情图片 URL"),
-		"gif_url":    optStr("表情动图 URL"),
-		"count":      optInt64("反应总数"),
-		"self":       optBool("当前登录用户是否已反应"),
-	}, "emoji_id", "emoji_name", "emoji_url", "count")
+		"emoji_id":     optInt32("表情 ID"),
+		"emoji_name":   reqStr("表情名称"),
+		"emoji_url":    reqStr("表情图片 URL"),
+		"gif_url":      optStr("表情动图 URL"),
+		"count":        optInt64("反应总数"),
+		"self":         optBool("当前登录用户是否已反应"),
+		"recent_users": recentUsers,
+	}, "emoji_id", "emoji_name", "emoji_url", "count", "recent_users")
 
 	// AddReactionRequest
 	registerSchema(t, "AddReactionRequest", openapi3.Schemas{

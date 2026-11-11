@@ -1,132 +1,84 @@
-package commentreaction
+package commentreaction_test
 
 import (
 	"context"
 	"errors"
+	"path/filepath"
 	"testing"
+	"time"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+
+	appcr "blog-api/internal/application/commentreaction"
 	domaincr "blog-api/internal/domain/commentreaction"
+	persistence "blog-api/internal/infrastructure/persistence/gorm"
+	"blog-api/internal/infrastructure/persistence/gorm/model"
 )
 
-// fakeStore CommentReactionStore 的内存 stub，记录调用参数与返回值。
-type fakeStore struct {
-	listRes  []domaincr.AggregatedReaction
-	listErr  error
-	batchRes []domaincr.ReactionList
-	batchErr error
+func TestService_RecentUsersAvailableToAnonymousViewer(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "reactions.db")), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	require.NoError(t, err)
+	sqlDB, err := db.DB()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = sqlDB.Close() })
+	require.NoError(t, db.AutoMigrate(&model.User{}, &model.Emoji{}, &model.CommentReaction{}))
+	require.NoError(t, db.Create(&model.Emoji{ID: 1, Name: "赞", URL: "/like.png"}).Error)
 
-	listCalls  []listCall
-	batchCalls []batchCall
-	addCalls   []addCall
-	rmCalls    []removeCall
-}
-
-type listCall struct {
-	commentID, viewerUserID string
-}
-
-type batchCall struct {
-	commentIDs   []string
-	viewerUserID string
-}
-
-type addCall struct {
-	commentID, userID, ipHash string
-	emojiID                   int32
-}
-
-type removeCall = addCall
-
-func (f *fakeStore) ListByComment(_ context.Context, commentID, viewerUserID string) ([]domaincr.AggregatedReaction, error) {
-	f.listCalls = append(f.listCalls, listCall{commentID, viewerUserID})
-	return f.listRes, f.listErr
-}
-
-func (f *fakeStore) BatchByComments(_ context.Context, commentIDs []string, viewerUserID string) ([]domaincr.ReactionList, error) {
-	f.batchCalls = append(f.batchCalls, batchCall{commentIDs, viewerUserID})
-	return f.batchRes, f.batchErr
-}
-
-func (f *fakeStore) Add(_ context.Context, commentID, userID, ipHash string, emojiID int32) error {
-	f.addCalls = append(f.addCalls, addCall{commentID, userID, ipHash, emojiID})
-	return nil
-}
-
-func (f *fakeStore) Remove(_ context.Context, commentID, userID, ipHash string, emojiID int32) error {
-	f.rmCalls = append(f.rmCalls, removeCall{commentID, userID, ipHash, emojiID})
-	return nil
-}
-
-func TestService_List_PassesCommentAndViewer(t *testing.T) {
-	want := []domaincr.AggregatedReaction{
-		{EmojiID: 1, EmojiName: "👍", Count: 3, Self: true},
-		{EmojiID: 2, EmojiName: "❤️", Count: 1, Self: false},
+	commentID := uuid.New()
+	userIDs := []uuid.UUID{uuid.New(), uuid.New(), uuid.New(), uuid.New()}
+	createdAt := time.Date(2026, 11, 11, 10, 0, 0, 0, time.UTC)
+	for index, name := range []string{"最早", "林间", "雾里", "Momo"} {
+		userID := userIDs[index]
+		require.NoError(t, db.Create(&model.User{
+			BaseModel: model.BaseModel{ID: userID}, Username: name,
+			Email: userID.String() + "@test", PasswordHash: "x",
+		}).Error)
+		require.NoError(t, db.Create(&model.CommentReaction{
+			ID: uuid.New(), CommentID: commentID, EmojiID: 1, UserID: &userID,
+			CreatedAt: createdAt.Add(time.Duration(index) * time.Minute),
+		}).Error)
 	}
-	store := &fakeStore{listRes: want}
-	svc := NewService(store)
+	require.NoError(t, db.Create(&model.CommentReaction{
+		ID: uuid.New(), CommentID: commentID, EmojiID: 1, IPHash: "anonymous",
+		CreatedAt: createdAt.Add(10 * time.Minute),
+	}).Error)
 
-	got, err := svc.List(context.Background(), "c-1", "u-1")
-	if err != nil {
-		t.Fatalf("List 返回错误: %v", err)
-	}
-	if len(got) != 2 {
-		t.Fatalf("返回 %d 条反应, want 2", len(got))
-	}
-	if got[0].EmojiID != 1 || got[0].Count != 3 || !got[0].Self {
-		t.Errorf("首条 = %+v, want EmojiID=1 Count=3 Self=true", got[0])
-	}
-	if got[1].EmojiName != "❤️" {
-		t.Errorf("第二条 EmojiName = %q, want ❤️", got[1].EmojiName)
-	}
-	// commentID 与 viewer 必须透传
-	if len(store.listCalls) != 1 {
-		t.Fatalf("store.ListByComment 调用 %d 次, want 1", len(store.listCalls))
-	}
-	if store.listCalls[0].commentID != "c-1" || store.listCalls[0].viewerUserID != "u-1" {
-		t.Errorf("透传 = (%+v), want commentID=c-1 viewerUserID=u-1", store.listCalls[0])
-	}
+	svc := appcr.NewService(persistence.NewCommentReactionStore(db))
+	list, err := svc.List(context.Background(), commentID.String(), "")
+	require.NoError(t, err)
+	require.Len(t, list, 1)
+	require.Equal(t, int64(5), list[0].Count)
+	require.False(t, list[0].Self)
+	require.Equal(t, []domaincr.RecentUser{
+		{ID: userIDs[3].String(), Name: "Momo"},
+		{ID: userIDs[2].String(), Name: "雾里"},
+		{ID: userIDs[1].String(), Name: "林间"},
+	}, list[0].RecentUsers)
+
+	batch, err := svc.Batch(context.Background(), []string{commentID.String()}, userIDs[0].String())
+	require.NoError(t, err)
+	require.Equal(t, list[0].RecentUsers, batch[0].Reactions[0].RecentUsers)
+	require.True(t, batch[0].Reactions[0].Self, "self 不受最近三人名单截断影响")
+}
+
+type unavailableStore struct {
+	domaincr.CommentReactionStore
+	err error
+}
+
+func (store unavailableStore) ListByComment(context.Context, string, string) ([]domaincr.AggregatedReaction, error) {
+	return nil, store.err
 }
 
 func TestService_List_PropagatesStoreError(t *testing.T) {
 	wantErr := errors.New("store unavailable")
-	store := &fakeStore{listErr: wantErr}
-	svc := NewService(store)
-
-	if _, err := svc.List(context.Background(), "c-1", ""); !errors.Is(err, wantErr) {
-		t.Errorf("err = %v, want %v", err, wantErr)
-	}
-}
-
-func TestService_Batch_FansOutToStore(t *testing.T) {
-	want := []domaincr.ReactionList{
-		{CommentID: "c-1", Reactions: []domaincr.AggregatedReaction{{EmojiID: 1, Count: 2}}},
-		{CommentID: "c-2", Reactions: nil},
-	}
-	store := &fakeStore{batchRes: want}
-	svc := NewService(store)
-
-	got, err := svc.Batch(context.Background(), []string{"c-1", "c-2"}, "u-9")
-	if err != nil {
-		t.Fatalf("Batch 返回错误: %v", err)
-	}
-	if len(got) != 2 {
-		t.Fatalf("返回 %d 条列表, want 2", len(got))
-	}
-	if got[0].CommentID != "c-1" || len(got[0].Reactions) != 1 {
-		t.Errorf("首条 = %+v, want CommentID=c-1 1 reaction", got[0])
-	}
-	if got[1].CommentID != "c-2" {
-		t.Errorf("第二条 CommentID = %q, want c-2", got[1].CommentID)
-	}
-	// 透传校验
-	if len(store.batchCalls) != 1 {
-		t.Fatalf("store.BatchByComments 调用 %d 次, want 1", len(store.batchCalls))
-	}
-	bc := store.batchCalls[0]
-	if len(bc.commentIDs) != 2 || bc.commentIDs[0] != "c-1" || bc.commentIDs[1] != "c-2" {
-		t.Errorf("透传 commentIDs = %v, want [c-1 c-2]", bc.commentIDs)
-	}
-	if bc.viewerUserID != "u-9" {
-		t.Errorf("透传 viewerUserID = %q, want u-9", bc.viewerUserID)
-	}
+	svc := appcr.NewService(unavailableStore{err: wantErr})
+	_, err := svc.List(context.Background(), "c-1", "")
+	require.ErrorIs(t, err, wantErr)
 }

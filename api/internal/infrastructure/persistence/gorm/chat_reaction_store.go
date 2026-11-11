@@ -53,15 +53,63 @@ func (s *ChatMessageReactionStore) ListByMessages(ctx context.Context, messageID
 		Scan(&rows).Error; err != nil {
 		return nil, domainshared.Internal("查询聊天消息反应失败", err)
 	}
+	type reactionKey struct {
+		messageID uuid.UUID
+		emojiID   int32
+	}
+	recentUsers := make(map[reactionKey][]domainchatreaction.RecentUser, len(rows))
+	if len(rows) > 0 {
+		var users []struct {
+			MessageID uuid.UUID
+			EmojiID   int32
+			UserID    uuid.UUID
+			Name      string
+		}
+		ranked := s.db.WithContext(ctx).
+			Table("chat_message_reactions cmr").
+			Select(`
+				cmr.message_id,
+				cmr.emoji_id,
+				cmr.user_id,
+				COALESCE(NULLIF(u.display_name, ''), u.username) AS name,
+				ROW_NUMBER() OVER (
+					PARTITION BY cmr.message_id, cmr.emoji_id
+					ORDER BY cmr.created_at DESC, cmr.id DESC
+				) AS recent_rank
+			`).
+			Joins("JOIN users u ON u.id = cmr.user_id AND u.deleted_at IS NULL").
+			Where("cmr.message_id IN ?", ids)
+		if err := s.db.WithContext(ctx).Table("(?) AS ranked", ranked).
+			Where("recent_rank <= ?", 3).
+			Order("message_id, emoji_id, recent_rank").
+			Scan(&users).Error; err != nil {
+			return nil, domainshared.Internal("查询聊天消息最近回应者失败", err)
+		}
+		for _, user := range users {
+			key := reactionKey{messageID: user.MessageID, emojiID: user.EmojiID}
+			if recentUsers[key] == nil {
+				recentUsers[key] = make([]domainchatreaction.RecentUser, 0, 3)
+			}
+			recentUsers[key] = append(recentUsers[key], domainchatreaction.RecentUser{
+				ID:   user.UserID.String(),
+				Name: user.Name,
+			})
+		}
+	}
 	for _, row := range rows {
 		key := row.MessageID.String()
+		users := recentUsers[reactionKey{messageID: row.MessageID, emojiID: row.EmojiID}]
+		if users == nil {
+			users = []domainchatreaction.RecentUser{}
+		}
 		result[key] = append(result[key], domainchatreaction.AggregatedReaction{
-			EmojiID:   row.EmojiID,
-			EmojiName: row.EmojiName,
-			EmojiURL:  row.EmojiURL,
-			GifURL:    row.GifURL,
-			Count:     row.Count,
-			Self:      row.SelfInt > 0,
+			EmojiID:     row.EmojiID,
+			EmojiName:   row.EmojiName,
+			EmojiURL:    row.EmojiURL,
+			GifURL:      row.GifURL,
+			Count:       row.Count,
+			Self:        row.SelfInt > 0,
+			RecentUsers: users,
 		})
 	}
 	return result, nil
