@@ -7,6 +7,7 @@ import { Field, Input, InputOTP, ResendButton, Spinner } from "@violet/ui";
 import { MailCheck, Send } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { FieldSendButton } from "./FieldSendButton";
 import { type PictureInput, RichCommentInput } from "./RichCommentInput";
 
 export interface CommentFormProps {
@@ -18,6 +19,12 @@ export interface CommentFormProps {
 	isLoggedIn: boolean;
 	/** 紧凑模式（回复框）；默认 false（顶级评论） */
 	compact?: boolean;
+	/**
+	 * 输入布局：field 把输入收进组件库字段，图标钮与文字同行，用于批注卡内的回复。
+	 *
+	 * @default "stacked"
+	 */
+	layout?: "stacked" | "field";
 	/** 是否允许上传图片；默认 true */
 	enableImage?: boolean;
 	/** 提交成功回调，参数为后端返回的新评论对象 */
@@ -29,6 +36,7 @@ export function CommentForm({
 	parentId,
 	isLoggedIn,
 	compact = false,
+	layout = "stacked",
 	enableImage = true,
 	onSuccess,
 }: CommentFormProps) {
@@ -196,6 +204,7 @@ export function CommentForm({
 				value={body}
 				onChange={setBody}
 				compact={compact}
+				layout={layout}
 				disabled={createComment.isPending}
 				enableImage={isLoggedIn && enableImage}
 				maxImages={10}
@@ -211,24 +220,38 @@ export function CommentForm({
 								匿名留言需邮箱验证码，审核通过后登录可见
 							</span>
 						)}
-						<button
-							ref={submitRef}
-							type="submit"
-							disabled={
-								createComment.isPending ||
-								isUploading ||
-								(!isLoggedIn && (!codeSent || code.length !== 6))
-							}
-							title="发送"
-							aria-label="发送"
-							className="inline-flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-						>
-							{createComment.isPending ? (
-								<Spinner size={16} aria-hidden="true" />
-							) : (
-								<Send className="size-3.5" />
-							)}
-						</button>
+						{layout === "field" ? (
+							<FieldSendButton
+								ref={submitRef}
+								type="submit"
+								label="发送"
+								loading={createComment.isPending}
+								disabled={
+									!body.trim() ||
+									isUploading ||
+									(!isLoggedIn && (!codeSent || code.length !== 6))
+								}
+							/>
+						) : (
+							<button
+								ref={submitRef}
+								type="submit"
+								disabled={
+									createComment.isPending ||
+									isUploading ||
+									(!isLoggedIn && (!codeSent || code.length !== 6))
+								}
+								title="发送"
+								aria-label="发送"
+								className="inline-flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+							>
+								{createComment.isPending ? (
+									<Spinner size={16} aria-hidden="true" />
+								) : (
+									<Send className="size-3.5" />
+								)}
+							</button>
+						)}
 					</>
 				}
 			/>

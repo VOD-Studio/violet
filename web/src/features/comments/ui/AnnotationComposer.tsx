@@ -1,7 +1,6 @@
 import { InlineLogin } from "@features/auth/ui/InlineLogin";
-import { Button } from "@violet/ui";
-import { Send } from "lucide-react";
 import { useState } from "react";
+import { FieldSendButton } from "./FieldSendButton";
 import { RichCommentInput } from "./RichCommentInput";
 
 export interface AnnotationComposerProps {
@@ -56,19 +55,12 @@ export function AnnotationComposer({
 				placeholder={placeholder}
 				editorLabel={editorLabel}
 				toolbarEnd={
-					<Button
-						type="button"
-						variant="ghost"
-						size="sm"
-						iconOnly
-						className="size-6 shrink-0 text-muted-foreground hover:text-foreground pointer-coarse:size-7"
-						aria-label={loginRequired ? "登录并发送" : sendLabel}
+					<FieldSendButton
+						label={loginRequired ? "登录并发送" : sendLabel}
 						loading={pending}
 						disabled={empty}
 						onClick={submit}
-					>
-						<Send />
-					</Button>
+					/>
 				}
 			/>
 			{loginRequired && showLogin && (

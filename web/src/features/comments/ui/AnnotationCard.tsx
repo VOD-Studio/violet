@@ -117,7 +117,7 @@ function AnnotationEntry({
 					<CommentForm
 						postId={postId}
 						parentId={comment.id}
-						compact
+						layout="field"
 						isLoggedIn={isLoggedIn}
 						enableImage={false}
 						onSuccess={(created) => {
