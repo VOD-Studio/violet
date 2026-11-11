@@ -33,13 +33,12 @@ import { QuoteCard } from "@violet/ui";
 | `deleted?: boolean` | 原文已删除：只留一行说明，不渲染作者、时间与缩略图，整卡不可点也不可聚焦。 |
 | `deletedLabel?: string` | 删除态说明，默认「原推文已删除」。 |
 | `action?: ReactNode` | 右上角的附加操作（如取消引用），自动浮在覆盖层之上。 |
-| `renderAuthor?: (author) => ReactNode` | 需要作者可点时替换默认的头像 + 名字块。 |
 | `renderLink?: (props) => ReactElement` | 站内路由用它替换原生 `<a>`，保留客户端导航。 |
 | `ref / className / style` | 全部属于根 `HTMLDivElement`，ref 支持对象、回调及 React 19 清理函数。 |
 
-## 一处链接，多个点击目标
+## 唯一原文链接与预览操作
 
-正文链接带 `.v-quote-card__link::after` 伪元素，`inset: 0` 把点击区扩到整张卡，所以卡上的空白处、作者行、缩略图都落在同一个链接里。卡内其他 `a`、`button`、`[role="button"]` 被提到 `z-index: 2`，浮在覆盖层之上仍可单独点击；组件不给根节点挂 `onClick` 或 `role="button"`。
+正文链接带 `.v-quote-card__link::after` 伪元素，`inset: 0` 把点击区扩到整张卡，所以卡上的空白处、作者行、缩略图都落在同一个链接里。作者是展示信息，不另设个人主页链接。`action` 槽浮在覆盖层之上，取消引用等按钮仍可单独点击；组件不给根节点挂 `onClick` 或 `role="button"`。
 
 `renderLink` 拿到的 `className` 是覆盖层的挂载点，自定义元素必须原样展开它，否则点击区只剩正文那一段：
 
@@ -58,22 +57,18 @@ import { Link } from "@tanstack/react-router";
 />
 ```
 
-`renderAuthor` 拿到的作者块同样在覆盖层之上，站内链接用这一个口子接入：
-
-```tsx
-renderAuthor={({ name, avatar }) => (
-  <Link className="v-quote-card__author" to="/users/$username" params={{ username: name }}>
-    <img className="v-quote-card__avatar" src={avatar} alt="" width={20} height={20} />
-    <span className="v-quote-card__name">{name}</span>
-  </Link>
-)}
-```
-
 ## 视觉与动效
 
 纸色底、发丝边、圆角 12、软影，内边距 12×14；头部件间距 8，正文与缩略图间距 12。悬停只给作者名与正文加下划线，卡片不位移、不缩放。键盘焦点是包住整卡的 2px 强调色环，`outline-offset: 2px`，根节点不裁剪；宿主不要把卡片放进裁掉外溢的容器。
 
 删除态去掉软影、底色换成凹陷色，只保留一行灰色说明与 16px 图标。减弱动态（系统偏好或宿主的 `data-motion="reduce"`）下取消下划线过渡。
+
+## 真实消费边界
+
+- 推文列表、详情来源栏与聊天消息统一使用原文路由链接；删除来源只渲染 `deleted`，不保留作者、时间、缩略图或链接。
+- 聊天待发送与推文发布器预览不传 `href`，避免误触离开编辑；取消引用按钮仍由宿主持有，发送状态不交给引用卡。
+- 二级引用一律只传「引用了一条推文」，即使更深层目标已经删除也不改成当前卡的删除态。服务端的 `QuotedTweetDTO.quote_of` 和聊天 `SharedTweetDTO.quote_of` 只保留这一层关系标记，不获取或展开更深层正文；无引用时省略字段。
+- 分享预览读取当前原文返回 404 时显示删除态，网络或其他读取失败仍显示错误反馈。
 
 ## 样式入口
 
@@ -87,4 +82,4 @@ renderAuthor={({ name, avatar }) => (
 
 React 与纯 HTML 共用 `.v-quote-card` 以及 `__header`、`__author`、`__avatar`、`__name`、`__time`、`__action`、`__link`、`__body`、`__column`、`__text`、`__nested`、`__image`、`__deleted`、`__icon` 类。卡片宽度由宿主给，组件本身撑满可用宽度。
 
-站点 `/ui?open=quote-card` 陈列被引用推文、聊天分享、嵌套与删除四种状态。
+站点 `/ui?open=quote-card` 陈列被引用推文、聊天分享、嵌套、发布器预览与删除五种状态；预览可取消并重新引用，占地统一为 520×180。

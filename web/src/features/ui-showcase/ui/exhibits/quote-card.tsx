@@ -1,4 +1,6 @@
-import { QuoteCard } from "@violet/ui";
+import { Button, QuoteCard } from "@violet/ui";
+import { X } from "lucide-react";
+import { useState } from "react";
 import type { Exhibit, ExhibitRenderProps } from "../../model/exhibit";
 import { cover, portrait } from "./art";
 
@@ -7,7 +9,39 @@ const THUMB = cover(210);
 
 const CONTENT = "给博客加了季节。春天落桃花，秋天落桂花，冬天的雪会积在导航上。";
 
+function QuotePreview() {
+	const [cancelled, setCancelled] = useState(false);
+	return (
+		<div className="w-105">
+			{cancelled ? (
+				<Button variant="secondary" onClick={() => setCancelled(false)}>
+					重新引用
+				</Button>
+			) : (
+				<QuoteCard
+					authorName="xunrua"
+					authorAvatar={AVATAR}
+					time="2 小时前"
+					content={CONTENT}
+					imageSrc={THUMB}
+					action={
+						<Button
+							iconOnly
+							variant="ghost"
+							aria-label="取消引用"
+							onClick={() => setCancelled(true)}
+						>
+							<X className="size-4" />
+						</Button>
+					}
+				/>
+			)}
+		</div>
+	);
+}
+
 function QuoteCardStates({ state }: ExhibitRenderProps) {
+	if (state === "preview") return <QuotePreview />;
 	if (state === "deleted") {
 		return (
 			<div className="w-105">
@@ -17,7 +51,7 @@ function QuoteCardStates({ state }: ExhibitRenderProps) {
 	}
 
 	if (state === "chat") {
-		// 聊天里作者可点，卡片宽度跟着气泡走，点击整卡进推文详情。
+		// 聊天卡与推文引用共用唯一的原文链接，宽度跟着气泡走。
 		return (
 			<div className="w-80 max-w-full">
 				<QuoteCard
@@ -29,20 +63,6 @@ function QuoteCardStates({ state }: ExhibitRenderProps) {
 					timeTitle="2026-11-10 09:12"
 					content={CONTENT}
 					imageSrc={THUMB}
-					renderAuthor={({ name, avatar }) => (
-						<a className="v-quote-card__author" href="#author">
-							{avatar && (
-								<img
-									className="v-quote-card__avatar"
-									src={avatar}
-									alt=""
-									width={20}
-									height={20}
-								/>
-							)}
-							<span className="v-quote-card__name">{name}</span>
-						</a>
-					)}
 				/>
 			</div>
 		);
@@ -91,6 +111,7 @@ export const quoteCardExhibit: Exhibit = {
 		{ id: "tweet", label: "引用推文" },
 		{ id: "chat", label: "聊天分享" },
 		{ id: "nested", label: "嵌套引用" },
+		{ id: "preview", label: "发布器预览" },
 		{ id: "deleted", label: "原文已删除" },
 	],
 	Render: QuoteCardStates,

@@ -1,9 +1,23 @@
 /** 引用卡三态在推文侧的契约：整卡一处链接、单张缩略图、删除态不可点。 */
 import type { QuotedTweet, Tweet } from "@entities/tweet/model/types";
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import type { QuoteCardLinkProps } from "@violet/ui";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { QuotedTweetCard } from "../QuotedTweetCard";
 import { TweetDetailSources } from "../TweetDetailSources";
+
+vi.mock("@tanstack/react-router", () => ({
+	Link: ({
+		children,
+		to,
+		params,
+		...props
+	}: Omit<QuoteCardLinkProps, "href"> & { to: string; params: { id: string } }) => (
+		<a {...props} href={to.replace("$id", params.id)}>
+			{children}
+		</a>
+	),
+}));
 
 function makeQuoted(overrides: Partial<QuotedTweet> = {}): QuotedTweet {
 	return {
@@ -75,6 +89,16 @@ describe("QuotedTweetCard", () => {
 		);
 		expect(screen.getByText("引用了一条推文")).toBeTruthy();
 		expect(screen.getByRole("link", { name: /quoted/ })).toBeTruthy();
+	});
+
+	it("被引用推文有下一层引用时不展开更深内容，即使其目标已经删除", () => {
+		const { container } = render(
+			<QuotedTweetCard tweet={makeQuoted({ quote_of: "deleted-nested" })} />,
+		);
+		expect(screen.getAllByRole("link")).toHaveLength(1);
+		expect(screen.getByText("被引用的正文")).toBeTruthy();
+		expect(container.querySelector(".v-quote-card__nested")).not.toBeNull();
+		expect(container.querySelectorAll("[data-slot='quote-card']")).toHaveLength(1);
 	});
 });
 

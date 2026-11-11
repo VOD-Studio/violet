@@ -39,12 +39,6 @@ describe("QuoteCard", () => {
 		expect(images[0]?.getAttribute("src")).toBe(base.imageSrc);
 	});
 
-	it("图片只留第一张，多余图片不折叠成 +N", () => {
-		const { container } = render(<QuoteCard {...base} />);
-		expect(container.querySelector("[data-count]")).toBeNull();
-		expect(screen.queryByText(/^\+\d+$/)).toBeNull();
-	});
-
 	it("附加上操作的按钮不落在链接里，独立可点", () => {
 		const onCancel = vi.fn();
 		render(
@@ -63,42 +57,6 @@ describe("QuoteCard", () => {
 		expect(onCancel).toHaveBeenCalledOnce();
 	});
 
-	it("作者可点时由 renderAuthor 接管，仍浮在覆盖链接之外", () => {
-		render(
-			<QuoteCard
-				{...base}
-				renderAuthor={({ name }) => (
-					<a href={`/users/${name}`} className="v-quote-card__author">
-						<span className="v-quote-card__name">{name}</span>
-					</a>
-				)}
-			/>,
-		);
-		const authorLink = screen.getByRole("link", { name: base.authorName });
-		expect(authorLink.getAttribute("href")).toBe("/users/xunrua");
-		expect(authorLink.classList.contains("v-quote-card__link")).toBe(false);
-	});
-
-	it("renderLink 交给站内路由，覆盖层类名原样展开", () => {
-		render(
-			<QuoteCard
-				{...base}
-				renderLink={(props) => (
-					<a
-						className={props.className}
-						href={props.href}
-						aria-label={props["aria-label"]}
-					>
-						{props.children}
-					</a>
-				)}
-			/>,
-		);
-		const link = screen.getByRole("link", { name: base.label });
-		expect(link.classList.contains("v-quote-card__link")).toBe(true);
-		expect(link.getAttribute("href")).toBe(base.href);
-	});
-
 	it("省略 href 时只展示内容，不生成链接", () => {
 		const { container } = render(<QuoteCard {...base} href={undefined} />);
 		expect(screen.queryByRole("link")).toBeNull();
@@ -113,7 +71,7 @@ describe("QuoteCard", () => {
 	});
 
 	it("删除态不渲染作者、时间、缩略图与链接", () => {
-		const { container } = render(<QuoteCard deleted />);
+		const { container } = render(<QuoteCard {...base} deleted />);
 		expect(screen.getByText("原推文已删除")).toBeTruthy();
 		expect(screen.queryByText(base.authorName)).toBeNull();
 		expect(screen.queryByText(base.time)).toBeNull();

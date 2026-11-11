@@ -95,7 +95,13 @@ export function TweetComposerAttachments({
 								? contentImageUrl(quotedTweet.images[0].url, { width: 128 })
 								: undefined
 						}
-						nested={quotedTweet.external_tweet ? TWEET_MESSAGES.quoteNested : undefined}
+						nested={
+							quotedTweet.external_tweet ||
+							quotedTweet.quote_of ||
+							("quoted_tweet" in quotedTweet && quotedTweet.quoted_tweet)
+								? TWEET_MESSAGES.quoteNested
+								: undefined
+						}
 						action={
 							onCancelQuote && (
 								<Button

@@ -2,13 +2,6 @@ import { cn } from "cn";
 import { Info } from "lucide-react";
 import type { ComponentProps, ReactElement, ReactNode } from "react";
 
-/** 作者名与头像，`renderAuthor` 拿到的就是这份数据。 */
-export interface QuoteCardAuthor {
-	name: string;
-	/** 头像地址；省略时只渲染名字。 */
-	avatar?: string;
-}
-
 /** 整卡链接要展开的属性；自定义链接元素必须原样展开，覆盖层依赖 `className`。 */
 export interface QuoteCardLinkProps {
 	className: string;
@@ -52,8 +45,6 @@ export interface QuoteCardProps extends Omit<ComponentProps<"div">, "children" |
 	deletedLabel?: string;
 	/** 右上角的附加操作（如取消引用）；自动浮在覆盖层之上，保持独立可点。 */
 	action?: ReactNode;
-	/** 需要作者可点时替换默认的作者块（头像 + 名字）。 */
-	renderAuthor?: (author: QuoteCardAuthor) => ReactNode;
 	/** 站内路由用它替换原生 `<a>`，保留客户端导航。 */
 	renderLink?: (props: QuoteCardLinkProps) => ReactElement;
 }
@@ -100,7 +91,6 @@ export function QuoteCard({
 	deleted = false,
 	deletedLabel = DEFAULT_DELETED_LABEL,
 	action,
-	renderAuthor,
 	renderLink,
 	className,
 	...props
@@ -126,24 +116,20 @@ export function QuoteCard({
 	return (
 		<div {...props} data-slot="quote-card" className={cn("v-quote-card", className)}>
 			<div className="v-quote-card__header">
-				{renderAuthor ? (
-					renderAuthor({ name: authorName ?? "", avatar: authorAvatar })
-				) : (
-					<span className="v-quote-card__author">
-						{authorAvatar && (
-							<img
-								className="v-quote-card__avatar"
-								src={authorAvatar}
-								alt=""
-								width={20}
-								height={20}
-								loading="lazy"
-								decoding="async"
-							/>
-						)}
-						{authorName && <span className="v-quote-card__name">{authorName}</span>}
-					</span>
-				)}
+				<span className="v-quote-card__author">
+					{authorAvatar && (
+						<img
+							className="v-quote-card__avatar"
+							src={authorAvatar}
+							alt=""
+							width={20}
+							height={20}
+							loading="lazy"
+							decoding="async"
+						/>
+					)}
+					{authorName && <span className="v-quote-card__name">{authorName}</span>}
+				</span>
 				{time && (
 					<time className="v-quote-card__time" title={timeTitle}>
 						{time}

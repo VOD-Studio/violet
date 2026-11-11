@@ -60,6 +60,8 @@ export interface QuotedTweet {
 	emote?: Record<string, TweetCommentEmoteRef>;
 	/** 引用计数 */
 	quote_count: number;
+	/** 下一层引用 ID；只用于摘要提示，不展开更深层正文，目标删除后仍保留。 */
+	quote_of?: string;
 	/** 创建时间，RFC3339 字符串 */
 	created_at: string;
 	external_tweet?: ExternalTweet | null;

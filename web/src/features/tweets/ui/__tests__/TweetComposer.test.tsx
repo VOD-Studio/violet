@@ -1,4 +1,5 @@
 import type { Emoji } from "@entities/emoji/model/types";
+import type { Tweet } from "@entities/tweet/model/types";
 import { ApiError } from "@shared/api/error";
 import {
 	act,
@@ -436,5 +437,50 @@ describe("TweetComposer", () => {
 		);
 		fireEvent.click(screen.getByRole("button", { name: "发布" }));
 		expect(mutateMock).not.toHaveBeenCalled();
+	});
+
+	it("本站引用预览保留取消与发布能力，二级引用不展开", () => {
+		const quotedTweet: Tweet = {
+			id: "quoted-target",
+			author: { id: "u-quoted", username: "quoted", avatar_url: "" },
+			content: "被引用的正文",
+			images: [
+				{ url: "/uploads/first.webp", width: 640, height: 480 },
+				{ url: "/uploads/second.webp", width: 640, height: 480 },
+			],
+			quote_of: "deleted-nested",
+			like_count: 0,
+			is_liked: false,
+			comment_count: 0,
+			quote_count: 0,
+			created_at: "2026-11-01T00:00:00Z",
+			link_cards: [],
+		};
+		const onCancelQuote = vi.fn();
+		const { container, rerender } = render(
+			<TweetComposer quotedTweet={quotedTweet} onCancelQuote={onCancelQuote} />,
+		);
+		expect(screen.queryByRole("link")).toBeNull();
+		expect(container.querySelectorAll(".v-quote-card__image")).toHaveLength(1);
+		expect(container.querySelector(".v-quote-card__nested")).not.toBeNull();
+		fireEvent.change(screen.getByRole("textbox", { name: "推文正文" }), {
+			target: { value: "保留草稿" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "取消引用" }));
+		expect(onCancelQuote).toHaveBeenCalledOnce();
+		expect(mutateMock).not.toHaveBeenCalled();
+		rerender(<TweetComposer />);
+		expect(container.querySelector("[data-slot='quote-card']")).toBeNull();
+		expect(screen.getByRole("textbox", { name: "推文正文" })).toHaveProperty(
+			"value",
+			"保留草稿",
+		);
+
+		rerender(<TweetComposer quotedTweet={quotedTweet} onCancelQuote={onCancelQuote} />);
+		fireEvent.click(screen.getByRole("button", { name: "发布" }));
+		expect(mutateMock).toHaveBeenCalledWith(
+			{ content: "保留草稿", images: [], quote_of: "quoted-target" },
+			expect.any(Object),
+		);
 	});
 });

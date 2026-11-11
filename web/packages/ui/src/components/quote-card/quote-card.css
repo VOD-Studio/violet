@@ -104,8 +104,8 @@
 		outline-offset: 2px;
 	}
 
-	/* 作者链接与附加操作浮在覆盖层之上，各自保留点击 */
-	.v-quote-card :is(a, button, [role="button"]):not(.v-quote-card__link) {
+	/* 附加操作浮在覆盖层之上，保留独立交互 */
+	.v-quote-card__action {
 		position: relative;
 		z-index: 2;
 	}
@@ -154,8 +154,8 @@
 		transition: text-decoration-color 160ms var(--ease-hover, ease-out);
 	}
 
-	.v-quote-card:hover .v-quote-card__name,
-	.v-quote-card:hover .v-quote-card__text {
+	.v-quote-card:has(.v-quote-card__link):hover .v-quote-card__name,
+	.v-quote-card:has(.v-quote-card__link):hover .v-quote-card__text {
 		text-decoration-color: color-mix(in oklab, var(--foreground) 40%, transparent);
 	}
 
