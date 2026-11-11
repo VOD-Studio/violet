@@ -1,4 +1,5 @@
 import { useLoginFlows } from "@features/auth/hooks/use-login-flows";
+import { Collapse } from "@shared/ui/disclosure";
 import { Button, GithubIcon, GoogleIcon, Input } from "@violet/ui";
 import { cn } from "cn";
 import { ChevronDown } from "lucide-react";
@@ -109,53 +110,42 @@ function InlineLoginContent({
 				</button>
 			)}
 
-			{/* -m-1 p-1：折叠需要 overflow-hidden，给聚焦环留 4px 外扩空间 */}
-			<div
-				className={cn(
-					"grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none",
-					passwordOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
-				)}
-			>
-				<div className="-m-1 overflow-hidden p-1">
-					<form
-						className="space-y-2 pt-3"
-						onSubmit={(event) => {
-							event.preventDefault();
-							if (valid) submitPassword({ identifier: identifier.trim(), password });
-						}}
+			<Collapse open={passwordOpen} keepMounted contentClassName="pt-3">
+				<form
+					className="space-y-2"
+					onSubmit={(event) => {
+						event.preventDefault();
+						if (valid) submitPassword({ identifier: identifier.trim(), password });
+					}}
+				>
+					<Input
+						type="text"
+						aria-label="用户名或邮箱"
+						placeholder="用户名或邮箱"
+						value={identifier}
+						onChange={(e) => setIdentifier(e.target.value)}
+						autoComplete="username"
+					/>
+					<Input
+						type="password"
+						aria-label="密码"
+						placeholder="密码（至少 8 位）"
+						value={password}
+						onChange={(e) => setPassword(e.target.value)}
+						autoComplete="current-password"
+					/>
+					<Button
+						type="submit"
+						variant="primary"
+						disabled={!valid || !csrfToken}
+						loading={passwordPending}
+						loadingText="登录中…"
+						className="w-full"
 					>
-						<Input
-							type="text"
-							aria-label="用户名或邮箱"
-							placeholder="用户名或邮箱"
-							value={identifier}
-							onChange={(e) => setIdentifier(e.target.value)}
-							autoComplete="username"
-							tabIndex={passwordOpen ? 0 : -1}
-						/>
-						<Input
-							type="password"
-							aria-label="密码"
-							placeholder="密码（至少 8 位）"
-							value={password}
-							onChange={(e) => setPassword(e.target.value)}
-							autoComplete="current-password"
-							tabIndex={passwordOpen ? 0 : -1}
-						/>
-						<Button
-							type="submit"
-							variant="primary"
-							disabled={!valid || !csrfToken}
-							loading={passwordPending}
-							loadingText="登录中…"
-							tabIndex={passwordOpen ? 0 : -1}
-							className="w-full"
-						>
-							登录
-						</Button>
-					</form>
-				</div>
-			</div>
+						登录
+					</Button>
+				</form>
+			</Collapse>
 		</div>
 	);
 }

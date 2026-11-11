@@ -1,4 +1,5 @@
 import { InlineLogin } from "@features/auth/ui/InlineLogin";
+import { Collapse } from "@shared/ui/disclosure";
 import { useState } from "react";
 import { FieldSendButton } from "./FieldSendButton";
 import { RichCommentInput } from "./RichCommentInput";
@@ -63,13 +64,13 @@ export function AnnotationComposer({
 					/>
 				}
 			/>
-			{loginRequired && showLogin && (
+			<Collapse open={loginRequired && showLogin} contentClassName="pt-2">
 				<InlineLogin
-					className="annotation-pop mt-3 border-t border-border pt-3"
+					className="border-t border-border pt-3"
 					description="登录后发送，已写的内容会保留。"
 					onSuccess={() => onLoggedIn?.()}
 				/>
-			)}
+			</Collapse>
 		</div>
 	);
 }

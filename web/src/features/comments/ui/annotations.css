@@ -543,34 +543,6 @@
 .annotation-replies > li[data-fresh] {
 	animation: annotation-fade-in 0.24s ease-out;
 }
-/* 回复输入的展开与收起：高度与透明度一起走，收起更快；内层留出聚焦环向外扩的 4px */
-.annotation-reveal {
-	display: grid;
-	grid-template-rows: 1fr;
-	margin-inline-start: 34px;
-	opacity: 1;
-	transition:
-		grid-template-rows 0.2s cubic-bezier(0.32, 0.72, 0, 1),
-		opacity 0.16s ease-out;
-}
-.annotation-reveal[data-state="closed"] {
-	grid-template-rows: 0fr;
-	opacity: 0;
-	transition-duration: 0.14s;
-	transition-timing-function: ease-in;
-}
-@starting-style {
-	.annotation-reveal {
-		grid-template-rows: 0fr;
-		opacity: 0;
-	}
-}
-.annotation-reveal-inner {
-	min-block-size: 0;
-	margin: -4px;
-	padding: 12px 4px 4px;
-	overflow: hidden;
-}
 .annotation-item-reply-to {
 	color: var(--muted-foreground);
 }
@@ -665,7 +637,6 @@
 	.annotation-mark,
 	.annotation-tool,
 	.annotation-trigger,
-	.annotation-reveal,
 	.annotation-marker > :is(.annotation-avatar-wrap, .annotation-avatar) {
 		transition: none;
 	}
