@@ -133,14 +133,14 @@ test("段评下载期间可关闭，再次打开失败后仍可关闭", async ({
 		await paragraph.hover();
 		await page.getByRole("button", { name: /^发表段评/ }).click();
 		await expect(panel.getByRole("status")).toHaveText("正在准备段评…");
-		await panel.getByRole("button", { name: "关闭段评", exact: true }).click();
+		await page.keyboard.press("Escape");
 		await expect(panel).not.toBeVisible();
 		await paragraph.hover();
 		await page.getByRole("button", { name: /^发表段评/ }).click();
 		await expect(panel).toBeVisible();
 		download.resolve();
 		await expect(panel.getByRole("alert")).toContainText("段评表单加载失败");
-		await panel.getByRole("button", { name: "关闭段评", exact: true }).click();
+		await page.keyboard.press("Escape");
 		await expect(panel).not.toBeVisible();
 		await expect(paragraph).toContainText("增强恢复后，这段结尾仍是原来的节点。");
 		expect(await diagnostics()).toEqual([]);

@@ -6,6 +6,7 @@ import { useAnnotationAnchorVisible } from "../hooks/use-annotation-anchor-visib
 import { rangeKey } from "../lib/annotation-marks";
 import type { AnnotationAuthorFilter, BlockAuthor } from "../model/types";
 import { AnnotationThread } from "./AnnotationCard";
+import { AnnotationPending } from "./AnnotationPending";
 import { AnnotationPopoverHeader } from "./AnnotationPopoverHeader";
 import { AnnotationPortal } from "./AnnotationPortal";
 import { AnnotationOverlayContext } from "./annotation-overlay-context";
@@ -179,7 +180,7 @@ function PopoverBody({
 				<AnnotationPopoverHeader target={target} onFilter={onFilter} onClose={onClose} />
 			)}
 			<div className="annotation-scroll annotation-card-list">
-				{query.isLoading && <PopoverSkeleton />}
+				{query.isLoading && <AnnotationPending label="批注加载中" />}
 				{query.isError && (
 					<p role="alert" className="text-sm text-muted-foreground">
 						批注加载失败，请稍后重试。
@@ -208,21 +209,5 @@ function PopoverBody({
 				</div>
 			)}
 		</>
-	);
-}
-
-function PopoverSkeleton() {
-	return (
-		<div aria-busy="true" className="space-y-2">
-			{[1, 2].map((i) => (
-				<div key={i} className="flex gap-2.5">
-					<div className="size-6 shrink-0 animate-pulse rounded-full bg-muted" />
-					<div className="flex-1 space-y-1.5">
-						<div className="h-3 w-1/3 animate-pulse rounded bg-muted" />
-						<div className="h-3 w-full animate-pulse rounded bg-muted" />
-					</div>
-				</div>
-			))}
-		</div>
 	);
 }

@@ -15,6 +15,7 @@ import {
 	useSyncExternalStore,
 } from "react";
 import { useAnnotationAnchorVisible } from "../hooks/use-annotation-anchor-visible";
+import { AnnotationPending } from "./AnnotationPending";
 import { AnnotationPortal } from "./AnnotationPortal";
 import { AnnotationOverlayContext } from "./annotation-overlay-context";
 import { useExclusivePanel } from "./use-exclusive-panel";
@@ -321,18 +322,7 @@ export function BlockCommentTrigger({
 									defer={false}
 									load={loadBlockComposer}
 									label="段评表单"
-									fallback={
-										<div className="text-sm">
-											<p role="status">正在准备段评…</p>
-											<button
-												type="button"
-												onClick={close}
-												className="mt-3 rounded-md px-2 py-1 text-primary focus-visible:outline-2 focus-visible:outline-ring"
-											>
-												关闭段评
-											</button>
-										</div>
-									}
+									fallback={<AnnotationPending label="正在准备段评…" />}
 									componentProps={{
 										block: composerBlock,
 										postId,
