@@ -188,10 +188,13 @@ export const markdownComponents: Components = {
 		}
 		if (p["data-type"] === "block-math") {
 			const latex = String(p["data-latex"] ?? "");
+			// 首屏公式不等视口：服务端直出排版，水合沿用同一结果
+			const eager = p["data-first-screen"] === "true";
 			return (
 				<DeferredContent
+					defer={!eager}
 					load={loadBlockMathFormula}
-					componentProps={{ latex }}
+					componentProps={{ latex, eager }}
 					label="公式"
 					fallback={
 						<div data-type="block-math" data-latex={latex}>

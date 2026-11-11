@@ -57,7 +57,7 @@ const CONTRACT_POST = {
 	updated_at: "2026-08-11T10:00:00Z",
 };
 
-const RICH_CONTENT_POSTS = ["code", "diagram", "toc", "image", "toc-copy", "worker", "image-hydration"].map((kind, index) => ({
+const RICH_CONTENT_POSTS = ["code", "diagram", "toc", "image", "toc-copy", "worker", "image-hydration", "math"].map((kind, index) => ({
 	...CONTRACT_POST,
 	id: `10000000-0000-0000-0000-00000000001${index + 1}`,
 	slug: `contract-rich-${kind}`,
@@ -68,10 +68,15 @@ const RICH_CONTENT_POSTS = ["code", "diagram", "toc", "image", "toc-copy", "work
 		"<p>增强加载失败时，这段正文始终保留。</p>",
 		kind === "diagram"
 			? '<div data-type="diagram-block" data-format="mermaid" data-source="flowchart LR\n  A[开始阅读] --&gt; B[完整图表]"></div>'
-			: '<pre><code class="language-typescript">const recoveryMessage = "正文仍可阅读";</code></pre>',
+			: kind === "math"
+				? '<p>质能方程 <span data-type="inline-math" data-latex="E=mc^2"></span> 写在段落里。</p><div data-type="block-math" data-latex="\\int_0^\\infty e^{-x^2}\\,dx = \\frac{\\sqrt{\\pi}}{2}"></div>'
+				: '<pre><code class="language-typescript">const recoveryMessage = "正文仍可阅读";</code></pre>',
 		"<p>增强恢复后，这段结尾仍是原来的节点。</p>",
 		kind === "image"
 			? '<p><img src="/uploads/contract-article.png" alt="可预览的正文图片" width="400" height="240"></p>'
+			: "",
+		kind === "math"
+			? `${"<p>首屏之外的长段落，用来把后面的公式推出首屏。</p>".repeat(80)}<div data-type="block-math" data-latex="a^2 + b^2 = c^2"></div>`
 			: "",
 		kind === "worker"
 			? '<pre><code class="language-python">print("线程结果独立")</code></pre>'

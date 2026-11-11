@@ -66,6 +66,38 @@ function ensureHeadingIds(tree: Nodes): Nodes {
 	return tree;
 }
 
+/** 首屏范围：块公式之前的正文字数上限（1440×900 下约一屏半中文）与块公式个数上限。 */
+const FIRST_SCREEN_TEXT = 1500;
+const FIRST_SCREEN_FORMULAS = 6;
+
+/**
+ * 给首屏范围内的块公式打上 `data-first-screen`，渲染时直出排版结果而非等接近视口再排。
+ *
+ * @remarks 只按文档顺序与前文字数判断，服务端与浏览器得出同一结论，水合不出现差异。
+ */
+function markFirstScreenFormulas(tree: Nodes): Nodes {
+	let text = 0;
+	let formulas = 0;
+	const visit = (node: Nodes): boolean => {
+		if (text >= FIRST_SCREEN_TEXT || formulas >= FIRST_SCREEN_FORMULAS) return false;
+		if (node.type === "text") {
+			text += node.value.trim().length;
+			return true;
+		}
+		if (node.type === "element" && node.properties?.dataType === "block-math") {
+			node.properties = { ...node.properties, dataFirstScreen: "true" };
+			formulas += 1;
+			return true;
+		}
+		if ("children" in node) {
+			for (const child of node.children) if (!visit(child)) return false;
+		}
+		return true;
+	};
+	visit(tree);
+	return tree;
+}
+
 /** 解析结果缓存容量；命中省去一次完整的解析、清洗与标题 id 补全。 */
 const PARSED_CACHE_LIMIT = 12;
 const parsedCache = new Map<string, Nodes>();
@@ -82,7 +114,7 @@ function parseArticleHtml(html: string): Nodes {
 		parsedCache.set(html, hit);
 		return hit;
 	}
-	const tree = ensureHeadingIds(sanitizeContent(htmlToHast(html)));
+	const tree = markFirstScreenFormulas(ensureHeadingIds(sanitizeContent(htmlToHast(html))));
 	parsedCache.set(html, tree);
 	if (parsedCache.size > PARSED_CACHE_LIMIT) {
 		const oldest = parsedCache.keys().next().value;
