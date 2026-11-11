@@ -21,6 +21,7 @@ export * from "./components/dialog/index";
 export * from "./components/drawer/index";
 export * from "./components/dropdown/index";
 export * from "./components/dropdown-menu/index";
+export * from "./components/emoji-picker/index";
 export * from "./components/empty/index";
 export * from "./components/field/index";
 export * from "./components/hover-card/index";

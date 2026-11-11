@@ -1,0 +1,24 @@
+import assert from "node:assert/strict";
+import { EmojiPickerPanel, type EmojiPickerSection } from "@violet/ui";
+import { EmojiPickerPanel as LeafPanel } from "@violet/ui/emoji-picker";
+import { renderToString } from "react-dom/server";
+import { emojiGroups } from "./src/emoji-picker.js";
+
+for (const Component of [EmojiPickerPanel, LeafPanel]) {
+	const html = renderToString(
+		<Component
+			groups={emojiGroups}
+			activeGroup="small"
+			onGroupChange={() => undefined}
+			onSelect={() => undefined}
+		/>,
+	);
+	assert.match(html, /role="listbox"/);
+	assert.match(html, /aria-description="[^\"]*会员专属[^\"]*"/);
+	assert.match(html, /aria-label="小表情"/);
+}
+
+// @ts-expect-error 密度只支持小表情、大表情与颜文字。
+const invalidDensity: EmojiPickerSection["density"] = "compact";
+void invalidDensity;
+console.log("EmojiPickerPanel root/leaf types and SSR passed.");

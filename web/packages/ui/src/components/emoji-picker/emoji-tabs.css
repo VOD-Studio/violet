@@ -1,0 +1,78 @@
+@import "../button/button.css";
+@import "../list-highlight/list-highlight.css";
+
+@layer components {
+	.v-emoji-picker__tabs {
+		display: flex;
+		align-items: center;
+		gap: 2px;
+		block-size: 46px;
+		padding: 6px 4px 0;
+	}
+
+	.v-emoji-picker__strip {
+		display: flex;
+		flex: 1;
+		gap: 4px;
+		min-inline-size: 0;
+		overflow-x: auto;
+		scrollbar-width: none;
+	}
+
+	.v-emoji-picker__tab {
+		display: inline-flex;
+		flex: none;
+		align-items: center;
+		justify-content: center;
+		block-size: 32px;
+		padding: 0 8px;
+		border: 0;
+		border-radius: 8px;
+		background: transparent;
+		color: var(--muted-foreground);
+		font-size: 12px;
+		white-space: nowrap;
+		cursor: pointer;
+		transition: color 120ms ease-out;
+	}
+
+	.v-emoji-picker__tab {
+		min-inline-size: 32px;
+	}
+	.v-emoji-picker__tab:hover,
+	.v-emoji-picker__tab[aria-selected="true"] {
+		color: var(--foreground);
+	}
+
+	.v-emoji-picker__tab-icon {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 17px;
+		line-height: 1;
+	}
+
+	.v-emoji-picker__tab-icon > :is(svg, img) {
+		inline-size: 17px;
+		block-size: 17px;
+		object-fit: contain;
+	}
+
+	.v-emoji-picker__tab:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: -2px;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-emoji-picker__tab {
+			transition: none;
+		}
+	}
+
+	[data-motion="reduce"] .v-emoji-picker__tab,
+	[data-motion="reduce"] .v-emoji-picker__strip.v-list-highlight::before,
+	[data-motion="reduce"]
+		.v-emoji-picker__strip.v-list-highlight[data-list-highlight-visible="true"][data-list-highlight-jump="false"]::before {
+		transition: none;
+	}
+}

@@ -1,3 +1,4 @@
+import "./emoji-picker-ssr.js";
 import "./sortable-ssr.js";
 import "./content-ssr.js";
 import "./quote-card-ssr.js";

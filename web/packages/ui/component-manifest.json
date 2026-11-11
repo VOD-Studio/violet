@@ -147,6 +147,13 @@
 			"css": "src/components/dropdown-menu/dropdown-menu.css"
 		},
 		{
+			"name": "emoji-picker",
+			"status": "foundation",
+			"entry": "src/components/emoji-picker/index.ts",
+			"css": "src/components/emoji-picker/emoji-picker.css",
+			"documentation": "web/packages/ui/docs/components/emoji-picker.md"
+		},
+		{
 			"name": "empty",
 			"status": "foundation",
 			"entry": "src/components/empty/index.ts",

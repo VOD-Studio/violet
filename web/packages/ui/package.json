@@ -137,6 +137,11 @@
 			"import": "./src/components/dropdown-menu/index.ts",
 			"default": "./src/components/dropdown-menu/index.ts"
 		},
+		"./emoji-picker": {
+			"types": "./src/components/emoji-picker/index.ts",
+			"import": "./src/components/emoji-picker/index.ts",
+			"default": "./src/components/emoji-picker/index.ts"
+		},
 		"./empty": {
 			"types": "./src/components/empty/index.ts",
 			"import": "./src/components/empty/index.ts",
@@ -412,6 +417,7 @@
 		"./components/drawer.css": "./src/components/drawer/drawer.css",
 		"./components/dropdown.css": "./src/components/dropdown/dropdown.css",
 		"./components/dropdown-menu.css": "./src/components/dropdown-menu/dropdown-menu.css",
+		"./components/emoji-picker.css": "./src/components/emoji-picker/emoji-picker.css",
 		"./components/empty.css": "./src/components/empty/empty.css",
 		"./components/field.css": "./src/components/field/field.css",
 		"./components/hover-card.css": "./src/components/hover-card/hover-card.css",
@@ -601,6 +607,11 @@
 				"types": "./dist/components/dropdown-menu/index.d.ts",
 				"import": "./dist/components/dropdown-menu/index.js",
 				"default": "./dist/components/dropdown-menu/index.js"
+			},
+			"./emoji-picker": {
+				"types": "./dist/components/emoji-picker/index.d.ts",
+				"import": "./dist/components/emoji-picker/index.js",
+				"default": "./dist/components/emoji-picker/index.js"
 			},
 			"./empty": {
 				"types": "./dist/components/empty/index.d.ts",
@@ -877,6 +888,7 @@
 			"./components/drawer.css": "./dist/components/drawer.css",
 			"./components/dropdown.css": "./dist/components/dropdown.css",
 			"./components/dropdown-menu.css": "./dist/components/dropdown-menu.css",
+			"./components/emoji-picker.css": "./dist/components/emoji-picker.css",
 			"./components/empty.css": "./dist/components/empty.css",
 			"./components/field.css": "./dist/components/field.css",
 			"./components/hover-card.css": "./dist/components/hover-card.css",

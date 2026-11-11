@@ -18,6 +18,7 @@ import { dialogExhibit } from "./dialog";
 import { drawerExhibit } from "./drawer";
 import { dropdownExhibit } from "./dropdown";
 import { dropdownMenuExhibit } from "./dropdown-menu";
+import { emojiPickerExhibit } from "./emoji-picker";
 import { fieldExhibit } from "./field";
 import { footerExhibit } from "./footer";
 import { iconsExhibit } from "./icons";
@@ -110,6 +111,7 @@ export const EXHIBITS: Exhibit[] = [
 	otpExhibit,
 	uploadExhibit,
 	mentionExhibit,
+	emojiPickerExhibit,
 	linkCardExhibit,
 	imagePixelRevealExhibit,
 	iconsExhibit,
