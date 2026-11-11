@@ -1,6 +1,7 @@
 import type { Exhibit } from "../../model/exhibit";
 import { accordionExhibit } from "./accordion";
 import { alertExhibit } from "./alert";
+import { annotationExhibit } from "./annotation";
 import { announcementBarExhibit } from "./announcement-bar";
 import { avatarExhibit } from "./avatar";
 import { badgeExhibit } from "./badge";
@@ -117,15 +118,7 @@ export const EXHIBITS: Exhibit[] = [
 	accordionExhibit,
 	alertExhibit,
 	chartExhibit,
-	{
-		id: "annotation",
-		name: "批注",
-		units: ["annotation"],
-		zone: "content",
-		category: "content",
-		footprint: { width: 560, height: 240 },
-		issue: 716,
-	},
+	annotationExhibit,
 	quoteCardExhibit,
 	imageGridExhibit,
 	{

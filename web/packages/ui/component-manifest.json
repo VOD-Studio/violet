@@ -17,6 +17,13 @@
 			"documentation": "web/packages/ui/docs/components/alert.md"
 		},
 		{
+			"name": "annotation",
+			"status": "foundation",
+			"entry": "src/components/annotation/index.ts",
+			"css": "src/components/annotation/annotation.css",
+			"documentation": "web/packages/ui/docs/components/annotation.md"
+		},
+		{
 			"name": "announcement-bar",
 			"status": "foundation",
 			"entry": "src/components/announcement-bar/index.ts",

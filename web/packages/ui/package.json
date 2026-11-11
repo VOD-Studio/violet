@@ -37,6 +37,11 @@
 			"import": "./src/components/alert/index.ts",
 			"default": "./src/components/alert/index.ts"
 		},
+		"./annotation": {
+			"types": "./src/components/annotation/index.ts",
+			"import": "./src/components/annotation/index.ts",
+			"default": "./src/components/annotation/index.ts"
+		},
 		"./announcement-bar": {
 			"types": "./src/components/announcement-bar/index.ts",
 			"import": "./src/components/announcement-bar/index.ts",
@@ -387,6 +392,7 @@
 		"./classes.css": "./src/classes.css",
 		"./components/accordion.css": "./src/components/accordion/accordion.css",
 		"./components/alert.css": "./src/components/alert/alert.css",
+		"./components/annotation.css": "./src/components/annotation/annotation.css",
 		"./components/announcement-bar.css": "./src/components/announcement-bar/announcement-bar.css",
 		"./components/avatar.css": "./src/components/avatar/avatar.css",
 		"./components/badge.css": "./src/components/badge/badge.css",
@@ -494,6 +500,11 @@
 				"types": "./dist/components/alert/index.d.ts",
 				"import": "./dist/components/alert/index.js",
 				"default": "./dist/components/alert/index.js"
+			},
+			"./annotation": {
+				"types": "./dist/components/annotation/index.d.ts",
+				"import": "./dist/components/annotation/index.js",
+				"default": "./dist/components/annotation/index.js"
 			},
 			"./announcement-bar": {
 				"types": "./dist/components/announcement-bar/index.d.ts",
@@ -845,6 +856,7 @@
 			"./classes.css": "./dist/classes.css",
 			"./components/accordion.css": "./dist/components/accordion.css",
 			"./components/alert.css": "./dist/components/alert.css",
+			"./components/annotation.css": "./dist/components/annotation.css",
 			"./components/announcement-bar.css": "./dist/components/announcement-bar.css",
 			"./components/avatar.css": "./dist/components/avatar.css",
 			"./components/badge.css": "./dist/components/badge.css",

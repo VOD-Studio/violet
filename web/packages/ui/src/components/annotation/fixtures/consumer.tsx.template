@@ -1,0 +1,19 @@
+import { createRef } from "react";
+import { AnnotationCardFrame, AnnotationMark, AnnotationToolbar, AnnotationToolButton } from "@violet/ui";
+import { AnnotationMark as LeafAnnotationMark } from "@violet/ui/annotation";
+
+const annotationMarkRef = createRef<HTMLElement>();
+const annotationCardRef = createRef<HTMLDivElement>();
+const annotationToolRef = createRef<HTMLButtonElement>();
+
+export function AnnotationConsumer() {
+	return <section aria-label="批注消费者">
+		<AnnotationMark ref={annotationMarkRef} aria-label="1 条批注：阅读">阅读</AnnotationMark>
+		<LeafAnnotationMark aria-label="1 条批注：相遇">相遇</LeafAnnotationMark>
+		<AnnotationToolbar aria-label="选区操作">
+			<AnnotationToolButton ref={annotationToolRef} onMouseDown={(event) => event.preventDefault()}>批注</AnnotationToolButton>
+			<AnnotationToolButton disabled>复制</AnnotationToolButton>
+		</AnnotationToolbar>
+		<AnnotationCardFrame ref={annotationCardRef} role="dialog" aria-label="批注内容">有时一句话，就能把陌生人的距离拉近。</AnnotationCardFrame>
+	</section>;
+}
