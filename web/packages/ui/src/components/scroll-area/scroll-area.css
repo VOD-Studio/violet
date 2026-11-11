@@ -21,12 +21,21 @@
 	padding: var(--v-scroll-area-padding, 4px);
 	overflow: auto;
 	overscroll-behavior: contain;
-	outline: none;
 }
 
 .v-scroll-area__viewport:focus-visible {
-	outline: 2px solid var(--ring);
-	outline-offset: -2px;
+	outline: none;
+}
+
+.v-scroll-area:has(> .v-scroll-area__viewport:focus-visible)::after {
+	position: absolute;
+	/* 高于滑块层，避免粘性内容和覆盖式滑块遮住焦点环。 */
+	z-index: 51;
+	inset: 0;
+	border: 2px solid var(--ring);
+	border-radius: inherit;
+	pointer-events: none;
+	content: "";
 }
 
 .v-scroll-area[data-orientation="vertical"] > .v-scroll-area__viewport {
