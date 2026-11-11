@@ -197,6 +197,8 @@ Shiki 初始化、语言准备与分词在按需创建的 Web Worker 中执行�
 
 站点公共层提供 `shared/ui/announcement-severity` 状态色和 `shared/hooks/use-banner-ticker` 轮播节拍。终端、阅读进度等公共界面只消费用途语义色。
 
+正文编辑内核位于 `shared/ui/rich-text-input`，统一处理光标、提及与图片占位符；只接收显示模型和回调，不导入业务实体或 feature。表情实体到显示模型的投影在 `entities/emoji/lib/inline-emoji`，评论与聊天分别注入选择器、上传和业务上下文。
+
 公告横幅与卡片共享公共状态色，不依赖实验页面。lab 的固定实验色与旧 utility 仅限 `.lab-scope`，包括其 portal 内容；离开实验路由后不改变正式页面。
 
 ### 颜色守门
