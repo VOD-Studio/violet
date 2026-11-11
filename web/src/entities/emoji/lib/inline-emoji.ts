@@ -14,5 +14,11 @@ export function toInlineEmoji(emoji: Emoji): InlineEmoji {
 
 /** 分组只用于业务选择器，编辑器只接收扁平的占位符显示列表。 */
 export function toInlineEmojis(groups: readonly EmojiGroup[]): InlineEmoji[] {
-	return groups.flatMap((group) => group.emojis.map(toInlineEmoji));
+	return groups.flatMap((group) =>
+		group.emojis.map((emoji) =>
+			toInlineEmoji(
+				group.type === 1 ? { ...emoji, meta: { ...emoji.meta, type: 4 } } : emoji,
+			),
+		),
+	);
 }

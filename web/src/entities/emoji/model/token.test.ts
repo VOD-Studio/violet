@@ -2,6 +2,17 @@ import { describe, expect, it } from "vitest";
 import { toEmojiToken } from "./token";
 
 describe("toEmojiToken", () => {
+	it("颜文字插入原文而不是占位符", () => {
+		expect(
+			toEmojiToken({
+				id: 3,
+				name: "开心",
+				url: "",
+				text_content: "(・ω・)",
+				meta: { type: 4 },
+			}),
+		).toBe("(・ω・)");
+	});
 	it("为自定义表情追加 ID", () => {
 		expect(
 			toEmojiToken({
