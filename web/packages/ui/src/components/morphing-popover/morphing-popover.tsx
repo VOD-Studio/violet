@@ -17,7 +17,7 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { type Anchor, chooseAnchor } from "./anchor";
+import { type Anchor, chooseAnchor, VIEWPORT_MARGIN } from "./anchor";
 import { canMorph, createMorph, type Morph, type Shape, shapeOf } from "./morph";
 
 /** 不做变形时（减弱动态、不支持 Web Animations）面板直接淡入淡出的时长。 */
@@ -234,17 +234,38 @@ function MorphingPopoverContent({
 		if (!mounted || !layer || !panel || !shadow || !body || !ghostNode) return;
 		const relay = handoff.current;
 		handoff.current = null;
-		const anchor =
-			relay?.anchor ??
-			(trigger
-				? chooseAnchor(
-						trigger.getBoundingClientRect(),
-						panel.getBoundingClientRect(),
-						{ width: window.innerWidth, height: window.innerHeight },
-						outset,
-					)
-				: "top left");
+		const viewport = {
+			width: document.documentElement.clientWidth || window.innerWidth,
+			height: window.innerHeight,
+		};
+		layer.style.setProperty(
+			"--v-morph-available-inline-size",
+			`${viewport.width - 2 * VIEWPORT_MARGIN}px`,
+		);
+		const anchor = trigger
+			? chooseAnchor(
+					trigger.getBoundingClientRect(),
+					panel.getBoundingClientRect(),
+					viewport,
+					outset,
+					relay?.anchor,
+				)
+			: "top left";
 		layer.dataset.anchor = anchor;
+		layer.style.translate = "";
+		const target = panel.getBoundingClientRect();
+		if (target.width > 0) {
+			const left = Math.max(
+				VIEWPORT_MARGIN,
+				Math.min(target.left, viewport.width - target.width - VIEWPORT_MARGIN),
+			);
+			const offset = left - target.left;
+			if (offset !== 0) {
+				// DOMRect 已包含宿主缩放，translate 使用未缩放的局部坐标。
+				const scaleX = target.width / panel.offsetWidth;
+				layer.style.translate = `${offset / scaleX}px 0`;
+			}
+		}
 		if (!trigger) {
 			layer.dataset.motion = "fade";
 			return;

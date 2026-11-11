@@ -62,7 +62,7 @@
 		box-sizing: border-box;
 		inline-size: max-content;
 		min-inline-size: 15rem;
-		max-inline-size: min(25rem, calc(100vw - 1rem));
+		max-inline-size: min(25rem, var(--v-morph-available-inline-size, calc(100vw - 1rem)));
 		border-radius: var(--v-morph-radius, 16px);
 		background-color: var(--popover);
 		color: var(--popover-foreground);
