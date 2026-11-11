@@ -52,9 +52,8 @@ import {
 } from "../hooks/use-rich-text-input";
 import { AnnotationOverlayContext } from "./annotation-overlay-context";
 
-/** 字段布局里与文字同行的图标钮：24 圆钮，触屏 28；底色用墨色叠层，在凹陷底与聚焦后的纸面上都看得见。 */
-const FIELD_ACTION_CLASS =
-	"inline-flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/8 hover:text-foreground focus-visible:outline-2 focus-visible:-outline-offset-1 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-40 pointer-coarse:size-7";
+/** 字段布局里与文字同行的图标钮：组件库输入框的圆钮槽（24px，悬停、聚焦环与禁用态都由它定义）。 */
+const FIELD_ACTION_CLASS = "v-input-control__action";
 
 export interface PictureInput {
 	id?: string;
@@ -589,7 +588,7 @@ export function RichCommentInput({
 				"overflow-y-auto bg-transparent focus:outline-none",
 				isInline && "min-h-9 max-h-40 flex-1 min-w-0 px-1 py-1.5 text-sm leading-relaxed",
 				isField &&
-					"max-h-40 min-h-6 min-w-0 px-1 py-0.5 leading-5 pointer-coarse:min-h-7 pointer-coarse:py-1",
+					"max-h-40 min-h-8 min-w-0 px-2 py-1.5 leading-5 pointer-coarse:min-h-9 pointer-coarse:py-2",
 				isField && fieldWrapped && "col-span-2 row-start-1",
 				!isInline && !isField && "max-h-60",
 				!isInline &&
@@ -689,7 +688,7 @@ export function RichCommentInput({
 		return (
 			<div
 				className={cn(
-					"v-input-control v-input-control--filled v-input-control--sm block h-auto min-h-(--v-input-h) p-1",
+					"v-input-control v-input-control--filled block h-auto min-h-(--v-input-h) p-0.5 ps-1.5",
 					className,
 				)}
 				data-disabled={disabled || undefined}
@@ -700,7 +699,7 @@ export function RichCommentInput({
 				{/* 写不下一行时图标钮挪到文字下方，文字占满整行；节点顺序不变，可编辑区不重挂 */}
 				<div
 					className={cn(
-						"grid items-end gap-1",
+						"grid items-center gap-1",
 						fieldWrapped
 							? "grid-cols-[minmax(0,1fr)_auto]"
 							: "grid-cols-[auto_minmax(0,1fr)_auto]",

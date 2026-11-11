@@ -3,11 +3,10 @@
 import { useCreateComment, useSendCommentCode } from "@features/comments/api/mutations";
 import type { Comment, CreateComment } from "@features/comments/model/types";
 import { ApiError } from "@shared/api/error";
-import { Field, Input, InputOTP, ResendButton, Spinner } from "@violet/ui";
+import { Button, Field, Input, InputOTP, ResendButton, Spinner } from "@violet/ui";
 import { MailCheck, Send } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { FieldSendButton } from "./FieldSendButton";
 import { type PictureInput, RichCommentInput } from "./RichCommentInput";
 
 export interface CommentFormProps {
@@ -221,17 +220,22 @@ export function CommentForm({
 							</span>
 						)}
 						{layout === "field" ? (
-							<FieldSendButton
+							<Button
 								ref={submitRef}
 								type="submit"
-								label="发送"
+								variant={body.trim() ? "primary" : "ghost"}
+								size="sm"
+								iconOnly
+								aria-label="发送"
 								loading={createComment.isPending}
 								disabled={
 									!body.trim() ||
 									isUploading ||
 									(!isLoggedIn && (!codeSent || code.length !== 6))
 								}
-							/>
+							>
+								<Send />
+							</Button>
 						) : (
 							<button
 								ref={submitRef}
