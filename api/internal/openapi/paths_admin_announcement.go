@@ -19,6 +19,8 @@ func registerAdminAnnouncementPaths(t *openapi3.T) {
 		"content_html": optStr("渲染后 HTML（article 形态）"),
 		"cover_image":  optStr("封面图 URL（article 形态）"),
 		"excerpt":      optStr("摘要（card/article 形态）"),
+		"link_url":     optStr("可选链接：完整 http/https 地址或单斜线开头的站内路径；更新时不传保留，空串清除地址及文字"),
+		"link_text":    optStr("可选链接文字；非空时必须有链接地址；更新时不传保留，空串清除文字"),
 	}, "title", "content", "type")
 
 	idResp := func(desc string) *openapi3.ResponseRef {

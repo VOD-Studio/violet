@@ -86,6 +86,8 @@ func registerPublicPaths(t *openapi3.T) {
 		"content_html": optStr("渲染后 HTML（article 形态）"),
 		"cover_image":  optStr("封面图 URL（article 形态）"),
 		"excerpt":      optStr("摘要（card/article 形态）"),
+		"link_url":     optStr("可选行动链接；无链接时省略"),
+		"link_text":    optStr("可选链接文字；为空时省略"),
 		"created_at":   optStr("创建时间（RFC3339）"),
 	})
 

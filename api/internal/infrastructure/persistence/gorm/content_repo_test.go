@@ -51,6 +51,7 @@ func TestAnnouncementRepository_Lifecycle(t *testing.T) {
 	active, err := domainannouncement.NewAnnouncement(0, "活跃公告", "内容 A", domainannouncement.SeverityInfo)
 	require.NoError(t, err)
 	active.SetSortOrder(2)
+	require.NoError(t, active.SetLink("/blog/updates", "查看更新"))
 	activeID, err := repo.Save(ctx, active)
 	require.NoError(t, err)
 	require.NotZero(t, activeID)
@@ -79,6 +80,15 @@ func TestAnnouncementRepository_Lifecycle(t *testing.T) {
 	assert.Equal(t, domainannouncement.SeverityInfo, got.Severity())
 	assert.Equal(t, 2, got.SortOrder())
 	assert.True(t, got.IsActive())
+	assert.Equal(t, "/blog/updates", got.LinkURL())
+	assert.Equal(t, "查看更新", got.LinkText())
+	require.NoError(t, got.SetLink("", ""))
+	_, err = repo.Save(ctx, got)
+	require.NoError(t, err)
+	cleared, err := repo.FindByID(ctx, activeID)
+	require.NoError(t, err)
+	assert.Empty(t, cleared.LinkURL())
+	assert.Empty(t, cleared.LinkText())
 
 	// FindAll：按 sort_order ASC, created_at DESC → sort_order=1（停用）在前
 	all, err := repo.FindAll(ctx)

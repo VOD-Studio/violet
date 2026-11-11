@@ -166,3 +166,42 @@ func TestParseAffects_Empty(t *testing.T) {
 		t.Errorf("ParseAffects(invalid) = %v, want nil", got)
 	}
 }
+
+func TestUpdateLink_RecordsChanges(t *testing.T) {
+	a, err := NewAnnouncement(7, "公告", "内容", SeverityInfo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := a.SetLink("/old", "旧文字"); err != nil {
+		t.Fatal(err)
+	}
+	if len(a.PullEvents()) != 0 {
+		t.Fatal("initial link must not publish an update")
+	}
+	if err := a.UpdateLink("/new", "新文字"); err != nil {
+		t.Fatal(err)
+	}
+	events := a.PullEvents()
+	if len(events) != 1 {
+		t.Fatalf("got %d events, want one update", len(events))
+	}
+	event, ok := events[0].(AnnouncementUpdated)
+	if !ok || event.ID != 7 || len(event.Changes) != 2 {
+		t.Fatalf("unexpected update: %#v", events[0])
+	}
+	want := []AnnouncementChange{
+		{Field: "link_url", From: "/old", To: "/new"},
+		{Field: "link_text", From: "旧文字", To: "新文字"},
+	}
+	for i, change := range want {
+		if event.Changes[i] != change {
+			t.Errorf("change %d = %#v, want %#v", i, event.Changes[i], change)
+		}
+	}
+	if err := a.UpdateLink("/new", "新文字"); err != nil {
+		t.Fatal(err)
+	}
+	if len(a.PullEvents()) != 0 {
+		t.Fatal("unchanged link must not publish an update")
+	}
+}

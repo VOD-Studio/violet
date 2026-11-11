@@ -35,6 +35,7 @@ func announcementToPO(a *announcement.Announcement) model.Announcement {
 		SortOrder: a.SortOrder(),
 		ContentMD: a.ContentMD(), ContentHTML: a.ContentHTML(),
 		CoverImage: a.CoverImage(), Excerpt: a.Excerpt(),
+		LinkURL: a.LinkURL(), LinkText: a.LinkText(),
 	}
 	if s := a.StartTime(); s != nil {
 		po.StartTime = s
@@ -61,7 +62,7 @@ func announcementPOToDomain(po model.Announcement) *announcement.Announcement {
 	return announcement.ReconstructAnnouncement(
 		po.ID, po.Title, po.Content, po.Type, po.Display, po.IsActive,
 		po.StartTime, po.EndTime, po.SortOrder, []string(po.Affects),
-		po.ContentMD, po.ContentHTML, po.CoverImage, po.Excerpt,
+		po.ContentMD, po.ContentHTML, po.CoverImage, po.Excerpt, po.LinkURL, po.LinkText,
 		createdBy, po.CreatedAt, po.UpdatedAt,
 	)
 }

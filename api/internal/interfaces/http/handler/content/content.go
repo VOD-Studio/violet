@@ -91,6 +91,8 @@ type announcementRequest struct {
 	ContentHTML string   `json:"content_html"`
 	CoverImage  string   `json:"cover_image"`
 	Excerpt     string   `json:"excerpt"`
+	LinkURL     *string  `json:"link_url"`
+	LinkText    *string  `json:"link_text"`
 }
 
 func (h *Handler) CreateAnnouncement(w http.ResponseWriter, r *http.Request) {
@@ -108,6 +110,12 @@ func (h *Handler) CreateAnnouncement(w http.ResponseWriter, r *http.Request) {
 		Display: req.Display, SortOrder: derefInt(req.SortOrder),
 		Affects: req.Affects, ContentMD: req.ContentMD, ContentHTML: req.ContentHTML,
 		CoverImage: req.CoverImage, Excerpt: req.Excerpt,
+	}
+	if req.LinkURL != nil {
+		in.LinkURL = *req.LinkURL
+	}
+	if req.LinkText != nil {
+		in.LinkText = *req.LinkText
 	}
 	if req.StartTime != "" {
 		if t, err := time.Parse(time.RFC3339, req.StartTime); err == nil {
@@ -147,6 +155,7 @@ func (h *Handler) UpdateAnnouncement(w http.ResponseWriter, r *http.Request) {
 		Display: req.Display, IsActive: req.IsActive, SortOrder: req.SortOrder,
 		Affects: req.Affects, ContentMD: req.ContentMD, ContentHTML: req.ContentHTML,
 		CoverImage: req.CoverImage, Excerpt: req.Excerpt,
+		LinkURL: req.LinkURL, LinkText: req.LinkText,
 	}
 	if req.StartTime != "" {
 		if t, err := time.Parse(time.RFC3339, req.StartTime); err == nil {

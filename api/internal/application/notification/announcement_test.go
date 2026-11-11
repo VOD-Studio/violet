@@ -96,7 +96,7 @@ func TestSubscriber_AnnouncementCreated_ArticleFallsBackToExcerpt(t *testing.T) 
 	user := newID()
 	a := domainannouncement.ReconstructAnnouncement(7, "长文公告", "", domainannouncement.SeverityInfo,
 		domainannouncement.DisplayArticle, true, nil, nil, 0, nil,
-		"# md", "<h1>md</h1>", "", "纯文本摘要", nil, time.Now(), time.Now())
+		"# md", "<h1>md</h1>", "", "纯文本摘要", "", "", nil, time.Now(), time.Now())
 	sub := announcementSubscriber(store, a, user)
 
 	require.NoError(t, sub.Handle(context.Background(), domainannouncement.NewAnnouncementCreated(7)))

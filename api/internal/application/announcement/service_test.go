@@ -2,15 +2,17 @@ package announcement
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 
 	infraeventbus "blog-api/internal/infrastructure/eventbus"
 
-	domain "blog-api/internal/domain/announcement"
 	"blog-api/internal/application/mocks"
+	domain "blog-api/internal/domain/announcement"
 )
 
 func newServiceWithMock() (*Service, *mocks.MockAnnouncementRepository) {
@@ -119,4 +121,136 @@ func TestService_ListActive_Empty(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, dtos)
 	repo.AssertExpectations(t)
+}
+
+func TestService_Create_LinkValidation(t *testing.T) {
+	cases := []struct {
+		name    string
+		address string
+		text    string
+		valid   bool
+	}{
+		{name: "none", valid: true},
+		{name: "https", address: "https://example.com/news?q=1#details", text: "详情", valid: true},
+		{name: "http", address: "http://example.com:8080", valid: true},
+		{name: "internal", address: "/blog/updates?year=2026#latest", text: "更新", valid: true},
+		{name: "root", address: "/", valid: true},
+		{name: "uppercase scheme", address: "HTTPS://example.com/news", valid: true},
+		{name: "raw space", address: "/news details"},
+		{name: "unicode space", address: "/news\u00a0details"},
+		{name: "text without address", text: "详情"},
+		{name: "relative", address: "blog/updates"},
+		{name: "protocol relative", address: "//evil.example"},
+		{name: "javascript", address: "javascript:alert(1)"},
+		{name: "data", address: "data:text/html,hello"},
+		{name: "missing host", address: "https:///news"},
+		{name: "backslash", address: "/\\evil.example"},
+		{name: "external backslash", address: "https://example.com/\\evil"},
+		{name: "newline", address: "/news\n"},
+		{name: "tab", address: "/news\t"},
+		{name: "delete", address: "/news\x7f"},
+		{name: "encoded control", address: "/news%0a"},
+		{name: "encoded backslash", address: "/%5cevil.example"},
+		{name: "encoded second slash", address: "/%2fevil.example"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			svc, repo := newServiceWithMock()
+			if tc.valid {
+				repo.On("Save", mock.Anything, mock.MatchedBy(func(a *domain.Announcement) bool {
+					return a.LinkURL() == tc.address && a.LinkText() == tc.text
+				})).Return(42, nil).Once()
+			}
+			_, err := svc.Create(context.Background(), CreateInput{
+				Title: "公告", Content: "内容", Type: "info",
+				LinkURL: tc.address, LinkText: tc.text,
+			})
+			if tc.valid {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+				repo.AssertNotCalled(t, "Save", mock.Anything, mock.Anything)
+			}
+			repo.AssertExpectations(t)
+		})
+	}
+}
+
+func TestService_Update_LinkPatch(t *testing.T) {
+	pointer := func(value string) *string { return &value }
+	cases := []struct {
+		name        string
+		initialURL  string
+		initialText string
+		address     *string
+		text        *string
+		wantURL     string
+		wantText    string
+		wantErr     bool
+	}{
+		{name: "omitted preserves", initialURL: "/old", initialText: "原文字", wantURL: "/old", wantText: "原文字"},
+		{name: "set", address: pointer("https://example.com"), text: pointer("查看"), wantURL: "https://example.com", wantText: "查看"},
+		{name: "address preserves text", initialURL: "/old", initialText: "原文字", address: pointer("/new"), wantURL: "/new", wantText: "原文字"},
+		{name: "text only", initialURL: "/old", text: pointer("新文字"), wantURL: "/old", wantText: "新文字"},
+		{name: "clear text", initialURL: "/old", initialText: "原文字", text: pointer(""), wantURL: "/old"},
+		{name: "clear both", initialURL: "/old", initialText: "原文字", address: pointer("")},
+		{name: "clear overrides supplied text", initialURL: "/old", address: pointer(""), text: pointer("忽略")},
+		{name: "text requires address", text: pointer("详情"), wantErr: true},
+		{name: "invalid address", initialURL: "/old", address: pointer("//evil.example"), wantErr: true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			svc, repo := newServiceWithMock()
+			a, err := domain.NewAnnouncement(1, "公告", "内容", "info")
+			require.NoError(t, err)
+			require.NoError(t, a.SetLink(tc.initialURL, tc.initialText))
+			repo.On("FindByID", mock.Anything, int32(1)).Return(a, nil).Once()
+			if !tc.wantErr {
+				repo.On("Save", mock.Anything, mock.MatchedBy(func(saved *domain.Announcement) bool {
+					return saved.LinkURL() == tc.wantURL && saved.LinkText() == tc.wantText
+				})).Return(1, nil).Once()
+			}
+			err = svc.Update(context.Background(), UpdateInput{
+				ID: 1, Title: "公告", Content: "内容", Type: "info",
+				LinkURL: tc.address, LinkText: tc.text,
+			})
+			if tc.wantErr {
+				require.Error(t, err)
+				assert.Equal(t, tc.initialURL, a.LinkURL())
+				assert.Equal(t, tc.initialText, a.LinkText())
+				repo.AssertNotCalled(t, "Save", mock.Anything, mock.Anything)
+			} else {
+				require.NoError(t, err)
+			}
+			repo.AssertExpectations(t)
+		})
+	}
+}
+
+func TestService_Get_LinkJSON(t *testing.T) {
+	for _, address := range []string{"", "/news"} {
+		t.Run(address, func(t *testing.T) {
+			svc, repo := newServiceWithMock()
+			a, err := domain.NewAnnouncement(1, "公告", "内容", "info")
+			require.NoError(t, err)
+			if address != "" {
+				require.NoError(t, a.SetLink(address, "查看"))
+			}
+			repo.On("FindByID", mock.Anything, int32(1)).Return(a, nil).Once()
+			dto, err := svc.Get(context.Background(), 1)
+			require.NoError(t, err)
+			encoded, err := json.Marshal(dto)
+			require.NoError(t, err)
+			var fields map[string]any
+			require.NoError(t, json.Unmarshal(encoded, &fields))
+			if address == "" {
+				assert.NotContains(t, fields, "link_url")
+				assert.NotContains(t, fields, "link_text")
+			} else {
+				assert.Equal(t, address, fields["link_url"])
+				assert.Equal(t, "查看", fields["link_text"])
+			}
+			repo.AssertExpectations(t)
+		})
+	}
 }

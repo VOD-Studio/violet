@@ -27,6 +27,7 @@ import (
 	domainann "blog-api/internal/domain/announcement"
 	domainproj "blog-api/internal/domain/project"
 	domainshared "blog-api/internal/domain/shared"
+	infraeventbus "blog-api/internal/infrastructure/eventbus"
 )
 
 // ---------------------------------------------------------------------
@@ -147,7 +148,7 @@ const validUUID = "550e8400-e29b-41d4-a716-446655440000"
 func TestListActiveAnnouncements_Returns200(t *testing.T) {
 	ann := domainann.ReconstructAnnouncement(
 		1, "站点公告", "欢迎", domainann.SeverityInfo, domainann.DisplayBanner,
-		true, nil, nil, 0, nil, "", "", "", "", nil, time.Now(), time.Now(),
+		true, nil, nil, 0, nil, "", "", "", "", "", "", nil, time.Now(), time.Now(),
 	)
 	repo := &stubAnnRepo{active: []*domainann.Announcement{ann}}
 	h := NewHandler(appann.NewService(repo, nil), nil)
@@ -371,4 +372,62 @@ func TestUpdateProject_SlugField(t *testing.T) {
 			assert.Equal(t, tc.want, p.Slug())
 		})
 	}
+}
+
+type linkAnnouncementRepo struct {
+	stubAnnRepo
+	saved *domainann.Announcement
+}
+
+func (s *linkAnnouncementRepo) Save(_ context.Context, a *domainann.Announcement) (int32, error) {
+	s.saved = a
+	return 1, nil
+}
+
+func (s *linkAnnouncementRepo) FindByID(_ context.Context, id int32) (*domainann.Announcement, error) {
+	if s.saved == nil || s.saved.ID() != id {
+		return nil, domainann.ErrNotFound
+	}
+	return s.saved, nil
+}
+
+func TestAnnouncement_LinkLifecycle(t *testing.T) {
+	repo := &linkAnnouncementRepo{}
+	h := NewHandler(appann.NewService(repo, infraeventbus.NewInMemory()), nil)
+	create := newJSONRequest(http.MethodPost, "/admin/announcements",
+		`{"title":"公告","content":"内容","type":"info","link_url":"/news","link_text":"查看"}`)
+	created := httptest.NewRecorder()
+	h.CreateAnnouncement(created, create)
+	require.Equal(t, http.StatusCreated, created.Code)
+
+	read := func() map[string]any {
+		t.Helper()
+		req := httptest.NewRequest(http.MethodGet, "/admin/announcements/1", nil)
+		req.SetPathValue("id", "1")
+		result := httptest.NewRecorder()
+		h.GetAnnouncement(result, req)
+		require.Equal(t, http.StatusOK, result.Code)
+		return decodeBody(t, result)["data"].(map[string]any)
+	}
+	assert.Equal(t, "/news", read()["link_url"])
+	assert.Equal(t, "查看", read()["link_text"])
+
+	patch := func(fields string, status int) {
+		t.Helper()
+		req := newJSONRequest(http.MethodPatch, "/admin/announcements/1",
+			`{"title":"公告","content":"内容","type":"info"`+fields+`}`)
+		req.SetPathValue("id", "1")
+		result := httptest.NewRecorder()
+		h.UpdateAnnouncement(result, req)
+		require.Equal(t, status, result.Code)
+	}
+	patch("", http.StatusOK)
+	assert.Equal(t, "/news", read()["link_url"])
+	patch(`,"link_url":"//evil.example"`, http.StatusBadRequest)
+	assert.Equal(t, "/news", read()["link_url"])
+	patch(`,"link_url":""`, http.StatusOK)
+	cleared := read()
+	assert.NotContains(t, cleared, "link_url")
+	assert.NotContains(t, cleared, "link_text")
+	patch(`,"link_text":"查看"`, http.StatusBadRequest)
 }
