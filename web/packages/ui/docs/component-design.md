@@ -53,6 +53,8 @@ web/packages/ui/src/components/<name>/
 
 功能圆角最大 16px；浮起只使用规定的软影。普通 hover、loading、面板切换通过颜色、描边、透明度反馈，遵守减弱动态。迁移一个 legacy 单元不等于其他旧组件也满足了这些规则。
 
+减弱动态同时读取系统偏好和宿主 `[data-motion="reduce"]` 作用域。依赖的浮层、Tooltip 与 ListHighlight 必须继承同一作用域；原位浮层的换块接力要重新核对新尺寸是否仍能放下，不能只复用旧方向。
+
 ## 登记公开入口
 
 在 `component-manifest.json` 的 `components` 中登记 `name`、`status`、`entry`，以及实际存在的 `css`、`documentation` 路径。已有单元迁移时修改原条目，不能保留重复导出。

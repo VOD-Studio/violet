@@ -36,6 +36,14 @@
 		outline: none;
 	}
 
+	.v-list-highlight[data-motion="reduce"]::before,
+	[data-motion="reduce"] .v-list-highlight::before,
+	.v-list-highlight[data-motion="reduce"][data-list-highlight-visible="true"][data-list-highlight-jump="false"]::before,
+	[data-motion="reduce"]
+		.v-list-highlight[data-list-highlight-visible="true"][data-list-highlight-jump="false"]::before {
+		transition: none;
+	}
+
 	@media (prefers-reduced-motion: reduce) {
 		.v-list-highlight::before,
 		.v-list-highlight[data-list-highlight-visible="true"][data-list-highlight-jump="false"]::before {

@@ -252,9 +252,13 @@ function TooltipContent({
 			const previous = registry.current;
 			registry.current = self;
 			if (previous?.wrapper.isConnected && !previous.superseded) {
-				const animated = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+				const animated =
+					!node.closest('[data-motion="reduce"]') &&
+					!window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 				predecessor.current = { bubble: previous, animated };
-				if (animated) setSliding(true);
+				if (animated) {
+					setSliding(true);
+				}
 			}
 			return () => {
 				if (registry.current === self) registry.current = null;

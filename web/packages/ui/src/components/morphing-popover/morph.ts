@@ -117,7 +117,9 @@ const blurOf = (opacity: number) => `blur(${px((1 - opacity) * GHOST_BLUR_PX)})`
 
 /** 能否播放外形动画：需要 Web Animations，且没有开启减弱动态。 */
 export function canMorph(element: HTMLElement) {
-	if (typeof element.animate !== "function") return false;
+	if (typeof element.animate !== "function" || element.closest('[data-motion="reduce"]')) {
+		return false;
+	}
 	return !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 }
 

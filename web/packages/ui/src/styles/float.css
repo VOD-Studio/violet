@@ -1,7 +1,7 @@
 /*
  * 浮层共用的出现与消失：从触发器一侧浮出并淡入，收起时往触发器方向退并淡出，不缩放。
  * 浮层内容元素带上 .v-float 即可，data-state 与 data-side 由 Radix 或 Popper 提供。
- * 选择器全部用 :where() 归零优先级，各单元的同名变量与 animation 声明无需关心导入顺序。
+ * 基础选择器用 :where() 归零优先级；宿主减弱动态规则覆盖单元的入退场动画。
  *
  * 可由单元覆盖的变量：
  *   --v-float-in / --v-float-out          进入与退出时长
@@ -75,6 +75,21 @@
 		to {
 			opacity: 0;
 		}
+	}
+
+	.v-float[data-motion="reduce"]:is(
+		[data-state="open"],
+		[data-state="delayed-open"],
+		[data-state="instant-open"]
+	),
+	[data-motion="reduce"]
+		.v-float:is([data-state="open"], [data-state="delayed-open"], [data-state="instant-open"]) {
+		animation: v-float-fade-in 100ms ease-out backwards;
+	}
+
+	.v-float[data-motion="reduce"][data-state="closed"],
+	[data-motion="reduce"] .v-float[data-state="closed"] {
+		animation: v-float-fade-out 100ms ease-out forwards;
 	}
 
 	/* 减弱动态：只保留 100ms 的透明度变化 */
