@@ -30,7 +30,9 @@ export function useScrollState(
 
 	useEffect(() => {
 		const element = viewport.current;
-		if (!element) return;
+		if (!element) {
+			return;
+		}
 
 		const isDocument = element === document.scrollingElement;
 		// 文档滚动的 scroll 事件派发在 document 上，而不是 scrollingElement。
@@ -63,13 +65,17 @@ export function useScrollState(
 
 		const resizeObserver = new ResizeObserver(measure);
 		resizeObserver.observe(element);
-		if (content.current) resizeObserver.observe(content.current);
+		if (content.current) {
+			resizeObserver.observe(content.current);
+		}
 
 		measure();
 		scrollTarget.addEventListener("scroll", onScroll, { passive: true });
 		scrollTarget.addEventListener("scrollend", stopScrolling);
 		// 窗口只改变高度时 html 的盒尺寸不变，ResizeObserver 观察不到文档视口的变化。
-		if (isDocument) window.addEventListener("resize", measure);
+		if (isDocument) {
+			window.addEventListener("resize", measure);
+		}
 
 		return () => {
 			cancelAnimationFrame(frame);
@@ -77,7 +83,9 @@ export function useScrollState(
 			resizeObserver.disconnect();
 			scrollTarget.removeEventListener("scroll", onScroll);
 			scrollTarget.removeEventListener("scrollend", stopScrolling);
-			if (isDocument) window.removeEventListener("resize", measure);
+			if (isDocument) {
+				window.removeEventListener("resize", measure);
+			}
 		};
 	}, [viewport, content]);
 

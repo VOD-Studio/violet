@@ -62,12 +62,17 @@ export function DocumentScrollbar() {
 		root.setAttribute("data-scrollbar", "none");
 
 		return () => {
-			if (original === null) root.removeAttribute("data-scrollbar");
-			else root.setAttribute("data-scrollbar", original);
+			if (original === null) {
+				root.removeAttribute("data-scrollbar");
+			} else {
+				root.setAttribute("data-scrollbar", original);
+			}
 		};
 	}, []);
 
-	if (locked) return null;
+	if (locked) {
+		return null;
+	}
 
 	return (
 		<div className="v-document-scrollbar" data-scrolling={scrolling || undefined}>

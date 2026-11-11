@@ -58,7 +58,9 @@ export function ScrollArea({
 
 	const scrollPage = (direction: -1 | 1) => {
 		const viewport = viewportRef.current;
-		if (!viewport) return;
+		if (!viewport) {
+			return;
+		}
 
 		const maxLeft = viewport.scrollWidth - viewport.clientWidth;
 		const step = viewport.clientWidth * PAGE_RATIO * direction;
@@ -70,7 +72,9 @@ export function ScrollArea({
 		viewport.scrollTo({ left, behavior: reducedMotion ? "auto" : "smooth" });
 
 		// 到头后这一侧的按钮会消失；焦点先交给视口，键盘用户可以接着用方向键。
-		if (left <= 0 || left >= maxLeft) viewport.focus({ preventScroll: true });
+		if (left <= 0 || left >= maxLeft) {
+			viewport.focus({ preventScroll: true });
+		}
 	};
 
 	return (
@@ -94,11 +98,12 @@ export function ScrollArea({
 				</div>
 			</div>
 
-			{FADE_EDGES.filter((edge) => edges[edge]).map((edge) => (
+			{FADE_EDGES.map((edge) => (
 				<div
 					key={edge}
 					className="v-scroll-area__fade"
 					data-edge={edge}
+					hidden={!edges[edge]}
 					aria-hidden="true"
 				/>
 			))}
@@ -110,31 +115,33 @@ export function ScrollArea({
 				<Scrollbar axis="horizontal" metrics={metrics} viewport={viewportRef} />
 			)}
 
-			{edges.left && (
-				<Button
-					iconOnly
-					size="sm"
-					className="v-scroll-area__page"
-					data-edge="left"
-					aria-label="向左滚动"
-					aria-controls={viewportId}
-					onClick={() => scrollPage(-1)}
-				>
-					<ChevronLeft {...iconProps()} />
-				</Button>
-			)}
-			{edges.right && (
-				<Button
-					iconOnly
-					size="sm"
-					className="v-scroll-area__page"
-					data-edge="right"
-					aria-label="向右滚动"
-					aria-controls={viewportId}
-					onClick={() => scrollPage(1)}
-				>
-					<ChevronRight {...iconProps()} />
-				</Button>
+			{orientation !== "vertical" && (
+				<>
+					<Button
+						iconOnly
+						size="sm"
+						hidden={!edges.left}
+						className="v-scroll-area__page"
+						data-edge="left"
+						aria-label="向左滚动"
+						aria-controls={viewportId}
+						onClick={() => scrollPage(-1)}
+					>
+						<ChevronLeft {...iconProps()} />
+					</Button>
+					<Button
+						iconOnly
+						size="sm"
+						hidden={!edges.right}
+						className="v-scroll-area__page"
+						data-edge="right"
+						aria-label="向右滚动"
+						aria-controls={viewportId}
+						onClick={() => scrollPage(1)}
+					>
+						<ChevronRight {...iconProps()} />
+					</Button>
+				</>
 			)}
 		</div>
 	);

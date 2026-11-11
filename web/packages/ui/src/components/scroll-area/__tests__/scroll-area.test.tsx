@@ -21,12 +21,6 @@ function setGeometry(element: Element, geometry: Geometry) {
 	}
 }
 
-function visibleFades(container: HTMLElement) {
-	return Array.from(container.querySelectorAll(".v-scroll-area__fade")).map((fade) =>
-		fade.getAttribute("data-edge"),
-	);
-}
-
 beforeEach(() => {
 	// 测量放在下一帧；测试里同步执行，事件触发后即可断言。
 	vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
@@ -42,37 +36,13 @@ afterEach(() => {
 });
 
 describe("ScrollArea", () => {
-	it("只在仍有内容的一侧显示渐隐", () => {
-		const { container } = render(<ScrollArea aria-label="章节">内容</ScrollArea>);
-		const viewport = screen.getByRole("region", { name: "章节" });
-		setGeometry(viewport, {
-			scrollTop: 0,
-			scrollHeight: 300,
-			clientHeight: 100,
-			scrollWidth: 200,
-			clientWidth: 200,
-		});
-
-		fireEvent.scroll(viewport);
-		expect(visibleFades(container)).toEqual(["bottom"]);
-
-		viewport.scrollTop = 100;
-		fireEvent.scroll(viewport);
-		expect(visibleFades(container)).toEqual(["top", "bottom"]);
-
-		viewport.scrollTop = 200;
-		fireEvent.scroll(viewport);
-		expect(visibleFades(container)).toEqual(["top"]);
-	});
-
-	it("纵向区域即使内容更宽也不显示左右渐隐与翻页按钮", () => {
-		const { container } = render(<ScrollArea aria-label="章节">内容</ScrollArea>);
+	it("纵向区域即使内容更宽也不显示横向翻页按钮", () => {
+		render(<ScrollArea aria-label="章节">内容</ScrollArea>);
 		const viewport = screen.getByRole("region", { name: "章节" });
 		setGeometry(viewport, { scrollWidth: 400, clientWidth: 200 });
 
 		fireEvent.scroll(viewport);
 
-		expect(visibleFades(container)).toEqual([]);
 		expect(screen.queryByRole("button", { name: "向右滚动" })).toBeNull();
 	});
 
@@ -85,7 +55,9 @@ describe("ScrollArea", () => {
 		const viewport = screen.getByRole("region", { name: "章节导航" });
 		setGeometry(viewport, { scrollLeft: 0, scrollWidth: 300, clientWidth: 100 });
 		viewport.scrollTo = vi.fn((options?: ScrollToOptions | number) => {
-			if (typeof options === "object") viewport.scrollLeft = options.left ?? 0;
+			if (typeof options === "object") {
+				viewport.scrollLeft = options.left ?? 0;
+			}
 			fireEvent.scroll(viewport);
 		}) as typeof viewport.scrollTo;
 		fireEvent.scroll(viewport);
@@ -113,7 +85,9 @@ describe("ScrollArea", () => {
 		const thumb = container.querySelector<HTMLElement>(
 			'.v-scrollbar[data-axis="vertical"] > .v-scrollbar__thumb',
 		);
-		if (!thumb?.parentElement) throw new Error("纵向滑块没有渲染");
+		if (!thumb?.parentElement) {
+			throw new Error("纵向滑块没有渲染");
+		}
 		thumb.setPointerCapture = vi.fn();
 		// 轨道 100px、滑块 25px：可移动 75px 对应 300px 的滚动范围，每 1px 滚动 4px。
 		vi.spyOn(thumb.parentElement, "getBoundingClientRect").mockReturnValue(

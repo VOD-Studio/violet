@@ -28,7 +28,9 @@ export function Scrollbar({ axis, metrics, viewport }: ScrollbarProps) {
 	const contentSize = vertical ? metrics.scrollHeight : metrics.scrollWidth;
 	const offset = vertical ? metrics.scrollTop : metrics.scrollLeft;
 
-	if (!hasOverflow(viewportSize, contentSize)) return null;
+	if (!hasOverflow(viewportSize, contentSize)) {
+		return null;
+	}
 
 	// 长度与位置交给 CSS 按轨道换算，这里只给比例，不读取轨道尺寸。
 	const thumbStyle = {
@@ -39,7 +41,9 @@ export function Scrollbar({ axis, metrics, viewport }: ScrollbarProps) {
 	const startDrag = (event: PointerEvent<HTMLDivElement>) => {
 		const element = viewport.current;
 		const track = event.currentTarget.parentElement;
-		if (event.button !== 0 || !element || !track) return;
+		if (event.button !== 0 || !element || !track) {
+			return;
+		}
 
 		// 阻止拖动时选中页面文字。
 		event.preventDefault();
@@ -65,17 +69,24 @@ export function Scrollbar({ axis, metrics, viewport }: ScrollbarProps) {
 	const moveDrag = (event: PointerEvent<HTMLDivElement>) => {
 		const origin = drag.current;
 		const element = viewport.current;
-		if (!origin || origin.pointerId !== event.pointerId || !element) return;
+		if (!origin || origin.pointerId !== event.pointerId || !element) {
+			return;
+		}
 
 		const pointer = vertical ? event.clientY : event.clientX;
 		const scroll = origin.scroll + (pointer - origin.pointer) * origin.scrollPerPixel;
 
-		if (vertical) element.scrollTop = scroll;
-		else element.scrollLeft = scroll;
+		if (vertical) {
+			element.scrollTop = scroll;
+		} else {
+			element.scrollLeft = scroll;
+		}
 	};
 
 	const endDrag = (event: PointerEvent<HTMLDivElement>) => {
-		if (drag.current?.pointerId === event.pointerId) drag.current = null;
+		if (drag.current?.pointerId === event.pointerId) {
+			drag.current = null;
+		}
 	};
 
 	return (

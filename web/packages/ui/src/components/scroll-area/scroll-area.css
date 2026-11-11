@@ -53,6 +53,11 @@
 	pointer-events: none;
 }
 
+.v-scroll-area__fade[hidden],
+.v-scroll-area__page[hidden] {
+	display: none;
+}
+
 .v-scroll-area__fade[data-edge="top"] {
 	inset: 0 0 auto;
 	block-size: 24px;

@@ -16,5 +16,6 @@ import { ScrollArea } from "@violet/ui";
 - 四边 24px 渐隐只在对应方向仍有内容时显示，不做过渡。默认取页面纸色；放在纸片里时在外层设置 `--v-scroll-area-surface: var(--card)`。
 - 视口保留 4px 内边距保护子控件焦点环。已有足够单元格内边距的表格可设置 `--v-scroll-area-padding: 0px`；不得因此裁掉可聚焦子项的外环。
 - 内容外层宽度与“宽 100% 的块”一致，只有放不下时才变宽；宽度为 100% 的表格仍按视口宽度排版。
+- 滚动过程中只切换边缘装饰与翻页按钮的可见性，不插拔外围节点；嵌入拖拽排序等依赖祖先测量的内容时，不因滚动改变测量基准。
 
 `DocumentScrollbar` 每个文档挂载一次，覆盖文档滚动条但不替换 `window` 滚动；弹层把 html 或 body 设为 `overflow: hidden` 时同步隐藏。宿主可在 SSR 的 `html` 上设置 `data-scrollbar="none"` 避免首帧滚动条占宽；卸载后恢复原属性。
