@@ -1,19 +1,9 @@
 import manifest from "@violet/ui/component-manifest.json";
 import type { ComponentType } from "react";
+import type { Category } from "./category";
 
 /** 按占地划分的展区，决定展品陈列在哪间展厅。 */
 export type Zone = "banner" | "stage" | "shelf" | "field" | "content";
-
-/** 按用途划分的类别，只用作筛选。 */
-export type Category =
-	| "action"
-	| "form"
-	| "navigation"
-	| "overlay"
-	| "feedback"
-	| "display"
-	| "content"
-	| "layout";
 
 /** 展品静止态与展开态所需的最小舞台空间，单位 px。 */
 export interface Footprint {
@@ -62,17 +52,6 @@ export const ZONES: { id: Zone; name: string; rule: string }[] = [
 	{ id: "shelf", name: "微件架", rule: "一个展柜放一整族" },
 	{ id: "field", name: "字段", rule: "带标签、提示与展开态" },
 	{ id: "content", name: "内容", rule: "放在正文语境里" },
-];
-
-export const CATEGORIES: { id: Category; name: string }[] = [
-	{ id: "action", name: "操作" },
-	{ id: "form", name: "表单" },
-	{ id: "navigation", name: "导航" },
-	{ id: "overlay", name: "浮层" },
-	{ id: "feedback", name: "反馈" },
-	{ id: "display", name: "展示" },
-	{ id: "content", name: "内容" },
-	{ id: "layout", name: "布局" },
 ];
 
 export const STATUS_LABEL: Record<ExhibitStatus, string> = {

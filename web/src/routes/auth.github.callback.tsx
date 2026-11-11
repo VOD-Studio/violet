@@ -10,14 +10,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { z } from "zod";
-
-const searchSchema = z.object({
-	code: z.string().optional(),
-});
 
 export const Route = createFileRoute("/auth/github/callback")({
-	validateSearch: searchSchema,
+	validateSearch: (search: Record<string, unknown>): { code?: string } =>
+		typeof search.code === "string" ? { code: search.code } : {},
 	component: GithubCallbackPage,
 });
 

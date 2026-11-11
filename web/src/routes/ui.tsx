@@ -1,10 +1,9 @@
-import type { ShowcaseSearch } from "@features/ui-showcase/model/search";
-import { showcaseSearchSchema } from "@features/ui-showcase/model/search";
+import { parseShowcaseSearch, type ShowcaseSearch } from "@features/ui-showcase/model/search";
 import { ShowcasePage } from "@features/ui-showcase/ui/ShowcasePage";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/ui")({
-	validateSearch: showcaseSearchSchema,
+	validateSearch: parseShowcaseSearch,
 	head: () => ({
 		meta: [
 			{ title: "组件陈列室 · @violet/ui" },

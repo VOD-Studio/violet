@@ -18,18 +18,21 @@ import { Button, GithubIcon, GoogleIcon, Input, Label } from "@violet/ui";
 import type { ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { z } from "zod";
 
 /**
- * loginSearchSchema - 登录页 URL 查询参数
+ * 登录页 URL 查询参数；非字符串值回落为默认值。
  *
  * - redirect: 登录成功后跳转的目标路径，默认回到首页。
  * - email: 预填邮箱（注册/找回密码成功后跳转时传入，省去用户重复输入）。
  */
-const loginSearchSchema = z.object({
-	redirect: z.string().optional().catch("/"),
-	email: z.string().optional().catch(""),
-});
+function parseLoginSearch(search: Record<string, unknown>): { redirect?: string; email?: string } {
+	const result: { redirect?: string; email?: string } = {};
+	if (search.redirect !== undefined)
+		result.redirect = typeof search.redirect === "string" ? search.redirect : "/";
+	if (search.email !== undefined)
+		result.email = typeof search.email === "string" ? search.email : "";
+	return result;
+}
 
 /**
  * 后端未返回 message 时的兜底文案（按状态码）。正常路径下后端会给出
@@ -48,7 +51,7 @@ const FALLBACK_BY_STATUS: Record<number, string> = {
  */
 export const Route = createFileRoute("/login")({
 	ssr: false,
-	validateSearch: loginSearchSchema,
+	validateSearch: parseLoginSearch,
 	beforeLoad: ({ context, search }) => {
 		// 已登录(网络确认)则重定向到目标页,避免已登录用户看到登录页。
 		// 只认 context.auth(父路由 __root.beforeLoad 已 await getAuthSession 的准确网络判定)。

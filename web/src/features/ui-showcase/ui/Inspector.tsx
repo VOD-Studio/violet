@@ -5,14 +5,8 @@ import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useCaseFit } from "../hooks/use-case-fit";
-import {
-	CASE_PADDING,
-	CATEGORIES,
-	type Exhibit,
-	exhibitStatus,
-	STATUS_LABEL,
-	ZONES,
-} from "../model/exhibit";
+import { CATEGORIES } from "../model/category";
+import { CASE_PADDING, type Exhibit, exhibitStatus, STATUS_LABEL, ZONES } from "../model/exhibit";
 import type { ShowcaseSearch } from "../model/search";
 import { CaseFitBadge } from "./CaseFitBadge";
 import { plateNumber } from "./ExhibitCase";
