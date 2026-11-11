@@ -5,7 +5,8 @@
  * 共用同一份 envelope 路由表，保证 SSR loader 与浏览器侧请求看到相同数据。
  */
 
-/** 首页 loader 必需的站点身份（含卷首引言，驱动 Epigraph 渲染）。 */
+import { createHash } from "node:crypto";
+
 const SITE_IDENTITY = {
 	site_name: "Violet",
 	site_url: "https://contract.local",
@@ -468,11 +469,96 @@ export const PROJECTS_FIXTURE = [
 /** 实时状态未公开或无人在线时的应答：顶栏不显示活动。 */
 const NO_PRESENCE = { generated_at: "2026-10-01T00:00:00Z", devices: [] };
 
+/** 批注契约：contract-rich-code 首段带一条划线批注，可回复、可再发段评。 */
+const ANNOTATION_TEXT = "增强加载失败时，这段正文始终保留。";
+const ANNOTATION_BLOCK_ID = createHash("sha256").update(ANNOTATION_TEXT).digest("hex").slice(0, 8);
+const CODE_POST_ID = "10000000-0000-0000-0000-000000000011";
+const ANNOTATION_COMMENT = {
+	id: "51000000-0000-0000-0000-000000000001",
+	post_id: CODE_POST_ID,
+	depth: 0,
+	author_name: "契约读者",
+	avatar_url: "",
+	body: "这段原文被划线批注。",
+	pictures: [],
+	is_author: false,
+	anchor: {
+		block_id: ANNOTATION_BLOCK_ID,
+		start_offset: 0,
+		end_offset: 6,
+		selected_text: ANNOTATION_TEXT.slice(0, 6),
+		block_text_hash: ANNOTATION_BLOCK_ID,
+	},
+	status: "approved",
+	created_at: "2026-11-01T10:00:00Z",
+	replies: [],
+	replies_total: 0,
+};
+/** 批注摘要按块聚合；提交新的顶层批注后计数增加，划线（划线节点）会被整体重建。 */
+const annotationSummary = () => [
+	{
+		block_id: ANNOTATION_BLOCK_ID,
+		count: 1 + postedAnnotations,
+		authors: [
+			{ name: "契约读者", is_ai: false, count: 1 },
+			...(postedAnnotations > 0
+				? [{ name: "契约管理员", is_ai: false, count: postedAnnotations }]
+				: []),
+		],
+		ranges: [
+			{ start: 0, end: 6, is_ai: false, author_name: "契约读者", is_author: false },
+			...(postedAnnotations > 0
+				? [
+					{
+						start: 8,
+						end: 12,
+						is_ai: false,
+						author_name: "契约管理员",
+						is_author: false,
+					},
+				]
+				: []),
+		],
+	},
+];
+
+/** 本进程内提交过的顶层批注数；批注摘要随之变化，模拟后端聚合更新。 */
+let postedAnnotations = 0;
+
+
 /** 与后端 envelope 语义一致的路由表；浏览器侧 page.route 复用同一份数据。
  * cookie 含 contract_admin=1 时按已登录 root 应答会话与后台数据（工具方言契约用）。 */
-export function handle(method, pathname, search, cookie = "") {
+export function handle(method, pathname, search, cookie = "", rawBody = "") {
 	const params = new URLSearchParams(search || "");
 	const isAdminActor = /(?:^|;\s*)contract_admin=1(?:;|$)/.test(cookie);
+	if (
+		method === "POST" &&
+		pathname === `/api/v1/posts/${CODE_POST_ID}/comments`
+	) {
+		// 回执按已登录直发处理：approved 立即可见，回复带线程信息供乐观更新
+		const body = JSON.parse(rawBody || "{}");
+		if (!body.parent_id) postedAnnotations += 1;
+		return {
+			status: 200,
+			body: envelope({
+				id: `52000000-0000-0000-0000-${String(Math.floor(Math.random() * 1e12)).padStart(12, "0")}`,
+				post_id: CODE_POST_ID,
+				parent_id: body.parent_id,
+				thread_root_id: body.parent_id,
+				depth: body.parent_id ? 1 : 0,
+				author_name: "契约管理员",
+				avatar_url: "",
+				body: body.body,
+				pictures: [],
+				is_author: false,
+				anchor: body.anchor,
+				status: "approved",
+				created_at: new Date().toISOString(),
+				replies: [],
+				replies_total: 0,
+			}),
+		};
+	}
 	if (
 		method === "POST" &&
 		RICH_CONTENT_POSTS.some((post) => pathname === `/api/v1/posts/${post.id}/view`)
@@ -510,12 +596,22 @@ export function handle(method, pathname, search, cookie = "") {
 		(post) => pathname === `/api/v1/posts/${post.slug}`,
 	);
 	if (richContentPost) return { status: 200, body: envelope(richContentPost) };
+	if (pathname === `/api/v1/posts/${CODE_POST_ID}/annotations/summary`) {
+		return { status: 200, body: envelope(annotationSummary()) };
+	}
 	if (
 		RICH_CONTENT_POSTS.some(
 			(post) => pathname === `/api/v1/posts/${post.id}/annotations/summary`,
 		)
 	) {
 		return { status: 200, body: envelope([]) };
+	}
+	if (
+		pathname === `/api/v1/posts/${CODE_POST_ID}/comments` &&
+		params.get("type") === "annotation" &&
+		params.get("block_id") === ANNOTATION_BLOCK_ID
+	) {
+		return { status: 200, body: paged([ANNOTATION_COMMENT], Number(params.get("limit") || 20)) };
 	}
 	if (
 		RICH_CONTENT_POSTS.some((post) => pathname === `/api/v1/posts/${post.id}/comments`)

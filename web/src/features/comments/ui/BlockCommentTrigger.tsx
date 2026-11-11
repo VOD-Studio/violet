@@ -208,7 +208,10 @@ export function BlockCommentTrigger({
 
 	const open = (fromKeyboard: boolean) => {
 		if (!current) return;
-		returnFocus.current = fromKeyboard || mode !== "pointer";
+		// 只有键盘唤出（Enter/Space，click.detail 为 0）才在关闭后要回焦点；
+		// 鼠标点开时焦点先于 click 落到入口（mode 已是 keyboard），若据此还焦，
+		// 面板一关焦点又被程序化送回入口，指针悬停会被「键盘接管」挡住。
+		returnFocus.current = fromKeyboard;
 		if (isLoggedIn) current.classList.add(DRAFT_CLASS);
 		setComposerBlock(current);
 	};

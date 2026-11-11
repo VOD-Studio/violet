@@ -135,19 +135,19 @@ export function AnnotationLayer({
 			const sessionId = ++sessionCounter.current;
 			setActive((cur) =>
 				cur &&
-				cur.blockId === blockId &&
-				cur.rangeKey === rangeKey &&
-				sameAuthorFilter(cur.author, author) &&
-				cur.anchorEl === anchorEl
+					cur.blockId === blockId &&
+					cur.rangeKey === rangeKey &&
+					sameAuthorFilter(cur.author, author) &&
+					cur.anchorEl === anchorEl
 					? null
 					: {
-							blockId,
-							rangeKey,
-							author,
-							anchorEl,
-							returnFocusEl,
-							sessionId: cur?.sessionId ?? sessionId,
-						},
+						blockId,
+						rangeKey,
+						author,
+						anchorEl,
+						returnFocusEl,
+						sessionId: cur?.sessionId ?? sessionId,
+					},
 			);
 		},
 		[],
@@ -202,19 +202,39 @@ export function AnnotationLayer({
 	const summaryByBlock = useMemo(() => new Map(summary.map((b) => [b.block_id, b])), [summary]);
 	const target = active ?? lastActive.current;
 	const block = target ? summaryByBlock.get(target.blockId) : undefined;
+
+	/** 最近解析成功的划线节点；重划间隙里旧节点已脱离文档时顶一帧。 */
+	const lastResolvedAnchor = useRef<HTMLElement | null>(null);
+	/** 回复或刷新会重建划线（旧 mark 节点被替换）；按块与区间重新解析定位参照，面板不漂到视口左上角。 */
+	const resolveAnchorEl = (current: ActivePopover): HTMLElement => {
+		if (current.rangeKey != null) {
+			// blockId 是 8 位十六进制、rangeKey 形如 "12:34"，都无需 CSS 转义
+			const mark = contentRef.current?.querySelector<HTMLElement>(
+				`mark.${MARK_CLASS}[data-annotation-block="${current.blockId}"][data-annotation-range="${current.rangeKey}"]`,
+			);
+			if (mark) {
+				lastResolvedAnchor.current = mark;
+				return mark;
+			}
+		}
+		if (current.anchorEl.isConnected) return current.anchorEl;
+		if (lastResolvedAnchor.current?.isConnected) return lastResolvedAnchor.current;
+		return markerMap.get(current.blockId) ?? current.anchorEl;
+	};
+
 	const popoverTarget: AnnotationPopoverTarget | null =
 		target && block
 			? {
-					blockId: target.blockId,
-					rangeKey: target.rangeKey,
-					sessionId: target.sessionId,
-					author: target.author,
-					anchorEl: target.anchorEl,
-					returnFocusEl: target.returnFocusEl,
-					blockEl: markerMap.get(target.blockId) ?? null,
-					authors: block.authors ?? [],
-					count: block.count,
-				}
+				blockId: target.blockId,
+				rangeKey: target.rangeKey,
+				sessionId: target.sessionId,
+				author: target.author,
+				anchorEl: resolveAnchorEl(target),
+				returnFocusEl: target.returnFocusEl,
+				blockEl: markerMap.get(target.blockId) ?? null,
+				authors: block.authors ?? [],
+				count: block.count,
+			}
 			: null;
 
 	return (

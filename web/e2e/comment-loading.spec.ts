@@ -66,7 +66,10 @@ test("批注工具下载期间和失败后，原生文字选区仍可见", async
 			.locator("[data-article-content] p")
 			.filter({ hasText: ARTICLE_START });
 		const points = await paragraph.evaluate((element) => {
-			const text = element.firstChild;
+			// 首段开头可能已被划线 mark 包住，取第一个非空文本节点
+			const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+			let text = walker.nextNode();
+			while (text && (text.textContent ?? "").length < 6) text = walker.nextNode();
 			if (!text) throw new Error("正文缺少可选文本");
 			const start = document.createRange();
 			start.setStart(text, 0);
@@ -122,9 +125,10 @@ test("段评下载期间可关闭，再次打开失败后仍可关闭", async ({
 	try {
 		await page.goto("/blog/contract-rich-code");
 		await expect(page.locator("[data-article-content] pre.shiki")).toBeVisible();
+		// 首段带划线批注（页边角标负责），段评用未批注的结尾段
 		const paragraph = page
 			.locator("[data-article-content] p")
-			.filter({ hasText: ARTICLE_START });
+			.filter({ hasText: "增强恢复后，这段结尾仍是原来的节点。" });
 		const panel = page.getByRole("dialog", { name: /^发表段评/ });
 		await paragraph.hover();
 		await page.getByRole("button", { name: /^发表段评/ }).click();
@@ -138,7 +142,7 @@ test("段评下载期间可关闭，再次打开失败后仍可关闭", async ({
 		await expect(panel.getByRole("alert")).toContainText("段评表单加载失败");
 		await panel.getByRole("button", { name: "关闭段评", exact: true }).click();
 		await expect(panel).not.toBeVisible();
-		await expect(paragraph).toContainText(ARTICLE_START);
+		await expect(paragraph).toContainText("增强恢复后，这段结尾仍是原来的节点。");
 		expect(await diagnostics()).toEqual([]);
 	} finally {
 		download.resolve();

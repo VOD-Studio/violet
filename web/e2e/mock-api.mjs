@@ -12,12 +12,22 @@ const PORT = Number(process.env.PORT || 9410);
 
 const server = createServer((req, res) => {
 	const url = new URL(req.url, `http://127.0.0.1:${PORT}`);
-	const result = handle(req.method, url.pathname, url.search, req.headers.cookie ?? "");
-	res.writeHead(result.status, {
-		"content-type": result.contentType ?? "application/json; charset=utf-8",
-		"access-control-allow-origin": "*",
+	const chunks = [];
+	req.on("data", (chunk) => chunks.push(chunk));
+	req.on("end", () => {
+		const result = handle(
+			req.method,
+			url.pathname,
+			url.search,
+			req.headers.cookie ?? "",
+			Buffer.concat(chunks).toString("utf8"),
+		);
+		res.writeHead(result.status, {
+			"content-type": result.contentType ?? "application/json; charset=utf-8",
+			"access-control-allow-origin": "*",
+		});
+		res.end(result.body);
 	});
-	res.end(result.body);
 });
 // route.fetch 的连接池不理会 Keep-Alive 超时提示，服务端按时关闭空闲连接时恰好复用会 ECONNRESET；
 // 空闲连接改由客户端在用例结束时关闭。
