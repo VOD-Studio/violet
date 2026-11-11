@@ -40,7 +40,12 @@ export function createRichCodeRenderer(
 		const code = nodeToText(children).replace(/\n$/, "");
 		const language = /language-(\S+)/u.exec(cls)?.[1] ?? "";
 		const embed = findArticleEmbed(language);
-		if (embed) return <LazyArticleEmbed definition={embed} source={code} context={context} />;
+		if (embed)
+			return (
+				<div data-article-embed={embed.kind} style={{ display: "contents" }}>
+					<LazyArticleEmbed definition={embed} source={code} context={context} />
+				</div>
+			);
 
 		if (/\bmath-inline\b/u.test(cls)) {
 			return <InlineMathContent latex={code} />;
