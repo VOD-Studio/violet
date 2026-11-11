@@ -14,23 +14,38 @@ import {
 } from "@dnd-kit/sortable";
 import { cn } from "cn";
 import { useComposedRefs } from "radix-ui/internal";
-import { type ComponentProps, type ReactNode, useId } from "react";
+import { type ComponentProps, type ReactNode, useId, useMemo } from "react";
 import { restrictToList } from "./restrict-to-list";
 import { SortableRow } from "./sortable-row";
 import { useSortableList } from "./use-sortable-list";
 
-const MODIFIERS = [restrictToList];
-
-/** 按稳定标识排序；调用方持有数据与持久化，表单内容更新不会被落位时的快照覆盖。 */
+/**
+ * 按稳定标识排序；调用方持有数据与持久化，表单内容更新不会被落位时的快照覆盖。
+ *
+ * @typeParam T - 列表项数据类型
+ */
 export interface SortableProps<T> extends Omit<ComponentProps<"ol">, "children" | "onChange"> {
 	items: readonly T[];
+	/** 标识必须唯一且稳定，编辑内容或更改顺序时不能改变。 */
 	getId: (item: T) => string | number;
 	getLabel: (item: T) => string;
-	/** 返回 Promise 时等待保存完成；拒绝后保留原顺序并播报失败。 */
+	/**
+	 * 返回 Promise 时等待保存完成；拒绝后保留原顺序并播报失败。
+	 * 成功后仍等待宿主提供新顺序才解锁和恢复焦点，期间允许增删或编辑项目。
+	 */
 	onReorder: (items: T[]) => unknown;
 	renderItem: (item: T, index: number) => ReactNode;
-	/** 菜单的 Portal 容器；未提供时使用 document.body。 */
+	/**
+	 * 菜单的 Portal 容器。
+	 *
+	 * @default document.body
+	 */
 	menuContainer?: HTMLElement | null;
+	/**
+	 * 禁用把手与移动菜单；异步等待只锁排序，不禁用把手的原生焦点能力。
+	 *
+	 * @default false
+	 */
 	disabled?: boolean;
 	"aria-label": string;
 }
@@ -50,6 +65,8 @@ export function Sortable<T>({
 }: SortableProps<T>) {
 	const drag = useSortableList({ items, getId, getLabel, onReorder });
 	const composedRef = useComposedRefs(ref, drag.root);
+	const ids = useMemo(() => items.map(getId), [items, getId]);
+	const modifiers = useMemo(() => [restrictToList(drag.root)], [drag.root]);
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
 		useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -65,7 +82,7 @@ export function Sortable<T>({
 			id={id}
 			sensors={sensors}
 			collisionDetection={closestCenter}
-			modifiers={MODIFIERS}
+			modifiers={modifiers}
 			onDragStart={drag.start}
 			onDragOver={drag.over}
 			onDragCancel={drag.cancel}
@@ -85,12 +102,12 @@ export function Sortable<T>({
 				},
 			}}
 		>
-			<SortableContext items={items.map(getId)} strategy={verticalListSortingStrategy}>
+			<SortableContext items={ids} strategy={verticalListSortingStrategy}>
 				<ol
 					{...props}
 					ref={composedRef}
 					className={cn("v-sortable", className)}
-					aria-busy={drag.settling ? true : undefined}
+					aria-busy={drag.busy || undefined}
 				>
 					{drag.marker && (
 						<li
@@ -107,6 +124,7 @@ export function Sortable<T>({
 							index={index}
 							total={items.length}
 							disabled={disabled}
+							busy={drag.busy}
 							settling={drag.settling}
 							active={drag.activeId === getId(item)}
 							menuContainer={menuContainer}

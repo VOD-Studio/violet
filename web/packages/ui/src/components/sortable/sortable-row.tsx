@@ -18,6 +18,7 @@ interface SortableRowProps {
 	index: number;
 	total: number;
 	disabled: boolean;
+	busy: boolean;
 	active: boolean;
 	settling: SettlingItem | null;
 	menuContainer?: HTMLElement | null;
@@ -32,13 +33,14 @@ export function SortableRow({
 	index,
 	total,
 	disabled,
+	busy,
 	active,
 	settling,
 	menuContainer,
 	onMove,
 	children,
 }: SortableRowProps) {
-	const locked = disabled || Boolean(settling);
+	const locked = disabled || busy;
 	const { setNodeRef, setActivatorNodeRef, attributes, listeners, transform, transition } =
 		useSortable({
 			id,
@@ -60,7 +62,7 @@ export function SortableRow({
 
 	const lifted = active || settling?.id === id;
 	const style: CSSProperties & { "--v-sortable-transition": string | undefined } = {
-		transform: `translate3d(0,${y}px,0)`,
+		transform: y === 0 ? undefined : `translate3d(0,${y}px,0)`,
 		"--v-sortable-transition": settling
 			? "transform 160ms cubic-bezier(.32,.72,0,1)"
 			: transition,
@@ -77,7 +79,7 @@ export function SortableRow({
 					size="sm"
 					variant="ghost"
 					disabled={disabled}
-					aria-disabled={locked || undefined}
+					aria-disabled={disabled || undefined}
 					aria-label={`移动 ${label}，在第 ${index + 1} 位，共 ${total} 项`}
 					className="v-sortable__handle"
 				>
@@ -85,7 +87,7 @@ export function SortableRow({
 				</Button>
 				<div className="v-sortable__content">{children}</div>
 				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
+					<DropdownMenuTrigger asChild disabled={locked}>
 						<Button
 							iconOnly
 							size="sm"
@@ -98,11 +100,17 @@ export function SortableRow({
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="end" container={menuContainer}>
-						<DropdownMenuItem disabled={index === 0} onSelect={() => onMove(-1)}>
+						<DropdownMenuItem
+							disabled={locked || index === 0}
+							onSelect={() => onMove(-1)}
+						>
 							<ArrowUp {...iconProps()} />
 							上移
 						</DropdownMenuItem>
-						<DropdownMenuItem disabled={index === total - 1} onSelect={() => onMove(1)}>
+						<DropdownMenuItem
+							disabled={locked || index === total - 1}
+							onSelect={() => onMove(1)}
+						>
 							<ArrowDown {...iconProps()} />
 							下移
 						</DropdownMenuItem>
