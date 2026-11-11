@@ -310,8 +310,16 @@ export function BlockCommentTrigger({
 							}}
 							onInteractOutside={(event) => {
 								// 聚焦移动不算离开；真正的外部按下才收起
-								if (event.detail.originalEvent.type === "focusin")
+								if (event.detail.originalEvent.type === "focusin") {
 									event.preventDefault();
+									return;
+								}
+								// 鼠标/触屏唤出的面板被外部点击关闭：立即清掉入口跟随的段落，
+								// 不依赖 blur 时序，入口不会残留在旧位置等下一次指针移动
+								if (!returnFocus.current) {
+									setCurrent(null);
+									setMode("pointer");
+								}
 							}}
 							inert={!composerVisible}
 							aria-hidden={!composerVisible || undefined}
