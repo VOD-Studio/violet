@@ -3,6 +3,7 @@ import {
 	closestAnnotatableBlock,
 	listAnnotatableBlocks,
 } from "@features/comments/lib/selection-to-anchor";
+import { createAsyncLoader } from "@shared/lib/create-async-loader";
 import { DeferredContent } from "@shared/ui/deferred-content/DeferredContent";
 import { MessageSquareText } from "lucide-react";
 import { Popover } from "radix-ui";
@@ -20,10 +21,11 @@ import { AnnotationPortal } from "./AnnotationPortal";
 import { AnnotationOverlayContext } from "./annotation-overlay-context";
 import { useExclusivePanel } from "./use-exclusive-panel";
 
-const loadBlockComposer = () =>
+const loadBlockComposer = createAsyncLoader(() =>
 	import("./BlockAnnotationComposer").then((module) => ({
 		default: module.BlockAnnotationComposer,
-	}));
+	})),
+);
 
 /** 指针离开段落后入口延迟隐藏的时间，留给指针经过留白移向入口按钮。 */
 const HIDE_DELAY_MS = 300;
@@ -256,6 +258,10 @@ export function BlockCommentTrigger({
 	};
 
 	const showTrigger = Boolean(visibleBlock && !annotatedBlocks.has(visibleBlock));
+	// 入口一出现就取输入面板的模块：指针移过去点开时多半已经到位，面板直接是输入框。
+	useEffect(() => {
+		if (showTrigger) void loadBlockComposer().catch(() => {});
+	}, [showTrigger]);
 	const excerpt = visibleBlock ? getBlockText(visibleBlock).trim().slice(0, LABEL_EXCERPT) : "";
 	// 服务端渲染出的按钮会在样式随懒加载模块到位之前露在正文左上角，只在浏览器里渲染。
 	if (!hydrated) return null;
@@ -318,16 +324,25 @@ export function BlockCommentTrigger({
 							aria-label="发表段评"
 						>
 							<AnnotationOverlayContext value={composerVisible}>
+								<blockquote className="annotation-quote">
+									{getBlockText(composerBlock)}
+								</blockquote>
 								<DeferredContent
 									defer={false}
 									load={loadBlockComposer}
 									label="段评表单"
-									fallback={<AnnotationPending label="正在准备段评…" />}
+									fallback={
+										<AnnotationPending
+											label="正在准备段评…"
+											className="h-8 pointer-coarse:h-9"
+										/>
+									}
 									componentProps={{
 										block: composerBlock,
 										postId,
 										isLoggedIn,
 										onClose: close,
+										autoFocus: true,
 									}}
 								/>
 							</AnnotationOverlayContext>

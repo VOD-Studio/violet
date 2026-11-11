@@ -1,40 +1,45 @@
-/**
- * AnnotationPending - 批注浮层的等待指示
- *
- * 批注卡与段评面板是小浮层、内容条数不定，形状不可预知——按设计稿「加载」页
- * 用花形指示器而非骨架（梅花为通用款）；300ms 内完成的等待不显示，避免闪现。
- * 减弱动态下的静止由指示器自身的动画规则处理。
- */
-import { FlowerBloom } from "@violet/ui";
+import { getClientThemeState } from "@shared/lib/theme-preference";
+import { FlowerBloom, SEASON_FLOWER } from "@violet/ui";
 import { cn } from "cn";
 import { useEffect, useState } from "react";
 
+/** 等待超过这个时长才画出花形，更快完成的不显示任何加载。 */
+const SHOW_DELAY_MS = 300;
+
 export interface AnnotationPendingProps {
-	/** 可见的一句等待说明；省略时只有花形，读屏仍可感知 */
-	label?: string;
+	/** 读屏播报的等待说明；画面上只有花形。 */
+	label: string;
+	/** 等待区的高度由调用方给定，与随后到位的内容相当，面板不因此改变大小。 */
 	className?: string;
 }
 
-/** 300ms 后才显示的等待指示：花形 + 说明，居中一行。 */
+/**
+ * 批注浮层的块加载：等待区中央描出一朵当季的花，与整页等待同款。
+ *
+ * @remarks 等待区从一开始就占位，花形延后出现；浮层不会先以空壳出现再撑开。
+ */
 export function AnnotationPending({ label, className }: AnnotationPendingProps) {
 	const [visible, setVisible] = useState(false);
 	useEffect(() => {
-		const timer = window.setTimeout(() => setVisible(true), 300);
+		const timer = window.setTimeout(() => setVisible(true), SHOW_DELAY_MS);
 		return () => window.clearTimeout(timer);
 	}, []);
-	if (!visible) return null;
 	return (
 		<div
 			role="status"
 			aria-busy="true"
-			className={cn(
-				"flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground",
-				className,
-			)}
+			className={cn("flex items-center justify-center", className)}
 		>
-			<FlowerBloom kind="plum" size={24} tone="season" aria-hidden="true" />
-			{label && <span>{label}</span>}
-			{!label && <span className="sr-only">加载中</span>}
+			{visible && (
+				<FlowerBloom
+					kind={SEASON_FLOWER[getClientThemeState().preset]}
+					size={24}
+					variant="outline"
+					tone="season"
+					aria-hidden="true"
+				/>
+			)}
+			<span className="sr-only">{label}</span>
 		</div>
 	);
 }

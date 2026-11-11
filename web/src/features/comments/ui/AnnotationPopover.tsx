@@ -180,7 +180,7 @@ function PopoverBody({
 				<AnnotationPopoverHeader target={target} onFilter={onFilter} onClose={onClose} />
 			)}
 			<div className="annotation-scroll annotation-card-list">
-				{query.isLoading && <AnnotationPending label="批注加载中" />}
+				{query.isLoading && <AnnotationPending label="批注加载中" className="py-6" />}
 				{query.isError && (
 					<p role="alert" className="text-sm text-muted-foreground">
 						批注加载失败，请稍后重试。
@@ -201,7 +201,6 @@ function PopoverBody({
 			{target.blockEl && (
 				<div role="group" aria-label="发表段评">
 					<BlockAnnotationComposer
-						embedded
 						block={target.blockEl}
 						postId={postId}
 						isLoggedIn={isLoggedIn}
