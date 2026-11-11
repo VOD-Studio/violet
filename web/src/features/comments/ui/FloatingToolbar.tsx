@@ -9,6 +9,7 @@ import {
 	selectionToAnchor,
 } from "@features/comments/lib/selection-to-anchor";
 import type { Anchor } from "@features/comments/lib/types";
+import { AnnotationCardFrame, AnnotationToolButton, AnnotationToolbar } from "@violet/ui";
 import { Copy, LogIn, MessageSquareQuote } from "lucide-react";
 import { Popover } from "radix-ui";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -319,19 +320,15 @@ export function FloatingToolbar({
 		<>
 			{pos && !composing && (
 				<AnnotationPortal>
-					<div
+					<AnnotationToolbar
 						ref={toolbarRef}
-						role="toolbar"
-						aria-label="批注工具"
 						className="annotation-selection-toolbar"
 						style={{ top: pos.top, left: pos.left }}
 						inert={pos.offscreen}
 						aria-hidden={pos.offscreen || undefined}
 						data-offscreen={pos.offscreen ? "true" : undefined}
 					>
-						<button
-							type="button"
-							className="annotation-tool"
+						<AnnotationToolButton
 							// preventDefault 防止 mousedown 清掉选区：选区一清，工具条就没有可定位的对象。
 							onMouseDown={(event) => event.preventDefault()}
 							onClick={handleAnnotate}
@@ -350,18 +347,15 @@ export function FloatingToolbar({
 									登录后批注
 								</>
 							)}
-						</button>
-						<button
-							type="button"
-							className="annotation-tool"
+						</AnnotationToolButton>
+						<AnnotationToolButton
 							onMouseDown={(event) => event.preventDefault()}
 							onClick={handleCopy}
 						>
 							<Copy className="size-4" aria-hidden="true" />
 							复制
-						</button>
-						<i aria-hidden="true" />
-					</div>
+						</AnnotationToolButton>
+					</AnnotationToolbar>
 				</AnnotationPortal>
 			)}
 			{draft && (
@@ -369,6 +363,7 @@ export function FloatingToolbar({
 					<Popover.Anchor virtualRef={{ current: cardAnchor }} />
 					<AnnotationPortal>
 						<Popover.Content
+							asChild
 							aria-label="新批注"
 							aria-hidden={!cardVisible || !composing ? true : undefined}
 							inert={!cardVisible || !composing}
@@ -386,21 +381,23 @@ export function FloatingToolbar({
 							}}
 							className="annotation-card v-float z-50 outline-none"
 						>
-							<AnnotationOverlayContext value={composing && cardVisible}>
-								<AnnotationQuote>{draft.selectedText}</AnnotationQuote>
-								<AnnotationComposer
-									autoFocus
-									body={body}
-									onBodyChange={setBody}
-									onSubmit={handleSubmit}
-									pending={pending}
-									placeholder="写下你的批注…"
-									editorLabel="批注内容"
-									sendLabel="提交批注"
-									loginRequired={!isLoggedIn}
-									onLoggedIn={handleSubmit}
-								/>
-							</AnnotationOverlayContext>
+							<AnnotationCardFrame>
+								<AnnotationOverlayContext value={composing && cardVisible}>
+									<AnnotationQuote>{draft.selectedText}</AnnotationQuote>
+									<AnnotationComposer
+										autoFocus
+										body={body}
+										onBodyChange={setBody}
+										onSubmit={handleSubmit}
+										pending={pending}
+										placeholder="写下你的批注…"
+										editorLabel="批注内容"
+										sendLabel="提交批注"
+										loginRequired={!isLoggedIn}
+										onLoggedIn={handleSubmit}
+									/>
+								</AnnotationOverlayContext>
+							</AnnotationCardFrame>
 						</Popover.Content>
 					</AnnotationPortal>
 				</Popover.Root>

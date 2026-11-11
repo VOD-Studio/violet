@@ -1,4 +1,5 @@
 import type { Comment } from "@entities/comment/model/types";
+import { AnnotationCardFrame } from "@violet/ui";
 import { Popover } from "radix-ui";
 import { useContext, useEffect, useRef, useState } from "react";
 import { useBlockAnnotations } from "../api/queries";
@@ -87,6 +88,7 @@ export function AnnotationPopover({
 			<Popover.Anchor virtualRef={{ current: target.anchorEl }} />
 			<AnnotationPortal>
 				<Popover.Content
+					asChild
 					ref={contentRef}
 					aria-label={target.rangeKey === null ? "段落批注" : "批注"}
 					aria-hidden={offscreen || !open ? true : undefined}
@@ -117,16 +119,18 @@ export function AnnotationPopover({
 					}}
 					className="annotation-card v-float z-50 outline-none"
 				>
-					<AnnotationOverlayContext value={open && !offscreen}>
-						<PopoverBody
-							key={`${target.blockId}:${target.sessionId}`}
-							target={target}
-							postId={postId}
-							isLoggedIn={isLoggedIn}
-							onFilter={onFilter}
-							onClose={onClose}
-						/>
-					</AnnotationOverlayContext>
+					<AnnotationCardFrame>
+						<AnnotationOverlayContext value={open && !offscreen}>
+							<PopoverBody
+								key={`${target.blockId}:${target.sessionId}`}
+								target={target}
+								postId={postId}
+								isLoggedIn={isLoggedIn}
+								onFilter={onFilter}
+								onClose={onClose}
+							/>
+						</AnnotationOverlayContext>
+					</AnnotationCardFrame>
 				</Popover.Content>
 			</AnnotationPortal>
 		</Popover.Root>

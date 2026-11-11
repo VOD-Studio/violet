@@ -345,76 +345,9 @@
 .annotation-selection-toolbar {
 	position: fixed;
 	z-index: 50;
-	display: flex;
-	gap: 2px;
-	padding: 4px;
-	border: 1px solid var(--ol);
-	border-radius: 10px;
-	background-color: var(--popover);
-	box-shadow: var(--shadow-soft);
 	transform: translate(-50%, -100%);
-	animation: annotation-toolbar-in 0.15s cubic-bezier(0.32, 0.72, 0, 1);
-}
-.annotation-selection-toolbar > i {
-	position: absolute;
-	bottom: -5px;
-	left: 50%;
-	width: 9px;
-	height: 9px;
-	margin-left: -4.5px;
-	border: 0 solid var(--ol);
-	border-right-width: 1px;
-	border-bottom-width: 1px;
-	background-color: var(--popover);
-	transform: rotate(45deg);
-	pointer-events: none;
-}
-.annotation-tool {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-	height: 32px;
-	padding: 0 10px;
-	border: 0;
-	border-radius: 8px;
-	background: transparent;
-	color: var(--foreground);
-	font: inherit;
-	font-size: 13px;
-	cursor: pointer;
-	transition: background-color 0.14s ease-out;
-}
-.annotation-tool:hover:not(:disabled) {
-	background-color: var(--muted);
-}
-.annotation-tool:focus-visible {
-	outline: 2px solid var(--ring);
-	outline-offset: 0;
-}
-.annotation-tool:disabled {
-	cursor: not-allowed;
-	opacity: 0.5;
 }
 
-/* 批注卡：宽 320 的纸片浮层；出现与收起的动效由 .v-float 提供（200ms / 140ms）。 */
-.annotation-card {
-	box-sizing: border-box;
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-	inline-size: 20rem;
-	max-inline-size: calc(100vw - 2rem);
-	max-block-size: min(32rem, var(--radix-popover-content-available-height, 100dvh));
-	padding: 12px;
-	border: 1px solid var(--ol);
-	border-radius: 12px;
-	background-color: var(--popover);
-	color: var(--popover-foreground);
-	box-shadow: var(--shadow-soft);
-}
-.annotation-card[data-state="closed"] {
-	pointer-events: none;
-}
 /* 锚点滚出视口：整张卡隐藏但不销毁，草稿与焦点状态保留。 */
 .annotation-card[data-offscreen="true"],
 .annotation-selection-toolbar[data-offscreen="true"] {
@@ -626,13 +559,6 @@
 	}
 }
 
-@keyframes annotation-toolbar-in {
-	from {
-		opacity: 0;
-		transform: translate(-50%, calc(-100% + 4px));
-	}
-}
-
 @media (prefers-reduced-motion: reduce) {
 	.annotation-mark,
 	.annotation-draft-mark,
@@ -646,7 +572,6 @@
 		animation: none;
 	}
 	.annotation-mark,
-	.annotation-tool,
 	.annotation-trigger,
 	.annotation-marker > :is(.annotation-avatar-wrap, .annotation-avatar) {
 		transition: none;

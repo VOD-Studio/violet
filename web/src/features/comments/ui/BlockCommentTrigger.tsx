@@ -5,6 +5,7 @@ import {
 } from "@features/comments/lib/selection-to-anchor";
 import { createAsyncLoader } from "@shared/lib/create-async-loader";
 import { DeferredContent } from "@shared/ui/deferred-content/DeferredContent";
+import { AnnotationCardFrame } from "@violet/ui";
 import { MessageSquareText } from "lucide-react";
 import { Popover } from "radix-ui";
 import {
@@ -304,6 +305,7 @@ export function BlockCommentTrigger({
 					<Popover.Anchor virtualRef={{ current: composerBlock }} />
 					<AnnotationPortal>
 						<Popover.Content
+							asChild
 							className="annotation-card annotation-block-composer v-float pointer-events-auto z-50 outline-none"
 							align="end"
 							side="bottom"
@@ -324,27 +326,29 @@ export function BlockCommentTrigger({
 							data-offscreen={!composerVisible ? "true" : undefined}
 							aria-label="发表段评"
 						>
-							<AnnotationOverlayContext value={composerVisible}>
-								<AnnotationQuote>{getBlockText(composerBlock)}</AnnotationQuote>
-								<DeferredContent
-									defer={false}
-									load={loadBlockComposer}
-									label="段评表单"
-									fallback={
-										<AnnotationPending
-											label="正在准备段评…"
-											className="h-8 pointer-coarse:h-9"
-										/>
-									}
-									componentProps={{
-										block: composerBlock,
-										postId,
-										isLoggedIn,
-										onClose: close,
-										autoFocus: true,
-									}}
-								/>
-							</AnnotationOverlayContext>
+							<AnnotationCardFrame>
+								<AnnotationOverlayContext value={composerVisible}>
+									<AnnotationQuote>{getBlockText(composerBlock)}</AnnotationQuote>
+									<DeferredContent
+										defer={false}
+										load={loadBlockComposer}
+										label="段评表单"
+										fallback={
+											<AnnotationPending
+												label="正在准备段评…"
+												className="h-8 pointer-coarse:h-9"
+											/>
+										}
+										componentProps={{
+											block: composerBlock,
+											postId,
+											isLoggedIn,
+											onClose: close,
+											autoFocus: true,
+										}}
+									/>
+								</AnnotationOverlayContext>
+							</AnnotationCardFrame>
 						</Popover.Content>
 					</AnnotationPortal>
 				</Popover.Root>
