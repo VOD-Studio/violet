@@ -1,10 +1,10 @@
+import type { AggregatedReaction } from "@entities/reaction/model/types";
 import { apiDelete, apiGet, apiGetPaged, apiPatch, apiPost } from "@shared/api/request";
 import type {
 	BotCommandsResponse,
 	ChatConversation,
 	ChatMember,
 	ChatMessage,
-	ChatMessageReaction,
 	ChatMessageReader,
 	ChatUnreadCount,
 	ChatUser,
@@ -41,7 +41,7 @@ export const fetchChatMessages = (id: string, cursor?: string, limit = 50, signa
 	});
 
 export const fetchChatMessageReactions = (conversationID: string, messageID: string) =>
-	apiGet<ChatMessageReaction[]>(
+	apiGet<AggregatedReaction[]>(
 		`/chat/conversations/${conversationID}/messages/${messageID}/reactions`,
 	);
 export const fetchChatMessageReaders = (conversationID: string, messageID: string) =>

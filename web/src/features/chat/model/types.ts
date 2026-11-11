@@ -1,4 +1,5 @@
 import type { CommentEmoteRef } from "@entities/comment/model/types";
+import type { AggregatedReaction } from "@entities/reaction/model/types";
 
 export type ConversationKind = "direct" | "room";
 export type MessageType = "text" | "image" | "system" | "tweet_share";
@@ -80,15 +81,6 @@ export interface ChatMessageReference {
 	is_deleted: boolean;
 }
 
-export interface ChatMessageReaction {
-	emoji_id: number;
-	emoji_name: string;
-	emoji_url: string;
-	gif_url: string;
-	count: number;
-	self: boolean;
-}
-
 export interface ChatMessage {
 	/** 仅发送者可见，与发送请求的 Idempotency-Key 一致。 */
 	client_message_id?: string;
@@ -106,7 +98,7 @@ export interface ChatMessage {
 	media?: ChatMedia[];
 	shared_tweet?: SharedTweet;
 	reply_to?: ChatMessageReference;
-	reactions: ChatMessageReaction[];
+	reactions: AggregatedReaction[];
 	/** 已读回执；仅自己发送的非系统消息附带（见 CONTEXT.md「已读回执」词条） */
 	read_state?: ChatMessageReadState;
 	is_deleted: boolean;

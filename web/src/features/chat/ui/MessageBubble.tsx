@@ -1,17 +1,14 @@
 /**
  * 消息气泡与 Bot 回复卡片，承载操作条和表情反应。
  */
-import type { Emoji } from "@entities/emoji/model/types";
-import { EmojiPicker } from "@features/emojis/ui/EmojiPicker";
 import { stripPlaceholdersForPreview } from "@shared/ui/rich-text-input/use-rich-text-input";
 import { Spinner } from "@violet/ui";
 import { cn } from "cn";
-import { Check, Copy, Pencil, Reply, Smile, Trash2, TriangleAlert } from "lucide-react";
+import { Check, Copy, Pencil, Reply, Trash2, TriangleAlert } from "lucide-react";
 import { motion } from "motion/react";
 import type { PointerEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useAddChatMessageReaction, useRemoveChatMessageReaction } from "../api/queries";
 import { useChatAppearance } from "../hooks/useChatAppearance";
 import { imageBubbleContent } from "../lib/conversation";
 import type { OutgoingMessage } from "../model/chat-outbox";
@@ -26,8 +23,8 @@ import { AppearanceBadgeStrip } from "./appearance/AppearanceBadgeStrip";
 import { BotReplyCard } from "./BotReplyCard";
 import { BubbleShell, BubbleTimestamp } from "./bubble-shell";
 import { ChatMessageContent } from "./ChatMessageContent";
-import { ChatReactionBar } from "./ChatReactionBar";
 import { MessageEditComposer } from "./MessageEditComposer";
+import { MessageReactions } from "./MessageReactions";
 import { MessageReadReceipt } from "./MessageReadReceipt";
 import { TweetShareCard } from "./TweetShareCard";
 
@@ -74,21 +71,10 @@ export function MessageBubble({
 	const mine = message.sender.id === currentUserID;
 	const isBotReply = message.sender.is_bot && message.type === "text";
 	const [editing, setEditing] = useState(false);
-	const reactions = message.reactions ?? [];
-	const selfReactionIds = useMemo(
-		() =>
-			new Set(
-				reactions.filter((reaction) => reaction.self).map((reaction) => reaction.emoji_id),
-			),
-		[reactions],
-	);
 	const mergedEmote = useMemo(
 		() => (message.custom_emote ? { ...emoteMap, ...message.custom_emote } : emoteMap),
 		[emoteMap, message.custom_emote],
 	);
-	const addReaction = useAddChatMessageReaction(message.conversation_id, message.id);
-	const removeReaction = useRemoveChatMessageReaction(message.conversation_id, message.id);
-	const reactionBusy = addReaction.isPending || removeReaction.isPending;
 	const [copied, setCopied] = useState(false);
 	const [touchActionsVisible, setTouchActionsVisible] = useState(false);
 	const longPressTimer = useRef<number | null>(null);
@@ -122,28 +108,6 @@ export function MessageBubble({
 		} catch {
 			toast.error("复制失败");
 		}
-	};
-
-	const handleToggleReaction = (emojiID: number) => {
-		if (reactionBusy) return;
-		if (selfReactionIds.has(emojiID)) {
-			removeReaction.mutate(emojiID);
-			return;
-		}
-		if (selfReactionIds.size >= 3) {
-			toast.info("单条消息最多添加 3 种表情");
-			return;
-		}
-		addReaction.mutate(emojiID);
-	};
-
-	const handleAddReaction = (emoji: Emoji) => {
-		if (reactionBusy || selfReactionIds.has(emoji.id)) return;
-		if (selfReactionIds.size >= 3) {
-			toast.info("单条消息最多添加 3 种表情");
-			return;
-		}
-		addReaction.mutate(emoji.id);
 	};
 
 	if (message.type === "system") {
@@ -293,28 +257,6 @@ export function MessageBubble({
 							>
 								{!sending && !message.is_deleted && (
 									<div className="pointer-events-auto flex items-center gap-0.5 rounded-full border border-border bg-card p-1 shadow-md">
-										<EmojiPicker
-											align={mine ? "start" : "end"}
-											onSelect={handleAddReaction}
-											selectedIds={selfReactionIds}
-											showMyEmojis={false}
-											trigger={
-												<button
-													aria-label={
-														selfReactionIds.size >= 3
-															? "消息表情数量已达上限"
-															: "添加消息表情"
-													}
-													className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-													disabled={
-														reactionBusy || selfReactionIds.size >= 3
-													}
-													type="button"
-												>
-													<Smile className="size-3.5" />
-												</button>
-											}
-										/>
 										{mine && (
 											<button
 												aria-label="编辑消息"
@@ -380,10 +322,13 @@ export function MessageBubble({
 					mine ? "mr-12.5 items-end justify-self-end text-right" : "ml-12.5 items-start",
 				)}
 			>
-				<ChatReactionBar
-					disabled={reactionBusy || Boolean(sending)}
-					onToggle={handleToggleReaction}
-					reactions={reactions}
+				<MessageReactions
+					conversationId={message.conversation_id}
+					messageId={message.id}
+					currentUserId={currentUserID}
+					disabled={Boolean(sending) || message.is_deleted}
+					reactions={message.reactions ?? []}
+					mine={mine}
 				/>
 				{(sending || (mine && !message.is_deleted)) && (
 					<div className="flex min-h-4 max-w-full items-center">
