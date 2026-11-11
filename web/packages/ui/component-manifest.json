@@ -361,6 +361,13 @@
 			"css": "src/components/sonner/sonner.css"
 		},
 		{
+			"name": "sortable",
+			"status": "foundation",
+			"entry": "src/components/sortable/index.ts",
+			"css": "src/components/sortable/sortable.css",
+			"documentation": "web/packages/ui/docs/components/sortable.md"
+		},
+		{
 			"name": "steps",
 			"status": "foundation",
 			"entry": "src/components/steps/index.ts",

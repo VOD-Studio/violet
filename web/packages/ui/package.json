@@ -302,6 +302,11 @@
 			"import": "./src/components/sonner/index.ts",
 			"default": "./src/components/sonner/index.ts"
 		},
+		"./sortable": {
+			"types": "./src/components/sortable/index.ts",
+			"import": "./src/components/sortable/index.ts",
+			"default": "./src/components/sortable/index.ts"
+		},
 		"./steps": {
 			"types": "./src/components/steps/index.ts",
 			"import": "./src/components/steps/index.ts",
@@ -438,6 +443,7 @@
 		"./components/skeleton.css": "./src/components/skeleton/skeleton.css",
 		"./components/slider.css": "./src/components/slider/slider.css",
 		"./components/sonner.css": "./src/components/sonner/sonner.css",
+		"./components/sortable.css": "./src/components/sortable/sortable.css",
 		"./components/steps.css": "./src/components/steps/steps.css",
 		"./components/switch.css": "./src/components/switch/switch.css",
 		"./components/table.css": "./src/components/table/table.css",
@@ -761,6 +767,11 @@
 				"import": "./dist/components/sonner/index.js",
 				"default": "./dist/components/sonner/index.js"
 			},
+			"./sortable": {
+				"types": "./dist/components/sortable/index.d.ts",
+				"import": "./dist/components/sortable/index.js",
+				"default": "./dist/components/sortable/index.js"
+			},
 			"./steps": {
 				"types": "./dist/components/steps/index.d.ts",
 				"import": "./dist/components/steps/index.js",
@@ -897,6 +908,7 @@
 			"./components/skeleton.css": "./dist/components/skeleton.css",
 			"./components/slider.css": "./dist/components/slider.css",
 			"./components/sonner.css": "./dist/components/sonner.css",
+			"./components/sortable.css": "./dist/components/sortable.css",
 			"./components/steps.css": "./dist/components/steps.css",
 			"./components/switch.css": "./dist/components/switch.css",
 			"./components/table.css": "./dist/components/table.css",
@@ -920,6 +932,8 @@
 		"react-dom": "^19.0.0"
 	},
 	"dependencies": {
+		"@dnd-kit/core": "^6.3.1",
+		"@dnd-kit/sortable": "^10.0.0",
 		"@types/lodash": "4.17.25",
 		"cn": "^0.4.0",
 		"lucide-react": "^1.23.0",

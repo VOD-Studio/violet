@@ -1,0 +1,117 @@
+@import "../button/button.css";
+@import "../dropdown-menu/dropdown-menu.css";
+
+@layer components {
+	.v-sortable {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		margin: 0;
+		padding: 4px;
+		list-style: none;
+	}
+
+	.v-sortable__slot {
+		position: relative;
+		min-inline-size: 0;
+		border-radius: 12px;
+	}
+
+	.v-sortable__slot[data-lifted] {
+		z-index: 3;
+		background: var(--muted);
+	}
+
+	.v-sortable__row {
+		position: relative;
+		display: flex;
+		align-items: flex-start;
+		gap: 10px;
+		min-block-size: 48px;
+		box-sizing: border-box;
+		padding: 8px 4px;
+		border-radius: 12px;
+		color: var(--foreground);
+		font-size: 14px;
+		transition: var(--v-sortable-transition, none);
+	}
+
+	.v-sortable__row:hover {
+		background: color-mix(in oklab, var(--muted) 55%, transparent);
+	}
+
+	.v-sortable__slot[data-lifted] > .v-sortable__row {
+		background: var(--card);
+		box-shadow: var(--shadow-soft);
+	}
+
+	.v-sortable__content {
+		flex: 1;
+		min-inline-size: 0;
+		align-self: center;
+	}
+
+	.v-sortable__handle,
+	.v-sortable__menu {
+		flex: none;
+		inline-size: 32px;
+		block-size: 32px;
+		min-block-size: 32px;
+		padding: 0;
+		border-radius: 8px;
+		opacity: 0;
+		transition: opacity 120ms ease-out;
+	}
+
+	.v-sortable__handle {
+		cursor: grab;
+		touch-action: none;
+	}
+
+	.v-sortable__row:hover > :is(.v-sortable__handle, .v-sortable__menu),
+	.v-sortable__row:focus-within > :is(.v-sortable__handle, .v-sortable__menu),
+	.v-sortable__slot[data-lifted]
+		> .v-sortable__row
+		> :is(.v-sortable__handle, .v-sortable__menu) {
+		opacity: 1;
+	}
+
+	.v-sortable__slot[data-lifted] .v-sortable__handle {
+		cursor: grabbing;
+	}
+
+	.v-sortable__handle:focus-visible,
+	.v-sortable__menu:focus-visible {
+		opacity: 1;
+	}
+
+	.v-sortable__announcement {
+		position: absolute;
+		inline-size: 1px;
+		block-size: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	@media (hover: none) {
+		.v-sortable__handle,
+		.v-sortable__menu {
+			opacity: 1;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-sortable__row,
+		.v-sortable__handle,
+		.v-sortable__menu {
+			transition: none;
+		}
+	}
+
+	[data-motion="reduce"] :is(.v-sortable__row, .v-sortable__handle, .v-sortable__menu) {
+		transition: none;
+	}
+}

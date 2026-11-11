@@ -48,6 +48,7 @@ import { separatorExhibit } from "./separator";
 import { sheetExhibit } from "./sheet";
 import { sliderExhibit } from "./slider";
 import { sonnerExhibit } from "./sonner";
+import { sortableExhibit } from "./sortable";
 import { switchExhibit } from "./switch";
 import { tableExhibit } from "./table";
 import { tabsExhibit } from "./tabs";
@@ -117,6 +118,7 @@ export const EXHIBITS: Exhibit[] = [
 	scrollAreaExhibit,
 	listExhibit,
 	treeExhibit,
+	sortableExhibit,
 	accordionExhibit,
 	alertExhibit,
 	chartExhibit,

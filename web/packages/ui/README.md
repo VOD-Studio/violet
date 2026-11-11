@@ -111,6 +111,8 @@ Segmented 是带滑动指示器的分段控制：`orientation` 选横向或竖�
 
 `ScrollArea` 统一元素内的原生滚动、覆盖式滑块与按位置出现的边缘渐隐；`orientation="horizontal"` 或 `"both"` 同时提供左右按钮，必须用 `aria-label` 或 `aria-labelledby` 命名。`className` 控制布局，ref 与原生属性指向滚动视口。整页使用 `<DocumentScrollbar />`，不接管 `window` 滚动，浮层锁滚动时同步隐藏，卸载恢复原状态。两者从 `@violet/ui` 或 `@violet/ui/scroll-area` 导入，按需 CSS 为 `@violet/ui/components/scroll-area.css`。见[滚动区域契约](docs/components/scroll-area.md)与[展品](https://xunrua.top/ui?open=scroll-area)。
 
+`Sortable` 用于章节、图片与设置区块等手动排序列表：宿主持有 `items` 和 `onReorder`，每项提供稳定标识与可读名称。把手支持指针及空格/Enter 拿起、↑↓ 移动、Esc 取消，移动菜单提供上移和下移；160ms 落位后才提交，减弱动态直接完成。参见[排序契约](docs/components/sortable.md)与[展品](https://xunrua.top/ui?open=sortable)，按需入口为 `@violet/ui/sortable` 和 `@violet/ui/components/sortable.css`。
+
 `badge` 单元包含 `Tag`、`TagToggle`、`Badge`、`Count`、`Dot` 与 `BadgeAnchor`：Tag 给内容分类，TagToggle 是带 `aria-pressed` 的筛选标签，Badge 以 `tone` 表示记录状态且文字本身就是信息，Count 与 Dot 提示未读。胶囊 Count 与 Dot 对读屏隐藏，数量要写进宿主的可访问名称；为 0 时 Count 不渲染，超过 `max` 显示 `99+`。`avatar` 单元的 Avatar 在图片未到时呼吸占位、失败退回首字，`alt` 默认取 `name`，`alt=""` 表示装饰，在线状态与作者标记写进可访问名称；AvatarGroup 超出 `max` 折成「+N」，指针悬停时展开压叠，触屏不展开，减弱动态下直接切换。Kbd 渲染原生 `<kbd>`，一个组合键一个键帽，未传 `platform` 时水合后才按访客系统切换符号。`card` 单元保留 `Card*` 复合结构并新增相框卡 `CardFrame*`，只有 `CardFrameTitle asChild` 的链接承载点击并扩到整张卡；Separator 装饰用法为 `role="none"`，区块之间传 `decorative={false}` 得到 `<hr>`；Skeleton 默认 `aria-hidden`，只用凹陷色起伏，不加扫光。以上单元均从 `@violet/ui` 或同名叶子入口导入，按需 CSS 为 `@violet/ui/components/<name>.css`，[陈列室展品](https://xunrua.top/ui?open=badge)可逐态查看，独立 consumer 的 `?preview=display` 覆盖头像加载失败、计数、标签、键帽平台与相框卡点击。
 
 分隔线的圆点、带字与区块形态可在[独立展品](https://xunrua.top/ui?open=separator)中并排查看；卡片与骨架留在[卡片展品](https://xunrua.top/ui?open=card)。

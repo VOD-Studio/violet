@@ -53,6 +53,7 @@ export * from "./components/sheet/index";
 export * from "./components/skeleton/index";
 export * from "./components/slider/index";
 export * from "./components/sonner/index";
+export * from "./components/sortable/index";
 export * from "./components/steps/index";
 export * from "./components/switch/index";
 export * from "./components/table/index";
