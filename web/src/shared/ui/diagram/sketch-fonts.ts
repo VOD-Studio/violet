@@ -1,3 +1,4 @@
+import xiaolaiStylesheet from "@chinese-fonts/xiaolai/dist/Xiaolai/result.css?url";
 import excalifontLicense from "../../../assets/fonts/diagram/Excalifont-OFL.txt?raw";
 import xiaolaiLicense from "../../../assets/fonts/diagram/Xiaolai-OFL.txt?raw";
 import diagramFontCss from "../../../styles/diagram-fonts.css?inline";
@@ -14,11 +15,6 @@ interface FontShard {
 
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 const STYLE_ATTRIBUTE = "data-diagram-fonts";
-const CDN_STYLESHEET =
-	"https://cn-font.claude-code-best.win/packages/xiaolai/dist/Xiaolai/result.css";
-const CDN_FONT_DIRECTORY = new URL(".", CDN_STYLESHEET).href;
-const EXCALIFONT_CDN_DIRECTORY =
-	"https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.18.1/dist/prod/fonts/Excalifont/";
 let fontShards: FontShard[] | undefined;
 let allFontShards: Promise<FontShard[]> | undefined;
 const embeddedFonts = new Map<string, Promise<string>>();
@@ -61,19 +57,16 @@ async function getFontShards(text: string): Promise<FontShard[]> {
 	) {
 		return fontShards;
 	}
-	// 官方 CDN 会重定向至其 ImageKit 字体存储；请求不携带凭据。
-	allFontShards ??= fetch(CDN_STYLESHEET, { credentials: "omit" })
+	// 中文字体的分片规则随站点构建产出、与页面同源，冷加载不再跨域取元数据与字形。
+	allFontShards ??= fetch(xiaolaiStylesheet)
 		.then(async (response) => {
 			if (!response.ok) throw new Error(`中文图表字体加载失败：HTTP ${response.status}`);
-			const remote = parseFontShards(await response.text(), CDN_STYLESHEET);
+			const remote = parseFontShards(await response.text(), response.url);
 			if (
 				!remote.length ||
-				remote.some(
-					(shard) =>
-						shard.family !== "Xiaolai SC" || !shard.url.startsWith(CDN_FONT_DIRECTORY),
-				)
+				remote.some((shard) => shard.family !== "Xiaolai SC" || !isSiteFont(shard.url))
 			)
-				throw new Error("中文图表字体 CDN 元数据无效");
+				throw new Error("中文图表字体元数据无效");
 			return [...(fontShards ?? []), ...remote];
 		})
 		.catch((error: unknown) => {
@@ -81,6 +74,14 @@ async function getFontShards(text: string): Promise<FontShard[]> {
 			throw error;
 		});
 	return allFontShards;
+}
+
+/** 字体只接受本站资源，或构建时内联进样式表的小分片。 */
+function isSiteFont(url: string): boolean {
+	return (
+		url.startsWith("data:font/woff2;base64,") ||
+		new URL(url, document.baseURI).origin === new URL(document.baseURI).origin
+	);
 }
 
 function selectFontShards(text: string, shards: FontShard[]): Map<FontShard, string> {
@@ -92,7 +93,7 @@ function selectFontShards(text: string, shards: FontShard[]): Map<FontShard, str
 	return selected;
 }
 
-function registerFontCss(css: string, kind: "screen" | "cdn"): void {
+function registerFontCss(css: string, kind: "screen" | "chinese"): void {
 	if (document.head.querySelector(`style[${STYLE_ATTRIBUTE}="${kind}"]`)) return;
 	const style = document.createElement("style");
 	style.setAttribute(STYLE_ATTRIBUTE, kind);
@@ -113,15 +114,15 @@ export async function loadDiagramFonts(text: string): Promise<void> {
 	const shards = await getFontShards(text);
 	if (
 		shards.some((shard) => shard.family === "Xiaolai SC") &&
-		!document.head.querySelector(`style[${STYLE_ATTRIBUTE}="cdn"]`)
+		!document.head.querySelector(`style[${STYLE_ATTRIBUTE}="chinese"]`)
 	) {
-		// 仅读取官方字体规则，不将远程样式表中的其他 CSS 注入页面。
+		// 只取字体规则，不把整份分片样式表注入页面。
 		registerFontCss(
 			shards
 				.filter((shard) => shard.family === "Xiaolai SC")
 				.map((shard) => fontFaceRule(shard, shard.url))
 				.join("\n"),
-			"cdn",
+			"chinese",
 		);
 	}
 	await Promise.all(
@@ -132,13 +133,9 @@ export async function loadDiagramFonts(text: string): Promise<void> {
 }
 
 async function fetchEmbeddedFont(url: string): Promise<string> {
-	const allowed = [CDN_FONT_DIRECTORY, EXCALIFONT_CDN_DIRECTORY].some((directory) =>
-		url.startsWith(directory),
-	);
+	if (!isSiteFont(url)) throw new Error("图表字体来源不在许可范围内");
+	if (url.startsWith("data:")) return url;
 	const resolved = new URL(url, document.baseURI);
-	if (!allowed || resolved.protocol !== "https:") {
-		throw new Error("图表字体来源不在许可范围内");
-	}
 	const response = await fetch(resolved.href, {
 		credentials: "omit",
 		redirect: "follow",

@@ -57,7 +57,7 @@ PR 检查拒绝小于或等于目标分支 manifest 的版本意图；release-pl
 
 ## 生产事务与归档
 
-公开入口由 `nginx-proxy` 提供 TLS，`/api/` 和 `/uploads/` 转发至 API，其余页面由 Web SSR 服务。带 hash 的静态资源由 nginx 的共享目录提供。PostgreSQL、Redis、上传和备份使用独立卷。
+公开入口由 `nginx-proxy` 提供 TLS，`/api/` 和 `/uploads/` 转发至 API，其余页面由 Web SSR 服务。带 hash 的静态资源由 nginx 的共享目录提供，其中包括流程图用的 Excalifont 与中文 Xiaolai SC 字体分片（约 16 MB、三百余个 woff2，只在图表需要对应字符时按需下载）。PostgreSQL、Redis、上传和备份使用独立卷。
 
 文章页 `/blog/{slug}` 的匿名 GET（无查询参数、无会话及鉴权头）在 Web SSR 进程内缓存完整 HTML，按路径与外观/主题/装饰 cookie 区分：20 秒内命中，过期重渲染失败时旧版最多再兜底 120 秒。运行时文章更新最多等待 20 秒可见，后端故障时最多 140 秒；发布与回滚会重启 Web 进程并清空副本。
 

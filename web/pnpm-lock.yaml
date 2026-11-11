@@ -12,6 +12,9 @@ importers:
 
   .:
     dependencies:
+      '@chinese-fonts/xiaolai':
+        specifier: 3.0.0
+        version: 3.0.0
       '@codemirror/autocomplete':
         specifier: ^6.20.3
         version: 6.20.3
@@ -882,6 +885,9 @@ packages:
 
   '@chevrotain/types@11.1.2':
     resolution: {integrity: sha512-U+HFai5+zmJCkK86QsaJtoITlboZHBqrVketcO2ROv865xfCMSFpELQoz1GkX5GzME8pTa+3kbKrZHQtI0gdbw==}
+
+  '@chinese-fonts/xiaolai@3.0.0':
+    resolution: {integrity: sha512-22d5xFPzxPQZuvx8doHn6sHrzvrdG/0QuQWBXQoX9TlKVVAyTvEADWHQv9FBGHIYTINaCZTCnQ6O4rfic/bWdg==}
 
   '@codemirror/autocomplete@6.20.3':
     resolution: {integrity: sha512-tlosUqb+3BbxCxZdu4tKeRghPFC+QM7q4X5YhKV2eCmPG+1r2F3f4AaSz5sCrFqUtX4Jh20VFTKecl16MgiV9g==}
@@ -6619,6 +6625,8 @@ snapshots:
       css-tree: 3.2.1
 
   '@chevrotain/types@11.1.2': {}
+
+  '@chinese-fonts/xiaolai@3.0.0': {}
 
   '@codemirror/autocomplete@6.20.3':
     dependencies:

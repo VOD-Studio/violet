@@ -57,7 +57,7 @@ const CONTRACT_POST = {
 	updated_at: "2026-08-11T10:00:00Z",
 };
 
-const RICH_CONTENT_POSTS = ["code", "diagram", "toc", "image", "toc-copy", "worker", "image-hydration", "math"].map((kind, index) => ({
+const RICH_CONTENT_POSTS = ["code", "diagram", "toc", "image", "toc-copy", "worker", "image-hydration", "math", "diagrams"].map((kind, index) => ({
 	...CONTRACT_POST,
 	id: `10000000-0000-0000-0000-00000000001${index + 1}`,
 	slug: `contract-rich-${kind}`,
@@ -77,6 +77,13 @@ const RICH_CONTENT_POSTS = ["code", "diagram", "toc", "image", "toc-copy", "work
 			: "",
 		kind === "math"
 			? `${"<p>首屏之外的长段落，用来把后面的公式推出首屏。</p>".repeat(80)}<div data-type="block-math" data-latex="a^2 + b^2 = c^2"></div>`
+			: "",
+		kind === "diagrams"
+			? Array.from(
+				{ length: 5 },
+				(_, index) =>
+					`${"<p>图表之间的正文段落，让每张图都需要滚动才能看到。</p>".repeat(20)}<div data-type="diagram-block" data-format="mermaid" data-source="flowchart LR\n  A[第${index + 1}张图：开始] --&gt; B{检查条件}\n  B --&gt;|满足| C[继续阅读]\n  B --&gt;|不满足| D[返回修改]"></div>`,
+			).join("")
 			: "",
 		kind === "worker"
 			? '<pre><code class="language-python">print("线程结果独立")</code></pre>'
