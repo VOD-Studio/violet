@@ -1,6 +1,6 @@
 import type { Comment } from "@entities/comment/model/types";
 import { Popover } from "radix-ui";
-import { useContext, useEffect, useRef } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { useBlockAnnotations } from "../api/queries";
 import { useAnnotationAnchorVisible } from "../hooks/use-annotation-anchor-visible";
 import { rangeKey } from "../lib/annotation-marks";
@@ -166,6 +166,8 @@ function PopoverBody({
 	onClose: () => void;
 }) {
 	const query = useBlockAnnotations(postId, target.blockId);
+	// 缓存命中时与卡片一起浮出；经过等待才到的内容单独淡入，避免等待区被硬替换
+	const [waited] = useState(query.isLoading);
 	const overlayActive = useContext(AnnotationOverlayContext);
 	const all = groupByRange(query.data?.data ?? []);
 	const groups = target.rangeKey === null ? all : all.filter((g) => g.key === target.rangeKey);
@@ -179,7 +181,7 @@ function PopoverBody({
 			{target.rangeKey === null && (
 				<AnnotationPopoverHeader target={target} onFilter={onFilter} onClose={onClose} />
 			)}
-			<div className="annotation-card-list">
+			<div className="annotation-card-list" data-waited={waited || undefined}>
 				{query.isLoading && <AnnotationPending label="批注加载中" className="py-6" />}
 				{query.isError && (
 					<p role="alert" className="text-sm text-muted-foreground">

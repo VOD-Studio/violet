@@ -13,6 +13,7 @@ import { MessageCircle } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { AnnotationAuthorProfile } from "./AnnotationAuthorProfile";
 import { AnnotationQuote } from "./AnnotationQuote";
+import { AnnotationReveal } from "./AnnotationReveal";
 import { AnnotationOverlayContext } from "./annotation-overlay-context";
 import { CommentForm } from "./CommentForm";
 
@@ -112,25 +113,28 @@ function AnnotationEntry({
 					)
 				}
 			/>
-			{replying && (
-				<div className="annotation-reply-form">
-					<CommentForm
-						postId={postId}
-						parentId={comment.id}
-						layout="field"
-						isLoggedIn={isLoggedIn}
-						enableImage={false}
-						onSuccess={(created) => {
-							setPendingReplies((prev) => [...prev, created]);
-							setReplying(false);
-						}}
-					/>
-				</div>
-			)}
+			<AnnotationReveal open={replying}>
+				<CommentForm
+					postId={postId}
+					parentId={comment.id}
+					layout="field"
+					isLoggedIn={isLoggedIn}
+					enableImage={false}
+					onSuccess={(created) => {
+						setPendingReplies((prev) => [...prev, created]);
+						setReplying(false);
+					}}
+				/>
+			</AnnotationReveal>
 			{replies.length > 0 && (
 				<ul className="annotation-items annotation-replies">
 					{shownReplies.map((reply) => (
-						<li key={reply.id}>
+						<li
+							key={reply.id}
+							data-fresh={
+								pendingReplies.some((item) => item.id === reply.id) || undefined
+							}
+						>
 							<AnnotationItem
 								reply
 								comment={reply}

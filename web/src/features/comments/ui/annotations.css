@@ -442,6 +442,10 @@
 	flex-direction: column;
 	gap: 10px;
 }
+/* 经过等待才到位的批注：整组淡入并由模糊转清晰 */
+.annotation-card-list[data-waited] > .annotation-thread {
+	animation: annotation-fade-in 0.24s ease-out;
+}
 /* 每处划线一组讨论，组与组之间一条细线；前面有可见的组才画，筛掉的组不留线 */
 .annotation-thread:not([hidden]) ~ .annotation-thread {
 	padding-block-start: 12px;
@@ -535,8 +539,37 @@
 .annotation-replies .annotation-item {
 	gap: 8px;
 }
-.annotation-reply-form {
+/* 刚发出的回复：淡入并由模糊转清晰，与评论区面板同一语汇，不位移 */
+.annotation-replies > li[data-fresh] {
+	animation: annotation-fade-in 0.24s ease-out;
+}
+/* 回复输入的展开与收起：高度与透明度一起走，收起更快；内层留出聚焦环向外扩的 4px */
+.annotation-reveal {
+	display: grid;
+	grid-template-rows: 1fr;
 	margin-inline-start: 34px;
+	opacity: 1;
+	transition:
+		grid-template-rows 0.2s cubic-bezier(0.32, 0.72, 0, 1),
+		opacity 0.16s ease-out;
+}
+.annotation-reveal[data-state="closed"] {
+	grid-template-rows: 0fr;
+	opacity: 0;
+	transition-duration: 0.14s;
+	transition-timing-function: ease-in;
+}
+@starting-style {
+	.annotation-reveal {
+		grid-template-rows: 0fr;
+		opacity: 0;
+	}
+}
+.annotation-reveal-inner {
+	min-block-size: 0;
+	margin: -4px;
+	padding: 12px 4px 4px;
+	overflow: hidden;
 }
 .annotation-item-reply-to {
 	color: var(--muted-foreground);
@@ -624,12 +657,15 @@
 	.annotation-selection-toolbar,
 	.annotation-card,
 	.annotation-marker,
-	.annotation-pop {
+	.annotation-pop,
+	.annotation-card-list[data-waited] > .annotation-thread,
+	.annotation-replies > li[data-fresh] {
 		animation: none;
 	}
 	.annotation-mark,
 	.annotation-tool,
 	.annotation-trigger,
+	.annotation-reveal,
 	.annotation-marker > :is(.annotation-avatar-wrap, .annotation-avatar) {
 		transition: none;
 	}
