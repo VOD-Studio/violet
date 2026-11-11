@@ -15,12 +15,17 @@ export const AFFECTS_OPTIONS = [
 	"site",
 ] as const;
 
-/**
- * admin-announcements 表单 zod schema
- *
- * startTime/endTime 为 datetime-local 字符串，可空，用 superRefine 校验：
- * 若都填了，开始不得晚于结束。
- */
+function isAnnouncementLink(value: string): boolean {
+	if (!value) return true;
+	if (/[\p{White_Space}\p{Cc}\\]/u.test(value)) return false;
+	if (value.startsWith("/")) return !value.startsWith("//");
+	if (!/^https?:\/\//i.test(value)) return false;
+	try {
+		return new URL(value).hostname !== "";
+	} catch {
+		return false;
+	}
+}
 
 /**
  * 创建/编辑公告表单
@@ -36,6 +41,11 @@ export const announcementSchema = z
 	.object({
 		title: z.string().min(1, "标题不能为空").max(200, "标题最多 200 字符"),
 		content: z.string().optional().or(z.literal("")),
+		linkURL: z
+			.string()
+			.trim()
+			.refine(isAnnouncementLink, "链接仅支持 http、https 或以 / 开头的站内路径"),
+		linkText: z.string().trim(),
 		type: z.enum(["info", "warning", "success", "error"]),
 		display: z.enum(DISPLAY_OPTIONS),
 		isActive: z.boolean(),
@@ -53,6 +63,13 @@ export const announcementSchema = z
 			.optional(),
 	})
 	.superRefine((data, ctx) => {
+		if (data.linkText && !data.linkURL) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["linkURL"],
+				message: "填写链接文字时需要提供链接地址",
+			});
+		}
 		// banner / card 形态必须有纯文本内容
 		if (data.display !== "article" && !data.content?.trim()) {
 			ctx.addIssue({

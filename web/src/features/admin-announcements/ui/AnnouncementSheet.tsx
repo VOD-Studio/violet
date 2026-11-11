@@ -66,6 +66,8 @@ const DISPLAY_LABELS: Record<AnnouncementDisplay, string> = {
 const BASE_DEFAULTS: AnnouncementForm = {
 	title: "",
 	content: "",
+	linkURL: "",
+	linkText: "",
 	type: "info",
 	display: "banner",
 	isActive: true,
@@ -156,6 +158,8 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
 			...BASE_DEFAULTS,
 			title: editing.title,
 			content: editing.content ?? "",
+			linkURL: editing.link_url ?? "",
+			linkText: editing.link_text ?? "",
 			type: editing.type,
 			display: editing.display,
 			isActive: editing.is_active,
@@ -184,6 +188,8 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
 			title: data.title,
 			// article 形态正文用 content_html，content 留空
 			content: data.display === "article" ? "" : (data.content ?? ""),
+			link_url: data.linkURL,
+			link_text: data.linkText,
 			type: data.type,
 			display: data.display,
 			is_active: data.isActive,
@@ -308,6 +314,35 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
 								)}
 							</div>
 						)}
+
+						<Field
+							label="链接地址"
+							optional
+							error={errors.linkURL?.message}
+							hint="支持 http、https 或以 / 开头的站内路径；留空则不显示链接"
+						>
+							<Input
+								id="ann-link-url"
+								inputMode="url"
+								autoComplete="off"
+								placeholder="/announcements/12"
+								disabled={pending}
+								{...register("linkURL")}
+							/>
+						</Field>
+						<Field
+							label="链接文字"
+							optional
+							error={errors.linkText?.message}
+							hint="留空时显示“查看详情”"
+						>
+							<Input
+								id="ann-link-text"
+								placeholder="查看详情"
+								disabled={pending}
+								{...register("linkText")}
+							/>
+						</Field>
 
 						{/* 正文（article 形态）：编辑器吃剩余高度，内部自滚动，状态栏始终可见 */}
 						{isArticle && (

@@ -16,6 +16,9 @@ export interface AnnouncementDTO {
 	title: string;
 	/** 公告正文 */
 	content: string;
+	/** 仅允许 http/https 或站内路径；未配置时省略。 */
+	link_url?: string;
+	link_text?: string;
 	/** 公告类型(severity 同义冗余) */
 	type: AnnouncementType;
 	/** 严重程度(视觉语义,前端消费此字段) */
@@ -61,6 +64,8 @@ export interface CreateAnnouncementRequest {
 	content_html?: string;
 	cover_image?: string;
 	excerpt?: string;
+	link_url?: string;
+	link_text?: string;
 }
 
 /**
@@ -80,4 +85,8 @@ export interface UpdateAnnouncementRequest {
 	content_html?: string;
 	cover_image?: string;
 	excerpt?: string;
+	/** 未传保留原值，空串清除链接。 */
+	link_url?: string;
+	/** 未传保留原值，空串使用默认链接文字。 */
+	link_text?: string;
 }
