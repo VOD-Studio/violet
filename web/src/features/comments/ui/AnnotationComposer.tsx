@@ -50,7 +50,7 @@ export function AnnotationComposer({
 				submitOnEnter
 				enableEmoji
 				enableImage={false}
-				compact
+				layout="field"
 				autoFocus={autoFocus}
 				disabled={pending}
 				placeholder={placeholder}
@@ -61,6 +61,7 @@ export function AnnotationComposer({
 						variant="ghost"
 						size="sm"
 						iconOnly
+						className="size-6 shrink-0 text-muted-foreground hover:text-foreground pointer-coarse:size-7"
 						aria-label={loginRequired ? "登录并发送" : sendLabel}
 						loading={pending}
 						disabled={empty}

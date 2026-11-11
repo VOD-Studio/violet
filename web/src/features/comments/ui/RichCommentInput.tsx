@@ -2,7 +2,8 @@
  * RichCommentInput - 自包含富文本评论输入组件
  *
  * contentEditable 输入区 + 底部工具栏（emoji 按钮 + 图片上传按钮）。
- * layout="inline" 时图标与编辑区同行渲染为圆角药丸容器（聊天场景）；默认 "stacked" 保持编辑区在上、工具栏在下。
+ * layout="inline" 时图标与编辑区同行渲染为圆角药丸容器（聊天场景）；layout="field" 时同行排进组件库的输入字段外壳（批注卡）；
+ * 默认 "stacked" 保持编辑区在上、工具栏在下。
  *
  * 受控 API：value/onChange 管理纯文本内容（emoji 为 [name] 占位符）。
  * 图片上传：点击按钮 → 系统文件选择器 → useChunkedUpload 后台上传 → 缩略图进度条
@@ -50,6 +51,10 @@ import {
 } from "../hooks/use-rich-text-input";
 import { AnnotationOverlayContext } from "./annotation-overlay-context";
 
+/** 字段布局里与文字同行的图标钮：24 圆钮，触屏 28；底色用墨色叠层，在凹陷底与聚焦后的纸面上都看得见。 */
+const FIELD_ACTION_CLASS =
+	"inline-flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/8 hover:text-foreground focus-visible:outline-2 focus-visible:-outline-offset-1 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-40 pointer-coarse:size-7";
+
 export interface PictureInput {
 	id?: string;
 	url: string;
@@ -76,8 +81,11 @@ export interface RichCommentInputProps {
 	enableImage?: boolean;
 	/** 图片是否作为行内节点插入光标处、与文字混排（默认 false：图片走独立缩略图行）。仅 chat 消费。 */
 	inlineImages?: boolean;
-	/** 布局模式：stacked=编辑区在上、工具栏在下（默认，评论/推文场景）；inline=图标与编辑区同行的圆角药丸容器（聊天场景） */
-	layout?: "stacked" | "inline";
+	/**
+	 * 布局模式：stacked=编辑区在上、工具栏在下（默认，评论/推文场景）；inline=图标与编辑区同行的圆角药丸容器（聊天场景）；
+	 * field=图标、编辑区与 toolbarEnd 同行，外壳是组件库的输入字段，单行起、随内容增高（批注卡）
+	 */
+	layout?: "stacked" | "inline" | "field";
 	/** 分片上传 purpose，默认 "comment" */
 	uploadPurpose?: string;
 	/** 是否按 Enter 发送（Shift+Enter 换行） */
@@ -484,6 +492,7 @@ export function RichCommentInput({
 
 	const canAddMore = imageItems.length < maxImages && !disabled;
 	const isInline = layout === "inline";
+	const isField = layout === "field";
 
 	const emojiButton = enableEmoji && (
 		<EmojiPicker
@@ -500,6 +509,10 @@ export function RichCommentInput({
 					>
 						<Smile className="size-4" />
 					</button>
+				) : isField ? (
+					<button type="button" aria-label="添加表情" className={FIELD_ACTION_CLASS}>
+						<Smile className="size-4" />
+					</button>
 				) : undefined
 			}
 		/>
@@ -511,12 +524,16 @@ export function RichCommentInput({
 			onClick={() => fileInputRef.current?.click()}
 			disabled={!canAddMore}
 			title={canAddMore ? "上传图片" : `最多 ${maxImages} 张图片`}
-			className={cn(
-				"inline-flex items-center justify-center text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40",
-				isInline ? "size-9 rounded-full" : "size-7 rounded",
-			)}
+			className={
+				isField
+					? FIELD_ACTION_CLASS
+					: cn(
+							"inline-flex items-center justify-center text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40",
+							isInline ? "size-9 rounded-full" : "size-7 rounded",
+						)
+			}
 		>
-			<ImageIcon className={isInline ? "size-4" : "size-3.5"} />
+			<ImageIcon className={isInline || isField ? "size-4" : "size-3.5"} />
 		</button>
 	);
 
@@ -560,10 +577,12 @@ export function RichCommentInput({
 			suppressContentEditableWarning
 			className={cn(
 				"overflow-y-auto bg-transparent focus:outline-none",
-				isInline
-					? "min-h-9 max-h-40 flex-1 min-w-0 px-1 py-1.5 text-sm leading-relaxed"
-					: "max-h-60",
+				isInline && "min-h-9 max-h-40 flex-1 min-w-0 px-1 py-1.5 text-sm leading-relaxed",
+				isField &&
+					"max-h-40 min-h-6 min-w-0 flex-1 px-1 py-0.5 leading-5 pointer-coarse:min-h-7 pointer-coarse:py-1",
+				!isInline && !isField && "max-h-60",
 				!isInline &&
+					!isField &&
 					(compact ? "min-h-10 px-3 py-2 text-sm" : "min-h-24 px-4 py-3 text-sm"),
 				"empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground empty:before:pointer-events-none",
 				inputClassName,
@@ -649,6 +668,29 @@ export function RichCommentInput({
 					</div>
 					{editor}
 					<div className="shrink-0">{toolbarEnd}</div>
+				</div>
+				{suggestions}
+			</div>
+		);
+	}
+
+	if (isField) {
+		return (
+			<div
+				className={cn(
+					"v-input-control v-input-control--filled v-input-control--sm block h-auto min-h-(--v-input-h) p-1",
+					className,
+				)}
+				data-disabled={disabled || undefined}
+			>
+				{slashSuggestions}
+				{fileInput}
+				{thumbnails}
+				<div className="flex items-end gap-1">
+					{emojiButton}
+					{imageButton}
+					{editor}
+					{toolbarEnd}
 				</div>
 				{suggestions}
 			</div>
