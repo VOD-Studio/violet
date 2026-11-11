@@ -4,7 +4,7 @@ import { EmojiPicker } from "@features/emojis/ui/EmojiPicker";
 import { httpClient } from "@shared/api/http";
 import { useSessionStore } from "@shared/api/session";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { AxiosError } from "axios";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
@@ -72,9 +72,13 @@ beforeEach(() => {
 				data = mine;
 				break;
 			case "/uploads/emoji": {
-				if (!(config.data instanceof FormData)) throw new Error("Missing upload form");
+				if (!(config.data instanceof FormData)) {
+					throw new Error("Missing upload form");
+				}
 				const file = config.data.get("file");
-				if (!(file instanceof File)) throw new Error("Missing upload file");
+				if (!(file instanceof File)) {
+					throw new Error("Missing upload file");
+				}
 				uploadedNames.push(file.name);
 				data = {
 					url: "/uploads/emojis/created.gif",
@@ -106,31 +110,33 @@ afterEach(() => {
 	httpClient.defaults.adapter = originalAdapter;
 	useSessionStore.setState({ sessionActive: false, sessionVersion: 0 });
 	vi.restoreAllMocks();
+	localStorage.removeItem("violet:recent-emojis");
 });
 
 it("左右切组不回绕，选择表情后重开仍保留刚浏览的分组", async () => {
 	const onSelect = vi.fn();
 	render(
 		<QueryClientProvider client={queryClient}>
-			<EmojiPicker onSelect={onSelect} />
+			<EmojiPicker onSelect={onSelect} closeOnSelect />
 		</QueryClientProvider>,
 	);
 	fireEvent.click(screen.getByRole("button", { name: "添加表情" }));
-	await screen.findByRole("button", { name: "赞" });
-
-	expect(screen.getByRole("button", { name: "上一组" }).hasAttribute("disabled")).toBe(true);
+	fireEvent.click(await screen.findByRole("tab", { name: "默认" }));
+	await screen.findByRole("option", { name: "赞" });
 	fireEvent.click(screen.getByRole("button", { name: "下一组" }));
-	const happy = await screen.findByRole("button", { name: "开心" });
-	expect(screen.queryByRole("button", { name: "赞" })).toBeNull();
-	expect(screen.getByRole("button", { name: "下一组" }).hasAttribute("disabled")).toBe(true);
+	const happy = await screen.findByRole("option", { name: "开心" });
+	expect(screen.queryByRole("option", { name: "赞" })).toBeNull();
+	expect(screen.getByRole("button", { name: "下一组" }).getAttribute("aria-disabled")).toBe(
+		"true",
+	);
 	fireEvent.click(happy);
 	expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ id: 2 }));
-	await waitFor(() => expect(screen.queryByRole("button", { name: "开心" })).toBeNull());
+	await waitFor(() => expect(screen.queryByRole("option", { name: "开心" })).toBeNull());
 
 	fireEvent.click(screen.getByRole("button", { name: "添加表情" }));
-	await screen.findByRole("button", { name: "开心" });
+	await screen.findByRole("option", { name: "开心" });
 	fireEvent.click(screen.getByRole("button", { name: "上一组" }));
-	await screen.findByRole("button", { name: "赞" });
+	await screen.findByRole("option", { name: "赞" });
 });
 
 it.each([
@@ -146,7 +152,7 @@ it.each([
 		</QueryClientProvider>,
 	);
 	fireEvent.click(screen.getByRole("button", { name }));
-	await screen.findByRole("button", { name: "赞" });
+	await screen.findByRole("tab", { name: "默认" });
 	rerender(
 		<QueryClientProvider client={queryClient}>
 			<EmojiPicker onSelect={onSelect} trigger={trigger} disabled />
@@ -163,10 +169,10 @@ it.each([
 	);
 	expect(screen.queryByRole("dialog", { name: "表情选择器" })).toBeNull();
 	fireEvent.click(screen.getByRole("button", { name }));
-	await screen.findByRole("button", { name: "赞" });
+	await screen.findByRole("tab", { name: "默认" });
 });
 
-it("有动图时网格和聚焦预览都显示动图，方向键只切换导航中的分组", async () => {
+it("方向键切组后在网格激活表情，连续插入不关闭", async () => {
 	render(
 		<QueryClientProvider client={queryClient}>
 			<EmojiPicker onSelect={vi.fn()} closeOnSelect={false} />
@@ -178,19 +184,17 @@ it("有动图时网格和聚焦预览都显示动图，方向键只切换导航�
 	fireEvent.keyDown(first, { key: "ArrowRight" });
 	const second = screen.getByRole("tab", { name: "动态" });
 	expect(document.activeElement).toBe(second);
-	const happy = await screen.findByRole("button", { name: "开心" });
-	expect(within(happy).getByRole("img").getAttribute("src")).toBe("/uploads/emojis/happy.gif");
-
-	act(() => happy.focus());
-	await screen.findByRole("tooltip", { name: "开心预览" });
-	expect(screen.getByAltText("开心预览").getAttribute("src")).toBe("/uploads/emojis/happy.gif");
-	fireEvent.keyDown(happy, { key: "ArrowLeft" });
-	expect(screen.getByRole("tab", { name: "动态" }).getAttribute("aria-selected")).toBe("true");
-	fireEvent.keyDown(happy, { key: "Escape" });
-	await waitFor(() => expect(screen.queryByRole("tooltip")).toBeNull());
+	const happy = await screen.findByRole("option", { name: "开心" });
+	const grid = screen.getByRole("listbox");
+	act(() => grid.focus());
+	fireEvent.keyDown(grid, { key: "Home" });
+	expect(grid.getAttribute("aria-activedescendant")).toBe(happy.id);
+	fireEvent.keyDown(grid, { key: "Enter" });
+	expect(screen.getByRole("dialog", { name: "表情选择器" })).toBeTruthy();
+	expect(document.activeElement).toBe(grid);
 });
 
-it("收藏入口位于首项，自传与收藏合并显示，选好图片直接以文件名加入网格", async () => {
+it("最近使用排第一，登录收藏分开显示自传与收藏，上传后可立即插入", async () => {
 	useSessionStore.setState({ sessionActive: true, sessionVersion: 1 });
 	mine = {
 		owned: [{ id: "owned", name: "自传猫", url: "/owned.gif" }],
@@ -203,20 +207,16 @@ it("收藏入口位于首项，自传与收藏合并显示，选好图片直接�
 		</QueryClientProvider>,
 	);
 	fireEvent.click(screen.getByRole("button", { name: "添加表情" }));
-	expect(screen.getAllByRole("tab")[0].getAttribute("aria-label")).toBe("收藏表情");
-	await screen.findByRole("button", { name: "收藏狗" });
-	const panel = screen.getByRole("tabpanel");
-	expect(
-		within(panel)
-			.getAllByRole("button")
-			.map((button) => button.getAttribute("aria-label")),
-	).toEqual(["上传表情", "自传猫", "收藏狗"]);
+	expect(screen.getAllByRole("tab")[0].getAttribute("aria-label")).toBe("最近使用");
+	fireEvent.click(screen.getByRole("tab", { name: "收藏" }));
+	await screen.findByRole("option", { name: "收藏狗" });
+	expect(screen.getByRole("option", { name: "自传猫" })).toBeTruthy();
 	const input = screen.getByLabelText("选择表情图片");
 	fireEvent.change(input, {
 		target: { files: [new File(["gif"], "my_cat.gif", { type: "image/gif" })] },
 	});
 	expect(screen.queryByRole("textbox", { name: "表情名称" })).toBeNull();
-	const created = await screen.findByRole("button", { name: "mycat" });
+	const created = await screen.findByRole("option", { name: "mycat" });
 	expect(uploadedNames).toEqual(["my_cat.gif"]);
 	fireEvent.click(created);
 	expect(onSelect).toHaveBeenCalledWith(
@@ -233,10 +233,11 @@ it("仅系统表情的回应入口不显示个人分组，已选表情不可再�
 		</QueryClientProvider>,
 	);
 	fireEvent.click(screen.getByRole("button", { name: "添加表情" }));
-	const selected = await screen.findByRole("button", { name: "赞（已选择）" });
-	expect(screen.queryByRole("tab", { name: "收藏表情" })).toBeNull();
+	fireEvent.click(await screen.findByRole("tab", { name: "默认" }));
+	const selected = await screen.findByRole("option", { name: /赞.*已回应/ });
+	expect(screen.queryByRole("tab", { name: "收藏" })).toBeNull();
 	expect(screen.queryByRole("button", { name: "上传表情" })).toBeNull();
-	expect(selected.hasAttribute("disabled")).toBe(true);
+	expect(selected.getAttribute("aria-disabled")).toBe("true");
 	fireEvent.click(selected);
 	expect(onSelect).not.toHaveBeenCalled();
 });
@@ -252,6 +253,7 @@ it.each([
 		</QueryClientProvider>,
 	);
 	fireEvent.click(screen.getByRole("button", { name: "添加表情" }));
+	fireEvent.click(await screen.findByRole("tab", { name: "收藏" }));
 	await screen.findByRole("button", { name: "上传表情" });
 	failEndpoint = endpoint;
 	fireEvent.change(screen.getByLabelText("选择表情图片"), {
@@ -268,5 +270,33 @@ it.each([
 	fireEvent.change(screen.getByLabelText("选择表情图片"), {
 		target: { files: [new File(["gif"], "保留动图.gif", { type: "image/gif" })] },
 	});
-	await screen.findByRole("button", { name: "保留动图" });
+	await screen.findByRole("option", { name: "保留动图" });
+});
+
+it("最近页连续点击同一位置不重排，关闭重开后再应用新的最近顺序", async () => {
+	localStorage.setItem("violet:recent-emojis", JSON.stringify(["system:1", "system:2"]));
+	const onSelect = vi.fn();
+	render(
+		<QueryClientProvider client={queryClient}>
+			<EmojiPicker onSelect={onSelect} closeOnSelect={false} />
+		</QueryClientProvider>,
+	);
+	const trigger = screen.getByRole("button", { name: "添加表情" });
+	fireEvent.click(trigger);
+	await screen.findByRole("option", { name: "开心" });
+
+	fireEvent.click(screen.getAllByRole("option")[1]);
+	expect(
+		screen.getAllByRole("option").map((option) => option.getAttribute("aria-label")),
+	).toEqual(["赞", "开心"]);
+	fireEvent.click(screen.getAllByRole("option")[1]);
+	expect(onSelect.mock.calls.map(([emoji]) => emoji.id)).toEqual([2, 2]);
+
+	fireEvent.click(trigger);
+	await waitFor(() => expect(screen.queryByRole("dialog", { name: "表情选择器" })).toBeNull());
+	fireEvent.click(trigger);
+	await screen.findByRole("option", { name: "开心" });
+	expect(
+		screen.getAllByRole("option").map((option) => option.getAttribute("aria-label")),
+	).toEqual(["开心", "赞"]);
 });
