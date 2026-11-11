@@ -1,0 +1,38 @@
+import assert from "node:assert/strict";
+import { renderToString } from "react-dom/server";
+import { QuoteCard } from "@violet/ui";
+import { QuoteCard as LeafQuoteCard } from "@violet/ui/quote-card";
+
+const quote = {
+	href: "/tweets/original",
+	label: "引用原文",
+	authorName: "consumer-author",
+	time: "consumer-time",
+	content: "consumer-body",
+	imageSrc: "/consumer-thumbnail.webp",
+};
+
+for (const Card of [QuoteCard, LeafQuoteCard]) {
+	const live = renderToString(<Card {...quote} nested="引用了一条推文" />);
+	assert.equal((live.match(/<a\b/g) ?? []).length, 1);
+	assert.match(live, /href="\/tweets\/original"/);
+	assert.equal((live.match(/<img\b/g) ?? []).length, 1);
+	assert.match(live, /consumer-author/);
+	assert.match(live, /<time\b/);
+	assert.match(live, /consumer-body/);
+	assert.match(live, /引用了一条推文/);
+
+	const deleted = renderToString(<Card {...quote} deleted />);
+	assert.doesNotMatch(deleted, /<a\b|<time\b|<img\b|tabindex=/);
+	assert.doesNotMatch(deleted, /consumer-author|consumer-time|consumer-body|consumer-thumbnail/);
+	assert.match(deleted, /data-state="deleted"/);
+
+	const preview = renderToString(
+		<Card {...quote} href={undefined} action={<button type="button">取消引用</button>} />,
+	);
+	assert.doesNotMatch(preview, /<a\b/);
+	assert.match(preview, /<button type="button"/);
+	assert.match(preview, /consumer-body/);
+}
+
+console.log("QuoteCard 根入口与叶子入口 SSR 三态通过");
