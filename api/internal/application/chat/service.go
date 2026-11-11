@@ -238,6 +238,8 @@ type SharedTweetDTO struct {
 	Images []apptweet.TweetImageDTO `json:"images,omitempty"`
 	// CreatedAt 推文创建时间；推文已删除时为空。
 	CreatedAt string `json:"created_at,omitempty"`
+	// QuoteOf 保留被分享推文的引用关系，不展开更深层正文。
+	QuoteOf *string `json:"quote_of,omitempty"`
 	// IsDeleted 被分享的推文是否已被物理删除。
 	IsDeleted     bool                       `json:"is_deleted"`
 	ExternalTweet *apptweet.ExternalTweetDTO `json:"external_tweet,omitempty"`
@@ -1772,7 +1774,7 @@ func (s *Service) sharedTweetDTO(ctx context.Context, tweetID domainshared.ID, v
 				return nil, err
 			}
 		}
-		return &SharedTweetDTO{ID: view.ID, Author: &UserDTO{ID: view.Author.ID, Username: view.Author.Username, AvatarURL: view.Author.AvatarURL}, Content: view.Content, Images: view.Images, CreatedAt: view.CreatedAt, ExternalTweet: view.ExternalTweet, QuotedTweet: view.QuotedTweet}, nil
+		return &SharedTweetDTO{ID: view.ID, Author: &UserDTO{ID: view.Author.ID, Username: view.Author.Username, AvatarURL: view.Author.AvatarURL}, Content: view.Content, Images: view.Images, CreatedAt: view.CreatedAt, QuoteOf: view.QuoteOf, ExternalTweet: view.ExternalTweet, QuotedTweet: view.QuotedTweet}, nil
 	}
 	t, err := s.tweets.FindByID(ctx, tweetID)
 	if err != nil {
@@ -1786,10 +1788,15 @@ func (s *Service) sharedTweetDTO(ctx context.Context, tweetID domainshared.ID, v
 		return nil, err
 	}
 	authorDTO := userToDTO(author)
-	return &SharedTweetDTO{
+	dto := &SharedTweetDTO{
 		ID: t.ID().String(), Author: &authorDTO, Content: t.Content(), Images: apptweet.ImageRefsToDTOs(t.Images()),
 		CreatedAt: t.CreatedAt().Format(time.RFC3339Nano),
-	}, nil
+	}
+	if quote := t.QuoteOf(); quote != nil {
+		id := quote.String()
+		dto.QuoteOf = &id
+	}
+	return dto, nil
 }
 
 // stripChatImageTokens 剥离内联图片占位符并修剪空白，供预览等人类可读场景使用。

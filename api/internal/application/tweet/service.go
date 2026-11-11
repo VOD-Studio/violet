@@ -109,14 +109,16 @@ type UserProfileDTO struct {
 
 // QuotedTweetDTO 被引用推文读模型。
 type QuotedTweetDTO struct {
-	ID            string              `json:"id"`
-	Author        AuthorDTO           `json:"author"`
-	Content       string              `json:"content"`
-	Images        []TweetImageDTO     `json:"images"`
-	Emote         map[string]EmojiRef `json:"emote,omitempty"`
-	QuoteCount    int                 `json:"quote_count"`
-	CreatedAt     string              `json:"created_at"`
-	ExternalTweet *ExternalTweetDTO   `json:"external_tweet,omitempty"`
+	ID         string              `json:"id"`
+	Author     AuthorDTO           `json:"author"`
+	Content    string              `json:"content"`
+	Images     []TweetImageDTO     `json:"images"`
+	Emote      map[string]EmojiRef `json:"emote,omitempty"`
+	QuoteCount int                 `json:"quote_count"`
+	// QuoteOf 只标记下一层引用；不展开其正文，目标删除后仍保留。
+	QuoteOf       *string           `json:"quote_of,omitempty"`
+	CreatedAt     string            `json:"created_at"`
+	ExternalTweet *ExternalTweetDTO `json:"external_tweet,omitempty"`
 	// LinkCards 正文 URL 逐个对应的链接卡片，可为空数组
 	LinkCards []*applp.LinkCardDTO `json:"link_cards"`
 }
@@ -645,6 +647,10 @@ func (s *Service) toDTOs(ctx context.Context, tweets []*domaintweet.Tweet) []Twe
 					CreatedAt:     qt.CreatedAt().UTC().Format(time.RFC3339),
 					ExternalTweet: sourceView(qt, externalViews),
 					LinkCards:     linkCardsForBody(qt.Content(), linkCardsMap),
+				}
+				if nested := qt.QuoteOf(); nested != nil {
+					id := nested.String()
+					quotedTweetDTO.QuoteOf = &id
 				}
 			}
 		}
