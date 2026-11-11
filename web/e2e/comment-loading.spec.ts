@@ -91,21 +91,17 @@ test("批注工具下载期间和失败后，原生文字选区仍可见", async
 		await expect
 			.poll(() => page.evaluate(() => window.getSelection()?.toString()))
 			.toBe("增强加载失败");
-		const selectionOpacity = () =>
-			paragraph.evaluate((element) => {
-				const canvas = document.createElement("canvas");
-				canvas.width = 1;
-				canvas.height = 1;
-				const context = canvas.getContext("2d");
-				if (!context) throw new Error("浏览器无法检查选区颜色");
-				context.fillStyle = getComputedStyle(element, "::selection").backgroundColor;
-				context.fillRect(0, 0, 1, 1);
-				return context.getImageData(0, 0, 1, 1).data[3];
-			});
-		expect(await selectionOpacity()).toBeGreaterThan(0);
+		// 原生选区被替换为荧光笔笔触：画上笔触的块保持可见（不因工具条未加载而消失）
+		const brushVisible = () =>
+			paragraph.evaluate(
+				(element) =>
+					element.hasAttribute("data-selection-painted") &&
+					getComputedStyle(element).backgroundImage.includes("url("),
+			);
+		expect(await brushVisible()).toBe(true);
 		download.resolve();
 		await expect(page.getByRole("alert").filter({ hasText: "批注工具加载失败" })).toBeVisible();
-		expect(await selectionOpacity()).toBeGreaterThan(0);
+		expect(await brushVisible()).toBe(true);
 		await expect(paragraph).toContainText(ARTICLE_START);
 		expect(await diagnostics()).toEqual([]);
 	} finally {
