@@ -123,11 +123,12 @@ export interface AsyncContentProps<P extends object> {
 export interface DeferredContentProps<P extends object>
 	extends Omit<AsyncContentProps<P>, "inline"> {
 	/**
-	 * 是否等待接近视口；交互已触发或必须保留 SSR 语义内容时传 `false`。
+	 * 启用时机：`true` 等接近视口；`"idle"` 接近视口或浏览器空闲，先到者启用，
+	 * 供读者可能直接跳转到、又不值得首屏就算的内容；交互已触发或必须保留 SSR 语义内容时传 `false`。
 	 *
 	 * @default true
 	 */
-	defer?: boolean;
+	defer?: boolean | "idle";
 }
 
 /**
@@ -181,14 +182,11 @@ export function DeferredContent<P extends object>({
 	defer = true,
 	...props
 }: DeferredContentProps<P>) {
-	const { ref, ready } = useViewportPreparation<HTMLDivElement>();
+	const { ref, ready } = useViewportPreparation<HTMLDivElement>({ idle: defer === "idle" });
+	const active = ready || defer === false;
 	return (
-		<div
-			ref={ref}
-			className="min-w-0"
-			data-content-preparation={ready || !defer ? "ready" : "waiting"}
-		>
-			{ready || !defer ? <AsyncContent {...props} /> : props.fallback}
+		<div ref={ref} className="min-w-0" data-content-preparation={active ? "ready" : "waiting"}>
+			{active ? <AsyncContent {...props} /> : props.fallback}
 		</div>
 	);
 }

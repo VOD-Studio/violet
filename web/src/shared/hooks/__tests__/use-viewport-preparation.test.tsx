@@ -69,4 +69,28 @@ describe("useViewportPreparation", () => {
 		render(<PreparedBlock />);
 		expect(screen.getByText("增强已准备")).toBeTruthy();
 	});
+
+	it("声明等待空闲的块在远处也随空闲回调启用，其余块仍等接近视口", () => {
+		let idle: (() => void) | undefined;
+		vi.stubGlobal("requestIdleCallback", (callback: () => void) => {
+			idle = callback;
+			return 1;
+		});
+		function IdleBlock() {
+			const { ref, ready } = useViewportPreparation<HTMLDivElement>({ idle: true });
+			return <div ref={ref}>{ready ? "增强已准备" : "原始正文"}</div>;
+		}
+		render(
+			<>
+				<IdleBlock />
+				<PreparedBlock />
+			</>,
+		);
+		const [idleHost, viewportHost] = screen.getAllByText("原始正文");
+		intersect(idleHost, false);
+		expect(idleHost.textContent).toBe("原始正文");
+		act(() => idle?.());
+		expect(idleHost.textContent).toBe("增强已准备");
+		expect(viewportHost.textContent).toBe("原始正文");
+	});
 });

@@ -2,6 +2,7 @@ import { LazyArticleEmbed } from "@shared/ui/article-embeds/LazyArticleEmbed";
 import { findArticleEmbed } from "@shared/ui/article-embeds/registry";
 import type { ArticleContentContext } from "@shared/ui/article-embeds/types";
 import { DeferredContent } from "@shared/ui/deferred-content/DeferredContent";
+import { BlockMathSource } from "@shared/ui/katex/BlockMathSource";
 import { InlineMathContent } from "@shared/ui/katex/InlineMathContent";
 import { loadBlockMathFormula } from "@shared/ui/katex/math-formula-loader";
 import { lazy, Suspense } from "react";
@@ -53,14 +54,11 @@ export function createRichCodeRenderer(
 		if (/\bmath-display\b/u.test(cls)) {
 			return (
 				<DeferredContent
+					defer="idle"
 					load={loadBlockMathFormula}
 					componentProps={{ latex: code }}
 					label="公式"
-					fallback={
-						<div data-type="block-math" data-latex={code}>
-							{code}
-						</div>
-					}
+					fallback={<BlockMathSource latex={code} />}
 				/>
 			);
 		}

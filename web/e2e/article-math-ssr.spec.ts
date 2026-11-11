@@ -34,7 +34,7 @@ test("首屏公式随 HTML 排好，脚本接管前后都不退回 LaTeX 原文"
 		await expect(first.locator(".katex-mathml")).toHaveCSS("position", "absolute");
 		expect(await first.evaluate(ownText)).toBe("");
 		await expect(page.locator('[data-type="inline-math"] .katex')).toBeVisible();
-		// 首屏之外的公式仍按视口排版，服务端只给原文
+		// 首屏之外的公式服务端只给原文，脚本接管后再排
 		await expect(page.locator('[data-type="block-math"]').last()).toContainText(LATER);
 
 		const ready = page.waitForResponse("**/api/v1/presence/stream");
@@ -44,6 +44,10 @@ test("首屏公式随 HTML 排好，脚本接管前后都不退回 LaTeX 原文"
 		await expect(first.locator(".katex-display")).toBeVisible();
 		expect(await first.evaluate(ownText)).toBe("");
 		expect(hydrationErrors).toEqual([]);
+		// 文末的公式不必滚到跟前：空闲时已排好，读者从目录跳过去看不到 LaTeX 原文
+		await expect(
+			page.locator('[data-type="block-math"]').last().locator(".katex-display"),
+		).toBeAttached();
 	} finally {
 		scripts.resolve();
 		await context.unrouteAll({ behavior: "wait" });

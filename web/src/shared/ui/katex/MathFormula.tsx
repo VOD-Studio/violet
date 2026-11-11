@@ -9,6 +9,7 @@
  */
 import { scheduleEnhancement } from "@shared/lib/schedule-enhancement";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { BLOCK_MATH_CLASS, BLOCK_MATH_SOURCE_CLASS } from "./BlockMathSource";
 import { KatexStylesheet } from "./KatexStylesheet";
 import { renderKatexElement } from "./katex-element";
 
@@ -44,7 +45,7 @@ export interface BlockMathFormulaProps {
  * 保留 LaTeX 原文的块公式。
  *
  * @remarks 排队排版时同一源码在挂载期间保留结果；源码变化或卸载取消尚未开始的计算，
- * 计算尚未完成或失败时显示原文。视口门控由调用方在加载本模块前完成。
+ * 计算尚未完成或失败时显示原文。启用时机由调用方在加载本模块前决定。
  */
 export function BlockMathFormula({ latex, eager = false }: BlockMathFormulaProps) {
 	const hostRef = useRef<HTMLDivElement>(null);
@@ -68,15 +69,16 @@ export function BlockMathFormula({ latex, eager = false }: BlockMathFormulaProps
 			});
 		return () => controller.abort();
 	}, [eager, latex]);
+	const formula = immediate ?? (rendered?.latex === latex ? rendered.node : null);
 	return (
 		<div
 			ref={hostRef}
-			className="my-6 overflow-x-auto"
+			className={formula ? BLOCK_MATH_CLASS : BLOCK_MATH_SOURCE_CLASS}
 			data-type="block-math"
 			data-latex={latex}
 		>
 			<KatexStylesheet />
-			{immediate ?? (rendered?.latex === latex ? rendered.node : latex)}
+			{formula ?? latex}
 		</div>
 	);
 }

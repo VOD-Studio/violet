@@ -7,6 +7,7 @@
  */
 
 import { DeferredContent } from "@shared/ui/deferred-content/DeferredContent";
+import { BlockMathSource } from "@shared/ui/katex/BlockMathSource";
 import { InlineMathContent } from "@shared/ui/katex/InlineMathContent";
 import { loadBlockMathFormula } from "@shared/ui/katex/math-formula-loader";
 import { RunnableCodeRenderer } from "@shared/ui/markdown-preview/code-renderer-context";
@@ -188,19 +189,16 @@ export const markdownComponents: Components = {
 		}
 		if (p["data-type"] === "block-math") {
 			const latex = String(p["data-latex"] ?? "");
-			// 首屏公式不等视口：服务端直出排版，水合沿用同一结果
+			// 首屏公式服务端直出排版，水合沿用同一结果；其余在浏览器空闲时提前排好，
+			// 读者从目录跳到文末也不会先看到 LaTeX 原文。
 			const eager = p["data-first-screen"] === "true";
 			return (
 				<DeferredContent
-					defer={!eager}
+					defer={eager ? false : "idle"}
 					load={loadBlockMathFormula}
 					componentProps={{ latex, eager }}
 					label="公式"
-					fallback={
-						<div data-type="block-math" data-latex={latex}>
-							{latex}
-						</div>
-					}
+					fallback={<BlockMathSource latex={latex} />}
 				/>
 			);
 		}
