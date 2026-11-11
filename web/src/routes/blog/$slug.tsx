@@ -1,9 +1,15 @@
+import { activePersonaKeys } from "@entities/persona/api/keys";
+import { fetchActivePersona } from "@entities/persona/api/queries";
 import type { PostDetail } from "@entities/post/model/types";
 import { commentKeys } from "@features/comments/api/keys";
 import { fetchAnnotationSummary } from "@features/comments/api/queries";
 import { postKeys } from "@features/posts/api/keys";
 import { fetchPostBySlug } from "@features/posts/api/queries";
 import { PostDetailSkeleton } from "@features/posts/ui/PostDetailSkeleton";
+import { seriesKeys } from "@features/series/api/keys";
+import { fetchChapterContext, fetchSeriesBySlug } from "@features/series/api/queries";
+import { settingsKeys } from "@features/settings/api/keys";
+import { fetchAnnouncements, fetchSettings } from "@features/settings/api/queries";
 import { SITE_URL } from "@shared/config/env";
 import { createFileRoute } from "@tanstack/react-router";
 import { BlogDetailPage } from "@widgets/BlogDetailPage";
@@ -19,10 +25,46 @@ export const Route = createFileRoute("/blog/$slug")({
 	pendingMs: 0,
 	pendingMinMs: 200,
 	loader: async ({ context, params }) => {
-		const post = await context.queryClient.ensureQueryData({
+		const { queryClient } = context;
+		// 设置与系列归属会改变首屏版面；人设、公告及书目录不阻塞正文。
+		// 所有请求在正文前并行起跑，失败留给浏览器重取；服务端不重试。
+		const settings = queryClient.ensureQueryData({
+			queryKey: settingsKeys.public(),
+			queryFn: fetchSettings,
+			retry: false,
+		});
+		const chapter = queryClient.ensureQueryData({
+			queryKey: seriesKeys.context(params.slug),
+			queryFn: () => fetchChapterContext(params.slug),
+			retry: false,
+		});
+		const announcements = queryClient.ensureQueryData({
+			queryKey: settingsKeys.announcements(),
+			queryFn: fetchAnnouncements,
+			retry: false,
+		});
+		const persona = queryClient.ensureQueryData({
+			queryKey: activePersonaKeys.current(""),
+			queryFn: () => fetchActivePersona(),
+			retry: false,
+		});
+		const series = chapter.then((value) =>
+			value?.series.slug
+				? queryClient.prefetchQuery({
+						queryKey: seriesKeys.detail(value.series.slug),
+						queryFn: () => fetchSeriesBySlug(value.series.slug),
+						retry: false,
+					})
+				: undefined,
+		);
+		void Promise.allSettled([announcements, persona, series]);
+		const layout = Promise.allSettled([settings, chapter]);
+		const post = await queryClient.ensureQueryData({
 			queryKey: postKeys.detail(params.slug),
 			queryFn: () => fetchPostBySlug(params.slug),
 		});
+		// 浏览器里导航不等版面数据：壳层的多半已在缓存，系列归属到了再补。
+		if (typeof window === "undefined") await layout;
 		// 批注摘要按访客身份过滤：服务端预取没有访客 cookie，只会拿到空表并作为新鲜数据脱水，
 		// 登录读者刷新后看不到已有批注。只在浏览器导航时预取。
 		if (post?.id && typeof window !== "undefined") {
