@@ -7,15 +7,6 @@ export function collectDiagnostics(page: Page) {
 	page.on("console", (message) => {
 		const text = message.text();
 		const source = message.location().url;
-		// 匿名身份探活返回 401；只排除该响应的浏览器资源提示。
-		if (
-			message.type() === "error" &&
-			source === "http://127.0.0.1:4173/api/v1/auth/me" &&
-			text ===
-				"Failed to load resource: the server responded with a status of 401 (Unauthorized)"
-		) {
-			return;
-		}
 		if (
 			message.type() === "error" ||
 			/same key|duplicate key|hydration|hydrated|uncaught/i.test(text)
@@ -27,13 +18,16 @@ export function collectDiagnostics(page: Page) {
 }
 
 /**
- * 导航并等待客户端会话探活，SSR 文本可见时事件监听可能尚未挂载。
+ * 导航并等待壳层的客户端请求；SSR 文本可见时事件监听可能尚未挂载。
  *
- * @remarks 探活由壳层 Header 发出，只说明 React 根已接管：路由内容在独立的 Suspense 边界里稍后水合，
- * 此前的点击与按键由 React 补水合后重放，页面 effect 订阅的窗口事件则会丢失，见 {@link refocusUntilRequest}。
+ * @remarks 公开页用 Header 的 presence stream 判定根已接管；后台以鉴权 me 为准。
+ * 路由内容在独立的 Suspense 边界里稍后水合，页面 effect 订阅的窗口事件可能丢失，
+ * 见 {@link refocusUntilRequest}。
  */
 export async function openClientPage(page: Page, path: string) {
-	const ready = page.waitForResponse("**/api/v1/auth/me");
+	const ready = page.waitForResponse(
+		path.startsWith("/admin") ? "**/api/v1/auth/me" : "**/api/v1/presence/stream",
+	);
 	const [response] = await Promise.all([page.goto(path), ready]);
 	return response;
 }

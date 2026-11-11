@@ -268,7 +268,7 @@ pnpm test:contract
 
 [playwright.config.ts](playwright.config.ts) 会启动测试 API（9410）和构建后的 SSR 服务（4173），不是连接线上业务环境。可在命令后指定用例文件，例如 `pnpm test:contract e2e/ssr-hydration.spec.ts`。
 
-SSR 内容可见不代表客户端交互已挂载。需要交互的测试使用 [e2e/support.ts](e2e/support.ts) 的 `openClientPage` 等待会话探活；涉及页面 effect 的聚焦刷新再使用对应就绪辅助函数，不能仅凭文本出现就派发窗口事件。
+SSR 内容可见不代表客户端交互已挂载。需要交互的测试使用 [e2e/support.ts](e2e/support.ts) 的 `openClientPage` 等待客户端请求：公开页等顶栏的 `/presence/stream`，后台等 `/auth/me`；涉及页面 effect 的聚焦刷新再使用对应就绪辅助函数，不能仅凭文本出现就派发窗口事件。
 
 ## 生产构建与部署
 

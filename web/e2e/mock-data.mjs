@@ -81,10 +81,10 @@ const RICH_CONTENT_POSTS = ["code", "diagram", "toc", "image", "toc-copy", "work
 			: "",
 		kind === "toc" || kind === "toc-copy"
 			? Array.from(
-					{ length: 20 },
-					(_, index) =>
-						`<h2>目录章节 ${index + 1}</h2><p>键盘焦点保持可见，不被滚动区域裁剪。</p>`,
-				).join("")
+				{ length: 20 },
+				(_, index) =>
+					`<h2>目录章节 ${index + 1}</h2><p>键盘焦点保持可见，不被滚动区域裁剪。</p>`,
+			).join("")
 			: "",
 	].join(""),
 }));
@@ -600,6 +600,10 @@ export function handle(method, pathname, search, cookie = "") {
 				github_username: "contract",
 				profile_role: "缓存接管契约作者",
 				avatar_url: "",
+				google_login_enabled: true,
+				github_login_enabled: true,
+				google_client_id: "contract-google-client",
+				github_client_id: "contract-github-client",
 				tagline: "",
 				about_config: {
 					sections: [{ id: "bio", enabled: true }],
@@ -627,6 +631,21 @@ export function handle(method, pathname, search, cookie = "") {
 	if (pathname === "/api/v1/galleries/contract-gallery") {
 		return { status: 200, body: envelope(CONTRACT_GALLERY) };
 	}
+	if (pathname === "/api/v1/window")
+		return {
+			status: 200,
+			body: envelope({
+				enabled: false,
+				city: "",
+				timezone: "",
+				condition: "",
+				is_day: true,
+				temperature_c: null,
+				observed_at: "",
+				photo_slot: "clear",
+				photo: "",
+			}),
+		};
 	if (pathname === "/api/v1/presence") return { status: 200, body: envelope(NO_PRESENCE) };
 	if (pathname === "/api/v1/presence/stream") {
 		// route.fetch 要等响应结束，所以推一条快照就收尾；retry 拉长，用例期间不重连。

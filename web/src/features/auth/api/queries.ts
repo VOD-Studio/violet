@@ -1,6 +1,7 @@
 import type { UserDTO } from "@entities/user/model/types";
 import { clientQueryClient } from "@shared/api/query-client";
 import { apiGet } from "@shared/api/request";
+import { useSessionStore } from "@shared/api/session";
 import { registerSessionExpiredHandler } from "@shared/api/session-expired";
 import {
 	type QueryClient,
@@ -87,7 +88,7 @@ export const fetchMe = (): Promise<UserDTO> =>
 /**
  * useMe - 当前登录用户 hook
  *
- * 默认 enabled，未登录时会收到 401 业务错误，调用方按需控制 enabled。
+ * 没有会话时不请求：游客的身份已由 SSR 探明，再问只会得到 401。
  * 缓存 key 为 auth.me，写操作成功后通过 invalidate 触发刷新。
  *
  * staleTime 设为 Infinity：用户资料只在显式 invalidate 时刷新，避免登出后
@@ -95,10 +96,12 @@ export const fetchMe = (): Promise<UserDTO> =>
  *
  * @param options 透传 useQuery 选项，常用于禁用自动请求
  */
-export const useMe = (options: { enabled?: boolean } = {}): UseQueryResult<UserDTO | null> =>
-	useQuery<UserDTO | null>({
+export const useMe = (options: { enabled?: boolean } = {}): UseQueryResult<UserDTO | null> => {
+	const sessionActive = useSessionStore((state) => state.sessionActive);
+	return useQuery<UserDTO | null>({
 		queryKey: authKeys.me(),
 		queryFn: fetchMe,
-		enabled: options.enabled,
+		enabled: sessionActive && (options.enabled ?? true),
 		staleTime: Infinity,
 	});
+};
