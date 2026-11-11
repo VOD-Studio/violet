@@ -3,6 +3,7 @@ import { MarkdownContent } from "@shared/ui/markdown-preview/MarkdownContent";
 import { Link, notFound } from "@tanstack/react-router";
 import { PageShell } from "@violet/ui";
 import { cn } from "cn";
+import { EDITOR_GUIDE_SOURCES } from "../model/chapter-sources";
 import { EDITOR_GUIDE_CHAPTERS, rewriteChapterLinks } from "../model/chapters";
 
 /** 前后章导航：两端对齐，缺失一侧留占位保持布局稳定。 */
@@ -49,7 +50,8 @@ function ChapterNav({ index }: { index: number }) {
 export function EditorGuideChapterPage({ chapterId }: { chapterId: string }) {
 	const index = EDITOR_GUIDE_CHAPTERS.findIndex((chapter) => chapter.id === chapterId);
 	const chapter = EDITOR_GUIDE_CHAPTERS[index];
-	if (!chapter) throw notFound();
+	const source = EDITOR_GUIDE_SOURCES[chapterId];
+	if (!chapter || source === undefined) throw notFound();
 
 	return (
 		<PageShell className="pt-4 font-sans sm:pt-8">
@@ -73,7 +75,7 @@ export function EditorGuideChapterPage({ chapterId }: { chapterId: string }) {
 							</p>
 						</header>
 						<GuideTocContent contentKey={chapter.id}>
-							<MarkdownContent content={rewriteChapterLinks(chapter.source)} />
+							<MarkdownContent content={rewriteChapterLinks(source)} />
 						</GuideTocContent>
 						<ChapterNav index={index} />
 					</div>
