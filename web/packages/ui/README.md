@@ -4,7 +4,7 @@ React 19 组件库，使用原生 HTML 与 Radix 提供交互行为，用类型�
 
 ## 当前范围
 
-`component-manifest.json` 记录每个组件的入口、样式和成熟度。当前登记 63 个 `foundation` 单元（含 UploadQueue/UploadDropzone 所在的 upload 单元）与 4 个保留 API 的 `legacy` 单元；完整列表以清单为准。兼容入口不代表已经重建所有组件。
+`component-manifest.json` 记录每个组件的入口、样式和成熟度；`foundation` 是已按单元契约交付的基础能力，`legacy` 保留存量 API，完整范围以清单为准。兼容入口不代表已经重建所有组件。
 
 所有组件都放在 `src/components/<name>/`，实现、有变体时的 `styles.ts`、CSS、入口和测试就近维护。`src/legacy.ts` 只汇总兼容导出；`src/lib/` 只放有实际消费方的复用能力。
 
@@ -120,6 +120,14 @@ Segmented 是带滑动指示器的分段控制：`orientation` 选横向或竖�
 `morphing-popover` 单元的 `MorphingPopover`、`MorphingPopoverTrigger`、`MorphingPopoverContent` 让一个有底色的胶囊或圆钮自己长成面板：外形从按钮的位置、大小与圆角长出，内容晚一拍浮现，收起时缩回；同一个根里换一块 `key` 不同的面板即接力，新面板从旧面板长出，关闭直接缩回最初的按钮。`ghost` 放触发器上字的副本，`outset` 让面板的角比按钮外扩，`radius` 是展开后的圆角；Esc、点外面、焦点离开都会收起，开启减弱动态时只做 100ms 淡入淡出。从 `@violet/ui` 或 `@violet/ui/morphing-popover` 导入，按需 CSS 为 `@violet/ui/components/morphing-popover.css`；[陈列室展品](https://xunrua.top/ui?open=morphing-popover)可操作灵动岛展开卡与回应选择器的接力。
 
 `announcement-bar` 是站点级公告的展示单元：一句话、可选链接与右侧关闭钮，宽度跟着文字走，自身不占页面高度。`content` 必填；`link` 传了才渲染原生 `<a>`；`severity` 只换指示点颜色；`onClose` 交给宿主决定关闭后的已读与隐藏，定位、多条轮换与暂停也都在宿主。淡入 180ms 只动透明度，减弱动态与 `[data-motion="reduce"]` 作用域下静止。从 `@violet/ui` 或 `@violet/ui/announcement-bar` 导入，按需 CSS 为 `@violet/ui/components/announcement-bar.css`；[组件契约](docs/components/announcement-bar.md)说明属性与语义，[陈列室展品](https://xunrua.top/ui?open=announcement-bar)可切换有、没有公告两态。
+
+`annotation` 提供原文标记、选区工具栏与 320px 纸片；不接管文章锚点、评论请求或登录状态。[批注契约](docs/components/annotation.md)说明原生节点、键盘激活与按需样式；[展品](https://xunrua.top/ui?open=annotation)覆盖选区、已有批注与批注卡。
+
+`MentionList` 只负责候选列表与读屏人数，宿主持有焦点、查询和插入；筛选与触发词解析同属 `mention` 单元。[提及契约](docs/components/mention.md)列出键盘与输入框接线。
+
+`QuoteCard` 在推文、聊天和发布预览中共用三态：原文整卡唯一链接，嵌套仅提示下一层引用，删除后不泄露作者与时间。详见[引用卡契约](docs/components/quote-card.md)。
+
+`ImageGrid` 按图片数量陈列至多四张真实缩略图，回调交出实际 `img` 供灯箱定位；完整图片与灯箱状态留给宿主。详见[图片网格契约](docs/components/image-grid.md)与[展品](https://xunrua.top/ui?open=image-grid)。
 
 ## 开发与验证
 
