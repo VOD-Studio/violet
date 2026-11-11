@@ -317,8 +317,10 @@
 		},
 		{
 			"name": "scroll-area",
-			"status": "legacy",
-			"entry": "src/components/scroll-area/index.ts"
+			"status": "foundation",
+			"entry": "src/components/scroll-area/index.ts",
+			"css": "src/components/scroll-area/scroll-area.css",
+			"documentation": "web/packages/ui/docs/components/scroll-area.md"
 		},
 		{
 			"name": "segmented",

@@ -45,6 +45,7 @@
 @import "./components/quote-card/quote-card.css";
 @import "./components/radio/radio.css";
 @import "./components/resend-button/resend-button.css";
+@import "./components/scroll-area/scroll-area.css";
 @import "./components/segmented/segmented.css";
 @import "./components/select/select.css";
 @import "./components/separator/separator.css";

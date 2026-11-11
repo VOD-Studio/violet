@@ -31,13 +31,4 @@ const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
 
 OverlayScroll.displayName = "OverlayScroll";
 
-/**
- * 覆盖文档的原生滚动条，保留 window 滚动、锚点与浏览器滚动恢复。
- *
- * @remarks 每个文档只挂载一次；SSR 宿主可在 html 设置 data-scrollbar="none" 避免首帧占位。
- */
-function DocumentScrollbar() {
-	return <Scrollbars viewport="document" />;
-}
-
-export { DocumentScrollbar, OverlayScroll };
+export { OverlayScroll };

@@ -11,7 +11,7 @@ import {
 	useState,
 } from "react";
 import { Button } from "../button";
-import { OverlayScroll } from "../overlay-scroll";
+import { ScrollArea } from "../scroll-area";
 import { DataTableBody } from "./data-table-body";
 import { DataTableFooter } from "./data-table-footer";
 import { DataTableHeader } from "./data-table-header";
@@ -365,14 +365,22 @@ export function DataTable<T>({
 			{toolbar ? <div className="v-data-table__toolbar">{toolbar}</div> : null}
 
 			<div className="v-data-table__frame">
-				<OverlayScroll
+				<ScrollArea
 					ref={scrollRef}
 					className="v-data-table__scroller"
+					orientation="both"
 					role="region"
 					tabIndex={0}
 					aria-label={caption ?? "数据表格"}
 					// 视口自己占据弹性剩余高度而不是写 100% 高度：根容器高度 auto、只靠 max-block-size 限高时，百分比高度没有确定值
-					style={{ height: "auto", flex: "1 1 0%", minHeight: 0 }}
+					style={
+						{
+							height: "auto",
+							flex: "1 1 0%",
+							minHeight: 0,
+							"--v-scroll-area-padding": "0px",
+						} as CSSProperties
+					}
 				>
 					<table
 						ref={tableRef}
@@ -446,7 +454,7 @@ export function DataTable<T>({
 							}
 						/>
 					</table>
-				</OverlayScroll>
+				</ScrollArea>
 
 				{showBulkBar ? (
 					<div

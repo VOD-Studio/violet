@@ -41,6 +41,7 @@ import { popoverExhibit } from "./popover";
 import { presenceExhibit } from "./presence";
 import { quoteCardExhibit } from "./quote-card";
 import { radioExhibit } from "./radio";
+import { scrollAreaExhibit } from "./scroll-area";
 import { segmentedExhibit } from "./segmented";
 import { selectExhibit } from "./select";
 import { separatorExhibit } from "./separator";
@@ -113,6 +114,7 @@ export const EXHIBITS: Exhibit[] = [
 	iconsExhibit,
 	cardExhibit,
 	separatorExhibit,
+	scrollAreaExhibit,
 	listExhibit,
 	treeExhibit,
 	accordionExhibit,

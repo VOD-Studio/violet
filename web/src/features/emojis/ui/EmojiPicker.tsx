@@ -239,9 +239,10 @@ function EmojiPickerSession({
 						key={activeKey}
 						id={`${id}-panel`}
 						role="tabpanel"
+						aria-label="表情列表"
 						aria-labelledby={activeKey === undefined ? undefined : `${id}-${activeKey}`}
-						className="h-48 overscroll-contain px-3 pb-3"
-						mask="none"
+						className="h-48"
+						viewportClassName="px-3 pb-3"
 						ref={(element) => {
 							if (element && activeKey !== undefined)
 								element.scrollTop = scrollPositions.current.get(activeKey) ?? 0;

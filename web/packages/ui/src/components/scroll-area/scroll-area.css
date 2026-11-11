@@ -1,0 +1,201 @@
+/*
+ * ScrollArea：原生滚动视口、覆盖式滑块与按位置出现的边缘渐隐。
+ * 滑块出现 150ms；指针离开或停止滚动 800ms 后用 300ms 淡出；减弱动态下常显。
+ * 需先导入 @violet/ui/tokens.css 或 styles.css。
+ */
+@import "../button/button.css";
+@import "../../styles/scrollbar.css";
+
+.v-scroll-area {
+	position: relative;
+	isolation: isolate;
+	min-inline-size: 0;
+	min-block-size: 0;
+}
+
+.v-scroll-area__viewport {
+	box-sizing: border-box;
+	block-size: 100%;
+	max-block-size: inherit;
+	/* 视口会裁剪内容；留出内边距，子控件的焦点环才不会被切掉。 */
+	padding: var(--v-scroll-area-padding, 4px);
+	overflow: auto;
+	overscroll-behavior: contain;
+	outline: none;
+}
+
+.v-scroll-area__viewport:focus-visible {
+	outline: 2px solid var(--ring);
+	outline-offset: -2px;
+}
+
+.v-scroll-area[data-orientation="vertical"] > .v-scroll-area__viewport {
+	overflow-x: hidden;
+}
+
+.v-scroll-area[data-orientation="horizontal"] > .v-scroll-area__viewport {
+	overflow-y: hidden;
+}
+
+/* 宽度与“宽 100% 的块”一致，放不下时才变宽；ResizeObserver 因此能发现横向溢出的变化。 */
+.v-scroll-area__content {
+	display: flow-root;
+	inline-size: fit-content;
+	min-inline-size: 100%;
+}
+
+/* ---- 边缘渐隐：跟随滚动位置出现与消失，不做过渡 ---- */
+
+.v-scroll-area__fade {
+	--v-scroll-area-fade-color: var(--v-scroll-area-surface, var(--background));
+	position: absolute;
+	z-index: 1;
+	pointer-events: none;
+}
+
+.v-scroll-area__fade[data-edge="top"] {
+	inset: 0 0 auto;
+	block-size: 24px;
+	background: linear-gradient(to bottom, var(--v-scroll-area-fade-color), transparent);
+}
+
+.v-scroll-area__fade[data-edge="bottom"] {
+	inset: auto 0 0;
+	block-size: 24px;
+	background: linear-gradient(to top, var(--v-scroll-area-fade-color), transparent);
+}
+
+.v-scroll-area__fade[data-edge="left"] {
+	inset: 0 auto 0 0;
+	inline-size: 24px;
+	background: linear-gradient(to right, var(--v-scroll-area-fade-color), transparent);
+}
+
+.v-scroll-area__fade[data-edge="right"] {
+	inset: 0 0 0 auto;
+	inline-size: 24px;
+	background: linear-gradient(to left, var(--v-scroll-area-fade-color), transparent);
+}
+
+/* ---- 横向翻页按钮：外观来自 Button，这里只负责定位 ---- */
+
+.v-scroll-area__page {
+	position: absolute;
+	z-index: 2;
+	inset-block-start: 50%;
+	translate: 0 -50%;
+}
+
+.v-scroll-area__page[data-edge="left"] {
+	inset-inline-start: 4px;
+}
+
+.v-scroll-area__page[data-edge="right"] {
+	inset-inline-end: 4px;
+}
+
+/* ---- 滑块 ---- */
+
+.v-document-scrollbar {
+	position: fixed;
+	inset: 0;
+	z-index: 50;
+	pointer-events: none;
+}
+
+.v-scrollbar {
+	--v-scrollbar-fade-in: opacity 150ms ease-out;
+	--v-scrollbar-fade-out: opacity 300ms ease-out 800ms;
+	position: absolute;
+	z-index: 3;
+	pointer-events: none;
+}
+
+.v-scrollbar[data-axis="vertical"] {
+	inset: 3px 3px 3px auto;
+	inline-size: 6px;
+}
+
+.v-scrollbar[data-axis="horizontal"] {
+	inset: auto 3px 3px;
+	block-size: 6px;
+}
+
+/* 两个方向都有滑块时各自让出 12px（边距 3 + 粗细 6 + 间隔 3），避免在右下角交叠。 */
+.v-scrollbar[data-axis="vertical"]:has(~ .v-scrollbar[data-axis="horizontal"]) {
+	inset-block-end: 12px;
+}
+
+.v-scrollbar[data-axis="vertical"] ~ .v-scrollbar[data-axis="horizontal"] {
+	inset-inline-end: 12px;
+}
+
+.v-scrollbar__thumb {
+	/* 至少 24px 便于抓取，但不超过整条轨道；百分比按轨道长度解析。 */
+	--v-scrollbar-length: min(100%, max(24px, var(--v-scrollbar-ratio) * 100%));
+	--v-scrollbar-offset: calc(var(--v-scrollbar-progress) * (100% - var(--v-scrollbar-length)));
+	position: absolute;
+	border-radius: 3px;
+	background: color-mix(in oklab, var(--foreground) 25%, transparent);
+	opacity: 0;
+	pointer-events: auto;
+	touch-action: none;
+	cursor: grab;
+	transition:
+		var(--v-scrollbar-fade-out),
+		background-color 150ms ease-out;
+}
+
+.v-scrollbar[data-axis="vertical"] > .v-scrollbar__thumb {
+	inset-inline: 0;
+	inset-block-start: var(--v-scrollbar-offset);
+	block-size: var(--v-scrollbar-length);
+}
+
+.v-scrollbar[data-axis="horizontal"] > .v-scrollbar__thumb {
+	inset-block: 0;
+	inset-inline-start: var(--v-scrollbar-offset);
+	inline-size: var(--v-scrollbar-length);
+}
+
+/* 子选择器只命中自己的滑块，嵌套的 ScrollArea 不会被外层悬停一并唤出。 */
+.v-scroll-area:hover > .v-scrollbar > .v-scrollbar__thumb,
+.v-scroll-area[data-scrolling] > .v-scrollbar > .v-scrollbar__thumb,
+.v-document-scrollbar[data-scrolling] > .v-scrollbar > .v-scrollbar__thumb,
+.v-scrollbar__thumb:hover,
+.v-scrollbar__thumb:active {
+	opacity: 1;
+	transition:
+		var(--v-scrollbar-fade-in),
+		background-color 150ms ease-out;
+}
+
+.v-scrollbar__thumb:hover,
+.v-scrollbar__thumb:active {
+	background: color-mix(in oklab, var(--foreground) 40%, transparent);
+}
+
+.v-scrollbar__thumb:active {
+	cursor: grabbing;
+}
+
+/* 减弱动态：滑块常显，不做淡入淡出。 */
+@media (prefers-reduced-motion: reduce) {
+	.v-scrollbar {
+		--v-scrollbar-fade-in: opacity 0s;
+		--v-scrollbar-fade-out: opacity 0s;
+	}
+
+	.v-scrollbar__thumb {
+		opacity: 1;
+	}
+}
+
+[data-motion="reduce"] .v-scrollbar {
+	--v-scrollbar-fade-in: opacity 0s;
+	--v-scrollbar-fade-out: opacity 0s;
+}
+
+[data-motion="reduce"] .v-scrollbar__thumb {
+	opacity: 1;
+}
