@@ -96,6 +96,8 @@
 
 	.v-sortable__announcement {
 		position: absolute;
+		inset-block-start: 0;
+		inset-inline-start: 0;
 		inline-size: 1px;
 		block-size: 1px;
 		padding: 0;
