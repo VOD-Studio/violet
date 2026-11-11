@@ -1,3 +1,4 @@
+import { useShareTweetStore } from "@entities/tweet/model/share-store";
 import { SiteMusicPlayer } from "@features/music-player/ui/SiteMusicPlayer";
 import { getClientAppearance } from "@shared/lib/appearance-cookie";
 import {
@@ -9,6 +10,7 @@ import {
 import { CUSTOM_THEME_STYLE_ID, generateCustomThemeCss } from "@shared/lib/theme-css";
 import { getClientThemeState, renderedTheme } from "@shared/lib/theme-preference";
 import { SystemAppearanceTransition } from "@shared/ui/appearance-transition";
+import { AsyncContent } from "@shared/ui/deferred-content/DeferredContent";
 import NotFound from "@shared/ui/not-found";
 import RouteError from "@shared/ui/route-error";
 import {
@@ -25,11 +27,10 @@ import Footer from "@widgets/Footer";
 import Header from "@widgets/Header";
 import SiteBackdrop from "@widgets/SiteBackdrop";
 import { cn } from "cn";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ApiDocsDialog } from "@/features/api-docs";
 import { LinkConfirmDialog } from "@/features/auth/ui/LinkConfirmDialog";
 import { LoginDialog } from "@/features/auth/ui/LoginDialog";
-import { ShareTweetDialog } from "@/features/chat/ui/ShareTweetDialog";
 import AppProvider from "../providers";
 import type { RouterContext } from "../router";
 import { isSessionActive, markSessionActive } from "../shared/api/session";
@@ -189,8 +190,32 @@ function RootComponent() {
 			<LoginDialog />
 			<LinkConfirmDialog />
 			<ApiDocsDialog />
-			<ShareTweetDialog />
+			<ShareTweetDialogSlot />
 		</AppProvider>
+	);
+}
+
+const loadShareTweetDialog = () =>
+	import("@/features/chat/ui/ShareTweetDialog").then((module) => ({
+		default: module.ShareTweetDialog,
+	}));
+const NO_PROPS = {};
+
+/** 分享推文的会话选择器连同聊天查询层，首次发起分享才下载。 */
+function ShareTweetDialogSlot() {
+	const sharing = useShareTweetStore((state) => state.tweet !== null);
+	const [hasShared, setHasShared] = useState(sharing);
+	useEffect(() => {
+		if (sharing) setHasShared(true);
+	}, [sharing]);
+	if (!sharing && !hasShared) return null;
+	return (
+		<AsyncContent
+			load={loadShareTweetDialog}
+			componentProps={NO_PROPS}
+			fallback={null}
+			label="分享面板"
+		/>
 	);
 }
 
