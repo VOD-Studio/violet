@@ -46,6 +46,8 @@ export interface BuildTweetCommentConfigArgs {
 function toGridImages(pictures: TweetCommentPicture[]) {
 	return pictures.map((p) => ({
 		url: p.url,
+		width: p.width > 0 ? p.width : undefined,
+		height: p.height > 0 ? p.height : undefined,
 		thumbnail:
 			pictures.length === 1
 				? contentImageUrl(p.url, { width: 800 })

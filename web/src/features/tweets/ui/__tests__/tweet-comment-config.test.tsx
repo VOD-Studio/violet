@@ -48,10 +48,11 @@ describe("buildTweetCommentConfig.renderBody", () => {
 		// 表情：[doge] 占位符替换为表情 img
 		const emojiImg = screen.getByAltText("[doge]");
 		expect(emojiImg.getAttribute("src")).toBe("https://emoji/doge.png");
-		// 附图：ImageGrid 格子（bg 样式引用原图 / 缩略图 URL）
-		const gridCells = screen.getAllByRole("button");
-		expect(gridCells.length).toBeGreaterThan(0);
-		expect(gridCells[0].getAttribute("style")).toContain("/uploads/comment/a.webp");
+		const gridCell = screen.getByRole("button", { name: "查看第 1 张，共 1 张" });
+		const thumbnail = gridCell.querySelector("img");
+		expect(thumbnail?.getAttribute("src")).toContain("/uploads/comment/a.webp");
+		expect(thumbnail?.getAttribute("src")).toContain("w=800");
+		expect(thumbnail?.getAttribute("src")).not.toContain("thumb=");
 	});
 
 	it("无图片无表情时不渲染网格", () => {

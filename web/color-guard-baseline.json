@@ -1748,24 +1748,6 @@
 			"count": 1
 		},
 		{
-			"file": "src/shared/ui/image-grid/ImageGrid.tsx",
-			"rule": "tailwind-palette",
-			"value": "bg-black",
-			"count": 1
-		},
-		{
-			"file": "src/shared/ui/image-grid/ImageGrid.tsx",
-			"rule": "tailwind-palette",
-			"value": "text-white",
-			"count": 1
-		},
-		{
-			"file": "src/shared/ui/image-grid/__tests__/ImageGrid.test.tsx",
-			"rule": "tailwind-palette",
-			"value": "bg-black",
-			"count": 2
-		},
-		{
 			"file": "src/shared/ui/markdown-preview/__tests__/CommonSyntax.test.tsx",
 			"rule": "raw-color",
 			"value": "#ff0000",

@@ -51,12 +51,6 @@ vi.mock("@violet/ui/confirm-dialog", () => ({
 		) : null,
 }));
 
-// TweetPhotos 含灯箱交互（重），mock 掉避免 DOM portal 干扰
-vi.mock("@violetjs/react-tweet", async (importOriginal) => ({
-	...(await importOriginal<object>()),
-	TweetPhotos: () => <img src="/photo.png" alt="推文配图" />,
-}));
-
 import TweetCard from "../TweetCard";
 
 function makeTweet(overrides: Partial<Tweet> = {}): Tweet {
@@ -226,14 +220,24 @@ describe("TweetCard — 整卡导航边界", () => {
 		expect(navigateMock).not.toHaveBeenCalled();
 	});
 
-	it("点击图片和更多菜单不会触发详情导航", async () => {
+	it("点击配图打开预览而不是详情导航", async () => {
+		render(
+			<TweetCard
+				tweet={makeTweet({ images: [{ url: "/photo.png", width: null, height: null }] })}
+			/>,
+		);
+		fireEvent.click(screen.getByRole("button", { name: "查看第 1 张，共 1 张" }));
+		await waitFor(() => expect(screen.getByRole("dialog", { name: "图片预览" })).toBeTruthy());
+		expect(navigateMock).not.toHaveBeenCalled();
+	});
+
+	it("点击更多菜单不会触发详情导航", async () => {
 		meDataOverride = { id: "u-author" };
 		render(
 			<TweetCard
 				tweet={makeTweet({ images: [{ url: "/photo.png", width: null, height: null }] })}
 			/>,
 		);
-		fireEvent.click(screen.getByRole("img", { name: "推文配图" }));
 		await openMoreMenu();
 		expect(navigateMock).not.toHaveBeenCalled();
 	});
