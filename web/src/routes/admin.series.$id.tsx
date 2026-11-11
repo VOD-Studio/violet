@@ -1,18 +1,3 @@
-import {
-	closestCenter,
-	DndContext,
-	type DragEndEvent,
-	KeyboardSensor,
-	PointerSensor,
-	useSensor,
-	useSensors,
-} from "@dnd-kit/core";
-import {
-	arrayMove,
-	SortableContext,
-	sortableKeyboardCoordinates,
-	verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import {
 	useAddSection,
@@ -26,8 +11,8 @@ import {
 import { useAdminSeriesDetail } from "@features/admin-series/api/queries";
 import type { SeriesChapterDTO, SeriesSectionChapters } from "@features/admin-series/model/types";
 import { PostPickerDialog } from "@features/admin-series/ui/PostPickerDialog";
+import { SeriesChapterScope } from "@features/admin-series/ui/SeriesChapterScope";
 import { SeriesSheet } from "@features/admin-series/ui/SeriesSheet";
-import { SortableChapterRow } from "@features/admin-series/ui/SortableChapterRow";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { HistoryBack } from "@shared/ui/history-back";
 import { createFileRoute } from "@tanstack/react-router";
@@ -43,20 +28,14 @@ import {
 	DialogTitle,
 	Input,
 	Skeleton,
+	Sortable,
 } from "@violet/ui";
-import { BookPlus, Globe, Plus, Trash2 } from "lucide-react";
+import { Globe, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 
 export const Route = createFileRoute("/admin/series/$id")({
 	component: AdminSeriesEditPage,
 });
-
-function useDndSensors() {
-	return useSensors(
-		useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-		useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-	);
-}
 
 function AdminSeriesEditPage() {
 	const { id } = Route.useParams();
@@ -68,7 +47,6 @@ function AdminSeriesEditPage() {
 	const attach = useAttachChapters(id);
 	const detach = useDetachChapter(id);
 	const reorder = useReorderChapters(id);
-	const sensors = useDndSensors();
 
 	const [metaOpen, setMetaOpen] = useState(false);
 	// null=关；""=挂书根；其他=挂入对应卷
@@ -99,109 +77,44 @@ function AdminSeriesEditPage() {
 		);
 	}
 
-	/** 卷拖拽结束：重排后全量提交卷顺序 */
-	const onSectionDragEnd = (event: DragEndEvent) => {
-		const { active, over } = event;
-		if (!over || active.id === over.id) return;
-		const oldIndex = series.sections.findIndex((s) => s.section.id === active.id);
-		const newIndex = series.sections.findIndex((s) => s.section.id === over.id);
-		if (oldIndex < 0 || newIndex < 0) return;
-		const reordered = arrayMove(series.sections, oldIndex, newIndex);
-		reorderSections.mutate(reordered.map((s) => s.section.id));
-	};
-
-	/** 章节拖拽（卷内/根范围各自独立 SortableContext）：
-	 * 拖完以新序重算全树 plans 提交。跨卷移动走「摘除 + 挂入」两步（后端
-	 * chapters/order 也支持跨卷，但 dnd 跨 Context 拖拽体验差，两步更明确）。 */
-	const makeChapterDragEnd = (scopeId: string, chapters: SeriesChapterDTO[]) => {
-		return (event: DragEndEvent) => {
-			const { active, over } = event;
-			if (!over || active.id === over.id) return;
-			const oldIndex = chapters.findIndex((c) => c.post_id === active.id);
-			const newIndex = chapters.findIndex((c) => c.post_id === over.id);
-			if (oldIndex < 0 || newIndex < 0) return;
-			const reordered = arrayMove(chapters, oldIndex, newIndex);
-			const plans = [
-				{ section_id: "", ordered_post_ids: series.root_chapters.map((c) => c.post_id) },
-				...series.sections.map((s) => ({
-					section_id: s.section.id,
-					ordered_post_ids: s.chapters.map((c) => c.post_id),
-				})),
-			].map((plan) =>
-				plan.section_id === scopeId
-					? { ...plan, ordered_post_ids: reordered.map((c) => c.post_id) }
-					: plan,
-			);
-			reorder.mutate(plans);
-		};
-	};
-
-	const renderScope = (scopeId: string, label: string | null, chapters: SeriesChapterDTO[]) => {
-		return (
-			<div className="rounded-lg border border-edge-hairline p-4">
-				<div className="mb-3 flex items-center justify-between">
-					<h3 className="text-sm font-medium">{label ?? "书根章节（未分卷）"}</h3>
-					<PermissionGuard permission="series:update">
-						<div className="flex items-center gap-1">
-							<Button
-								size="sm"
-								variant="outline"
-								onClick={() => setPickerScope(scopeId)}
-							>
-								<BookPlus className="size-3.5" />
-								挂入章节
-							</Button>
-							{label !== null && (
-								<Button
-									iconOnly
-									size="sm"
-									variant="ghost"
-									title="删除卷（须先移出全部章节）"
-									onClick={() => {
-										const sec = series.sections.find(
-											(s) => s.section.id === scopeId,
-										);
-										if (sec) setRemoveSectionTarget(sec);
-									}}
-								>
-									<Trash2 className="size-3.5" />
-								</Button>
-							)}
-						</div>
-					</PermissionGuard>
-				</div>
-				{chapters.length === 0 ? (
-					<p className="text-muted-foreground py-4 text-center text-sm">暂无章节</p>
-				) : (
-					<DndContext
-						sensors={sensors}
-						collisionDetection={closestCenter}
-						onDragEnd={makeChapterDragEnd(scopeId, chapters)}
-					>
-						<SortableContext
-							items={chapters.map((c) => c.post_id)}
-							strategy={verticalListSortingStrategy}
-						>
-							<div className="space-y-1.5">
-								{chapters.map((ch) => (
-									<SortableChapterRow
-										key={ch.post_id}
-										chapter={ch}
-										onRemove={(postId) => {
-											const target = chapters.find(
-												(c) => c.post_id === postId,
-											);
-											if (target) setDetachTarget(target);
-										}}
-									/>
-								))}
-							</div>
-						</SortableContext>
-					</DndContext>
-				)}
-			</div>
+	const reorderScope = (scopeId: string, chapters: SeriesChapterDTO[]) => {
+		const plans = [
+			{
+				section_id: "",
+				ordered_post_ids: series.root_chapters.map((chapter) => chapter.post_id),
+			},
+			...series.sections.map((section) => ({
+				section_id: section.section.id,
+				ordered_post_ids: section.chapters.map((chapter) => chapter.post_id),
+			})),
+		].map((plan) =>
+			plan.section_id === scopeId
+				? { ...plan, ordered_post_ids: chapters.map((chapter) => chapter.post_id) }
+				: plan,
 		);
+		return reorder.mutateAsync(plans);
 	};
+
+	const renderScope = (scopeId: string, label: string | null, chapters: SeriesChapterDTO[]) => (
+		<SeriesChapterScope
+			label={label}
+			chapters={chapters}
+			disabled={reorder.isPending}
+			onAttach={() => setPickerScope(scopeId)}
+			onDetach={setDetachTarget}
+			onReorder={(ordered) => reorderScope(scopeId, ordered)}
+			onRemoveSection={
+				label === null
+					? undefined
+					: () => {
+							const section = series.sections.find(
+								(candidate) => candidate.section.id === scopeId,
+							);
+							if (section) setRemoveSectionTarget(section);
+						}
+			}
+		/>
+	);
 
 	return (
 		<PageShell
@@ -248,17 +161,21 @@ function AdminSeriesEditPage() {
 							</Button>
 						</PermissionGuard>
 					</div>
-					<DndContext
-						sensors={sensors}
-						collisionDetection={closestCenter}
-						onDragEnd={onSectionDragEnd}
-					>
-						<div className="space-y-4">
-							{series.sections.map((sec) =>
-								renderScope(sec.section.id, sec.section.title, sec.chapters),
-							)}
-						</div>
-					</DndContext>
+					<Sortable
+						aria-label="卷与部顺序"
+						items={series.sections}
+						getId={(section) => section.section.id}
+						getLabel={(section) => section.section.title}
+						disabled={reorderSections.isPending}
+						onReorder={(sections) =>
+							reorderSections.mutateAsync(
+								sections.map((section) => section.section.id),
+							)
+						}
+						renderItem={(section) =>
+							renderScope(section.section.id, section.section.title, section.chapters)
+						}
+					/>
 				</div>
 			</div>
 

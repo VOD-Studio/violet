@@ -1,19 +1,15 @@
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import type { PersonaAdminImage } from "@entities/persona/model/types";
 import { contentImageUrl } from "@shared/lib/image-url";
 import { Button, Input, Label, Tag, Textarea } from "@violet/ui";
 
-import { ArrowDown, ArrowUp, GripVertical, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 
 interface PersonaImageEditorProps {
 	image: PersonaAdminImage;
 	index: number;
-	total: number;
 	disabled: boolean;
 	onPreview: (trigger: HTMLButtonElement) => void;
 	onChange: (patch: Pick<PersonaAdminImage, "caption" | "alt_text_override">) => void;
-	onMove: (to: number) => void;
 	onRemove: () => void;
 }
 
@@ -21,27 +17,13 @@ interface PersonaImageEditorProps {
 export function PersonaImageEditor({
 	image,
 	index,
-	total,
 	disabled,
 	onPreview,
 	onChange,
-	onMove,
 	onRemove,
 }: PersonaImageEditorProps) {
-	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-		id: image.file_id,
-		disabled,
-	});
 	return (
-		<div
-			ref={setNodeRef}
-			style={{
-				transform: CSS.Transform.toString(transform),
-				transition,
-				opacity: isDragging ? 0.5 : 1,
-			}}
-			className="grid gap-4 border-t py-4 first:border-t-0 first:pt-0 last:pb-0 sm:grid-cols-[128px_minmax(0,1fr)]"
-		>
+		<div className="grid gap-4 p-2 sm:grid-cols-[128px_minmax(0,1fr)]">
 			<div className="space-y-2">
 				<button
 					type="button"
@@ -72,40 +54,6 @@ export function PersonaImageEditor({
 					</p>
 					{!disabled ? (
 						<div className="flex items-center gap-1">
-							<Button
-								iconOnly
-								type="button"
-								variant="ghost"
-								size="sm"
-								disabled={index === 0}
-								onClick={() => onMove(index - 1)}
-								aria-label={`上移第 ${index + 1} 张设定图`}
-							>
-								<ArrowUp className="size-4" />
-							</Button>
-							<Button
-								iconOnly
-								type="button"
-								variant="ghost"
-								size="sm"
-								disabled={index === total - 1}
-								onClick={() => onMove(index + 1)}
-								aria-label={`下移第 ${index + 1} 张设定图`}
-							>
-								<ArrowDown className="size-4" />
-							</Button>
-							<Button
-								iconOnly
-								type="button"
-								variant="ghost"
-								size="sm"
-								className="cursor-grab active:cursor-grabbing"
-								aria-label={`拖动第 ${index + 1} 张设定图排序`}
-								{...attributes}
-								{...listeners}
-							>
-								<GripVertical className="size-4" />
-							</Button>
 							<Button
 								iconOnly
 								type="button"

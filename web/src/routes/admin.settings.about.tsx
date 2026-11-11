@@ -1,20 +1,3 @@
-import {
-	closestCenter,
-	DndContext,
-	type DragEndEvent,
-	KeyboardSensor,
-	PointerSensor,
-	useSensor,
-	useSensors,
-} from "@dnd-kit/core";
-import {
-	arrayMove,
-	SortableContext,
-	sortableKeyboardCoordinates,
-	useSortable,
-	verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import type { AboutConfig, AboutSection } from "@features/about/model/about-config";
 import { ABOUT_SECTION_IDS, ABOUT_SECTION_LABELS } from "@features/about/ui/section-registry";
 import {
@@ -26,8 +9,7 @@ import type { AboutSettingsDTO } from "@features/admin-settings/model/types";
 import { SettingsSubPage } from "@features/admin-settings/ui/SettingsSubPage";
 import { useSettingsForm } from "@features/admin-settings/ui/use-settings-form";
 import { createFileRoute } from "@tanstack/react-router";
-import { Switch } from "@violet/ui";
-import { GripVertical } from "lucide-react";
+import { Sortable, Switch } from "@violet/ui";
 
 /**
  * 关于页配置表单值（仅 about_config 字段，原生 JSON 对象）。
@@ -81,20 +63,8 @@ function AboutConfigPage() {
 		syncToConfig(fullSections.map((s) => (s.id === id ? { ...s, enabled } : s)));
 	};
 
-	const sensors = useSensors(
-		useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-		useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-	);
-
-	/** 拖拽结束：用 arrayMove 重排后把新 index 作为 order 写回 */
-	const onDragEnd = (event: DragEndEvent) => {
-		const { active, over } = event;
-		if (!over || active.id === over.id) return;
-		const oldIndex = fullSections.findIndex((s) => s.id === active.id);
-		const newIndex = fullSections.findIndex((s) => s.id === over.id);
-		if (oldIndex < 0 || newIndex < 0) return;
-		const reordered = arrayMove(fullSections, oldIndex, newIndex);
-		syncToConfig(reordered.map((s, i) => ({ ...s, order: i })));
+	const reorderSections = (next: AboutSection[]) => {
+		syncToConfig(next.map((section, order) => ({ ...section, order })));
 	};
 
 	return (
@@ -110,34 +80,27 @@ function AboutConfigPage() {
 				<p className="text-xs text-muted-foreground">
 					打开开关显示该区块；拖拽手柄调整显示顺序。未配置过的区块默认关闭。
 				</p>
-				<DndContext
-					sensors={sensors}
-					collisionDetection={closestCenter}
-					onDragEnd={onDragEnd}
-				>
-					<SortableContext
-						items={fullSections.map((s) => s.id)}
-						strategy={verticalListSortingStrategy}
-					>
-						<div className="space-y-1">
-							{fullSections.map((section) => (
-								<SortableSectionItem
-									key={section.id}
-									section={section}
-									releasesRepoConfigured={releasesRepoConfigured}
-									onToggle={toggleEnabled}
-								/>
-							))}
-						</div>
-					</SortableContext>
-				</DndContext>
+				<Sortable
+					aria-label="关于页区块顺序"
+					items={fullSections}
+					getId={(section) => section.id}
+					getLabel={(section) => ABOUT_SECTION_LABELS[section.id] ?? section.id}
+					disabled={isPending}
+					onReorder={reorderSections}
+					renderItem={(section) => (
+						<SectionItem
+							section={section}
+							releasesRepoConfigured={releasesRepoConfigured}
+							onToggle={toggleEnabled}
+						/>
+					)}
+				/>
 			</section>
 		</SettingsSubPage>
 	);
 }
 
-/** 可拖拽的区块列表项 */
-function SortableSectionItem({
+function SectionItem({
 	section,
 	releasesRepoConfigured,
 	onToggle,
@@ -146,31 +109,9 @@ function SortableSectionItem({
 	releasesRepoConfigured: boolean;
 	onToggle: (id: string, enabled: boolean) => void;
 }) {
-	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-		id: section.id,
-	});
-	const style = {
-		transform: CSS.Transform.toString(transform),
-		transition,
-		opacity: isDragging ? 0.4 : 1,
-	};
-
 	return (
-		<div
-			ref={setNodeRef}
-			style={style}
-			className="flex items-center justify-between rounded-md border border-edge-hairline px-4 py-3"
-		>
-			<div className="flex items-center gap-3">
-				<button
-					type="button"
-					className="cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
-					aria-label="拖拽排序"
-					{...attributes}
-					{...listeners}
-				>
-					<GripVertical className="size-4" />
-				</button>
+		<div className="flex min-h-8 items-center justify-between gap-3">
+			<div>
 				<div>
 					<span className="text-sm font-medium">
 						{ABOUT_SECTION_LABELS[section.id] ?? section.id}
@@ -185,7 +126,11 @@ function SortableSectionItem({
 					)}
 				</div>
 			</div>
-			<Switch checked={section.enabled} onCheckedChange={(v) => onToggle(section.id, v)} />
+			<Switch
+				aria-label={`显示${ABOUT_SECTION_LABELS[section.id] ?? section.id}`}
+				checked={section.enabled}
+				onCheckedChange={(value) => onToggle(section.id, value)}
+			/>
 		</div>
 	);
 }

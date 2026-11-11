@@ -236,7 +236,10 @@ describe("GalleryDraftEditor", () => {
 		fireEvent.change(screen.getByLabelText("标题"), { target: { value: "新标题" } });
 		fireEvent.click(screen.getByRole("button", { name: "从素材库选择" }));
 		fireEvent.click(screen.getByRole("button", { name: "确认选择测试图片" }));
-		fireEvent.click(screen.getByRole("button", { name: "将第 3 张图片前移" }));
+		const menus = screen.getAllByRole("button", { name: /^调整 .* 的顺序$/ });
+		fireEvent.pointerDown(menus[2], { button: 0, ctrlKey: false });
+		fireEvent.click(await screen.findByRole("menuitem", { name: "上移" }));
+		await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
 		fireEvent.click(screen.getByRole("button", { name: "保存工作稿" }));
 
 		await waitFor(() => expect(saveMutateAsync).toHaveBeenCalledTimes(1));
