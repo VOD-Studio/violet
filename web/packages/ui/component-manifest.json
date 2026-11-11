@@ -310,6 +310,13 @@
 			"css": "src/components/radio/radio.css"
 		},
 		{
+			"name": "reaction",
+			"status": "foundation",
+			"entry": "src/components/reaction/index.ts",
+			"css": "src/components/reaction/reaction.css",
+			"documentation": "web/packages/ui/docs/components/reaction.md"
+		},
+		{
 			"name": "resend-button",
 			"status": "foundation",
 			"entry": "src/components/resend-button/index.ts",

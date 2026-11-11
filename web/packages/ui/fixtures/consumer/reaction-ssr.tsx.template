@@ -1,0 +1,25 @@
+import assert from "node:assert/strict";
+import { ReactionBar, type ReactionItem } from "@violet/ui";
+import { ReactionBar as LeafReactionBar } from "@violet/ui/reaction";
+import { renderToString } from "react-dom/server";
+
+const items: ReactionItem[] = [{
+	id: "thumb",
+	name: "赞",
+	content: "👍",
+	count: 120,
+	self: true,
+	recentUsers: [{ name: "本机用户", self: true }, { name: "林间" }],
+}];
+const root = renderToString(<ReactionBar items={items} />);
+const selected = root.match(/<button\b[^>]*aria-pressed="true"[^>]*>/)?.[0];
+assert.ok(selected?.includes("120"), "读屏名称必须保留实际人数，不能被视觉99+截断。");
+assert.match(root, />99\+</, "视觉计数应封顶为99+。");
+
+const leaf = renderToString(<LeafReactionBar items={[
+	{ ...items[0], id: "visible", count: 3, self: false },
+	{ ...items[0], id: "empty", name: "不应出现的回应", count: 0, self: false },
+]} />);
+assert.match(leaf, /aria-pressed="false"/);
+assert.doesNotMatch(leaf, /不应出现的回应/);
+console.log("ReactionBar 独立根入口与叶子入口 SSR 行为通过。");

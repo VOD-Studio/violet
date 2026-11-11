@@ -42,6 +42,7 @@ import { popoverExhibit } from "./popover";
 import { presenceExhibit } from "./presence";
 import { quoteCardExhibit } from "./quote-card";
 import { radioExhibit } from "./radio";
+import { reactionExhibit } from "./reaction";
 import { scrollAreaExhibit } from "./scroll-area";
 import { segmentedExhibit } from "./segmented";
 import { selectExhibit } from "./select";
@@ -112,6 +113,7 @@ export const EXHIBITS: Exhibit[] = [
 	uploadExhibit,
 	mentionExhibit,
 	emojiPickerExhibit,
+	reactionExhibit,
 	linkCardExhibit,
 	imagePixelRevealExhibit,
 	iconsExhibit,

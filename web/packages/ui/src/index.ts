@@ -45,6 +45,7 @@ export * from "./components/progress/index";
 export * from "./components/prompt-dialog/index";
 export * from "./components/quote-card/index";
 export * from "./components/radio/index";
+export * from "./components/reaction/index";
 export * from "./components/resend-button/index";
 export * from "./components/scroll-area/index";
 export * from "./components/segmented/index";

@@ -262,6 +262,11 @@
 			"import": "./src/components/radio/index.ts",
 			"default": "./src/components/radio/index.ts"
 		},
+		"./reaction": {
+			"types": "./src/components/reaction/index.ts",
+			"import": "./src/components/reaction/index.ts",
+			"default": "./src/components/reaction/index.ts"
+		},
 		"./resend-button": {
 			"types": "./src/components/resend-button/index.ts",
 			"import": "./src/components/resend-button/index.ts",
@@ -440,6 +445,7 @@
 		"./components/prompt-dialog.css": "./src/components/prompt-dialog/prompt-dialog.css",
 		"./components/quote-card.css": "./src/components/quote-card/quote-card.css",
 		"./components/radio.css": "./src/components/radio/radio.css",
+		"./components/reaction.css": "./src/components/reaction/reaction.css",
 		"./components/resend-button.css": "./src/components/resend-button/resend-button.css",
 		"./components/scroll-area.css": "./src/components/scroll-area/scroll-area.css",
 		"./components/segmented.css": "./src/components/segmented/segmented.css",
@@ -733,6 +739,11 @@
 				"import": "./dist/components/radio/index.js",
 				"default": "./dist/components/radio/index.js"
 			},
+			"./reaction": {
+				"types": "./dist/components/reaction/index.d.ts",
+				"import": "./dist/components/reaction/index.js",
+				"default": "./dist/components/reaction/index.js"
+			},
 			"./resend-button": {
 				"types": "./dist/components/resend-button/index.d.ts",
 				"import": "./dist/components/resend-button/index.js",
@@ -911,6 +922,7 @@
 			"./components/prompt-dialog.css": "./dist/components/prompt-dialog.css",
 			"./components/quote-card.css": "./dist/components/quote-card.css",
 			"./components/radio.css": "./dist/components/radio.css",
+			"./components/reaction.css": "./dist/components/reaction.css",
 			"./components/resend-button.css": "./dist/components/resend-button.css",
 			"./components/scroll-area.css": "./dist/components/scroll-area.css",
 			"./components/segmented.css": "./dist/components/segmented.css",
