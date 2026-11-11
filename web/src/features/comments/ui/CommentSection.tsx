@@ -37,7 +37,16 @@ export function CommentSection({ postId }: CommentSectionProps) {
 
 	// 滚动加载顶层评论：type=free（仅自由评论）+ top_level=true（仅 depth=0）。
 	// 回复走 useReplies 按需拉，避免 1000×1000 量级一次性拉崩。
-	const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
+	const {
+		data,
+		isLoading,
+		isError,
+		error,
+		refetch,
+		fetchNextPage,
+		hasNextPage,
+		isFetchingNextPage,
+	} = useInfiniteQuery({
 		queryKey: ["comments", "list", postId, { type: "free", top_level: true }],
 		queryFn: ({ pageParam }) =>
 			fetchComments(postId, {
@@ -85,6 +94,8 @@ export function CommentSection({ postId }: CommentSectionProps) {
 					config={config}
 					isLoggedIn={isLoggedIn}
 					isLoading={isLoading}
+					error={isError ? error : undefined}
+					onRetry={() => void refetch()}
 					onLoadMore={hasNextPage ? fetchNextPage : undefined}
 					isLoadingMore={isFetchingNextPage}
 				/>

@@ -19,7 +19,10 @@ export interface ExpandedRepliesProps<T extends CommentRaw> {
 	fetchNextPage: () => void;
 	isFetchingNextPage: boolean;
 	isLoading: boolean;
-	/** 已展示的回复 id（预览 + 内联 pending），拉取结果跳过它们（纯追加） */
+	/** 首次加载失败（网络/500）；已有内容时保留列表，仅在无内容时展示错误与重试 */
+	error?: unknown;
+	/** 失败后的重试回调 */
+	onRetry?: () => void;
 	excludeIds: Set<string>;
 	/** 已可见回复（预览 + pending），供「回复 @yyy」按 parentId 推导 */
 	knownReplies: CommentDisplayItem<T>[];
@@ -35,6 +38,8 @@ export function ExpandedReplies<T extends CommentRaw>({
 	fetchNextPage,
 	isFetchingNextPage,
 	isLoading,
+	error,
+	onRetry,
 	excludeIds,
 	knownReplies,
 	config,
@@ -67,14 +72,22 @@ export function ExpandedReplies<T extends CommentRaw>({
 				/>
 			))}
 
-			{/* 首次加载效果（展开后第一页还在路上） */}
-			{(isLoading || isFetchingNextPage) && mapped.length === 0 && (
-				<div className="flex items-center gap-1.5 py-1 pl-1 text-xs text-muted-foreground">
-					<Spinner size={16} aria-hidden="true" />
-					加载中...
-				</div>
+			{error && mapped.length === 0 && !isLoading && (
+				<p className="flex items-center gap-2 py-1 pl-1 text-xs text-muted-foreground">
+					回复加载失败
+					{onRetry && (
+						<button
+							type="button"
+							onClick={() => onRetry()}
+							className="text-primary hover:underline"
+						>
+							重试
+						</button>
+					)}
+				</p>
 			)}
 
+			{/* 首次加载效果（展开后第一页还在路上） */}
 			{/* 底部「查看更多回复」按钮 */}
 			{hasNextPage && (
 				<button

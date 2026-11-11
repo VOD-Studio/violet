@@ -166,14 +166,14 @@ function ArticleExpandedReplies({
 	isLoggedIn: boolean;
 	onReplyAdded: (reply: CommentDisplayItem<Comment>) => void;
 }) {
-	const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useReplies(
-		topLevelId,
-		{ limit: 10 },
-	);
+	const { data, error, refetch, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
+		useReplies(topLevelId, { limit: 10 });
 	return (
 		<ExpandedReplies
 			topLevelId={topLevelId}
 			replies={data?.pages.flatMap((p) => p.data) ?? []}
+			error={error}
+			onRetry={() => void refetch()}
 			hasNextPage={!!hasNextPage}
 			fetchNextPage={fetchNextPage}
 			isFetchingNextPage={isFetchingNextPage}

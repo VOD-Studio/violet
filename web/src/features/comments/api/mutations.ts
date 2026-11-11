@@ -59,7 +59,7 @@ export const useCreateComment = (postId: string) => {
 
 /** bumpRepliesTotalInList 手动递增顶层列表缓存中父评论的 replies_total。
  *  用 setQueriesData 直接改缓存，不触发重拉——避免批注列表 refetch 引起 relocate 重算和角标消失。
- *  useComments 是 useQuery（非 infinite），缓存结构是 { data: Comment[], pagination }。 */
+ *  评论区顶层列表是 useInfiniteQuery（{pages}），其余消费方是 useQuery（{data}），两种形态都更新。 */
 function bumpRepliesTotalInList(
 	qc: ReturnType<typeof useQueryClient>,
 	postId: string,
@@ -74,16 +74,25 @@ function bumpRepliesTotalInList(
 		},
 		(old: unknown) => {
 			if (!old || typeof old !== "object") return old;
-			const typed = old as PagedResponse<Comment>;
-			if (!Array.isArray(typed.data)) return old;
-			return {
-				...typed,
-				data: typed.data.map((c) =>
+			const bumpIn = (comments: Comment[]) =>
+				comments.map((c) =>
 					c.id === parentCommentId
 						? { ...c, replies_total: (c.replies_total ?? 0) + 1 }
 						: c,
-				),
-			};
+				);
+			// useInfiniteQuery 缓存：每页 data 里的父评论都要递增
+			if ("pages" in old && Array.isArray(old.pages)) {
+				const pages = old.pages as PagedResponse<Comment>[];
+				return {
+					...old,
+					pages: pages.map((page) =>
+						Array.isArray(page.data) ? { ...page, data: bumpIn(page.data) } : page,
+					),
+				};
+			}
+			if (!("data" in old) || !Array.isArray(old.data)) return old;
+			const paged = old as PagedResponse<Comment>;
+			return { ...paged, data: bumpIn(paged.data) };
 		},
 	);
 }
