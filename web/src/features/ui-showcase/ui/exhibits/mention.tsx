@@ -1,4 +1,4 @@
-import { MENTION_ALL } from "@entities/user/model/mention-token";
+import { MENTION_ALL } from "@shared/lib/mention-token";
 import {
 	filterMentionCandidates,
 	type MentionCandidate,
@@ -6,7 +6,7 @@ import {
 	mentionOptionId,
 	parseMentionTrigger,
 } from "@violet/ui";
-import { type KeyboardEvent, useId, useState } from "react";
+import { type KeyboardEvent, useId, useLayoutEffect, useRef, useState } from "react";
 import type { Exhibit, ExhibitRenderProps } from "../../model/exhibit";
 
 const COMMENT_CANDIDATES: MentionCandidate[] = [
@@ -32,17 +32,36 @@ const ROOM_CANDIDATES: MentionCandidate[] = [
 /** 真实的触发、筛选、键盘与插入，输入框只是宿主（站内是 contentEditable）。 */
 function MentionField({ state }: ExhibitRenderProps) {
 	const listboxID = useId();
+	const inputRef = useRef<HTMLInputElement>(null);
+	const pendingCaret = useRef<number | null>(null);
 	const room = state === "room";
 	const candidates = room ? ROOM_CANDIDATES : COMMENT_CANDIDATES;
 	const [value, setValue] = useState("@");
+	const [caret, setCaret] = useState(1);
 	const [activeIndex, setActiveIndex] = useState(0);
 	const [dismissed, setDismissed] = useState(false);
-	const trigger = dismissed ? null : parseMentionTrigger(value);
+	const trigger = dismissed ? null : parseMentionTrigger(value, caret);
 	const matches = trigger ? filterMentionCandidates(candidates, trigger.query) : [];
 	const open = trigger !== null;
 	const active = matches[activeIndex];
+	useLayoutEffect(() => {
+		if (pendingCaret.current === null) return;
+		inputRef.current?.focus();
+		inputRef.current?.setSelectionRange(pendingCaret.current, pendingCaret.current);
+		pendingCaret.current = null;
+	}, [value]);
+	const insert = (candidate: MentionCandidate) => {
+		if (!trigger) return;
+		const inserted = `@${candidate.displayName}\u00a0`;
+		const nextCaret = trigger.start + inserted.length;
+		pendingCaret.current = nextCaret;
+		setValue(`${value.slice(0, trigger.start)}${inserted}${value.slice(trigger.end)}`);
+		setCaret(nextCaret);
+		setDismissed(true);
+		setActiveIndex(0);
+	};
 	const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-		if (!open) return;
+		if (event.nativeEvent.isComposing || !open) return;
 		if (event.key === "ArrowDown" || event.key === "ArrowUp") {
 			event.preventDefault();
 			if (matches.length === 0) return;
@@ -57,10 +76,7 @@ function MentionField({ state }: ExhibitRenderProps) {
 		}
 		if ((event.key === "Enter" || event.key === "Tab") && active && trigger) {
 			event.preventDefault();
-			const inserted = `@${active.displayName}\u00a0`;
-			setValue(`${value.slice(0, trigger.start)}${inserted}${value.slice(trigger.end)}`);
-			setDismissed(true);
-			setActiveIndex(0);
+			insert(active);
 		}
 	};
 
@@ -72,9 +88,10 @@ function MentionField({ state }: ExhibitRenderProps) {
 				</span>
 				{/* biome-ignore lint/a11y/useAriaPropsSupportedByRole: 与站内一致，可编辑输入默认 role=textbox 且带 aria-expanded */}
 				<input
+					ref={inputRef}
 					aria-autocomplete="list"
 					aria-activedescendant={
-						active ? mentionOptionId(listboxID, active.id) : undefined
+						open && active ? mentionOptionId(listboxID, active.id) : undefined
 					}
 					aria-controls={open ? listboxID : undefined}
 					aria-expanded={open}
@@ -82,10 +99,14 @@ function MentionField({ state }: ExhibitRenderProps) {
 					className="w-full rounded-xl border border-edge-hairline bg-muted/40 px-3 py-2 text-sm text-foreground outline-none focus-visible:border-ring"
 					onChange={(event) => {
 						setValue(event.target.value);
+						setCaret(event.target.selectionStart ?? event.target.value.length);
 						setDismissed(false);
 						setActiveIndex(0);
 					}}
 					onKeyDown={handleKeyDown}
+					onSelect={(event) => {
+						setCaret(event.currentTarget.selectionStart ?? value.length);
+					}}
 					value={value}
 				/>
 				{open && (
@@ -95,10 +116,7 @@ function MentionField({ state }: ExhibitRenderProps) {
 						className="absolute inset-s-0 top-[calc(100%+6px)]"
 						id={listboxID}
 						onActiveIndexChange={setActiveIndex}
-						onSelect={(candidate) => {
-							setValue(`@${candidate.displayName}\u00a0`);
-							setDismissed(true);
-						}}
+						onSelect={insert}
 						query={trigger.query}
 					/>
 				)}
