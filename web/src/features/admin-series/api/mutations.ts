@@ -19,17 +19,20 @@ import { adminSeriesKeys } from "./keys";
 
 const useInvalidateSeries = () => {
 	const qc = useQueryClient();
-	return () => {
-		qc.invalidateQueries({ queryKey: adminSeriesKeys.lists() });
-		qc.invalidateQueries({ queryKey: adminSeriesKeys.details() });
-	};
+	return () =>
+		Promise.all([
+			qc.invalidateQueries({ queryKey: adminSeriesKeys.lists() }),
+			qc.invalidateQueries({ queryKey: adminSeriesKeys.details() }),
+		]);
 };
 
 export const useCreateSeries = () => {
 	const invalidate = useInvalidateSeries();
 	return useMutation({
 		mutationFn: (input: CreateSeriesInput) => createSeries(input),
-		onSuccess: () => invalidate(),
+		onSuccess: () => {
+			invalidate();
+		},
 	});
 };
 
@@ -37,7 +40,9 @@ export const useUpdateSeries = (id: string) => {
 	const invalidate = useInvalidateSeries();
 	return useMutation({
 		mutationFn: (input: UpdateSeriesInput) => updateSeries(id, input),
-		onSuccess: () => invalidate(),
+		onSuccess: () => {
+			invalidate();
+		},
 	});
 };
 
@@ -89,13 +94,16 @@ export const useRemoveSection = (id: string) => {
 	});
 };
 
+/**
+ * 保存卷顺序，并等待书列表与详情刷新后结束 pending 状态。
+ */
 export const useReorderSections = (id: string) => {
 	const invalidate = useInvalidateSeries();
 	return useMutation({
 		mutationFn: (orderedSectionIds: string[]) => reorderSections(id, orderedSectionIds),
 		onSuccess: () => {
 			toast.success("卷顺序已更新");
-			invalidate();
+			return invalidate();
 		},
 		onError: (err) => toast.error(err.message),
 	});
@@ -125,14 +133,16 @@ export const useDetachChapter = (id: string) => {
 	});
 };
 
-/** 全树调序：乐观不适用（服务端为事务全量重写），提交后 invalidate。 */
+/**
+ * 全树调序由服务端事务全量重写，不使用乐观更新；等待列表与详情刷新后结束 pending 状态。
+ */
 export const useReorderChapters = (id: string) => {
 	const invalidate = useInvalidateSeries();
 	return useMutation({
 		mutationFn: (plans: ReorderScope[]) => reorderChapters(id, plans),
 		onSuccess: () => {
 			toast.success("章节顺序已更新");
-			invalidate();
+			return invalidate();
 		},
 		onError: (err) => toast.error(err.message),
 	});
