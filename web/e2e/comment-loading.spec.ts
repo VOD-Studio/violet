@@ -129,14 +129,14 @@ test("段评下载期间可关闭，再次打开失败后仍可关闭", async ({
 		const paragraph = page
 			.locator("[data-article-content] p")
 			.filter({ hasText: ARTICLE_START });
-		const panel = page.getByRole("dialog", { name: "发表段评", exact: true });
+		const panel = page.getByRole("dialog", { name: /^发表段评/ });
 		await paragraph.hover();
-		await page.getByRole("button", { name: "发表段评", exact: true }).click();
+		await page.getByRole("button", { name: /^发表段评/ }).click();
 		await expect(panel.getByRole("status")).toHaveText("正在准备段评…");
 		await panel.getByRole("button", { name: "关闭段评", exact: true }).click();
 		await expect(panel).not.toBeVisible();
 		await paragraph.hover();
-		await page.getByRole("button", { name: "发表段评", exact: true }).click();
+		await page.getByRole("button", { name: /^发表段评/ }).click();
 		await expect(panel).toBeVisible();
 		download.resolve();
 		await expect(panel.getByRole("alert")).toContainText("段评表单加载失败");

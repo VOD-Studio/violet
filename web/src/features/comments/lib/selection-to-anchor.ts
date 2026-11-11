@@ -160,6 +160,20 @@ export function closestAnnotatableBlock(
 	return block;
 }
 
+/**
+ * 正文里能发起段评的块，按文档顺序、去重后列出；与悬停判定同一口径。
+ *
+ * @remarks 供键盘在段落之间移动段评入口。
+ */
+export function listAnnotatableBlocks(root: HTMLElement): HTMLElement[] {
+	const blocks = new Set<HTMLElement>();
+	for (const element of root.querySelectorAll<HTMLElement>(BLOCK_SELECTOR)) {
+		const block = closestAnnotatableBlock(element, root);
+		if (block) blocks.add(block);
+	}
+	return [...blocks];
+}
+
 export interface SelectionToAnchorOptions {
 	/** 选区所在正文容器（用于校验选区在正文内） */
 	root: HTMLElement;
