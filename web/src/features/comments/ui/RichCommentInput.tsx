@@ -44,6 +44,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { useFieldWrapped } from "../hooks/use-field-wrapped";
 import {
 	extractImageIds,
 	type ImageNodeStatus,
@@ -493,6 +494,15 @@ export function RichCommentInput({
 	const canAddMore = imageItems.length < maxImages && !disabled;
 	const isInline = layout === "inline";
 	const isField = layout === "field";
+	const fieldStartRef = useRef<HTMLDivElement>(null);
+	const fieldEndRef = useRef<HTMLDivElement>(null);
+	const fieldSides = useMemo(() => [fieldStartRef, fieldEndRef], []);
+	const fieldWrapped = useFieldWrapped({
+		editorRef: contentRef,
+		sideRefs: fieldSides,
+		content: value,
+		enabled: isField,
+	});
 
 	const emojiButton = enableEmoji && (
 		<EmojiPicker
@@ -579,7 +589,8 @@ export function RichCommentInput({
 				"overflow-y-auto bg-transparent focus:outline-none",
 				isInline && "min-h-9 max-h-40 flex-1 min-w-0 px-1 py-1.5 text-sm leading-relaxed",
 				isField &&
-					"max-h-40 min-h-6 min-w-0 flex-1 px-1 py-0.5 leading-5 pointer-coarse:min-h-7 pointer-coarse:py-1",
+					"max-h-40 min-h-6 min-w-0 px-1 py-0.5 leading-5 pointer-coarse:min-h-7 pointer-coarse:py-1",
+				isField && fieldWrapped && "col-span-2 row-start-1",
 				!isInline && !isField && "max-h-60",
 				!isInline &&
 					!isField &&
@@ -686,11 +697,35 @@ export function RichCommentInput({
 				{slashSuggestions}
 				{fileInput}
 				{thumbnails}
-				<div className="flex items-end gap-1">
-					{emojiButton}
-					{imageButton}
+				{/* 写不下一行时图标钮挪到文字下方，文字占满整行；节点顺序不变，可编辑区不重挂 */}
+				<div
+					className={cn(
+						"grid items-end gap-1",
+						fieldWrapped
+							? "grid-cols-[minmax(0,1fr)_auto]"
+							: "grid-cols-[auto_minmax(0,1fr)_auto]",
+					)}
+				>
+					<div
+						ref={fieldStartRef}
+						className={cn(
+							"flex items-center gap-0.5",
+							fieldWrapped && "col-start-1 row-start-2 justify-self-start",
+						)}
+					>
+						{emojiButton}
+						{imageButton}
+					</div>
 					{editor}
-					{toolbarEnd}
+					<div
+						ref={fieldEndRef}
+						className={cn(
+							"flex items-center",
+							fieldWrapped && "col-start-2 row-start-2",
+						)}
+					>
+						{toolbarEnd}
+					</div>
 				</div>
 				{suggestions}
 			</div>
