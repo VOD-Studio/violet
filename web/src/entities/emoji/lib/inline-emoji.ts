@@ -2,10 +2,14 @@ import type { InlineEmoji } from "@shared/lib/inline-emoji";
 import { toEmojiToken } from "../model/token";
 import type { Emoji, EmojiGroup } from "../model/types";
 
-/** 将表情实体投影为正文编辑器所需的最小显示信息。 */
+/** 将表情实体投影为正文编辑器所需的最小显示信息；颜文字不携带图片地址。 */
 export function toInlineEmoji(emoji: Emoji): InlineEmoji {
+	const token = toEmojiToken(emoji);
+	if (emoji.meta?.type === 4) {
+		return { token, text: token };
+	}
 	return {
-		token: toEmojiToken(emoji),
+		token,
 		src: emoji.gif_url || emoji.url || undefined,
 		text: emoji.text_content || emoji.name,
 		size: emoji.meta?.size,

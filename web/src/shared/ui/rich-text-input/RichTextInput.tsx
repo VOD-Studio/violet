@@ -9,7 +9,6 @@ import {
 	type ImageUploadTask,
 } from "@shared/lib/image-upload-task";
 import type { InlineEmoji } from "@shared/lib/inline-emoji";
-import { isImageURL } from "@shared/lib/url";
 import {
 	filterMentionCandidates,
 	type MentionCandidate,
@@ -471,14 +470,6 @@ export function RichTextInput({
 		}
 	}, [resetNonce]);
 
-	const handleEmojiSelect = (emoji: InlineEmoji) => {
-		if (emoji.src && isImageURL(emoji.src)) {
-			insertEmoji(emoji.token, emoji.src, emoji.size);
-		} else {
-			insertEmoji(emoji.token, emoji.text || emoji.token, emoji.size);
-		}
-	};
-
 	const handleFileSelect = useCallback(
 		async (e: React.ChangeEvent<HTMLInputElement>) => {
 			const files = Array.from(e.target.files ?? []);
@@ -504,7 +495,7 @@ export function RichTextInput({
 	const emojiButton =
 		enableEmoji &&
 		renderEmojiPicker({
-			onSelect: handleEmojiSelect,
+			onSelect: insertEmoji,
 			align: "start",
 			closeOnSelect: false,
 			disabled: disabled || !overlayActive,
@@ -512,12 +503,18 @@ export function RichTextInput({
 				<button
 					type="button"
 					aria-label="添加表情"
+					onMouseDown={(event) => event.preventDefault()}
 					className="inline-flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
 				>
 					<Smile className="size-4" />
 				</button>
 			) : isField ? (
-				<button type="button" aria-label="添加表情" className={FIELD_ACTION_CLASS}>
+				<button
+					type="button"
+					aria-label="添加表情"
+					className={FIELD_ACTION_CLASS}
+					onMouseDown={(event) => event.preventDefault()}
+				>
 					<Smile className="size-4" />
 				</button>
 			) : undefined,

@@ -181,7 +181,7 @@ describe("useRichTextInput 图片行内节点", () => {
 		editor.focus();
 
 		act(() => {
-			api.insertEmoji("[smile]", "https://example.com/smile.png");
+			api.insertEmoji({ token: "[smile]", src: "https://example.com/smile.png" });
 		});
 		act(() => {
 			api.insertImage("img-4", "https://cdn.example.com/img-4.png", "done");
@@ -230,10 +230,10 @@ describe("useRichTextInput 图片行内节点", () => {
 		editor.focus();
 
 		act(() => {
-			api.insertEmoji(
-				"[mycat:00000000-0000-0000-0000-000000000001]",
-				"https://example.com/mycat.png",
-			);
+			api.insertEmoji({
+				token: "[mycat:00000000-0000-0000-0000-000000000001]",
+				src: "https://example.com/mycat.png",
+			});
 		});
 
 		expect(onChange).toHaveBeenLastCalledWith("[mycat:00000000-0000-0000-0000-000000000001]");

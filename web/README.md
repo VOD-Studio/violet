@@ -197,7 +197,7 @@ Shiki 初始化、语言准备与分词在按需创建的 Web Worker 中执行�
 
 站点公共层提供 `shared/ui/announcement-severity` 状态色和 `shared/hooks/use-banner-ticker` 轮播节拍。终端、阅读进度等公共界面只消费用途语义色。
 
-正文编辑内核位于 `shared/ui/rich-text-input`，统一处理光标、提及与图片占位符；只接收显示模型和回调，不导入业务实体或 feature。表情实体到显示模型的投影在 `entities/emoji/lib/inline-emoji`，评论与聊天分别注入选择器、上传和业务上下文。
+正文编辑内核位于 `shared/ui/rich-text-input`，统一处理光标、提及与图片占位符；只接收显示模型和回调，不导入业务实体或 feature。表情实体到显示模型的投影在 `entities/emoji/lib/inline-emoji`，评论与聊天分别注入选择器、上传和业务上下文。图片和颜文字按显示模型区分，不通过方括号猜测；颜文字保留原文并插入文本节点。工具栏取得焦点后仍在保存的编辑区选区连续插入表情，不抢回焦点；跨编辑区的选区不会删除外部正文。
 
 最近使用由 `entities/emoji/model/recent` 持有，评论、推文、聊天与回应共用本设备最近 16 项，只在真实选中时记录。跨标签页的更新和清空同步到已挂载入口，服务器不保存这份记录。
 

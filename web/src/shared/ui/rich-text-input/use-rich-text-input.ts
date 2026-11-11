@@ -10,7 +10,7 @@
  * - 受控同步：外部 value 变化时同步 DOM，用户输入时不重置光标
  *
  * emoji 查表由宿主传入分组，编辑内核不发请求。
- * 图片表情用 <img data-emoji>，颜文字用 <span data-emoji>。
+ * 图片表情用 <img data-emoji>，颜文字按原文插入文本节点。
  * 内嵌图片（仅 inlineImages 消费方使用）用 data-image 标记：上传中/失败态是
  * contentEditable=false 的 <span>（叠加进度/失败态，可能有覆盖层子节点，需禁用
  * 编辑保证退格整体删除）；完成态是纯 <img>（与 emoji 图片节点同构，无子节点天然原子）。
@@ -54,7 +54,11 @@ export type ImageNodeStatus = "uploading" | "done" | "error";
 
 export interface UseRichTextInputReturn {
 	contentRef: React.RefObject<HTMLDivElement | null>;
-	insertEmoji: (name: string, display: string, size?: number) => void;
+	/**
+	 * 在保存的编辑选区插入；图片按 src 显示、token 序列化，其余按 token 原文插入文本节点。
+	 * 连续插入会推进保存的选区，不主动转移焦点。
+	 */
+	insertEmoji: (emoji: InlineEmoji) => void;
 	/** 在光标处插入/原地更新一个内嵌图片节点；同一 id 重复调用会替换已有节点（uploading → done/error）。
 	 * replaceId 传入时按它定位旧节点替换为新 id 节点（上传完成把本地 uuid 换键为服务端 file_id）。 */
 	insertImage: (id: string, url: string, status: ImageNodeStatus, replaceId?: string) => void;
@@ -287,27 +291,61 @@ export function useRichTextInput({
 		}
 	}, [value, syncToDom]);
 
-	const insertEmoji = useCallback(
-		(name: string, display: string, size?: number) => {
-			const div = contentRef.current;
-			if (!div || disabled) return;
-			div.focus();
-
-			const element = createEmojiElement(name, display, size);
-
+	const emojiCaret = useRef<Range | null>(null);
+	useEffect(() => {
+		const rememberCaret = () => {
 			const selection = window.getSelection();
-			if (!selection || selection.rangeCount === 0 || !div.contains(selection.anchorNode)) {
-				div.appendChild(element);
-			} else {
-				const range = selection.getRangeAt(0);
-				range.deleteContents();
-				range.insertNode(element);
-				range.setStartAfter(element);
-				range.collapse(true);
+			if (!selection?.rangeCount) {
+				return;
+			}
+			const range = selection.getRangeAt(0);
+			if (contentRef.current?.contains(range.commonAncestorContainer)) {
+				emojiCaret.current = range.cloneRange();
+			}
+		};
+		document.addEventListener("selectionchange", rememberCaret);
+		return () => document.removeEventListener("selectionchange", rememberCaret);
+	}, []);
+
+	const insertEmoji = useCallback(
+		(emoji: InlineEmoji) => {
+			const div = contentRef.current;
+			if (!div || disabled) {
+				return;
+			}
+			const selection = window.getSelection();
+			const liveRange = selection?.rangeCount ? selection.getRangeAt(0) : null;
+			const savedRange = emojiCaret.current;
+			let range: Range | null = null;
+			if (savedRange && div.contains(savedRange.commonAncestorContainer)) {
+				range = savedRange.cloneRange();
+			}
+			// 网格聚焦时页面可能仍保留旧选区，优先使用上次插入后推进的光标。
+			if (
+				liveRange &&
+				div.contains(liveRange.commonAncestorContainer) &&
+				(document.activeElement === div || !range)
+			) {
+				range = liveRange.cloneRange();
+			}
+			if (!range) {
+				range = document.createRange();
+				range.selectNodeContents(div);
+				range.collapse(false);
+			}
+			const element =
+				emoji.src && isImageURL(emoji.src)
+					? createEmojiElement(emoji.token, emoji.src, emoji.size)
+					: document.createTextNode(emoji.token);
+			range.deleteContents();
+			range.insertNode(element);
+			range.setStartAfter(element);
+			range.collapse(true);
+			emojiCaret.current = range;
+			if (document.activeElement === div && selection) {
 				selection.removeAllRanges();
 				selection.addRange(range);
 			}
-
 			lastSyncedRef.current = htmlToMarkdown();
 			onChangeRef.current?.(lastSyncedRef.current);
 		},
