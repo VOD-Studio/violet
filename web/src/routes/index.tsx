@@ -1,10 +1,12 @@
 import { SITE_URL } from "@shared/config/env";
 import { createFileRoute } from "@tanstack/react-router";
-import HomeExperience, {
-	HomeExperienceSkeleton,
+// 直接引用各自的模块：经总出口引用会把首页组件整个带进全站入口包
+import {
 	recentPublicationsQueryOptions,
 	siteIdentityQueryOptions,
-} from "@widgets/HomeExperience";
+} from "@widgets/HomeExperience/api/queries";
+import { HomeExperience } from "@widgets/HomeExperience/HomeExperience";
+import { HomeExperienceSkeleton } from "@widgets/HomeExperience/HomeExperienceSkeleton";
 
 function HomePage() {
 	const { initialRecentPublicationsFailed } = Route.useLoaderData();

@@ -5,9 +5,7 @@ import { Link } from "@tanstack/react-router";
 import { Button, Empty, PageShell, Skeleton } from "@violet/ui";
 import { ArrowRight, Calendar, Filter } from "lucide-react";
 import { useMemo } from "react";
-import { noteExcerpt, notePlainLength, noteTitle } from "../model/display";
-
-export const NOTES_PAGE_LIMIT = 24;
+import { NOTES_PAGE_LIMIT, noteExcerpt, notePlainLength, noteTitle } from "../model/display";
 
 interface NotesPageProps {
 	tag?: string;
