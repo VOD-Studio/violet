@@ -52,7 +52,12 @@ try {
 		name: "violet-ui-independent-consumer",
 		private: true,
 		type: "module",
-		dependencies: { "@violet/ui": `file:${tarball}`, react: installedVersion("react"), "react-dom": installedVersion("react-dom") },
+		dependencies: {
+			"@violet/ui": `file:${tarball}`,
+			react: installedVersion("react"),
+			"react-dom": installedVersion("react-dom"),
+			"lucide-react": installedVersion("lucide-react"),
+		},
 		devDependencies: Object.fromEntries(tools.map((name) => [name, installedVersion(name)])),
 		pnpm: { overrides: Object.fromEntries(Object.keys(packageJson.dependencies).map((name) => [name, installedVersion(name)])) },
 	};
@@ -63,6 +68,7 @@ try {
 	const fixtureRoot = resolve(packageRoot, "fixtures/consumer");
 	for (const [fixture, destination] of [
  ["index.html", "index.html"],
+		["icons.tsx", "src/icons.tsx"],
 		["comment.tsx", "src/comment.tsx"],
 		["comment-ssr.tsx", "comment-ssr.tsx"],
 	["reaction.tsx", "src/reaction.tsx"],
@@ -88,6 +94,10 @@ try {
 	const forbidden = /(?:^|\/)(?:motion|framer-motion|recharts|sonner|input-otp)(?:\/|@|$)/;
 	const graphs = {};
 	for (const [name, entry, symbol] of [
+		["root-icons", "@violet/ui", "iconProps"],
+		["leaf-icons", "@violet/ui/icons", "iconProps"],
+		["root-drawn-icon", "@violet/ui", "IslandIcon"],
+		["leaf-drawn-icon", "@violet/ui/icons", "IslandIcon"],
 		["root-comment", "@violet/ui", "CommentItem"],
 		["leaf-comment", "@violet/ui/comment", "CommentItem"],
 		["root-reaction", "@violet/ui", "ReactionBar"],

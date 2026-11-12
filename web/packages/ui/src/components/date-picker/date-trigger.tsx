@@ -4,6 +4,7 @@ import { cn } from "cn";
 import { CalendarDays, Clock, X } from "lucide-react";
 import { useComposedRefs } from "radix-ui/internal";
 import { type CSSProperties, useLayoutEffect, useRef, useState } from "react";
+import { iconProps } from "../icons";
 import { inputVariants } from "../input/styles";
 import type { DateTriggerProps } from "./types";
 
@@ -143,7 +144,7 @@ export function DateTrigger({
 								onClear();
 							}}
 						>
-							<X aria-hidden />
+							<X {...iconProps(14)} aria-hidden />
 						</button>
 					)}
 					{!readOnly && (

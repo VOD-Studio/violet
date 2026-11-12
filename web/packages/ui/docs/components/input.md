@@ -45,6 +45,8 @@ import { Input } from "@violet/ui";
 
 从左到右：`leading`、输入区、清除钮、状态图标、`trailing`、操作钮（显隐、复制），间距 8px。`leading` 与 `trailing` 只放不可点内容：图标（前置按尺寸自动 16 / 20px）、一小段文字（`https://`、`@`、`px`）或键帽。清除、显隐、复制钮固定 24px，不随 `lg` 放大。
 
+普通图标槽默认线宽 1.75；`leading` 的默认图标随 `controlSize` 取 16 / 16 / 20，其余普通槽取 16。传 `<Icon {...iconProps(12)} />` 等显式六档时，槽保留图标本身的尺寸与线宽；附加类名放在 `iconProps` 第二参数，不能覆盖返回的 `v-icon` 标记。清除图标使用显式 14 档、线宽 2；状态位的加载圆弧由 indicator 负责，不受普通图标槽重置。
+
 ### 清除
 
 `clearable` 提供清除钮，名称默认「清除」（`clearLabel`）。仅在有内容且非禁用、非只读时存在于 DOM，视觉上只在悬停或焦点在控件内时出现，所以 Tab 可达。点击清空、回焦输入区，并派发一次原生 `input` 事件，受控与非受控都成立；`onClear` 在其后触发。输入区按 Esc 同样清空并 `preventDefault`，已空时不拦截。

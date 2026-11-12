@@ -1,6 +1,7 @@
 import {
 	Avatar,
 	Badge,
+	iconProps,
 	MorphingPopover,
 	MorphingPopoverContent,
 	MorphingPopoverTrigger,
@@ -81,14 +82,14 @@ function PresenceCard() {
 					</div>
 				</div>
 				<AppRow
-					icon={<Code size={14} aria-hidden="true" />}
+					icon={<Code {...iconProps(14)} aria-hidden="true" />}
 					title="Visual Studio Code"
 					detail="Rust 全栈笔记 · 第 5 章.md"
 				/>
 			</Device>
 			<Device name="iPhone">
 				<AppRow
-					icon={<BookOpen size={14} aria-hidden="true" />}
+					icon={<BookOpen {...iconProps(14)} aria-hidden="true" />}
 					title="微信读书"
 					detail="《置身事内》· 第 3 章"
 				/>

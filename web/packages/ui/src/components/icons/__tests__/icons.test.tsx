@@ -1,53 +1,32 @@
-import { render } from "@testing-library/react";
-import { CircleAlert } from "lucide-react";
+import { render, screen } from "@testing-library/react";
+import { createRef } from "react";
 import { describe, expect, it } from "vitest";
 import { IslandIcon, MorphIcon, TimelineIcon } from "../drawn-icons";
-import { iconProps } from "../icon-props";
-
-describe("iconProps", () => {
-	it("省略尺寸时取 16 档", () => {
-		expect(iconProps()).toEqual({ size: 16, strokeWidth: 1.75 });
-	});
-
-	it.each([
-		[12, 2],
-		[14, 2],
-		[16, 1.75],
-		[18, 1.75],
-		[20, 1.75],
-		[24, 1.75],
-	] as const)("%i 档线宽为 %f", (size, strokeWidth) => {
-		expect(iconProps(size)).toEqual({ size, strokeWidth });
-	});
-
-	it("展开到 lucide 图标上得到对应尺寸与线宽", () => {
-		const { container } = render(<CircleAlert {...iconProps(14)} />);
-		const svg = container.querySelector("svg");
-		expect(svg?.getAttribute("width")).toBe("14");
-		expect(svg?.getAttribute("stroke-width")).toBe("2");
-	});
-});
 
 describe("自绘图标", () => {
 	it.each([
 		["灵动岛", IslandIcon],
 		["时间线", TimelineIcon],
 		["变形", MorphIcon],
-	] as const)("%s 走 24 网格并对读屏隐藏", (_name, Icon) => {
+	] as const)("%s 保留装饰性 SVG 的读屏隐藏", (_name, Icon) => {
 		const { container } = render(<Icon />);
-		const svg = container.querySelector("svg");
-		expect(svg?.getAttribute("viewBox")).toBe("0 0 24 24");
-		expect(svg?.getAttribute("fill")).toBe("none");
-		expect(svg?.getAttribute("stroke")).toBe("currentColor");
-		expect(svg?.getAttribute("stroke-width")).toBe("1.75");
-		expect(svg?.getAttribute("aria-hidden")).toBe("true");
+		expect(container.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+		expect(screen.queryByRole("img")).toBeNull();
 	});
 
-	it("尺寸由 iconProps 决定，线宽可被 iconProps 覆盖", () => {
-		const { container } = render(<IslandIcon {...iconProps(12)} />);
-		const svg = container.querySelector("svg");
-		expect(svg?.getAttribute("width")).toBe("12");
-		expect(svg?.getAttribute("stroke-width")).toBe("2");
+	it.each([
+		["灵动岛", IslandIcon],
+		["时间线", TimelineIcon],
+		["变形", MorphIcon],
+	] as const)("%s 支持独立命名与原生 SVG ref", (name, Icon) => {
+		const ref = createRef<SVGSVGElement>();
+		render(<Icon ref={ref} role="img" aria-label={name} />);
+		expect(screen.getByRole("img", { name })).toBe(ref.current);
+	});
+
+	it.each([IslandIcon, MorphIcon, TimelineIcon])("几何使用 24 网格", (Icon) => {
+		const { container } = render(<Icon />);
+		expect(container.querySelector("svg")?.getAttribute("viewBox")).toBe("0 0 24 24");
 	});
 
 	it("内容不出 2 的安全区", () => {

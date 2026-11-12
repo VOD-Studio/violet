@@ -69,10 +69,14 @@
 
 	.v-dropdown-menu__item > :where(svg) {
 		flex: none;
-		inline-size: 1rem;
-		block-size: 1rem;
 		color: var(--muted-foreground);
 		pointer-events: none;
+	}
+
+	.v-dropdown-menu__item > svg:not(.v-icon) {
+		inline-size: 1rem;
+		block-size: 1rem;
+		stroke-width: 1.75;
 	}
 
 	/* 没有图标或标记的项留出标记列，文字与同组带标记的项对齐 */

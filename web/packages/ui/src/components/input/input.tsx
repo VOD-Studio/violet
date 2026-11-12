@@ -13,6 +13,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { iconProps } from "../icons";
 import { Spinner } from "../indicator";
 import { type InputVariantProps, inputVariants } from "./styles";
 
@@ -35,7 +36,7 @@ export interface InputClassNames {
  * `aria-label`；`aria-describedby`、`aria-invalid` 等由表单项传入，原样落在 input。
  */
 export interface InputProps extends ComponentProps<"input">, InputVariantProps {
-	/** 前置槽：图标（按尺寸自动 16 / 20）或一小段文字，不可点。 */
+	/** 前置槽：默认图标按尺寸自动 16 / 20；显式 `iconProps` 保留档位，也可放不可点的短文字。 */
 	leading?: ReactNode;
 	/** 后置槽：单位、键帽、域名等，不可点。 */
 	trailing?: ReactNode;
@@ -297,7 +298,7 @@ export function Input({
 					aria-label={clearLabel}
 					onClick={clear}
 				>
-					<X aria-hidden="true" />
+					<X {...iconProps(14)} aria-hidden="true" />
 				</button>
 			)}
 			{status && (

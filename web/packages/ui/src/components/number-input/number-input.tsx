@@ -4,6 +4,7 @@ import { cn } from "cn";
 import { ChevronDown, ChevronUp, Minus, Plus } from "lucide-react";
 import { useComposedRefs } from "radix-ui/internal";
 import { type ComponentProps, type MouseEvent, type ReactNode, useId } from "react";
+import { iconProps } from "../icons";
 import { type InputClassNames, type InputVariantProps, inputVariants } from "../input";
 import { decimalPlaces, toBound, toText } from "./number-value";
 import { type NumberInputVariantProps, numberInputVariants } from "./styles";
@@ -112,14 +113,14 @@ export function NumberInput({
 		>
 			{controls === "stacked" ? (
 				direction === 1 ? (
-					<ChevronUp aria-hidden="true" />
+					<ChevronUp {...iconProps(14)} aria-hidden="true" />
 				) : (
-					<ChevronDown aria-hidden="true" />
+					<ChevronDown {...iconProps(14)} aria-hidden="true" />
 				)
 			) : direction === 1 ? (
-				<Plus aria-hidden="true" />
+				<Plus {...iconProps(14)} aria-hidden="true" />
 			) : (
-				<Minus aria-hidden="true" />
+				<Minus {...iconProps(14)} aria-hidden="true" />
 			)}
 		</button>
 	);

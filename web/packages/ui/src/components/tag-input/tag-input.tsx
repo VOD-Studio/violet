@@ -19,6 +19,7 @@ import {
 } from "react";
 import { highlightMatch, PickerList, PickerOption, PickerPanel } from "../../lib/picker-panel";
 import { type ListboxItem, useListbox } from "../../lib/use-listbox";
+import { iconProps } from "../icons";
 import { Spinner } from "../indicator";
 import { type InputVariantProps, inputVariants } from "../input/styles";
 import { commitTags, maxMessage, TAG_SEPARATORS, type TagRejection, tagKey } from "./commit-tags";
@@ -475,7 +476,7 @@ export function TagInput({
 								onMouseDown={(event) => event.preventDefault()}
 								onClick={() => removeTag(tag)}
 							>
-								<X aria-hidden="true" />
+								<X {...iconProps(12)} aria-hidden="true" />
 							</button>
 						) : null}
 					</span>

@@ -55,14 +55,14 @@
 		cursor: progress;
 	}
 
-	.v-button svg:not([class*="size-"]) {
+	.v-button :where(svg:not(.v-icon, .v-spinner > svg)) {
 		inline-size: 1rem;
 		block-size: 1rem;
+		stroke-width: 1.75;
 	}
 
 	.v-button svg {
 		flex-shrink: 0;
-		stroke-width: 1.75;
 		pointer-events: none;
 	}
 
@@ -190,7 +190,7 @@
 		font-size: 1rem;
 	}
 
-	.v-button--lg svg:not([class*="size-"]) {
+	.v-button--lg :where(svg:not(.v-icon, .v-spinner > svg)) {
 		inline-size: 1.25rem;
 		block-size: 1.25rem;
 	}
@@ -249,6 +249,10 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
+	}
+
+	.v-button__label {
+		gap: inherit;
 	}
 
 	.v-button__icon,

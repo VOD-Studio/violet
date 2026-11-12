@@ -1,3 +1,4 @@
+import { IconsConsumer } from "./icons.js";
 import { CommentConsumer } from "./comment.js";
 import { ReactionConsumer } from "./reaction.js";
 import { EmojiPickerConsumer } from "./emoji-picker.js";
@@ -685,6 +686,7 @@ if (!root) {
 	throw new Error("Consumer root is missing.");
 }
 const previews = new Map<string, ComponentType>([
+	["icons", IconsConsumer],
 	["comment", CommentConsumer],
 	["reaction", ReactionConsumer],
 	["emoji-picker", EmojiPickerConsumer],

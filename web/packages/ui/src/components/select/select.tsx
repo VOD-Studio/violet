@@ -32,6 +32,7 @@ import {
 	PickerPanel,
 } from "../../lib/picker-panel";
 import { type ListboxItem, type UseListboxResult, useListbox } from "../../lib/use-listbox";
+import { iconProps } from "../icons";
 import { Spinner } from "../indicator";
 import { type InputVariantProps, inputVariants } from "../input/styles";
 
@@ -703,7 +704,7 @@ export function SelectTrigger({
 							onMouseDown={(event) => event.preventDefault()}
 							onClick={() => context.remove(value)}
 						>
-							<X aria-hidden="true" />
+							<X {...iconProps(12)} aria-hidden="true" />
 						</button>
 					) : null}
 				</span>
@@ -753,7 +754,7 @@ export function SelectTrigger({
 						buttonRef.current?.focus({ preventScroll: true });
 					}}
 				>
-					<X aria-hidden="true" />
+					<X {...iconProps(14)} aria-hidden="true" />
 				</button>
 			) : null}
 			{trailing}

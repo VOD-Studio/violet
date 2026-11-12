@@ -3,6 +3,7 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { type KeyboardEvent, type MouseEvent, useLayoutEffect, useRef } from "react";
 import { Button } from "../button";
+import { iconProps } from "../icons";
 import { ListHighlight, ListHighlightItem } from "../list-highlight";
 import type { EmojiPickerGroup } from "./types";
 
@@ -85,7 +86,7 @@ export function EmojiTabs({ groups, activeGroup, onGroupChange, id }: EmojiTabsP
 				onMouseDown={preventPointerFocus}
 				onClick={() => move(current - 1, false)}
 			>
-				<ChevronLeft size={14} strokeWidth={2} aria-hidden="true" />
+				<ChevronLeft {...iconProps(14)} aria-hidden="true" />
 			</Button>
 			<ListHighlight mode="active">
 				<div
@@ -139,7 +140,7 @@ export function EmojiTabs({ groups, activeGroup, onGroupChange, id }: EmojiTabsP
 				onMouseDown={preventPointerFocus}
 				onClick={() => move(current + 1, false)}
 			>
-				<ChevronRight size={14} strokeWidth={2} aria-hidden="true" />
+				<ChevronRight {...iconProps(14)} aria-hidden="true" />
 			</Button>
 		</div>
 	);

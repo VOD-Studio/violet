@@ -2,6 +2,7 @@
 
 import { ChevronDown } from "lucide-react";
 import { type CSSProperties, useLayoutEffect, useRef } from "react";
+import { iconProps } from "../icons";
 import {
 	addDays,
 	addMonths,
@@ -140,7 +141,7 @@ export function MonthView({
 				onClick={() => onMonthsChange(!months, month)}
 			>
 				{month.getFullYear()} 年{!months && ` ${month.getMonth() + 1} 月`}
-				<ChevronDown aria-hidden data-expanded={months || undefined} />
+				<ChevronDown {...iconProps(14)} aria-hidden data-expanded={months || undefined} />
 			</button>
 		</div>
 	);

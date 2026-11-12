@@ -11,6 +11,7 @@ import {
 	X,
 } from "lucide-react";
 import { type ComponentProps, type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { iconProps } from "../icons";
 import { FlowerBloom, Spinner } from "../indicator";
 
 /** 上传适配器报告的真实文件状态；百分比不代表服务端已经提交。 */
@@ -413,7 +414,7 @@ export function UploadQueue({
 														aria-hidden="true"
 													/>
 												) : item.status === "done" ? (
-													<Check aria-hidden="true" />
+													<Check {...iconProps(14)} aria-hidden="true" />
 												) : null}
 												<span>{message}</span>
 											</div>

@@ -1,6 +1,7 @@
 import { cn } from "cn";
 import { Baseline, ChevronDown } from "lucide-react";
 import { type ComponentProps, useId, useState } from "react";
+import { iconProps } from "../icons";
 import { Popover, PopoverContent, type PopoverContentProps, PopoverTrigger } from "../popover";
 import { HsvColorPicker } from "./HsvColorPicker";
 import { normalizeHexColor } from "./hsv";
@@ -100,7 +101,7 @@ export function ColorSwatch({
 					<span className="v-color-swatch__letter" aria-hidden="true">
 						A<span style={{ backgroundColor: current ?? "currentColor" }} />
 					</span>
-					<ChevronDown aria-hidden="true" />
+					<ChevronDown {...iconProps(12)} aria-hidden="true" />
 				</button>
 			</PopoverTrigger>
 			<PopoverContent
@@ -134,7 +135,7 @@ export function ColorSwatch({
 					onClick={() => setCustomOpen(!customOpen)}
 				>
 					自定义
-					<ChevronDown aria-hidden="true" />
+					<ChevronDown {...iconProps(14)} aria-hidden="true" />
 				</button>
 				<div
 					id={customId}

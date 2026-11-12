@@ -17,6 +17,7 @@ import {
 	useSyncExternalStore,
 } from "react";
 import { highlightMatch, PickerEmpty, PickerOption, PickerPanel } from "../../lib/picker-panel";
+import { iconProps } from "../icons";
 import { Spinner } from "../indicator";
 import { type InputVariantProps, inputVariants } from "../input/styles";
 import { useListHighlight } from "../list-highlight/use-list-highlight";
@@ -871,7 +872,7 @@ export function Cascader(props: CascaderProps) {
 							triggerRef.current?.focus({ preventScroll: true });
 						}}
 					>
-						<X aria-hidden="true" />
+						<X {...iconProps(14)} aria-hidden="true" />
 					</button>
 				) : null}
 				{status16}

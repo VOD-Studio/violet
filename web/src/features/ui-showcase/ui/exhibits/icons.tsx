@@ -1,5 +1,6 @@
-import { type IconSize, IslandIcon, iconProps, MorphIcon, TimelineIcon } from "@violet/ui";
+import { Button, type IconSize, IslandIcon, iconProps, MorphIcon, TimelineIcon } from "@violet/ui";
 import { CircleAlert, Ellipsis, Plus, Search, SquarePen, Trash2 } from "lucide-react";
+import { useState } from "react";
 import type { Exhibit, ExhibitRenderProps } from "../../model/exhibit";
 
 const SIZES: IconSize[] = [12, 14, 16, 18, 20, 24];
@@ -18,17 +19,34 @@ const ICONS = [
 ];
 
 function IconGrid({ state }: ExhibitRenderProps) {
-	const size = (Number(state) || 16) as IconSize;
+	const size = SIZES.find((size) => String(size) === state) ?? 16;
+	const [selected, setSelected] = useState<string>();
 	return (
 		<div className="flex h-full flex-col justify-center gap-4">
-			<p className="font-mono text-12 text-muted-foreground">
+			<p className="font-mono text-xs text-muted-foreground">
 				{size} 档 · 线宽 {iconProps(size).strokeWidth}
 			</p>
 			<div className="grid grid-cols-3 gap-x-3 gap-y-4">
 				{ICONS.map(({ label, Icon }) => (
 					<div key={label} className="flex flex-col items-center gap-1">
-						<Icon {...iconProps(size)} />
-						<span className="text-12 text-muted-foreground">{label}</span>
+						<Button
+							variant="ghost"
+							size="sm"
+							iconOnly
+							aria-label={`${label}图标`}
+							aria-pressed={selected === label}
+							className={
+								selected === label
+									? "text-selected-foreground"
+									: "text-muted-foreground hover:text-foreground"
+							}
+							onClick={() => {
+								setSelected(selected === label ? undefined : label);
+							}}
+						>
+							<Icon {...iconProps(size)} />
+						</Button>
+						<span className="text-xs text-muted-foreground">{label}</span>
 					</div>
 				))}
 			</div>

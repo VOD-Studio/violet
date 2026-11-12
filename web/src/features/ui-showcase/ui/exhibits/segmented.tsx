@@ -1,4 +1,4 @@
-import { Segmented } from "@violet/ui";
+import { iconProps, Segmented } from "@violet/ui";
 import { LayoutGrid, List, Moon, Sun, SunMoon } from "lucide-react";
 import { useState } from "react";
 import type { Exhibit, ExhibitRenderProps } from "../../model/exhibit";
@@ -14,13 +14,13 @@ const STATUSES = [
 	{ value: "scheduled", label: "定时", count: 1 },
 ];
 const APPEARANCES = [
-	{ value: "light", label: "浅色", icon: <Sun size={14} /> },
-	{ value: "dark", label: "深色", icon: <Moon size={14} /> },
-	{ value: "system", label: "跟随系统", icon: <SunMoon size={14} /> },
+	{ value: "light", label: "浅色", icon: <Sun {...iconProps(14)} /> },
+	{ value: "dark", label: "深色", icon: <Moon {...iconProps(14)} /> },
+	{ value: "system", label: "跟随系统", icon: <SunMoon {...iconProps(14)} /> },
 ];
 const VIEWS = [
-	{ value: "grid", label: "网格", icon: <LayoutGrid size={14} /> },
-	{ value: "list", label: "列表", icon: <List size={14} /> },
+	{ value: "grid", label: "网格", icon: <LayoutGrid {...iconProps(14)} /> },
+	{ value: "list", label: "列表", icon: <List {...iconProps(14)} /> },
 ];
 const RANGES = [
 	{ value: "today", label: "今天" },

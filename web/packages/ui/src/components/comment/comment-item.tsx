@@ -4,6 +4,7 @@ import { cn } from "cn";
 import { Crown, MessageCircle } from "lucide-react";
 import { type CSSProperties, useId } from "react";
 import { Button } from "../button";
+import { iconProps } from "../icons";
 import type { CommentItemProps } from "./types";
 import { useReplyFocus } from "./use-reply-focus";
 
@@ -52,7 +53,7 @@ export function CommentItem({
 				<div className="v-comment__avatar-content">{avatar}</div>
 				{isAuthor && (
 					<span className="v-comment__crown" aria-hidden="true">
-						<Crown size={12} strokeWidth={1.75} />
+						<Crown {...iconProps(12)} />
 					</span>
 				)}
 			</div>

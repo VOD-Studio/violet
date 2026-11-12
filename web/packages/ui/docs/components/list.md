@@ -82,6 +82,8 @@ import {
 
 行内容用 `span` 与 `svg`（不用 `div`），因此可以放进 button 与链接。头像直接放 `Avatar`，列表把它收成与图标块同样的 36（紧凑 28）；中性 `Tag` 在行被滑块罩住时换成纸色（`--v-tag-bg: var(--card)`），避免与滑块同色而消失。
 
+`ListItemIcon` 内的普通图标、`ListItemAction` 内的普通动作图标与 `ListItemChevron` 默认均为 16、线宽 1.75；图标块本身仍为 36 / 28，不等于其中 SVG 的尺寸。显式六档使用 `<Icon {...iconProps(size, className)} />`，保留 `v-icon` 标记后，列表不会覆盖 SVG 自身的尺寸与线宽。
+
 ## 调用方约定
 
 - **整行可点的行里不要再放可交互元素**（组件不校验）：行是 button 或链接时，里面的 `ListItemAction` 会变成嵌套交互，读屏与键盘都不可靠。行里要有操作时，让行本身不可点（不传 `onClick`、不用 `asChild`），操作放右边。

@@ -19,6 +19,7 @@ import {
 	useStackedScrim,
 	useTrackClicks,
 } from "../../lib/modal-opener";
+import { iconProps } from "../icons";
 import { Spinner, useDelayedBusy } from "../indicator";
 import { Kbd } from "../kbd";
 import { ListHighlight, ListHighlightItem } from "../list-highlight";
@@ -280,7 +281,7 @@ export function CommandList({
 					<div className="v-command__field">
 						{level ? (
 							<button type="button" className="v-command__trail" onClick={back}>
-								<ChevronLeft aria-hidden="true" />
+								<ChevronLeft {...iconProps(14)} aria-hidden="true" />
 								{level.label}
 							</button>
 						) : (
