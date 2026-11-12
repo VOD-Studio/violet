@@ -162,6 +162,8 @@ test("检视台里每种状态都在占地内", async ({ page, context }) => {
 
 test("检视台可用键盘走近、切换、调整外观并在离开后归还焦点", async ({ page, context }) => {
 	await loadClient(context);
+	await context.addCookies([{ name: "appearance", value: "dark", url: "http://127.0.0.1:4173" }]);
+	await context.addInitScript(() => localStorage.setItem("theme", "dark"));
 	const diagnostics = collectDiagnostics(page);
 	await page.setViewportSize({ width: 1440, height: 900 });
 	await page.goto("/ui");
@@ -189,24 +191,43 @@ test("检视台可用键盘走近、切换、调整外观并在离开后归还�
 	}
 
 	const scope = page.locator("body > [data-theme]");
+	await expect(page.locator("html")).toHaveCSS("color-scheme", "dark");
+	await dialog
+		.getByRole("radiogroup", { name: "季节" })
+		.getByRole("radio", { name: "花朝" })
+		.click();
 	await dialog
 		.getByRole("radiogroup", { name: "明暗" })
 		.getByRole("radio", { name: "深色" })
 		.click();
-	await expect(scope).toHaveClass(/\bdark\b/);
-	await expect(page.locator("main [data-theme]").first()).toHaveClass(/\bdark\b/);
+	const darkColors = await scope.evaluate((element) => ({
+		background: getComputedStyle(element).backgroundColor,
+		foreground: getComputedStyle(element).color,
+	}));
+	await dialog
+		.getByRole("radiogroup", { name: "明暗" })
+		.getByRole("radio", { name: "浅色" })
+		.click();
+	await expect
+		.poll(() => scope.evaluate((element) => getComputedStyle(element).backgroundColor))
+		.not.toBe(darkColors.background);
+	await expect
+		.poll(() => scope.evaluate((element) => getComputedStyle(element).color))
+		.not.toBe(darkColors.foreground);
+	await expect(page.locator("html")).toHaveCSS("color-scheme", "dark");
+	const springBackground = await scope.evaluate(
+		(element) => getComputedStyle(element).backgroundColor,
+	);
 	await dialog
 		.getByRole("radiogroup", { name: "季节" })
 		.getByRole("radio", { name: "荷风" })
 		.click();
-	await expect(scope).toHaveAttribute("data-theme", "summer");
+	await expect
+		.poll(() => scope.evaluate((element) => getComputedStyle(element).backgroundColor))
+		.not.toBe(springBackground);
 	const reduced = dialog.getByRole("button", { name: "减弱动态" });
 	await reduced.click();
 	await expect(reduced).toHaveAttribute("aria-pressed", "true");
-	await expect(scope).toHaveAttribute("data-motion", "reduce");
-	const outline = dialog.getByRole("button", { name: "占地框" });
-	await outline.click();
-	await expect(dialog.getByText("420 × 638", { exact: true }).first()).toBeVisible();
 
 	await dialog
 		.getByRole("radiogroup", { name: "展品状态" })

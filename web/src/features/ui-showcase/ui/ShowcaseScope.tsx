@@ -36,12 +36,12 @@ export function ShowcaseScope({
 			data-motion={appearance.reduced ? "reduce" : undefined}
 			className={cn(
 				"text-foreground",
+				styles[appearance.mode],
 				appearance.mode === "dark" && "dark",
 				appearance.reduced && styles.reduced,
 				className,
 			)}
-			// 站点为深色时子树要显式回到浅色，light-dark() 才取浅色一侧
-			style={{ colorScheme: appearance.mode, ...style }}
+			style={style}
 		>
 			{children}
 		</div>

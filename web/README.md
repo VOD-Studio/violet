@@ -271,6 +271,8 @@ CLI fixture 使用临时 Git 仓库，可通过 `pnpm test scripts/check-colors.
 
 文档站复用包内正文与示例，不维护第二套 API 说明。修改包实现时按包内流程做构建和真实 tarball 消费验证；站点 workspace 能运行不能替代独立包验收。安装方式与发布状态见各包 README。
 
+陈列室与检视台的明暗只作用于各自子树，不修改站点偏好。`ShowcaseScope` 使用局部 CSS `color-scheme` 规则，确保 Lightning CSS 为 `light-dark()` 生成的兼容标记也跟着切换；只改内联 `colorScheme` 会继承站点原来的兼容分支，出现「选中浅色但仍显示暗色」。
+
 ## 测试
 
 ### 单元测试
