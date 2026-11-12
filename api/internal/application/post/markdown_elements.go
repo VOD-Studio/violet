@@ -3,6 +3,7 @@ package post
 import (
 	"strings"
 
+	domaincoderunner "blog-api/internal/domain/coderunner"
 	infracoderunner "blog-api/internal/infrastructure/coderunner"
 )
 
@@ -36,7 +37,7 @@ func (f MarkdownFormula) DisplayMode() string {
 
 // MarkdownCodeBlock 从 content_md 提取的围栏代码块。
 type MarkdownCodeBlock struct {
-	Lang     string // 归一化语言 key（js→node 等，经 ParseFenceInfo）
+	Lang     string // 可运行块归一化语言 key，普通块保留作者语言
 	Runnable bool   // info string 含 runnable/run 标记
 	Code     string // 围栏内代码原文
 	Start    int    // 开围栏行首字节偏移
@@ -126,10 +127,10 @@ func scanFencedBlocks(content string) ([]MarkdownCodeBlock, []byteSpan) {
 		}
 		code = strings.TrimSuffix(code, "\n")
 
-		lang, runnable, _ := infracoderunner.ParseFenceInfo(info)
+		metadata := infracoderunner.ParseFenceInfo(info)
 		blocks = append(blocks, MarkdownCodeBlock{
-			Lang:     lang,
-			Runnable: runnable,
+			Lang:     domaincoderunner.NormalizeLang(metadata.Language),
+			Runnable: metadata.Runnable,
 			Code:     code,
 			Start:    pos,
 			End:      end,

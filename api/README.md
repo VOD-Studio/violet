@@ -127,7 +127,7 @@ REST 端点可用 `middleware.PATAuth` 复用 MCP 的 `PATVerifier`，再用 `Re
 
 ### 正文与媒体
 
-文章只提交 `content_md` 时，由 Goldmark 生成 HTML；Mermaid、可运行围栏与内容卡片保留对应语义载体。HTML 与 Markdown 的往返边界、脚注和表格等格式规则见[编辑器存储说明](../web/src/features/editor/docs/storage.md)，不在这里维护第二份语法手册。
+文章只提交 `content_md` 时，由 Goldmark 生成 HTML；Mermaid、可运行围栏与内容卡片保留对应语义载体。普通与可运行代码围栏均保留文件名、作者标行和原始源码，HTML 转回 Markdown 时保留空行、行尾空白与嵌套围栏。具体载体、往返边界、脚注和表格等格式规则见[编辑器存储说明](../web/src/features/editor/docs/storage.md)，不在这里维护第二份语法手册。
 
 上传支持分片、秒传与会话续传。`clientUploadId` 用于复用同一次文件上传；取消和合并有明确的竞争结果，不能把“取消已受理”理解为“正式文件已删除”。秒传还会确认磁盘文件存在，数据库记录不能替代丢失的文件字节。
 
