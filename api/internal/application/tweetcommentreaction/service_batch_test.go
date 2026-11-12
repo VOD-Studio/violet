@@ -76,7 +76,8 @@ func TestBatchReactionsValidateUniqueLimitAndUUIDs(t *testing.T) {
 func TestBatchReactionSQLCountDoesNotGrowWithTargetCount(t *testing.T) {
 	f := setup(t)
 	ctx := context.Background()
-	ids := []string{f.commentID.String()}
+	ids := make([]string, 0, app.MaxBatchCommentIDs)
+	ids = append(ids, f.commentID.String())
 	comments := make([]model.TweetComment, 0, app.MaxBatchCommentIDs-1)
 	reactions := make([]model.TweetCommentReaction, 0, app.MaxBatchCommentIDs)
 	reactions = append(reactions, model.TweetCommentReaction{ID: uuid.New(), CommentID: f.commentID, UserID: f.userID, EmojiID: f.emojiID})
