@@ -4,7 +4,7 @@
  * 文章评论与推文评论共用：loading 骨架 / 错误重试 / 空态 / 列表 / 加载更多。
  * 文章侧在外层包 ReactionProvider 批量拉反应（展开回复不在此范围，由 CommentReactions 自行降级）。
  */
-import { Button, Empty, Skeleton } from "@violet/ui";
+import { Button, CommentList as CommentListView, Empty, Skeleton } from "@violet/ui";
 
 import { CommentItem } from "./CommentItem";
 import type { CommentRaw, CommentSectionConfig } from "./types";
@@ -68,16 +68,19 @@ export function CommentList<T extends CommentRaw>({
 	}
 
 	return (
-		<div className="space-y-7">
-			{comments.map((raw) => (
-				<CommentItem
-					key={raw.id}
-					item={config.map(raw)}
-					level={0}
-					isLoggedIn={isLoggedIn}
-					config={config}
-				/>
-			))}
+		<div className="space-y-4">
+			<CommentListView>
+				{comments.map((raw) => (
+					<li key={raw.id}>
+						<CommentItem
+							item={config.map(raw)}
+							level={0}
+							isLoggedIn={isLoggedIn}
+							config={config}
+						/>
+					</li>
+				))}
+			</CommentListView>
 			{onLoadMore && (
 				<div className="flex justify-center py-2">
 					<Button variant="ghost" size="sm" onClick={onLoadMore} disabled={isLoadingMore}>

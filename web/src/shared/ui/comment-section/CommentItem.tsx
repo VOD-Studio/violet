@@ -1,18 +1,11 @@
 /**
- * CommentItem - 单条评论卡片（两层扁平回复）
- *
- * 文章评论与推文评论共用：头像 + 标题行 + 气泡正文插槽 + 操作插槽 + 内联回复表单插槽。深度 1 的回复不再嵌套回复区（两层扁平）。
- *
- * feature 差异经 CommentSectionConfig 注入（正文 / 操作 / 回复表单是插槽），
- * 能力开关走 CommentDisplayItem 字段（isAuthor / isPending / repliesTotal / repliesPreview）；
- * AI 等业务徽章经 config.renderMetaBadges 注入，shared 不解读 is_ai。
+ * 站点回复会话编排；视觉、原生语义和表单焦点由 SDK 承担。
+ * 正文、身份与请求通过 feature 插槽注入，内联提交的回复留在当前会话中。
  */
-import { cn } from "cn";
-import { MessageCircle } from "lucide-react";
+import { type CommentStatus, CommentItem as CommentView } from "@violet/ui";
 import { useState } from "react";
-import { CommentAvatar, CommentMeta } from "./CommentMeta";
+import { CommentAuthor, CommentAvatar, formatCommentTime } from "./CommentPresentation";
 import { CommentRepliesBlock } from "./CommentRepliesBlock";
-import { AUTHOR_TIER } from "./tone";
 import type {
 	CommentDisplayItem,
 	CommentRaw,
@@ -31,6 +24,12 @@ export interface CommentItemProps<T extends CommentRaw> {
 	config: CommentSectionConfig<T>;
 	/** 回复提交回调（level=1 时由父级传入，将新回复冒泡到顶层 pendingReplies） */
 	onReplyAdded?: (reply: CommentDisplayItem<T>) => void;
+	/**
+	 * 展开列表的错峰等待，单位毫秒；减弱动态下由 SDK 忽略。
+	 *
+	 * @default 0
+	 */
+	enterDelay?: number;
 }
 
 /**
@@ -63,6 +62,7 @@ export function CommentItem<T extends CommentRaw>({
 	isLoggedIn,
 	config,
 	onReplyAdded,
+	enterDelay,
 }: CommentItemProps<T>) {
 	const [replying, setReplying] = useState(false);
 	/** 顶层评论下内联提交的回复（立即显示，无需展开拉取） */
@@ -78,69 +78,52 @@ export function CommentItem<T extends CommentRaw>({
 		setReplying(false);
 	};
 
+	let status: CommentStatus = "visible";
+	if (item.isDeleted) {
+		status = "deleted";
+	} else if (item.isPending) {
+		status = "pending";
+	}
+	const size = level === 0 ? "md" : "sm";
+	const canReply = isLoggedIn && !item.isDeleted;
+	const showReplies =
+		level === 0 && shouldRenderRepliesBlock(item, config.repliesMode, pendingReplies.length);
+
 	return (
-		<div className="flex gap-3">
-			{config.renderAvatar?.(item, { size: level === 0 ? "md" : "sm" }) ?? (
-				<CommentAvatar item={item} size={level === 0 ? "md" : "sm"} />
-			)}
-
-			<div className="min-w-0 flex-1">
-				<CommentMeta
-					item={item}
-					badges={config.renderMetaBadges?.(item)}
-					authorName={config.renderAuthorName?.(item)}
-				/>
-
-				<div
-					className={cn(
-						"mt-1 w-fit max-w-full rounded-2xl rounded-tl-md px-4 py-2.5",
-						item.isAuthor ? AUTHOR_TIER.bubble : "bg-muted/50",
-					)}
-				>
-					{config.renderBody ? (
-						config.renderBody(item)
-					) : (
-						<p className="whitespace-pre-wrap wrap-break-word text-sm leading-relaxed text-foreground">
-							{item.body}
-						</p>
-					)}
-				</div>
-
-				<div className="mt-1 flex flex-wrap items-center gap-3 pl-1">
-					{isLoggedIn && (
-						<button
-							type="button"
-							onClick={() => setReplying((v) => !v)}
-							className="inline-flex h-6 items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary"
-							aria-label={replying ? "取消回复" : "回复"}
-						>
-							<MessageCircle className="size-3.5" />
-							<span>回复</span>
-						</button>
-					)}
-					{config.renderActions?.(item)}
-				</div>
-
-				{/* 内嵌回复表单：点回复按钮后展开 */}
-				{replying && (
-					<div className="mt-2">
-						{config.renderReplyForm(item, { onSuccess: handleReplySuccess })}
-					</div>
-				)}
-
-				{/* 回复区：仅顶层评论渲染（两层扁平，回复不再嵌套回复区） */}
-				{level === 0 &&
-					shouldRenderRepliesBlock(item, config.repliesMode, pendingReplies.length) && (
-						<CommentRepliesBlock
-							comment={item}
-							isLoggedIn={isLoggedIn}
-							config={config}
-							pendingReplies={pendingReplies}
-							onReplyAdded={(reply) => setPendingReplies((prev) => [...prev, reply])}
-						/>
-					)}
-			</div>
-		</div>
+		<CommentView
+			author={config.renderAuthorName?.(item) ?? <CommentAuthor item={item} />}
+			avatar={config.renderAvatar?.(item, { size }) ?? <CommentAvatar item={item} />}
+			dateTime={item.createdAt}
+			time={formatCommentTime(item.createdAt)}
+			replyTo={item.replyToName}
+			badges={config.renderMetaBadges?.(item)}
+			isAuthor={item.isAuthor}
+			reply={level > 0}
+			status={status}
+			actions={config.renderActions?.(item)}
+			onReply={canReply ? () => setReplying((value) => !value) : undefined}
+			enterDelay={enterDelay}
+			replyForm={
+				replying
+					? config.renderReplyForm(item, { onSuccess: handleReplySuccess })
+					: undefined
+			}
+			replies={
+				showReplies ? (
+					<CommentRepliesBlock
+						comment={item}
+						isLoggedIn={isLoggedIn}
+						config={config}
+						pendingReplies={pendingReplies}
+						onReplyAdded={(reply) =>
+							setPendingReplies((previous) => [...previous, reply])
+						}
+					/>
+				) : undefined
+			}
+		>
+			{config.renderBody ? config.renderBody(item) : item.body}
+		</CommentView>
 	);
 }
 

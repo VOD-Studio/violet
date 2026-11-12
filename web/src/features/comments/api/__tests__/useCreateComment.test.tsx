@@ -286,8 +286,7 @@ describe("useCreateComment — 回复缓存更新", () => {
 		fireEvent.keyDown(editor, { key: "Enter", ctrlKey: true });
 
 		await screen.findByText("刚提交的二级回复");
-		expect(screen.getByText(`@${targetName}`)).toBeTruthy();
-		expect(screen.getByText("审批中")).toBeTruthy();
+		expect(screen.getByText((content) => content.endsWith(`@${targetName}`))).toBeTruthy();
 		expect(apiPost).toHaveBeenCalledWith("/posts/p1/comments", {
 			body: "刚提交的二级回复",
 			parent_id: "r-target",

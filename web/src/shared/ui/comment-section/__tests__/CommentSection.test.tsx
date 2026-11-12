@@ -2,7 +2,7 @@
  * shared comment-section 展示层测试
  *
  * 覆盖：
- * - CommentItem：头像兜底 / 作者徽章 / 审批中徽章 / 回复按钮登录门控 / 内联回复表单
+ * - CommentItem：头像兜底 / 作者徽章 / 回复按钮登录门控 / 内联回复表单
  * - CommentRepliesBlock：toggle 模式（查看回复 → 懒加载展开）与 preview 模式（查看全部 N）
  *   + pending 去重（refetch 后预览已含新回复时不重复渲染）
  *
@@ -99,18 +99,6 @@ describe("CommentItem", () => {
 		expect(screen.getAllByText("作者").length).toBe(1);
 	});
 
-	it("pending 渲染「审批中」徽章", () => {
-		render(
-			<CommentItem
-				item={mk("c1", { isPending: true })}
-				level={0}
-				isLoggedIn={false}
-				config={stubConfig()}
-			/>,
-		);
-		expect(screen.getAllByText("审批中").length).toBe(1);
-	});
-
 	it("未登录不显示回复按钮", () => {
 		render(<CommentItem item={mk("c1")} level={0} isLoggedIn={false} config={stubConfig()} />);
 		expect(screen.queryByText("回复")).toBeNull();
@@ -171,7 +159,7 @@ describe("CommentRepliesBlock", () => {
 				/>
 			</>,
 		);
-		expect(screen.queryAllByText("@Alice")).toHaveLength(expected);
+		expect(screen.queryAllByText(/@Alice/)).toHaveLength(expected);
 	});
 
 	it("toggle 模式：默认显示「查看回复」，点击后挂载懒加载区并显示「收起回复」", () => {

@@ -4,7 +4,7 @@
  * 文章评论与推文评论共用：标题行 + 匿名黑洞引导（可选）+ 顶部表单（feature 提供）+ 列表区。
  * 数据获取与表单由 feature 层负责（各自 React Query hooks），本组件纯展示。
  */
-import { MessageSquare } from "lucide-react";
+import { CommentHeader, type CommentSort } from "@violet/ui";
 import type { ReactNode } from "react";
 
 export interface CommentSectionProps {
@@ -16,12 +16,19 @@ export interface CommentSectionProps {
 	form: ReactNode;
 	/** 是否登录 */
 	isLoggedIn: boolean;
-	/** 匿名黑洞模式（文章评论）：未登录不渲染列表区 */
+	/**
+	 * 匿名黑洞模式（文章评论）：未登录不渲染列表区。
+	 *
+	 * @default false
+	 */
 	blackhole?: boolean;
 	/** 匿名黑洞引导条（blackhole 且未登录时渲染；文章专属） */
 	banner?: ReactNode;
 	/** 列表区（feature 包 CommentList / ReactionProvider） */
 	children: ReactNode;
+	/** 顶层评论的真实查询排序，回复会话不使用此状态。 */
+	sort?: CommentSort;
+	onSortChange?: (sort: CommentSort) => void;
 }
 
 export function CommentSection({
@@ -32,18 +39,18 @@ export function CommentSection({
 	blackhole = false,
 	banner,
 	children,
+	sort,
+	onSortChange,
 }: CommentSectionProps) {
 	return (
 		<section className="min-w-0 max-w-4xl flex-1" aria-label="评论区">
-			<header className="mb-6 flex items-center gap-2">
-				<MessageSquare className="size-5 text-muted-foreground" />
-				<h2 className="text-lg font-semibold text-foreground">{title}</h2>
-				{count !== undefined && (
-					<span className="rounded-full bg-primary/10 px-2 py-0.5 font-mono text-xs font-medium text-primary tabular-nums">
-						{count}
-					</span>
-				)}
-			</header>
+			<CommentHeader
+				className="mb-6"
+				title={<h2>{title}</h2>}
+				count={count}
+				sort={sort}
+				onSortChange={onSortChange}
+			/>
 
 			{blackhole && !isLoggedIn && banner}
 
