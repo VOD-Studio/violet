@@ -1,6 +1,5 @@
-import { CodeCard } from "@shared/ui/code-preview";
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Button, Segmented } from "@violet/ui";
+import { Button, CodeBlock, Segmented } from "@violet/ui";
 import { cn } from "cn";
 import { ArrowUpRight, Check, Copy, X } from "lucide-react";
 import { type ComponentType, type ReactNode, useEffect, useRef, useState } from "react";
@@ -217,9 +216,9 @@ function SectionCode({ section }: { section: WorkbenchSection }) {
 	return (
 		<div className="grid gap-3">
 			{blocks.map((block) => (
-				<CodeCard
+				<CodeBlock
 					key={block.title}
-					title={block.title}
+					filename={block.title}
 					code={block.code}
 					language="ts"
 					collapseLines={0}

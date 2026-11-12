@@ -1,17 +1,5 @@
 import type { InstallView } from "@features/admin-mcp/model/clients";
-import { Button } from "@violet/ui";
-
-import { lazy, Suspense } from "react";
-
-/**
- * CodeCard 懒加载：与 markdown-components 同理，避免 shiki 高亮链
- * 进入 admin 主 chunk，仅接入面板真正渲染代码块时拉取。
- */
-const LazyCodeCard = lazy(() =>
-	import("@shared/ui/code-preview/components/CodeCard").then((m) => ({
-		default: m.CodeCard,
-	})),
-);
+import { Button, CodeBlock, InlineCode } from "@violet/ui";
 
 /** ClientInstallView - 渲染一种客户端安装方式（CLI 命令 / deeplink / 配置片段 / 图文步骤） */
 export function ClientInstallView({ view }: { view: InstallView }) {
@@ -27,14 +15,6 @@ export function ClientInstallView({ view }: { view: InstallView }) {
 	}
 }
 
-function CodeBlock({ code, language }: { code: string; language: string }) {
-	return (
-		<Suspense fallback={<div className="my-6 h-24 animate-pulse rounded-lg bg-muted" />}>
-			<LazyCodeCard code={code} language={language} className="my-6" />
-		</Suspense>
-	);
-}
-
 function ViewTitle({ title, note }: { title: string; note?: string }) {
 	return (
 		<div className="space-y-0.5">
@@ -48,7 +28,7 @@ function CommandsView({ view }: { view: Extract<InstallView, { kind: "commands" 
 	return (
 		<div className="space-y-2">
 			<ViewTitle title={view.title} note={view.note} />
-			<CodeBlock code={view.commands.join("\n")} language="bash" />
+			<CodeBlock code={view.commands.join("\n")} language="bash" className="my-6" />
 		</div>
 	);
 }
@@ -73,10 +53,15 @@ function SnippetView({ view }: { view: Extract<InstallView, { kind: "snippet" }>
 		<div className="space-y-2">
 			<ViewTitle title={view.title} note={view.note} />
 			<p className="text-xs text-muted-foreground">
-				合并入 <code className="rounded bg-muted px-1 py-0.5 font-mono">{view.path}</code>
+				合并入 <InlineCode>{view.path}</InlineCode>
 				（勿整体覆盖现有内容）：
 			</p>
-			<CodeBlock code={view.code} language={view.lang} />
+			<CodeBlock
+				code={view.code}
+				language={view.lang}
+				filename={view.path}
+				className="my-6"
+			/>
 		</div>
 	);
 }
