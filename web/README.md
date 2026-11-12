@@ -164,6 +164,8 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 
 修改内容块时同时检查编辑预览与阅读渲染。可运行代码依赖服务端有效策略；项目卡片与路线图读取当前项目数据，而非在文章里保存一份静态副本。
 
+阅读端的正文引用装饰不参与无障碍朗读，出处保留引用语义；提示块与普通引用独立呈现。
+
 #### 阅读端加载边界
 
 文章详情的路由参数、SSR loader 与 SEO 留在 `routes/blog/$slug.tsx`，阅读界面经 `widgets/BlogDetailPage` 的公开入口组合各 feature。浏览量登记复用 `features/posts/api/mutations` 的 `useIncrementView`，不在组合层拼接业务接口；mutation 状态变化和评论开关不重复提交统计，统计失败不影响正文，HTTP 客户端既有重试策略保持不变。

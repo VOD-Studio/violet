@@ -114,8 +114,8 @@ blockquote[data-type="alert"] > :last-child,
  * 正文引用段落：文章、手记与编辑器预览共用同一套规则。
  * 编辑器里的 blockquote 不带 article-blockquote 类（类名会随 getHTML 落进正文存储），
  * 因此用 .ProseMirror 作用域补齐，两处规则必须成对维护。
- * 缩进 24px（1.5rem）、引号 40px（2.5rem）取设计稿定值；不画竖线、不加底色。
- * 大引号走 ::before：伪元素不进无障碍树，等价于 aria-hidden。
+ * 缩进 24px（1.5rem）、引号 40px（2.5rem）按正文引用契约呈现；不画竖线、不加底色。
+ * 阅读端的装饰节点显式标记 aria-hidden，不依赖伪元素的无障碍行为。
  */
 :is(.article-blockquote, .ProseMirror blockquote:not([data-type="alert"])) {
 	position: relative;
@@ -130,19 +130,28 @@ blockquote[data-type="alert"] > :last-child,
 	quotes: none;
 }
 
-:is(.article-blockquote, .ProseMirror blockquote:not([data-type="alert"]))::before {
+.ProseMirror blockquote:not([data-type="alert"])::before {
 	content: "“";
+}
+
+.article-blockquote-mark,
+.ProseMirror blockquote:not([data-type="alert"])::before {
 	position: absolute;
 	inset-block-start: -0.15em;
 	inset-inline-start: 0;
 	color: color-mix(in oklab, var(--decoration) 70%, transparent);
 	font-family: var(--font-serif);
-	/* 设计稿：宋体 40px */
+	/* 正文引用契约：宋体 40px。 */
 	font-size: 2.5rem;
 	font-weight: 400;
 	line-height: 1;
 	pointer-events: none;
 	user-select: none;
+}
+
+/* 空装饰节点不参与 DOM 纯文本与批注锚点；隐藏其伪元素，避免读屏朗读。 */
+.article-blockquote-mark::before {
+	content: "“";
 }
 
 /* 段内正文跟随引用色，压过正文段落的 text-foreground/90 */
@@ -151,7 +160,10 @@ blockquote[data-type="alert"] > :last-child,
 	color: inherit;
 }
 
-:is(.article-blockquote, .ProseMirror blockquote:not([data-type="alert"])) > :first-child {
+:is(.article-blockquote, .ProseMirror blockquote:not([data-type="alert"])) > :first-child,
+:is(.article-blockquote, .ProseMirror blockquote:not([data-type="alert"]))
+	> .article-blockquote-mark
+	+ * {
 	margin-block-start: 0;
 }
 
