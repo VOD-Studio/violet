@@ -12,9 +12,13 @@
 | `design/` | 外部设计工具产出的设计稿原稿，含 [Violet UED 设计稿](./design/ued/README.md)：画布索引、画板源文件与引用资源。 |
 | `guides/` | 开发规范、风格指南、最佳实践。含 [前端代码规范](./guides/frontend-style-guide.md)、[Go 测试规范](./guides/go-testing-guide.md)、[MCP Server 使用指南](./guides/mcp-servers.md)、[页面转场指南](./guides/view-transitions.md)、[Nowbeam 接入指南](./guides/nowbeam.md)。 |
 | `issues/` | 按 PRD 或功能主题分组的历史任务/issue 记录。 |
-| `prd/` | 产品需求文档（Product Requirements Documents）。 |
+| `prd/` | 历史本地产品需求文档；新 PRD 使用 GitHub Issue，不在此保留正文副本。 |
 | `research/` | 基于一手来源的接入与技术可行性分析，含 [Kite 接入分析](./research/kite-integration.md)。 |
 | `superpowers/` | 被 `.gitignore` 忽略，不纳入版本控制。 |
+
+## 前台改版计划
+
+- [#758 前台页面改版规格](https://github.com/VOD-Studio/violet/issues/758)：前台页面范围、现有组件优先规则、数据能力与路由迁移；14 个实施子 Issue 通过原生子任务与依赖关系关联。
 
 ## 组件库开发
 
@@ -39,7 +43,7 @@
 
 ## 使用约定
 
-- PRD 主文件直接放在 `prd/` 根目录。
-- 每个 PRD 的拆分 issue 放在 `issues/<PRD编号或主题>/` 下，按文件夹内从 `0001` 起重新编号。
-- 跨 PRD 的公共功能主题（无对应 PRD）放在 `issues/<主题>/` 下。
+- 新 PRD 使用 GitHub 父 Issue，实施任务使用子 Issue；规格与验收标准只在 Issue 维护，仓库保留索引链接。
+- 仅 `gh` 不可用时降级为本地 Markdown：PRD 放 `prd/`，拆分任务放 `issues/<PRD编号或主题>/`。
+- 历史本地 PRD 与任务记录保留，不创建同主题的正文副本。
 - 被新决策替代的旧文档移入 `archive/`，不直接删除。

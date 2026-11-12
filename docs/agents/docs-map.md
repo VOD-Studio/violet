@@ -36,7 +36,7 @@
 | 有人要照着执行的操作流程(部署/配置/联调) | guide/runbook | `docs/guides/` 或 `docs/deploy/` | 有明确步骤可照做 |
 | 组件库开发与消费方反复查阅的指南 | 包内指南 | `web/packages/ui/docs/` | 包内为唯一正文，组件库文档站只 raw import；docs 索引只链接 |
 | 独立可复用包的消费与维护指南 | 包内 API / 开发说明 | 对应 `web/packages/<name>/docs/api.md` 与 `DEVELOPMENT.md` | README 放使用入口；可执行示例同源校验，文档索引只链接 |
-| 功能开发前的需求拆解 | PRD + issues | `docs/prd/` + `docs/issues/` | 功能分支第一个 commit(见 AGENTS.md) |
+| 功能开发前的需求拆解 | PRD Issue + 子 Issue | GitHub Issues；仓库只保留索引链接 | 归属 feature 分支；仅 `gh` 不可用时降级到 `docs/prd/` 与 `docs/issues/` |
 | 外部设计工具产出、需留存原稿的设计稿 | 设计稿归档 | `docs/design/<name>/` | 在线稿可能失效，实现要以原稿为准；原样存放并附 sha256 清单 |
 | 单个功能的对外说明 | README 一行 | 对应 README | 不为此建新文件 |
 
