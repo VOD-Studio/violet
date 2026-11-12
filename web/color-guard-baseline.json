@@ -1144,90 +1144,6 @@
 		{
 			"file": "src/features/editor/styles.css",
 			"rule": "raw-color",
-			"value": "#033a16",
-			"count": 1
-		},
-		{
-			"file": "src/features/editor/styles.css",
-			"rule": "raw-color",
-			"value": "#24292e",
-			"count": 1
-		},
-		{
-			"file": "src/features/editor/styles.css",
-			"rule": "raw-color",
-			"value": "#490202",
-			"count": 1
-		},
-		{
-			"file": "src/features/editor/styles.css",
-			"rule": "raw-color",
-			"value": "#79c0ff",
-			"count": 3
-		},
-		{
-			"file": "src/features/editor/styles.css",
-			"rule": "raw-color",
-			"value": "#7ee787",
-			"count": 1
-		},
-		{
-			"file": "src/features/editor/styles.css",
-			"rule": "raw-color",
-			"value": "#8b949e",
-			"count": 1
-		},
-		{
-			"file": "src/features/editor/styles.css",
-			"rule": "raw-color",
-			"value": "#a5d6ff",
-			"count": 2
-		},
-		{
-			"file": "src/features/editor/styles.css",
-			"rule": "raw-color",
-			"value": "#aff5b4",
-			"count": 1
-		},
-		{
-			"file": "src/features/editor/styles.css",
-			"rule": "raw-color",
-			"value": "#c9d1d9",
-			"count": 2
-		},
-		{
-			"file": "src/features/editor/styles.css",
-			"rule": "raw-color",
-			"value": "#d2a8ff",
-			"count": 1
-		},
-		{
-			"file": "src/features/editor/styles.css",
-			"rule": "raw-color",
-			"value": "#e6edf3",
-			"count": 1
-		},
-		{
-			"file": "src/features/editor/styles.css",
-			"rule": "raw-color",
-			"value": "#ff7b72",
-			"count": 1
-		},
-		{
-			"file": "src/features/editor/styles.css",
-			"rule": "raw-color",
-			"value": "#ffa198",
-			"count": 1
-		},
-		{
-			"file": "src/features/editor/styles.css",
-			"rule": "raw-color",
-			"value": "#ffa657",
-			"count": 3
-		},
-		{
-			"file": "src/features/editor/styles.css",
-			"rule": "raw-color",
 			"value": "hsl(0 0% 45%)",
 			"count": 1
 		},
@@ -1236,42 +1152,6 @@
 			"rule": "raw-color",
 			"value": "hsl(0 0% 85%)",
 			"count": 1
-		},
-		{
-			"file": "src/features/editor/ui/CodeBlockView.tsx",
-			"rule": "raw-color",
-			"value": "#24292e",
-			"count": 1
-		},
-		{
-			"file": "src/features/editor/ui/CodeBlockView.tsx",
-			"rule": "raw-color",
-			"value": "#e6edf3",
-			"count": 1
-		},
-		{
-			"file": "src/features/editor/ui/CodeBlockView.tsx",
-			"rule": "tailwind-palette",
-			"value": "bg-black",
-			"count": 1
-		},
-		{
-			"file": "src/features/editor/ui/CodeBlockView.tsx",
-			"rule": "tailwind-palette",
-			"value": "bg-white",
-			"count": 4
-		},
-		{
-			"file": "src/features/editor/ui/CodeBlockView.tsx",
-			"rule": "tailwind-palette",
-			"value": "border-white",
-			"count": 3
-		},
-		{
-			"file": "src/features/editor/ui/CodeBlockView.tsx",
-			"rule": "tailwind-palette",
-			"value": "text-white",
-			"count": 6
 		},
 		{
 			"file": "src/features/inkline-workbench/ui/ArtworkStage.tsx",

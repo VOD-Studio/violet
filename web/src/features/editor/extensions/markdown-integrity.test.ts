@@ -200,6 +200,51 @@ describe("editor Markdown integrity", () => {
 		expect(roundtrip(first).getJSON()).toEqual(first.getJSON());
 	});
 
+	it.each([
+		false,
+		true,
+	])("preserves filename, marked rows, source and overrides through HTML and Markdown (runnable=%s)", (runnable) => {
+		const filename = 'src/a "quote" <tag> & `tick`.ts';
+		const source = 'const text = "<&>";\n~~~\n\n';
+		const first = editor(
+			`~~~~TypeScript title=${JSON.stringify(filename)} {1,3-999999999999999999999}${runnable ? " run" : ""} {"timeout_secs":10,"allow_network":false}\n${source}\n~~~~`,
+		);
+		expect(first.state.doc.firstChild?.textContent).toBe(source);
+		expect(first.getJSON().content?.[0].attrs).toMatchObject({
+			language: runnable ? "bun" : "TypeScript",
+			filename,
+			highlightLines: "1,3-999999999999999999999",
+			runnable,
+			overrides: '{"timeout_secs":10,"allow_network":false}',
+		});
+		const html = new DOMParser().parseFromString(first.getHTML(), "text/html");
+		expect(html.querySelector("pre")?.getAttribute("data-filename")).toBe(filename);
+		expect(html.querySelector("pre")?.getAttribute("data-source")).toBe(source);
+		expect(html.querySelector("tag")).toBeNull();
+		expect(roundtrip(roundtrip(first)).getJSON()).toEqual(first.getJSON());
+	});
+
+	it.each([
+		["> ", "```", ""],
+		["  > ", "~~~", "- item\n\n"],
+	])("imports raw metadata inside nested containers (%s%s)", (prefix, fence, container) => {
+		const filename = 'src/"nested" <tag> & file.ts';
+		const source = 'console.log("<&>");';
+		const first = editor(
+			`${container}${prefix}${fence}typescript title=${JSON.stringify(filename)} {1} run {"timeout_secs":10}\n${prefix}${source}\n${prefix}${fence}`,
+		);
+		const html = new DOMParser().parseFromString(first.getHTML(), "text/html");
+		const pre = html.querySelector("blockquote pre");
+		expect(pre?.getAttribute("data-filename")).toBe(filename);
+		expect(pre?.getAttribute("data-lines")).toBe("1");
+		expect(pre?.getAttribute("data-lang")).toBe("bun");
+		expect(pre?.getAttribute("data-runnable")).toBe("true");
+		expect(pre?.getAttribute("data-overrides")).toBe('{"timeout_secs":10}');
+		expect(pre?.getAttribute("data-source")).toBe(source);
+		expect(html.querySelector("tag")).toBeNull();
+		expect(roundtrip(first).getJSON()).toEqual(first.getJSON());
+	});
+
 	it("retains task check state and highlight markup through both formats", () => {
 		const first = editor(
 			'<ul data-type="taskList"><li data-type="taskItem" data-checked="true"><p>Done <mark>highlight</mark></p></li><li data-type="taskItem" data-checked="false"><p>Pending</p></li></ul>',

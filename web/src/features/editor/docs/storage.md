@@ -12,9 +12,13 @@
 - 编辑器使用 marked 的围栏解析规则，支持反引号或波浪号围栏；可运行围栏接受 `run` / `runnable` 与带空格的 JSON 资源参数。普通代码中的 `$...$`、`==...==` 和围栏示例不会被当作正文公式或高亮。
 - 已知 `content_md`（包括版本预览）按 Markdown 解析，允许白名单内的原生 HTML 混排；`content_html` 仍直接走安全 HTML 阅读链路。公式、Mermaid、可运行代码、任务列表、高亮、提示块与折叠内容共用阅读组件，链接锚点与脚注回链留在当前页。任意脚本、事件属性和危险链接不在允许范围内。
 
-## 可运行代码块的载体
+## 代码块的载体
 
-可运行标记写入围栏 info string：`<lang> runnable {<ResourceLimits JSON>}`（如 `python runnable {"timeout_secs":10}`）。HTML 载体为带属性的 `<pre data-runnable="true" data-lang="python" data-overrides="{...}" data-source="原始源码">`，`data-source` 携带 HTML 转义后的原始源码供阅读器无损提取（避免反解高亮 HTML）。
+普通与可运行围栏共用显示元数据：`<lang> title="文件名" {1,3-5}`。完整示例为 `python title="main.py" {1,3-5} run {"timeout_secs":10}`；`run` 与 `runnable` 等价，资源 JSON 必须放在最后，与高亮行的数字花括号分别解析。
+
+Tiptap 保存 `language`、`filename`、`highlightLines`、`runnable` 与 `overrides` 属性。HTML 的 `<pre>` 用 `data-filename`、`data-lines` 保存文件名与紧凑行范围，并用 `data-lang`、`data-source` 保存语言和原始源码；可运行块额外带 `data-runnable="true"`，资源声明保存在 `data-overrides`。所有属性按 HTML 规则转义，文件名写回 Markdown 时按 JSON 字符串转义。普通语言保持作者写法，仅可运行语言归一化为执行运行时别名。
+
+源码的空行、尾换行与嵌套围栏示例在 HTML / Markdown 往返中保持不变。导出围栏长于源码中的同类符号串；文件名含反引号时改用波浪号围栏。高亮范围不提前展开，阅读时仅展开实际源码内的有效行号，去重并排序。错误元数据不会删除代码；事件属性与任意 `data-*` 属性仍不在 HTML 白名单内。
 
 ## 旧文章脚注仍显示源码时
 

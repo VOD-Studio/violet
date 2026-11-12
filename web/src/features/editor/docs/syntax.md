@@ -85,7 +85,9 @@ const a = 1;
 ```
 
 - 行首输入 ` ``` ` 加语言名（如 `javascript`、`go`）再回车，或 Slash 菜单「代码块」插入。
-- 编辑器右上角下拉切换语言；前台按语言高亮，并显示语言标签与复制按钮。
+- 编辑器顶部下拉切换语言；「代码设置」可填写文件名与高亮行。前台显示文件名、语言标签与复制按钮。
+- 文件名写作 `title="src/main.py"`，支持空格、JSON 转义引号与反斜线；高亮行写作 `{1,3-5}`，从 1 开始。两者可同时用于普通和可运行代码块。
+- 行范围保持紧凑存储，只映射实际源码内的行；超出源码的行号不显示。清空「文件名」或「高亮行」会删除对应元数据。
 - common 预设外的高亮语言（dockerfile、nginx 等）按需动态加载。
 
 ### 可运行代码块
@@ -93,7 +95,7 @@ const a = 1;
 读者可在文章页就地执行的源码块。Slash 菜单「可运行代码块」插入，语言支持 python / node / go / rust / bun；Markdown 载体为带 `runnable` 标记的围栏块，info string 可携带 JSON 资源参数：
 
 ````markdown
-```python runnable {"timeout_secs":10}
+```python title="main.py" {1,3-5} runnable {"timeout_secs":10}
 print("hello, violet")
 ```
 ````
