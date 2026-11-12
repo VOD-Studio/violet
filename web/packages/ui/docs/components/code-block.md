@@ -17,6 +17,8 @@ import "@violet/ui/styles.css";
 
 只读形态使用 `figure > figcaption + … + pre > code`。超过 12 行默认折叠，`collapseLines={0}` 用于需要完整展开的文件预览；展开后可收起，折叠只裁切显示，不删除源码。行号从 1 开始，不进入复制结果和读屏内容。行号区按设计稿保留 40px 内容宽与 14px 右间距，阅读态 Tab 宽度为 8。`className`、原生属性和 `ref` 落在 `figure`。顶栏常规高度为 40px；宿主窄于 26rem 时允许换行，避免已修改标记、还原与运行动作被裁剪。
 
+在文章等使用 Tailwind Typography `prose` 的容器内，React `CodeBlock` 与 `InlineCode` 自带 `not-prose` 隔离正文排版，保留代码区的背景、行距、行内样式及复制操作；原生 HTML 消费方需要在外壳与行内代码上自行添加 `not-prose`。
+
 服务端直接输出完整、安全转义的源码。近视口后才启动共享 Shiki Worker，语法文件按语言加载；等待、失败与源变更都先保留正确的纯文本，旧高亮不会覆盖新源码。关键字、字符串、注释与函数使用语义色，不因四季或明暗切换重新高亮。宿主可通过 `--font-mono` 提供 Maple Mono；组件包不带站点字体。
 
 发行包自带可重定位的 Worker、按需语法 JSON 与 WASM。消费方的 Vite 负责收集资源，无需复制文件到 `public` 或配置站点绝对路径；开发预构建与生产构建使用同一安装包。
