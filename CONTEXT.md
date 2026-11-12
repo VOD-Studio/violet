@@ -119,11 +119,11 @@ _Avoid_: MermaidNode（写死单一格式的命名，丧失多格式扩展性）
 ## 代码执行（Code Execution）
 
 **可运行代码块（Runnable Code Block）**:
-文章中可在读者浏览器就地执行的源码块。Markdown 载体为带 `runnable` 标记的围栏块，info string 格式 `<lang> runnable {<ResourceLimits JSON>}`（如 `python runnable {"timeout_secs":10}`）。HTML 载体为带属性的 `<pre data-runnable="true" data-lang="python" data-overrides="{...}" data-source="原始源码">`，data-source 携带 HTML 转义后的原始源码供阅读器无损提取（避免反解高亮 HTML）。
+文章中可由读者就地修改并提交后端沙箱执行的源码块。Markdown 的独立 `run` 或 `runnable` 标记启用执行；info string 可同时包含 `title="main example.py"`、数字强调行 `{2,4-6}` 与资源 JSON。标题字符串内的运行词不启用执行。HTML 通过 `data-filename`、`data-lines` 保留展示元数据；可运行载体另有 `data-runnable="true"`、`data-lang`、`data-overrides` 与 `data-source`。`data-source` 保存 HTML 转义后的原始源码，避免反解高亮 HTML；`data-lang` 只保存单个语言标识，不从其中的空白引入运行声明。
 _Avoid_: 可执行代码块（口语未区分「可运行」标记与执行能力）
 
 **代码执行（Code Execution）**:
-把可运行代码块的源码提交到后端沙箱容器执行、回流结果的核心能力。后端用 Docker Go SDK 调 unix socket（兼容 docker 与 podman），在隔离容器内执行，stdout/stderr 经 SSE 流式回传到阅读页 xterm.js 终端。支持 python/node/go/rust/bun 五种语言。见 ADR-0006。
+把可运行代码块的当前源码提交到后端沙箱容器执行、回流结果的核心能力。后端用 Docker Go SDK 调 unix socket（兼容 docker 与 podman），在隔离容器内执行，stdout/stderr 经 SSE 流式回传，由代码块的纯文本输出区按到达顺序展示。支持 python/node/go/rust/bun 五种语言。见 ADR-0006。
 _Avoid_: 代码运行（未体现沙箱隔离语义）
 
 **沙箱（Sandbox）**:

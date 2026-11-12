@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"unicode"
 
 	infracoderunner "blog-api/internal/infrastructure/coderunner"
 
@@ -88,7 +89,10 @@ func htmlToMarkdown(htmlStr string) (string, error) {
 		}},
 		md.Rule{Filter: []string{"pre"}, Replacement: func(content string, s *goquery.Selection, _ *md.Options) *string {
 			code := s.Find("code").First()
-			info := s.AttrOr("data-lang", "")
+			info := strings.TrimSpace(s.AttrOr("data-lang", ""))
+			if strings.ContainsFunc(info, unicode.IsSpace) {
+				info = ""
+			}
 			if info == "" {
 				for _, class := range strings.Fields(code.AttrOr("class", "")) {
 					if strings.HasPrefix(class, "language-") {

@@ -320,3 +320,21 @@ func TestHTMLToMarkdown_FormattedFootnoteSup(t *testing.T) {
 	assert.Equal(t, 1, doc.Find(`[role="doc-noteref"]`).Length())
 	assert.Contains(t, doc.Find(`[role="doc-endnotes"]`).Text(), "Definition")
 }
+
+func TestHTMLLanguageCannotIntroduceRunnableMarker(t *testing.T) {
+	for _, language := range []string{"python&#10;run", "python run", "python&#160;run"} {
+		t.Run(language, func(t *testing.T) {
+			source := `print("read only")`
+			input := `<pre data-lang="` + language + `"><code class="language-python">` + source + `</code></pre>`
+			converted, err := htmlToMarkdown(input)
+			require.NoError(t, err)
+			rendered, err := markdown.ToHTML(converted)
+			require.NoError(t, err)
+			doc, err := goquery.NewDocumentFromReader(strings.NewReader(rendered))
+			require.NoError(t, err)
+			assert.NotEqual(t, "true", doc.Find("pre").AttrOr("data-runnable", ""))
+			assert.Equal(t, "language-python", doc.Find("code").AttrOr("class", ""))
+			assert.Equal(t, source, strings.TrimSuffix(doc.Find("code").Text(), "\n"))
+		})
+	}
+}
