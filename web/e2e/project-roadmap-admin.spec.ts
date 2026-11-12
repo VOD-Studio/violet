@@ -26,15 +26,33 @@ async function openEditable(page: Page) {
 	await expect(page.locator('.v-kanban-canvas [data-draggable="true"]').first()).toBeVisible();
 }
 
-/** 按住卡片拖到目标点再放下；先小步移出拖拽阈值，再分步移到目标，看板才能逐帧求落点。 */
-async function drag(page: Page, from: Locator, to: { x: number; y: number }) {
+type Point = { x: number; y: number };
+
+/**
+ * 按住卡片拖到目标点再放下；先小步移出拖拽阈值，再分步移到目标，看板才能逐帧求落点。
+ *
+ * 目标可以是求值函数：指针经过目标列时占位会把列里的卡片顶开，放手前按此刻的版面重新瞄准，
+ * 再等两帧让看板按最后的指针位置求完落点。
+ */
+async function drag(page: Page, from: Locator, to: Point | (() => Promise<Point>)) {
 	const box = await from.boundingBox();
 	if (!box) throw new Error("card is not visible");
+	const aim = async () => (typeof to === "function" ? to() : to);
 	const start = { x: box.x + box.width / 2, y: box.y + 16 };
 	await page.mouse.move(start.x, start.y);
 	await page.mouse.down();
 	await page.mouse.move(start.x + 12, start.y + 12, { steps: 3 });
-	await page.mouse.move(to.x, to.y, { steps: 16 });
+	const first = await aim();
+	await page.mouse.move(first.x, first.y, { steps: 16 });
+	const last = await aim();
+	if (last.x !== first.x || last.y !== first.y)
+		await page.mouse.move(last.x, last.y, { steps: 4 });
+	await page.evaluate(
+		() =>
+			new Promise<void>((resolve) => {
+				requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+			}),
+	);
 	await page.mouse.up();
 }
 
@@ -87,7 +105,7 @@ test.describe("管理员拖动条目", () => {
 		const diagnostics = collectDiagnostics(page);
 		await openEditable(page);
 
-		await drag(page, card(page, 3), await belowLast(page, "in_progress"));
+		await drag(page, card(page, 3), () => belowLast(page, "in_progress"));
 
 		await expect.poll(() => moves.length).toBe(1);
 		expect(moves[0]).toEqual({
@@ -194,7 +212,7 @@ test.describe("管理员拖动条目", () => {
 			})
 			.toBe(true);
 
-		await drag(page, card(page, 3), await belowLast(page, "in_progress"));
+		await drag(page, card(page, 3), () => belowLast(page, "in_progress"));
 
 		await expect.poll(() => moves.length).toBe(1);
 		expect(moves[0].body).toEqual({ stage: "in_progress", before_id: idOf(5), after_id: "" });

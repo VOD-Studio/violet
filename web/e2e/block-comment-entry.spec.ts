@@ -86,8 +86,13 @@ test.describe("390px 手机", () => {
 
 		const composer = page.getByRole("dialog", { name: "发表段评" });
 		await expect(async () => {
-			// 已打开时不再点按：入口是开关，慢机器上重复点按会把刚打开的段评收回去
-			if (!(await composer.isVisible())) await entry.tap();
+			// CI 截图里入口会在测量与截图之后收起，此时点按只会落在正文上：先确保入口在，再点它。
+			// 面板已打开时不再点按：入口是开关，重复点按会把刚打开的段评收回去。
+			if (!(await composer.isVisible())) {
+				if ((await entry.getAttribute("data-show")) !== "true") await paragraph.tap();
+				await expect(entry).toHaveAttribute("data-show", "true", { timeout: 1_000 });
+				await entry.tap();
+			}
 			await expect(composer).toBeVisible({ timeout: 1_000 });
 		}).toPass();
 		await page.keyboard.press("Escape");
