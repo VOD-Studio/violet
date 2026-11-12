@@ -1,4 +1,5 @@
 import type { AdminComment } from "@features/admin-comments/model/types";
+import { iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { Images, Quote } from "lucide-react";
 
@@ -25,8 +26,8 @@ export function CommentCell({ row }: CommentCellProps) {
 	return (
 		<div className="space-y-1">
 			{anchorText && (
-				<div className="flex items-start gap-1.5 text-xs text-muted-foreground">
-					<Quote className="size-3 shrink-0 translate-y-0.5 text-primary/50" />
+				<div className="flex items-start gap-1 text-xs text-muted-foreground">
+					<Quote {...iconProps(12, "shrink-0 translate-y-0.5 text-primary/50")} />
 					<span className="line-clamp-1 italic">
 						{truncate(anchorText, ANCHOR_PREVIEW_MAX)}
 					</span>
@@ -42,7 +43,7 @@ export function CommentCell({ row }: CommentCellProps) {
 			</p>
 			{hasPictures && (
 				<div className="flex items-center gap-1 text-xs text-muted-foreground">
-					<Images className="size-3" />
+					<Images {...iconProps(12)} />
 					<span>{row.pictures.length} 张图片</span>
 				</div>
 			)}

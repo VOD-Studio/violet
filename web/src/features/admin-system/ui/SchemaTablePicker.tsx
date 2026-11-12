@@ -1,4 +1,4 @@
-import { Button, Input, Popover, PopoverContent, PopoverTrigger } from "@violet/ui";
+import { Button, Input, iconProps, Popover, PopoverContent, PopoverTrigger } from "@violet/ui";
 
 import { cn } from "cn";
 import { Check, ChevronsUpDown, Search, TableProperties } from "lucide-react";
@@ -119,8 +119,8 @@ export function SchemaTablePicker({
 								>
 									<Check
 										aria-hidden
-										className={cn(
-											"size-3.5",
+										{...iconProps(
+											14,
 											selectedTable ? "opacity-100" : "opacity-0",
 										)}
 									/>

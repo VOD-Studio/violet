@@ -1,5 +1,5 @@
 import { MarkdownContent } from "@shared/ui/markdown-preview/MarkdownContent";
-import { PageShell } from "@violet/ui";
+import { iconProps, PageShell } from "@violet/ui";
 import { ArrowUpRight } from "lucide-react";
 import type { ReactNode } from "react";
 import packageJson from "../../../../packages/kanban/package.json";
@@ -95,7 +95,7 @@ export function KanbanDocsPage() {
 					</a>
 					<a href={SOURCE_URL} target="_blank" rel="noreferrer" className={LINK}>
 						源码
-						<ArrowUpRight className="size-3.5" aria-hidden="true" />
+						<ArrowUpRight {...iconProps(14)} aria-hidden="true" />
 					</a>
 				</nav>
 			</header>

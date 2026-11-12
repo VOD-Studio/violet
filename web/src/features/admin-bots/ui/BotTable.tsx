@@ -15,6 +15,7 @@ import {
 	type DataTableColumn,
 	type DataTablePagination,
 	Input,
+	iconProps,
 	Modal,
 	Switch,
 } from "@violet/ui";
@@ -180,7 +181,7 @@ export function BotTable({ bots, pagination, loading, onTokenRevealed }: BotTabl
 						}
 						onClick={() => reveal.mutate(row.id, { onSuccess: onTokenRevealed })}
 					>
-						<Eye className="size-3.5" />
+						<Eye {...iconProps(14)} />
 					</Button>
 					<Button
 						iconOnly
@@ -190,7 +191,7 @@ export function BotTable({ bots, pagination, loading, onTokenRevealed }: BotTabl
 						title="重置 token"
 						onClick={() => setPending({ kind: "rotate", bot: row })}
 					>
-						<KeyRound className="size-3.5" />
+						<KeyRound {...iconProps(14)} />
 					</Button>
 					<Button
 						iconOnly
@@ -201,7 +202,7 @@ export function BotTable({ bots, pagination, loading, onTokenRevealed }: BotTabl
 						title="吊销 Bot"
 						onClick={() => setPending({ kind: "revoke", bot: row })}
 					>
-						<Trash2 className="size-3.5" />
+						<Trash2 {...iconProps(14)} />
 					</Button>
 				</div>
 			),

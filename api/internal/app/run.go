@@ -146,6 +146,7 @@ func buildRoutingDeps(cfg *config.Config, redisClient *redis.Client, c *Containe
 		RoadmapRelations:       c.Roadmap.Relations,
 		Comment:                c.Comment.CommentHandler,
 		CommentReaction:        c.CommentReaction.CommentReactionHandler,
+		TweetCommentReaction:   c.Tweet.CommentReactions,
 		Media:                  c.Media.MediaHandler,
 		Post:                   c.Post.PostHandler,
 		Tag:                    c.Tag.TagHandler,

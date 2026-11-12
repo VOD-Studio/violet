@@ -1,6 +1,7 @@
 import { AIBadge } from "@entities/comment/ui/AIBadge";
 import type { AdminComment } from "@features/admin-comments/model/types";
 import { imageUrl } from "@shared/lib/image-url";
+import { iconProps } from "@violet/ui";
 import { Quote } from "lucide-react";
 import { ImagePreview, useImagePreview } from "@/shared/ui/image-preview";
 import { AdminCommentAvatar, AdminCommentName } from "./CommentAuthor";
@@ -31,8 +32,8 @@ export function CommentDetail({ row }: CommentDetailProps) {
 				</div>
 				{/* 批注锚定原文 */}
 				{row.anchor?.selected_text && (
-					<div className="flex items-start gap-1.5 rounded-lg border-l-2 border-primary/30 bg-muted/50 px-3 py-1.5 text-xs">
-						<Quote className="size-3 shrink-0 translate-y-0.5 text-primary/50" />
+					<div className="flex items-start gap-1 rounded-lg border-l-2 border-primary/30 bg-muted/50 px-3 py-1.5 text-xs">
+						<Quote {...iconProps(12, "shrink-0 translate-y-0.5 text-primary/50")} />
 						<span className="italic text-muted-foreground">
 							{row.anchor.selected_text}
 						</span>

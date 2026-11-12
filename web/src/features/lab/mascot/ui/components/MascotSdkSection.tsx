@@ -1,5 +1,5 @@
 import type { EmotionDef } from "@violet/mascot";
-import { CodeBlock } from "@violet/ui";
+import { CodeBlock, iconProps } from "@violet/ui";
 import { Code2, MoveRight } from "lucide-react";
 
 interface MascotSdkSectionProps {
@@ -33,7 +33,7 @@ export function MascotSdkSection({ pinnedDef }: MascotSdkSectionProps) {
 				<div className="flex items-center gap-2 font-mono text-[9px] text-muted-foreground">
 					<span className="size-1.5 bg-neon-blue" />
 					{pinnedDef.id} / {pinnedDef.en}
-					<MoveRight className="size-3.5 text-neon-blue" />
+					<MoveRight {...iconProps(14, "text-neon-blue")} />
 				</div>
 			</header>
 

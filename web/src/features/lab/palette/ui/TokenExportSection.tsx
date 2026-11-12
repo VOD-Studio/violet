@@ -1,5 +1,5 @@
 import { copyText } from "@shared/lib/clipboard";
-import { Tabs, TabsList, TabsTrigger } from "@violet/ui";
+import { iconProps, Tabs, TabsList, TabsTrigger } from "@violet/ui";
 import { cn } from "cn";
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
@@ -83,12 +83,12 @@ export function TokenExportSection({ className }: TokenExportSectionProps) {
 				<button
 					type="button"
 					onClick={handleCopy}
-					className="flex items-center gap-1.5 rounded-lg border border-edge-hairline bg-card px-3.5 py-2 text-xs font-medium transition-colors hover:border-primary-base hover:text-primary-base"
+					className="flex items-center gap-2 rounded-lg border border-edge-hairline bg-card px-3.5 py-2 text-xs font-medium transition-colors hover:border-primary-base hover:text-primary-base"
 				>
 					{copied ? (
-						<Check className="size-3.5 text-emerald-500" />
+						<Check {...iconProps(14, "text-emerald-500")} />
 					) : (
-						<Copy className="size-3.5" />
+						<Copy {...iconProps(14)} />
 					)}
 					<span>复制当前片段</span>
 				</button>

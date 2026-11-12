@@ -1,6 +1,6 @@
 import { CHAT_BADGES, useGrantBadges, useRevokeBadge, useUserBadges } from "@entities/chat-badge";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button, Modal, Spinner } from "@violet/ui";
+import { Button, iconProps, Modal, Spinner } from "@violet/ui";
 import { cn } from "cn";
 import { BadgeCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -90,8 +90,8 @@ export function UserBadgesDialog({ open, onOpenChange, user }: UserBadgesDialogP
 										/>
 										<span className="inline-flex items-center gap-1">
 											<BadgeCheck
-												className={cn(
-													"size-3.5",
+												{...iconProps(
+													14,
 													owned
 														? "text-primary"
 														: "text-muted-foreground/50",

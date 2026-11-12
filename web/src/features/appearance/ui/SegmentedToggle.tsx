@@ -1,3 +1,4 @@
+import { type IconSize, iconProps } from "@violet/ui";
 import { Monitor, Moon, Sun } from "lucide-react";
 import { motion } from "motion/react";
 import { useId } from "react";
@@ -10,10 +11,10 @@ const choices: { value: AppearanceOption; label: string; icon: typeof Sun }[] = 
 	{ value: "system", label: "跟随系统", icon: Monitor },
 ];
 
-const dims: Record<AppearanceSize, { pad: string; cell: string; icon: string }> = {
-	lg: { pad: "p-1.5", cell: "h-12 w-20", icon: "size-5" },
-	default: { pad: "p-1", cell: "h-9 w-16", icon: "size-4" },
-	sm: { pad: "p-0.5", cell: "size-7", icon: "size-3.5" },
+const dims: Record<AppearanceSize, { pad: string; cell: string; icon: IconSize }> = {
+	lg: { pad: "p-1.5", cell: "h-12 w-20", icon: 20 },
+	default: { pad: "p-1", cell: "h-9 w-16", icon: 16 },
+	sm: { pad: "p-0.5", cell: "size-7", icon: 14 },
 };
 
 interface SegmentedToggleProps {
@@ -66,11 +67,14 @@ export function SegmentedToggle({ size = "default" }: SegmentedToggleProps) {
 							/>
 						)}
 						<Icon
-							className={`relative z-10 transition-colors ${icon} ${
-								isActive
-									? "text-foreground"
-									: "text-muted-foreground group-hover:text-foreground/80"
-							}`}
+							{...iconProps(
+								icon,
+								`relative z-10 transition-colors ${
+									isActive
+										? "text-foreground"
+										: "text-muted-foreground group-hover:text-foreground/80"
+								}`,
+							)}
 						/>
 						<span className="sr-only">{choice.label}</span>
 					</button>

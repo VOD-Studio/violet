@@ -19,6 +19,7 @@ import {
 	type DataTableSort,
 	Field,
 	Input,
+	iconProps,
 	Modal,
 	NumberInput,
 	Tag,
@@ -160,7 +161,7 @@ function AdminProjectsPage() {
 										onClick={() => openEdit(row)}
 										aria-label={`编辑项目 ${row.title}`}
 									>
-										<Pencil className="size-3.5" />
+										<Pencil {...iconProps(14)} />
 									</Button>
 								</span>
 							</TooltipTrigger>
@@ -179,7 +180,7 @@ function AdminProjectsPage() {
 										onClick={() => setDeleteId(row.id)}
 										aria-label={`删除项目 ${row.title}`}
 									>
-										<Trash2 className="size-3.5" />
+										<Trash2 {...iconProps(14)} />
 									</Button>
 								</span>
 							</TooltipTrigger>
@@ -199,7 +200,7 @@ function AdminProjectsPage() {
 				action={
 					canCreate ? (
 						<Button size="sm" onClick={openCreate}>
-							<Plus className="size-3.5" /> 创建项目
+							<Plus {...iconProps(14)} /> 创建项目
 						</Button>
 					) : null
 				}

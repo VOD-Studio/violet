@@ -166,6 +166,8 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 
 代码展示统一使用 `@violet/ui` 的 `CodeBlock`、`InlineCode` 与 `CodeBlockOutput`。`shared/ui/markdown-preview` 解释文件名、标行与围栏载体，`entities/code-runner` 注入运行策略、执行流和本机 Vim 偏好；阅读页草稿不回写文章。作者编辑仍由 Tiptap 管理，同一份元数据经 Markdown、HTML 与后端转换保留，不复用阅读页的 CodeMirror 实例。
 
+阅读端的正文引用装饰不参与无障碍朗读，出处保留引用语义；提示块与普通引用独立呈现。
+
 #### 阅读端加载边界
 
 文章详情的路由参数、SSR loader 与 SEO 留在 `routes/blog/$slug.tsx`，阅读界面经 `widgets/BlogDetailPage` 的公开入口组合各 feature。浏览量登记复用 `features/posts/api/mutations` 的 `useIncrementView`，不在组合层拼接业务接口；mutation 状态变化和评论开关不重复提交统计，统计失败不影响正文，HTTP 客户端既有重试策略保持不变。
@@ -199,15 +201,21 @@ Shiki 初始化、语言准备与分词由 `@violet/ui` 的代码块在按需创
 
 站点公共层提供 `shared/ui/announcement-severity` 状态色和 `shared/hooks/use-banner-ticker` 轮播节拍。终端、阅读进度等公共界面只消费用途语义色。
 
+站点线框图标直接取自 `lucide-react`；应用文档外壳使用原生 `LucideProvider` 设置默认 16px / 1.75 线宽，根级异常页也在其范围内；斜杠菜单的独立 React 根单独传入同一组默认值。显式小图标通过 `@violet/ui` 的 `iconProps(12或14, 非尺寸类名)` 同时指定尺寸与 2 线宽，不再只用 `size-3` / `size-3.5` 缩小图形。该入口附带 `v-icon` 标记，保证 Button、Input、菜单等控件槽不覆盖显式档位；Provider 只传默认尺寸和线宽，不向所有图标注入这一标记，以保留大号控件自己的图标档位。规范档为 12 / 14 / 16 / 18 / 20 / 24，同一工具栏采用同档；品牌标志、季节图形与插画保留各自造型。只有图标的按钮提供动作名 `aria-label`，原有 `title` 保留作补充；已有可见文字、读屏文字或显式名称时不重复添加。完整契约见 [Icons 图标](packages/ui/docs/components/icons.md)。
+
+图标与文字的相邻间距为普通按钮 8px、菜单项 12px、元信息 4px。SDK 按钮和菜单已提供对应 gap，不在子图标上叠加 `mr-*`；自定义行只调整这对图标与文字，不改组间留白或插画的光学校准。
+
 正文编辑内核位于 `shared/ui/rich-text-input`，统一处理光标、提及与图片占位符；只接收显示模型和回调，不导入业务实体或 feature。表情实体到显示模型的投影在 `entities/emoji/lib/inline-emoji`，评论与聊天分别注入选择器、上传和业务上下文。图片和颜文字按显示模型区分，不通过方括号猜测；颜文字保留原文并插入文本节点。工具栏取得焦点后仍在保存的编辑区选区连续插入表情，不抢回焦点；跨编辑区的选区不会删除外部正文。
 
 最近使用由 `entities/emoji/model/recent` 持有，评论、推文、聊天与回应共用本设备最近 16 项，只在真实选中时记录。跨标签页的更新和清空同步到已挂载入口，服务器不保存这份记录。
 
-`entities/reaction` 持有聚合回应读模型与目标级乐观更新，`recent_users` 沿用后端公开的 `{id,name}[]`。回滚快照保存目标表情与原位置，恢复时不覆盖其它回应的并发更新。
+`entities/reaction` 持有聚合回应读模型与目标级乐观更新，`recent_users` 沿用后端公开的 `{id,name}[]`。回滚快照保存目标表情与原位置，恢复时不覆盖其它回应的并发更新。共享批量 Provider 明确区分范围内的结果、加载、错误与重试；范围内失败或缺项不拆成逐条请求，只有范围外的动态回复补单条。
 
 `features/emojis/ui/EmojiReactions` 把系统目录接入 `ReactionBar`，完整选择器直接渲染 `EmojiPickerPanel`，不再套第二层浮层。以 `system:<ID>` 贯穿已选与最近项；快捷条读取公共最近记录的前 8 个系统表情，不包含私人收藏。上限提示由宿主传入，不在目录适配层硬编码聊天规则。
 
-文章评论通过 `CommentReactions` 接入统一回应条，不限制种类。添加与取消同步计数、GIF 和本人名单；失败只恢复该评论的目标表情，刷新 Promise 完成前入口维持忙碌。访客点击已有回应提示「登录后可以回应」，不显示添加入口。
+文章评论通过 `CommentReactions`、推文评论通过 `TweetCommentReactions` 接入统一回应条，均不限制种类；最新/热门进入真实请求和完整查询键。添加与取消同步计数、GIF 和本人名单；失败只恢复目标评论的目标表情，回应与热门次序刷新完成前维持忙碌。访客可读推文的公开回应；点击已有回应提示登录，不显示添加入口。文章仍保留匿名黑洞规则。推文批量范围超过 100 个 ID 时分批读取。
+
+文章与推文共用 `@violet/ui` 的评论壳，站点 `shared/ui/comment-section` 保留身份、时间、业务插槽及既有回复会话。展开分页由宿主传入本批起点，40ms 错峰不累计历史页；预览与刚提交的回复立即显示。
 
 聊天通过 `MessageReactions` 接入同一入口，每人每条消息最多 3 种，超过 6 种回应时折叠，回应条与气泡同侧对齐。失败回滚不覆盖其它消息或新消息；待发送、发送失败和已删除消息保留现有人数，但不提供无效的添加入口。
 

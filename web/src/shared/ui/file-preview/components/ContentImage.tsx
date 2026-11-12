@@ -59,7 +59,7 @@ export function ContentImage({
 			{/* 错误态 */}
 			{hasError ? (
 				<div className="flex flex-col items-center gap-2 text-muted-foreground">
-					<CircleAlert className="size-8" />
+					<CircleAlert className="size-6" />
 					<span className="text-sm">图片加载失败</span>
 				</div>
 			) : null}

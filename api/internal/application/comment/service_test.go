@@ -507,7 +507,7 @@ func TestListByPost_AnonViewer_ReturnsEmpty_BlackHole(t *testing.T) {
 	// 匿名 viewer 不应查 DB
 	repo.AssertNotCalled(t, "FindPage")
 
-	items, total, err := svc.ListByPost(context.Background(), shared.NewID().String(), "", "", domain.AnchorFilterAll, domain.DepthFilterAll, "", 1, 20)
+	items, total, err := svc.ListByPost(context.Background(), shared.NewID().String(), "", "", domain.AnchorFilterAll, domain.DepthFilterAll, "", "", 1, 20)
 	assert.NoError(t, err)
 	assert.Empty(t, items)
 	assert.Equal(t, int64(0), total)
@@ -524,11 +524,11 @@ func TestListByPost_LoggedInViewer_ReturnsApprovedAndOwnPending(t *testing.T) {
 	myPending, _ := newDomainComment(shared.NewID(), postID, "bob", "pending")
 	repo.On("FindPage", mock.Anything, domain.ListFilter{
 		PostID: &postID, Status: domain.StatusApproved, ViewerUserID: &viewer,
-		AnchorFilter: domain.AnchorFilterAll, DepthFilter: &allDepth,
+		AnchorFilter: domain.AnchorFilterAll, DepthFilter: &allDepth, TopLevelSort: "latest",
 	}, shared.PageQuery{Page: 1, Limit: 20}).
 		Return(shared.NewPageResult(shared.PageQuery{Page: 1, Limit: 20}, []*domain.Comment{approved, myPending}, 2), nil).Once()
 
-	items, total, err := svc.ListByPost(context.Background(), postID.String(), viewer.String(), "", domain.AnchorFilterAll, domain.DepthFilterAll, "", 1, 20)
+	items, total, err := svc.ListByPost(context.Background(), postID.String(), viewer.String(), "", domain.AnchorFilterAll, domain.DepthFilterAll, "", "", 1, 20)
 	assert.NoError(t, err)
 	assert.Len(t, items, 2)
 	assert.Equal(t, int64(2), total)
@@ -546,11 +546,11 @@ func TestListByPost_AnchorFilter_PassthroughToRepo(t *testing.T) {
 	// 期望 repo 收到 AnchorFilterAnnotation（与 AnchorFilterAll 的用例区分）
 	repo.On("FindPage", mock.Anything, domain.ListFilter{
 		PostID: &postID, Status: domain.StatusApproved, ViewerUserID: &viewer,
-		AnchorFilter: domain.AnchorFilterAnnotation, DepthFilter: &allDepth,
+		AnchorFilter: domain.AnchorFilterAnnotation, DepthFilter: &allDepth, TopLevelSort: "latest",
 	}, shared.PageQuery{Page: 1, Limit: 20}).
 		Return(shared.NewPageResult(shared.PageQuery{Page: 1, Limit: 20}, []*domain.Comment{}, 0), nil).Once()
 
-	_, _, err := svc.ListByPost(context.Background(), postID.String(), viewer.String(), "", domain.AnchorFilterAnnotation, domain.DepthFilterAll, "", 1, 20)
+	_, _, err := svc.ListByPost(context.Background(), postID.String(), viewer.String(), "", domain.AnchorFilterAnnotation, domain.DepthFilterAll, "", "", 1, 20)
 	assert.NoError(t, err)
 	repo.AssertExpectations(t)
 }
@@ -752,7 +752,7 @@ func TestListByPost_ReplyPreviewResolvesTargetOutsidePreview(t *testing.T) {
 	}), mock.Anything).Return(shared.PageResult[*domain.Comment]{Items: []*domain.Comment{reply}, Total: 4}, nil).Once()
 	repo.On("FindByIDs", mock.Anything, []shared.ID{target.ID()}).Return([]*domain.Comment{target}, nil).Once()
 
-	items, _, err := svc.ListByPost(context.Background(), postID.String(), viewer.String(), "", domain.AnchorFilterFree, domain.DepthFilterTopLevel, "", 1, 10)
+	items, _, err := svc.ListByPost(context.Background(), postID.String(), viewer.String(), "", domain.AnchorFilterFree, domain.DepthFilterTopLevel, "", "", 1, 10)
 	if !assert.NoError(t, err) || !assert.Len(t, items, 1) || !assert.Len(t, items[0].Replies, 1) {
 		return
 	}

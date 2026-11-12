@@ -1,5 +1,5 @@
 import { formatDate, formatRelativeTime } from "@shared/lib/date";
-import { Badge, Button, Card, ConfirmDialog } from "@violet/ui";
+import { Badge, Button, Card, ConfirmDialog, iconProps } from "@violet/ui";
 import { Laptop, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -33,8 +33,8 @@ export function PresenceDevicesCard({ onIssue }: { onIssue: () => void }) {
 			<div className="flex items-center justify-between gap-4 border-b border-border/60 pb-3">
 				<h3 className="text-base font-medium">设备</h3>
 				{canManage ? (
-					<Button size="sm" onClick={onIssue} className="gap-1.5">
-						<Plus className="size-3.5" />
+					<Button size="sm" onClick={onIssue}>
+						<Plus {...iconProps(14)} />
 						签发凭证
 					</Button>
 				) : null}

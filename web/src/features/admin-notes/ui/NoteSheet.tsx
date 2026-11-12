@@ -23,6 +23,7 @@ import {
 	Button,
 	ConfirmDialog,
 	Input,
+	iconProps,
 	Sheet,
 	SheetContent,
 	SheetDescription,
@@ -276,8 +277,8 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 						{/* 标签选择与输入区 */}
 						<div className="border-edge-hairline bg-muted/20 space-y-2.5 rounded-lg border p-3">
 							<div className="flex items-center justify-between">
-								<span className="text-muted-foreground flex items-center gap-1.5 font-mono text-xs">
-									<TagIcon className="size-3.5" />
+								<span className="text-muted-foreground flex items-center gap-1 font-mono text-xs">
+									<TagIcon {...iconProps(14)} />
 									标签 ({currentTags.length}/8)
 								</span>
 							</div>
@@ -327,7 +328,7 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 											disabled={!tagInput.trim()}
 											className="h-7.5 px-2 text-xs"
 										>
-											<Plus className="mr-1 size-3" /> 添加
+											<Plus {...iconProps(12)} /> 添加
 										</Button>
 									</div>
 

@@ -66,6 +66,7 @@ function createRecentGroup(
 	return {
 		id: "recent",
 		label: "最近使用",
+		// EmojiPicker.dc.html 的组页签图形为 17px，不使用通用图标档位。
 		icon: <Clock size={17} strokeWidth={1.75} />,
 		sections: populatedSections,
 	};
@@ -96,7 +97,12 @@ function createPersonalGroup(
 			items: favorited.map((emoji) => toEmojiPickerItem(emoji, options.selectedIds)),
 		});
 	}
-	return { id: "mine", label: "收藏", icon: <Heart size={17} strokeWidth={1.75} />, sections };
+	return {
+		id: "mine",
+		label: "收藏",
+		icon: <Heart size={17} strokeWidth={1.75} />,
+		sections,
+	};
 }
 
 function createPublicGroup(group: EmojiGroup, selectedIds?: ReadonlySet<number>): EmojiPickerGroup {

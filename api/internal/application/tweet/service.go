@@ -941,31 +941,6 @@ func (s *Service) DeleteComment(ctx context.Context, id string) error {
 	return s.commentRepo.Delete(ctx, cid)
 }
 
-// ListComments 列出推文下的顶层评论（公开，page/limit 分页，最新在前）。
-func (s *Service) ListComments(ctx context.Context, tweetIDStr string, page, limit int) ([]CommentDTO, int64, error) {
-	if s.commentRepo == nil {
-		return nil, 0, errCommentRepoNotInjected
-	}
-	tweetID, err := shared.ParseID(tweetIDStr)
-	if err != nil {
-		return nil, 0, shared.BadRequest("非法的推文 ID")
-	}
-	result, err := s.commentRepo.FindPage(ctx, domaintweet.ListFilter{TweetID: &tweetID},
-		shared.PageQuery{Page: page, Limit: limit}.Normalize())
-	if err != nil {
-		return nil, 0, err
-	}
-	comments := result.Items
-	dtos := s.commentsToDTOs(ctx, comments)
-	if err := s.attachRepliesCount(ctx, comments, dtos); err != nil {
-		return nil, 0, err
-	}
-	if err := s.enrichEmotes(ctx, dtos); err != nil {
-		return nil, 0, err
-	}
-	return dtos, result.Total, nil
-}
-
 // attachRepliesCount 批量填充顶层评论的回复数（一次 GROUP BY 查询，避免 N+1）。
 func (s *Service) attachRepliesCount(ctx context.Context, comments []*domaintweet.Comment, dtos []CommentDTO) error {
 	if s.commentRepo == nil || len(comments) == 0 {

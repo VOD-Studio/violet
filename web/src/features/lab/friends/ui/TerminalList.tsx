@@ -1,3 +1,4 @@
+import { iconProps } from "@violet/ui";
 import { ArrowUpRight } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
@@ -78,11 +79,14 @@ export function TerminalList({ links }: { links: FriendLinkDTO[] }) {
 											{link.name}
 										</span>
 										<ArrowUpRight
-											className={`size-3.5 justify-self-end text-muted-foreground transition-all duration-200 ${
-												open
-													? "translate-x-0 opacity-100"
-													: "-translate-x-1 opacity-0"
-											}`}
+											{...iconProps(
+												14,
+												`justify-self-end text-muted-foreground transition-all duration-200 ${
+													open
+														? "translate-x-0 opacity-100"
+														: "-translate-x-1 opacity-0"
+												}`,
+											)}
 										/>
 									</span>
 									{/* 行内展开：站长与一句话描述 */}

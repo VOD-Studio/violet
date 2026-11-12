@@ -82,8 +82,13 @@
 	}
 
 	.v-list__icon > svg,
-	.v-list__action > svg,
-	.v-list__chevron {
+	.v-list__action > svg {
+		flex: none;
+	}
+
+	.v-list__icon > svg:not(.v-icon),
+	.v-list__action > svg:not(.v-icon),
+	.v-list__chevron:not(.v-icon) {
 		inline-size: 1rem;
 		block-size: 1rem;
 		stroke-width: 1.75;

@@ -1,18 +1,23 @@
 import type { Comment } from "@entities/comment/model/types";
+import {
+	captureCommentReactionQueries,
+	reactionQueryMatches,
+	updateCommentReactionQueries,
+} from "@entities/reaction/lib/comment-query-cache";
 import { addSelfReaction, removeSelfReaction } from "@entities/reaction/lib/optimistic";
 import { useMe } from "@features/auth/api/queries";
 import { findCachedEmoji } from "@features/emojis/api/cache";
 import { apiDelete, apiPatch, apiPost } from "@shared/api/request";
 import type { PagedResponse } from "@shared/api/types";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import type { AddReaction, CreateComment, SendCodeBody } from "../model/types";
-import { commentKeys } from "./keys";
 import {
-	captureCommentReaction,
-	reactionQueryMatches,
-	updateCommentReactions,
-} from "./reaction-cache";
+	type QueryClient,
+	type QueryFilters,
+	useMutation,
+	useQueryClient,
+} from "@tanstack/react-query";
+import { toast } from "sonner";
+import type { AddReaction, CommentListQuery, CreateComment, SendCodeBody } from "../model/types";
+import { commentKeys } from "./keys";
 
 /**
  * 回复提交后直接更新所属顶层线程的缓存，不重拉顶层列表，保持批注角标稳定。
@@ -189,12 +194,12 @@ export const useSendCommentCode = (postId: string) => {
 /**
  * 添加回应时立即更新计数、GIF 与本人名单；刷新完成前维持 pending，避免重复提交。
  */
-export const useAddReaction = (commentId: string) => {
+export const useAddReaction = (commentId: string, postId: string) => {
 	const qc = useQueryClient();
 	const me = useMe();
 	const filters = {
 		predicate: (query: { queryKey: readonly unknown[] }) =>
-			reactionQueryMatches(query.queryKey, commentId),
+			reactionQueryMatches(query.queryKey, commentKeys.reactions(), commentId),
 	};
 	return useMutation({
 		mutationFn: (body: AddReaction) => apiPost<null>(`/comments/${commentId}/reactions`, body),
@@ -204,9 +209,14 @@ export const useAddReaction = (commentId: string) => {
 				return;
 			}
 			await qc.cancelQueries(filters);
-			const rollback = captureCommentReaction(qc, commentId, body.emoji_id);
+			const rollback = captureCommentReactionQueries(
+				qc,
+				commentKeys.reactions(),
+				commentId,
+				body.emoji_id,
+			);
 			const emoji = findCachedEmoji(qc, body.emoji_id);
-			updateCommentReactions(qc, commentId, (reactions) =>
+			updateCommentReactionQueries(qc, commentKeys.reactions(), commentId, (reactions) =>
 				addSelfReaction(
 					reactions,
 					body.emoji_id,
@@ -220,17 +230,17 @@ export const useAddReaction = (commentId: string) => {
 			context?.rollback();
 			toast.error("回应没有成功");
 		},
-		onSettled: () => qc.invalidateQueries(filters),
+		onSettled: () => invalidateReactionViews(qc, postId, filters),
 	});
 };
 
 /** 取消回应同时移除本人名单；失败只恢复该评论的目标表情。 */
-export const useRemoveReaction = (commentId: string) => {
+export const useRemoveReaction = (commentId: string, postId: string) => {
 	const qc = useQueryClient();
 	const me = useMe();
 	const filters = {
 		predicate: (query: { queryKey: readonly unknown[] }) =>
-			reactionQueryMatches(query.queryKey, commentId),
+			reactionQueryMatches(query.queryKey, commentKeys.reactions(), commentId),
 	};
 	return useMutation({
 		mutationFn: (emojiId: number) =>
@@ -241,8 +251,13 @@ export const useRemoveReaction = (commentId: string) => {
 				return;
 			}
 			await qc.cancelQueries(filters);
-			const rollback = captureCommentReaction(qc, commentId, emojiId);
-			updateCommentReactions(qc, commentId, (reactions) =>
+			const rollback = captureCommentReactionQueries(
+				qc,
+				commentKeys.reactions(),
+				commentId,
+				emojiId,
+			);
+			updateCommentReactionQueries(qc, commentKeys.reactions(), commentId, (reactions) =>
 				removeSelfReaction(reactions, emojiId, user.id),
 			);
 			return { rollback };
@@ -251,7 +266,7 @@ export const useRemoveReaction = (commentId: string) => {
 			context?.rollback();
 			toast.error("回应没有成功");
 		},
-		onSettled: () => qc.invalidateQueries(filters),
+		onSettled: () => invalidateReactionViews(qc, postId, filters),
 	});
 };
 
@@ -287,3 +302,16 @@ export const useDeleteComment = (id: string) => {
 		},
 	});
 };
+
+function invalidateReactionViews(qc: QueryClient, postId: string, filters: QueryFilters) {
+	return Promise.all([
+		qc.invalidateQueries(filters),
+		qc.invalidateQueries({
+			queryKey: commentKeys.lists(),
+			predicate: (query) => {
+				const parameters = query.queryKey[3] as CommentListQuery | undefined;
+				return query.queryKey[2] === postId && parameters?.sort === "hot";
+			},
+		}),
+	]);
+}

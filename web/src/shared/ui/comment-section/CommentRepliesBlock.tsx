@@ -13,8 +13,9 @@
  *      新增回复追加在下方，「查看更多回复」继续分页
  *   3. 「回复 @yyy」标注：后端 reply_to_name 优先，没有则由 parentId 从可见回复推导
  */
+import { CommentReplies, iconProps } from "@violet/ui";
 import { ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { CommentItem } from "./CommentItem";
 import type { CommentDisplayItem, CommentRaw, CommentSectionConfig } from "./types";
 
@@ -36,6 +37,7 @@ export function CommentRepliesBlock<T extends CommentRaw>({
 	onReplyAdded,
 }: CommentRepliesBlockProps<T>) {
 	const [expanded, setExpanded] = useState(false);
+	const listId = useId();
 
 	const previewReplies =
 		config.repliesMode === "preview" ? (comment.repliesPreview ?? []).map(config.map) : [];
@@ -49,61 +51,58 @@ export function CommentRepliesBlock<T extends CommentRaw>({
 
 	// 只省略直接回复楼主的标注，同名作者不代表同一评论。
 	const renderReply = (reply: CommentDisplayItem<T>) => (
-		<CommentItem
-			key={reply.id}
-			item={reply.parentId === comment.id ? { ...reply, replyToName: undefined } : reply}
-			level={1}
-			isLoggedIn={isLoggedIn}
-			config={config}
-			onReplyAdded={onReplyAdded}
-		/>
+		<li key={reply.id}>
+			<CommentItem
+				item={reply.parentId === comment.id ? { ...reply, replyToName: undefined } : reply}
+				level={1}
+				isLoggedIn={isLoggedIn}
+				config={config}
+				onReplyAdded={onReplyAdded}
+			/>
+		</li>
 	);
 
+	let toggleLabel = expanded ? "收起回复" : "查看回复";
+	let showToggle = comment.repliesTotal === undefined || comment.repliesTotal > 0;
+	if (config.repliesMode === "preview") {
+		showToggle =
+			!expanded && comment.repliesTotal !== undefined && comment.repliesTotal > visibleCount;
+		if (comment.repliesTotal !== undefined) {
+			toggleLabel = `查看全部 ${comment.repliesTotal} 条回复`;
+		}
+	}
+
 	return (
-		<div className="relative mt-4 space-y-4 before:absolute before:-left-7.5 before:top-0 before:bottom-2 before:w-0.5 before:rounded-full before:bg-primary/15">
-			{/* 预览回复（preview 模式，位置不动） */}
-			{previewReplies.map(renderReply)}
-
-			{/* 刚提交的回复（尾部追加） */}
-			{visiblePending.map(renderReply)}
-
-			{/* 展开后的追加回复：feature 查询组件懒加载挂载（去重预览 + pending） */}
-			{expanded &&
-				config.renderExpandedReplies({
-					topLevelId: comment.id,
-					excludeIds: allExcludedIds,
-					knownReplies,
-					isLoggedIn,
-					onReplyAdded,
-				})}
-
-			{/* 展开按钮：preview=「查看全部 N 条回复」；toggle=「查看回复 / 收起回复」 */}
-			{config.repliesMode === "preview"
-				? !expanded &&
-					comment.repliesTotal !== undefined &&
-					comment.repliesTotal > visibleCount && (
-						<button
-							type="button"
-							onClick={() => setExpanded(true)}
-							className="flex items-center gap-1 text-xs text-primary hover:underline"
-						>
-							<ChevronDown className="size-3" />
-							查看全部 {comment.repliesTotal} 条回复
-						</button>
-					)
-				: (comment.repliesTotal === undefined || (comment.repliesTotal ?? 0) > 0) && (
-						<button
-							type="button"
-							onClick={() => setExpanded((v) => !v)}
-							className="flex items-center gap-1 py-1 pl-1 text-xs text-primary hover:underline"
-						>
-							<ChevronDown
-								className={`size-3 transition-transform ${expanded ? "rotate-180" : ""}`}
-							/>
-							{expanded ? "收起回复" : "查看回复"}
-						</button>
-					)}
-		</div>
+		<>
+			{(knownReplies.length > 0 || expanded) && (
+				<CommentReplies id={listId} aria-label={`${comment.authorName} 的回复`}>
+					{knownReplies.map(renderReply)}
+					{expanded &&
+						config.renderExpandedReplies({
+							topLevelId: comment.id,
+							excludeIds: allExcludedIds,
+							knownReplies,
+							isLoggedIn,
+							onReplyAdded,
+						})}
+				</CommentReplies>
+			)}
+			{showToggle && (
+				<button
+					type="button"
+					onClick={() => setExpanded((value) => !value)}
+					aria-expanded={expanded}
+					aria-controls={knownReplies.length > 0 || expanded ? listId : undefined}
+					className="mt-3 flex items-center gap-2 py-1 text-xs text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+				>
+					<ChevronDown
+						{...iconProps(12, expanded ? "rotate-180" : "")}
+						aria-hidden="true"
+					/>
+					{toggleLabel}
+				</button>
+			)}
+		</>
 	);
 }
 

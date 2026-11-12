@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
 	Button,
 	Input,
+	iconProps,
 	Label,
 	Sheet,
 	SheetBody,
@@ -180,7 +181,7 @@ export function SeriesSheet({ open, onOpenChange, editing, onCreated }: SeriesSh
 									disabled={isSubmitting}
 									onClick={() => setAiCoverOpen(true)}
 								>
-									<WandSparkles className="size-3.5" />
+									<WandSparkles {...iconProps(14)} />
 									AI 生成
 								</Button>
 							</div>

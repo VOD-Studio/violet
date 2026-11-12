@@ -5,8 +5,9 @@
  * 登录提交者本人能看到自己刚提交的 pending 评论（带此徽章）；
  * 他人永远只看到 approved（后端黑洞/可见性保证），不会看到此徽章。
  *
- * 文章评论（CommentMeta）与批注卡片（AnnotationCard）共用。
+ * 批注卡片使用此角标；评论条目由 SDK CommentItem 显示完整的待审核说明。
  */
+import { iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { Clock } from "lucide-react";
 
@@ -33,7 +34,7 @@ export function PendingBadge({ show, size = "md" }: PendingBadgeProps) {
 			)}
 			title="管理员审核通过后公开"
 		>
-			{size === "md" && <Clock className="size-3" />}
+			{size === "md" && <Clock {...iconProps(12)} />}
 			审批中
 		</span>
 	);

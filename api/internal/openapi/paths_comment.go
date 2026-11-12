@@ -98,7 +98,7 @@ func registerCommentPaths(t *openapi3.T) {
 
 	// AddReactionRequest
 	registerSchema(t, "AddReactionRequest", openapi3.Schemas{
-		"emoji_id": reqStr("表情 ID"),
+		"emoji_id": optInt32("表情 ID"),
 	}, "emoji_id")
 
 	// BatchReactionsRequest / BatchResult
@@ -119,14 +119,16 @@ func registerCommentPaths(t *openapi3.T) {
 	// ============ 前台评论 ============
 
 	get(t, "/posts/{postId}/comments", &openapi3.Operation{
-		Tags:    []string{"评论"},
-		Summary: "文章已审核评论列表",
+		Tags:        []string{"评论"},
+		Summary:     "文章评论列表",
+		Description: "匿名返回 []；登录可见 approved 与自己的 pending。自由顶层列表（type=free&top_level=true）支持 sort=latest|hot，默认 latest；hot 按总回应记录数降序，同数按 created_at DESC、id DESC。批注、混合层级及回复保持原有顺序。",
 		Parameters: openapi3.Parameters{
 			pathStrParam("postId", "文章 ID（UUID）"),
-			pageParam(), limitParam(100),
+			pageParam(), limitParam(100), commentSortParam(),
 		},
 		Responses: responses(
-			200, dataArrayResponse("CommentDTO", "已审核评论列表（仅 approved）", 200, true),
+			200, dataArrayResponse("CommentDTO", "可见评论（approved 与本人 pending）", 200, true),
+			400, errorResponse("sort 必须为 latest 或 hot"),
 		),
 	})
 

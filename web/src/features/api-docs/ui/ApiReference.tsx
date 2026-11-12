@@ -1,4 +1,4 @@
-import { Input, ScrollArea } from "@violet/ui";
+import { Input, iconProps, ScrollArea } from "@violet/ui";
 import { cn } from "cn";
 import { ArrowRight, ArrowUpRight, Search } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
@@ -143,7 +143,7 @@ export function ApiReference() {
 						className="ml-auto inline-flex items-center gap-0.5 text-xs text-muted-foreground transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
 					>
 						完整文档
-						<ArrowUpRight className="size-3.5" />
+						<ArrowUpRight {...iconProps(14)} />
 					</a>
 				</div>
 				{model.version ? (
@@ -461,9 +461,12 @@ function AppendixSection({
 				>
 					<p className="flex items-center gap-2 font-mono text-[10px] tracking-[0.2em] text-muted-foreground/60 uppercase">
 						<ArrowRight
-							className={cn(
-								"size-3 transition-transform duration-200 group-hover:translate-x-0.5",
-								visible && "rotate-90",
+							{...iconProps(
+								12,
+								cn(
+									"transition-transform duration-200 group-hover:translate-x-0.5",
+									visible && "rotate-90",
+								),
 							)}
 						/>
 						<span>Appendix · {scopeTotal} admin endpoints</span>

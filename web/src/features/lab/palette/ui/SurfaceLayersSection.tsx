@@ -1,5 +1,6 @@
 import { SURFACE_LAYERS } from "@features/lab/palette/model/tokens";
 import { ColorSwatch } from "@features/lab/palette/ui/ColorSwatch";
+import { iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { Layers } from "lucide-react";
 
@@ -35,8 +36,8 @@ export function SurfaceLayersSection({ mode, className }: SurfaceLayersSectionPr
 				{(mode === "light" || mode === "dual") && (
 					<div className="rounded-2xl border border-black/10 bg-[#faf9fd] p-6 text-[#13111c] shadow-xs">
 						<div className="mb-4 flex items-center justify-between">
-							<span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-								<Layers className="size-3.5 text-primary-base" />
+							<span className="flex items-center gap-1 text-xs font-semibold text-slate-700">
+								<Layers {...iconProps(14, "text-primary-base")} />
 								浅色画布空间层叠 · 温润白瓷
 							</span>
 							<span className="font-mono text-[10px] text-slate-400">
@@ -115,8 +116,8 @@ export function SurfaceLayersSection({ mode, className }: SurfaceLayersSectionPr
 				{(mode === "dark" || mode === "dual") && (
 					<div className="dark rounded-2xl border border-white/10 bg-[#0d0b14] p-6 text-[#f5f4fa] shadow-xs">
 						<div className="mb-4 flex items-center justify-between">
-							<span className="flex items-center gap-1.5 text-xs font-semibold text-zinc-300">
-								<Layers className="size-3.5 text-primary-base" />
+							<span className="flex items-center gap-1 text-xs font-semibold text-zinc-300">
+								<Layers {...iconProps(14, "text-primary-base")} />
 								深色画布空间层叠 · 玄曜星空
 							</span>
 							<span className="font-mono text-[10px] text-zinc-500">

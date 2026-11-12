@@ -7,6 +7,7 @@ import {
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
+	iconProps,
 	Table,
 	TableBody,
 	TableCell,
@@ -86,7 +87,7 @@ export function PlaylistTracksDrawer({ playlist, open, onOpenChange }: PlaylistT
 										className="text-muted-foreground hover:text-foreground"
 										title="在网易云打开歌单"
 									>
-										<ExternalLink className="size-3.5" />
+										<ExternalLink {...iconProps(14)} />
 									</a>
 								)}
 							</DialogTitle>
@@ -161,7 +162,7 @@ export function PlaylistTracksDrawer({ playlist, open, onOpenChange }: PlaylistT
 															className="text-muted-foreground hover:text-foreground"
 															title="在网易云查看歌曲"
 														>
-															<ExternalLink className="size-3" />
+															<ExternalLink {...iconProps(12)} />
 														</a>
 													</div>
 												</TableCell>
@@ -196,7 +197,7 @@ export function PlaylistTracksDrawer({ playlist, open, onOpenChange }: PlaylistT
 									disabled={page <= 1}
 									onClick={() => setPage((p) => p - 1)}
 								>
-									<ChevronLeft className="size-3.5" />
+									<ChevronLeft {...iconProps(14)} />
 									上一页
 								</Button>
 								<Button
@@ -207,7 +208,7 @@ export function PlaylistTracksDrawer({ playlist, open, onOpenChange }: PlaylistT
 									onClick={() => setPage((p) => p + 1)}
 								>
 									下一页
-									<ChevronRight className="size-3.5" />
+									<ChevronRight {...iconProps(14)} />
 								</Button>
 							</div>
 						</div>

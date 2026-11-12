@@ -1,5 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@violet/ui";
+import {
+	Button,
+	iconProps,
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@violet/ui";
 import { cn } from "cn";
 import { ArrowLeft, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { AdminBrand } from "./AdminBrand";
@@ -81,9 +88,9 @@ export function AdminSidebar() {
 							className="bg-background absolute top-7 -right-3.5 z-40 size-7 -translate-y-1/2 rounded-full shadow-sm"
 						>
 							{collapsed ? (
-								<PanelLeftOpen className="size-3.5" />
+								<PanelLeftOpen {...iconProps(14)} />
 							) : (
-								<PanelLeftClose className="size-3.5" />
+								<PanelLeftClose {...iconProps(14)} />
 							)}
 						</Button>
 					</TooltipTrigger>

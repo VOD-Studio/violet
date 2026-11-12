@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { iconProps } from "@violet/ui";
 import { ArrowUpRight } from "lucide-react";
 import type { ComponentType, ReactNode } from "react";
 
@@ -166,7 +167,7 @@ export function SiteFooter({
 												GitHub
 												<ArrowUpRight
 													aria-hidden="true"
-													className="size-3 opacity-60"
+													{...iconProps(12, "opacity-60")}
 												/>
 											</a>
 										</li>

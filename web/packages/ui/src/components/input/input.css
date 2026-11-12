@@ -282,19 +282,28 @@
 		color: var(--muted-foreground);
 	}
 
-	.v-input-control svg {
+	.v-input-control__leading > svg,
+	.v-input-control__trailing > svg,
+	.v-input-control__status > svg,
+	.v-input-control__action > svg {
 		flex: none;
+	}
+
+	.v-input-control__leading > :where(svg:not(.v-icon)),
+	.v-input-control__trailing > :where(svg:not(.v-icon)),
+	.v-input-control__status > :where(svg:not(.v-icon)),
+	.v-input-control__action > :where(svg:not(.v-icon)) {
 		stroke-width: 1.75;
 	}
 
-	.v-input-control__leading svg {
+	.v-input-control__leading > :where(svg:not(.v-icon)) {
 		inline-size: var(--v-input-icon);
 		block-size: var(--v-input-icon);
 	}
 
-	.v-input-control__trailing svg,
-	.v-input-control__status svg,
-	.v-input-control__action svg {
+	.v-input-control__trailing > :where(svg:not(.v-icon)),
+	.v-input-control__status > :where(svg:not(.v-icon)),
+	.v-input-control__action > :where(svg:not(.v-icon)) {
 		inline-size: 1rem;
 		block-size: 1rem;
 	}
@@ -356,12 +365,6 @@
 	.v-input-control__action--clear {
 		opacity: 0;
 		pointer-events: none;
-	}
-
-	.v-input-control__action--clear svg {
-		inline-size: 0.875rem;
-		block-size: 0.875rem;
-		stroke-width: 2;
 	}
 
 	.v-input-control:focus-within .v-input-control__action--clear {

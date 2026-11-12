@@ -1,3 +1,4 @@
+import { iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { AppWindow, ChevronDown, Music } from "lucide-react";
 import type { ReactNode } from "react";
@@ -118,7 +119,7 @@ export function NavbarBrand({ name, avatar, open = false, live }: NavbarBrandPro
 					<StackCircle
 						slot="brand-cover"
 						src={live.cover.src}
-						fallback={<Music aria-hidden="true" className="size-3.5" />}
+						fallback={<Music aria-hidden="true" {...iconProps(14)} />}
 						className={live.cover.paused ? "grayscale opacity-60" : undefined}
 					/>
 				) : null}
@@ -126,7 +127,7 @@ export function NavbarBrand({ name, avatar, open = false, live }: NavbarBrandPro
 					<StackCircle
 						slot="brand-app"
 						src={live.app.src}
-						fallback={<AppWindow aria-hidden="true" className="size-3.5" />}
+						fallback={<AppWindow aria-hidden="true" {...iconProps(14)} />}
 					/>
 				) : null}
 			</span>
@@ -154,9 +155,12 @@ export function NavbarBrand({ name, avatar, open = false, live }: NavbarBrandPro
 				<ChevronDown
 					aria-hidden="true"
 					data-slot="brand-chevron"
-					className={cn(
-						"size-3 shrink-0 text-muted-foreground transition-transform duration-200 group-hover:text-foreground",
-						open && "rotate-180 text-foreground",
+					{...iconProps(
+						12,
+						cn(
+							"shrink-0 text-muted-foreground transition-transform duration-200 group-hover:text-foreground",
+							open && "rotate-180 text-foreground",
+						),
 					)}
 				/>
 			</span>

@@ -212,8 +212,8 @@ export function AudioControls({
 					size="sm"
 					variant={state.isLooping ? "secondary" : "ghost"}
 					onClick={onToggleLoop}
-					title={state.isLooping ? "关闭循环" : "单曲循环"}
 					aria-label={state.isLooping ? "关闭循环" : "单曲循环"}
+					title={state.isLooping ? "关闭循环" : "单曲循环"}
 				>
 					{state.isLooping ? (
 						<Repeat1 className="size-4 text-primary" />

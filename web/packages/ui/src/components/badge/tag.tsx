@@ -3,6 +3,7 @@
 import { X } from "lucide-react";
 import { Slot, Toggle } from "radix-ui";
 import type { ComponentProps, HTMLAttributes, MouseEvent, ReactNode, Ref } from "react";
+import { iconProps } from "../icons";
 import { type TagVariantProps, tagVariants } from "./styles";
 
 /** 取出 children 里的纯文字；JSX 会把 `#{name}` 拆成数组，元素节点不参与。 */
@@ -14,11 +15,14 @@ function textOf(node: ReactNode): string {
 
 interface NativeTagProps extends ComponentProps<"span">, TagVariantProps {
 	asChild?: false;
-	/** 12px，在文字前；对读屏隐藏。 */
+	/** 图标对读屏隐藏；普通 SVG 为 12px，显式 `iconProps` 保留档位。 */
 	icon?: ReactNode;
 	/** 提供后在末尾渲染独立的 × 按钮；点击不会冒泡到标签的祖先。 */
 	onRemove?: () => void;
-	/** × 的可访问名称；默认「移除 文字」，children 不是文字时为「移除」。 */
+	/**
+	 * 移除按钮的可访问名称。
+	 * @default "移除 文字"，children 不是文字时为 "移除"
+	 */
 	removeLabel?: string;
 }
 
@@ -82,7 +86,7 @@ export function Tag({
 			{children}
 			{onRemove && (
 				<button type="button" className="v-tag__remove" aria-label={label} onClick={remove}>
-					<X size={12} aria-hidden="true" />
+					<X {...iconProps(12)} aria-hidden="true" />
 				</button>
 			)}
 		</span>

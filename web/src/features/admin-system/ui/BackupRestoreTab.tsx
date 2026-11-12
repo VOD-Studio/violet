@@ -1,6 +1,16 @@
 import { formatDateTime } from "@shared/lib/date";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button, ConfirmDialog, Input, Modal, NumberInput, Spinner, Switch, Tag } from "@violet/ui";
+import {
+	Button,
+	ConfirmDialog,
+	Input,
+	iconProps,
+	Modal,
+	NumberInput,
+	Spinner,
+	Switch,
+	Tag,
+} from "@violet/ui";
 import {
 	Archive,
 	CalendarClock,
@@ -213,7 +223,7 @@ export function BackupRestoreTab() {
 						onClick={() => void backupsQuery.refetch()}
 					>
 						<RefreshCw
-							className={`size-3.5 ${backupsQuery.isFetching ? "animate-spin" : ""}`}
+							{...iconProps(14, backupsQuery.isFetching ? "animate-spin" : "")}
 						/>
 						刷新
 					</Button>
@@ -466,7 +476,7 @@ function BackupTable({
 										aria-label={`下载 ${backup.filename}`}
 										onClick={() => onDownload(backup.filename, "database")}
 									>
-										<DownloadIcon className="size-3.5" />
+										<DownloadIcon {...iconProps(14)} />
 									</Button>
 									{backup.uploads_filename && (
 										<Button
@@ -478,7 +488,7 @@ function BackupTable({
 											aria-label={`下载 ${backup.uploads_filename}`}
 											onClick={() => onDownload(backup.filename, "uploads")}
 										>
-											<FileArchive className="size-3.5" />
+											<FileArchive {...iconProps(14)} />
 										</Button>
 									)}
 									<Button
@@ -490,7 +500,7 @@ function BackupTable({
 										aria-label={`恢复 ${backup.filename}`}
 										onClick={() => onRestore(backup)}
 									>
-										<RotateCcw className="size-3.5" />
+										<RotateCcw {...iconProps(14)} />
 									</Button>
 									<Button
 										iconOnly
@@ -502,7 +512,7 @@ function BackupTable({
 										aria-label={`删除 ${backup.filename}`}
 										onClick={() => onDelete(backup)}
 									>
-										<Trash2 className="size-3.5" />
+										<Trash2 {...iconProps(14)} />
 									</Button>
 								</div>
 							</td>

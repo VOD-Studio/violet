@@ -27,6 +27,7 @@ import {
 	Button,
 	ConfirmDialog,
 	DataTable,
+	iconProps,
 	Select,
 	SelectContent,
 	SelectItem,
@@ -137,49 +138,45 @@ function AdminSubscriptionsPage() {
 							iconOnly
 							variant="ghost"
 							size="sm"
-							title="立即抓取"
 							aria-label="立即抓取"
+							title="立即抓取"
 							disabled={fetchingIds.has(row.id)}
 							onClick={() => handleFetch(row.id)}
 						>
 							<RefreshCw
-								className={`size-3.5 ${fetchingIds.has(row.id) ? "animate-spin" : ""}`}
+								{...iconProps(14, fetchingIds.has(row.id) ? "animate-spin" : "")}
 							/>
 						</Button>
 						<Button
 							iconOnly
 							variant="ghost"
 							size="sm"
-							title={paused ? "恢复（清零失败计数）" : "暂停"}
 							aria-label={paused ? "恢复（清零失败计数）" : "暂停"}
+							title={paused ? "恢复（清零失败计数）" : "暂停"}
 							onClick={() => (paused ? resumeMut : pauseMut).mutate(row.id)}
 						>
-							{paused ? (
-								<Play className="size-3.5" />
-							) : (
-								<Pause className="size-3.5" />
-							)}
+							{paused ? <Play {...iconProps(14)} /> : <Pause {...iconProps(14)} />}
 						</Button>
 						<Button
 							iconOnly
 							variant="ghost"
 							size="sm"
-							title="编辑"
 							aria-label="编辑"
+							title="编辑"
 							onClick={() => setEditing(row)}
 						>
-							<Pencil className="size-3.5" />
+							<Pencil {...iconProps(14)} />
 						</Button>
 						<Button
 							iconOnly
 							variant="ghost"
 							size="sm"
-							title="删除"
 							aria-label="删除"
+							title="删除"
 							className="hover:bg-destructive/10 hover:text-destructive"
 							onClick={() => setDeleting(row)}
 						>
-							<Trash2 className="size-3.5" />
+							<Trash2 {...iconProps(14)} />
 						</Button>
 					</div>
 				);
@@ -193,7 +190,7 @@ function AdminSubscriptionsPage() {
 			description="管理 RSS 订阅源"
 			action={
 				<Button size="sm" onClick={() => setCreateOpen(true)}>
-					<Plus className="size-3.5" />
+					<Plus {...iconProps(14)} />
 					新建订阅
 				</Button>
 			}

@@ -1,3 +1,4 @@
+import { iconProps } from "@violet/ui";
 import { Play } from "lucide-react";
 import type { MockItem } from "../model/mock";
 import { VideoBadge } from "./FeedVariants";
@@ -136,7 +137,7 @@ export function GridUniform({ items, onOpen }: { items: MockItem[]; onOpen: (i: 
 					/>
 					{it.isVideo ? (
 						<span className="absolute right-1.5 bottom-1.5 flex items-center gap-1 rounded-sm bg-black/55 px-1.5 py-0.5 font-mono text-[10px] text-white">
-							<Play className="size-2.5" />
+							<Play {...iconProps(12)} />
 							视频
 						</span>
 					) : null}

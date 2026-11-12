@@ -1,4 +1,4 @@
-import { Button } from "@violet/ui";
+import { Button, iconProps } from "@violet/ui";
 
 import { ArrowDownLeft, ArrowUpRight, DatabaseZap, SquareTerminal, X } from "lucide-react";
 import type { ReactNode } from "react";
@@ -64,7 +64,7 @@ export function SchemaRelationshipInspector({
 							size="sm"
 							onClick={() => onUseQuery(buildTableSelectSQL(table))}
 						>
-							<DatabaseZap className="size-3" />
+							<DatabaseZap {...iconProps(12)} />
 							查询
 						</Button>
 						{onClose && (
@@ -75,7 +75,7 @@ export function SchemaRelationshipInspector({
 								aria-label="关闭关系详情"
 								onClick={onClose}
 							>
-								<X className="size-3.5" />
+								<X {...iconProps(14)} />
 							</Button>
 						)}
 					</div>
@@ -91,7 +91,7 @@ export function SchemaRelationshipInspector({
 					<div className="space-y-4">
 						<RelationshipGroup
 							title="引用出去"
-							icon={<ArrowUpRight className="size-3.5" />}
+							icon={<ArrowUpRight {...iconProps(14)} />}
 							relationships={outgoing}
 							selectedKey={selectedKey}
 							onSelectTable={onSelectTable}
@@ -99,7 +99,7 @@ export function SchemaRelationshipInspector({
 						/>
 						<RelationshipGroup
 							title="被其他表引用"
-							icon={<ArrowDownLeft className="size-3.5" />}
+							icon={<ArrowDownLeft {...iconProps(14)} />}
 							relationships={incoming}
 							selectedKey={selectedKey}
 							onSelectTable={onSelectTable}
@@ -168,7 +168,7 @@ function RelationshipGroup({
 										onUseQuery(buildRelationshipJoinSQL(relationship))
 									}
 								>
-									<SquareTerminal className="size-3" />
+									<SquareTerminal {...iconProps(12)} />
 									生成 JOIN
 								</Button>
 							</div>

@@ -15,6 +15,7 @@
 @import "./components/color-picker/color-picker.css";
 @import "./components/combobox/combobox.css";
 @import "./components/command/command.css";
+@import "./components/comment/comment.css";
 @import "./components/confirm-dialog/confirm-dialog.css";
 @import "./components/context-menu/context-menu.css";
 @import "./components/date-picker/date-picker.css";

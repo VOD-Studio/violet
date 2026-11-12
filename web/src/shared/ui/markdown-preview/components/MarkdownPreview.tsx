@@ -8,7 +8,7 @@
  * - 加载/错误状态 + 重试
  */
 
-import { Button } from "@violet/ui";
+import { Button, iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { Check, CircleAlert, Copy, RotateCcw } from "lucide-react";
 import { useState } from "react";
@@ -56,13 +56,13 @@ export function MarkdownPreview({ url, name, className }: MarkdownPreviewProps) 
 					variant="ghost"
 					onClick={handleCopy}
 					disabled={loadStatus !== "ready"}
-					title="复制源码"
 					aria-label="复制源码"
+					title="复制源码"
 				>
 					{copied ? (
-						<Check className="size-3.5 text-green-500" />
+						<Check {...iconProps(14, "text-green-500")} />
 					) : (
-						<Copy className="size-3.5" />
+						<Copy {...iconProps(14)} />
 					)}
 				</Button>
 			</div>
@@ -79,10 +79,10 @@ export function MarkdownPreview({ url, name, className }: MarkdownPreviewProps) 
 					</div>
 				) : loadStatus === "error" ? (
 					<div className="flex h-40 flex-col items-center justify-center gap-2 text-muted-foreground">
-						<CircleAlert className="size-8 text-red-500" />
+						<CircleAlert className="size-6 text-red-500" />
 						<span className="text-sm">Markdown 加载失败</span>
 						<Button type="button" variant="outline" size="sm" onClick={retry}>
-							<RotateCcw className="mr-1.5 size-3.5" />
+							<RotateCcw {...iconProps(14)} />
 							重试
 						</Button>
 					</div>

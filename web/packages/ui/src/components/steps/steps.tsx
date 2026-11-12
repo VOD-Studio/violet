@@ -1,6 +1,7 @@
 import { cn } from "cn";
 import { Check } from "lucide-react";
 import type { ComponentProps, CSSProperties, ReactNode } from "react";
+import { iconProps } from "../icons";
 
 /** 一步流程的名称与可省略说明；名称用于可访问名称，必须是纯文本。 */
 export interface StepItem {
@@ -69,7 +70,7 @@ export function Steps({
 				const content = (
 					<>
 						{status === "done" ? (
-							<Check aria-hidden="true" />
+							<Check {...iconProps(14)} aria-hidden="true" />
 						) : status === "error" ? (
 							<b>!</b>
 						) : (

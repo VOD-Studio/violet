@@ -1,4 +1,4 @@
-import { GithubIcon } from "@violet/ui";
+import { GithubIcon, iconProps } from "@violet/ui";
 import { ArrowUpRight, AtSign, Mail, Rss, Share2, Tv } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 
@@ -88,13 +88,13 @@ export function SocialMatrixSection({ settings }: AboutSectionProps) {
 							aria-label={`${label}：${target}`}
 						>
 							<span className={styles.socialIconWrap}>
-								<Icon className={styles.socialIcon} aria-hidden />
+								<Icon {...iconProps(14, styles.socialIcon)} aria-hidden />
 							</span>
 							<span className={styles.socialText}>
 								<span className={styles.socialLabel}>{label}</span>
 								<span className={styles.socialTarget}>{target}</span>
 							</span>
-							<ArrowUpRight className={styles.socialArrow} aria-hidden />
+							<ArrowUpRight {...iconProps(14, styles.socialArrow)} aria-hidden />
 						</a>
 					);
 				})}

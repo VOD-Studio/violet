@@ -1,5 +1,6 @@
 import type { ChapterContext } from "@features/series/model/types";
 import { Link } from "@tanstack/react-router";
+import { iconProps } from "@violet/ui";
 import { BookOpen } from "lucide-react";
 
 /**
@@ -14,7 +15,7 @@ export function SeriesBelonging({ context }: { context: ChapterContext | null })
 			params={{ slug: context.series.slug }}
 			className="hover:text-foreground mb-4 inline-flex items-center gap-1.5 font-mono text-sm text-muted-foreground transition-colors"
 		>
-			<BookOpen className="size-3.5" />
+			<BookOpen {...iconProps(14)} />
 			属于《{context.series.title}》
 			{context.chapter_no > 0 ? ` · 第 ${context.chapter_no} 章` : ""}
 		</Link>

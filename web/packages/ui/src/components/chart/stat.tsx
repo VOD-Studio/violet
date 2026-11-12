@@ -1,6 +1,7 @@
 import { cn } from "cn";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import type { ComponentProps } from "react";
+import { iconProps } from "../icons";
 
 /** 变化量：箭头表示方向，颜色只做辅助，文字说明与上一期的比较。 */
 export interface StatChange {
@@ -60,7 +61,7 @@ export function Stat({ label, value, change, trend, className, ...props }: StatP
 			<span className="v-stat__value">{value}</span>
 			{change !== undefined ? (
 				<span className="v-stat__change" data-direction={change.direction}>
-					<TrendIcon aria-hidden="true" />
+					<TrendIcon {...iconProps(14)} aria-hidden="true" />
 					<span className="v-stat__delta">{change.value}</span>
 					<span className="v-stat__note">{change.note ?? "比上周"}</span>
 				</span>

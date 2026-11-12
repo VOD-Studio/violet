@@ -2,7 +2,7 @@ import type { PublicPersona } from "@entities/persona/model/types";
 import { formatDate } from "@shared/lib/date";
 import { avatarUrl } from "@shared/lib/image-url";
 import { Epigraph } from "@shared/ui/epigraph";
-import { GithubIcon, ImagePixelReveal } from "@violet/ui";
+import { GithubIcon, ImagePixelReveal, iconProps } from "@violet/ui";
 import { ArrowDown, ArrowRight, BookText, ExternalLink, Mail, Rss, Share2, Tv } from "lucide-react";
 import { Tooltip as TooltipPrimitive } from "radix-ui";
 import { type ComponentType, type SVGProps, useState } from "react";
@@ -232,7 +232,12 @@ export function HomePrelude({ identity, lead, persona }: HomePreludeProps) {
 								{HOME_KIND_LABEL[lead.kind]} ·{" "}
 								{formatDate(lead.published_at, "dotted-date")}
 							</span>
-							<ArrowRight className="size-3.5 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none" />
+							<ArrowRight
+								{...iconProps(
+									14,
+									"shrink-0 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none",
+								)}
+							/>
 						</HomeContentLink>
 					) : (
 						<span className="text-muted-foreground">公开内容正在整理中。</span>
@@ -243,7 +248,12 @@ export function HomePrelude({ identity, lead, persona }: HomePreludeProps) {
 						className="group inline-flex shrink-0 items-center gap-1.5 pl-4 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
 					>
 						<span>开卷漫游</span>
-						<ArrowDown className="size-3.5 transition-transform duration-200 group-hover:translate-y-0.5 motion-reduce:transition-none" />
+						<ArrowDown
+							{...iconProps(
+								14,
+								"transition-transform duration-200 group-hover:translate-y-0.5 motion-reduce:transition-none",
+							)}
+						/>
 					</a>
 				</div>
 			</div>

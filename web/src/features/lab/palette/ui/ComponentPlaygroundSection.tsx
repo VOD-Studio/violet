@@ -3,6 +3,7 @@ import {
 	Badge,
 	Button,
 	Input,
+	iconProps,
 	Steps,
 	Tabs,
 	TabsContent,
@@ -103,7 +104,7 @@ export function ComponentPlaygroundSection({ className }: ComponentPlaygroundSec
 									onClick={() => setCurrentStep((s) => Math.max(0, s - 1))}
 									disabled={currentStep === 0}
 								>
-									<ChevronLeft className="size-3" />
+									<ChevronLeft {...iconProps(12)} />
 									上一步
 								</Button>
 								<Button
@@ -113,7 +114,7 @@ export function ComponentPlaygroundSection({ className }: ComponentPlaygroundSec
 									disabled={currentStep === 3}
 								>
 									下一步
-									<ChevronRight className="size-3" />
+									<ChevronRight {...iconProps(12)} />
 								</Button>
 							</div>
 						</div>

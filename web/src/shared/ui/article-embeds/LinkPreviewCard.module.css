@@ -40,8 +40,8 @@
 }
 
 .imageFallback svg {
-	width: 1.35rem;
-	height: 1.35rem;
+	width: 1.5rem;
+	height: 1.5rem;
 	color: var(--muted-foreground);
 }
 

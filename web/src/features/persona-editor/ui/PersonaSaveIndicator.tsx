@@ -1,5 +1,5 @@
 import type { PersonaSaveState } from "@features/persona-editor/model/types";
-import { Spinner } from "@violet/ui";
+import { iconProps, Spinner } from "@violet/ui";
 import { Check, TriangleAlert } from "lucide-react";
 
 interface PersonaSaveIndicatorProps {
@@ -22,10 +22,10 @@ export function PersonaSaveIndicator({ state }: PersonaSaveIndicatorProps) {
 	if (state === "saved") {
 		return (
 			<span
-				className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"
+				className="inline-flex items-center gap-1 text-xs text-muted-foreground"
 				role="status"
 			>
-				<Check className="size-3.5" />
+				<Check {...iconProps(14)} />
 				已保存
 			</span>
 		);
@@ -34,12 +34,12 @@ export function PersonaSaveIndicator({ state }: PersonaSaveIndicatorProps) {
 		<span
 			className={
 				state === "dirty"
-					? "inline-flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400"
-					: "inline-flex items-center gap-1.5 text-xs text-destructive"
+					? "inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400"
+					: "inline-flex items-center gap-1 text-xs text-destructive"
 			}
 			role="status"
 		>
-			<TriangleAlert className="size-3.5" />
+			<TriangleAlert {...iconProps(14)} />
 			{state === "dirty" ? "有未保存修改" : state === "conflict" ? "版本冲突" : "保存失败"}
 		</span>
 	);

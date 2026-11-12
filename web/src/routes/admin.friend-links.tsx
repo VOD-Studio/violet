@@ -27,6 +27,7 @@ import {
 	ConfirmDialog,
 	DataTable,
 	type DataTableColumn,
+	iconProps,
 	Segmented,
 	type SegmentedItem,
 } from "@violet/ui";
@@ -130,7 +131,7 @@ function AdminFriendLinksPage() {
 						className="inline-flex max-w-full items-center gap-1 text-sm text-primary hover:underline"
 					>
 						<span className="truncate">{row.linkback_url}</span>
-						<ExternalLink className="size-3 shrink-0" />
+						<ExternalLink {...iconProps(12, "shrink-0")} />
 					</a>
 				) : (
 					<span className="text-muted-foreground">—</span>
@@ -166,12 +167,12 @@ function AdminFriendLinksPage() {
 								iconOnly
 								variant="ghost"
 								size="sm"
-								title={row.status === "rejected" ? "改判为通过" : "批准"}
 								aria-label={row.status === "rejected" ? "改判为通过" : "批准"}
+								title={row.status === "rejected" ? "改判为通过" : "批准"}
 								disabled={approveMut.isPending}
 								onClick={() => approveMut.mutate(row.id)}
 							>
-								<Check className="size-3.5" />
+								<Check {...iconProps(14)} />
 							</Button>
 						) : null}
 						{row.status === "pending" ? (
@@ -179,12 +180,12 @@ function AdminFriendLinksPage() {
 								iconOnly
 								variant="ghost"
 								size="sm"
-								title="拒绝"
 								aria-label="拒绝"
+								title="拒绝"
 								disabled={rejectMut.isPending}
 								onClick={() => rejectMut.mutate(row.id)}
 							>
-								<X className="size-3.5" />
+								<X {...iconProps(14)} />
 							</Button>
 						) : null}
 						{row.status === "approved" ? (
@@ -192,12 +193,12 @@ function AdminFriendLinksPage() {
 								iconOnly
 								variant="ghost"
 								size="sm"
-								title="下柜"
 								aria-label="下柜"
+								title="下柜"
 								disabled={disableMut.isPending}
 								onClick={() => disableMut.mutate(row.id)}
 							>
-								<EyeOff className="size-3.5" />
+								<EyeOff {...iconProps(14)} />
 							</Button>
 						) : null}
 						{row.status === "disabled" ? (
@@ -205,12 +206,12 @@ function AdminFriendLinksPage() {
 								iconOnly
 								variant="ghost"
 								size="sm"
-								title="恢复"
 								aria-label="恢复"
+								title="恢复"
 								disabled={restoreMut.isPending}
 								onClick={() => restoreMut.mutate(row.id)}
 							>
-								<RotateCcw className="size-3.5" />
+								<RotateCcw {...iconProps(14)} />
 							</Button>
 						) : null}
 						{/* 全部状态可编辑/删除 */}
@@ -218,22 +219,22 @@ function AdminFriendLinksPage() {
 							iconOnly
 							variant="ghost"
 							size="sm"
-							title="编辑"
 							aria-label="编辑"
+							title="编辑"
 							onClick={() => setEditing(row)}
 						>
-							<Pencil className="size-3.5" />
+							<Pencil {...iconProps(14)} />
 						</Button>
 						<Button
 							iconOnly
 							variant="ghost"
 							size="sm"
-							title="删除"
 							aria-label="删除"
+							title="删除"
 							className="hover:bg-destructive/10 hover:text-destructive"
 							onClick={() => setDeleting(row)}
 						>
-							<Trash2 className="size-3.5" />
+							<Trash2 {...iconProps(14)} />
 						</Button>
 					</div>
 				) : null,
@@ -247,7 +248,7 @@ function AdminFriendLinksPage() {
 			action={
 				canManage ? (
 					<Button size="sm" onClick={() => setCreateOpen(true)}>
-						<Plus className="size-3.5" />
+						<Plus {...iconProps(14)} />
 						手动添加
 					</Button>
 				) : null

@@ -1,5 +1,6 @@
 import { ClosingVignette } from "@features/seasonal-decor/ui/ClosingVignette";
 import type { Season } from "@shared/lib/theme-preference";
+import { iconProps } from "@violet/ui";
 import { Heart, Mail, Rss } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -69,13 +70,16 @@ export function HomeClosing({ identity, season }: HomeClosingProps) {
 						<span className="text-xs text-muted-foreground/80 transition-colors group-hover:text-foreground">
 							{impressionLabel}
 						</span>
-						<span className="inline-flex items-center gap-1.5 font-mono text-xs text-foreground/80 transition-colors group-hover:text-primary">
+						<span className="inline-flex items-center gap-1 font-mono text-xs text-foreground/80 transition-colors group-hover:text-primary">
 							<Heart
-								className={`size-3.5 transition-colors duration-200 ${
-									impression?.impressed
-										? "fill-primary text-primary"
-										: "text-muted-foreground/60 group-hover:text-primary"
-								}`}
+								{...iconProps(
+									14,
+									`transition-colors duration-200 ${
+										impression?.impressed
+											? "fill-primary text-primary"
+											: "text-muted-foreground/60 group-hover:text-primary"
+									}`,
+								)}
 							/>
 							<span className="tabular-nums">
 								{impressionMutation.isPending ? "…" : (impression?.count ?? "—")}
@@ -98,8 +102,13 @@ export function HomeClosing({ identity, season }: HomeClosingProps) {
 											<span className="text-xs text-muted-foreground/80 transition-colors group-hover:text-foreground">
 												{channel.label}
 											</span>
-											<span className="inline-flex items-center gap-1.5 text-xs text-foreground/80 transition-colors group-hover:text-primary">
-												<ChannelIcon className="size-3 text-muted-foreground/60 transition-colors group-hover:text-primary" />
+											<span className="inline-flex items-center gap-1 text-xs text-foreground/80 transition-colors group-hover:text-primary">
+												<ChannelIcon
+													{...iconProps(
+														12,
+														"text-muted-foreground/60 transition-colors group-hover:text-primary",
+													)}
+												/>
 												<span className="font-normal tracking-wide text-muted-foreground/80 group-hover:text-foreground">
 													不错过每一纸书。
 												</span>

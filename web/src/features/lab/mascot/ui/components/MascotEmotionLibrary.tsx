@@ -7,6 +7,7 @@ import {
 	DialogTitle,
 	DialogTrigger,
 	Input,
+	iconProps,
 	ScrollArea,
 	Segmented,
 } from "@violet/ui";
@@ -171,9 +172,9 @@ export function MascotEmotionLibrary({
 						<DialogTrigger asChild>
 							<button
 								type="button"
-								className="inline-flex h-8 cursor-pointer items-center gap-1.5 border border-edge-hairline px-3 font-mono text-[9px] tracking-[0.08em] text-muted-foreground uppercase transition-colors hover:border-neon-blue hover:text-neon-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-blue"
+								className="inline-flex h-8 cursor-pointer items-center gap-2 border border-edge-hairline px-3 font-mono text-[9px] tracking-[0.08em] text-muted-foreground uppercase transition-colors hover:border-neon-blue hover:text-neon-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-blue"
 							>
-								<Grid2X2 className="size-3.5" />
+								<Grid2X2 {...iconProps(14)} />
 								全部状态
 							</button>
 						</DialogTrigger>

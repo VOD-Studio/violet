@@ -21,6 +21,7 @@ import {
 } from "@shared/ui/comment-section";
 import { EmojiText } from "@shared/ui/emoji-text";
 import { ImageGrid } from "@shared/ui/image-grid";
+import { useMemo } from "react";
 import { AnnotationAuthorProfile } from "./AnnotationAuthorProfile";
 import { CommentForm } from "./CommentForm";
 import { CommentReactions } from "./CommentReactions";
@@ -72,16 +73,11 @@ export function buildArticleCommentConfig({
 					!c.is_ai && c.author_username ? `/users/${c.author_username}` : undefined,
 				isAuthor: !c.is_ai && c.is_author,
 				isPending: c.status === "pending",
+				isDeleted: c.status === "deleted",
 				body: c.body,
 				createdAt: c.created_at,
 				repliesTotal: c.replies_total,
 				repliesPreview: c.replies,
-				tone:
-					!c.is_ai && c.is_author
-						? "author"
-						: c.replies && c.replies.length > 0
-							? "discussion"
-							: "default",
 				raw: c,
 			};
 		},
@@ -108,7 +104,7 @@ export function buildArticleCommentConfig({
 		renderMetaBadges: (item) => <AIBadge show={!!item.raw.is_ai} name={item.raw.author_name} />,
 		renderBody: (item) => (
 			<>
-				<p className="mt-2 whitespace-pre-wrap wrap-break-word text-sm text-foreground">
+				<p className="whitespace-pre-wrap wrap-break-word text-sm text-foreground">
 					<EmojiText text={item.body} emote={item.raw.emote} />
 				</p>
 				{item.raw.pictures && item.raw.pictures.length > 0 && (
@@ -118,7 +114,9 @@ export function buildArticleCommentConfig({
 				)}
 			</>
 		),
-		renderActions: (item) => <CommentReactions commentId={item.id} isLoggedIn={isLoggedIn} />,
+		renderActions: (item) => (
+			<CommentReactions postId={postId} commentId={item.id} isLoggedIn={isLoggedIn} />
+		),
 		renderReplyForm: (item, { onSuccess }) => (
 			<CommentForm
 				postId={postId}
@@ -170,10 +168,13 @@ function ArticleExpandedReplies({
 }) {
 	const { data, error, refetch, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
 		useReplies(topLevelId, { limit: 10 });
+	const replies = useMemo(() => data?.pages.flatMap((page) => page.data) ?? [], [data]);
+	const newBatchStart = replies.length - (data?.pages.at(-1)?.data.length ?? 0);
 	return (
 		<ExpandedReplies
 			topLevelId={topLevelId}
-			replies={data?.pages.flatMap((p) => p.data) ?? []}
+			replies={replies}
+			newBatchStart={newBatchStart}
 			error={error}
 			onRetry={() => void refetch()}
 			hasNextPage={!!hasNextPage}

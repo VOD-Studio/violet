@@ -1,4 +1,4 @@
-import { Button, Spinner, Switch } from "@violet/ui";
+import { Button, iconProps, Spinner, Switch } from "@violet/ui";
 
 import { DatabaseZap, Info, Play, RotateCcw, TableProperties, TriangleAlert } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
@@ -84,14 +84,14 @@ export function SQLConsoleTab({
 								disabled={execute.isPending}
 								onClick={() => loadSQL(DEFAULT_SYSTEM_SQL)}
 							>
-								<RotateCcw className="size-3.5" />
+								<RotateCcw {...iconProps(14)} />
 								重置
 							</Button>
 							<Button
 								size="sm"
 								disabled={!hasSQL || execute.isPending}
 								loading={execute.isPending}
-								leftIcon={<Play className="size-3.5" />}
+								leftIcon={<Play {...iconProps(14)} />}
 								onClick={handleExecute}
 							>
 								执行
@@ -108,7 +108,7 @@ export function SQLConsoleTab({
 					/>
 
 					<div className="text-muted-foreground bg-muted/35 flex flex-wrap items-center gap-2 rounded-lg px-3 py-2 text-xs">
-						<Info className="size-3.5 shrink-0" />
+						<Info {...iconProps(14, "shrink-0")} />
 						<span className="min-w-52 flex-1">
 							PostgreSQL 不支持 <code>SHOW TABLES</code>；查询 public 表请使用{" "}
 							<code>pg_catalog.pg_tables</code>。
@@ -119,7 +119,7 @@ export function SQLConsoleTab({
 							disabled={execute.isPending}
 							onClick={() => loadSQL(LIST_TABLES_SQL)}
 						>
-							<TableProperties className="size-3" />
+							<TableProperties {...iconProps(12)} />
 							载入查表 SQL
 						</Button>
 					</div>

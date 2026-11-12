@@ -1,4 +1,4 @@
-import { Badge, Button, Card, ConfirmDialog } from "@violet/ui";
+import { Badge, Button, Card, ConfirmDialog, iconProps } from "@violet/ui";
 import {
 	Activity,
 	ExternalLink,
@@ -101,10 +101,9 @@ export function MusicAccountCard({
 						size="sm"
 						onClick={handleVerify}
 						disabled={!canManage || verifyMutation.isPending || isStatusLoading}
-						className="gap-1.5"
 					>
 						<Activity
-							className={`size-3.5 ${verifyMutation.isPending ? "animate-spin" : ""}`}
+							{...iconProps(14, verifyMutation.isPending ? "animate-spin" : "")}
 						/>
 						连通性测试
 					</Button>
@@ -189,7 +188,7 @@ export function MusicAccountCard({
 											className="text-muted-foreground hover:text-foreground"
 											title="查看网易云个人主页"
 										>
-											<ExternalLink className="size-3.5" />
+											<ExternalLink {...iconProps(14)} />
 										</a>
 									</div>
 									<div className="font-mono text-muted-foreground text-xs">
@@ -204,10 +203,12 @@ export function MusicAccountCard({
 									size="sm"
 									onClick={handleRefresh}
 									disabled={!canManage || refreshMutation.isPending}
-									className="gap-1"
 								>
 									<RefreshCw
-										className={`size-3.5 ${refreshMutation.isPending ? "animate-spin" : ""}`}
+										{...iconProps(
+											14,
+											refreshMutation.isPending ? "animate-spin" : "",
+										)}
 									/>
 									刷新
 								</Button>
@@ -218,7 +219,7 @@ export function MusicAccountCard({
 									disabled={!canManage || disconnectMutation.isPending}
 									className="text-destructive hover:bg-destructive/10"
 								>
-									<LogOut className="size-3.5" />
+									<LogOut {...iconProps(14)} />
 									断开
 								</Button>
 							</div>
@@ -233,9 +234,8 @@ export function MusicAccountCard({
 									size="sm"
 									onClick={onOpenQrLogin}
 									disabled={!canManage || Boolean(loginDisabledReason)}
-									className="gap-1.5"
 								>
-									<LogIn className="size-3.5" />
+									<LogIn {...iconProps(14)} />
 									重新扫码登录
 								</Button>
 								<Button
@@ -259,9 +259,8 @@ export function MusicAccountCard({
 									size="sm"
 									onClick={onOpenQrLogin}
 									disabled={!canManage || Boolean(loginDisabledReason)}
-									className="gap-1.5"
 								>
-									<LogIn className="size-3.5" />
+									<LogIn {...iconProps(14)} />
 									扫码连接账号
 								</Button>
 							</div>

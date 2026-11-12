@@ -1,4 +1,4 @@
-import { Button } from "@violet/ui";
+import { Button, iconProps } from "@violet/ui";
 import { Download } from "lucide-react";
 
 import { useFilePreviewVariant } from "../file-preview-context";
@@ -35,7 +35,7 @@ export function FilePlaceholder({ url, name, mimeType, hint, className }: FilePl
 	return (
 		<div className={`flex flex-col items-center justify-center gap-4 p-8 ${className ?? ""}`}>
 			<div className="flex size-20 items-center justify-center rounded-2xl bg-muted">
-				<Icon className="size-10 text-muted-foreground" />
+				<Icon className="size-6 text-muted-foreground" />
 			</div>
 			<div className="text-center">
 				<p className="text-sm font-medium">{label}</p>
@@ -46,7 +46,7 @@ export function FilePlaceholder({ url, name, mimeType, hint, className }: FilePl
 			</div>
 			{!viewer ? (
 				<Button variant="outline" size="sm" onClick={handleDownload}>
-					<Download className="mr-1.5 size-3.5" />
+					<Download {...iconProps(14)} />
 					下载文件
 				</Button>
 			) : null}

@@ -1,4 +1,5 @@
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
+import { createRef } from "react";
 import { describe, expect, it } from "vitest";
 import { IslandIcon, MorphIcon, TimelineIcon } from "../drawn-icons";
 
@@ -7,14 +8,20 @@ describe("自绘图标", () => {
 		["灵动岛", IslandIcon],
 		["时间线", TimelineIcon],
 		["变形", MorphIcon],
-	] as const)("%s 走 24 网格并对读屏隐藏", (_name, Icon) => {
+	] as const)("%s 保留装饰性 SVG 的读屏隐藏", (_name, Icon) => {
 		const { container } = render(<Icon />);
-		const svg = container.querySelector("svg");
-		expect(svg?.getAttribute("viewBox")).toBe("0 0 24 24");
-		expect(svg?.getAttribute("fill")).toBe("none");
-		expect(svg?.getAttribute("stroke")).toBe("currentColor");
-		expect(svg?.getAttribute("stroke-width")).toBe("1.75");
-		expect(svg?.getAttribute("aria-hidden")).toBe("true");
+		expect(container.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+		expect(screen.queryByRole("img")).toBeNull();
+	});
+
+	it.each([
+		["灵动岛", IslandIcon],
+		["时间线", TimelineIcon],
+		["变形", MorphIcon],
+	] as const)("%s 支持独立命名与原生 SVG ref", (name, Icon) => {
+		const ref = createRef<SVGSVGElement>();
+		render(<Icon ref={ref} role="img" aria-label={name} />);
+		expect(screen.getByRole("img", { name })).toBe(ref.current);
 	});
 
 	it("内容不出 2 的安全区", () => {

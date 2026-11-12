@@ -15,6 +15,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { iconProps } from "../icons";
 import { FlowerBloom } from "../indicator";
 import { useListHighlight } from "../list-highlight/use-list-highlight";
 import {
@@ -119,7 +120,11 @@ function TreeRow({ id, row, current, active, status, icons, onRowClick }: TreeRo
 		>
 			{isBranch ? (
 				<span className="v-tree__chevron" data-tree-chevron="" aria-hidden="true">
-					{busy ? <FlowerBloom kind="plum" size={16} tone="current" /> : <ChevronRight />}
+					{busy ? (
+						<FlowerBloom kind="plum" size={16} tone="current" />
+					) : (
+						<ChevronRight {...iconProps(14)} />
+					)}
 				</span>
 			) : (
 				<span className="v-tree__spacer" aria-hidden="true" />

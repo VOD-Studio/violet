@@ -84,8 +84,6 @@
 }
 
 .arrow {
-	width: 0.85rem;
-	height: 0.85rem;
 	color: var(--muted-foreground);
 	transition: transform 180ms ease-out;
 }

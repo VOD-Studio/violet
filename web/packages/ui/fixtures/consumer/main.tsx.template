@@ -1,5 +1,6 @@
 import { CodeBlockConsumer } from "./code-block.js";
 import { IconsConsumer } from "./icons.js";
+import { CommentConsumer } from "./comment.js";
 import { ReactionConsumer } from "./reaction.js";
 import { EmojiPickerConsumer } from "./emoji-picker.js";
 import { SortableConsumer } from "./sortable.js";
@@ -688,6 +689,7 @@ if (!root) {
 const previews = new Map<string, ComponentType>([
 	["code-block", CodeBlockConsumer],
 	["icons", IconsConsumer],
+	["comment", CommentConsumer],
 	["reaction", ReactionConsumer],
 	["emoji-picker", EmojiPickerConsumer],
 	["sortable", SortableConsumer],

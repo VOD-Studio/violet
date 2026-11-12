@@ -68,6 +68,11 @@ func (s *CommentReactionStore) Remove(ctx context.Context, commentID, userID, ip
 
 // BatchByComments 批量查询多评论反应（按 emoji 分组计数，并标识当前用户是否已反应）
 func (s *CommentReactionStore) BatchByComments(ctx context.Context, commentIDs []string, viewerUserID string) ([]domaincr.ReactionList, error) {
+	return batchCommentReactions(ctx, s.db, "comment_reactions", commentIDs, viewerUserID)
+}
+
+// batchCommentReactions 仅供文章/推文两种独立存储复用公开聚合读模型；表名由实现固定传入。
+func batchCommentReactions(ctx context.Context, db *gorm.DB, table string, commentIDs []string, viewerUserID string) ([]domaincr.ReactionList, error) {
 	if len(commentIDs) == 0 {
 		return []domaincr.ReactionList{}, nil
 	}
@@ -84,9 +89,9 @@ func (s *CommentReactionStore) BatchByComments(ctx context.Context, commentIDs [
 		Count     int64     `gorm:"column:count"`
 		SelfInt   int       `gorm:"column:self_int"`
 	}
-	err := s.db.WithContext(ctx).
-		Table("comment_reactions cr").
-		Select("cr.comment_id, cr.emoji_id, e.name AS emoji_name, e.url AS emoji_url, e.gif_url AS gif_url, COUNT(*) AS count, MAX(CASE WHEN cr.user_id = ? THEN 1 ELSE 0 END) AS self_int", parseUUID(viewerUserID)).
+	err := db.WithContext(ctx).
+		Table(table+" cr").
+		Select("cr.comment_id, cr.emoji_id, e.name AS emoji_name, e.url AS emoji_url, e.gif_url AS gif_url, COUNT(*) AS count, MAX(CASE WHEN cr.user_id = ? AND ? THEN 1 ELSE 0 END) AS self_int", parseUUID(viewerUserID), viewerUserID != "").
 		Joins("LEFT JOIN emojis e ON e.id = cr.emoji_id").
 		Where("cr.comment_id IN ?", ids).
 		Group("cr.comment_id, cr.emoji_id, e.name, e.url, e.gif_url").
@@ -107,8 +112,8 @@ func (s *CommentReactionStore) BatchByComments(ctx context.Context, commentIDs [
 			UserID    uuid.UUID
 			Name      string
 		}
-		ranked := s.db.WithContext(ctx).
-			Table("comment_reactions cr").
+		ranked := db.WithContext(ctx).
+			Table(table+" cr").
 			Select(`
 				cr.comment_id,
 				cr.emoji_id,
@@ -121,7 +126,7 @@ func (s *CommentReactionStore) BatchByComments(ctx context.Context, commentIDs [
 			`).
 			Joins("JOIN users u ON u.id = cr.user_id AND u.deleted_at IS NULL").
 			Where("cr.comment_id IN ?", ids)
-		if err := s.db.WithContext(ctx).Table("(?) AS ranked", ranked).
+		if err := db.WithContext(ctx).Table("(?) AS ranked", ranked).
 			Where("recent_rank <= ?", 3).
 			Order("comment_id, emoji_id, recent_rank").
 			Scan(&users).Error; err != nil {

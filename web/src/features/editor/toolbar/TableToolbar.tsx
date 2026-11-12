@@ -5,7 +5,7 @@
  * Tiptap 表格默认无 UI，需自行提供这些命令入口（#5）。
  */
 import type { Editor } from "@tiptap/react";
-import { Button } from "@violet/ui";
+import { Button, iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { Columns2, Grid2x2, Rows2, Table as TableIcon, Trash2, Undo2 } from "lucide-react";
 import type { MouseEvent } from "react";
@@ -32,7 +32,7 @@ export function TableToolbar({ editor }: TableToolbarProps) {
 			onMouseDown={keepFocus}
 		>
 			<span className="px-1 text-[11px] text-muted-foreground">
-				<TableIcon className="mr-1 inline size-3" />
+				<TableIcon {...iconProps(12, "mr-1 inline")} />
 				表格
 			</span>
 			<span className="mx-0.5 h-4 w-px bg-edge-hairline" aria-hidden />

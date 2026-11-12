@@ -15,6 +15,7 @@ export * from "./components/code-block/index";
 export * from "./components/color-picker/index";
 export * from "./components/combobox/index";
 export * from "./components/command/index";
+export * from "./components/comment/index";
 export * from "./components/confirm-dialog/index";
 export * from "./components/context-menu/index";
 export * from "./components/date-picker/index";

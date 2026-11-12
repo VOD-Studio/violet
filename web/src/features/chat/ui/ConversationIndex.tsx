@@ -2,7 +2,7 @@
  * 会话索引侧栏：标题、搜索、会话列表与搜索结果（含发起私聊）。
  */
 
-import { Button, Input } from "@violet/ui";
+import { Button, Input, iconProps } from "@violet/ui";
 
 import { cn } from "cn";
 import { MessageCircle, Plus, Search } from "lucide-react";
@@ -228,7 +228,7 @@ function SearchResults({
 										onClick={() => void startPrivateChat(user)}
 										size="sm"
 										className="h-8 shrink-0 px-2.5 text-xs shadow-xs"
-										leftIcon={<MessageCircle className="size-3.5" />}
+										leftIcon={<MessageCircle {...iconProps(14)} />}
 									>
 										<span className="sr-only sm:not-sr-only sm:ml-1">私聊</span>
 									</Button>
@@ -362,7 +362,7 @@ export function ConversationEmpty({ onCreate }: { onCreate: () => void }) {
 				size="sm"
 				variant="outline"
 			>
-				<Plus className="mr-1 size-3.5" />
+				<Plus {...iconProps(14)} />
 				新建会话
 			</Button>
 		</div>

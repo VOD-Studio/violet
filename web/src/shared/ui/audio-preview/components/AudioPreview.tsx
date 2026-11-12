@@ -30,7 +30,7 @@ export function AudioPreview({ url, name, className, autoPlay = false }: AudioPr
 			<div
 				className={`flex size-32 items-center justify-center rounded-full bg-primary/10 shadow-inner ${state.isPlaying ? "animate-spin [animation-duration:6s]" : ""}`}
 			>
-				<Disc3 className="size-16 text-primary" />
+				<Disc3 className="size-6 text-primary" />
 			</div>
 
 			{name && !viewer ? (

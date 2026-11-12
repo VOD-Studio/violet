@@ -183,8 +183,8 @@
 }
 
 .technologyIcon {
-	width: 1.65rem;
-	height: 1.65rem;
+	width: 1.5rem;
+	height: 1.5rem;
 	margin-bottom: 0.55rem;
 	color: var(--technology-color);
 }
@@ -249,8 +249,8 @@
 
 .socialIcon,
 .socialArrow {
-	width: 0.9rem;
-	height: 0.9rem;
+	width: 0.875rem;
+	height: 0.875rem;
 }
 
 .socialText {
@@ -415,8 +415,8 @@
 }
 
 .releaseLinkIcon {
-	width: 0.8rem;
-	height: 0.8rem;
+	width: 0.875rem;
+	height: 0.875rem;
 }
 
 .allReleasesLink {

@@ -1,6 +1,7 @@
 import type { Announcement } from "@features/settings/model/types";
 import { getAnnouncementSev } from "@shared/ui/announcement-severity";
 import { Link } from "@tanstack/react-router";
+import { iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { ArrowRight } from "lucide-react";
 import { motion } from "motion/react";
@@ -80,7 +81,12 @@ function Receipt({ a, index }: { a: Announcement; index: number }) {
 						</span>
 					)}
 					{isArticle ? (
-						<ArrowRight className="size-3.5 text-muted-foreground/50 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-foreground" />
+						<ArrowRight
+							{...iconProps(
+								14,
+								"text-muted-foreground/50 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-foreground",
+							)}
+						/>
 					) : null}
 				</span>
 			</div>

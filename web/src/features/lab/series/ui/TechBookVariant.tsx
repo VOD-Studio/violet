@@ -1,4 +1,4 @@
-import { Kbd } from "@violet/ui";
+import { iconProps, Kbd } from "@violet/ui";
 import { ArrowLeft, ArrowRight, BookOpen, ChevronRight, FileText, Search } from "lucide-react";
 import type { SeriesSurface } from "../model/mock";
 import { CURRENT_CHAPTER, JAVA_BOOK, SHELF_BOOKS } from "../model/mock";
@@ -154,7 +154,7 @@ function Reader() {
 				<main className="mx-auto w-full max-w-3xl px-8 py-14">
 					<div className="mb-8 flex items-center gap-2 font-mono text-xs text-muted-foreground">
 						<span>第二部</span>
-						<ChevronRight className="size-3" />
+						<ChevronRight {...iconProps(12)} />
 						<span>第 7 章</span>
 					</div>
 					<h1 className="text-4xl font-bold tracking-tight">{CURRENT_CHAPTER.title}</h1>

@@ -1,5 +1,6 @@
 import type { MediaCatalogSource } from "@entities/media/api/queries";
 import type { MediaFile } from "@entities/media/model/types";
+import { iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { ImagePlus, X } from "lucide-react";
 import { useState } from "react";
@@ -96,7 +97,7 @@ export function AvatarPicker({
 							compact ? "-top-0.5 -right-0.5 size-3.5" : "-top-1 -right-1 size-5",
 						)}
 					>
-						<X className={compact ? "size-2" : "size-3"} />
+						<X {...iconProps(12)} />
 					</button>
 				) : null}
 			</div>

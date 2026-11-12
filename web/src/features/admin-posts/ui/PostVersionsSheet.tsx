@@ -10,6 +10,7 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
+	iconProps,
 	Sheet,
 	SheetBody,
 	SheetContent,
@@ -81,7 +82,7 @@ export function PostVersionsSheet({
 										</div>
 										<div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
 											<div className="flex items-center gap-1.5 rounded-full bg-muted/40 px-2.5 py-1">
-												<Clock className="size-3.5" />
+												<Clock {...iconProps(14)} />
 												{formatDateTime(v.created_at, "second")}
 											</div>
 											{v.editor ? (

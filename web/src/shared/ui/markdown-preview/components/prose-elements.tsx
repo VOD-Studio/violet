@@ -16,10 +16,10 @@ function cellAlignment(
 /** 保留阅读所需语义属性，不透传任意 DOM props。 */
 export const proseElements: Components = {
 	blockquote: ({ children, cite, ...props }) => {
-		const p = props as Record<string, unknown>;
-		const type = p["data-alert-type"];
+		const attributes = props as Record<string, unknown>;
+		const type = attributes["data-alert-type"];
 		const isAlert =
-			p["data-type"] === "alert" &&
+			attributes["data-type"] === "alert" &&
 			typeof type === "string" &&
 			/^(NOTE|TIP|IMPORTANT|WARNING|CAUTION)$/u.test(type);
 		if (isAlert) {
@@ -32,8 +32,9 @@ export const proseElements: Components = {
 		}
 		return (
 			<blockquote cite={cite} className="article-blockquote">
+				<span className="article-blockquote-mark" aria-hidden="true" />
 				{children}
-				{/* cite 属性只由清洗白名单放行 http(s) 出处；样式见 article-blocks.css */}
+				{/* cite 的 URL 协议已由 HTML 清洗器过滤；作者写入的 <cite> 按原文保留。 */}
 				{cite ? <cite className="article-blockquote-cite">{cite}</cite> : null}
 			</blockquote>
 		);

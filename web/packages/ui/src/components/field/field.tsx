@@ -13,6 +13,7 @@ import {
 	useId,
 	useMemo,
 } from "react";
+import { iconProps } from "../icons";
 import { Label } from "./label";
 
 /** 表单项传给控件的接线属性，经 `useFieldControl()` 取得。 */
@@ -74,7 +75,7 @@ function FieldMeta({ id, count, ...messages }: FieldMessages & { id: string; cou
 		<div className="v-field__meta">
 			<span id={id} className="v-field__message" aria-live="polite" data-state={state}>
 				{state === "error" ? (
-					<CircleAlert className="v-field__icon" size={14} aria-hidden="true" />
+					<CircleAlert {...iconProps(14, "v-field__icon")} aria-hidden="true" />
 				) : null}
 				{content === null ? null : <span>{content}</span>}
 			</span>

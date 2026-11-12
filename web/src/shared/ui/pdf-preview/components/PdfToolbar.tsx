@@ -43,8 +43,8 @@ export function PdfToolbar({
 				variant="ghost"
 				onClick={onPrevPage}
 				disabled={currentPage <= 1}
-				title="上一页"
 				aria-label="上一页"
+				title="上一页"
 			>
 				<ChevronLeft className="size-4" />
 			</Button>
@@ -72,8 +72,8 @@ export function PdfToolbar({
 				variant="ghost"
 				onClick={onNextPage}
 				disabled={currentPage >= numPages}
-				title="下一页"
 				aria-label="下一页"
+				title="下一页"
 			>
 				<ChevronRight className="size-4" />
 			</Button>
@@ -87,8 +87,8 @@ export function PdfToolbar({
 				variant="ghost"
 				onClick={onZoomOut}
 				disabled={scale <= 0.5}
-				title="缩小"
 				aria-label="缩小"
+				title="缩小"
 			>
 				<Minus className="size-4" />
 			</Button>
@@ -107,8 +107,8 @@ export function PdfToolbar({
 				variant="ghost"
 				onClick={onZoomIn}
 				disabled={scale >= 3}
-				title="放大"
 				aria-label="放大"
+				title="放大"
 			>
 				<Plus className="size-4" />
 			</Button>
@@ -118,8 +118,8 @@ export function PdfToolbar({
 				size="sm"
 				variant="ghost"
 				onClick={onResetZoom}
-				title="实际大小"
 				aria-label="实际大小"
+				title="实际大小"
 			>
 				<Maximize className="size-4" />
 			</Button>
@@ -133,8 +133,8 @@ export function PdfToolbar({
 					size="sm"
 					variant="ghost"
 					onClick={onDownload}
-					title="下载 PDF"
 					aria-label="下载 PDF"
+					title="下载 PDF"
 				>
 					<Download className="size-4" />
 				</Button>

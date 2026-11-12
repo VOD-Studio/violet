@@ -26,6 +26,7 @@ import {
 	ConfirmDialog,
 	DataTable,
 	exportToCsv,
+	iconProps,
 	SearchInput,
 	Select,
 	SelectContent,
@@ -294,7 +295,7 @@ function AdminUsers() {
 											}}
 											aria-label={`编辑用户 ${row.username}`}
 										>
-											<Pencil className="size-3.5" />
+											<Pencil {...iconProps(14)} />
 										</Button>
 									</span>
 								</TooltipTrigger>
@@ -316,7 +317,7 @@ function AdminUsers() {
 											}}
 											aria-label={`管理徽章 ${row.username}`}
 										>
-											<BadgeCheck className="size-3.5" />
+											<BadgeCheck {...iconProps(14)} />
 										</Button>
 									</span>
 								</TooltipTrigger>
@@ -338,7 +339,7 @@ function AdminUsers() {
 												}}
 												aria-label={`恢复用户 ${row.username}`}
 											>
-												<ArchiveRestore className="size-3.5" />
+												<ArchiveRestore {...iconProps(14)} />
 											</Button>
 										</span>
 									</TooltipTrigger>
@@ -362,7 +363,7 @@ function AdminUsers() {
 												}}
 												aria-label={`注销用户 ${row.username}`}
 											>
-												<Trash2 className="size-3.5" />
+												<Trash2 {...iconProps(14)} />
 											</Button>
 										</span>
 									</TooltipTrigger>
@@ -388,7 +389,7 @@ function AdminUsers() {
 											}}
 											aria-label={`合并用户 ${row.username}`}
 										>
-											<Merge className="size-3.5" />
+											<Merge {...iconProps(14)} />
 										</Button>
 									</span>
 								</TooltipTrigger>
@@ -409,7 +410,7 @@ function AdminUsers() {
 				action={
 					<PermissionGuard permission="user:list">
 						<Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-							<Plus className="size-3.5" />
+							<Plus {...iconProps(14)} />
 							创建用户
 						</Button>
 					</PermissionGuard>
@@ -481,7 +482,7 @@ function AdminUsers() {
 							onClick={() => refetch()}
 							disabled={isLoading}
 						>
-							<RefreshCw className="size-3.5" />
+							<RefreshCw {...iconProps(14)} />
 							刷新
 						</Button>
 						<Button
@@ -492,7 +493,7 @@ function AdminUsers() {
 								toast.success("已导出当前页 CSV");
 							}}
 						>
-							<Download className="size-3.5" />
+							<Download {...iconProps(14)} />
 							导出 CSV
 						</Button>
 					</div>
@@ -535,7 +536,7 @@ function AdminUsers() {
 										selectedHasProtected
 									}
 								>
-									<Trash2 className="size-3.5" />
+									<Trash2 {...iconProps(14)} />
 									禁用
 								</Button>
 							</PermissionGuard>
@@ -550,7 +551,7 @@ function AdminUsers() {
 									}
 								>
 									<SelectTrigger controlSize="sm" className="w-40">
-										<UserCog className="size-3.5 mr-1" />
+										<UserCog {...iconProps(14, "mr-1")} />
 										修改角色
 									</SelectTrigger>
 									<SelectContent>

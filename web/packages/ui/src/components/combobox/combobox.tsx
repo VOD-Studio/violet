@@ -28,6 +28,7 @@ import {
 	PickerPanel,
 } from "../../lib/picker-panel";
 import { type ListboxItem, type UseListboxResult, useListbox } from "../../lib/use-listbox";
+import { iconProps } from "../icons";
 import { Spinner } from "../indicator";
 import { type InputVariantProps, inputVariants } from "../input/styles";
 
@@ -767,7 +768,7 @@ export function Combobox({
 						onBlur={closeOnBlur}
 						onClick={() => clear()}
 					>
-						<X aria-hidden="true" />
+						<X {...iconProps(14)} aria-hidden="true" />
 					</button>
 				) : null}
 				<span role="status" className="v-combobox__live">

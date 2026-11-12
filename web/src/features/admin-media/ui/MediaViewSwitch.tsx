@@ -1,11 +1,11 @@
-import { Segmented, type SegmentedItem } from "@violet/ui";
+import { iconProps, Segmented, type SegmentedItem } from "@violet/ui";
 import { LayoutGrid, Table } from "lucide-react";
 
 export type MediaViewMode = "grid" | "table";
 
 const SEGMENTS: SegmentedItem<MediaViewMode>[] = [
-	{ value: "grid", icon: <LayoutGrid size={14} />, label: "网格" },
-	{ value: "table", icon: <Table size={14} />, label: "表格" },
+	{ value: "grid", icon: <LayoutGrid {...iconProps(14)} />, label: "网格" },
+	{ value: "table", icon: <Table {...iconProps(14)} />, label: "表格" },
 ];
 
 export interface MediaViewSwitchProps {

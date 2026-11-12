@@ -4,6 +4,7 @@
  * 在播放器下方展示分辨率、时长、体积、编码等信息（传入 metadata 时显示）。
  */
 
+import { iconProps } from "@violet/ui";
 import { Clock, HardDrive, Hash, Monitor } from "lucide-react";
 import type { VideoMetadata } from "../types/video-preview-types";
 import { formatBytes, formatTime } from "../utils/format";
@@ -46,7 +47,7 @@ export function VideoInfo({ metadata, duration }: VideoInfoProps) {
 		<div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-white/10 bg-black px-3 py-2 text-xs text-white/60">
 			{items.map(({ icon: Icon, label, value }) => (
 				<span key={label} className="flex items-center gap-1">
-					<Icon className="size-3" />
+					<Icon {...iconProps(12)} />
 					<span className="text-white/40">{label}:</span>
 					<span className="font-medium text-white">{value}</span>
 				</span>

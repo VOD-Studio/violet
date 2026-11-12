@@ -118,11 +118,6 @@
 	letter-spacing: 0.04em;
 }
 
-.openHint svg {
-	width: 0.78rem;
-	height: 0.78rem;
-}
-
 @media (prefers-reduced-motion: reduce) {
 	.trigger {
 		transition: none;

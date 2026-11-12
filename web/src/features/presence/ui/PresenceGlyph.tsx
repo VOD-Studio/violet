@@ -1,3 +1,4 @@
+import { iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { AppWindow, PanelTop, Pause } from "lucide-react";
 import type { PresenceActivity } from "../lib/presence";
@@ -24,5 +25,5 @@ export function PresenceGlyph({
 	}
 	const Icon =
 		activity.kind === "media" ? Pause : activity.kind === "application" ? AppWindow : PanelTop;
-	return <Icon aria-hidden="true" className={cn("size-3.5 shrink-0", className)} />;
+	return <Icon aria-hidden="true" {...iconProps(14, cn("shrink-0", className))} />;
 }

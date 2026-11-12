@@ -1,5 +1,5 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Button, CodeBlock, Segmented } from "@violet/ui";
+import { Button, CodeBlock, iconProps, Segmented } from "@violet/ui";
 import { cn } from "cn";
 import { ArrowUpRight, Check, Copy, X } from "lucide-react";
 import { type ComponentType, type ReactNode, useEffect, useRef, useState } from "react";
@@ -333,7 +333,7 @@ function ExternalLinks({ className }: { className?: string }) {
 						)}
 					>
 						{link.label}
-						<ArrowUpRight aria-hidden className="size-3" />
+						<ArrowUpRight aria-hidden {...iconProps(12)} />
 					</a>
 				</li>
 			))}

@@ -1,6 +1,14 @@
 import { useClientPagination } from "@features/admin-shared/ui/data-table";
 import { formatDate, formatDateTime } from "@shared/lib/date";
-import { Badge, Button, DataTable, type DataTableColumn, Spinner, Switch } from "@violet/ui";
+import {
+	Badge,
+	Button,
+	DataTable,
+	type DataTableColumn,
+	iconProps,
+	Spinner,
+	Switch,
+} from "@violet/ui";
 
 import { Database, RefreshCw } from "lucide-react";
 import { useState } from "react";
@@ -107,7 +115,7 @@ export function DatabaseStatusTab({ onUseQuery }: DatabaseStatusTabProps) {
 					{query.error?.message ?? "接口未返回状态数据"}
 				</p>
 				<Button variant="outline" size="sm" onClick={() => void query.refetch()}>
-					<RefreshCw className="size-3.5" />
+					<RefreshCw {...iconProps(14)} />
 					重试
 				</Button>
 			</div>
@@ -137,9 +145,7 @@ export function DatabaseStatusTab({ onUseQuery }: DatabaseStatusTabProps) {
 						disabled={query.isFetching}
 						onClick={() => void query.refetch()}
 					>
-						<RefreshCw
-							className={`size-3.5 ${query.isFetching ? "animate-spin" : ""}`}
-						/>
+						<RefreshCw {...iconProps(14, query.isFetching ? "animate-spin" : "")} />
 						刷新
 					</Button>
 				</div>

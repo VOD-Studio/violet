@@ -2,7 +2,7 @@ import { useChunkedUpload } from "@features/upload/hooks/use-chunked-upload";
 import { useFileSelection } from "@features/upload/hooks/use-file-selection";
 import { useUploadQueue } from "@features/upload/hooks/use-upload-queue";
 import { imageUrl } from "@shared/lib/image-url";
-import { Button, UploadDropzone, type UploadEntry, UploadQueue } from "@violet/ui";
+import { Button, iconProps, UploadDropzone, type UploadEntry, UploadQueue } from "@violet/ui";
 import { Upload } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -306,7 +306,7 @@ export function Uploader<T extends UploadResult>({
 			<div className={entry === "button" ? "flex flex-wrap items-center gap-2" : "space-y-2"}>
 				{entry === "button" ? (
 					<Button size="sm" disabled={selectionDisabled} onClick={open}>
-						<Upload className="size-3.5" aria-hidden="true" />
+						<Upload {...iconProps(14)} aria-hidden="true" />
 						{label ?? "上传文件"}
 					</Button>
 				) : (

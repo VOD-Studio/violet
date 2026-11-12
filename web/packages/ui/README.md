@@ -66,7 +66,7 @@ SearchInput 并入 input 单元，是 Input 加搜索图标、清除钮与防抖
 
 Button 的 `asChild` 保留子元素内容，禁用或加载时阻止交互；自定义 Link 必须透传 DOM 属性和 ref。公开契约以组件类型与测试为准；[陈列室展品](https://xunrua.top/ui?open=button)陈列各变体与尺寸的默认、加载与禁用态。
 
-图标从 `lucide-react` 导入，六档尺寸与线宽通过 `iconProps(size)` 统一指定；该入口及 Island / Timeline / Morph 三枚自绘图标由 `@violet/ui` 和 `@violet/ui/icons` 导出。显式档位不会被按钮、输入框、菜单或列表的默认图标样式覆盖。仅图标按钮由宿主提供 `aria-label`，不以 `title` 代替。[图标契约](docs/components/icons.md)列出六档位置与组合用法；独立消费验收的 `?preview=icons` 展示根入口和叶入口的实际控件组合。
+图标从 `lucide-react` 导入，六档尺寸与线宽通过 `iconProps(size, className)` 统一指定；该入口及 Island / Timeline / Morph 三枚自绘图标由 `@violet/ui` 和 `@violet/ui/icons` 导出。显式档位不会被按钮、输入框、菜单或列表的默认图标样式覆盖，宿主通过原生 `LucideProvider` 设置默认值。仅图标按钮由宿主提供 `aria-label`，不以 `title` 代替。[图标契约](docs/components/icons.md)列出六档位置与组合用法；[陈列室展品](https://xunrua.top/ui?open=icons)与独立消费验收的 `?preview=icons` 可检视实际组合，后者支持根入口与叶入口切换。
 
 `default` 与 `primary` 按钮都遵循当前方言的 `primary` / `primary-foreground`，悬停使用 `primary-hover`；`soft` 采用 `selected` / `selected-foreground`，`link` 使用 `link`。组件不会绕过方言直接读取品牌色阶。
 
@@ -118,6 +118,8 @@ Segmented 是带滑动指示器的分段控制：`orientation` 选横向或竖�
 `EmojiPickerPanel` 以 `groups`、`activeGroup` 和 `onSelect` 组合表情分组与网格，提供三种密度、方向键导航、悬停预览、不可用说明及加载/错误/空态。它不管理登录、请求、本机记录或浮层开关；宿主通过 Popover 或 MorphingPopover 承载。同源规格见[表情面板契约](docs/components/emoji-picker.md)，[展品](https://xunrua.top/ui?open=emoji-picker)覆盖最近使用、收藏上传与已回应状态。
 
 `ReactionBar` 受控展示人数与本人回应，复用名单 Tooltip、快捷选择和完整表情面板的 MorphingPopover 接力。宿主提供目录、最近记录、权限与请求；`maxSelected`、`collapseAfter` 分别控制本人上限与长集合折叠，失败回滚仍由宿主更新数据。从 `@violet/ui` 或 `@violet/ui/reaction` 导入，按需样式为 `@violet/ui/components/reaction.css`。见[回应条契约](docs/components/reaction.md)、[陈列室展品](https://xunrua.top/ui?open=reaction)及独立 consumer 的 `?preview=reaction`。
+
+`CommentHeader`、`CommentItem`、`CommentList` 与 `CommentReplies` 组合文章及推文的评论展示，排序、权限、回应请求和回复会话均由宿主持有。从 `@violet/ui` 或 `@violet/ui/comment` 导入，按需 CSS 为 `@violet/ui/components/comment.css`。见[评论契约](docs/components/comment.md)、[陈列室展品](https://xunrua.top/ui?open=comment)与独立 consumer 的 `?preview=comment`。
 
 `badge` 单元包含 `Tag`、`TagToggle`、`Badge`、`Count`、`Dot` 与 `BadgeAnchor`：Tag 给内容分类，TagToggle 是带 `aria-pressed` 的筛选标签，Badge 以 `tone` 表示记录状态且文字本身就是信息，Count 与 Dot 提示未读。胶囊 Count 与 Dot 对读屏隐藏，数量要写进宿主的可访问名称；为 0 时 Count 不渲染，超过 `max` 显示 `99+`。`avatar` 单元的 Avatar 在图片未到时呼吸占位、失败退回首字，`alt` 默认取 `name`，`alt=""` 表示装饰，在线状态与作者标记写进可访问名称；AvatarGroup 超出 `max` 折成「+N」，指针悬停时展开压叠，触屏不展开，减弱动态下直接切换。Kbd 渲染原生 `<kbd>`，一个组合键一个键帽，未传 `platform` 时水合后才按访客系统切换符号。`card` 单元保留 `Card*` 复合结构并新增相框卡 `CardFrame*`，只有 `CardFrameTitle asChild` 的链接承载点击并扩到整张卡；Separator 装饰用法为 `role="none"`，区块之间传 `decorative={false}` 得到 `<hr>`；Skeleton 默认 `aria-hidden`，只用凹陷色起伏，不加扫光。以上单元均从 `@violet/ui` 或同名叶子入口导入，按需 CSS 为 `@violet/ui/components/<name>.css`，[陈列室展品](https://xunrua.top/ui?open=badge)可逐态查看，独立 consumer 的 `?preview=display` 覆盖头像加载失败、计数、标签、键帽平台与相框卡点击。
 

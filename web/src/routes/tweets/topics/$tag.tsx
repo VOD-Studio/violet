@@ -1,6 +1,6 @@
 import TweetTimeline from "@features/tweets/ui/TweetTimeline";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { PageShell } from "@violet/ui";
+import { iconProps, PageShell } from "@violet/ui";
 import { ArrowLeft, Hash } from "lucide-react";
 
 function TopicTimelinePage() {
@@ -16,9 +16,9 @@ function TopicTimelinePage() {
 						<button
 							type="button"
 							onClick={() => navigate({ to: "/tweets" })}
-							className="inline-flex w-fit items-center gap-1.5 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+							className="inline-flex w-fit items-center gap-2 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
 						>
-							<ArrowLeft className="size-3.5" />
+							<ArrowLeft {...iconProps(14)} />
 							返回时间线
 						</button>
 

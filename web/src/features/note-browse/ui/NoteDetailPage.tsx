@@ -4,7 +4,7 @@ import { formatDate } from "@shared/lib/date";
 import { FloatingBack } from "@shared/ui/floating-back";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { Link } from "@tanstack/react-router";
-import { Empty, PageShell, Skeleton } from "@violet/ui";
+import { Empty, iconProps, PageShell, Skeleton } from "@violet/ui";
 import { ArrowLeft, Calendar, CircleCheck, Copy, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -60,7 +60,7 @@ export function NoteDetailPage({ noteId }: NoteDetailPageProps) {
 									to="/notes"
 									className="hover:text-foreground inline-flex items-center gap-1 font-semibold text-foreground/80 transition-colors"
 								>
-									<ArrowLeft className="size-3" />
+									<ArrowLeft {...iconProps(12)} />
 									<span>NOTES_INDEX</span>
 								</Link>
 								<span className="text-muted-foreground/40">/</span>
@@ -71,17 +71,17 @@ export function NoteDetailPage({ noteId }: NoteDetailPageProps) {
 
 							<div className="flex items-center gap-3 tabular-nums">
 								<span className="flex items-center gap-1 text-success font-medium">
-									<CircleCheck className="size-3" />
+									<CircleCheck {...iconProps(12)} />
 									RESOLVED
 								</span>
 								<span className="text-muted-foreground/40">|</span>
 								<button
 									type="button"
 									onClick={handleCopy}
-									className="hover:text-foreground inline-flex items-center gap-1 text-muted-foreground transition-colors"
+									className="hover:text-foreground inline-flex items-center gap-2 text-muted-foreground transition-colors"
 									title="复制此工单直达链接"
 								>
-									<Copy className="size-3" />
+									<Copy {...iconProps(12)} />
 									<span>{copied ? "COPIED" : "SHARE"}</span>
 								</button>
 							</div>
@@ -120,7 +120,7 @@ export function NoteDetailPage({ noteId }: NoteDetailPageProps) {
 								<div className="flex flex-wrap items-center justify-between gap-y-2 pt-1 font-mono text-[11px] text-muted-foreground/70">
 									<div className="flex items-center gap-3 tabular-nums">
 										<span className="flex items-center gap-1">
-											<Calendar className="size-3" />
+											<Calendar {...iconProps(12)} />
 											{formatDate(note.published_at)}
 										</span>
 										<span>•</span>
@@ -155,7 +155,7 @@ export function NoteDetailPage({ noteId }: NoteDetailPageProps) {
 							{/* 尾部验收签名章 */}
 							<footer className="mt-10 border-t border-edge-hairline pt-6">
 								<div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-									<div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
+									<div className="flex items-center gap-1 font-mono text-xs text-muted-foreground">
 										<ShieldCheck className="size-4 text-success" />
 										<span>VERIFIED_POSTMORTEM_ENTRY</span>
 									</div>
@@ -165,7 +165,12 @@ export function NoteDetailPage({ noteId }: NoteDetailPageProps) {
 										className="group inline-flex items-center gap-1 font-mono text-xs text-primary transition-colors hover:underline"
 									>
 										<span>INDEX_OVERVIEW</span>
-										<ArrowLeft className="size-3 rotate-180 transition-transform group-hover:translate-x-1" />
+										<ArrowLeft
+											{...iconProps(
+												12,
+												"rotate-180 transition-transform group-hover:translate-x-1",
+											)}
+										/>
 									</Link>
 								</div>
 							</footer>

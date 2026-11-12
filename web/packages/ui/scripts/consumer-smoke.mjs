@@ -52,7 +52,12 @@ try {
 		name: "violet-ui-independent-consumer",
 		private: true,
 		type: "module",
-		dependencies: { "@violet/ui": `file:${tarball}`, react: installedVersion("react"), "react-dom": installedVersion("react-dom") },
+		dependencies: {
+			"@violet/ui": `file:${tarball}`,
+			react: installedVersion("react"),
+			"react-dom": installedVersion("react-dom"),
+			"lucide-react": installedVersion("lucide-react"),
+		},
 		devDependencies: Object.fromEntries(tools.map((name) => [name, installedVersion(name)])),
 		pnpm: { overrides: Object.fromEntries(Object.keys(packageJson.dependencies).map((name) => [name, installedVersion(name)])) },
 	};
@@ -62,6 +67,8 @@ try {
 	mkdirSync(resolve(consumerRoot, "src"));
 	const fixtureRoot = resolve(packageRoot, "fixtures/consumer");
 	for (const [fixture, destination] of [
+		["comment.tsx", "src/comment.tsx"],
+		["comment-ssr.tsx", "comment-ssr.tsx"],
 		["code-block.tsx", "src/code-block.tsx"],
 		["code-block-types.tsx", "code-block-types.tsx"],
 		["code-block-ssr.tsx", "code-block-ssr.tsx"],
@@ -92,10 +99,12 @@ try {
 	for (const [name, entry, symbol] of [
 		["root-code-block", "@violet/ui", "CodeBlock"],
 		["leaf-code-block", "@violet/ui/code-block", "CodeBlock"],
-		["root-icons", "@violet/ui", "IslandIcon"],
-		["leaf-icons", "@violet/ui/icons", "IslandIcon"],
-		["root-icon-props", "@violet/ui", "iconProps"],
-		["leaf-icon-props", "@violet/ui/icons", "iconProps"],
+		["root-icons", "@violet/ui", "iconProps"],
+		["leaf-icons", "@violet/ui/icons", "iconProps"],
+		["root-drawn-icon", "@violet/ui", "IslandIcon"],
+		["leaf-drawn-icon", "@violet/ui/icons", "IslandIcon"],
+		["root-comment", "@violet/ui", "CommentItem"],
+		["leaf-comment", "@violet/ui/comment", "CommentItem"],
 		["root-reaction", "@violet/ui", "ReactionBar"],
 		["leaf-reaction", "@violet/ui/reaction", "ReactionBar"],
 		["root-upload-queue", "@violet/ui", "UploadQueue"],
@@ -118,6 +127,7 @@ try {
 	const cssText = {};
 	for (const [name, imports] of [
 		["code-block", ["tokens.css", "components/code-block.css"]],
+		["comment", ["tokens.css", "components/comment.css"]],
 		["reaction", ["tokens.css", "components/reaction.css"]],
 		["alert", ["tokens.css", "components/alert.css"]],
 		["emoji-picker", ["tokens.css", "components/emoji-picker.css"]], ["sortable", ["tokens.css", "components/sortable.css"]], ["breadcrumbs", ["tokens.css", "components/breadcrumbs.css"]], ["chart", ["tokens.css", "components/chart.css"]], ["empty", ["tokens.css", "components/empty.css"]], ["page-header", ["tokens.css", "components/page-header.css"]], ["progress", ["tokens.css", "components/progress.css"]], ["steps", ["tokens.css", "components/steps.css"]], ["upload", ["tokens.css", "components/upload.css"]], ["all", ["tokens.css", "classes.css"]], ["button", ["tokens.css", "components/button.css"]], ["checkbox", ["tokens.css", "components/checkbox.css"]], ["input", ["tokens.css", "components/input.css"]], ["select", ["tokens.css", "components/select.css"]], ["combobox", ["tokens.css", "components/combobox.css"]], ["tag-input", ["tokens.css", "components/tag-input.css"]], ["cascader", ["tokens.css", "components/cascader.css"]], ["tree-select", ["tokens.css", "components/tree-select.css"]], ["field", ["tokens.css", "components/field.css"]], ["image-pixel-reveal", ["tokens.css", "components/image-pixel-reveal.css"]], ["upload-tile", ["tokens.css", "components/upload-tile.css"]], ["dropdown", ["tokens.css", "components/dropdown.css"]], ["segmented", ["tokens.css", "components/segmented.css"]], ["link-card", ["tokens.css", "components/link-card.css"]], ["avatar", ["tokens.css", "components/avatar.css"]], ["badge", ["tokens.css", "components/badge.css"]], ["kbd", ["tokens.css", "components/kbd.css"]], ["card", ["tokens.css", "components/card.css"]], ["separator", ["tokens.css", "components/separator.css"]], ["skeleton", ["tokens.css", "components/skeleton.css"]], ["switch", ["tokens.css", "components/switch.css"]], ["radio", ["tokens.css", "components/radio.css"]], ["toggle-group", ["tokens.css", "components/toggle-group.css"]], ["tabs", ["tokens.css", "components/tabs.css"]], ["popover", ["tokens.css", "components/popover.css"]], ["hover-card", ["tokens.css", "components/hover-card.css"]], ["tooltip", ["tokens.css", "components/tooltip.css"]], ["dropdown-menu", ["tokens.css", "components/dropdown-menu.css"]], ["context-menu", ["tokens.css", "components/context-menu.css"]], ["sonner", ["tokens.css", "components/sonner.css"]], ["dialog", ["tokens.css", "components/dialog.css"]], ["confirm-dialog", ["tokens.css", "components/confirm-dialog.css"]], ["prompt-dialog", ["tokens.css", "components/prompt-dialog.css"]], ["sheet", ["tokens.css", "components/sheet.css"]], ["drawer", ["tokens.css", "components/drawer.css"]], ["command", ["tokens.css", "components/command.css"]], ["morphing-popover", ["tokens.css", "components/morphing-popover.css"]], ["date-picker", ["tokens.css", "components/date-picker.css"]], ["number-input", ["tokens.css", "components/number-input.css"]], ["slider", ["tokens.css", "components/slider.css"]], ["color-picker", ["tokens.css", "components/color-picker.css"]], ["otp", ["tokens.css", "components/otp.css"]], ["resend-button", ["tokens.css", "components/resend-button.css"]], ["accordion", ["tokens.css", "components/accordion.css"]], ["list", ["tokens.css", "components/list.css"]], ["tree", ["tokens.css", "components/tree.css"]], ["pagination", ["tokens.css", "components/pagination.css"]], ["table", ["tokens.css", "components/table.css"]], ["annotation", ["tokens.css", "components/annotation.css"]], ["mention", ["tokens.css", "components/mention.css"]], ["quote-card", ["tokens.css", "components/quote-card.css"]], ["image-grid", ["tokens.css", "components/image-grid.css"]]
@@ -151,6 +161,7 @@ try {
 	assert.match(cssText["link-card"], /\.v-link-card\s*\{/);
 	assert.match(cssText.all, /\.v-link-card\s*\{/);
 	for (const [name, ...patterns] of [
+		["comment", /\.v-comment\s*[,{]/, /\.v-segmented\s*[,{]/],
 		["reaction", /\.v-reaction\s*[,{]/, /\.v-morph\s*[,{]/, /\.v-list-highlight\s*[,{]/, /\.v-tooltip\s*[,{]/],
 		["alert", /\.v-alert\s*\{/, /\.v-alert__icon\s*\{/],
 		["breadcrumbs", /\.v-breadcrumbs\s*\{/, /\.v-breadcrumbs__more\s*\{/, /\.v-dropdown-menu__content\s*\{/], ["chart", /\.v-chart\s*\{/, /\.v-stat__value\s*\{/, /\.v-mini-bars__bar\s*\{/], ["empty", /\.v-empty\s*\{/, /\.v-empty__description\s*\{/], ["page-header", /\.v-page-header\s*\{/, /\.v-page-header\[data-compact\]\s*\{/], ["progress", /\.v-progress\s*\{/, /\.v-progress-ring__fill\s*\{/], ["steps", /\.v-steps\s*\{/, /\.v-steps__dot\s*\{/]

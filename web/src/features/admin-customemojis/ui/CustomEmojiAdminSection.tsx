@@ -12,6 +12,7 @@ import {
 	Button,
 	ConfirmDialog,
 	DataTable,
+	iconProps,
 	SearchInput,
 	Tooltip,
 	TooltipContent,
@@ -96,7 +97,7 @@ export function CustomEmojiAdminSection() {
 								onClick={() => setDeleting(row)}
 								aria-label={`下架表情 ${row.name}`}
 							>
-								<Trash2 className="size-3.5" />
+								<Trash2 {...iconProps(14)} />
 							</Button>
 						</span>
 					</TooltipTrigger>

@@ -14,6 +14,7 @@ import { codeBlockExhibit } from "./code-block";
 import { colorPickerExhibit } from "./color-picker";
 import { comboboxExhibit } from "./combobox";
 import { commandExhibit } from "./command";
+import { commentExhibit } from "./comment";
 import { datePickerExhibit } from "./date-picker";
 import { dialogExhibit } from "./dialog";
 import { drawerExhibit } from "./drawer";
@@ -128,6 +129,7 @@ export const EXHIBITS: Exhibit[] = [
 	alertExhibit,
 	chartExhibit,
 	annotationExhibit,
+	commentExhibit,
 	quoteCardExhibit,
 	imageGridExhibit,
 	codeBlockExhibit,

@@ -6,7 +6,7 @@ import {
 } from "@features/music-player/api/queries";
 import { createMusicSource } from "@features/music-player/lib/source";
 import type { MusicPlaybackMode } from "@features/music-player/model/types";
-import { Button } from "@violet/ui";
+import { Button, iconProps } from "@violet/ui";
 import { getPlayer, type Player } from "@violetjs/kite-player";
 import { KitePlayer } from "@violetjs/kite-player/react";
 import { RotateCcw } from "lucide-react";
@@ -31,7 +31,7 @@ function PlayerFailure({ error, loading, onRetry }: PlayerFailureProps) {
 				size="sm"
 				variant="outline"
 				loading={loading}
-				leftIcon={<RotateCcw className="size-3.5" />}
+				leftIcon={<RotateCcw {...iconProps(14)} />}
 				onClick={onRetry}
 			>
 				重试

@@ -67,9 +67,18 @@
 	}
 
 	.v-tag__icon > :where(svg) {
+		pointer-events: none;
+	}
+
+	.v-tag__icon > :where(svg:not(.v-icon)),
+	.v-badge__icon > :where(svg:not(.v-icon)) {
 		inline-size: 0.75rem;
 		block-size: 0.75rem;
-		pointer-events: none;
+	}
+
+	.v-tag__icon > :where(svg.lucide:not(.v-icon)),
+	.v-badge__icon > :where(svg.lucide:not(.v-icon)) {
+		stroke-width: 2;
 	}
 
 	/* × 是独立按钮：18px 点击区，默认偏淡，悬停与聚焦才清楚 */
@@ -184,11 +193,6 @@
 		display: inline-flex;
 		flex-shrink: 0;
 		color: var(--v-badge-dot);
-	}
-
-	.v-badge__icon > :where(svg) {
-		inline-size: 0.75rem;
-		block-size: 0.75rem;
 	}
 
 	.v-badge--ok {

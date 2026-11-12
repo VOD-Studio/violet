@@ -4,7 +4,7 @@ import { useCreateComment, useSendCommentCode } from "@features/comments/api/mut
 import type { Comment, CreateComment } from "@features/comments/model/types";
 import { ApiError } from "@shared/api/error";
 import type { PictureInput } from "@shared/ui/rich-text-input/RichTextInput";
-import { Button, Field, Input, InputOTP, ResendButton, Spinner } from "@violet/ui";
+import { Button, Field, Input, InputOTP, iconProps, ResendButton, Spinner } from "@violet/ui";
 import { MailCheck, Send } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -253,7 +253,7 @@ export function CommentForm({
 								{createComment.isPending ? (
 									<Spinner size={16} aria-hidden="true" />
 								) : (
-									<Send className="size-3.5" />
+									<Send {...iconProps(14)} />
 								)}
 							</button>
 						)}

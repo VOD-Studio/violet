@@ -1,5 +1,6 @@
 import type { UserDTO } from "@entities/user/model/types";
 import { formatDate } from "@shared/lib/date";
+import { iconProps } from "@violet/ui";
 import {
 	CalendarDays,
 	FingerprintPattern,
@@ -35,12 +36,12 @@ export const AccountInfoSection = ({ user }: AccountInfoSectionProps) => {
 					<span className="truncate">{user.email}</span>
 					{user.email_verified ? (
 						<span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-							<ShieldCheck className="size-3" />
+							<ShieldCheck {...iconProps(12)} />
 							已验证
 						</span>
 					) : (
 						<span className="inline-flex items-center gap-1 text-xs text-warning">
-							<TriangleAlert className="size-3" />
+							<TriangleAlert {...iconProps(12)} />
 							未验证
 						</span>
 					)}

@@ -1,5 +1,5 @@
 import type { SeriesChapterDTO } from "@features/admin-series/model/types";
-import { Badge, Button } from "@violet/ui";
+import { Badge, Button, iconProps } from "@violet/ui";
 
 import { Link2, Trash2 } from "lucide-react";
 
@@ -18,7 +18,7 @@ export function SortableChapterRow({ chapter, onRemove }: SortableChapterRowProp
 			<span className="min-w-0 flex-1">
 				<span className="block truncate text-sm font-medium">{chapter.title}</span>
 				<span className="text-muted-foreground flex items-center gap-1 truncate font-mono text-xs">
-					<Link2 className="size-3" />
+					<Link2 {...iconProps(12)} />
 					{chapter.slug}
 				</span>
 			</span>

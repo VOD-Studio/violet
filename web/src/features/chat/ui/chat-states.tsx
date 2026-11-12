@@ -2,7 +2,7 @@
  * 空态与骨架屏：无选中会话、会话列表空、消息空与加载占位。
  */
 
-import { Button } from "@violet/ui";
+import { Button, iconProps } from "@violet/ui";
 
 import { cn } from "cn";
 import { Image as ImageIcon, MessageCircle, Plus } from "lucide-react";
@@ -41,7 +41,7 @@ export function ConversationEmpty({ onCreate }: { onCreate: () => void }) {
 				size="sm"
 				variant="outline"
 			>
-				<Plus className="mr-1 size-3.5" />
+				<Plus {...iconProps(14)} />
 				新建会话
 			</Button>
 		</div>

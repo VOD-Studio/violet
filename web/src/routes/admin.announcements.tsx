@@ -18,6 +18,7 @@ import {
 	Button,
 	ConfirmDialog,
 	DataTable,
+	iconProps,
 	Tag,
 	Tooltip,
 	TooltipContent,
@@ -160,7 +161,7 @@ function AdminAnnouncementsPage() {
 										onClick={() => handleEdit(row)}
 										aria-label={`编辑公告 ${row.title}`}
 									>
-										<Pencil className="size-3.5" />
+										<Pencil {...iconProps(14)} />
 									</Button>
 								</span>
 							</TooltipTrigger>
@@ -179,7 +180,7 @@ function AdminAnnouncementsPage() {
 										onClick={() => handleDelete(row)}
 										aria-label={`删除公告 ${row.title}`}
 									>
-										<Trash2 className="size-3.5" />
+										<Trash2 {...iconProps(14)} />
 									</Button>
 								</span>
 							</TooltipTrigger>
@@ -199,7 +200,7 @@ function AdminAnnouncementsPage() {
 				action={
 					<PermissionGuard permission="announcement:manage">
 						<Button size="sm" onClick={handleCreate}>
-							<Plus className="size-3.5" />
+							<Plus {...iconProps(14)} />
 							创建公告
 						</Button>
 					</PermissionGuard>

@@ -3,7 +3,7 @@ import { toAvatarItem } from "@shared/lib/avatar-user";
 import { formatDate } from "@shared/lib/date";
 import { BackLink } from "@shared/ui/back-link";
 import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
-import { AvatarGroup } from "@violet/ui";
+import { AvatarGroup, iconProps } from "@violet/ui";
 import { Calendar, ExternalLink, Eye } from "lucide-react";
 import type { ReactNode } from "react";
 import { SharedElement } from "@/shared/lib/view-transition";
@@ -45,9 +45,9 @@ export function PostDetailHeader({ post, viewCount, children }: PostDetailHeader
 						href={post.canonical_url}
 						target="_blank"
 						rel="noopener noreferrer external"
-						className="mb-5 inline-flex items-center gap-1.5 font-mono text-sm text-muted-foreground transition-colors hover:text-foreground"
+						className="mb-5 inline-flex items-center gap-1 font-mono text-sm text-muted-foreground transition-colors hover:text-foreground"
 					>
-						<ExternalLink className="size-3.5" />
+						<ExternalLink {...iconProps(14)} />
 						转载自 · {sourceHostname(post.canonical_url)}
 					</a>
 				) : null}
@@ -65,7 +65,7 @@ export function PostDetailHeader({ post, viewCount, children }: PostDetailHeader
 					) : null}
 					{post.published_at ? (
 						<span className="inline-flex items-center gap-1.5">
-							<Calendar className="size-3.5" />
+							<Calendar {...iconProps(14)} />
 							<span>
 								{formatDate(post.published_at, "long-date", "—", "Asia/Shanghai")}
 							</span>
@@ -73,12 +73,12 @@ export function PostDetailHeader({ post, viewCount, children }: PostDetailHeader
 						</span>
 					) : post.edited_at ? (
 						<span className="inline-flex items-center gap-1.5">
-							<Calendar className="size-3.5" />
+							<Calendar {...iconProps(14)} />
 							<RevisionChip post={post} standalone />
 						</span>
 					) : null}
 					<span className="inline-flex items-center gap-1.5">
-						<Eye className="size-3.5" />
+						<Eye {...iconProps(14)} />
 						{viewCount} 次阅读
 					</span>
 				</div>

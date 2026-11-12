@@ -1,0 +1,370 @@
+import {
+	Avatar,
+	Button,
+	CommentHeader,
+	CommentItem,
+	CommentList,
+	CommentReplies,
+	type CommentSort,
+	type CommentStatus,
+	type EmojiPickerItem,
+	ReactionBar,
+	type ReactionItem,
+	Textarea,
+} from "@violet/ui";
+import {
+	CommentHeader as LeafHeader,
+	CommentItem as LeafItem,
+	CommentList as LeafList,
+	CommentReplies as LeafReplies,
+} from "@violet/ui/comment";
+import { ReactionBar as LeafReactions } from "@violet/ui/reaction";
+import { type ReactNode, useEffect, useRef, useState } from "react";
+
+const choices: EmojiPickerItem[] = [
+	{ id: "heart", name: "喜欢", content: "❤️", placeholder: "[喜欢]" },
+	{ id: "think", name: "思考", content: "🤔", placeholder: "[思考]" },
+	{ id: "clap", name: "鼓掌", content: "👏", placeholder: "[鼓掌]" },
+];
+interface Entry {
+	id: string;
+	parent?: string;
+	author: string;
+	body: string;
+	created: number;
+	isAuthor?: boolean;
+	replyTo?: string;
+	status: CommentStatus;
+	reactions: ReactionItem[];
+}
+const initial: Entry[] = [
+	{
+		id: "author",
+		author: "林间",
+		body: "把留白留给读者，把回应留在文字旁。",
+		created: 1,
+		isAuthor: true,
+		status: "visible",
+		reactions: choices.map((choice, index) => ({
+			id: choice.id,
+			name: choice.name,
+			content: choice.content,
+			count: 8 - index,
+			self: false,
+			recentUsers: [{ name: "山野" }, { name: "雾里" }],
+		})),
+	},
+	{
+		id: "latest",
+		author: "山野",
+		created: 2,
+		status: "visible",
+		body: "窄屏也应完整呈现这段讨论，不截断正文。\nhttps://example.com/a-deliberately-long-unbroken-comment-reference-for-small-screens",
+		reactions: [
+			{
+				id: "heart",
+				name: "喜欢",
+				content: "❤️",
+				count: 1,
+				self: false,
+				recentUsers: [{ name: "林间" }],
+			},
+		],
+	},
+	{
+		id: "reply",
+		parent: "author",
+		author: "雾里",
+		body: "谢谢分享，读完还想再看一遍。",
+		created: 3,
+		replyTo: "林间",
+		status: "visible",
+		reactions: [],
+	},
+];
+
+function Composer({ author, onSubmit }: { author: string; onSubmit: (body: string) => void }) {
+	const [body, setBody] = useState("");
+	return (
+		<form
+			onSubmit={(event) => {
+				event.preventDefault();
+				if (body.trim()) {
+					onSubmit(body.trim());
+				}
+			}}
+		>
+			<Textarea
+				aria-label={`回复 ${author}`}
+				value={body}
+				onChange={(event) => setBody(event.target.value)}
+				rows={2}
+				maxLength={200}
+				required
+			/>
+			<Button type="submit" disabled={!body.trim()}>
+				发送回复
+			</Button>
+		</form>
+	);
+}
+
+/** 根入口与叶子入口切换消费同一份受控数据，失败只回滚目标评论的回应。 */
+export function CommentConsumer() {
+	const [entries, setEntries] = useState(initial);
+	const [sort, setSort] = useState<CommentSort>("latest");
+	const [replyId, setReplyId] = useState<string | null>(null);
+	const [leaf, setLeaf] = useState(false);
+	const [tweet, setTweet] = useState(false);
+	const [visitor, setVisitor] = useState(false);
+	const [reduced, setReduced] = useState(false);
+	const [width, setWidth] = useState("390");
+	const [rejectNext, setRejectNext] = useState(false);
+	const [busy, setBusy] = useState(false);
+	const [message, setMessage] = useState("");
+	const timer = useRef<number | undefined>(undefined);
+	const sequence = useRef(10);
+	useEffect(() => () => window.clearTimeout(timer.current), []);
+	const Header = leaf ? LeafHeader : CommentHeader;
+	const Item = leaf ? LeafItem : CommentItem;
+	const List = leaf ? LeafList : CommentList;
+	const Replies = leaf ? LeafReplies : CommentReplies;
+	const Reactions = leaf ? LeafReactions : ReactionBar;
+	const title = tweet ? "推文讨论" : "文章评论";
+	const roots = entries
+		.filter((entry) => !entry.parent)
+		.sort((left, right) => {
+			if (sort === "hot") {
+				const difference =
+					right.reactions.reduce((sum, item) => sum + item.count, 0) -
+					left.reactions.reduce((sum, item) => sum + item.count, 0);
+				if (difference !== 0) {
+					return difference;
+				}
+			}
+			return right.created - left.created;
+		});
+	const change = (entry: Entry, id: string, add: boolean) => {
+		if (busy || visitor) {
+			return;
+		}
+		const choice = choices.find((item) => item.id === id);
+		const current = entry.reactions.find((item) => item.id === id);
+		if (!choice || (add && current?.self)) {
+			return;
+		}
+		const self = !current?.self;
+		const count = (current?.count ?? 0) + (self ? 1 : -1);
+		const next = entry.reactions.filter((item) => item.id !== id);
+		if (count > 0) {
+			const recentUsers = (current?.recentUsers ?? []).filter((user) => !user.self);
+			if (self) {
+				recentUsers.unshift({ name: "本机用户", self: true });
+			}
+			const replacement = {
+				id,
+				name: choice.name,
+				content: choice.content,
+				count,
+				self,
+				recentUsers: recentUsers.slice(0, count),
+			};
+			const index = entry.reactions.findIndex((item) => item.id === id);
+			if (index < 0) {
+				next.push(replacement);
+			} else {
+				next.splice(index, 0, replacement);
+			}
+		}
+		setEntries((all) =>
+			all.map((item) => (item.id === entry.id ? { ...item, reactions: next } : item)),
+		);
+		setMessage("");
+		if (rejectNext) {
+			setRejectNext(false);
+			setBusy(true);
+			timer.current = window.setTimeout(() => {
+				setEntries((all) =>
+					all.map((item) =>
+						item.id === entry.id ? { ...item, reactions: entry.reactions } : item,
+					),
+				);
+				setBusy(false);
+				setMessage("回应没有成功，已恢复原来的表情与人数。");
+			}, 420);
+		}
+	};
+	const submit = (target: Entry, body: string) => {
+		sequence.current += 1;
+		setEntries((all) => [
+			...all,
+			{
+				id: `local-${sequence.current}`,
+				parent: target.parent ?? target.id,
+				author: "本机用户",
+				body,
+				created: sequence.current,
+				replyTo: target.author,
+				status: "visible",
+				reactions: [],
+			},
+		]);
+		setReplyId(null);
+		setMessage(`已回复 @${target.author}`);
+	};
+	const renderEntry = (entry: Entry, index = 0): ReactNode => {
+		const children = entries.filter((item) => item.parent === entry.id);
+		let replies: ReactNode;
+		if (children.length > 0) {
+			replies = (
+				<Replies aria-label={`${entry.author}的回复`}>{children.map(renderEntry)}</Replies>
+			);
+		}
+		let replyForm: ReactNode;
+		if (replyId === entry.id && !visitor) {
+			replyForm = (
+				<Composer
+					key={entry.id}
+					author={entry.author}
+					onSubmit={(body) => submit(entry, body)}
+				/>
+			);
+		}
+		return (
+			<li key={entry.id}>
+				<Item
+					author={entry.author}
+					avatar={<Avatar name={entry.author} alt="" />}
+					dateTime={new Date(Date.UTC(2026, 10, 12, 1, entry.created)).toISOString()}
+					time={`${entry.created} 分钟前`}
+					isAuthor={entry.isAuthor}
+					reply={Boolean(entry.parent)}
+					replyTo={entry.replyTo}
+					status={entry.status}
+					enterDelay={entry.parent ? index * 40 : 0}
+					onReply={
+						visitor
+							? undefined
+							: () =>
+									setReplyId((current) =>
+										current === entry.id ? null : entry.id,
+									)
+					}
+					replyForm={replyForm}
+					replies={replies}
+					actions={
+						<Reactions
+							items={entry.reactions}
+							recentItems={choices}
+							disabled={busy}
+							onToggle={visitor ? undefined : (id) => change(entry, id, false)}
+							onAdd={visitor ? undefined : (id) => change(entry, id, true)}
+						/>
+					}
+				>
+					{entry.body}
+				</Item>
+			</li>
+		);
+	};
+	return (
+		<main data-motion={reduced ? "reduce" : undefined} style={{ padding: 12 }}>
+			<h1>评论 · 独立安装包</h1>
+			<fieldset style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 24 }}>
+				<legend>真实交互条件</legend>
+				<label>
+					<input
+						type="checkbox"
+						checked={leaf}
+						onChange={(event) => setLeaf(event.target.checked)}
+					/>
+					叶子入口
+				</label>
+				<label>
+					<input
+						type="checkbox"
+						checked={tweet}
+						onChange={(event) => setTweet(event.target.checked)}
+					/>
+					推文场景
+				</label>
+				<label>
+					<input
+						type="checkbox"
+						checked={visitor}
+						onChange={(event) => {
+							setVisitor(event.target.checked);
+							setReplyId(null);
+						}}
+					/>
+					匿名只读
+				</label>
+				<label>
+					<input
+						type="checkbox"
+						checked={reduced}
+						onChange={(event) => setReduced(event.target.checked)}
+					/>
+					减弱动态
+				</label>
+				<label>
+					<input
+						type="checkbox"
+						checked={rejectNext}
+						onChange={(event) => setRejectNext(event.target.checked)}
+					/>
+					下一次回应失败
+				</label>
+				<label>
+					内容宽度
+					<select value={width} onChange={(event) => setWidth(event.target.value)}>
+						<option value="320">320px</option>
+						<option value="390">390px</option>
+						<option value="600">600px</option>
+					</select>
+				</label>
+				<label>
+					最新一条的审核状态
+					<select
+						value={entries.find((entry) => entry.id === "latest")?.status}
+						onChange={(event) => {
+							const status = event.currentTarget.value;
+							if (
+								status !== "visible" &&
+								status !== "pending" &&
+								status !== "deleted"
+							) {
+								return;
+							}
+							setEntries((all) =>
+								all.map((entry) =>
+									entry.id === "latest" ? { ...entry, status } : entry,
+								),
+							);
+							setReplyId(null);
+						}}
+					>
+						<option value="visible">公开</option>
+						<option value="pending">待审核</option>
+						<option value="deleted">已删除</option>
+					</select>
+				</label>
+				<Button onClick={() => document.documentElement.classList.toggle("dark")}>
+					切换明暗
+				</Button>
+			</fieldset>
+			<section aria-label={title} style={{ width: Number(width), maxWidth: "100%" }}>
+				<Header
+					title={<h2>{title}</h2>}
+					count={roots.length}
+					sort={sort}
+					onSortChange={setSort}
+				/>
+				<List aria-label={title}>{roots.map(renderEntry)}</List>
+				<p role="status">
+					{visitor ? "登录后才能回复或回应；仍可阅读公开回应名单。" : message}
+				</p>
+			</section>
+		</main>
+	);
+}

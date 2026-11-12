@@ -33,6 +33,7 @@ import {
 	type ListboxMode,
 	useListbox,
 } from "../../lib/use-listbox";
+import { iconProps } from "../icons";
 import { Spinner } from "../indicator";
 import { type InputVariantProps, inputVariants } from "../input/styles";
 import { useListHighlight } from "../list-highlight/use-list-highlight";
@@ -237,7 +238,7 @@ function TreeRow({
 					{busy ? (
 						<Spinner size={16} aria-hidden="true" />
 					) : (
-						<ChevronRight aria-hidden="true" />
+						<ChevronRight {...iconProps(14)} aria-hidden="true" />
 					)}
 				</button>
 			) : (
@@ -844,7 +845,7 @@ export function TreeSelect(props: TreeSelectProps) {
 								onMouseDown={(event) => event.preventDefault()}
 								onClick={chip.remove}
 							>
-								<X aria-hidden="true" />
+								<X {...iconProps(12)} aria-hidden="true" />
 							</button>
 						) : null}
 					</span>
@@ -901,7 +902,7 @@ export function TreeSelect(props: TreeSelectProps) {
 						onMouseDown={(event) => event.preventDefault()}
 						onClick={clearAll}
 					>
-						<X aria-hidden="true" />
+						<X {...iconProps(14)} aria-hidden="true" />
 					</button>
 				) : null}
 				{trailing}
@@ -953,7 +954,7 @@ export function TreeSelect(props: TreeSelectProps) {
 						onMouseDown={(event) => event.preventDefault()}
 						onClick={clearAll}
 					>
-						<X aria-hidden="true" />
+						<X {...iconProps(14)} aria-hidden="true" />
 					</button>
 				) : null}
 				{loading ? trailing : null}

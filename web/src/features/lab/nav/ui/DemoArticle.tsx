@@ -1,5 +1,6 @@
 import { BackLink } from "@shared/ui/back-link";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
+import { iconProps } from "@violet/ui";
 import { Calendar, Eye } from "lucide-react";
 import type { ReactNode, RefObject } from "react";
 
@@ -75,11 +76,11 @@ export function DemoHeader() {
 				<div className="flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-sm text-muted-foreground">
 					<span>super</span>
 					<span className="inline-flex items-center gap-1.5">
-						<Calendar className="size-3.5" />
+						<Calendar {...iconProps(14)} />
 						2026 年 8 月 16 日
 					</span>
 					<span className="inline-flex items-center gap-1.5">
-						<Eye className="size-3.5" />
+						<Eye {...iconProps(14)} />
 						128 次阅读
 					</span>
 				</div>

@@ -1,13 +1,13 @@
 import { createLucideIcon, type IconNode, type LucideProps } from "lucide-react";
 
 /**
- * 自绘图标与 lucide 共用 24 网格、圆头圆角与 `currentColor`，默认线宽 1.75。
- * 尺寸与线宽仍由 `iconProps` 决定，这里只保证省略属性时与 lucide 图标同档。
+ * 自绘图标与 lucide 共用 24 网格、圆头圆角与 `currentColor`。
+ * @default 16px、线宽 1.75；显式六档通过 `iconProps` 设置。
  */
 function createDrawnIcon(name: string, node: IconNode) {
 	const Icon = createLucideIcon(name, node);
-	return function DrawnIcon({ strokeWidth = 1.75, ...props }: LucideProps) {
-		return <Icon strokeWidth={strokeWidth} {...props} />;
+	return function DrawnIcon({ size = 16, strokeWidth = 1.75, ...props }: LucideProps) {
+		return <Icon size={size} strokeWidth={strokeWidth} {...props} />;
 	};
 }
 

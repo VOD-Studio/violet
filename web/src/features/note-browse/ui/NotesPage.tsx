@@ -2,7 +2,7 @@ import { usePublishedNotesFeed } from "@entities/note/api/queries";
 import type { PublicNote } from "@entities/note/model/types";
 import { formatDate } from "@shared/lib/date";
 import { Link } from "@tanstack/react-router";
-import { Button, Empty, PageShell, Skeleton } from "@violet/ui";
+import { Button, Empty, iconProps, PageShell, Skeleton } from "@violet/ui";
 import { ArrowRight, Calendar, Filter } from "lucide-react";
 import { useMemo } from "react";
 import { NOTES_PAGE_LIMIT, noteExcerpt, notePlainLength, noteTitle } from "../model/display";
@@ -141,7 +141,7 @@ function DossierFilterBar({ tags, active }: { tags: string[]; active?: string })
 	return (
 		<div className="mb-6 flex flex-wrap items-center gap-1.5 font-mono text-xs">
 			<span className="text-muted-foreground/60 mr-2 inline-flex items-center gap-1 text-[11px] uppercase tracking-wider">
-				<Filter className="size-3" />
+				<Filter {...iconProps(12)} />
 				SCOPE:
 			</span>
 			<Link
@@ -207,7 +207,7 @@ function FieldNoteTicket({ note, index }: { note: PublicNote; index: number }) {
 						</span>
 					</div>
 					<div className="flex items-center gap-1.5 tabular-nums text-muted-foreground/80">
-						<Calendar className="size-3 text-muted-foreground/60" />
+						<Calendar {...iconProps(12, "text-muted-foreground/60")} />
 						{formatDate(note.published_at)}
 					</div>
 				</div>
@@ -248,7 +248,12 @@ function FieldNoteTicket({ note, index }: { note: PublicNote; index: number }) {
 
 				<div className="flex items-center gap-2 font-mono text-[11px] text-muted-foreground/70">
 					<span>{wordCount} W</span>
-					<ArrowRight className="size-3.5 transition-transform duration-200 group-hover:translate-x-1 group-hover:text-foreground" />
+					<ArrowRight
+						{...iconProps(
+							14,
+							"transition-transform duration-200 group-hover:translate-x-1 group-hover:text-foreground",
+						)}
+					/>
 				</div>
 			</div>
 		</Link>

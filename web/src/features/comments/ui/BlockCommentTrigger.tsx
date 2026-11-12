@@ -5,7 +5,7 @@ import {
 } from "@features/comments/lib/selection-to-anchor";
 import { createAsyncLoader } from "@shared/lib/create-async-loader";
 import { DeferredContent } from "@shared/ui/deferred-content/DeferredContent";
-import { AnnotationCardFrame } from "@violet/ui";
+import { AnnotationCardFrame, iconProps } from "@violet/ui";
 import { MessageSquareText } from "lucide-react";
 import { Popover } from "radix-ui";
 import {
@@ -298,7 +298,7 @@ export function BlockCommentTrigger({
 				data-placement={touch ? "below" : undefined}
 				className="annotation-trigger pointer-events-auto absolute"
 			>
-				<MessageSquareText className="size-3.5" />
+				<MessageSquareText {...iconProps(14)} />
 			</button>
 			{composerBlock && (
 				<Popover.Root open onOpenChange={(next) => !next && close()}>

@@ -3,6 +3,7 @@
 import { cn } from "cn";
 import { X } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
+import { iconProps } from "../icons";
 
 /** 公告语气；只换指示点颜色，文字与底色不跟着变。 */
 export type AnnouncementBarSeverity = "info" | "warning" | "success" | "error";
@@ -54,7 +55,7 @@ export function AnnouncementBar({
 				aria-label="关闭公告"
 				onClick={onClose}
 			>
-				<X aria-hidden="true" />
+				<X {...iconProps(12)} aria-hidden="true" />
 			</button>
 		</div>
 	);

@@ -2,7 +2,7 @@
  * 会话详情抽屉：成员管理、邀请、通知设置与离开会话。
  */
 
-import { Button, Input } from "@violet/ui";
+import { Button, Input, iconProps } from "@violet/ui";
 
 import { Bell, BellOff, LogOut, Plus, ShieldCheck, Users, X } from "lucide-react";
 import { motion } from "motion/react";
@@ -112,7 +112,7 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 				<div>
 					<div className="mb-2.5 flex items-center justify-between px-1">
 						<p className="text-xs text-muted-foreground">成员 · {members.length}</p>
-						<Users className="size-3.5 text-muted-foreground" />
+						<Users {...iconProps(14, "text-muted-foreground")} />
 					</div>
 					<div className="space-y-1">
 						{members.map((member) => (
@@ -145,7 +145,7 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 											}
 											type="button"
 										>
-											<X className="size-3.5" />
+											<X {...iconProps(14)} />
 										</button>
 									)
 								)}
@@ -203,7 +203,7 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 						variant="ghost"
 						size="sm"
 					>
-						<LogOut className="mr-2 size-3.5" />
+						<LogOut {...iconProps(14)} />
 						离开会话
 					</Button>
 				</div>
@@ -240,11 +240,7 @@ function NotificationSettings({
 						size="sm"
 						variant="ghost"
 					>
-						{muted ? (
-							<BellOff className="mr-1.5 size-3.5" />
-						) : (
-							<Bell className="mr-1.5 size-3.5" />
-						)}
+						{muted ? <BellOff {...iconProps(14)} /> : <Bell {...iconProps(14)} />}
 						{muted ? "已静音此会话" : "静音此会话"}
 					</Button>
 					{push.enabled && (

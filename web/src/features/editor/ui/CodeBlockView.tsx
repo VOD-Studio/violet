@@ -19,6 +19,7 @@ import {
 	type CodeBlockOutputChunk,
 	type CodeBlockRunResult,
 	Input,
+	iconProps,
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
@@ -456,7 +457,7 @@ function CodeBlockViewComponent({
 						onClick={() => setEditingEmbed(true)}
 						className="ml-auto inline-flex h-6 items-center gap-1 rounded-sm px-2 text-xs text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
 					>
-						<Pencil className="size-3" aria-hidden="true" />
+						<Pencil {...iconProps(12)} aria-hidden="true" />
 						编辑{embed.inserter.title}
 					</button>
 				) : null}
@@ -467,9 +468,8 @@ function CodeBlockViewComponent({
 						variant={runState === "running" ? "secondary" : "primary"}
 						onClick={handleRun}
 						disabled={runState === "running" || !availability?.allowed}
-						className="gap-1"
 					>
-						<Play className="size-3" />
+						<Play {...iconProps(12)} />
 						{runState === "running" ? "运行中…" : (availability?.reason ?? "运行")}
 					</Button>
 				)}

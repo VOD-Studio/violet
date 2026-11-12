@@ -11,7 +11,7 @@ import {
 	stripImagePlaceholders,
 	stripPlaceholdersForPreview,
 } from "@shared/ui/rich-text-input/use-rich-text-input";
-import { Button } from "@violet/ui";
+import { Button, iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { MessageSquareQuote, Reply, Send, X } from "lucide-react";
 import {
@@ -359,7 +359,7 @@ export function MessageComposer({
 							onClick={clearPendingShare}
 							type="button"
 						>
-							<X className="size-3.5" />
+							<X {...iconProps(14)} />
 						</button>
 					</div>
 				) : (
@@ -386,7 +386,7 @@ export function MessageComposer({
 								onClick={onCancelReply}
 								type="button"
 							>
-								<X className="size-3.5" />
+								<X {...iconProps(14)} />
 							</button>
 						</div>
 					)

@@ -1,6 +1,7 @@
 /**
  * 批注卡里的一条讨论：顶部引用被批注的原文，其下依次是批注与回复。
  */
+
 import { getCommentAuthorPresentation } from "@entities/comment/lib/ai-personas";
 import type { Comment } from "@entities/comment/model/types";
 import { AIBadge } from "@entities/comment/ui/AIBadge";
@@ -10,6 +11,7 @@ import { Collapse } from "@shared/ui/disclosure";
 import { EmojiText } from "@shared/ui/emoji-text";
 import PendingBadge from "@shared/ui/pending-badge";
 import { Link } from "@tanstack/react-router";
+import { iconProps } from "@violet/ui";
 import { MessageCircle } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { AnnotationAuthorProfile } from "./AnnotationAuthorProfile";
@@ -107,7 +109,7 @@ function AnnotationEntry({
 							aria-expanded={replying}
 							onClick={() => setReplying((open) => !open)}
 						>
-							<MessageCircle className="size-3" aria-hidden="true" />
+							<MessageCircle {...iconProps(12)} aria-hidden="true" />
 							回复
 						</button>
 					)

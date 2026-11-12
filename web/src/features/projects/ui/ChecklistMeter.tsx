@@ -1,3 +1,4 @@
+import { iconProps } from "@violet/ui";
 import { ListChecks } from "lucide-react";
 import type { ChecklistProgress } from "../lib/roadmap-checklist";
 
@@ -15,7 +16,7 @@ export function ChecklistMeter({ progress, className }: ChecklistMeterProps) {
 	const percent = progress.total === 0 ? 0 : Math.round((progress.done / progress.total) * 100);
 	return (
 		<span className={`inline-flex items-center gap-1.5 tabular-nums ${className ?? ""}`}>
-			<ListChecks className="size-3.5 shrink-0" aria-hidden="true" />
+			<ListChecks {...iconProps(14, "shrink-0")} aria-hidden="true" />
 			<span>
 				<span className="sr-only">子项已完成：</span>
 				{progress.done}/{progress.total}

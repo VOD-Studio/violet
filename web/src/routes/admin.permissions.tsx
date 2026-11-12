@@ -10,6 +10,7 @@ import {
 	Button,
 	ConfirmDialog,
 	DataTable,
+	iconProps,
 	Tag,
 	Tooltip,
 	TooltipContent,
@@ -188,7 +189,7 @@ function AdminPermissionsPage() {
 										aria-label="编辑权限"
 										disabled={!isSuperAdmin}
 									>
-										<Pencil className="size-3.5" />
+										<Pencil {...iconProps(14)} />
 									</Button>
 								</span>
 							</TooltipTrigger>
@@ -205,7 +206,7 @@ function AdminPermissionsPage() {
 										aria-label="删除权限"
 										disabled={isBuiltin || !isSuperAdmin}
 									>
-										<Trash2 className="size-3.5" />
+										<Trash2 {...iconProps(14)} />
 									</Button>
 								</span>
 							</TooltipTrigger>
@@ -227,7 +228,7 @@ function AdminPermissionsPage() {
 				action={
 					isSuperAdmin ? (
 						<Button size="sm" onClick={handleCreate}>
-							<Plus className="size-3.5" />
+							<Plus {...iconProps(14)} />
 							新建权限
 						</Button>
 					) : null

@@ -1,6 +1,6 @@
 import { useLoginFlows } from "@features/auth/hooks/use-login-flows";
 import { Collapse } from "@shared/ui/disclosure";
-import { Button, GithubIcon, GoogleIcon, Input } from "@violet/ui";
+import { Button, GithubIcon, GoogleIcon, Input, iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { ChevronDown } from "lucide-react";
 import { type ReactNode, useState } from "react";
@@ -100,9 +100,12 @@ function InlineLoginContent({
 					<span className="inline-flex items-center gap-1">
 						使用账号密码登录
 						<ChevronDown
-							className={cn(
-								"size-3.5 transition-transform duration-200 motion-reduce:transition-none",
-								passwordOpen && "rotate-180",
+							{...iconProps(
+								14,
+								cn(
+									"transition-transform duration-200 motion-reduce:transition-none",
+									passwordOpen && "rotate-180",
+								),
 							)}
 						/>
 					</span>

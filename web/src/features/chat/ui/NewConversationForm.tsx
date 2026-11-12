@@ -1,4 +1,4 @@
-import { Button, Input } from "@violet/ui";
+import { Button, Input, iconProps } from "@violet/ui";
 
 import { cn } from "cn";
 import { Check, Search, Users, X } from "lucide-react";
@@ -118,7 +118,7 @@ export function NewConversationForm({ onCreated, onClose }: NewConversationFormP
 								>
 									<ChatAvatar user={user} className="size-4" />
 									<span>{user.display_name}</span>
-									<X className="size-3 opacity-60" />
+									<X {...iconProps(12, "opacity-60")} />
 								</button>
 							))}
 						</div>

@@ -7,7 +7,7 @@ import { PATTable } from "@features/admin-mcp/ui/PATTable";
 import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { createFileRoute } from "@tanstack/react-router";
-import { Button } from "@violet/ui";
+import { Button, iconProps } from "@violet/ui";
 import { Plus } from "lucide-react";
 import * as React from "react";
 
@@ -41,7 +41,7 @@ function AdminMCPPage() {
 						setDialogOpen(true);
 					}}
 				>
-					<Plus className="size-3.5" />
+					<Plus {...iconProps(14)} />
 					创建令牌
 				</Button>
 			}
