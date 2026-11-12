@@ -67,6 +67,7 @@ export function CodePreview({
 					className="text-white/70 hover:bg-white/10 hover:text-white"
 					onClick={handleCopy}
 					title="复制代码"
+					aria-label="复制代码"
 				>
 					{copied ? (
 						<Check className="size-3.5 text-green-400" />

@@ -57,6 +57,7 @@ export function MarkdownPreview({ url, name, className }: MarkdownPreviewProps) 
 					onClick={handleCopy}
 					disabled={loadStatus !== "ready"}
 					title="复制源码"
+					aria-label="复制源码"
 				>
 					{copied ? (
 						<Check className="size-3.5 text-green-500" />

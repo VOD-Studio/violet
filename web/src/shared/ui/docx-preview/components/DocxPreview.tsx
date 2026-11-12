@@ -46,6 +46,7 @@ export function DocxPreview({ url, name, className }: DocxPreviewProps) {
 						variant="ghost"
 						onClick={handleDownload}
 						title="下载"
+						aria-label="下载"
 					>
 						<Download className="size-3.5" />
 					</Button>

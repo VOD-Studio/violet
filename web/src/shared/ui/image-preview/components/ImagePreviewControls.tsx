@@ -112,6 +112,7 @@ export function ImagePreviewControls({
 							onClick={handleClick(onRotateLeft)}
 							className="text-foreground hover:bg-muted active:scale-100 sm:size-9"
 							title="左旋转"
+							aria-label="左旋转"
 						>
 							<RotateCcw className="h-4 w-4 sm:h-5 sm:w-5" />
 						</Button>
@@ -124,6 +125,7 @@ export function ImagePreviewControls({
 							onClick={handleClick(onRotateRight)}
 							className="text-foreground hover:bg-muted active:scale-100 sm:size-9"
 							title="右旋转"
+							aria-label="右旋转"
 						>
 							<RotateCw className="h-4 w-4 sm:h-5 sm:w-5" />
 						</Button>
@@ -138,6 +140,7 @@ export function ImagePreviewControls({
 							onClick={handleClick(onFlipX)}
 							className="text-foreground hover:bg-muted active:scale-100 sm:size-9"
 							title="水平翻转"
+							aria-label="水平翻转"
 						>
 							<FlipHorizontal className="h-4 w-4 sm:h-5 sm:w-5" />
 						</Button>
@@ -150,6 +153,7 @@ export function ImagePreviewControls({
 							onClick={handleClick(onFlipY)}
 							className="text-foreground hover:bg-muted active:scale-100 sm:size-9"
 							title="垂直翻转"
+							aria-label="垂直翻转"
 						>
 							<FlipVertical className="h-4 w-4 sm:h-5 sm:w-5" />
 						</Button>
@@ -167,6 +171,7 @@ export function ImagePreviewControls({
 								onClick={handleClick(onReset)}
 								className="text-foreground hover:bg-muted active:scale-100 sm:size-9"
 								title="重置（也可双击图片）"
+								aria-label="重置"
 							>
 								<RefreshCcw className="h-4 w-4 sm:h-5 sm:w-5" />
 							</Button>
