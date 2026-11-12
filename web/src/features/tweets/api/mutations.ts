@@ -3,14 +3,14 @@
 import type { Tweet, TweetComment } from "@entities/tweet/model/types";
 import { apiDelete, apiPost } from "@shared/api/request";
 import type { PagedResponse } from "@shared/api/types";
-import {
-	type QueryClient,
-	type QueryKey,
-	useMutation,
-	useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { CreateTweetCommentInput, CreateTweetInput } from "../model/types";
+import {
+	bumpTweetCommentCount,
+	type TweetCommentListCache as CommentListCache,
+	removeTweetCommentFromCaches,
+} from "./comment-cache";
 import { tweetKeys } from "./keys";
 
 /** useInfiniteQuery 的缓存结构（pages + pageParams） */
@@ -18,19 +18,6 @@ type TimelineCache = {
 	pages: PagedResponse<Tweet>[];
 	pageParams: (string | undefined)[];
 };
-
-/** useInfiniteQuery 的评论缓存结构（顶层评论列表 / 回复列表共用） */
-type CommentListCache = {
-	pages: PagedResponse<TweetComment>[];
-	pageParams: (number | undefined)[];
-};
-
-/** 详情与时间线缓存快照（删除评论回滚用） */
-interface CountCacheSnapshot {
-	prevDetail: Tweet | undefined;
-	prevTimelines: [QueryKey, TimelineCache | undefined][];
-	prevUserTimelines: [QueryKey, TimelineCache | undefined][];
-}
 
 /**
  * useCreateTweet - 发推文
@@ -196,53 +183,11 @@ export const useToggleLikeTweet = (tweet: Tweet) => {
 
 // --- 推文评论（P2 / issue #108）---
 
-/** bumpTweetCommentCount - 把 comment_count ± delta 同步到详情与全部时间线缓存 */
-function bumpTweetCommentCount(qc: QueryClient, tweetId: string, delta: number) {
-	const apply = (t: Tweet): Tweet => ({
-		...t,
-		comment_count: Math.max(0, t.comment_count + delta),
-	});
-	qc.setQueryData<Tweet>(tweetKeys.detail(tweetId), (old) => (old ? apply(old) : old));
-	const updateTimeline = (old?: TimelineCache): TimelineCache | undefined => {
-		if (!old?.pages) return old;
-		return {
-			...old,
-			pages: old.pages.map((page) => ({
-				...page,
-				data: page.data.map((t) => (t.id === tweetId ? apply(t) : t)),
-			})),
-		};
-	};
-	qc.setQueriesData<TimelineCache>({ queryKey: tweetKeys.timeline }, updateTimeline);
-	qc.setQueriesData<TimelineCache>(
-		{ queryKey: [...tweetKeys.all, "userTimeline"] },
-		updateTimeline,
-	);
-}
-
-/** captureCountCaches - 快照详情与全部时间线缓存，供删除回滚用 */
-function captureCountCaches(qc: QueryClient, tweetId: string): CountCacheSnapshot {
-	return {
-		prevDetail: qc.getQueryData<Tweet>(tweetKeys.detail(tweetId)),
-		prevTimelines: qc.getQueriesData<TimelineCache>({ queryKey: tweetKeys.timeline }),
-		prevUserTimelines: qc.getQueriesData<TimelineCache>({
-			queryKey: [...tweetKeys.all, "userTimeline"],
-		}),
-	};
-}
-
-/** restoreCountCaches - 用快照恢复详情与全部时间线缓存 */
-function restoreCountCaches(qc: QueryClient, tweetId: string, snap: CountCacheSnapshot) {
-	if (snap.prevDetail) qc.setQueryData(tweetKeys.detail(tweetId), snap.prevDetail);
-	for (const [k, d] of snap.prevTimelines) qc.setQueryData(k, d);
-	for (const [k, d] of snap.prevUserTimelines) qc.setQueryData(k, d);
-}
-
 /**
  * useCreateTweetComment - 发评论 / 回复（登录，即发即出）
  *
- * 成功后即时更新缓存（无需重拉）：顶层评论插到列表首页顶部，回复追加到对应
- * 顶层评论的回复列表；同时 comment_count +1 同步到详情与全部时间线。
+ * 成功后即时更新各排序列表与详情/时间线数量；顶层评论插入首页后，
+ * 等待 hot 列表从后端刷新，不能把「最新插入」当成热度排序。
  *
  * @param tweetId 所属推文 ID（路由参数，写操作 URL 需要）
  */
@@ -251,14 +196,16 @@ export const useCreateTweetComment = (tweetId: string) => {
 	return useMutation({
 		mutationFn: (input: CreateTweetCommentInput) =>
 			apiPost<TweetComment>(`/tweets/${tweetId}/comments`, input),
-		onSuccess: (comment, input) => {
+		onSuccess: async (comment, input) => {
 			bumpTweetCommentCount(qc, tweetId, 1);
 			if (input.parent_id) {
 				// 回复：追加到对应顶层评论的回复列表末尾（回复按 created_at 正序）
 				qc.setQueriesData<CommentListCache>(
 					{ queryKey: tweetKeys.replies(input.parent_id) },
 					(old) => {
-						if (!old?.pages.length) return old;
+						if (!old?.pages.length) {
+							return old;
+						}
 						const pages = [...old.pages];
 						const last = pages[pages.length - 1];
 						pages[pages.length - 1] = {
@@ -276,7 +223,9 @@ export const useCreateTweetComment = (tweetId: string) => {
 				qc.setQueriesData<CommentListCache>(
 					{ queryKey: tweetKeys.commentList(tweetId) },
 					(old) => {
-						if (!old?.pages.length) return old;
+						if (!old?.pages.length) {
+							return old;
+						}
 						const [first, ...rest] = old.pages;
 						return {
 							...old,
@@ -293,6 +242,7 @@ export const useCreateTweetComment = (tweetId: string) => {
 						};
 					},
 				);
+				await qc.invalidateQueries({ queryKey: tweetKeys.commentListOf(tweetId, "hot") });
 			}
 		},
 	});
@@ -318,50 +268,21 @@ export const useDeleteTweetComment = (tweetId: string) => {
 			await qc.cancelQueries({ queryKey: tweetKeys.timeline });
 			await qc.cancelQueries({ queryKey: [...tweetKeys.all, "userTimeline"] });
 
-			// 快照评论缓存（顶层列表 + 各回复列表），供回滚
-			const prevComments = qc.getQueriesData<CommentListCache>({
-				queryKey: [...tweetKeys.all, "comments"],
-			});
-			const snap = captureCountCaches(qc, tweetId);
-
-			// 即时从所有评论缓存移除该 id（顶层列表 / 回复列表均可能命中）
-			qc.setQueriesData<CommentListCache>(
-				{ queryKey: [...tweetKeys.all, "comments"] },
-				(old) => {
-					if (!old?.pages) return old;
-					let removed = false;
-					const pages = old.pages.map((page) => {
-						const next = page.data.filter((c) => c.id !== commentId);
-						if (next.length === page.data.length) return page;
-						removed = true;
-						return {
-							data: next,
-							pagination: {
-								...page.pagination,
-								total: Math.max(0, (page.pagination.total ?? 0) - 1),
-							},
-						};
-					});
-					return removed ? { ...old, pages } : old;
-				},
-			);
-			// 即时 comment_count -1（回复精确；顶层因级联回列为低估，onSuccess 重取纠正）
+			const rollback = removeTweetCommentFromCaches(qc, commentId);
+			// 只做本次增量；失败加回时保留期间创建/删除造成的数量变化。
 			bumpTweetCommentCount(qc, tweetId, -1);
-
-			return { prevComments, snap };
+			return { rollback };
 		},
 		onError: (_err, _id, context) => {
 			toast.error("删除失败，请重试");
-			if (context?.prevComments) {
-				for (const [key, data] of context.prevComments) {
-					qc.setQueryData(key, data);
-				}
+			if (context) {
+				context.rollback();
+				bumpTweetCommentCount(qc, tweetId, 1);
 			}
-			if (context?.snap) restoreCountCaches(qc, tweetId, context.snap);
 		},
 		onSuccess: () => {
 			// 重取详情拿权威 comment_count（顶层评论删除级联回复，-1 是低估）
-			qc.invalidateQueries({ queryKey: tweetKeys.detail(tweetId) });
+			return qc.invalidateQueries({ queryKey: tweetKeys.detail(tweetId) });
 		},
 	});
 };

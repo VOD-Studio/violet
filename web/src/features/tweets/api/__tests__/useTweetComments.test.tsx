@@ -24,9 +24,10 @@ vi.mock("@shared/api/request", () => ({
 	apiGetPaged: vi.fn(),
 }));
 
-import { apiDelete, apiPost } from "@shared/api/request";
+import { apiDelete, apiGetPaged, apiPost } from "@shared/api/request";
 import { tweetKeys } from "../keys";
 import { useCreateTweetComment, useDeleteTweetComment } from "../mutations";
+import { useTweetComments, useTweetReplies } from "../queries";
 
 function createWrapper(qc: QueryClient) {
 	return ({ children }: { children: ReactNode }) => (
@@ -99,7 +100,7 @@ describe("useCreateTweetComment — 缓存联动", () => {
 	it("创建顶层评论：插到列表首页顶部 + comment_count +1 同步详情与时间线", async () => {
 		const tweet = makeTweet({ id: "t1", comment_count: 2 });
 		const existing = makeComment({ id: "c-old" });
-		qc.setQueryData(tweetKeys.commentList("t1"), {
+		qc.setQueryData(tweetKeys.commentListOf("t1", "latest"), {
 			pages: [paged([existing], 2)],
 			pageParams: [1],
 		} satisfies CommentListCache);
@@ -120,7 +121,7 @@ describe("useCreateTweetComment — 缓存联动", () => {
 		await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
 		// 评论列表：新评论在首页顶部
-		const list = qc.getQueryData<CommentListCache>(tweetKeys.commentList("t1"));
+		const list = qc.getQueryData<CommentListCache>(tweetKeys.commentListOf("t1", "latest"));
 		expect(list?.pages[0].data.map((c) => c.id)).toEqual(["c-new", "c-old"]);
 		expect(list?.pages[0].pagination.total).toBe(3);
 		// 详情 comment_count +1
@@ -180,7 +181,7 @@ describe("useDeleteTweetComment — 乐观删除与回滚", () => {
 		const tweet = makeTweet({ id: "t1", comment_count: 3 });
 		const target = makeComment({ id: "c-del" });
 		const other = makeComment({ id: "c-keep" });
-		qc.setQueryData(tweetKeys.commentList("t1"), {
+		qc.setQueryData(tweetKeys.commentListOf("t1", "latest"), {
 			pages: [paged([target, other], 2)],
 			pageParams: [1],
 		} satisfies CommentListCache);
@@ -196,7 +197,7 @@ describe("useDeleteTweetComment — 乐观删除与回滚", () => {
 		await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
 		// 评论缓存：目标已移除
-		const list = qc.getQueryData<CommentListCache>(tweetKeys.commentList("t1"));
+		const list = qc.getQueryData<CommentListCache>(tweetKeys.commentListOf("t1", "latest"));
 		expect(list?.pages[0].data.map((c) => c.id)).toEqual(["c-keep"]);
 		// 详情被 invalidate（isInvalidating 或重新标记为 stale）
 		expect(apiDelete).toHaveBeenCalledWith("/tweets/t1/comments/c-del");
@@ -205,7 +206,7 @@ describe("useDeleteTweetComment — 乐观删除与回滚", () => {
 	it("删除失败：回滚评论缓存与 comment_count", async () => {
 		const tweet = makeTweet({ id: "t1", comment_count: 2 });
 		const target = makeComment({ id: "c-del" });
-		qc.setQueryData(tweetKeys.commentList("t1"), {
+		qc.setQueryData(tweetKeys.commentListOf("t1", "latest"), {
 			pages: [paged([target], 1)],
 			pageParams: [1],
 		} satisfies CommentListCache);
@@ -221,9 +222,51 @@ describe("useDeleteTweetComment — 乐观删除与回滚", () => {
 		await waitFor(() => expect(result.current.isError).toBe(true));
 
 		// 回滚：评论回到缓存
-		const list = qc.getQueryData<CommentListCache>(tweetKeys.commentList("t1"));
+		const list = qc.getQueryData<CommentListCache>(tweetKeys.commentListOf("t1", "latest"));
 		expect(list?.pages[0].data.map((c) => c.id)).toEqual(["c-del"]);
 		// 回滚：comment_count 恢复原值
 		expect(qc.getQueryData<Tweet>(tweetKeys.detail("t1"))?.comment_count).toBe(2);
 	});
+});
+
+it("真实排序参数独立缓存并保留服务端次序；回复保持默认时间正序", async () => {
+	const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+	const newest = makeComment({ id: "newest" });
+	const hottest = makeComment({ id: "hottest" });
+	vi.mocked(apiGetPaged).mockImplementation((_path, options) => {
+		const params = options?.params as { sort?: string } | undefined;
+		return Promise.resolve(
+			paged(params?.sort === "hot" ? [hottest, newest] : [newest, hottest]),
+		) as never;
+	});
+	const wrapper = createWrapper(qc);
+	const { result, rerender, unmount } = renderHook(
+		({ sort }: { sort: "latest" | "hot" }) => useTweetComments("t1", sort),
+		{ wrapper, initialProps: { sort: "latest" } },
+	);
+	await waitFor(() => expect(result.current.isSuccess).toBe(true));
+	expect(result.current.data?.pages[0].data.map((item) => item.id)).toEqual([
+		"newest",
+		"hottest",
+	]);
+	rerender({ sort: "hot" });
+	await waitFor(() => expect(result.current.isSuccess).toBe(true));
+	expect(result.current.data?.pages[0].data.map((item) => item.id)).toEqual([
+		"hottest",
+		"newest",
+	]);
+	expect(apiGetPaged).toHaveBeenCalledWith("/tweets/t1/comments", {
+		params: { page: 1, limit: 10, sort: "hot" },
+	});
+	expect(qc.getQueryData(tweetKeys.commentListOf("t1", "latest"))).toBeDefined();
+	expect(qc.getQueryData(tweetKeys.commentListOf("t1", "hot"))).toBeDefined();
+	expect(qc.getQueryData(tweetKeys.commentList("t1"))).toBeUndefined();
+	unmount();
+	const replies = renderHook(() => useTweetReplies("t1", "root"), { wrapper });
+	await waitFor(() => expect(replies.result.current.isSuccess).toBe(true));
+	expect(apiGetPaged).toHaveBeenCalledWith("/tweets/t1/comments/root/replies", {
+		params: { page: 1, limit: 10 },
+	});
+	cleanup();
+	qc.clear();
 });
