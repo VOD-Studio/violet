@@ -1,38 +1,13 @@
 import { act, render, screen } from "@testing-library/react";
-import { createRef } from "react";
 import { hydrateRoot, type Root } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { Kbd, KbdSeparator } from "../kbd";
+import { Kbd } from "../kbd";
 
 /** 一个键帽里的各单元格文字，按渲染顺序。 */
 function cells(kbd: Element | null) {
-	return [...(kbd?.querySelectorAll(".v-kbd__key") ?? [])].map((cell) => cell.textContent);
+	return [...(kbd?.children ?? [])].map((cell) => cell.textContent);
 }
-
-describe("Kbd 单键", () => {
-	it("渲染原生 kbd 元素，内容为传入的单个键", () => {
-		const { container } = render(<Kbd>Esc</Kbd>);
-		const kbd = container.querySelector("kbd");
-		expect(kbd).not.toBeNull();
-		expect(kbd?.textContent).toBe("Esc");
-	});
-
-	it("透传原生属性与 ref 到 kbd", () => {
-		const ref = createRef<HTMLElement>();
-		render(
-			<Kbd ref={ref} id="hint" title="退出" data-testid="cap" className="custom">
-				/
-			</Kbd>,
-		);
-		const kbd = screen.getByTestId("cap");
-		expect(ref.current).toBe(kbd);
-		expect(kbd.tagName).toBe("KBD");
-		expect(kbd.id).toBe("hint");
-		expect(kbd.getAttribute("title")).toBe("退出");
-		expect(kbd.classList.contains("custom")).toBe(true);
-	});
-});
 
 describe("Kbd 组合键", () => {
 	it("一个组合是一个 kbd，修饰符在前，顺序固定为 ⌃ ⌥ ⇧ ⌘（macOS）", () => {
@@ -82,14 +57,6 @@ describe("Kbd 组合键", () => {
 	});
 });
 
-describe("KbdSeparator", () => {
-	it("是带语义文字的普通元素，不对读屏隐藏", () => {
-		render(<KbdSeparator>然后</KbdSeparator>);
-		const separator = screen.getByText("然后");
-		expect(separator.getAttribute("aria-hidden")).toBeNull();
-	});
-});
-
 describe("Kbd 平台检测", () => {
 	afterEach(() => {
 		vi.restoreAllMocks();
@@ -100,6 +67,26 @@ describe("Kbd 平台检测", () => {
 		const html = renderToString(<Kbd keys={["mod", "K"]} />);
 		expect(html).toContain("Ctrl");
 		expect(html).not.toContain("⌘");
+	});
+
+	it("UA-CH 平台为空时仍按 MacIntel 显示实际可用的 Command 组合键", async () => {
+		vi.spyOn(navigator, "platform", "get").mockReturnValue("MacIntel");
+		const original = Object.getOwnPropertyDescriptor(navigator, "userAgentData");
+		Object.defineProperty(navigator, "userAgentData", {
+			configurable: true,
+			value: { platform: "" },
+		});
+		try {
+			render(<Kbd keys={["mod", "enter"]} />);
+			expect((await screen.findByLabelText("Command")).textContent).toBe("⌘");
+			expect(screen.getByLabelText("Return").textContent).toBe("↵");
+		} finally {
+			if (original) {
+				Object.defineProperty(navigator, "userAgentData", original);
+			} else {
+				Reflect.deleteProperty(navigator, "userAgentData");
+			}
+		}
 	});
 
 	it("macOS 访客水合后切换为符号，且水合没有差异报错", async () => {

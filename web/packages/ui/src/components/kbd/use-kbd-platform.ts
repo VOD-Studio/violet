@@ -3,14 +3,17 @@ import type { KbdPlatform } from "./keys";
 
 const MAC_PATTERN = /mac|iphone|ipad|ipod/i;
 
+interface NavigatorWithPlatformHint extends Navigator {
+	userAgentData?: { platform?: string };
+}
+
 function subscribe() {
 	return () => {};
 }
 
 function getClientPlatform(): KbdPlatform {
-	const platform =
-		(navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData
-			?.platform ?? navigator.platform;
+	const hint = (navigator as NavigatorWithPlatformHint).userAgentData?.platform;
+	const platform = hint || navigator.platform;
 	return MAC_PATTERN.test(platform) ? "mac" : "other";
 }
 

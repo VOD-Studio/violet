@@ -8,6 +8,9 @@ interface KbdOptions extends KbdVariantProps {
 	/**
 	 * 显示平台。省略时只在客户端按访客系统检测：服务端与水合首帧写文字修饰符，
 	 * 水合后 macOS 访客切换为符号。
+	 * 浏览器的平台提示缺失或为空时回退系统平台；显式传值优先于自动检测。
+	 *
+	 * @default 根据访客平台自动识别
 	 */
 	platform?: KbdPlatform;
 }
