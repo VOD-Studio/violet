@@ -8,7 +8,6 @@ import {
 	openWithArticleSnapshot,
 } from "./rich-content-harness";
 
-const CODE_SOURCE = 'const recoveryMessage = "正文仍可阅读";';
 const DIAGRAM_SOURCE = "flowchart LR\n  A[开始阅读] --> B[完整图表]";
 
 test("中文图表的字体元数据与字形只向本站请求", async ({ page, context }) => {
@@ -84,35 +83,3 @@ for (const chunk of ["DiagramBlock", "mermaid.core"]) {
 		expect(await diagnostics()).toEqual([]);
 	});
 }
-
-test("代码样式下载失败保留源码，局部重试重新请求 CSS 且不替换正文和 document", async ({
-	page,
-	context,
-}) => {
-	await loadClient(context);
-	const asset = await blockAsset(context, page, /\/assets\/CodeCard-[^/]+\.css$/);
-	const diagnostics = collectUnexpectedDiagnostics(page, asset.blockedUrls);
-	const snapshot = await openWithArticleSnapshot(context, page, "/blog/contract-rich-code");
-	await page
-		.locator("[data-article-content] [data-content-preparation]")
-		.first()
-		.scrollIntoViewIfNeeded();
-	const failure = page.getByRole("alert").filter({ hasText: "代码高亮加载失败" });
-	await expect(failure).toBeVisible();
-	await expect(page.locator("[data-article-content] pre")).toHaveText(CODE_SOURCE);
-	await expectArticlePreserved(page, snapshot);
-	expect(asset.blockedUrls.size).toBeGreaterThan(0);
-	expect(asset.successfulUrls).toEqual([]);
-
-	asset.release();
-	await failure.getByRole("button", { name: "重试", exact: true }).click();
-	const highlighted = page.locator("[data-article-content] pre.shiki");
-	await expect(highlighted).toBeVisible();
-	await expect(highlighted).toHaveText(CODE_SOURCE);
-	await expect(highlighted.locator("code span[style]").first()).toBeAttached();
-	await expect(failure).toHaveCount(0);
-	expect(asset.successfulUrls.some((url) => asset.blockedUrls.has(url))).toBe(true);
-	await expectArticlePreserved(page, snapshot);
-	expect(asset.documents).toHaveLength(1);
-	expect(await diagnostics()).toEqual([]);
-});

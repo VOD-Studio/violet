@@ -2,7 +2,7 @@
  * selectionToAnchor 测试：覆盖「特殊块（代码块/图块/块级公式）选中时不可批注」。
  *
  * 现实里这些块语义上不可批注：
- * - 代码块 pre：shiki 输出 pre.shiki、降级 pre、图块错误态源码 pre 都命中
+ * - 代码块 pre：阅读源码与图块错误态源码都不可批注
  * - 图块 div[data-type=diagram-block]：渲染产物是 SVG，不可批注
  * - 块级公式：KaTeX display 产物 .katex-display，不可批注
  *
@@ -50,18 +50,17 @@ function firstChild(el: HTMLElement): Node {
 	return node;
 }
 
-/** 构造正文容器，模拟阅读端真实 DOM 结构（CodeCard 外层有 div 包装）。 */
 function buildRoot(): HTMLElement {
 	const root = document.createElement("main");
 	root.setAttribute("data-article-content", "");
 	root.innerHTML = `
     <p id="p-text">这是普通段落，可以被批注。</p>
-    <!-- CodeCard：外层 div 包装（含语言标签/复制按钮），内部 shiki 输出 pre>code -->
-    <div class="group relative">
-      <div class="shiki-code">
-        <pre class="shiki"><code id="code-text">const x = 1;</code></pre>
+    <figure class="v-code-block">
+      <figcaption>typescript</figcaption>
+      <div class="v-code-block__body">
+        <pre class="v-code-block__code"><code id="code-text">const x = 1;</code></pre>
       </div>
-    </div>
+    </figure>
     <div data-type="diagram-block" data-source="graph TD; A-->B">
       <div class="diagram-render">
         <svg><text id="diagram-text">Node A</text></svg>
@@ -97,7 +96,7 @@ describe("selectionToAnchor", () => {
 		expect(anchor).not.toBeNull();
 	});
 
-	it("代码块 pre（CodeCard 内 shiki pre>code）→ 返回 null（不可批注）", async () => {
+	it("代码块源码不可批注", async () => {
 		const code = byId("code-text");
 		const textNode = firstChild(code);
 		selectRange(textNode, 0, textNode, 4);

@@ -21,18 +21,15 @@ function RunnerProvider({ children }: { children: ReactNode }) {
 	);
 }
 
-vi.mock("@/shared/ui/code-preview/use-shiki-highlight", () => ({
-	useShikiHighlight: () => ({ html: "", loading: false }),
-}));
 vi.mock("@/shared/ui/diagram/render-mermaid", () => ({
 	renderMermaid: async () => ({
 		svg: '<svg xmlns="http://www.w3.org/2000/svg"><text>diagram</text></svg>',
 	}),
 }));
-// CodeMirror 依赖浏览器几何信息，仅替换其编辑区边界，保留真实 CodeRunner。
-vi.mock("@entities/code-runner/ui/CodeMirrorEditor", () => ({
-	CodeMirrorEditor: ({ value }: { value: string }) => (
-		<textarea aria-label="Code source" defaultValue={value} />
+// 这里检验载体与真实运行外壳；键盘内核另由组件单元和浏览器覆盖。
+vi.mock("../../../../../packages/ui/src/components/code-block/code-editor", () => ({
+	CodeEditor: ({ value, label }: { value: string; label: string }) => (
+		<textarea aria-label={label} defaultValue={value} />
 	),
 }));
 
@@ -203,7 +200,8 @@ describe("article reading integrity", () => {
 		await waitFor(() =>
 			expect(markdown.queryByRole("button", { name: "运行" })).not.toBeNull(),
 		);
-		expect((markdown.getByLabelText("Code source") as HTMLTextAreaElement).value).toBe(
+		expect(await markdown.findByRole("textbox", { name: "可编辑的 node 代码" })).toHaveProperty(
+			"value",
 			'console.log("==literal==")',
 		);
 		expect(markdown.container.textContent).toContain("node");
@@ -218,7 +216,8 @@ describe("article reading integrity", () => {
 			{ wrapper: RunnerProvider },
 		);
 		await waitFor(() => expect(html.queryByRole("button", { name: "运行" })).not.toBeNull());
-		expect((html.getByLabelText("Code source") as HTMLTextAreaElement).value).toBe(
+		expect(await html.findByRole("textbox", { name: "可编辑的 node 代码" })).toHaveProperty(
+			"value",
 			'console.log("==literal==")',
 		);
 		expect(html.container.textContent).toContain("node");

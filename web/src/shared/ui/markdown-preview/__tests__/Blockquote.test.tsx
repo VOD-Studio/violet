@@ -1,12 +1,8 @@
 import { readFileSync } from "node:fs";
 import { render } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { HtmlContent } from "../HtmlContent";
 import { MarkdownContent } from "../MarkdownContent";
-
-vi.mock("@/shared/ui/code-preview/use-shiki-highlight", () => ({
-	useShikiHighlight: () => ({ html: "", loading: false }),
-}));
 
 const readers = {
 	Markdown: (content: string) => <MarkdownContent content={content} />,

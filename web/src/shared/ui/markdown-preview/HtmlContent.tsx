@@ -140,6 +140,7 @@ export function HtmlContent({ html, className, context }: HtmlContentProps) {
 				jsx,
 				jsxs,
 				components: createMarkdownComponents(context),
+				passNode: true,
 			}),
 		[html, context],
 	);

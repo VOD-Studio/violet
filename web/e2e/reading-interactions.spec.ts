@@ -5,7 +5,9 @@ import { loadClient } from "./client";
 test("目录键盘焦点的四边均位于滚动裁剪层内", async ({ page, context }) => {
 	await loadClient(context);
 	await page.goto("/blog/contract-rich-toc");
-	await expect(page.locator("[data-article-content] pre.shiki")).toBeVisible();
+	await expect(
+		page.locator("[data-article-content] pre:has(.v-code-block__source > span[style])"),
+	).toBeVisible();
 	await page.getByRole("button", { name: "展开完整目录", exact: true }).focus();
 	const links = page.locator("[data-toc-accordion] a");
 	const count = await links.count();
@@ -56,7 +58,9 @@ test("正文图片打开原图预览，并复用浏览器已经选中的缩略�
 		});
 	});
 	await page.goto("/blog/contract-rich-image");
-	await expect(page.locator("[data-article-content] pre.shiki")).toBeVisible();
+	await expect(
+		page.locator("[data-article-content] pre:has(.v-code-block__source > span[style])"),
+	).toBeVisible();
 	const image = page.getByRole("img", { name: "可预览的正文图片", exact: true });
 	await expect(image).toBeVisible();
 	await expect
@@ -82,7 +86,9 @@ test("正文图片打开原图预览，并复用浏览器已经选中的缩略�
 test("同正文文章切换后，目录跟踪新文章的标题节点", async ({ page, context }) => {
 	await loadClient(context);
 	await page.goto("/blog/contract-rich-toc");
-	await expect(page.locator("[data-article-content] pre.shiki")).toBeVisible();
+	await expect(
+		page.locator("[data-article-content] pre:has(.v-code-block__source > span[style])"),
+	).toBeVisible();
 	const previousTitle = await page.getByRole("heading", { level: 1 }).innerText();
 	await page
 		.getByRole("navigation", { name: "章节导航" })
@@ -90,7 +96,9 @@ test("同正文文章切换后，目录跟踪新文章的标题节点", async ({
 		.click();
 	await expect(page).toHaveURL(/\/blog\/contract-rich-toc-copy$/);
 	await expect(page.getByRole("heading", { level: 1 })).not.toHaveText(previousTitle);
-	await expect(page.locator("[data-article-content] pre.shiki")).toBeVisible();
+	await expect(
+		page.locator("[data-article-content] pre:has(.v-code-block__source > span[style])"),
+	).toBeVisible();
 	await page.getByRole("button", { name: "展开完整目录", exact: true }).hover();
 	const firstLink = page
 		.locator("[data-toc-accordion]")

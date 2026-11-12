@@ -16,7 +16,9 @@ test("评论抽屉关闭时不请求模块，打开失败不替换正文且重�
 	const asset = await blockAsset(context, page, /\/assets\/CommentDrawer-[^/]+\.js$/);
 	const diagnostics = collectUnexpectedDiagnostics(page, asset.blockedUrls);
 	const snapshot = await openWithArticleSnapshot(context, page, "/blog/contract-rich-code");
-	await expect(page.locator("[data-article-content] pre.shiki")).toBeVisible();
+	await expect(
+		page.locator("[data-article-content] pre:has(.v-code-block__source > span[style])"),
+	).toBeVisible();
 	await page.waitForLoadState("networkidle");
 	expect(asset.blockedUrls.size).toBe(0);
 	expect(asset.successfulUrls).toEqual([]);
@@ -61,7 +63,9 @@ test("批注工具下载期间和失败后，原生文字选区仍可见", async
 	});
 	try {
 		await page.goto("/blog/contract-rich-code");
-		await expect(page.locator("[data-article-content] pre.shiki")).toBeVisible();
+		await expect(
+			page.locator("[data-article-content] pre:has(.v-code-block__source > span[style])"),
+		).toBeVisible();
 		const paragraph = page
 			.locator("[data-article-content] p")
 			.filter({ hasText: ARTICLE_START });
@@ -124,7 +128,9 @@ test("段评下载期间可关闭，再次打开失败后仍可关闭", async ({
 	});
 	try {
 		await page.goto("/blog/contract-rich-code");
-		await expect(page.locator("[data-article-content] pre.shiki")).toBeVisible();
+		await expect(
+			page.locator("[data-article-content] pre:has(.v-code-block__source > span[style])"),
+		).toBeVisible();
 		// 首段带划线批注（页边角标负责），段评用未批注的结尾段
 		const paragraph = page
 			.locator("[data-article-content] p")

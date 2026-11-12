@@ -54,6 +54,8 @@ const schema: Schema = {
 			"dataLang",
 			"dataOverrides",
 			"dataSource",
+			"dataFilename",
+			"dataLines",
 		],
 		p: [...(defaultSchema.attributes?.p ?? []), "style"],
 		h1: [...(defaultSchema.attributes?.h1 ?? []), "style"],

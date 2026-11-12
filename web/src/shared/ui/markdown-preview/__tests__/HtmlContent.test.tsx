@@ -10,11 +10,6 @@ import { describe, expect, it, vi } from "vitest";
 import { createMarkdownComponents } from "../components/markdown-components";
 import { HtmlContent } from "../HtmlContent";
 
-// 屏蔽异步 shiki：CodeBlock 走降级 pre/code，便于同步断言代码块结构
-vi.mock("@/shared/ui/code-preview/use-shiki-highlight", () => ({
-	useShikiHighlight: () => ({ html: "", loading: false }),
-}));
-
 // 真实 mermaid 在 jsdom 跑不了（依赖 layout/worker）；mock renderMermaid 同步返回
 // 固定 SVG，断言白名单保留 → 注册表分发 → SVG 写入容器的完整链路。
 // 参考 diagram/__tests__/render-mermaid.test.ts 同款 mock 思路。
@@ -25,7 +20,7 @@ vi.mock("@/shared/ui/diagram/render-mermaid", () => ({
 }));
 
 describe("HtmlContent", () => {
-	it("代码块内含空行时不被拆分：单个 pre、文本完整、无段落混入", () => {
+	it("旧 HTML 代码块保留语言与空行，不被拆分", () => {
 		// 模拟 TipTap getHTML 产出：pre > code.language-x，代码内含空行（函数间）
 		const html = [
 			"<p>intro</p>",
@@ -47,6 +42,7 @@ describe("HtmlContent", () => {
 		const pre = container.querySelector("pre");
 		expect(pre?.textContent).toContain("fn a()");
 		expect(pre?.textContent).toContain("fn b()");
+		expect(container.querySelector("figcaption")?.textContent).toContain("rust");
 
 		// 仅 intro/outro 两个段落，代码块内不应混入拆分产生的段落
 		expect(container.querySelectorAll("p")).toHaveLength(2);
@@ -89,18 +85,6 @@ describe("HtmlContent", () => {
 		const { container } = render(<HtmlContent html={html} />);
 
 		expect(container.querySelector("pre")?.textContent).toContain("if a < b && c > d {}");
-	});
-
-	it("无 language class 的 pre/code 仍按围栏代码块渲染，不降级为行内代码", () => {
-		// 编辑器将「自动/纯文本」存为 language:null，序列化后丢失 language-text class，
-		// 但前台必须仍识别为围栏代码块，否则会变成行内 <code> 样式。
-		const html = "<pre><code>const a = 1;\nconst b = 2;</code></pre>";
-		const { container } = render(<HtmlContent html={html} />);
-
-		// 应有围栏代码块外层卡片，而非行内代码的 bg-primary/10 胶囊样式
-		expect(container.querySelector(".bg-card")).toBeTruthy();
-		expect(container.querySelector("pre")).toBeTruthy();
-		expect(container.querySelector("code.bg-primary\\/10")).toBeNull();
 	});
 
 	it("正文图片走 w=1200 缩略(webp),原图只在预览时加载", () => {

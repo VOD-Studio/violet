@@ -1,6 +1,6 @@
 import { DeferredContent } from "@shared/ui/deferred-content/DeferredContent";
+import { CodeBlock } from "@violet/ui";
 import { type ComponentType, createContext, useContext } from "react";
-import codeScrollbar from "@/shared/ui/code-scrollbar.module.css";
 
 /** 正文代码载体的渲染参数，执行能力由应用层注入。 */
 export interface RunnableCodeProps {
@@ -8,6 +8,8 @@ export interface RunnableCodeProps {
 	source: string;
 	/** 运行参数覆盖项的 JSON 文本；省略时采用代码运行器的默认设置。 */
 	overridesJson?: string;
+	filename?: string;
+	highlightedLines?: readonly number[];
 }
 
 /**
@@ -28,14 +30,16 @@ export const RunnableCodeLoaderContext = createContext<RunnableCodeLoader | null
 export function RunnableCodeRenderer(props: RunnableCodeProps) {
 	const load = useContext(RunnableCodeLoaderContext);
 	const fallback = (
-		<pre
+		<CodeBlock
+			code={props.source}
+			language={props.language}
+			filename={props.filename}
+			highlightedLines={props.highlightedLines}
+			className="my-6"
 			data-runnable="true"
 			data-lang={props.language}
 			data-source={props.source}
-			className={`${codeScrollbar.scrollbar} my-6 overflow-x-auto rounded-lg border border-edge-hairline bg-[#24292e] px-4 py-3 text-sm leading-relaxed text-white/90`}
-		>
-			<code>{props.source}</code>
-		</pre>
+		/>
 	);
 	return load ? (
 		<DeferredContent

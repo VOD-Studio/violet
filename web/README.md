@@ -164,13 +164,15 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 
 修改内容块时同时检查编辑预览与阅读渲染。可运行代码依赖服务端有效策略；项目卡片与路线图读取当前项目数据，而非在文章里保存一份静态副本。
 
+代码展示统一使用 `@violet/ui` 的 `CodeBlock`、`InlineCode` 与 `CodeBlockOutput`。`shared/ui/markdown-preview` 解释文件名、标行与围栏载体，`entities/code-runner` 注入运行策略、执行流和本机 Vim 偏好；阅读页草稿不回写文章。作者编辑仍由 Tiptap 管理，同一份元数据经 Markdown、HTML 与后端转换保留，不复用阅读页的 CodeMirror 实例。
+
 #### 阅读端加载边界
 
 文章详情的路由参数、SSR loader 与 SEO 留在 `routes/blog/$slug.tsx`，阅读界面经 `widgets/BlogDetailPage` 的公开入口组合各 feature。浏览量登记复用 `features/posts/api/mutations` 的 `useIncrementView`，不在组合层拼接业务接口；mutation 状态变化和评论开关不重复提交统计，统计失败不影响正文，HTTP 客户端既有重试策略保持不变。
 
 正文与标题始终由 SSR 输出，不做整篇虚拟化。`useViewportPreparation` 共用视口观察器，按约一个视口的提前量启动代码、图表、大公式和所属手绘外框；准备后保持挂载，滚出再返回不会重建已完成结果。行内公式保留稳定的 LaTeX 语义载体，不逐个设置观察器。`scheduleEnhancement` 分批执行重计算，可见内容优先；外框只在尺寸、圆角或 seed 改变后重画，换色沿用 `currentColor`。
 
-Shiki 初始化、语言准备与分词在按需创建的 Web Worker 中执行，取消的调用丢弃晚回结果。Mermaid 使用独立串行队列，模块与字体下载不阻塞其他增强；图表测量与 SVG 处理仍在主线程，字体与 Inkline 准备完整后再展示。
+Shiki 初始化、语言准备与分词由 `@violet/ui` 的代码块在按需创建的 Web Worker 中执行，取消的调用丢弃晚回结果，增强失败保留原文。Mermaid 使用独立串行队列，模块与字体下载不阻塞其他增强；图表测量与 SVG 处理仍在主线程，字体与 Inkline 准备完整后再展示。
 
 `createAsyncLoader` 统一模块与初始化任务的并发复用、成功缓存和失败清理，不自动重试、不用于参数化业务查询。富内容失败只显示局部反馈，源码与正文继续可读。同 URL 的模块下载失败可能被浏览器缓存，此时提供重新载入页面；样式下载与渲染失败支持局部重试，样式恢复以新 `<link>` 的 `load` 事件确认。
 

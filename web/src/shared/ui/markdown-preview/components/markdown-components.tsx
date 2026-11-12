@@ -10,7 +10,6 @@ import { DeferredContent } from "@shared/ui/deferred-content/DeferredContent";
 import { BlockMathSource } from "@shared/ui/katex/BlockMathSource";
 import { InlineMathContent } from "@shared/ui/katex/InlineMathContent";
 import { loadBlockMathFormula } from "@shared/ui/katex/math-formula-loader";
-import { RunnableCodeRenderer } from "@shared/ui/markdown-preview/code-renderer-context";
 import { ArticleImage } from "@shared/ui/markdown-preview/components/ArticleImage";
 import { cn } from "cn";
 import type { CSSProperties, ReactNode } from "react";
@@ -25,7 +24,7 @@ import { diagramRenderers } from "../../diagram/renderers";
 import { SketchFrame } from "../../sketch-frame/SketchFrame";
 import { nodeToText } from "../node-to-text";
 import { proseElements } from "./prose-elements";
-import { createRichCodeRenderer } from "./rich-code-renderer";
+import { createRichCodeRenderer, createRichPreRenderer } from "./rich-code-renderer";
 
 /**
  * 正文标题渲染:h2-h4 渲染管线都会补 slug id,有 id 时复用悬停锚点
@@ -214,34 +213,7 @@ export const markdownComponents: Components = {
 		);
 	},
 	code: createRichCodeRenderer(),
-	// pre：可运行代码块（data-runnable="true"）渲染 CodeRunner，其余透传给 code 分支。
-	// 可运行块的 data-source 携带 HTML 转义后的原始源码（避免反解高亮 HTML）。
-	pre: ({ children, ...props }) => {
-		const p = props as Record<string, unknown>;
-		if (p["data-runnable"] === "true" || p["data-runnable"] === true) {
-			const lang = String(p["data-lang"] ?? "");
-			const overrides = (() => {
-				const raw = p["data-overrides"];
-				if (!raw || raw === "") return undefined;
-				try {
-					return JSON.parse(String(raw));
-				} catch {
-					return undefined;
-				}
-			})();
-			// data-source 是权威源码（HTML 转义后的原始文本），无则降级用 children 文本
-			const rawSource = p["data-source"];
-			const source = typeof rawSource === "string" ? rawSource : nodeToText(children);
-			return (
-				<RunnableCodeRenderer
-					language={lang}
-					source={source}
-					overridesJson={overrides ? JSON.stringify(overrides) : undefined}
-				/>
-			);
-		}
-		return <>{children}</>;
-	},
+	pre: createRichPreRenderer(),
 	img: ArticleImage,
 };
 
@@ -256,7 +228,11 @@ export function createMarkdownComponents(context?: ArticleContentContext): Compo
 	if (!context) return markdownComponents;
 	let components = contextComponents.get(context);
 	if (!components) {
-		components = { ...markdownComponents, code: createRichCodeRenderer(context) };
+		components = {
+			...markdownComponents,
+			code: createRichCodeRenderer(context),
+			pre: createRichPreRenderer(context),
+		};
 		contextComponents.set(context, components);
 	}
 	return components;

@@ -1,14 +1,3 @@
-/**
- * useCodeRun - 代码执行编排 hook
- *
- * 管理「提交 → SSE 订阅 → 终态」的完整生命周期：
- *   1. submitExecStream 提交拿 task_id
- *   2. streamExec 连 SSE，stdout/stderr chunk 实时回调，done 触发终态
- *   3. 组件卸载时 abort，防泄漏
- *
- * 降级策略：SSE 连接失败时改用轮询 getExecResult（对应 yggdrasil 的兜底）。
- */
-
 import { type StreamHandlers, streamExec, submitExecStream } from "@entities/code-runner/api/exec";
 import type { ExecResult, ResourceLimits } from "@entities/code-runner/model/types";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -38,13 +27,17 @@ export function useCodeRun(): UseCodeRunResult {
 	const [result, setResult] = useState<ExecResult | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const abortRef = useRef<AbortController | null>(null);
+	const generationRef = useRef(0);
 
-	// 卸载时取消进行中的 SSE
 	useEffect(() => {
-		return () => abortRef.current?.abort();
+		return () => {
+			generationRef.current += 1;
+			abortRef.current?.abort();
+		};
 	}, []);
 
 	const reset = useCallback(() => {
+		generationRef.current += 1;
 		abortRef.current?.abort();
 		abortRef.current = null;
 		setState("idle");
@@ -59,7 +52,7 @@ export function useCodeRun(): UseCodeRunResult {
 			handlers: Pick<StreamHandlers, "onStdout" | "onStderr">,
 			overrides?: ResourceLimits,
 		): Promise<ExecResult | null> => {
-			// 中断上一次执行
+			const generation = ++generationRef.current;
 			abortRef.current?.abort();
 			setState("running");
 			setResult(null);
@@ -67,16 +60,30 @@ export function useCodeRun(): UseCodeRunResult {
 
 			try {
 				const taskId = await submitExecStream({ language, source, overrides });
+				// 提交尚未返回时也可能卸载或换源，不再为旧代码建立流。
+				if (generation !== generationRef.current) return null;
 				return await new Promise<ExecResult | null>((resolve) => {
 					const controller = streamExec(taskId, {
-						onStdout: handlers.onStdout,
-						onStderr: handlers.onStderr,
+						onStdout: (text) => {
+							if (generation === generationRef.current) handlers.onStdout?.(text);
+						},
+						onStderr: (text) => {
+							if (generation === generationRef.current) handlers.onStderr?.(text);
+						},
 						onDone: (res) => {
+							if (generation !== generationRef.current) {
+								resolve(null);
+								return;
+							}
 							setResult(res);
 							setState("done");
 							resolve(res);
 						},
 						onError: (err) => {
+							if (generation !== generationRef.current) {
+								resolve(null);
+								return;
+							}
 							setError(err.message);
 							setState("done");
 							resolve(null);
@@ -85,7 +92,7 @@ export function useCodeRun(): UseCodeRunResult {
 					abortRef.current = controller;
 				});
 			} catch (err) {
-				// 提交失败（语言不支持/源码过大/网络错误）
+				if (generation !== generationRef.current) return null;
 				const msg = err instanceof Error ? err.message : String(err);
 				setError(msg);
 				setState("done");

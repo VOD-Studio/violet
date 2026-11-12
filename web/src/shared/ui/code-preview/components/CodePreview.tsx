@@ -1,126 +1,46 @@
-/**
- * 代码预览主组件（shiki）
- *
- * 功能：
- * - 语法高亮（shiki，github-dark 主题）
- * - 行号显示
- * - 横向滚动、等宽字体
- * - 复制代码
- * - 加载/错误状态 + 重试
- */
-
-import { Button } from "@violet/ui";
+import { Button, CodeBlock } from "@violet/ui";
 import { cn } from "cn";
-import { Check, CircleAlert, Copy, RotateCcw } from "lucide-react";
-import { useState } from "react";
-import { copyText } from "@/shared/lib/clipboard";
-
 import { useFilePreviewVariant } from "@/shared/ui/file-preview/file-preview-context";
-import { useCodeHighlight } from "../hooks/useCodeHighlight";
+import { useCodeSource } from "../hooks/useCodeSource";
 import type { CodePreviewProps } from "../types/code-preview-types";
 import { inferLanguage } from "../utils/language";
 
-export function CodePreview({
-	url,
-	name,
-	language,
-	className,
-	showLineNumbers = true,
-}: CodePreviewProps) {
-	const lang = language || inferLanguage(name);
-	const { html, loadStatus, retry } = useCodeHighlight({ url, language: lang });
-	const [copied, setCopied] = useState(false);
+export function CodePreview({ url, name, language, className }: CodePreviewProps) {
+	const { source, loadStatus, retry } = useCodeSource(url);
 	const viewer = useFilePreviewVariant() === "viewer";
-
-	async function handleCopy() {
-		try {
-			const res = await fetch(url);
-			const text = await res.text();
-			const ok = await copyText(text);
-			if (ok) {
-				setCopied(true);
-				setTimeout(() => setCopied(false), 2000);
-			}
-		} catch {
-			// 忽略复制失败
-		}
-	}
-
 	return (
 		<div
-			className={`flex flex-col overflow-hidden rounded-lg border bg-[#24292e] ${className ?? ""}`}
+			className={cn(
+				"min-h-0 overflow-auto rounded-xl",
+				viewer ? "flex-1" : "max-h-[70vh]",
+				className,
+			)}
 		>
-			<div
-				className={cn(
-					"flex items-center border-white/10 border-b px-3 py-1.5",
-					viewer ? "justify-end" : "justify-between",
-				)}
-			>
-				{!viewer ? (
-					<span className="truncate font-mono text-xs text-white/70">{name ?? lang}</span>
-				) : null}
-				<Button
-					iconOnly
-					type="button"
-					size="sm"
-					variant="ghost"
-					className="text-white/70 hover:bg-white/10 hover:text-white"
-					onClick={handleCopy}
-					title="复制代码"
-					aria-label="复制代码"
-				>
-					{copied ? (
-						<Check className="size-3.5 text-green-400" />
-					) : (
-						<Copy className="size-3.5" />
-					)}
-				</Button>
-			</div>
-
-			<div className={cn("max-h-[70vh] overflow-auto", viewer && "max-h-none flex-1")}>
-				{loadStatus === "loading" ? (
-					<div className="flex h-32 items-center justify-center">
-						<div className="size-6 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-					</div>
-				) : loadStatus === "error" ? (
-					<div className="flex h-40 flex-col items-center justify-center gap-2 text-white/60">
-						<CircleAlert className="size-8 text-red-400" />
-						<span className="text-sm">代码加载失败</span>
-						<Button type="button" variant="outline" size="sm" onClick={retry}>
-							<RotateCcw className="mr-1.5 size-3.5" />
-							重试
-						</Button>
-					</div>
-				) : (
-					<CodeBlock html={html} showLineNumbers={showLineNumbers} />
-				)}
-			</div>
-		</div>
-	);
-}
-
-/** 渲染高亮后的代码（shiki 输出 pre>code 结构），叠加行号 */
-function CodeBlock({ html, showLineNumbers }: { html: string; showLineNumbers: boolean }) {
-	// 计算行数用于生成行号列
-	const lineCount = (html.match(/class="line"/g) ?? []).length || 1;
-
-	return (
-		<div className="flex">
-			{showLineNumbers ? (
+			{loadStatus === "ready" ? (
+				<CodeBlock
+					code={source}
+					language={language || inferLanguage(name)}
+					filename={viewer ? undefined : name}
+					collapseLines={0}
+				/>
+			) : loadStatus === "error" ? (
 				<div
-					className="select-none border-r border-white/10 px-3 py-3 text-right font-mono text-xs leading-relaxed text-white/30"
-					aria-hidden="true"
+					role="alert"
+					className="flex min-h-40 flex-col items-center justify-center gap-2 bg-secondary text-muted-foreground"
 				>
-					{Array.from({ length: lineCount }, (_, i) => (
-						<div key={`line-${i + 1}`}>{i + 1}</div>
-					))}
+					<span>代码加载失败</span>
+					<Button type="button" variant="outline" size="sm" onClick={retry}>
+						重试
+					</Button>
 				</div>
-			) : null}
-			<div
-				className="shiki-code flex-1 overflow-x-auto px-4 py-3 [&_pre]:bg-transparent! [&_pre]:m-0! [&_pre]:p-0 [&_code]:font-mono! [&_code]:text-xs! [&_code]:leading-relaxed!"
-				// biome-ignore lint/security/noDangerouslySetInnerHtml: shiki codeToHtml 对代码文本做 HTML 实体转义（<script> 渲染为 &#x3C;script&#x3E; 纯文本，实测无裸标签），输出属性仅 class/style/tabindex 受控集合，无 href/src/on*；代码内容不可能注入可执行 HTML
-				dangerouslySetInnerHTML={{ __html: html }}
-			/>
+			) : (
+				<div
+					role="status"
+					className="flex min-h-32 items-center justify-center bg-secondary text-muted-foreground"
+				>
+					加载代码…
+				</div>
+			)}
 		</div>
 	);
 }
