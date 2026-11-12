@@ -7,84 +7,50 @@ import {
 } from "@violet/ui";
 import { useEffect, useRef, useState } from "react";
 import type { Exhibit, ExhibitRenderProps } from "../../model/exhibit";
-
-const SOURCE = `# 斐波那契：每一项是前两项之和
-def fib(n):
-    a, b = 0, 1
-    for _ in range(n):
-        a, b = b, a + b
-    return a
-
-print([fib(i) for i in range(10)])`;
-const LONG_SOURCE = `package memory
-
-// Roll 把最早的一段对话压缩成一条摘要，摘要再进入长期记忆。
-func (s *Summary) Roll(ctx context.Context, msgs []Message) error {
-\tif len(msgs) < rollEvery {
-\t\treturn nil
-\t}
-\tdigest, err := s.llm.Summarize(ctx, msgs[:rollEvery])
-\tif err != nil {
-\t\treturn fmt.Errorf("summarize: %w", err)
-\t}
-\ts.metrics.Rolled.Add(1)
-\treturn s.store.Append(ctx, digest)
-}
-
-func (s *Summary) Recall(ctx context.Context, q string, k int) ([]Digest, error) {
-\thits, err := s.store.Search(ctx, q, k)
-\tif err != nil {
-\t\treturn nil, err
-\t}
-\tsort.Slice(hits, func(i, j int) bool { return hits[i].Score > hits[j].Score })
-\treturn hits, nil
-}`;
-const FIBONACCI_OUTPUT = "[0, 1, 1, 2, 3, 5, 8, 13, 21, 34]\n";
-const results: Record<string, CodeBlockRunResult> = {
-	success: { status: "success", exitCode: 0, durationMs: 38 },
-	"nonzero-exit": { status: "error", exitCode: 1, durationMs: 41 },
-	timeout: { status: "timeout" },
-	oom: { status: "oom_killed" },
-};
+import {
+	editorPosition,
+	FIBONACCI_OUTPUT,
+	initialOutput,
+	LONG_SOURCE,
+	results,
+	SOURCE,
+} from "./code-block-data";
 
 function CodeBlockSpecimen({ state }: ExhibitRenderProps) {
 	const host = useRef<HTMLDivElement>(null);
 	const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 	const [retried, setRetried] = useState(false);
 	const [running, setRunning] = useState(state === "running");
-	const [output, setOutput] = useState<CodeBlockOutputChunk[]>(
-		state === "running" || results[state]
-			? [
-					{ kind: "info", text: "$ 运行中…\n" },
-					...(state === "success"
-						? [{ kind: "stdout" as const, text: FIBONACCI_OUTPUT }]
-						: state === "nonzero-exit"
-							? [
-									{
-										kind: "stderr" as const,
-										text: "Traceback (most recent call last):\n  File \"main.py\", line 8, in <module>\nTypeError: 'int' object is not iterable\n",
-									},
-								]
-							: []),
-				]
-			: [],
-	);
+	const [output, setOutput] = useState<CodeBlockOutputChunk[]>(() => initialOutput(state));
 	const [result, setResult] = useState<CodeBlockRunResult | undefined>(results[state]);
-	const readonly = ["reading", "highlighted", "folded", "expanded"].includes(state);
+	const readonly =
+		state === "reading" ||
+		state === "highlighted" ||
+		state === "folded" ||
+		state === "expanded";
 	let availability: CodeBlockAvailability = { status: "ready" };
-	if (state === "loading") availability = { status: "loading" };
-	if (state === "disabled") availability = { status: "disabled" };
-	if (state === "language-disabled") availability = { status: "language-disabled" };
-	if (state === "policy-error" && !retried)
+	if (state === "loading") {
+		availability = { status: "loading" };
+	}
+	if (state === "disabled") {
+		availability = { status: "disabled" };
+	}
+	if (state === "language-disabled") {
+		availability = { status: "language-disabled" };
+	}
+	if (state === "policy-error" && !retried) {
 		availability = {
 			status: "error",
 			message: "无法读取运行策略。请重试。",
 			onRetry: () => setRetried(true),
 		};
+	}
 
 	useEffect(
 		() => () => {
-			for (const timer of timers.current) clearTimeout(timer);
+			for (const timer of timers.current) {
+				clearTimeout(timer);
+			}
 		},
 		[],
 	);
@@ -105,27 +71,31 @@ function CodeBlockSpecimen({ state }: ExhibitRenderProps) {
 				"search",
 				"vim-off",
 			].includes(state)
-		)
+		) {
 			return;
+		}
 		let disposed = false;
 		let observer: MutationObserver | undefined;
 		void import("@codemirror/view").then(({ EditorView }) => {
-			if (disposed || !host.current) return;
+			if (disposed || !host.current) {
+				return;
+			}
 			const initialize = () => {
 				const element = host.current?.querySelector<HTMLElement>(".cm-editor");
 				const view = element ? EditorView.findFromDOM(element) : undefined;
-				if (!view) return;
+				if (!view) {
+					return;
+				}
 				observer?.disconnect();
 				if (state === "dirty") {
 					view.dispatch({ changes: { from: 0, insert: "# 修改仅保留在本页\n" } });
 					return;
 				}
-				const line = view.state.doc.line(
-					state === "visual" ? 5 : state === "insert" || state === "vim-off" ? 4 : 3,
-				);
-				const column =
-					state === "visual" ? 15 : state === "insert" || state === "vim-off" ? 19 : 4;
-				view.dispatch({ selection: { anchor: Math.min(line.to, line.from + column) } });
+				const position = editorPosition(state);
+				const line = view.state.doc.line(position.line);
+				view.dispatch({
+					selection: { anchor: Math.min(line.to, line.from + position.column) },
+				});
 				view.focus();
 				const keys: Record<string, string[]> = {
 					insert: ["i"],
@@ -172,7 +142,9 @@ function CodeBlockSpecimen({ state }: ExhibitRenderProps) {
 	}, [state]);
 
 	function demonstrateStream() {
-		for (const timer of timers.current) clearTimeout(timer);
+		for (const timer of timers.current) {
+			clearTimeout(timer);
+		}
 		setRunning(true);
 		setResult(undefined);
 		setOutput([{ kind: "info", text: "$ 运行中…\n" }]);
