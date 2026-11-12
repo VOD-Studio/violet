@@ -138,6 +138,7 @@ function AdminSubscriptionsPage() {
 							variant="ghost"
 							size="sm"
 							title="立即抓取"
+							aria-label="立即抓取"
 							disabled={fetchingIds.has(row.id)}
 							onClick={() => handleFetch(row.id)}
 						>
@@ -150,6 +151,7 @@ function AdminSubscriptionsPage() {
 							variant="ghost"
 							size="sm"
 							title={paused ? "恢复（清零失败计数）" : "暂停"}
+							aria-label={paused ? "恢复（清零失败计数）" : "暂停"}
 							onClick={() => (paused ? resumeMut : pauseMut).mutate(row.id)}
 						>
 							{paused ? (
@@ -163,6 +165,7 @@ function AdminSubscriptionsPage() {
 							variant="ghost"
 							size="sm"
 							title="编辑"
+							aria-label="编辑"
 							onClick={() => setEditing(row)}
 						>
 							<Pencil className="size-3.5" />
@@ -172,6 +175,7 @@ function AdminSubscriptionsPage() {
 							variant="ghost"
 							size="sm"
 							title="删除"
+							aria-label="删除"
 							className="hover:bg-destructive/10 hover:text-destructive"
 							onClick={() => setDeleting(row)}
 						>

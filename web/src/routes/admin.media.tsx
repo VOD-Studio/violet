@@ -613,6 +613,7 @@ function MediaTable({
 							size="sm"
 							variant="ghost"
 							title="编辑"
+							aria-label="编辑"
 							onClick={() => onEdit(file)}
 						>
 							<Pencil className="size-3.5" />
@@ -624,6 +625,7 @@ function MediaTable({
 							size="sm"
 							variant="ghost"
 							title="删除"
+							aria-label="删除"
 							className="hover:bg-destructive/10 hover:text-destructive"
 							onClick={() => onDelete(file)}
 						>

@@ -178,6 +178,7 @@ function AdminCommentsPage() {
 							size="sm"
 							variant="ghost"
 							title="通过"
+							aria-label="通过"
 							onClick={() => approveMut.mutate(row.id)}
 							disabled={approveMut.isPending}
 						>
@@ -190,6 +191,7 @@ function AdminCommentsPage() {
 							size="sm"
 							variant="ghost"
 							title="标为垃圾"
+							aria-label="标为垃圾"
 							className="hover:bg-destructive/10 hover:text-destructive"
 							onClick={() => spamMut.mutate(row.id)}
 							disabled={spamMut.isPending}
@@ -203,6 +205,7 @@ function AdminCommentsPage() {
 							size="sm"
 							variant="ghost"
 							title="删除"
+							aria-label="删除"
 							className="hover:bg-destructive/10 hover:text-destructive"
 							onClick={() => setDeletingId(row.id)}
 							disabled={deleteMut.isPending}

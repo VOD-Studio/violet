@@ -529,6 +529,7 @@ function RowActions({
 						variant="ghost"
 						size="sm"
 						title="恢复"
+						aria-label="恢复"
 						onClick={handleRestore}
 						disabled={restorePost.isPending}
 					>
@@ -541,6 +542,7 @@ function RowActions({
 						variant="ghost"
 						size="sm"
 						title="彻底删除"
+						aria-label="彻底删除"
 						className="hover:bg-destructive/10 hover:text-destructive"
 						onClick={() => onDelete(row)}
 					>
@@ -563,6 +565,7 @@ function RowActions({
 						variant="ghost"
 						size="sm"
 						title="更多操作"
+						aria-label="更多操作"
 						className="w-auto min-w-8 px-1.5"
 					>
 						<Ellipsis />

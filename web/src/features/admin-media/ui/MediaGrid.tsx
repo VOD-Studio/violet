@@ -121,6 +121,7 @@ function MediaCard({
 						className="size-7 shadow-sm"
 						onClick={() => onPickCover(file)}
 						title="选帧设封面"
+						aria-label="选帧设封面"
 					>
 						<Film className="size-3" />
 					</Button>
@@ -133,6 +134,7 @@ function MediaCard({
 						className="size-7 shadow-sm"
 						onClick={() => onCrop(file)}
 						title="裁剪"
+						aria-label="裁剪"
 					>
 						<Crop className="size-3" />
 					</Button>
@@ -145,6 +147,7 @@ function MediaCard({
 						className="size-7 shadow-sm"
 						onClick={() => onEdit(file)}
 						title="编辑"
+						aria-label="编辑"
 					>
 						<Pencil className="size-3" />
 					</Button>
@@ -157,6 +160,7 @@ function MediaCard({
 						className="size-7 shadow-sm hover:bg-destructive hover:text-destructive-foreground"
 						onClick={() => onDelete(file)}
 						title="删除"
+						aria-label="删除"
 					>
 						<Trash2 className="size-3" />
 					</Button>

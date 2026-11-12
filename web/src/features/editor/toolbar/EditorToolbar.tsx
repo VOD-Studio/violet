@@ -83,6 +83,7 @@ export function EditorToolbar({
 				variant="ghost"
 				size="sm"
 				title={item.title}
+				aria-label={item.title}
 				disabled={disabled}
 				onMouseDown={keepFocus}
 				onClick={() => item.run(editor)}
@@ -134,6 +135,7 @@ export function EditorToolbar({
 							variant="ghost"
 							size="sm"
 							title="插入图片"
+							aria-label="插入图片"
 							className="w-auto min-w-8 px-1.5"
 						>
 							<ImagePlus />

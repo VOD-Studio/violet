@@ -167,6 +167,7 @@ function AdminFriendLinksPage() {
 								variant="ghost"
 								size="sm"
 								title={row.status === "rejected" ? "改判为通过" : "批准"}
+								aria-label={row.status === "rejected" ? "改判为通过" : "批准"}
 								disabled={approveMut.isPending}
 								onClick={() => approveMut.mutate(row.id)}
 							>
@@ -179,6 +180,7 @@ function AdminFriendLinksPage() {
 								variant="ghost"
 								size="sm"
 								title="拒绝"
+								aria-label="拒绝"
 								disabled={rejectMut.isPending}
 								onClick={() => rejectMut.mutate(row.id)}
 							>
@@ -191,6 +193,7 @@ function AdminFriendLinksPage() {
 								variant="ghost"
 								size="sm"
 								title="下柜"
+								aria-label="下柜"
 								disabled={disableMut.isPending}
 								onClick={() => disableMut.mutate(row.id)}
 							>
@@ -203,6 +206,7 @@ function AdminFriendLinksPage() {
 								variant="ghost"
 								size="sm"
 								title="恢复"
+								aria-label="恢复"
 								disabled={restoreMut.isPending}
 								onClick={() => restoreMut.mutate(row.id)}
 							>
@@ -215,6 +219,7 @@ function AdminFriendLinksPage() {
 							variant="ghost"
 							size="sm"
 							title="编辑"
+							aria-label="编辑"
 							onClick={() => setEditing(row)}
 						>
 							<Pencil className="size-3.5" />
@@ -224,6 +229,7 @@ function AdminFriendLinksPage() {
 							variant="ghost"
 							size="sm"
 							title="删除"
+							aria-label="删除"
 							className="hover:bg-destructive/10 hover:text-destructive"
 							onClick={() => setDeleting(row)}
 						>

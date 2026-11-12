@@ -20,7 +20,11 @@ function Shelf() {
 						</p>
 						<h1 className="text-4xl font-semibold tracking-tight">书架</h1>
 					</div>
-					<button type="button" className="rounded-full border border-current/15 p-3">
+					<button
+						type="button"
+						aria-label="搜索"
+						className="rounded-full border border-current/15 p-3"
+					>
 						<Search className="size-5" />
 					</button>
 				</header>

@@ -137,6 +137,7 @@ function AdminLogsPage() {
 					variant="ghost"
 					size="sm"
 					title="查看详情"
+					aria-label="查看详情"
 					onClick={() => setDetailLog(row)}
 				>
 					<Eye className="size-3.5" />

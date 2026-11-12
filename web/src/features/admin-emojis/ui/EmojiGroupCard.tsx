@@ -163,6 +163,7 @@ export function EmojiGroupCard({ group, onEdit, onDelete, onManageEmojis }: Emoj
 							size="sm"
 							onClick={() => onEdit(group)}
 							title="编辑"
+							aria-label="编辑"
 							disabled={isDisabled}
 						>
 							<Pencil className="size-3.5" />
@@ -175,6 +176,7 @@ export function EmojiGroupCard({ group, onEdit, onDelete, onManageEmojis }: Emoj
 							size="sm"
 							onClick={() => onDelete(group)}
 							title="删除"
+							aria-label="删除"
 							className={cn(
 								"hover:bg-destructive/10 hover:text-destructive",
 								isDisabled && "hover:bg-transparent",
