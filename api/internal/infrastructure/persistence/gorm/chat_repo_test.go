@@ -69,11 +69,11 @@ func TestChatRepositoryBotReplyRejectsStaleSnapshot(t *testing.T) {
 	require.NoError(t, db.Create(messageToPO(message)).Error)
 	stale, err := repo.FindMessage(context.Background(), message.ConversationID(), message.ID())
 	require.NoError(t, err)
-	require.NoError(t, message.AdvanceBotReply("新正文", "", domainchat.BotReplyStreaming, 1, now.Add(time.Second)))
+	require.NoError(t, message.AdvanceBotReply("新正文", "", nil, domainchat.BotReplyStreaming, 1, now.Add(time.Second)))
 	events, err := repo.UpdateBotReply(context.Background(), message, 0, []domainshared.ID{domainshared.NewID()})
 	require.NoError(t, err)
 	require.Len(t, events, 1)
-	require.NoError(t, stale.AdvanceBotReply("旧正文", "", domainchat.BotReplyStreaming, 1, now.Add(time.Second)))
+	require.NoError(t, stale.AdvanceBotReply("旧正文", "", nil, domainchat.BotReplyStreaming, 1, now.Add(time.Second)))
 	_, err = repo.UpdateBotReply(context.Background(), stale, 0, nil)
 	require.Error(t, err)
 	reloaded, err := repo.FindMessage(context.Background(), message.ConversationID(), message.ID())
@@ -187,4 +187,49 @@ func TestChatRepositoryReadPositionDoesNotRegress(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestChatRepositoryBotToolCallsRoundTrip(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "bot-tool-calls.db")), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	require.NoError(t, err)
+	require.NoError(t, db.AutoMigrate(&model.ChatMessage{}, &model.ChatMessageMedia{}))
+	repo := NewChatRepository(db)
+	ctx := context.Background()
+	now := time.Now().UTC()
+
+	message, err := domainchat.NewPendingBotMessage(domainshared.NewID(), domainshared.NewID(), "tool-calls", now, nil)
+	require.NoError(t, err)
+	po := messageToPO(message)
+	require.Equal(t, "[]", string(po.BotToolCalls), "空快照应落库为空数组")
+	require.NoError(t, db.Create(po).Error)
+
+	calls := []domainchat.BotToolCall{
+		{ID: "call_1", Name: "web_search", Status: domainchat.BotToolCallRunning, Arguments: `{"q":"x"}`},
+		{Name: "fetch_url", Status: domainchat.BotToolCallFailed, Error: "boom", DurationMS: 3120},
+	}
+	require.NoError(t, message.AdvanceBotReply("", "", calls, domainchat.BotReplyStreaming, 1, now.Add(time.Second)))
+	_, err = repo.UpdateBotReply(ctx, message, 0, nil)
+	require.NoError(t, err)
+
+	reloaded, err := repo.FindMessage(ctx, message.ConversationID(), message.ID())
+	require.NoError(t, err)
+	require.Equal(t, calls, reloaded.BotReply().ToolCalls())
+
+	legacyID, legacyConversationID := uuid.New(), uuid.New()
+	require.NoError(t, db.Exec(
+		`INSERT INTO chat_messages (id, conversation_id, sender_id, message_type, content, idempotency_key, bot_status, bot_thinking, bot_revision, bot_updated_at, created_at, updated_at)
+		 VALUES (?, ?, ?, 'text', '旧消息', 'legacy-1', 'completed', '', 1, ?, ?, ?)`,
+		legacyID, legacyConversationID, uuid.New(), now, now, now,
+	).Error)
+	legacy, err := repo.FindMessage(ctx, domainshared.IDFromUUID(legacyConversationID), domainshared.IDFromUUID(legacyID))
+	require.NoError(t, err)
+	require.NotNil(t, legacy.BotReply())
+	require.Empty(t, legacy.BotReply().ToolCalls(), "历史行按列默认值读作空列表")
+
+	require.NoError(t, db.Exec("UPDATE chat_messages SET bot_tool_calls = ? WHERE id = ?", "{broken", message.ID().UUID()).Error)
+	degraded, err := repo.FindMessage(ctx, message.ConversationID(), message.ID())
+	require.NoError(t, err, "损坏的工具调用 JSON 不应让读取失败")
+	require.Empty(t, degraded.BotReply().ToolCalls())
 }

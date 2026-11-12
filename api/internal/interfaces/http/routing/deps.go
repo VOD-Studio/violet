@@ -117,17 +117,19 @@ type Deps struct {
 	System                 *systemhttp.Handler
 	Image                  *imagehttp.Handler
 	Tweet                  *tweethttp.Handler
-	FriendLink             *friendlinkhttp.Handler
-	LinkPreview            *linkpreviewhttp.Handler
-	Series                 *serieshttp.Handler
-	Gallery                *galleryhttp.Handler
-	Note                   *notehttp.Handler
-	Publication            *publicationhttp.Handler
-	Persona                *personahttp.Handler
-	Notification           *notificationhttp.Handler
-	NotificationStream     *notificationhttp.StreamHandler
-	Chat                   *chathttp.Handler
-	ChatStream             *chathttp.StreamHandler
+	// TweetBot 外部 bot 的推文写入面（与 ChatBot 一样挂根 router 绕开 CSRF）。
+	TweetBot           *tweethttp.BotHandler
+	FriendLink         *friendlinkhttp.Handler
+	LinkPreview        *linkpreviewhttp.Handler
+	Series             *serieshttp.Handler
+	Gallery            *galleryhttp.Handler
+	Note               *notehttp.Handler
+	Publication        *publicationhttp.Handler
+	Persona            *personahttp.Handler
+	Notification       *notificationhttp.Handler
+	NotificationStream *notificationhttp.StreamHandler
+	Chat               *chathttp.Handler
+	ChatStream         *chathttp.StreamHandler
 	// Bot API（外部程序以 Bearer bot token 收发消息）与其后台管理。
 	BotAuth      func(http.Handler) http.Handler
 	ChatBot      *chathttp.BotHandler

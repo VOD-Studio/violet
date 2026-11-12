@@ -9,6 +9,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -19,6 +22,7 @@ import (
 	"github.com/rs/zerolog/log"
 	_ "golang.org/x/image/webp"
 
+	appshared "blog-api/internal/application/shared"
 	domainemoji "blog-api/internal/domain/emoji"
 	"blog-api/internal/domain/shared"
 	domainupload "blog-api/internal/domain/upload"
@@ -52,6 +56,8 @@ type EmojiDTO struct {
 	TextContent string        `json:"text_content,omitempty"`
 	SortOrder   int           `json:"sort_order,omitempty"`
 	Meta        *EmojiMetaDTO `json:"meta,omitempty"`
+	// Token 可直接发进正文的系统表情占位符，形如 [name]
+	Token string `json:"token"`
 }
 
 // EmojiMetaDTO 表情元数据读模型（alias/size/type，源自 B站 meta 子对象与顶层 type）
@@ -433,6 +439,7 @@ func emojiGroupsToDTOs(groups []*domainemoji.EmojiGroup) []EmojiGroupDTO {
 func emojiToDTO(e domainemoji.Emoji) EmojiDTO {
 	dto := EmojiDTO{
 		ID: e.ID(), GroupID: e.GroupID(), Name: e.Name(), URL: e.URL(),
+		Token:     appshared.EmojiToken(e.Name()),
 		SourceURL: e.SourceURL(), GifURL: e.GifURL(),
 		TextContent: e.TextContent(), SortOrder: e.SortOrder(),
 		Meta: metaToDTO(e.Meta()),
@@ -1224,14 +1231,44 @@ type BotMediaDTO struct {
 
 // SaveBotMedia 校验并保存 bot 上传的聊天图片。
 func (s *UploadService) SaveBotMedia(ctx context.Context, in SaveBotMediaInput) (BotMediaDTO, error) {
-	ext, ok := SniffImageExt(in.Data)
-	if !ok {
-		return BotMediaDTO{}, shared.BadRequest("仅支持 png、jpeg、gif、webp 图片")
-	}
-	if in.MIMEType != imageMIMEByExt[ext] {
-		return BotMediaDTO{}, shared.BadRequest("图片 MIME 类型与文件内容不一致")
+	ext, err := validateBotImage(in)
+	if err != nil {
+		return BotMediaDTO{}, err
 	}
 	return s.saveImageDTO(ctx, in.OwnerID, domainupload.PurposeChat, in.OriginalName, ext, in.Data)
+}
+
+// SaveBotTweetImage 校验并保存 bot 上传的推文配图（purpose=tweet）。
+func (s *UploadService) SaveBotTweetImage(ctx context.Context, in SaveBotMediaInput) (BotMediaDTO, error) {
+	ext, err := validateBotImage(in)
+	if err != nil {
+		return BotMediaDTO{}, err
+	}
+	return s.saveImageDTO(ctx, in.OwnerID, domainupload.PurposeTweet, in.OriginalName, ext, in.Data)
+}
+
+// SaveBotAvatar 校验并保存 bot 自身头像（purpose=avatar，最多 10 MiB）。
+func (s *UploadService) SaveBotAvatar(ctx context.Context, in SaveBotMediaInput) (BotMediaDTO, error) {
+	if in.OwnerID.IsZero() || len(in.Data) == 0 || len(in.Data) > 10<<20 {
+		return BotMediaDTO{}, shared.BadRequest("头像归属无效、内容为空或超过 10 MiB")
+	}
+	ext, err := validateBotImage(in)
+	if err != nil {
+		return BotMediaDTO{}, err
+	}
+	return s.saveImageDTO(ctx, in.OwnerID, domainupload.PurposeAvatar, in.OriginalName, ext, in.Data)
+}
+
+// validateBotImage 按内容嗅探图片格式，并要求声明的 MIME 与之一致。
+func validateBotImage(in SaveBotMediaInput) (string, error) {
+	ext, ok := SniffImageExt(in.Data)
+	if !ok {
+		return "", shared.BadRequest("仅支持 png、jpeg、gif、webp 图片")
+	}
+	if in.MIMEType != imageMIMEByExt[ext] {
+		return "", shared.BadRequest("图片 MIME 类型与文件内容不一致")
+	}
+	return ext, nil
 }
 
 // SavePostImageInput 是 MCP 为文章上传配图的用例入参。

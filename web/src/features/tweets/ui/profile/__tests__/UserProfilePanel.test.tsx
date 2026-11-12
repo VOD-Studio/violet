@@ -113,3 +113,24 @@ describe("UserProfilePanel", () => {
 		);
 	});
 });
+
+describe("UserProfilePanel — Bot 标识", () => {
+	it("Bot 资料在显示名旁展示 BOT 徽章，且访客仍可发起私聊", () => {
+		me.current = { id: "u2" };
+		render(
+			<UserProfilePanel
+				profile={{ ...profile, is_bot: true }}
+				tweetCount="0"
+				mediaCount={0}
+				likeCount="0"
+			/>,
+		);
+		expect(screen.getByText("BOT")).toBeTruthy();
+		expect(screen.getByRole("button", { name: /发起私聊/ })).toBeTruthy();
+	});
+
+	it("人类资料不展示 BOT 徽章", () => {
+		render(<UserProfilePanel profile={profile} tweetCount="0" mediaCount={0} likeCount="0" />);
+		expect(screen.queryByText("BOT")).toBeNull();
+	});
+});

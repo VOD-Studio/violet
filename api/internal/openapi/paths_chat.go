@@ -11,10 +11,20 @@ func registerChatPaths(t *openapi3.T) {
 		"avatar_url":   optStr("头像地址"),
 		"is_bot":       optBool("是否为 Bot 虚拟用户；吊销凭据后仍保留身份"),
 	})
+	registerSchema(t, "ChatBotToolCallDTO", openapi3.Schemas{
+		"id":          optStr("调用方稳定标识，单条回复内唯一"),
+		"name":        reqStr("工具名"),
+		"status":      strEnum("running、completed 或 failed；已存记录恒有值", "running", "completed", "failed"),
+		"arguments":   optStr("调用参数原文"),
+		"result":      optStr("工具返回内容原文"),
+		"error":       optStr("失败原因原文"),
+		"duration_ms": optInt64("调用耗时（毫秒）"),
+	})
 	registerSchema(t, "ChatBotReplyDTO", openapi3.Schemas{
 		"status":                    reqStr("pending、thinking、streaming、completed 或 failed"),
 		"thinking":                  optStr("后台允许展示时的思考内容"),
 		"thinking_default_expanded": optBool("思考内容是否默认展开"),
+		"tool_calls":                refArray("累计工具调用快照；无调用时省略", "ChatBotToolCallDTO"),
 		"revision":                  optInt64("累计更新版本"),
 		"updated_at":                reqStr("最近上报时间"),
 	})
