@@ -1,5 +1,5 @@
 import type { EmojiGroup } from "@entities/emoji/model/types";
-import type { AggregatedReaction } from "@entities/reaction/model/types";
+import type { AggregatedReaction, CommentReactionResult } from "@entities/reaction/model/types";
 import { authKeys } from "@features/auth/api/keys";
 import { emojiKeys } from "@features/emojis/api/keys";
 import { apiGet, apiPost } from "@shared/api/request";
@@ -9,7 +9,6 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { toast } from "sonner";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { commentKeys } from "../../api/keys";
-import type { BatchReactionResult } from "../../model/types";
 import { CommentReactions } from "../CommentReactions";
 import { ReactionProvider } from "../ReactionProvider";
 
@@ -65,18 +64,13 @@ afterEach(() => {
 
 it("失败只恢复目标回应，保留另一评论成功更新与同评论其他回应；刷新完成前保持忙碌", async () => {
 	const key = [...commentKeys.reactions(), "batch", ["c1", "c2"]];
-	qc.setQueryData<BatchReactionResult[]>(key, [
+	qc.setQueryData<CommentReactionResult[]>(key, [
 		{ comment_id: "c1", reactions: [original] },
 		{ comment_id: "c2", reactions: [original] },
 	]);
-	let rejectWrite!: (error: Error) => void;
-	let finishRefresh!: (data: BatchReactionResult[]) => void;
-	const write = new Promise<null>((_resolve, reject) => {
-		rejectWrite = reject;
-	});
-	const refresh = new Promise<BatchReactionResult[]>((resolve) => {
-		finishRefresh = resolve;
-	});
+	const { promise: write, reject: rejectWrite } = Promise.withResolvers<null>();
+	const { promise: refresh, resolve: finishRefresh } =
+		Promise.withResolvers<CommentReactionResult[]>();
 	vi.mocked(apiPost).mockImplementation((path) => {
 		if (path === "/comments/reactions/batch") {
 			return refresh as never;
@@ -88,10 +82,10 @@ it("失败只恢复目标回应，保留另一评论成功更新与同评论其�
 		<QueryClientProvider client={qc}>
 			<ReactionProvider commentIds={["c1", "c2"]}>
 				<section aria-label="第一条">
-					<CommentReactions commentId="c1" isLoggedIn />
+					<CommentReactions postId="p1" commentId="c1" isLoggedIn />
 				</section>
 				<section aria-label="第二条">
-					<CommentReactions commentId="c2" isLoggedIn />
+					<CommentReactions postId="p1" commentId="c2" isLoggedIn />
 				</section>
 			</ReactionProvider>
 		</QueryClientProvider>,
@@ -99,14 +93,14 @@ it("失败只恢复目标回应，保留另一评论成功更新与同评论其�
 	const first = within(screen.getByRole("region", { name: "第一条" }));
 	fireEvent.click(first.getByRole("button", { name: "赞，2 人" }));
 	await first.findByRole("button", { name: "赞，3 人，你已回应" });
-	const optimistic = qc.getQueryData<BatchReactionResult[]>(key)?.[0].reactions[0];
+	const optimistic = qc.getQueryData<CommentReactionResult[]>(key)?.[0].reactions[0];
 	expect(optimistic?.recent_users[0]).toEqual({ id: "me", name: "本人" });
 	expect(
 		first.getByRole("button", { name: "赞，3 人，你已回应" }).querySelector("img")?.src,
 	).toContain("/like.gif");
 	const otherReaction = { ...original, emoji_id: 2, emoji_name: "笑", count: 7 };
 	act(() =>
-		qc.setQueryData<BatchReactionResult[]>(key, (data) =>
+		qc.setQueryData<CommentReactionResult[]>(key, (data) =>
 			data?.map((item) => ({
 				...item,
 				reactions:
@@ -131,7 +125,7 @@ it("失败只恢复目标回应，保留另一评论成功更新与同评论其�
 		"true",
 	);
 	await act(async () => {
-		finishRefresh(qc.getQueryData<BatchReactionResult[]>(key) ?? []);
+		finishRefresh(qc.getQueryData<CommentReactionResult[]>(key) ?? []);
 	});
 	await waitFor(() =>
 		expect(
@@ -145,7 +139,7 @@ it("访客没有添加入口，点已有回应只提示登录而不提交", asyn
 	const info = vi.spyOn(toast, "info");
 	render(
 		<QueryClientProvider client={qc}>
-			<CommentReactions commentId="c1" />
+			<CommentReactions postId="p1" commentId="c1" />
 		</QueryClientProvider>,
 	);
 	fireEvent.click(await screen.findByRole("button", { name: "赞，2 人" }));
@@ -166,7 +160,7 @@ it("完整选择器新增回应立即携带本人名单和 GIF，失败移除新
 	vi.mocked(apiGet).mockResolvedValue([]);
 	render(
 		<QueryClientProvider client={qc}>
-			<CommentReactions commentId="c1" isLoggedIn />
+			<CommentReactions postId="p1" commentId="c1" isLoggedIn />
 		</QueryClientProvider>,
 	);
 	fireEvent.click(screen.getByRole("button", { name: "添加回应" }));

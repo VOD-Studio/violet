@@ -8,21 +8,13 @@
  * - Comment / AdminComment 见 application/comment/service.go。
  * - AggregatedReaction / ReactionList 见 domain/commentreaction/entity.go。
  */
-import type { AdminComment, Comment, CommentPicture } from "@entities/comment/model/types";
-import type { AggregatedReaction } from "@entities/reaction/model/types";
+import type {
+	AdminComment,
+	Comment,
+	CommentPicture,
+	CommentSort,
+} from "@entities/comment/model/types";
 import type { PageQuery } from "@shared/api/types";
-
-/**
- * BatchReactionResult - 批量反应查询的单条结果
- *
- * 对应后端 domain/commentreaction/entity.go 的 ReactionList。
- */
-export interface BatchReactionResult {
-	/** 评论 ID */
-	comment_id: string;
-	/** 该评论的聚合反应列表 */
-	reactions: AggregatedReaction[];
-}
 
 /**
  * CommentType - 评论按 anchor 维度过滤的字面量联合
@@ -44,6 +36,8 @@ export interface CommentListQuery extends PageQuery {
 	top_level?: boolean;
 	/** 按 anchor_block_id 精确过滤（批注按块懒加载） */
 	block_id?: string;
+	/** 顶层自由评论的真实排序；省略时由后端按最新优先。 */
+	sort?: CommentSort;
 }
 
 /**
@@ -84,8 +78,7 @@ export interface BlockAuthor {
 /** 批注气泡按原始署名与 is_ai 筛选，区分同名真人与 AI。 */
 export type AnnotationAuthorFilter = { name: string; is_ai: boolean } | null;
 
-/** 回复排序方式。asc=最早优先（默认），desc=最新优先。
- *  「热门」需 reaction_count 冗余，本期未实现。 */
+/** 回复只按时间排序：asc=最早优先（默认），desc=最新优先；热门仅用于顶层列表。 */
 export type ReplySort = "asc" | "desc";
 
 /**

@@ -5,15 +5,14 @@
  * - 批量查询返回的 reactions 为 null 时，useReactionsFromContext 返回空数组
  * - 批量查询正常返回时，子组件能读到对应评论的反应
  */
-import type { AggregatedReaction } from "@entities/reaction/model/types";
+import type { AggregatedReaction, CommentReactionResult } from "@entities/reaction/model/types";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { BatchReactionResult } from "../../model/types";
 import { ReactionProvider, useReactionsFromContext } from "../ReactionProvider";
 
 const batchReactions = vi.fn((_ids: string[]) => ({
-	data: undefined as BatchReactionResult[] | undefined,
+	data: undefined as CommentReactionResult[] | undefined,
 	isLoading: false,
 }));
 const singleReactions = vi.fn((_id: string, _options: { enabled?: boolean }) => ({
