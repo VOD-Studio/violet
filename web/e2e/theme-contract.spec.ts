@@ -7,7 +7,9 @@ import {
 	CONTRACT_ORIGIN,
 	canonicalColor,
 	contrastRatio,
+	openAppearancePanel,
 	type ScopeColors,
+	SEMANTIC_TOKENS,
 	scopeColors,
 } from "./theme-harness";
 
@@ -127,12 +129,11 @@ for (const theme of SEASONS) {
 							: appearance === "dark"
 								? "暗黑"
 								: "亮色";
+					const panel = await openAppearancePanel(page);
 					await expect(
-						page
-							.locator("header")
-							.first()
-							.getByRole("radio", { name: label, exact: true, includeHidden: true }),
+						panel.getByRole("radio", { name: label, exact: true }),
 					).toHaveAttribute("aria-checked", "true");
+					await page.keyboard.press("Escape");
 					await expect(page.locator("html")).toHaveClass(new RegExp(`\\b${resolved}\\b`));
 					await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
 					expect(await scopeColors(page, "html"), "根 token 首帧与水合一致").toEqual(
@@ -212,7 +213,7 @@ for (const appearance of ["light", "dark"] as const) {
 		await page.goto("/admin", { waitUntil: "load" });
 		await expect(page.locator(".dialect-tool")).toHaveCount(0);
 		await expect(page.locator("html")).toHaveAttribute("data-theme", "custom");
-		const scope = await scopeColors(page, "html");
+		const scope = await scopeColors(page, "html", [...SEMANTIC_TOKENS, "material-accent"]);
 		expect(scope.primary.value).toBe(scope.foreground.value);
 		expect(scope.link.value).toBe(scope["material-accent"].value);
 		expectReadableText(scope);
@@ -276,7 +277,10 @@ for (const appearance of ["light", "dark"] as const) {
 				await page.goto("/admin", { waitUntil: "load" });
 				await expect(page.locator(".dialect-tool")).toHaveCount(0);
 				await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
-				const scope = await scopeColors(page, "html");
+				const scope = await scopeColors(page, "html", [
+					...SEMANTIC_TOKENS,
+					"material-accent",
+				]);
 				expect(scope.primary.value).toBe(scope.foreground.value);
 				expect(scope.link.value).toBe(scope["material-accent"].value);
 				expect(scope.ring.value).toBe(scope["material-accent"].value);
@@ -302,7 +306,7 @@ for (const appearance of ["light", "dark"] as const) {
 			const dialog = page.locator('[role="dialog"][aria-label="图片预览"]');
 			await expect(dialog).toBeVisible();
 			await expect(page.locator(".dialect-immersive")).toHaveCount(0);
-			const overlay = dialog.locator(".backdrop-blur-\\[20px\\]");
+			const overlay = dialog.locator(".bg-scrim-paper");
 			await expect(overlay).toBeVisible();
 			await page.keyboard.press("Escape");
 			await expect(dialog).toHaveCount(0);

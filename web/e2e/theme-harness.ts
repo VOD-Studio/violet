@@ -188,3 +188,11 @@ export function canonicalColor(page: Page, value: string) {
 		return computed;
 	}, value);
 }
+
+/** 打开顶栏「季节与外观」面板；明暗单选在面板里，未打开时不在 DOM。 */
+export async function openAppearancePanel(page: Page) {
+	await page.getByRole("button", { name: /^季节与外观：/ }).click();
+	const panel = page.getByRole("dialog", { name: "季节与外观" });
+	await panel.waitFor();
+	return panel;
+}

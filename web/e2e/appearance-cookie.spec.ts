@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { loadClient } from "./client";
-import { CONTRACT_ORIGIN } from "./theme-harness";
+import { CONTRACT_ORIGIN, openAppearancePanel } from "./theme-harness";
 
 for (const appearance of ["light", "dark"] as const) {
 	test(`旧外观 cookie：${appearance} 在禁用 JS 时由 SSR 迁移`, async ({ browser }) => {
@@ -42,8 +42,8 @@ test("旧 system 偏好迁移后仍跟随系统，手动切换只更新新 cooki
 	await loadClient(context);
 	const page = await context.newPage();
 	await page.goto("/", { waitUntil: "load" });
-	const header = page.locator("header").first();
-	await expect(header.getByRole("radio", { name: "跟随系统", exact: true })).toHaveAttribute(
+	const panel = await openAppearancePanel(page);
+	await expect(panel.getByRole("radio", { name: "跟随系统", exact: true })).toHaveAttribute(
 		"aria-checked",
 		"true",
 	);
@@ -56,8 +56,7 @@ test("旧 system 偏好迁移后仍跟随系统，手动切换只更新新 cooki
 				(await context.cookies()).find((cookie) => cookie.name === "appearance")?.value,
 		)
 		.toBe("light");
-	await header.getByRole("link", { name: "登录", exact: true }).hover();
-	await header.getByRole("radio", { name: "暗黑", exact: true }).click();
+	await panel.getByRole("radio", { name: "暗黑", exact: true }).click();
 	await expect(page.locator("html")).toHaveClass(/\bdark\b/);
 	await expect
 		.poll(

@@ -130,13 +130,14 @@ test("SSR 首帧按图层开关卸载插画与粒子，不留下空背景", asyn
 	await context.close();
 });
 
-test("工具页面不显示装饰", async ({ browser }) => {
+test("工具页面不显示背景与插画装饰，页头药丸装饰仍属导航", async ({ browser }) => {
 	const context = await appearanceContext(browser, "light", { decoration: "autumn" });
 	const page = await context.newPage();
 	await page.goto("/inkline", { waitUntil: "load" });
 	const shown = await page.locator("[data-decoration-slot]").evaluateAll(
 		(nodes) =>
 			nodes.filter((node) => {
+				if (node.closest("header")) return false;
 				const style = getComputedStyle(node);
 				return (
 					style.display !== "none" &&
@@ -302,8 +303,9 @@ test("命令面板切换装饰不改变主题", async ({ browser }) => {
 	const header = page.locator("header").first();
 	await header.getByRole("button", { name: /^搜索/ }).click();
 	const dialog = page.getByRole("dialog");
-	await dialog.getByRole("textbox").fill("装饰");
-	await dialog.getByRole("button", { name: "装饰：无", exact: true }).click();
+	await dialog.getByRole("combobox").fill("装饰");
+	await dialog.getByRole("option", { name: /^切换装饰/ }).click();
+	await dialog.getByRole("option", { name: "无", exact: true }).click();
 	await expect(page.locator("html")).toHaveAttribute("data-theme", "summer");
 	await expect(page.locator("html")).toHaveAttribute("data-decoration", "none");
 	await expect(page.locator("[data-decoration-slot]")).toHaveCount(0);
