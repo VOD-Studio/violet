@@ -4,7 +4,7 @@ import {
 	closeBracketsKeymap,
 	completionKeymap,
 } from "@codemirror/autocomplete";
-import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import { defaultKeymap, history, historyKeymap, isolateHistory } from "@codemirror/commands";
 import { go } from "@codemirror/lang-go";
 import { javascript } from "@codemirror/lang-javascript";
 import { python } from "@codemirror/lang-python";
@@ -17,7 +17,7 @@ import {
 } from "@codemirror/language";
 import { lintKeymap } from "@codemirror/lint";
 import { highlightSelectionMatches, searchKeymap, setSearchQuery } from "@codemirror/search";
-import { Compartment, EditorState, type Extension, Transaction } from "@codemirror/state";
+import { Compartment, EditorState, type Extension } from "@codemirror/state";
 import {
 	crosshairCursor,
 	drawSelection,
@@ -32,7 +32,12 @@ import {
 } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
 import { type CodeMirror, getCM, vim } from "@replit/codemirror-vim";
-import { useEffect, useRef, useState } from "react";
+import { type Ref, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { type EditorStatus, editorAnnouncement, readStatus } from "./code-editor-status";
+
+export interface CodeEditorHandle {
+	focus: () => void;
+}
 
 /** 页内代码编辑内核的受控内容与交互入口。 */
 export interface CodeEditorProps {
@@ -42,18 +47,9 @@ export interface CodeEditorProps {
 	onChange: (value: string) => void;
 	onRun: () => void;
 	label: string;
+	ref?: Ref<CodeEditorHandle>;
 }
 
-type Mode = "normal" | "insert" | "visual";
-interface EditorStatus {
-	mode: Mode | null;
-	pending: string;
-	position: string;
-	selected: number;
-	search: string;
-}
-
-const modeLabels = { normal: "普通模式", insert: "插入模式", visual: "可视模式" };
 const highlighting = HighlightStyle.define([
 	{ tag: tags.keyword, class: "v-code-block__syntax-keyword" },
 	{ tag: [tags.string, tags.regexp], class: "v-code-block__syntax-string" },
@@ -113,43 +109,6 @@ function languageExtension(language: string): Extension {
 	}
 }
 
-function readStatus(view: EditorView): EditorStatus {
-	const cm = getCM(view);
-	const state = cm?.state.vim;
-	const mode = state
-		? state.insertMode
-			? "insert"
-			: state.visualMode
-				? "visual"
-				: "normal"
-		: null;
-	const head = view.state.selection.main.head;
-	const line = view.state.doc.lineAt(head);
-	const query = cm?.cm6Query;
-	let search = "";
-	if (mode === "normal" && state?.searchState_?.getOverlay() && query?.valid) {
-		const cursor = query.getCursor(view.state);
-		let current = 0;
-		let total = 0;
-		for (let match = cursor.next(); !match.done; match = cursor.next()) {
-			total++;
-			if (head >= match.value.from && head < match.value.to) current = total;
-		}
-		search = `${current} / ${total}`;
-	}
-	return {
-		mode,
-		search,
-		pending: mode && mode !== "insert" ? (state?.status ?? "") : "",
-		position: state?.visualMode
-			? `${state.sel.head.line + 1}:${state.sel.head.ch + 1}`
-			: `${line.number}:${head - line.from + 1}`,
-		selected: state?.visualMode
-			? view.state.selection.ranges.reduce((count, range) => count + range.to - range.from, 0)
-			: 0,
-	};
-}
-
 /** 保留页内草稿、原生 Vim 命令与焦点遍历的 CodeMirror 编辑器。 */
 export function CodeEditor(props: CodeEditorProps) {
 	const rootRef = useRef<HTMLDivElement>(null);
@@ -173,10 +132,20 @@ export function CodeEditor(props: CodeEditorProps) {
 	const [commandOpen, setCommandOpen] = useState(false);
 	const [shortcut, setShortcut] = useState("Ctrl↵");
 
+	useImperativeHandle(
+		props.ref,
+		() => ({
+			focus: () => runtime.current?.view.focus(),
+		}),
+		[],
+	);
+
 	useEffect(() => {
 		const host = hostRef.current;
 		const root = rootRef.current;
-		if (!host || !root) return;
+		if (!host || !root) {
+			return;
+		}
 		const initial = latest.current;
 		const vimSlot = new Compartment();
 		const languageSlot = new Compartment();
@@ -188,7 +157,9 @@ export function CodeEditor(props: CodeEditorProps) {
 		const defer = (callback: () => void) => {
 			const timer = window.setTimeout(() => {
 				timers.delete(timer);
-				if (!disposed) callback();
+				if (!disposed) {
+					callback();
+				}
 			}, 0);
 			timers.add(timer);
 		};
@@ -208,8 +179,12 @@ export function CodeEditor(props: CodeEditorProps) {
 					languageSlot.of(languageExtension(initial.language)),
 					labelSlot.of(attributes(initial.label)),
 					EditorView.updateListener.of((update) => {
-						if (update.docChanged) latest.current.onChange(update.state.doc.toString());
-						if (update.docChanged || update.selectionSet) syncStatus();
+						if (update.docChanged) {
+							latest.current.onChange(update.state.doc.toString());
+						}
+						if (update.docChanged || update.selectionSet) {
+							syncStatus();
+						}
 						if (
 							update.transactions.some((transaction) =>
 								transaction.effects.some((effect) => effect.is(setSearchQuery)),
@@ -263,22 +238,30 @@ export function CodeEditor(props: CodeEditorProps) {
 				closeCommand = closeWithoutFocus;
 				input?.addEventListener("blur", () => {
 					defer(() => {
-						if (document.activeElement !== input) closeWithoutFocus();
+						if (document.activeElement !== input) {
+							closeWithoutFocus();
+						}
 					});
 				});
 				return close;
 			};
 			const onDialog = () => {
-				if (!disposed) setCommandOpen(Boolean(cm.state.dialog));
-				if (!cm.state.dialog) closeCommand = undefined;
+				if (!disposed) {
+					setCommandOpen(Boolean(cm.state.dialog));
+				}
+				if (!cm.state.dialog) {
+					closeCommand = undefined;
+				}
 			};
-			for (const event of ["vim-mode-change", "vim-keypress", "vim-command-done"])
+			for (const event of ["vim-mode-change", "vim-keypress", "vim-command-done"]) {
 				cm.on(event, syncStatus);
+			}
 			cm.on("dialog", onDialog);
 			detachVim = () => {
 				closeCommand?.();
-				for (const event of ["vim-mode-change", "vim-keypress", "vim-command-done"])
+				for (const event of ["vim-mode-change", "vim-keypress", "vim-command-done"]) {
 					cm.off(event, syncStatus);
+				}
 				cm.off("dialog", onDialog);
 				cm.openDialog = originalDialog;
 				cm.save = originalSave;
@@ -286,10 +269,14 @@ export function CodeEditor(props: CodeEditorProps) {
 			};
 		}
 		const initialCM = getCM(view);
-		if (initialCM) attachVim(initialCM);
+		if (initialCM) {
+			attachVim(initialCM);
+		}
 		const setVim = (enabled: boolean) => {
 			const current = getCM(view);
-			if (Boolean(current) === enabled) return;
+			if (Boolean(current) === enabled) {
+				return;
+			}
 			if (current?.state.vim) {
 				detachVim();
 			}
@@ -302,8 +289,12 @@ export function CodeEditor(props: CodeEditorProps) {
 			syncStatus();
 		};
 		const captureKey = (event: KeyboardEvent) => {
-			if (event.defaultPrevented || event.isComposing) return;
-			if (event.key !== "Tab") setNotice("");
+			if (event.defaultPrevented || event.isComposing) {
+				return;
+			}
+			if (event.key !== "Tab") {
+				setNotice("");
+			}
 			if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
 				event.preventDefault();
 				event.stopPropagation();
@@ -316,12 +307,17 @@ export function CodeEditor(props: CodeEditorProps) {
 				for (const element of root.querySelectorAll<HTMLElement>(
 					"input, button, select, textarea, a[href], [tabindex], [contenteditable]",
 				)) {
-					if (element === event.target) continue;
+					if (element === event.target) {
+						continue;
+					}
 					const tabIndex = element.getAttribute("tabindex");
 					element.tabIndex = -1;
 					defer(() => {
-						if (tabIndex === null) element.removeAttribute("tabindex");
-						else element.setAttribute("tabindex", tabIndex);
+						if (tabIndex === null) {
+							element.removeAttribute("tabindex");
+						} else {
+							element.setAttribute("tabindex", tabIndex);
+						}
 					});
 				}
 			}
@@ -334,7 +330,9 @@ export function CodeEditor(props: CodeEditorProps) {
 			disposed = true;
 			detachVim();
 			root.removeEventListener("keydown", captureKey, true);
-			for (const timer of timers) clearTimeout(timer);
+			for (const timer of timers) {
+				clearTimeout(timer);
+			}
 			view.destroy();
 			runtime.current = null;
 		};
@@ -366,7 +364,7 @@ export function CodeEditor(props: CodeEditorProps) {
 		if (view && view.state.doc.toString() !== props.value) {
 			view.dispatch({
 				changes: { from: 0, to: view.state.doc.length, insert: props.value },
-				annotations: Transaction.addToHistory.of(false),
+				annotations: isolateHistory.of("full"),
 			});
 			setNotice("");
 		}
@@ -412,12 +410,7 @@ export function CodeEditor(props: CodeEditorProps) {
 				aria-live="polite"
 				aria-atomic="true"
 			>
-				{notice ||
-					(commandOpen
-						? "Vim 命令输入"
-						: status.mode
-							? modeLabels[status.mode]
-							: "Vim 已关闭")}
+				{editorAnnouncement(notice, commandOpen, status.mode)}
 			</span>
 		</div>
 	);

@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { CodeBlock } from "./code-block";
 import { CodeEditor } from "./code-editor";
 
 const rangeRects = Object.getOwnPropertyDescriptor(Range.prototype, "getClientRects");
@@ -41,6 +42,9 @@ function EditorExample({ vimEnabled = true, onRun = () => {} }) {
 			<output aria-label="当前代码" aria-live="off">
 				{value}
 			</output>
+			<button type="button" onClick={() => setValue("alpha\nbeta\ngamma")}>
+				还原源码
+			</button>
 		</>
 	);
 }
@@ -62,6 +66,48 @@ describe("CodeEditor native editing", () => {
 		await waitFor(() =>
 			expect(screen.getByLabelText("当前代码").textContent).toBe("alpha\nbeta\ngamma"),
 		);
+	});
+
+	it("undoes and redoes a restore without corrupting the draft", async () => {
+		const user = userEvent.setup();
+		render(<EditorExample />);
+		const editor = screen.getByRole("textbox", { name: "可编辑的 Python 代码" });
+		editor.focus();
+		press(editor, "x");
+		await user.click(screen.getByRole("button", { name: "还原源码" }));
+		expect(editor.textContent).toBe("alphabetagamma");
+		editor.focus();
+		press(editor, "u");
+		expect(screen.getByLabelText("当前代码").textContent).toBe("lpha\nbeta\ngamma");
+		fireEvent.keyDown(editor, { key: "r", keyCode: 82, which: 82, ctrlKey: true });
+		expect(screen.getByLabelText("当前代码").textContent).toBe("alpha\nbeta\ngamma");
+	});
+
+	it("restores a CRLF source as one clean draft and returns focus to editing", async () => {
+		const user = userEvent.setup();
+		render(
+			<CodeBlock
+				code={"alpha\r\nbeta\r\ngamma"}
+				language="python"
+				run={{
+					availability: { status: "ready" },
+					running: false,
+					output: [],
+					onRun: () => {},
+				}}
+			/>,
+		);
+		const editor = await screen.findByRole("textbox", { name: "可编辑的 python 代码" });
+		editor.focus();
+		press(editor, "x");
+		await user.click(screen.getByRole("button", { name: "还原" }));
+		expect(screen.queryByText("已修改")).toBeNull();
+		expect(document.activeElement).toBe(editor);
+		press(editor, "u");
+		expect(editor.textContent).toBe("lphabetagamma");
+		fireEvent.keyDown(editor, { key: "r", keyCode: 82, which: 82, ctrlKey: true });
+		expect(editor.textContent).toBe("alphabetagamma");
+		expect(screen.queryByText("已修改")).toBeNull();
 	});
 
 	it("announces modes and pending keys without losing the cursor on rerender", () => {

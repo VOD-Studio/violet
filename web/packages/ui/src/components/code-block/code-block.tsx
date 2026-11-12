@@ -1,7 +1,8 @@
 import { cn } from "cn";
 import { Check, Copy, LoaderCircle, Play } from "lucide-react";
-import { lazy, Suspense, useEffect, useId, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useId, useMemo, useRef, useState } from "react";
 import { CodeBlockOutput } from "./code-block-output";
+import type { CodeEditorHandle } from "./code-editor";
 import { CodeSource } from "./code-source";
 import type { CodeBlockProps } from "./types";
 
@@ -14,6 +15,11 @@ const availabilityLabels = {
 	disabled: "运行器已关闭",
 	"language-disabled": "此语言已禁用",
 	error: "策略读取失败",
+};
+const copyAnnouncements = {
+	idle: "",
+	copied: "已复制",
+	failed: "复制失败，请重试",
 };
 
 /** 展示作者源码；传入执行配置后允许仅在当前页面编辑和运行。 */
@@ -30,17 +36,23 @@ export function CodeBlock({
 	className,
 	...props
 }: CodeBlockProps) {
-	const [original, setOriginal] = useState(code);
-	const [draft, setDraft] = useState(code);
+	const editable = run !== undefined;
+	const authorCode = useMemo(
+		() => (editable ? code.replace(/\r\n?/gu, "\n") : code),
+		[code, editable],
+	);
+	const [original, setOriginal] = useState(authorCode);
+	const [draft, setDraft] = useState(authorCode);
 	const [expanded, setExpanded] = useState(false);
 	const [localVim, setLocalVim] = useState(defaultVimEnabled);
 	const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
 	const copyVersion = useRef(0);
 	const timer = useRef<number | undefined>(undefined);
 	const contentId = useId();
-	if (original !== code) {
-		setOriginal(code);
-		setDraft(code);
+	const editorRef = useRef<CodeEditorHandle>(null);
+	if (original !== authorCode) {
+		setOriginal(authorCode);
+		setDraft(authorCode);
 		setExpanded(false);
 		setCopyState("idle");
 		copyVersion.current++;
@@ -54,22 +66,28 @@ export function CodeBlock({
 	);
 	const source = run ? draft : code;
 	const vim = vimEnabled ?? localVim;
-	const lineCount = code.split(/\r\n|\n|\r/).length;
+	const lineCount = useMemo(() => code.split(/\r\n|\n|\r/u).length, [code]);
 	const foldable = !run && collapseLines > 0 && lineCount > collapseLines;
 	const canRun = run?.availability.status === "ready" && !run.running;
 	const onRun = () => {
-		if (canRun) run?.onRun(draft);
+		if (canRun) {
+			run?.onRun(draft);
+		}
 	};
 	const copy = async () => {
 		const version = ++copyVersion.current;
 		clearTimeout(timer.current);
 		try {
 			await navigator.clipboard.writeText(source);
-			if (version !== copyVersion.current) return;
+			if (version !== copyVersion.current) {
+				return;
+			}
 			setCopyState("copied");
 			timer.current = window.setTimeout(() => setCopyState("idle"), 1600);
 		} catch {
-			if (version === copyVersion.current) setCopyState("failed");
+			if (version === copyVersion.current) {
+				setCopyState("failed");
+			}
 		}
 	};
 	return (
@@ -81,13 +99,16 @@ export function CodeBlock({
 						{filename}
 					</span>
 				)}
-				{run && draft !== code && (
+				{run && draft !== authorCode && (
 					<>
 						<span className="v-code-block__dirty">已修改</span>
 						<button
 							type="button"
 							className="v-code-block__button"
-							onClick={() => setDraft(code)}
+							onClick={() => {
+								setDraft(authorCode);
+								editorRef.current?.focus();
+							}}
 						>
 							还原
 						</button>
@@ -100,7 +121,9 @@ export function CodeBlock({
 							className="v-code-block__button v-code-block__vim"
 							aria-pressed={vim}
 							onClick={() => {
-								if (vimEnabled === undefined) setLocalVim(!vim);
+								if (vimEnabled === undefined) {
+									setLocalVim(!vim);
+								}
 								onVimEnabledChange?.(!vim);
 							}}
 						>
@@ -143,11 +166,7 @@ export function CodeBlock({
 					)}
 				</span>
 				<span className="v-code-block__announcement" role="status">
-					{copyState === "copied"
-						? "已复制"
-						: copyState === "failed"
-							? "复制失败，请重试"
-							: ""}
+					{copyAnnouncements[copyState]}
 				</span>
 			</figcaption>
 			{run?.availability.status === "error" && (
@@ -183,6 +202,7 @@ export function CodeBlock({
 						}
 					>
 						<CodeEditor
+							ref={editorRef}
 							value={draft}
 							language={language}
 							vimEnabled={vim}
