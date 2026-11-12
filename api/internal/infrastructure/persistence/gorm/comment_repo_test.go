@@ -621,10 +621,11 @@ func TestCountAnnotationsByBlock_PreservesAISignatures(t *testing.T) {
 	assert.Equal(t, domaincomment.BlockAuthor{Name: "Claude", IsAI: true}, got[0].Authors[1])
 	assert.Equal(t, domaincomment.BlockAuthor{Name: "Claude", AvatarURL: "a.png", IsAI: false}, got[0].Authors[2])
 	require.Len(t, got[0].Ranges, 4)
+	pat1ID, pat2ID, humanID := domainshared.IDFromUUID(pat1), domainshared.IDFromUUID(pat2), domainshared.IDFromUUID(human)
 	assert.Equal(t, []domaincomment.BlockRange{
-		{Start: 0, End: 3, IsAI: true, AuthorName: "GPT"},
-		{Start: 0, End: 3, IsAI: true, AuthorName: "Claude"},
-		{Start: 0, End: 3, IsAI: true, AuthorName: "GPT"},
-		{Start: 0, End: 3, IsAI: false, AuthorName: "Claude"},
+		{Start: 0, End: 3, IsAI: true, AuthorName: "GPT", CreatedBy: &pat1ID},
+		{Start: 0, End: 3, IsAI: true, AuthorName: "Claude", CreatedBy: &pat2ID},
+		{Start: 0, End: 3, IsAI: true, AuthorName: "GPT", CreatedBy: &pat2ID},
+		{Start: 0, End: 3, IsAI: false, AuthorName: "Claude", CreatedBy: &humanID},
 	}, got[0].Ranges)
 }
