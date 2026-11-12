@@ -9,6 +9,9 @@
 /** 评论状态机 */
 export type CommentStatus = "pending" | "approved" | "spam" | "deleted";
 
+/** 顶层评论的列表顺序；回复接口仍使用独立的时间方向。 */
+export type CommentSort = "latest" | "hot";
+
 /**
  * CommentPicture - 评论附件图片
  *

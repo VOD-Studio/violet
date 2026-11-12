@@ -13,3 +13,9 @@ export interface AggregatedReaction {
 	self: boolean;
 	recent_users: ReactionUser[];
 }
+
+/** 评论批量读取的单条结果；文章与推文接口共用同一形态。 */
+export interface CommentReactionResult {
+	comment_id: string;
+	reactions: AggregatedReaction[];
+}
