@@ -63,6 +63,8 @@ try {
 	const fixtureRoot = resolve(packageRoot, "fixtures/consumer");
 	for (const [fixture, destination] of [
  ["index.html", "index.html"],
+		["comment.tsx", "src/comment.tsx"],
+		["comment-ssr.tsx", "comment-ssr.tsx"],
 	["reaction.tsx", "src/reaction.tsx"],
 	["reaction-ssr.tsx", "reaction-ssr.tsx"],
  ["emoji-picker.tsx", "src/emoji-picker.tsx"], ["emoji-picker-ssr.tsx", "emoji-picker-ssr.tsx"], ["sortable.tsx", "src/sortable.tsx"], ["sortable-ssr.tsx", "sortable-ssr.tsx"], ["upload.tsx", "src/upload.tsx"], ["upload-types.tsx", "upload-types.tsx"], ["upload-ssr.tsx", "upload-ssr.tsx"], ["plain.html", "plain.html"], ["main.tsx", "src/main.tsx"], ["value-controls.tsx", "src/value-controls.tsx"], ["value-controls-types.tsx", "value-controls-types.tsx"], ["value-controls-ssr.tsx", "value-controls-ssr.tsx"], ["data-display.tsx", "src/data-display.tsx"], ["data-display-types.tsx", "data-display-types.tsx"], ["data-display-ssr.tsx", "data-display-ssr.tsx"], ["style.css", "src/style.css"], ["ssr.tsx", "ssr.tsx"], ["type-tests.tsx", "type-tests.tsx"], ["../../src/components/annotation/fixtures/consumer.tsx", "src/annotation.tsx"], ["../../src/components/mention/fixtures/consumer.tsx", "src/mention.tsx"], ["quote-card.tsx", "src/quote-card.tsx"], ["quote-card-ssr.tsx", "quote-card-ssr.tsx"], ["quote-card-types.tsx", "quote-card-types.tsx"], ["image-grid.tsx", "src/image-grid.tsx"], ["content-ssr.tsx", "content-ssr.tsx"]
@@ -86,6 +88,8 @@ try {
 	const forbidden = /(?:^|\/)(?:motion|framer-motion|recharts|sonner|input-otp)(?:\/|@|$)/;
 	const graphs = {};
 	for (const [name, entry, symbol] of [
+		["root-comment", "@violet/ui", "CommentItem"],
+		["leaf-comment", "@violet/ui/comment", "CommentItem"],
 		["root-reaction", "@violet/ui", "ReactionBar"],
 		["leaf-reaction", "@violet/ui/reaction", "ReactionBar"],
  ["root-upload-queue", "@violet/ui", "UploadQueue"],
@@ -107,6 +111,7 @@ try {
 	const css = {};
 	const cssText = {};
 	for (const [name, imports] of [
+		["comment", ["tokens.css", "components/comment.css"]],
 		["reaction", ["tokens.css", "components/reaction.css"]],
  ["alert", ["tokens.css", "components/alert.css"]],
  ["emoji-picker", ["tokens.css", "components/emoji-picker.css"]], ["sortable", ["tokens.css", "components/sortable.css"]], ["breadcrumbs", ["tokens.css", "components/breadcrumbs.css"]], ["chart", ["tokens.css", "components/chart.css"]], ["empty", ["tokens.css", "components/empty.css"]], ["page-header", ["tokens.css", "components/page-header.css"]], ["progress", ["tokens.css", "components/progress.css"]], ["steps", ["tokens.css", "components/steps.css"]], ["upload", ["tokens.css", "components/upload.css"]], ["all", ["tokens.css", "classes.css"]], ["button", ["tokens.css", "components/button.css"]], ["checkbox", ["tokens.css", "components/checkbox.css"]], ["input", ["tokens.css", "components/input.css"]], ["select", ["tokens.css", "components/select.css"]], ["combobox", ["tokens.css", "components/combobox.css"]], ["tag-input", ["tokens.css", "components/tag-input.css"]], ["cascader", ["tokens.css", "components/cascader.css"]], ["tree-select", ["tokens.css", "components/tree-select.css"]], ["field", ["tokens.css", "components/field.css"]], ["image-pixel-reveal", ["tokens.css", "components/image-pixel-reveal.css"]], ["upload-tile", ["tokens.css", "components/upload-tile.css"]], ["dropdown", ["tokens.css", "components/dropdown.css"]], ["segmented", ["tokens.css", "components/segmented.css"]], ["link-card", ["tokens.css", "components/link-card.css"]], ["avatar", ["tokens.css", "components/avatar.css"]], ["badge", ["tokens.css", "components/badge.css"]], ["kbd", ["tokens.css", "components/kbd.css"]], ["card", ["tokens.css", "components/card.css"]], ["separator", ["tokens.css", "components/separator.css"]], ["skeleton", ["tokens.css", "components/skeleton.css"]], ["switch", ["tokens.css", "components/switch.css"]], ["radio", ["tokens.css", "components/radio.css"]], ["toggle-group", ["tokens.css", "components/toggle-group.css"]], ["tabs", ["tokens.css", "components/tabs.css"]], ["popover", ["tokens.css", "components/popover.css"]], ["hover-card", ["tokens.css", "components/hover-card.css"]], ["tooltip", ["tokens.css", "components/tooltip.css"]], ["dropdown-menu", ["tokens.css", "components/dropdown-menu.css"]], ["context-menu", ["tokens.css", "components/context-menu.css"]], ["sonner", ["tokens.css", "components/sonner.css"]], ["dialog", ["tokens.css", "components/dialog.css"]], ["confirm-dialog", ["tokens.css", "components/confirm-dialog.css"]], ["prompt-dialog", ["tokens.css", "components/prompt-dialog.css"]], ["sheet", ["tokens.css", "components/sheet.css"]], ["drawer", ["tokens.css", "components/drawer.css"]], ["command", ["tokens.css", "components/command.css"]], ["morphing-popover", ["tokens.css", "components/morphing-popover.css"]], ["date-picker", ["tokens.css", "components/date-picker.css"]], ["number-input", ["tokens.css", "components/number-input.css"]], ["slider", ["tokens.css", "components/slider.css"]], ["color-picker", ["tokens.css", "components/color-picker.css"]], ["otp", ["tokens.css", "components/otp.css"]], ["resend-button", ["tokens.css", "components/resend-button.css"]], ["accordion", ["tokens.css", "components/accordion.css"]], ["list", ["tokens.css", "components/list.css"]], ["tree", ["tokens.css", "components/tree.css"]], ["pagination", ["tokens.css", "components/pagination.css"]], ["table", ["tokens.css", "components/table.css"]], ["annotation", ["tokens.css", "components/annotation.css"]], ["mention", ["tokens.css", "components/mention.css"]], ["quote-card", ["tokens.css", "components/quote-card.css"]], ["image-grid", ["tokens.css", "components/image-grid.css"]]
@@ -140,6 +145,7 @@ try {
 	assert.match(cssText["link-card"], /\.v-link-card\s*\{/);
 	assert.match(cssText.all, /\.v-link-card\s*\{/);
 	for (const [name, ...patterns] of [
+		["comment", /\.v-comment\s*[,{]/, /\.v-segmented\s*[,{]/],
 		["reaction", /\.v-reaction\s*[,{]/, /\.v-morph\s*[,{]/, /\.v-list-highlight\s*[,{]/, /\.v-tooltip\s*[,{]/],
  ["alert", /\.v-alert\s*\{/, /\.v-alert__icon\s*\{/],
  ["breadcrumbs", /\.v-breadcrumbs\s*\{/, /\.v-breadcrumbs__more\s*\{/, /\.v-dropdown-menu__content\s*\{/], ["chart", /\.v-chart\s*\{/, /\.v-stat__value\s*\{/, /\.v-mini-bars__bar\s*\{/], ["empty", /\.v-empty\s*\{/, /\.v-empty__description\s*\{/], ["page-header", /\.v-page-header\s*\{/, /\.v-page-header\[data-compact\]\s*\{/], ["progress", /\.v-progress\s*\{/, /\.v-progress-ring__fill\s*\{/], ["steps", /\.v-steps\s*\{/, /\.v-steps__dot\s*\{/]

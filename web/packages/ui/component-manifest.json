@@ -104,6 +104,13 @@
 			"css": "src/components/command/command.css"
 		},
 		{
+			"name": "comment",
+			"status": "foundation",
+			"entry": "src/components/comment/index.ts",
+			"css": "src/components/comment/comment.css",
+			"documentation": "web/packages/ui/docs/components/comment.md"
+		},
+		{
 			"name": "confirm-dialog",
 			"status": "foundation",
 			"entry": "src/components/confirm-dialog/index.ts",

@@ -117,6 +117,8 @@ Segmented 是带滑动指示器的分段控制：`orientation` 选横向或竖�
 
 `ReactionBar` 受控展示人数与本人回应，复用名单 Tooltip、快捷选择和完整表情面板的 MorphingPopover 接力。宿主提供目录、最近记录、权限与请求；`maxSelected`、`collapseAfter` 分别控制本人上限与长集合折叠，失败回滚仍由宿主更新数据。从 `@violet/ui` 或 `@violet/ui/reaction` 导入，按需样式为 `@violet/ui/components/reaction.css`。见[回应条契约](docs/components/reaction.md)、[陈列室展品](https://xunrua.top/ui?open=reaction)及独立 consumer 的 `?preview=reaction`。
 
+`CommentHeader`、`CommentItem`、`CommentList` 与 `CommentReplies` 组合文章及推文的评论展示，排序、权限、回应请求和回复会话均由宿主持有。从 `@violet/ui` 或 `@violet/ui/comment` 导入，按需 CSS 为 `@violet/ui/components/comment.css`。见[评论契约](docs/components/comment.md)、[陈列室展品](https://xunrua.top/ui?open=comment)与独立 consumer 的 `?preview=comment`。
+
 `badge` 单元包含 `Tag`、`TagToggle`、`Badge`、`Count`、`Dot` 与 `BadgeAnchor`：Tag 给内容分类，TagToggle 是带 `aria-pressed` 的筛选标签，Badge 以 `tone` 表示记录状态且文字本身就是信息，Count 与 Dot 提示未读。胶囊 Count 与 Dot 对读屏隐藏，数量要写进宿主的可访问名称；为 0 时 Count 不渲染，超过 `max` 显示 `99+`。`avatar` 单元的 Avatar 在图片未到时呼吸占位、失败退回首字，`alt` 默认取 `name`，`alt=""` 表示装饰，在线状态与作者标记写进可访问名称；AvatarGroup 超出 `max` 折成「+N」，指针悬停时展开压叠，触屏不展开，减弱动态下直接切换。Kbd 渲染原生 `<kbd>`，一个组合键一个键帽，未传 `platform` 时水合后才按访客系统切换符号。`card` 单元保留 `Card*` 复合结构并新增相框卡 `CardFrame*`，只有 `CardFrameTitle asChild` 的链接承载点击并扩到整张卡；Separator 装饰用法为 `role="none"`，区块之间传 `decorative={false}` 得到 `<hr>`；Skeleton 默认 `aria-hidden`，只用凹陷色起伏，不加扫光。以上单元均从 `@violet/ui` 或同名叶子入口导入，按需 CSS 为 `@violet/ui/components/<name>.css`，[陈列室展品](https://xunrua.top/ui?open=badge)可逐态查看，独立 consumer 的 `?preview=display` 覆盖头像加载失败、计数、标签、键帽平台与相框卡点击。
 
 分隔线的圆点、带字与区块形态可在[独立展品](https://xunrua.top/ui?open=separator)中并排查看；卡片与骨架留在[卡片展品](https://xunrua.top/ui?open=card)。

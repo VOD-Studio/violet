@@ -102,6 +102,11 @@
 			"import": "./src/components/command/index.ts",
 			"default": "./src/components/command/index.ts"
 		},
+		"./comment": {
+			"types": "./src/components/comment/index.ts",
+			"import": "./src/components/comment/index.ts",
+			"default": "./src/components/comment/index.ts"
+		},
 		"./confirm-dialog": {
 			"types": "./src/components/confirm-dialog/index.ts",
 			"import": "./src/components/confirm-dialog/index.ts",
@@ -415,6 +420,7 @@
 		"./components/color-picker.css": "./src/components/color-picker/color-picker.css",
 		"./components/combobox.css": "./src/components/combobox/combobox.css",
 		"./components/command.css": "./src/components/command/command.css",
+		"./components/comment.css": "./src/components/comment/comment.css",
 		"./components/confirm-dialog.css": "./src/components/confirm-dialog/confirm-dialog.css",
 		"./components/context-menu.css": "./src/components/context-menu/context-menu.css",
 		"./components/date-picker.css": "./src/components/date-picker/date-picker.css",
@@ -578,6 +584,11 @@
 				"types": "./dist/components/command/index.d.ts",
 				"import": "./dist/components/command/index.js",
 				"default": "./dist/components/command/index.js"
+			},
+			"./comment": {
+				"types": "./dist/components/comment/index.d.ts",
+				"import": "./dist/components/comment/index.js",
+				"default": "./dist/components/comment/index.js"
 			},
 			"./confirm-dialog": {
 				"types": "./dist/components/confirm-dialog/index.d.ts",
@@ -892,6 +903,7 @@
 			"./components/color-picker.css": "./dist/components/color-picker.css",
 			"./components/combobox.css": "./dist/components/combobox.css",
 			"./components/command.css": "./dist/components/command.css",
+			"./components/comment.css": "./dist/components/comment.css",
 			"./components/confirm-dialog.css": "./dist/components/confirm-dialog.css",
 			"./components/context-menu.css": "./dist/components/context-menu.css",
 			"./components/date-picker.css": "./dist/components/date-picker.css",
