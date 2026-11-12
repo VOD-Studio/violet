@@ -87,6 +87,11 @@
 			"import": "./src/components/checkbox/index.ts",
 			"default": "./src/components/checkbox/index.ts"
 		},
+		"./code-block": {
+			"types": "./src/components/code-block/index.ts",
+			"import": "./src/components/code-block/index.ts",
+			"default": "./src/components/code-block/index.ts"
+		},
 		"./color-picker": {
 			"types": "./src/components/color-picker/index.ts",
 			"import": "./src/components/color-picker/index.ts",
@@ -412,6 +417,7 @@
 		"./components/cascader.css": "./src/components/cascader/cascader.css",
 		"./components/chart.css": "./src/components/chart/chart.css",
 		"./components/checkbox.css": "./src/components/checkbox/checkbox.css",
+		"./components/code-block.css": "./src/components/code-block/code-block.css",
 		"./components/color-picker.css": "./src/components/color-picker/color-picker.css",
 		"./components/combobox.css": "./src/components/combobox/combobox.css",
 		"./components/command.css": "./src/components/command/command.css",
@@ -563,6 +569,11 @@
 				"types": "./dist/components/checkbox/index.d.ts",
 				"import": "./dist/components/checkbox/index.js",
 				"default": "./dist/components/checkbox/index.js"
+			},
+			"./code-block": {
+				"types": "./dist/components/code-block/index.d.ts",
+				"import": "./dist/components/code-block/index.js",
+				"default": "./dist/components/code-block/index.js"
 			},
 			"./color-picker": {
 				"types": "./dist/components/color-picker/index.d.ts",
@@ -889,6 +900,7 @@
 			"./components/cascader.css": "./dist/components/cascader.css",
 			"./components/chart.css": "./dist/components/chart.css",
 			"./components/checkbox.css": "./dist/components/checkbox.css",
+			"./components/code-block.css": "./dist/components/code-block.css",
 			"./components/color-picker.css": "./dist/components/color-picker.css",
 			"./components/combobox.css": "./dist/components/combobox.css",
 			"./components/command.css": "./dist/components/command.css",
@@ -956,14 +968,28 @@
 		"react-dom": "^19.0.0"
 	},
 	"dependencies": {
+		"@codemirror/autocomplete": "^6.20.3",
+		"@codemirror/commands": "^6.10.4",
+		"@codemirror/lang-go": "^6.0.1",
+		"@codemirror/lang-javascript": "^6.2.5",
+		"@codemirror/lang-python": "^6.2.1",
+		"@codemirror/lang-rust": "^6.0.2",
+		"@codemirror/language": "^6.12.4",
+		"@codemirror/lint": "^6.9.7",
+		"@codemirror/search": "^6.7.1",
+		"@codemirror/state": "^6.7.1",
+		"@codemirror/view": "^6.43.6",
 		"@dnd-kit/core": "^6.3.1",
 		"@dnd-kit/sortable": "^10.0.0",
+		"@lezer/highlight": "^1.2.3",
+		"@replit/codemirror-vim": "^6.3.0",
 		"@types/lodash": "4.17.25",
 		"cn": "^0.4.0",
 		"lucide-react": "^1.23.0",
 		"motion": "^12.42.2",
 		"radix-ui": "^1.6.0",
 		"recharts": "2.15.4",
+		"shiki": "^4.3.0",
 		"sonner": "^2.0.7",
 		"tailwind-variants": "^3.3.1"
 	},
@@ -972,6 +998,7 @@
 		"@playwright/test": "^1.63.0",
 		"@testing-library/dom": "^10.4.1",
 		"@testing-library/react": "^16.3.0",
+		"@testing-library/user-event": "^14.6.9",
 		"@types/node": "^22.10.2",
 		"@types/react": "^19.2.0",
 		"@types/react-dom": "^19.2.0",

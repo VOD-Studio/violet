@@ -11,6 +11,7 @@ export * from "./components/card/index";
 export * from "./components/cascader/index";
 export * from "./components/chart/index";
 export * from "./components/checkbox/index";
+export * from "./components/code-block/index";
 export * from "./components/color-picker/index";
 export * from "./components/combobox/index";
 export * from "./components/command/index";

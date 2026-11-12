@@ -349,3 +349,44 @@ test("输入框展品的减弱动态作用域内，加载中的细圆弧静止",
 	]);
 	expect(animations).toEqual([]);
 });
+
+test("窄宿主中的已修改代码块仍可完整聚焦并运行", async ({ page, context }) => {
+	await loadClient(context);
+	await page.setViewportSize({ width: 1440, height: 900 });
+	await page.goto("/ui?open=code-block");
+	const dialog = page.getByRole("dialog").filter({ has: page.locator("[data-inspector-stage]") });
+	await dialog.getByRole("radio", { name: "已修改", exact: true }).click();
+	const stage = dialog.locator("[data-stage]");
+	await expect(stage.getByRole("button", { name: "还原", exact: true })).toBeVisible();
+	await stage.evaluate((element) => {
+		element.style.width = "342px";
+	});
+	const block = stage.locator("figure");
+	const bounds = await block.boundingBox();
+	if (!bounds) throw new Error("代码块没有布局尺寸");
+	for (const button of await block.locator("figcaption button").all()) {
+		await button.focus();
+		await expect(button).toBeFocused();
+		const rect = await button.boundingBox();
+		if (!rect) throw new Error("代码块按钮没有布局尺寸");
+		expect(rect.x).toBeGreaterThanOrEqual(bounds.x);
+		expect(rect.x + rect.width).toBeLessThanOrEqual(bounds.x + bounds.width);
+	}
+	await block.getByRole("button", { name: "运行", exact: true }).press("Enter");
+	await expect(block.getByRole("log")).toContainText("[0, 1, 1, 2, 3, 5, 8, 13, 21, 34]");
+});
+
+test("代码块的长状态栏只在自身滚动，不横向移走检视台", async ({ page, context }) => {
+	await loadClient(context);
+	await page.goto("/ui?open=code-block");
+	const dialog = page.getByRole("dialog").filter({ has: page.locator("[data-inspector-stage]") });
+	for (const width of [390, 1440]) {
+		await page.setViewportSize({ width, height: 900 });
+		await dialog.getByRole("radio", { name: "内存超限", exact: true }).click();
+		const rect = await dialog.boundingBox();
+		if (!rect) throw new Error("检视台没有布局尺寸");
+		expect(rect.x).toBeGreaterThanOrEqual(0);
+		expect(rect.x + rect.width).toBeLessThanOrEqual(width);
+		await dialog.getByRole("radio", { name: "阅读", exact: true }).click();
+	}
+});

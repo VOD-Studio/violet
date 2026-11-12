@@ -84,6 +84,13 @@
 			"documentation": "web/packages/ui/docs/components/checkbox.md"
 		},
 		{
+			"name": "code-block",
+			"status": "foundation",
+			"entry": "src/components/code-block/index.ts",
+			"css": "src/components/code-block/code-block.css",
+			"documentation": "web/packages/ui/docs/components/code-block.md"
+		},
+		{
 			"name": "color-picker",
 			"status": "foundation",
 			"entry": "src/components/color-picker/index.ts",

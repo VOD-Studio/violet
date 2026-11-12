@@ -1,0 +1,20 @@
+import assert from "node:assert/strict";
+import { CodeBlock, CodeBlockOutput } from "@violet/ui";
+import { CodeBlock as LeafCodeBlock } from "@violet/ui/code-block";
+import { renderToString } from "react-dom/server";
+
+const source = '<script>alert("plain text")</script>\n\nconst value = 42;\n';
+for (const Component of [CodeBlock, LeafCodeBlock]) {
+  const html = renderToString(<Component code={source} language="javascript" filename="source.js" highlightedLines={[3]} />);
+  assert.match(html, /<figure\b/);
+  assert.match(html, /<figcaption\b/);
+  assert.match(html, /<pre\b/);
+  assert.match(html, /<code\b/);
+  assert.match(html, /&lt;script&gt;/);
+  assert.doesNotMatch(html, /<script>/);
+  assert.match(html, /const value = 42;/);
+}
+const output = renderToString(<CodeBlockOutput running={false} output={[{ kind: "stdout", text: "part" }, { kind: "stdout", text: "ial\n" }]} result={{ status: "error", exitCode: 2, durationMs: 12 }} />);
+assert.match(output, /role="log"/);
+assert.match(output, /aria-live="polite"/);
+assert.match(output, /退出码 2/);

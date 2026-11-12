@@ -137,6 +137,8 @@ Segmented 是带滑动指示器的分段控制：`orientation` 选横向或竖�
 
 `ImageGrid` 按图片数量陈列至多四张真实缩略图，回调交出实际 `img` 供灯箱定位；完整图片与灯箱状态留给宿主。详见[图片网格契约](docs/components/image-grid.md)与[展品](https://xunrua.top/ui?open=image-grid)。
 
+`CodeBlock` 统一只读源码、页内 CodeMirror / Vim 编辑与可读屏执行输出；`InlineCode` 共用语义配色。文件名、作者标行、12 行折叠与复制由单元负责，执行策略、SSE 与本机偏好由宿主接入。[代码块契约](docs/components/code-block.md)说明原生语义、快捷键和按需 Worker；[展品](https://xunrua.top/ui?open=code-block)与独立消费 `?preview=code-block` 覆盖阅读、编辑和运行状态。
+
 ## 开发与验证
 
 在仓库 `web` 目录执行：

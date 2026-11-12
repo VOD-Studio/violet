@@ -1,0 +1,15 @@
+import { CodeBlock, CodeBlockOutput, InlineCode, type CodeBlockAvailability, type CodeBlockProps } from "@violet/ui";
+import { CodeBlock as LeafCodeBlock } from "@violet/ui/code-block";
+
+const props = {
+  code: "print('Hello')",
+  language: "python",
+  filename: "hello.py",
+  highlightedLines: [1],
+  run: { availability: { status: "error", message: "离线", onRetry: () => {} }, running: false, output: [], onRun: (source: string) => console.info(source) },
+} satisfies CodeBlockProps;
+const examples = <><CodeBlock {...props} /><LeafCodeBlock {...props} /><InlineCode>source</InlineCode><CodeBlockOutput running={false} output={[]} result={{ status: "error", exitCode: null, durationMs: 0 }} /></>;
+// @ts-expect-error 读取失败必须由宿主提供重试动作。
+const unavailableWithoutRetry: CodeBlockAvailability = { status: "error", message: "离线" };
+void examples;
+void unavailableWithoutRetry;

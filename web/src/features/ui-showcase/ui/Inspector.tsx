@@ -187,16 +187,18 @@ function InspectorDialog({
 					</div>
 					<div className="flex flex-wrap items-center gap-x-4 gap-y-3">
 						{states.length > 1 && (
-							<Segmented
-								aria-label="展品状态"
-								size="sm"
-								variant="ink"
-								value={state}
-								onValueChange={(value) =>
-									setSelection({ exhibit: exhibit.id, state: value })
-								}
-								segments={states.map(({ id, label }) => ({ value: id, label }))}
-							/>
+							<div className="-m-1 min-w-0 max-w-full overflow-x-auto scroll-px-1 p-1">
+								<Segmented
+									aria-label="展品状态"
+									size="sm"
+									variant="ink"
+									value={state}
+									onValueChange={(value) =>
+										setSelection({ exhibit: exhibit.id, state: value })
+									}
+									segments={states.map(({ id, label }) => ({ value: id, label }))}
+								/>
+							</div>
 						)}
 						<ShowcaseToolbar
 							season={season}

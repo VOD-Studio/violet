@@ -62,6 +62,9 @@ try {
 	mkdirSync(resolve(consumerRoot, "src"));
 	const fixtureRoot = resolve(packageRoot, "fixtures/consumer");
 	for (const [fixture, destination] of [
+		["code-block.tsx", "src/code-block.tsx"],
+		["code-block-types.tsx", "code-block-types.tsx"],
+		["code-block-ssr.tsx", "code-block-ssr.tsx"],
 		["icons.tsx", "src/icons.tsx"],
 		["index.html", "index.html"],
 		["reaction.tsx", "src/reaction.tsx"],
@@ -71,7 +74,7 @@ try {
 		cpSync(resolve(fixtureRoot, `${fixture}.template`), resolve(consumerRoot, destination));
 	}
 	const compilerOptions = { target: "ES2022", module: "ESNext", moduleResolution: "Bundler", jsx: "react-jsx", strict: true, noEmit: true, skipLibCheck: false, types: ["vite/client", "node"] };
-	writeFileSync(resolve(consumerRoot, "tsconfig.json"), JSON.stringify({ compilerOptions, include: ["src", "ssr.tsx", "type-tests.tsx", "data-display-types.tsx", "data-display-ssr.tsx", "quote-card-types.tsx", "quote-card-ssr.tsx"] }));
+	writeFileSync(resolve(consumerRoot, "tsconfig.json"), JSON.stringify({ compilerOptions, include: ["src", "ssr.tsx", "type-tests.tsx", "data-display-types.tsx", "data-display-ssr.tsx", "quote-card-types.tsx", "quote-card-ssr.tsx", "code-block-types.tsx", "code-block-ssr.tsx"] }));
 	writeFileSync(resolve(consumerRoot, "tsconfig.nodenext.json"), JSON.stringify({ extends: "./tsconfig.json", compilerOptions: { module: "NodeNext", moduleResolution: "NodeNext" } }));
 	writeFileSync(resolve(consumerRoot, "vite.config.mjs"), 'import { defineConfig } from "vite";\nimport tailwindcss from "@tailwindcss/vite";\nexport default defineConfig({ plugins: [tailwindcss()], build: { rolldownOptions: { input: { main: "index.html", plain: "plain.html" } } } });\n');
 	const consumerRequire = createRequire(resolve(consumerRoot, "package.json"));
@@ -87,6 +90,8 @@ try {
 	const forbidden = /(?:^|\/)(?:motion|framer-motion|recharts|sonner|input-otp)(?:\/|@|$)/;
 	const graphs = {};
 	for (const [name, entry, symbol] of [
+		["root-code-block", "@violet/ui", "CodeBlock"],
+		["leaf-code-block", "@violet/ui/code-block", "CodeBlock"],
 		["root-icons", "@violet/ui", "IslandIcon"],
 		["leaf-icons", "@violet/ui/icons", "IslandIcon"],
 		["root-icon-props", "@violet/ui", "iconProps"],
@@ -112,6 +117,7 @@ try {
 	const css = {};
 	const cssText = {};
 	for (const [name, imports] of [
+		["code-block", ["tokens.css", "components/code-block.css"]],
 		["reaction", ["tokens.css", "components/reaction.css"]],
 		["alert", ["tokens.css", "components/alert.css"]],
 		["emoji-picker", ["tokens.css", "components/emoji-picker.css"]], ["sortable", ["tokens.css", "components/sortable.css"]], ["breadcrumbs", ["tokens.css", "components/breadcrumbs.css"]], ["chart", ["tokens.css", "components/chart.css"]], ["empty", ["tokens.css", "components/empty.css"]], ["page-header", ["tokens.css", "components/page-header.css"]], ["progress", ["tokens.css", "components/progress.css"]], ["steps", ["tokens.css", "components/steps.css"]], ["upload", ["tokens.css", "components/upload.css"]], ["all", ["tokens.css", "classes.css"]], ["button", ["tokens.css", "components/button.css"]], ["checkbox", ["tokens.css", "components/checkbox.css"]], ["input", ["tokens.css", "components/input.css"]], ["select", ["tokens.css", "components/select.css"]], ["combobox", ["tokens.css", "components/combobox.css"]], ["tag-input", ["tokens.css", "components/tag-input.css"]], ["cascader", ["tokens.css", "components/cascader.css"]], ["tree-select", ["tokens.css", "components/tree-select.css"]], ["field", ["tokens.css", "components/field.css"]], ["image-pixel-reveal", ["tokens.css", "components/image-pixel-reveal.css"]], ["upload-tile", ["tokens.css", "components/upload-tile.css"]], ["dropdown", ["tokens.css", "components/dropdown.css"]], ["segmented", ["tokens.css", "components/segmented.css"]], ["link-card", ["tokens.css", "components/link-card.css"]], ["avatar", ["tokens.css", "components/avatar.css"]], ["badge", ["tokens.css", "components/badge.css"]], ["kbd", ["tokens.css", "components/kbd.css"]], ["card", ["tokens.css", "components/card.css"]], ["separator", ["tokens.css", "components/separator.css"]], ["skeleton", ["tokens.css", "components/skeleton.css"]], ["switch", ["tokens.css", "components/switch.css"]], ["radio", ["tokens.css", "components/radio.css"]], ["toggle-group", ["tokens.css", "components/toggle-group.css"]], ["tabs", ["tokens.css", "components/tabs.css"]], ["popover", ["tokens.css", "components/popover.css"]], ["hover-card", ["tokens.css", "components/hover-card.css"]], ["tooltip", ["tokens.css", "components/tooltip.css"]], ["dropdown-menu", ["tokens.css", "components/dropdown-menu.css"]], ["context-menu", ["tokens.css", "components/context-menu.css"]], ["sonner", ["tokens.css", "components/sonner.css"]], ["dialog", ["tokens.css", "components/dialog.css"]], ["confirm-dialog", ["tokens.css", "components/confirm-dialog.css"]], ["prompt-dialog", ["tokens.css", "components/prompt-dialog.css"]], ["sheet", ["tokens.css", "components/sheet.css"]], ["drawer", ["tokens.css", "components/drawer.css"]], ["command", ["tokens.css", "components/command.css"]], ["morphing-popover", ["tokens.css", "components/morphing-popover.css"]], ["date-picker", ["tokens.css", "components/date-picker.css"]], ["number-input", ["tokens.css", "components/number-input.css"]], ["slider", ["tokens.css", "components/slider.css"]], ["color-picker", ["tokens.css", "components/color-picker.css"]], ["otp", ["tokens.css", "components/otp.css"]], ["resend-button", ["tokens.css", "components/resend-button.css"]], ["accordion", ["tokens.css", "components/accordion.css"]], ["list", ["tokens.css", "components/list.css"]], ["tree", ["tokens.css", "components/tree.css"]], ["pagination", ["tokens.css", "components/pagination.css"]], ["table", ["tokens.css", "components/table.css"]], ["annotation", ["tokens.css", "components/annotation.css"]], ["mention", ["tokens.css", "components/mention.css"]], ["quote-card", ["tokens.css", "components/quote-card.css"]], ["image-grid", ["tokens.css", "components/image-grid.css"]]

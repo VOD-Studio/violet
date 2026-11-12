@@ -1,0 +1,311 @@
+/* CodeMirror injects unlayered rules; these scoped interop rules must stay unlayered. */
+.v-code-block .v-code-block__editor {
+	min-inline-size: 0;
+	color: var(--foreground);
+	background: var(--secondary);
+	font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
+}
+
+.v-code-block .v-code-block__editor .cm-editor {
+	color: inherit;
+	background: transparent;
+	font-size: 13px;
+	line-height: 1.75;
+}
+
+.v-code-block .v-code-block__editor .cm-editor.cm-focused {
+	outline: none;
+}
+
+.v-code-block .v-code-block__editor .cm-scroller {
+	font: inherit;
+	overflow: auto;
+}
+
+.v-code-block .v-code-block__editor .cm-content {
+	padding-block: 4px 10px;
+	caret-color: var(--foreground);
+}
+
+.v-code-block .v-code-block__editor .cm-line {
+	padding-inline: 0 16px;
+}
+
+.v-code-block .v-code-block__editor .cm-gutters {
+	color: color-mix(in oklab, var(--muted-foreground) 50%, transparent);
+	background: transparent;
+	border: 0;
+	user-select: none;
+}
+
+.v-code-block .v-code-block__editor .cm-lineNumbers .cm-gutterElement {
+	box-sizing: content-box;
+	padding-inline: 0 14px;
+	min-inline-size: 40px;
+}
+
+.v-code-block .v-code-block__editor .cm-activeLine,
+.v-code-block .v-code-block__editor .cm-activeLineGutter {
+	background: transparent;
+}
+
+.v-code-block .v-code-block__editor .cm-focused .cm-activeLine {
+	background: color-mix(in oklab, var(--foreground) 4%, transparent);
+}
+
+.v-code-block .v-code-block__editor .cm-focused .cm-activeLineGutter {
+	color: var(--foreground);
+	background: color-mix(in oklab, var(--foreground) 4%, transparent);
+}
+
+.v-code-block .v-code-block__editor .cm-selectionBackground,
+.v-code-block .v-code-block__editor .cm-focused .cm-selectionBackground {
+	background: color-mix(in oklab, var(--decoration) 30%, transparent);
+}
+
+.v-code-block .v-code-block__editor .cm-searchMatch,
+.v-code-block .v-code-block__editor .cm-searchMatch-selected,
+.v-code-block .v-code-block__editor .cm-selectionMatch {
+	background: color-mix(in oklab, var(--decoration) 16%, transparent);
+	outline: none;
+}
+
+.v-code-block .v-code-block__editor .cm-cursor,
+.v-code-block .v-code-block__editor .cm-dropCursor {
+	border-inline-start: 2px solid var(--foreground);
+}
+
+.v-code-block .v-code-block__editor .cm-fat-cursor {
+	background: var(--foreground);
+	border-radius: 1px;
+	/* The Vim cursor writes the underlying token's color inline. */
+	color: var(--secondary) !important;
+}
+
+.v-code-block .v-code-block__editor .cm-editor:not(.cm-focused) .cm-fat-cursor {
+	visibility: hidden;
+}
+
+.v-code-block .v-code-block__editor[data-mode="normal"] .cm-vimCursorLayer,
+.v-code-block .v-code-block__editor[data-mode="visual"] .cm-vimCursorLayer {
+	/* CM updates animationName inline whenever the selection moves. */
+	animation: none !important;
+}
+
+.v-code-block .v-code-block__editor .cm-matchingBracket {
+	color: var(--foreground);
+	background: color-mix(in oklab, var(--decoration) 16%, transparent);
+}
+
+.v-code-block .v-code-block__editor .cm-nonmatchingBracket {
+	color: var(--destructive-text);
+}
+
+.v-code-block .v-code-block__editor .cm-tooltip,
+.v-code-block .v-code-block__editor .cm-panels {
+	color: var(--foreground);
+	background: var(--secondary);
+	border-color: var(--border);
+}
+
+.v-code-block .v-code-block__editor .cm-tooltip-autocomplete ul li[aria-selected] {
+	color: var(--foreground);
+	background: color-mix(in oklab, var(--decoration) 16%, var(--secondary));
+}
+
+.v-code-block .v-code-block__editor .cm-panels-bottom {
+	border-block-start: 1px solid var(--border);
+}
+
+.v-code-block .v-code-block__editor .cm-panels-bottom:has(.cm-vim-panel) {
+	border-block-start: 0;
+}
+
+.v-code-block .v-code-block__status,
+.v-code-block .v-code-block__editor .cm-vim-panel {
+	box-sizing: border-box;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	block-size: 28px;
+	min-inline-size: 0;
+	padding-inline: 12px 10px;
+	color: var(--muted-foreground);
+	background: color-mix(in oklab, var(--secondary) 92%, var(--foreground));
+	white-space: nowrap;
+	font:
+		12px / 1 var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
+}
+
+.v-code-block .v-code-block__status[hidden],
+.v-code-block .v-code-block__editor:has(.cm-vim-panel) .v-code-block__status {
+	display: none;
+}
+
+.v-code-block .v-code-block__mode {
+	padding: 3px 6px;
+	border-radius: 4px;
+	color: var(--foreground);
+	background: color-mix(in oklab, var(--foreground) 9%, transparent);
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+}
+
+.v-code-block .v-code-block__editor[data-mode="insert"] .v-code-block__mode {
+	color: var(--link);
+	background: color-mix(in oklab, var(--link) 14%, transparent);
+}
+
+.v-code-block .v-code-block__editor[data-mode="visual"] .v-code-block__mode {
+	background: color-mix(in oklab, var(--decoration) 30%, transparent);
+}
+
+.v-code-block .v-code-block__editor-notice {
+	flex: 1;
+	min-inline-size: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.v-code-block .v-code-block__pending,
+.v-code-block .v-code-block__position,
+.v-code-block .v-code-block__run-hint {
+	flex-shrink: 0;
+	font: inherit;
+}
+
+.v-code-block .v-code-block__pending {
+	color: var(--foreground);
+}
+
+.v-code-block .v-code-block__pending:empty {
+	display: none;
+}
+
+.v-code-block .v-code-block__run-hint {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.v-code-block .v-code-block__shortcut {
+	display: inline-flex;
+	align-items: center;
+	block-size: 18px;
+	padding-inline: 5px;
+	border-radius: 4px;
+	color: var(--foreground);
+	background: color-mix(in oklab, var(--foreground) 8%, transparent);
+	font: inherit;
+	font-size: 11px;
+}
+
+.v-code-block .v-code-block__editor .cm-vim-panel input {
+	flex: 1;
+	min-inline-size: 0;
+	inline-size: 0;
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	outline: none;
+	color: var(--foreground);
+	background: transparent;
+	font: inherit;
+	caret-color: var(--foreground);
+	caret-animation: manual;
+	animation: v-code-block-command-caret 1s step-end infinite;
+}
+
+.v-code-block .v-code-block__editor .cm-vim-panel div {
+	display: flex;
+	align-items: center;
+	min-inline-size: 0;
+	color: var(--foreground);
+}
+
+.v-code-block .v-code-block__editor .cm-vim-panel span:has(input) {
+	min-inline-size: 0;
+	font-family: inherit !important;
+}
+
+.v-code-block .v-code-block__editor .cm-vim-panel span {
+	/* Vim prompt descriptions otherwise use an inline fixed gray. */
+	color: inherit !important;
+}
+
+.v-code-block .v-code-block__editor .cm-textfield,
+.v-code-block .v-code-block__editor .cm-button {
+	color: var(--foreground);
+	background: var(--secondary);
+	border: 1px solid var(--border);
+	font: inherit;
+}
+
+.v-code-block .v-code-block__syntax-keyword {
+	color: var(--link);
+}
+
+.v-code-block .v-code-block__syntax-string {
+	color: var(--success-text);
+}
+
+.v-code-block .v-code-block__syntax-comment,
+.v-code-block .v-code-block__syntax-punctuation {
+	color: var(--muted-foreground);
+}
+
+.v-code-block .v-code-block__syntax-function {
+	color: var(--foreground);
+	font-weight: 500;
+}
+
+.v-code-block .v-code-block__editor-announcement {
+	position: absolute;
+	inline-size: 1px;
+	block-size: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
+}
+
+@keyframes v-code-block-command-caret {
+	0%,
+	49% {
+		caret-color: var(--foreground);
+	}
+
+	50%,
+	100% {
+		caret-color: transparent;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.v-code-block .v-code-block__editor .cm-cursorLayer {
+		animation: none !important;
+	}
+
+	.v-code-block .v-code-block__editor .cm-content,
+	.v-code-block .v-code-block__editor .cm-vim-panel input {
+		caret-animation: manual;
+		animation: none;
+	}
+}
+
+[data-motion="reduce"] .v-code-block .v-code-block__editor .cm-cursorLayer,
+.v-code-block[data-motion="reduce"] .v-code-block__editor .cm-cursorLayer {
+	animation: none !important;
+}
+
+[data-motion="reduce"] .v-code-block .v-code-block__editor .cm-content,
+[data-motion="reduce"] .v-code-block .v-code-block__editor .cm-vim-panel input,
+.v-code-block[data-motion="reduce"] .v-code-block__editor .cm-content,
+.v-code-block[data-motion="reduce"] .v-code-block__editor .cm-vim-panel input {
+	caret-animation: manual;
+	animation: none;
+}

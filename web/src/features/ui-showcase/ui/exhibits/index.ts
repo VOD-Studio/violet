@@ -10,6 +10,7 @@ import { cardExhibit } from "./card";
 import { cascaderExhibit } from "./cascader";
 import { chartExhibit } from "./chart";
 import { checkboxExhibit } from "./checkbox";
+import { codeBlockExhibit } from "./code-block";
 import { colorPickerExhibit } from "./color-picker";
 import { comboboxExhibit } from "./combobox";
 import { commandExhibit } from "./command";
@@ -129,14 +130,6 @@ export const EXHIBITS: Exhibit[] = [
 	annotationExhibit,
 	quoteCardExhibit,
 	imageGridExhibit,
-	{
-		id: "code-block",
-		name: "代码块",
-		units: ["code-block"],
-		zone: "content",
-		category: "content",
-		footprint: { width: 560, height: 320 },
-		issue: 720,
-	},
+	codeBlockExhibit,
 	tweetEmbedExhibit,
 ];

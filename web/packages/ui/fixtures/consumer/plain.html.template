@@ -14,6 +14,12 @@
 	<body>
 		<main>
 			<h1>原生 HTML 与纯 CSS</h1>
+			<figure id="plain-code-block" class="v-code-block">
+				<figcaption class="v-code-block__header"><span class="v-code-block__language">typescript</span><span class="v-code-block__filename">hello.ts</span></figcaption>
+				<pre class="v-code-block__pre"><code>const message = "Hello";
+console.log(message);</code></pre>
+			</figure>
+			<p>行内 <code class="v-inline-code">message</code></p>
 			<button id="plain-button" type="button" class="v-button v-button--primary">保存</button>
 			<div>
 				<label for="plain-input" class="v-label">邮箱</label>
