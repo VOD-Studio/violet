@@ -106,6 +106,10 @@ it("本机没有最近记录时，快捷条用系统默认分组的前八个，�
 	expect(within(dialog).getByRole("tab", { name: "默认" }).getAttribute("aria-selected")).toBe(
 		"true",
 	);
+	// 内置分组没有封面：页签是线性图标，不是表情图片或文字。
+	const tab = within(dialog).getByRole("tab", { name: "默认" });
+	expect(tab.querySelector("svg")).not.toBeNull();
+	expect(tab.querySelector("img")).toBeNull();
 	fireEvent.click(await within(dialog).findByRole("option", { name: "表情9" }));
 	expect(onAdd).toHaveBeenCalledExactlyOnceWith(9);
 });
