@@ -83,14 +83,22 @@ export function parseFenceInfo(info: string): FenceInfo {
 	return result;
 }
 
-/** 将显示与执行元数据写回围栏，文件名使用 JSON 字符串转义。 */
+/**
+ * 将显示与执行元数据写回围栏，文件名使用 JSON 字符串转义。
+ *
+ * @remarks language 只取首个非空白标识；执行声明必须来自独立的 runnable 字段。
+ */
 export function serializeFenceInfo(info: FenceInfo): string {
-	const tokens = [info.language];
-	if (info.filename !== null) tokens.push(`title=${JSON.stringify(info.filename)}`);
+	const tokens = [info.language.trimStart().match(/^\S+/u)?.[0] ?? ""];
+	if (info.filename !== null) {
+		tokens.push(`title=${JSON.stringify(info.filename)}`);
+	}
 	if (info.highlightLines && lineSpec.test(info.highlightLines)) {
 		tokens.push(`{${info.highlightLines}}`);
 	}
-	if (info.runnable) tokens.push("runnable");
+	if (info.runnable) {
+		tokens.push("runnable");
+	}
 	if (info.overrides) {
 		try {
 			const value: unknown = JSON.parse(info.overrides);
@@ -101,7 +109,9 @@ export function serializeFenceInfo(info: FenceInfo): string {
 			// 无效资源声明不写入围栏，也不改变源码。
 		}
 	}
-	if (!tokens[0] && tokens.length > 1) tokens[0] = "text";
+	if (!tokens[0] && tokens.length > 1) {
+		tokens[0] = "text";
+	}
 	return tokens.join(" ");
 }
 

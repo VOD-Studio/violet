@@ -72,6 +72,24 @@ describe("parseFenceInfo", () => {
 	});
 });
 
+describe("serializeFenceInfo", () => {
+	it.each([
+		"python run",
+		"python\nrun",
+		"python\u00a0run",
+	])("does not promote a language attribute into metadata: %j", (language) => {
+		const serialized = serializeFenceInfo({
+			language,
+			runnable: false,
+			filename: "run runnable.py",
+			highlightLines: "1,3-5",
+			overrides: '{"timeout_secs":10}',
+		});
+		expect(serialized).toBe('python title="run runnable.py" {1,3-5} {"timeout_secs":10}');
+		expect(parseFenceInfo(serialized).runnable).toBe(false);
+	});
+});
+
 describe("parseHighlightedLines", () => {
 	it("bounds even enormous ranges to actual source rows and sorts unique rows", () => {
 		expect(parseHighlightedLines("3-99999999999999999999999999999,1,3,2-4", 5)).toEqual([

@@ -201,10 +201,39 @@ describe("editor Markdown integrity", () => {
 	});
 
 	it.each([
+		"python run",
+		"python\nrun",
+		"python\u00a0run",
+	])("keeps imported language attributes read-only across HTML and Markdown: %j", (language) => {
+		const source = 'print("<&>")\n```\n~~~\n\n';
+		const filename = 'src/run runnable "quoted" <&> `file`.py';
+		const carrier = document.createElement("pre");
+		carrier.setAttribute("data-lang", language);
+		carrier.setAttribute("data-filename", filename);
+		carrier.setAttribute("data-lines", "1,3");
+		carrier.setAttribute("data-overrides", '{"timeout_secs":10}');
+		carrier.setAttribute("data-source", source);
+		carrier.textContent = "highlighted markup is not the source";
+		const first = editor(carrier.outerHTML, "html");
+		const result = roundtrip(roundtrip(first));
+		expect(result.state.doc.firstChild?.textContent).toBe(source);
+		expect(result.getJSON().content?.[0].attrs).toMatchObject({
+			language: "python",
+			runnable: false,
+			filename,
+			highlightLines: "1,3",
+			overrides: '{"timeout_secs":10}',
+		});
+		const html = new DOMParser().parseFromString(result.getHTML(), "text/html");
+		expect(html.querySelector("pre")?.getAttribute("data-runnable")).toBeNull();
+		expect(html.querySelector("pre")?.getAttribute("data-source")).toBe(source);
+	});
+
+	it.each([
 		false,
 		true,
 	])("preserves filename, marked rows, source and overrides through HTML and Markdown (runnable=%s)", (runnable) => {
-		const filename = 'src/a "quote" <tag> & `tick`.ts';
+		const filename = 'src/run runnable "quote" <tag> & `tick`.ts';
 		const source = 'const text = "<&>";\n~~~\n\n';
 		const first = editor(
 			`~~~~TypeScript title=${JSON.stringify(filename)} {1,3-999999999999999999999}${runnable ? " run" : ""} {"timeout_secs":10,"allow_network":false}\n${source}\n~~~~`,
