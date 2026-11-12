@@ -1,12 +1,12 @@
 # violet/ui
 
-> React 19 组件库；基础组件与 HTML 共用 BEM CSS，Tailwind utility 可用于布局和局部覆盖。@violet/ui 可构建为 ESM、类型声明和 CSS，并以 tarball 安装到独立项目；尚未发布到 npm，也没有专用组件文档 MCP server。规范正文在仓库的包内 `docs/`，站点只陈列真实组件。
+> React 19 组件库；基础组件与 HTML 共用 BEM CSS，Tailwind utility 可用于布局和局部覆盖。@violet/ui 可构建为 ESM、类型声明和 CSS，并以 tarball 安装到独立项目；尚未发布到 npm，也没有专用组件文档 MCP server。规范正文在仓库的包内 `docs/`，组件通过包内行为测试、真实 tarball consumer 与实际消费页验收。
 
 ## 规范正文
 
 - [包 README](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/ui/README.md): 安装、CSS 入口与各基础单元的用法。
 - [架构指南](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/ui/docs/architecture.md): 原生语义、组件单元、单视觉源、清单成熟度与真实 tarball 验证。
-- [组件设计方法](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/ui/docs/component-design.md): 从消费场景到实现、清单、上架展品和独立消费者的操作流程。
+- [组件设计方法](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/ui/docs/component-design.md): 从消费场景到实现、清单、行为测试和独立消费者的操作流程。
 - [组件清单](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/ui/component-manifest.json): 公开单元、入口、CSS 与 foundation / legacy 状态的事实源。
 
 ## 组件契约
@@ -15,6 +15,6 @@
 - [Input 与 SearchInput](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/ui/docs/components/input.md)
 - [LinkCard](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/ui/docs/components/link-card.md)
 
-## 组件陈列室
+## 设计与验收边界
 
-- [陈列室](https://xunrua.top/ui): 按占地分整幅橱窗、浮层舞台、微件架、字段、内容五个展区陈列真实组件；`?open=<id>` 直接走近一件展品，切换状态、占地框、明暗、季节与减弱动态。
+组件包当前契约与实现是组件层权威。页面设计稿只决定布局、内容与流程；已有组件必须复用，不为旧页面稿复制组件或倒退其行为。验收覆盖包内行为测试、工作区外真实 tarball consumer，以及实际消费页的明暗、窄屏、键盘与减弱动态。

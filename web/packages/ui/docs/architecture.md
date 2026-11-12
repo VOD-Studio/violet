@@ -44,7 +44,7 @@ web/packages/ui/
 | 生成色阶、语义 token 和 Tailwind 映射 | `web/packages/ui/src/styles/` | `@violetjs/theme` 只用于构建；组件只消费语义，不引用色阶 |
 | 字体、博客方言和站点装饰动画 | `web/src/styles/` | 宿主负责加载字体和装饰资源 |
 | 公开单元、状态、CSS、文档路径 | `component-manifest.json` | 派生入口通过同步命令生成 |
-| 组件陈列（展品） | `web/src/features/ui-showcase/` | `/ui` 按占地陈列真实组件，不复制规格正文 |
+| 消费验收 | 包内行为测试、`fixtures/consumer/` 与实际消费页 | 分别验证组件契约、真实 tarball 和业务接线 |
 
 组件单元的依赖方向如下。结构、按需 recipe、CSS、导出与测试放在同一目录，修改一个组件时能看到它的完整契约。`src/legacy.ts` 只是兼容 barrel，不保存另一份组件实现。`lib/` 只接收已经被多个组件使用的能力。
 
@@ -142,7 +142,7 @@ ImagePixelReveal 的 `className` 属于根容器，用于约束尺寸；`imgClas
 
 选择类单元（`switch`、`radio`、`toggle-group`、`tabs`、`segmented`）共用一套键盘契约：整组只占一个 Tab 停靠位，方向键在启用项之间移动，跳过禁用项。Switch 与 ToggleGroup 的每项是原生 button（Space/Enter 激活）；RadioGroup 用原生 radio 的方向键换选；Tabs 沿用 Radix 的自动激活。Segmented 默认项是 `role="radio"` 的 button、容器 `role="radiogroup"`，带 `render` 的导航类分段保持普通 group 语义。加载中的 Switch 挂 `aria-busy` 并忽略激活，视觉仍跟随宿主的 `checked`；失败回退由宿主翻转状态完成，圆钮自动滑回。Tabs 的底线指示器与渐隐层对读屏隐藏，测量在客户端完成，SSR 不输出位置。
 
-浮层类单元（`popover`、`hover-card`、`tooltip`、`dropdown`、`dropdown-menu`、`context-menu`、`sonner`）共用一套出场：从触发器一侧浮出并淡入，收起往触发器方向退并淡出，不缩放。时长与位移按各自的组件稿：弹出层 200/140ms、6/4px，悬停卡片 200/120ms、4px，文字提示 150/120ms，下拉面板 220/140ms，操作菜单 200/140ms，右键菜单 180/120ms 且收起原地淡出，子菜单 180/140ms。共用关键帧在 `src/styles/float.css`，内容元素带 `.v-float`，基础选择器零优先级，单元用 `--v-float-*` 变量覆盖；系统与宿主 `[data-motion="reduce"]` 下统一覆盖为 100ms 透明度。挂到 body 的内容层级是 `--layer-float`（60，盖过 50 的对话框与侧边面板），原位渲染的下拉是 `--layer-dropdown`（40），文字提示 `--layer-tooltip`（70），轻提示 `--layer-toast`（90）。需要 Portal 的内容都接受 `container`，陈列室据此把浮层收进展品舞台，随检视台的明暗、季节与减弱动态变化。
+浮层类单元（`popover`、`hover-card`、`tooltip`、`dropdown`、`dropdown-menu`、`context-menu`、`sonner`）共用一套出场：从触发器一侧浮出并淡入，收起往触发器方向退并淡出，不缩放。时长与位移按各自的组件稿：弹出层 200/140ms、6/4px，悬停卡片 200/120ms、4px，文字提示 150/120ms，下拉面板 220/140ms，操作菜单 200/140ms，右键菜单 180/120ms 且收起原地淡出，子菜单 180/140ms。共用关键帧在 `src/styles/float.css`，内容元素带 `.v-float`，基础选择器零优先级，单元用 `--v-float-*` 变量覆盖；系统与宿主 `[data-motion="reduce"]` 下统一覆盖为 100ms 透明度。挂到 body 的内容层级是 `--layer-float`（60，盖过 50 的对话框与侧边面板），原位渲染的下拉是 `--layer-dropdown`（40），文字提示 `--layer-tooltip`（70），轻提示 `--layer-toast`（90）。需要 Portal 的内容都接受 `container`，宿主据此限定挂载范围，并让浮层继承局部明暗、主题与减弱动态。
 
 Popover 非模态：无遮罩，背后可滚动；点外面、Esc、再点触发器关闭，焦点回到触发器，点到别的可聚焦元素时尊重那次聚焦；触发器滚出视野时自动关闭。面板 `role="dialog"`，默认用触发器命名，传 `aria-label` 时以它为准。触发器是 Button 时，打开期间的按下态由 `aria-expanded` 驱动。HoverCard 悬停 500ms 出现、离开 200ms 消失，指针从触发词移到卡片上不消失，键盘聚焦同样延迟出现，Esc 立即消失，触屏不出现；卡片只做预览，不放按钮。Tooltip 的 `TooltipProvider` 默认 0 延迟，指针离开 60ms 后才退回，按下触发器、Esc 与失焦立即收起；相邻触发器之间同一个气泡滑过去（180ms），所以相邻触发器要在同一个 Provider 下；`truncatedOnly` 只在文字确实被截断时出现；气泡不接收指针，不放链接和按钮。
 
@@ -158,13 +158,13 @@ DropdownMenu 与 ContextMenu 共用一套项：键盘打开焦点进第一项，
 
 选择器族（`select`、`combobox`、`tag-input`、`cascader`、`tree-select`）共用两块地基，放在 `src/lib/`，不进清单：`use-listbox.ts` 是无 DOM 假设的键盘与激活引擎（焦点留在触发器或输入框，高亮以 id 保存、用 `aria-activedescendant` 告知；↑↓ Home End 跳过禁用项、不循环，字符键前缀预测输入，鼠标与键盘模式分离，键盘引起的变化才滚动），`picker-panel.tsx` + `picker.css` 是非模态、不抢焦点的浮层外壳与选项行（Radix Popover 的 Anchor + Portal + Content，与锚点同宽、下方起点对齐、距锚点 6px、放不下翻到上方）。Esc 在 Radix 捕获阶段处理，不看 `defaultPrevented`——站点根上常驻的 Radix 层会先对每个 Esc 调用 `preventDefault`。面板的进出场沿用共享的 `v-float`：200ms 浮出、140ms 收起；设计稿同为 200ms，Dropdown 的 `use-dropdown-motion` 是 220ms，两处各用各的常量。触发器直接复用 `input` 单元的外壳（`v-input-control`），不另起一份外壳样式。
 
-模态类单元（`dialog`、`confirm-dialog`、`prompt-dialog`、`sheet`、`drawer`、`command`）共用 `src/styles/scrim.css` 的遮罩：只做透明度进出，不虚化背后；对话框、确认框与抽屉用 `--scrim`（墨色 28%），侧边面板与命令面板用浅一档的 `--scrim-soft`；叠在另一层遮罩上时不再加深。层级为 `--layer-modal`（50），命令面板 `--layer-command`（80）盖住所有浮层。打开者由 `src/lib/modal-opener.tsx` 记录：关闭后焦点回到触发器或打开时的焦点，Safari 点按钮不给焦点时退回被点击的按钮。Dialog 宽度四档 448/512/672/896，窄于 640 为屏宽减 32，标题区与底栏固定、只有 `DialogBody` 滚动，滚动后两端各出现一条细线；打开时焦点落到第一个输入框，没有时落到底栏主按钮。进场从点击打开它的按钮展开（脚本只动位移与裁切，内容晚一拍淡入，打开期间按钮隐藏），快捷键或系统打开时落位回弹，`entrance` 可指定；`dirty` 时 Esc、点遮罩、关闭按钮与取消先在底栏询问。`Modal` 是同一套部件的属性式写法。ConfirmDialog 与 PromptDialog 建在 Dialog 上，用同一外壳与出场（设计稿写的是原地由模糊变清晰，评审时统一为与对话框一致），固定 400 宽：确认框 `role="alertdialog"`、没有关闭按钮，点遮罩只把焦点移回取消并提示一句，执行中禁用取消与 Esc，失败写在按钮上方，`confirmText` 要求输入名称；输入确认框预填并全选，回车提交，错误与字数写在输入框下方。Sheet 浮在窗口内侧 12，宽度三档 360/400/520，只从左右滑出；无遮罩时页面照常可用，F6 在面板与页面之间跳转，`contentKey` 变化时只交叉淡化内容。Drawer 只用于窄于 640 的屏幕，按 Vaul 的手势模型：跟手拖动，拖过可见高度的 25% 或快于 0.5px/ms 下滑即关闭，不够就弹回；`snapPoints` 为随内容或半屏 52% 与全屏两档，只有全屏档内容区滚动。CommandList 是数据驱动的命令面板：文章、页面、命令三组顺序固定、每组最多 5 项，匹配字加底色，方向键跨组循环，回车时当前项亮一下再执行，⌘↵ 新标签打开，Esc 依次清空输入、回到上一级、关闭；全文搜索中列表立即 `aria-busy`，超过 200ms 才显示控件圆弧与骨架。各单元的 `modal={false}` 只为陈列室常开陈列，不抢焦点。稿里的这些点没有实现：抽屉的返回手势与「保留草稿」询问；命令面板不输入时的「最近打开的 3 篇文章」需要调用方提供，站点暂无数据来源，「在全文里搜索」也因没有搜索页未接入；站点现有确认框的标题与按钮文案仍待按「写后果、写动作」逐条改写。
+模态类单元（`dialog`、`confirm-dialog`、`prompt-dialog`、`sheet`、`drawer`、`command`）共用 `src/styles/scrim.css` 的遮罩：只做透明度进出，不虚化背后；对话框、确认框与抽屉用 `--scrim`（墨色 28%），侧边面板与命令面板用浅一档的 `--scrim-soft`；叠在另一层遮罩上时不再加深。层级为 `--layer-modal`（50），命令面板 `--layer-command`（80）盖住所有浮层。打开者由 `src/lib/modal-opener.tsx` 记录：关闭后焦点回到触发器或打开时的焦点，Safari 点按钮不给焦点时退回被点击的按钮。Dialog 宽度四档 448/512/672/896，窄于 640 为屏宽减 32，标题区与底栏固定、只有 `DialogBody` 滚动，滚动后两端各出现一条细线；打开时焦点落到第一个输入框，没有时落到底栏主按钮。进场从点击打开它的按钮展开（脚本只动位移与裁切，内容晚一拍淡入，打开期间按钮隐藏），快捷键或系统打开时落位回弹，`entrance` 可指定；`dirty` 时 Esc、点遮罩、关闭按钮与取消先在底栏询问。`Modal` 是同一套部件的属性式写法。ConfirmDialog 与 PromptDialog 建在 Dialog 上，用同一外壳与出场（设计稿写的是原地由模糊变清晰，评审时统一为与对话框一致），固定 400 宽：确认框 `role="alertdialog"`、没有关闭按钮，点遮罩只把焦点移回取消并提示一句，执行中禁用取消与 Esc，失败写在按钮上方，`confirmText` 要求输入名称；输入确认框预填并全选，回车提交，错误与字数写在输入框下方。Sheet 浮在窗口内侧 12，宽度三档 360/400/520，只从左右滑出；无遮罩时页面照常可用，F6 在面板与页面之间跳转，`contentKey` 变化时只交叉淡化内容。Drawer 只用于窄于 640 的屏幕，按 Vaul 的手势模型：跟手拖动，拖过可见高度的 25% 或快于 0.5px/ms 下滑即关闭，不够就弹回；`snapPoints` 为随内容或半屏 52% 与全屏两档，只有全屏档内容区滚动。CommandList 是数据驱动的命令面板：文章、页面、命令三组顺序固定、每组最多 5 项，匹配字加底色，方向键跨组循环，回车时当前项亮一下再执行，⌘↵ 新标签打开，Esc 依次清空输入、回到上一级、关闭；全文搜索中列表立即 `aria-busy`，超过 200ms 才显示控件圆弧与骨架。各单元支持的 `modal={false}` 为非模态挂载保留，不因删除展示页而移除；宿主须按实际语义管理焦点。稿里的这些点没有实现：抽屉的返回手势与「保留草稿」询问；命令面板不输入时的「最近打开的 3 篇文章」需要调用方提供，站点暂无数据来源，「在全文里搜索」也因没有搜索页未接入；站点现有确认框的标题与按钮文案仍待按「写后果、写动作」逐条改写。
 
 Dialog 从按钮展开用 400ms，收回用 220ms；`cubic-bezier(0.2, 0, 0.2, 1)` 只作用于外形变化段，关键帧偏移按实际时间执行。展开在 344ms 到位，最后 56ms 浮起软影；收回先在 60ms 内淡掉内容与软影，再用 160ms 回到触发器的尺寸与真实圆角，不把图片入口裁成胶囊。展开中途关闭时，从当时的位移、裁切与底色继续收回，不先跳回完整面板。
 
 ## Violet 的设计规则
 
-这些规则针对现有库的维护问题，是否有效要由具体组件和消费验证证明。组件设计从真实消费场景、需求和 DOM 契约推导。
+这些规则针对现有库的维护问题，是否有效要由具体组件和消费验证证明。组件设计从真实消费场景、需求和 DOM 契约推导。组件包当前契约与实现是组件层权威；页面设计稿只决定布局、内容与流程，已有组件必须复用，不为旧页面稿复制组件或倒退其行为。
 
 | 规则 | 解决的问题 | 验证方式与边界 |
 | --- | --- | --- |

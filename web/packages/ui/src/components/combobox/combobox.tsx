@@ -137,7 +137,7 @@ export interface ComboboxProps
 	open?: boolean;
 	defaultOpen?: boolean;
 	onOpenChange?: (open: boolean) => void;
-	/** 挂载面板的容器；默认 `document.body`。陈列室舞台与带缩放的宿主需要传入。 */
+	/** 挂载面板的容器；默认 `document.body`。带缩放的宿主需要传入。 */
 	container?: HTMLElement | null;
 	/** 判断「放不下」的边界，默认视口。 */
 	collisionBoundary?: Element | null;

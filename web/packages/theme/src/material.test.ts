@@ -5,7 +5,7 @@ import { deltaE, displayed, PRECISIONS, parse, tintedOn, wcag } from "./test/col
 import { seasonTheme as preset, SEASON_NAMES, SEASONS } from "./test/seasons.ts";
 
 /**
- * 期望值取自 UED 设计稿「基础」页的色值公式（docs/design/ued/project/Controls.dc.html 的 renderVals），
+ * 期望值取自 UED 设计稿「基础」页的色值公式（https://github.com/VOD-Studio/violet/blob/e176bfe03/docs/design/ued/project/Controls.dc.html 的 renderVals），
  * 四季共用同一组明度与色度，只有色相不同；种子色与旋钮见 test/seasons.ts。
  * 设计稿里有的取值超出 sRGB（例如深色春、冬的强调字），比较时取它在屏幕上实际显示的颜色。
  */

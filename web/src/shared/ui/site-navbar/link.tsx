@@ -4,7 +4,6 @@ import type { ComponentProps, ComponentType } from "react";
 /**
  * 导航里链接的渲染契约：普通锚点属性加 `href`，`ref` 与其余属性必须透传，
  * 因为 Segmented 与 Dropdown 触发器会把状态属性和 `asChild` 引用交给它。
- * 陈列室注入只阻止跳转的实现。
  */
 export type NavbarLinkComponent = ComponentType<ComponentProps<"a"> & { href: string }>;
 

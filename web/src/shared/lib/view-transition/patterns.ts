@@ -8,7 +8,7 @@ function normalize(pathname: string): string[] {
  *
  * @example
  * matchPattern("/blog/$slug", "/blog/hello"); // true
- * matchPattern("/ui/*", "/ui/components/button"); // true
+ * matchPattern("/admin/*", "/admin/settings/general"); // true
  * matchPattern("/blog", "/blog/hello"); // false
  */
 export function matchPattern(pattern: string, pathname: string): boolean {

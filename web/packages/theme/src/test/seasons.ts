@@ -1,7 +1,7 @@
 import type { Theme } from "../index.ts";
 
 /**
- * UED 设计稿「基础」页的四季输入：种子色、色相与两个共用旋钮（docs/design/ued/project/Controls.dc.html）。
+ * UED 设计稿「基础」页的四季输入：种子色、色相与两个共用旋钮（https://github.com/VOD-Studio/violet/blob/e176bfe03/docs/design/ued/project/Controls.dc.html）。
  * 设计稿的色相取整，种子色是站点预设使用的种子，两者最多差约 5°。
  */
 export const SEASONS = {

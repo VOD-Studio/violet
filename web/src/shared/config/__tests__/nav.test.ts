@@ -30,16 +30,6 @@ describe("getNavItems 一级入口", () => {
 	});
 });
 
-describe("NAV_ITEMS 组件陈列室入口", () => {
-	const more = getNavItems({ authenticated: false }).find((item) => item.label === "更多");
-	const showcase = more?.children?.find((link) => link.to === "/ui");
-
-	it("更多菜单提供组件陈列室入口", () => {
-		expect(showcase?.label).toBe("组件陈列室");
-		expect(showcase?.description).toBe("按占地陈列组件的真实实现");
-	});
-});
-
 describe("NAV_ITEMS 看板入口", () => {
 	it("更多菜单提供看板文档与演示入口，/kanban 归它", () => {
 		const items = getNavItems({ authenticated: false });
@@ -101,7 +91,6 @@ describe("flattenNavLinks", () => {
 		);
 		expect(new Set(targets).size).toBe(targets.length);
 		expect(targets).toContain("/blog/archive");
-		expect(targets).toContain("/ui");
 		expect(targets).toContain("/kanban");
 	});
 });

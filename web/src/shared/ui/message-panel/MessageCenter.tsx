@@ -25,7 +25,7 @@ export interface MessageCenterProps extends Omit<MessagePanelProps, "tab" | "onT
 	/** 受控标签；省略时内部记住上次停留的标签。 */
 	tab?: MessageTab;
 	onTabChange?: (tab: MessageTab) => void;
-	/** 面板挂载的容器，默认 `document.body`；陈列室放进自己的舞台。 */
+	/** 面板挂载的容器，默认 `document.body`。 */
 	container?: HTMLElement | null;
 }
 

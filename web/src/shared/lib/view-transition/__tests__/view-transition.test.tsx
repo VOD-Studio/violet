@@ -24,9 +24,9 @@ describe("matchPattern", () => {
 		expect(matchPattern("/blog/$slug", "/blog")).toBe(false);
 		expect(matchPattern("/blog/$slug", "/blog/a/b")).toBe(false);
 		expect(matchPattern("/blog", "/blog/hello")).toBe(false);
-		expect(matchPattern("/ui/*", "/ui")).toBe(true);
-		expect(matchPattern("/ui/*", "/ui/components/button")).toBe(true);
-		expect(matchPattern("/ui/*", "/uix")).toBe(false);
+		expect(matchPattern("/admin/*", "/admin")).toBe(true);
+		expect(matchPattern("/admin/*", "/admin/settings/general")).toBe(true);
+		expect(matchPattern("/admin/*", "/administrator")).toBe(false);
 	});
 
 	it("忽略尾部斜杠，根路径只匹配根", () => {
@@ -54,18 +54,18 @@ describe("resolveTransitionKind", () => {
 			["/", "/chat"],
 			["/profile", "/"],
 			["/announcements/1", "/"],
-			["/ui", "/"],
+			["/editor-guide", "/"],
 		] as const)
 			expect(resolveTransitionKind(from, to), `${from} → ${to}`).toBe("fade");
 	});
 
-	it("后台与实验页不做转场；进出组件陈列室仍有淡入淡出", () => {
+	it("后台与实验页不做转场；进出编辑器手册仍有淡入淡出", () => {
 		expect(resolveTransitionKind("/", "/admin")).toBe("none");
 		expect(resolveTransitionKind("/admin/posts", "/")).toBe("none");
 		expect(resolveTransitionKind("/admin/posts", "/admin/users")).toBe("none");
 		expect(resolveTransitionKind("/", "/lab/blog")).toBe("none");
-		expect(resolveTransitionKind("/", "/ui")).toBe("fade");
-		expect(resolveTransitionKind("/ui", "/blog")).toBe("fade");
+		expect(resolveTransitionKind("/", "/editor-guide")).toBe("fade");
+		expect(resolveTransitionKind("/editor-guide", "/blog")).toBe("fade");
 	});
 
 	it("没有来源（首次进入）时按目标判断", () => {

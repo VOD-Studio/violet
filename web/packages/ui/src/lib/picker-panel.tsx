@@ -37,9 +37,9 @@ export interface PickerPanelProps {
 	onOpenChange: (open: boolean) => void;
 	/** 定位与宽度的锚点：触发器或输入框外壳。面板与它同宽（最小 160px）。 */
 	anchorRef: RefObject<HTMLElement | null>;
-	/** 挂载 Portal 的容器；默认 `document.body`。陈列室舞台与带缩放的宿主需要传入。 */
+	/** 挂载 Portal 的容器；默认 `document.body`。带缩放的宿主需要传入。 */
 	container?: HTMLElement | null;
-	/** 判断「放不下」的边界；默认是视口。陈列室舞台里传舞台，面板就不会越出舞台。 */
+	/** 判断「放不下」的边界；默认是视口。局部宿主可传入自身容器以限制浮层范围。 */
 	collisionBoundary?: Element | null;
 	className?: string;
 	children?: ReactNode;

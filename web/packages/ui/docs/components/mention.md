@@ -68,7 +68,7 @@ const matches = trigger ? filterMentionCandidates(candidates, trigger.query) : [
 
 Tailwind v4 宿主在 Tailwind 后导入 `@violet/ui/styles.css`。React 与纯 HTML 共用 `.v-mention` 以及 `__label`、`__list`、`__option`、`__all`、`__name`、`__handle`、`__tag`、`__empty` 类；头像样式随面板一起加载。
 
-站点在 `/ui?open=mention` 陈列评论与聊天房间两种语境，聊天房间比评论多「全体成员 · N 人」。
+实际消费页验收评论与聊天房间两种语境，聊天房间比评论多「全体成员 · N 人」。
 
 ## 站点集成与消费验收
 

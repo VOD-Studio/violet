@@ -51,7 +51,7 @@ const columns: DataTableColumn<Post>[] = [
 | `columns` / `data` / `keyExtractor` | 列定义、当前页的行、行唯一键（选择与展开都按它记） |
 | `caption` | 表格的可访问名称：渲染为屏幕外的 `<caption>`，同时命名横向滚动区域；没传时区域名称是「数据表格」 |
 | `density` | `comfortable`（默认）表头 36、行 48；`compact` 表头 32、行 40 |
-| `container` | 内部浮层（显示列菜单、每页条数选项、单元格提示）的挂载容器，默认 `body`；同时作为判定「放不下」的边界。陈列室舞台与带缩放的宿主传它，与 `Select`、`TreeSelect` 的 `container` 一致 |
+| `container` | 内部浮层（显示列菜单、每页条数选项、单元格提示）的挂载容器，默认 `body`；同时作为判定「放不下」的边界。局部作用域与带缩放的宿主传它，与 `Select`、`TreeSelect` 的 `container` 一致 |
 | `className` | 落在根容器上 |
 | `toolbar` | 表格上方的槽位（搜索、筛选、密度、导出按钮），由调用方排布；根容器是纵向 flex，工具栏与表格间距 14 |
 | `sort` / `onSortChange` | 受控排序态 `{ key, order }`；点一下升序，再点降序 |
@@ -211,7 +211,7 @@ const columns: DataTableColumn<Post>[] = [
 - 整行点击没有键盘等价，沿用旧实现。
 - 展开面板最宽 760 是稿给的值；内容更宽的页面用 `--v-table-panel-max` 覆盖。
 - 表格没有行虚拟化，大数据量靠分页。
-- 真实 tarball 消费验收（类型、SSR、Vite 构建、按需 CSS）与 `/ui` 陈列室逐态检视（明暗、四季、窄屏、减弱动态）已做；聚焦态只在前台标签里验过。
+- 交付验收分别执行真实 tarball 消费（类型、SSR、Vite 构建、按需 CSS）与实际消费页逐态检查（明暗、主题、窄屏、减弱动态、焦点可见性）；历史展示页的结果不能代替当前消费页验收。
 
 ## 导入
 

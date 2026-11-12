@@ -82,4 +82,4 @@ import { Link } from "@tanstack/react-router";
 
 React 与纯 HTML 共用 `.v-quote-card` 以及 `__header`、`__author`、`__avatar`、`__name`、`__time`、`__action`、`__link`、`__body`、`__column`、`__text`、`__nested`、`__image`、`__deleted`、`__icon` 类。卡片宽度由宿主给，组件本身撑满可用宽度。
 
-站点 `/ui?open=quote-card` 陈列被引用推文、聊天分享、嵌套、发布器预览与删除五种状态；预览可取消并重新引用，占地统一为 520×180。
+实际消费页需验收被引用推文、聊天分享、嵌套、发布器预览与删除五种状态，以及预览取消和重新引用；布局由消费场景约束，不固定展示页占地。

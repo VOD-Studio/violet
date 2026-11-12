@@ -73,7 +73,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 ## 面板
 
-面板是共用的 `lib/picker-panel.tsx`：Radix Popover 的 `Anchor + Portal + Content`，非模态、不抢焦点，挂到 `document.body`，用 `container` 改挂到陈列室舞台或带缩放的宿主。下方起点对齐、距触发器 6px，放不下翻到上方，浮出方向随之反转；最小宽 160px；触发器滚出视野时收起。没有选项显示「无选项」（`empty` 覆盖）；`loading` 且没有选项时显示指示器与「加载中…」。
+面板是共用的 `lib/picker-panel.tsx`：Radix Popover 的 `Anchor + Portal + Content`，非模态、不抢焦点，挂到 `document.body`，用 `container` 指定局部作用域或带缩放的宿主容器。下方起点对齐、距触发器 6px，放不下翻到上方，浮出方向随之反转；最小宽 160px；触发器滚出视野时收起。没有选项显示「无选项」（`empty` 覆盖）；`loading` 且没有选项时显示指示器与「加载中…」。
 
 动效沿用共享的浮出 `v-float`：**进入 200ms**、退出 140ms，位移 6px 与 4px，不缩放、不裁剪，减弱动态只做 100ms 透明度。收起时交互面板立即退出 Radix 浮层栈，只在原容器保留一份不可聚焦、不可点击且不参与无障碍树的退场画面；动画结束后画面卸下。这样在对话框内选完后立刻按 Esc 会关闭对话框，不会被退场面板截走。站点 Dropdown 的浮出（`use-dropdown-motion`）是 220ms，两者相差 20ms，各自沿用自己单元的既有常量，没有统一。
 

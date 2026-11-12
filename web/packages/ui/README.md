@@ -58,27 +58,27 @@ export function ProfileForm() {
 
 也可以从 `@violet/ui/button`、`@violet/ui/input` 等组件入口导入。`@violet/ui/variants` 只导出类名 recipe，不依赖 React；`@violet/ui/legacy` 提供存量兼容入口。
 
-Input 是原生输入的外壳，不渲染标签、提示、错误与字数，这些属于表单项；单独使用必须写 `aria-label`。`className`、`style`、`ref`、`id`、`name` 与原生事件都属于 input，`aria-describedby`、`aria-invalid` 原样透传，`classNames` 只有 `control`（外壳，即根元素）、`input`、`leading`、`trailing`、`action`。`variant` 支持 filled（默认）/ outline / underline / plain，`controlSize` 支持 sm / md / lg（32 / 36 / 40，触屏各加 4），原生 `size` 仍是数字。`invalid`、`valid`、`loading` 在状态位显示警示、对勾或细圆弧；`clearable`（Esc 同样清空）、`passwordToggle`（光标位置保持）、`copyable` 提供 24px 圆钮，清除派发真实输入事件。保留 FormData、reset、受控/非受控及 SSR ID 语义。[输入框契约](docs/components/input.md)逐项说明，[陈列室展品](https://xunrua.top/ui?open=input)按四种变体 × 九种状态逐格查看。
+Input 是原生输入的外壳，不渲染标签、提示、错误与字数，这些属于表单项；单独使用必须写 `aria-label`。`className`、`style`、`ref`、`id`、`name` 与原生事件都属于 input，`aria-describedby`、`aria-invalid` 原样透传，`classNames` 只有 `control`（外壳，即根元素）、`input`、`leading`、`trailing`、`action`。`variant` 支持 filled（默认）/ outline / underline / plain，`controlSize` 支持 sm / md / lg（32 / 36 / 40，触屏各加 4），原生 `size` 仍是数字。`invalid`、`valid`、`loading` 在状态位显示警示、对勾或细圆弧；`clearable`（Esc 同样清空）、`passwordToggle`（光标位置保持）、`copyable` 提供 24px 圆钮，清除派发真实输入事件。保留 FormData、reset、受控/非受控及 SSR ID 语义。[输入框契约](docs/components/input.md)逐项说明；四种变体与各状态由包内行为测试和实际消费页验收。
 
 Field 把一个控件包成表单项：标签（`Label` 并入本单元）、提示与错误同一个消息行（`aria-live="polite"`，恒占一行高）、字数；单个元素子节点自动接线 `id`、`aria-describedby`、`aria-invalid`，组合控件用 `useFieldControl()`。`orientation="horizontal"` 在容器宽于 36rem 时横排，窄时回到纵向。另有 `FieldSet`（fieldset/legend）、`FieldSummary`（提交汇总）、`focusField` 与纯逻辑的 `useFieldCheck`（失焦后才显示错误、异步检查停手 600ms 后才发），见 [Field 契约](docs/components/field.md)。
 
 SearchInput 并入 input 单元，是 Input 加搜索图标、清除钮与防抖的组合，只增加防抖、回车搜索与可选的 `shortcut` 键帽；仅需即时筛选时使用 `Input type="search"`。从 `@violet/ui` 或 `@violet/ui/input` 导入，按需样式为 `@violet/ui/components/input.css`，已含键帽与加载指示器的依赖样式。
 
-Button 的 `asChild` 保留子元素内容，禁用或加载时阻止交互；自定义 Link 必须透传 DOM 属性和 ref。公开契约以组件类型与测试为准；[陈列室展品](https://xunrua.top/ui?open=button)陈列各变体与尺寸的默认、加载与禁用态。
+Button 的 `asChild` 保留子元素内容，禁用或加载时阻止交互；自定义 Link 必须透传 DOM 属性和 ref。公开契约以组件类型与测试为准；各变体与尺寸的默认、加载与禁用态通过包内行为测试和实际消费页验收。
 
-图标从 `lucide-react` 导入，六档尺寸与线宽通过 `iconProps(size, className)` 统一指定；该入口及 Island / Timeline / Morph 三枚自绘图标由 `@violet/ui` 和 `@violet/ui/icons` 导出。显式档位不会被按钮、输入框、菜单或列表的默认图标样式覆盖，宿主通过原生 `LucideProvider` 设置默认值。仅图标按钮由宿主提供 `aria-label`，不以 `title` 代替。[图标契约](docs/components/icons.md)列出六档位置与组合用法；[陈列室展品](https://xunrua.top/ui?open=icons)与独立消费验收的 `?preview=icons` 可检视实际组合，后者支持根入口与叶入口切换。
+图标从 `lucide-react` 导入，六档尺寸与线宽通过 `iconProps(size, className)` 统一指定；该入口及 Island / Timeline / Morph 三枚自绘图标由 `@violet/ui` 和 `@violet/ui/icons` 导出。显式档位不会被按钮、输入框、菜单或列表的默认图标样式覆盖，宿主通过原生 `LucideProvider` 设置默认值。仅图标按钮由宿主提供 `aria-label`，不以 `title` 代替。[图标契约](docs/components/icons.md)列出六档位置与组合用法；独立消费验收的 `?preview=icons` 可检视实际组合，支持根入口与叶入口切换。
 
 `default` 与 `primary` 按钮都遵循当前方言的 `primary` / `primary-foreground`，悬停使用 `primary-hover`；`soft` 采用 `selected` / `selected-foreground`，`link` 使用 `link`。组件不会绕过方言直接读取品牌色阶。
 
 Checkbox 的 ref 指向可聚焦的 button；名称使用关联 Label 或 `aria-label`，表单字段由内部 input 桥接。三态、表单与纯 HTML 样式的边界见 [Checkbox 契约](docs/components/checkbox.md)。
 
-ImagePixelReveal 让图片瓦片逐块裁剪展开，原图始终静止；默认 random 每轮重新洗牌，悬停可重播完整拼合，减弱动态时直接显示。`className` 约束根容器尺寸，`imgClassName` 调整默认图片；`children` 可替换内容，`src` 改变时重新开始独立周期。组件从 `@violet/ui` 导入，按需 CSS 为 `@violet/ui/components/image-pixel-reveal.css`；[陈列室展品](https://xunrua.top/ui?open=image-pixel-reveal)可切换四种揭示顺序并悬停重播。
+ImagePixelReveal 让图片瓦片逐块裁剪展开，原图始终静止；默认 random 每轮重新洗牌，悬停可重播完整拼合，减弱动态时直接显示。`className` 约束根容器尺寸，`imgClassName` 调整默认图片；`children` 可替换内容，`src` 改变时重新开始独立周期。组件从 `@violet/ui` 导入，按需 CSS 为 `@violet/ui/components/image-pixel-reveal.css`；四种揭示顺序与悬停重播通过包内行为测试和实际消费页验收。
 
 UploadTile 是由父容器决定尺寸的方形原生按钮：浅底、无虚线、默认 8px 圆角与 20px 加号，`dragActive` 显示季节浅底和上传箭头，`busy` 显示指示器并禁止激活。UploadDropzone 提供带标签和 hint 的原生选择按钮。UploadQueue 展示六种真实上传状态、取消确认、策略暂停/失败、重试冷却和字节加权进度；360px 面板支持内联或右下浮动、收起与焦点安全列表。三个组件不选择或上传文件，宿主持有队列、拖放、取消确认和 API。纯图标入口须提供 `aria-label`；原生 ref、事件和表单属性透传。[上传契约](docs/components/upload.md)说明状态、动作与按需 CSS；集成验收证据单独记录。
 
-LinkCard 是原生 anchor 的紧凑链接预览，接收 `href`、`title`、可选描述、站点名和图片，不依赖业务 DTO 或请求。左侧缩略图与卡片边缘相接，坏图退为文字卡，预览内容更新后可恢复；自动隐藏实质重复的标题/描述与站点/域名。ref、事件和导航策略属于整卡，默认安全新标签，调用方可覆盖。从 `@violet/ui` 或 `@violet/ui/link-card` 导入，按需 CSS 为 `@violet/ui/components/link-card.css`。[组件契约](docs/components/link-card.md)说明原生行为，[陈列室展品](https://xunrua.top/ui?open=link-card)可切换封面、Logo、无图与坏图，独立 consumer 的 `?preview=link-card` 覆盖图片降级、内容更新、主题和窄屏场景。
+LinkCard 是原生 anchor 的紧凑链接预览，接收 `href`、`title`、可选描述、站点名和图片，不依赖业务 DTO 或请求。左侧缩略图与卡片边缘相接，坏图退为文字卡，预览内容更新后可恢复；自动隐藏实质重复的标题/描述与站点/域名。ref、事件和导航策略属于整卡，默认安全新标签，调用方可覆盖。从 `@violet/ui` 或 `@violet/ui/link-card` 导入，按需 CSS 为 `@violet/ui/components/link-card.css`。[组件契约](docs/components/link-card.md)说明原生行为，独立 consumer 的 `?preview=link-card` 覆盖图片降级、内容更新、主题和窄屏场景。
 
-Dropdown 是指针悬停与键盘聚焦展开的披露面板，不是点击菜单：鼠标与笔停留展开，键盘聚焦（`:focus-visible`）立即展开，Escape 收起；点击触发器或面板从不切换开合，触屏不会展开，需要触屏可达时由宿主提供等价入口。`DropdownGroup` 让并列面板互斥并即时切换；`DropdownTrigger` 默认是 button，`asChild` 可把行为合并到链接并保留其点击与 `href`；`DropdownContent` 紧随触发器渲染并由 Radix Popper 定位，空间不足时自动翻向对侧。`DropdownItem` 默认原生按钮，`asChild` 可保留链接；同一面板共用一块跟随 hover 与键盘焦点的高亮，文字与图标不移动，减弱动态时直接切换。从 `@violet/ui` 或 `@violet/ui/dropdown` 导入；按需样式为 `@violet/ui/components/dropdown.css`。[陈列室展品](https://xunrua.top/ui?open=dropdown)展示链接与按钮两种触发器的同组切换和向上展开。
+Dropdown 是指针悬停与键盘聚焦展开的披露面板，不是点击菜单：鼠标与笔停留展开，键盘聚焦（`:focus-visible`）立即展开，Escape 收起；点击触发器或面板从不切换开合，触屏不会展开，需要触屏可达时由宿主提供等价入口。`DropdownGroup` 让并列面板互斥并即时切换；`DropdownTrigger` 默认是 button，`asChild` 可把行为合并到链接并保留其点击与 `href`；`DropdownContent` 紧随触发器渲染并由 Radix Popper 定位，空间不足时自动翻向对侧。`DropdownItem` 默认原生按钮，`asChild` 可保留链接；同一面板共用一块跟随 hover 与键盘焦点的高亮，文字与图标不移动，减弱动态时直接切换。从 `@violet/ui` 或 `@violet/ui/dropdown` 导入；按需样式为 `@violet/ui/components/dropdown.css`。链接与按钮两种触发器的同组切换和向上展开通过包内行为测试和实际消费页验收。
 
 当前共享高亮的 `DropdownItem` 自动带 `data-highlighted`，宿主可据此同步图标或文字的强调样式；经过项间空隙与触发器间隙仍保留，切换目标、禁用或真正离开时更新。该状态表示 hover / 键盘焦点目标，不表示路由或业务选中。
 
@@ -105,41 +105,41 @@ export function Actions() {
 
 从 `@violet/ui/list-highlight` 也可按需导入；叶子 CSS 是 `@violet/ui/components/list-highlight.css`，完整样式入口已包含它。容器 `::before` 留给底色，条目保持透明背景，不额外添加当前行背景。禁用项不高亮，嵌套列表各自管理，尺寸变化重新测量；内部 Hook 不公开，不要求消费方维护选择器或观察器。
 
-Select 从固定的几项里选一个或几个：组合式 `Select`、`SelectTrigger`、`SelectValue`、`SelectContent`、`SelectItem`，多选加 `multiple`、值是 `string[]`。触发器是复用输入框外壳的 `role="combobox"` 按钮，`variant`、`controlSize`、`invalid`、`valid`、`loading` 与 Input 一致，焦点始终在触发器、高亮项由 `aria-activedescendant` 指出；↑↓ Home End 跳过禁用项且不循环，字母键按前缀跳转（汉字按拼音声母），Enter 选中，Esc 收起（在对话框里只收起面板），Tab 去下一个控件。多选以芯片显示已选项，超过 `maxChips`（默认 2）折成「+N」，有「清除全部」。`name` 渲染隐藏输入参与 FormData，表单复位回到 `defaultValue`。面板与选项行是选择器族（combobox、tag-input、cascader、tree-select）共用的 `lib/picker-panel.tsx` 与 `lib/use-listbox.ts`。需要输入筛选或自由输入时用 combobox，不要给 Select 加搜索。契约见 [docs/components/select.md](docs/components/select.md)，[陈列室展品](https://xunrua.top/ui?open=select)含单选、分组与说明、多选、状态与无选项。从 `@violet/ui` 或 `@violet/ui/select` 导入；按需样式为 `@violet/ui/components/select.css`。
+Select 从固定的几项里选一个或几个：组合式 `Select`、`SelectTrigger`、`SelectValue`、`SelectContent`、`SelectItem`，多选加 `multiple`、值是 `string[]`。触发器是复用输入框外壳的 `role="combobox"` 按钮，`variant`、`controlSize`、`invalid`、`valid`、`loading` 与 Input 一致，焦点始终在触发器、高亮项由 `aria-activedescendant` 指出；↑↓ Home End 跳过禁用项且不循环，字母键按前缀跳转（汉字按拼音声母），Enter 选中，Esc 收起（在对话框里只收起面板），Tab 去下一个控件。多选以芯片显示已选项，超过 `maxChips`（默认 2）折成「+N」，有「清除全部」。`name` 渲染隐藏输入参与 FormData，表单复位回到 `defaultValue`。面板与选项行是选择器族（combobox、tag-input、cascader、tree-select）共用的 `lib/picker-panel.tsx` 与 `lib/use-listbox.ts`。需要输入筛选或自由输入时用 combobox，不要给 Select 加搜索。契约见 [docs/components/select.md](docs/components/select.md)，单选、分组与说明、多选、状态与无选项通过包内行为测试和实际消费页验收。从 `@violet/ui` 或 `@violet/ui/select` 导入；按需样式为 `@violet/ui/components/select.css`。
 
 Combobox、TagInput、Cascader、TreeSelect 与 Select 同族，共用同一套面板与键盘引擎，按「值的形态」分工：Combobox 是能打字的输入框加建议列表，值是已选建议的 `string`（`creatable` 时可用自己输入的文字），`onSearch` 接服务端结果，焦点留在输入框，高亮由 `aria-activedescendant` 指出，输入法组词期间不响应 Enter；TagInput 是在输入框里连续输入多个值，值是 `string[]`，回车、逗号、顿号生成标签，Backspace 先选中再删除最后一个，`max`、`validate`、`normalize`、`onReject` 管理合法性，给了 `suggestions` 才弹建议并成为 `role="combobox"`，每个标签一个隐藏输入；Cascader 逐列选一条路径，值是 `string[]`（从第一级到所选节点），触发器是 `role="combobox"`，面板是 `role="tree"`，→ 展开下一列、← 回上一列，`changeOnSelect`、`loadData`、`searchable` 按需开启，每一级一个隐藏输入；TreeSelect 从一棵树里选节点，单选值是 `string`、`multiple` 时是 `string[]`（类型随之收窄），多选勾选联动，→ ← 展开收起，`loadChildren` 懒加载，`searchable` 按完整路径搜索。四者都复用输入框外壳（`variant`、`controlSize`、`invalid`、`valid`、`loading`、`disabled`），接入 Field 的 `id`、`aria-describedby`、`aria-invalid`，`name` 参与表单与复位，`container` 与 `collisionBoundary` 用于舞台和带缩放的宿主，Esc 在对话框里只收起面板。选项只有固定几项用 Select；详见各自的 `docs/components/combobox.md`、`tag-input.md`、`cascader.md`、`tree-select.md`。
 
-Segmented 是带滑动指示器的分段控制：`orientation` 选横向或竖向，`variant` 选 `soft`、`ink`、`line`，`value` 受控，`segments` 描述各段。纸片滑动 280ms，不缩放；设置 `itemSize` 进入不做 JS 测量的等尺寸布局，再加 `expandSelected` 让选中项占满剩余长度、其余收成只剩图标。方向键在启用项之间移动并同时选中；容器为 `role="radiogroup"`，默认按钮分段带 `aria-checked`，`render` 可把属性展开到链接或 Dropdown 触发器上并保持普通 group 语义。从 `@violet/ui` 或 `@violet/ui/segmented` 导入；按需样式为 `@violet/ui/components/segmented.css`。[陈列室展品](https://xunrua.top/ui?open=segmented)陈列三种变体与图标分段，独立 consumer 的 `?preview=segmented` 可操作选中收起、主题和窄屏状态。
+Segmented 是带滑动指示器的分段控制：`orientation` 选横向或竖向，`variant` 选 `soft`、`ink`、`line`，`value` 受控，`segments` 描述各段。纸片滑动 280ms，不缩放；设置 `itemSize` 进入不做 JS 测量的等尺寸布局，再加 `expandSelected` 让选中项占满剩余长度、其余收成只剩图标。方向键在启用项之间移动并同时选中；容器为 `role="radiogroup"`，默认按钮分段带 `aria-checked`，`render` 可把属性展开到链接或 Dropdown 触发器上并保持普通 group 语义。从 `@violet/ui` 或 `@violet/ui/segmented` 导入；按需样式为 `@violet/ui/components/segmented.css`。独立 consumer 的 `?preview=segmented` 可操作选中收起、主题和窄屏状态。
 
-`ScrollArea` 统一元素内的原生滚动、覆盖式滑块与按位置出现的边缘渐隐；`orientation="horizontal"` 或 `"both"` 同时提供左右按钮，必须用 `aria-label` 或 `aria-labelledby` 命名。`className` 控制布局，ref 与原生属性指向滚动视口。整页使用 `<DocumentScrollbar />`，不接管 `window` 滚动，浮层锁滚动时同步隐藏，卸载恢复原状态。两者从 `@violet/ui` 或 `@violet/ui/scroll-area` 导入，按需 CSS 为 `@violet/ui/components/scroll-area.css`。见[滚动区域契约](docs/components/scroll-area.md)与[展品](https://xunrua.top/ui?open=scroll-area)。
+`ScrollArea` 统一元素内的原生滚动、覆盖式滑块与按位置出现的边缘渐隐；`orientation="horizontal"` 或 `"both"` 同时提供左右按钮，必须用 `aria-label` 或 `aria-labelledby` 命名。`className` 控制布局，ref 与原生属性指向滚动视口。整页使用 `<DocumentScrollbar />`，不接管 `window` 滚动，浮层锁滚动时同步隐藏，卸载恢复原状态。两者从 `@violet/ui` 或 `@violet/ui/scroll-area` 导入，按需 CSS 为 `@violet/ui/components/scroll-area.css`。见[滚动区域契约](docs/components/scroll-area.md)。
 
-`Sortable` 用于章节、图片与设置区块等手动排序列表：宿主持有 `items` 和 `onReorder`，每项提供稳定标识与可读名称。把手支持指针及空格/Enter 拿起、↑↓ 移动、Esc 取消，移动菜单提供上移和下移；160ms 落位后才提交，减弱动态直接完成。参见[排序契约](docs/components/sortable.md)与[展品](https://xunrua.top/ui?open=sortable)，按需入口为 `@violet/ui/sortable` 和 `@violet/ui/components/sortable.css`。
+`Sortable` 用于章节、图片与设置区块等手动排序列表：宿主持有 `items` 和 `onReorder`，每项提供稳定标识与可读名称。把手支持指针及空格/Enter 拿起、↑↓ 移动、Esc 取消，移动菜单提供上移和下移；160ms 落位后才提交，减弱动态直接完成。参见[排序契约](docs/components/sortable.md)，按需入口为 `@violet/ui/sortable` 和 `@violet/ui/components/sortable.css`。
 
-`EmojiPickerPanel` 以 `groups`、`activeGroup` 和 `onSelect` 组合表情分组与网格，提供三种密度、方向键导航、悬停预览、不可用说明及加载/错误/空态。它不管理登录、请求、本机记录或浮层开关；宿主通过 Popover 或 MorphingPopover 承载。同源规格见[表情面板契约](docs/components/emoji-picker.md)，[展品](https://xunrua.top/ui?open=emoji-picker)覆盖最近使用、收藏上传与已回应状态。
+`EmojiPickerPanel` 以 `groups`、`activeGroup` 和 `onSelect` 组合表情分组与网格，提供三种密度、方向键导航、悬停预览、不可用说明及加载/错误/空态。它不管理登录、请求、本机记录或浮层开关；宿主通过 Popover 或 MorphingPopover 承载。同源规格见[表情面板契约](docs/components/emoji-picker.md)；最近使用、收藏上传与已回应状态在实际消费页验收。
 
-`ReactionBar` 受控展示人数与本人回应，复用名单 Tooltip、快捷选择和完整表情面板的 MorphingPopover 接力。宿主提供目录、最近记录、权限与请求；`maxSelected`、`collapseAfter` 分别控制本人上限与长集合折叠，失败回滚仍由宿主更新数据。从 `@violet/ui` 或 `@violet/ui/reaction` 导入，按需样式为 `@violet/ui/components/reaction.css`。见[回应条契约](docs/components/reaction.md)、[陈列室展品](https://xunrua.top/ui?open=reaction)及独立 consumer 的 `?preview=reaction`。
+`ReactionBar` 受控展示人数与本人回应，复用名单 Tooltip、快捷选择和完整表情面板的 MorphingPopover 接力。宿主提供目录、最近记录、权限与请求；`maxSelected`、`collapseAfter` 分别控制本人上限与长集合折叠，失败回滚仍由宿主更新数据。从 `@violet/ui` 或 `@violet/ui/reaction` 导入，按需样式为 `@violet/ui/components/reaction.css`。见[回应条契约](docs/components/reaction.md)及独立 consumer 的 `?preview=reaction`。
 
-`CommentHeader`、`CommentItem`、`CommentList` 与 `CommentReplies` 组合文章及推文的评论展示，排序、权限、回应请求和回复会话均由宿主持有。从 `@violet/ui` 或 `@violet/ui/comment` 导入，按需 CSS 为 `@violet/ui/components/comment.css`。见[评论契约](docs/components/comment.md)、[陈列室展品](https://xunrua.top/ui?open=comment)与独立 consumer 的 `?preview=comment`。
+`CommentHeader`、`CommentItem`、`CommentList` 与 `CommentReplies` 组合文章及推文的评论展示，排序、权限、回应请求和回复会话均由宿主持有。从 `@violet/ui` 或 `@violet/ui/comment` 导入，按需 CSS 为 `@violet/ui/components/comment.css`。见[评论契约](docs/components/comment.md)与独立 consumer 的 `?preview=comment`。
 
-`badge` 单元包含 `Tag`、`TagToggle`、`Badge`、`Count`、`Dot` 与 `BadgeAnchor`：Tag 给内容分类，TagToggle 是带 `aria-pressed` 的筛选标签，Badge 以 `tone` 表示记录状态且文字本身就是信息，Count 与 Dot 提示未读。胶囊 Count 与 Dot 对读屏隐藏，数量要写进宿主的可访问名称；为 0 时 Count 不渲染，超过 `max` 显示 `99+`。`avatar` 单元的 Avatar 在图片未到时呼吸占位、失败退回首字，`alt` 默认取 `name`，`alt=""` 表示装饰，在线状态与作者标记写进可访问名称；AvatarGroup 超出 `max` 折成「+N」，指针悬停时展开压叠，触屏不展开，减弱动态下直接切换。Kbd 渲染原生 `<kbd>`，一个组合键一个键帽，未传 `platform` 时水合后才按访客系统切换符号。`card` 单元保留 `Card*` 复合结构并新增相框卡 `CardFrame*`，只有 `CardFrameTitle asChild` 的链接承载点击并扩到整张卡；Separator 装饰用法为 `role="none"`，区块之间传 `decorative={false}` 得到 `<hr>`；Skeleton 默认 `aria-hidden`，只用凹陷色起伏，不加扫光。以上单元均从 `@violet/ui` 或同名叶子入口导入，按需 CSS 为 `@violet/ui/components/<name>.css`，[陈列室展品](https://xunrua.top/ui?open=badge)可逐态查看，独立 consumer 的 `?preview=display` 覆盖头像加载失败、计数、标签、键帽平台与相框卡点击。
+`badge` 单元包含 `Tag`、`TagToggle`、`Badge`、`Count`、`Dot` 与 `BadgeAnchor`：Tag 给内容分类，TagToggle 是带 `aria-pressed` 的筛选标签，Badge 以 `tone` 表示记录状态且文字本身就是信息，Count 与 Dot 提示未读。胶囊 Count 与 Dot 对读屏隐藏，数量要写进宿主的可访问名称；为 0 时 Count 不渲染，超过 `max` 显示 `99+`。`avatar` 单元的 Avatar 在图片未到时呼吸占位、失败退回首字，`alt` 默认取 `name`，`alt=""` 表示装饰，在线状态与作者标记写进可访问名称；AvatarGroup 超出 `max` 折成「+N」，指针悬停时展开压叠，触屏不展开，减弱动态下直接切换。Kbd 渲染原生 `<kbd>`，一个组合键一个键帽，未传 `platform` 时水合后才按访客系统切换符号。`card` 单元保留 `Card*` 复合结构并新增相框卡 `CardFrame*`，只有 `CardFrameTitle asChild` 的链接承载点击并扩到整张卡；Separator 装饰用法为 `role="none"`，区块之间传 `decorative={false}` 得到 `<hr>`；Skeleton 默认 `aria-hidden`，只用凹陷色起伏，不加扫光。以上单元均从 `@violet/ui` 或同名叶子入口导入，按需 CSS 为 `@violet/ui/components/<name>.css`，独立 consumer 的 `?preview=display` 覆盖头像加载失败、计数、标签、键帽平台与相框卡点击。
 
-分隔线的圆点、带字与区块形态可在[独立展品](https://xunrua.top/ui?open=separator)中并排查看；卡片与骨架留在[卡片展品](https://xunrua.top/ui?open=card)。
+分隔线的圆点、带字与区块形态，以及卡片与骨架的组合，通过包内行为测试与实际消费页验收。
 
-`switch`、`radio`、`toggle-group`、`tabs` 四个控件单元沿用同一套键盘与读屏契约。Switch 是 `role="switch"` 的原生按钮，`loading` 期间圆钮显示梅花指示器并忽略激活，`aria-busy` 立即生效；尺寸 sm/md/lg 三档。RadioGroup/Radio 用原生 `<input type="radio">` 放进 `fieldset`，`legend` 视觉隐藏但命名整组，一组一个 Tab 位，方向键换选并同时选中；`appearance="card"` 提供选项卡片。ToggleGroup 的每一项都是原生 button 加 `aria-pressed`（单选也不用 radio），整组一个 Tab 位，方向键只移焦点不改按下态，单选再点归零、多选各自开关；`variant="bare"` 是工具栏形，`ToggleGroupSeparator` 分隔组段。Tabs 保留 Radix 语义（←→ 移动即切换、Home/End 到首尾、面板可聚焦），当前项下方一条墨色 2px 底线滑动 280ms 到新位置，`TabsCount` 的计数是标签名称的一部分，放不下时横向滚动且当前项自动滚入可见区；竖排为个人主页侧栏保留，设计稿没有该形态。Segmented 默认项改为 `role="radiogroup"`/`role="radio"` 语义、纸片滑动 280ms；带 `render` 的导航类分段仍是普通 group。以上单元均从 `@violet/ui` 或同名叶子入口导入，按需 CSS 为 `@violet/ui/components/<name>.css`，[陈列室](https://xunrua.top/ui?open=switch)可逐态操作。
+`switch`、`radio`、`toggle-group`、`tabs` 四个控件单元沿用同一套键盘与读屏契约。Switch 是 `role="switch"` 的原生按钮，`loading` 期间圆钮显示梅花指示器并忽略激活，`aria-busy` 立即生效；尺寸 sm/md/lg 三档。RadioGroup/Radio 用原生 `<input type="radio">` 放进 `fieldset`，`legend` 视觉隐藏但命名整组，一组一个 Tab 位，方向键换选并同时选中；`appearance="card"` 提供选项卡片。ToggleGroup 的每一项都是原生 button 加 `aria-pressed`（单选也不用 radio），整组一个 Tab 位，方向键只移焦点不改按下态，单选再点归零、多选各自开关；`variant="bare"` 是工具栏形，`ToggleGroupSeparator` 分隔组段。Tabs 保留 Radix 语义（←→ 移动即切换、Home/End 到首尾、面板可聚焦），当前项下方一条墨色 2px 底线滑动 280ms 到新位置，`TabsCount` 的计数是标签名称的一部分，放不下时横向滚动且当前项自动滚入可见区；竖排为个人主页侧栏保留，设计稿没有该形态。Segmented 默认项改为 `role="radiogroup"`/`role="radio"` 语义、纸片滑动 280ms；带 `render` 的导航类分段仍是普通 group。以上单元均从 `@violet/ui` 或同名叶子入口导入，按需 CSS 为 `@violet/ui/components/<name>.css`；各状态通过包内行为测试、真实 tarball consumer 与实际消费页验收。
 
-`morphing-popover` 单元的 `MorphingPopover`、`MorphingPopoverTrigger`、`MorphingPopoverContent` 让一个有底色的胶囊或圆钮自己长成面板：外形从按钮的位置、大小与圆角长出，内容晚一拍浮现，收起时缩回；同一个根里换一块 `key` 不同的面板即接力，新面板从旧面板长出，关闭直接缩回最初的按钮。`ghost` 放触发器上字的副本，`outset` 让面板的角比按钮外扩，`radius` 是展开后的圆角；Esc、点外面、焦点离开都会收起，开启减弱动态时只做 100ms 淡入淡出。从 `@violet/ui` 或 `@violet/ui/morphing-popover` 导入，按需 CSS 为 `@violet/ui/components/morphing-popover.css`；[陈列室展品](https://xunrua.top/ui?open=morphing-popover)可操作灵动岛展开卡与回应选择器的接力。
+`morphing-popover` 单元的 `MorphingPopover`、`MorphingPopoverTrigger`、`MorphingPopoverContent` 让一个有底色的胶囊或圆钮自己长成面板：外形从按钮的位置、大小与圆角长出，内容晚一拍浮现，收起时缩回；同一个根里换一块 `key` 不同的面板即接力，新面板从旧面板长出，关闭直接缩回最初的按钮。`ghost` 放触发器上字的副本，`outset` 让面板的角比按钮外扩，`radius` 是展开后的圆角；Esc、点外面、焦点离开都会收起，开启减弱动态时只做 100ms 淡入淡出。从 `@violet/ui` 或 `@violet/ui/morphing-popover` 导入，按需 CSS 为 `@violet/ui/components/morphing-popover.css`；灵动岛展开卡与回应选择器的接力在实际消费页验收。
 
-`announcement-bar` 是站点级公告的展示单元：一句话、可选链接与右侧关闭钮，宽度跟着文字走，自身不占页面高度。`content` 必填；`link` 传了才渲染原生 `<a>`；`severity` 只换指示点颜色；`onClose` 交给宿主决定关闭后的已读与隐藏，定位、多条轮换与暂停也都在宿主。淡入 180ms 只动透明度，减弱动态与 `[data-motion="reduce"]` 作用域下静止。从 `@violet/ui` 或 `@violet/ui/announcement-bar` 导入，按需 CSS 为 `@violet/ui/components/announcement-bar.css`；[组件契约](docs/components/announcement-bar.md)说明属性与语义，[陈列室展品](https://xunrua.top/ui?open=announcement-bar)可切换有、没有公告两态。
+`announcement-bar` 是站点级公告的展示单元：一句话、可选链接与右侧关闭钮，宽度跟着文字走，自身不占页面高度。`content` 必填；`link` 传了才渲染原生 `<a>`；`severity` 只换指示点颜色；`onClose` 交给宿主决定关闭后的已读与隐藏，定位、多条轮换与暂停也都在宿主。淡入 180ms 只动透明度，减弱动态与 `[data-motion="reduce"]` 作用域下静止。从 `@violet/ui` 或 `@violet/ui/announcement-bar` 导入，按需 CSS 为 `@violet/ui/components/announcement-bar.css`；[组件契约](docs/components/announcement-bar.md)说明属性与语义；有、没有公告两态在实际消费页验收。
 
-`annotation` 提供原文标记、选区工具栏与 320px 纸片；不接管文章锚点、评论请求或登录状态。[批注契约](docs/components/annotation.md)说明原生节点、键盘激活与按需样式；[展品](https://xunrua.top/ui?open=annotation)覆盖选区、已有批注与批注卡。
+`annotation` 提供原文标记、选区工具栏与 320px 纸片；不接管文章锚点、评论请求或登录状态。[批注契约](docs/components/annotation.md)说明原生节点、键盘激活与按需样式；选区、已有批注与批注卡在文章消费页验收。
 
 `MentionList` 只负责候选列表与读屏人数，宿主持有焦点、查询和插入；筛选与触发词解析同属 `mention` 单元。[提及契约](docs/components/mention.md)列出键盘与输入框接线。
 
 `QuoteCard` 在推文、聊天和发布预览中共用三态：原文整卡唯一链接，嵌套仅提示下一层引用，删除后不泄露作者与时间。详见[引用卡契约](docs/components/quote-card.md)。
 
-`ImageGrid` 按图片数量陈列至多四张真实缩略图，回调交出实际 `img` 供灯箱定位；完整图片与灯箱状态留给宿主。详见[图片网格契约](docs/components/image-grid.md)与[展品](https://xunrua.top/ui?open=image-grid)。
+`ImageGrid` 按图片数量陈列至多四张真实缩略图，回调交出实际 `img` 供灯箱定位；完整图片与灯箱状态留给宿主。详见[图片网格契约](docs/components/image-grid.md)。
 
-`CodeBlock` 统一只读源码、页内 CodeMirror / Vim 编辑与可读屏执行输出；`InlineCode` 共用语义配色。文件名、作者标行、12 行折叠与复制由单元负责，执行策略、SSE 与本机偏好由宿主接入。[代码块契约](docs/components/code-block.md)说明原生语义、快捷键和按需 Worker；[展品](https://xunrua.top/ui?open=code-block)与独立消费 `?preview=code-block` 覆盖阅读、编辑和运行状态。
+`CodeBlock` 统一只读源码、页内 CodeMirror / Vim 编辑与可读屏执行输出；`InlineCode` 共用语义配色。文件名、作者标行、12 行折叠与复制由单元负责，执行策略、SSE 与本机偏好由宿主接入。[代码块契约](docs/components/code-block.md)说明原生语义、快捷键和按需 Worker；独立消费 `?preview=code-block` 覆盖阅读、编辑和运行状态。
 
 ## 开发与验证
 
@@ -159,6 +159,6 @@ pnpm --filter @violet/ui consumer
 
 纯 CSS 消费者按 [ADR-0029](../../../docs/adr/0029-contrast-gate-wcag-hard-apca-advisory.md) 分别检查常态与悬停态的文字对比度：标准档至少 4.5:1，提高对比度档至少 7:1，不要求悬停比常态更高。
 
-开发方法以包内 [架构指南](docs/architecture.md)与[组件设计流程](docs/component-design.md)为权威。站点的 `/ui` 陈列室按占地陈列各单元的真实组件，不复制规格正文。
+开发方法以包内 [架构指南](docs/architecture.md)与[组件设计流程](docs/component-design.md)为权威。组件包当前契约与实现是组件层权威，页面设计稿只决定布局、内容与流程；已有组件必须复用，不为旧页面稿复制组件或倒退其行为。组件交付需要包内行为测试、工作区外真实 tarball consumer 与实际消费页的明暗、窄屏、键盘和减弱动态证据。
 
 MIT License。

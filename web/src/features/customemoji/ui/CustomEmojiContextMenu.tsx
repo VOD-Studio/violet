@@ -19,7 +19,7 @@ interface CustomEmojiTarget {
  * 它打开时会 preventDefault，外层 Radix 触发器随之跳过，不会同时弹出两个菜单。
  *
  * 用最近的触发器是否就是外层这个来判断，而不是 DOM 包含关系：
- * Portal 渲染（如陈列室的走近检视台）的内容不在这个 DOM 子树里，但 React 事件仍会穿过来。
+ * Portal 渲染的对话框内容不在这个 DOM 子树里，但 React 事件仍会穿过来。
  */
 function insideNestedContextMenu(event: React.MouseEvent<HTMLDivElement>) {
 	if (!(event.target instanceof Element)) return false;

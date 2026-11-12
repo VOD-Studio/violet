@@ -764,9 +764,9 @@ export function SelectTrigger({
 
 export interface SelectContentProps {
 	className?: string;
-	/** 挂载面板的容器；默认 `document.body`。陈列室舞台与带缩放的宿主需要传入。 */
+	/** 挂载面板的容器；默认 `document.body`。带缩放的宿主需要传入。 */
 	container?: HTMLElement | null;
-	/** 判断「放不下」的边界，默认视口；与 `container` 一起给陈列室舞台用。 */
+	/** 判断「放不下」的边界，默认视口；局部宿主可与 `container` 一起指定。 */
 	collisionBoundary?: Element | null;
 	/** 没有选项时的内容，默认「无选项」。 */
 	empty?: ReactNode;

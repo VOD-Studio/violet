@@ -147,9 +147,7 @@ function RootComponent() {
 	const isFullscreenRoute = isChatRoute || isWorkbenchRoute;
 	const isProfileRoute = pathname.startsWith("/profile");
 	const isLabRoute = pathname.startsWith("/lab");
-	// 组件陈列室自带柜内聚光与明暗，窗只铺在公开内容页
-	const isShowcaseRoute = pathname === "/ui";
-	const showBackdrop = !isProfileRoute && !isFullscreenRoute && !isLabRoute && !isShowcaseRoute;
+	const showBackdrop = !isProfileRoute && !isFullscreenRoute && !isLabRoute;
 
 	// 首次 hydration 复用 SSR claims，不一定重跑客户端 beforeLoad。
 	useEffect(() => {

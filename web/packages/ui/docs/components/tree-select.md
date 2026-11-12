@@ -90,7 +90,7 @@ import { TreeSelect } from "@violet/ui";
 
 ## 面板与动效
 
-面板是共用的 `lib/picker-panel.tsx`（Radix Popover 的 Anchor + Portal + Content，非模态、不抢焦点），与触发器（多选、可搜索时是整个外壳）同宽，下方 6px、放不下翻到上方；内边距 6、圆角 12、唯一软影；最多 8 行（264px）超出滚动。`container` 改挂到陈列室舞台或带缩放的宿主，`collisionBoundary` 配合使用。
+面板是共用的 `lib/picker-panel.tsx`（Radix Popover 的 Anchor + Portal + Content，非模态、不抢焦点），与触发器（多选、可搜索时是整个外壳）同宽，下方 6px、放不下翻到上方；内边距 6、圆角 12、唯一软影；最多 8 行（264px）超出滚动。`container` 指定局部作用域或带缩放的宿主容器，`collisionBoundary` 配合使用。
 
 行高 32、圆角 8、缩进每级 18（`padding-inline-start = 4px + 层级 × 18px`）。展开箭头 20px 圆钮、图标 14px，展开时转 90°，140ms；子节点直接出现与消失，不做高度动画。勾选框 16px、圆角 5，底色 140ms 过渡。减弱动态（系统偏好与 `[data-motion="reduce"]` 两个作用域）下箭头不转、勾选框不过渡，面板只做透明度。
 

@@ -73,17 +73,5 @@
 		"parser": {
 			"tailwindDirectives": true
 		}
-	},
-	"overrides": [
-		{
-			"includes": ["src/features/ui-showcase/ui/showcase.module.css"],
-			"linter": {
-				"rules": {
-					"complexity": {
-						"noImportantStyles": "off"
-					}
-				}
-			}
-		}
-	]
+	}
 }

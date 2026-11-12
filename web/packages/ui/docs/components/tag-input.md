@@ -23,7 +23,7 @@ import { Field, TagInput } from "@violet/ui";
 | `placeholder` | 没有任何标签时的占位，默认「输入后按回车」 |
 | `name`、`form` | 每个标签一个隐藏 `<input>` 参与 `FormData`，没有标签不提交 |
 | `variant`、`controlSize`、`invalid`、`valid`、`loading`、`disabled`、`readOnly`、`required` | 与 Input 一致 |
-| `container`、`collisionBoundary` | 建议浮层的挂载容器与碰撞边界，陈列室舞台与带缩放的宿主需要传入 |
+| `container`、`collisionBoundary` | 建议浮层的挂载容器与碰撞边界，局部作用域与带缩放的宿主需要传入 |
 | `id`、`aria-label`、`aria-labelledby`、`aria-describedby`、`aria-invalid`、`ref`、`onFocus`、`onBlur` | 都落在真正的 `<input>` 上 |
 | `className`、`style` | 落在外壳 `div` 上 |
 

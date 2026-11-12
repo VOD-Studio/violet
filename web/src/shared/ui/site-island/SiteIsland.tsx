@@ -51,7 +51,7 @@ export interface SiteIslandProps {
 	onCompactChange: (compact: boolean) => void;
 	/** 点击入口链接（左键且无修饰键）时回调，接线层据此设乐观值 */
 	onSelect?: (to: string) => void;
-	/** 视口（或陈列室舞台）宽度，岛的各态宽度都由它推出 */
+	/** 视口或挂载容器宽度，岛的各态宽度都由它推出 */
 	viewportWidth: number;
 	/** 页面加载进度 0–100；null 不显示 */
 	routing: number | null;
@@ -59,9 +59,9 @@ export interface SiteIslandProps {
 	presence?: SiteIslandPresence;
 	/** 面板底部的主题选择插槽 */
 	themePicker?: ReactNode;
-	/** viewport：fixed 贴视口底部并在 lg 以上隐藏（站点）；container：absolute 贴最近定位祖先底部、不随断点隐藏，面板背板也限制在该祖先内（陈列室舞台） */
+	/** viewport：fixed 贴视口底部并在 lg 以上隐藏；container：absolute 贴最近定位祖先底部、不随断点隐藏，面板背板也限制在该祖先内 */
 	placement?: "viewport" | "container";
-	/** 链接渲染组件，默认路由跳转；陈列室注入只阻止跳转的实现 */
+	/** 链接渲染组件，默认交给站点路由跳转；自定义实现必须透传属性与 ref */
 	LinkComponent?: NavbarLinkComponent;
 }
 

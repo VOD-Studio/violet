@@ -20,7 +20,7 @@ import { Breadcrumbs } from "@violet/ui";
 
 ## 折叠与窄屏
 
-超过四级时中间层级折进「…」按钮（28 × 24 的圆钮），第一级与最后两级始终显示；菜单沿用 `dropdown-menu` 的面板与项，触发钮名称写「展开中间的 N 级」，并带 `aria-expanded`。`menuContainer` 用于陈列室把菜单收进舞台。
+超过四级时中间层级折进「…」按钮（28 × 24 的圆钮），第一级与最后两级始终显示；菜单沿用 `dropdown-menu` 的面板与项，触发钮名称写「展开中间的 N 级」，并带 `aria-expanded`。`menuContainer` 用于宿主指定菜单挂载容器。
 
 容器小于 23rem 时隐藏完整层级，只留「‹ 上一级」的返回链接。上一级没有 `href` 时不渲染返回链接。
 

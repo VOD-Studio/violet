@@ -79,7 +79,7 @@ pnpm dev
 | `/persona`、`/about`、`/friends`、`/changelog` | 人设、关于、友链与更新日志 |
 | `/login`、`/register`、`/forgot-password` | 认证流程 |
 | `/admin/*` | 内容与站点管理 |
-| `/editor-guide`、`/ui`、`/kanban`、`/inkline` | 编辑器手册、组件陈列室与工具文档 |
+| `/editor-guide`、`/kanban`、`/inkline` | 编辑器手册与工具文档 |
 | `/pet` | 电子宠物演示 |
 
 `/pet` 的 SDK 不入库；开发该页面时需准备 [kodama](https://github.com/VOD-Studio/kodama)，再执行 `pnpm pet:sync`。脚本默认读取并排检出的仓库，也可通过 `PET_REPO` 指定。
@@ -143,8 +143,8 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 | 管理后台 | `features/admin-*`，公共后台布局与表格在 `admin-layout` / `admin-shared` |
 | 运行策略与代码执行 | `entities/runtime-policy`、`entities/code-runner`、`features/admin-settings` |
 | 首页与阅读页组合 | `widgets/` |
-| 顶栏、移动端底部岛与页脚 | 展示层在 `shared/ui/site-navbar`、`site-island`、`site-footer`（props 驱动，陈列室直接渲染），接线层在 `widgets/Header`、`widgets/Footer`；一级入口与登录态可见性在 `shared/config/nav.ts` 的 `getNavItems` |
-| 消息铃铛（通知与聊天面板、新消息轻提示） | 展示层在 `shared/ui/message-panel`（面板、通知行、聊天行、轻提示；陈列室直接渲染）；`features/notifications` 取通知并整理成行（`lib/notice-entry`），`features/chat` 提供会话行与新消息提示的数据；`widgets/Header/HeaderMessages` 把两边合流进铃铛，`HeaderChatToast` 挂提示，后台顶栏的铃铛只有通知 |
+| 顶栏、移动端底部岛与页脚 | 展示层在 `shared/ui/site-navbar`、`site-island`、`site-footer`（props 驱动），接线层在 `widgets/Header`、`widgets/Footer`；一级入口与登录态可见性在 `shared/config/nav.ts` 的 `getNavItems` |
+| 消息铃铛（通知与聊天面板、新消息轻提示） | 展示层在 `shared/ui/message-panel`（面板、通知行、聊天行、轻提示）；`features/notifications` 取通知并整理成行（`lib/notice-entry`），`features/chat` 提供会话行与新消息提示的数据；`widgets/Header/HeaderMessages` 把两边合流进铃铛，`HeaderChatToast` 挂提示，后台顶栏的铃铛只有通知 |
 
 只在一个 feature 内使用的实现留在 feature。第二个 feature 需要同一业务能力时，提到 `entities/`；站点专用基础能力放 `shared/`，通用 React 组件放 `packages/ui/`。不要让 `shared` 反向导入业务 feature。
 
@@ -263,7 +263,7 @@ CLI fixture 使用临时 Git 仓库，可通过 `pnpm test scripts/check-colors.
 
 | 包 | 文档站 / 站内用途 | 开发依据 |
 | --- | --- | --- |
-| `@violet/ui` | `/ui` 组件陈列室，通用 UI 与主题 | [架构](packages/ui/docs/architecture.md)、[组件设计](packages/ui/docs/component-design.md) |
+| `@violet/ui` | 通用 UI 与主题，供实际业务页消费 | [架构](packages/ui/docs/architecture.md)、[组件设计](packages/ui/docs/component-design.md) |
 | `@violetjs/kanban` | `/kanban`，项目路线图看板与画布 | [使用说明](packages/kanban/README.zh-CN.md)、[维护指南](packages/kanban/DEVELOPMENT.md) |
 | `@violetjs/inkline` | `/inkline`，手绘工作台与文章图表 | [使用说明](packages/inkline/README.zh-CN.md)、[维护指南](packages/inkline/DEVELOPMENT.md) |
 | `@violetjs/react-tweet` | 文章引用与推文页面 | [使用说明](packages/react-tweet/README.zh-CN.md)、[维护指南](packages/react-tweet/DEVELOPMENT.md) |
@@ -271,7 +271,7 @@ CLI fixture 使用临时 Git 仓库，可通过 `pnpm test scripts/check-colors.
 
 文档站复用包内正文与示例，不维护第二套 API 说明。修改包实现时按包内流程做构建和真实 tarball 消费验证；站点 workspace 能运行不能替代独立包验收。安装方式与发布状态见各包 README。
 
-陈列室与检视台的明暗只作用于各自子树，不修改站点偏好。`ShowcaseScope` 使用局部 CSS `color-scheme` 规则，确保 Lightning CSS 为 `light-dark()` 生成的兼容标记也跟着切换；只改内联 `colorScheme` 会继承站点原来的兼容分支，出现「选中浅色但仍显示暗色」。
+组件包当前契约与实现是组件层权威，页面设计稿只决定布局、内容与流程；已有组件必须复用，不为旧页面稿复制组件或倒退其行为。组件通过包内行为测试、工作区外真实 tarball consumer 与实际消费页的明暗、窄屏、键盘和减弱动态验收，不提供替代展示路由。
 
 ## 测试
 

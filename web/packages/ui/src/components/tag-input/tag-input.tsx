@@ -64,7 +64,7 @@ export interface TagInputProps extends InputVariantProps {
 	valid?: boolean;
 	/** 输入区尾部显示加载指示并设 `aria-busy`。 */
 	loading?: boolean;
-	/** 建议浮层挂载的容器；默认 `document.body`。陈列室舞台与带缩放的宿主需要传入。 */
+	/** 建议浮层挂载的容器；默认 `document.body`。带缩放的宿主需要传入。 */
 	container?: HTMLElement | null;
 	/** 判断浮层「放不下」的边界，默认视口。 */
 	collisionBoundary?: Element | null;
