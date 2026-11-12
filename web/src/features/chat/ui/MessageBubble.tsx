@@ -329,6 +329,7 @@ export function MessageBubble({
 					messageId={message.id}
 					currentUserId={currentUserID}
 					disabled={Boolean(sending) || message.is_deleted}
+					deleted={message.is_deleted}
 					reactions={message.reactions ?? []}
 					mine={mine}
 				/>

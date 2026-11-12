@@ -232,6 +232,7 @@ it("永久不可回应的消息保留人数，但没有失效的添加入口且�
 				reactions={[reaction]}
 				mine={false}
 				disabled
+				deleted
 			/>
 		</QueryClientProvider>,
 	);
@@ -241,4 +242,23 @@ it("永久不可回应的消息保留人数，但没有失效的添加入口且�
 	fireEvent.click(chip);
 	expect(apiDelete).not.toHaveBeenCalled();
 	expect(apiPost).not.toHaveBeenCalled();
+});
+
+it("待发送的消息保留禁用的添加入口，确认后不产生版面位移", () => {
+	render(
+		<QueryClientProvider client={qc}>
+			<MessageReactions
+				conversationId="c"
+				messageId="m1"
+				currentUserId="me"
+				reactions={[]}
+				mine={false}
+				disabled
+			/>
+		</QueryClientProvider>,
+	);
+	const add = screen.getByRole("button", { name: "添加回应" });
+	expect(add.getAttribute("aria-disabled")).toBe("true");
+	fireEvent.click(add);
+	expect(screen.queryByRole("toolbar", { name: "常用回应" })).toBeNull();
 });
