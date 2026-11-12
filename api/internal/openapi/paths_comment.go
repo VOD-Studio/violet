@@ -98,7 +98,7 @@ func registerCommentPaths(t *openapi3.T) {
 
 	// AddReactionRequest
 	registerSchema(t, "AddReactionRequest", openapi3.Schemas{
-		"emoji_id": reqStr("表情 ID"),
+		"emoji_id": optInt32("表情 ID"),
 	}, "emoji_id")
 
 	// BatchReactionsRequest / BatchResult

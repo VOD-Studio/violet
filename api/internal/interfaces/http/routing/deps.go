@@ -29,19 +29,19 @@ import (
 	galleryhttp "blog-api/internal/interfaces/http/handler/gallery"
 	githubhttp "blog-api/internal/interfaces/http/handler/github"
 	imagehttp "blog-api/internal/interfaces/http/handler/image"
+	linkpreviewhttp "blog-api/internal/interfaces/http/handler/linkpreview"
 	mediahttp "blog-api/internal/interfaces/http/handler/media"
 	musichttp "blog-api/internal/interfaces/http/handler/music"
 	notehttp "blog-api/internal/interfaces/http/handler/note"
 	notificationhttp "blog-api/internal/interfaces/http/handler/notification"
 	ompusagehttp "blog-api/internal/interfaces/http/handler/omp_usage"
 	personahttp "blog-api/internal/interfaces/http/handler/persona"
-	presencehttp "blog-api/internal/interfaces/http/handler/presence"
 	posthttp "blog-api/internal/interfaces/http/handler/post"
+	presencehttp "blog-api/internal/interfaces/http/handler/presence"
 	publicationhttp "blog-api/internal/interfaces/http/handler/publication"
 	releaseshttp "blog-api/internal/interfaces/http/handler/releases"
 	roadmaphttp "blog-api/internal/interfaces/http/handler/roadmap"
 	rolehttp "blog-api/internal/interfaces/http/handler/role"
-	linkpreviewhttp "blog-api/internal/interfaces/http/handler/linkpreview"
 	serieshttp "blog-api/internal/interfaces/http/handler/series"
 	settingshttp "blog-api/internal/interfaces/http/handler/settings"
 	siteidentityhttp "blog-api/internal/interfaces/http/handler/siteidentity"
@@ -51,6 +51,7 @@ import (
 	systemhttp "blog-api/internal/interfaces/http/handler/system"
 	taghttp "blog-api/internal/interfaces/http/handler/tag"
 	tweethttp "blog-api/internal/interfaces/http/handler/tweet"
+	tweetreactionhttp "blog-api/internal/interfaces/http/handler/tweetcommentreaction"
 	useradminhttp "blog-api/internal/interfaces/http/handler/useradmin"
 	windowhttp "blog-api/internal/interfaces/http/handler/window"
 
@@ -102,6 +103,7 @@ type Deps struct {
 	RoadmapRelations       *roadmaphttp.RelationHandler
 	Comment                *commenthttp.Handler
 	CommentReaction        *crhttp.Handler
+	TweetCommentReaction   *tweetreactionhttp.Handler
 	Media                  *mediahttp.Handler
 	Post                   *posthttp.Handler
 	Tag                    *taghttp.Handler

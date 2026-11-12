@@ -6,6 +6,7 @@ import "github.com/getkin/kin-openapi/openapi3"
 // 点赞/评论，以及用户主页公开资料与推文列表。
 func registerTweetPaths(t *openapi3.T) {
 	registerExternalTweetPaths(t)
+	registerTweetCommentReactionPaths(t)
 	// ---- 公共 schema ----
 
 	registerSchema(t, "TweetAuthorDTO", openapi3.Schemas{
