@@ -83,6 +83,37 @@ it("快捷入口读取公共最近八个系统表情，私人项不出现，已�
 	expect(JSON.parse(localStorage.getItem("violet:recent-emojis") ?? "[]")[0]).toBe("system:9");
 });
 
+it("本机没有最近记录时，快捷条用系统默认分组的前八个，完整选择器直接落在该分组", async () => {
+	const onAdd = vi.fn();
+	render(
+		<QueryClientProvider client={qc}>
+			<EmojiReactions
+				reactions={[]}
+				currentUserId="me"
+				isLoggedIn
+				onAdd={onAdd}
+				onRemove={vi.fn()}
+			/>
+		</QueryClientProvider>,
+	);
+	fireEvent.click(screen.getByRole("button", { name: "添加回应" }));
+	const toolbar = await screen.findByRole("toolbar", { name: "常用回应" });
+	expect(within(toolbar).getAllByRole("button")).toHaveLength(9);
+	expect(within(toolbar).getByRole("button", { name: "表情1" })).toBeTruthy();
+	expect(within(toolbar).queryByRole("button", { name: "表情9" })).toBeNull();
+	fireEvent.click(within(toolbar).getByRole("button", { name: "更多表情" }));
+	const dialog = await screen.findByRole("dialog", { name: "选择回应" });
+	expect(within(dialog).getByRole("tab", { name: "默认" }).getAttribute("aria-selected")).toBe(
+		"true",
+	);
+	// 内置分组没有封面：页签是线性图标，不是表情图片或文字。
+	const tab = within(dialog).getByRole("tab", { name: "默认" });
+	expect(tab.querySelector("svg")).not.toBeNull();
+	expect(tab.querySelector("img")).toBeNull();
+	fireEvent.click(await within(dialog).findByRole("option", { name: "表情9" }));
+	expect(onAdd).toHaveBeenCalledExactlyOnceWith(9);
+});
+
 it("评论不限种类且不折叠，十种本人回应仍能打开添加入口", async () => {
 	render(
 		<QueryClientProvider client={qc}>

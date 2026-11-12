@@ -135,19 +135,19 @@ export function AnnotationLayer({
 			const sessionId = ++sessionCounter.current;
 			setActive((cur) =>
 				cur &&
-					cur.blockId === blockId &&
-					cur.rangeKey === rangeKey &&
-					sameAuthorFilter(cur.author, author) &&
-					cur.anchorEl === anchorEl
+				cur.blockId === blockId &&
+				cur.rangeKey === rangeKey &&
+				sameAuthorFilter(cur.author, author) &&
+				cur.anchorEl === anchorEl
 					? null
 					: {
-						blockId,
-						rangeKey,
-						author,
-						anchorEl,
-						returnFocusEl,
-						sessionId: cur?.sessionId ?? sessionId,
-					},
+							blockId,
+							rangeKey,
+							author,
+							anchorEl,
+							returnFocusEl,
+							sessionId: cur?.sessionId ?? sessionId,
+						},
 			);
 		},
 		[],
@@ -225,16 +225,16 @@ export function AnnotationLayer({
 	const popoverTarget: AnnotationPopoverTarget | null =
 		target && block
 			? {
-				blockId: target.blockId,
-				rangeKey: target.rangeKey,
-				sessionId: target.sessionId,
-				author: target.author,
-				anchorEl: resolveAnchorEl(target),
-				returnFocusEl: target.returnFocusEl,
-				blockEl: markerMap.get(target.blockId) ?? null,
-				authors: block.authors ?? [],
-				count: block.count,
-			}
+					blockId: target.blockId,
+					rangeKey: target.rangeKey,
+					sessionId: target.sessionId,
+					author: target.author,
+					anchorEl: resolveAnchorEl(target),
+					returnFocusEl: target.returnFocusEl,
+					blockEl: markerMap.get(target.blockId) ?? null,
+					authors: block.authors ?? [],
+					count: block.count,
+				}
 			: null;
 
 	return (

@@ -64,13 +64,7 @@ body {
 	--tw-prose-td: var(--color-foreground);
 }
 
-/*
- * 不要给 .prose pre 加 background/border/border-radius/backdrop-filter 等装饰。
- * 文章代码块由 CodeBlock 自带完整卡片样式（dark bg + 圆角 + 边框 + shiki 高亮），
- * 编辑器代码块由 .ProseMirror pre 兜底。此前的 .prose pre 规则未入 layer 且带
- * !important，会盖过 CodeBlock 的 Tailwind 覆盖：内层 pre 出现圆角裁剪首/尾行，
- * glass 背景盖住 shiki 高亮。
- */
+/* 正文的 prose 排版不作用于 @violet/ui 的代码块和行内代码；组件在根节点带 not-prose。 */
 
 /* 全局边框工具类：Tailwind v4 默认不生成 border-border，显式提供 */
 @layer base {

@@ -91,7 +91,7 @@ export function CodeBlock({
 		}
 	};
 	return (
-		<figure {...props} className={cn("v-code-block", "not-prose", className)}>
+		<figure {...props} className={cn("v-code-block not-prose", className)}>
 			<figcaption className="v-code-block__header">
 				<span className="v-code-block__language">{language}</span>
 				{filename && (

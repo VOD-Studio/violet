@@ -83,7 +83,11 @@ function DetailHeader() {
 						</Button>
 					</>
 				}
-				primaryAction={<Button variant="primary" size="sm">发布</Button>}
+				primaryAction={
+					<Button variant="primary" size="sm">
+						发布
+					</Button>
+				}
 			/>
 			<p className="text-13 text-muted-foreground">正文从这里开始。</p>
 		</div>

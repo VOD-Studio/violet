@@ -102,6 +102,19 @@ const RICH_CONTENT_POSTS = ["code", "diagram", "toc", "image", "toc-copy", "work
 	].join(""),
 }));
 
+RICH_CONTENT_POSTS.push(...["html", "markdown"].map((format, index) => ({
+	...CONTRACT_POST,
+	id: `10000000-0000-0000-0000-00000000002${index + 1}`,
+	slug: `contract-code-typography-${format}`,
+	title: `代码排版契约：${format}`,
+	content_html: format === "html"
+		? '<h2>代码排版</h2><p>变量 <code>a</code> 不参与正文装饰。</p><pre><code class="language-javascript">const a = 1;</code></pre><pre data-runnable="true" data-lang="bun" data-source="console.log(&quot;article&quot;);"><code>console.log(&quot;article&quot;);</code></pre>'
+		: "",
+	content_md: format === "markdown"
+		? '## 代码排版\n\n变量 `a` 不参与正文装饰。\n\n```javascript\nconst a = 1;\n```\n\n```bun runnable\nconsole.log("article");\n```'
+		: "",
+})));
+
 const CONTRACT_NOTE = {
 	id: "41000000-0000-0000-0000-000000000001",
 	title: "缓存接管笔记",

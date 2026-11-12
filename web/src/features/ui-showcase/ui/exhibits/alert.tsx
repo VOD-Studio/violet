@@ -151,7 +151,11 @@ function EmptyDefault() {
 			<Empty
 				title="还没有想法"
 				description="写下第一条后会出现在这里。"
-				action={<Button variant="primary" size="sm">记一条</Button>}
+				action={
+					<Button variant="primary" size="sm">
+						记一条
+					</Button>
+				}
 			/>
 		</div>
 	);

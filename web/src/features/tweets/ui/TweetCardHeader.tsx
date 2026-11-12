@@ -9,6 +9,7 @@ import {
 import { Link } from "@tanstack/react-router";
 import { cn } from "cn";
 import type { ReactNode } from "react";
+import { BotBadge } from "./BotBadge";
 
 /** 本站作者、发布时间及可选管理菜单。 */
 export interface TweetCardHeaderProps {
@@ -56,14 +57,17 @@ export function TweetCardHeader({
 					/>
 				</Link>
 				<div className="v-tweet__author">
-					<Link
-						to="/users/$username"
-						params={{ username: author.username }}
-						onClick={(event) => event.stopPropagation()}
-						className="v-tweet__name truncate"
-					>
-						{author.username}
-					</Link>
+					<div className="v-tweet__name-row">
+						<Link
+							to="/users/$username"
+							params={{ username: author.username }}
+							onClick={(event) => event.stopPropagation()}
+							className="v-tweet__name truncate"
+						>
+							{author.username}
+						</Link>
+						<BotBadge show={author.is_bot} />
+					</div>
 					{isDetail ? (
 						<time
 							dateTime={createdAt}

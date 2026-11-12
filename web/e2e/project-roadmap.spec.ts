@@ -159,41 +159,40 @@ test.describe("项目详情页", () => {
 		await expect(dialog).toHaveCount(0);
 	});
 
-	test("弹窗只淡入淡出：打开过程中位置与尺寸不变", async ({ page, context }) => {
+	test("弹窗展开动画结束后位置与尺寸稳定，完整落在视口里", async ({ page, context }) => {
 		await loadClient(context);
 		await open(page);
-		await page.evaluate(() => {
-			const samples: number[][] = [];
-			(window as unknown as { __samples: number[][] }).__samples = samples;
-			const watch = new MutationObserver(() => {
-				const content = document.querySelector('[data-slot="dialog-content"]');
-				if (!content) return;
-				watch.disconnect();
-				const start = performance.now();
-				const tick = () => {
-					const rect = content.getBoundingClientRect();
-					samples.push([rect.left, rect.top, rect.width, rect.height]);
-					if (performance.now() - start < 400) requestAnimationFrame(tick);
-				};
-				tick();
-			});
-			watch.observe(document.body, { childList: true, subtree: true });
-		});
-
 		await cardButton(page, "计划中的第二项").click();
 		await expect(page.getByRole("dialog")).toBeVisible();
-		await page.waitForTimeout(500);
-
+		// 弹窗按设计稿从触发卡片长出，等入场动画走完才量取落点。
+		await page.waitForTimeout(700);
 		const samples = await page.evaluate(
-			() => (window as unknown as { __samples: number[][] }).__samples,
+			() =>
+				new Promise<number[][]>((resolve) => {
+					const out: number[][] = [];
+					const tick = () => {
+						const rect = document
+							.querySelector('[data-slot="dialog-content"]')
+							?.getBoundingClientRect();
+						if (rect) out.push([rect.left, rect.top, rect.width, rect.height]);
+						if (out.length < 8) requestAnimationFrame(tick);
+						else resolve(out);
+					};
+					tick();
+				}),
 		);
-		expect(samples.length).toBeGreaterThan(3);
+		expect(samples.length).toBe(8);
 		for (const sample of samples) {
-			expect(sample[0]).toBeCloseTo(samples[0][0], 0);
-			expect(sample[1]).toBeCloseTo(samples[0][1], 0);
-			expect(sample[2]).toBeCloseTo(samples[0][2], 0);
-			expect(sample[3]).toBeCloseTo(samples[0][3], 0);
+			for (const index of [0, 1, 2, 3])
+				expect(sample[index]).toBeCloseTo(samples[0][index], 0);
 		}
+		const size = page.viewportSize();
+		if (!size) throw new Error("缺少视口尺寸");
+		const [left, top, width, height] = samples[0];
+		expect(left).toBeGreaterThanOrEqual(0);
+		expect(top).toBeGreaterThanOrEqual(0);
+		expect(left + width).toBeLessThanOrEqual(size.width);
+		expect(top + height).toBeLessThanOrEqual(size.height);
 	});
 
 	test("没有条目的项目显示空状态，不显示进度概览", async ({ page, context }) => {
@@ -465,13 +464,15 @@ test.describe("窄屏（390px）", () => {
 
 		const dialog = page.getByRole("dialog", { name: "已完成的第 17 项" });
 		await expect(dialog).toBeVisible();
+		// 入场动画期间弹窗仍在位移，落位后才量取是否完整在视口里。
+		await page.waitForTimeout(700);
 		const box = await dialog.boundingBox();
 		expect(box).not.toBeNull();
 		expect(box?.x ?? -1).toBeGreaterThanOrEqual(0);
 		expect(box?.y ?? -1).toBeGreaterThanOrEqual(0);
 		expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(390);
 		expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThanOrEqual(844);
-		await expect(dialog.getByRole("button", { name: "Close" })).toBeVisible();
+		await expect(dialog.getByRole("button", { name: "关闭" })).toBeVisible();
 		await expect(
 			dialog.getByRole("link", { name: "https://example.com/no-label" }),
 		).toBeVisible();

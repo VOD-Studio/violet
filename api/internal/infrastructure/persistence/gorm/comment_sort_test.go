@@ -83,7 +83,7 @@ func TestArticleCommentHotSortUsesAllReactionsBeforePagination(t *testing.T) {
 	filter.TopLevelSort = "latest"
 	result, err := repo.FindPage(ctx, filter, shared.PageQuery{Page: 1, Limit: 10})
 	require.NoError(t, err)
-	got = nil
+	got = make([]string, 0, len(result.Items))
 	for _, item := range result.Items {
 		got = append(got, item.ID().String())
 	}
@@ -137,7 +137,7 @@ func TestTweetCommentHotSortUsesAllReactionsAndStableTies(t *testing.T) {
 	filter.TopLevelSort = "latest"
 	result, err := repo.FindPage(ctx, filter, shared.PageQuery{Page: 1, Limit: 10})
 	require.NoError(t, err)
-	got = nil
+	got = make([]string, 0, len(result.Items))
 	for _, item := range result.Items {
 		got = append(got, item.ID().String())
 	}

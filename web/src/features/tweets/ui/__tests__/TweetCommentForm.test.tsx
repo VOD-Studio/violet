@@ -16,6 +16,9 @@ vi.mock("@tanstack/react-router", () => ({ useNavigate: () => vi.fn() }));
 vi.mock("@features/emojis/api/queries", () => ({
 	useAllEmojis: () => ({ data: [], isLoading: false }),
 }));
+vi.mock("@features/customemoji/api/queries", () => ({
+	useMyCustomEmojis: () => ({ data: undefined, isLoading: false }),
+}));
 vi.mock("@features/upload/hooks/use-chunked-upload", () => ({
 	useChunkedUpload: () => ({ uploadFile: vi.fn() }),
 }));

@@ -33,7 +33,9 @@ function BasicCard() {
 				<Button size="sm" variant="ghost">
 					稍后
 				</Button>
-				<Button variant="primary" size="sm">断开</Button>
+				<Button variant="primary" size="sm">
+					断开
+				</Button>
 			</CardFooter>
 		</Card>
 	);

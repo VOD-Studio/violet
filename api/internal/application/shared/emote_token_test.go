@@ -29,3 +29,16 @@ func TestSplitCustomEmojiTokens(t *testing.T) {
 	assert.Equal(t, []domainshared.ID{id}, tokens.IDs)
 	assert.Equal(t, []string{"[mycat:" + id.String() + "]", "[other:" + id.String() + "]"}, tokens.TokensByID[id])
 }
+
+func TestEmojiToken(t *testing.T) {
+	assert.Equal(t, "[doge]", EmojiToken("doge"))
+	assert.Equal(t, "[doge]", EmojiToken("[doge]"))
+	assert.Equal(t, "", EmojiToken(""))
+	assert.Equal(t, "[(╯°□°）╯]", EmojiToken("(╯°□°）╯"))
+}
+
+func TestFormatCustomEmojiToken(t *testing.T) {
+	id := domainshared.MustParseID("11111111-1111-1111-1111-111111111111")
+	assert.Equal(t, "[mycat:11111111-1111-1111-1111-111111111111]", FormatCustomEmojiToken("mycat", id))
+	assert.Equal(t, "[猫 咪:11111111-1111-1111-1111-111111111111]", FormatCustomEmojiToken("猫 咪", id))
+}

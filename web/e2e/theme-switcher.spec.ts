@@ -171,19 +171,19 @@ test("自定义主题：实时预览，应用后刷新仍生效，选回预设�
 
 	await input.fill("#2B6CB0");
 	const expected = normalizeTheme({ version: 1, seed: "#2b6cb0" });
-	const { brand } = generateScales(expected, { appearance: "light" });
-	// 浅色预览卡：主要按钮取实色档，链接取文字档，选中态取浅底档
+	const { material, neutral } = generateScales(expected, { appearance: "light" });
+	// 浅色预览卡：主要按钮取墨色，链接取材质强调色，选中态是装饰色 16% 叠纸片底
 	const preview = dialog.getByRole("group", { name: "生成结果预览" });
 	const computed = (target: Locator, property: "color" | "backgroundColor") =>
 		target.first().evaluate((element, key) => getComputedStyle(element)[key], property);
 	await expect
 		.poll(() => computed(preview.getByRole("button", { name: "主要按钮" }), "backgroundColor"))
-		.toBe(await canonicalColor(page, brand.steps[9]));
+		.toBe(await canonicalColor(page, neutral.steps[12]));
 	expect(await computed(preview.getByText("链接", { exact: true }), "color")).toBe(
-		await canonicalColor(page, brand.steps[11]),
+		await canonicalColor(page, material.accent),
 	);
 	expect(await computed(preview.getByText("已选中", { exact: true }), "backgroundColor")).toBe(
-		await canonicalColor(page, brand.steps[3]),
+		await canonicalColor(page, `color-mix(in oklab, ${material.deco} 16%, ${material.sheet})`),
 	);
 
 	await dialog.getByRole("button", { name: "应用" }).click();

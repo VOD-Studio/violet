@@ -32,7 +32,7 @@ export function CommentItem({
 	const formId = useId();
 	const deleted = status === "deleted";
 	const formOpen = !deleted && replyForm != null && replyForm !== false;
-	const { formRef, replyButtonRef, cancel } = useReplyFocus(formOpen, onReply);
+	const { formRef, replyButtonRef } = useReplyFocus(formOpen);
 	const itemStyle = {
 		"--v-comment-enter-delay": `${Math.max(0, enterDelay)}ms`,
 		...style,
@@ -92,11 +92,6 @@ export function CommentItem({
 				{formOpen && (
 					<div className="v-comment__reply-form" ref={formRef} id={formId}>
 						{replyForm}
-						{onReply && (
-							<Button variant="ghost" className="v-comment__action" onClick={cancel}>
-								取消
-							</Button>
-						)}
 					</div>
 				)}
 				{replies}

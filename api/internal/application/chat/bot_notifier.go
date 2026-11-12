@@ -154,8 +154,16 @@ func (d *BotEventDispatcher) recipientIDs(ctx context.Context, conversation *dom
 // ID 留空：bot 事件不写 `id:` 行，浏览器/客户端的 Last-Event-ID 续传语义只对
 // 用户侧持久化事件成立，bot 的恢复路径是重拉会话消息。
 func NewBotEvent(eventType domainchat.ChatEventType, data map[string]any, occurredAt time.Time) EventDTO {
+	return NewBotEventNamed(string(eventType), data, occurredAt)
+}
+
+// NewBotEventNamed 组装任意事件名的 bot SSE 信封。
+//
+// 聊天之外的事件（如推文互动）复用同一条 /chat/bot/events 流，事件名由调用方
+// 给出，不引入聊天域的事件类型枚举。
+func NewBotEventNamed(eventType string, data map[string]any, occurredAt time.Time) EventDTO {
 	return EventDTO{
-		Type:       string(eventType),
+		Type:       eventType,
 		Version:    1,
 		OccurredAt: occurredAt.Format(time.RFC3339Nano),
 		Data:       data,

@@ -12,7 +12,8 @@ export function generatePersonaIdentityCss(seed: string): string {
 		const dark = generateScales({ version: 1, seed }, { appearance: "dark", contrast });
 		const roles = {
 			text: [light.brand.steps[11], dark.brand.steps[11]],
-			border: [light.brand.steps[7], dark.brand.steps[7]],
+			// 浅色纸面比纯白暗，第 7 档边界对底色不足 3:1，浅色取第 8 档。
+			border: [light.brand.steps[8], dark.brand.steps[7]],
 			decoration: [light.brand.steps[9], dark.brand.steps[9]],
 			surface: [light.brand.steps[3], dark.brand.steps[3]],
 		};

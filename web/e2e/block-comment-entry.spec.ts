@@ -64,6 +64,8 @@ test.describe("390px 手机", () => {
 		const paragraph = page
 			.locator("[data-article-content] p")
 			.filter({ hasText: "增强恢复后，这段结尾仍是原来的节点。" });
+		// 段落若停在底部浮动评论钮与导航岛后面，点按会落在它们身上；先滚到视口中部
+		await paragraph.evaluate((element) => element.scrollIntoView({ block: "center" }));
 		await expect(async () => {
 			await paragraph.tap();
 			await expect(entry).toHaveAttribute("data-show", "true", { timeout: 1_000 });
@@ -82,11 +84,11 @@ test.describe("390px 手机", () => {
 			.toBe(true);
 		await page.screenshot({ path: test.info().outputPath("mobile-entry.png") });
 
+		const composer = page.getByRole("dialog", { name: "发表段评" });
 		await expect(async () => {
-			await entry.tap();
-			await expect(page.getByRole("dialog", { name: "发表段评" })).toBeVisible({
-				timeout: 1_000,
-			});
+			// 已打开时不再点按：入口是开关，慢机器上重复点按会把刚打开的段评收回去
+			if (!(await composer.isVisible())) await entry.tap();
+			await expect(composer).toBeVisible({ timeout: 1_000 });
 		}).toPass();
 		await page.keyboard.press("Escape");
 

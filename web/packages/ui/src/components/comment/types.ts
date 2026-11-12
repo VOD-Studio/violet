@@ -24,11 +24,11 @@ export interface CommentItemProps extends Omit<ComponentProps<"article">, "title
 	status?: CommentStatus;
 	/** 放入真实 ReactionBar 等操作；组件不创建独立点赞计数。 */
 	actions?: ReactNode;
-	/** 回复按钮与取消按钮共享的切换意图；省略时不显示这两个按钮。 */
+	/** 回复按钮的切换意图；省略时不显示回复按钮。 */
 	onReply?: () => void;
 	/**
 	 * 受控回复表单；出现时聚焦首个可编辑输入，关闭后仅在焦点仍属表单时返回回复按钮。
-	 * 宿主负责提交、关闭、错误与草稿，不要再为同一表单添加重复取消入口。
+	 * 宿主负责提交、关闭、错误与草稿；关闭靠再次激活「回复」或宿主自己的入口，组件不内置取消按钮。
 	 */
 	replyForm?: ReactNode;
 	/** 回复列表或加载区；不自动折叠、去重或改写子节点。 */

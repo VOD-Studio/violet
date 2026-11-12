@@ -525,7 +525,7 @@ describe("ChatWorkspace", () => {
 				pointerType: "touch",
 			});
 			vi.advanceTimersByTime(500);
-			expect(screen.getByRole("button", { name: "添加消息表情" })).toBeTruthy();
+			expect(screen.getByRole("button", { name: "添加回应" })).toBeTruthy();
 		} finally {
 			vi.useRealTimers();
 		}

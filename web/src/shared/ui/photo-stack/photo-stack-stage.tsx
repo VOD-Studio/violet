@@ -705,11 +705,11 @@ export function PhotoStackStage({
 			{overlay ? (
 				<>
 					<div className="pointer-events-none absolute inset-x-0 bottom-3 z-30 flex justify-center">
-						<span className="rounded-full bg-black/45 p-1.5 backdrop-blur-sm">
-							<GripHorizontal className="size-4 text-white/90" />
+						<span className="rounded-full bg-card/80 p-1.5 backdrop-blur-sm">
+							<GripHorizontal className="size-4 text-foreground/90" />
 						</span>
 					</div>
-					<div className="pointer-events-none absolute bottom-3 left-3 z-30 rounded-full bg-black/45 px-2 py-0.5 font-mono text-[10px] text-white/90 backdrop-blur-sm">
+					<div className="pointer-events-none absolute bottom-3 left-3 z-30 rounded-full bg-card/80 px-2 py-0.5 font-mono text-[10px] text-foreground/90 backdrop-blur-sm">
 						{safeIndex + 1} / {images.length}
 					</div>
 				</>

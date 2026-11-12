@@ -98,8 +98,8 @@ test("整幅展品跨满全部栏，非整幅展品按占地分栏", async ({ pa
 });
 
 test("检视台里每种状态都在占地内", async ({ page, context }) => {
-	// 逐件逐态走完全部馆藏，展品多了以后超出默认时限
-	test.slow();
+	// 逐件逐态走完全部馆藏，本机约 140 秒，CI 机器更慢；默认 3 倍时限已不够
+	test.setTimeout(600_000);
 	await loadClient(context);
 	await page.setViewportSize({ width: 1440, height: 900 });
 	await page.emulateMedia({ reducedMotion: "reduce" });

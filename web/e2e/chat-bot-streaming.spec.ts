@@ -20,6 +20,16 @@ const bot = {
 };
 const createdAt = "2026-09-23T10:00:00Z";
 
+type MockToolCall = {
+	id: string;
+	name: string;
+	status: "running" | "completed" | "failed";
+	arguments?: string;
+	result?: string;
+	error?: string;
+	duration_ms?: number;
+};
+
 test("Bot 卡片随生成快照更新状态，断线后回查最新内容", async ({ page, context }) => {
 	await page.clock.setFixedTime(new Date(createdAt));
 	await context.addCookies([
@@ -48,6 +58,7 @@ test("Bot 卡片随生成快照更新状态，断线后回查最新内容", asyn
 	let savedStatus = "pending";
 	let savedThinking = "";
 	let savedRevision = 0;
+	let savedToolCalls: MockToolCall[] = [];
 	let messageReads = 0;
 	const message = () => ({
 		id: "m1",
@@ -60,6 +71,7 @@ test("Bot 卡片随生成快照更新状态，断线后回查最新内容", asyn
 			thinking: savedThinking,
 			revision: savedRevision,
 			updated_at: createdAt,
+			tool_calls: savedToolCalls,
 		},
 		reactions: [],
 		is_deleted: false,
@@ -136,6 +148,53 @@ test("Bot 卡片随生成快照更新状态，断线后回查最新内容", asyn
 		savedContent = content;
 		savedThinking = "检查输入";
 		savedRevision = Number(id);
+		savedToolCalls =
+			status === "streaming"
+				? [
+						{
+							id: "call_1",
+							name: "web_search",
+							status: "running",
+							arguments: '{"query":"violet tool calls"}',
+							duration_ms: 120,
+						},
+						{
+							id: "call_2",
+							name: "fetch_page",
+							status: "completed",
+							arguments: '{"url":"https://example.com"}',
+							result: "示例页面内容",
+							duration_ms: 2300,
+						},
+					]
+				: status === "completed"
+					? [
+							{
+								id: "call_1",
+								name: "web_search",
+								status: "completed",
+								arguments: '{"query":"violet tool calls"}',
+								result: "搜索结果",
+								duration_ms: 850,
+							},
+							{
+								id: "call_2",
+								name: "fetch_page",
+								status: "completed",
+								arguments: '{"url":"https://example.com"}',
+								result: "示例页面内容",
+								duration_ms: 2300,
+							},
+							{
+								id: "call_3",
+								name: "summarize",
+								status: "failed",
+								arguments: '{"text":"示例页面内容"}',
+								error: "抓取失败：连接超时",
+								duration_ms: 4000,
+							},
+						]
+					: [];
 		await page.evaluate(
 			(payload) =>
 				(window as Window & { emitChat?: (payload: unknown) => void }).emitChat?.(payload),
@@ -151,6 +210,7 @@ test("Bot 卡片随生成快照更新状态，断线后回查最新内容", asyn
 						thinking: "检查输入",
 						revision: Number(id),
 						updated_at: createdAt,
+						tool_calls: savedToolCalls,
 					},
 				},
 			},
@@ -161,6 +221,23 @@ test("Bot 卡片随生成快照更新状态，断线后回查最新内容", asyn
 		if (status === "thinking") {
 			await bubble.getByRole("button", { name: /思考过程/ }).click();
 			await expect(bubble).toContainText("检查输入");
+		}
+		if (status === "streaming") {
+			await expect(bubble.getByRole("button", { name: /工具调用/ })).toContainText("2");
+			await bubble.getByRole("button", { name: /工具调用/ }).click();
+			await expect(bubble).toContainText("web_search");
+			await expect(bubble).toContainText("fetch_page");
+			await expect(bubble).toContainText('{"query":"violet tool calls"}');
+			await expect(bubble).toContainText("示例页面内容");
+			await expect(bubble).toContainText("运行中");
+			await expect(bubble).toContainText("2.3s");
+		}
+		if (status === "completed") {
+			await expect(bubble.getByText("运行中")).toHaveCount(0);
+			await expect(bubble).toContainText("已完成");
+			await expect(bubble).toContainText("失败");
+			await expect(bubble).toContainText("抓取失败：连接超时");
+			await expect(bubble).toContainText("搜索结果");
 		}
 		await expect(bubble).toHaveCount(1);
 	}
@@ -177,6 +254,11 @@ test("Bot 卡片随生成快照更新状态，断线后回查最新内容", asyn
 	await page.reload();
 	await expect(page.getByTestId("chat-message-m1")).toContainText(savedContent);
 	await page.setViewportSize({ width: 375, height: 812 });
+	await page
+		.getByTestId("bot-reply-card")
+		.getByRole("button", { name: /工具调用/ })
+		.click();
+	await expect(page.getByTestId("bot-reply-card")).toContainText("summarize");
 	const cardBounds = await page.getByTestId("bot-reply-card").boundingBox();
 	expect(cardBounds).not.toBeNull();
 	expect(cardBounds?.x ?? -1).toBeGreaterThanOrEqual(0);

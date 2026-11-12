@@ -3,7 +3,7 @@ import { toEmojiToken } from "@entities/emoji/model/token";
 import type { Emoji, EmojiGroup } from "@entities/emoji/model/types";
 import { isImageURL } from "@shared/lib/url";
 import type { EmojiPickerGroup, EmojiPickerItem, EmojiPickerSection } from "@violet/ui";
-import { Clock, Heart } from "lucide-react";
+import { Clock, Heart, Smile } from "lucide-react";
 import type { ReactNode } from "react";
 import {
 	type EmojiDensity,
@@ -108,7 +108,13 @@ function createPersonalGroup(
 function createPublicGroup(group: EmojiGroup, selectedIds?: ReadonlySet<number>): EmojiPickerGroup {
 	const id = String(group.id);
 	const cover = group.cover_url;
-	const icon = cover && isImageURL(cover) ? <img src={cover} alt="" /> : undefined;
+	let icon: ReactNode;
+	if (cover && isImageURL(cover)) {
+		icon = <img src={cover} alt="" />;
+	} else if (group.source === "system") {
+		// 内置分组没有封面：与「最近」「我的」页签同为 17px 线性图标。
+		icon = <Smile size={17} strokeWidth={1.75} />;
+	}
 	return {
 		id,
 		label: group.name,

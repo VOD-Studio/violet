@@ -367,7 +367,7 @@ func TestCreateBotRejectsForeignUsername(t *testing.T) {
 		t.Fatal(err)
 	}
 	// 邮箱形如 bot 虚拟用户，但本地部分的 ID 不是自己的 ID。
-	impostor := domainuser.NewUser(domainshared.NewID(), mustEmail(t, "bot+"+bannedID.String()+"@"+botUserEmailDomain), mustUsername(t, "impostor"), domainuser.NewPasswordHash("$2y$hash"))
+	impostor := domainuser.NewUser(domainshared.NewID(), mustEmail(t, "bot+"+bannedID.String()+"@"+domainuser.BotUserEmailDomain), mustUsername(t, "impostor"), domainuser.NewPasswordHash("$2y$hash"))
 	impostor.Deactivate()
 	if err := users.Save(ctx, impostor); err != nil {
 		t.Fatal(err)

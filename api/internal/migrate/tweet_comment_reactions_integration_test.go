@@ -22,7 +22,7 @@ func TestTweetCommentReactionMigrationConstraintsAndRollback(t *testing.T) {
 		_, err := db.Exec(statement)
 		require.NoError(t, err)
 	}
-	up, err := os.ReadFile(filepath.Join("..", "..", "migrations", "150_create_tweet_comment_reactions.up.sql"))
+	up, err := os.ReadFile(filepath.Join("..", "..", "migrations", "151_create_tweet_comment_reactions.up.sql"))
 	require.NoError(t, err)
 	_, err = db.Exec(string(up))
 	require.NoError(t, err)
@@ -51,7 +51,7 @@ func TestTweetCommentReactionMigrationConstraintsAndRollback(t *testing.T) {
 	var count int
 	require.NoError(t, db.QueryRow(`SELECT COUNT(*) FROM tweet_comment_reactions`).Scan(&count))
 	require.Zero(t, count, "评论删除级联清理回应")
-	down, err := os.ReadFile(filepath.Join("..", "..", "migrations", "150_create_tweet_comment_reactions.down.sql"))
+	down, err := os.ReadFile(filepath.Join("..", "..", "migrations", "151_create_tweet_comment_reactions.down.sql"))
 	require.NoError(t, err)
 	_, err = db.Exec(string(down))
 	require.NoError(t, err)

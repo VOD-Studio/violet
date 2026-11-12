@@ -303,7 +303,8 @@ describe("段评", () => {
 		write(editor, "我的段落看法");
 		fireEvent.click(within(composer).getByRole("button", { name: "添加表情" }));
 		const picker = await screen.findByRole("dialog", { name: "表情选择器" });
-		const emoji = await within(picker).findByRole("button", { name: "微笑" });
+		fireEvent.click(await within(picker).findByRole("tab", { name: "文字表情" }));
+		const emoji = await within(picker).findByRole("option", { name: "微笑" });
 		fireEvent.click(emoji);
 		expect(screen.getByRole("dialog", { name: "批注" })).toBe(dialog);
 		expect(editor.textContent).toContain("我的段落看法");
@@ -343,7 +344,8 @@ describe("回复", () => {
 		fireEvent.pointerDown(trigger);
 		fireEvent.click(trigger);
 		const picker = await screen.findByRole("dialog", { name: "表情选择器" });
-		const emoji = await within(picker).findByRole("button", { name: "微笑" });
+		fireEvent.click(await within(picker).findByRole("tab", { name: "文字表情" }));
+		const emoji = await within(picker).findByRole("option", { name: "微笑" });
 		fireEvent.pointerDown(emoji);
 		fireEvent.click(emoji);
 		expect(screen.getByRole("dialog", { name: "批注" })).toBe(dialog);

@@ -15,6 +15,7 @@ import (
 	domaintweet "blog-api/internal/domain/tweet"
 	"blog-api/internal/infrastructure/persistence/gorm/model"
 )
+
 func setupTweetCommentTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 	tmpFile := t.TempDir() + "/test.db"
@@ -316,4 +317,27 @@ func TestTweetCommentRepository_Delete_NotFound(t *testing.T) {
 	repo := NewTweetCommentRepository(setupTweetCommentTestDB(t))
 	err := repo.Delete(context.Background(), domainshared.NewID())
 	require.ErrorIs(t, err, domaintweet.ErrCommentNotFound)
+}
+
+// TestTweetCommentRepository_Save_DuplicateIDDoesNotOverwrite 评论无更新路径：
+// 同主键二次插入必须报错，且不能改写已存内容（bot 幂等靠这一点守住 409）。
+func TestTweetCommentRepository_Save_DuplicateIDDoesNotOverwrite(t *testing.T) {
+	repo := NewTweetCommentRepository(setupTweetCommentTestDB(t))
+	ctx := context.Background()
+	tweetID := domainshared.NewID()
+	authorID := domainshared.NewID()
+	commentID := domainshared.NewID()
+	now := time.Now()
+
+	first := domaintweet.ReconstructComment(commentID, tweetID, authorID, "原文", nil, nil, 0, "", now, now)
+	require.NoError(t, first.SetParent(nil))
+	require.NoError(t, repo.Save(ctx, first))
+
+	second := domaintweet.ReconstructComment(commentID, tweetID, authorID, "篡改", nil, nil, 0, "", now, now)
+	require.NoError(t, second.SetParent(nil))
+	require.Error(t, repo.Save(ctx, second), "重复主键必须返回错误")
+
+	got, err := repo.FindByID(ctx, commentID)
+	require.NoError(t, err)
+	assert.Equal(t, "原文", got.Body())
 }

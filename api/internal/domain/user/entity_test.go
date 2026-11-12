@@ -235,3 +235,33 @@ func TestID_Parse(t *testing.T) {
 		t.Error("未设置的 ID 应为零值")
 	}
 }
+
+func TestIsBot(t *testing.T) {
+	id := shared.MustParseID("11111111-1111-1111-1111-111111111111")
+	other := shared.MustParseID("22222222-2222-2222-2222-222222222222")
+	username, _ := ParseUsername("helpers")
+
+	cases := []struct {
+		name  string
+		email string
+		want  bool
+	}{
+		{"canonical", "bot+" + id.String() + "@" + BotUserEmailDomain, true},
+		{"human", "someone@example.com", false},
+		{"local id is not own", "bot+" + other.String() + "@" + BotUserEmailDomain, false},
+		{"domain mismatch", "bot+" + id.String() + "@example.com", false},
+		{"bare bot local", "bot@bot.violet.invalid", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			email, err := ParseEmail(tc.email)
+			if err != nil {
+				t.Fatalf("ParseEmail(%q) error = %v", tc.email, err)
+			}
+			u := NewUser(id, email, username, NewPasswordHash(""))
+			if got := u.IsBot(); got != tc.want {
+				t.Fatalf("IsBot() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}

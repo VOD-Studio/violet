@@ -1,4 +1,4 @@
-package chat
+package chat_test
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
+	appchat "blog-api/internal/application/chat"
 	domainchat "blog-api/internal/domain/chat"
 	domainchatreaction "blog-api/internal/domain/chatreaction"
 	domainshared "blog-api/internal/domain/shared"
@@ -50,8 +51,8 @@ func TestListMessagesIncludesRecentReactionsFromStorage(t *testing.T) {
 		}).Error)
 	}
 
-	svc, repo := newReactionService(t, message, viewerID, conversationID, persistence.NewChatMessageReactionStore(db))
-	repo.messages = []*domainchat.Message{message}
+	svc, setMessages := appchat.NewReactionServiceForTest(t, message, viewerID, conversationID, persistence.NewChatMessageReactionStore(db))
+	setMessages([]*domainchat.Message{message})
 	result, err := svc.ListMessages(context.Background(), viewerID, conversationID, "", 20)
 	require.NoError(t, err)
 	require.Len(t, result.Items, 1)

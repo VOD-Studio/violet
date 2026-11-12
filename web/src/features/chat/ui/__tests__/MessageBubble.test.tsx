@@ -381,7 +381,9 @@ it("待发送图片显示进度并隐藏编辑与已读，失败后可原地重�
 	renderBubble(message, undefined, "direct", "u_1", { status: "uploading", progress: 42 });
 	expect(screen.getByRole("status").textContent).toContain("图片上传中 42%");
 	expect(screen.queryByRole("button", { name: "编辑消息" })).toBeNull();
-	expect(screen.queryByRole("button", { name: "添加消息表情" })).toBeNull();
+	expect(screen.getByRole("button", { name: "添加回应" }).getAttribute("aria-disabled")).toBe(
+		"true",
+	);
 	expect(screen.queryByText("未读")).toBeNull();
 	cleanup();
 	const retry = vi.fn();

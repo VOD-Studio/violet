@@ -20,6 +20,8 @@ export interface Emoji {
 	name: string;
 	/** 静态图片 URL */
 	url: string;
+	/** 可直接发进正文的系统表情占位符，形如 [name]；后端 EmojiDTO 恒定下发 */
+	token?: string;
 	/** 来源页 URL，可选 */
 	source_url?: string;
 	/** 动图 URL，可选 */

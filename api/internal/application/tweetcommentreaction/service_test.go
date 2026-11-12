@@ -123,7 +123,7 @@ func TestReactionTargetAndEmojiRules(t *testing.T) {
 func TestRecentUsersAreBoundedOrderedAndExcludeDeleted(t *testing.T) {
 	f := setup(t)
 	at := time.Date(2026, 11, 12, 10, 0, 0, 0, time.UTC)
-	var ids []uuid.UUID
+	ids := make([]uuid.UUID, 0, 5)
 	for i := range 5 {
 		id := uuid.New()
 		ids = append(ids, id)

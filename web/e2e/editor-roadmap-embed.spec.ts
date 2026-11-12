@@ -72,7 +72,7 @@ test.describe("编辑器里的路线图入口", () => {
 		await page.getByRole("button", { name: "编辑路线图" }).click();
 		dialog = page.getByRole("dialog", { name: "编辑路线图" });
 		await expect(dialog.getByRole("combobox", { name: "条目" })).toHaveText(`#1 ${titleOf(1)}`);
-		await dialog.getByRole("button", { name: "关系画布" }).click();
+		await dialog.getByRole("radio", { name: "关系画布" }).click();
 		await expect(
 			dialog.getByText("指定条目时只画与它相连的部分，否则画整个项目"),
 		).toBeVisible();
