@@ -101,7 +101,7 @@ describe("Comment 语义与状态", () => {
 		expect(onReply).not.toHaveBeenCalled();
 	});
 
-	it("没有回复回调就没有回复或取消操作，回应槽保持可交互", () => {
+	it("没有回复回调就没有回复操作，回应槽保持可交互", () => {
 		const onReact = vi.fn();
 		render(
 			<CommentItem
@@ -146,7 +146,7 @@ describe("Comment 语义与状态", () => {
 });
 
 describe("Comment 受控回复焦点", () => {
-	it("表单出现后跳过非文本控件、隐藏、禁用和只读输入，取消返回原入口", () => {
+	it("表单出现后跳过非文本控件、隐藏、禁用和只读输入，再次激活回复关闭并返回原入口", () => {
 		render(<ReplyExample />);
 		const reply = screen.getByRole("button", { name: "回复" });
 		fireEvent.click(reply);
@@ -156,7 +156,7 @@ describe("Comment 受控回复焦点", () => {
 		expect(
 			document.getElementById(reply.getAttribute("aria-controls") ?? "")?.contains(input),
 		).toBe(true);
-		fireEvent.click(screen.getByRole("button", { name: "取消" }));
+		fireEvent.click(reply);
 		expect(screen.queryByRole("textbox", { name: "回复正文" })).toBeNull();
 		expect(document.activeElement).toBe(reply);
 		expect(reply.getAttribute("aria-expanded")).toBe("false");

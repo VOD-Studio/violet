@@ -40,7 +40,7 @@ function firstEditable(root: HTMLElement) {
 	});
 }
 
-export function useReplyFocus(open: boolean, onReply: (() => void) | undefined) {
+export function useReplyFocus(open: boolean) {
 	const formRef = useRef<HTMLDivElement>(null);
 	const replyButtonRef = useRef<HTMLButtonElement>(null);
 	const ownsFocus = useRef(false);
@@ -113,12 +113,5 @@ export function useReplyFocus(open: boolean, onReply: (() => void) | undefined) 
 		};
 	}, [open]);
 
-	const cancel = () => {
-		// Safari 指针点击按钮不保证聚焦；显式取消仍应回到原回复入口。
-		ownsFocus.current = true;
-		lastFocused.current = formRef.current;
-		onReply?.();
-	};
-
-	return { formRef, replyButtonRef, cancel };
+	return { formRef, replyButtonRef };
 }
