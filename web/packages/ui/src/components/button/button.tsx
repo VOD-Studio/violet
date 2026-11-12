@@ -281,8 +281,17 @@ function NativeButton({
 						</span>
 					)}
 					{showDone && (
-						<span aria-hidden="true" data-slot="done-icon" className="v-button__done-icon">
-							<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+						<span
+							aria-hidden="true"
+							data-slot="done-icon"
+							className="v-button__done-icon"
+						>
+							<svg
+								viewBox="0 0 24 24"
+								fill="none"
+								aria-hidden="true"
+								focusable="false"
+							>
 								<path d="m5 12.5 4.5 4.5L19 7.5" />
 							</svg>
 						</span>

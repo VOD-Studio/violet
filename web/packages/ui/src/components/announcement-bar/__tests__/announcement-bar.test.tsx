@@ -9,7 +9,9 @@ afterEach(() => {
 
 describe("AnnouncementBar", () => {
 	it("渲染一句话正文与关闭钮，没有链接时不出现链接", () => {
-		render(<AnnouncementBar content="评论编辑器即将支持 Markdown 实时预览" onClose={() => {}} />);
+		render(
+			<AnnouncementBar content="评论编辑器即将支持 Markdown 实时预览" onClose={() => {}} />,
+		);
 		expect(screen.getByText("评论编辑器即将支持 Markdown 实时预览")).toBeTruthy();
 		expect(screen.queryByRole("link")).toBeNull();
 		expect(screen.getByRole("button", { name: "关闭公告" })).toBeTruthy();
