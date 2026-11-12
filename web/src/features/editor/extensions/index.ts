@@ -33,7 +33,7 @@ import { createDiagramBlockExtension } from "../ui/DiagramBlockView";
 import { createImageExtension } from "../ui/ImageView";
 import { createMathExtensions } from "../ui/MathView";
 import { CustomTaskItem } from "../ui/TaskItemView";
-import { Alert } from "./alert";
+import { createAlert } from "./alert";
 import { Footnotes } from "./footnote-list";
 import { FootnoteDefinition, FootnoteReference } from "./footnotes";
 import {
@@ -42,6 +42,7 @@ import {
 	NativeSubscript,
 	NativeSuperscript,
 } from "./native-syntax";
+import { NativeCite, QuotePresentation } from "./quote";
 import { createMarkdownTable } from "./table";
 
 /** 低光高亮实例：common 预设已注册 37 种常用语言，其余按需动态注册 */
@@ -111,7 +112,9 @@ export function buildEditorExtensions(
 		Highlight.configure({ multicolor: true }),
 		NativeSubscript,
 		NativeSuperscript,
-		Alert,
+		NativeCite,
+		QuotePresentation,
+		createAlert(),
 		...createNativeDetails(),
 		// —— 文本对齐（可裁剪）——
 		...(features?.align === false

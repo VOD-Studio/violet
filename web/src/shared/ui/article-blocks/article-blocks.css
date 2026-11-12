@@ -112,10 +112,9 @@ blockquote[data-type="alert"] > :last-child,
 
 /*
  * 正文引用段落：文章、手记与编辑器预览共用同一套规则。
- * 编辑器里的 blockquote 不带 article-blockquote 类（类名会随 getHTML 落进正文存储），
- * 因此用 .ProseMirror 作用域补齐，两处规则必须成对维护。
+ * 编辑器的装饰节点只进入视图，展示类名不写入正文存储。
  * 缩进 24px（1.5rem）、引号 40px（2.5rem）按正文引用契约呈现；不画竖线、不加底色。
- * 阅读端的装饰节点显式标记 aria-hidden，不依赖伪元素的无障碍行为。
+ * 装饰节点显式标记 aria-hidden，不依赖伪元素的无障碍行为。
  */
 :is(.article-blockquote, .ProseMirror blockquote:not([data-type="alert"])) {
 	position: relative;
@@ -130,12 +129,7 @@ blockquote[data-type="alert"] > :last-child,
 	quotes: none;
 }
 
-.ProseMirror blockquote:not([data-type="alert"])::before {
-	content: "“";
-}
-
-.article-blockquote-mark,
-.ProseMirror blockquote:not([data-type="alert"])::before {
+.article-blockquote-mark {
 	position: absolute;
 	inset-block-start: -0.15em;
 	inset-inline-start: 0;
