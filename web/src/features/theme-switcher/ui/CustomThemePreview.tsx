@@ -73,7 +73,13 @@ export function CustomThemePreview({ appearance, seed }: CustomThemePreviewProps
 				与<span className="text-primary">强调</span>
 			</p>
 			<div className="flex flex-wrap items-center gap-2">
-				<Button ref={button} size="sm" tabIndex={-1} style={{ transition: "none" }}>
+				<Button
+					ref={button}
+					variant="primary"
+					size="sm"
+					tabIndex={-1}
+					style={{ transition: "none" }}
+				>
 					主要按钮
 				</Button>
 				<span className="inline-flex h-6 items-center rounded-full bg-selected px-2.5 text-xs text-selected-foreground">
