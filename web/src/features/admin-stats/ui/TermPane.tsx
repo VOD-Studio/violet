@@ -18,8 +18,7 @@ interface TermPaneProps {
  * TermPane - 终端窗格外壳。
  *
  * 概览驾驶舱的区块容器：mono 路径小签 + hairline 标题行 + 内容区，
- * 取代 shadcn 大圆角卡片——后台信息面板与前台 terminal-card 共享
- * 同一视觉身份，而非通用 admin 模板脸。
+ * 取代 shadcn 大圆角卡片，用终端视觉身份而非通用 admin 模板脸。
  */
 export function TermPane({
 	tag,

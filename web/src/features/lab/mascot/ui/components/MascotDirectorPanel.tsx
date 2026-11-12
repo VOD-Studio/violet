@@ -1,6 +1,6 @@
 import type { EmotionDef } from "@violet/mascot";
 import type { MascotHandle } from "@violet/mascot/react";
-import { OverlayScroll } from "@violet/ui";
+import { iconProps, ScrollArea } from "@violet/ui";
 import { cn } from "cn";
 import {
 	Hand,
@@ -83,22 +83,22 @@ export function MascotDirectorPanel({ mascotRef, def, onAIMessage }: MascotDirec
 	const antics: StageAction[] = [
 		{
 			label: "摸头",
-			icon: <Hand className="size-3.5" />,
+			icon: <Hand {...iconProps(14)} />,
 			onClick: () => mascotRef.current?.pet(),
 		},
 		{
 			label: "转圈",
-			icon: <RotateCw className="size-3.5" />,
+			icon: <RotateCw {...iconProps(14)} />,
 			onClick: () => mascotRef.current?.spin(),
 		},
 		{
 			label: "撒花",
-			icon: <Sparkles className="size-3.5" />,
+			icon: <Sparkles {...iconProps(14)} />,
 			onClick: () => mascotRef.current?.burst(25),
 		},
 		{
 			label: "弹跳",
-			icon: <Zap className="size-3.5" />,
+			icon: <Zap {...iconProps(14)} />,
 			onClick: () => mascotRef.current?.bounce(),
 		},
 	];
@@ -107,7 +107,7 @@ export function MascotDirectorPanel({ mascotRef, def, onAIMessage }: MascotDirec
 		{
 			label: isMagicPersistent ? "收起阵" : "魔法阵",
 			description: isMagicPersistent ? "常驻地面" : "脚下召唤",
-			icon: <WandSparkles className="size-3.5" />,
+			icon: <WandSparkles {...iconProps(14)} />,
 			active: isMagicPersistent,
 			onClick: () => {
 				const next = !isMagicPersistent;
@@ -122,31 +122,31 @@ export function MascotDirectorPanel({ mascotRef, def, onAIMessage }: MascotDirec
 		{
 			label: "彩带",
 			description: "轻薄流线",
-			icon: <Sparkles className="size-3.5" />,
+			icon: <Sparkles {...iconProps(14)} />,
 			onClick: () => mascotRef.current?.streamers(),
 		},
 		{
 			label: "流星",
 			description: "许愿掠过",
-			icon: <Rocket className="size-3.5" />,
+			icon: <Rocket {...iconProps(14)} />,
 			onClick: () => mascotRef.current?.meteors(),
 		},
 		{
 			label: "烟花",
 			description: "高空绽放",
-			icon: <PartyPopper className="size-3.5" />,
+			icon: <PartyPopper {...iconProps(14)} />,
 			onClick: () => mascotRef.current?.fireworks(),
 		},
 		{
 			label: "爱心雨",
 			description: "甜蜜落下",
-			icon: <Heart className="size-3.5" />,
+			icon: <Heart {...iconProps(14)} />,
 			onClick: () => mascotRef.current?.hearts(),
 		},
 		{
 			label: "闪耀",
 			description: "聚光登场",
-			icon: <Sparkles className="size-3.5" />,
+			icon: <Sparkles {...iconProps(14)} />,
 			onClick: () => mascotRef.current?.spotlight(),
 		},
 	];
@@ -174,11 +174,11 @@ export function MascotDirectorPanel({ mascotRef, def, onAIMessage }: MascotDirec
 	};
 
 	return (
-		<OverlayScroll className="h-full min-h-0">
+		<ScrollArea aria-label="吉祥物导演控制台" className="h-full min-h-0">
 			<section className="border-b border-edge-hairline p-4">
 				<div className="mb-3 flex items-center justify-between gap-2">
 					<div className="flex items-center gap-2">
-						<Hand className="size-3.5 text-neon-blue" />
+						<Hand {...iconProps(14, "text-neon-blue")} />
 						<div>
 							<h3 className="text-xs font-semibold">角色动作</h3>
 							<p className="font-mono text-[8px] tracking-[0.12em] text-muted-foreground uppercase">
@@ -198,7 +198,7 @@ export function MascotDirectorPanel({ mascotRef, def, onAIMessage }: MascotDirec
 			<section className="border-b border-edge-hairline p-4">
 				<div className="mb-3 flex items-center justify-between gap-2">
 					<div className="flex items-center gap-2">
-						<WandSparkles className="size-3.5 text-neon-blue" />
+						<WandSparkles {...iconProps(14, "text-neon-blue")} />
 						<div>
 							<h3 className="text-xs font-semibold">舞台特效</h3>
 							<p className="font-mono text-[8px] tracking-[0.12em] text-muted-foreground uppercase">
@@ -218,7 +218,7 @@ export function MascotDirectorPanel({ mascotRef, def, onAIMessage }: MascotDirec
 			<section className="border-b border-edge-hairline p-4">
 				<div className="flex items-center justify-between gap-3">
 					<div className="flex items-center gap-2">
-						<RotateCw className="size-3.5 text-neon-blue" />
+						<RotateCw {...iconProps(14, "text-neon-blue")} />
 						<div>
 							<label htmlFor="mascot-yaw" className="text-xs font-semibold">
 								手动方向
@@ -255,7 +255,7 @@ export function MascotDirectorPanel({ mascotRef, def, onAIMessage }: MascotDirec
 			<section className="p-4" aria-live="polite">
 				<div className="mb-3 flex items-center justify-between gap-2">
 					<div className="flex items-center gap-2">
-						<Terminal className="size-3.5 text-neon-blue" />
+						<Terminal {...iconProps(14, "text-neon-blue")} />
 						<div>
 							<h3 className="text-xs font-semibold">AI 消息</h3>
 							<p className="font-mono text-[8px] tracking-[0.12em] text-muted-foreground uppercase">
@@ -293,14 +293,14 @@ export function MascotDirectorPanel({ mascotRef, def, onAIMessage }: MascotDirec
 						<button
 							type="button"
 							onClick={sendJson}
-							className="inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 bg-foreground px-3 font-mono text-[9px] tracking-[0.08em] text-background uppercase transition-colors hover:bg-neon-blue hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-blue"
+							className="inline-flex h-8 shrink-0 cursor-pointer items-center gap-2 bg-foreground px-3 font-mono text-[9px] tracking-[0.08em] text-background uppercase transition-colors hover:bg-neon-blue hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-blue"
 						>
-							<Send className="size-3" />
+							<Send {...iconProps(12)} />
 							发送
 						</button>
 					</div>
 				</div>
 			</section>
-		</OverlayScroll>
+		</ScrollArea>
 	);
 }

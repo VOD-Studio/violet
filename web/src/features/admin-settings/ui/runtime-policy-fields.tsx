@@ -1,14 +1,14 @@
 import {
 	Button,
-	Input,
-	Label,
+	Field,
+	NumberInput,
 	Switch,
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
 } from "@violet/ui";
-import { CircleHelp } from "lucide-react";
+import { CircleQuestionMark } from "lucide-react";
 import { createContext, type ReactNode, useContext, useId, useState } from "react";
 
 /** 字段展示上下文不决定表单结构或字段类型。 */
@@ -35,9 +35,10 @@ export function PolicyHelp({ label, children }: { label: string; children: React
 			<Tooltip open={open} onOpenChange={setOpen}>
 				<TooltipTrigger asChild>
 					<Button
+						iconOnly
 						type="button"
 						variant="ghost"
-						size="icon-sm"
+						size="sm"
 						aria-label={`${label}说明`}
 						aria-expanded={open}
 						onPointerDown={(event) => event.preventDefault()}
@@ -54,13 +55,10 @@ export function PolicyHelp({ label, children }: { label: string; children: React
 							}
 						}}
 					>
-						<CircleHelp className="size-4" />
+						<CircleQuestionMark className="size-4" />
 					</Button>
 				</TooltipTrigger>
-				<TooltipContent
-					className="max-w-80 animate-none"
-					onEscapeKeyDown={() => setOpen(false)}
-				>
+				<TooltipContent className="max-w-80" onEscapeKeyDown={() => setOpen(false)}>
 					{children}
 				</TooltipContent>
 			</Tooltip>
@@ -81,39 +79,37 @@ function displayValue(value: unknown) {
 	return value === undefined ? "—" : String(value);
 }
 
-/** 保持草稿值、保存值、实例实际值和来源同时可见。 */
+/** 提示行并列保存值、实例实际值和来源；校验出错时同一位置让位给错误文案。 */
 export function PolicyField({ name, label, help, children }: PolicyFieldProps) {
 	const id = useId();
 	const state = useContext(RuntimeFieldContext);
 	const error = state.error(name);
 	const source = state.sources[name];
 	return (
-		<div className="space-y-2">
-			<div className="flex items-center gap-1">
-				<Label htmlFor={id}>{label}</Label>
-				<PolicyHelp label={label}>{help}</PolicyHelp>
-			</div>
-			{children(id, state)}
-			<div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-				<span>保存值：{displayValue(state.saved[name])}</span>
-				<span>实例值：{displayValue(state.effective[name])}</span>
-				<span>
-					来源：
-					{source === "override"
-						? "站点覆盖"
-						: source === "deployment"
-							? "部署默认"
-							: source === "application"
-								? "应用默认"
-								: "—"}
+		<Field
+			label={label}
+			htmlFor={id}
+			labelEnd={<PolicyHelp label={label}>{help}</PolicyHelp>}
+			error={error}
+			hint={
+				<span className="flex flex-wrap gap-x-4 gap-y-1">
+					<span>保存值：{displayValue(state.saved[name])}</span>
+					<span>实例值：{displayValue(state.effective[name])}</span>
+					<span>
+						来源：
+						{source === "override"
+							? "站点覆盖"
+							: source === "deployment"
+								? "部署默认"
+								: source === "application"
+									? "应用默认"
+									: "—"}
+					</span>
 				</span>
-			</div>
-			{error && (
-				<p id={`${id}-error`} role="alert" className="text-sm text-destructive">
-					{error}
-				</p>
-			)}
-		</div>
+			}
+		>
+			{children(id, state)}
+		</Field>
 	);
 }
 
@@ -140,21 +136,18 @@ export function PolicyNumber({
 	return (
 		<PolicyField name={name} label={label} help={help}>
 			{(id, state) => (
-				<Input
+				<NumberInput
 					id={id}
 					name={name}
-					type="number"
 					min={min}
 					max={max}
 					step={step}
 					required
 					value={Number.isFinite(value) ? value : ""}
 					disabled={state.disabled}
-					aria-invalid={!!state.error(name)}
-					aria-describedby={state.error(name) ? `${id}-error` : undefined}
 					onChange={(event) =>
 						onChange(
-							event.target.value === "" ? Number.NaN : event.target.valueAsNumber,
+							event.target.value === "" ? Number.NaN : Number(event.target.value),
 						)
 					}
 				/>
@@ -179,8 +172,6 @@ export function PolicySwitch({ name, label, help, value, onChange }: PolicySwitc
 					checked={value}
 					disabled={state.disabled}
 					onCheckedChange={onChange}
-					aria-invalid={!!state.error(name)}
-					aria-describedby={state.error(name) ? `${id}-error` : undefined}
 				/>
 			)}
 		</PolicyField>

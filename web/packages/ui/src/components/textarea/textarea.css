@@ -1,82 +1,123 @@
+/*
+ * Textarea 的多行布局：外壳基础类与变体类和 Input 共用（.v-input-control + 变体类），
+ * 变体、状态与涟漪都由 input.css 定义，这里只写多行的差异——纵向排布、上下 10 的内边距、
+ * 行高 24、外壳右下角的字数与底部操作栏。叶子 CSS 消费需先导入本文件（它已带上 input.css）。
+ */
+@import "../input/input.css";
+
 @layer components {
-	.v-textarea {
-		box-sizing: border-box;
-		display: block;
-		inline-size: 100%;
-		min-inline-size: 0;
-		min-block-size: 5rem;
-		padding: 0.5rem 0.75rem;
-		border: 1px solid var(--input);
-		border-radius: var(--v-control-radius, min(var(--radius), 1rem));
-		background-color: var(--background);
-		color: var(--foreground);
-		font-family: inherit;
-		font-size: 1rem;
-		line-height: 1.5;
-		transition:
-			border-color var(--v-duration-fast, 150ms) var(--v-easing, ease-out),
-			background-color var(--v-duration-fast, 150ms) var(--v-easing, ease-out);
+	/* 双类选择器：classes.css 汇总时 input.css 会被各叶子单元重复展开多轮，
+	 最后一轮排在本文件之后，单类选择器压不过 .v-input-control 的 block-size 与 .v-input 的 font */
+	.v-input-control.v-textarea {
+		flex-direction: column;
+		align-items: stretch;
+		block-size: auto;
+		padding-block: 0;
 	}
 
-	.v-textarea:focus-visible {
-		outline: 2px solid var(--ring);
-		outline-offset: 2px;
-		border-color: var(--ring);
+	.v-input.v-textarea__field {
+		block-size: auto;
+		margin-block: 0.625rem;
+		line-height: 1.5rem;
+		resize: none;
+		overflow-y: auto;
 	}
 
-	.v-textarea::placeholder {
+	/* 字数贴在外壳内右下角时，输入区不再留出底部间距 */
+	.v-textarea[data-count] .v-input.v-textarea__field {
+		margin-block-end: 0;
+	}
+
+	.v-textarea__count {
+		align-self: flex-end;
+		margin-block: 0.125rem 0.5rem;
 		color: var(--muted-foreground);
+		font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+		font-size: 0.75rem;
+		font-variant-numeric: tabular-nums;
 	}
 
-	.v-textarea::selection {
-		background-color: var(--primary);
-		color: var(--primary-foreground);
+	.v-textarea__count[data-over] {
+		color: var(--destructive-text);
 	}
 
-	.v-textarea:disabled {
+	/* 操作栏：外壳底部一行，高 32，与文字只靠间距分开，不画分割线；负外边距让图标钮贴回外壳内缘 */
+	.v-textarea__bar {
+		display: flex;
+		align-items: center;
+		gap: 0.125rem;
+		block-size: 2rem;
+		margin-block: 0 0.375rem;
+		margin-inline: -0.375rem;
+	}
+
+	.v-textarea__bar .v-textarea__count {
+		align-self: auto;
+		margin-block: 0;
+		margin-inline: auto 0.375rem;
+	}
+
+	/* 操作栏图标钮：28px 圆形，宿主也可以用自己的按钮，这里给默认形态 */
+	.v-textarea__action {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		inline-size: 1.75rem;
+		block-size: 1.75rem;
+		padding: 0;
+		border: 0;
+		border-radius: 999px;
+		background-color: transparent;
+		color: var(--muted-foreground);
+		font: inherit;
+		cursor: pointer;
+		transition:
+			background-color 120ms ease-out,
+			color 120ms ease-out;
+	}
+
+	.v-textarea__action svg {
+		inline-size: 1rem;
+		block-size: 1rem;
+		stroke-width: 1.75;
+	}
+
+	.v-textarea__action:hover:not(:disabled) {
+		background-color: var(--secondary);
+		color: var(--foreground);
+	}
+
+	.v-textarea__action:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: -1px;
+	}
+
+	.v-textarea__action:disabled {
 		cursor: not-allowed;
-		opacity: 0.5;
-	}
-
-	.v-textarea:is([aria-invalid="true"], [aria-invalid="grammar"], [aria-invalid="spelling"]) {
-		border-color: var(--destructive);
-	}
-
-	.v-textarea:is(
-		[aria-invalid="true"],
-		[aria-invalid="grammar"],
-		[aria-invalid="spelling"]
-	):focus-visible {
-		outline-color: var(--destructive);
-	}
-
-	@media (min-width: 48rem) {
-		.v-textarea {
-			font-size: 0.875rem;
-		}
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.v-textarea {
+		.v-textarea__action {
 			transition: none;
 		}
 	}
 
+	/* 只给读屏：视觉字数已 aria-hidden，接近上限后的播报文字在这里 */
+	.v-textarea-sr {
+		position: absolute;
+		inline-size: 1px;
+		block-size: 1px;
+		margin: -1px;
+		padding: 0;
+		overflow: hidden;
+		border: 0;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
 	@media (forced-colors: active) {
-		.v-textarea {
-			border-color: ButtonText;
-			background-color: Canvas;
-			color: CanvasText;
-		}
-
-		.v-textarea:focus-visible {
-			outline-color: Highlight;
-		}
-
-		.v-textarea:disabled {
-			border-color: GrayText;
+		.v-textarea__count[data-over] {
 			color: GrayText;
-			opacity: 1;
 		}
 	}
 }

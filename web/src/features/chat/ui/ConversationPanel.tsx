@@ -4,13 +4,13 @@
 
 import type { PendingChatShare } from "@entities/tweet/model/share-store";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
-import type { RichCommentInputHandle } from "@features/comments/ui/RichCommentInput";
 import { formatDate } from "@shared/lib/date";
 import { ImagePreview, useImagePreview } from "@shared/ui/image-preview";
+import type { RichTextInputHandle } from "@shared/ui/rich-text-input/RichTextInput";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button } from "@violet/ui";
+import { Button, Spinner } from "@violet/ui";
 import { cn } from "cn";
-import { ArrowDown, ArrowLeft, LoaderCircle, MoreVertical } from "lucide-react";
+import { ArrowDown, ArrowLeft, EllipsisVertical } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -73,7 +73,7 @@ export function ConversationPanel({
 	const [replyTarget, setReplyTarget] = useState<ChatMessage | null>(null);
 	const [pendingFocusID, setPendingFocusID] = useState<string | null>(null);
 	const [highlightedID, setHighlightedID] = useState<string | null>(null);
-	const inputRef = useRef<RichCommentInputHandle>(null);
+	const inputRef = useRef<RichTextInputHandle>(null);
 	const handleMention = (user: ChatUser) => {
 		if (user.id === currentUserID) return;
 		if (!inputRef.current?.appendMention(user.id)) {
@@ -391,10 +391,11 @@ export function ConversationPanel({
 				<header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border px-3 md:px-5">
 					<div className="flex min-w-0 items-center gap-2.5">
 						<Button
+							iconOnly
 							aria-label="返回会话列表"
 							className="size-9 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground md:hidden"
 							onClick={onBack}
-							size="icon"
+							size="md"
 							variant="ghost"
 						>
 							<ArrowLeft className="size-5" />
@@ -418,13 +419,14 @@ export function ConversationPanel({
 					</div>
 
 					<Button
+						iconOnly
 						aria-label="打开会话详情"
 						className="size-9 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground"
 						onClick={onToggleDetails}
-						size="icon"
+						size="md"
 						variant="ghost"
 					>
-						<MoreVertical className="size-5" />
+						<EllipsisVertical className="size-5" />
 					</Button>
 				</header>
 
@@ -460,7 +462,7 @@ export function ConversationPanel({
 										>
 											{isFetchingNextPage && (
 												<>
-													<LoaderCircle className="size-3.5 animate-spin" />
+													<Spinner size={16} aria-hidden="true" />
 													加载更早的消息…
 												</>
 											)}
@@ -546,7 +548,8 @@ export function ConversationPanel({
 										aria-label="回到底部"
 										className="pointer-events-auto size-8.5 rounded-full border border-border bg-card shadow-md"
 										onClick={() => scrollToBottom(true)}
-										size="icon-sm"
+										iconOnly
+										size="sm"
 										variant="outline"
 									>
 										<ArrowDown className="size-4" />

@@ -1,14 +1,6 @@
-import { Button, Switch } from "@violet/ui";
+import { Button, iconProps, Spinner, Switch } from "@violet/ui";
 
-import {
-	AlertTriangle,
-	DatabaseZap,
-	Info,
-	Loader2,
-	Play,
-	RotateCcw,
-	TableProperties,
-} from "lucide-react";
+import { DatabaseZap, Info, Play, RotateCcw, TableProperties, TriangleAlert } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { useExecuteSQL } from "../api/mutations";
 import { useDatabaseSchema } from "../api/queries";
@@ -92,19 +84,16 @@ export function SQLConsoleTab({
 								disabled={execute.isPending}
 								onClick={() => loadSQL(DEFAULT_SYSTEM_SQL)}
 							>
-								<RotateCcw className="size-3.5" />
+								<RotateCcw {...iconProps(14)} />
 								重置
 							</Button>
 							<Button
 								size="sm"
 								disabled={!hasSQL || execute.isPending}
+								loading={execute.isPending}
+								leftIcon={<Play {...iconProps(14)} />}
 								onClick={handleExecute}
 							>
-								{execute.isPending ? (
-									<Loader2 className="size-3.5 animate-spin" />
-								) : (
-									<Play className="size-3.5" />
-								)}
 								执行
 							</Button>
 						</div>
@@ -119,18 +108,18 @@ export function SQLConsoleTab({
 					/>
 
 					<div className="text-muted-foreground bg-muted/35 flex flex-wrap items-center gap-2 rounded-lg px-3 py-2 text-xs">
-						<Info className="size-3.5 shrink-0" />
+						<Info {...iconProps(14, "shrink-0")} />
 						<span className="min-w-52 flex-1">
 							PostgreSQL 不支持 <code>SHOW TABLES</code>；查询 public 表请使用{" "}
 							<code>pg_catalog.pg_tables</code>。
 						</span>
 						<Button
 							variant="ghost"
-							size="xs"
+							size="sm"
 							disabled={execute.isPending}
 							onClick={() => loadSQL(LIST_TABLES_SQL)}
 						>
-							<TableProperties className="size-3" />
+							<TableProperties {...iconProps(12)} />
 							载入查表 SQL
 						</Button>
 					</div>
@@ -163,7 +152,7 @@ export function SQLConsoleTab({
 
 			{execute.error && (
 				<div className="border-destructive/30 bg-destructive/5 text-destructive flex items-start gap-2 rounded-lg border px-4 py-3 text-sm">
-					<AlertTriangle className="mt-0.5 size-4 shrink-0" />
+					<TriangleAlert className="mt-0.5 size-4 shrink-0" />
 					<div>
 						<p className="font-medium">SQL 未执行</p>
 						<p className="mt-1 text-sm">{execute.error.message}</p>
@@ -224,7 +213,7 @@ function SchemaPanel({ loading, tables }: { loading: boolean; tables: DatabaseSc
 			<div className="max-h-96 space-y-1 overflow-auto p-2 xl:max-h-96">
 				{loading ? (
 					<p className="text-muted-foreground flex items-center gap-2 px-2 py-4 text-xs">
-						<Loader2 className="size-3.5 animate-spin" />
+						<Spinner size={16} aria-hidden="true" />
 						读取结构
 					</p>
 				) : (

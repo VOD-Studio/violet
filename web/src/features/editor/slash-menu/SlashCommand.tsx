@@ -7,9 +7,13 @@
  */
 import { Extension } from "@tiptap/core";
 import { Suggestion, type SuggestionKeyDownProps, type SuggestionProps } from "@tiptap/suggestion";
+import { iconProps } from "@violet/ui";
+import { LucideProvider } from "lucide-react";
 import { createRoot, type Root } from "react-dom/client";
 import { SlashMenuView } from "./SlashMenu";
 import { buildFootnoteReferenceItems, type SlashMenuItem } from "./slash-items";
+
+const { size, strokeWidth } = iconProps();
 
 export interface SlashCommandOptions {
 	/** 图片插入回调 */
@@ -75,7 +79,11 @@ export const SlashCommand = Extension.create<SlashCommandOptions>({
 						// Zen 专注根容器是 fixed inset-0 z-40，不设层级菜单会被整体遮挡
 						host.style.zIndex = "50";
 						const root = createRoot(host);
-						root.render(<SlashMenuView {...props} />);
+						root.render(
+							<LucideProvider size={size} strokeWidth={strokeWidth}>
+								<SlashMenuView {...props} />
+							</LucideProvider>,
+						);
 						const unmount = props.mount?.(host) ?? undefined;
 						state = { host, root, unmount, last: props };
 					};
@@ -85,7 +93,11 @@ export const SlashCommand = Extension.create<SlashCommandOptions>({
 							mount(props);
 							return;
 						}
-						state.root.render(<SlashMenuView {...props} />);
+						state.root.render(
+							<LucideProvider size={size} strokeWidth={strokeWidth}>
+								<SlashMenuView {...props} />
+							</LucideProvider>,
+						);
 						state.last = props;
 					};
 

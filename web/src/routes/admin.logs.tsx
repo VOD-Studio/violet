@@ -1,23 +1,22 @@
 import { useAdminAuditLogs } from "@features/admin-audit-logs/api/queries";
 import type { AuditEventDTO, FieldChangeDTO } from "@features/admin-audit-logs/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import {
-	DataTable,
-	type DataTableColumn,
-	usePagedQuery,
-} from "@features/admin-shared/ui/data-table";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { formatDateTime } from "@shared/lib/date";
 import { createFileRoute } from "@tanstack/react-router";
 import {
-	Badge,
 	Button,
+	DataTable,
+	type DataTableColumn,
 	Input,
+	iconProps,
 	Modal,
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
+	Tag,
 } from "@violet/ui";
 import { Eye } from "lucide-react";
 import { useState } from "react";
@@ -95,7 +94,7 @@ function AdminLogsPage() {
 				const name = row.actor.user_name || row.actor.user_id || "匿名";
 				return row.actor.actor_type === "system" ? (
 					<span className="text-muted-foreground">
-						{name} <Badge variant="outline">系统</Badge>
+						{name} <Tag size="sm">系统</Tag>
 					</span>
 				) : (
 					name
@@ -105,7 +104,7 @@ function AdminLogsPage() {
 		{
 			key: "action",
 			header: "动作",
-			cell: (row) => <Badge variant="secondary">{row.action}</Badge>,
+			cell: (row) => <Tag>{row.action}</Tag>,
 		},
 		{
 			key: "summary",
@@ -135,12 +134,14 @@ function AdminLogsPage() {
 			width: "64px",
 			cell: (row) => (
 				<Button
+					iconOnly
 					variant="ghost"
-					size="icon-sm"
+					size="sm"
+					aria-label="查看详情"
 					title="查看详情"
 					onClick={() => setDetailLog(row)}
 				>
-					<Eye className="size-3.5" />
+					<Eye {...iconProps(14)} />
 				</Button>
 			),
 		},
@@ -189,9 +190,8 @@ function AdminLogsPage() {
 						</SelectContent>
 					</Select>
 					<Input
-						variant="soft"
 						controlSize="sm"
-						classNames={{ root: "w-48" }}
+						classNames={{ control: "w-48" }}
 						aria-label="按操作人 UUID 筛选日志"
 						placeholder="操作人 UUID"
 						value={actor}
@@ -257,7 +257,7 @@ function AuditEventDetail({ event }: { event: AuditEventDTO }) {
 			<div className="rounded-md border p-3">
 				<div className="mb-1 text-xs text-muted-foreground">资源</div>
 				<div className="flex flex-wrap items-center gap-2">
-					<Badge variant="outline">{event.resource.type}</Badge>
+					<Tag>{event.resource.type}</Tag>
 					{event.resource.name && <span className="text-sm">{event.resource.name}</span>}
 				</div>
 				{event.resource.id && (
@@ -307,7 +307,7 @@ function DetailItem({ label, value }: { label: string; value: string }) {
 function ChangeRow({ change }: { change: FieldChangeDTO }) {
 	return (
 		<div className="flex flex-wrap items-center gap-2 rounded-md border p-2 text-xs">
-			<Badge variant="outline">{change.field}</Badge>
+			<Tag>{change.field}</Tag>
 			<span className="text-muted-foreground line-through">{formatValue(change.from)}</span>
 			<span aria-hidden>→</span>
 			<span className="font-medium">{formatValue(change.to)}</span>

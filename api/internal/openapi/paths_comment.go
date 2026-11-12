@@ -13,6 +13,15 @@ func registerCommentPaths(t *openapi3.T) {
 		"size":   optInt64("字节数"),
 	})
 
+	// CommentAnchor：批注锚点五元组。新锚点按当前已发布正文验收；存量锚点读取不重新校验。
+	registerSchema(t, "CommentAnchor", openapi3.Schemas{
+		"block_id":        reqStr("块标识：规范块文本 trim 后 SHA-256 前 8 位 hex"),
+		"start_offset":    optInt("规范块内 UTF-16 起始偏移（含）"),
+		"end_offset":      optInt("规范块内 UTF-16 结束偏移（不含）"),
+		"selected_text":   reqStr("所选原文；整段批注覆盖整个块"),
+		"block_text_hash": reqStr("创建时规范块文本 trim 后 SHA-256 前 8 位 hex"),
+	}, "block_id", "start_offset", "end_offset", "selected_text", "block_text_hash")
+
 	// CommentDTO：前台评论读模型
 	registerSchema(t, "CommentDTO", openapi3.Schemas{
 		"id":             reqStr("评论 ID（UUID）"),
@@ -24,6 +33,7 @@ func registerCommentPaths(t *openapi3.T) {
 		"author_name":    reqStr("评论者昵称"),
 		"avatar_url":     optStr("评论者头像 URL"),
 		"body":           reqStr("评论内容"),
+		"anchor":         optRef("批注锚点；自由评论无此字段，存量锚点保留原值", "CommentAnchor"),
 		"pictures":       refArray("附图列表", "CommentPicture"),
 		"is_author":      optBool("是否文章作者本人"),
 		"is_ai":          optBool("是否 MCP/AI agent 发表（专用头像与 AI 徽章）"),
@@ -54,12 +64,13 @@ func registerCommentPaths(t *openapi3.T) {
 	// CreateCommentRequest
 	registerSchema(t, "CreateCommentRequest", openapi3.Schemas{
 		"body":         reqStr("评论内容"),
-		"parent_id":    optStr("父评论 ID（UUID，顶级评论不传）"),
-		"author_name":  reqStr("评论者昵称"),
-		"author_email": reqStr("评论者邮箱"),
+		"parent_id":    optStr("父评论 ID（UUID，顶级评论不传）；无自身锚点的回复继承父锚点，不重新验收"),
+		"author_name":  reqStr("匿名评论者昵称；登录时忽略"),
+		"author_email": reqStr("匿名评论者邮箱；登录时忽略"),
 		"author_url":   optStr("评论者网站"),
 		"avatar_url":   optStr("评论者头像 URL"),
-	}, "body", "author_name", "author_email")
+		"anchor":       optRef("新批注锚点；需要登录，仅可指向已发布文章中唯一的非空 p/h1–h6/li/blockquote 文本块（可含行内代码、链接与公式）。不支持表格、图片块、图注、块公式、图块、代码/可运行块、嵌入卡及折叠摘要；details 正文段落可用", "CommentAnchor"),
+	}, "body")
 
 	// BatchUpdateCommentStatusRequest
 	registerSchema(t, "BatchUpdateCommentStatusRequest", openapi3.Schemas{
@@ -67,19 +78,27 @@ func registerCommentPaths(t *openapi3.T) {
 		"status": strEnum("目标状态", "pending", "approved", "spam", "deleted"),
 	}, "ids", "status")
 
+	registerSchema(t, "CommentReactionRecentUser", openapi3.Schemas{
+		"id":   reqStr("回应者用户 ID（UUID）"),
+		"name": reqStr("展示名；未设置时回退用户名"),
+	}, "id", "name")
+	recentUsers := refArray("最近至多 3 位登录回应者，按回应时间倒序、同时间按反应 ID 倒序。访客同样可读；匿名反应计入 count 但不列名，无可展示用户时返回 []", "CommentReactionRecentUser")
+	recentUsers.Value.MaxItems = new(uint64(3))
+
 	// AggregatedReaction：聚合后的评论反应
 	registerSchema(t, "AggregatedReaction", openapi3.Schemas{
-		"emoji_id":   optInt32("表情 ID"),
-		"emoji_name": reqStr("表情名称"),
-		"emoji_url":  reqStr("表情图片 URL"),
-		"gif_url":    optStr("表情动图 URL"),
-		"count":      optInt64("反应总数"),
-		"self":       optBool("当前登录用户是否已反应"),
-	}, "emoji_id", "emoji_name", "emoji_url", "count")
+		"emoji_id":     optInt32("表情 ID"),
+		"emoji_name":   reqStr("表情名称"),
+		"emoji_url":    reqStr("表情图片 URL"),
+		"gif_url":      optStr("表情动图 URL"),
+		"count":        optInt64("反应总数"),
+		"self":         optBool("当前登录用户是否已反应"),
+		"recent_users": recentUsers,
+	}, "emoji_id", "emoji_name", "emoji_url", "count", "recent_users")
 
 	// AddReactionRequest
 	registerSchema(t, "AddReactionRequest", openapi3.Schemas{
-		"emoji_id": reqStr("表情 ID"),
+		"emoji_id": optInt32("表情 ID"),
 	}, "emoji_id")
 
 	// BatchReactionsRequest / BatchResult
@@ -100,31 +119,35 @@ func registerCommentPaths(t *openapi3.T) {
 	// ============ 前台评论 ============
 
 	get(t, "/posts/{postId}/comments", &openapi3.Operation{
-		Tags:    []string{"评论"},
-		Summary: "文章已审核评论列表",
+		Tags:        []string{"评论"},
+		Summary:     "文章评论列表",
+		Description: "匿名返回 []；登录可见 approved 与自己的 pending。自由顶层列表（type=free&top_level=true）支持 sort=latest|hot，默认 latest；hot 按总回应记录数降序，同数按 created_at DESC、id DESC。批注、混合层级及回复保持原有顺序。",
 		Parameters: openapi3.Parameters{
 			pathStrParam("postId", "文章 ID（UUID）"),
-			pageParam(), limitParam(100),
+			pageParam(), limitParam(100), commentSortParam(),
 		},
 		Responses: responses(
-			200, dataArrayResponse("CommentDTO", "已审核评论列表（仅 approved）", 200, true),
+			200, dataArrayResponse("CommentDTO", "可见评论（approved 与本人 pending）", 200, true),
+			400, errorResponse("sort 必须为 latest 或 hot"),
 		),
 	})
 
 	post(t, "/posts/{postId}/comments", &openapi3.Operation{
 		Tags:        []string{"评论"},
 		Summary:     "提交评论",
-		Description: "提交评论（默认 pending，待审核）。受评论限流保护。",
+		Description: "提交评论（默认 pending，待审核）。新锚点按文章当前正文与受支持文本块校验；存量锚点读取与无自身锚点的回复不再验证。受评论限流保护。",
 		Parameters: openapi3.Parameters{
 			pathStrParam("postId", "文章 ID（UUID）"), csrfHeaderParam(),
 		},
 		RequestBody: jsonBody("CreateCommentRequest", true, "评论内容"),
 		Responses: responses(
 			201, dataResponse("CommentDTO", "新建评论（pending 状态）", 201),
-			400, errorResponse("请求参数错误"),
+			400, errorResponse("请求参数错误或锚点不匹配正文/节点不可批注"),
+			401, errorResponse("匿名用户不能提交批注"),
+			404, errorResponse("批注文章不存在、未发布或已删除"),
+			500, errorResponse("文章正文暂时不可读取"),
 		),
 	})
-
 	post(t, "/posts/{postId}/comments/code", &openapi3.Operation{
 		Tags:        []string{"评论"},
 		Summary:     "发送匿名评论验证码",

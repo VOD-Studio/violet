@@ -21,7 +21,7 @@ function BlogPage() {
 	const { limit } = Route.useLoaderData();
 	return (
 		<PageShell>
-			<PageHeader eyebrow="All Posts" title="博客" />
+			<PageHeader title="博客" />
 			<BlogCascade limit={limit} />
 		</PageShell>
 	);

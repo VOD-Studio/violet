@@ -4,8 +4,7 @@ import type { PublishedGallery } from "@entities/gallery/model/types";
 import { formatDate } from "@shared/lib/date";
 import { PhotoStack } from "@shared/ui/photo-stack";
 import { Link } from "@tanstack/react-router";
-import { Button, Empty, PageHeader, PageShell, ShimmerSkeleton } from "@violet/ui";
-import { Loader2 } from "lucide-react";
+import { Button, Empty, PageHeader, PageShell, Skeleton } from "@violet/ui";
 
 export const PUBLISHED_GALLERY_PAGE_LIMIT = 12;
 
@@ -53,9 +52,9 @@ function GalleryBrowseSkeleton() {
 		<div className="grid gap-x-10 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
 			{Array.from({ length: 6 }).map((_, index) => (
 				<div key={index} className="space-y-4">
-					<ShimmerSkeleton className="aspect-3/4 w-full rounded-2xl" />
-					<ShimmerSkeleton className="h-5 w-2/3 rounded-md" />
-					<ShimmerSkeleton className="h-4 w-full rounded-md" />
+					<Skeleton className="aspect-3/4 w-full rounded-2xl" />
+					<Skeleton className="h-5 w-2/3 rounded-md" />
+					<Skeleton className="h-4 w-full rounded-md" />
 				</div>
 			))}
 		</div>
@@ -93,19 +92,13 @@ export function GalleryBrowsePage() {
 	return (
 		<PageShell>
 			<PageHeader
-				eyebrow="Photo Stories"
 				title="图集"
 				description="已经发布的视觉作品。"
 				className="mb-12 max-w-2xl"
 			/>
 
 			{feed.galleries.length === 0 ? (
-				<Empty
-					title="暂无图集"
-					description="还没有发布的图集"
-					className="py-20"
-					size="lg"
-				/>
+				<Empty title="暂无图集" description="还没有发布的图集" className="py-20" />
 			) : (
 				<>
 					<div className="grid gap-x-10 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
@@ -123,12 +116,9 @@ export function GalleryBrowsePage() {
 								) : null}
 								<Button
 									variant="outline"
-									disabled={feed.loadingMore}
+									loading={feed.loadingMore}
 									onClick={feed.loadMore}
 								>
-									{feed.loadingMore ? (
-										<Loader2 className="size-4 animate-spin" />
-									) : null}
 									{feed.loadMoreFailed ? "重试加载" : "加载更多"}
 								</Button>
 							</div>

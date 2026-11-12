@@ -1,0 +1,31 @@
+import { ImageGrid, type ImageGridImage } from "@violet/ui";
+import { ImageGrid as LeafImageGrid } from "@violet/ui/image-grid";
+import { useState } from "react";
+
+const images: ImageGridImage[] = Array.from({ length: 9 }, (_, index) => ({
+	src: `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect width="600" height="400" fill="hsl(${index * 35} 35% 65%)"/><circle cx="400" cy="120" r="60" fill="white"/></svg>`)}`,
+	alt: `照片 ${index + 1}`,
+	width: 600,
+	height: 400,
+}));
+
+export function ImageGridConsumer() {
+	const [count, setCount] = useState(5);
+	const [orientation, setOrientation] = useState("landscape");
+	const [leaf, setLeaf] = useState(false);
+	const [selected, setSelected] = useState("尚未选择");
+	const Grid = leaf ? LeafImageGrid : ImageGrid;
+	const photos = images.slice(0, count).map((image) => ({
+		...image,
+		width: orientation === "portrait" ? 200 : orientation === "wide" ? 1600 : 600,
+		height: 400,
+	}));
+	return <main style={{ maxWidth: 480, padding: 8, margin: "32px auto" }}>
+		<h1>图片网格 · 独立安装包</h1>
+		<label>图片数量<select id="grid-count" value={count} onChange={(event) => setCount(Number(event.target.value))}>{[1, 2, 3, 4, 5, 9].map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
+		<label>图片比例<select id="grid-orientation" value={orientation} onChange={(event) => setOrientation(event.target.value)}><option value="landscape">横图</option><option value="portrait">竖图</option><option value="wide">超宽图</option></select></label>
+		<label><input id="grid-leaf" type="checkbox" checked={leaf} onChange={(event) => setLeaf(event.target.checked)} />叶子入口</label>
+		<div style={{ marginBlock: 16 }}><Grid images={photos} onImageClick={(index, image) => setSelected(`${index + 1}/${count} · ${image.tagName}`)} /></div>
+		<output id="grid-selected" aria-live="polite">{selected}</output>
+	</main>;
+}

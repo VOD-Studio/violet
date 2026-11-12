@@ -1,0 +1,44 @@
+/* 三根柱的静态电平 6 / 12 / 8px 就是设计稿的静止画面；动画只改高度，不用 scale。 */
+.bar {
+	display: block;
+	width: 3px;
+	border-radius: 1px;
+	background: var(--decoration);
+	animation: brand-level 1s ease-in-out infinite;
+}
+
+.bar:nth-child(1) {
+	height: 6px;
+}
+
+.bar:nth-child(2) {
+	height: 12px;
+	animation-delay: 300ms;
+}
+
+.bar:nth-child(3) {
+	height: 8px;
+	animation-delay: 600ms;
+}
+
+@keyframes brand-level {
+	0%,
+	100% {
+		height: 4px;
+	}
+	50% {
+		height: 13px;
+	}
+}
+
+/* 减弱动态：系统偏好，以及检视台的 data-motion="reduce" 作用域；停在静态电平 */
+@media (prefers-reduced-motion: reduce) {
+	.bar {
+		animation: none;
+	}
+}
+
+/* biome-ignore lint/correctness/noUnknownPseudoClass: CSS Modules 的全局引用，非标准伪类 */
+:global([data-motion="reduce"]) .bar {
+	animation: none;
+}

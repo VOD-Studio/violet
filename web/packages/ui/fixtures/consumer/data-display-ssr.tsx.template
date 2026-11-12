@@ -1,0 +1,175 @@
+import assert from "node:assert/strict";
+import { renderToString } from "react-dom/server";
+import { Accordion, AccordionItem, Alert, Breadcrumbs, DataTable, Empty, List, ListItem, ListItemContent, ListItemTitle, MiniBars, PageHeader, Pagination, ProgressBar, ProgressRing, Stat, Steps, Tree } from "@violet/ui";
+import { Accordion as LeafAccordion, AccordionItem as LeafAccordionItem } from "@violet/ui/accordion";
+import { Alert as LeafAlert } from "@violet/ui/alert";
+import { Breadcrumbs as LeafBreadcrumbs } from "@violet/ui/breadcrumbs";
+import { Empty as LeafEmpty } from "@violet/ui/empty";
+import { PageHeader as LeafPageHeader } from "@violet/ui/page-header";
+import { ProgressBar as LeafProgressBar, ProgressRing as LeafProgressRing } from "@violet/ui/progress";
+import { Steps as LeafSteps } from "@violet/ui/steps";
+import { List as LeafList, ListItem as LeafListItem, ListItemContent as LeafListItemContent, ListItemTitle as LeafListItemTitle } from "@violet/ui/list";
+import { Tree as LeafTree } from "@violet/ui/tree";
+import { Pagination as LeafPagination } from "@violet/ui/pagination";
+import { DataTable as LeafDataTable } from "@violet/ui/table";
+
+for (const [Root, Item] of [[Accordion, AccordionItem], [LeafAccordion, LeafAccordionItem]] as const) {
+	const html = renderToString(
+		<Root type="single" defaultValue="b">
+			<Item value="a" title="甲" summary="摘要">甲内容</Item>
+			<Item value="b" title="乙">乙内容</Item>
+		</Root>,
+	);
+	assert.equal((html.match(/<h3\b/g) ?? []).length, 2);
+	assert.match(html, /aria-expanded="false"/);
+	assert.match(html, /aria-expanded="true"/);
+	assert.equal((html.match(/role="region"/g) ?? []).length, 2);
+	// 收起的内容常驻 DOM 且 inert，展开的不带。
+	assert.equal((html.match(/inert=""/g) ?? []).length, 1);
+	assert.match(html, /摘要/);
+}
+
+for (const [Root, Item, Content, Title] of [[List, ListItem, ListItemContent, ListItemTitle], [LeafList, LeafListItem, LeafListItemContent, LeafListItemTitle]] as const) {
+	const html = renderToString(
+		<Root aria-label="设置">
+			<Item aria-current="page"><Content><Title>外观</Title></Content></Item>
+			<Item onClick={() => {}}><Title>语言</Title></Item>
+		</Root>,
+	);
+	assert.match(html, /<ul\b[^>]*aria-label="设置"/);
+	assert.equal((html.match(/<li\b/g) ?? []).length, 2);
+	assert.match(html, /<div\b[^>]*aria-current="page"/);
+	assert.match(html, /<button\b[^>]*type="button"/);
+}
+
+for (const Component of [Tree, LeafTree]) {
+	const html = renderToString(
+		<Component
+			aria-label="目录"
+			defaultExpanded={["a"]}
+			defaultValue="a1"
+			nodes={[{ value: "a", label: "甲", children: [{ value: "a1", label: "甲一" }] }, { value: "b", label: "乙" }]}
+		/>,
+	);
+	assert.match(html, /role="tree"/);
+	assert.equal((html.match(/role="treeitem"/g) ?? []).length, 3);
+	assert.match(html, /aria-level="2"/);
+	assert.match(html, /aria-expanded="true"/);
+	assert.match(html, /aria-activedescendant=/);
+}
+
+for (const Component of [Pagination, LeafPagination]) {
+	const html = renderToString(<Component page={3} totalPages={9} onPageChange={() => {}} />);
+	assert.match(html, /<nav\b[^>]*aria-label="分页"/);
+	assert.match(html, /aria-current="page"/);
+	assert.match(html, /aria-label="上一页"/);
+	assert.match(html, /aria-label="下一页"/);
+}
+
+interface Row { id: string; title: string; views: number }
+const columns = [
+	{ key: "title", header: "标题", accessorKey: "title" as const, sortable: true },
+	{ key: "views", header: "浏览", accessorKey: "views" as const, align: "right" as const },
+];
+const row: Row = { id: "1", title: "独库公路", views: 12 };
+for (const Component of [DataTable, LeafDataTable]) {
+	const data = renderToString(
+		<Component
+			caption="文章"
+			columns={columns}
+			data={[row]}
+			keyExtractor={(item: Row) => item.id}
+			sort={{ key: "title", order: "asc" }}
+			selectable
+			pagination={{ page: 1, pageSize: 10, total: 25, onChange: () => {} }}
+		/>,
+	);
+	assert.match(data, /<table\b/);
+	assert.match(data, /role="region"[^>]*tabindex="0"|tabindex="0"[^>]*role="region"/);
+	assert.match(data, /aria-sort="ascending"/);
+	assert.match(data, /独库公路/);
+	assert.match(data, /aria-label="全选本页"/);
+	assert.match(data, /aria-label="每页条数"/);
+	const loading = renderToString(<Component columns={columns} data={[]} keyExtractor={(item: Row) => item.id} loading />);
+	assert.match(loading, /aria-busy="true"/);
+	const failed = renderToString(<Component columns={columns} data={[]} keyExtractor={(item: Row) => item.id} error={new Error("502")} onRetry={() => {}} />);
+	assert.match(failed, /role="alert"/);
+	assert.match(failed, /502/);
+	assert.match(failed, /重试/);
+}
+const stepsProps = {
+	current: 1,
+	onStepClick: () => undefined,
+	steps: [
+		{ title: "填写信息", description: "作者与标题" },
+		{ title: "验证站点" },
+		{ title: "发布" },
+	],
+};
+const steps = renderToString(<Steps {...stepsProps} />);
+assert.equal(steps, renderToString(<LeafSteps {...stepsProps} />));
+assert.match(steps, /aria-current="step"/);
+assert.match(steps, /第 1 步，填写信息，已完成/);
+assert.match(steps, /已完成/);
+assert.match(steps, /出错|进行中/);
+
+const crumbs = [
+	{ label: "内容", href: "/admin" },
+	{ label: "文章", href: "/admin/posts" },
+	{ label: "拆解 Saber" },
+];
+const breadcrumbs = renderToString(<Breadcrumbs items={crumbs} />);
+assert.equal(breadcrumbs, renderToString(<LeafBreadcrumbs items={crumbs} />));
+assert.match(breadcrumbs, /<nav[^>]*aria-label="当前位置"/);
+assert.match(breadcrumbs, /aria-current="page"/);
+assert.match(breadcrumbs, /<span class="v-breadcrumbs__separator" aria-hidden="true">/);
+
+const headerProps = {
+	title: "文章",
+	description: "共 270 篇",
+	compact: true,
+	compactSummary: "270 篇",
+	primaryAction: <button type="button">写文章</button>,
+};
+const header = renderToString(<PageHeader {...headerProps} />);
+assert.equal(header, renderToString(<LeafPageHeader {...headerProps} />));
+assert.match(header, /data-compact=""/);
+assert.equal((header.match(/<h1\b/g) ?? []).length, 1);
+assert.equal((header.match(/写文章/g) ?? []).length, 1);
+
+const bar = renderToString(<ProgressBar value={42} label="上传 cover-season.webp" />);
+assert.equal(bar, renderToString(<LeafProgressBar value={42} label="上传 cover-season.webp" />));
+assert.match(bar, /role="progressbar"/);
+assert.match(bar, /aria-valuenow="42"/);
+assert.match(bar, /aria-labelledby="[^"]+"/);
+assert.match(bar, /aria-valuetext="42%"/);
+
+const ring = renderToString(<ProgressRing value={65} label="本月阅读目标" description="已读 13 / 20 篇" />);
+assert.equal(ring, renderToString(<LeafProgressRing value={65} label="本月阅读目标" description="已读 13 / 20 篇" />));
+assert.match(ring, /pathLength="100"/);
+assert.match(ring, /stroke-dasharray="100 100"/);
+assert.match(ring, /stroke-dashoffset:35/);
+
+const danger = renderToString(<Alert tone="danger" title="同步失败" />);
+assert.equal(danger, renderToString(<LeafAlert tone="danger" title="同步失败" />));
+assert.match(danger, /role="alert"/);
+assert.match(danger, /aria-hidden="true"/);
+assert.doesNotMatch(danger, /aria-label="关闭"/);
+const dismissible = renderToString(<Alert title="可关闭" onDismiss={() => undefined} />);
+assert.match(dismissible, /role="status"/);
+assert.match(dismissible, /aria-label="关闭"/);
+
+const empty = renderToString(<Empty title="还没有想法" description="写下第一条后会出现在这里。" />);
+assert.equal(empty, renderToString(<LeafEmpty title="还没有想法" description="写下第一条后会出现在这里。" />));
+assert.match(empty, /role="status"/);
+const compactEmpty = renderToString(<Empty variant="compact" title="没有新消息" />);
+assert.match(compactEmpty, /data-variant="compact"/);
+
+const stat = renderToString(<Stat label="近 7 天访问" value="12,480" change={{ direction: "up", value: "18%" }} />);
+assert.match(stat, /role="group"/);
+assert.match(stat, /aria-label="近 7 天访问 12,480，比上周多 18%"/);
+const bars = renderToString(<MiniBars data={[{ label: "周一", value: 1200 }, { label: "周二", value: 980 }]} unit="访问" />);
+assert.match(bars, /role="img"/);
+assert.match(bars, /aria-label="周一 1,200，周二 980"/);
+assert.match(bars, /v-mini-bars__bar/);
+console.log("Independent root/leaf SSR for accordion, list, tree, pagination, table, steps, breadcrumbs, page-header, progress, alert, empty, stat and mini-bars passed.");

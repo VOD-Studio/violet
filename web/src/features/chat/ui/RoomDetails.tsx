@@ -2,9 +2,9 @@
  * 会话详情抽屉：成员管理、邀请、通知设置与离开会话。
  */
 
-import { Button, Input } from "@violet/ui";
+import { Button, Input, iconProps } from "@violet/ui";
 
-import { Bell, BellOff, LoaderCircle, LogOut, Plus, ShieldCheck, Users, X } from "lucide-react";
+import { Bell, BellOff, LogOut, Plus, ShieldCheck, Users, X } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -77,7 +77,7 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 		>
 			<header className="flex h-16 shrink-0 items-center justify-between border-b border-border px-5">
 				<h3 className="text-sm font-semibold text-foreground">会话详情</h3>
-				<Button aria-label="关闭详情" onClick={onClose} size="icon-sm" variant="ghost">
+				<Button iconOnly aria-label="关闭详情" onClick={onClose} size="sm" variant="ghost">
 					<X className="size-4" />
 				</Button>
 			</header>
@@ -100,7 +100,7 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 					{conversation.kind === "room" && isOwner && (
 						<Input
 							aria-label="房间名称"
-							classNames={{ root: "mt-2" }}
+							classNames={{ control: "mt-2" }}
 							onBlur={() => void saveTitle()}
 							onChange={(event) => setTitle(event.target.value)}
 							value={title}
@@ -112,7 +112,7 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 				<div>
 					<div className="mb-2.5 flex items-center justify-between px-1">
 						<p className="text-xs text-muted-foreground">成员 · {members.length}</p>
-						<Users className="size-3.5 text-muted-foreground" />
+						<Users {...iconProps(14, "text-muted-foreground")} />
 					</div>
 					<div className="space-y-1">
 						{members.map((member) => (
@@ -145,7 +145,7 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 											}
 											type="button"
 										>
-											<X className="size-3.5" />
+											<X {...iconProps(14)} />
 										</button>
 									)
 								)}
@@ -160,7 +160,7 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 						<div className="flex gap-2">
 							<Input
 								aria-label="邀请用户名"
-								classNames={{ root: "min-w-0 flex-1" }}
+								classNames={{ control: "min-w-0 flex-1" }}
 								onChange={(event) => setInviteUsername(event.target.value)}
 								onKeyDown={(event) => event.key === "Enter" && void inviteUser()}
 								placeholder="username"
@@ -169,8 +169,10 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 							<Button
 								disabled={invite.isPending}
 								onClick={() => void inviteUser()}
-								size="icon-sm"
+								iconOnly
+								size="sm"
 								className="size-10 rounded-xl"
+								aria-label="邀请成员"
 							>
 								<Plus className="size-4" />
 							</Button>
@@ -201,7 +203,7 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 						variant="ghost"
 						size="sm"
 					>
-						<LogOut className="mr-2 size-3.5" />
+						<LogOut {...iconProps(14)} />
 						离开会话
 					</Button>
 				</div>
@@ -238,11 +240,7 @@ function NotificationSettings({
 						size="sm"
 						variant="ghost"
 					>
-						{muted ? (
-							<BellOff className="mr-1.5 size-3.5" />
-						) : (
-							<Bell className="mr-1.5 size-3.5" />
-						)}
+						{muted ? <BellOff {...iconProps(14)} /> : <Bell {...iconProps(14)} />}
 						{muted ? "已静音此会话" : "静音此会话"}
 					</Button>
 					{push.enabled && (
@@ -263,19 +261,14 @@ function NotificationSettings({
 					<Button
 						className="mt-2.5 h-7.5 w-full rounded-lg text-xs font-medium"
 						disabled={push.busy || !push.enabled || !push.supported}
+						loading={push.busy}
 						onClick={() =>
 							subscribed ? void push.disable() : void push.enable(showPreview)
 						}
 						size="sm"
-						variant={subscribed ? "outline" : "default"}
+						variant={subscribed ? "outline" : "primary"}
 					>
-						{push.busy ? (
-							<LoaderCircle className="size-3 animate-spin" />
-						) : subscribed ? (
-							"关闭浏览器通知"
-						) : (
-							"启用浏览器通知"
-						)}
+						{subscribed ? "关闭浏览器通知" : "启用浏览器通知"}
 					</Button>
 				</div>
 			</div>

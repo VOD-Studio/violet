@@ -1,3 +1,4 @@
+import { iconProps, Spinner } from "@violet/ui";
 import { cn } from "cn";
 import { AlertTriangle, Check, Copy, LoaderCircle } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -95,9 +96,7 @@ export function BotReplyCard({
 						role="status"
 						aria-live="polite"
 					>
-						{active && !stalled && (
-							<LoaderCircle aria-hidden="true" className="size-3 animate-spin" />
-						)}
+						{active && !stalled && <Spinner size={16} aria-hidden="true" />}
 						{status}
 					</span>
 				)}
@@ -122,7 +121,7 @@ export function BotReplyCard({
 								onClick={() => void copyThinking()}
 								type="button"
 							>
-								<Copy aria-hidden="true" className="size-3.5" />
+								<Copy aria-hidden="true" {...iconProps(14)} />
 							</button>
 						)}
 					</div>

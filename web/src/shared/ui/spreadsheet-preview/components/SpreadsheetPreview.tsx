@@ -9,9 +9,9 @@
  * - 下载
  */
 
-import { Button } from "@violet/ui";
+import { Button, iconProps } from "@violet/ui";
 import { cn } from "cn";
-import { AlertCircle, Download, RotateCcw, Table } from "lucide-react";
+import { CircleAlert, Download, RotateCcw, Table } from "lucide-react";
 import { formatDateTime } from "@/shared/lib/date";
 
 import { useFilePreviewVariant } from "@/shared/ui/file-preview/file-preview-context";
@@ -41,13 +41,15 @@ export function SpreadsheetPreview({ url, name, className }: SpreadsheetPreviewP
 						{name ?? "Excel 表格"}
 					</span>
 					<Button
+						iconOnly
 						type="button"
-						size="icon-sm"
+						size="sm"
 						variant="ghost"
 						onClick={handleDownload}
+						aria-label="下载"
 						title="下载"
 					>
-						<Download className="size-3.5" />
+						<Download {...iconProps(14)} />
 					</Button>
 				</div>
 			) : null}
@@ -74,10 +76,10 @@ export function SpreadsheetPreview({ url, name, className }: SpreadsheetPreviewP
 					</div>
 				) : loadStatus === "error" ? (
 					<div className="flex h-40 flex-col items-center justify-center gap-2 text-muted-foreground">
-						<AlertCircle className="size-8 text-red-500" />
+						<CircleAlert className="size-6 text-red-500" />
 						<span className="text-sm">表格加载失败</span>
 						<Button type="button" variant="outline" size="sm" onClick={retry}>
-							<RotateCcw className="mr-1.5 size-3.5" />
+							<RotateCcw {...iconProps(14)} />
 							重试
 						</Button>
 					</div>
@@ -110,7 +112,7 @@ export function SpreadsheetPreview({ url, name, className }: SpreadsheetPreviewP
 					</table>
 				) : (
 					<div className="flex h-40 flex-col items-center justify-center gap-2 text-muted-foreground">
-						<Table className="size-8 opacity-40" />
+						<Table className="size-6 opacity-40" />
 						<span className="text-xs">该工作表为空</span>
 					</div>
 				)}

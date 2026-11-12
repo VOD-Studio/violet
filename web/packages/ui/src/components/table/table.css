@@ -1,0 +1,644 @@
+/*
+ * 表格：不套卡片，表头一条细线、行间一条细线。Table 原语（.v-table*）与 DataTable（.v-data-table*）共用一份外观。
+ * 行底色走 --v-table-rb（每行重新求值），固定列与表头据此保持不透明；表格放在 --card 以外的底上时覆盖 --v-table-bg。
+ * 需先导入 @violet/ui/tokens.css 或 styles.css。
+ */
+@import "../button/button.css";
+@import "../checkbox/checkbox.css";
+@import "../dropdown-menu/dropdown-menu.css";
+@import "../scroll-area/scroll-area.css";
+@import "../pagination/pagination.css";
+@import "../select/select.css";
+@import "../skeleton/skeleton.css";
+@import "../tooltip/tooltip.css";
+
+@layer components {
+	/* ---- 原语 ---- */
+
+	.v-table[data-density="compact"],
+	.v-data-table[data-density="compact"] {
+		--v-table-head-h: 2rem;
+		--v-table-row-h: 2.5rem;
+	}
+
+	.v-table__container {
+		position: relative;
+		inline-size: 100%;
+		overflow-x: auto;
+	}
+
+	.v-table {
+		box-sizing: border-box;
+		inline-size: 100%;
+		border-collapse: separate;
+		border-spacing: 0;
+		caption-side: bottom;
+		color: var(--foreground);
+		font-size: 0.875rem;
+	}
+
+	.v-table__row {
+		--v-table-rb: var(--v-table-bg, var(--card));
+	}
+
+	.v-table__body > .v-table__row:hover:not(.v-table__expanded, .v-table__state-row) {
+		--v-table-rb: color-mix(in oklab, var(--muted) 55%, var(--v-table-bg, var(--card)));
+	}
+
+	.v-table__row[data-state="selected"] {
+		--v-table-rb: color-mix(in oklab, var(--decoration) 5%, var(--v-table-bg, var(--card)));
+	}
+
+	.v-table__body > .v-table__row[data-state="selected"]:hover:not(.v-table__expanded) {
+		--v-table-rb: color-mix(in oklab, var(--decoration) 8%, var(--v-table-bg, var(--card)));
+	}
+
+	.v-table__row[data-clickable] {
+		cursor: pointer;
+	}
+
+	.v-table__head,
+	.v-table__cell {
+		box-sizing: border-box;
+		padding: 0 0.75rem;
+		border-block-end: 1px solid var(--border);
+		background-color: var(--v-table-rb, var(--v-table-bg, var(--card)));
+		text-align: start;
+		vertical-align: middle;
+		white-space: nowrap;
+	}
+
+	.v-table__head {
+		block-size: var(--v-table-head-h, 2.25rem);
+		color: var(--muted-foreground);
+		font-size: 0.75rem;
+		font-weight: 400;
+	}
+
+	.v-table__cell {
+		block-size: var(--v-table-row-h, 3rem);
+		transition: background-color 120ms ease-out;
+	}
+
+	/* 行标题：放在正文里的 th[scope="row"] 按正文呈现 */
+	.v-table__head[scope="row"] {
+		block-size: var(--v-table-row-h, 3rem);
+		color: var(--foreground);
+		font-size: inherit;
+	}
+
+	.v-table__footer > .v-table__row > :is(.v-table__cell, .v-table__head) {
+		border-block-start: 1px solid var(--border);
+		background-color: color-mix(in oklab, var(--muted) 55%, var(--v-table-bg, var(--card)));
+		font-weight: 500;
+	}
+
+	.v-table__caption {
+		margin-block-start: 1rem;
+		color: var(--muted-foreground);
+		font-size: 0.875rem;
+	}
+
+	:is(.v-table__head, .v-table__cell)[data-align="center"] {
+		text-align: center;
+	}
+
+	:is(.v-table__head, .v-table__cell)[data-align="right"] {
+		text-align: end;
+		font-variant-numeric: tabular-nums;
+	}
+
+	/* 勾选、展开、显示列所在的窄列：内容居中，不留内边距 */
+	:is(.v-table__head, .v-table__cell)[data-gutter] {
+		padding: 0;
+		text-align: center;
+	}
+
+	.v-table__num {
+		font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.v-table__cell-content {
+		display: flex;
+		align-items: center;
+		justify-content: flex-start;
+		min-inline-size: 0;
+	}
+
+	.v-table__cell[data-align="center"] > .v-table__cell-content {
+		justify-content: center;
+	}
+
+	.v-table__cell[data-align="right"] > .v-table__cell-content {
+		justify-content: flex-end;
+	}
+
+	.v-table__cell-content[data-fit-content] {
+		inline-size: max-content;
+	}
+
+	.v-table__truncate {
+		display: block;
+		min-inline-size: 0;
+		max-inline-size: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.v-table__tip-target {
+		cursor: default;
+	}
+
+	/* 行内操作按钮（编辑、更多）：放进调用方单元格里，只在悬停或聚焦该行时出现；触屏没有悬停，常显 */
+	.v-table__row-actions {
+		display: inline-flex;
+		gap: 2px;
+		opacity: 0;
+		transition: opacity 160ms ease-out;
+	}
+
+	.v-table__row:is(:hover, :focus-within) .v-table__row-actions,
+	.v-table__row-actions:is(:focus-within, :has([aria-expanded="true"])) {
+		opacity: 1;
+	}
+
+	.v-table__row-actions > :is(button, a) {
+		inline-size: 1.75rem;
+		block-size: 1.75rem;
+	}
+
+	@media (hover: none) {
+		.v-table__row-actions {
+			opacity: 1;
+		}
+	}
+
+	.v-table__sr {
+		position: absolute;
+		inline-size: 1px;
+		block-size: 1px;
+		margin: -1px;
+		padding: 0;
+		border: 0;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	/* ---- 表头：排序与列宽手柄 ---- */
+
+	.v-table__sort {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		block-size: 1.5rem;
+		padding: 0;
+		border: 0;
+		border-radius: 4px;
+		background: none;
+		color: inherit;
+		font: inherit;
+		cursor: pointer;
+		transition: color 160ms ease-out;
+	}
+
+	.v-table__head[data-align="right"] .v-table__sort {
+		flex-direction: row-reverse;
+	}
+
+	.v-table__sort:hover {
+		color: var(--foreground);
+	}
+
+	.v-table__sort:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+
+	.v-table__head[data-sorted] {
+		color: var(--foreground);
+		font-weight: 500;
+	}
+
+	.v-table__sort-icon {
+		flex: none;
+	}
+
+	/* 排序箭头只在悬停或正在排序时出现 */
+	.v-table__sort-icon[data-idle] {
+		opacity: 0;
+		transition: opacity 160ms ease-out;
+	}
+
+	.v-table__sort:is(:hover, :focus-visible) .v-table__sort-icon[data-idle] {
+		opacity: 0.5;
+	}
+
+	.v-table__resizer {
+		position: absolute;
+		inset-block: 0.5rem;
+		inset-inline-end: 0;
+		z-index: 1;
+		inline-size: 0.625rem;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		cursor: col-resize;
+		touch-action: none;
+	}
+
+	.v-table__resizer::after {
+		content: "";
+		position: absolute;
+		inset-block: 0;
+		inset-inline-end: 0;
+		inline-size: 1px;
+		background-color: transparent;
+		transition: background-color 160ms ease-out;
+	}
+
+	.v-table__head:hover .v-table__resizer::after {
+		background-color: var(--border);
+	}
+
+	.v-table__resizer:is(:hover, :focus-visible)::after {
+		background-color: var(--rule2);
+	}
+
+	.v-table__resizer:is([data-dragging], :active)::after {
+		inline-size: 2px;
+		background-color: var(--decoration);
+	}
+
+	.v-table__resizer:focus-visible {
+		outline: 2px solid var(--ring);
+	}
+
+	.v-table__icon-button {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		inline-size: 1.625rem;
+		block-size: 1.625rem;
+		padding: 0;
+		border: 0;
+		border-radius: 50%;
+		background: transparent;
+		color: var(--muted-foreground);
+		cursor: pointer;
+		transition:
+			background-color 120ms ease-out,
+			color 120ms ease-out;
+	}
+
+	.v-table__icon-button:is(:hover, [aria-expanded="true"]) {
+		background-color: var(--muted);
+		color: var(--foreground);
+	}
+
+	/* 窄列里留 3px，聚焦环 2px 不会越出单元格 */
+	.v-table__icon-button:focus-visible {
+		outline: 2px solid var(--ring);
+	}
+
+	.v-table__expand-icon {
+		transition: transform 280ms cubic-bezier(0.32, 0.72, 0, 1);
+	}
+
+	.v-table__expand-icon[data-open] {
+		transform: rotate(90deg);
+	}
+
+	/* ---- DataTable ---- */
+
+	.v-data-table {
+		display: flex;
+		flex-direction: column;
+		inline-size: 100%;
+		max-block-size: 100%;
+		min-block-size: 0;
+	}
+
+	.v-data-table__toolbar {
+		display: flex;
+		flex: none;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5rem;
+		margin-block-end: 0.875rem;
+	}
+
+	.v-data-table__frame {
+		position: relative;
+		display: flex;
+		flex: 1 1 0%;
+		flex-direction: column;
+		min-block-size: 0;
+	}
+
+	.v-data-table__scroller {
+		display: flex;
+		flex: 1 1 0%;
+		flex-direction: column;
+		min-block-size: 0;
+	}
+
+	.v-data-table__scroller > [role="region"] {
+		outline: none;
+	}
+
+	/* 滚动区聚焦环画在表头之上，避免被吸顶表头盖住 */
+	.v-data-table__scroller:has(> [role="region"]:focus-visible)::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+		z-index: 7;
+		border-radius: 0.5rem;
+		outline: 2px solid var(--ring);
+		outline-offset: -2px;
+		pointer-events: none;
+	}
+
+	.v-data-table .v-table {
+		table-layout: fixed;
+	}
+
+	/* 表头吸顶，固定列贴边；固定列在表头上更高一层 */
+	.v-data-table .v-table__head {
+		position: sticky;
+		inset-block-start: 0;
+		z-index: 3;
+	}
+
+	.v-data-table :is(.v-table__head, .v-table__cell)[data-sticky] {
+		position: sticky;
+		z-index: 2;
+	}
+
+	.v-data-table .v-table__head[data-sticky] {
+		z-index: 4;
+	}
+
+	/* 横向滚动出现时，固定列内侧边缘出细线，滚到它下面的内容渐隐；不用投影 */
+	.v-data-table [data-sticky-edge]::after {
+		content: "";
+		position: absolute;
+		inset-block: 0;
+		inline-size: 1.5rem;
+		opacity: 0;
+		pointer-events: none;
+		transition: opacity 160ms ease-out;
+	}
+
+	.v-data-table [data-sticky="left"][data-sticky-edge]::after {
+		inset-inline-start: 100%;
+		background:
+			linear-gradient(var(--border), var(--border)) left / 1px 100% no-repeat,
+			linear-gradient(to right, var(--v-table-rb), transparent);
+	}
+
+	.v-data-table [data-sticky="right"][data-sticky-edge]::after {
+		inset-inline-end: 100%;
+		background:
+			linear-gradient(var(--border), var(--border)) right / 1px 100% no-repeat,
+			linear-gradient(to left, var(--v-table-rb), transparent);
+	}
+
+	.v-data-table[data-scrolled-start] [data-sticky="left"][data-sticky-edge]::after,
+	.v-data-table[data-scrolled-end] [data-sticky="right"][data-sticky-edge]::after {
+		opacity: 1;
+	}
+
+	/* 展开的行：本行的细线让给面板底部 */
+	.v-table__row[data-expanded] > .v-table__cell {
+		border-block-end-color: transparent;
+	}
+
+	.v-table__expanded > .v-table__cell {
+		block-size: auto;
+		padding: 0;
+		border-block-end: 0;
+		white-space: normal;
+	}
+
+	.v-table__expanded[data-open] > .v-table__cell {
+		border-block-end: 1px solid var(--border);
+	}
+
+	.v-table__collapse {
+		display: grid;
+		grid-template-rows: 0fr;
+		transition: grid-template-rows var(--v-table-expand-duration, 280ms)
+			cubic-bezier(0.32, 0.72, 0, 1);
+	}
+
+	.v-table__collapse[data-open] {
+		grid-template-rows: 1fr;
+	}
+
+	.v-table__collapse-inner {
+		min-block-size: 0;
+		overflow: clip;
+	}
+
+	.v-table__panel-wrap {
+		box-sizing: border-box;
+		padding: 0.5rem 1rem 0.75rem calc(var(--v-table-lead, 0px) + 0.75rem);
+	}
+
+	.v-table__panel-wrap[data-fixed] {
+		position: sticky;
+		inset-inline-start: 0;
+		inline-size: var(--v-table-viewport, 100%);
+		max-inline-size: 100%;
+	}
+
+	.v-table__panel {
+		box-sizing: border-box;
+		max-inline-size: var(--v-table-panel-max, 760px);
+		padding: 0.75rem 1rem;
+		border-radius: 10px;
+		background-color: color-mix(in oklab, var(--muted) 55%, var(--v-table-bg, var(--card)));
+		font-size: 0.875rem;
+		white-space: normal;
+	}
+
+	/* ---- 批量操作：盖在表头原位，不改变高度 ---- */
+
+	.v-data-table__bulk {
+		position: absolute;
+		inset-block-start: 0;
+		inset-inline: var(--v-table-lead, 0px) 0;
+		z-index: 6;
+		box-sizing: border-box;
+		display: flex;
+		align-items: center;
+		gap: 2px;
+		block-size: var(--v-table-head-h, 2.25rem);
+		padding: 4px 4px 4px 0.75rem;
+		overflow-x: auto;
+		overflow-y: hidden;
+		scrollbar-width: none;
+		border-block-end: 1px solid var(--border);
+		background-color: var(--v-table-bg, var(--card));
+		opacity: 0;
+		pointer-events: none;
+		transition: opacity 160ms ease-out;
+	}
+
+	.v-data-table__bulk[data-open] {
+		opacity: 1;
+		pointer-events: auto;
+	}
+
+	.v-data-table__bulk .v-button {
+		block-size: 1.75rem;
+		padding-inline: 0.625rem;
+	}
+
+	.v-data-table__bulk-count {
+		flex: none;
+		padding-inline-end: 0.5rem;
+		font-size: 0.8125rem;
+		white-space: nowrap;
+	}
+
+	.v-data-table__bulk-count b {
+		font-weight: 600;
+	}
+
+	.v-data-table__bulk-all {
+		--v-button-fg: var(--link);
+	}
+
+	.v-data-table__bulk-divider {
+		flex: none;
+		inline-size: 1px;
+		block-size: 0.875rem;
+		margin-inline: 0.375rem;
+		background-color: var(--border);
+	}
+
+	.v-data-table__bulk-spacer {
+		flex: 1 1 0;
+	}
+
+	/* ---- 状态：从标题列起左对齐写在表体里 ---- */
+
+	.v-table__cell.v-table__state-cell {
+		block-size: auto;
+		padding: 0;
+		white-space: normal;
+	}
+
+	.v-data-table__state {
+		position: sticky;
+		inset-inline-start: 0;
+		box-sizing: border-box;
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 4px;
+		inline-size: var(--v-table-viewport, 100%);
+		max-inline-size: 100%;
+		min-block-size: 9.25rem;
+		padding: 1.75rem 1rem 1.75rem calc(var(--v-table-lead, 0px) + 0.75rem);
+	}
+
+	.v-data-table__state-title {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		color: var(--foreground);
+		font-size: 0.9375rem;
+		font-weight: 600;
+	}
+
+	.v-data-table__state-dot {
+		flex: none;
+		inline-size: 6px;
+		block-size: 6px;
+		border-radius: 50%;
+		background-color: var(--destructive);
+	}
+
+	.v-data-table__state-text {
+		color: var(--muted-foreground);
+		font-size: 0.8125rem;
+	}
+
+	.v-data-table__state-text[data-mono] {
+		font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+		font-size: 0.75rem;
+	}
+
+	.v-data-table__state > .v-button {
+		margin-block-start: 0.75rem;
+	}
+
+	.v-table__skeleton {
+		block-size: 10px;
+		border-radius: 5px;
+	}
+
+	/* ---- 分页栏 ---- */
+
+	.v-data-table__footer {
+		display: flex;
+		flex: none;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.625rem;
+		margin-block-start: 0.875rem;
+		color: var(--muted-foreground);
+		font-size: 0.8125rem;
+	}
+
+	.v-data-table__total b {
+		color: var(--foreground);
+		font-weight: 500;
+	}
+
+	/* 比 .v-input-control 的 100% 宽多一级，不依赖样式表加载顺序 */
+	.v-data-table .v-data-table__page-size {
+		flex: none;
+		inline-size: 7.5rem;
+		font-size: 0.8125rem;
+	}
+
+	.v-data-table__pager {
+		margin-inline-start: auto;
+	}
+
+	/* ---- 减弱动态：所有过渡静止，面板直接出现与消失 ---- */
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-table__cell,
+		.v-table__sort,
+		.v-table__sort-icon,
+		.v-table__resizer::after,
+		.v-table__icon-button,
+		.v-table__expand-icon,
+		.v-table__collapse,
+		.v-table__row-actions,
+		.v-data-table__bulk,
+		.v-data-table [data-sticky-edge]::after {
+			transition: none;
+		}
+	}
+
+	[data-motion="reduce"] .v-table__cell,
+	[data-motion="reduce"] .v-table__sort,
+	[data-motion="reduce"] .v-table__sort-icon,
+	[data-motion="reduce"] .v-table__resizer::after,
+	[data-motion="reduce"] .v-table__icon-button,
+	[data-motion="reduce"] .v-table__expand-icon,
+	[data-motion="reduce"] .v-table__collapse,
+	[data-motion="reduce"] .v-table__row-actions,
+	[data-motion="reduce"] .v-data-table__bulk,
+	[data-motion="reduce"] .v-data-table [data-sticky-edge]::after {
+		transition: none;
+	}
+}

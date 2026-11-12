@@ -1,30 +1,32 @@
 import { usePresenceStream } from "@features/presence";
 import { useSessionStore } from "@shared/api/session";
+import { useAuthenticated } from "@shared/api/use-authenticated";
 import { useMe } from "@/features/auth/api/queries";
 
 import HeaderActions from "./HeaderActions";
+import HeaderChatToast from "./HeaderChatToast";
 import HeaderIsland from "./HeaderIsland";
 import HeaderLogo from "./HeaderLogo";
-import HeaderNav from "./HeaderNav";
+import HeaderNavbar from "./HeaderNavbar";
 
 interface HeaderProps {
 	isAuthenticated: boolean;
 }
 
 /**
- * Header - 页面顶部容器（三段式悬浮胶囊设计）
+ * Header - 页面顶部容器：左 Logo、中导航、右工具三枚悬浮药丸，移动端另有底部灵动岛。
  *
- * 参考现代顶级个人博客（如 tblog.mmzhiku.xyz），采用左(Logo)、中(Nav)、右(Actions)
- * 三段独立悬浮胶囊岛。外层 pointer-events-none 避免阻挡页面内容，各胶囊 pointer-events-auto。
- * 严禁 scale 变形，纯色/磨砂玻璃过渡。
+ * 外层 pointer-events-none 避免阻挡页面内容，各药丸 pointer-events-auto。
+ * 药丸外壳与导航形态在 {@link SiteNavbar}，这里只取登录态与用户并装配内容。
  */
 const Header = ({ isAuthenticated }: HeaderProps) => {
-	// 登录态来源合并：SSR 静态快照（首屏）OR 客户端响应式 sessionActive（登录/登出瞬间）。
+	// useMe 的开关：SSR 静态快照（首屏）OR 客户端响应式 sessionActive（登录瞬间）。
 	// 单用 isAuthenticated 会导致登录成功后 useMe 仍 enabled:false，读不到新写入的 me，
-	// Header 不刷新成"个人中心"。sessionActive 是 Zustand 响应式，登录/登出立即触发 re-render。
+	// Header 不刷新成"个人中心"。
 	const sessionActive = useSessionStore((s) => s.sessionActive);
-	const enabled = isAuthenticated || sessionActive;
-	const { data: user } = useMe({ enabled });
+	const { data: user } = useMe({ enabled: isAuthenticated || sessionActive });
+	// 导航结构随登录态变化：首帧取 SSR 登录态，登出后立即回到游客入口（路由上下文不会随登出刷新）
+	const authenticated = useAuthenticated(isAuthenticated);
 	usePresenceStream();
 
 	return (
@@ -32,25 +34,17 @@ const Header = ({ isAuthenticated }: HeaderProps) => {
 			style={{ viewTransitionName: "site-header" }}
 			className="pointer-events-none sticky top-0 z-40 w-full pt-2.5 pb-1"
 		>
-			<div className="container relative mx-auto flex h-10 max-w-6xl items-center justify-between gap-2 px-3 sm:px-4">
-				{/* 左段：Logo 胶囊 */}
-				<div className="flex shrink-0 items-center">
-					<HeaderLogo />
-				</div>
-
-				{/* 中段：主导航船坞胶囊（相对页面绝对居中，不受左右胶囊宽度影响） */}
-				<div className="absolute top-1/2 left-1/2 hidden -translate-x-1/2 -translate-y-1/2 lg:block">
-					<HeaderNav />
-				</div>
-
-				{/* 右段：工具与鉴权操作胶囊 */}
-				<div className="flex shrink-0 items-center justify-end">
-					<HeaderActions user={user} />
-				</div>
+			<div className="container relative mx-auto max-w-6xl px-3 sm:px-4">
+				<HeaderNavbar
+					authenticated={authenticated}
+					logo={<HeaderLogo />}
+					actions={<HeaderActions user={user} />}
+				/>
+				{user && <HeaderChatToast user={user} />}
 			</div>
 
 			{/* 移动端底部灵动岛导航（portal 到 body，lg 以上隐藏） */}
-			<HeaderIsland />
+			<HeaderIsland authenticated={authenticated} />
 		</header>
 	);
 };

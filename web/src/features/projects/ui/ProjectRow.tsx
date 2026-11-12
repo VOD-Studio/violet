@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Badge } from "@violet/ui";
+import { Tag } from "@violet/ui";
 import { cn } from "cn";
 import type { ProjectRoadmapSummary } from "../model/roadmap-summary";
 import type { Project } from "../model/types";
@@ -110,7 +110,7 @@ export function ProjectRow({ project }: ProjectRowProps) {
 					<ul className="flex flex-wrap gap-1.5" aria-label="技术栈">
 						{project.tech_stack.map((tech) => (
 							<li key={tech}>
-								<Badge variant="secondary">{tech}</Badge>
+								<Tag size="sm">{tech}</Tag>
 							</li>
 						))}
 					</ul>

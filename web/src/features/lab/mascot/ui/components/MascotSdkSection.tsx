@@ -1,6 +1,6 @@
 import type { EmotionDef } from "@violet/mascot";
+import { CodeBlock, iconProps } from "@violet/ui";
 import { Code2, MoveRight } from "lucide-react";
-import { CodeCard } from "@/shared/ui/code-preview";
 
 interface MascotSdkSectionProps {
 	pinnedDef: EmotionDef;
@@ -33,13 +33,13 @@ export function MascotSdkSection({ pinnedDef }: MascotSdkSectionProps) {
 				<div className="flex items-center gap-2 font-mono text-[9px] text-muted-foreground">
 					<span className="size-1.5 bg-neon-blue" />
 					{pinnedDef.id} / {pinnedDef.en}
-					<MoveRight className="size-3.5 text-neon-blue" />
+					<MoveRight {...iconProps(14, "text-neon-blue")} />
 				</div>
 			</header>
 
 			<div className="grid gap-4 border-t border-edge-hairline bg-muted/20 p-4 md:grid-cols-2">
-				<CodeCard title="AI 消息协议" language="typescript" code={messageCode} />
-				<CodeCard title="实例化" language="typescript" code={instanceCode} />
+				<CodeBlock filename="AI 消息协议" language="typescript" code={messageCode} />
+				<CodeBlock filename="实例化" language="typescript" code={instanceCode} />
 			</div>
 		</section>
 	);

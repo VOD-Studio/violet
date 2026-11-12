@@ -79,7 +79,7 @@ export function PageShell({ description, action, sticky, children }: PageShellPr
 				{sticky}
 			</div>
 			{/* 内容区滚动容器：overflow-y-auto 接管非表格页滚动（表格页靠 DataTable
-				内部 OverlayScroll 滚动，此处不触发）。无水平 padding，滚动条贴 main 边缘。
+				内部 ScrollArea 滚动，此处不触发）。无水平 padding，滚动条贴 main 边缘。
 				isolate 困住 DataTable 固定列 z-index，防止越界到标题区之上。 */}
 			<div
 				ref={scrollRef}

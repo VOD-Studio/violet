@@ -5,23 +5,36 @@
  * 登录提交者本人能看到自己刚提交的 pending 评论（带此徽章）；
  * 他人永远只看到 approved（后端黑洞/可见性保证），不会看到此徽章。
  *
- * 文章评论（CommentMeta）与批注卡片（AnnotationCard）共用。
+ * 批注卡片使用此角标；评论条目由 SDK CommentItem 显示完整的待审核说明。
  */
+import { iconProps } from "@violet/ui";
+import { cn } from "cn";
 import { Clock } from "lucide-react";
 
 export interface PendingBadgeProps {
 	/** 是否显示（通常为 status === 'pending'） */
 	show: boolean;
+	/**
+	 * sm 高 16、不带图标，与署名旁的小标签并排时不压过署名。
+	 *
+	 * @default "md"
+	 */
+	size?: "sm" | "md";
 }
 
-export function PendingBadge({ show }: PendingBadgeProps) {
+export function PendingBadge({ show, size = "md" }: PendingBadgeProps) {
 	if (!show) return null;
 	return (
 		<span
-			className="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2 py-0.5 text-xs text-warning"
+			className={cn(
+				"inline-flex items-center rounded-full bg-warning/10 text-warning",
+				size === "sm"
+					? "h-4 px-1.5 text-[10.5px] font-medium"
+					: "gap-1 px-2 py-0.5 text-xs",
+			)}
 			title="管理员审核通过后公开"
 		>
-			<Clock className="size-3" />
+			{size === "md" && <Clock {...iconProps(12)} />}
 			审批中
 		</span>
 	);

@@ -1,15 +1,17 @@
 import type { Tag } from "@entities/tag/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
-import { DataTable, usePagedQuery } from "@features/admin-shared/ui/data-table";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { TagDialog } from "@features/admin-tags/ui/TagDialog";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { useDeleteTag } from "@features/tags/api/mutations";
 import { useTagsPaged } from "@features/tags/api/queries";
 import { createFileRoute } from "@tanstack/react-router";
+import type { DataTableColumn, DataTableSort } from "@violet/ui";
 import {
 	Button,
 	ConfirmDialog,
+	DataTable,
+	iconProps,
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
@@ -95,18 +97,19 @@ function AdminTagsPage() {
 			sticky: "right",
 			width: "96px",
 			cell: (row) => (
-				<div className="flex items-center gap-2">
+				<div className="v-table__row-actions items-center gap-2">
 					<PermissionGuard permission="tag:update">
 						<Tooltip>
 							<TooltipTrigger asChild>
 								<span>
 									<Button
-										size="icon-sm"
+										iconOnly
+										size="sm"
 										variant="ghost"
 										onClick={() => handleEdit(row)}
 										aria-label={`编辑标签 ${row.name}`}
 									>
-										<Pencil className="size-3.5" />
+										<Pencil {...iconProps(14)} />
 									</Button>
 								</span>
 							</TooltipTrigger>
@@ -118,13 +121,14 @@ function AdminTagsPage() {
 							<TooltipTrigger asChild>
 								<span>
 									<Button
-										size="icon-sm"
+										iconOnly
+										size="sm"
 										variant="ghost"
 										className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 										onClick={() => handleDelete(row)}
 										aria-label={`删除标签 ${row.name}`}
 									>
-										<Trash2 className="size-3.5" />
+										<Trash2 {...iconProps(14)} />
 									</Button>
 								</span>
 							</TooltipTrigger>
@@ -144,7 +148,7 @@ function AdminTagsPage() {
 				action={
 					<PermissionGuard permission="tag:create">
 						<Button size="sm" onClick={handleCreate}>
-							<Plus className="size-3.5" />
+							<Plus {...iconProps(14)} />
 							创建标签
 						</Button>
 					</PermissionGuard>

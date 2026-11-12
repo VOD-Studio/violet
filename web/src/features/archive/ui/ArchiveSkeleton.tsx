@@ -1,4 +1,4 @@
-import { ShimmerSkeleton } from "@violet/ui";
+import { Skeleton } from "@violet/ui";
 
 import { cn } from "cn";
 
@@ -13,25 +13,22 @@ const ArchiveSkeleton = ({ className }: ArchiveSkeletonProps) => {
 		<div className={cn("space-y-10", className)}>
 			<div className="flex flex-wrap gap-2">
 				{Array.from({ length: 5 }, (_, i) => (
-					<ShimmerSkeleton key={i} className="h-8 w-16 rounded-full" />
+					<Skeleton key={i} className="h-8 w-16 rounded-full" />
 				))}
 			</div>
 
 			{years.map((index) => (
 				<div key={index} className="space-y-4">
-					<ShimmerSkeleton className="h-7 w-40 rounded-md" />
+					<Skeleton className="h-7 w-40 rounded-md" />
 					<div className="space-y-3 border-l-2 border-border pl-4">
 						{Array.from({ length: 4 }, (_, i) => (
 							<div key={i} className="flex items-start gap-3">
-								<ShimmerSkeleton className="mt-0.5 h-4 w-10 rounded-md" />
+								<Skeleton className="mt-0.5 h-4 w-10 rounded-md" />
 								<div className="flex flex-1 flex-col gap-1">
-									<ShimmerSkeleton className="h-4 w-full rounded-md" />
+									<Skeleton className="h-4 w-full rounded-md" />
 									<div className="flex flex-wrap gap-1">
 										{Array.from({ length: 2 }, (_, j) => (
-											<ShimmerSkeleton
-												key={j}
-												className="h-5 w-12 rounded-full"
-											/>
+											<Skeleton key={j} className="h-5 w-12 rounded-full" />
 										))}
 									</div>
 								</div>

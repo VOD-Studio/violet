@@ -113,14 +113,16 @@ type UserProfileDTO struct {
 
 // QuotedTweetDTO 被引用推文读模型。
 type QuotedTweetDTO struct {
-	ID            string              `json:"id"`
-	Author        AuthorDTO           `json:"author"`
-	Content       string              `json:"content"`
-	Images        []TweetImageDTO     `json:"images"`
-	Emote         map[string]EmojiRef `json:"emote,omitempty"`
-	QuoteCount    int                 `json:"quote_count"`
-	CreatedAt     string              `json:"created_at"`
-	ExternalTweet *ExternalTweetDTO   `json:"external_tweet,omitempty"`
+	ID         string              `json:"id"`
+	Author     AuthorDTO           `json:"author"`
+	Content    string              `json:"content"`
+	Images     []TweetImageDTO     `json:"images"`
+	Emote      map[string]EmojiRef `json:"emote,omitempty"`
+	QuoteCount int                 `json:"quote_count"`
+	// QuoteOf 只标记下一层引用；不展开其正文，目标删除后仍保留。
+	QuoteOf       *string           `json:"quote_of,omitempty"`
+	CreatedAt     string            `json:"created_at"`
+	ExternalTweet *ExternalTweetDTO `json:"external_tweet,omitempty"`
 	// LinkCards 正文 URL 逐个对应的链接卡片，可为空数组
 	LinkCards []*applp.LinkCardDTO `json:"link_cards"`
 }
@@ -652,6 +654,10 @@ func (s *Service) toDTOs(ctx context.Context, tweets []*domaintweet.Tweet) []Twe
 					ExternalTweet: sourceView(qt, externalViews),
 					LinkCards:     linkCardsForBody(qt.Content(), linkCardsMap),
 				}
+				if nested := qt.QuoteOf(); nested != nil {
+					id := nested.String()
+					quotedTweetDTO.QuoteOf = &id
+				}
 			}
 		}
 
@@ -945,7 +951,7 @@ func (s *Service) CreateComment(ctx context.Context, in CreateCommentInput) (Com
 		}
 		return CommentDTO{}, err
 	}
-	s.publishEvents(ctx, []shared.DomainEvent{domaintweet.NewTweetCommented(c, tw.AuthorID(), repliedToAuthorID)})
+	s.publishEvents(ctx, []shared.DomainEvent{domaintweet.NewTweetCommented(c, tw, repliedToAuthorID)})
 	dto := s.commentsToDTOs(ctx, []*domaintweet.Comment{c})[0]
 	if err := s.enrichSingleEmote(ctx, &dto); err != nil {
 		return CommentDTO{}, err
@@ -974,31 +980,6 @@ func (s *Service) DeleteComment(ctx context.Context, id string) error {
 		return shared.Forbidden("无权删除他人评论")
 	}
 	return s.commentRepo.Delete(ctx, cid)
-}
-
-// ListComments 列出推文下的顶层评论（公开，page/limit 分页，最新在前）。
-func (s *Service) ListComments(ctx context.Context, tweetIDStr string, page, limit int) ([]CommentDTO, int64, error) {
-	if s.commentRepo == nil {
-		return nil, 0, errCommentRepoNotInjected
-	}
-	tweetID, err := shared.ParseID(tweetIDStr)
-	if err != nil {
-		return nil, 0, shared.BadRequest("非法的推文 ID")
-	}
-	result, err := s.commentRepo.FindPage(ctx, domaintweet.ListFilter{TweetID: &tweetID},
-		shared.PageQuery{Page: page, Limit: limit}.Normalize())
-	if err != nil {
-		return nil, 0, err
-	}
-	comments := result.Items
-	dtos := s.commentsToDTOs(ctx, comments)
-	if err := s.attachRepliesCount(ctx, comments, dtos); err != nil {
-		return nil, 0, err
-	}
-	if err := s.enrichEmotes(ctx, dtos); err != nil {
-		return nil, 0, err
-	}
-	return dtos, result.Total, nil
 }
 
 // attachRepliesCount 批量填充顶层评论的回复数（一次 GROUP BY 查询，避免 N+1）。

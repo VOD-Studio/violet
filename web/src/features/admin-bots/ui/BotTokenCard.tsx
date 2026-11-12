@@ -1,5 +1,5 @@
 import { copyText } from "@shared/lib/clipboard";
-import { Button } from "@violet/ui";
+import { Button, iconProps } from "@violet/ui";
 
 import { Check, Copy } from "lucide-react";
 import * as React from "react";
@@ -49,7 +49,7 @@ export function BotTokenCard({ token, botName, onDismiss }: BotTokenCardProps) {
 				</div>
 				<div className="flex items-center gap-2">
 					<Button size="sm" variant="outline" onClick={copy}>
-						{copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+						{copied ? <Check {...iconProps(14)} /> : <Copy {...iconProps(14)} />}
 						{copied ? "已复制" : "复制"}
 					</Button>
 					<Button size="sm" variant="ghost" onClick={onDismiss} title="收起明文">

@@ -1,6 +1,6 @@
 import { Button } from "@violet/ui";
 
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import { RefreshCw, TriangleAlert } from "lucide-react";
 
 interface PersonaOperationErrorProps {
 	error: { kind: "validation" | "conflict"; message: string } | null;
@@ -16,7 +16,7 @@ export function PersonaOperationError({ error, onReload }: PersonaOperationError
 			role="alert"
 		>
 			<div className="flex items-start gap-2 text-sm">
-				<AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
+				<TriangleAlert className="mt-0.5 size-4 shrink-0 text-destructive" />
 				<p>{error.message}</p>
 			</div>
 			{error.kind === "conflict" ? (

@@ -1,4 +1,3 @@
-// Package gorm 提供 commentreaction 模块的 GORM 存储实现。
 package gorm
 
 import (
@@ -29,33 +28,11 @@ func parseUUID(s string) uuid.UUID {
 
 // ListByComment 查询评论反应（按 emoji 分组计数，并标识当前用户是否已反应）
 func (s *CommentReactionStore) ListByComment(ctx context.Context, commentID, viewerUserID string) ([]domaincr.AggregatedReaction, error) {
-	var rows []struct {
-		EmojiID   int32  `gorm:"column:emoji_id"`
-		EmojiName string `gorm:"column:emoji_name"`
-		EmojiURL  string `gorm:"column:emoji_url"`
-		GifURL    string `gorm:"column:gif_url"`
-		Count     int64  `gorm:"column:count"`
-		SelfInt   int    `gorm:"column:self_int"`
-	}
-	err := s.db.WithContext(ctx).
-		Table("comment_reactions cr").
-		Select("cr.emoji_id, e.name AS emoji_name, e.url AS emoji_url, e.gif_url AS gif_url, COUNT(*) AS count, MAX(CASE WHEN cr.user_id = ? THEN 1 ELSE 0 END) AS self_int", parseUUID(viewerUserID)).
-		Joins("LEFT JOIN emojis e ON e.id = cr.emoji_id").
-		Where("cr.comment_id = ?", parseUUID(commentID)).
-		Group("cr.emoji_id, e.name, e.url, e.gif_url").
-		Order("count DESC, cr.emoji_id ASC").
-		Scan(&rows).Error
+	lists, err := s.BatchByComments(ctx, []string{commentID}, viewerUserID)
 	if err != nil {
-		return nil, domainshared.Internal("查询评论反应失败", err)
+		return nil, err
 	}
-	result := make([]domaincr.AggregatedReaction, 0, len(rows))
-	for _, r := range rows {
-		result = append(result, domaincr.AggregatedReaction{
-			EmojiID: r.EmojiID, EmojiName: r.EmojiName, EmojiURL: r.EmojiURL, GifURL: r.GifURL,
-			Count: r.Count, Self: r.SelfInt > 0,
-		})
-	}
-	return result, nil
+	return lists[0].Reactions, nil
 }
 
 // Add 添加反应（幂等）
@@ -91,6 +68,11 @@ func (s *CommentReactionStore) Remove(ctx context.Context, commentID, userID, ip
 
 // BatchByComments 批量查询多评论反应（按 emoji 分组计数，并标识当前用户是否已反应）
 func (s *CommentReactionStore) BatchByComments(ctx context.Context, commentIDs []string, viewerUserID string) ([]domaincr.ReactionList, error) {
+	return batchCommentReactions(ctx, s.db, "comment_reactions", commentIDs, viewerUserID)
+}
+
+// batchCommentReactions 仅供文章/推文两种独立存储复用公开聚合读模型；表名由实现固定传入。
+func batchCommentReactions(ctx context.Context, db *gorm.DB, table string, commentIDs []string, viewerUserID string) ([]domaincr.ReactionList, error) {
 	if len(commentIDs) == 0 {
 		return []domaincr.ReactionList{}, nil
 	}
@@ -107,9 +89,9 @@ func (s *CommentReactionStore) BatchByComments(ctx context.Context, commentIDs [
 		Count     int64     `gorm:"column:count"`
 		SelfInt   int       `gorm:"column:self_int"`
 	}
-	err := s.db.WithContext(ctx).
-		Table("comment_reactions cr").
-		Select("cr.comment_id, cr.emoji_id, e.name AS emoji_name, e.url AS emoji_url, e.gif_url AS gif_url, COUNT(*) AS count, MAX(CASE WHEN cr.user_id = ? THEN 1 ELSE 0 END) AS self_int", parseUUID(viewerUserID)).
+	err := db.WithContext(ctx).
+		Table(table+" cr").
+		Select("cr.comment_id, cr.emoji_id, e.name AS emoji_name, e.url AS emoji_url, e.gif_url AS gif_url, COUNT(*) AS count, MAX(CASE WHEN cr.user_id = ? AND ? THEN 1 ELSE 0 END) AS self_int", parseUUID(viewerUserID), viewerUserID != "").
 		Joins("LEFT JOIN emojis e ON e.id = cr.emoji_id").
 		Where("cr.comment_id IN ?", ids).
 		Group("cr.comment_id, cr.emoji_id, e.name, e.url, e.gif_url").
@@ -118,17 +100,69 @@ func (s *CommentReactionStore) BatchByComments(ctx context.Context, commentIDs [
 	if err != nil {
 		return nil, domainshared.Internal("批量查询评论反应失败", err)
 	}
+	type reactionKey struct {
+		commentID uuid.UUID
+		emojiID   int32
+	}
+	recentUsers := make(map[reactionKey][]domaincr.RecentUser, len(rows))
+	if len(rows) > 0 {
+		var users []struct {
+			CommentID uuid.UUID
+			EmojiID   int32
+			UserID    uuid.UUID
+			Name      string
+		}
+		ranked := db.WithContext(ctx).
+			Table(table+" cr").
+			Select(`
+				cr.comment_id,
+				cr.emoji_id,
+				cr.user_id,
+				COALESCE(NULLIF(u.display_name, ''), u.username) AS name,
+				ROW_NUMBER() OVER (
+					PARTITION BY cr.comment_id, cr.emoji_id
+					ORDER BY cr.created_at DESC, cr.id DESC
+				) AS recent_rank
+			`).
+			Joins("JOIN users u ON u.id = cr.user_id AND u.deleted_at IS NULL").
+			Where("cr.comment_id IN ?", ids)
+		if err := db.WithContext(ctx).Table("(?) AS ranked", ranked).
+			Where("recent_rank <= ?", 3).
+			Order("comment_id, emoji_id, recent_rank").
+			Scan(&users).Error; err != nil {
+			return nil, domainshared.Internal("查询评论最近回应者失败", err)
+		}
+		for _, user := range users {
+			key := reactionKey{commentID: user.CommentID, emojiID: user.EmojiID}
+			if recentUsers[key] == nil {
+				recentUsers[key] = make([]domaincr.RecentUser, 0, 3)
+			}
+			recentUsers[key] = append(recentUsers[key], domaincr.RecentUser{
+				ID:   user.UserID.String(),
+				Name: user.Name,
+			})
+		}
+	}
 	grouped := make(map[string][]domaincr.AggregatedReaction)
 	for _, r := range rows {
 		cid := r.CommentID.String()
+		users := recentUsers[reactionKey{commentID: r.CommentID, emojiID: r.EmojiID}]
+		if users == nil {
+			users = []domaincr.RecentUser{}
+		}
 		grouped[cid] = append(grouped[cid], domaincr.AggregatedReaction{
 			EmojiID: r.EmojiID, EmojiName: r.EmojiName, EmojiURL: r.EmojiURL, GifURL: r.GifURL,
 			Count: r.Count, Self: r.SelfInt > 0,
+			RecentUsers: users,
 		})
 	}
 	result := make([]domaincr.ReactionList, 0, len(commentIDs))
 	for _, cid := range commentIDs {
-		result = append(result, domaincr.ReactionList{CommentID: cid, Reactions: grouped[cid]})
+		reactions := grouped[parseUUID(cid).String()]
+		if reactions == nil {
+			reactions = []domaincr.AggregatedReaction{}
+		}
+		result = append(result, domaincr.ReactionList{CommentID: cid, Reactions: reactions})
 	}
 	return result, nil
 }

@@ -6,10 +6,11 @@
 	.v-checkbox {
 		--v-checkbox-accent: var(--primary);
 		--v-checkbox-accent-foreground: var(--primary-foreground);
-		--v-checkbox-idle-border: color-mix(in oklab, var(--foreground) 35%, transparent);
+		--v-checkbox-idle-border: color-mix(in oklab, var(--foreground) 30%, transparent);
 		--v-checkbox-size: 1rem;
-		--v-checkbox-icon-size: 0.875rem;
+		--v-checkbox-icon-size: calc(var(--v-checkbox-size) * 0.75);
 		--v-checkbox-radius: 0.3125rem;
+		--v-checkbox-duration: 140ms;
 		box-sizing: border-box;
 		position: relative;
 		display: inline-flex;
@@ -28,10 +29,10 @@
 		cursor: pointer;
 		user-select: none;
 		transition:
-			background-color var(--v-duration-fast, 150ms) var(--v-easing, ease-out),
-			border-color var(--v-duration-fast, 150ms) var(--v-easing, ease-out),
-			color var(--v-duration-fast, 150ms) var(--v-easing, ease-out),
-			opacity var(--v-duration-fast, 150ms) var(--v-easing, ease-out);
+			background-color var(--v-checkbox-duration) ease-out,
+			border-color var(--v-checkbox-duration) ease-out,
+			color var(--v-checkbox-duration) ease-out,
+			opacity var(--v-checkbox-duration) ease-out;
 	}
 
 	.v-checkbox:where(button) {
@@ -51,37 +52,22 @@
 
 	.v-checkbox--sm {
 		--v-checkbox-size: 0.875rem;
-		--v-checkbox-icon-size: 0.625rem;
 		--v-checkbox-radius: 0.25rem;
 	}
 
 	.v-checkbox--lg {
 		--v-checkbox-size: 1.25rem;
-		--v-checkbox-icon-size: 1rem;
 		--v-checkbox-radius: 0.375rem;
 	}
 
+	/* 悬停只加深框线，底色保持纸色 */
 	.v-checkbox:where(:not(:disabled):not([data-disabled])):hover {
-		border-color: color-mix(in oklab, var(--foreground) 60%, transparent);
-		background-color: var(--accent);
+		border-color: color-mix(in oklab, var(--foreground) 50%, transparent);
 	}
 
 	.v-checkbox:is([data-state="checked"], [data-state="indeterminate"], :checked, :indeterminate) {
 		border-color: var(--v-checkbox-accent);
 		background-color: var(--v-checkbox-accent);
-	}
-
-	.v-checkbox:is(
-		[data-state="checked"],
-		[data-state="indeterminate"],
-		:checked,
-		:indeterminate
-	):where(:not(:disabled):not([data-disabled])):hover {
-		background-color: color-mix(
-			in oklab,
-			var(--v-checkbox-accent) 90%,
-			var(--v-checkbox-accent-foreground)
-		);
 	}
 
 	.v-checkbox:focus-visible {
@@ -92,7 +78,7 @@
 	.v-checkbox:disabled,
 	.v-checkbox[data-disabled] {
 		cursor: not-allowed;
-		opacity: 0.5;
+		opacity: 0.45;
 	}
 
 	.v-checkbox:is([aria-invalid="true"], [aria-invalid="grammar"], [aria-invalid="spelling"]) {
@@ -107,50 +93,104 @@
 		outline-color: var(--destructive);
 	}
 
-	.v-checkbox__indicator {
-		display: flex;
-		inline-size: 100%;
-		block-size: 100%;
-		align-items: center;
-		justify-content: center;
-		color: inherit;
-		pointer-events: none;
-		animation: v-checkbox-reveal var(--v-duration-fast, 150ms) var(--v-easing, ease-out);
-	}
-
-	.v-checkbox__icon {
-		display: block;
+	/* 对勾：常驻 SVG，选中从左下往右上描出（180ms、晚 40ms），取消 100ms 擦回 */
+	.v-checkbox__tick {
+		position: absolute;
+		inset: 0;
+		margin: auto;
+		overflow: visible;
 		inline-size: var(--v-checkbox-icon-size);
 		block-size: var(--v-checkbox-icon-size);
-		stroke-width: 2.5;
+		pointer-events: none;
 	}
 
-	.v-checkbox__icon--indeterminate,
-	.v-checkbox[data-state="indeterminate"] .v-checkbox__icon--checked {
-		display: none;
+	.v-checkbox__tick-path {
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 2.2;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+		stroke-dasharray: 1 1;
+		stroke-dashoffset: 1;
+		transition: stroke-dashoffset 100ms ease-in;
 	}
 
-	.v-checkbox[data-state="indeterminate"] .v-checkbox__icon--indeterminate {
-		display: block;
+	.v-checkbox[data-state="checked"] .v-checkbox__tick-path {
+		stroke-dashoffset: 0;
+		transition: stroke-dashoffset 180ms ease-out 40ms;
 	}
 
-	@keyframes v-checkbox-reveal {
-		from {
-			opacity: 0;
-		}
-		to {
-			opacity: 1;
-		}
+	/* 半选短横：8 × 2，120ms 淡入 */
+	.v-checkbox__dash {
+		position: absolute;
+		inset: 0;
+		margin: auto;
+		inline-size: calc(var(--v-checkbox-size) / 2);
+		block-size: 2px;
+		border-radius: 1px;
+		background-color: currentColor;
+		opacity: 0;
+		transition: opacity 120ms ease-out;
+	}
+
+	.v-checkbox[data-state="indeterminate"] .v-checkbox__dash {
+		opacity: 1;
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.v-checkbox {
+		.v-checkbox,
+		.v-checkbox__tick-path,
+		.v-checkbox__dash,
+		.v-checkbox-card {
 			transition: none;
 		}
+	}
 
-		.v-checkbox__indicator {
-			animation: none;
-		}
+	/* 勾选卡片：整卡是点击区域，由调用方在包装元素上携带 data-state；
+	   内部 Checkbox 的点击需 stopPropagation，避免包装层双触发 */
+	.v-checkbox-card {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.75rem;
+		box-sizing: border-box;
+		padding: 0.875rem 1rem;
+		border-radius: var(--radius-12);
+		background-color: var(--muted);
+		cursor: pointer;
+		transition:
+			background-color var(--v-checkbox-duration, 140ms) ease-out,
+			box-shadow var(--v-checkbox-duration, 140ms) ease-out;
+	}
+
+	.v-checkbox-card:hover {
+		background-color: color-mix(in oklab, var(--muted) 90%, var(--foreground));
+	}
+
+	.v-checkbox-card[data-state="checked"] {
+		background-color: var(--card);
+		box-shadow: 0 0 0 1.5px var(--foreground);
+	}
+
+	.v-checkbox-card[data-disabled] {
+		cursor: not-allowed;
+		opacity: 0.45;
+	}
+
+	.v-checkbox-card__text {
+		display: flex;
+		flex-direction: column;
+		gap: 0.125rem;
+		text-align: start;
+	}
+
+	.v-checkbox-card__title {
+		font-weight: 600;
+	}
+
+	.v-checkbox-card__description {
+		font-size: 0.8125rem;
+		line-height: 1.6;
+		color: var(--muted-foreground);
 	}
 
 	@media (forced-colors: active) {

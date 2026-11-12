@@ -1,52 +1,25 @@
 /*
- * 文章批注：划线荧光笔、段评入口、评论者头像角标与批注气泡（comments feature 持有）。
+ * 文章批注：被批注文字、页边头像组、选区工具条与批注卡（comments feature 持有）。
  * 运行时 DOM 由 range-marks 与 AnnotationLayer 按固定 class 名生成，用功能持有的全局选择器而非 CSS Module。
- * 动效只用透明度与模糊，不缩放、不位移。
+ * 颜色取语义 token：季节色是 --decoration，强调字是 --link，纸片是 --popover，凹陷是 --muted。
  */
 
-/* 划线批注高亮：不规则的手绘荧光笔笔触。
-   笔触拆成左端、中段、右端三层背景：两端固定宽度保持圆润，只有中段随文字长度拉伸，
-   整条拉伸会把圆头拉成尖角。形状与颜色画在背景 SVG 里（两种形状交替避免一模一样），文字不被遮罩；
-   box-decoration-break: clone 让折行的每一段各自铺一次背景。内边距与等量负外边距相抵，不改变行内排版。
-   三态用色区分：选区淡紫（SelectionHighlight 以块背景图层绘制，同款笔触）、已保存的划线绿色、
-   写批注时的草稿琥珀色。 */
-:root {
-	--annotation-cap: 0.5em;
-	--annotation-saved-capl-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%2334d399' fill-opacity='.5' d='M10 2.6C6.2 2 2.6 3.6 1.8 8 1.2 11.4 1.4 15.2 3 17.4 4.6 19.2 7.6 18.8 10 18.6Z'/%3E%3C/svg%3E");
-	--annotation-saved-capl-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%2334d399' fill-opacity='.5' d='M10 2.4C6 2.4 2.8 3 1.6 7 .8 10.6 1.2 14.6 2.6 17 4 19 7.4 18.4 10 18.6Z'/%3E%3C/svg%3E");
-	--annotation-saved-mid-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%2334d399' fill-opacity='.5' d='M0 2.6C20 1.8 40 3 60 2.2S90 2.8 100 2.4V18.6C80 19.4 60 18 40 18.8S12 18.2 0 18.6Z'/%3E%3C/svg%3E");
-	--annotation-saved-mid-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%2334d399' fill-opacity='.5' d='M0 2.6C16 3.2 36 1.8 58 2.8S88 2 100 2.4V18.6C84 18 64 19.2 44 18.2S14 19 0 18.6Z'/%3E%3C/svg%3E");
-	--annotation-saved-capr-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%2334d399' fill-opacity='.5' d='M0 2.4C4.2 2.8 8.4 2 9.4 6.8 10 10.4 9.6 14.2 8.4 16.8 7 19.4 3.6 18 0 18.6Z'/%3E%3C/svg%3E");
-	--annotation-saved-capr-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%2334d399' fill-opacity='.5' d='M0 2.4C4 2 8 3.2 9.2 7.4 10.1 11 9.4 14.6 8 17.2 6.6 19.2 3 18.2 0 18.6Z'/%3E%3C/svg%3E");
-	--annotation-saved-hover-capl-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%2334d399' fill-opacity='.72' d='M10 2.6C6.2 2 2.6 3.6 1.8 8 1.2 11.4 1.4 15.2 3 17.4 4.6 19.2 7.6 18.8 10 18.6Z'/%3E%3C/svg%3E");
-	--annotation-saved-hover-capl-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%2334d399' fill-opacity='.72' d='M10 2.4C6 2.4 2.8 3 1.6 7 .8 10.6 1.2 14.6 2.6 17 4 19 7.4 18.4 10 18.6Z'/%3E%3C/svg%3E");
-	--annotation-saved-hover-mid-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%2334d399' fill-opacity='.72' d='M0 2.6C20 1.8 40 3 60 2.2S90 2.8 100 2.4V18.6C80 19.4 60 18 40 18.8S12 18.2 0 18.6Z'/%3E%3C/svg%3E");
-	--annotation-saved-hover-mid-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%2334d399' fill-opacity='.72' d='M0 2.6C16 3.2 36 1.8 58 2.8S88 2 100 2.4V18.6C84 18 64 19.2 44 18.2S14 19 0 18.6Z'/%3E%3C/svg%3E");
-	--annotation-saved-hover-capr-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%2334d399' fill-opacity='.72' d='M0 2.4C4.2 2.8 8.4 2 9.4 6.8 10 10.4 9.6 14.2 8.4 16.8 7 19.4 3.6 18 0 18.6Z'/%3E%3C/svg%3E");
-	--annotation-saved-hover-capr-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%2334d399' fill-opacity='.72' d='M0 2.4C4 2 8 3.2 9.2 7.4 10.1 11 9.4 14.6 8 17.2 6.6 19.2 3 18.2 0 18.6Z'/%3E%3C/svg%3E");
-	--annotation-draft-capl-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%23f59e0b' fill-opacity='.5' d='M10 2.6C6.2 2 2.6 3.6 1.8 8 1.2 11.4 1.4 15.2 3 17.4 4.6 19.2 7.6 18.8 10 18.6Z'/%3E%3C/svg%3E");
-	--annotation-draft-capl-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%23f59e0b' fill-opacity='.5' d='M10 2.4C6 2.4 2.8 3 1.6 7 .8 10.6 1.2 14.6 2.6 17 4 19 7.4 18.4 10 18.6Z'/%3E%3C/svg%3E");
-	--annotation-draft-mid-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%23f59e0b' fill-opacity='.5' d='M0 2.6C20 1.8 40 3 60 2.2S90 2.8 100 2.4V18.6C80 19.4 60 18 40 18.8S12 18.2 0 18.6Z'/%3E%3C/svg%3E");
-	--annotation-draft-mid-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%23f59e0b' fill-opacity='.5' d='M0 2.6C16 3.2 36 1.8 58 2.8S88 2 100 2.4V18.6C84 18 64 19.2 44 18.2S14 19 0 18.6Z'/%3E%3C/svg%3E");
-	--annotation-draft-capr-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%23f59e0b' fill-opacity='.5' d='M0 2.4C4.2 2.8 8.4 2 9.4 6.8 10 10.4 9.6 14.2 8.4 16.8 7 19.4 3.6 18 0 18.6Z'/%3E%3C/svg%3E");
-	--annotation-draft-capr-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%23f59e0b' fill-opacity='.5' d='M0 2.4C4 2 8 3.2 9.2 7.4 10.1 11 9.4 14.6 8 17.2 6.6 19.2 3 18.2 0 18.6Z'/%3E%3C/svg%3E");
-	--annotation-select-capl-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%238b5cf6' fill-opacity='.2' d='M10 2.6C6.2 2 2.6 3.6 1.8 8 1.2 11.4 1.4 15.2 3 17.4 4.6 19.2 7.6 18.8 10 18.6Z'/%3E%3C/svg%3E");
-	--annotation-select-capl-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%238b5cf6' fill-opacity='.2' d='M10 2.4C6 2.4 2.8 3 1.6 7 .8 10.6 1.2 14.6 2.6 17 4 19 7.4 18.4 10 18.6Z'/%3E%3C/svg%3E");
-	--annotation-select-mid-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%238b5cf6' fill-opacity='.2' d='M0 2.6C20 1.8 40 3 60 2.2S90 2.8 100 2.4V18.6C80 19.4 60 18 40 18.8S12 18.2 0 18.6Z'/%3E%3C/svg%3E");
-	--annotation-select-mid-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%238b5cf6' fill-opacity='.2' d='M0 2.6C16 3.2 36 1.8 58 2.8S88 2 100 2.4V18.6C84 18 64 19.2 44 18.2S14 19 0 18.6Z'/%3E%3C/svg%3E");
-	--annotation-select-capr-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%238b5cf6' fill-opacity='.2' d='M0 2.4C4.2 2.8 8.4 2 9.4 6.8 10 10.4 9.6 14.2 8.4 16.8 7 19.4 3.6 18 0 18.6Z'/%3E%3C/svg%3E");
-	--annotation-select-capr-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath fill='%238b5cf6' fill-opacity='.2' d='M0 2.4C4 2 8 3.2 9.2 7.4 10.1 11 9.4 14.6 8 17.2 6.6 19.2 3 18.2 0 18.6Z'/%3E%3C/svg%3E");
-}
-
-/* 仅在笔触已经绘制后隐藏原生底色，懒加载期间与失败时保留可见选区。 */
+/* 荧光笔笔触由 SVG 画成背景图，颜色随季节与明暗在运行时写入 :root（见 lib/brush-colors.ts）。
+   选中的正文由 SelectionHighlight 按块画同款笔触，画好后才隐藏原生底色，
+   懒加载期间与失败时保留可见选区。 */
 :root [data-article-content] [data-selection-painted]::selection,
 :root [data-article-content] [data-selection-painted] ::selection {
 	background-color: transparent;
 	color: var(--foreground);
 }
 
+/* 被批注的文字：荧光笔笔触，季节色 22% 的底，悬停 34%，点开的与写批注时的草稿 38% 并带下划线。
+   笔触拆成左端、中段、右端三层背景：两端固定宽度保持圆润，只有中段随文字长度拉伸，
+   整条拉伸会把圆头拉成尖角；两种形状交替避免一模一样。
+   box-decoration-break: clone 让折行的每一段各自铺一次背景；内边距与等量负外边距相抵，不改变行内排版。 */
 .annotation-mark,
 .annotation-draft-mark {
+	--annotation-cap: 0.5em;
 	margin-inline: -0.2em;
 	padding-inline: 0.2em;
 	/* 压掉 <mark> 浏览器默认的纯黄底，颜色只来自背景图 */
@@ -84,6 +57,54 @@
 		var(--annotation-saved-hover-capl-b), var(--annotation-saved-hover-mid-b),
 		var(--annotation-saved-hover-capr-b);
 }
+.annotation-mark[data-active="true"],
+.annotation-draft-mark {
+	background-image:
+		var(--annotation-active-capl-a), var(--annotation-active-mid-a),
+		var(--annotation-active-capr-a);
+	text-decoration: underline;
+	text-decoration-color: color-mix(in oklab, var(--link) 50%, transparent);
+	text-underline-offset: 4px;
+}
+.annotation-mark[data-active="true"]:nth-of-type(even),
+.annotation-draft-mark:nth-of-type(even) {
+	background-image:
+		var(--annotation-active-capl-b), var(--annotation-active-mid-b),
+		var(--annotation-active-capr-b);
+}
+/* 站长的划线是墨色笔触，读者的是季节色；颜色深浅的三态与读者一致。 */
+.annotation-mark[data-author="true"] {
+	background-image:
+		var(--annotation-author-capl-a), var(--annotation-author-mid-a),
+		var(--annotation-author-capr-a);
+}
+.annotation-mark[data-author="true"]:nth-of-type(even) {
+	background-image:
+		var(--annotation-author-capl-b), var(--annotation-author-mid-b),
+		var(--annotation-author-capr-b);
+}
+.annotation-mark[data-author="true"]:hover {
+	background-image:
+		var(--annotation-author-hover-capl-a), var(--annotation-author-hover-mid-a),
+		var(--annotation-author-hover-capr-a);
+}
+.annotation-mark[data-author="true"]:nth-of-type(even):hover {
+	background-image:
+		var(--annotation-author-hover-capl-b), var(--annotation-author-hover-mid-b),
+		var(--annotation-author-hover-capr-b);
+}
+.annotation-mark[data-author="true"][data-active="true"] {
+	background-image:
+		var(--annotation-author-active-capl-a), var(--annotation-author-active-mid-a),
+		var(--annotation-author-active-capr-a);
+}
+.annotation-mark[data-author="true"][data-active="true"]:nth-of-type(even) {
+	background-image:
+		var(--annotation-author-active-capl-b), var(--annotation-author-active-mid-b),
+		var(--annotation-author-active-capr-b);
+}
+
+/* AI 自署名的划线按角色着色：淡底加同色下划线，不用笔触，一眼与真人区分。 */
 .annotation-mark[data-ai="true"],
 .annotation-mark[data-ai="true"]:nth-of-type(even) {
 	background-image: none;
@@ -95,45 +116,45 @@
 }
 .annotation-mark[data-ai="true"]:hover,
 .annotation-mark[data-ai="true"]:nth-of-type(even):hover {
-	background-image: none;
 	background-color: color-mix(in oklch, var(--ai-accent) 18%, transparent);
 	text-decoration-color: var(--ai-accent);
 }
+.annotation-mark[data-ai="true"][data-active="true"],
+.annotation-mark[data-ai="true"][data-active="true"]:nth-of-type(even) {
+	background-color: color-mix(in oklch, var(--ai-accent) 26%, transparent);
+	text-decoration-color: var(--ai-accent);
+}
+.annotation-mark:focus-visible {
+	outline: 2px solid var(--ring);
+	outline-offset: 2px;
+}
 .annotation-draft-mark {
-	background-image:
-		var(--annotation-draft-capl-a), var(--annotation-draft-mid-a),
-		var(--annotation-draft-capr-a);
 	cursor: text;
 }
-.annotation-draft-mark:nth-of-type(even) {
-	background-image:
-		var(--annotation-draft-capl-b), var(--annotation-draft-mid-b),
-		var(--annotation-draft-capr-b);
-}
 
-/* 段评草稿：整段写批注时淡淡铺一层暖色，只用 background 与 box-shadow 外扩，不改盒模型 */
+/* 段评草稿：整段写批注时淡淡铺一层季节色，只用 background 与 box-shadow 外扩，不改盒模型 */
 .annotation-draft-highlight {
-	--annotation-accent: var(--warning);
 	border-radius: 0.5rem;
-	background-color: color-mix(in oklch, var(--annotation-accent) 10%, transparent);
-	box-shadow: 0 0 0 0.5em color-mix(in oklch, var(--annotation-accent) 10%, transparent);
+	background-color: color-mix(in oklab, var(--decoration) 14%, transparent);
+	box-shadow: 0 0 0 0.5em color-mix(in oklab, var(--decoration) 14%, transparent);
 	scroll-margin-top: 80px;
 	animation: annotation-wash-in 0.3s ease-out;
 }
 
-/* 引言：被批注的原文，荧光笔底色而非斜体加竖线 */
-.annotation-quote {
-	padding-inline: 0.25em;
-	border-radius: 0.3em;
-	background-color: color-mix(in oklch, var(--primary) 16%, transparent);
-	-webkit-box-decoration-break: clone;
-	box-decoration-break: clone;
+/* 悬停段落时紧贴其右缘的透明热区，与段落等高：指针从段落右缘任意高度移出都落在上面，
+   再沿它移向入口，不会因为出口与入口不在同一高度而丢失悬停。 */
+.annotation-trigger-rail {
+	left: 100%;
+	width: 3rem;
 }
-.annotation-quote[data-ai-persona] {
-	background-color: color-mix(in oklch, var(--ai-accent) 16%, transparent);
+@media (max-width: 1023.98px) {
+	.annotation-trigger-rail {
+		display: none;
+	}
 }
 
-/* 悬停段落时右侧边距的段评入口：常驻挂载，靠透明度显隐，换段时纵向平滑滑到新位置 */
+/* 悬停段落时右侧边距的段评入口：与头像组同一条侧轨，圆钮，常驻挂载，靠透明度显隐，换段时纵向滑到新位置。
+   ::before 把可点区域向左伸向段落、四周各放大一圈，指针从段落移过来时不易掉出入口。 */
 .annotation-trigger {
 	left: calc(100% + 0.5rem);
 	display: inline-flex;
@@ -141,34 +162,47 @@
 	justify-content: center;
 	width: 1.75rem;
 	height: 1.75rem;
+	margin-top: 2px;
 	padding: 0;
 	border: 0;
-	border-radius: 0.75rem;
-	background-color: var(--selected);
-	color: var(--selected-foreground);
+	border-radius: 9999px;
+	background-color: var(--muted);
+	box-shadow: 0 0 0 2px var(--background);
+	color: var(--muted-foreground);
 	cursor: pointer;
 	opacity: 0;
 	pointer-events: none;
 	transition:
-		top 0.2s ease,
-		opacity 0.2s ease,
+		top 0.15s ease,
+		opacity 0.15s ease,
 		background-color 0.15s,
 		color 0.15s;
+}
+.annotation-trigger::before {
+	content: "";
+	position: absolute;
+	inset: -6px -6px -6px -14px;
 }
 .annotation-trigger[data-show="true"] {
 	opacity: 1;
 	pointer-events: auto;
 }
 .annotation-trigger:hover {
-	background-color: var(--selected-hover);
-	color: var(--selected-foreground);
+	background-color: color-mix(in oklab, var(--decoration) 16%, var(--card));
+	color: var(--link);
 }
 .annotation-trigger:focus-visible {
 	outline: 2px solid var(--ring);
 	outline-offset: 2px;
 }
+/* 触屏入口：内联在末行文字后（JS 设 left），末行写满时退到段落右下方；不占页边，窄屏可用 */
+.annotation-trigger[data-placement="below"] {
+	left: auto;
+	right: 0;
+	margin-top: 0;
+}
 @media (max-width: 1023.98px) {
-	.annotation-trigger {
+	.annotation-trigger:not([data-placement="below"]) {
 		display: none;
 	}
 }
@@ -178,8 +212,8 @@
 	left: calc(100% + 0.5rem);
 	display: flex;
 	align-items: center;
-	gap: 2px;
-	width: 112px;
+	gap: 0;
+	width: 120px;
 	padding: 4px;
 	animation: annotation-fade-in 0.25s ease-out;
 }
@@ -219,13 +253,16 @@
 		margin-inline-start 0.3s cubic-bezier(0.4, 0, 0.2, 1),
 		box-shadow 0.2s;
 }
-.annotation-marker
+/* 头像叠成一摞：每个遮住前一个的一半多，前面的压在上面；悬停、聚焦或批注卡打开时散开，
+   焦点移进批注卡后仍保持展开，关闭才收拢。 */
+.annotation-marker > :is(.annotation-avatar-wrap, .annotation-avatar)
+	+ :is(.annotation-avatar-wrap, .annotation-avatar) {
+	margin-inline-start: -0.875rem;
+}
+.annotation-marker:is(:hover, :focus-within, [data-open="true"])
 	> :is(.annotation-avatar-wrap, .annotation-avatar)
 	+ :is(.annotation-avatar-wrap, .annotation-avatar) {
-	margin-inline-start: -0.5rem;
-}
-.annotation-marker:is(:hover, :focus-within) > :is(.annotation-avatar-wrap, .annotation-avatar) {
-	margin-inline-start: 0;
+	margin-inline-start: 0.25rem;
 }
 .annotation-marker > .annotation-marker-mobile + :is(.annotation-avatar-wrap, .annotation-avatar) {
 	margin-inline-start: 0;
@@ -304,39 +341,201 @@
 	opacity: 1;
 }
 
-/* Radix 管理嵌套浮层与离场挂载；关闭尾帧和离屏内容不再参与交互。 */
-.annotation-popover {
-	height: min(472px, var(--radix-popover-content-available-height));
+/* 选中文字后在选区上方浮出的工具条：纸片外壳加箭头，从下方 4px 浮出并淡入。 */
+.annotation-selection-toolbar {
+	position: fixed;
+	z-index: 50;
+	transform: translate(-50%, -100%);
 }
-.annotation-popover[data-state="open"] {
-	animation: annotation-fade-in 0.18s ease;
-}
-.annotation-popover[data-state="closed"] {
-	pointer-events: none;
-	animation: annotation-fade-out 0.18s ease;
-}
-.annotation-popover[data-offscreen="true"] {
-	visibility: hidden;
-	pointer-events: none;
-}
-.annotation-block-composer[data-offscreen="true"],
+
+/* 锚点滚出视口：整张卡隐藏但不销毁，草稿与焦点状态保留。 */
+.annotation-card[data-offscreen="true"],
 .annotation-selection-toolbar[data-offscreen="true"] {
 	visibility: hidden;
 	pointer-events: none;
 }
 
-@keyframes annotation-fade-out {
-	from {
-		opacity: 1;
-		filter: blur(0);
-	}
-	to {
-		opacity: 0;
-		filter: blur(6px);
-	}
+/* 列表可滚动；聚焦环向外扩，用等量内外边距避免被滚动层裁掉。
+   滚动条沿用站点全局的细条，只在内容超出时出现，不预留槽位占掉右侧版心。 */
+.annotation-card-list {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	min-block-size: 0;
+	margin: -4px;
+	padding: 4px;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+.annotation-card-list:empty {
+	display: none;
+}
+.annotation-thread {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+/* 经过等待才到位的批注：整组淡入并由模糊转清晰 */
+.annotation-card-list[data-waited] > .annotation-thread {
+	animation: annotation-fade-in 0.24s ease-out;
+}
+/* 每处划线一组讨论，组与组之间一条细线；前面有可见的组才画，筛掉的组不留线 */
+.annotation-thread:not([hidden]) ~ .annotation-thread {
+	padding-block-start: 12px;
+	border-block-start: 1px solid var(--border);
+}
+/* 被批注的原文：沿用正文引用的写法——衬线引号取季节色，不画竖线、不加底色；最多两行。
+   开头一个「“」、结尾一个「”」，成对才有「引了一段话」的收束；块收缩到文字宽度，结尾引号跟在文字后面。
+   引号在伪元素里，不进无障碍树；限高的裁切放在内层，引号不被裁。 */
+.annotation-quote {
+	position: relative;
+	align-self: flex-start;
+	max-inline-size: 100%;
+	margin: 0;
+	padding-inline: 1.5rem;
+	color: color-mix(in oklab, var(--foreground) 80%, transparent);
+}
+.annotation-quote::before,
+.annotation-quote::after {
+	position: absolute;
+	inset-block-start: -0.1em;
+	color: color-mix(in oklab, var(--decoration) 70%, transparent);
+	font-family: var(--font-serif);
+	font-size: 1.75rem;
+	font-weight: 400;
+	line-height: 1;
+	pointer-events: none;
+	user-select: none;
+}
+.annotation-quote::before {
+	content: "“";
+	inset-inline-start: 0;
+}
+.annotation-quote::after {
+	content: "”";
+	inset-block: auto -0.1em;
+	inset-inline-end: 0;
+}
+.annotation-quote > span {
+	display: -webkit-box;
+	overflow: hidden;
+	font-size: 13px;
+	line-height: 1.7;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+}
+.annotation-items {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.annotation-item {
+	display: flex;
+	gap: 10px;
+}
+/* 署名行：署名、身份标签、时间依次排开，「回复」靠到行尾 */
+.annotation-item-meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 2px 6px;
+	min-block-size: 20px;
+	font-size: 12px;
+}
+.annotation-item-name {
+	max-inline-size: 8rem;
+	overflow: hidden;
+	color: var(--foreground);
+	font-size: 13px;
+	font-weight: 600;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.annotation-item-time {
+	color: var(--muted-foreground);
+	font-variant-numeric: tabular-nums;
+}
+.annotation-item-text {
+	margin: 2px 0 0;
+	font-size: 13px;
+	line-height: 1.7;
+	overflow-wrap: anywhere;
+	white-space: pre-wrap;
+}
+.annotation-entry {
+	display: flex;
+	flex-direction: column;
+}
+.annotation-entry[hidden],
+.annotation-thread[hidden] {
+	display: none;
+}
+/* 回复挂在批注正文的左缘之下，一条细线表示从属；头像小一号 */
+.annotation-replies {
+	margin-block-start: 8px;
+	margin-inline-start: 34px;
+	padding-inline-start: 10px;
+	border-inline-start: 1px solid var(--border);
+}
+.annotation-replies .annotation-item {
+	gap: 8px;
+}
+/* 刚发出的回复：淡入并由模糊转清晰，与评论区面板同一语汇，不位移 */
+.annotation-replies > li[data-fresh] {
+	animation: annotation-fade-in 0.24s ease-out;
+}
+.annotation-item-reply-to {
+	color: var(--muted-foreground);
+}
+.annotation-reply-button {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 0;
+	border: 0;
+	border-radius: 4px;
+	background: transparent;
+	color: var(--muted-foreground);
+	font: inherit;
+	font-size: 12px;
+	cursor: pointer;
+	transition: color 0.14s ease-out;
+}
+.annotation-reply-button[aria-expanded="true"] {
+	color: var(--link);
+}
+.annotation-reply-button:hover {
+	color: var(--link);
+}
+.annotation-reply-button:focus-visible {
+	outline: 2px solid var(--ring);
+	outline-offset: 2px;
+}
+/* 署名行里的「回复」靠到行尾 */
+.annotation-item-meta > .annotation-reply-button {
+	margin-inline-start: auto;
+}
+.annotation-author-tag {
+	display: inline-flex;
+	align-items: center;
+	height: 16px;
+	padding: 0 5px;
+	border-radius: 9999px;
+	background-color: color-mix(in oklab, var(--decoration) 16%, var(--card));
+	color: var(--link);
+	font-size: 10.5px;
+	font-weight: 500;
+}
+/* 卡片底部常驻的段评输入：一条细线与上方可滚动的批注列表分开 */
+.annotation-card-composer {
+	padding-block-start: 12px;
+	border-block-start: 1px solid var(--border);
 }
 
-/* 输入面板与工具条挂载时的淡入 */
+/* 评论区输入面板挂载时的淡入 */
 .annotation-pop {
 	animation: annotation-fade-in 0.2s ease-out;
 }
@@ -352,6 +551,7 @@
 	}
 }
 
+/* 段评草稿的底色淡入 */
 @keyframes annotation-wash-in {
 	from {
 		background-color: transparent;
@@ -363,19 +563,22 @@
 	.annotation-mark,
 	.annotation-draft-mark,
 	.annotation-draft-highlight,
-	.annotation-popover[data-state],
+	.annotation-selection-toolbar,
+	.annotation-card,
 	.annotation-marker,
-	.annotation-pop {
+	.annotation-pop,
+	.annotation-card-list[data-waited] > .annotation-thread,
+	.annotation-replies > li[data-fresh] {
 		animation: none;
 	}
-	.annotation-popover,
+	.annotation-mark,
 	.annotation-trigger,
 	.annotation-marker > :is(.annotation-avatar-wrap, .annotation-avatar) {
 		transition: none;
 	}
 }
 
-/* 批注面板自定义滚动条：细条半透明，出现时不挤压内容 */
+/* 评论抽屉的滚动区：槽位常留，滚动条出现时不挤压内容 */
 .annotation-scroll {
 	scrollbar-gutter: stable;
 }

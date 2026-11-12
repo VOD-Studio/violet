@@ -1,4 +1,8 @@
 .v-tweet {
+	/*
+	 * 包内变量承接宿主主题 token：宿主加载了语义 token 时自动跟随明暗与方言，
+	 * 单独使用时退回包内中性默认值。不要在这里引用站点样式表。
+	 */
 	--_tweet-background: var(--tweet-background, var(--card, light-dark(#ffffff, #0a0a0a)));
 	--_tweet-foreground: var(
 		--tweet-foreground,
@@ -9,12 +13,18 @@
 		--tweet-border,
 		color-mix(in oklab, var(--border, light-dark(#e5e5e5, #333333)) 75%, transparent)
 	);
-	--_tweet-accent: var(--tweet-accent, light-dark(#0866d9, #75b6ff));
+	--_tweet-accent: var(--tweet-accent, var(--link, light-dark(#0866d9, #75b6ff)));
 	--_tweet-accent-hover: var(
 		--tweet-accent-hover,
-		color-mix(in oklab, var(--_tweet-accent) 90%, white)
+		var(--link-hover, color-mix(in oklab, var(--_tweet-accent) 90%, white))
 	);
 	--_tweet-soft: var(--tweet-surface, var(--muted, light-dark(#fafafa, #171717)));
+	/* 圆角与阴影只取宿主的功能圆角档与软影，独立使用时退回同名默认值 */
+	--_tweet-radius: min(var(--tweet-radius, var(--radius-12, 12px)), var(--radius-16, 16px));
+	--_tweet-radius-inner: var(--tweet-radius-inner, var(--radius-8, 8px));
+	--_tweet-radius-media: var(--tweet-radius-media, var(--radius-12, 12px));
+	--_tweet-radius-control: var(--tweet-radius-control, var(--radius-4, 4px));
+	--_tweet-shadow: var(--tweet-shadow, none);
 	color-scheme: light dark;
 	box-sizing: border-box;
 	width: 100%;
@@ -22,11 +32,12 @@
 	margin: 0;
 	padding: 16px 20px;
 	border: 1px solid var(--_tweet-border);
-	border-radius: min(var(--tweet-radius, 12px), 16px);
+	border-radius: var(--_tweet-radius);
 	background: var(--_tweet-background);
+	box-shadow: var(--_tweet-shadow);
 	color: var(--_tweet-foreground);
-	font-family: var(--tweet-font-family, ui-sans-serif, system-ui, sans-serif);
-	font-size: 15px;
+	font-family: var(--tweet-font-family, var(--font-sans, ui-sans-serif, system-ui, sans-serif));
+	font-size: var(--tweet-font-size, 0.9375rem);
 	font-weight: 400;
 	line-height: 1.55;
 	text-align: start;
@@ -292,7 +303,7 @@
 /* 引用推文是一张小卡片：头像缩小、去掉品牌与互动数，媒体用缩略图。 */
 .v-tweet--quoted {
 	padding: 10px 12px;
-	border-radius: 10px;
+	border-radius: var(--_tweet-radius-inner);
 	font-size: 13px;
 	line-height: 1.5;
 }
@@ -348,7 +359,7 @@
 .v-tweet__skeleton span {
 	display: block;
 	height: 12px;
-	border-radius: 4px;
+	border-radius: var(--_tweet-radius-control);
 	background: color-mix(in oklab, var(--_tweet-muted) 20%, var(--_tweet-background));
 }
 .v-tweet__skeleton-header {
@@ -415,7 +426,7 @@
 	appearance: none;
 	padding: 4px 12px;
 	border: 1px solid var(--_tweet-border);
-	border-radius: 6px;
+	border-radius: var(--_tweet-radius-control);
 	background: transparent;
 	color: var(--_tweet-foreground);
 	font: inherit;

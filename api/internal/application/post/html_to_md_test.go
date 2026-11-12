@@ -96,6 +96,38 @@ func TestHTMLToMarkdown_CarrierRoundTrip(t *testing.T) {
 	}
 }
 
+func TestHTMLToMarkdown_CodeMetadataRoundTrip(t *testing.T) {
+	for _, runnable := range []bool{false, true} {
+		info := "TypeScript title=\"src/\\\"quote\\\" <tag> & `tick`.ts\" {1,3-99999999999999999999999999}"
+		language := "TypeScript"
+		if runnable {
+			info += " run"
+			language = "bun"
+		}
+		info += ` {"timeout_secs":10,"allow_network":false}`
+		source := "\nconst text = \"<&>\";  \n\n\n~~~\n\t\n\n"
+		rendered, err := markdown.ToHTML("~~~~" + info + "\n" + source + "\n~~~~")
+		require.NoError(t, err)
+		for range 3 {
+			doc, err := goquery.NewDocumentFromReader(strings.NewReader(rendered))
+			require.NoError(t, err)
+			pre := doc.Find("pre")
+			assert.Equal(t, 1, pre.Length())
+			assert.Equal(t, language, pre.AttrOr("data-lang", ""))
+			assert.Equal(t, "src/\"quote\" <tag> & `tick`.ts", pre.AttrOr("data-filename", ""))
+			assert.Equal(t, "1,3-99999999999999999999999999", pre.AttrOr("data-lines", ""))
+			assert.Equal(t, source, pre.AttrOr("data-source", ""))
+			assert.Equal(t, runnable, pre.AttrOr("data-runnable", "") == "true")
+			assert.JSONEq(t, `{"timeout_secs":10,"allow_network":false}`, pre.AttrOr("data-overrides", ""))
+			assert.Equal(t, 0, doc.Find("tag").Length())
+			converted, err := htmlToMarkdown(rendered)
+			require.NoError(t, err)
+			rendered, err = markdown.ToHTML(converted)
+			require.NoError(t, err)
+		}
+	}
+}
+
 func TestHTMLToMarkdown_FootnoteShapes(t *testing.T) {
 	for name, html := range map[string]string{
 		"remark": `<p>A<sup><a href="#user-content-fn-note" data-footnote-ref="">1</a></sup> B<sup><a href="#user-content-fn-note" data-footnote-ref="">1</a></sup></p><section data-footnotes=""><h2>Footnotes</h2><ol><li id="user-content-fn-note"><p>First</p><p>Second <a href="#ref" data-footnote-backref="">↩</a></p></li></ol></section>`,
@@ -287,4 +319,22 @@ func TestHTMLToMarkdown_FormattedFootnoteSup(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 1, doc.Find(`[role="doc-noteref"]`).Length())
 	assert.Contains(t, doc.Find(`[role="doc-endnotes"]`).Text(), "Definition")
+}
+
+func TestHTMLLanguageCannotIntroduceRunnableMarker(t *testing.T) {
+	for _, language := range []string{"python&#10;run", "python run", "python&#160;run"} {
+		t.Run(language, func(t *testing.T) {
+			source := `print("read only")`
+			input := `<pre data-lang="` + language + `"><code class="language-python">` + source + `</code></pre>`
+			converted, err := htmlToMarkdown(input)
+			require.NoError(t, err)
+			rendered, err := markdown.ToHTML(converted)
+			require.NoError(t, err)
+			doc, err := goquery.NewDocumentFromReader(strings.NewReader(rendered))
+			require.NoError(t, err)
+			assert.NotEqual(t, "true", doc.Find("pre").AttrOr("data-runnable", ""))
+			assert.Equal(t, "language-python", doc.Find("code").AttrOr("class", ""))
+			assert.Equal(t, source, strings.TrimSuffix(doc.Find("code").Text(), "\n"))
+		})
+	}
 }

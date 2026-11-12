@@ -2,10 +2,10 @@
  * 会话索引侧栏：标题、搜索、会话列表与搜索结果（含发起私聊）。
  */
 
-import { Button, Input } from "@violet/ui";
+import { Button, Input, iconProps } from "@violet/ui";
 
 import { cn } from "cn";
-import { LoaderCircle, MessageCircle, Plus, Search } from "lucide-react";
+import { MessageCircle, Plus, Search } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { type ReactNode, useDeferredValue, useState } from "react";
 import { toast } from "sonner";
@@ -62,6 +62,7 @@ export function ConversationIndex({
 					<h1 className="mr-auto text-[1.35rem] font-semibold text-foreground">聊天</h1>
 					<ChatAppearanceButton active={appearanceOpen} onClick={onOpenAppearance} />
 					<Button
+						iconOnly
 						aria-label="新建会话"
 						className={cn(
 							"size-9 rounded-full text-muted-foreground transition-colors",
@@ -70,7 +71,7 @@ export function ConversationIndex({
 								: "hover:bg-secondary hover:text-foreground",
 						)}
 						onClick={onToggleNew}
-						size="icon"
+						size="md"
 						variant="ghost"
 					>
 						<Plus
@@ -88,7 +89,6 @@ export function ConversationIndex({
 						onChange={(event) => onSearch(event.target.value)}
 						placeholder="搜索"
 						value={search}
-						variant="soft"
 					/>
 				</div>
 			</header>
@@ -224,15 +224,12 @@ function SearchResults({
 									<Button
 										aria-label={`发起与${user.display_name}的私聊`}
 										disabled={busyID !== null}
+										loading={busyID === user.id}
 										onClick={() => void startPrivateChat(user)}
 										size="sm"
 										className="h-8 shrink-0 px-2.5 text-xs shadow-xs"
+										leftIcon={<MessageCircle {...iconProps(14)} />}
 									>
-										{busyID === user.id ? (
-											<LoaderCircle className="size-3.5 animate-spin" />
-										) : (
-											<MessageCircle className="size-3.5" />
-										)}
 										<span className="sr-only sm:not-sr-only sm:ml-1">私聊</span>
 									</Button>
 								</div>
@@ -365,7 +362,7 @@ export function ConversationEmpty({ onCreate }: { onCreate: () => void }) {
 				size="sm"
 				variant="outline"
 			>
-				<Plus className="mr-1 size-3.5" />
+				<Plus {...iconProps(14)} />
 				新建会话
 			</Button>
 		</div>

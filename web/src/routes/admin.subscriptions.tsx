@@ -1,6 +1,5 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
-import { DataTable, usePagedQuery } from "@features/admin-shared/ui/data-table";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import {
 	useCreateSubscription,
 	useDeleteSubscription,
@@ -22,17 +21,20 @@ import { SubscriptionFormDialog } from "@features/admin-subscriptions/ui/Subscri
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { formatDateTime } from "@shared/lib/date";
 import { createFileRoute } from "@tanstack/react-router";
+import type { DataTableColumn } from "@violet/ui";
 import {
 	Badge,
 	Button,
 	ConfirmDialog,
+	DataTable,
+	iconProps,
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
 } from "@violet/ui";
-import { AlertTriangle, Pause, Pencil, Play, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { Pause, Pencil, Play, Plus, RefreshCw, Trash2, TriangleAlert } from "lucide-react";
 import * as React from "react";
 
 export const Route = createFileRoute("/admin/subscriptions")({
@@ -86,12 +88,9 @@ function AdminSubscriptionsPage() {
 				const paused = row.status === "paused";
 				return (
 					<div className="flex flex-wrap items-center gap-1">
-						<Badge variant={paused ? "destructive" : "default"}>
-							{paused ? "已暂停" : "活跃"}
-						</Badge>
+						<Badge tone={paused ? "danger" : "ok"}>{paused ? "已暂停" : "活跃"}</Badge>
 						{row.consecutive_failures > 0 && !paused && (
-							<Badge variant="outline" className="text-yellow-600">
-								<AlertTriangle className="mr-0.5 size-3" />
+							<Badge tone="warning" icon={<TriangleAlert />}>
 								{row.consecutive_failures}
 							</Badge>
 						)}
@@ -136,44 +135,48 @@ function AdminSubscriptionsPage() {
 				return (
 					<div className="flex justify-center gap-1">
 						<Button
+							iconOnly
 							variant="ghost"
-							size="icon-sm"
+							size="sm"
+							aria-label="立即抓取"
 							title="立即抓取"
 							disabled={fetchingIds.has(row.id)}
 							onClick={() => handleFetch(row.id)}
 						>
 							<RefreshCw
-								className={`size-3.5 ${fetchingIds.has(row.id) ? "animate-spin" : ""}`}
+								{...iconProps(14, fetchingIds.has(row.id) ? "animate-spin" : "")}
 							/>
 						</Button>
 						<Button
+							iconOnly
 							variant="ghost"
-							size="icon-sm"
+							size="sm"
+							aria-label={paused ? "恢复（清零失败计数）" : "暂停"}
 							title={paused ? "恢复（清零失败计数）" : "暂停"}
 							onClick={() => (paused ? resumeMut : pauseMut).mutate(row.id)}
 						>
-							{paused ? (
-								<Play className="size-3.5" />
-							) : (
-								<Pause className="size-3.5" />
-							)}
+							{paused ? <Play {...iconProps(14)} /> : <Pause {...iconProps(14)} />}
 						</Button>
 						<Button
+							iconOnly
 							variant="ghost"
-							size="icon-sm"
+							size="sm"
+							aria-label="编辑"
 							title="编辑"
 							onClick={() => setEditing(row)}
 						>
-							<Pencil className="size-3.5" />
+							<Pencil {...iconProps(14)} />
 						</Button>
 						<Button
+							iconOnly
 							variant="ghost"
-							size="icon-sm"
+							size="sm"
+							aria-label="删除"
 							title="删除"
 							className="hover:bg-destructive/10 hover:text-destructive"
 							onClick={() => setDeleting(row)}
 						>
-							<Trash2 className="size-3.5" />
+							<Trash2 {...iconProps(14)} />
 						</Button>
 					</div>
 				);
@@ -187,7 +190,7 @@ function AdminSubscriptionsPage() {
 			description="管理 RSS 订阅源"
 			action={
 				<Button size="sm" onClick={() => setCreateOpen(true)}>
-					<Plus className="size-3.5" />
+					<Plus {...iconProps(14)} />
 					新建订阅
 				</Button>
 			}

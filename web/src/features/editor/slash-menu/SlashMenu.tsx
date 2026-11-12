@@ -1,7 +1,7 @@
 /**
  * SlashMenu - 斜杠命令菜单的 React 视图
  *
- * 由 ReactRenderer 挂载，接收 SuggestionProps（items/query/command）。
+ * 由独立 React 根挂载，接收 SuggestionProps（items/query/command）。
  * 支持上下键导航 + 回车选中 + 点击选中，按 query 过滤。
  */
 import type { Editor } from "@tiptap/react";
@@ -112,7 +112,7 @@ export function SlashMenuView({ items, command }: SlashMenuProps) {
 									if (allowHover.current) setSelected(idx);
 								}}
 								onClick={() => command(item)}
-								className={`flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors ${
+								className={`flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-left transition-colors ${
 									idx === selected ? "bg-accent" : "hover:bg-accent/50"
 								}`}
 							>

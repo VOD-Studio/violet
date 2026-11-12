@@ -1,0 +1,199 @@
+/*
+ * TagInput：外壳复用 input 单元的 .v-input-control 家族，改成 min-height 加自动换行；
+ * 建议浮层与选项行来自选择器族共用的 lib/picker.css。需先导入 @violet/ui/tokens.css 或 styles.css。
+ *
+ * 承载 role="list" 的节点自己是换行的 flex 容器，芯片与输入框（包在 role="none" 的节点里，display:contents）
+ * 同排换行；list 保留布局盒，无障碍树里才一定有它。
+ * 设计稿里「标签与输入区之间 4」与输入框外壳的 gap:8 冲突，这里以规格表为准，芯片与输入区的 gap 取 4px。
+ */
+@import "../input/input.css";
+@import "../../lib/picker.css";
+
+@layer components {
+	.v-input-control.v-tag-input {
+		flex-wrap: wrap;
+		block-size: auto;
+		min-block-size: var(--v-input-h);
+		padding-block: 4px;
+		gap: 4px;
+	}
+
+	.v-tag-input__list {
+		display: flex;
+		flex: 1 1 auto;
+		flex-wrap: wrap;
+		align-items: center;
+		min-inline-size: 0;
+		gap: 4px;
+	}
+
+	.v-tag-input__field {
+		display: contents;
+	}
+
+	/* 输入区占剩余宽度，最窄 80px，放不下就自己换到下一行 */
+	.v-input.v-tag-input__input {
+		flex: 1 1 5rem;
+		inline-size: auto;
+		min-inline-size: 5rem;
+		block-size: calc(var(--v-input-h) - 8px);
+	}
+
+	/* 加载指示固定在首行右端，不参与换行，窄外壳里也不会掉到下一行 */
+	.v-tag-input[data-loading] {
+		padding-inline-end: calc(var(--v-input-px) + 1.5rem);
+	}
+
+	.v-tag-input > .v-input-control__status {
+		position: absolute;
+		inset-block-start: calc((var(--v-input-h) - 1rem) / 2);
+		inset-inline-end: var(--v-input-px);
+	}
+
+	/* 到达上限：输入框只读且 aria-disabled，仍可聚焦；用光标表达不可输入 */
+	.v-tag-input__input[aria-disabled="true"] {
+		cursor: not-allowed;
+	}
+
+	.v-tag-input__chip {
+		display: inline-flex;
+		flex: 0 1 auto;
+		align-items: center;
+		box-sizing: border-box;
+		min-inline-size: 0;
+		max-inline-size: 100%;
+		block-size: 24px;
+		padding: 0 8px;
+		border-radius: 6px;
+		background-color: color-mix(in oklab, var(--foreground) 8%, transparent);
+		font-size: 0.8125rem;
+		font-weight: 400;
+		line-height: 1;
+		transition: background-color 120ms ease-out;
+	}
+
+	.v-tag-input__chip[data-removable] {
+		padding-inline-end: 3px;
+	}
+
+	/* 待删：退格或方向键选中的芯片，底色加深 */
+	.v-tag-input__chip[data-armed] {
+		background-color: color-mix(in oklab, var(--foreground) 16%, transparent);
+	}
+
+	.v-tag-input__label {
+		min-inline-size: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.v-tag-input__remove {
+		position: relative;
+		display: inline-flex;
+		flex: none;
+		align-items: center;
+		justify-content: center;
+		box-sizing: border-box;
+		inline-size: 18px;
+		block-size: 18px;
+		margin: 0 0 0 2px;
+		padding: 0;
+		border: 0;
+		border-radius: 5px;
+		background-color: transparent;
+		color: inherit;
+		opacity: 0.7;
+		cursor: pointer;
+		transition:
+			background-color 140ms ease-out,
+			opacity 120ms ease-out;
+	}
+
+	.v-tag-input__remove:hover {
+		background-color: color-mix(in oklab, var(--foreground) 12%, transparent);
+		opacity: 1;
+	}
+
+	.v-tag-input__remove:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: -1px;
+	}
+
+	.v-tag-input__remove svg {
+		inline-size: 12px;
+		block-size: 12px;
+	}
+
+	/* 触屏：芯片与删除钮各放大一档，输入区的高度已随外壳加 4 */
+	@media (pointer: coarse) {
+		.v-tag-input__chip {
+			block-size: 28px;
+		}
+
+		.v-tag-input__remove {
+			inline-size: 22px;
+			block-size: 22px;
+		}
+	}
+
+	/* 读屏专用的原因说明与播报区；选择器比 .v-input-control > * 高一档，才压得住它的 position */
+	.v-tag-input > .v-tag-input__sr {
+		position: absolute;
+		inline-size: 1px;
+		block-size: 1px;
+		margin: -1px;
+		padding: 0;
+		border: 0;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	/* 重复项闪动：只变底色，季节色 40%；a、b 两份同形，连续重复时轮换以重播 */
+	@media (prefers-reduced-motion: no-preference) {
+		.v-tag-input__chip[data-dup="a"]:not(:where([data-motion="reduce"] *)) {
+			animation: v-tag-input-flash-a 600ms ease-out;
+		}
+
+		.v-tag-input__chip[data-dup="b"]:not(:where([data-motion="reduce"] *)) {
+			animation: v-tag-input-flash-b 600ms ease-out;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-tag-input__chip,
+		.v-tag-input__remove {
+			transition: none;
+		}
+	}
+
+	[data-motion="reduce"] .v-tag-input__chip,
+	[data-motion="reduce"] .v-tag-input__remove {
+		transition: none;
+	}
+
+	@media (forced-colors: active) {
+		.v-tag-input__chip {
+			outline: 1px solid ButtonText;
+		}
+
+		.v-tag-input__chip[data-armed] {
+			outline: 2px solid Highlight;
+		}
+	}
+}
+
+@keyframes v-tag-input-flash-a {
+	0%,
+	40% {
+		background-color: color-mix(in oklab, var(--decoration) 40%, transparent);
+	}
+}
+
+@keyframes v-tag-input-flash-b {
+	0%,
+	40% {
+		background-color: color-mix(in oklab, var(--decoration) 40%, transparent);
+	}
+}

@@ -17,17 +17,6 @@ const SDK_SCRIPT = `window.google = { accounts: { oauth2: {
 
 async function prepareAuth(context: BrowserContext) {
 	await loadClient(context);
-	await context.route("**/api/v1/settings", async (route) => {
-		const response = handle("GET", "/api/v1/settings", "");
-		const body = JSON.parse(response.body);
-		Object.assign(body.data, {
-			google_login_enabled: true,
-			github_login_enabled: true,
-			google_client_id: "contract-google-client",
-			github_client_id: "contract-github-client",
-		});
-		await route.fulfill({ json: body });
-	});
 	await context.route("**/api/v1/auth/csrf-token", (route) =>
 		route.fulfill({ json: { data: { csrf_token: "contract-csrf" } } }),
 	);
@@ -50,9 +39,9 @@ async function holdGoogleSdk(context: BrowserContext) {
 }
 
 async function openAuthPage(page: Page, path: string) {
-	// pending SDK 会延后 load；这里只等待 DOM 与客户端会话探活。
+	// pending SDK 会延后 load；公开页用实时状态请求作为客户端接管信号。
 	await Promise.all([
-		page.waitForResponse("**/api/v1/auth/me"),
+		page.waitForResponse("**/api/v1/presence/stream"),
 		page.goto(path, { waitUntil: "domcontentloaded" }),
 	]);
 }
@@ -101,7 +90,7 @@ async function openLoginSurface(
 }
 
 async function expectOtherLoginsWork(page: Page, surface: Locator) {
-	const github = surface.getByRole("button", { name: "GitHub", exact: true });
+	const github = surface.getByRole("button", { name: /GitHub/ });
 	await expect(github).toBeEnabled();
 	const [popup] = await Promise.all([page.waitForEvent("popup"), github.click()]);
 	await expect(popup).toHaveURL(/github\.com\/login\/oauth\/authorize\?/);
@@ -124,7 +113,7 @@ for (const surface of ["page", "inline", "dialog"] as const) {
 			await prepareAuth(context);
 			const release = await holdGoogleSdk(context);
 			const content = await openLoginSurface(context, page, surface);
-			const google = content.getByRole("button", { name: "Google", exact: true });
+			const google = content.getByRole("button", { name: /Google/ });
 			await expect(google).toBeDisabled();
 			const identifier = content.getByRole("textbox", { name: /账号|用户名或邮箱/ });
 			const password = content.getByLabel("密码", { exact: true });
@@ -159,14 +148,21 @@ for (const outcome of ["success", "error"] as const) {
 		const github = page
 			.locator("dl > div")
 			.filter({ has: page.getByText("GitHub", { exact: true }) });
-		await expect(google.getByRole("button", { name: "绑定", exact: true })).toBeDisabled();
+		const googleButton = google.getByRole("button", { name: "绑定", exact: true });
+		const oauthRequests: string[] = [];
+		page.on("request", (request) => {
+			if (request.url().includes("/oauth-sdk-request")) oauthRequests.push(request.url());
+		});
+		await expect(googleButton).toHaveAttribute("aria-busy", "true");
+		await googleButton.click();
+		expect(oauthRequests).toHaveLength(0);
 		await expect(github.getByRole("button", { name: "绑定", exact: true })).toBeEnabled();
 		release(outcome);
 		if (outcome === "error") {
 			await expect(page.getByRole("alert")).toHaveText(SDK_ERROR);
-			await expect(google.getByRole("button", { name: "绑定", exact: true })).toBeDisabled();
+			await expect(googleButton).toHaveAttribute("aria-busy", "true");
 		} else {
-			await expect(google.getByRole("button", { name: "绑定", exact: true })).toBeEnabled();
+			await expect(googleButton).not.toHaveAttribute("aria-busy", "true");
 			await Promise.all([
 				page.waitForRequest("**/oauth-sdk-request"),
 				google.getByRole("button", { name: "绑定", exact: true }).click(),

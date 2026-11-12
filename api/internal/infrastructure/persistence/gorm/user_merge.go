@@ -25,8 +25,8 @@ type simpleRef struct{ table, col string }
 // ownedRef 复合唯一键含 user 列的表：先删 secondary 侧与 primary 侧撞复合键的行，再改写。
 // dedupCols 是除 user 列外构成唯一性的列（用于撞行判定）。
 type ownedRef struct {
-	table    string
-	col      string
+	table     string
+	col       string
 	dedupCols []string
 }
 
@@ -58,6 +58,7 @@ var simpleRefs = []simpleRef{
 // ownedRefs 复合唯一键表：撞行折叠（保留 primary 侧）后改写。
 var ownedRefs = []ownedRef{
 	{"comment_reactions", "user_id", []string{"comment_id", "emoji_id"}},
+	{"tweet_comment_reactions", "user_id", []string{"comment_id", "emoji_id"}},
 	{"tweet_likes", "user_id", []string{"tweet_id"}},
 	// client_request_id 为部分唯一索引（WHERE NOT NULL）：幂等键为 NULL 的推文
 	// 互不冲突（SQL NULL 不等值匹配），仅两侧同键撞行时折叠
@@ -65,7 +66,7 @@ var ownedRefs = []ownedRef{
 	{"custom_emoji_favorites", "user_id", []string{"emoji_id"}},
 	{"chat_conversation_members", "user_id", []string{"conversation_id"}},
 	{"chat_read_positions", "user_id", []string{"conversation_id"}},
-	{"chat_bots", "user_id", nil}, // user_id 唯一：primary 已有 bot 时保留 primary 侧
+	{"chat_bots", "user_id", nil},                      // user_id 唯一：primary 已有 bot 时保留 primary 侧
 	{"notifications", "user_id", []string{"event_id"}}, // uq(event,user)
 }
 

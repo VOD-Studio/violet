@@ -1,0 +1,3 @@
+ALTER TABLE announcements
+    ADD COLUMN link_url TEXT NOT NULL DEFAULT '',
+    ADD COLUMN link_text TEXT NOT NULL DEFAULT '';

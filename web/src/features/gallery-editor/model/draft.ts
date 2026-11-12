@@ -5,11 +5,6 @@ import type { CompleteUploadResult } from "@features/upload/model/types";
 
 export const MAX_GALLERY_ITEMS = 50;
 
-/** 按当前数组顺序归一化 position。 */
-export function normalizeGalleryItems(items: GalleryItem[]): GalleryItem[] {
-	return items.map((item, position) => ({ ...item, position }));
-}
-
 /** 追加未重复的图片素材，并遵守 50 张上限。 */
 export function appendMediaFiles(items: GalleryItem[], files: MediaFile[]): GalleryItem[] {
 	const existing = new Set(items.map((item) => item.file_id));
@@ -62,31 +57,6 @@ export function appendUploadedFile(
 			alt_text_override: "",
 		},
 	];
-}
-
-/** 在数组内移动图片，越界请求保持原数组。 */
-export function moveGalleryItem(items: GalleryItem[], from: number, to: number): GalleryItem[] {
-	if (from < 0 || to < 0 || from >= items.length || to >= items.length || from === to) {
-		return items;
-	}
-	const next = [...items];
-	const [moved] = next.splice(from, 1);
-	if (!moved) return items;
-	next.splice(to, 0, moved);
-	return normalizeGalleryItems(next);
-}
-
-/** 把拖拽库返回的 active/over ID 转成稳定的数组重排。 */
-export function moveGalleryItemById(
-	items: GalleryItem[],
-	activeId: string,
-	overId: string,
-): GalleryItem[] {
-	return moveGalleryItem(
-		items,
-		items.findIndex((item) => item.file_id === activeId),
-		items.findIndex((item) => item.file_id === overId),
-	);
 }
 
 /** 把本地编辑状态投影为后端要求的完整保存 document。 */

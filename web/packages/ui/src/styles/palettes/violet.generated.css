@@ -240,6 +240,21 @@
 	--category-6-11: light-dark(oklch(0.4546 0.18 10), oklch(0.8749 0.0681 10));
 	--category-6-12: light-dark(oklch(0.3182 0.1 10), oklch(0.9503 0.0252 10));
 	--category-6-contrast: light-dark(oklch(1 0 0), oklch(0.2 0.02 10));
+	--material-page: light-dark(oklch(0.968 0.006 285.88), oklch(0.17 0.0087 285.88));
+	--material-sheet: light-dark(oklch(0.994 0.0029 285.88), oklch(0.235 0.011 285.88));
+	--material-sunk: light-dark(oklch(0.945 0.007 285.88), oklch(0.29 0.012 285.88));
+	--material-rule: light-dark(
+		oklch(0.3332 0.0105 285.88 / 0.11),
+		oklch(0.9375 0.009 285.88 / 0.12)
+	);
+	--material-rule2: light-dark(
+		oklch(0.3332 0.0105 285.88 / 0.3),
+		oklch(0.9375 0.009 285.88 / 0.3)
+	);
+	--material-deco: light-dark(#684dda, #684dda);
+	--material-accent: light-dark(oklch(0.4739 0.0974 285.88), oklch(0.8589 0.0726 285.88));
+	--material-danger: light-dark(oklch(0.52 0.16 27), oklch(0.74 0.14 25));
+	--material-ok: light-dark(oklch(0.4876 0.1205 155), oklch(0.74 0.15 155));
 }
 
 @media (prefers-contrast: more) {
@@ -484,5 +499,20 @@
 		--category-6-11: light-dark(oklch(0.2979 0.1191 10), oklch(0.9503 0.0252 10));
 		--category-6-12: light-dark(oklch(0.1 0.0399 10), oklch(1 0 0));
 		--category-6-contrast: light-dark(oklch(1 0 0), oklch(0.2 0.02 10));
+		--material-page: light-dark(oklch(0.968 0.006 285.88), oklch(0.17 0.0087 285.88));
+		--material-sheet: light-dark(oklch(0.994 0.0029 285.88), oklch(0.235 0.011 285.88));
+		--material-sunk: light-dark(oklch(0.945 0.007 285.88), oklch(0.29 0.012 285.88));
+		--material-rule: light-dark(
+			oklch(0.1 0.0105 285.88 / 0.11),
+			oklch(0.9977 0.0011 285.88 / 0.12)
+		);
+		--material-rule2: light-dark(
+			oklch(0.1 0.0105 285.88 / 0.3),
+			oklch(0.9977 0.0011 285.88 / 0.3)
+		);
+		--material-deco: light-dark(#684dda, #684dda);
+		--material-accent: light-dark(oklch(0.3941 0.0974 285.88), oklch(0.8589 0.0726 285.88));
+		--material-danger: light-dark(oklch(0.4078 0.16 27), oklch(0.8079 0.1089 25));
+		--material-ok: light-dark(oklch(0.3775 0.0933 155), oklch(0.7782 0.15 155));
 	}
 }

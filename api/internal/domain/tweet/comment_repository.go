@@ -9,8 +9,8 @@ import (
 // CommentRepository 推文评论仓储接口（端口）。
 //
 // 评论分页走 offset 语义的 shared.PageQuery（评论流无顶部插入问题，与推文
-// 时间线的 cursor 分页不同，见 PRD-0013 难逆决策）。顶层评论列表按 created_at
-// 倒序（最新在前），回复按 created_at 正序（对话时间线），均带 id tiebreaker。
+// 时间线的 cursor 分页不同，见 PRD-0013 难逆决策）。顶层评论默认按时间倒序，
+// hot 按总回应数倒序；回复按 created_at 正序（对话时间线），均带 id tiebreaker。
 type CommentRepository interface {
 	// Save 插入评论（仅创建路径，无更新语义）。主键重复须返回错误，
 	// 供 bot 幂等重试回查后返回已有评论或报告内容冲突。
@@ -19,7 +19,7 @@ type CommentRepository interface {
 	FindByID(ctx context.Context, id shared.ID) (*Comment, error)
 	// FindPage 分页列出推文评论（统一入口，筛选维度由 ListFilter 正交组合）。
 	//
-	// TweetID 场景返回顶层评论（depth=0），按 created_at DESC, id DESC（最新在前）；
+	// TweetID 场景返回顶层评论（depth=0），由 TopLevelSort 决定时间或总回应数降序；
 	// ParentID 场景按顶层评论 path 前缀拉全部扁平回复（排除自身），排序由 Sort
 	// 决定（默认 asc 对话时间线）。均带 id tiebreaker 防 offset 翻页漂移；
 	// ParentID 指向的评论不存在时返回 ErrCommentNotFound。
@@ -45,12 +45,14 @@ type CommentRepository interface {
 // 由调用方按场景组装：顶层评论列表传 TweetID；回复链传 ParentID+Sort，
 // 两者互斥（TweetID 只出顶层、ParentID 只出回复链）。
 type ListFilter struct {
-	// TweetID 按推文过滤，仅返回顶层评论（depth=0），最新在前
+	// TweetID 按推文过滤，仅返回顶层评论（depth=0），配合 TopLevelSort
 	TweetID *shared.ID
 	// ParentID 按顶层评论拉全部扁平回复（path 前缀，排除自身），配合 Sort
 	ParentID *shared.ID
 	// Sort 回复链时间排序："asc"（默认，最早优先）/ "desc"，仅 ParentID 场景生效
 	Sort string
+	// TopLevelSort 顶层评论排序：latest（默认）或 hot（总回应数降序），仅 TweetID 场景生效。
+	TopLevelSort string
 }
 
 // ErrCommentNotFound 评论不存在

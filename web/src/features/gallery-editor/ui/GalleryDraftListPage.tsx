@@ -1,10 +1,6 @@
 import type { GalleryStatus, GallerySummary } from "@entities/gallery/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import {
-	DataTable,
-	type DataTableColumn,
-	usePagedQuery,
-} from "@features/admin-shared/ui/data-table";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { useMe } from "@features/auth/api/queries";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useCreateGalleryDraft, useDeleteGallery } from "@features/gallery-editor/api/mutations";
@@ -14,8 +10,12 @@ import { formatDateTime } from "@shared/lib/date";
 import { useNavigate } from "@tanstack/react-router";
 import {
 	Badge,
+	type BadgeProps,
 	Button,
 	ConfirmDialog,
+	DataTable,
+	type DataTableColumn,
+	iconProps,
 	SearchInput,
 	Select,
 	SelectContent,
@@ -27,9 +27,17 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@violet/ui";
-import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+
+/** 图集状态对应的徽章色调：有未发布修改需要关注，已撤回视为停用。 */
+const GALLERY_STATUS_TONES: Record<GalleryStatus, NonNullable<BadgeProps["tone"]>> = {
+	draft: "neutral",
+	published: "ok",
+	modified: "warning",
+	unpublished: "off",
+};
 
 const STATUS_FILTER_OPTIONS: Array<{ value: string; label: string }> = [
 	{ value: "all", label: "全部状态" },
@@ -98,15 +106,7 @@ export function GalleryDraftListPage() {
 			header: "状态",
 			width: "110px",
 			cell: (row) => (
-				<Badge
-					variant={
-						row.status === "published"
-							? "default"
-							: row.status === "modified"
-								? "secondary"
-								: "outline"
-					}
-				>
+				<Badge tone={GALLERY_STATUS_TONES[row.status]}>
 					{GALLERY_STATUS_LABELS[row.status]}
 				</Badge>
 			),
@@ -158,17 +158,18 @@ export function GalleryDraftListPage() {
 			width: "96px",
 			sticky: "right",
 			cell: (row) => (
-				<div className="flex items-center gap-2">
+				<div className="v-table__row-actions items-center gap-2">
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<span>
 								<Button
+									iconOnly
 									variant="ghost"
-									size="icon-sm"
+									size="sm"
 									onClick={() => openDraft(row.id)}
 									aria-label={`编辑图集 ${row.title || row.id.slice(0, 8)}`}
 								>
-									<Pencil className="size-3.5" />
+									<Pencil {...iconProps(14)} />
 								</Button>
 							</span>
 						</TooltipTrigger>
@@ -180,13 +181,14 @@ export function GalleryDraftListPage() {
 							<TooltipTrigger asChild>
 								<span>
 									<Button
+										iconOnly
 										variant="ghost"
-										size="icon-sm"
+										size="sm"
 										className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 										onClick={() => setDeleting(row)}
 										aria-label={`删除图集 ${row.title || row.id.slice(0, 8)}`}
 									>
-										<Trash2 className="size-3.5" />
+										<Trash2 {...iconProps(14)} />
 									</Button>
 								</span>
 							</TooltipTrigger>
@@ -217,13 +219,10 @@ export function GalleryDraftListPage() {
 						<Button
 							size="sm"
 							disabled={createDraft.isPending}
+							loading={createDraft.isPending}
+							leftIcon={<Plus className="size-4" />}
 							onClick={() => void handleCreate()}
 						>
-							{createDraft.isPending ? (
-								<Loader2 className="size-4 animate-spin" />
-							) : (
-								<Plus className="size-4" />
-							)}
 							新建工作稿
 						</Button>
 					) : null
@@ -233,7 +232,6 @@ export function GalleryDraftListPage() {
 						<div className="min-w-50 max-w-80 flex-1">
 							<SearchInput
 								aria-label="按作者用户名筛选图集"
-								variant="soft"
 								controlSize="sm"
 								defaultValue=""
 								placeholder="按作者用户名筛选..."

@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Violet 友链</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&family=Noto+Serif+SC:wght@400;500;600;700&family=Alex+Brush&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Maple Mono";font-weight:400;font-style:normal;src:url(/_blob/a3ecea3add4961def4d089b95f486230) format("woff2")}
+@font-face{font-family:"Maple Mono";font-weight:500;font-style:normal;src:url(/_blob/1ba23035f8e49762aeac0a2a66f83fa0) format("woff2")}
+body{margin:0}
+a{color:inherit;text-decoration:none}
+.paper-l{position:absolute;inset:0;background-image:url(/_blob/66391f4a5c5b623abcbda5bc91818ab0);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.paper-d{position:absolute;inset:0;background-image:url(/_blob/b0a1c287fd95586fcb700c431de8f4c5);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.num{font-family:"Maple Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.mono{font-family:"Maple Mono",ui-monospace,monospace}
+.sheet{background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);border:1px solid var(--ol)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;height:36px;padding:0 16px;border:0;border-radius:999px;font-family:inherit;font-size:14px;font-weight:500;white-space:nowrap;background:var(--sunk);color:var(--fg);cursor:pointer}
+.btn.sm{height:32px;padding:0 12px}.btn.lg{height:40px;font-size:16px}
+.btn.pri{background:var(--fg);color:var(--bg)}.btn.gho{background:transparent}
+.btn.ic{width:32px;padding:0}
+.seg{display:inline-flex;padding:2px;border-radius:999px;background:var(--sunk)}
+.sg{display:inline-flex;align-items:center;gap:6px;box-sizing:border-box;height:32px;padding:0 12px;border-radius:999px;font-size:14px;color:var(--muted)}
+.sg i{font-style:normal;font-size:12px;opacity:.7}
+.sg.on{background:var(--sheet);color:var(--fg);font-weight:500;box-shadow:0 4px 24px rgb(0 0 0 / .05)}
+.chip{display:inline-flex;align-items:center;gap:4px;box-sizing:border-box;height:24px;padding:0 10px;border-radius:999px;background:var(--sunk);font-size:12px;font-weight:500;color:var(--muted)}
+.chip.ac{background:color-mix(in oklab,var(--deco) 16%,var(--sheet));color:var(--accent)}
+.chip.ok{background:color-mix(in oklab,var(--ok) 12%,var(--sheet));color:var(--ok)}
+.fld{display:flex;align-items:center;gap:8px;box-sizing:border-box;height:36px;padding:0 12px;border-radius:12px;background:var(--sunk);font-size:14px;color:var(--muted)}
+.lab{display:block;margin-bottom:8px;font-size:14px;font-weight:600}
+.h1{margin:0;font-size:52px;font-weight:600;line-height:1.15;letter-spacing:-0.01em}
+
+.fr{display:flex;flex-direction:column;padding:20px 22px 18px;border-radius:16px}
+.fr .av{width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none}
+.fr .nm{font-size:16px;font-weight:600;line-height:1.4}
+.fr .dm{font-size:12px;color:var(--muted)}
+.fr .ds{margin:12px 0 0;font-size:14px;line-height:1.8;flex:1}
+.fr .lt{display:flex;align-items:baseline;gap:8px;margin-top:14px;padding-top:12px;border-top:1px dashed var(--rule2);font-size:13px}
+.fr .lt .t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fr.lost{opacity:.55}
+.kv{display:grid;grid-template-columns:64px minmax(0,1fr) 32px;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--rule);font-size:14px}
+
+</style>
+</helmet>
+<div style="{{vars}}position:relative;overflow:hidden;width:1440px;min-height:2200px;display:flex;flex-direction:column;background:var(--bg);color:var(--fg);font-family:'Songti SC','Noto Serif SC','Source Han Serif SC',STSong,SimSun,serif;font-size:15px;line-height:1.8">
+<div class="paper-l" style="display:{{showLight}}"></div>
+<div class="paper-d" style="display:{{showDark}}"></div>
+<img src="{{art}}" alt="" style="position:absolute;top:0;right:0;width:460px;opacity:0.6;pointer-events:none;mix-blend-mode:{{blend}};-webkit-mask-image:radial-gradient(circle at 100% 0%,#000 55%,transparent 92%);mask-image:radial-gradient(circle at 100% 0%,#000 55%,transparent 92%)">
+<div style="position:absolute;z-index:20;top:0;left:0;right:0"><dc-import name="Header" state="child" title="友链" bare="{{ true }}" season="{{season}}" dark="{{dark}}" hint-size="1440px,70px"></dc-import></div>
+<main style="position:relative;z-index:2;width:1120px;margin:0 auto;padding:120px 0 0">
+<div style="display:flex;align-items:flex-end;justify-content:space-between"><div><h1 class="h1">友链</h1><p style="margin:12px 0 0;font-size:15px;color:var(--muted)"><span class="num">23</span> 位朋友，按最近更新排序</p></div><a href="#apply" class="btn pri"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>申请友链</a></div>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-top:40px">
+<a href="#" class="fr sheet"><div style="display:flex;align-items:center;gap:12px"><img class="av" src="/_blob/814f8b81eea66eed0b6752da9d95bdbc" alt=""><div style="min-width:0"><div class="nm">小径</div><div class="dm mono">xiaojing.io</div></div></div><p class="ds">独立游戏开发日志，一周一更。</p><div class="lt"><span style="color:var(--muted);flex:none">最近</span><span class="t">第 41 周：主角终于能跳了</span><span class="num" style="flex:none;font-size:12px;color:var(--muted)">今天</span></div></a>
+<a href="#" class="fr sheet"><div style="display:flex;align-items:center;gap:12px"><img class="av" src="/_blob/4bfc16b19a177812744604d69bfa3fbc" alt=""><div style="min-width:0"><div class="nm">静室</div><div class="dm mono">jingshi.dev</div></div></div><p class="ds">做前端，也做木工。</p><div class="lt"><span style="color:var(--muted);flex:none">最近</span><span class="t">给 Popover 写一个不会跑偏的箭头</span><span class="num" style="flex:none;font-size:12px;color:var(--muted)">2 天前</span></div></a>
+<a href="#" class="fr sheet"><div style="display:flex;align-items:center;gap:12px"><img class="av" src="/_blob/39bcb0bd77c0619a0f1df1c0ed9b4444" alt=""><div style="min-width:0"><div class="nm">南山记</div><div class="dm mono">nanshan.site</div></div></div><p class="ds">后端工程师，偶尔写诗。</p><div class="lt"><span style="color:var(--muted);flex:none">最近</span><span class="t">一次 Postgres 锁等待的排查</span><span class="num" style="flex:none;font-size:12px;color:var(--muted)">3 天前</span></div></a>
+<a href="#" class="fr sheet"><div style="display:flex;align-items:center;gap:12px"><img class="av" src="/_blob/70eabb77c94ea8e601907122c3c4ca5d" alt=""><div style="min-width:0"><div class="nm">山月</div><div class="dm mono">shanyue.xyz</div></div></div><p class="ds">前端基建与工具链。</p><div class="lt"><span style="color:var(--muted);flex:none">最近</span><span class="t">pnpm catalog 在 monorepo 里的实战</span><span class="num" style="flex:none;font-size:12px;color:var(--muted)">4 天前</span></div></a>
+<a href="#" class="fr sheet"><div style="display:flex;align-items:center;gap:12px"><img class="av" src="/_blob/6088255c64459277009c55192955e1ab" alt=""><div style="min-width:0"><div class="nm">竹间</div><div class="dm mono">zhujian.me</div></div></div><p class="ds">Rust、慢跑和一点点数学。</p><div class="lt"><span style="color:var(--muted);flex:none">最近</span><span class="t">在树莓派上跑 Bevy</span><span class="num" style="flex:none;font-size:12px;color:var(--muted)">5 天前</span></div></a>
+<a href="#" class="fr sheet"><div style="display:flex;align-items:center;gap:12px"><img class="av" src="/_blob/cdd807830934caef57a440ae48a88d9b" alt=""><div style="min-width:0"><div class="nm">雾里</div><div class="dm mono">wuli.ink</div></div></div><p class="ds">摄影与胶片冲洗。</p><div class="lt"><span style="color:var(--muted);flex:none">最近</span><span class="t">D76 一比一稀释下的颗粒</span><span class="num" style="flex:none;font-size:12px;color:var(--muted)">6 天前</span></div></a>
+<a href="#" class="fr sheet"><div style="display:flex;align-items:center;gap:12px"><img class="av" src="/_blob/6ea5545459a03270ac6ad193def6ee0e" alt=""><div style="min-width:0"><div class="nm">夜航船</div><div class="dm mono">yehangchuan.blog</div></div></div><p class="ds">记录读过的书和走过的路。</p><div class="lt"><span style="color:var(--muted);flex:none">最近</span><span class="t">重读《夜航船》</span><span class="num" style="flex:none;font-size:12px;color:var(--muted)">1 周前</span></div></a>
+<a href="#" class="fr sheet"><div style="display:flex;align-items:center;gap:12px"><img class="av" src="/_blob/52d0254b3d8852ff951bf4de8eec6a57" alt=""><div style="min-width:0"><div class="nm">半糖</div><div class="dm mono">bantang.cafe</div></div></div><p class="ds">设计师，写设计，也写咖啡。</p><div class="lt"><span style="color:var(--muted);flex:none">最近</span><span class="t">为什么我不再用纯黑</span><span class="num" style="flex:none;font-size:12px;color:var(--muted)">2 周前</span></div></a>
+<a href="#" class="fr sheet lost"><div style="display:flex;align-items:center;gap:12px"><img class="av" src="/_blob/315f4ecea459f6da53480fa284468470" alt=""><div style="min-width:0"><div class="nm">旧港</div><div class="dm mono">jiugang.net</div></div></div><p class="ds">嵌入式与业余无线电。</p><div class="lt" style="color:var(--muted)">近 <span class="num">30</span> 天无法访问</div></a>
+</div>
+<div style="display:flex;justify-content:center;margin-top:32px"><span class="btn">看全部 23 位</span></div>
+
+<section id="apply" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:56px;margin-top:96px;padding-top:56px;border-top:1px solid var(--rule)">
+  <div><h2 style="margin:0;font-size:26px;font-weight:600">交换友链</h2><p style="margin:10px 0 0;font-size:15px;line-height:1.9;color:var(--muted)">先把本站加到你的友链里，再填右边的表。留下 RSS 的话，你的最新文章会显示在卡片上。</p>
+    <div class="sheet" style="margin-top:28px;padding:8px 20px;border-radius:16px">
+      <div class="kv" style="border-top:0"><span style="color:var(--muted)">名称</span><span>Violet</span><button class="btn gho ic" aria-label="复制"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 9h11v11H9zM5 15V6a2 2 0 0 1 2-2h9"/></svg></button></div>
+      <div class="kv"><span style="color:var(--muted)">地址</span><span class="mono" style="font-size:13px">https://xunrua.top</span><button class="btn gho ic" aria-label="复制"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 9h11v11H9zM5 15V6a2 2 0 0 1 2-2h9"/></svg></button></div>
+      <div class="kv"><span style="color:var(--muted)">头像</span><span class="mono" style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">https://xunrua.top/avatar.webp</span><button class="btn gho ic" aria-label="复制"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 9h11v11H9zM5 15V6a2 2 0 0 1 2-2h9"/></svg></button></div>
+      <div class="kv"><span style="color:var(--muted)">简介</span><span>写代码的人，也写字。</span><button class="btn gho ic" aria-label="复制"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 9h11v11H9zM5 15V6a2 2 0 0 1 2-2h9"/></svg></button></div>
+    </div></div>
+  <form class="sheet" style="padding:28px;border-radius:16px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px"><label><span class="lab">站名</span><span class="fld">夜航船</span></label><label><span class="lab">地址</span><span class="fld mono" style="font-size:13px">https://</span></label></div>
+    <label style="display:block;margin-top:16px"><span class="lab">头像地址</span><span class="fld mono" style="font-size:13px">https://</span></label>
+    <label style="display:block;margin-top:16px"><span class="lab">一句话简介</span><span class="fld">记录读过的书和走过的路</span></label>
+    <label style="display:block;margin-top:16px"><span class="lab">RSS 地址<span style="font-weight:400;color:var(--muted)">（选填）</span></span><span class="fld mono" style="font-size:13px">https://</span></label>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:24px"><span style="font-size:13px;color:var(--muted)">审核通过后出现在上面，通常一两天。</span><button class="btn pri" type="button">提交申请</button></div>
+  </form>
+</section>
+</main>
+<div style="position:relative;z-index:2;margin-top:auto;padding-top:96px"><dc-import name="Footer" season="{{season}}" dark="{{dark}}" hint-size="1440px,320px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"season":{"editor":"enum","options":["春","夏","秋","冬"],"default":"春"},"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":2200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const S = {
+      '春': { seed: '#f47983', h: 16.6, l: '/_blob/d8aaad66118cac26d5af34610af527bf', d: '/_blob/0cfa75d49c85d4df8e63d591ce6c7ea1' },
+      '夏': { seed: '#2f9e7a', h: 162, l: '/_blob/c0353bf8edad55e8130fb95826b3799f', d: '/_blob/8ab23c87229ff622bac13566cfb665fd' },
+      '秋': { seed: '#d9a21b', h: 82.95, l: '/_blob/d837ab2ada8c6a3cbb1a71fea71be6e2', d: '/_blob/8a07e26da1a24b8a9f19bf09a30aca11' },
+      '冬': { seed: '#7d8ea3', h: 252, l: '/_blob/eb4210561b3c04659b349b6813d7ba9c', d: '/_blob/f4961af0e552cbba606908f217a44b37' },
+    };
+    const season = S[this.props.season] ? this.props.season : '春';
+    const dark = !!this.props.dark;
+    const s = S[season], h = s.h;
+    const vars = dark
+      ? `--bg:oklch(0.17 0.0087 ${h});--sheet:oklch(0.235 0.011 ${h});--sunk:oklch(0.29 0.012 ${h});--fg:oklch(0.9373 0.015 ${h});--muted:oklch(0.8573 0.0225 ${h});--rule:oklch(0.9373 0.015 ${h} / .12);--rule2:oklch(0.9373 0.015 ${h} / .3);--deco:${s.seed};--accent:oklch(0.8589 0.1031 ${h});--danger:oklch(0.74 0.14 25);--ok:oklch(0.74 0.15 155);--ol:rgb(255 255 255 / .08);`
+      : `--bg:oklch(0.968 0.006 ${h});--sheet:oklch(0.994 0.003 ${h});--sunk:oklch(0.945 0.007 ${h});--fg:oklch(0.3331 0.0175 ${h});--muted:oklch(0.4717 0.0225 ${h});--rule:oklch(0.3331 0.0175 ${h} / .11);--rule2:oklch(0.3331 0.0175 ${h} / .3);--deco:${s.seed};--accent:oklch(0.4739 0.0974 ${h});--danger:oklch(0.52 0.16 27);--ok:oklch(0.52 0.13 155);--ol:transparent;`;
+    const base = { vars, season, dark, art: dark ? s.d : s.l, blend: dark ? 'normal' : 'multiply', showLight: dark ? 'none' : 'block', showDark: dark ? 'block' : 'none' };
+    const extra = {};
+    return Object.assign(base, extra);
+  }
+}
+</script>
+</body>
+</html>

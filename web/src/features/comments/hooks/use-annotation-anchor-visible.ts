@@ -1,8 +1,14 @@
 import { useLayoutEffect, useState } from "react";
 
+/** 正文里的定位参照：元素，或只能量出矩形的虚拟锚点（如选区）。 */
+export interface AnnotationAnchor {
+	getBoundingClientRect: () => DOMRect;
+	isConnected?: boolean;
+}
+
 /** 只判断正文锚点是否可见，不因内部滚动关闭会话或卸载草稿。 */
 export function useAnnotationAnchorVisible(
-	anchor: HTMLElement | null | undefined,
+	anchor: AnnotationAnchor | null | undefined,
 	enabled: boolean,
 ): boolean {
 	const [visible, setVisible] = useState(true);
@@ -12,7 +18,9 @@ export function useAnnotationAnchorVisible(
 		const measure = () => {
 			frame = 0;
 			const rect = anchor.getBoundingClientRect();
-			setVisible(anchor.isConnected && rect.bottom >= 0 && rect.top <= window.innerHeight);
+			setVisible(
+				anchor.isConnected !== false && rect.bottom >= 0 && rect.top <= window.innerHeight,
+			);
 		};
 		const schedule = () => {
 			if (!frame) frame = requestAnimationFrame(measure);

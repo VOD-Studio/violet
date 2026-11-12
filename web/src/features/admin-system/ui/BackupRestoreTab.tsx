@@ -1,13 +1,22 @@
 import { formatDateTime } from "@shared/lib/date";
 import { useQueryClient } from "@tanstack/react-query";
-import { Badge, Button, ConfirmDialog, Input, Modal, Switch } from "@violet/ui";
+import {
+	Button,
+	ConfirmDialog,
+	Input,
+	iconProps,
+	Modal,
+	NumberInput,
+	Spinner,
+	Switch,
+	Tag,
+} from "@violet/ui";
 import {
 	Archive,
 	CalendarClock,
 	DatabaseBackup,
 	Download as DownloadIcon,
 	FileArchive,
-	Loader2,
 	RefreshCw,
 	RotateCcw,
 	Save,
@@ -126,7 +135,7 @@ export function BackupRestoreTab() {
 								备份与恢复同一时间只运行一个任务
 							</p>
 						</div>
-						<Badge variant="outline">pg_dump / psql</Badge>
+						<Tag>pg_dump / psql</Tag>
 					</div>
 					<div className="mt-5 flex items-center justify-between gap-3 rounded-lg border px-3.5 py-3">
 						<span>
@@ -156,26 +165,18 @@ export function BackupRestoreTab() {
 									onError: (error) => toast.error(error.message),
 								})
 							}
+							loading={createBackup.isPending}
+							leftIcon={<Archive className="size-4" />}
 						>
-							{createBackup.isPending ? (
-								<Loader2 className="size-4 animate-spin" />
-							) : (
-								<Archive className="size-4" />
-							)}
 							创建备份
 						</Button>
 						<Button
 							variant="outline"
-							disabled={
-								importBackup.isPending || taskQuery.data?.status === "running"
-							}
+							disabled={taskQuery.data?.status === "running"}
+							loading={importBackup.isPending}
+							leftIcon={<Upload className="size-4" />}
 							onClick={() => fileInputRef.current?.click()}
 						>
-							{importBackup.isPending ? (
-								<Loader2 className="size-4 animate-spin" />
-							) : (
-								<Upload className="size-4" />
-							)}
 							导入签名备份
 						</Button>
 						<input
@@ -222,7 +223,7 @@ export function BackupRestoreTab() {
 						onClick={() => void backupsQuery.refetch()}
 					>
 						<RefreshCw
-							className={`size-3.5 ${backupsQuery.isFetching ? "animate-spin" : ""}`}
+							{...iconProps(14, backupsQuery.isFetching ? "animate-spin" : "")}
 						/>
 						刷新
 					</Button>
@@ -341,9 +342,8 @@ function BackupSettings({
 				</label>
 				<label htmlFor="backup-retention-count" className="space-y-1.5 text-sm font-medium">
 					<span>保留份数</span>
-					<Input
+					<NumberInput
 						id="backup-retention-count"
-						type="number"
 						min={1}
 						max={365}
 						value={value?.retention_count ?? 30}
@@ -384,14 +384,11 @@ function BackupSettings({
 			<Button
 				className="mt-5 w-full"
 				variant="outline"
-				disabled={!value || pending}
+				disabled={!value}
+				loading={pending}
+				leftIcon={<Save className="size-4" />}
 				onClick={onSave}
 			>
-				{pending ? (
-					<Loader2 className="size-4 animate-spin" />
-				) : (
-					<Save className="size-4" />
-				)}
 				保存自动备份设置
 			</Button>
 		</section>
@@ -418,7 +415,7 @@ function BackupTable({
 	if (loading) {
 		return (
 			<div className="text-muted-foreground flex items-center justify-center gap-2 py-16 text-sm">
-				<Loader2 className="size-4 animate-spin" />
+				<Spinner size={16} aria-hidden="true" />
 				读取备份清单
 			</div>
 		);
@@ -455,7 +452,7 @@ function BackupTable({
 								</p>
 							</td>
 							<td className="px-4 py-3">
-								<Badge variant="outline">{originLabels[backup.origin]}</Badge>
+								<Tag>{originLabels[backup.origin]}</Tag>
 							</td>
 							<td className="px-4 py-3 whitespace-nowrap">
 								{formatDateTime(backup.created_at, "second")}
@@ -471,47 +468,51 @@ function BackupTable({
 							<td className="px-4 py-3">
 								<div className="flex justify-end gap-1">
 									<Button
+										iconOnly
 										variant="ghost"
-										size="icon-sm"
+										size="sm"
 										disabled={actionPending}
 										title="下载数据库"
 										aria-label={`下载 ${backup.filename}`}
 										onClick={() => onDownload(backup.filename, "database")}
 									>
-										<DownloadIcon className="size-3.5" />
+										<DownloadIcon {...iconProps(14)} />
 									</Button>
 									{backup.uploads_filename && (
 										<Button
+											iconOnly
 											variant="ghost"
-											size="icon-sm"
+											size="sm"
 											disabled={actionPending}
 											title="下载上传归档"
 											aria-label={`下载 ${backup.uploads_filename}`}
 											onClick={() => onDownload(backup.filename, "uploads")}
 										>
-											<FileArchive className="size-3.5" />
+											<FileArchive {...iconProps(14)} />
 										</Button>
 									)}
 									<Button
+										iconOnly
 										variant="ghost"
-										size="icon-sm"
+										size="sm"
 										disabled={actionPending}
 										title="恢复数据库"
 										aria-label={`恢复 ${backup.filename}`}
 										onClick={() => onRestore(backup)}
 									>
-										<RotateCcw className="size-3.5" />
+										<RotateCcw {...iconProps(14)} />
 									</Button>
 									<Button
+										iconOnly
 										className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 										variant="ghost"
-										size="icon-sm"
+										size="sm"
 										disabled={actionPending}
 										title="删除备份"
 										aria-label={`删除 ${backup.filename}`}
 										onClick={() => onDelete(backup)}
 									>
-										<Trash2 className="size-3.5" />
+										<Trash2 {...iconProps(14)} />
 									</Button>
 								</div>
 							</td>
@@ -529,7 +530,9 @@ function TaskStatus({ task }: { task: BackupTaskDTO }) {
 		<section className="rounded-xl border bg-card px-4 py-3" aria-live="polite">
 			<div className="flex items-center justify-between gap-3">
 				<div className="flex min-w-0 items-center gap-2">
-					{isRunning && <Loader2 className="text-primary size-4 shrink-0 animate-spin" />}
+					{isRunning && (
+						<Spinner size={16} className="text-primary shrink-0" aria-hidden="true" />
+					)}
 					<div className="min-w-0">
 						<p className="truncate text-sm font-medium">{task.message}</p>
 						{task.error && (
@@ -587,10 +590,10 @@ function RestoreDialog({
 					</Button>
 					<Button
 						variant="destructive"
-						disabled={pending || confirmation !== target?.filename}
+						disabled={confirmation !== target?.filename}
+						loading={pending}
 						onClick={onConfirm}
 					>
-						{pending && <Loader2 className="size-4 animate-spin" />}
 						开始恢复
 					</Button>
 				</>

@@ -1,4 +1,5 @@
 import type { CommentEmoteRef } from "@entities/comment/model/types";
+import type { AggregatedReaction } from "@entities/reaction/model/types";
 
 export type ConversationKind = "direct" | "room";
 export type MessageType = "text" | "image" | "system" | "tweet_share";
@@ -79,6 +80,8 @@ export interface SharedTweet {
 	images?: TweetImageRef[];
 	created_at?: string;
 	is_deleted: boolean;
+	/** 被分享推文的下一层引用 ID，目标删除后仍保留。 */
+	quote_of?: string;
 	external_tweet?: ExternalTweet | null;
 	quoted_tweet?: QuotedTweet | null;
 }
@@ -90,15 +93,6 @@ export interface ChatMessageReference {
 	content?: string;
 	media?: ChatMedia;
 	is_deleted: boolean;
-}
-
-export interface ChatMessageReaction {
-	emoji_id: number;
-	emoji_name: string;
-	emoji_url: string;
-	gif_url: string;
-	count: number;
-	self: boolean;
 }
 
 export interface ChatMessage {
@@ -118,7 +112,7 @@ export interface ChatMessage {
 	media?: ChatMedia[];
 	shared_tweet?: SharedTweet;
 	reply_to?: ChatMessageReference;
-	reactions: ChatMessageReaction[];
+	reactions: AggregatedReaction[];
 	/** 已读回执；仅自己发送的非系统消息附带（见 CONTEXT.md「已读回执」词条） */
 	read_state?: ChatMessageReadState;
 	is_deleted: boolean;

@@ -79,7 +79,7 @@ pnpm dev
 | `/persona`、`/about`、`/friends`、`/changelog` | 人设、关于、友链与更新日志 |
 | `/login`、`/register`、`/forgot-password` | 认证流程 |
 | `/admin/*` | 内容与站点管理 |
-| `/editor-guide`、`/ui`、`/kanban`、`/inkline` | 编辑器手册、组件与工具文档 |
+| `/editor-guide`、`/ui`、`/kanban`、`/inkline` | 编辑器手册、组件陈列室与工具文档 |
 | `/pet` | 电子宠物演示 |
 
 `/pet` 的 SDK 不入库；开发该页面时需准备 [kodama](https://github.com/VOD-Studio/kodama)，再执行 `pnpm pet:sync`。脚本默认读取并排检出的仓库，也可通过 `PET_REPO` 指定。
@@ -116,6 +116,10 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 
 空记录的「接入 OMP」面板直接提供原生 Marketplace 安装命令与本站配置模板，无需跳转文档；令牌不在面板中填写或保存。访问令牌表单的「用量上报」分组可单独选择 `usage:write`；该权限仅用于客户端上报，不授予读取其他用户统计的能力。[扩展指南](../docs/guides/omp-usage.md)补充升级、卸载与环境变量配置。
 
+### 上传与素材库
+
+上传展示复用 `@violet/ui` 的 UploadDropzone、UploadTile 与 UploadQueue，站点调度器保留服务端并发、限流恢复和取消确认。素材管理页用按钮或全页拖放选择文件，进度面板固定右下；图片先显示本机预览，队列停止执行后批量刷新素材目录，也可提前展示已成功项。收起不取消，关闭须确认并等待未完成项的取消结果。图库、人设与表情仍逐项接收成功结果。
+
 ## 模块定位
 
 开发时先区分页面装配、业务功能和共享能力，再找对应目录。下表是常用入口，不是逐控件行为清单。
@@ -130,14 +134,17 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 | 项目与路线图 | `features/projects`、`admin-projects` |
 | 上传、媒体与表情 | `features/upload`、`media`、`emojis`、`customemoji` |
 | 站点音乐 | `features/admin-music`、`music-player`，共享模型在 `entities/music` |
-| 实时状态（Nowbeam） | `features/presence`、`admin-presence`，顶栏 Logo 胶囊与移动端底部岛在 `widgets/Header` 接入 |
+| 实时状态（Nowbeam） | `features/presence` 管数据、暂停超时与到药丸/卡片的映射，`admin-presence` 管后台；药丸与站长卡片的展示层在 `shared/ui/site-navbar`、`site-profile`，由 `widgets/Header/HeaderLogo` 接线，移动端底部岛同样读 `useLivePresence` |
+| 窗（全站背景） | `features/window-backdrop`，由 `widgets/SiteBackdrop` 与季节装饰叠放；后台配置在 `/admin/settings/window` |
 | 网页链接预览 | `entities/link-preview` 管请求与回填，`shared/lib/linkify` 识别正文 URL，`@violet/ui` 提供展示组件 |
 | 明暗外观切换 | `features/appearance`，SSR 与 cookie 桥接在 `shared/` |
 | 主题切换 | `features/theme-switcher`，预设、偏好解析与 SSR 在 `shared/` |
 | 四季装饰与图层控制 | `features/seasonal-decor`，入口在 `theme-switcher` 与命令面板 |
 | 管理后台 | `features/admin-*`，公共后台布局与表格在 `admin-layout` / `admin-shared` |
 | 运行策略与代码执行 | `entities/runtime-policy`、`entities/code-runner`、`features/admin-settings` |
-| 首页与阅读页组合、导航 | `widgets/` 与 `shared/config/nav.ts` |
+| 首页与阅读页组合 | `widgets/` |
+| 顶栏、移动端底部岛与页脚 | 展示层在 `shared/ui/site-navbar`、`site-island`、`site-footer`（props 驱动，陈列室直接渲染），接线层在 `widgets/Header`、`widgets/Footer`；一级入口与登录态可见性在 `shared/config/nav.ts` 的 `getNavItems` |
+| 消息铃铛（通知与聊天面板、新消息轻提示） | 展示层在 `shared/ui/message-panel`（面板、通知行、聊天行、轻提示；陈列室直接渲染）；`features/notifications` 取通知并整理成行（`lib/notice-entry`），`features/chat` 提供会话行与新消息提示的数据；`widgets/Header/HeaderMessages` 把两边合流进铃铛，`HeaderChatToast` 挂提示，后台顶栏的铃铛只有通知 |
 
 只在一个 feature 内使用的实现留在 feature。第二个 feature 需要同一业务能力时，提到 `entities/`；站点专用基础能力放 `shared/`，通用 React 组件放 `packages/ui/`。不要让 `shared` 反向导入业务 feature。
 
@@ -157,13 +164,17 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 
 修改内容块时同时检查编辑预览与阅读渲染。可运行代码依赖服务端有效策略；项目卡片与路线图读取当前项目数据，而非在文章里保存一份静态副本。
 
+代码展示统一使用 `@violet/ui` 的 `CodeBlock`、`InlineCode` 与 `CodeBlockOutput`。`shared/ui/markdown-preview` 解释文件名、标行与围栏载体，`entities/code-runner` 注入运行策略、执行流和本机 Vim 偏好；阅读页草稿不回写文章。作者编辑仍由 Tiptap 管理，同一份元数据经 Markdown、HTML 与后端转换保留，不复用阅读页的 CodeMirror 实例。
+
+阅读端的正文引用装饰不参与无障碍朗读，出处保留引用语义；提示块与普通引用独立呈现。
+
 #### 阅读端加载边界
 
 文章详情的路由参数、SSR loader 与 SEO 留在 `routes/blog/$slug.tsx`，阅读界面经 `widgets/BlogDetailPage` 的公开入口组合各 feature。浏览量登记复用 `features/posts/api/mutations` 的 `useIncrementView`，不在组合层拼接业务接口；mutation 状态变化和评论开关不重复提交统计，统计失败不影响正文，HTTP 客户端既有重试策略保持不变。
 
 正文与标题始终由 SSR 输出，不做整篇虚拟化。`useViewportPreparation` 共用视口观察器，按约一个视口的提前量启动代码、图表、大公式和所属手绘外框；准备后保持挂载，滚出再返回不会重建已完成结果。行内公式保留稳定的 LaTeX 语义载体，不逐个设置观察器。`scheduleEnhancement` 分批执行重计算，可见内容优先；外框只在尺寸、圆角或 seed 改变后重画，换色沿用 `currentColor`。
 
-Shiki 初始化、语言准备与分词在按需创建的 Web Worker 中执行，取消的调用丢弃晚回结果。Mermaid 使用独立串行队列，模块与字体下载不阻塞其他增强；图表测量与 SVG 处理仍在主线程，字体与 Inkline 准备完整后再展示。
+Shiki 初始化、语言准备与分词由 `@violet/ui` 的代码块在按需创建的 Web Worker 中执行，取消的调用丢弃晚回结果，增强失败保留原文。Mermaid 使用独立串行队列，模块与字体下载不阻塞其他增强；图表测量与 SVG 处理仍在主线程，字体与 Inkline 准备完整后再展示。
 
 `createAsyncLoader` 统一模块与初始化任务的并发复用、成功缓存和失败清理，不自动重试、不用于参数化业务查询。富内容失败只显示局部反馈，源码与正文继续可读。同 URL 的模块下载失败可能被浏览器缓存，此时提供重新载入页面；样式下载与渲染失败支持局部重试，样式恢复以新 `<link>` 的 `load` 事件确认。
 
@@ -177,20 +188,36 @@ Shiki 初始化、语言准备与分词在按需创建的 Web Worker 中执行�
 
 ## 样式与组件
 
-全局入口是 [src/styles.css](src/styles.css)：Tailwind v4 后导入 `@violet/ui/styles.css`，再加载站点主题、方言和转场。
+全局入口是 [src/styles.css](src/styles.css)：Tailwind v4 后导入 `@violet/ui/styles.css`，再加载站点主题与转场。
 
 | 样式内容 | 归属 |
 | --- | --- |
 | 生成色阶、基础语义 token 与通用组件 CSS | `packages/theme/` 生成算法，`packages/ui/` 构建期接入 |
 | 站点字体、装饰与主题适配 | `src/styles/` |
-| 公开内容、工具界面、沉浸舞台的方言 | `src/styles/dialects/` |
 | feature 私有样式 | 所属组件旁的样式文件 |
 
-页面分别使用 `.dialect-public`、`.dialect-tool`、`.dialect-immersive`，只描述语义到色阶的映射：公开主要动作为品牌色，工具主要动作为高对比中性色，沉浸舞台使用固定深色灰阶；状态色不被方言改写。Button 悬停使用 `primary-hover`，链接、选中、焦点、进度、装饰和分类各有独立语义。通用组件从 `@violet/ui` 使用；组件的公开入口与成熟度以 [component-manifest.json](packages/ui/component-manifest.json) 为准。
-
+站点采用单一材质：页面铺纸面，内容浮在纸片上，可输入的地方是凹陷。主要动作全站取墨色，季节色只做装饰、进度与选中点。Button 悬停使用 `primary-hover`，链接、选中、焦点、进度、装饰和分类各有独立语义。通用组件从 `@violet/ui` 使用；组件的公开入口与成熟度以 [component-manifest.json](packages/ui/component-manifest.json) 为准。
 包颜色由 `pnpm --filter @violet/ui sync` 生成、`check` 校验。人设身份色只在 `.identity-theme` 内生效，修改种子后运行 `pnpm colors:persona`，`pnpm check:persona-colors` 校验提交的静态 CSS。四季预设主题的种子色与旋钮在 `src/shared/lib/theme-presets.ts`，修改后运行 `pnpm colors:themes` 重新生成 `src/styles/theme-presets.generated.css`，`pnpm check:theme-colors` 校验；每季一个 `[data-theme]` 规则，只含品牌与中性色阶，状态色与分类色沿用默认色板。
 
 站点公共层提供 `shared/ui/announcement-severity` 状态色和 `shared/hooks/use-banner-ticker` 轮播节拍。终端、阅读进度等公共界面只消费用途语义色。
+
+站点线框图标直接取自 `lucide-react`；应用文档外壳使用原生 `LucideProvider` 设置默认 16px / 1.75 线宽，根级异常页也在其范围内；斜杠菜单的独立 React 根单独传入同一组默认值。显式小图标通过 `@violet/ui` 的 `iconProps(12或14, 非尺寸类名)` 同时指定尺寸与 2 线宽，不再只用 `size-3` / `size-3.5` 缩小图形。该入口附带 `v-icon` 标记，保证 Button、Input、菜单等控件槽不覆盖显式档位；Provider 只传默认尺寸和线宽，不向所有图标注入这一标记，以保留大号控件自己的图标档位。规范档为 12 / 14 / 16 / 18 / 20 / 24，同一工具栏采用同档；品牌标志、季节图形与插画保留各自造型。只有图标的按钮提供动作名 `aria-label`，原有 `title` 保留作补充；已有可见文字、读屏文字或显式名称时不重复添加。完整契约见 [Icons 图标](packages/ui/docs/components/icons.md)。
+
+图标与文字的相邻间距为普通按钮 8px、菜单项 12px、元信息 4px。SDK 按钮和菜单已提供对应 gap，不在子图标上叠加 `mr-*`；自定义行只调整这对图标与文字，不改组间留白或插画的光学校准。
+
+正文编辑内核位于 `shared/ui/rich-text-input`，统一处理光标、提及与图片占位符；只接收显示模型和回调，不导入业务实体或 feature。表情实体到显示模型的投影在 `entities/emoji/lib/inline-emoji`，评论与聊天分别注入选择器、上传和业务上下文。图片和颜文字按显示模型区分，不通过方括号猜测；颜文字保留原文并插入文本节点。工具栏取得焦点后仍在保存的编辑区选区连续插入表情，不抢回焦点；跨编辑区的选区不会删除外部正文。
+
+最近使用由 `entities/emoji/model/recent` 持有，评论、推文、聊天与回应共用本设备最近 16 项，只在真实选中时记录。跨标签页的更新和清空同步到已挂载入口，服务器不保存这份记录。
+
+`entities/reaction` 持有聚合回应读模型与目标级乐观更新，`recent_users` 沿用后端公开的 `{id,name}[]`。回滚快照保存目标表情与原位置，恢复时不覆盖其它回应的并发更新。共享批量 Provider 明确区分范围内的结果、加载、错误与重试；范围内失败或缺项不拆成逐条请求，只有范围外的动态回复补单条。
+
+`features/emojis/ui/EmojiReactions` 把系统目录接入 `ReactionBar`，完整选择器直接渲染 `EmojiPickerPanel`，不再套第二层浮层。以 `system:<ID>` 贯穿已选与最近项；快捷条读取公共最近记录的前 8 个系统表情，不包含私人收藏。上限提示由宿主传入，不在目录适配层硬编码聊天规则。
+
+文章评论通过 `CommentReactions`、推文评论通过 `TweetCommentReactions` 接入统一回应条，均不限制种类；最新/热门进入真实请求和完整查询键。添加与取消同步计数、GIF 和本人名单；失败只恢复目标评论的目标表情，回应与热门次序刷新完成前维持忙碌。访客可读推文的公开回应；点击已有回应提示登录，不显示添加入口。文章仍保留匿名黑洞规则。推文批量范围超过 100 个 ID 时分批读取。
+
+文章与推文共用 `@violet/ui` 的评论壳，站点 `shared/ui/comment-section` 保留身份、时间、业务插槽及既有回复会话。展开分页由宿主传入本批起点，40ms 错峰不累计历史页；预览与刚提交的回复立即显示。
+
+聊天通过 `MessageReactions` 接入同一入口，每人每条消息最多 3 种，超过 6 种回应时折叠，回应条与气泡同侧对齐。失败回滚不覆盖其它消息或新消息；待发送、发送失败和已删除消息保留现有人数，但不提供无效的添加入口。
 
 公告横幅与卡片共享公共状态色，不依赖实验页面。lab 的固定实验色与旧 utility 仅限 `.lab-scope`，包括其 portal 内容；离开实验路由后不改变正式页面。
 
@@ -220,7 +247,7 @@ CLI fixture 使用临时 Git 仓库，可通过 `pnpm test scripts/check-colors.
 
 主题偏好由 `shared/lib/theme-preference.ts` 解析，SSR 通过 `getSSRThemeState` 在 `<html>` 上输出 `data-theme`，首帧即为访客的预设主题；自定义主题按规范化后的种子色在 SSR 现算，内联进 `<head>` 的 `#theme-custom` 样式，`data-theme` 为 `custom`，`data-season` 仍给出偏好对应的季节；规则与术语见 CONTEXT「主题与色彩」。主题契约（`e2e/theme-contract.spec.ts`）覆盖「主题 × 外观 × 视口」的首帧与水合一致性，并在浏览器中实测关键文字组合的对比度。
 
-切换入口是 `@features/theme-switcher` 的 `ThemeMenu`，挂在顶栏工具区外观开关旁，打开单层「主题与装饰」面板；移动端底部导航的「更多」面板用 `ThemePicker` 承载同一份 `ThemeSettings`。跟随季节与四季色卡用底色、描边表达单选状态，不另加对号；「自定义」打开 `CustomThemeDialog`，取色或输入十六进制种子色，实时预览浅深两种外观下的按钮、链接、选中态与主色文字后应用。设置面板内即时换色，不创建会阻塞点击的整页快照；命令面板保留原有扩散效果。偏好 cookie 写入且 DOM 更新完成后刷新路由上下文，`e2e/theme-switcher.spec.ts` 覆盖切换、刷新保持、键盘操作与自定义流程。
+切换入口是 `@features/theme-switcher` 的 `ThemeMenu`，顶栏右药丸里以当季花形图标呈现为「季节与外观」，打开单层面板：顶部是明暗外观，其后是主题配色与装饰；移动端底部导航的「更多」面板用 `ThemePicker` 承载同一份 `ThemeSettings`。跟随季节与四季色卡用底色、描边表达单选状态，不另加对号；「自定义」打开 `CustomThemeDialog`，取色或输入十六进制种子色，实时预览浅深两种外观下的按钮、链接、选中态与主色文字后应用。设置面板内即时换色，不创建会阻塞点击的整页快照；命令面板保留原有扩散效果。偏好 cookie 写入且 DOM 更新完成后刷新路由上下文，`e2e/theme-switcher.spec.ts` 覆盖切换、刷新保持、键盘操作与自定义流程。
 
 ### 装饰偏好
 
@@ -230,19 +257,21 @@ CLI fixture 使用临时 Git 仓库，可通过 `pnpm test scripts/check-colors.
 
 装饰内容统一由 `@features/seasonal-decor` 投放：背景层是视口角落插画与飘落画布，点缀位是首页收尾寄语上方的小幅插画，组件挂件保留在顶栏三个胶囊与页脚。角落插画按自身边界径向淡出，飘落画布避开正文阅读带；点缀位采用绝对定位，不参与布局。插画用主题 token 混色、固定随机种子保证 SSR 与客户端一致；粒子先画进离屏精灵再贴图。背景仅在桌面公开页显示；隐藏、零尺寸、窄屏或离屏时停止逐帧绘制，减弱动态时仅显示静态画面。工具与沉浸方言不显示装饰，`@violet/ui` 不依赖装饰实现。
 
-桌面在「主题与装饰」面板内用 `@violet/ui` 的 `Segmented` 选择装饰季节，并用独立开关配置插画、飘落与挂件，不再使用子菜单；切换后面板保持打开，方便连续配置。移动端「更多」面板提供相同选择，命令面板支持选择装饰季节或关闭装饰。三个入口共用现有 `useDecorationSwitcher`，装饰变化不改主题。`e2e/decoration.spec.ts` 覆盖首帧与水合一致性、图层持久化、连续配置、布局不变与减弱动态静止，并在启用动效时验证切换配色后可立即点击装饰。
+桌面在「季节与外观」面板内用 `@violet/ui` 的 `Segmented` 选择装饰季节，并用独立开关配置插画、飘落与挂件，不再使用子菜单；切换后面板保持打开，方便连续配置。移动端「更多」面板提供相同选择，命令面板支持选择装饰季节或关闭装饰。三个入口共用现有 `useDecorationSwitcher`，装饰变化不改主题。`e2e/decoration.spec.ts` 覆盖首帧与水合一致性、图层持久化、连续配置、布局不变与减弱动态静止，并在启用动效时验证切换配色后可立即点击装饰。
 
 ### 独立包与文档站
 
 | 包 | 文档站 / 站内用途 | 开发依据 |
 | --- | --- | --- |
-| `@violet/ui` | `/ui`，通用 UI 与主题 | [架构](packages/ui/docs/architecture.md)、[组件设计](packages/ui/docs/component-design.md) |
+| `@violet/ui` | `/ui` 组件陈列室，通用 UI 与主题 | [架构](packages/ui/docs/architecture.md)、[组件设计](packages/ui/docs/component-design.md) |
 | `@violetjs/kanban` | `/kanban`，项目路线图看板与画布 | [使用说明](packages/kanban/README.zh-CN.md)、[维护指南](packages/kanban/DEVELOPMENT.md) |
 | `@violetjs/inkline` | `/inkline`，手绘工作台与文章图表 | [使用说明](packages/inkline/README.zh-CN.md)、[维护指南](packages/inkline/DEVELOPMENT.md) |
 | `@violetjs/react-tweet` | 文章引用与推文页面 | [使用说明](packages/react-tweet/README.zh-CN.md)、[维护指南](packages/react-tweet/DEVELOPMENT.md) |
 | `@violetjs/theme` | 构建期生成组件色阶与站点局部身份色 | [使用说明](packages/theme/README.zh-CN.md)、[维护指南](packages/theme/DEVELOPMENT.md) |
 
 文档站复用包内正文与示例，不维护第二套 API 说明。修改包实现时按包内流程做构建和真实 tarball 消费验证；站点 workspace 能运行不能替代独立包验收。安装方式与发布状态见各包 README。
+
+陈列室与检视台的明暗只作用于各自子树，不修改站点偏好。`ShowcaseScope` 使用局部 CSS `color-scheme` 规则，确保 Lightning CSS 为 `light-dark()` 生成的兼容标记也跟着切换；只改内联 `colorScheme` 会继承站点原来的兼容分支，出现「选中浅色但仍显示暗色」。
 
 ## 测试
 
@@ -263,7 +292,7 @@ pnpm test:contract
 
 [playwright.config.ts](playwright.config.ts) 会启动测试 API（9410）和构建后的 SSR 服务（4173），不是连接线上业务环境。可在命令后指定用例文件，例如 `pnpm test:contract e2e/ssr-hydration.spec.ts`。
 
-SSR 内容可见不代表客户端交互已挂载。需要交互的测试使用 [e2e/support.ts](e2e/support.ts) 的 `openClientPage` 等待会话探活；涉及页面 effect 的聚焦刷新再使用对应就绪辅助函数，不能仅凭文本出现就派发窗口事件。
+SSR 内容可见不代表客户端交互已挂载。需要交互的测试使用 [e2e/support.ts](e2e/support.ts) 的 `openClientPage` 等待客户端请求：公开页等顶栏的 `/presence/stream`，后台等 `/auth/me`；涉及页面 effect 的聚焦刷新再使用对应就绪辅助函数，不能仅凭文本出现就派发窗口事件。
 
 ## 生产构建与部署
 

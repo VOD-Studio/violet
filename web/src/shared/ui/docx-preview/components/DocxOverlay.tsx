@@ -2,8 +2,8 @@
  * Docx 加载/错误遮罩
  */
 
-import { Button } from "@violet/ui";
-import { AlertCircle, FileText, RotateCcw } from "lucide-react";
+import { Button, iconProps } from "@violet/ui";
+import { CircleAlert, FileText, RotateCcw } from "lucide-react";
 
 import type { DocxLoadStatus } from "../types/docx-preview-types";
 
@@ -16,7 +16,7 @@ export function DocxOverlay({ loadStatus, onRetry }: DocxOverlayProps) {
 	if (loadStatus === "loading") {
 		return (
 			<div className="flex h-60 flex-col items-center justify-center gap-2 text-muted-foreground">
-				<FileText className="size-10 opacity-40" />
+				<FileText className="size-6 opacity-40" />
 				<div className="size-6 animate-spin rounded-full border-2 border-muted border-t-primary" />
 				<span className="text-xs">正在解析文档…</span>
 			</div>
@@ -26,10 +26,10 @@ export function DocxOverlay({ loadStatus, onRetry }: DocxOverlayProps) {
 	if (loadStatus === "error") {
 		return (
 			<div className="flex h-60 flex-col items-center justify-center gap-3 text-muted-foreground">
-				<AlertCircle className="size-10 text-red-500" />
+				<CircleAlert className="size-6 text-red-500" />
 				<p className="text-sm">文档加载失败</p>
 				<Button type="button" variant="outline" size="sm" onClick={onRetry}>
-					<RotateCcw className="mr-1.5 size-3.5" />
+					<RotateCcw {...iconProps(14)} />
 					重试
 				</Button>
 			</div>

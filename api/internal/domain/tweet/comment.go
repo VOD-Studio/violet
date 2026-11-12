@@ -210,17 +210,20 @@ type TweetCommented struct {
 	RepliedToAuthorID *shared.ID
 	// Excerpt 评论正文前缀快照（纯图评论为空串）
 	Excerpt string
+	// TweetExcerpt 被评论推文的正文前缀快照（通知的对象标题用）
+	TweetExcerpt string
 }
 
 // NewTweetCommented 构造推文评论事件。
-// tweetAuthorID 由应用层从所属推文取得；repliedToAuthorID 顶层评论传 nil。
-func NewTweetCommented(c *Comment, tweetAuthorID shared.ID, repliedToAuthorID *shared.ID) TweetCommented {
+// tweet 是被评论的推文；repliedToAuthorID 顶层评论传 nil。
+func NewTweetCommented(c *Comment, tweet *Tweet, repliedToAuthorID *shared.ID) TweetCommented {
 	return TweetCommented{
 		BaseEvent:         shared.NewBaseEvent("tweet.commented", c.tweetID),
-		TweetAuthorID:     tweetAuthorID,
+		TweetAuthorID:     tweet.authorID,
 		ActorID:           c.authorID,
 		CommentID:         c.id,
 		RepliedToAuthorID: repliedToAuthorID,
 		Excerpt:           excerpt(c.body),
+		TweetExcerpt:      tweet.NotificationExcerpt(),
 	}
 }

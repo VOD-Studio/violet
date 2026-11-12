@@ -1,11 +1,15 @@
-import { ImagePixelReveal, Input, Label, Textarea, type ButtonProps, type CheckboxProps, type ImagePixelRevealProps, type PixelRevealVariant, type InputProps } from "@violet/ui";
+import "./value-controls-types.js";
+import "./upload-types.js";
+import "./data-display-types.js";
+import { Field, FieldSet, FieldSummary, focusField, useFieldCheck, useFieldControl, type FieldProps, type FieldSetProps, type FieldSummaryProps, ImagePixelReveal, Input, Label, Textarea, type ButtonProps, type CheckboxProps, type ImagePixelRevealProps, type PixelRevealVariant, type InputProps } from "@violet/ui";
 import { Button } from "@violet/ui/button";
 import { Checkbox } from "@violet/ui/checkbox";
 import { ImagePixelReveal as LeafImagePixelReveal, type ImagePixelRevealProps as LeafImagePixelRevealProps, type PixelRevealVariant as LeafPixelRevealVariant } from "@violet/ui/image-pixel-reveal";
-import { Modal } from "@violet/ui/legacy";
+import { Field as LeafField, Label as LeafLabel, type FieldProps as LeafFieldProps } from "@violet/ui/field";
+import { PageShell } from "@violet/ui/legacy";
 import { Input as LeafInput, type InputProps as LeafInputProps } from "@violet/ui/input";
 import { SearchInput, type SearchInputProps } from "@violet/ui";
-import { SearchInput as LeafSearchInput, type SearchInputProps as LeafSearchInputProps } from "@violet/ui/search-input";
+import { SearchInput as LeafSearchInput, type SearchInputProps as LeafSearchInputProps } from "@violet/ui/input";
 import { buttonVariants, checkboxVariants, inputVariants, type ButtonVariantProps, type InputVariantProps } from "@violet/ui/variants";
 import { createRef, type Ref } from "react";
 import { UploadTile, type UploadTileProps } from "@violet/ui";
@@ -15,7 +19,39 @@ import { Dropdown as LeafDropdown, DropdownContent as LeafDropdownContent, Dropd
 import { Segmented, type SegmentedItem, type SegmentedProps } from "@violet/ui";
 import { Segmented as LeafSegmented, type SegmentedProps as LeafSegmentedProps } from "@violet/ui/segmented";
 import { LinkCard, type LinkCardProps } from "@violet/ui";
+import { Avatar, AvatarGroup, Badge, BadgeAnchor, CardFrameTitle, Count, Kbd, Separator, Skeleton, Tag, TagToggle, type AvatarProps, type BadgeProps, type KbdProps, type TagProps } from "@violet/ui";
+import { Avatar as LeafAvatar } from "@violet/ui/avatar";
+import { Tag as LeafTag } from "@violet/ui/badge";
+import { Kbd as LeafKbd } from "@violet/ui/kbd";
+import { badgeVariants, countVariants, kbdVariants, tagVariants, type BadgeVariantProps, type KbdVariantProps, type TagVariantProps } from "@violet/ui/variants";
+import { Radio, RadioGroup, Switch, Tabs, TabsContent, TabsCount, TabsList, TabsTrigger, ToggleGroup, ToggleGroupItem, ToggleGroupSeparator, type RadioGroupProps, type RadioProps, type SwitchProps, type ToggleGroupProps } from "@violet/ui";
+import { Radio as LeafRadio, RadioGroup as LeafRadioGroup } from "@violet/ui/radio";
+import { Switch as LeafSwitch } from "@violet/ui/switch";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue, type SelectProps, type SelectTriggerProps } from "@violet/ui";
+import { Select as LeafSelect, SelectContent as LeafSelectContent, SelectItem as LeafSelectItem, SelectTrigger as LeafSelectTrigger, SelectValue as LeafSelectValue } from "@violet/ui/select";
+import { Cascader, Combobox, TagInput, TreeSelect, type CascaderLoadData, type CascaderOption, type CascaderProps, type ComboboxFilter, type ComboboxInputReason, type ComboboxOption, type ComboboxProps, type TagInputProps, type TagRejection, type TagRejectionReason, type TreeSelectMultipleProps, type TreeSelectOption, type TreeSelectProps, type TreeSelectSingleProps } from "@violet/ui";
+import { Cascader as LeafCascader } from "@violet/ui/cascader";
+import { Combobox as LeafCombobox } from "@violet/ui/combobox";
+import { TagInput as LeafTagInput } from "@violet/ui/tag-input";
+import { TreeSelect as LeafTreeSelect } from "@violet/ui/tree-select";
+import { Tabs as LeafTabs, TabsContent as LeafTabsContent, TabsCount as LeafTabsCount, TabsList as LeafTabsList, TabsTrigger as LeafTabsTrigger } from "@violet/ui/tabs";
+import { ToggleGroupItem as LeafToggleGroupItem } from "@violet/ui/toggle-group";
 import { LinkCard as LeafLinkCard, type LinkCardProps as LeafLinkCardProps } from "@violet/ui/link-card";
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger, HoverCard, HoverCardContent, HoverCardTrigger, Popover, PopoverContent, PopoverTrigger, Toaster, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, type DropdownMenuContentProps, type HoverCardContentProps, type PopoverContentProps, type TooltipContentProps, type VioletToasterProps } from "@violet/ui";
+import { DropdownMenu as LeafDropdownMenu, DropdownMenuContent as LeafDropdownMenuContent, DropdownMenuItem as LeafDropdownMenuItem, DropdownMenuTrigger as LeafDropdownMenuTrigger } from "@violet/ui/dropdown-menu";
+import { Popover as LeafPopover, PopoverContent as LeafPopoverContent, PopoverTrigger as LeafPopoverTrigger } from "@violet/ui/popover";
+import { MorphingPopover, MorphingPopoverContent, type MorphingPopoverContentProps, type MorphingPopoverProps, MorphingPopoverTrigger } from "@violet/ui";
+import { MorphingPopover as LeafMorphingPopover, MorphingPopoverContent as LeafMorphingPopoverContent, MorphingPopoverTrigger as LeafMorphingPopoverTrigger } from "@violet/ui/morphing-popover";
+import { Toaster as LeafToaster } from "@violet/ui/sonner";
+import { type CommandItem, CommandList, ConfirmDialog, Dialog, DialogBody, DialogClose, DialogContent, type DialogContentProps, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, Drawer, DrawerBody, DrawerContent, DrawerHeader, DrawerTitle, Modal, PromptDialog, Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@violet/ui";
+import { Tooltip as LeafTooltip, TooltipContent as LeafTooltipContent, TooltipTrigger as LeafTooltipTrigger } from "@violet/ui/tooltip";
+import { ListHighlight, ListHighlightItem, type ListHighlightProps } from "@violet/ui";
+import { ListHighlight as LeafListHighlight, ListHighlightItem as LeafListHighlightItem } from "@violet/ui/list-highlight";
+
+export function HighlightedActions() {
+	const props: Pick<ListHighlightProps, "mode"> = { mode: "pointer" };
+	return <><ListHighlight {...props}><ul><li><ListHighlightItem><button type="button">复制链接</button></ListHighlightItem></li></ul></ListHighlight><LeafListHighlight mode="active"><div><LeafListHighlightItem active><button type="button">存为图片</button></LeafListHighlightItem></div></LeafListHighlight></>;
+}
 
 const linkCardProps: LinkCardProps = {
 	href: "https://example.com/guide#native",
@@ -85,14 +121,15 @@ export const invalidNativeRef = <Button ref={anchorRef}>保存</Button>;
 const invalidSlottedProps: ButtonProps = { asChild: true, href: "/settings" };
 void invalidSlottedProps;
 const field: InputProps = {
-	label: "邮箱", description: "接收通知", type: "email", size: 24, controlSize: "lg",
-	variant: "soft", clearable: true, leading: <span>@</span>, trailing: <span>.com</span>,
+	"aria-label": "邮箱", type: "email", size: 24, controlSize: "lg",
+	variant: "outline", clearable: true, valid: true, leading: <span>@</span>, trailing: <span>.com</span>,
+	passwordToggleLabel: "显示密码", copyLabel: "复制", onCopied: (value) => { const copied: string = value; void copied; },
 	ref: (input) => { input?.focus(); },
 	onChange: (event) => {
 		const target: HTMLInputElement = event.currentTarget;
 		void target.value;
 	},
-	classNames: { root: "field-layout", control: "field-surface" },
+	classNames: { control: "field-surface", action: "field-action" },
 };
 const leafField: LeafInputProps = field;
 const inputRecipe: InputVariantProps = { variant: "underline", controlSize: "sm" };
@@ -103,9 +140,16 @@ export const invalidInputSize = <Input size="lg" />;
 export const invalidInputRef = <Input ref={createRef<HTMLButtonElement>()} />;
 // @ts-expect-error 视觉变体限定为公开的四种。
 inputVariants({ variant: "unknown" });
+// @ts-expect-error 旧变体名 soft 已更名为 filled。
+inputVariants({ variant: "soft" });
+// @ts-expect-error 标签、提示与错误属于表单项，输入框不再接收。
+export const invalidInputLabel = <Input label="邮箱" />;
+// @ts-expect-error 外壳就是根元素，不再有 root 槽。
+export const invalidInputRoot = <Input classNames={{ root: "layout" }} />;
 const search: SearchInputProps = {
-	label: "搜索文章", name: "query", size: 24, controlSize: "sm", variant: "soft",
-	defaultValue: "violet", classNames: { root: "search-layout", control: "search-surface" },
+	"aria-label": "搜索文章", name: "query", size: 24, controlSize: "sm", variant: "filled",
+	defaultValue: "violet", classNames: { control: "search-surface", action: "search-clear" },
+	shortcut: ["mod", "K"], clearLabel: "清除搜索",
 	ref: (input) => { input?.select(); },
 	onValueChange: (value) => { const query: string = value; void query; },
 	onSearch: (value) => { const query: string = value; void query; },
@@ -121,8 +165,58 @@ buttonVariants(recipe);
 buttonVariants({ variant: "primary", className: "consumer-class" });
 // @ts-expect-error Unsupported variants must stay compile-time errors.
 buttonVariants({ variant: "unknown" });
+export const buttonStates = <>
+	<Button variant="secondary" size="sm" leftIcon="★" rightIcon="›">取消</Button>
+	<Button variant="outline" size="md" loading loadingText="保存中…">保存</Button>
+	<Button variant="ghost" size="lg" loading aria-label="刷新" iconOnly>↻</Button>
+	<Button variant="destructive" done="已删除">删除</Button>
+	<Button variant="link" doneDuration={800} done="已完成">查看全部</Button>
+</>;
+// @ts-expect-error 旧的 default 变体已删除，主操作写 primary。
+export const invalidLegacyVariant = <Button variant="default">保存</Button>;
+// @ts-expect-error 旧的 soft 变体已删除，次要动作用 secondary。
+export const invalidSoftVariant = <Button variant="soft">取消</Button>;
+// @ts-expect-error 旧的 xs 尺寸已删除，最小档是 sm。
+export const invalidXsSize = <Button size="xs">保存</Button>;
+// @ts-expect-error 旧的 icon-sm 尺寸已删除，纯图标按钮写 iconOnly 加尺寸。
+export const invalidIconSize = <Button size="icon-sm" aria-label="新建">+</Button>;
 export const example = <><Button {...button}>保存</Button><Input {...field} /><LeafInput {...leafField} /><Input /><Label>名称</Label><Textarea /></>;
-export const legacy = Modal;
+export const legacy = PageShell;
+
+const fieldProps: FieldProps = {
+	label: "邮箱", optional: true, hint: "只用于回复通知", error: "邮箱格式不正确", success: "可以使用", checking: "正在检查…",
+	count: { value: 10, max: 40 }, orientation: "horizontal", controlSize: "lg", htmlFor: "email", className: "layout", children: <Input id="email" />,
+};
+const leafFieldProps: LeafFieldProps = fieldProps;
+const fieldSetProps: FieldSetProps = { legend: "通知方式", optional: true, description: "至少选一种", hint: "已选 1 种", error: "至少选一种", children: <Input aria-label="邮件" /> };
+const summaryProps: FieldSummaryProps = { errors: [{ id: "title", label: "标题" }], title: (count: number) => `还有 ${count} 处` };
+// @ts-expect-error 标签必填。
+export const invalidFieldLabel = <Field><Input /></Field>;
+// @ts-expect-error 排法只有纵向与横排。
+export const invalidFieldOrientation = <Field label="邮箱" orientation="diagonal"><Input /></Field>;
+// @ts-expect-error 组名必填。
+export const invalidFieldSet = <FieldSet><Input aria-label="邮件" /></FieldSet>;
+// @ts-expect-error 汇总必须给出错误列表。
+export const invalidSummary = <FieldSummary />;
+export function FieldProbe({ value }: { value: string }) {
+	const control = useFieldControl();
+	const check = useFieldCheck({
+		value,
+		validate: (next) => (next.includes("@") ? undefined : "缺少 @"),
+		validateAsync: async (next, signal: AbortSignal) => (signal.aborted || next === "taken" ? "已被占用" : undefined),
+		asyncDelay: 300,
+		revealOn: "change",
+	});
+	const error: string | undefined = check.error;
+	const valid: boolean = check.valid;
+	const checking: boolean = check.checking;
+	const focused: boolean = focusField("email");
+	check.touch();
+	check.reset();
+	void [error, valid, checking, focused];
+	return <Field {...fieldProps} {...leafFieldProps} error={check.error} checking={check.checking ? "正在检查…" : undefined}><Input {...control} {...check.fieldProps} /><LeafLabel>名称</LeafLabel></Field>;
+}
+export const fieldSetExample = <><FieldSet {...fieldSetProps} /><FieldSummary {...summaryProps} /><LeafField label="名称"><Input /></LeafField></>;
 
 const checkbox: CheckboxProps = {
 	ref: createRef<HTMLButtonElement>(), name: "updates", value: "weekly", required: true,
@@ -232,3 +326,273 @@ export const invalidSegmentedOrientation = <Segmented value="a" segments={segmen
 export const invalidSegmentedVariant = <Segmented value="a" segments={segments} variant="solid" />;
 // @ts-expect-error 叶子入口保留相同的方向约束。
 export const invalidLeafSegmentedOrientation = <LeafSegmented value="a" segments={segments} orientation="diagonal" />;
+
+const avatarRef = createRef<HTMLSpanElement>();
+const frameTitleRef = createRef<HTMLAnchorElement>();
+const avatarProps: AvatarProps = { name: "Rua", src: "/rua.png", size: 48, shape: "square", status: "away", ring: true, crown: true, tone: "season", imgProps: { loading: "lazy" } };
+const tagProps: TagProps = { size: "sm", tone: "accent", icon: null, onRemove: () => undefined, removeLabel: "移除 shell", children: "shell" };
+const badgeProps: BadgeProps = { tone: "warning", icon: null, children: "审核中" };
+const kbdProps: KbdProps = { keys: ["mod", "shift", "K"], size: "lg", variant: "light", platform: "mac" };
+const tagVariantProps: TagVariantProps = { size: "xs", tone: "neutral" };
+const badgeVariantProps: BadgeVariantProps = { tone: "off" };
+const kbdVariantProps: KbdVariantProps = { size: "sm", variant: "onButton" };
+export const displayRecipes = [tagVariants(tagVariantProps), badgeVariants(badgeVariantProps), kbdVariants(kbdVariantProps), countVariants({ variant: "inline" })];
+export const displayExamples = <>
+	<Avatar ref={avatarRef} {...avatarProps} />
+	<LeafAvatar name="频道" icon={null} shape="square" alt="" />
+	<AvatarGroup items={[{ name: "Rua" }, { name: "Mika", src: "/mika.png" }]} max={3} size={32} label="2 人点了赞" />
+	<Tag {...tagProps} />
+	<Tag asChild><a href="/tags/shell">shell</a></Tag>
+	<TagToggle size="lg" defaultPressed onPressedChange={(pressed) => { const next: boolean = pressed; void next; }}>前端</TagToggle>
+	<Badge {...badgeProps} />
+	<BadgeAnchor placement="edge" badge={<Count value={3} max={9} variant="capsule" />}><button type="button">消息</button></BadgeAnchor>
+	<Kbd {...kbdProps} />
+	<LeafKbd>Esc</LeafKbd>
+	<CardFrameTitle asChild ref={frameTitleRef}><a href="/posts/season">给博客加了季节</a></CardFrameTitle>
+	<Separator orientation="vertical" decorative={false} spacing="section" />
+	<Skeleton className="h-4" />
+</>;
+// @ts-expect-error asChild 的 Tag 把图标放进子元素，不接受 icon。
+export const invalidTagAsChildIcon = <Tag asChild icon={null}><a href="/tags/shell">shell</a></Tag>;
+// @ts-expect-error Kbd 的 children 与 keys 二选一。
+export const invalidKbdBoth = <Kbd keys={["mod", "K"]}>K</Kbd>;
+// @ts-expect-error Avatar 尺寸只有六档。
+export const invalidAvatarSize = <Avatar size={50} />;
+// @ts-expect-error Badge 色调只接受设计稿的六种。
+export const invalidBadgeTone = <Badge tone="primary" />;
+// @ts-expect-error Count 的 value 必填。
+export const invalidCountValue = <Count />;
+// @ts-expect-error BadgeAnchor 不再支持右下角位置。
+export const invalidAnchorPlacement = <BadgeAnchor placement="bottom-corner" badge={null}><span /></BadgeAnchor>;
+// @ts-expect-error 叶子入口保留相同的色调约束。
+export const invalidLeafTagTone = <LeafTag tone="ok">x</LeafTag>;
+
+const switchRef = createRef<HTMLButtonElement>();
+const radioRef = createRef<HTMLInputElement>();
+const fieldsetRef = createRef<HTMLFieldSetElement>();
+const switchProps: SwitchProps = { checked: true, defaultChecked: false, onCheckedChange: (checked: boolean) => void checked, size: "lg", loading: true, name: "dark", value: "on", form: "settings" };
+const radioGroupProps: RadioGroupProps = { legend: "谁可以评论", name: "audience", value: "all", defaultValue: "all", onValueChange: (value: string) => void value, orientation: "horizontal", appearance: "card", disabled: false, required: true };
+const radioProps: RadioProps = { value: "all", label: "所有人", description: "登录后即可评论", disabled: false };
+const toggleSingle: ToggleGroupProps = { type: "single", value: "left", defaultValue: "left", onValueChange: (value: string) => void value, variant: "bare", role: "toolbar", orientation: "horizontal", disabled: false, children: <ToggleGroupItem value="left">L</ToggleGroupItem> };
+const toggleMultiple: ToggleGroupProps = { type: "multiple", value: ["bold"], defaultValue: ["bold"], onValueChange: (value: string[]) => void value.length, variant: "track", children: <ToggleGroupItem value="bold">B</ToggleGroupItem> };
+export const controlExamples = <>
+	<Switch ref={switchRef} id="consumer-switch" {...switchProps} />
+	<LeafSwitch size="sm" />
+	<RadioGroup ref={fieldsetRef} {...radioGroupProps}>
+		<Radio ref={radioRef} {...radioProps} />
+		<LeafRadio value="friends" label="仅友链" />
+	</RadioGroup>
+	<LeafRadioGroup legend="排序" defaultValue="new"><LeafRadio value="new" label="最新" /></LeafRadioGroup>
+	<ToggleGroup aria-label="对齐" {...toggleSingle}>
+		<ToggleGroupItem value="left" aria-label="左对齐" title="左对齐" />
+		<ToggleGroupItem value="right" aria-label="右对齐" disabled />
+		<ToggleGroupSeparator />
+	</ToggleGroup>
+	<ToggleGroup aria-label="文字格式" {...toggleMultiple}>
+		<LeafToggleGroupItem value="bold" aria-label="加粗">B</LeafToggleGroupItem>
+	</ToggleGroup>
+	<Tabs defaultValue="articles" orientation="vertical" onValueChange={(value: string) => void value}>
+		<TabsList size="lg"><TabsTrigger value="articles" disabled>文章</TabsTrigger><TabsTrigger value="comments">评论<TabsCount>12</TabsCount></TabsTrigger></TabsList>
+		<TabsContent value="articles" forceMount>文章面板</TabsContent>
+		<TabsContent value="comments">评论面板</TabsContent>
+	</Tabs>
+</>;
+const selectRef = createRef<HTMLButtonElement>();
+const selectProps: SelectProps = { id: "status", "aria-describedby": "hint", "aria-invalid": true, value: "draft", onValueChange: (value: string) => void value, name: "status", disabled: false, readOnly: false, required: true, loading: false, open: true, onOpenChange: (open: boolean) => void open };
+const multiSelectProps: SelectProps = { multiple: true, value: ["Go"], defaultValue: ["Go"], onValueChange: (value: string[]) => void value.length };
+const selectTriggerProps: SelectTriggerProps = { variant: "outline", controlSize: "sm", invalid: true, valid: false, loading: false, maxChips: 3, id: "status", "aria-label": "状态", "aria-describedby": "hint" };
+export const selectExamples = <>
+	<Select {...selectProps}>
+		<SelectTrigger ref={selectRef} {...selectTriggerProps}><SelectValue placeholder="选择状态">已选</SelectValue></SelectTrigger>
+		<SelectContent container={null} collisionBoundary={null} empty="无选项" loading={false}>
+			<SelectGroup><SelectLabel>状态</SelectLabel><SelectItem value="draft" textValue="草稿" icon={<span />} description="未发布" meta="3 篇">草稿</SelectItem></SelectGroup>
+			<SelectSeparator />
+			<SelectItem value="published" disabled>已发布</SelectItem>
+		</SelectContent>
+	</Select>
+	<Select {...multiSelectProps}><SelectTrigger aria-label="标签"><SelectValue placeholder="添加标签" /></SelectTrigger><SelectContent><SelectItem value="Go">Go</SelectItem></SelectContent></Select>
+	<LeafSelect defaultValue="a"><LeafSelectTrigger aria-label="叶子"><LeafSelectValue /></LeafSelectTrigger><LeafSelectContent><LeafSelectItem value="a">甲</LeafSelectItem></LeafSelectContent></LeafSelect>
+</>;
+const comboboxRef = createRef<HTMLInputElement>();
+const comboboxOptions: ComboboxOption[] = [{ value: "hz", label: "杭州", description: "浙江", icon: <span />, meta: "3", disabled: false, group: "城市" }];
+const comboboxFilter: ComboboxFilter = (option, query) => option.label.includes(query);
+const comboboxProps: ComboboxProps = { options: comboboxOptions, value: "hz", onValueChange: (value: string) => void value, inputValue: "杭", onInputChange: (text: string, reason: ComboboxInputReason) => void [text, reason], onSearch: (query: string) => void query, filter: comboboxFilter, loading: false, name: "city", invalid: true, controlSize: "sm", variant: "outline", "aria-label": "城市" };
+const tagInputProps: TagInputProps = { value: ["Go"], onValueChange: (value: string[]) => void value.length, max: 5, suggestions: ["Rust"], validate: (tag: string) => (tag ? null : "不能为空"), normalize: (raw: string) => raw.trim(), onReject: (rejection: TagRejection) => void (rejection.reason satisfies TagRejectionReason), name: "topics", "aria-label": "标签" };
+const cascaderLoad: CascaderLoadData = async (path) => path.length ? [{ value: "x", label: "x", isLeaf: true }] : [];
+const cascaderOptions: CascaderOption[] = [{ value: "zj", label: "浙江", children: [{ value: "hz", label: "杭州" }], disabled: false }];
+const cascaderProps: CascaderProps = { options: cascaderOptions, value: ["zj", "hz"], onValueChange: (path: string[], nodes: CascaderOption[]) => void [path, nodes], changeOnSelect: true, loadData: cascaderLoad, searchable: true, name: "region", "aria-label": "地区" };
+const treeSelectOptions: TreeSelectOption[] = [{ value: "a", label: "文档", children: [{ value: "a1", label: "指南" }], meta: "1", lazy: false }];
+const treeSelectSingle: TreeSelectSingleProps = { options: treeSelectOptions, value: "a1", onValueChange: (value: string) => void value, leafOnly: true, "aria-label": "目录" };
+const treeSelectMultiple: TreeSelectMultipleProps = { multiple: true, options: treeSelectOptions, value: ["a1"], onValueChange: (value: string[]) => void value.length, "aria-label": "目录" };
+const treeSelectUnion: TreeSelectProps = treeSelectSingle;
+export const pickerFamilyExamples = <>
+	<Combobox ref={comboboxRef} {...comboboxProps} />
+	<LeafCombobox options={comboboxOptions} aria-label="叶子" />
+	<TagInput {...tagInputProps} />
+	<LeafTagInput defaultValue={["a"]} aria-label="叶子" />
+	<Cascader {...cascaderProps} />
+	<LeafCascader options={cascaderOptions} aria-label="叶子" />
+	<TreeSelect {...treeSelectUnion} />
+	<TreeSelect {...treeSelectMultiple} />
+	<LeafTreeSelect options={treeSelectOptions} aria-label="叶子" />
+</>;
+// @ts-expect-error Combobox 的值是字符串。
+export const invalidComboboxValue = <Combobox options={comboboxOptions} value={["hz"]} aria-label="城市" />;
+// @ts-expect-error Combobox 必须提供 options。
+export const invalidComboboxOptions = <Combobox aria-label="城市" />;
+// @ts-expect-error TagInput 的值必须是字符串数组。
+export const invalidTagInputValue = <TagInput value="Go" aria-label="标签" />;
+// @ts-expect-error Cascader 的值必须是字符串路径数组。
+export const invalidCascaderValue = <Cascader options={cascaderOptions} value="zj" aria-label="地区" />;
+// @ts-expect-error TreeSelect 多选的值必须是数组。
+export const invalidTreeSelectMultiple = <TreeSelect multiple options={treeSelectOptions} value="a1" aria-label="目录" />;
+// @ts-expect-error TreeSelect 单选的值是字符串。
+export const invalidTreeSelectSingle = <TreeSelect options={treeSelectOptions} value={["a1"]} aria-label="目录" />;
+// @ts-expect-error leafOnly 只属于单选。
+export const invalidTreeSelectLeafOnly = <TreeSelect multiple leafOnly options={treeSelectOptions} aria-label="目录" />;
+// @ts-expect-error 多选的值必须是数组。
+export const invalidMultipleValue = <Select multiple value="Go"><SelectTrigger aria-label="标签" /></Select>;
+// @ts-expect-error 单选的值是字符串，不是数组。
+export const invalidSingleValue = <Select value={["Go"]}><SelectTrigger aria-label="标签" /></Select>;
+// @ts-expect-error 多选的 onValueChange 收到数组。
+export const invalidMultipleChange = <Select multiple onValueChange={(value: string) => void value}><SelectTrigger aria-label="标签" /></Select>;
+// @ts-expect-error 触发器尺寸改用 controlSize，且只有三档。
+export const invalidSelectSize = <SelectTrigger aria-label="状态" controlSize="xl" />;
+// @ts-expect-error 旧的 size 属性已删除。
+export const invalidLegacySelectSize = <SelectTrigger aria-label="状态" size="sm" />;
+// @ts-expect-error SelectItem 的 value 必填。
+export const invalidSelectItem = <SelectItem>草稿</SelectItem>;
+// @ts-expect-error Switch 尺寸只有三档。
+export const invalidSwitchSize = <Switch size="default" />;
+// @ts-expect-error Switch 不存在 busy 属性。
+export const invalidSwitchBusy = <Switch busy />;
+// @ts-expect-error RadioGroup 的朝向只有两值。
+export const invalidRadioOrientation = <RadioGroup legend="排序" orientation="diagonal"><Radio value="a" label="甲" /></RadioGroup>;
+// @ts-expect-error Radio 的 value 必填。
+export const invalidRadioValue = <Radio label="甲" />;
+// @ts-expect-error ToggleGroup 的 value 类型随 type 区分。
+export const invalidToggleSingleValue = <ToggleGroup type="single" value={["bold"]}><ToggleGroupItem value="bold">B</ToggleGroupItem></ToggleGroup>;
+// @ts-expect-error ToggleGroup 的 role 只接受 group 与 toolbar。
+export const invalidToggleRole = <ToggleGroup type="multiple" role="radiogroup" aria-label="格式"><ToggleGroupItem value="bold">B</ToggleGroupItem></ToggleGroup>;
+// @ts-expect-error TabsList 尺寸只有两档。
+export const invalidTabsListSize = <Tabs defaultValue="a"><TabsList size="xl"><TabsTrigger value="a">甲</TabsTrigger></TabsList><TabsContent value="a">面板</TabsContent></Tabs>;
+
+const popoverContentRef = createRef<HTMLDivElement>();
+const popoverContentProps: PopoverContentProps = { side: "top", align: "end", sideOffset: 8, container: null, "aria-label": "标签筛选" };
+const hoverCardContentProps: HoverCardContentProps = { side: "bottom", container: null };
+const tooltipContentProps: TooltipContentProps = { arrow: false, shortcut: ["shift", "enter"], container: null, side: "right" };
+const menuContentProps: DropdownMenuContentProps = { align: "end", container: null, loop: true };
+const toasterProps: VioletToasterProps = { theme: "dark", position: "bottom-right", closeButton: true };
+export const overlayExamples = <>
+	<Popover defaultOpen onOpenChange={(open: boolean) => void open}>
+		<PopoverTrigger asChild><button type="button">标签</button></PopoverTrigger>
+		<PopoverContent ref={popoverContentRef} {...popoverContentProps}>筛选</PopoverContent>
+	</Popover>
+	<LeafPopover>
+		<LeafPopoverTrigger asChild><button type="button">分享</button></LeafPopoverTrigger>
+		<LeafPopoverContent>链接</LeafPopoverContent>
+	</LeafPopover>
+	<HoverCard openDelay={500} closeDelay={200}>
+		<HoverCardTrigger asChild><a href="/u/linjian">@林间</a></HoverCardTrigger>
+		<HoverCardContent {...hoverCardContentProps}>林间的名片</HoverCardContent>
+	</HoverCard>
+	<TooltipProvider delayDuration={0} skipDelayDuration={180}>
+		<Tooltip truncatedOnly onOpenChange={(open: boolean) => void open}>
+			<TooltipTrigger asChild><span>长标题</span></TooltipTrigger>
+			<TooltipContent {...tooltipContentProps}>完整标题</TooltipContent>
+		</Tooltip>
+		<LeafTooltip>
+			<LeafTooltipTrigger asChild><button type="button" aria-label="加粗">B</button></LeafTooltipTrigger>
+			<LeafTooltipContent shortcut={["shift", "b"]}>加粗</LeafTooltipContent>
+		</LeafTooltip>
+	</TooltipProvider>
+	<DropdownMenu>
+		<DropdownMenuTrigger asChild><button type="button">更多</button></DropdownMenuTrigger>
+		<DropdownMenuContent {...menuContentProps}>
+			<DropdownMenuItem variant="destructive" reason="草稿不能置顶" disabled inset>置顶</DropdownMenuItem>
+			<DropdownMenuCheckboxItem checked closeOnSelect onCheckedChange={(checked: boolean) => void checked}>显示摘要</DropdownMenuCheckboxItem>
+			<DropdownMenuSub>
+				<DropdownMenuSubTrigger>移动到系列</DropdownMenuSubTrigger>
+				<DropdownMenuSubContent><DropdownMenuItem>新建系列…</DropdownMenuItem></DropdownMenuSubContent>
+			</DropdownMenuSub>
+		</DropdownMenuContent>
+	</DropdownMenu>
+	<ContextMenu>
+		<ContextMenuTrigger asChild><div>右键这里</div></ContextMenuTrigger>
+		<ContextMenuContent container={null}>
+			<ContextMenuItem variant="destructive" reason="不可恢复">删除</ContextMenuItem>
+		</ContextMenuContent>
+	</ContextMenu>
+	<LeafDropdownMenu>
+		<LeafDropdownMenuTrigger asChild><button type="button">排序</button></LeafDropdownMenuTrigger>
+		<LeafDropdownMenuContent><LeafDropdownMenuItem>最新</LeafDropdownMenuItem></LeafDropdownMenuContent>
+	</LeafDropdownMenu>
+	<Toaster {...toasterProps} />
+	<LeafToaster hotkey={["altKey", "KeyT"]} visibleToasts={3} />
+</>;
+const dialogContentProps: DialogContentProps = { size: "lg", entrance: "settle", overlay: false, dirty: true, container: null };
+const commandItems: CommandItem[] = [
+	{ id: "post-1", label: "独库公路，六天", group: "posts", onSelect: ({ newTab }) => void newTab },
+	{ id: "cmd-theme", label: "切换主题", group: "commands", shortcut: ["mod", "shift", "t"], children: [{ id: "spring", label: "花朝", group: "" }] },
+];
+export const dialogFamily = <>
+	<Dialog onOpenChange={(open: boolean) => void open}>
+		<DialogTrigger asChild><button type="button">编辑资料</button></DialogTrigger>
+		<DialogContent {...dialogContentProps}>
+			<DialogHeader><DialogTitle>编辑资料</DialogTitle><DialogDescription>名字和简介会显示在评论旁边</DialogDescription></DialogHeader>
+			<DialogBody><input aria-label="昵称" /></DialogBody>
+			<DialogFooter><DialogClose asChild><button type="button">取消</button></DialogClose></DialogFooter>
+		</DialogContent>
+	</Dialog>
+	<Modal open onOpenChange={() => {}} title="新建角色" size="sm" footer={<button type="submit" form="role">创建</button>} dirty={false}>表单</Modal>
+	<ConfirmDialog open onOpenChange={() => {}} title="永久删除？" confirmLabel="永久删除" loading loadingLabel="正在删除…" error="网络中断" confirmText="Rust 全栈笔记" onConfirm={() => {}} />
+	<PromptDialog open onOpenChange={() => {}} title="重命名" maxLength={24} onConfirm={(value: string) => value.length > 0} />
+	<Sheet modal={false}>
+		<SheetContent side="left" size="sm" contentKey={1}>
+			<SheetHeader><SheetTitle>筛选</SheetTitle></SheetHeader>
+			<SheetBody>标签</SheetBody>
+			<SheetFooter><button type="button">重置</button></SheetFooter>
+		</SheetContent>
+	</Sheet>
+	<Drawer>
+		<DrawerContent snapPoints="half-full">
+			<DrawerHeader><DrawerTitle>筛选</DrawerTitle></DrawerHeader>
+			<DrawerBody>标签</DrawerBody>
+		</DrawerContent>
+	</Drawer>
+	<CommandList open onOpenChange={() => {}} items={commandItems} groups={[{ id: "posts", label: "文章" }]} query="" onQueryChange={() => {}} searching fullTextGroup="fulltext" onSearchAll={(query: string) => void query} />
+</>;
+// @ts-expect-error 对话框宽度只有 sm、md、lg、xl 四档。
+export const invalidDialogSize = <DialogContent size="huge" />;
+// @ts-expect-error 侧边面板只从左右两侧滑出，底部用抽屉。
+export const invalidSheetSide = <SheetContent side="bottom" />;
+// @ts-expect-error 抽屉只有随内容与半屏全屏两种高度档。
+export const invalidDrawerSnap = <DrawerContent snapPoints="three" />;
+// @ts-expect-error 确认框必须给出执行动作。
+export const invalidConfirm = <ConfirmDialog open onOpenChange={() => {}} title="永久删除？" />;
+// @ts-expect-error 命令项必须声明所属分组。
+export const invalidCommandItem: CommandItem = { id: "orphan", label: "无组" };
+// @ts-expect-error 提示的快捷键是键名数组，不是字符串。
+export const invalidTooltipShortcut = <TooltipContent shortcut="⌘B">加粗</TooltipContent>;
+// @ts-expect-error 菜单项的 variant 只有 default 与 destructive。
+export const invalidMenuVariant = <DropdownMenuItem variant="danger">删除</DropdownMenuItem>;
+// @ts-expect-error 悬停卡片的延迟是毫秒数。
+export const invalidHoverDelay = <HoverCard openDelay="500" />;
+
+const morphRootProps: MorphingPopoverProps = { defaultOpen: false, onOpenChange: (open: boolean) => void open, className: "pill" };
+const morphContentRef = createRef<HTMLDivElement>();
+const morphContentProps: MorphingPopoverContentProps = { role: "listbox", "aria-label": "回应", radius: 20, outset: 6, ghost: <span>＋</span>, ghostClassName: "pointer-events-none" };
+export const morphingExamples = <>
+	<MorphingPopover {...morphRootProps}>
+		<MorphingPopoverTrigger asChild><button type="button">添加回应</button></MorphingPopoverTrigger>
+		<MorphingPopoverContent ref={morphContentRef} {...morphContentProps}>表情</MorphingPopoverContent>
+	</MorphingPopover>
+	<LeafMorphingPopover open onOpenChange={() => {}}>
+		<LeafMorphingPopoverTrigger>状态</LeafMorphingPopoverTrigger>
+		<LeafMorphingPopoverContent>内容</LeafMorphingPopoverContent>
+	</LeafMorphingPopover>
+</>;
+// @ts-expect-error 圆角是像素数，不是 CSS 字符串。
+export const invalidMorphRadius = <MorphingPopoverContent radius="16px" />;
+// @ts-expect-error 展开与否的回调接收布尔值。
+export const invalidMorphChange = <MorphingPopover onOpenChange={(open: string) => void open} />;

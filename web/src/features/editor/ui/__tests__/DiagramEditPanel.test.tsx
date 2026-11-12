@@ -63,7 +63,7 @@ describe("DiagramEditPanel 预览状态", () => {
 		const preview = container.querySelector(".diagram-preview");
 		expect(preview?.innerHTML).toContain("stale");
 		// 叠加半透明 spinner
-		expect(container.querySelector(".animate-spin")).toBeTruthy();
+		expect(container.querySelector(".v-spinner")).toBeTruthy();
 	});
 
 	it("空源码 + 非 loading 时显示占位提示", () => {

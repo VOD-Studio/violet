@@ -1,5 +1,12 @@
-import type { EmojiGroup } from "@entities/emoji/model/types";
-import { emojiKeys } from "@features/emojis/api/keys";
+import {
+	addSelfReaction,
+	captureReaction,
+	removeSelfReaction,
+	restoreReaction,
+} from "@entities/reaction/lib/optimistic";
+import type { AggregatedReaction } from "@entities/reaction/model/types";
+import { useMe } from "@features/auth/api/queries";
+import { findCachedEmoji } from "@features/emojis/api/cache";
 import type { PagedResponse } from "@shared/api/types";
 import {
 	type InfiniteData,
@@ -10,6 +17,7 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { toast } from "sonner";
 import {
 	type ChatSendRequest,
 	enqueueChatMessage,
@@ -17,7 +25,6 @@ import {
 } from "../model/chat-outbox";
 import type {
 	ChatMessage,
-	ChatMessageReaction,
 	CreateConversationInput,
 	EditChatMessageInput,
 	PushSubscriptionInput,
@@ -239,84 +246,76 @@ export const useSendChatMessage = () => {
 
 export const useAddChatMessageReaction = (conversationID: string, messageID: string) => {
 	const qc = useQueryClient();
+	const me = useMe();
 	const queryKey = chatKeys.messages(conversationID);
 	return useMutation({
 		mutationFn: (emojiID: number) => addChatMessageReaction(conversationID, messageID, emojiID),
 		onMutate: async (emojiID) => {
 			await qc.cancelQueries({ queryKey });
-			const previous = qc.getQueryData<InfiniteData<PagedResponse<ChatMessage>>>(queryKey);
-			const emoji = findEmojiById(qc, emojiID);
-			if (emoji) {
+			const previous = captureMessageReaction(qc, queryKey, messageID, emojiID);
+			const emoji = findCachedEmoji(qc, emojiID);
+			const user = me.data;
+			if (user) {
 				qc.setQueryData<InfiniteData<PagedResponse<ChatMessage>>>(queryKey, (old) =>
-					updateChatMessageReactions(old, messageID, (reactions) => {
-						const index = reactions.findIndex(
-							(reaction) => reaction.emoji_id === emojiID,
-						);
-						if (index >= 0) {
-							const reaction = reactions[index];
-							if (reaction.self) return reactions;
-							const next = [...reactions];
-							next[index] = { ...reaction, count: reaction.count + 1, self: true };
-							return next;
-						}
-						return [
-							...reactions,
-							{
-								emoji_id: emojiID,
-								emoji_name: emoji.name,
-								emoji_url: emoji.url,
-								gif_url: emoji.gif_url ?? "",
-								count: 1,
-								self: true,
-							},
-						];
-					}),
+					updateChatMessageReactions(old, messageID, (reactions) =>
+						addSelfReaction(
+							reactions,
+							emojiID,
+							{ id: user.id, name: user.display_name || user.username },
+							emoji,
+						),
+					),
 				);
 			}
 			return { previous };
 		},
-		onError: (_error, _emojiID, context) => {
-			if (context?.previous) qc.setQueryData(queryKey, context.previous);
+		onError: (_error, emojiID, context) => {
+			const previous = context?.previous;
+			if (previous) {
+				qc.setQueryData<InfiniteData<PagedResponse<ChatMessage>>>(queryKey, (old) =>
+					updateChatMessageReactions(old, messageID, (reactions) =>
+						restoreReaction(reactions, emojiID, previous),
+					),
+				);
+			}
+			toast.error("回应没有成功");
 		},
-		onSettled: () => {
-			qc.invalidateQueries({ queryKey });
-		},
+		onSettled: () => qc.invalidateQueries({ queryKey }),
 	});
 };
 
 export const useRemoveChatMessageReaction = (conversationID: string, messageID: string) => {
 	const qc = useQueryClient();
+	const me = useMe();
 	const queryKey = chatKeys.messages(conversationID);
 	return useMutation({
 		mutationFn: (emojiID: number) =>
 			removeChatMessageReaction(conversationID, messageID, emojiID),
 		onMutate: async (emojiID) => {
 			await qc.cancelQueries({ queryKey });
-			const previous = qc.getQueryData<InfiniteData<PagedResponse<ChatMessage>>>(queryKey);
-			qc.setQueryData<InfiniteData<PagedResponse<ChatMessage>>>(queryKey, (old) =>
-				updateChatMessageReactions(old, messageID, (reactions) => {
-					const index = reactions.findIndex((reaction) => reaction.emoji_id === emojiID);
-					if (index < 0 || !reactions[index].self) return reactions;
-					if (reactions[index].count <= 1) {
-						return reactions.filter((_, reactionIndex) => reactionIndex !== index);
-					}
-					const next = [...reactions];
-					next[index] = {
-						...reactions[index],
-						count: reactions[index].count - 1,
-						self: false,
-					};
-					return next;
-				}),
-			);
+			const previous = captureMessageReaction(qc, queryKey, messageID, emojiID);
+			const user = me.data;
+			if (user) {
+				qc.setQueryData<InfiniteData<PagedResponse<ChatMessage>>>(queryKey, (old) =>
+					updateChatMessageReactions(old, messageID, (reactions) =>
+						removeSelfReaction(reactions, emojiID, user.id),
+					),
+				);
+			}
 			return { previous };
 		},
-		onError: (_error, _emojiID, context) => {
-			if (context?.previous) qc.setQueryData(queryKey, context.previous);
+		onError: (_error, emojiID, context) => {
+			const previous = context?.previous;
+			if (previous) {
+				qc.setQueryData<InfiniteData<PagedResponse<ChatMessage>>>(queryKey, (old) =>
+					updateChatMessageReactions(old, messageID, (reactions) =>
+						restoreReaction(reactions, emojiID, previous),
+					),
+				);
+			}
+			toast.error("回应没有成功");
 		},
-		onSettled: () => {
-			qc.invalidateQueries({ queryKey });
-		},
+		onSettled: () => qc.invalidateQueries({ queryKey }),
 	});
 };
 
@@ -342,21 +341,14 @@ export const useSaveChatPushSubscription = () =>
 export const useDeleteChatPushSubscription = () =>
 	useMutation({ mutationFn: (endpoint: string) => deleteChatPushSubscription(endpoint) });
 
-function findEmojiById(qc: QueryClient, emojiID: number) {
-	const groups = qc.getQueryData<EmojiGroup[]>(emojiKeys.publicGroupList());
-	for (const group of groups ?? []) {
-		const emoji = group.emojis.find((item) => item.id === emojiID);
-		if (emoji) return emoji;
-	}
-	return null;
-}
-
 function updateChatMessageReactions(
 	data: InfiniteData<PagedResponse<ChatMessage>> | undefined,
 	messageID: string,
-	update: (reactions: ChatMessageReaction[]) => ChatMessageReaction[],
+	update: (reactions: AggregatedReaction[]) => AggregatedReaction[],
 ) {
-	if (!data) return data;
+	if (!data) {
+		return data;
+	}
 	return {
 		...data,
 		pages: data.pages.map((page) => ({
@@ -368,4 +360,20 @@ function updateChatMessageReactions(
 			),
 		})),
 	};
+}
+
+function captureMessageReaction(
+	qc: QueryClient,
+	queryKey: readonly unknown[],
+	messageId: string,
+	emojiId: number,
+) {
+	const data = qc.getQueryData<InfiniteData<PagedResponse<ChatMessage>>>(queryKey);
+	for (const page of data?.pages ?? []) {
+		const message = page.data.find((entry) => entry.id === messageId);
+		if (message) {
+			return captureReaction(message.reactions, emojiId);
+		}
+	}
+	return undefined;
 }

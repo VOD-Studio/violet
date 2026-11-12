@@ -1,27 +1,14 @@
-/**
- * CommentForm - 评论输入表单（双模式）
- *
- * PRD-0001 双轨认证：
- *   - 登录态（isLoggedIn=true）：单步直发，作者信息从会话取（前端不传 author_*），
- *     提交成功后立即看到自己 pending 评论 + 「审批中」徽章。
- *   - 匿名态（isLoggedIn=false）：两步流
- *       1. 填昵称 + 邮箱 → 点「发送验证码」（useSendCommentCode）
- *       2. 收到邮箱 6 位码 → 用 InputOTP 收码 + 填评论内容 → 提交（带 code）
- *     提交成功后 toast（黑洞模式看不到自己刚提交的）。
- *     验证码错误 → 400；同一文章已留过言 → 409，均由 toast 反馈。
- *
- * 复用：InputOTP + ResendButton（匿名验证码两步流核心 UI 已就位）。
- */
+/** 登录用户直接评论；匿名用户先发送邮箱验证码，再随评论一起提交。 */
 
 import { useCreateComment, useSendCommentCode } from "@features/comments/api/mutations";
 import type { Comment, CreateComment } from "@features/comments/model/types";
 import { ApiError } from "@shared/api/error";
-import { Input, InputOTP, InputOTPGroup, InputOTPSlot, ResendButton } from "@violet/ui";
-
-import { Loader2, MailCheck, Send } from "lucide-react";
+import type { PictureInput } from "@shared/ui/rich-text-input/RichTextInput";
+import { Button, Field, Input, InputOTP, iconProps, ResendButton, Spinner } from "@violet/ui";
+import { MailCheck, Send } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { type PictureInput, RichCommentInput } from "./RichCommentInput";
+import { RichCommentInput } from "./RichCommentInput";
 
 export interface CommentFormProps {
 	/** 文章 id */
@@ -32,6 +19,12 @@ export interface CommentFormProps {
 	isLoggedIn: boolean;
 	/** 紧凑模式（回复框）；默认 false（顶级评论） */
 	compact?: boolean;
+	/**
+	 * 输入布局：field 把输入收进组件库字段，图标钮与文字同行，用于批注卡内的回复。
+	 *
+	 * @default "stacked"
+	 */
+	layout?: "stacked" | "field";
 	/** 是否允许上传图片；默认 true */
 	enableImage?: boolean;
 	/** 提交成功回调，参数为后端返回的新评论对象 */
@@ -43,6 +36,7 @@ export function CommentForm({
 	parentId,
 	isLoggedIn,
 	compact = false,
+	layout = "stacked",
 	enableImage = true,
 	onSuccess,
 }: CommentFormProps) {
@@ -58,6 +52,9 @@ export function CommentForm({
 	const [email, setEmail] = useState("");
 	const [code, setCode] = useState("");
 	const [codeSent, setCodeSent] = useState(false);
+	const [codeError, setCodeError] = useState("");
+	const [invalidCode, setInvalidCode] = useState(false);
+	const codeSession = useRef(0);
 
 	const sendCode = useSendCommentCode(postId);
 	const createComment = useCreateComment(postId);
@@ -68,12 +65,18 @@ export function CommentForm({
 			toast.error("请先填写邮箱");
 			return false;
 		}
+		const session = codeSession.current;
 		try {
 			await sendCode.mutateAsync({ email: email.trim() });
+			if (session !== codeSession.current) return false;
+			setCode("");
+			setCodeError("");
+			setInvalidCode(false);
 			setCodeSent(true);
 			toast.success("验证码已发送至邮箱");
 			return true;
 		} catch (err) {
+			if (session !== codeSession.current) return false;
 			toastError(err, "发送验证码失败");
 			return false;
 		}
@@ -95,6 +98,7 @@ export function CommentForm({
 			payload.author_email = email.trim();
 			payload.code = code.trim();
 		}
+		const session = codeSession.current;
 		createComment.mutate(payload, {
 			onSuccess: (newComment) => {
 				if (newComment.status === "pending") {
@@ -109,11 +113,26 @@ export function CommentForm({
 				setResetNonce((n) => n + 1);
 				setAuthorName("");
 				setEmail("");
+				codeSession.current += 1;
+				setCodeError("");
+				setInvalidCode(false);
 				setCode("");
 				setCodeSent(false);
 				onSuccess?.(newComment);
 			},
-			onError: (err) => toastError(err, "提交失败"),
+			onError: (err) => {
+				if (
+					!isLoggedIn &&
+					session === codeSession.current &&
+					err instanceof ApiError &&
+					err.code === "BAD_REQUEST" &&
+					err.message === "验证码错误或已过期"
+				) {
+					setCodeError(err.message);
+					setInvalidCode(true);
+				}
+				toastError(err, "提交失败");
+			},
 		});
 	};
 
@@ -134,26 +153,24 @@ export function CommentForm({
 							<Input
 								type="email"
 								aria-label="邮箱"
-								classNames={{ root: "min-w-0 flex-1" }}
+								classNames={{ control: "min-w-0 flex-1" }}
 								placeholder="邮箱 *"
 								value={email}
 								onChange={(e) => {
 									setEmail(e.target.value);
-									if (codeSent) setCodeSent(false); // 换邮箱重置发码状态
+									codeSession.current += 1;
+									setCodeSent(false);
+									setCode("");
+									setCodeError("");
+									setInvalidCode(false);
 								}}
 								required
 							/>
 							<ResendButton
 								onResend={handleSendCode}
 								resetKey={email}
-								disabled={sendCode.isPending}
-								label={
-									sendCode.isPending
-										? "发送中…"
-										: codeSent
-											? "重新发送"
-											: "发送验证码"
-								}
+								disabled={createComment.isPending}
+								label={codeSent ? "重新发送" : "发送验证码"}
 							/>
 						</div>
 					</div>
@@ -163,16 +180,20 @@ export function CommentForm({
 								<MailCheck className="size-4" />
 								验证码已发送至 {email}
 							</div>
-							<InputOTP maxLength={6} value={code} onChange={setCode}>
-								<InputOTPGroup>
-									<InputOTPSlot index={0} />
-									<InputOTPSlot index={1} />
-									<InputOTPSlot index={2} />
-									<InputOTPSlot index={3} />
-									<InputOTPSlot index={4} />
-									<InputOTPSlot index={5} />
-								</InputOTPGroup>
-							</InputOTP>
+							<Field label="邮箱验证码" error={codeError}>
+								<InputOTP
+									name="code"
+									value={code}
+									onChange={(value) => {
+										setCode(value);
+										setInvalidCode(false);
+										if (value) setCodeError("");
+									}}
+									invalid={invalidCode && !createComment.isPending}
+									disabled={createComment.isPending}
+									required
+								/>
+							</Field>
 						</div>
 					)}
 				</div>
@@ -183,6 +204,7 @@ export function CommentForm({
 				value={body}
 				onChange={setBody}
 				compact={compact}
+				layout={layout}
 				disabled={createComment.isPending}
 				enableImage={isLoggedIn && enableImage}
 				maxImages={10}
@@ -198,24 +220,43 @@ export function CommentForm({
 								匿名留言需邮箱验证码，审核通过后登录可见
 							</span>
 						)}
-						<button
-							ref={submitRef}
-							type="submit"
-							disabled={
-								createComment.isPending ||
-								isUploading ||
-								(!isLoggedIn && (!codeSent || code.length !== 6))
-							}
-							title="发送"
-							aria-label="发送"
-							className="inline-flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-						>
-							{createComment.isPending ? (
-								<Loader2 className="size-3.5 animate-spin" />
-							) : (
-								<Send className="size-3.5" />
-							)}
-						</button>
+						{layout === "field" ? (
+							<Button
+								ref={submitRef}
+								type="submit"
+								variant={body.trim() ? "primary" : "ghost"}
+								size="sm"
+								iconOnly
+								aria-label="发送"
+								loading={createComment.isPending}
+								disabled={
+									!body.trim() ||
+									isUploading ||
+									(!isLoggedIn && (!codeSent || code.length !== 6))
+								}
+							>
+								<Send />
+							</Button>
+						) : (
+							<button
+								ref={submitRef}
+								type="submit"
+								disabled={
+									createComment.isPending ||
+									isUploading ||
+									(!isLoggedIn && (!codeSent || code.length !== 6))
+								}
+								title="发送"
+								aria-label="发送"
+								className="inline-flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+							>
+								{createComment.isPending ? (
+									<Spinner size={16} aria-hidden="true" />
+								) : (
+									<Send {...iconProps(14)} />
+								)}
+							</button>
+						)}
 					</>
 				}
 			/>

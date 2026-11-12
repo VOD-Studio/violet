@@ -7,8 +7,8 @@
  * - 暂停时（非 loading/error）：中央大播放按钮
  */
 
-import { Button } from "@violet/ui";
-import { AlertCircle, Play, RotateCcw } from "lucide-react";
+import { Button, iconProps } from "@violet/ui";
+import { CircleAlert, Play, RotateCcw } from "lucide-react";
 
 import type { VideoLoadStatus } from "../types/video-preview-types";
 
@@ -40,10 +40,10 @@ export function VideoOverlay({
 	if (loadStatus === "error") {
 		return (
 			<div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-black/60 text-white">
-				<AlertCircle className="size-10 text-red-400" />
+				<CircleAlert className="size-6 text-red-400" />
 				<p className="text-sm">视频加载失败</p>
 				<Button type="button" variant="outline" size="sm" onClick={onRetry}>
-					<RotateCcw className="mr-1.5 size-3.5" />
+					<RotateCcw {...iconProps(14)} />
 					重试
 				</Button>
 			</div>
@@ -61,9 +61,9 @@ export function VideoOverlay({
 			>
 				<span className="flex size-16 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-transform group-hover:scale-110">
 					{isEnded ? (
-						<RotateCcw className="size-7" />
+						<RotateCcw className="size-6" />
 					) : (
-						<Play className="ml-1 size-7 fill-current" />
+						<Play className="ml-1 size-6 fill-current" />
 					)}
 				</span>
 			</button>

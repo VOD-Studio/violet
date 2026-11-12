@@ -1,5 +1,9 @@
 import { useSharedTweet } from "@entities/tweet/api/queries";
-import { SharedTweetSummary } from "./SharedTweetSummary";
+import { ApiError } from "@shared/api/error";
+import { formatDateTime, formatRelativeTime } from "@shared/lib/date";
+import { avatarUrl, contentImageUrl } from "@shared/lib/image-url";
+import { TWEET_MESSAGES } from "@shared/lib/tweet-messages";
+import { QuoteCard } from "@violet/ui";
 
 /** 分享选择与待发送横条都读取当前推文，避免继续展示已撤回的来源。 */
 export function TweetSharingPreview({ id }: { id: string }) {
@@ -10,6 +14,9 @@ export function TweetSharingPreview({ id }: { id: string }) {
 				正在读取推文…
 			</p>
 		);
+	if (query.isError && query.error instanceof ApiError && query.error.status === 404) {
+		return <QuoteCard deleted />;
+	}
 	if (query.isError)
 		return (
 			<p role="alert" className="text-xs text-muted-foreground">
@@ -18,12 +25,20 @@ export function TweetSharingPreview({ id }: { id: string }) {
 		);
 	const tweet = query.data;
 	if (!tweet) return null;
+	const thumbnail = tweet.images[0];
 	return (
-		<div className="rounded-xl border border-border bg-card p-3">
-			<SharedTweetSummary tweet={tweet} />
-			{tweet.quote_of && !tweet.quoted_tweet && (
-				<p className="mt-2 text-xs text-muted-foreground">被引用的本站推文已删除</p>
-			)}
-		</div>
+		<QuoteCard
+			authorName={tweet.author.username}
+			authorAvatar={avatarUrl(tweet.author.avatar_url, tweet.author.username)}
+			time={formatRelativeTime(new Date(tweet.created_at))}
+			timeTitle={formatDateTime(tweet.created_at, "long")}
+			content={tweet.content}
+			imageSrc={thumbnail ? contentImageUrl(thumbnail.url, { width: 128 }) : undefined}
+			nested={
+				tweet.quoted_tweet || tweet.quote_of || tweet.external_tweet
+					? TWEET_MESSAGES.quoteNested
+					: undefined
+			}
+		/>
 	);
 }

@@ -47,7 +47,6 @@ test("SSR 图片早于水合加载完成后，小图和动图释放最小占位"
 				.toBe(true);
 		}
 		release();
-		await expect(page.locator("[data-article-content] pre.shiki")).toBeAttached();
 		for (const name of ["水合前小图", "水合前动图"]) {
 			const image = page.getByAltText(name, { exact: true });
 			await expect.poll(async () => (await image.boundingBox())?.height).toBe(60);
@@ -76,7 +75,6 @@ test("已加载的 SSR 封面足够清晰时，水合测量不会降档重下", 
 			.toBe(true);
 		const selected = await cover.evaluate((image: HTMLImageElement) => image.currentSrc);
 		release();
-		await expect(page.locator("[data-article-content] pre.shiki")).toBeAttached();
 		await page.waitForLoadState("networkidle");
 		expect(await cover.evaluate((image: HTMLImageElement) => image.currentSrc)).toBe(selected);
 		expect(requests).toEqual([selected]);

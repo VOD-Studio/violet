@@ -7,9 +7,8 @@ import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useDeleteTweet, useToggleLikeTweet } from "@features/tweets/api/mutations";
 import { tokenizeLinks } from "@shared/lib/linkify";
 import { useNavigate } from "@tanstack/react-router";
-import { ConfirmDialog, Modal } from "@violet/ui";
+import { ConfirmDialog, Modal, QuoteCard } from "@violet/ui";
 import { TweetCard as TweetCardLayout } from "@violetjs/react-tweet";
-import { AlertCircle } from "lucide-react";
 import { type MouseEvent, useState } from "react";
 import { toast } from "sonner";
 import { ExternalTweetActions } from "./ExternalTweetActions";
@@ -196,12 +195,7 @@ const TweetCard = ({
 								<ExternalTweetCard tweet={tweet.external_tweet} />
 							)}
 							{tweet.quoted_tweet && <QuotedTweetCard tweet={tweet.quoted_tweet} />}
-							{tweet.quote_of && !tweet.quoted_tweet && (
-								<div className="flex items-center gap-2 rounded-xl border border-edge-hairline bg-muted/20 p-3 text-xs text-muted-foreground">
-									<AlertCircle className="size-4 shrink-0" />
-									<span>推文已删除</span>
-								</div>
-							)}
+							{tweet.quote_of && !tweet.quoted_tweet && <QuoteCard deleted />}
 						</div>
 					) : null
 				}

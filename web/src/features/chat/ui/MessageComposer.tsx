@@ -3,19 +3,15 @@
  */
 import { toEmojiToken } from "@entities/emoji/model/token";
 import { type PendingChatShare, useShareTweetStore } from "@entities/tweet/model/share-store";
+import { useMyCustomEmojis } from "@features/customemoji/api/queries";
+import type { ImageUploadReference } from "@shared/lib/image-upload-task";
+import type { RichTextInputHandle } from "@shared/ui/rich-text-input/RichTextInput";
 import {
 	extractImageIds,
 	stripImagePlaceholders,
 	stripPlaceholdersForPreview,
-} from "@features/comments/hooks/use-rich-text-input";
-import {
-	RichCommentInput,
-	type RichCommentInputHandle,
-} from "@features/comments/ui/RichCommentInput";
-import { useMyCustomEmojis } from "@features/customemoji/api/queries";
-import type { ImageUploadReference } from "@shared/lib/image-upload-task";
-import { Button } from "@violet/ui";
-
+} from "@shared/ui/rich-text-input/use-rich-text-input";
+import { Button, iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { MessageSquareQuote, Reply, Send, X } from "lucide-react";
 import {
@@ -40,11 +36,12 @@ import {
 	botTargetListboxId,
 	botTargetOptionId,
 } from "./BotCommandMenu";
+import { ChatRichInput } from "./ChatRichInput";
 import { TweetSharingPreview } from "./TweetSharingPreview";
 
 export interface MessageComposerProps {
 	/** 接收会话内点击用户名触发的提及。 */
-	inputRef?: Ref<RichCommentInputHandle>;
+	inputRef?: Ref<RichTextInputHandle>;
 	conversationID: string;
 	/** 仅房间提供全体提及候选。 */
 	conversationKind?: ConversationKind;
@@ -77,9 +74,9 @@ export function MessageComposer({
 	const [activeCommandIndex, setActiveCommandIndex] = useState(0);
 	const [activeTargetIndex, setActiveTargetIndex] = useState(0);
 	const [needsTarget, setNeedsTarget] = useState(false);
-	const richInputRef = useRef<RichCommentInputHandle | null>(null);
+	const richInputRef = useRef<RichTextInputHandle | null>(null);
 	const setRichInputRef = useCallback(
-		(handle: RichCommentInputHandle | null) => {
+		(handle: RichTextInputHandle | null) => {
 			richInputRef.current = handle;
 			if (typeof inputRef === "function") inputRef(handle);
 			else if (inputRef) inputRef.current = handle;
@@ -362,7 +359,7 @@ export function MessageComposer({
 							onClick={clearPendingShare}
 							type="button"
 						>
-							<X className="size-3.5" />
+							<X {...iconProps(14)} />
 						</button>
 					</div>
 				) : (
@@ -389,7 +386,7 @@ export function MessageComposer({
 								onClick={onCancelReply}
 								type="button"
 							>
-								<X className="size-3.5" />
+								<X {...iconProps(14)} />
 							</button>
 						</div>
 					)
@@ -399,7 +396,7 @@ export function MessageComposer({
 						<TweetSharingPreview id={pendingShare.tweet.id} />
 					</div>
 				)}
-				<RichCommentInput
+				<ChatRichInput
 					ref={setRichInputRef}
 					autoFocus
 					value={content}
@@ -455,7 +452,7 @@ export function MessageComposer({
 							title="发送（Enter），Shift+Enter 换行"
 							disabled={!canSend}
 							onClick={() => void sendMessage()}
-							size="icon"
+							iconOnly
 							className={cn(
 								"rounded-full transition-colors",
 								canSend

@@ -12,8 +12,8 @@
 import { computeBlockId } from "./block-id";
 import type { CandidateBlock } from "./relocate";
 
-/** 块级元素选择器：批注可锚定的元素类型。 */
-const BLOCK_SELECTOR = "p, h2, h3, h4, h5, li, pre, blockquote, [data-runnable='true']";
+/** 历史锚点继续定位代码/可运行块；同时收录新支持的 h1、h6 标题。 */
+const BLOCK_SELECTOR = "p, h1, h2, h3, h4, h5, h6, li, pre, blockquote, [data-runnable='true']";
 
 /**
  * getBlockText 读取块的纯文本，是 computeBlockId 与选区锚点共用的取文本口径。

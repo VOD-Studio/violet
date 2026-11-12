@@ -16,12 +16,12 @@ import {
 import {
 	Button,
 	Dialog,
+	DialogBody,
 	DialogContent,
 	DialogDescription,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-	InlineError,
 	Input,
 	Label,
 } from "@violet/ui";
@@ -82,7 +82,7 @@ export function AICoverDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-xl">
+			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>AI 生成封面</DialogTitle>
 					<DialogDescription>
@@ -91,76 +91,91 @@ export function AICoverDialog({
 							: "候选会存入素材库；点选一张先回填表单，随「创建」一起提交。"}
 					</DialogDescription>
 				</DialogHeader>
-				<div className="space-y-4">
-					<div className="space-y-2">
-						<Label htmlFor="ai-cover-prompt">画面描述</Label>
-						<Input
-							id="ai-cover-prompt"
-							value={prompt}
-							placeholder={defaultPrompt}
-							onChange={(e) => setPrompt(e.target.value)}
-							disabled={generate.isPending}
-						/>
-						<p className="text-muted-foreground text-xs">
-							留空时按上面的默认文案生成。
-						</p>
-					</div>
-					<div className="space-y-2">
-						<Label htmlFor="ai-cover-count">张数</Label>
-						<div className="flex gap-2">
-							{[2, 3, MAX_COUNT].map((n) => (
-								<Button
-									key={n}
-									type="button"
-									size="sm"
-									variant={count === n ? "default" : "outline"}
-									disabled={generate.isPending}
-									onClick={() => setCount(n)}
-								>
-									{n} 张
-								</Button>
-							))}
+				<DialogBody>
+					<div className="space-y-4">
+						<div className="space-y-2">
+							<Label htmlFor="ai-cover-prompt">画面描述</Label>
+							<Input
+								id="ai-cover-prompt"
+								value={prompt}
+								placeholder={defaultPrompt}
+								onChange={(e) => setPrompt(e.target.value)}
+								disabled={generate.isPending}
+							/>
+							<p className="text-muted-foreground text-xs">
+								留空时按上面的默认文案生成。
+							</p>
 						</div>
-					</div>
-
-					{generate.isPending ? (
-						<div className="grid grid-cols-2 gap-3">
-							{Array.from({ length: count }, (_, i) => (
-								<div
-									key={i}
-									className="aspect-2/3 animate-pulse rounded-lg bg-muted"
-								/>
-							))}
+						<div className="space-y-2">
+							<Label htmlFor="ai-cover-count">张数</Label>
+							<div className="flex gap-2">
+								{[2, 3, MAX_COUNT].map((n) => (
+									<Button
+										key={n}
+										type="button"
+										size="sm"
+										variant={count === n ? "primary" : "outline"}
+										disabled={generate.isPending}
+										onClick={() => setCount(n)}
+									>
+										{n} 张
+									</Button>
+								))}
+							</div>
 						</div>
-					) : null}
 
-					{generate.isError && generate.error ? (
-						<InlineError
-							message={generate.error.message}
-							onRetry={() => handleGenerate()}
-							retrying={generate.isPending}
-						/>
-					) : null}
-
-					{!generate.isPending && urls.length > 0 ? (
-						<div className="grid grid-cols-2 gap-3">
-							{urls.map((url) => (
-								<button
-									key={url}
-									type="button"
-									onClick={() => handlePick(url)}
-									className="group overflow-hidden rounded-lg border border-edge-hairline transition-colors hover:border-primary"
-								>
-									<img
-										src={url}
-										alt="AI 封面候选"
-										className="aspect-2/3 w-full object-cover transition-transform group-hover:scale-[1.02]"
+						{generate.isPending ? (
+							<div className="grid grid-cols-2 gap-3">
+								{Array.from({ length: count }, (_, i) => (
+									<div
+										key={i}
+										className="aspect-2/3 animate-pulse rounded-lg bg-muted"
 									/>
-								</button>
-							))}
-						</div>
-					) : null}
-				</div>
+								))}
+							</div>
+						) : null}
+
+						{generate.isError && generate.error ? (
+							<div
+								role="alert"
+								className="flex items-center justify-between gap-3 border-b border-edge-hairline py-3"
+							>
+								<p className="min-w-0 text-destructive text-sm">
+									{generate.error.message}
+								</p>
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									loading={generate.isPending}
+									loadingText="进行中…"
+									onClick={() => handleGenerate()}
+								>
+									重试
+								</Button>
+							</div>
+						) : null}
+
+						{!generate.isPending && urls.length > 0 ? (
+							<div className="grid grid-cols-2 gap-3">
+								{urls.map((url) => (
+									<button
+										key={url}
+										type="button"
+										onClick={() => handlePick(url)}
+										className="group overflow-hidden rounded-lg border border-edge-hairline transition-colors hover:border-primary"
+									>
+										<img
+											src={url}
+											alt="AI 封面候选"
+											className="aspect-2/3 w-full object-cover transition-transform group-hover:scale-[1.02]"
+										/>
+									</button>
+								))}
+							</div>
+						) : null}
+					</div>
+				</DialogBody>
 				<DialogFooter>
 					<Button type="button" onClick={handleGenerate} disabled={generate.isPending}>
 						<WandSparkles className="size-4" />

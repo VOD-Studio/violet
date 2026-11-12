@@ -1,4 +1,5 @@
 import type { SessionClaims } from "@entities/user/model/types";
+import { PageLoading } from "@shared/ui/page-loading";
 // 文章里的 roadmap 卡片：服务端与客户端都要登记，两边渲染才一致
 import RouteError from "@shared/ui/route-error";
 import type { QueryClient } from "@tanstack/react-query";
@@ -7,7 +8,6 @@ import {
 	type RegisteredRouter,
 } from "@tanstack/react-router";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
-import { RuaLoading } from "@widgets/PersonaMotion";
 import "./register-article-embeds";
 import { routeTree } from "./routeTree.gen";
 import { clientQueryClient, createQueryClient } from "./shared/api/query-client";
@@ -38,7 +38,7 @@ export const getRouter = () => {
 		scrollRestoration: true,
 		defaultPreload: "intent",
 		defaultPreloadStaleTime: 30_000,
-		defaultPendingComponent: RuaLoading,
+		defaultPendingComponent: PageLoading,
 		// 路由级错误在出错路由自己的槽位渲染（壳层 Header/Footer 保留），
 		// 根级错误才落 __root errorComponent 的整页兜底
 		defaultErrorComponent: RouteError,

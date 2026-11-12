@@ -15,12 +15,14 @@ import {
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
+	iconProps,
 } from "@violet/ui";
 import { cn } from "cn";
 import { ChevronDown, ImagePlus, Upload } from "lucide-react";
 import type { MouseEvent } from "react";
 import { useMemo } from "react";
 
+import { useEditorTextColor } from "../hooks/useEditorTextColor";
 import type { ResolvedFeatures } from "../lib/features";
 import { buildToolbarItems, TOOLBAR_DIVIDER, type ToolbarItem } from "./toolbar-items";
 
@@ -36,13 +38,15 @@ interface EditorToolbarProps {
 	onInsertLink: () => void;
 }
 
-/**
- * 阻止工具栏按钮的默认 mousedown 行为，避免点击时编辑器失焦。
- * 这是 Tiptap 工具栏的标准做法：命令自身会 chain().focus()，但若 mousedown 让
- * ProseMirror 失去选区，命令仍会因选区丢失而失效。
- */
-function keepFocus(e: MouseEvent) {
-	e.preventDefault();
+/** 只拦工具栏内按钮；Portal 面板中的输入框必须能正常聚焦。 */
+function keepFocus(e: MouseEvent<HTMLElement>) {
+	if (
+		e.target instanceof Element &&
+		e.currentTarget.contains(e.target) &&
+		e.target.closest("button")
+	) {
+		e.preventDefault();
+	}
 }
 
 export function EditorToolbar({
@@ -56,6 +60,7 @@ export function EditorToolbar({
 		() => buildToolbarItems(onInsertLink, features),
 		[onInsertLink, features],
 	);
+	const textColor = useEditorTextColor(editor);
 	if (!editor) return null;
 
 	const renderItem = (item: ToolbarItem | typeof TOOLBAR_DIVIDER, idx: number) => {
@@ -73,10 +78,12 @@ export function EditorToolbar({
 		const disabled = item.canRun ? !item.canRun(editor) : false;
 		return (
 			<Button
+				iconOnly
 				key={item.id}
 				type="button"
 				variant="ghost"
-				size="icon-sm"
+				size="sm"
+				aria-label={item.title}
 				title={item.title}
 				disabled={disabled}
 				onMouseDown={keepFocus}
@@ -91,7 +98,7 @@ export function EditorToolbar({
 	return (
 		<div
 			className="sticky top-0 z-10 flex flex-wrap items-center gap-0.5 border-b border-edge-hairline bg-background/80 px-2 py-1.5 backdrop-blur"
-			// 容器统一拦截 mousedown，避免按钮点击让编辑器失焦（#1）
+			// React Portal 仍向工具栏冒泡，但不属于工具栏的 DOM 子树。
 			onMouseDown={keepFocus}
 		>
 			{items.map(renderItem)}
@@ -100,9 +107,9 @@ export function EditorToolbar({
 					<span className="mx-0.5 h-5 w-px shrink-0 bg-edge-hairline" aria-hidden />
 					{/* 文字颜色色板（color 能力关闭时隐藏） */}
 					<ColorSwatch
-						value={editor.getAttributes("textStyle").color}
-						onChange={(c) => editor.chain().focus().setColor(c).run()}
-						onClear={() => editor.chain().focus().unsetColor().run()}
+						{...textColor}
+						onChange={(color) => editor.chain().setColor(color).run()}
+						onClear={() => editor.chain().unsetColor().run()}
 					/>
 				</>
 			)}
@@ -110,9 +117,11 @@ export function EditorToolbar({
 			{/* 图片插入：imageLibrary 关闭时退化为单按钮本地上传 */}
 			{features?.imageLibrary === false ? (
 				<Button
+					iconOnly
 					type="button"
 					variant="ghost"
-					size="icon-sm"
+					size="sm"
+					aria-label="上传图片"
 					title="上传图片"
 					onClick={onUploadImage}
 				>
@@ -122,23 +131,25 @@ export function EditorToolbar({
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
 						<Button
+							iconOnly
 							type="button"
 							variant="ghost"
-							size="icon-sm"
+							size="sm"
+							aria-label="插入图片"
 							title="插入图片"
 							className="w-auto min-w-8 px-1.5"
 						>
 							<ImagePlus />
-							<ChevronDown className="size-3 opacity-50" />
+							<ChevronDown {...iconProps(12, "opacity-50")} />
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="end">
 						<DropdownMenuItem onClick={onPickImage}>
-							<ImagePlus className="size-3.5" />
+							<ImagePlus />
 							从素材库选择
 						</DropdownMenuItem>
 						<DropdownMenuItem onClick={onUploadImage}>
-							<Upload className="size-3.5" />
+							<Upload />
 							上传本地图片
 						</DropdownMenuItem>
 					</DropdownMenuContent>

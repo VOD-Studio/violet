@@ -126,7 +126,7 @@ for (const scenario of SCENARIOS) {
 				}).observe(document, { childList: true, subtree: true });
 			}, scenario);
 			const clientReady = page.waitForResponse(
-				(response) => new URL(response.url()).pathname === "/api/v1/auth/me",
+				(response) => new URL(response.url()).pathname === "/api/v1/presence/stream",
 			);
 			resumeScripts?.();
 			await clientReady;

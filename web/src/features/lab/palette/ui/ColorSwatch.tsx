@@ -1,6 +1,7 @@
 import type { TokenItem } from "@features/lab/palette/model/tokens";
 import { copyText } from "@shared/lib/clipboard";
 import { getContrastRatio, getWcagRating, oklchToRgb, parseOklch } from "@shared/lib/color-math";
+import { iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
@@ -102,12 +103,12 @@ export function ColorSwatch({ token, mode, bgCanvasOklch, className }: ColorSwat
 					<button
 						type="button"
 						onClick={() => handleCopy(hex, "Hex")}
-						className="flex items-center gap-1 rounded-md border border-white/20 bg-black/60 px-2 py-1 font-mono text-[10px] text-white backdrop-blur-xs transition-colors hover:bg-black/80"
+						className="flex items-center gap-2 rounded-md border border-white/20 bg-black/60 px-2 py-1 font-mono text-[10px] text-white backdrop-blur-xs transition-colors hover:bg-black/80"
 					>
 						{copied === "Hex" ? (
-							<Check className="size-3 text-emerald-400" />
+							<Check {...iconProps(12, "text-emerald-400")} />
 						) : (
-							<Copy className="size-3" />
+							<Copy {...iconProps(12)} />
 						)}
 						<span>{hex}</span>
 					</button>
@@ -115,12 +116,12 @@ export function ColorSwatch({ token, mode, bgCanvasOklch, className }: ColorSwat
 					<button
 						type="button"
 						onClick={() => handleCopy(rawOklch, "OKLCH")}
-						className="flex items-center gap-1 rounded-md border border-white/20 bg-black/60 px-2 py-1 font-mono text-[10px] text-white backdrop-blur-xs transition-colors hover:bg-black/80"
+						className="flex items-center gap-2 rounded-md border border-white/20 bg-black/60 px-2 py-1 font-mono text-[10px] text-white backdrop-blur-xs transition-colors hover:bg-black/80"
 					>
 						{copied === "OKLCH" ? (
-							<Check className="size-3 text-emerald-400" />
+							<Check {...iconProps(12, "text-emerald-400")} />
 						) : (
-							<Copy className="size-3" />
+							<Copy {...iconProps(12)} />
 						)}
 						<span>OKLCH</span>
 					</button>
@@ -140,13 +141,13 @@ export function ColorSwatch({ token, mode, bgCanvasOklch, className }: ColorSwat
 					<button
 						type="button"
 						onClick={() => handleCopy(`var(${token.variable})`, "CSS Variable")}
-						className="mt-1 inline-flex items-center gap-1 font-mono text-xs text-muted-foreground transition-colors hover:text-primary-base"
+						className="mt-1 inline-flex items-center gap-2 font-mono text-xs text-muted-foreground transition-colors hover:text-primary-base"
 					>
 						<span>{token.variable}</span>
 						{copied === "CSS Variable" ? (
-							<Check className="size-3 text-emerald-500" />
+							<Check {...iconProps(12, "text-emerald-500")} />
 						) : (
-							<Copy className="size-3 opacity-60" />
+							<Copy {...iconProps(12, "opacity-60")} />
 						)}
 					</button>
 

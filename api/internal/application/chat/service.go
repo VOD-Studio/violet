@@ -185,6 +185,8 @@ type MessageReactionDTO struct {
 	Count int64 `json:"count"`
 	// Self 当前用户是否已添加该表情。
 	Self bool `json:"self"`
+	// RecentUsers 最近的至多三位回应者，按回应时间倒序；空值为 []。
+	RecentUsers []domainchatreaction.RecentUser `json:"recent_users"`
 }
 
 // UserDTO 用户公开资料读模型。
@@ -261,6 +263,8 @@ type SharedTweetDTO struct {
 	Images []apptweet.TweetImageDTO `json:"images,omitempty"`
 	// CreatedAt 推文创建时间；推文已删除时为空。
 	CreatedAt string `json:"created_at,omitempty"`
+	// QuoteOf 保留被分享推文的引用关系，不展开更深层正文。
+	QuoteOf *string `json:"quote_of,omitempty"`
 	// IsDeleted 被分享的推文是否已被物理删除。
 	IsDeleted     bool                       `json:"is_deleted"`
 	ExternalTweet *apptweet.ExternalTweetDTO `json:"external_tweet,omitempty"`
@@ -501,7 +505,7 @@ func (s *Service) CreateConversation(ctx context.Context, in CreateConversationI
 		if err != nil {
 			return ConversationDTO{}, err
 		}
-		s.publishRoomInvites(ctx, conversation, participants)
+		s.publishRoomInvites(ctx, conversation, in.UserID, participants)
 		s.notifyEvents(ctx, events)
 	case domainchat.ConversationDirect:
 		// 对端不在场：没有会话创建事件就只能刷新才能看到新私聊。
@@ -579,7 +583,7 @@ func (s *Service) InviteMember(ctx context.Context, userID, conversationID, invi
 	if err != nil {
 		return err
 	}
-	s.publishRoomInvites(ctx, conversation, []domainshared.ID{inviteeID})
+	s.publishRoomInvites(ctx, conversation, userID, []domainshared.ID{inviteeID})
 	changed, err := s.repo.SaveEvent(ctx, recipients, domainchat.EventMemberChanged, map[string]any{"conversation_id": conversationID.String(), "user_id": inviteeID.String()})
 	if err != nil {
 		return err
@@ -588,13 +592,13 @@ func (s *Service) InviteMember(ctx context.Context, userID, conversationID, invi
 	return nil
 }
 
-func (s *Service) publishRoomInvites(ctx context.Context, conversation *domainchat.Conversation, inviteeIDs []domainshared.ID) {
+func (s *Service) publishRoomInvites(ctx context.Context, conversation *domainchat.Conversation, inviterID domainshared.ID, inviteeIDs []domainshared.ID) {
 	if s.bus == nil {
 		return
 	}
 	events := make([]domainshared.DomainEvent, 0, len(inviteeIDs))
 	for _, inviteeID := range inviteeIDs {
-		events = append(events, domainchat.NewRoomInvited(conversation.ID(), inviteeID, conversation.Title()))
+		events = append(events, domainchat.NewRoomInvited(conversation.ID(), inviterID, inviteeID, conversation.Title()))
 	}
 	if len(events) > 0 {
 		_ = s.bus.Publish(ctx, events)
@@ -1761,9 +1765,14 @@ func botToolCallDTOs(calls []domainchat.BotToolCall) []BotToolCallDTO {
 func messageReactionDTOs(reactions []domainchatreaction.AggregatedReaction) []MessageReactionDTO {
 	result := make([]MessageReactionDTO, 0, len(reactions))
 	for _, reaction := range reactions {
+		recentUsers := reaction.RecentUsers
+		if recentUsers == nil {
+			recentUsers = []domainchatreaction.RecentUser{}
+		}
 		result = append(result, MessageReactionDTO{
 			EmojiID: reaction.EmojiID, EmojiName: reaction.EmojiName, EmojiURL: reaction.EmojiURL,
 			GifURL: reaction.GifURL, Count: reaction.Count, Self: reaction.Self,
+			RecentUsers: recentUsers,
 		})
 	}
 	return result
@@ -1818,7 +1827,7 @@ func (s *Service) sharedTweetDTO(ctx context.Context, tweetID domainshared.ID, v
 				return nil, err
 			}
 		}
-		return &SharedTweetDTO{ID: view.ID, Author: &UserDTO{ID: view.Author.ID, Username: view.Author.Username, AvatarURL: view.Author.AvatarURL}, Content: view.Content, Images: view.Images, CreatedAt: view.CreatedAt, ExternalTweet: view.ExternalTweet, QuotedTweet: view.QuotedTweet}, nil
+		return &SharedTweetDTO{ID: view.ID, Author: &UserDTO{ID: view.Author.ID, Username: view.Author.Username, AvatarURL: view.Author.AvatarURL}, Content: view.Content, Images: view.Images, CreatedAt: view.CreatedAt, QuoteOf: view.QuoteOf, ExternalTweet: view.ExternalTweet, QuotedTweet: view.QuotedTweet}, nil
 	}
 	t, err := s.tweets.FindByID(ctx, tweetID)
 	if err != nil {
@@ -1832,10 +1841,15 @@ func (s *Service) sharedTweetDTO(ctx context.Context, tweetID domainshared.ID, v
 		return nil, err
 	}
 	authorDTO := userToDTO(author)
-	return &SharedTweetDTO{
+	dto := &SharedTweetDTO{
 		ID: t.ID().String(), Author: &authorDTO, Content: t.Content(), Images: apptweet.ImageRefsToDTOs(t.Images()),
 		CreatedAt: t.CreatedAt().Format(time.RFC3339Nano),
-	}, nil
+	}
+	if quote := t.QuoteOf(); quote != nil {
+		id := quote.String()
+		dto.QuoteOf = &id
+	}
+	return dto, nil
 }
 
 // stripChatImageTokens 剥离内联图片占位符并修剪空白，供预览等人类可读场景使用。

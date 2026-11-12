@@ -1,4 +1,5 @@
 import { MarkdownContent } from "@shared/ui/markdown-preview/MarkdownContent";
+import { iconProps } from "@violet/ui";
 import { ChevronRight } from "lucide-react";
 import type { KanbanExample } from "../model/examples";
 
@@ -24,7 +25,10 @@ export function KanbanExampleBlock({ example }: { example: KanbanExample }) {
 			<details className="group mt-3">
 				<summary className="inline-flex cursor-pointer list-none items-center gap-1 rounded-sm font-mono text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden">
 					<ChevronRight
-						className="size-3.5 transition-transform group-open:rotate-90 motion-reduce:transition-none"
+						{...iconProps(
+							14,
+							"transition-transform group-open:rotate-90 motion-reduce:transition-none",
+						)}
 						aria-hidden="true"
 					/>
 					源码 · examples/{id}.tsx

@@ -23,15 +23,18 @@ import {
 	Button,
 	ConfirmDialog,
 	Input,
+	iconProps,
 	Sheet,
 	SheetContent,
 	SheetDescription,
 	SheetFooter,
 	SheetHeader,
 	SheetTitle,
+	Spinner,
+	Tag,
 } from "@violet/ui";
 import { cn } from "cn";
-import { ExternalLink, Loader2, Maximize2, Plus, Tag as TagIcon, Trash2, X } from "lucide-react";
+import { ExternalLink, Maximize2, Plus, Tag as TagIcon, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -198,25 +201,15 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 
 	return (
 		<Sheet open={open} onOpenChange={onOpenChange}>
-			<SheetContent
-				side="right"
-				className="flex h-full w-full flex-col gap-0 overflow-hidden sm:max-w-2xl lg:max-w-3xl"
-			>
+			<SheetContent className="[--v-sheet-width:42rem] lg:[--v-sheet-width:48rem]">
 				{/* 顶栏头部 */}
-				<SheetHeader className="border-edge-hairline flex flex-row items-center justify-between border-b px-6 py-4 pr-12">
+				<SheetHeader className="flex-row items-center justify-between border-b border-edge-hairline">
 					<div className="flex items-center gap-3">
 						<SheetTitle className="text-lg font-semibold tracking-tight">
 							{isEdit ? "编辑笔记" : "新建笔记"}
 						</SheetTitle>
 						{note ? (
-							<Badge variant="outline" className="gap-1.5 py-0.5 text-xs">
-								<span
-									className={
-										note.status === "published"
-											? "size-1.5 rounded-full bg-success"
-											: "size-1.5 rounded-full bg-muted-foreground/40"
-									}
-								/>
+							<Badge tone={note.status === "published" ? "ok" : "neutral"}>
 								{NOTE_STATUS_LABELS[note.status]}
 							</Badge>
 						) : null}
@@ -228,7 +221,14 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 					{/* 扩展操作：全屏跳转 + 前台预览 */}
 					<div className="flex items-center gap-1">
 						{note?.status === "published" && (
-							<Button variant="ghost" size="icon-sm" asChild title="查看前台公开页">
+							<Button
+								iconOnly
+								variant="ghost"
+								size="sm"
+								asChild
+								aria-label="查看前台公开页"
+								title="查看前台公开页"
+							>
 								<a href={`/notes/${note.id}`} target="_blank" rel="noreferrer">
 									<ExternalLink className="size-4" />
 								</a>
@@ -236,9 +236,11 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 						)}
 						{isEdit && (
 							<Button
+								iconOnly
 								variant="ghost"
-								size="icon-sm"
+								size="sm"
 								onClick={handleOpenFullscreen}
+								aria-label="展开为全屏独立工作台"
 								title="展开为全屏独立工作台"
 							>
 								<Maximize2 className="size-4" />
@@ -250,7 +252,7 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 				{/* 中间表单主区 */}
 				{isEdit && isLoading ? (
 					<div className="flex flex-1 items-center justify-center">
-						<Loader2 className="text-muted-foreground size-6 animate-spin" />
+						<Spinner size={24} className="text-muted-foreground" aria-hidden="true" />
 					</div>
 				) : (
 					<div className="flex min-h-0 flex-1 flex-col space-y-4 overflow-y-auto px-6 py-5">
@@ -260,7 +262,7 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 								{...register("title")}
 								placeholder="无标题笔记（可留空）…"
 								aria-label="笔记标题"
-								variant="ghost"
+								variant="plain"
 								classNames={{ control: "px-0" }}
 								className={cn(
 									"text-xl font-bold tracking-tight placeholder:text-muted-foreground/40 md:text-2xl",
@@ -275,8 +277,8 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 						{/* 标签选择与输入区 */}
 						<div className="border-edge-hairline bg-muted/20 space-y-2.5 rounded-lg border p-3">
 							<div className="flex items-center justify-between">
-								<span className="text-muted-foreground flex items-center gap-1.5 font-mono text-xs">
-									<TagIcon className="size-3.5" />
+								<span className="text-muted-foreground flex items-center gap-1 font-mono text-xs">
+									<TagIcon {...iconProps(14)} />
 									标签 ({currentTags.length}/8)
 								</span>
 							</div>
@@ -284,21 +286,14 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 							{/* 已选标签 */}
 							<div className="flex flex-wrap gap-1.5">
 								{currentTags.map((t) => (
-									<Badge
+									<Tag
 										key={t}
-										variant="secondary"
-										className="gap-1 py-0.5 text-xs font-mono"
+										size="sm"
+										onRemove={() => handleRemoveTag(t)}
+										removeLabel={`移除标签 ${t}`}
 									>
 										#{t}
-										<button
-											type="button"
-											onClick={() => handleRemoveTag(t)}
-											className="hover:text-destructive transition-colors"
-											aria-label={`移除标签 ${t}`}
-										>
-											<X className="size-3" />
-										</button>
-									</Badge>
+									</Tag>
 								))}
 								{currentTags.length === 0 ? (
 									<span className="text-xs text-muted-foreground/60">
@@ -323,7 +318,7 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 											}}
 											placeholder="输入标签名按回车…"
 											className="text-xs"
-											classNames={{ root: "min-w-0 flex-1" }}
+											classNames={{ control: "min-w-0 flex-1" }}
 										/>
 										<Button
 											type="button"
@@ -333,7 +328,7 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 											disabled={!tagInput.trim()}
 											className="h-7.5 px-2 text-xs"
 										>
-											<Plus className="mr-1 size-3" /> 添加
+											<Plus {...iconProps(12)} /> 添加
 										</Button>
 									</div>
 
@@ -430,12 +425,10 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 								type="button"
 								variant="outline"
 								size="sm"
-								disabled={publishNote.isPending || saving}
+								disabled={saving}
+								loading={publishNote.isPending}
 								onClick={() => void handlePublish()}
 							>
-								{publishNote.isPending ? (
-									<Loader2 className="mr-1.5 size-3.5 animate-spin" />
-								) : null}
 								发布
 							</Button>
 						)}
@@ -444,12 +437,9 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 							<Button
 								type="button"
 								size="sm"
-								disabled={saving}
+								loading={saving}
 								onClick={() => void handleSave()}
 							>
-								{saving ? (
-									<Loader2 className="mr-1.5 size-3.5 animate-spin" />
-								) : null}
 								{isEdit ? "保存" : "创建"}
 							</Button>
 						)}

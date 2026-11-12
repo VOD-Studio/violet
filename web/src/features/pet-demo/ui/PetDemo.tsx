@@ -212,7 +212,7 @@ export function PetDemo() {
 					<div>
 						<div className="flex items-start justify-between gap-4">
 							<h2 className="text-2xl font-semibold tracking-tight">{species}</h2>
-							<Button variant="ghost" size="xs" onClick={demo.hatch}>
+							<Button variant="ghost" size="sm" onClick={demo.hatch}>
 								重新孵化
 							</Button>
 						</div>
@@ -258,7 +258,7 @@ export function PetDemo() {
 										</div>
 										{o.eligible && !dead ? (
 											<Button
-												size="xs"
+												size="sm"
 												variant="primary"
 												onClick={() => demo.evolve(o.branch)}
 											>

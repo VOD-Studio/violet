@@ -17,8 +17,8 @@ vi.mock("@shared/api/request", () => ({
 }));
 
 import type { BotDTO } from "@features/admin-bots/model/types";
-import type { DataTablePagination } from "@features/admin-shared/ui/data-table";
 import { apiDelete, apiPatch, apiPost } from "@shared/api/request";
+import type { DataTablePagination } from "@violet/ui";
 import { BotTable } from "../BotTable";
 
 const pagination: DataTablePagination = { page: 1, pageSize: 20, total: 2, onChange: vi.fn() };

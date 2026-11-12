@@ -16,7 +16,7 @@
  * 渲染成什么由 ChatMessageContent 的 span 覆盖决定（提及要跳用户主页，插件里造不出路由链接）。
  */
 import type { CommentEmoteRef } from "@entities/comment/model/types";
-import { MENTION_ALL, mentionTokenPattern } from "@entities/user/model/mention-token";
+import { MENTION_ALL, mentionTokenPattern } from "@shared/lib/mention-token";
 import { isImageURL } from "@shared/lib/url";
 import type { Element, ElementContent, Root as HastRoot, Text as HastText } from "hast";
 import type { Root as MdastRoot } from "mdast";

@@ -1,0 +1,264 @@
+import {
+	EmojiPickerPanel,
+	ReactionBar,
+	type EmojiPickerGroup,
+	type EmojiPickerItem,
+	type ReactionItem,
+} from "@violet/ui";
+import { ReactionBar as LeafReactionBar } from "@violet/ui/reaction";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+const choices: readonly EmojiPickerItem[] = [
+	{ id: "thumb", name: "赞", content: "👍", placeholder: "[赞]" },
+	{ id: "heart", name: "喜欢", content: "❤️", placeholder: "[喜欢]" },
+	{ id: "fire", name: "热情", content: "🔥", placeholder: "[热情]" },
+	{ id: "laugh", name: "开心", content: "😂", placeholder: "[开心]" },
+	{ id: "party", name: "庆祝", content: "🎉", placeholder: "[庆祝]" },
+	{ id: "think", name: "思考", content: "🤔", placeholder: "[思考]" },
+	{ id: "look", name: "围观", content: "👀", placeholder: "[围观]" },
+	{ id: "thanks", name: "感谢", content: "🙏", placeholder: "[感谢]" },
+	{ id: "clap", name: "鼓掌", content: "👏", placeholder: "[鼓掌]" },
+];
+const recentChoices = choices.slice(0, 8);
+const otherUsers = [{ name: "林间" }, { name: "雾里" }];
+const selfUsers = [{ name: "本机用户", self: true }, ...otherUsers];
+const byId = new Map(choices.map((choice) => [choice.id, choice]));
+
+function initialItems(): ReactionItem[] {
+	return choices.slice(0, 8).map((choice, index) => ({
+		id: choice.id,
+		name: choice.name,
+		content: choice.content,
+		count: 12 - index,
+		self: index === 0,
+		recentUsers: [{ name: "林间" }, { name: "雾里" }],
+	}));
+}
+
+function FullPicker({
+	items,
+	onPick,
+	close,
+}: {
+	items: readonly ReactionItem[];
+	onPick: (id: string) => void;
+	close: () => void;
+}) {
+	const [group, setGroup] = useState("small");
+	const groups = useMemo<EmojiPickerGroup[]>(() => {
+		const selected = new Set(items.filter((item) => item.self).map((item) => item.id));
+		return [
+			{
+				id: "small",
+				label: "小表情",
+				sections: [
+					{
+						id: "small",
+						label: "表情",
+						density: "small",
+						items: choices.map((choice) => ({
+							...choice,
+							selected: selected.has(choice.id),
+						})),
+					},
+				],
+			},
+		];
+	}, [items]);
+	return (
+		<EmojiPickerPanel
+			groups={groups}
+			activeGroup={group}
+			onGroupChange={setGroup}
+			onSelect={(item) => {
+				onPick(item.id);
+				close();
+			}}
+		/>
+	);
+}
+
+export function ReactionConsumer() {
+	const [items, setItems] = useState(initialItems);
+	const [chat, setChat] = useState(true);
+	const [visitor, setVisitor] = useState(false);
+	const [reduced, setReduced] = useState(false);
+	const [position, setPosition] = useState<"flex-start" | "center" | "flex-end">("flex-start");
+	const [rejectNext, setRejectNext] = useState(false);
+	const [pending, setPending] = useState(false);
+	const [message, setMessage] = useState("");
+	const timer = useRef<number | undefined>(undefined);
+	const removalTimer = useRef<number | undefined>(undefined);
+	useEffect(
+		() => () => {
+			window.clearTimeout(timer.current);
+			window.clearTimeout(removalTimer.current);
+		},
+		[],
+	);
+
+	const change = (id: string, mode: "toggle" | "add") => {
+		if (pending) {
+			return;
+		}
+		if (visitor) {
+			setMessage("登录后可以回应");
+			return;
+		}
+		const choice = byId.get(id);
+		const current = items.find((item) => item.id === id);
+		if (!choice || (mode === "add" && current?.self)) {
+			return;
+		}
+		const self = !current?.self;
+		let selectedCount = 0;
+		for (const item of items) {
+			if (item.self) {
+				selectedCount += 1;
+			}
+		}
+		if (chat && self && selectedCount >= 3) {
+			setMessage("单条消息最多 3 种回应，先取消一种");
+			return;
+		}
+		const count = (current?.count ?? 0) + (self ? 1 : -1);
+		const next = items.filter((item) => item.id !== id);
+		if (count > 0) {
+			const replacement: ReactionItem = {
+				id,
+				name: choice.name,
+				content: choice.content,
+				count,
+				self,
+				recentUsers: (self ? selfUsers : otherUsers).slice(0, count),
+			};
+			const index = items.findIndex((item) => item.id === id);
+			if (index < 0) {
+				next.push(replacement);
+			} else {
+				next.splice(index, 0, replacement);
+			}
+		}
+		setItems(next);
+		setMessage("");
+		if (rejectNext) {
+			setRejectNext(false);
+			setPending(true);
+			timer.current = window.setTimeout(() => {
+				setItems(items);
+				setPending(false);
+				setMessage("回应没有成功");
+			}, 320);
+		}
+	};
+
+	return (
+		<main data-motion={reduced ? "reduce" : undefined}>
+			<h1>回应条 · 独立安装包</h1>
+			<fieldset style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+				<legend>交互条件</legend>
+				<label>
+					<input
+						type="checkbox"
+						checked={chat}
+						onChange={(event) => setChat(event.target.checked)}
+					/>
+					聊天上限
+				</label>
+				<label>
+					<input
+						type="checkbox"
+						checked={visitor}
+						onChange={(event) => setVisitor(event.target.checked)}
+					/>
+					访客
+				</label>
+				<label>
+					<input
+						type="checkbox"
+						checked={reduced}
+						onChange={(event) => setReduced(event.target.checked)}
+					/>
+					减弱动态
+				</label>
+				<label>
+					<input
+						type="checkbox"
+						checked={rejectNext}
+						onChange={(event) => setRejectNext(event.target.checked)}
+					/>
+					下一次失败
+				</label>
+				<button
+					type="button"
+					onClick={() => document.documentElement.classList.toggle("dark")}
+				>
+					切换明暗
+				</button>
+				<button type="button" onClick={() => setItems([])}>
+					清空回应
+				</button>
+				<button type="button" onClick={() => setItems(initialItems())}>
+					重置回应
+				</button>
+				<button
+					type="button"
+					onClick={() => {
+						const id = items[0]?.id;
+						if (!id) {
+							return;
+						}
+						window.clearTimeout(removalTimer.current);
+						removalTimer.current = window.setTimeout(() => {
+							setItems((current) => current.filter((item) => item.id !== id));
+						}, 800);
+					}}
+				>
+					稍后移除首项
+				</button>
+				<button type="button" onClick={() => setPosition("flex-start")}>
+					靠左
+				</button>
+				<button type="button" onClick={() => setPosition("center")}>
+					居中
+				</button>
+				<button type="button" onClick={() => setPosition("flex-end")}>
+					靠右
+				</button>
+			</fieldset>
+			<section
+				aria-label="交互回应"
+				style={{
+					display: "flex",
+					justifyContent: position,
+					minHeight: 340,
+					alignItems: "flex-end",
+					paddingBlock: 24,
+				}}
+			>
+				<ReactionBar
+					items={items}
+					recentItems={recentChoices}
+					onToggle={(id) => change(id, "toggle")}
+					onAdd={visitor ? undefined : (id) => change(id, "add")}
+					maxSelected={chat ? 3 : undefined}
+					collapseAfter={chat ? 6 : undefined}
+					disabled={pending}
+					onLimit={() => setMessage("单条消息最多 3 种回应，先取消一种")}
+					limitMessage={chat ? "单条消息最多 3 种回应，先取消一种" : undefined}
+					renderPicker={({ close }) => (
+						<FullPicker
+							items={items}
+							onPick={(id) => change(id, "add")}
+							close={close}
+						/>
+					)}
+				/>
+			</section>
+			<p role="status">{message}</p>
+			<section aria-label="叶子入口的只读回应">
+				<LeafReactionBar items={items} />
+			</section>
+		</main>
+	);
+}

@@ -1,19 +1,19 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-	Badge,
 	Button,
 	Input,
 	Label,
 	Modal,
+	NumberInput,
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
+	Tag,
 	Textarea,
 } from "@violet/ui";
 
-import { Loader2 } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useAdminPermissions, useCreatePermission, useUpdatePermission } from "../api/queries";
@@ -147,8 +147,7 @@ export function CreatePermissionDialog({
 					>
 						取消
 					</Button>
-					<Button type="submit" form="permission-form" disabled={pending}>
-						{pending && <Loader2 className="mr-1 size-4 animate-spin" />}
+					<Button type="submit" form="permission-form" loading={pending}>
 						{isEdit ? "保存" : "创建"}
 					</Button>
 				</>
@@ -182,7 +181,7 @@ export function CreatePermissionDialog({
 					/>
 					{isBuiltin && (
 						<p className="text-muted-foreground text-xs">
-							<Badge variant="secondary">内置</Badge> 类型不可更改
+							<Tag size="sm">内置</Tag> 类型不可更改
 						</p>
 					)}
 				</div>
@@ -237,8 +236,7 @@ export function CreatePermissionDialog({
 							<Input
 								id="code"
 								classNames={{
-									root: "min-w-0 flex-1",
-									control: "rounded-l-none",
+									control: "min-w-0 flex-1 rounded-l-none",
 								}}
 								disabled={isBuiltin || pending || !parentCode}
 								placeholder={parentCode ? "如 create" : "请先选择所属分组"}
@@ -295,9 +293,8 @@ export function CreatePermissionDialog({
 				{/* 排序 */}
 				<div className="space-y-2">
 					<Label htmlFor="sort">排序</Label>
-					<Input
+					<NumberInput
 						id="sort"
-						type="number"
 						min={0}
 						disabled={pending}
 						{...register("sort", { valueAsNumber: true })}

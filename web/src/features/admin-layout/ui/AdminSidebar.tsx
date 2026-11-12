@@ -1,5 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@violet/ui";
+import {
+	Button,
+	iconProps,
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@violet/ui";
 import { cn } from "cn";
 import { ArrowLeft, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { AdminBrand } from "./AdminBrand";
@@ -62,7 +69,7 @@ export function AdminSidebar() {
 	};
 
 	return (
-		<TooltipProvider delayDuration={200}>
+		<TooltipProvider>
 			<aside
 				className={cn(
 					"relative hidden shrink-0 flex-col border-r bg-card md:flex",
@@ -72,17 +79,18 @@ export function AdminSidebar() {
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<Button
+							iconOnly
 							id="sidebar-toggle"
 							variant="outline"
-							size="icon"
+							size="md"
 							onClick={handleToggle}
 							aria-label={collapsed ? "展开侧边栏" : "收起侧边栏"}
 							className="bg-background absolute top-7 -right-3.5 z-40 size-7 -translate-y-1/2 rounded-full shadow-sm"
 						>
 							{collapsed ? (
-								<PanelLeftOpen className="size-3.5" />
+								<PanelLeftOpen {...iconProps(14)} />
 							) : (
-								<PanelLeftClose className="size-3.5" />
+								<PanelLeftClose {...iconProps(14)} />
 							)}
 						</Button>
 					</TooltipTrigger>

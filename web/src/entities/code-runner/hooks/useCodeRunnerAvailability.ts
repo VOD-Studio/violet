@@ -3,9 +3,17 @@ import { apiGet } from "@shared/api/request";
 import { parseFenceInfo } from "@shared/lib/markdown/fence-info";
 import { type UseQueryResult, useQuery } from "@tanstack/react-query";
 
+const unavailableReasons = {
+	loading: "策略加载中…",
+	disabled: "运行器已关闭",
+	"language-disabled": "此语言已禁用",
+	error: "策略读取失败",
+} as const;
+
 /** 有效策略的查询状态，以及当前围栏语言的执行许可。 */
 export type CodeRunnerAvailability = UseQueryResult<CodeRunnerPolicyProjection> & {
 	canonical: string;
+	policyStatus: "ready" | keyof typeof unavailableReasons;
 	/** null 表示有效策略允许执行，否则为直接展示的禁用原因。 */
 	reason: string | null;
 	allowed: boolean;
@@ -24,14 +32,15 @@ export function useCodeRunnerAvailability(
 		refetchInterval: 2000,
 	});
 	const canonical = parseFenceInfo(`${language} run`).language;
-	const reason = query.isError
-		? "策略读取失败"
+	const policyStatus = query.isError
+		? "error"
 		: !query.data
-			? "策略加载中…"
+			? "loading"
 			: !query.data.enabled
-				? "运行器已关闭"
+				? "disabled"
 				: !(query.data.languages ?? []).includes(canonical)
-					? "此语言已禁用"
-					: null;
-	return { ...query, canonical, reason, allowed: enabled && reason === null };
+					? "language-disabled"
+					: "ready";
+	const reason = policyStatus === "ready" ? null : unavailableReasons[policyStatus];
+	return { ...query, canonical, policyStatus, reason, allowed: enabled && reason === null };
 }

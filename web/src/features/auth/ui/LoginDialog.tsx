@@ -6,7 +6,6 @@ import { clearSessionActive } from "@shared/api/session";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { Button, GithubIcon, GoogleIcon, Input, Label, Modal } from "@violet/ui";
-import { Loader2 } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 import { GoogleOAuthGate } from "./GoogleOAuthGate";
 
@@ -121,12 +120,11 @@ function LoginDialogContent({ googleError }: { googleError: ReactNode }) {
 					<Button
 						type="submit"
 						form="login-dialog-form"
-						disabled={passwordPending || googlePending || !csrfToken}
+						disabled={!csrfToken}
+						loading={passwordPending || googlePending}
+						loadingText="登录中…"
 					>
-						{(passwordPending || googlePending) && (
-							<Loader2 className="mr-2 size-4 animate-spin" />
-						)}
-						{passwordPending || googlePending ? "登录中…" : "登录"}
+						登录
 					</Button>
 				</>
 			}
@@ -180,11 +178,13 @@ function LoginDialogContent({ googleError }: { googleError: ReactNode }) {
 						<div className="flex justify-center">
 							{showGoogle ? (
 								<Button
+									iconOnly
 									type="button"
 									variant="outline"
-									size="icon"
+									size="md"
 									className="size-12 rounded-full"
 									onClick={startGoogle}
+									aria-label="使用 Google 登录"
 									disabled={googlePending || !googleReady}
 								>
 									<GoogleIcon title="Google" className="size-6" />
@@ -192,11 +192,13 @@ function LoginDialogContent({ googleError }: { googleError: ReactNode }) {
 							) : null}
 							{showGithub ? (
 								<Button
+									iconOnly
 									type="button"
 									variant="outline"
-									size="icon"
+									size="md"
 									className="ml-4 size-12 rounded-full"
 									onClick={startGithub}
+									aria-label="使用 GitHub 登录"
 									disabled={githubPending}
 								>
 									<GithubIcon title="GitHub" className="size-6" />

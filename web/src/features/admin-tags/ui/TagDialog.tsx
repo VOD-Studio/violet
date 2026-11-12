@@ -4,7 +4,6 @@ import { useCreateTag, useUpdateTag } from "@features/tags/api/mutations";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button, Input, Label, Modal } from "@violet/ui";
 
-import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 
@@ -64,8 +63,7 @@ export function TagDialog({ open, onOpenChange, editing }: TagDialogProps) {
 					>
 						取消
 					</Button>
-					<Button type="submit" form="tag-form" disabled={pending}>
-						{pending && <Loader2 className="mr-1 size-4 animate-spin" />}
+					<Button type="submit" form="tag-form" loading={pending}>
 						{isEdit ? "保存" : "创建"}
 					</Button>
 				</>

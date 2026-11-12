@@ -125,6 +125,46 @@ describe("useCreateComment — 回复缓存更新", () => {
 		expect(vi.mocked(apiGetPaged)).not.toHaveBeenCalled();
 	});
 
+	it("评论区顶层列表是无限分页缓存时，每页里的父评论 replies_total 都递增", async () => {
+		const inFirstPage = makeComment({ id: "c1", replies_total: 2, replies: [] });
+		const inSecondPage = makeComment({ id: "c9", replies_total: 5, replies: [] });
+		qc.setQueryData(commentKeys.list("p1", { type: "free" }), {
+			pages: [
+				{
+					data: [inFirstPage],
+					pagination: { page: 1, limit: 20, total: 2, total_pages: 1 },
+				},
+				{
+					data: [inSecondPage],
+					pagination: { page: 2, limit: 20, total: 2, total_pages: 1 },
+				},
+			],
+			pageParams: [1, 2],
+		});
+		vi.mocked(apiPost).mockResolvedValue(
+			makeComment({
+				id: "r-new",
+				parent_id: "c9",
+				thread_root_id: "c9",
+				depth: 1,
+				body: "第二页楼主的回复",
+				status: "approved",
+			}),
+		);
+
+		const { result } = renderHook(() => useCreateComment("p1"), {
+			wrapper: createWrapper(qc),
+		});
+		await result.current.mutateAsync({ body: "第二页楼主的回复", parent_id: "c9" });
+
+		const cache = qc.getQueryData<{ pages: PagedResponse<Comment>[] }>(
+			commentKeys.list("p1", { type: "free" }),
+		);
+		expect(cache?.pages[0]?.data[0]?.replies_total).toBe(2);
+		expect(cache?.pages[1]?.data[0]?.replies_total).toBe(6);
+		expect(vi.mocked(apiGetPaged)).not.toHaveBeenCalled();
+	});
+
 	it("已展开回复区时提交回复，useReplies 缓存应含新回复", async () => {
 		const topComment = makeComment({ id: "c1", replies_total: 1, replies: [] });
 		const listData: PagedResponse<Comment> = {
@@ -246,8 +286,7 @@ describe("useCreateComment — 回复缓存更新", () => {
 		fireEvent.keyDown(editor, { key: "Enter", ctrlKey: true });
 
 		await screen.findByText("刚提交的二级回复");
-		expect(screen.getByText(`@${targetName}`)).toBeTruthy();
-		expect(screen.getByText("审批中")).toBeTruthy();
+		expect(screen.getByText((content) => content.endsWith(`@${targetName}`))).toBeTruthy();
 		expect(apiPost).toHaveBeenCalledWith("/posts/p1/comments", {
 			body: "刚提交的二级回复",
 			parent_id: "r-target",

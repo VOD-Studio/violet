@@ -9,9 +9,9 @@ import {
 	COVER_PREVIEWS,
 } from "@shared/lib/profile-cover";
 import { UserProfileCover } from "@shared/ui/profile-cover/UserProfileCover";
-import { Button } from "@violet/ui";
+import { Button, Spinner } from "@violet/ui";
 import { cn } from "cn";
-import { ImagePlus, Loader2, Trash2 } from "lucide-react";
+import { ImagePlus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { SectionCard } from "./SectionCard";
@@ -107,7 +107,7 @@ export function ProfileCoverSection({ user }: { user: UserDTO }) {
 					)}
 				>
 					{updateProfile.isPending ? (
-						<Loader2 className="size-6 animate-spin" />
+						<Spinner size={24} aria-hidden="true" />
 					) : (
 						<ImagePlus className="size-6" />
 					)}

@@ -1,17 +1,22 @@
 import type { Comment } from "@entities/comment/model/types";
-import type { EmojiGroup } from "@entities/emoji/model/types";
+import {
+	captureCommentReactionQueries,
+	reactionQueryMatches,
+	updateCommentReactionQueries,
+} from "@entities/reaction/lib/comment-query-cache";
+import { addSelfReaction, removeSelfReaction } from "@entities/reaction/lib/optimistic";
 import { useMe } from "@features/auth/api/queries";
-import { emojiKeys } from "@features/emojis/api/keys";
+import { findCachedEmoji } from "@features/emojis/api/cache";
 import { apiDelete, apiPatch, apiPost } from "@shared/api/request";
 import type { PagedResponse } from "@shared/api/types";
-import { type QueryKey, useMutation, useQueryClient } from "@tanstack/react-query";
-import type {
-	AddReaction,
-	BatchReactionResult,
-	CreateComment,
-	Reaction,
-	SendCodeBody,
-} from "../model/types";
+import {
+	type QueryClient,
+	type QueryFilters,
+	useMutation,
+	useQueryClient,
+} from "@tanstack/react-query";
+import { toast } from "sonner";
+import type { AddReaction, CommentListQuery, CreateComment, SendCodeBody } from "../model/types";
 import { commentKeys } from "./keys";
 
 /**
@@ -59,7 +64,7 @@ export const useCreateComment = (postId: string) => {
 
 /** bumpRepliesTotalInList 手动递增顶层列表缓存中父评论的 replies_total。
  *  用 setQueriesData 直接改缓存，不触发重拉——避免批注列表 refetch 引起 relocate 重算和角标消失。
- *  useComments 是 useQuery（非 infinite），缓存结构是 { data: Comment[], pagination }。 */
+ *  评论区顶层列表是 useInfiniteQuery（{pages}），其余消费方是 useQuery（{data}），两种形态都更新。 */
 function bumpRepliesTotalInList(
 	qc: ReturnType<typeof useQueryClient>,
 	postId: string,
@@ -74,16 +79,25 @@ function bumpRepliesTotalInList(
 		},
 		(old: unknown) => {
 			if (!old || typeof old !== "object") return old;
-			const typed = old as PagedResponse<Comment>;
-			if (!Array.isArray(typed.data)) return old;
-			return {
-				...typed,
-				data: typed.data.map((c) =>
+			const bumpIn = (comments: Comment[]) =>
+				comments.map((c) =>
 					c.id === parentCommentId
 						? { ...c, replies_total: (c.replies_total ?? 0) + 1 }
 						: c,
-				),
-			};
+				);
+			// useInfiniteQuery 缓存：每页 data 里的父评论都要递增
+			if ("pages" in old && Array.isArray(old.pages)) {
+				const pages = old.pages as PagedResponse<Comment>[];
+				return {
+					...old,
+					pages: pages.map((page) =>
+						Array.isArray(page.data) ? { ...page, data: bumpIn(page.data) } : page,
+					),
+				};
+			}
+			if (!("data" in old) || !Array.isArray(old.data)) return old;
+			const paged = old as PagedResponse<Comment>;
+			return { ...paged, data: bumpIn(paged.data) };
 		},
 	);
 }
@@ -177,208 +191,84 @@ export const useSendCommentCode = (postId: string) => {
 	});
 };
 
-/** useAddReaction - POST /comments/{commentId}/reactions 添加反应，按用户/IP 幂等
- *
- * 乐观更新：立即在单条/批量反应缓存中递增对应 emoji 计数并标记 self，避免 mutation
- * settle 后、缓存尚未刷新前的空窗期内用户重复点击导致重复提交。
+/**
+ * 添加回应时立即更新计数、GIF 与本人名单；刷新完成前维持 pending，避免重复提交。
  */
-export const useAddReaction = (commentId: string) => {
+export const useAddReaction = (commentId: string, postId: string) => {
 	const qc = useQueryClient();
-	const me = useMe({ enabled: true });
-
+	const me = useMe();
+	const filters = {
+		predicate: (query: { queryKey: readonly unknown[] }) =>
+			reactionQueryMatches(query.queryKey, commentKeys.reactions(), commentId),
+	};
 	return useMutation({
 		mutationFn: (body: AddReaction) => apiPost<null>(`/comments/${commentId}/reactions`, body),
 		onMutate: async (body) => {
-			const userId = me.data?.id;
-			if (!userId) return;
-			const emoji = findEmojiById(qc, body.emoji_id);
-			if (!emoji) return;
-
-			await qc.cancelQueries({ queryKey: commentKeys.reactions() });
-			const previousReactions = captureReactions(qc);
-			optimisticAddReaction(qc, commentId, body.emoji_id, emoji.name, emoji.url);
-			return { previousReactions };
+			const user = me.data;
+			if (!user) {
+				return;
+			}
+			await qc.cancelQueries(filters);
+			const rollback = captureCommentReactionQueries(
+				qc,
+				commentKeys.reactions(),
+				commentId,
+				body.emoji_id,
+			);
+			const emoji = findCachedEmoji(qc, body.emoji_id);
+			updateCommentReactionQueries(qc, commentKeys.reactions(), commentId, (reactions) =>
+				addSelfReaction(
+					reactions,
+					body.emoji_id,
+					{ id: user.id, name: user.display_name || user.username },
+					emoji,
+				),
+			);
+			return { rollback };
 		},
-		onError: (_err, _body, context) => {
-			if (!context?.previousReactions) return;
-			restoreReactions(qc, context.previousReactions);
+		onError: (_error, _body, context) => {
+			context?.rollback();
+			toast.error("回应没有成功");
 		},
-		onSettled: () => {
-			// 乐观更新后仍触发后台刷新，保证数据最终一致
-			qc.invalidateQueries({ queryKey: commentKeys.reactions() });
-		},
+		onSettled: () => invalidateReactionViews(qc, postId, filters),
 	});
 };
 
-/** useRemoveReaction - DELETE /comments/{commentId}/reactions/{emojiId} 移除反应
- *
- * 乐观更新：立即在缓存中递减对应 emoji 计数并取消 self 标记，避免重复点击抖动。
- */
-export const useRemoveReaction = (commentId: string) => {
+/** 取消回应同时移除本人名单；失败只恢复该评论的目标表情。 */
+export const useRemoveReaction = (commentId: string, postId: string) => {
 	const qc = useQueryClient();
-	const me = useMe({ enabled: true });
-
+	const me = useMe();
+	const filters = {
+		predicate: (query: { queryKey: readonly unknown[] }) =>
+			reactionQueryMatches(query.queryKey, commentKeys.reactions(), commentId),
+	};
 	return useMutation({
 		mutationFn: (emojiId: number) =>
 			apiDelete<null>(`/comments/${commentId}/reactions/${emojiId}`),
 		onMutate: async (emojiId) => {
-			const userId = me.data?.id;
-			if (!userId) return;
-
-			await qc.cancelQueries({ queryKey: commentKeys.reactions() });
-			const previousReactions = captureReactions(qc);
-			optimisticRemoveReaction(qc, commentId, emojiId);
-			return { previousReactions };
+			const user = me.data;
+			if (!user) {
+				return;
+			}
+			await qc.cancelQueries(filters);
+			const rollback = captureCommentReactionQueries(
+				qc,
+				commentKeys.reactions(),
+				commentId,
+				emojiId,
+			);
+			updateCommentReactionQueries(qc, commentKeys.reactions(), commentId, (reactions) =>
+				removeSelfReaction(reactions, emojiId, user.id),
+			);
+			return { rollback };
 		},
-		onError: (_err, _emojiId, context) => {
-			if (!context?.previousReactions) return;
-			restoreReactions(qc, context.previousReactions);
+		onError: (_error, _emojiId, context) => {
+			context?.rollback();
+			toast.error("回应没有成功");
 		},
-		onSettled: () => {
-			qc.invalidateQueries({ queryKey: commentKeys.reactions() });
-		},
+		onSettled: () => invalidateReactionViews(qc, postId, filters),
 	});
 };
-
-/** findEmojiById - 从表情缓存按 ID 查找名称与图片 URL */
-function findEmojiById(
-	qc: ReturnType<typeof useQueryClient>,
-	emojiId: number,
-): { name: string; url: string } | null {
-	const groups = qc.getQueryData<EmojiGroup[]>(emojiKeys.publicGroupList());
-	if (!groups) return null;
-	for (const group of groups) {
-		const emoji = group.emojis.find((e) => e.id === emojiId);
-		if (emoji) return { name: emoji.name, url: emoji.url };
-	}
-	return null;
-}
-
-/** isBatchReactionsKey - 是否为批量反应查询键 */
-function isBatchReactionsKey(key: QueryKey): boolean {
-	return key[0] === "comments" && key[1] === "reactions" && key[2] === "batch";
-}
-
-/** batchIncludesCommentId - 批量查询键是否包含指定评论 */
-function batchIncludesCommentId(key: QueryKey, commentId: string): boolean {
-	return Array.isArray(key[3]) && key[3].includes(commentId);
-}
-
-/** captureReactions - 捕获指定评论相关的反应缓存快照，用于回滚 */
-function captureReactions(qc: ReturnType<typeof useQueryClient>): Map<QueryKey, unknown> {
-	const previous = new Map<QueryKey, unknown>();
-	qc.getQueryCache()
-		.findAll({ queryKey: commentKeys.reactions() })
-		.forEach((query) => {
-			previous.set(query.queryKey, query.state.data);
-		});
-	return previous;
-}
-
-/** restoreReactions - 用快照恢复反应缓存 */
-function restoreReactions(qc: ReturnType<typeof useQueryClient>, previous: Map<QueryKey, unknown>) {
-	previous.forEach((data, key) => {
-		qc.setQueryData(key, data);
-	});
-}
-
-/** optimisticAddReaction - 在缓存中递增指定 emoji 计数并标记 self */
-function optimisticAddReaction(
-	qc: ReturnType<typeof useQueryClient>,
-	commentId: string,
-	emojiId: number,
-	emojiName: string,
-	emojiUrl: string,
-) {
-	const newReaction: Reaction = {
-		emoji_id: emojiId,
-		emoji_name: emojiName,
-		emoji_url: emojiUrl,
-		count: 1,
-		self: true,
-	};
-
-	// 1. 单条评论反应列表（精确键）
-	qc.setQueryData<Reaction[]>(commentKeys.reactionList(commentId), (old) => {
-		if (!old) return old;
-		const idx = old.findIndex((r) => r.emoji_id === emojiId);
-		if (idx >= 0) {
-			const existing = old[idx];
-			if (existing.self) return old;
-			const next = [...old];
-			next[idx] = { ...existing, count: existing.count + 1, self: true };
-			return next;
-		}
-		return [...old, newReaction];
-	});
-
-	// 2. 批量反应结果（按 predicate 定位包含该评论的 batch 缓存）
-	qc.setQueriesData<BatchReactionResult[]>(
-		{
-			predicate: (query) =>
-				isBatchReactionsKey(query.queryKey) &&
-				batchIncludesCommentId(query.queryKey, commentId),
-		},
-		(old) => {
-			if (!old) return old;
-			return old.map((item) => {
-				if (item.comment_id !== commentId) return item;
-				const idx = item.reactions?.findIndex((r) => r.emoji_id === emojiId) ?? -1;
-				if (idx >= 0) {
-					const existing = item.reactions[idx];
-					if (existing.self) return item;
-					const next = [...item.reactions];
-					next[idx] = { ...existing, count: existing.count + 1, self: true };
-					return { ...item, reactions: next };
-				}
-				return { ...item, reactions: [...(item.reactions ?? []), newReaction] };
-			});
-		},
-	);
-}
-
-/** optimisticRemoveReaction - 在缓存中递减指定 emoji 计数并取消 self 标记 */
-function optimisticRemoveReaction(
-	qc: ReturnType<typeof useQueryClient>,
-	commentId: string,
-	emojiId: number,
-) {
-	const updateList = (list: Reaction[]): Reaction[] => {
-		const idx = list.findIndex((r) => r.emoji_id === emojiId);
-		if (idx < 0) return list;
-		const existing = list[idx];
-		if (!existing.self) return list;
-		if (existing.count <= 1) {
-			return list.filter((_, i) => i !== idx);
-		}
-		const next = [...list];
-		next[idx] = { ...existing, count: existing.count - 1, self: false };
-		return next;
-	};
-
-	// 1. 单条评论反应列表（精确键）
-	qc.setQueryData<Reaction[]>(commentKeys.reactionList(commentId), (old) => {
-		if (!old) return old;
-		return updateList(old);
-	});
-
-	// 2. 批量反应结果
-	qc.setQueriesData<BatchReactionResult[]>(
-		{
-			predicate: (query) =>
-				isBatchReactionsKey(query.queryKey) &&
-				batchIncludesCommentId(query.queryKey, commentId),
-		},
-		(old) => {
-			if (!old) return old;
-			return old.map((item) =>
-				item.comment_id === commentId
-					? { ...item, reactions: updateList(item.reactions ?? []) }
-					: item,
-			);
-		},
-	);
-}
 
 /** useApproveComment - PATCH /comments/{id}/approve 审核通过，公共端点需管理员身份 */
 export const useApproveComment = (id: string) => {
@@ -412,3 +302,16 @@ export const useDeleteComment = (id: string) => {
 		},
 	});
 };
+
+function invalidateReactionViews(qc: QueryClient, postId: string, filters: QueryFilters) {
+	return Promise.all([
+		qc.invalidateQueries(filters),
+		qc.invalidateQueries({
+			queryKey: commentKeys.lists(),
+			predicate: (query) => {
+				const parameters = query.queryKey[3] as CommentListQuery | undefined;
+				return query.queryKey[2] === postId && parameters?.sort === "hot";
+			},
+		}),
+	]);
+}

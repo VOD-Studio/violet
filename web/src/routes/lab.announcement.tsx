@@ -7,7 +7,6 @@ import {
 import { BannerCrossfade } from "@features/lab/announcement/ui/BannerCrossfade";
 import { BannerPrism } from "@features/lab/announcement/ui/BannerPrism";
 import { BannerSlide } from "@features/lab/announcement/ui/BannerSlide";
-import { BannerTeletype } from "@features/lab/announcement/ui/BannerTeletype";
 import { EditorialIndex } from "@features/lab/announcement/ui/EditorialIndex";
 import { EventLog } from "@features/lab/announcement/ui/EventLog";
 import { NoticeBoard } from "@features/lab/announcement/ui/NoticeBoard";
@@ -20,7 +19,7 @@ import { Empty, Segmented } from "@violet/ui";
 import { useState } from "react";
 
 type PreviewState = "data" | "skeleton" | "empty";
-type BannerDirection = "prism" | "crossfade" | "slide" | "teletype";
+type BannerDirection = "prism" | "crossfade" | "slide";
 
 const DIRECTIONS: { value: AnnouncementDirection; label: string; intent: string }[] = [
 	{
@@ -71,18 +70,13 @@ const BANNER_DIRECTIONS: { value: BannerDirection; label: string; intent: string
 		label: "滑轨推入",
 		intent: "新公告从右侧推入、旧公告推出，底部 2px 驻留进度线把「还有几秒换下一条」可视化。信息最透明的一版。",
 	},
-	{
-		value: "teletype",
-		label: "电传打字",
-		intent: "公告像电传机逐字打上横幅：打出 → 驻留（光标闪烁）→ 快速退格清屏 → 打下一条，节拍由文本长度自然决定。与全站终端 DNA 同源，叙事感最强的一版。",
-	},
 ];
 
 /**
  * /lab/announcement - 公告原型实验室
  *
  * 两个对比面：首页公告区（card / article 两形态，五方向 × 三态）
- * 与顶部横幅（banner 形态，四候选——棱柱旋转为正交 3D 滚筒：无
+ * 与顶部横幅（banner 形态，三候选——棱柱旋转为正交 3D 滚筒：无
  * 透视畸变，落定切静态层根治模糊）。静态 mock 不接 API；
  * 横幅三条不变约束（后端排序 / 关闭即已读 / 动画可暂停）在每个方向上保持。
  */
@@ -174,7 +168,6 @@ function AnnouncementLab() {
 					{preview === "empty" ? (
 						<Empty
 							key="empty"
-							size="lg"
 							title="NO EVENTS"
 							description="站点安静运行中，没有需要你知道的事。"
 							className="py-16"
@@ -183,7 +176,7 @@ function AnnouncementLab() {
 				</div>
 			</section>
 
-			{/* ============ 横幅展示方向：banner 形态四候选 ============ */}
+			{/* ============ 横幅展示方向：banner 形态三候选 ============ */}
 			<section>
 				<h2 className="mb-2 text-2xl font-semibold">横幅展示方向</h2>
 				<p className="mb-8 max-w-3xl text-sm text-muted-foreground">
@@ -220,7 +213,6 @@ function AnnouncementLab() {
 					{banner === "prism" ? <BannerPrism items={MOCK_BANNERS} /> : null}
 					{banner === "crossfade" ? <BannerCrossfade items={MOCK_BANNERS} /> : null}
 					{banner === "slide" ? <BannerSlide items={MOCK_BANNERS} /> : null}
-					{banner === "teletype" ? <BannerTeletype items={MOCK_BANNERS} /> : null}
 
 					<div className="flex h-56 items-center justify-center">
 						<p className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground/40 uppercase">

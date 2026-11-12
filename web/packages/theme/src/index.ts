@@ -6,6 +6,7 @@ export type {
 	Appearance,
 	ContrastLevel,
 	GenerateOptions,
+	Material,
 	Scale,
 	StatusName,
 	Step,

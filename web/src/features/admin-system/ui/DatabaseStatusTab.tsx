@@ -1,12 +1,16 @@
+import { useClientPagination } from "@features/admin-shared/ui/data-table";
+import { formatDate, formatDateTime } from "@shared/lib/date";
 import {
+	Badge,
+	Button,
 	DataTable,
 	type DataTableColumn,
-	useClientPagination,
-} from "@features/admin-shared/ui/data-table";
-import { formatDate, formatDateTime } from "@shared/lib/date";
-import { Badge, Button, Switch } from "@violet/ui";
+	iconProps,
+	Spinner,
+	Switch,
+} from "@violet/ui";
 
-import { Database, Loader2, RefreshCw } from "lucide-react";
+import { Database, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { useDatabaseSchema, useDatabaseStatus } from "../api/queries";
 import type { DatabaseActivityDTO, DatabaseIndexDTO, DatabaseTableDTO } from "../model/types";
@@ -70,7 +74,7 @@ const tableColumns: DataTableColumn<DatabaseTableDTO>[] = [
 		width: "180px",
 		cell: (row) => (
 			<div className="flex items-center gap-2">
-				<Badge variant={row.statistics_fresh ? "secondary" : "outline"}>
+				<Badge tone={row.statistics_fresh ? "ok" : "neutral"}>
 					{row.statistics_fresh ? "7 日内已分析" : "待分析"}
 				</Badge>
 				{row.last_analyze && (
@@ -97,7 +101,7 @@ export function DatabaseStatusTab({ onUseQuery }: DatabaseStatusTabProps) {
 	if (query.isLoading) {
 		return (
 			<div className="text-muted-foreground flex flex-1 items-center justify-center gap-2 py-20">
-				<Loader2 className="size-4 animate-spin" />
+				<Spinner size={16} aria-hidden="true" />
 				正在读取 PostgreSQL 统计视图
 			</div>
 		);
@@ -111,7 +115,7 @@ export function DatabaseStatusTab({ onUseQuery }: DatabaseStatusTabProps) {
 					{query.error?.message ?? "接口未返回状态数据"}
 				</p>
 				<Button variant="outline" size="sm" onClick={() => void query.refetch()}>
-					<RefreshCw className="size-3.5" />
+					<RefreshCw {...iconProps(14)} />
 					重试
 				</Button>
 			</div>
@@ -141,9 +145,7 @@ export function DatabaseStatusTab({ onUseQuery }: DatabaseStatusTabProps) {
 						disabled={query.isFetching}
 						onClick={() => void query.refetch()}
 					>
-						<RefreshCw
-							className={`size-3.5 ${query.isFetching ? "animate-spin" : ""}`}
-						/>
+						<RefreshCw {...iconProps(14, query.isFetching ? "animate-spin" : "")} />
 						刷新
 					</Button>
 				</div>
@@ -167,7 +169,7 @@ export function DatabaseStatusTab({ onUseQuery }: DatabaseStatusTabProps) {
 							<span className="font-mono text-lg font-semibold tabular-nums">
 								v{status.migration.version}
 							</span>
-							<Badge variant={status.migration.dirty ? "destructive" : "secondary"}>
+							<Badge tone={status.migration.dirty ? "danger" : "ok"}>
 								{status.migration.dirty ? "DIRTY" : "CLEAN"}
 							</Badge>
 						</div>
@@ -208,7 +210,7 @@ function DatabaseRelationshipSection({ onUseQuery }: { onUseQuery: (sql: string)
 	if (query.isLoading) {
 		return (
 			<div className="text-muted-foreground flex h-28 items-center justify-center gap-2 rounded-xl border border-primary/10 bg-primary/3 text-sm">
-				<Loader2 className="size-4 animate-spin" />
+				<Spinner size={16} aria-hidden="true" />
 				正在编排关系星图
 			</div>
 		);

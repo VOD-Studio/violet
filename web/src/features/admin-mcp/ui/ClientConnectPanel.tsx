@@ -2,7 +2,14 @@ import { type ConfigContext, MCP_CLIENTS } from "@features/admin-mcp/model/clien
 import { MCP_SERVERS, serversForScopes } from "@features/admin-mcp/model/types";
 import { ClientInstallView } from "@features/admin-mcp/ui/ClientInstallView";
 import { copyText } from "@shared/lib/clipboard";
-import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@violet/ui";
+import {
+	Button,
+	iconProps,
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@violet/ui";
 
 import { cn } from "cn";
 import { Check, Copy, Globe, KeyRound, X } from "lucide-react";
@@ -97,11 +104,11 @@ export function ClientConnectPanel({ token, scopes }: ClientConnectPanelProps) {
 									: "text-muted-foreground hover:bg-muted",
 							)}
 						>
-							{on ? <Check className="size-3" /> : null}
+							{on ? <Check {...iconProps(12)} /> : null}
 							{s.label}
 							{s.anonymous ? (
 								<span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
-									<Globe className="size-2.5" />
+									<Globe {...iconProps(12)} />
 									公开
 								</span>
 							) : null}
@@ -111,7 +118,7 @@ export function ClientConnectPanel({ token, scopes }: ClientConnectPanelProps) {
 			</div>
 
 			<div className="flex gap-4">
-				<TooltipProvider delayDuration={200}>
+				<TooltipProvider>
 					<nav className="flex w-11 shrink-0 flex-col gap-1 md:w-44">
 						{MCP_CLIENTS.map((c) => {
 							const Icon = c.icon;
@@ -121,6 +128,7 @@ export function ClientConnectPanel({ token, scopes }: ClientConnectPanelProps) {
 									<TooltipTrigger asChild>
 										<button
 											type="button"
+											aria-label={c.label}
 											onClick={() => setClientKey(c.key)}
 											className={cn(
 												"flex items-center justify-center gap-2 rounded-md p-2 text-sm transition-colors md:justify-start",
@@ -197,7 +205,7 @@ function TokenBanner({ token, onDismiss }: { token: string; onDismiss: () => voi
 							}
 						}}
 					>
-						{copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+						{copied ? <Check {...iconProps(14)} /> : <Copy {...iconProps(14)} />}
 						复制
 					</Button>
 				</div>
@@ -206,10 +214,12 @@ function TokenBanner({ token, onDismiss }: { token: string; onDismiss: () => voi
 				</p>
 			</div>
 			<Button
+				iconOnly
 				type="button"
 				variant="ghost"
-				size="icon-sm"
+				size="sm"
 				className="shrink-0"
+				aria-label="我已保存，关闭提示"
 				title="我已保存，关闭提示"
 				onClick={onDismiss}
 			>

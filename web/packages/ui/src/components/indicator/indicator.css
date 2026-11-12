@@ -1,0 +1,311 @@
+/*
+ * 指示器单元样式：块状花形（.v-flower）与控件内细圆弧（.v-spinner）。
+ * 需先导入 @violet/ui/tokens.css 或 styles.css。
+ *
+ * 花形由两个属性控制：
+ *   data-variant  solid 实体（默认，纯色实心无描边）｜outline 描边（描线成花，淡淡上色）
+ *   data-tone     natural 花本色（默认）｜season 跟随季节色 --decoration｜current 沿用文字色
+ * 想用别的颜色，直接覆盖 --v-flower-color。细圆弧取 currentColor，不带底色与轨道。
+ */
+
+.v-flower {
+	--v-flower-size: 24px;
+	/* 一个循环 2.4 秒：绽开或描线（依 index 错开 0.16s）→ 停留 → 淡去 */
+	--v-flower-period: 2.4s;
+	--v-flower-color: var(--seed-winter);
+	--v-flower-line: color-mix(in oklab, var(--v-flower-color) 66%, var(--foreground));
+	/* 渐变三档不透明度：实体近乎不透明，描边只淡淡上色 */
+	--v-flower-s1: 1;
+	--v-flower-s2: 0.95;
+	--v-flower-s3: 0.85;
+
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: none;
+	width: var(--v-flower-size);
+	height: var(--v-flower-size);
+	vertical-align: middle;
+}
+
+.v-flower--sakura {
+	--v-flower-color: var(--seed-spring);
+}
+
+.v-flower--lotus {
+	--v-flower-color: var(--seed-summer);
+}
+
+.v-flower--osmanthus {
+	--v-flower-color: var(--seed-autumn);
+}
+
+.v-flower--plum,
+.v-flower--snow,
+.v-flower--branch {
+	--v-flower-color: var(--seed-winter);
+}
+
+.v-flower[data-tone="season"] {
+	--v-flower-color: var(--decoration);
+}
+
+.v-flower[data-tone="current"] {
+	--v-flower-color: currentColor;
+	--v-flower-line: currentColor;
+}
+
+.v-flower[data-variant="outline"] {
+	--v-flower-s1: 0.5;
+	--v-flower-s2: 0.2;
+	--v-flower-s3: 0.06;
+}
+
+.v-flower svg {
+	display: block;
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+	fill: none;
+	stroke: var(--v-flower-line);
+	stroke-width: 1.4;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+.v-flower__stop {
+	stop-color: var(--v-flower-color);
+}
+
+.v-flower__stop:nth-child(1) {
+	stop-opacity: var(--v-flower-s1);
+}
+
+.v-flower__stop:nth-child(2) {
+	stop-opacity: var(--v-flower-s2);
+}
+
+.v-flower__stop:nth-child(3) {
+	stop-opacity: var(--v-flower-s3);
+}
+
+.v-flower--snow svg {
+	animation: v-flower-rotate 7s linear infinite;
+}
+
+/* 实体：花瓣纯色填充，无描边，依序绽开 */
+.v-flower__draw {
+	stroke: none;
+	fill: var(--v-flower-fill);
+	opacity: 0;
+	animation: v-flower-bloom var(--v-flower-period) ease-out infinite;
+	animation-delay: calc(var(--v-flower-index) * 0.16s);
+}
+
+/* 描边：逐瓣描出轮廓，再淡淡上色 */
+.v-flower[data-variant="outline"] .v-flower__draw {
+	stroke: var(--v-flower-line);
+	stroke-dasharray: 1 1;
+	stroke-dashoffset: 1;
+	fill-opacity: 0;
+	opacity: 1;
+	animation:
+		v-flower-draw var(--v-flower-period) cubic-bezier(0.45, 0.05, 0.25, 1) infinite,
+		v-flower-wash var(--v-flower-period) ease-in-out infinite;
+	animation-delay: calc(var(--v-flower-index) * 0.16s), calc(var(--v-flower-index) * 0.16s);
+}
+
+/* 茎、水面线与雪花枝本身就是线，两种形态都描线生长 */
+.v-flower__line {
+	fill: none;
+	stroke: var(--v-flower-line);
+	stroke-dasharray: 1 1;
+	stroke-dashoffset: 1;
+	animation: v-flower-draw var(--v-flower-period) cubic-bezier(0.45, 0.05, 0.25, 1) infinite;
+	animation-delay: calc(var(--v-flower-index) * 0.16s);
+}
+
+.v-flower__base {
+	opacity: 0.4;
+}
+
+.v-flower__stem {
+	stroke-width: 1.5;
+}
+
+.v-flower__pop {
+	opacity: 0;
+	stroke: none;
+	fill: var(--v-flower-color);
+	animation: v-flower-pop var(--v-flower-period) ease-out infinite;
+	animation-delay: calc(var(--v-flower-index) * 0.16s);
+}
+
+.v-flower[data-variant="outline"] .v-flower__pop {
+	stroke: var(--v-flower-line);
+	fill-opacity: 0.22;
+}
+
+/* 花心比花瓣深一档，两种形态都是实心点 */
+.v-flower .v-flower__pop.v-flower__dot {
+	stroke: none;
+	fill: color-mix(in oklab, var(--v-flower-color) 55%, var(--foreground));
+	fill-opacity: 1;
+}
+
+@keyframes v-flower-draw {
+	0% {
+		stroke-dashoffset: 1;
+		stroke-opacity: 1;
+	}
+	26% {
+		stroke-dashoffset: 0;
+		stroke-opacity: 1;
+	}
+	72% {
+		stroke-dashoffset: 0;
+		stroke-opacity: 1;
+	}
+	88%,
+	100% {
+		stroke-dashoffset: 0;
+		stroke-opacity: 0;
+	}
+}
+
+@keyframes v-flower-wash {
+	0%,
+	26% {
+		fill-opacity: 0;
+	}
+	42%,
+	72% {
+		fill-opacity: 1;
+	}
+	88%,
+	100% {
+		fill-opacity: 0;
+	}
+}
+
+@keyframes v-flower-bloom {
+	0%,
+	8% {
+		opacity: 0;
+	}
+	34%,
+	72% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+	}
+}
+
+@keyframes v-flower-pop {
+	0%,
+	28% {
+		opacity: 0;
+	}
+	40%,
+	72% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+	}
+}
+
+@keyframes v-flower-rotate {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+/* 梅枝：宽是高的三倍 */
+.v-flower--branch {
+	--v-flower-size: 24px;
+	width: calc(var(--v-flower-size) * 3);
+}
+
+.v-flower--branch .v-flower__stem {
+	animation-duration: 2.6s;
+	animation-name: v-flower-grow;
+}
+
+.v-flower--branch .v-flower__pop {
+	animation-duration: 2.6s;
+}
+
+@keyframes v-flower-grow {
+	0% {
+		stroke-dashoffset: 1;
+		opacity: 1;
+	}
+	60% {
+		stroke-dashoffset: 0;
+		opacity: 1;
+	}
+	88% {
+		stroke-dashoffset: 0;
+		opacity: 1;
+	}
+	100% {
+		stroke-dashoffset: 0;
+		opacity: 0;
+	}
+}
+
+/* —— 控件内加载：细圆弧，与控件板一致 —— */
+
+.v-spinner {
+	--v-spinner-size: 16px;
+
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: none;
+	width: var(--v-spinner-size);
+	height: var(--v-spinner-size);
+	color: inherit;
+	vertical-align: middle;
+	animation: v-spinner-rotate 1.6s linear infinite;
+}
+
+.v-spinner svg {
+	display: block;
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+}
+
+.v-spinner__arc {
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.75;
+	stroke-linecap: round;
+	/* pathLength=100 归一化，虚线动画按百分比推进 */
+	stroke-dasharray: 4 100;
+	animation: v-spinner-dash 1.4s ease-in-out infinite;
+}
+
+@keyframes v-spinner-rotate {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@keyframes v-spinner-dash {
+	0% {
+		stroke-dasharray: 4 100;
+		stroke-dashoffset: 0;
+	}
+	50% {
+		stroke-dasharray: 60 100;
+		stroke-dashoffset: -18;
+	}
+	100% {
+		stroke-dasharray: 4 100;
+		stroke-dashoffset: -96;
+	}
+}

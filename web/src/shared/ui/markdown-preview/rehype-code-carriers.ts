@@ -1,5 +1,6 @@
 import type { Element, Nodes, Root } from "hast";
-import { parseFenceInfo } from "@/shared/lib/markdown/fence-info";
+import type { Transformer } from "unified";
+import { parseFenceInfo, readRawFenceInfo } from "@/shared/lib/markdown/fence-info";
 
 function sourceText(node: Nodes): string {
 	if (node.type === "text") return node.value;
@@ -7,8 +8,9 @@ function sourceText(node: Nodes): string {
 }
 
 /** 将已解析的围栏转为与存储 HTML 相同的阅读载体。 */
-export function rehypeCodeCarriers() {
-	return (tree: Root) => {
+export function rehypeCodeCarriers(): Transformer<Root, Root> {
+	return (tree, file) => {
+		const markdown = file.toString();
 		const visit = (node: Nodes) => {
 			if (node.type === "element" && node.tagName === "pre") {
 				const code = node.children[0];
@@ -18,8 +20,18 @@ export function rehypeCodeCarriers() {
 						(Array.isArray(classes) ? classes.join(" ") : String(classes ?? "")).match(
 							/(?:^|\s)language-(\S+)/u,
 						)?.[1] ?? "";
-					const info = parseFenceInfo(`${language} ${String(code.data?.meta ?? "")}`);
+					const offset = node.position?.start.offset;
+					const rawInfo =
+						offset === undefined ? undefined : readRawFenceInfo(markdown, offset);
+					const info = parseFenceInfo(
+						rawInfo ?? `${language} ${String(code.data?.meta ?? "")}`,
+					);
 					const source = sourceText(code).replace(/\n$/u, "");
+					node.properties.dataLang = info.language;
+					node.properties.dataSource = source;
+					if (info.overrides) node.properties.dataOverrides = info.overrides;
+					if (info.filename !== null) node.properties.dataFilename = info.filename;
+					if (info.highlightLines) node.properties.dataLines = info.highlightLines;
 					if (info.language === "mermaid" && !info.runnable) {
 						node.tagName = "div";
 						node.properties = {

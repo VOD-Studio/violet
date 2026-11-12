@@ -13,6 +13,9 @@ vi.mock("@features/auth/ui/InlineLogin", () => ({
 vi.mock("@features/emojis/api/queries", () => ({
 	useAllEmojis: () => ({ data: [], isLoading: false }),
 }));
+vi.mock("@features/customemoji/api/queries", () => ({
+	useMyCustomEmojis: () => ({ data: undefined, isLoading: false }),
+}));
 vi.mock("@features/upload/hooks/use-chunked-upload", () => ({
 	useChunkedUpload: () => ({ uploadFile: vi.fn() }),
 }));
@@ -20,13 +23,13 @@ vi.mock("@features/upload/hooks/use-chunked-upload", () => ({
 import { AnnotationComposer } from "../AnnotationComposer";
 
 const base = {
-	title: "划线批注",
-	quote: "被批注的原文",
 	body: "我的想法",
 	onBodyChange: vi.fn(),
 	onSubmit: vi.fn(),
-	onCancel: vi.fn(),
 	pending: false,
+	placeholder: "写下你的批注…",
+	editorLabel: "批注内容",
+	sendLabel: "提交批注",
 };
 
 describe("AnnotationComposer", () => {
@@ -43,29 +46,34 @@ describe("AnnotationComposer", () => {
 		);
 
 		expect(screen.queryByText("模拟登录成功")).toBeNull();
-		fireEvent.click(screen.getByLabelText("提交批注"));
+		fireEvent.click(screen.getByLabelText("登录并发送"));
 		expect(onSubmit).not.toHaveBeenCalled();
 
 		fireEvent.click(screen.getByText("模拟登录成功"));
 		expect(onLoggedIn).toHaveBeenCalledTimes(1);
 	});
 
-	it("已登录时发送按钮显示「发送」并直接提交", () => {
+	it("已登录时回车与点发送都直接提交", () => {
 		const onSubmit = vi.fn();
 		render(<AnnotationComposer {...base} onSubmit={onSubmit} />);
 
-		expect(screen.queryByText("登录并发送")).toBeNull();
+		fireEvent.keyDown(screen.getByRole("textbox", { name: "批注内容" }), { key: "Enter" });
 		fireEvent.click(screen.getByLabelText("提交批注"));
-		expect(onSubmit).toHaveBeenCalledTimes(1);
+		expect(onSubmit).toHaveBeenCalledTimes(2);
 		expect(screen.queryByText("模拟登录成功")).toBeNull();
 	});
 
-	it("引言显示被批注的原文，取消按钮触发 onCancel", () => {
-		const onCancel = vi.fn();
-		render(<AnnotationComposer {...base} onCancel={onCancel} />);
+	it("没有内容时不能提交", () => {
+		const onSubmit = vi.fn();
+		render(<AnnotationComposer {...base} body="  " onSubmit={onSubmit} />);
 
-		expect(screen.getByText("被批注的原文")).toBeTruthy();
-		fireEvent.click(screen.getByLabelText("取消"));
-		expect(onCancel).toHaveBeenCalledTimes(1);
+		fireEvent.keyDown(screen.getByRole("textbox", { name: "批注内容" }), { key: "Enter" });
+		expect((screen.getByLabelText("提交批注") as HTMLButtonElement).disabled).toBe(true);
+		expect(onSubmit).not.toHaveBeenCalled();
+	});
+
+	it("输入区带表情按钮", () => {
+		render(<AnnotationComposer {...base} />);
+		expect(screen.getByRole("button", { name: "添加表情" })).toBeTruthy();
 	});
 });

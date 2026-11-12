@@ -1,0 +1,361 @@
+/*
+ * TreeSelect：触发器复用 input 单元的外壳（.v-input-control 家族），面板外壳来自选择器族共用的 lib/picker.css，
+ * 树行（缩进、展开钮、勾选框）是本单元自己的，与 Tree 单元不共享。需先导入 @violet/ui/tokens.css 或 styles.css。
+ */
+@import "../input/input.css";
+@import "../../lib/picker.css";
+
+@layer components {
+	/* 单选触发器是 button：去掉原生外观，值靠左，整块可点 */
+	.v-input-control.v-tree-select__trigger {
+		appearance: none;
+		margin: 0;
+		font-family: inherit;
+		text-align: start;
+		cursor: pointer;
+	}
+
+	.v-tree-select__trigger[data-readonly] {
+		cursor: default;
+	}
+
+	.v-tree-select__trigger[data-disabled] {
+		cursor: not-allowed;
+	}
+
+	.v-tree-select__value {
+		flex: 1 1 auto;
+		min-inline-size: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.v-tree-select__value[data-placeholder] {
+		color: var(--muted-foreground);
+	}
+
+	/* 读屏专用：选中后读出完整路径的播报区 */
+	.v-tree-select__sr {
+		position: absolute;
+		inline-size: 1px;
+		block-size: 1px;
+		margin: -1px;
+		padding: 0;
+		border: 0;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	/* 多选：外壳随芯片换行变高，展开钮或搜索输入占剩余宽度 */
+	.v-input-control.v-tree-select__shell--multiple {
+		flex-wrap: wrap;
+		block-size: auto;
+		min-block-size: var(--v-input-h);
+		padding-block: 4px;
+		gap: 4px;
+		cursor: default;
+	}
+
+	.v-tree-select__toggle {
+		display: flex;
+		flex: 1 1 0;
+		align-items: center;
+		box-sizing: border-box;
+		min-inline-size: 48px;
+		block-size: calc(var(--v-input-h) - 8px);
+		margin: 0;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		text-align: start;
+		cursor: pointer;
+		outline: none;
+	}
+
+	.v-tree-select__shell--multiple[data-disabled] .v-tree-select__toggle {
+		cursor: not-allowed;
+	}
+
+	.v-tree-select__shell--multiple[data-readonly] .v-tree-select__toggle {
+		cursor: default;
+	}
+
+	.v-tree-select__shell--multiple .v-tree-select__input {
+		flex: 1 1 0;
+		inline-size: auto;
+		min-inline-size: 48px;
+		block-size: calc(var(--v-input-h) - 8px);
+	}
+
+	.v-tree-select__chip {
+		display: inline-flex;
+		flex: none;
+		align-items: center;
+		box-sizing: border-box;
+		block-size: 24px;
+		padding: 0 3px 0 8px;
+		border-radius: 6px;
+		background-color: color-mix(in oklab, var(--foreground) 8%, transparent);
+		font-size: 0.8125rem;
+		font-weight: 400;
+		line-height: 1;
+	}
+
+	.v-tree-select__chip--more {
+		padding-inline-end: 8px;
+		color: var(--muted-foreground);
+	}
+
+	.v-tree-select__chip-label {
+		max-inline-size: 12rem;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.v-tree-select__chip-remove {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		box-sizing: border-box;
+		inline-size: 18px;
+		block-size: 18px;
+		margin: 0 0 0 2px;
+		padding: 0;
+		border: 0;
+		border-radius: 5px;
+		background-color: transparent;
+		color: inherit;
+		opacity: 0.7;
+		cursor: pointer;
+		transition:
+			background-color 140ms ease-out,
+			opacity 120ms ease-out;
+	}
+
+	.v-tree-select__chip-remove:hover {
+		background-color: color-mix(in oklab, var(--foreground) 12%, transparent);
+		opacity: 1;
+	}
+
+	.v-tree-select__chip-remove:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: -1px;
+	}
+
+	.v-tree-select__chip-remove svg {
+		inline-size: 12px;
+		block-size: 12px;
+	}
+
+	/* 树行：高 32、圆角 8、缩进每级 18；悬停是列表的滑动高亮，键盘移动改为行自身的底色 */
+	.v-tree-select__row {
+		position: relative;
+		z-index: 1;
+		box-sizing: border-box;
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		min-block-size: 32px;
+		padding-inline-start: calc(4px + var(--v-tree-depth, 0) * 18px);
+		padding-inline-end: 4px;
+		border-radius: var(--radius-8, 8px);
+		background-color: transparent;
+		color: var(--popover-foreground);
+		font-size: 0.875rem;
+		line-height: 1.4;
+		cursor: pointer;
+		user-select: none;
+	}
+
+	.v-tree-select__row[data-kb] {
+		background-color: var(--muted);
+	}
+
+	.v-tree-select__row[aria-disabled="true"] {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
+	/* 取回失败：整行换危险色，点一下重试 */
+	.v-tree-select__row[data-failed] {
+		color: var(--destructive-text);
+	}
+
+	/* 展开钮 20px 圆钮，叶子用同宽的空位对齐文字 */
+	.v-tree-select__chevron {
+		display: inline-flex;
+		flex: none;
+		align-items: center;
+		justify-content: center;
+		box-sizing: border-box;
+		inline-size: 20px;
+		block-size: 20px;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		border-radius: 999px;
+		background-color: transparent;
+		color: var(--muted-foreground);
+		cursor: pointer;
+	}
+
+	.v-tree-select__chevron:hover {
+		background-color: color-mix(in oklab, var(--muted) 80%, var(--foreground));
+		color: var(--foreground);
+	}
+
+	.v-tree-select__chevron[aria-disabled="true"] {
+		cursor: default;
+	}
+
+	.v-tree-select__chevron[aria-disabled="true"]:hover {
+		background-color: transparent;
+		color: var(--muted-foreground);
+	}
+
+	.v-tree-select__chevron > svg {
+		inline-size: 14px;
+		block-size: 14px;
+		transition: transform 140ms ease-out;
+	}
+
+	.v-tree-select__row[aria-expanded="true"] .v-tree-select__chevron > svg {
+		transform: rotate(90deg);
+	}
+
+	.v-tree-select__spacer {
+		flex: none;
+		inline-size: 20px;
+	}
+
+	.v-tree-select__body {
+		display: flex;
+		flex: 1 1 auto;
+		align-items: center;
+		gap: 8px;
+		box-sizing: border-box;
+		min-inline-size: 0;
+		min-block-size: 32px;
+		padding-inline: 4px;
+	}
+
+	.v-tree-select__icon {
+		display: inline-flex;
+		flex: none;
+		color: var(--muted-foreground);
+	}
+
+	.v-tree-select__icon svg {
+		inline-size: 16px;
+		block-size: 16px;
+	}
+
+	.v-tree-select__label {
+		flex: 1 1 auto;
+		min-inline-size: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.v-tree-select__row[data-selected] .v-tree-select__label {
+		font-weight: 600;
+	}
+
+	.v-tree-select__meta {
+		flex: none;
+		color: var(--muted-foreground);
+		font-size: 0.75rem;
+		font-variant-numeric: tabular-nums;
+		font-weight: 400;
+	}
+
+	.v-tree-select__row[data-failed] .v-tree-select__icon,
+	.v-tree-select__row[data-failed] .v-tree-select__meta {
+		color: inherit;
+	}
+
+	.v-tree-select__check {
+		flex: none;
+		inline-size: 16px;
+		block-size: 16px;
+		color: var(--foreground);
+	}
+
+	/* 勾选框：未选只有细线，部分选中与全部选中都是墨色底，分别画短横与对勾 */
+	.v-tree-select__box {
+		display: inline-grid;
+		flex: none;
+		place-items: center;
+		box-sizing: border-box;
+		inline-size: 16px;
+		block-size: 16px;
+		border-radius: 5px;
+		background-color: var(--card);
+		box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--foreground) 30%, transparent);
+		color: var(--background);
+		transition:
+			background-color 140ms ease-out,
+			box-shadow 140ms ease-out;
+	}
+
+	.v-tree-select__box[data-state="some"],
+	.v-tree-select__box[data-state="all"] {
+		background-color: var(--foreground);
+		box-shadow: none;
+	}
+
+	/* 对勾与短横互斥：离开的那个立即消失，进入的那个淡入，不会叠放 */
+	.v-tree-select__box svg {
+		grid-area: 1 / 1;
+		inline-size: 12px;
+		block-size: 12px;
+		stroke-width: 2.6;
+		opacity: 0;
+	}
+
+	.v-tree-select__dash {
+		grid-area: 1 / 1;
+		inline-size: 8px;
+		block-size: 2px;
+		border-radius: 1px;
+		background-color: var(--background);
+		opacity: 0;
+	}
+
+	.v-tree-select__box[data-state="all"] svg,
+	.v-tree-select__box[data-state="some"] .v-tree-select__dash {
+		opacity: 1;
+		transition: opacity 120ms ease-out;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-tree-select__chip-remove,
+		.v-tree-select__chevron > svg,
+		.v-tree-select__box,
+		.v-tree-select__box[data-state] svg,
+		.v-tree-select__box[data-state] .v-tree-select__dash {
+			transition: none;
+		}
+	}
+
+	[data-motion="reduce"] .v-tree-select__chip-remove,
+	[data-motion="reduce"] .v-tree-select__chevron > svg,
+	[data-motion="reduce"] .v-tree-select__box,
+	[data-motion="reduce"] .v-tree-select__box[data-state] svg,
+	[data-motion="reduce"] .v-tree-select__box[data-state] .v-tree-select__dash {
+		transition: none;
+	}
+
+	@media (forced-colors: active) {
+		.v-tree-select__row[data-kb] {
+			outline: 2px solid Highlight;
+			outline-offset: -2px;
+		}
+	}
+}

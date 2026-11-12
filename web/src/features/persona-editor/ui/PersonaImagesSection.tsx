@@ -1,18 +1,3 @@
-import {
-	closestCenter,
-	DndContext,
-	type DragEndEvent,
-	KeyboardSensor,
-	PointerSensor,
-	useSensor,
-	useSensors,
-} from "@dnd-kit/core";
-import {
-	arrayMove,
-	SortableContext,
-	sortableKeyboardCoordinates,
-	verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
 import type { MediaFile } from "@entities/media/model/types";
 import { MediaPicker } from "@entities/media/ui/MediaPicker";
 import type { PersonaAdminImage } from "@entities/persona/model/types";
@@ -24,7 +9,7 @@ import {
 import type { CompleteUploadResult } from "@features/upload/model/types";
 import { Uploader } from "@features/upload/ui/Uploader";
 import { ImagePreview } from "@shared/ui/image-preview";
-import { Button, Card, CardContent, CardHeader, CardTitle } from "@violet/ui";
+import { Button, Card, CardContent, CardHeader, CardTitle, Sortable } from "@violet/ui";
 import { ImagePlus } from "lucide-react";
 import { useRef, useState } from "react";
 import { PersonaImageEditor } from "./PersonaImageEditor";
@@ -50,10 +35,6 @@ export function PersonaImagesSection({ images, disabled, onChange }: PersonaImag
 	const [uploadBusy, setUploadBusy] = useState(false);
 	const imagesRef = useRef(images);
 	imagesRef.current = images;
-	const sensors = useSensors(
-		useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-		useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-	);
 
 	const addMedia = (files: MediaFile[]) => {
 		onChange(appendPersonaMedia(images, files));
@@ -64,14 +45,6 @@ export function PersonaImagesSection({ images, disabled, onChange }: PersonaImag
 		const next = appendUploadedPersonaImage(imagesRef.current, uploaded, source);
 		imagesRef.current = next;
 		onChange(next);
-	};
-
-	const handleDragEnd = ({ active, over }: DragEndEvent) => {
-		if (!over || active.id === over.id) return;
-		const from = images.findIndex((image) => image.file_id === String(active.id));
-		const to = images.findIndex((image) => image.file_id === String(over.id));
-		if (from < 0 || to < 0) return;
-		onChange(arrayMove(images, from, to));
 	};
 
 	const alts = images.map(
@@ -119,49 +92,40 @@ export function PersonaImagesSection({ images, disabled, onChange }: PersonaImag
 						还没有设定图。上传图片或从自己的素材库中选择。
 					</p>
 				) : (
-					<DndContext
-						sensors={sensors}
-						collisionDetection={closestCenter}
-						onDragEnd={handleDragEnd}
-					>
-						<SortableContext
-							items={images.map((image) => image.file_id)}
-							strategy={verticalListSortingStrategy}
-						>
-							<div>
-								{images.map((image, index) => (
-									<PersonaImageEditor
-										key={image.file_id}
-										image={image}
-										index={index}
-										total={images.length}
-										disabled={disabled}
-										onPreview={(trigger) =>
-											setLightbox({ open: true, index, trigger })
-										}
-										onChange={(patch) =>
-											onChange(
-												images.map((candidate) =>
-													candidate.file_id === image.file_id
-														? { ...candidate, ...patch }
-														: candidate,
-												),
-											)
-										}
-										onMove={(to) => onChange(arrayMove(images, index, to))}
-										onRemove={() =>
-											onChange(
-												images.filter(
-													(candidate) =>
-														candidate.file_id !== image.file_id,
-												),
-											)
-										}
-									/>
-								))}
-							</div>
-						</SortableContext>
-					</DndContext>
+					<Sortable
+						aria-label="设定图顺序"
+						items={images}
+						getId={(image) => image.file_id}
+						getLabel={(image) =>
+							image.caption || image.alt_text_override || image.alt_text || "设定图"
+						}
+						disabled={disabled}
+						onReorder={onChange}
+						renderItem={(image, index) => (
+							<PersonaImageEditor
+								image={image}
+								index={index}
+								disabled={disabled}
+								onPreview={(trigger) => setLightbox({ open: true, index, trigger })}
+								onChange={(patch) =>
+									onChange(
+										images.map((candidate) =>
+											candidate.file_id === image.file_id
+												? { ...candidate, ...patch }
+												: candidate,
+										),
+									)
+								}
+								onRemove={() =>
+									onChange(
+										images.filter(
+											(candidate) => candidate.file_id !== image.file_id,
+										),
+									)
+								}
+							/>
+						)}
+					/>
 				)}
 			</CardContent>
 

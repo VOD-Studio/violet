@@ -4,8 +4,8 @@
  * 覆盖波形区域的三种状态：加载中、加载失败（含重试）。
  */
 
-import { Button } from "@violet/ui";
-import { AlertCircle, Loader2, RotateCcw } from "lucide-react";
+import { Button, iconProps, Spinner } from "@violet/ui";
+import { CircleAlert, RotateCcw } from "lucide-react";
 
 import type { AudioLoadStatus } from "../types/audio-preview-types";
 
@@ -19,7 +19,7 @@ export function AudioOverlay({ loadStatus, onRetry }: AudioOverlayProps) {
 	if (loadStatus === "loading") {
 		return (
 			<div className="flex h-20 items-center justify-center gap-2 text-muted-foreground">
-				<Loader2 className="size-4 animate-spin" />
+				<Spinner size={16} aria-hidden="true" />
 				<span className="text-xs">加载音频中…</span>
 			</div>
 		);
@@ -30,11 +30,11 @@ export function AudioOverlay({ loadStatus, onRetry }: AudioOverlayProps) {
 		return (
 			<div className="flex h-20 flex-col items-center justify-center gap-2 text-muted-foreground">
 				<div className="flex items-center gap-1.5 text-red-500">
-					<AlertCircle className="size-4" />
+					<CircleAlert className="size-4" />
 					<span className="text-xs">音频加载失败</span>
 				</div>
 				<Button type="button" variant="outline" size="sm" onClick={onRetry}>
-					<RotateCcw className="mr-1.5 size-3" />
+					<RotateCcw {...iconProps(12)} />
 					重试
 				</Button>
 			</div>

@@ -1,3 +1,4 @@
+import { iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { ArrowRight } from "lucide-react";
 import { useReducedMotion } from "motion/react";
@@ -52,9 +53,12 @@ export function OperationRow({ op, schemas }: OperationRowProps) {
 					className="flex size-3.5 shrink-0 items-center justify-center overflow-clip"
 				>
 					<ArrowRight
-						className={cn(
-							"size-3.5 text-muted-foreground/40 transition-all duration-200 group-hover:text-muted-foreground",
-							open && "rotate-90",
+						{...iconProps(
+							14,
+							cn(
+								"text-muted-foreground/40 transition-all duration-200 group-hover:text-muted-foreground",
+								open && "rotate-90",
+							),
 						)}
 					/>
 				</span>

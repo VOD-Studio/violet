@@ -19,7 +19,7 @@ const controlClassName =
 	"inline-flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-[background-color,color,transform] hover:bg-muted hover:text-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-25";
 
 /** 通用媒体查看器：统一文件 chrome，并把格式渲染委托给 FilePreview。
- * 根容器挂 Immersive 方言：中性舞台恒近黑，品牌色只留给焦点环。 */
+ * 单一材质弹窗，遮罩使用纸色加模糊。 */
 export function MediaViewer({
 	open,
 	onOpenChange,
@@ -109,8 +109,9 @@ export function MediaViewer({
 				unstyled
 				onEscapeKeyDown={blockDialogDismiss}
 				onInteractOutside={blockDialogDismiss}
+				overlayClassName="bg-background/90! backdrop-blur-[20px]"
 				className={cn(
-					"dialect-immersive h-[min(88dvh,48rem)] max-h-[calc(100dvh-1rem)] max-w-[calc(100vw-1rem)] gap-0 rounded-xl border border-border bg-card shadow-2xl sm:max-w-[min(94vw,72rem)]",
+					"h-[min(88dvh,48rem)] max-h-[calc(100dvh-1rem)] max-w-[calc(100vw-1rem)] gap-0 rounded-xl border border-sheet-border bg-card shadow-soft sm:max-w-[min(94vw,72rem)]",
 				)}
 			>
 				<section className="flex h-full min-h-0 flex-col" aria-label="媒体查看器">

@@ -15,13 +15,7 @@ import { MediaGrid } from "@features/admin-media/ui/MediaGrid";
 import { MediaGridSkeleton } from "@features/admin-media/ui/MediaGridSkeleton";
 import { MediaLightbox } from "@features/admin-media/ui/MediaLightbox";
 import { type MediaViewMode, MediaViewSwitch } from "@features/admin-media/ui/MediaViewSwitch";
-import {
-	DataTable,
-	type DataTableColumn,
-	type DataTablePagination,
-	DEFAULT_PAGE_SIZE,
-	usePagedQuery,
-} from "@features/admin-shared/ui/data-table";
+import { DEFAULT_PAGE_SIZE, usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useReplaceMediaFile } from "@features/upload/api/mutations";
 import { useChunkedUpload } from "@features/upload/hooks/use-chunked-upload";
@@ -36,6 +30,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
 	Button,
 	ConfirmDialog,
+	DataTable,
+	type DataTableColumn,
+	type DataTablePagination,
+	iconProps,
 	Modal,
 	SearchInput,
 	Select,
@@ -44,7 +42,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@violet/ui";
-import { Images, Pencil, Trash2, Upload } from "lucide-react";
+import { Images, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -68,8 +66,6 @@ function AdminMediaPage() {
 	const pageSize = DEFAULT_PAGE_SIZE;
 
 	// 弹窗状态
-	const [uploadOpen, setUploadOpen] = useState(false);
-	const [uploadBusy, setUploadBusy] = useState(false);
 	const [editFile, setEditFile] = useState<MediaFile | null>(null);
 	const [editOpen, setEditOpen] = useState(false);
 	const [coverFile, setCoverFile] = useState<MediaFile | null>(null);
@@ -245,10 +241,20 @@ function AdminMediaPage() {
 			description="管理系统媒体文件"
 			action={
 				canUpload ? (
-					<Button size="sm" onClick={() => setUploadOpen(true)}>
-						<Upload className="size-3.5" />
-						上传素材
-					</Button>
+					<Uploader
+						entry="button"
+						purpose="material"
+						accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.7z,.md"
+						maxSize={1024 * 1024 * 1024}
+						maxFiles={10}
+						label="上传素材"
+						hint="支持图片、视频、音频、文档，单文件最大 1GB"
+						onBatchUploaded={() => {
+							void queryClient.invalidateQueries({
+								queryKey: mediaCatalogKeys.lists(),
+							});
+						}}
+					/>
 				) : null
 			}
 			sticky={
@@ -301,7 +307,6 @@ function AdminMediaPage() {
 
 					<div className="min-w-40 max-w-72 flex-1">
 						<SearchInput
-							variant="soft"
 							controlSize="sm"
 							aria-label="搜索媒体文件名"
 							defaultValue=""
@@ -331,7 +336,7 @@ function AdminMediaPage() {
 				)
 			) : currentFiles.length === 0 ? (
 				<div className="flex h-40 flex-col items-center justify-center gap-2 text-muted-foreground">
-					<Images className="size-8 opacity-40" />
+					<Images className="size-6 opacity-40" />
 					<p className="text-sm">暂无素材</p>
 				</div>
 			) : view === "grid" ? (
@@ -369,40 +374,6 @@ function AdminMediaPage() {
 					pagination={pagination}
 				/>
 			)}
-
-			{/* 上传弹窗 */}
-			<Modal
-				open={uploadOpen}
-				onOpenChange={(open) => {
-					if (
-						!open &&
-						uploadBusy &&
-						!window.confirm("仍有文件排队或上传，关闭将取消未完成项。是否关闭？")
-					)
-						return;
-					setUploadOpen(open);
-				}}
-				title="上传素材"
-				description="支持拖拽多文件，分片上传含进度"
-				size="md"
-				footer={null}
-			>
-				<Uploader
-					purpose="material"
-					onBusyChange={setUploadBusy}
-					accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.7z,.md"
-					maxSize={1024 * 1024 * 1024}
-					maxFiles={10}
-					label="拖拽文件到此处或点击上传"
-					hint="支持图片、视频、音频、文档，单文件最大 1GB"
-					onUploaded={() => {
-						// 上传成功后刷新素材列表
-						queryClient.invalidateQueries({
-							queryKey: mediaCatalogKeys.lists(),
-						});
-					}}
-				/>
-			</Modal>
 
 			{/* 编辑弹窗 */}
 			<EditMediaDialog open={editOpen} onOpenChange={setEditOpen} file={editFile} />
@@ -548,6 +519,7 @@ function MediaTable({
 			cell: (file) => (
 				<button
 					type="button"
+					aria-label={`预览 ${file.original_name}`}
 					onClick={(e) => onPreview?.(file, e.currentTarget)}
 					className="block size-10 overflow-hidden rounded bg-muted"
 				>
@@ -636,26 +608,30 @@ function MediaTable({
 			width: "96px",
 			align: "center",
 			cell: (file) => (
-				<div className="flex justify-center gap-1">
+				<div className="v-table__row-actions gap-1">
 					{onEdit ? (
 						<Button
-							size="icon-sm"
+							iconOnly
+							size="sm"
 							variant="ghost"
+							aria-label="编辑"
 							title="编辑"
 							onClick={() => onEdit(file)}
 						>
-							<Pencil className="size-3.5" />
+							<Pencil {...iconProps(14)} />
 						</Button>
 					) : null}
 					{onDelete ? (
 						<Button
-							size="icon-sm"
+							iconOnly
+							size="sm"
 							variant="ghost"
+							aria-label="删除"
 							title="删除"
 							className="hover:bg-destructive/10 hover:text-destructive"
 							onClick={() => onDelete(file)}
 						>
-							<Trash2 className="size-3.5" />
+							<Trash2 {...iconProps(14)} />
 						</Button>
 					) : null}
 				</div>
@@ -679,7 +655,7 @@ function MediaTable({
 						onClick={onBatchDelete}
 						disabled={batchDeleting}
 					>
-						<Trash2 className="size-3.5" />
+						<Trash2 {...iconProps(14)} />
 						删除
 					</Button>
 				) : null

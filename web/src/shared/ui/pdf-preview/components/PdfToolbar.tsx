@@ -37,11 +37,13 @@ export function PdfToolbar({
 	return (
 		<div className="flex items-center gap-1 border-b px-2 py-1.5">
 			<Button
+				iconOnly
 				type="button"
-				size="icon-sm"
+				size="sm"
 				variant="ghost"
 				onClick={onPrevPage}
 				disabled={currentPage <= 1}
+				aria-label="上一页"
 				title="上一页"
 			>
 				<ChevronLeft className="size-4" />
@@ -50,11 +52,10 @@ export function PdfToolbar({
 				<Input
 					type="number"
 					aria-label="当前页码"
-					variant="ghost"
+					variant="plain"
 					controlSize="sm"
 					classNames={{
-						root: "w-10.5",
-						control: "px-1",
+						control: "w-10.5 px-1",
 						input: "text-center text-xs tabular-nums",
 					}}
 					max={numPages || 1}
@@ -65,11 +66,13 @@ export function PdfToolbar({
 				<span>/ {numPages || "-"}</span>
 			</div>
 			<Button
+				iconOnly
 				type="button"
-				size="icon-sm"
+				size="sm"
 				variant="ghost"
 				onClick={onNextPage}
 				disabled={currentPage >= numPages}
+				aria-label="下一页"
 				title="下一页"
 			>
 				<ChevronRight className="size-4" />
@@ -78,11 +81,13 @@ export function PdfToolbar({
 			<div className="mx-1 h-4 w-px bg-border" />
 
 			<Button
+				iconOnly
 				type="button"
-				size="icon-sm"
+				size="sm"
 				variant="ghost"
 				onClick={onZoomOut}
 				disabled={scale <= 0.5}
+				aria-label="缩小"
 				title="缩小"
 			>
 				<Minus className="size-4" />
@@ -96,20 +101,24 @@ export function PdfToolbar({
 				{Math.round(scale * 100)}%
 			</button>
 			<Button
+				iconOnly
 				type="button"
-				size="icon-sm"
+				size="sm"
 				variant="ghost"
 				onClick={onZoomIn}
 				disabled={scale >= 3}
+				aria-label="放大"
 				title="放大"
 			>
 				<Plus className="size-4" />
 			</Button>
 			<Button
+				iconOnly
 				type="button"
-				size="icon-sm"
+				size="sm"
 				variant="ghost"
 				onClick={onResetZoom}
+				aria-label="实际大小"
 				title="实际大小"
 			>
 				<Maximize className="size-4" />
@@ -119,10 +128,12 @@ export function PdfToolbar({
 
 			{showDownload ? (
 				<Button
+					iconOnly
 					type="button"
-					size="icon-sm"
+					size="sm"
 					variant="ghost"
 					onClick={onDownload}
+					aria-label="下载 PDF"
 					title="下载 PDF"
 				>
 					<Download className="size-4" />

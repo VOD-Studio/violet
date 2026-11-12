@@ -1,4 +1,4 @@
-import { Button, Segmented } from "@violet/ui";
+import { Button, iconProps, Segmented } from "@violet/ui";
 import { canExportWebm, exportGif, exportWebm } from "@violetjs/inkline/export";
 import { Download } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -254,7 +254,7 @@ export function ExportPanel() {
 							download={job.name}
 							className="inline-flex items-center gap-1 rounded-sm text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
 						>
-							<Download aria-hidden className="size-3.5" />
+							<Download aria-hidden {...iconProps(14)} />
 							下载 {job.name} · {(job.size / 1024).toFixed(0)} KB · 用时{" "}
 							{job.seconds.toFixed(1)} 秒
 						</a>

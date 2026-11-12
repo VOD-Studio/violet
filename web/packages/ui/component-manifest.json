@@ -3,28 +3,78 @@
 	"package": "@violet/ui",
 	"components": [
 		{
+			"name": "accordion",
+			"status": "foundation",
+			"entry": "src/components/accordion/index.ts",
+			"css": "src/components/accordion/accordion.css",
+			"documentation": "web/packages/ui/docs/components/accordion.md"
+		},
+		{
+			"name": "alert",
+			"status": "foundation",
+			"entry": "src/components/alert/index.ts",
+			"css": "src/components/alert/alert.css",
+			"documentation": "web/packages/ui/docs/components/alert.md"
+		},
+		{
+			"name": "annotation",
+			"status": "foundation",
+			"entry": "src/components/annotation/index.ts",
+			"css": "src/components/annotation/annotation.css",
+			"documentation": "web/packages/ui/docs/components/annotation.md"
+		},
+		{
+			"name": "announcement-bar",
+			"status": "foundation",
+			"entry": "src/components/announcement-bar/index.ts",
+			"css": "src/components/announcement-bar/announcement-bar.css",
+			"documentation": "web/packages/ui/docs/components/announcement-bar.md"
+		},
+		{
+			"name": "avatar",
+			"status": "foundation",
+			"entry": "src/components/avatar/index.ts",
+			"css": "src/components/avatar/avatar.css"
+		},
+		{
 			"name": "badge",
-			"status": "legacy",
+			"status": "foundation",
 			"entry": "src/components/badge/index.ts",
 			"css": "src/components/badge/badge.css"
+		},
+		{
+			"name": "breadcrumbs",
+			"status": "foundation",
+			"entry": "src/components/breadcrumbs/index.ts",
+			"css": "src/components/breadcrumbs/breadcrumbs.css",
+			"documentation": "web/packages/ui/docs/components/breadcrumbs.md"
 		},
 		{
 			"name": "button",
 			"status": "foundation",
 			"entry": "src/components/button/index.ts",
 			"css": "src/components/button/button.css",
-			"documentation": "web/src/features/ui-docs/ui/ButtonDoc.tsx"
+			"documentation": "web/packages/ui/docs/components/button.md"
 		},
 		{
 			"name": "card",
-			"status": "legacy",
+			"status": "foundation",
 			"entry": "src/components/card/index.ts",
 			"css": "src/components/card/card.css"
 		},
 		{
+			"name": "cascader",
+			"status": "foundation",
+			"entry": "src/components/cascader/index.ts",
+			"css": "src/components/cascader/cascader.css",
+			"documentation": "web/packages/ui/docs/components/cascader.md"
+		},
+		{
 			"name": "chart",
-			"status": "legacy",
-			"entry": "src/components/chart/index.ts"
+			"status": "foundation",
+			"entry": "src/components/chart/index.ts",
+			"css": "src/components/chart/chart.css",
+			"documentation": "web/packages/ui/docs/components/chart.md"
 		},
 		{
 			"name": "checkbox",
@@ -34,105 +84,200 @@
 			"documentation": "web/packages/ui/docs/components/checkbox.md"
 		},
 		{
+			"name": "code-block",
+			"status": "foundation",
+			"entry": "src/components/code-block/index.ts",
+			"css": "src/components/code-block/code-block.css",
+			"documentation": "web/packages/ui/docs/components/code-block.md"
+		},
+		{
 			"name": "color-picker",
-			"status": "legacy",
-			"entry": "src/components/color-picker/index.ts"
+			"status": "foundation",
+			"entry": "src/components/color-picker/index.ts",
+			"css": "src/components/color-picker/color-picker.css",
+			"documentation": "web/packages/ui/docs/components/color-picker.md"
+		},
+		{
+			"name": "combobox",
+			"status": "foundation",
+			"entry": "src/components/combobox/index.ts",
+			"css": "src/components/combobox/combobox.css",
+			"documentation": "web/packages/ui/docs/components/combobox.md"
 		},
 		{
 			"name": "command",
-			"status": "legacy",
-			"entry": "src/components/command/index.ts"
+			"status": "foundation",
+			"entry": "src/components/command/index.ts",
+			"css": "src/components/command/command.css"
+		},
+		{
+			"name": "comment",
+			"status": "foundation",
+			"entry": "src/components/comment/index.ts",
+			"css": "src/components/comment/comment.css",
+			"documentation": "web/packages/ui/docs/components/comment.md"
 		},
 		{
 			"name": "confirm-dialog",
-			"status": "legacy",
-			"entry": "src/components/confirm-dialog/index.ts"
+			"status": "foundation",
+			"entry": "src/components/confirm-dialog/index.ts",
+			"css": "src/components/confirm-dialog/confirm-dialog.css"
 		},
 		{
 			"name": "context-menu",
-			"status": "legacy",
-			"entry": "src/components/context-menu/index.ts"
+			"status": "foundation",
+			"entry": "src/components/context-menu/index.ts",
+			"css": "src/components/context-menu/context-menu.css"
+		},
+		{
+			"name": "date-picker",
+			"status": "foundation",
+			"entry": "src/components/date-picker/index.ts",
+			"css": "src/components/date-picker/date-picker.css",
+			"documentation": "web/packages/ui/docs/components/date-picker.md"
 		},
 		{
 			"name": "dialog",
-			"status": "legacy",
-			"entry": "src/components/dialog/index.ts"
+			"status": "foundation",
+			"entry": "src/components/dialog/index.ts",
+			"css": "src/components/dialog/dialog.css"
+		},
+		{
+			"name": "drawer",
+			"status": "foundation",
+			"entry": "src/components/drawer/index.ts",
+			"css": "src/components/drawer/drawer.css"
 		},
 		{
 			"name": "dropdown",
 			"status": "foundation",
 			"entry": "src/components/dropdown/index.ts",
-			"css": "src/components/dropdown/dropdown.css",
-			"documentation": "web/src/features/ui-docs/ui/DropdownDoc.tsx"
+			"css": "src/components/dropdown/dropdown.css"
 		},
 		{
 			"name": "dropdown-menu",
-			"status": "legacy",
-			"entry": "src/components/dropdown-menu/index.ts"
+			"status": "foundation",
+			"entry": "src/components/dropdown-menu/index.ts",
+			"css": "src/components/dropdown-menu/dropdown-menu.css"
+		},
+		{
+			"name": "emoji-picker",
+			"status": "foundation",
+			"entry": "src/components/emoji-picker/index.ts",
+			"css": "src/components/emoji-picker/emoji-picker.css",
+			"documentation": "web/packages/ui/docs/components/emoji-picker.md"
 		},
 		{
 			"name": "empty",
-			"status": "legacy",
-			"entry": "src/components/empty/index.ts"
+			"status": "foundation",
+			"entry": "src/components/empty/index.ts",
+			"css": "src/components/empty/empty.css",
+			"documentation": "web/packages/ui/docs/components/empty.md"
+		},
+		{
+			"name": "field",
+			"status": "foundation",
+			"entry": "src/components/field/index.ts",
+			"css": "src/components/field/field.css",
+			"documentation": "web/packages/ui/docs/components/field.md"
+		},
+		{
+			"name": "hover-card",
+			"status": "foundation",
+			"entry": "src/components/hover-card/index.ts",
+			"css": "src/components/hover-card/hover-card.css"
 		},
 		{
 			"name": "icons",
-			"status": "legacy",
-			"entry": "src/components/icons/index.ts"
+			"status": "foundation",
+			"entry": "src/components/icons/index.ts",
+			"documentation": "web/packages/ui/docs/components/icons.md"
+		},
+		{
+			"name": "image-grid",
+			"status": "foundation",
+			"entry": "src/components/image-grid/index.ts",
+			"css": "src/components/image-grid/image-grid.css",
+			"documentation": "web/packages/ui/docs/components/image-grid.md"
 		},
 		{
 			"name": "image-pixel-reveal",
 			"status": "foundation",
 			"entry": "src/components/image-pixel-reveal/index.ts",
-			"css": "src/components/image-pixel-reveal/image-pixel-reveal.css",
-			"documentation": "web/src/features/ui-docs/ui/ImagePixelRevealDoc.tsx"
+			"css": "src/components/image-pixel-reveal/image-pixel-reveal.css"
 		},
 		{
-			"name": "inline-error",
-			"status": "legacy",
-			"entry": "src/components/inline-error/index.ts"
+			"name": "indicator",
+			"status": "foundation",
+			"entry": "src/components/indicator/index.ts",
+			"css": "src/components/indicator/indicator.css"
 		},
 		{
 			"name": "input",
 			"status": "foundation",
 			"entry": "src/components/input/index.ts",
 			"css": "src/components/input/input.css",
-			"documentation": "web/src/features/ui-docs/ui/InputDoc.tsx"
+			"documentation": "web/packages/ui/docs/components/input.md"
 		},
 		{
-			"name": "label",
+			"name": "kbd",
 			"status": "foundation",
-			"entry": "src/components/label/index.ts",
-			"css": "src/components/label/label.css",
-			"documentation": "web/src/features/ui-docs/ui/library-guides/content/composition.md"
+			"entry": "src/components/kbd/index.ts",
+			"css": "src/components/kbd/kbd.css"
 		},
 		{
 			"name": "link-card",
 			"status": "foundation",
 			"entry": "src/components/link-card/index.ts",
 			"css": "src/components/link-card/link-card.css",
-			"documentation": "web/src/features/ui-docs/ui/LinkCardDoc.tsx"
+			"documentation": "web/packages/ui/docs/components/link-card.md"
 		},
 		{
-			"name": "modal",
-			"status": "legacy",
-			"entry": "src/components/modal/index.ts"
+			"name": "list",
+			"status": "foundation",
+			"entry": "src/components/list/index.ts",
+			"css": "src/components/list/list.css",
+			"documentation": "web/packages/ui/docs/components/list.md"
+		},
+		{
+			"name": "list-highlight",
+			"status": "foundation",
+			"entry": "src/components/list-highlight/index.ts",
+			"css": "src/components/list-highlight/list-highlight.css"
+		},
+		{
+			"name": "mention",
+			"status": "foundation",
+			"entry": "src/components/mention/index.ts",
+			"css": "src/components/mention/mention.css",
+			"documentation": "web/packages/ui/docs/components/mention.md"
+		},
+		{
+			"name": "morphing-popover",
+			"status": "foundation",
+			"entry": "src/components/morphing-popover/index.ts",
+			"css": "src/components/morphing-popover/morphing-popover.css"
+		},
+		{
+			"name": "number-input",
+			"status": "foundation",
+			"entry": "src/components/number-input/index.ts",
+			"css": "src/components/number-input/number-input.css",
+			"documentation": "web/packages/ui/docs/components/number-input.md"
 		},
 		{
 			"name": "otp",
-			"status": "legacy",
-			"entry": "src/components/otp/index.ts"
-		},
-		{
-			"name": "overlay-scroll",
-			"status": "legacy",
-			"entry": "src/components/overlay-scroll/index.ts",
-			"css": "src/components/overlay-scroll/overlay-scroll.css"
+			"status": "foundation",
+			"entry": "src/components/otp/index.ts",
+			"css": "src/components/otp/otp.css",
+			"documentation": "web/packages/ui/docs/components/otp.md"
 		},
 		{
 			"name": "page-header",
-			"status": "legacy",
-			"entry": "src/components/page-header/index.ts"
+			"status": "foundation",
+			"entry": "src/components/page-header/index.ts",
+			"css": "src/components/page-header/page-header.css",
+			"documentation": "web/packages/ui/docs/components/page-header.md"
 		},
 		{
 			"name": "page-shell",
@@ -141,96 +286,147 @@
 		},
 		{
 			"name": "pagination",
-			"status": "legacy",
-			"entry": "src/components/pagination/index.ts"
+			"status": "foundation",
+			"entry": "src/components/pagination/index.ts",
+			"css": "src/components/pagination/pagination.css",
+			"documentation": "web/packages/ui/docs/components/pagination.md"
 		},
 		{
 			"name": "popover",
-			"status": "legacy",
-			"entry": "src/components/popover/index.ts"
+			"status": "foundation",
+			"entry": "src/components/popover/index.ts",
+			"css": "src/components/popover/popover.css"
+		},
+		{
+			"name": "progress",
+			"status": "foundation",
+			"entry": "src/components/progress/index.ts",
+			"css": "src/components/progress/progress.css",
+			"documentation": "web/packages/ui/docs/components/progress.md"
 		},
 		{
 			"name": "prompt-dialog",
-			"status": "legacy",
-			"entry": "src/components/prompt-dialog/index.ts"
+			"status": "foundation",
+			"entry": "src/components/prompt-dialog/index.ts",
+			"css": "src/components/prompt-dialog/prompt-dialog.css"
+		},
+		{
+			"name": "quote-card",
+			"status": "foundation",
+			"entry": "src/components/quote-card/index.ts",
+			"css": "src/components/quote-card/quote-card.css",
+			"documentation": "web/packages/ui/docs/components/quote-card.md"
+		},
+		{
+			"name": "radio",
+			"status": "foundation",
+			"entry": "src/components/radio/index.ts",
+			"css": "src/components/radio/radio.css"
+		},
+		{
+			"name": "reaction",
+			"status": "foundation",
+			"entry": "src/components/reaction/index.ts",
+			"css": "src/components/reaction/reaction.css",
+			"documentation": "web/packages/ui/docs/components/reaction.md"
 		},
 		{
 			"name": "resend-button",
-			"status": "legacy",
-			"entry": "src/components/resend-button/index.ts"
+			"status": "foundation",
+			"entry": "src/components/resend-button/index.ts",
+			"css": "src/components/resend-button/resend-button.css",
+			"documentation": "web/packages/ui/docs/components/resend-button.md"
 		},
 		{
 			"name": "scroll-area",
-			"status": "legacy",
-			"entry": "src/components/scroll-area/index.ts"
-		},
-		{
-			"name": "search-input",
 			"status": "foundation",
-			"entry": "src/components/search-input/index.ts",
-			"css": "src/components/search-input/search-input.css",
-			"documentation": "web/src/features/ui-docs/ui/SearchInputDoc.tsx"
+			"entry": "src/components/scroll-area/index.ts",
+			"css": "src/components/scroll-area/scroll-area.css",
+			"documentation": "web/packages/ui/docs/components/scroll-area.md"
 		},
 		{
 			"name": "segmented",
 			"status": "foundation",
 			"entry": "src/components/segmented/index.ts",
-			"css": "src/components/segmented/segmented.css",
-			"documentation": "web/src/features/ui-docs/ui/SegmentedDoc.tsx"
+			"css": "src/components/segmented/segmented.css"
 		},
 		{
 			"name": "select",
-			"status": "legacy",
-			"entry": "src/components/select/index.ts"
+			"status": "foundation",
+			"entry": "src/components/select/index.ts",
+			"css": "src/components/select/select.css",
+			"documentation": "web/packages/ui/docs/components/select.md"
 		},
 		{
 			"name": "separator",
-			"status": "legacy",
+			"status": "foundation",
 			"entry": "src/components/separator/index.ts",
 			"css": "src/components/separator/separator.css"
 		},
 		{
 			"name": "sheet",
-			"status": "legacy",
-			"entry": "src/components/sheet/index.ts"
-		},
-		{
-			"name": "shimmer-skeleton",
-			"status": "legacy",
-			"entry": "src/components/shimmer-skeleton/index.ts"
+			"status": "foundation",
+			"entry": "src/components/sheet/index.ts",
+			"css": "src/components/sheet/sheet.css"
 		},
 		{
 			"name": "skeleton",
-			"status": "legacy",
+			"status": "foundation",
 			"entry": "src/components/skeleton/index.ts",
 			"css": "src/components/skeleton/skeleton.css"
 		},
 		{
+			"name": "slider",
+			"status": "foundation",
+			"entry": "src/components/slider/index.ts",
+			"css": "src/components/slider/slider.css",
+			"documentation": "web/packages/ui/docs/components/slider.md"
+		},
+		{
 			"name": "sonner",
-			"status": "legacy",
-			"entry": "src/components/sonner/index.ts"
+			"status": "foundation",
+			"entry": "src/components/sonner/index.ts",
+			"css": "src/components/sonner/sonner.css"
+		},
+		{
+			"name": "sortable",
+			"status": "foundation",
+			"entry": "src/components/sortable/index.ts",
+			"css": "src/components/sortable/sortable.css",
+			"documentation": "web/packages/ui/docs/components/sortable.md"
 		},
 		{
 			"name": "steps",
-			"status": "legacy",
-			"entry": "src/components/steps/index.ts"
+			"status": "foundation",
+			"entry": "src/components/steps/index.ts",
+			"css": "src/components/steps/steps.css",
+			"documentation": "web/packages/ui/docs/components/steps.md"
 		},
 		{
 			"name": "switch",
-			"status": "legacy",
+			"status": "foundation",
 			"entry": "src/components/switch/index.ts",
 			"css": "src/components/switch/switch.css"
 		},
 		{
 			"name": "table",
-			"status": "legacy",
-			"entry": "src/components/table/index.ts"
+			"status": "foundation",
+			"entry": "src/components/table/index.ts",
+			"css": "src/components/table/table.css",
+			"documentation": "web/packages/ui/docs/components/table.md"
 		},
 		{
 			"name": "tabs",
-			"status": "legacy",
+			"status": "foundation",
 			"entry": "src/components/tabs/index.ts",
 			"css": "src/components/tabs/tabs.css"
+		},
+		{
+			"name": "tag-input",
+			"status": "foundation",
+			"entry": "src/components/tag-input/index.ts",
+			"css": "src/components/tag-input/tag-input.css",
+			"documentation": "web/packages/ui/docs/components/tag-input.md"
 		},
 		{
 			"name": "text-underline",
@@ -242,19 +438,47 @@
 			"status": "foundation",
 			"entry": "src/components/textarea/index.ts",
 			"css": "src/components/textarea/textarea.css",
-			"documentation": "web/src/features/ui-docs/ui/library-guides/content/composition.md"
+			"documentation": "web/packages/ui/docs/components/textarea.md"
+		},
+		{
+			"name": "toggle-group",
+			"status": "foundation",
+			"entry": "src/components/toggle-group/index.ts",
+			"css": "src/components/toggle-group/toggle-group.css"
 		},
 		{
 			"name": "tooltip",
-			"status": "legacy",
-			"entry": "src/components/tooltip/index.ts"
+			"status": "foundation",
+			"entry": "src/components/tooltip/index.ts",
+			"css": "src/components/tooltip/tooltip.css"
+		},
+		{
+			"name": "tree",
+			"status": "foundation",
+			"entry": "src/components/tree/index.ts",
+			"css": "src/components/tree/tree.css",
+			"documentation": "web/packages/ui/docs/components/tree.md"
+		},
+		{
+			"name": "tree-select",
+			"status": "foundation",
+			"entry": "src/components/tree-select/index.ts",
+			"css": "src/components/tree-select/tree-select.css",
+			"documentation": "web/packages/ui/docs/components/tree-select.md"
+		},
+		{
+			"name": "upload",
+			"status": "foundation",
+			"entry": "src/components/upload/index.ts",
+			"css": "src/components/upload/upload.css",
+			"documentation": "web/packages/ui/docs/components/upload.md"
 		},
 		{
 			"name": "upload-tile",
 			"status": "foundation",
 			"entry": "src/components/upload-tile/index.ts",
 			"css": "src/components/upload-tile/upload-tile.css",
-			"documentation": "web/src/features/ui-docs/ui/UploadTileDoc.tsx"
+			"documentation": "web/packages/ui/docs/components/upload.md"
 		}
 	],
 	"additionalExports": [
@@ -279,6 +503,17 @@
 	],
 	"recipes": [
 		{
+			"entry": "src/components/badge/styles.ts",
+			"symbols": [
+				"type BadgeVariantProps",
+				"badgeVariants",
+				"type CountVariantProps",
+				"countVariants",
+				"type TagVariantProps",
+				"tagVariants"
+			]
+		},
+		{
 			"entry": "src/components/button/styles.ts",
 			"symbols": ["type ButtonVariantProps", "buttonVariants"]
 		},
@@ -289,6 +524,18 @@
 		{
 			"entry": "src/components/input/styles.ts",
 			"symbols": ["type InputVariantProps", "inputVariants"]
+		},
+		{
+			"entry": "src/components/kbd/styles.ts",
+			"symbols": ["type KbdVariantProps", "kbdVariants"]
+		},
+		{
+			"entry": "src/components/number-input/styles.ts",
+			"symbols": ["type NumberInputVariantProps", "numberInputVariants"]
+		},
+		{
+			"entry": "src/components/textarea/styles.ts",
+			"symbols": ["type TextareaVariantProps", "textareaVariants"]
 		}
 	],
 	"styles": {

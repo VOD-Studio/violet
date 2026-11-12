@@ -2,16 +2,28 @@
 
 import { Slot } from "radix-ui";
 import type * as React from "react";
-import { Children, cloneElement, isValidElement } from "react";
+import { Children, cloneElement, isValidElement, useEffect, useState } from "react";
+import { Spinner } from "../indicator";
 import { type ButtonVariantProps, buttonVariants } from "./styles";
 
+/** 结果文案的默认展示时长。 */
+const DONE_DURATION = 1600;
+
 interface ButtonOptions extends ButtonVariantProps {
-	/** 加载时禁止激活并保留正文占位；asChild 保留子元素自己的内容。 */
+	/** 加载：aria-busy、仍可聚焦、点击被忽略；指示器盖在内容中央，宽度不变。asChild 保留子元素自己的内容。 */
 	loading?: boolean;
-	/** 原生按钮加载时替换正文；新文案的自然宽度可能不同。 */
+	/** 加载时替换正文；宽度跟随新文案，仅在非 iconOnly 时生效。 */
 	loadingText?: React.ReactNode;
+	/** 完成后的结果文案（如「已保存」）：短暂替换正文后回到 children，供表单保存反馈用。 */
+	done?: React.ReactNode;
+	/** 结果文案展示时长。@default 1600 */
+	doneDuration?: number;
+	/** 前置图标表示动作；加载时被指示器在原位置替换。 */
 	leftIcon?: React.ReactNode;
+	/** 后置箭头表示展开或跳转；加载时移出。 */
 	rightIcon?: React.ReactNode;
+	/** 正圆形纯图标按钮；必须有可读名称（aria-label）。 */
+	iconOnly?: boolean;
 }
 
 interface NativeButtonProps extends React.ComponentProps<"button">, ButtonOptions {
@@ -41,13 +53,16 @@ type SlottedButtonProps = React.HTMLAttributes<HTMLElement> & {
  */
 export function Button({
 	className,
-	variant = "default",
-	size = "default",
+	variant = "secondary",
+	size = "md",
 	asChild,
 	loading = false,
 	loadingText,
+	done,
+	doneDuration = DONE_DURATION,
 	leftIcon,
 	rightIcon,
+	iconOnly = false,
 	disabled = false,
 	type = "button",
 	children,
@@ -58,11 +73,12 @@ export function Button({
 	onKeyUpCapture,
 	...props
 }: ButtonProps) {
+	// done 展示期间点击仍然有效，只有 loading 忽略点击
+	const showDone = !loading && done != null;
+	const label = showDone ? done : loading && loadingText != null ? loadingText : children;
+	// 设计稿：加载不算禁用，仍可聚焦；点击与键盘激活由 aria-disabled 的语义加上激活守卫忽略
 	const isDisabled =
-		disabled || loading || props["aria-disabled"] === true || props["aria-disabled"] === "true";
-	const isIconOnly = typeof size === "string" && size.startsWith("icon");
-	const hasLoadingText = !isIconOnly && loading && loadingText != null;
-	const hasInlineSpinner = hasLoadingText && !leftIcon;
+		disabled || props["aria-disabled"] === true || props["aria-disabled"] === "true";
 	const classes = buttonVariants({ variant, size, className });
 
 	if (asChild) {
@@ -71,13 +87,15 @@ export function Button({
 			throw new Error("Button asChild requires one React element.");
 		}
 
-		const childDisabled =
-			isDisabled ||
-			child.props.disabled === true ||
+		// 设计稿：加载不算禁用——子元素保持可聚焦，只报 aria-busy，激活由守卫忽略
+		const childUnavailable = loading || isDisabled;
+		const childDisabled = !loading && isDisabled;
+		const childAriaDisabled =
+			childDisabled ||
 			child.props["aria-disabled"] === true ||
 			child.props["aria-disabled"] === "true";
 		const guardClick = (event: React.MouseEvent<HTMLElement>) => {
-			if (childDisabled) {
+			if (childUnavailable) {
 				event.preventDefault();
 				event.stopPropagation();
 				return true;
@@ -85,7 +103,7 @@ export function Button({
 			return false;
 		};
 		const guardKey = (event: React.KeyboardEvent<HTMLElement>) => {
-			if (childDisabled && (event.key === "Enter" || event.key === " ")) {
+			if (childUnavailable && (event.key === "Enter" || event.key === " ")) {
 				event.preventDefault();
 				event.stopPropagation();
 				return true;
@@ -94,8 +112,17 @@ export function Button({
 		};
 
 		// Slot 先执行子元素事件，因此禁用拦截必须替换子元素的捕获 handler。
+		const originalChildren = child.props.children;
+		const slottedChildren = loading ? (
+			<>
+				{originalChildren}
+				<SpinnerOverlay />
+			</>
+		) : (
+			originalChildren
+		);
 		const slottedChild = cloneElement(child, {
-			"aria-disabled": childDisabled || undefined,
+			"aria-disabled": childAriaDisabled || undefined,
 			"aria-busy": loading || props["aria-busy"] || child.props["aria-busy"],
 			tabIndex: childDisabled ? -1 : (child.props.tabIndex ?? props.tabIndex),
 			...(child.type === "button"
@@ -121,8 +148,8 @@ export function Button({
 				child.props.onKeyUpCapture?.(event);
 				onKeyUpCapture?.(event);
 			},
+			children: slottedChildren,
 		});
-
 		return (
 			<Slot.Root
 				{...props}
@@ -132,7 +159,6 @@ export function Button({
 				data-size={size}
 				data-loading={loading ? "true" : undefined}
 				data-disabled={childDisabled ? "true" : undefined}
-				data-indicator="overlay"
 				data-as-child="true"
 				className={classes}
 			>
@@ -142,7 +168,7 @@ export function Button({
 	}
 
 	return (
-		<button
+		<NativeButton
 			{...props}
 			ref={ref}
 			type={type}
@@ -150,9 +176,9 @@ export function Button({
 			data-variant={variant}
 			data-size={size}
 			data-loading={loading ? "true" : undefined}
+			data-done={showDone ? "true" : undefined}
+			data-icon-only={iconOnly ? "true" : undefined}
 			data-disabled={isDisabled ? "true" : undefined}
-			data-indicator={isIconOnly || leftIcon || hasInlineSpinner ? "slot" : "overlay"}
-			data-loading-text={hasLoadingText ? "true" : undefined}
 			aria-busy={loading || props["aria-busy"]}
 			aria-disabled={isDisabled || props["aria-disabled"]}
 			disabled={isDisabled}
@@ -161,30 +187,119 @@ export function Button({
 			onAuxClickCapture={onAuxClickCapture}
 			onKeyDownCapture={onKeyDownCapture}
 			onKeyUpCapture={onKeyUpCapture}
+			label={label}
+			leftIcon={leftIcon}
+			rightIcon={rightIcon}
+			loading={loading}
+			iconOnly={iconOnly}
+			showDone={showDone}
+			doneDuration={doneDuration}
 		>
-			{isIconOnly ? (
+			{children}
+		</NativeButton>
+	);
+}
+
+/** 加载指示器盖在内容中央：绝对定位、不占宽高，按钮宽度因此不变。 */
+function SpinnerOverlay() {
+	return (
+		<span aria-hidden="true" className="v-button__overlay">
+			<Spinner size={16} />
+		</span>
+	);
+}
+
+interface NativeButtonInternalProps extends Omit<React.ComponentProps<"button">, "children"> {
+	label: React.ReactNode;
+	leftIcon?: React.ReactNode;
+	rightIcon?: React.ReactNode;
+	loading: boolean;
+	iconOnly: boolean;
+	showDone: boolean;
+	doneDuration: number;
+	children?: React.ReactNode;
+}
+
+/**
+ * 结果文案的展示计时归内部按钮：loading 与 done 交替更新时定时器重新起算；
+ * 回落只翻内部状态，不回调调用方，调用方的状态机由它自己的异步流程收尾。
+ */
+function NativeButton({
+	label,
+	leftIcon,
+	rightIcon,
+	loading,
+	iconOnly,
+	showDone,
+	doneDuration,
+	children,
+	...props
+}: NativeButtonInternalProps) {
+	const [settled, setSettled] = useState(false);
+	useEffect(() => {
+		if (!showDone) {
+			setSettled(false);
+			return;
+		}
+		const timer = window.setTimeout(() => setSettled(true), doneDuration);
+		return () => window.clearTimeout(timer);
+	}, [showDone, doneDuration]);
+	const settledDone = showDone && settled;
+	const hasOverlay = loading && (iconOnly || !leftIcon);
+	const visibleLabel = settledDone ? children : label;
+	// 加载时激活被忽略：aria-disabled 挡住原生 click 与键盘激活（jsdom 与真实浏览器一致）
+	const guard = (event: React.SyntheticEvent) => {
+		if (!loading) return;
+		event.preventDefault();
+		event.stopPropagation();
+	};
+	return (
+		<button
+			{...props}
+			data-done={showDone ? "true" : undefined}
+			data-settled={settledDone ? "true" : undefined}
+			onClick={loading ? guard : props.onClick}
+			onDoubleClick={loading ? guard : props.onDoubleClick}
+			onMouseDown={loading ? guard : props.onMouseDown}
+			onMouseUp={loading ? guard : props.onMouseUp}
+			onTouchStart={loading ? guard : props.onTouchStart}
+			onTouchEnd={loading ? guard : props.onTouchEnd}
+			onKeyDown={loading ? guard : props.onKeyDown}
+			onKeyUp={loading ? guard : props.onKeyUp}
+		>
+			{iconOnly ? (
 				<span data-slot="icon" className="v-button__icon">
 					<span className="v-button__icon-content">{children}</span>
-					{loading && <span aria-hidden="true" className="v-button__spinner" />}
+					{hasOverlay && <SpinnerOverlay />}
 				</span>
 			) : (
 				<>
-					{hasInlineSpinner && (
-						<span
-							aria-hidden="true"
-							className="v-button__spinner v-button__spinner--inline"
-						/>
-					)}
 					{leftIcon && (
 						<span aria-hidden="true" data-slot="start-icon" className="v-button__icon">
 							<span className="v-button__icon-content">{leftIcon}</span>
-							{loading && <span className="v-button__spinner" />}
+							{loading && <SpinnerOverlay />}
+						</span>
+					)}
+					{showDone && (
+						<span
+							aria-hidden="true"
+							data-slot="done-icon"
+							className="v-button__done-icon"
+						>
+							<svg
+								viewBox="0 0 24 24"
+								fill="none"
+								aria-hidden="true"
+								focusable="false"
+							>
+								<path d="m5 12.5 4.5 4.5L19 7.5" />
+							</svg>
 						</span>
 					)}
 					<span data-slot="label" className="v-button__label">
-						{loading && loadingText != null ? loadingText : children}
+						{visibleLabel}
 					</span>
-					{rightIcon && (
+					{rightIcon && !loading && (
 						<span
 							aria-hidden="true"
 							data-slot="end-icon"
@@ -193,6 +308,7 @@ export function Button({
 							{rightIcon}
 						</span>
 					)}
+					{hasOverlay && <SpinnerOverlay />}
 				</>
 			)}
 		</button>

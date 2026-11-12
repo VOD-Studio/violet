@@ -14,7 +14,6 @@ export interface TransitionRule {
 
 const ADMIN = ["/admin", "/admin/*"];
 const LAB = ["/lab", "/lab/*"];
-const UI_DOCS = ["/ui", "/ui/*"];
 const WORKBENCH = ["/inkline", "/inkline/*"];
 
 const eitherIn = (patterns: readonly string[]) => (from: string | undefined, to: string) =>
@@ -30,12 +29,6 @@ export const TRANSITION_RULES: readonly TransitionRule[] = [
 	{ id: "admin", kind: "none", applies: eitherIn(ADMIN) },
 	// 实验页不属于正式页面，也不应带上转场样式。
 	{ id: "lab", kind: "none", applies: eitherIn(LAB) },
-	// 组件库文档站内部切换由侧栏主导，内容直接切换。
-	{
-		id: "ui-docs-internal",
-		kind: "none",
-		applies: (from, to) => matchesAny(UI_DOCS, from) && matchesAny(UI_DOCS, to),
-	},
 	// 包演示页切换各节时工作台保持挂载，只换舞台与面板内容。
 	{
 		id: "workbench-internal",

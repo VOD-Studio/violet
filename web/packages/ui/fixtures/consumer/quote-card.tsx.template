@@ -1,0 +1,57 @@
+import { QuoteCard } from "@violet/ui";
+import { QuoteCard as LeafQuoteCard } from "@violet/ui/quote-card";
+import { useState } from "react";
+
+const thumbnail = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='currentColor'/%3E%3C/svg%3E";
+const quote = {
+	authorName: "独立消费者作者",
+	time: "2 小时前",
+	content: "引用卡在真实安装包中保持唯一链接、一张缩略图与独立取消操作。",
+	imageSrc: thumbnail,
+};
+
+export function QuoteCardPreview() {
+	const [leaf, setLeaf] = useState(false);
+	const [quoted, setQuoted] = useState(true);
+	const [message, setMessage] = useState("尚未发送");
+	const Card = leaf ? LeafQuoteCard : QuoteCard;
+	return (
+		<main style={{ maxWidth: 520, margin: "32px auto", padding: 8 }}>
+			<h1>引用卡 · 独立安装包</h1>
+			<label>
+				<input id="quote-card-leaf" type="checkbox" checked={leaf} onChange={(event) => setLeaf(event.currentTarget.checked)} />
+				叶子入口
+			</label>
+			<div style={{ display: "grid", gap: 20, padding: 8 }}>
+				<section id="quote-card-tweet" aria-label="引用推文">
+					<Card {...quote} href="#quote-card-target" label="打开被引用推文" />
+				</section>
+				<section id="quote-card-chat" aria-label="聊天分享" style={{ width: "min(320px, 100%)" }}>
+					<Card {...quote} href="#quote-card-target" label="打开聊天分享的推文" />
+				</section>
+				<section id="quote-card-nested" aria-label="嵌套引用">
+					<Card {...quote} href="#quote-card-target" label="打开包含二级引用的推文" nested="引用了一条推文" />
+				</section>
+				<section id="quote-card-deleted" aria-label="已删除来源">
+					<Card {...quote} href="#quote-card-target" deleted />
+				</section>
+				<form id="quote-card-preview" aria-label="发布器预览" onSubmit={(event) => {
+					event.preventDefault();
+					setMessage(quoted ? "已带引用发送" : "已取消引用后发送");
+				}}>
+					{quoted ? (
+						<Card {...quote} action={
+							<button id="quote-card-cancel" type="button" onClick={() => { setQuoted(false); setMessage("已取消引用"); }}>取消引用</button>
+						} />
+					) : (
+						<button id="quote-card-restore" type="button" onClick={() => setQuoted(true)}>重新引用</button>
+					)}
+					<label>草稿<input id="quote-card-draft" name="draft" defaultValue="保留我的草稿" /></label>
+					<button id="quote-card-send" type="submit">发送</button>
+				</form>
+			</div>
+			<output id="quote-card-message" aria-live="polite">{message}</output>
+			<p id="quote-card-target" tabIndex={-1}>被引用推文的原文位置</p>
+		</main>
+	);
+}

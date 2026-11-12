@@ -1,1 +1,1 @@
-export { PromptDialog, type PromptDialogProps } from "./PromptDialog";
+export { PromptDialog, type PromptDialogProps } from "./prompt-dialog";

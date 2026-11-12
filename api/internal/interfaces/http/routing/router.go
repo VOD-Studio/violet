@@ -39,6 +39,7 @@ func RegisterRoutes(r chi.Router, d *Deps) {
 		registerSiteImpressionRoutes(v1, d)
 		registerMusicPublicRoutes(v1, d)
 		registerPresencePublicRoutes(v1, d)
+		registerWindowPublicRoutes(v1, d)
 		v1.Get("/stats", d.Stats.GetPublicStats)
 
 		// GitHub 数据（公开，Token 在后端管理）
@@ -379,6 +380,12 @@ func registerTweetRoutes(v1 chi.Router, d *Deps) {
 		r.With(d.SessionAuth).Post("/{id}/comments", tweetH.CreateComment)
 		r.With(d.SessionAuth).Delete("/{id}/comments/{commentId}", tweetH.DeleteComment)
 		r.With(d.OptionalAuth).Get("/{id}/comments/{commentId}/replies", tweetH.ListReplies)
+		reactions := d.TweetCommentReaction
+		r.With(d.OptionalAuth).Get("/{id}/comments/{commentId}/reactions", reactions.List)
+		r.With(d.OptionalAuth).Post("/{id}/comments/reactions/batch", reactions.Batch)
+		r.With(d.SessionAuth, d.limit("comment", "POST /api/v1/tweets/{id}/comments/{commentId}/reactions")).
+			Post("/{id}/comments/{commentId}/reactions", reactions.Add)
+		r.With(d.SessionAuth).Delete("/{id}/comments/{commentId}/reactions/{emojiId}", reactions.Remove)
 	})
 
 	// 用户主页公开资料与推文列表（公开，支持 OptionalAuth 获取 is_liked）

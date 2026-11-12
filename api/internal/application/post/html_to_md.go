@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"unicode"
+
+	infracoderunner "blog-api/internal/infrastructure/coderunner"
 
 	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/JohannesKaufmann/html-to-markdown/plugin"
@@ -86,7 +89,10 @@ func htmlToMarkdown(htmlStr string) (string, error) {
 		}},
 		md.Rule{Filter: []string{"pre"}, Replacement: func(content string, s *goquery.Selection, _ *md.Options) *string {
 			code := s.Find("code").First()
-			info := s.AttrOr("data-lang", "")
+			info := strings.TrimSpace(s.AttrOr("data-lang", ""))
+			if strings.ContainsFunc(info, unicode.IsSpace) {
+				info = ""
+			}
 			if info == "" {
 				for _, class := range strings.Fields(code.AttrOr("class", "")) {
 					if strings.HasPrefix(class, "language-") {
@@ -99,13 +105,20 @@ func htmlToMarkdown(htmlStr string) (string, error) {
 			if !hasSource {
 				source = strings.TrimSuffix(s.Text(), "\n")
 			}
-			if s.AttrOr("data-runnable", "") == "true" {
-				info += " runnable"
-				if overrides := s.AttrOr("data-overrides", ""); overrides != "" {
-					info += " " + overrides
-				}
+			metadata := infracoderunner.FenceInfo{
+				Language:       info,
+				Runnable:       s.AttrOr("data-runnable", "") == "true",
+				HighlightLines: s.AttrOr("data-lines", ""),
 			}
-			return md.String(markdownFence(info, source))
+			if filename, ok := s.Attr("data-filename"); ok {
+				metadata.Filename = &filename
+			}
+			if overrides := s.AttrOr("data-overrides", ""); overrides != "" {
+				metadata.Overrides = infracoderunner.ParseFenceInfo("text " + overrides).Overrides
+			}
+			// HTML 解析已将 NUL 替换为 U+FFFD；临时 NUL 阻止转换器压缩源码空行、裁掉行尾空白。
+			source = strings.ReplaceAll(source, "\n", "\x00\n") + "\x00"
+			return md.String(markdownFence(infracoderunner.SerializeFenceInfo(metadata), source))
 		}},
 		md.Rule{Filter: []string{"mark"}, Replacement: func(content string, s *goquery.Selection, _ *md.Options) *string {
 			return md.String("==" + content + "==")
@@ -183,7 +196,7 @@ func htmlToMarkdown(htmlStr string) (string, error) {
 		}},
 	)
 	mdText := converter.Convert(doc.Selection)
-	return mdText, nil
+	return strings.ReplaceAll(mdText, "\x00", ""), nil
 }
 
 func isFootnoteSup(s *goquery.Selection, footnotes map[string]string) bool {
@@ -225,12 +238,15 @@ func indentMarkdown(content string) string {
 	return strings.ReplaceAll(content, "\n", "\n    ")
 }
 
-// 围栏必须长于源码中的所有连续反引号，防止代码示例提前闭合。
-// 源码保持原样，列表与引用的缩进由对应转换规则补齐。
+// 围栏长于源码中的同类符号串，元数据含反引号时改用波浪号。
 func markdownFence(info, source string) string {
+	marker := '`'
+	if strings.ContainsRune(info, marker) {
+		marker = '~'
+	}
 	length, run := 3, 0
 	for _, c := range source {
-		if c == '`' {
+		if c == marker {
 			run++
 			if run >= length {
 				length = run + 1
@@ -239,6 +255,6 @@ func markdownFence(info, source string) string {
 			run = 0
 		}
 	}
-	fence := strings.Repeat("`", length)
+	fence := strings.Repeat(string(marker), length)
 	return "\n\n" + fence + info + "\n" + source + "\n" + fence + "\n\n"
 }

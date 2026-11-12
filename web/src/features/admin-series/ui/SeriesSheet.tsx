@@ -7,8 +7,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
 	Button,
 	Input,
+	iconProps,
 	Label,
 	Sheet,
+	SheetBody,
 	SheetContent,
 	SheetDescription,
 	SheetFooter,
@@ -107,7 +109,7 @@ export function SeriesSheet({ open, onOpenChange, editing, onCreated }: SeriesSh
 
 	return (
 		<Sheet open={open} onOpenChange={onOpenChange}>
-			<SheetContent className="w-full overflow-y-auto sm:max-w-lg">
+			<SheetContent size="lg">
 				<SheetHeader>
 					<SheetTitle>{editing ? "编辑书" : "建书"}</SheetTitle>
 					<SheetDescription>
@@ -116,80 +118,84 @@ export function SeriesSheet({ open, onOpenChange, editing, onCreated }: SeriesSh
 							: "先建书慢慢挂章节，发布前不出现在公开书架"}
 					</SheetDescription>
 				</SheetHeader>
-				<form
-					id="series-form"
-					onSubmit={handleSubmit(onSubmit)}
-					className="flex flex-1 flex-col gap-4 px-4"
-				>
-					<div className="space-y-2">
-						<Label htmlFor="series-title">书名</Label>
-						<Input
-							id="series-title"
-							{...register("title")}
-							disabled={isSubmitting}
-							onChange={(e) => {
-								register("title").onChange(e);
-								if (!editing) {
-									debouncedSlugify.run(e.target.value);
-								}
-							}}
-						/>
-						{errors.title && (
-							<p className="text-destructive text-sm">{errors.title.message}</p>
-						)}
-					</div>
-					<div className="space-y-2">
-						<Label htmlFor="series-slug">slug</Label>
-						<Input
-							id="series-slug"
-							placeholder="输入书名自动生成，可手动修改"
-							{...register("slug")}
-							disabled={isSubmitting || !!editing}
-							onChange={(e) => {
-								slugTouched.current = true;
-								register("slug").onChange(e);
-							}}
-						/>
-						{errors.slug && (
-							<p className="text-destructive text-sm">{errors.slug.message}</p>
-						)}
-					</div>
-					<div className="space-y-2">
-						<Label htmlFor="series-desc">简介</Label>
-						<Textarea
-							id="series-desc"
-							rows={3}
-							{...register("description")}
-							disabled={isSubmitting}
-						/>
-						{errors.description && (
-							<p className="text-destructive text-sm">{errors.description.message}</p>
-						)}
-					</div>
-					<div className="space-y-2">
-						<div className="flex items-center justify-between">
-							<Label>封面图</Label>
-							<Button
-								type="button"
-								size="xs"
-								variant="outline"
+				<SheetBody>
+					<form
+						id="series-form"
+						onSubmit={handleSubmit(onSubmit)}
+						className="flex flex-col gap-4"
+					>
+						<div className="space-y-2">
+							<Label htmlFor="series-title">书名</Label>
+							<Input
+								id="series-title"
+								{...register("title")}
 								disabled={isSubmitting}
-								onClick={() => setAiCoverOpen(true)}
-							>
-								<WandSparkles className="size-3.5" />
-								AI 生成
-							</Button>
+								onChange={(e) => {
+									register("title").onChange(e);
+									if (!editing) {
+										debouncedSlugify.run(e.target.value);
+									}
+								}}
+							/>
+							{errors.title && (
+								<p className="text-destructive text-sm">{errors.title.message}</p>
+							)}
 						</div>
-						<Cover
-							value={watch("cover_image") || undefined}
-							onChange={(url) => {
-								reset({ ...watch(), cover_image: url });
-							}}
-							onClear={() => reset({ ...watch(), cover_image: "" })}
-							title="选择书籍封面"
-						/>
-					</div>
-				</form>
+						<div className="space-y-2">
+							<Label htmlFor="series-slug">slug</Label>
+							<Input
+								id="series-slug"
+								placeholder="输入书名自动生成，可手动修改"
+								{...register("slug")}
+								disabled={isSubmitting || !!editing}
+								onChange={(e) => {
+									slugTouched.current = true;
+									register("slug").onChange(e);
+								}}
+							/>
+							{errors.slug && (
+								<p className="text-destructive text-sm">{errors.slug.message}</p>
+							)}
+						</div>
+						<div className="space-y-2">
+							<Label htmlFor="series-desc">简介</Label>
+							<Textarea
+								id="series-desc"
+								rows={3}
+								{...register("description")}
+								disabled={isSubmitting}
+							/>
+							{errors.description && (
+								<p className="text-destructive text-sm">
+									{errors.description.message}
+								</p>
+							)}
+						</div>
+						<div className="space-y-2">
+							<div className="flex items-center justify-between">
+								<Label>封面图</Label>
+								<Button
+									type="button"
+									size="sm"
+									variant="outline"
+									disabled={isSubmitting}
+									onClick={() => setAiCoverOpen(true)}
+								>
+									<WandSparkles {...iconProps(14)} />
+									AI 生成
+								</Button>
+							</div>
+							<Cover
+								value={watch("cover_image") || undefined}
+								onChange={(url) => {
+									reset({ ...watch(), cover_image: url });
+								}}
+								onClear={() => reset({ ...watch(), cover_image: "" })}
+								title="选择书籍封面"
+							/>
+						</div>
+					</form>
+				</SheetBody>
 				<SheetFooter>
 					<Button type="submit" form="series-form" disabled={isSubmitting}>
 						{isSubmitting ? "保存中…" : "保存"}

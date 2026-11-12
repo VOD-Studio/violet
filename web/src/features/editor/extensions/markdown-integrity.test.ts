@@ -200,6 +200,80 @@ describe("editor Markdown integrity", () => {
 		expect(roundtrip(first).getJSON()).toEqual(first.getJSON());
 	});
 
+	it.each([
+		"python run",
+		"python\nrun",
+		"python\u00a0run",
+	])("keeps imported language attributes read-only across HTML and Markdown: %j", (language) => {
+		const source = 'print("<&>")\n```\n~~~\n\n';
+		const filename = 'src/run runnable "quoted" <&> `file`.py';
+		const carrier = document.createElement("pre");
+		carrier.setAttribute("data-lang", language);
+		carrier.setAttribute("data-filename", filename);
+		carrier.setAttribute("data-lines", "1,3");
+		carrier.setAttribute("data-overrides", '{"timeout_secs":10}');
+		carrier.setAttribute("data-source", source);
+		carrier.textContent = "highlighted markup is not the source";
+		const first = editor(carrier.outerHTML, "html");
+		const result = roundtrip(roundtrip(first));
+		expect(result.state.doc.firstChild?.textContent).toBe(source);
+		expect(result.getJSON().content?.[0].attrs).toMatchObject({
+			language: "python",
+			runnable: false,
+			filename,
+			highlightLines: "1,3",
+			overrides: '{"timeout_secs":10}',
+		});
+		const html = new DOMParser().parseFromString(result.getHTML(), "text/html");
+		expect(html.querySelector("pre")?.getAttribute("data-runnable")).toBeNull();
+		expect(html.querySelector("pre")?.getAttribute("data-source")).toBe(source);
+	});
+
+	it.each([
+		false,
+		true,
+	])("preserves filename, marked rows, source and overrides through HTML and Markdown (runnable=%s)", (runnable) => {
+		const filename = 'src/run runnable "quote" <tag> & `tick`.ts';
+		const source = 'const text = "<&>";\n~~~\n\n';
+		const first = editor(
+			`~~~~TypeScript title=${JSON.stringify(filename)} {1,3-999999999999999999999}${runnable ? " run" : ""} {"timeout_secs":10,"allow_network":false}\n${source}\n~~~~`,
+		);
+		expect(first.state.doc.firstChild?.textContent).toBe(source);
+		expect(first.getJSON().content?.[0].attrs).toMatchObject({
+			language: runnable ? "bun" : "TypeScript",
+			filename,
+			highlightLines: "1,3-999999999999999999999",
+			runnable,
+			overrides: '{"timeout_secs":10,"allow_network":false}',
+		});
+		const html = new DOMParser().parseFromString(first.getHTML(), "text/html");
+		expect(html.querySelector("pre")?.getAttribute("data-filename")).toBe(filename);
+		expect(html.querySelector("pre")?.getAttribute("data-source")).toBe(source);
+		expect(html.querySelector("tag")).toBeNull();
+		expect(roundtrip(roundtrip(first)).getJSON()).toEqual(first.getJSON());
+	});
+
+	it.each([
+		["> ", "```", ""],
+		["  > ", "~~~", "- item\n\n"],
+	])("imports raw metadata inside nested containers (%s%s)", (prefix, fence, container) => {
+		const filename = 'src/"nested" <tag> & file.ts';
+		const source = 'console.log("<&>");';
+		const first = editor(
+			`${container}${prefix}${fence}typescript title=${JSON.stringify(filename)} {1} run {"timeout_secs":10}\n${prefix}${source}\n${prefix}${fence}`,
+		);
+		const html = new DOMParser().parseFromString(first.getHTML(), "text/html");
+		const pre = html.querySelector("blockquote pre");
+		expect(pre?.getAttribute("data-filename")).toBe(filename);
+		expect(pre?.getAttribute("data-lines")).toBe("1");
+		expect(pre?.getAttribute("data-lang")).toBe("bun");
+		expect(pre?.getAttribute("data-runnable")).toBe("true");
+		expect(pre?.getAttribute("data-overrides")).toBe('{"timeout_secs":10}');
+		expect(pre?.getAttribute("data-source")).toBe(source);
+		expect(html.querySelector("tag")).toBeNull();
+		expect(roundtrip(first).getJSON()).toEqual(first.getJSON());
+	});
+
 	it("retains task check state and highlight markup through both formats", () => {
 		const first = editor(
 			'<ul data-type="taskList"><li data-type="taskItem" data-checked="true"><p>Done <mark>highlight</mark></p></li><li data-type="taskItem" data-checked="false"><p>Pending</p></li></ul>',

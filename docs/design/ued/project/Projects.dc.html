@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Violet 项目</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&family=Noto+Serif+SC:wght@400;500;600;700&family=Alex+Brush&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Maple Mono";font-weight:400;font-style:normal;src:url(/_blob/a3ecea3add4961def4d089b95f486230) format("woff2")}
+@font-face{font-family:"Maple Mono";font-weight:500;font-style:normal;src:url(/_blob/1ba23035f8e49762aeac0a2a66f83fa0) format("woff2")}
+body{margin:0}
+a{color:inherit;text-decoration:none}
+.paper-l{position:absolute;inset:0;background-image:url(/_blob/66391f4a5c5b623abcbda5bc91818ab0);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.paper-d{position:absolute;inset:0;background-image:url(/_blob/b0a1c287fd95586fcb700c431de8f4c5);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.num{font-family:"Maple Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.mono{font-family:"Maple Mono",ui-monospace,monospace}
+.sheet{background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);border:1px solid var(--ol)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;height:36px;padding:0 16px;border:0;border-radius:999px;font-family:inherit;font-size:14px;font-weight:500;white-space:nowrap;background:var(--sunk);color:var(--fg);cursor:pointer}
+.btn.sm{height:32px;padding:0 12px}.btn.lg{height:40px;font-size:16px}
+.btn.pri{background:var(--fg);color:var(--bg)}.btn.gho{background:transparent}
+.btn.ic{width:32px;padding:0}
+.seg{display:inline-flex;padding:2px;border-radius:999px;background:var(--sunk)}
+.sg{display:inline-flex;align-items:center;gap:6px;box-sizing:border-box;height:32px;padding:0 12px;border-radius:999px;font-size:14px;color:var(--muted)}
+.sg i{font-style:normal;font-size:12px;opacity:.7}
+.sg.on{background:var(--sheet);color:var(--fg);font-weight:500;box-shadow:0 4px 24px rgb(0 0 0 / .05)}
+.chip{display:inline-flex;align-items:center;gap:4px;box-sizing:border-box;height:24px;padding:0 10px;border-radius:999px;background:var(--sunk);font-size:12px;font-weight:500;color:var(--muted)}
+.chip.ac{background:color-mix(in oklab,var(--deco) 16%,var(--sheet));color:var(--accent)}
+.chip.ok{background:color-mix(in oklab,var(--ok) 12%,var(--sheet));color:var(--ok)}
+.fld{display:flex;align-items:center;gap:8px;box-sizing:border-box;height:36px;padding:0 12px;border-radius:12px;background:var(--sunk);font-size:14px;color:var(--muted)}
+.lab{display:block;margin-bottom:8px;font-size:14px;font-weight:600}
+.h1{margin:0;font-size:52px;font-weight:600;line-height:1.15;letter-spacing:-0.01em}
+
+.pj{display:flex;flex-direction:column;border-radius:16px;overflow:hidden}
+.cv{position:relative;height:300px;overflow:hidden}
+.pb{padding:24px 28px 26px}
+.pn{font:500 24px "Maple Mono",monospace;letter-spacing:-0.02em}
+.lk{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:999px;color:var(--muted)}
+.bar{height:4px;border-radius:2px;background:var(--sunk)}.bar i{display:block;height:100%;border-radius:2px;background:var(--deco)}
+
+</style>
+</helmet>
+<div style="{{vars}}position:relative;overflow:hidden;width:1440px;min-height:1900px;display:flex;flex-direction:column;background:var(--bg);color:var(--fg);font-family:'Songti SC','Noto Serif SC','Source Han Serif SC',STSong,SimSun,serif;font-size:15px;line-height:1.8">
+<div class="paper-l" style="display:{{showLight}}"></div>
+<div class="paper-d" style="display:{{showDark}}"></div>
+<img src="{{art}}" alt="" style="position:absolute;top:0;right:0;width:460px;opacity:0.6;pointer-events:none;mix-blend-mode:{{blend}};-webkit-mask-image:radial-gradient(circle at 100% 0%,#000 55%,transparent 92%);mask-image:radial-gradient(circle at 100% 0%,#000 55%,transparent 92%)">
+<div style="position:absolute;z-index:20;top:0;left:0;right:0"><dc-import name="Header" state="rest" section="项目" presence="app" bare="{{ true }}" season="{{season}}" dark="{{dark}}" hint-size="1440px,70px"></dc-import></div>
+<main style="position:relative;z-index:2;width:1120px;margin:0 auto;padding:120px 0 0">
+<div style="display:flex;align-items:flex-end;justify-content:space-between"><h1 class="h1">项目</h1><span class="seg"><span class="sg on">全部<i>4</i></span><span class="sg">进行中</span><span class="sg">已归档</span></span></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:40px">
+<article class="pj sheet"><div class="cv"><img src="/_blob/27c93c36c6528908a0cb37b8d6a80dbc" alt="violet 首页" style="width:100%;height:100%;object-fit:cover;object-position:50% 0"></div><div class="pb">
+  <div style="display:flex;align-items:center;gap:10px"><span class="pn">violet</span><span class="chip ok">稳定迭代</span><span style="margin-left:auto;display:flex;gap:2px"><a href="#" class="lk" aria-label="GitHub"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg></a><a href="#" class="lk" aria-label="文档"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg></a><a href="#" class="lk" aria-label="访问"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div>
+  <p style="margin:10px 0 0;font-size:15px;line-height:1.9">这座博客本身：Go + React 的全栈 monorepo，DDD 后端与 FSD 前端。</p>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:14px"><span class="chip">Go</span><span class="chip">React</span><span class="chip">PostgreSQL</span><span class="chip">Redis</span></div>
+  <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--rule)"><div style="display:flex;justify-content:space-between;font-size:13px;color:var(--muted)"><span>最新 <span class="num" style="color:var(--fg)">v2.22.1</span> · <span class="num">10.29</span></span><span>120 个版本</span></div></div></div></article>
+<article class="pj sheet"><div class="cv"><div style="position:absolute;inset:0;background:color-mix(in oklab,var(--deco) 9%,var(--sheet))"></div>
+<svg viewBox="0 0 544 300" width="100%" height="100%" aria-hidden="true" style="position:absolute;inset:0"><path d="M392 52 450 120 392 214 334 120Z" fill="color-mix(in oklab,var(--deco) 30%,var(--sheet))" stroke="var(--fg)" stroke-width="1.5" stroke-linejoin="round"/><path d="M392 52v162M334 120h116" stroke="var(--fg)" stroke-width="1" opacity=".5"/><path d="M392 214c-10 30 30 34 14 62s-50 16-62 36" fill="none" stroke="var(--fg)" stroke-width="1.3" stroke-linecap="round"/><path d="M398 246l12-6M380 282l-12-4" stroke="var(--deco)" stroke-width="3" stroke-linecap="round"/></svg>
+<span style="position:absolute;left:40px;bottom:36px;font:500 76px/1 'Maple Mono',monospace;letter-spacing:-0.04em">kite</span></div><div class="pb">
+  <div style="display:flex;align-items:center;gap:10px"><span class="pn">kite</span><span class="chip ac">进行中</span><span style="margin-left:auto;display:flex;gap:2px"><a href="#" class="lk" aria-label="GitHub"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg></a><a href="#" class="lk" aria-label="文档"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg></a><a href="#" class="lk" aria-label="访问"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div>
+  <p style="margin:10px 0 0;font-size:15px;line-height:1.9">团队协作工具箱，与 violet 共用一套工程实践。</p>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:14px"><span class="chip">TypeScript</span><span class="chip">Vite</span><span class="chip">gRPC</span></div>
+  <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--rule)"><div style="display:flex;justify-content:space-between;font-size:13px;color:var(--muted)"><span>路线图</span><span class="num">8 / 38 · 21%</span></div><div class="bar" style="margin-top:10px"><i style="width:21%"></i></div><div style="margin-top:12px;font-size:13px;color:var(--muted)">正在做 <span class="num">#19</span> 向 Buf Schema Registry 发布公共 proto</div></div></div></article>
+<article class="pj sheet"><div class="cv"><div style="position:absolute;inset:0;background:var(--sunk)"></div>
+<svg viewBox="0 0 544 300" width="100%" height="100%" aria-hidden="true" style="position:absolute;inset:0"><path d="M40 210c40-6 52-62 92-60s46 50 88 48 50-92 94-96 48 66 92 64 44-58 98-60" fill="none" stroke="var(--fg)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M42 214c41-8 50-60 91-58s47 47 87 45 51-88 93-92 49 63 93 61 43-55 97-57" fill="none" stroke="var(--fg)" stroke-width="1" stroke-linecap="round" opacity=".35"/><circle cx="314" cy="102" r="6" fill="var(--deco)"/></svg>
+<span style="position:absolute;left:40px;top:34px;font:500 40px/1 'Maple Mono',monospace;letter-spacing:-0.03em">inkline</span></div><div class="pb">
+  <div style="display:flex;align-items:center;gap:10px"><span class="pn">inkline</span><span class="chip ok">稳定迭代</span><span style="margin-left:auto;display:flex;gap:2px"><a href="#" class="lk" aria-label="GitHub"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg></a><a href="#" class="lk" aria-label="文档"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg></a><a href="#" class="lk" aria-label="访问"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div>
+  <p style="margin:10px 0 0;font-size:15px;line-height:1.9">手绘风格的图表与动画导出：线条带一点抖动，可导出 WebM 与 GIF。</p>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:14px"><span class="chip">TypeScript</span><span class="chip">Canvas</span><span class="chip">npm</span></div>
+  <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--rule)"><div style="display:flex;justify-content:space-between;font-size:13px;color:var(--muted)"><span>最新 <span class="num" style="color:var(--fg)">0.4.0</span> · <span class="num">10.20</span></span><span>文档 · 工作台</span></div></div></div></article>
+<article class="pj sheet"><div class="cv"><div style="position:absolute;inset:0;background:color-mix(in oklab,var(--sunk) 60%,var(--sheet))"></div>
+<div style="position:absolute;left:40px;right:40px;top:88px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+<div style="padding:10px;border-radius:10px;background:var(--sunk)"><span class="mono" style="font-size:11px;color:var(--muted)">计划</span><span style="display:block;height:28px;margin-top:8px;border-radius:6px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05)"></span><span style="display:block;height:40px;margin-top:8px;border-radius:6px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05)"></span><span style="display:block;height:28px;margin-top:8px;border-radius:6px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05)"></span></div>
+<div style="padding:10px;border-radius:10px;background:var(--sunk)"><span class="mono" style="font-size:11px;color:var(--muted)">进行中</span><span style="position:relative;display:block;height:40px;margin-top:8px;border-radius:6px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05)"><i style="position:absolute;top:8px;right:8px;width:6px;height:6px;border-radius:50%;background:var(--deco)"></i></span><span style="display:block;height:28px;margin-top:8px;border-radius:6px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05)"></span></div>
+<div style="padding:10px;border-radius:10px;background:var(--sunk)"><span class="mono" style="font-size:11px;color:var(--muted)">完成</span><span style="display:block;height:28px;margin-top:8px;border-radius:6px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05)"></span><span style="display:block;height:28px;margin-top:8px;border-radius:6px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05)"></span></div></div>
+<span style="position:absolute;left:40px;top:34px;font:500 40px/1 'Maple Mono',monospace;letter-spacing:-0.03em">kanban</span></div><div class="pb">
+  <div style="display:flex;align-items:center;gap:10px"><span class="pn">kanban</span><span class="chip ok">稳定迭代</span><span style="margin-left:auto;display:flex;gap:2px"><a href="#" class="lk" aria-label="GitHub"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg></a><a href="#" class="lk" aria-label="文档"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg></a><a href="#" class="lk" aria-label="访问"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div>
+  <p style="margin:10px 0 0;font-size:15px;line-height:1.9">可嵌进文章的看板组件，支持拖拽、键盘操作与读屏。</p>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:14px"><span class="chip">React</span><span class="chip">dnd</span><span class="chip">npm</span></div>
+  <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--rule)"><div style="display:flex;justify-content:space-between;font-size:13px;color:var(--muted)"><span>最新 <span class="num" style="color:var(--fg)">1.2.0</span> · <span class="num">10.17</span></span><span>文档 · 示例</span></div></div></div></article>
+</div>
+</main>
+<div style="position:relative;z-index:2;margin-top:auto;padding-top:96px"><dc-import name="Footer" season="{{season}}" dark="{{dark}}" hint-size="1440px,320px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"season":{"editor":"enum","options":["春","夏","秋","冬"],"default":"春"},"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const S = {
+      '春': { seed: '#f47983', h: 16.6, l: '/_blob/d8aaad66118cac26d5af34610af527bf', d: '/_blob/0cfa75d49c85d4df8e63d591ce6c7ea1' },
+      '夏': { seed: '#2f9e7a', h: 162, l: '/_blob/c0353bf8edad55e8130fb95826b3799f', d: '/_blob/8ab23c87229ff622bac13566cfb665fd' },
+      '秋': { seed: '#d9a21b', h: 82.95, l: '/_blob/d837ab2ada8c6a3cbb1a71fea71be6e2', d: '/_blob/8a07e26da1a24b8a9f19bf09a30aca11' },
+      '冬': { seed: '#7d8ea3', h: 252, l: '/_blob/eb4210561b3c04659b349b6813d7ba9c', d: '/_blob/f4961af0e552cbba606908f217a44b37' },
+    };
+    const season = S[this.props.season] ? this.props.season : '春';
+    const dark = !!this.props.dark;
+    const s = S[season], h = s.h;
+    const vars = dark
+      ? `--bg:oklch(0.17 0.0087 ${h});--sheet:oklch(0.235 0.011 ${h});--sunk:oklch(0.29 0.012 ${h});--fg:oklch(0.9373 0.015 ${h});--muted:oklch(0.8573 0.0225 ${h});--rule:oklch(0.9373 0.015 ${h} / .12);--rule2:oklch(0.9373 0.015 ${h} / .3);--deco:${s.seed};--accent:oklch(0.8589 0.1031 ${h});--danger:oklch(0.74 0.14 25);--ok:oklch(0.74 0.15 155);--ol:rgb(255 255 255 / .08);`
+      : `--bg:oklch(0.968 0.006 ${h});--sheet:oklch(0.994 0.003 ${h});--sunk:oklch(0.945 0.007 ${h});--fg:oklch(0.3331 0.0175 ${h});--muted:oklch(0.4717 0.0225 ${h});--rule:oklch(0.3331 0.0175 ${h} / .11);--rule2:oklch(0.3331 0.0175 ${h} / .3);--deco:${s.seed};--accent:oklch(0.4739 0.0974 ${h});--danger:oklch(0.52 0.16 27);--ok:oklch(0.52 0.13 155);--ol:transparent;`;
+    const base = { vars, season, dark, art: dark ? s.d : s.l, blend: dark ? 'normal' : 'multiply', showLight: dark ? 'none' : 'block', showDark: dark ? 'block' : 'none' };
+    const extra = {};
+    return Object.assign(base, extra);
+  }
+}
+</script>
+</body>
+</html>

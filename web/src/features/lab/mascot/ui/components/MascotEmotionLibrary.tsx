@@ -7,7 +7,8 @@ import {
 	DialogTitle,
 	DialogTrigger,
 	Input,
-	OverlayScroll,
+	iconProps,
+	ScrollArea,
 	Segmented,
 } from "@violet/ui";
 import { Grid2X2, Search } from "lucide-react";
@@ -70,13 +71,12 @@ function LibraryFilters({
 				leading={<Search aria-hidden="true" />}
 				clearable
 				clearLabel="清除搜索"
-				variant="soft"
 				controlSize="sm"
 				value={query}
 				onChange={(event) => onQueryChange(event.target.value)}
 				placeholder="搜索表情、状态或编号"
 				aria-label="搜索表情、状态或编号"
-				classNames={{ root: "mt-2.5" }}
+				classNames={{ control: "mt-2.5" }}
 			/>
 		</>
 	);
@@ -128,7 +128,11 @@ export function MascotEmotionLibrary({
 				/>
 			</div>
 
-			<OverlayScroll data-emotion-scroll className="hidden min-h-0 flex-1 lg:block">
+			<ScrollArea
+				aria-label="表情动作图库"
+				data-emotion-scroll
+				className="hidden min-h-0 flex-1 lg:block"
+			>
 				<div className="px-3 pb-3">
 					<div className="grid grid-cols-2 border-t border-l border-edge-hairline">
 						{visibleDefs.map((def) => (
@@ -153,7 +157,7 @@ export function MascotEmotionLibrary({
 						) : null}
 					</div>
 				</div>
-			</OverlayScroll>
+			</ScrollArea>
 
 			<div className="flex min-h-0 flex-1 flex-col lg:hidden">
 				<div className="flex items-center justify-between gap-3 border-b border-edge-hairline px-3 py-2.5">
@@ -168,17 +172,18 @@ export function MascotEmotionLibrary({
 						<DialogTrigger asChild>
 							<button
 								type="button"
-								className="inline-flex h-8 cursor-pointer items-center gap-1.5 border border-edge-hairline px-3 font-mono text-[9px] tracking-[0.08em] text-muted-foreground uppercase transition-colors hover:border-neon-blue hover:text-neon-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-blue"
+								className="inline-flex h-8 cursor-pointer items-center gap-2 border border-edge-hairline px-3 font-mono text-[9px] tracking-[0.08em] text-muted-foreground uppercase transition-colors hover:border-neon-blue hover:text-neon-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-blue"
 							>
-								<Grid2X2 className="size-3.5" />
+								<Grid2X2 {...iconProps(14)} />
 								全部状态
 							</button>
 						</DialogTrigger>
 						<DialogContent
 							data-lab-scope
-							className="lab-scope max-h-[82dvh] gap-0! overflow-hidden rounded-lg border-edge-hairline bg-background p-0! text-foreground shadow-xl sm:max-w-2xl"
+							size="lg"
+							className="lab-scope overflow-hidden"
 						>
-							<DialogHeader className="border-b border-edge-hairline px-4 pt-4 pr-12 pb-3 text-left">
+							<DialogHeader className="border-b border-edge-hairline">
 								<DialogTitle className="text-lg tracking-tight">
 									状态图鉴
 								</DialogTitle>
@@ -196,7 +201,11 @@ export function MascotEmotionLibrary({
 									onQueryChange={setQuery}
 								/>
 							</div>
-							<OverlayScroll data-emotion-scroll className="min-h-0">
+							<ScrollArea
+								aria-label="全部表情动作"
+								data-emotion-scroll
+								className="min-h-0"
+							>
 								<div className="px-4 pb-4">
 									<div className="grid grid-cols-2 border-t border-l border-edge-hairline sm:grid-cols-3">
 										{visibleDefs.map((def) => (
@@ -223,12 +232,17 @@ export function MascotEmotionLibrary({
 										) : null}
 									</div>
 								</div>
-							</OverlayScroll>
+							</ScrollArea>
 						</DialogContent>
 					</Dialog>
 				</div>
 
-				<OverlayScroll data-emotion-scroll className="min-h-0 flex-1">
+				<ScrollArea
+					aria-label="状态胶片"
+					orientation="both"
+					data-emotion-scroll
+					className="min-h-0 flex-1"
+				>
 					<div className="p-3">
 						<div className="flex w-max gap-2" role="group" aria-label="状态胶片">
 							{visibleDefs.map((def) => (
@@ -247,7 +261,7 @@ export function MascotEmotionLibrary({
 							) : null}
 						</div>
 					</div>
-				</OverlayScroll>
+				</ScrollArea>
 			</div>
 		</div>
 	);

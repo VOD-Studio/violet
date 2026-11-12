@@ -87,3 +87,27 @@ export interface LlmSettingsDTO {
 	llm_model: string;
 	llm_protocol: string;
 }
+
+/** 窗的城市（Open-Meteo 地理编码结果） */
+export interface WindowCityDTO {
+	name: string;
+	/** 一级行政区，可为空串 */
+	region: string;
+	/** 国家，可为空串 */
+	country: string;
+	latitude: number;
+	longitude: number;
+	/** IANA 时区名 */
+	timezone: string;
+}
+
+/** 窗外照片槽位：四种天气各一张，夜里另用一张 */
+export type WindowPhotoSlot = "clear" | "cloudy" | "rain" | "snow" | "night";
+
+/** 窗配置（全站背景：站长那边的天气与窗外的景） */
+export interface WindowSettingsDTO {
+	/** null 表示未配置城市，窗只画默认景、不显示天气 */
+	city: WindowCityDTO | null;
+	/** 五个槽位齐全；空串表示用内置的默认景 */
+	photos: Record<WindowPhotoSlot, string>;
+}

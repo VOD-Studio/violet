@@ -6,6 +6,10 @@ import { NotesAdminListPage } from "../NotesAdminListPage";
 
 vi.mock("@features/admin-shared/ui/data-table", () => ({
 	usePagedQuery: vi.fn(),
+}));
+
+vi.mock("@violet/ui", async (importOriginal) => ({
+	...(await importOriginal<typeof import("@violet/ui")>()),
 	DataTable: (props: { data: unknown[]; columns: unknown[] }) => (
 		<div>
 			<div data-testid="row-count">{props.data.length}</div>

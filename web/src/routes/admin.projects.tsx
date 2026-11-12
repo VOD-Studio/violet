@@ -6,23 +6,23 @@ import {
 	useUpdateProject,
 } from "@features/admin-projects/api/mutations";
 import type { CreateProject } from "@features/admin-projects/model/types";
-import {
-	DataTable,
-	type DataTableColumn,
-	type DataTableSort,
-	usePagedQuery,
-} from "@features/admin-shared/ui/data-table";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useProjects, useProjectsPaged } from "@features/projects/api/queries";
-
 import type { Project } from "@features/projects/model/types";
 import { createFileRoute } from "@tanstack/react-router";
 import {
-	Badge,
 	Button,
 	ConfirmDialog,
+	DataTable,
+	type DataTableColumn,
+	type DataTableSort,
+	Field,
 	Input,
+	iconProps,
 	Modal,
+	NumberInput,
+	Tag,
 	Textarea,
 	Tooltip,
 	TooltipContent,
@@ -105,9 +105,9 @@ function AdminProjectsPage() {
 			header: "技术栈",
 			cell: (row) =>
 				row.tech_stack?.map((t) => (
-					<Badge key={t} variant="secondary" className="mr-1">
+					<Tag key={t} className="mr-1">
 						{t}
-					</Badge>
+					</Tag>
 				)),
 		},
 		{
@@ -155,12 +155,13 @@ function AdminProjectsPage() {
 							<TooltipTrigger asChild>
 								<span>
 									<Button
-										size="icon-sm"
+										iconOnly
+										size="sm"
 										variant="ghost"
 										onClick={() => openEdit(row)}
 										aria-label={`编辑项目 ${row.title}`}
 									>
-										<Pencil className="size-3.5" />
+										<Pencil {...iconProps(14)} />
 									</Button>
 								</span>
 							</TooltipTrigger>
@@ -172,13 +173,14 @@ function AdminProjectsPage() {
 							<TooltipTrigger asChild>
 								<span>
 									<Button
-										size="icon-sm"
+										iconOnly
+										size="sm"
 										variant="ghost"
 										className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 										onClick={() => setDeleteId(row.id)}
 										aria-label={`删除项目 ${row.title}`}
 									>
-										<Trash2 className="size-3.5" />
+										<Trash2 {...iconProps(14)} />
 									</Button>
 								</span>
 							</TooltipTrigger>
@@ -198,7 +200,7 @@ function AdminProjectsPage() {
 				action={
 					canCreate ? (
 						<Button size="sm" onClick={openCreate}>
-							<Plus className="size-3.5" /> 创建项目
+							<Plus {...iconProps(14)} /> 创建项目
 						</Button>
 					) : null
 				}
@@ -307,28 +309,30 @@ function ProjectDialog({
 					</label>
 					<Input id="project-title" {...register("title", { required: true })} />
 				</div>
-				<Input
-					id="project-slug"
+				<Field
 					label="网址标识"
-					placeholder="violet"
-					description={
+					hint={
 						isEditing
 							? "仅限小写字母、数字和单连字符；修改后原网址将失效。"
 							: "仅限小写字母、数字和单连字符；留空按标题生成。"
 					}
-					maxLength={255}
-					required={isEditing}
-					pattern="[a-z0-9]+(-[a-z0-9]+)*"
-					invalid={!!errors.slug}
-					errorMessage={errors.slug?.message}
-					{...register("slug", {
-						required: isEditing ? "请输入网址标识" : false,
-						pattern: {
-							value: /^[a-z0-9]+(-[a-z0-9]+)*$/,
-							message: "仅限小写字母、数字和单连字符",
-						},
-					})}
-				/>
+					error={errors.slug?.message}
+				>
+					<Input
+						id="project-slug"
+						placeholder="violet"
+						maxLength={255}
+						required={isEditing}
+						pattern="[a-z0-9]+(-[a-z0-9]+)*"
+						{...register("slug", {
+							required: isEditing ? "请输入网址标识" : false,
+							pattern: {
+								value: /^[a-z0-9]+(-[a-z0-9]+)*$/,
+								message: "仅限小写字母、数字和单连字符",
+							},
+						})}
+					/>
+				</Field>
 				<div className="space-y-1.5">
 					<label htmlFor="project-desc" className="text-sm font-medium">
 						描述
@@ -403,9 +407,8 @@ function ProjectDialog({
 						<label htmlFor="project-sort" className="text-sm font-medium">
 							排序
 						</label>
-						<Input
+						<NumberInput
 							id="project-sort"
-							type="number"
 							{...register("sort_order", { valueAsNumber: true })}
 						/>
 					</div>

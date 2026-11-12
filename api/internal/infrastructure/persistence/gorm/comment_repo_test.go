@@ -558,6 +558,7 @@ func TestCountAnnotationsByBlock_ReturnsDistinctAuthorsInOrder(t *testing.T) {
 	add("b1", "Bob", "", &bob, time.Minute)
 	add("b1", "Alice", "a.png", &alice, 2*time.Minute)
 	add("b2", "Alice", "a.png", &alice, 3*time.Minute)
+	add("b3", "游客", "", nil, 4*time.Minute)
 
 	got, err := repo.CountAnnotationsByBlock(context.Background(), fixedPostID, domaincomment.StatusApproved, nil)
 	require.NoError(t, err)
@@ -573,7 +574,10 @@ func TestCountAnnotationsByBlock_ReturnsDistinctAuthorsInOrder(t *testing.T) {
 	}, byBlock["b1"].Authors)
 	assert.Equal(t, []domaincomment.BlockAuthor{{Name: "Alice", AvatarURL: "a.png"}}, byBlock["b2"].Authors)
 	assert.Len(t, byBlock["b1"].Ranges, 3)
-	assert.Equal(t, domaincomment.BlockRange{Start: 0, End: 3, AuthorName: "Alice"}, byBlock["b1"].Ranges[0])
+	aliceID := domainshared.IDFromUUID(alice)
+	assert.Equal(t, domaincomment.BlockRange{Start: 0, End: 3, AuthorName: "Alice", CreatedBy: &aliceID}, byBlock["b1"].Ranges[0])
+	require.Len(t, byBlock["b3"].Ranges, 1)
+	assert.Nil(t, byBlock["b3"].Ranges[0].CreatedBy)
 }
 
 func TestCountAnnotationsByBlock_PreservesAISignatures(t *testing.T) {
@@ -617,10 +621,11 @@ func TestCountAnnotationsByBlock_PreservesAISignatures(t *testing.T) {
 	assert.Equal(t, domaincomment.BlockAuthor{Name: "Claude", IsAI: true}, got[0].Authors[1])
 	assert.Equal(t, domaincomment.BlockAuthor{Name: "Claude", AvatarURL: "a.png", IsAI: false}, got[0].Authors[2])
 	require.Len(t, got[0].Ranges, 4)
+	pat1ID, pat2ID, humanID := domainshared.IDFromUUID(pat1), domainshared.IDFromUUID(pat2), domainshared.IDFromUUID(human)
 	assert.Equal(t, []domaincomment.BlockRange{
-		{Start: 0, End: 3, IsAI: true, AuthorName: "GPT"},
-		{Start: 0, End: 3, IsAI: true, AuthorName: "Claude"},
-		{Start: 0, End: 3, IsAI: true, AuthorName: "GPT"},
-		{Start: 0, End: 3, IsAI: false, AuthorName: "Claude"},
+		{Start: 0, End: 3, IsAI: true, AuthorName: "GPT", CreatedBy: &pat1ID},
+		{Start: 0, End: 3, IsAI: true, AuthorName: "Claude", CreatedBy: &pat2ID},
+		{Start: 0, End: 3, IsAI: true, AuthorName: "GPT", CreatedBy: &pat2ID},
+		{Start: 0, End: 3, IsAI: false, AuthorName: "Claude", CreatedBy: &humanID},
 	}, got[0].Ranges)
 }

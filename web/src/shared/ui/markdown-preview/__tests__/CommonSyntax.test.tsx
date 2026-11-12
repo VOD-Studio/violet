@@ -1,11 +1,7 @@
 import { render, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { HtmlContent } from "../HtmlContent";
 import { MarkdownContent } from "../MarkdownContent";
-
-vi.mock("@/shared/ui/code-preview/use-shiki-highlight", () => ({
-	useShikiHighlight: () => ({ html: "", loading: false }),
-}));
 
 const alertTypes = ["NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"] as const;
 const readers = {

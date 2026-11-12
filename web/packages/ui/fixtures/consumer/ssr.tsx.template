@@ -1,9 +1,20 @@
+import "./code-block-ssr.js";
+import "./comment-ssr.js";
+import "./reaction-ssr.js";
+import "./emoji-picker-ssr.js";
+import "./sortable-ssr.js";
+import "./content-ssr.js";
+import "./quote-card-ssr.js";
+import "./value-controls-ssr.js";
+import "./upload-ssr.js";
+import "./data-display-ssr.js";
 import assert from "node:assert/strict";
-import { Button, Checkbox, ImagePixelReveal, Input, type PixelRevealVariant } from "@violet/ui";
+import { Button, Checkbox, Field, FieldSet, FieldSummary, ImagePixelReveal, Input, SearchInput, type PixelRevealVariant } from "@violet/ui";
+import { Field as LeafField, FieldSet as LeafFieldSet, FieldSummary as LeafFieldSummary } from "@violet/ui/field";
 import { Button as LeafButton } from "@violet/ui/button";
 import { Checkbox as LeafCheckbox } from "@violet/ui/checkbox";
 import { ImagePixelReveal as LeafImagePixelReveal } from "@violet/ui/image-pixel-reveal";
-import { Input as LeafInput } from "@violet/ui/input";
+import { Input as LeafInput, SearchInput as LeafSearchInput } from "@violet/ui/input";
 import { buttonVariants, checkboxVariants } from "@violet/ui/variants";
 import { renderToString } from "react-dom/server";
 import { UploadTile } from "@violet/ui";
@@ -14,6 +25,42 @@ import { Segmented as LeafSegmented } from "@violet/ui/segmented";
 import { UploadTile as LeafUploadTile } from "@violet/ui/upload-tile";
 import { LinkCard } from "@violet/ui";
 import { LinkCard as LeafLinkCard } from "@violet/ui/link-card";
+import { Avatar, AvatarGroup, Badge, BadgeAnchor, Card, CardFrame, CardFrameBody, CardFrameMeta, CardFrameTitle, CardHeader, CardTitle, Count, Dot, Kbd, KbdSeparator, Separator, Skeleton, Tag, TagToggle } from "@violet/ui";
+import { Avatar as LeafAvatar, AvatarGroup as LeafAvatarGroup } from "@violet/ui/avatar";
+import { Badge as LeafBadge, BadgeAnchor as LeafBadgeAnchor, Count as LeafCount, Tag as LeafTag, TagToggle as LeafTagToggle } from "@violet/ui/badge";
+import { Card as LeafCard, CardFrame as LeafCardFrame, CardFrameBody as LeafCardFrameBody, CardFrameMeta as LeafCardFrameMeta, CardFrameTitle as LeafCardFrameTitle, CardHeader as LeafCardHeader, CardTitle as LeafCardTitle } from "@violet/ui/card";
+import { Kbd as LeafKbd } from "@violet/ui/kbd";
+import { Separator as LeafSeparator } from "@violet/ui/separator";
+import { Skeleton as LeafSkeleton } from "@violet/ui/skeleton";
+import { badgeVariants, countVariants, kbdVariants, tagVariants } from "@violet/ui/variants";
+import { Radio, RadioGroup, Switch, Tabs, TabsContent, TabsCount, TabsList, TabsTrigger, ToggleGroup, ToggleGroupItem, ToggleGroupSeparator } from "@violet/ui";
+import { RadioGroup as LeafRadioGroup, Radio as LeafRadio } from "@violet/ui/radio";
+import { Switch as LeafSwitch } from "@violet/ui/switch";
+import { Tabs as LeafTabs, TabsContent as LeafTabsContent, TabsCount as LeafTabsCount, TabsList as LeafTabsList, TabsTrigger as LeafTabsTrigger } from "@violet/ui/tabs";
+import { ToggleGroup as LeafToggleGroup, ToggleGroupItem as LeafToggleGroupItem } from "@violet/ui/toggle-group";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@violet/ui";
+import { Select as LeafSelect, SelectContent as LeafSelectContent, SelectGroup as LeafSelectGroup, SelectItem as LeafSelectItem, SelectLabel as LeafSelectLabel, SelectTrigger as LeafSelectTrigger, SelectValue as LeafSelectValue } from "@violet/ui/select";
+import { Cascader, Combobox, TagInput, TreeSelect, type CascaderOption, type ComboboxOption, type TreeSelectOption } from "@violet/ui";
+import { Cascader as LeafCascader } from "@violet/ui/cascader";
+import { Combobox as LeafCombobox } from "@violet/ui/combobox";
+import { TagInput as LeafTagInput } from "@violet/ui/tag-input";
+import { TreeSelect as LeafTreeSelect } from "@violet/ui/tree-select";
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, HoverCard, HoverCardContent, HoverCardTrigger, Popover, PopoverContent, PopoverTrigger, Toaster, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@violet/ui";
+import { ContextMenu as LeafContextMenu, ContextMenuContent as LeafContextMenuContent, ContextMenuItem as LeafContextMenuItem, ContextMenuTrigger as LeafContextMenuTrigger } from "@violet/ui/context-menu";
+import { DropdownMenu as LeafDropdownMenu, DropdownMenuContent as LeafDropdownMenuContent, DropdownMenuItem as LeafDropdownMenuItem, DropdownMenuTrigger as LeafDropdownMenuTrigger } from "@violet/ui/dropdown-menu";
+import { HoverCard as LeafHoverCard, HoverCardContent as LeafHoverCardContent, HoverCardTrigger as LeafHoverCardTrigger } from "@violet/ui/hover-card";
+import { Popover as LeafPopover, PopoverContent as LeafPopoverContent, PopoverTrigger as LeafPopoverTrigger } from "@violet/ui/popover";
+import { MorphingPopover, MorphingPopoverContent, MorphingPopoverTrigger } from "@violet/ui";
+import { MorphingPopover as LeafMorphingPopover, MorphingPopoverContent as LeafMorphingPopoverContent, MorphingPopoverTrigger as LeafMorphingPopoverTrigger } from "@violet/ui/morphing-popover";
+import { Toaster as LeafToaster } from "@violet/ui/sonner";
+import { Tooltip as LeafTooltip, TooltipContent as LeafTooltipContent, TooltipProvider as LeafTooltipProvider, TooltipTrigger as LeafTooltipTrigger } from "@violet/ui/tooltip";
+import { CommandList, ConfirmDialog, Dialog, DialogContent, DialogTitle, DialogTrigger, Drawer, DrawerContent, DrawerTitle, DrawerTrigger, Modal, PromptDialog, Sheet, SheetContent, SheetTitle, SheetTrigger } from "@violet/ui";
+import { CommandList as LeafCommandList } from "@violet/ui/command";
+import { ConfirmDialog as LeafConfirmDialog } from "@violet/ui/confirm-dialog";
+import { Dialog as LeafDialog, DialogContent as LeafDialogContent, DialogTitle as LeafDialogTitle, DialogTrigger as LeafDialogTrigger, Modal as LeafModal } from "@violet/ui/dialog";
+import { Drawer as LeafDrawer, DrawerContent as LeafDrawerContent, DrawerTitle as LeafDrawerTitle, DrawerTrigger as LeafDrawerTrigger } from "@violet/ui/drawer";
+import { PromptDialog as LeafPromptDialog } from "@violet/ui/prompt-dialog";
+import { Sheet as LeafSheet, SheetContent as LeafSheetContent, SheetTitle as LeafSheetTitle, SheetTrigger as LeafSheetTrigger } from "@violet/ui/sheet";
 
 const cardProps = { href: "https://www.example.com/guide#native", title: "y_defect的推文", description: "@y_defect的推文", siteName: "EXAMPLE.COM", imageSrc: "https://example.com/logo.png", imageAlt: "Example logo" };
 const card = renderToString(<LinkCard {...cardProps} />);
@@ -45,14 +92,50 @@ const root = renderToString(<Button variant="primary">保存</Button>);
 const leaf = renderToString(<LeafButton variant="primary">保存</LeafButton>);
 assert.equal(root, leaf);
 assert.match(root, /v-button--primary/);
+const loading = renderToString(<LeafButton variant="secondary" loading loadingText="保存中…">保存</LeafButton>);
+assert.match(loading, /aria-busy="true"/);
+assert.doesNotMatch(loading, /aria-disabled=/);
+assert.doesNotMatch(loading, /disabled=""/);
+assert.match(loading, /保存中…/);
+assert.match(loading, /v-spinner/);
+const iconOnly = renderToString(<LeafButton variant="ghost" iconOnly aria-label="刷新" />);
+assert.match(iconOnly, /data-icon-only="true"/);
+assert.match(iconOnly, /aria-label="刷新"/);
+const done = renderToString(<LeafButton variant="primary" done="已保存">保存</LeafButton>);
+assert.match(done, /data-done="true"/);
+assert.match(done, /已保存/);
 const link = renderToString(<LeafButton asChild><a href="/settings">设置</a></LeafButton>);
 assert.match(link, /^<a /);
 assert.match(link, /href="\/settings"/);
 assert.doesNotMatch(link, /<button/);
-const field = renderToString(<Input id="email" label="邮箱" description="用于发送更新" />);
-assert.equal(field, renderToString(<LeafInput id="email" label="邮箱" description="用于发送更新" />));
-assert.match(field, /for="email"/);
-assert.match(field, /aria-describedby="email-description"/);
+const field = renderToString(<Input id="email" aria-label="邮箱" aria-describedby="email-hint" invalid />);
+assert.equal(field, renderToString(<LeafInput id="email" aria-label="邮箱" aria-describedby="email-hint" invalid />));
+assert.match(field, /<input[^>]*id="email"/);
+assert.match(field, /aria-describedby="email-hint"/);
+assert.match(field, /aria-invalid="true"/);
+assert.match(field, /v-input-control--filled/);
+assert.doesNotMatch(field, /<label|<p /);
+const fieldTree = () => <Field label="邮箱" optional hint="只用于回复通知" error="邮箱格式不正确，缺少 @ 或域名" count={{ value: 36, max: 40 }}><Input type="email" aria-label="邮箱输入" /></Field>;
+const fieldHtml = renderToString(fieldTree());
+assert.equal(fieldHtml, renderToString(<LeafField label="邮箱" optional hint="只用于回复通知" error="邮箱格式不正确，缺少 @ 或域名" count={{ value: 36, max: 40 }}><Input type="email" aria-label="邮箱输入" /></LeafField>));
+assert.match(fieldHtml, /<label[^>]*for="[^"]+"[^>]*>邮箱<\/label><span class="v-field__optional">（选填）<\/span>/);
+assert.match(fieldHtml, /aria-live="polite"/);
+assert.match(fieldHtml, /aria-invalid="true"/);
+assert.match(fieldHtml, /邮箱格式不正确，缺少 @ 或域名/);
+assert.doesNotMatch(fieldHtml, /只用于回复通知/);
+assert.match(fieldHtml, /36 \/ 40/);
+const fieldSetHtml = renderToString(<FieldSet legend="通知方式" description="至少选一种" error="至少选一种通知方式"><Checkbox aria-label="邮件" /></FieldSet>);
+assert.equal(fieldSetHtml, renderToString(<LeafFieldSet legend="通知方式" description="至少选一种" error="至少选一种通知方式"><Checkbox aria-label="邮件" /></LeafFieldSet>));
+assert.match(fieldSetHtml, /<fieldset[^>]*aria-describedby="[^"]+"[^>]*><legend[^>]*>通知方式/);
+const summaryHtml = renderToString(<FieldSummary errors={[{ id: "title", label: "标题" }]} />);
+assert.equal(summaryHtml, renderToString(<LeafFieldSummary errors={[{ id: "title", label: "标题" }]} />));
+assert.match(summaryHtml, /role="alert"/);
+assert.match(summaryHtml, /还有 1 处需要修改/);
+assert.equal(renderToString(<FieldSummary errors={[]} />), "");
+const search = renderToString(<SearchInput id="query" aria-label="搜索文章" defaultValue="violet" />);
+assert.equal(search, renderToString(<LeafSearchInput id="query" aria-label="搜索文章" defaultValue="violet" />));
+assert.match(search, /type="search"/);
+assert.match(search, /aria-label="清除搜索"/);
 assert.match(buttonVariants({ variant: "primary" }), /v-button--primary/);
 const checkbox = renderToString(<form><Checkbox id="updates" name="updates" value="weekly" defaultChecked required aria-label="订阅更新" /></form>);
 assert.equal(checkbox, renderToString(<form><LeafCheckbox id="updates" name="updates" value="weekly" defaultChecked required aria-label="订阅更新" /></form>));
@@ -101,12 +184,268 @@ const viewSegments = [{ value: "grid", label: "网格" }, { value: "table", labe
 const segmentedTree = (Root: typeof Segmented, equal: boolean) => <Root aria-label="视图" value="grid" segments={viewSegments} {...(equal ? { itemSize: "5rem" } : {})} />;
 const segmented = renderToString(segmentedTree(Segmented, false));
 assert.equal(segmented, renderToString(segmentedTree(LeafSegmented, false)));
-assert.match(segmented, /role="group"/);
-assert.match(segmented, /aria-pressed="true"/);
-assert.match(segmented, /aria-pressed="false"/);
+assert.match(segmented, /role="radiogroup"/);
+assert.match(segmented, /aria-checked="true"/);
+assert.match(segmented, /aria-checked="false"/);
 assert.doesNotMatch(segmented, /data-layout="equal"/);
 const segmentedEqual = renderToString(segmentedTree(Segmented, true));
 assert.equal(segmentedEqual, renderToString(segmentedTree(LeafSegmented, true)));
 assert.match(segmentedEqual, /data-layout="equal"/);
 assert.match(segmentedEqual, /--v-segmented-item-size:\s*5rem/);
-console.log("Independent root/leaf SSR, Input, Checkbox, ImagePixelReveal, UploadTile, Dropdown and Segmented semantics passed.");
+const switchNode = renderToString(<Switch checked aria-labelledby="sw-label" id="consumer-switch" />);
+assert.equal(switchNode, renderToString(<LeafSwitch checked aria-labelledby="sw-label" id="consumer-switch" />));
+assert.match(switchNode, /role="switch"/);
+assert.match(switchNode, /aria-checked="true"/);
+assert.match(switchNode, /type="button"/);
+const busySwitch = renderToString(<LeafSwitch defaultChecked loading aria-label="同步中" />);
+assert.match(busySwitch, /aria-busy="true"/);
+assert.match(busySwitch, /data-loading=""/);
+
+const radioGroup = renderToString(<RadioGroup legend="谁可以评论" defaultValue="all" name="audience"><Radio value="all" label="所有人" /><Radio value="friends" label="仅友链" description="其余人只能看" /></RadioGroup>);
+assert.equal(radioGroup, renderToString(<LeafRadioGroup legend="谁可以评论" defaultValue="all" name="audience"><LeafRadio value="all" label="所有人" /><LeafRadio value="friends" label="仅友链" description="其余人只能看" /></LeafRadioGroup>));
+assert.match(radioGroup, /<fieldset\b/);
+assert.match(radioGroup, /type="radio"/);
+assert.match(radioGroup, /checked/);
+assert.match(radioGroup, /aria-describedby=/);
+
+const selectTree = (Root: typeof Select, Trigger: typeof SelectTrigger, Value: typeof SelectValue, Content: typeof SelectContent, Group: typeof SelectGroup, Label: typeof SelectLabel, Item: typeof SelectItem) => (
+	<Root name="status" defaultValue="published">
+		<Trigger aria-label="文章状态" id="consumer-status" aria-describedby="consumer-status-hint"><Value placeholder="选择状态" /></Trigger>
+		<Content><Group><Label>状态</Label><Item value="draft">草稿</Item><Item value="published">已发布</Item></Group></Content>
+	</Root>
+);
+const select = renderToString(selectTree(Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectLabel, SelectItem));
+assert.equal(select, renderToString(selectTree(LeafSelect, LeafSelectTrigger, LeafSelectValue, LeafSelectContent, LeafSelectGroup, LeafSelectLabel, LeafSelectItem)));
+assert.match(select, /<button\b[^>]*role="combobox"/);
+assert.match(select, /aria-haspopup="listbox"/);
+assert.match(select, /aria-expanded="false"/);
+assert.match(select, /<input type="hidden" name="status" value="published"/);
+assert.doesNotMatch(select, /role="option"/);
+assert.match(select, />已发布<\/span>/);
+const multiSelect = renderToString(<Select multiple name="tags" defaultValue={["Go", "Rust"]}><SelectTrigger aria-label="文章标签"><SelectValue placeholder="添加标签" /></SelectTrigger><SelectContent><SelectItem value="Go">Go</SelectItem></SelectContent></Select>);
+assert.equal((multiSelect.match(/type="hidden" name="tags"/g) ?? []).length, 2);
+assert.match(multiSelect, /role="combobox"/);
+
+const comboboxOptions: ComboboxOption[] = [{ value: "hz", label: "杭州" }, { value: "sh", label: "上海" }];
+const comboboxTree = (Root: typeof Combobox) => <Root aria-label="城市" name="city" options={comboboxOptions} defaultValue="hz" aria-describedby="city-hint" />;
+const combobox = renderToString(comboboxTree(Combobox));
+assert.equal(combobox, renderToString(comboboxTree(LeafCombobox)));
+assert.match(combobox, /<input\b[^>]*role="combobox"/);
+assert.match(combobox, /aria-expanded="false"/);
+assert.match(combobox, /aria-autocomplete="list"/);
+assert.match(combobox, /aria-describedby="city-hint"/);
+assert.match(combobox, /<input type="hidden" name="city" value="hz"/);
+assert.doesNotMatch(combobox, /role="option"/);
+const tagInputTree = (Root: typeof TagInput) => <Root aria-label="文章标签" name="topics" defaultValue={["Go", "Rust"]} suggestions={["React"]} max={5} />;
+const tagInput = renderToString(tagInputTree(TagInput));
+assert.equal(tagInput, renderToString(tagInputTree(LeafTagInput)));
+assert.equal((tagInput.match(/type="hidden" name="topics"/g) ?? []).length, 2);
+assert.match(tagInput, /Go/);
+assert.match(tagInput, /Rust/);
+assert.match(tagInput, /<input\b[^>]*aria-label="文章标签"/);
+assert.doesNotMatch(tagInput, /role="option"/);
+const cascaderOptionList: CascaderOption[] = [{ value: "zj", label: "浙江", children: [{ value: "hz", label: "杭州" }] }];
+const cascaderTree = (Root: typeof Cascader) => <Root aria-label="地区" name="region" options={cascaderOptionList} defaultValue={["zj", "hz"]} />;
+const cascader = renderToString(cascaderTree(Cascader));
+assert.equal(cascader, renderToString(cascaderTree(LeafCascader)));
+assert.match(cascader, /role="combobox"/);
+assert.match(cascader, /aria-expanded="false"/);
+assert.equal((cascader.match(/type="hidden" name="region"/g) ?? []).length, 2);
+assert.match(cascader, /浙江/);
+assert.doesNotMatch(cascader, /role="treeitem"/);
+const treeSelectOptionList: TreeSelectOption[] = [{ value: "a", label: "文档", children: [{ value: "a1", label: "指南" }, { value: "a2", label: "参考" }] }];
+const treeSelectTree = (Root: typeof TreeSelect) => <Root aria-label="目录" name="dir" options={treeSelectOptionList} defaultValue="a1" />;
+const treeSelect = renderToString(treeSelectTree(TreeSelect));
+assert.equal(treeSelect, renderToString(treeSelectTree(LeafTreeSelect)));
+assert.match(treeSelect, /role="combobox"/);
+assert.match(treeSelect, /aria-expanded="false"/);
+assert.match(treeSelect, /<input type="hidden" name="dir" value="a1"/);
+assert.doesNotMatch(treeSelect, /role="treeitem"/);
+const multiTreeSelect = renderToString(<TreeSelect multiple aria-label="目录" name="dirs" options={treeSelectOptionList} defaultValue={["a1", "a2"]} />);
+assert.equal((multiTreeSelect.match(/type="hidden" name="dirs"/g) ?? []).length, 2);
+const toggleGroup = renderToString(<ToggleGroup type="multiple" aria-label="文字格式" defaultValue={["bold"]}><ToggleGroupItem value="bold" aria-label="加粗">B</ToggleGroupItem><ToggleGroupItem value="italic" aria-label="斜体">I</ToggleGroupItem></ToggleGroup>);
+assert.equal(toggleGroup, renderToString(<LeafToggleGroup type="multiple" aria-label="文字格式" defaultValue={["bold"]}><LeafToggleGroupItem value="bold" aria-label="加粗">B</LeafToggleGroupItem><LeafToggleGroupItem value="italic" aria-label="斜体">I</LeafToggleGroupItem></LeafToggleGroup>));
+assert.match(toggleGroup, /role="group"/);
+assert.equal((toggleGroup.match(/aria-pressed="true"/g) ?? []).length, 1);
+assert.match(renderToString(<ToggleGroupSeparator />), /aria-hidden="true"/);
+
+const tabsTree = (Root: typeof Tabs, List: typeof TabsList, Trigger: typeof TabsTrigger, Panel: typeof TabsContent, Count: typeof TabsCount) => (
+	<Root defaultValue="articles" aria-label="内容分区">
+		<List><Trigger value="articles">文章</Trigger><Trigger value="comments">评论<Count>12</Count></Trigger></List>
+		<Panel value="articles">文章面板</Panel>
+		<Panel value="comments">评论面板</Panel>
+	</Root>
+);
+const tabs = renderToString(tabsTree(Tabs, TabsList, TabsTrigger, TabsContent, TabsCount));
+assert.equal(tabs, renderToString(tabsTree(LeafTabs, LeafTabsList, LeafTabsTrigger, LeafTabsContent, LeafTabsCount)));
+assert.match(tabs, /role="tablist"/);
+assert.match(tabs, /role="tab"[^>]*aria-selected="true"/);
+assert.match(tabs, /role="tabpanel"/);
+assert.match(tabs, /评论<span[^>]*data-slot="tabs-count"[^>]*>12<\/span>/);
+assert.match(tabs, /v-tabs__indicator/);
+
+const avatarProps = { name: "Rua", src: "https://example.com/rua.png", status: "online" as const };
+const avatar = renderToString(<Avatar {...avatarProps} />);
+assert.equal(avatar, renderToString(<LeafAvatar {...avatarProps} />));
+assert.match(avatar, /<img\b[^>]*src="https:\/\/example\.com\/rua\.png"/);
+assert.match(avatar, /role="img"[^>]*aria-label="Rua，在线"|aria-label="Rua，在线"[^>]*role="img"/);
+assert.match(avatar, /data-state="loading"/);
+const initialAvatar = renderToString(<LeafAvatar name="林" alt="" />);
+assert.match(initialAvatar, /data-state="fallback"/);
+assert.match(initialAvatar, />林</);
+assert.doesNotMatch(initialAvatar, /role="img"|<img/);
+const people = ["Rua", "Mika", "Noa", "Ken", "Yui"].map((name) => ({ name }));
+const group = renderToString(<AvatarGroup items={people} label="5 人点了赞" />);
+assert.equal(group, renderToString(<LeafAvatarGroup items={people} label="5 人点了赞" />));
+assert.match(group, /role="group"/);
+assert.match(group, /aria-label="还有 2 人"/);
+assert.equal(renderToString(<AvatarGroup items={[]} />), "");
+
+const tag = renderToString(<Tag onRemove={() => undefined}>shell</Tag>);
+assert.equal(tag, renderToString(<LeafTag onRemove={() => undefined}>shell</LeafTag>));
+assert.match(tag, /class="v-tag"/);
+assert.match(tag, /<button\b[^>]*aria-label="移除 shell"/);
+const tagLink = renderToString(<LeafTag asChild><a href="/tags/shell">shell</a></LeafTag>);
+assert.match(tagLink, /^<a\b[^>]*href="\/tags\/shell"[^>]*class="v-tag"|^<a\b[^>]*class="v-tag"[^>]*href="\/tags\/shell"/);
+const tagToggle = renderToString(<TagToggle pressed onPressedChange={() => undefined}>前端</TagToggle>);
+assert.equal(tagToggle, renderToString(<LeafTagToggle pressed onPressedChange={() => undefined}>前端</LeafTagToggle>));
+assert.match(tagToggle, /<button\b[^>]*aria-pressed="true"/);
+const badge = renderToString(<Badge tone="ok">已发布</Badge>);
+assert.equal(badge, renderToString(<LeafBadge tone="ok">已发布</LeafBadge>));
+assert.match(badge, /v-badge--ok/);
+assert.match(badge, /已发布/);
+const count = renderToString(<Count value={120} />);
+assert.equal(count, renderToString(<LeafCount value={120} />));
+assert.match(count, />99\+</);
+assert.match(count, /aria-hidden="true"/);
+assert.equal(renderToString(<Count value={0} />), "");
+assert.doesNotMatch(renderToString(<Count variant="inline" value={3} />), /aria-hidden/);
+assert.match(renderToString(<Dot />), /aria-hidden="true"/);
+const anchor = renderToString(<BadgeAnchor badge={<Count value={3} />}><button type="button" aria-label="消息，3 条未读">消息</button></BadgeAnchor>);
+assert.equal(anchor, renderToString(<LeafBadgeAnchor badge={<LeafCount value={3} />}><button type="button" aria-label="消息，3 条未读">消息</button></LeafBadgeAnchor>));
+assert.match(anchor, /data-placement="corner"/);
+assert.match(badgeVariants({ tone: "danger" }), /v-badge--danger/);
+assert.match(tagVariants({ size: "sm", tone: "accent" }), /v-tag--sm[\s\S]*v-tag--accent|v-tag--accent[\s\S]*v-tag--sm/);
+assert.match(countVariants({ variant: "inline" }), /v-count--inline/);
+
+const kbdCombo = renderToString(<Kbd keys={["mod", "K"]} />);
+assert.equal(kbdCombo, renderToString(<LeafKbd keys={["mod", "K"]} />));
+assert.match(kbdCombo, /^<kbd\b/);
+assert.match(kbdCombo, /Ctrl/);
+assert.doesNotMatch(kbdCombo, /⌘/);
+const kbdMac = renderToString(<LeafKbd keys={["mod", "K"]} platform="mac" />);
+assert.match(kbdMac, /⌘/);
+assert.match(kbdMac, /aria-label="Command"/);
+assert.match(renderToString(<Kbd>Esc</Kbd>), /<kbd\b[^>]*>.*Esc.*<\/kbd>/);
+assert.match(renderToString(<KbdSeparator>或</KbdSeparator>), />或</);
+assert.match(kbdVariants({ size: "sm", variant: "light" }), /v-kbd--sm/);
+
+const frame = renderToString(<CardFrame><CardFrameBody><CardFrameTitle asChild><a href="/posts/season">给博客加了季节</a></CardFrameTitle><CardFrameMeta>2026-11-02</CardFrameMeta></CardFrameBody></CardFrame>);
+assert.equal(frame, renderToString(<LeafCardFrame><LeafCardFrameBody><LeafCardFrameTitle asChild><a href="/posts/season">给博客加了季节</a></LeafCardFrameTitle><LeafCardFrameMeta>2026-11-02</LeafCardFrameMeta></LeafCardFrameBody></LeafCardFrame>));
+assert.equal((frame.match(/<a\b/g) ?? []).length, 1);
+assert.ok(frame.indexOf("给博客加了季节") < frame.indexOf("2026-11-02"), "Frame card title must precede meta in DOM order.");
+const basicCard = renderToString(<Card><CardHeader><CardTitle>同步</CardTitle></CardHeader></Card>);
+assert.equal(basicCard, renderToString(<LeafCard><LeafCardHeader><LeafCardTitle>同步</LeafCardTitle></LeafCardHeader></LeafCard>));
+assert.match(basicCard, /class="v-card"/);
+
+assert.match(renderToString(<Separator />), /role="none"/);
+assert.equal(renderToString(<Separator />), renderToString(<LeafSeparator />));
+assert.match(renderToString(<LeafSeparator decorative={false} />), /^<hr\b/);
+const labelled = renderToString(<LeafSeparator>或</LeafSeparator>);
+assert.match(labelled, /role="separator"/);
+assert.match(labelled, /aria-labelledby=/);
+const skeleton = renderToString(<Skeleton className="h-4" />);
+assert.equal(skeleton, renderToString(<LeafSkeleton className="h-4" />));
+assert.match(skeleton, /aria-hidden="true"/);
+assert.match(skeleton, /class="v-skeleton h-4"/);
+
+const popoverTree = (Root: typeof Popover, Trigger: typeof PopoverTrigger, Content: typeof PopoverContent) => (
+	<Root><Trigger asChild><button type="button">标签</button></Trigger><Content>标签筛选面板</Content></Root>
+);
+const popover = renderToString(popoverTree(Popover, PopoverTrigger, PopoverContent));
+assert.equal(popover, renderToString(popoverTree(LeafPopover, LeafPopoverTrigger, LeafPopoverContent)));
+assert.match(popover, /aria-haspopup="dialog"/);
+assert.match(popover, /aria-expanded="false"/);
+assert.doesNotMatch(popover, /标签筛选面板/);
+
+const hoverCardTree = (Root: typeof HoverCard, Trigger: typeof HoverCardTrigger, Content: typeof HoverCardContent) => (
+	<Root><Trigger asChild><a href="/u/linjian">@林间</a></Trigger><Content>林间的名片</Content></Root>
+);
+const hoverCard = renderToString(hoverCardTree(HoverCard, HoverCardTrigger, HoverCardContent));
+assert.equal(hoverCard, renderToString(hoverCardTree(LeafHoverCard, LeafHoverCardTrigger, LeafHoverCardContent)));
+assert.match(hoverCard, /<a\b[^>]*href="\/u\/linjian"/);
+assert.doesNotMatch(hoverCard, /林间的名片/);
+
+const tooltipTree = (Provider: typeof TooltipProvider, Root: typeof Tooltip, Trigger: typeof TooltipTrigger, Content: typeof TooltipContent) => (
+	<Provider><Root><Trigger asChild><button type="button" aria-label="加粗">B</button></Trigger><Content shortcut={["shift", "b"]}>加粗</Content></Root></Provider>
+);
+const tooltip = renderToString(tooltipTree(TooltipProvider, Tooltip, TooltipTrigger, TooltipContent));
+assert.equal(tooltip, renderToString(tooltipTree(LeafTooltipProvider, LeafTooltip, LeafTooltipTrigger, LeafTooltipContent)));
+assert.match(tooltip, /aria-label="加粗"/);
+assert.match(tooltip, /data-state="closed"/);
+assert.doesNotMatch(tooltip, /role="tooltip"/);
+
+const menuTree = (Root: typeof DropdownMenu, Trigger: typeof DropdownMenuTrigger, Content: typeof DropdownMenuContent, Item: typeof DropdownMenuItem) => (
+	<Root><Trigger asChild><button type="button">更多</button></Trigger><Content><Item>编辑</Item></Content></Root>
+);
+const menu = renderToString(menuTree(DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem));
+assert.equal(menu, renderToString(menuTree(LeafDropdownMenu, LeafDropdownMenuTrigger, LeafDropdownMenuContent, LeafDropdownMenuItem)));
+assert.match(menu, /aria-haspopup="menu"/);
+assert.match(menu, /aria-expanded="false"/);
+assert.doesNotMatch(menu, /编辑/);
+
+const contextMenuTree = (Root: typeof ContextMenu, Trigger: typeof ContextMenuTrigger, Content: typeof ContextMenuContent, Item: typeof ContextMenuItem) => (
+	<Root><Trigger asChild><div>右键这里</div></Trigger><Content><Item>复制</Item></Content></Root>
+);
+const contextMenu = renderToString(contextMenuTree(ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem));
+assert.equal(contextMenu, renderToString(contextMenuTree(LeafContextMenu, LeafContextMenuTrigger, LeafContextMenuContent, LeafContextMenuItem)));
+assert.match(contextMenu, /右键这里/);
+assert.doesNotMatch(contextMenu, /复制/);
+
+const toaster = renderToString(<Toaster />);
+assert.equal(toaster, renderToString(<LeafToaster />));
+assert.match(toaster, /<section\b[^>]*aria-label="通知/);
+
+const modalTree = (Root: typeof Dialog, Trigger: typeof DialogTrigger, Content: typeof DialogContent, Title: typeof DialogTitle, name: string) => (
+	<Root><Trigger asChild><button type="button">{name}</button></Trigger><Content aria-describedby={undefined}><Title>{name}</Title>框里的内容</Content></Root>
+);
+const dialog = renderToString(modalTree(Dialog, DialogTrigger, DialogContent, DialogTitle, "编辑资料"));
+assert.equal(dialog, renderToString(modalTree(LeafDialog, LeafDialogTrigger, LeafDialogContent, LeafDialogTitle, "编辑资料")));
+assert.match(dialog, /aria-haspopup="dialog"/);
+assert.match(dialog, /aria-expanded="false"/);
+assert.doesNotMatch(dialog, /框里的内容/);
+const sheet = renderToString(modalTree(Sheet as typeof Dialog, SheetTrigger as typeof DialogTrigger, SheetContent as typeof DialogContent, SheetTitle as typeof DialogTitle, "筛选"));
+assert.equal(sheet, renderToString(modalTree(LeafSheet as typeof Dialog, LeafSheetTrigger as typeof DialogTrigger, LeafSheetContent as typeof DialogContent, LeafSheetTitle as typeof DialogTitle, "筛选")));
+assert.match(sheet, /aria-haspopup="dialog"/);
+assert.doesNotMatch(sheet, /框里的内容/);
+const drawer = renderToString(modalTree(Drawer as typeof Dialog, DrawerTrigger as typeof DialogTrigger, DrawerContent as typeof DialogContent, DrawerTitle as typeof DialogTitle, "分享"));
+assert.equal(drawer, renderToString(modalTree(LeafDrawer as typeof Dialog, LeafDrawerTrigger as typeof DialogTrigger, LeafDrawerContent as typeof DialogContent, LeafDrawerTitle as typeof DialogTitle, "分享")));
+assert.match(drawer, /aria-haspopup="dialog"/);
+assert.doesNotMatch(drawer, /框里的内容/);
+// 关闭的模态单元在服务端不输出任何内容
+for (const [name, node, leaf] of [
+	["Modal", <Modal open={false} onOpenChange={() => {}} title="新建角色">表单</Modal>, <LeafModal open={false} onOpenChange={() => {}} title="新建角色">表单</LeafModal>],
+	["ConfirmDialog", <ConfirmDialog open={false} onOpenChange={() => {}} title="永久删除？" onConfirm={() => {}} />, <LeafConfirmDialog open={false} onOpenChange={() => {}} title="永久删除？" onConfirm={() => {}} />],
+	["PromptDialog", <PromptDialog open={false} onOpenChange={() => {}} title="重命名" onConfirm={() => {}} />, <LeafPromptDialog open={false} onOpenChange={() => {}} title="重命名" onConfirm={() => {}} />],
+	["CommandList", <CommandList open={false} onOpenChange={() => {}} items={[]} groups={[]} query="" onQueryChange={() => {}} />, <LeafCommandList open={false} onOpenChange={() => {}} items={[]} groups={[]} query="" onQueryChange={() => {}} />],
+] as const) {
+	assert.equal(renderToString(node), "", `${name} rendered while closed.`);
+	assert.equal(renderToString(leaf), "", `Leaf ${name} rendered while closed.`);
+}
+const morphTree = (Root: typeof MorphingPopover, Trigger: typeof MorphingPopoverTrigger, Content: typeof MorphingPopoverContent, open: boolean) => (
+	<Root defaultOpen={open}><Trigger asChild><button type="button">状态</button></Trigger><Content aria-label="状态详情"><b>此刻在听</b></Content></Root>
+);
+const morph = renderToString(morphTree(MorphingPopover, MorphingPopoverTrigger, MorphingPopoverContent, false));
+assert.equal(morph, renderToString(morphTree(LeafMorphingPopover, LeafMorphingPopoverTrigger, LeafMorphingPopoverContent, false)));
+assert.match(morph, /aria-expanded="false"/);
+assert.match(morph, /aria-controls="[^"]+"/);
+assert.doesNotMatch(morph, /此刻在听/);
+// 默认展开时服务端就输出面板；锚点与动效模式由脚本在客户端写，服务端不输出
+const morphOpen = renderToString(morphTree(MorphingPopover, MorphingPopoverTrigger, MorphingPopoverContent, true));
+assert.equal(morphOpen, renderToString(morphTree(LeafMorphingPopover, LeafMorphingPopoverTrigger, LeafMorphingPopoverContent, true)));
+assert.match(morphOpen, /aria-expanded="true"/);
+assert.match(morphOpen, /role="dialog"/);
+assert.match(morphOpen, /aria-label="状态详情"/);
+assert.match(morphOpen, /此刻在听/);
+assert.doesNotMatch(morphOpen, /data-anchor|data-motion/);
+console.log("Independent root/leaf SSR, Input, Select, Checkbox, ImagePixelReveal, UploadTile, Dropdown, Segmented, Avatar, Badge, Kbd, Card, Separator, Skeleton, Popover, HoverCard, Tooltip, DropdownMenu, ContextMenu, Toaster, Dialog, Modal, ConfirmDialog, PromptDialog, Sheet, Drawer, CommandList and MorphingPopover semantics passed.");

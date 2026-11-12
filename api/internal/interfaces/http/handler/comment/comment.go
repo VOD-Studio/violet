@@ -13,8 +13,8 @@ import (
 
 	appcomment "blog-api/internal/application/comment"
 	domaincomment "blog-api/internal/domain/comment"
-	"blog-api/internal/domain/shared"
 	domainpost "blog-api/internal/domain/post"
+	"blog-api/internal/domain/shared"
 	domainuser "blog-api/internal/domain/user"
 	interfacesmw "blog-api/internal/interfaces/http/middleware"
 	"blog-api/internal/interfaces/http/response"
@@ -27,7 +27,7 @@ import (
 // stub 实现（见 comment_test.go 的 stubCommentService），避免在测试里启动完整 service +
 // 真实 repo/codeStore。*appcomment.Service 通过 Go 结构化接口天然满足此契约。
 type commentService interface {
-	ListByPost(ctx context.Context, postID, viewerUserID, postAuthorID string, anchorFilter domaincomment.AnchorFilter, depthFilter domaincomment.DepthFilter, blockID string, page, limit int) ([]appcomment.CommentDTO, int64, error)
+	ListByPost(ctx context.Context, postID, viewerUserID, postAuthorID string, anchorFilter domaincomment.AnchorFilter, depthFilter domaincomment.DepthFilter, blockID, sort string, page, limit int) ([]appcomment.CommentDTO, int64, error)
 	ListReplies(ctx context.Context, parentID, viewerUserID, sort string, page, limit int) ([]appcomment.CommentDTO, int64, error)
 	Create(ctx context.Context, in appcomment.CreateInput) (appcomment.CommentDTO, error)
 	SendCode(ctx context.Context, in appcomment.SendCodeInput) error
@@ -40,7 +40,7 @@ type commentService interface {
 	Approve(ctx context.Context, id string) error
 	MarkSpam(ctx context.Context, id string) error
 	Delete(ctx context.Context, id string) error
-	AnnotationSummary(ctx context.Context, postID, viewerUserID string) ([]appcomment.BlockCountDTO, error)
+	AnnotationSummary(ctx context.Context, postID, viewerUserID, postAuthorID string) ([]appcomment.BlockCountDTO, error)
 }
 
 // Handler 评论 HTTP 处理器。
@@ -73,21 +73,16 @@ func (h *Handler) ListByPost(w http.ResponseWriter, r *http.Request) {
 	postID := r.PathValue("postId")
 	viewerID := interfacesmw.GetUserIDFromContext(r)
 	page, limit := response.ParsePaging(r)
+	sort, err := shared.ParseCommentSort(r.URL.Query().Get("sort"))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
 
 	// 解析 type → AnchorFilter；空串/未知值降级为 free（保守默认，避免误返批注到评论区）。
 	anchorFilter := mapCommentType(r.URL.Query().Get("type"))
 
-	// 查 post 拿 author_id，用于 service 计算 CommentDTO.is_author（作者高亮）。
-	// 查询失败时留空，is_author 恒为 false（不阻塞评论列表）。
-	var authorID string
-	if h.posts != nil {
-		pid, err := shared.ParseID(postID)
-		if err == nil {
-			if p, err := h.posts.FindByID(r.Context(), pid); err == nil {
-				authorID = p.AuthorID().String()
-			}
-		}
-	}
+	authorID := h.postAuthorID(r.Context(), postID)
 
 	// top_level query param：true 时只返回顶层评论（depth=0），配合「按需拉回复」分页策略。
 	// 默认 false（兼容老调用方，返回顶层+回复全部）。
@@ -98,7 +93,7 @@ func (h *Handler) ListByPost(w http.ResponseWriter, r *http.Request) {
 
 	blockID := r.URL.Query().Get("block_id")
 
-	items, total, err := h.svc.ListByPost(r.Context(), postID, viewerID, authorID, anchorFilter, depthFilter, blockID, page, limit)
+	items, total, err := h.svc.ListByPost(r.Context(), postID, viewerID, authorID, anchorFilter, depthFilter, blockID, sort, page, limit)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
@@ -106,12 +101,29 @@ func (h *Handler) ListByPost(w http.ResponseWriter, r *http.Request) {
 	response.RespondPaged(w, items, page, limit, total)
 }
 
+// postAuthorID 查文章作者 ID，用于 service 计算 is_author（作者高亮）。
+// 查询失败时返回空串，is_author 恒为 false，不阻塞响应。
+func (h *Handler) postAuthorID(ctx context.Context, postID string) string {
+	if h.posts == nil {
+		return ""
+	}
+	pid, err := shared.ParseID(postID)
+	if err != nil {
+		return ""
+	}
+	p, err := h.posts.FindByID(ctx, pid)
+	if err != nil {
+		return ""
+	}
+	return p.AuthorID().String()
+}
+
 // AnnotationSummary 按块聚合统计批注数量（轻量端点，不含正文/回复）。
 // 黑洞模式：匿名 viewer 返回空数组。
 func (h *Handler) AnnotationSummary(w http.ResponseWriter, r *http.Request) {
 	postID := r.PathValue("postId")
 	viewerID := interfacesmw.GetUserIDFromContext(r)
-	blocks, err := h.svc.AnnotationSummary(r.Context(), postID, viewerID)
+	blocks, err := h.svc.AnnotationSummary(r.Context(), postID, viewerID, h.postAuthorID(r.Context(), postID))
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
@@ -273,14 +285,14 @@ type createCommentRequest struct {
 	ParentID string `json:"parent_id"`                // 父评论 id；非空表示嵌套回复
 
 	// 以下四项仅匿名评论消费；登录态由 handler 从 user 资料覆盖（防伪造）。
-	AuthorName  string `json:"author_name"  validate:"omitempty"`           // 匿名必填（handler 层校验，非 validator）
-	AuthorEmail string `json:"author_email" validate:"omitempty,email"`     // 匿名必填；email 格式校验
-	AuthorURL   string `json:"author_url"`                                // 可选个人站点
-	AvatarURL   string `json:"avatar_url"`                                // 可选头像 URL
+	AuthorName  string `json:"author_name"  validate:"omitempty"`       // 匿名必填（handler 层校验，非 validator）
+	AuthorEmail string `json:"author_email" validate:"omitempty,email"` // 匿名必填；email 格式校验
+	AuthorURL   string `json:"author_url"`                              // 可选个人站点
+	AvatarURL   string `json:"avatar_url"`                              // 可选头像 URL
 
-	Code     string                      `json:"code"`     // 匿名必填：邮箱验证码（来自 /comments/code）
-	Anchor   *appcomment.AnchorInput     `json:"anchor"`   // 选区批注锚点；非空强制登录
-	Pictures []appcomment.PictureInput   `json:"pictures"` // 评论附图（可选，Bilibili 式）
+	Code     string                    `json:"code"`     // 匿名必填：邮箱验证码（来自 /comments/code）
+	Anchor   *appcomment.AnchorInput   `json:"anchor"`   // 选区批注锚点；非空强制登录
+	Pictures []appcomment.PictureInput `json:"pictures"` // 评论附图（可选，Bilibili 式）
 }
 
 // Create 创建评论（前台公开，双轨认证）。
@@ -288,7 +300,8 @@ type createCommentRequest struct {
 // 双轨认证（PRD-0001）：
 //   - 登录（会话有 userID）：跳过验证码/配额，author_* 从 user 资料填充
 //   - 匿名：必须 author_name + author_email + 邮箱验证码 code；走一篇一次配额
-//   - 带 anchor（选区批注）：强制登录，否则 401
+//   - 带 anchor（选区批注）：强制登录，否则 401；锚点按当前已发布正文与可批注块
+//     种类在 service 层验收，不匹配返回 400/404
 //
 // ip_hash 一律由 handler 从 middleware.GetClientIP + SHA256 计算填充。
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {

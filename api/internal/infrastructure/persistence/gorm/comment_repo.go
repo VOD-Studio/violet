@@ -209,6 +209,10 @@ func commentPageOrder(filter comment.ListFilter) string {
 		// 回复链默认最早优先（时间线阅读顺序）
 		return "c.created_at ASC, c.id ASC"
 	}
+	if filter.ParentID == nil && filter.PostID != nil && filter.AnchorFilter == comment.AnchorFilterFree &&
+		filter.DepthFilter != nil && *filter.DepthFilter == comment.DepthFilterTopLevel && filter.TopLevelSort == "hot" {
+		return "(SELECT COUNT(*) FROM comment_reactions r WHERE r.comment_id = c.id) DESC, c.created_at DESC, c.id DESC"
+	}
 	return "c.created_at DESC, c.id DESC"
 }
 
@@ -330,8 +334,13 @@ func (r *CommentRepository) CountAnnotationsByBlock(ctx context.Context, postID 
 			continue
 		}
 		if row.StartOffset != nil && row.EndOffset != nil && len(results[i].Ranges) < comment.BlockRangeLimit {
+			var createdBy *domainshared.ID
+			if row.CreatedBy != nil {
+				id := domainshared.IDFromUUID(*row.CreatedBy)
+				createdBy = &id
+			}
 			results[i].Ranges = append(results[i].Ranges, comment.BlockRange{
-				Start: *row.StartOffset, End: *row.EndOffset, IsAI: row.IsAI, AuthorName: row.AuthorName,
+				Start: *row.StartOffset, End: *row.EndOffset, IsAI: row.IsAI, AuthorName: row.AuthorName, CreatedBy: createdBy,
 			})
 		}
 		if len(results[i].Authors) >= comment.BlockAuthorLimit {

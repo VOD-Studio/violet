@@ -3,7 +3,8 @@ import {
 	Badge,
 	Button,
 	Input,
-	PhysicalSteps,
+	iconProps,
+	Steps,
 	Tabs,
 	TabsContent,
 	TabsList,
@@ -11,7 +12,7 @@ import {
 	Textarea,
 } from "@violet/ui";
 import { cn } from "cn";
-import { BookOpen, ChevronLeft, ChevronRight, MousePointer, Sparkles } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, MousePointer } from "lucide-react";
 import { useState } from "react";
 
 export interface ComponentPlaygroundSectionProps {
@@ -35,16 +36,15 @@ export function ComponentPlaygroundSection({ className }: ComponentPlaygroundSec
 					<h3 className="mt-1 text-2xl font-bold tracking-tight">基础组件主题实装演练</h3>
 				</div>
 				<p className="max-w-md text-xs text-muted-foreground">
-					验证
-					Button、Badge、PhysicalSteps、SpotlightCard、古纸排版及选区焦点环在紫罗兰下的质感。
+					验证 Button、Badge、Steps、SpotlightCard、古纸排版及选区焦点环在紫罗兰下的质感。
 				</p>
 			</div>
 
 			<Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-				<TabsList className="mb-6 flex-wrap">
+				<TabsList className="mb-6">
 					<TabsTrigger value="buttons">按钮组 Buttons</TabsTrigger>
 					<TabsTrigger value="badges">徽章组 Badges</TabsTrigger>
-					<TabsTrigger value="timeline">步骤光脉 PhysicalSteps</TabsTrigger>
+					<TabsTrigger value="timeline">步骤 Steps</TabsTrigger>
 					<TabsTrigger value="spotlight">聚光与典藏 Spotlight</TabsTrigger>
 					<TabsTrigger value="interactive">交互焦点 & 选区</TabsTrigger>
 				</TabsList>
@@ -57,36 +57,11 @@ export function ComponentPlaygroundSection({ className }: ComponentPlaygroundSec
 						</h4>
 
 						<div className="flex flex-wrap items-center gap-3">
-							<Button variant="default">默认主操作 (Default)</Button>
+							<Button variant="primary">默认主操作 (Default)</Button>
 							<Button variant="secondary">次级操作 (Secondary)</Button>
 							<Button variant="outline">边框轮廓 (Outline)</Button>
 							<Button variant="ghost">幽灵悬停 (Ghost)</Button>
 							<Button variant="destructive">危险操作 (Destructive)</Button>
-						</div>
-
-						{/* 公开内容方言对照 */}
-						<div className="mt-8 rounded-xl border border-edge-hairline/80 bg-background/50 p-5 dialect-public">
-							<div className="mb-2 flex items-center justify-between">
-								<span className="font-mono text-xs font-semibold text-primary-base">
-									.dialect-public 方言作用域对照
-								</span>
-								<span className="font-mono text-[11px] text-muted-foreground">
-									--primary → var(--primary-base)
-								</span>
-							</div>
-							<p className="mb-4 text-xs text-muted-foreground">
-								在公开内容方言内，标准{" "}
-								<code className="font-mono">variant="default"</code>{" "}
-								按钮自动继承紫罗兰主色：
-							</p>
-							<div className="flex flex-wrap items-center gap-3">
-								<Button variant="default">
-									<Sparkles className="size-4" />
-									公开主按钮 (Follows Primary)
-								</Button>
-								<Button variant="outline">公开边框</Button>
-								<Button variant="ghost">公开悬停</Button>
-							</div>
 						</div>
 					</div>
 				</TabsContent>
@@ -99,51 +74,55 @@ export function ComponentPlaygroundSection({ className }: ComponentPlaygroundSec
 						</h4>
 
 						<div className="flex flex-wrap items-center gap-3">
-							<Badge variant="default">主要状态 (Default)</Badge>
-							<Badge variant="secondary">中性次级 (Secondary)</Badge>
-							<Badge variant="outline">发丝边框 (Outline)</Badge>
-							<Badge variant="destructive">阻断警告 (Destructive)</Badge>
+							<Badge tone="ok">正常 (ok)</Badge>
+							<Badge tone="neutral">草稿 (neutral)</Badge>
+							<Badge tone="accent">已定时 (accent)</Badge>
+							<Badge tone="warning">待审 (warning)</Badge>
+							<Badge tone="off">已停用 (off)</Badge>
+							<Badge tone="danger">异常 (danger)</Badge>
 						</div>
 					</div>
 				</TabsContent>
 
-				{/* 物理时间轴 Steps 演练 */}
+				{/* 步骤流程演练 */}
 				<TabsContent value="timeline" className="space-y-6">
 					<div className="rounded-2xl border border-edge-hairline bg-card p-6 md:p-8">
 						<div className="mb-6 flex flex-wrap items-center justify-between gap-4">
 							<div>
 								<h4 className="text-xs font-semibold text-muted-foreground tracking-wider uppercase">
-									PhysicalSteps · 物理光脉流转演练
+									Steps · 流程演练
 								</h4>
 								<p className="mt-1 text-xs text-muted-foreground">
-									线条连接与节点依次点亮，激活态呈现紫罗兰色环与柔光微晕。
+									已完成打勾、当前一步墨色实心；连接线只画到走过的位置，已完成的步骤可以点回去。
 								</p>
 							</div>
 
 							<div className="flex items-center gap-2">
 								<Button
-									size="xs"
+									size="sm"
 									variant="outline"
 									onClick={() => setCurrentStep((s) => Math.max(0, s - 1))}
 									disabled={currentStep === 0}
 								>
-									<ChevronLeft className="size-3" />
+									<ChevronLeft {...iconProps(12)} />
 									上一步
 								</Button>
 								<Button
-									size="xs"
-									variant="default"
+									size="sm"
+									variant="primary"
 									onClick={() => setCurrentStep((s) => Math.min(3, s + 1))}
 									disabled={currentStep === 3}
 								>
 									下一步
-									<ChevronRight className="size-3" />
+									<ChevronRight {...iconProps(12)} />
 								</Button>
 							</div>
 						</div>
 
 						<div className="max-w-xl py-2">
-							<PhysicalSteps
+							<Steps
+								orientation="vertical"
+								onStepClick={setCurrentStep}
 								steps={[
 									{
 										title: "色彩空间数学建模",

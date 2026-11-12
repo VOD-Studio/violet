@@ -2,18 +2,19 @@
  * 消息内联编辑器：在气泡原位修订消息，Enter 保存、Esc 取消。
  * 图片消息可增删图片但至少保留一张；推文分享消息只编辑配文。
  */
-import { extractImageIds } from "@features/comments/hooks/use-rich-text-input";
-import { type PictureInput, RichCommentInput } from "@features/comments/ui/RichCommentInput";
-import { Button } from "@violet/ui";
 
+import type { PictureInput } from "@shared/ui/rich-text-input/RichTextInput";
+import { extractImageIds } from "@shared/ui/rich-text-input/use-rich-text-input";
+import { Button } from "@violet/ui";
 import { cn } from "cn";
-import { Check, LoaderCircle, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { type KeyboardEvent, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useEditChatMessage } from "../api/queries";
 import { useMentionCandidates } from "../hooks/use-mention-candidates";
 import { imageBubbleContent } from "../lib/conversation";
 import type { ChatMessage, ConversationKind } from "../model/types";
+import { ChatRichInput } from "./ChatRichInput";
 
 interface MessageEditComposerProps {
 	message: ChatMessage;
@@ -98,7 +99,7 @@ export function MessageEditComposer({
 
 	return (
 		<div className="min-w-60" onKeyDown={handleKeyDown}>
-			<RichCommentInput
+			<ChatRichInput
 				autoFocus
 				value={value}
 				onChange={setValue}
@@ -119,16 +120,18 @@ export function MessageEditComposer({
 				toolbarEnd={
 					<>
 						<Button
+							iconOnly
 							aria-label="取消编辑"
 							title="取消（Esc）"
 							onClick={onClose}
-							size="icon"
+							size="md"
 							variant="ghost"
 							className="rounded-full"
 						>
 							<X className="size-4" />
 						</Button>
 						<Button
+							iconOnly
 							aria-label="保存编辑"
 							title={
 								isImage && mediaIDs.length === 0
@@ -136,8 +139,9 @@ export function MessageEditComposer({
 									: "保存（Enter），Shift+Enter 换行"
 							}
 							disabled={!canSave}
+							loading={edit.isPending}
 							onClick={save}
-							size="icon"
+							size="md"
 							className={cn(
 								"rounded-full transition-colors",
 								canSave
@@ -145,11 +149,7 @@ export function MessageEditComposer({
 									: "bg-secondary text-muted-foreground",
 							)}
 						>
-							{edit.isPending ? (
-								<LoaderCircle className="size-4 animate-spin" />
-							) : (
-								<Check className="size-4" />
-							)}
+							<Check className="size-4" />
 						</Button>
 					</>
 				}

@@ -1,0 +1,279 @@
+@import "../avatar/avatar.css";
+@import "../button/button.css";
+@import "../segmented/segmented.css";
+
+@layer components {
+	.v-comment-header {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		margin-block-end: 20px;
+		color: var(--foreground);
+	}
+
+	.v-comment-header__title {
+		display: flex;
+		align-items: baseline;
+		gap: 8px;
+		font-size: 18px;
+		font-weight: 600;
+	}
+
+	.v-comment-header__title > :where(h1, h2, h3, h4, h5, h6) {
+		margin: 0;
+		font: inherit;
+	}
+
+	.v-comment-header__count {
+		color: var(--muted-foreground);
+		font-family: var(--font-mono, ui-monospace, monospace);
+		font-size: 12px;
+		font-weight: 400;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.v-comment-list,
+	.v-comment-replies {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.v-comment-list > li + li {
+		margin-block-start: 24px;
+	}
+
+	.v-comment-replies {
+		position: relative;
+		margin-block-start: 14px;
+		padding-inline-start: 16px;
+	}
+
+	.v-comment-replies:empty {
+		display: none;
+	}
+
+	.v-comment-replies::before {
+		position: absolute;
+		inset-block: 4px;
+		inset-inline-start: 0;
+		inline-size: 1px;
+		background-color: var(--border);
+		content: "";
+	}
+
+	.v-comment-replies > li + li {
+		margin-block-start: 16px;
+	}
+
+	.v-comment {
+		--v-comment-avatar-size: 36px;
+		display: flex;
+		gap: 12px;
+		min-inline-size: 0;
+		color: var(--foreground);
+		/* 只用 backwards：结束后不再保留 opacity 动画效果，评论才不会成为永久层叠上下文而把自己的浮层压在后面的评论之下。 */
+		animation: v-comment-enter 180ms ease-out var(--v-comment-enter-delay, 0ms) backwards;
+	}
+
+	.v-comment[data-reply] {
+		--v-comment-avatar-size: 28px;
+		gap: 10px;
+	}
+
+	.v-comment__avatar {
+		position: relative;
+		flex: none;
+		inline-size: var(--v-comment-avatar-size);
+		block-size: var(--v-comment-avatar-size);
+		border-radius: 50%;
+	}
+
+	.v-comment[data-author] > .v-comment__avatar::before {
+		position: absolute;
+		inset: -4px;
+		box-sizing: border-box;
+		border: 2px solid var(--decoration);
+		border-radius: inherit;
+		background: var(--background);
+		content: "";
+	}
+
+	.v-comment__avatar-content {
+		position: relative;
+		inline-size: 100%;
+		block-size: 100%;
+		border-radius: inherit;
+	}
+
+	.v-comment__avatar-content > *,
+	.v-comment__avatar-content .v-avatar,
+	.v-comment__avatar-content img {
+		box-sizing: border-box;
+		inline-size: 100%;
+		block-size: 100%;
+		border-radius: 50%;
+	}
+
+	.v-comment__avatar .v-comment__avatar-content .v-avatar {
+		--v-avatar-size: var(--v-comment-avatar-size);
+	}
+
+	.v-comment__avatar-content img {
+		object-fit: cover;
+	}
+
+	.v-comment__avatar-content > a,
+	.v-comment__avatar-content img {
+		display: block;
+	}
+
+	.v-comment__crown {
+		position: absolute;
+		inset-block-start: -7px;
+		inset-inline-end: -7px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		inline-size: 18px;
+		block-size: 18px;
+		border-radius: 50%;
+		outline: 2px solid var(--background);
+		background: var(--card);
+		color: var(--decoration);
+		pointer-events: none;
+	}
+
+	.v-comment__main {
+		flex: 1;
+		min-inline-size: 0;
+	}
+
+	.v-comment__meta {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 8px;
+		font-size: 13px;
+		line-height: 1.8;
+	}
+
+	.v-comment__author {
+		min-inline-size: 0;
+		font-size: 14px;
+		font-weight: 600;
+		overflow-wrap: anywhere;
+	}
+
+	.v-comment[data-author] > .v-comment__main > .v-comment__meta > .v-comment__author {
+		color: var(--link);
+	}
+
+	.v-comment__author-tag {
+		display: inline-flex;
+		align-items: center;
+		block-size: 18px;
+		padding-inline: 6px;
+		border-radius: 999px;
+		background: var(--decoration-muted);
+		color: var(--link);
+		font-size: 11px;
+		font-weight: 500;
+	}
+
+	.v-comment__reply-to,
+	.v-comment__time,
+	.v-comment__pending {
+		color: var(--muted-foreground);
+		font-size: 12px;
+	}
+
+	.v-comment__reply-to {
+		overflow-wrap: anywhere;
+	}
+
+	.v-comment__time {
+		font-family: var(--font-mono, ui-monospace, monospace);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.v-comment__bubble {
+		box-sizing: border-box;
+		display: inline-block;
+		max-inline-size: 100%;
+		margin-block-start: 6px;
+		padding: 8px 12px;
+		border-radius: 4px 14px 14px 14px;
+		background: var(--muted);
+		font-size: 14px;
+		line-height: 1.8;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+	}
+
+	.v-comment[data-author] > .v-comment__main > .v-comment__bubble {
+		background: color-mix(in oklab, var(--decoration) 10%, var(--card));
+	}
+
+	.v-comment[data-status="pending"] > .v-comment__main > .v-comment__bubble {
+		opacity: 0.6;
+	}
+
+	.v-comment[data-status="deleted"] > .v-comment__main > .v-comment__bubble {
+		color: var(--muted-foreground);
+		font-size: 13px;
+	}
+
+	.v-comment__actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 4px;
+		min-block-size: 28px;
+		margin-block-start: 4px;
+		margin-inline-start: -6px;
+	}
+
+	.v-comment__action.v-button {
+		gap: 4px;
+		block-size: 28px;
+		padding-inline: 8px;
+		color: var(--muted-foreground);
+		font-size: 13px;
+		font-weight: 400;
+	}
+
+	.v-comment__action.v-button:hover {
+		color: var(--foreground);
+	}
+
+	.v-comment__action.v-button:focus-visible {
+		outline-offset: 1px;
+	}
+
+	.v-comment__reply-form {
+		margin-block-start: 8px;
+	}
+
+	@keyframes v-comment-enter {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
+	}
+
+	.v-comment[data-motion="reduce"],
+	[data-motion="reduce"] .v-comment {
+		animation: none;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-comment {
+			animation: none;
+		}
+	}
+}

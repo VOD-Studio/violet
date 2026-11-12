@@ -16,7 +16,7 @@ export function PersonaStatusPanel({ detail, completeness }: PersonaStatusPanelP
 		<Card>
 			<CardHeader className="flex-row items-center justify-between gap-4">
 				<CardTitle>激活检查</CardTitle>
-				<Badge variant={detail.is_active ? "default" : "outline"}>
+				<Badge tone={detail.is_active ? "ok" : "off"}>
 					{detail.is_active ? "当前人设" : "未激活"}
 				</Badge>
 			</CardHeader>

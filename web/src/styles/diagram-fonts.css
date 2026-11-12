@@ -1,9 +1,9 @@
-/* 官方 Excalidraw 0.18.1 发布的 Excalifont CDN 分片；许可保存在 src/assets/fonts/diagram/。 */
-/* 中文 Xiaolai SC 由图表字体加载器按需从中文网字计划 CDN 加载。 */
+/* Excalidraw 0.18.1 发布的 Excalifont 分片，随站点静态资源同源交付；许可保存在 src/assets/fonts/diagram/。 */
+/* 中文 Xiaolai SC 由图表字体加载器按需从同源的字体分片加载。 */
 
 @font-face {
 	font-family: "Excalifont";
-	src: url("https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.18.1/dist/prod/fonts/Excalifont/Excalifont-Regular-a88b72a24fb54c9f94e3b5fdaa7481c9.woff2")
+	src: url("../assets/fonts/diagram/excalifont/Excalifont-Regular-a88b72a24fb54c9f94e3b5fdaa7481c9.woff2")
 		format("woff2");
 	font-style: normal;
 	font-weight: 400;
@@ -14,7 +14,7 @@
 
 @font-face {
 	font-family: "Excalifont";
-	src: url("https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.18.1/dist/prod/fonts/Excalifont/Excalifont-Regular-be310b9bcd4f1a43f571c46df7809174.woff2")
+	src: url("../assets/fonts/diagram/excalifont/Excalifont-Regular-be310b9bcd4f1a43f571c46df7809174.woff2")
 		format("woff2");
 	font-style: normal;
 	font-weight: 400;
@@ -26,7 +26,7 @@
 
 @font-face {
 	font-family: "Excalifont";
-	src: url("https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.18.1/dist/prod/fonts/Excalifont/Excalifont-Regular-b9dcf9d2e50a1eaf42fc664b50a3fd0d.woff2")
+	src: url("../assets/fonts/diagram/excalifont/Excalifont-Regular-b9dcf9d2e50a1eaf42fc664b50a3fd0d.woff2")
 		format("woff2");
 	font-style: normal;
 	font-weight: 400;
@@ -36,7 +36,7 @@
 
 @font-face {
 	font-family: "Excalifont";
-	src: url("https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.18.1/dist/prod/fonts/Excalifont/Excalifont-Regular-41b173a47b57366892116a575a43e2b6.woff2")
+	src: url("../assets/fonts/diagram/excalifont/Excalifont-Regular-41b173a47b57366892116a575a43e2b6.woff2")
 		format("woff2");
 	font-style: normal;
 	font-weight: 400;
@@ -46,7 +46,7 @@
 
 @font-face {
 	font-family: "Excalifont";
-	src: url("https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.18.1/dist/prod/fonts/Excalifont/Excalifont-Regular-3f2c5db56cc93c5a6873b1361d730c16.woff2")
+	src: url("../assets/fonts/diagram/excalifont/Excalifont-Regular-3f2c5db56cc93c5a6873b1361d730c16.woff2")
 		format("woff2");
 	font-style: normal;
 	font-weight: 400;
@@ -58,7 +58,7 @@
 
 @font-face {
 	font-family: "Excalifont";
-	src: url("https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.18.1/dist/prod/fonts/Excalifont/Excalifont-Regular-349fac6ca4700ffec595a7150a0d1e1d.woff2")
+	src: url("../assets/fonts/diagram/excalifont/Excalifont-Regular-349fac6ca4700ffec595a7150a0d1e1d.woff2")
 		format("woff2");
 	font-style: normal;
 	font-weight: 400;
@@ -68,7 +68,7 @@
 
 @font-face {
 	font-family: "Excalifont";
-	src: url("https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.18.1/dist/prod/fonts/Excalifont/Excalifont-Regular-623ccf21b21ef6b3a0d87738f77eb071.woff2")
+	src: url("../assets/fonts/diagram/excalifont/Excalifont-Regular-623ccf21b21ef6b3a0d87738f77eb071.woff2")
 		format("woff2");
 	font-style: normal;
 	font-weight: 400;

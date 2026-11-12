@@ -1,11 +1,11 @@
 /** 图表完成 Mermaid 与 Inkline 后整体显示，失败保留源码并提供恢复入口。 */
 
 import { EnhancementFailure } from "@shared/ui/deferred-content/DeferredContent";
+import { CodeBlock } from "@violet/ui";
 import { cn } from "cn";
 import { AnimatePresence } from "motion/react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { subscribeAppearanceRerender } from "@/shared/lib/appearance-rerender";
-import { CodeCard } from "@/shared/ui/code-preview/components/CodeCard";
 import { DiagramFullscreen } from "./DiagramFullscreen";
 import { DiagramPlaceholder } from "./DiagramPlaceholder";
 import { DiagramViewport } from "./DiagramViewport";
@@ -39,7 +39,7 @@ interface DiagramErrorProps extends DiagramBlockProps {
 function DiagramError({ format, source, cause, onRetry }: DiagramErrorProps) {
 	return (
 		<>
-			<CodeCard code={source} language={format} collapseLines={0} />
+			<CodeBlock code={source} language={format} collapseLines={0} />
 			<EnhancementFailure
 				error={cause}
 				message="图表渲染失败，源码仍可阅读。"
@@ -151,8 +151,6 @@ export function DiagramBlock({ format, source }: DiagramBlockProps) {
 	};
 
 	// 容器结构全程稳定：加载与加载完用同一 DOM，仅内容填充不同。
-	// 根容器 block 布局：失败态 CodeCard 在 block 里自然 w-full（不被 flex
-	// 收缩为内容宽度）。成功态 DiagramViewport + 居中 wrapper 在块级里仍居中。
 	// data-type 与编辑器节点载体同名：批注的 UNANNOTATABLE_SELECTOR 靠它拦截；
 	// select-none 使图内文字（SVG text / foreignObject HTML）不可选，从源头
 	// 消除划线批注选区与拖拽时的误选。

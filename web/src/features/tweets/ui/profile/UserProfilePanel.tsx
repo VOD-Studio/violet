@@ -6,10 +6,10 @@ import { formatDate } from "@shared/lib/date";
 import { avatarUrl } from "@shared/lib/image-url";
 import { useSharedElement } from "@shared/lib/view-transition";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Button } from "@violet/ui";
+import { Button, iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { differenceInDays } from "date-fns";
-import { CalendarDays, Check, Copy, Gauge, MessageCircle, PenSquare, Share2 } from "lucide-react";
+import { CalendarDays, Check, Copy, Gauge, MessageCircle, Share2, SquarePen } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { BotBadge } from "../BotBadge";
@@ -119,8 +119,9 @@ export function UserProfilePanel({
 			<div className="mt-1 flex items-center gap-1">
 				<span className="font-mono text-sm text-muted-foreground">@{profile.username}</span>
 				<Button
+					iconOnly
 					variant="ghost"
-					size="icon-xs"
+					size="sm"
 					aria-label="复制用户名"
 					onClick={async () => {
 						if (await copyText(`@${profile.username}`, `已复制 @${profile.username}`))
@@ -128,9 +129,9 @@ export function UserProfilePanel({
 					}}
 				>
 					{copied === "handle" ? (
-						<Check className="size-3.5" />
+						<Check {...iconProps(14)} />
 					) : (
-						<Copy className="size-3.5 text-muted-foreground" />
+						<Copy {...iconProps(14, "text-muted-foreground")} />
 					)}
 				</Button>
 			</div>
@@ -143,7 +144,7 @@ export function UserProfilePanel({
 				{isSelf ? (
 					<Button variant="outline" className="flex-1" asChild>
 						<Link to="/profile">
-							<PenSquare className="size-4" />
+							<SquarePen className="size-4" />
 							编辑资料
 						</Link>
 					</Button>
@@ -154,8 +155,9 @@ export function UserProfilePanel({
 					</Button>
 				)}
 				<Button
+					iconOnly
 					variant="outline"
-					size="icon"
+					size="md"
 					aria-label="复制主页链接"
 					onClick={async () => {
 						if (await copyText(window.location.href, "主页链接已复制"))

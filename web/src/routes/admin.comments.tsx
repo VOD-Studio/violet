@@ -14,15 +14,21 @@ import { CommentAuthor } from "@features/admin-comments/ui/CommentAuthor";
 import { CommentCell } from "@features/admin-comments/ui/CommentCell";
 import { CommentDetail } from "@features/admin-comments/ui/CommentDetail";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import {
-	DataTable,
-	type DataTableColumn,
-	usePagedQuery,
-} from "@features/admin-shared/ui/data-table";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { formatDateTime } from "@shared/lib/date";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Badge, Button, ConfirmDialog, Segmented, type SegmentedItem } from "@violet/ui";
+import {
+	Badge,
+	type BadgeProps,
+	Button,
+	ConfirmDialog,
+	DataTable,
+	type DataTableColumn,
+	iconProps,
+	Segmented,
+	type SegmentedItem,
+} from "@violet/ui";
 import { Ban, Check, Trash2 } from "lucide-react";
 import { useState } from "react";
 
@@ -46,13 +52,13 @@ const STATUS_BADGE: Record<
 	CommentStatus,
 	{
 		label: string;
-		variant: "default" | "secondary" | "destructive" | "outline";
+		tone: NonNullable<BadgeProps["tone"]>;
 	}
 > = {
-	pending: { label: "待审核", variant: "secondary" },
-	approved: { label: "已通过", variant: "default" },
-	spam: { label: "垃圾", variant: "destructive" },
-	deleted: { label: "已删除", variant: "outline" },
+	pending: { label: "待审核", tone: "warning" },
+	approved: { label: "已通过", tone: "ok" },
+	spam: { label: "垃圾", tone: "danger" },
+	deleted: { label: "已删除", tone: "off" },
 };
 
 /**
@@ -152,9 +158,7 @@ function AdminCommentsPage() {
 			key: "status",
 			header: "状态",
 			cell: (row) => (
-				<Badge variant={STATUS_BADGE[row.status].variant}>
-					{STATUS_BADGE[row.status].label}
-				</Badge>
+				<Badge tone={STATUS_BADGE[row.status].tone}>{STATUS_BADGE[row.status].label}</Badge>
 			),
 		},
 		{
@@ -171,37 +175,43 @@ function AdminCommentsPage() {
 				<div className="flex items-center gap-1">
 					{canApprove ? (
 						<Button
-							size="icon-sm"
+							iconOnly
+							size="sm"
 							variant="ghost"
+							aria-label="通过"
 							title="通过"
 							onClick={() => approveMut.mutate(row.id)}
 							disabled={approveMut.isPending}
 						>
-							<Check className="size-3.5" />
+							<Check {...iconProps(14)} />
 						</Button>
 					) : null}
 					{canApprove ? (
 						<Button
-							size="icon-sm"
+							iconOnly
+							size="sm"
 							variant="ghost"
+							aria-label="标为垃圾"
 							title="标为垃圾"
 							className="hover:bg-destructive/10 hover:text-destructive"
 							onClick={() => spamMut.mutate(row.id)}
 							disabled={spamMut.isPending}
 						>
-							<Ban className="size-3.5" />
+							<Ban {...iconProps(14)} />
 						</Button>
 					) : null}
 					{canDelete ? (
 						<Button
-							size="icon-sm"
+							iconOnly
+							size="sm"
 							variant="ghost"
+							aria-label="删除"
 							title="删除"
 							className="hover:bg-destructive/10 hover:text-destructive"
 							onClick={() => setDeletingId(row.id)}
 							disabled={deleteMut.isPending}
 						>
-							<Trash2 className="size-3.5" />
+							<Trash2 {...iconProps(14)} />
 						</Button>
 					) : null}
 				</div>
@@ -250,7 +260,7 @@ function AdminCommentsPage() {
 								onClick={handleBatchApprove}
 								disabled={batchMut.isPending}
 							>
-								<Check className="size-3.5" />
+								<Check {...iconProps(14)} />
 								通过
 							</Button>
 							<Button
@@ -259,7 +269,7 @@ function AdminCommentsPage() {
 								onClick={handleBatchSpam}
 								disabled={batchMut.isPending}
 							>
-								<Ban className="size-3.5" />
+								<Ban {...iconProps(14)} />
 								标垃圾
 							</Button>
 						</>

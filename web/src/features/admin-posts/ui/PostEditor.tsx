@@ -37,6 +37,7 @@ import {
 	ConfirmDialog,
 	Input,
 	Sheet,
+	SheetBody,
 	SheetContent,
 	SheetHeader,
 	SheetTitle,
@@ -419,13 +420,13 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 					onOpenVersions={() => setVersionsOpen(true)}
 				/>
 
-				<div className="grid flex-1 grid-cols-1 gap-4 overflow-hidden lg:grid-cols-[1fr_320px]">
+				<div className="-m-1 grid flex-1 grid-cols-1 gap-4 overflow-hidden p-1 lg:grid-cols-[1fr_320px]">
 					<div className="flex min-h-0 flex-col gap-2">
 						<Input
 							value={initialData?.title ?? ""}
 							readOnly
 							placeholder="文章标题…"
-							variant="ghost"
+							variant="plain"
 							controlSize="lg"
 							className="text-2xl font-bold"
 							classNames={{ control: "px-4" }}
@@ -436,10 +437,10 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 								value={initialData?.slug ?? ""}
 								readOnly
 								placeholder="url-slug"
-								variant="ghost"
+								variant="plain"
 								controlSize="sm"
 								className="font-mono text-sm"
-								classNames={{ root: "min-w-0 flex-1", control: "px-0" }}
+								classNames={{ control: "min-w-0 flex-1 px-0" }}
 							/>
 						</div>
 						<div className="min-h-0 flex-1">
@@ -495,8 +496,8 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 			<div
 				className={
 					zenMode && sidebarCollapsed
-						? "grid flex-1 grid-cols-1 gap-4 overflow-hidden"
-						: "grid flex-1 grid-cols-1 gap-4 overflow-hidden lg:grid-cols-[1fr_320px]"
+						? "-m-1 grid flex-1 grid-cols-1 gap-4 overflow-hidden p-1"
+						: "-m-1 grid flex-1 grid-cols-1 gap-4 overflow-hidden p-1 lg:grid-cols-[1fr_320px]"
 				}
 			>
 				{/* 左：编辑器（移动端整页占满，桌面与侧栏并排） */}
@@ -510,7 +511,7 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 							},
 						})}
 						placeholder="文章标题…"
-						variant="ghost"
+						variant="plain"
 						controlSize="lg"
 						className="text-2xl font-bold"
 						classNames={{ control: "px-4" }}
@@ -531,10 +532,10 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 										field.onChange(e.target.value);
 									}}
 									placeholder="url-slug"
-									variant="ghost"
+									variant="plain"
 									controlSize="sm"
 									className="font-mono text-sm"
-									classNames={{ root: "min-w-0 flex-1", control: "px-0" }}
+									classNames={{ control: "min-w-0 flex-1 px-0" }}
 								/>
 							)}
 						/>
@@ -571,13 +572,13 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 							<PostEditorSidebar control={control} register={register} />
 						</div>
 						<Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
-							<SheetContent side="right" className="w-[85vw] max-w-sm lg:hidden">
+							<SheetContent className="lg:hidden" aria-describedby={undefined}>
 								<SheetHeader>
 									<SheetTitle>文章设置</SheetTitle>
 								</SheetHeader>
-								<div className="flex-1 overflow-y-auto">
+								<SheetBody>
 									<PostEditorSidebar control={control} register={register} />
-								</div>
+								</SheetBody>
 							</SheetContent>
 						</Sheet>
 					</>

@@ -1,0 +1,23 @@
+import assert from "node:assert/strict";
+import { renderToString } from "react-dom/server";
+import { AnnotationConsumer } from "./src/annotation.js";
+import { MentionConsumer } from "./src/mention.js";
+import { ImageGrid } from "@violet/ui/image-grid";
+
+const annotation = renderToString(<AnnotationConsumer />);
+assert.match(annotation, /<mark\b[^>]*role="button"/);
+assert.match(annotation, /role="toolbar"/);
+assert.match(annotation, /role="dialog"/);
+
+const mention = renderToString(<MentionConsumer />);
+assert.match(mention, /role="combobox"/);
+assert.match(mention, /aria-autocomplete="list"/);
+assert.match(mention, /role="listbox"/);
+assert.equal((mention.match(/role="option"/g) ?? []).length, 3);
+
+const images = Array.from({ length: 9 }, (_, index) => ({ src: `/image-${index}.webp`, width: 600, height: 400 }));
+const grid = renderToString(<ImageGrid images={images} onImageClick={() => { throw new Error("SSR 不应激活图片"); }} />);
+assert.equal((grid.match(/<button\b/g) ?? []).length, 4);
+assert.equal((grid.match(/<img\b/g) ?? []).length, 4);
+assert.doesNotMatch(grid, /src="\/image-[4-8]\.webp"/);
+console.log("批注、提及与图片网格安装包 SSR 通过");

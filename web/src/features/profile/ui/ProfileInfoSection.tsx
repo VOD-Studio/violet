@@ -1,6 +1,6 @@
 import type { UserDTO } from "@entities/user/model/types";
 import { useUpdateProfile } from "@features/auth/api/mutations";
-import { Button, Input, Textarea } from "@violet/ui";
+import { Button, Input, iconProps, Textarea } from "@violet/ui";
 
 import { AtSign, Check, PencilLine, Quote, X } from "lucide-react";
 import type { ReactNode } from "react";
@@ -73,14 +73,15 @@ const FieldShell = ({
 					<div className="group/field flex items-start gap-3">
 						<div className="min-w-0 flex-1">{displayValue}</div>
 						<Button
-							size="icon-sm"
+							iconOnly
+							size="sm"
 							variant="ghost"
 							onClick={onEdit}
 							// 触屏没有 hover，移动端常显；桌面保持 hover 显现的克制感
 							className="opacity-100 transition-opacity md:opacity-0 md:group-hover/field:opacity-100 md:focus-visible:opacity-100"
 							aria-label={editLabel}
 						>
-							<PencilLine className="size-3.5" />
+							<PencilLine {...iconProps(14)} />
 						</Button>
 					</div>
 				)}
@@ -143,8 +144,8 @@ const UsernameField = ({ user }: { user: UserDTO }) => {
 							variant="underline"
 							value={value}
 							onChange={(e) => setValue(e.target.value)}
-							leading={<AtSign className="size-3.5" />}
-							classNames={{ root: "min-w-0 flex-1" }}
+							leading={<AtSign {...iconProps(14)} />}
+							classNames={{ control: "min-w-0 flex-1" }}
 							placeholder="请输入用户名"
 							aria-invalid={!!error}
 							autoFocus
@@ -154,9 +155,8 @@ const UsernameField = ({ user }: { user: UserDTO }) => {
 								size="sm"
 								onClick={handleSave}
 								disabled={updateProfile.isPending}
-								className="gap-1.5"
 							>
-								<Check className="size-3.5" />
+								<Check {...iconProps(14)} />
 								{updateProfile.isPending ? "保存中..." : "保存"}
 							</Button>
 							<Button
@@ -164,9 +164,8 @@ const UsernameField = ({ user }: { user: UserDTO }) => {
 								variant="ghost"
 								onClick={handleCancel}
 								disabled={updateProfile.isPending}
-								className="gap-1.5"
 							>
-								<X className="size-3.5" />
+								<X {...iconProps(14)} />
 								取消
 							</Button>
 						</div>
@@ -235,7 +234,7 @@ const DisplayNameField = ({ user }: { user: UserDTO }) => {
 						<Input
 							aria-label="显示名"
 							variant="underline"
-							classNames={{ root: "min-w-0 flex-1" }}
+							classNames={{ control: "min-w-0 flex-1" }}
 							value={value}
 							onChange={(e) => setValue(e.target.value)}
 							placeholder="留空显示用户名"
@@ -247,9 +246,8 @@ const DisplayNameField = ({ user }: { user: UserDTO }) => {
 								size="sm"
 								onClick={handleSave}
 								disabled={updateProfile.isPending}
-								className="gap-1.5"
 							>
-								<Check className="size-3.5" />
+								<Check {...iconProps(14)} />
 								{updateProfile.isPending ? "保存中..." : "保存"}
 							</Button>
 							<Button
@@ -257,9 +255,8 @@ const DisplayNameField = ({ user }: { user: UserDTO }) => {
 								variant="ghost"
 								onClick={handleCancel}
 								disabled={updateProfile.isPending}
-								className="gap-1.5"
 							>
-								<X className="size-3.5" />
+								<X {...iconProps(14)} />
 								取消
 							</Button>
 						</div>
@@ -314,7 +311,7 @@ const BioField = ({ user }: { user: UserDTO }) => {
 			displayValue={
 				user.bio ? (
 					<div className="flex gap-2">
-						<Quote className="mt-0.5 size-3.5 shrink-0 text-muted-foreground/60" />
+						<Quote {...iconProps(14, "mt-0.5 shrink-0 text-muted-foreground/60")} />
 						<p className="text-sm leading-relaxed text-foreground/90">{user.bio}</p>
 					</div>
 				) : (
@@ -341,13 +338,8 @@ const BioField = ({ user }: { user: UserDTO }) => {
 						</div>
 					</div>
 					<div className="flex items-center gap-2 pt-1">
-						<Button
-							size="sm"
-							onClick={handleSave}
-							disabled={updateProfile.isPending}
-							className="gap-1.5"
-						>
-							<Check className="size-3.5" />
+						<Button size="sm" onClick={handleSave} disabled={updateProfile.isPending}>
+							<Check {...iconProps(14)} />
 							{updateProfile.isPending ? "保存中..." : "保存"}
 						</Button>
 						<Button
@@ -355,9 +347,8 @@ const BioField = ({ user }: { user: UserDTO }) => {
 							variant="ghost"
 							onClick={handleCancel}
 							disabled={updateProfile.isPending}
-							className="gap-1.5"
 						>
-							<X className="size-3.5" />
+							<X {...iconProps(14)} />
 							取消
 						</Button>
 					</div>

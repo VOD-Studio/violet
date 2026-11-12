@@ -3,15 +3,17 @@ import { useDeleteSeries } from "@features/admin-series/api/mutations";
 import { useAdminSeries } from "@features/admin-series/api/queries";
 import type { AdminSeriesListItem } from "@features/admin-series/model/types";
 import { SeriesSheet } from "@features/admin-series/ui/SeriesSheet";
-import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
-import { DataTable, usePagedQuery } from "@features/admin-shared/ui/data-table";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { formatDate } from "@shared/lib/date";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import type { DataTableColumn } from "@violet/ui";
 import {
 	Badge,
 	Button,
 	ConfirmDialog,
+	DataTable,
+	iconProps,
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
@@ -81,7 +83,7 @@ function AdminSeriesPage() {
 			sortable: true,
 			width: "90px",
 			cell: (row) => (
-				<Badge variant={row.status === "published" ? "default" : "secondary"}>
+				<Badge tone={row.status === "published" ? "ok" : "neutral"}>
 					{row.status === "published" ? "已发布" : "草稿"}
 				</Badge>
 			),
@@ -129,7 +131,8 @@ function AdminSeriesPage() {
 						<TooltipTrigger asChild>
 							<span>
 								<Button
-									size="icon-sm"
+									iconOnly
+									size="sm"
 									variant="ghost"
 									onClick={() =>
 										void navigate({
@@ -139,7 +142,7 @@ function AdminSeriesPage() {
 									}
 									aria-label={`目录管理《${row.title}》`}
 								>
-									<BookOpen className="size-3.5" />
+									<BookOpen {...iconProps(14)} />
 								</Button>
 							</span>
 						</TooltipTrigger>
@@ -150,12 +153,13 @@ function AdminSeriesPage() {
 							<TooltipTrigger asChild>
 								<span>
 									<Button
-										size="icon-sm"
+										iconOnly
+										size="sm"
 										variant="ghost"
 										onClick={() => handleEditMeta(row)}
 										aria-label={`编辑《${row.title}》信息`}
 									>
-										<Pencil className="size-3.5" />
+										<Pencil {...iconProps(14)} />
 									</Button>
 								</span>
 							</TooltipTrigger>
@@ -167,13 +171,14 @@ function AdminSeriesPage() {
 							<TooltipTrigger asChild>
 								<span>
 									<Button
-										size="icon-sm"
+										iconOnly
+										size="sm"
 										variant="ghost"
 										className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 										onClick={() => handleDelete(row)}
 										aria-label={`解散《${row.title}》`}
 									>
-										<Trash2 className="size-3.5" />
+										<Trash2 {...iconProps(14)} />
 									</Button>
 								</span>
 							</TooltipTrigger>
@@ -193,7 +198,7 @@ function AdminSeriesPage() {
 				action={
 					<PermissionGuard permission="series:create">
 						<Button size="sm" onClick={handleCreate}>
-							<Plus className="size-3.5" />
+							<Plus {...iconProps(14)} />
 							建书
 						</Button>
 					</PermissionGuard>

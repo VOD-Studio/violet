@@ -8,8 +8,7 @@
 import { Cover } from "@features/admin-media/ui/Cover";
 import type { PostForm } from "@features/admin-posts/model/schema";
 import { useTags } from "@features/tags/api/queries";
-import { Badge, Input, Label, Switch, Textarea } from "@violet/ui";
-import { X } from "lucide-react";
+import { Input, Label, Switch, Tag, Textarea } from "@violet/ui";
 import { type Control, Controller, type UseFormRegister } from "react-hook-form";
 
 interface PostEditorSidebarProps {
@@ -57,18 +56,15 @@ export function PostEditorSidebar({ control, register }: PostEditorSidebarProps)
 						<Label>标签</Label>
 						<div className="flex flex-wrap gap-1.5">
 							{field.value.map((t) => (
-								<Badge key={t} variant="secondary" className="gap-1">
+								<Tag
+									key={t}
+									onRemove={() =>
+										field.onChange(field.value.filter((x) => x !== t))
+									}
+									removeLabel={`移除标签 ${t}`}
+								>
 									{t}
-									<button
-										type="button"
-										onClick={() =>
-											field.onChange(field.value.filter((x) => x !== t))
-										}
-										className="hover:text-destructive"
-									>
-										<X className="size-3" />
-									</button>
-								</Badge>
+								</Tag>
 							))}
 							{field.value.length === 0 ? (
 								<span className="text-xs text-muted-foreground">未选择标签</span>

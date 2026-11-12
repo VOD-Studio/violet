@@ -2,7 +2,7 @@
 
 [中文](./README.zh-CN.md)
 
-Turn one seed color into 12-step color scales for light and dark appearances: brand and neutral scales with translucent counterparts, fixed danger, warning and success scales, and six categorical scales for chart series and other categories. Text, solid foregrounds and control boundaries meet WCAG 2.2 AA and APCA thresholds for any seed, a higher-contrast level serves `prefers-contrast: more`, every color stays inside sRGB, and the same input always gives the same output. Zero dependencies, no Node APIs: it runs in the browser, during SSR and in build scripts.
+Turn one seed color into 12-step color scales for light and dark appearances: brand and neutral scales with translucent counterparts, fixed danger, warning and success scales, and six categorical scales for chart series and other categories. Text, solid foregrounds and control boundaries meet WCAG 2.2 AA for any seed; APCA is reported as a graded advisory for text, not enforced. A higher-contrast level serves `prefers-contrast: more`, every color stays inside sRGB, and the same input always gives the same output. A `material` set adds named roles: three surfaces, two rules, a decoration color, and accent and status text that stay legible on those surfaces. Zero dependencies, no Node APIs: it runs in the browser, during SSR and in build scripts.
 
 ```sh
 pnpm add @violetjs/theme
@@ -17,7 +17,7 @@ import { generateScales, normalizeTheme, toCssVariables } from "@violetjs/theme"
 
 // 1. Normalize untrusted input (a cookie, a form field). Invalid input falls back to a default theme.
 const theme = normalizeTheme({ version: 1, seed: "#3A7BD5" });
-// { version: 1, seed: "#3a7bd5", knobs: { neutralChroma: 0.015 } }
+// { version: 1, seed: "#3a7bd5", knobs: { neutralChroma: 0.015, accentChroma: 0.0974 } }
 
 // 2. Generate the scales for each appearance, optionally at the higher contrast level.
 const light = generateScales(theme, { appearance: "light" });
@@ -29,6 +29,7 @@ light.brand.contrast; // text color for steps 9 and 10
 light.brand.alpha[3]; // "color(srgb … / …)": step 3 as a translucent color over the page background
 light.status.danger.steps[11]; // danger text
 light.categorical[0].steps[9]; // first chart series
+light.material.accent; // link and focus-ring text, legible on the page, sheet and sunk surfaces
 
 // 3. Serialize to CSS custom properties.
 const css = toCssVariables([light, dark, lightMore, darkMore]);
@@ -49,6 +50,7 @@ With both appearances, each value is a `light-dark()` pair, so the page needs `c
 | `--neutral-1` … `--neutral-12`, `--neutral-contrast`, `--neutral-a1` … `--neutral-a12` | Neutral, tinted with the seed's hue |
 | `--danger-*`, `--warning-*`, `--success-*` | Status, fixed hues |
 | `--category-1-*` … `--category-6-*` | Categorical, fixed hues, in chart-series order |
+| `--material-page`, `--material-sheet`, `--material-sunk`, `--material-rule`, `--material-rule2`, `--material-deco`, `--material-accent`, `--material-danger`, `--material-ok` | Material, see below |
 
 ## Theme
 
@@ -57,6 +59,7 @@ With both appearances, each value is a `light-dark()` pair, so the page needs `c
 | `version` | Data version, currently `1`. Other versions fall back to the default theme. |
 | `seed` | `#rgb` or `#rrggbb`. The brand scale keeps its hue and as much of its chroma as possible. |
 | `knobs.neutralChroma` | Chroma of the neutral scale's strongest steps, `0`–`0.05`, default `0.015`. Never above the seed's own chroma; `0` gives pure gray. |
+| `knobs.accentChroma` | Chroma of the accent text (`material.accent`), `0`–`0.2`, default `0.0974`; in dark mode ×1.0585. Never above 3× the seed's own chroma, so a near-gray seed does not get a tinted accent. |
 
 `generateScales` throws a `TypeError` for a malformed seed. `normalizeTheme(input, fallback?)` never throws: a non-object, a wrong version or an invalid seed returns the fallback, an invalid knob falls back on its own, and unknown knobs are dropped, so the result is safe to embed in CSS.
 
@@ -69,12 +72,12 @@ Step roles follow [Radix Colors](https://www.radix-ui.com/colors/docs/palette-co
 | 1–2 | App background, surfaces | | |
 | 3–5 | Component backgrounds: rest, hover, pressed | | |
 | 6 | Decorative separators | | |
-| 7–8 | Control borders, focus rings | WCAG 3:1, APCA Lc 30 | WCAG 4.5:1, Lc 45 |
-| 9–10 | Solid backgrounds and their hover | APCA Lc 15 against the background, since [WCAG 1.4.11](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast) needs no fill contrast for a button with a text label; `contrast` on them: WCAG 4.5:1, Lc 60 | Lc 30; `contrast`: WCAG 7:1, Lc 75 |
-| 11 | Secondary text, links | WCAG 4.5:1, APCA Lc 75; on steps 3–5: Lc 60 | WCAG 7:1, Lc 90; on steps 3–5: Lc 75 |
-| 12 | Body text | WCAG 4.5:1, APCA Lc 90; on steps 3–5: Lc 75 | WCAG 7:1, Lc 100; on steps 3–5: Lc 90 |
+| 7–8 | Control borders, focus rings | WCAG 3:1 | WCAG 4.5:1 |
+| 9–10 | Solid backgrounds and their hover | No fill contrast required for a button with a text label under [WCAG 1.4.11](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast); text (`contrast`) on them: WCAG 4.5:1 | Text: WCAG 7:1 |
+| 11 | Secondary text, links | WCAG 4.5:1 | WCAG 7:1 |
+| 12 | Body text | WCAG 4.5:1 | WCAG 7:1 |
 
-The standard APCA levels follow APCA's use-case tiers: Lc 90 is what its font lookup table asks of 16px/400 body text, Lc 75 is the minimum for body text, Lc 60 for other readable content such as labels and buttons, Lc 30 for meaningful non-text elements and Lc 15 for large buttons to be discernible. The `"more"` level adds Lc 15, APCA's equivalent of AAA, with body text capped at Lc 100, the most an off-white background allows, and uses WCAG's AAA 7:1 for text.
+For text only, the advisory APCA references are Lc 90 for body text, 75 for secondary text, and 45 for status text; on component backgrounds body and secondary text use 75 and 60. Text on a solid fill uses Lc 60. The `"more"` level raises each reference by 15, capping body text on page backgrounds at Lc 100. Decorative fills, borders, and chart graphics have no APCA reference (ADR-0029).
 
 Step 9 is the seed itself whenever near-white or near-black text passes on it. Otherwise only its lightness moves, to the nearest value where one of them does. `contrast` is whichever text color needs the smaller move, the same in both appearances: saturated mid-tone seeds keep white text in dark mode too, and bright seeds such as yellow keep their brightness with near-black text. Step 10, the hover state, moves toward higher contrast with that text: darker under white text, lighter under near-black text.
 
@@ -83,7 +86,23 @@ Step 9 is the seed itself whenever near-white or near-black text passes on it. O
 Status and categorical scales do not change with the theme.
 
 - **Status**: danger, warning and success have fixed seeds and follow the same rules as the brand scale.
-- **Categorical**: six hues at least 45° apart (blue, amber, green, purple, teal, red), ordered so that neighbors differ most and red and green are not adjacent. Within one appearance and level, the solid steps of all six differ in lightness by at most 0.1, every other step shares one lightness, and the solids keep at least WCAG 3:1 and APCA Lc 30 against the background, as [WCAG 1.4.11](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast) requires of chart graphics. Hues and lightness come from an offline search that maximizes the smallest pairwise difference under normal vision and the protanopia, deuteranopia and tritanopia simulations of [Machado et al. 2009](https://www.inf.ufrgs.br/~oliveira/pubs_files/CVD_Simulation/CVD_Simulation.html); every pair stays at least ΔE<sub>OK</sub> 0.04 apart, twice the CSS Color 4 just-noticeable difference.
+- **Categorical**: six hues at least 45° apart (blue, amber, green, purple, teal, red), ordered so that neighbors differ most and red and green are not adjacent. Within one appearance and level, the solid steps of all six differ in lightness by at most 0.1, every other step shares one lightness, and chart graphics keep at least WCAG 3:1 against the background under [WCAG 1.4.11](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast). Hues and lightness come from an offline search that maximizes the smallest pairwise difference under normal vision and the protanopia, deuteranopia and tritanopia simulations of [Machado et al. 2009](https://www.inf.ufrgs.br/~oliveira/pubs_files/CVD_Simulation/CVD_Simulation.html); every pair stays at least ΔE<sub>OK</sub> 0.04 apart, twice the CSS Color 4 just-noticeable difference.
+
+## Material
+
+`material` names the roles that a design uses directly instead of by step number. Surfaces, lines and accent text use CSS `oklch()` values with the seed's hue; `deco` is the unmodified seed hex and `danger`/`ok` have fixed hues.
+
+| Role | Use |
+| --- | --- |
+| `page` | Page background. |
+| `sheet` | Cards, panels, popovers, the current item. Lighter than `page` in light mode, so it is not a neutral step. |
+| `sunk` | Inputs, segmented tracks, keycaps, skeletons. |
+| `rule`, `rule2` | Hairline and strong lines: the body text color (neutral step 12) at a fixed opacity. |
+| `deco` | The seed itself, for decoration, progress and selection marks. It carries no text. |
+| `accent` | Links, focus rings, text on the season-color tint. |
+| `danger`, `ok` | Text and icons for error and success. |
+
+Surface lightness is fixed per appearance and surface chroma never exceeds the seed's. The three text roles start from a fixed lightness and move away from the background until they reach WCAG 4.5:1 (7:1 at the `"more"` level) on all three surfaces. Accent text must also pass on the season-color tint (`color-mix(in oklab, deco 16%, sheet)`); `danger` and `ok` must pass on their own 12% tint over `page` and `sheet`. Light-mode `ok` therefore ends up slightly darker than its starting value.
 
 ## Alpha scales
 
@@ -91,9 +110,9 @@ Status and categorical scales do not change with the theme.
 
 ## How it works
 
-Colors are computed in OKLCH. Each step's lightness is solved from a target WCAG contrast ratio against the background (in the spirit of [Adobe Leonardo](https://leonardocolor.io/)). APCA is stricter than WCAG 2 in some ranges, especially in dark mode, so each APCA level is converted into a WCAG ratio target for the solver. Colors outside the target gamut keep their lightness and hue and lose only chroma, as in [CSS Color 4 gamut mapping](https://www.w3.org/TR/css-color-4/#gamut-mapping). The output is rounded to four decimals for lightness and chroma, still inside the gamut.
+Colors are computed in OKLCH. Each step's lightness is solved from fixed WCAG contrast-ratio targets against the background (in the spirit of [Adobe Leonardo](https://leonardocolor.io/)); the retained targets also reproduce the design's body and secondary text (neutral steps 12 and 11). APCA does not determine solver targets. Colors outside the target gamut keep their lightness and hue and lose only chroma, as in [CSS Color 4 gamut mapping](https://www.w3.org/TR/css-color-4/#gamut-mapping). The output is rounded to four decimals for lightness and chroma, still inside the gamut.
 
-APCA itself is not part of the runtime. The test suite sweeps every hue in 1° steps across the full chroma range, many seed lightnesses and both ends of the knob range, in both appearances and both contrast levels, and checks each pair against the official [`apca-w3`](https://github.com/Myndex/apca-w3) and WCAG 2.2, for both the exact and the 8-bit quantized colors.
+APCA itself is not part of the runtime. The test suite sweeps every hue in 1° steps across the full chroma range, many seed lightnesses and both ends of the knob range, in both appearances and both contrast levels, and checks each pair against WCAG 2.2, for both the exact and the 8-bit quantized colors. A pair below its WCAG threshold fails. A pair that passes WCAG but falls below its level of the official [`apca-w3`](https://github.com/Myndex/apca-w3) is only reported as a warning, because APCA is a reference here rather than a constraint.
 
 ## License
 

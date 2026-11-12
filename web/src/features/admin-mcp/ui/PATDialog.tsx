@@ -7,9 +7,15 @@ import {
 	type PATScope,
 	type UpdatePATRequest,
 } from "@features/admin-mcp/model/types";
-import { DateTimePicker } from "@shared/ui/date-time-picker/components/DateTimePicker";
-import type { DateTimePreset } from "@shared/ui/date-time-picker/types/date-time-picker-types";
-import { Button, Checkbox, Input, Label, Modal } from "@violet/ui";
+import {
+	Button,
+	Checkbox,
+	DatePicker,
+	type DatePickerPreset,
+	Input,
+	Label,
+	Modal,
+} from "@violet/ui";
 
 import * as React from "react";
 import { toast } from "sonner";
@@ -50,8 +56,7 @@ export function PATDialog({ open, onOpenChange, token, onCreated, onUpdated }: P
 			expiryPresets: [
 				{ label: "90 天", value: addDays(90) },
 				{ label: "365 天", value: addDays(365) },
-				{ label: "永不过期", value: "never" },
-			] as DateTimePreset[],
+			] as DatePickerPreset[],
 		};
 	}, []);
 
@@ -217,16 +222,32 @@ export function PATDialog({ open, onOpenChange, token, onCreated, onUpdated }: P
 				</fieldset>
 				<fieldset className="space-y-2">
 					<legend className="text-sm font-medium">有效期</legend>
-					<DateTimePicker
-						value={expiresAt}
+					<DatePicker
+						aria-label="到期日期"
+						value={expiresAt === "never" ? "" : expiresAt}
 						onChange={setExpiresAt}
-						mode="date"
 						placeholder="默认 90 天"
 						min={today}
-						disabled={pending}
+						disabled={pending || expiresAt === "never"}
 						clearable={false}
 						presets={expiryPresets}
 					/>
+					<div className="flex items-center gap-2">
+						<Checkbox
+							id={`${formId}-never-expires`}
+							checked={expiresAt === "never"}
+							onCheckedChange={(checked) =>
+								setExpiresAt(checked === true ? "never" : "")
+							}
+							disabled={pending}
+						/>
+						<Label
+							htmlFor={`${formId}-never-expires`}
+							className="cursor-pointer text-sm"
+						>
+							永不过期
+						</Label>
+					</div>
 					<p className="text-xs text-muted-foreground">
 						{token
 							? "未修改时保留原过期时间；选择“永不过期”将移除到期限制。"

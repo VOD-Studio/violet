@@ -1,4 +1,4 @@
-import { ShimmerSkeleton } from "@violet/ui";
+import { Skeleton } from "@violet/ui";
 
 import { cn } from "cn";
 
@@ -28,18 +28,18 @@ const PostListSkeleton = ({
 						key={index}
 						className="flex flex-col overflow-hidden rounded-lg border border-edge-hairline bg-background"
 					>
-						<ShimmerSkeleton className={cn("w-full", coverH)} />
+						<Skeleton className={cn("w-full", coverH)} />
 						<div className="flex flex-col gap-3 p-5">
-							<ShimmerSkeleton className="h-5 w-20 rounded-full" />
-							<ShimmerSkeleton className="h-6 w-full rounded-md" />
-							<ShimmerSkeleton className="h-4 w-full rounded-md" />
-							<ShimmerSkeleton className="h-4 w-2/3 rounded-md" />
+							<Skeleton className="h-5 w-20 rounded-full" />
+							<Skeleton className="h-6 w-full rounded-md" />
+							<Skeleton className="h-4 w-full rounded-md" />
+							<Skeleton className="h-4 w-2/3 rounded-md" />
 							<div className="flex items-center justify-between pt-1">
 								<div className="flex items-center gap-1.5">
-									<ShimmerSkeleton className="h-5 w-5 rounded-full" />
-									<ShimmerSkeleton className="h-3 w-16 rounded-md" />
+									<Skeleton className="h-5 w-5 rounded-full" />
+									<Skeleton className="h-3 w-16 rounded-md" />
 								</div>
-								<ShimmerSkeleton className="h-3 w-20 rounded-md" />
+								<Skeleton className="h-3 w-20 rounded-md" />
 							</div>
 						</div>
 					</div>

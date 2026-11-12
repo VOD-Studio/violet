@@ -1,2 +1,2 @@
-export type { StepItem, StepsProps } from "./PhysicalSteps";
-export { PhysicalSteps } from "./PhysicalSteps";
+export type { StepItem, StepsProps, StepsTone } from "./steps";
+export { Steps } from "./steps";

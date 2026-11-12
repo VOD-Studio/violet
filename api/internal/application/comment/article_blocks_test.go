@@ -9,21 +9,30 @@ import (
 	domain "blog-api/internal/domain/comment"
 )
 
-func TestExtractArticleBlocks_MatchesFrontendSelectors(t *testing.T) {
+func TestExtractArticleBlocks_MatchesNewAnchorNodeMatrix(t *testing.T) {
 	html := `<div data-article-content>
-		<p>hello world</p>
-		<h2>标题</h2>
-		<li>列表项</li>
-		<pre>code</pre>
+		<p>hello <code>world</code> <a href="/post">link</a></p>
+		<h1>一级</h1><h2>二级</h2><h3>三级</h3><h4>四级</h4><h5>五级</h5><h6>六级</h6>
+		<ul><li>列表项</li></ul><blockquote><p>引用段落</p></blockquote>
+		<details><summary>摘要</summary><p>折叠正文</p></details>
+		<table><tr><th>表头</th><td>单元格</td></tr></table>
+		<p><img src="/image.png" alt="图片说明"></p>
+		<figure><img src="/figure.png"><figcaption>图注</figcaption></figure>
+		<div data-type="block-math" data-latex="x^2"></div>
+		<div data-type="diagram-block" data-source="graph TD"></div>
+		<pre><code>代码</code></pre>
+		<pre data-runnable="true" data-source="print(1)"><code>print(1)</code></pre>
+		<pre><code class="language-dialogue">{"text":"嵌入"}</code></pre>
 		<p>   </p>
 	</div>`
 	blocks, err := ExtractArticleBlocks(html)
 	require.NoError(t, err)
-	require.Len(t, blocks, 4)
-	id, err := ComputeBlockID("hello world")
-	require.NoError(t, err)
-	assert.Equal(t, id, blocks[0].ID)
-	assert.Equal(t, "hello world", blocks[0].Text)
+	texts := make([]string, len(blocks))
+	for i, block := range blocks {
+		texts[i] = block.Text
+	}
+	// 引用块与其内唯一段落文本相同，各算一个候选（阅读端悬停会提升到外层）
+	assert.Equal(t, []string{"hello world link", "一级", "二级", "三级", "四级", "五级", "六级", "列表项", "引用段落", "引用段落", "折叠正文"}, texts)
 }
 
 func TestEnsureAnchorMatchesArticle_RejectsSubstringBlockText(t *testing.T) {
@@ -75,12 +84,11 @@ func TestExtractArticleBlocks_InlineMathUsesDataLatex(t *testing.T) {
 	assert.Equal(t, id, blocks[0].ID)
 }
 
-func TestExtractArticleBlocks_RunnablePreUsesDataSource(t *testing.T) {
+func TestEnsureAnchorMatchesArticle_RejectsRunnableSource(t *testing.T) {
 	html := `<pre data-runnable="true" data-lang="python" data-source="print(1)"><code class="hljs">print(<span>1</span>)</code></pre>`
-	blocks, err := ExtractArticleBlocks(html)
+	anchor, err := BuildFullBlockAnchor("print(1)")
 	require.NoError(t, err)
-	require.Len(t, blocks, 1)
-	assert.Equal(t, "print(1)", blocks[0].Text)
+	require.Error(t, EnsureAnchorMatchesArticle(html, anchor))
 }
 
 func TestEnsureAnchorMatchesArticle_AcceptsMathNormalizedBlock(t *testing.T) {
@@ -89,6 +97,37 @@ func TestEnsureAnchorMatchesArticle_AcceptsMathNormalizedBlock(t *testing.T) {
 	a, err := ResolveAnnotationAnchor("", 0, 1, "见", "", blockText)
 	require.NoError(t, err)
 	require.NoError(t, EnsureAnchorMatchesArticle(html, a))
+}
+
+func TestEnsureAnchorMatchesArticle_RejectsUnsupportedBlocks(t *testing.T) {
+	for _, tc := range []struct{ name, html, text string }{
+		{"table", "<table><tr><th>标题</th><td>单元格</td></tr></table>", "单元格"},
+		{"imageOnly", `<p><img alt="图片"></p>`, "图片"},
+		{"figure", "<figure><figcaption><p>图注</p></figcaption></figure>", "图注"},
+		{"blockMath", `<div data-type="block-math" data-latex="x^2"></div>`, "x^2"},
+		{"diagram", `<div data-type="diagram-block" data-source="flow"></div>`, "flow"},
+		{"code", "<pre><code>hello</code></pre>", "hello"},
+		{"embed", `<pre><code class="language-dialogue">{"text":"hi"}</code></pre>`, `{"text":"hi"}`},
+		{"summary", "<details><summary><p>摘要</p></summary></details>", "摘要"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			anchor, err := BuildFullBlockAnchor(tc.text)
+			require.NoError(t, err)
+			require.Error(t, EnsureAnchorMatchesArticle(tc.html, anchor))
+		})
+	}
+}
+
+func TestEnsureAnchorMatchesArticle_DoesNotConfuseUnsupportedBlockWithMatchingText(t *testing.T) {
+	anchor, err := BuildFullBlockAnchor("same")
+	require.NoError(t, err)
+	require.NoError(t, EnsureAnchorMatchesArticle("<p>same</p><pre>same</pre>", anchor))
+}
+
+func TestEnsureAnchorMatchesArticle_AcceptsRepeatedBlockText(t *testing.T) {
+	anchor, err := BuildFullBlockAnchor("same")
+	require.NoError(t, err)
+	require.NoError(t, EnsureAnchorMatchesArticle("<p>same</p><h2>same</h2>", anchor))
 }
 
 func TestResolveArticleHTML_PrefersHTML(t *testing.T) {

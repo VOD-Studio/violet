@@ -1,5 +1,5 @@
 import { formatDate, formatRelativeTime } from "@shared/lib/date";
-import { Badge, Button, Card, ConfirmDialog } from "@violet/ui";
+import { Badge, Button, Card, ConfirmDialog, iconProps } from "@violet/ui";
 import { Laptop, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -33,8 +33,8 @@ export function PresenceDevicesCard({ onIssue }: { onIssue: () => void }) {
 			<div className="flex items-center justify-between gap-4 border-b border-border/60 pb-3">
 				<h3 className="text-base font-medium">设备</h3>
 				{canManage ? (
-					<Button size="sm" onClick={onIssue} className="gap-1.5">
-						<Plus className="size-3.5" />
+					<Button size="sm" onClick={onIssue}>
+						<Plus {...iconProps(14)} />
 						签发凭证
 					</Button>
 				) : null}
@@ -65,21 +65,9 @@ export function PresenceDevicesCard({ onIssue }: { onIssue: () => void }) {
 										<span className="truncate font-medium">
 											{device.display_name}
 										</span>
-										{device.online ? (
-											<Badge
-												variant="outline"
-												className="border-success/30 text-success"
-											>
-												在线
-											</Badge>
-										) : (
-											<Badge
-												variant="outline"
-												className="text-muted-foreground"
-											>
-												离线
-											</Badge>
-										)}
+										<Badge tone={device.online ? "ok" : "off"}>
+											{device.online ? "在线" : "离线"}
+										</Badge>
 									</div>
 									<div className="mt-1 space-y-0.5 text-sm text-muted-foreground">
 										{device.online ? (

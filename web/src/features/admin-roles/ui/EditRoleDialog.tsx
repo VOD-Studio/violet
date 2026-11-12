@@ -1,7 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button, Input, Label, Modal, Textarea } from "@violet/ui";
 
-import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useUpdateRole } from "../api/queries";
@@ -82,8 +81,7 @@ export function EditRoleDialog({ open, onOpenChange, role }: EditRoleDialogProps
 					>
 						取消
 					</Button>
-					<Button type="submit" form="edit-role-form" disabled={updateRole.isPending}>
-						{updateRole.isPending && <Loader2 className="mr-1 size-4 animate-spin" />}
+					<Button type="submit" form="edit-role-form" loading={updateRole.isPending}>
 						保存
 					</Button>
 				</>

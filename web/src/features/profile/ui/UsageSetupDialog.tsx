@@ -3,6 +3,7 @@ import { copyText } from "@shared/lib/clipboard";
 import {
 	Button,
 	Dialog,
+	DialogBody,
 	DialogContent,
 	DialogDescription,
 	DialogHeader,
@@ -25,7 +26,7 @@ export function UsageSetupDialog() {
 					接入 OMP
 				</Button>
 			</DialogTrigger>
-			<DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-xl">
+			<DialogContent size="lg">
 				<UsageSetupContent />
 			</DialogContent>
 		</Dialog>
@@ -43,29 +44,32 @@ function UsageSetupContent() {
 
 	return (
 		<>
-			<DialogHeader className="text-left">
+			<DialogHeader>
 				<DialogTitle>接入 OMP</DialogTitle>
 				<DialogDescription>仅上传用量，不包含对话正文。</DialogDescription>
 			</DialogHeader>
-			<SetupCode label="安装命令" code={installCommand} />
-			<div className="min-w-0 space-y-3">
-				<SetupCode label="连接配置" code={configuration} />
-				<p className="text-sm leading-relaxed text-muted-foreground">
-					保存到 <code className="font-mono text-xs">~/.omp/omp-usage.json</code>
-					，文件权限设为 600。将 <code className="font-mono text-xs">&lt;TOKEN&gt;</code>
-					替换为仅含 <code className="font-mono text-xs">usage:write</code> 权限的
-					<a
-						href="/admin/mcp"
-						target="_blank"
-						rel="noreferrer"
-						className="rounded-sm text-primary underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-					>
-						访问令牌
-					</a>
-					。
-				</p>
-			</div>
-			<p className="text-xs text-muted-foreground">配置后重启 OMP，用量每分钟同步。</p>
+			<DialogBody className="flex flex-col gap-4">
+				<SetupCode label="安装命令" code={installCommand} />
+				<div className="min-w-0 space-y-3">
+					<SetupCode label="连接配置" code={configuration} />
+					<p className="text-sm leading-relaxed text-muted-foreground">
+						保存到 <code className="font-mono text-xs">~/.omp/omp-usage.json</code>
+						，文件权限设为 600。将{" "}
+						<code className="font-mono text-xs">&lt;TOKEN&gt;</code>
+						替换为仅含 <code className="font-mono text-xs">usage:write</code> 权限的
+						<a
+							href="/admin/mcp"
+							target="_blank"
+							rel="noreferrer"
+							className="rounded-sm text-primary underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+						>
+							访问令牌
+						</a>
+						。
+					</p>
+				</div>
+				<p className="text-xs text-muted-foreground">配置后重启 OMP，用量每分钟同步。</p>
+			</DialogBody>
 		</>
 	);
 }
@@ -81,8 +85,9 @@ function SetupCode({ label, code }: { label: string; code: string }) {
 			<div className="flex items-center justify-between gap-3">
 				<h3 className="text-sm font-medium">{label}</h3>
 				<Button
+					iconOnly
 					variant="ghost"
-					size="icon-sm"
+					size="sm"
 					onClick={() => void copy()}
 					aria-label={copied ? `已复制${label}` : `复制${label}`}
 					title={copied ? `已复制${label}` : `复制${label}`}

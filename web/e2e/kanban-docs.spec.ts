@@ -46,7 +46,8 @@ test.describe("/kanban 看板文档与演示", () => {
 	});
 
 	test("导航「更多」里有「看板」入口，进入文档页", async ({ page }) => {
-		await openClientPage(page, "/projects");
+		// 在「更多」的子页上，该按钮换成子页名，所以从首页进入
+		await openClientPage(page, "/");
 		await page.getByRole("button", { name: "更多" }).click();
 		await page.getByRole("link", { name: /看板/ }).click();
 

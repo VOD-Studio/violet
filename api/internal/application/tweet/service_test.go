@@ -545,6 +545,36 @@ func TestService_Create_WithQuote(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestService_QuotedTweetKeepsNestedReferenceWithoutExpandingBody(t *testing.T) {
+	author := newTestUser(t, "alice")
+	now := time.Now()
+	for _, nestedExists := range []bool{true, false} {
+		name := "deleted"
+		if nestedExists {
+			name = "available"
+		}
+		t.Run(name, func(t *testing.T) {
+			nestedID, quotedID, outerID := shared.NewID(), shared.NewID(), shared.NewID()
+			nested := domaintweet.ReconstructTweet(nestedID, author.GetID(), "不应展开的更深正文", nil, nil, 0, now, now)
+			quoted := domaintweet.ReconstructTweet(quotedID, author.GetID(), "被引用的正文", nil, &nestedID, 0, now, now)
+			outer := domaintweet.ReconstructTweet(outerID, author.GetID(), "外层正文", nil, &quotedID, 0, now, now)
+			repo := &fakeTweetRepo{findByIDData: map[string]*domaintweet.Tweet{
+				outerID.String(): outer, quotedID.String(): quoted,
+			}}
+			if nestedExists {
+				repo.findByIDData[nestedID.String()] = nested
+			}
+			svc := newService(repo, &fakeUserRepo{byIDs: map[string]*domainuser.User{author.GetID().String(): author}}, nil, nil, appshared.NoopEventBus{})
+			dto, err := svc.GetByID(context.Background(), outerID.String())
+			require.NoError(t, err)
+			require.NotNil(t, dto.QuotedTweet)
+			require.NotNil(t, dto.QuotedTweet.QuoteOf)
+			assert.Equal(t, nestedID.String(), *dto.QuotedTweet.QuoteOf)
+			assert.Equal(t, "被引用的正文", dto.QuotedTweet.Content)
+		})
+	}
+}
+
 // --- Delete 三分支 ---
 
 // seedTweet 构造待删除推文并放入 repo。
@@ -1059,7 +1089,7 @@ func TestListComments(t *testing.T) {
 		comments.byID[r.ID().String()] = r
 	}
 
-	dtos, total, err := svc.ListComments(context.Background(), tweetID.String(), 1, 20)
+	dtos, total, err := svc.ListComments(context.Background(), tweetID.String(), "", 1, 20)
 	require.NoError(t, err)
 	assert.Equal(t, int64(3), total)
 	assert.Len(t, dtos, 3)
@@ -1246,7 +1276,7 @@ func TestListComments_EmoteEnriched(t *testing.T) {
 	comments.byID[c.ID().String()] = c
 
 	svc := newCommentCapabilityService(t, &fakeTweetRepo{}, comments, authorID, nil, lookup)
-	dtos, total, err := svc.ListComments(context.Background(), tweetID.String(), 1, 20)
+	dtos, total, err := svc.ListComments(context.Background(), tweetID.String(), "", 1, 20)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), total)
 	require.Len(t, dtos, 1)

@@ -1,5 +1,6 @@
 import {
 	Button,
+	iconProps,
 	Segmented,
 	type SegmentedItem,
 	Select,
@@ -10,7 +11,7 @@ import {
 	Switch,
 } from "@violet/ui";
 
-import { Download, FileDown, Loader2, SquareTerminal, Table2 } from "lucide-react";
+import { Download, FileDown, SquareTerminal, Table2 } from "lucide-react";
 import { useState } from "react";
 import { useExportData } from "../api/mutations";
 import { useDatabaseSchema } from "../api/queries";
@@ -151,12 +152,13 @@ export function DataExportTab() {
 								size="sm"
 							/>
 						</div>
-						<Button className="w-full" disabled={disabled} onClick={handleExport}>
-							{exportMutation.isPending ? (
-								<Loader2 className="size-4 animate-spin" />
-							) : (
-								<Download className="size-4" />
-							)}
+						<Button
+							className="w-full"
+							disabled={disabled}
+							loading={exportMutation.isPending}
+							leftIcon={<Download className="size-4" />}
+							onClick={handleExport}
+						>
 							下载 {format === "csv" ? "CSV" : "SQL"}
 						</Button>
 						{exportMutation.error && (
@@ -168,7 +170,7 @@ export function DataExportTab() {
 				</aside>
 			</div>
 			<div className="text-muted-foreground mt-6 flex items-start gap-2 rounded-lg border px-4 py-3 text-xs leading-5">
-				<Table2 className="mt-0.5 size-3.5 shrink-0" />
+				<Table2 {...iconProps(14, "mt-0.5 shrink-0")} />
 				SQL 格式只包含 INSERT 数据，不包含建表语句。查询模式会写入逻辑表名
 				export_result，适合审阅或二次处理。
 			</div>

@@ -1,8 +1,8 @@
 import { CHAT_BADGES, useGrantBadges, useRevokeBadge, useUserBadges } from "@entities/chat-badge";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button, Modal } from "@violet/ui";
+import { Button, iconProps, Modal, Spinner } from "@violet/ui";
 import { cn } from "cn";
-import { BadgeCheck, Loader2 } from "lucide-react";
+import { BadgeCheck } from "lucide-react";
 import { toast } from "sonner";
 
 import type { AdminUserDTO } from "../model/types";
@@ -58,7 +58,7 @@ export function UserBadgesDialog({ open, onOpenChange, user }: UserBadgesDialogP
 			<div className="max-h-[60vh] overflow-y-auto pr-1">
 				{isLoading ? (
 					<div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
-						<Loader2 className="size-4 animate-spin" aria-hidden="true" />
+						<Spinner size={16} aria-hidden="true" />
 						加载持有记录…
 					</div>
 				) : (
@@ -90,8 +90,8 @@ export function UserBadgesDialog({ open, onOpenChange, user }: UserBadgesDialogP
 										/>
 										<span className="inline-flex items-center gap-1">
 											<BadgeCheck
-												className={cn(
-													"size-3.5",
+												{...iconProps(
+													14,
 													owned
 														? "text-primary"
 														: "text-muted-foreground/50",

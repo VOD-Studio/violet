@@ -1,10 +1,4 @@
-/**
- * CodeBlockView - 编辑器代码块自定义 NodeView
- *
- * 用 ReactNodeViewRenderer 扩展 CodeBlockLowlight，在代码块顶部加语言下拉选择。
- * - 下拉改 node.attrs.language → lowlight 自动重新高亮
- * - NodeViewContent 渲染可编辑代码区（contentEditable），保留 lowlight 实时高亮
- */
+/** Tiptap 代码块保留源码编辑、高亮、显示元数据与执行结果。 */
 
 import { getExecResult, submitExec } from "@entities/code-runner/api/exec";
 import {
@@ -12,6 +6,7 @@ import {
 	useCodeRunnerAvailability,
 } from "@entities/code-runner/hooks/useCodeRunnerAvailability";
 import { isTerminalStatus } from "@entities/code-runner/model/types";
+import { toCodeBlockRunResult } from "@entities/code-runner/ui/code-run-result";
 import { useDebouncedValue } from "@shared/hooks/use-debounced-value";
 import { findArticleEmbed, LazyArticleEmbed } from "@shared/ui/article-embeds";
 import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
@@ -20,6 +15,14 @@ import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewContent, NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
 import {
 	Button,
+	CodeBlockOutput,
+	type CodeBlockOutputChunk,
+	type CodeBlockRunResult,
+	Input,
+	iconProps,
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
 	Select,
 	SelectContent,
 	SelectGroup,
@@ -29,10 +32,13 @@ import {
 } from "@violet/ui";
 import type { createLowlight } from "lowlight";
 import { Pencil, Play } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 
-import { parseFenceInfo } from "@/shared/lib/markdown/fence-info";
-import codeScrollbar from "@/shared/ui/code-scrollbar.module.css";
+import {
+	parseFenceInfo,
+	readRawFenceInfo,
+	serializeFenceInfo,
+} from "@/shared/lib/markdown/fence-info";
 import { ensureLanguageRegistered } from "../extensions";
 import { renderCodeFence } from "../extensions/code-fence";
 import { EmbedInsertDialog } from "./EmbedInsertDialog";
@@ -42,7 +48,7 @@ import { EmbedInsertDialog } from "./EmbedInsertDialog";
  *
  * 覆盖 lowlight common 预设的全部语言 + 常用扩展项（dockerfile/nginx/vue/powershell 等）。
  * common 预设外的语言编辑时不实时高亮，由 extensions 的 ensureLanguageRegistered 按需注册；
- * 保存后前台展示统一走 shiki bundle/full 兜底。
+ * 保存后前台由 CodeBlock 的 Shiki Worker 按需高亮，未知语言保留纯文本。
  */
 const LANGUAGES = [
 	{ value: "text", label: "自动/纯文本" },
@@ -139,6 +145,8 @@ function normalizeLang(id: string | null): string | null {
  * 故 lang 属性需显式检查，否则会被识别为纯文本。
  */
 export function resolveLanguageFromElement(element: Element): string | null {
+	const storedLanguage = element.getAttribute("data-lang");
+	if (storedLanguage !== null) return storedLanguage || null;
 	// 候选元素：<pre> 本身 + 第一个子元素（通常是 <code>）
 	const candidates: Element[] = [element];
 	if (element.firstElementChild) candidates.push(element.firstElementChild);
@@ -156,16 +164,9 @@ export function resolveLanguageFromElement(element: Element): string | null {
 }
 
 /**
- * CodeBlockView 扩展：继承 CodeBlockLowlight，加自定义 React nodeView（语言下拉）
+ * 为代码块装配作者控件与无损 HTML / Markdown 载体。
  *
- * 同时覆盖 language 属性的 parseHTML，兼容远程导入/HTML 粘贴时多种代码块结构
- * （class 在 <pre> 或 <code>、language-/lang-/hljs-/brush: 前缀、lang / data-language 属性），
- * 避免 readability 抓取的代码块因结构差异被解析为纯文本。
- *
- * 可运行代码块：node.attrs.runnable=true 时，renderHTML 输出 data-runnable/data-lang/
- * data-overrides/data-source 属性，供阅读页注入的 CodeRunner 识别挂载。
- *
- * @param lowlight 共享的 lowlight 实例
+ * @param lowlight - 编辑器共享的语法高亮实例。
  */
 export function createCodeBlockExtension(lowlight: ReturnType<typeof createLowlight>) {
 	return CodeBlockLowlight.extend({
@@ -187,8 +188,8 @@ export function createCodeBlockExtension(lowlight: ReturnType<typeof createLowli
 			];
 		},
 		parseMarkdown(token, helpers) {
-			const info = parseFenceInfo(token.lang ?? "");
-			if (info.language === "mermaid") {
+			const info = parseFenceInfo(readRawFenceInfo(token.raw ?? "") ?? token.lang ?? "");
+			if (info.language === "mermaid" && !info.runnable) {
 				return helpers.createNode("diagramBlock", {
 					format: "mermaid",
 					source: token.text ?? "",
@@ -196,16 +197,19 @@ export function createCodeBlockExtension(lowlight: ReturnType<typeof createLowli
 			}
 			return helpers.createNode(
 				"codeBlock",
-				{ ...info, language: normalizeLang(info.language) },
+				{ ...info, language: info.language || null },
 				token.text ? [helpers.createTextNode(token.text)] : [],
 			);
 		},
 		renderMarkdown(node) {
 			const source = node.content?.map((child) => child.text ?? "").join("") ?? "";
-			const language = node.attrs?.language ?? "";
-			const info = node.attrs?.runnable
-				? `${language} runnable${node.attrs.overrides ? ` ${node.attrs.overrides}` : ""}`
-				: language;
+			const info = serializeFenceInfo({
+				language: node.attrs?.language ?? "",
+				runnable: node.attrs?.runnable === true,
+				filename: node.attrs?.filename ?? null,
+				highlightLines: node.attrs?.highlightLines ?? null,
+				overrides: node.attrs?.overrides ?? null,
+			});
 			return renderCodeFence(source, info);
 		},
 		addNodeView() {
@@ -218,6 +222,20 @@ export function createCodeBlockExtension(lowlight: ReturnType<typeof createLowli
 					default: null,
 					rendered: false,
 					parseHTML: (element: HTMLElement) => resolveLanguageFromElement(element),
+				},
+				filename: {
+					default: null,
+					parseHTML: (element: HTMLElement) => element.getAttribute("data-filename"),
+					renderHTML: (attributes: { filename?: string | null }) =>
+						attributes.filename != null ? { "data-filename": attributes.filename } : {},
+				},
+				highlightLines: {
+					default: null,
+					parseHTML: (element: HTMLElement) => element.getAttribute("data-lines"),
+					renderHTML: (attributes: { highlightLines?: string | null }) =>
+						attributes.highlightLines
+							? { "data-lines": attributes.highlightLines }
+							: {},
 				},
 				// 可运行标记：true 时该代码块在阅读页渲染为 CodeRunner
 				runnable: {
@@ -237,7 +255,7 @@ export function createCodeBlockExtension(lowlight: ReturnType<typeof createLowli
 				},
 			};
 		},
-		// renderHTML：runnable 块输出 data-* 属性 + data-source（HTML 转义源码）供阅读页无损提取
+		// 所有代码块都保存原始源码，避免往返时反解高亮 HTML 或丢失尾换行。
 		renderHTML({
 			node,
 			HTMLAttributes,
@@ -248,25 +266,12 @@ export function createCodeBlockExtension(lowlight: ReturnType<typeof createLowli
 			};
 			HTMLAttributes: Record<string, unknown>;
 		}) {
-			const isRunnable = node.attrs.runnable === true;
-			if (!isRunnable) {
-				// 普通代码块走父类默认渲染（<pre><code class="language-xxx">）
-				return [
-					"pre",
-					HTMLAttributes,
-					[
-						"code",
-						{ class: node.attrs.language ? `language-${node.attrs.language}` : null },
-						0,
-					],
-				] as const;
-			}
-			const lang = node.attrs.language || "";
+			const lang = node.attrs.language ?? "";
 			const extraAttrs: Record<string, string> = {
-				"data-runnable": "true",
 				"data-lang": lang,
 				"data-source": node.textContent,
 			};
+			if (node.attrs.runnable) extraAttrs["data-runnable"] = "true";
 			if (node.attrs.overrides) extraAttrs["data-overrides"] = node.attrs.overrides;
 			return [
 				"pre",
@@ -304,6 +309,7 @@ function CodeBlockViewComponent({
 	getPos,
 	availability,
 }: CodeBlockViewComponentProps) {
+	const metadataId = useId();
 	const language = (node.attrs.language as string) || "text";
 	const isRunnable = node.attrs.runnable === true;
 	const overridesJson = (node.attrs.overrides as string | null) || undefined;
@@ -311,7 +317,8 @@ function CodeBlockViewComponent({
 	const [registering, setRegistering] = useState(false);
 	// 运行状态：idle / running / 结果文本
 	const [runState, setRunState] = useState<"idle" | "running">("idle");
-	const [resultText, setResultText] = useState<string | null>(null);
+	const [output, setOutput] = useState<CodeBlockOutputChunk[]>([]);
+	const [result, setResult] = useState<CodeBlockRunResult>();
 	void extension;
 	const embed = findArticleEmbed(language);
 	const previewSource = useDebouncedValue(node.textContent, PREVIEW_DELAY);
@@ -345,7 +352,8 @@ function CodeBlockViewComponent({
 		// 从 node 取纯文本源码（contentEditable 内容）
 		const source = node.textContent || "";
 		setRunState("running");
-		setResultText(null);
+		setOutput([]);
+		setResult(undefined);
 		try {
 			const overrides = overridesJson ? JSON.parse(overridesJson) : undefined;
 			const taskId = await submitExec({
@@ -359,78 +367,109 @@ function CodeBlockViewComponent({
 				await new Promise((r) => setTimeout(r, 500));
 				const task = await getExecResult(taskId);
 				if (isTerminalStatus(task.status)) {
-					const parts = [
-						task.exit_code != null ? `退出码 ${task.exit_code}` : "",
-						task.duration_ms > 0 ? `${task.duration_ms}ms` : "",
-					]
-						.filter(Boolean)
-						.join(" · ");
-					const out = [
-						task.stdout ? `stdout:\n${task.stdout}` : "",
-						task.stderr ? `stderr:\n${task.stderr}` : "",
-						parts ? `[${task.status} · ${parts}]` : `[${task.status}]`,
-					]
-						.filter(Boolean)
-						.join("\n\n");
-					setResultText(out || `[${task.status}]`);
+					setOutput([
+						{ kind: "stdout", text: task.stdout },
+						{ kind: "stderr", text: task.stderr },
+					]);
+					setResult(toCodeBlockRunResult(task));
 					setRunState("idle");
 					return;
 				}
 			}
-			setResultText("[轮询超时]");
+			setResult(toCodeBlockRunResult(null, "轮询超时，未能获取执行结果"));
 			setRunState("idle");
 		} catch (err) {
-			setResultText(`运行失败：${err instanceof Error ? err.message : String(err)}`);
+			setResult(toCodeBlockRunResult(null, err instanceof Error ? err.message : String(err)));
 			setRunState("idle");
 		}
 	};
 
 	return (
-		<NodeViewWrapper className="my-4 overflow-hidden rounded-lg border border-edge-hairline bg-[#24292e]">
-			{/* 顶部：语言下拉 + （runnable 时）运行按钮 */}
-			<div className="flex items-center justify-between border-b border-white/10 px-3 py-1.5">
+		<NodeViewWrapper className="v-code-block my-4" aria-busy={runState === "running"}>
+			<div className="v-code-block__header" contentEditable={false}>
 				<Select
 					value={language}
 					disabled={registering}
 					onValueChange={handleLanguageChange}
 				>
-					<SelectTrigger className="h-6 w-36 border-none bg-white/5 px-1 font-mono text-xs text-white/70 transition-colors hover:bg-white/10 hover:text-white focus:ring-0">
+					<SelectTrigger variant="plain" controlSize="sm" className="w-36 font-mono">
 						<SelectValue />
 					</SelectTrigger>
 					<SelectContent>
 						<SelectGroup>
 							{options.map((l) => (
-								<SelectItem
-									key={l.value}
-									value={l.value}
-									className="focus:bg-accent focus:text-accent-foreground"
-								>
+								<SelectItem key={l.value} value={l.value}>
 									{l.label}
 								</SelectItem>
 							))}
 						</SelectGroup>
 					</SelectContent>
 				</Select>
+				<Popover>
+					<PopoverTrigger asChild>
+						<Button type="button" size="sm" variant="ghost">
+							代码设置
+						</Button>
+					</PopoverTrigger>
+					<PopoverContent aria-label="代码设置" className="w-72">
+						<div className="grid gap-3" contentEditable={false}>
+							<label
+								htmlFor={`${metadataId}-filename`}
+								className="grid gap-1 text-sm"
+							>
+								文件名
+								<Input
+									id={`${metadataId}-filename`}
+									value={node.attrs.filename ?? ""}
+									placeholder="main.py"
+									onChange={(event) =>
+										updateAttributes({ filename: event.target.value || null })
+									}
+								/>
+							</label>
+							<label htmlFor={`${metadataId}-lines`} className="grid gap-1 text-sm">
+								高亮行
+								<Input
+									id={`${metadataId}-lines`}
+									value={node.attrs.highlightLines ?? ""}
+									placeholder="1,3-5"
+									pattern="[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*"
+									onChange={(event) =>
+										updateAttributes({
+											highlightLines:
+												event.target.value.replace(/\s+/gu, "") || null,
+										})
+									}
+								/>
+							</label>
+							<p className="text-xs text-muted-foreground">
+								行号从 1 开始，用逗号分隔，范围写作 3-5；超出源码的行号不显示。
+							</p>
+						</div>
+					</PopoverContent>
+				</Popover>
+				{node.attrs.filename && (
+					<span className="v-code-block__filename truncate">{node.attrs.filename}</span>
+				)}
 				{embed?.inserter ? (
 					<button
 						type="button"
 						onClick={() => setEditingEmbed(true)}
-						className="ml-auto inline-flex h-6 items-center gap-1 rounded-sm bg-white/5 px-2 text-xs text-white/70 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+						className="ml-auto inline-flex h-6 items-center gap-1 rounded-sm px-2 text-xs text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
 					>
-						<Pencil className="size-3" aria-hidden="true" />
+						<Pencil {...iconProps(12)} aria-hidden="true" />
 						编辑{embed.inserter.title}
 					</button>
 				) : null}
 				{isRunnable && (
 					<Button
 						type="button"
-						size="xs"
-						variant={runState === "running" ? "secondary" : "default"}
+						size="sm"
+						variant={runState === "running" ? "secondary" : "primary"}
 						onClick={handleRun}
 						disabled={runState === "running" || !availability?.allowed}
-						className="gap-1"
 					>
-						<Play className="size-3" />
+						<Play {...iconProps(12)} />
 						{runState === "running" ? "运行中…" : (availability?.reason ?? "运行")}
 					</Button>
 				)}
@@ -438,12 +477,12 @@ function CodeBlockViewComponent({
 			{isRunnable && availability?.isError && (
 				<div
 					role="alert"
-					className="flex items-center gap-2 px-3 py-2 text-xs text-white/80"
+					className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground"
 				>
 					<span>{availability.error.message}</span>
 					<Button
 						type="button"
-						size="xs"
+						size="sm"
 						variant="secondary"
 						disabled={availability.isFetching}
 						onClick={() => void availability.refetch()}
@@ -459,13 +498,13 @@ function CodeBlockViewComponent({
 			 */}
 			<NodeViewContent<"pre">
 				as="pre"
-				className={`m-0! bg-transparent! overflow-x-auto p-4 text-[0.85rem] leading-6 text-[#e6edf3] ${language ? `language-${language}` : ""}`}
+				className={`v-code-block__pre m-0! bg-transparent! ${language ? `language-${language}` : ""}`}
 			/>
 			{embed ? (
 				<section
 					aria-label="嵌入预览"
 					contentEditable={false}
-					className="flow-root border-t border-white/10 bg-background px-4"
+					className="flow-root border-t border-border bg-background px-4"
 				>
 					<LazyArticleEmbed definition={embed} source={previewSource} />
 				</section>
@@ -479,13 +518,14 @@ function CodeBlockViewComponent({
 					returnFocus={() => editor.commands.focus()}
 				/>
 			) : null}
-			{/* 运行结果区（仅 runnable 且有结果时显示） */}
-			{isRunnable && resultText && (
-				<pre
-					className={`${codeScrollbar.scrollbar} max-h-48 overflow-auto border-t border-white/10 bg-black/30 p-3 text-xs leading-relaxed text-white/90`}
-				>
-					<code>{resultText}</code>
-				</pre>
+			{isRunnable && (
+				<div contentEditable={false}>
+					<CodeBlockOutput
+						output={output}
+						running={runState === "running"}
+						result={result}
+					/>
+				</div>
 			)}
 		</NodeViewWrapper>
 	);

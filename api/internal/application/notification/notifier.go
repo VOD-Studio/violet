@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"sync"
-	"time"
 
 	"github.com/rs/zerolog"
 
@@ -21,7 +20,9 @@ type SSEEvent struct {
 	Title      string         `json:"title"`
 	Body       string         `json:"body"`
 	Payload    map[string]any `json:"payload"`
-	CreatedAt  string         `json:"created_at"`
+	// Structured 由 payload 保留键提升的结构化字段，与列表读模型同源（见 structuredFromPayload）
+	Structured
+	CreatedAt string `json:"created_at"`
 }
 
 // Notifier 通知推送端口。subscriber 写入通知后调用 Push 推给在线用户。
@@ -121,12 +122,7 @@ type PushingSubscriber struct {
 // NewPushingSubscriber 构造带推送的 subscriber。
 func NewPushingSubscriber(
 	store domainnotification.NotificationRepository,
-	subLookup SubscriptionOwnerLookup,
-	commentLookup CommentAuthorLookup,
-	adminLookup AdminUserLookup,
-	friendlinkLookup FriendLinkApplicantLookup,
-	postAuthorLookup CommentPostAuthorLookup,
-	actorLookup ActorNameLookup,
+	lookups Lookups,
 	notifier Notifier,
 	browserPush BrowserPusher,
 	log zerolog.Logger,
@@ -135,7 +131,7 @@ func NewPushingSubscriber(
 		browserPush = NoopBrowserPusher{}
 	}
 	return &PushingSubscriber{
-		Subscriber:  NewSubscriber(store, subLookup, commentLookup, adminLookup, friendlinkLookup, postAuthorLookup, actorLookup, log),
+		Subscriber:  NewSubscriber(store, lookups, log),
 		notifier:    notifier,
 		browserPush: browserPush,
 	}
@@ -148,42 +144,15 @@ func (s *PushingSubscriber) Subscribe(bus appshared.EventBus) {
 
 // Handle 处理事件 → 写通知 → 推送。
 func (s *PushingSubscriber) Handle(ctx context.Context, event domainshared.DomainEvent) error {
-	actions, ok := s.mapEvent(ctx, event)
-	if !ok || len(actions) == 0 {
-		return nil
-	}
-
-	for _, act := range actions {
-		n, err := domainnotification.NewNotification(act.userID, domainshared.IDFromUUID(event.EventID()), act.sourceType, act.sourceID, act.title, act.body, act.payload)
-		if err != nil {
-			s.log.Error().Err(err).Str("event", event.EventName()).Msg("构造通知失败")
-			continue
-		}
-		if err := s.store.Save(ctx, n); err != nil {
-			s.log.Error().
-				Err(err).
-				Str("event", event.EventName()).
-				Str("event_id", event.EventID().String()).
-				Str("user_id", act.userID.String()).
-				Msg("通知写入失败")
-			continue
-		}
+	for _, n := range s.persist(ctx, event) {
 		// 推送给在线用户
-		s.notifier.Push(act.userID, SSEEvent{
-			ID:         n.GetID().String(),
-			SourceType: string(act.sourceType),
-			SourceID:   act.sourceID.String(),
-			Title:      act.title,
-			Body:       act.body,
-			Payload:    act.payload,
-			CreatedAt:  n.CreatedAt().Format(time.RFC3339),
-		})
+		s.notifier.Push(n.UserID(), NewSSEEvent(n))
 		// 浏览器系统通知：页面在后台或已关闭时的唯一送达通道，与 SSE 并行
-		s.browserPush.PushBrowser(ctx, act.userID, BrowserNotification{
-			SourceType: act.sourceType,
-			Title:      act.title,
-			Body:       act.body,
-			URL:        notificationURL(act.sourceType, act.payload),
+		s.browserPush.PushBrowser(ctx, n.UserID(), BrowserNotification{
+			SourceType: n.SourceType(),
+			Title:      n.Title(),
+			Body:       n.Body(),
+			URL:        notificationURL(n.SourceType(), n.Payload()),
 		})
 	}
 	return nil

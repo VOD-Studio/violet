@@ -1,36 +1,15 @@
-import {
-	Button,
-	Input,
-	InputOTP,
-	InputOTPGroup,
-	InputOTPSlot,
-	Label,
-	Modal,
-	ResendButton,
-	Textarea,
-} from "@violet/ui";
+import { Button, Input, Label, Modal, Textarea } from "@violet/ui";
 
-import { ArrowLeft, ArrowRight, Mailbox, UserRoundCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { EMPTY_FORM, type FriendLinkForm } from "../model/mock";
+import { ApplyIdentityStep } from "./ApplyIdentityStep";
 import { BusinessCardFace } from "./CardWall";
 
 type Track = "anon" | "member";
 type Step = "identity" | "card" | "done";
 
-/** mock 验证码口令：任意 6 位数字均可通过（实验室不接 API） */
-const CODE_HINT = "实验室 mock：任意 6 位数字可通过";
-
-/**
- * 申请弹窗 · 「交换名片」仪式原型
- *
- * 交互叙事：申请友链 = 把站点的名片递进站长的名片夹。
- * - 左栏是「正在填写的名片」实时预览，让表单有了实体；
- * - 匿名轨道先「验明正身」（邮箱 → 验证码），登录轨道直达名片填写（双轨两步流）；
- * - 提交瞬间名片翻面、盖上「PENDING 待审核」邮戳，给出回执编号——
- *   仪式的高潮是「名片已递出」，而不是「表单提交成功」。
- */
 export function ApplyDialog({
 	open,
 	onOpenChange,
@@ -68,7 +47,7 @@ export function ApplyDialog({
 	};
 
 	const canProceedIdentity =
-		track === "member" || (form.contact_email.includes("@") && code.length === 6);
+		track === "member" || (form.contact_email.includes("@") && codeSent && code.length === 6);
 	const canSubmit = form.name.trim().length > 0 && form.url.trim().length > 0;
 
 	return (
@@ -162,115 +141,28 @@ export function ApplyDialog({
 				<div className="min-h-72">
 					<AnimatePresence mode="wait" initial={false}>
 						{step === "identity" ? (
-							<motion.div
+							<ApplyIdentityStep
 								key="identity"
-								initial={{ opacity: 0, x: 24 }}
-								animate={{ opacity: 1, x: 0 }}
-								exit={{ opacity: 0, x: -24 }}
-								transition={{ duration: 0.25 }}
-								className="flex flex-col gap-5"
-							>
-								{/* 双轨选择 */}
-								<div className="grid grid-cols-2 gap-3">
-									<button
-										type="button"
-										onClick={() => setTrack("anon")}
-										className={`flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition-colors ${
-											track === "anon"
-												? "border-foreground/40 bg-muted/40"
-												: "border-edge-hairline hover:bg-muted/30"
-										}`}
-									>
-										<Mailbox className="size-4 text-muted-foreground" />
-										<span className="text-sm font-medium">匿名申请</span>
-										<span className="text-xs text-muted-foreground">
-											邮箱验证码两步流
-										</span>
-									</button>
-									<button
-										type="button"
-										onClick={() => setTrack("member")}
-										className={`flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition-colors ${
-											track === "member"
-												? "border-foreground/40 bg-muted/40"
-												: "border-edge-hairline hover:bg-muted/30"
-										}`}
-									>
-										<UserRoundCheck className="size-4 text-muted-foreground" />
-										<span className="text-sm font-medium">登录用户</span>
-										<span className="text-xs text-muted-foreground">
-											跳过验证，直达名片
-										</span>
-									</button>
-								</div>
-
-								{track === "anon" ? (
-									<>
-										<div className="flex flex-col gap-2">
-											<Label htmlFor="fl-email">
-												联系邮箱（仅留存，不公开）
-											</Label>
-											<div className="flex gap-2">
-												<Input
-													id="fl-email"
-													type="email"
-													placeholder="you@your.blog"
-													value={form.contact_email}
-													onChange={(e) =>
-														set("contact_email")(e.target.value)
-													}
-													classNames={{ root: "min-w-0 flex-1" }}
-												/>
-												<ResendButton
-													variant="outline"
-													label={codeSent ? "重新发送" : "发送验证码"}
-													resetKey={form.contact_email}
-													onResend={() => {
-														if (!form.contact_email.includes("@"))
-															return false;
-														setCodeSent(true);
-													}}
-												/>
-											</div>
-										</div>
-										{codeSent ? (
-											<motion.div
-												initial={{ opacity: 0, y: 8 }}
-												animate={{ opacity: 1, y: 0 }}
-												className="flex flex-col gap-2"
-											>
-												<Label>验证码</Label>
-												<InputOTP
-													maxLength={6}
-													value={code}
-													onChange={setCode}
-												>
-													<InputOTPGroup>
-														{[0, 1, 2, 3, 4, 5].map((i) => (
-															<InputOTPSlot key={i} index={i} />
-														))}
-													</InputOTPGroup>
-												</InputOTP>
-												<p className="text-xs text-muted-foreground">
-													{CODE_HINT}
-												</p>
-											</motion.div>
-										) : null}
-									</>
-								) : (
-									<motion.p
-										initial={{ opacity: 0, y: 8 }}
-										animate={{ opacity: 1, y: 0 }}
-										className="rounded-xl border border-edge-hairline bg-muted/30 p-4 text-sm text-muted-foreground"
-									>
-										已登录为{" "}
-										<span className="font-mono text-foreground">
-											@demo-user
-										</span>
-										，联系邮箱取自账号资料，无需验证码。
-									</motion.p>
-								)}
-							</motion.div>
+								track={track}
+								onTrackChange={setTrack}
+								email={form.contact_email}
+								onEmailChange={(email) => {
+									set("contact_email")(email);
+									setCode("");
+									setCodeSent(false);
+								}}
+								verification={{
+									code,
+									sent: codeSent,
+									onChange: setCode,
+									onSend: () => {
+										if (!form.contact_email.includes("@")) return false;
+										setCode("");
+										setCodeSent(true);
+										return true;
+									},
+								}}
+							/>
 						) : null}
 
 						{step === "card" ? (

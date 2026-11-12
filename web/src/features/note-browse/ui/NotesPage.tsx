@@ -2,12 +2,10 @@ import { usePublishedNotesFeed } from "@entities/note/api/queries";
 import type { PublicNote } from "@entities/note/model/types";
 import { formatDate } from "@shared/lib/date";
 import { Link } from "@tanstack/react-router";
-import { Button, Empty, PageShell, ShimmerSkeleton } from "@violet/ui";
-import { ArrowRight, Calendar, Filter, Loader2 } from "lucide-react";
+import { Button, Empty, iconProps, PageShell, Skeleton } from "@violet/ui";
+import { ArrowRight, Calendar, Filter } from "lucide-react";
 import { useMemo } from "react";
-import { noteExcerpt, notePlainLength, noteTitle } from "../model/display";
-
-export const NOTES_PAGE_LIMIT = 24;
+import { NOTES_PAGE_LIMIT, noteExcerpt, notePlainLength, noteTitle } from "../model/display";
 
 interface NotesPageProps {
 	tag?: string;
@@ -39,7 +37,6 @@ export function NotesPage({ tag }: NotesPageProps) {
 						</Button>
 					}
 					className="py-24"
-					size="lg"
 				/>
 			</PageShell>
 		);
@@ -60,7 +57,6 @@ export function NotesPage({ tag }: NotesPageProps) {
 					title={tag ? `没有 ${tag} 的笔记` : "暂无笔记"}
 					description={tag ? "换个标签看看" : "踩过的坑会在这里沉淀"}
 					className="py-24"
-					size="lg"
 				/>
 			) : (
 				<>
@@ -76,12 +72,10 @@ export function NotesPage({ tag }: NotesPageProps) {
 							<Button
 								variant="outline"
 								disabled={feed.loadingMore}
+								loading={feed.loadingMore}
 								onClick={feed.loadMore}
 								className="h-9 rounded-md border-dashed px-6 font-mono text-xs tracking-wider uppercase"
 							>
-								{feed.loadingMore ? (
-									<Loader2 className="mr-2 size-3.5 animate-spin" />
-								) : null}
 								{feed.loadMoreFailed ? "重新加载下页" : "读取更多档案记录 >>"}
 							</Button>
 						</div>
@@ -147,7 +141,7 @@ function DossierFilterBar({ tags, active }: { tags: string[]; active?: string })
 	return (
 		<div className="mb-6 flex flex-wrap items-center gap-1.5 font-mono text-xs">
 			<span className="text-muted-foreground/60 mr-2 inline-flex items-center gap-1 text-[11px] uppercase tracking-wider">
-				<Filter className="size-3" />
+				<Filter {...iconProps(12)} />
 				SCOPE:
 			</span>
 			<Link
@@ -213,7 +207,7 @@ function FieldNoteTicket({ note, index }: { note: PublicNote; index: number }) {
 						</span>
 					</div>
 					<div className="flex items-center gap-1.5 tabular-nums text-muted-foreground/80">
-						<Calendar className="size-3 text-muted-foreground/60" />
+						<Calendar {...iconProps(12, "text-muted-foreground/60")} />
 						{formatDate(note.published_at)}
 					</div>
 				</div>
@@ -254,7 +248,12 @@ function FieldNoteTicket({ note, index }: { note: PublicNote; index: number }) {
 
 				<div className="flex items-center gap-2 font-mono text-[11px] text-muted-foreground/70">
 					<span>{wordCount} W</span>
-					<ArrowRight className="size-3.5 transition-transform duration-200 group-hover:translate-x-1 group-hover:text-foreground" />
+					<ArrowRight
+						{...iconProps(
+							14,
+							"transition-transform duration-200 group-hover:translate-x-1 group-hover:text-foreground",
+						)}
+					/>
 				</div>
 			</div>
 		</Link>
@@ -270,16 +269,16 @@ function DossierGridSkeleton() {
 					className="border-edge-hairline bg-card/20 flex h-40 flex-col justify-between rounded-xl border p-5"
 				>
 					<div className="flex justify-between border-b border-edge-hairline pb-3">
-						<ShimmerSkeleton className="h-3 w-16" />
-						<ShimmerSkeleton className="h-3 w-20" />
+						<Skeleton className="h-3 w-16" />
+						<Skeleton className="h-3 w-20" />
 					</div>
 					<div className="space-y-2 py-2">
-						<ShimmerSkeleton className="h-4 w-3/4" />
-						<ShimmerSkeleton className="h-3 w-full" />
+						<Skeleton className="h-4 w-3/4" />
+						<Skeleton className="h-3 w-full" />
 					</div>
 					<div className="flex justify-between border-t border-edge-hairline pt-3">
-						<ShimmerSkeleton className="h-3.5 w-24" />
-						<ShimmerSkeleton className="h-3 w-12" />
+						<Skeleton className="h-3.5 w-24" />
+						<Skeleton className="h-3 w-12" />
 					</div>
 				</div>
 			))}

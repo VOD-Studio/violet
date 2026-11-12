@@ -1,6 +1,6 @@
-/** 小屏使用底部目录面板；跳转到标题后自动关闭。 */
+/** 小屏用抽屉显示目录；跳转到标题后自动关闭。 */
 import ArticleToc, { type ArticleTocProps } from "@features/posts/ui/ArticleToc";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@violet/ui";
+import { Drawer, DrawerBody, DrawerContent, DrawerHeader, DrawerTitle } from "@violet/ui";
 
 import { ListTree } from "lucide-react";
 import { useState } from "react";
@@ -16,32 +16,30 @@ const MobileTocFab = ({ items, contentRef }: MobileTocFabProps) => {
 	if (!items.length) return null;
 
 	return (
-		<Sheet open={open} onOpenChange={setOpen}>
+		<Drawer open={open} onOpenChange={setOpen}>
 			<button
 				type="button"
 				onClick={() => setOpen(true)}
 				aria-label="打开目录"
-				className="group flex size-11 items-center justify-center rounded-full border border-edge-hairline bg-background/80 text-muted-foreground shadow-lg backdrop-blur transition-colors duration-300 hover:border-selected-foreground hover:bg-accent hover:text-foreground"
+				className="group flex size-11 items-center justify-center rounded-full border border-edge-hairline bg-background/80 text-muted-foreground shadow-soft backdrop-blur transition-colors duration-300 hover:border-selected-foreground hover:bg-accent hover:text-foreground"
 			>
 				<span className="absolute inset-0 rounded-full bg-decoration-muted opacity-0 blur-md transition-opacity duration-300 group-hover:opacity-100" />
 				<ListTree className="relative size-5" />
 			</button>
-			<SheetContent side="bottom" className="max-h-[70vh] p-0">
-				<SheetHeader className="border-b border-edge-hairline">
-					<SheetTitle className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
-						目录
-					</SheetTitle>
-				</SheetHeader>
-				<div className="scrollbar-none max-h-[60vh] overflow-y-auto overflow-x-hidden px-4 py-4">
+			<DrawerContent aria-describedby={undefined}>
+				<DrawerHeader>
+					<DrawerTitle>目录</DrawerTitle>
+				</DrawerHeader>
+				<DrawerBody className="scrollbar-none overflow-x-hidden">
 					<ArticleToc
 						items={items}
 						contentRef={contentRef}
 						hideTitle
 						onNavigate={() => setOpen(false)}
 					/>
-				</div>
-			</SheetContent>
-		</Sheet>
+				</DrawerBody>
+			</DrawerContent>
+		</Drawer>
 	);
 };
 

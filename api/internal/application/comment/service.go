@@ -12,6 +12,7 @@ import (
 
 	appshared "blog-api/internal/application/shared"
 	domain "blog-api/internal/domain/comment"
+	post "blog-api/internal/domain/post"
 	"blog-api/internal/domain/shared"
 	user "blog-api/internal/domain/user"
 )
@@ -78,6 +79,8 @@ type BlockRangeDTO struct {
 	End        int    `json:"end"`
 	IsAI       bool   `json:"is_ai"`
 	AuthorName string `json:"author_name"`
+	// IsAuthor 该划线是否由文章 Owner 本人发出：created_by == post.author_id；匿名恒为 false
+	IsAuthor bool `json:"is_author"`
 }
 
 // BlockAuthorDTO 批注块上的评论者
@@ -156,11 +159,17 @@ type Service struct {
 	commentRepo domain.CommentRepository
 	// userRepo 富化评论作者第三方登录角标（author_provider/author_profile_url）
 	userRepo    user.UserRepository
+	articleRepo ArticleLookup
 	codeStore   appshared.CodeStore
 	emailSender EmailSender
 	emojiLookup EmojiLookup
 	sitePolicy  SitePolicy
 	bus         appshared.EventBus
+}
+
+// ArticleLookup 仅取公开可见文章正文，避免评论用例依赖整个文章仓储。
+type ArticleLookup interface {
+	FindActiveByID(ctx context.Context, id shared.ID) (*post.Post, error)
 }
 
 // SitePolicy 站点级评论策略端口（由 wiring 适配 settings 模块）。
@@ -175,92 +184,14 @@ type SitePolicy interface {
 // codeStore 和 emailSender 用于匿名评论的邮箱验证码两步流（PRD-0001）。
 // emojiLookup 用于 toDTO 后解析 body 中的 [name] 构建 emote 映射，nil 时跳过。
 // sitePolicy 用于 Create 时的开关/审核分流，nil 时按「开评论 + 需审核」兜底。
-func NewService(repo domain.CommentRepository, userRepo user.UserRepository, codeStore appshared.CodeStore, emailSender EmailSender, emojiLookup EmojiLookup, sitePolicy SitePolicy, bus appshared.EventBus) *Service {
-	return &Service{commentRepo: repo, userRepo: userRepo, codeStore: codeStore, emailSender: emailSender, emojiLookup: emojiLookup, sitePolicy: sitePolicy, bus: bus}
-}
-
-// 黑洞模式（PRD-0001）：匿名 viewer（viewerUserID 为空字符串）直接返回空数组，
-// 看不到任何评论（含自己刚提交的）；登录 viewer 返回 approved ∪ 自己的 pending。
-//
-// postAuthorID 用于运行时计算 CommentDTO.is_author（comment.created_by == post.author_id），
-// 由 handler 查 post 后传入。
-//
-// anchorFilter 控制按 anchor 列过滤（自由评论 / 批注 / 全部），见 domain.AnchorFilter；
-// 空串视为 AnchorFilterAll。前端底部评论区传 AnchorFilterFree，批注角标层传
-// AnchorFilterAnnotation，把两条数据流在接口层彻底分开。
-//
-// depthFilter 控制按 depth 列过滤（顶层 / 回复 / 全部），见 domain.DepthFilter；
-// 前台顶层评论列表传 DepthFilterTopLevel，配合 FindReplies 按需拉回复。
-func (s *Service) ListByPost(ctx context.Context, postID, viewerUserID, postAuthorID string, anchorFilter domain.AnchorFilter, depthFilter domain.DepthFilter, blockID string, page, limit int) ([]CommentDTO, int64, error) {
-	// 黑洞模式：匿名 viewer 不查 DB。
-	if viewerUserID == "" {
-		return []CommentDTO{}, 0, nil
-	}
-	pid, err := shared.ParseID(postID)
-	if err != nil {
-		return nil, 0, err
-	}
-	viewerID, err := shared.ParseID(viewerUserID)
-	if err != nil {
-		return nil, 0, err
-	}
-	result, err := s.commentRepo.FindPage(ctx, domain.ListFilter{
-		PostID: &pid, Status: domain.StatusApproved, ViewerUserID: &viewerID,
-		AnchorFilter: anchorFilter, DepthFilter: &depthFilter, BlockID: blockID,
-	}, shared.PageQuery{Page: page, Limit: limit}.Normalize())
-	if err != nil {
-		return nil, 0, err
-	}
-	items := result.Items
-	// is_author 计算需要 post.author_id；解析失败时留空（所有评论都不算作者）。
-	var authorID *shared.ID
-	if postAuthorID != "" {
-		if aid, err := shared.ParseID(postAuthorID); err == nil {
-			authorID = &aid
-		}
-	}
-	dtos := make([]CommentDTO, 0, len(items))
-	// 顶层 + 回复预览实体平铺，供 enrichOAuthIdentities 一次批量富化角标
-	flat := make([]*domain.Comment, 0, len(items)+replyPreviewLimit*len(items))
-	for _, c := range items {
-		dto := toDTO(c, authorID, "")
-		// 顶层评论列表：补回复预览（前 3 条）+ 回复总数。
-		// 「查看全部」走独立接口 GET /comments/{id}/replies 分页。
-		// 仅 depthFilter=TopLevel 时补（避免 depthFilter=All 重复填充）。
-		if depthFilter == domain.DepthFilterTopLevel {
-			parentID := c.ID()
-			replies, err := s.commentRepo.FindPage(ctx, domain.ListFilter{
-				ParentID: &parentID, Status: domain.StatusApproved, ViewerUserID: &viewerID, Sort: "asc",
-			}, shared.PageQuery{Page: 1, Limit: replyPreviewLimit})
-			if err != nil {
-				return nil, 0, err
-			}
-			dto.RepliesTotal = replies.Total
-			dto.Replies = make([]CommentDTO, 0, len(replies.Items))
-			for _, r := range replies.Items {
-				dto.Replies = append(dto.Replies, toDTO(r, authorID, ""))
-			}
-			flat = append(flat, replies.Items...)
-		}
-		dtos = append(dtos, dto)
-		flat = append(flat, c)
-	}
-	flat, err = s.resolveReplyTargets(ctx, dtos, flat, viewerUserID)
-	if err != nil {
-		return nil, 0, err
-	}
-	if err := s.enrichOAuthIdentities(ctx, dtos, flat); err != nil {
-		return nil, 0, err
-	}
-	if err := s.enrichEmotes(ctx, dtos); err != nil {
-		return nil, 0, err
-	}
-	return dtos, result.Total, nil
+// articles 供 Create 校验新批注锚点（读当前已发布正文）；nil 时带锚点的创建报内部错误。
+func NewService(repo domain.CommentRepository, userRepo user.UserRepository, codeStore appshared.CodeStore, emailSender EmailSender, emojiLookup EmojiLookup, sitePolicy SitePolicy, bus appshared.EventBus, articles ArticleLookup) *Service {
+	return &Service{commentRepo: repo, userRepo: userRepo, articleRepo: articles, codeStore: codeStore, emailSender: emailSender, emojiLookup: emojiLookup, sitePolicy: sitePolicy, bus: bus}
 }
 
 // AnnotationSummary 按块聚合统计批注数量（轻量，不含正文/回复）。
 // 黑洞模式同 ListByPost：匿名 viewer 返回空数组。
-func (s *Service) AnnotationSummary(ctx context.Context, postID, viewerUserID string) ([]BlockCountDTO, error) {
+func (s *Service) AnnotationSummary(ctx context.Context, postID, viewerUserID, postAuthorID string) ([]BlockCountDTO, error) {
 	if viewerUserID == "" {
 		return []BlockCountDTO{}, nil
 	}
@@ -271,6 +202,12 @@ func (s *Service) AnnotationSummary(ctx context.Context, postID, viewerUserID st
 	viewerID, err := shared.ParseID(viewerUserID)
 	if err != nil {
 		return nil, err
+	}
+	var authorID *shared.ID
+	if postAuthorID != "" {
+		if aid, err := shared.ParseID(postAuthorID); err == nil {
+			authorID = &aid
+		}
 	}
 	blocks, err := s.commentRepo.CountAnnotationsByBlock(ctx, pid, domain.StatusApproved, &viewerID)
 	if err != nil {
@@ -284,7 +221,8 @@ func (s *Service) AnnotationSummary(ctx context.Context, postID, viewerUserID st
 		}
 		ranges := make([]BlockRangeDTO, 0, len(b.Ranges))
 		for _, r := range b.Ranges {
-			ranges = append(ranges, BlockRangeDTO{Start: r.Start, End: r.End, IsAI: r.IsAI, AuthorName: r.AuthorName})
+			isAuthor := r.CreatedBy != nil && authorID != nil && *r.CreatedBy == *authorID
+			ranges = append(ranges, BlockRangeDTO{Start: r.Start, End: r.End, IsAI: r.IsAI, AuthorName: r.AuthorName, IsAuthor: isAuthor})
 		}
 		dtos = append(dtos, BlockCountDTO{BlockID: b.BlockID, Count: b.Count, Authors: authors, Ranges: ranges})
 	}
@@ -619,6 +557,21 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CommentDTO, error
 			return CommentDTO{}, err
 		}
 		if err := s.checkAnonQuota(ctx, postID, in.IPHash, in.AuthorEmail); err != nil {
+			return CommentDTO{}, err
+		}
+	}
+	if in.Anchor != nil {
+		if s.articleRepo == nil {
+			return CommentDTO{}, shared.Internal("未配置文章正文查找", nil)
+		}
+		article, err := s.articleRepo.FindActiveByID(ctx, postID)
+		if err != nil {
+			return CommentDTO{}, err
+		}
+		if article == nil || !article.IsPublished() {
+			return CommentDTO{}, post.ErrNotFound
+		}
+		if err := EnsureAnchorMatchesArticle(ResolveArticleHTML(article.ContentHTML(), article.ContentMD()), in.Anchor); err != nil {
 			return CommentDTO{}, err
 		}
 	}

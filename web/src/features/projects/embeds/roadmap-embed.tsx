@@ -1,7 +1,8 @@
 import type { ArticleEmbedModule } from "@shared/ui/article-embeds";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { AlertCircle, ArrowUpRight, Lock } from "lucide-react";
+import { iconProps } from "@violet/ui";
+import { ArrowUpRight, CircleAlert, Lock } from "lucide-react";
 import { type ReactNode, Suspense, useRef, useState } from "react";
 import { roadmapEmbedQueryOptions } from "../api/queries";
 import { ROADMAP_STAGE_LABELS } from "../lib/roadmap-board";
@@ -45,7 +46,7 @@ function Notice({ children }: { children: ReactNode }) {
 	return (
 		<EmbedFrame variant="notice">
 			<p className="flex items-center gap-2 text-sm text-muted-foreground">
-				<AlertCircle className="size-4 shrink-0" aria-hidden="true" />
+				<CircleAlert className="size-4 shrink-0" aria-hidden="true" />
 				{children}
 			</p>
 		</EmbedFrame>
@@ -100,7 +101,7 @@ function ProjectLink({ detail, children }: { detail: RoadmapDetail; children: Re
 			className={`inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary ${FOCUS}`}
 		>
 			{children}
-			<ArrowUpRight className="size-3.5" aria-hidden="true" />
+			<ArrowUpRight {...iconProps(14)} aria-hidden="true" />
 		</Link>
 	);
 }
@@ -132,7 +133,7 @@ function ItemCard({ detail, item }: { detail: RoadmapDetail; item: RoadmapItem }
 					<span className="mt-2.5 flex flex-wrap gap-1">
 						{item.blocked ? (
 							<span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 text-[11px] leading-5 text-destructive">
-								<Lock className="size-3" aria-hidden="true" />
+								<Lock {...iconProps(12)} aria-hidden="true" />
 								被阻塞
 							</span>
 						) : null}

@@ -6,8 +6,6 @@ import {
 	appendUploadedFile,
 	buildSaveGalleryInput,
 	MAX_GALLERY_ITEMS,
-	moveGalleryItem,
-	moveGalleryItemById,
 } from "../draft";
 
 function galleryItem(fileId: string, position: number): GalleryItem {
@@ -81,19 +79,9 @@ describe("gallery draft document helpers", () => {
 		]);
 	});
 
-	it("排序后归一化 position，保存请求不回传 position 或媒体投影", () => {
-		const moved = moveGalleryItem(
-			[galleryItem("a", 0), galleryItem("b", 1), galleryItem("c", 2)],
-			2,
-			0,
-		);
-		const input = buildSaveGalleryInput(7, "标题", "摘要", moved);
-
-		expect(moved.map((item) => `${item.file_id}:${item.position}`)).toEqual([
-			"c:0",
-			"a:1",
-			"b:2",
-		]);
+	it("保存请求保留数组顺序但不回传 position 或媒体投影", () => {
+		const items = [galleryItem("c", 2), galleryItem("a", 0), galleryItem("b", 1)];
+		const input = buildSaveGalleryInput(7, "标题", "摘要", items);
 		expect(input).toEqual({
 			expected_version: 7,
 			title: "标题",
@@ -104,19 +92,5 @@ describe("gallery draft document helpers", () => {
 				{ file_id: "b", caption: "说明 b", alt_text_override: "替代 b" },
 			],
 		});
-	});
-
-	it("拖拽结束按 active/over ID 重排", () => {
-		const moved = moveGalleryItemById(
-			[galleryItem("a", 0), galleryItem("b", 1), galleryItem("c", 2)],
-			"a",
-			"c",
-		);
-
-		expect(moved.map((item) => `${item.file_id}:${item.position}`)).toEqual([
-			"b:0",
-			"c:1",
-			"a:2",
-		]);
 	});
 });

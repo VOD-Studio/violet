@@ -1,0 +1,73 @@
+/*
+ * 键帽单元样式：.v-kbd（尺寸 sm | md | lg；底色 默认 | light | on-button）与连接词 .v-kbd-separator。
+ * 需先导入 @violet/ui/tokens.css 或 styles.css。
+ * 一个组合键是一个键帽，单元格间距 2px；不做 3D、描边或投影。
+ */
+
+@layer components {
+	.v-kbd {
+		--v-kbd-height: 1.5rem;
+		--v-kbd-radius: var(--radius-8, 8px);
+		--v-kbd-padding-inline: 0.5rem;
+		--v-kbd-bg: var(--muted);
+
+		box-sizing: border-box;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 2px;
+		block-size: var(--v-kbd-height);
+		min-inline-size: var(--v-kbd-height);
+		padding-inline: var(--v-kbd-padding-inline);
+		border-radius: var(--v-kbd-radius);
+		background-color: var(--v-kbd-bg);
+		color: var(--muted-foreground);
+		font-family: inherit;
+		font-size: 0.875rem;
+		font-weight: 500;
+		line-height: 1;
+		white-space: nowrap;
+		vertical-align: middle;
+	}
+
+	/* 符号键与字母同基线：裁掉上下留白做光学居中；不支持 text-box 的浏览器忽略该声明 */
+	.v-kbd__key {
+		text-box: trim-both cap alphabetic;
+	}
+
+	.v-kbd--sm {
+		--v-kbd-height: 1.25rem;
+		--v-kbd-radius: 6px;
+		--v-kbd-padding-inline: 0.375rem;
+
+		font-size: 0.75rem;
+	}
+
+	.v-kbd--lg {
+		--v-kbd-height: 1.75rem;
+		--v-kbd-padding-inline: 0.625rem;
+
+		font-size: 1rem;
+	}
+
+	/* 已有底色的控件里只留字 */
+	.v-kbd--light {
+		--v-kbd-bg: transparent;
+		--v-kbd-padding-inline: 2px;
+
+		min-inline-size: 0;
+	}
+
+	/* 凹陷色按钮上换纸面底 */
+	.v-kbd--on-button {
+		--v-kbd-bg: var(--card);
+
+		margin-inline-start: 6px;
+	}
+
+	.v-kbd-separator {
+		margin-inline: 0.5rem;
+		color: var(--muted-foreground);
+		font-size: 0.8125rem;
+	}
+}

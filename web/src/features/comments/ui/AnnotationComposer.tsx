@@ -1,126 +1,82 @@
 import { InlineLogin } from "@features/auth/ui/InlineLogin";
-import { cn } from "cn";
-import { Loader2, LogIn, Send, X } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { Collapse } from "@shared/ui/disclosure";
+import { Button } from "@violet/ui";
+import { Send } from "lucide-react";
+import { useState } from "react";
 import { RichCommentInput } from "./RichCommentInput";
 
 export interface AnnotationComposerProps {
-	/** 面板标题，如「划线批注」「段评」 */
-	title: string;
-	/** 标题左侧的图标，显示在淡色圆角底上 */
-	icon?: ReactNode;
-	/** 引言：被批注的原文，最多显示两行 */
-	quote?: string;
 	body: string;
 	onBodyChange: (value: string) => void;
 	onSubmit: () => void;
-	onCancel: () => void;
 	pending: boolean;
-	placeholder?: string;
-	/** 未登录：照常写内容，点「登录并发送」在面板内展开登录区，登录成功后调用 onLoggedIn */
+	placeholder: string;
+	/** 输入区的可访问名称，如「批注内容」「段评内容」 */
+	editorLabel: string;
+	/** 发送钮的可访问名称；未登录时固定为「登录并发送」 */
+	sendLabel: string;
+	/** 未登录：照常写内容，点「登录并发送」在卡片内展开登录区，登录成功后调用 onLoggedIn */
 	loginRequired?: boolean;
-	/** 在面板内登录成功后调用，调用方此时应直接发送批注（会话已建立） */
+	/** 在卡片内登录成功后调用，调用方此时应直接发送批注（会话已建立） */
 	onLoggedIn?: () => void;
-	/** 阅读浮层底部只呈现紧凑输入区，不重复标题、原文或取消按钮。 */
-	embedded?: boolean;
+	autoFocus?: boolean;
 }
 
-/** 批注输入面板：引言 + 富文本输入 + 提交/取消，划线批注与段评共用。 */
+/** 批注卡底部的输入：可添加表情，回车或点发送提交，Shift+回车换行。 */
 export function AnnotationComposer({
-	title,
-	icon,
-	quote,
 	body,
 	onBodyChange,
 	onSubmit,
-	onCancel,
 	pending,
-	placeholder = "写下你的批注…",
+	placeholder,
+	editorLabel,
+	sendLabel,
 	loginRequired = false,
 	onLoggedIn,
-	embedded = false,
+	autoFocus = false,
 }: AnnotationComposerProps) {
 	const [showLogin, setShowLogin] = useState(false);
+	const empty = !body.trim();
 	const submit = () => {
-		// ⌘/Ctrl+Enter 直接调用，需与按钮禁用条件一致
-		if (pending || !body.trim()) return;
+		if (pending || empty) return;
 		if (loginRequired) setShowLogin(true);
 		else onSubmit();
 	};
 	return (
-		<div
-			className={cn(
-				"annotation-pop",
-				embedded
-					? "w-full p-1"
-					: "w-104 max-w-[calc(100vw-2rem)] max-h-[min(calc(100dvh-2rem),var(--radix-popover-content-available-height,100dvh))] overflow-y-auto rounded-2xl bg-(--surface-glass) p-4 shadow-[0_4px_24px_rgb(0_0_0/0.05)] backdrop-blur-md dark:ring-1 dark:ring-white/10",
-			)}
-		>
-			{!embedded && (
-				<>
-					<div className="mb-3 flex items-center gap-2">
-						{icon && (
-							<span className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
-								{icon}
-							</span>
-						)}
-						<span className="text-sm font-medium text-foreground">{title}</span>
-						<button
-							type="button"
-							onClick={onCancel}
-							className="ml-auto text-muted-foreground transition-colors hover:text-foreground"
-							aria-label="取消"
-						>
-							<X className="size-4" />
-						</button>
-					</div>
-					{quote && (
-						<p className="relative mb-3 line-clamp-3 rounded-xl bg-muted/40 py-2 pr-3 pl-8 text-xs leading-relaxed text-muted-foreground before:absolute before:top-0.5 before:left-2.5 before:font-serif before:text-2xl before:leading-none before:text-primary/40 before:content-['“']">
-							<span className="annotation-quote">{quote}</span>
-						</p>
-					)}
-				</>
-			)}
+		<div className="annotation-composer">
 			<RichCommentInput
 				value={body}
 				onChange={onBodyChange}
 				onSubmit={submit}
+				submitOnEnter
 				enableEmoji
 				enableImage={false}
+				layout="field"
+				autoFocus={autoFocus}
 				disabled={pending}
 				placeholder={placeholder}
-				editorLabel={embedded ? "段评内容" : "评论内容"}
-				compact={embedded}
+				editorLabel={editorLabel}
 				toolbarEnd={
-					<button
-						type="button"
+					<Button
+						variant={empty ? "ghost" : "primary"}
+						size="sm"
+						iconOnly
+						aria-label={loginRequired ? "登录并发送" : sendLabel}
+						loading={pending}
+						disabled={empty}
 						onClick={submit}
-						disabled={pending || !body.trim()}
-						title={loginRequired ? "登录并发送" : embedded ? "发送段评" : "提交批注"}
-						aria-label={embedded ? "发送段评" : "提交批注"}
-						className={cn(
-							"inline-flex h-7 items-center rounded-full bg-primary text-xs font-medium text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50",
-							embedded ? "w-7 justify-center" : "gap-1 px-3",
-						)}
 					>
-						{pending ? (
-							<Loader2 className="size-3.5 animate-spin" />
-						) : loginRequired ? (
-							<LogIn className="size-3.5" />
-						) : (
-							<Send className="size-3.5" />
-						)}
-						{!embedded && (loginRequired ? "登录并发送" : "发送")}
-					</button>
+						<Send />
+					</Button>
 				}
 			/>
-			{loginRequired && showLogin && (
+			<Collapse open={loginRequired && showLogin} contentClassName="pt-2">
 				<InlineLogin
-					className="annotation-pop mt-3"
-					description="登录后即可发送你的批注，内容已为你保留。"
+					className="border-t border-border pt-3"
+					description="登录后发送，已写的内容会保留。"
 					onSuccess={() => onLoggedIn?.()}
 				/>
-			)}
+			</Collapse>
 		</div>
 	);
 }

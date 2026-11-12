@@ -1,3 +1,4 @@
+import { iconProps, Kbd } from "@violet/ui";
 import { ArrowLeft, ArrowRight, BookOpen, ChevronRight, FileText, Search } from "lucide-react";
 import type { SeriesSurface } from "../model/mock";
 import { CURRENT_CHAPTER, JAVA_BOOK, SHELF_BOOKS } from "../model/mock";
@@ -21,7 +22,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 					className="flex items-center gap-2 rounded-lg border border-edge-hairline px-3 py-2 text-sm text-muted-foreground"
 				>
 					<Search className="size-4" />
-					搜索全书 <kbd className="ml-4 font-mono text-xs">⌘ K</kbd>
+					搜索全书 <Kbd variant="light" size="sm" keys={["mod", "K"]} />
 				</button>
 			</header>
 			{children}
@@ -153,7 +154,7 @@ function Reader() {
 				<main className="mx-auto w-full max-w-3xl px-8 py-14">
 					<div className="mb-8 flex items-center gap-2 font-mono text-xs text-muted-foreground">
 						<span>第二部</span>
-						<ChevronRight className="size-3" />
+						<ChevronRight {...iconProps(12)} />
 						<span>第 7 章</span>
 					</div>
 					<h1 className="text-4xl font-bold tracking-tight">{CURRENT_CHAPTER.title}</h1>

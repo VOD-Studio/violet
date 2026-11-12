@@ -1,12 +1,41 @@
-import { Button, Checkbox, DocumentScrollbar, Dropdown, DropdownContent, DropdownGroup, DropdownItem, DropdownTrigger, ImagePixelReveal, Input, Label, OverlayScroll, SearchInput, Segmented, UploadTile, type PixelRevealVariant } from "@violet/ui";
+import { CodeBlockConsumer } from "./code-block.js";
+import { IconsConsumer } from "./icons.js";
+import { CommentConsumer } from "./comment.js";
+import { ReactionConsumer } from "./reaction.js";
+import { EmojiPickerConsumer } from "./emoji-picker.js";
+import { SortableConsumer } from "./sortable.js";
+import { Button, Checkbox, DocumentScrollbar, Dropdown, DropdownContent, DropdownGroup, DropdownItem, DropdownTrigger, ImagePixelReveal, Field, Input, Label, ScrollArea, SearchInput, Segmented, UploadTile, type PixelRevealVariant } from "@violet/ui";
 import { buttonVariants } from "@violet/ui/variants";
 import checkboxCss from "@violet/ui/components/checkbox.css?raw";
-import { SearchInput as LeafSearchInput } from "@violet/ui/search-input";
-import { useEffect, useRef, useState } from "react";
+import { SearchInput as LeafSearchInput } from "@violet/ui/input";
+import { type ComponentType, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
 import { LinkCard } from "@violet/ui";
 import { LinkCard as LeafLinkCard } from "@violet/ui/link-card";
+import { Avatar, AvatarGroup, Badge, BadgeAnchor, Card, CardContent, CardFooter, CardFrame, CardFrameBody, CardFrameExcerpt, CardFrameImage, CardFrameMeta, CardFrameTitle, CardHeader, CardTitle, Count, Dot, Kbd, KbdSeparator, Radio, RadioGroup, Separator, Skeleton, Switch, Tabs, TabsContent, TabsCount, TabsList, TabsTrigger, Tag, TagToggle, ToggleGroup, ToggleGroupItem } from "@violet/ui";
+import { Avatar as LeafAvatar } from "@violet/ui/avatar";
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, HoverCard, HoverCardContent, HoverCardTrigger, Popover, PopoverContent, PopoverTrigger, Toaster, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@violet/ui";
+import { MorphingPopover, MorphingPopoverContent, MorphingPopoverTrigger } from "@violet/ui";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@violet/ui";
+import { Select as LeafSelect, SelectContent as LeafSelectContent, SelectItem as LeafSelectItem, SelectTrigger as LeafSelectTrigger, SelectValue as LeafSelectValue } from "@violet/ui/select";
+import { CommandList, ConfirmDialog, Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, Drawer, DrawerBody, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, Sheet, SheetBody, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@violet/ui";
+import { Cascader, Combobox, TagInput, TreeSelect, type CascaderOption, type ComboboxOption, type TreeSelectOption } from "@violet/ui";
+import { Cascader as LeafCascader } from "@violet/ui/cascader";
+import { Combobox as LeafCombobox } from "@violet/ui/combobox";
+import { TagInput as LeafTagInput } from "@violet/ui/tag-input";
+import { TreeSelect as LeafTreeSelect } from "@violet/ui/tree-select";
+import { DataDisplayPreview } from "./data-display.js";
+import { ValueControlsPreview } from "./value-controls.js";
+import { UploadPreview } from "./upload.js";
+import { AnnotationConsumer } from "./annotation.js";
+import { MentionConsumer } from "./mention.js";
+import { QuoteCardPreview } from "./quote-card.js";
+import { ImageGridConsumer } from "./image-grid.js";
+
+const comboOptions: ComboboxOption[] = [{ value: "hz", label: "杭州", description: "浙江" }, { value: "sh", label: "上海" }, { value: "bj", label: "北京", disabled: true }];
+const cascaderOptions: CascaderOption[] = [{ value: "zj", label: "浙江", children: [{ value: "hz", label: "杭州" }, { value: "nb", label: "宁波" }] }, { value: "js", label: "江苏", children: [{ value: "nj", label: "南京" }] }];
+const treeOptions: TreeSelectOption[] = [{ value: "a", label: "文档", children: [{ value: "a1", label: "指南" }, { value: "a2", label: "参考" }] }, { value: "b", label: "图片" }];
 
 const linkCardLogo = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><rect width="160" height="160" fill="#f0edf8"/><path d="m40 44 40 76 40-76H98l-18 36-18-36Z" fill="#684dda"/></svg>')}`;
 const linkCardCover = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="240"><rect width="400" height="240" fill="#dbe8e9"/><path d="m0 210 130-160 100 120 80-100 90 140v30H0Z" fill="#406c83"/></svg>')}`;
@@ -57,24 +86,24 @@ function LinkCardPreview() {
 	</main>;
 }
 
-function OverlayScrollPreview() {
+function ScrollAreaPreview() {
 	const [enabled, setEnabled] = useState(true);
 	return <>
 		{enabled && <DocumentScrollbar />}
 		<main>
-			<h1>OverlayScroll · 独立安装包</h1>
+			<h1>ScrollArea · 独立安装包</h1>
 			<Button id="document-scrollbar-toggle" onClick={() => setEnabled((value) => !value)}>
 				{enabled ? "恢复原生滚动条" : "启用覆盖式滚动条"}
 			</Button>
-			<p>页面继续由 window 滚动；下方视口独立支持横向和纵向拖拽。</p>
-			<a href="#overlay-scroll-end">定位页尾</a>
-			<OverlayScroll id="element-scroll" className="h-64">
+			<p>页面继续由 window 滚动；下方视口独立支持横向和纵向滚动、拖动滑块与左右翻页。</p>
+			<a href="#scroll-area-end">定位页尾</a>
+			<ScrollArea id="element-scroll" aria-label="元素内滚动" orientation="both" className="h-64">
 				<div style={{ width: "140%", height: "40rem", padding: "1rem" }}>
 					元素内的滚动内容
 				</div>
-			</OverlayScroll>
+			</ScrollArea>
 			<div style={{ height: "200vh" }} />
-			<p id="overlay-scroll-end">文档滚动终点</p>
+			<p id="scroll-area-end">文档滚动终点</p>
 		</main>
 	</>;
 }
@@ -261,35 +290,45 @@ function InputPreview() {
 			{(["sm", "md", "lg"] as const).map((size) => <Button key={size} aria-pressed={controlSize === size} onClick={() => setControlSize(size)}>{size}</Button>)}
 		</div>
 		<section className="input-grid" aria-label="四种输入外观">
-			{(["outline", "soft", "ghost", "underline"] as const).map((variant) => <Input
-				key={variant} id={`consumer-input-${variant}`} label={variant} name={variant}
-				variant={variant} controlSize={controlSize} leading={leading}
-				trailing={variant === "underline" ? ".violet.dev" : undefined}
-				defaultValue="Violet" clearable description="可输入、清除与切换焦点"
-				invalid={state === "invalid"} errorMessage="请检查输入内容"
-				readOnly={state === "readonly"} disabled={state === "disabled"}
-			/>)}
+			{(["filled", "outline", "underline", "plain"] as const).map((variant) => <div key={variant}>
+				<Label htmlFor={`consumer-input-${variant}`}>{variant}</Label>
+				<Input
+					id={`consumer-input-${variant}`} name={variant} aria-describedby={`consumer-input-${variant}-error`}
+					variant={variant} controlSize={controlSize} leading={leading}
+					trailing={variant === "underline" ? ".violet.dev" : undefined}
+					defaultValue="Violet" clearable
+					invalid={state === "invalid"}
+					readOnly={state === "readonly"} disabled={state === "disabled"}
+				/>
+				{state === "invalid" ? <p id={`consumer-input-${variant}-error`}>请检查输入内容</p> : null}
+			</div>)}
 		</section>
 		<section aria-label="输入表单">
 			<form id="input-form" onReset={(event) => { if (cancelReset) event.preventDefault(); }} onSubmit={(event) => {
 				event.preventDefault();
 				setSubmitted(JSON.stringify(Array.from(new FormData(event.currentTarget).entries())));
 			}}>
-				<Input id="consumer-input-name" name="name" label="显示名称" defaultValue="初始名称" clearable />
-				<Input id="consumer-input-password" name="password" label="密码" type="password" defaultValue="violet-password" passwordToggle clearable />
-				<Input id="consumer-input-readonly" name="readonly" label="只读字段" defaultValue="保留内容" readOnly clearable />
-				<Input id="consumer-input-disabled" name="disabled" label="禁用字段" defaultValue="不会提交" disabled clearable />
+				<Label htmlFor="consumer-input-name">显示名称</Label>
+				<Input id="consumer-input-name" name="name" defaultValue="初始名称" clearable />
+				<Label htmlFor="consumer-input-password">密码</Label>
+				<Input id="consumer-input-password" name="password" type="password" defaultValue="violet-password" passwordToggle clearable />
+				<Label htmlFor="consumer-input-readonly">只读字段</Label>
+				<Input id="consumer-input-readonly" name="readonly" defaultValue="保留内容" readOnly clearable />
+				<Label htmlFor="consumer-input-disabled">禁用字段</Label>
+				<Input id="consumer-input-disabled" name="disabled" defaultValue="不会提交" disabled clearable />
 				<div className="input-controls">
 					<Button type="submit">提交 Input 表单</Button>
 					<Button type="reset">重置 Input 表单</Button>
 					<label><input type="checkbox" checked={cancelReset} onChange={(event) => setCancelReset(event.currentTarget.checked)} />取消表单重置</label>
 				</div>
 			</form>
-			<Input id="consumer-input-external" form="input-form" name="external" label="表单外字段" defaultValue="外部初值" clearable />
+			<Label htmlFor="consumer-input-external">表单外字段</Label>
+			<Input id="consumer-input-external" form="input-form" name="external" defaultValue="外部初值" clearable />
 			<output id="input-submitted">{submitted}</output>
 		</section>
 		<section aria-label="受控拒绝更新">
-			<Input id="consumer-input-controlled" label="固定受控值" value="固定值" clearable onChange={(event) => {
+			<Label htmlFor="consumer-input-controlled">固定受控值</Label>
+			<Input id="consumer-input-controlled" value="固定值" clearable onChange={(event) => {
 				const value = event.currentTarget.value;
 				setRequests((current) => [...current, value]);
 			}} />
@@ -352,8 +391,12 @@ function App() {
 				<Button id="react-button" variant="primary" onClick={() => setCount(count + 1)}>
 					保存 {count}
 				</Button>
-				<Input id="email" label="邮箱" description="用于发送更新" type="email" />
-				<Input id="invalid-email" label="错误状态" invalid errorMessage="请输入正确邮箱" />
+				<Field label="邮箱" hint="用于发送更新">
+					<Input id="email" type="email" />
+				</Field>
+				<Field label="错误状态" error="请输入正确邮箱">
+					<Input id="invalid-email" />
+				</Field>
 			</section>
 			<section aria-label="纯 HTML 样式">
 				<h2>HTML</h2>
@@ -361,7 +404,7 @@ function App() {
 					保存
 				</button>
 				<label htmlFor="html-email" className="v-label">邮箱</label>
-				<div className="v-input-control v-input-control--outline v-input-control--md">
+				<div className="v-input-control v-input-control--filled v-input-control--md">
 					<input id="html-email" type="email" className="v-input" />
 				</div>
 			</section>
@@ -425,7 +468,7 @@ function App() {
 			</section>
 			<section aria-label="搜索交互">
 				<h2>SearchInput</h2>
-				<LeafSearchInput id="search-query" aria-label="搜索文章" variant="soft" controlSize="sm" className="search-text" classNames={{ root: "search-layout" }} defaultValue="violet" onKeyDown={(event) => setKeys((keys) => [...keys, event.key])} onSearch={(query) => setSearches((searches) => [...searches, query])} />
+				<LeafSearchInput id="search-query" aria-label="搜索文章" variant="filled" controlSize="sm" className="search-text" classNames={{ control: "search-layout" }} shortcut={["mod", "K"]} defaultValue="violet" onKeyDown={(event) => setKeys((keys) => [...keys, event.key])} onSearch={(query) => setSearches((searches) => [...searches, query])} />
 				<output id="search-keys">{JSON.stringify(keys)}</output>
 				<output id="search-queries">{JSON.stringify(searches)}</output>
 				<SearchInput id="readonly-query" aria-label="只读搜索" readOnly defaultValue="保留文本" />
@@ -435,7 +478,238 @@ function App() {
 	);
 }
 
+const portrait = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96"><rect width="96" height="96" fill="#dbe8e9"/><circle cx="48" cy="38" r="18" fill="#406c83"/><path d="M14 96c4-26 20-34 34-34s30 8 34 34Z" fill="#406c83"/></svg>')}`;
+
+function DisplayPreview() {
+	const [broken, setBroken] = useState(false);
+	const [unread, setUnread] = useState(3);
+	const [tags, setTags] = useState(["shell", "violet"]);
+	const [filter, setFilter] = useState("前端");
+	const [mac, setMac] = useState(false);
+	const [dark, setDark] = useState(document.documentElement.classList.contains("dark"));
+	return <main>
+		<h1>头像、徽章、键帽、卡片、分隔与骨架 · 独立安装包</h1>
+		<div className="image-reveal-controls">
+			<Button id="display-theme" onClick={() => { document.documentElement.classList.toggle("dark", !dark); setDark(!dark); }}>切换明暗</Button>
+			<Button id="display-broken" onClick={() => setBroken(!broken)}>图片{broken ? "恢复" : "损坏"}</Button>
+			<Button id="display-unread" onClick={() => setUnread(unread + 60)}>未读 +60</Button>
+			<Button id="display-reset-unread" onClick={() => setUnread(0)}>未读清零</Button>
+			<Button id="display-platform" onClick={() => setMac(!mac)}>平台：{mac ? "macOS" : "其他"}</Button>
+		</div>
+		<section aria-label="头像">
+			<h2>Avatar</h2>
+			<div className="display-row">
+				<LeafAvatar id="display-avatar" name="Rua" src={broken ? "data:image/png;base64,broken" : portrait} status="online" />
+				<Avatar name="林" size={48} tone="season" />
+				<Avatar name="频道" shape="square" icon={<span>#</span>} size={32} />
+				<Avatar name="站长" src={portrait} ring crown size={64} />
+				<AvatarGroup items={["Rua", "Mika", "Noa", "Ken", "Yui"].map((name) => ({ name, src: portrait }))} label="5 人点了赞" />
+			</div>
+		</section>
+		<section aria-label="徽章与标签">
+			<h2>Badge · Tag · Count</h2>
+			<div className="display-row">
+				<BadgeAnchor badge={<Count value={unread} />}><Button id="display-bell" aria-label={`消息，${unread} 条未读`}>消息</Button></BadgeAnchor>
+				<BadgeAnchor placement="edge" badge={<Dot />}><Avatar name="Rua" alt="Rua，有新动态" src={portrait} /></BadgeAnchor>
+				<span>评论 <Count variant="inline" value={unread} /></span>
+			</div>
+			<div className="display-row">
+				{(["neutral", "ok", "accent", "warning", "off", "danger"] as const).map((tone) => <Badge key={tone} tone={tone}>{tone}</Badge>)}
+			</div>
+			<div className="display-row">
+				{tags.map((tag) => <Tag key={tag} onRemove={() => setTags(tags.filter((item) => item !== tag))}>#{tag}</Tag>)}
+				<output id="display-tags">{tags.join(",")}</output>
+			</div>
+			<div className="display-row" role="group" aria-label="按栏目筛选">
+				{["全部", "前端", "后端"].map((name) => <TagToggle key={name} pressed={filter === name} onPressedChange={() => setFilter(name)}>{name}</TagToggle>)}
+			</div>
+		</section>
+		<section aria-label="键帽">
+			<h2>Kbd</h2>
+			<div className="display-row">
+				<Kbd keys={["mod", "K"]} platform={mac ? "mac" : "other"} />
+				<Kbd>Esc</Kbd><KbdSeparator>或</KbdSeparator><Kbd keys={["shift", "enter"]} platform={mac ? "mac" : "other"} />
+			</div>
+		</section>
+		<section aria-label="控件">
+			<h2>Switch · Radio · ToggleGroup · Tabs</h2>
+			<div className="display-row">
+				<label className="display-field" htmlFor="consumer-switch">深色模式</label>
+				<Switch id="consumer-switch" checked={dark} onCheckedChange={setDark} />
+				<Switch id="consumer-switch-loading" loading aria-label="同步中" />
+				<Switch size="sm" aria-label="小号开关" />
+			</div>
+			<RadioGroup legend="谁可以评论" defaultValue="all" name="audience">
+				<Radio value="all" label="所有人" description="登录后即可评论" />
+				<Radio value="friends" label="仅友链与订阅者" />
+			</RadioGroup>
+			<RadioGroup legend="发布方式" defaultValue="now" name="publish" appearance="card">
+				<Radio value="now" label="立即发布" description="出现在首页「最近」" />
+				<Radio value="draft" label="存为草稿" description="不出现在任何列表里" />
+			</RadioGroup>
+			<div className="display-row">
+				<Select name="status" defaultValue="draft">
+					<SelectTrigger aria-label="文章状态" className="consumer-select"><SelectValue placeholder="选择状态" /></SelectTrigger>
+					<SelectContent>
+						<SelectGroup>
+							<SelectLabel>状态</SelectLabel>
+							<SelectItem value="draft">草稿</SelectItem>
+							<SelectItem value="published" description="出现在首页「最近」">已发布</SelectItem>
+							<SelectItem value="removed" disabled>已删除</SelectItem>
+						</SelectGroup>
+					</SelectContent>
+				</Select>
+				<Select multiple name="tags" defaultValue={["Go", "Rust", "React"]}>
+					<SelectTrigger aria-label="文章标签" className="consumer-select"><SelectValue placeholder="添加标签" /></SelectTrigger>
+					<SelectContent>{["Go", "Rust", "React", "Postgres"].map((tag) => <SelectItem key={tag} value={tag}>{tag}</SelectItem>)}</SelectContent>
+				</Select>
+				<LeafSelect defaultValue="a">
+					<LeafSelectTrigger aria-label="叶子入口" className="consumer-select"><LeafSelectValue /></LeafSelectTrigger>
+					<LeafSelectContent><LeafSelectItem value="a">甲</LeafSelectItem><LeafSelectItem value="b">乙</LeafSelectItem></LeafSelectContent>
+				</LeafSelect>
+			</div>
+			<div className="display-row">
+				<Combobox aria-label="城市" className="consumer-select" name="city" options={comboOptions} placeholder="搜索城市" />
+				<LeafCombobox aria-label="叶子入口" className="consumer-select" options={comboOptions} />
+				<TagInput aria-label="文章标签" className="consumer-select" name="topics" defaultValue={["Go", "Rust"]} suggestions={["React", "Postgres"]} />
+				<LeafTagInput aria-label="叶子入口" className="consumer-select" defaultValue={["a"]} />
+			</div>
+			<div className="display-row">
+				<Cascader aria-label="地区" className="consumer-select" name="region" options={cascaderOptions} defaultValue={["zj", "hz"]} />
+				<LeafCascader aria-label="叶子入口" className="consumer-select" options={cascaderOptions} />
+				<TreeSelect aria-label="目录" className="consumer-select" name="dir" options={treeOptions} defaultValue="a1" />
+				<TreeSelect multiple aria-label="多选目录" className="consumer-select" options={treeOptions} defaultValue={["a1"]} />
+				<LeafTreeSelect aria-label="叶子入口" className="consumer-select" options={treeOptions} />
+			</div>
+			<div className="display-row">
+				<ToggleGroup type="multiple" aria-label="文字格式" defaultValue={["bold"]}>
+					<ToggleGroupItem value="bold" aria-label="加粗" title="加粗">B</ToggleGroupItem>
+					<ToggleGroupItem value="italic" aria-label="斜体" title="斜体">I</ToggleGroupItem>
+				</ToggleGroup>
+				<ToggleGroup type="single" aria-label="列表显示" variant="bare" role="toolbar">
+					<ToggleGroupItem value="summary">摘要</ToggleGroupItem>
+					<ToggleGroupItem value="cover">封面</ToggleGroupItem>
+				</ToggleGroup>
+			</div>
+			<Tabs defaultValue="articles">
+				<TabsList>
+					<TabsTrigger value="articles">文章</TabsTrigger>
+					<TabsTrigger value="comments">评论<TabsCount>12</TabsCount></TabsTrigger>
+				</TabsList>
+				<TabsContent value="articles">3 篇文章</TabsContent>
+				<TabsContent value="comments">12 条评论</TabsContent>
+			</Tabs>
+		</section>
+		<section aria-label="卡片">
+			<h2>Card · Separator · Skeleton</h2>
+			<Card>
+				<CardHeader><CardTitle>同步到 Mastodon</CardTitle></CardHeader>
+				<CardContent>已连接账号。</CardContent>
+				<CardFooter><Button>断开</Button></CardFooter>
+			</Card>
+			<CardFrame>
+				<CardFrameImage><img src={portrait} alt="" /></CardFrameImage>
+				<CardFrameBody>
+					<CardFrameTitle asChild><a id="display-frame-link" href="#display-frame-destination">给博客加了季节</a></CardFrameTitle>
+					<CardFrameMeta>2026-11-02 · 技术</CardFrameMeta>
+					<CardFrameExcerpt>整张卡由标题链接承载点击，卡内按钮仍可单独点击。</CardFrameExcerpt>
+					<Button id="display-frame-button">收藏</Button>
+				</CardFrameBody>
+			</CardFrame>
+			<span id="display-frame-destination">链接目标</span>
+			<Separator>或</Separator>
+			<div aria-busy="true"><Skeleton className="display-skeleton" /></div>
+		</section>
+	</main>;
+}
+
+function OverlayPreview() {
+	const [log, setLog] = useState<string[]>([]);
+	const note = (entry: string) => setLog((items) => [...items, entry]);
+	return <main>
+		<h1>浮层</h1>
+		<TooltipProvider>
+			<section aria-label="浮层" className="display-row">
+				<Dialog onOpenChange={(open) => note(`dialog:${open}`)}>
+					<DialogTrigger asChild><Button id="overlay-dialog-trigger" variant="secondary">编辑资料</Button></DialogTrigger>
+					<DialogContent aria-describedby={undefined}>
+						<DialogHeader><DialogTitle>编辑资料</DialogTitle></DialogHeader>
+						<DialogBody><input id="overlay-dialog-input" aria-label="昵称" /></DialogBody>
+						<DialogFooter><Button>保存</Button></DialogFooter>
+					</DialogContent>
+				</Dialog>
+				<Sheet>
+					<SheetTrigger asChild><Button id="overlay-sheet-trigger" variant="secondary">筛选</Button></SheetTrigger>
+					<SheetContent aria-describedby={undefined}><SheetHeader><SheetTitle>筛选</SheetTitle></SheetHeader><SheetBody>标签</SheetBody></SheetContent>
+				</Sheet>
+				<Drawer>
+					<DrawerTrigger asChild><Button id="overlay-drawer-trigger" variant="secondary">分享</Button></DrawerTrigger>
+					<DrawerContent aria-describedby={undefined}><DrawerHeader><DrawerTitle>分享</DrawerTitle></DrawerHeader><DrawerBody>复制链接</DrawerBody></DrawerContent>
+				</Drawer>
+				<ConfirmDialog open={false} onOpenChange={() => {}} title="永久删除？" confirmLabel="永久删除" onConfirm={() => note("confirm")} />
+				<CommandList open={false} onOpenChange={() => {}} items={[]} groups={[]} query="" onQueryChange={() => {}} />
+				<Popover onOpenChange={(open) => note(`popover:${open}`)}>
+					<PopoverTrigger asChild><Button id="overlay-popover-trigger" variant="outline">标签</Button></PopoverTrigger>
+					<PopoverContent><input id="overlay-popover-input" aria-label="找标签" /></PopoverContent>
+				</Popover>
+				<MorphingPopover onOpenChange={(open) => note(`morph:${open}`)}>
+					<MorphingPopoverTrigger id="overlay-morph-trigger" className="display-field">此刻</MorphingPopoverTrigger>
+					<MorphingPopoverContent aria-label="此刻" ghost="此刻"><input id="overlay-morph-input" aria-label="想说点什么" /></MorphingPopoverContent>
+				</MorphingPopover>
+				<HoverCard>
+					<HoverCardTrigger asChild><a id="overlay-hover-trigger" href="#linjian">@林间</a></HoverCardTrigger>
+					<HoverCardContent>林间的名片</HoverCardContent>
+				</HoverCard>
+				<Tooltip>
+					<TooltipTrigger asChild><Button id="overlay-tooltip-trigger" variant="ghost" aria-label="加粗">B</Button></TooltipTrigger>
+					<TooltipContent shortcut={["shift", "b"]}>加粗</TooltipContent>
+				</Tooltip>
+				<DropdownMenu onOpenChange={(open) => note(`menu:${open}`)}>
+					<DropdownMenuTrigger asChild><Button id="overlay-menu-trigger" variant="outline">更多</Button></DropdownMenuTrigger>
+					<DropdownMenuContent>
+						<DropdownMenuItem onSelect={() => note("menu:edit")}>编辑</DropdownMenuItem>
+						<DropdownMenuItem variant="destructive" reason="不可恢复" disabled>删除</DropdownMenuItem>
+					</DropdownMenuContent>
+				</DropdownMenu>
+				<ContextMenu>
+					<ContextMenuTrigger asChild><div id="overlay-context-trigger" className="display-field">右键这里</div></ContextMenuTrigger>
+					<ContextMenuContent><ContextMenuItem onSelect={() => note("context:copy")}>复制</ContextMenuItem></ContextMenuContent>
+				</ContextMenu>
+			</section>
+		</TooltipProvider>
+		<output id="overlay-log">{log.join(",")}</output>
+		<Toaster />
+	</main>;
+}
+
 const root = document.getElementById("root");
-if (!root) throw new Error("Consumer root is missing.");
+if (!root) {
+	throw new Error("Consumer root is missing.");
+}
+const previews = new Map<string, ComponentType>([
+	["code-block", CodeBlockConsumer],
+	["icons", IconsConsumer],
+	["comment", CommentConsumer],
+	["reaction", ReactionConsumer],
+	["emoji-picker", EmojiPickerConsumer],
+	["sortable", SortableConsumer],
+	["annotation", AnnotationConsumer],
+	["mention", MentionConsumer],
+	["quote-card", QuoteCardPreview],
+	["image-grid", ImageGridConsumer],
+	["data-display", DataDisplayPreview],
+	["upload", UploadPreview],
+	["value-controls", ValueControlsPreview],
+	["input", InputPreview],
+	["scroll-area", ScrollAreaPreview],
+	["image-pixel-reveal", ImagePixelRevealPreview],
+	["upload-tile", UploadTilePreview],
+	["dropdown", DropdownPreview],
+	["segmented", SegmentedPreview],
+	["link-card", LinkCardPreview],
+	["display", DisplayPreview],
+	["overlay", OverlayPreview],
+]);
 const preview = new URLSearchParams(window.location.search).get("preview");
-createRoot(root).render(preview === "input" ? <InputPreview /> : preview === "overlay-scroll" ? <OverlayScrollPreview /> : preview === "image-pixel-reveal" ? <ImagePixelRevealPreview /> : preview === "upload-tile" ? <UploadTilePreview /> : preview === "dropdown" ? <DropdownPreview /> : preview === "segmented" ? <SegmentedPreview /> : preview === "link-card" ? <LinkCardPreview /> : <App />);
+const Preview = previews.get(preview ?? "") ?? App;
+createRoot(root).render(<Preview />);

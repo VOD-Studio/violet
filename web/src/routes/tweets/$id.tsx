@@ -7,7 +7,7 @@ import { TweetDetailSources } from "@features/tweets/ui/TweetDetailSources";
 import { SITE_URL } from "@shared/config/env";
 import { HistoryBack } from "@shared/ui/history-back";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Empty, PageShell, ShimmerSkeleton } from "@violet/ui";
+import { Empty, PageShell, Skeleton } from "@violet/ui";
 import { cn } from "cn";
 
 /**
@@ -29,7 +29,7 @@ function TweetDetailPage() {
 		return (
 			<PageShell>
 				<div className="mx-auto w-full max-w-3xl">
-					<ShimmerSkeleton className="h-48 w-full rounded-xl" />
+					<Skeleton className="h-48 w-full rounded-xl" />
 				</div>
 			</PageShell>
 		);

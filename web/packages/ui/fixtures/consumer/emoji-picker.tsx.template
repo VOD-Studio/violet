@@ -1,0 +1,72 @@
+import { EmojiPickerPanel, type EmojiPickerGroup } from "@violet/ui";
+import { useState } from "react";
+
+export const emojiGroups: EmojiPickerGroup[] = [
+	{
+		id: "small",
+		label: "小表情",
+		sections: [
+			{
+				id: "small",
+				label: "表情",
+				density: "small",
+				items: [
+					{
+						id: "smile",
+						name: "微笑",
+						content: "😀",
+						placeholder: "[微笑]",
+						aliases: ["smile"],
+					},
+					{
+						id: "locked",
+						name: "猫猫",
+						content: "🐱",
+						placeholder: "[猫猫]",
+						disabledReason: "会员专属",
+					},
+				],
+			},
+		],
+	},
+	{
+		id: "text",
+		label: "颜文字",
+		sections: [
+			{
+				id: "text",
+				label: "颜文字",
+				density: "text",
+				items: [
+					{
+						id: "hello",
+						name: "你好",
+						content: "(・ω・)",
+						placeholder: "(・ω・)",
+					},
+				],
+			},
+		],
+	},
+];
+
+export function EmojiPickerConsumer() {
+	const [group, setGroup] = useState("small");
+	const [text, setText] = useState("");
+	return (
+		<main>
+			<h1>写评论</h1>
+			<textarea
+				aria-label="评论内容"
+				value={text}
+				onChange={(event) => setText(event.target.value)}
+			/>
+			<EmojiPickerPanel
+				groups={emojiGroups}
+				activeGroup={group}
+				onGroupChange={setGroup}
+				onSelect={(item) => setText((value) => value + item.placeholder)}
+			/>
+		</main>
+	);
+}

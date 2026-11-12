@@ -122,7 +122,6 @@ function FriendsLab() {
 					{preview === "empty" ? (
 						<Empty
 							key={`empty-${direction}`}
-							size="lg"
 							title="NO LINKS YET"
 							description="还没有互换任何友链。递出你的名片，成为第一个。"
 							action={

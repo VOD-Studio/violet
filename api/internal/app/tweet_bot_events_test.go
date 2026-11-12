@@ -133,7 +133,9 @@ func TestTweetBotEvents_CommentNotifiesAuthorAndRepliedTo(t *testing.T) {
 	require.NoError(t, comment.SetParent(nil))
 	f.reader.comments[comment.ID().String()] = apptweet.CommentDTO{ID: comment.ID().String(), TweetID: tweetID.String()}
 	repliedTo := replierAuthorID
-	event := domaintweet.NewTweetCommented(comment, tweetAuthorID, &repliedTo)
+	commentedTweet, err := domaintweet.NewTweet(tweetAuthorID, "原推文", nil, nil)
+	require.NoError(t, err)
+	event := domaintweet.NewTweetCommented(comment, commentedTweet, &repliedTo)
 
 	require.NoError(t, f.sub.handle(context.Background(), event))
 
@@ -160,7 +162,9 @@ func TestTweetBotEvents_CommentDedupesSameRecipient(t *testing.T) {
 	require.NoError(t, comment.SetParent(nil))
 	f.reader.comments[comment.ID().String()] = apptweet.CommentDTO{ID: comment.ID().String(), TweetID: tweetID.String()}
 	repliedTo := authorID
-	event := domaintweet.NewTweetCommented(comment, authorID, &repliedTo)
+	commentedTweet, err := domaintweet.NewTweet(authorID, "原推文", nil, nil)
+	require.NoError(t, err)
+	event := domaintweet.NewTweetCommented(comment, commentedTweet, &repliedTo)
 
 	require.NoError(t, f.sub.handle(context.Background(), event))
 

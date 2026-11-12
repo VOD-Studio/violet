@@ -31,13 +31,17 @@ describe("normalizeTheme", () => {
 		expect(defaults).toEqual({
 			version: 1,
 			seed: expect.stringMatching(/^#[0-9a-f]{6}$/),
-			knobs: { neutralChroma: expect.any(Number) },
+			knobs: { neutralChroma: expect.any(Number), accentChroma: expect.any(Number) },
 		});
 		expect(normalizeTheme(defaults)).toEqual(defaults);
 	});
 
 	it("非法输入回落为调用方给定的主题", () => {
-		const fallback = { version: 1 as const, seed: "#336699", knobs: { neutralChroma: 0.03 } };
+		const fallback = {
+			version: 1 as const,
+			seed: "#336699",
+			knobs: { neutralChroma: 0.03, accentChroma: 0.05 },
+		};
 		expect(normalizeTheme("garbage", fallback)).toEqual(fallback);
 	});
 
@@ -63,13 +67,24 @@ describe("normalizeTheme", () => {
 			).toEqual(defaults.knobs);
 	});
 
+	it("强调字色度旋钮：合法值保留，越界与非数值单独回落", () => {
+		const accent = (accentChroma: unknown) =>
+			normalizeTheme({ version: 1, seed: "#336699", knobs: { accentChroma } }).knobs;
+		expect(accent(0.12).accentChroma).toBe(0.12);
+		for (const bad of [-0.01, 0.3, Number.NaN, "0.1", null])
+			expect(accent(bad).accentChroma).toBe(defaults.knobs.accentChroma);
+	});
+
 	it("丢弃未知旋钮", () => {
 		const theme = normalizeTheme({
 			version: 1,
 			seed: "#336699",
 			knobs: { neutralChroma: 0.02, injected: "}" },
 		});
-		expect(theme.knobs).toEqual({ neutralChroma: 0.02 });
+		expect(theme.knobs).toEqual({
+			neutralChroma: 0.02,
+			accentChroma: defaults.knobs.accentChroma,
+		});
 	});
 
 	it("返回新对象，修改结果不影响输入与默认主题", () => {

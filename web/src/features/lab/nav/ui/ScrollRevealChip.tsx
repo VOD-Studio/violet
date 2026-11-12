@@ -1,3 +1,4 @@
+import { iconProps } from "@violet/ui";
 import { ArrowLeft } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useRef } from "react";
@@ -33,7 +34,7 @@ export function ScrollRevealChip() {
 								type="button"
 								className="flex cursor-pointer items-center gap-2 rounded-full border border-edge-hairline bg-background/90 px-4 py-2 text-sm shadow-sm backdrop-blur transition-colors hover:border-foreground/40"
 							>
-								<ArrowLeft className="size-3.5" />
+								<ArrowLeft {...iconProps(14)} />
 								返回博客
 							</button>
 						</motion.div>

@@ -1,0 +1,172 @@
+/*
+ * Progress：知道百分比时的条形与圆环进度。
+ * 需先导入 @violet/ui/tokens.css 或 styles.css。
+ */
+
+@layer components {
+	.v-progress {
+		display: flex;
+		flex-direction: column;
+		box-sizing: border-box;
+		min-width: 0;
+	}
+
+	.v-progress__head {
+		display: flex;
+		justify-content: space-between;
+		gap: 12px;
+		margin-block-end: 8px;
+		font-size: 14px;
+	}
+
+	.v-progress__label {
+		min-width: 0;
+		overflow-wrap: anywhere;
+	}
+
+	.v-progress__value {
+		flex: none;
+		font-family: var(--font-mono);
+		color: var(--muted-foreground);
+	}
+
+	.v-progress__track {
+		position: relative;
+		block-size: 4px;
+		border-radius: 2px;
+		background-color: var(--muted);
+		overflow: hidden;
+	}
+
+	.v-progress__fill {
+		position: absolute;
+		inset: 0;
+		border-radius: 2px;
+		background-color: var(--foreground);
+		transform: scaleX(var(--v-progress-value, 0));
+		transform-origin: left center;
+		transition:
+			transform 300ms ease-out,
+			background-color 200ms ease-out;
+	}
+
+	.v-progress__hint {
+		margin: 8px 0 0;
+		font-size: 13px;
+		line-height: 1.6;
+		color: var(--muted-foreground);
+	}
+
+	.v-progress__hint[data-status="success"] {
+		color: var(--success-text);
+	}
+
+	.v-progress__hint[data-status="error"] {
+		color: var(--destructive-text);
+	}
+
+	.v-progress__segments {
+		display: flex;
+		gap: 3px;
+		margin-block-start: 10px;
+	}
+
+	.v-progress__segments i {
+		flex: 1;
+		block-size: 4px;
+		border-radius: 2px;
+		background-color: var(--muted);
+	}
+
+	.v-progress__segments i[data-active] {
+		background-color: var(--foreground);
+	}
+
+	/* —— 圆环 —— */
+
+	.v-progress-ring {
+		display: inline-flex;
+		align-items: center;
+		gap: 14px;
+	}
+
+	.v-progress-ring__disc {
+		position: relative;
+		display: inline-flex;
+		flex: none;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.v-progress-ring__disc[data-size="48"] {
+		inline-size: 48px;
+		block-size: 48px;
+	}
+
+	.v-progress-ring__disc[data-size="32"] {
+		inline-size: 32px;
+		block-size: 32px;
+	}
+
+	.v-progress-ring__disc svg {
+		transform: rotate(-90deg);
+	}
+
+	.v-progress-ring__track,
+	.v-progress-ring__fill {
+		fill: none;
+	}
+
+	.v-progress-ring__track {
+		stroke: var(--muted);
+	}
+
+	.v-progress-ring__fill {
+		stroke: var(--foreground);
+		stroke-linecap: round;
+		transition:
+			stroke-dashoffset 300ms ease-out,
+			stroke 200ms ease-out;
+	}
+
+	.v-progress-ring__value {
+		position: absolute;
+		font-family: var(--font-mono);
+		font-size: 12px;
+	}
+
+	.v-progress-ring__text {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+	}
+
+	.v-progress-ring__text b {
+		font-size: 14px;
+		font-weight: 600;
+	}
+
+	.v-progress-ring__text span {
+		font-size: 13px;
+		color: var(--muted-foreground);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-progress__fill,
+		.v-progress-ring__fill {
+			transition: none;
+		}
+	}
+
+	.v-progress__track[data-status="success"] .v-progress__fill,
+	.v-progress-ring__disc[data-status="success"] .v-progress-ring__fill {
+		background-color: var(--success);
+		stroke: var(--success);
+	}
+
+	.v-progress__track[data-status="error"] .v-progress__fill,
+	.v-progress-ring__disc[data-status="error"] .v-progress-ring__fill {
+		background-color: var(--destructive);
+		stroke: var(--destructive);
+	}
+}

@@ -65,7 +65,6 @@ export function EmojiToolbar({
 			<div className="mb-4 flex shrink-0 items-center gap-2 px-1 pt-1">
 				<div className="flex-1">
 					<SearchInput
-						variant="soft"
 						controlSize="sm"
 						aria-label="搜索表情名称"
 						placeholder="搜索表情名称..."
@@ -75,7 +74,7 @@ export function EmojiToolbar({
 				</div>
 
 				<Button
-					variant={isSelectMode ? "default" : "outline"}
+					variant={isSelectMode ? "primary" : "outline"}
 					size="sm"
 					onClick={onToggleSelectMode}
 				>
@@ -116,7 +115,7 @@ export function EmojiToolbar({
 						placeholder="名称"
 						disabled={isAddingText}
 						aria-invalid={!!errors.name}
-						classNames={{ root: "w-32" }}
+						classNames={{ control: "w-32" }}
 						{...register("name")}
 					/>
 					<Input
@@ -125,7 +124,7 @@ export function EmojiToolbar({
 						placeholder="文本内容，如 (・∀・)"
 						disabled={isAddingText}
 						aria-invalid={!!errors.textContent}
-						classNames={{ root: "min-w-0 flex-1" }}
+						classNames={{ control: "min-w-0 flex-1" }}
 						{...register("textContent")}
 					/>
 					<Button className="h-9 shrink-0" type="submit" disabled={isAddingText}>
@@ -137,6 +136,7 @@ export function EmojiToolbar({
 						variant="ghost"
 						className="h-9 shrink-0"
 						onClick={onToggleAddText}
+						aria-label="取消添加文本"
 					>
 						<X className="size-4" />
 					</Button>

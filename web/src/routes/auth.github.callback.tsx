@@ -5,19 +5,15 @@ import {
 	GITHUB_OAUTH_MESSAGE,
 } from "@features/auth/hooks/use-github-oauth";
 import { openLinkConfirmFromError } from "@features/auth/lib/open-link-confirm";
+import { PageLoading } from "@shared/ui/page-loading";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
-import { RuaLoading } from "@widgets/PersonaMotion";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { z } from "zod";
-
-const searchSchema = z.object({
-	code: z.string().optional(),
-});
 
 export const Route = createFileRoute("/auth/github/callback")({
-	validateSearch: searchSchema,
+	validateSearch: (search: Record<string, unknown>): { code?: string } =>
+		typeof search.code === "string" ? { code: search.code } : {},
 	component: GithubCallbackPage,
 });
 
@@ -110,5 +106,5 @@ function GithubCallbackPage() {
 		);
 	}, [code, githubLogin, bindConnection, qc, navigate]);
 
-	return <RuaLoading label="正在处理 GitHub 授权" detail="授权完成即可继续" className="h-dvh" />;
+	return <PageLoading label="正在处理 GitHub 授权…" className="h-dvh" />;
 }

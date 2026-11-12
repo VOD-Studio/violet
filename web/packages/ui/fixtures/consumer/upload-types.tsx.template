@@ -1,0 +1,23 @@
+import { UploadDropzone, UploadQueue, type UploadDropzoneProps, type UploadEntry, type UploadEntryStatus, type UploadQueueProps } from "@violet/ui";
+import { UploadDropzone as LeafDropzone, UploadQueue as LeafQueue } from "@violet/ui/upload";
+import { UploadTile } from "@violet/ui/upload-tile";
+import { createRef } from "react";
+
+const status: UploadEntryStatus = "waiting";
+const entries: readonly UploadEntry[] = [{ id: "route", name: "route.jpg", size: 1024, status, progress: 45, kind: "image", retryAt: 1000 }];
+const dropzone: UploadDropzoneProps = {
+	ref: createRef<HTMLButtonElement>(), name: "attachment", value: "select", type: "button", dragActive: true, disabled: false,
+	"aria-label": "选择附件", hint: "最多 10 MB", onClick: (event) => event.currentTarget.focus(),
+	onDrop: (event) => { event.preventDefault(); const file: File | undefined = event.dataTransfer.files[0]; void file; },
+};
+const queue: UploadQueueProps = {
+	ref: createRef<HTMLElement>(), items: entries, concurrency: 2, now: 0, policy: "ready", floating: false,
+	defaultCollapsed: true, "aria-label": "附件上传", onCancel: (id) => { const value: string = id; void value; },
+	onRetry: (id) => { const value: string = id; void value; }, onRemove: (id) => { const value: string = id; void value; },
+	onCancelAll: () => {}, onClearCompleted: () => {}, onRetryPolicy: () => {}, onResume: () => {}, onClose: () => {},
+};
+export const uploadExamples = <><UploadDropzone {...dropzone}>选择附件</UploadDropzone><LeafDropzone {...dropzone}>选择附件</LeafDropzone><UploadQueue {...queue} /><LeafQueue {...queue} /><UploadTile dragActive aria-label="添加图片" /></>;
+// @ts-expect-error 文件队列只接收公开六态，不用任意字符串冒充服务端状态。
+export const invalidEntry: UploadEntry = { id: "x", name: "x", size: 1, status: "finished", progress: 100 };
+// @ts-expect-error 文件选择入口的 ref 指向原生按钮。
+export const invalidDropzone = <UploadDropzone ref={createRef<HTMLInputElement>()}>选择</UploadDropzone>;

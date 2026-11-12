@@ -3,11 +3,11 @@
 }
 
 .card {
-	--tweet-radius: 1rem;
+	--tweet-radius: var(--radius-16, 1rem);
 	--tweet-border: var(--edge-hairline);
+	--tweet-shadow: var(--shadow-soft);
 	padding: 1.25rem;
 	font-size: 1rem;
-	box-shadow: 0 4px 24px rgb(0 0 0 / 0.05);
 }
 
 :is(.card, .references) [class~="v-tweet"] {
@@ -17,7 +17,7 @@
 
 :is(.card, .references) [class~="v-tweet--quoted"] {
 	padding: 0.75rem;
-	border-radius: 0.5rem;
+	border-radius: var(--radius-8, 0.5rem);
 	background: var(--card);
 }
 

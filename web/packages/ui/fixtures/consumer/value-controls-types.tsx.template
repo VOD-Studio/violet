@@ -1,0 +1,98 @@
+import { createRef } from "react";
+import {
+	DatePicker,
+	DateRangePicker,
+	HsvColorPicker,
+	ColorSwatch,
+	InputOTP,
+	InputOTPGroup,
+	InputOTPSlot,
+	NumberInput,
+	ResendButton,
+	Slider,
+	type DatePickerProps,
+	type DateRange,
+	type NumberInputProps,
+	type SliderProps,
+} from "@violet/ui";
+import { DatePicker as LeafDatePicker, DateRangePicker as LeafDateRangePicker } from "@violet/ui/date-picker";
+import { NumberInput as LeafNumberInput } from "@violet/ui/number-input";
+import { Slider as LeafSlider } from "@violet/ui/slider";
+import { HsvColorPicker as LeafColorPicker, ColorSwatch as LeafColorSwatch } from "@violet/ui/color-picker";
+import { InputOTP as LeafOTP, InputOTPGroup as LeafOTPGroup, InputOTPSlot as LeafOTPSlot } from "@violet/ui/otp";
+import { ResendButton as LeafResendButton } from "@violet/ui/resend-button";
+import { numberInputVariants, type NumberInputVariantProps } from "@violet/ui/variants";
+
+const dateProps: DatePickerProps = {
+	ref: createRef<HTMLInputElement>(),
+	id: "scheduled", name: "scheduled", form: "publish",
+	mode: "datetime", defaultValue: "2026-11-03T09:30",
+	min: "2026-10-15T00:00", max: "2026-11-30T23:59",
+	variant: "outline", controlSize: "sm",
+	"aria-label": "发布时间",
+	onChange: (value) => { const local: string = value; void local; },
+};
+export const dates = <>
+	<DatePicker {...dateProps} />
+	<LeafDatePicker {...dateProps} mode="date" defaultValue="2026-11-03" />
+	<DateRangePicker value={{ start: "2026-11-03", end: "2026-11-07" }} onChange={(next) => { const range: DateRange = next; void range; }} />
+	<LeafDateRangePicker mode="datetime" defaultValue={{ start: "2026-11-03T09:30" }} name="period" />
+</>;
+// @ts-expect-error 日期触发器的 ref 是原生 input。
+export const invalidDateRef = <DatePicker ref={createRef<HTMLButtonElement>()} />;
+// @ts-expect-error 日期值不是时间戳。
+export const invalidDateValue = <LeafDatePicker value={1793653200000} />;
+// @ts-expect-error 区间回调接收区间对象而非单值字符串。
+export const invalidRangeChange = <DateRangePicker onChange={(value: string) => void value} />;
+
+const numberProps: NumberInputProps = {
+	ref: createRef<HTMLInputElement>(), name: "amount", form: "payment",
+	min: 0, max: 100, step: 0.1, precision: 2, allowEmpty: false,
+	defaultValue: 1.5, controls: "stacked", variant: "filled", controlSize: "lg",
+	onChange: (event) => { const input: HTMLInputElement = event.currentTarget; void input.value; },
+	onValueCommit: (value) => { const normalized: number | null = value; void normalized; },
+};
+export const numbers = <><NumberInput {...numberProps} /><LeafNumberInput {...numberProps} controls="none" /></>;
+const numberRecipe: NumberInputVariantProps = { controls: "sides" };
+numberInputVariants(numberRecipe);
+// @ts-expect-error 数字输入的 ref 不属于外壳。
+export const invalidNumberRef = <NumberInput ref={createRef<HTMLDivElement>()} />;
+// @ts-expect-error 数字提交回调不返回草稿字符串。
+export const invalidNumberCommit = <LeafNumberInput onValueCommit={(value: string) => void value} />;
+// @ts-expect-error 输入类型由组件的 spinbutton 契约管理。
+export const invalidNumberType = <NumberInput type="number" />;
+
+const sliderProps: SliderProps = {
+	defaultValue: [20, 80], min: 0, max: 100, step: 5,
+	name: "window", thumbLabels: ["起点", "终点"],
+	formatValue: (value, index) => `${index === 0 ? "从" : "到"} ${value} 分钟`,
+	onValueChange: (value) => { const requested: number[] = value; void requested; },
+	onValueCommit: (value) => { const committed: number[] = value; void committed; },
+};
+export const sliders = <><Slider {...sliderProps} ref={createRef<HTMLSpanElement>()} /><LeafSlider {...sliderProps} marks={[{ value: 0, label: "无" }, { value: 37, label: "适中" }, { value: 100, label: "满" }]} /></>;
+// @ts-expect-error 滑块使用数值数组，不接受字符串值。
+export const invalidSliderValue = <Slider value={["20"]} />;
+// @ts-expect-error 标记必须描述数值位置。
+export const invalidSliderMark = <LeafSlider marks={[{ value: "low", label: "低" }]} />;
+
+export const colors = <>
+	<HsvColorPicker value="#cc6633" onChange={(value) => { const hex: string = value; void hex; }} onValidityChange={(valid) => { const ready: boolean = valid; void ready; }} hexInputProps={{ ref: createRef<HTMLInputElement>(), name: "accent", "aria-label": "自定义颜色" }} />
+	<LeafColorPicker value="#2f9e7a" onChange={() => {}} />
+	<ColorSwatch value="#cc6633" onChange={() => {}} onClear={() => {}} recentColors={["#1d7286"]} />
+	<LeafColorSwatch onChange={() => {}} onClear={() => {}} />
+</>;
+// @ts-expect-error 取色器的值必须是颜色字符串。
+export const invalidColorValue = <HsvColorPicker value={220} onChange={() => {}} />;
+
+export const codes = <>
+	<InputOTP name="code" ref={createRef<HTMLInputElement>()} maxLength={6} value="123" onChange={(value) => { const code: string = value; void code; }} onComplete={(value) => { const complete: string = value; void complete; }} invalid>
+		<InputOTPGroup>{Array.from({ length: 6 }, (_, index) => <InputOTPSlot key={index} index={index} />)}</InputOTPGroup>
+	</InputOTP>
+	<LeafOTP maxLength={6} defaultValue="123"><LeafOTPGroup>{Array.from({ length: 6 }, (_, index) => <LeafOTPSlot key={index} index={index} />)}</LeafOTPGroup></LeafOTP>
+	<ResendButton onResend={async () => false} resetKey="new@example.com" />
+	<LeafResendButton ref={createRef<HTMLButtonElement>()} onResend={() => true} cooldownSeconds={3} />
+</>;
+// @ts-expect-error 验证码 ref 指向第一格 input，而非外层 div。
+export const invalidOtpRef = <InputOTP ref={createRef<HTMLDivElement>()} maxLength={6} />;
+// @ts-expect-error 验证码完成事件返回整串文本。
+export const invalidOtpComplete = <LeafOTP maxLength={6} onComplete={(value: number) => void value} />;

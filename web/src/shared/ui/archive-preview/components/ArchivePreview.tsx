@@ -9,9 +9,9 @@
  * - 下载原始压缩包
  */
 
-import { Button } from "@violet/ui";
+import { Button, iconProps } from "@violet/ui";
 import { cn } from "cn";
-import { AlertCircle, Download, FileArchive, RotateCcw } from "lucide-react";
+import { CircleAlert, Download, FileArchive, RotateCcw } from "lucide-react";
 import { useMemo } from "react";
 
 import { useFilePreviewVariant } from "@/shared/ui/file-preview/file-preview-context";
@@ -43,18 +43,20 @@ export function ArchivePreview({ url, name, mimeType, className }: ArchivePrevie
 		>
 			{!viewer ? (
 				<div className="flex items-center justify-between border-b px-3 py-1.5">
-					<span className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
-						<FileArchive className="size-3.5 shrink-0" />
+					<span className="flex items-center gap-1 truncate text-xs text-muted-foreground">
+						<FileArchive {...iconProps(14, "shrink-0")} />
 						{name ?? "压缩包"}
 					</span>
 					<Button
+						iconOnly
 						type="button"
-						size="icon-sm"
+						size="sm"
 						variant="ghost"
 						onClick={handleDownload}
+						aria-label="下载"
 						title="下载"
 					>
-						<Download className="size-3.5" />
+						<Download {...iconProps(14)} />
 					</Button>
 				</div>
 			) : null}
@@ -66,22 +68,22 @@ export function ArchivePreview({ url, name, mimeType, className }: ArchivePrevie
 					</div>
 				) : unsupported ? (
 					<div className="flex h-40 flex-col items-center justify-center gap-3 px-6 text-center text-muted-foreground">
-						<FileArchive className="size-10 opacity-40" />
+						<FileArchive className="size-6 opacity-40" />
 						<div>
 							<p className="text-sm">该压缩格式暂不支持在线预览</p>
 							<p className="mt-1 text-xs">RAR/7z 等格式请下载后查看</p>
 						</div>
 						<Button type="button" variant="outline" size="sm" onClick={handleDownload}>
-							<Download className="mr-1.5 size-3.5" />
+							<Download {...iconProps(14)} />
 							下载文件
 						</Button>
 					</div>
 				) : loadStatus === "error" ? (
 					<div className="flex h-40 flex-col items-center justify-center gap-2 text-muted-foreground">
-						<AlertCircle className="size-8 text-red-500" />
+						<CircleAlert className="size-6 text-red-500" />
 						<span className="text-sm">压缩包加载失败</span>
 						<Button type="button" variant="outline" size="sm" onClick={retry}>
-							<RotateCcw className="mr-1.5 size-3.5" />
+							<RotateCcw {...iconProps(14)} />
 							重试
 						</Button>
 					</div>

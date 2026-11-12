@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { formatDate, formatDateTime, formatRelativeTime, formatTime } from "../date";
+import {
+	formatDate,
+	formatDateTime,
+	formatMessageTime,
+	formatRelativeTime,
+	formatTime,
+} from "../date";
 
 describe("date display formatting", () => {
 	afterEach(() => {
@@ -44,5 +50,34 @@ describe("date display formatting", () => {
 		vi.setSystemTime(new Date("2026-09-07T12:00:00Z"));
 
 		expect(formatRelativeTime("2026-09-07T11:55:00Z")).toBe("5 分钟前");
+	});
+});
+
+describe("formatMessageTime", () => {
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	const at = (day: number, hour: number, minute = 0, second = 0) =>
+		new Date(2026, 10, day, hour, minute, second);
+
+	it("当天按分钟与小时数，隔天起按日历日数而不是满 24 小时", () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(at(9, 10));
+		expect(formatMessageTime(at(9, 9, 59, 40))).toBe("刚刚");
+		expect(formatMessageTime(at(9, 9, 2))).toBe("58 分钟前");
+		expect(formatMessageTime(at(9, 7))).toBe("3 小时前");
+		expect(formatMessageTime(at(8, 23))).toBe("昨天");
+		expect(formatMessageTime(at(7, 20))).toBe("前天");
+		expect(formatMessageTime(at(6, 20))).toBe("3 天前");
+		expect(formatMessageTime(at(3, 8))).toBe("6 天前");
+	});
+
+	it("满一周显示月日；时钟略快造成的未来时间按刚刚；无效输入用兜底", () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(at(9, 10));
+		expect(formatMessageTime(at(2, 8))).toBe("11月2日");
+		expect(formatMessageTime(at(9, 10, 0, 30))).toBe("刚刚");
+		expect(formatMessageTime("not-a-date", "—")).toBe("—");
 	});
 });

@@ -1,14 +1,3 @@
-/**
- * useCodeRun - 代码执行编排 hook
- *
- * 管理「提交 → SSE 订阅 → 终态」的完整生命周期：
- *   1. submitExecStream 提交拿 task_id
- *   2. streamExec 连 SSE，stdout/stderr chunk 实时回调，done 触发终态
- *   3. 组件卸载时 abort，防泄漏
- *
- * 降级策略：SSE 连接失败时改用轮询 getExecResult（对应 yggdrasil 的兜底）。
- */
-
 import { type StreamHandlers, streamExec, submitExecStream } from "@entities/code-runner/api/exec";
 import type { ExecResult, ResourceLimits } from "@entities/code-runner/model/types";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -22,7 +11,7 @@ export interface UseCodeRunResult {
 	result: ExecResult | null;
 	/** 错误信息（提交或连接失败时） */
 	error: string | null;
-	/** 执行代码。返回最终结果（或 null 表示失败） */
+	/** 执行代码。失败、重置、被后续运行替换或卸载时返回 null。 */
 	run: (
 		language: string,
 		source: string,
@@ -33,66 +22,92 @@ export interface UseCodeRunResult {
 	reset: () => void;
 }
 
+interface ActiveExecution {
+	controller: AbortController | null;
+	resolve: (result: ExecResult | null) => void;
+}
+
 export function useCodeRun(): UseCodeRunResult {
 	const [state, setState] = useState<RunState>("idle");
 	const [result, setResult] = useState<ExecResult | null>(null);
 	const [error, setError] = useState<string | null>(null);
-	const abortRef = useRef<AbortController | null>(null);
+	const activeRef = useRef<ActiveExecution | null>(null);
 
-	// 卸载时取消进行中的 SSE
-	useEffect(() => {
-		return () => abortRef.current?.abort();
+	const cancelCurrent = useCallback(() => {
+		const execution = activeRef.current;
+		activeRef.current = null;
+		execution?.controller?.abort();
+		execution?.resolve(null);
 	}, []);
 
+	useEffect(() => cancelCurrent, [cancelCurrent]);
+
 	const reset = useCallback(() => {
-		abortRef.current?.abort();
-		abortRef.current = null;
+		cancelCurrent();
 		setState("idle");
 		setResult(null);
 		setError(null);
-	}, []);
+	}, [cancelCurrent]);
 
 	const run = useCallback(
-		async (
+		(
 			language: string,
 			source: string,
 			handlers: Pick<StreamHandlers, "onStdout" | "onStderr">,
 			overrides?: ResourceLimits,
 		): Promise<ExecResult | null> => {
-			// 中断上一次执行
-			abortRef.current?.abort();
+			cancelCurrent();
+			const completion = Promise.withResolvers<ExecResult | null>();
+			const execution: ActiveExecution = { controller: null, resolve: completion.resolve };
+			activeRef.current = execution;
 			setState("running");
 			setResult(null);
 			setError(null);
 
-			try {
-				const taskId = await submitExecStream({ language, source, overrides });
-				return await new Promise<ExecResult | null>((resolve) => {
-					const controller = streamExec(taskId, {
-						onStdout: handlers.onStdout,
-						onStderr: handlers.onStderr,
-						onDone: (res) => {
-							setResult(res);
-							setState("done");
-							resolve(res);
-						},
-						onError: (err) => {
-							setError(err.message);
-							setState("done");
-							resolve(null);
-						},
-					});
-					abortRef.current = controller;
-				});
-			} catch (err) {
-				// 提交失败（语言不支持/源码过大/网络错误）
-				const msg = err instanceof Error ? err.message : String(err);
-				setError(msg);
+			const finish = (res: ExecResult | null, message: string | null = null) => {
+				if (activeRef.current !== execution) {
+					return;
+				}
+				activeRef.current = null;
+				setResult(res);
+				setError(message);
 				setState("done");
-				return null;
-			}
+				completion.resolve(res);
+			};
+
+			void (async () => {
+				try {
+					const taskId = await submitExecStream({ language, source, overrides });
+					// POST 仍可完成服务端任务，但被替换或卸载的调用不再建立流。
+					if (activeRef.current !== execution) {
+						return;
+					}
+					const controller = streamExec(taskId, {
+						onStdout: (text) => {
+							if (activeRef.current === execution) {
+								handlers.onStdout(text);
+							}
+						},
+						onStderr: (text) => {
+							if (activeRef.current === execution) {
+								handlers.onStderr(text);
+							}
+						},
+						onDone: (res) => finish(res),
+						onError: (err) => finish(null, err.message),
+					});
+					execution.controller = controller;
+					if (activeRef.current !== execution) {
+						controller.abort();
+					}
+				} catch (err) {
+					finish(null, err instanceof Error ? err.message : String(err));
+				}
+			})();
+
+			return completion.promise;
 		},
-		[],
+		[cancelCurrent],
 	);
 
 	return { state, result, error, run, reset };

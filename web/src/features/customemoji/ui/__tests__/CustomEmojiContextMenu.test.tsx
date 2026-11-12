@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@violet/ui";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const favorite = { mutate: vi.fn(), isPending: false };
@@ -36,6 +37,29 @@ describe("CustomEmojiContextMenu", () => {
 
 		expect(event.defaultPrevented).toBe(false);
 		expect(container.querySelector('[role="menuitem"]')).toBeNull();
+	});
+
+	it("页面里自带 ContextMenu 的区域照常打开自己的菜单，普通内容仍是原生菜单", () => {
+		render(
+			<CustomEmojiContextMenu>
+				<ContextMenu>
+					<ContextMenuTrigger asChild>
+						<article>一行文章</article>
+					</ContextMenuTrigger>
+					<ContextMenuContent>
+						<ContextMenuItem>编辑</ContextMenuItem>
+					</ContextMenuContent>
+				</ContextMenu>
+				<span>普通内容</span>
+			</CustomEmojiContextMenu>,
+		);
+
+		// fireEvent 在事件被 preventDefault 时返回 false
+		expect(fireEvent.contextMenu(screen.getByText("普通内容"))).toBe(true);
+		expect(screen.queryByRole("menuitem")).toBeNull();
+
+		expect(fireEvent.contextMenu(screen.getByText("一行文章"))).toBe(false);
+		expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual(["编辑"]);
 	});
 
 	it.each([

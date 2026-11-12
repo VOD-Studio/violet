@@ -2,7 +2,9 @@ package coderunner
 
 import (
 	"encoding/json"
+	"regexp"
 	"strings"
+	"unicode"
 
 	domaincoderunner "blog-api/internal/domain/coderunner"
 )
@@ -97,29 +99,92 @@ func IsSupportedLang(lang string) bool {
 	return ok
 }
 
-// ParseFenceInfo 解析围栏代码块的 info string。
-//
-// 格式：<lang> [runnable|run] [ {<ResourceLimits JSON>} ]
-// 返回 (lang, runnable, overrides)。lang 已经过 NormalizeLang 归一化。
-// 未知 token 静默忽略；末尾 JSON 可包含空白，解析失败时 overrides 为 nil。
-func ParseFenceInfo(info string) (lang string, runnable bool, overrides *domaincoderunner.ResourceLimits) {
-	metadata := info
-	if start := strings.IndexByte(info, '{'); start >= 0 {
-		metadata = info[:start]
-		var limits domaincoderunner.ResourceLimits
-		if err := json.Unmarshal([]byte(info[start:]), &limits); err == nil {
-			overrides = &limits
+// FenceInfo 保存围栏的显示元数据和独立执行声明。
+type FenceInfo struct {
+	Language       string
+	Runnable       bool
+	Overrides      json.RawMessage
+	Filename       *string
+	HighlightLines string
+}
+
+var fenceLineSpec = regexp.MustCompile(`^[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$`)
+var fenceTitle = regexp.MustCompile(`^"(?:[^"\\]|\\.)*"`)
+
+// ParseFenceInfo 解析 title、紧凑行号范围、run/runnable 与末尾资源 JSON。
+// 仅可运行围栏归一化语言；行号范围不展开，错误元数据不改变源码。
+func ParseFenceInfo(info string) FenceInfo {
+	rest := strings.TrimSpace(info)
+	end := strings.IndexFunc(rest, unicode.IsSpace)
+	if end < 0 {
+		return FenceInfo{Language: rest}
+	}
+	result := FenceInfo{Language: rest[:end]}
+	rest = strings.TrimSpace(rest[end:])
+	for rest != "" {
+		if strings.HasPrefix(rest, `title="`) {
+			quoted := fenceTitle.FindString(rest[6:])
+			if quoted == "" {
+				break
+			}
+			var filename string
+			if json.Unmarshal([]byte(quoted), &filename) == nil {
+				result.Filename = &filename
+			}
+			rest = strings.TrimSpace(rest[6+len(quoted):])
+			continue
+		}
+		if rest[0] == '{' {
+			if end := strings.IndexByte(rest, '}'); end >= 0 {
+				rows := strings.Join(strings.Fields(rest[1:end]), "")
+				if fenceLineSpec.MatchString(rows) {
+					result.HighlightLines = rows
+					rest = strings.TrimSpace(rest[end+1:])
+					continue
+				}
+			}
+			var limits domaincoderunner.ResourceLimits
+			if json.Unmarshal([]byte(rest), &limits) == nil {
+				result.Overrides = json.RawMessage(rest)
+			}
+			break
+		}
+		end := strings.IndexFunc(rest, unicode.IsSpace)
+		if end < 0 {
+			end = len(rest)
+		}
+		token := rest[:end]
+		if token == "run" || token == "runnable" {
+			result.Runnable = true
+		}
+		rest = strings.TrimSpace(rest[end:])
+	}
+	if result.Runnable {
+		result.Language = domaincoderunner.NormalizeLang(result.Language)
+	}
+	return result
+}
+
+// SerializeFenceInfo 将显示与执行元数据写回围栏，文件名使用 JSON 字符串转义。
+func SerializeFenceInfo(info FenceInfo) string {
+	tokens := []string{info.Language}
+	if info.Filename != nil {
+		filename, _ := json.Marshal(*info.Filename)
+		tokens = append(tokens, "title="+string(filename))
+	}
+	if fenceLineSpec.MatchString(info.HighlightLines) {
+		tokens = append(tokens, "{"+info.HighlightLines+"}")
+	}
+	if info.Runnable {
+		tokens = append(tokens, "runnable")
+	}
+	if len(info.Overrides) != 0 {
+		if encoded, err := json.Marshal(info.Overrides); err == nil {
+			tokens = append(tokens, string(encoded))
 		}
 	}
-	tokens := strings.Fields(metadata)
-	if len(tokens) == 0 {
-		return "", false, nil
+	if tokens[0] == "" && len(tokens) > 1 {
+		tokens[0] = "text"
 	}
-	lang = domaincoderunner.NormalizeLang(tokens[0])
-	for _, tok := range tokens[1:] {
-		if tok == "runnable" || tok == "run" {
-			runnable = true
-		}
-	}
-	return lang, runnable, overrides
+	return strings.Join(tokens, " ")
 }

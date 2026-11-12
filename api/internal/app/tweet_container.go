@@ -11,6 +11,7 @@ import (
 	appmedia "blog-api/internal/application/media"
 	appshared "blog-api/internal/application/shared"
 	apptweet "blog-api/internal/application/tweet"
+	apptweetreaction "blog-api/internal/application/tweetcommentreaction"
 	domainemoji "blog-api/internal/domain/emoji"
 	domainimage "blog-api/internal/domain/image"
 	"blog-api/internal/domain/shared"
@@ -19,13 +20,15 @@ import (
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
 	"blog-api/internal/infrastructure/xtweet"
 	tweethttp "blog-api/internal/interfaces/http/handler/tweet"
+	tweetreactionhttp "blog-api/internal/interfaces/http/handler/tweetcommentreaction"
 	"blog-api/internal/middleware"
 )
 
 type TweetContainer struct {
-	TweetHandler    *tweethttp.Handler
-	TweetService    *apptweet.Service
-	ExternalService *apptweet.ExternalService
+	TweetHandler     *tweethttp.Handler
+	CommentReactions *tweetreactionhttp.Handler
+	TweetService     *apptweet.Service
+	ExternalService  *apptweet.ExternalService
 	// TweetBotHandler 外部 bot 的推文写入面（发布/评论/点赞/删除/媒体）。
 	TweetBotHandler *tweethttp.BotHandler
 }
@@ -64,7 +67,10 @@ func NewTweetContainer(
 		bus,
 	).WithExternal(external)
 	return &TweetContainer{
-		TweetHandler:    tweethttp.NewHandler(svc),
+		TweetHandler: tweethttp.NewHandler(svc),
+		CommentReactions: tweetreactionhttp.NewHandler(apptweetreaction.NewService(
+			tweetRepo, commentRepo, emojiRepo, gormrepo.NewTweetCommentReactionStore(db),
+		)),
 		TweetService:    svc,
 		ExternalService: external,
 		TweetBotHandler: tweethttp.NewBotHandler(svc, uploadSvc, cfg.BotMediaMaxBytes),

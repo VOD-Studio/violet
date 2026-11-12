@@ -11,14 +11,16 @@
  * 数据流：useInfiniteQuery 滚动加载顶层评论（type=free + top_level=true），
  * 每页 20 条。回复走 useReplies 按需拉（comment-config 内懒加载）。
  */
+import type { CommentSort } from "@entities/comment/model/types";
 import { useMe } from "@features/auth/api/queries";
 import { InlineLogin } from "@features/auth/ui/InlineLogin";
 import { fetchComments } from "@features/comments/api/queries";
 import { CommentList, CommentSection as CommentSectionShell } from "@shared/ui/comment-section";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { Button, GithubIcon, GoogleIcon } from "@violet/ui";
+import { Button, GithubIcon, GoogleIcon, iconProps } from "@violet/ui";
 import { ChevronDown } from "lucide-react";
 import { useMemo, useState } from "react";
+import { commentKeys } from "../api/keys";
 import { CommentForm } from "./CommentForm";
 import { buildArticleCommentConfig } from "./comment-config";
 import { ReactionProvider } from "./ReactionProvider";
@@ -34,15 +36,26 @@ export interface CommentSectionProps {
 export function CommentSection({ postId }: CommentSectionProps) {
 	const me = useMe();
 	const isLoggedIn = !!me.data;
+	const [sort, setSort] = useState<CommentSort>("latest");
 
 	// 滚动加载顶层评论：type=free（仅自由评论）+ top_level=true（仅 depth=0）。
 	// 回复走 useReplies 按需拉，避免 1000×1000 量级一次性拉崩。
-	const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-		queryKey: ["comments", "list", postId, { type: "free", top_level: true }],
+	const {
+		data,
+		isLoading,
+		isError,
+		error,
+		refetch,
+		fetchNextPage,
+		hasNextPage,
+		isFetchingNextPage,
+	} = useInfiniteQuery({
+		queryKey: commentKeys.list(postId, { type: "free", top_level: true, sort }),
 		queryFn: ({ pageParam }) =>
 			fetchComments(postId, {
 				type: "free",
 				top_level: true,
+				sort,
 				page: pageParam,
 				limit: TOP_LEVEL_PAGE_SIZE,
 			}),
@@ -56,7 +69,7 @@ export function CommentSection({ postId }: CommentSectionProps) {
 	});
 
 	// 把所有分页的 data 拼成扁平列表
-	const comments = data?.pages.flatMap((p) => p.data) ?? [];
+	const comments = useMemo(() => data?.pages.flatMap((page) => page.data) ?? [], [data]);
 	const total = data?.pages[0]?.pagination?.total ?? 0;
 	const config = useMemo(
 		() => buildArticleCommentConfig({ postId, isLoggedIn }),
@@ -68,6 +81,8 @@ export function CommentSection({ postId }: CommentSectionProps) {
 		<CommentSectionShell
 			title="评论"
 			count={isLoggedIn ? total : undefined}
+			sort={sort}
+			onSortChange={isLoggedIn ? setSort : undefined}
 			form={
 				isLoggedIn ? (
 					<CommentForm postId={postId} isLoggedIn />
@@ -85,6 +100,8 @@ export function CommentSection({ postId }: CommentSectionProps) {
 					config={config}
 					isLoggedIn={isLoggedIn}
 					isLoading={isLoading}
+					error={isError ? error : undefined}
+					onRetry={() => void refetch()}
 					onLoadMore={hasNextPage ? fetchNextPage : undefined}
 					isLoadingMore={isFetchingNextPage}
 				/>
@@ -121,7 +138,7 @@ function JoinDiscussionCard() {
 			</div>
 			{open && (
 				<InlineLogin
-					className="annotation-pop mt-4 bg-background/60"
+					className="annotation-pop mt-4 border-t border-border pt-4"
 					onSuccess={() => setOpen(false)}
 				/>
 			)}
@@ -138,11 +155,14 @@ function AnonymousComposer({ postId }: { postId: string }) {
 				type="button"
 				onClick={() => setOpen((v) => !v)}
 				aria-expanded={open}
-				className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+				className="inline-flex items-center gap-2 text-xs text-muted-foreground transition-colors hover:text-foreground"
 			>
 				不想登录？匿名留言
 				<ChevronDown
-					className={`size-3.5 transition-transform duration-300 ${open ? "rotate-180" : ""}`}
+					{...iconProps(
+						14,
+						`transition-transform duration-300 ${open ? "rotate-180" : ""}`,
+					)}
 				/>
 			</button>
 			<div

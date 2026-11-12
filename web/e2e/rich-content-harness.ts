@@ -76,10 +76,7 @@ export function collectUnexpectedDiagnostics(page: Page, blockedUrls: Set<string
 		const source = message.location().url;
 		if (
 			message.type() === "error" &&
-			((source === "http://127.0.0.1:4173/api/v1/auth/me" &&
-				text ===
-					"Failed to load resource: the server responded with a status of 401 (Unauthorized)") ||
-				(blockedUrls.has(source) && text === "Failed to load resource: net::ERR_FAILED") ||
+			((blockedUrls.has(source) && text === "Failed to load resource: net::ERR_FAILED") ||
 				expectedError(text))
 		) {
 			return;
@@ -148,7 +145,7 @@ export async function openWithArticleSnapshot(context: BrowserContext, page: Pag
 			},
 			{ start: ARTICLE_START, end: ARTICLE_END },
 		);
-		const ready = page.waitForResponse("**/api/v1/auth/me");
+		const ready = page.waitForResponse("**/api/v1/presence/stream");
 		scripts.resolve();
 		await ready;
 		return snapshot;

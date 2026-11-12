@@ -6,43 +6,15 @@
  *
  * 字段来源：
  * - Comment / AdminComment 见 application/comment/service.go。
- * - Reaction / ReactionList 见 domain/commentreaction/entity.go。
+ * - AggregatedReaction / ReactionList 见 domain/commentreaction/entity.go。
  */
-import type { AdminComment, Comment, CommentPicture } from "@entities/comment/model/types";
+import type {
+	AdminComment,
+	Comment,
+	CommentPicture,
+	CommentSort,
+} from "@entities/comment/model/types";
 import type { PageQuery } from "@shared/api/types";
-
-/**
- * Reaction - 评论反应读模型（聚合后）
- *
- * 对应后端 domain/commentreaction/entity.go 的 AggregatedReaction，
- * 按 emoji 分组计数并携带当前用户是否已反应的标记。
- */
-export interface Reaction {
-	/** 表情 ID */
-	emoji_id: number;
-	/** 表情名称 */
-	emoji_name: string;
-	/** 表情图片 URL */
-	emoji_url: string;
-	/** 表情动图 URL */
-	gif_url?: string;
-	/** 反应总数 */
-	count: number;
-	/** 当前登录用户是否已反应 */
-	self: boolean;
-}
-
-/**
- * BatchReactionResult - 批量反应查询的单条结果
- *
- * 对应后端 domain/commentreaction/entity.go 的 ReactionList。
- */
-export interface BatchReactionResult {
-	/** 评论 ID */
-	comment_id: string;
-	/** 该评论的聚合反应列表 */
-	reactions: Reaction[];
-}
 
 /**
  * CommentType - 评论按 anchor 维度过滤的字面量联合
@@ -64,6 +36,8 @@ export interface CommentListQuery extends PageQuery {
 	top_level?: boolean;
 	/** 按 anchor_block_id 精确过滤（批注按块懒加载） */
 	block_id?: string;
+	/** 顶层自由评论的真实排序；省略时由后端按最新优先。 */
+	sort?: CommentSort;
 }
 
 /**
@@ -88,6 +62,8 @@ export interface BlockRange {
 	end: number;
 	is_ai: boolean;
 	author_name: string;
+	/** 发表者是文章 Owner 本人；旧响应没有此字段时按 false。 */
+	is_author?: boolean;
 }
 
 /** BlockAuthor - 批注块上的评论者 */
@@ -102,8 +78,7 @@ export interface BlockAuthor {
 /** 批注气泡按原始署名与 is_ai 筛选，区分同名真人与 AI。 */
 export type AnnotationAuthorFilter = { name: string; is_ai: boolean } | null;
 
-/** 回复排序方式。asc=最早优先（默认），desc=最新优先。
- *  「热门」需 reaction_count 冗余，本期未实现。 */
+/** 回复只按时间排序：asc=最早优先（默认），desc=最新优先；热门仅用于顶层列表。 */
 export type ReplySort = "asc" | "desc";
 
 /**

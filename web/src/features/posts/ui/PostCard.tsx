@@ -1,10 +1,10 @@
 import { getDisplayName } from "@entities/user/model/display-name";
+import { toAvatarItem } from "@shared/lib/avatar-user";
 import { formatRelativeTime } from "@shared/lib/date";
-import { AvatarGroup } from "@shared/ui/avatar-group";
 import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
 import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { Link } from "@tanstack/react-router";
-import { Badge } from "@violet/ui";
+import { AvatarGroup, iconProps, Tag } from "@violet/ui";
 import { ImageOff, Star } from "lucide-react";
 import { BLOG_SCOPE, markSharedSource, SharedElement } from "@/shared/lib/view-transition";
 
@@ -67,15 +67,14 @@ const PostCard = ({ post, size = "md" }: PostCardProps) => {
 						<div
 							className={`flex w-full ${coverH} items-center justify-center bg-muted`}
 						>
-							<ImageOff className="h-8 w-8 text-muted-foreground/50" />
+							<ImageOff className="size-6 text-muted-foreground/50" />
 						</div>
 					</Link>
 				)}
 				{post.is_featured && (
-					<Badge variant="default" className="absolute top-2 left-2 z-10 gap-1">
-						<Star className="size-3" />
+					<Tag icon={<Star {...iconProps(12)} />} className="absolute top-2 left-2 z-10">
 						精选
-					</Badge>
+					</Tag>
 				)}
 			</div>
 
@@ -109,8 +108,10 @@ const PostCard = ({ post, size = "md" }: PostCardProps) => {
 					<div className="flex items-center gap-1.5">
 						{post.author ? (
 							<AvatarGroup
-								users={[post.author, ...(post.collaborators ?? [])]}
-								highlightFirst
+								items={[post.author, ...(post.collaborators ?? [])].map(
+									toAvatarItem,
+								)}
+								size={24}
 							/>
 						) : null}
 						{post.author ? getDisplayName(post.author) : null}

@@ -9,7 +9,7 @@ for (const appearance of ["light", "dark"] as const) {
 		const page = await context.newPage();
 		await page.setViewportSize({ width: 900, height: 900 });
 		await page.goto("/");
-		const publicColors = await scopeColors(page, ".dialect-public");
+		const rootColors = await scopeColors(page, "html");
 		await page.goto("/lab/mascot");
 		const scope = page.locator("[data-lab-scope]").first();
 		await expect(scope).toBeVisible();
@@ -52,7 +52,7 @@ for (const appearance of ["light", "dark"] as const) {
 			.click();
 		await expect(page).toHaveURL(/\/$/);
 		expect(await page.locator("html").getAttribute("data-theme-navigation")).toBe(documentId);
-		expect(await scopeColors(page, ".dialect-public")).toEqual(publicColors);
+		expect(await scopeColors(page, "html")).toEqual(rootColors);
 		await expect(page.locator(".lab-scope")).toHaveCount(0);
 		await context.close();
 	});

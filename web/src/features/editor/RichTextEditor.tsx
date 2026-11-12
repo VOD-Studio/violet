@@ -218,14 +218,14 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 						<Button
 							type="button"
 							variant={sourceMode ? "secondary" : "ghost"}
-							size="xs"
+							size="sm"
 							title="切换 Markdown 源码 / 富文本"
 							onClick={toggleSourceMode}
 						>
 							<Code2 /> 源码
 						</Button>
 						{features.importFile ? (
-							<Button asChild size="xs" variant="ghost" title="导入 .md 文件">
+							<Button asChild size="sm" variant="ghost" title="导入 .md 文件">
 								<label className="cursor-pointer">
 									<input
 										type="file"
@@ -242,7 +242,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 							<Button
 								type="button"
 								variant="ghost"
-								size="xs"
+								size="sm"
 								title="导出为 .md"
 								onClick={handleExport}
 							>
@@ -272,9 +272,10 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 				<PromptDialog
 					open={linkDialogOpen}
 					onOpenChange={setLinkDialogOpen}
-					title="插入链接"
+					title={linkDefault ? "编辑链接" : "插入链接"}
 					label="链接地址"
 					defaultValue={linkDefault}
+					confirmLabel={linkDefault ? "保存" : "插入"}
 					placeholder="https://"
 					onConfirm={handleLinkConfirm}
 				/>

@@ -10,7 +10,7 @@
  * 注意：仅支持 .docx（OOXML），老式二进制 .doc 不支持（由 FilePreview 占位）。
  */
 
-import { Button } from "@violet/ui";
+import { Button, iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { Download } from "lucide-react";
 
@@ -40,13 +40,15 @@ export function DocxPreview({ url, name, className }: DocxPreviewProps) {
 						{name ?? "Word 文档"}
 					</span>
 					<Button
+						iconOnly
 						type="button"
-						size="icon-sm"
+						size="sm"
 						variant="ghost"
 						onClick={handleDownload}
+						aria-label="下载"
 						title="下载"
 					>
-						<Download className="size-3.5" />
+						<Download {...iconProps(14)} />
 					</Button>
 				</div>
 			) : null}

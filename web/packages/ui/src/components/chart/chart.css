@@ -1,0 +1,321 @@
+/*
+ * Chart：Recharts 外壳的主题接线，以及统计数字与只给趋势的迷你图。
+ * 分类色由调用方通过 --chart-1…5 或语义色配置，组件不引入新色值。
+ * 需先导入 @violet/ui/tokens.css 或 styles.css。
+ */
+
+@layer components {
+	.v-chart {
+		display: flex;
+		aspect-ratio: 16 / 9;
+		justify-content: center;
+		inline-size: 100%;
+		font-size: 12px;
+	}
+
+	.v-chart :where(.recharts-cartesian-axis-tick text) {
+		fill: var(--muted-foreground);
+	}
+
+	.v-chart :where(.recharts-cartesian-grid line) {
+		stroke: var(--border);
+	}
+
+	.v-chart :where(.recharts-curve.recharts-tooltip-cursor) {
+		stroke: var(--border);
+	}
+
+	.v-chart :where(.recharts-rectangle.recharts-tooltip-cursor) {
+		fill: var(--muted);
+	}
+
+	.v-chart :where(.recharts-polar-grid line) {
+		stroke: var(--border);
+	}
+
+	.v-chart :where(.recharts-radial-bar-background-sector) {
+		fill: var(--muted);
+	}
+
+	.v-chart :where(.recharts-reference-line line) {
+		stroke: var(--border);
+	}
+
+	.v-chart :where(.recharts-dot[stroke="#fff"]) {
+		stroke: transparent;
+	}
+
+	.v-chart :where(.recharts-sector) {
+		outline: none;
+		stroke: transparent;
+	}
+
+	.v-chart :where(.recharts-surface) {
+		outline: none;
+	}
+
+	.v-chart__tooltip {
+		display: grid;
+		min-inline-size: 8rem;
+		box-sizing: border-box;
+		gap: 6px;
+		align-items: start;
+		padding: 6px 10px;
+		border: 1px solid var(--border);
+		border-radius: var(--radius-8);
+		background-color: var(--card);
+		box-shadow: var(--shadow-soft);
+		font-size: 12px;
+	}
+
+	.v-chart__tooltip-title {
+		font-weight: 500;
+	}
+
+	.v-chart__tooltip-list {
+		display: grid;
+		gap: 6px;
+	}
+
+	.v-chart__tooltip-item {
+		display: flex;
+		align-items: stretch;
+		inline-size: 100%;
+		gap: 8px;
+		flex-wrap: wrap;
+	}
+
+	.v-chart__tooltip-item > svg {
+		inline-size: 10px;
+		block-size: 10px;
+		color: var(--muted-foreground);
+	}
+
+	.v-chart__tooltip-indicator {
+		flex: none;
+		inline-size: 10px;
+		block-size: 10px;
+		align-self: center;
+		border-radius: 2px;
+		background-color: var(--v-chart-indicator-color);
+	}
+
+	.v-chart__tooltip-indicator[data-indicator="line"] {
+		inline-size: 4px;
+		border-radius: 0;
+	}
+
+	.v-chart__tooltip-indicator[data-indicator="dashed"] {
+		inline-size: 0;
+		border: 1.5px dashed var(--v-chart-indicator-color);
+		background-color: transparent;
+	}
+
+	.v-chart__tooltip-indicator[data-nested] {
+		margin-block: 2px;
+		align-self: stretch;
+	}
+
+	.v-chart__tooltip-row {
+		display: flex;
+		flex: 1;
+		justify-content: space-between;
+		line-height: 1;
+		gap: 12px;
+	}
+
+	.v-chart__tooltip-label {
+		display: grid;
+		gap: 6px;
+		color: var(--muted-foreground);
+	}
+
+	.v-chart__tooltip-value {
+		font-family: var(--font-mono);
+		font-weight: 500;
+		color: var(--foreground);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.v-chart__legend {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 16px;
+		padding-block-start: 12px;
+	}
+
+	.v-chart__legend[data-align="top"] {
+		padding-block: 0 12px;
+	}
+
+	.v-chart__legend-item {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.v-chart__legend-item > svg {
+		inline-size: 12px;
+		block-size: 12px;
+		color: var(--muted-foreground);
+	}
+
+	.v-chart__legend-swatch {
+		flex: none;
+		inline-size: 8px;
+		block-size: 8px;
+		border-radius: 2px;
+	}
+
+	/* —— 统计数字 —— */
+
+	.v-stat {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		min-width: 0;
+	}
+
+	.v-stat__label {
+		font-size: 13px;
+		color: var(--muted-foreground);
+	}
+
+	.v-stat__value {
+		font-family: var(--font-mono);
+		font-size: 28px;
+		font-weight: 500;
+		font-variant-numeric: tabular-nums;
+		line-height: 1.2;
+	}
+
+	.v-stat__change {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		font-size: 13px;
+	}
+
+	.v-stat__change svg {
+		inline-size: 14px;
+		block-size: 14px;
+	}
+
+	.v-stat__change[data-direction="up"] {
+		color: var(--success-text);
+	}
+
+	.v-stat__change[data-direction="down"] {
+		color: var(--destructive-text);
+	}
+
+	.v-stat__delta {
+		font-family: var(--font-mono);
+	}
+
+	.v-stat__note {
+		margin-inline-start: 4px;
+		color: var(--muted-foreground);
+	}
+
+	.v-stat__spark {
+		inline-size: 120px;
+		block-size: 32px;
+		margin-block-start: 8px;
+		overflow: visible;
+	}
+
+	.v-stat__spark path {
+		fill: none;
+		stroke: color-mix(in oklab, var(--foreground) 60%, transparent);
+		stroke-width: 1.5;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+	}
+
+	/* —— 迷你柱状图 —— */
+
+	.v-mini-bars {
+		position: relative;
+		display: flex;
+		align-items: flex-end;
+		box-sizing: border-box;
+		gap: 10px;
+		block-size: 120px;
+		padding-block-start: 36px;
+	}
+
+	.v-mini-bars__item {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 6px;
+		inline-size: 44px;
+		cursor: default;
+	}
+
+	.v-mini-bars__bar {
+		display: block;
+		inline-size: 100%;
+		border-radius: 4px 4px 2px 2px;
+		background-color: var(--muted);
+		transition: background-color var(--duration-hover) ease-out;
+	}
+
+	.v-mini-bars__item[data-active] .v-mini-bars__bar {
+		background-color: var(--foreground);
+	}
+
+	.v-mini-bars__label {
+		font-size: 12px;
+		color: var(--muted-foreground);
+	}
+
+	.v-mini-bars__tip {
+		position: absolute;
+		inset-block-start: 0;
+		transform: translateX(-50%);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: 4px 10px;
+		border-radius: var(--radius-8);
+		background-color: var(--card);
+		box-shadow: var(--shadow-soft);
+		font-size: 12px;
+		white-space: nowrap;
+		pointer-events: none;
+		animation: v-mini-bars-tip 150ms cubic-bezier(0.32, 0.72, 0, 1);
+	}
+
+	.v-mini-bars__tip b {
+		font-size: 13px;
+		font-weight: 600;
+	}
+
+	.v-mini-bars__tip span {
+		color: var(--muted-foreground);
+	}
+
+	@keyframes v-mini-bars-tip {
+		from {
+			opacity: 0;
+		}
+
+		to {
+			opacity: 1;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-mini-bars__bar {
+			transition: none;
+		}
+
+		.v-mini-bars__tip {
+			animation: none;
+		}
+	}
+}

@@ -1,6 +1,5 @@
 "use client";
 
-import { Check, Minus } from "lucide-react";
 import { Checkbox as CheckboxPrimitive } from "radix-ui";
 import {
 	type ComponentProps,
@@ -136,19 +135,15 @@ export function Checkbox({
 				asChild
 			>
 				<button ref={buttonRef} type="button" form={form}>
-					<CheckboxPrimitive.Indicator
-						data-slot="checkbox-indicator"
-						className="v-checkbox__indicator"
-					>
-						<Check
-							aria-hidden="true"
-							className="v-checkbox__icon v-checkbox__icon--checked"
+					{/* 对勾是一笔描出来的：pathLength 归一后由 data-state 驱动描线与擦回，不随状态重挂 */}
+					<svg className="v-checkbox__tick" viewBox="0 0 16 16" aria-hidden="true">
+						<path
+							className="v-checkbox__tick-path"
+							d="M3.6 8.3 6.6 11.2 12.4 4.9"
+							pathLength={1}
 						/>
-						<Minus
-							aria-hidden="true"
-							className="v-checkbox__icon v-checkbox__icon--indeterminate"
-						/>
-					</CheckboxPrimitive.Indicator>
+					</svg>
+					<span className="v-checkbox__dash" aria-hidden="true" />
 				</button>
 			</CheckboxPrimitive.Root>
 		</span>

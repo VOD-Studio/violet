@@ -231,6 +231,25 @@ func TestMarkdownToHTML_RunnableMetadata(t *testing.T) {
 	assert.NotContains(t, out, "inline-math")
 }
 
+func TestMarkdownToHTML_CodeDisplayMetadata(t *testing.T) {
+	for _, marker := range []string{"", " run"} {
+		out, err := ToHTML("```TypeScript title=\"src/\\\"quoted\\\" <img> & file.ts\" {1,3-999999999999999999999999999}" + marker + " {\"timeout_secs\":10,\"allow_network\":false}\nconst x = \"<&>\";\n\n```\n")
+		require.NoError(t, err)
+		assert.Contains(t, out, `data-filename="src/&#34;quoted&#34; &lt;img&gt; &amp; file.ts"`)
+		assert.Contains(t, out, `data-lines="1,3-999999999999999999999999999"`)
+		assert.Contains(t, out, `data-source="const x = &#34;&lt;&amp;&gt;&#34;;`+"\n"+`"`)
+		assert.Contains(t, out, `&#34;allow_network&#34;:false`)
+		assert.NotContains(t, out, "<img>")
+		if marker == "" {
+			assert.Contains(t, out, `data-lang="TypeScript"`)
+			assert.NotContains(t, out, `data-runnable`)
+		} else {
+			assert.Contains(t, out, `data-lang="bun"`)
+			assert.Contains(t, out, `data-runnable="true"`)
+		}
+	}
+}
+
 func TestMarkdownToHTML_Footnotes(t *testing.T) {
 	out, err := ToHTML("First[^note], again[^note].\n\n[^note]: First paragraph $x$.\n\n    Second paragraph **bold**.")
 	require.NoError(t, err)

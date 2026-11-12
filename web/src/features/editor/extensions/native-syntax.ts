@@ -19,14 +19,30 @@ export function serializeNativeHtml(node: JSONContent, schema: Schema): string {
 	return html.replace(/\r/g, "&#13;").replace(/\n/g, "&#10;");
 }
 
+function hasCitation(node: JSONContent): boolean {
+	if (node.marks?.some((mark) => mark.type === "cite")) {
+		return true;
+	}
+	return node.content?.some(hasCitation) ?? false;
+}
+
 /** 与各节点的 Markdown 序列化共用原生 HTML 载体判定。 */
 export function requiresNativeHtml(node: JSONContent): boolean {
 	if (node.type === "details") return true;
+	if (node.type === "blockquote") {
+		return (
+			(typeof node.attrs?.cite === "string" && node.attrs.cite.length > 0) ||
+			hasCitation(node)
+		);
+	}
 	if (node.type === "paragraph" || node.type === "heading") {
 		return (
 			node.content?.some((child) =>
 				child.marks?.some(
-					(mark) => mark.type === "subscript" || mark.type === "superscript",
+					(mark) =>
+						mark.type === "subscript" ||
+						mark.type === "superscript" ||
+						mark.type === "cite",
 				),
 			) ?? false
 		);
@@ -63,7 +79,7 @@ function hasCarrierFootnote(node: JSONContent, insideCarrier = false): boolean {
 	return node.content?.some((child) => hasCarrierFootnote(child, carrier)) ?? false;
 }
 
-/** 上下标与其他格式交错时，整个文本块使用 HTML 保留字符转义与格式边界。 */
+/** Markdown 无法表达的引用出处与混合格式按需保留为原生 HTML。 */
 export function createNativeSyntaxStarterKit() {
 	let schema: Schema;
 	return StarterKit.extend({
@@ -75,8 +91,9 @@ export function createNativeSyntaxStarterKit() {
 				if (
 					!(extension instanceof Node) ||
 					!["doc", "paragraph", "heading"].includes(extension.name)
-				)
+				) {
 					return extension;
+				}
 				const renderMarkdown = getExtensionField<NonNullable<NodeConfig["renderMarkdown"]>>(
 					extension,
 					"renderMarkdown",

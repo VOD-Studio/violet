@@ -1,0 +1,151 @@
+/*
+ * 提及候选面板：输入框下方的 300 宽浮层，行内是头像、显示名、等宽用户名与角色标签。
+ * 面板与选项行的外观只此一份，React 与纯 HTML 共用 .v-mention 家族。
+ * 头像复用 avatar 单元，需先导入 @violet/ui/tokens.css 或 styles.css。
+ */
+@import "../avatar/avatar.css";
+
+@layer components {
+	.v-mention {
+		box-sizing: border-box;
+		z-index: var(--layer-dropdown, 40);
+		inline-size: 300px;
+		max-inline-size: 100%;
+		padding: 6px;
+		border: 1px solid var(--ol);
+		border-radius: var(--radius-12, 12px);
+		background-color: var(--popover);
+		color: var(--popover-foreground);
+		box-shadow: var(--shadow-soft);
+		animation: v-mention-in 140ms ease-out;
+	}
+
+	.v-mention__announcement {
+		position: absolute;
+		inline-size: 1px;
+		block-size: 1px;
+		padding: 0;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	.v-mention__label {
+		padding: 2px 8px 6px;
+		color: var(--muted-foreground);
+		font-size: 12px;
+		line-height: 1.4;
+	}
+
+	/* 滚动裁剪区留 4px 内边距与等量负外边距，选项的聚焦环不会被切掉 */
+	.v-mention__list {
+		box-sizing: border-box;
+		max-block-size: 240px;
+		margin-inline: -4px;
+		padding: 0 4px;
+		overflow-y: auto;
+		scroll-padding-block: 4px;
+	}
+
+	.v-mention__option {
+		box-sizing: border-box;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		inline-size: 100%;
+		padding: 6px 8px;
+		border: 0;
+		border-radius: var(--radius-8, 8px);
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		text-align: start;
+		cursor: pointer;
+		transition: background-color var(--v-duration-fast, 150ms) ease-out;
+	}
+
+	.v-mention__option:hover,
+	.v-mention__option[aria-selected="true"] {
+		background-color: var(--muted);
+	}
+
+	.v-mention__option:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+
+	.v-mention__all {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		flex: none;
+		inline-size: 24px;
+		block-size: 24px;
+		border-radius: var(--radius-full, 9999px);
+		background-color: var(--muted);
+		color: var(--muted-foreground);
+	}
+
+	.v-mention__name {
+		flex: 1;
+		min-inline-size: 0;
+		overflow: hidden;
+		font-size: 14px;
+		line-height: 1.4;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+
+	.v-mention__handle {
+		margin-inline-start: 8px;
+		color: var(--muted-foreground);
+		font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+		font-size: 12px;
+	}
+
+	.v-mention__tag {
+		flex: none;
+		display: inline-flex;
+		align-items: center;
+		block-size: 18px;
+		padding-inline: 6px;
+		border-radius: var(--radius-full, 9999px);
+		background-color: var(--muted);
+		color: var(--muted-foreground);
+		font-size: 11px;
+		line-height: 1;
+	}
+
+	.v-mention__empty {
+		margin: 0;
+		padding: 8px;
+		color: var(--muted-foreground);
+		font-size: 13px;
+		line-height: 1.5;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-mention {
+			animation: none;
+		}
+
+		.v-mention__option {
+			transition: none;
+		}
+	}
+
+	[data-motion="reduce"] .v-mention {
+		animation: none;
+	}
+
+	[data-motion="reduce"] .v-mention__option {
+		transition: none;
+	}
+}
+
+/* 只做淡入：设计稿要求浮层原地出现，不做位移与缩放 */
+@keyframes v-mention-in {
+	from {
+		opacity: 0;
+	}
+}

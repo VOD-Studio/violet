@@ -2,7 +2,7 @@ import { fetchSeriesBySlug, seriesKeys, useSeriesDetail } from "@features/series
 import type { SeriesDetail } from "@features/series/model/types";
 import { SeriesDetailBody } from "@features/series/ui/SeriesDetailBody";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Button, Empty, PageShell, ShimmerSkeleton } from "@violet/ui";
+import { Button, Empty, PageShell, Skeleton } from "@violet/ui";
 
 function SeriesDetailPage() {
 	const { slug } = Route.useParams();
@@ -12,17 +12,17 @@ function SeriesDetailPage() {
 		return (
 			<PageShell>
 				<div className="mx-auto max-w-4xl space-y-6">
-					<ShimmerSkeleton className="h-4 w-24 rounded-md" />
+					<Skeleton className="h-4 w-24 rounded-md" />
 					<div className="grid gap-10 md:grid-cols-[220px_minmax(0,1fr)]">
-						<ShimmerSkeleton className="aspect-2/3 w-full rounded-sm" />
+						<Skeleton className="aspect-2/3 w-full rounded-sm" />
 						<div className="space-y-4">
-							<ShimmerSkeleton className="h-4 w-32 rounded-md" />
-							<ShimmerSkeleton className="h-12 w-4/5 rounded-lg" />
-							<ShimmerSkeleton className="h-4 w-full rounded-md" />
-							<ShimmerSkeleton className="h-4 w-2/3 rounded-md" />
+							<Skeleton className="h-4 w-32 rounded-md" />
+							<Skeleton className="h-12 w-4/5 rounded-lg" />
+							<Skeleton className="h-4 w-full rounded-md" />
+							<Skeleton className="h-4 w-2/3 rounded-md" />
 						</div>
 					</div>
-					<ShimmerSkeleton className="h-64 w-full rounded-lg" />
+					<Skeleton className="h-64 w-full rounded-lg" />
 				</div>
 			</PageShell>
 		);
@@ -39,7 +39,6 @@ function SeriesDetailPage() {
 						</Button>
 					}
 					className="py-20"
-					size="lg"
 				/>
 			</PageShell>
 		);

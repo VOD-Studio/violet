@@ -1,8 +1,7 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { useAllRoles } from "@features/admin-roles/api/queries";
-import { getRoleBadgeVariant, getRoleDisplayName } from "@features/admin-roles/lib/utils";
-import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
-import { DataTable, exportToCsv, usePagedQuery } from "@features/admin-shared/ui/data-table";
+import { getRoleDisplayName, getRoleTagTone } from "@features/admin-roles/lib/utils";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import {
 	useAdminUsers,
 	useBatchUpdateRole,
@@ -19,16 +18,22 @@ import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { formatDateTime } from "@shared/lib/date";
 import { createFileRoute } from "@tanstack/react-router";
+import type { DataTableColumn, DataTableSort } from "@violet/ui";
 import {
+	Avatar,
 	Badge,
 	Button,
 	ConfirmDialog,
+	DataTable,
+	exportToCsv,
+	iconProps,
 	SearchInput,
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
+	Tag,
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
@@ -48,7 +53,7 @@ import {
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useMe } from "@/features/auth/api/queries";
-import { AvatarGroup } from "@/shared/ui/avatar-group/AvatarGroup";
+import { toAvatarItem } from "@/shared/lib/avatar-user";
 
 export const Route = createFileRoute("/admin/users")({
 	component: AdminUsers,
@@ -200,15 +205,7 @@ function AdminUsers() {
 			width: "72px",
 			align: "center",
 			cell: (row) => (
-				<AvatarGroup
-					users={[
-						{
-							username: row.username,
-							avatar_url: row.avatar_url,
-						},
-					]}
-					size="md"
-				/>
+				<Avatar {...toAvatarItem(row)} size={32} imgProps={{ loading: "lazy" }} />
 			),
 		},
 		{
@@ -232,16 +229,16 @@ function AdminUsers() {
 			header: "角色",
 			sortable: true,
 			cell: (row) => {
-				const variant = getRoleBadgeVariant(row.role, row.is_root);
+				const tone = getRoleTagTone(row.role, row.is_root);
 				const label = getRoleDisplayName(roles, row.role, row.role, row.is_root);
-				return <Badge variant={variant}>{label}</Badge>;
+				return <Tag tone={tone}>{label}</Tag>;
 			},
 		},
 		{
 			key: "is_active",
 			header: "状态",
 			cell: (row) => (
-				<Badge variant={row.is_active ? "outline" : "destructive"}>
+				<Badge tone={row.is_active ? "ok" : "danger"}>
 					{row.is_active ? "正常" : "已禁用"}
 				</Badge>
 			),
@@ -250,7 +247,7 @@ function AdminUsers() {
 			key: "email_verified",
 			header: "邮箱验证",
 			cell: (row) => (
-				<Badge variant={row.email_verified ? "default" : "secondary"}>
+				<Badge tone={row.email_verified ? "ok" : "off"}>
 					{row.email_verified ? "已验证" : "未验证"}
 				</Badge>
 			),
@@ -282,14 +279,15 @@ function AdminUsers() {
 					row.id === currentUserId;
 				return (
 					// 操作列点击不触发行点击：拦截在 DataTable 的 td 层（列声明 stopClickPropagation）
-					<div className="flex justify-center gap-2">
+					<div className="v-table__row-actions gap-2">
 						<PermissionGuard permission="user:list">
 							<Tooltip>
 								<TooltipTrigger asChild>
 									<span>
 										<Button
+											iconOnly
 											variant="ghost"
-											size="icon-sm"
+											size="sm"
 											onClick={(e) => {
 												e.stopPropagation();
 												setEditingUser(row);
@@ -297,7 +295,7 @@ function AdminUsers() {
 											}}
 											aria-label={`编辑用户 ${row.username}`}
 										>
-											<Pencil className="size-3.5" />
+											<Pencil {...iconProps(14)} />
 										</Button>
 									</span>
 								</TooltipTrigger>
@@ -309,8 +307,9 @@ function AdminUsers() {
 								<TooltipTrigger asChild>
 									<span>
 										<Button
+											iconOnly
 											variant="ghost"
-											size="icon-sm"
+											size="sm"
 											onClick={(e) => {
 												e.stopPropagation();
 												setBadgesUser(row);
@@ -318,7 +317,7 @@ function AdminUsers() {
 											}}
 											aria-label={`管理徽章 ${row.username}`}
 										>
-											<BadgeCheck className="size-3.5" />
+											<BadgeCheck {...iconProps(14)} />
 										</Button>
 									</span>
 								</TooltipTrigger>
@@ -331,15 +330,16 @@ function AdminUsers() {
 									<TooltipTrigger asChild>
 										<span>
 											<Button
+												iconOnly
 												variant="ghost"
-												size="icon-sm"
+												size="sm"
 												onClick={(e) => {
 													e.stopPropagation();
 													restoreUser.mutate(row.id);
 												}}
 												aria-label={`恢复用户 ${row.username}`}
 											>
-												<ArchiveRestore className="size-3.5" />
+												<ArchiveRestore {...iconProps(14)} />
 											</Button>
 										</span>
 									</TooltipTrigger>
@@ -352,8 +352,9 @@ function AdminUsers() {
 									<TooltipTrigger asChild>
 										<span>
 											<Button
+												iconOnly
 												variant="ghost"
-												size="icon-sm"
+												size="sm"
 												className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 												disabled={isProtected}
 												onClick={(e) => {
@@ -362,7 +363,7 @@ function AdminUsers() {
 												}}
 												aria-label={`注销用户 ${row.username}`}
 											>
-												<Trash2 className="size-3.5" />
+												<Trash2 {...iconProps(14)} />
 											</Button>
 										</span>
 									</TooltipTrigger>
@@ -377,8 +378,9 @@ function AdminUsers() {
 								<TooltipTrigger asChild>
 									<span>
 										<Button
+											iconOnly
 											variant="ghost"
-											size="icon-sm"
+											size="sm"
 											disabled={deletedView === "deleted" || isProtected}
 											onClick={(e) => {
 												e.stopPropagation();
@@ -387,7 +389,7 @@ function AdminUsers() {
 											}}
 											aria-label={`合并用户 ${row.username}`}
 										>
-											<Merge className="size-3.5" />
+											<Merge {...iconProps(14)} />
 										</Button>
 									</span>
 								</TooltipTrigger>
@@ -408,7 +410,7 @@ function AdminUsers() {
 				action={
 					<PermissionGuard permission="user:list">
 						<Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-							<Plus className="size-3.5" />
+							<Plus {...iconProps(14)} />
 							创建用户
 						</Button>
 					</PermissionGuard>
@@ -417,7 +419,6 @@ function AdminUsers() {
 					<div className="flex flex-wrap items-center gap-3 pt-1">
 						<div className="min-w-50 max-w-80 flex-1">
 							<SearchInput
-								variant="soft"
 								controlSize="sm"
 								aria-label="搜索用户名或邮箱"
 								defaultValue=""
@@ -481,7 +482,7 @@ function AdminUsers() {
 							onClick={() => refetch()}
 							disabled={isLoading}
 						>
-							<RefreshCw className="size-3.5" />
+							<RefreshCw {...iconProps(14)} />
 							刷新
 						</Button>
 						<Button
@@ -492,7 +493,7 @@ function AdminUsers() {
 								toast.success("已导出当前页 CSV");
 							}}
 						>
-							<Download className="size-3.5" />
+							<Download {...iconProps(14)} />
 							导出 CSV
 						</Button>
 					</div>
@@ -535,7 +536,7 @@ function AdminUsers() {
 										selectedHasProtected
 									}
 								>
-									<Trash2 className="size-3.5" />
+									<Trash2 {...iconProps(14)} />
 									禁用
 								</Button>
 							</PermissionGuard>
@@ -549,8 +550,8 @@ function AdminUsers() {
 										selectedHasProtected
 									}
 								>
-									<SelectTrigger size="sm" className="w-40">
-										<UserCog className="size-3.5 mr-1" />
+									<SelectTrigger controlSize="sm" className="w-40">
+										<UserCog {...iconProps(14, "mr-1")} />
 										修改角色
 									</SelectTrigger>
 									<SelectContent>

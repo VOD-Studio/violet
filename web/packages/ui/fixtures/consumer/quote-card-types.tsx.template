@@ -1,0 +1,39 @@
+import { createRef } from "react";
+import { QuoteCard, type QuoteCardLinkProps, type QuoteCardProps } from "@violet/ui";
+import {
+	QuoteCard as LeafQuoteCard,
+	type QuoteCardLinkProps as LeafQuoteCardLinkProps,
+	type QuoteCardProps as LeafQuoteCardProps,
+} from "@violet/ui/quote-card";
+
+const props: QuoteCardProps = {
+	href: "/tweets/original",
+	label: "引用原文",
+	authorName: "consumer",
+	content: "原文摘要",
+	imageSrc: "/thumbnail.webp",
+	nested: "引用了一条推文",
+};
+const leafProps: LeafQuoteCardProps = props;
+const renderLink = ({ children, ...link }: QuoteCardLinkProps) => <a {...link}>{children}</a>;
+const leafRenderLink: (props: LeafQuoteCardLinkProps) => React.ReactElement = renderLink;
+
+export const cards = (
+	<>
+		<QuoteCard {...props} ref={createRef<HTMLDivElement>()} renderLink={renderLink} />
+		<LeafQuoteCard {...leafProps} renderLink={leafRenderLink} />
+		<QuoteCard {...props} href={undefined} action={<button type="button">取消引用</button>} />
+		<LeafQuoteCard deleted deletedLabel="来源已删除" />
+		<QuoteCard ref={(element) => {
+			const root: HTMLDivElement | null = element;
+			return () => { void root; };
+		}} onClick={(event) => { const root: HTMLDivElement = event.currentTarget; void root; }} />
+	</>
+);
+
+// @ts-expect-error 作者不再提供独立链接扩展口，整卡只有唯一的原文链接。
+export const removedAuthorRenderer = <QuoteCard renderAuthor={() => <a href="/users/consumer">consumer</a>} />;
+// @ts-expect-error 缩略图只接受一张图片地址，不接受图片数组。
+export const invalidImages = <LeafQuoteCard imageSrc={["/one.webp", "/two.webp"]} />;
+// @ts-expect-error ref 属于根 div，不属于覆盖链接。
+export const invalidAnchorRef = <QuoteCard ref={createRef<HTMLAnchorElement>()} />;

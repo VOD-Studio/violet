@@ -54,6 +54,8 @@ const schema: Schema = {
 			"dataLang",
 			"dataOverrides",
 			"dataSource",
+			"dataFilename",
+			"dataLines",
 		],
 		p: [...(defaultSchema.attributes?.p ?? []), "style"],
 		h1: [...(defaultSchema.attributes?.h1 ?? []), "style"],
@@ -79,6 +81,7 @@ const schema: Schema = {
 		"input",
 		"label",
 		"section",
+		"cite",
 	],
 	// 标题与脚注双向链接必须沿用存储时的同一组 id。
 	clobberPrefix: "",

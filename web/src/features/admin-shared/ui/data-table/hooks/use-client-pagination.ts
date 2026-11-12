@@ -1,5 +1,5 @@
+import type { DataTablePagination } from "@violet/ui";
 import { useMemo, useState } from "react";
-import type { DataTablePagination } from "../types/data-table-types";
 import { DEFAULT_PAGE_SIZE } from "./use-paged-query";
 
 /**

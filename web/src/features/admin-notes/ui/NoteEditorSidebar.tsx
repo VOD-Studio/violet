@@ -1,9 +1,9 @@
 import type { AdminNote } from "@features/admin-notes/model/types";
 import { useTags } from "@features/tags/api/queries";
 import { formatDate } from "@shared/lib/date";
-import { Badge, Input, Label } from "@violet/ui";
+import { Input, iconProps, Kbd, Label, Tag } from "@violet/ui";
 
-import { Clock, FileText, Hash, Info, Plus, Tag as TagIcon, X } from "lucide-react";
+import { Clock, FileText, Hash, Info, Plus, Tag as TagIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
 interface NoteEditorSidebarProps {
@@ -52,7 +52,7 @@ export function NoteEditorSidebar({
 			<div className="border-edge-hairline bg-background rounded-lg border p-4 shadow-2xs">
 				<div className="mb-3 flex items-center justify-between">
 					<Label className="flex items-center gap-1.5 font-medium">
-						<TagIcon className="text-muted-foreground size-3.5" />
+						<TagIcon {...iconProps(14, "text-muted-foreground")} />
 						标签
 					</Label>
 					<span className="font-mono text-xs text-muted-foreground">{tags.length}/8</span>
@@ -61,17 +61,14 @@ export function NoteEditorSidebar({
 				{/* 已选标签 */}
 				<div className="mb-3 flex flex-wrap gap-1.5">
 					{tags.map((t) => (
-						<Badge key={t} variant="secondary" className="gap-1 py-0.5 text-xs">
+						<Tag
+							key={t}
+							size="sm"
+							onRemove={() => handleRemoveTag(t)}
+							removeLabel={`移除标签 ${t}`}
+						>
 							#{t}
-							<button
-								type="button"
-								onClick={() => handleRemoveTag(t)}
-								className="hover:text-destructive transition-colors"
-								aria-label={`移除标签 ${t}`}
-							>
-								<X className="size-3" />
-							</button>
-						</Badge>
+						</Tag>
 					))}
 					{tags.length === 0 ? (
 						<span className="text-xs text-muted-foreground/70">暂无标签</span>
@@ -93,7 +90,7 @@ export function NoteEditorSidebar({
 							placeholder="输入标签按回车…"
 							controlSize="sm"
 							className="text-xs"
-							classNames={{ root: "min-w-0 flex-1" }}
+							classNames={{ control: "min-w-0 flex-1" }}
 						/>
 						<button
 							type="button"
@@ -102,7 +99,7 @@ export function NoteEditorSidebar({
 							className="border-input hover:bg-muted disabled:opacity-40 inline-flex size-8 shrink-0 items-center justify-center rounded-md border transition-colors"
 							aria-label="添加标签"
 						>
-							<Plus className="size-3.5" />
+							<Plus {...iconProps(14)} />
 						</button>
 					</div>
 				) : null}
@@ -132,20 +129,20 @@ export function NoteEditorSidebar({
 			{/* 元信息卡片 */}
 			<div className="border-edge-hairline bg-background rounded-lg border p-4 shadow-2xs">
 				<Label className="mb-3 flex items-center gap-1.5 font-medium">
-					<Info className="text-muted-foreground size-3.5" />
+					<Info {...iconProps(14, "text-muted-foreground")} />
 					文档指标
 				</Label>
 				<div className="space-y-2.5 text-xs">
 					<div className="flex items-center justify-between">
 						<span className="text-muted-foreground flex items-center gap-1.5">
-							<FileText className="size-3 text-muted-foreground/70" />
+							<FileText {...iconProps(12, "text-muted-foreground/70")} />
 							字数
 						</span>
 						<span className="font-mono font-medium">{contentLength} 字</span>
 					</div>
 					<div className="flex items-center justify-between">
 						<span className="text-muted-foreground flex items-center gap-1.5">
-							<Clock className="size-3 text-muted-foreground/70" />
+							<Clock {...iconProps(12, "text-muted-foreground/70")} />
 							预估阅读
 						</span>
 						<span className="font-mono font-medium">约 {readingMinutes} 分钟</span>
@@ -175,13 +172,12 @@ export function NoteEditorSidebar({
 			{/* 快捷键提示 */}
 			<div className="border-edge-hairline bg-muted/20 text-muted-foreground/80 rounded-lg border p-3.5 text-xs">
 				<p className="mb-1.5 flex items-center gap-1.5 font-medium text-foreground">
-					<Hash className="size-3.5 text-muted-foreground" />
+					<Hash {...iconProps(14, "text-muted-foreground")} />
 					写作贴士
 				</p>
 				<ul className="space-y-1 text-[11px] leading-relaxed">
 					<li>
-						• 按 <kbd className="bg-muted rounded px-1 font-mono">⌘ S</kbd>{" "}
-						随时快捷保存。
+						• 按 <Kbd size="sm" keys={["mod", "S"]} /> 随时快捷保存。
 					</li>
 					<li>• 标题留空时，系统自动提取首行作为索引摘要。</li>
 					<li>• 正文推荐使用「现象 / 根因 / 修法」三段式排版。</li>

@@ -1,0 +1,20 @@
+/*
+ * 窗：前台固定背景。窗外的景虚化铺满视口，雾按背景色覆在上面，水珠与雪在最上层。
+ */
+
+.layer {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+}
+
+/* 半分辨率绘制后放大；放大 6% 藏住模糊在边缘留下的浅色。浅色主题下压低对比，夜景也不会在亮的界面上显脏 */
+.view {
+	filter: blur(14px) saturate(0.85) contrast(0.72) brightness(1.08);
+	transform: scale(1.06);
+}
+
+.view[data-dark] {
+	filter: blur(14px) saturate(0.8) brightness(0.36);
+}

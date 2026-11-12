@@ -12,9 +12,6 @@ import type { ReactNode } from "react";
 /** 原始评论的最小约束（归一化与去重需要 id） */
 export type CommentRaw = { id: string };
 
-/** 评论展示视觉色阶（源自文章评论 severity 概念；推文恒 default） */
-export type CommentTone = "default" | "discussion" | "author";
-
 /** 单条评论的展示归一化模型（feature 适配，shared 渲染） */
 export interface CommentDisplayItem<T extends CommentRaw = CommentRaw> {
 	/** 评论 ID */
@@ -37,8 +34,10 @@ export interface CommentDisplayItem<T extends CommentRaw = CommentRaw> {
 	authorProfileUrl?: string;
 	/** 是否作者本人（作者徽章） */
 	isAuthor?: boolean;
-	/** 是否待审核（「审批中」徽章；推文即发即出恒 false） */
+	/** 是否待审核（明确显示「待审核 · 仅自己可见」）；推文即发即出恒 false。 */
 	isPending?: boolean;
+	/** 已删除时保留条目位置，不再显示原文或交互。 */
+	isDeleted?: boolean;
 	/** 正文纯文本 */
 	body: string;
 	/** 创建时间，RFC3339 字符串 */
@@ -47,8 +46,6 @@ export interface CommentDisplayItem<T extends CommentRaw = CommentRaw> {
 	repliesTotal?: number;
 	/** 回复预览（后端返回才有；无则展开时才拉取） */
 	repliesPreview?: T[];
-	/** 视觉色阶 */
-	tone?: CommentTone;
 	/** 原始评论对象（插槽 / 回调用） */
 	raw: T;
 }
@@ -90,7 +87,7 @@ export interface CommentSectionConfig<T extends CommentRaw = CommentRaw> {
 	renderAvatar?: (item: CommentDisplayItem<T>, opts: { size: "md" | "sm" }) => ReactNode;
 	/** 标题行额外徽章（文章 AI 身份等 feature 专属；shared 不感知业务语义） */
 	renderMetaBadges?: (item: CommentDisplayItem<T>) => ReactNode;
-	/** 操作插槽（文章 ReactionBar；推文删除按钮） */
+	/** 操作插槽（文章 CommentReactions；推文删除按钮） */
 	renderActions?: (item: CommentDisplayItem<T>) => ReactNode;
 	/** 回复表单插槽（点「回复」后内联展开；提交成功后调用 onSuccess(raw)） */
 	renderReplyForm: (

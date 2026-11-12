@@ -98,8 +98,8 @@ describe("PostEditor 清空/重置", () => {
 		// 点击工具栏「清空」按钮
 		fireEvent.click(screen.getByRole("button", { name: /^清空$/ }));
 
-		// 确认弹窗内的「清空」按钮（与工具栏按钮同名，限定在 dialog 内取）
-		const dialog = await screen.findByRole("dialog");
+		// 确认框内的「清空」按钮（与工具栏按钮同名，限定在确认框内取）
+		const dialog = await screen.findByRole("alertdialog");
 		fireEvent.click(within(dialog).getByRole("button", { name: "清空" }));
 
 		// 标题已清空（旧值消失）
@@ -133,7 +133,7 @@ describe("PostEditor 清空/重置", () => {
 		fireEvent.click(screen.getByRole("button", { name: /^重置$/ }));
 
 		// 确认弹窗内的「重置」按钮
-		const dialog = await screen.findByRole("dialog");
+		const dialog = await screen.findByRole("alertdialog");
 		fireEvent.click(within(dialog).getByRole("button", { name: "重置" }));
 
 		// 恢复为服务器原始标题

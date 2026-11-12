@@ -1,9 +1,3 @@
-/**
- * useVimPreference - Vim 模式偏好持久化
- *
- * 默认开启（与 yggdrasil 一致），key 为 violet-code-runner-vim。
- * 切换时同步写入 localStorage。
- */
 import { useCallback, useState } from "react";
 
 const STORAGE_KEY = "violet-code-runner-vim";
@@ -19,19 +13,16 @@ function readStored(): boolean {
 }
 
 export function useVimPreference() {
-	const [vimEnabled, setVimEnabled] = useState(readStored);
+	const [vimEnabled, setEnabled] = useState(readStored);
 
-	const toggle = useCallback(() => {
-		setVimEnabled((prev) => {
-			const next = !prev;
-			try {
-				localStorage.setItem(STORAGE_KEY, String(next));
-			} catch {
-				// 写入失败不影响内存状态
-			}
-			return next;
-		});
+	const setVimEnabled = useCallback((enabled: boolean) => {
+		setEnabled(enabled);
+		try {
+			localStorage.setItem(STORAGE_KEY, String(enabled));
+		} catch {
+			// 禁止本机存储时仍保留本页内的设置。
+		}
 	}, []);
 
-	return { vimEnabled, toggleVim: toggle };
+	return { vimEnabled, setVimEnabled };
 }

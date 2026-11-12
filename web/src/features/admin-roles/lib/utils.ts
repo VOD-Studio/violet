@@ -4,21 +4,11 @@
 import type { RoleDTO } from "../model/types";
 
 /**
- * 根据角色名称获取 Badge variant
+ * 根据角色名称获取 Tag 色调：最高权限角色用强调色，其余中性
  */
-export const getRoleBadgeVariant = (
-	roleName?: string,
-	isRoot?: boolean,
-): "default" | "secondary" | "outline" | "destructive" => {
-	if (isRoot) return "default";
-	switch (roleName) {
-		case "superadmin":
-			return "default";
-		case "admin":
-			return "secondary";
-		default:
-			return "outline";
-	}
+export const getRoleTagTone = (roleName?: string, isRoot?: boolean): "neutral" | "accent" => {
+	if (isRoot || roleName === "superadmin") return "accent";
+	return "neutral";
 };
 
 /**

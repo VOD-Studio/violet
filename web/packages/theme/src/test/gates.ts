@@ -2,14 +2,13 @@ import type { ContrastLevel, Step } from "../index.ts";
 import { apca, type Measured, measure, PRECISIONS, wcag } from "./colors.ts";
 import { describeTheme, namedScales, type Sample, STEPS } from "./sweep.ts";
 
-type Threshold = { wcag: number; apca: number };
+type Threshold = { wcag: number; apca?: number };
 
 export interface Gate {
 	name: string;
 	/**
-	 * 标准档的 APCA Lc 绝对值下限按 APCA 的用途分档：90 是字号表中 16px/400 正文的要求，75 是正文的最低值，
-	 * 60 是正文以外的可读内容文字（标签、按钮文字），30 是有语义的非文字元素，15 是大面积按钮可辨的下限。
-	 * 提高档按 APCA 的 AAA 换算上调 Lc 15（正文在近白背景上至多做到 Lc 100），WCAG 文字取 AAA 的 7、非文字取 4.5。
+	 * WCAG 2.2 AA 是硬约束：低于 `wcag` 的组合让测试失败。文字的 `apca` 是按用途分级的
+	 * 参考下限，只告警不失败（ADR-0029）；装饰与边框不检查 APCA。
 	 */
 	threshold: Record<ContrastLevel, Threshold>;
 	/** 前景：某几档，或实色上的前景色 */
@@ -54,16 +53,8 @@ export const GATES: Gate[] = [
 	},
 	{
 		name: "控件边界与焦点环对背景与表面",
-		threshold: { standard: { wcag: 3, apca: 30 }, more: { wcag: 4.5, apca: 45 } },
+		threshold: { standard: { wcag: 3 }, more: { wcag: 4.5 } },
 		texts: [7, 8],
-		on: [1, 2],
-		surfaces: "shared",
-	},
-	{
-		// WCAG 1.4.11 不要求带文字按钮的填充色与页面对比，只用 APCA 对大面积按钮的可辨下限
-		name: "实色与背景可辨",
-		threshold: { standard: { wcag: 1, apca: 15 }, more: { wcag: 1, apca: 30 } },
-		texts: [9, 10],
 		on: [1, 2],
 		surfaces: "shared",
 	},
@@ -77,7 +68,7 @@ export const GATES: Gate[] = [
 	{
 		// 分类色用作图表系列，属于 WCAG 1.4.11 要求 3:1 的图形
 		name: "分类色实色作为图形对背景与表面",
-		threshold: { standard: { wcag: 3, apca: 30 }, more: { wcag: 4.5, apca: 45 } },
+		threshold: { standard: { wcag: 3 }, more: { wcag: 4.5 } },
 		texts: [9, 10],
 		on: [1, 2],
 		surfaces: "shared",
@@ -106,15 +97,24 @@ export const measureSample = ({ scales }: Sample): MeasuredScale[] =>
 		};
 	});
 
-/** 某一门槛在全部样本上的不达标组合。 */
-export function gateFailures(
+export interface GateResult {
+	/** 低于 WCAG 下限的组合，硬约束 */
+	failures: string[];
+	/** 达到 WCAG 下限但低于 APCA 参考值的组合总数，只告警 */
+	advisoryCount: number;
+	/** 前三条告警示例，不保留整轮遍历的重复日志 */
+	advisories: string[];
+}
+
+/** 某一门槛在全部样本上的不达标组合；WCAG 不达标是失败，仅 APCA 偏低是告警。 */
+export function evaluateGate(
 	gate: Gate,
 	samples: Sample[],
 	measured: MeasuredScale[][],
 	contrast: ContrastLevel,
-) {
-	const { wcag: minWcag, apca: minApca } = gate.threshold[contrast];
-	const failures: string[] = [];
+): GateResult {
+	const { wcag: minWcag, apca: reference } = gate.threshold[contrast];
+	const result: GateResult = { failures: [], advisoryCount: 0, advisories: [] };
 	samples.forEach((sample, index) => {
 		const scales = measured[index] ?? [];
 		const [brand, neutral] = scales as [MeasuredScale, MeasuredScale];
@@ -128,6 +128,14 @@ export function gateFailures(
 						? [neutral, brand]
 						: [neutral, brand, scale];
 			for (const text of gate.texts) {
+				// 状态色阶的正文与次要文字按状态用途参考 Lc 45（提高档 Lc 60）
+				const apcaReference =
+					(text === 11 || text === 12) &&
+					(scale.name === "danger" ||
+						scale.name === "warning" ||
+						scale.name === "success")
+						? Math.min(reference ?? Infinity, contrast === "more" ? 60 : 45)
+						: reference;
 				const foreground =
 					text === "contrast" ? scale.contrast : (scale.colors[text - 1] as Measured);
 				for (const surface of surfaces) {
@@ -135,18 +143,26 @@ export function gateFailures(
 						const background = surface.colors[step - 1] as Measured;
 						for (const precision of PRECISIONS) {
 							const ratio = wcag(foreground, background, precision);
+							if (ratio >= minWcag && apcaReference === undefined) continue;
 							const lc = apca(foreground, background, precision);
-							if (ratio >= minWcag && lc >= minApca) continue;
+							if (
+								ratio >= minWcag &&
+								apcaReference !== undefined &&
+								lc >= apcaReference
+							)
+								continue;
+							const failed = ratio < minWcag;
+							if (!failed) result.advisoryCount++;
+							if (!failed && result.advisories.length >= 3) continue;
 							const label =
 								text === "contrast" ? scale.contrastCss : scale.css[text - 1];
-							failures.push(
-								`${describeTheme(sample.theme)} ${scale.name} ${label} on ${surface.css[step - 1]} (${precision}): WCAG ${ratio.toFixed(2)}, APCA ${lc.toFixed(1)}`,
-							);
+							const line = `${describeTheme(sample.theme)} ${scale.name} ${label} on ${surface.css[step - 1]} (${precision}): WCAG ${ratio.toFixed(2)}, APCA ${lc.toFixed(1)}`;
+							(failed ? result.failures : result.advisories).push(line);
 						}
 					}
 				}
 			}
 		}
 	});
-	return failures;
+	return result;
 }

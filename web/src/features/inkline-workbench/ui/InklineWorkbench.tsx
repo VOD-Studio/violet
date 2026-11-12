@@ -1,6 +1,5 @@
-import { CodeCard } from "@shared/ui/code-preview";
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Button, Segmented } from "@violet/ui";
+import { Button, CodeBlock, iconProps, Segmented } from "@violet/ui";
 import { cn } from "cn";
 import { ArrowUpRight, Check, Copy, X } from "lucide-react";
 import { type ComponentType, type ReactNode, useEffect, useRef, useState } from "react";
@@ -217,9 +216,9 @@ function SectionCode({ section }: { section: WorkbenchSection }) {
 	return (
 		<div className="grid gap-3">
 			{blocks.map((block) => (
-				<CodeCard
+				<CodeBlock
 					key={block.title}
-					title={block.title}
+					filename={block.title}
 					code={block.code}
 					language="ts"
 					collapseLines={0}
@@ -259,8 +258,9 @@ function Brand() {
 					{INSTALL}
 				</code>
 				<Button
+					iconOnly
 					variant="ghost"
-					size="icon-xs"
+					size="sm"
 					onClick={copy}
 					aria-label={copied ? "已复制" : "复制安装命令"}
 				>
@@ -333,7 +333,7 @@ function ExternalLinks({ className }: { className?: string }) {
 						)}
 					>
 						{link.label}
-						<ArrowUpRight aria-hidden className="size-3" />
+						<ArrowUpRight aria-hidden {...iconProps(12)} />
 					</a>
 				</li>
 			))}
@@ -386,7 +386,13 @@ function Overlay({
 			>
 				<div className="flex items-center justify-between">
 					<span className="text-sm font-medium">{title}</span>
-					<Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="关闭面板">
+					<Button
+						iconOnly
+						variant="ghost"
+						size="sm"
+						onClick={onClose}
+						aria-label="关闭面板"
+					>
 						<X aria-hidden />
 					</Button>
 				</div>

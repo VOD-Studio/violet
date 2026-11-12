@@ -1,0 +1,244 @@
+import { createRef } from "react";
+import {
+	Accordion,
+	AccordionItem,
+	Alert,
+	Breadcrumbs,
+	DataTable,
+	Empty,
+	exportToCsv,
+	List,
+	ListItem,
+	ListItemAction,
+	ListItemChevron,
+	ListItemContent,
+	ListItemDescription,
+	ListItemIcon,
+	ListItemTitle,
+	ListItemValue,
+	MiniBars,
+	PageHeader,
+	Pagination,
+	ProgressBar,
+	ProgressRing,
+	Stat,
+	Steps,
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+	Tree,
+	type AlertProps,
+	type AlertTone,
+	type BreadcrumbItem,
+	type BreadcrumbsProps,
+	type DataTableColumn,
+	type DataTableProps,
+	type DataTableSort,
+	type EmptyProps,
+	type EmptyVariant,
+	type MiniBarsDatum,
+	type MiniBarsProps,
+	type PageHeaderBack,
+	type PageHeaderProps,
+	type ProgressBarProps,
+	type ProgressRingProps,
+	type ProgressSegments,
+	type ProgressStatus,
+	type StatChange,
+	type StatProps,
+	type StepItem,
+	type StepsProps,
+	type StepsTone,
+	type TreeNodeData,
+} from "@violet/ui";
+
+import {
+	Alert as LeafAlert,
+	type AlertProps as LeafAlertProps,
+} from "@violet/ui/alert";
+import {
+	Breadcrumbs as LeafBreadcrumbs,
+	type BreadcrumbsProps as LeafBreadcrumbsProps,
+} from "@violet/ui/breadcrumbs";
+import { Empty as LeafEmpty, type EmptyProps as LeafEmptyProps } from "@violet/ui/empty";
+import {
+	PageHeader as LeafPageHeader,
+	type PageHeaderProps as LeafPageHeaderProps,
+} from "@violet/ui/page-header";
+import {
+	ProgressBar as LeafProgressBar,
+	type ProgressBarProps as LeafProgressBarProps,
+} from "@violet/ui/progress";
+import { Steps as LeafSteps, type StepsProps as LeafStepsProps } from "@violet/ui/steps";
+import { Accordion as LeafAccordion, AccordionItem as LeafAccordionItem } from "@violet/ui/accordion";
+import { List as LeafList, ListItem as LeafListItem } from "@violet/ui/list";
+import { Pagination as LeafPagination } from "@violet/ui/pagination";
+import { DataTable as LeafDataTable, Table as LeafTable } from "@violet/ui/table";
+import { Tree as LeafTree } from "@violet/ui/tree";
+
+export const accordions = <>
+	<Accordion defaultValue={["a"]} onValueChange={(value) => { const open: string[] = value; void open; }} headingLevel={2}>
+		<AccordionItem value="a" title="评论需要审核吗？">首次评论需要审核。</AccordionItem>
+	</Accordion>
+	<LeafAccordion type="single" value="" onValueChange={(value) => { const open: string = value; void open; }}>
+		<LeafAccordionItem value="publish" title="发布设置" summary="立即发布" disabled>…</LeafAccordionItem>
+	</LeafAccordion>
+</>;
+// @ts-expect-error 一次一项的值是字符串而不是数组。
+export const invalidSingleValue = <Accordion type="single" value={["a"]} />;
+// @ts-expect-error 可多开的值是数组而不是字符串。
+export const invalidMultipleValue = <LeafAccordion type="multiple" defaultValue="a" />;
+
+export const lists = <>
+	<List density="compact" aria-label="成员" ref={createRef<HTMLUListElement>()}>
+		<ListItem asChild aria-current="page"><a href="/settings">外观</a></ListItem>
+		<ListItem onClick={(event) => { const button: HTMLButtonElement = event.currentTarget; void button; }}>
+			<ListItemIcon>★</ListItemIcon>
+			<ListItemContent><ListItemTitle mono>语言</ListItemTitle><ListItemDescription>界面与日期格式</ListItemDescription></ListItemContent>
+			<ListItemValue>简体中文</ListItemValue>
+			<ListItemChevron />
+		</ListItem>
+		<ListItem><ListItemTitle>小径</ListItemTitle><ListItemAction aria-label="小径 的更多操作">⋯</ListItemAction></ListItem>
+	</List>
+	<LeafList><LeafListItem ref={createRef<HTMLDivElement>()}>静态行</LeafListItem></LeafList>
+</>;
+// @ts-expect-error 静态行不是 button，disabled 与 type 只属于整行可点的行。
+export const invalidStaticDisabled = <ListItem disabled>静态行</ListItem>;
+// @ts-expect-error 整行可点的行是原生 button，ref 不能声明成 div。
+export const invalidButtonRef = <ListItem onClick={() => {}} ref={createRef<HTMLDivElement>()}>可点行</ListItem>;
+
+const nodes: TreeNodeData[] = [
+	{ value: "series", label: "系列", meta: 12, children: [{ value: "series/rust", label: "Rust 全栈笔记", lazy: true }] },
+	{ value: "about", label: "关于", icon: null },
+];
+export const trees = <>
+	<Tree
+		aria-label="文档目录"
+		nodes={nodes}
+		icons
+		defaultValue="about"
+		onValueChange={(value) => { const current: string = value; void current; }}
+		onExpandedChange={(expanded) => { const keys: string[] = expanded; void keys; }}
+		loadChildren={async (node) => { const parent: TreeNodeData = node; return [{ value: `${parent.value}/1`, label: "第 1 章" }]; }}
+		ref={createRef<HTMLDivElement>()}
+	/>
+	<LeafTree aria-label="文件" nodes={nodes} expanded={["series"]} />
+</>;
+// @ts-expect-error 当前项是字符串。
+export const invalidTreeValue = <Tree nodes={nodes} value={1} />;
+// @ts-expect-error role 由组件持有。
+export const invalidTreeRole = <LeafTree nodes={nodes} role="listbox" />;
+
+export const pagers = <>
+	<Pagination page={2} totalPages={9} onPageChange={(page) => { const next: number = page; void next; }} />
+	<LeafPagination page={1} totalPages={1} onPageChange={() => {}} aria-label="文章分页" />
+</>;
+// @ts-expect-error 页码回调接收数字。
+export const invalidPageChange = <Pagination page={1} totalPages={3} onPageChange={(page: string) => void page} />;
+
+interface Article {
+	id: string;
+	title: string;
+	views: number;
+}
+const columns: DataTableColumn<Article>[] = [
+	{ key: "title", header: "标题", accessorKey: "title", sortable: true, ellipsis: true, width: "320px" },
+	{ key: "views", header: "浏览", accessorKey: "views", align: "right", exportValue: (row) => row.views },
+	{ key: "actions", header: "操作", cell: (row) => row.id, sticky: "right", stopClickPropagation: true },
+];
+const tableProps: DataTableProps<Article> = {
+	columns,
+	data: [{ id: "1", title: "独库公路", views: 12 }],
+	keyExtractor: (row) => row.id,
+	pagination: { page: 1, pageSize: 10, total: 25, onChange: (page, pageSize) => { void [page, pageSize]; } },
+	sort: { key: "title", order: "asc" } satisfies DataTableSort,
+	onSortChange: (sort) => { const order: "asc" | "desc" = sort.order; void order; },
+	selectable: true,
+	onSelectionChange: (ids) => { const selected: Set<string> = ids; void selected; },
+	bulkActions: <button type="button">发布</button>,
+	onSelectAll: () => {},
+	totalSelectable: 25,
+	expandable: true,
+	renderExpandedRow: (row) => row.title,
+	storageKey: "articles",
+	filtered: false,
+	density: "compact",
+	caption: "文章",
+	emptyAction: <button type="button">写文章</button>,
+	filteredTitle: "没有匹配的结果",
+	filteredAction: <button type="button">清除筛选</button>,
+	errorTitle: "没能读取文章列表",
+	error: new Error("502"),
+	onRetry: () => {},
+};
+export const dataTables = <>
+	<DataTable {...tableProps} />
+	<LeafDataTable {...tableProps} loading />
+</>;
+exportToCsv("articles", columns, tableProps.data);
+// @ts-expect-error accessorKey 必须是行数据的键。
+export const invalidColumn: DataTableColumn<Article> = { key: "missing", header: "缺失", accessorKey: "nope" };
+// @ts-expect-error 排序方向只有升序与降序。
+export const invalidSort: DataTableSort = { key: "title", order: "up" };
+// @ts-expect-error 行密度只有舒适与紧凑。
+export const invalidDensity = <DataTable {...tableProps} density="tight" />;
+
+export const primitives = <Table>
+	<TableHeader><TableRow><TableHead scope="col">标题</TableHead></TableRow></TableHeader>
+	<TableBody><TableRow><TableCell>独库公路</TableCell></TableRow></TableBody>
+</Table>;
+export const leafPrimitives = <LeafTable aria-label="文章" />;
+
+export const stepItems: StepItem[] = [{ title: "填写信息", description: "作者与标题" }];
+export const stepsTone: StepsTone = "error";
+export const stepsProps: StepsProps = { steps: stepItems, current: 0, tone: stepsTone };
+export const leafStepsProps: LeafStepsProps = stepsProps;
+export const crumbs: BreadcrumbItem[] = [{ label: "内容", href: "/admin" }, { label: "文章" }];
+export const breadcrumbsProps: BreadcrumbsProps = { items: crumbs };
+export const leafBreadcrumbsProps: LeafBreadcrumbsProps = breadcrumbsProps;
+export const back: PageHeaderBack = { href: "/admin/posts", label: "文章" };
+export const pageHeaderProps: PageHeaderProps = { title: "文章", back, compact: true };
+export const leafPageHeaderProps: LeafPageHeaderProps = pageHeaderProps;
+export const segments: ProgressSegments = { count: 5, active: 3 };
+export const progressStatus: ProgressStatus = "success";
+export const progressBarProps: ProgressBarProps = { value: 100, label: "上传", segments };
+export const leafProgressBarProps: LeafProgressBarProps = progressBarProps;
+export const progressRingProps: ProgressRingProps = { value: 65, label: "目标", size: 32 };
+export const tones: AlertTone[] = ["info", "success", "warning", "danger"];
+export const alertProps: AlertProps = { tone: tones[3], title: "同步失败", action: { label: "重试", onClick: () => undefined } };
+export const leafAlertProps: LeafAlertProps = alertProps;
+export const emptyVariants: EmptyVariant[] = ["default", "plain", "compact"];
+export const emptyProps: EmptyProps = { title: "暂无内容", variant: emptyVariants[1], action: <a href="/new">新建</a> };
+export const leafEmptyProps: LeafEmptyProps = emptyProps;
+export const change: StatChange = { direction: "up", value: "18%" };
+export const statProps: StatProps = { label: "近 7 天访问", value: "12,480", change, trend: [1, 2, 3] };
+export const bars: MiniBarsDatum[] = [{ label: "周一", value: 1200 }];
+export const miniBarsProps: MiniBarsProps = { data: bars, unit: "访问" };
+
+// @ts-expect-error 未知语气
+export const badTone: AlertProps = { title: "x", tone: "notice" };
+// @ts-expect-error 步骤标题必须是纯文本
+export const badStep: StepsProps = { current: 0, steps: [{ title: <b>x</b> }] };
+// @ts-expect-error 圆环尺寸只有 32 与 48
+export const badRing: ProgressRingProps = { value: 1, size: 40 };
+
+export const components = [
+	<Steps {...stepsProps} />,
+	<Breadcrumbs {...breadcrumbsProps} />,
+	<PageHeader {...pageHeaderProps} />,
+	<ProgressBar {...progressBarProps} />,
+	<ProgressRing {...progressRingProps} />,
+	<Alert {...alertProps} />,
+	<Empty {...emptyProps} />,
+	<Stat {...statProps} />,
+	<MiniBars {...miniBarsProps} />,
+	<LeafSteps {...leafStepsProps} />,
+	<LeafBreadcrumbs {...leafBreadcrumbsProps} />,
+	<LeafPageHeader {...leafPageHeaderProps} />,
+	<LeafProgressBar {...leafProgressBarProps} />,
+	<LeafAlert {...leafAlertProps} />,
+	<LeafEmpty {...leafEmptyProps} />,
+];

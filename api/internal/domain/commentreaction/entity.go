@@ -10,6 +10,14 @@ import (
 	"blog-api/internal/domain/shared"
 )
 
+// RecentUser 是聚合反应中可公开展示的最近回应者。
+type RecentUser struct {
+	// ID 回应者用户 ID。
+	ID string `json:"id"`
+	// Name 展示名，未设置时使用用户名。
+	Name string `json:"name"`
+}
+
 // AggregatedReaction 聚合后的评论反应读模型（面向展示）
 type AggregatedReaction struct {
 	// EmojiID 表情 id
@@ -24,6 +32,8 @@ type AggregatedReaction struct {
 	Count int64 `json:"count"`
 	// Self 当前 viewer 是否已对该表情反应（高亮「我点过的」）
 	Self bool `json:"self"`
+	// RecentUsers 最近的至多三位登录回应者，按回应时间及反应 ID 倒序；匿名反应不列名，空值为 []。
+	RecentUsers []RecentUser `json:"recent_users"`
 }
 
 // ReactionList 单条评论的聚合反应列表

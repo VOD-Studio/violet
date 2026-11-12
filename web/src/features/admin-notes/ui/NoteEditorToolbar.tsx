@@ -1,8 +1,8 @@
 import type { AdminNote } from "@features/admin-notes/model/types";
 import { NOTE_STATUS_LABELS } from "@features/admin-notes/model/types";
-import { Badge, Button, ConfirmDialog } from "@violet/ui";
+import { Badge, Button, ConfirmDialog, iconProps } from "@violet/ui";
 
-import { ArrowLeft, ExternalLink, Loader2, SlidersHorizontal, Trash2 } from "lucide-react";
+import { ArrowLeft, ExternalLink, SlidersHorizontal, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 interface NoteEditorToolbarProps {
@@ -40,21 +40,21 @@ export function NoteEditorToolbar({
 		<div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
 			{/* 左侧：返回 + 标题 + 状态 Badge + 未保存提示 */}
 			<div className="flex shrink-0 items-center gap-3">
-				<Button variant="ghost" size="icon-sm" onClick={onBack} title="返回列表">
+				<Button
+					iconOnly
+					variant="ghost"
+					size="sm"
+					onClick={onBack}
+					aria-label="返回列表"
+					title="返回列表"
+				>
 					<ArrowLeft className="size-4" />
 				</Button>
 				<h1 className="text-lg font-semibold tracking-tight">
 					{isEdit ? "编辑笔记" : "新建笔记"}
 				</h1>
 				{note ? (
-					<Badge variant="outline" className="gap-1.5 py-0.5">
-						<span
-							className={
-								note.status === "published"
-									? "size-1.5 rounded-full bg-success"
-									: "size-1.5 rounded-full bg-muted-foreground/40"
-							}
-						/>
+					<Badge tone={note.status === "published" ? "ok" : "neutral"}>
 						{NOTE_STATUS_LABELS[note.status]}
 					</Badge>
 				) : null}
@@ -73,7 +73,7 @@ export function NoteEditorToolbar({
 						className="lg:hidden"
 						onClick={onOpenSettings}
 					>
-						<SlidersHorizontal className="mr-1.5 size-3.5" />
+						<SlidersHorizontal {...iconProps(16)} />
 						设置
 					</Button>
 				)}
@@ -126,18 +126,17 @@ export function NoteEditorToolbar({
 					<Button
 						variant="outline"
 						size="sm"
-						disabled={publishing || saving}
+						disabled={saving}
+						loading={publishing}
 						onClick={onPublish}
 					>
-						{publishing ? <Loader2 className="mr-1.5 size-3.5 animate-spin" /> : null}
 						发布
 					</Button>
 				) : null}
 
 				{/* 保存/创建按钮 */}
 				{canManage ? (
-					<Button size="sm" disabled={saving} onClick={onSave}>
-						{saving ? <Loader2 className="mr-1.5 size-3.5 animate-spin" /> : null}
+					<Button size="sm" loading={saving} onClick={onSave}>
 						{isEdit ? "保存" : "创建"}
 					</Button>
 				) : null}

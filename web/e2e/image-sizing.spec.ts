@@ -153,7 +153,8 @@ for (const density of [1, 2, 3]) {
 					),
 				)
 				.toBe(true);
-			expect((await crop.boundingBox())?.width).toBeCloseTo(1368, 0);
+			// 选区占 50% 宽：img 盒是容器的 2 倍（342 → 684），由 object-fit: cover 铺出可见区域。
+			expect((await crop.boundingBox())?.width).toBeCloseTo(684, 0);
 		} finally {
 			await context.close();
 		}

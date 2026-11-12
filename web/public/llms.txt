@@ -1,44 +1,20 @@
 # violet/ui
 
-> React 19 组件库与用法文档；基础组件与 HTML 共用 BEM CSS，Tailwind utility 可用于布局和局部覆盖。@violet/ui 可构建为 ESM、类型声明和 CSS，并以 tarball 安装到独立项目；尚未发布到 npm，也没有专用组件文档 MCP server。
+> React 19 组件库；基础组件与 HTML 共用 BEM CSS，Tailwind utility 可用于布局和局部覆盖。@violet/ui 可构建为 ESM、类型声明和 CSS，并以 tarball 安装到独立项目；尚未发布到 npm，也没有专用组件文档 MCP server。规范正文在仓库的包内 `docs/`，站点只陈列真实组件。
 
-## 开始使用
+## 规范正文
 
-- [文档首页](https://xunrua.top/ui): 包的入口与文档目录。
-- [介绍](https://xunrua.top/ui/guides/introduction): 包的使用范围与限制。
-- [架构指南](https://xunrua.top/ui/guides/architecture): 原生语义、组件单元、单视觉源、清单成熟度与真实 tarball 验证。
-- [组件设计方法](https://xunrua.top/ui/guides/component-design): 从消费场景到实现、清单、同源示例和独立消费者的操作流程。
-- [快速入门](https://xunrua.top/ui/guides/quick-start): 工作区安装、CSS 导入和 Button 用法。
-- [框架集成](https://xunrua.top/ui/guides/integration): Vite、TanStack Start 与普通 CSS 的接入边界。
+- [包 README](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/ui/README.md): 安装、CSS 入口与各基础单元的用法。
+- [架构指南](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/ui/docs/architecture.md): 原生语义、组件单元、单视觉源、清单成熟度与真实 tarball 验证。
+- [组件设计方法](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/ui/docs/component-design.md): 从消费场景到实现、清单、上架展品和独立消费者的操作流程。
+- [组件清单](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/ui/component-manifest.json): 公开单元、入口、CSS 与 foundation / legacy 状态的事实源。
 
-- [命令行](https://xunrua.top/ui/guides/cli): 构建与打包命令及专用 CLI 的边界。
-- [重建进度](https://xunrua.top/ui/guides/roadmap): 以组件清单的 foundation / legacy 标记区分已重建与兼容单元。
+## 组件契约
 
-## 设计指南
+- [Checkbox](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/ui/docs/components/checkbox.md)
+- [Input 与 SearchInput](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/ui/docs/components/input.md)
+- [LinkCard](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/ui/docs/components/link-card.md)
 
-- [主题与语义 token](https://xunrua.top/ui/guides/theming)
-- [深色模式](https://xunrua.top/ui/guides/dark-mode)
-- [样式](https://xunrua.top/ui/guides/styling)
-- [动画](https://xunrua.top/ui/guides/animation)
-- [组合](https://xunrua.top/ui/guides/composition)
+## 组件陈列室
 
-## 组件用法
-
-- [Button](https://xunrua.top/ui/components/button)
-- [Badge](https://xunrua.top/ui/components/badge)
-- [Checkbox](https://xunrua.top/ui/components/checkbox)
-- [Dialog](https://xunrua.top/ui/components/dialog)
-- [Input](https://xunrua.top/ui/components/input): 四种变体、三种尺寸、清除与密码显隐、可选标签/说明/错误及原生 FormData/reset；预览和复制代码同源。
-- [SearchInput](https://xunrua.top/ui/components/search-input): 独立组合 Input 的搜索单元，复用四变体、尺寸与样式槽；防抖、回车立即搜索、清除与加载反馈。
-- [Tabs](https://xunrua.top/ui/components/tabs)
-- [ImagePixelReveal](https://xunrua.top/ui/components/image-pixel-reveal): 静止原图、瓦片裁剪拼合、逐轮随机洗牌、悬停重播与减弱动态；自包含 SVG 同源示例。
-- [LinkCard](https://xunrua.top/ui/components/link-card): 独立原生链接预览，左侧完整缩略图、重复信息去重、坏图回退与内容更新恢复；明暗和窄屏同源示例，不依赖业务 DTO 或请求。
-- [UploadTile](https://xunrua.top/ui/components/upload-tile): 方形原生按钮、busy/disabled、原生 ref 与键盘；同源示例只记录激活次数，文件选择和上传由宿主负责。
-- [Dropdown](https://xunrua.top/ui/components/dropdown): 悬停与键盘聚焦展开的面板，点击不开合、触屏不展开；asChild 链接触发器与同组互斥切换。
-- [Segmented](https://xunrua.top/ui/components/segmented): 横纵方向与 soft/ink/line 变体的分段控制，指示器合成层平移；等尺寸与收起选中项模式，render 可承载链接与 Dropdown 触发器。
-
-## 智能体
-
-- [Agent Skills](https://xunrua.top/ui/guides/skills): 项目内技能入口。
-- [AGENTS.md](https://xunrua.top/ui/guides/agents-md): 包的代理规范。
-- [MCP 服务器](https://xunrua.top/ui/guides/mcp): 区分博客 MCP 与尚未提供的组件文档 MCP。
+- [陈列室](https://xunrua.top/ui): 按占地分整幅橱窗、浮层舞台、微件架、字段、内容五个展区陈列真实组件；`?open=<id>` 直接走近一件展品，切换状态、占地框、明暗、季节与减弱动态。

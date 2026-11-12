@@ -1,0 +1,223 @@
+/*
+ * 表单项（Field、FieldSet、FieldSummary）与 Label 的 BEM 类名样式。需先导入 @violet/ui/tokens.css 或 styles.css。
+ *
+ * 表单项只管标签、提示、错误与字数，不画控件的聚焦、出错、通过外观（归输入框）。
+ * 消息行恒占一行高，提示与错误是同一个元素、同一个位置：出错只换文案与颜色，下方内容不跳。
+ * 没有任何过渡：提示与错误是直接切换，所以也不需要减弱动态分支。
+ */
+
+@layer components {
+	.v-label {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		color: var(--foreground);
+		font-size: 0.875rem;
+		font-weight: 500;
+		line-height: 1.5;
+	}
+
+	.v-label[data-disabled="true"],
+	.v-label:has(:disabled),
+	[data-disabled="true"] > .v-label,
+	.peer:disabled ~ .v-label {
+		cursor: not-allowed;
+		opacity: 0.5;
+	}
+
+	.v-field {
+		--v-field-h-base: 2.25rem;
+		--v-field-h: var(--v-field-h-base);
+
+		box-sizing: border-box;
+		min-inline-size: 0;
+		margin: 0;
+		padding: 0;
+		border: 0;
+	}
+
+	.v-field[data-control-size="sm"] {
+		--v-field-h-base: 2rem;
+	}
+
+	.v-field[data-control-size="lg"] {
+		--v-field-h-base: 2.5rem;
+	}
+
+	/* 触屏：控件高度各加 4，横排标签行高跟着加，中线才对得上 */
+	@media (pointer: coarse) {
+		.v-field {
+			--v-field-h: calc(var(--v-field-h-base) + 4px);
+		}
+	}
+
+	.v-field__label {
+		display: block;
+		margin: 0 0 0.5rem;
+		padding: 0;
+		color: var(--foreground);
+		font-size: 0.875rem;
+		font-weight: 500;
+		line-height: 1.4;
+	}
+
+	.v-field__label > .v-label {
+		line-height: inherit;
+	}
+
+	/* 「（选填）」与标签同一行，但在 <label> 之外：可访问名称保持纯文案 */
+	.v-field__optional {
+		margin-inline-start: 2px;
+		color: var(--muted-foreground);
+		font-weight: 400;
+	}
+
+	.v-field__label-end {
+		display: inline-flex;
+		margin-inline-start: 0.25rem;
+		vertical-align: middle;
+	}
+
+	.v-field__description {
+		margin: -0.25rem 0 0.75rem;
+		color: var(--muted-foreground);
+		font-size: 0.8125rem;
+		line-height: 1.6;
+	}
+
+	.v-field__control {
+		min-inline-size: 0;
+	}
+
+	.v-field__meta {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 0.75rem;
+		min-block-size: 1.25rem;
+		margin-block-start: 0.375rem;
+	}
+
+	.v-field__message {
+		display: inline-flex;
+		align-items: flex-start;
+		gap: 0.375rem;
+		min-inline-size: 0;
+		color: var(--muted-foreground);
+		font-size: 0.8125rem;
+		line-height: 1.6;
+	}
+
+	.v-field__message[data-state="error"] {
+		color: var(--destructive-text);
+	}
+
+	.v-field__message[data-state="success"] {
+		color: var(--success-text);
+	}
+
+	.v-field__icon {
+		flex: none;
+		/* 图标与第一行文字的中线对齐：(行高 1.6 × 13px − 14px) / 2 */
+		margin-block-start: calc((1.3rem - 0.875rem) / 2);
+	}
+
+	.v-field__count {
+		flex: none;
+		color: var(--muted-foreground);
+		font-family: var(--font-mono);
+		font-size: 0.75rem;
+		font-variant-numeric: tabular-nums;
+		line-height: 1.6;
+	}
+
+	.v-field__count[data-over] {
+		color: var(--destructive-text);
+	}
+
+	/* 横排：标签在左、控件在右，窄于 36rem（按 Field 自身宽度，不是视口）时回到纵向 */
+	.v-field--horizontal {
+		container-type: inline-size;
+	}
+
+	@container (min-width: 36rem) {
+		.v-field--horizontal > .v-field__layout {
+			display: grid;
+			grid-template-columns: 160px minmax(0, 420px);
+			gap: 20px 24px;
+			align-items: start;
+		}
+
+		/* 行高等于控件高，标签与控件第一行的中线对齐 */
+		.v-field--horizontal .v-field__label {
+			margin: 0;
+			line-height: var(--v-field-h);
+		}
+	}
+
+	.v-field-summary {
+		display: flex;
+		gap: 0.625rem;
+		padding: 0.75rem 0.875rem;
+		border-radius: var(--radius-12);
+		background-color: color-mix(in oklab, var(--destructive) 7%, var(--card));
+		color: var(--destructive-text);
+		outline: none;
+	}
+
+	.v-field-summary__icon {
+		flex: none;
+		margin-block-start: 0.125rem;
+	}
+
+	.v-field-summary__body {
+		min-inline-size: 0;
+	}
+
+	.v-field-summary__title {
+		display: block;
+		font-size: 0.875rem;
+		font-weight: 600;
+		line-height: 1.5;
+	}
+
+	.v-field-summary__list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+		margin: 0.25rem 0 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.v-field-summary__item {
+		margin: 0;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		font-size: 0.8125rem;
+		text-decoration: underline;
+		text-underline-offset: 3px;
+		cursor: pointer;
+	}
+
+	.v-field-summary__item:focus-visible {
+		border-radius: var(--radius-4);
+		outline: 2px solid currentColor;
+		outline-offset: 2px;
+	}
+
+	@media (forced-colors: active) {
+		.v-label,
+		.v-field__label {
+			color: CanvasText;
+		}
+
+		.v-field-summary {
+			border: 1px solid CanvasText;
+			color: CanvasText;
+		}
+	}
+}

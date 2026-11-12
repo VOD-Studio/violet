@@ -1,5 +1,6 @@
 import { getCommentAuthorPresentation } from "@entities/comment/lib/ai-personas";
 import { type RefObject, useEffect, useState } from "react";
+import { describeMarks, groupRanges } from "../lib/annotation-marks";
 import { computeBlockId } from "../lib/block-id";
 import { extractCandidateBlocks, findBlockElement, getBlockText } from "../lib/extract-blocks";
 import { clearMarks, mapLegacyRangeToCarrier, wrapRange } from "../lib/range-marks";
@@ -51,20 +52,26 @@ export function useAnnotationMarks(
 					if (cancelled || generation !== runGeneration) return;
 					// 历史 KaTeX hash 的区间仍按旧 textContent 计长。
 					const legacyMatch = carrierId !== null && carrierId !== block_id;
-					for (const range of ranges ?? []) {
-						const mapped = legacyMatch ? mapLegacyRangeToCarrier(el, range) : range;
+					for (const group of groupRanges(ranges ?? [])) {
+						const mapped = legacyMatch ? mapLegacyRangeToCarrier(el, group) : group;
 						if (mapped.start <= 0 && mapped.end >= carrier.length) continue;
-						wrapRange(el, mapped, MARK_CLASS, {
+						const marks = wrapRange(el, mapped, MARK_CLASS, {
 							annotationBlock: block_id,
-							...(range.is_ai
+							annotationRange: group.key,
+							...(group.aiName !== null
 								? {
 										ai: "true",
 										aiPersona:
-											getCommentAuthorPresentation(range).personaId ??
-											"unknown",
+											getCommentAuthorPresentation({
+												author_name: group.aiName,
+												is_ai: true,
+											}).personaId ?? "unknown",
 									}
-								: {}),
+								: group.byAuthor
+									? { author: "true" }
+									: {}),
 						});
+						describeMarks(marks, group.count);
 					}
 					nextMap.set(block_id, el);
 				}

@@ -1,4 +1,4 @@
-import { ShimmerSkeleton } from "@violet/ui";
+import { Skeleton } from "@violet/ui";
 
 import styles from "./AboutPage.module.css";
 
@@ -7,17 +7,17 @@ export function AboutPageSkeleton() {
 	return (
 		<main className={styles.page} aria-busy="true" aria-label="正在加载关于页">
 			<header className={styles.intro}>
-				<ShimmerSkeleton className={styles.skeletonEyebrow} />
-				<ShimmerSkeleton className={styles.skeletonTitle} />
-				<ShimmerSkeleton className={styles.skeletonCopy} />
+				<Skeleton className={styles.skeletonEyebrow} />
+				<Skeleton className={styles.skeletonTitle} />
+				<Skeleton className={styles.skeletonCopy} />
 			</header>
 			<div className={styles.skeletonFlow}>
 				{["story", "profile", "activity"].map((section) => (
 					<section key={section} className={styles.skeletonSection}>
-						<ShimmerSkeleton className={styles.skeletonHeading} />
-						<ShimmerSkeleton className={styles.skeletonLine} />
-						<ShimmerSkeleton className={styles.skeletonLine} />
-						<ShimmerSkeleton className={styles.skeletonLine} />
+						<Skeleton className={styles.skeletonHeading} />
+						<Skeleton className={styles.skeletonLine} />
+						<Skeleton className={styles.skeletonLine} />
+						<Skeleton className={styles.skeletonLine} />
 					</section>
 				))}
 			</div>

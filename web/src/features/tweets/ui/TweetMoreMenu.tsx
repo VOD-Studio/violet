@@ -6,7 +6,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@violet/ui";
-import { MoreHorizontal, Trash2 } from "lucide-react";
+import { Ellipsis, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 
 /** 将来源管理和本站删除放在同一菜单中，危险动作单独分组。 */
@@ -22,19 +22,19 @@ export function TweetMoreMenu({ children, dangerSlot, disabled, onDelete }: Twee
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
 				<Button
+					iconOnly
 					type="button"
 					variant="ghost"
-					size="icon"
+					size="md"
 					aria-label="更多推文操作"
 					className="size-11 shrink-0 text-muted-foreground"
 					onClick={(event) => event.stopPropagation()}
 				>
-					<MoreHorizontal className="size-5" />
+					<Ellipsis className="size-5" />
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent
 				align="end"
-				className="min-w-48 rounded-xl shadow-none animate-none!"
 				onClick={(event) => event.stopPropagation()}
 				onKeyDown={(event) => event.stopPropagation()}
 			>

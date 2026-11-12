@@ -6,7 +6,10 @@ package announcement
 
 import (
 	"encoding/json"
+	"net/url"
+	"strings"
 	"time"
+	"unicode"
 
 	"blog-api/internal/domain/shared"
 )
@@ -142,6 +145,10 @@ type Announcement struct {
 	coverImage string
 	// excerpt article 形态的摘要
 	excerpt string
+	// linkURL 可选行动链接，仅允许 http/https 绝对地址或单斜线开头的站内路径
+	linkURL string
+	// linkText 链接显示文字；没有 linkURL 时必须为空
+	linkText string
 	// createdBy 创建人用户 ID（可空：系统生成无创建人）
 	createdBy *shared.ID
 	// timestamps 创建/更新时间戳
@@ -171,7 +178,7 @@ func NewAnnouncement(id int32, title, content, severity string) (*Announcement, 
 func ReconstructAnnouncement(
 	id int32, title, content, severity, display string, isActive bool,
 	start, end *time.Time, sortOrder int, affects []string,
-	contentMD, contentHTML, coverImage, excerpt string,
+	contentMD, contentHTML, coverImage, excerpt, linkURL, linkText string,
 	createdBy *shared.ID, createdAt, updatedAt time.Time,
 ) *Announcement {
 	return &Announcement{
@@ -180,6 +187,7 @@ func ReconstructAnnouncement(
 		affects: affects, contentMD: contentMD, contentHTML: contentHTML,
 		coverImage: coverImage, excerpt: excerpt, createdBy: createdBy,
 		timestamps: shared.Timestamps{CreatedAt: createdAt, UpdatedAt: updatedAt},
+		linkURL:    linkURL, linkText: linkText,
 	}
 }
 
@@ -220,6 +228,56 @@ func (a *Announcement) SetRichContent(md, html, cover, excerpt string) {
 	a.contentHTML = html
 	a.coverImage = cover
 	a.excerpt = excerpt
+}
+
+// SetLink 设置可选链接；空地址只允许搭配空文字。
+func (a *Announcement) SetLink(address, text string) error {
+	if address == "" {
+		if text != "" {
+			return shared.BadRequest("填写链接文字时必须提供链接地址")
+		}
+	} else if !validLink(address) {
+		return shared.BadRequest("公告链接仅支持完整的 http/https 地址或单斜线开头的站内路径")
+	}
+	a.linkURL, a.linkText = address, text
+	return nil
+}
+
+// UpdateLink 记录链接字段的实际变更，供现有审计订阅者消费。
+func (a *Announcement) UpdateLink(address, text string) error {
+	beforeURL, beforeText := a.linkURL, a.linkText
+	if err := a.SetLink(address, text); err != nil {
+		return err
+	}
+	var changes []AnnouncementChange
+	if beforeURL != address {
+		changes = append(changes, AnnouncementChange{Field: "link_url", From: beforeURL, To: address})
+	}
+	if beforeText != text {
+		changes = append(changes, AnnouncementChange{Field: "link_text", From: beforeText, To: text})
+	}
+	if len(changes) > 0 {
+		a.RecordEvent(NewAnnouncementUpdated(a.id, a.title, changes))
+	}
+	return nil
+}
+
+func validLink(raw string) bool {
+	if strings.ContainsFunc(raw, unicode.IsSpace) {
+		return false
+	}
+	decoded, err := url.PathUnescape(raw)
+	if err != nil || strings.ContainsRune(decoded, '\\') || strings.ContainsFunc(decoded, unicode.IsControl) {
+		return false
+	}
+	u, err := url.Parse(raw)
+	if err != nil {
+		return false
+	}
+	if strings.HasPrefix(raw, "/") && !strings.HasPrefix(raw, "//") {
+		return u.Scheme == "" && u.Host == "" && !strings.HasPrefix(u.Path, "//")
+	}
+	return (strings.EqualFold(u.Scheme, "http") || strings.EqualFold(u.Scheme, "https")) && u.Hostname() != ""
 }
 
 // IsCurrentlyActive 当前是否生效（考虑时间区间）
@@ -282,6 +340,8 @@ func (a *Announcement) ContentMD() string     { return a.contentMD }
 func (a *Announcement) ContentHTML() string   { return a.contentHTML }
 func (a *Announcement) CoverImage() string    { return a.coverImage }
 func (a *Announcement) Excerpt() string       { return a.excerpt }
+func (a *Announcement) LinkURL() string       { return a.linkURL }
+func (a *Announcement) LinkText() string      { return a.linkText }
 func (a *Announcement) CreatedBy() *shared.ID { return a.createdBy }
 func (a *Announcement) CreatedAt() time.Time  { return a.timestamps.CreatedAt }
 func (a *Announcement) UpdatedAt() time.Time  { return a.timestamps.UpdatedAt }

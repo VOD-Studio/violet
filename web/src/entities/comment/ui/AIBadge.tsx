@@ -1,4 +1,5 @@
 /** MCP/agent 发表标识；署名是模型自述，不表示经过身份验证。 */
+import { iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { Sparkles } from "lucide-react";
 import { getCommentAuthorPresentation } from "../lib/ai-personas";
@@ -25,7 +26,7 @@ export function AIBadge({ show, name }: AIBadgeProps) {
 			)}
 			title="由 AI 通过 MCP 发表，署名由模型自行提供"
 		>
-			<Sparkles className="size-3" />
+			<Sparkles {...iconProps(12)} />
 			AI
 		</span>
 	);

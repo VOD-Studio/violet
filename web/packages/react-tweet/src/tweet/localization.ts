@@ -69,6 +69,11 @@ export interface TweetMessages {
 	 */
 	quote: string;
 	/**
+	 * 引用卡里二级引用的说明文字：只写一行，不再嵌套第二张卡。
+	 * @example "Quoted a post"
+	 */
+	quoteNested: string;
+	/**
 	 * 照片的默认替代文字。
 	 *
 	 * {index} 替换为已本地化的序号。
@@ -239,6 +244,7 @@ const english: TweetMessages = {
 	showMore: "Show more",
 	showLess: "Show less",
 	quote: "View quoted post",
+	quoteNested: "Quoted a post",
 	photo: "Post photo {index}",
 	viewPhoto: "View original photo {index}",
 	photoRail: "Post photos, {count} in total. Scroll horizontally.",
@@ -278,6 +284,7 @@ const chinese: TweetMessages = {
 	showMore: "展示更多",
 	showLess: "收起",
 	quote: "查看引用推文",
+	quoteNested: "引用了一条推文",
 	photo: "推文图片 {index}",
 	viewPhoto: "查看图片 {index} 原图",
 	photoRail: "推文图片，共 {count} 张，可左右滑动",

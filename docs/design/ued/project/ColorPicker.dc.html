@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Violet 取色</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;family=Alex+Brush&amp;display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Maple Mono";font-weight:400;font-style:normal;src:url(/_blob/a3ecea3add4961def4d089b95f486230) format("woff2")}
+@font-face{font-family:"Maple Mono";font-weight:500;font-style:normal;src:url(/_blob/1ba23035f8e49762aeac0a2a66f83fa0) format("woff2")}
+body{margin:0}
+a{color:inherit;text-decoration:none}
+.paper-l{position:absolute;inset:0;background-image:url(/_blob/66391f4a5c5b623abcbda5bc91818ab0);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.paper-d{position:absolute;inset:0;background-image:url(/_blob/b0a1c287fd95586fcb700c431de8f4c5);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.num{font-family:"Maple Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.mono{font-family:"Maple Mono",ui-monospace,monospace}
+.sheet{background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);border:1px solid var(--ol)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;height:36px;padding:0 16px;border:0;border-radius:999px;font-family:inherit;font-size:14px;font-weight:500;white-space:nowrap;background:var(--sunk);color:var(--fg);cursor:pointer}
+.btn.sm{height:32px;padding:0 12px}.btn.lg{height:40px;font-size:16px}
+.btn.pri{background:var(--fg);color:var(--bg)}.btn.gho{background:transparent}
+.btn.ic{width:32px;padding:0}
+.seg{display:inline-flex;padding:2px;border-radius:999px;background:var(--sunk)}
+.sg{display:inline-flex;align-items:center;gap:6px;box-sizing:border-box;height:32px;padding:0 12px;border-radius:999px;font-size:14px;color:var(--muted)}
+.sg i{font-style:normal;font-size:12px;opacity:.7}
+.sg.on{background:var(--sheet);color:var(--fg);font-weight:500;box-shadow:0 4px 24px rgb(0 0 0 / .05)}
+.chip{display:inline-flex;align-items:center;gap:4px;box-sizing:border-box;height:24px;padding:0 10px;border-radius:999px;background:var(--sunk);font-size:12px;font-weight:500;color:var(--muted)}
+.chip.ac{background:color-mix(in oklab,var(--deco) 16%,var(--sheet));color:var(--accent)}
+.chip.ok{background:color-mix(in oklab,var(--ok) 12%,var(--sheet));color:var(--ok)}
+.fld{display:flex;align-items:center;gap:8px;box-sizing:border-box;height:36px;padding:0 12px;border-radius:12px;background:var(--sunk);font-size:14px;color:var(--muted)}
+.lab{display:block;margin-bottom:8px;font-size:14px;font-weight:600}
+.h1{margin:0;font-size:52px;font-weight:600;line-height:1.15;letter-spacing:-0.01em}
+
+.k-blk{display:grid;grid-template-columns:240px minmax(0,1fr);gap:56px;padding:56px 0;border-top:1px solid var(--rule)}
+.k-blk h2{margin:0;font-size:24px;font-weight:600;line-height:1.3}
+.k-uid{display:block;margin-top:6px;font:400 12px "Maple Mono",monospace;color:var(--muted)}
+.k-lead{margin:12px 0 0;font-size:13px;line-height:1.85;color:var(--muted)}
+.k-cap{margin-top:10px;font-size:12px;line-height:1.7;color:var(--muted)}
+.k-row{display:flex;flex-wrap:wrap;align-items:flex-start;gap:28px}
+.k-pnl{border-radius:12px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);border:1px solid var(--ol)}
+.k-ib{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--muted);cursor:pointer;flex:none}
+.k-ib:hover{background:var(--sunk);color:var(--fg)}
+.k-mi{display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;min-height:36px;padding:6px 10px;border:0;border-radius:8px;background:transparent;font-family:inherit;font-size:14px;color:var(--fg);text-align:left;cursor:pointer;white-space:nowrap}
+.k-mi:hover,.k-mi.hl{background:var(--sunk)}
+.k-mi .k{margin-left:auto;font:500 12px Inter,sans-serif;color:var(--muted)}
+.k-mi svg{color:var(--muted);flex:none}
+.k-sep{height:1px;margin:6px 8px;background:var(--rule)}
+.k-lbl{padding:6px 10px 4px;font-size:12px;color:var(--muted)}
+.k-av{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;object-fit:cover;background:var(--sunk);font-weight:600;color:var(--muted);flex:none}
+.k-scrim{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgb(20 16 14 / .32)}
+.k-sw{position:relative;display:inline-block;width:36px;height:20px;border-radius:999px;background:var(--fg);flex:none}.k-sw::after{content:"";position:absolute;top:2px;left:18px;width:16px;height:16px;border-radius:50%;background:var(--bg)}
+.k-sw.off{background:color-mix(in oklab,var(--sunk) 80%,var(--fg))}.k-sw.off::after{left:2px;background:var(--sheet)}
+.k-arc{animation:k-rot 1.6s linear infinite;flex:none}.k-arc .a{animation:k-dash 1.4s ease-in-out infinite}
+@keyframes k-rot{to{transform:rotate(360deg)}}
+@keyframes k-dash{0%{stroke-dasharray:4 100;stroke-dashoffset:0}50%{stroke-dasharray:60 100;stroke-dashoffset:-18}100%{stroke-dasharray:4 100;stroke-dashoffset:-96}}
+@media (prefers-reduced-motion: reduce){.k-arc,.k-arc .a{animation:none}.k-arc .a{stroke-dasharray:62 100}}
+.k-fade{animation:k-in .18s ease-out both}@keyframes k-in{from{opacity:0}to{opacity:1}}
+
+.k-hlw{position:relative;display:flex;flex-direction:column;gap:2px}
+.k-hlw:has(> .k-li){gap:4px}
+.k-hlw > .k-mi,.k-hlw > .k-li,.k-hlw > .k-opt{position:relative;z-index:1}
+.k-hlw > .k-mi:hover,.k-hlw > .k-li:hover,.k-hlw > .k-opt:hover{background:transparent}
+.k-hlw > .k-mi.on,.k-hlw > .k-li.on,.k-hlw > .k-mi.on:hover,.k-hlw > .k-li.on:hover{background:color-mix(in oklab,var(--deco) 13%,var(--sheet))}
+.k-hlw > .k-mi.on:hover,.k-hlw > .k-li.on:hover{background:color-mix(in oklab,var(--deco) 18%,var(--sheet))}
+.k-hlw > .k-mi.on{color:var(--accent);font-weight:600}.k-hlw > .k-mi.on svg{color:var(--accent)}
+.k-hlw > .k-li.on b{color:var(--accent)}
+.k-hl{position:absolute;left:0;top:0;z-index:0;border-radius:8px;background:var(--sunk);pointer-events:none;opacity:0}
+.k-reveal{animation:k-reveal calc(200ms*var(--k,1)) cubic-bezier(.32,.72,0,1) backwards}
+.k-reveal.out{animation:k-sink calc(140ms*var(--k,1)) ease-in forwards}
+@keyframes k-reveal{from{opacity:0;transform:translateY(-6px)}}
+@keyframes k-sink{to{opacity:0;transform:translateY(-4px)}}
+.k-ovl{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center}
+.k-ovl > :not(.k-scr):not(.k-lbs){position:relative}
+.k-scr{position:absolute;inset:0;background:rgb(20 16 14 / .28)}
+[data-scroll]{overflow-y:auto;overscroll-behavior:contain}
+.k-scrim.in,.k-scr.in{animation:k-fi calc(200ms*var(--k,1)) ease-out backwards}
+.k-scrim.out,.k-scr.out{animation:k-fo calc(160ms*var(--k,1)) ease-in forwards}
+.k-dlg.in{animation:k-dlg-in calc(220ms*var(--k,1)) cubic-bezier(.32,.72,0,1) backwards}
+.k-dlg.out{animation:k-dlg-out calc(140ms*var(--k,1)) ease-in forwards}
+.k-shr.in{animation:k-from-r calc(360ms*var(--k,1)) cubic-bezier(.32,.72,0,1) backwards}
+.k-shr.out{animation:k-to-r calc(240ms*var(--k,1)) cubic-bezier(.4,0,1,1) forwards}
+.k-shb.in{animation:k-from-b calc(400ms*var(--k,1)) cubic-bezier(.32,.72,0,1) backwards}
+.k-shb.out{animation:k-to-b calc(240ms*var(--k,1)) cubic-bezier(.4,0,1,1) forwards}
+.k-pop.in{animation:k-reveal calc(200ms*var(--k,1)) cubic-bezier(.32,.72,0,1) backwards}
+.k-pop.out{animation:k-sink calc(140ms*var(--k,1)) ease-in forwards}
+.k-cmd.in{animation:k-fi calc(160ms*var(--k,1)) ease-out backwards}
+.k-cmd.out{animation:k-fo calc(100ms*var(--k,1)) ease-in forwards}
+.k-lbs.in{animation:k-fi calc(240ms*var(--k,1)) ease-out backwards}
+.k-lbs.out{animation:k-fo calc(240ms*var(--k,1)) ease-in calc(40ms*var(--k,1)) forwards}
+@keyframes k-fi{from{opacity:0}}
+@keyframes k-fo{to{opacity:0}}
+@keyframes k-dlg-in{from{opacity:0;filter:blur(6px)}}
+@keyframes k-dlg-out{to{opacity:0;filter:blur(4px)}}
+@keyframes k-from-r{from{transform:translateX(calc(100% + 16px))}}
+@keyframes k-to-r{to{transform:translateX(calc(100% + 16px))}}
+@keyframes k-from-b{from{transform:translateY(100%)}}
+@keyframes k-to-b{to{transform:translateY(100%)}}
+.k-fld{display:flex;align-items:center;gap:8px;box-sizing:border-box;height:36px;padding:0 12px;border-radius:12px;background:var(--sunk);font-size:14px;color:var(--fg);transition:background-color .16s ease-out,box-shadow .16s ease-out}
+.k-fld:hover{background:color-mix(in oklab,var(--sunk) 92%,var(--fg))}
+.k-fld:focus-within,.k-fld.f{background:var(--sheet);box-shadow:0 0 0 1px color-mix(in oklab,var(--fg) 28%,transparent),0 0 0 4px color-mix(in oklab,var(--deco) 18%,transparent)}
+.k-fld.e{background:color-mix(in oklab,var(--danger) 5%,var(--sheet));box-shadow:0 0 0 1px color-mix(in oklab,var(--danger) 60%,transparent),0 0 0 4px color-mix(in oklab,var(--danger) 12%,transparent)}
+.k-fld input,.k-fld textarea{flex:1;min-width:0;height:100%;padding:0;border:0;outline:0;background:transparent;font:inherit;color:inherit}
+.k-fld input::placeholder,.k-fld textarea::placeholder{color:var(--muted)}
+.k-seg{position:relative;display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:2px;border-radius:999px;background:var(--sunk)}
+.k-seg > button{position:relative;z-index:1;height:32px;padding:0 14px;border:0;border-radius:999px;background:transparent;font-family:inherit;font-size:14px;color:var(--muted);cursor:pointer;transition:color .2s ease-out}
+.k-seg > button.on{color:var(--fg);font-weight:500}
+.k-seg > i{position:absolute;top:2px;bottom:2px;left:2px;border-radius:999px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);transition:transform .28s cubic-bezier(.32,.72,0,1)}
+.k-tog{position:relative;display:inline-block;width:36px;height:20px;padding:0;border:0;border-radius:999px;background:color-mix(in oklab,var(--sunk) 80%,var(--fg));cursor:pointer;transition:background-color .2s ease-out;flex:none}
+.k-tog::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--sheet);box-shadow:0 1px 2px rgb(0 0 0 / .12);transition:transform .28s cubic-bezier(.32,.72,0,1),background-color .2s}
+.k-tog.on{background:var(--fg)}.k-tog.on::after{transform:translateX(16px);background:var(--bg)}
+.k-chk{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;padding:0;border:0;border-radius:6px;background:var(--sheet);box-shadow:inset 0 0 0 1.5px var(--rule2);cursor:pointer;transition:background-color .16s ease-out,box-shadow .16s ease-out;flex:none}
+.k-chk path{stroke-dasharray:24;stroke-dashoffset:24;transition:stroke-dashoffset .22s cubic-bezier(.32,.72,0,1) .04s}
+.k-chk.on{background:var(--fg);box-shadow:none}.k-chk.on path{stroke-dashoffset:0}
+.k-acc{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s cubic-bezier(.32,.72,0,1)}
+.k-acc > div{overflow:hidden}
+.k-acc.open{grid-template-rows:1fr}
+.k-chev{transition:transform .28s cubic-bezier(.32,.72,0,1)}.k-chev.open{transform:rotate(180deg)}
+@media (prefers-reduced-motion: reduce){.k-hl,.k-seg > i,.k-tog::after,.k-acc,.k-chev,.k-chk path{transition:none!important}.k-reveal{animation:k-fi .1s ease-out backwards}.k-reveal.out{animation:k-fo .1s ease-out forwards}
+  .k-dlg.in,.k-shr.in,.k-shb.in,.k-pop.in,.k-cmd.in{animation:k-fi .1s ease-out backwards}
+  .k-dlg.out,.k-shr.out,.k-shb.out,.k-pop.out,.k-cmd.out{animation:k-fo .1s ease-out forwards}}
+
+.k-toaster{position:absolute;right:16px;bottom:16px;z-index:8;width:356px;height:0;outline:none}
+.k-thit{position:absolute;left:-16px;right:-16px;bottom:-16px}
+.k-to{position:absolute;left:0;right:0;bottom:0;box-sizing:border-box;border-radius:12px;background:var(--sheet);border:1px solid var(--ol);box-shadow:0 4px 24px rgb(0 0 0 / .05);touch-action:none;user-select:none;transform-origin:50% 50%;
+  transition:transform calc(.4s*var(--k,1)) ease,opacity calc(.4s*var(--k,1)) ease,height calc(.4s*var(--k,1)) ease}
+.k-to.in0{animation:k-tup0 calc(400ms*var(--k,1)) ease backwards}
+.k-to.in1{animation:k-tup1 calc(400ms*var(--k,1)) ease backwards}
+@keyframes k-tup0{from{transform:translateY(100%);opacity:0}}
+@keyframes k-tup1{from{transform:translateY(100%);opacity:0}}
+.k-to.drag{transition:height calc(.4s*var(--k,1)) ease;cursor:grabbing}
+.k-to.swo{transition:transform calc(.2s*var(--k,1)) ease-out,opacity calc(.2s*var(--k,1)) ease-out}
+.k-ti{display:flex;align-items:center;gap:14px;min-height:54px;box-sizing:border-box;padding:14px 40px 14px 18px;transition:opacity calc(.2s*var(--k,1)) ease}
+.k-to.back .k-ti{opacity:0;pointer-events:none}
+.k-tic{position:relative;width:18px;height:18px;flex:none}
+.k-tic > span{position:absolute;inset:0;display:inline-flex;opacity:0;transition:opacity .2s ease-out}
+.k-tic.ok .i-ok,.k-tic.err .i-err,.k-tic.warn .i-warn,.k-tic.info .i-info,.k-tic.load .i-load{opacity:1}
+.k-tic .i-ok{color:var(--ok)}.k-tic .i-err{color:var(--danger)}.k-tic .i-warn{color:oklch(0.68 0.14 70)}.k-tic .i-info{color:var(--muted)}.k-tic .i-load{color:var(--deco)}
+.k-tic .ck{stroke-dasharray:12;stroke-dashoffset:12;transition:stroke-dashoffset .3s cubic-bezier(.32,.72,0,1) .1s}
+.k-tic.ok .ck{stroke-dashoffset:0}
+.k-tt{font-size:13.5px;line-height:1.5;color:var(--fg)}
+.k-tn{display:inline-block;margin-left:6px;padding:0 6px;border-radius:999px;background:var(--sunk);font-size:11px;line-height:18px;color:var(--muted);vertical-align:1px}
+.k-tn.b0{animation:k-bump0 .6s ease-out}.k-tn.b1{animation:k-bump1 .6s ease-out}.k-tn.b-{animation:none}
+@keyframes k-bump0{from{background:color-mix(in oklab,var(--deco) 35%,var(--sheet));color:var(--accent)}}
+@keyframes k-bump1{from{background:color-mix(in oklab,var(--deco) 35%,var(--sheet));color:var(--accent)}}
+.k-td{font-size:12px;line-height:1.6;color:var(--muted)}
+.k-ta{flex:none;height:32px;padding:0 12px;border:0;border-radius:999px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05),0 0 0 1px var(--ol);font:500 14px inherit;font-family:inherit;color:var(--fg);cursor:pointer;transition:background-color .16s ease-out}
+.k-ta:hover{background:var(--sunk)}
+.k-tx{position:absolute;top:8px;right:8px;display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--muted);cursor:pointer;opacity:.7;transition:opacity .16s ease-out,background-color .16s ease-out,color .16s ease-out}
+.k-tx:hover,.k-tx:focus-visible{opacity:1;background:var(--sunk);color:var(--fg)}
+.k-to.back .k-tx{opacity:0;pointer-events:none}
+@media (prefers-reduced-motion: reduce){.k-to{transition:opacity .1s ease-out}.k-to.in0,.k-to.in1{animation:k-fi .1s ease-out backwards}}
+
+.cp-panel{width:248px}
+.cp-sv{position:relative;height:156px;border-radius:12px;overflow:hidden;cursor:crosshair;touch-action:none;outline:none}
+.cp-sv:focus-visible{box-shadow:0 0 0 2px var(--sheet),0 0 0 4px color-mix(in oklab,var(--deco) 60%,transparent)}
+.cp-w,.cp-b{position:absolute;inset:0;pointer-events:none}
+.cp-w{background:linear-gradient(to right,#fff,rgb(255 255 255 / 0))}
+.cp-b{background:linear-gradient(to top,#000,rgb(0 0 0 / 0))}
+.cp-pt{position:absolute;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;box-shadow:0 0 0 2px #fff,0 0 0 3px rgb(0 0 0 / .22);pointer-events:none}
+.cp-hue{position:relative;height:12px;margin:14px 0 0;border-radius:999px;background:linear-gradient(to right,#f00 0%,#ff0 17%,#0f0 33%,#0ff 50%,#00f 67%,#f0f 83%,#f00 100%);cursor:pointer;touch-action:none;outline:none}
+.cp-hue:focus-visible{box-shadow:0 0 0 2px var(--sheet),0 0 0 4px color-mix(in oklab,var(--deco) 60%,transparent)}
+.cp-ht{position:absolute;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;box-shadow:0 0 0 2px #fff,0 0 0 3px rgb(0 0 0 / .22);pointer-events:none}
+.cp-row{display:flex;align-items:center;gap:8px;margin-top:14px}
+.cp-cmp{display:flex;width:44px;height:32px;border-radius:8px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--rule);flex:none}
+.cp-cmp i{flex:1}.cp-cmp i:first-child{cursor:pointer}
+.cp-hex{flex:1;min-width:0;height:32px;gap:2px;padding:0 10px}
+.cp-hex input{text-transform:uppercase;font-size:13px;letter-spacing:.04em}
+.cp-eye{width:32px;height:32px}
+.cp-err{margin-top:8px;font-size:12px;color:var(--danger)}
+.k-fld.e{background:color-mix(in oklab,var(--danger) 5%,var(--sheet));box-shadow:0 0 0 1px color-mix(in oklab,var(--danger) 60%,transparent),0 0 0 4px color-mix(in oklab,var(--danger) 12%,transparent)}
+.cp-pop{padding:14px}
+.cp-demo{display:flex;align-items:flex-start;gap:48px}
+.cp-notes{display:flex;flex-direction:column;gap:14px;max-width:420px;padding-top:4px}
+.cp-notes b{display:block;font-size:14px;font-weight:600}
+.cp-notes span{display:block;margin-top:2px;font-size:13px;line-height:1.75;color:var(--muted)}
+.cp-ed{max-width:720px;padding:6px 0 0}
+.cp-tb{display:inline-flex;align-items:center;gap:2px;padding:4px;border-radius:12px;background:var(--sheet);box-shadow:0 0 0 1px var(--rule)}
+.cp-tbs{width:1px;height:18px;margin:0 4px;background:var(--rule)}
+.cp-ab{display:inline-flex;align-items:center;gap:2px;height:32px;padding:0 6px 0 8px;border:0;border-radius:10px;background:transparent;color:var(--fg);cursor:pointer;transition:background-color .16s ease-out}
+.cp-ab:hover,.cp-ab.open{background:var(--sunk)}
+.cp-ab svg{color:var(--muted)}
+.cp-a{position:relative;display:inline-flex;flex-direction:column;align-items:center;font:600 15px Georgia,serif;line-height:16px}
+.cp-a i{display:block;width:14px;height:3px;margin-top:2px;border-radius:2px;box-shadow:inset 0 0 0 .5px rgb(0 0 0 / .12)}
+.cp-ep{position:absolute;left:0;top:40px;z-index:5;width:276px}
+.cp-lb{margin:2px 0 8px;font-size:12px;color:var(--muted)}
+.cp-sws{display:grid;grid-template-columns:repeat(6,24px);justify-content:space-between;gap:8px 6px;margin-bottom:12px}
+.cp-sw{width:24px;height:24px;padding:0;border:0;border-radius:8px;cursor:pointer;box-shadow:inset 0 0 0 1px rgb(0 0 0 / .08);transition:box-shadow .16s ease-out}
+.cp-sw:hover{box-shadow:inset 0 0 0 1px rgb(0 0 0 / .08),0 0 0 2px var(--sheet),0 0 0 3px var(--rule2)}
+.cp-sw.on,.cp-sw.on:hover{box-shadow:0 0 0 2px var(--sheet),0 0 0 4px var(--fg)}
+.cp-sw:focus-visible{outline:none;box-shadow:0 0 0 2px var(--sheet),0 0 0 4px color-mix(in oklab,var(--deco) 60%,transparent)}
+.cp-more{display:flex;align-items:center;justify-content:space-between;width:100%;height:32px;margin:0 0 4px;padding:0 4px;border:0;border-radius:8px;background:transparent;font-family:inherit;font-size:13px;color:var(--fg);cursor:pointer}
+.cp-more:hover{background:var(--sunk)}
+.cp-warn{display:flex;align-items:flex-start;gap:8px;margin-top:10px;padding:8px 10px;border-radius:10px;background:color-mix(in oklab,var(--danger) 7%,var(--sheet));font-size:12px;line-height:1.6;color:var(--danger)}
+.cp-warn svg{flex:none;margin-top:1px}
+.cp-txt{margin:24px 0 0;max-width:620px;font-size:17px;line-height:2}
+.cp-selt{background:color-mix(in oklab,var(--deco) 22%,transparent);border-radius:2px;transition:color .12s linear}
+.cp-dlg{width:560px;padding:22px 24px 24px;box-sizing:border-box}
+.cp-seedrow{margin-top:18px}
+.cp-sf{width:240px;padding:0 10px 0 4px;gap:2px}
+.cp-sf input{text-transform:uppercase;font-size:13px;letter-spacing:.04em}
+.cp-chipbtn{width:28px;height:28px;margin-right:6px;padding:0;border:0;border-radius:8px;cursor:pointer;box-shadow:inset 0 0 0 1px rgb(0 0 0 / .1);flex:none}
+.cp-sp{position:absolute;left:0;top:68px;z-index:21}
+.ad-catch{position:fixed;inset:0;z-index:20}
+.cp-seeds{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:12px}
+.cp-seed{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0;border:0;border-radius:10px;background:transparent;font-family:inherit;font-size:12px;color:var(--muted);cursor:pointer;transition:background-color .16s ease-out}
+.cp-seed:hover{background:var(--sunk)}
+.cp-seed i{width:24px;height:24px;border-radius:50%;box-shadow:inset 0 0 0 1px rgb(0 0 0 / .08)}
+.cp-seed.on{color:var(--fg);font-weight:600}.cp-seed.on i{box-shadow:0 0 0 2px var(--sheet),0 0 0 4px var(--fg)}
+.cp-adj{margin:8px 0 0}
+.cp-pvs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px}
+.cp-pv{padding:14px 16px;border-radius:14px;box-shadow:inset 0 0 0 1px var(--rule)}
+.cp-pv.l{background:#fbf8f6;color:#2f2a28}.cp-pv.d{background:#211d1c;color:#ece6e3}
+.cp-pvl{font-size:12px;opacity:.6}
+.cp-pv p{margin:6px 0 12px;font-size:15px;line-height:1.7}
+.cp-pb{display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:999px;font-size:14px;font-weight:500}
+.cp-chip{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;font-size:12px}
+.tb-sec{padding:48px 0;border-top:1px solid var(--rule)}
+.tb-spec{width:100%;margin-top:20px;border-collapse:collapse;font-size:14px;line-height:1.8}
+.tb-spec th{width:120px;padding:12px 16px 12px 0;text-align:left;vertical-align:top;font-weight:600;box-shadow:inset 0 -1px 0 var(--rule)}
+.tb-spec td{padding:12px 0;color:color-mix(in oklab,var(--fg) 85%,transparent);box-shadow:inset 0 -1px 0 var(--rule)}
+
+</style>
+</helmet>
+<div style="{{vars}}position:relative;overflow:hidden;width:1440px;min-height:2350px;display:flex;flex-direction:column;background:var(--bg);color:var(--fg);font-family:'Songti SC','Noto Serif SC','Source Han Serif SC',STSong,SimSun,serif;font-size:15px;line-height:1.8">
+<div class="paper-l" style="display:{{showLight}}"></div>
+<div class="paper-d" style="display:{{showDark}}"></div>
+
+
+<main style="position:relative;z-index:2;padding:96px 160px 120px"><h1 class="h1">取色</h1><p style="margin:16px 0 56px;max-width:680px;font-size:15px;line-height:1.8;color:var(--muted)">项目里有两处要选颜色：编辑器给文字上色，以及自定义主题的种子色。两处共用一块取色面板。</p><section class="k-blk"><div><h2>取色面板</h2><span class="k-uid">color-picker · HsvColorPicker</span><p class="k-lead">饱和度与明度在上，色相在下，最下一行是新旧颜色对比、十六进制输入和吸管。拖动时指针直接跟手；方向键微调 1%，按住 Shift 每次 10%。输入途中不报错，离开输入框还不合法才标红。</p></div><div><div class="cp-demo"><div class="k-pnl cp-pop" style="position:static"><div class="cp-panel"><div class="cp-sv" style="background:{{pa.hueBg}}" tabindex="0" role="slider" aria-label="饱和度与明度" aria-valuetext="{{pa.svText}}" onPointerDown="{{pa.svDown}}" onPointerMove="{{pa.svMove}}" onPointerUp="{{pa.up}}" onPointerCancel="{{pa.up}}" onKeyDown="{{pa.svKey}}"><i class="cp-w"></i><i class="cp-b"></i><span class="cp-pt" style="left:{{pa.sx}}%;top:{{pa.vy}}%;background:{{pa.hex}}"></span></div><div class="cp-hue" tabindex="0" role="slider" aria-label="色相" aria-valuemin="0" aria-valuemax="360" aria-valuenow="{{pa.h}}" aria-valuetext="色相 {{pa.h}}°" onPointerDown="{{pa.hueDown}}" onPointerMove="{{pa.hueMove}}" onPointerUp="{{pa.up}}" onPointerCancel="{{pa.up}}" onKeyDown="{{pa.hueKey}}"><span class="cp-ht" style="left:{{pa.hx}}%;background:{{pa.hueBg}}"></span></div><div class="cp-row"><span class="cp-cmp" title="左：打开时的颜色　右：新颜色"><i style="background:{{pa.old}}" onClick="{{pa.revert}}" title="恢复打开时的颜色"></i><i style="background:{{pa.hex}}"></i></span><label onMouseDown="{{keepFocus}}" class="k-fld cp-hex {{pa.errCls}}"><span class="mono" style="color:var(--muted)">#</span><input class="mono" value="{{pa.hexIn}}" onInput="{{pa.hexInput}}" onBlur="{{pa.hexBlur}}" maxlength="7" spellcheck="false" autocomplete="off" aria-label="十六进制颜色值"></label><sc-if value="{{hasEye}}" hint-placeholder-val="{{ true }}"><button class="k-ib cp-eye" onClick="{{pa.eye}}" aria-label="从屏幕吸取颜色" title="从屏幕吸取颜色"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 22l1-1h3l9-9M3 21v-3l9-9M15 6l3.4-3.4a2.1 2.1 0 0 1 3 3L18 9l.4.4a2.1 2.1 0 0 1 0 3l-.8.8-6-6 .8-.8a2.1 2.1 0 0 1 3 0z"></path></svg></button></sc-if></div><sc-if value="{{pa.err}}" hint-placeholder-val="{{ false }}"><div class="cp-err">请输入 3 位或 6 位十六进制，比如 C63 或 CC6633</div></sc-if></div></div><div class="cp-notes"><div><b>指针</b><span>白色 2px 环外加一圈浅墨线，在浅色和深色上都看得清；里面填当前颜色</span></div><div><b>色相滑块</b><span>18px 圆，填当前色相的纯色，所以不用看色条也知道停在哪</span></div><div><b>对比块</b><span>左半是打开时的颜色，右半是新颜色；点左半可以退回</span></div><div><b>十六进制</b><span>可以省略 #，支持 3 位和 6 位，自动转大写；粘贴整串也行</span></div><div><b>吸管</b><span>浏览器支持 EyeDropper 时才出现（Chrome、Edge），可以从屏幕任何地方吸色</span></div></div></div></div></section><section class="k-blk"><div><h2>文字颜色</h2><span class="k-uid">ColorSwatch · 编辑器工具栏</span><p class="k-lead">按钮是一个带色条的「A」，色条就是当前颜色。预设换成十二个在纸面上读得清的传统色，悬停加细环、选中是纸色间隔加墨色环，不放大。最近用过的放最上面。自定义面板默认收起；拖动时选中的文字实时变色，对比度不够会提醒。</p></div><div><div class="cp-ed"><div class="cp-tb"><button class="k-ib" aria-label="加粗"><b style="font:700 15px Georgia,serif">B</b></button><button class="k-ib" aria-label="斜体"><i style="font:italic 15px Georgia,serif">I</i></button><button class="k-ib" aria-label="下划线"><u style="font:15px Georgia,serif">U</u></button><i class="cp-tbs"></i><div style="position:relative"><button class="cp-ab {{eOpenCls}}" onClick="{{eToggle}}" aria-label="文字颜色" aria-expanded="{{eOpen}}" title="文字颜色"><span class="cp-a">A<i style="background:{{eBar}}"></i></span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button><sc-if value="{{eOpen}}" hint-placeholder-val="{{ true }}"><div class="k-pnl k-reveal cp-pop cp-ep" role="dialog" aria-label="文字颜色"><sc-if value="{{hasRecent}}" hint-placeholder-val="{{ true }}"><div class="cp-lb">最近使用</div><div class="cp-sws"><sc-for list="{{recent}}" as="c" hint-placeholder-count="3"><button class="cp-sw {{c.cls}}" style="background:{{c.hex}}" onClick="{{c.pick}}" aria-label="{{c.name}}" title="{{c.name}}"></button></sc-for></div></sc-if><div class="cp-lb">预设</div><div class="cp-sws"><sc-for list="{{presets}}" as="c" hint-placeholder-count="12"><button class="cp-sw {{c.cls}}" style="background:{{c.hex}}" onClick="{{c.pick}}" aria-label="{{c.name}}" title="{{c.name}} {{c.hex}}"></button></sc-for></div><button class="cp-more {{eCusCls}}" onClick="{{eCus}}" aria-expanded="{{eCusOn}}"><span>自定义</span><svg class="k-chev {{eCusCls}}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button><div class="k-acc {{eCusCls}}"><div><div style="padding:4px 0 2px"><div class="cp-panel"><div class="cp-sv" style="background:{{pe.hueBg}}" tabindex="0" role="slider" aria-label="饱和度与明度" aria-valuetext="{{pe.svText}}" onPointerDown="{{pe.svDown}}" onPointerMove="{{pe.svMove}}" onPointerUp="{{pe.up}}" onPointerCancel="{{pe.up}}" onKeyDown="{{pe.svKey}}"><i class="cp-w"></i><i class="cp-b"></i><span class="cp-pt" style="left:{{pe.sx}}%;top:{{pe.vy}}%;background:{{pe.hex}}"></span></div><div class="cp-hue" tabindex="0" role="slider" aria-label="色相" aria-valuemin="0" aria-valuemax="360" aria-valuenow="{{pe.h}}" aria-valuetext="色相 {{pe.h}}°" onPointerDown="{{pe.hueDown}}" onPointerMove="{{pe.hueMove}}" onPointerUp="{{pe.up}}" onPointerCancel="{{pe.up}}" onKeyDown="{{pe.hueKey}}"><span class="cp-ht" style="left:{{pe.hx}}%;background:{{pe.hueBg}}"></span></div><div class="cp-row"><span class="cp-cmp" title="左：打开时的颜色　右：新颜色"><i style="background:{{pe.old}}" onClick="{{pe.revert}}" title="恢复打开时的颜色"></i><i style="background:{{pe.hex}}"></i></span><label onMouseDown="{{keepFocus}}" class="k-fld cp-hex {{pe.errCls}}"><span class="mono" style="color:var(--muted)">#</span><input class="mono" value="{{pe.hexIn}}" onInput="{{pe.hexInput}}" onBlur="{{pe.hexBlur}}" maxlength="7" spellcheck="false" autocomplete="off" aria-label="十六进制颜色值"></label><sc-if value="{{hasEye}}" hint-placeholder-val="{{ true }}"><button class="k-ib cp-eye" onClick="{{pe.eye}}" aria-label="从屏幕吸取颜色" title="从屏幕吸取颜色"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 22l1-1h3l9-9M3 21v-3l9-9M15 6l3.4-3.4a2.1 2.1 0 0 1 3 3L18 9l.4.4a2.1 2.1 0 0 1 0 3l-.8.8-6-6 .8-.8a2.1 2.1 0 0 1 3 0z"></path></svg></button></sc-if></div><sc-if value="{{pe.err}}" hint-placeholder-val="{{ false }}"><div class="cp-err">请输入 3 位或 6 位十六进制，比如 C63 或 CC6633</div></sc-if></div></div></div></div><sc-if value="{{lowC}}" hint-placeholder-val="{{ false }}"><div class="cp-warn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 8v4M12 16h.01"></path></svg><span>在纸面上对比度 <b class="num">{{ratio}}</b>:1，正文读起来吃力，建议 4.5 以上</span></div></sc-if><div class="k-sep" style="margin:8px -2px"></div><button class="k-mi" onClick="{{eClear}}" style="margin:0 -4px;width:calc(100% + 8px)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16M6 16l6-12 6 12M8.5 11h7"></path></svg>清除颜色<span class="k">恢复正文色</span></button></div></sc-if></div><button class="k-ib" aria-label="链接"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg></button><button class="k-ib" aria-label="引用"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h10v10M7 17 17 7"></path></svg></button></div><p class="cp-txt">落花的轨迹用三次贝塞尔曲线模拟，<span class="cp-selt" style="color:{{eText}}">控制点跟着风速抖一下</span>，看起来就不那么机械。</p></div></div></section><section class="k-blk"><div><h2>种子色</h2><span class="k-uid">自定义主题 · CustomThemeDialog</span><p class="k-lead">原来用的是浏览器自带的取色框，在不同系统上长得不一样。改成同一块取色面板，上面加四季种子色；种子色太浅或太深时自动调到可读，并写明调了什么。</p></div><div><div class="k-pnl cp-dlg"><b style="font-size:17px;font-weight:600">自定义主题</b><p class="ad-note" style="margin:6px 0 0;font-size:13px">选一个种子色生成整套配色，按钮与文字会自动调到可读。</p><div class="cp-seedrow"><div style="position:relative"><span class="lab">种子色</span><span class="k-fld cp-sf {{tFldCls}}"><button class="cp-chipbtn" style="background:{{pt.hex}}" onClick="{{tToggle}}" aria-label="打开取色面板" aria-expanded="{{tOpen}}"></button><span class="mono" style="color:var(--muted)">#</span><input class="mono" value="{{pt.hexIn}}" onInput="{{pt.hexInput}}" onBlur="{{pt.hexBlur}}" maxlength="7" spellcheck="false" autocomplete="off" aria-label="种子色"></span><sc-if value="{{pt.err}}" hint-placeholder-val="{{ false }}"><div class="cp-err">请输入 #rgb 或 #rrggbb</div></sc-if><sc-if value="{{tOpen}}" hint-placeholder-val="{{ false }}"><div class="ad-catch" onClick="{{tToggle}}"></div><div class="k-pnl k-reveal cp-pop cp-sp"><div class="cp-lb">四季</div><div class="cp-seeds"><sc-for list="{{seeds}}" as="c" hint-placeholder-count="4"><button class="cp-seed {{c.cls}}" onClick="{{c.pick}}"><i style="background:{{c.hex}}"></i>{{c.name}}</button></sc-for></div><div class="cp-panel"><div class="cp-sv" style="background:{{pt.hueBg}}" tabindex="0" role="slider" aria-label="饱和度与明度" aria-valuetext="{{pt.svText}}" onPointerDown="{{pt.svDown}}" onPointerMove="{{pt.svMove}}" onPointerUp="{{pt.up}}" onPointerCancel="{{pt.up}}" onKeyDown="{{pt.svKey}}"><i class="cp-w"></i><i class="cp-b"></i><span class="cp-pt" style="left:{{pt.sx}}%;top:{{pt.vy}}%;background:{{pt.hex}}"></span></div><div class="cp-hue" tabindex="0" role="slider" aria-label="色相" aria-valuemin="0" aria-valuemax="360" aria-valuenow="{{pt.h}}" aria-valuetext="色相 {{pt.h}}°" onPointerDown="{{pt.hueDown}}" onPointerMove="{{pt.hueMove}}" onPointerUp="{{pt.up}}" onPointerCancel="{{pt.up}}" onKeyDown="{{pt.hueKey}}"><span class="cp-ht" style="left:{{pt.hx}}%;background:{{pt.hueBg}}"></span></div><div class="cp-row"><span class="cp-cmp" title="左：打开时的颜色　右：新颜色"><i style="background:{{pt.old}}" onClick="{{pt.revert}}" title="恢复打开时的颜色"></i><i style="background:{{pt.hex}}"></i></span><label onMouseDown="{{keepFocus}}" class="k-fld cp-hex {{pt.errCls}}"><span class="mono" style="color:var(--muted)">#</span><input class="mono" value="{{pt.hexIn}}" onInput="{{pt.hexInput}}" onBlur="{{pt.hexBlur}}" maxlength="7" spellcheck="false" autocomplete="off" aria-label="十六进制颜色值"></label><sc-if value="{{hasEye}}" hint-placeholder-val="{{ true }}"><button class="k-ib cp-eye" onClick="{{pt.eye}}" aria-label="从屏幕吸取颜色" title="从屏幕吸取颜色"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 22l1-1h3l9-9M3 21v-3l9-9M15 6l3.4-3.4a2.1 2.1 0 0 1 3 3L18 9l.4.4a2.1 2.1 0 0 1 0 3l-.8.8-6-6 .8-.8a2.1 2.1 0 0 1 3 0z"></path></svg></button></sc-if></div><sc-if value="{{pt.err}}" hint-placeholder-val="{{ false }}"><div class="cp-err">请输入 3 位或 6 位十六进制，比如 C63 或 CC6633</div></sc-if></div></div></sc-if></div><sc-if value="{{tAdj}}" hint-placeholder-val="{{ false }}"><p class="ad-note cp-adj">{{tAdjText}}</p></sc-if></div><div class="cp-pvs"><div class="cp-pv l" style="{{tp_l.vars}}"><span class="cp-pvl">浅色</span><p>正文里的<span style="color:var(--lk);text-decoration:underline;text-underline-offset:4px">链接</span>与<span style="color:var(--lk)">强调</span></p><div style="display:flex;align-items:center;gap:8px"><span class="cp-pb" style="background:var(--pb);color:var(--pt)">主要按钮</span><span class="cp-chip" style="background:var(--sb);color:var(--lk)">已选中</span></div></div><div class="cp-pv d" style="{{tp_d.vars}}"><span class="cp-pvl">深色</span><p>正文里的<span style="color:var(--lk);text-decoration:underline;text-underline-offset:4px">链接</span>与<span style="color:var(--lk)">强调</span></p><div style="display:flex;align-items:center;gap:8px"><span class="cp-pb" style="background:var(--pb);color:var(--pt)">主要按钮</span><span class="cp-chip" style="background:var(--sb);color:var(--lk)">已选中</span></div></div></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px"><button class="btn" onClick="{{tCancel}}">取消</button><button class="btn pri" onClick="{{tApply}}" aria-disabled="{{tBad}}">应用</button></div></div></div></section><section class="tb-sec"><div style="display:flex;align-items:baseline;gap:14px"><h2 style="margin:0;font-size:24px;font-weight:600">规格</h2></div><table class="tb-spec"><tr><th>尺寸</th><td>取色面板宽 248；饱和度区高 156，圆角 12；色相条高 12；色相滑块 18；指针 14；预设色块 24，间距 6</td></tr><tr><th>预设</th><td>十二个传统色，都按在纸面上的对比度挑过（≥ 4.5:1）；季节种子色只用于主题，不进文字预设</td></tr><tr><th>选中与悬停</th><td>悬停加 1px 细环；选中是 2px 纸色间隔加 2px 墨色环；不放大，不位移</td></tr><tr><th>键盘</th><td>饱和度区方向键各调 1%，Shift 加速到 10%；色相条左右键每次 1°，Shift 10°；Tab 依次经过饱和度区、色相条、输入框、吸管</td></tr><tr><th>读屏</th><td>两块都是 slider，读出「饱和度 64%，明度 82%」与「色相 220°」；色块读颜色名</td></tr><tr><th>动效</th><td>弹出层从触发器一侧 6px 处浮出 200ms，收起往回退并淡出 140ms；自定义面板高度展开 280ms；拖动不加过渡</td></tr><tr><th>可读性</th><td>文字颜色在纸面上低于 4.5:1 时提示；主题种子色由生成算法兜底，界面写明调了多少</td></tr></table></section></main><div class="k-toaster {{tst.cls}}" role="region" aria-label="通知（⌥T）" tabindex="-1" ref="{{tst.ref}}" onMouseEnter="{{tst.enter}}" onMouseLeave="{{tst.leave}}" onFocus="{{tst.focus}}" onBlur="{{tst.blur}}" style="position:fixed;right:24px;bottom:24px;z-index:90"><span class="k-thit" style="{{tst.hit}}"></span><sc-for list="{{tst.slots}}" as="s" hint-placeholder-count="0"><div class="k-to {{s.cls}}" role="{{s.role}}" style="{{s.style}}" onPointerDown="{{s.down}}" onPointerMove="{{s.move}}" onPointerUp="{{s.up}}" onPointerCancel="{{s.up}}"><div class="k-ti" ref="{{s.ref}}"><span class="k-tic {{s.type}}"><span class="i-ok"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"></path><path class="ck" d="m8.5 12.5 2.5 2.5 4.5-5"></path></svg></span><span class="i-err"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 8v4M12 16h.01"></path></svg></span><span class="i-warn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"></path></svg></span><span class="i-info"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16v-4M12 8h.01"></path></svg></span><span class="i-load"><svg class="k-arc" width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" style="color:currentColor"><circle cx="8" cy="8" r="6.1" fill="none" stroke="currentColor" stroke-opacity=".22" stroke-width="1.75"></circle><circle class="a" cx="8" cy="8" r="6.1" pathLength="100" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" transform="rotate(-90 8 8)"></circle></svg></span></span><div style="flex:1;min-width:0"><div class="k-tt">{{s.title}}<sc-if value="{{s.multi}}" hint-placeholder-val="{{ false }}"><span class="k-tn num {{s.bump}}">×{{s.count}}</span></sc-if></div><sc-if value="{{s.hasDesc}}" hint-placeholder-val="{{ false }}"><div class="k-td">{{s.desc}}</div></sc-if></div><sc-if value="{{s.hasAct}}" hint-placeholder-val="{{ false }}"><button class="k-ta" onClick="{{s.act}}">{{s.action}}</button></sc-if></div><button class="k-tx" aria-label="关闭" onClick="{{s.close}}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg></button></div></sc-for></div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"season":{"editor":"enum","options":["春","夏","秋","冬"],"default":"春"},"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":2350}}'>
+class Component extends DCLogic {
+  state = { pa: { h: 355.1220, s: 0.504098, v: 0.956863, old: '#f47983', txt: null, err: false }, pe: { h: 222.2222, s: 0.701299, v: 0.603922, old: '#2e4e9a', txt: null, err: false }, pt: { h: 355.1220, s: 0.504098, v: 0.956863, old: '#f47983', txt: null, err: false }, eOpen: true, eCus: false, eColor: '#2e4e9a', recent: ['#2e4e9a', '#c63c26', '#2f7d4f'], tOpen: false, toasts: [], tex: false, tdrag: null, ov: null, ph: '', run: 0 };
+  componentDidMount() { this._altT = (e) => { if (e.altKey && e.code === 'KeyT' && this._toasterEl) { e.preventDefault(); this._toasterEl.focus(); } else if ((e.metaKey || e.ctrlKey) && (e.key || '').toLowerCase() === 'k' && this._openCmd) { e.preventDefault(); this._openCmd(); } else if (e.key === 'Escape' && this._esc) this._esc(); else if (this.state.ov === 'lb' && this._lbNav && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) this._lbNav(e.key === 'ArrowRight' ? 1 : -1); else if (this._pageKey && !this.state.ov) this._pageKey(e); }; window.addEventListener('keydown', this._altT); }
+  componentWillUnmount() { window.removeEventListener('keydown', this._altT); Object.values(this._tm || {}).forEach((x) => clearTimeout(x.t)); document.documentElement.style.overflow = ''; document.body.style.overflow = ''; }
+  renderVals() {
+    const S = {
+      '春': { seed: '#f47983', h: 16.6, l: '/_blob/d8aaad66118cac26d5af34610af527bf', d: '/_blob/0cfa75d49c85d4df8e63d591ce6c7ea1' },
+      '夏': { seed: '#2f9e7a', h: 162, l: '/_blob/c0353bf8edad55e8130fb95826b3799f', d: '/_blob/8ab23c87229ff622bac13566cfb665fd' },
+      '秋': { seed: '#d9a21b', h: 82.95, l: '/_blob/d837ab2ada8c6a3cbb1a71fea71be6e2', d: '/_blob/8a07e26da1a24b8a9f19bf09a30aca11' },
+      '冬': { seed: '#7d8ea3', h: 252, l: '/_blob/eb4210561b3c04659b349b6813d7ba9c', d: '/_blob/f4961af0e552cbba606908f217a44b37' },
+    };
+    const season = S[this.props.season] ? this.props.season : '春';
+    const dark = !!this.props.dark;
+    const s = S[season], h = s.h;
+    const vars = dark
+      ? `--bg:oklch(0.17 0.0087 ${h});--sheet:oklch(0.235 0.011 ${h});--sunk:oklch(0.29 0.012 ${h});--fg:oklch(0.9373 0.015 ${h});--muted:oklch(0.8573 0.0225 ${h});--rule:oklch(0.9373 0.015 ${h} / .12);--rule2:oklch(0.9373 0.015 ${h} / .3);--deco:${s.seed};--accent:oklch(0.8589 0.1031 ${h});--danger:oklch(0.74 0.14 25);--ok:oklch(0.74 0.15 155);--ol:rgb(255 255 255 / .08);`
+      : `--bg:oklch(0.968 0.006 ${h});--sheet:oklch(0.994 0.003 ${h});--sunk:oklch(0.945 0.007 ${h});--fg:oklch(0.3331 0.0175 ${h});--muted:oklch(0.4717 0.0225 ${h});--rule:oklch(0.3331 0.0175 ${h} / .11);--rule2:oklch(0.3331 0.0175 ${h} / .3);--deco:${s.seed};--accent:oklch(0.4739 0.0974 ${h});--danger:oklch(0.52 0.16 27);--ok:oklch(0.52 0.13 155);--ol:transparent;`;
+    const base = { vars, season, dark, art: dark ? s.d : s.l, blend: dark ? 'normal' : 'multiply', showLight: dark ? 'none' : 'block', showDark: dark ? 'block' : 'none' };
+    
+    const HL = (key) => { const cur = this.state['hl_' + key];
+      const style = cur ? `transform:translate(${cur.x}px,${cur.y}px);width:${cur.w}px;height:${cur.h}px;opacity:${cur.on ? 1 : 0};transition:${cur.jump ? 'opacity .12s ease' : 'transform .28s cubic-bezier(.32,.72,0,1),width .28s cubic-bezier(.32,.72,0,1),height .28s cubic-bezier(.32,.72,0,1),opacity .12s ease'}` : 'opacity:0';
+      return { style,
+        enter: (e) => { const el = e.currentTarget; if (el.getAttribute('aria-disabled') === 'true') return; const prev = this.state['hl_' + key]; this.setState({ ['hl_' + key]: { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight, on: true, jump: !prev || !prev.on } }); },
+        leave: () => { const prev = this.state['hl_' + key]; if (prev) this.setState({ ['hl_' + key]: Object.assign({}, prev, { on: false }) }); } }; };
+    base.keepFocus = (e) => { const t = e.target; if (t.closest && t.closest('input,textarea,select,button,a,[tabindex]')) return; const c = e.currentTarget.querySelector('input,textarea,select'); if (!c || c.disabled) return; e.preventDefault(); if (document.activeElement !== c) c.focus(); };
+    const SLOW = () => (this.state.slow ? 4 : 1);
+    const OUT_MS = { dialog: 240, confirm: 160, prompt: 160, sheet: 240, side: 240, bottom: 240, pop: 150, menu: 150, ctx: 150, cmd: 160, lb: 280 };
+    const flip = (el, thumb, dur, back) => { const a = thumb.getBoundingClientRect(), b = el.getBoundingClientRect(); if (!b.width || !a.width) return Promise.resolve();
+      const s = Math.max(a.width / b.width, a.height / b.height), dx = a.left + a.width / 2 - (b.left + b.width / 2), dy = a.top + a.height / 2 - (b.top + b.height / 2);
+      const ix = Math.max(0, (b.width - a.width / s) / 2), iy = Math.max(0, (b.height - a.height / s) / 2);
+      const from = { transform: `translate(${dx}px,${dy}px) scale(${s})`, clipPath: `inset(${iy}px ${ix}px round ${8 / s}px)` }, to = { transform: 'translate(0px,0px) scale(1)', clipPath: 'inset(0px 0px round 4px)' };
+      return el.animate(back ? [to, from] : [from, to], { duration: dur, easing: 'cubic-bezier(.32,.72,0,1)', fill: back ? 'forwards' : 'none' }).finished.catch(() => {}); };
+    const ovOpen = (name, extra) => () => { clearTimeout(this._ovT); this.setState(Object.assign({ ov: name, ph: 'in', run: (this.state.run || 0) + 1, last: name, drag: 0, dragging: false }, extra || {})); };
+    const ovClose = () => { const name = this.state.ov; if (!name || this.state.ph === 'out') return; this.setState({ ph: 'out', run: (this.state.run || 0) + 1 }); clearTimeout(this._ovT);
+      const done = () => { if (this.state.ph === 'out') this.setState({ ov: null, drag: 0 }); };
+      const thumb = name === 'lb' && this._thumbs ? this._thumbs[this.state.lb || 0] : null;
+      if (thumb && this._lbEl && !matchMedia('(prefers-reduced-motion: reduce)').matches) flip(this._lbEl, thumb, 280 * SLOW(), true).then(done);
+      else this._ovT = setTimeout(done, (OUT_MS[name] || 160) * SLOW() + 40); };
+    const MODAL = { dialog: 1, confirm: 1, prompt: 1, sheet: 1, bottom: 1, cmd: 1, lb: 1 };
+    const lockRef = (always) => (el) => { if (!el || el.__lk) return; el.__lk = 1;
+      const h = (e) => { if (!always && !MODAL[this.state.ov]) return; const dy = e.deltaY || 0;
+        for (let n = e.target; n && n !== el.parentNode; n = n.parentNode) { if (n.hasAttribute && n.hasAttribute('data-scroll')) { if (e.type === 'touchmove' || (dy < 0 ? n.scrollTop > 0 : n.scrollTop + n.clientHeight < n.scrollHeight - 1)) return; break; } }
+        e.preventDefault(); };
+      el.addEventListener('wheel', h, { passive: false }); el.addEventListener('touchmove', h, { passive: false }); };
+    this._esc = ovClose;
+    const ovPh = (name) => (this.state.ov === name ? this.state.ph : '');
+    const thumbRef = (i) => (el) => { if (el) { this._thumbs = this._thumbs || {}; this._thumbs[i] = el; } };
+    const lbRef = (el) => { if (!el) return; this._lbEl = el; if (this._lbRun === this.state.run) return; this._lbRun = this.state.run;
+      const thumb = this._thumbs ? this._thumbs[this.state.lb || 0] : null; if (this.state.ph !== 'in' || !thumb || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const go = () => { el.style.visibility = ''; flip(el, thumb, 360 * SLOW(), false); };
+      if (el.complete && el.naturalWidth) go(); else { el.style.visibility = 'hidden'; el.addEventListener('load', go, { once: true }); } };
+    const focusRef = (ms) => (el) => { if (!el || this._fr === this.state.run || this.state.ph !== 'in') return; this._fr = this.state.run; setTimeout(() => { try { el.focus({ preventScroll: true }); } catch (e) {} }, ms * SLOW()); };
+    
+    // 动法照 Sonner：从底边升起、后层上移 14px 并缩 5%、悬停展开间距 14、移除时向下落回、划走阈值 45px 或 0.11px/ms
+    const T_GAP = 14, T_LIFT = 14, T_SC = 0.05, T_MAX = 3, T_DUR = { ok: 4000, info: 4000, warn: 6000, err: Infinity, load: Infinity };
+    this._tm = this._tm || {}; this._th = this._th || {}; this._tpos = this._tpos || {};
+    const tl = () => this.state.toasts || [];
+    const tMap = (fn) => this.setState((p) => ({ toasts: (p.toasts || []).map(fn) }));
+    const tDur = (o) => (o.action && o.type !== 'err' && o.type !== 'load' ? 8000 : T_DUR[o.type || 'ok']);
+    const tDismiss = (id, sw) => { const t = tl().find((x) => x.id === id); if (!t || t.ph === 'out') return; const tm = this._tm[id]; if (tm) clearTimeout(tm.t); delete this._tm[id];
+      const exOut = !!this.state.tex && !sw; tMap((x) => (x.id === id ? Object.assign({}, x, { ph: 'out', sw: sw || null, exOut }) : x)); if (this._onToast) this._onToast('out');
+      setTimeout(() => this.setState((p) => { const rest = (p.toasts || []).filter((x) => x.id !== id), any = rest.some((x) => x.ph !== 'out'); if (!any) this._tfocus = false; return any ? { toasts: rest } : { toasts: rest, tex: false }; }), (sw || exOut ? 200 : 400) * SLOW() + 60); };
+    const tArm = (id, ms) => { const o = this._tm[id]; if (o) clearTimeout(o.t); if (!isFinite(ms)) { delete this._tm[id]; return; } const x = { start: Date.now(), left: ms, t: null }; this._tm[id] = x; if (!this.state.tex) x.t = setTimeout(() => tDismiss(id), ms); };
+    const tPause = () => Object.keys(this._tm).forEach((k) => { const x = this._tm[k]; if (x.t) { clearTimeout(x.t); x.t = null; x.left -= Date.now() - x.start; } });
+    const tResume = () => Object.keys(this._tm).forEach((k) => { const x = this._tm[k]; if (!x.t) { x.start = Date.now(); x.t = setTimeout(() => tDismiss(+k), Math.max(800, x.left)); } });
+    const toast = (o) => { const list = tl(), same = list.find((x) => x.ph !== 'out' && (o.key ? x.key === o.key : x.title === o.title && (x.type || 'ok') === (o.type || 'ok') && (x.desc || '') === (o.desc || '')));
+      if (same) { tMap((x) => (x.id === same.id ? Object.assign({}, x, { count: x.count + 1, gen: x.gen + 1 }) : x)); tArm(same.id, same.dur); if (this._onToast) this._onToast('in'); return same.id; }
+      const used = list.map((x) => x.slot); let slot = [0, 1, 2, 3, 4, 5].find((s2) => used.indexOf(s2) < 0), keep = list;
+      if (slot == null) { const old = list.slice().sort((a, b) => a.id - b.id)[0]; slot = old.slot; keep = list.filter((x) => x !== old); delete this._tm[old.id]; }
+      const id = (this._tid = Math.max(this._tid || 0, ...list.map((x) => x.id)) + 1), t = Object.assign({ id, slot, ph: 'in', count: 1, gen: 0, type: 'ok', sw: null }, o); t.dur = tDur(t); this._sgen = this._sgen || {}; t.sg = (this._sgen[slot] = (this._sgen[slot] || 0) + 1) % 2;
+      this.setState({ toasts: keep.concat([t]) }); tArm(id, t.dur); if (this._onToast) this._onToast('in'); return id; };
+    const tUpdate = (id, o) => { const t = tl().find((x) => x.id === id); if (!t || t.ph === 'out') return; const n = Object.assign({}, t, o); n.dur = tDur(n); tMap((x) => (x.id === id ? n : x)); tArm(id, n.dur); };
+    const T_SAMPLES = ['已保存草稿', '已发布「秋天的桂花酿」', '已加入系列「Rust 全栈笔记」', '已通过林间的评论', '已更新封面', '已移到回收站', '已导出 文章列表.csv', '已置顶这条推文'];
+    const tNext = () => { this._tsi = ((this._tsi == null ? -1 : this._tsi) + 1) % T_SAMPLES.length; return T_SAMPLES[this._tsi]; };
+    const tTest = { one: () => toast({ type: 'ok', title: tNext() }), burst: () => [0, 1, 2].forEach((i) => setTimeout(() => toast({ type: i === 1 ? 'info' : 'ok', title: tNext() }), i * 180)),
+      same: () => toast({ type: 'ok', title: '已复制链接' }), clear: () => tl().filter((x) => x.ph !== 'out').forEach((x) => tDismiss(x.id)) };
+    const damp = (d) => d / (1.5 + Math.abs(d) / 20);
+    const toaster = () => { const list = tl(), ex = !!this.state.tex, drag = this.state.tdrag, live = list.filter((x) => x.ph !== 'out').sort((a, b) => b.id - a.id);
+      const hOf = (t) => this._th[t.id] || 56, fh = live[0] ? hOf(live[0]) : 56;
+      const pos = (t) => { const i = live.indexOf(t), c = Math.min(i, T_MAX); let y = 0; if (ex) { for (let j = 0; j < c; j++) y -= hOf(live[j]) + T_GAP; } else y = -c * T_LIFT; return { y, sc: ex ? 1 : +(1 - c * T_SC).toFixed(3), h: ex || i === 0 ? hOf(t) : fh, i }; };
+      const slots = [0, 1, 2, 3, 4, 5].map((s2) => { const t = list.find((x) => x.slot === s2); if (!t) return { cls: '', style: 'display:none', type: '' };
+        const on = t.ph !== 'out'; const p = on ? pos(t) : this._tpos[t.id] || { y: 0, sc: 1, h: hOf(t), i: 0 }; if (on) this._tpos[t.id] = p;
+        const dragging = !!(drag && drag.id === t.id), hidden = on && p.i >= T_MAX, sw = t.sw;
+        let tf;
+        if (!on && sw) tf = `translate(calc(${sw.x}px + ${sw.dir === 'r' ? '100%' : '0px'}),calc(${p.y + sw.y}px + ${sw.dir === 'd' ? '100%' : '0px'})) scale(${p.sc})`;
+        else if (!on && t.exOut) tf = `translate(0px,${p.y}px) scale(${p.sc})`;
+        else if (!on) tf = `translate(0px,calc(${p.y}px + 100%)) scale(${p.sc})`;
+        else if (dragging) tf = `translate(${drag.x}px,${p.y + drag.y}px) scale(${p.sc})`;
+        else tf = `translate(0px,${p.y}px) scale(${p.sc})`;
+        const style = `transform:${tf};height:${p.h}px;opacity:${!on || hidden ? 0 : 1};z-index:${20 - p.i};pointer-events:${hidden || !on ? 'none' : 'auto'};`;
+        return { cls: 'in' + (t.sg || 0) + (on && p.i > 0 && !ex ? ' back' : '') + (dragging ? ' drag' : '') + (!on && (sw || t.exOut) ? ' swo' : ''), style, bump: 'b' + (t.gen % 2) + (t.gen ? '' : ' b-'), role: t.type === 'err' ? 'alert' : 'status', type: t.type, title: t.title, desc: t.desc || '', hasDesc: !!t.desc,
+          action: t.action || '', hasAct: !!t.action, multi: t.count > 1, count: t.count,
+          act: () => { const f = t.onAct; tDismiss(t.id); if (f) f(); }, close: () => tDismiss(t.id),
+          ref: (el) => { if (!el) return; const h = el.offsetHeight; if (h && this._th[t.id] !== h) { this._th[t.id] = h; this.setState((q) => ({ thv: (q.thv || 0) + 1 })); } },
+          down: (e) => { if (e.target.closest && e.target.closest('button')) return; this._tx0 = e.clientX; this._ty0 = e.clientY; this._tt0 = performance.now(); this._tax = null; try { e.currentTarget.setPointerCapture(e.pointerId); } catch (x) {} this.setState({ tdrag: { id: t.id, x: 0, y: 0 } }); },
+          move: (e) => { const d = this.state.tdrag; if (!d || d.id !== t.id) return; const rx = e.clientX - this._tx0, ry = e.clientY - this._ty0;
+            if (!this._tax && Math.max(Math.abs(rx), Math.abs(ry)) > 4) this._tax = Math.abs(rx) >= Math.abs(ry) ? 'x' : 'y';
+            const ax = this._tax; this.setState({ tdrag: { id: t.id, x: ax === 'x' ? (rx > 0 ? rx : damp(rx)) : 0, y: ax === 'y' ? (ry > 0 ? ry : damp(ry)) : 0 } }); },
+          up: () => { const d = this.state.tdrag; if (!d || d.id !== t.id) return; const amt = this._tax === 'y' ? d.y : d.x, v = Math.abs(amt) / Math.max(1, performance.now() - this._tt0);
+            this.setState({ tdrag: null }); if (amt >= 45 || (v > 0.11 && amt > 10)) tDismiss(t.id, { x: d.x, y: d.y, dir: this._tax === 'y' ? 'd' : 'r' }); } }; });
+      const vis = live.slice(0, T_MAX); let H = 0; if (ex) vis.forEach((t, j) => { H += hOf(t) + (j ? T_GAP : 0); }); else if (vis.length) H = fh + (vis.length - 1) * T_LIFT;
+      if (ex) this._hitMax = Math.max(this._hitMax || 0, H); else this._hitMax = 0;
+      const hitH = ex ? this._hitMax : H;
+      return { cls: ex ? 'ex' : '', hit: `height:${hitH ? hitH + 32 : 0}px`, slots, ref: (el) => { if (el) this._toasterEl = el; },
+        enter: () => { if (!this.state.tex && live.length) { this.setState({ tex: true }); tPause(); } },
+        leave: () => { if (this.state.tex && !this._tfocus) { this.setState({ tex: false }); tResume(); } },
+        focus: () => { this._tfocus = true; if (!this.state.tex && live.length) { this.setState({ tex: true }); tPause(); } },
+        blur: (e) => { if (e.relatedTarget && e.currentTarget.contains(e.relatedTarget)) return; this._tfocus = false; if (this.state.tex) { this.setState({ tex: false }); tResume(); } } }; };
+    const st = this.state, set = (o) => this.setState(o);
+    const PRE = [["朱砂", "#c63c26"], ["赭石", "#9c5333"], ["琥珀", "#946708"], ["苔绿", "#5f7a2a"], ["竹青", "#2f7d4f"], ["石青", "#1d7286"], ["靛蓝", "#2e4e9a"], ["藏青", "#2b3a55"], ["紫棠", "#6b3f7a"], ["胭脂", "#b0365a"], ["檀褐", "#6e4b3a"], ["墨灰", "#55524f"]], SEEDS = [["春", "#f47983"], ["夏", "#2f9e7a"], ["秋", "#d9a21b"], ["冬", "#7d8ea3"]];
+    const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+    const hsv2hex = (h, s, v) => { const f = (n) => { const k = (n + h / 60) % 6; return v - v * s * Math.max(0, Math.min(k, 4 - k, 1)); }; return '#' + [f(5), f(3), f(1)].map((x) => Math.round(x * 255).toString(16).padStart(2, '0')).join(''); };
+    const hex2rgb = (x) => { const n = parseInt(x.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+    const hex2hsv = (x) => { const [r, g, b] = hex2rgb(x).map((c) => c / 255), mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn; let h = 0;
+      if (d) { h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h *= 60; if (h < 0) h += 360; } return { h, s: mx ? d / mx : 0, v: mx }; };
+    const norm = (t) => { const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec((t || '').trim()); if (!m) return null; let x = m[1]; if (x.length === 3) x = x.split('').map((c) => c + c).join(''); return '#' + x.toLowerCase(); };
+    const lum = (x) => { const [r, g, b] = hex2rgb(x).map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+    const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+    const PAPER = '#fbf8f6', NIGHT = '#211d1c';
+    const nameOf = (hex) => { const p = PRE.find((x) => x[1] === hex); return p ? p[0] : hex.toUpperCase(); };
+    const picker = (key, onChange) => { const c = st[key], hex = hsv2hex(c.h, c.s, c.v), drag = (this._drag = this._drag || {});
+      const put = (o) => { this.setState((p) => ({ [key]: Object.assign({}, p[key], o, { txt: null, err: false }) })); if (onChange) { const n = Object.assign({}, c, o); onChange(hsv2hex(n.h, n.s, n.v)); } };
+      const svAt = (e) => { const r = e.currentTarget.getBoundingClientRect(); put({ s: clamp((e.clientX - r.left) / r.width), v: clamp(1 - (e.clientY - r.top) / r.height) }); };
+      const hueAt = (e) => { const r = e.currentTarget.getBoundingClientRect(); put({ h: clamp((e.clientX - r.left) / r.width, 0, 0.9999) * 360 }); };
+      return { hex, hexIn: c.txt != null ? c.txt : hex.slice(1).toUpperCase(), hueBg: `hsl(${Math.round(c.h)} 100% 50%)`, sx: c.s * 100, vy: (1 - c.v) * 100, hx: (c.h / 360) * 100, h: Math.round(c.h),
+        svText: `饱和度 ${Math.round(c.s * 100)}%，明度 ${Math.round(c.v * 100)}%`, old: c.old, err: !!c.err, errCls: c.err ? 'e' : '',
+        svDown: (e) => { try { e.currentTarget.setPointerCapture(e.pointerId); } catch (x) {} drag[key] = 'sv'; svAt(e); }, svMove: (e) => { if (drag[key] === 'sv') svAt(e); },
+        hueDown: (e) => { try { e.currentTarget.setPointerCapture(e.pointerId); } catch (x) {} drag[key] = 'hue'; hueAt(e); }, hueMove: (e) => { if (drag[key] === 'hue') hueAt(e); }, up: () => { drag[key] = null; },
+        svKey: (e) => { const d = e.shiftKey ? 0.1 : 0.01, m = { ArrowLeft: [-d, 0], ArrowRight: [d, 0], ArrowUp: [0, d], ArrowDown: [0, -d] }[e.key]; if (!m) return; e.preventDefault(); put({ s: clamp(c.s + m[0]), v: clamp(c.v + m[1]) }); },
+        hueKey: (e) => { const d = e.shiftKey ? 10 : 1, m = { ArrowLeft: -d, ArrowRight: d, ArrowDown: -d, ArrowUp: d }[e.key]; if (m == null) return; e.preventDefault(); put({ h: (c.h + m + 360) % 360 }); },
+        hexInput: (e) => { const t = e.target.value.replace('#', '').toUpperCase(), n = norm(t); if (n) { const hv = hex2hsv(n); this.setState((p) => ({ [key]: Object.assign({}, p[key], hv, { txt: t, err: false }) })); if (onChange) onChange(n); } else this.setState((p) => ({ [key]: Object.assign({}, p[key], { txt: t }) })); },
+        hexBlur: () => { const cur = this.state[key]; if (cur.txt != null && !norm(cur.txt)) this.setState((p) => ({ [key]: Object.assign({}, p[key], { err: true }) })); else if (cur.txt != null) this.setState((p) => ({ [key]: Object.assign({}, p[key], { txt: null }) })); },
+        revert: () => put(hex2hsv(c.old)),
+        eye: async () => { if (!window.EyeDropper) { toast({ type: 'warn', title: '这个浏览器还不支持吸管' }); return; } try { const r = await new window.EyeDropper().open(); const n = norm(r.sRGBHex); if (n) put(hex2hsv(n)); } catch (x) {} } }; };
+    const applyText = (hex) => this.setState({ eColor: hex });
+    const pe = picker('pe', applyText), pt = picker('pt'), pa = picker('pa');
+    const pickE = (hex) => this.setState((p) => ({ eColor: hex, pe: Object.assign({}, p.pe, hex2hsv(hex), { txt: null, err: false }), recent: [hex].concat((p.recent || []).filter((x) => x !== hex)).slice(0, 6) }));
+    const eHex = st.eColor, ratio = eHex ? contrast(eHex, PAPER) : 10;
+    // 主题生成：按钮色调到白字 4.5:1，链接色调到纸面 4.5:1；深色下反过来调亮
+    const fit = (hex, bg, target, dir) => { let { h, s, v } = hex2hsv(hex), out = hex, n = 0; while (contrast(out, bg) < target && n < 60) { if (dir < 0) v = Math.max(0, v - 0.02); else { v = Math.min(1, v + 0.02); s = Math.max(0, s - 0.015); } out = hsv2hex(h, s, v); n++; } return { out, n }; };
+    const seed = pt.hex, pbL = fit(seed, '#ffffff', 4.5, -1), lkL = fit(seed, PAPER, 4.5, -1), pbD = fit(seed, NIGHT, 6, 1), lkD = fit(seed, NIGHT, 4.5, 1);
+    const mix = (a, b, t) => { const x = hex2rgb(a), y = hex2rgb(b); return '#' + x.map((c, i) => Math.round(c * t + y[i] * (1 - t)).toString(16).padStart(2, '0')).join(''); };
+    const adjPct = Math.round(pbL.n * 2);
+    const extra = { hasEye: true, pa, pe, pt,
+      eOpen: !!st.eOpen, eOpenCls: st.eOpen ? 'open' : '', eToggle: () => set({ eOpen: !st.eOpen }), eBar: eHex || 'var(--fg)', eText: eHex || 'inherit',
+      eCus: () => set({ eCus: !st.eCus }), eCusOn: !!st.eCus, eCusCls: st.eCus ? 'open' : '',
+      hasRecent: (st.recent || []).length > 0, recent: (st.recent || []).map((hex) => ({ hex, name: nameOf(hex), cls: hex === eHex ? 'on' : '', pick: () => pickE(hex) })),
+      presets: PRE.map(([name, hex]) => ({ name, hex, cls: hex === eHex ? 'on' : '', pick: () => pickE(hex) })),
+      lowC: !!eHex && ratio < 4.5, ratio: ratio.toFixed(1), eClear: () => { set({ eColor: null }); toast({ type: 'ok', title: '已清除颜色', desc: '选中的文字恢复正文色', key: 'clr' }); },
+      tOpen: !!st.tOpen, tToggle: () => set({ tOpen: !st.tOpen }), tFldCls: st.pt.err ? 'e' : st.tOpen ? 'f' : '',
+      seeds: SEEDS.map(([name, hex]) => ({ name, hex, cls: hex === seed ? 'on' : '', pick: () => this.setState((p) => ({ pt: Object.assign({}, p.pt, hex2hsv(hex), { txt: null, err: false }) })) })),
+      tAdj: adjPct > 0, tAdjText: `为了让按钮上的白字读得清，按钮色比种子色暗了 ${adjPct}%；链接色同样调过。`,
+      tp_l: { vars: `--pb:${pbL.out};--pt:#fff;--lk:${lkL.out};--sb:${mix(seed, PAPER, 0.16)}` }, tp_d: { vars: `--pb:${pbD.out};--pt:${NIGHT};--lk:${lkD.out};--sb:${mix(seed, NIGHT, 0.22)}` },
+      tBad: !!st.pt.err, tCancel: () => this.setState((p) => ({ pt: Object.assign({}, p.pt, hex2hsv(p.pt.old), { txt: null, err: false }), tOpen: false })),
+      tApply: () => { if (st.pt.err) return; set({ tOpen: false }); toast({ type: 'ok', title: '已应用自定义主题', desc: '种子色 ' + seed.toUpperCase() }); }, tst: toaster() };
+    if (typeof window !== 'undefined') extra.hasEye = 'EyeDropper' in window;
+    return Object.assign(base, extra);
+  }
+}
+</script>
+</body>
+</html>

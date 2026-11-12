@@ -1,66 +1,55 @@
-/**
- * ImageGrid 组件测试
- *
- * 验证不同图片数量的布局和 +N 遮罩。
- */
-import { cleanup, render } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { ImageGrid } from "../ImageGrid";
 
-describe("ImageGrid", () => {
-	afterEach(() => {
-		cleanup();
-	});
+vi.mock("@shared/ui/image-preview", async () => ({
+	...(await vi.importActual("@shared/ui/image-preview/hooks/useImagePreview")),
+	ImagePreview: ({
+		open,
+		images,
+		currentIndex,
+		triggerElement,
+		onIndexChange,
+		onClose,
+	}: {
+		open: boolean;
+		images: string[];
+		currentIndex: number;
+		triggerElement: HTMLElement | null;
+		onIndexChange: (index: number) => void;
+		onClose: () => void;
+	}) =>
+		open ? (
+			<div role="dialog" aria-label="图片预览" data-trigger={triggerElement?.tagName}>
+				<img src={images[currentIndex]} alt="完整图片" />
+				<button type="button" onClick={() => onIndexChange(currentIndex + 1)}>
+					下一张
+				</button>
+				<button type="button" onClick={onClose}>
+					关闭
+				</button>
+			</div>
+		) : null,
+}));
 
-	it("空数组不渲染", () => {
-		const { container } = render(<ImageGrid images={[]} />);
-		expect(container.firstChild).toBeNull();
-	});
+afterEach(cleanup);
 
-	it("1 张图：单列布局", () => {
-		const { container } = render(<ImageGrid images={[{ url: "/a.jpg" }]} />);
-		const grid = container.querySelector(".grid");
-		expect(grid?.className).toContain("grid-cols-1");
-		expect(grid?.className).toContain("w-full");
-	});
-
-	it("2 张图：双列布局", () => {
-		const { container } = render(<ImageGrid images={[{ url: "/a.jpg" }, { url: "/b.jpg" }]} />);
-		const grid = container.querySelector(".grid");
-		expect(grid?.className).toContain("grid-cols-2");
-	});
-
-	it("3 张图：三列布局", () => {
-		const images = Array.from({ length: 3 }, (_, i) => ({ url: `/${i}.jpg` }));
-		const { container } = render(<ImageGrid images={images} />);
-		const grid = container.querySelector(".grid");
-		expect(grid?.className).toContain("grid-cols-3");
-	});
-
-	it("9 张图：全显示无遮罩", () => {
-		const images = Array.from({ length: 9 }, (_, i) => ({ url: `/${i}.jpg` }));
-		const { container } = render(<ImageGrid images={images} />);
-		const cells = container.querySelectorAll('[role="button"]');
-		expect(cells.length).toBe(9);
-		const overlay = container.querySelector(".bg-black\\/50");
-		expect(overlay).toBeNull();
-	});
-
-	it("10 张图：显示前 9 张 + +N 遮罩", () => {
-		const images = Array.from({ length: 10 }, (_, i) => ({ url: `/${i}.jpg` }));
-		const { container } = render(<ImageGrid images={images} />);
-		const cells = container.querySelectorAll('[role="button"]');
-		expect(cells.length).toBe(10);
-		const overlay = container.querySelector(".bg-black\\/50");
-		expect(overlay).toBeTruthy();
-		expect(overlay?.textContent).toContain("+1");
-	});
-
-	it("缩略图优先使用 thumbnail", () => {
-		const { container } = render(
-			<ImageGrid images={[{ url: "/full.jpg", thumbnail: "/thumb.jpg" }]} />,
-		);
-		const cell = container.querySelector('[role="button"]');
-		expect(cell?.getAttribute("style")).toContain("/thumb.jpg");
+describe("本站图片网格灯箱编排", () => {
+	it("第四格从真实缩略图打开原图，隐藏图片仍可在灯箱顺序浏览", () => {
+		const images = Array.from({ length: 6 }, (_, index) => ({
+			url: `/full-${index}.jpg`,
+			thumbnail: `/thumb-${index}.jpg`,
+		}));
+		render(<ImageGrid images={images} />);
+		expect(screen.getAllByRole("button")).toHaveLength(4);
+		const fourth = screen.getByRole("button", { name: "查看第 4 张，共 6 张" });
+		expect(fourth.querySelector("img")?.getAttribute("src")).toBe("/thumb-3.jpg");
+		fireEvent.click(screen.getByText("+3"));
+		expect(screen.getByRole("dialog").getAttribute("data-trigger")).toBe("IMG");
+		expect(screen.getByAltText("完整图片").getAttribute("src")).toBe("/full-3.jpg");
+		fireEvent.click(screen.getByRole("button", { name: "下一张" }));
+		expect(screen.getByAltText("完整图片").getAttribute("src")).toBe("/full-4.jpg");
+		fireEvent.click(screen.getByRole("button", { name: "关闭" }));
+		expect(screen.queryByRole("dialog")).toBeNull();
 	});
 });

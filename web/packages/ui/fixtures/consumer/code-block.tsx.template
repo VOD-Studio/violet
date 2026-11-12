@@ -1,0 +1,34 @@
+import { CodeBlock, InlineCode, type CodeBlockAvailability, type CodeBlockOutputChunk, type CodeBlockRunResult } from "@violet/ui";
+import { CodeBlock as LeafCodeBlock } from "@violet/ui/code-block";
+import { useState } from "react";
+
+const source = 'const message = "Hello";\nconsole.log(message);';
+export function CodeBlockConsumer() {
+  const [submitted, setSubmitted] = useState("");
+  const [available, setAvailable] = useState<CodeBlockAvailability>({ status: "ready" });
+  const [result, setResult] = useState<CodeBlockRunResult>();
+  const [output, setOutput] = useState<CodeBlockOutputChunk[]>([]);
+  const [running, setRunning] = useState(false);
+  return <main>
+    <h1>CodeBlock · 独立安装包</h1>
+    <p>编辑与快捷键提交给宿主；下列按钮注入输出状态，不执行源码。</p>
+    <p>行内 <InlineCode>message</InlineCode></p>
+    <div className="image-reveal-controls">
+      <button id="code-policy-error" onClick={() => setAvailable({ status: "error", message: "读取策略失败", onRetry: () => setAvailable({ status: "ready" }) })}>策略失败</button>
+      <button id="code-stream-start" onClick={() => { setRunning(true); setResult(undefined); setOutput([{ kind: "stdout", text: "Hello" }]); }}>开始流</button>
+      <button id="code-stream-finish" onClick={() => { setOutput((chunks) => [...chunks, { kind: "stdout", text: " World\n" }, { kind: "stderr", text: "warning\n" }]); setRunning(false); setResult({ status: "success", exitCode: 0, durationMs: 12 }); }}>追加并结束</button>
+      <button id="code-timeout" onClick={() => { setRunning(false); setResult({ status: "timeout" }); }}>超时</button>
+    </div>
+    <section aria-label="根入口阅读代码">
+      <CodeBlock id="code-root" code={source} language="typescript" filename="hello.ts" highlightedLines={[2]} />
+    </section>
+    <section aria-label="叶入口折叠代码">
+      <LeafCodeBlock id="code-folded" code={Array.from({ length: 15 }, (_, i) => `console.log(${i + 1});`).join("\n")} language="javascript" />
+    </section>
+    <section aria-label="叶入口可编辑代码">
+      <LeafCodeBlock id="code-editable" code={source} language="typescript" filename="editable.ts" run={{ availability: available, running, output, result, onRun: setSubmitted }} />
+      <button id="after-code-editor">编辑器之后</button>
+    </section>
+    <output id="code-submitted">{submitted}</output>
+  </main>;
+}

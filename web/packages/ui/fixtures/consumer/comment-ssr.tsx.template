@@ -1,0 +1,142 @@
+import assert from "node:assert/strict";
+import {
+	Avatar,
+	CommentHeader,
+	CommentItem,
+	CommentList,
+	CommentReplies,
+	ReactionBar,
+	type ReactionItem,
+} from "@violet/ui";
+import {
+	CommentHeader as LeafHeader,
+	CommentItem as LeafItem,
+	CommentList as LeafList,
+	CommentReplies as LeafReplies,
+} from "@violet/ui/comment";
+import { renderToString } from "react-dom/server";
+
+const reactions: ReactionItem[] = [
+	{
+		id: "heart",
+		name: "喜欢",
+		content: "❤️",
+		count: 6,
+		self: false,
+		recentUsers: [{ name: "雾里" }, { name: "山野" }],
+	},
+	{
+		id: "think",
+		name: "思考",
+		content: "🤔",
+		count: 2,
+		self: false,
+		recentUsers: [{ name: "山野" }],
+	},
+];
+
+/** 无写入权限的服务端文章评论：作者、公开回应与回复保持原生语义。 */
+export function CommentSsrRoot() {
+	return (
+		<section aria-label="文章评论">
+			<CommentHeader title={<h2>文章评论</h2>} count={1} />
+			<CommentList>
+				<li>
+					<CommentItem
+						author="林间"
+						avatar={<Avatar name="林间" alt="" />}
+						dateTime="2026-11-12T09:00:00+08:00"
+						time="1 小时前"
+						isAuthor
+						actions={<ReactionBar items={reactions} />}
+						replies={
+							<CommentReplies aria-label="林间的回复">
+								<li>
+									<CommentItem
+										author="雾里"
+										avatar={<Avatar name="雾里" alt="" />}
+										dateTime="2026-11-12T09:10:00+08:00"
+										time="50 分钟前"
+										reply
+										replyTo="林间"
+									>
+										读完还想再看一遍，谢谢分享。
+									</CommentItem>
+								</li>
+							</CommentReplies>
+						}
+					>
+						把留白留给读者，把回应留在文字旁。
+					</CommentItem>
+				</li>
+			</CommentList>
+		</section>
+	);
+}
+
+/** 叶子入口的推文审核态；没有排序回调或回复权限，不输出假控件。 */
+export function CommentSsrLeaf() {
+	return (
+		<section aria-label="推文讨论">
+			<LeafHeader title={<h2>推文讨论</h2>} count={2} />
+			<LeafList>
+				<li>
+					<LeafItem
+						author="本机用户"
+						avatar={<Avatar name="本机用户" alt="" />}
+						dateTime="2026-11-12T09:20:00+08:00"
+						time="40 分钟前"
+						status="pending"
+					>
+						补充一个观察，等审核后与大家交流。
+					</LeafItem>
+				</li>
+				<li>
+					<LeafItem
+						author="山野"
+						avatar={<Avatar name="山野" alt="" />}
+						dateTime="2026-11-12T09:30:00+08:00"
+						time="30 分钟前"
+						status="deleted"
+						actions={<ReactionBar items={reactions} />}
+						replies={
+							<LeafReplies aria-label="保留的讨论">
+								<li>
+									<LeafItem
+										author="林间"
+										avatar={<Avatar name="林间" alt="" />}
+										dateTime="2026-11-12T09:40:00+08:00"
+										time="20 分钟前"
+										reply
+										replyTo="山野"
+									>
+										讨论的后续仍然保留。
+									</LeafItem>
+								</li>
+							</LeafReplies>
+						}
+					>
+						不应暴露的已删除原文
+					</LeafItem>
+				</li>
+			</LeafList>
+		</section>
+	);
+}
+
+const root = renderToString(<CommentSsrRoot />);
+assert.match(root, /<article\b/);
+assert.match(root, /<ol\b/);
+assert.match(root, /dateTime="2026-11-12T09:00:00\+08:00"/);
+assert.match(root, /回复 @/);
+assert.match(root, /喜欢，6 人/);
+assert.match(root, /思考，2 人/);
+assert.doesNotMatch(root, /aria-label="评论排序"/);
+assert.doesNotMatch(root, /aria-expanded=/);
+const leaf = renderToString(<CommentSsrLeaf />);
+assert.match(leaf, /待审核 · 仅自己可见/);
+assert.match(leaf, /这条评论已删除/);
+assert.match(leaf, /讨论的后续仍然保留/);
+assert.doesNotMatch(leaf, /不应暴露的已删除原文/);
+assert.doesNotMatch(leaf, /喜欢，6 人/);
+console.log("Comment 独立根入口与叶子入口 SSR 行为通过。");

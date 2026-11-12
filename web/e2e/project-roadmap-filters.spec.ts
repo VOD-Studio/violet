@@ -173,7 +173,9 @@ test.describe("路线图筛选", () => {
 		await expectMatches(page, [2]);
 		await selectTag(page, "性能");
 		await expectMatches(page, []);
-		await page.getByRole("button", { name: "清除输入", exact: true }).click();
+		// 清除钮只在悬停或焦点在输入框内时出现，焦点已在标签选择器上，先悬停
+		await search(page).hover();
+		await page.getByRole("button", { name: "清除", exact: true }).click();
 		await expectMatches(page, [1]);
 		await selectTag(page, "后端");
 		await expectMatches(page, [4]);
@@ -247,7 +249,7 @@ test.describe("路线图筛选", () => {
 			1,
 		);
 
-		await page.getByRole("button", { name: "清除输入", exact: true }).click();
+		await page.getByRole("button", { name: "清除", exact: true }).click();
 		await expect(search(page)).toBeFocused();
 		await expectMatches(page, [1]);
 		await expect(page).toHaveURL(
@@ -468,7 +470,7 @@ test.describe("路线图筛选", () => {
 			await search(page).focus();
 			await expect(search(page)).toBeFocused();
 			await search(page).press("Tab");
-			await expect(page.getByRole("button", { name: "清除输入", exact: true })).toBeFocused();
+			await expect(page.getByRole("button", { name: "清除", exact: true })).toBeFocused();
 			await page.keyboard.press("Tab");
 			await expect(tags(page)).toBeFocused();
 			await page.keyboard.press("ArrowDown");

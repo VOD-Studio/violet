@@ -1,18 +1,17 @@
+import { parseHighlightedLines } from "@shared/lib/markdown/fence-info";
 import { LazyArticleEmbed } from "@shared/ui/article-embeds/LazyArticleEmbed";
 import { findArticleEmbed } from "@shared/ui/article-embeds/registry";
 import type { ArticleContentContext } from "@shared/ui/article-embeds/types";
 import { DeferredContent } from "@shared/ui/deferred-content/DeferredContent";
+import { BlockMathSource } from "@shared/ui/katex/BlockMathSource";
 import { InlineMathContent } from "@shared/ui/katex/InlineMathContent";
 import { loadBlockMathFormula } from "@shared/ui/katex/math-formula-loader";
-import { lazy, Suspense } from "react";
-import type { Components } from "react-markdown";
-import codeScrollbar from "@/shared/ui/code-scrollbar.module.css";
+import { CodeBlock, InlineCode } from "@violet/ui";
+import { type ComponentProps, lazy, Suspense } from "react";
+import type { Components, ExtraProps } from "react-markdown";
+import { RunnableCodeRenderer } from "../code-renderer-context";
 import { nodeToText } from "../node-to-text";
 
-const loadCodeCard = () =>
-	import("../../code-preview/components/CodeCard").then((module) => ({
-		default: module.CodeCard,
-	}));
 const LazyProfileMention = lazy(() =>
 	import("../../article-embeds/ProfileMention").then((module) => ({
 		default: module.ProfileMention,
@@ -26,6 +25,13 @@ function personaMentionLabel(source: string): string | null {
 	return match?.[1]?.trim() ?? null;
 }
 
+interface RichCodeProps extends ComponentProps<"code">, ExtraProps {
+	source?: string;
+	fenced?: boolean;
+	filename?: string;
+	highlightedLines?: readonly number[];
+}
+
 /**
  * 为文章实例创建读取人物上下文的代码节点渲染器。
  *
@@ -34,13 +40,18 @@ function personaMentionLabel(source: string): string | null {
  */
 export function createRichCodeRenderer(
 	context?: ArticleContentContext,
-): NonNullable<Components["code"]> {
-	return ({ className, children }) => {
+): (props: RichCodeProps) => React.ReactNode {
+	return ({ className, children, source, fenced, filename, highlightedLines }) => {
 		const cls = className || "";
-		const code = nodeToText(children).replace(/\n$/, "");
+		const code = source ?? nodeToText(children).replace(/\n$/, "");
 		const language = /language-(\S+)/u.exec(cls)?.[1] ?? "";
 		const embed = findArticleEmbed(language);
-		if (embed) return <LazyArticleEmbed definition={embed} source={code} context={context} />;
+		if (embed)
+			return (
+				<div data-article-embed={embed.kind} style={{ display: "contents" }}>
+					<LazyArticleEmbed definition={embed} source={code} context={context} />
+				</div>
+			);
 
 		if (/\bmath-inline\b/u.test(cls)) {
 			return <InlineMathContent latex={code} />;
@@ -48,19 +59,16 @@ export function createRichCodeRenderer(
 		if (/\bmath-display\b/u.test(cls)) {
 			return (
 				<DeferredContent
+					defer="idle"
 					load={loadBlockMathFormula}
 					componentProps={{ latex: code }}
 					label="公式"
-					fallback={
-						<div data-type="block-math" data-latex={code}>
-							{code}
-						</div>
-					}
+					fallback={<BlockMathSource latex={code} />}
 				/>
 			);
 		}
 
-		const isFenced = Boolean(language) || code.includes("\n");
+		const isFenced = fenced || Boolean(language) || code.includes("\n");
 		if (!isFenced) {
 			const mentionLabel = personaMentionLabel(code);
 			if (mentionLabel !== null) {
@@ -74,30 +82,72 @@ export function createRichCodeRenderer(
 					</Suspense>
 				);
 			}
+			return <InlineCode>{children}</InlineCode>;
+		}
+
+		return (
+			<CodeBlock
+				code={code}
+				language={language}
+				filename={filename}
+				highlightedLines={highlightedLines}
+				className="my-6"
+			/>
+		);
+	};
+}
+
+/** 从 pre 载体读取权威源码与作者元数据，再分发到只读或运行界面。 */
+export function createRichPreRenderer(
+	context?: ArticleContentContext,
+): NonNullable<Components["pre"]> {
+	const RichCode = createRichCodeRenderer(context);
+	return ({ children, node, ...props }) => {
+		const attributes = props as Record<string, unknown>;
+		const rawSource = attributes["data-source"];
+		const source =
+			typeof rawSource === "string" ? rawSource : nodeToText(children).replace(/\n$/u, "");
+		const codeNode = node?.children.find(
+			(child) => child.type === "element" && child.tagName === "code",
+		);
+		const classNames = codeNode?.type === "element" ? codeNode.properties.className : undefined;
+		const className = Array.isArray(classNames)
+			? classNames.join(" ")
+			: String(classNames ?? "");
+		const language = String(
+			attributes["data-lang"] ?? /language-(\S+)/u.exec(className)?.[1] ?? "",
+		);
+		const filename =
+			typeof attributes["data-filename"] === "string"
+				? attributes["data-filename"]
+				: undefined;
+		const lineSpec =
+			typeof attributes["data-lines"] === "string" ? attributes["data-lines"] : undefined;
+		const highlightedLines = parseHighlightedLines(lineSpec, source.split("\n").length);
+
+		if (attributes["data-runnable"] === "true" || attributes["data-runnable"] === true) {
 			return (
-				<code className="rounded-md bg-primary/10 px-1.5 py-0.5 font-mono text-[0.85em] text-primary">
-					{children}
-				</code>
+				<RunnableCodeRenderer
+					language={language}
+					source={source}
+					filename={filename}
+					highlightedLines={highlightedLines}
+					overridesJson={
+						typeof attributes["data-overrides"] === "string"
+							? attributes["data-overrides"]
+							: undefined
+					}
+				/>
 			);
 		}
 
 		return (
-			<DeferredContent
-				load={loadCodeCard}
-				componentProps={{ code, language, className: "my-6", collapseLines: 0 }}
-				label="代码高亮"
-				fallback={
-					<div className="not-prose my-6 overflow-hidden rounded-xl border border-border/60 bg-card">
-						<div className="border-b border-border/60 px-3 py-1.5 font-mono text-xs text-muted-foreground">
-							{language || "text"}
-						</div>
-						<pre
-							className={`${codeScrollbar.scrollbar} overflow-x-auto px-4 py-3 text-sm leading-relaxed text-foreground`}
-						>
-							<code>{code}</code>
-						</pre>
-					</div>
-				}
+			<RichCode
+				source={source}
+				fenced
+				className={className || (language ? `language-${language}` : undefined)}
+				filename={filename}
+				highlightedLines={highlightedLines}
 			/>
 		);
 	};

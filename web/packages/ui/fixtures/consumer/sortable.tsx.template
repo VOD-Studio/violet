@@ -1,0 +1,25 @@
+import { Sortable } from "@violet/ui";
+import { useState } from "react";
+
+const CHAPTERS = [
+	{ id: "rain", title: "第一章 · 雨停之前" },
+	{ id: "wind", title: "第二章 · 山口的风" },
+	{ id: "lake", title: "第三章 · 湖边的夜" },
+];
+
+export function SortableConsumer() {
+	const [chapters, setChapters] = useState(CHAPTERS);
+	return (
+		<main>
+			<h1>章节顺序</h1>
+			<Sortable
+				aria-label="章节顺序"
+				items={chapters}
+				getId={(chapter) => chapter.id}
+				getLabel={(chapter) => chapter.title}
+				onReorder={setChapters}
+				renderItem={(chapter) => chapter.title}
+			/>
+		</main>
+	);
+}

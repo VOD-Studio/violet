@@ -1,12 +1,14 @@
 import {
 	Button,
 	Dialog,
+	DialogBody,
 	DialogContent,
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
+	Spinner,
 } from "@violet/ui";
-import { CheckCircle2, QrCode, RefreshCw, Smartphone } from "lucide-react";
+import { CircleCheck, QrCode, Smartphone } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -28,7 +30,7 @@ export function MusicLoginQrDialog({ open, onOpenChange, onSuccess }: MusicLogin
 	const [attempt, setAttempt] = useState(0);
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-md">
+			<DialogContent size="sm">
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
 						<QrCode className="size-5 text-primary" />
@@ -38,19 +40,21 @@ export function MusicLoginQrDialog({ open, onOpenChange, onSuccess }: MusicLogin
 						全站统一使用该账号访问歌单库；不会代表访客获取付费歌曲播放权。
 					</DialogDescription>
 				</DialogHeader>
-				{open && (
-					<MusicQrSession
-						key={attempt}
-						onRetry={() => setAttempt((value) => value + 1)}
-						onConfirmed={(account) => {
-							toast.success(
-								`网易云账号「${account.profile?.nickname ?? "已连接"}」连接成功`,
-							);
-							onSuccess?.(account);
-							onOpenChange(false);
-						}}
-					/>
-				)}
+				<DialogBody>
+					{open && (
+						<MusicQrSession
+							key={attempt}
+							onRetry={() => setAttempt((value) => value + 1)}
+							onConfirmed={(account) => {
+								toast.success(
+									`网易云账号「${account.profile?.nickname ?? "已连接"}」连接成功`,
+								);
+								onSuccess?.(account);
+								onOpenChange(false);
+							}}
+						/>
+					)}
+				</DialogBody>
 			</DialogContent>
 		</Dialog>
 	);
@@ -119,7 +123,7 @@ function MusicQrSession({ onRetry, onConfirmed }: MusicQrSessionProps) {
 						role="status"
 						className="flex flex-col items-center gap-2 text-muted-foreground text-xs"
 					>
-						<RefreshCw className="size-6 animate-spin text-primary" />
+						<Spinner size={24} className="text-primary" aria-hidden="true" />
 						正在生成二维码…
 					</div>
 				) : qrState === "expired" ? (
@@ -131,12 +135,12 @@ function MusicQrSession({ onRetry, onConfirmed }: MusicQrSessionProps) {
 					</>
 				) : qrState === "scanned" ? (
 					<div role="status" className="flex flex-col items-center gap-2">
-						<Smartphone className="size-8 text-primary" />
+						<Smartphone className="size-6 text-primary" />
 						<p className="text-sm">请在手机上确认登录</p>
 					</div>
 				) : qrState === "confirmed" ? (
 					<div role="status" className="flex flex-col items-center gap-2">
-						<CheckCircle2 className="size-8 text-success" />
+						<CircleCheck className="size-6 text-success" />
 						登录成功
 					</div>
 				) : (

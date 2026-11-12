@@ -6,8 +6,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
 	Button,
 	Checkbox,
+	type DateRange,
+	DateRangePicker,
+	type DateRangePreset,
+	Field,
 	Input,
+	iconProps,
 	Label,
+	NumberInput,
 	Select,
 	SelectContent,
 	SelectItem,
@@ -24,11 +30,9 @@ import {
 } from "@violet/ui";
 
 import { addDays, addHours, endOfDay, format, startOfDay, startOfHour } from "date-fns";
-import { Loader2, Lock } from "lucide-react";
+import { Lock } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import type { DateTimeRange, DateTimeRangePreset } from "@/shared/ui/date-time-picker";
-import { DateTimeRangePickerField } from "@/shared/ui/date-time-picker";
 import { useCreateAnnouncement, useUpdateAnnouncement } from "../api/queries";
 import {
 	AFFECTS_OPTIONS,
@@ -63,6 +67,8 @@ const DISPLAY_LABELS: Record<AnnouncementDisplay, string> = {
 const BASE_DEFAULTS: AnnouncementForm = {
 	title: "",
 	content: "",
+	linkURL: "",
+	linkText: "",
 	type: "info",
 	display: "banner",
 	isActive: true,
@@ -153,6 +159,8 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
 			...BASE_DEFAULTS,
 			title: editing.title,
 			content: editing.content ?? "",
+			linkURL: editing.link_url ?? "",
+			linkText: editing.link_text ?? "",
 			type: editing.type,
 			display: editing.display,
 			isActive: editing.is_active,
@@ -181,6 +189,8 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
 			title: data.title,
 			// article 形态正文用 content_html，content 留空
 			content: data.display === "article" ? "" : (data.content ?? ""),
+			link_url: data.linkURL,
+			link_text: data.linkText,
 			type: data.type,
 			display: data.display,
 			is_active: data.isActive,
@@ -209,11 +219,11 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
 	const isBanner = display === "banner";
 
 	const now = startOfHour(new Date());
-	const formatRange = (start: Date, end: Date): DateTimeRange => ({
+	const formatRange = (start: Date, end: Date): DateRange => ({
 		start: format(start, "yyyy-MM-dd'T'HH:mm"),
 		end: format(end, "yyyy-MM-dd'T'HH:mm"),
 	});
-	const rangePresets: DateTimeRangePreset[] = [
+	const rangePresets: DateRangePreset[] = [
 		{ label: "最近1小时", value: formatRange(now, addHours(now, 1)) },
 		{ label: "今天", value: formatRange(startOfDay(now), endOfDay(now)) },
 		{ label: "最近7天", value: formatRange(addDays(now, -7), now) },
@@ -223,12 +233,11 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
 	return (
 		<Sheet open={open} onOpenChange={onOpenChange}>
 			<SheetContent
-				side="right"
-				className="w-full gap-0 overflow-hidden sm:max-w-2xl lg:max-w-4xl h-full"
+				className="[--v-sheet-width:42rem] lg:[--v-sheet-width:56rem]"
 				onInteractOutside={blockIfFloatingActive}
 				onPointerDownOutside={blockIfFloatingActive}
 			>
-				<SheetHeader className="border-b border-edge-hairline pr-12">
+				<SheetHeader className="border-b border-edge-hairline">
 					<SheetTitle>{isEdit ? "编辑公告" : "创建公告"}</SheetTitle>
 					<SheetDescription>
 						{isEdit ? "修改公告内容与生效设置" : "新建一条站点公告"}
@@ -307,6 +316,35 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
 							</div>
 						)}
 
+						<Field
+							label="链接地址"
+							optional
+							error={errors.linkURL?.message}
+							hint="支持 http、https 或以 / 开头的站内路径；留空则不显示链接"
+						>
+							<Input
+								id="ann-link-url"
+								inputMode="url"
+								autoComplete="off"
+								placeholder="/announcements/12"
+								disabled={pending}
+								{...register("linkURL")}
+							/>
+						</Field>
+						<Field
+							label="链接文字"
+							optional
+							error={errors.linkText?.message}
+							hint="留空时显示“查看详情”"
+						>
+							<Input
+								id="ann-link-text"
+								placeholder="查看详情"
+								disabled={pending}
+								{...register("linkText")}
+							/>
+						</Field>
+
 						{/* 正文（article 形态）：编辑器吃剩余高度，内部自滚动，状态栏始终可见 */}
 						{isArticle && (
 							<div className="flex min-h-0 flex-1 flex-col gap-2">
@@ -340,7 +378,7 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
 								展示形态
 								{isEdit && (
 									<span className="inline-flex items-center gap-0.5 text-[10px] font-normal text-muted-foreground">
-										<Lock className="size-2.5" />
+										<Lock {...iconProps(12)} />
 										创建后不可改
 									</span>
 								)}
@@ -376,9 +414,8 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
 						<div className="grid grid-cols-2 gap-3">
 							<div className="space-y-2">
 								<Label htmlFor="ann-sort">排序</Label>
-								<Input
+								<NumberInput
 									id="ann-sort"
-									type="number"
 									min={0}
 									disabled={pending}
 									{...register("sortOrder", { valueAsNumber: true })}
@@ -475,15 +512,21 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
 							control={control}
 							name="timeRange"
 							render={({ field }) => (
-								<DateTimeRangePickerField
-									label="生效区间"
-									value={field.value}
-									onChange={field.onChange}
-									disabled={pending}
-									placeholder="选择生效时间区间"
-									presets={rangePresets}
-									error={errors.timeRange?.end?.message}
-								/>
+								<Field label="生效区间" error={errors.timeRange?.end?.message}>
+									<DateRangePicker
+										mode="datetime"
+										value={field.value}
+										onChange={(range) =>
+											field.onChange({
+												start: range.start ?? "",
+												end: range.end ?? "",
+											})
+										}
+										disabled={pending}
+										placeholder="选择生效时间区间"
+										presets={rangePresets}
+									/>
+								</Field>
 							)}
 						/>
 					</aside>
@@ -498,8 +541,7 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
 					>
 						取消
 					</Button>
-					<Button type="submit" form="announcement-form" disabled={pending}>
-						{pending && <Loader2 className="mr-1 size-4 animate-spin" />}
+					<Button type="submit" form="announcement-form" loading={pending}>
 						{isEdit ? "保存" : "创建"}
 					</Button>
 				</SheetFooter>

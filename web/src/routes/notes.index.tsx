@@ -1,6 +1,7 @@
 import { publishedNoteKeys } from "@entities/note/api/keys";
 import { fetchPublishedNotes } from "@entities/note/api/queries";
-import { NOTES_PAGE_LIMIT, NotesPage } from "@features/note-browse/ui/NotesPage";
+import { NOTES_PAGE_LIMIT } from "@features/note-browse/model/display";
+import { NotesPage } from "@features/note-browse/ui/NotesPage";
 import { SITE_URL } from "@shared/config/env";
 import { createFileRoute } from "@tanstack/react-router";
 

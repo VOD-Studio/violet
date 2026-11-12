@@ -1,7 +1,7 @@
-import { Button, Input } from "@violet/ui";
+import { Button, Input, iconProps } from "@violet/ui";
 
 import { cn } from "cn";
-import { Check, LoaderCircle, Search, Users, X } from "lucide-react";
+import { Check, Search, Users, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useDeferredValue, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -73,10 +73,11 @@ export function NewConversationForm({ onCreated, onClose }: NewConversationFormP
 		>
 			<header className="flex h-14 shrink-0 items-center gap-3 px-4">
 				<Button
+					iconOnly
 					aria-label="关闭新建会话"
 					className="size-9 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground"
 					onClick={onClose}
-					size="icon"
+					size="md"
 					variant="ghost"
 				>
 					<X className="size-5" />
@@ -95,7 +96,6 @@ export function NewConversationForm({ onCreated, onClose }: NewConversationFormP
 					placeholder="搜索用户名或展示名"
 					ref={searchRef}
 					value={memberSearch}
-					variant="soft"
 				/>
 			</div>
 
@@ -118,7 +118,7 @@ export function NewConversationForm({ onCreated, onClose }: NewConversationFormP
 								>
 									<ChatAvatar user={user} className="size-4" />
 									<span>{user.display_name}</span>
-									<X className="size-3 opacity-60" />
+									<X {...iconProps(12, "opacity-60")} />
 								</button>
 							))}
 						</div>
@@ -183,7 +183,7 @@ export function NewConversationForm({ onCreated, onClose }: NewConversationFormP
 				{isRoom && (
 					<Input
 						aria-label="群聊名称"
-						classNames={{ root: "mb-2" }}
+						classNames={{ control: "mb-2" }}
 						onChange={(event) => setTitle(event.target.value)}
 						placeholder="群聊名称（可选）"
 						value={title}
@@ -192,16 +192,11 @@ export function NewConversationForm({ onCreated, onClose }: NewConversationFormP
 				<Button
 					className="h-11 w-full rounded-xl text-sm font-semibold"
 					disabled={busy || selectedUsers.length === 0}
+					loading={busy}
+					leftIcon={<Users className="size-4" />}
 					onClick={() => void submit()}
 				>
-					{busy ? (
-						<LoaderCircle className="size-4 animate-spin" />
-					) : (
-						<>
-							<Users className="size-4" />
-							{isRoom ? "创建群聊" : "发起私聊"}
-						</>
-					)}
+					{isRoom ? "创建群聊" : "发起私聊"}
 				</Button>
 			</div>
 		</motion.div>

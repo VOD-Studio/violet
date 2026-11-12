@@ -1,10 +1,9 @@
-import { ShimmerSkeleton } from "@violet/ui";
+import { Skeleton } from "@violet/ui";
 
 /**
  * FriendsSkeleton - /friends 页骨架屏
  *
- * 形状对齐全站内容页的 PostcardWall 明信片几何（双列错落），
- * 沿用 shared ShimmerSkeleton 的光影扫过范式。
+ * 形状对齐全站内容页的 PostcardWall 明信片几何（双列错落）。
  *
  * 与 friends-lab 版本差异：lab 支持多方向切换故按方向枚举形状，
  * 生产只服务明信片墙一种方向，省去 direction 入参。
@@ -20,13 +19,13 @@ export function FriendsSkeleton() {
 					}`}
 				>
 					<div className="flex items-start justify-between">
-						<ShimmerSkeleton className="h-3 w-20" />
-						<ShimmerSkeleton className="size-14 rounded-sm" />
+						<Skeleton className="h-3 w-20" />
+						<Skeleton className="size-14 rounded-sm" />
 					</div>
-					<ShimmerSkeleton className="mt-3 h-6 w-32" />
-					<ShimmerSkeleton className="mt-2 h-3 w-24" />
-					<ShimmerSkeleton className="mt-4 h-4 w-full" />
-					<ShimmerSkeleton className="mt-5 h-3 w-28" />
+					<Skeleton className="mt-3 h-6 w-32" />
+					<Skeleton className="mt-2 h-3 w-24" />
+					<Skeleton className="mt-4 h-4 w-full" />
+					<Skeleton className="mt-5 h-3 w-28" />
 				</div>
 			))}
 		</div>

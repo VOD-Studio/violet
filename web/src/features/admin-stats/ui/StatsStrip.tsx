@@ -1,5 +1,6 @@
 import { useCountUp } from "@shared/hooks/use-count-up";
 import { Link } from "@tanstack/react-router";
+import { iconProps } from "@violet/ui";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { computeDelta } from "../lib/metrics";
 import type { DashboardStatsDTO, ViewPointDTO } from "../model/types";
@@ -132,9 +133,9 @@ function Cell({ cell }: { cell: StripCell }) {
 						}`}
 					>
 						{cell.trend === "up" ? (
-							<TrendingUp className="size-3 shrink-0" />
+							<TrendingUp {...iconProps(12, "shrink-0")} />
 						) : cell.trend === "down" ? (
-							<TrendingDown className="size-3 shrink-0" />
+							<TrendingDown {...iconProps(12, "shrink-0")} />
 						) : null}
 						<span className="truncate">{cell.context}</span>
 					</span>

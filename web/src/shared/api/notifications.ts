@@ -16,7 +16,15 @@ export type NotificationSourceType =
 	| "tweet_liked"
 	| "tweet_quoted"
 	| "tweet_commented"
-	| "tweet_comment_replied";
+	| "tweet_comment_replied"
+	| "window_knocked"
+	| "announcement";
+
+/** 通知的行为人；系统发出的通知没有。 */
+export interface NotificationActor {
+	name: string;
+	avatar_url?: string;
+}
 
 /** 通知读模型（后端 NotificationDTO 对应） */
 export interface NotificationItem {
@@ -26,12 +34,18 @@ export interface NotificationItem {
 	title: string;
 	body: string;
 	payload: Record<string, unknown>;
+	/** 谁做的；旧通知与系统通知缺省，此时只能读 title。 */
+	actor?: NotificationActor;
+	/** 被操作对象的标题（文章标题、推文摘要、站点名等）。 */
+	object_title?: string;
+	/** 一行原文摘要，已折叠空白并截断。 */
+	quote?: string;
 	is_read: boolean;
 	read_at?: string;
 	created_at: string;
 }
 
-/** SSE 推送的事件结构（后端 SSEEvent 对应） */
+/** SSE 推送的事件结构（后端 SSEEvent 对应），结构化字段与 {@link NotificationItem} 一致 */
 export interface NotificationSSEEvent {
 	id: string;
 	source_type: NotificationSourceType;
@@ -39,6 +53,9 @@ export interface NotificationSSEEvent {
 	title: string;
 	body: string;
 	payload: Record<string, unknown>;
+	actor?: NotificationActor;
+	object_title?: string;
+	quote?: string;
 	created_at: string;
 }
 

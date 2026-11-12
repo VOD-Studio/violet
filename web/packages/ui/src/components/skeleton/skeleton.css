@@ -1,39 +1,30 @@
 /*
- * Skeleton 组件的 BEM 类名样式（.v-skeleton 及 __sheen）。
+ * Skeleton：只用凹陷底色，透明度 1 ⇄ .55 缓慢起伏，不加扫光。
  * 需先导入 @violet/ui/tokens.css 或 styles.css。
- * 占位底色取 --secondary；扫光用正文色低透明度混合，随明暗主题自动适配，
- * 不依赖站点级 --glow-soft（那是宿主 token，包内不假设存在）。
  */
 
-.v-skeleton {
-	position: relative;
-	overflow: hidden;
-	border-radius: calc(var(--radius) - 2px);
-	background-color: var(--secondary);
-}
-
-.v-skeleton__sheen {
-	position: absolute;
-	inset: 0;
-	transform: translateX(-100%);
-	background: linear-gradient(
-		90deg,
-		transparent,
-		color-mix(in oklab, var(--foreground) 12%, transparent),
-		transparent
-	);
-	animation: v-skeleton-shimmer 1.6s ease-in-out infinite;
-	pointer-events: none;
-}
-
-@keyframes v-skeleton-shimmer {
-	to {
-		transform: translateX(100%);
+@layer components {
+	.v-skeleton {
+		display: block;
+		border-radius: var(--radius-4, 4px);
+		background-color: var(--muted);
+		animation: v-skeleton-breathe var(--duration-skeleton, 1.8s)
+			var(--ease-skeleton, ease-in-out) infinite;
 	}
-}
 
-@media (prefers-reduced-motion: reduce) {
-	.v-skeleton__sheen {
-		animation: none;
+	@keyframes v-skeleton-breathe {
+		0%,
+		100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.55;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-skeleton {
+			animation: none;
+		}
 	}
 }

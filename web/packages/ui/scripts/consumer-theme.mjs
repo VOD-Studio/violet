@@ -18,7 +18,7 @@ const colors = (locator) => locator.evaluate((element) => {
 	const result = { actualText: sample(style.color), actualBackground: sample(style.backgroundColor) };
 	const probe = document.createElement("span");
 	element.append(probe);
-	for (const name of ["background", "primary", "primary-hover", "primary-foreground", "link"]) {
+	for (const name of ["background", "foreground", "primary", "primary-hover", "primary-foreground", "link"]) {
 		probe.style.color = `var(--${name})`;
 		result[name] = sample(getComputedStyle(probe).color);
 	}
@@ -37,30 +37,32 @@ export async function checkConsumerTheme(css, html) {
 			await page.locator("html").evaluate((el, value) => { el.className = value; }, appearance);
 			for (const contrast of ["no-preference", "more"]) {
 				await page.emulateMedia({ contrast });
+				const minimumRatio = contrast === "more" ? 7 : 4.5;
 				for (const id of ["plain-button", "plain-scoped-button"]) {
 					const button = page.locator(`#${id}`);
 					await page.mouse.move(0, 0);
 					await button.evaluate((el) => { el.style.transition = "none"; });
+					// 主要按钮是墨色底、纸色字；季节色只出现在聚焦环与链接，不参与按钮底色
 					const normal = await colors(button);
-					assert.equal(normal.actualBackground.value, normal.primary.value);
+					assert.equal(normal.actualBackground.value, normal.foreground.value, `${appearance}/${contrast}/${id}: primary is not ink`);
+					assert.equal(normal.actualText.value, normal.background.value, `${appearance}/${contrast}/${id}: primary text is not paper`);
 					const normalRatio = ratio(normal.actualText, normal.actualBackground);
-					assert.ok(normalRatio >= 4.5, `${appearance}/${contrast}/${id}: normal contrast ${normalRatio}`);
+					assert.ok(normalRatio >= minimumRatio, `${appearance}/${contrast}/${id}: normal contrast ${normalRatio} < ${minimumRatio}`);
 					await button.hover();
 					const hover = await colors(button);
-					assert.equal(hover.actualBackground.value, normal["primary-hover"].value);
-					assert.equal(hover.actualText.value, normal["primary-foreground"].value);
+					assert.notEqual(hover.actualBackground.value, normal.actualBackground.value, `${appearance}/${contrast}/${id}: hover keeps the base color`);
+					assert.equal(hover.actualText.value, normal.background.value);
 					const hoverRatio = ratio(hover.actualText, hover.actualBackground);
-					assert.ok(hoverRatio >= normalRatio, `${appearance}/${contrast}/${id}: hover contrast ${hoverRatio} < ${normalRatio}`);
+					assert.ok(hoverRatio >= minimumRatio, `${appearance}/${contrast}/${id}: hover contrast ${hoverRatio} < ${minimumRatio}`);
 					readings.push({ appearance, contrast, id, normalRatio, hoverRatio });
 				}
 				const input = page.locator("#plain-input");
-				const label = page.locator('[for="plain-input"]');
-				await label.evaluate((el) => { el.style.transition = "none"; });
+				const shell = page.locator("#plain-shell");
 				for (const invalid of [false, true]) {
-					await input.evaluate((el, value) => el.setAttribute("aria-invalid", String(value)), invalid);
+					await shell.evaluate((el, value) => el.toggleAttribute("data-invalid", value), invalid);
 					await input.focus();
-					const focused = await colors(label);
-					assert.ok(ratio(focused.actualText, focused.background) >= 4.5, `${appearance}/${contrast}: focused label, invalid=${invalid}`);
+					const focused = await colors(shell);
+					assert.ok(ratio(focused.actualText, focused.actualBackground) >= 4.5, `${appearance}/${contrast}: focused input text, invalid=${invalid}`);
 				}
 				const root = await colors(page.locator("main"));
 				const namedLink = await page.locator("a.v-button--link").evaluate((el) => getComputedStyle(el).color);

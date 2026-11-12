@@ -1,14 +1,13 @@
 import { useDeletePAT } from "@features/admin-mcp/api/queries";
 import type { PATDTO } from "@features/admin-mcp/model/types";
+import { formatDate, formatDateTime } from "@shared/lib/date";
 import {
+	Button,
 	DataTable,
 	type DataTableColumn,
 	type DataTablePagination,
-} from "@features/admin-shared/ui/data-table";
-import { formatDate, formatDateTime } from "@shared/lib/date";
-import {
-	Badge,
-	Button,
+	iconProps,
+	Tag,
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
@@ -41,9 +40,9 @@ export function PATTable({ tokens, pagination, loading, onConnect, onEdit }: PAT
 			cell: (row) => (
 				<div className="flex flex-wrap gap-1">
 					{row.scopes.map((s) => (
-						<Badge key={s} variant="secondary" className="font-mono text-xs">
+						<Tag key={s} size="sm">
 							{s}
-						</Badge>
+						</Tag>
 					))}
 				</div>
 			),
@@ -73,17 +72,18 @@ export function PATTable({ tokens, pagination, loading, onConnect, onEdit }: PAT
 			sticky: "right",
 			width: "136px",
 			cell: (row) => (
-				<div className="flex items-center gap-2">
+				<div className="v-table__row-actions items-center gap-2">
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<span>
 								<Button
+									iconOnly
 									variant="ghost"
-									size="icon-sm"
+									size="sm"
 									onClick={() => onConnect(row)}
 									aria-label={`查看令牌 ${row.name} 接入配置`}
 								>
-									<Cable className="size-3.5" />
+									<Cable {...iconProps(14)} />
 								</Button>
 							</span>
 						</TooltipTrigger>
@@ -92,12 +92,13 @@ export function PATTable({ tokens, pagination, loading, onConnect, onEdit }: PAT
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<Button
+								iconOnly
 								variant="ghost"
-								size="icon-sm"
+								size="sm"
 								onClick={() => onEdit(row)}
 								aria-label={`编辑令牌 ${row.name}`}
 							>
-								<Pencil className="size-3.5" />
+								<Pencil {...iconProps(14)} />
 							</Button>
 						</TooltipTrigger>
 						<TooltipContent>编辑令牌</TooltipContent>
@@ -106,14 +107,15 @@ export function PATTable({ tokens, pagination, loading, onConnect, onEdit }: PAT
 						<TooltipTrigger asChild>
 							<span>
 								<Button
+									iconOnly
 									variant="ghost"
-									size="icon-sm"
+									size="sm"
 									className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 									onClick={() => del.mutate(row.id)}
 									disabled={del.isPending}
 									aria-label={`吊销令牌 ${row.name}`}
 								>
-									<Trash2 className="size-3.5" />
+									<Trash2 {...iconProps(14)} />
 								</Button>
 							</span>
 						</TooltipTrigger>

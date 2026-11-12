@@ -1,4 +1,4 @@
-import { Button, Checkbox, Input, Label, Textarea } from "@violet/ui";
+import { Button, Checkbox, Field, Input, Label, Textarea } from "@violet/ui";
 import { Plus, X } from "lucide-react";
 import { type FormEvent, useId, useState } from "react";
 import {
@@ -62,17 +62,16 @@ export function RoadmapItemForm({ item, onSave, onCancel }: RoadmapItemFormProps
 
 	return (
 		<form onSubmit={submit} className="space-y-5" aria-label={`编辑 #${item.number}`}>
-			<Input
-				label="标题"
-				value={draft.title}
-				maxLength={200}
-				invalid={titleMissing}
-				errorMessage="标题不能为空"
-				onChange={(event) => {
-					patch({ title: event.target.value });
-					setTitleMissing(false);
-				}}
-			/>
+			<Field label="标题" error={titleMissing ? "标题不能为空" : undefined}>
+				<Input
+					value={draft.title}
+					maxLength={200}
+					onChange={(event) => {
+						patch({ title: event.target.value });
+						setTitleMissing(false);
+					}}
+				/>
+			</Field>
 			<div className={SECTION}>
 				<Label htmlFor={descriptionId}>简介</Label>
 				<Textarea
@@ -82,12 +81,12 @@ export function RoadmapItemForm({ item, onSave, onCancel }: RoadmapItemFormProps
 					onChange={(event) => patch({ description: event.target.value })}
 				/>
 			</div>
-			<Input
-				label="标签"
-				description="用逗号分隔"
-				value={draft.tags}
-				onChange={(event) => patch({ tags: event.target.value })}
-			/>
+			<Field label="标签" hint="用逗号分隔">
+				<Input
+					value={draft.tags}
+					onChange={(event) => patch({ tags: event.target.value })}
+				/>
+			</Field>
 
 			<fieldset className={SECTION}>
 				<legend className={LEGEND}>关联链接</legend>
@@ -98,20 +97,21 @@ export function RoadmapItemForm({ item, onSave, onCancel }: RoadmapItemFormProps
 							aria-label={`链接 ${index + 1} 的名称`}
 							placeholder="名称（可选）"
 							value={link.label}
-							classNames={{ root: "w-36 shrink-0" }}
+							classNames={{ control: "w-36 shrink-0" }}
 							onChange={(event) => setLink(index, { label: event.target.value })}
 						/>
 						<Input
 							aria-label={`链接 ${index + 1} 的地址`}
 							placeholder="https:// 或 /站内路径"
 							value={link.url}
-							classNames={{ root: "min-w-0 flex-1" }}
+							classNames={{ control: "min-w-0 flex-1" }}
 							onChange={(event) => setLink(index, { url: event.target.value })}
 						/>
 						<Button
+							iconOnly
 							type="button"
 							variant="ghost"
-							size="icon"
+							size="md"
 							aria-label={`删除链接 ${index + 1}`}
 							onClick={() =>
 								patch({ links: draft.links.filter((_, at) => at !== index) })
@@ -148,13 +148,14 @@ export function RoadmapItemForm({ item, onSave, onCancel }: RoadmapItemFormProps
 							aria-label={`子项 ${index + 1}`}
 							value={entry.text}
 							maxLength={500}
-							classNames={{ root: "min-w-0 flex-1" }}
+							classNames={{ control: "min-w-0 flex-1" }}
 							onChange={(event) => setStep(index, { text: event.target.value })}
 						/>
 						<Button
+							iconOnly
 							type="button"
 							variant="ghost"
-							size="icon"
+							size="md"
 							aria-label={`删除子项 ${index + 1}`}
 							onClick={() =>
 								patch({
@@ -181,17 +182,19 @@ export function RoadmapItemForm({ item, onSave, onCancel }: RoadmapItemFormProps
 
 			{completed ? (
 				<div className="grid gap-4 sm:grid-cols-2">
-					<Input
-						label="交付版本"
-						value={draft.deliveredVersion}
-						onChange={(event) => patch({ deliveredVersion: event.target.value })}
-					/>
-					<Input
-						label="完成日期"
-						type="date"
-						value={draft.completionDate}
-						onChange={(event) => patch({ completionDate: event.target.value })}
-					/>
+					<Field label="交付版本">
+						<Input
+							value={draft.deliveredVersion}
+							onChange={(event) => patch({ deliveredVersion: event.target.value })}
+						/>
+					</Field>
+					<Field label="完成日期">
+						<Input
+							type="date"
+							value={draft.completionDate}
+							onChange={(event) => patch({ completionDate: event.target.value })}
+						/>
+					</Field>
 				</div>
 			) : null}
 

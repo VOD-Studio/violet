@@ -38,11 +38,11 @@
 		"dist/tweet/icons/verified-business.svg": "e725f6e60bf0ed30fac816036436dd374df4a515f84889e9ae20bf54771a83ce",
 		"dist/tweet/icons/verified-government.svg": "eb3a56bea7d7ca2be3d9643a55db714e3132abd02402bbcdf87816e2201db1d8",
 		"dist/tweet/icons/verified.svg": "bf5989fd075b1adc68cc6ac63cc88424905523b08d5473ed0346a7f4063de568",
-		"dist/tweet/localization.d.ts": "3fed434f86b1d9864d2bb2f1fbe9fceaafefea991df53f0cd31acf0a37d106b7",
-		"dist/tweet/localization.js": "f20fbd90049f203a953e4738e0f3f123db3084c35be15b9ca2f91e45d86f13d4",
+		"dist/tweet/localization.d.ts": "97928966f5d0fc266f798d19d1c655d803e0e4599d4b159820db447c31935456",
+		"dist/tweet/localization.js": "22a703f3f486e72cb76e27326c681893eeff45bf4af4158e8cdd6604d231cc42",
 		"dist/tweet/media-renderers.d.ts": "9ac43a138fbcb5ca60b8e690924f0bd5f49b8755cdbdfbae3f035a893324fe43",
 		"dist/tweet/media-renderers.js": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
-		"dist/tweet/media.css": "d71d10d07fb639e54b296d9158246341f53e746cd94f7db53a2d89df359fe43f",
+		"dist/tweet/media.css": "30a5a51fa7b37540b10407f533238aece702da0deeb6a50c58b00ecf370a984d",
 		"dist/tweet/media.d.ts": "0c111a17a1888f2181e89af11d032530d6c7c46288d17962dc047d13a516c35d",
 		"dist/tweet/media.js": "dc2d22a583fdfe96f23bbce14b1389f04ff730280b1bbd78a1da05392b8220f7",
 		"dist/tweet/photos.d.ts": "b9226a4637eb542b2475943cec405aa83c1fbecb5515023c9fb2e71ed23fd08b",
@@ -51,7 +51,7 @@
 		"dist/tweet/primitives.js": "8868508b6d795fcfbc38f2a6e8802def235ab7d1174262f5d03fa683e54d8ef8",
 		"dist/tweet/text.d.ts": "88e8ce3db78ff6131890ab501775a35692fa00a521b2ed638ef8f52afff1ddbf",
 		"dist/tweet/text.js": "e127307dd89052cd438591fec905b585c4d2eba37c227067447e0c89a6cbf3e9",
-		"dist/tweet/tweet.css": "d083c923290a2c0ad91f9362ac851130426f30149c848afa20cb24e793af656b",
+		"dist/tweet/tweet.css": "e7132bd42d9d0444dd7fe822a9c61845ed7fb264d7f56113254021b3bc6fe117",
 		"dist/tweet/tweet.d.ts": "303f992e62cbcc28348381506f2fa86739b63813412bcc596c6afb7a538a83f5",
 		"dist/tweet/tweet.js": "6b1b14f5d5230a352015d4e9684c7bfb794d266b3aa387cdd4e7a117f84a1d64",
 		"dist/tweet/use-text-collapse.d.ts": "a3d2713c4f550c9d8b320cfd2d3bad93e199b0272baa7cfce4c78eb0f3973194",
@@ -69,7 +69,7 @@
 		"scripts/render-examples.mjs": "00d7c99a4495874e37277ad3b14a7558270f0fb55a4050b3827803119e2e7400"
 	},
 	"images": {
-		"tweet-en.png": "4e060262062d054ccbef6f2f851ab28c36402e1e6a6f8fa241817eb4d7621954",
-		"tweet-zh.png": "bf8070327678d51aa29012bb24ee3ab7ee8859214985a94b8f35bf7445cecbe2"
+		"tweet-en.png": "4649083546900a68d242e810e4ea006e8177eb6998bb1d3c85feb7877891d1fc",
+		"tweet-zh.png": "ef3c5eb1f019338b6cc4a1820674c93d115ad4f784dd30a19789c0293e360e92"
 	}
 }

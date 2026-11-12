@@ -56,6 +56,7 @@ type Container struct {
 	CustomEmoji     *CustomEmojiContainer
 	LinkPreview     *LinkPreviewContainer
 	Presence        *PresenceContainer
+	Window          *WindowContainer
 }
 
 // 跨模块依赖（装配顺序即依赖序）：
@@ -113,6 +114,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	tag := NewTagContainer(db)
 	github := NewGitHubContainer(settings.Store)
 	releases := NewReleasesContainer(settings.Store, rdb)
+	window := NewWindowContainer(settings.Store, rdb, bus)
 	audit := NewAuditContainer(db)
 	stats := NewStatsContainer(db)
 	userAdmin := NewUserAdminContainer(db, authcmd.NewBcryptHasher(), bus, auth.SessionStore)
@@ -156,7 +158,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 		OMPUsage: ompUsage,
 		Media:    media, CodeRunner: codeRunner, Image: image, Tweet: tweet, FriendLink: friendLink,
 		Series: series, Gallery: gallery, Note: note, Publication: publication, Persona: persona, Notification: notification, Chat: chat, CustomEmoji: customEmoji,
-		LinkPreview: linkPreview, Presence: presence,
+		LinkPreview: linkPreview, Presence: presence, Window: window,
 	}
 	return c, roleCleanup, nil
 }

@@ -13,6 +13,7 @@ import (
 	"blog-api/internal/application/mocks"
 	appshared "blog-api/internal/application/shared"
 	domain "blog-api/internal/domain/comment"
+	domainpost "blog-api/internal/domain/post"
 	"blog-api/internal/domain/shared"
 	domainuser "blog-api/internal/domain/user"
 	infraeventbus "blog-api/internal/infrastructure/eventbus"
@@ -178,13 +179,36 @@ func (f *fakeSitePolicy) CommentPolicy(context.Context) (bool, bool, error) {
 	return f.enabled, f.moderation, f.err
 }
 
+type fakeArticleLookup struct {
+	articles map[shared.ID]*domainpost.Post
+	err      error
+	calls    int
+}
+
+func (f *fakeArticleLookup) FindActiveByID(_ context.Context, id shared.ID) (*domainpost.Post, error) {
+	f.calls++
+	if f.err != nil {
+		return nil, f.err
+	}
+	article, ok := f.articles[id]
+	if !ok {
+		return nil, domainpost.ErrNotFound
+	}
+	return article, nil
+}
+
+func articleForAnnotation(id shared.ID, contentHTML, contentMD, status string) *domainpost.Post {
+	return domainpost.ReconstructPost(id, shared.NewID(), "文章", "article", contentMD, contentHTML,
+		"", "", status, 0, false, false, "", "", nil, nil, nil, time.Time{}, time.Time{})
+}
+
 // newServiceWithMocks 构造带 mock 的 service，返回 service + 各 mock 便于断言。
 // policy 传 nil 时 service 内部按「开评论 + 需审核」兜底，等价旧行为。
 func newServiceWithMocks(policy SitePolicy) (*Service, *mocks.MockCommentRepository, *mocks.MockCommentCodeStore, *mocks.MockCommentEmailSender) {
 	repo := new(mocks.MockCommentRepository)
 	codeStore := new(mocks.MockCommentCodeStore)
 	emailSender := new(mocks.MockCommentEmailSender)
-	return NewService(repo, nil, codeStore, emailSender, noopEmojiLookup{}, policy, infraeventbus.NewInMemory()), repo, codeStore, emailSender
+	return NewService(repo, nil, codeStore, emailSender, noopEmojiLookup{}, policy, infraeventbus.NewInMemory(), nil), repo, codeStore, emailSender
 }
 
 func TestCreate_LoggedIn_SkipsCodeAndQuota(t *testing.T) {
@@ -209,7 +233,7 @@ func TestCreate_LoggedIn_SkipsCodeAndQuota(t *testing.T) {
 func TestCreate_LoggedIn_FillsAuthorFromUserRepo(t *testing.T) {
 	repo := new(mocks.MockCommentRepository)
 	userRepo := new(mocks.MockUserRepository)
-	svc := NewService(repo, userRepo, new(mocks.MockCommentCodeStore), new(mocks.MockCommentEmailSender), noopEmojiLookup{}, nil, infraeventbus.NewInMemory())
+	svc := NewService(repo, userRepo, new(mocks.MockCommentCodeStore), new(mocks.MockCommentEmailSender), noopEmojiLookup{}, nil, infraeventbus.NewInMemory(), nil)
 	uid := shared.NewID()
 	email, _ := domainuser.ParseEmail("bob@x.com")
 	name, _ := domainuser.ParseUsername("bob")
@@ -240,7 +264,7 @@ func TestCreate_AISignatureDoesNotBecomePATProfile(t *testing.T) {
 			users := new(mocks.MockUserRepository)
 			users.On("FindByIDsForDisplay", mock.Anything, mock.Anything).Return([]*domainuser.User{}, nil)
 			repo.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
-			svc := NewService(repo, users, new(mocks.MockCommentCodeStore), new(mocks.MockCommentEmailSender), noopEmojiLookup{}, nil, infraeventbus.NewInMemory())
+			svc := NewService(repo, users, new(mocks.MockCommentCodeStore), new(mocks.MockCommentEmailSender), noopEmojiLookup{}, nil, infraeventbus.NewInMemory(), nil)
 			dto, err := svc.Create(context.Background(), CreateInput{
 				PostID: shared.NewID().String(), UserID: shared.NewID().String(),
 				AuthorName: signature, AvatarURL: "/owner.png", IsAI: true, Body: "comment",
@@ -333,38 +357,93 @@ func TestCreate_Anon_QuotaExceeded_ReturnsErrAnonQuotaExceeded(t *testing.T) {
 
 func TestCreate_AnchorWithoutLogin_Rejected(t *testing.T) {
 	svc, _, _, _ := newServiceWithMocks(nil)
-	// 匿名带 anchor：domain.NewComment 会拒绝（批注强制登录）
+	// 匿名带锚点先过验证码这一关：未登录者得不到正文是否匹配的信息
 	anchor := &domain.Anchor{BlockID: "abc12345", StartOffset: 0, EndOffset: 5, SelectedText: "hello", BlockHashSync: "deadbeef"}
-	// 注意：匿名路径会先走验证码校验，code 为空会 ErrInvalidCode；这里测的是
-	// 「即使过了验证码，anchor+匿名仍被 domain 拒绝」——所以先让验证码通过
-	// 改为直接测 domain 层行为更干净，这里用 service 层验证错误链。
 	_, err := svc.Create(context.Background(), CreateInput{
 		PostID:     shared.NewID().String(),
 		AuthorName: "alice", AuthorEmail: "alice@x.com",
 		Body: "hi", Code: "", Anchor: anchor, IPHash: "iphash1",
 	})
-	// code 空先报 ErrInvalidCode
 	assert.ErrorIs(t, err, ErrInvalidCode)
 }
 
 func TestCreate_LoggedIn_WithAnchor_Succeeds(t *testing.T) {
 	svc, repo, _, _ := newServiceWithMocks(nil)
-	uid := shared.NewID()
-	anchor := &domain.Anchor{BlockID: "abc12345", StartOffset: 0, EndOffset: 5, SelectedText: "hello", BlockHashSync: "deadbeef"}
+	uid, postID := shared.NewID(), shared.NewID()
+	svc.articleRepo = &fakeArticleLookup{articles: map[shared.ID]*domainpost.Post{
+		postID: articleForAnnotation(postID, "<p>hello world</p>", "", domainpost.StatusPublished),
+	}}
+	anchor, err := BuildFullBlockAnchor("hello world")
+	assert.NoError(t, err)
 
-	// 用 MatchedBy 断言传给 Save 的 Comment 携带正确的 anchor（Issue-0003）
 	repo.On("Save", mock.Anything, mock.MatchedBy(func(c *domain.Comment) bool {
 		a := c.Anchor()
-		return a != nil && a.BlockID == "abc12345" && a.SelectedText == "hello"
+		return a != nil && a.BlockID == anchor.BlockID && a.SelectedText == "hello world"
 	})).Return(nil).Once()
 
-	_, err := svc.Create(context.Background(), CreateInput{
-		PostID: shared.NewID().String(), UserID: uid.String(),
+	_, err = svc.Create(context.Background(), CreateInput{
+		PostID: postID.String(), UserID: uid.String(),
 		AuthorName: "bob", AuthorEmail: "bob@x.com",
 		Body: "note", Anchor: anchor,
 	})
 	assert.NoError(t, err)
 	repo.AssertExpectations(t)
+}
+
+func TestCreate_AnchorAdmissionUsesLatestPublishedArticle(t *testing.T) {
+	svc, repo, _, _ := newServiceWithMocks(nil)
+	postID, uid := shared.NewID(), shared.NewID()
+	article := articleForAnnotation(postID, "<p>old text</p>", "", domainpost.StatusPublished)
+	lookup := &fakeArticleLookup{articles: map[shared.ID]*domainpost.Post{postID: article}}
+	svc.articleRepo = lookup
+	oldAnchor, err := BuildFullBlockAnchor("old text")
+	assert.NoError(t, err)
+	input := CreateInput{PostID: postID.String(), UserID: uid.String(), AuthorName: "reader", Body: "note", Anchor: oldAnchor}
+
+	assert.NoError(t, article.UpdateContent("文章", "", "<p>new text</p>", "", ""))
+	_, err = svc.Create(context.Background(), input)
+	assert.Error(t, err, "更新后的正文不再接受旧 block_id")
+	repo.AssertNotCalled(t, "Save")
+
+	fresh, err := BuildFullBlockAnchor("new text")
+	assert.NoError(t, err)
+	input.Anchor = fresh
+	repo.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
+	_, err = svc.Create(context.Background(), input)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, lookup.calls)
+	repo.AssertExpectations(t)
+}
+
+func TestCreate_AnchorAdmissionRejectsUnavailableArticle(t *testing.T) {
+	for _, status := range []string{domainpost.StatusDraft, domainpost.StatusArchived} {
+		t.Run(status, func(t *testing.T) {
+			svc, repo, _, _ := newServiceWithMocks(nil)
+			postID := shared.NewID()
+			svc.articleRepo = &fakeArticleLookup{articles: map[shared.ID]*domainpost.Post{
+				postID: articleForAnnotation(postID, "<p>hello</p>", "", status),
+			}}
+			anchor, err := BuildFullBlockAnchor("hello")
+			assert.NoError(t, err)
+			_, err = svc.Create(context.Background(), CreateInput{
+				PostID: postID.String(), UserID: shared.NewID().String(), AuthorName: "reader", Body: "note", Anchor: anchor,
+			})
+			assert.ErrorIs(t, err, domainpost.ErrNotFound)
+			repo.AssertNotCalled(t, "Save")
+		})
+	}
+}
+
+func TestCreate_AnchorAdmissionRejectsArticleLookupError(t *testing.T) {
+	svc, repo, _, _ := newServiceWithMocks(nil)
+	svc.articleRepo = &fakeArticleLookup{err: errors.New("storage unavailable")}
+	anchor, err := BuildFullBlockAnchor("hello")
+	assert.NoError(t, err)
+	_, err = svc.Create(context.Background(), CreateInput{
+		PostID: shared.NewID().String(), UserID: shared.NewID().String(), AuthorName: "reader", Body: "note", Anchor: anchor,
+	})
+	assert.EqualError(t, err, "storage unavailable")
+	repo.AssertNotCalled(t, "Save")
 }
 
 // TestCreate_PicturesPassedToDomain 验证 pictures 接线：CreateInput.Pictures 流入 domain（Issue-0003）。
@@ -428,7 +507,7 @@ func TestListByPost_AnonViewer_ReturnsEmpty_BlackHole(t *testing.T) {
 	// 匿名 viewer 不应查 DB
 	repo.AssertNotCalled(t, "FindPage")
 
-	items, total, err := svc.ListByPost(context.Background(), shared.NewID().String(), "", "", domain.AnchorFilterAll, domain.DepthFilterAll, "", 1, 20)
+	items, total, err := svc.ListByPost(context.Background(), shared.NewID().String(), "", "", domain.AnchorFilterAll, domain.DepthFilterAll, "", "", 1, 20)
 	assert.NoError(t, err)
 	assert.Empty(t, items)
 	assert.Equal(t, int64(0), total)
@@ -445,11 +524,11 @@ func TestListByPost_LoggedInViewer_ReturnsApprovedAndOwnPending(t *testing.T) {
 	myPending, _ := newDomainComment(shared.NewID(), postID, "bob", "pending")
 	repo.On("FindPage", mock.Anything, domain.ListFilter{
 		PostID: &postID, Status: domain.StatusApproved, ViewerUserID: &viewer,
-		AnchorFilter: domain.AnchorFilterAll, DepthFilter: &allDepth,
+		AnchorFilter: domain.AnchorFilterAll, DepthFilter: &allDepth, TopLevelSort: "latest",
 	}, shared.PageQuery{Page: 1, Limit: 20}).
 		Return(shared.NewPageResult(shared.PageQuery{Page: 1, Limit: 20}, []*domain.Comment{approved, myPending}, 2), nil).Once()
 
-	items, total, err := svc.ListByPost(context.Background(), postID.String(), viewer.String(), "", domain.AnchorFilterAll, domain.DepthFilterAll, "", 1, 20)
+	items, total, err := svc.ListByPost(context.Background(), postID.String(), viewer.String(), "", domain.AnchorFilterAll, domain.DepthFilterAll, "", "", 1, 20)
 	assert.NoError(t, err)
 	assert.Len(t, items, 2)
 	assert.Equal(t, int64(2), total)
@@ -467,11 +546,11 @@ func TestListByPost_AnchorFilter_PassthroughToRepo(t *testing.T) {
 	// 期望 repo 收到 AnchorFilterAnnotation（与 AnchorFilterAll 的用例区分）
 	repo.On("FindPage", mock.Anything, domain.ListFilter{
 		PostID: &postID, Status: domain.StatusApproved, ViewerUserID: &viewer,
-		AnchorFilter: domain.AnchorFilterAnnotation, DepthFilter: &allDepth,
+		AnchorFilter: domain.AnchorFilterAnnotation, DepthFilter: &allDepth, TopLevelSort: "latest",
 	}, shared.PageQuery{Page: 1, Limit: 20}).
 		Return(shared.NewPageResult(shared.PageQuery{Page: 1, Limit: 20}, []*domain.Comment{}, 0), nil).Once()
 
-	_, _, err := svc.ListByPost(context.Background(), postID.String(), viewer.String(), "", domain.AnchorFilterAnnotation, domain.DepthFilterAll, "", 1, 20)
+	_, _, err := svc.ListByPost(context.Background(), postID.String(), viewer.String(), "", domain.AnchorFilterAnnotation, domain.DepthFilterAll, "", "", 1, 20)
 	assert.NoError(t, err)
 	repo.AssertExpectations(t)
 }
@@ -673,7 +752,7 @@ func TestListByPost_ReplyPreviewResolvesTargetOutsidePreview(t *testing.T) {
 	}), mock.Anything).Return(shared.PageResult[*domain.Comment]{Items: []*domain.Comment{reply}, Total: 4}, nil).Once()
 	repo.On("FindByIDs", mock.Anything, []shared.ID{target.ID()}).Return([]*domain.Comment{target}, nil).Once()
 
-	items, _, err := svc.ListByPost(context.Background(), postID.String(), viewer.String(), "", domain.AnchorFilterFree, domain.DepthFilterTopLevel, "", 1, 10)
+	items, _, err := svc.ListByPost(context.Background(), postID.String(), viewer.String(), "", domain.AnchorFilterFree, domain.DepthFilterTopLevel, "", "", 1, 10)
 	if !assert.NoError(t, err) || !assert.Len(t, items, 1) || !assert.Len(t, items[0].Replies, 1) {
 		return
 	}
@@ -868,4 +947,44 @@ func TestCreate_RejectAnchoredParent_RejectsAnnotationParent(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "自由评论不能回复划线批注")
 	repo.AssertExpectations(t)
+}
+
+func TestAnnotationSummary_MarksPostAuthorRanges(t *testing.T) {
+	owner, other, viewer := shared.NewID(), shared.NewID(), shared.NewID()
+	postID := shared.NewID()
+	blocks := []domain.BlockCount{{BlockID: "b1", Count: 3, Ranges: []domain.BlockRange{
+		{Start: 0, End: 1, CreatedBy: &owner},
+		{Start: 1, End: 2, CreatedBy: &other},
+		{Start: 2, End: 3, CreatedBy: nil},
+	}}}
+
+	cases := []struct {
+		name         string
+		postAuthorID string
+		want         []bool
+	}{
+		{"作者划线标记 is_author", owner.String(), []bool{true, false, false}},
+		{"作者 ID 为空时全部为 false", "", []bool{false, false, false}},
+		{"作者 ID 非法时全部为 false", "not-a-uuid", []bool{false, false, false}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			svc, repo, _, _ := newServiceWithMocks(nil)
+			repo.On("CountAnnotationsByBlock", mock.Anything, postID, domain.StatusApproved, mock.Anything).Return(blocks, nil).Once()
+			got, err := svc.AnnotationSummary(context.Background(), postID.String(), viewer.String(), tc.postAuthorID)
+			assert.NoError(t, err)
+			if assert.Len(t, got, 1) && assert.Len(t, got[0].Ranges, 3) {
+				for i, w := range tc.want {
+					assert.Equal(t, w, got[0].Ranges[i].IsAuthor, "range %d", i)
+				}
+			}
+		})
+	}
+}
+
+func TestAnnotationSummary_AnonymousViewerReturnsEmpty(t *testing.T) {
+	svc, _, _, _ := newServiceWithMocks(nil)
+	got, err := svc.AnnotationSummary(context.Background(), shared.NewID().String(), "", shared.NewID().String())
+	assert.NoError(t, err)
+	assert.Empty(t, got)
 }

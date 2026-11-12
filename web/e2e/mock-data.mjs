@@ -5,7 +5,8 @@
  * 共用同一份 envelope 路由表，保证 SSR loader 与浏览器侧请求看到相同数据。
  */
 
-/** 首页 loader 必需的站点身份（含卷首引言，驱动 Epigraph 渲染）。 */
+import { createHash } from "node:crypto";
+
 const SITE_IDENTITY = {
 	site_name: "Violet",
 	site_url: "https://contract.local",
@@ -57,7 +58,7 @@ const CONTRACT_POST = {
 	updated_at: "2026-08-11T10:00:00Z",
 };
 
-const RICH_CONTENT_POSTS = ["code", "diagram", "toc", "image", "toc-copy", "worker", "image-hydration"].map((kind, index) => ({
+const RICH_CONTENT_POSTS = ["code", "diagram", "toc", "image", "toc-copy", "worker", "image-hydration", "math", "diagrams"].map((kind, index) => ({
 	...CONTRACT_POST,
 	id: `10000000-0000-0000-0000-00000000001${index + 1}`,
 	slug: `contract-rich-${kind}`,
@@ -68,10 +69,22 @@ const RICH_CONTENT_POSTS = ["code", "diagram", "toc", "image", "toc-copy", "work
 		"<p>增强加载失败时，这段正文始终保留。</p>",
 		kind === "diagram"
 			? '<div data-type="diagram-block" data-format="mermaid" data-source="flowchart LR\n  A[开始阅读] --&gt; B[完整图表]"></div>'
-			: '<pre><code class="language-typescript">const recoveryMessage = "正文仍可阅读";</code></pre>',
+			: kind === "math"
+				? '<p>质能方程 <span data-type="inline-math" data-latex="E=mc^2"></span> 写在段落里。</p><div data-type="block-math" data-latex="\\int_0^\\infty e^{-x^2}\\,dx = \\frac{\\sqrt{\\pi}}{2}"></div>'
+				: '<pre><code class="language-typescript">const recoveryMessage = "正文仍可阅读";</code></pre>',
 		"<p>增强恢复后，这段结尾仍是原来的节点。</p>",
 		kind === "image"
 			? '<p><img src="/uploads/contract-article.png" alt="可预览的正文图片" width="400" height="240"></p>'
+			: "",
+		kind === "math"
+			? `${"<p>首屏之外的长段落，用来把后面的公式推出首屏。</p>".repeat(80)}<div data-type="block-math" data-latex="a^2 + b^2 = c^2"></div>`
+			: "",
+		kind === "diagrams"
+			? Array.from(
+				{ length: 5 },
+				(_, index) =>
+					`${"<p>图表之间的正文段落，让每张图都需要滚动才能看到。</p>".repeat(20)}<div data-type="diagram-block" data-format="mermaid" data-source="flowchart LR\n  A[第${index + 1}张图：开始] --&gt; B{检查条件}\n  B --&gt;|满足| C[继续阅读]\n  B --&gt;|不满足| D[返回修改]"></div>`,
+			).join("")
 			: "",
 		kind === "worker"
 			? '<pre><code class="language-python">print("线程结果独立")</code></pre>'
@@ -81,13 +94,26 @@ const RICH_CONTENT_POSTS = ["code", "diagram", "toc", "image", "toc-copy", "work
 			: "",
 		kind === "toc" || kind === "toc-copy"
 			? Array.from(
-					{ length: 20 },
-					(_, index) =>
-						`<h2>目录章节 ${index + 1}</h2><p>键盘焦点保持可见，不被滚动区域裁剪。</p>`,
-				).join("")
+				{ length: 20 },
+				(_, index) =>
+					`<h2>目录章节 ${index + 1}</h2><p>键盘焦点保持可见，不被滚动区域裁剪。</p>`,
+			).join("")
 			: "",
 	].join(""),
 }));
+
+RICH_CONTENT_POSTS.push(...["html", "markdown"].map((format, index) => ({
+	...CONTRACT_POST,
+	id: `10000000-0000-0000-0000-00000000002${index + 1}`,
+	slug: `contract-code-typography-${format}`,
+	title: `代码排版契约：${format}`,
+	content_html: format === "html"
+		? '<h2>代码排版</h2><p>变量 <code>a</code> 不参与正文装饰。</p><pre><code class="language-javascript">const a = 1;</code></pre><pre data-runnable="true" data-lang="bun" data-source="console.log(&quot;article&quot;);"><code>console.log(&quot;article&quot;);</code></pre>'
+		: "",
+	content_md: format === "markdown"
+		? '## 代码排版\n\n变量 `a` 不参与正文装饰。\n\n```javascript\nconst a = 1;\n```\n\n```bun runnable\nconsole.log("article");\n```'
+		: "",
+})));
 
 const CONTRACT_NOTE = {
 	id: "41000000-0000-0000-0000-000000000001",
@@ -456,11 +482,96 @@ export const PROJECTS_FIXTURE = [
 /** 实时状态未公开或无人在线时的应答：顶栏不显示活动。 */
 const NO_PRESENCE = { generated_at: "2026-10-01T00:00:00Z", devices: [] };
 
+/** 批注契约：contract-rich-code 首段带一条划线批注，可回复、可再发段评。 */
+const ANNOTATION_TEXT = "增强加载失败时，这段正文始终保留。";
+const ANNOTATION_BLOCK_ID = createHash("sha256").update(ANNOTATION_TEXT).digest("hex").slice(0, 8);
+const CODE_POST_ID = "10000000-0000-0000-0000-000000000011";
+const ANNOTATION_COMMENT = {
+	id: "51000000-0000-0000-0000-000000000001",
+	post_id: CODE_POST_ID,
+	depth: 0,
+	author_name: "契约读者",
+	avatar_url: "",
+	body: "这段原文被划线批注。",
+	pictures: [],
+	is_author: false,
+	anchor: {
+		block_id: ANNOTATION_BLOCK_ID,
+		start_offset: 0,
+		end_offset: 6,
+		selected_text: ANNOTATION_TEXT.slice(0, 6),
+		block_text_hash: ANNOTATION_BLOCK_ID,
+	},
+	status: "approved",
+	created_at: "2026-11-01T10:00:00Z",
+	replies: [],
+	replies_total: 0,
+};
+/** 批注摘要按块聚合；提交新的顶层批注后计数增加，划线（划线节点）会被整体重建。 */
+const annotationSummary = () => [
+	{
+		block_id: ANNOTATION_BLOCK_ID,
+		count: 1 + postedAnnotations,
+		authors: [
+			{ name: "契约读者", is_ai: false, count: 1 },
+			...(postedAnnotations > 0
+				? [{ name: "契约管理员", is_ai: false, count: postedAnnotations }]
+				: []),
+		],
+		ranges: [
+			{ start: 0, end: 6, is_ai: false, author_name: "契约读者", is_author: false },
+			...(postedAnnotations > 0
+				? [
+					{
+						start: 8,
+						end: 12,
+						is_ai: false,
+						author_name: "契约管理员",
+						is_author: false,
+					},
+				]
+				: []),
+		],
+	},
+];
+
+/** 本进程内提交过的顶层批注数；批注摘要随之变化，模拟后端聚合更新。 */
+let postedAnnotations = 0;
+
+
 /** 与后端 envelope 语义一致的路由表；浏览器侧 page.route 复用同一份数据。
  * cookie 含 contract_admin=1 时按已登录 root 应答会话与后台数据（工具方言契约用）。 */
-export function handle(method, pathname, search, cookie = "") {
+export function handle(method, pathname, search, cookie = "", rawBody = "") {
 	const params = new URLSearchParams(search || "");
 	const isAdminActor = /(?:^|;\s*)contract_admin=1(?:;|$)/.test(cookie);
+	if (
+		method === "POST" &&
+		pathname === `/api/v1/posts/${CODE_POST_ID}/comments`
+	) {
+		// 回执按已登录直发处理：approved 立即可见，回复带线程信息供乐观更新
+		const body = JSON.parse(rawBody || "{}");
+		if (!body.parent_id) postedAnnotations += 1;
+		return {
+			status: 200,
+			body: envelope({
+				id: `52000000-0000-0000-0000-${String(Math.floor(Math.random() * 1e12)).padStart(12, "0")}`,
+				post_id: CODE_POST_ID,
+				parent_id: body.parent_id,
+				thread_root_id: body.parent_id,
+				depth: body.parent_id ? 1 : 0,
+				author_name: "契约管理员",
+				avatar_url: "",
+				body: body.body,
+				pictures: [],
+				is_author: false,
+				anchor: body.anchor,
+				status: "approved",
+				created_at: new Date().toISOString(),
+				replies: [],
+				replies_total: 0,
+			}),
+		};
+	}
 	if (
 		method === "POST" &&
 		RICH_CONTENT_POSTS.some((post) => pathname === `/api/v1/posts/${post.id}/view`)
@@ -498,12 +609,22 @@ export function handle(method, pathname, search, cookie = "") {
 		(post) => pathname === `/api/v1/posts/${post.slug}`,
 	);
 	if (richContentPost) return { status: 200, body: envelope(richContentPost) };
+	if (pathname === `/api/v1/posts/${CODE_POST_ID}/annotations/summary`) {
+		return { status: 200, body: envelope(annotationSummary()) };
+	}
 	if (
 		RICH_CONTENT_POSTS.some(
 			(post) => pathname === `/api/v1/posts/${post.id}/annotations/summary`,
 		)
 	) {
 		return { status: 200, body: envelope([]) };
+	}
+	if (
+		pathname === `/api/v1/posts/${CODE_POST_ID}/comments` &&
+		params.get("type") === "annotation" &&
+		params.get("block_id") === ANNOTATION_BLOCK_ID
+	) {
+		return { status: 200, body: paged([ANNOTATION_COMMENT], Number(params.get("limit") || 20)) };
 	}
 	if (
 		RICH_CONTENT_POSTS.some((post) => pathname === `/api/v1/posts/${post.id}/comments`)
@@ -600,6 +721,10 @@ export function handle(method, pathname, search, cookie = "") {
 				github_username: "contract",
 				profile_role: "缓存接管契约作者",
 				avatar_url: "",
+				google_login_enabled: true,
+				github_login_enabled: true,
+				google_client_id: "contract-google-client",
+				github_client_id: "contract-github-client",
 				tagline: "",
 				about_config: {
 					sections: [{ id: "bio", enabled: true }],
@@ -627,6 +752,21 @@ export function handle(method, pathname, search, cookie = "") {
 	if (pathname === "/api/v1/galleries/contract-gallery") {
 		return { status: 200, body: envelope(CONTRACT_GALLERY) };
 	}
+	if (pathname === "/api/v1/window")
+		return {
+			status: 200,
+			body: envelope({
+				enabled: false,
+				city: "",
+				timezone: "",
+				condition: "",
+				is_day: true,
+				temperature_c: null,
+				observed_at: "",
+				photo_slot: "clear",
+				photo: "",
+			}),
+		};
 	if (pathname === "/api/v1/presence") return { status: 200, body: envelope(NO_PRESENCE) };
 	if (pathname === "/api/v1/presence/stream") {
 		// route.fetch 要等响应结束，所以推一条快照就收尾；retry 拉长，用例期间不重连。

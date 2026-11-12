@@ -1,4 +1,4 @@
-import { Badge, Button, Card, ConfirmDialog } from "@violet/ui";
+import { Badge, Button, Card, ConfirmDialog, iconProps } from "@violet/ui";
 import {
 	Activity,
 	ExternalLink,
@@ -101,10 +101,9 @@ export function MusicAccountCard({
 						size="sm"
 						onClick={handleVerify}
 						disabled={!canManage || verifyMutation.isPending || isStatusLoading}
-						className="gap-1.5"
 					>
 						<Activity
-							className={`size-3.5 ${verifyMutation.isPending ? "animate-spin" : ""}`}
+							{...iconProps(14, verifyMutation.isPending ? "animate-spin" : "")}
 						/>
 						连通性测试
 					</Button>
@@ -114,19 +113,9 @@ export function MusicAccountCard({
 					<div className="flex items-center justify-between">
 						<span className="text-muted-foreground">配置状态</span>
 						{status?.configured ? (
-							<Badge
-								variant="outline"
-								className="border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-							>
-								已配置服务地址与令牌
-							</Badge>
+							<Badge tone="ok">已配置服务地址与令牌</Badge>
 						) : (
-							<Badge
-								variant="outline"
-								className="border-amber-500/30 text-amber-600 dark:text-amber-400"
-							>
-								未配置
-							</Badge>
+							<Badge tone="warning">未配置</Badge>
 						)}
 					</div>
 
@@ -159,26 +148,10 @@ export function MusicAccountCard({
 						<h3 className="font-medium text-base">站点网易云账号</h3>
 					</div>
 
-					{account?.state === "connected" && (
-						<Badge
-							variant="outline"
-							className="border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-						>
-							已连接
-						</Badge>
-					)}
-					{account?.state === "expired" && (
-						<Badge
-							variant="outline"
-							className="border-amber-500/30 text-amber-600 dark:text-amber-400"
-						>
-							凭据已失效
-						</Badge>
-					)}
+					{account?.state === "connected" && <Badge tone="ok">已连接</Badge>}
+					{account?.state === "expired" && <Badge tone="warning">凭据已失效</Badge>}
 					{(!account || account.state === "disconnected") && (
-						<Badge variant="outline" className="text-muted-foreground">
-							未连接
-						</Badge>
+						<Badge tone="off">未连接</Badge>
 					)}
 				</div>
 
@@ -215,7 +188,7 @@ export function MusicAccountCard({
 											className="text-muted-foreground hover:text-foreground"
 											title="查看网易云个人主页"
 										>
-											<ExternalLink className="size-3.5" />
+											<ExternalLink {...iconProps(14)} />
 										</a>
 									</div>
 									<div className="font-mono text-muted-foreground text-xs">
@@ -230,10 +203,12 @@ export function MusicAccountCard({
 									size="sm"
 									onClick={handleRefresh}
 									disabled={!canManage || refreshMutation.isPending}
-									className="gap-1"
 								>
 									<RefreshCw
-										className={`size-3.5 ${refreshMutation.isPending ? "animate-spin" : ""}`}
+										{...iconProps(
+											14,
+											refreshMutation.isPending ? "animate-spin" : "",
+										)}
 									/>
 									刷新
 								</Button>
@@ -244,7 +219,7 @@ export function MusicAccountCard({
 									disabled={!canManage || disconnectMutation.isPending}
 									className="text-destructive hover:bg-destructive/10"
 								>
-									<LogOut className="size-3.5" />
+									<LogOut {...iconProps(14)} />
 									断开
 								</Button>
 							</div>
@@ -259,9 +234,8 @@ export function MusicAccountCard({
 									size="sm"
 									onClick={onOpenQrLogin}
 									disabled={!canManage || Boolean(loginDisabledReason)}
-									className="gap-1.5"
 								>
-									<LogIn className="size-3.5" />
+									<LogIn {...iconProps(14)} />
 									重新扫码登录
 								</Button>
 								<Button
@@ -285,9 +259,8 @@ export function MusicAccountCard({
 									size="sm"
 									onClick={onOpenQrLogin}
 									disabled={!canManage || Boolean(loginDisabledReason)}
-									className="gap-1.5"
 								>
-									<LogIn className="size-3.5" />
+									<LogIn {...iconProps(14)} />
 									扫码连接账号
 								</Button>
 							</div>

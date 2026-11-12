@@ -19,15 +19,15 @@ const { mockUploadFile } = vi.hoisted(() => ({ mockUploadFile: vi.fn() }));
 vi.mock("@features/emojis/api/queries", () => ({
 	useAllEmojis: () => ({ data: [], isLoading: false }),
 }));
+vi.mock("@features/customemoji/api/queries", () => ({
+	useMyCustomEmojis: () => ({ data: undefined, isLoading: false }),
+}));
 vi.mock("@features/upload/hooks/use-chunked-upload", () => ({
 	useChunkedUpload: () => ({ uploadFile: mockUploadFile }),
 }));
 
-import {
-	type PictureInput,
-	RichCommentInput,
-	type RichCommentInputHandle,
-} from "../RichCommentInput";
+import type { PictureInput, RichTextInputHandle } from "@shared/ui/rich-text-input/RichTextInput";
+import { RichCommentInput } from "../RichCommentInput";
 
 /** 受控包装：inlineImages 依赖 value 真正回灌才能驱动退格剔除等效果，镜像 chat 的用法。 */
 function Controlled({ onImagesChange }: { onImagesChange: (images: PictureInput[]) => void }) {
@@ -128,7 +128,7 @@ describe("RichCommentInput", () => {
 	});
 
 	it("外部追加提及保留草稿和图片，支持重复点击并聚焦到末尾", () => {
-		const ref = createRef<RichCommentInputHandle>();
+		const ref = createRef<RichTextInputHandle>();
 		const onChange = vi.fn();
 		const userID = "00000000-0000-0000-0000-000000000002";
 		render(
@@ -159,7 +159,7 @@ describe("RichCommentInput", () => {
 	});
 
 	it("禁用输入框或非候选用户不追加提及", () => {
-		const ref = createRef<RichCommentInputHandle>();
+		const ref = createRef<RichTextInputHandle>();
 		const onChange = vi.fn();
 		const props = {
 			ref,
@@ -183,16 +183,22 @@ describe("提及浮层键盘导航", () => {
 		displayName: `用户${i}`,
 	}));
 
-	/** 在编辑区打一个 `@` 并把光标落在其后，触发候选浮层（jsdom 里得手动摆 Selection）。 */
-	function openSuggestions() {
-		const utils = render(
+	/** 受控输入：输入与插入都回写 value，否则渲染会把 DOM 拉回空值。 */
+	function Controlled() {
+		const [value, setValue] = useState("");
+		return (
 			<RichCommentInput
-				value=""
-				onChange={() => {}}
+				value={value}
+				onChange={setValue}
 				mentionCandidates={candidates}
 				onSubmit={() => {}}
-			/>,
+			/>
 		);
+	}
+
+	/** 在编辑区打一个 `@` 并把光标落在其后，触发候选浮层（jsdom 里得手动摆 Selection）。 */
+	function openSuggestions() {
+		const utils = render(<Controlled />);
 		const editor = screen.getByRole("textbox");
 		editor.textContent = "@";
 		const textNode = editor.firstChild as Text;
@@ -210,16 +216,19 @@ describe("提及浮层键盘导航", () => {
 		cleanup();
 	});
 
-	it("方向键换高亮项时把它滚进可视区", () => {
+	it("候选最多 6 条，方向键循环换高亮并把它滚进可视区", () => {
 		const { editor } = openSuggestions();
 		const options = screen.getAllByRole("option");
-		expect(options).toHaveLength(candidates.length);
-		const scrollIntoView = vi.spyOn(options[7], "scrollIntoView");
+		expect(options).toHaveLength(6);
+		const scrollIntoView = vi.spyOn(options[5], "scrollIntoView");
 
 		fireEvent.keyDown(editor, { key: "ArrowUp" });
 
-		expect(options[7].getAttribute("aria-selected")).toBe("true");
+		expect(options[5].getAttribute("aria-selected")).toBe("true");
 		expect(scrollIntoView).toHaveBeenCalledWith({ block: "nearest" });
+
+		fireEvent.keyDown(editor, { key: "ArrowDown" });
+		expect(options[0].getAttribute("aria-selected")).toBe("true");
 	});
 
 	it("滚动带起的 hover（鼠标静止）不劫持键盘高亮，鼠标真实移动后恢复", () => {
@@ -228,11 +237,71 @@ describe("提及浮层键盘导航", () => {
 		fireEvent.keyDown(editor, { key: "ArrowUp" });
 
 		fireEvent.mouseOver(options[3]);
-		expect(options[7].getAttribute("aria-selected")).toBe("true");
+		expect(options[5].getAttribute("aria-selected")).toBe("true");
 
 		fireEvent.mouseMove(screen.getByRole("listbox"));
 		fireEvent.mouseOver(options[3]);
 		expect(options[3].getAttribute("aria-selected")).toBe("true");
+	});
+
+	it("输入框暴露 aria-autocomplete、aria-expanded 与当前高亮项", () => {
+		const { editor } = openSuggestions();
+		const listbox = screen.getByRole("listbox");
+		const options = screen.getAllByRole("option");
+
+		expect(editor.getAttribute("aria-autocomplete")).toBe("list");
+		expect(editor.getAttribute("aria-expanded")).toBe("true");
+		expect(editor.getAttribute("aria-controls")).toBe(listbox.id);
+		expect(editor.getAttribute("aria-activedescendant")).toBe(options[0].id);
+		expect(listbox.getAttribute("aria-label")).toBe("提及候选，共 6 人");
+
+		fireEvent.keyDown(editor, { key: "ArrowDown" });
+		expect(editor.getAttribute("aria-activedescendant")).toBe(options[1].id);
+	});
+
+	it("Esc 只收浮层，已输入的文字还在", () => {
+		const { editor } = openSuggestions();
+
+		fireEvent.keyDown(editor, { key: "Escape" });
+
+		expect(screen.queryByRole("listbox")).toBeNull();
+		expect(editor.getAttribute("aria-expanded")).toBe("false");
+		expect(editor.getAttribute("aria-activedescendant")).toBeNull();
+		expect(editor.textContent).toBe("@");
+	});
+
+	it("Tab 与 Enter 一样插入高亮的候选", () => {
+		const { editor } = openSuggestions();
+
+		fireEvent.keyDown(editor, { key: "Tab" });
+
+		expect(editor.querySelector("[data-mention]")?.textContent).toBe("@用户0");
+		expect(screen.queryByRole("listbox")).toBeNull();
+	});
+
+	it("显示名、用户名与拼音首字母都能筛到同一个人", () => {
+		const { editor } = openSuggestions();
+		const type = (text: string) => {
+			editor.textContent = text;
+			const textNode = editor.firstChild as Text;
+			const range = document.createRange();
+			range.setStart(textNode, text.length);
+			range.collapse(true);
+			const selection = window.getSelection();
+			selection?.removeAllRanges();
+			selection?.addRange(range);
+			fireEvent.input(editor);
+		};
+
+		type("@用户1");
+		expect(screen.getAllByRole("option")).toHaveLength(1);
+		type("@user2");
+		expect(screen.getByRole("option", { name: /用户2/ })).toBeTruthy();
+		type("@yh0");
+		expect(screen.getByRole("option", { name: /用户0/ })).toBeTruthy();
+		type("@zzz");
+		expect(screen.queryAllByRole("option")).toHaveLength(0);
+		expect(screen.getByText("没有叫「zzz」的人")).toBeTruthy();
 	});
 });
 

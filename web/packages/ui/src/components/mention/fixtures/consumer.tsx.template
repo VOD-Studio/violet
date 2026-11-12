@@ -1,0 +1,58 @@
+import { useId, useState, type KeyboardEvent } from "react";
+import {
+	filterMentionCandidates,
+	MentionList,
+	mentionOptionId,
+	parseMentionTrigger,
+	type MentionCandidate,
+} from "@violet/ui/mention";
+
+const candidates: MentionCandidate[] = [
+	{ id: "all", username: "all", displayName: "所有人", memberCount: 23 },
+	{ id: "lin", username: "linjian", displayName: "林间", role: "owner" },
+	{ id: "bot", username: "saber", displayName: "Saber", isBot: true },
+];
+
+export function MentionConsumer() {
+	const id = useId();
+	const [value, setValue] = useState("@");
+	const [dismissed, setDismissed] = useState(false);
+	const [activeIndex, setActiveIndex] = useState(0);
+	const trigger = dismissed ? null : parseMentionTrigger(value);
+	const matches = trigger ? filterMentionCandidates(candidates, trigger.query) : [];
+	const active = matches[activeIndex];
+	const select = (candidate: MentionCandidate) => {
+		if (!trigger) return;
+		setValue(`${value.slice(0, trigger.start)}@${candidate.displayName} `);
+		setDismissed(true);
+	};
+	const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+		if (!trigger || event.nativeEvent.isComposing) return;
+		if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+			event.preventDefault();
+			if (matches.length) setActiveIndex((index) => (index + (event.key === "ArrowDown" ? 1 : -1) + matches.length) % matches.length);
+		} else if ((event.key === "Enter" || event.key === "Tab") && active) {
+			event.preventDefault();
+			select(active);
+		} else if (event.key === "Escape") {
+			event.preventDefault();
+			setDismissed(true);
+		}
+	};
+	return (
+		<section style={{ width: 320, minHeight: 330 }}>
+			<input
+				role="combobox"
+				aria-label="提及消费消息"
+				aria-autocomplete="list"
+				aria-expanded={trigger !== null}
+				aria-controls={trigger ? id : undefined}
+				aria-activedescendant={trigger && active ? mentionOptionId(id, active.id) : undefined}
+				value={value}
+				onChange={(event) => { setValue(event.target.value); setDismissed(false); setActiveIndex(0); }}
+				onKeyDown={onKeyDown}
+			/>
+			{trigger && <MentionList id={id} candidates={matches} activeIndex={activeIndex} onActiveIndexChange={setActiveIndex} onSelect={select} query={trigger.query} />}
+		</section>
+	);
+}

@@ -104,6 +104,23 @@ REST 端点可用 `middleware.PATAuth` 复用 MCP 的 `PATVerifier`，再用 `Re
 
 `POST /api/v1/link-cards/lookup` 公开批量读取最多 10 个 URL 的网页预览，仍需 CSRF cookie。返回 `cards`、`pending`、`unavailable`：仅 pending 继续查询；上游 403 不绕过防护，失败退避期间不重复抓取。成功快照默认缓存 7 天，过期惰性刷新；封面校验后缓存到本站。
 
+### 评论回应与排序
+
+文章与推文评论共享 `AggregatedReaction` 读模型，但分别存储于 `comment_reactions` 和迁移 150 的 `tweet_comment_reactions`；推文评论不会写入文章评论外键。
+
+| 方法 | 路径 | 语义 |
+| --- | --- | --- |
+| GET | `/tweets/{id}/comments/{commentId}/reactions` | 公开读取，校验推文存在及评论归属 |
+| POST | 同上 | 登录添加 `{ "emoji_id": 1 }`，幂等 |
+| DELETE | `/tweets/{id}/comments/{commentId}/reactions/{emojiId}` | 登录取消自己的回应，幂等 |
+| POST | `/tweets/{id}/comments/reactions/batch` | 公开批量读 `{ "comment_ids": ["UUID"] }`，仍需 CSRF |
+
+回应含 `emoji_id`、`emoji_name`、`emoji_url`、`gif_url`、`count`、`self`、`recent_users: [{id,name}]`。最近名单仅含未注销的公开用户，最多 3 名，按回应时间及记录 ID 倒序，展示名为空时回退用户名；匿名读取 `self=false`，空列表返回 `[]`。推文回应只接受已启用系统目录的普通/颜文字与无门槛旧目录项，不接受会员、购买或私人表情。
+
+推文批量回应按 UUID 去重并保留首次出现顺序，每次最多 100 个唯一评论、请求体最多 16 KiB（分别越限返回 400 / 413，沿用统一错误结构）。查询先确认推文本身存在，再以固定次数 SQL 筛选同推文目标并聚合；已删除、不存在或属于其它推文的合法评论 ID 仍有对应结果，`reactions: []`，不会令整批失败或泄露其它推文回应。非法 UUID 返回 400，推文本身不存在返回 404；空输入返回 `[]`。单条读取及写入仍严格校验评论存在与归属，失败返回 404。
+
+`GET /posts/{postId}/comments?type=free&top_level=true` 与 `GET /tweets/{id}/comments` 接受 `sort=latest|hot`（缺省 latest，非法值 400）。hot 在数据库分页前按该评论全部回应记录数降序，再按 `created_at DESC,id DESC` 稳定破同；不维护冗余计数。文章匿名黑洞、自己的 pending、批注/后台/检索与回复 asc/desc 的原有语义不变。
+
 ## 业务模块
 
 按用例定位 [internal/application/](internal/application/)，再查看对应领域与适配器；不是每个模块都具有完全同名的四层目录。
@@ -121,12 +138,13 @@ REST 端点可用 `middleware.PATAuth` 复用 MCP 的 `PATVerifier`，再用 `Re
 | 首页资源 | `publication`、`siteidentity`、`siteimpression` | 发布物投影、公开身份与匿名印记 |
 | 外部内容 | `subscription`、`github`、`releases`、`music`、`linkpreview` | RSS、GitHub、版本记录、Kite 音乐与共享网页预览 |
 | 实时状态 | `presence` | Nowbeam 上报接收、设备凭证与公开推送 |
+| 窗 | `window` | 站长城市的天气（Open-Meteo）、窗外照片与敲窗通知 |
 | 开放与运营 | `mcp`、`coderunner`、`audit`、`system` | MCP、沙箱、审计、数据库运维 |
 | 个人用量 | `omp_usage` | PAT 批量摄取、个人会话聚合与跨语言同源 PostgreSQL 契约 |
 
 ### 正文与媒体
 
-文章只提交 `content_md` 时，由 Goldmark 生成 HTML；Mermaid、可运行围栏与内容卡片保留对应语义载体。HTML 与 Markdown 的往返边界、脚注和表格等格式规则见[编辑器存储说明](../web/src/features/editor/docs/storage.md)，不在这里维护第二份语法手册。
+文章只提交 `content_md` 时，由 Goldmark 生成 HTML；Mermaid、可运行围栏与内容卡片保留对应语义载体。普通与可运行代码围栏均保留文件名、作者标行和原始源码，HTML 转回 Markdown 时保留空行、行尾空白与嵌套围栏。具体载体、往返边界、脚注和表格等格式规则见[编辑器存储说明](../web/src/features/editor/docs/storage.md)，不在这里维护第二份语法手册。
 
 上传支持分片、秒传与会话续传。`clientUploadId` 用于复用同一次文件上传；取消和合并有明确的竞争结果，不能把“取消已受理”理解为“正式文件已删除”。秒传还会确认磁盘文件存在，数据库记录不能替代丢失的文件字节。
 
@@ -208,6 +226,17 @@ Cookie 由 `MUSIC_CREDENTIAL_KEY` 加密保存，凭据不交给前端。账号�
 | GET、PUT | `/admin/presence/settings` | 公开读取开关，默认关闭 |
 
 快照只在 API 进程内存，服务重启即清空，因此 API 需单实例运行。反向代理要为上报端点转发 `Upgrade` / `Connection` 头，空闲超时大于 45 秒租约，见 `deploy/nginx/xunrua.top`。
+
+### 窗接口
+
+全站背景「窗」的数据。城市与照片存在站点设置的 key-value 表（`window_city`、`window_photo_<槽位>`）；天气按城市坐标在 Redis 缓存 15 分钟，上游失败时退回 6 小时内的旧数据。后台读取需 `settings:view`，写入需 `settings:update` 与 CSRF。
+
+| 方法 | 路径 | 用途 |
+| --- | --- | --- |
+| GET | `/window` | 公开窗状态：城市、时区、天气状况、昼夜、气温、此刻的照片槽位与照片；未配置城市时 `enabled` 为 false |
+| POST | `/window/knock` | 敲窗，给管理员发一条 `window_knocked` 站内通知；按摘要后的 IP 每小时一次 |
+| GET、PUT | `/admin/window` | 读取、整体替换城市与五个照片槽位（晴、阴与雾、雨、雪、夜） |
+| GET | `/admin/window/cities?q=` | 代理 Open-Meteo 地理编码搜索城市，最多 8 个 |
 
 扫码挑战三分钟过期、一次性消费；关闭管理弹窗时取消，确认或过期后停止轮询。退出先断开本地连接，上游退出失败仍返回明确说明。续期任务在进程启动 24 小时后首次运行，此后每 24 小时执行；登录过期转 `expired` 并切匿名播放，网络故障不冒充账号失效。
 

@@ -9,11 +9,7 @@ import {
 } from "@features/admin-posts/api/mutations";
 import { useAdminPosts } from "@features/admin-posts/api/queries";
 import type { AdminPostListItem, PostBatchAction } from "@features/admin-posts/model/types";
-import {
-	DataTable,
-	type DataTableColumn,
-	usePagedQuery,
-} from "@features/admin-shared/ui/data-table";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { useMe } from "@features/auth/api/queries";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useTags } from "@features/tags/api/queries";
@@ -24,12 +20,15 @@ import {
 	Button,
 	Checkbox,
 	ConfirmDialog,
+	DataTable,
+	type DataTableColumn,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 	Input,
+	iconProps,
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
@@ -39,19 +38,20 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
+	Tag,
 } from "@violet/ui";
 import {
 	Archive,
 	ChevronDown,
+	Ellipsis,
 	FileEdit,
-	MoreHorizontal,
 	Pencil,
 	Plus,
 	RotateCcw,
 	Send,
 	Star,
 	StarOff,
-	Tag,
+	Tag as TagIcon,
 	Trash2,
 	Undo2,
 } from "lucide-react";
@@ -69,12 +69,11 @@ export const Route = createFileRoute("/admin/posts/")({
 	component: AdminPostsPage,
 });
 
-const STATUS_META: Record<string, { label: string; variant: "default" | "secondary" | "outline" }> =
-	{
-		draft: { label: "草稿", variant: "secondary" },
-		published: { label: "已发布", variant: "default" },
-		archived: { label: "已归档", variant: "outline" },
-	};
+const STATUS_META: Record<string, { label: string; tone: "neutral" | "ok" | "off" }> = {
+	draft: { label: "草稿", tone: "neutral" },
+	published: { label: "已发布", tone: "ok" },
+	archived: { label: "已归档", tone: "off" },
+};
 
 const STATUS_OPTIONS = [
 	{ value: "all", label: "全部状态" },
@@ -221,13 +220,13 @@ function AdminPostsPage() {
 			width: "100px",
 			cell: (row) => {
 				if (status === "trashed") {
-					return <Badge variant="destructive">已删除</Badge>;
+					return <Badge tone="danger">已删除</Badge>;
 				}
 				const meta = STATUS_META[row.status] ?? {
 					label: row.status,
-					variant: "outline" as const,
+					tone: "off" as const,
 				};
-				return <Badge variant={meta.variant}>{meta.label}</Badge>;
+				return <Badge tone={meta.tone}>{meta.label}</Badge>;
 			},
 		},
 		{
@@ -237,10 +236,7 @@ function AdminPostsPage() {
 			align: "center",
 			cell: (row) =>
 				row.is_featured ? (
-					<Badge variant="default">
-						<Star className="size-3" />
-						精选
-					</Badge>
+					<Tag icon={<Star />}>精选</Tag>
 				) : (
 					<span className="text-xs text-muted-foreground">—</span>
 				),
@@ -252,9 +248,9 @@ function AdminPostsPage() {
 				row.tags.length > 0 ? (
 					<div className="flex flex-wrap gap-1">
 						{row.tags.slice(0, 3).map((t) => (
-							<Badge key={t} variant="outline" className="text-[10px]">
+							<Tag key={t} size="xs">
 								{t}
-							</Badge>
+							</Tag>
 						))}
 						{row.tags.length > 3 ? (
 							<span className="text-xs text-muted-foreground">
@@ -313,7 +309,7 @@ function AdminPostsPage() {
 			action={
 				canCreate ? (
 					<Button size="sm" onClick={() => navigate({ to: "/admin/posts/new" })}>
-						<Plus className="size-3.5" />
+						<Plus {...iconProps(14)} />
 						新建文章
 					</Button>
 				) : null
@@ -322,7 +318,6 @@ function AdminPostsPage() {
 				<div className="flex flex-wrap items-center gap-3 pt-1">
 					<div className="min-w-50 max-w-80 flex-1">
 						<SearchInput
-							variant="soft"
 							controlSize="sm"
 							aria-label="搜索文章标题或正文"
 							defaultValue=""
@@ -363,7 +358,7 @@ function AdminPostsPage() {
 								onClick={() => runBulk("restore")}
 								disabled={batchMut.isPending}
 							>
-								<RotateCcw className="size-3.5" />
+								<RotateCcw {...iconProps(14)} />
 								恢复
 							</Button>
 							<Button
@@ -372,7 +367,7 @@ function AdminPostsPage() {
 								onClick={() => setPendingBulk("hard_delete")}
 								disabled={batchMut.isPending}
 							>
-								<Trash2 className="size-3.5" />
+								<Trash2 {...iconProps(14)} />
 								彻底删除
 							</Button>
 						</>
@@ -384,7 +379,7 @@ function AdminPostsPage() {
 								onClick={() => runBulk("publish")}
 								disabled={batchMut.isPending}
 							>
-								<Send className="size-3.5" />
+								<Send {...iconProps(14)} />
 								发布
 							</Button>
 							<Button
@@ -393,7 +388,7 @@ function AdminPostsPage() {
 								onClick={() => runBulk("archive")}
 								disabled={batchMut.isPending}
 							>
-								<Archive className="size-3.5" />
+								<Archive {...iconProps(14)} />
 								归档
 							</Button>
 							<Button
@@ -402,7 +397,7 @@ function AdminPostsPage() {
 								onClick={() => runBulk("feature")}
 								disabled={batchMut.isPending}
 							>
-								<Star className="size-3.5" />
+								<Star {...iconProps(14)} />
 								加精
 							</Button>
 							<Button
@@ -411,7 +406,7 @@ function AdminPostsPage() {
 								onClick={() => runBulk("unfeature")}
 								disabled={batchMut.isPending}
 							>
-								<StarOff className="size-3.5" />
+								<StarOff {...iconProps(14)} />
 								取消精选
 							</Button>
 							<Button
@@ -420,7 +415,7 @@ function AdminPostsPage() {
 								onClick={() => setPendingBulk("delete")}
 								disabled={batchMut.isPending}
 							>
-								<Trash2 className="size-3.5" />
+								<Trash2 {...iconProps(14)} />
 								删除
 							</Button>
 						</>
@@ -528,27 +523,31 @@ function RowActions({
 
 	if (viewStatus === "trashed") {
 		return (
-			<div className="flex items-center justify-end gap-1">
+			<div className="v-table__row-actions items-center justify-end gap-1">
 				{canDelete ? (
 					<Button
+						iconOnly
 						variant="ghost"
-						size="icon-sm"
+						size="sm"
+						aria-label="恢复"
 						title="恢复"
 						onClick={handleRestore}
 						disabled={restorePost.isPending}
 					>
-						<Undo2 className="size-3.5" />
+						<Undo2 {...iconProps(14)} />
 					</Button>
 				) : null}
 				{canHardDelete ? (
 					<Button
+						iconOnly
 						variant="ghost"
-						size="icon-sm"
+						size="sm"
+						aria-label="彻底删除"
 						title="彻底删除"
 						className="hover:bg-destructive/10 hover:text-destructive"
 						onClick={() => onDelete(row)}
 					>
-						<Trash2 className="size-3.5" />
+						<Trash2 {...iconProps(14)} />
 					</Button>
 				) : null}
 			</div>
@@ -559,17 +558,19 @@ function RowActions({
 	if (!canEdit && !canPublish && !canDelete && !canFeature) return null;
 
 	return (
-		<div className="flex items-center justify-end">
+		<div className="v-table__row-actions items-center justify-end">
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
 					<Button
+						iconOnly
 						variant="ghost"
-						size="icon-sm"
+						size="sm"
+						aria-label="更多操作"
 						title="更多操作"
 						className="w-auto min-w-8 px-1.5"
 					>
-						<MoreHorizontal />
-						<ChevronDown className="size-3 opacity-50" />
+						<Ellipsis />
+						<ChevronDown {...iconProps(12, "opacity-50")} />
 					</Button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end">
@@ -583,7 +584,7 @@ function RowActions({
 								})
 							}
 						>
-							<Pencil className="size-3.5" />
+							<Pencil />
 							编辑
 						</DropdownMenuItem>
 					) : null}
@@ -592,19 +593,19 @@ function RowActions({
 							<DropdownMenuSeparator />
 							{row.status !== "published" ? (
 								<DropdownMenuItem onClick={() => changeStatus("published")}>
-									<Send className="size-3.5" />
+									<Send />
 									发布
 								</DropdownMenuItem>
 							) : null}
 							{row.status !== "draft" ? (
 								<DropdownMenuItem onClick={() => changeStatus("draft")}>
-									<FileEdit className="size-3.5" />
+									<FileEdit />
 									移至草稿
 								</DropdownMenuItem>
 							) : null}
 							{row.status !== "archived" ? (
 								<DropdownMenuItem onClick={() => changeStatus("archived")}>
-									<Archive className="size-3.5" />
+									<Archive />
 									归档
 								</DropdownMenuItem>
 							) : null}
@@ -614,7 +615,7 @@ function RowActions({
 						<>
 							<DropdownMenuSeparator />
 							<DropdownMenuItem onClick={toggleFeatured}>
-								<Star className="size-3.5" />
+								<Star />
 								{row.is_featured ? "取消加精" : "加精"}
 							</DropdownMenuItem>
 						</>
@@ -623,7 +624,7 @@ function RowActions({
 						<>
 							<DropdownMenuSeparator />
 							<DropdownMenuItem variant="destructive" onClick={() => onDelete(row)}>
-								<Trash2 className="size-3.5" />
+								<Trash2 />
 								删除
 							</DropdownMenuItem>
 						</>
@@ -669,17 +670,17 @@ function TagFilter({
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
 			<PopoverTrigger asChild>
-				<Button variant="outline" size="sm" className="h-9 gap-1.5">
-					<Tag className="size-3.5" />
+				<Button variant="outline" size="sm" className="h-9">
+					<TagIcon {...iconProps(14)} />
 					{selected.length > 0 ? `标签 (${selected.length})` : "标签筛选"}
-					<ChevronDown className="size-3 opacity-50" />
+					<ChevronDown {...iconProps(12, "opacity-50")} />
 				</Button>
 			</PopoverTrigger>
 			<PopoverContent className="w-60 p-0" align="start">
 				<div className="border-b p-2">
 					<Input
 						type="search"
-						variant="ghost"
+						variant="plain"
 						aria-label="搜索标签"
 						placeholder="搜索标签..."
 						value={query}

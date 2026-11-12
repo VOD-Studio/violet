@@ -20,13 +20,13 @@
  *
  * 由 createDiagramBlockExtension（DiagramBlockView）以 .extend({ addNodeView }) 挂载。
  */
+import { useIsDarkAppearance } from "@shared/lib/dark-appearance";
 import { NodeSelection } from "@tiptap/pm/state";
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewWrapper } from "@tiptap/react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useFloatingMathPanel } from "../hooks/useFloatingMathPanel";
-import { useIsDarkAppearance } from "../hooks/useIsDarkAppearance";
 import { useMermaidSvg } from "../hooks/useMermaidSvg";
 import { updateDiagramSource } from "../lib/update-diagram-source";
 import { DiagramEditPanel } from "./DiagramEditPanel";

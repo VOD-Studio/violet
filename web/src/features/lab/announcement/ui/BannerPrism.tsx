@@ -9,7 +9,7 @@ import { BannerFace, BannerStage } from "./BannerStage";
 // 没有单点透视的梯形畸变（近侧放大远侧缩小会被读作「特意放大」）
 const FLIP_EASE = [0.2, 0, 0, 1] as const;
 const FLIP_DURATION = 0.45;
-const FACE_HEIGHT = 28; // 每面高度 px（h-7），与生产 AnnouncementBar 一致
+const FACE_HEIGHT = 28; // 每面高度 px（h-7），与横幅方向的既有条体高度一致
 
 /** N 面棱柱的每面 transform：绕 X 轴 360/N 度 + 内切半径 translateZ。
  * n=2 时内切半径为 0（两面共面、退化成平面翻牌），特判给半面高

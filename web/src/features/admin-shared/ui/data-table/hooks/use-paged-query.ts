@@ -1,7 +1,7 @@
 import type { PagedResponse, PageQuery } from "@shared/api/types";
 import type { UseQueryResult } from "@tanstack/react-query";
+import type { DataTablePagination } from "@violet/ui";
 import { useMemo, useState } from "react";
-import type { DataTablePagination } from "../types/data-table-types";
 
 /** 全站表格默认每页条数 */
 export const DEFAULT_PAGE_SIZE = 50;

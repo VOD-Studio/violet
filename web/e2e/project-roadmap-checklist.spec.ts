@@ -59,6 +59,8 @@ test.describe("子项清单", () => {
 		const dialog = page.getByRole("dialog", { name: "进行中的第一项" });
 		const list = dialog.getByRole("region", { name: "子项清单" });
 		await expect(list.getByRole("listitem")).toHaveCount(30);
+		// 入场动画期间弹窗仍在位移，落位后才量取是否完整在视口里。
+		await page.waitForTimeout(700);
 		const box = await dialog.boundingBox();
 		const viewport = page.viewportSize();
 		expect(box && viewport && box.y >= 0 && box.y + box.height <= viewport.height).toBe(true);

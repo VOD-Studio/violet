@@ -14,7 +14,7 @@
 > 本节规定代码归属；commit 边界与依赖顺序统一见「提交流程规范」。
 
 - **前端通用组件与站点公共层各归其位**。跨 feature 的通用 React 组件及基础语义 token 在 `web/packages/ui/`，从 `@violet/ui` 根入口使用组件；Tailwind v4 后导入 `@violet/ui/styles.css`。`web/src/styles/dialects/` 保留站点方言；`web/src/shared/` 只放站点级通用能力，以上两层均不夹带 `posts` / `comments` / `editor` 等 feature 业务逻辑。FSD 分层(`shared` → `entities` → `features` → `widgets`)不允许向业务层反向依赖。
-- **组件库以单元组织并标记成熟度**。所有组件在 `web/packages/ui/src/components/<name>/`，结构、按需 typed recipe、CSS、导出与测试共置；`component-manifest.json` 是公开单元、入口、CSS、文档与 foundation / legacy 状态的事实源。`src/legacy.ts` 仅为兼容 barrel，不放实现副本。基础单元的 React 与 HTML 共用唯一 BEM CSS；其余 legacy 的样式逐个迁移。共享 `lib/` 只接收真实复用能力，字体、签名与站点装饰动画留在 `web/src/styles/site-theme.css`。组件库规范以 `web/packages/ui/docs/architecture.md` 与 `component-design.md` 为权威；`web/src/features/ui-docs/` 展示同一正文与同源组件示例，公开入口为 `/ui`；新增单元按包内规范执行清单同步、源码检查、构建与外部 tarball 消费验收。
+- **组件库以单元组织并标记成熟度**。所有组件在 `web/packages/ui/src/components/<name>/`，结构、按需 typed recipe、CSS、导出与测试共置；`component-manifest.json` 是公开单元、入口、CSS、文档与 foundation / legacy 状态的事实源。`src/legacy.ts` 仅为兼容 barrel，不放实现副本。基础单元的 React 与 HTML 共用唯一 BEM CSS；其余 legacy 的样式逐个迁移。共享 `lib/` 只接收真实复用能力，字体、签名与站点装饰动画留在 `web/src/styles/site-theme.css`。组件库规范以 `web/packages/ui/docs/architecture.md` 与 `component-design.md` 为权威；`web/src/features/ui-showcase/` 是 `/ui` 组件陈列室，按占地陈列真实组件，不复制规格正文；新增单元按包内规范执行清单同步、源码检查、构建、外部 tarball 消费验收，并上架展品。
 - **后端各层各司其职**:领域逻辑进 `domain`,用例编排进 `application`,基础设施细节进 `infrastructure`,HTTP 适配进 `interfaces`;`internal/middleware/` 只放通用横切中间件(auth/cors/csrf/ratelimit 等)。通用基础设施(错误码、observability、通用中间件)不夹带具体业务实体逻辑。
 - **判断「是否公共」看真实消费方**,不是位置。feature 私有逻辑被第二个 feature 复用时先上提；通用组件进 `web/packages/ui/`，站点专用基础能力进 `web/src/shared/`，有业务语义的实体逻辑进 `web/src/entities/`（提交顺序见「依赖与迁移」）。
 
@@ -96,6 +96,7 @@ Single-context:根 `CONTEXT.md` 单文件统管所有域(认证/文章/公告),`
 - **非必要不使用 `scale` 动效。** 悬停、选中、打开/关闭等常规状态不得靠缩放制造反馈；优先使用颜色、描边、阴影与透明度。只有图片预览、画布缩放等交互语义本身就是「缩放」时才使用。
 - **非必要不使用从上、下、左、右滑入/滑出的位移动效。** 普通面板、详情区、卡片和弹层默认直接呈现或仅淡入淡出；只有需要表达明确空间来源或去向时才使用方向性运动。
 - **季节装饰的飘落粒子是例外。** 背景层的落花、落叶、落雪与萤火本身就是方向性运动，可以持续飘动；开启减弱动态时必须静止，也不得借此给面板、卡片等界面元素加出入场位移。
+- **组件设计稿明文规定的动效以组件稿为准。** 设计稿「基础」页的时长（浮层 180/120ms 等）与「只动颜色、透明度、描线、裁切」只是默认值；`docs/design/ued/` 里某个组件的设计稿明文规定了时长、位移或缩放时，按该稿实现，不算违反以上三条。见 `docs/adr/0026-ued-design-authority.md`。
 
 ## 前端视觉红线
 
@@ -140,7 +141,7 @@ Single-context:根 `CONTEXT.md` 单文件统管所有域(认证/文章/公告),`
 | feature 私有实现 | 同一行为涉及的组件、hook、状态和测试一起提交，不按文件或技术层切碎 |
 | 无关修复、格式化、流程文档 | 与当前功能分开；同一文件不是合并不同目的的依据 |
 
-**按职责归组，不按目录机械切分。** 组件的实现、CSS、导出、清单、测试、消费验收 fixture 及对应文档共同构成组件提交。位于 `web/src/features/ui-docs/` 的同源示例、文档页面及路由属于组件文档，不属于站点业务接入。其余组件或业务变更仍须按各自目的分组。
+**按职责归组，不按目录机械切分。** 组件的实现、CSS、导出、清单、测试、消费验收 fixture 及对应文档共同构成组件提交。位于 `web/src/features/ui-showcase/` 的展品及陈列室页面属于组件交付，不属于站点业务接入。其余组件或业务变更仍须按各自目的分组。
 
 ### 依赖与迁移
 

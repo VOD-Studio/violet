@@ -83,9 +83,10 @@ export function PersonaFactsSection({ facts, disabled, onChange }: PersonaFactsS
 								{!disabled ? (
 									<div className="flex items-center justify-end gap-1">
 										<Button
+											iconOnly
 											type="button"
 											variant="ghost"
-											size="icon-sm"
+											size="sm"
 											disabled={index === 0}
 											onClick={() =>
 												onChange(arrayMove(facts, index, index - 1))
@@ -95,9 +96,10 @@ export function PersonaFactsSection({ facts, disabled, onChange }: PersonaFactsS
 											<ArrowUp className="size-4" />
 										</Button>
 										<Button
+											iconOnly
 											type="button"
 											variant="ghost"
-											size="icon-sm"
+											size="sm"
 											disabled={index === facts.length - 1}
 											onClick={() =>
 												onChange(arrayMove(facts, index, index + 1))
@@ -107,9 +109,10 @@ export function PersonaFactsSection({ facts, disabled, onChange }: PersonaFactsS
 											<ArrowDown className="size-4" />
 										</Button>
 										<Button
+											iconOnly
 											type="button"
 											variant="ghost"
-											size="icon-sm"
+											size="sm"
 											className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 											onClick={() =>
 												onChange(

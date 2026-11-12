@@ -4,15 +4,17 @@ import type { RoleDTO } from "@features/admin-roles/model/types";
 import { CreateRoleDialog } from "@features/admin-roles/ui/CreateRoleDialog";
 import { EditRoleDialog } from "@features/admin-roles/ui/EditRoleDialog";
 import { RolePermissionsDialog } from "@features/admin-roles/ui/RolePermissionsDialog";
-import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
-import { DataTable, usePagedQuery } from "@features/admin-shared/ui/data-table";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { formatDate } from "@shared/lib/date";
 import { createFileRoute } from "@tanstack/react-router";
+import type { DataTableColumn, DataTableSort } from "@violet/ui";
 import {
-	Badge,
 	Button,
 	ConfirmDialog,
+	DataTable,
+	iconProps,
+	Tag,
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
@@ -112,7 +114,7 @@ function AdminRolesPage() {
 			sortable: true,
 			cell: (row) => (
 				<div className="flex items-center gap-1 text-muted-foreground">
-					<Users className="size-3.5" />
+					<Users {...iconProps(14)} />
 					<span>{row.user_count || 0}</span>
 				</div>
 			),
@@ -124,9 +126,7 @@ function AdminRolesPage() {
 			cell: (row) => {
 				const count = row.permission_codes?.length ?? 0;
 				return (
-					<Badge variant="secondary">
-						{row.permission_codes?.includes("*") ? "全部" : `${count} 个权限`}
-					</Badge>
+					<Tag>{row.permission_codes?.includes("*") ? "全部" : `${count} 个权限`}</Tag>
 				);
 			},
 		},
@@ -146,18 +146,19 @@ function AdminRolesPage() {
 				// （重命名破坏 users.role 硬编码、删除会让依赖角色失权，后端仍守卫）
 				const isBuiltin = row.is_builtin;
 				return (
-					<div className="flex items-center gap-2">
+					<div className="v-table__row-actions items-center gap-2">
 						<PermissionGuard permission="role:manage">
 							<Tooltip>
 								<TooltipTrigger asChild>
 									<span>
 										<Button
-											size="icon-sm"
+											iconOnly
+											size="sm"
 											variant="ghost"
 											onClick={() => handleConfigurePermissions(row)}
 											aria-label={`配置权限 ${row.name}`}
 										>
-											<Settings className="size-3.5" />
+											<Settings {...iconProps(14)} />
 										</Button>
 									</span>
 								</TooltipTrigger>
@@ -169,12 +170,13 @@ function AdminRolesPage() {
 								<TooltipTrigger asChild>
 									<span>
 										<Button
-											size="icon-sm"
+											iconOnly
+											size="sm"
 											variant="ghost"
 											onClick={() => handleEdit(row)}
 											aria-label={`编辑角色 ${row.name}`}
 										>
-											<Pencil className="size-3.5" />
+											<Pencil {...iconProps(14)} />
 										</Button>
 									</span>
 								</TooltipTrigger>
@@ -186,14 +188,15 @@ function AdminRolesPage() {
 								<TooltipTrigger asChild>
 									<span>
 										<Button
-											size="icon-sm"
+											iconOnly
+											size="sm"
 											variant="ghost"
 											className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 											onClick={() => handleDelete(row)}
 											disabled={isBuiltin || deleteRole.isPending}
 											aria-label={`删除角色 ${row.name}`}
 										>
-											<Trash2 className="size-3.5" />
+											<Trash2 {...iconProps(14)} />
 										</Button>
 									</span>
 								</TooltipTrigger>
@@ -216,7 +219,7 @@ function AdminRolesPage() {
 				action={
 					<PermissionGuard permission="role:manage">
 						<Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-							<Plus className="size-3.5" />
+							<Plus {...iconProps(14)} />
 							创建角色
 						</Button>
 					</PermissionGuard>

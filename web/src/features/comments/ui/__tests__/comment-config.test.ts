@@ -2,13 +2,16 @@
  * toGridImages 测试
  *
  * 契约:多图缩略图必须与原图同比例(w 档保比例,不用 thumb 裁方)——
- * 预览占位层与比例探测依赖该前提;格子 bg-cover 显示不受参数变化影响。
+ * 预览占位层与比例探测依赖该前提，网格中的 img 仅在展示时裁切。
  */
 import type { Comment } from "@entities/comment/model/types";
-import { describe, expect, it } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 import { buildArticleCommentConfig, toGridImages } from "../comment-config";
 
 const pic = (url: string) => ({ url, width: 0, height: 0, size: 1024 });
+
+afterEach(cleanup);
 
 describe("toGridImages", () => {
 	it("多图:缩略图 w=400 保比例,不用 thumb 裁方", () => {
@@ -54,5 +57,22 @@ describe("buildArticleCommentConfig.map", () => {
 
 	it("匿名或已注销作者：不生成链接", () => {
 		expect(map(comment({})).authorHref).toBeUndefined();
+	});
+
+	it("文章评论使用真实等比例缩略图，超过四张只陈列四格", () => {
+		const config = buildArticleCommentConfig({ postId: "p1", isLoggedIn: true });
+		const item = config.map(
+			comment({
+				pictures: Array.from({ length: 5 }, (_, index) => pic(`/uploads/${index}.jpg`)),
+			}),
+		);
+		render(config.renderBody?.(item));
+		expect(screen.getAllByRole("button")).toHaveLength(4);
+		const thumbnail = screen
+			.getByRole("button", { name: "查看第 4 张，共 5 张" })
+			.querySelector("img");
+		expect(thumbnail?.getAttribute("src")).toContain("w=400");
+		expect(thumbnail?.getAttribute("src")).not.toContain("thumb=");
+		expect(screen.getByText("+2")).toBeTruthy();
 	});
 });

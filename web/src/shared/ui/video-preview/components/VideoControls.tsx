@@ -161,12 +161,20 @@ export function VideoControls({
 			<div className="mt-1 flex items-center gap-2 text-white">
 				{/* 播放/暂停/重播 */}
 				<Button
+					iconOnly
 					type="button"
-					size="icon-sm"
+					size="sm"
 					variant="ghost"
 					className="text-white hover:bg-white/20"
 					onClick={onTogglePlay}
-					title={state.isPlaying ? "暂停 (空格)" : "播放 (空格)"}
+					title={
+						state.isEnded
+							? "重播 (空格)"
+							: state.isPlaying
+								? "暂停 (空格)"
+								: "播放 (空格)"
+					}
+					aria-label={state.isEnded ? "重播" : state.isPlaying ? "暂停" : "播放"}
 				>
 					{state.isEnded ? (
 						<RotateCcw className="size-4" />
@@ -180,12 +188,14 @@ export function VideoControls({
 				{/* 音量 */}
 				<div className="group/volume flex items-center">
 					<Button
+						iconOnly
 						type="button"
-						size="icon-sm"
+						size="sm"
 						variant="ghost"
 						className="text-white hover:bg-white/20"
 						onClick={onToggleMute}
-						title="静音 (M)"
+						title={state.isMuted ? "取消静音 (M)" : "静音 (M)"}
+						aria-label={state.isMuted ? "取消静音" : "静音"}
 					>
 						<VolumeIcon className="size-4" />
 					</Button>
@@ -245,12 +255,14 @@ export function VideoControls({
 
 				{/* 全屏 */}
 				<Button
+					iconOnly
 					type="button"
-					size="icon-sm"
+					size="sm"
 					variant="ghost"
 					className="text-white hover:bg-white/20"
 					onClick={onToggleFullscreen}
 					title="全屏 (F)"
+					aria-label={isFullscreen ? "退出全屏" : "全屏"}
 				>
 					{isFullscreen ? (
 						<Minimize className="size-4" />

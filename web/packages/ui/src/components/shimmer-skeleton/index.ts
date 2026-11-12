@@ -1,1 +1,0 @@
-export { ShimmerSkeleton } from "./ShimmerSkeleton";

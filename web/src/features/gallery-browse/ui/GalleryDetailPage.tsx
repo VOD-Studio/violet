@@ -6,7 +6,7 @@ import { contentImageSources, contentImageUrl } from "@shared/lib/image-url";
 import { HistoryBack } from "@shared/ui/history-back";
 import { ImagePreview } from "@shared/ui/image-preview";
 import { Link } from "@tanstack/react-router";
-import { Button, Empty, PageShell, ShimmerSkeleton } from "@violet/ui";
+import { Button, Empty, PageShell, Skeleton } from "@violet/ui";
 import { useState } from "react";
 
 interface GalleryDetailPageProps {
@@ -44,9 +44,9 @@ export function GalleryDetailPage({ slug }: GalleryDetailPageProps) {
 		return (
 			<PageShell>
 				<div className="mx-auto max-w-4xl space-y-8">
-					<ShimmerSkeleton className="h-5 w-28 rounded-md" />
-					<ShimmerSkeleton className="h-12 w-2/3 rounded-lg" />
-					<ShimmerSkeleton className="aspect-4/3 w-full rounded-2xl" />
+					<Skeleton className="h-5 w-28 rounded-md" />
+					<Skeleton className="h-12 w-2/3 rounded-lg" />
+					<Skeleton className="aspect-4/3 w-full rounded-2xl" />
 				</div>
 			</PageShell>
 		);
@@ -64,7 +64,6 @@ export function GalleryDetailPage({ slug }: GalleryDetailPageProps) {
 						</Button>
 					}
 					className="py-20"
-					size="lg"
 				/>
 			</PageShell>
 		);

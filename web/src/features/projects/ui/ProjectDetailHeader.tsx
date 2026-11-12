@@ -1,4 +1,5 @@
 import { BackLink } from "@shared/ui/back-link";
+import { iconProps } from "@violet/ui";
 import { ArrowUpRight } from "lucide-react";
 import type { RoadmapProgress as RoadmapProgressData } from "../model/roadmap-summary";
 import type { Project } from "../model/types";
@@ -57,7 +58,7 @@ export function ProjectDetailHeader({ project, progress }: ProjectDetailHeaderPr
 									className={LINK}
 								>
 									演示
-									<ArrowUpRight className="size-3.5" aria-hidden="true" />
+									<ArrowUpRight {...iconProps(14)} aria-hidden="true" />
 								</a>
 							) : null}
 							{project.github_url ? (
@@ -68,7 +69,7 @@ export function ProjectDetailHeader({ project, progress }: ProjectDetailHeaderPr
 									className={LINK}
 								>
 									源码
-									<ArrowUpRight className="size-3.5" aria-hidden="true" />
+									<ArrowUpRight {...iconProps(14)} aria-hidden="true" />
 								</a>
 							) : null}
 						</div>

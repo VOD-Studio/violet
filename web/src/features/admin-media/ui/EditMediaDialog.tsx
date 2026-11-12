@@ -1,7 +1,6 @@
 import type { MediaFile } from "@entities/media/model/types";
 import { useUpdateMediaMetadata } from "@features/admin-media/api/mutations";
 import { Button, Input, Label, Modal } from "@violet/ui";
-import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -87,16 +86,10 @@ export function EditMediaDialog({ open, onOpenChange, file }: EditMediaDialogPro
 					<Button
 						type="submit"
 						form="edit-media-form"
-						disabled={updateMutation.isPending}
+						loading={updateMutation.isPending}
+						loadingText="保存中…"
 					>
-						{updateMutation.isPending ? (
-							<>
-								<Loader2 className="size-4 animate-spin" />
-								保存中…
-							</>
-						) : (
-							"保存"
-						)}
+						保存
 					</Button>
 				</>
 			}

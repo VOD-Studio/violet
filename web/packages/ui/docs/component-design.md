@@ -2,16 +2,16 @@
 
 本流程用于给 `@violet/ui` 新增通用组件，或把 legacy 单元迁入新架构。先打开[架构指南](./architecture.md)和 `web/packages/ui/component-manifest.json`，确认是否已有同类能力。
 
-给场景写一段最小调用代码，再列出谁拥有状态、需要哪些 DOM 语义、什么时候不用该组件。Input 是原生输入，可选 label、说明和错误；值、校验与请求状态由调用方管理。不要因为一个字段示例而增加表单引擎。
+给场景写一段最小调用代码，再列出谁拥有状态、需要哪些 DOM 语义、什么时候不用该组件。Input 是原生输入的外壳；标签、错误文案属于表单项，值、校验与请求状态由调用方管理。不要因为一个字段示例而增加表单引擎。
 
 ```tsx
 <Input
-  label="显示名称"
+  aria-label="显示名称"
   name="displayName"
   value={name}
   onChange={(event) => setName(event.target.value)}
   invalid={name.trim().length < 2}
-  errorMessage="至少输入两个非空白字符"
+  aria-describedby="displayName-error"
 />
 ```
 
@@ -30,7 +30,7 @@ web/packages/ui/src/components/<name>/
   __tests__/     行为与消费契约
 ```
 
-组件只有两三个文件时保持平铺，测试与实现共置；站点示例放 `web/src/features/ui-docs/ui/examples/<name>/`，不能把业务请求、路由和 validation schema 放进包。legacy 组件也放在 `src/components/<name>/`，迁移状态由清单表达，不另建一套目录。
+组件只有两三个文件时保持平铺，测试与实现共置；展品放 `web/src/features/ui-showcase/ui/exhibits/<id>.tsx`，不能把业务请求、路由和 validation schema 放进包。legacy 组件也放在 `src/components/<name>/`，迁移状态由清单表达，不另建一套目录。
 
 没有变体时直接使用稳定 BEM 类名，不建立空 recipe。需要 variant / size 时，recipe 负责选择 `.v-<name>`、`.v-<name>--<variant>` 等稳定类名。尺寸、色值、状态反馈统一写在组件 CSS，使用语义 token。组件 props 从原生属性或行为 primitive 推导，variant 类型从 recipe 推导，避免在 props、文档和样式中各维护一份枚举。
 
@@ -44,14 +44,16 @@ web/packages/ui/src/components/<name>/
 | Button loading | 调用方 | `aria-busy`、`data-loading`；点击和子 handler 不触发 |
 | Input 输入 / readonly / required | 原生控件与调用方 | 保留值、事件、ref 和表单提交语义 |
 | Checkbox 选择与表单复位 | 组件或调用方 | 可见状态与 FormData 一致；尊重 reset 取消，校验焦点落可见控件 |
-| Input invalid | 调用方 | 显式 invalid 优先于 aria-invalid；错误显示时才加入 describedby |
+| Input invalid / valid | 调用方 | 显式 invalid 优先于 aria-invalid 并写入 aria-invalid；valid 只改外观，不写 ARIA |
 | Dialog 打开 / 关闭 | Radix 或调用方 | 关闭语义、焦点回退和滚动边界按真实能力验收 |
 
-复合组件先确定 ref 与 `className` 落在哪个元素。Input 的两者都落 input，`classNames.root` 是外层布局，`classNames.control` 是视觉外壳。显式属性优先于组件内部默认值；事件合并要明确 `preventDefault` 是否取消内部行为。输入与内部操作按钮共享焦点范围，只有真正离开再进入才重新播放聚焦反馈。
+复合组件先确定 ref 与 `className` 落在哪个元素。Input 的两者都落 input，外壳就是根元素，`classNames.control` 调整它。显式属性优先于组件内部默认值；事件合并要明确 `preventDefault` 是否取消内部行为。输入与内部操作按钮共享焦点范围，只有真正离开再进入才重新播放聚焦反馈。
 
 公开类型必须与这些 DOM 归属一致。Button 的原生模式使用 `HTMLButtonElement`，asChild 模式使用 `HTMLElement`，不能把链接事件声明为 button 事件。类型检查同时覆盖合法的 anchor ref 和应被拒绝的原生按钮 anchor ref；运行测试验证合并后的实际节点与卸载清理。
 
 功能圆角最大 16px；浮起只使用规定的软影。普通 hover、loading、面板切换通过颜色、描边、透明度反馈，遵守减弱动态。迁移一个 legacy 单元不等于其他旧组件也满足了这些规则。
+
+减弱动态同时读取系统偏好和宿主 `[data-motion="reduce"]` 作用域。依赖的浮层、Tooltip 与 ListHighlight 必须继承同一作用域；原位浮层的换块接力要重新核对新尺寸是否仍能放下，不能只复用旧方向。
 
 ## 登记公开入口
 
@@ -67,22 +69,32 @@ pnpm --filter @violet/ui check
 
 如果导出 recipe，将它接入 `@violet/ui/variants`，该入口只允许样式依赖。不要让 recipe 导入组件 barrel。CSS 汇集入口和叶子入口从相同源文件构建；组合组件 CSS 需引入它使用的子组件 CSS，不能要求消费方猜测依赖。纯 CSS 应能直接加载，不依赖宿主扫描组件 TSX。
 
-## 用同源示例解释 API
+## 在陈列室上架展品
 
-一个示例文件同时提供预览与复制代码。文档页按已有 `CodeCard` 模式引入：
+组件落地后在 `/ui` 陈列室上架一件展品。展品文件导出一个 `Exhibit`，登记到 `ui/exhibits/index.ts` 的馆藏目录，顺序即铭牌编号；状态由清单推导，不在展品里另写：
 
 ```tsx
-import { InputBasicDemo } from "@features/ui-docs/ui/examples/input/basic";
-import basicSource from "@features/ui-docs/ui/examples/input/basic.tsx?raw";
-
-<CodeCard code={basicSource} language="tsx" lineNumbers>
-  <InputBasicDemo />
-</CodeCard>
+export const inputExhibit: Exhibit = {
+  id: "input",
+  name: "输入框",
+  units: ["input"],
+  zone: "field",
+  category: "form",
+  footprint: { width: 520, height: 216 },
+  states: [
+    { id: "default", label: "默认" },
+    { id: "invalid", label: "错误" },
+  ],
+  Render: InputFields,
+};
 ```
 
-示例必须有真实名称、初值和回调。只展示组件支持的能力；Input 不支持异步请求，就把请求状态留在示例消费方。Button 至少展示动作、禁用、loading 与链接；Input 展示四变体、尺寸、说明、错误、清除、密码显隐、原生字段属性与表单 reset。
+- `zone` 按占地选展区：整幅橱窗放真实宽度独占一行的展品，浮层舞台放带触发器的浮层，微件架一个展柜放一整族，字段带标签与提示，内容放进正文语境。`category` 只用于筛选。
+- `footprint` 是所有状态与展开态的最小舞台。舞台按它固定尺寸，内容超出即判为溢出；菜单与常开陈列展开后也必须留在框内，用检视台的占地框逐态核对。由交互打开的对话框、确认框、命令面板与有遮罩的侧边面板挂到 `useStageContainer` 的 `host`，铺满视口，仍随检视台的外观变化；抽屉属于手机，留在展品的手机框里。
+- `states` 的第一项是展柜里的陈列态，`Render` 按 `state` 渲染真实组件，名称、初值与回调写成真实场景。只展示组件支持的能力，请求状态留在展品里模拟。
+- 待建单元先登记占地与 `issue`，不写 `Render`；落地时补上 `Render` 并删去 `issue`。
 
-文档的权威正文留在包内 `docs/`，`web/src/features/ui-docs/` 直接 raw import 包文档。指南发布在 `/ui/guides/<slug>`，组件 API 与示例发布在 `/ui/components/<name>`。预览与复制源码遵循同源 CodeCard 模式。
+`src/features/ui-showcase/model/__tests__/exhibit.test.ts` 要求每个 foundation 单元都有真实展品；`e2e/ui-showcase.spec.ts` 在 390 至 3440 七个宽度下断言展柜不裁切、只在放不下占地时横向滑动，并在检视台逐态检查占地。
 
 ## 跑源码检查与真实消费者
 
@@ -109,7 +121,7 @@ pnpm add /tmp/violet-ui-0.1.0.tgz
 
 版本号以 package.json 和 pack 输出为准。包尚未发布 npm，文档不使用未存在的 registry 安装流程。
 
-行为测试按组件能力取用：Button 检查 Enter/Space、disabled/loading、asChild 子 handler 和 object/callback ref；Input 检查可访问名称、ID 去重、原生 onChange、FormData/reset、受控更新、复合焦点、清除、密码显隐和 SSR hydration。真实浏览器检查明暗主题、焦点、错误与减弱动态；弹层增加焦点回退和点击外部。测试断言用户能观察的契约，避免只复述内部实现。
+行为测试按组件能力取用：Button 检查 Enter/Space、disabled/loading、asChild 子 handler 和 object/callback ref；Input 检查可访问名称、ID、原生 onChange、FormData/reset、受控更新、复合焦点、清除与 Esc、密码显隐与光标保持、复制和 SSR hydration。真实浏览器检查明暗主题、焦点、错误与减弱动态；弹层增加焦点回退和点击外部。测试断言用户能观察的契约，避免只复述内部实现。
 
 组件库文档改动还要运行根 Makefile 的 `make web-lint`、`make web-typecheck` 和相关 `make web-test`。检查结果记录实际执行的命令与限制，由独立 reviewer/verifier 复核，作者不自行批准交付。
 

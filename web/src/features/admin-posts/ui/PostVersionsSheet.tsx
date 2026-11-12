@@ -1,18 +1,23 @@
+import { toAvatarItem } from "@shared/lib/avatar-user";
 import { formatDateTime } from "@shared/lib/date";
-import { AvatarGroup } from "@shared/ui/avatar-group";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import {
+	Avatar,
 	Button,
 	Dialog,
+	DialogBody,
 	DialogContent,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
+	iconProps,
 	Sheet,
+	SheetBody,
 	SheetContent,
 	SheetDescription,
 	SheetHeader,
 	SheetTitle,
+	Spinner,
 } from "@violet/ui";
 import { Clock, History } from "lucide-react";
 import { useState } from "react";
@@ -39,8 +44,8 @@ export function PostVersionsSheet({
 	return (
 		<>
 			<Sheet open={open} onOpenChange={onOpenChange}>
-				<SheetContent className="w-100 sm:w-120 overflow-y-auto">
-					<SheetHeader className="px-6 pt-6 pb-4">
+				<SheetContent size="lg">
+					<SheetHeader>
 						<SheetTitle className="flex items-center gap-2">
 							<History className="size-5" />
 							历史版本
@@ -48,17 +53,16 @@ export function PostVersionsSheet({
 						<SheetDescription>查看并恢复之前的文章快照</SheetDescription>
 					</SheetHeader>
 
-					<div className="flex flex-col gap-3 px-6 pb-6">
+					<SheetBody className="flex flex-col gap-3">
 						{isLoading ? (
 							<div className="flex justify-center p-8">
-								<div className="size-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+								<Spinner size={24} className="text-primary" aria-hidden="true" />
 							</div>
 						) : versions?.length ? (
-							versions.map((v, index) => (
+							versions.map((v) => (
 								<div
 									key={v.id}
-									className="group relative overflow-hidden rounded-xl border bg-background p-4 transition-all duration-300 hover:-translate-y-1 hover:border-selected-foreground hover:shadow-lg dark:hover:shadow-decoration/5 animate-in slide-in-from-bottom-4 fade-in fill-mode-backwards"
-									style={{ animationDelay: `${index * 50}ms` }}
+									className="group relative overflow-hidden rounded-xl border bg-background p-4 transition-colors duration-300 hover:border-selected-foreground"
 								>
 									<div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
@@ -78,12 +82,16 @@ export function PostVersionsSheet({
 										</div>
 										<div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
 											<div className="flex items-center gap-1.5 rounded-full bg-muted/40 px-2.5 py-1">
-												<Clock className="size-3.5" />
+												<Clock {...iconProps(14)} />
 												{formatDateTime(v.created_at, "second")}
 											</div>
 											{v.editor ? (
 												<div className="flex items-center gap-1.5 rounded-full bg-muted/40 px-2.5 py-1">
-													<AvatarGroup users={[v.editor]} size="xs" />
+													<Avatar
+														{...toAvatarItem(v.editor)}
+														alt=""
+														size={24}
+													/>
 													{v.editor.display_name || v.editor.username}
 												</div>
 											) : null}
@@ -94,7 +102,7 @@ export function PostVersionsSheet({
 						) : (
 							<p className="text-sm text-muted-foreground">暂无历史版本记录</p>
 						)}
-					</div>
+					</SheetBody>
 				</SheetContent>
 			</Sheet>
 
@@ -144,23 +152,23 @@ function VersionPreviewDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={(val) => !val && onClose()}>
-			<DialogContent className="max-w-4xl sm:max-w-4xl lg:max-w-5xl h-[100dvh] sm:h-[85vh] flex flex-col gap-0 overflow-hidden p-0 sm:rounded-2xl border-border/50 shadow-2xl">
-				<DialogHeader className="border-b bg-muted/20 p-6">
-					<DialogTitle className="text-xl font-semibold flex items-center gap-2">
+			<DialogContent size="xl" className="h-[85dvh]" aria-describedby={undefined}>
+				<DialogHeader>
+					<DialogTitle className="flex items-center gap-2">
 						<History className="size-5 text-primary" />
 						版本内容预览
 					</DialogTitle>
 				</DialogHeader>
-				<div className="flex-1 min-h-0 overflow-y-auto p-6 bg-background/50">
+				<DialogBody>
 					{isLoading ? (
 						<div className="flex h-full items-center justify-center p-12">
 							<div className="flex flex-col items-center gap-4 animate-in fade-in duration-500">
-								<div className="size-8 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
+								<Spinner size={32} className="text-primary" aria-hidden="true" />
 								<p className="text-sm text-muted-foreground">正在加载版本内容...</p>
 							</div>
 						</div>
 					) : (
-						<div className="prose prose-sm md:prose-base dark:prose-invert max-w-none animate-in fade-in slide-in-from-bottom-2 duration-500">
+						<div className="prose prose-sm md:prose-base dark:prose-invert max-w-none">
 							{data?.content_md ? (
 								<ArticleContent content={data.content_md} contentType="markdown" />
 							) : (
@@ -168,21 +176,12 @@ function VersionPreviewDialog({
 							)}
 						</div>
 					)}
-				</div>
-				<DialogFooter className="border-t bg-muted/20 p-4 px-6 mt-0">
-					<Button
-						variant="ghost"
-						onClick={onClose}
-						disabled={restoreMut.isPending}
-						className="rounded-full"
-					>
+				</DialogBody>
+				<DialogFooter>
+					<Button variant="secondary" onClick={onClose} disabled={restoreMut.isPending}>
 						取消
 					</Button>
-					<Button
-						onClick={handleRestore}
-						disabled={isLoading || restoreMut.isPending}
-						className="rounded-full shadow-md transition-all hover:shadow-lg"
-					>
+					<Button onClick={handleRestore} disabled={isLoading || restoreMut.isPending}>
 						{restoreMut.isPending ? "恢复中..." : "恢复至此版本"}
 					</Button>
 				</DialogFooter>

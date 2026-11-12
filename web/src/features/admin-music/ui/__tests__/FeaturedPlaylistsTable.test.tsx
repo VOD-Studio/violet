@@ -88,8 +88,14 @@ describe("FeaturedPlaylistsTable", () => {
 	it("点击移动按钮触发重新排序", async () => {
 		render(<FeaturedPlaylistsTable playlists={samplePlaylists} onViewTracks={vi.fn()} />);
 
-		const firstDownBtn = screen.getAllByTitle("下移")[0] as HTMLButtonElement | undefined;
-		if (!firstDownBtn) throw new Error("Down button not found");
+		const upButtons = screen.getAllByRole("button", { name: "上移" });
+		const downButtons = screen.getAllByRole("button", { name: "下移" });
+		expect(upButtons).toHaveLength(samplePlaylists.length);
+		expect(downButtons).toHaveLength(samplePlaylists.length);
+		const firstDownBtn = downButtons[0] as HTMLButtonElement | undefined;
+		if (!firstDownBtn) {
+			throw new Error("Down button not found");
+		}
 		expect(firstDownBtn.disabled).toBe(false);
 		fireEvent.click(firstDownBtn);
 

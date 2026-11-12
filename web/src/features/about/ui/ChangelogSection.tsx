@@ -4,7 +4,7 @@ import { formatDate } from "@shared/lib/date";
 import { Disclosure } from "@shared/ui/disclosure";
 import { Timeline, TimelineItem } from "@shared/ui/timeline";
 import { Link } from "@tanstack/react-router";
-import { ShimmerSkeleton } from "@violet/ui";
+import { iconProps, Skeleton } from "@violet/ui";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 
 import { AboutChapter } from "./AboutChapter";
@@ -23,7 +23,7 @@ export function ChangelogSection(_: AboutSectionProps) {
 				title="这座站还会继续改吗？"
 				intro="会。最近几次变化都留在下面，新的版本也会继续往这里长。"
 			>
-				<ShimmerSkeleton className={styles.loadingRelease} />
+				<Skeleton className={styles.loadingRelease} />
 			</AboutChapter>
 		);
 	}
@@ -129,7 +129,7 @@ export function ChangelogSection(_: AboutSectionProps) {
 										>
 											GitHub Release
 											<ArrowUpRight
-												className={styles.releaseLinkIcon}
+												{...iconProps(14, styles.releaseLinkIcon)}
 												aria-hidden
 											/>
 										</a>
@@ -142,7 +142,7 @@ export function ChangelogSection(_: AboutSectionProps) {
 			</Timeline>
 			<Link to="/changelog" className={styles.allReleasesLink}>
 				查看完整更新日志
-				<ArrowRight className={styles.releaseLinkIcon} aria-hidden />
+				<ArrowRight {...iconProps(14, styles.releaseLinkIcon)} aria-hidden />
 			</Link>
 		</AboutChapter>
 	);

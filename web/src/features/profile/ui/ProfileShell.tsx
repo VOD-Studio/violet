@@ -5,6 +5,7 @@ import { CropUploadDialog, type CropUploadResult } from "@features/upload/ui/Cro
 import { avatarUrl } from "@shared/lib/image-url";
 import { Link } from "@tanstack/react-router";
 import {
+	iconProps,
 	PageShell,
 	Tabs,
 	TabsContent,
@@ -17,7 +18,6 @@ import {
 } from "@violet/ui";
 import { cn } from "cn";
 import { ArrowUpRight, Camera, ShieldCheck, User as UserIcon } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
@@ -47,7 +47,6 @@ export const ProfileShell = ({
 	profile,
 	security,
 }: ProfileShellProps) => {
-	// 受控 tabs：滑动指示块（layoutId 共享元素）需要感知激活项
 	const [tab, setTab] = useState<ProfileTab>(defaultTab);
 	const [orientation, setOrientation] = useState<"horizontal" | "vertical">("horizontal");
 
@@ -70,7 +69,7 @@ export const ProfileShell = ({
 				<div className="mx-auto w-full max-w-7xl">
 					<div className="grid grid-cols-1 gap-6 px-1 md:grid-cols-[17rem_minmax(0,1fr)] md:gap-8">
 						<aside className="md:sticky md:top-24 md:self-start">
-							<ProfileSidebar user={user} activeTab={tab} />
+							<ProfileSidebar user={user} />
 						</aside>
 						<div className="min-w-0">
 							<TabsContent
@@ -93,7 +92,7 @@ export const ProfileShell = ({
 	);
 };
 
-const ProfileSidebar = ({ user, activeTab }: { user: UserDTO; activeTab: ProfileTab }) => {
+const ProfileSidebar = ({ user }: { user: UserDTO }) => {
 	const [pendingFile, setPendingFile] = useState<File | null>(null);
 	const [cropOpen, setCropOpen] = useState(false);
 	const updateProfile = useUpdateProfile();
@@ -128,7 +127,7 @@ const ProfileSidebar = ({ user, activeTab }: { user: UserDTO; activeTab: Profile
 							"transition-colors group-hover/avatar:bg-primary group-hover/avatar:text-primary-foreground",
 						)}
 					>
-						<Camera className="size-3" />
+						<Camera {...iconProps(12)} />
 					</span>
 					<input
 						type="file"
@@ -158,13 +157,14 @@ const ProfileSidebar = ({ user, activeTab }: { user: UserDTO; activeTab: Profile
 									<span className="truncate">{getDisplayName(user)}</span>
 									<ArrowUpRight
 										aria-hidden
-										className="size-3.5 shrink-0 text-muted-foreground transition-colors group-hover/public:text-primary group-focus-visible/public:text-primary"
+										{...iconProps(
+											14,
+											"shrink-0 text-muted-foreground transition-colors group-hover/public:text-primary group-focus-visible/public:text-primary",
+										)}
 									/>
 								</Link>
 							</TooltipTrigger>
-							<TooltipContent side="top" sideOffset={6} className="animate-none!">
-								查看公开主页
-							</TooltipContent>
+							<TooltipContent side="top">查看公开主页</TooltipContent>
 						</Tooltip>
 					</TooltipProvider>
 				</h1>
@@ -174,25 +174,16 @@ const ProfileSidebar = ({ user, activeTab }: { user: UserDTO; activeTab: Profile
 				</p>
 			</div>
 
-			{/* Tab 列表：default 分段式（自带激活态过渡），移动端横排可滚动 */}
-			<TabsList
-				className={cn(
-					"mt-6 h-auto w-full justify-start p-1",
-					"flex-row overflow-x-auto md:flex-col md:items-stretch md:overflow-visible",
-				)}
-			>
-				<ProfileSidebarTab
-					value="profile"
-					active={activeTab === "profile"}
-					icon={<UserIcon className="size-4" />}
-					label="个人资料"
-				/>
-				<ProfileSidebarTab
-					value="security"
-					active={activeTab === "security"}
-					icon={<ShieldCheck className="size-4" />}
-					label="账户与安全"
-				/>
+			{/* Tab 列表：竖排侧栏，移动端横排可滚动 */}
+			<TabsList className="mt-6">
+				<TabsTrigger value="profile">
+					<UserIcon className="size-4" />
+					<span>个人资料</span>
+				</TabsTrigger>
+				<TabsTrigger value="security">
+					<ShieldCheck className="size-4" />
+					<span>账户与安全</span>
+				</TabsTrigger>
 			</TabsList>
 
 			<CropUploadDialog
@@ -209,49 +200,5 @@ const ProfileSidebar = ({ user, activeTab }: { user: UserDTO; activeTab: Profile
 				onConfirm={handleConfirm}
 			/>
 		</div>
-	);
-};
-
-const ProfileSidebarTab = ({
-	value,
-	active,
-	icon,
-	label,
-}: {
-	value: ProfileTab;
-	active: boolean;
-	icon?: ReactNode;
-	label: string;
-}) => {
-	const reduceMotion = useReducedMotion();
-	return (
-		<TabsTrigger
-			value={value}
-			className={cn(
-				"w-full justify-start gap-2 py-2 pr-3 pl-3 text-left",
-				// 抑制分段器自身的 per-tab 激活底色/投影，激活视觉全部交给滑动指示块
-				"data-[state=active]:bg-transparent dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-transparent",
-				"group-data-[variant=default]/tabs-list:data-[state=active]:shadow-none",
-			)}
-		>
-			{/* 滑动指示块：layoutId 共享元素，激活态切换时在 tab 间平滑滑动。
-			    absolute 定位元素默认画在静态内容之上，内容需包 relative z-10 压住 */}
-			{active && (
-				<motion.span
-					aria-hidden
-					layoutId="profile-tab-thumb"
-					transition={
-						reduceMotion
-							? { duration: 0 }
-							: { type: "spring", stiffness: 400, damping: 34 }
-					}
-					className="absolute inset-0 z-0 rounded-md bg-background shadow-sm dark:border dark:border-input dark:bg-input/30"
-				/>
-			)}
-			<span className="relative z-10 flex min-w-0 flex-1 items-center gap-2">
-				{icon}
-				<span className="flex-1">{label}</span>
-			</span>
-		</TabsTrigger>
 	);
 };

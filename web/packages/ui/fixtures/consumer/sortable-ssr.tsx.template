@@ -1,0 +1,24 @@
+import assert from "node:assert/strict";
+import { Sortable, type SortableProps } from "@violet/ui";
+import { Sortable as LeafSortable } from "@violet/ui/sortable";
+import { renderToString } from "react-dom/server";
+
+const props = {
+	"aria-label": "章节顺序",
+	items: [{ id: "rain", title: "第一章" }],
+	getId: (chapter) => chapter.id,
+	getLabel: (chapter) => chapter.title,
+	onReorder: () => undefined,
+	renderItem: (chapter) => chapter.title,
+} satisfies SortableProps<{ id: string; title: string }>;
+
+for (const Component of [Sortable, LeafSortable]) {
+	const html = renderToString(<Component {...props} />);
+	assert.match(html, /<ol[^>]*aria-label="章节顺序"/);
+	assert.match(html, /移动 第一章，在第 1 位，共 1 项/);
+}
+
+// @ts-expect-error 项目必须提供稳定的字符串或数字标识。
+const invalidId: SortableProps<{ id: boolean }> = { ...props, items: [{ id: true }], getId: (item) => item.id };
+void invalidId;
+console.log("Sortable root/leaf types and SSR passed.");

@@ -3,12 +3,7 @@
  * 取消 SSE 订阅不会撤销已提交的沙箱任务。
  */
 
-import type {
-	ExecRequest,
-	ExecResult,
-	ExecTask,
-	StreamChunk,
-} from "@entities/code-runner/model/types";
+import type { ExecRequest, ExecResult, ExecTask } from "@entities/code-runner/model/types";
 import { apiGet, apiPost } from "@shared/api/request";
 
 /** 提交执行的返回值 */
@@ -57,6 +52,8 @@ export interface StreamHandlers {
 	onError?: (err: Error) => void;
 }
 
+const FRAME_BOUNDARY = /\r?\n\r?\n/u;
+
 /**
  * 消费 SSE 流式输出。
  *
@@ -71,12 +68,29 @@ export function streamExec(taskId: string, handlers: StreamHandlers): AbortContr
 	const url = `/api/v1/code-runner/stream?task_id=${encodeURIComponent(taskId)}`;
 
 	void (async () => {
+		let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+		let finished = false;
+		const cancelReader = () => {
+			void reader?.cancel().catch(() => {});
+		};
+		const streamHandlers: StreamHandlers = {
+			onStdout: handlers.onStdout,
+			onStderr: handlers.onStderr,
+			onDone: (result) => {
+				finished = true;
+				handlers.onDone(result);
+			},
+			onError: (error) => {
+				finished = true;
+				handlers.onError?.(error);
+			},
+		};
+
 		try {
 			const res = await fetch(url, {
 				method: "GET",
 				credentials: "include",
 				signal: controller.signal,
-				// SSE 不缓存
 				cache: "no-store",
 			});
 			if (!res.ok) {
@@ -86,35 +100,53 @@ export function streamExec(taskId: string, handlers: StreamHandlers): AbortContr
 				throw new Error("响应不支持流式读取");
 			}
 
-			const reader = res.body.getReader();
+			reader = res.body.getReader();
+			controller.signal.addEventListener("abort", cancelReader, { once: true });
 			const decoder = new TextDecoder();
 			let buffer = "";
 
-			// SSE 解析：按 \n\n 分帧，每帧含 event:/data: 行
-			for (;;) {
+			while (!finished && !controller.signal.aborted) {
 				const { done, value } = await reader.read();
-				if (done) break;
+				if (controller.signal.aborted) {
+					break;
+				}
+				buffer += decoder.decode(value, { stream: !done });
 
-				const decoded = decoder.decode(value, { stream: true });
-				buffer += decoded;
-
-				// 按事件分隔符（空行）切帧
-				let frameEnd = buffer.indexOf("\n\n");
-				while (frameEnd >= 0) {
-					const frame = buffer.slice(0, frameEnd);
-					buffer = buffer.slice(frameEnd + 2);
-					parseSSEFrame(frame, handlers);
-					frameEnd = buffer.indexOf("\n\n");
+				// 保留原始行尾，CR 与 LF 分属不同网络分片时也能识别空行。
+				let separator = FRAME_BOUNDARY.exec(buffer);
+				while (separator && !finished && !controller.signal.aborted) {
+					const frame = buffer.slice(0, separator.index);
+					buffer = buffer.slice(separator.index + separator[0].length);
+					parseSSEFrame(frame, streamHandlers);
+					separator = FRAME_BOUNDARY.exec(buffer);
+				}
+				if (done) {
+					if (!finished && !controller.signal.aborted && buffer.trim()) {
+						parseSSEFrame(buffer, streamHandlers);
+					}
+					if (!finished && !controller.signal.aborted) {
+						throw new Error("执行流在返回最终结果前已关闭");
+					}
+					break;
 				}
 			}
-			// 处理缓冲区剩余
-			if (buffer.trim()) {
-				parseSSEFrame(buffer, handlers);
-			}
 		} catch (err) {
-			// abort 不算错误
-			if ((err as Error).name === "AbortError") return;
-			handlers.onError?.(err as Error);
+			if (!controller.signal.aborted && !finished) {
+				finished = true;
+				handlers.onError?.(err instanceof Error ? err : new Error(String(err)));
+			}
+		} finally {
+			controller.signal.removeEventListener("abort", cancelReader);
+			controller.abort();
+			if (reader) {
+				try {
+					await reader.cancel();
+				} catch {
+					// 断流或主动取消后仍须释放 reader 的独占锁。
+				} finally {
+					reader.releaseLock();
+				}
+			}
 		}
 	})();
 
@@ -122,7 +154,7 @@ export function streamExec(taskId: string, handlers: StreamHandlers): AbortContr
 }
 
 /**
- * 解析单个 SSE 帧（已按 \n\n 切出）。
+ * 解析单个 SSE 帧，支持 LF 与 CRLF 行尾。
  *
  * 帧格式：
  *   event: stdout
@@ -136,9 +168,11 @@ export function parseSSEFrame(frame: string, handlers: StreamHandlers): void {
 	let eventType = "";
 	const dataLines: string[] = [];
 
-	for (const line of frame.split("\n")) {
+	for (const line of frame.split(/\r?\n/)) {
 		// 跳过空行和注释（: keep-alive）
-		if (line === "" || line.startsWith(":")) continue;
+		if (line === "" || line.startsWith(":")) {
+			continue;
+		}
 		if (line.startsWith("event:")) {
 			eventType = line.slice(6).trim();
 		} else if (line.startsWith("data:")) {
@@ -147,20 +181,21 @@ export function parseSSEFrame(frame: string, handlers: StreamHandlers): void {
 		}
 	}
 
-	if (eventType === "") return;
+	if (eventType === "") {
+		return;
+	}
 	const data = dataLines.join("\n");
 
-	const chunk: StreamChunk = { type: eventType as StreamChunk["type"], data };
-	switch (chunk.type) {
+	switch (eventType) {
 		case "stdout":
-			handlers.onStdout(chunk.data);
+			handlers.onStdout(data);
 			break;
 		case "stderr":
-			handlers.onStderr(chunk.data);
+			handlers.onStderr(data);
 			break;
 		case "done":
 			try {
-				handlers.onDone(JSON.parse(chunk.data) as ExecResult);
+				handlers.onDone(JSON.parse(data) as ExecResult);
 			} catch {
 				handlers.onError?.(new Error("done 事件 JSON 解析失败"));
 			}

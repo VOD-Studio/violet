@@ -1,5 +1,8 @@
 import type { PublicNote } from "@entities/note/model/types";
 
+/** 手记列表每页条数；路由预取与列表查询共用同一个 queryKey。 */
+export const NOTES_PAGE_LIMIT = 24;
+
 /** 无标题笔记的正文兜底截断长度。 */
 const TITLE_FALLBACK_MAX = 48;
 

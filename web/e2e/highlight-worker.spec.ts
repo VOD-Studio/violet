@@ -20,11 +20,11 @@ test("不同语言乱序完成时，各代码块仍接收自己的完整高亮�
 		const first = article.locator("pre").filter({ hasText: TYPESCRIPT_SOURCE });
 		const second = article.locator("pre").filter({ hasText: PYTHON_SOURCE });
 		await expect.poll(() => waitingForTypescript).toBe(true);
-		await expect(second).toHaveClass(/shiki/);
-		await expect(first).not.toHaveClass(/shiki/);
+		await expect(second.locator(".v-code-block__source > span[style]").first()).toBeAttached();
+		await expect(first.locator(".v-code-block__source > span[style]")).toHaveCount(0);
 		await expect(first).toHaveText(TYPESCRIPT_SOURCE);
 		grammar.resolve();
-		await expect(first).toHaveClass(/shiki/);
+		await expect(first.locator(".v-code-block__source > span[style]").first()).toBeAttached();
 		await expect(first).toHaveText(TYPESCRIPT_SOURCE);
 		await expect(second).toHaveText(PYTHON_SOURCE);
 		expect(page.workers().filter((worker) => WORKER_ASSET.test(worker.url()))).toHaveLength(1);
@@ -65,9 +65,9 @@ test("高亮线程下载失败保留源码，后续文章可在原文档中重�
 			.getByRole("link", { name: /下一章/ })
 			.click();
 		await expect(page).toHaveURL(/\/blog\/contract-rich-toc-copy$/);
-		await expect(page.locator("[data-article-content] pre.shiki")).toHaveText(
-			TYPESCRIPT_SOURCE,
-		);
+		await expect(
+			page.locator("[data-article-content] pre:has(.v-code-block__source > span[style])"),
+		).toHaveText(TYPESCRIPT_SOURCE);
 		expect(await page.evaluate((previous) => document === previous, documentBefore)).toBe(true);
 		await documentBefore.dispose();
 	} finally {

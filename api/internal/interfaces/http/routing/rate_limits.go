@@ -56,6 +56,7 @@ var rateBindings = map[string]rateBinding{
 	"site-impressions":  {"站点印象投票", "hashed_ip", 60, 10},
 	"presence-ingest":   {"实时状态上报握手", "ip", 60, 30},
 	"presence-stream":   {"实时状态推送连接", "ip", 60, 30},
+	"window-knock":      {"敲窗", "hashed_ip", 3600, 1},
 	"image_processing":  {"图片处理与读取", "ip", 60, 60},
 }
 

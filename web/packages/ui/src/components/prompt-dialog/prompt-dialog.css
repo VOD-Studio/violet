@@ -1,0 +1,46 @@
+@import "../confirm-dialog/confirm-dialog.css";
+@import "../field/field.css";
+@import "../textarea/textarea.css";
+
+@layer components {
+	.v-prompt__field {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		margin-block-start: 16px;
+	}
+
+	.v-prompt__meta {
+		display: flex;
+		gap: 8px;
+		color: var(--muted-foreground);
+		font-size: var(--text-12);
+		line-height: 1.6;
+	}
+
+	.v-prompt__error {
+		color: var(--destructive-text);
+	}
+
+	.v-prompt__count {
+		margin-inline-start: auto;
+		font-family: var(--font-mono);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.v-confirm__actions.v-prompt__actions {
+		margin-block-start: 16px;
+	}
+
+	.v-prompt__hint {
+		margin-inline-end: auto;
+		color: var(--muted-foreground);
+		font-size: var(--text-12);
+	}
+
+	@media (max-width: 639.98px) {
+		.v-prompt__hint {
+			display: none;
+		}
+	}
+}

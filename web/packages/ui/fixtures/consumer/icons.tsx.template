@@ -1,0 +1,218 @@
+import {
+	Badge,
+	Button,
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+	Input,
+	IslandIcon,
+	List,
+	ListItem,
+	ListItemAction,
+	ListItemChevron,
+	ListItemContent,
+	ListItemIcon,
+	ListItemTitle,
+	MorphIcon,
+	Tag,
+	TimelineIcon,
+	iconProps,
+	type IconSize,
+} from "@violet/ui";
+import {
+	IslandIcon as LeafIslandIcon,
+	MorphIcon as LeafMorphIcon,
+	TimelineIcon as LeafTimelineIcon,
+	iconProps as leafIconProps,
+} from "@violet/ui/icons";
+import { Ellipsis, LucideProvider, Search } from "lucide-react";
+import { useState } from "react";
+
+const SIZES: readonly IconSize[] = [12, 14, 16, 18, 20, 24];
+const ROOT_ICONS = { IslandIcon, MorphIcon, TimelineIcon, iconProps };
+const LEAF_ICONS = {
+	IslandIcon: LeafIslandIcon,
+	MorphIcon: LeafMorphIcon,
+	TimelineIcon: LeafTimelineIcon,
+	iconProps: leafIconProps,
+};
+
+export function IconsConsumer() {
+	const [leaf, setLeaf] = useState(false);
+	const [selected, setSelected] = useState<IconSize>(16);
+	const [count, setCount] = useState(0);
+	const activate = () => setCount((value) => value + 1);
+	const selectSize = (size: IconSize) => {
+		setSelected(size);
+		activate();
+	};
+	const icons = leaf ? LEAF_ICONS : ROOT_ICONS;
+	const defaults = icons.iconProps();
+	const shapes = [
+		{ label: "搜索", Icon: Search },
+		{ label: "灵动岛", Icon: icons.IslandIcon },
+		{ label: "时间线", Icon: icons.TimelineIcon },
+		{ label: "变形", Icon: icons.MorphIcon },
+	];
+
+	return (
+		<main>
+			<h1>图标 · 独立安装包</h1>
+			<label className="checkbox-row">
+				<input
+					type="checkbox"
+					checked={leaf}
+					onChange={(event) => setLeaf(event.currentTarget.checked)}
+				/>
+				使用叶子入口
+			</label>
+			<section aria-label="六档图标" className="gap-6">
+				{SIZES.map((size) => (
+					<div key={size} data-icon-size={size} className="grid gap-3">
+						<p className="m-0 font-mono text-sm text-muted-foreground">
+							{size} px · 线宽 {icons.iconProps(size).strokeWidth}
+						</p>
+						<div className="flex flex-wrap items-center gap-6 text-muted-foreground">
+							{shapes.map(({ label, Icon }) => (
+								<span key={label} className="inline-flex items-center gap-1">
+									<Icon {...icons.iconProps(size)} data-icon-placement="standalone" />
+									<span className="text-xs">{label}</span>
+								</span>
+							))}
+						</div>
+						<div className="flex flex-wrap items-center gap-3">
+							<Button
+								variant="ghost"
+								aria-pressed={selected === size}
+								className={
+									selected === size ? "text-selected-foreground" : "text-muted-foreground"
+								}
+								onClick={() => selectSize(size)}
+								leftIcon={
+									<Search {...icons.iconProps(size)} data-icon-placement="button" />
+								}
+							>
+								选中 {size} 档
+							</Button>
+							<Button
+								size="lg"
+								iconOnly
+								aria-label={`${size} 档图标按钮`}
+								onClick={() => selectSize(size)}
+							>
+								<icons.MorphIcon
+									{...icons.iconProps(size)}
+									data-icon-placement="large-button"
+								/>
+							</Button>
+							<Button asChild size="sm">
+								<a href="#icon-result">
+									<icons.TimelineIcon
+										{...icons.iconProps(size)}
+										data-icon-placement="link-button"
+									/>
+									{size} 档结果
+								</a>
+							</Button>
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Button variant="ghost" iconOnly aria-label={`显示 ${size} 档菜单`}>
+										<Ellipsis {...icons.iconProps(size)} />
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent>
+									<DropdownMenuItem onSelect={() => selectSize(size)}>
+										<Search {...icons.iconProps(size)} data-icon-placement="menu" />
+										选中 {size} 档
+									</DropdownMenuItem>
+								</DropdownMenuContent>
+							</DropdownMenu>
+						</div>
+						<Input
+							aria-label={`${size} 档输入框`}
+							placeholder="搜索图标"
+							leading={
+								<Search {...icons.iconProps(size)} data-icon-placement="input" />
+							}
+						/>
+					</div>
+				))}
+			</section>
+			<List aria-label="六档图标列表" density="compact">
+				{SIZES.map((size) => (
+					<ListItem
+						key={size}
+						data-icon-size={size}
+						aria-current={selected === size ? "true" : undefined}
+						onClick={() => selectSize(size)}
+					>
+						<ListItemIcon>
+							<Search {...icons.iconProps(size)} data-icon-placement="list" />
+						</ListItemIcon>
+						<ListItemContent>
+							<ListItemTitle>{size} 档列表项</ListItemTitle>
+						</ListItemContent>
+					</ListItem>
+				))}
+			</List>
+			<LucideProvider size={defaults.size} strokeWidth={defaults.strokeWidth}>
+				<section aria-label="原生 Provider 默认图标" className="gap-3">
+					<Search role="img" aria-label="默认原生搜索图标" />
+					<Button leftIcon={<Search />} data-default-icon="button" onClick={activate}>
+						默认搜索
+					</Button>
+					<Button size="lg" leftIcon={<Search />} data-default-icon="large-button">
+						大按钮默认搜索
+					</Button>
+					<Button data-default-icon="inline-button">
+						<Search />
+						行内图标按钮
+					</Button>
+					<Input
+						aria-label="默认输入框"
+						defaultValue="可清除"
+						clearable
+						leading={<Search />}
+					/>
+					<Input controlSize="lg" aria-label="大输入框" leading={<Search />} />
+					<div className="flex flex-wrap items-center gap-3">
+						<Tag icon={<Search data-default-icon="tag" />}>默认标签图标</Tag>
+						<Badge icon={<Search data-default-icon="badge" />}>默认状态图标</Badge>
+						<Tag icon={<Search {...icons.iconProps(14)} data-default-icon="explicit-tag" />}>
+							显式 14 档
+						</Tag>
+					</div>
+					<List aria-label="默认图标列表" density="compact">
+						<ListItem>
+							<ListItemIcon>
+								<Search data-default-icon="list" />
+							</ListItemIcon>
+							<ListItemContent>
+								<ListItemTitle>默认列表图标</ListItemTitle>
+							</ListItemContent>
+							<ListItemChevron data-default-icon="list-chevron" />
+							<ListItemAction aria-label="查看图标目录" onClick={activate}>
+								<icons.TimelineIcon data-default-icon="list-action" />
+							</ListItemAction>
+						</ListItem>
+					</List>
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button variant="ghost" iconOnly aria-label="显示默认图标菜单">
+								<Ellipsis />
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent>
+							<DropdownMenuItem onSelect={() => selectSize(16)}>
+								<Search data-default-icon="menu" />
+								选中默认档
+							</DropdownMenuItem>
+						</DropdownMenuContent>
+					</DropdownMenu>
+				</section>
+			</LucideProvider>
+			<output id="icon-result">已激活 {count} 次</output>
+		</main>
+	);
+}

@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Violet 关于 · 生长</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Alex+Brush&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Maple Mono";font-weight:400;font-style:normal;src:url(/_blob/a3ecea3add4961def4d089b95f486230) format("woff2")}
+@font-face{font-family:"Maple Mono";font-weight:500;font-style:normal;src:url(/_blob/1ba23035f8e49762aeac0a2a66f83fa0) format("woff2")}
+body{margin:0}
+a{color:inherit;text-decoration:none}
+.paper-l{position:absolute;inset:0;background-image:url(/_blob/66391f4a5c5b623abcbda5bc91818ab0);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.paper-d{position:absolute;inset:0;background-image:url(/_blob/b0a1c287fd95586fcb700c431de8f4c5);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.num{font-family:"Maple Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.lbl{position:absolute;font-size:13px;line-height:1.6;white-space:nowrap}
+.lbl .d{font:500 12px "Maple Mono",monospace;color:var(--muted)}
+.stem{stroke-dasharray:1;stroke-dashoffset:1;animation:grow 2.4s cubic-bezier(.45,.05,.25,1) forwards}
+.leaves{opacity:0;animation:show 1.2s ease-out 1s forwards}
+.blooms{opacity:0;animation:show 1s ease-out 1.8s forwards}
+@keyframes grow{to{stroke-dashoffset:0}}
+@keyframes show{to{opacity:1}}
+@media (prefers-reduced-motion: reduce){.stem{animation:none;stroke-dashoffset:0}.leaves,.blooms{animation:none;opacity:1}}
+.col h3{margin:0 0 20px;font-size:13px;font-weight:400;color:var(--muted)}
+.rel{display:grid;grid-template-columns:76px minmax(0,1fr);gap:12px;padding:14px 0;border-top:1px solid var(--rule);font-size:15px;line-height:1.7}
+.btn{display:inline-flex;align-items:center;gap:8px;box-sizing:border-box;height:36px;padding:0 16px;border-radius:999px;background:var(--sunk);font-size:14px;font-weight:500}
+</style>
+</helmet>
+<div style="{{vars}}position:relative;overflow:hidden;width:1440px;min-height:2200px;display:flex;flex-direction:column;background:var(--bg);color:var(--fg);font-family:'Songti SC','Noto Serif SC','Source Han Serif SC',STSong,SimSun,serif;font-size:15px;line-height:1.8">
+<div class="paper-l" style="display:{{showLight}}"></div>
+<div class="paper-d" style="display:{{showDark}}"></div>
+<div style="position:absolute;z-index:20;top:0;left:0;right:0"><dc-import name="Header" state="child" title="关于" bare="{{ true }}" season="{{season}}" dark="{{dark}}" hint-size="1440px,70px"></dc-import></div>
+
+<header style="position:relative;z-index:2;width:1120px;margin:0 auto;padding:168px 0 0;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:56px;align-items:end">
+  <h1 style="margin:0;font-size:60px;font-weight:600;line-height:1.25;letter-spacing:-0.01em">这座花园，<br>种下 <span class="num" style="font-weight:500;letter-spacing:-0.04em">185</span> 天了。</h1>
+  <p style="margin:0 0 10px;font-size:16px;line-height:2;color:var(--muted)">它从一次提交长起。叶子是每周写下的提交，花苞是发布的版本。园丁是我，xunrua。</p>
+</header>
+
+<figure style="position:relative;z-index:2;margin:72px 0 0;height:440px" aria-label="从 2026 年 4 月 29 日到今天的生长：五月中到六月中休眠，7 月 30 日发布 v2.0.0，十月发布了 14 个版本">
+  <svg width="1440" height="440" viewBox="0 0 1440 440" aria-hidden="true" style="position:absolute;inset:0;overflow:visible">
+    <sc-for list="{{months}}" as="m" hint-placeholder-count="6"><line x1="{{m.x}}" y1="40" x2="{{m.x}}" y2="404" stroke="var(--rule)" stroke-dasharray="2 6"/></sc-for>
+    <g class="leaves"><path d="{{leaves}}" fill="var(--leaf)" stroke="var(--leafEdge)" stroke-width=".8" stroke-linejoin="round"/><path d="{{veins}}" fill="none" stroke="var(--leafEdge)" stroke-width=".7" stroke-linecap="round" opacity=".7"/></g>
+    <path class="stem" pathLength="1" d="{{stem}}" fill="none" stroke="var(--leafEdge)" stroke-width="2.4" stroke-linecap="round"/>
+    <g class="blooms">
+      <path d="{{buds}}" fill="var(--deco)"/>
+      <path d="{{flower1}}" fill="color-mix(in oklab,var(--deco) 52%,var(--bg))" stroke="color-mix(in oklab,var(--deco) 80%,var(--fg))" stroke-width=".8"/>
+      <circle cx="{{f1x}}" cy="{{f1y}}" r="3.2" fill="color-mix(in oklab,var(--deco) 70%,var(--fg))"/>
+      <path d="{{flower2}}" fill="color-mix(in oklab,var(--deco) 52%,var(--bg))" stroke="color-mix(in oklab,var(--deco) 80%,var(--fg))" stroke-width=".8"/>
+      <circle cx="{{f2x}}" cy="{{f2y}}" r="4" fill="color-mix(in oklab,var(--deco) 70%,var(--fg))"/>
+      <circle cx="{{s0x}}" cy="{{s0y}}" r="5" fill="var(--bg)" stroke="var(--leafEdge)" stroke-width="2"/>
+    </g>
+    <sc-for list="{{leaders}}" as="l" hint-placeholder-count="4"><line x1="{{l.x1}}" y1="{{l.y1}}" x2="{{l.x2}}" y2="{{l.y2}}" stroke="var(--rule2)"/></sc-for>
+    <sc-for list="{{months}}" as="m" hint-placeholder-count="6"><text x="{{m.tx}}" y="428" font-size="12" fill="var(--muted)" font-family="Maple Mono,monospace">{{m.t}}</text></sc-for>
+  </svg>
+  <div class="lbl" style="left:{{l0x}}px;top:{{l0y}}px;text-align:right;transform:translateX(-100%)"><div class="d">04.29</div>第一次提交：项目脚手架</div>
+  <div class="lbl" style="left:{{l1x}}px;top:{{l1y}}px;color:var(--muted)"><div class="d">05 中 – 06 中</div>休眠，几乎没动</div>
+  <div class="lbl" style="left:{{l2x}}px;top:{{l2y}}px"><div class="d">07.30 · v2.0.0</div>第一朵花</div>
+  <div class="lbl" style="left:{{l3x}}px;top:{{l3y}}px"><div class="d">10 月</div>开了 14 个版本</div>
+  <div class="lbl" style="left:{{l4x}}px;top:{{l4y}}px;text-align:right;transform:translateX(-100%)"><div class="d">10.31 · 第 185 天</div>今天</div>
+  <img src="/_blob/5f28c4bf59a4c2a6947f80a6b4b0bc2f" alt="xunrua" style="position:absolute;left:{{avX}}px;top:{{avY}}px;width:40px;height:40px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 3px var(--bg),0 4px 24px rgb(0 0 0 / .05)">
+  <div class="lbl" style="left:{{tipX}}px;top:{{tipY}}px;padding:10px 14px;border-radius:12px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);border:1px solid var(--ol)"><div class="d">第 27 周 · 7 月第一周</div><span class="num">339</span> 次提交，最茂盛的一周</div>
+</figure>
+
+<main style="position:relative;z-index:2;width:1120px;margin:96px auto 0;display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:56px;padding-top:56px;border-top:1px solid var(--rule)">
+  <div class="col"><h3>园丁</h3>
+    <div style="display:flex;align-items:center;gap:14px"><img src="/_blob/5f28c4bf59a4c2a6947f80a6b4b0bc2f" alt="" style="width:56px;height:56px;border-radius:50%;object-fit:cover"><div><div style="font:500 20px 'Maple Mono',monospace">xunrua</div><div style="font-size:14px;color:var(--muted)">写代码的人，也写字。</div></div></div>
+    <p style="margin:20px 0 0;font-size:15px;line-height:2;letter-spacing:.02em">白天在公司写 Go，夜里回来给这座花园松土。喜欢字体、相机和机械键盘，咖啡要手冲。</p>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:24px"><a href="#" class="btn">GitHub</a><a href="#" class="btn">RSS 订阅</a><a href="#" class="btn">聊天室</a></div>
+  </div>
+  <div class="col"><h3>最近开的花</h3>
+    <a href="#" class="rel"><span class="num" style="font-size:13px;color:var(--muted)">v2.22.1</span><span>修好了角落插画被裁掉一大块</span></a>
+    <a href="#" class="rel"><span class="num" style="font-size:13px;color:var(--muted)">v2.22.0</span><span>顶栏能看到站长此刻在听什么、在用什么</span></a>
+    <a href="#" class="rel"><span class="num" style="font-size:13px;color:var(--muted)">v2.21.0</span><span>后台可以管理实时状态的设备</span></a>
+    <a href="#" class="rel" style="border-bottom:1px solid var(--rule)"><span class="num" style="font-size:13px;color:var(--muted)">v2.20.0</span><span>主题设置收成一个面板</span></a>
+  </div>
+  <div class="col"><h3>正在发芽</h3>
+    <div style="font:500 17px 'Maple Mono',monospace">kite</div>
+    <div style="font-size:14px;color:var(--muted)">团队协作工具箱</div>
+    <div style="display:flex;align-items:center;gap:12px;margin-top:14px"><span style="flex:1;height:4px;border-radius:2px;background:var(--sunk)"><span style="display:block;width:21%;height:100%;border-radius:2px;background:var(--deco)"></span></span><span class="num" style="font-size:12px;color:var(--muted)">8 / 38</span></div>
+    <div class="rel" style="margin-top:18px"><span class="num" style="font-size:13px;color:var(--muted)">#19</span><span>向 Buf Schema Registry 发布公共 proto</span></div>
+    <div class="rel" style="border-bottom:1px solid var(--rule)"><span class="num" style="font-size:13px;color:var(--muted)">#3</span><span>接入第二个音乐源，验证多源抽象</span></div>
+  </div>
+</main>
+<div style="position:relative;z-index:2;margin-top:auto;padding-top:96px"><dc-import name="Footer" season="{{season}}" dark="{{dark}}" hint-size="1440px,320px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"season":{"editor":"enum","options":["春","夏","秋","冬"],"default":"春"},"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":2200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const S = { '春': ['#f47983', 16.6], '夏': ['#2f9e7a', 162], '秋': ['#d9a21b', 82.95], '冬': ['#7d8ea3', 252] };
+    const season = S[this.props.season] ? this.props.season : '春';
+    const [seed, h] = S[season];
+    const dark = !!this.props.dark;
+    const vars = (dark
+      ? `--bg:oklch(0.17 0.0087 ${h});--sheet:oklch(0.235 0.011 ${h});--sunk:oklch(0.29 0.012 ${h});--fg:oklch(0.9373 0.015 ${h});--muted:oklch(0.8573 0.0225 ${h});--rule:oklch(0.9373 0.015 ${h} / .12);--rule2:oklch(0.9373 0.015 ${h} / .3);--ol:rgb(255 255 255 / .08);--leaf:oklch(0.42 0.05 135 / .75);--leafEdge:oklch(0.62 0.06 135);`
+      : `--bg:oklch(0.968 0.006 ${h});--sheet:oklch(0.994 0.003 ${h});--sunk:oklch(0.945 0.007 ${h});--fg:oklch(0.3331 0.0175 ${h});--muted:oklch(0.4717 0.0225 ${h});--rule:oklch(0.3331 0.0175 ${h} / .11);--rule2:oklch(0.3331 0.0175 ${h} / .3);--ol:transparent;--leaf:oklch(0.8 0.05 135 / .8);--leafEdge:oklch(0.52 0.06 135);`)
+      + `--deco:${seed};`;
+
+    const X0 = 240, X1 = 1320, DAYS = 187;
+    const xd = (d) => X0 + d / DAYS * (X1 - X0);
+    const yx = (x) => { const t = (x - X0) / (X1 - X0); return 236 + 24 * Math.sin(t * Math.PI * 3 + .4) - 46 * t; };
+    const f = (v) => v.toFixed(1);
+    // 枝条：Catmull-Rom 平滑
+    const pts = []; for (let x = X0; x <= X1 + .1; x += 24) pts.push([x, yx(x)]);
+    let stem = `M${f(pts[0][0])} ${f(pts[0][1])}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+      stem += `C${f(p1[0] + (p2[0] - p0[0]) / 6)} ${f(p1[1] + (p2[1] - p0[1]) / 6)} ${f(p2[0] - (p3[0] - p1[0]) / 6)} ${f(p2[1] - (p3[1] - p1[1]) / 6)} ${f(p2[0])} ${f(p2[1])}`;
+    }
+    const tan = (x) => Math.atan2(yx(x + 1) - yx(x - 1), 2);
+    const rot = (bx, by, rho, px, py) => [bx + px * Math.cos(rho) - py * Math.sin(rho), by + px * Math.sin(rho) + py * Math.cos(rho)];
+    // 叶片与季节插画同一种披针形（shapes.ts leafPath）
+    const leaf = (bx, by, phi, len, wid) => {
+      const rho = phi + Math.PI / 2, R = (px, py) => rot(bx, by, rho, px, py), g = (p) => f(p[0]) + ' ' + f(p[1]);
+      return `M${g(R(0, 0))}C${g(R(wid, -len * .25))} ${g(R(wid * .9, -len * .7))} ${g(R(0, -len))}C${g(R(-wid * .9, -len * .7))} ${g(R(-wid, -len * .25))} ${g(R(0, 0))}Z`;
+    };
+    const vein = (bx, by, phi, len) => { const e = rot(bx, by, phi + Math.PI / 2, 0, -len * .82); return `M${f(bx)} ${f(by)}L${f(e[0])} ${f(e[1])}`; };
+    // ISO 周 18–44 的提交数（git log --author=meyou）
+    const W = [157, 161, 2, 0, 0, 0, 1, 76, 123, 339, 123, 245, 103, 225, 84, 171, 46, 75, 101, 133, 57, 71, 49, 229, 253, 125, 28];
+    let leaves = '', veins = '';
+    W.forEach((c, i) => {
+      if (!c) return;
+      const x = xd(i * 7 + 3.5), y = yx(x), th = tan(x), up = i % 2 === 0;
+      const len = 14 + 54 * Math.sqrt(c / 339), wid = len * .34, phi = th + (up ? -1 : 1) * 0.95;
+      leaves += leaf(x, y, phi, len, wid); veins += vein(x, y, phi, len);
+      if (c > 150) { const phi2 = th + (up ? 1 : -1) * 0.75, l2 = len * .62; leaves += leaf(x + 6, yx(x + 6), phi2, l2, l2 * .34); veins += vein(x + 6, yx(x + 6), phi2, l2); }
+    });
+    // 版本花苞：同一天的叠放在枝条上方
+    const REL = [94, 96, 97, 98, 100, 102, 105, 106, 107, 165, 167, 170, 175, 176, 177, 177, 178, 179, 183, 184, 185, 185, 185];
+    const circ = (cx, cy, r) => `M${f(cx - r)} ${f(cy)}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0z`;
+    const seen = {}; let buds = '';
+    REL.slice(1).forEach((d) => { seen[d] = (seen[d] || 0) + 1; const x = xd(d), y = yx(x) - 9 - (seen[d] - 1) * 8; buds += circ(x, y, 3); });
+    const peach = (cx, cy, r) => { let s = ''; for (let i = 0; i < 5; i++) { const a = i * Math.PI * 2 / 5 + .3, R = (px, py) => rot(cx, cy, a, px, py - 1.5), g = (p) => f(p[0]) + ' ' + f(p[1]);
+      s += `M${g(R(0, 0))}C${g(R(-.42 * r, -.14 * r))} ${g(R(-.58 * r, -.66 * r))} ${g(R(-.34 * r, -.94 * r))}C${g(R(-.2 * r, -1.06 * r))} ${g(R(-.05 * r, -1.02 * r))} ${g(R(0, -.96 * r))}C${g(R(.05 * r, -1.02 * r))} ${g(R(.2 * r, -1.06 * r))} ${g(R(.34 * r, -.94 * r))}C${g(R(.58 * r, -.66 * r))} ${g(R(.42 * r, -.14 * r))} ${g(R(0, 0))}Z`; } return s; };
+    const fx1 = xd(94), fy1 = yx(fx1) - 26, fx2 = xd(185) - 4, fy2 = yx(xd(185)) - 34;
+    const s0x = xd(2), s0y = yx(s0x);
+    const months = [['5 月', 4], ['6 月', 35], ['7 月', 65], ['8 月', 96], ['9 月', 127], ['10 月', 157]].map(([t, d]) => ({ t, x: f(xd(d)), tx: f(xd(d) + 6) }));
+    const gx = xd(38), wx = xd(9 * 7 + 3.5);
+    const leaders = [
+      { x1: f(fx1), y1: f(fy1 - 16), x2: f(fx1), y2: f(fy1 - 56) },
+      { x1: f(xd(176)), y1: f(yx(xd(176)) - 44), x2: f(xd(176)), y2: f(yx(xd(176)) - 92) },
+      { x1: f(gx), y1: f(yx(gx) + 14), x2: f(gx), y2: f(yx(gx) + 64) },
+      { x1: f(wx), y1: f(yx(wx) + 66), x2: f(wx), y2: f(yx(wx) + 96) },
+    ];
+    return {
+      vars, season, dark, stem, leaves, veins, buds, months, leaders,
+      flower1: peach(fx1, fy1, 15), f1x: f(fx1), f1y: f(fy1), flower2: peach(fx2, fy2, 19), f2x: f(fx2), f2y: f(fy2),
+      s0x: f(s0x), s0y: f(s0y),
+      l0x: f(s0x - 16), l0y: f(s0y - 24),
+      l1x: f(gx - 60), l1y: f(yx(gx) + 68),
+      l2x: f(fx1 - 30), l2y: f(fy1 - 104),
+      l3x: f(xd(176) - 40), l3y: f(yx(xd(176)) - 140),
+      l4x: f(X1 + 10), l4y: f(yx(X1) + 36),
+      avX: f(X1 + 8), avY: f(yx(X1) - 20),
+      tipX: f(wx - 90), tipY: f(yx(wx) + 100),
+    };
+  }
+}
+</script>
+</body>
+</html>

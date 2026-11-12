@@ -1,0 +1,269 @@
+/*
+ * Toaster 的 BEM 类名样式（.v-toaster、.v-toast 及其 __ 部件与 -- 类型修饰）。
+ * 需先导入 @violet/ui/tokens.css 或 styles.css。
+ *
+ * 引擎是 sonner：叠放、划走、计时、定位由它的 data- 属性与自动注入的未分层样式驱动，
+ * 本文件只负责外观与对齐动效。toastOptions 固定 unstyled，所以它按 data-styled 注入的外观
+ * 规则不会生效；剩余的少数未分层规则会盖过 @layer components，只能用 !important 压回，
+ * 每处都标了原因。
+ */
+
+@import "../indicator/indicator.css";
+
+@layer components {
+	.v-toaster {
+		--v-toast-fade: 100ms;
+	}
+
+	.v-toast {
+		box-sizing: border-box;
+		display: flex;
+		align-items: center;
+		gap: 14px;
+		width: var(--width);
+		min-height: 54px;
+		padding: 14px 40px 14px 18px;
+		border-radius: var(--radius-12);
+		background: var(--popover);
+		color: var(--popover-foreground);
+		box-shadow: var(--shadow-soft);
+		font-size: 13.5px;
+		/* Radix 模态打开时 body 是 pointer-events:none，通知仍要能点撤销 */
+		pointer-events: auto;
+	}
+
+	/* sonner 的聚焦规则是未分层的硬投影，换成唯一软影加聚焦环 */
+	.v-toast:focus-visible {
+		--v-toast-focus-ring: 0 0 0 2px var(--popover), 0 0 0 4px var(--ring);
+		/* biome-ignore lint/complexity/noImportantStyles: 压过 sonner 未分层的 :focus-visible 硬投影 */
+		box-shadow: var(--shadow-soft), var(--v-toast-focus-ring) !important;
+	}
+
+	/* 退后的层：内容隐藏，只露纸边；位移与缩放由 sonner 的 --y 给出（每层上移 gap、缩 5%） */
+	.v-toast[data-expanded="false"][data-front="false"] > * {
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	/* —— 图标：18 线框，颜色只用在图标上 —— */
+
+	.v-toast__icon {
+		position: relative;
+		flex: none;
+		width: 18px;
+		height: 18px;
+		color: var(--muted-foreground);
+		font-size: 14px;
+		line-height: 18px;
+		text-align: center;
+	}
+
+	.v-toast--success .v-toast__icon {
+		color: var(--success-text);
+	}
+
+	.v-toast--error .v-toast__icon {
+		color: var(--destructive-text);
+	}
+
+	.v-toast--warning .v-toast__icon {
+		color: var(--warning-text);
+	}
+
+	.v-toast--info .v-toast__icon {
+		color: var(--muted-foreground);
+	}
+
+	/* 结果图标挂载时淡入，与退场的加载圆弧交叉淡化 */
+	.v-toast__glyph {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		animation: v-toast-glyph-in 200ms ease-out backwards;
+	}
+
+	.v-toast__glyph svg {
+		display: block;
+		fill: none;
+	}
+
+	.v-toast__tick {
+		stroke-dasharray: 12;
+		animation: v-toast-draw 300ms cubic-bezier(0.32, 0.72, 0, 1) 100ms backwards;
+	}
+
+	/* sonner 的 .sonner-loader 是未分层规则：定位居中，隐藏时还带 scale(0.8)，这里只保留居中与淡出 */
+	.v-toast__loader {
+		display: flex;
+		color: var(--decoration);
+		/* biome-ignore lint/complexity/noImportantStyles: 压过 .sonner-loader 的未分层位移与缩放 */
+		transform: translate(-50%, -50%) !important;
+		/* biome-ignore lint/complexity/noImportantStyles: 同上，缩放只留给退后一层 */
+		transition: opacity 200ms ease-out !important;
+	}
+
+	/* —— 文字 —— */
+
+	.v-toast__content {
+		display: flex;
+		flex: 1;
+		flex-direction: column;
+		min-width: 0;
+	}
+
+	.v-toast__title {
+		font-size: 13.5px;
+		line-height: 1.5;
+		color: var(--popover-foreground);
+	}
+
+	.v-toast__description {
+		font-size: 12px;
+		line-height: 1.6;
+		color: var(--muted-foreground);
+	}
+
+	/* —— 操作：浮起的纸色胶囊；描边环保证深色下仍可辨认 —— */
+
+	.v-toast__action,
+	.v-toast__cancel {
+		display: inline-flex;
+		flex: none;
+		align-items: center;
+		height: 32px;
+		padding: 0 12px;
+		border: 0;
+		border-radius: 999px;
+		font: inherit;
+		font-size: 14px;
+		font-weight: 500;
+		cursor: pointer;
+		transition: background-color 160ms ease-out;
+	}
+
+	.v-toast__action {
+		background: var(--popover);
+		color: var(--popover-foreground);
+		box-shadow:
+			var(--shadow-soft),
+			0 0 0 1px var(--ol);
+	}
+
+	.v-toast__action:hover {
+		background: var(--muted);
+	}
+
+	.v-toast__cancel {
+		background: transparent;
+		color: var(--muted-foreground);
+	}
+
+	.v-toast__cancel:hover {
+		background: var(--muted);
+		color: var(--popover-foreground);
+	}
+
+	.v-toast__action:focus-visible,
+	.v-toast__cancel:focus-visible,
+	.v-toast__close:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+
+	/* —— 关闭：20 圆钮常驻右上角 8 / 8，颜色偏浅，悬停加深 —— */
+
+	.v-toast__close {
+		position: absolute;
+		top: 8px;
+		inset-inline-end: 8px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 20px;
+		height: 20px;
+		padding: 0;
+		border: 0;
+		border-radius: 50%;
+		background: transparent;
+		color: var(--muted-foreground);
+		cursor: pointer;
+		opacity: 0.7;
+		transition:
+			opacity 160ms ease-out,
+			background-color 160ms ease-out,
+			color 160ms ease-out;
+	}
+
+	.v-toast__close:hover,
+	.v-toast__close:focus-visible {
+		background: var(--muted);
+		color: var(--popover-foreground);
+		opacity: 1;
+	}
+
+	@keyframes v-toast-glyph-in {
+		from {
+			opacity: 0;
+		}
+	}
+
+	@keyframes v-toast-draw {
+		from {
+			stroke-dashoffset: 12;
+		}
+	}
+
+	@keyframes v-toast-fade-out {
+		to {
+			opacity: 0;
+		}
+	}
+
+	/*
+	 * 减弱动态：只保留 100ms 透明度，位移与缩放静止。
+	 * sonner 自带 transition/animation:none !important；分层的 !important 反过来优先于未分层的，
+	 * 所以能在这里改写。退场的 --y 钉在原位，只淡出。
+	 */
+	@media (prefers-reduced-motion: reduce) {
+		.v-toast {
+			/* biome-ignore lint/complexity/noImportantStyles: 改写 sonner 减弱动态下的 transition:none */
+			transition: opacity var(--v-toast-fade) ease-out !important;
+		}
+
+		/* biome-ignore lint/style/noDescendingSpecificity: 与前面的退后层规则声明的属性不同，次序无关 */
+		.v-toast > * {
+			/* biome-ignore lint/complexity/noImportantStyles: 同上 */
+			transition: opacity var(--v-toast-fade) ease-out !important;
+		}
+
+		.v-toast[data-swipe-out="true"] {
+			/* biome-ignore lint/complexity/noImportantStyles: 改写 sonner 减弱动态下的 animation:none */
+			animation: v-toast-fade-out var(--v-toast-fade) ease-out forwards !important;
+		}
+
+		.v-toast[data-removed="true"][data-expanded="true"] {
+			/* biome-ignore lint/complexity/noImportantStyles: 压过 sonner 未分层的退场位移 */
+			--y: translateY(calc(var(--lift) * var(--offset))) !important;
+		}
+
+		.v-toast[data-removed="true"][data-expanded="false"][data-front="true"] {
+			/* biome-ignore lint/complexity/noImportantStyles: 同上 */
+			--y: translateY(0) !important;
+		}
+
+		.v-toast[data-removed="true"][data-expanded="false"][data-front="false"] {
+			--v-toast-back-pose: translateY(calc(var(--lift-amount) * var(--toasts-before)))
+				scale(calc(-1 * var(--scale)));
+			/* biome-ignore lint/complexity/noImportantStyles: 同上 */
+			--y: var(--v-toast-back-pose) !important;
+		}
+
+		.v-toast__glyph {
+			animation-duration: var(--v-toast-fade);
+		}
+
+		.v-toast__tick {
+			animation: none;
+		}
+	}
+}

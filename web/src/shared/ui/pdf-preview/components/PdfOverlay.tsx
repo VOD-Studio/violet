@@ -2,8 +2,8 @@
  * PDF 加载/错误遮罩
  */
 
-import { Button } from "@violet/ui";
-import { AlertCircle, RotateCcw } from "lucide-react";
+import { Button, iconProps } from "@violet/ui";
+import { CircleAlert, RotateCcw } from "lucide-react";
 
 import type { PdfLoadStatus } from "../types/pdf-preview-types";
 
@@ -24,10 +24,10 @@ export function PdfOverlay({ loadStatus, onRetry }: PdfOverlayProps) {
 	if (loadStatus === "error") {
 		return (
 			<div className="flex h-80 flex-col items-center justify-center gap-3 text-muted-foreground">
-				<AlertCircle className="size-10 text-red-500" />
+				<CircleAlert className="size-6 text-red-500" />
 				<p className="text-sm">PDF 加载失败</p>
 				<Button type="button" variant="outline" size="sm" onClick={onRetry}>
-					<RotateCcw className="mr-1.5 size-3.5" />
+					<RotateCcw {...iconProps(14)} />
 					重试
 				</Button>
 			</div>

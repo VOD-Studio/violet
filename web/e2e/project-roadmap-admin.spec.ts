@@ -26,15 +26,33 @@ async function openEditable(page: Page) {
 	await expect(page.locator('.v-kanban-canvas [data-draggable="true"]').first()).toBeVisible();
 }
 
-/** 按住卡片拖到目标点再放下；先小步移出拖拽阈值，再分步移到目标，看板才能逐帧求落点。 */
-async function drag(page: Page, from: Locator, to: { x: number; y: number }) {
+type Point = { x: number; y: number };
+
+/**
+ * 按住卡片拖到目标点再放下；先小步移出拖拽阈值，再分步移到目标，看板才能逐帧求落点。
+ *
+ * 目标可以是求值函数：指针经过目标列时占位会把列里的卡片顶开，放手前按此刻的版面重新瞄准，
+ * 再等两帧让看板按最后的指针位置求完落点。
+ */
+async function drag(page: Page, from: Locator, to: Point | (() => Promise<Point>)) {
 	const box = await from.boundingBox();
 	if (!box) throw new Error("card is not visible");
+	const aim = async () => (typeof to === "function" ? to() : to);
 	const start = { x: box.x + box.width / 2, y: box.y + 16 };
 	await page.mouse.move(start.x, start.y);
 	await page.mouse.down();
 	await page.mouse.move(start.x + 12, start.y + 12, { steps: 3 });
-	await page.mouse.move(to.x, to.y, { steps: 16 });
+	const first = await aim();
+	await page.mouse.move(first.x, first.y, { steps: 16 });
+	const last = await aim();
+	if (last.x !== first.x || last.y !== first.y)
+		await page.mouse.move(last.x, last.y, { steps: 4 });
+	await page.evaluate(
+		() =>
+			new Promise<void>((resolve) => {
+				requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+			}),
+	);
 	await page.mouse.up();
 }
 
@@ -87,7 +105,7 @@ test.describe("管理员拖动条目", () => {
 		const diagnostics = collectDiagnostics(page);
 		await openEditable(page);
 
-		await drag(page, card(page, 3), await belowLast(page, "in_progress"));
+		await drag(page, card(page, 3), () => belowLast(page, "in_progress"));
 
 		await expect.poll(() => moves.length).toBe(1);
 		expect(moves[0]).toEqual({
@@ -184,10 +202,17 @@ test.describe("管理员拖动条目", () => {
 		await openEditable(page);
 		await page.getByRole("button", { name: "缩小" }).click();
 		await expect(page.locator(".v-kanban-canvas__zoom")).not.toHaveText("100%");
-		// 等缩放过渡结束，卡片停在缩小后的位置再量
-		await page.waitForTimeout(300);
+		// 等缩放过渡结束：卡片位置连续两次量取一致才算停稳，固定延时在慢机器上不够
+		await expect
+			.poll(async () => {
+				const before = await card(page, 3).boundingBox();
+				await page.waitForTimeout(150);
+				const after = await card(page, 3).boundingBox();
+				return JSON.stringify(before) === JSON.stringify(after);
+			})
+			.toBe(true);
 
-		await drag(page, card(page, 3), await belowLast(page, "in_progress"));
+		await drag(page, card(page, 3), () => belowLast(page, "in_progress"));
 
 		await expect.poll(() => moves.length).toBe(1);
 		expect(moves[0].body).toEqual({ stage: "in_progress", before_id: idOf(5), after_id: "" });
@@ -547,6 +572,26 @@ test.describe("管理员维护条目关系", () => {
 		return dialog;
 	}
 
+	test("关系类型在对话框中 Esc 先收起面板，选完后立刻 Esc 关闭对话框", async ({
+		page,
+		context,
+	}) => {
+		await roadmapBackend(context);
+		await openEditable(page);
+		const dialog = await openDetails(page, 5);
+		const trigger = dialog.getByRole("combobox", { name: "关系类型" });
+		await trigger.click();
+		await expect(page.getByRole("option", { name: "阻塞", exact: true })).toBeVisible();
+		await page.keyboard.press("Escape");
+		await expect(dialog).toBeVisible();
+		await expect(page.getByRole("option", { name: "阻塞", exact: true })).toHaveCount(0);
+
+		await trigger.click();
+		await page.getByRole("option", { name: "阻塞", exact: true }).click();
+		await page.keyboard.press("Escape");
+		await expect(dialog).toHaveCount(0);
+	});
+
 	async function relate(page: Page, number: number, kind: string, query: string, target: number) {
 		const dialog = await openDetails(page, number);
 		await dialog.getByRole("combobox", { name: "关系类型" }).click();
@@ -582,6 +627,7 @@ test.describe("管理员维护条目关系", () => {
 		);
 
 		await page.keyboard.press("Escape");
+		await expect(page.getByRole("dialog", { name: titleOf(5) })).toHaveCount(0);
 		await expect(historyButton(page, "撤销")).toHaveAttribute("aria-disabled", "false");
 		await page.keyboard.press("ControlOrMeta+z");
 		await expect

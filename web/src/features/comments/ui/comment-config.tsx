@@ -4,7 +4,7 @@
  * 把后端 Comment 归一化为 CommentDisplayItem，注入文章专属插槽：
  *   - renderMetaBadges：AI 身份徽章（feature 专属，不进 shared）
  *   - renderBody：EmojiText 表情 + 图片网格（ImageGrid）
- *   - renderActions：ReactionBar（评论反应）
+ *   - renderActions：CommentReactions（评论回应）
  *   - renderReplyForm：CommentForm（匿名两步流 / 富文本在表单内部）
  *   - renderExpandedReplies：包装 useReplies（展开时才挂载 → 懒加载）
  */
@@ -21,21 +21,24 @@ import {
 } from "@shared/ui/comment-section";
 import { EmojiText } from "@shared/ui/emoji-text";
 import { ImageGrid } from "@shared/ui/image-grid";
+import { useMemo } from "react";
 import { AnnotationAuthorProfile } from "./AnnotationAuthorProfile";
 import { CommentForm } from "./CommentForm";
-import { ReactionBar } from "./ReactionBar";
+import { CommentReactions } from "./CommentReactions";
 
 type CommentPictures = NonNullable<Comment["pictures"]>;
 
 /**
  * 评论图片 → ImageGrid 入参:格子用缩略图(点开预览才加载原图)。
  * 单图 w=800 保比例(GIF 由 contentImageUrl 剥参数保动画);
- * 多图 w=400 保比例——格子 bg-cover 裁方显示,且预览占位/比例探测
+ * 多图 w=400 保比例——网格用 object-fit 裁切，且预览占位/比例探测
  * 要求缩略图与原图同比例(旧 thumb=400x400 裁方会导致占位拉伸)。
  */
 export function toGridImages(pictures: CommentPictures) {
 	return pictures.map((p) => ({
 		url: p.url,
+		width: p.width > 0 ? p.width : undefined,
+		height: p.height > 0 ? p.height : undefined,
 		thumbnail:
 			pictures.length === 1
 				? contentImageUrl(p.url, { width: 800 })
@@ -70,16 +73,11 @@ export function buildArticleCommentConfig({
 					!c.is_ai && c.author_username ? `/users/${c.author_username}` : undefined,
 				isAuthor: !c.is_ai && c.is_author,
 				isPending: c.status === "pending",
+				isDeleted: c.status === "deleted",
 				body: c.body,
 				createdAt: c.created_at,
 				repliesTotal: c.replies_total,
 				repliesPreview: c.replies,
-				tone:
-					!c.is_ai && c.is_author
-						? "author"
-						: c.replies && c.replies.length > 0
-							? "discussion"
-							: "default",
 				raw: c,
 			};
 		},
@@ -106,7 +104,7 @@ export function buildArticleCommentConfig({
 		renderMetaBadges: (item) => <AIBadge show={!!item.raw.is_ai} name={item.raw.author_name} />,
 		renderBody: (item) => (
 			<>
-				<p className="mt-2 whitespace-pre-wrap wrap-break-word text-sm text-foreground">
+				<p className="whitespace-pre-wrap wrap-break-word text-sm text-foreground">
 					<EmojiText text={item.body} emote={item.raw.emote} />
 				</p>
 				{item.raw.pictures && item.raw.pictures.length > 0 && (
@@ -116,7 +114,9 @@ export function buildArticleCommentConfig({
 				)}
 			</>
 		),
-		renderActions: (item) => <ReactionBar commentId={item.id} isLoggedIn={isLoggedIn} />,
+		renderActions: (item) => (
+			<CommentReactions postId={postId} commentId={item.id} isLoggedIn={isLoggedIn} />
+		),
 		renderReplyForm: (item, { onSuccess }) => (
 			<CommentForm
 				postId={postId}
@@ -166,14 +166,17 @@ function ArticleExpandedReplies({
 	isLoggedIn: boolean;
 	onReplyAdded: (reply: CommentDisplayItem<Comment>) => void;
 }) {
-	const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useReplies(
-		topLevelId,
-		{ limit: 10 },
-	);
+	const { data, error, refetch, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
+		useReplies(topLevelId, { limit: 10 });
+	const replies = useMemo(() => data?.pages.flatMap((page) => page.data) ?? [], [data]);
+	const newBatchStart = replies.length - (data?.pages.at(-1)?.data.length ?? 0);
 	return (
 		<ExpandedReplies
 			topLevelId={topLevelId}
-			replies={data?.pages.flatMap((p) => p.data) ?? []}
+			replies={replies}
+			newBatchStart={newBatchStart}
+			error={error}
+			onRetry={() => void refetch()}
 			hasNextPage={!!hasNextPage}
 			fetchNextPage={fetchNextPage}
 			isFetchingNextPage={isFetchingNextPage}

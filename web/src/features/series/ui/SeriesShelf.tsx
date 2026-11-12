@@ -5,7 +5,7 @@ import { formatDate } from "@shared/lib/date";
 import { markSharedSource, SERIES_SCOPE, SharedElement } from "@shared/lib/view-transition";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Button, Empty, ShimmerSkeleton } from "@violet/ui";
+import { Button, Empty, Skeleton } from "@violet/ui";
 import { useEffect, useRef, useState } from "react";
 
 const PAGE_LIMIT = 24;
@@ -37,9 +37,9 @@ function ShelfSkeleton() {
 		<div className="grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-3 lg:grid-cols-4">
 			{Array.from({ length: 8 }).map((_, i) => (
 				<div key={i} className="mx-auto w-full max-w-56">
-					<ShimmerSkeleton className="aspect-2/3 w-full rounded-sm" />
-					<ShimmerSkeleton className="mt-4 h-5 w-4/5 rounded-md" />
-					<ShimmerSkeleton className="mt-1.5 h-4 w-2/3 rounded-md" />
+					<Skeleton className="aspect-2/3 w-full rounded-sm" />
+					<Skeleton className="mt-4 h-5 w-4/5 rounded-md" />
+					<Skeleton className="mt-1.5 h-4 w-2/3 rounded-md" />
 				</div>
 			))}
 		</div>
@@ -119,9 +119,7 @@ export function SeriesShelf() {
 		);
 	}
 	if (!books.length) {
-		return (
-			<Empty title="暂无书籍" description="还没有发布的系列书" className="py-20" size="lg" />
-		);
+		return <Empty title="暂无书籍" description="还没有发布的系列书" className="py-20" />;
 	}
 
 	return (

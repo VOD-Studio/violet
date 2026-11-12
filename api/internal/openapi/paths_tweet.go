@@ -6,6 +6,7 @@ import "github.com/getkin/kin-openapi/openapi3"
 // 点赞/评论，以及用户主页公开资料与推文列表。
 func registerTweetPaths(t *openapi3.T) {
 	registerExternalTweetPaths(t)
+	registerTweetCommentReactionPaths(t)
 	// ---- 公共 schema ----
 
 	registerSchema(t, "TweetAuthorDTO", openapi3.Schemas{
@@ -196,13 +197,14 @@ func registerTweetPaths(t *openapi3.T) {
 	get(t, "/tweets/{id}/comments", &openapi3.Operation{
 		Tags:        []string{"推文"},
 		Summary:     "推文评论列表",
-		Description: "仅顶层评论，最新在前（offset 分页）；回复走 replies 端点。",
+		Description: "仅顶层评论（offset 分页）；sort=latest|hot，默认 latest。hot 按总回应记录数降序，并列按 created_at DESC、id DESC；回复的排序不变。",
 		Parameters: append(
-			openapi3.Parameters{pathStrParam("id", "推文 ID")},
+			openapi3.Parameters{pathStrParam("id", "推文 ID"), commentSortParam()},
 			pageParam(), limitParam(100),
 		),
 		Responses: responses(
 			200, dataArrayResponse("TweetCommentDTO", "顶层评论列表", 200, true),
+			400, errorResponse("sort 必须为 latest 或 hot"),
 		),
 	})
 

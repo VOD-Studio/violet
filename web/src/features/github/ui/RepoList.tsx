@@ -1,4 +1,4 @@
-import { Empty } from "@violet/ui";
+import { Empty, iconProps } from "@violet/ui";
 
 import { cn } from "cn";
 import { ExternalLink, GitFork, Star } from "lucide-react";
@@ -35,14 +35,16 @@ const RepoCard = ({ repo }: RepoCardProps) => (
 		<div className="mt-auto flex items-center gap-4 text-xs text-muted-foreground font-mono">
 			{repo.language && <span>{repo.language}</span>}
 			<span className="flex items-center gap-1">
-				<Star className="h-3.5 w-3.5" />
+				<Star {...iconProps(14)} />
 				{repo.stars}
 			</span>
 			<span className="flex items-center gap-1">
-				<GitFork className="h-3.5 w-3.5" />
+				<GitFork {...iconProps(14)} />
 				{repo.forks}
 			</span>
-			<ExternalLink className="ml-auto h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100" />
+			<ExternalLink
+				{...iconProps(14, "ml-auto opacity-0 transition-opacity group-hover:opacity-100")}
+			/>
 		</div>
 	</a>
 );

@@ -63,7 +63,7 @@ export function RoadmapRelationForm({ item, items, onRelate }: RoadmapRelationFo
 		<div className="space-y-2">
 			<div className="flex flex-wrap items-center gap-2">
 				<Select value={kindKey} onValueChange={setKindKey}>
-					<SelectTrigger aria-label="关系类型" size="sm" className="w-28 shrink-0">
+					<SelectTrigger aria-label="关系类型" controlSize="sm" className="w-28 shrink-0">
 						<SelectValue />
 					</SelectTrigger>
 					<SelectContent>
@@ -79,7 +79,7 @@ export function RoadmapRelationForm({ item, items, onRelate }: RoadmapRelationFo
 					aria-label="搜索要关联的条目"
 					placeholder="搜索编号或标题"
 					controlSize="sm"
-					classNames={{ root: "min-w-0 flex-1" }}
+					classNames={{ control: "min-w-0 flex-1" }}
 					leading={<Search className="size-4" aria-hidden="true" />}
 					value={query}
 					onChange={(event) => {

@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import {
 	Button,
 	Sheet,
+	SheetBody,
 	SheetClose,
 	SheetContent,
 	SheetHeader,
@@ -26,21 +27,22 @@ export function AdminMobileNav() {
 		<Sheet open={open} onOpenChange={setOpen}>
 			<SheetTrigger asChild>
 				<Button
+					iconOnly
 					variant="ghost"
-					size="icon-sm"
+					size="sm"
 					className="md:hidden"
 					aria-label="打开导航菜单"
 				>
 					<Menu className="size-5" />
 				</Button>
 			</SheetTrigger>
-			<SheetContent side="left" className="flex w-64 flex-col p-0">
-				<SheetHeader className="p-0">
+			<SheetContent side="left" size="sm" aria-describedby={undefined}>
+				<SheetHeader>
 					<SheetTitle className="sr-only">管理后台导航</SheetTitle>
 					<AdminBrand />
 				</SheetHeader>
-				<div className="flex min-h-0 flex-1 flex-col p-3">
-					<div className="flex-1 overflow-y-auto">
+				<SheetBody className="flex flex-col px-3">
+					<div className="flex-1">
 						<SheetClose asChild>
 							<div>
 								<NavMenu onNavigate={() => setOpen(false)} />
@@ -56,7 +58,7 @@ export function AdminMobileNav() {
 							返回前台
 						</Link>
 					</SheetClose>
-				</div>
+				</SheetBody>
 			</SheetContent>
 		</Sheet>
 	);

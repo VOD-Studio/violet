@@ -7,13 +7,18 @@ import {
 } from "@features/admin-bots/api/queries";
 import { BOT_NAME_MAX } from "@features/admin-bots/model/constants";
 import type { BotDTO } from "@features/admin-bots/model/types";
+import { formatDateTime } from "@shared/lib/date";
 import {
+	Badge,
+	Button,
 	DataTable,
 	type DataTableColumn,
 	type DataTablePagination,
-} from "@features/admin-shared/ui/data-table";
-import { formatDateTime } from "@shared/lib/date";
-import { Badge, Button, Input, Modal, Switch } from "@violet/ui";
+	Input,
+	iconProps,
+	Modal,
+	Switch,
+} from "@violet/ui";
 
 import { Eye, KeyRound, Trash2 } from "lucide-react";
 import * as React from "react";
@@ -112,7 +117,7 @@ export function BotTable({ bots, pagination, loading, onTokenRevealed }: BotTabl
 							update.mutate({ id: row.id, body: { enabled } })
 						}
 					/>
-					<Badge variant={row.enabled ? "secondary" : "outline"}>
+					<Badge tone={row.enabled ? "ok" : "off"}>
 						{row.enabled ? "已启用" : "已禁用"}
 					</Badge>
 				</div>
@@ -161,11 +166,12 @@ export function BotTable({ bots, pagination, loading, onTokenRevealed }: BotTabl
 			sticky: "right",
 			width: "128px",
 			cell: (row) => (
-				<div className="flex items-center gap-2">
+				<div className="v-table__row-actions items-center gap-2">
 					{/* 库里无密文（早于密文列创建、密钥已换）时置灰：撞错误不如直接说明为什么看不了 */}
 					<Button
+						iconOnly
 						variant="ghost"
-						size="icon-sm"
+						size="sm"
 						disabled={!row.token_viewable || reveal.isPending}
 						aria-label={`查看 ${row.name} 的 token`}
 						title={
@@ -175,26 +181,28 @@ export function BotTable({ bots, pagination, loading, onTokenRevealed }: BotTabl
 						}
 						onClick={() => reveal.mutate(row.id, { onSuccess: onTokenRevealed })}
 					>
-						<Eye className="size-3.5" />
+						<Eye {...iconProps(14)} />
 					</Button>
 					<Button
+						iconOnly
 						variant="ghost"
-						size="icon-sm"
+						size="sm"
 						aria-label={`重置 ${row.name} 的 token`}
 						title="重置 token"
 						onClick={() => setPending({ kind: "rotate", bot: row })}
 					>
-						<KeyRound className="size-3.5" />
+						<KeyRound {...iconProps(14)} />
 					</Button>
 					<Button
+						iconOnly
 						variant="ghost"
-						size="icon-sm"
+						size="sm"
 						className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 						aria-label={`吊销 ${row.name}`}
 						title="吊销 Bot"
 						onClick={() => setPending({ kind: "revoke", bot: row })}
 					>
-						<Trash2 className="size-3.5" />
+						<Trash2 {...iconProps(14)} />
 					</Button>
 				</div>
 			),
@@ -227,7 +235,7 @@ export function BotTable({ bots, pagination, loading, onTokenRevealed }: BotTabl
 							取消
 						</Button>
 						<Button
-							variant={pending?.kind === "revoke" ? "destructive" : "default"}
+							variant={pending?.kind === "revoke" ? "destructive" : "primary"}
 							onClick={runPending}
 							disabled={rotate.isPending || del.isPending}
 						>
@@ -284,7 +292,7 @@ function EditableBotName({ name, disabled, onCommit }: EditableBotNameProps) {
 			maxLength={BOT_NAME_MAX}
 			value={draft}
 			className="text-sm font-medium"
-			classNames={{ root: "w-40" }}
+			classNames={{ control: "w-40" }}
 			onFocus={(e) => e.currentTarget.select()}
 			onChange={(e) => setDraft(e.target.value)}
 			onKeyDown={(e) => {

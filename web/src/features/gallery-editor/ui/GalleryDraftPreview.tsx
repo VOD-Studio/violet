@@ -37,7 +37,7 @@ export function GalleryDraftPreview({ title, summary, items }: GalleryDraftPrevi
 		return (
 			<div className="flex aspect-3/4 items-center justify-center rounded-xl border border-dashed bg-muted/30 text-muted-foreground">
 				<div className="text-center">
-					<Images className="mx-auto mb-2 size-8" />
+					<Images className="mx-auto mb-2 size-6" />
 					<p className="text-sm">选择图片后可在这里预览</p>
 				</div>
 			</div>
@@ -49,11 +49,11 @@ export function GalleryDraftPreview({ title, summary, items }: GalleryDraftPrevi
 	return (
 		<>
 			<Tabs defaultValue="feed">
-				<TabsList className="grid w-full grid-cols-2">
+				<TabsList>
 					<TabsTrigger value="feed">浏览流</TabsTrigger>
 					<TabsTrigger value="detail">详情与灯箱</TabsTrigger>
 				</TabsList>
-				<TabsContent value="feed" className="mt-4">
+				<TabsContent value="feed">
 					<PhotoStack
 						images={items.map((item, index) => ({
 							src: item.thumbnail || item.url,

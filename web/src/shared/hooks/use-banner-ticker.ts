@@ -1,12 +1,15 @@
-import { type RefObject, useEffect, useRef, useState } from "react";
+import { type FocusEvent, type RefObject, useEffect, useRef, useState } from "react";
 
 /**
- * 同一 rAF 时钟驱动进度与换页；悬停或聚焦暂停，手动翻页重置计时。
- * 减少动态效果偏好下只保留手动翻页。
+ * 同一 rAF 时钟驱动进度与换页；悬停、容器内聚焦和显式暂停各自独立。
+ * 全部暂停原因解除后续走累计驻留时间；手动翻页重置计时，减少动态效果下只保留手动翻页。
  */
 export function useBannerTicker(n: number, intervalMs = 5000) {
 	const [index, setIndex] = useState(0);
-	const [paused, setPaused] = useState(false);
+	const [manuallyPaused, setPaused] = useState(false);
+	const [hovered, setHovered] = useState(false);
+	const [focused, setFocused] = useState(false);
+	const paused = manuallyPaused || hovered || focused;
 	/** 当前公告已驻留时长（ms），rAF 里读写，不进 effect 依赖 */
 	const elapsedRef = useRef(0);
 	const [progress, setProgress] = useState(0);
@@ -42,10 +45,18 @@ export function useBannerTicker(n: number, intervalMs = 5000) {
 	};
 
 	const hoverHandlers = {
-		onMouseEnter: () => setPaused(true),
-		onMouseLeave: () => setPaused(false),
-		onFocus: () => setPaused(true),
-		onBlur: () => setPaused(false),
+		onMouseEnter: () => setHovered(true),
+		onMouseLeave: () => setHovered(false),
+		onFocus: () => setFocused(true),
+		onBlur: (event: FocusEvent<HTMLElement>) => {
+			if (
+				event.relatedTarget instanceof Node &&
+				event.currentTarget.contains(event.relatedTarget)
+			) {
+				return;
+			}
+			setFocused(false);
+		},
 	};
 
 	const wheelRef = useWheelStep(step);

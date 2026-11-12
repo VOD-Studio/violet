@@ -1,8 +1,8 @@
 import { useShareTweetStore } from "@entities/tweet/model/share-store";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { createPortal } from "react-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import type { BotCommandsResponse, ChatMember, ChatMessage } from "../../model/types";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { BotCommandsResponse, ChatMember, ChatMessage, ChatUser } from "../../model/types";
 import { MessageComposer } from "../MessageComposer";
 import { MessageEditComposer } from "../MessageEditComposer";
 
@@ -17,6 +17,7 @@ const previewMock = vi.hoisted(() => ({ portal: false }));
 vi.mock("../../api/queries", () => ({
 	useSendChatMessage: () => ({ mutateAsync: sendMocks.mutateAsync, isPending: false }),
 	useChatMembers: () => ({ data: activeMembers }),
+	useChatMessages: () => ({ data: messagePages ? { pages: messagePages } : undefined }),
 	useBotCommands: () => ({ data: catalogData, refetch: sendMocks.refetch }),
 	useEditChatMessage: () => ({ mutate: sendMocks.edit, isPending: false }),
 }));
@@ -49,8 +50,34 @@ const members: ChatMember[] = [
 	},
 	{ user: sender, role: "member", joined_at: "2026-08-25T08:00:00Z", is_muted: false },
 ];
+const carol = {
+	id: "00000000-0000-0000-0000-000000000003",
+	username: "carol",
+	display_name: "Carol",
+	avatar_url: "",
+};
+const linjian = {
+	id: "00000000-0000-0000-0000-000000000004",
+	username: "linjian",
+	display_name: "林间",
+	avatar_url: "",
+};
+const roomBot = {
+	id: "00000000-0000-0000-0000-000000000005",
+	username: "saber",
+	display_name: "Saber",
+	avatar_url: "",
+	is_bot: true,
+};
+const extraMembers: ChatMember[] = [
+	{ user: carol, role: "owner", joined_at: "2026-08-26T08:00:00Z", is_muted: false },
+	{ user: linjian, role: "member", joined_at: "2026-08-27T08:00:00Z", is_muted: false },
+	{ user: roomBot, role: "member", joined_at: "2026-08-28T08:00:00Z", is_muted: false },
+];
 let activeMembers = members;
 let catalogData: BotCommandsResponse = { bots: [] };
+/** 会话面板已缓存的消息页，按分页首屏最新排列；缺省表示还没加载到消息。 */
+let messagePages: { data: ChatMessage[] }[] | undefined;
 const bot1 = {
 	id: "00000000-0000-0000-0000-000000000010",
 	username: "saber",
@@ -86,6 +113,10 @@ function textMessage(content?: string): ChatMessage {
 	};
 }
 
+function messageFrom(sender: ChatUser, id: string): ChatMessage {
+	return { ...textMessage("hi"), id, sender };
+}
+
 /** 在 contentEditable 里模拟「打完一段文字、光标停在末尾」的输入。 */
 function typeInto(box: HTMLElement, text: string) {
 	box.textContent = text;
@@ -106,6 +137,7 @@ afterEach(() => {
 	sendMocks.refetch.mockReset();
 	activeMembers = members;
 	catalogData = { bots: [] };
+	messagePages = undefined;
 	previewMock.portal = false;
 	useShareTweetStore.setState({ tweet: null, pending: null });
 });
@@ -447,9 +479,9 @@ describe("MessageComposer", () => {
 describe("MessageComposer 全体提及", () => {
 	it.each([
 		"@",
-		"@所有",
+		"@全体",
 		"@all",
-	])("房间输入 %s 可选择所有人，并发送独立的全体占位符", async (query) => {
+	])("房间输入 %s 可选择全体成员，并发送独立的全体占位符", async (query) => {
 		render(
 			<MessageComposer
 				conversationID="c_1"
@@ -462,7 +494,7 @@ describe("MessageComposer 全体提及", () => {
 		);
 		const box = screen.getByRole("textbox");
 		typeInto(box, query);
-		const all = screen.getByRole("option", { name: /所有人/ });
+		const all = screen.getByRole("option", { name: /全体成员/ });
 		expect(screen.getAllByRole("option")[0]).toBe(all);
 		fireEvent.keyDown(box, { key: "Enter" });
 		expect(sendMocks.mutateAsync).not.toHaveBeenCalled();
@@ -484,13 +516,132 @@ describe("MessageComposer 全体提及", () => {
 			/>,
 		);
 		typeInto(screen.getByRole("textbox"), "@");
-		expect(screen.queryByRole("option", { name: /所有人/ })).toBeNull();
+		expect(screen.queryByRole("option", { name: /全体成员/ })).toBeNull();
 		expect(screen.getByRole("option", { name: /Bob/ })).toBeTruthy();
 	});
 });
 
+describe("MessageComposer 提及候选", () => {
+	beforeEach(() => {
+		activeMembers = [...members, ...extraMembers];
+		// 页内按时间升序：Bob 更早，Carol 刚说话
+		messagePages = [{ data: [messageFrom(sender, "m1"), messageFrom(carol, "m2")] }];
+	});
+
+	it("全体成员置顶带人数，最近发言者排前，角色与机器人带标签", () => {
+		render(
+			<MessageComposer
+				conversationID="c_1"
+				conversationKind="room"
+				currentUserID={selfID}
+				onCancelReply={() => {}}
+				pendingShare={null}
+				replyTarget={null}
+			/>,
+		);
+		typeInto(screen.getByRole("textbox"), "@");
+
+		const options = screen.getAllByRole("option");
+		expect(options).toHaveLength(5);
+		expect(options[0].textContent).toContain("全体成员");
+		expect(options[0].textContent).toContain("5 人");
+		expect(options[1].textContent).toContain("Carol");
+		expect(options[1].textContent).toContain("管理员");
+		expect(options[2].textContent).toContain("Bob");
+		expect(options[3].textContent).toContain("林间");
+		expect(options[4].textContent).toContain("机器人");
+	});
+
+	it("拼音首字母也能筛到人", () => {
+		render(
+			<MessageComposer
+				conversationID="c_1"
+				conversationKind="room"
+				currentUserID={selfID}
+				onCancelReply={() => {}}
+				pendingShare={null}
+				replyTarget={null}
+			/>,
+		);
+		typeInto(screen.getByRole("textbox"), "@lj");
+
+		expect(screen.getAllByRole("option")).toHaveLength(1);
+		expect(screen.getByRole("option", { name: /林间/ })).toBeTruthy();
+	});
+
+	it("输入框暴露 aria-autocomplete 与展开态，Esc 只收浮层", () => {
+		render(
+			<MessageComposer
+				conversationID="c_1"
+				conversationKind="room"
+				currentUserID={selfID}
+				onCancelReply={() => {}}
+				pendingShare={null}
+				replyTarget={null}
+			/>,
+		);
+		const box = screen.getByRole("textbox");
+		typeInto(box, "@");
+		const listbox = screen.getByRole("listbox");
+		expect(box.getAttribute("aria-autocomplete")).toBe("list");
+		expect(box.getAttribute("aria-controls")).toBe(listbox.id);
+		expect(box.getAttribute("aria-activedescendant")).toBe(screen.getAllByRole("option")[0].id);
+
+		fireEvent.keyDown(box, { key: "Escape" });
+
+		expect(screen.queryByRole("listbox")).toBeNull();
+		expect(box.getAttribute("aria-expanded")).toBe("false");
+	});
+
+	it.each(["Enter", "Tab"])("方向键选择成员后用 %s 插入且不发送", (key) => {
+		render(
+			<MessageComposer
+				conversationID="c_1"
+				conversationKind="room"
+				currentUserID={selfID}
+				onCancelReply={() => {}}
+				pendingShare={null}
+				replyTarget={null}
+			/>,
+		);
+		const box = screen.getByRole("textbox");
+		typeInto(box, "请看 @");
+		const options = screen.getAllByRole("option");
+		fireEvent.keyDown(box, { key: "ArrowDown" });
+		expect(box.getAttribute("aria-activedescendant")).toBe(options[1].id);
+		fireEvent.keyDown(box, { key: "ArrowUp" });
+		expect(box.getAttribute("aria-activedescendant")).toBe(options[0].id);
+		fireEvent.keyDown(box, { key: "ArrowDown" });
+		fireEvent.keyDown(box, { key });
+		expect(box.textContent).toBe("请看 @Carol\u00a0");
+		expect(screen.queryByRole("listbox")).toBeNull();
+		expect(sendMocks.mutateAsync).not.toHaveBeenCalled();
+	});
+
+	it("Esc 保留草稿，邮箱和超过二十字的查询不触发", () => {
+		render(
+			<MessageComposer
+				conversationID="c_1"
+				conversationKind="room"
+				currentUserID={selfID}
+				onCancelReply={() => {}}
+				pendingShare={null}
+				replyTarget={null}
+			/>,
+		);
+		const box = screen.getByRole("textbox");
+		typeInto(box, "请看 @lj");
+		fireEvent.keyDown(box, { key: "Escape" });
+		expect(box.textContent).toBe("请看 @lj");
+		typeInto(box, "person@example.com");
+		expect(screen.queryByRole("listbox")).toBeNull();
+		typeInto(box, `@${"字".repeat(21)}`);
+		expect(screen.queryByRole("listbox")).toBeNull();
+	});
+});
+
 describe("MessageEditComposer 全体提及", () => {
-	it("房间编辑可选所有人，预填的全体提及仍保留在提交正文中", () => {
+	it("房间编辑可选全体成员，预填的全体提及仍保留在提交正文中", () => {
 		render(
 			<MessageEditComposer
 				message={textMessage("@(all:all) 原文")}
@@ -509,7 +660,7 @@ describe("MessageEditComposer 全体提及", () => {
 		window.getSelection()?.removeAllRanges();
 		window.getSelection()?.addRange(range);
 		fireEvent.input(box);
-		fireEvent.click(screen.getByRole("option", { name: /所有人/ }));
+		fireEvent.click(screen.getByRole("option", { name: /全体成员/ }));
 		fireEvent.click(screen.getByRole("button", { name: "保存编辑" }));
 		expect(sendMocks.edit.mock.calls[0][0].input.content).toBe("@(all:all) 原文 @(all:all)");
 		expect(sendMocks.mutateAsync).not.toHaveBeenCalled();

@@ -1,14 +1,13 @@
+import type { AggregatedReaction, CommentReactionResult } from "@entities/reaction/model/types";
 import { apiGet, apiGetPaged, apiPost } from "@shared/api/request";
 import type { PagedResponse } from "@shared/api/types";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import type {
 	AdminComment,
-	BatchReactionResult,
 	BatchReactionsQuery,
 	BlockCount,
 	Comment,
 	CommentListQuery,
-	Reaction,
 	ReplyListQuery,
 } from "../model/types";
 import { commentKeys } from "./keys";
@@ -18,7 +17,7 @@ import { commentKeys } from "./keys";
  *
  * 黑洞模式（PRD-0001）：后端按 cookie 里的 viewerUserID 判定——
  *   - 匿名 viewer（无会话）：返回空数组（看不到任何评论，含自己刚提交的）
- *   - 登录 viewer：返回 approved 联合自己的 pending（带「审批中」徽章）
+ *   - 登录 viewer：返回 approved 联合自己的 pending（显示「待审核 · 仅自己可见」）
  *
  * type query param 控制按 anchor 维度过滤（free / annotation / all），
  * 把自由评论与批注在接口层彻底分开：底部评论区用 free，批注角标层用 annotation。
@@ -142,8 +141,8 @@ export const useReplies = (commentId: string, query: ReplyListQuery = {}) =>
 	});
 
 /** fetchCommentReactions - GET /comments/{commentId}/reactions 评论反应列表 */
-export const fetchCommentReactions = async (commentId: string): Promise<Reaction[]> =>
-	apiGet<Reaction[]>(`/comments/${commentId}/reactions`);
+export const fetchCommentReactions = async (commentId: string): Promise<AggregatedReaction[]> =>
+	apiGet<AggregatedReaction[]>(`/comments/${commentId}/reactions`);
 
 /** useCommentReactions - 单条评论反应列表 hook */
 export const useCommentReactions = (commentId: string, options: { enabled?: boolean } = {}) =>
@@ -156,8 +155,8 @@ export const useCommentReactions = (commentId: string, options: { enabled?: bool
 /** fetchBatchReactions - POST /comments/reactions/batch 批量获取反应，避免 N+1 */
 export const fetchBatchReactions = async (
 	body: BatchReactionsQuery,
-): Promise<BatchReactionResult[]> =>
-	apiPost<BatchReactionResult[]>("/comments/reactions/batch", body);
+): Promise<CommentReactionResult[]> =>
+	apiPost<CommentReactionResult[]>("/comments/reactions/batch", body);
 
 /**
  * useBatchReactions - 批量获取多条评论的反应

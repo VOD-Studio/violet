@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -105,7 +106,7 @@ func (r *reactionUserRepo) FindByIDs(context.Context, []domainshared.ID) ([]*dom
 	return []*domainuser.User{r.user}, nil
 }
 
-func newReactionService(t *testing.T, message *domainchat.Message, userID, conversationID domainshared.ID, store *reactionStoreStub) (*Service, *reactionChatRepo) {
+func newReactionService(t *testing.T, message *domainchat.Message, userID, conversationID domainshared.ID, store domainchatreaction.Store) (*Service, *reactionChatRepo) {
 	t.Helper()
 	now := time.Date(2026, 8, 21, 10, 0, 0, 0, time.UTC)
 	conversation, err := domainchat.NewConversation(domainchat.ConversationDirect, userID, "", now)
@@ -172,28 +173,19 @@ func TestAddMessageReactionRejectsSystemMessage(t *testing.T) {
 	}
 }
 
-func TestListMessagesIncludesAggregatedReactions(t *testing.T) {
-	conversationID := domainshared.NewID()
-	userID := domainshared.NewID()
-	now := time.Date(2026, 8, 21, 10, 0, 0, 0, time.UTC)
-	message, err := domainchat.NewTextMessage(conversationID, userID, "hello", "message", now, nil)
+func TestMessageReactionDTOsUsesEmptyRecentUsersArray(t *testing.T) {
+	got := messageReactionDTOs([]domainchatreaction.AggregatedReaction{{EmojiID: 1, Count: 1}})
+	data, err := json.Marshal(got)
 	if err != nil {
 		t.Fatal(err)
 	}
-	store := &reactionStoreStub{byMessage: map[string][]domainchatreaction.AggregatedReaction{
-		message.ID().String(): {{EmojiID: 42, EmojiName: "[笑]", Count: 2, Self: true}},
-	}}
-	svc, repo := newReactionService(t, message, userID, conversationID, store)
-	repo.messages = []*domainchat.Message{message}
-
-	result, err := svc.ListMessages(context.Background(), userID, conversationID, "", 20)
-	if err != nil {
-		t.Fatalf("ListMessages() error = %v", err)
+	var decoded []struct {
+		RecentUsers []domainchatreaction.RecentUser `json:"recent_users"`
 	}
-	if len(result.Items) != 1 || len(result.Items[0].Reactions) != 1 {
-		t.Fatalf("message reactions = %+v, want one reaction", result.Items)
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatal(err)
 	}
-	if got := result.Items[0].Reactions[0].Count; got != 2 {
-		t.Fatalf("reaction count = %d, want 2", got)
+	if len(decoded) != 1 || decoded[0].RecentUsers == nil || len(decoded[0].RecentUsers) != 0 {
+		t.Fatalf("recent_users must be an empty JSON array: %s", data)
 	}
 }

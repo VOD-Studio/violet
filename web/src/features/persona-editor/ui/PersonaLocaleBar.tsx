@@ -5,7 +5,16 @@ import {
 	localeLabel,
 	normalizeLocaleInput,
 } from "@shared/ui/locale-switcher";
-import { Badge, Button, Input, Popover, PopoverContent, PopoverTrigger } from "@violet/ui";
+import {
+	Badge,
+	Button,
+	Input,
+	iconProps,
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+	Tag,
+} from "@violet/ui";
 import { Check, Languages, Plus, Star, Trash2 } from "lucide-react";
 import { useState } from "react";
 
@@ -76,15 +85,14 @@ export function PersonaLocaleBar({
 			/>
 
 			<div className="ml-auto flex flex-wrap items-center gap-2">
-				<Badge variant={complete ? "secondary" : "outline"}>
-					{complete ? <Check className="size-3" /> : null}
+				<Badge
+					tone={complete ? "ok" : "off"}
+					icon={complete ? <Check {...iconProps(12)} /> : undefined}
+				>
 					{complete ? "公开资料完整" : "待补全"}
 				</Badge>
 				{value === defaultLocale ? (
-					<Badge variant="outline">
-						<Star className="size-3 fill-current" />
-						默认语言
-					</Badge>
+					<Tag icon={<Star {...iconProps(12, "fill-current")} />}>默认语言</Tag>
 				) : (
 					<Button
 						type="button"
@@ -148,7 +156,7 @@ export function PersonaLocaleBar({
 							<div className="flex gap-2">
 								<Input
 									id="persona-custom-locale"
-									classNames={{ root: "min-w-0 flex-1" }}
+									classNames={{ control: "min-w-0 flex-1" }}
 									value={customLocale}
 									placeholder="例如 fr-FR"
 									aria-invalid={Boolean(customError)}
@@ -179,9 +187,10 @@ export function PersonaLocaleBar({
 				</Popover>
 
 				<Button
+					iconOnly
 					type="button"
 					variant="ghost"
-					size="icon-sm"
+					size="sm"
 					disabled={disabled || locales.length === 1 || value === defaultLocale}
 					className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 					onClick={() => onRemove(value)}

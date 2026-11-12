@@ -81,6 +81,9 @@ func tweetCommentPageOrder(filter domaintweet.ListFilter) string {
 		// 回复链默认最早优先（对话时间线）
 		return "created_at ASC, id ASC"
 	}
+	if filter.ParentID == nil && filter.TweetID != nil && filter.TopLevelSort == "hot" {
+		return "(SELECT COUNT(*) FROM tweet_comment_reactions r WHERE r.comment_id = tweet_comments.id) DESC, created_at DESC, id DESC"
+	}
 	return "created_at DESC, id DESC"
 }
 

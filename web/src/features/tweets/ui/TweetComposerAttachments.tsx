@@ -1,9 +1,9 @@
 import type { QuotedTweet, Tweet } from "@entities/tweet/model/types";
-import { ExternalTweetCard } from "@entities/tweet/ui/ExternalTweetCard";
 import { formatRelativeTime } from "@shared/lib/date";
-import { contentImageUrl } from "@shared/lib/image-url";
-import { Button } from "@violet/ui";
-import { AlertCircle, X } from "lucide-react";
+import { avatarUrl, contentImageUrl } from "@shared/lib/image-url";
+import { TWEET_MESSAGES } from "@shared/lib/tweet-messages";
+import { Button, iconProps, QuoteCard } from "@violet/ui";
+import { CircleAlert, X } from "lucide-react";
 import type { TweetComposerImage } from "../hooks/useTweetComposerImages";
 import styles from "./TweetComposer.module.css";
 
@@ -61,7 +61,7 @@ export function TweetComposerAttachments({
 									role="alert"
 									className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-destructive text-destructive-foreground"
 								>
-									<AlertCircle className="size-4" />
+									<CircleAlert className="size-4" />
 									<span className="text-xs">上传失败</span>
 								</div>
 							)}
@@ -73,7 +73,7 @@ export function TweetComposerAttachments({
 								className={`${styles.action} absolute top-0 right-0`}
 							>
 								<span className="inline-flex size-6 items-center justify-center rounded-md bg-background/90">
-									<X className="size-3.5" />
+									<X {...iconProps(14)} />
 								</span>
 							</button>
 						</div>
@@ -81,41 +81,43 @@ export function TweetComposerAttachments({
 				</div>
 			)}
 			{quotedTweet && (
-				<section
-					aria-label="引用的推文"
-					className="space-y-2 rounded-xl border border-border p-3 text-sm"
-				>
-					<div className="flex items-center justify-between gap-2">
-						<div className="min-w-0">
-							<span className="font-medium">{quotedTweet.author.username}</span>
-							<span className="ml-2 text-xs text-muted-foreground">
-								{formatRelativeTime(new Date(quotedTweet.created_at))}
-							</span>
-						</div>
-						{onCancelQuote && (
-							<Button
-								type="button"
-								variant="ghost"
-								size="icon"
-								aria-label="取消引用"
-								disabled={disabled}
-								onClick={onCancelQuote}
-							>
-								<X className="size-4" />
-							</Button>
+				<section aria-label="引用的推文">
+					<QuoteCard
+						authorName={quotedTweet.author.username}
+						authorAvatar={avatarUrl(
+							quotedTweet.author.avatar_url,
+							quotedTweet.author.username,
 						)}
-					</div>
-					{quotedTweet.content && (
-						<p className="line-clamp-2 whitespace-pre-wrap">{quotedTweet.content}</p>
-					)}
-					{quotedTweet.images.length > 0 && (
-						<p className="text-xs text-muted-foreground">
-							{quotedTweet.images.length} 张图片
-						</p>
-					)}
-					{quotedTweet.external_tweet && (
-						<ExternalTweetCard tweet={quotedTweet.external_tweet} compact />
-					)}
+						time={formatRelativeTime(new Date(quotedTweet.created_at))}
+						content={quotedTweet.content}
+						imageSrc={
+							quotedTweet.images[0]
+								? contentImageUrl(quotedTweet.images[0].url, { width: 128 })
+								: undefined
+						}
+						nested={
+							quotedTweet.external_tweet ||
+							quotedTweet.quote_of ||
+							("quoted_tweet" in quotedTweet && quotedTweet.quoted_tweet)
+								? TWEET_MESSAGES.quoteNested
+								: undefined
+						}
+						action={
+							onCancelQuote && (
+								<Button
+									iconOnly
+									type="button"
+									variant="ghost"
+									size="md"
+									aria-label="取消引用"
+									disabled={disabled}
+									onClick={onCancelQuote}
+								>
+									<X className="size-4" />
+								</Button>
+							)
+						}
+					/>
 				</section>
 			)}
 		</>

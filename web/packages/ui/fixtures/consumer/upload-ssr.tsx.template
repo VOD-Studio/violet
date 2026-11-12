@@ -1,0 +1,29 @@
+import assert from "node:assert/strict";
+import { UploadDropzone, UploadQueue, type UploadEntry } from "@violet/ui";
+import { UploadDropzone as LeafDropzone, UploadQueue as LeafQueue } from "@violet/ui/upload";
+import { renderToString } from "react-dom/server";
+
+const entries: UploadEntry[] = [
+	{ id: "queued", name: "next.jpg", size: 1024, progress: 0, status: "queued" },
+	{ id: "uploading", name: "current.mp4", size: 8192, progress: 42, status: "uploading", kind: "video" },
+	{ id: "error", name: "retry.jpg", size: 4096, progress: 30, status: "error", error: "连接中断", retryAt: 5000 },
+	{ id: "done", name: "saved.jpg", size: 2048, progress: 100, status: "done" },
+];
+for (const Queue of [UploadQueue, LeafQueue]) {
+	const html = renderToString(<Queue items={entries} concurrency={2} now={1000} aria-label="附件上传" onRetry={() => {}} onCancel={() => {}} onRemove={() => {}} />);
+	assert.match(html, /<ul\b/);
+	assert.equal((html.match(/<li\b/g) ?? []).length, entries.length);
+	assert.match(html, /role="status"/);
+	assert.match(html, /role="alert"/);
+	assert.match(html, /retry\.jpg/);
+	assert.match(html, /disabled=""/);
+}
+for (const Dropzone of [UploadDropzone, LeafDropzone]) {
+	const html = renderToString(<Dropzone name="attachment" value="choose" aria-label="选择附件" disabled hint="最多 10 MB">选择文件</Dropzone>);
+	assert.match(html, /<button\b/);
+	assert.match(html, /type="button"/);
+	assert.match(html, /disabled=""/);
+	assert.match(html, /name="attachment"/);
+	assert.match(html, /最多 10 MB/);
+}
+console.log("Installed upload root/leaf list, error, cooldown and native selection semantics passed.");

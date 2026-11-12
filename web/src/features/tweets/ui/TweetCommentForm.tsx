@@ -11,11 +11,12 @@
  */
 
 import type { TweetComment } from "@entities/tweet/model/types";
-import { type PictureInput, RichCommentInput } from "@features/comments/ui/RichCommentInput";
+import { RichCommentInput } from "@features/comments/ui/RichCommentInput";
 import { ApiError } from "@shared/api/error";
+import type { PictureInput } from "@shared/ui/rich-text-input/RichTextInput";
 import { useNavigate } from "@tanstack/react-router";
-import { Button } from "@violet/ui";
-import { Loader2, LogIn, Send } from "lucide-react";
+import { Button, iconProps } from "@violet/ui";
+import { LogIn, Send } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { useCreateTweetComment } from "../api/mutations";
@@ -113,13 +114,10 @@ export function TweetCommentForm({
 						ref={submitRef}
 						type="submit"
 						size="sm"
-						disabled={createComment.isPending || isUploading || overLimit}
+						disabled={isUploading || overLimit}
+						loading={createComment.isPending}
+						leftIcon={<Send {...iconProps(14)} />}
 					>
-						{createComment.isPending ? (
-							<Loader2 className="size-3.5 animate-spin" />
-						) : (
-							<Send className="size-3.5" />
-						)}
 						{compact ? "回复" : "评论"}
 					</Button>
 				}

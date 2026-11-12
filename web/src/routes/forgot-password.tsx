@@ -8,32 +8,13 @@ import {
 } from "@features/auth/model/schemas";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import {
-	Button,
-	Input,
-	InputOTP,
-	InputOTPGroup,
-	InputOTPSlot,
-	Label,
-	ResendButton,
-} from "@violet/ui";
+import { Button, Field, Input, InputOTP, Label, ResendButton } from "@violet/ui";
 import { MailCheck } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { ApiError } from "@/shared/api/error";
 
-/**
- * /forgot-password - 忘记密码页（分步重置）
- *
- * 流程：
- * 1. 输入注册邮箱 → POST /auth/forgot-password → 后端发 6 位重置码到邮箱
- *    （安全设计：邮箱不存在也返回成功，不暴露是否注册）
- *    （开发环境重置码会同步打到后端日志）
- * 2. 原地展开验证码 + 新密码输入区 → POST /auth/reset-password → 跳 /login
- *
- * 重发重置码：重新调 forgot-password 接口。
- */
 export const Route = createFileRoute("/forgot-password")({
 	ssr: false,
 	component: ForgotPasswordPage,
@@ -43,12 +24,12 @@ function ForgotPasswordPage() {
 	const navigate = useNavigate();
 	const csrfToken = useCsrfToken();
 	const [sentEmail, setSentEmail] = useState<string | null>(null);
+	const [invalidCode, setInvalidCode] = useState(false);
 
 	// 步骤 1 表单：邮箱
 	const {
 		register: registerEmail,
 		handleSubmit: handleSubmitEmail,
-		getValues: getEmailValues,
 		formState: { errors: emailErrors },
 	} = useForm<ForgotPasswordFormData>({
 		resolver: zodResolver(forgotPasswordSchema),
@@ -61,6 +42,8 @@ function ForgotPasswordPage() {
 		handleSubmit: handleSubmitReset,
 		setValue: setResetValue,
 		watch: watchReset,
+		clearErrors: clearResetErrors,
+		setError: setResetError,
 		formState: { errors: resetErrors },
 	} = useForm<ResetPasswordFormData>({
 		resolver: zodResolver(resetPasswordSchema),
@@ -112,6 +95,10 @@ function ForgotPasswordPage() {
 							? err.message || "重置失败，请检查验证码"
 							: err.message || "重置失败";
 					toast.error(msg);
+					if (err instanceof ApiError && err.code === "UNAUTHORIZED") {
+						setResetError("code", { type: "server", message: msg });
+						setInvalidCode(true);
+					}
 				},
 			},
 		);
@@ -120,10 +107,13 @@ function ForgotPasswordPage() {
 	// 重发重置码。
 	// 返回 false 表示未生效（ResendButton 不进入冷却），让用户能立即修正后重试。
 	const handleResend = async (): Promise<boolean> => {
-		const email = sentEmail || getEmailValues("email");
+		const email = sentEmail;
 		if (!email) return false;
 		try {
 			await forgotMutation.mutateAsync({ email });
+			setResetValue("code", "");
+			clearResetErrors("code");
+			setInvalidCode(false);
 			toast.success("重置码已重新发送");
 			return true;
 		} catch (err) {
@@ -135,7 +125,9 @@ function ForgotPasswordPage() {
 
 	// OTP 输入同步到 react-hook-form
 	const handleCodeChange = (value: string) => {
-		setResetValue("code", value, { shouldValidate: true });
+		setResetValue("code", value, { shouldDirty: true });
+		setInvalidCode(false);
+		if (value) clearResetErrors("code");
 	};
 
 	return (
@@ -152,7 +144,7 @@ function ForgotPasswordPage() {
 					// 步骤 2：重置码 + 新密码
 					<form onSubmit={onSubmitReset} className="space-y-4">
 						<div className="flex flex-col items-center gap-3 text-center">
-							<MailCheck className="size-12 text-primary" />
+							<MailCheck className="size-6 text-primary" />
 							<p className="text-sm text-muted-foreground">
 								重置码已发送至
 								<br />
@@ -160,28 +152,23 @@ function ForgotPasswordPage() {
 							</p>
 						</div>
 
-						<div className="flex flex-col items-center gap-2">
-							<InputOTP maxLength={6} value={codeValue} onChange={handleCodeChange}>
-								<InputOTPGroup>
-									<InputOTPSlot index={0} />
-									<InputOTPSlot index={1} />
-									<InputOTPSlot index={2} />
-									<InputOTPSlot index={3} />
-									<InputOTPSlot index={4} />
-									<InputOTPSlot index={5} />
-								</InputOTPGroup>
-							</InputOTP>
-							{resetErrors.code ? (
-								<p className="text-xs text-destructive">
-									{resetErrors.code.message}
-								</p>
-							) : null}
-						</div>
+						<Field label="邮箱重置码" error={resetErrors.code?.message}>
+							<InputOTP
+								name="code"
+								value={codeValue}
+								onChange={handleCodeChange}
+								invalid={invalidCode && !resetMutation.isPending}
+								valid={resetMutation.isSuccess}
+								required
+								disabled={resetMutation.isPending || forgotMutation.isPending}
+							/>
+						</Field>
 
 						<div className="text-center">
 							<ResendButton
 								onResend={handleResend}
-								disabled={forgotMutation.isPending}
+								resetKey={sentEmail}
+								disabled={resetMutation.isPending}
 							/>
 						</div>
 

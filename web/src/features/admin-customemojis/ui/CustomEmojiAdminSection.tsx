@@ -3,13 +3,16 @@ import {
 	useAdminDeleteCustomEmoji,
 } from "@features/admin-customemojis/api/queries";
 import type { AdminCustomEmoji } from "@features/admin-customemojis/model/types";
-import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
-import { DataTable, usePagedQuery } from "@features/admin-shared/ui/data-table";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
+import { toAvatarItem } from "@shared/lib/avatar-user";
 import { formatDateTime } from "@shared/lib/date";
-import { AvatarGroup } from "@shared/ui/avatar-group/AvatarGroup";
+import type { DataTableColumn } from "@violet/ui";
 import {
+	Avatar,
 	Button,
 	ConfirmDialog,
+	DataTable,
+	iconProps,
 	SearchInput,
 	Tooltip,
 	TooltipContent,
@@ -59,14 +62,11 @@ export function CustomEmojiAdminSection() {
 			ellipsis: true,
 			cell: (row) => (
 				<div className="flex min-w-0 items-center gap-2">
-					<AvatarGroup
-						users={[
-							{
-								username: row.owner.username,
-								avatar_url: row.owner.avatar_url,
-							},
-						]}
-						size="sm"
+					<Avatar
+						{...toAvatarItem(row.owner)}
+						alt=""
+						size={24}
+						imgProps={{ loading: "lazy" }}
 					/>
 					<span className="truncate">{row.owner.display_name || row.owner.username}</span>
 				</div>
@@ -88,15 +88,16 @@ export function CustomEmojiAdminSection() {
 			cell: (row) => (
 				<Tooltip>
 					<TooltipTrigger asChild>
-						<span>
+						<span className="v-table__row-actions">
 							<Button
+								iconOnly
 								variant="ghost"
-								size="icon-sm"
+								size="sm"
 								className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 								onClick={() => setDeleting(row)}
 								aria-label={`下架表情 ${row.name}`}
 							>
-								<Trash2 className="size-3.5" />
+								<Trash2 {...iconProps(14)} />
 							</Button>
 						</span>
 					</TooltipTrigger>
@@ -121,9 +122,8 @@ export function CustomEmojiAdminSection() {
 				emptyDescription="还没有用户上传自定义表情"
 				toolbar={
 					<SearchInput
-						variant="soft"
 						controlSize="sm"
-						classNames={{ root: "min-w-50 max-w-100" }}
+						classNames={{ control: "min-w-50 max-w-100" }}
 						aria-label="搜索自定义表情名称或上传者"
 						placeholder="搜索表情名或上传者..."
 						defaultValue=""

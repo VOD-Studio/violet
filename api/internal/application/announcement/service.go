@@ -8,8 +8,8 @@ import (
 	"github.com/rs/zerolog/log"
 
 	appshared "blog-api/internal/application/shared"
-	"blog-api/internal/domain/shared"
 	domain "blog-api/internal/domain/announcement"
+	"blog-api/internal/domain/shared"
 )
 
 // AnnouncementDTO 公告读模型
@@ -29,13 +29,15 @@ type AnnouncementDTO struct {
 	ContentHTML string   `json:"content_html,omitempty"`
 	CoverImage  string   `json:"cover_image,omitempty"`
 	Excerpt     string   `json:"excerpt,omitempty"`
+	LinkURL     string   `json:"link_url,omitempty"`
+	LinkText    string   `json:"link_text,omitempty"`
 	CreatedAt   string   `json:"created_at"`
 }
 
 // Service 公告用例服务（简化 DDD：CRUD 不强制 command/query 分包）
 type Service struct {
 	repo domain.AnnouncementRepository
-	bus   appshared.EventBus
+	bus  appshared.EventBus
 }
 
 // NewService 构造公告用例服务
@@ -117,12 +119,17 @@ type CreateInput struct {
 	ContentHTML string
 	CoverImage  string
 	Excerpt     string
+	LinkURL     string
+	LinkText    string
 }
 
 // Create 创建公告
 func (s *Service) Create(ctx context.Context, in CreateInput) (int32, error) {
 	a, err := domain.NewAnnouncement(0, in.Title, in.Content, in.Type)
 	if err != nil {
+		return 0, err
+	}
+	if err := a.SetLink(in.LinkURL, in.LinkText); err != nil {
 		return 0, err
 	}
 	if in.Display != "" {
@@ -164,6 +171,10 @@ type UpdateInput struct {
 	ContentHTML string
 	CoverImage  string
 	Excerpt     string
+	// LinkURL nil 保留原地址；空串清除地址及文字。
+	LinkURL *string
+	// LinkText nil 保留原文字；空串清除文字。
+	LinkText *string
 }
 
 // Update 更新公告
@@ -174,6 +185,21 @@ func (s *Service) Update(ctx context.Context, in UpdateInput) error {
 	a, err := s.repo.FindByID(ctx, in.ID)
 	if err != nil {
 		return err
+	}
+	if in.LinkURL != nil || in.LinkText != nil {
+		address, text := a.LinkURL(), a.LinkText()
+		if in.LinkText != nil {
+			text = *in.LinkText
+		}
+		if in.LinkURL != nil {
+			address = *in.LinkURL
+			if address == "" {
+				text = ""
+			}
+		}
+		if err := a.UpdateLink(address, text); err != nil {
+			return err
+		}
 	}
 	if err := a.Update(in.Title, in.Content, in.Type); err != nil {
 		return err
@@ -227,6 +253,7 @@ func toDTO(a *domain.Announcement) AnnouncementDTO {
 		SortOrder: a.SortOrder(),
 		ContentMD: a.ContentMD(), ContentHTML: a.ContentHTML(),
 		CoverImage: a.CoverImage(), Excerpt: a.Excerpt(),
+		LinkURL: a.LinkURL(), LinkText: a.LinkText(),
 		CreatedAt: a.CreatedAt().Format(time.RFC3339),
 	}
 	if affects := a.Affects(); len(affects) > 0 {

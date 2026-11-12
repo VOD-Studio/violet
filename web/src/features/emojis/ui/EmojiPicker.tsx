@@ -1,45 +1,59 @@
 import type { Emoji } from "@entities/emoji/model/types";
-import { useAllEmojis } from "@features/emojis/api/queries";
-import styles from "@features/emojis/ui/EmojiPicker.module.css";
-import { EmojiTile } from "@features/emojis/ui/EmojiTile";
-import { MyEmojisPanel } from "@features/emojis/ui/MyEmojisPanel";
 import { useSessionStore } from "@shared/api/session";
-import { isImageURL } from "@shared/lib/url";
 import {
 	Button,
+	EmojiPickerPanel,
+	type EmojiPickerPanelProps,
+	iconProps,
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
-	ScrollArea,
-	TooltipProvider,
 } from "@violet/ui";
-import { cn } from "cn";
-import { ChevronLeft, ChevronRight, Heart, Loader2, Smile } from "lucide-react";
-import { type KeyboardEvent, type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { Smile } from "lucide-react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { useEmojiCatalog } from "../hooks/use-emoji-catalog";
+import { EmojiUploadAction } from "./EmojiUploadAction";
+import { createEmojiPickerGroups } from "./emoji-picker-groups";
 
-/** 评论、推文和聊天共用的表情选择入口。 */
+/**
+ * 评论、推文和聊天共用的表情选择入口。
+ */
 export interface EmojiPickerProps {
+	/** 自定义触发元素；省略时使用「添加表情」图标按钮。 */
 	trigger?: ReactNode;
 	onSelect: (emoji: Emoji) => void;
+	/**
+	 * 浮层相对触发器的水平对齐方式。
+	 *
+	 * @default start
+	 */
 	align?: "start" | "center" | "end";
+	/** 已回应的系统表情 ID；匹配项可以预览，但不能再次选择。 */
 	selectedIds?: Set<number>;
-	/** 连续插入时保持浮层和输入框焦点。 */
+	/**
+	 * 连续插入时设为 false，选中后保留浮层且不主动夺取焦点。
+	 *
+	 * @default true
+	 */
 	closeOnSelect?: boolean;
-	/** 回应只接受系统表情时关闭。 */
+	/**
+	 * 回应入口只接受系统表情时设为 false，不显示个人收藏与上传。
+	 *
+	 * @default true
+	 */
 	showMyEmojis?: boolean;
-	/** 禁用入口并关闭已打开的选择器。 */
+	/**
+	 * 禁用入口并关闭已打开的选择器；重新启用不会自动展开。
+	 *
+	 * @default false
+	 */
 	disabled?: boolean;
 }
 
-type GroupKey = number | "mine";
-
-const groupTabClassName =
-	"relative flex size-7 shrink-0 items-center justify-center text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring aria-selected:bg-popover aria-selected:font-medium aria-selected:text-foreground";
-
-/** 会话切换会清除打开状态、分组位置和未提交的个人表情。 */
+/** 会话切换卸载个人数据和已展开的面板。 */
 export function EmojiPicker(props: EmojiPickerProps) {
-	const sessionVersion = useSessionStore((state) => state.sessionVersion);
-	return <EmojiPickerSession key={sessionVersion} {...props} />;
+	const version = useSessionStore((state) => state.sessionVersion);
+	return <EmojiPickerSession key={version} {...props} />;
 }
 
 function EmojiPickerSession({
@@ -52,250 +66,109 @@ function EmojiPickerSession({
 	disabled = false,
 }: EmojiPickerProps) {
 	const [open, setOpen] = useState(false);
-	const [selectedGroup, setSelectedGroup] = useState<GroupKey | null>(null);
-	const { data, isLoading, isError, refetch } = useAllEmojis();
-	const groups = data ?? [];
-	const isLoggedIn = useSessionStore((state) => state.sessionActive);
-	const hasMine = isLoggedIn && showMyEmojis;
-	const keys: GroupKey[] = hasMine
-		? ["mine", ...groups.map((group) => group.id)]
-		: groups.map((group) => group.id);
-	const activeKey =
-		selectedGroup !== null && keys.includes(selectedGroup) ? selectedGroup : keys[0];
-	const activeIndex = activeKey === undefined ? -1 : keys.indexOf(activeKey);
-	const activeGroup = groups.find((group) => group.id === activeKey);
-	const showingMine = activeKey === "mine";
-	const id = useId();
-	const navRef = useRef<HTMLDivElement>(null);
-	const stripRef = useRef<HTMLDivElement>(null);
-	const activeButtonRef = useRef<HTMLButtonElement>(null);
-	const scrollPositions = useRef(new Map<GroupKey, number>());
+	const [recentOrder, setRecentOrder] = useState<readonly string[] | null>(null);
+	const [group, setGroup] = useState("recent");
+	const scroll = useRef(new Map<string, number>());
 	useEffect(() => {
-		if (disabled) return setOpen(false);
-		if (!open || activeKey === undefined) return;
-		const strip = stripRef.current;
-		const button = activeButtonRef.current;
-		if (strip && button) {
-			strip.scrollLeft = button.offsetLeft - (strip.clientWidth - button.offsetWidth) / 2;
+		if (disabled) {
+			setOpen(false);
+			setRecentOrder(null);
 		}
-	}, [open, activeKey, disabled]);
-
-	const handleSelect = (emoji: Emoji) => {
-		onSelect(emoji);
-		if (closeOnSelect) setOpen(false);
-	};
-
-	const navigate = (index: number, focus = false) => {
-		const key = keys[index];
-		if (key === undefined) return;
-		setSelectedGroup(key);
-		if (focus) {
-			navRef.current
-				?.querySelector<HTMLButtonElement>(`[data-group-key="${key}"]`)
-				?.focus({ preventScroll: true });
+	}, [disabled]);
+	const catalog = useEmojiCatalog({ showMyEmojis, selectedIds });
+	const recentKeys = recentOrder ?? catalog.recentKeys;
+	const recent = useMemo(() => {
+		const emojis: Emoji[] = [];
+		for (const key of recentKeys) {
+			const emoji = catalog.directory.byKey.get(key);
+			if (emoji) {
+				emojis.push(emoji);
+			}
 		}
-	};
+		return emojis;
+	}, [catalog.directory, recentKeys]);
+	const groups = useMemo(
+		() =>
+			createEmojiPickerGroups(catalog.directory, recent, {
+				selectedIds,
+				uploadAction: <EmojiUploadAction />,
+			}),
+		[catalog.directory, recent, selectedIds],
+	);
+	const activeGroup = groups.some((entry) => entry.id === group) ? group : "recent";
+	const query = activeGroup === "mine" ? catalog.mineQuery : catalog.publicQuery;
+	let status: EmojiPickerPanelProps["status"] = "ready";
+	if (query.isLoading) {
+		status = "loading";
+	} else if (query.isError) {
+		status = "error";
+	}
 
-	const handleNavigationKey = (event: KeyboardEvent<HTMLDivElement>) => {
-		if (!(event.target instanceof HTMLElement) || event.target.getAttribute("role") !== "tab")
-			return;
-		let next: number;
-		switch (event.key) {
-			case "ArrowLeft":
-				next = activeIndex - 1;
-				break;
-			case "ArrowRight":
-				next = activeIndex + 1;
-				break;
-			case "Home":
-				next = 0;
-				break;
-			case "End":
-				next = keys.length - 1;
-				break;
-			default:
-				return;
+	const handleOpenChange = (nextOpen: boolean) => {
+		// 同一次打开内保留格子顺序，连续点击同一位置不会换成另一张表情。
+		if (nextOpen) {
+			setRecentOrder(catalog.recentKeys);
+		} else {
+			setRecentOrder(null);
 		}
-		event.preventDefault();
-		navigate(next, true);
+		setOpen(nextOpen);
 	};
-
 	return (
-		<Popover open={open && !disabled} onOpenChange={setOpen}>
+		<Popover open={open && !disabled} onOpenChange={handleOpenChange}>
 			<PopoverTrigger asChild disabled={disabled}>
 				{trigger ?? (
 					<Button
+						iconOnly
 						type="button"
 						variant="ghost"
-						size="icon-xs"
+						size="sm"
 						aria-label="添加表情"
-						className="text-muted-foreground hover:text-foreground"
+						onMouseDown={(event) => event.preventDefault()}
 					>
-						<Smile className="size-3.5" />
+						<Smile {...iconProps(14)} />
 					</Button>
 				)}
 			</PopoverTrigger>
 			<PopoverContent
 				align={align}
-				sideOffset={4}
 				aria-label="表情选择器"
-				inert={disabled || !open}
-				aria-hidden={disabled || !open ? true : undefined}
-				className={cn("w-85 max-w-[calc(100vw-2rem)] p-0", styles.panel)}
+				className="w-85 max-w-[calc(100vw-2rem)] p-0"
 				onOpenAutoFocus={(event) => event.preventDefault()}
 				onFocusOutside={(event) => {
-					if (!closeOnSelect) event.preventDefault();
+					if (!closeOnSelect) {
+						event.preventDefault();
+					}
+				}}
+				onInteractOutside={(event) => {
+					if (
+						!closeOnSelect &&
+						event.target instanceof Element &&
+						event.target.closest('[contenteditable="true"],textarea,input')
+					) {
+						event.preventDefault();
+					}
 				}}
 			>
-				<TooltipProvider delayDuration={200} skipDelayDuration={100}>
-					<div className="mx-3 mt-3 flex items-center gap-1 bg-muted">
-						<div
-							ref={navRef}
-							role="tablist"
-							aria-label="表情分组"
-							onKeyDown={handleNavigationKey}
-							className="flex min-w-0 flex-1 items-center gap-1"
-						>
-							<div
-								ref={stripRef}
-								className="relative flex min-w-0 flex-1 gap-1 overflow-x-auto overscroll-x-contain [&::-webkit-scrollbar]:hidden"
-								style={{ scrollbarWidth: "none" }}
-							>
-								{hasMine && (
-									<button
-										ref={showingMine ? activeButtonRef : undefined}
-										type="button"
-										role="tab"
-										id={`${id}-mine`}
-										aria-label="收藏表情"
-										title="收藏表情"
-										aria-selected={showingMine}
-										aria-controls={`${id}-panel`}
-										tabIndex={showingMine ? 0 : -1}
-										data-group-key="mine"
-										onClick={() => setSelectedGroup("mine")}
-										className={groupTabClassName}
-									>
-										<Heart aria-hidden="true" className="size-5" />
-									</button>
-								)}
-								{groups.map((group) => {
-									const active = group.id === activeKey;
-									return (
-										<button
-											key={group.id}
-											ref={active ? activeButtonRef : undefined}
-											type="button"
-											role="tab"
-											id={`${id}-${group.id}`}
-											aria-label={group.name}
-											title={group.name}
-											aria-selected={active}
-											aria-controls={`${id}-panel`}
-											tabIndex={active ? 0 : -1}
-											data-group-key={group.id}
-											onClick={() => setSelectedGroup(group.id)}
-											className={groupTabClassName}
-										>
-											{group.cover_url && isImageURL(group.cover_url) ? (
-												<img
-													src={group.cover_url}
-													alt=""
-													className="size-5 shrink-0 object-contain"
-													loading="lazy"
-												/>
-											) : (
-												<span className="truncate">{group.name}</span>
-											)}
-										</button>
-									);
-								})}
-							</div>
-						</div>
-						<Button
-							variant="ghost"
-							size="icon-xs"
-							aria-label="上一组"
-							title="上一组"
-							disabled={activeIndex <= 0}
-							onClick={() => navigate(activeIndex - 1)}
-						>
-							<ChevronLeft className="size-4" />
-						</Button>
-						<Button
-							variant="ghost"
-							size="icon-xs"
-							aria-label="下一组"
-							title="下一组"
-							disabled={activeIndex < 0 || activeIndex >= keys.length - 1}
-							onClick={() => navigate(activeIndex + 1)}
-						>
-							<ChevronRight className="size-4" />
-						</Button>
-					</div>
-					<ScrollArea
-						key={activeKey}
-						id={`${id}-panel`}
-						role="tabpanel"
-						aria-labelledby={activeKey === undefined ? undefined : `${id}-${activeKey}`}
-						className="h-48 overscroll-contain px-3 pb-3"
-						mask="none"
-						ref={(element) => {
-							if (element && activeKey !== undefined)
-								element.scrollTop = scrollPositions.current.get(activeKey) ?? 0;
-						}}
-						onScroll={(event) => {
-							if (activeKey !== undefined)
-								scrollPositions.current.set(
-									activeKey,
-									event.currentTarget.scrollTop,
-								);
-						}}
-					>
-						{showingMine ? (
-							<MyEmojisPanel onSelect={handleSelect} />
-						) : isLoading ? (
-							<div
-								role="status"
-								className="flex items-center justify-center py-8 text-muted-foreground"
-							>
-								<Loader2 className="mr-2 size-4 animate-spin motion-reduce:animate-none" />
-								加载中…
-							</div>
-						) : isError && !data ? (
-							<div className="flex flex-col items-center gap-2 py-6 text-sm text-muted-foreground">
-								<p>表情加载失败</p>
-								<Button variant="outline" size="sm" onClick={() => void refetch()}>
-									重新加载
-								</Button>
-							</div>
-						) : activeGroup && activeGroup.emojis.length > 0 ? (
-							<div
-								className={cn(
-									"grid gap-1 pt-2",
-									activeGroup.type === 1
-										? "grid-cols-4"
-										: activeGroup.meta?.size === 2
-											? "grid-cols-5"
-											: "grid-cols-10",
-								)}
-							>
-								{activeGroup.emojis.map((emoji) => (
-									<EmojiTile
-										key={emoji.id}
-										emoji={emoji}
-										selected={selectedIds?.has(emoji.id)}
-										onSelect={handleSelect}
-									/>
-								))}
-							</div>
-						) : (
-							<p className="py-8 text-center text-sm text-muted-foreground">
-								{activeGroup ? "该分组暂无表情" : "暂无可用表情"}
-							</p>
-						)}
-					</ScrollArea>
-				</TooltipProvider>
+				<EmojiPickerPanel
+					groups={groups}
+					activeGroup={activeGroup}
+					onGroupChange={setGroup}
+					scrollTop={scroll.current.get(activeGroup) ?? 0}
+					onScrollTopChange={(value) => scroll.current.set(activeGroup, value)}
+					status={status}
+					errorMessage={query.error instanceof Error ? query.error.message : undefined}
+					onRetry={() => void query.refetch()}
+					onSelect={(item) => {
+						const emoji = catalog.select(item.id);
+						if (!emoji) {
+							return;
+						}
+						onSelect(emoji);
+						if (closeOnSelect) {
+							handleOpenChange(false);
+						}
+					}}
+				/>
 			</PopoverContent>
 		</Popover>
 	);

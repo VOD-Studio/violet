@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Violet 推文详情</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&family=Noto+Serif+SC:wght@400;500;600;700&family=Alex+Brush&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Maple Mono";font-weight:400;font-style:normal;src:url(/_blob/a3ecea3add4961def4d089b95f486230) format("woff2")}
+@font-face{font-family:"Maple Mono";font-weight:500;font-style:normal;src:url(/_blob/1ba23035f8e49762aeac0a2a66f83fa0) format("woff2")}
+body{margin:0}
+a{color:inherit;text-decoration:none}
+.paper-l{position:absolute;inset:0;background-image:url(/_blob/66391f4a5c5b623abcbda5bc91818ab0);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.paper-d{position:absolute;inset:0;background-image:url(/_blob/b0a1c287fd95586fcb700c431de8f4c5);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.num{font-family:"Maple Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.mono{font-family:"Maple Mono",ui-monospace,monospace}
+.sheet{background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);border:1px solid var(--ol)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;height:36px;padding:0 16px;border:0;border-radius:999px;font-family:inherit;font-size:14px;font-weight:500;white-space:nowrap;background:var(--sunk);color:var(--fg);cursor:pointer}
+.btn.sm{height:32px;padding:0 12px}.btn.lg{height:40px;font-size:16px}
+.btn.pri{background:var(--fg);color:var(--bg)}.btn.gho{background:transparent}
+.btn.ic{width:32px;padding:0}
+.seg{display:inline-flex;padding:2px;border-radius:999px;background:var(--sunk)}
+.sg{display:inline-flex;align-items:center;gap:6px;box-sizing:border-box;height:32px;padding:0 12px;border-radius:999px;font-size:14px;color:var(--muted)}
+.sg i{font-style:normal;font-size:12px;opacity:.7}
+.sg.on{background:var(--sheet);color:var(--fg);font-weight:500;box-shadow:0 4px 24px rgb(0 0 0 / .05)}
+.chip{display:inline-flex;align-items:center;gap:4px;box-sizing:border-box;height:24px;padding:0 10px;border-radius:999px;background:var(--sunk);font-size:12px;font-weight:500;color:var(--muted)}
+.chip.ac{background:color-mix(in oklab,var(--deco) 16%,var(--sheet));color:var(--accent)}
+.chip.ok{background:color-mix(in oklab,var(--ok) 12%,var(--sheet));color:var(--ok)}
+.fld{display:flex;align-items:center;gap:8px;box-sizing:border-box;height:36px;padding:0 12px;border-radius:12px;background:var(--sunk);font-size:14px;color:var(--muted)}
+.lab{display:block;margin-bottom:8px;font-size:14px;font-weight:600}
+.h1{margin:0;font-size:52px;font-weight:600;line-height:1.15;letter-spacing:-0.01em}
+
+.tc{position:relative;display:grid;grid-template-columns:40px minmax(0,1fr);gap:12px;padding:16px 20px 8px;border-radius:16px}
+.tc + .tc{margin-top:16px}
+.tc .av{width:40px;height:40px;border-radius:50%;object-fit:cover}
+.who{display:flex;align-items:center;gap:6px;font-size:15px;line-height:1.4}.who b{font-weight:600}.who .tm{font-size:14px;color:var(--muted)}
+.tx{display:block;margin:4px 0 0;font-size:16px;line-height:1.85;letter-spacing:.02em}
+.tag{color:var(--accent)}
+.media{display:grid;gap:2px;margin-top:12px;border-radius:16px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--rule)}.media img{display:block;width:100%;height:100%;object-fit:cover}
+.lc{display:block;margin-top:12px;border-radius:16px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--rule)}
+.qt{display:block;margin-top:12px;padding:12px 14px;border-radius:16px;box-shadow:inset 0 0 0 1px var(--rule2)}
+.acts{display:flex;align-items:center;justify-content:space-between;margin:4px -8px 0;max-width:560px}
+.acts.full{max-width:none}
+.ac{display:inline-flex;align-items:center;gap:2px;padding:0;border:0;background:none;font:500 13px Inter,"PingFang SC",sans-serif;color:var(--muted);cursor:pointer}
+.ac i{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;font-style:normal;transition:background-color .12s ease-out,color .12s ease-out}
+.ac.r:hover{color:var(--accent)}.ac.r:hover i{background:color-mix(in oklab,var(--accent) 12%,transparent)}
+.ac.q:hover{color:var(--ok)}.ac.q:hover i{background:color-mix(in oklab,var(--ok) 12%,transparent)}
+.ac.l:hover,.ac.l.on{color:var(--deco)}.ac.l:hover i{background:color-mix(in oklab,var(--deco) 14%,transparent)}
+.ac.v:hover{color:var(--accent)}.ac.v:hover i{background:color-mix(in oklab,var(--accent) 12%,transparent)}
+.ac.s:hover i{background:var(--sunk);color:var(--fg)}
+.more{position:absolute;top:10px;right:12px}
+.vt{margin-top:12px;padding:16px 20px;border-radius:12px;background:#fff;border:1px solid #e5e5e5;color:#0a0a0a;font:400 15px/1.5 ui-sans-serif,system-ui,-apple-system,"PingFang SC",sans-serif}
+.vav{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:#fafafa;color:#737373;font-size:18px;font-weight:600;flex:none}
+.scrim{position:fixed;inset:0;z-index:60;background:rgb(20 16 14 / .32);display:flex;align-items:flex-start;justify-content:center;padding-top:96px}
+.dlg{position:relative;width:600px;border-radius:16px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);border:1px solid var(--ol)}
+.xbtn{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--fg);cursor:pointer}
+.xbtn:hover{background:var(--sunk)}
+.tool{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--accent);cursor:pointer}
+.tool:hover{background:color-mix(in oklab,var(--accent) 10%,transparent)}
+.toast{position:fixed;left:50%;bottom:32px;z-index:70;display:flex;align-items:center;gap:10px;height:44px;padding:0 18px;border-radius:999px;background:var(--fg);color:var(--bg);font-size:14px;transform:translateX(-50%)}
+.pick{display:flex;flex-direction:column;align-items:center;gap:8px;width:76px;padding:0;border:0;background:none;font-family:inherit;font-size:12px;color:var(--fg);cursor:pointer}
+.pick .ph{position:relative;display:block;width:56px;height:56px;border-radius:50%}
+.pick .ph img,.pick .ph span{display:flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;object-fit:cover;background:var(--sunk);font-size:20px;font-weight:600;color:var(--muted)}
+.pick.on .ph img,.pick.on .ph > span:first-child{box-shadow:0 0 0 2px var(--sheet),0 0 0 4px var(--fg)}
+.pick .ck{position:absolute;right:-2px;bottom:-2px;display:none;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--fg);color:var(--bg);box-shadow:0 0 0 2px var(--sheet)}
+.pick.on .ck{display:flex}
+.round{display:flex;flex-direction:column;align-items:center;gap:8px;width:76px;font-size:12px;color:var(--fg);background:none;border:0;padding:0;font-family:inherit;cursor:pointer}
+.round i{display:flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;background:var(--sunk);font-style:normal}
+.round:hover i{background:color-mix(in oklab,var(--sunk) 85%,var(--fg))}
+.side{position:sticky;top:96px;display:flex;flex-direction:column;gap:20px}
+.box{padding:18px 20px;border-radius:16px}.box h3{margin:0 0 10px;font-size:13px;font-weight:400;color:var(--muted)}
+.topic{display:flex;justify-content:space-between;padding:7px 0;font-size:14px}
+.cmt{display:grid;grid-template-columns:36px minmax(0,1fr);gap:12px;padding:16px 0}
+.cmt + .cmt{border-top:1px solid var(--rule)}
+.cmt .av{width:36px;height:36px;border-radius:50%;object-fit:cover}
+.cmt p{margin:4px 0 0;font-size:15px;line-height:1.85}
+.lnk{display:inline-flex;align-items:center;gap:4px;padding:0;border:0;background:none;font-family:inherit;font-size:13px;color:var(--muted);cursor:pointer}
+.reps{margin-top:8px}.reps .cmt{padding:10px 0}.reps .cmt + .cmt{border-top:0}
+
+</style>
+</helmet>
+<div style="{{vars}}position:relative;overflow:hidden;width:1440px;min-height:2000px;display:flex;flex-direction:column;background:var(--bg);color:var(--fg);font-family:'Songti SC','Noto Serif SC','Source Han Serif SC',STSong,SimSun,serif;font-size:15px;line-height:1.8">
+<div class="paper-l" style="display:{{showLight}}"></div>
+<div class="paper-d" style="display:{{showDark}}"></div>
+<img src="{{art}}" alt="" style="position:absolute;top:0;right:0;width:460px;opacity:0.6;pointer-events:none;mix-blend-mode:{{blend}};-webkit-mask-image:radial-gradient(circle at 100% 0%,#000 55%,transparent 92%);mask-image:radial-gradient(circle at 100% 0%,#000 55%,transparent 92%)">
+<div style="position:absolute;z-index:20;top:0;left:0;right:0"><dc-import name="Header" state="detail" section="推文" title="给博客加了季节" progress="18" user="{{ true }}" bare="{{ true }}" season="{{season}}" dark="{{dark}}" hint-size="1440px,70px"></dc-import></div>
+<main style="position:relative;z-index:2;width:1120px;margin:0 auto;padding:112px 0 0">
+<a href="Tweets.dc.html" class="btn gho sm" style="margin-left:-12px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>推文</a>
+<div style="display:grid;grid-template-columns:640px minmax(0,1fr);gap:72px;margin-top:16px;align-items:start">
+<div>
+  <article class="sheet" style="position:relative;padding:20px 24px 8px;border-radius:16px">
+    <div style="display:flex;align-items:center;gap:12px"><img src="/_blob/5f28c4bf59a4c2a6947f80a6b4b0bc2f" alt="" style="width:48px;height:48px;border-radius:50%;object-fit:cover"><div><div style="font-size:16px;font-weight:600">xunrua</div><div class="mono" style="font-size:13px;color:var(--muted)">@xunrua</div></div></div>
+    <button class="btn gho ic more" aria-label="更多" style="color:var(--muted)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg></button>
+    <p style="margin:16px 0 0;font-size:19px;line-height:1.85;letter-spacing:.02em">给博客加了季节。春天落桃花，秋天落桂花，冬天屋檐会积雪。改了一周的贝塞尔曲线，现在看什么都像花瓣。<span class="tag">#violet</span></p>
+    <div class="media" style="grid-template-columns:1fr 1fr;height:320px"><img src="/_blob/e799d2070872161b3559fcc279c8c47a" alt=""><img src="/_blob/08b5bbcf8e789230ee300223c24ad7f4" alt=""></div>
+    <div style="margin-top:14px;font-size:14px;color:var(--muted)"><span class="num">23:41</span> · 2026 年 10 月 30 日 · <b class="num" style="color:var(--fg);font-weight:500">1,284</b> 次浏览</div>
+    <div style="display:flex;gap:20px;margin-top:12px;padding:12px 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);font-size:14px;color:var(--muted)"><span><b class="num" style="color:var(--fg);font-weight:500">12</b> 评论</span><span><b class="num" style="color:var(--fg);font-weight:500">3</b> 引用</span><span><b class="num" style="color:var(--fg);font-weight:500">{{t1.l}}</b> 喜欢</span></div>
+    <div class="acts full">
+  <a href="TweetDetail.dc.html" class="ac r" aria-label="评论"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg></i><span class="num">{{t1.c}}</span></a>
+  <button class="ac q" aria-label="引用" onClick="{{t1.quote}}"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m17 2 4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3"/></svg></i><span class="num">{{t1.q}}</span></button>
+  <button class="ac l {{t1.lcls}}" aria-label="喜欢" aria-pressed="{{t1.liked}}" onClick="{{t1.like}}"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="{{t1.fill}}" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-9.2-8.6C1.3 8.4 3 5 6.4 5c2 0 3.3 1.1 4.1 2.3h3C14.3 6.1 15.6 5 17.6 5 21 5 22.7 8.4 21.2 11.4 19 15.6 12 20 12 20z"/></svg></i><span class="num">{{t1.l}}</span></button>
+  <span class="ac v" aria-label="浏览"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 20V10M12 20V4M6 20v-6"/></svg></i><span class="num">{{t1.v}}</span></span>
+  <button class="ac s" aria-label="分享" onClick="{{t1.share}}"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v13M16 6l-4-4-4 4M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/></svg></i></button>
+</div>
+  </article>
+  <div class="sheet" style="display:grid;grid-template-columns:40px minmax(0,1fr);gap:12px;margin-top:16px;padding:16px 20px 10px;border-radius:16px">
+    <img src="/_blob/5f28c4bf59a4c2a6947f80a6b4b0bc2f" alt="" style="width:40px;height:40px;border-radius:50%;object-fit:cover">
+    <div><div style="min-height:40px;padding-top:6px;font-size:17px;color:var(--muted)">发布你的评论</div><div style="display:flex;align-items:center;gap:2px;margin-left:-8px"><button class="tool" aria-label="添加图片"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h18v18H3zM8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3M21 15l-5-5L5 21"/></svg></button><button class="tool" aria-label="表情"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg></button><button class="btn pri sm" style="margin-left:auto">评论</button></div></div>
+  </div>
+  <section aria-label="评论" style="margin-top:32px">
+    <div style="display:flex;align-items:center;justify-content:space-between"><h2 style="margin:0;font-size:20px;font-weight:600">评论 <span class="num" style="font-size:15px;color:var(--muted);font-weight:400">12</span></h2><span class="seg"><span class="sg {{sortNew}}" onClick="{{byNew}}" role="tab">最新</span><span class="sg {{sortHot}}" onClick="{{byHot}}" role="tab">最热</span></span></div>
+    <div style="margin-top:12px">
+      <div class="cmt"><img class="av" src="/_blob/6088255c64459277009c55192955e1ab" alt=""><div><div class="who" style="font-size:14px"><b>林间</b><span class="tm" style="font-size:13px">· 2 小时前</span></div><p>落桃花那段的贝塞尔能开源吗？想抄作业。</p><div style="display:flex;gap:18px;margin-top:6px"><button class="lnk"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>回复</button><button class="lnk" onClick="{{cl_a.toggle}}" style="{{cl_a.style}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="{{cl_a.fill}}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-9.2-8.6C1.3 8.4 3 5 6.4 5c2 0 3.3 1.1 4.1 2.3h3C14.3 6.1 15.6 5 17.6 5 21 5 22.7 8.4 21.2 11.4 19 15.6 12 20 12 20z"/></svg><span class="num">{{cl_a.n}}</span></button></div><button class="lnk" onClick="{{toggleRep}}" style="margin-top:8px;color:var(--accent)">{{repLabel}}</button><sc-if value="{{repOpen}}" hint-placeholder-val="{{ true }}"><div class="reps"><div class="cmt"><img class="av" src="/_blob/5f28c4bf59a4c2a6947f80a6b4b0bc2f" alt=""><div><div class="who" style="font-size:14px"><b>xunrua</b><span class="chip" style="height:20px;padding:0 8px">作者</span><span class="tm" style="font-size:13px">· 1 小时前</span></div><p>都在仓库的 seasonal-decor 目录里，花瓣和叶子是同一个函数。</p><div style="display:flex;gap:18px;margin-top:6px"><button class="lnk"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>回复</button></div></div></div><div class="cmt"><img class="av" src="/_blob/6088255c64459277009c55192955e1ab" alt=""><div><div class="who" style="font-size:14px"><b>林间</b><span class="tm" style="font-size:13px">· 58 分钟前</span></div><p>好，晚上去翻。</p><div style="display:flex;gap:18px;margin-top:6px"><button class="lnk"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>回复</button></div></div></div></div></sc-if></div></div>
+      <div class="cmt"><img class="av" src="/_blob/52d0254b3d8852ff951bf4de8eec6a57" alt=""><div><div class="who" style="font-size:14px"><b>Momo</b><span class="tm" style="font-size:13px">· 5 小时前</span></div><p>冬天的雪会积在导航上吗？</p><div style="display:flex;gap:18px;margin-top:6px"><button class="lnk"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>回复</button><button class="lnk" onClick="{{cl_b.toggle}}" style="{{cl_b.style}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="{{cl_b.fill}}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-9.2-8.6C1.3 8.4 3 5 6.4 5c2 0 3.3 1.1 4.1 2.3h3C14.3 6.1 15.6 5 17.6 5 21 5 22.7 8.4 21.2 11.4 19 15.6 12 20 12 20z"/></svg><span class="num">{{cl_b.n}}</span></button></div></div></div>
+      <div class="cmt"><img class="av" src="/_blob/cdd807830934caef57a440ae48a88d9b" alt=""><div><div class="who" style="font-size:14px"><b>雾里</b><span class="tm" style="font-size:13px">· 6 小时前</span></div><p>秋天的版本也想看，桂花那个颜色很难调。</p><img src="/_blob/fc0dfd2db5525fe1dcf85d29dc6157d6" alt="" style="display:block;width:260px;height:160px;margin-top:10px;border-radius:12px;object-fit:cover"><div style="display:flex;gap:18px;margin-top:6px"><button class="lnk"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>回复</button><button class="lnk" onClick="{{cl_c.toggle}}" style="{{cl_c.style}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="{{cl_c.fill}}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-9.2-8.6C1.3 8.4 3 5 6.4 5c2 0 3.3 1.1 4.1 2.3h3C14.3 6.1 15.6 5 17.6 5 21 5 22.7 8.4 21.2 11.4 19 15.6 12 20 12 20z"/></svg><span class="num">{{cl_c.n}}</span></button></div></div></div>
+      <button class="btn" style="width:100%;margin-top:12px">再看 9 条评论</button>
+    </div>
+  </section>
+</div>
+<aside class="side">
+  <div class="box sheet"><div style="display:flex;align-items:center;gap:12px"><img src="/_blob/5f28c4bf59a4c2a6947f80a6b4b0bc2f" alt="" style="width:52px;height:52px;border-radius:50%;object-fit:cover"><div><div style="font-size:16px;font-weight:600">xunrua</div><div class="mono" style="font-size:13px;color:var(--muted)">@xunrua</div></div></div><p style="margin:12px 0 0;font-size:14px;line-height:1.8">写代码的人，也写字。</p><div style="display:flex;gap:24px;margin-top:12px;font-size:13px;color:var(--muted)"><span><b class="num" style="color:var(--fg);font-weight:500">58</b> 推文</span><span><b class="num" style="color:var(--fg);font-weight:500">1.2k</b> 获赞</span></div><a href="Profile.dc.html" class="btn" style="width:100%;margin-top:14px">看主页</a></div>
+  <div class="box sheet"><h3>引用了这条</h3><div style="display:flex;gap:10px;align-items:flex-start"><img src="/_blob/52d0254b3d8852ff951bf4de8eec6a57" alt="" style="width:28px;height:28px;border-radius:50%;object-fit:cover"><div style="font-size:14px;line-height:1.7"><b style="font-weight:600">Momo</b><span style="color:var(--muted)"> · 1 小时前</span><br>这个落花太好看了，求教程！</div></div></div>
+</aside>
+</div>
+</main>
+<sc-if value="{{quoteOpen}}" hint-placeholder-val="{{ false }}"><div class="scrim" onClick="{{closeQuote}}"><div class="dlg" role="dialog" aria-label="引用推文" onClick="{{stop}}">
+  <div style="padding:8px 8px 0"><button class="xbtn" aria-label="关闭" onClick="{{closeQuote}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+  <div style="display:grid;grid-template-columns:40px minmax(0,1fr);gap:12px;padding:4px 20px 12px">
+    <img src="/_blob/5f28c4bf59a4c2a6947f80a6b4b0bc2f" alt="" style="width:40px;height:40px;border-radius:50%;object-fit:cover">
+    <div><div style="min-height:56px;padding-top:6px;font-size:19px;line-height:1.7;color:var(--muted)">添加评论</div><a href="TweetDetail.dc.html" class="qt"><span style="display:flex;align-items:center;gap:8px;font-size:14px"><img src="/_blob/5f28c4bf59a4c2a6947f80a6b4b0bc2f" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:cover"><b style="font-weight:600">xunrua</b><span style="color:var(--muted)">· 2 小时前</span></span><span style="display:block;margin-top:6px;font-size:15px;line-height:1.75">给博客加了季节。春天落桃花，秋天落桂花，冬天屋檐会积雪。改了一周的贝塞尔曲线，现在看什么都像花瓣。</span><img src="/_blob/e799d2070872161b3559fcc279c8c47a" alt="" style="display:block;width:100%;height:180px;margin-top:10px;border-radius:8px;object-fit:cover"></a></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:2px;margin:0 20px;padding:10px 0 12px 44px;border-top:1px solid var(--rule)"><button class="tool" aria-label="添加图片"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h18v18H3zM8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3M21 15l-5-5L5 21"/></svg></button><button class="tool" aria-label="表情"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg></button><button class="tool" aria-label="话题"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/></svg></button>
+    <svg width="22" height="22" viewBox="0 0 22 22" aria-label="还能输入 500 字" role="img" style="margin-left:auto;margin-right:12px"><circle cx="11" cy="11" r="9" fill="none" stroke="var(--rule2)" stroke-width="2"/></svg><button class="btn pri sm" onClick="{{closeQuote}}">发布</button></div>
+</div></div></sc-if>
+<sc-if value="{{shareOpen}}" hint-placeholder-val="{{ false }}"><div class="scrim" onClick="{{closeShare}}"><div class="dlg" role="dialog" aria-label="分享" onClick="{{stop}}" style="width:520px;padding:20px 20px 16px">
+  <div style="display:flex;align-items:center;justify-content:space-between"><b style="font-size:17px;font-weight:600">分享</b><button class="xbtn" aria-label="关闭" onClick="{{closeShare}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+  <div style="margin-top:16px;font-size:13px;color:var(--muted)">发到聊天</div>
+  <div style="display:flex;gap:8px;margin-top:12px">
+    <button class="pick {{pk_a.cls}}" onClick="{{pk_a.toggle}}"><span class="ph"><span class="mono" style="font-weight:500">#</span><span class="ck"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg></span></span># 大厅</button>
+    <button class="pick {{pk_b.cls}}" onClick="{{pk_b.toggle}}"><span class="ph"><img src="/_blob/6088255c64459277009c55192955e1ab" alt=""><span class="ck"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg></span></span>林间</button>
+    <button class="pick {{pk_c.cls}}" onClick="{{pk_c.toggle}}"><span class="ph"><span>夜</span><span class="ck"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg></span></span>夜猫子</button>
+    <button class="pick {{pk_d.cls}}" onClick="{{pk_d.toggle}}"><span class="ph"><img src="/_blob/52d0254b3d8852ff951bf4de8eec6a57" alt=""><span class="ck"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg></span></span>Momo</button>
+    <button class="pick {{pk_e.cls}}" onClick="{{pk_e.toggle}}"><span class="ph"><img src="/_blob/e799d2070872161b3559fcc279c8c47a" alt=""><span class="ck"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg></span></span>Rua</button>
+    <button class="pick" aria-label="更多会话"><span class="ph"><span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-3.5-3.5"/></svg></span></span>搜索</button>
+  </div>
+  <sc-if value="{{anyPick}}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:8px;margin-top:16px"><span class="fld" style="flex:1">附一句话（选填）</span><button class="btn pri" onClick="{{sendShare}}">发送给 {{pickCount}} 个会话</button></div></sc-if>
+  <div style="height:1px;margin:20px 0 16px;background:var(--rule)"></div>
+  <div style="display:flex;gap:8px">
+    <button class="round" onClick="{{copyLink}}"><i><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></i>复制链接</button>
+    <button class="round"><i><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h18v18H3zM8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3M21 15l-5-5L5 21"/></svg></i>存为图片</button>
+    <sc-if value="{{shareExt}}" hint-placeholder-val="{{ false }}"><button class="round"><i><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-label="X" role="img"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></i>在 X 打开</button></sc-if>
+  </div>
+</div></div></sc-if>
+<sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}"><div class="toast" role="status"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>{{toast}}</div></sc-if>
+<div style="position:relative;z-index:2;margin-top:auto;padding-top:96px"><dc-import name="Footer" season="{{season}}" dark="{{dark}}" hint-size="1440px,320px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"season":{"editor":"enum","options":["春","夏","秋","冬"],"default":"春"},"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":2000}}'>
+class Component extends DCLogic {
+  state = { liked: {}, quote: null, share: null, ext: false, picks: {}, toast: '', rep: false, sort: 'new' };
+  flash(msg) { this.setState({ toast: msg }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: '' }), 1800); }
+  renderVals() {
+    const S = {
+      '春': { seed: '#f47983', h: 16.6, l: '/_blob/d8aaad66118cac26d5af34610af527bf', d: '/_blob/0cfa75d49c85d4df8e63d591ce6c7ea1' },
+      '夏': { seed: '#2f9e7a', h: 162, l: '/_blob/c0353bf8edad55e8130fb95826b3799f', d: '/_blob/8ab23c87229ff622bac13566cfb665fd' },
+      '秋': { seed: '#d9a21b', h: 82.95, l: '/_blob/d837ab2ada8c6a3cbb1a71fea71be6e2', d: '/_blob/8a07e26da1a24b8a9f19bf09a30aca11' },
+      '冬': { seed: '#7d8ea3', h: 252, l: '/_blob/eb4210561b3c04659b349b6813d7ba9c', d: '/_blob/f4961af0e552cbba606908f217a44b37' },
+    };
+    const season = S[this.props.season] ? this.props.season : '春';
+    const dark = !!this.props.dark;
+    const s = S[season], h = s.h;
+    const vars = dark
+      ? `--bg:oklch(0.17 0.0087 ${h});--sheet:oklch(0.235 0.011 ${h});--sunk:oklch(0.29 0.012 ${h});--fg:oklch(0.9373 0.015 ${h});--muted:oklch(0.8573 0.0225 ${h});--rule:oklch(0.9373 0.015 ${h} / .12);--rule2:oklch(0.9373 0.015 ${h} / .3);--deco:${s.seed};--accent:oklch(0.8589 0.1031 ${h});--danger:oklch(0.74 0.14 25);--ok:oklch(0.74 0.15 155);--ol:rgb(255 255 255 / .08);`
+      : `--bg:oklch(0.968 0.006 ${h});--sheet:oklch(0.994 0.003 ${h});--sunk:oklch(0.945 0.007 ${h});--fg:oklch(0.3331 0.0175 ${h});--muted:oklch(0.4717 0.0225 ${h});--rule:oklch(0.3331 0.0175 ${h} / .11);--rule2:oklch(0.3331 0.0175 ${h} / .3);--deco:${s.seed};--accent:oklch(0.4739 0.0974 ${h});--danger:oklch(0.52 0.16 27);--ok:oklch(0.52 0.13 155);--ol:transparent;`;
+    const base = { vars, season, dark, art: dark ? s.d : s.l, blend: dark ? 'normal' : 'multiply', showLight: dark ? 'none' : 'block', showDark: dark ? 'block' : 'none' };
+    const st = this.state, set = (o) => this.setState(o);
+    const T = (id, c, q, l0, v, init, ext) => { const liked = st.liked[id] === undefined ? init : st.liked[id];
+      return { c, q, v, l: l0 + (liked === init ? 0 : liked ? 1 : -1), liked, fill: liked ? 'currentColor' : 'none', lcls: liked ? 'on' : '',
+        like: () => set({ liked: Object.assign({}, st.liked, { [id]: !liked }) }), quote: () => set({ quote: id }), share: () => set({ share: id, ext: !!ext, picks: {} }) }; };
+    const keys = ['a', 'b', 'c', 'd', 'e'], picks = st.picks || {}, pickCount = keys.filter((k) => picks[k]).length;
+    const extra = { quoteOpen: !!st.quote, closeQuote: () => set({ quote: null }), shareOpen: !!st.share, shareExt: !!st.ext, closeShare: () => set({ share: null }),
+      anyPick: pickCount > 0, pickCount, sendShare: () => { set({ share: null }); this.flash('已发到 ' + pickCount + ' 个会话'); },
+      copyLink: () => { set({ share: null }); this.flash('链接已复制'); }, stop: (e) => e.stopPropagation(), toastOn: !!st.toast, toast: st.toast || '' };
+    keys.forEach((k) => { extra['pk_' + k] = { cls: picks[k] ? 'on' : '', toggle: () => set({ picks: Object.assign({}, picks, { [k]: !picks[k] }) }) }; });
+    extra.t1 = T('t1', 12, 3, 48, '1.2k', true);
+    const CL = { a: 3, b: 1, c: 5 }; ['a', 'b', 'c'].forEach((k) => { const on = !!(st.cl && st.cl[k]); extra['cl_' + k] = { n: CL[k] + (on ? 1 : 0), fill: on ? 'currentColor' : 'none', style: on ? 'color:var(--deco)' : '', toggle: () => set({ cl: Object.assign({}, st.cl, { [k]: !on }) }) }; });
+    Object.assign(extra, { repOpen: !!st.rep, repLabel: st.rep ? '收起回复' : '查看 2 条回复', toggleRep: () => set({ rep: !st.rep }),
+      sortNew: st.sort === 'hot' ? '' : 'on', sortHot: st.sort === 'hot' ? 'on' : '', byNew: () => set({ sort: 'new' }), byHot: () => set({ sort: 'hot' }) });
+    return Object.assign(base, extra);
+  }
+}
+</script>
+</body>
+</html>

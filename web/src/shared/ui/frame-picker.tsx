@@ -179,7 +179,7 @@ export function FramePicker({
 			<div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
 				{error ? (
 					<div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
-						<Film className="size-8 opacity-40" />
+						<Film className="size-6 opacity-40" />
 						<p className="px-4 text-center text-xs">{error}</p>
 					</div>
 				) : (

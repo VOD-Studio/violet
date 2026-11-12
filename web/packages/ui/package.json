@@ -27,10 +27,40 @@
 			"import": "./src/variants.ts",
 			"default": "./src/variants.ts"
 		},
+		"./accordion": {
+			"types": "./src/components/accordion/index.ts",
+			"import": "./src/components/accordion/index.ts",
+			"default": "./src/components/accordion/index.ts"
+		},
+		"./alert": {
+			"types": "./src/components/alert/index.ts",
+			"import": "./src/components/alert/index.ts",
+			"default": "./src/components/alert/index.ts"
+		},
+		"./annotation": {
+			"types": "./src/components/annotation/index.ts",
+			"import": "./src/components/annotation/index.ts",
+			"default": "./src/components/annotation/index.ts"
+		},
+		"./announcement-bar": {
+			"types": "./src/components/announcement-bar/index.ts",
+			"import": "./src/components/announcement-bar/index.ts",
+			"default": "./src/components/announcement-bar/index.ts"
+		},
+		"./avatar": {
+			"types": "./src/components/avatar/index.ts",
+			"import": "./src/components/avatar/index.ts",
+			"default": "./src/components/avatar/index.ts"
+		},
 		"./badge": {
 			"types": "./src/components/badge/index.ts",
 			"import": "./src/components/badge/index.ts",
 			"default": "./src/components/badge/index.ts"
+		},
+		"./breadcrumbs": {
+			"types": "./src/components/breadcrumbs/index.ts",
+			"import": "./src/components/breadcrumbs/index.ts",
+			"default": "./src/components/breadcrumbs/index.ts"
 		},
 		"./button": {
 			"types": "./src/components/button/index.ts",
@@ -42,6 +72,11 @@
 			"import": "./src/components/card/index.ts",
 			"default": "./src/components/card/index.ts"
 		},
+		"./cascader": {
+			"types": "./src/components/cascader/index.ts",
+			"import": "./src/components/cascader/index.ts",
+			"default": "./src/components/cascader/index.ts"
+		},
 		"./chart": {
 			"types": "./src/components/chart/index.ts",
 			"import": "./src/components/chart/index.ts",
@@ -52,15 +87,30 @@
 			"import": "./src/components/checkbox/index.ts",
 			"default": "./src/components/checkbox/index.ts"
 		},
+		"./code-block": {
+			"types": "./src/components/code-block/index.ts",
+			"import": "./src/components/code-block/index.ts",
+			"default": "./src/components/code-block/index.ts"
+		},
 		"./color-picker": {
 			"types": "./src/components/color-picker/index.ts",
 			"import": "./src/components/color-picker/index.ts",
 			"default": "./src/components/color-picker/index.ts"
 		},
+		"./combobox": {
+			"types": "./src/components/combobox/index.ts",
+			"import": "./src/components/combobox/index.ts",
+			"default": "./src/components/combobox/index.ts"
+		},
 		"./command": {
 			"types": "./src/components/command/index.ts",
 			"import": "./src/components/command/index.ts",
 			"default": "./src/components/command/index.ts"
+		},
+		"./comment": {
+			"types": "./src/components/comment/index.ts",
+			"import": "./src/components/comment/index.ts",
+			"default": "./src/components/comment/index.ts"
 		},
 		"./confirm-dialog": {
 			"types": "./src/components/confirm-dialog/index.ts",
@@ -72,10 +122,20 @@
 			"import": "./src/components/context-menu/index.ts",
 			"default": "./src/components/context-menu/index.ts"
 		},
+		"./date-picker": {
+			"types": "./src/components/date-picker/index.ts",
+			"import": "./src/components/date-picker/index.ts",
+			"default": "./src/components/date-picker/index.ts"
+		},
 		"./dialog": {
 			"types": "./src/components/dialog/index.ts",
 			"import": "./src/components/dialog/index.ts",
 			"default": "./src/components/dialog/index.ts"
+		},
+		"./drawer": {
+			"types": "./src/components/drawer/index.ts",
+			"import": "./src/components/drawer/index.ts",
+			"default": "./src/components/drawer/index.ts"
 		},
 		"./dropdown": {
 			"types": "./src/components/dropdown/index.ts",
@@ -87,55 +147,90 @@
 			"import": "./src/components/dropdown-menu/index.ts",
 			"default": "./src/components/dropdown-menu/index.ts"
 		},
+		"./emoji-picker": {
+			"types": "./src/components/emoji-picker/index.ts",
+			"import": "./src/components/emoji-picker/index.ts",
+			"default": "./src/components/emoji-picker/index.ts"
+		},
 		"./empty": {
 			"types": "./src/components/empty/index.ts",
 			"import": "./src/components/empty/index.ts",
 			"default": "./src/components/empty/index.ts"
+		},
+		"./field": {
+			"types": "./src/components/field/index.ts",
+			"import": "./src/components/field/index.ts",
+			"default": "./src/components/field/index.ts"
+		},
+		"./hover-card": {
+			"types": "./src/components/hover-card/index.ts",
+			"import": "./src/components/hover-card/index.ts",
+			"default": "./src/components/hover-card/index.ts"
 		},
 		"./icons": {
 			"types": "./src/components/icons/index.ts",
 			"import": "./src/components/icons/index.ts",
 			"default": "./src/components/icons/index.ts"
 		},
+		"./image-grid": {
+			"types": "./src/components/image-grid/index.ts",
+			"import": "./src/components/image-grid/index.ts",
+			"default": "./src/components/image-grid/index.ts"
+		},
 		"./image-pixel-reveal": {
 			"types": "./src/components/image-pixel-reveal/index.ts",
 			"import": "./src/components/image-pixel-reveal/index.ts",
 			"default": "./src/components/image-pixel-reveal/index.ts"
 		},
-		"./inline-error": {
-			"types": "./src/components/inline-error/index.ts",
-			"import": "./src/components/inline-error/index.ts",
-			"default": "./src/components/inline-error/index.ts"
+		"./indicator": {
+			"types": "./src/components/indicator/index.ts",
+			"import": "./src/components/indicator/index.ts",
+			"default": "./src/components/indicator/index.ts"
 		},
 		"./input": {
 			"types": "./src/components/input/index.ts",
 			"import": "./src/components/input/index.ts",
 			"default": "./src/components/input/index.ts"
 		},
-		"./label": {
-			"types": "./src/components/label/index.ts",
-			"import": "./src/components/label/index.ts",
-			"default": "./src/components/label/index.ts"
+		"./kbd": {
+			"types": "./src/components/kbd/index.ts",
+			"import": "./src/components/kbd/index.ts",
+			"default": "./src/components/kbd/index.ts"
 		},
 		"./link-card": {
 			"types": "./src/components/link-card/index.ts",
 			"import": "./src/components/link-card/index.ts",
 			"default": "./src/components/link-card/index.ts"
 		},
-		"./modal": {
-			"types": "./src/components/modal/index.ts",
-			"import": "./src/components/modal/index.ts",
-			"default": "./src/components/modal/index.ts"
+		"./list": {
+			"types": "./src/components/list/index.ts",
+			"import": "./src/components/list/index.ts",
+			"default": "./src/components/list/index.ts"
+		},
+		"./list-highlight": {
+			"types": "./src/components/list-highlight/index.ts",
+			"import": "./src/components/list-highlight/index.ts",
+			"default": "./src/components/list-highlight/index.ts"
+		},
+		"./mention": {
+			"types": "./src/components/mention/index.ts",
+			"import": "./src/components/mention/index.ts",
+			"default": "./src/components/mention/index.ts"
+		},
+		"./morphing-popover": {
+			"types": "./src/components/morphing-popover/index.ts",
+			"import": "./src/components/morphing-popover/index.ts",
+			"default": "./src/components/morphing-popover/index.ts"
+		},
+		"./number-input": {
+			"types": "./src/components/number-input/index.ts",
+			"import": "./src/components/number-input/index.ts",
+			"default": "./src/components/number-input/index.ts"
 		},
 		"./otp": {
 			"types": "./src/components/otp/index.ts",
 			"import": "./src/components/otp/index.ts",
 			"default": "./src/components/otp/index.ts"
-		},
-		"./overlay-scroll": {
-			"types": "./src/components/overlay-scroll/index.ts",
-			"import": "./src/components/overlay-scroll/index.ts",
-			"default": "./src/components/overlay-scroll/index.ts"
 		},
 		"./page-header": {
 			"types": "./src/components/page-header/index.ts",
@@ -157,10 +252,30 @@
 			"import": "./src/components/popover/index.ts",
 			"default": "./src/components/popover/index.ts"
 		},
+		"./progress": {
+			"types": "./src/components/progress/index.ts",
+			"import": "./src/components/progress/index.ts",
+			"default": "./src/components/progress/index.ts"
+		},
 		"./prompt-dialog": {
 			"types": "./src/components/prompt-dialog/index.ts",
 			"import": "./src/components/prompt-dialog/index.ts",
 			"default": "./src/components/prompt-dialog/index.ts"
+		},
+		"./quote-card": {
+			"types": "./src/components/quote-card/index.ts",
+			"import": "./src/components/quote-card/index.ts",
+			"default": "./src/components/quote-card/index.ts"
+		},
+		"./radio": {
+			"types": "./src/components/radio/index.ts",
+			"import": "./src/components/radio/index.ts",
+			"default": "./src/components/radio/index.ts"
+		},
+		"./reaction": {
+			"types": "./src/components/reaction/index.ts",
+			"import": "./src/components/reaction/index.ts",
+			"default": "./src/components/reaction/index.ts"
 		},
 		"./resend-button": {
 			"types": "./src/components/resend-button/index.ts",
@@ -171,11 +286,6 @@
 			"types": "./src/components/scroll-area/index.ts",
 			"import": "./src/components/scroll-area/index.ts",
 			"default": "./src/components/scroll-area/index.ts"
-		},
-		"./search-input": {
-			"types": "./src/components/search-input/index.ts",
-			"import": "./src/components/search-input/index.ts",
-			"default": "./src/components/search-input/index.ts"
 		},
 		"./segmented": {
 			"types": "./src/components/segmented/index.ts",
@@ -197,20 +307,25 @@
 			"import": "./src/components/sheet/index.ts",
 			"default": "./src/components/sheet/index.ts"
 		},
-		"./shimmer-skeleton": {
-			"types": "./src/components/shimmer-skeleton/index.ts",
-			"import": "./src/components/shimmer-skeleton/index.ts",
-			"default": "./src/components/shimmer-skeleton/index.ts"
-		},
 		"./skeleton": {
 			"types": "./src/components/skeleton/index.ts",
 			"import": "./src/components/skeleton/index.ts",
 			"default": "./src/components/skeleton/index.ts"
 		},
+		"./slider": {
+			"types": "./src/components/slider/index.ts",
+			"import": "./src/components/slider/index.ts",
+			"default": "./src/components/slider/index.ts"
+		},
 		"./sonner": {
 			"types": "./src/components/sonner/index.ts",
 			"import": "./src/components/sonner/index.ts",
 			"default": "./src/components/sonner/index.ts"
+		},
+		"./sortable": {
+			"types": "./src/components/sortable/index.ts",
+			"import": "./src/components/sortable/index.ts",
+			"default": "./src/components/sortable/index.ts"
 		},
 		"./steps": {
 			"types": "./src/components/steps/index.ts",
@@ -232,6 +347,11 @@
 			"import": "./src/components/tabs/index.ts",
 			"default": "./src/components/tabs/index.ts"
 		},
+		"./tag-input": {
+			"types": "./src/components/tag-input/index.ts",
+			"import": "./src/components/tag-input/index.ts",
+			"default": "./src/components/tag-input/index.ts"
+		},
 		"./text-underline": {
 			"types": "./src/components/text-underline/index.ts",
 			"import": "./src/components/text-underline/index.ts",
@@ -242,10 +362,30 @@
 			"import": "./src/components/textarea/index.ts",
 			"default": "./src/components/textarea/index.ts"
 		},
+		"./toggle-group": {
+			"types": "./src/components/toggle-group/index.ts",
+			"import": "./src/components/toggle-group/index.ts",
+			"default": "./src/components/toggle-group/index.ts"
+		},
 		"./tooltip": {
 			"types": "./src/components/tooltip/index.ts",
 			"import": "./src/components/tooltip/index.ts",
 			"default": "./src/components/tooltip/index.ts"
+		},
+		"./tree": {
+			"types": "./src/components/tree/index.ts",
+			"import": "./src/components/tree/index.ts",
+			"default": "./src/components/tree/index.ts"
+		},
+		"./tree-select": {
+			"types": "./src/components/tree-select/index.ts",
+			"import": "./src/components/tree-select/index.ts",
+			"default": "./src/components/tree-select/index.ts"
+		},
+		"./upload": {
+			"types": "./src/components/upload/index.ts",
+			"import": "./src/components/upload/index.ts",
+			"default": "./src/components/upload/index.ts"
 		},
 		"./upload-tile": {
 			"types": "./src/components/upload-tile/index.ts",
@@ -270,23 +410,75 @@
 		"./styles.css": "./src/styles.css",
 		"./tokens.css": "./src/tokens.css",
 		"./classes.css": "./src/classes.css",
+		"./components/accordion.css": "./src/components/accordion/accordion.css",
+		"./components/alert.css": "./src/components/alert/alert.css",
+		"./components/annotation.css": "./src/components/annotation/annotation.css",
+		"./components/announcement-bar.css": "./src/components/announcement-bar/announcement-bar.css",
+		"./components/avatar.css": "./src/components/avatar/avatar.css",
 		"./components/badge.css": "./src/components/badge/badge.css",
+		"./components/breadcrumbs.css": "./src/components/breadcrumbs/breadcrumbs.css",
 		"./components/button.css": "./src/components/button/button.css",
 		"./components/card.css": "./src/components/card/card.css",
+		"./components/cascader.css": "./src/components/cascader/cascader.css",
+		"./components/chart.css": "./src/components/chart/chart.css",
 		"./components/checkbox.css": "./src/components/checkbox/checkbox.css",
+		"./components/code-block.css": "./src/components/code-block/code-block.css",
+		"./components/color-picker.css": "./src/components/color-picker/color-picker.css",
+		"./components/combobox.css": "./src/components/combobox/combobox.css",
+		"./components/command.css": "./src/components/command/command.css",
+		"./components/comment.css": "./src/components/comment/comment.css",
+		"./components/confirm-dialog.css": "./src/components/confirm-dialog/confirm-dialog.css",
+		"./components/context-menu.css": "./src/components/context-menu/context-menu.css",
+		"./components/date-picker.css": "./src/components/date-picker/date-picker.css",
+		"./components/dialog.css": "./src/components/dialog/dialog.css",
+		"./components/drawer.css": "./src/components/drawer/drawer.css",
 		"./components/dropdown.css": "./src/components/dropdown/dropdown.css",
+		"./components/dropdown-menu.css": "./src/components/dropdown-menu/dropdown-menu.css",
+		"./components/emoji-picker.css": "./src/components/emoji-picker/emoji-picker.css",
+		"./components/empty.css": "./src/components/empty/empty.css",
+		"./components/field.css": "./src/components/field/field.css",
+		"./components/hover-card.css": "./src/components/hover-card/hover-card.css",
+		"./components/image-grid.css": "./src/components/image-grid/image-grid.css",
 		"./components/image-pixel-reveal.css": "./src/components/image-pixel-reveal/image-pixel-reveal.css",
+		"./components/indicator.css": "./src/components/indicator/indicator.css",
 		"./components/input.css": "./src/components/input/input.css",
-		"./components/label.css": "./src/components/label/label.css",
+		"./components/kbd.css": "./src/components/kbd/kbd.css",
 		"./components/link-card.css": "./src/components/link-card/link-card.css",
-		"./components/overlay-scroll.css": "./src/components/overlay-scroll/overlay-scroll.css",
-		"./components/search-input.css": "./src/components/search-input/search-input.css",
+		"./components/list.css": "./src/components/list/list.css",
+		"./components/list-highlight.css": "./src/components/list-highlight/list-highlight.css",
+		"./components/mention.css": "./src/components/mention/mention.css",
+		"./components/morphing-popover.css": "./src/components/morphing-popover/morphing-popover.css",
+		"./components/number-input.css": "./src/components/number-input/number-input.css",
+		"./components/otp.css": "./src/components/otp/otp.css",
+		"./components/page-header.css": "./src/components/page-header/page-header.css",
+		"./components/pagination.css": "./src/components/pagination/pagination.css",
+		"./components/popover.css": "./src/components/popover/popover.css",
+		"./components/progress.css": "./src/components/progress/progress.css",
+		"./components/prompt-dialog.css": "./src/components/prompt-dialog/prompt-dialog.css",
+		"./components/quote-card.css": "./src/components/quote-card/quote-card.css",
+		"./components/radio.css": "./src/components/radio/radio.css",
+		"./components/reaction.css": "./src/components/reaction/reaction.css",
+		"./components/resend-button.css": "./src/components/resend-button/resend-button.css",
+		"./components/scroll-area.css": "./src/components/scroll-area/scroll-area.css",
 		"./components/segmented.css": "./src/components/segmented/segmented.css",
+		"./components/select.css": "./src/components/select/select.css",
 		"./components/separator.css": "./src/components/separator/separator.css",
+		"./components/sheet.css": "./src/components/sheet/sheet.css",
 		"./components/skeleton.css": "./src/components/skeleton/skeleton.css",
+		"./components/slider.css": "./src/components/slider/slider.css",
+		"./components/sonner.css": "./src/components/sonner/sonner.css",
+		"./components/sortable.css": "./src/components/sortable/sortable.css",
+		"./components/steps.css": "./src/components/steps/steps.css",
 		"./components/switch.css": "./src/components/switch/switch.css",
+		"./components/table.css": "./src/components/table/table.css",
 		"./components/tabs.css": "./src/components/tabs/tabs.css",
+		"./components/tag-input.css": "./src/components/tag-input/tag-input.css",
 		"./components/textarea.css": "./src/components/textarea/textarea.css",
+		"./components/toggle-group.css": "./src/components/toggle-group/toggle-group.css",
+		"./components/tooltip.css": "./src/components/tooltip/tooltip.css",
+		"./components/tree.css": "./src/components/tree/tree.css",
+		"./components/tree-select.css": "./src/components/tree-select/tree-select.css",
+		"./components/upload.css": "./src/components/upload/upload.css",
 		"./components/upload-tile.css": "./src/components/upload-tile/upload-tile.css",
 		"./palettes/violet.css": "./src/styles/palettes/violet.generated.css",
 		"./palettes/coral.css": "./src/styles/palettes/coral.generated.css",
@@ -324,10 +516,40 @@
 				"import": "./dist/variants.js",
 				"default": "./dist/variants.js"
 			},
+			"./accordion": {
+				"types": "./dist/components/accordion/index.d.ts",
+				"import": "./dist/components/accordion/index.js",
+				"default": "./dist/components/accordion/index.js"
+			},
+			"./alert": {
+				"types": "./dist/components/alert/index.d.ts",
+				"import": "./dist/components/alert/index.js",
+				"default": "./dist/components/alert/index.js"
+			},
+			"./annotation": {
+				"types": "./dist/components/annotation/index.d.ts",
+				"import": "./dist/components/annotation/index.js",
+				"default": "./dist/components/annotation/index.js"
+			},
+			"./announcement-bar": {
+				"types": "./dist/components/announcement-bar/index.d.ts",
+				"import": "./dist/components/announcement-bar/index.js",
+				"default": "./dist/components/announcement-bar/index.js"
+			},
+			"./avatar": {
+				"types": "./dist/components/avatar/index.d.ts",
+				"import": "./dist/components/avatar/index.js",
+				"default": "./dist/components/avatar/index.js"
+			},
 			"./badge": {
 				"types": "./dist/components/badge/index.d.ts",
 				"import": "./dist/components/badge/index.js",
 				"default": "./dist/components/badge/index.js"
+			},
+			"./breadcrumbs": {
+				"types": "./dist/components/breadcrumbs/index.d.ts",
+				"import": "./dist/components/breadcrumbs/index.js",
+				"default": "./dist/components/breadcrumbs/index.js"
 			},
 			"./button": {
 				"types": "./dist/components/button/index.d.ts",
@@ -339,6 +561,11 @@
 				"import": "./dist/components/card/index.js",
 				"default": "./dist/components/card/index.js"
 			},
+			"./cascader": {
+				"types": "./dist/components/cascader/index.d.ts",
+				"import": "./dist/components/cascader/index.js",
+				"default": "./dist/components/cascader/index.js"
+			},
 			"./chart": {
 				"types": "./dist/components/chart/index.d.ts",
 				"import": "./dist/components/chart/index.js",
@@ -349,15 +576,30 @@
 				"import": "./dist/components/checkbox/index.js",
 				"default": "./dist/components/checkbox/index.js"
 			},
+			"./code-block": {
+				"types": "./dist/components/code-block/index.d.ts",
+				"import": "./dist/components/code-block/index.js",
+				"default": "./dist/components/code-block/index.js"
+			},
 			"./color-picker": {
 				"types": "./dist/components/color-picker/index.d.ts",
 				"import": "./dist/components/color-picker/index.js",
 				"default": "./dist/components/color-picker/index.js"
 			},
+			"./combobox": {
+				"types": "./dist/components/combobox/index.d.ts",
+				"import": "./dist/components/combobox/index.js",
+				"default": "./dist/components/combobox/index.js"
+			},
 			"./command": {
 				"types": "./dist/components/command/index.d.ts",
 				"import": "./dist/components/command/index.js",
 				"default": "./dist/components/command/index.js"
+			},
+			"./comment": {
+				"types": "./dist/components/comment/index.d.ts",
+				"import": "./dist/components/comment/index.js",
+				"default": "./dist/components/comment/index.js"
 			},
 			"./confirm-dialog": {
 				"types": "./dist/components/confirm-dialog/index.d.ts",
@@ -369,10 +611,20 @@
 				"import": "./dist/components/context-menu/index.js",
 				"default": "./dist/components/context-menu/index.js"
 			},
+			"./date-picker": {
+				"types": "./dist/components/date-picker/index.d.ts",
+				"import": "./dist/components/date-picker/index.js",
+				"default": "./dist/components/date-picker/index.js"
+			},
 			"./dialog": {
 				"types": "./dist/components/dialog/index.d.ts",
 				"import": "./dist/components/dialog/index.js",
 				"default": "./dist/components/dialog/index.js"
+			},
+			"./drawer": {
+				"types": "./dist/components/drawer/index.d.ts",
+				"import": "./dist/components/drawer/index.js",
+				"default": "./dist/components/drawer/index.js"
 			},
 			"./dropdown": {
 				"types": "./dist/components/dropdown/index.d.ts",
@@ -384,55 +636,90 @@
 				"import": "./dist/components/dropdown-menu/index.js",
 				"default": "./dist/components/dropdown-menu/index.js"
 			},
+			"./emoji-picker": {
+				"types": "./dist/components/emoji-picker/index.d.ts",
+				"import": "./dist/components/emoji-picker/index.js",
+				"default": "./dist/components/emoji-picker/index.js"
+			},
 			"./empty": {
 				"types": "./dist/components/empty/index.d.ts",
 				"import": "./dist/components/empty/index.js",
 				"default": "./dist/components/empty/index.js"
+			},
+			"./field": {
+				"types": "./dist/components/field/index.d.ts",
+				"import": "./dist/components/field/index.js",
+				"default": "./dist/components/field/index.js"
+			},
+			"./hover-card": {
+				"types": "./dist/components/hover-card/index.d.ts",
+				"import": "./dist/components/hover-card/index.js",
+				"default": "./dist/components/hover-card/index.js"
 			},
 			"./icons": {
 				"types": "./dist/components/icons/index.d.ts",
 				"import": "./dist/components/icons/index.js",
 				"default": "./dist/components/icons/index.js"
 			},
+			"./image-grid": {
+				"types": "./dist/components/image-grid/index.d.ts",
+				"import": "./dist/components/image-grid/index.js",
+				"default": "./dist/components/image-grid/index.js"
+			},
 			"./image-pixel-reveal": {
 				"types": "./dist/components/image-pixel-reveal/index.d.ts",
 				"import": "./dist/components/image-pixel-reveal/index.js",
 				"default": "./dist/components/image-pixel-reveal/index.js"
 			},
-			"./inline-error": {
-				"types": "./dist/components/inline-error/index.d.ts",
-				"import": "./dist/components/inline-error/index.js",
-				"default": "./dist/components/inline-error/index.js"
+			"./indicator": {
+				"types": "./dist/components/indicator/index.d.ts",
+				"import": "./dist/components/indicator/index.js",
+				"default": "./dist/components/indicator/index.js"
 			},
 			"./input": {
 				"types": "./dist/components/input/index.d.ts",
 				"import": "./dist/components/input/index.js",
 				"default": "./dist/components/input/index.js"
 			},
-			"./label": {
-				"types": "./dist/components/label/index.d.ts",
-				"import": "./dist/components/label/index.js",
-				"default": "./dist/components/label/index.js"
+			"./kbd": {
+				"types": "./dist/components/kbd/index.d.ts",
+				"import": "./dist/components/kbd/index.js",
+				"default": "./dist/components/kbd/index.js"
 			},
 			"./link-card": {
 				"types": "./dist/components/link-card/index.d.ts",
 				"import": "./dist/components/link-card/index.js",
 				"default": "./dist/components/link-card/index.js"
 			},
-			"./modal": {
-				"types": "./dist/components/modal/index.d.ts",
-				"import": "./dist/components/modal/index.js",
-				"default": "./dist/components/modal/index.js"
+			"./list": {
+				"types": "./dist/components/list/index.d.ts",
+				"import": "./dist/components/list/index.js",
+				"default": "./dist/components/list/index.js"
+			},
+			"./list-highlight": {
+				"types": "./dist/components/list-highlight/index.d.ts",
+				"import": "./dist/components/list-highlight/index.js",
+				"default": "./dist/components/list-highlight/index.js"
+			},
+			"./mention": {
+				"types": "./dist/components/mention/index.d.ts",
+				"import": "./dist/components/mention/index.js",
+				"default": "./dist/components/mention/index.js"
+			},
+			"./morphing-popover": {
+				"types": "./dist/components/morphing-popover/index.d.ts",
+				"import": "./dist/components/morphing-popover/index.js",
+				"default": "./dist/components/morphing-popover/index.js"
+			},
+			"./number-input": {
+				"types": "./dist/components/number-input/index.d.ts",
+				"import": "./dist/components/number-input/index.js",
+				"default": "./dist/components/number-input/index.js"
 			},
 			"./otp": {
 				"types": "./dist/components/otp/index.d.ts",
 				"import": "./dist/components/otp/index.js",
 				"default": "./dist/components/otp/index.js"
-			},
-			"./overlay-scroll": {
-				"types": "./dist/components/overlay-scroll/index.d.ts",
-				"import": "./dist/components/overlay-scroll/index.js",
-				"default": "./dist/components/overlay-scroll/index.js"
 			},
 			"./page-header": {
 				"types": "./dist/components/page-header/index.d.ts",
@@ -454,10 +741,30 @@
 				"import": "./dist/components/popover/index.js",
 				"default": "./dist/components/popover/index.js"
 			},
+			"./progress": {
+				"types": "./dist/components/progress/index.d.ts",
+				"import": "./dist/components/progress/index.js",
+				"default": "./dist/components/progress/index.js"
+			},
 			"./prompt-dialog": {
 				"types": "./dist/components/prompt-dialog/index.d.ts",
 				"import": "./dist/components/prompt-dialog/index.js",
 				"default": "./dist/components/prompt-dialog/index.js"
+			},
+			"./quote-card": {
+				"types": "./dist/components/quote-card/index.d.ts",
+				"import": "./dist/components/quote-card/index.js",
+				"default": "./dist/components/quote-card/index.js"
+			},
+			"./radio": {
+				"types": "./dist/components/radio/index.d.ts",
+				"import": "./dist/components/radio/index.js",
+				"default": "./dist/components/radio/index.js"
+			},
+			"./reaction": {
+				"types": "./dist/components/reaction/index.d.ts",
+				"import": "./dist/components/reaction/index.js",
+				"default": "./dist/components/reaction/index.js"
 			},
 			"./resend-button": {
 				"types": "./dist/components/resend-button/index.d.ts",
@@ -468,11 +775,6 @@
 				"types": "./dist/components/scroll-area/index.d.ts",
 				"import": "./dist/components/scroll-area/index.js",
 				"default": "./dist/components/scroll-area/index.js"
-			},
-			"./search-input": {
-				"types": "./dist/components/search-input/index.d.ts",
-				"import": "./dist/components/search-input/index.js",
-				"default": "./dist/components/search-input/index.js"
 			},
 			"./segmented": {
 				"types": "./dist/components/segmented/index.d.ts",
@@ -494,20 +796,25 @@
 				"import": "./dist/components/sheet/index.js",
 				"default": "./dist/components/sheet/index.js"
 			},
-			"./shimmer-skeleton": {
-				"types": "./dist/components/shimmer-skeleton/index.d.ts",
-				"import": "./dist/components/shimmer-skeleton/index.js",
-				"default": "./dist/components/shimmer-skeleton/index.js"
-			},
 			"./skeleton": {
 				"types": "./dist/components/skeleton/index.d.ts",
 				"import": "./dist/components/skeleton/index.js",
 				"default": "./dist/components/skeleton/index.js"
 			},
+			"./slider": {
+				"types": "./dist/components/slider/index.d.ts",
+				"import": "./dist/components/slider/index.js",
+				"default": "./dist/components/slider/index.js"
+			},
 			"./sonner": {
 				"types": "./dist/components/sonner/index.d.ts",
 				"import": "./dist/components/sonner/index.js",
 				"default": "./dist/components/sonner/index.js"
+			},
+			"./sortable": {
+				"types": "./dist/components/sortable/index.d.ts",
+				"import": "./dist/components/sortable/index.js",
+				"default": "./dist/components/sortable/index.js"
 			},
 			"./steps": {
 				"types": "./dist/components/steps/index.d.ts",
@@ -529,6 +836,11 @@
 				"import": "./dist/components/tabs/index.js",
 				"default": "./dist/components/tabs/index.js"
 			},
+			"./tag-input": {
+				"types": "./dist/components/tag-input/index.d.ts",
+				"import": "./dist/components/tag-input/index.js",
+				"default": "./dist/components/tag-input/index.js"
+			},
 			"./text-underline": {
 				"types": "./dist/components/text-underline/index.d.ts",
 				"import": "./dist/components/text-underline/index.js",
@@ -539,10 +851,30 @@
 				"import": "./dist/components/textarea/index.js",
 				"default": "./dist/components/textarea/index.js"
 			},
+			"./toggle-group": {
+				"types": "./dist/components/toggle-group/index.d.ts",
+				"import": "./dist/components/toggle-group/index.js",
+				"default": "./dist/components/toggle-group/index.js"
+			},
 			"./tooltip": {
 				"types": "./dist/components/tooltip/index.d.ts",
 				"import": "./dist/components/tooltip/index.js",
 				"default": "./dist/components/tooltip/index.js"
+			},
+			"./tree": {
+				"types": "./dist/components/tree/index.d.ts",
+				"import": "./dist/components/tree/index.js",
+				"default": "./dist/components/tree/index.js"
+			},
+			"./tree-select": {
+				"types": "./dist/components/tree-select/index.d.ts",
+				"import": "./dist/components/tree-select/index.js",
+				"default": "./dist/components/tree-select/index.js"
+			},
+			"./upload": {
+				"types": "./dist/components/upload/index.d.ts",
+				"import": "./dist/components/upload/index.js",
+				"default": "./dist/components/upload/index.js"
 			},
 			"./upload-tile": {
 				"types": "./dist/components/upload-tile/index.d.ts",
@@ -567,23 +899,75 @@
 			"./styles.css": "./dist/styles.css",
 			"./tokens.css": "./dist/tokens.css",
 			"./classes.css": "./dist/classes.css",
+			"./components/accordion.css": "./dist/components/accordion.css",
+			"./components/alert.css": "./dist/components/alert.css",
+			"./components/annotation.css": "./dist/components/annotation.css",
+			"./components/announcement-bar.css": "./dist/components/announcement-bar.css",
+			"./components/avatar.css": "./dist/components/avatar.css",
 			"./components/badge.css": "./dist/components/badge.css",
+			"./components/breadcrumbs.css": "./dist/components/breadcrumbs.css",
 			"./components/button.css": "./dist/components/button.css",
 			"./components/card.css": "./dist/components/card.css",
+			"./components/cascader.css": "./dist/components/cascader.css",
+			"./components/chart.css": "./dist/components/chart.css",
 			"./components/checkbox.css": "./dist/components/checkbox.css",
+			"./components/code-block.css": "./dist/components/code-block.css",
+			"./components/color-picker.css": "./dist/components/color-picker.css",
+			"./components/combobox.css": "./dist/components/combobox.css",
+			"./components/command.css": "./dist/components/command.css",
+			"./components/comment.css": "./dist/components/comment.css",
+			"./components/confirm-dialog.css": "./dist/components/confirm-dialog.css",
+			"./components/context-menu.css": "./dist/components/context-menu.css",
+			"./components/date-picker.css": "./dist/components/date-picker.css",
+			"./components/dialog.css": "./dist/components/dialog.css",
+			"./components/drawer.css": "./dist/components/drawer.css",
 			"./components/dropdown.css": "./dist/components/dropdown.css",
+			"./components/dropdown-menu.css": "./dist/components/dropdown-menu.css",
+			"./components/emoji-picker.css": "./dist/components/emoji-picker.css",
+			"./components/empty.css": "./dist/components/empty.css",
+			"./components/field.css": "./dist/components/field.css",
+			"./components/hover-card.css": "./dist/components/hover-card.css",
+			"./components/image-grid.css": "./dist/components/image-grid.css",
 			"./components/image-pixel-reveal.css": "./dist/components/image-pixel-reveal.css",
+			"./components/indicator.css": "./dist/components/indicator.css",
 			"./components/input.css": "./dist/components/input.css",
-			"./components/label.css": "./dist/components/label.css",
+			"./components/kbd.css": "./dist/components/kbd.css",
 			"./components/link-card.css": "./dist/components/link-card.css",
-			"./components/overlay-scroll.css": "./dist/components/overlay-scroll.css",
-			"./components/search-input.css": "./dist/components/search-input.css",
+			"./components/list.css": "./dist/components/list.css",
+			"./components/list-highlight.css": "./dist/components/list-highlight.css",
+			"./components/mention.css": "./dist/components/mention.css",
+			"./components/morphing-popover.css": "./dist/components/morphing-popover.css",
+			"./components/number-input.css": "./dist/components/number-input.css",
+			"./components/otp.css": "./dist/components/otp.css",
+			"./components/page-header.css": "./dist/components/page-header.css",
+			"./components/pagination.css": "./dist/components/pagination.css",
+			"./components/popover.css": "./dist/components/popover.css",
+			"./components/progress.css": "./dist/components/progress.css",
+			"./components/prompt-dialog.css": "./dist/components/prompt-dialog.css",
+			"./components/quote-card.css": "./dist/components/quote-card.css",
+			"./components/radio.css": "./dist/components/radio.css",
+			"./components/reaction.css": "./dist/components/reaction.css",
+			"./components/resend-button.css": "./dist/components/resend-button.css",
+			"./components/scroll-area.css": "./dist/components/scroll-area.css",
 			"./components/segmented.css": "./dist/components/segmented.css",
+			"./components/select.css": "./dist/components/select.css",
 			"./components/separator.css": "./dist/components/separator.css",
+			"./components/sheet.css": "./dist/components/sheet.css",
 			"./components/skeleton.css": "./dist/components/skeleton.css",
+			"./components/slider.css": "./dist/components/slider.css",
+			"./components/sonner.css": "./dist/components/sonner.css",
+			"./components/sortable.css": "./dist/components/sortable.css",
+			"./components/steps.css": "./dist/components/steps.css",
 			"./components/switch.css": "./dist/components/switch.css",
+			"./components/table.css": "./dist/components/table.css",
 			"./components/tabs.css": "./dist/components/tabs.css",
+			"./components/tag-input.css": "./dist/components/tag-input.css",
 			"./components/textarea.css": "./dist/components/textarea.css",
+			"./components/toggle-group.css": "./dist/components/toggle-group.css",
+			"./components/tooltip.css": "./dist/components/tooltip.css",
+			"./components/tree.css": "./dist/components/tree.css",
+			"./components/tree-select.css": "./dist/components/tree-select.css",
+			"./components/upload.css": "./dist/components/upload.css",
 			"./components/upload-tile.css": "./dist/components/upload-tile.css",
 			"./palettes/violet.css": "./dist/palettes/violet.css",
 			"./palettes/coral.css": "./dist/palettes/coral.css",
@@ -596,13 +980,28 @@
 		"react-dom": "^19.0.0"
 	},
 	"dependencies": {
+		"@codemirror/autocomplete": "^6.20.3",
+		"@codemirror/commands": "^6.10.4",
+		"@codemirror/lang-go": "^6.0.1",
+		"@codemirror/lang-javascript": "^6.2.5",
+		"@codemirror/lang-python": "^6.2.1",
+		"@codemirror/lang-rust": "^6.0.2",
+		"@codemirror/language": "^6.12.4",
+		"@codemirror/lint": "^6.9.7",
+		"@codemirror/search": "^6.7.1",
+		"@codemirror/state": "^6.7.1",
+		"@codemirror/view": "^6.43.6",
+		"@dnd-kit/core": "^6.3.1",
+		"@dnd-kit/sortable": "^10.0.0",
+		"@lezer/highlight": "^1.2.3",
+		"@replit/codemirror-vim": "^6.3.0",
 		"@types/lodash": "4.17.25",
 		"cn": "^0.4.0",
-		"input-otp": "^1.4.2",
-		"lucide-react": "^1.21.0",
+		"lucide-react": "^1.23.0",
 		"motion": "^12.42.2",
 		"radix-ui": "^1.6.0",
 		"recharts": "2.15.4",
+		"shiki": "^4.3.0",
 		"sonner": "^2.0.7",
 		"tailwind-variants": "^3.3.1"
 	},
@@ -611,6 +1010,7 @@
 		"@playwright/test": "^1.63.0",
 		"@testing-library/dom": "^10.4.1",
 		"@testing-library/react": "^16.3.0",
+		"@testing-library/user-event": "^14.6.9",
 		"@types/node": "^22.10.2",
 		"@types/react": "^19.2.0",
 		"@types/react-dom": "^19.2.0",

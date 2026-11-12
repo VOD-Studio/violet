@@ -1,0 +1,364 @@
+@import "../../styles/scrim.css";
+@import "../list-highlight/list-highlight.css";
+@import "../indicator/indicator.css";
+@import "../kbd/kbd.css";
+@import "../skeleton/skeleton.css";
+
+@layer components {
+	.v-command-overlay {
+		z-index: var(--layer-command);
+		--v-scrim-in: 160ms;
+		--v-scrim-out: 160ms;
+	}
+
+	/* 先是一个输入框，然后才是结果；面板最高 440，列表的高度跟着结果数量变化 */
+	.v-command {
+		--v-command-ease: cubic-bezier(0.32, 0.72, 0, 1);
+
+		box-sizing: border-box;
+		position: fixed;
+		inset-inline: 0;
+		inset-block-start: 15%;
+		z-index: var(--layer-command);
+		display: flex;
+		flex-direction: column;
+		inline-size: min(560px, calc(100% - 16px));
+		max-block-size: min(440px, calc(85% - 16px));
+		margin-inline: auto;
+		overflow: hidden;
+		border: 1px solid var(--ol);
+		border-radius: var(--radius-12);
+		background-color: var(--popover);
+		color: var(--popover-foreground);
+		box-shadow: var(--shadow-soft);
+		font-size: var(--text-14);
+		outline: none;
+	}
+
+	.v-command__title {
+		position: absolute;
+		inline-size: 1px;
+		block-size: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	.v-command__field {
+		display: flex;
+		flex: none;
+		align-items: center;
+		gap: 10px;
+		block-size: 52px;
+		padding: 0 16px;
+		box-shadow: inset 0 -1px 0 var(--border);
+	}
+
+	.v-command__icon {
+		flex: none;
+		inline-size: 18px;
+		block-size: 18px;
+		color: var(--muted-foreground);
+	}
+
+	.v-command__trail {
+		display: inline-flex;
+		flex: none;
+		align-items: center;
+		gap: 2px;
+		block-size: 28px;
+		padding: 0 10px 0 6px;
+		border: 0;
+		border-radius: var(--radius-8);
+		background-color: var(--muted);
+		color: var(--foreground);
+		font: inherit;
+		font-size: var(--text-13);
+		cursor: pointer;
+	}
+
+	.v-command__trail svg {
+		inline-size: 14px;
+		block-size: 14px;
+	}
+
+	.v-command__trail:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+
+	.v-command__input {
+		flex: 1;
+		min-inline-size: 0;
+		block-size: 100%;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		font-size: 1rem;
+		outline: none;
+	}
+
+	.v-command__input::placeholder {
+		color: var(--muted-foreground);
+	}
+
+	.v-command__busy {
+		flex: none;
+		color: var(--muted-foreground);
+	}
+
+	.v-command__viewport {
+		flex: 0 1 auto;
+		block-size: var(--v-command-list, auto);
+		min-block-size: 0;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		transition: block-size 200ms var(--v-command-ease);
+	}
+
+	.v-command__list {
+		padding: 6px;
+	}
+
+	.v-command__group + .v-command__group {
+		margin-block-start: 6px;
+	}
+
+	.v-command__group-label {
+		padding: 8px 10px 4px;
+		color: var(--muted-foreground);
+		font-size: var(--text-12);
+	}
+
+	.v-command__item {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		min-block-size: 40px;
+		padding: 4px 10px;
+		border-radius: var(--radius-8);
+		cursor: pointer;
+		user-select: none;
+	}
+
+	.v-command__item[data-flash] {
+		animation: v-command-flash 140ms ease-out;
+	}
+
+	.v-command__item-icon {
+		display: inline-flex;
+		flex: none;
+		color: var(--muted-foreground);
+	}
+
+	.v-command__item-icon svg {
+		inline-size: 16px;
+		block-size: 16px;
+	}
+
+	.v-command__item-text {
+		display: flex;
+		flex: 1;
+		flex-direction: column;
+		min-inline-size: 0;
+	}
+
+	.v-command__item-label,
+	.v-command__item-description {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.v-command__item-description {
+		color: var(--muted-foreground);
+		font-size: var(--text-12);
+	}
+
+	.v-command__item-hint {
+		flex: none;
+		max-inline-size: 40%;
+		overflow: hidden;
+		color: var(--muted-foreground);
+		font-family: var(--font-mono);
+		font-size: var(--text-12);
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.v-command__match {
+		border-radius: 2px;
+		background-color: var(--decoration-muted);
+		color: inherit;
+	}
+
+	.v-command__skeleton-row {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		padding: 8px 10px;
+	}
+
+	.v-command__skeleton-title {
+		inline-size: 60%;
+		block-size: 12px;
+	}
+
+	.v-command__skeleton-line {
+		inline-size: 40%;
+		block-size: 10px;
+	}
+
+	.v-command__empty-text {
+		margin: 0;
+		padding: 12px 10px 6px;
+		color: var(--muted-foreground);
+	}
+
+	.v-command__footer {
+		display: flex;
+		flex: none;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		block-size: 36px;
+		padding: 0 16px;
+		box-shadow: inset 0 1px 0 var(--border);
+		color: var(--muted-foreground);
+		font-size: var(--text-12);
+	}
+
+	.v-command__keys {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		white-space: nowrap;
+	}
+
+	.v-command__keys .v-kbd + :not(.v-kbd) {
+		margin-inline-end: 6px;
+	}
+
+	.v-command__status {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	/* 输入框从上方 8px 落下并由虚变实，列表随后往下展开，前 8 项依次浮现 */
+	.v-command[data-state="open"] {
+		animation: v-command-in 220ms var(--v-command-ease) backwards;
+	}
+
+	.v-command[data-state="open"] .v-command__viewport {
+		animation: v-command-expand 260ms var(--v-command-ease) backwards;
+	}
+
+	.v-command[data-state="open"] .v-command__item[data-stagger] {
+		animation: v-command-item-in 200ms ease-out backwards;
+		animation-delay: calc(60ms + var(--v-command-i, 0) * 20ms);
+	}
+
+	.v-command[data-state="closed"] {
+		animation: v-command-out 120ms ease-in forwards;
+	}
+
+	/* 进入下一级时列表往左推进，退回时往右 */
+	.v-command__list[data-push="forward"] {
+		animation: v-command-forward 180ms var(--v-command-ease);
+	}
+
+	.v-command__list[data-push="back"] {
+		animation: v-command-back 180ms var(--v-command-ease);
+	}
+
+	@keyframes v-command-in {
+		from {
+			opacity: 0;
+			filter: blur(6px);
+			transform: translateY(-8px);
+		}
+	}
+
+	@keyframes v-command-out {
+		to {
+			opacity: 0;
+			transform: translateY(-4px);
+		}
+	}
+
+	@keyframes v-command-expand {
+		from {
+			block-size: 0;
+		}
+	}
+
+	@keyframes v-command-item-in {
+		from {
+			opacity: 0;
+		}
+	}
+
+	@keyframes v-command-forward {
+		from {
+			opacity: 0;
+			transform: translateX(16px);
+		}
+	}
+
+	@keyframes v-command-back {
+		from {
+			opacity: 0;
+			transform: translateX(-16px);
+		}
+	}
+
+	@keyframes v-command-flash {
+		from,
+		to {
+			background-color: color-mix(in oklab, var(--decoration) 35%, var(--popover));
+			color: var(--selected-foreground);
+		}
+	}
+
+	@keyframes v-command-fade-in {
+		from {
+			opacity: 0;
+		}
+	}
+
+	@keyframes v-command-fade-out {
+		to {
+			opacity: 0;
+		}
+	}
+
+	@media (max-width: 639.98px) {
+		.v-command {
+			inset-block-start: 8px;
+			max-block-size: min(440px, calc(100% - 16px));
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-command__viewport {
+			transition: none;
+		}
+
+		.v-command[data-state="open"] {
+			animation: v-command-fade-in 100ms ease-out backwards;
+		}
+
+		.v-command[data-state="closed"] {
+			animation: v-command-fade-out 100ms ease-out forwards;
+		}
+
+		.v-command[data-state="open"] .v-command__viewport,
+		.v-command[data-state="open"] .v-command__item[data-stagger],
+		.v-command__list[data-push] {
+			animation: none;
+		}
+	}
+}

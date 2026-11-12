@@ -16,15 +16,21 @@ import type {
 import { FriendLinkCell } from "@features/admin-friend-links/ui/FriendLinkCell";
 import { FriendLinkFormDialog } from "@features/admin-friend-links/ui/FriendLinkFormDialog";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import {
-	DataTable,
-	type DataTableColumn,
-	usePagedQuery,
-} from "@features/admin-shared/ui/data-table";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { formatDateTime } from "@shared/lib/date";
 import { createFileRoute } from "@tanstack/react-router";
-import { Badge, Button, ConfirmDialog, Segmented, type SegmentedItem } from "@violet/ui";
+import {
+	Badge,
+	type BadgeProps,
+	Button,
+	ConfirmDialog,
+	DataTable,
+	type DataTableColumn,
+	iconProps,
+	Segmented,
+	type SegmentedItem,
+} from "@violet/ui";
 import { Check, ExternalLink, EyeOff, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
 import { useState } from "react";
 
@@ -45,13 +51,13 @@ const STATUS_BADGE: Record<
 	FriendLinkStatus,
 	{
 		label: string;
-		variant: "default" | "secondary" | "destructive" | "outline";
+		tone: NonNullable<BadgeProps["tone"]>;
 	}
 > = {
-	pending: { label: "待审核", variant: "secondary" },
-	approved: { label: "已通过", variant: "default" },
-	rejected: { label: "已拒绝", variant: "destructive" },
-	disabled: { label: "已下柜", variant: "outline" },
+	pending: { label: "待审核", tone: "warning" },
+	approved: { label: "已通过", tone: "ok" },
+	rejected: { label: "已拒绝", tone: "danger" },
+	disabled: { label: "已下柜", tone: "off" },
 };
 
 function AdminFriendLinksPage() {
@@ -93,9 +99,7 @@ function AdminFriendLinksPage() {
 			header: "状态",
 			width: "100px",
 			cell: (row) => (
-				<Badge variant={STATUS_BADGE[row.status].variant}>
-					{STATUS_BADGE[row.status].label}
-				</Badge>
+				<Badge tone={STATUS_BADGE[row.status].tone}>{STATUS_BADGE[row.status].label}</Badge>
 			),
 		},
 		{
@@ -127,7 +131,7 @@ function AdminFriendLinksPage() {
 						className="inline-flex max-w-full items-center gap-1 text-sm text-primary hover:underline"
 					>
 						<span className="truncate">{row.linkback_url}</span>
-						<ExternalLink className="size-3 shrink-0" />
+						<ExternalLink {...iconProps(12, "shrink-0")} />
 					</a>
 				) : (
 					<span className="text-muted-foreground">—</span>
@@ -160,65 +164,77 @@ function AdminFriendLinksPage() {
 							disabled 恢复；rejected 可改判批准（误拒纠正，PRD US16） */}
 						{row.status === "pending" || row.status === "rejected" ? (
 							<Button
+								iconOnly
 								variant="ghost"
-								size="icon-sm"
+								size="sm"
+								aria-label={row.status === "rejected" ? "改判为通过" : "批准"}
 								title={row.status === "rejected" ? "改判为通过" : "批准"}
 								disabled={approveMut.isPending}
 								onClick={() => approveMut.mutate(row.id)}
 							>
-								<Check className="size-3.5" />
+								<Check {...iconProps(14)} />
 							</Button>
 						) : null}
 						{row.status === "pending" ? (
 							<Button
+								iconOnly
 								variant="ghost"
-								size="icon-sm"
+								size="sm"
+								aria-label="拒绝"
 								title="拒绝"
 								disabled={rejectMut.isPending}
 								onClick={() => rejectMut.mutate(row.id)}
 							>
-								<X className="size-3.5" />
+								<X {...iconProps(14)} />
 							</Button>
 						) : null}
 						{row.status === "approved" ? (
 							<Button
+								iconOnly
 								variant="ghost"
-								size="icon-sm"
+								size="sm"
+								aria-label="下柜"
 								title="下柜"
 								disabled={disableMut.isPending}
 								onClick={() => disableMut.mutate(row.id)}
 							>
-								<EyeOff className="size-3.5" />
+								<EyeOff {...iconProps(14)} />
 							</Button>
 						) : null}
 						{row.status === "disabled" ? (
 							<Button
+								iconOnly
 								variant="ghost"
-								size="icon-sm"
+								size="sm"
+								aria-label="恢复"
 								title="恢复"
 								disabled={restoreMut.isPending}
 								onClick={() => restoreMut.mutate(row.id)}
 							>
-								<RotateCcw className="size-3.5" />
+								<RotateCcw {...iconProps(14)} />
 							</Button>
 						) : null}
 						{/* 全部状态可编辑/删除 */}
 						<Button
+							iconOnly
 							variant="ghost"
-							size="icon-sm"
+							size="sm"
+							aria-label="编辑"
 							title="编辑"
 							onClick={() => setEditing(row)}
 						>
-							<Pencil className="size-3.5" />
+							<Pencil {...iconProps(14)} />
 						</Button>
 						<Button
+							iconOnly
 							variant="ghost"
-							size="icon-sm"
+							size="sm"
+							aria-label="删除"
 							title="删除"
 							className="hover:bg-destructive/10 hover:text-destructive"
 							onClick={() => setDeleting(row)}
 						>
-							<Trash2 className="size-3.5" />
+							<Trash2 {...iconProps(14)} />
 						</Button>
 					</div>
 				) : null,
@@ -232,7 +248,7 @@ function AdminFriendLinksPage() {
 			action={
 				canManage ? (
 					<Button size="sm" onClick={() => setCreateOpen(true)}>
-						<Plus className="size-3.5" />
+						<Plus {...iconProps(14)} />
 						手动添加
 					</Button>
 				) : null

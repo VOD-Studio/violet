@@ -58,14 +58,14 @@ export function EmojiList({
 		if (searchQuery) {
 			return (
 				<div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-					<Search className="mb-2 size-8" />
+					<Search className="mb-2 size-6" />
 					<p>未找到匹配的表情</p>
 				</div>
 			);
 		}
 		return (
 			<div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-				<Images className="mb-2 size-8" />
+				<Images className="mb-2 size-6" />
 				<p>暂无表情</p>
 				<p className="mt-1 text-sm">切换到上传标签页添加表情</p>
 			</div>
@@ -81,12 +81,12 @@ export function EmojiList({
 					<Button variant="ghost" size="sm" onClick={onToggleSelectAll}>
 						{allSelected ? (
 							<>
-								<CheckSquare className="mr-1 size-4" />
+								<CheckSquare className="size-4" />
 								取消全选当前页
 							</>
 						) : (
 							<>
-								<Square className="mr-1 size-4" />
+								<Square className="size-4" />
 								全选当前页
 							</>
 						)}

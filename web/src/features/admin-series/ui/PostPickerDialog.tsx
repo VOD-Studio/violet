@@ -4,6 +4,7 @@ import {
 	Badge,
 	Button,
 	Dialog,
+	DialogBody,
 	DialogContent,
 	DialogDescription,
 	DialogFooter,
@@ -69,119 +70,124 @@ export function PostPickerDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="flex max-h-[80vh] flex-col sm:max-w-xl">
+			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>挂入章节</DialogTitle>
 					<DialogDescription>点选顺序即挂入顺序；只能挂自己的文章</DialogDescription>
 				</DialogHeader>
-				<SearchInput
-					variant="soft"
-					controlSize="sm"
-					aria-label="搜索可挂入的文章标题"
-					value={keyword}
-					onValueChange={setKeyword}
-					onSearch={(v) => {
-						setKeyword(v);
-						setPage(1);
-					}}
-					placeholder="搜索文章标题"
-				/>
-				<div className="min-h-0 flex-1 space-y-1 overflow-y-auto">
-					{isLoading ? (
-						<div className="space-y-1">
-							{Array.from({ length: 5 }).map((_, i) => (
-								<Skeleton key={i} className="h-12 w-full" />
-							))}
-						</div>
-					) : posts.length === 0 ? (
-						<p className="text-muted-foreground py-8 text-center text-sm">
-							没有匹配的文章
-						</p>
-					) : (
-						posts.map((post) => {
-							const excluded = excludeIds.has(post.id);
-							const order = picked.findIndex((p) => p.id === post.id);
-							const checked = order >= 0;
-							return (
-								<button
-									key={post.id}
-									type="button"
-									disabled={excluded}
-									onClick={() => toggle(post)}
-									className={`flex w-full items-center gap-3 rounded-md border px-3 py-2 text-start transition-colors ${
-										excluded
-											? "border-edge-hairline opacity-40"
-											: checked
-												? "border-primary bg-primary/5"
-												: "border-edge-hairline hover:bg-muted/50"
-									}`}
-								>
-									<span
-										className={`flex size-5 shrink-0 items-center justify-center rounded border font-mono text-xs ${
-											checked
-												? "border-primary bg-primary text-primary-foreground"
-												: "border-edge-hairline"
+				<DialogBody className="flex flex-col gap-3 overflow-hidden">
+					<SearchInput
+						controlSize="sm"
+						aria-label="搜索可挂入的文章标题"
+						value={keyword}
+						onValueChange={setKeyword}
+						onSearch={(v) => {
+							setKeyword(v);
+							setPage(1);
+						}}
+						placeholder="搜索文章标题"
+					/>
+					<div className="min-h-0 flex-1 space-y-1 overflow-y-auto">
+						{isLoading ? (
+							<div className="space-y-1">
+								{Array.from({ length: 5 }).map((_, i) => (
+									<Skeleton key={i} className="h-12 w-full" />
+								))}
+							</div>
+						) : posts.length === 0 ? (
+							<p className="text-muted-foreground py-8 text-center text-sm">
+								没有匹配的文章
+							</p>
+						) : (
+							posts.map((post) => {
+								const excluded = excludeIds.has(post.id);
+								const order = picked.findIndex((p) => p.id === post.id);
+								const checked = order >= 0;
+								return (
+									<button
+										key={post.id}
+										type="button"
+										disabled={excluded}
+										onClick={() => toggle(post)}
+										className={`flex w-full items-center gap-3 rounded-md border px-3 py-2 text-start transition-colors ${
+											excluded
+												? "border-edge-hairline opacity-40"
+												: checked
+													? "border-primary bg-primary/5"
+													: "border-edge-hairline hover:bg-muted/50"
 										}`}
 									>
-										{checked ? order + 1 : ""}
-									</span>
-									<span className="min-w-0 flex-1">
-										<span className="block truncate text-sm font-medium">
-											{post.title}
-										</span>
-										<span className="text-muted-foreground block truncate font-mono text-xs">
-											{post.slug}
-										</span>
-									</span>
-									{excluded ? (
-										<Badge variant="secondary">已在书内</Badge>
-									) : (
-										<Badge
-											variant={
-												post.status === "published" ? "default" : "outline"
-											}
+										<span
+											className={`flex size-5 shrink-0 items-center justify-center rounded border font-mono text-xs ${
+												checked
+													? "border-primary bg-primary text-primary-foreground"
+													: "border-edge-hairline"
+											}`}
 										>
-											{post.status === "published"
-												? "已发布"
-												: post.status === "draft"
-													? "草稿"
-													: "已归档"}
-										</Badge>
-									)}
-								</button>
-							);
-						})
-					)}
-				</div>
-				<div className="flex items-center justify-between gap-2">
-					<span className="text-muted-foreground min-w-0 flex-1 truncate text-xs">
-						已选 {picked.length} 章
-						{picked.length > 0 ? `：${picked.map((p) => p.title).join("、")}` : ""}
-					</span>
-					{total > PAGE_LIMIT && (
-						<span className="flex shrink-0 items-center gap-2 text-xs">
-							<Button
-								variant="outline"
-								size="sm"
-								disabled={page <= 1}
-								onClick={() => setPage((p) => p - 1)}
-							>
-								上一页
-							</Button>
-							<span className="font-mono">
-								{page} / {totalPages}
-							</span>
-							<Button
-								variant="outline"
-								size="sm"
-								disabled={page >= totalPages}
-								onClick={() => setPage((p) => p + 1)}
-							>
-								下一页
-							</Button>
+											{checked ? order + 1 : ""}
+										</span>
+										<span className="min-w-0 flex-1">
+											<span className="block truncate text-sm font-medium">
+												{post.title}
+											</span>
+											<span className="text-muted-foreground block truncate font-mono text-xs">
+												{post.slug}
+											</span>
+										</span>
+										{excluded ? (
+											<Badge tone="off">已在书内</Badge>
+										) : (
+											<Badge
+												tone={
+													post.status === "published"
+														? "ok"
+														: post.status === "draft"
+															? "neutral"
+															: "off"
+												}
+											>
+												{post.status === "published"
+													? "已发布"
+													: post.status === "draft"
+														? "草稿"
+														: "已归档"}
+											</Badge>
+										)}
+									</button>
+								);
+							})
+						)}
+					</div>
+					<div className="flex items-center justify-between gap-2">
+						<span className="text-muted-foreground min-w-0 flex-1 truncate text-xs">
+							已选 {picked.length} 章
+							{picked.length > 0 ? `：${picked.map((p) => p.title).join("、")}` : ""}
 						</span>
-					)}
-				</div>
+						{total > PAGE_LIMIT && (
+							<span className="flex shrink-0 items-center gap-2 text-xs">
+								<Button
+									variant="outline"
+									size="sm"
+									disabled={page <= 1}
+									onClick={() => setPage((p) => p - 1)}
+								>
+									上一页
+								</Button>
+								<span className="font-mono">
+									{page} / {totalPages}
+								</span>
+								<Button
+									variant="outline"
+									size="sm"
+									disabled={page >= totalPages}
+									onClick={() => setPage((p) => p + 1)}
+								>
+									下一页
+								</Button>
+							</span>
+						)}
+					</div>
+				</DialogBody>
 				<DialogFooter>
 					<Button
 						type="button"

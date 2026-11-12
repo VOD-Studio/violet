@@ -1,7 +1,6 @@
 import { useAdminPermissions } from "@features/admin-permissions/api/queries";
-import { Badge, Button, Checkbox, Label, Modal } from "@violet/ui";
+import { Button, Checkbox, Label, Modal, Tag } from "@violet/ui";
 
-import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRoleDetail, useUpdateRolePermissions } from "../api/queries";
 
@@ -115,11 +114,8 @@ export function RolePermissionsDialog({
 						<Button
 							type="button"
 							onClick={handleSave}
-							disabled={updateRolePermissions.isPending}
+							loading={updateRolePermissions.isPending}
 						>
-							{updateRolePermissions.isPending && (
-								<Loader2 className="mr-1 size-4 animate-spin" />
-							)}
 							保存
 						</Button>
 					</>
@@ -158,9 +154,9 @@ export function RolePermissionsDialog({
 									>
 										{menu.name}
 									</Label>
-									<Badge variant="secondary">
+									<Tag size="sm">
 										{selectedCount}/{groupCodes.length}
-									</Badge>
+									</Tag>
 								</div>
 							</div>
 

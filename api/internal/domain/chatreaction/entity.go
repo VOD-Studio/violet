@@ -8,6 +8,14 @@ const (
 	MaxReactionsPerMessagePerUser = 3
 )
 
+// RecentUser 是聚合反应中可展示的最近回应者。
+type RecentUser struct {
+	// ID 回应者用户 ID。
+	ID string `json:"id"`
+	// Name 展示名，未设置时使用用户名。
+	Name string `json:"name"`
+}
+
 // AggregatedReaction 按表情聚合后的聊天消息反应读模型。
 type AggregatedReaction struct {
 	// EmojiID 表情 ID。
@@ -22,6 +30,8 @@ type AggregatedReaction struct {
 	Count int64 `json:"count"`
 	// Self 当前用户是否已添加该表情。
 	Self bool `json:"self"`
+	// RecentUsers 最近的至多三位回应者，按回应时间及反应 ID 倒序；空值为 []。
+	RecentUsers []RecentUser `json:"recent_users"`
 }
 
 // ErrReactionLimitReached 当前用户在同一消息上的表情种类已达上限。

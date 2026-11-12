@@ -2,14 +2,16 @@ import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { useAdminPermissions, useDeletePermission } from "@features/admin-permissions/api/queries";
 import type { PermissionDTO } from "@features/admin-permissions/model/types";
 import { CreatePermissionDialog } from "@features/admin-permissions/ui/CreatePermissionDialog";
-import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
-import { DataTable, useClientPagination } from "@features/admin-shared/ui/data-table";
+import { useClientPagination } from "@features/admin-shared/ui/data-table";
 import { useIsSuperAdmin } from "@features/auth/hooks/usePermissions";
 import { createFileRoute } from "@tanstack/react-router";
+import type { DataTableColumn } from "@violet/ui";
 import {
-	Badge,
 	Button,
 	ConfirmDialog,
+	DataTable,
+	iconProps,
+	Tag,
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
@@ -150,9 +152,9 @@ function AdminPermissionsPage() {
 			key: "type",
 			header: "类型",
 			cell: (r) => (
-				<Badge variant={r.row.type === "menu" ? "default" : "outline"}>
+				<Tag tone={r.row.type === "menu" ? "accent" : "neutral"}>
 					{r.row.type === "menu" ? "分组" : "操作"}
-				</Badge>
+				</Tag>
 			),
 		},
 		{
@@ -164,12 +166,7 @@ function AdminPermissionsPage() {
 		{
 			key: "builtin",
 			header: "内置",
-			cell: (r) =>
-				r.row.is_builtin ? (
-					<Badge variant="secondary">
-						<Lock className="size-3" /> 内置
-					</Badge>
-				) : null,
+			cell: (r) => (r.row.is_builtin ? <Tag icon={<Lock />}>内置</Tag> : null),
 		},
 		{
 			key: "actions_col",
@@ -179,18 +176,20 @@ function AdminPermissionsPage() {
 			cell: (r) => {
 				const isBuiltin = !!r.row.is_builtin;
 				return (
-					<div className="flex items-center gap-2">
+					<div className="v-table__row-actions items-center gap-2">
 						<Tooltip>
 							<TooltipTrigger asChild>
 								{/* span 包裹：让 Radix Tooltip 能附着到可能 disabled 的按钮上 */}
 								<span>
 									<Button
-										size="icon-sm"
+										iconOnly
+										size="sm"
 										variant="ghost"
 										onClick={() => handleEdit(r.row)}
+										aria-label="编辑权限"
 										disabled={!isSuperAdmin}
 									>
-										<Pencil className="size-3.5" />
+										<Pencil {...iconProps(14)} />
 									</Button>
 								</span>
 							</TooltipTrigger>
@@ -200,12 +199,14 @@ function AdminPermissionsPage() {
 							<TooltipTrigger asChild>
 								<span>
 									<Button
-										size="icon-sm"
+										iconOnly
+										size="sm"
 										variant="ghost"
 										onClick={() => handleDelete(r.row)}
+										aria-label="删除权限"
 										disabled={isBuiltin || !isSuperAdmin}
 									>
-										<Trash2 className="size-3.5" />
+										<Trash2 {...iconProps(14)} />
 									</Button>
 								</span>
 							</TooltipTrigger>
@@ -227,7 +228,7 @@ function AdminPermissionsPage() {
 				action={
 					isSuperAdmin ? (
 						<Button size="sm" onClick={handleCreate}>
-							<Plus className="size-3.5" />
+							<Plus {...iconProps(14)} />
 							新建权限
 						</Button>
 					) : null

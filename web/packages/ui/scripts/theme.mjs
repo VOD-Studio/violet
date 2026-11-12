@@ -26,6 +26,7 @@ export async function generatedThemeSources() {
 	]));
 	const action = combinations((appearance) => ({ version: 1, seed: appearance === "light" ? "#202020" : "#eeeeee", knobs: { neutralChroma: 0 } }));
 	const immersive = combinations(() => ({ version: 1, seed: "#eeeeee", knobs: { neutralChroma: 0 } }), ["dark"]);
-	sources.set("src/styles/fixed.generated.css", header + neutralOnly(toCssVariables(action, { prefix: "action-" })) + "\n" + neutralOnly(toCssVariables(immersive, { prefix: "immersive-" })));
+	const materialConstants = `:root {\n\t--fixed-shadow-soft: 0 4px 24px rgb(0 0 0 / 0.05);\n\t--fixed-sheet-border: light-dark(transparent, rgb(255 255 255 / 0.08));\n\t--fixed-scrim: rgb(20 16 14 / 0.28);\n\t--fixed-scrim-soft: rgb(20 16 14 / 0.18);\n\t--fixed-image-overlay: rgb(0 0 0 / 0.4);\n\t--fixed-image-overlay-strong: rgb(0 0 0 / 0.6);\n\t--fixed-image-overlay-foreground: #fff;\n\t--seed-spring: #f47983;\n\t--seed-summer: #2f9e7a;\n\t--seed-autumn: #d9a21b;\n\t--seed-winter: #7d8ea3;\n}\n`;
+	sources.set("src/styles/fixed.generated.css", header + materialConstants + "\n" + neutralOnly(toCssVariables(action, { prefix: "action-" })) + "\n" + neutralOnly(toCssVariables(immersive, { prefix: "immersive-" })));
 	return new Map([...sources].map(([path, content]) => [path, execFileSync("pnpm", ["exec", "biome", "format", `--stdin-file-path=${path}`], { cwd: packageRoot, input: content, encoding: "utf8" })]));
 }

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
+import { parse } from "@babel/parser";
 import { build } from "esbuild";
 import { distEntry, manifest, packageRoot, publicEntries, repositoryRoot, sourceRoot, validateManifest } from "./registry.mjs";
 
@@ -27,13 +28,53 @@ for (const item of readdirSync(sourceRoot, { withFileTypes: true })) {
 	assert.ok(!item.isDirectory() || !existsSync(resolve(sourceRoot, item.name, "index.ts")), `Component implementation remains at src/${item.name}.`);
 }
 
-const visualUtilities = /["'`](?:[^"'`]*\s)?(?:bg-|text-(?:sm|xs|base|lg|xl|foreground|muted|primary)|p[xytrblse]?-\d|m[xytrblse]?-\d|gap-\d|rounded-|shadow-|ring-|border-(?:border|primary)|h-\d|w-\d|flex(?:\s|["'`])|inline-flex|grid(?:\s|["'`]))/;
+const visualUtilities = /(?:^|\s)(?:bg-|text-(?:sm|xs|base|lg|xl|foreground|muted|primary)|p[xytrblse]?-\d|m[xytrblse]?-\d|gap-\d|rounded-|shadow-|ring-|border-(?:border|primary)|h-\d|w-\d|flex(?:\s|$)|inline-flex|grid(?:\s|$))/;
+
+function containsVisualUtilities(path, source) {
+	const plugins = ["typescript"];
+	if (path.endsWith("x")) {
+		plugins.push("jsx");
+	}
+	const parsed = parse(source, { sourceType: "unambiguous", plugins });
+	function visit(node) {
+		if (!node?.type || node.type === "TSLiteralType") {
+			return false;
+		}
+		// 数据取值与 ARIA 属性不是类名，不能把 role="grid" 误识别为视觉工具类。
+		if (node.type === "JSXAttribute" && /^(?:role$|aria-)/.test(node.name.name ?? "")) {
+			return false;
+		}
+		if (
+			node.type === "ObjectProperty" &&
+			(node.key.name ?? node.key.value) === "value" &&
+			node.value.type === "StringLiteral"
+		) {
+			return false;
+		}
+		if (node.type === "StringLiteral") {
+			return visualUtilities.test(node.value);
+		}
+		if (node.type === "TemplateElement") {
+			return visualUtilities.test(node.value.cooked ?? node.value.raw);
+		}
+		for (const child of Object.values(node)) {
+			if (Array.isArray(child)) {
+				if (child.some((item) => item?.type && visit(item))) {
+					return true;
+				}
+			} else if (child?.type && visit(child)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	return visit(parsed);
+}
 for (const component of manifest.components.filter((item) => item.status === "foundation")) {
 	const directory = resolve(packageRoot, component.entry, "..");
 	for (const path of filesUnder(directory).filter((file) => /\.[jt]sx?$/.test(file) && !/\.(test|spec)\./.test(file))) {
-		// `value: "grid"` 这类数据取值不是类名，先剔除再扫描
-		const code = readFileSync(path, "utf8").replace(/\bvalue:\s*(?:"[^"\n]*"|'[^'\n]*')/g, "");
-		assert.ok(!visualUtilities.test(code), `Foundation JSX contains visual utility classes: ${path}`);
+		const source = readFileSync(path, "utf8");
+		assert.ok(!containsVisualUtilities(path, source), `Foundation JSX contains visual utility classes: ${path}`);
 	}
 }
 for (const path of sourceFiles) {

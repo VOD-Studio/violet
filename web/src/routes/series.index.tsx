@@ -5,7 +5,7 @@ import { PageHeader, PageShell } from "@violet/ui";
 function SeriesIndexPage() {
 	return (
 		<PageShell>
-			<PageHeader eyebrow="Online Books" title="系列书" />
+			<PageHeader title="系列书" />
 			<SeriesShelf />
 		</PageShell>
 	);

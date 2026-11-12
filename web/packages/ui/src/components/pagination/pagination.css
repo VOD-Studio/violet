@@ -1,0 +1,104 @@
+/*
+ * Pagination：页码胶囊、上一页/下一页圆钮与省略号，不依赖其它单元样式。
+ * 等宽数字取 --font-mono，由宿主决定字体；需先导入 @violet/ui/tokens.css 或 styles.css。
+ */
+@layer components {
+	.v-pagination {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 4px;
+	}
+
+	.v-pagination__page,
+	.v-pagination__step {
+		box-sizing: border-box;
+		display: inline-flex;
+		flex: none;
+		align-items: center;
+		justify-content: center;
+		block-size: 32px;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		color: var(--muted-foreground);
+		cursor: pointer;
+		transition:
+			background-color 160ms ease-out,
+			color 160ms ease-out;
+	}
+
+	.v-pagination__page {
+		min-inline-size: 32px;
+		padding-inline: 8px;
+		border-radius: 9999px;
+		font: 400 13px / 1 var(--font-mono);
+	}
+
+	.v-pagination__step {
+		inline-size: 32px;
+		border-radius: 50%;
+	}
+
+	.v-pagination__step svg {
+		inline-size: 16px;
+		block-size: 16px;
+	}
+
+	.v-pagination__page:hover,
+	.v-pagination__step:hover {
+		background-color: var(--muted);
+		color: var(--foreground);
+	}
+
+	.v-pagination__page[aria-current="page"] {
+		background-color: var(--foreground);
+		color: var(--background);
+	}
+
+	.v-pagination__step[aria-disabled="true"] {
+		opacity: 0.35;
+		pointer-events: none;
+	}
+
+	.v-pagination__page:focus-visible,
+	.v-pagination__step:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+
+	.v-pagination__ellipsis {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-inline-size: 24px;
+		color: var(--muted-foreground);
+		font: 400 13px / 1 var(--font-mono);
+		user-select: none;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-pagination__page,
+		.v-pagination__step {
+			transition: none;
+		}
+	}
+
+	[data-motion="reduce"] .v-pagination__page,
+	[data-motion="reduce"] .v-pagination__step {
+		transition: none;
+	}
+
+	@media (forced-colors: active) {
+		.v-pagination__page[aria-current="page"] {
+			background-color: Highlight;
+			color: HighlightText;
+		}
+
+		.v-pagination__page:focus-visible,
+		.v-pagination__step:focus-visible {
+			outline-color: Highlight;
+		}
+	}
+}

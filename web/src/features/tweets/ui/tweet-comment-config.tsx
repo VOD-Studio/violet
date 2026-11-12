@@ -3,13 +3,14 @@
  *
  * 归一化 TweetComment → CommentDisplayItem，注入推文专属插槽：
  *   - renderBody：EmojiText 表情 + 图片网格（ImageGrid，与文章评论同款）
- *   - renderActions：删除按钮（作者本人 / tweet:delete-any，乐观删除 + 失败回滚）
+ *   - renderActions：统一多表情回应与删除按钮（作者本人 / tweet:delete-any）
  *   - renderReplyForm：TweetCommentForm（登录专用，富文本 + 图片在表单内部）
  *   - renderExpandedReplies：包装 useTweetReplies（展开时才挂载 → 懒加载，
  *     修复旧实现顶层评论挂载即拉回复的 N+1）
  *   - 作者徽章：comment.author.id === tweetAuthorId（后端无 is_author，前端推导）
  *   - renderMetaBadges：Bot 作者标识（author.is_bot）
  */
+
 import type { TweetComment, TweetCommentPicture } from "@entities/tweet/model/types";
 import { contentImageUrl, imageUrl } from "@shared/lib/image-url";
 import {
@@ -19,10 +20,13 @@ import {
 } from "@shared/ui/comment-section";
 import { EmojiText } from "@shared/ui/emoji-text";
 import { ImageGrid } from "@shared/ui/image-grid";
+import { iconProps } from "@violet/ui";
 import { Trash2 } from "lucide-react";
+import { useMemo } from "react";
 import { useTweetReplies } from "../api/queries";
 import { BotBadge } from "./BotBadge";
 import { TweetCommentForm } from "./TweetCommentForm";
+import { TweetCommentReactionProvider, TweetCommentReactions } from "./TweetCommentReactions";
 
 export interface BuildTweetCommentConfigArgs {
 	/** 所属推文 id（回复 / 删除写操作 URL 需要） */
@@ -48,6 +52,8 @@ export interface BuildTweetCommentConfigArgs {
 function toGridImages(pictures: TweetCommentPicture[]) {
 	return pictures.map((p) => ({
 		url: p.url,
+		width: p.width > 0 ? p.width : undefined,
+		height: p.height > 0 ? p.height : undefined,
 		thumbnail:
 			pictures.length === 1
 				? contentImageUrl(p.url, { width: 800 })
@@ -80,14 +86,13 @@ export function buildTweetCommentConfig({
 			createdAt: c.created_at,
 			// 回复数驱动「查看回复」toggle 显隐（0 回复不显示）
 			repliesTotal: c.replies_count,
-			tone: "default",
 			raw: c,
 		}),
 		repliesMode: "toggle",
 		renderMetaBadges: (item) => <BotBadge show={!!item.raw.author.is_bot} />,
 		renderBody: (item) => (
 			<>
-				<p className="mt-2 whitespace-pre-wrap wrap-break-word text-sm text-foreground">
+				<p className="whitespace-pre-wrap wrap-break-word text-sm text-foreground">
 					<EmojiText text={item.body} emote={item.raw.emote} />
 				</p>
 				{item.raw.pictures && item.raw.pictures.length > 0 && (
@@ -101,17 +106,26 @@ export function buildTweetCommentConfig({
 			const comment = item.raw;
 			// 作者本人 或 持 tweet:delete-any 权限者可删（鉴权双重判定在后端应用层）
 			const isAuthor = !!currentUserId && currentUserId === comment.author.id;
-			if (!currentUserId || (!isAuthor && !canDeleteAny)) return null;
+			const canDelete = !!currentUserId && (isAuthor || canDeleteAny);
 			return (
-				<button
-					type="button"
-					aria-label="删除评论"
-					onClick={() => onDelete(comment.id)}
-					disabled={isDeleting(comment.id)}
-					className="inline-flex h-6 items-center text-xs text-muted-foreground opacity-0 transition-all hover:text-destructive group-hover:opacity-100"
-				>
-					<Trash2 className="size-3.5" />
-				</button>
+				<>
+					<TweetCommentReactions
+						tweetId={tweetId}
+						commentId={comment.id}
+						isLoggedIn={isLoggedIn}
+					/>
+					{canDelete && (
+						<button
+							type="button"
+							aria-label="删除评论"
+							onClick={() => onDelete(comment.id)}
+							disabled={isDeleting(comment.id)}
+							className="inline-flex h-7 items-center text-xs text-muted-foreground transition-colors hover:text-destructive focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+						>
+							<Trash2 {...iconProps(14)} />
+						</button>
+					)}
+				</>
 			);
 		},
 		renderReplyForm: (item, { onSuccess }) => (
@@ -175,19 +189,28 @@ function TweetExpandedReplies({
 		tweetId,
 		topLevelId,
 	);
+	const replies = useMemo(() => data?.pages.flatMap((page) => page.data) ?? [], [data]);
+	const commentIds = useMemo(
+		() => [...replies.map((reply) => reply.id), ...knownReplies.map((reply) => reply.id)],
+		[replies, knownReplies],
+	);
+	const newBatchStart = replies.length - (data?.pages.at(-1)?.data.length ?? 0);
 	return (
-		<ExpandedReplies
-			topLevelId={topLevelId}
-			replies={data?.pages.flatMap((p) => p.data) ?? []}
-			hasNextPage={!!hasNextPage}
-			fetchNextPage={fetchNextPage}
-			isFetchingNextPage={isFetchingNextPage}
-			isLoading={isLoading}
-			excludeIds={excludeIds}
-			knownReplies={knownReplies}
-			config={config}
-			isLoggedIn={isLoggedIn}
-			onReplyAdded={onReplyAdded}
-		/>
+		<TweetCommentReactionProvider tweetId={tweetId} commentIds={commentIds}>
+			<ExpandedReplies
+				topLevelId={topLevelId}
+				replies={replies}
+				newBatchStart={newBatchStart}
+				hasNextPage={!!hasNextPage}
+				fetchNextPage={fetchNextPage}
+				isFetchingNextPage={isFetchingNextPage}
+				isLoading={isLoading}
+				excludeIds={excludeIds}
+				knownReplies={knownReplies}
+				config={config}
+				isLoggedIn={isLoggedIn}
+				onReplyAdded={onReplyAdded}
+			/>
+		</TweetCommentReactionProvider>
 	);
 }

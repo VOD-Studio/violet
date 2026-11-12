@@ -1,3 +1,4 @@
+import { iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { AppWindow, PanelTop } from "lucide-react";
 import { describeActivity, deviceActivities } from "../lib/presence";
@@ -37,7 +38,7 @@ export function PresenceCard({ devices, lead, clockOffset, className }: Presence
 
 			{media ? (
 				<div className="mt-3">
-					<p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+					<p className="flex items-center gap-1 text-xs text-muted-foreground">
 						<PresenceGlyph activity={{ kind: "media", media }} />
 						<span>
 							{media.state === "playing" ? "正在播放" : "已暂停"} ·{" "}
@@ -66,7 +67,7 @@ export function PresenceCard({ devices, lead, clockOffset, className }: Presence
 					{application ? (
 						<>
 							<dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
-								<AppWindow aria-hidden="true" className="size-3.5" />
+								<AppWindow aria-hidden="true" {...iconProps(14)} />
 								正在使用
 							</dt>
 							<dd className="truncate text-foreground">{application.display_name}</dd>
@@ -75,7 +76,7 @@ export function PresenceCard({ devices, lead, clockOffset, className }: Presence
 					{window ? (
 						<>
 							<dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
-								<PanelTop aria-hidden="true" className="size-3.5" />
+								<PanelTop aria-hidden="true" {...iconProps(14)} />
 								窗口
 							</dt>
 							<dd className="truncate text-foreground" title={window.title}>

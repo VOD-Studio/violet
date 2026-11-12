@@ -11,8 +11,8 @@ export type StatusName = "danger" | "warning" | "success";
 export type Foreground = "light" | "dark";
 
 /**
- * 求解用的 WCAG 比值目标，对相应背景取最差值。WCAG 门槛留约 2% 余量吸收取整与 8 位量化；
- * APCA 门槛折算成 WCAG 比值后按遍历测试校准，取两者较大者。深色下 APCA 更严，所以两种外观的数值不对称。
+ * 对相应背景取最差值的 WCAG 比值目标。保留的数值同时复现 UED 设计稿的正文与说明文字色
+ * （中性第 12、11 档），求解与测试只以 WCAG 判定；APCA 不参与求解（ADR-0029）。
  */
 export interface Targets {
 	/** 第 2–6 档相对第 1 档的亮度差，按观感取值，不由对比度反解；提高档的组件底色更浅，给正文留出空间 */
@@ -33,6 +33,47 @@ export interface Targets {
 	separation: number;
 }
 
+/** 材质表面的 OKLCH 取值；色度是上限，不超过种子色本身的色度。 */
+export interface SurfaceRule {
+	l: number;
+	c: number;
+}
+
+/** 状态文字色的起始 OKLCH 取值；明度会沿远离背景的方向移动到达标为止。 */
+export interface StatusTextRule {
+	l: number;
+	c: number;
+	h: number;
+}
+
+/**
+ * 材质：纸面（页面底）、纸片（卡片、面板、浮层、当前项）、凹陷（输入框、分段轨道、键帽、骨架）。
+ * 取值来自 UED 设计稿「基础」页，四季共用，只有色相随种子色。
+ */
+export interface MaterialRules {
+	page: SurfaceRule;
+	sheet: SurfaceRule;
+	sunk: SurfaceRule;
+	/** 发丝线与强线：正文色的透明度，分隔线与时间线、尺寸标注用 */
+	rule: number;
+	rule2: number;
+	/**
+	 * 强调字：起始明度与色度比例。色度 = 旋钮 `accentChroma` × `chromaScale`；
+	 * 明度从这里起沿远离背景的方向移动，直到在纸面、纸片、凹陷上都达到 `textContrast`。
+	 */
+	accent: { l: number; chromaScale: number };
+	/** 材质上文字色的 WCAG 目标：标准档取 AA 正文的 4.5，提高对比度档取 AAA 的 7 */
+	textContrast: Readonly<Record<ContrastLevel, number>>;
+	/** 危险色与成功色：作文字、图标时的起始取值，色相固定、不随主题变化 */
+	danger: StatusTextRule;
+	ok: StatusTextRule;
+	/**
+	 * 文字放在着色底上的占比：状态文字在自身色的 `status` 底上，强调字在季节色的 `accent` 底上，
+	 * 底色取纸面与纸片。设计稿里状态标签的占比是 5%–12%，取上限；选中态芯片是 16%。
+	 */
+	tint: { status: number; accent: number };
+}
+
 export interface AppearanceRules {
 	/** 远离背景的亮度方向：浅色向暗为 -1，深色向亮为 1 */
 	direction: -1 | 1;
@@ -45,12 +86,12 @@ export interface AppearanceRules {
 	/** 中性色阶各档色度相对 `neutralChroma` 的比例 */
 	neutralChroma: readonly number[];
 	/**
-	 * 各对比度档位的目标。标准档：边框 WCAG 3 / APCA Lc 30，次要文字 4.5 / 75，正文 4.5 / 90，
-	 * 组件底色上的次要文字 4.5 / 60、正文 4.5 / 75，实色前景 4.5 / 60，实色与背景 Lc 15。
-	 * 提高档按 APCA 的 AAA 换算整体上调 Lc 15，WCAG 文字门槛取 AAA 的 7、非文字取 4.5；
-	 * 正文在近白背景上至多做到 Lc 100 左右，因此只上调到 100。
+	 * 各对比度档位的 WCAG 求解目标。标准档正文与次要文字至少 4.5:1、边界至少 3:1；
+	 * 提高档文字至少 7:1、边界至少 4.5:1。部分目标更高以复现设计稿取值，
+	 * 并为组件底色、取整与 8 位量化留余量；APCA 不参与目标选择。
 	 */
 	targets: Readonly<Record<ContrastLevel, Targets>>;
+	material: MaterialRules;
 }
 
 export const RULES: Readonly<Record<Appearance, AppearanceRules>> = {
@@ -60,6 +101,18 @@ export const RULES: Readonly<Record<Appearance, AppearanceRules>> = {
 		limit: 0.1,
 		brandChroma: [0.02, 0.05, 0.1, 0.18, 0.26, 0.36, 0.6, 0.75, 1, 1, 0.9, 0.5],
 		neutralChroma: [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.85, 0.9, 1, 1, 0.9, 0.7],
+		material: {
+			page: { l: 0.968, c: 0.006 },
+			sheet: { l: 0.994, c: 0.003 },
+			sunk: { l: 0.945, c: 0.007 },
+			rule: 0.11,
+			rule2: 0.3,
+			accent: { l: 0.4739, chromaScale: 1 },
+			textContrast: { standard: 4.5, more: 7 },
+			danger: { l: 0.52, c: 0.16, h: 27 },
+			ok: { l: 0.52, c: 0.13, h: 155 },
+			tint: { status: 0.12, accent: 0.16 },
+		},
 		targets: {
 			standard: {
 				offsets: [0.012, 0.035, 0.058, 0.08, 0.11],
@@ -89,6 +142,18 @@ export const RULES: Readonly<Record<Appearance, AppearanceRules>> = {
 		limit: 0.985,
 		brandChroma: [0.1, 0.16, 0.3, 0.42, 0.5, 0.55, 0.65, 0.8, 1, 0.95, 0.7, 0.3],
 		neutralChroma: [0.35, 0.45, 0.55, 0.6, 0.65, 0.7, 0.85, 0.9, 1, 1, 0.9, 0.6],
+		material: {
+			page: { l: 0.17, c: 0.0087 },
+			sheet: { l: 0.235, c: 0.011 },
+			sunk: { l: 0.29, c: 0.012 },
+			rule: 0.12,
+			rule2: 0.3,
+			accent: { l: 0.8589, chromaScale: 1.0585 },
+			textContrast: { standard: 4.5, more: 7 },
+			danger: { l: 0.74, c: 0.14, h: 25 },
+			ok: { l: 0.74, c: 0.15, h: 155 },
+			tint: { status: 0.12, accent: 0.16 },
+		},
 		targets: {
 			standard: {
 				offsets: [0.035, 0.075, 0.105, 0.135, 0.175],

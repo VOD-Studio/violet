@@ -176,3 +176,45 @@ func TestListMessagesRedactsDeletedSharedTweet(t *testing.T) {
 		t.Fatalf("deleted shared tweet placeholder = %+v, want redacted", result.Items[0].SharedTweet)
 	}
 }
+
+func TestSharedTweetKeepsNestedReferenceAfterItsTargetIsDeleted(t *testing.T) {
+	for _, withReader := range []bool{true, false} {
+		name := "repository"
+		if withReader {
+			name = "reader"
+		}
+		t.Run(name, func(t *testing.T) {
+			conversationID, userID, authorID := domainshared.NewID(), domainshared.NewID(), domainshared.NewID()
+			nestedID := domainshared.NewID()
+			tweet, err := domaintweet.NewTweet(authorID, "带引用的分享正文", nil, &nestedID)
+			require.NoError(t, err)
+			svc, repo := newShareService(t, tweet, userID, authorID, conversationID)
+			nested := nestedID.String()
+			if withReader {
+				svc.WithTweetReader(&liveTweetReader{view: apptweet.TweetDTO{
+					ID: tweet.ID().String(), Content: tweet.Content(), QuoteOf: &nested,
+					Author: apptweet.AuthorDTO{ID: authorID.String(), Username: "bob"},
+				}})
+			}
+			sent, err := svc.SendMessage(context.Background(), SendMessageInput{
+				UserID: userID, ConversationID: conversationID, Type: domainchat.MessageTweetShare,
+				SharedTweetID: tweet.ID(), IdempotencyKey: "nested-share",
+			})
+			require.NoError(t, err)
+			require.NotNil(t, sent.SharedTweet)
+			require.NotNil(t, sent.SharedTweet.QuoteOf)
+			assert.Equal(t, nested, *sent.SharedTweet.QuoteOf)
+			assert.False(t, sent.SharedTweet.IsDeleted)
+			assert.Nil(t, sent.SharedTweet.QuotedTweet)
+			require.NotNil(t, repo.saved)
+			assert.Empty(t, repo.saved.Content())
+
+			listed, err := svc.ListMessages(context.Background(), userID, conversationID, "", 20)
+			require.NoError(t, err)
+			require.Len(t, listed.Items, 1)
+			require.NotNil(t, listed.Items[0].SharedTweet.QuoteOf)
+			assert.Equal(t, nested, *listed.Items[0].SharedTweet.QuoteOf)
+			assert.Equal(t, tweet.Content(), listed.Items[0].SharedTweet.Content)
+		})
+	}
+}

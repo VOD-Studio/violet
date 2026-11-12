@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { ChevronRight } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -210,9 +211,12 @@ function TreeNavItemNode({
 						)}
 					>
 						<ChevronRight
-							className={cn(
-								"h-3.5 w-3.5 transition-transform duration-200 ease-out",
-								isExpanded && "rotate-90",
+							{...iconProps(
+								14,
+								cn(
+									"transition-transform duration-200 ease-out",
+									isExpanded && "rotate-90",
+								),
 							)}
 						/>
 						<span className="sr-only">

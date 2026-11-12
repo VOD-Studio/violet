@@ -17,15 +17,15 @@
  */
 
 import type { CommentEmoteRef } from "@entities/comment/model/types";
-import { MENTION_ALL } from "@entities/user/model/mention-token";
+import { MENTION_ALL } from "@shared/lib/mention-token";
 import { Link } from "@tanstack/react-router";
+import { CodeBlock, InlineCode } from "@violet/ui";
 import { cn } from "cn";
 import type { ComponentProps, ReactElement, ReactNode } from "react";
-import { lazy, Suspense, useMemo } from "react";
+import { useMemo } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
-import codeScrollbar from "@/shared/ui/code-scrollbar.module.css";
 import {
 	rehypeChatEmoji,
 	rehypeChatInlineImage,
@@ -33,10 +33,6 @@ import {
 	remarkChatInline,
 } from "../lib/chat-markdown";
 import type { ChatMedia, ChatUser } from "../model/types";
-
-const LazyCodeCard = lazy(() =>
-	import("@shared/ui/code-preview/components/CodeCard").then((m) => ({ default: m.CodeCard })),
-);
 
 const REMARK_PLUGINS = [remarkChatInline, remarkBreaks];
 const BOT_REMARK_PLUGINS = [remarkGfm, remarkBreaks];
@@ -166,7 +162,6 @@ const chatMarkdownComponents: Components = {
 	img: chatImg,
 	// 提及占位符替换出的 span（带 data-mention 标记，见 chat-markdown.ts）渲染成用户主页链接。
 	span: chatSpan,
-	// 围栏块走 CodeCard（shiki 高亮 + 复制），懒加载；行内走纯样式。pre 透传给 code 分支。
 	pre: ({ children }) => <>{children}</>,
 	code: ({ className, children }) => {
 		const cls = className || "";
@@ -174,29 +169,8 @@ const chatMarkdownComponents: Components = {
 		const match = /language-(\S+)/.exec(cls);
 		const language = match?.[1] ?? "";
 		const isFenced = !!match || code.includes("\n");
-		if (!isFenced) {
-			return (
-				<code className="rounded bg-black/10 px-1 py-0.5 font-mono text-[0.85em] dark:bg-white/10">
-					{children}
-				</code>
-			);
-		}
-		return (
-			<Suspense
-				fallback={
-					<pre
-						className={cn(
-							codeScrollbar.scrollbar,
-							"my-1.5 overflow-x-auto rounded-lg border border-edge-hairline bg-[#24292e] px-3 py-2 text-xs leading-relaxed text-white/90",
-						)}
-					>
-						<code>{code}</code>
-					</pre>
-				}
-			>
-				<LazyCodeCard code={code} language={language} className="my-1.5" />
-			</Suspense>
-		);
+		if (!isFenced) return <InlineCode>{children}</InlineCode>;
+		return <CodeBlock code={code} language={language} className="my-1.5" />;
 	},
 };
 

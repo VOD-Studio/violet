@@ -1,0 +1,210 @@
+@layer components {
+	.v-slider {
+		position: relative;
+		display: block;
+		box-sizing: border-box;
+		inline-size: 100%;
+		block-size: 28px;
+		font-family: inherit;
+		color: var(--foreground);
+		touch-action: none;
+		user-select: none;
+		cursor: pointer;
+	}
+
+	.v-slider[data-marks] {
+		margin-block-end: 24px;
+	}
+
+	.v-slider__track {
+		position: absolute;
+		inset-inline: 0;
+		inset-block-start: 12px;
+		block-size: 4px;
+		border-radius: 2px;
+		background: var(--muted);
+	}
+
+	.v-slider__range {
+		position: absolute;
+		inset-block: 0;
+		border-radius: inherit;
+		background: var(--foreground);
+	}
+
+	.v-slider > span:has(> .v-slider__thumb) {
+		inset-block-start: 5px;
+	}
+
+	.v-slider__thumb {
+		position: relative;
+		display: block;
+		box-sizing: border-box;
+		inline-size: 18px;
+		block-size: 18px;
+		padding: 0;
+		border: 1px solid var(--rule2);
+		border-radius: 50%;
+		background: var(--card);
+		box-shadow: var(--shadow-soft);
+		cursor: grab;
+		outline: none;
+		transition: border-color 140ms ease-out;
+	}
+
+	.v-slider__thumb::before {
+		position: absolute;
+		inset: -5px;
+		border-radius: inherit;
+		content: "";
+	}
+
+	.v-slider__thumb:hover {
+		border-color: var(--foreground);
+	}
+
+	.v-slider__thumb:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+
+	.v-slider[data-invalid] .v-slider__thumb {
+		border-color: var(--destructive);
+	}
+
+	.v-slider[data-invalid] .v-slider__thumb:focus-visible {
+		outline-color: var(--destructive);
+	}
+
+	.v-slider__thumb[data-dragging] {
+		cursor: grabbing;
+	}
+
+	.v-slider[data-motion="jump"] > span:has(> .v-slider__thumb),
+	.v-slider[data-motion="jump"] .v-slider__range {
+		transition:
+			left 160ms cubic-bezier(0.32, 0.72, 0, 1),
+			right 160ms cubic-bezier(0.32, 0.72, 0, 1);
+	}
+
+	.v-slider__tip {
+		position: absolute;
+		inset-inline-start: 50%;
+		inset-block-end: calc(100% + 8px);
+		z-index: var(--layer-tooltip);
+		padding: 4px 8px;
+		border: 1px solid var(--ol);
+		border-radius: 8px;
+		background: var(--popover);
+		color: var(--popover-foreground);
+		box-shadow: var(--shadow-soft);
+		font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+		font-size: 12px;
+		font-variant-numeric: tabular-nums;
+		line-height: 1.5;
+		white-space: nowrap;
+		pointer-events: none;
+		opacity: 0;
+		transform: translate(-50%, 4px);
+		transition:
+			opacity 120ms ease-out,
+			transform 120ms ease-out;
+	}
+
+	.v-slider__tip::after {
+		position: absolute;
+		inset-inline-start: 50%;
+		inset-block-start: 100%;
+		inline-size: 8px;
+		block-size: 8px;
+		margin: -4px 0 0 -4px;
+		background: var(--popover);
+		transform: rotate(45deg);
+		content: "";
+	}
+
+	.v-slider__thumb:is(:focus-visible, [data-dragging]) .v-slider__tip {
+		opacity: 1;
+		transform: translate(-50%, 0);
+		transition-duration: 150ms;
+		transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+	}
+
+	.v-slider__mark {
+		position: absolute;
+		inset-block-start: 0;
+		inline-size: 4px;
+		block-size: 4px;
+		border-radius: 50%;
+		background: var(--muted-foreground);
+		transform: translateX(-50%);
+		pointer-events: none;
+	}
+
+	.v-slider__mark[data-selected] {
+		background: var(--background);
+	}
+
+	.v-slider__labels {
+		position: absolute;
+		inset-inline: 0;
+		inset-block-start: 30px;
+		block-size: 18px;
+		font-size: 12px;
+		line-height: 18px;
+		color: var(--muted-foreground);
+		pointer-events: none;
+	}
+
+	.v-slider__label {
+		position: absolute;
+		white-space: nowrap;
+		transform: translateX(-50%);
+	}
+
+	.v-slider[data-disabled] {
+		opacity: 0.45;
+		cursor: not-allowed;
+		pointer-events: none;
+	}
+
+	.v-slider[data-readonly],
+	.v-slider[data-readonly] .v-slider__thumb {
+		cursor: default;
+	}
+
+	@media (pointer: coarse) {
+		.v-slider {
+			block-size: 32px;
+		}
+		.v-slider__track {
+			inset-block-start: 14px;
+		}
+		.v-slider > span:has(> .v-slider__thumb) {
+			inset-block-start: 4px;
+		}
+		.v-slider__thumb {
+			inline-size: 24px;
+			block-size: 24px;
+		}
+		.v-slider__thumb::before {
+			inset: -10px;
+		}
+		.v-slider__labels {
+			inset-block-start: 34px;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-slider__thumb,
+		.v-slider__tip,
+		.v-slider__thumb:is(:focus-visible, [data-dragging]) .v-slider__tip,
+		.v-slider[data-motion="jump"] .v-slider__range,
+		.v-slider[data-motion="jump"] > span:has(> .v-slider__thumb) {
+			transition: none;
+		}
+		.v-slider__tip {
+			transform: translateX(-50%);
+		}
+	}
+}

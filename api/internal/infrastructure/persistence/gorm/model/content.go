@@ -147,6 +147,8 @@ type Announcement struct {
 	ContentHTML string                      `gorm:"type:text;column:content_html" json:"content_html,omitempty"`
 	CoverImage  string                      `gorm:"type:text;column:cover_image" json:"cover_image,omitempty"`
 	Excerpt     string                      `gorm:"type:text" json:"excerpt,omitempty"`
+	LinkURL     string                      `gorm:"type:text;not null;default:''" json:"link_url,omitempty"`
+	LinkText    string                      `gorm:"type:text;not null;default:''" json:"link_text,omitempty"`
 	CreatedBy   *uuid.UUID                  `gorm:"type:uuid;column:created_by" json:"created_by,omitempty"`
 	CreatedAt   time.Time                   `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt   time.Time                   `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`

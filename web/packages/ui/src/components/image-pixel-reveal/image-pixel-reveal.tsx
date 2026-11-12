@@ -14,6 +14,7 @@ import {
 	useState,
 	useSyncExternalStore,
 } from "react";
+import { FlowerBloom } from "../indicator";
 
 export type PixelRevealVariant = "random" | "ripple" | "diagonal" | "curtain";
 
@@ -276,6 +277,11 @@ function PixelRevealImage({
 			data-state={status}
 			className={cn("v-image-pixel-reveal", className)}
 		>
+			{status === "loading" && (
+				<div className="v-image-pixel-reveal__placeholder" aria-hidden="true">
+					<FlowerBloom kind="osmanthus" size={24} />
+				</div>
+			)}
 			<div ref={contentRef} className="v-image-pixel-reveal__content" style={maskStyle}>
 				{children ? (
 					children

@@ -2,7 +2,7 @@
 
 import { useMe } from "@features/auth/api/queries";
 import { useTimeline, useTopicTimeline } from "@features/tweets/api/queries";
-import { Button, Empty, ShimmerSkeleton } from "@violet/ui";
+import { Button, Empty, Skeleton } from "@violet/ui";
 
 import { type ReactNode, useMemo } from "react";
 import { summarizeFeed } from "../model/feed-insights";
@@ -45,7 +45,7 @@ export function TweetTimeline({ limit, tag, header }: TweetTimelineProps = {}) {
 				{isLoading ? (
 					<div className="flex flex-col gap-4">
 						{Array.from({ length: 3 }).map((_, i) => (
-							<ShimmerSkeleton key={i} className="h-48 w-full rounded-2xl" />
+							<Skeleton key={i} className="h-48 w-full rounded-2xl" />
 						))}
 					</div>
 				) : isError ? (

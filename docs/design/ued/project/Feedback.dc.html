@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Violet 空状态与错误态</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&family=Noto+Serif+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Maple Mono";font-weight:400;font-style:normal;src:url(/_blob/a3ecea3add4961def4d089b95f486230) format("woff2")}
+@font-face{font-family:"Maple Mono";font-weight:500;font-style:normal;src:url(/_blob/1ba23035f8e49762aeac0a2a66f83fa0) format("woff2")}
+body{margin:0}
+a{color:inherit;text-decoration:none}
+.paper-l{position:absolute;inset:0;background-image:url(/_blob/66391f4a5c5b623abcbda5bc91818ab0);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.paper-d{position:absolute;inset:0;background-image:url(/_blob/b0a1c287fd95586fcb700c431de8f4c5);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.sec{padding:40px 0 32px;border-top:1px solid var(--rule)}
+.sec h2{margin:0;font-size:22px;font-weight:500;letter-spacing:-0.02em}
+.sec .sub{margin-top:6px;font-size:13px;color:var(--muted);line-height:1.8;max-width:820px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px;margin-top:24px}
+.cell{display:flex;flex-direction:column;gap:12px}
+.nm{font-size:13.5px;font-weight:500}
+.ds{font-size:12.5px;line-height:1.75;color:var(--muted)}
+.stage{position:relative;box-sizing:border-box;min-height:240px;border-radius:12px;background:color-mix(in oklab,var(--sunk) 55%,transparent);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:28px;text-align:center;overflow:hidden}
+.sheet{background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);border:1px solid var(--ol)}
+.t{font-size:16px;font-weight:500}
+.d{font-size:13px;color:var(--muted);line-height:1.7}
+.b{display:inline-flex;align-items:center;gap:8px;box-sizing:border-box;height:36px;padding:0 16px;border-radius:999px;font-size:14px;font-weight:500}
+.b.p{background:var(--fg);color:var(--bg)}.b.s{background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05)}
+.kbd{display:inline-flex;align-items:center;justify-content:center;gap:2px;min-width:24px;height:24px;padding:0 8px;box-sizing:border-box;border-radius:8px;background:var(--sunk);font:500 14px Inter,sans-serif;color:var(--muted)}
+.kbd > *{text-box:trim-both cap alphabetic}
+</style>
+</helmet>
+<div style="{{vars}}position:relative;overflow:hidden;width:1440px;min-height:2100px;background:var(--bg);color:var(--fg);font-family:'Songti SC','Noto Serif SC','Source Han Serif SC',STSong,SimSun,serif;font-size:14px;line-height:1.6">
+<div class="paper-l" style="display:{{showLight}}"></div>
+<div class="paper-d" style="display:{{showDark}}"></div>
+<div style="position:relative;z-index:2;padding:64px 160px 80px">
+<h1 style="margin:0;font-size:44px;font-weight:400;letter-spacing:-0.03em;line-height:1.15">空状态与错误态</h1>
+<p style="margin:12px 0 36px;font-size:14px;color:var(--muted);max-width:820px;line-height:1.8">每个状态只回答两件事：发生了什么、现在能做什么。插画只用当季的小幅插画，错误页才用大幅插画。</p>
+
+<section class="sec"><h2>空状态</h2>
+<div class="grid">
+  <div class="cell"><div class="stage"><img src="{{vig}}" alt="" style="width:170px;height:80px;object-fit:contain;mix-blend-mode:{{blend}}"><div class="t">还没有想法</div><div class="d">写下第一条后会出现在这里。</div><a href="#" class="b p" style="margin-top:6px">记一条</a></div>
+    <div class="nm">列表为空（手记 · 想法）</div><div class="ds">当季小插画 + 一句话；只有站长登录时才出现「记一条」，访客只看到前两行。</div></div>
+  <div class="cell"><div class="stage"><div class="t">没有符合条件的文章</div><div class="d">标签「Rust」· 系列「Yggdrasil」</div><a href="#" class="b s" style="margin-top:6px">清除筛选</a></div>
+    <div class="nm">筛选无结果（博客）</div><div class="ds">不放插画，直接说清当前的筛选条件，并给一个「清除筛选」。</div></div>
+  <div class="cell"><div class="stage" style="align-items:stretch;text-align:left;justify-content:flex-start"><div class="sheet" style="border-radius:16px;overflow:hidden"><div style="display:flex;align-items:center;gap:12px;height:52px;padding:0 18px;border-bottom:1px solid var(--rule)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--deco)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span style="flex:1;font-size:15px">kubernetes</span><kbd class="kbd"><span>Esc</span></kbd></div>
+      <div style="padding:26px 18px 24px;text-align:center"><div style="font-size:14.5px;font-weight:500">没有找到「kubernetes」</div><div class="d" style="margin-top:4px">标题和正文里都没有这个词，换个说法试试。</div></div></div></div>
+    <div class="nm">搜索无结果</div><div class="ds">在搜索面板内显示，不跳页；说明搜过的范围。</div></div>
+  <div class="cell"><div class="stage"><div class="sheet" style="width:300px;border-radius:16px;padding:30px 20px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><div class="t" style="font-size:14px;margin-top:8px">没有新消息</div></div></div>
+    <div class="nm">消息为空</div><div class="ds">面板里只留图标和一句话。</div></div>
+</div></section>
+
+<section class="sec"><h2>错误态</h2>
+<div class="grid">
+  <div class="cell" style="grid-column:span 2"><div class="stage" style="min-height:380px;align-items:flex-start;text-align:left;padding:56px 64px"><img src="{{art}}" alt="" style="position:absolute;top:0;right:0;width:520px;mix-blend-mode:{{blend}};-webkit-mask-image:radial-gradient(circle at 100% 0%,#000 58%,transparent 96%);mask-image:radial-gradient(circle at 100% 0%,#000 58%,transparent 96%)">
+      <div style="position:relative;font:500 112px/1 'Maple Mono',monospace;letter-spacing:-0.05em;color:color-mix(in oklab,var(--fg) 18%,transparent)">404</div>
+      <div style="position:relative;margin-top:18px;font-size:26px;font-weight:500">这一页不在这里</div>
+      <div style="position:relative;margin-top:8px" class="d">它可能被移动或删除了。</div>
+      <div style="position:relative;display:flex;gap:10px;margin-top:22px"><a href="#" class="b p">回首页</a><a href="#" class="b s">搜索<kbd class="kbd"><abbr title="Command" style="text-decoration:none">⌘</abbr><span>K</span></kbd></a></div></div>
+    <div class="nm">404 页面</div><div class="ds">整页错误才用大幅当季插画；正文一句话，两个出口。</div></div>
+  <div class="cell"><div class="stage" style="align-items:flex-start;text-align:left;padding:40px"><div style="font:500 13px 'Maple Mono',monospace;color:var(--muted)">500</div><div class="t" style="font-size:22px">服务暂时不可用</div><div class="d">稍后再试；如果一直这样，请把下面的编号告诉我。</div><div style="display:flex;align-items:center;gap:12px;margin-top:8px"><a href="#" class="b p">重试</a><span style="font:400 12px 'Maple Mono',monospace;color:var(--muted)">[请求编号]</span></div></div>
+    <div class="nm">服务错误页</div><div class="ds">不放插画，给重试和请求编号，方便排查。</div></div>
+  <div class="cell"><div class="stage" style="align-items:stretch;justify-content:center"><div class="sheet" style="display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:12px;text-align:left"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg><span style="flex:1;font-size:13.5px">评论加载失败<span style="display:block;font-size:12px;color:var(--muted)">文章正文不受影响</span></span><a href="#" class="b s" style="height:32px;padding:0 12px">重试</a></div></div>
+    <div class="nm">区块加载失败</div><div class="ds">只影响一个区块时就地显示，不打断整页；说明哪些不受影响。</div></div>
+  <div class="cell"><div class="stage" style="justify-content:flex-start;padding-top:26px"><div class="sheet" style="display:flex;align-items:center;gap:10px;height:36px;box-sizing:border-box;padding:0 16px;border-radius:999px;font-size:12.5px"><span style="width:7px;height:7px;border-radius:50%;background:var(--danger)"></span>网络已断开，恢复后会自动刷新</div></div>
+    <div class="nm">离线</div><div class="ds">导航下方一条小提示；恢复后自动刷新当前数据并消失。</div></div>
+  <div class="cell"><div class="stage" style="align-items:stretch"><div class="sheet" style="border-radius:12px;padding:18px;text-align:left"><div style="font-size:12px;color:var(--muted)">邮箱</div><div style="height:36px;display:flex;align-items:center;border-bottom:2px solid var(--danger);font-size:14px">xunrua@</div><div style="margin-top:6px;font-size:12px;color:var(--danger)">邮箱格式不正确</div></div></div>
+    <div class="nm">表单字段错误</div><div class="ds">错在哪一项就标在哪一项下方，提交按钮不变灰，仍可再次提交。</div></div>
+</div></section>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"season":{"editor":"enum","options":["春","夏","秋","冬"],"default":"春"},"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":2100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const S = {
+      '春': { seed: '#f47983', h: 16.6, v: '/_blob/110f63ef7715ec0f34860e8c25e7ce2d', l: '/_blob/d8aaad66118cac26d5af34610af527bf', d: '/_blob/0cfa75d49c85d4df8e63d591ce6c7ea1' },
+      '夏': { seed: '#2f9e7a', h: 162, v: '/_blob/7f7921d4060bcc96542fae14e57c6876', l: '/_blob/c0353bf8edad55e8130fb95826b3799f', d: '/_blob/8ab23c87229ff622bac13566cfb665fd' },
+      '秋': { seed: '#d9a21b', h: 82.95, v: '/_blob/76b487be4a0beebabe3601551bf4f036', l: '/_blob/d837ab2ada8c6a3cbb1a71fea71be6e2', d: '/_blob/8a07e26da1a24b8a9f19bf09a30aca11' },
+      '冬': { seed: '#7d8ea3', h: 252, v: '/_blob/412916b5507c1e93dfdc168a77ff2cef', l: '/_blob/eb4210561b3c04659b349b6813d7ba9c', d: '/_blob/f4961af0e552cbba606908f217a44b37' },
+    };
+    const season = S[this.props.season] ? this.props.season : '春';
+    const dark = !!this.props.dark;
+    const s = S[season], h = s.h;
+    const vars = dark
+      ? `--bg:oklch(0.17 0.0087 ${h});--sheet:oklch(0.235 0.011 ${h});--sunk:oklch(0.29 0.012 ${h});--fg:oklch(0.9373 0.015 ${h});--muted:oklch(0.8573 0.0225 ${h});--rule:oklch(0.9373 0.015 ${h} / .12);--deco:${s.seed};--danger:oklch(0.74 0.14 25);--ol:rgb(255 255 255 / .08);`
+      : `--bg:oklch(0.968 0.006 ${h});--sheet:oklch(0.994 0.003 ${h});--sunk:oklch(0.945 0.007 ${h});--fg:oklch(0.3331 0.0175 ${h});--muted:oklch(0.4717 0.0225 ${h});--rule:oklch(0.3331 0.0175 ${h} / .11);--deco:${s.seed};--danger:oklch(0.52 0.16 27);--ol:transparent;`;
+    return { vars, vig: s.v, art: dark ? s.d : s.l, blend: dark ? 'normal' : 'multiply', showLight: dark ? 'none' : 'block', showDark: dark ? 'block' : 'none' };
+  }
+}
+</script>
+</body>
+</html>

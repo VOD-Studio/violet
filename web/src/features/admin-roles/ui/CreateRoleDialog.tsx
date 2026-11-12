@@ -1,7 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button, Input, Label, Modal, Textarea } from "@violet/ui";
 
-import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useCreateRole } from "../api/queries";
@@ -64,8 +63,7 @@ export function CreateRoleDialog({ open, onOpenChange }: CreateRoleDialogProps) 
 					>
 						取消
 					</Button>
-					<Button type="submit" form="create-role-form" disabled={createRole.isPending}>
-						{createRole.isPending && <Loader2 className="mr-1 size-4 animate-spin" />}
+					<Button type="submit" form="create-role-form" loading={createRole.isPending}>
 						创建
 					</Button>
 				</>

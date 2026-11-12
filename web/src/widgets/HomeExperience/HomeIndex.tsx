@@ -2,7 +2,7 @@ import type { AdminComment } from "@entities/comment/model/types";
 import type { Tweet } from "@entities/tweet/model/types";
 import { formatDate, formatRelativeTime } from "@shared/lib/date";
 import { Link } from "@tanstack/react-router";
-import { Skeleton } from "@violet/ui";
+import { iconProps, Skeleton } from "@violet/ui";
 import { cn } from "cn";
 import { ArrowRight, ArrowUpRight, RefreshCw } from "lucide-react";
 import { motion } from "motion/react";
@@ -89,10 +89,10 @@ export function HomeIndex({
 								type="button"
 								disabled={publicationRetrying}
 								onClick={onRetryPublications}
-								className="mt-3 inline-flex items-center gap-1.5 text-xs text-link transition-colors hover:text-link-hover disabled:cursor-wait disabled:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+								className="mt-3 inline-flex items-center gap-2 text-xs text-link transition-colors hover:text-link-hover disabled:cursor-wait disabled:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
 							>
 								<RefreshCw
-									className={`size-3.5 ${publicationRetrying ? "animate-spin" : ""}`}
+									{...iconProps(14, publicationRetrying ? "animate-spin" : "")}
 								/>
 								{publicationRetrying ? "正在重试" : "重新获取近稿"}
 							</button>
@@ -181,7 +181,7 @@ export function HomeIndex({
 							className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
 						>
 							尽览新篇
-							<ArrowRight className="size-3.5" />
+							<ArrowRight {...iconProps(14)} />
 						</Link>
 					</div>
 				</motion.div>
@@ -255,7 +255,7 @@ export function HomeIndex({
 								className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
 							>
 								回看全部偶得
-								<ArrowUpRight className="size-3.5" />
+								<ArrowUpRight {...iconProps(14)} />
 							</Link>
 						</div>
 					</div>

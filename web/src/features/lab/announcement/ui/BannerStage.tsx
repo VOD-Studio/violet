@@ -1,11 +1,12 @@
 import type { Announcement } from "@features/settings/model/types";
 import { getAnnouncementSev } from "@shared/ui/announcement-severity";
+import { iconProps } from "@violet/ui";
 import { cn } from "cn";
 import type { ReactNode, Ref } from "react";
 import { useState } from "react";
 
 /**
- * banner severity → neon 色（生产 AnnouncementBar 的横幅配色约定，
+ * banner severity → neon 色（实验室深底横幅的配色，
  * 与卡片系的 shadcn 色阶刻意双轨：深底上 neon 更亮）
  */
 export const BANNER_NEON: Record<string, string> = {
@@ -97,7 +98,7 @@ export function BannerFace({ a }: { a: Announcement }) {
 				BANNER_NEON[a.severity] ?? BANNER_NEON.info,
 			)}
 		>
-			<cfg.Icon className="size-3.5 shrink-0" />
+			<cfg.Icon {...iconProps(14, "shrink-0")} />
 			<span className="truncate text-primary-foreground dark:text-foreground">
 				{a.content}
 			</span>

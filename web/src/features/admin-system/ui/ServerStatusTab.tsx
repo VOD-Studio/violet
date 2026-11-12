@@ -1,6 +1,6 @@
 import { formatDateTime } from "@shared/lib/date";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button, Segmented, type SegmentedItem, Skeleton, Switch } from "@violet/ui";
+import { Button, iconProps, Segmented, type SegmentedItem, Skeleton, Switch } from "@violet/ui";
 import { Activity, Pause, Play, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { systemKeys } from "../api/keys";
@@ -65,12 +65,12 @@ export function ServerStatusTab() {
 						/>
 						{polling ? (
 							<span className="flex items-center gap-1">
-								<Play className="size-3" />
+								<Play {...iconProps(12)} />
 								轮询中
 							</span>
 						) : (
 							<span className="flex items-center gap-1">
-								<Pause className="size-3" />
+								<Pause {...iconProps(12)} />
 								已暂停
 							</span>
 						)}
@@ -81,7 +81,7 @@ export function ServerStatusTab() {
 						onClick={handleManualRefresh}
 						disabled={isLoading}
 					>
-						<RefreshCw className={`size-3.5 ${isLoading ? "animate-spin" : ""}`} />
+						<RefreshCw {...iconProps(14, isLoading ? "animate-spin" : "")} />
 						刷新
 					</Button>
 				</div>
@@ -101,9 +101,7 @@ export function ServerStatusTab() {
 
 					<section className="space-y-3">
 						<div className="flex items-center justify-between">
-							<SectionTitle icon={<Activity className="size-3.5" />}>
-								磁盘
-							</SectionTitle>
+							<SectionTitle icon={<Activity {...iconProps(14)} />}>磁盘</SectionTitle>
 							<Segmented
 								value={diskMode}
 								onValueChange={setDiskMode}
@@ -119,7 +117,7 @@ export function ServerStatusTab() {
 					</section>
 
 					<section className="space-y-3">
-						<SectionTitle icon={<Activity className="size-3.5" />}>运行时</SectionTitle>
+						<SectionTitle icon={<Activity {...iconProps(14)} />}>运行时</SectionTitle>
 						<RuntimePulse runtime={snapshotQ.data.runtime} history={historyQ.data} />
 					</section>
 				</div>
@@ -161,7 +159,7 @@ function ErrorBlock({ message, onRetry }: { message: string; onRetry: () => void
 		<div className="text-muted-foreground flex flex-col items-center gap-3 py-12">
 			<p>加载监控数据失败：{message}</p>
 			<Button variant="outline" size="sm" onClick={onRetry}>
-				<RefreshCw className="size-3.5" />
+				<RefreshCw {...iconProps(14)} />
 				重试
 			</Button>
 		</div>

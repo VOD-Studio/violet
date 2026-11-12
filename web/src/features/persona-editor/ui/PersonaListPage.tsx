@@ -1,10 +1,6 @@
 import type { PersonaSummary } from "@entities/persona/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import {
-	DataTable,
-	type DataTableColumn,
-	usePagedQuery,
-} from "@features/admin-shared/ui/data-table";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useCreatePersona, useDeletePersona } from "@features/persona-editor/api/mutations";
 import { useAdminPersonas } from "@features/persona-editor/api/queries";
@@ -16,13 +12,16 @@ import {
 	Badge,
 	Button,
 	ConfirmDialog,
+	DataTable,
+	type DataTableColumn,
+	iconProps,
 	SearchInput,
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
 } from "@violet/ui";
-import { Eye, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -96,7 +95,7 @@ export function PersonaListPage() {
 			width: "150px",
 			cell: (row) => (
 				<div className="flex items-center gap-2">
-					<Badge variant={row.is_complete ? "secondary" : "outline"}>
+					<Badge tone={row.is_complete ? "ok" : "off"}>
 						{row.is_complete ? "完整" : "待补全"}
 					</Badge>
 					<span className="text-xs tabular-nums text-muted-foreground">
@@ -116,7 +115,7 @@ export function PersonaListPage() {
 			header: "当前状态",
 			width: "110px",
 			cell: (row) => (
-				<Badge variant={row.is_active ? "default" : "outline"}>
+				<Badge tone={row.is_active ? "ok" : "off"}>
 					{row.is_active ? "当前人设" : "未激活"}
 				</Badge>
 			),
@@ -137,20 +136,21 @@ export function PersonaListPage() {
 			width: "96px",
 			sticky: "right",
 			cell: (row) => (
-				<div className="flex items-center gap-1">
+				<div className="v-table__row-actions items-center gap-1">
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<Button
+								iconOnly
 								type="button"
 								variant="ghost"
-								size="icon-sm"
+								size="sm"
 								onClick={() => openPersona(row.id)}
 								aria-label={`${canManage ? "编辑" : "查看"}人设 ${row.name || row.id.slice(0, 8)}`}
 							>
 								{canManage ? (
-									<Pencil className="size-3.5" />
+									<Pencil {...iconProps(14)} />
 								) : (
-									<Eye className="size-3.5" />
+									<Eye {...iconProps(14)} />
 								)}
 							</Button>
 						</TooltipTrigger>
@@ -161,15 +161,16 @@ export function PersonaListPage() {
 							<TooltipTrigger asChild>
 								<span>
 									<Button
+										iconOnly
 										type="button"
 										variant="ghost"
-										size="icon-sm"
+										size="sm"
 										disabled={row.is_active}
 										className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 										onClick={() => setDeleting(row)}
 										aria-label={`删除人设 ${row.name || row.id.slice(0, 8)}`}
 									>
-										<Trash2 className="size-3.5" />
+										<Trash2 {...iconProps(14)} />
 									</Button>
 								</span>
 							</TooltipTrigger>
@@ -193,13 +194,10 @@ export function PersonaListPage() {
 						<Button
 							size="sm"
 							disabled={createPersona.isPending}
+							loading={createPersona.isPending}
+							leftIcon={<Plus className="size-4" />}
 							onClick={() => void handleCreate()}
 						>
-							{createPersona.isPending ? (
-								<Loader2 className="size-4 animate-spin" />
-							) : (
-								<Plus className="size-4" />
-							)}
 							新建档案
 						</Button>
 					) : null
@@ -208,7 +206,6 @@ export function PersonaListPage() {
 					<div className="max-w-80 pt-1">
 						<SearchInput
 							aria-label="搜索人设"
-							variant="soft"
 							controlSize="sm"
 							defaultValue=""
 							placeholder="按角色名称搜索…"

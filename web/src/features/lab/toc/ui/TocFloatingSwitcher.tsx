@@ -1,3 +1,4 @@
+import { iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { ChevronLeft, Layers, PanelLeft, PanelLeftClose } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -114,12 +115,12 @@ export function TocFloatingSwitcher<V extends string>({
 						onToggleCompact();
 						setOpen(false);
 					}}
-					className="mx-0.5 flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded-full bg-muted/50 px-2.5 font-mono text-[11px] text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
+					className="mx-0.5 flex h-7 shrink-0 cursor-pointer items-center gap-2 rounded-full bg-muted/50 px-2.5 font-mono text-[11px] text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
 				>
 					{isCompact ? (
-						<PanelLeft className="size-3.5" />
+						<PanelLeft {...iconProps(14)} />
 					) : (
-						<PanelLeftClose className="size-3.5" />
+						<PanelLeftClose {...iconProps(14)} />
 					)}
 					{isCompact ? "展开目录" : "收起为窄轨"}
 				</button>

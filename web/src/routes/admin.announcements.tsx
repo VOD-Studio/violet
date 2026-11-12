@@ -8,15 +8,18 @@ import type {
 	AnnouncementType,
 } from "@features/admin-announcements/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
-import { DataTable, usePagedQuery } from "@features/admin-shared/ui/data-table";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { formatDateTime } from "@shared/lib/date";
 import { createFileRoute } from "@tanstack/react-router";
+import type { DataTableColumn, DataTableSort } from "@violet/ui";
 import {
 	Badge,
 	Button,
 	ConfirmDialog,
+	DataTable,
+	iconProps,
+	Tag,
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
@@ -110,14 +113,14 @@ function AdminAnnouncementsPage() {
 			header: "形态",
 			sortable: true,
 			width: "80px",
-			cell: (row) => <Badge variant="secondary">{DISPLAY_LABEL[row.display]}</Badge>,
+			cell: (row) => <Tag>{DISPLAY_LABEL[row.display]}</Tag>,
 		},
 		{
 			key: "type",
 			header: "类型",
 			sortable: true,
 			width: "80px",
-			cell: (row) => <Badge variant="outline">{TYPE_LABEL[row.type]}</Badge>,
+			cell: (row) => <Tag>{TYPE_LABEL[row.type]}</Tag>,
 		},
 		{
 			key: "range",
@@ -137,9 +140,7 @@ function AdminAnnouncementsPage() {
 			sortable: true,
 			width: "80px",
 			cell: (row) => (
-				<Badge variant={row.is_active ? "default" : "secondary"}>
-					{row.is_active ? "启用" : "停用"}
-				</Badge>
+				<Badge tone={row.is_active ? "ok" : "off"}>{row.is_active ? "启用" : "停用"}</Badge>
 			),
 		},
 		{
@@ -148,18 +149,19 @@ function AdminAnnouncementsPage() {
 			sticky: "right",
 			width: "96px",
 			cell: (row) => (
-				<div className="flex items-center gap-2">
+				<div className="v-table__row-actions items-center gap-2">
 					<PermissionGuard permission="announcement:manage">
 						<Tooltip>
 							<TooltipTrigger asChild>
 								<span>
 									<Button
-										size="icon-sm"
+										iconOnly
+										size="sm"
 										variant="ghost"
 										onClick={() => handleEdit(row)}
 										aria-label={`编辑公告 ${row.title}`}
 									>
-										<Pencil className="size-3.5" />
+										<Pencil {...iconProps(14)} />
 									</Button>
 								</span>
 							</TooltipTrigger>
@@ -171,13 +173,14 @@ function AdminAnnouncementsPage() {
 							<TooltipTrigger asChild>
 								<span>
 									<Button
-										size="icon-sm"
+										iconOnly
+										size="sm"
 										variant="ghost"
 										className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 										onClick={() => handleDelete(row)}
 										aria-label={`删除公告 ${row.title}`}
 									>
-										<Trash2 className="size-3.5" />
+										<Trash2 {...iconProps(14)} />
 									</Button>
 								</span>
 							</TooltipTrigger>
@@ -197,7 +200,7 @@ function AdminAnnouncementsPage() {
 				action={
 					<PermissionGuard permission="announcement:manage">
 						<Button size="sm" onClick={handleCreate}>
-							<Plus className="size-3.5" />
+							<Plus {...iconProps(14)} />
 							创建公告
 						</Button>
 					</PermissionGuard>

@@ -3,7 +3,7 @@ import { contentImageSources, contentImageUrl } from "@shared/lib/image-url";
 import { cn } from "cn";
 import { ImageOff } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { coverCropTransform, type Size } from "./lib/crop-display";
+import { coverCropFrame, type Size } from "./lib/crop-display";
 
 interface LoadedImage extends Size {
 	src: string;
@@ -57,7 +57,8 @@ export interface CroppedImageProps {
  *
  * @remarks `crop` 只在 CSS 几何中生效，不叠加服务端居中裁剪。
  * 选区与容器比例不同时按 cover 居中；未传 aspect 时以选区比例撑开布局。
- * 裁剪几何就绪前隐藏图片，避免闪现未裁剪的全图；无 crop 时直接展示。
+ * 选区几何只用相对容器的百分比表达，服务端首帧即按选区可见；
+ * 容器测量与图片固有尺寸只参与派生资源宽度的选择。
  */
 export function CroppedImage({
 	src,
@@ -83,12 +84,14 @@ export function CroppedImage({
 	const [density, setDensity] = useState(1);
 	const sourceScale = rect ? 1 / rect.w : 1;
 	const currentNatural = natural?.src === src ? natural : null;
-	const transform =
-		rect && currentNatural && box ? coverCropTransform(rect, currentNatural, box) : null;
-	const fullWidth = transform
-		? transform.width
-		: currentNatural && box
-			? Math.max(box.w, (box.h * currentNatural.w) / currentNatural.h)
+	const frame = rect ? coverCropFrame(rect) : null;
+	// 完整源图 cover 进「容器 ÷ 选区占比」的盒后的渲染宽度，决定需要请求多少像素。
+	const fullWidth =
+		currentNatural && box
+			? Math.max(
+					box.w * sourceScale,
+					((box.h / (rect?.h ?? 1)) * currentNatural.w) / currentNatural.h,
+				)
 			: (box?.w ?? width ?? 0) * sourceScale;
 	const requiredWidth = Math.ceil(fullWidth * density);
 	const requestWidth =
@@ -186,7 +189,7 @@ export function CroppedImage({
 				)}
 				style={ratio ? { aspectRatio: ratio } : undefined}
 			>
-				<ImageOff className="size-8 max-h-[60%] max-w-[60%] text-muted-foreground/50" />
+				<ImageOff className="size-6 max-h-[60%] max-w-[60%] text-muted-foreground/50" />
 			</div>
 		);
 	}
@@ -221,16 +224,18 @@ export function CroppedImage({
 						imgClassName,
 					)}
 					style={
-						transform
+						frame
 							? {
-									width: transform.width,
-									height: transform.height,
-									left: transform.left,
-									top: transform.top,
+									width: `${frame.width}%`,
+									height: `${frame.height}%`,
+									left: `${frame.left}%`,
+									top: `${frame.top}%`,
+									objectFit: "cover",
+									objectPosition: `${frame.focusX}% ${frame.focusY}%`,
+									// 调用方用 group-hover:scale 悬停放大时，原点须与可见区域中心重合。
+									transformOrigin: `${frame.focusX}% ${frame.focusY}%`,
 								}
-							: rect
-								? { visibility: "hidden" }
-								: undefined
+							: undefined
 					}
 				/>
 			</picture>

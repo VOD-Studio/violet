@@ -1,26 +1,20 @@
 import type { EmojiGroup } from "@entities/emoji/model/types";
 import { useUpdateEmojiGroup } from "@features/admin-emojis/api/mutations";
 import {
-	Badge,
 	Button,
 	Card,
 	CardContent,
 	CardFooter,
 	CardHeader,
 	CardTitle,
+	iconProps,
 	Switch,
+	Tag,
 } from "@violet/ui";
 
 import { cn } from "cn";
-import { Hash, Pencil, Smile, SortAsc, Tag, Trash2 } from "lucide-react";
+import { Hash, Pencil, Smile, SortAsc, Tag as TagIcon, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-
-/** 来源标签使用分类色，不与审核状态或站点品牌混用。 */
-const SOURCE_COLORS: Record<string, string> = {
-	system: "bg-category-1-muted text-category-1 border-category-1/20",
-	bilibili: "bg-category-2-muted text-category-2 border-category-2/20",
-	custom: "bg-category-3-muted text-category-3 border-category-3/20",
-};
 
 /** 来源标签的中文映射 */
 const SOURCE_LABELS: Record<string, string> = {
@@ -44,7 +38,6 @@ interface EmojiGroupCardProps {
  */
 export function EmojiGroupCard({ group, onEdit, onDelete, onManageEmojis }: EmojiGroupCardProps) {
 	const updateGroup = useUpdateEmojiGroup();
-	const sourceColor = SOURCE_COLORS[group.source] ?? SOURCE_COLORS.custom;
 	const sourceLabel = SOURCE_LABELS[group.source] ?? group.source;
 	const isDisabled = !group.is_enabled;
 	const isToggling = updateGroup.isPending;
@@ -97,17 +90,14 @@ export function EmojiGroupCard({ group, onEdit, onDelete, onManageEmojis }: Emoj
 								{group.name}
 							</CardTitle>
 						</div>
-						<Badge
-							variant="outline"
-							className={cn(
-								"w-fit gap-1 border px-2 py-0.5 text-xs font-medium",
-								sourceColor,
-								isDisabled && "opacity-50",
-							)}
+						<Tag
+							size="sm"
+							tone={group.source === "system" ? "accent" : "neutral"}
+							icon={<TagIcon />}
+							className="w-fit"
 						>
-							<Tag className="size-3" />
 							{sourceLabel}
-						</Badge>
+						</Tag>
 					</div>
 					<div className="flex flex-col items-end gap-1">
 						<Switch
@@ -138,7 +128,7 @@ export function EmojiGroupCard({ group, onEdit, onDelete, onManageEmojis }: Emoj
 							isDisabled && "opacity-50",
 						)}
 					>
-						<Hash className="size-3.5" />
+						<Hash {...iconProps(14)} />
 						<span className="tabular-nums">{group.id}</span>
 					</div>
 					<div
@@ -147,7 +137,7 @@ export function EmojiGroupCard({ group, onEdit, onDelete, onManageEmojis }: Emoj
 							isDisabled && "opacity-50",
 						)}
 					>
-						<SortAsc className="size-3.5" />
+						<SortAsc {...iconProps(14)} />
 						<span className="tabular-nums">{group.sort_order}</span>
 					</div>
 				</div>
@@ -159,30 +149,34 @@ export function EmojiGroupCard({ group, onEdit, onDelete, onManageEmojis }: Emoj
 						variant="outline"
 						size="sm"
 						onClick={() => onManageEmojis(group.id)}
-						className="flex-1 gap-1.5"
+						className="flex-1"
 						disabled={isDisabled}
 					>
-						<Smile className="size-3.5" />
+						<Smile {...iconProps(14)} />
 						管理表情
 					</Button>
 				) : null}
 				<div className="flex gap-1">
 					{onEdit ? (
 						<Button
+							iconOnly
 							variant="ghost"
-							size="icon-sm"
+							size="sm"
 							onClick={() => onEdit(group)}
+							aria-label="编辑"
 							title="编辑"
 							disabled={isDisabled}
 						>
-							<Pencil className="size-3.5" />
+							<Pencil {...iconProps(14)} />
 						</Button>
 					) : null}
 					{onDelete ? (
 						<Button
+							iconOnly
 							variant="ghost"
-							size="icon-sm"
+							size="sm"
 							onClick={() => onDelete(group)}
+							aria-label="删除"
 							title="删除"
 							className={cn(
 								"hover:bg-destructive/10 hover:text-destructive",
@@ -190,7 +184,7 @@ export function EmojiGroupCard({ group, onEdit, onDelete, onManageEmojis }: Emoj
 							)}
 							disabled={isDisabled}
 						>
-							<Trash2 className="size-3.5" />
+							<Trash2 {...iconProps(14)} />
 						</Button>
 					) : null}
 				</div>

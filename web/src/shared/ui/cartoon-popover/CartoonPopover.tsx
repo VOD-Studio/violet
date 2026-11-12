@@ -1,4 +1,5 @@
 import { useReducedMotion } from "@shared/lib/motion";
+import { iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { X } from "lucide-react";
 import {
@@ -546,7 +547,7 @@ export function CartoonPopoverClose({ className, onClick, ...props }: CartoonPop
 			)}
 			{...props}
 		>
-			<X className="size-3.5 stroke-[2.2]" />
+			<X {...iconProps(14)} />
 		</button>
 	);
 }

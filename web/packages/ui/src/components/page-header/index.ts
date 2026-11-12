@@ -1,2 +1,2 @@
-export type { PageHeaderProps } from "./PageHeader";
-export { PageHeader } from "./PageHeader";
+export type { PageHeaderBack, PageHeaderProps } from "./page-header";
+export { PageHeader } from "./page-header";

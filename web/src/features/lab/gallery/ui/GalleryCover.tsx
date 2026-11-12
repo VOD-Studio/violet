@@ -13,7 +13,7 @@ export function GalleryCover({ gallery, className }: { gallery: MockGallery; cla
 			<div
 				className={`flex aspect-4/3 items-center justify-center bg-muted ${className ?? ""}`}
 			>
-				<ImageOff className="size-7 text-muted-foreground/50" />
+				<ImageOff className="size-6 text-muted-foreground/50" />
 			</div>
 		);
 	}

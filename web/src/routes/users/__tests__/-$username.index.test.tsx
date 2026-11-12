@@ -234,7 +234,7 @@ describe("UserPublicProfilePage rendering", () => {
 		expect(screen.getByText("带图摄影推文")).toBeTruthy();
 
 		// 切换到图文 Tab
-		const mediaTab = screen.getByRole("button", { name: /图文/ });
+		const mediaTab = screen.getByRole("radio", { name: /图文/ });
 		fireEvent.click(mediaTab);
 
 		expect(screen.queryByText("普通纯文本推文")).toBeNull();

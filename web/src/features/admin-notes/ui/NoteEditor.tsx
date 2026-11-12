@@ -16,9 +16,16 @@ import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { RichTextEditor } from "@features/editor";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "@tanstack/react-router";
-import { Input, Sheet, SheetContent, SheetHeader, SheetTitle } from "@violet/ui";
+import {
+	Input,
+	Sheet,
+	SheetBody,
+	SheetContent,
+	SheetHeader,
+	SheetTitle,
+	Spinner,
+} from "@violet/ui";
 import { cn } from "cn";
-import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -157,7 +164,7 @@ export function NoteEditor({ id }: NoteEditorProps) {
 	if (!isCreate && isLoading) {
 		return (
 			<div className="flex h-full items-center justify-center">
-				<Loader2 className="text-muted-foreground size-6 animate-spin" />
+				<Spinner size={24} className="text-muted-foreground" aria-hidden="true" />
 			</div>
 		);
 	}
@@ -183,7 +190,7 @@ export function NoteEditor({ id }: NoteEditorProps) {
 			/>
 
 			{/* 主编辑工作区与侧栏 */}
-			<div className="grid flex-1 grid-cols-1 gap-4 overflow-hidden lg:grid-cols-[1fr_280px]">
+			<div className="-m-1 grid flex-1 grid-cols-1 gap-4 overflow-hidden p-1 lg:grid-cols-[1fr_280px]">
 				{/* 左侧创作主区 */}
 				<div className="flex min-h-0 min-w-0 flex-col gap-2">
 					{/* 无边框大标题输入 */}
@@ -191,7 +198,7 @@ export function NoteEditor({ id }: NoteEditorProps) {
 						{...register("title")}
 						placeholder="无标题笔记（可留空）…"
 						aria-label="笔记标题"
-						variant="ghost"
+						variant="plain"
 						controlSize="lg"
 						classNames={{ control: "px-2" }}
 						className={cn(
@@ -240,16 +247,18 @@ export function NoteEditor({ id }: NoteEditorProps) {
 
 				{/* 移动端侧滑抽屉 */}
 				<Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
-					<SheetContent side="right" className="w-[85vw] max-w-sm overflow-y-auto">
-						<SheetHeader className="mb-4">
+					<SheetContent aria-describedby={undefined}>
+						<SheetHeader>
 							<SheetTitle>笔记设置</SheetTitle>
 						</SheetHeader>
-						<NoteEditorSidebar
-							note={note}
-							contentLength={contentMD.length}
-							tags={currentTags}
-							onTagsChange={handleTagsChange}
-						/>
+						<SheetBody>
+							<NoteEditorSidebar
+								note={note}
+								contentLength={contentMD.length}
+								tags={currentTags}
+								onTagsChange={handleTagsChange}
+							/>
+						</SheetBody>
 					</SheetContent>
 				</Sheet>
 			</div>

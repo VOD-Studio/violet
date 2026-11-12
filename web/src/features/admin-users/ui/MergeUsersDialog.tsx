@@ -1,7 +1,6 @@
 import { useAdminUsers, useMergeUsers } from "@features/admin-users/api/queries";
 import type { AdminUserDTO } from "@features/admin-users/model/types";
 import { Button, Input, Label, Modal } from "@violet/ui";
-import { Loader2 } from "lucide-react";
 import { useState } from "react";
 
 interface MergeUsersDialogProps {
@@ -79,8 +78,8 @@ export function MergeUsersDialog({ open, onOpenChange, user }: MergeUsersDialogP
 						form="merge-users-form"
 						variant="destructive"
 						disabled={!canSubmit}
+						loading={mergeUsers.isPending}
 					>
-						{mergeUsers.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
 						合并并删除「{user.username}」
 					</Button>
 				</>
@@ -92,7 +91,6 @@ export function MergeUsersDialog({ open, onOpenChange, user }: MergeUsersDialogP
 					<Input
 						id="merge-primary-search"
 						type="search"
-						variant="soft"
 						controlSize="sm"
 						value={keyword}
 						onChange={(e) => {

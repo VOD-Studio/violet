@@ -1,4 +1,4 @@
-import { Button, Input, Popover, PopoverContent, PopoverTrigger } from "@violet/ui";
+import { Button, Input, iconProps, Popover, PopoverContent, PopoverTrigger } from "@violet/ui";
 
 import { cn } from "cn";
 import { Check, ChevronsUpDown, Search, TableProperties } from "lucide-react";
@@ -65,13 +65,12 @@ export function SchemaTablePicker({
 			</PopoverTrigger>
 			<PopoverContent
 				align="start"
-				sideOffset={6}
-				className="w-(--radix-popover-trigger-width) min-w-72 p-0 data-[state=closed]:animate-none! data-[state=open]:animate-none!"
+				className="w-(--radix-popover-trigger-width) min-w-72 p-0"
 			>
 				<div className="border-b p-2">
 					<Input
 						type="search"
-						variant="ghost"
+						variant="plain"
 						aria-label="搜索 schema 或数据表名称"
 						leading={<Search className="size-4" />}
 						clearable
@@ -120,8 +119,8 @@ export function SchemaTablePicker({
 								>
 									<Check
 										aria-hidden
-										className={cn(
-											"size-3.5",
+										{...iconProps(
+											14,
 											selectedTable ? "opacity-100" : "opacity-0",
 										)}
 									/>

@@ -63,14 +63,17 @@ type FriendLinkCreated struct {
 	Name string
 	// URL 站点 URL 快照
 	URL string
+	// Description 站点描述快照（通知摘要用，可空）
+	Description string
 }
 
 // NewFriendLinkCreated 构造友链创建事件
-func NewFriendLinkCreated(id shared.ID, name, siteURL string) FriendLinkCreated {
+func NewFriendLinkCreated(id shared.ID, name, siteURL, description string) FriendLinkCreated {
 	return FriendLinkCreated{
-		BaseEvent: shared.NewBaseEvent("friendlink.created", id),
-		Name:      name,
-		URL:       siteURL,
+		BaseEvent:   shared.NewBaseEvent("friendlink.created", id),
+		Name:        name,
+		URL:         siteURL,
+		Description: description,
 	}
 }
 
@@ -82,16 +85,19 @@ type FriendLinkApproved struct {
 	// From 原状态
 	From string
 	// To 目标状态（恒 approved）
-	To   string
+	To string
+	// Description 站点描述快照（通知摘要用，可空）
+	Description string
 }
 
 // NewFriendLinkApproved 构造批准事件
-func NewFriendLinkApproved(id shared.ID, name, from string) FriendLinkApproved {
+func NewFriendLinkApproved(id shared.ID, name, from, description string) FriendLinkApproved {
 	return FriendLinkApproved{
-		BaseEvent: shared.NewBaseEvent("friendlink.approved", id),
-		Name:      name,
-		From:      from,
-		To:        StatusApproved,
+		BaseEvent:   shared.NewBaseEvent("friendlink.approved", id),
+		Name:        name,
+		From:        from,
+		To:          StatusApproved,
+		Description: description,
 	}
 }
 
@@ -103,16 +109,19 @@ type FriendLinkRejected struct {
 	// From 原状态
 	From string
 	// To 目标状态（恒 rejected）
-	To   string
+	To string
+	// Description 站点描述快照（通知摘要用，可空）
+	Description string
 }
 
 // NewFriendLinkRejected 构造拒绝事件
-func NewFriendLinkRejected(id shared.ID, name, from string) FriendLinkRejected {
+func NewFriendLinkRejected(id shared.ID, name, from, description string) FriendLinkRejected {
 	return FriendLinkRejected{
-		BaseEvent: shared.NewBaseEvent("friendlink.rejected", id),
-		Name:      name,
-		From:      from,
-		To:        StatusRejected,
+		BaseEvent:   shared.NewBaseEvent("friendlink.rejected", id),
+		Name:        name,
+		From:        from,
+		To:          StatusRejected,
+		Description: description,
 	}
 }
 
@@ -282,7 +291,7 @@ func NewFriendLink(p CreateParams) (*FriendLink, error) {
 		contactEmail: email, ipHash: p.IPHash,
 		status: StatusPending,
 	}
-	f.RecordEvent(NewFriendLinkCreated(f.id, f.name, f.url))
+	f.RecordEvent(NewFriendLinkCreated(f.id, f.name, f.url, f.description))
 	return f, nil
 }
 
@@ -301,7 +310,7 @@ func NewManual(id shared.ID, name, siteURL, avatarURL, description, ownerName, l
 		contactEmail: NormalizeEmail(contactEmail),
 		status:       StatusApproved, sortOrder: sortOrder,
 	}
-	f.RecordEvent(NewFriendLinkCreated(f.id, f.name, f.url))
+	f.RecordEvent(NewFriendLinkCreated(f.id, f.name, f.url, f.description))
 	return f, nil
 }
 
@@ -376,7 +385,7 @@ func (f *FriendLink) Approve() error {
 	}
 	from := f.status
 	f.status = StatusApproved
-	f.RecordEvent(NewFriendLinkApproved(f.id, f.name, from))
+	f.RecordEvent(NewFriendLinkApproved(f.id, f.name, from, f.description))
 	return nil
 }
 
@@ -387,7 +396,7 @@ func (f *FriendLink) Reject() error {
 	}
 	from := f.status
 	f.status = StatusRejected
-	f.RecordEvent(NewFriendLinkRejected(f.id, f.name, from))
+	f.RecordEvent(NewFriendLinkRejected(f.id, f.name, from, f.description))
 	return nil
 }
 

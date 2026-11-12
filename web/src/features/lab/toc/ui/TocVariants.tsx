@@ -1,4 +1,5 @@
 import { SegmentedArticleToc } from "@entities/post/ui/SegmentedArticleToc";
+import { iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { ChevronRight } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -455,9 +456,12 @@ function BranchNode({
 						className="flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground/60 transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
 					>
 						<ChevronRight
-							className={cn(
-								"size-3 transition-transform duration-200",
-								!isCollapsed && "rotate-90",
+							{...iconProps(
+								12,
+								cn(
+									"transition-transform duration-200",
+									!isCollapsed && "rotate-90",
+								),
 							)}
 						/>
 					</button>

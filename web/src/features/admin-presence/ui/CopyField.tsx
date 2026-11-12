@@ -1,4 +1,4 @@
-import { Button } from "@violet/ui";
+import { Button, iconProps } from "@violet/ui";
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -23,14 +23,15 @@ export function CopyField({ label, value }: { label: string; value: string }) {
 				{value}
 			</code>
 			<Button
+				iconOnly
 				type="button"
 				variant="ghost"
-				size="icon-sm"
+				size="sm"
 				aria-label={`复制${label}`}
 				onClick={copy}
 				className="shrink-0"
 			>
-				{copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+				{copied ? <Check {...iconProps(14)} /> : <Copy {...iconProps(14)} />}
 			</Button>
 		</div>
 	);

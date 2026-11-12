@@ -12,7 +12,6 @@ import {
 	SelectValue,
 	Switch,
 } from "@violet/ui";
-import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 
@@ -99,8 +98,7 @@ export function CreateUserDialog({
 					>
 						取消
 					</Button>
-					<Button type="submit" form="create-user-form" disabled={createUser.isPending}>
-						{createUser.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
+					<Button type="submit" form="create-user-form" loading={createUser.isPending}>
 						创建
 					</Button>
 				</>

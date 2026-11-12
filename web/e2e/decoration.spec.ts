@@ -69,9 +69,8 @@ test("非法的装饰 cookie 回落为跟随主题", async ({ browser }) => {
 
 async function openDecorationPanel(page: Page) {
 	const header = page.locator("header").first();
-	await header.getByRole("link", { name: "登录", exact: true }).hover();
-	await header.getByRole("button", { name: /^主题：/ }).click();
-	const panel = page.getByRole("dialog", { name: "主题与装饰", exact: true });
+	await header.getByRole("button", { name: /^季节与外观：/ }).click();
+	const panel = page.getByRole("dialog", { name: "季节与外观", exact: true });
 	await expect(panel).toBeVisible();
 	return panel;
 }
@@ -104,8 +103,8 @@ for (const appearance of ["light", "dark"] as const) {
 				expect(slot).toEqual({ hidden: "true", pointerEvents: "none" });
 
 			await menu
-				.getByRole("group", { name: "装饰", exact: true })
-				.getByRole("button", { name: "无", exact: true })
+				.getByRole("radiogroup", { name: "装饰", exact: true })
+				.getByRole("radio", { name: "无", exact: true })
 				.click();
 			await expect(page.locator("html")).toHaveAttribute("data-decoration", "none");
 			await expect(page.locator("[data-decoration-slot]")).toHaveCount(0);
@@ -131,13 +130,14 @@ test("SSR 首帧按图层开关卸载插画与粒子，不留下空背景", asyn
 	await context.close();
 });
 
-test("工具页面不显示装饰", async ({ browser }) => {
+test("工具页面不显示背景与插画装饰，页头药丸装饰仍属导航", async ({ browser }) => {
 	const context = await appearanceContext(browser, "light", { decoration: "autumn" });
 	const page = await context.newPage();
 	await page.goto("/inkline", { waitUntil: "load" });
 	const shown = await page.locator("[data-decoration-slot]").evaluateAll(
 		(nodes) =>
 			nodes.filter((node) => {
+				if (node.closest("header")) return false;
 				const style = getComputedStyle(node);
 				return (
 					style.display !== "none" &&
@@ -238,8 +238,8 @@ test("移动端季节与图层可独立配置并持久化", async ({ browser }) 
 	await page.setViewportSize({ width: 390, height: 844 });
 	await page.goto("/", { waitUntil: "load" });
 	await page.getByRole("button", { name: "展开全部导航", exact: true }).click();
-	const group = page.getByRole("group", { name: "装饰", exact: true });
-	await group.getByRole("button", { name: "春", exact: true }).click();
+	const group = page.getByRole("radiogroup", { name: "装饰", exact: true });
+	await group.getByRole("radio", { name: "春", exact: true }).click();
 	await page.getByRole("switch", { name: "飘落", exact: true }).click();
 	await page.getByRole("switch", { name: "挂件", exact: true }).click();
 	await expect(page.locator("html")).toHaveAttribute("data-theme", "winter");
@@ -267,9 +267,8 @@ test("切换配色后可立即恢复装饰跟随", async ({ browser }) => {
 		content: "::view-transition-new(root) { animation-duration: 60s; }",
 	});
 	const header = page.locator("header").first();
-	await header.getByRole("link", { name: "登录", exact: true }).hover();
-	await header.getByRole("button", { name: /^主题：/ }).click();
-	const panel = page.getByRole("dialog", { name: "主题与装饰", exact: true });
+	await header.getByRole("button", { name: /^季节与外观：/ }).click();
+	const panel = page.getByRole("dialog", { name: "季节与外观", exact: true });
 	await panel
 		.getByRole("radiogroup", { name: "主题", exact: true })
 		.getByRole("radio", { name: /^夏(?:\s|$)/ })
@@ -283,8 +282,8 @@ test("切换配色后可立即恢复装饰跟随", async ({ browser }) => {
 		return promise;
 	});
 	const follow = panel
-		.getByRole("group", { name: "装饰", exact: true })
-		.getByRole("button", { name: "跟随", exact: true });
+		.getByRole("radiogroup", { name: "装饰", exact: true })
+		.getByRole("radio", { name: "跟随", exact: true });
 	const box = await follow.boundingBox();
 	if (!box) throw new Error("装饰跟随按钮没有可点击区域");
 	await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2, { delay: 80 });
@@ -302,11 +301,11 @@ test("命令面板切换装饰不改变主题", async ({ browser }) => {
 	const page = await context.newPage();
 	await page.goto("/", { waitUntil: "load" });
 	const header = page.locator("header").first();
-	await header.getByRole("link", { name: "登录", exact: true }).hover();
 	await header.getByRole("button", { name: /^搜索/ }).click();
 	const dialog = page.getByRole("dialog");
-	await dialog.getByRole("textbox").fill("装饰");
-	await dialog.getByRole("button", { name: "装饰：无", exact: true }).click();
+	await dialog.getByRole("combobox").fill("装饰");
+	await dialog.getByRole("option", { name: /^切换装饰/ }).click();
+	await dialog.getByRole("option", { name: "无", exact: true }).click();
 	await expect(page.locator("html")).toHaveAttribute("data-theme", "summer");
 	await expect(page.locator("html")).toHaveAttribute("data-decoration", "none");
 	await expect(page.locator("[data-decoration-slot]")).toHaveCount(0);

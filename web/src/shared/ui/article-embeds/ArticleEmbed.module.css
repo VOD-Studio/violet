@@ -17,11 +17,6 @@
 	font-weight: 650;
 }
 
-.invalid p svg {
-	width: 0.9rem;
-	height: 0.9rem;
-}
-
 .invalid pre {
 	max-height: 12rem;
 	margin: 0.7rem 0 0;

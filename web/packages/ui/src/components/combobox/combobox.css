@@ -1,0 +1,35 @@
+/*
+ * Combobox：外壳复用 input 单元的 .v-input-control 家族，面板与选项行来自选择器族共用的 lib/picker.css。
+ * 需先导入 @violet/ui/tokens.css 或 styles.css。
+ */
+@import "../input/input.css";
+@import "../../lib/picker.css";
+
+@layer components {
+	.v-combobox__input[readonly] {
+		cursor: default;
+	}
+
+	/* 「N 条建议」「正在查找」的播报节点：只给读屏，不占位置 */
+	.v-input-control > .v-combobox__live {
+		position: absolute;
+		inline-size: 1px;
+		block-size: 1px;
+		margin: -1px;
+		padding: 0;
+		overflow: hidden;
+		border: 0;
+		white-space: nowrap;
+		clip-path: inset(50%);
+	}
+
+	/* 创建项前的 16px 加号，跟着文字走，不用图标块 */
+	.v-picker-option .v-combobox__create-icon {
+		display: inline-block;
+		inline-size: 16px;
+		block-size: 16px;
+		margin-inline-end: 8px;
+		color: var(--muted-foreground);
+		vertical-align: -3px;
+	}
+}

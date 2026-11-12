@@ -8,7 +8,8 @@ const { filePreviewProps, modalProps } = vi.hoisted(() => ({
 	modalProps: vi.fn(),
 }));
 
-vi.mock("@violet/ui/modal", () => ({
+vi.mock("@violet/ui/dialog", async (importOriginal) => ({
+	...(await importOriginal<typeof import("@violet/ui/dialog")>()),
 	Modal: (props: {
 		children: ReactNode;
 		open: boolean;

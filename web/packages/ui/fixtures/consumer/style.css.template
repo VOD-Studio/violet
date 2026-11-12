@@ -19,9 +19,9 @@ section {
 }
 .preview-scope {
 	--radius: 0.25rem;
-	--primary: var(--decoration);
-	--primary-hover: var(--decoration-hover);
-	--primary-foreground: var(--decoration-foreground);
+	--primary: var(--success-9);
+	--primary-hover: var(--success-10);
+	--primary-foreground: var(--success-contrast);
 }
 .checkbox-row {
 	display: flex;
@@ -115,6 +115,10 @@ section {
 	align-items: center;
 	gap: 0.75rem;
 }
+.data-display-page {
+	max-width: 64rem;
+	margin: 2rem auto;
+}
 .input-grid {
 	grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
 	gap: 2rem;
@@ -122,4 +126,36 @@ section {
 #input-form {
 	display: grid;
 	gap: 1.5rem;
+}
+.consumer-select {
+	inline-size: 14rem;
+}
+
+.display-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 1rem;
+}
+.display-skeleton {
+	width: 60%;
+	height: 1rem;
+}
+.display-field {
+	font-size: 0.875rem;
+}
+
+.upload-stage {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 1rem;
+	padding: 1rem 0;
+}
+.upload-stage > .v-upload-dropzone {
+	width: min(100%, 22.5rem);
+}
+.upload-stage > .v-upload-queue {
+	display: block;
+	padding: 0;
 }

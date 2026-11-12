@@ -3,17 +3,16 @@ import { useDeleteNote } from "@features/admin-notes/api/mutations";
 import { useAdminNotes as useAdminNotesQuery } from "@features/admin-notes/api/queries";
 import type { AdminNoteSummary, NoteStatus } from "@features/admin-notes/model/types";
 import { NOTE_STATUS_LABELS } from "@features/admin-notes/model/types";
-import {
-	DataTable,
-	type DataTableColumn,
-	usePagedQuery,
-} from "@features/admin-shared/ui/data-table";
+import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { formatDateTime } from "@shared/lib/date";
 import {
 	Badge,
 	Button,
 	ConfirmDialog,
+	DataTable,
+	type DataTableColumn,
+	iconProps,
 	Select,
 	SelectContent,
 	SelectItem,
@@ -97,14 +96,7 @@ export function NotesAdminListPage() {
 			header: "状态",
 			width: "96px",
 			cell: (row) => (
-				<Badge variant="outline" className="gap-1.5">
-					<span
-						className={
-							row.status === "published"
-								? "size-1.5 rounded-full bg-success"
-								: "size-1.5 rounded-full bg-muted-foreground/40"
-						}
-					/>
+				<Badge tone={row.status === "published" ? "ok" : "neutral"}>
 					{NOTE_STATUS_LABELS[row.status]}
 				</Badge>
 			),
@@ -129,18 +121,19 @@ export function NotesAdminListPage() {
 			header: "操作",
 			sticky: "right",
 			cell: (row) => (
-				<div className="flex items-center gap-2">
+				<div className="v-table__row-actions items-center gap-2">
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<span>
 								<Button
-									size="icon-sm"
+									iconOnly
+									size="sm"
 									variant="ghost"
 									onClick={() => openEdit(row.id)}
 									disabled={!canManage}
 									aria-label={`编辑笔记 ${row.title || row.id.slice(0, 8)}`}
 								>
-									<Pencil className="size-3.5" />
+									<Pencil {...iconProps(14)} />
 								</Button>
 							</span>
 						</TooltipTrigger>
@@ -150,14 +143,15 @@ export function NotesAdminListPage() {
 						<TooltipTrigger asChild>
 							<span>
 								<Button
-									size="icon-sm"
+									iconOnly
+									size="sm"
 									variant="ghost"
 									className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 									onClick={() => setDeleting(row)}
 									disabled={!canManage}
 									aria-label={`删除笔记 ${row.title || row.id.slice(0, 8)}`}
 								>
-									<Trash2 className="size-3.5" />
+									<Trash2 {...iconProps(14)} />
 								</Button>
 							</span>
 						</TooltipTrigger>

@@ -1,3 +1,4 @@
+import { useShareTweetStore } from "@entities/tweet/model/share-store";
 import { SiteMusicPlayer } from "@features/music-player/ui/SiteMusicPlayer";
 import { getClientAppearance } from "@shared/lib/appearance-cookie";
 import {
@@ -9,6 +10,7 @@ import {
 import { CUSTOM_THEME_STYLE_ID, generateCustomThemeCss } from "@shared/lib/theme-css";
 import { getClientThemeState, renderedTheme } from "@shared/lib/theme-preference";
 import { SystemAppearanceTransition } from "@shared/ui/appearance-transition";
+import { AsyncContent } from "@shared/ui/deferred-content/DeferredContent";
 import NotFound from "@shared/ui/not-found";
 import RouteError from "@shared/ui/route-error";
 import {
@@ -18,19 +20,18 @@ import {
 	Scripts,
 	useRouterState,
 } from "@tanstack/react-router";
-import { DocumentScrollbar } from "@violet/ui";
+import { DocumentScrollbar, iconProps } from "@violet/ui";
 import AnnouncementBar from "@widgets/AnnouncementBar";
 import CommandPalette from "@widgets/CommandPalette";
 import Footer from "@widgets/Footer";
 import Header from "@widgets/Header";
-import { RuaRouteTransition } from "@widgets/PersonaMotion";
 import SiteBackdrop from "@widgets/SiteBackdrop";
 import { cn } from "cn";
-import { useEffect } from "react";
+import { LucideProvider } from "lucide-react";
+import { useEffect, useState } from "react";
 import { ApiDocsDialog } from "@/features/api-docs";
 import { LinkConfirmDialog } from "@/features/auth/ui/LinkConfirmDialog";
 import { LoginDialog } from "@/features/auth/ui/LoginDialog";
-import { ShareTweetDialog } from "@/features/chat/ui/ShareTweetDialog";
 import AppProvider from "../providers";
 import type { RouterContext } from "../router";
 import { isSessionActive, markSessionActive } from "../shared/api/session";
@@ -39,6 +40,8 @@ import { getSSRDecoration, getSSRDecorationLayers } from "../shared/server/decor
 import { getAuthSession } from "../shared/server/session";
 import { getSSRThemeState } from "../shared/server/theme";
 import appCss from "../styles.css?url";
+
+const defaultIconProps = iconProps();
 
 /** 缓存首次 getAuthSession 结果，客户端 SPA 导航复用避免网络阻塞 */
 let cachedClaims: ReturnType<typeof getAuthSession> extends Promise<infer T>
@@ -110,6 +113,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 			{ title: "Violet" },
 		],
 		links: [
+			{ rel: "preconnect", href: "https://cdn.jsdelivr.net", crossOrigin: "anonymous" },
 			{ rel: "stylesheet", href: appCss },
 			{ rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
 			{ rel: "icon", type: "image/png", sizes: "256x256", href: "/favicon.png" },
@@ -142,18 +146,10 @@ function RootComponent() {
 	const isWorkbenchRoute = pathname === "/inkline" || pathname.startsWith("/inkline/");
 	const isFullscreenRoute = isChatRoute || isWorkbenchRoute;
 	const isProfileRoute = pathname.startsWith("/profile");
-	// 工具方言：个人中心、聊天与包演示页（.dialect-tool）；/lab 实验豁免保持根作用域
-	// 中性，实验样式不得反向改写正式页面 token
 	const isLabRoute = pathname.startsWith("/lab");
-	const shellDialect =
-		isProfileRoute || isChatRoute || isWorkbenchRoute
-			? "dialect-tool"
-			: isLabRoute
-				? null
-				: "dialect-public";
-	// 组件库文档的示例需要中性画布，星图点缀只铺在公开内容页
-	const isUiDocsRoute = pathname === "/ui" || pathname.startsWith("/ui/");
-	const showBackdrop = shellDialect === "dialect-public" && !isUiDocsRoute;
+	// 组件陈列室自带柜内聚光与明暗，窗只铺在公开内容页
+	const isShowcaseRoute = pathname === "/ui";
+	const showBackdrop = !isProfileRoute && !isFullscreenRoute && !isLabRoute && !isShowcaseRoute;
 
 	// 首次 hydration 复用 SSR claims，不一定重跑客户端 beforeLoad。
 	useEffect(() => {
@@ -163,7 +159,6 @@ function RootComponent() {
 	return (
 		<AppProvider>
 			<SystemAppearanceTransition />
-			<RuaRouteTransition />
 			{isAdminRoute ? (
 				// 后台路由：完全独立的布局，不包含前台 Header/Footer
 				<Outlet />
@@ -173,14 +168,11 @@ function RootComponent() {
 					className={cn(
 						"flex min-h-screen flex-col",
 						isFullscreenRoute && "h-dvh overflow-hidden",
-						// 公开壳层挂 Public Content 方言；/profile 与 /chat 挂 Tool 方言；
-						// /admin 独立布局不经过这里
-						shellDialect,
 						// 独立层叠上下文让背景点缀的负 z-index 落在壳层画布之上
 						showBackdrop && "isolate",
 					)}
 				>
-					{showBackdrop && <SiteBackdrop />}
+					{showBackdrop && <SiteBackdrop dense={pathname !== "/"} />}
 					<AnnouncementBar />
 					<Header isAuthenticated={auth.isAuthenticated} />
 					<main
@@ -201,8 +193,32 @@ function RootComponent() {
 			<LoginDialog />
 			<LinkConfirmDialog />
 			<ApiDocsDialog />
-			<ShareTweetDialog />
+			<ShareTweetDialogSlot />
 		</AppProvider>
+	);
+}
+
+const loadShareTweetDialog = () =>
+	import("@/features/chat/ui/ShareTweetDialog").then((module) => ({
+		default: module.ShareTweetDialog,
+	}));
+const NO_PROPS = {};
+
+/** 分享推文的会话选择器连同聊天查询层，首次发起分享才下载。 */
+function ShareTweetDialogSlot() {
+	const sharing = useShareTweetStore((state) => state.tweet !== null);
+	const [hasShared, setHasShared] = useState(sharing);
+	useEffect(() => {
+		if (sharing) setHasShared(true);
+	}, [sharing]);
+	if (!sharing && !hasShared) return null;
+	return (
+		<AsyncContent
+			load={loadShareTweetDialog}
+			componentProps={NO_PROPS}
+			fallback={null}
+			label="分享面板"
+		/>
 	);
 }
 
@@ -238,7 +254,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				/>
 			</head>
 			<body>
-				{children}
+				<LucideProvider
+					size={defaultIconProps.size}
+					strokeWidth={defaultIconProps.strokeWidth}
+				>
+					{children}
+				</LucideProvider>
 				<Scripts />
 			</body>
 		</html>

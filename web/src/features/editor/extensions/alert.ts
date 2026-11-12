@@ -1,4 +1,6 @@
 import { mergeAttributes, Node } from "@tiptap/core";
+import type { Schema } from "@tiptap/pm/model";
+import { requiresNativeHtml, serializeNativeHtml } from "./native-syntax";
 
 /** GitHub 提示块支持的类型；标题由展示层派生，不写入正文。 */
 export const ALERT_TYPES = ["NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"] as const;
@@ -20,81 +22,100 @@ declare module "@tiptap/core" {
 }
 
 /** 可编辑的 GitHub 提示块，复用 Markdown blockquote tokenizer 的代码/转义边界。 */
-export const Alert = Node.create({
-	name: "alert",
-	priority: 110,
-	group: "block",
-	content: "block+",
-	defining: true,
-	addAttributes() {
-		return {
-			alertType: {
-				default: "NOTE",
-				parseHTML: (element) => element.getAttribute("data-alert-type"),
-				renderHTML: ({ alertType }) => ({ "data-alert-type": alertType }),
-			},
-		};
-	},
-	parseHTML() {
-		return [
-			{
-				tag: 'blockquote[data-type="alert"]',
-				getAttrs: (element) =>
-					isAlertType(element.getAttribute("data-alert-type")) ? {} : false,
-			},
-		];
-	},
-	renderHTML({ HTMLAttributes }) {
-		return ["blockquote", mergeAttributes(HTMLAttributes, { "data-type": "alert" }), 0];
-	},
-	markdownTokenName: "blockquote",
-	parseMarkdown(token, helpers) {
-		const match = /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][\t ]*(?:\r?\n|$)/.exec(
-			token.text ?? "",
-		);
-		if (!match) return [];
-		const tokens = [...(token.tokens ?? [])];
-		const first = tokens[0];
-		if (first?.type !== "paragraph") return [];
-		const text = (first.text ?? "").replace(
-			/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][\t ]*(?:\r?\n|$)/,
-			"",
-		);
-		if (text) {
-			tokens[0] = { ...first, text, tokens: helpers.tokenizeInline?.(text) ?? [] };
-		} else {
-			tokens.shift();
-		}
-		const content = helpers.parseChildren(tokens);
-		return {
-			type: "alert",
-			attrs: { alertType: match[1] },
-			content: content.length ? content : [{ type: "paragraph" }],
-		};
-	},
-	renderMarkdown(node, helpers) {
-		const body = helpers
-			.renderChildren(node.content ?? [], "\n\n")
-			.split("\n")
-			.map((line) => (line ? `> ${line}` : ">"))
-			.join("\n");
-		// Tiptap 序列化普通引用时也会选择首个 blockquote token 处理器。
-		return node.type === "alert" ? `> [!${node.attrs?.alertType ?? "NOTE"}]\n${body}` : body;
-	},
-	addCommands() {
-		return {
-			setAlert:
-				(type) =>
-				({ commands, editor }) => {
-					if (!isAlertType(type)) return false;
-					return editor.isActive(this.name)
-						? commands.updateAttributes(this.name, { alertType: type })
-						: commands.wrapIn(this.name, { alertType: type });
+export function createAlert() {
+	let schema: Schema;
+	return Node.create({
+		name: "alert",
+		priority: 110,
+		group: "block",
+		content: "block+",
+		defining: true,
+		onBeforeCreate() {
+			schema = this.editor.schema;
+		},
+		addAttributes() {
+			return {
+				alertType: {
+					default: "NOTE",
+					parseHTML: (element) => element.getAttribute("data-alert-type"),
+					renderHTML: ({ alertType }) => ({ "data-alert-type": alertType }),
 				},
-			unsetAlert:
-				() =>
-				({ commands }) =>
-					commands.lift(this.name),
-		};
-	},
-});
+			};
+		},
+		parseHTML() {
+			return [
+				{
+					tag: 'blockquote[data-type="alert"]',
+					getAttrs: (element) =>
+						isAlertType(element.getAttribute("data-alert-type")) ? {} : false,
+				},
+			];
+		},
+		renderHTML({ HTMLAttributes }) {
+			return ["blockquote", mergeAttributes(HTMLAttributes, { "data-type": "alert" }), 0];
+		},
+		markdownTokenName: "blockquote",
+		parseMarkdown(token, helpers) {
+			const match = /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][\t ]*(?:\r?\n|$)/.exec(
+				token.text ?? "",
+			);
+			if (!match) {
+				return [];
+			}
+			const tokens = [...(token.tokens ?? [])];
+			const first = tokens[0];
+			if (first?.type !== "paragraph") {
+				return [];
+			}
+			const text = (first.text ?? "").replace(
+				/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][\t ]*(?:\r?\n|$)/,
+				"",
+			);
+			if (text) {
+				tokens[0] = { ...first, text, tokens: helpers.tokenizeInline?.(text) ?? [] };
+			} else {
+				tokens.shift();
+			}
+			const content = helpers.parseChildren(tokens);
+			return {
+				type: "alert",
+				attrs: { alertType: match[1] },
+				content: content.length ? content : [{ type: "paragraph" }],
+			};
+		},
+		renderMarkdown(node, helpers) {
+			// Tiptap 序列化普通引用时也会选择首个 blockquote token 处理器。
+			if (requiresNativeHtml(node)) {
+				return serializeNativeHtml(node, schema);
+			}
+			const body = helpers
+				.renderChildren(node.content ?? [], "\n\n")
+				.split("\n")
+				.map((line) => (line ? `> ${line}` : ">"))
+				.join("\n");
+			if (node.type === "alert") {
+				return `> [!${node.attrs?.alertType ?? "NOTE"}]\n${body}`;
+			}
+			return body;
+		},
+		addCommands() {
+			return {
+				setAlert:
+					(type) =>
+					({ commands, editor }) => {
+						if (!isAlertType(type)) {
+							return false;
+						}
+						if (editor.isActive(this.name)) {
+							return commands.updateAttributes(this.name, { alertType: type });
+						}
+						return commands.wrapIn(this.name, { alertType: type });
+					},
+				unsetAlert:
+					() =>
+					({ commands }) =>
+						commands.lift(this.name),
+			};
+		},
+	});
+}

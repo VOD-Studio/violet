@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Violet 导航状态</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Maple Mono";font-weight:400;font-style:normal;src:url(/_blob/a3ecea3add4961def4d089b95f486230) format("woff2")}
+body{margin:0}
+.cap{font:400 13px/1.7 "Songti SC","Noto Serif SC","Source Han Serif SC",STSong,SimSun,serif;color:var(--muted);padding:0 0 8px 160px;max-width:1100px}
+.cap b{color:var(--fg);font-weight:500}
+.paper-l{position:absolute;inset:0;background-image:url(/_blob/66391f4a5c5b623abcbda5bc91818ab0);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.paper-d{position:absolute;inset:0;background-image:url(/_blob/b0a1c287fd95586fcb700c431de8f4c5);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.fr{position:relative;width:1440px;overflow:hidden;background:var(--bg)}
+.top{position:absolute;z-index:20;top:0;left:0;right:0}
+</style>
+</helmet>
+<div style="{{vars}}width:1440px;font-family:'Songti SC','Noto Serif SC','Source Han Serif SC',STSong,SimSun,serif;background:var(--bg);padding:40px 0 48px;display:flex;flex-direction:column;gap:22px;color:var(--fg)">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"season":{"editor":"enum","options":["春","夏","秋","冬"],"default":"春"},"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":4800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const S = { '春': 16.6, '夏': 162, '秋': 82.95, '冬': 252 };
+    const season = S[this.props.season] ? this.props.season : '春';
+    const h = S[season];
+    const dark = !!this.props.dark;
+    const vars = dark
+      ? `--bg:oklch(0.17 0.0087 ${h});--fg:oklch(0.9373 0.015 ${h});--muted:oklch(0.8573 0.0225 ${h});`
+      : `--bg:oklch(0.968 0.006 ${h});--fg:oklch(0.3331 0.0175 ${h});--muted:oklch(0.4717 0.0225 ${h});`;
+    return { vars, season, dark, showLight: dark ? 'none' : 'block', showDark: dark ? 'block' : 'none' };
+  }
+}
+</script>
+</body>
+</html>

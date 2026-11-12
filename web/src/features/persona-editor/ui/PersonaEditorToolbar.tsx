@@ -1,7 +1,7 @@
 import type { PersonaSaveState } from "@features/persona-editor/model/types";
 import { Link } from "@tanstack/react-router";
 import { Badge, Button } from "@violet/ui";
-import { ArrowLeft, CircleCheck, ExternalLink, Loader2, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, CircleCheck, ExternalLink, Save, Trash2 } from "lucide-react";
 import { PersonaSaveIndicator } from "./PersonaSaveIndicator";
 
 interface PersonaEditorToolbarProps {
@@ -40,7 +40,7 @@ export function PersonaEditorToolbar({
 					</Link>
 				</Button>
 				<PersonaSaveIndicator state={saveState} />
-				{!canManage ? <Badge variant="outline">只读</Badge> : null}
+				{!canManage ? <Badge tone="off">只读</Badge> : null}
 			</div>
 
 			<div className="flex flex-wrap items-center justify-end gap-2">
@@ -67,13 +67,10 @@ export function PersonaEditorToolbar({
 											? "请先补全激活所需资料"
 											: undefined
 							}
+							loading={activating}
+							leftIcon={<CircleCheck className="size-4" />}
 							onClick={onActivate}
 						>
-							{activating ? (
-								<Loader2 className="size-4 animate-spin" />
-							) : (
-								<CircleCheck className="size-4" />
-							)}
 							{isActive ? "已激活" : "设为当前人设"}
 						</Button>
 						<Button
@@ -86,12 +83,13 @@ export function PersonaEditorToolbar({
 							<Trash2 className="size-4" />
 							删除
 						</Button>
-						<Button size="sm" disabled={saveDisabled} onClick={onSave}>
-							{saveState === "saving" ? (
-								<Loader2 className="size-4 animate-spin" />
-							) : (
-								<Save className="size-4" />
-							)}
+						<Button
+							size="sm"
+							disabled={saveDisabled}
+							loading={saveState === "saving"}
+							leftIcon={<Save className="size-4" />}
+							onClick={onSave}
+						>
 							保存档案
 						</Button>
 					</>

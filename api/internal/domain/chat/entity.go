@@ -75,6 +75,8 @@ const (
 // RoomInvited 私有房间成员邀请事实。
 type RoomInvited struct {
 	shared.BaseEvent
+	// InviterID 发起邀请的用户 ID（建房时为房主）。
+	InviterID shared.ID
 	// InviteeID 被邀请用户 ID。
 	InviteeID shared.ID
 	// Title 房间名称快照。
@@ -82,8 +84,8 @@ type RoomInvited struct {
 }
 
 // NewRoomInvited 创建房间邀请事件。
-func NewRoomInvited(conversationID, inviteeID shared.ID, title string) RoomInvited {
-	return RoomInvited{BaseEvent: shared.NewBaseEvent("chat.room.invited", conversationID), InviteeID: inviteeID, Title: title}
+func NewRoomInvited(conversationID, inviterID, inviteeID shared.ID, title string) RoomInvited {
+	return RoomInvited{BaseEvent: shared.NewBaseEvent("chat.room.invited", conversationID), InviterID: inviterID, InviteeID: inviteeID, Title: title}
 }
 
 const (

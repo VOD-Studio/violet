@@ -5,7 +5,7 @@
  * 放置惯例对齐 entities/user。
  */
 
-import type { AvatarUser } from "@shared/ui/avatar-group";
+import type { AvatarUser } from "@shared/lib/avatar-user";
 
 /**
  * Post - 文章摘要，首页列表用

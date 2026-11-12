@@ -16,7 +16,9 @@ test("评论抽屉关闭时不请求模块，打开失败不替换正文且重�
 	const asset = await blockAsset(context, page, /\/assets\/CommentDrawer-[^/]+\.js$/);
 	const diagnostics = collectUnexpectedDiagnostics(page, asset.blockedUrls);
 	const snapshot = await openWithArticleSnapshot(context, page, "/blog/contract-rich-code");
-	await expect(page.locator("[data-article-content] pre.shiki")).toBeVisible();
+	await expect(
+		page.locator("[data-article-content] pre:has(.v-code-block__source > span[style])"),
+	).toBeVisible();
 	await page.waitForLoadState("networkidle");
 	expect(asset.blockedUrls.size).toBe(0);
 	expect(asset.successfulUrls).toEqual([]);
@@ -61,12 +63,17 @@ test("批注工具下载期间和失败后，原生文字选区仍可见", async
 	});
 	try {
 		await page.goto("/blog/contract-rich-code");
-		await expect(page.locator("[data-article-content] pre.shiki")).toBeVisible();
+		await expect(
+			page.locator("[data-article-content] pre:has(.v-code-block__source > span[style])"),
+		).toBeVisible();
 		const paragraph = page
 			.locator("[data-article-content] p")
 			.filter({ hasText: ARTICLE_START });
 		const points = await paragraph.evaluate((element) => {
-			const text = element.firstChild;
+			// 首段开头可能已被划线 mark 包住，取第一个非空文本节点
+			const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+			let text = walker.nextNode();
+			while (text && (text.textContent ?? "").length < 6) text = walker.nextNode();
 			if (!text) throw new Error("正文缺少可选文本");
 			const start = document.createRange();
 			start.setStart(text, 0);
@@ -91,21 +98,17 @@ test("批注工具下载期间和失败后，原生文字选区仍可见", async
 		await expect
 			.poll(() => page.evaluate(() => window.getSelection()?.toString()))
 			.toBe("增强加载失败");
-		const selectionOpacity = () =>
-			paragraph.evaluate((element) => {
-				const canvas = document.createElement("canvas");
-				canvas.width = 1;
-				canvas.height = 1;
-				const context = canvas.getContext("2d");
-				if (!context) throw new Error("浏览器无法检查选区颜色");
-				context.fillStyle = getComputedStyle(element, "::selection").backgroundColor;
-				context.fillRect(0, 0, 1, 1);
-				return context.getImageData(0, 0, 1, 1).data[3];
-			});
-		expect(await selectionOpacity()).toBeGreaterThan(0);
+		// 原生选区被替换为荧光笔笔触：画上笔触的块保持可见（不因工具条未加载而消失）
+		const brushVisible = () =>
+			paragraph.evaluate(
+				(element) =>
+					element.hasAttribute("data-selection-painted") &&
+					getComputedStyle(element).backgroundImage.includes("url("),
+			);
+		expect(await brushVisible()).toBe(true);
 		download.resolve();
 		await expect(page.getByRole("alert").filter({ hasText: "批注工具加载失败" })).toBeVisible();
-		expect(await selectionOpacity()).toBeGreaterThan(0);
+		expect(await brushVisible()).toBe(true);
 		await expect(paragraph).toContainText(ARTICLE_START);
 		expect(await diagnostics()).toEqual([]);
 	} finally {
@@ -125,24 +128,27 @@ test("段评下载期间可关闭，再次打开失败后仍可关闭", async ({
 	});
 	try {
 		await page.goto("/blog/contract-rich-code");
-		await expect(page.locator("[data-article-content] pre.shiki")).toBeVisible();
+		await expect(
+			page.locator("[data-article-content] pre:has(.v-code-block__source > span[style])"),
+		).toBeVisible();
+		// 首段带划线批注（页边角标负责），段评用未批注的结尾段
 		const paragraph = page
 			.locator("[data-article-content] p")
-			.filter({ hasText: ARTICLE_START });
-		const panel = page.getByRole("dialog", { name: "发表段评", exact: true });
+			.filter({ hasText: "增强恢复后，这段结尾仍是原来的节点。" });
+		const panel = page.getByRole("dialog", { name: /^发表段评/ });
 		await paragraph.hover();
-		await page.getByRole("button", { name: "发表段评", exact: true }).click();
+		await page.getByRole("button", { name: /^发表段评/ }).click();
 		await expect(panel.getByRole("status")).toHaveText("正在准备段评…");
-		await panel.getByRole("button", { name: "关闭段评", exact: true }).click();
+		await page.keyboard.press("Escape");
 		await expect(panel).not.toBeVisible();
 		await paragraph.hover();
-		await page.getByRole("button", { name: "发表段评", exact: true }).click();
+		await page.getByRole("button", { name: /^发表段评/ }).click();
 		await expect(panel).toBeVisible();
 		download.resolve();
 		await expect(panel.getByRole("alert")).toContainText("段评表单加载失败");
-		await panel.getByRole("button", { name: "关闭段评", exact: true }).click();
+		await page.keyboard.press("Escape");
 		await expect(panel).not.toBeVisible();
-		await expect(paragraph).toContainText(ARTICLE_START);
+		await expect(paragraph).toContainText("增强恢复后，这段结尾仍是原来的节点。");
 		expect(await diagnostics()).toEqual([]);
 	} finally {
 		download.resolve();

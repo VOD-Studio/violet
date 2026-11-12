@@ -2,23 +2,30 @@
 	/* 容器：几何与配色全部由自定义属性决定，变体、尺寸、方向只改这些属性。
 	   位移与尺寸统一使用物理属性（left/width/height），与 JS 测量和 translate 的坐标系一致 */
 	.v-segmented {
-		--v-segmented-duration: 420ms;
+		--v-segmented-duration: 280ms;
 		--v-segmented-ease: cubic-bezier(0.32, 0.72, 0, 1);
 		--v-segmented-fade: 200ms;
-		--v-segmented-tint: 280ms;
+		--v-segmented-tint: 140ms;
 		--v-segmented-reveal: 300ms;
 		--v-segmented-reveal-delay: 80ms;
 		--v-segmented-pad: 0.125rem;
-		--v-segmented-gap: 0.125rem;
+		--v-segmented-gap: 0rem;
 		--v-segmented-block: 2rem;
-		--v-segmented-font-size: 0.75rem;
+		--v-segmented-font-size: 0.8125rem;
 		--v-segmented-icon-size: 1rem;
-		--v-segmented-radius: min(var(--radius-lg), 1rem);
-		--v-segmented-item-radius: min(var(--radius-md), 1rem);
-		--v-segmented-indicator-radius: calc(var(--v-segmented-radius) - var(--v-segmented-pad));
+		/* 轨道圆角为高度的一半；竖排在下方改为 12/10 的功能圆角 */
+		--v-segmented-radius: calc(var(--v-segmented-block) / 2);
+		--v-segmented-item-radius: calc(
+			(var(--v-segmented-block) - 2 * var(--v-segmented-pad)) /
+			2
+		);
+		--v-segmented-indicator-radius: calc(
+			(var(--v-segmented-block) - 2 * var(--v-segmented-pad)) /
+			2
+		);
 		--v-segmented-track: var(--muted);
 		--v-segmented-active-color: var(--foreground);
-		--v-segmented-item-pad: 0.75rem;
+		--v-segmented-item-pad: 0.625rem;
 		box-sizing: border-box;
 		position: relative;
 		display: inline-flex;
@@ -34,11 +41,13 @@
 	.v-segmented[data-size="default"] {
 		--v-segmented-block: 2.25rem;
 		--v-segmented-font-size: 0.875rem;
+		--v-segmented-item-pad: 0.75rem;
 	}
 
 	.v-segmented[data-size="lg"] {
 		--v-segmented-block: 2.5rem;
-		--v-segmented-font-size: 0.875rem;
+		--v-segmented-font-size: 1rem;
+		--v-segmented-item-pad: 0.75rem;
 	}
 
 	.v-segmented[data-rounded="full"] {
@@ -58,6 +67,13 @@
 
 	.v-segmented[data-orientation="vertical"][data-block="true"] {
 		height: 100%;
+	}
+
+	/* 竖排是侧栏列表形态：轨道 12、纸片 10 的功能圆角，不做胶囊 */
+	.v-segmented[data-orientation="vertical"] {
+		--v-segmented-radius: var(--radius-12);
+		--v-segmented-item-radius: calc(var(--radius-12) - 2px);
+		--v-segmented-indicator-radius: calc(var(--radius-12) - 2px);
 	}
 
 	/* 等尺寸布局的总长由 item-size 与 weight 决定，block 不再把容器拉宽，否则轨道右侧会留出空白 */
@@ -132,6 +148,13 @@
 		flex-direction: column;
 	}
 
+	/* 横排选项等宽（板式 1fr）；等尺寸布局由 item-size 精确控制，保持 flex */
+	.v-segmented:not([data-layout="equal"])[data-orientation="horizontal"] .v-segmented__track {
+		display: grid;
+		grid-auto-flow: column;
+		grid-auto-columns: 1fr;
+	}
+
 	.v-segmented[data-layout="equal"] .v-segmented__track {
 		gap: 0;
 	}
@@ -151,7 +174,6 @@
 		background-color: transparent;
 		color: var(--muted-foreground);
 		font: inherit;
-		font-weight: 500;
 		letter-spacing: inherit;
 		text-decoration: none;
 		white-space: nowrap;
@@ -159,8 +181,8 @@
 		appearance: none;
 		-webkit-tap-highlight-color: transparent;
 		transition:
-			color var(--v-segmented-tint) ease,
-			background-color var(--v-segmented-tint) ease;
+			color var(--v-segmented-tint) ease-out,
+			background-color var(--v-segmented-tint) ease-out;
 	}
 
 	/* 组合内容用 margin 排布，收起时才能随尺寸平滑归零 */
@@ -170,6 +192,7 @@
 
 	.v-segmented__item[data-active="true"] {
 		color: var(--v-segmented-active-color);
+		font-weight: 500;
 	}
 
 	.v-segmented__item:where(:not([data-active="true"]):not(:disabled):not([data-disabled])):hover {
@@ -179,10 +202,10 @@
 	/* 首次测量前指示器隐形，选中项自带与指示器同形的底色，测量完成后无缝交接 */
 	.v-segmented[data-measured="false"][data-variant="soft"]
 	.v-segmented__item[data-active="true"] {
-		background-color: var(--background);
+		background-color: var(--card);
 		box-shadow:
-			0 0 0 1px light-dark(rgb(0 0 0 / 0.05), rgb(255 255 255 / 0.1)),
-			0 4px 24px rgb(0 0 0 / 0.05);
+			0 0 0 1px var(--ol),
+			var(--shadow-soft);
 	}
 
 	.v-segmented[data-measured="false"][data-variant="ink"] .v-segmented__item[data-active="true"] {
@@ -229,8 +252,8 @@
 			calc(var(--v-segmented-item-size) * var(--v-segmented-weight, 1))
 		);
 		transition:
-			color var(--v-segmented-tint) ease,
-			background-color var(--v-segmented-tint) ease,
+			color var(--v-segmented-tint) ease-out,
+			background-color var(--v-segmented-tint) ease-out,
 			width var(--v-segmented-duration) var(--v-segmented-ease);
 	}
 
@@ -245,8 +268,8 @@
 			calc(var(--v-segmented-item-size) * var(--v-segmented-weight, 1))
 		);
 		transition:
-			color var(--v-segmented-tint) ease,
-			background-color var(--v-segmented-tint) ease,
+			color var(--v-segmented-tint) ease-out,
+			background-color var(--v-segmented-tint) ease-out,
 			height var(--v-segmented-duration) var(--v-segmented-ease);
 	}
 
@@ -263,13 +286,13 @@
 	.v-segmented__item:focus-visible {
 		z-index: 2;
 		outline: 2px solid var(--ring);
-		outline-offset: 0;
+		outline-offset: -2px;
 	}
 
 	.v-segmented__item:disabled,
 	.v-segmented__item[data-disabled] {
 		cursor: not-allowed;
-		opacity: 0.5;
+		opacity: 0.4;
 	}
 
 	.v-segmented__label,
@@ -364,11 +387,12 @@
 		transform: translate3d(0, var(--v-segmented-shift), 0);
 	}
 
+	/* 纸片：纸色底、唯一软影，深色下加 1px 细线（--ol）帮助纸片脱离深色轨道 */
 	.v-segmented[data-variant="soft"] .v-segmented__indicator {
-		background-color: var(--background);
+		background-color: var(--card);
 		box-shadow:
-			0 0 0 1px light-dark(rgb(0 0 0 / 0.05), rgb(255 255 255 / 0.1)),
-			0 4px 24px rgb(0 0 0 / 0.05);
+			0 0 0 1px var(--ol),
+			var(--shadow-soft);
 	}
 
 	.v-segmented[data-variant="ink"] .v-segmented__indicator,

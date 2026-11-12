@@ -216,23 +216,30 @@ func renderFence(w util.BufWriter, source []byte, node ast.Node, entering bool) 
 	if n.Info != nil {
 		info = string(n.Info.Value(source))
 	}
-	lang, runnable, overrides := infracoderunner.ParseFenceInfo(info)
+	metadata := infracoderunner.ParseFenceInfo(info)
 	code := n.Lines().Value(source)
 	body := bytes.TrimSuffix(code, []byte("\n"))
-	if lang == "mermaid" {
+	if metadata.Language == "mermaid" && !metadata.Runnable {
 		_, _ = fmt.Fprintf(w, "<div data-type=\"diagram-block\" data-format=\"mermaid\" data-source=\"%s\"></div>\n", util.EscapeHTML(body))
 		return ast.WalkSkipChildren, nil
 	}
 	_, _ = w.WriteString("<pre")
-	if runnable {
-		_, _ = fmt.Fprintf(w, ` data-runnable="true" data-lang="%s" data-source="%s"`, util.EscapeHTML([]byte(lang)), util.EscapeHTML(body))
-		if overrides != nil {
-			encoded, err := json.Marshal(overrides)
-			if err != nil {
-				return ast.WalkStop, err
-			}
-			_, _ = fmt.Fprintf(w, ` data-overrides="%s"`, util.EscapeHTML(encoded))
+	_, _ = fmt.Fprintf(w, ` data-lang="%s" data-source="%s"`, util.EscapeHTML([]byte(metadata.Language)), util.EscapeHTML(body))
+	if metadata.Filename != nil {
+		_, _ = fmt.Fprintf(w, ` data-filename="%s"`, util.EscapeHTML([]byte(*metadata.Filename)))
+	}
+	if metadata.HighlightLines != "" {
+		_, _ = fmt.Fprintf(w, ` data-lines="%s"`, util.EscapeHTML([]byte(metadata.HighlightLines)))
+	}
+	if metadata.Runnable {
+		_, _ = w.WriteString(` data-runnable="true"`)
+	}
+	if len(metadata.Overrides) != 0 {
+		encoded, err := json.Marshal(metadata.Overrides)
+		if err != nil {
+			return ast.WalkStop, err
 		}
+		_, _ = fmt.Fprintf(w, ` data-overrides="%s"`, util.EscapeHTML(encoded))
 	}
 	_, _ = w.WriteString("><code")
 	if language := n.Language(source); len(language) != 0 {

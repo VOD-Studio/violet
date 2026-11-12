@@ -1,5 +1,6 @@
 /** tweets feature 查询层（cursor 分页时间线） */
 
+import type { CommentSort } from "@entities/comment/model/types";
 import type { Tweet, TweetComment } from "@entities/tweet/model/types";
 import { userKeys } from "@entities/user/api/keys";
 import type { UserProfile } from "@entities/user/model/types";
@@ -8,6 +9,7 @@ import type { PagedResponse } from "@shared/api/types";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import {
 	TWEET_COMMENT_PAGE_SIZE,
+	type TweetCommentListQuery,
 	type TweetCommentPageQuery,
 	type TweetTimelineQuery,
 } from "../model/types";
@@ -119,7 +121,7 @@ export const useUserTimeline = (username: string, limit: number = TIMELINE_PAGE_
  */
 export const fetchTweetComments = async (
 	tweetId: string,
-	query: TweetCommentPageQuery = {},
+	query: TweetCommentListQuery = {},
 ): Promise<PagedResponse<TweetComment>> =>
 	apiGetPaged<TweetComment>(`/tweets/${tweetId}/comments`, { params: query });
 
@@ -129,11 +131,15 @@ const pageBasedNextPageParam = (lastPage: PagedResponse<unknown>): number | unde
 	const currentPage = lastPage.pagination?.page ?? 1;
 	return currentPage < totalPages ? currentPage + 1 : undefined;
 };
-/** useTweetComments - 推文顶层评论列表 hook（page/limit 滚动加载，最新在前）。回复走 useTweetReplies 按需拉。 */
-export const useTweetComments = (tweetId: string, limit: number = TWEET_COMMENT_PAGE_SIZE) =>
+/** 顶层列表按真实排序独立缓存，回复仍按需加载并保持时间正序。 */
+export const useTweetComments = (
+	tweetId: string,
+	sort: CommentSort = "latest",
+	limit: number = TWEET_COMMENT_PAGE_SIZE,
+) =>
 	useInfiniteQuery({
-		queryKey: tweetKeys.commentList(tweetId),
-		queryFn: ({ pageParam }) => fetchTweetComments(tweetId, { page: pageParam, limit }),
+		queryKey: tweetKeys.commentListOf(tweetId, sort),
+		queryFn: ({ pageParam }) => fetchTweetComments(tweetId, { page: pageParam, limit, sort }),
 		initialPageParam: 1,
 		getNextPageParam: pageBasedNextPageParam,
 		enabled: !!tweetId,

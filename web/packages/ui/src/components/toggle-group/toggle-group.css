@@ -1,0 +1,114 @@
+@layer components {
+	/* 开关组：轨道形与工具栏形共用 32 的圆钮；按下是纸片淡入，不滑动 */
+	.v-toggle-group {
+		--v-toggle-group-duration: 140ms;
+		--v-toggle-group-gap: 0.125rem;
+		--v-toggle-group-section-gap: 0.75rem;
+		--v-toggle-group-item-size: 2rem;
+		box-sizing: border-box;
+		display: inline-flex;
+		align-items: center;
+		gap: var(--v-toggle-group-gap);
+		padding: 0.125rem;
+		border-radius: 9999px;
+		background-color: var(--muted);
+	}
+
+	.v-toggle-group[data-orientation="vertical"] {
+		flex-direction: column;
+	}
+
+	/* 工具栏形：无轨道，悬停凹陷色，按下凹陷色混入墨色 */
+	.v-toggle-group[data-variant="bare"] {
+		padding: 0;
+		background-color: transparent;
+	}
+
+	.v-toggle-group__item {
+		box-sizing: border-box;
+		display: inline-flex;
+		flex: none;
+		align-items: center;
+		justify-content: center;
+		gap: 0.375rem;
+		min-width: var(--v-toggle-group-item-size);
+		height: var(--v-toggle-group-item-size);
+		margin: 0;
+		padding: 0 0.5rem;
+		border: 0;
+		border-radius: 9999px;
+		background-color: transparent;
+		color: var(--muted-foreground);
+		font: inherit;
+		font-size: 0.875rem;
+		white-space: nowrap;
+		cursor: pointer;
+		appearance: none;
+		-webkit-tap-highlight-color: transparent;
+		transition:
+			background-color var(--v-toggle-group-duration) ease-out,
+			color var(--v-toggle-group-duration) ease-out,
+			box-shadow var(--v-toggle-group-duration) ease-out;
+	}
+
+	/* 带文字的项内边距加宽，纯图标保持圆钮比例 */
+	.v-toggle-group__item[data-text] {
+		padding-inline: 0.75rem;
+	}
+
+	.v-toggle-group__item > svg {
+		width: 1rem;
+		height: 1rem;
+	}
+
+	.v-toggle-group__item:not([aria-pressed="true"]):not(:disabled):hover {
+		color: var(--foreground);
+	}
+
+	/* 轨道形按下：纸色底 + 唯一软影 + 1px 描边，140ms 淡入淡出 */
+	.v-toggle-group[data-variant="track"] .v-toggle-group__item[aria-pressed="true"] {
+		background-color: var(--card);
+		color: var(--foreground);
+		box-shadow:
+			var(--shadow-soft),
+			0 0 0 1px var(--ol);
+	}
+
+	.v-toggle-group[data-variant="bare"]
+		.v-toggle-group__item:not([aria-pressed="true"]):not(:disabled):hover {
+		background-color: var(--muted);
+	}
+
+	.v-toggle-group[data-variant="bare"] .v-toggle-group__item[aria-pressed="true"] {
+		background-color: color-mix(in oklab, var(--muted) 85%, var(--foreground));
+		color: var(--foreground);
+		box-shadow: none;
+	}
+
+	/* 焦点环画在项内，不被轨道裁切 */
+	.v-toggle-group__item:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: -2px;
+	}
+
+	.v-toggle-group__item:disabled {
+		cursor: not-allowed;
+		opacity: 0.5;
+	}
+
+	.v-toggle-group__separator {
+		flex: none;
+		width: var(--v-toggle-group-section-gap);
+	}
+
+	.v-toggle-group[data-orientation="vertical"] .v-toggle-group__separator {
+		width: auto;
+		height: var(--v-toggle-group-section-gap);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-toggle-group {
+			--v-toggle-group-duration: 0s;
+		}
+	}
+}

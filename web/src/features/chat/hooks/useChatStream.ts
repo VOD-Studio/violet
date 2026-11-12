@@ -4,6 +4,7 @@ import { type InfiniteData, type QueryClient, useQueryClient } from "@tanstack/r
 import { useEffect } from "react";
 import { chatEventStreamURL } from "../api/client";
 import { chatKeys } from "../api/keys";
+import { useChatAlertStore } from "../model/chat-alert-store";
 import { useChatTypingStore } from "../model/chat-typing-store";
 import type {
 	BotReply,
@@ -15,6 +16,9 @@ import type {
 } from "../model/types";
 
 type ChatMessagesCache = InfiniteData<PagedResponse<ChatMessage>, unknown>;
+
+/** 事件发生超过这么久就不再当作「新消息」弹提示（重连补发的是旧消息）。 */
+const FRESH_MESSAGE_MS = 60_000;
 
 function mergeCustomEmote(
 	queryClient: QueryClient,
@@ -188,6 +192,20 @@ export const useChatStream = () => {
 					payload.custom_emote
 				) {
 					mergeCustomEmote(queryClient, conversationID, messageID, payload.custom_emote);
+				}
+				// 断线重连补发的旧消息不弹轻提示，只有刚发生的才算「新消息」
+				if (
+					payload.type === "message.created" &&
+					typeof conversationID === "string" &&
+					typeof messageID === "string" &&
+					typeof payload.data.sender_id === "string" &&
+					Date.now() - new Date(payload.occurred_at).getTime() < FRESH_MESSAGE_MS
+				) {
+					useChatAlertStore.getState().raise({
+						conversationID,
+						messageID,
+						senderID: payload.data.sender_id,
+					});
 				}
 				queryClient.invalidateQueries({ queryKey: chatKeys.conversations() });
 				queryClient.invalidateQueries({ queryKey: chatKeys.unreadCount() });

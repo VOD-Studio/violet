@@ -16,19 +16,20 @@ import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { createFileRoute } from "@tanstack/react-router";
 import {
-	Badge,
 	Button,
 	Card,
 	CardContent,
 	ConfirmDialog,
 	Empty,
 	Input,
+	iconProps,
 	Tabs,
 	TabsContent,
 	TabsList,
 	TabsTrigger,
+	Tag,
 } from "@violet/ui";
-import { CheckCircle, Layers, Loader2, Plus, Power, PowerOff, Search } from "lucide-react";
+import { CheckCircle, Layers, Plus, Power, PowerOff, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -223,7 +224,7 @@ function EmojisPage() {
 					action={
 						canManageGroup ? (
 							<Button onClick={handleCreateGroup}>
-								<Plus className="mr-1 size-4" />
+								<Plus className="size-4" />
 								创建分组
 							</Button>
 						) : null
@@ -263,7 +264,7 @@ function EmojisPage() {
 						{canRefetch ? <RefetchBilibiliButton /> : null}
 						{canManageGroup && !isEmpty ? (
 							<Button size="sm" onClick={handleCreateGroup}>
-								<Plus className="size-3.5" />
+								<Plus {...iconProps(14)} />
 								创建分组
 							</Button>
 						) : null}
@@ -277,7 +278,6 @@ function EmojisPage() {
 						<div className="min-w-50 max-w-100 flex-1">
 							<Input
 								type="search"
-								variant="soft"
 								controlSize="sm"
 								aria-label="搜索表情分组名称"
 								leading={<Search className="size-4" />}
@@ -295,26 +295,20 @@ function EmojisPage() {
 										variant="outline"
 										size="sm"
 										onClick={handleBatchEnable}
-										disabled={batchPending || isLoading || stats.disabled === 0}
+										disabled={isLoading || stats.disabled === 0}
+										loading={batchPending}
+										leftIcon={<Power {...iconProps(14)} />}
 									>
-										{batchPending ? (
-											<Loader2 className="mr-1 size-3.5 animate-spin" />
-										) : (
-											<Power className="mr-1 size-3.5" />
-										)}
 										批量启用
 									</Button>
 									<Button
 										variant="outline"
 										size="sm"
 										onClick={handleBatchDisable}
-										disabled={batchPending || isLoading || stats.enabled === 0}
+										disabled={isLoading || stats.enabled === 0}
+										loading={batchPending}
+										leftIcon={<PowerOff {...iconProps(14)} />}
 									>
-										{batchPending ? (
-											<Loader2 className="mr-1 size-3.5 animate-spin" />
-										) : (
-											<PowerOff className="mr-1 size-3.5" />
-										)}
 										批量禁用
 									</Button>
 								</>
@@ -322,9 +316,9 @@ function EmojisPage() {
 						</div>
 
 						{searchQuery && (
-							<Badge variant="secondary" className="ml-auto">
+							<Tag className="ml-auto">
 								显示 {filteredGroups.length} / {groups?.length ?? 0} 个分组
-							</Badge>
+							</Tag>
 						)}
 					</div>
 				)

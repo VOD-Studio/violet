@@ -1,7 +1,7 @@
 import type { Tweet } from "@entities/tweet/model/types";
 import { NoSharedElements } from "@shared/lib/view-transition";
 import { Link } from "@tanstack/react-router";
-import { Button, Segmented, ShimmerSkeleton } from "@violet/ui";
+import { Button, Segmented, Skeleton } from "@violet/ui";
 import { useState } from "react";
 
 import TweetCard from "../TweetCard";
@@ -73,7 +73,7 @@ export function UserProfileFeed({
 				{isLoading ? (
 					<div className="flex flex-col gap-4">
 						{Array.from({ length: 3 }).map((_, index) => (
-							<ShimmerSkeleton key={index} className="h-48 w-full rounded-2xl" />
+							<Skeleton key={index} className="h-48 w-full rounded-2xl" />
 						))}
 					</div>
 				) : error ? (

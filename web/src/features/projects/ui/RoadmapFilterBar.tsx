@@ -51,9 +51,8 @@ export function RoadmapFilterBar({
 				type="search"
 				aria-label="搜索条目"
 				placeholder="搜索标题或简介"
-				variant="soft"
 				controlSize="sm"
-				classNames={{ root: "min-w-0 flex-[1_1_16rem] sm:max-w-80" }}
+				classNames={{ control: "min-w-0 flex-[1_1_16rem] sm:max-w-80" }}
 				leading={<Search className="size-4" aria-hidden="true" />}
 				clearable
 				value={filters.q ?? ""}
@@ -72,16 +71,14 @@ export function RoadmapFilterBar({
 			>
 				<SelectTrigger
 					aria-label="条目标签筛选"
-					size="sm"
-					className="max-w-full border-transparent bg-muted/50 shadow-none"
+					variant="plain"
+					controlSize="sm"
+					className="w-fit max-w-full"
 				>
-					{/* 显式给出文字：Radix 要挂载后才从选项里读出显示文字，服务端直出的首帧会是空白 */}
+					{/* 显式给出文字：选项要挂载后才登记各自的文字，服务端直出的首帧会是空白 */}
 					<SelectValue>{selectedTag ?? "全部标签"}</SelectValue>
 				</SelectTrigger>
-				<SelectContent
-					className="animate-none!"
-					style={{ boxShadow: "0 4px 24px rgb(0 0 0 / 0.05)" }}
-				>
+				<SelectContent>
 					<SelectItem value="all">全部标签</SelectItem>
 					{options.map((tag) => (
 						<SelectItem key={tag} value={`tag:${tag}`}>

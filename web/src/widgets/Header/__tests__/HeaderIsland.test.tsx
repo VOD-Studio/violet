@@ -13,7 +13,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { afterEach, describe, expect, it } from "vitest";
 import HeaderIsland from "../HeaderIsland";
 
-function renderAt(path: string, presence?: PresenceReceipt) {
+function renderAt(path: string, presence?: PresenceReceipt, authenticated = false) {
 	const root = createRootRoute({
 		// 面板里的主题选择读取根路由上下文
 		beforeLoad: () => ({
@@ -23,7 +23,7 @@ function renderAt(path: string, presence?: PresenceReceipt) {
 		}),
 		component: () => (
 			<>
-				<HeaderIsland />
+				<HeaderIsland authenticated={authenticated} />
 				<Outlet />
 			</>
 		),
@@ -31,8 +31,8 @@ function renderAt(path: string, presence?: PresenceReceipt) {
 	const empty = () => null;
 	const router = createRouter({
 		routeTree: root.addChildren(
-			["/", "/blog", "/blog/archive", "/series", "/galleries", "/lab", "/chat"].map((p) =>
-				createRoute({ getParentRoute: () => root, path: p, component: empty }),
+			["/", "/blog", "/blog/archive", "/notes", "/tweets", "/galleries", "/lab", "/chat"].map(
+				(p) => createRoute({ getParentRoute: () => root, path: p, component: empty }),
 			),
 		),
 		history: createMemoryHistory({ initialEntries: [path] }),
@@ -51,11 +51,11 @@ describe("HeaderIsland", () => {
 	afterEach(cleanup);
 
 	it("收起时显示主要入口，当前页带文字标出，全部导航收在「更多」里", async () => {
-		renderAt("/series");
+		renderAt("/notes");
 		const nav = await screen.findByRole("navigation", { name: "移动端导航" });
 		expect(nav.querySelectorAll("a")).toHaveLength(4);
 		expect(nav.querySelector('a[aria-current="page"]')?.getAttribute("aria-label")).toBe(
-			"系列",
+			"手记",
 		);
 		expect(screen.queryByText("浏览本站", { exact: false })).toBeNull();
 	});
@@ -88,6 +88,18 @@ describe("HeaderIsland", () => {
 			await router.navigate({ to: "/blog" });
 		});
 		await waitFor(() => expect(screen.queryByText("Violet · 浏览本站")).toBeNull());
+	});
+
+	it.each([
+		[true, 1],
+		[false, 0],
+	])("登录态 %s 时，展开面板里聊天入口有 %i 个", async (authenticated, count) => {
+		renderAt("/", undefined, authenticated);
+		const more = await screen.findByRole("button", { name: "展开全部导航" });
+		await act(async () => {});
+		fireEvent.click(more);
+		await screen.findByText("Violet · 浏览本站");
+		expect(screen.queryAllByRole("link", { name: "聊天" })).toHaveLength(count);
 	});
 
 	it.each([

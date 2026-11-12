@@ -1,0 +1,59 @@
+import { UploadDropzone, type UploadEntry, UploadQueue } from "@violet/ui";
+import { UploadDropzone as LeafDropzone, UploadQueue as LeafQueue } from "@violet/ui/upload";
+import { useEffect, useRef, useState } from "react";
+
+const initialEntries: UploadEntry[] = [
+	{ id: "queued", name: "mountains.jpg", size: 2048, progress: 0, status: "queued", kind: "image" },
+	{ id: "uploading", name: "a-long-filename-that-keeps-its-extension.mp4", size: 4 * 1024 * 1024, progress: 42, status: "uploading", kind: "video" },
+	{ id: "waiting", name: "waiting.mp3", size: 8192, progress: 25, status: "waiting", kind: "audio" },
+	{ id: "done", name: "saved.jpg", size: 2048, progress: 100, status: "done", kind: "image" },
+	{ id: "error", name: "retry.pdf", size: 4096, progress: 30, status: "error", error: "连接中断" },
+	{ id: "cancelled", name: "cancelled.txt", size: 1024, progress: 0, status: "cancelled" },
+];
+
+export function UploadPreview() {
+	const [items, setItems] = useState(initialEntries);
+	const [leaf, setLeaf] = useState(false);
+	const [drag, setDrag] = useState(false);
+	const [policy, setPolicy] = useState<"ready" | "loading" | "error" | "paused">("ready");
+	const [now, setNow] = useState(Date.now);
+	const [message, setMessage] = useState("未执行操作");
+	const input = useRef<HTMLInputElement>(null);
+	const previews = useRef(new Map<string, string>());
+	useEffect(() => {
+		const timer = window.setInterval(() => setNow(Date.now()), 1000);
+		return () => { window.clearInterval(timer); for (const url of previews.current.values()) URL.revokeObjectURL(url); };
+	}, []);
+	const Queue = leaf ? LeafQueue : UploadQueue;
+	const Dropzone = leaf ? LeafDropzone : UploadDropzone;
+	const remove = (id: string) => {
+		const url = previews.current.get(id);
+		if (url) URL.revokeObjectURL(url);
+		previews.current.delete(id);
+		setItems((current) => current.filter((entry) => entry.id !== id));
+	};
+	return <main className="upload-page">
+		<h1>Upload · 独立安装包</h1>
+		<div className="image-reveal-controls">
+			<label><input id="upload-leaf" type="checkbox" checked={leaf} onChange={(event) => setLeaf(event.currentTarget.checked)} />叶子入口</label>
+			<label>配置<select id="upload-policy" value={policy} onChange={(event) => setPolicy(event.currentTarget.value as typeof policy)}><option value="ready">正常</option><option value="loading">读取中</option><option value="error">失败</option><option value="paused">手动恢复</option></select></label>
+			<button id="upload-cooldown" type="button" onClick={() => { setItems((current) => current.map((entry) => entry.id === "error" ? { ...entry, status: "error", retryAt: Date.now() + 3000 } : entry)); }}>等待 3 秒后重试</button>
+			<button id="upload-progress" type="button" onClick={() => setItems((current) => current.map((entry) => entry.status === "queued" ? { ...entry, status: "uploading", progress: 60 } : entry.status === "uploading" ? { ...entry, status: "done", progress: 100 } : entry))}>推进上传</button>
+			<button id="upload-reset" type="button" onClick={() => { for (const id of previews.current.keys()) remove(id); setItems(initialEntries); }}>重置状态</button>
+		</div>
+		<input ref={input} id="upload-file" type="file" multiple hidden onChange={(event) => {
+			const selected = Array.from(event.currentTarget.files ?? []).map((file): UploadEntry => {
+				const id = crypto.randomUUID();
+				const thumbnail = file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined;
+				if (thumbnail) previews.current.set(id, thumbnail);
+				return { id, name: file.name, size: file.size, status: "queued", progress: 0, thumbnail };
+			});
+			setItems((current) => [...current, ...selected]); setMessage(`已选择 ${selected.length} 个本机文件`); event.currentTarget.value = "";
+		}} />
+		<div className="upload-stage">
+			<Dropzone dragActive={drag} hint="本机选择与上传状态演示，不执行网络请求" onClick={() => input.current?.click()} onDragOver={(event) => { event.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={(event) => { event.preventDefault(); setDrag(false); setMessage(`拖入 ${event.dataTransfer.files.length} 个文件`); }}>选择文件</Dropzone>
+			<Queue items={items} concurrency={2} now={now} policy={policy} onRetryPolicy={() => { setPolicy("ready"); setMessage("配置已恢复"); }} onResume={() => { setPolicy("ready"); setMessage("队列已恢复"); }} onCancel={(id) => { setItems((current) => current.map((entry) => entry.id === id ? { ...entry, status: "cancelled" } : entry)); setMessage(`取消 ${id}`); }} onRetry={(id) => { setItems((current) => current.map((entry) => entry.id === id ? { ...entry, status: "uploading", error: undefined, retryAt: undefined } : entry)); setMessage(`重试 ${id}`); }} onRemove={remove} onCancelAll={() => setItems((current) => current.map((entry) => ["done", "cancelled"].includes(entry.status) ? entry : { ...entry, status: "cancelled" }))} onClearCompleted={() => { for (const entry of items) if (["done", "cancelled"].includes(entry.status)) remove(entry.id); }} />
+		</div>
+		<output id="upload-message" aria-live="polite">{message}</output>
+	</main>;
+}

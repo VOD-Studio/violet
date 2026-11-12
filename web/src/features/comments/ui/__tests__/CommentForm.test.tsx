@@ -8,21 +8,27 @@
  * mock 范式复制 admin-posts/ui/__tests__/PostEditorLayout.test.tsx；
  * 断言风格跟随项目惯例（.length/.toBeNull/.toBeTruthy，无 jest-dom）。
  */
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { createMutate } = vi.hoisted(() => ({ createMutate: vi.fn() }));
+const { createMutate, sendCode } = vi.hoisted(() => ({
+	createMutate: vi.fn(),
+	sendCode: vi.fn(),
+}));
 
 // vi.mock 必须在 import 被测模块前（hoist）
 vi.mock("@features/comments/api/mutations", () => ({
 	useCreateComment: () => ({ mutate: createMutate, isPending: false }),
-	useSendCommentCode: () => ({ mutate: vi.fn(), isPending: false }),
+	useSendCommentCode: () => ({ mutateAsync: sendCode, isPending: false }),
 }));
 vi.mock("@shared/api/login-dialog-store", () => ({
 	useLoginDialogStore: () => ({ open: vi.fn() }),
 }));
 vi.mock("@features/emojis/api/queries", () => ({
 	useAllEmojis: () => ({ data: [], isLoading: false }),
+}));
+vi.mock("@features/customemoji/api/queries", () => ({
+	useMyCustomEmojis: () => ({ data: undefined, isLoading: false }),
 }));
 vi.mock("@features/upload/hooks/use-chunked-upload", () => ({
 	useChunkedUpload: () => ({ uploadFile: vi.fn() }),
@@ -34,6 +40,7 @@ import { CommentForm } from "../CommentForm";
 describe("CommentForm", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		sendCode.mockResolvedValue(null);
 	});
 	afterEach(() => {
 		cleanup();
@@ -94,5 +101,63 @@ describe("CommentForm", () => {
 		fireEvent.input(editor);
 		fireEvent.keyDown(editor, { key: "Enter", metaKey: true });
 		expect(createMutate).not.toHaveBeenCalled();
+	});
+
+	it("发码失败可立即重试，成功后才展示有名称的验证码组", async () => {
+		sendCode.mockRejectedValueOnce(new Error("网络中断"));
+		render(<CommentForm postId="p1" isLoggedIn={false} />);
+		fireEvent.change(screen.getByRole("textbox", { name: "邮箱" }), {
+			target: { value: "reader@example.com" },
+		});
+		const send = screen.getByRole("button", { name: "发送验证码" });
+		fireEvent.click(send);
+		await waitFor(() => expect((send as HTMLButtonElement).disabled).toBe(false));
+		expect(screen.queryByRole("group", { name: "邮箱验证码" })).toBeNull();
+		fireEvent.click(send);
+		const group = await screen.findByRole("group", { name: "邮箱验证码" });
+		expect(within(group).getAllByRole("textbox")).toHaveLength(6);
+		expect(sendCode).toHaveBeenCalledTimes(2);
+	});
+
+	it("切换邮箱后，旧邮箱迟到的成功结果不会展开验证码或冷却新邮箱", async () => {
+		const oldRequest = Promise.withResolvers<null>();
+		sendCode.mockReturnValueOnce(oldRequest.promise);
+		render(<CommentForm postId="p1" isLoggedIn={false} />);
+		const email = screen.getByRole("textbox", { name: "邮箱" });
+		fireEvent.change(email, { target: { value: "old@example.com" } });
+		fireEvent.click(screen.getByRole("button", { name: "发送验证码" }));
+		fireEvent.change(email, { target: { value: "new@example.com" } });
+		await act(async () => oldRequest.resolve(null));
+		expect(screen.queryByRole("group", { name: "邮箱验证码" })).toBeNull();
+		const send = screen.getByRole("button", { name: "发送验证码" });
+		expect((send as HTMLButtonElement).disabled).toBe(false);
+		fireEvent.click(send);
+		await screen.findByRole("group", { name: "邮箱验证码" });
+		expect(sendCode).toHaveBeenLastCalledWith({ email: "new@example.com" });
+	});
+
+	it("换邮箱立即清除旧验证码，不能将其用于新邮箱提交", async () => {
+		render(<CommentForm postId="p1" isLoggedIn={false} />);
+		const email = screen.getByRole("textbox", { name: "邮箱" });
+		fireEvent.change(email, { target: { value: "old@example.com" } });
+		fireEvent.click(screen.getByRole("button", { name: "发送验证码" }));
+		const group = await screen.findByRole("group", { name: "邮箱验证码" });
+		fireEvent.paste(within(group).getByRole("textbox", { name: "第 1 位" }), {
+			clipboardData: { getData: () => "482951" },
+		});
+		expect((screen.getByRole("button", { name: "发送" }) as HTMLButtonElement).disabled).toBe(
+			false,
+		);
+		fireEvent.change(email, { target: { value: "new@example.com" } });
+		expect((screen.getByRole("button", { name: "发送" }) as HTMLButtonElement).disabled).toBe(
+			true,
+		);
+		fireEvent.click(screen.getByRole("button", { name: "发送验证码" }));
+		const newGroup = await screen.findByRole("group", { name: "邮箱验证码" });
+		expect(
+			within(newGroup)
+				.getAllByRole("textbox")
+				.every((input) => (input as HTMLInputElement).value === ""),
+		).toBe(true);
 	});
 });

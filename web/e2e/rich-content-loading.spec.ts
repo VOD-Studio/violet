@@ -1,4 +1,3 @@
-import { basename, join } from "node:path";
 import { expect, test } from "@playwright/test";
 import { loadClient } from "./client";
 import {
@@ -9,26 +8,33 @@ import {
 	openWithArticleSnapshot,
 } from "./rich-content-harness";
 
-const CODE_SOURCE = 'const recoveryMessage = "正文仍可阅读";';
 const DIAGRAM_SOURCE = "flowchart LR\n  A[开始阅读] --> B[完整图表]";
 
-test.beforeEach(async ({ context }) => {
-	// 使用实际 CDN 字体分片，避免外部网络决定模块恢复用例的时限；OFL 许可见 src/assets/fonts/diagram/。
-	for (const pattern of [
-		"https://cn-font.claude-code-best.win/packages/xiaolai/dist/Xiaolai/**",
-		"https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.18.1/dist/prod/fonts/Excalifont/**",
-	]) {
-		await context.route(pattern, (route) =>
-			route.fulfill({
-				path: join(
-					import.meta.dirname,
-					"fixtures/diagram-fonts",
-					basename(new URL(route.request().url()).pathname),
-				),
-				headers: { "access-control-allow-origin": "*" },
-			}),
-		);
-	}
+test("中文图表的字体元数据与字形只向本站请求", async ({ page, context }) => {
+	await loadClient(context);
+	const requests: string[] = [];
+	page.on("request", (request) => requests.push(request.url()));
+	await page.goto("/blog/contract-rich-diagram");
+	await page
+		.locator("[data-article-content] [data-content-preparation]")
+		.first()
+		.scrollIntoViewIfNeeded();
+	const svg = page.locator('[data-type="diagram-block"] [role="img"] > svg');
+	await expect(svg).toContainText("开始阅读");
+	// 图表字体：中文分片规则、中文字形与 Excalifont 都从本站 /assets 取
+	expect(requests.some((url) => /\/assets\/result-[^/]+\.css$/.test(url))).toBe(true);
+	expect(
+		requests.some(
+			(url) => url.startsWith("http://127.0.0.1:4173/assets/") && url.endsWith(".woff2"),
+		),
+	).toBe(true);
+	expect(
+		requests.filter(
+			(url) =>
+				/cn-font|@excalidraw|Excalifont|xiaolai/i.test(url) &&
+				!url.startsWith("http://127.0.0.1:4173/"),
+		),
+	).toEqual([]);
 });
 
 for (const chunk of ["DiagramBlock", "mermaid.core"]) {
@@ -77,35 +83,3 @@ for (const chunk of ["DiagramBlock", "mermaid.core"]) {
 		expect(await diagnostics()).toEqual([]);
 	});
 }
-
-test("代码样式下载失败保留源码，局部重试重新请求 CSS 且不替换正文和 document", async ({
-	page,
-	context,
-}) => {
-	await loadClient(context);
-	const asset = await blockAsset(context, page, /\/assets\/CodeCard-[^/]+\.css$/);
-	const diagnostics = collectUnexpectedDiagnostics(page, asset.blockedUrls);
-	const snapshot = await openWithArticleSnapshot(context, page, "/blog/contract-rich-code");
-	await page
-		.locator("[data-article-content] [data-content-preparation]")
-		.first()
-		.scrollIntoViewIfNeeded();
-	const failure = page.getByRole("alert").filter({ hasText: "代码高亮加载失败" });
-	await expect(failure).toBeVisible();
-	await expect(page.locator("[data-article-content] pre")).toHaveText(CODE_SOURCE);
-	await expectArticlePreserved(page, snapshot);
-	expect(asset.blockedUrls.size).toBeGreaterThan(0);
-	expect(asset.successfulUrls).toEqual([]);
-
-	asset.release();
-	await failure.getByRole("button", { name: "重试", exact: true }).click();
-	const highlighted = page.locator("[data-article-content] pre.shiki");
-	await expect(highlighted).toBeVisible();
-	await expect(highlighted).toHaveText(CODE_SOURCE);
-	await expect(highlighted.locator("code span[style]").first()).toBeAttached();
-	await expect(failure).toHaveCount(0);
-	expect(asset.successfulUrls.some((url) => asset.blockedUrls.has(url))).toBe(true);
-	await expectArticlePreserved(page, snapshot);
-	expect(asset.documents).toHaveLength(1);
-	expect(await diagnostics()).toEqual([]);
-});

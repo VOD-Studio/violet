@@ -9,6 +9,13 @@ export interface Knobs {
 	 * @default 0.015
 	 */
 	neutralChroma: number;
+	/**
+	 * 强调字（链接、聚焦环、季节色着色底上的文字）的 OKLCH 色度，取值 0–0.2，指浅色外观下的色度，
+	 * 深色外观按 `RULES` 里的比例放大；不超过种子色色度的 3 倍，近灰的种子色因此不会凭空染色。
+	 *
+	 * @default 0.0974
+	 */
+	accentChroma: number;
 }
 
 /** 主题：一个种子色加若干旋钮。 */
@@ -25,8 +32,11 @@ export interface NormalizedTheme extends Theme {
 	knobs: Knobs;
 }
 
-const DEFAULT_KNOBS: Knobs = { neutralChroma: 0.015 };
-const KNOB_RANGES: Record<keyof Knobs, readonly [number, number]> = { neutralChroma: [0, 0.05] };
+const DEFAULT_KNOBS: Knobs = { neutralChroma: 0.015, accentChroma: 0.0974 };
+const KNOB_RANGES: Record<keyof Knobs, readonly [number, number]> = {
+	neutralChroma: [0, 0.05],
+	accentChroma: [0, 0.2],
+};
 const DEFAULT_THEME: NormalizedTheme = {
 	version: THEME_VERSION,
 	seed: "#684dda",
@@ -67,7 +77,7 @@ export function resolveKnobs(knobs: unknown): Knobs {
  * @example
  * ```ts
  * normalizeTheme({ version: 1, seed: "#F0A" });
- * // { version: 1, seed: "#ff00aa", knobs: { neutralChroma: 0.015 } }
+ * // { version: 1, seed: "#ff00aa", knobs: { neutralChroma: 0.015, accentChroma: 0.0974 } }
  * ```
  */
 export function normalizeTheme(

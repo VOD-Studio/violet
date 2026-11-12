@@ -27,6 +27,7 @@ export function computeScrollProgress(input: ProgressInput): number {
  * 监听目标容器（或窗口）的滚动位置，实时返回当前阅读进度百分比（0..100）。
  *
  * @param ref - 可选自定义滚动容器 DOM Ref，省略时监听整个 window
+ * @param enabled - 为 false 时不监听滚动，返回最近一次的值；默认 true
  *
  * @returns 0 到 100 的进度数字
  *
@@ -36,10 +37,14 @@ export function computeScrollProgress(input: ProgressInput): number {
  * return <div style={{ width: `${progress}%` }} className="progress-bar" />;
  * ```
  */
-export function useScrollProgress(ref?: React.RefObject<HTMLElement | null>): number {
+export function useScrollProgress(
+	ref?: React.RefObject<HTMLElement | null>,
+	enabled = true,
+): number {
 	const [progress, setProgress] = useState(0);
 
 	useEffect(() => {
+		if (!enabled) return;
 		const onScroll = () => {
 			if (!ref) {
 				setProgress(
@@ -73,7 +78,7 @@ export function useScrollProgress(ref?: React.RefObject<HTMLElement | null>): nu
 			el.addEventListener("scroll", onScroll, { passive: true });
 			return () => el.removeEventListener("scroll", onScroll);
 		}
-	}, [ref]);
+	}, [ref, enabled]);
 
 	return progress;
 }

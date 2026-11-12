@@ -7,6 +7,7 @@ import {
 import {
 	Button,
 	Dialog,
+	DialogBody,
 	DialogContent,
 	DialogDescription,
 	DialogFooter,
@@ -76,21 +77,23 @@ function EmbedInsertBody({
 				</DialogTitle>
 				<DialogDescription>{inserter.description}</DialogDescription>
 			</DialogHeader>
-			<Suspense fallback={<p className="text-sm text-muted-foreground">正在加载表单…</p>}>
-				<Picker initialSource={initialSource} onChange={setSource} />
-			</Suspense>
-			<section aria-label="预览" className="space-y-1">
-				<h3 className="text-xs text-muted-foreground">预览</h3>
-				{source ? (
-					<LazyArticleEmbed definition={definition} source={source} />
-				) : (
-					<p className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
-						选好之后在这里预览
-					</p>
-				)}
-			</section>
+			<DialogBody className="flex flex-col gap-5">
+				<Suspense fallback={<p className="text-sm text-muted-foreground">正在加载表单…</p>}>
+					<Picker initialSource={initialSource} onChange={setSource} />
+				</Suspense>
+				<section aria-label="预览" className="space-y-1">
+					<h3 className="text-xs text-muted-foreground">预览</h3>
+					{source ? (
+						<LazyArticleEmbed definition={definition} source={source} />
+					) : (
+						<p className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+							选好之后在这里预览
+						</p>
+					)}
+				</section>
+			</DialogBody>
 			<DialogFooter>
-				<Button type="button" variant="outline" onClick={onClose}>
+				<Button type="button" variant="secondary" onClick={onClose}>
 					取消
 				</Button>
 				<Button
@@ -130,7 +133,7 @@ export function EmbedInsertDialog({
 			}}
 		>
 			<DialogContent
-				className="max-h-[calc(100dvh-4rem)] gap-5 overflow-y-auto sm:max-w-2xl"
+				size="lg"
 				onCloseAutoFocus={(event) => {
 					event.preventDefault();
 					returnFocus();

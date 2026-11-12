@@ -66,6 +66,8 @@ type BlockRange struct {
 	IsAI bool
 	// AuthorName 发表时的原始署名；AI 用于对应独立角色颜色，不表示来源已验证
 	AuthorName string
+	// CreatedBy 发表者登录 ID，匿名批注为 nil；应用层据此判断是否文章作者本人
+	CreatedBy *shared.ID
 }
 
 // BlockAuthorLimit 每个批注块返回的评论者上限；前端头像组只需展示前几位。
@@ -168,6 +170,8 @@ type ListFilter struct {
 	BlockID string
 	// Sort 回复链时间排序："asc"（默认，最早优先）/ "desc"，仅 ParentID 场景生效
 	Sort string
+	// TopLevelSort 自由顶层评论排序：latest（默认）或 hot（总回应数降序），不改变批注/后台/检索。
+	TopLevelSort string
 	// Query body 全文检索（空格分词多关键词 AND），仅 FindPageWithPost 支持
 	Query string
 }

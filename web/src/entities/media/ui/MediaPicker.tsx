@@ -8,6 +8,7 @@ import type { MediaCatalogQuery, MediaFile, MediaType } from "@entities/media/mo
 import { imageUrl } from "@shared/lib/image-url";
 import {
 	Button,
+	iconProps,
 	Modal,
 	Pagination,
 	SearchInput,
@@ -185,7 +186,6 @@ export function MediaPicker({
 				) : null}
 				<SearchInput
 					aria-label="搜索素材文件名"
-					variant="soft"
 					controlSize="sm"
 					defaultValue={keyword}
 					onSearch={(v) => {
@@ -193,7 +193,7 @@ export function MediaPicker({
 						setPage(1);
 					}}
 					placeholder="搜索文件名…"
-					classNames={{ root: "max-w-64 flex-1" }}
+					classNames={{ control: "max-w-64 flex-1" }}
 				/>
 			</div>
 
@@ -226,7 +226,7 @@ export function MediaPicker({
 									<MediaThumb file={file} />
 									{isSel ? (
 										<span className="absolute right-1.5 top-1.5 flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
-											<Check className="size-3" />
+											<Check {...iconProps(12)} />
 										</span>
 									) : null}
 									<span className="absolute inset-x-0 bottom-0 truncate bg-linear-to-t from-black/70 to-transparent px-2 py-1 text-left text-[11px] text-white opacity-0 transition-opacity group-hover:opacity-100">
@@ -269,7 +269,7 @@ function MediaThumb({ file }: { file: MediaFile }) {
 	const Icon = isVideo ? Film : isAudio ? Music : FileText;
 	return (
 		<div className="flex size-full flex-col items-center justify-center gap-1 text-muted-foreground">
-			<Icon className="size-8" />
+			<Icon className="size-6" />
 			<span className="px-1 text-[10px]">{file.original_name}</span>
 		</div>
 	);

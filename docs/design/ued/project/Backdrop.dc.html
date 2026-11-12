@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Violet 背景</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&family=Noto+Serif+SC:wght@400;500;600;700&family=Alex+Brush&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Maple Mono";font-weight:400;font-style:normal;src:url(/_blob/a3ecea3add4961def4d089b95f486230) format("woff2")}
+@font-face{font-family:"Maple Mono";font-weight:500;font-style:normal;src:url(/_blob/1ba23035f8e49762aeac0a2a66f83fa0) format("woff2")}
+body{margin:0}
+a{color:inherit;text-decoration:none}
+.paper-l{position:absolute;inset:0;background-image:url(/_blob/66391f4a5c5b623abcbda5bc91818ab0);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.paper-d{position:absolute;inset:0;background-image:url(/_blob/b0a1c287fd95586fcb700c431de8f4c5);background-size:1440px 1600px;background-repeat:repeat-y;pointer-events:none}
+.num{font-family:"Maple Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.mono{font-family:"Maple Mono",ui-monospace,monospace}
+.sheet{background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);border:1px solid var(--ol)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;height:36px;padding:0 16px;border:0;border-radius:999px;font-family:inherit;font-size:14px;font-weight:500;white-space:nowrap;background:var(--sunk);color:var(--fg);cursor:pointer}
+.btn.sm{height:32px;padding:0 12px}.btn.lg{height:40px;font-size:16px}
+.btn.pri{background:var(--fg);color:var(--bg)}.btn.gho{background:transparent}
+.btn.ic{width:32px;padding:0}
+.seg{display:inline-flex;padding:2px;border-radius:999px;background:var(--sunk)}
+.sg{display:inline-flex;align-items:center;gap:6px;box-sizing:border-box;height:32px;padding:0 12px;border-radius:999px;font-size:14px;color:var(--muted)}
+.sg i{font-style:normal;font-size:12px;opacity:.7}
+.sg.on{background:var(--sheet);color:var(--fg);font-weight:500;box-shadow:0 4px 24px rgb(0 0 0 / .05)}
+.chip{display:inline-flex;align-items:center;gap:4px;box-sizing:border-box;height:24px;padding:0 10px;border-radius:999px;background:var(--sunk);font-size:12px;font-weight:500;color:var(--muted)}
+.chip.ac{background:color-mix(in oklab,var(--deco) 16%,var(--sheet));color:var(--accent)}
+.chip.ok{background:color-mix(in oklab,var(--ok) 12%,var(--sheet));color:var(--ok)}
+.fld{display:flex;align-items:center;gap:8px;box-sizing:border-box;height:36px;padding:0 12px;border-radius:12px;background:var(--sunk);font-size:14px;color:var(--muted)}
+.lab{display:block;margin-bottom:8px;font-size:14px;font-weight:600}
+.h1{margin:0;font-size:52px;font-weight:600;line-height:1.15;letter-spacing:-0.01em}
+
+.k-blk{display:grid;grid-template-columns:240px minmax(0,1fr);gap:56px;padding:56px 0;border-top:1px solid var(--rule)}
+.k-blk h2{margin:0;font-size:24px;font-weight:600;line-height:1.3}
+.k-uid{display:block;margin-top:6px;font:400 12px "Maple Mono",monospace;color:var(--muted)}
+.k-lead{margin:12px 0 0;font-size:13px;line-height:1.85;color:var(--muted)}
+.k-cap{margin-top:10px;font-size:12px;line-height:1.7;color:var(--muted)}
+.k-row{display:flex;flex-wrap:wrap;align-items:flex-start;gap:28px}
+.k-pnl{border-radius:12px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);border:1px solid var(--ol)}
+.k-ib{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--muted);cursor:pointer;flex:none}
+.k-ib:hover{background:var(--sunk);color:var(--fg)}
+.k-mi{display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;min-height:36px;padding:6px 10px;border:0;border-radius:8px;background:transparent;font-family:inherit;font-size:14px;color:var(--fg);text-align:left;cursor:pointer;white-space:nowrap}
+.k-mi:hover,.k-mi.hl{background:var(--sunk)}
+.k-mi .k{margin-left:auto;font:500 12px Inter,sans-serif;color:var(--muted)}
+.k-mi svg{color:var(--muted);flex:none}
+.k-sep{height:1px;margin:6px 8px;background:var(--rule)}
+.k-lbl{padding:6px 10px 4px;font-size:12px;color:var(--muted)}
+.k-av{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;object-fit:cover;background:var(--sunk);font-weight:600;color:var(--muted);flex:none}
+.k-scrim{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgb(20 16 14 / .32)}
+.k-sw{position:relative;display:inline-block;width:36px;height:20px;border-radius:999px;background:var(--fg);flex:none}.k-sw::after{content:"";position:absolute;top:2px;left:18px;width:16px;height:16px;border-radius:50%;background:var(--bg)}
+.k-sw.off{background:color-mix(in oklab,var(--sunk) 80%,var(--fg))}.k-sw.off::after{left:2px;background:var(--sheet)}
+.k-arc{animation:k-rot 1.6s linear infinite;flex:none}.k-arc .a{animation:k-dash 1.4s ease-in-out infinite}
+@keyframes k-rot{to{transform:rotate(360deg)}}
+@keyframes k-dash{0%{stroke-dasharray:4 100;stroke-dashoffset:0}50%{stroke-dasharray:60 100;stroke-dashoffset:-18}100%{stroke-dasharray:4 100;stroke-dashoffset:-96}}
+@media (prefers-reduced-motion: reduce){.k-arc,.k-arc .a{animation:none}.k-arc .a{stroke-dasharray:62 100}}
+.k-fade{animation:k-in .18s ease-out both}@keyframes k-in{from{opacity:0}to{opacity:1}}
+
+.k-hlw{position:relative;display:flex;flex-direction:column;gap:2px}
+.k-hlw:has(> .k-li){gap:4px}
+.k-hlw > .k-mi,.k-hlw > .k-li,.k-hlw > .k-opt{position:relative;z-index:1}
+.k-hlw > .k-mi:hover,.k-hlw > .k-li:hover,.k-hlw > .k-opt:hover{background:transparent}
+.k-hlw > .k-mi.on,.k-hlw > .k-li.on,.k-hlw > .k-mi.on:hover,.k-hlw > .k-li.on:hover{background:color-mix(in oklab,var(--deco) 13%,var(--sheet))}
+.k-hlw > .k-mi.on:hover,.k-hlw > .k-li.on:hover{background:color-mix(in oklab,var(--deco) 18%,var(--sheet))}
+.k-hlw > .k-mi.on{color:var(--accent);font-weight:600}.k-hlw > .k-mi.on svg{color:var(--accent)}
+.k-hlw > .k-li.on b{color:var(--accent)}
+.k-hl{position:absolute;left:0;top:0;z-index:0;border-radius:8px;background:var(--sunk);pointer-events:none;opacity:0}
+.k-reveal{animation:k-reveal calc(200ms*var(--k,1)) cubic-bezier(.32,.72,0,1) backwards}
+.k-reveal.out{animation:k-sink calc(140ms*var(--k,1)) ease-in forwards}
+@keyframes k-reveal{from{opacity:0;transform:translateY(-6px)}}
+@keyframes k-sink{to{opacity:0;transform:translateY(-4px)}}
+.k-ovl{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center}
+.k-ovl > :not(.k-scr):not(.k-lbs){position:relative}
+.k-scr{position:absolute;inset:0;background:rgb(20 16 14 / .28)}
+[data-scroll]{overflow-y:auto;overscroll-behavior:contain}
+.k-scrim.in,.k-scr.in{animation:k-fi calc(200ms*var(--k,1)) ease-out backwards}
+.k-scrim.out,.k-scr.out{animation:k-fo calc(160ms*var(--k,1)) ease-in forwards}
+.k-dlg.in{animation:k-dlg-in calc(220ms*var(--k,1)) cubic-bezier(.32,.72,0,1) backwards}
+.k-dlg.out{animation:k-dlg-out calc(140ms*var(--k,1)) ease-in forwards}
+.k-shr.in{animation:k-from-r calc(360ms*var(--k,1)) cubic-bezier(.32,.72,0,1) backwards}
+.k-shr.out{animation:k-to-r calc(240ms*var(--k,1)) cubic-bezier(.4,0,1,1) forwards}
+.k-shb.in{animation:k-from-b calc(400ms*var(--k,1)) cubic-bezier(.32,.72,0,1) backwards}
+.k-shb.out{animation:k-to-b calc(240ms*var(--k,1)) cubic-bezier(.4,0,1,1) forwards}
+.k-pop.in{animation:k-reveal calc(200ms*var(--k,1)) cubic-bezier(.32,.72,0,1) backwards}
+.k-pop.out{animation:k-sink calc(140ms*var(--k,1)) ease-in forwards}
+.k-cmd.in{animation:k-fi calc(160ms*var(--k,1)) ease-out backwards}
+.k-cmd.out{animation:k-fo calc(100ms*var(--k,1)) ease-in forwards}
+.k-lbs.in{animation:k-fi calc(240ms*var(--k,1)) ease-out backwards}
+.k-lbs.out{animation:k-fo calc(240ms*var(--k,1)) ease-in calc(40ms*var(--k,1)) forwards}
+@keyframes k-fi{from{opacity:0}}
+@keyframes k-fo{to{opacity:0}}
+@keyframes k-dlg-in{from{opacity:0;filter:blur(6px)}}
+@keyframes k-dlg-out{to{opacity:0;filter:blur(4px)}}
+@keyframes k-from-r{from{transform:translateX(calc(100% + 16px))}}
+@keyframes k-to-r{to{transform:translateX(calc(100% + 16px))}}
+@keyframes k-from-b{from{transform:translateY(100%)}}
+@keyframes k-to-b{to{transform:translateY(100%)}}
+.k-fld{display:flex;align-items:center;gap:8px;box-sizing:border-box;height:36px;padding:0 12px;border-radius:12px;background:var(--sunk);font-size:14px;color:var(--fg);transition:background-color .16s ease-out,box-shadow .16s ease-out}
+.k-fld:hover{background:color-mix(in oklab,var(--sunk) 92%,var(--fg))}
+.k-fld:focus-within,.k-fld.f{background:var(--sheet);box-shadow:0 0 0 1px color-mix(in oklab,var(--fg) 28%,transparent),0 0 0 4px color-mix(in oklab,var(--deco) 18%,transparent)}
+.k-fld.e{background:color-mix(in oklab,var(--danger) 5%,var(--sheet));box-shadow:0 0 0 1px color-mix(in oklab,var(--danger) 60%,transparent),0 0 0 4px color-mix(in oklab,var(--danger) 12%,transparent)}
+.k-fld input,.k-fld textarea{flex:1;min-width:0;height:100%;padding:0;border:0;outline:0;background:transparent;font:inherit;color:inherit}
+.k-fld input::placeholder,.k-fld textarea::placeholder{color:var(--muted)}
+.k-seg{position:relative;display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:2px;border-radius:999px;background:var(--sunk)}
+.k-seg > button{position:relative;z-index:1;height:32px;padding:0 14px;border:0;border-radius:999px;background:transparent;font-family:inherit;font-size:14px;color:var(--muted);cursor:pointer;transition:color .2s ease-out}
+.k-seg > button.on{color:var(--fg);font-weight:500}
+.k-seg > i{position:absolute;top:2px;bottom:2px;left:2px;border-radius:999px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);transition:transform .28s cubic-bezier(.32,.72,0,1)}
+.k-tog{position:relative;display:inline-block;width:36px;height:20px;padding:0;border:0;border-radius:999px;background:color-mix(in oklab,var(--sunk) 80%,var(--fg));cursor:pointer;transition:background-color .2s ease-out;flex:none}
+.k-tog::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--sheet);box-shadow:0 1px 2px rgb(0 0 0 / .12);transition:transform .28s cubic-bezier(.32,.72,0,1),background-color .2s}
+.k-tog.on{background:var(--fg)}.k-tog.on::after{transform:translateX(16px);background:var(--bg)}
+.k-chk{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;padding:0;border:0;border-radius:6px;background:var(--sheet);box-shadow:inset 0 0 0 1.5px var(--rule2);cursor:pointer;transition:background-color .16s ease-out,box-shadow .16s ease-out;flex:none}
+.k-chk path{stroke-dasharray:24;stroke-dashoffset:24;transition:stroke-dashoffset .22s cubic-bezier(.32,.72,0,1) .04s}
+.k-chk.on{background:var(--fg);box-shadow:none}.k-chk.on path{stroke-dashoffset:0}
+.k-acc{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s cubic-bezier(.32,.72,0,1)}
+.k-acc > div{overflow:hidden}
+.k-acc.open{grid-template-rows:1fr}
+.k-chev{transition:transform .28s cubic-bezier(.32,.72,0,1)}.k-chev.open{transform:rotate(180deg)}
+@media (prefers-reduced-motion: reduce){.k-hl,.k-seg > i,.k-tog::after,.k-acc,.k-chev,.k-chk path{transition:none!important}.k-reveal{animation:k-fi .1s ease-out backwards}.k-reveal.out{animation:k-fo .1s ease-out forwards}
+  .k-dlg.in,.k-shr.in,.k-shb.in,.k-pop.in,.k-cmd.in{animation:k-fi .1s ease-out backwards}
+  .k-dlg.out,.k-shr.out,.k-shb.out,.k-pop.out,.k-cmd.out{animation:k-fo .1s ease-out forwards}}
+
+.k-toaster{position:absolute;right:16px;bottom:16px;z-index:8;width:356px;height:0;outline:none}
+.k-thit{position:absolute;left:-16px;right:-16px;bottom:-16px}
+.k-to{position:absolute;left:0;right:0;bottom:0;box-sizing:border-box;border-radius:12px;background:var(--sheet);border:1px solid var(--ol);box-shadow:0 4px 24px rgb(0 0 0 / .05);touch-action:none;user-select:none;transform-origin:50% 50%;
+  transition:transform calc(.4s*var(--k,1)) ease,opacity calc(.4s*var(--k,1)) ease,height calc(.4s*var(--k,1)) ease}
+.k-to.in0{animation:k-tup0 calc(400ms*var(--k,1)) ease backwards}
+.k-to.in1{animation:k-tup1 calc(400ms*var(--k,1)) ease backwards}
+@keyframes k-tup0{from{transform:translateY(100%);opacity:0}}
+@keyframes k-tup1{from{transform:translateY(100%);opacity:0}}
+.k-to.drag{transition:height calc(.4s*var(--k,1)) ease;cursor:grabbing}
+.k-to.swo{transition:transform calc(.2s*var(--k,1)) ease-out,opacity calc(.2s*var(--k,1)) ease-out}
+.k-ti{display:flex;align-items:center;gap:14px;min-height:54px;box-sizing:border-box;padding:14px 40px 14px 18px;transition:opacity calc(.2s*var(--k,1)) ease}
+.k-to.back .k-ti{opacity:0;pointer-events:none}
+.k-tic{position:relative;width:18px;height:18px;flex:none}
+.k-tic > span{position:absolute;inset:0;display:inline-flex;opacity:0;transition:opacity .2s ease-out}
+.k-tic.ok .i-ok,.k-tic.err .i-err,.k-tic.warn .i-warn,.k-tic.info .i-info,.k-tic.load .i-load{opacity:1}
+.k-tic .i-ok{color:var(--ok)}.k-tic .i-err{color:var(--danger)}.k-tic .i-warn{color:oklch(0.68 0.14 70)}.k-tic .i-info{color:var(--muted)}.k-tic .i-load{color:var(--deco)}
+.k-tic .ck{stroke-dasharray:12;stroke-dashoffset:12;transition:stroke-dashoffset .3s cubic-bezier(.32,.72,0,1) .1s}
+.k-tic.ok .ck{stroke-dashoffset:0}
+.k-tt{font-size:13.5px;line-height:1.5;color:var(--fg)}
+.k-tn{display:inline-block;margin-left:6px;padding:0 6px;border-radius:999px;background:var(--sunk);font-size:11px;line-height:18px;color:var(--muted);vertical-align:1px}
+.k-tn.b0{animation:k-bump0 .6s ease-out}.k-tn.b1{animation:k-bump1 .6s ease-out}.k-tn.b-{animation:none}
+@keyframes k-bump0{from{background:color-mix(in oklab,var(--deco) 35%,var(--sheet));color:var(--accent)}}
+@keyframes k-bump1{from{background:color-mix(in oklab,var(--deco) 35%,var(--sheet));color:var(--accent)}}
+.k-td{font-size:12px;line-height:1.6;color:var(--muted)}
+.k-ta{flex:none;height:32px;padding:0 12px;border:0;border-radius:999px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05),0 0 0 1px var(--ol);font:500 14px inherit;font-family:inherit;color:var(--fg);cursor:pointer;transition:background-color .16s ease-out}
+.k-ta:hover{background:var(--sunk)}
+.k-tx{position:absolute;top:8px;right:8px;display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--muted);cursor:pointer;opacity:.7;transition:opacity .16s ease-out,background-color .16s ease-out,color .16s ease-out}
+.k-tx:hover,.k-tx:focus-visible{opacity:1;background:var(--sunk);color:var(--fg)}
+.k-to.back .k-tx{opacity:0;pointer-events:none}
+@media (prefers-reduced-motion: reduce){.k-to{transition:opacity .1s ease-out}.k-to.in0,.k-to.in1{animation:k-fi .1s ease-out backwards}}
+
+.od-fam{display:flex;flex-wrap:wrap;gap:4px;margin-top:-24px}
+.od-fam a{display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:999px;font-size:13px;color:var(--muted);transition:background-color .16s ease-out,color .16s ease-out}
+.od-fam a:hover{background:var(--sunk);color:var(--fg)}
+.od-fam a[aria-current]{background:var(--sheet);color:var(--fg);font-weight:600;box-shadow:0 4px 24px rgb(0 0 0 / .05),0 0 0 1px var(--ol)}
+.od-sub{max-width:720px;margin:20px 0 0;font-size:16px;line-height:1.85;color:color-mix(in oklab,var(--fg) 82%,transparent)}
+.od-sec{margin-top:64px;padding-top:48px;border-top:1px solid var(--rule)}
+.od-sh{display:flex;align-items:baseline;gap:14px}
+.od-sh h2{margin:0;font-size:24px;font-weight:600;line-height:1.3}
+.od-lead{max-width:760px;margin:12px 0 0;font-size:14px;line-height:1.85;color:var(--muted)}
+.od-spec,.od-pick{width:100%;margin-top:24px;border-collapse:collapse;font-size:14px;line-height:1.8}
+.od-spec th{width:128px;padding:12px 16px 12px 0;text-align:left;vertical-align:top;font-weight:600;box-shadow:inset 0 -1px 0 var(--rule)}
+.od-spec td{padding:12px 0;color:color-mix(in oklab,var(--fg) 85%,transparent);box-shadow:inset 0 -1px 0 var(--rule)}
+.od-pick th{padding:0 16px 10px 0;text-align:left;font-size:12px;font-weight:400;color:var(--muted);box-shadow:inset 0 -1px 0 var(--rule)}
+.od-pick td{padding:12px 16px 12px 0;vertical-align:top;box-shadow:inset 0 -1px 0 var(--rule);color:color-mix(in oklab,var(--fg) 85%,transparent)}
+.od-pick td:first-child{width:120px;white-space:nowrap}.od-pick td:last-child{width:340px;color:var(--muted)}
+.od-pick a{font-weight:600;color:var(--fg)}.od-pick a:hover{color:var(--accent)}
+.od-pick tr.cur td{background:color-mix(in oklab,var(--sunk) 55%,transparent)}.od-pick tr.cur td:first-child{padding-left:12px;border-radius:8px 0 0 8px}.od-pick tr.cur td:last-child{border-radius:0 8px 8px 0}
+.od-pick tr.cur a{color:var(--accent)}
+.od-ctl{display:flex;flex-wrap:wrap;align-items:center;gap:12px 28px;margin:28px 0 16px}
+.od-cg{display:inline-flex;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
+.od-win{position:relative;width:1120px;height:600px;border-radius:16px;background:var(--bg);box-shadow:inset 0 0 0 1px var(--rule);overflow:hidden}
+.od-phone{position:relative;width:360px;height:720px;border-radius:16px;background:var(--bg);box-shadow:inset 0 0 0 1px var(--rule);overflow:hidden;flex:none}
+.od-win .k-scr,.od-phone .k-scr{z-index:4}
+.od-ctr{position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.od-ctr > *{pointer-events:auto}
+.od-catch{position:absolute;inset:0;z-index:3}
+.od-site{position:absolute;inset:0}
+.od-hd{display:flex;align-items:center;gap:8px;height:64px;padding:0 24px}
+.od-pill{display:inline-flex;align-items:center;gap:4px;height:36px;padding:0 14px;border-radius:999px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05),0 0 0 1px var(--ol);font-size:14px}
+.od-nav{margin:0 auto;padding:0 4px}.od-nav > span{display:inline-flex;align-items:center;height:28px;padding:0 12px;border-radius:999px;color:var(--muted)}
+.od-rb{width:36px;padding:0;justify-content:center;color:var(--muted)}
+.od-art{width:640px;margin:28px auto 0}
+.od-at{margin-top:6px;font-size:30px;font-weight:600;line-height:1.35}
+.od-acts{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 22px}
+.od-art p{margin:0 0 14px;font-size:15px;line-height:1.95;color:color-mix(in oklab,var(--fg) 88%,transparent)}
+.od-cap{margin-top:12px;font-size:13px;line-height:1.7;color:var(--muted)}
+.od-anat{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:56px;align-items:center;margin-top:28px}
+.od-fig{position:relative;display:flex;align-items:center;justify-content:center;min-height:400px;padding:48px 64px;border-radius:16px;background:color-mix(in oklab,var(--sunk) 55%,var(--bg))}
+.od-mk{position:absolute;z-index:3;display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;margin-top:-10px;border-radius:50%;background:var(--fg);color:var(--bg);font:500 11px/1 "Maple Mono",monospace;font-style:normal}
+.od-mk.s{position:static;margin:2px 0 0;flex:none}
+.od-parts{display:flex;flex-direction:column;gap:18px;margin:0;padding:0;list-style:none}
+.od-parts li{display:flex;gap:14px}
+.od-parts b{display:block;font-size:15px;font-weight:600;line-height:1.5}
+.od-parts span{display:block;margin-top:2px;font-size:13px;line-height:1.75;color:var(--muted)}
+.od-rel{position:relative}
+.od-tl{display:grid;grid-template-columns:1fr 1fr;gap:48px;margin-top:24px}
+.od-tlr{display:grid;grid-template-columns:52px minmax(0,1fr) 230px;align-items:center;gap:12px;height:30px}
+.od-tlr.ax{height:22px}
+.od-nm{font-size:13px;color:var(--muted);white-space:nowrap}
+.od-tr{position:relative;height:100%;background:repeating-linear-gradient(to right,var(--rule) 0 1px,transparent 1px 25%)}
+.od-tk{position:absolute;top:2px;transform:translateX(-50%);font:400 11px "Maple Mono",monospace;color:var(--muted)}
+.od-bar{position:absolute;top:9px;height:12px;border-radius:6px}
+.od-bar.scr{background:color-mix(in oklab,var(--fg) 16%,transparent)}
+.od-bar.pnl{background:var(--fg)}
+.od-bar.aux{background:color-mix(in oklab,var(--deco) 70%,transparent)}
+.od-bar.mark{top:10px;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:var(--sheet);box-shadow:inset 0 0 0 2px var(--deco)}
+.od-meta{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.od-meta .num{color:var(--fg)}
+.od-lgs{display:flex;gap:20px;margin-top:14px;font-size:12px;color:var(--muted)}
+.od-lg{display:inline-flex;align-items:center;gap:6px}
+.od-lg .od-bar{position:static;display:inline-block;width:18px;height:8px;margin:0}
+.od-lg .od-bar.mark{width:10px;height:10px}
+.od-kbd{display:inline-flex;align-items:center;height:24px;padding:0 8px;border-radius:8px;background:var(--sunk);font:500 12px Inter,sans-serif;color:var(--muted);white-space:nowrap}
+.od-x{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--muted);cursor:pointer;flex:none}
+.od-x:hover{background:var(--sunk);color:var(--fg)}
+.od-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 48px;margin-top:28px}
+.od-two b{display:block;font-size:15px;font-weight:600}
+.od-two p{margin:6px 0 0;font-size:14px;line-height:1.85;color:var(--muted)}
+.od-do{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;margin-top:28px}
+.od-do > div{padding:24px;border-radius:16px;background:color-mix(in oklab,var(--sunk) 55%,var(--bg))}
+.od-do .tag{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600}
+.od-do .tag.y{color:var(--ok)}.od-do .tag.n{color:var(--danger)}
+.od-do p{margin:12px 0 0;font-size:13px;line-height:1.8;color:var(--muted)}
+
+.in-sprite{position:absolute;width:0;height:0;overflow:hidden}
+.in-ic{flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.mu{color:var(--muted)}
+.in-arc{animation:in-rot 1.6s linear infinite;flex:none}.in-arc .a{animation:in-dash 1.4s ease-in-out infinite}
+@keyframes in-rot{to{transform:rotate(360deg)}}
+@keyframes in-dash{0%{stroke-dasharray:4 100;stroke-dashoffset:0}50%{stroke-dasharray:60 100;stroke-dashoffset:-18}100%{stroke-dasharray:4 100;stroke-dashoffset:-96}}
+@property --a{syntax:"<angle>";inherits:false;initial-value:0deg}
+/* 共用外壳 */
+.in-f{--h:36px;--px:12px;--fs:14px;position:relative;display:flex;align-items:center;gap:8px;box-sizing:border-box;width:100%;height:var(--h);padding:0 var(--px);border:0;font-family:inherit;font-size:var(--fs);line-height:1.4;color:var(--fg);text-align:left;cursor:text}
+.in-f > *{position:relative;z-index:1}
+.in-f::before,.in-f::after{content:"";position:absolute;pointer-events:none;z-index:0}
+.in-f.is-d{opacity:.5;cursor:not-allowed}
+.in-f.is-r{background:transparent!important;box-shadow:inset 0 0 0 1px var(--rule)!important;cursor:default}
+.in-f.is-r::before,.in-f.is-r::after{display:none!important}
+/* 共用：焦点色 --fc 是季节色混 40% 墨色，边框、光晕、涟漪全用它；出错换危险色，通过换成功色 */
+.in-f{--fc:color-mix(in oklab,var(--deco) 60%,var(--fg));--gl:color-mix(in oklab,var(--fc) 16%,transparent);border-radius:8px;transition:background-color .14s ease-out,box-shadow .24s cubic-bezier(.34,1.3,.64,1)}
+.in-f.is-e{--fc:var(--danger)}.in-f.is-ok{--fc:var(--ok)}
+.in-f::before{inset:0;border-radius:inherit;box-shadow:0 0 0 0 transparent}
+.in-f:focus-within::before,.in-f.is-e::before,.in-f.is-ok::before{animation:in-rp .5s cubic-bezier(.2,.7,.2,1)}
+@keyframes in-rp{from{box-shadow:0 0 0 3px color-mix(in oklab,var(--fc) 32%,transparent)}to{box-shadow:0 0 0 5px transparent}}
+@keyframes in-rpu{from{box-shadow:0 5px 0 0 color-mix(in oklab,var(--fc) 32%,transparent)}to{box-shadow:0 7px 0 0 transparent}}
+/* A 填充（默认）：灰底；聚焦转纸色，1px 细环加 3px 光晕 */
+[data-look="a"] .in-f{background:var(--sunk);box-shadow:0 0 0 1px transparent}
+[data-look="a"] .in-f:hover,[data-look="a"] .in-f.is-h{background:color-mix(in oklab,var(--sunk) 92%,var(--fg))}
+[data-look="a"] .in-f:focus-within,[data-look="a"] .in-f.is-f{background:var(--sheet);box-shadow:0 0 0 1px var(--fc),0 0 0 4px var(--gl)}
+[data-look="a"] .in-f.is-e,[data-look="a"] .in-f.is-e:hover,[data-look="a"] .in-f.is-e:focus-within{box-shadow:0 0 0 1px var(--fc),0 0 0 4px var(--gl)}
+[data-look="a"] .in-f.is-ok,[data-look="a"] .in-f.is-ok:hover{box-shadow:0 0 0 1px var(--fc)}
+/* B 描边：透明底 + 1px 墨色细环；聚焦环换焦点色并带光晕 */
+[data-look="b"] .in-f{background:var(--sheet);box-shadow:0 0 0 1px color-mix(in oklab,var(--fg) 22%,transparent)}
+[data-look="b"] .in-f:hover,[data-look="b"] .in-f.is-h{box-shadow:0 0 0 1px var(--fc)}
+[data-look="b"] .in-f:focus-within,[data-look="b"] .in-f.is-f{background:var(--sheet);box-shadow:0 0 0 1px var(--fc),0 0 0 4px var(--gl)}
+[data-look="b"] .in-f.is-e,[data-look="b"] .in-f.is-e:hover,[data-look="b"] .in-f.is-e:focus-within{box-shadow:0 0 0 1px var(--fc),0 0 0 4px var(--gl)}
+[data-look="b"] .in-f.is-ok,[data-look="b"] .in-f.is-ok:hover{box-shadow:0 0 0 1px var(--fc)}
+/* C 下划线：只有底边一条线；聚焦时线加粗成 2px，下面带一条浅光晕 */
+[data-look="c"] .in-f{border-radius:6px 6px 0 0;background:transparent;box-shadow:0 1px 0 0 color-mix(in oklab,var(--fg) 28%,transparent)}
+[data-look="c"] .in-f:hover,[data-look="c"] .in-f.is-h{box-shadow:0 1px 0 0 var(--fc)}
+[data-look="c"] .in-f:focus-within,[data-look="c"] .in-f.is-f{background:var(--sheet);box-shadow:0 2px 0 0 var(--fc),0 5px 0 0 var(--gl)}
+[data-look="c"] .in-f.is-e,[data-look="c"] .in-f.is-e:hover,[data-look="c"] .in-f.is-e:focus-within{box-shadow:0 2px 0 0 var(--fc),0 5px 0 0 var(--gl)}
+[data-look="c"] .in-f.is-ok,[data-look="c"] .in-f.is-ok:hover{box-shadow:0 2px 0 0 var(--fc)}
+[data-look="c"] .in-f:focus-within::before,[data-look="c"] .in-f.is-e::before,[data-look="c"] .in-f.is-ok::before{animation-name:in-rpu}
+[data-look="c"] .in-f.is-r{box-shadow:0 1px 0 0 var(--rule)!important}
+/* D 无框：静止什么都没有，用在行内编辑；悬停出浅底，聚焦同填充 */
+[data-look="d"] .in-f{background:transparent;box-shadow:0 0 0 1px transparent}
+[data-look="d"] .in-f:hover,[data-look="d"] .in-f.is-h{background:color-mix(in oklab,var(--sunk) 60%,transparent)}
+[data-look="d"] .in-f:focus-within,[data-look="d"] .in-f.is-f{background:var(--sheet);box-shadow:0 0 0 1px var(--fc),0 0 0 4px var(--gl)}
+[data-look="d"] .in-f.is-e,[data-look="d"] .in-f.is-e:hover,[data-look="d"] .in-f.is-e:focus-within{box-shadow:0 0 0 1px var(--fc),0 0 0 4px var(--gl)}
+[data-look="d"] .in-f.is-ok,[data-look="d"] .in-f.is-ok:hover{box-shadow:0 0 0 1px var(--fc)}
+[data-look="d"] .in-f.is-r{box-shadow:none!important}
+@media (prefers-reduced-motion: reduce){.in-f,.in-f::before,.in-f::after{transition:none!important;animation:none!important}}
+.in-i{flex:1;min-width:0;height:100%;padding:0;border:0;background:transparent;font:inherit;color:inherit;outline:none;caret-color:var(--accent)}
+.in-i::placeholder,.in-i.ph{color:var(--muted);opacity:1}
+.in-i::-webkit-search-cancel-button{display:none}
+.in-caret{display:inline-block;width:1px;height:18px;background:var(--accent);animation:in-bl 1s steps(2,start) infinite}
+@keyframes in-bl{to{visibility:hidden}}
+.in-s{display:inline-flex;align-items:center;flex:none;color:var(--muted)}
+.in-pt{font-size:13px}
+.in-x{display:inline-flex;align-items:center;justify-content:center;flex:none;width:24px;height:24px;padding:0;border:0;border-radius:999px;background:transparent;color:var(--muted);cursor:pointer;transition:background-color .14s ease-out,color .14s ease-out}
+.in-x:hover{background:var(--sunk);color:var(--fg)}
+.in-x:focus-visible{outline:2px solid var(--accent);outline-offset:-1px}
+.in-kbd{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;min-width:24px;height:24px;padding:0 8px;border-radius:8px;background:var(--sunk);font:500 14px Inter,"Noto Sans SC",system-ui,sans-serif;color:var(--muted);white-space:nowrap;flex:none}
+.in-look{position:sticky;top:12px;z-index:30;display:flex;align-items:center;gap:14px;width:max-content;margin-top:36px;padding:6px 6px 6px 18px;border-radius:999px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);border:1px solid var(--ol);font-size:13px;color:var(--muted)}
+.in-lk{padding-right:12px;font-weight:500;color:var(--fg)}
+.in-mx{display:grid;grid-template-columns:72px repeat(4,minmax(0,1fr));gap:20px 28px;align-items:center;margin-top:32px;padding:4px}
+.in-mh b{display:block;font-size:16px;font-weight:600}.in-mh span{display:block;margin-top:2px;font-size:12px;color:var(--muted)}
+.in-ml{font-size:13px;color:var(--muted)}
+.in-mc{padding:4px}
+.in-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:36px 40px;align-items:start;margin-top:28px;padding:4px}
+.in-cn{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;font-size:13px}
+.in-cn b{font-weight:600}.in-cn .mono{font-size:11.5px;color:var(--muted)}
+.in-fig{width:380px}
+.in-demo{cursor:default}
+.in-play{display:grid;grid-template-columns:minmax(0,1fr) 460px;gap:40px;align-items:center;margin-top:28px}
+.in-stage{display:flex;align-items:center;justify-content:center;min-height:260px;padding:48px;border-radius:12px;background:color-mix(in oklab,var(--sunk) 55%,var(--bg))}
+.in-field{width:380px}
+.in-pc{display:flex;flex-direction:column;gap:16px;align-items:flex-start}
+.in-pc .od-cg{white-space:nowrap}.in-pc .k-seg > button{white-space:nowrap;padding:0 12px}
+.in-pc .od-cg{width:100%;justify-content:space-between}
+.in-szs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:40px;margin-top:28px}
+.in-szh{margin-bottom:10px;font-size:13px;font-weight:600}.in-szh .mono{font-weight:400;font-size:11.5px;color:var(--muted)}
+.in-szn{margin-top:8px;font-size:12px;color:var(--muted)}
+
+.in-wrap{position:relative}
+.in-btn{cursor:pointer}.in-v{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.in-v.ph{color:var(--muted)}
+/* 浮层：沿用已设计的纸片面板（.k-pnl）与浮出动画（.k-reveal，退出 .out），列表项用滑动高亮（.k-hlw / .k-hl） */
+.pp{position:absolute;top:calc(100% + 6px);left:0;z-index:20;box-sizing:border-box;padding:6px}
+.pl{max-height:264px;overflow-y:auto;overscroll-behavior:contain;margin:0 -6px;padding:0 6px}
+.k-hlw > .k-mi.kb,.k-hlw > .k-li.kb,.k-hlw > .tr.kb{background:var(--sunk)}
+.k-hlw > .k-mi.sel{font-weight:600}
+.k-hlw > .k-mi.dis,.k-hlw > .k-li.dis{opacity:.4;cursor:not-allowed}
+.k-hlw > .tr{position:relative;z-index:1}.k-hlw > .tr:hover{background:transparent}
+.k-hlw > .k-lbl{position:relative;z-index:1;padding:8px 10px 4px}
+.k-mi .t,.k-li .t{flex:1;min-width:0;white-space:normal}
+.k-mi .ck{flex:none;color:var(--accent)}
+.k-li{display:flex;align-items:center;min-height:48px;padding:6px 10px;border-radius:8px;gap:12px;cursor:pointer;border:0;background:transparent;font:inherit;width:100%;text-align:left;box-sizing:border-box;color:var(--fg)}
+.k-tile{display:flex;align-items:center;justify-content:center;flex:none;width:32px;height:32px;border-radius:8px;background:var(--sunk);color:var(--muted);transition:background-color .14s ease-out}
+.k-li.on .k-tile,.k-li.kb .k-tile{background:var(--sheet)}
+.k-li .ck{flex:none;color:var(--accent)}
+.k-li:hover{background:transparent}
+.k-li .k-tile{width:32px;height:32px;border-radius:8px}
+.k-li b{display:block;font-size:14px;font-weight:600;line-height:1.4}.k-li .d{display:block;font-size:12px;line-height:1.5;color:var(--muted)}
+.cb{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;width:16px;height:16px;border-radius:5px;box-shadow:inset 0 0 0 1px var(--rule2);background:var(--sheet);color:var(--bg);flex:none;transition:background-color .14s ease-out}
+.cb.on{background:var(--fg);box-shadow:none}
+.cb .ic-ck{stroke-width:2.6;opacity:0;transition:opacity .12s ease-out}.cb.on .ic-ck{opacity:1}
+.k-mi .cb svg,.k-li .cb svg{color:var(--bg)}.k-mi .ck svg,.k-li .ck svg{color:var(--accent)}
+.cb-d{display:block;width:8px;height:2px;border-radius:1px;background:var(--bg)}
+.pe{padding:16px 8px;text-align:center;font-size:14px;color:var(--muted)}
+/* 多选标签：无边框的浅色小块，× 默认淡、悬停才清楚；「+N」是纯文字，不可移除 */
+.in-chip{display:inline-flex;align-items:center;gap:0;height:24px;padding:0 3px 0 8px;border-radius:6px;background:color-mix(in oklab,var(--fg) 8%,transparent);font-size:13px;font-weight:400;line-height:1;color:var(--fg);flex:none}
+.in-f .in-chip{background:color-mix(in oklab,var(--fg) 8%,transparent);box-shadow:none}
+.in-chip.more{padding:0 8px;color:var(--muted)}
+.in-cx{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;margin-left:2px;padding:0;border:0;border-radius:5px;background:transparent;color:var(--muted);opacity:.7;cursor:pointer;transition:background-color .12s ease-out,opacity .12s ease-out}
+.in-cx:hover{background:color-mix(in oklab,var(--fg) 12%,transparent);color:var(--fg);opacity:1}
+.in-mark{background:color-mix(in oklab,var(--deco) 30%,transparent);color:inherit;border-radius:2px}
+/* 字号统一：正文与触发器 14，说明 13，标注 12，等宽数字比正文小 1，视觉上才一样大 */
+.in-f .num,.in-f .in-i.num{font-size:calc(var(--fs) - 1px)}
+.cp{display:flex;flex-direction:column;gap:56px;margin-top:28px;padding:4px 4px 0}
+.cp-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:36px 40px;align-items:start}
+.cn{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;font-size:14px}
+.cn b{font-weight:600}.cn .mono{font-size:12px;color:var(--muted)}
+.mw{margin:28px 0 0}
+.cx-note{margin-top:10px;font-size:13px;line-height:1.75;color:var(--muted)}
+.ct-demo{min-height:96px}
+/* 选中统一用墨色与字重表达，不再叠一层季节色淡底：灰只给悬停与区间，墨只给选中，季节色只给聚焦环和今天的小点 */
+.k-hlw > .k-mi.on,.k-hlw > .k-li.on,.k-hlw > .tr.on,.k-hlw > .k-mi.on:hover,.k-hlw > .k-li.on:hover{background:transparent;color:var(--fg);font-weight:600}
+.k-hlw > .k-mi.on svg,.k-hlw > .k-li.on b{color:var(--fg)}
+.k-mi .ck svg,.k-li .ck svg,.k-mi .ck{color:var(--fg)}
+.k-li .k-tile{background:var(--sunk)}.k-li.on .k-tile,.k-li.kb .k-tile{background:var(--sunk)}
+@media (prefers-reduced-motion: reduce){.k-hl{transition:none!important}}
+
+.in-play{display:grid;grid-template-columns:minmax(0,1fr) 460px;gap:40px;align-items:center;margin-top:28px}
+.in-stage{display:flex;align-items:center;justify-content:center;min-height:240px;padding:48px;border-radius:12px;background:color-mix(in oklab,var(--sunk) 55%,var(--bg))}
+.in-pc{display:flex;flex-direction:column;gap:16px;align-items:flex-start}.in-pc .od-cg{width:100%;justify-content:space-between;white-space:nowrap}.in-pc .k-seg > button{white-space:nowrap;padding:0 12px}
+.mx{display:grid;gap:18px 12px;align-items:center;margin-top:32px}
+.mx-h{font-size:12px;color:var(--muted);text-align:center}.mx-l{font-size:14px;color:var(--muted)}.mx-c{display:flex;justify-content:center;align-items:center;min-height:40px}
+.vt{font-size:14px;line-height:1.6}
+
+.bd-blk{margin-top:64px}.bd-blk:first-of-type{margin-top:32px}
+.bd-h{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:14px}.bd-c{display:flex;align-items:center;gap:12px}
+.bd-n b{font-size:22px;font-weight:600;margin-right:14px}.bd-n span{font-size:15px;color:var(--muted)}
+.bd-rs{height:32px;padding:0 14px;border:0;border-radius:999px;background:transparent;font:inherit;font-size:13px;color:var(--muted);cursor:pointer}.bd-rs:hover{background:var(--sunk);color:var(--fg)}
+.bd-rs:focus-visible,.rc-act:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.bd-cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px;margin-top:18px}
+.bd-cols b{display:block;margin-bottom:6px;font-size:14px;font-weight:600}.bd-cols p{margin:0;font-size:14px;line-height:1.85;color:var(--muted)}
+.pp{position:relative;height:560px;border-radius:16px;overflow:hidden;background:var(--bg);color:var(--fg);isolation:isolate;user-select:none;-webkit-user-select:none}
+.pp-l{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.pp-grain{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.24  0 0 0 0 0.2  0 0 0 0 0.16  1.7 0 0 0 -0.72'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E");background-size:220px 220px;opacity:.13}.pp.dk .pp-grain{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  1.7 0 0 0 -0.74'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.12}
+.pp-hd{position:relative;z-index:4;display:flex;align-items:center;justify-content:space-between;padding:18px 22px 0;pointer-events:none}.pp-pill{pointer-events:auto}
+.pp-pill{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:999px;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);font-size:13px}
+.pp-av{width:20px;height:20px;border-radius:50%;background:color-mix(in oklab,var(--deco) 40%,var(--sunk))}.pp-logo b{font-size:12px;letter-spacing:.06em}
+.pp-nav{gap:0;padding:0 4px}.pp-nav span{padding:0 11px;color:var(--muted)}.pp-nav span.on{color:var(--fg);font-weight:600}
+.pp-rt{gap:10px}.pp-dot{width:14px;height:14px;border-radius:50%;background:var(--sunk)}
+.pp-ar{position:relative;z-index:2;width:420px;padding:44px 0 0 64px;pointer-events:none}.pp-ar>*{pointer-events:auto;user-select:text;-webkit-user-select:text}
+.pp-meta{display:inline-block;font-size:12px;color:var(--muted)}
+.pp-t{margin:8px 0 14px;font-size:26px;font-weight:600;line-height:1.35}
+.pp-ar p{margin:0 0 10px;font-size:15px;line-height:1.9}
+.sk-sub{color:var(--muted)}
+.sk-rows{list-style:none;margin:18px 0 0;padding:0}.sk-rows li{display:flex;justify-content:space-between;gap:16px;padding:9px 0;font-size:15px;cursor:pointer}.sk-rows li:hover span:first-child{font-weight:600}.sk-rows .num{font-size:13px;color:var(--muted)}
+.st-tip,.rb-tip,.mp-card,.wn-card{position:absolute;left:0;top:0;z-index:5;background:var(--sheet);box-shadow:0 4px 24px rgb(0 0 0 / .05);border-radius:12px;opacity:0;pointer-events:none;transition:opacity .16s ease-out}
+.st-tip.on,.rb-tip.on,.mp-card.on,.wn-card.on{opacity:1}
+.st-tip{width:236px;padding:12px 14px}.st-tip b{display:block;font-size:14px;font-weight:600;line-height:1.5}.st-tip span{display:block;margin-top:4px;font-size:12px;color:var(--muted)}.st-tip i{display:block;margin-top:6px;font-style:normal;font-size:12px;color:var(--muted)}
+.mp-art{position:absolute;z-index:2;left:0;top:62px;bottom:0;width:480px;box-sizing:border-box;overflow:auto;padding:0 28px 160px 64px;scrollbar-width:thin;-webkit-mask-image:linear-gradient(#000 calc(100% - 60px),transparent);mask-image:linear-gradient(#000 calc(100% - 60px),transparent);user-select:text;-webkit-user-select:text}
+.mp-art h4{margin:26px 0 6px;font-size:16px;font-weight:600}.mp-art p{margin:0;font-size:15px;line-height:1.9}
+.mp-card{width:226px;overflow:hidden}.mp-card img{display:block;width:100%;height:120px;object-fit:cover}.mp-card b{display:block;padding:10px 14px 0;font-size:14px}.mp-card span{display:block;padding:2px 14px 0;font-size:12px;color:var(--muted)}.mp-card i{display:block;padding:6px 14px 12px;font-style:normal;font-size:12px;color:var(--muted)}
+.mp-elev{position:absolute;z-index:3;left:496px;bottom:18px;font-size:12px;color:var(--muted);opacity:0;transition:opacity .16s ease-out}.mp-elev.on{opacity:1}
+.wn-view{object-fit:cover;filter:blur(14px) saturate(.9);transform:scale(1.08)}.pp-pane.dk .wn-view{filter:blur(14px) saturate(.8) brightness(.45)}
+.wn-col{width:440px}.wn-h{margin:20px 0 12px;font-size:32px;font-weight:600}.wn-clock{color:var(--muted);font-size:14px}
+.wn-card{left:auto;right:24px;top:74px;width:248px;padding:14px 16px}.wn-card b{display:block;font-size:15px;font-weight:600}.wn-card span{display:block;margin-top:4px;font-size:13px;line-height:1.7;color:var(--muted)}
+.rb-art{position:absolute;z-index:2;left:0;top:62px;bottom:0;width:540px;box-sizing:border-box;overflow:auto;padding:0 40px 200px 64px;scrollbar-width:thin;-webkit-mask-image:linear-gradient(#000 calc(100% - 60px),transparent);mask-image:linear-gradient(#000 calc(100% - 60px),transparent);user-select:text;-webkit-user-select:text}
+.rb-art p{margin:0 0 14px;font-size:15px;line-height:1.95}.rb-cv{z-index:3}
+.rb-count{position:absolute;z-index:4;right:24px;bottom:18px;font-size:13px;color:var(--muted)}
+.rb-tip{padding:8px 12px;font-size:13px;white-space:nowrap}
+.rc-col{width:420px;padding-top:60px}.rc-state{font-size:34px;margin-top:10px}.rc-song{font-size:18px}.rc-time{font-size:13px;color:var(--muted)}
+.rc-act{display:inline-flex;align-items:center;height:36px;margin-top:10px;padding:0 18px;border-radius:999px;background:var(--fg);color:var(--bg);font-size:14px;cursor:pointer}
+.rc-note{margin-top:22px !important;font-size:13px !important;color:var(--muted)}
+
+</style>
+</helmet>
+<div style="{{vars}}position:relative;overflow:hidden;width:1440px;min-height:5800px;display:flex;flex-direction:column;background:var(--bg);color:var(--fg);font-family:'Songti SC','Noto Serif SC','Source Han Serif SC',STSong,SimSun,serif;font-size:15px;line-height:1.8">
+<div class="paper-l" style="display:{{showLight}}"></div>
+<div class="paper-d" style="display:{{showDark}}"></div>
+
+
+<main style="position:relative;z-index:2;padding:96px 160px 120px"><div class="in-root"><svg class="in-sprite" aria-hidden="true" focusable="false"><symbol id="n-Search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></symbol><symbol id="n-X" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol><symbol id="n-Eye" viewBox="0 0 24 24"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="n-EyeOff" viewBox="0 0 24 24"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></symbol><symbol id="n-Check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol><symbol id="n-CircleAlert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></symbol><symbol id="n-CircleCheck" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol><symbol id="n-ChevronsUpDown" viewBox="0 0 24 24"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></symbol><symbol id="n-ChevronDown" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol><symbol id="n-ChevronUp" viewBox="0 0 24 24"><path d="m18 15-6-6-6 6"/></symbol><symbol id="n-ChevronRight" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol><symbol id="n-ChevronLeft" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol><symbol id="n-Plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol><symbol id="n-Minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol><symbol id="n-CalendarDays" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></symbol><symbol id="n-Copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol><symbol id="n-Mail" viewBox="0 0 24 24"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/></symbol><symbol id="n-Lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol><symbol id="n-Info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></symbol><symbol id="n-Folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol><symbol id="n-FolderOpen" viewBox="0 0 24 24"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></symbol><symbol id="n-File" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/></symbol><symbol id="n-FileText" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></symbol><symbol id="n-Images" viewBox="0 0 24 24"><path d="m22 11-1.296-1.296a2.4 2.4 0 0 0-3.408 0L11 16"/><path d="M4 8a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2"/><circle cx="13" cy="7" r="1" fill="currentColor"/><rect x="8" y="2" width="14" height="14" rx="2"/></symbol><symbol id="n-Globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></symbol><symbol id="n-Users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></symbol><symbol id="n-Pencil" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></symbol><symbol id="n-Trash2" viewBox="0 0 24 24"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol><symbol id="n-Download" viewBox="0 0 24 24"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></symbol><symbol id="n-Upload" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></symbol><symbol id="n-ArrowRight" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol><symbol id="n-ArrowLeft" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></symbol><symbol id="n-Send" viewBox="0 0 24 24"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></symbol><symbol id="n-Save" viewBox="0 0 24 24"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></symbol><symbol id="n-Heart" viewBox="0 0 24 24"><path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"/></symbol><symbol id="n-Settings" viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="n-Ellipsis" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></symbol><symbol id="n-Clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol><symbol id="n-Tag" viewBox="0 0 24 24"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></symbol><symbol id="n-Layers" viewBox="0 0 24 24"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/></symbol><symbol id="n-BookOpen" viewBox="0 0 24 24"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></symbol><symbol id="n-Link2" viewBox="0 0 24 24"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" x2="16" y1="12" y2="12"/></symbol><symbol id="n-ListFilter" viewBox="0 0 24 24"><path d="M2 5h20"/><path d="M6 12h12"/><path d="M9 19h6"/></symbol><symbol id="n-Sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></symbol><symbol id="n-Moon" viewBox="0 0 24 24"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></symbol><symbol id="n-SunMoon" viewBox="0 0 24 24"><path d="M12 2v2"/><path d="M14.837 16.385a6 6 0 1 1-7.223-7.222c.624-.147.97.66.715 1.248a4 4 0 0 0 5.26 5.259c.589-.255 1.396.09 1.248.715"/><path d="M16 12a4 4 0 0 0-4-4"/><path d="m19 5-1.256 1.256"/><path d="M20 12h2"/></symbol><symbol id="n-LayoutGrid" viewBox="0 0 24 24"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></symbol><symbol id="n-List" viewBox="0 0 24 24"><path d="M3 5h.01"/><path d="M3 12h.01"/><path d="M3 19h.01"/><path d="M8 5h13"/><path d="M8 12h13"/><path d="M8 19h13"/></symbol><symbol id="n-Bell" viewBox="0 0 24 24"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></symbol><symbol id="n-Bot" viewBox="0 0 24 24"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></symbol><symbol id="n-Crown" viewBox="0 0 24 24"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/></symbol><symbol id="n-Hash" viewBox="0 0 24 24"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></symbol><symbol id="n-Monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></symbol><symbol id="n-Feather" viewBox="0 0 24 24"><path d="M12.67 19a2 2 0 0 0 1.416-.588l6.154-6.172a6 6 0 0 0-8.49-8.49L5.586 9.914A2 2 0 0 0 5 11.328V18a1 1 0 0 0 1 1z"/><path d="M16 8 2 22"/><path d="M17.5 15H9"/></symbol><symbol id="n-Star" viewBox="0 0 24 24"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></symbol><symbol id="n-MessageCircle" viewBox="0 0 24 24"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/></symbol><symbol id="n-Command" viewBox="0 0 24 24"><path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3"/></symbol><symbol id="n-CornerDownLeft" viewBox="0 0 24 24"><path d="M20 4v7a4 4 0 0 1-4 4H4"/><path d="m9 10-5 5 5 5"/></symbol><symbol id="n-ArrowUp" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></symbol><symbol id="n-ArrowDown" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></symbol><symbol id="n-BadgeCheck" viewBox="0 0 24 24"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/></symbol><symbol id="n-UserRound" viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></symbol><symbol id="n-ImageOff" viewBox="0 0 24 24"><line x1="2" x2="22" y1="2" y2="22"/><path d="M10.41 10.41a2 2 0 1 1-2.83-2.83"/><line x1="13.5" x2="6" y1="13.5" y2="21"/><line x1="18" x2="21" y1="12" y2="15"/><path d="M3.59 3.59A1.99 1.99 0 0 0 3 5v14a2 2 0 0 0 2 2h14c.55 0 1.052-.22 1.41-.59"/><path d="M21 15V5a2 2 0 0 0-2-2H9"/></symbol><symbol id="n-Sparkles" viewBox="0 0 24 24"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/><path d="M20 2v4"/><path d="M22 4h-4"/><circle cx="4" cy="20" r="2"/></symbol><symbol id="n-ImagePlus" viewBox="0 0 24 24"><path d="M16 5h6"/><path d="M19 2v6"/><path d="M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/><circle cx="9" cy="9" r="2"/></symbol><symbol id="n-Smile" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></symbol><symbol id="n-SmilePlus" viewBox="0 0 24 24"><path d="M22 11v1a10 10 0 1 1-9-10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/><path d="M16 5h6"/><path d="M19 2v6"/></symbol><symbol id="n-AtSign" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/></symbol><symbol id="n-Paperclip" viewBox="0 0 24 24"><path d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551"/></symbol><symbol id="n-Quote" viewBox="0 0 24 24"><path d="M16 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/><path d="M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/></symbol><symbol id="n-MessageSquareQuote" viewBox="0 0 24 24"><path d="M14 14a2 2 0 0 0 2-2V8h-2"/><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/><path d="M8 14a2 2 0 0 0 2-2V8H8"/></symbol><symbol id="n-Reply" viewBox="0 0 24 24"><path d="M20 18v-2a4 4 0 0 0-4-4H4"/><path d="m9 17-5-5 5-5"/></symbol><symbol id="n-Pin" viewBox="0 0 24 24"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></symbol><symbol id="n-GripVertical" viewBox="0 0 24 24"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></symbol><symbol id="n-ExternalLink" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol><symbol id="n-Image" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></symbol><symbol id="n-Code" viewBox="0 0 24 24"><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></symbol><symbol id="n-SquareCode" viewBox="0 0 24 24"><path d="m10 9-3 3 3 3"/><path d="m14 15 3-3-3-3"/><rect x="3" y="3" width="18" height="18" rx="2"/></symbol><symbol id="n-Inbox" viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol><symbol id="n-Megaphone" viewBox="0 0 24 24"><path d="M11 6a13 13 0 0 0 8.4-2.8A1 1 0 0 1 21 4v12a1 1 0 0 1-1.6.8A13 13 0 0 0 11 14H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/><path d="M6 14a12 12 0 0 0 2.4 7.2 2 2 0 0 0 3.2-2.4A8 8 0 0 1 10 14"/><path d="M8 6v8"/></symbol><symbol id="n-TriangleAlert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol><symbol id="n-House" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol><symbol id="n-Bold" viewBox="0 0 24 24"><path d="M6 12h9a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h7a4 4 0 0 1 0 8"/></symbol><symbol id="n-Italic" viewBox="0 0 24 24"><line x1="19" x2="10" y1="4" y2="4"/><line x1="14" x2="5" y1="20" y2="20"/><line x1="15" x2="9" y1="4" y2="20"/></symbol><symbol id="n-Underline" viewBox="0 0 24 24"><path d="M6 4v6a6 6 0 0 0 12 0V4"/><line x1="4" x2="20" y1="20" y2="20"/></symbol><symbol id="n-Strikethrough" viewBox="0 0 24 24"><path d="M16 4H9a3 3 0 0 0-2.83 4"/><path d="M14 12a4 4 0 0 1 0 8H6"/><line x1="4" x2="20" y1="12" y2="12"/></symbol><symbol id="n-AlignLeft" viewBox="0 0 24 24"><path d="M21 5H3"/><path d="M15 12H3"/><path d="M17 19H3"/></symbol><symbol id="n-AlignCenter" viewBox="0 0 24 24"><path d="M21 5H3"/><path d="M17 12H7"/><path d="M19 19H5"/></symbol><symbol id="n-AlignRight" viewBox="0 0 24 24"><path d="M21 5H3"/><path d="M21 12H9"/><path d="M21 19H7"/></symbol><symbol id="n-ListOrdered" viewBox="0 0 24 24"><path d="M11 5h10"/><path d="M11 12h10"/><path d="M11 19h10"/><path d="M4 4h1v5"/><path d="M4 9h2"/><path d="M6.5 20H3.4c0-1 2.6-1.925 2.6-3.5a1.5 1.5 0 0 0-2.6-1.02"/></symbol><symbol id="n-SlidersHorizontal" viewBox="0 0 24 24"><path d="M10 5H3"/><path d="M12 19H3"/><path d="M14 3v4"/><path d="M16 17v4"/><path d="M21 12h-9"/><path d="M21 19h-5"/><path d="M21 5h-7"/><path d="M8 10v4"/><path d="M8 12H3"/></symbol><symbol id="n-RefreshCw" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol><symbol id="n-Rss" viewBox="0 0 24 24"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></symbol><symbol id="n-Music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol><symbol id="n-Play" viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/></symbol><symbol id="n-Pause" viewBox="0 0 24 24"><rect x="14" y="3" width="5" height="18" rx="1"/><rect x="5" y="3" width="5" height="18" rx="1"/></symbol><symbol id="n-MessagesSquare" viewBox="0 0 24 24"><path d="M16 10a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 14.286V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/><path d="M20 9a2 2 0 0 1 2 2v10.286a.71.71 0 0 1-1.212.502l-2.202-2.202A2 2 0 0 0 17.172 19H10a2 2 0 0 1-2-2v-1"/></symbol><symbol id="n-BellOff" viewBox="0 0 24 24"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M17 17H4a1 1 0 0 1-.74-1.673C4.59 13.956 6 12.499 6 8a6 6 0 0 1 .258-1.742"/><path d="m2 2 20 20"/><path d="M8.668 3.01A6 6 0 0 1 18 8c0 2.687.77 4.653 1.707 6.05"/></symbol><symbol id="n-Undo2" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></symbol><symbol id="n-Highlighter" viewBox="0 0 24 24"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></symbol><symbol id="n-Disc3" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M6 12c0-1.7.7-3.2 1.8-4.2"/><circle cx="12" cy="12" r="2"/><path d="M18 12c0 1.7-.7 3.2-1.8 4.2"/></symbol><symbol id="n-Archive" viewBox="0 0 24 24"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></symbol><symbol id="n-Repeat2" viewBox="0 0 24 24"><path d="m2 9 3-3 3 3"/><path d="M13 18H7a2 2 0 0 1-2-2V6"/><path d="m22 15-3 3-3-3"/><path d="M11 6h6a2 2 0 0 1 2 2v10"/></symbol><symbol id="n-Share2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></symbol><symbol id="n-Flag" viewBox="0 0 24 24"><path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/></symbol><symbol id="n-CopyCheck" viewBox="0 0 24 24"><path d="m12 15 2 2 4-4"/><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol><symbol id="n-FolderKanban" viewBox="0 0 24 24"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/><path d="M8 10v4"/><path d="M12 10v2"/><path d="M16 10v6"/></symbol><symbol id="n-NotebookText" viewBox="0 0 24 24"><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M9.5 8h5"/><path d="M9.5 12H16"/><path d="M9.5 16H14"/></symbol><symbol id="n-Volume2" viewBox="0 0 24 24"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.364 18.364a9 9 0 0 0 0-12.728"/></symbol><symbol id="n-Headphones" viewBox="0 0 24 24"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></symbol><symbol id="n-MessageCircleReply" viewBox="0 0 24 24"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/><path d="m10 15-3-3 3-3"/><path d="M7 12h8a2 2 0 0 1 2 2v1"/></symbol><symbol id="n-History" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></symbol><symbol id="n-ArrowUpRight" viewBox="0 0 24 24"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></symbol><symbol id="n-TrendingUp" viewBox="0 0 24 24"><path d="M16 7h6v6"/><path d="m22 7-8.5 8.5-5-5L2 17"/></symbol><symbol id="n-TrendingDown" viewBox="0 0 24 24"><path d="M16 17h6v-6"/><path d="m22 17-8.5-8.5-5 5L2 7"/></symbol><symbol id="n-FileImage" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><circle cx="10" cy="12" r="2"/><path d="m20 17-1.296-1.296a2.41 2.41 0 0 0-3.408 0L9 22"/></symbol><symbol id="n-UserPlus" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></symbol><symbol id="n-Languages" viewBox="0 0 24 24"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></symbol><symbol id="n-KeyRound" viewBox="0 0 24 24"><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/></symbol><symbol id="n-Shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></symbol><symbol id="n-ShieldCheck" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol><symbol id="n-Palette" viewBox="0 0 24 24"><path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"/><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/></symbol><symbol id="n-RotateCcw" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></symbol><symbol id="n-Smartphone" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></symbol><symbol id="n-Laptop" viewBox="0 0 24 24"><path d="M18 5a2 2 0 0 1 2 2v8.526a2 2 0 0 0 .212.897l1.068 2.127a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45l1.068-2.127A2 2 0 0 0 4 15.526V7a2 2 0 0 1 2-2z"/><path d="M20.054 15.987H3.946"/></symbol><symbol id="n-HardDrive" viewBox="0 0 24 24"><path d="M10 16h.01"/><path d="M2.212 11.577a2 2 0 0 0-.212.896V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5.527a2 2 0 0 0-.212-.896L18.55 5.11A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><path d="M21.946 12.013H2.054"/><path d="M6 16h.01"/></symbol><symbol id="n-Database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></symbol><symbol id="n-Activity" viewBox="0 0 24 24"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></symbol></svg><nav class="od-fam" aria-label="基础"><a href="Foundation.dc.html">基础规范</a><a href="Sitemap.dc.html">站点结构</a><a href="Icons.dc.html">图标</a><a href="Motion.dc.html">动效</a><a href="Backdrop.dc.html" aria-current="page">背景</a><a href="Showcase.dc.html">组件</a></nav><h1 class="h1" style="margin-top:40px">背景</h1><span class="k-uid" style="margin-top:10px;font-size:13px">backdrop</span><p class="od-sub">全站最底下那层。这一批把站点自己的东西铺在底下：星图、行迹、窗、书签、唱片，每个交互都对应一件真的事。</p><div data-look="a"><section class="od-sec"><div class="od-sh"><h2>五块底</h2><span class="k-uid" style="margin:0">backdrop</span></div><p class="od-lead">这一批不再画花样，而是把这个站自己的东西铺在最底下：文章、走过的路、站长那边的天气、正在读的人、在听的歌。每个交互都对应一件真的事。</p><div class="od-ctl" style="margin-top:24px"><span class="od-cg">外观<span class="k-seg" style="grid-template-columns:repeat(2,1fr)"><i style="width:calc((100% - 4px) / 2);transform:translateX({{sx_dk}}%)"></i><button class="{{s_dk0}}" onClick="{{ss_dk0}}">浅色</button><button class="{{s_dk1}}" onClick="{{ss_dk1}}">深色</button></span></span><span class="od-cg">季节<span class="k-seg" style="grid-template-columns:repeat(4,1fr)"><i style="width:calc((100% - 4px) / 4);transform:translateX({{sx_ss}}%)"></i><button class="{{s_ss0}}" onClick="{{ss_ss0}}">春</button><button class="{{s_ss1}}" onClick="{{ss_ss1}}">夏</button><button class="{{s_ss2}}" onClick="{{ss_ss2}}">秋</button><button class="{{s_ss3}}" onClick="{{ss_ss3}}">冬</button></span></span></div><div class="bd-blk"><div class="bd-h"><div class="bd-n"><b>星图</b><span>站里的文章，排成一片星空</span></div><div class="bd-c"><button class="bd-rs" type="button" onClick="{{rs_sky}}">重来</button></div></div><div class="pp pp-sky {{dkc}}" data-k="sky" data-season="{{ss}}" style="{{pvars}}" ref="{{root_sky}}" onMouseDown="{{dn_sky}}" onMouseMove="{{mv_sky}}" onMouseUp="{{up_sky}}" onMouseLeave="{{lv_sky}}"><canvas class="pp-l cv-main"></canvas><div class="pp-l pp-grain"></div><div class="pp-hd"><span class="pp-pill pp-logo"><i class="pp-av"></i><b class="mono">VIOLET</b></span><span class="pp-pill pp-nav"><span class="on">博客</span><span class="">手记</span><span class="">推文</span><span class="">更多</span></span><span class="pp-pill pp-rt"><i class="pp-dot"></i><i class="pp-dot"></i></span></div><div class="pp-ar sk-col"><h3 class="pp-t">博客</h3><p class="sk-sub">63 篇文章排在天上：亮的是读的人多的，连成线的是同一个系列，空心的是你还没读过的。</p><ul class="sk-rows"><li data-star="1"><span>拆解 Saber：一个会思考的聊天机器人</span><span class="num">2026-10-12</span></li><li data-star="16"><span>浮层的进出场</span><span class="num">2026-09-30</span></li><li data-star="11"><span>独库公路，六天</span><span class="num">2026-08-02</span></li><li data-star="23"><span>中间件的顺序</span><span class="num">2026-07-15</span></li><li data-star="28"><span>重读《活着》</span><span class="num">2026-06-21</span></li></ul></div><div class="st-tip"></div></div><div class="bd-cols"><div><b>怎么用</b><p>指针是一架望远镜：镜头里看得见平时看不见的暗星，也就是那些很久没人读的旧文章，名字会浮出来。指到一颗星，它所在的系列会连起来；左边列表和天上是同一批文章，指一行，天上那颗就亮。点一下打开，读过的星从空心变成实心。</p></div><div><b>心意</b><p>读者能看见这个站的全貌，也能看见自己读过哪些。读得越多，天上越亮。</p></div><div><b>落地</b><p>文章、系列、阅读数都已经有；读过的记录存在本机。星的位置按发布时间和系列算，每次来都在同一个地方。</p></div></div></div><div class="bd-blk"><div class="bd-h"><div class="bd-n"><b>行迹</b><span>游记底下铺着它走过的那段路</span></div><div class="bd-c"><button class="bd-rs" type="button" onClick="{{rs_trail}}">重来</button></div></div><div class="pp pp-trail {{dkc}}" data-k="trail" data-season="{{ss}}" style="{{pvars}}" ref="{{root_trail}}" onMouseDown="{{dn_trail}}" onMouseMove="{{mv_trail}}" onMouseUp="{{up_trail}}" onMouseLeave="{{lv_trail}}"><canvas class="pp-l cv-main"></canvas><div class="pp-l pp-grain"></div><div class="pp-hd"><span class="pp-pill pp-logo"><i class="pp-av"></i><b class="mono">VIOLET</b></span><span class="pp-pill pp-nav"><span class="on">博客</span><span class="">手记</span><span class="">推文</span><span class="">更多</span></span><span class="pp-pill pp-rt"><i class="pp-dot"></i><i class="pp-dot"></i></span></div><div class="mp-art"><div class="pp-meta num">2026-10-12 · 骑行</div><h3 class="pp-t">独库公路，六天</h3><section data-day="0"><h4>第一天 · 独山子—乔尔玛</h4><p>从独山子出发，第一天就爬升两千米。哈希勒根达坂的风把手套吹透，下坡时手指已经握不住刹车。晚上在乔尔玛的兵站借宿，老板说明天的雪要等中午才化。</p></section><section data-day="1"><h4>第二天 · 乔尔玛—那拉提</h4><p>雪果然中午才化。路两边的山从灰变绿，到那拉提已经是草原，马在路中间慢慢走，车都得停下来等。</p></section><section data-day="2"><h4>第三天 · 那拉提—巴音布鲁克</h4><p>这一段几乎都是缓坡，风从正面来。傍晚到巴音布鲁克，湿地里的水像一面一面的镜子，天鹅离得很远。</p></section><section data-day="3"><h4>第四天 · 巴音布鲁克</h4><p>休整一天。洗衣服，补轮胎，把相机里的照片导出来，发现一半都糊了。</p></section><section data-day="4"><h4>第五天 · 巴音布鲁克—大龙池</h4><p>翻铁力买提达坂。上去的时候下冰雹，下来的时候出太阳，一天里过了四季。大龙池边扎营，夜里冷得睡不着。</p></section><section data-day="5"><h4>第六天 · 大龙池—库车</h4><p>最后一天一路往下，山从绿变红，进库车的时候已经是戈壁。六天，五百多公里，腿上晒出了一道分界线。</p></section></div><div class="mp-card"></div><span class="mp-elev"></span></div><div class="bd-cols"><div><b>怎么用</b><p>在左边往下读，路线上的小点跟着走：读到「第二天」，点就到了乔尔玛。指到地名会弹出那里的照片，点一下打开图集；指针在地图上移动时，角上显示那里的海拔。</p></div><div><b>心意</b><p>一篇游记读完，等于跟着走了一遍。</p></div><div><b>落地</b><p>需要给文章或图集加地点与路线（图集现在没有拍摄地点）；等高线用公开高程数据离线生成，页面上只画路线和小点。</p></div></div></div><div class="bd-blk"><div class="bd-h"><div class="bd-n"><b>窗</b><span>隔着一扇窗，看看他那边现在的天气</span></div><div class="bd-c"><span class="k-seg" style="grid-template-columns:repeat(3,1fr)"><i style="width:calc((100% - 4px) / 3);transform:translateX({{sx_wx}}%)"></i><button class="{{s_wx0}}" onClick="{{ss_wx0}}">雨</button><button class="{{s_wx1}}" onClick="{{ss_wx1}}">雪</button><button class="{{s_wx2}}" onClick="{{ss_wx2}}">晴</button></span><button class="bd-rs" type="button" onClick="{{rs_pane}}">重来</button></div></div><div class="pp pp-pane {{dkc}}" data-k="pane" data-season="{{ss}}" data-wx="{{wx}}" style="{{pvars}}" ref="{{root_pane}}" onMouseDown="{{dn_pane}}" onMouseMove="{{mv_pane}}" onMouseUp="{{up_pane}}" onMouseLeave="{{lv_pane}}"><img class="pp-l wn-view" src="{{wnImg}}" alt=""><canvas class="pp-l cv-out"></canvas><canvas class="pp-l cv-fog"></canvas><canvas class="pp-l cv-main"></canvas><div class="pp-hd"><span class="pp-pill pp-logo"><i class="pp-av"></i><b class="mono">VIOLET</b></span><span class="pp-pill pp-nav"><span class="on">博客</span><span class="">手记</span><span class="">推文</span><span class="">更多</span></span><span class="pp-pill pp-rt"><i class="pp-dot"></i><i class="pp-dot"></i></span></div><div class="pp-ar wn-col"><h3 class="wn-h">这里是 Violet</h3><p>写代码，骑车，拍点照片。偶尔把想清楚的事写下来。</p><p class="wn-clock">{{wnClock}}</p></div><div class="wn-card"></div></div><div class="bd-cols"><div><b>怎么用</b><p>窗外是站长那边此刻的天气：雨顺着玻璃往下淌，雪粘在玻璃上，晴天能看见光里的灰。按住拖动擦掉雾气，过一会儿又会起雾。点一下是敲窗，玻璃上的水珠被震下来，角上出现他那边的时间、天气和正在听的歌。</p></div><div><b>心意</b><p>来别人家做客，先隔着窗看看他那边怎么样。</p></div><div><b>落地</b><p>站点设置里填一个城市，后端定时拉天气；时间和在听的歌用现有的实时状态。敲窗可以给站长发一条轻提示，同一访客每小时一次。</p></div></div></div><div class="bd-blk"><div class="bd-h"><div class="bd-n"><b>书签</b><span>和你同时在读的人，书签夹在他们读到的那一段</span></div><div class="bd-c"><button class="bd-rs" type="button" onClick="{{rs_ribbon}}">重来</button></div></div><div class="pp pp-ribbon {{dkc}}" data-k="ribbon" data-season="{{ss}}" style="{{pvars}}" ref="{{root_ribbon}}" onMouseDown="{{dn_ribbon}}" onMouseMove="{{mv_ribbon}}" onMouseUp="{{up_ribbon}}" onMouseLeave="{{lv_ribbon}}"><div class="pp-l pp-grain"></div><div class="pp-hd"><span class="pp-pill pp-logo"><i class="pp-av"></i><b class="mono">VIOLET</b></span><span class="pp-pill pp-nav"><span class="on">博客</span><span class="">手记</span><span class="">推文</span><span class="">更多</span></span><span class="pp-pill pp-rt"><i class="pp-dot"></i><i class="pp-dot"></i></span></div><div class="rb-art"><div class="pp-meta num">2026-10-12 · 机器人</div><h3 class="pp-t">拆解 Saber：一个会思考的聊天机器人</h3><p data-p="0">Saber 的记忆分三层：最近二十条对话原样留着，再往前的压成摘要，摘要攒够了再写进长期记忆。每一层都只在需要的时候才读。</p><p data-p="1">这篇从一次真实的对话开始，看一条消息怎样穿过这三层，最后变成它下一次回答里的一句话。</p><p data-p="2">第一层最简单，就是一个环形缓冲。满了以后最早的那条不会直接丢，而是交给摘要器。</p><p data-p="3">摘要器每次处理四十条，压成一段两三百字的摘要。压缩会丢细节，所以摘要里只留「谁说了什么决定」，不留语气。</p><p data-p="4">摘要攒到一定数量，再按话题合并，写进长期记忆。长期记忆是向量加关键词两路检索，命中以后只取最相关的三条。</p><p data-p="5">问题出在第二层。摘要器有时会把用户的玩笑当成决定写下来，到了长期记忆里就变成了「用户说过」。</p><p data-p="6">后来给摘要加了一个置信度：不确定是不是决定的，标成「可能」，检索时降权。</p><p data-p="7">这样改完以后，它记错的次数少了很多，但也偶尔会忘掉真正重要的事。记忆这件事，大概没有完美的做法。</p></div><canvas class="pp-l cv-main rb-cv"></canvas><span class="rb-count"></span><div class="rb-tip"></div></div><div class="bd-cols"><div><b>怎么用</b><p>右边垂着几根丝带书签，每一根是此刻正在读这篇的一个人，夹在他读到的段落；他往下读，书签就跟着挪。滚动正文时书签会晃。指到一根看对方读了多久；点一下是点头致意，对方那边的书签也会动一下。在右边空白处点一下，把你自己的书签夹到那一段，下次从这里接着读。</p></div><div><b>心意</b><p>读同一篇文章的人彼此看不见，但知道有人在。</p></div><div><b>落地</b><p>复用通知的实时推送通道，只传「第几段」和一个匿名编号；自己的书签存在本机。</p></div></div></div><div class="bd-blk"><div class="bd-h"><div class="bd-n"><b>唱片</b><span>他在听的那首歌，刻在页面的角上</span></div><div class="bd-c"><span class="k-seg" style="grid-template-columns:repeat(3,1fr)"><i style="width:calc((100% - 4px) / 3);transform:translateX({{sx_rs}}%)"></i><button class="{{s_rs0}}" onClick="{{ss_rs0}}">在听</button><button class="{{s_rs1}}" onClick="{{ss_rs1}}">暂停</button><button class="{{s_rs2}}" onClick="{{ss_rs2}}">没在听</button></span><button class="bd-rs" type="button" onClick="{{rs_record}}">重来</button></div></div><div class="pp pp-record {{dkc}}" data-k="record" data-season="{{ss}}" data-rs="{{rs}}" style="{{pvars}}" ref="{{root_record}}" onMouseDown="{{dn_record}}" onMouseMove="{{mv_record}}" onMouseUp="{{up_record}}" onMouseLeave="{{lv_record}}"><canvas class="pp-l cv-main"></canvas><div class="pp-l pp-grain"></div><div class="pp-hd"><span class="pp-pill pp-logo"><i class="pp-av"></i><b class="mono">VIOLET</b></span><span class="pp-pill pp-nav"><span class="on">博客</span><span class="">手记</span><span class="">推文</span><span class="">更多</span></span><span class="pp-pill pp-rt"><i class="pp-dot"></i><i class="pp-dot"></i></span></div><div class="pp-ar rc-col"><div class="pp-meta">此刻</div><h3 class="pp-t rc-state"></h3><p class="rc-song">《夜航星》 · 不才</p><p class="rc-time num"></p><span class="rc-act" role="button" tabindex="0"></span><p class="rc-note">放过的纹路颜色更深，唱针停在这首歌放到的地方。</p></div></div><div class="bd-cols"><div><b>怎么用</b><p>站长在听歌时，页面右下角是一张慢慢转的唱片，唱针停在这首歌放到的地方，放过的纹路颜色更深。指针移动，纹路上的反光跟着转。点唱片或「一起听」，站内播放器从同一秒开始放。暂停时唱针抬起，没在听歌就只剩空纹路。</p></div><div><b>心意</b><p>不只是看到他在听什么，而是可以坐下来一起听。</p></div><div><b>落地</b><p>实时状态里已经有歌曲时长和播放位置；「一起听」让站内播放器跳到同一秒。</p></div></div></div></section><section class="od-sec"><div class="od-sh"><h2>交互的边界</h2></div><p class="od-lead">五块各有各的玩法，规则是同一套。</p><table class="od-spec"><tr><th>都是真的事</th><td>每个交互都对应一件真的事：打开文章、看照片、敲窗、点头、一起听；没有只为了好看的点击</td></tr><tr><th>只在空白处</th><td>按在文字、链接、按钮上照常选字和点击；地图、星空、玻璃这些底只在空白处响应</td></tr><tr><th>不抢阅读</th><td>底的颜色都压在背景色附近，正文对比度不受影响；弹出来的卡片都用浮层面板，几秒后或移开就收</td></tr><tr><th>减弱动态</th><td>只留结果不放过程：雨珠不滑、唱片不转、书签不晃，指针移动时直接切到结果</td></tr><tr><th>触屏</th><td>轻点等于点击；滑动留给滚动，所以触屏上不擦雾，望远镜改为轻点一颗星</td></tr><tr><th>隐私</th><td>共读只传段落号与匿名编号；读过的文章、自己的书签只存在本机</td></tr></table></section><section class="od-sec"><div class="od-sh"><h2>我的建议</h2></div><table class="od-spec"><tr><th>一页一种</th><td>首页用「窗」；博客列表用「星图」；游记用「行迹」；长文用「书签」；关于页或「此刻」用「唱片」</td></tr><tr><th>先做</th><td>星图和书签：数据都已经有，效果最直接</td></tr><tr><th>需要新数据</th><td>窗要站长城市与天气；行迹要文章或图集的地点与路线</td></tr><tr><th>后台</th><td>平底加极细颗粒，不放任何交互</td></tr><tr><th>去掉</th><td>现在的两张 930KB 纹理和 background-attachment: fixed</td></tr></table></section></div></div></main>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"season":{"editor":"enum","options":["春","夏","秋","冬"],"default":"春"},"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":5800}}'>
+class Component extends DCLogic {
+  state = { dk: 'l', ss: '春', wx: 'rain', rs: 'play', slow: false, toasts: [] };
+  renderVals() {
+    const S = {
+      '春': { seed: '#f47983', h: 16.6, l: '/_blob/d8aaad66118cac26d5af34610af527bf', d: '/_blob/0cfa75d49c85d4df8e63d591ce6c7ea1' },
+      '夏': { seed: '#2f9e7a', h: 162, l: '/_blob/c0353bf8edad55e8130fb95826b3799f', d: '/_blob/8ab23c87229ff622bac13566cfb665fd' },
+      '秋': { seed: '#d9a21b', h: 82.95, l: '/_blob/d837ab2ada8c6a3cbb1a71fea71be6e2', d: '/_blob/8a07e26da1a24b8a9f19bf09a30aca11' },
+      '冬': { seed: '#7d8ea3', h: 252, l: '/_blob/eb4210561b3c04659b349b6813d7ba9c', d: '/_blob/f4961af0e552cbba606908f217a44b37' },
+    };
+    const season = S[this.props.season] ? this.props.season : '春';
+    const dark = !!this.props.dark;
+    const s = S[season], h = s.h;
+    const vars = dark
+      ? `--bg:oklch(0.17 0.0087 ${h});--sheet:oklch(0.235 0.011 ${h});--sunk:oklch(0.29 0.012 ${h});--fg:oklch(0.9373 0.015 ${h});--muted:oklch(0.8573 0.0225 ${h});--rule:oklch(0.9373 0.015 ${h} / .12);--rule2:oklch(0.9373 0.015 ${h} / .3);--deco:${s.seed};--accent:oklch(0.8589 0.1031 ${h});--danger:oklch(0.74 0.14 25);--ok:oklch(0.74 0.15 155);--ol:rgb(255 255 255 / .08);`
+      : `--bg:oklch(0.968 0.006 ${h});--sheet:oklch(0.994 0.003 ${h});--sunk:oklch(0.945 0.007 ${h});--fg:oklch(0.3331 0.0175 ${h});--muted:oklch(0.4717 0.0225 ${h});--rule:oklch(0.3331 0.0175 ${h} / .11);--rule2:oklch(0.3331 0.0175 ${h} / .3);--deco:${s.seed};--accent:oklch(0.4739 0.0974 ${h});--danger:oklch(0.52 0.16 27);--ok:oklch(0.52 0.13 155);--ol:transparent;`;
+    const base = { vars, season, dark, art: dark ? s.d : s.l, blend: dark ? 'normal' : 'multiply', showLight: dark ? 'none' : 'block', showDark: dark ? 'block' : 'none' };
+    
+    const HL = (key) => { const cur = this.state['hl_' + key];
+      const style = cur ? `transform:translate(${cur.x}px,${cur.y}px);width:${cur.w}px;height:${cur.h}px;opacity:${cur.on ? 1 : 0};transition:${cur.jump ? 'opacity .12s ease' : 'transform .28s cubic-bezier(.32,.72,0,1),width .28s cubic-bezier(.32,.72,0,1),height .28s cubic-bezier(.32,.72,0,1),opacity .12s ease'}` : 'opacity:0';
+      return { style,
+        enter: (e) => { const el = e.currentTarget; if (el.getAttribute('aria-disabled') === 'true') return; const prev = this.state['hl_' + key]; this.setState({ ['hl_' + key]: { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight, on: true, jump: !prev || !prev.on } }); },
+        leave: () => { const prev = this.state['hl_' + key]; if (prev) this.setState({ ['hl_' + key]: Object.assign({}, prev, { on: false }) }); } }; };
+    base.keepFocus = (e) => { const t = e.target; if (t.closest && t.closest('input,textarea,select,button,a,[tabindex]')) return; const c = e.currentTarget.querySelector('input,textarea,select'); if (!c || c.disabled) return; e.preventDefault(); if (document.activeElement !== c) c.focus(); };
+    const SLOW = () => (this.state.slow ? 4 : 1);
+    const OUT_MS = { dialog: 200, confirm: 160, prompt: 160, sheet: 240, side: 240, bottom: 240, pop: 150, menu: 150, ctx: 150, cmd: 160, lb: 280 };
+    const flip = (el, thumb, dur, back) => { const a = thumb.getBoundingClientRect(), b = el.getBoundingClientRect(); if (!b.width || !a.width) return Promise.resolve();
+      const s = Math.max(a.width / b.width, a.height / b.height), dx = a.left + a.width / 2 - (b.left + b.width / 2), dy = a.top + a.height / 2 - (b.top + b.height / 2);
+      const ix = Math.max(0, (b.width - a.width / s) / 2), iy = Math.max(0, (b.height - a.height / s) / 2);
+      const from = { transform: `translate(${dx}px,${dy}px) scale(${s})`, clipPath: `inset(${iy}px ${ix}px round ${8 / s}px)` }, to = { transform: 'translate(0px,0px) scale(1)', clipPath: 'inset(0px 0px round 4px)' };
+      return el.animate(back ? [to, from] : [from, to], { duration: dur, easing: 'cubic-bezier(.32,.72,0,1)', fill: back ? 'forwards' : 'none' }).finished.catch(() => {}); };
+    const ovOpen = (name, extra) => () => { clearTimeout(this._ovT); this.setState(Object.assign({ ov: name, ph: 'in', run: (this.state.run || 0) + 1, last: name, drag: 0, dragging: false }, extra || {})); };
+    const ovClose = () => { const name = this.state.ov; if (!name || this.state.ph === 'out') return; this.setState({ ph: 'out', run: (this.state.run || 0) + 1 }); clearTimeout(this._ovT);
+      const done = () => { if (this.state.ph === 'out') this.setState({ ov: null, drag: 0 }); };
+      const thumb = name === 'lb' && this._thumbs ? this._thumbs[this.state.lb || 0] : null;
+      if (thumb && this._lbEl && !matchMedia('(prefers-reduced-motion: reduce)').matches) flip(this._lbEl, thumb, 280 * SLOW(), true).then(done);
+      else this._ovT = setTimeout(done, (OUT_MS[name] || 160) * SLOW() + 40); };
+    const MODAL = { dialog: 1, confirm: 1, prompt: 1, sheet: 1, bottom: 1, cmd: 1, lb: 1 };
+    const lockRef = (always) => (el) => { if (!el || el.__lk) return; el.__lk = 1;
+      const h = (e) => { if (!always && !MODAL[this.state.ov]) return; const dy = e.deltaY || 0;
+        for (let n = e.target; n && n !== el.parentNode; n = n.parentNode) { if (n.hasAttribute && n.hasAttribute('data-scroll')) { if (e.type === 'touchmove' || (dy < 0 ? n.scrollTop > 0 : n.scrollTop + n.clientHeight < n.scrollHeight - 1)) return; break; } }
+        e.preventDefault(); };
+      el.addEventListener('wheel', h, { passive: false }); el.addEventListener('touchmove', h, { passive: false }); };
+    this._esc = ovClose;
+    const ovPh = (name) => (this.state.ov === name ? this.state.ph : '');
+    const thumbRef = (i) => (el) => { if (el) { this._thumbs = this._thumbs || {}; this._thumbs[i] = el; } };
+    const lbRef = (el) => { if (!el) return; this._lbEl = el; if (this._lbRun === this.state.run) return; this._lbRun = this.state.run;
+      const thumb = this._thumbs ? this._thumbs[this.state.lb || 0] : null; if (this.state.ph !== 'in' || !thumb || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const go = () => { el.style.visibility = ''; flip(el, thumb, 360 * SLOW(), false); };
+      if (el.complete && el.naturalWidth) go(); else { el.style.visibility = 'hidden'; el.addEventListener('load', go, { once: true }); } };
+    const focusRef = (ms) => (el) => { if (!el || this._fr === this.state.run || this.state.ph !== 'in') return; this._fr = this.state.run; setTimeout(() => { try { el.focus({ preventScroll: true }); } catch (e) {} }, ms * SLOW()); };
+    const st = this.state, set = (o) => this.setState(o);
+    const SEG = (key, vals) => { const i = Math.max(0, vals.indexOf(st[key])), o = { ['sx_' + key]: i * 100 };
+      vals.forEach((v, j) => { o['s_' + key + j] = j === i ? 'on' : ''; o['ss_' + key + j] = () => set({ [key]: v }); }); return o; };
+    const shutNow = (extra) => { clearTimeout(this._cT); this.setState(Object.assign({ open: null, out: false }, extra || {})); };
+    const shut = (extra) => { if (!this.state.open) return; clearTimeout(this._cT); this.setState({ out: true }); this._cT = setTimeout(() => shutNow(extra), 150); };
+
+    if (!this._ENG) this._ENG = (() => {
+  const DATA = {"sky": {"series": [["机器人手记", ["Saber 的第一行代码", "拆解 Saber：一个会思考的聊天机器人", "Saber 的记忆怎样压缩", "给机器人一个人设", "让它学会说「我不知道」", "工具调用的边界", "一次失控的对话复盘"]], ["骑行", ["第一次爬坡", "换了一副轮组", "雨里骑回家", "环青海湖", "独库公路，六天", "冬天还骑吗"]], ["前端札记", ["从 Ant Design 迁到自己的组件库", "一个输入框的十种状态", "用 OKLCH 算主题色", "浮层的进出场", "无障碍里最容易漏的三件事", "React 19 的表单动作", "季节装饰是怎么画的", "把 Vim 塞进代码块"]], ["Go 后端", ["一个人的项目要不要 DDD", "手写依赖注入容器", "中间件的顺序", "PostgreSQL 全文搜索", "会话放进 Redis", "一次慢查询", "把错误码收拢"]], ["读书", ["重读《活着》", "《设计心理学》笔记", "《禅与摩托车维修艺术》", "一年读了多少", "《小王子》第三遍"]], ["相机与暗房", ["第一卷胶片", "暗房里的三个小时", "35mm 还是 50mm", "把旧照片扫进电脑"]]], "singles": ["2025 年终", "搬家", "换工作", "一个人的周末", "楼下的猫", "咖啡豆", "修好了旧台灯", "第一次做饭", "一封没寄出的信", "去看海", "失眠的夜里", "换了一把键盘", "过敏季", "给奶奶打电话", "雨天的书店", "学会游泳", "一年的照片", "把博客重写了一遍", "在火车上", "断网的一天", "一盆绿萝", "夏天的西瓜", "年度歌单", "跑完第一个十公里", "旧手机", "老家的院子"], "cur": 1}, "trail": {"route": [[0.55, 0.05], [0.58, 0.13], [0.56, 0.21], [0.62, 0.28], [0.67, 0.35], [0.64, 0.43], [0.71, 0.49], [0.78, 0.54], [0.76, 0.62], [0.82, 0.69], [0.8, 0.77], [0.86, 0.85], [0.84, 0.95]], "places": [[0, "独山子", "mtn", 0], [0.1, "哈希勒根达坂", "hiker", 3400], [0.18, "乔尔玛", "creek", 0], [0.34, "那拉提", "sunset", 0], [0.5, "巴音布鲁克", "mist", 0], [0.7, "铁力买提达坂", "mtn", 3200], [0.84, "大龙池", "sea", 0], [1, "库车", "dune", 0]], "days": [0, 0.18, 0.34, 0.5, 0.58, 0.84, 1], "dayNames": ["一", "二", "三", "四", "五", "六"], "notes": ["出发的地方", "", "兵站借宿", "草原", "天鹅湖", "", "湖边扎营", "终点"]}, "img": {"mtn": "/_blob/4bfc16b19a177812744604d69bfa3fbc", "hiker": "/_blob/3e47ffb528f89474554575be227acf8f", "sunset": "/_blob/fc0dfd2db5525fe1dcf85d29dc6157d6", "dune": "/_blob/39bcb0bd77c0619a0f1df1c0ed9b4444", "fall": "/_blob/b5b61126ea058b267e11e71d30b418bc", "creek": "/_blob/6088255c64459277009c55192955e1ab", "sea": "/_blob/6ea5545459a03270ac6ad193def6ee0e", "lagoon": "/_blob/01cd050057dcea6d01381bbf9869cb0f", "pier": "/_blob/6b247105d691ed438e41061d40fd283c", "coast": "/_blob/08b5bbcf8e789230ee300223c24ad7f4", "mist": "/_blob/cdd807830934caef57a440ae48a88d9b", "canal": "/_blob/d8ebab215c9ca83fc6a9beda0c4d31cc", "roofs": "/_blob/70eabb77c94ea8e601907122c3c4ca5d", "boats": "/_blob/315f4ecea459f6da53480fa284468470", "door": "/_blob/34ac4adfe1cd77f890256cc904b2e341", "cafe": "/_blob/52d0254b3d8852ff951bf4de8eec6a57", "camera": "/_blob/8103f2e9cb8005233db7d9427fc7e661", "violet": "/_blob/e799d2070872161b3559fcc279c8c47a", "grass": "/_blob/814f8b81eea66eed0b6752da9d95bdbc", "cars": "/_blob/bd780c99ea55c8b0149ef2e3317e821a", "me": "/_blob/5f28c4bf59a4c2a6947f80a6b4b0bc2f", "claude": "/_blob/b3ae72d1e224675f174984d3a42b756c", "home": "/_blob/27c93c36c6528908a0cb37b8d6a80dbc"}, "pane": {"rain": ["你敲了敲窗", "他那边 21:40，杭州，小雨。"], "snow": ["你敲了敲窗", "他那边 07:12，哈尔滨，小雪。"], "sun": ["你敲了敲窗", "他那边 16:30，大理，晴。"], "music": "正在听《夜航星》· 不才"}, "ribbon": {"readers": [[0, "一位读者 · 在这一段停了 2 分钟"], [3, "一位读者 · 刚从「机器人手记」上一篇过来"], [4, "一位读者 · 读了 9 分钟"], [5, "一位读者 · 第二次读这篇"]], "mine": 2, "paras": 8}, "record": {"len": 252, "pos": 102, "label": "夜航星 · 不才 · 三十三转"}};
+  const SERIF = "'Songti SC','Noto Serif SC','Source Han Serif SC',serif";
+  const rngf = (seed) => { let x = seed >>> 0; return () => ((x = (Math.imul(x, 1664525) + 1013904223) >>> 0) / 4294967296); };
+  const mix = (a, b, t) => [0, 1, 2].map((i) => Math.round(a[i] * t + b[i] * (1 - t)));
+  const rgb = (c, a) => (a === undefined ? `rgb(${c[0]},${c[1]},${c[2]})` : `rgba(${c[0]},${c[1]},${c[2]},${a})`);
+  const still = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  let probe = null;
+  const toRgb = (css) => { if (!probe) { const c = document.createElement('canvas'); c.width = c.height = 1; probe = c.getContext('2d', { willReadFrequently: true }); }
+    probe.clearRect(0, 0, 1, 1); probe.fillStyle = '#000'; probe.fillStyle = css; probe.fillRect(0, 0, 1, 1); const d = probe.getImageData(0, 0, 1, 1).data; return [d[0], d[1], d[2]]; };
+  const readTheme = (root) => { const cs = getComputedStyle(root);
+    return { bg: toRgb(cs.backgroundColor), fg: toRgb(cs.color), deco: toRgb(cs.getPropertyValue('--deco').trim() || '#f47983'), dk: root.classList.contains('dk'),
+      season: root.getAttribute('data-season') || '春', wx: root.getAttribute('data-wx') || '', rs: root.getAttribute('data-rs') || '' }; };
+  const tkey = (t) => [t.bg, t.fg, t.deco, t.dk, t.season, t.wx, t.rs].join('|');
+  const dprOf = () => Math.min(2, window.devicePixelRatio || 1);
+  const fit = (cv, W, H) => { const d = dprOf(); cv.width = Math.round(W * d); cv.height = Math.round(H * d); const g = cv.getContext('2d'); g.setTransform(d, 0, 0, d, 0, 0); return g; };
+  const off = (W, H) => { const c = document.createElement('canvas'); return { c, g: fit(c, W, H) }; };
+  const looper = (frame) => { let raf = 0, last = 0;
+    const run = (t) => { raf = 0; const dt = Math.min(0.05, last ? (t - last) / 1000 : 0.016); last = t; if (frame(t, dt)) raf = requestAnimationFrame(run); else last = 0; };
+    return { kick() { if (!raf) raf = requestAnimationFrame(run); }, stop() { if (raf) cancelAnimationFrame(raf); raf = 0; last = 0; } }; };
+  const spaced = (g, text, x, y, sp) => { let w = 0; for (const ch of text) w += g.measureText(ch).width + sp; w -= sp; let cx = x - w / 2; for (const ch of text) { g.fillText(ch, cx, y); cx += g.measureText(ch).width + sp; } };
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+
+  // ---- 星图：文章是星，系列连成星座，指针是一架望远镜 ----
+  const sky = (root) => {
+    const cv = root.querySelector('.cv-main'), tip = root.querySelector('.st-tip');
+    let th = null, key = '', W = 0, H = 0, g, base, stars = [], cons = [], dust = [], hover = -1, cur = -1, read = new Set(), opening = -1, openT = 0;
+    const lens = { x: 0, y: 0, a: 0, ta: 0 };
+    const t1 = el('b'), t2 = el('span'), t3 = el('i'); tip.replaceChildren(t1, t2, t3);
+    const build = () => { const r = rngf(42); stars = []; cons = []; dust = []; read = new Set();
+      const C = [[.62, .32], [.87, .24], [.76, .66], [.94, .72], [.58, .8], [.72, .1]];
+      DATA.sky.series.forEach(([name, titles], si) => { let x = C[si][0] * W, y = C[si][1] * H, a = r() * 6.283; const idx = [];
+        titles.forEach((t, j) => { if (j) { a += (r() - .5) * 1.7; const st = 36 + r() * 30; x = clamp(x + Math.cos(a) * st, W * .49, W - 18); y = clamp(y + Math.sin(a) * st * .8, 18, H - 18); }
+          stars.push({ x, y, t, s: name, m: .3 + r() * .7, d: `20${23 + Math.floor(r() * 4)}-${String(1 + Math.floor(r() * 12)).padStart(2, '0')}-${String(1 + Math.floor(r() * 28)).padStart(2, '0')}`, n: Math.round(180 + r() * 2600) }); idx.push(stars.length - 1); });
+        cons.push({ name, idx }); });
+      DATA.sky.singles.forEach((t) => stars.push({ x: W * (.49 + r() * .49), y: 14 + r() * (H - 28), t, s: '', m: Math.pow(r(), 2.2) * .9, d: `20${22 + Math.floor(r() * 5)}-${String(1 + Math.floor(r() * 12)).padStart(2, '0')}-${String(1 + Math.floor(r() * 28)).padStart(2, '0')}`, n: Math.round(40 + r() * 600) }));
+      cur = DATA.sky.cur; stars.forEach((s, i) => { if (r() < .42 || i === cur) read.add(i); });
+      for (let i = 0; i < 1300; i++) { const u = r(), off2 = (r() + r() + r() - 1.5) * 60; const x = W * (.46 + u * .62) + off2 * .5, y = H * (1.05 - u * 1.1) + off2; dust.push([x, y, .3 + r() * .7, .04 + r() * r() * .22]); } };
+    const drawStar = (b, s, i, dim) => { const rr = 1 + s.m * 2.6, isRead = read.has(i);
+      if (th.dk) { const gr = b.createRadialGradient(s.x, s.y, 0, s.x, s.y, rr * 5.5); gr.addColorStop(0, rgb(th.fg, (dim ? .14 : .3) * (.4 + s.m))); gr.addColorStop(1, rgb(th.fg, 0)); b.fillStyle = gr; b.beginPath(); b.arc(s.x, s.y, rr * 5.5, 0, 6.283); b.fill();
+        b.fillStyle = rgb(th.fg, isRead ? .95 : .5); b.beginPath(); b.arc(s.x, s.y, rr * .78, 0, 6.283); b.fill(); }
+      else if (isRead) { b.fillStyle = rgb(th.fg, dim ? .5 : .84); b.beginPath(); b.arc(s.x, s.y, rr, 0, 6.283); b.fill(); }
+      else { b.fillStyle = rgb(th.bg); b.strokeStyle = rgb(th.fg, dim ? .4 : .66); b.lineWidth = .8; b.beginPath(); b.arc(s.x, s.y, rr, 0, 6.283); b.fill(); b.stroke(); }
+      if (s.m > .8 && !dim) { b.strokeStyle = rgb(th.fg, .45); b.lineWidth = .5; const L = rr * 3.6; b.beginPath(); b.moveTo(s.x - L, s.y); b.lineTo(s.x - rr - 2, s.y); b.moveTo(s.x + rr + 2, s.y); b.lineTo(s.x + L, s.y); b.moveTo(s.x, s.y - L); b.lineTo(s.x, s.y - rr - 2); b.moveTo(s.x, s.y + rr + 2); b.lineTo(s.x, s.y + L); b.stroke(); } };
+    const renderBase = () => { base = off(W, H); const b = base.g, P = [W * 1.15, -H * .6];
+      b.lineWidth = .5; b.strokeStyle = rgb(th.fg, .065);
+      for (let rr = 340; rr < 2400; rr += 120) { b.beginPath(); b.arc(P[0], P[1], rr, 0, 6.283); b.stroke(); }
+      for (let a = 92; a <= 196; a += 8) { const t = a * Math.PI / 180; b.beginPath(); b.moveTo(P[0] + Math.cos(t) * 340, P[1] + Math.sin(t) * 340); b.lineTo(P[0] + Math.cos(t) * 2600, P[1] + Math.sin(t) * 2600); b.stroke(); }
+      for (const d of dust) { b.fillStyle = rgb(th.fg, d[3] * (th.dk ? 1.2 : .9)); b.beginPath(); b.arc(d[0], d[1], d[2], 0, 6.283); b.fill(); }
+      b.lineWidth = .7; b.strokeStyle = rgb(th.fg, th.dk ? .24 : .2);
+      for (const c of cons) { b.beginPath(); c.idx.forEach((i, k) => { const s = stars[i]; if (k) b.lineTo(s.x, s.y); else b.moveTo(s.x, s.y); }); b.stroke(); }
+      b.font = `italic 12px ${SERIF}`; b.fillStyle = rgb(th.fg, .46); b.textBaseline = 'middle';
+      for (const c of cons) { let sx = 0, sy = 0, my = 0; c.idx.forEach((i) => { sx += stars[i].x; sy += stars[i].y; my = Math.max(my, stars[i].y); }); spaced(b, c.name, sx / c.idx.length, Math.min(H - 12, my + 22), 3); }
+      stars.forEach((s, i) => { if (s.m >= .18) drawStar(b, s, i, false); });
+      if (cur >= 0) { const s = stars[cur], rr = 1 + s.m * 2.6; b.strokeStyle = rgb(th.deco, .9); b.lineWidth = 1.1; b.beginPath(); b.arc(s.x, s.y, rr + 5, 0, 6.283); b.stroke(); b.font = `12px ${SERIF}`; b.fillStyle = rgb(mix(th.deco, th.fg, .45)); b.textAlign = 'left'; b.fillText('你在这里', s.x + rr + 10, s.y); } };
+    const showTip = (i) => { if (i < 0) { tip.classList.remove('on'); return; } const s = stars[i];
+      t1.textContent = s.t; t2.textContent = `${s.d}${s.s ? ' · ' + s.s : ''} · ${s.n.toLocaleString()} 次阅读`; t3.textContent = opening === i ? '正在打开…' : read.has(i) ? '读过 · 点一下打开' : '还没读过 · 点一下打开';
+      const x = clamp(s.x + 16, 8, W - 248), y = clamp(s.y - 18, 8, H - 86); tip.style.transform = `translate(${x}px,${y}px)`; tip.classList.add('on'); };
+    const draw = () => { g.clearRect(0, 0, W, H); g.drawImage(base.c, 0, 0, W, H);
+      if (lens.a > .01) { const R = 96; g.save(); g.beginPath(); g.arc(lens.x, lens.y, R, 0, 6.283); g.clip(); g.globalAlpha = lens.a;
+        g.fillStyle = rgb(th.dk ? [255, 255, 255] : th.fg, th.dk ? .025 : .018); g.fillRect(lens.x - R, lens.y - R, R * 2, R * 2);
+        g.font = `11px ${SERIF}`; g.textAlign = 'left'; g.textBaseline = 'middle';
+        stars.forEach((s, i) => { if (s.m < .18 && Math.hypot(s.x - lens.x, s.y - lens.y) < R + 4) { drawStar(g, { ...s, m: .34 }, i, true); g.fillStyle = rgb(th.fg, .42); g.fillText(s.t.length > 12 ? s.t.slice(0, 12) + '…' : s.t, s.x + 7, s.y); } });
+        g.restore(); g.globalAlpha = lens.a; g.strokeStyle = rgb(th.fg, th.dk ? .2 : .16); g.lineWidth = .8; g.beginPath(); g.arc(lens.x, lens.y, R, 0, 6.283); g.stroke();
+        g.strokeStyle = th.dk ? 'rgba(255,255,255,.1)' : 'rgba(255,255,255,.95)'; g.lineWidth = 2.4; g.beginPath(); g.arc(lens.x, lens.y, R - 3, 3.55, 4.55); g.stroke(); g.globalAlpha = 1; }
+      if (hover >= 0) { const s = stars[hover], c = cons.find((q) => q.idx.includes(hover));
+        if (c) { g.strokeStyle = rgb(th.deco, .7); g.lineWidth = 1.1; g.beginPath(); c.idx.forEach((i, k) => { const q = stars[i]; if (k) g.lineTo(q.x, q.y); else g.moveTo(q.x, q.y); }); g.stroke(); }
+        g.strokeStyle = rgb(th.deco, .95); g.lineWidth = 1; g.beginPath(); g.arc(s.x, s.y, 9, 0, 6.283); g.stroke(); } };
+    const near = (x, y) => { let best = -1, bd = 22; stars.forEach((s, i) => { if (s.m < .18 && !(lens.a > .5 && Math.hypot(s.x - lens.x, s.y - lens.y) < 96)) return; const d = Math.hypot(s.x - x, s.y - y); if (d < bd) { bd = d; best = i; } }); return best; };
+    const L = looper((t) => { lens.a += (lens.ta - lens.a) * (still() ? 1 : .18); if (opening >= 0 && t - openT > 900) { opening = -1; showTip(hover); } draw(); return Math.abs(lens.ta - lens.a) > .01 || opening >= 0; });
+    const rows = [...root.querySelectorAll('[data-star]')];
+    rows.forEach((row) => { row.addEventListener('mouseenter', () => { hover = +row.getAttribute('data-star'); showTip(hover); draw(); }); row.addEventListener('mouseleave', () => { hover = -1; showTip(-1); draw(); }); });
+    return { root,
+      theme() { const t = readTheme(root), k = tkey(t); if (k === key && W) return; const first = !W; key = k; th = t; W = cv.clientWidth || 1120; H = cv.clientHeight || 560; g = fit(cv, W, H); if (first) build(); renderBase(); draw(); },
+      down(x, y) { const i = near(x, y); if (i < 0) return; read.add(i); opening = i; openT = performance.now(); renderBase(); showTip(i); L.kick(); },
+      move(x, y) { if (x < W * .45) { lens.ta = 0; L.kick(); return; } lens.x = x; lens.y = y; lens.ta = 1; const i = near(x, y); if (i !== hover) { hover = i; showTip(i); } L.kick(); },
+      up() {}, leave() { lens.ta = 0; hover = -1; showTip(-1); L.kick(); }, reset() { read = new Set([cur]); renderBase(); draw(); }, destroy() { L.stop(); } }; };
+
+  // ---- 行迹：等高线地图，读到哪就走到哪 ----
+  const trail = (root) => {
+    const cv = root.querySelector('.cv-main'), art = root.querySelector('.mp-art'), card = root.querySelector('.mp-card'), elev = root.querySelector('.mp-elev');
+    let th = null, key = '', W = 0, H = 0, g, base, path = [], cum = [], total = 0, prog = 0, tprog = 0, hp = -1, hfun = null, places = [];
+    const cImg = el('img'), cT = el('b'), cS = el('span'), cA = el('i'); cImg.alt = ''; card.replaceChildren(cImg, cT, cS, cA);
+    const noise = (seed) => { const r = rngf(seed), P = new Float32Array(65536); for (let i = 0; i < 65536; i++) P[i] = r(); const at = (x, y) => P[((y & 255) << 8) | (x & 255)];
+      return (x, y) => { const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi, u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf), a = at(xi, yi), b = at(xi + 1, yi), c = at(xi, yi + 1), d = at(xi + 1, yi + 1); return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v; }; };
+    const at = (f) => { let i = 1; while (i < cum.length - 1 && cum[i] < f * total) i++; const a = path[i - 1], b = path[i], seg = cum[i] - cum[i - 1] || 1, k = clamp((f * total - cum[i - 1]) / seg, 0, 1); return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, i]; };
+    const build = () => { const R = DATA.trail.route.map(([x, y]) => [x * W, y * H]); path = [];
+      for (let i = 0; i < R.length - 1; i++) { const p0 = R[Math.max(0, i - 1)], p1 = R[i], p2 = R[i + 1], p3 = R[Math.min(R.length - 1, i + 2)];
+        for (let k = 0; k < 14; k++) { const t = k / 14, t2 = t * t, t3 = t2 * t; path.push([0, 1].map((d) => .5 * (2 * p1[d] + (-p0[d] + p2[d]) * t + (2 * p0[d] - 5 * p1[d] + 4 * p2[d] - p3[d]) * t2 + (-p0[d] + 3 * p1[d] - 3 * p2[d] + p3[d]) * t3))); } }
+      path.push(R[R.length - 1]); cum = [0]; for (let i = 1; i < path.length; i++) cum.push(cum[i - 1] + Math.hypot(path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1])); total = cum[cum.length - 1];
+      const n = noise(5), dist = (x, y) => { let m = 1e9; for (let i = 0; i < path.length; i += 2) { const d = (path[i][0] - x) ** 2 + (path[i][1] - y) ** 2; if (d < m) m = d; } return Math.sqrt(m); };
+      hfun = (x, y) => { let s = 0, a = .5, f = 1 / 170; for (let o = 0; o < 4; o++) { s += a * n(x * f + 3, y * f + 7); f *= 2; a *= .5; }
+        return s * .95 + .55 * Math.exp(-(((y - (.3 * H + 50 * Math.sin(x / 190))) / (.2 * H)) ** 2)) + .45 * Math.exp(-(((y - (.72 * H + 40 * Math.sin(x / 150 + 1))) / (.16 * H)) ** 2)) - .34 * Math.exp(-((dist(x, y) / 55) ** 2)); };
+      places = DATA.trail.places.map(([f, name, img, alt]) => { const p = at(f); return { x: p[0], y: p[1], f, name, img, alt }; }); };
+    const renderBase = () => { base = off(W, H); const b = base.g, st = 7, nx = Math.ceil(W / st) + 1, ny = Math.ceil(H / st) + 1, G = new Float32Array(nx * ny); let lo = 1e9, hi = -1e9;
+      for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) { const v = hfun(i * st, j * st); G[j * nx + i] = v; lo = Math.min(lo, v); hi = Math.max(hi, v); }
+      const contour = (lv) => { b.beginPath(); for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++) { const a = G[j * nx + i], c1 = G[j * nx + i + 1], c2 = G[(j + 1) * nx + i + 1], c3 = G[(j + 1) * nx + i];
+          const id = (a > lv ? 8 : 0) | (c1 > lv ? 4 : 0) | (c2 > lv ? 2 : 0) | (c3 > lv ? 1 : 0); if (id === 0 || id === 15) continue; const x = i * st, y = j * st, t = (p, q) => (lv - p) / (q - p);
+          const T = [x + st * t(a, c1), y], Rr = [x + st, y + st * t(c1, c2)], B = [x + st * t(c3, c2), y + st], Lf = [x, y + st * t(a, c3)], s = (p, q) => { b.moveTo(p[0], p[1]); b.lineTo(q[0], q[1]); };
+          switch (id) { case 1: case 14: s(Lf, B); break; case 2: case 13: s(B, Rr); break; case 3: case 12: s(Lf, Rr); break; case 4: case 11: s(T, Rr); break; case 5: s(Lf, T); s(B, Rr); break; case 6: case 9: s(T, B); break; case 7: case 8: s(Lf, T); break; case 10: s(Lf, B); s(T, Rr); break; } } b.stroke(); };
+      let k = 0; for (let lv = lo + .05; lv < hi; lv += .052, k++) { const idx = k % 5 === 4; b.lineWidth = idx ? .8 : .5; b.strokeStyle = rgb(th.fg, idx ? (th.dk ? .2 : .17) : (th.dk ? .1 : .085)); contour(lv); }
+      const lx = W * .84, ly = H * .13; b.save(); b.beginPath(); for (let i = 0; i <= 60; i++) { const a = i / 60 * 6.283, rr = 1 + .12 * Math.sin(a * 3 + 1) + .06 * Math.sin(a * 5); const px = lx + Math.cos(a) * 74 * rr, py = ly + Math.sin(a) * 30 * rr; if (i) b.lineTo(px, py); else b.moveTo(px, py); } b.closePath();
+      b.fillStyle = rgb(th.bg); b.fill(); b.strokeStyle = rgb(th.fg, .32); b.lineWidth = .8; b.stroke(); b.clip(); b.strokeStyle = rgb(th.fg, .14); b.lineWidth = .5; for (let y = ly - 34; y < ly + 34; y += 3) { b.beginPath(); b.moveTo(lx - 90, y); b.lineTo(lx + 90, y); b.stroke(); } b.restore();
+      b.font = `italic 11px ${SERIF}`; b.fillStyle = rgb(th.fg, .5); b.textBaseline = 'middle'; spaced(b, '天池', lx, ly + 44, 4);
+      b.strokeStyle = rgb(th.fg, .22); b.lineWidth = .9; b.beginPath(); b.moveTo(lx + 60, ly + 18); b.bezierCurveTo(W * .93, H * .32, W * .9, H * .46, W * .96, H * .6); b.bezierCurveTo(W * 1.0, H * .7, W * .95, H * .86, W * 1.02, H * .98); b.stroke();
+      const fade = b.createLinearGradient(0, 0, W * .46, 0); fade.addColorStop(0, rgb(th.bg, .94)); fade.addColorStop(.75, rgb(th.bg, .7)); fade.addColorStop(1, rgb(th.bg, 0)); b.fillStyle = fade; b.fillRect(0, 0, W * .46, H);
+      for (const p of places) { b.fillStyle = rgb(th.bg); b.strokeStyle = rgb(th.fg, .7); b.lineWidth = .9; b.beginPath(); b.arc(p.x, p.y, p.alt ? 0 : 3, 0, 6.283); b.fill(); b.stroke();
+        if (p.alt) { b.fillStyle = rgb(th.fg, .7); b.beginPath(); b.moveTo(p.x, p.y - 5); b.lineTo(p.x + 4.5, p.y + 3); b.lineTo(p.x - 4.5, p.y + 3); b.closePath(); b.fill(); }
+        b.textAlign = 'left'; b.font = `12px ${SERIF}`; b.fillStyle = rgb(th.fg, .78); b.fillText(p.name, p.x + 10, p.y - 1); if (p.alt) { b.font = `italic 11px ${SERIF}`; b.fillStyle = rgb(th.fg, .5); b.fillText(`${p.alt} 米`, p.x + 10, p.y + 14); } }
+      const cx = W - 54, cy = H - 64; b.strokeStyle = rgb(th.fg, .4); b.lineWidth = .6; b.beginPath(); b.arc(cx, cy, 16, 0, 6.283); b.stroke(); b.fillStyle = rgb(th.fg, .6); b.beginPath(); b.moveTo(cx, cy - 22); b.lineTo(cx + 4, cy); b.lineTo(cx, cy + 3); b.lineTo(cx - 4, cy); b.closePath(); b.fill();
+      b.font = `11px ${SERIF}`; b.textAlign = 'center'; b.fillText('北', cx, cy - 30);
+      const sx = W - 190, sy = H - 24; for (let i = 0; i < 4; i++) { b.fillStyle = i % 2 ? rgb(th.bg) : rgb(th.fg, .55); b.fillRect(sx + i * 24, sy, 24, 3); } b.strokeStyle = rgb(th.fg, .55); b.lineWidth = .5; b.strokeRect(sx, sy, 96, 3);
+      b.font = `10px ${SERIF}`; b.fillStyle = rgb(th.fg, .5); ['0', '20', '40 公里'].forEach((tx, i) => b.fillText(tx, sx + i * 48 + (i === 2 ? 14 : 0), sy - 6)); };
+    const draw = () => { g.clearRect(0, 0, W, H); g.drawImage(base.c, 0, 0, W, H); g.lineCap = 'round'; g.lineJoin = 'round';
+      g.strokeStyle = rgb(th.fg, .22); g.lineWidth = 1.2; g.beginPath(); path.forEach((p, i) => (i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]))); g.stroke();
+      const here = at(prog); g.strokeStyle = rgb(mix(th.deco, th.fg, .62)); g.lineWidth = 2; g.beginPath(); for (let i = 0; i < here[2]; i++) (i ? g.lineTo(path[i][0], path[i][1]) : g.moveTo(path[i][0], path[i][1])); g.lineTo(here[0], here[1]); g.stroke();
+      DATA.trail.days.forEach((f, i) => { if (i === 0) return; const p = at(f); g.fillStyle = rgb(th.fg, .55); g.font = `10px ${SERIF}`; g.textAlign = 'right'; g.fillText(DATA.trail.dayNames[i - 1], p[0] - 8, p[1] + 4); });
+      const gr = g.createRadialGradient(here[0], here[1], 0, here[0], here[1], 22); gr.addColorStop(0, rgb(th.deco, .35)); gr.addColorStop(1, rgb(th.deco, 0)); g.fillStyle = gr; g.beginPath(); g.arc(here[0], here[1], 22, 0, 6.283); g.fill();
+      g.fillStyle = rgb(th.bg); g.beginPath(); g.arc(here[0], here[1], 6.5, 0, 6.283); g.fill(); g.fillStyle = rgb(mix(th.deco, th.fg, .7)); g.beginPath(); g.arc(here[0], here[1], 4.2, 0, 6.283); g.fill();
+      if (hp >= 0) { const p = places[hp]; g.strokeStyle = rgb(th.deco, .9); g.lineWidth = 1; g.beginPath(); g.arc(p.x, p.y, 9, 0, 6.283); g.stroke(); } };
+    const sync = () => { const secs = [...art.querySelectorAll('[data-day]')]; if (!secs.length) return; const y = art.scrollTop + art.clientHeight * .32; let k = 0; while (k < secs.length - 1 && secs[k + 1].offsetTop <= y) k++;
+      const top = secs[k].offsetTop, nxt = k < secs.length - 1 ? secs[k + 1].offsetTop : art.scrollHeight - art.clientHeight * .68, frac = clamp((y - top) / Math.max(1, nxt - top), 0, 1), D = DATA.trail.days;
+      tprog = D[k] + (D[k + 1] - D[k]) * frac; if (still()) prog = tprog; L.kick(); };
+    const L = looper(() => { prog += (tprog - prog) * .12; draw(); return Math.abs(tprog - prog) > .0005; });
+    art.addEventListener('scroll', sync, { passive: true });
+    const showCard = (i) => { if (i < 0) { card.classList.remove('on'); return; } const p = places[i]; cImg.src = DATA.img[p.img] || ''; cT.textContent = p.name; cS.textContent = p.alt ? `海拔 ${p.alt} 米` : DATA.trail.notes[i] || ''; cA.textContent = '点一下打开《独库公路》图集';
+      card.style.transform = `translate(${clamp(p.x - 250, W * .44, W - 236)}px,${clamp(p.y - 70, 10, H - 210)}px)`; card.classList.add('on'); };
+    return { root,
+      theme() { const t = readTheme(root), k = tkey(t); if (k === key && W) return; const first = !W; key = k; th = t; W = cv.clientWidth || 1120; H = cv.clientHeight || 560; g = fit(cv, W, H); if (first) build(); renderBase(); sync(); prog = tprog; draw(); },
+      down(x, y) { if (hp >= 0) { cA.textContent = '正在打开图集…'; setTimeout(() => { if (hp >= 0) cA.textContent = '点一下打开《独库公路》图集'; }, 900); } },
+      move(x, y) { let best = -1, bd = 18; places.forEach((p, i) => { const d = Math.hypot(p.x - x, p.y - y); if (d < bd) { bd = d; best = i; } }); if (best !== hp) { hp = best; showCard(best); draw(); }
+        if (x > W * .44 && hfun) { elev.textContent = `海拔 ${(Math.round((1300 + hfun(x, y) * 2100) / 10) * 10).toLocaleString()} 米`; elev.classList.add('on'); } else elev.classList.remove('on'); },
+      up() {}, leave() { hp = -1; showCard(-1); elev.classList.remove('on'); draw(); }, reset() { art.scrollTop = 0; sync(); }, destroy() { L.stop(); art.removeEventListener('scroll', sync); } }; };
+
+  // ---- 窗：隔着起雾的玻璃看站长那边的天气；拖动擦雾，点一下敲窗 ----
+  const pane = (root) => {
+    const view = root.querySelector('.wn-view'), out = root.querySelector('.cv-out'), fogC = root.querySelector('.cv-fog'), cv = root.querySelector('.cv-main'), card = root.querySelector('.wn-card');
+    let th = null, key = '', W = 0, H = 0, g, go, gf, mask, beads, drops = [], flakes = [], stuck = [], motes = [], wipe = null, cardT = 0, downAt = null;
+    const c1 = el('b'), c2 = el('span'), c3 = el('span'); card.replaceChildren(c1, c2, c3);
+    const fogCol = () => (th.dk ? [22, 23, 28] : [244, 243, 240]), fogA = () => (th.wx === 'sun' ? (th.dk ? .55 : .5) : th.dk ? .74 : .8);
+    const bead = (b, x, y, r) => { b.fillStyle = th.dk ? 'rgba(0,0,0,.35)' : 'rgba(60,64,72,.16)'; b.beginPath(); b.arc(x, y + r * .25, r, 0, 6.283); b.fill(); b.fillStyle = th.dk ? 'rgba(255,255,255,.12)' : 'rgba(255,255,255,.85)'; b.beginPath(); b.arc(x - r * .25, y - r * .3, r * .45, 0, 6.283); b.fill(); };
+    const seed = () => { const r = rngf(17); drops = []; flakes = []; stuck = []; motes = []; beads = off(W, H); mask = off(W, H);
+      if (th.wx === 'rain') { for (let i = 0; i < 1400; i++) bead(beads.g, r() * W, r() * H, .4 + r() * r() * 1.6); for (let i = 0; i < 26; i++) drops.push({ x: r() * W, y: r() * H, r: 2.4 + r() * 4, vy: 0, sl: false, ph: r() * 6 }); }
+      if (th.wx === 'snow') { for (let i = 0; i < 140; i++) flakes.push({ x: r() * W, y: r() * H, r: .8 + r() * 2.4, v: 10 + r() * 22, ph: r() * 6 }); for (let i = 0; i < 18; i++) stuck.push({ x: r() * W, y: r() * H, r: 1.6 + r() * 2.6, a: 1, t: r() * 6 }); }
+      if (th.wx === 'sun') for (let i = 0; i < 90; i++) motes.push({ x: r() * W, y: r() * H, r: .5 + r() * 1.3, vx: 0, vy: 0, ph: r() * 6 }); };
+    const refract = (x, y, r) => { if (!view.complete || !view.naturalWidth) return false; const iw = view.naturalWidth, ih = view.naturalHeight, s = Math.max(W / iw, H / ih), ox = (W - iw * s) / 2, oy = (H - ih * s) / 2, span = r * 7;
+      const sx = (x - span / 2 - ox) / s, sy = (y - span / 2 - oy) / s; g.save(); g.beginPath(); g.ellipse(x, y, r * .94, r, 0, 0, 6.283); g.clip(); g.translate(x, y); g.scale(1, -1);
+      g.filter = th.dk ? 'brightness(.55)' : 'none'; g.drawImage(view, sx, sy, span / s, span / s, -r, -r, r * 2, r * 2); g.filter = 'none'; g.restore(); return true; };
+    const drawDrop = (d) => { refract(d.x, d.y, d.r); g.strokeStyle = th.dk ? 'rgba(0,0,0,.5)' : 'rgba(40,44,52,.28)'; g.lineWidth = .9; g.beginPath(); g.ellipse(d.x, d.y, d.r * .94, d.r, 0, .2, 2.94); g.stroke();
+      g.fillStyle = th.dk ? 'rgba(255,255,255,.35)' : 'rgba(255,255,255,.95)'; g.beginPath(); g.ellipse(d.x - d.r * .32, d.y - d.r * .42, d.r * .2, d.r * .14, -.6, 0, 6.283); g.fill(); };
+    const compose = () => { gf.clearRect(0, 0, W, H); gf.globalCompositeOperation = 'source-over'; gf.fillStyle = rgb(fogCol(), fogA()); gf.fillRect(0, 0, W, H); gf.globalCompositeOperation = 'destination-out'; gf.drawImage(mask.c, 0, 0, W, H); gf.globalCompositeOperation = 'source-over'; };
+    const clearAt = (x, y, rad, a) => { const m = mask.g, gr = m.createRadialGradient(x, y, 0, x, y, rad); gr.addColorStop(0, `rgba(0,0,0,${a})`); gr.addColorStop(.7, `rgba(0,0,0,${a * .7})`); gr.addColorStop(1, 'rgba(0,0,0,0)'); m.fillStyle = gr; m.beginPath(); m.arc(x, y, rad, 0, 6.283); m.fill(); };
+    const L = looper((t, dt) => { const r = Math.random;
+      const m = mask.g; m.globalCompositeOperation = 'destination-out'; m.fillStyle = `rgba(0,0,0,${th.wx === 'sun' ? .006 : .011})`; m.fillRect(0, 0, W, H); m.globalCompositeOperation = 'source-over';
+      go.clearRect(0, 0, W, H);
+      if (th.wx === 'snow') { go.fillStyle = 'rgba(255,255,255,.9)'; for (const f of flakes) { f.y += f.v * dt; f.x += Math.sin(t / 900 + f.ph) * 8 * dt; if (f.y > H + 4) { f.y = -4; f.x = r() * W; } go.beginPath(); go.arc(f.x, f.y, f.r, 0, 6.283); go.fill(); } }
+      if (th.wx === 'sun') { const bm = go.createLinearGradient(W * .9, 0, W * .35, H); bm.addColorStop(0, th.dk ? 'rgba(255,220,170,.06)' : 'rgba(255,226,170,.42)'); bm.addColorStop(1, 'rgba(255,226,170,0)'); go.fillStyle = bm; go.beginPath(); go.moveTo(W * .72, 0); go.lineTo(W * 1, 0); go.lineTo(W * .62, H); go.lineTo(W * .3, H); go.closePath(); go.fill();
+        go.fillStyle = th.dk ? 'rgba(255,236,200,.35)' : 'rgba(255,250,236,.95)'; for (const p of motes) { p.vx = p.vx * .98 + Math.sin(t / 1400 + p.ph) * .6; p.vy = p.vy * .98 + Math.cos(t / 1700 + p.ph) * .4 - .15; p.x += p.vx * dt * 6; p.y += p.vy * dt * 6; if (p.y < -4) p.y = H + 4; if (p.x < -4) p.x = W + 4; if (p.x > W + 4) p.x = -4; go.beginPath(); go.arc(p.x, p.y, p.r, 0, 6.283); go.fill(); } }
+      compose(); g.clearRect(0, 0, W, H);
+      if (th.wx === 'rain') { g.drawImage(beads.c, 0, 0, W, H);
+        for (const d of drops) { if (!d.sl && d.r > 4.2 && r() < .004) d.sl = true;
+          if (d.sl) { const target = 24 + d.r * 14; d.vy += (target - d.vy) * .08; if (r() < .02) d.vy *= .15; const py = d.y; d.y += d.vy * dt; d.x += Math.sin(d.y * .04 + d.ph) * .25;
+            clearAt(d.x, d.y - d.r, d.r * 1.5, .5); const bg = beads.g; bg.globalCompositeOperation = 'destination-out'; bg.fillStyle = 'rgba(0,0,0,1)'; bg.beginPath(); bg.arc(d.x, d.y, d.r * 1.2, 0, 6.283); bg.fill(); bg.globalCompositeOperation = 'source-over';
+            if (Math.floor(py / 14) !== Math.floor(d.y / 14) && r() < .7) bead(bg, d.x + (r() - .5) * 2, d.y - d.r * 2.2, .6 + r() * 1.1); d.r = Math.min(7.5, d.r + dt * .25);
+            if (d.y > H + 12) { d.y = -10 - r() * 40; d.x = r() * W; d.r = 2.4 + r() * 3.4; d.sl = false; d.vy = 0; } }
+          drawDrop(d); } }
+      if (th.wx === 'snow') { for (const s of stuck) { s.t += dt; if (s.fall) { s.y += 90 * dt; s.a -= dt * .6; } g.globalAlpha = Math.max(0, s.a); g.fillStyle = th.dk ? 'rgba(236,240,248,.85)' : 'rgba(255,255,255,.98)'; g.shadowColor = th.dk ? 'rgba(0,0,0,.5)' : 'rgba(70,80,100,.25)'; g.shadowBlur = 3;
+          g.beginPath(); for (let k = 0; k < 6; k++) { const a = k * 1.047 + s.t * .02; g.moveTo(s.x, s.y); g.lineTo(s.x + Math.cos(a) * s.r * 1.6, s.y + Math.sin(a) * s.r * 1.6); } g.strokeStyle = g.fillStyle; g.lineWidth = .8; g.stroke(); g.beginPath(); g.arc(s.x, s.y, s.r * .55, 0, 6.283); g.fill(); g.shadowColor = 'transparent'; g.globalAlpha = 1; }
+        stuck = stuck.filter((s) => s.a > 0); if (stuck.length < 14 && r() < .01) stuck.push({ x: r() * W, y: r() * H * .9, r: 1.6 + r() * 2.6, a: 1, t: 0 }); }
+      if (cardT && t - cardT > 5200) { card.classList.remove('on'); cardT = 0; }
+      return !still(); });
+    return { root,
+      theme() { const t = readTheme(root), k = tkey(t); if (k === key && W) return; key = k; th = t; W = cv.clientWidth || 1120; H = cv.clientHeight || 560; g = fit(cv, W, H); go = fit(out, W, H); gf = fit(fogC, W, H); seed(); compose();
+        c1.textContent = DATA.pane[th.wx] ? DATA.pane[th.wx][0] : ''; c2.textContent = DATA.pane[th.wx] ? DATA.pane[th.wx][1] : ''; c3.textContent = DATA.pane.music; if (!view.complete) view.onload = () => L.kick(); L.kick(); },
+      down(x, y) { downAt = [x, y, performance.now()]; wipe = [x, y]; },
+      move(x, y, pressed) { if (!pressed || !wipe) return; const d = Math.hypot(x - wipe[0], y - wipe[1]), n = Math.max(1, Math.ceil(d / 6));
+        for (let i = 1; i <= n; i++) { const px = wipe[0] + (x - wipe[0]) * i / n, py = wipe[1] + (y - wipe[1]) * i / n; clearAt(px, py, 30, .95); if (beads) { const b = beads.g; b.globalCompositeOperation = 'destination-out'; b.fillStyle = 'rgba(0,0,0,.9)'; b.beginPath(); b.arc(px, py, 22, 0, 6.283); b.fill(); b.globalCompositeOperation = 'source-over'; } }
+        wipe = [x, y]; L.kick(); },
+      up(x, y) { wipe = null; if (downAt && Math.hypot(x - downAt[0], y - downAt[1]) < 6 && performance.now() - downAt[2] < 400) {
+          drops.forEach((d) => { if (d.r > 3 && Math.random() < .7) d.sl = true; }); stuck.forEach((s) => { if (Math.random() < .8) s.fall = true; }); motes.forEach((p) => { p.vx += (Math.random() - .5) * 30; p.vy += (Math.random() - .5) * 30; });
+          card.classList.add('on'); cardT = performance.now(); } downAt = null; L.kick(); },
+      leave() { wipe = null; downAt = null; }, reset() { seed(); compose(); L.kick(); }, destroy() { L.stop(); } }; };
+
+  // ---- 书签：和你同时在读的人，书签夹在他们读到的那一段 ----
+  const ribbon = (root) => {
+    const cv = root.querySelector('.cv-main'), art = root.querySelector('.rb-art'), tip = root.querySelector('.rb-tip'), cnt = root.querySelector('.rb-count');
+    let th = null, key = '', W = 0, H = 0, g, rb = [], ptr = null, hov = -1, lastMove = 0, simT = 0;
+    const COLS = [[88, 98, 140], [168, 128, 70], [104, 128, 96], [146, 92, 112]];
+    const paraY = (i) => { const ps = art.querySelectorAll('[data-p]'); const p = ps[clamp(i, 0, ps.length - 1)]; return p ? art.offsetTop + p.offsetTop - art.scrollTop + 12 : 40; };
+    const colX = () => art.offsetLeft + art.clientWidth + 10;
+    const restShape = (i, len, n) => { const pts = [], ex = 70 + (i % 3) * 26, b1 = [46 + i * 6, 18], b2 = [20 - i * 4, len * .55], e = [ex, len]; for (let k = 0; k < n; k++) { const t = k / (n - 1), u = 1 - t;
+        pts.push([3 * u * u * t * b1[0] + 3 * u * t * t * b2[0] + t * t * t * e[0], 3 * u * u * t * b1[1] + 3 * u * t * t * b2[1] + t * t * t * e[1]]); } return pts; };
+    const even = (pts, n) => { const c = [0]; for (let k = 1; k < pts.length; k++) c.push(c[k - 1] + Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1])); const T = c[c.length - 1], out = []; let j = 1;
+      for (let k = 0; k < n; k++) { const d = T * k / (n - 1); while (j < c.length - 1 && c[j] < d) j++; const a = pts[j - 1], b = pts[j], f = clamp((d - c[j - 1]) / ((c[j] - c[j - 1]) || 1), 0, 1); out.push([a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]); } return out; };
+    const make = (who, para, col, label, i) => { const x = colX() + 6 + i * 22, y = paraY(para), n = 20, len = 200 + (i * 41) % 80, rest = even(restShape(i, len, 80), n);
+      let L0 = 0; for (let k = 1; k < n; k++) L0 += Math.hypot(rest[k][0] - rest[k - 1][0], rest[k][1] - rest[k - 1][1]);
+      return { who, para, col, label, ax: x, ay: y, rest, nodes: rest.map(([dx, dy]) => ({ x: x + dx, y: y + dy })), seg: L0 / (n - 1), hi: 0, wig: 0 }; };
+    const build = () => { rb = DATA.ribbon.readers.map(([para, label], i) => make('r' + i, para, COLS[i % COLS.length], label, i + 1)); rb.unshift(make('me', DATA.ribbon.mine, null, '', 0)); };
+    const step = (dt, t) => {
+      for (const r of rb) { const i = rb.indexOf(r), tx = colX() + 6 + i * 22, ty = paraY(r.para); r.ax += (tx - r.ax) * .25; r.ay += (ty - r.ay) * .3; r.hi *= .96; r.wig *= .94; const N = r.nodes;
+        N[0].x = r.ax; N[0].y = r.ay;
+        for (let k = 1; k < N.length; k++) { const n = N[k], tgx = r.ax + r.rest[k][0], tgy = r.ay + r.rest[k][1], f = still() ? 1 : .035; n.x += (tgx - n.x) * f; n.y += (tgy - n.y) * f;
+          if (r.wig > .01) { n.x += Math.sin(t / 70 + k * .7) * r.wig * (k / N.length) * 2.2; }
+          if (ptr) { const dx = n.x - ptr[0], dy = n.y - ptr[1], d = Math.hypot(dx, dy); if (d < 30 && d > .01) { const q = (30 - d) / 30 * 6; n.x += dx / d * q; n.y += dy / d * q; } } }
+        for (let it = 0; it < 6; it++) { for (let k = 1; k < N.length; k++) { const a = N[k - 1], b = N[k], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1, diff = (d - r.seg) / d; if (k === 1) { b.x -= dx * diff; b.y -= dy * diff; } else { a.x += dx * diff * .5; a.y += dy * diff * .5; b.x -= dx * diff * .5; b.y -= dy * diff * .5; } }
+          for (let k = 1; k < N.length - 1; k++) { const a = N[k - 1], b = N[k], c = N[k + 1]; b.x += ((a.x + c.x) / 2 - b.x) * .12; b.y += ((a.y + c.y) / 2 - b.y) * .12; } N[0].x = r.ax; N[0].y = r.ay; } } };
+    const drawRibbon = (r) => { const N = r.nodes, w = 5, base = r.col || th.deco, col = th.dk ? mix(base, th.bg, .7) : mix(base, th.bg, .82), L = [], R = [];
+      for (let k = 0; k < N.length; k++) { const a = N[Math.max(0, k - 1)], b = N[Math.min(N.length - 1, k + 1)], tx = b.x - a.x, ty = b.y - a.y, d = Math.hypot(tx, ty) || 1, nx = -ty / d, ny = tx / d; L.push([N[k].x + nx * w, N[k].y + ny * w]); R.push([N[k].x - nx * w, N[k].y - ny * w]); }
+      const e = N[N.length - 1], e2 = N[N.length - 2], ex = e.x - e2.x, ey = e.y - e2.y, ed = Math.hypot(ex, ey) || 1, tipx = e.x - ex / ed * 9, tipy = e.y - ey / ed * 9;
+      g.save(); g.shadowColor = th.dk ? 'rgba(0,0,0,.55)' : 'rgba(60,46,30,.18)'; g.shadowBlur = 2.5; g.shadowOffsetX = .8; g.shadowOffsetY = 1.4; g.fillStyle = rgb(col); g.beginPath(); g.moveTo(L[0][0], L[0][1]); L.forEach((p) => g.lineTo(p[0], p[1])); g.lineTo(tipx, tipy); for (let k = R.length - 1; k >= 0; k--) g.lineTo(R[k][0], R[k][1]); g.closePath(); g.fill(); g.restore();
+      g.lineCap = 'round'; for (let k = 0; k < N.length - 1; k++) { const a = N[k], b = N[k + 1], ang = Math.atan2(b.y - a.y, b.x - a.x), sh = .25 + .75 * Math.pow(Math.abs(Math.cos(ang - 1.1)), 5);
+        g.strokeStyle = th.dk ? `rgba(255,255,255,${.1 * sh})` : `rgba(255,255,255,${.5 * sh})`; g.lineWidth = 2.6; g.beginPath(); g.moveTo(a.x - 1.2, a.y); g.lineTo(b.x - 1.2, b.y); g.stroke();
+        g.strokeStyle = th.dk ? `rgba(0,0,0,${.25 * (1 - sh)})` : `rgba(40,30,20,${.12 * (1 - sh)})`; g.lineWidth = 1.4; g.beginPath(); g.moveTo(a.x + 3.2, a.y); g.lineTo(b.x + 3.2, b.y); g.stroke(); }
+      if (r.hi > .02) { g.strokeStyle = rgb(th.deco, .7 * r.hi); g.lineWidth = 1; g.beginPath(); g.moveTo(L[0][0], L[0][1]); L.forEach((p) => g.lineTo(p[0], p[1])); g.stroke(); }
+      g.fillStyle = th.dk ? 'rgba(0,0,0,.5)' : 'rgba(60,46,30,.22)'; g.beginPath(); g.ellipse(r.ax, r.ay, 6.5, 1.6, 0, 0, 6.283); g.fill(); };
+    const showTip = (i, text) => { if (i < 0) { tip.classList.remove('on'); return; } const r = rb[i]; tip.textContent = text || (r.who === 'me' ? '你的书签 · 在右边空白处点一下，把它夹到那一段' : r.label);
+      tip.style.transform = `translate(${clamp(r.ax + 18, 0, W - 260)}px,${clamp(r.ay - 30, 6, H - 40)}px)`; tip.classList.add('on'); };
+    const L = looper((t, dt) => { step(dt, t); if (t - simT > 5200 && !still()) { simT = t; const r = rb[1 + Math.floor(Math.random() * (rb.length - 1))]; if (r) { r.para = Math.min(DATA.ribbon.paras - 1, r.para + 1); } }
+      g.clearRect(0, 0, W, H); rb.slice().reverse().forEach(drawRibbon); return true; });
+    art.addEventListener('scroll', () => L.kick(), { passive: true });
+    const nearest = (x, y) => { let best = -1, bd = 9; rb.forEach((r, i) => r.nodes.forEach((n) => { const d = Math.hypot(n.x - x, n.y - y); if (d < bd) { bd = d; best = i; } })); return best; };
+    return { root,
+      theme() { const t = readTheme(root), k = tkey(t); if (k === key && W) return; const first = !W; key = k; th = t; W = cv.clientWidth || 1120; H = cv.clientHeight || 560; g = fit(cv, W, H); if (first) build(); if (cnt) cnt.textContent = `此刻 ${rb.length - 1} 人和你读同一篇`; L.kick(); },
+      down(x, y) { const i = nearest(x, y); if (i > 0) { const r = rb[i]; r.hi = 1; r.wig = 1; showTip(i, '你朝这位读者点了点头，对方会看到书签轻轻动一下'); return; }
+        if (x > colX() - 4) { const ps = [...art.querySelectorAll('[data-p]')]; let best = 0, bd = 1e9; ps.forEach((p, k) => { const d = Math.abs(paraY(k) - y); if (d < bd) { bd = d; best = k; } }); rb[0].para = best; rb[0].hi = 1; showTip(0, `书签夹在第 ${best + 1} 段，下次从这里接着读`); } },
+      move(x, y) { ptr = [x, y]; lastMove = performance.now(); const i = nearest(x, y); if (i !== hov) { hov = i; showTip(i); } },
+      up() {}, leave() { ptr = null; hov = -1; showTip(-1); }, reset() { build(); }, destroy() { L.stop(); } }; };
+
+  // ---- 唱片：站长在听的那首歌，刻在页面角上；光随指针转，点一下一起听 ----
+  const record = (root) => {
+    const cv = root.querySelector('.cv-main'), timeEl = root.querySelector('.rc-time'), act = root.querySelector('.rc-act'), stEl = root.querySelector('.rc-state');
+    let th = null, key = '', W = 0, H = 0, g, grooves, tinted, shOff, C = [0, 0], R0 = 0, R1 = 0, sheen = 3.9, tsheen = 3.9, pos = DATA.record.pos, rot = 0, joined = false, lastT = 0;
+    const len = DATA.record.len;
+    const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+    const playing = () => th.rs === 'play';
+    const renderBase = () => { grooves = off(W, H); const b = grooves.g; b.lineWidth = .7;
+      for (let r = R0 + 6; r < R1; r += 1.8) { b.strokeStyle = 'rgba(255,255,255,1)'; b.beginPath(); b.arc(C[0], C[1], r, Math.PI * .9, Math.PI * 1.6); b.stroke(); }
+      tinted = off(W, H); tinted.g.drawImage(grooves.c, 0, 0, W, H); tinted.g.globalCompositeOperation = 'source-in'; tinted.g.fillStyle = rgb(th.dk ? [255, 255, 255] : th.fg); tinted.g.fillRect(0, 0, W, H); shOff = off(W, H); };
+    const needleR = () => R1 - 8 - (R1 - R0 - 30) * (pos / len);
+    const armGeom = () => { const P = [W * 1.04, H * .02], Lr = Math.hypot(P[0] - C[0], P[1] - C[1]), rn = needleR(), A = 260; const a = Math.atan2(P[1] - C[1], P[0] - C[0]);
+      const cosb = clamp((Lr * Lr + rn * rn - A * A) / (2 * Lr * rn), -1, 1), ang = a - Math.acos(cosb); return { P, N: [C[0] + Math.cos(ang) * rn, C[1] + Math.sin(ang) * rn] }; };
+    const draw = () => { g.clearRect(0, 0, W, H); const ink = th.fg;
+      g.fillStyle = rgb(th.dk ? [0, 0, 0] : ink, th.dk ? .32 : .055); g.beginPath(); g.arc(C[0], C[1], R1, 0, 6.283); g.fill();
+      g.save(); g.globalAlpha = th.dk ? .06 : .12; g.drawImage(tinted.c, 0, 0, W, H); g.restore();
+      const sh = shOff, sg = sh.g; sg.globalCompositeOperation = 'source-over'; sg.clearRect(0, 0, W, H); sg.drawImage(grooves.c, 0, 0, W, H); sg.globalCompositeOperation = 'source-in'; const cg = sg.createConicGradient(sheen, C[0], C[1]); const A = th.dk ? .26 : 1;
+      [[0, A], [.03, A * .45], [.075, 0], [.425, 0], [.47, A * .45], [.5, A], [.53, A * .45], [.575, 0], [.925, 0], [.97, A * .45], [1, A]].forEach(([o, a]) => cg.addColorStop(o, `rgba(255,255,255,${a})`)); sg.fillStyle = cg; sg.fillRect(0, 0, W, H); g.drawImage(sh.c, 0, 0, W, H);
+      const gl = g.createConicGradient(sheen, C[0], C[1]), GA = th.dk ? .05 : .3; [[0, GA], [.05, GA * .3], [.11, 0], [.39, 0], [.45, GA * .3], [.5, GA], [.55, GA * .3], [.61, 0], [.89, 0], [.95, GA * .3], [1, GA]].forEach(([o, a]) => gl.addColorStop(o, `rgba(255,255,255,${a})`));
+      g.fillStyle = gl; g.beginPath(); g.arc(C[0], C[1], R1, 0, 6.283); g.arc(C[0], C[1], R0 + 4, 0, 6.283, true); g.fill();
+      const rn = needleR(); g.fillStyle = rgb(th.dk ? [0, 0, 0] : ink, th.dk ? .18 : .025); g.beginPath(); g.arc(C[0], C[1], R1 - 4, 0, 6.283); g.arc(C[0], C[1], rn, 0, 6.283, true); g.fill();
+      const lab = th.dk ? mix(th.deco, th.bg, .3) : mix(th.deco, th.bg, .28); g.fillStyle = rgb(lab); g.beginPath(); g.arc(C[0], C[1], R0, 0, 6.283); g.fill(); g.strokeStyle = rgb(th.fg, .18); g.lineWidth = .6; g.beginPath(); g.arc(C[0], C[1], R0 - 10, 0, 6.283); g.stroke();
+      if (th.rs !== 'off') { g.save(); g.translate(C[0], C[1]); g.rotate(rot); g.font = `13px ${SERIF}`; g.fillStyle = rgb(th.fg, .7); const text = DATA.record.label; let a = -Math.PI * .86; for (const ch of text) { g.save(); g.rotate(a); g.translate(0, -(R0 - 26)); g.fillText(ch, -6, 0); g.restore(); a += .085; } g.restore(); }
+      if (th.rs !== 'off') { const { P, N } = armGeom(), lift = th.rs === 'pause' ? 6 : 0; g.strokeStyle = rgb(th.fg, th.dk ? .5 : .42); g.lineWidth = .8; const dx = N[0] - P[0], dy = N[1] - P[1], d = Math.hypot(dx, dy), nx = -dy / d * 1.8, ny = dx / d * 1.8;
+        g.beginPath(); g.moveTo(P[0] + nx, P[1] + ny); g.lineTo(N[0] + nx, N[1] + ny - lift); g.moveTo(P[0] - nx, P[1] - ny); g.lineTo(N[0] - nx, N[1] - ny - lift); g.stroke();
+        g.save(); g.translate(N[0], N[1] - lift); g.rotate(Math.atan2(dy, dx) + .5); g.fillStyle = rgb(th.fg, th.dk ? .6 : .5); g.fillRect(-3, -6, 14, 9); g.restore();
+        g.fillStyle = rgb(th.bg); g.strokeStyle = rgb(th.fg, .4); g.lineWidth = .8; g.beginPath(); g.arc(P[0], P[1], 18, 0, 6.283); g.fill(); g.stroke(); g.beginPath(); g.arc(P[0], P[1], 6, 0, 6.283); g.stroke();
+        if (joined) { const gr = g.createRadialGradient(N[0], N[1], 0, N[0], N[1], 26); gr.addColorStop(0, rgb(th.deco, .45)); gr.addColorStop(1, rgb(th.deco, 0)); g.fillStyle = gr; g.beginPath(); g.arc(N[0], N[1], 26, 0, 6.283); g.fill(); } } };
+    const ui = () => { if (stEl) stEl.textContent = th.rs === 'play' ? '他在听' : th.rs === 'pause' ? '他暂停了' : '他现在没在听歌';
+      timeEl.textContent = th.rs === 'off' ? '' : `${fmt(pos)} / ${fmt(len)}`; act.textContent = th.rs === 'off' ? '' : joined ? '你们在一起听 · 离开' : '一起听'; act.style.display = th.rs === 'off' ? 'none' : ''; };
+    const L = looper((t, dt) => { sheen += (tsheen - sheen) * (still() ? 1 : .1); if (playing()) { pos = (pos + dt) % len; if (!still()) rot += dt * .16; } if (t - lastT > 500) { lastT = t; ui(); } draw(); return playing() || Math.abs(tsheen - sheen) > .002; });
+    const toggle = () => { if (th.rs === 'off') return; joined = !joined; ui(); L.kick(); };
+    act.addEventListener('click', toggle); act.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+    return { root,
+      theme() { const t = readTheme(root), k = tkey(t); if (k === key && W) return; key = k; th = t; W = cv.clientWidth || 1120; H = cv.clientHeight || 560; g = fit(cv, W, H); C = [W * .97, H * 1.0]; R1 = Math.min(W * .56, H * .98); R0 = 150; if (th.rs === 'off') joined = false; renderBase(); ui(); draw(); L.kick(); },
+      down(x, y) { if (Math.hypot(x - C[0], y - C[1]) < R1) toggle(); },
+      move(x, y) { let a = Math.atan2(y - C[1], x - C[0]); while (a - sheen > Math.PI) a -= 6.283; while (sheen - a > Math.PI) a += 6.283; tsheen = a; L.kick(); },
+      up() {}, leave() {}, reset() { joined = false; pos = DATA.record.pos; ui(); draw(); }, destroy() { L.stop(); } }; };
+
+  return { sky, trail, pane, ribbon, record };
+})();
+    if (!this._engs) this._engs = {};
+    const ENG = this._ENG, engs = this._engs;
+    const ps = S[st.ss] || S['春'], dk = st.dk === 'd';
+    const pvars = dk ? `--bg:oklch(0.17 0.0087 ${ps.h});--sheet:oklch(0.235 0.011 ${ps.h});--sunk:oklch(0.29 0.012 ${ps.h});--fg:oklch(0.9373 0.015 ${ps.h});--muted:oklch(0.8573 0.0225 ${ps.h});--rule:oklch(0.9373 0.015 ${ps.h} / .12);--rule2:oklch(0.9373 0.015 ${ps.h} / .3);--deco:${ps.seed};--accent:oklch(0.8589 0.1031 ${ps.h});--danger:oklch(0.74 0.14 25);--ok:oklch(0.74 0.15 155);--ol:rgb(255 255 255 / .08);` : `--bg:oklch(0.968 0.006 ${ps.h});--sheet:oklch(0.994 0.003 ${ps.h});--sunk:oklch(0.945 0.007 ${ps.h});--fg:oklch(0.3331 0.0175 ${ps.h});--muted:oklch(0.4717 0.0225 ${ps.h});--rule:oklch(0.3331 0.0175 ${ps.h} / .11);--rule2:oklch(0.3331 0.0175 ${ps.h} / .3);--deco:${ps.seed};--accent:oklch(0.4739 0.0974 ${ps.h});--danger:oklch(0.52 0.16 27);--ok:oklch(0.52 0.13 155);--ol:transparent;`;
+    const WX = {"rain": ["/_blob/d8ebab215c9ca83fc6a9beda0c4d31cc", "他那边 21:40 · 杭州 · 小雨"], "snow": ["/_blob/70eabb77c94ea8e601907122c3c4ca5d", "他那边 07:12 · 哈尔滨 · 小雪"], "sun": ["/_blob/fc0dfd2db5525fe1dcf85d29dc6157d6", "他那边 16:30 · 大理 · 晴"]};
+    const loc = (e) => { const el = e.currentTarget, r = el.getBoundingClientRect(), k = el.clientWidth / (r.width || 1); return [(e.clientX - r.left) * k, (e.clientY - r.top) * k]; };
+    const BLOCK = ".pp-pill,.pp-ar p,.pp-t,.pp-meta,.sk-rows li,.rc-act,.mp-art,.rb-art,.st-tip,.mp-card,.wn-card";
+    const extra = { pvars, dkc: dk ? 'dk' : '', ss: st.ss, wx: st.wx, rs: st.rs, wnImg: WX[st.wx][0], wnClock: WX[st.wx][1] };
+    ["sky", "trail", "pane", "ribbon", "record"].forEach((k) => {
+      extra['root_' + k] = (el) => { if (!el) return; let g = engs[k]; if (!g || g.root !== el) { if (g) g.destroy(); g = engs[k] = ENG[k](el); } g.theme(); };
+      extra['dn_' + k] = (e) => { if (e.button !== 0 || (e.target && e.target.closest && e.target.closest(BLOCK))) return; e.preventDefault(); const g = engs[k]; if (!g) return; this._dn = k; const p = loc(e); g.down(p[0], p[1]); };
+      extra['mv_' + k] = (e) => { const g = engs[k]; if (!g) return; const p = loc(e); g.move(p[0], p[1], this._dn === k); };
+      extra['up_' + k] = (e) => { const g = engs[k]; if (!g || this._dn !== k) return; this._dn = null; const p = loc(e); g.up(p[0], p[1]); };
+      extra['lv_' + k] = () => { const g = engs[k]; if (!g) return; if (this._dn === k) { this._dn = null; g.up(-1e4, -1e4); } g.leave(); };
+      extra['rs_' + k] = () => { const g = engs[k]; if (g) g.reset(); };
+    });
+    Object.assign(extra, SEG('dk', ['l', 'd']), SEG('ss', ['春', '夏', '秋', '冬']), SEG('wx', ['rain', 'snow', 'sun']), SEG('rs', ['play', 'pause', 'off']));
+
+    return Object.assign(base, extra);
+  }
+}
+</script>
+</body>
+</html>
