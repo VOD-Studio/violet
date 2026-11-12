@@ -1089,7 +1089,7 @@ func TestListComments(t *testing.T) {
 		comments.byID[r.ID().String()] = r
 	}
 
-	dtos, total, err := svc.ListComments(context.Background(), tweetID.String(), 1, 20)
+	dtos, total, err := svc.ListComments(context.Background(), tweetID.String(), "", 1, 20)
 	require.NoError(t, err)
 	assert.Equal(t, int64(3), total)
 	assert.Len(t, dtos, 3)
@@ -1276,7 +1276,7 @@ func TestListComments_EmoteEnriched(t *testing.T) {
 	comments.byID[c.ID().String()] = c
 
 	svc := newCommentCapabilityService(t, &fakeTweetRepo{}, comments, authorID, nil, lookup)
-	dtos, total, err := svc.ListComments(context.Background(), tweetID.String(), 1, 20)
+	dtos, total, err := svc.ListComments(context.Background(), tweetID.String(), "", 1, 20)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), total)
 	require.Len(t, dtos, 1)

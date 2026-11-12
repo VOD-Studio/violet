@@ -170,6 +170,8 @@ type ListFilter struct {
 	BlockID string
 	// Sort 回复链时间排序："asc"（默认，最早优先）/ "desc"，仅 ParentID 场景生效
 	Sort string
+	// TopLevelSort 自由顶层评论排序：latest（默认）或 hot（总回应数降序），不改变批注/后台/检索。
+	TopLevelSort string
 	// Query body 全文检索（空格分词多关键词 AND），仅 FindPageWithPost 支持
 	Query string
 }

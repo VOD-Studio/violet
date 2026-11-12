@@ -245,7 +245,7 @@ func (h *Handler) DeleteComment(w http.ResponseWriter, r *http.Request) {
 // ListComments 列出推文下的顶层评论（公开）：GET /tweets/{id}/comments
 func (h *Handler) ListComments(w http.ResponseWriter, r *http.Request) {
 	page, limit := response.ParsePaging(r)
-	dtos, total, err := h.svc.ListComments(r.Context(), r.PathValue("id"), page, limit)
+	dtos, total, err := h.svc.ListComments(r.Context(), r.PathValue("id"), r.URL.Query().Get("sort"), page, limit)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return

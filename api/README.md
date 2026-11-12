@@ -104,7 +104,7 @@ REST 端点可用 `middleware.PATAuth` 复用 MCP 的 `PATVerifier`，再用 `Re
 
 `POST /api/v1/link-cards/lookup` 公开批量读取最多 10 个 URL 的网页预览，仍需 CSRF cookie。返回 `cards`、`pending`、`unavailable`：仅 pending 继续查询；上游 403 不绕过防护，失败退避期间不重复抓取。成功快照默认缓存 7 天，过期惰性刷新；封面校验后缓存到本站。
 
-### 评论回应
+### 评论回应与排序
 
 文章与推文评论共享 `AggregatedReaction` 读模型，但分别存储于 `comment_reactions` 和迁移 150 的 `tweet_comment_reactions`；推文评论不会写入文章评论外键。
 
@@ -118,6 +118,8 @@ REST 端点可用 `middleware.PATAuth` 复用 MCP 的 `PATVerifier`，再用 `Re
 回应含 `emoji_id`、`emoji_name`、`emoji_url`、`gif_url`、`count`、`self`、`recent_users: [{id,name}]`。最近名单仅含未注销的公开用户，最多 3 名，按回应时间及记录 ID 倒序，展示名为空时回退用户名；匿名读取 `self=false`，空列表返回 `[]`。推文回应只接受已启用系统目录的普通/颜文字与无门槛旧目录项，不接受会员、购买或私人表情。
 
 推文批量回应按 UUID 去重并保留首次出现顺序，每次最多 100 个唯一评论、请求体最多 16 KiB（分别越限返回 400 / 413，沿用统一错误结构）。查询先确认推文本身存在，再以固定次数 SQL 筛选同推文目标并聚合；已删除、不存在或属于其它推文的合法评论 ID 仍有对应结果，`reactions: []`，不会令整批失败或泄露其它推文回应。非法 UUID 返回 400，推文本身不存在返回 404；空输入返回 `[]`。单条读取及写入仍严格校验评论存在与归属，失败返回 404。
+
+`GET /posts/{postId}/comments?type=free&top_level=true` 与 `GET /tweets/{id}/comments` 接受 `sort=latest|hot`（缺省 latest，非法值 400）。hot 在数据库分页前按该评论全部回应记录数降序，再按 `created_at DESC,id DESC` 稳定破同；不维护冗余计数。文章匿名黑洞、自己的 pending、批注/后台/检索与回复 asc/desc 的原有语义不变。
 
 ## 业务模块
 

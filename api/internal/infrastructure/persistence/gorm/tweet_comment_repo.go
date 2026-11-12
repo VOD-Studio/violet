@@ -6,10 +6,10 @@ import (
 	"errors"
 	"strings"
 
-	"gorm.io/gorm"
 	domainshared "blog-api/internal/domain/shared"
 	domaintweet "blog-api/internal/domain/tweet"
 	"blog-api/internal/infrastructure/persistence/gorm/model"
+	"gorm.io/gorm"
 )
 
 // TweetCommentRepository 推文评论 GORM 实现。
@@ -79,6 +79,9 @@ func tweetCommentPageOrder(filter domaintweet.ListFilter) string {
 	if filter.ParentID != nil && filter.Sort != "desc" {
 		// 回复链默认最早优先（对话时间线）
 		return "created_at ASC, id ASC"
+	}
+	if filter.ParentID == nil && filter.TweetID != nil && filter.TopLevelSort == "hot" {
+		return "(SELECT COUNT(*) FROM tweet_comment_reactions r WHERE r.comment_id = tweet_comments.id) DESC, created_at DESC, id DESC"
 	}
 	return "created_at DESC, id DESC"
 }

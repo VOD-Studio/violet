@@ -13,8 +13,8 @@ import (
 
 	appcomment "blog-api/internal/application/comment"
 	domaincomment "blog-api/internal/domain/comment"
-	"blog-api/internal/domain/shared"
 	domainpost "blog-api/internal/domain/post"
+	"blog-api/internal/domain/shared"
 	domainuser "blog-api/internal/domain/user"
 	interfacesmw "blog-api/internal/interfaces/http/middleware"
 	"blog-api/internal/interfaces/http/response"
@@ -27,7 +27,7 @@ import (
 // stub 实现（见 comment_test.go 的 stubCommentService），避免在测试里启动完整 service +
 // 真实 repo/codeStore。*appcomment.Service 通过 Go 结构化接口天然满足此契约。
 type commentService interface {
-	ListByPost(ctx context.Context, postID, viewerUserID, postAuthorID string, anchorFilter domaincomment.AnchorFilter, depthFilter domaincomment.DepthFilter, blockID string, page, limit int) ([]appcomment.CommentDTO, int64, error)
+	ListByPost(ctx context.Context, postID, viewerUserID, postAuthorID string, anchorFilter domaincomment.AnchorFilter, depthFilter domaincomment.DepthFilter, blockID, sort string, page, limit int) ([]appcomment.CommentDTO, int64, error)
 	ListReplies(ctx context.Context, parentID, viewerUserID, sort string, page, limit int) ([]appcomment.CommentDTO, int64, error)
 	Create(ctx context.Context, in appcomment.CreateInput) (appcomment.CommentDTO, error)
 	SendCode(ctx context.Context, in appcomment.SendCodeInput) error
@@ -73,6 +73,11 @@ func (h *Handler) ListByPost(w http.ResponseWriter, r *http.Request) {
 	postID := r.PathValue("postId")
 	viewerID := interfacesmw.GetUserIDFromContext(r)
 	page, limit := response.ParsePaging(r)
+	sort, err := shared.ParseCommentSort(r.URL.Query().Get("sort"))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
 
 	// 解析 type → AnchorFilter；空串/未知值降级为 free（保守默认，避免误返批注到评论区）。
 	anchorFilter := mapCommentType(r.URL.Query().Get("type"))
@@ -88,7 +93,7 @@ func (h *Handler) ListByPost(w http.ResponseWriter, r *http.Request) {
 
 	blockID := r.URL.Query().Get("block_id")
 
-	items, total, err := h.svc.ListByPost(r.Context(), postID, viewerID, authorID, anchorFilter, depthFilter, blockID, page, limit)
+	items, total, err := h.svc.ListByPost(r.Context(), postID, viewerID, authorID, anchorFilter, depthFilter, blockID, sort, page, limit)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
@@ -280,14 +285,14 @@ type createCommentRequest struct {
 	ParentID string `json:"parent_id"`                // 父评论 id；非空表示嵌套回复
 
 	// 以下四项仅匿名评论消费；登录态由 handler 从 user 资料覆盖（防伪造）。
-	AuthorName  string `json:"author_name"  validate:"omitempty"`           // 匿名必填（handler 层校验，非 validator）
-	AuthorEmail string `json:"author_email" validate:"omitempty,email"`     // 匿名必填；email 格式校验
-	AuthorURL   string `json:"author_url"`                                // 可选个人站点
-	AvatarURL   string `json:"avatar_url"`                                // 可选头像 URL
+	AuthorName  string `json:"author_name"  validate:"omitempty"`       // 匿名必填（handler 层校验，非 validator）
+	AuthorEmail string `json:"author_email" validate:"omitempty,email"` // 匿名必填；email 格式校验
+	AuthorURL   string `json:"author_url"`                              // 可选个人站点
+	AvatarURL   string `json:"avatar_url"`                              // 可选头像 URL
 
-	Code     string                      `json:"code"`     // 匿名必填：邮箱验证码（来自 /comments/code）
-	Anchor   *appcomment.AnchorInput     `json:"anchor"`   // 选区批注锚点；非空强制登录
-	Pictures []appcomment.PictureInput   `json:"pictures"` // 评论附图（可选，Bilibili 式）
+	Code     string                    `json:"code"`     // 匿名必填：邮箱验证码（来自 /comments/code）
+	Anchor   *appcomment.AnchorInput   `json:"anchor"`   // 选区批注锚点；非空强制登录
+	Pictures []appcomment.PictureInput `json:"pictures"` // 评论附图（可选，Bilibili 式）
 }
 
 // Create 创建评论（前台公开，双轨认证）。
