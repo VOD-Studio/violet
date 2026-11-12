@@ -64,6 +64,8 @@ test.describe("390px 手机", () => {
 		const paragraph = page
 			.locator("[data-article-content] p")
 			.filter({ hasText: "增强恢复后，这段结尾仍是原来的节点。" });
+		// 段落若停在底部浮动评论钮与导航岛后面，点按会落在它们身上；先滚到视口中部
+		await paragraph.evaluate((element) => element.scrollIntoView({ block: "center" }));
 		await expect(async () => {
 			await paragraph.tap();
 			await expect(entry).toHaveAttribute("data-show", "true", { timeout: 1_000 });

@@ -184,8 +184,15 @@ test.describe("管理员拖动条目", () => {
 		await openEditable(page);
 		await page.getByRole("button", { name: "缩小" }).click();
 		await expect(page.locator(".v-kanban-canvas__zoom")).not.toHaveText("100%");
-		// 等缩放过渡结束，卡片停在缩小后的位置再量
-		await page.waitForTimeout(300);
+		// 等缩放过渡结束：卡片位置连续两次量取一致才算停稳，固定延时在慢机器上不够
+		await expect
+			.poll(async () => {
+				const before = await card(page, 3).boundingBox();
+				await page.waitForTimeout(150);
+				const after = await card(page, 3).boundingBox();
+				return JSON.stringify(before) === JSON.stringify(after);
+			})
+			.toBe(true);
 
 		await drag(page, card(page, 3), await belowLast(page, "in_progress"));
 
