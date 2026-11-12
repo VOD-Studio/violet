@@ -361,6 +361,7 @@
 	.v-input-control__action--clear svg {
 		inline-size: 0.875rem;
 		block-size: 0.875rem;
+		stroke-width: 2;
 	}
 
 	.v-input-control:focus-within .v-input-control__action--clear {

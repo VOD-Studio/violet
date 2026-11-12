@@ -66,6 +66,8 @@ SearchInput 并入 input 单元，是 Input 加搜索图标、清除钮与防抖
 
 Button 的 `asChild` 保留子元素内容，禁用或加载时阻止交互；自定义 Link 必须透传 DOM 属性和 ref。公开契约以组件类型与测试为准；[陈列室展品](https://xunrua.top/ui?open=button)陈列各变体与尺寸的默认、加载与禁用态。
 
+图标从 `lucide-react` 导入，六档尺寸与线宽通过 `iconProps(size)` 统一指定；该入口及 Island / Timeline / Morph 三枚自绘图标由 `@violet/ui` 和 `@violet/ui/icons` 导出。显式档位不会被按钮、输入框、菜单或列表的默认图标样式覆盖。仅图标按钮由宿主提供 `aria-label`，不以 `title` 代替。[图标契约](docs/components/icons.md)列出六档位置与组合用法；独立消费验收的 `?preview=icons` 展示根入口和叶入口的实际控件组合。
+
 `default` 与 `primary` 按钮都遵循当前方言的 `primary` / `primary-foreground`，悬停使用 `primary-hover`；`soft` 采用 `selected` / `selected-foreground`，`link` 使用 `link`。组件不会绕过方言直接读取品牌色阶。
 
 Checkbox 的 ref 指向可聚焦的 button；名称使用关联 Label 或 `aria-label`，表单字段由内部 input 桥接。三态、表单与纯 HTML 样式的边界见 [Checkbox 契约](docs/components/checkbox.md)。

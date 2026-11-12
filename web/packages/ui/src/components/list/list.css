@@ -81,6 +81,14 @@
 		color: var(--muted-foreground);
 	}
 
+	.v-list__icon > svg,
+	.v-list__action > svg,
+	.v-list__chevron {
+		inline-size: 1rem;
+		block-size: 1rem;
+		stroke-width: 1.75;
+	}
+
 	/* avatar 只有固定几档，列表里统一收成图标块大小 */
 	.v-list__row .v-avatar[data-size] {
 		--v-avatar-size: var(--v-list-icon-size);

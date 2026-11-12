@@ -1,0 +1,66 @@
+import {
+	Button,
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+	Input,
+	IslandIcon,
+	iconProps,
+	List,
+	ListItem,
+	ListItemAction,
+	ListItemChevron,
+	ListItemContent,
+	ListItemIcon,
+	ListItemTitle,
+	type IconSize,
+} from "@violet/ui";
+import { iconProps as leafIconProps, MorphIcon, TimelineIcon } from "@violet/ui/icons";
+import { useState } from "react";
+
+const SIZES: IconSize[] = [12, 14, 16, 18, 20, 24];
+
+export function IconsConsumer() {
+	const [count, setCount] = useState(0);
+	const activate = () => setCount((value) => value + 1);
+	return (
+		<main>
+			<h1>Icons · 独立安装包</h1>
+			{SIZES.map((size) => (
+				<section key={size} aria-label={`${size}px 图标`}>
+					<Button onClick={activate} leftIcon={<IslandIcon {...iconProps(size)} />}>
+						{size}px 根入口
+					</Button>
+					<Button size="lg" iconOnly aria-label={`${size}px 叶入口`} onClick={activate}>
+						<MorphIcon {...leafIconProps(size)} />
+					</Button>
+					<Button asChild size="sm">
+						<a href="#icon-result"><TimelineIcon {...leafIconProps(size)} />结果</a>
+					</Button>
+					<Input aria-label={`${size}px 输入框`} leading={<IslandIcon {...iconProps(size)} />} />
+				</section>
+			))}
+			<section aria-label="默认图标">
+				<Button onClick={activate} leftIcon={<IslandIcon />}>默认按钮</Button>
+				<Input aria-label="默认输入框" defaultValue="可清除" clearable leading={<IslandIcon />} />
+				<List aria-label="默认列表">
+					<ListItem>
+						<ListItemIcon><IslandIcon /></ListItemIcon>
+						<ListItemContent><ListItemTitle>图标目录</ListItemTitle></ListItemContent>
+						<ListItemChevron />
+						<ListItemAction aria-label="查看图标目录" onClick={activate}><TimelineIcon /></ListItemAction>
+					</ListItem>
+				</List>
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild><Button>打开图标菜单</Button></DropdownMenuTrigger>
+					<DropdownMenuContent>
+						<DropdownMenuItem onSelect={activate}><IslandIcon />默认菜单项</DropdownMenuItem>
+						<DropdownMenuItem onSelect={activate}><TimelineIcon {...leafIconProps(12)} />12px 菜单项</DropdownMenuItem>
+					</DropdownMenuContent>
+				</DropdownMenu>
+			</section>
+			<output id="icon-result">已激活 {count} 次</output>
+		</main>
+	);
+}

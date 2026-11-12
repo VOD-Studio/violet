@@ -71,6 +71,7 @@
 		flex: none;
 		inline-size: 1rem;
 		block-size: 1rem;
+		stroke-width: 1.75;
 		color: var(--muted-foreground);
 		pointer-events: none;
 	}

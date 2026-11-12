@@ -11,7 +11,7 @@ import { CircleAlert } from "lucide-react";
 
 ## 尺寸与线宽
 
-`iconProps(size?)` 是本单元唯一的尺寸入口：返回 `{ size, strokeWidth }`，直接展开到 lucide 图标或自绘图标上。省略时取 16。
+`iconProps(size?)` 是本单元唯一的尺寸入口：返回 SVG 的 `size`、`strokeWidth`，并用同值的 `style.width`、`style.height`、`style.strokeWidth` 保留最终几何。直接展开到 lucide 图标或自绘图标上；省略时取 16。
 
 | 尺寸 | 线宽 | 用在 |
 | --- | --- | --- |
@@ -24,7 +24,7 @@ import { CircleAlert } from "lucide-react";
 
 同一行、同一个工具栏里只用一档。14 及以下之所以把线宽提到 2，是让缩小后的笔画不至于细到发虚。
 
-内核对尺寸另有约束：`button` 单元把按钮内没有显式尺寸类的图标统一成 1rem、线宽 1.75（见 `button.css`）。因此在按钮里放 12/14 档图标时，实际线宽是 1.75 而不是 2；这条差异待设计确认后再统一，本单元不绕过按钮的规则。
+显式 `iconProps` 的尺寸与线宽优先于按钮、输入框、菜单、列表等容器的默认图标样式。需要额外的 SVG 样式时，合并返回的 `style`，不要整体覆盖；仅图标按钮仍由宿主提供 `aria-label` 和文字提示。未指定尺寸时沿用各组件自己的默认值，例如大号按钮的图标为 20。
 
 ## 网格
 

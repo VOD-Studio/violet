@@ -1,4 +1,4 @@
-import { type IconSize, IslandIcon, iconProps, MorphIcon, TimelineIcon } from "@violet/ui";
+import { Button, type IconSize, IslandIcon, iconProps, MorphIcon, TimelineIcon } from "@violet/ui";
 import { CircleAlert, Ellipsis, Plus, Search, SquarePen, Trash2 } from "lucide-react";
 import type { Exhibit, ExhibitRenderProps } from "../../model/exhibit";
 
@@ -32,6 +32,21 @@ function IconGrid({ state }: ExhibitRenderProps) {
 					</div>
 				))}
 			</div>
+			<div
+				role="group"
+				aria-label="图标按钮"
+				className="flex items-center justify-center gap-3"
+			>
+				<Button size="sm" iconOnly aria-label="提示">
+					<CircleAlert {...iconProps(size)} />
+				</Button>
+				<Button iconOnly aria-label="灵动岛">
+					<IslandIcon {...iconProps(size)} />
+				</Button>
+				<Button size="lg" iconOnly aria-label="变形">
+					<MorphIcon {...iconProps(size)} />
+				</Button>
+			</div>
 		</div>
 	);
 }
@@ -42,7 +57,7 @@ export const iconsExhibit: Exhibit = {
 	units: ["icons"],
 	zone: "shelf",
 	category: "display",
-	footprint: { width: 360, height: 230 },
+	footprint: { width: 360, height: 300 },
 	states: SIZES.map((size) => ({ id: String(size), label: `${size} px` })),
 	Render: IconGrid,
 };
