@@ -38,7 +38,7 @@
 	}
 
 	.v-alert[data-tone="success"] .v-alert__icon {
-		color: var(--success);
+		color: var(--success-text);
 	}
 
 	.v-alert[data-tone="warning"] .v-alert__icon {
@@ -46,7 +46,7 @@
 	}
 
 	.v-alert[data-tone="danger"] .v-alert__icon {
-		color: var(--destructive);
+		color: var(--destructive-text);
 	}
 
 	.v-alert__body {
