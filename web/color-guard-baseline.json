@@ -362,180 +362,6 @@
 			"count": 1
 		},
 		{
-			"file": "packages/ui/src/components/chart/chart.tsx",
-			"rule": "raw-color",
-			"value": "#ccc",
-			"count": 3
-		},
-		{
-			"file": "packages/ui/src/components/chart/chart.tsx",
-			"rule": "raw-color",
-			"value": "#fff",
-			"count": 2
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#06b6d4",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#0ea5e9",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#0f172a",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#10b981",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#14b8a6",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#22c55e",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#3b82f6",
-			"count": 2
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#6366f1",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#64748b",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#84cc16",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#8b5cf6",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#a855f7",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#d946ef",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#eab308",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#ec4899",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#ef4444",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#f59e0b",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/ColorSwatch.tsx",
-			"rule": "raw-color",
-			"value": "#f97316",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
-			"rule": "raw-color",
-			"value": "#00f",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
-			"rule": "raw-color",
-			"value": "#0f0",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
-			"rule": "raw-color",
-			"value": "#0ff",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
-			"rule": "raw-color",
-			"value": "#f00",
-			"count": 2
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
-			"rule": "raw-color",
-			"value": "#f0f",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
-			"rule": "raw-color",
-			"value": "#ff0",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
-			"rule": "tailwind-palette",
-			"value": "border-white",
-			"count": 2
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
-			"rule": "tailwind-palette",
-			"value": "from-black",
-			"count": 1
-		},
-		{
-			"file": "packages/ui/src/components/color-picker/HsvColorPicker.tsx",
-			"rule": "tailwind-palette",
-			"value": "from-white",
-			"count": 1
-		},
-		{
 			"file": "packages/ui/src/components/icons/google.tsx",
 			"rule": "raw-color",
 			"value": "#34a853",
@@ -986,18 +812,6 @@
 			"count": 1
 		},
 		{
-			"file": "src/features/chat/ui/SharedTweetSummary.tsx",
-			"rule": "tailwind-palette",
-			"value": "bg-black",
-			"count": 1
-		},
-		{
-			"file": "src/features/chat/ui/SharedTweetSummary.tsx",
-			"rule": "tailwind-palette",
-			"value": "text-white",
-			"count": 1
-		},
-		{
 			"file": "src/features/comments/ui/CommentDrawer.tsx",
 			"rule": "tailwind-palette",
 			"value": "ring-white",
@@ -1412,57 +1226,15 @@
 			"count": 1
 		},
 		{
-			"file": "src/shared/ui/particle-field.tsx",
-			"rule": "raw-color",
-			"value": "#000",
-			"count": 2
-		},
-		{
 			"file": "src/shared/ui/pdf-preview/components/PdfOverlay.tsx",
 			"rule": "tailwind-palette",
 			"value": "text-red-500",
 			"count": 1
 		},
 		{
-			"file": "src/shared/ui/photo-stack-stage.tsx",
-			"rule": "tailwind-palette",
-			"value": "bg-black",
-			"count": 2
-		},
-		{
-			"file": "src/shared/ui/photo-stack-stage.tsx",
-			"rule": "tailwind-palette",
-			"value": "text-white",
-			"count": 2
-		},
-		{
 			"file": "src/shared/ui/spreadsheet-preview/components/SpreadsheetPreview.tsx",
 			"rule": "tailwind-palette",
 			"value": "text-red-500",
-			"count": 1
-		},
-		{
-			"file": "src/shared/ui/terminal-card.tsx",
-			"rule": "tailwind-palette",
-			"value": "bg-amber-400",
-			"count": 1
-		},
-		{
-			"file": "src/shared/ui/terminal-card.tsx",
-			"rule": "tailwind-palette",
-			"value": "bg-emerald-400",
-			"count": 1
-		},
-		{
-			"file": "src/shared/ui/terminal-card.tsx",
-			"rule": "tailwind-palette",
-			"value": "bg-red-500",
-			"count": 1
-		},
-		{
-			"file": "src/shared/ui/terminal-card.tsx",
-			"rule": "raw-color",
-			"value": "rgba(0,0,0,0.06)",
 			"count": 1
 		},
 		{
