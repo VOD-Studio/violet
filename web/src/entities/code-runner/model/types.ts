@@ -51,14 +51,6 @@ export interface ExecTask {
 	duration_ms: number;
 }
 
-/** SSE 流式输出的单个 chunk */
-export interface StreamChunk {
-	/** "stdout" | "stderr" | "done" */
-	type: "stdout" | "stderr" | "done";
-	/** stdout/stderr 为文本片段；done 为 ExecResult 的 JSON 字符串 */
-	data: string;
-}
-
 /** 是否终态（任务结束，停止轮询/SSE） */
 export function isTerminalStatus(status: ExecStatus): boolean {
 	return (

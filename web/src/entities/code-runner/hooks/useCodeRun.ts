@@ -11,7 +11,7 @@ export interface UseCodeRunResult {
 	result: ExecResult | null;
 	/** 错误信息（提交或连接失败时） */
 	error: string | null;
-	/** 执行代码。返回最终结果（或 null 表示失败） */
+	/** 执行代码。失败、重置、被后续运行替换或卸载时返回 null。 */
 	run: (
 		language: string,
 		source: string,
@@ -22,84 +22,92 @@ export interface UseCodeRunResult {
 	reset: () => void;
 }
 
+interface ActiveExecution {
+	controller: AbortController | null;
+	resolve: (result: ExecResult | null) => void;
+}
+
 export function useCodeRun(): UseCodeRunResult {
 	const [state, setState] = useState<RunState>("idle");
 	const [result, setResult] = useState<ExecResult | null>(null);
 	const [error, setError] = useState<string | null>(null);
-	const abortRef = useRef<AbortController | null>(null);
-	const generationRef = useRef(0);
+	const activeRef = useRef<ActiveExecution | null>(null);
 
-	useEffect(() => {
-		return () => {
-			generationRef.current += 1;
-			abortRef.current?.abort();
-		};
+	const cancelCurrent = useCallback(() => {
+		const execution = activeRef.current;
+		activeRef.current = null;
+		execution?.controller?.abort();
+		execution?.resolve(null);
 	}, []);
 
+	useEffect(() => cancelCurrent, [cancelCurrent]);
+
 	const reset = useCallback(() => {
-		generationRef.current += 1;
-		abortRef.current?.abort();
-		abortRef.current = null;
+		cancelCurrent();
 		setState("idle");
 		setResult(null);
 		setError(null);
-	}, []);
+	}, [cancelCurrent]);
 
 	const run = useCallback(
-		async (
+		(
 			language: string,
 			source: string,
 			handlers: Pick<StreamHandlers, "onStdout" | "onStderr">,
 			overrides?: ResourceLimits,
 		): Promise<ExecResult | null> => {
-			const generation = ++generationRef.current;
-			abortRef.current?.abort();
+			cancelCurrent();
+			const completion = Promise.withResolvers<ExecResult | null>();
+			const execution: ActiveExecution = { controller: null, resolve: completion.resolve };
+			activeRef.current = execution;
 			setState("running");
 			setResult(null);
 			setError(null);
 
-			try {
-				const taskId = await submitExecStream({ language, source, overrides });
-				// 提交尚未返回时也可能卸载或换源，不再为旧代码建立流。
-				if (generation !== generationRef.current) return null;
-				return await new Promise<ExecResult | null>((resolve) => {
+			const finish = (res: ExecResult | null, message: string | null = null) => {
+				if (activeRef.current !== execution) {
+					return;
+				}
+				activeRef.current = null;
+				setResult(res);
+				setError(message);
+				setState("done");
+				completion.resolve(res);
+			};
+
+			void (async () => {
+				try {
+					const taskId = await submitExecStream({ language, source, overrides });
+					// POST 仍可完成服务端任务，但被替换或卸载的调用不再建立流。
+					if (activeRef.current !== execution) {
+						return;
+					}
 					const controller = streamExec(taskId, {
 						onStdout: (text) => {
-							if (generation === generationRef.current) handlers.onStdout?.(text);
+							if (activeRef.current === execution) {
+								handlers.onStdout(text);
+							}
 						},
 						onStderr: (text) => {
-							if (generation === generationRef.current) handlers.onStderr?.(text);
-						},
-						onDone: (res) => {
-							if (generation !== generationRef.current) {
-								resolve(null);
-								return;
+							if (activeRef.current === execution) {
+								handlers.onStderr(text);
 							}
-							setResult(res);
-							setState("done");
-							resolve(res);
 						},
-						onError: (err) => {
-							if (generation !== generationRef.current) {
-								resolve(null);
-								return;
-							}
-							setError(err.message);
-							setState("done");
-							resolve(null);
-						},
+						onDone: (res) => finish(res),
+						onError: (err) => finish(null, err.message),
 					});
-					abortRef.current = controller;
-				});
-			} catch (err) {
-				if (generation !== generationRef.current) return null;
-				const msg = err instanceof Error ? err.message : String(err);
-				setError(msg);
-				setState("done");
-				return null;
-			}
+					execution.controller = controller;
+					if (activeRef.current !== execution) {
+						controller.abort();
+					}
+				} catch (err) {
+					finish(null, err instanceof Error ? err.message : String(err));
+				}
+			})();
+
+			return completion.promise;
 		},
-		[],
+		[cancelCurrent],
 	);
 
 	return { state, result, error, run, reset };
