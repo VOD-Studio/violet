@@ -74,7 +74,8 @@
 		gap: 12px;
 		min-inline-size: 0;
 		color: var(--foreground);
-		animation: v-comment-enter 180ms ease-out var(--v-comment-enter-delay, 0ms) both;
+		/* 只用 backwards：结束后不再保留 opacity 动画效果，评论才不会成为永久层叠上下文而把自己的浮层压在后面的评论之下。 */
+		animation: v-comment-enter 180ms ease-out var(--v-comment-enter-delay, 0ms) backwards;
 	}
 
 	.v-comment[data-reply] {
