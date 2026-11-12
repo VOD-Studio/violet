@@ -34,10 +34,10 @@
 | 做了难以逆转的技术选型,「为什么选 X 不选 Y」未来会被问 | ADR | `docs/adr/NNN-slug.md` | 决策一旦反悔成本高 |
 | 团队要反复遵守的代码约定 | guide | `docs/guides/` | 第三个人会写错的地方 |
 | 有人要照着执行的操作流程(部署/配置/联调) | guide/runbook | `docs/guides/` 或 `docs/deploy/` | 有明确步骤可照做 |
-| 组件库开发与消费方反复查阅的指南 | 包内指南 | `web/packages/ui/docs/` | 包内为唯一正文，组件库文档站只 raw import；docs 索引只链接 |
+| 组件库开发与消费方反复查阅的指南 | 包内指南 | `web/packages/ui/docs/` | 包内为唯一正文，文档索引只链接；验证使用独立消费者与实际业务页面 |
 | 独立可复用包的消费与维护指南 | 包内 API / 开发说明 | 对应 `web/packages/<name>/docs/api.md` 与 `DEVELOPMENT.md` | README 放使用入口；可执行示例同源校验，文档索引只链接 |
 | 功能开发前的需求拆解 | PRD Issue + 子 Issue | GitHub Issues；仓库只保留索引链接 | 归属 feature 分支；仅 `gh` 不可用时降级到 `docs/prd/` 与 `docs/issues/` |
-| 外部设计工具产出、需留存原稿的设计稿 | 设计稿归档 | `docs/design/<name>/` | 在线稿可能失效，实现要以原稿为准；原样存放并附 sha256 清单 |
+| 外部设计工具产出、需留存原稿的设计稿 | 设计稿归档 | `docs/design/<name>/` | 原稿用于来源核验，附 sha256 清单；页面稿不覆盖当前组件契约，按现行设计优先级实施 |
 | 单个功能的对外说明 | README 一行 | 对应 README | 不为此建新文件 |
 
 不建:内部实现 walkthrough(代码自表达)、一次性 bug 修复过程(commit 够)、调研草稿无沉淀价值。

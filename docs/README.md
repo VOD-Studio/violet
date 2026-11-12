@@ -9,7 +9,7 @@
 | `adr/` | 架构决策记录（Architecture Decision Records），包含已被采纳或 superseded 的决策。 |
 | `archive/` | 已过时或过渡性的文档，保留历史上下文但不再作为当前依据。 |
 | `deploy/` | 部署、运维、发布手册：含 [发布手册](./deploy/release-runbook.md)、[手动部署](./deploy/manual-deploy.md)、[runner 搭建](./deploy/runner-setup.md)。 |
-| `design/` | 外部设计工具产出的设计稿原稿，含 [Violet UED 设计稿](./design/ued/README.md)：画布索引、画板源文件与引用资源。 |
+| `design/` | 外部设计工具产出的设计稿原稿，含 [Violet 页面与基础设计稿](./design/ued/README.md)：保留画布索引、页面原稿与引用资源，旧组件画板已移除。 |
 | `guides/` | 开发规范、风格指南、最佳实践。含 [前端代码规范](./guides/frontend-style-guide.md)、[Go 测试规范](./guides/go-testing-guide.md)、[MCP Server 使用指南](./guides/mcp-servers.md)、[页面转场指南](./guides/view-transitions.md)、[Nowbeam 接入指南](./guides/nowbeam.md)。 |
 | `issues/` | 按 PRD 或功能主题分组的历史任务/issue 记录。 |
 | `prd/` | 历史本地产品需求文档；新 PRD 使用 GitHub Issue，不在此保留正文副本。 |
@@ -22,11 +22,12 @@
 
 ## 组件库开发
 
-组件库规范留在 `web/packages/ui/docs/`；`/ui` 组件陈列室按占地陈列真实组件，不复制规范正文：
+组件库规范留在 `web/packages/ui/docs/`；组件陈列室已下线，开发与验收直接使用包内规范、独立消费者和实际业务页面：
 
 - [组件库架构](../web/packages/ui/docs/architecture.md)：组件单元、同源 CSS、成熟度与验证边界。
-- [组件设计方法](../web/packages/ui/docs/component-design.md)：消费场景、清单登记、上架展品与真实 tarball 验收。
+- [组件设计方法](../web/packages/ui/docs/component-design.md)：消费场景、清单登记与真实 tarball 验收。
 - [包内规范](../web/packages/ui/AGENTS.md)与[包 README](../web/packages/ui/README.md)：公开入口与当前可执行命令。
+- [页面与组件设计优先级](./adr/0030-frontend-pages-use-existing-components.md)：已有组件优先于旧页面稿，页面改版不复制同类控件。
 
 ## 独立 npm 包
 
