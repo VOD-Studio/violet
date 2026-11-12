@@ -7,6 +7,7 @@ import {
 	CardFooter,
 	CardHeader,
 	CardTitle,
+	iconProps,
 	Switch,
 	Tag,
 } from "@violet/ui";
@@ -127,7 +128,7 @@ export function EmojiGroupCard({ group, onEdit, onDelete, onManageEmojis }: Emoj
 							isDisabled && "opacity-50",
 						)}
 					>
-						<Hash className="size-3.5" />
+						<Hash {...iconProps(14)} />
 						<span className="tabular-nums">{group.id}</span>
 					</div>
 					<div
@@ -136,7 +137,7 @@ export function EmojiGroupCard({ group, onEdit, onDelete, onManageEmojis }: Emoj
 							isDisabled && "opacity-50",
 						)}
 					>
-						<SortAsc className="size-3.5" />
+						<SortAsc {...iconProps(14)} />
 						<span className="tabular-nums">{group.sort_order}</span>
 					</div>
 				</div>
@@ -148,10 +149,10 @@ export function EmojiGroupCard({ group, onEdit, onDelete, onManageEmojis }: Emoj
 						variant="outline"
 						size="sm"
 						onClick={() => onManageEmojis(group.id)}
-						className="flex-1 gap-1.5"
+						className="flex-1"
 						disabled={isDisabled}
 					>
-						<Smile className="size-3.5" />
+						<Smile {...iconProps(14)} />
 						管理表情
 					</Button>
 				) : null}
@@ -162,10 +163,11 @@ export function EmojiGroupCard({ group, onEdit, onDelete, onManageEmojis }: Emoj
 							variant="ghost"
 							size="sm"
 							onClick={() => onEdit(group)}
+							aria-label="编辑"
 							title="编辑"
 							disabled={isDisabled}
 						>
-							<Pencil className="size-3.5" />
+							<Pencil {...iconProps(14)} />
 						</Button>
 					) : null}
 					{onDelete ? (
@@ -174,6 +176,7 @@ export function EmojiGroupCard({ group, onEdit, onDelete, onManageEmojis }: Emoj
 							variant="ghost"
 							size="sm"
 							onClick={() => onDelete(group)}
+							aria-label="删除"
 							title="删除"
 							className={cn(
 								"hover:bg-destructive/10 hover:text-destructive",
@@ -181,7 +184,7 @@ export function EmojiGroupCard({ group, onEdit, onDelete, onManageEmojis }: Emoj
 							)}
 							disabled={isDisabled}
 						>
-							<Trash2 className="size-3.5" />
+							<Trash2 {...iconProps(14)} />
 						</Button>
 					) : null}
 				</div>

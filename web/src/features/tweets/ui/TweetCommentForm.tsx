@@ -15,7 +15,7 @@ import { RichCommentInput } from "@features/comments/ui/RichCommentInput";
 import { ApiError } from "@shared/api/error";
 import type { PictureInput } from "@shared/ui/rich-text-input/RichTextInput";
 import { useNavigate } from "@tanstack/react-router";
-import { Button } from "@violet/ui";
+import { Button, iconProps } from "@violet/ui";
 import { LogIn, Send } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -116,7 +116,7 @@ export function TweetCommentForm({
 						size="sm"
 						disabled={isUploading || overLimit}
 						loading={createComment.isPending}
-						leftIcon={<Send className="size-3.5" />}
+						leftIcon={<Send {...iconProps(14)} />}
 					>
 						{compact ? "回复" : "评论"}
 					</Button>

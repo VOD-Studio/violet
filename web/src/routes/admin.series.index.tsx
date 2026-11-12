@@ -13,6 +13,7 @@ import {
 	Button,
 	ConfirmDialog,
 	DataTable,
+	iconProps,
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
@@ -141,7 +142,7 @@ function AdminSeriesPage() {
 									}
 									aria-label={`目录管理《${row.title}》`}
 								>
-									<BookOpen className="size-3.5" />
+									<BookOpen {...iconProps(14)} />
 								</Button>
 							</span>
 						</TooltipTrigger>
@@ -158,7 +159,7 @@ function AdminSeriesPage() {
 										onClick={() => handleEditMeta(row)}
 										aria-label={`编辑《${row.title}》信息`}
 									>
-										<Pencil className="size-3.5" />
+										<Pencil {...iconProps(14)} />
 									</Button>
 								</span>
 							</TooltipTrigger>
@@ -177,7 +178,7 @@ function AdminSeriesPage() {
 										onClick={() => handleDelete(row)}
 										aria-label={`解散《${row.title}》`}
 									>
-										<Trash2 className="size-3.5" />
+										<Trash2 {...iconProps(14)} />
 									</Button>
 								</span>
 							</TooltipTrigger>
@@ -197,7 +198,7 @@ function AdminSeriesPage() {
 				action={
 					<PermissionGuard permission="series:create">
 						<Button size="sm" onClick={handleCreate}>
-							<Plus className="size-3.5" />
+							<Plus {...iconProps(14)} />
 							建书
 						</Button>
 					</PermissionGuard>

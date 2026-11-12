@@ -1,4 +1,4 @@
-import { GithubIcon } from "@violet/ui";
+import { GithubIcon, iconProps } from "@violet/ui";
 import { ArrowUpRight, AtSign, Globe2, Mail, Rss, Video } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 import styles from "./SocialLinksCard.module.css";
@@ -47,7 +47,7 @@ export function SocialLinksCard({ config }: SocialLinksCardProps) {
 							<strong>{link.label}</strong>
 							{link.handle ? <small>{link.handle}</small> : null}
 						</span>
-						<ArrowUpRight className={styles.arrow} aria-hidden />
+						<ArrowUpRight {...iconProps(14, styles.arrow)} aria-hidden />
 					</a>
 				);
 			})}

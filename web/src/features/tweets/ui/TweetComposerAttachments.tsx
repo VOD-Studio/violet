@@ -2,7 +2,7 @@ import type { QuotedTweet, Tweet } from "@entities/tweet/model/types";
 import { formatRelativeTime } from "@shared/lib/date";
 import { avatarUrl, contentImageUrl } from "@shared/lib/image-url";
 import { TWEET_MESSAGES } from "@shared/lib/tweet-messages";
-import { Button, QuoteCard } from "@violet/ui";
+import { Button, iconProps, QuoteCard } from "@violet/ui";
 import { CircleAlert, X } from "lucide-react";
 import type { TweetComposerImage } from "../hooks/useTweetComposerImages";
 import styles from "./TweetComposer.module.css";
@@ -73,7 +73,7 @@ export function TweetComposerAttachments({
 								className={`${styles.action} absolute top-0 right-0`}
 							>
 								<span className="inline-flex size-6 items-center justify-center rounded-md bg-background/90">
-									<X className="size-3.5" />
+									<X {...iconProps(14)} />
 								</span>
 							</button>
 						</div>

@@ -15,6 +15,7 @@ import {
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
+	iconProps,
 } from "@violet/ui";
 import { cn } from "cn";
 import { ChevronDown, ImagePlus, Upload } from "lucide-react";
@@ -82,6 +83,7 @@ export function EditorToolbar({
 				type="button"
 				variant="ghost"
 				size="sm"
+				aria-label={item.title}
 				title={item.title}
 				disabled={disabled}
 				onMouseDown={keepFocus}
@@ -133,11 +135,12 @@ export function EditorToolbar({
 							type="button"
 							variant="ghost"
 							size="sm"
+							aria-label="插入图片"
 							title="插入图片"
 							className="w-auto min-w-8 px-1.5"
 						>
 							<ImagePlus />
-							<ChevronDown className="size-3 opacity-50" />
+							<ChevronDown {...iconProps(12, "opacity-50")} />
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="end">

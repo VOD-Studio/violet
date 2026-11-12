@@ -20,13 +20,14 @@ import {
 	Scripts,
 	useRouterState,
 } from "@tanstack/react-router";
-import { DocumentScrollbar } from "@violet/ui";
+import { DocumentScrollbar, iconProps } from "@violet/ui";
 import AnnouncementBar from "@widgets/AnnouncementBar";
 import CommandPalette from "@widgets/CommandPalette";
 import Footer from "@widgets/Footer";
 import Header from "@widgets/Header";
 import SiteBackdrop from "@widgets/SiteBackdrop";
 import { cn } from "cn";
+import { LucideProvider } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ApiDocsDialog } from "@/features/api-docs";
 import { LinkConfirmDialog } from "@/features/auth/ui/LinkConfirmDialog";
@@ -39,6 +40,8 @@ import { getSSRDecoration, getSSRDecorationLayers } from "../shared/server/decor
 import { getAuthSession } from "../shared/server/session";
 import { getSSRThemeState } from "../shared/server/theme";
 import appCss from "../styles.css?url";
+
+const defaultIconProps = iconProps();
 
 /** 缓存首次 getAuthSession 结果，客户端 SPA 导航复用避免网络阻塞 */
 let cachedClaims: ReturnType<typeof getAuthSession> extends Promise<infer T>
@@ -251,7 +254,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				/>
 			</head>
 			<body>
-				{children}
+				<LucideProvider
+					size={defaultIconProps.size}
+					strokeWidth={defaultIconProps.strokeWidth}
+				>
+					{children}
+				</LucideProvider>
 				<Scripts />
 			</body>
 		</html>

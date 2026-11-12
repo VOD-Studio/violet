@@ -1,6 +1,6 @@
 import { useChangePassword } from "@features/auth/api/mutations";
 import { useNavigate } from "@tanstack/react-router";
-import { Button, Input, Label } from "@violet/ui";
+import { Button, Input, iconProps, Label } from "@violet/ui";
 import { Check, KeyRound, PencilLine, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -28,12 +28,8 @@ export const PasswordSection = ({ hasPassword }: PasswordSectionProps) => {
 				title="密码"
 				description="当前使用第三方账号登录，未设置密码"
 				action={
-					<Button
-						size="sm"
-						className="gap-1.5"
-						onClick={() => navigate({ to: "/forgot-password" })}
-					>
-						<KeyRound className="size-3.5" />
+					<Button size="sm" onClick={() => navigate({ to: "/forgot-password" })}>
+						<KeyRound {...iconProps(14)} />
 						设置密码
 					</Button>
 				}
@@ -126,7 +122,7 @@ const ChangePasswordCard = () => {
 						onClick={handleEdit}
 						aria-label="修改密码"
 					>
-						<PencilLine className="size-3.5" />
+						<PencilLine {...iconProps(14)} />
 					</Button>
 				) : undefined
 			}
@@ -160,21 +156,16 @@ const ChangePasswordCard = () => {
 					/>
 
 					<div className="flex flex-wrap items-center gap-2 pt-1">
-						<Button
-							onClick={handleSave}
-							disabled={changePassword.isPending}
-							className="gap-1.5"
-						>
-							<Check className="size-3.5" />
+						<Button onClick={handleSave} disabled={changePassword.isPending}>
+							<Check {...iconProps(14)} />
 							{changePassword.isPending ? "修改中..." : "确认修改"}
 						</Button>
 						<Button
 							variant="ghost"
 							onClick={handleCancel}
 							disabled={changePassword.isPending}
-							className="gap-1.5"
 						>
-							<X className="size-3.5" />
+							<X {...iconProps(14)} />
 							取消
 						</Button>
 					</div>

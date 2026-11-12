@@ -1,3 +1,4 @@
+import { iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { Check, ChevronDown, Copy } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
@@ -185,15 +186,15 @@ export function CodeCard({
 					type="button"
 					onClick={handleCopy}
 					className={cn(
-						"flex items-center gap-1 rounded px-1.5 py-0.5 text-xs transition-colors",
+						"flex items-center gap-2 rounded px-1.5 py-0.5 text-xs transition-colors",
 						skin.copy,
 					)}
 					title="复制代码"
 				>
 					{copied ? (
-						<Check className={cn("size-3.5", skin.check)} />
+						<Check {...iconProps(14, skin.check)} />
 					) : (
-						<Copy className="size-3.5" />
+						<Copy {...iconProps(14)} />
 					)}
 					{copied ? "已复制" : "复制"}
 				</button>
@@ -244,7 +245,7 @@ export function CodeCard({
 					<button
 						aria-expanded={expanded}
 						className={cn(
-							"absolute bottom-4 left-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-1 rounded-full border px-4 py-1.5 text-sm shadow-[0_4px_24px_rgba(0,0,0,0.05)] transition-colors",
+							"absolute bottom-4 left-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-2 rounded-full border px-4 py-1.5 text-sm shadow-[0_4px_24px_rgba(0,0,0,0.05)] transition-colors",
 							skin.toggle,
 						)}
 						onClick={toggleCollapsed}

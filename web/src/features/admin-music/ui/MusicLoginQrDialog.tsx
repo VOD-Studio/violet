@@ -135,12 +135,12 @@ function MusicQrSession({ onRetry, onConfirmed }: MusicQrSessionProps) {
 					</>
 				) : qrState === "scanned" ? (
 					<div role="status" className="flex flex-col items-center gap-2">
-						<Smartphone className="size-8 text-primary" />
+						<Smartphone className="size-6 text-primary" />
 						<p className="text-sm">请在手机上确认登录</p>
 					</div>
 				) : qrState === "confirmed" ? (
 					<div role="status" className="flex flex-col items-center gap-2">
-						<CircleCheck className="size-8 text-success" />
+						<CircleCheck className="size-6 text-success" />
 						登录成功
 					</div>
 				) : (

@@ -4,6 +4,7 @@
  * 把扁平的条目列表按目录层级渲染为可折叠树。
  */
 
+import { iconProps } from "@violet/ui";
 import { ChevronRight, File, Folder } from "lucide-react";
 import { useState } from "react";
 import type { ArchiveEntry } from "../types/archive-preview-types";
@@ -75,13 +76,16 @@ function DirNode({ node, depth }: { node: TreeNode; depth: number }) {
 			<button
 				type="button"
 				onClick={() => setExpanded((prev) => !prev)}
-				className="flex w-full items-center gap-1 rounded px-2 py-1 text-left hover:bg-muted"
+				className="flex w-full items-center gap-2 rounded px-2 py-1 text-left hover:bg-muted"
 				style={{ paddingLeft }}
 			>
 				<ChevronRight
-					className={`size-3.5 shrink-0 text-muted-foreground transition-transform ${expanded ? "rotate-90" : ""}`}
+					{...iconProps(
+						14,
+						`shrink-0 text-muted-foreground transition-transform ${expanded ? "rotate-90" : ""}`,
+					)}
 				/>
-				<Folder className="size-3.5 shrink-0 fill-primary/20 text-primary" />
+				<Folder {...iconProps(14, "shrink-0 fill-primary/20 text-primary")} />
 				<span className="truncate">{node.name}</span>
 			</button>
 			{expanded ? (
@@ -108,7 +112,7 @@ function FileRow({ entry, depth = 0 }: { entry: ArchiveEntry; depth?: number }) 
 			title={entry.path}
 		>
 			<span className="flex min-w-0 items-center gap-1">
-				<File className="size-3.5 shrink-0 text-muted-foreground" />
+				<File {...iconProps(14, "shrink-0 text-muted-foreground")} />
 				<span className="truncate">{entry.name}</span>
 			</span>
 			<span className="ml-2 shrink-0 text-xs tabular-nums text-muted-foreground">

@@ -144,7 +144,7 @@ function ForgotPasswordPage() {
 					// 步骤 2：重置码 + 新密码
 					<form onSubmit={onSubmitReset} className="space-y-4">
 						<div className="flex flex-col items-center gap-3 text-center">
-							<MailCheck className="size-12 text-primary" />
+							<MailCheck className="size-6 text-primary" />
 							<p className="text-sm text-muted-foreground">
 								重置码已发送至
 								<br />

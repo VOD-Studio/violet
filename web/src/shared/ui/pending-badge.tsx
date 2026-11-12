@@ -7,6 +7,7 @@
  *
  * 批注卡片使用此角标；评论条目由 SDK CommentItem 显示完整的待审核说明。
  */
+import { iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { Clock } from "lucide-react";
 
@@ -33,7 +34,7 @@ export function PendingBadge({ show, size = "md" }: PendingBadgeProps) {
 			)}
 			title="管理员审核通过后公开"
 		>
-			{size === "md" && <Clock className="size-3" />}
+			{size === "md" && <Clock {...iconProps(12)} />}
 			审批中
 		</span>
 	);

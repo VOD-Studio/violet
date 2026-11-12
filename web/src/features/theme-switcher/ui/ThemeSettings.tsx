@@ -4,7 +4,7 @@ import { DecorationPicker } from "@features/theme-switcher/ui/DecorationPicker";
 import { CustomThemeSwatch, ThemeSwatch } from "@features/theme-switcher/ui/ThemeSwatch";
 import { resolvePresetTheme, SEASONS } from "@shared/lib/theme-preference";
 import { THEME_PRESETS } from "@shared/lib/theme-presets";
-import { Button } from "@violet/ui";
+import { Button, iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { CalendarDays } from "lucide-react";
 import { RadioGroup } from "radix-ui";
@@ -33,11 +33,11 @@ export function ThemeSettings({ onCustomize, className }: ThemeSettingsProps) {
 						aria-pressed={custom !== null}
 						onClick={onCustomize}
 						className={cn(
-							"h-7 gap-1.5 px-2 text-xs",
+							"h-7 px-2 text-xs",
 							custom && "bg-selected text-selected-foreground",
 						)}
 					>
-						<CustomThemeSwatch active={custom !== null} className="size-3.5" />
+						<CustomThemeSwatch active={custom !== null} className="size-5" />
 						自定义
 					</Button>
 				</div>
@@ -52,7 +52,7 @@ export function ThemeSettings({ onCustomize, className }: ThemeSettingsProps) {
 						onClick={() => void switchTheme("follow")}
 						className="flex min-h-10 w-full items-center gap-2 rounded-lg px-2.5 text-xs transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[state=checked]:bg-selected data-[state=checked]:text-selected-foreground"
 					>
-						<CalendarDays aria-hidden className="size-3.5 text-muted-foreground" />
+						<CalendarDays aria-hidden {...iconProps(14, "text-muted-foreground")} />
 						<span>跟随季节</span>
 						<span className="ml-auto text-[11px] text-muted-foreground">
 							当前{themeChoiceTitle(seasonNow)}
@@ -68,7 +68,7 @@ export function ThemeSettings({ onCustomize, className }: ThemeSettingsProps) {
 								className="flex min-h-18 flex-col items-center justify-center gap-1 rounded-xl border border-transparent bg-muted/40 px-1 py-2 text-foreground transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[state=checked]:border-primary/50 data-[state=checked]:bg-selected data-[state=checked]:text-selected-foreground"
 							>
 								<div className="flex items-center gap-1.5 text-sm font-medium">
-									<ThemeSwatch theme={season} className="size-3" />
+									<ThemeSwatch theme={season} className="size-5" />
 									{THEME_PRESETS[season].label}
 								</div>
 								<span className="text-[11px] text-muted-foreground">

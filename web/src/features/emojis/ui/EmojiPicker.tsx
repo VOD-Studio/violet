@@ -4,6 +4,7 @@ import {
 	Button,
 	EmojiPickerPanel,
 	type EmojiPickerPanelProps,
+	iconProps,
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
@@ -124,7 +125,7 @@ function EmojiPickerSession({
 						aria-label="添加表情"
 						onMouseDown={(event) => event.preventDefault()}
 					>
-						<Smile className="size-3.5" />
+						<Smile {...iconProps(14)} />
 					</Button>
 				)}
 			</PopoverTrigger>

@@ -1,4 +1,4 @@
-import { Avatar } from "@violet/ui";
+import { Avatar, iconProps } from "@violet/ui";
 import { cn } from "cn";
 import type { ComponentProps } from "react";
 import { ROW_CLASS } from "./row";
@@ -42,7 +42,7 @@ export function NoticeRow({ notice, onSelect, className, ...props }: NoticeRowPr
 						aria-hidden="true"
 						className="absolute -right-1 -bottom-1 flex size-5.5 items-center justify-center rounded-full border-2 border-background bg-popover text-muted-foreground"
 					>
-						<Icon className="size-3" strokeWidth={1.75} />
+						<Icon {...iconProps(12)} />
 					</span>
 				</span>
 			) : (
@@ -50,7 +50,7 @@ export function NoticeRow({ notice, onSelect, className, ...props }: NoticeRowPr
 					aria-hidden="true"
 					className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
 				>
-					<Icon className="size-4.5" strokeWidth={1.75} />
+					<Icon {...iconProps(18)} />
 				</span>
 			)}
 			<span className="flex min-w-0 flex-1 flex-col">

@@ -1,6 +1,6 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
-import { Segmented, type SegmentedItem } from "@violet/ui";
+import { iconProps, Segmented, type SegmentedItem } from "@violet/ui";
 
 import { ArchiveRestore, Database, FileDown, ServerCog, SquareTerminal } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
@@ -18,7 +18,7 @@ const viewTabs: SegmentedItem<SystemPanelTab>[] = [
 		value: "database",
 		label: (
 			<>
-				<Database className="size-3.5" />
+				<Database {...iconProps(14)} />
 				数据库
 			</>
 		),
@@ -27,7 +27,7 @@ const viewTabs: SegmentedItem<SystemPanelTab>[] = [
 		value: "server",
 		label: (
 			<>
-				<ServerCog className="size-3.5" />
+				<ServerCog {...iconProps(14)} />
 				服务器状态
 			</>
 		),
@@ -39,7 +39,7 @@ const manageTabs: SegmentedItem<SystemPanelTab>[] = [
 		value: "sql",
 		label: (
 			<>
-				<SquareTerminal className="size-3.5" />
+				<SquareTerminal {...iconProps(14)} />
 				SQL 控制台
 			</>
 		),
@@ -48,7 +48,7 @@ const manageTabs: SegmentedItem<SystemPanelTab>[] = [
 		value: "export",
 		label: (
 			<>
-				<FileDown className="size-3.5" />
+				<FileDown {...iconProps(14)} />
 				数据导出
 			</>
 		),
@@ -57,7 +57,7 @@ const manageTabs: SegmentedItem<SystemPanelTab>[] = [
 		value: "backup",
 		label: (
 			<>
-				<ArchiveRestore className="size-3.5" />
+				<ArchiveRestore {...iconProps(14)} />
 				备份与恢复
 			</>
 		),

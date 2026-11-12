@@ -6,7 +6,7 @@ import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { createFileRoute } from "@tanstack/react-router";
-import { Button } from "@violet/ui";
+import { Button, iconProps } from "@violet/ui";
 import { Plus } from "lucide-react";
 import * as React from "react";
 
@@ -27,7 +27,7 @@ function AdminChatBotsPage() {
 			description="为外部程序签发聊天凭据，bot 以虚拟用户身份收发消息"
 			action={
 				<Button size="sm" onClick={() => setCreateOpen(true)}>
-					<Plus className="size-3.5" />
+					<Plus {...iconProps(14)} />
 					注册 Bot
 				</Button>
 			}

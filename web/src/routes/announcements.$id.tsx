@@ -7,7 +7,7 @@ import { BackLink } from "@shared/ui/back-link";
 import { FloatingBack } from "@shared/ui/floating-back";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { createFileRoute } from "@tanstack/react-router";
-import { Button } from "@violet/ui";
+import { Button, iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { ArrowLeft, Check, Copy } from "lucide-react";
 import { useState } from "react";
@@ -145,11 +145,11 @@ function AnnouncementDetailPage() {
 					disabled={acked}
 					className="font-mono"
 				>
-					<Check className="size-3.5" />
+					<Check {...iconProps(14)} />
 					{acked ? "已读" : "确认已读"}
 				</Button>
 				<Button variant="outline" size="sm" onClick={handleCopyId} className="font-mono">
-					{copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+					{copied ? <Check {...iconProps(14)} /> : <Copy {...iconProps(14)} />}
 					{copied ? "已复制" : `复制 ID · ${String(a.id).padStart(3, "0")}`}
 				</Button>
 			</footer>

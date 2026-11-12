@@ -1,3 +1,4 @@
+import { iconProps } from "@violet/ui";
 import { ArrowLeft, BookOpen, ChevronDown, Clock3, Search } from "lucide-react";
 import type { MockBook, SeriesSurface } from "../model/mock";
 import { CURRENT_CHAPTER, JAVA_BOOK, SHELF_BOOKS } from "../model/mock";
@@ -20,7 +21,11 @@ function Shelf() {
 						</p>
 						<h1 className="text-4xl font-semibold tracking-tight">书架</h1>
 					</div>
-					<button type="button" className="rounded-full border border-current/15 p-3">
+					<button
+						type="button"
+						aria-label="搜索书架"
+						className="rounded-full border border-current/15 p-3"
+					>
 						<Search className="size-5" />
 					</button>
 				</header>
@@ -141,7 +146,7 @@ function BookDirectory({ className = "" }: { className?: string }) {
 									</span>
 									<span className="flex-1">{item.title}</span>
 									<span className="flex items-center gap-1 text-xs opacity-45">
-										<Clock3 className="size-3" />
+										<Clock3 {...iconProps(12)} />
 										{item.readMinutes} min
 									</span>
 								</div>

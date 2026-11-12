@@ -33,6 +33,7 @@ import {
 	DataTable,
 	type DataTableColumn,
 	type DataTablePagination,
+	iconProps,
 	Modal,
 	SearchInput,
 	Select,
@@ -335,7 +336,7 @@ function AdminMediaPage() {
 				)
 			) : currentFiles.length === 0 ? (
 				<div className="flex h-40 flex-col items-center justify-center gap-2 text-muted-foreground">
-					<Images className="size-8 opacity-40" />
+					<Images className="size-6 opacity-40" />
 					<p className="text-sm">暂无素材</p>
 				</div>
 			) : view === "grid" ? (
@@ -518,6 +519,7 @@ function MediaTable({
 			cell: (file) => (
 				<button
 					type="button"
+					aria-label={`预览 ${file.original_name}`}
 					onClick={(e) => onPreview?.(file, e.currentTarget)}
 					className="block size-10 overflow-hidden rounded bg-muted"
 				>
@@ -612,10 +614,11 @@ function MediaTable({
 							iconOnly
 							size="sm"
 							variant="ghost"
+							aria-label="编辑"
 							title="编辑"
 							onClick={() => onEdit(file)}
 						>
-							<Pencil className="size-3.5" />
+							<Pencil {...iconProps(14)} />
 						</Button>
 					) : null}
 					{onDelete ? (
@@ -623,11 +626,12 @@ function MediaTable({
 							iconOnly
 							size="sm"
 							variant="ghost"
+							aria-label="删除"
 							title="删除"
 							className="hover:bg-destructive/10 hover:text-destructive"
 							onClick={() => onDelete(file)}
 						>
-							<Trash2 className="size-3.5" />
+							<Trash2 {...iconProps(14)} />
 						</Button>
 					) : null}
 				</div>
@@ -651,7 +655,7 @@ function MediaTable({
 						onClick={onBatchDelete}
 						disabled={batchDeleting}
 					>
-						<Trash2 className="size-3.5" />
+						<Trash2 {...iconProps(14)} />
 						删除
 					</Button>
 				) : null

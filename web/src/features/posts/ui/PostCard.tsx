@@ -4,7 +4,7 @@ import { formatRelativeTime } from "@shared/lib/date";
 import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
 import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { Link } from "@tanstack/react-router";
-import { AvatarGroup, Tag } from "@violet/ui";
+import { AvatarGroup, iconProps, Tag } from "@violet/ui";
 import { ImageOff, Star } from "lucide-react";
 import { BLOG_SCOPE, markSharedSource, SharedElement } from "@/shared/lib/view-transition";
 
@@ -67,12 +67,12 @@ const PostCard = ({ post, size = "md" }: PostCardProps) => {
 						<div
 							className={`flex w-full ${coverH} items-center justify-center bg-muted`}
 						>
-							<ImageOff className="h-8 w-8 text-muted-foreground/50" />
+							<ImageOff className="size-6 text-muted-foreground/50" />
 						</div>
 					</Link>
 				)}
 				{post.is_featured && (
-					<Tag icon={<Star className="size-3" />} className="absolute top-2 left-2 z-10">
+					<Tag icon={<Star {...iconProps(12)} />} className="absolute top-2 left-2 z-10">
 						精选
 					</Tag>
 				)}

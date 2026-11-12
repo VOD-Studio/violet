@@ -6,7 +6,7 @@ import { formatDate } from "@shared/lib/date";
 import { avatarUrl } from "@shared/lib/image-url";
 import { useSharedElement } from "@shared/lib/view-transition";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Button } from "@violet/ui";
+import { Button, iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { differenceInDays } from "date-fns";
 import { CalendarDays, Check, Copy, Gauge, MessageCircle, Share2, SquarePen } from "lucide-react";
@@ -125,9 +125,9 @@ export function UserProfilePanel({
 					}}
 				>
 					{copied === "handle" ? (
-						<Check className="size-3.5" />
+						<Check {...iconProps(14)} />
 					) : (
-						<Copy className="size-3.5 text-muted-foreground" />
+						<Copy {...iconProps(14, "text-muted-foreground")} />
 					)}
 				</Button>
 			</div>

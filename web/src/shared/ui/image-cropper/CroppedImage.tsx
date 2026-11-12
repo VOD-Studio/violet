@@ -189,7 +189,7 @@ export function CroppedImage({
 				)}
 				style={ratio ? { aspectRatio: ratio } : undefined}
 			>
-				<ImageOff className="size-8 max-h-[60%] max-w-[60%] text-muted-foreground/50" />
+				<ImageOff className="size-6 max-h-[60%] max-w-[60%] text-muted-foreground/50" />
 			</div>
 		);
 	}

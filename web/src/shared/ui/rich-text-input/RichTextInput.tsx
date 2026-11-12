@@ -11,6 +11,7 @@ import {
 import type { InlineEmoji } from "@shared/lib/inline-emoji";
 import {
 	filterMentionCandidates,
+	iconProps,
 	type MentionCandidate,
 	MentionList,
 	mentionOptionId,
@@ -525,6 +526,7 @@ export function RichTextInput({
 			type="button"
 			onClick={() => fileInputRef.current?.click()}
 			disabled={!canAddMore}
+			aria-label="上传图片"
 			title={canAddMore ? "上传图片" : `最多 ${maxImages} 张图片`}
 			className={
 				isField
@@ -535,7 +537,7 @@ export function RichTextInput({
 						)
 			}
 		>
-			<ImageIcon className={isInline || isField ? "size-4" : "size-3.5"} />
+			<ImageIcon {...iconProps(isInline || isField ? 16 : 14)} />
 		</button>
 	);
 
@@ -621,7 +623,7 @@ export function RichTextInput({
 							className="absolute right-1 top-1 rounded-full bg-(--image-overlay-strong) p-1 text-(--image-overlay-foreground) opacity-0 transition-opacity group-hover:opacity-100"
 							aria-label="删除图片"
 						>
-							<X className="size-3" />
+							<X {...iconProps(12)} />
 						</button>
 					)}
 				</div>

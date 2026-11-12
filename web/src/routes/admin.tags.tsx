@@ -11,6 +11,7 @@ import {
 	Button,
 	ConfirmDialog,
 	DataTable,
+	iconProps,
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
@@ -108,7 +109,7 @@ function AdminTagsPage() {
 										onClick={() => handleEdit(row)}
 										aria-label={`编辑标签 ${row.name}`}
 									>
-										<Pencil className="size-3.5" />
+										<Pencil {...iconProps(14)} />
 									</Button>
 								</span>
 							</TooltipTrigger>
@@ -127,7 +128,7 @@ function AdminTagsPage() {
 										onClick={() => handleDelete(row)}
 										aria-label={`删除标签 ${row.name}`}
 									>
-										<Trash2 className="size-3.5" />
+										<Trash2 {...iconProps(14)} />
 									</Button>
 								</span>
 							</TooltipTrigger>
@@ -147,7 +148,7 @@ function AdminTagsPage() {
 				action={
 					<PermissionGuard permission="tag:create">
 						<Button size="sm" onClick={handleCreate}>
-							<Plus className="size-3.5" />
+							<Plus {...iconProps(14)} />
 							创建标签
 						</Button>
 					</PermissionGuard>

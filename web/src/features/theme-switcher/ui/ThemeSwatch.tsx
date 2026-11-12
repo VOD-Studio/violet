@@ -1,4 +1,5 @@
 import type { Season } from "@shared/lib/theme-preference";
+import { iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { Pipette } from "lucide-react";
 
@@ -24,7 +25,9 @@ export function ThemeSwatch({
 
 /** 自定义选项的圆点：已生效时显示自定义主题的实色，否则显示取色图标。 */
 export function CustomThemeSwatch({ active, className }: { active: boolean; className?: string }) {
-	if (active) return <ThemeSwatch theme="custom" className={className} />;
+	if (active) {
+		return <ThemeSwatch theme="custom" className={className} />;
+	}
 	return (
 		<span
 			aria-hidden
@@ -33,7 +36,7 @@ export function CustomThemeSwatch({ active, className }: { active: boolean; clas
 				className,
 			)}
 		>
-			<Pipette className="size-3/5" />
+			<Pipette {...iconProps(12)} />
 		</span>
 	);
 }

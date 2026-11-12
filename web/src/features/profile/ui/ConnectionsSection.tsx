@@ -8,7 +8,7 @@ import { useGithubOAuth } from "@features/auth/hooks/use-github-oauth";
 import { useOAuthVisibility } from "@features/auth/hooks/use-oauth-visibility";
 import { GoogleOAuthGate } from "@features/auth/ui/GoogleOAuthGate";
 import { useGoogleLogin, useGoogleOAuth } from "@react-oauth/google";
-import { Button, GithubIcon } from "@violet/ui";
+import { Button, GithubIcon, iconProps } from "@violet/ui";
 import { CircleCheck, KeyRound, Link2, Link2Off, Mail } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { toast } from "sonner";
@@ -166,7 +166,7 @@ const BindButton = ({ onClick, disabled }: { onClick: () => void; disabled?: boo
 		size="sm"
 		onClick={onClick}
 		loading={disabled}
-		leftIcon={<Link2 className="size-3.5" />}
+		leftIcon={<Link2 {...iconProps(14)} />}
 		className="h-auto p-0 text-sm text-primary"
 	>
 		绑定
@@ -180,7 +180,7 @@ const UnbindButton = ({ onClick, disabled }: { onClick: () => void; disabled?: b
 		size="sm"
 		onClick={onClick}
 		loading={disabled}
-		leftIcon={<Link2Off className="size-3.5" />}
+		leftIcon={<Link2Off {...iconProps(14)} />}
 		className="h-auto p-0 text-sm text-muted-foreground hover:text-destructive"
 	>
 		解绑
@@ -211,12 +211,12 @@ const Row = ({
 			<dd className="flex items-center gap-3 text-sm">
 				{bound ? (
 					<>
-						<CircleCheck className="size-3.5 text-success" />
+						<CircleCheck {...iconProps(14, "text-success")} />
 						<span>{boundText}</span>
 					</>
 				) : (
 					<>
-						<Link2Off className="size-3.5 text-muted-foreground/60" />
+						<Link2Off {...iconProps(14, "text-muted-foreground/60")} />
 						<span className="text-muted-foreground">{unboundText}</span>
 					</>
 				)}

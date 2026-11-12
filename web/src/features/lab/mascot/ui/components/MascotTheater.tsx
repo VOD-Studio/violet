@@ -2,7 +2,7 @@ import type { EmotionDef } from "@violet/mascot";
 import { resolveEmotionId } from "@violet/mascot";
 import type { MascotHandle } from "@violet/mascot/react";
 import { MascotStage } from "@violet/mascot/react";
-import { Segmented, type SegmentedItem } from "@violet/ui";
+import { iconProps, Segmented, type SegmentedItem } from "@violet/ui";
 import { cn } from "cn";
 import { Grid2X2, Pause, Play, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { type PointerEvent as ReactPointerEvent, useRef, useState } from "react";
@@ -20,7 +20,7 @@ const DOCK_SEGMENTS: SegmentedItem<DockView>[] = [
 		value: "states",
 		label: (
 			<>
-				<Grid2X2 className="size-3" />
+				<Grid2X2 {...iconProps(12)} />
 				状态
 			</>
 		),
@@ -29,7 +29,7 @@ const DOCK_SEGMENTS: SegmentedItem<DockView>[] = [
 		value: "controls",
 		label: (
 			<>
-				<SlidersHorizontal className="size-3" />
+				<SlidersHorizontal {...iconProps(12)} />
 				控制
 			</>
 		),
@@ -139,10 +139,10 @@ export function MascotTheater({
 						<button
 							type="button"
 							onClick={replay}
-							className="inline-flex h-8 cursor-pointer items-center gap-1.5 px-2.5 font-mono text-[9px] tracking-[0.08em] text-muted-foreground uppercase transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neon-blue"
+							className="inline-flex h-8 cursor-pointer items-center gap-2 px-2.5 font-mono text-[9px] tracking-[0.08em] text-muted-foreground uppercase transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neon-blue"
 							title="重播当前表情动画与对白"
 						>
-							<RotateCcw className="size-3" />
+							<RotateCcw {...iconProps(12)} />
 							<span className="hidden sm:inline">重播</span>
 						</button>
 						<button
@@ -150,14 +150,14 @@ export function MascotTheater({
 							onClick={onToggleTour}
 							aria-pressed={isTouring}
 							className={cn(
-								"inline-flex h-8 cursor-pointer items-center gap-1.5 px-2.5 font-mono text-[9px] tracking-[0.08em] uppercase transition-colors focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neon-blue",
+								"inline-flex h-8 cursor-pointer items-center gap-2 px-2.5 font-mono text-[9px] tracking-[0.08em] uppercase transition-colors focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neon-blue",
 								isTouring
 									? "bg-foreground text-background"
 									: "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
 							)}
 							title={isTouring ? "暂停自动巡演" : "开始自动巡演"}
 						>
-							{isTouring ? <Pause className="size-3" /> : <Play className="size-3" />}
+							{isTouring ? <Pause {...iconProps(12)} /> : <Play {...iconProps(12)} />}
 							<span className="hidden sm:inline">巡演</span>
 						</button>
 					</div>

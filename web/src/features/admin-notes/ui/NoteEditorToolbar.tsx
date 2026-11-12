@@ -1,6 +1,6 @@
 import type { AdminNote } from "@features/admin-notes/model/types";
 import { NOTE_STATUS_LABELS } from "@features/admin-notes/model/types";
-import { Badge, Button, ConfirmDialog } from "@violet/ui";
+import { Badge, Button, ConfirmDialog, iconProps } from "@violet/ui";
 
 import { ArrowLeft, ExternalLink, SlidersHorizontal, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -73,7 +73,7 @@ export function NoteEditorToolbar({
 						className="lg:hidden"
 						onClick={onOpenSettings}
 					>
-						<SlidersHorizontal className="mr-1.5 size-3.5" />
+						<SlidersHorizontal {...iconProps(16)} />
 						设置
 					</Button>
 				)}

@@ -1,4 +1,4 @@
-import { GithubIcon } from "@violet/ui";
+import { GithubIcon, iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { AppWindow, BookOpen, Laptop, Link2, Music, Rss, User } from "lucide-react";
 import type { ReactNode } from "react";
@@ -152,7 +152,7 @@ function MediaRow({ media }: { media: ProfileNowMedia }) {
 					aria-hidden="true"
 					className="absolute -right-0.75 -bottom-0.75 flex size-5.5 items-center justify-center rounded-full border-2 border-card bg-primary text-primary-foreground"
 				>
-					<Music className="size-2.75" />
+					<Music {...iconProps(12)} />
 				</span>
 			</span>
 			<div className="min-w-0 flex-1">
@@ -249,7 +249,7 @@ export function ProfileCard({
 					) : null}
 					{identity.rssHref ? (
 						<CircleLink label="RSS" href={identity.rssHref}>
-							<Rss aria-hidden="true" className="size-3.75" />
+							<Rss aria-hidden="true" className="size-4" />
 						</CircleLink>
 					) : null}
 				</span>
@@ -259,8 +259,8 @@ export function ProfileCard({
 				<section aria-label="此刻" className="mt-5">
 					<div className="flex items-center justify-between">
 						<span className="text-[12.5px] font-semibold">此刻</span>
-						<span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-							<Laptop aria-hidden="true" className="size-3.25" />
+						<span className="flex items-center gap-1 text-xs text-muted-foreground">
+							<Laptop aria-hidden="true" {...iconProps(14)} />
 							{now.deviceName}
 						</span>
 					</div>
@@ -340,7 +340,7 @@ export function ProfileCard({
 							FOCUS,
 						)}
 					>
-						<Icon aria-hidden="true" className="size-3.5" />
+						<Icon aria-hidden="true" {...iconProps(14)} />
 						{label}
 					</LinkComponent>
 				))}

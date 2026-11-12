@@ -8,7 +8,7 @@
  * 定位与开闭由 MathView 的 Popover 承载，本组件只管面板本身。
  */
 
-import { Button } from "@violet/ui";
+import { Button, iconProps } from "@violet/ui";
 import { Trash2 } from "lucide-react";
 import { useMemo } from "react";
 
@@ -63,9 +63,9 @@ export function MathEditPanel({
 						variant="ghost"
 						size="sm"
 						onClick={onDelete}
-						className="h-7 gap-1 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+						className="h-7 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
 					>
-						<Trash2 className="size-3" />
+						<Trash2 {...iconProps(12)} />
 						删除
 					</Button>
 				</div>

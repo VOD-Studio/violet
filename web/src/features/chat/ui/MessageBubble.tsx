@@ -2,7 +2,7 @@
  * 消息气泡与 Bot 回复卡片，承载操作条和表情反应。
  */
 import { stripPlaceholdersForPreview } from "@shared/ui/rich-text-input/use-rich-text-input";
-import { Spinner } from "@violet/ui";
+import { iconProps, Spinner } from "@violet/ui";
 import { cn } from "cn";
 import { Check, Copy, Pencil, Reply, Trash2, TriangleAlert } from "lucide-react";
 import { motion } from "motion/react";
@@ -186,7 +186,9 @@ export function MessageBubble({
 							/>
 						) : message.is_deleted ? (
 							<div className="rounded-xl border border-dashed border-destructive/30 bg-destructive/5 px-3 py-2 text-xs italic text-muted-foreground">
-								<TriangleAlert className="mr-1.5 inline size-3.5 text-destructive" />
+								<TriangleAlert
+									{...iconProps(14, "mr-1.5 inline text-destructive")}
+								/>
 								消息已被管理员删除
 							</div>
 						) : isBotReply ? (
@@ -264,7 +266,7 @@ export function MessageBubble({
 												onClick={() => setEditing(true)}
 												type="button"
 											>
-												<Pencil className="size-3.5" />
+												<Pencil {...iconProps(14)} />
 											</button>
 										)}
 										{onReply && (
@@ -274,7 +276,7 @@ export function MessageBubble({
 												onClick={onReply}
 												type="button"
 											>
-												<Reply className="size-3.5" />
+												<Reply {...iconProps(14)} />
 											</button>
 										)}
 										{message.type === "text" && (
@@ -285,9 +287,9 @@ export function MessageBubble({
 												type="button"
 											>
 												{copied ? (
-													<Check className="size-3.5 text-primary" />
+													<Check {...iconProps(14, "text-primary")} />
 												) : (
-													<Copy className="size-3.5" />
+													<Copy {...iconProps(14)} />
 												)}
 											</button>
 										)}
@@ -298,7 +300,7 @@ export function MessageBubble({
 												onClick={onDelete}
 												type="button"
 											>
-												<Trash2 className="size-3.5" />
+												<Trash2 {...iconProps(14)} />
 											</button>
 										)}
 									</div>
@@ -334,13 +336,15 @@ export function MessageBubble({
 					<div className="flex min-h-4 max-w-full items-center">
 						{sending && (
 							<div
-								className="flex max-w-full items-center gap-1.5 px-1 text-[11px] leading-4 text-muted-foreground"
+								className="flex max-w-full items-center gap-1 px-1 text-[11px] leading-4 text-muted-foreground"
 								role="status"
 								aria-live="polite"
 							>
 								{sending.status === "failed" ? (
 									<>
-										<TriangleAlert className="size-3.5 shrink-0 text-destructive" />
+										<TriangleAlert
+											{...iconProps(14, "shrink-0 text-destructive")}
+										/>
 										<span className="wrap-anywhere text-destructive">
 											{sending.error}
 										</span>

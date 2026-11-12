@@ -1,5 +1,5 @@
 import type { ActiveNav, NavItem } from "@shared/config/nav";
-import { DropdownGroup, Kbd, Segmented, type SegmentedItem } from "@violet/ui";
+import { DropdownGroup, iconProps, Kbd, Segmented, type SegmentedItem } from "@violet/ui";
 import { cn } from "cn";
 import { ChevronDown, Search } from "lucide-react";
 import type { ReactNode } from "react";
@@ -144,7 +144,10 @@ export function SiteNavbar({
 				item.to === undefined && !collapsed ? (
 					<ChevronDown
 						aria-hidden="true"
-						className="size-3 transition-transform duration-300 group-data-[state=open]/item:rotate-180"
+						{...iconProps(
+							12,
+							"transition-transform duration-300 group-data-[state=open]/item:rotate-180",
+						)}
 					/>
 				) : undefined,
 			title: expanded && !current ? item.label : undefined,

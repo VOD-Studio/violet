@@ -16,6 +16,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
+	iconProps,
 	Separator,
 } from "@violet/ui";
 import { cn } from "cn";
@@ -120,7 +121,7 @@ const HeaderActions = ({ user }: { user?: UserDTO | null }) => {
 										{/* root 用户必有邮箱，无需重复显示；仅普通用户显示验证勾 */}
 										{!user.is_root && user.email_verified && (
 											<CircleCheck
-												className="size-3 shrink-0 text-success"
+												{...iconProps(12, "shrink-0 text-success")}
 												aria-label="邮箱已验证"
 											/>
 										)}
@@ -147,7 +148,7 @@ const HeaderActions = ({ user }: { user?: UserDTO | null }) => {
 									className="flex items-center gap-2.5 rounded-md px-2.5 py-2"
 								>
 									<span className="flex size-7 items-center justify-center rounded-md bg-muted/60 text-muted-foreground">
-										<User className="size-3.5" />
+										<User {...iconProps(14)} />
 									</span>
 									<span className="flex-1 text-sm">个人中心</span>
 								</Link>
@@ -159,7 +160,7 @@ const HeaderActions = ({ user }: { user?: UserDTO | null }) => {
 										className="flex items-center gap-2.5 rounded-md px-2.5 py-2"
 									>
 										<span className="flex size-7 items-center justify-center rounded-md bg-muted/60 text-muted-foreground">
-											<LayoutDashboard className="size-3.5" />
+											<LayoutDashboard {...iconProps(14)} />
 										</span>
 										<span className="flex-1 text-sm">后台管理</span>
 									</Link>
@@ -176,7 +177,7 @@ const HeaderActions = ({ user }: { user?: UserDTO | null }) => {
 								className="rounded-md px-2.5 py-2"
 							>
 								<span className="flex size-7 items-center justify-center rounded-md bg-muted/60 text-muted-foreground">
-									<LogOut className="size-3.5" />
+									<LogOut {...iconProps(14)} />
 								</span>
 								<span className="flex-1 text-sm">
 									{logout.isPending ? "登出中..." : "登出"}

@@ -9,6 +9,7 @@
  *     修复旧实现顶层评论挂载即拉回复的 N+1）
  *   - 作者徽章：comment.author.id === tweetAuthorId（后端无 is_author，前端推导）
  */
+
 import type { TweetComment, TweetCommentPicture } from "@entities/tweet/model/types";
 import { contentImageUrl, imageUrl } from "@shared/lib/image-url";
 import {
@@ -18,6 +19,7 @@ import {
 } from "@shared/ui/comment-section";
 import { EmojiText } from "@shared/ui/emoji-text";
 import { ImageGrid } from "@shared/ui/image-grid";
+import { iconProps } from "@violet/ui";
 import { Trash2 } from "lucide-react";
 import { useMemo } from "react";
 import { useTweetReplies } from "../api/queries";
@@ -117,7 +119,7 @@ export function buildTweetCommentConfig({
 							disabled={isDeleting(comment.id)}
 							className="inline-flex h-7 items-center text-xs text-muted-foreground transition-colors hover:text-destructive focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
 						>
-							<Trash2 className="size-3.5" />
+							<Trash2 {...iconProps(14)} />
 						</button>
 					)}
 				</>

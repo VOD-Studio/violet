@@ -5,6 +5,7 @@ import { CropUploadDialog, type CropUploadResult } from "@features/upload/ui/Cro
 import { avatarUrl } from "@shared/lib/image-url";
 import { Link } from "@tanstack/react-router";
 import {
+	iconProps,
 	PageShell,
 	Tabs,
 	TabsContent,
@@ -126,7 +127,7 @@ const ProfileSidebar = ({ user }: { user: UserDTO }) => {
 							"transition-colors group-hover/avatar:bg-primary group-hover/avatar:text-primary-foreground",
 						)}
 					>
-						<Camera className="size-3" />
+						<Camera {...iconProps(12)} />
 					</span>
 					<input
 						type="file"
@@ -156,7 +157,10 @@ const ProfileSidebar = ({ user }: { user: UserDTO }) => {
 									<span className="truncate">{getDisplayName(user)}</span>
 									<ArrowUpRight
 										aria-hidden
-										className="size-3.5 shrink-0 text-muted-foreground transition-colors group-hover/public:text-primary group-focus-visible/public:text-primary"
+										{...iconProps(
+											14,
+											"shrink-0 text-muted-foreground transition-colors group-hover/public:text-primary group-focus-visible/public:text-primary",
+										)}
 									/>
 								</Link>
 							</TooltipTrigger>

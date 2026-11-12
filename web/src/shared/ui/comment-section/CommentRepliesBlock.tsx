@@ -13,7 +13,7 @@
  *      新增回复追加在下方，「查看更多回复」继续分页
  *   3. 「回复 @yyy」标注：后端 reply_to_name 优先，没有则由 parentId 从可见回复推导
  */
-import { CommentReplies } from "@violet/ui";
+import { CommentReplies, iconProps } from "@violet/ui";
 import { ChevronDown } from "lucide-react";
 import { useId, useState } from "react";
 import { CommentItem } from "./CommentItem";
@@ -93,10 +93,10 @@ export function CommentRepliesBlock<T extends CommentRaw>({
 					onClick={() => setExpanded((value) => !value)}
 					aria-expanded={expanded}
 					aria-controls={knownReplies.length > 0 || expanded ? listId : undefined}
-					className="mt-3 flex items-center gap-1 py-1 text-xs text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+					className="mt-3 flex items-center gap-2 py-1 text-xs text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
 				>
 					<ChevronDown
-						className={`size-3 ${expanded ? "rotate-180" : ""}`}
+						{...iconProps(12, expanded ? "rotate-180" : "")}
 						aria-hidden="true"
 					/>
 					{toggleLabel}

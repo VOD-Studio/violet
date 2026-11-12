@@ -1,5 +1,5 @@
 import type { Emoji } from "@entities/emoji/model/types";
-import { Button } from "@violet/ui";
+import { Button, iconProps } from "@violet/ui";
 
 import { Check, Link, SquarePen, Trash2, Type } from "lucide-react";
 import type { ReactNode } from "react";
@@ -44,7 +44,7 @@ export function EmojiCard({
 								: "border-muted-foreground/30 bg-background/80"
 						}`}
 					>
-						{isSelected && <Check className="size-3 text-primary-foreground" />}
+						{isSelected && <Check {...iconProps(12, "text-primary-foreground")} />}
 					</div>
 				</div>
 			)}
@@ -78,7 +78,7 @@ export function EmojiCard({
 							}}
 							aria-label="编辑表情"
 						>
-							<SquarePen className="size-3" />
+							<SquarePen {...iconProps(12)} />
 						</Button>
 						<Button
 							iconOnly
@@ -91,16 +91,16 @@ export function EmojiCard({
 							}}
 							aria-label="删除表情"
 						>
-							<Trash2 className="size-3" />
+							<Trash2 {...iconProps(12)} />
 						</Button>
 					</div>
 
 					<div className="absolute bottom-1 left-1 right-1 hidden transition-opacity group-hover:block">
 						<div className="flex items-center gap-0.5 rounded bg-background/90 px-1.5 py-0.5 text-xs backdrop-blur-sm">
 							{emoji.url ? (
-								<Link className="size-3 shrink-0" />
+								<Link {...iconProps(12, "shrink-0")} />
 							) : (
-								<Type className="size-3 shrink-0" />
+								<Type {...iconProps(12, "shrink-0")} />
 							)}
 							<span className="truncate">{emoji.name}</span>
 						</div>

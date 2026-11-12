@@ -1,4 +1,4 @@
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@violet/ui";
+import { HoverCard, HoverCardContent, HoverCardTrigger, iconProps } from "@violet/ui";
 import { ArrowUpRight } from "lucide-react";
 import styles from "./ProfileMention.module.css";
 import type { ArticleProfile } from "./types";
@@ -50,7 +50,7 @@ export function ProfileMention({
 				) : null}
 				<p className={styles.openHint}>
 					{actionLabel}
-					<ArrowUpRight aria-hidden />
+					<ArrowUpRight {...iconProps(12)} aria-hidden />
 				</p>
 			</HoverCardContent>
 		</HoverCard>

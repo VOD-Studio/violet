@@ -1,4 +1,4 @@
-import { Button } from "@violet/ui";
+import { Button, iconProps } from "@violet/ui";
 import { cn } from "cn";
 import {
 	ChevronLeft,
@@ -83,7 +83,7 @@ export function ImagePreviewControls({
 						disabled={scale <= 0.5}
 						className="text-foreground hover:bg-muted active:scale-100 sm:size-9"
 					>
-						<ZoomOut className="h-4 w-4 sm:h-5 sm:w-5" />
+						<ZoomOut {...iconProps(16, "sm:size-5")} />
 					</Button>
 					<span className="min-w-10 shrink-0 text-center text-xs text-foreground sm:min-w-12.5 sm:text-sm">
 						{Math.round(scale * 100)}%
@@ -97,7 +97,7 @@ export function ImagePreviewControls({
 						disabled={scale >= 3}
 						className="text-foreground hover:bg-muted active:scale-100 sm:size-9"
 					>
-						<ZoomIn className="h-4 w-4 sm:h-5 sm:w-5" />
+						<ZoomIn {...iconProps(16, "sm:size-5")} />
 					</Button>
 
 					{/* 分隔线 */}
@@ -111,9 +111,10 @@ export function ImagePreviewControls({
 							size="sm"
 							onClick={handleClick(onRotateLeft)}
 							className="text-foreground hover:bg-muted active:scale-100 sm:size-9"
+							aria-label="左旋转"
 							title="左旋转"
 						>
-							<RotateCcw className="h-4 w-4 sm:h-5 sm:w-5" />
+							<RotateCcw {...iconProps(16, "sm:size-5")} />
 						</Button>
 					) : null}
 					{onRotateRight ? (
@@ -123,9 +124,10 @@ export function ImagePreviewControls({
 							size="sm"
 							onClick={handleClick(onRotateRight)}
 							className="text-foreground hover:bg-muted active:scale-100 sm:size-9"
+							aria-label="右旋转"
 							title="右旋转"
 						>
-							<RotateCw className="h-4 w-4 sm:h-5 sm:w-5" />
+							<RotateCw {...iconProps(16, "sm:size-5")} />
 						</Button>
 					) : null}
 
@@ -137,9 +139,10 @@ export function ImagePreviewControls({
 							size="sm"
 							onClick={handleClick(onFlipX)}
 							className="text-foreground hover:bg-muted active:scale-100 sm:size-9"
+							aria-label="水平翻转"
 							title="水平翻转"
 						>
-							<FlipHorizontal className="h-4 w-4 sm:h-5 sm:w-5" />
+							<FlipHorizontal {...iconProps(16, "sm:size-5")} />
 						</Button>
 					) : null}
 					{onFlipY ? (
@@ -149,9 +152,10 @@ export function ImagePreviewControls({
 							size="sm"
 							onClick={handleClick(onFlipY)}
 							className="text-foreground hover:bg-muted active:scale-100 sm:size-9"
+							aria-label="垂直翻转"
 							title="垂直翻转"
 						>
-							<FlipVertical className="h-4 w-4 sm:h-5 sm:w-5" />
+							<FlipVertical {...iconProps(16, "sm:size-5")} />
 						</Button>
 					) : null}
 
@@ -166,9 +170,10 @@ export function ImagePreviewControls({
 								size="sm"
 								onClick={handleClick(onReset)}
 								className="text-foreground hover:bg-muted active:scale-100 sm:size-9"
+								aria-label="重置（也可双击图片）"
 								title="重置（也可双击图片）"
 							>
-								<RefreshCcw className="h-4 w-4 sm:h-5 sm:w-5" />
+								<RefreshCcw {...iconProps(16, "sm:size-5")} />
 							</Button>
 						</>
 					) : null}
@@ -192,7 +197,7 @@ export function ImagePreviewControls({
 										"bg-muted font-medium text-foreground ring-1 ring-border",
 								)}
 							>
-								<List className="h-4 w-4 sm:h-5 sm:w-5" />
+								<List {...iconProps(16, "sm:size-5")} />
 							</Button>
 							<span className="text-xs text-foreground sm:text-sm">
 								{currentIndex + 1} / {totalImages}
@@ -207,7 +212,7 @@ export function ImagePreviewControls({
 						aria-label="关闭"
 						className="text-foreground hover:bg-muted active:scale-100 sm:size-9"
 					>
-						<X className="h-4 w-4 sm:h-5 sm:w-5" />
+						<X {...iconProps(16, "sm:size-5")} />
 					</Button>
 				</div>
 			</div>
@@ -223,7 +228,7 @@ export function ImagePreviewControls({
 						aria-label="上一张"
 						className="absolute top-1/2 left-2 z-50 hidden size-10 -translate-y-1/2 rounded-full border border-border bg-card text-foreground shadow-soft hover:bg-muted active:translate-y-[-50%]! sm:left-4 sm:flex sm:size-12"
 					>
-						<ChevronLeft className="h-6 w-6 sm:h-8 sm:w-8" />
+						<ChevronLeft className="size-6" />
 					</Button>
 					<Button
 						iconOnly
@@ -233,7 +238,7 @@ export function ImagePreviewControls({
 						aria-label="下一张"
 						className="absolute top-1/2 right-2 z-50 hidden size-10 -translate-y-1/2 rounded-full border border-border bg-card text-foreground shadow-soft hover:bg-muted active:translate-y-[-50%]! sm:right-4 sm:flex sm:size-12"
 					>
-						<ChevronRight className="h-6 w-6 sm:h-8 sm:w-8" />
+						<ChevronRight className="size-6" />
 					</Button>
 				</>
 			) : null}

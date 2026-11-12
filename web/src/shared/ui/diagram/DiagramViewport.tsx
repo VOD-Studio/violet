@@ -11,7 +11,7 @@
  * 不感知 mermaid：children 是任意渲染产物（SVG），纯交互容器。
  */
 
-import { Button } from "@violet/ui";
+import { Button, iconProps } from "@violet/ui";
 import {
 	Check,
 	Copy,
@@ -146,7 +146,7 @@ export function DiagramViewport({
 								aria-label="放大"
 								title="放大"
 							>
-								<ZoomIn className="size-3.5" />
+								<ZoomIn {...iconProps(14)} />
 							</Button>
 							<Button
 								iconOnly
@@ -156,7 +156,7 @@ export function DiagramViewport({
 								aria-label="缩小"
 								title="缩小"
 							>
-								<ZoomOut className="size-3.5" />
+								<ZoomOut {...iconProps(14)} />
 							</Button>
 							<Button
 								iconOnly
@@ -166,7 +166,7 @@ export function DiagramViewport({
 								aria-label="重置缩放"
 								title="重置缩放与位置"
 							>
-								<RotateCcw className="size-3.5" />
+								<RotateCcw {...iconProps(14)} />
 							</Button>
 							<span className="w-9 text-center text-[10px] tabular-nums text-muted-foreground">
 								{Math.round(state.scale * 100)}%
@@ -184,9 +184,9 @@ export function DiagramViewport({
 							title={copied ? "已复制" : "复制源码"}
 						>
 							{copied ? (
-								<Check className="size-3.5 text-green-400" />
+								<Check {...iconProps(14, "text-green-400")} />
 							) : (
-								<Copy className="size-3.5" />
+								<Copy {...iconProps(14)} />
 							)}
 						</Button>
 					) : null}
@@ -202,7 +202,7 @@ export function DiagramViewport({
 								aria-expanded={exportMenuOpen}
 								title="导出"
 							>
-								<Download className="size-3.5" />
+								<Download {...iconProps(14)} />
 							</Button>
 							{exportMenuOpen ? (
 								<div
@@ -212,7 +212,7 @@ export function DiagramViewport({
 									<button
 										type="button"
 										role="menuitem"
-										className="flex items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-accent"
+										className="flex items-center gap-3 rounded px-2 py-1.5 text-xs hover:bg-accent"
 										onClick={() => {
 											exportSvgFile(exportSvg).catch((error: unknown) => {
 												toast.error(
@@ -224,13 +224,13 @@ export function DiagramViewport({
 											setExportMenuOpen(false);
 										}}
 									>
-										<FileCode className="size-3.5" />
+										<FileCode {...iconProps(14)} />
 										导出 SVG
 									</button>
 									<button
 										type="button"
 										role="menuitem"
-										className="flex items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-accent"
+										className="flex items-center gap-3 rounded px-2 py-1.5 text-xs hover:bg-accent"
 										onClick={() => {
 											exportPng(exportSvg).catch((error: unknown) => {
 												toast.error(
@@ -242,7 +242,7 @@ export function DiagramViewport({
 											setExportMenuOpen(false);
 										}}
 									>
-										<FileImage className="size-3.5" />
+										<FileImage {...iconProps(14)} />
 										导出 PNG
 									</button>
 								</div>
@@ -258,9 +258,9 @@ export function DiagramViewport({
 						title={state.locked ? "解锁缩放（可平移放大）" : "锁定（恢复页面滚动）"}
 					>
 						{state.locked ? (
-							<Lock className="size-3.5" />
+							<Lock {...iconProps(14)} />
 						) : (
-							<LockOpen className="size-3.5" />
+							<LockOpen {...iconProps(14)} />
 						)}
 					</Button>
 					{onFullscreen ? (
@@ -272,7 +272,7 @@ export function DiagramViewport({
 							aria-label="全屏查看"
 							title="全屏查看"
 						>
-							<Maximize className="size-3.5" />
+							<Maximize {...iconProps(14)} />
 						</Button>
 					) : null}
 				</div>

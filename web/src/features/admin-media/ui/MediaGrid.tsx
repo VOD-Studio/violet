@@ -1,6 +1,6 @@
 import type { MediaFile } from "@entities/media/model/types";
 import { imageUrl } from "@shared/lib/image-url";
-import { Button } from "@violet/ui";
+import { Button, iconProps } from "@violet/ui";
 import type { LucideIcon } from "lucide-react";
 import { Crop, FileText, Film, Music, Pencil, Trash2 } from "lucide-react";
 
@@ -77,6 +77,7 @@ function MediaCard({
 			{/* 缩略图区 */}
 			<button
 				type="button"
+				aria-label={`预览 ${file.original_name}`}
 				onClick={(e) => onPreview?.(file, e.currentTarget)}
 				className="flex aspect-square w-full items-center justify-center overflow-hidden bg-muted"
 			>
@@ -96,7 +97,7 @@ function MediaCard({
 						className="h-full w-full object-cover transition-transform group-hover:scale-105"
 					/>
 				) : (
-					<FileIcon mime={file.mime_type} className="size-10 text-muted-foreground" />
+					<FileIcon mime={file.mime_type} className="size-6 text-muted-foreground" />
 				)}
 			</button>
 
@@ -120,9 +121,10 @@ function MediaCard({
 						variant="secondary"
 						className="size-7 shadow-sm"
 						onClick={() => onPickCover(file)}
+						aria-label="选帧设封面"
 						title="选帧设封面"
 					>
-						<Film className="size-3" />
+						<Film {...iconProps(12)} />
 					</Button>
 				) : null}
 				{isImage && onCrop ? (
@@ -132,9 +134,10 @@ function MediaCard({
 						variant="secondary"
 						className="size-7 shadow-sm"
 						onClick={() => onCrop(file)}
+						aria-label="裁剪"
 						title="裁剪"
 					>
-						<Crop className="size-3" />
+						<Crop {...iconProps(12)} />
 					</Button>
 				) : null}
 				{onEdit ? (
@@ -144,9 +147,10 @@ function MediaCard({
 						variant="secondary"
 						className="size-7 shadow-sm"
 						onClick={() => onEdit(file)}
+						aria-label="编辑"
 						title="编辑"
 					>
-						<Pencil className="size-3" />
+						<Pencil {...iconProps(12)} />
 					</Button>
 				) : null}
 				{onDelete ? (
@@ -156,9 +160,10 @@ function MediaCard({
 						variant="secondary"
 						className="size-7 shadow-sm hover:bg-destructive hover:text-destructive-foreground"
 						onClick={() => onDelete(file)}
+						aria-label="删除"
 						title="删除"
 					>
-						<Trash2 className="size-3" />
+						<Trash2 {...iconProps(12)} />
 					</Button>
 				) : null}
 			</div>

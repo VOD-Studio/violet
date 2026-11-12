@@ -28,6 +28,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 	Input,
+	iconProps,
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
@@ -308,7 +309,7 @@ function AdminPostsPage() {
 			action={
 				canCreate ? (
 					<Button size="sm" onClick={() => navigate({ to: "/admin/posts/new" })}>
-						<Plus className="size-3.5" />
+						<Plus {...iconProps(14)} />
 						新建文章
 					</Button>
 				) : null
@@ -357,7 +358,7 @@ function AdminPostsPage() {
 								onClick={() => runBulk("restore")}
 								disabled={batchMut.isPending}
 							>
-								<RotateCcw className="size-3.5" />
+								<RotateCcw {...iconProps(14)} />
 								恢复
 							</Button>
 							<Button
@@ -366,7 +367,7 @@ function AdminPostsPage() {
 								onClick={() => setPendingBulk("hard_delete")}
 								disabled={batchMut.isPending}
 							>
-								<Trash2 className="size-3.5" />
+								<Trash2 {...iconProps(14)} />
 								彻底删除
 							</Button>
 						</>
@@ -378,7 +379,7 @@ function AdminPostsPage() {
 								onClick={() => runBulk("publish")}
 								disabled={batchMut.isPending}
 							>
-								<Send className="size-3.5" />
+								<Send {...iconProps(14)} />
 								发布
 							</Button>
 							<Button
@@ -387,7 +388,7 @@ function AdminPostsPage() {
 								onClick={() => runBulk("archive")}
 								disabled={batchMut.isPending}
 							>
-								<Archive className="size-3.5" />
+								<Archive {...iconProps(14)} />
 								归档
 							</Button>
 							<Button
@@ -396,7 +397,7 @@ function AdminPostsPage() {
 								onClick={() => runBulk("feature")}
 								disabled={batchMut.isPending}
 							>
-								<Star className="size-3.5" />
+								<Star {...iconProps(14)} />
 								加精
 							</Button>
 							<Button
@@ -405,7 +406,7 @@ function AdminPostsPage() {
 								onClick={() => runBulk("unfeature")}
 								disabled={batchMut.isPending}
 							>
-								<StarOff className="size-3.5" />
+								<StarOff {...iconProps(14)} />
 								取消精选
 							</Button>
 							<Button
@@ -414,7 +415,7 @@ function AdminPostsPage() {
 								onClick={() => setPendingBulk("delete")}
 								disabled={batchMut.isPending}
 							>
-								<Trash2 className="size-3.5" />
+								<Trash2 {...iconProps(14)} />
 								删除
 							</Button>
 						</>
@@ -528,11 +529,12 @@ function RowActions({
 						iconOnly
 						variant="ghost"
 						size="sm"
+						aria-label="恢复"
 						title="恢复"
 						onClick={handleRestore}
 						disabled={restorePost.isPending}
 					>
-						<Undo2 className="size-3.5" />
+						<Undo2 {...iconProps(14)} />
 					</Button>
 				) : null}
 				{canHardDelete ? (
@@ -540,11 +542,12 @@ function RowActions({
 						iconOnly
 						variant="ghost"
 						size="sm"
+						aria-label="彻底删除"
 						title="彻底删除"
 						className="hover:bg-destructive/10 hover:text-destructive"
 						onClick={() => onDelete(row)}
 					>
-						<Trash2 className="size-3.5" />
+						<Trash2 {...iconProps(14)} />
 					</Button>
 				) : null}
 			</div>
@@ -562,11 +565,12 @@ function RowActions({
 						iconOnly
 						variant="ghost"
 						size="sm"
+						aria-label="更多操作"
 						title="更多操作"
 						className="w-auto min-w-8 px-1.5"
 					>
 						<Ellipsis />
-						<ChevronDown className="size-3 opacity-50" />
+						<ChevronDown {...iconProps(12, "opacity-50")} />
 					</Button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end">
@@ -666,10 +670,10 @@ function TagFilter({
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
 			<PopoverTrigger asChild>
-				<Button variant="outline" size="sm" className="h-9 gap-1.5">
-					<TagIcon className="size-3.5" />
+				<Button variant="outline" size="sm" className="h-9">
+					<TagIcon {...iconProps(14)} />
 					{selected.length > 0 ? `标签 (${selected.length})` : "标签筛选"}
-					<ChevronDown className="size-3 opacity-50" />
+					<ChevronDown {...iconProps(12, "opacity-50")} />
 				</Button>
 			</PopoverTrigger>
 			<PopoverContent className="w-60 p-0" align="start">

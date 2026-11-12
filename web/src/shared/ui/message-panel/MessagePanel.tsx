@@ -1,6 +1,7 @@
 import {
 	Button,
 	Empty,
+	iconProps,
 	ListHighlight,
 	ListHighlightItem,
 	Skeleton,
@@ -162,7 +163,7 @@ function ChatList({ chat }: { chat: MessagePanelChat }) {
 			<Button asChild variant="secondary" className="mt-1.5 w-full rounded-[10px] text-13">
 				<LinkComponent href="/chat">
 					进入聊天室
-					<ArrowRight aria-hidden="true" className="size-3.5" />
+					<ArrowRight aria-hidden="true" {...iconProps(14)} />
 				</LinkComponent>
 			</Button>
 		</>

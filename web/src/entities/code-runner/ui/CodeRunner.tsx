@@ -16,7 +16,7 @@ import { useCodeRunnerAvailability } from "@entities/code-runner/hooks/useCodeRu
 import { useVimPreference } from "@entities/code-runner/hooks/useVimPreference";
 import { CodeMirrorEditor } from "@entities/code-runner/ui/CodeMirrorEditor";
 import type { TerminalHandle } from "@entities/code-runner/ui/Terminal";
-import { Button } from "@violet/ui";
+import { Button, iconProps } from "@violet/ui";
 import { ChevronDown, ChevronUp, Play, Terminal as TerminalIcon } from "lucide-react";
 import { lazy, Suspense, useCallback, useRef, useState } from "react";
 import codeScrollbar from "@/shared/ui/code-scrollbar.module.css";
@@ -158,9 +158,8 @@ export function CodeRunner({ language, source, overridesJson }: CodeRunnerProps)
 						variant={isRunning ? "secondary" : "primary"}
 						onClick={handleRun}
 						disabled={isRunning || !availability.allowed}
-						className="gap-1"
 					>
-						<Play className="size-3" />
+						<Play {...iconProps(12)} />
 						{isRunning ? "运行中…" : (availability.reason ?? "运行")}
 					</Button>
 				</div>
@@ -199,14 +198,14 @@ export function CodeRunner({ language, source, overridesJson }: CodeRunnerProps)
 				<button
 					type="button"
 					onClick={() => setTerminalOpen((v) => !v)}
-					className="flex w-full items-center gap-1.5 px-3 py-1.5 text-xs text-white/60 transition-colors hover:bg-white/5 hover:text-white/80"
+					className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-white/60 transition-colors hover:bg-white/5 hover:text-white/80"
 				>
 					{terminalOpen ? (
-						<ChevronDown className="size-3" />
+						<ChevronDown {...iconProps(12)} />
 					) : (
-						<ChevronUp className="size-3" />
+						<ChevronUp {...iconProps(12)} />
 					)}
-					<TerminalIcon className="size-3" />
+					<TerminalIcon {...iconProps(12)} />
 					输出
 				</button>
 				{terminalOpen && (

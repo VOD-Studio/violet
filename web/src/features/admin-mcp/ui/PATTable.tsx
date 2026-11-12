@@ -6,6 +6,7 @@ import {
 	DataTable,
 	type DataTableColumn,
 	type DataTablePagination,
+	iconProps,
 	Tag,
 	Tooltip,
 	TooltipContent,
@@ -82,7 +83,7 @@ export function PATTable({ tokens, pagination, loading, onConnect, onEdit }: PAT
 									onClick={() => onConnect(row)}
 									aria-label={`查看令牌 ${row.name} 接入配置`}
 								>
-									<Cable className="size-3.5" />
+									<Cable {...iconProps(14)} />
 								</Button>
 							</span>
 						</TooltipTrigger>
@@ -97,7 +98,7 @@ export function PATTable({ tokens, pagination, loading, onConnect, onEdit }: PAT
 								onClick={() => onEdit(row)}
 								aria-label={`编辑令牌 ${row.name}`}
 							>
-								<Pencil className="size-3.5" />
+								<Pencil {...iconProps(14)} />
 							</Button>
 						</TooltipTrigger>
 						<TooltipContent>编辑令牌</TooltipContent>
@@ -114,7 +115,7 @@ export function PATTable({ tokens, pagination, loading, onConnect, onEdit }: PAT
 									disabled={del.isPending}
 									aria-label={`吊销令牌 ${row.name}`}
 								>
-									<Trash2 className="size-3.5" />
+									<Trash2 {...iconProps(14)} />
 								</Button>
 							</span>
 						</TooltipTrigger>

@@ -131,7 +131,7 @@ function RegisterPage() {
 					// 步骤 2：验证码输入
 					<div className="space-y-6">
 						<div className="flex flex-col items-center gap-3 text-center">
-							<MailCheck className="size-12 text-primary" />
+							<MailCheck className="size-6 text-primary" />
 							<p className="text-sm text-muted-foreground">
 								验证码已发送至
 								<br />

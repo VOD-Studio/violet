@@ -12,6 +12,7 @@ import {
 	ConfirmDialog,
 	DataTable,
 	type DataTableColumn,
+	iconProps,
 	Select,
 	SelectContent,
 	SelectItem,
@@ -132,7 +133,7 @@ export function NotesAdminListPage() {
 									disabled={!canManage}
 									aria-label={`编辑笔记 ${row.title || row.id.slice(0, 8)}`}
 								>
-									<Pencil className="size-3.5" />
+									<Pencil {...iconProps(14)} />
 								</Button>
 							</span>
 						</TooltipTrigger>
@@ -150,7 +151,7 @@ export function NotesAdminListPage() {
 									disabled={!canManage}
 									aria-label={`删除笔记 ${row.title || row.id.slice(0, 8)}`}
 								>
-									<Trash2 className="size-3.5" />
+									<Trash2 {...iconProps(14)} />
 								</Button>
 							</span>
 						</TooltipTrigger>

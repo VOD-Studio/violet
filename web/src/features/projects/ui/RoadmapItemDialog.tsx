@@ -6,6 +6,7 @@ import {
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
+	iconProps,
 	Tag,
 } from "@violet/ui";
 import { ExternalLink, Lock, Pencil, Trash2, X } from "lucide-react";
@@ -93,7 +94,7 @@ export function RoadmapItemDialog({
 							</DialogTitle>
 							{item.blocked && !editing ? (
 								<p className="flex items-center gap-1.5 text-sm text-destructive">
-									<Lock className="size-3.5 shrink-0" aria-hidden="true" />
+									<Lock {...iconProps(14, "shrink-0")} aria-hidden="true" />
 									被阻塞：还有未完成的前置条目
 								</p>
 							) : null}
@@ -172,7 +173,9 @@ export function RoadmapItemDialog({
 																				}
 																			>
 																				<X
-																					className="size-3.5"
+																					{...iconProps(
+																						14,
+																					)}
 																					aria-hidden="true"
 																				/>
 																			</Button>
@@ -231,7 +234,7 @@ export function RoadmapItemDialog({
 												className="inline-flex items-center gap-1.5 underline-offset-4 hover:underline"
 											>
 												<ExternalLink
-													className="size-3.5"
+													{...iconProps(14)}
 													aria-hidden="true"
 												/>
 												{link.label || link.url}

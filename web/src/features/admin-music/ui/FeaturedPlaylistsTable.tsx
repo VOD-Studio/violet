@@ -2,6 +2,7 @@ import {
 	Button,
 	Card,
 	ConfirmDialog,
+	iconProps,
 	Switch,
 	Table,
 	TableBody,
@@ -136,7 +137,7 @@ export function FeaturedPlaylistsTable({
 
 			{!isLoading && playlists.length === 0 ? (
 				<div className="flex min-h-48 flex-col items-center justify-center gap-3 p-6 text-center">
-					<Disc3 className="size-8 text-muted-foreground" />
+					<Disc3 className="size-6 text-muted-foreground" />
 					<div className="space-y-1">
 						<p className="font-medium text-sm">尚未添加歌单</p>
 						<p className="text-muted-foreground text-xs">
@@ -202,9 +203,10 @@ export function FeaturedPlaylistsTable({
 															orderMutation.isPending
 														}
 														onClick={() => handleMove(index, "up")}
+														aria-label="上移"
 														title="上移"
 													>
-														<ArrowUp className="size-3.5" />
+														<ArrowUp {...iconProps(14)} />
 													</Button>
 													<Button
 														variant="ghost"
@@ -216,9 +218,10 @@ export function FeaturedPlaylistsTable({
 															orderMutation.isPending
 														}
 														onClick={() => handleMove(index, "down")}
+														aria-label="下移"
 														title="下移"
 													>
-														<ArrowDown className="size-3.5" />
+														<ArrowDown {...iconProps(14)} />
 													</Button>
 												</div>
 											</TableCell>
@@ -247,7 +250,7 @@ export function FeaturedPlaylistsTable({
 																className="text-muted-foreground hover:text-foreground"
 																title="在网易云音乐打开"
 															>
-																<ExternalLink className="size-3.5" />
+																<ExternalLink {...iconProps(14)} />
 															</a>
 														</div>
 														<div className="font-mono text-muted-foreground text-xs">
@@ -291,9 +294,14 @@ export function FeaturedPlaylistsTable({
 														variant="ghost"
 														size="sm"
 														onClick={() => onViewTracks(item)}
-														className="h-8 gap-1 text-xs"
+														className="h-8 text-xs"
 													>
-														<Disc3 className="size-3.5 text-muted-foreground" />
+														<Disc3
+															{...iconProps(
+																14,
+																"text-muted-foreground",
+															)}
+														/>
 														曲目
 													</Button>
 													{canManage && (
@@ -305,9 +313,10 @@ export function FeaturedPlaylistsTable({
 															}
 															disabled={removeMutation.isPending}
 															className="size-8 p-0 text-destructive hover:bg-destructive/10"
+															aria-label="移除歌单"
 															title="移除歌单"
 														>
-															<Trash2 className="size-3.5" />
+															<Trash2 {...iconProps(14)} />
 														</Button>
 													)}
 												</div>

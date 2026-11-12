@@ -8,6 +8,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 	Input,
+	iconProps,
 	Segmented,
 	type SegmentedItem,
 	Tag,
@@ -162,7 +163,7 @@ export function AddPlaylistDialog({
 						<div className="mt-4 -mx-1 -mb-1 flex min-h-0 flex-1 flex-col overflow-hidden p-1">
 							{!isConnected ? (
 								<div className="flex flex-1 flex-col items-center justify-center space-y-3 py-12 text-center">
-									<Headphones className="size-10 text-muted-foreground" />
+									<Headphones className="size-6 text-muted-foreground" />
 									<p className="font-medium text-foreground text-sm">
 										未连接站点网易云账号
 									</p>
@@ -243,7 +244,11 @@ export function AddPlaylistDialog({
 																				className="text-muted-foreground hover:text-foreground"
 																				title="在网易云打开"
 																			>
-																				<ExternalLink className="size-3" />
+																				<ExternalLink
+																					{...iconProps(
+																						12,
+																					)}
+																				/>
 																			</a>
 																		</div>
 																		<div className="flex items-center gap-2 text-muted-foreground text-xs">
@@ -276,7 +281,7 @@ export function AddPlaylistDialog({
 																			item.name,
 																		)
 																	}
-																	className="h-8 gap-1 text-xs"
+																	className="h-8 text-xs"
 																>
 																	{isAdded ? (
 																		<span className="text-muted-foreground">
@@ -284,7 +289,9 @@ export function AddPlaylistDialog({
 																		</span>
 																	) : (
 																		<>
-																			<Plus className="size-3.5" />
+																			<Plus
+																				{...iconProps(14)}
+																			/>
 																			选入
 																		</>
 																	)}
@@ -311,7 +318,7 @@ export function AddPlaylistDialog({
 													disabled={libraryPage <= 1}
 													onClick={() => setLibraryPage((p) => p - 1)}
 												>
-													<ChevronLeft className="size-3.5" />
+													<ChevronLeft {...iconProps(14)} />
 													上一页
 												</Button>
 												<Button
@@ -322,7 +329,7 @@ export function AddPlaylistDialog({
 													onClick={() => setLibraryPage((p) => p + 1)}
 												>
 													下一页
-													<ChevronRight className="size-3.5" />
+													<ChevronRight {...iconProps(14)} />
 												</Button>
 											</div>
 										</div>
@@ -347,9 +354,9 @@ export function AddPlaylistDialog({
 										size="sm"
 										disabled={!inputPlaylistId.trim() || addMutation.isPending}
 										onClick={() => handleAddById(inputPlaylistId)}
-										className="gap-1.5 shrink-0"
+										className="shrink-0"
 									>
-										<Plus className="size-3.5" />
+										<Plus {...iconProps(14)} />
 										添加
 									</Button>
 								</div>
@@ -372,9 +379,9 @@ export function AddPlaylistDialog({
 										variant="outline"
 										size="sm"
 										disabled={!searchKeyword.trim() || isSearchLoading}
-										className="gap-1.5 shrink-0"
+										className="shrink-0"
 									>
-										<Search className="size-3.5" />
+										<Search {...iconProps(14)} />
 										搜索
 									</Button>
 								</form>
@@ -425,7 +432,9 @@ export function AddPlaylistDialog({
 																		className="text-muted-foreground hover:text-foreground"
 																		title="在网易云打开"
 																	>
-																		<ExternalLink className="size-3" />
+																		<ExternalLink
+																			{...iconProps(12)}
+																		/>
 																	</a>
 																</div>
 																<div className="flex items-center gap-2 text-muted-foreground text-xs">
@@ -447,7 +456,7 @@ export function AddPlaylistDialog({
 															onClick={() =>
 																handleAddById(item.id, item.name)
 															}
-															className="h-8 gap-1 text-xs"
+															className="h-8 text-xs"
 														>
 															{isAdded ? (
 																<span className="text-muted-foreground">
@@ -455,7 +464,7 @@ export function AddPlaylistDialog({
 																</span>
 															) : (
 																<>
-																	<Plus className="size-3.5" />
+																	<Plus {...iconProps(14)} />
 																	选入
 																</>
 															)}

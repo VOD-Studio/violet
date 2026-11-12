@@ -13,7 +13,7 @@
  * 定位与开闭由 DiagramPopoverView 的 Portal 承载，本组件只管面板本身。
  */
 
-import { Button, Spinner } from "@violet/ui";
+import { Button, iconProps, Spinner } from "@violet/ui";
 import { Trash2 } from "lucide-react";
 
 import type { MermaidRenderState } from "../hooks/useMermaidSvg";
@@ -88,9 +88,9 @@ export function DiagramEditPanel({
 					variant="ghost"
 					size="sm"
 					onClick={onDelete}
-					className="h-7 gap-1 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+					className="h-7 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
 				>
-					<Trash2 className="size-3" />
+					<Trash2 {...iconProps(12)} />
 					删除
 				</Button>
 			</div>

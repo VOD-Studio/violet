@@ -9,6 +9,7 @@ import {
 	DataTable,
 	type DataTableColumn,
 	Input,
+	iconProps,
 	Modal,
 	Select,
 	SelectContent,
@@ -136,10 +137,11 @@ function AdminLogsPage() {
 					iconOnly
 					variant="ghost"
 					size="sm"
+					aria-label="查看详情"
 					title="查看详情"
 					onClick={() => setDetailLog(row)}
 				>
-					<Eye className="size-3.5" />
+					<Eye {...iconProps(14)} />
 				</Button>
 			),
 		},

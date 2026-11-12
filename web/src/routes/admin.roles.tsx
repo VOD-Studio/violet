@@ -13,6 +13,7 @@ import {
 	Button,
 	ConfirmDialog,
 	DataTable,
+	iconProps,
 	Tag,
 	Tooltip,
 	TooltipContent,
@@ -113,7 +114,7 @@ function AdminRolesPage() {
 			sortable: true,
 			cell: (row) => (
 				<div className="flex items-center gap-1 text-muted-foreground">
-					<Users className="size-3.5" />
+					<Users {...iconProps(14)} />
 					<span>{row.user_count || 0}</span>
 				</div>
 			),
@@ -157,7 +158,7 @@ function AdminRolesPage() {
 											onClick={() => handleConfigurePermissions(row)}
 											aria-label={`配置权限 ${row.name}`}
 										>
-											<Settings className="size-3.5" />
+											<Settings {...iconProps(14)} />
 										</Button>
 									</span>
 								</TooltipTrigger>
@@ -175,7 +176,7 @@ function AdminRolesPage() {
 											onClick={() => handleEdit(row)}
 											aria-label={`编辑角色 ${row.name}`}
 										>
-											<Pencil className="size-3.5" />
+											<Pencil {...iconProps(14)} />
 										</Button>
 									</span>
 								</TooltipTrigger>
@@ -195,7 +196,7 @@ function AdminRolesPage() {
 											disabled={isBuiltin || deleteRole.isPending}
 											aria-label={`删除角色 ${row.name}`}
 										>
-											<Trash2 className="size-3.5" />
+											<Trash2 {...iconProps(14)} />
 										</Button>
 									</span>
 								</TooltipTrigger>
@@ -218,7 +219,7 @@ function AdminRolesPage() {
 				action={
 					<PermissionGuard permission="role:manage">
 						<Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-							<Plus className="size-3.5" />
+							<Plus {...iconProps(14)} />
 							创建角色
 						</Button>
 					</PermissionGuard>

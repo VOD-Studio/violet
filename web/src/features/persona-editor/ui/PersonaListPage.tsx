@@ -14,6 +14,7 @@ import {
 	ConfirmDialog,
 	DataTable,
 	type DataTableColumn,
+	iconProps,
 	SearchInput,
 	Tooltip,
 	TooltipContent,
@@ -147,9 +148,9 @@ export function PersonaListPage() {
 								aria-label={`${canManage ? "编辑" : "查看"}人设 ${row.name || row.id.slice(0, 8)}`}
 							>
 								{canManage ? (
-									<Pencil className="size-3.5" />
+									<Pencil {...iconProps(14)} />
 								) : (
-									<Eye className="size-3.5" />
+									<Eye {...iconProps(14)} />
 								)}
 							</Button>
 						</TooltipTrigger>
@@ -169,7 +170,7 @@ export function PersonaListPage() {
 										onClick={() => setDeleting(row)}
 										aria-label={`删除人设 ${row.name || row.id.slice(0, 8)}`}
 									>
-										<Trash2 className="size-3.5" />
+										<Trash2 {...iconProps(14)} />
 									</Button>
 								</span>
 							</TooltipTrigger>

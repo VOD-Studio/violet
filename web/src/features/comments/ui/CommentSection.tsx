@@ -17,7 +17,7 @@ import { InlineLogin } from "@features/auth/ui/InlineLogin";
 import { fetchComments } from "@features/comments/api/queries";
 import { CommentList, CommentSection as CommentSectionShell } from "@shared/ui/comment-section";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { Button, GithubIcon, GoogleIcon } from "@violet/ui";
+import { Button, GithubIcon, GoogleIcon, iconProps } from "@violet/ui";
 import { ChevronDown } from "lucide-react";
 import { useMemo, useState } from "react";
 import { commentKeys } from "../api/keys";
@@ -155,11 +155,14 @@ function AnonymousComposer({ postId }: { postId: string }) {
 				type="button"
 				onClick={() => setOpen((v) => !v)}
 				aria-expanded={open}
-				className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+				className="inline-flex items-center gap-2 text-xs text-muted-foreground transition-colors hover:text-foreground"
 			>
 				不想登录？匿名留言
 				<ChevronDown
-					className={`size-3.5 transition-transform duration-300 ${open ? "rotate-180" : ""}`}
+					{...iconProps(
+						14,
+						`transition-transform duration-300 ${open ? "rotate-180" : ""}`,
+					)}
 				/>
 			</button>
 			<div

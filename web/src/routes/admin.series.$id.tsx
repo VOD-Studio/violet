@@ -27,6 +27,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 	Input,
+	iconProps,
 	Skeleton,
 	Sortable,
 } from "@violet/ui";
@@ -138,7 +139,7 @@ function AdminSeriesEditPage() {
 							disabled={publish.isPending}
 							onClick={() => publish.mutate(series.status !== "published")}
 						>
-							<Globe className="size-3.5" />
+							<Globe {...iconProps(14)} />
 							{series.status === "published" ? "收回草稿" : "发布"}
 						</Button>
 					</PermissionGuard>
@@ -156,7 +157,7 @@ function AdminSeriesEditPage() {
 								variant="outline"
 								onClick={() => setAddSectionOpen(true)}
 							>
-								<Plus className="size-3.5" />
+								<Plus {...iconProps(14)} />
 								新建卷
 							</Button>
 						</PermissionGuard>

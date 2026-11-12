@@ -5,6 +5,7 @@
  * 展开前先让堆叠逐张飞离（scatter），收起后从散开位逐层归位（assemble），
  * 收拢期间视口跟随舞台平滑回滚。
  */
+import { iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -208,13 +209,9 @@ export function PhotoStack({
 					disabled={formation !== "idle"}
 					aria-expanded={expanded}
 					aria-label={expanded ? "收起为堆叠" : `展开全部照片，共 ${images.length} 张`}
-					className="mt-0.5 inline-flex shrink-0 items-center gap-1.5 rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground/80 transition-colors duration-200 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current disabled:opacity-60"
+					className="mt-0.5 inline-flex shrink-0 items-center gap-2 rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground/80 transition-colors duration-200 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current disabled:opacity-60"
 				>
-					{expanded ? (
-						<Minimize2 className="size-3.5" />
-					) : (
-						<Maximize2 className="size-3.5" />
-					)}
+					{expanded ? <Minimize2 {...iconProps(14)} /> : <Maximize2 {...iconProps(14)} />}
 					<span className="hidden sm:inline">
 						{expanded ? "收起" : `展开 ${images.length}`}
 					</span>

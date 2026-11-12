@@ -86,6 +86,7 @@ export function AudioControls({
 				type="button"
 				onClick={onTogglePlay}
 				className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform hover:scale-105 active:scale-95"
+				aria-label={state.isPlaying ? "暂停 (空格)" : "播放 (空格)"}
 				title={state.isPlaying ? "暂停 (空格)" : "播放 (空格)"}
 			>
 				{state.isPlaying ? (
@@ -155,6 +156,7 @@ export function AudioControls({
 						size="sm"
 						variant="ghost"
 						onClick={onToggleMute}
+						aria-label="静音 (M)"
 						title="静音 (M)"
 					>
 						<VolumeIcon className="size-4" />
@@ -210,6 +212,7 @@ export function AudioControls({
 					size="sm"
 					variant={state.isLooping ? "secondary" : "ghost"}
 					onClick={onToggleLoop}
+					aria-label={state.isLooping ? "关闭循环" : "单曲循环"}
 					title={state.isLooping ? "关闭循环" : "单曲循环"}
 				>
 					{state.isLooping ? (

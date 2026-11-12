@@ -2,7 +2,7 @@ import { useAppearanceSwitcher } from "@features/appearance";
 import { PRIMARY_TOKENS } from "@features/lab/palette/model/tokens";
 import { copyText } from "@shared/lib/clipboard";
 import { getContrastRatio, oklchToRgb, parseOklch } from "@shared/lib/color-math";
-import { Segmented } from "@violet/ui";
+import { iconProps, Segmented } from "@violet/ui";
 
 import { cn } from "cn";
 import { Check, Copy, Moon, Sparkles, Sun } from "lucide-react";
@@ -97,12 +97,12 @@ export function PaletteHero({ mode, onModeChange, resolvedAppearance }: PaletteH
 				<button
 					type="button"
 					onClick={handleCopyAll}
-					className="flex items-center gap-1.5 rounded-lg border border-edge-hairline bg-card px-3.5 py-2 text-xs font-medium text-foreground transition-colors hover:border-primary-base hover:text-primary-base"
+					className="flex items-center gap-2 rounded-lg border border-edge-hairline bg-card px-3.5 py-2 text-xs font-medium text-foreground transition-colors hover:border-primary-base hover:text-primary-base"
 				>
 					{copied ? (
-						<Check className="size-3.5 text-emerald-500" />
+						<Check {...iconProps(14, "text-emerald-500")} />
 					) : (
-						<Copy className="size-3.5" />
+						<Copy {...iconProps(14)} />
 					)}
 					<span>导出主色变量</span>
 				</button>
@@ -122,7 +122,7 @@ export function PaletteHero({ mode, onModeChange, resolvedAppearance }: PaletteH
 					<div>
 						<div className="mb-3 flex items-center gap-2">
 							<span className="inline-flex items-center gap-1 rounded-full bg-primary-base-soft px-2.5 py-1 text-xs font-medium text-primary-base-soft-foreground">
-								<Sparkles className="size-3" />
+								<Sparkles {...iconProps(12)} />
 								Hue 286° · 鸢尾冷香
 							</span>
 							<span className="rounded-full border border-edge-hairline px-2.5 py-0.5 font-mono text-[11px] text-muted-foreground">
@@ -201,7 +201,7 @@ export function PaletteHero({ mode, onModeChange, resolvedAppearance }: PaletteH
 											Royal Iris · 浅色
 										</span>
 										<div className="flex items-center gap-1 rounded-full bg-black/20 px-2 py-0.5 text-[10px] backdrop-blur-xs">
-											<Sun className="size-3" />
+											<Sun {...iconProps(12)} />
 											<span>5.7:1 AA</span>
 										</div>
 									</div>
@@ -226,7 +226,7 @@ export function PaletteHero({ mode, onModeChange, resolvedAppearance }: PaletteH
 											Amethyst · 深色
 										</span>
 										<div className="flex items-center gap-1 rounded-full bg-black/15 px-2 py-0.5 text-[10px] backdrop-blur-xs">
-											<Moon className="size-3" />
+											<Moon {...iconProps(12)} />
 											<span>6.0:1 AA</span>
 										</div>
 									</div>
@@ -261,11 +261,11 @@ export function PaletteHero({ mode, onModeChange, resolvedAppearance }: PaletteH
 									<span className="font-mono text-xs font-semibold tracking-wider uppercase">
 										Violet Iris · Primary
 									</span>
-									<div className="flex items-center gap-1.5 rounded-full bg-black/20 px-2 py-0.5 text-[11px] backdrop-blur-xs">
+									<div className="flex items-center gap-1 rounded-full bg-black/20 px-2 py-0.5 text-[11px] backdrop-blur-xs">
 										{effectiveAppearance === "light" ? (
-											<Sun className="size-3" />
+											<Sun {...iconProps(12)} />
 										) : (
-											<Moon className="size-3" />
+											<Moon {...iconProps(12)} />
 										)}
 										<span className="capitalize">{effectiveAppearance}</span>
 									</div>

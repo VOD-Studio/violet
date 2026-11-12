@@ -15,6 +15,7 @@ import {
 	ConfirmDialog,
 	DataTable,
 	type DataTableColumn,
+	iconProps,
 	SearchInput,
 	Select,
 	SelectContent,
@@ -168,7 +169,7 @@ export function GalleryDraftListPage() {
 									onClick={() => openDraft(row.id)}
 									aria-label={`编辑图集 ${row.title || row.id.slice(0, 8)}`}
 								>
-									<Pencil className="size-3.5" />
+									<Pencil {...iconProps(14)} />
 								</Button>
 							</span>
 						</TooltipTrigger>
@@ -187,7 +188,7 @@ export function GalleryDraftListPage() {
 										onClick={() => setDeleting(row)}
 										aria-label={`删除图集 ${row.title || row.id.slice(0, 8)}`}
 									>
-										<Trash2 className="size-3.5" />
+										<Trash2 {...iconProps(14)} />
 									</Button>
 								</span>
 							</TooltipTrigger>

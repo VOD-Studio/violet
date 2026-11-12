@@ -1,7 +1,7 @@
 import { useVerifyOAuth } from "@features/admin-settings/api/queries";
 import type { OAuthProviderStatus } from "@features/admin-settings/model/types";
 import { copyText } from "@shared/lib/clipboard";
-import { Button, Switch } from "@violet/ui";
+import { Button, iconProps, Switch } from "@violet/ui";
 
 import { cn } from "cn";
 import { Check, Copy } from "lucide-react";
@@ -164,13 +164,13 @@ export function OAuthProviderCard({
 								<span className="truncate font-mono">{callbackHint.value}</span>
 								<button
 									type="button"
-									className="flex shrink-0 items-center gap-1 hover:text-foreground"
+									className="flex shrink-0 items-center gap-2 hover:text-foreground"
 									onClick={copyHint}
 								>
 									{copied ? (
-										<Check className="size-3" />
+										<Check {...iconProps(12)} />
 									) : (
-										<Copy className="size-3" />
+										<Copy {...iconProps(12)} />
 									)}
 									{copied ? "已复制" : "复制"}
 								</button>

@@ -167,6 +167,7 @@ export function VideoControls({
 					variant="ghost"
 					className="text-white hover:bg-white/20"
 					onClick={onTogglePlay}
+					aria-label={state.isPlaying ? "暂停 (空格)" : "播放 (空格)"}
 					title={state.isPlaying ? "暂停 (空格)" : "播放 (空格)"}
 				>
 					{state.isEnded ? (
@@ -187,6 +188,7 @@ export function VideoControls({
 						variant="ghost"
 						className="text-white hover:bg-white/20"
 						onClick={onToggleMute}
+						aria-label="静音 (M)"
 						title="静音 (M)"
 					>
 						<VolumeIcon className="size-4" />
@@ -253,6 +255,7 @@ export function VideoControls({
 					variant="ghost"
 					className="text-white hover:bg-white/20"
 					onClick={onToggleFullscreen}
+					aria-label="全屏 (F)"
 					title="全屏 (F)"
 				>
 					{isFullscreen ? (

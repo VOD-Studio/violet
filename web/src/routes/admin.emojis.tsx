@@ -22,6 +22,7 @@ import {
 	ConfirmDialog,
 	Empty,
 	Input,
+	iconProps,
 	Tabs,
 	TabsContent,
 	TabsList,
@@ -223,7 +224,7 @@ function EmojisPage() {
 					action={
 						canManageGroup ? (
 							<Button onClick={handleCreateGroup}>
-								<Plus className="mr-1 size-4" />
+								<Plus className="size-4" />
 								创建分组
 							</Button>
 						) : null
@@ -263,7 +264,7 @@ function EmojisPage() {
 						{canRefetch ? <RefetchBilibiliButton /> : null}
 						{canManageGroup && !isEmpty ? (
 							<Button size="sm" onClick={handleCreateGroup}>
-								<Plus className="size-3.5" />
+								<Plus {...iconProps(14)} />
 								创建分组
 							</Button>
 						) : null}
@@ -296,7 +297,7 @@ function EmojisPage() {
 										onClick={handleBatchEnable}
 										disabled={isLoading || stats.disabled === 0}
 										loading={batchPending}
-										leftIcon={<Power className="size-3.5" />}
+										leftIcon={<Power {...iconProps(14)} />}
 									>
 										批量启用
 									</Button>
@@ -306,7 +307,7 @@ function EmojisPage() {
 										onClick={handleBatchDisable}
 										disabled={isLoading || stats.enabled === 0}
 										loading={batchPending}
-										leftIcon={<PowerOff className="size-3.5" />}
+										leftIcon={<PowerOff {...iconProps(14)} />}
 									>
 										批量禁用
 									</Button>

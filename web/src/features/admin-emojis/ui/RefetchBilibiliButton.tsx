@@ -1,6 +1,6 @@
 import { emojiKeys } from "@features/emojis/api/keys";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button, PromptDialog } from "@violet/ui";
+import { Button, iconProps, PromptDialog } from "@violet/ui";
 import { RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -66,7 +66,7 @@ export const RefetchBilibiliButton = () => {
 				size="sm"
 				disabled={isRunning || refetch.isPending}
 				loading={isRunning || refetch.isPending}
-				leftIcon={<RefreshCw className="size-3.5" />}
+				leftIcon={<RefreshCw {...iconProps(14)} />}
 				onClick={handleClick}
 			>
 				{isRunning

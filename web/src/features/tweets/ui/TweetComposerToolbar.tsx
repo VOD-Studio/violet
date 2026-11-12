@@ -1,6 +1,6 @@
 import type { Emoji } from "@entities/emoji/model/types";
 import { EmojiPicker } from "@features/emojis/ui/EmojiPicker";
-import { Popover, PopoverContent, PopoverTrigger } from "@violet/ui";
+import { iconProps, Popover, PopoverContent, PopoverTrigger } from "@violet/ui";
 import { ImagePlus, Link2, Send, Smile } from "lucide-react";
 import { useRef } from "react";
 import type { ExternalTweetPreviewState } from "../hooks/useExternalTweetPreview";
@@ -138,7 +138,7 @@ export function TweetComposerToolbar({
 					aria-busy={publishing.pending}
 				>
 					<span className={styles.submitLabel}>
-						<Send className="size-3.5" />
+						<Send {...iconProps(16)} />
 						{publishing.pending ? "发布中…" : "发布"}
 					</span>
 				</button>

@@ -1,4 +1,4 @@
-import { Spinner } from "@violet/ui";
+import { iconProps, Spinner } from "@violet/ui";
 import { Copy } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type ReactNode, useEffect, useState } from "react";
@@ -116,7 +116,7 @@ export function BotReplyCard({
 								onClick={() => void copyThinking()}
 								type="button"
 							>
-								<Copy aria-hidden="true" className="size-3.5" />
+								<Copy aria-hidden="true" {...iconProps(14)} />
 							</button>
 						)}
 					</div>

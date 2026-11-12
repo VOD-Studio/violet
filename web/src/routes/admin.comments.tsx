@@ -25,6 +25,7 @@ import {
 	ConfirmDialog,
 	DataTable,
 	type DataTableColumn,
+	iconProps,
 	Segmented,
 	type SegmentedItem,
 } from "@violet/ui";
@@ -177,11 +178,12 @@ function AdminCommentsPage() {
 							iconOnly
 							size="sm"
 							variant="ghost"
+							aria-label="通过"
 							title="通过"
 							onClick={() => approveMut.mutate(row.id)}
 							disabled={approveMut.isPending}
 						>
-							<Check className="size-3.5" />
+							<Check {...iconProps(14)} />
 						</Button>
 					) : null}
 					{canApprove ? (
@@ -189,12 +191,13 @@ function AdminCommentsPage() {
 							iconOnly
 							size="sm"
 							variant="ghost"
+							aria-label="标为垃圾"
 							title="标为垃圾"
 							className="hover:bg-destructive/10 hover:text-destructive"
 							onClick={() => spamMut.mutate(row.id)}
 							disabled={spamMut.isPending}
 						>
-							<Ban className="size-3.5" />
+							<Ban {...iconProps(14)} />
 						</Button>
 					) : null}
 					{canDelete ? (
@@ -202,12 +205,13 @@ function AdminCommentsPage() {
 							iconOnly
 							size="sm"
 							variant="ghost"
+							aria-label="删除"
 							title="删除"
 							className="hover:bg-destructive/10 hover:text-destructive"
 							onClick={() => setDeletingId(row.id)}
 							disabled={deleteMut.isPending}
 						>
-							<Trash2 className="size-3.5" />
+							<Trash2 {...iconProps(14)} />
 						</Button>
 					) : null}
 				</div>
@@ -256,7 +260,7 @@ function AdminCommentsPage() {
 								onClick={handleBatchApprove}
 								disabled={batchMut.isPending}
 							>
-								<Check className="size-3.5" />
+								<Check {...iconProps(14)} />
 								通过
 							</Button>
 							<Button
@@ -265,7 +269,7 @@ function AdminCommentsPage() {
 								onClick={handleBatchSpam}
 								disabled={batchMut.isPending}
 							>
-								<Ban className="size-3.5" />
+								<Ban {...iconProps(14)} />
 								标垃圾
 							</Button>
 						</>

@@ -1,4 +1,5 @@
 import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
+import { iconProps } from "@violet/ui";
 import { ArrowUpRight, Link2 } from "lucide-react";
 import { motion } from "motion/react";
 import { type FriendLinkDTO, hostOf } from "../model/mock";
@@ -28,8 +29,8 @@ export function BusinessCardFace({
 				/>
 				<div className="min-w-0 flex-1">
 					<h3 className="truncate font-semibold text-foreground">{link.name}</h3>
-					<p className="mt-0.5 flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
-						<Link2 className="size-3 shrink-0" />
+					<p className="mt-0.5 flex items-center gap-1 font-mono text-xs text-muted-foreground">
+						<Link2 {...iconProps(12, "shrink-0")} />
 						<span className="truncate">{hostOf(link.url)}</span>
 					</p>
 				</div>

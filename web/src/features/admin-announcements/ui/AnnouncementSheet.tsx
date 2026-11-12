@@ -11,6 +11,7 @@ import {
 	type DateRangePreset,
 	Field,
 	Input,
+	iconProps,
 	Label,
 	NumberInput,
 	Select,
@@ -377,7 +378,7 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
 								展示形态
 								{isEdit && (
 									<span className="inline-flex items-center gap-0.5 text-[10px] font-normal text-muted-foreground">
-										<Lock className="size-2.5" />
+										<Lock {...iconProps(12)} />
 										创建后不可改
 									</span>
 								)}
