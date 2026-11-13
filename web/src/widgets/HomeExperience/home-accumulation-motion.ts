@@ -6,8 +6,9 @@ export const LINE_DRAW_SECONDS = 0.9;
 /**
  * 元素在线条抵达其位置时开始显现的延迟。
  *
- * @param position 元素在时间线上的百分比位置
- * @param todayPosition 轴线终点（今日刻度）的百分比位置
+ * @param position - 元素在时间线上的百分比位置。
+ * @param todayPosition - 轴线终点（今日刻度）的百分比位置。
+ * @returns 延迟秒数，不晚于轴线绘制完成。
  */
 export function revealDelay(position: number, todayPosition: number): number {
 	return Math.min(position / Math.max(todayPosition, 1), 1) * LINE_DRAW_SECONDS;

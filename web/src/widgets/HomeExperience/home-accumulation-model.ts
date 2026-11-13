@@ -102,9 +102,9 @@ interface SeasonSegment {
 /**
  * 将当前自然月及其之前十一个自然月的内容聚合到连续时间线。
  *
- * @param publications 公开发布物，顺序不影响月份、季节与节点计算。
- * @param aggregationDays 每个节点覆盖的自然日数，非法值回退为 7。
- * @param referenceDate 决定十二个月窗口的当前日期，默认浏览时刻。
+ * @param publications - 公开发布物，顺序不影响月份、季节与节点计算。
+ * @param aggregationDays - 每个节点覆盖的自然日数，非法值回退为 7。
+ * @param referenceDate - 决定十二个月窗口的当前日期，默认浏览时刻。
  * @returns 月份、季节、聚合节点与窗口内最新发布物。
  */
 export function buildAccumulationTimeline(
@@ -211,7 +211,7 @@ export function buildAccumulationTimeline(
 /**
  * 生成当前自然月向前十二个月的 UTC 半开查询区间。
  *
- * @param referenceDate 决定当前自然月的日期，默认浏览时刻。
+ * @param referenceDate - 决定当前自然月的日期，默认浏览时刻。
  * @returns `from` 含首月首日，`to` 不含下月首日。
  */
 export function recentTwelveMonthWindow(referenceDate = new Date()): PublicationWindow {
@@ -376,7 +376,13 @@ function clamp(value: number, min: number, max: number): number {
 	return Math.min(Math.max(value, min), max);
 }
 
-/** 节点覆盖的日期范围，如 `8.01—07`；单日只显示起点。 */
+/**
+ * 格式化节点覆盖的 UTC 日期范围。
+ *
+ * @param startsAt - 首日的 UTC 毫秒时间戳，含该日。
+ * @param endsAt - 末日的 UTC 毫秒时间戳，含该日。
+ * @returns 如 `8.01—07`；同日只显示起点，跨月时保留两端月份。
+ */
 export function formatPointPeriod(startsAt: number, endsAt: number): string {
 	const start = new Date(startsAt);
 	const end = new Date(endsAt);
@@ -392,7 +398,7 @@ export function formatPointPeriod(startsAt: number, endsAt: number): string {
 /**
  * 把节点按时间归入季节段，供窄屏分行展示。
  *
- * @param todayAt 今天 0 点；包含今天的节点以今日位置为准。
+ * @param todayAt - 今天 0 点的 UTC 毫秒时间戳；包含今天的节点以今日位置为准。
  * @returns 以季节段 key 为索引的节点及其行内位置。
  */
 export function assignPointsToSegments(

@@ -4,13 +4,15 @@ import { HomeIndexSkeleton } from "./HomeIndexSkeleton";
 import { HomePreludeSkeleton } from "./HomePreludeSkeleton";
 
 interface HomeExperienceSkeletonProps {
-	/** 是否渲染时间线骨架（与后台 home_footprint_enabled 开关联动，缺省为 true） */
+	/**
+	 * 与后台 home_footprint_enabled 一致，关闭时不预留时间线占地。
+	 *
+	 * @default true
+	 */
 	showFootprint?: boolean;
 }
 
-/**
- * 首页组合骨架屏：由各板块专属独立子骨架屏模块化装配而成。
- */
+/** 首页按板块保留占地的加载占位。 */
 export function HomeExperienceSkeleton({ showFootprint = true }: HomeExperienceSkeletonProps) {
 	return (
 		<div aria-busy="true" className="overflow-clip text-foreground">

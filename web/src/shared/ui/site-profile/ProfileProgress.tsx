@@ -1,9 +1,10 @@
+/** 播放进度的展示契约；格式化与走时由宿主负责。 */
 export interface ProfileProgressProps {
 	/** 已播时长，已格式化，如 "1:23"。 */
 	elapsed: string;
 	/** 总时长，已格式化；省略时只显示已播。 */
 	total?: string;
-	/** 已播比例 0–1；省略时没有轨道。 */
+	/** 已播比例 0–1；同时提供 total 才显示轨道与总时长，越界比例会钳制。 */
 	ratio?: number;
 }
 

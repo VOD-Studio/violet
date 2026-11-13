@@ -24,7 +24,7 @@ interface HeaderNavbarProps {
 /**
  * 顶栏接线：把路由位置、滚动、页面加载与搜索面板接给 {@link SiteNavbar}。
  *
- * 滚动与进度会高频更新，单独放在这一层，logo 与 actions 作为已创建的元素传入，不随之重渲染。
+ * @remarks 滚动与进度在本层更新；logo 与 actions 使用调用方创建的元素。
  */
 const HeaderNavbar = ({ authenticated, logo, actions }: HeaderNavbarProps) => {
 	const { items, active, title } = useNavbarState(authenticated);

@@ -4,6 +4,7 @@ import { AppWindow, BookOpen, Laptop, Link2, Music, Rss, User } from "lucide-rea
 import type { ReactNode } from "react";
 import { type NavbarLinkComponent, RouterLink } from "../site-navbar";
 
+/** 已格式化、可直接展示的最新发布内容。 */
 export interface ProfileLatest {
 	title: string;
 	/** 已格式化，如 "10.10"。 */
@@ -11,6 +12,7 @@ export interface ProfileLatest {
 	href: string;
 }
 
+/** 媒体播放状态的展示模型，不在卡片内拉取封面或推进播放时钟。 */
 export interface ProfileNowMedia {
 	/** 如「正在播放 · 网易云音乐」「已暂停 · QQ 音乐」。 */
 	sourceLabel: string;
@@ -23,6 +25,7 @@ export interface ProfileNowMedia {
 	progress?: ReactNode;
 }
 
+/** 当前使用应用的展示模型，缺失的图标和时长无需伪造。 */
 export interface ProfileNowApp {
 	name: string;
 	/** 窗口标题，可空。 */
@@ -32,6 +35,7 @@ export interface ProfileNowApp {
 	usage?: string;
 }
 
+/** 同一设备的媒体与应用状态；两者都缺失时不展示「此刻」。 */
 export interface ProfileNow {
 	/** 设备名，如「MacBook Pro」。 */
 	deviceName: string;
@@ -39,6 +43,7 @@ export interface ProfileNow {
 	app?: ProfileNowApp;
 }
 
+/** 站长公开资料，与当前登录用户无关。 */
 export interface ProfileIdentity {
 	name: string;
 	bio?: string;
@@ -49,6 +54,7 @@ export interface ProfileIdentity {
 	rssHref?: string;
 }
 
+/** 调用方按同一时刻计算的年度进度快照。 */
 export interface ProfileYear {
 	year: number;
 	/** 第几天，1 起。 */
@@ -58,6 +64,7 @@ export interface ProfileYear {
 	month: number;
 }
 
+/** 站长卡片的展示数据与站内导航回调，不包含弹层状态。 */
 export interface ProfileCardProps {
 	identity: ProfileIdentity;
 	/** 省略或没有 media 也没有 app 时，整块「此刻」（含标题行）不出现。 */
@@ -65,8 +72,9 @@ export interface ProfileCardProps {
 	/** 两条都省略且都不在加载时整行不出现；只有一条时它独占一行。 */
 	latest?: { post?: ProfileLatest; note?: ProfileLatest };
 	/**
-	 * 哪几条还在取：没有值又在加载的那条先占一块同尺寸的位置，文章在前、手记在后。
-	 * 版式按「就绪 + 加载中」的条数定列，先到后到都不会让一列变两列。
+	 * 每条最新内容独立的加载状态。
+	 *
+	 * @remarks 尚未就绪的条目保留占位；按已就绪与加载中的总条数确定列数。
 	 */
 	latestPending?: { post?: boolean; note?: boolean };
 	year: ProfileYear;
@@ -204,9 +212,9 @@ function monthTone(month: number, current: number): string {
 }
 
 /**
- * 站长卡片的内容：身份、此刻（听的歌与用的应用）、最新文章与手记、年度进度、入口三链。
+ * 站长卡片的身份、此刻、最新内容与年度进度。
  *
- * 不含面板外壳，由 {@link SiteProfile} 放进变形面板。纯展示：时间相关文案与进度都由调用方给出。
+ * @remarks 不含面板外壳；时间文案、进度与数据加载状态均由调用方提供。
  */
 export function ProfileCard({
 	identity,

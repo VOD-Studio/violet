@@ -15,10 +15,14 @@ import type { HomePublicationItem } from "./types";
 /** 首页首屏资料与发布物查询状态。 */
 export interface HomePreludeProps {
 	identity: SiteIdentity;
+	/** 按发布时间选出的最新发布物；没有内容或尚未取得数据时为 null。 */
 	lead: HomePublicationItem | null;
+	/** 头像优先取公开人设；null 时使用站点身份头像。 */
 	persona: PublicPersona | null;
+	/** 无 lead 时展示错误与重试；已有内容继续展示，不因刷新失败清空。 */
 	publicationError: boolean;
 	publicationsLoading: boolean;
+	/** 控制错误态重试按钮的忙碌状态。 */
 	publicationsRetrying: boolean;
 	onRetryPublications: () => void;
 }

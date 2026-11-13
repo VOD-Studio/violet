@@ -1,10 +1,10 @@
 import { useRouterState } from "@tanstack/react-router";
 
 /**
- * 详情页声明的导航标题，取最深命中路由的 `staticData.navTitle(loaderData)`。
+ * 读取最深命中路由的导航标题。
  *
- * 返回 `path`（该路由实际命中的路径）供调用方校验：导航进行中 `location` 先于 `matches` 更新，
- * 标题只对仍在渲染的那一页有效。
+ * @returns 标题及其匹配路径；无标题时为 null。导航期间 location 可能先于 matches 更新，
+ * 调用方须用 path 确认标题仍属于当前页面。
  */
 export function useNavTitle(): { path: string; title: string } | null {
 	const path = useRouterState({ select: (state) => state.matches.at(-1)?.pathname });

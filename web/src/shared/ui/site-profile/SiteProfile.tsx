@@ -10,6 +10,7 @@ import {
 } from "../site-navbar";
 import { ProfileCard, type ProfileCardProps } from "./ProfileCard";
 
+/** 品牌触发器与站长卡片的组合契约，开合可由宿主控制。 */
 export interface SiteProfileProps {
 	brand: Omit<NavbarBrandProps, "open">;
 	/** 药丸（触发器）的名称，如「Violet 站长档案，此刻正在播放 晴天」。 */
@@ -22,10 +23,10 @@ export interface SiteProfileProps {
 }
 
 /**
- * 顶栏左药丸：logo 与此刻状态，点开后药丸长成站长卡片。
+ * 由品牌药丸形变展开的站长卡片。
  *
- * 药丸自带外壳（{@link NAVBAR_PILL_CLASS}），必须放进 `SiteNavbar` 的 `logo` 槽，
- * 由它的左容器提供定位参照与展开时的层级。
+ * @remarks 触发器自带 {@link NAVBAR_PILL_CLASS} 外壳，须放入 SiteNavbar 的 logo 槽，
+ * 由左容器提供定位参照与展开层级。
  */
 export function SiteProfile({
 	brand,

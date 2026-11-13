@@ -7,9 +7,10 @@ import styles from "./NavbarBrand.module.css";
 const TINT = "[--brand-tint:color-mix(in_oklab,var(--foreground)_5%,transparent)]";
 
 /**
- * 包住 {@link NavbarBrand} 的可点击元素类名：撑满药丸高度，悬停与展开时叠一层 5% 前景色，
- * 收起态收紧右内边距。药丸外壳（底色、边、阴影）由 `NAVBAR_PILL_CLASS` 提供，二者套在同一元素上；
- * 悬停用叠加的渐变而不是换底色，才不会盖掉药丸自己的半透明底。
+ * 品牌触发器的交互类名。
+ *
+ * @remarks 与 `NAVBAR_PILL_CLASS` 套在同一元素上；收起时缩小右内边距，
+ * 悬停与展开使用半透明叠层，保留药丸底色。
  */
 export const NAVBAR_BRAND_CLASS = `group flex items-center rounded-full pr-3 pl-1 transition-[padding,background-color] duration-300 hover:bg-[linear-gradient(var(--brand-tint),var(--brand-tint))] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring group-data-[collapsed=true]/navbar:pr-1 data-[state=open]:bg-[linear-gradient(var(--brand-tint),var(--brand-tint))] motion-reduce:transition-none ${TINT}`;
 
@@ -25,6 +26,7 @@ export interface NavbarLive {
 	lines?: { primary: string; secondary?: string };
 }
 
+/** 站名字标与站长头像资料，可附加实时状态。 */
 export interface NavbarBrandProps {
 	/** 站名，显示为全大写。 */
 	name: string;
@@ -81,9 +83,9 @@ function Equalizer() {
 }
 
 /**
- * logo 药丸里的内容：头像、可选的封面圆与应用圆、站名或两行文字、均衡器与箭头。
+ * 品牌药丸的头像、实时状态与字标内容。
  *
- * 必须渲染在带 `group` 类的可点击祖先里（悬停变色）。药丸外壳的 `data-collapsed` 为 true 时，
+ * @remarks 祖先须提供 `group`；导航外壳的 data-collapsed 为 true 时，
  * 文字、均衡器与箭头折叠，头像与叠圆仍保留。
  */
 export function NavbarBrand({

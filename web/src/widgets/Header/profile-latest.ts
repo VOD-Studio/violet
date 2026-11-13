@@ -16,9 +16,10 @@ function monthDay(iso: string): string {
 }
 
 /**
- * 文章 → 卡片里的一条：取发布时间最新的一篇。
+ * 将本页发布时间最新的文章转为站长卡片条目。
  *
- * 公开列表是精选优先再按发布时间排，排第一的不一定最新，所以要在这一页里自己挑。
+ * @remarks 公开列表精选优先，不能直接取第一项作为最新文章。
+ * @returns 带本地时区月日和详情链接的条目；本页无文章时为 undefined。
  */
 export function latestPost(
 	posts: Pick<Post, "title" | "slug" | "published_at">[] | undefined,
@@ -38,7 +39,11 @@ export function latestPost(
 	};
 }
 
-/** 手记 → 卡片里的一条；没有手记为 undefined。 */
+/**
+ * 将手记转为站长卡片条目。
+ *
+ * @returns 带本地时区月日和详情链接的条目；未传入手记时为 undefined。
+ */
 export function latestNote(
 	note: Pick<PublicNote, "id" | "title" | "content_html" | "published_at"> | undefined,
 ): ProfileLatest | undefined {
