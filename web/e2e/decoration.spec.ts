@@ -17,13 +17,13 @@ const CASES: {
 	decoration?: DecorationPreference;
 	expected: string;
 }[] = [
-		{ name: "默认跟随主题，投放当季装饰", expected: season },
-		{ name: "跟随主题时随所选预设", theme: "summer", expected: "summer" },
-		{ name: "关闭装饰", theme: "summer", decoration: "none", expected: "none" },
-		{ name: "自定义主题默认不显示装饰", custom, expected: "none" },
-		{ name: "自定义主题另选一季装饰", custom, decoration: "winter", expected: "winter" },
-		{ name: "预设主题另选一季装饰", theme: "spring", decoration: "autumn", expected: "autumn" },
-	];
+	{ name: "默认跟随主题，投放当季装饰", expected: season },
+	{ name: "跟随主题时随所选预设", theme: "summer", expected: "summer" },
+	{ name: "关闭装饰", theme: "summer", decoration: "none", expected: "none" },
+	{ name: "自定义主题默认不显示装饰", custom, expected: "none" },
+	{ name: "自定义主题另选一季装饰", custom, decoration: "winter", expected: "winter" },
+	{ name: "预设主题另选一季装饰", theme: "spring", decoration: "autumn", expected: "autumn" },
+];
 
 for (const { name, expected, ...options } of CASES) {
 	test(`装饰首帧：${name}`, async ({ browser }) => {
@@ -114,6 +114,31 @@ for (const appearance of ["light", "dark"] as const) {
 		});
 	}
 }
+
+test("首页四季收尾插画的图形均处于画布内，不裁切末端花叶", async ({ browser }) => {
+	for (const decoration of ["spring", "summer", "autumn", "winter"] as const) {
+		const context = await appearanceContext(browser, "light", { decoration });
+		const page = await context.newPage();
+		await page.emulateMedia({ reducedMotion: "reduce" });
+		await page.goto("/", { waitUntil: "load" });
+		const scene = page.locator("[data-decoration-slot='accent'] svg");
+		await scene.scrollIntoViewIfNeeded();
+		const bounds = await scene.evaluate((node: SVGSVGElement) => {
+			const drawing = node.getBBox();
+			const viewport = node.viewBox.baseVal;
+			return {
+				left: drawing.x - viewport.x,
+				top: drawing.y - viewport.y,
+				right: viewport.x + viewport.width - drawing.x - drawing.width,
+				bottom: viewport.y + viewport.height - drawing.y - drawing.height,
+			};
+		});
+		for (const [edge, margin] of Object.entries(bounds)) {
+			expect(margin, `${decoration} ${edge} 仍应留有描边余量`).toBeGreaterThan(2);
+		}
+		await context.close();
+	}
+});
 
 test("SSR 首帧按图层开关卸载插画与粒子，不留下空背景", async ({ browser }) => {
 	const context = await appearanceContext(browser, "light", {
