@@ -169,6 +169,34 @@ const paged = (data, limit) =>
 		meta: { pagination: { page: 1, limit, total: data.length, total_pages: 1 } },
 	});
 
+const BROWSE_POSTS = Array.from({ length: 26 }, (_, i) => ({
+	...CONTRACT_POST,
+	id: `10000000-0000-0000-0000-${String(i + 1).padStart(12, "0")}`,
+	slug: `contract-post-${i + 1}`,
+	title: `${i < 6 ? "壳层" : "分页"}契约文章 ${i + 1}`,
+	published_at: `${i < 18 ? "2026" : "2025"}-08-${String(28 - i).padStart(2, "0")}T10:00:00Z`,
+	tags: [...(i % 3 === 0 ? ["契约", "Go"] : ["契约"]), ...(i === 1 ? ["1e3"] : i === 2 ? ["null"] : [])],
+	canonical_url: i % 2 ? `https://example.test/posts/${i + 1}` : undefined,
+	is_featured: i === 0,
+}));
+
+function matchesBrowse(post, params) {
+	const tag = params.get("tag");
+	const source = params.get("source");
+	return (!tag || post.tags.includes(tag === "contract" ? "契约" : tag === "go" ? "Go" : tag)) &&
+		(source !== "original" || !post.canonical_url) &&
+		(source !== "repost" || !!post.canonical_url);
+}
+
+function browsePage(items, params) {
+	const page = Math.max(1, Number(params.get("page")) || 1);
+	const limit = Math.min(100, Math.max(1, Number(params.get("limit")) || 12));
+	return JSON.stringify({
+		data: items.slice((page - 1) * limit, page * limit),
+		meta: { pagination: { page, limit, total: items.length, total_pages: Math.ceil(items.length / limit) } },
+	});
+}
+
 /** 沉浸方言契约用公开图集：单图集单图，图片本体由契约路由按 /assets 路径应答。 */
 const CONTRACT_GALLERY = {
 	id: "20000000-0000-0000-0000-000000000001",
@@ -588,23 +616,43 @@ export function handle(method, pathname, search, cookie = "", rawBody = "") {
 		return { status: 200, body: paged(PUBLICATIONS.slice(0, limit), limit) };
 	}
 	if (pathname === "/api/v1/posts") {
-		const limit = Number(params.get("limit") || 12);
-		const posts = Array.from({ length: Math.min(limit, 6) }, (_, i) => ({
-			id: `10000000-0000-0000-0000-00000000000${i + 1}`,
-			slug: `contract-post-${i + 1}`,
-			title: `壳层契约文章 ${i + 1}`,
-			excerpt: "用于公开壳层视觉验收的样例摘要。",
-			cover_image: "",
-			view_count: i * 7,
-			published_at: `2026-08-1${i + 1}T10:00:00Z`,
-			tags: ["契约"],
-			is_featured: i === 0,
+		return { status: 200, body: browsePage(BROWSE_POSTS.filter((post) => matchesBrowse(post, params)), params) };
+	}
+	if (pathname === "/api/v1/posts/filters/tags") {
+		const source = new URLSearchParams(params);
+		source.delete("tag");
+		const posts = BROWSE_POSTS.filter((post) => matchesBrowse(post, source));
+		return {
+			status: 200, body: envelope([{ slug: "contract", name: "契约" }, { slug: "go", name: "Go" }, { slug: "1e3", name: "1e3" }, { slug: "null", name: "null" }].map((tag) => ({
+				...tag, count: posts.filter((post) => post.tags.includes(tag.name)).length,
+			})).filter((tag) => tag.count > 0))
+		};
+	}
+	if (pathname === "/api/v1/posts/archive") {
+		const years = [...new Set(BROWSE_POSTS.filter((post) => matchesBrowse(post, params)).map((post) => Number(post.published_at.slice(0, 4))))];
+		return { status: 200, body: envelope({ years }) };
+	}
+	if (/^\/api\/v1\/posts\/archive\/\d{4}$/.test(pathname)) {
+		const year = Number(pathname.split("/").at(-1));
+		const items = BROWSE_POSTS
+			.filter((post) => Number(post.published_at.slice(0, 4)) === year && matchesBrowse(post, params))
+			.map(({ id, slug, title, excerpt, cover_image, tags, published_at }) => ({
+				id, slug, title, excerpt, cover_image, tags, published_at,
+			}));
+		return { status: 200, body: envelope({ year, count: items.length, items }) };
+	}
+	if (pathname === "/api/v1/series") {
+		const books = [CONTRACT_SERIES, RICH_CONTENT_SERIES].filter((book) => book.root_chapters.some((chapter) => {
+			const post = [...BROWSE_POSTS, ...RICH_CONTENT_POSTS].find((candidate) => candidate.slug === chapter.slug);
+			return post && matchesBrowse(post, params);
 		}));
-		return { status: 200, body: paged(posts, limit) };
+		return { status: 200, body: browsePage(books, params) };
 	}
 	if (pathname === "/api/v1/posts/contract-post-1") {
 		return { status: 200, body: envelope(CONTRACT_POST) };
 	}
+	const browsePost = BROWSE_POSTS.find((post) => pathname === `/api/v1/posts/${post.slug}`);
+	if (browsePost) return { status: 200, body: envelope(browsePost) };
 	const richContentPost = RICH_CONTENT_POSTS.find(
 		(post) => pathname === `/api/v1/posts/${post.slug}`,
 	);

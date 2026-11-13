@@ -11,7 +11,7 @@ export function SeriesBelonging({ context }: { context: ChapterContext | null })
 	if (!context) return null;
 	return (
 		<Link
-			to="/series/$slug"
+			to="/blog/series/$slug"
 			params={{ slug: context.series.slug }}
 			className="hover:text-foreground mb-4 inline-flex items-center gap-1.5 font-mono text-sm text-muted-foreground transition-colors"
 		>

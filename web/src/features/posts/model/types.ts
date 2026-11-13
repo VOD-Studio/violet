@@ -1,19 +1,20 @@
 /**
- * posts 模块前台类型
- *
- * 领域读模型 Post、PostDetail 见 entities/post，此处转出供前台 slice 内部消费。
- * 后台写操作与查询类型见 features/admin-posts。
+ * 文章浏览的请求与搜索结果；跨 feature 读模型由 entities/post 提供。
  */
 export type { Post, PostDetail } from "@entities/post/model/types";
 
+import type { PostBrowseFilter } from "@entities/post/model/types";
 import type { PageQuery } from "@shared/api/types";
 
-/**
- * PostListQuery - 文章列表查询参数
- */
-export interface PostListQuery extends PageQuery {
-	/** 标签筛选 */
-	tag?: string;
+/** 已发布文章的分页查询；筛选在服务端完整集合上执行。 */
+export interface PostListQuery extends PageQuery, PostBrowseFilter {}
+
+/** 当前来源下可见文章的标签选项，不包含草稿或已删除文章。 */
+export interface PostTagOption {
+	slug: string;
+	name: string;
+	/** 关联的已发布文章数，单篇文章只计一次。 */
+	count: number;
 }
 
 /**

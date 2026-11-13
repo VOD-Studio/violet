@@ -2,19 +2,12 @@ import { expect, test } from "@playwright/test";
 import { loadClient } from "./client";
 import { openClientPage } from "./support";
 
-test("博客卡片下缘的静止指针持续悬停，聚光反馈不反复退出", async ({ context, page }) => {
+test("博客卡片下缘的静止指针持续悬停，命中区域不反复退出", async ({ context, page }) => {
 	await loadClient(context);
 	await openClientPage(page, "/blog");
 	const link = page.getByRole("link", { name: /壳层契约文章 2/ });
-	const card = link.locator(":scope > div");
+	const card = link.locator("xpath=ancestor::*[@data-slot='card-frame']");
 	await card.scrollIntoViewIfNeeded();
-	await expect
-		.poll(() =>
-			link.evaluate(
-				(element) => getComputedStyle(element.closest("article") ?? element).transform,
-			),
-		)
-		.toBe("none");
 	await page.mouse.move(0, 0);
 	const bounds = await card.boundingBox();
 	if (!bounds) throw new Error("博客卡片没有可见命中区域");
@@ -44,5 +37,4 @@ test("博客卡片下缘的静止指针持续悬停，聚光反馈不反复退�
 	).toBe(true);
 	const tops = samples.map((sample) => sample.top);
 	expect(Math.max(...tops) - Math.min(...tops), "悬停不移动命中盒").toBeLessThan(0.5);
-	await expect(card.locator("span[aria-hidden]").first()).toHaveCSS("opacity", "1");
 });

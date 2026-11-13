@@ -1,3 +1,9 @@
+import type { PostBrowseFilter } from "@entities/post/model/types";
+import type { PageQuery } from "@shared/api/types";
+
+/** 有筛选时仅列出包含匹配公开章节的系列；章节总数仍按全书计算。 */
+export interface SeriesListQuery extends PageQuery, PostBrowseFilter {}
+
 /** 书架项（GET /series） */
 export interface SeriesSummary {
 	id: string;

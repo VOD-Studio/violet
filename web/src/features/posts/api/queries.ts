@@ -1,29 +1,32 @@
+import type { PostBrowseFilter } from "@entities/post/model/types";
 import { apiGet, apiGetPaged } from "@shared/api/request";
 import type { PagedResponse } from "@shared/api/types";
 import { useQuery } from "@tanstack/react-query";
-import type { Post, PostDetail, PostListQuery, PostSearchResult } from "../model/types";
+import type {
+	Post,
+	PostDetail,
+	PostListQuery,
+	PostSearchResult,
+	PostTagOption,
+} from "../model/types";
 import { postKeys } from "./keys";
 
-/**
- * fetchPosts - 调后端 GET /posts 拉取已发布文章列表
- *
- * httpClient 已自动 withCredentials + 解 envelope，此处直接拿到 PagedResponse。
- *
- * @param query 分页与标签筛选
- * @returns 解包后的列表与分页元数据
- */
 export const fetchPosts = async (query: PostListQuery = {}): Promise<PagedResponse<Post>> =>
 	apiGetPaged<Post>("/posts", { params: query });
 
-/**
- * usePosts - 文章列表 hook
- *
- * @param query 分页与标签筛选
- */
 export const usePosts = (query: PostListQuery = {}) =>
 	useQuery({
 		queryKey: postKeys.list(query),
 		queryFn: () => fetchPosts(query),
+	});
+
+export const fetchPostTags = (filter: Pick<PostBrowseFilter, "source"> = {}) =>
+	apiGet<PostTagOption[]>("/posts/filters/tags", { params: filter });
+
+export const usePostTags = (filter: Pick<PostBrowseFilter, "source"> = {}) =>
+	useQuery({
+		queryKey: postKeys.tags(filter),
+		queryFn: () => fetchPostTags(filter),
 	});
 
 /**

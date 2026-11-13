@@ -42,8 +42,8 @@ describe("resolveTransitionKind", () => {
 		for (const [from, to] of [
 			["/", "/blog"],
 			["/blog", "/blog/hello"],
-			["/blog/hello", "/blog/archive"],
-			["/series", "/series/book"],
+			["/blog/hello", "/blog"],
+			["/blog/series", "/blog/series/book"],
 			["/galleries", "/galleries/trip"],
 			["/notes", "/notes/1"],
 			["/tweets", "/users/alice"],

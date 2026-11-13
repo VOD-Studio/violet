@@ -2,11 +2,20 @@ import type { SeriesChapter, SeriesDetail } from "@features/series/model/types";
 import { BookCover } from "@features/series/ui/BookCover";
 import { formatDate } from "@shared/lib/date";
 import { SharedElement } from "@shared/lib/view-transition";
-import { BackLink } from "@shared/ui/back-link";
 import { Link } from "@tanstack/react-router";
+import { Button, iconProps } from "@violet/ui";
 import { BookOpen } from "lucide-react";
 
-function ChapterRow({ chapter }: { chapter: SeriesChapter }) {
+interface ChapterRowProps {
+	chapter: SeriesChapter;
+}
+
+/** 公开目录的完整章节结构，不随列表筛选缩减。 */
+export interface SeriesDetailBodyProps {
+	detail: SeriesDetail;
+}
+
+function ChapterRow({ chapter }: ChapterRowProps) {
 	return (
 		<li>
 			<Link
@@ -23,18 +32,17 @@ function ChapterRow({ chapter }: { chapter: SeriesChapter }) {
 	);
 }
 
-/**
- * 书籍详情主体：封面 + 元信息 + 两层目录（根章节在前，各卷按序）。
- * 匿名可浏览；draft 书与非 published 章节已在 API 层过滤。
- */
-export function SeriesDetailBody({ detail }: { detail: SeriesDetail }) {
+/** 展示公开系列的完整目录；筛选入口不会缩减详情中的可见章节。 */
+export function SeriesDetailBody({ detail }: SeriesDetailBodyProps) {
 	const firstChapter =
 		detail.root_chapters[0] ?? detail.sections.find((s) => s.chapters.length > 0)?.chapters[0];
 	const sectionCount = detail.sections.length;
 
 	return (
 		<div>
-			<BackLink to="/series" label="系列书" className="mb-8" history />
+			<Button variant="ghost" size="sm" asChild className="mb-8">
+				<Link to="/blog/series">返回系列</Link>
+			</Button>
 			<header className="grid gap-10 md:grid-cols-[220px_minmax(0,1fr)]">
 				<div className="mx-auto w-52 md:mx-0 md:w-full">
 					<SharedElement name="cover" id={detail.slug}>
@@ -64,14 +72,12 @@ export function SeriesDetailBody({ detail }: { detail: SeriesDetail }) {
 					) : null}
 					{firstChapter ? (
 						<div className="mt-8">
-							<Link
-								to="/blog/$slug"
-								params={{ slug: firstChapter.slug }}
-								className="bg-primary text-primary-foreground hover:bg-primary-hover inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm transition-colors"
-							>
-								<BookOpen className="size-4" />
-								从第 {firstChapter.chapter_no} 章开始读
-							</Link>
+							<Button asChild>
+								<Link to="/blog/$slug" params={{ slug: firstChapter.slug }}>
+									<BookOpen {...iconProps(16)} />
+									从第 {firstChapter.chapter_no} 章开始读
+								</Link>
+							</Button>
 						</div>
 					) : (
 						<p className="text-muted-foreground mt-8 text-sm">目录还在准备中</p>

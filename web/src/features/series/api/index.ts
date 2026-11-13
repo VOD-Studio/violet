@@ -4,6 +4,5 @@ export {
 	fetchSeries,
 	fetchSeriesBySlug,
 	useChapterContext,
-	useSeries,
 	useSeriesDetail,
 } from "./queries";

@@ -68,8 +68,8 @@ pnpm dev
 | 路由 | 页面 |
 | --- | --- |
 | `/` | 首页与发布物入口 |
-| `/blog`、`/blog/:slug`、`/blog/archive` | 文章列表、阅读与归档 |
-| `/series`、`/series/:slug` | 系列书架与连续阅读 |
+| `/blog`、`/blog/series`、`/blog/archive` | 共用博客布局的文章、系列与归档视图 |
+| `/blog/:slug`、`/blog/series/:slug` | 文章阅读与系列目录 |
 | `/notes`、`/notes/:id` | 笔记流与详情 |
 | `/galleries`、`/galleries/:slug` | 图集流与详情 |
 | `/tweets`、`/tweets/:id` | 推文时间线与讨论 |
@@ -83,6 +83,12 @@ pnpm dev
 | `/pet` | 电子宠物演示 |
 
 `/pet` 的 SDK 不入库；开发该页面时需准备 [kodama](https://github.com/VOD-Studio/kodama)，再执行 `pnpm pet:sync`。脚本默认读取并排检出的仓库，也可通过 `PET_REPO` 指定。
+
+博客浏览通过路径区分视图，查询参数只保存标签、来源与页码。文章和系列支持 `tag`、`source=original|repost`、`page`；归档只接受 `tag`，进入归档时清除来源和页码。筛选在服务端完整数据集上执行，系列按其公开章节匹配，章节数仍是全书公开章节总数。
+
+`routes/blog/_browse.tsx` 持续挂载标题和工具栏，叶路由只替换结果区域；三个浏览路径之间不启用整页转场，详情页转场不受影响。SSR 输出当前页内容，归档首年直接可读，其余年份按视口或年份锚点加载。
+
+旧 `/series` 与 `/series/:slug` 分别 301 到 `/blog/series` 与 `/blog/series/:slug`，保留查询参数和片段；资源 API 仍为 `/series`。`/blog/archive` 保持原址。`series` 为博客目录保留 slug，新文章使用该 slug 时沿现有冲突规则分配后缀；上线前须检查存量文章是否占用该地址，不自动改写已有文章链接。
 
 ## 数据与认证
 
@@ -155,7 +161,7 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 
 公共页头由 `HeaderActions` 用一个 `MorphingPopover` 编排季节、消息和账号面板，`MorphingPopoverAnchor` 测量整枚右胶囊；展开及收回期间隐藏原胶囊，结束后焦点返回实际触发按钮。未读徽标附着在铃铛右上角，铃铛区域为 `9`、`99`、`99+` 预留空间，不覆盖相邻头像。`features/notifications/hooks/use-notification-panel` 只提供消息数据与动作，后台 `NotificationBell` 仍使用 `shared/ui/message-panel/MessageCenter` 的独立 popover。
 
-博客瀑布流卡片的 hover 保持命中盒不动，仅改变聚光与其他视觉反馈；避免卡片位移后让静止在下缘的指针反复进入、离开。`e2e/hover-stability.spec.ts` 在真实 `/blog` 页面按帧验证边缘悬停稳定性。
+博客相框卡片的 hover 保持命中盒不动；避免卡片位移后让静止在下缘的指针反复进入、离开。`e2e/hover-stability.spec.ts` 在真实 `/blog` 页面按帧验证边缘悬停稳定性。
 
 链接预览先显示 SSR 快照；客户端按规范 URL 共用缓存，只轮询服务端明确标记为 pending 的链接，完成、失败或离开页面后停止。首个消费方是推文；其他 feature 复用 `entities/link-preview`，不要在 `shared` 里导入推文 DTO。
 
