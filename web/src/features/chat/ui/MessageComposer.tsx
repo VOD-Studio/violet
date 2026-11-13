@@ -4,7 +4,6 @@
 import { toEmojiToken } from "@entities/emoji/model/token";
 import { type PendingChatShare, useShareTweetStore } from "@entities/tweet/model/share-store";
 import { useMyCustomEmojis } from "@features/customemoji/api/queries";
-import type { ImageUploadReference } from "@shared/lib/image-upload-task";
 import type { RichTextInputHandle } from "@shared/ui/rich-text-input/RichTextInput";
 import {
 	extractImageIds,
@@ -23,7 +22,9 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { createPortal } from "react-dom";
 import { useBotCommands, useChatMembers, useSendChatMessage } from "../api/queries";
+import { useChatDraftField } from "../hooks/use-chat-draft";
 import { useMentionCandidates } from "../hooks/use-mention-candidates";
 import { useChatTypingBroadcaster } from "../hooks/useChatTyping";
 import type { ChatMessage, ChatUser, ConversationKind, SendMessageInput } from "../model/types";
@@ -66,20 +67,24 @@ export function MessageComposer({
 	onCancelReply,
 	onMessageSent,
 }: MessageComposerProps) {
-	const [content, setContent] = useState("");
-	const [images, setImages] = useState<ImageUploadReference[]>([]);
+	const [content, setContent] = useChatDraftField(conversationID, "content");
+	const [images, setImages] = useChatDraftField(conversationID, "images");
 	const submittedRef = useRef(false);
 	const [resetNonce, setResetNonce] = useState(0);
 	const [slashQuery, setSlashQuery] = useState<string | null>(null);
 	const [activeCommandIndex, setActiveCommandIndex] = useState(0);
 	const [activeTargetIndex, setActiveTargetIndex] = useState(0);
 	const [needsTarget, setNeedsTarget] = useState(false);
+	const [suggestionHost, setSuggestionHost] = useState<HTMLDivElement | null>(null);
 	const richInputRef = useRef<RichTextInputHandle | null>(null);
 	const setRichInputRef = useCallback(
 		(handle: RichTextInputHandle | null) => {
 			richInputRef.current = handle;
-			if (typeof inputRef === "function") inputRef(handle);
-			else if (inputRef) inputRef.current = handle;
+			if (typeof inputRef === "function") {
+				inputRef(handle);
+			} else if (inputRef) {
+				inputRef.current = handle;
+			}
 		},
 		[inputRef],
 	);
@@ -334,136 +339,149 @@ export function MessageComposer({
 					onCancelReply();
 				}
 			}}
-			className="shrink-0 border-t border-border bg-card/70 p-4 backdrop-blur-xl md:p-5"
+			className="flex max-h-[50%] min-h-0 shrink-0 flex-col px-3 pb-3 pt-2 md:px-4 md:pb-4"
 		>
-			<div className="mx-auto max-w-4xl">
-				{pendingShare ? (
-					<div className="mb-2 flex items-center gap-2 rounded-xl border border-border bg-secondary px-3 py-2">
-						<MessageSquareQuote className="size-4 shrink-0 text-muted-foreground" />
-						<div className="min-w-0 flex-1">
-							<p className="text-xs font-medium text-foreground">
-								分享推文 @{pendingShare.tweet.authorUsername}
-							</p>
-							<p className="truncate text-xs text-muted-foreground">
-								{pendingShare.tweet.content ||
-									(pendingShare.tweet.externalTweet
-										? "X 推文转发"
-										: pendingShare.tweet.quotedTweet
-											? "本站引用"
-											: "（图片推文）")}
-							</p>
-						</div>
-						<button
-							aria-label="取消分享"
-							className="flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-							onClick={clearPendingShare}
-							type="button"
-						>
-							<X {...iconProps(14)} />
-						</button>
-					</div>
-				) : (
-					replyTarget && (
+			<div
+				ref={setSuggestionHost}
+				className="relative mx-auto flex min-h-0 w-full max-w-4xl flex-col"
+			>
+				<div className="-m-1 min-h-0 overflow-y-auto p-1">
+					{pendingShare ? (
 						<div className="mb-2 flex items-center gap-2 rounded-xl border border-border bg-secondary px-3 py-2">
-							<Reply className="size-4 shrink-0 text-muted-foreground" />
+							<MessageSquareQuote className="size-4 shrink-0 text-muted-foreground" />
 							<div className="min-w-0 flex-1">
 								<p className="text-xs font-medium text-foreground">
-									回复 {replyTarget.sender.display_name}
+									分享推文 @{pendingShare.tweet.authorUsername}
 								</p>
 								<p className="truncate text-xs text-muted-foreground">
-									{replyTarget.type === "image"
-										? stripPlaceholdersForPreview(
-												replyTarget.content ?? "",
-											).trim() || "图片消息"
-										: stripPlaceholdersForPreview(
-												replyTarget.content ?? "",
-											).trim() || "文本消息"}
+									{pendingShare.tweet.content ||
+										(pendingShare.tweet.externalTweet
+											? "X 推文转发"
+											: pendingShare.tweet.quotedTweet
+												? "本站引用"
+												: "（图片推文）")}
 								</p>
 							</div>
 							<button
-								aria-label="取消回复"
+								aria-label="取消分享"
 								className="flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-								onClick={onCancelReply}
+								onClick={clearPendingShare}
 								type="button"
 							>
 								<X {...iconProps(14)} />
 							</button>
 						</div>
-					)
-				)}
-				{pendingShare && (
-					<div className="mb-3">
-						<TweetSharingPreview id={pendingShare.tweet.id} />
-					</div>
-				)}
-				<ChatRichInput
-					ref={setRichInputRef}
-					autoFocus
-					value={content}
-					onChange={(value) => {
-						setContent(value);
-						if (!value.trim().startsWith("/")) setNeedsTarget(false);
-					}}
-					onSubmit={sendMessage}
-					onSlashQueryChange={(query) => {
-						setSlashQuery(query);
-						setActiveCommandIndex(0);
-					}}
-					onSlashKeyDown={handleSlashKeyDown}
-					slashSuggestions={
-						needsTarget ? (
-							<BotTargetMenu
-								bots={roomBots}
-								activeIndex={selectedTargetIndex}
-								onActiveIndexChange={setActiveTargetIndex}
-								onSelect={selectTarget}
-							/>
-						) : slashQuery !== null && commandChoices.length > 0 ? (
-							<BotCommandMenu
-								choices={commandChoices}
-								activeIndex={selectedCommandIndex}
-								onActiveIndexChange={setActiveCommandIndex}
-								onSelect={selectCommand}
-							/>
-						) : undefined
-					}
-					slashListboxId={needsTarget ? botTargetListboxId : botCommandListboxId}
-					slashActiveOptionId={
-						needsTarget
-							? botTargetOptionId(selectedTargetIndex)
-							: botCommandOptionId(selectedCommandIndex)
-					}
-					editorLabel="消息内容"
-					enableEmoji={true}
-					enableImage={!pendingShare}
-					inlineImages={!pendingShare}
-					uploadPurpose="chat"
-					submitOnEnter={true}
-					compact={true}
-					layout="inline"
-					placeholder="输入消息…"
-					resetNonce={resetNonce}
-					onImageUploadsChange={setImages}
-					mentionCandidates={mentionCandidates}
-					className="rounded-2xl border border-input bg-card transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20"
-					toolbarEnd={
-						<Button
-							aria-label="发送消息"
-							title="发送（Enter），Shift+Enter 换行"
-							disabled={!canSend}
-							onClick={() => void sendMessage()}
-							iconOnly
-							className={cn(
-								"rounded-full transition-colors",
-								canSend
-									? "bg-primary text-primary-foreground hover:bg-primary-hover"
-									: "bg-secondary text-muted-foreground",
-							)}
-						>
-							<Send className="size-4" />
-						</Button>
-					}
-				/>
+					) : (
+						replyTarget && (
+							<div className="mb-2 flex items-center gap-2 rounded-xl border border-border bg-secondary px-3 py-2">
+								<Reply className="size-4 shrink-0 text-muted-foreground" />
+								<div className="min-w-0 flex-1">
+									<p className="text-xs font-medium text-foreground">
+										回复 {replyTarget.sender.display_name}
+									</p>
+									<p className="truncate text-xs text-muted-foreground">
+										{replyTarget.type === "image"
+											? stripPlaceholdersForPreview(
+													replyTarget.content ?? "",
+												).trim() || "图片消息"
+											: stripPlaceholdersForPreview(
+													replyTarget.content ?? "",
+												).trim() || "文本消息"}
+									</p>
+								</div>
+								<button
+									aria-label="取消回复"
+									className="flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+									onClick={onCancelReply}
+									type="button"
+								>
+									<X {...iconProps(14)} />
+								</button>
+							</div>
+						)
+					)}
+					{pendingShare && (
+						<div className="mb-3">
+							<TweetSharingPreview id={pendingShare.tweet.id} />
+						</div>
+					)}
+					<ChatRichInput
+						ref={setRichInputRef}
+						value={content}
+						initialImageUploads={images}
+						onChange={(value) => {
+							setContent(value);
+							if (!value.trim().startsWith("/")) setNeedsTarget(false);
+						}}
+						onSubmit={sendMessage}
+						onSlashQueryChange={(query) => {
+							setSlashQuery(query);
+							setActiveCommandIndex(0);
+						}}
+						onSlashKeyDown={handleSlashKeyDown}
+						slashSuggestions={
+							suggestionHost
+								? needsTarget
+									? createPortal(
+											<BotTargetMenu
+												bots={roomBots}
+												activeIndex={selectedTargetIndex}
+												onActiveIndexChange={setActiveTargetIndex}
+												onSelect={selectTarget}
+											/>,
+											suggestionHost,
+										)
+									: slashQuery !== null && commandChoices.length > 0
+										? createPortal(
+												<BotCommandMenu
+													choices={commandChoices}
+													activeIndex={selectedCommandIndex}
+													onActiveIndexChange={setActiveCommandIndex}
+													onSelect={selectCommand}
+												/>,
+												suggestionHost,
+											)
+										: undefined
+								: undefined
+						}
+						slashListboxId={needsTarget ? botTargetListboxId : botCommandListboxId}
+						slashActiveOptionId={
+							needsTarget
+								? botTargetOptionId(selectedTargetIndex)
+								: botCommandOptionId(selectedCommandIndex)
+						}
+						editorLabel="消息内容"
+						enableEmoji={true}
+						enableImage={!pendingShare}
+						inlineImages={!pendingShare}
+						uploadPurpose="chat"
+						submitOnEnter={true}
+						compact={true}
+						layout="inline"
+						placeholder="输入消息…"
+						resetNonce={resetNonce}
+						onImageUploadsChange={setImages}
+						mentionCandidates={mentionCandidates}
+						className="rounded-2xl border border-(--sheet-border) bg-card shadow-soft transition-colors focus-within:ring-2 focus-within:ring-ring/20"
+						toolbarEnd={
+							<Button
+								aria-label="发送消息"
+								title="发送（Enter），Shift+Enter 换行"
+								disabled={!canSend}
+								onClick={() => void sendMessage()}
+								iconOnly
+								className={cn(
+									"rounded-full transition-colors",
+									canSend
+										? "bg-primary text-primary-foreground hover:bg-primary-hover"
+										: "bg-secondary text-muted-foreground",
+								)}
+							>
+								<Send className="size-4" />
+							</Button>
+						}
+					/>
+				</div>
 			</div>
 		</div>
 	);

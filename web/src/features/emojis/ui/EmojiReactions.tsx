@@ -15,20 +15,14 @@ export interface EmojiReactionsProps {
 	/** 省略时不显示添加入口，适用于尚未发送成功或已删除的消息。 */
 	onAdd?: (emojiId: number) => void;
 	onRemove: (emojiId: number) => void;
-	/**
-	 * 聊天传 3；达到上限时仍可取消已选项。
-	 *
-	 * @default 不限种类
-	 */
-	maxSelected?: number;
+	/** 允许从选择器再次选择本人回应以取消；默认保留评论的防重复语义。 */
+	allowSelected?: boolean;
 	/**
 	 * 聊天传 6，超出后可展开。
 	 *
 	 * @default 不折叠
 	 */
 	collapseAfter?: number;
-	onLimit?: () => void;
-	limitMessage?: string;
 	/**
 	 * 提交及刷新期间暂停所有回应操作。
 	 *
@@ -44,10 +38,8 @@ export function EmojiReactions({
 	isLoggedIn,
 	onAdd,
 	onRemove,
-	maxSelected,
+	allowSelected = false,
 	collapseAfter,
-	onLimit,
-	limitMessage,
 	disabled = false,
 	className,
 }: EmojiReactionsProps) {
@@ -129,9 +121,10 @@ export function EmojiReactions({
 		if (disabled || !isLoggedIn || !onAdd) {
 			return false;
 		}
-		if (maxSelected !== undefined && selectedIds.size >= maxSelected) {
-			onLimit?.();
-			return false;
+		const reaction = reactions.find((entry) => `system:${entry.emoji_id}` === key);
+		if (allowSelected && reaction?.self) {
+			onRemove(reaction.emoji_id);
+			return true;
 		}
 		const emoji = catalog.select(key);
 		if (!emoji || emoji.custom_emoji_id) {
@@ -156,10 +149,6 @@ export function EmojiReactions({
 		if (!onAdd) {
 			return;
 		}
-		if (maxSelected !== undefined && selectedIds.size >= maxSelected) {
-			onLimit?.();
-			return;
-		}
 		catalog.select(key);
 		onAdd(reaction.emoji_id);
 	};
@@ -170,13 +159,12 @@ export function EmojiReactions({
 			recentItems={recentItems}
 			onToggle={toggle}
 			onAdd={isLoggedIn && onAdd ? add : undefined}
-			maxSelected={maxSelected}
+			allowSelected={allowSelected}
 			collapseAfter={collapseAfter}
-			onLimit={onLimit}
-			limitMessage={limitMessage}
 			disabled={disabled}
 			renderPicker={({ close }) => (
 				<EmojiPickerPanel
+					allowSelected={allowSelected}
 					groups={groups}
 					activeGroup={activeGroup}
 					onGroupChange={setGroup}

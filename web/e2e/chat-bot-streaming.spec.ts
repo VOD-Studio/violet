@@ -253,6 +253,13 @@ test("Bot 卡片随生成快照更新状态，断线后回查最新内容", asyn
 	expect(messageReads).toBeGreaterThan(initialReads);
 	await page.reload();
 	await expect(page.getByTestId("chat-message-m1")).toContainText(savedContent);
+	const shortCardWidth = await page
+		.getByTestId("bot-reply-card")
+		.evaluate((card) => card.clientWidth);
+	const messageWidth = await page
+		.getByTestId("chat-message-m1")
+		.evaluate((message) => message.clientWidth);
+	expect(shortCardWidth, "短回复随内容收缩，不占满消息列").toBeLessThan(messageWidth * 0.75);
 	await page.setViewportSize({ width: 375, height: 812 });
 	await page
 		.getByTestId("bot-reply-card")

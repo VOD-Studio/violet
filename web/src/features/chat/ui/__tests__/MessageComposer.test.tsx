@@ -119,6 +119,7 @@ function messageFrom(sender: ChatUser, id: string): ChatMessage {
 
 /** 在 contentEditable 里模拟「打完一段文字、光标停在末尾」的输入。 */
 function typeInto(box: HTMLElement, text: string) {
+	box.focus();
 	box.textContent = text;
 	const range = document.createRange();
 	range.setStart(box.firstChild as Text, text.length);
@@ -370,20 +371,6 @@ describe("MessageComposer", () => {
 
 		expect(screen.getByText("@bob 你好")).toBeTruthy();
 		expect(screen.queryByText(/@\(bob:/)).toBeNull();
-	});
-
-	it("挂载后聚焦消息输入框", () => {
-		render(
-			<MessageComposer
-				conversationID="c_1"
-				currentUserID={selfID}
-				onCancelReply={() => {}}
-				pendingShare={null}
-				replyTarget={null}
-			/>,
-		);
-
-		expect(screen.getByRole("textbox")).toBe(document.activeElement);
 	});
 
 	it("选择回复目标后重新聚焦消息输入框", () => {

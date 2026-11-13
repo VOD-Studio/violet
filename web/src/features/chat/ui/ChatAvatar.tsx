@@ -9,6 +9,8 @@ export interface ChatAvatarProps {
 	user: ChatUser;
 	/** 头像尺寸与布局类名。 */
 	className?: string;
+	/** 嵌入会话选择等按钮时关闭个人主页链接，避免嵌套交互元素。 */
+	linked?: boolean;
 }
 
 /**
@@ -35,7 +37,7 @@ function fallbackColorClass(name: string): string {
 }
 
 /** 聊天用户头像：有图片时渲染图片；无图片时渲染纯色圆盘 + 白色首字母。 */
-export function ChatAvatar({ user, className }: ChatAvatarProps) {
+export function ChatAvatar({ user, className, linked = true }: ChatAvatarProps) {
 	const appearance = useChatAppearance(user.id);
 	const label = user.display_name.trim() ? user.display_name : user.username;
 	const initial = label.slice(0, 1).toUpperCase();
@@ -57,6 +59,12 @@ export function ChatAvatar({ user, className }: ChatAvatarProps) {
 			{initial}
 		</div>
 	);
+	const decorated = (
+		<AvatarDecoration frameId={appearance.avatar_frame_id} charmId={appearance.avatar_charm_id}>
+			{avatar}
+		</AvatarDecoration>
+	);
+	if (!linked) return decorated;
 	return (
 		<Link
 			aria-label={`${label} 的个人主页`}
@@ -64,12 +72,7 @@ export function ChatAvatar({ user, className }: ChatAvatarProps) {
 			params={{ username: user.username }}
 			to="/users/$username"
 		>
-			<AvatarDecoration
-				frameId={appearance.avatar_frame_id}
-				charmId={appearance.avatar_charm_id}
-			>
-				{avatar}
-			</AvatarDecoration>
+			{decorated}
 		</Link>
 	);
 }

@@ -14,7 +14,6 @@ interface ChatAppearanceWorkspaceProps {
 export function ChatAppearanceWorkspace({ user, onClose }: ChatAppearanceWorkspaceProps) {
 	const query = useOwnChatAppearance(user.id);
 	return (
-		// 与 NewConversationForm 一致：仅淡入,不做方向位移,尊重系统减少动态偏好
 		<motion.section
 			aria-labelledby="chat-appearance-title"
 			className="absolute inset-0 z-10 flex min-h-0 flex-col bg-background"
@@ -26,7 +25,11 @@ export function ChatAppearanceWorkspace({ user, onClose }: ChatAppearanceWorkspa
 				<Button iconOnly size="md" variant="ghost" aria-label="返回聊天" onClick={onClose}>
 					<ArrowLeft aria-hidden="true" className="size-5" />
 				</Button>
-				<h2 id="chat-appearance-title" className="text-lg font-semibold tracking-tight">
+				<h2
+					id="chat-appearance-title"
+					tabIndex={-1}
+					className="rounded text-lg font-semibold tracking-tight focus-visible:outline-2 focus-visible:outline-ring"
+				>
 					聊天外观
 				</h2>
 			</header>

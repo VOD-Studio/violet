@@ -2,10 +2,18 @@
  * 会话详情抽屉：成员管理、邀请、通知设置与离开会话。
  */
 
-import { Button, Input, iconProps } from "@violet/ui";
+import {
+	Button,
+	Input,
+	iconProps,
+	Sheet,
+	SheetBody,
+	SheetContent,
+	SheetHeader,
+	SheetTitle,
+} from "@violet/ui";
 
 import { Bell, BellOff, LogOut, Plus, ShieldCheck, Users, X } from "lucide-react";
-import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { fetchChatUser } from "../api/client";
@@ -20,10 +28,6 @@ import { useChatPushNotifications } from "../hooks/useChatPushNotifications";
 import { conversationLabel, conversationTargetUser } from "../lib/conversation";
 import type { ChatConversation, ChatMember } from "../model/types";
 import { ChatAvatar } from "./ChatAvatar";
-
-// overlay 滑入：抽屉浮于消息区右侧、transform 合成层动画（零重排），
-// 不再以 width 弹簧驱动文档流推挤——那会让整个消息列表每帧 reflow 而卡顿。
-const DETAILS_TRANSITION = { type: "spring", stiffness: 380, damping: 36 } as const;
 
 export interface RoomDetailsProps {
 	/** 当前会话。 */
@@ -68,147 +72,156 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 	};
 
 	return (
-		<motion.aside
-			initial={{ x: "100%" }}
-			animate={{ x: 0 }}
-			exit={{ x: "100%" }}
-			transition={DETAILS_TRANSITION}
-			className="absolute inset-y-0 right-0 z-20 flex w-[min(20rem,85vw)] shrink-0 flex-col overflow-hidden border-l border-border bg-card shadow-[0_4px_24px_rgb(0_0_0/0.05)]"
+		<Sheet
+			open
+			onOpenChange={(open) => {
+				if (!open) onClose();
+			}}
 		>
-			<header className="flex h-16 shrink-0 items-center justify-between border-b border-border px-5">
-				<h3 className="text-sm font-semibold text-foreground">会话详情</h3>
-				<Button iconOnly aria-label="关闭详情" onClick={onClose} size="sm" variant="ghost">
-					<X className="size-4" />
-				</Button>
-			</header>
-			<div className="flex-1 space-y-5 overflow-y-auto p-4">
-				<div className="rounded-2xl border border-border bg-secondary/40 p-4">
-					<div className="mb-2.5 flex items-center gap-3">
-						<ChatAvatar
-							user={conversationTargetUser(conversation, currentUserID)}
-							className="size-11"
-						/>
-						<div className="min-w-0">
-							<p className="truncate text-sm font-semibold text-foreground">
-								{conversationLabel(conversation, currentUserID)}
-							</p>
-							<p className="text-xs text-muted-foreground">
-								{conversation.kind === "room" ? "群聊" : "私聊"}
-							</p>
-						</div>
-					</div>
-					{conversation.kind === "room" && isOwner && (
-						<Input
-							aria-label="房间名称"
-							classNames={{ control: "mt-2" }}
-							onBlur={() => void saveTitle()}
-							onChange={(event) => setTitle(event.target.value)}
-							value={title}
-							variant="underline"
-						/>
-					)}
-				</div>
-
-				<div>
-					<div className="mb-2.5 flex items-center justify-between px-1">
-						<p className="text-xs text-muted-foreground">成员 · {members.length}</p>
-						<Users {...iconProps(14, "text-muted-foreground")} />
-					</div>
-					<div className="space-y-1">
-						{members.map((member) => (
-							<div
-								className="flex items-center gap-2.5 rounded-xl p-2 transition-colors hover:bg-secondary/40"
-								key={member.user.id}
-							>
-								<ChatAvatar user={member.user} className="size-7.5" />
-								<div className="min-w-0 flex-1">
-									<p className="truncate text-xs font-medium text-foreground">
-										{member.user.display_name}
-									</p>
-									<p className="truncate font-mono text-[11px] text-muted-foreground">
-										@{member.user.username}
-									</p>
-								</div>
-								{member.role === "owner" ? (
-									<ShieldCheck className="size-4 text-muted-foreground" />
-								) : (
-									isOwner && (
-										<button
-											aria-label={`移除 ${member.user.display_name}`}
-											className="text-muted-foreground transition hover:text-destructive"
-											disabled={remove.isPending}
-											onClick={() =>
-												remove.mutate({
-													id: conversation.id,
-													userId: member.user.id,
-												})
-											}
-											type="button"
-										>
-											<X {...iconProps(14)} />
-										</button>
-									)
-								)}
-							</div>
-						))}
-					</div>
-				</div>
-
-				{conversation.kind === "room" && currentMember && (
-					<div className="rounded-2xl border border-dashed border-border p-3.5">
-						<p className="mb-2 text-xs text-muted-foreground">邀请成员</p>
-						<div className="flex gap-2">
-							<Input
-								aria-label="邀请用户名"
-								classNames={{ control: "min-w-0 flex-1" }}
-								onChange={(event) => setInviteUsername(event.target.value)}
-								onKeyDown={(event) => event.key === "Enter" && void inviteUser()}
-								placeholder="username"
-								value={inviteUsername}
-							/>
-							<Button
-								disabled={invite.isPending}
-								onClick={() => void inviteUser()}
-								iconOnly
-								size="sm"
-								className="size-10 rounded-xl"
-								aria-label="邀请成员"
-							>
-								<Plus className="size-4" />
-							</Button>
-						</div>
-						<p className="mt-2 text-xs text-muted-foreground">
-							所有成员都可以邀请新成员
-						</p>
-					</div>
-				)}
-
-				<NotificationSettings
-					muted={currentMember?.is_muted ?? false}
-					onMute={(muted) => mute.mutate({ id: conversation.id, muted })}
-				/>
-
-				<div className="border-t border-border pt-3">
+			<SheetContent size="sm" showCloseButton={false} aria-describedby={undefined}>
+				<SheetHeader className="flex-row items-center justify-between">
+					<SheetTitle>会话详情</SheetTitle>
 					<Button
-						className="w-full justify-start rounded-xl text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
-						disabled={leave.isPending}
-						onClick={async () => {
-							try {
-								await leave.mutateAsync(conversation.id);
-								onClose();
-							} catch {
-								toast.error("无法离开会话", { description: "请稍后重试" });
-							}
-						}}
-						variant="ghost"
+						iconOnly
+						aria-label="关闭详情"
+						onClick={onClose}
 						size="sm"
+						variant="ghost"
 					>
-						<LogOut {...iconProps(14)} />
-						离开会话
+						<X className="size-4" />
 					</Button>
-				</div>
-			</div>
-		</motion.aside>
+				</SheetHeader>
+				<SheetBody className="space-y-5">
+					<div className="rounded-2xl border border-border bg-secondary/40 p-4">
+						<div className="mb-2.5 flex items-center gap-3">
+							<ChatAvatar
+								user={conversationTargetUser(conversation, currentUserID)}
+								className="size-11"
+							/>
+							<div className="min-w-0">
+								<p className="truncate text-sm font-semibold text-foreground">
+									{conversationLabel(conversation, currentUserID)}
+								</p>
+								<p className="text-xs text-muted-foreground">
+									{conversation.kind === "room" ? "群聊" : "私聊"}
+								</p>
+							</div>
+						</div>
+						{conversation.kind === "room" && isOwner && (
+							<Input
+								aria-label="房间名称"
+								classNames={{ control: "mt-2" }}
+								onBlur={() => void saveTitle()}
+								onChange={(event) => setTitle(event.target.value)}
+								value={title}
+								variant="underline"
+							/>
+						)}
+					</div>
+
+					<div>
+						<div className="mb-2.5 flex items-center justify-between px-1">
+							<p className="text-xs text-muted-foreground">成员 · {members.length}</p>
+							<Users {...iconProps(14, "text-muted-foreground")} />
+						</div>
+						<div className="space-y-1">
+							{members.map((member) => (
+								<div
+									className="flex items-center gap-2.5 rounded-xl p-2 transition-colors hover:bg-secondary/40"
+									key={member.user.id}
+								>
+									<ChatAvatar user={member.user} className="size-7.5" />
+									<div className="min-w-0 flex-1">
+										<p className="truncate text-xs font-medium text-foreground">
+											{member.user.display_name}
+										</p>
+										<p className="truncate font-mono text-[11px] text-muted-foreground">
+											@{member.user.username}
+										</p>
+									</div>
+									{member.role === "owner" ? (
+										<ShieldCheck className="size-4 text-muted-foreground" />
+									) : (
+										isOwner && (
+											<button
+												aria-label={`移除 ${member.user.display_name}`}
+												className="text-muted-foreground transition hover:text-destructive"
+												disabled={remove.isPending}
+												onClick={() =>
+													remove.mutate({
+														id: conversation.id,
+														userId: member.user.id,
+													})
+												}
+												type="button"
+											>
+												<X {...iconProps(14)} />
+											</button>
+										)
+									)}
+								</div>
+							))}
+						</div>
+					</div>
+
+					{conversation.kind === "room" && currentMember && (
+						<div className="rounded-2xl border border-dashed border-border p-3.5">
+							<p className="mb-2 text-xs text-muted-foreground">邀请成员</p>
+							<div className="flex gap-2">
+								<Input
+									aria-label="邀请用户名"
+									classNames={{ control: "min-w-0 flex-1" }}
+									onChange={(event) => setInviteUsername(event.target.value)}
+									onKeyDown={(event) =>
+										event.key === "Enter" && void inviteUser()
+									}
+									placeholder="username"
+									value={inviteUsername}
+								/>
+								<Button
+									disabled={invite.isPending}
+									onClick={() => void inviteUser()}
+									iconOnly
+									size="sm"
+									className="size-10 rounded-xl"
+									aria-label="邀请成员"
+								>
+									<Plus className="size-4" />
+								</Button>
+							</div>
+							<p className="mt-2 text-xs text-muted-foreground">
+								所有成员都可以邀请新成员
+							</p>
+						</div>
+					)}
+
+					<NotificationSettings
+						muted={currentMember?.is_muted ?? false}
+						onMute={(muted) => mute.mutate({ id: conversation.id, muted })}
+					/>
+
+					<div className="border-t border-border pt-3">
+						<Button
+							className="w-full justify-start rounded-xl text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+							disabled={leave.isPending}
+							onClick={async () => {
+								try {
+									await leave.mutateAsync(conversation.id);
+									onClose();
+								} catch {
+									toast.error("无法离开会话", { description: "请稍后重试" });
+								}
+							}}
+							variant="ghost"
+							size="sm"
+						>
+							<LogOut {...iconProps(14)} />
+							离开会话
+						</Button>
+					</div>
+				</SheetBody>
+			</SheetContent>
+		</Sheet>
 	);
 }
 

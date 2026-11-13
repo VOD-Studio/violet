@@ -37,6 +37,7 @@ const mockMe = {
 	display_name: "xfy",
 	avatar_url: "",
 };
+let mockIdentityLoaded = true;
 
 const mockOtherUser = {
 	id: "u_other",
@@ -94,6 +95,7 @@ const mockConversation = {
 		created_at: "2026-08-20T08:30:00Z",
 	},
 };
+let mockConversations = [mockConversation];
 
 const mockReadMutate = vi.fn();
 const mockSendMutateAsync = vi.fn().mockResolvedValue({});
@@ -117,7 +119,10 @@ const defaultChatMessagesResult = () => ({
 const useChatMessagesMock = vi.fn(defaultChatMessagesResult);
 
 vi.mock("@features/auth/api/queries", () => ({
-	useMe: () => ({ data: mockMe, isLoading: false }),
+	useMe: () => ({
+		data: mockIdentityLoaded ? mockMe : undefined,
+		isLoading: !mockIdentityLoaded,
+	}),
 }));
 
 vi.mock("@features/auth/hooks/usePermissions", () => ({
@@ -152,7 +157,7 @@ vi.mock("@features/chat/hooks/useChatPushNotifications", () => ({
 
 vi.mock("@features/chat/api/queries", () => ({
 	useChatConversations: () => ({
-		data: { data: [mockConversation], next_cursor: null },
+		data: { data: mockConversations, next_cursor: null },
 		isLoading: false,
 	}),
 	useChatContacts: () => ({
@@ -195,7 +200,7 @@ vi.mock("@features/chat/api/queries", () => ({
 }));
 vi.mock("../api/queries", () => ({
 	useChatConversations: () => ({
-		data: { data: [mockConversation], next_cursor: null },
+		data: { data: mockConversations, next_cursor: null },
 		isLoading: false,
 	}),
 	useChatContacts: () => ({
@@ -255,7 +260,7 @@ vi.mock("../hooks/useChatPushNotifications", () => ({
 
 vi.mock("../api/queries", () => ({
 	useChatConversations: () => ({
-		data: { data: [mockConversation], next_cursor: null },
+		data: { data: mockConversations, next_cursor: null },
 		isLoading: false,
 	}),
 	useChatContacts: () => ({
@@ -315,7 +320,13 @@ function createWrapper() {
 describe("ChatWorkspace", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		mockIdentityLoaded = true;
 		mockUploadFile.mockReset();
+		mockConversations = [mockConversation];
+		mockCreateMutateAsync.mockImplementation(async () => {
+			mockConversations = [...mockConversations, { ...mockConversation, id: "c_2" }];
+			return { id: "c_2" };
+		});
 		window.HTMLElement.prototype.scrollIntoView = vi.fn();
 		window.history.replaceState({}, "", "/chat?c=c_1");
 		window.HTMLElement.prototype.scrollTo = vi.fn(function (
@@ -506,9 +517,6 @@ describe("ChatWorkspace", () => {
 		expect(screen.getAllByText("dfy").length).toBeGreaterThan(0);
 		expect(screen.getAllByText("hello world").length).toBeGreaterThan(0);
 		expect(screen.getByRole("link", { name: "xfy 的个人主页" })).toBeTruthy();
-		expect(
-			screen.getAllByRole("link", { name: "dfy 的个人主页" }).length,
-		).toBeGreaterThanOrEqual(2);
 		// 消息输入框与富文本组件（RichCommentInput）
 		const editor = screen.getByRole("textbox", { name: "消息内容" });
 		expect(editor).toBeTruthy();
@@ -972,17 +980,75 @@ describe("ChatWorkspace", () => {
 		expect(screen.getByText("选择一个会话")).toBeTruthy();
 	});
 
-	it("私聊会话展示对方头像首字母，而非当前用户自己的头像", () => {
+	it("身份确定前不开放输入，身份到达后才建立草稿", () => {
+		mockIdentityLoaded = false;
+		const view = render(<ChatWorkspace />, { wrapper: createWrapper() });
+		expect(screen.queryByRole("textbox", { name: "消息内容" })).toBeNull();
+
+		mockIdentityLoaded = true;
+		view.rerender(<ChatWorkspace />);
+		const editor = screen.getByRole("textbox", { name: "消息内容" });
+		editor.textContent = "确定身份后的草稿";
+		fireEvent.input(editor);
+		view.rerender(<ChatWorkspace />);
+		expect(screen.getByRole("textbox", { name: "消息内容" }).textContent).toBe(
+			"确定身份后的草稿",
+		);
+	});
+
+	it("返回列表再进入会话仍保留未发送正文与引用", () => {
 		render(<ChatWorkspace />, { wrapper: createWrapper() });
+		fireEvent.click(screen.getByRole("button", { name: "回复消息" }));
+		const editor = screen.getByRole("textbox", { name: "消息内容" });
+		editor.textContent = "尚未发送的草稿";
+		fireEvent.input(editor);
+		fireEvent.click(screen.getByRole("button", { name: "返回会话列表" }));
+		fireEvent.click(screen.getByRole("button", { name: "dfy" }));
 
-		// 对方是 dfy，首字母 D；当前用户是 xfy，首字母 X
-		// 侧边栏会话项与顶部面板头像应为 D
-		const dAvatars = screen.getAllByText("D");
-		expect(dAvatars.length).toBeGreaterThanOrEqual(2);
+		expect(screen.getByRole("textbox", { name: "消息内容" }).textContent).toBe(
+			"尚未发送的草稿",
+		);
+		expect(screen.getByRole("button", { name: "取消回复" })).toBeTruthy();
+	});
 
-		// 消息列表中 mockConversation.last_message 由 mockMe 发送，消息气泡处才展示 X
-		const xAvatars = screen.getAllByText("X");
-		expect(xAvatars.length).toBe(1);
+	it("图片上传期间返回列表，完成后恢复的草稿仍能发送原图", async () => {
+		const upload = Promise.withResolvers<{
+			file_id: string;
+			url: string;
+			width: number;
+			height: number;
+		}>();
+		mockUploadFile.mockReturnValue(upload.promise);
+		const { container } = render(<ChatWorkspace />, { wrapper: createWrapper() });
+		const input = container.querySelector('input[type="file"]');
+		if (!input) throw new Error("未找到图片上传入口");
+		fireEvent.change(input, {
+			target: { files: [new File(["image"], "draft.png", { type: "image/png" })] },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "返回会话列表" }));
+		await act(async () => {
+			upload.resolve({
+				file_id: "draft-image",
+				url: "https://cdn.example.com/draft.png",
+				width: 40,
+				height: 30,
+			});
+		});
+		await act(async () => {
+			fireEvent.click(screen.getByRole("button", { name: "dfy" }));
+		});
+		await waitFor(() => {
+			const image = screen
+				.getByRole("textbox", { name: "消息内容" })
+				.querySelector('img[data-image="draft-image"]');
+			expect(image?.getAttribute("src")).toBe("https://cdn.example.com/draft.png");
+		});
+		fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
+		expect(mockSendMutateAsync).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				input: { type: "image", content: "![img:draft-image]" },
+			}),
+		);
 	});
 
 	it("还有更早消息可加载时用哨兵替代会话起始分割线，抓取中显示加载提示", () => {

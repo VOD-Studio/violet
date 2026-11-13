@@ -2,11 +2,19 @@
  * 会话索引侧栏：标题、搜索、会话列表与搜索结果（含发起私聊）。
  */
 
-import { Button, Input, iconProps } from "@violet/ui";
+import {
+	Avatar,
+	Button,
+	Empty,
+	Input,
+	iconProps,
+	ListHighlight,
+	ListHighlightItem,
+	Segmented,
+} from "@violet/ui";
 
 import { cn } from "cn";
-import { MessageCircle, Plus, Search } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { MessageCircle, Plus, Search, Users } from "lucide-react";
 import { type ReactNode, useDeferredValue, useState } from "react";
 import { toast } from "sonner";
 import { useChatContacts, useCreateChatConversation } from "../api/queries";
@@ -52,14 +60,18 @@ export function ConversationIndex({
 	onSelect,
 	onCreated,
 }: ConversationIndexProps) {
+	const [filter, setFilter] = useState<"all" | "room" | "direct">("all");
+	const filteredConversations = conversations.filter(
+		(conversation) => filter === "all" || conversation.kind === filter,
+	);
 	const deferredSearch = useDeferredValue(search.trim());
 	const contactsEnabled = Boolean(deferredSearch);
 
 	return (
-		<div className="flex h-full min-h-0 flex-col">
-			<header className="shrink-0 px-3 pb-2 pt-4 md:px-4">
-				<div className="flex h-11 items-center justify-between gap-3 px-1">
-					<h1 className="mr-auto text-[1.35rem] font-semibold text-foreground">聊天</h1>
+		<div className="flex h-full min-h-0 min-w-0 flex-col">
+			<header className="shrink-0 px-4 pb-1.5 pt-3.5">
+				<div className="flex items-center justify-between gap-2 pb-3">
+					<h1 className="mr-auto text-xl font-semibold text-foreground">聊天</h1>
 					<ChatAppearanceButton active={appearanceOpen} onClick={onOpenAppearance} />
 					<Button
 						iconOnly
@@ -74,12 +86,10 @@ export function ConversationIndex({
 						size="md"
 						variant="ghost"
 					>
-						<Plus
-							className={cn("size-5 transition-transform", showNew && "rotate-45")}
-						/>
+						<Plus className={cn("size-5", showNew && "rotate-45")} />
 					</Button>
 				</div>
-				<div className="px-1 pb-1">
+				<div className="pb-1">
 					<Input
 						aria-label="搜索会话、用户或群聊"
 						type="search"
@@ -91,13 +101,23 @@ export function ConversationIndex({
 						value={search}
 					/>
 				</div>
+				<div className="pt-2">
+					<Segmented
+						aria-label="会话类型"
+						block
+						value={filter}
+						onValueChange={setFilter}
+						segments={[
+							{ value: "all", label: "全部" },
+							{ value: "room", label: "群聊" },
+							{ value: "direct", label: "私信" },
+						]}
+					/>
+				</div>
 			</header>
+			{showNew && <NewConversationForm onCreated={onCreated} onClose={onToggleNew} />}
 
-			<AnimatePresence>
-				{showNew && <NewConversationForm onCreated={onCreated} onClose={onToggleNew} />}
-			</AnimatePresence>
-
-			<div className="min-h-0 flex-1 overflow-y-auto px-2.5 py-2.5">
+			<div className="min-h-0 min-w-0 flex-1 overflow-y-auto px-2.5 pb-2.5 pt-1">
 				{search.trim() ? (
 					<SearchResults
 						contactsEnabled={contactsEnabled}
@@ -108,30 +128,35 @@ export function ConversationIndex({
 						onSelect={onSelect}
 						selectedID={selectedID}
 					/>
+				) : loading ? (
+					<ConversationSkeleton />
+				) : conversations.length === 0 ? (
+					<ConversationEmpty onCreate={onToggleNew} />
+				) : filteredConversations.length === 0 ? (
+					<Empty
+						variant="plain"
+						title={filter === "room" ? "还没有群聊" : "还没有私信"}
+						description="切换到全部查看已有会话，或新建会话。"
+						action={
+							<Button variant="outline" size="sm" onClick={onToggleNew}>
+								新建会话
+							</Button>
+						}
+					/>
 				) : (
-					<>
-						<div className="mb-2 flex items-center justify-between px-2 text-xs text-muted-foreground">
-							<span>会话</span>
-							<span className="tabular-nums">{conversations.length}</span>
+					<ListHighlight>
+						<div className="space-y-0.5">
+							{filteredConversations.map((conversation) => (
+								<ConversationRow
+									active={conversation.id === selectedID}
+									conversation={conversation}
+									currentUserID={currentUserID}
+									key={conversation.id}
+									onClick={() => onSelect(conversation.id)}
+								/>
+							))}
 						</div>
-						{loading ? (
-							<ConversationSkeleton />
-						) : conversations.length === 0 ? (
-							<ConversationEmpty onCreate={onToggleNew} />
-						) : (
-							<div className="space-y-1">
-								{conversations.map((conversation) => (
-									<ConversationRow
-										active={conversation.id === selectedID}
-										conversation={conversation}
-										currentUserID={currentUserID}
-										key={conversation.id}
-										onClick={() => onSelect(conversation.id)}
-									/>
-								))}
-							</div>
-						)}
-					</>
+					</ListHighlight>
 				)}
 			</div>
 		</div>
@@ -185,21 +210,21 @@ function SearchResults({
 			<div className="space-y-4">
 				<SearchResultSection label="已有会话" count={conversations.length}>
 					{conversations.length > 0 ? (
-						<div className="space-y-1">
-							{conversations.map((conversation) => (
-								<ConversationRow
-									active={conversation.id === selectedID}
-									conversation={conversation}
-									currentUserID={currentUserID}
-									key={conversation.id}
-									onClick={() => onSelect(conversation.id)}
-								/>
-							))}
-						</div>
+						<ListHighlight>
+							<div className="space-y-1">
+								{conversations.map((conversation) => (
+									<ConversationRow
+										active={conversation.id === selectedID}
+										conversation={conversation}
+										currentUserID={currentUserID}
+										key={conversation.id}
+										onClick={() => onSelect(conversation.id)}
+									/>
+								))}
+							</div>
+						</ListHighlight>
 					) : (
-						<p className="px-2.5 py-2 text-xs text-muted-foreground/70">
-							没有匹配的会话
-						</p>
+						<Empty variant="compact" title="没有匹配的会话" />
 					)}
 				</SearchResultSection>
 				<SearchResultSection label="用户" count={contacts.length}>
@@ -227,7 +252,7 @@ function SearchResults({
 										loading={busyID === user.id}
 										onClick={() => void startPrivateChat(user)}
 										size="sm"
-										className="h-8 shrink-0 px-2.5 text-xs shadow-xs"
+										className="h-8 shrink-0 px-2.5 text-xs"
 										leftIcon={<MessageCircle {...iconProps(14)} />}
 									>
 										<span className="sr-only sm:not-sr-only sm:ml-1">私聊</span>
@@ -236,9 +261,7 @@ function SearchResults({
 							))}
 						</div>
 					) : (
-						<p className="px-2.5 py-2 text-xs text-muted-foreground/70">
-							没有匹配的用户
-						</p>
+						<Empty variant="compact" title="没有匹配的用户" />
 					)}
 				</SearchResultSection>
 			</div>
@@ -285,52 +308,69 @@ export function ConversationRow({
 }: ConversationRowProps) {
 	const avatarUser = conversationTargetUser(conversation, currentUserID);
 	const lastTime = conversation.last_message?.created_at ?? conversation.updated_at;
+	const label = conversationLabel(conversation, currentUserID);
 
 	return (
-		<button
-			className={cn(
-				"group relative flex w-full items-center gap-3 rounded-2xl px-2 py-2 text-left outline-none md:px-3",
-				active ? "text-foreground" : "text-foreground/90 hover:text-foreground",
-			)}
-			onClick={onClick}
-			type="button"
-		>
-			{/* 选中态：滑动高亮卡片（layoutId 跨行平滑过渡） */}
-			{active && (
-				<motion.div
-					layoutId="active-chat-row-highlight"
-					className="absolute inset-0 rounded-2xl bg-accent"
-					transition={{ type: "spring", stiffness: 450, damping: 35 }}
-				/>
-			)}
-
-			<div className="relative z-10 shrink-0">
-				<ChatAvatar user={avatarUser} className="size-12" />
-			</div>
-
-			<span className="relative z-10 min-w-0 flex-1 border-b border-border/60 pb-2 group-last:border-0">
-				<span className="flex items-center justify-between gap-2 pt-0.5">
-					<strong className="truncate text-[0.95rem] font-semibold text-foreground">
-						{conversationLabel(conversation, currentUserID)}
-					</strong>
-					<time className="shrink-0 text-xs leading-5 text-muted-foreground">
-						{lastTime ? formatRelativeTime(lastTime) : ""}
-					</time>
-				</span>
-				<span className="mt-0.5 flex items-center justify-between gap-2">
-					<span className="truncate text-sm leading-5 text-muted-foreground">
-						{conversation.last_message
-							? messagePreview(conversation.last_message)
-							: "还没有消息，打个招呼吧"}
-					</span>
-					{conversation.unread_count > 0 && (
-						<span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium leading-none text-primary-foreground tabular-nums">
-							{conversation.unread_count > 99 ? "99+" : conversation.unread_count}
-						</span>
+		<ListHighlightItem active={active}>
+			<button
+				data-conversation-id={conversation.id}
+				aria-current={active ? "true" : undefined}
+				aria-label={`${label}${conversation.unread_count > 0 ? `，${conversation.unread_count} 条未读消息` : ""}`}
+				className={cn(
+					"group relative flex w-full min-w-0 items-center gap-3 rounded-xl p-2.5 text-left",
+					active
+						? "font-medium text-foreground"
+						: "text-foreground/90 hover:text-foreground",
+				)}
+				onClick={onClick}
+				type="button"
+			>
+				<div className="shrink-0">
+					{conversation.kind === "room" ? (
+						<Avatar
+							size={40}
+							shape="square"
+							icon={<Users {...iconProps(20, "size-5")} />}
+							alt=""
+						/>
+					) : (
+						<ChatAvatar user={avatarUser} className="size-10" linked={false} />
 					)}
+				</div>
+				<span className="min-w-0 flex-1">
+					<span className="flex items-center justify-between gap-2">
+						<strong className="min-w-0 truncate text-[15px] font-semibold text-foreground">
+							{label}
+						</strong>
+						<time className="shrink-0 text-xs leading-5 text-muted-foreground">
+							{lastTime ? formatRelativeTime(lastTime) : ""}
+						</time>
+					</span>
+					<span className="mt-0.5 flex items-center justify-between gap-2">
+						<span className="truncate text-[13px] leading-5 text-muted-foreground">
+							{conversation.last_message ? (
+								<>
+									{conversation.kind === "room" &&
+										conversation.last_message.type !== "system" &&
+										`${conversation.last_message.sender.id === currentUserID ? "你" : conversation.last_message.sender.display_name}：`}
+									{messagePreview(conversation.last_message)}
+								</>
+							) : (
+								"还没有消息，打个招呼吧"
+							)}
+						</span>
+						{conversation.unread_count > 0 && (
+							<span
+								aria-hidden="true"
+								className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium leading-none text-primary-foreground tabular-nums"
+							>
+								{conversation.unread_count > 99 ? "99+" : conversation.unread_count}
+							</span>
+						)}
+					</span>
 				</span>
-			</span>
-		</button>
+			</button>
+		</ListHighlightItem>
 	);
 }
 
@@ -352,19 +392,16 @@ export function ConversationSkeleton() {
 
 export function ConversationEmpty({ onCreate }: { onCreate: () => void }) {
 	return (
-		<div className="px-4 py-10 text-center">
-			<MessageCircle className="mx-auto size-5 text-muted-foreground" />
-			<p className="mt-2.5 text-xs font-medium">还没有会话</p>
-			<p className="mt-0.5 text-xs text-muted-foreground">发起一次私聊即可建立连接。</p>
-			<Button
-				className="mt-3.5 h-8 px-3 text-xs"
-				onClick={onCreate}
-				size="sm"
-				variant="outline"
-			>
-				<Plus {...iconProps(14)} />
-				新建会话
-			</Button>
-		</div>
+		<Empty
+			variant="plain"
+			title="还没有会话"
+			description="发起一次私聊或创建群聊即可建立连接。"
+			action={
+				<Button onClick={onCreate} size="sm" variant="outline">
+					<Plus {...iconProps(14)} />
+					新建会话
+				</Button>
+			}
+		/>
 	);
 }

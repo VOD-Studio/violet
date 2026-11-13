@@ -8,10 +8,8 @@ import { formatDate } from "@shared/lib/date";
 import { ImagePreview, useImagePreview } from "@shared/ui/image-preview";
 import type { RichTextInputHandle } from "@shared/ui/rich-text-input/RichTextInput";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button, Spinner } from "@violet/ui";
-import { cn } from "cn";
-import { ArrowDown, ArrowLeft, EllipsisVertical } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { Avatar, Button, Empty, iconProps, Spinner } from "@violet/ui";
+import { ArrowDown, ArrowLeft, EllipsisVertical, Users } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -20,6 +18,7 @@ import {
 	useDeleteChatMessage,
 	useMarkChatRead,
 } from "../api/queries";
+import { useChatDraftField } from "../hooks/use-chat-draft";
 import { useEmojiEmoteMap } from "../hooks/use-emoji-emote-map";
 import { useAppearanceScrollFollow } from "../hooks/useAppearanceScrollFollow";
 import { panelAppearanceUserIDs } from "../lib/appearance-users";
@@ -35,6 +34,8 @@ import { RoomDetails } from "./RoomDetails";
 import { TypingIndicator } from "./TypingIndicator";
 
 export interface ConversationPanelProps {
+	/** 被外观编辑遮住时暂停已读推进。 */
+	active?: boolean;
 	/** 当前会话。 */
 	conversation: ChatConversation;
 	/** 当前用户 ID。 */
@@ -50,6 +51,7 @@ export interface ConversationPanelProps {
 }
 
 export function ConversationPanel({
+	active = true,
 	conversation,
 	currentUserID,
 	onBack,
@@ -63,6 +65,8 @@ export function ConversationPanel({
 		hasNextPage,
 		isFetchingNextPage,
 		isLoading: messagesLoading,
+		isError: messagesFailed,
+		refetch: reloadMessages,
 	} = useChatMessages(conversation.id);
 	const { data: memberData } = useChatMembers(conversation.id);
 	const members = memberData ?? [];
@@ -70,10 +74,14 @@ export function ConversationPanel({
 	const deleteMessage = useDeleteChatMessage();
 	const read = useMarkChatRead();
 	const imagePreview = useImagePreview();
-	const [replyTarget, setReplyTarget] = useState<ChatMessage | null>(null);
+	const [replyTarget, setReplyTarget] = useChatDraftField(conversation.id, "reply");
 	const [pendingFocusID, setPendingFocusID] = useState<string | null>(null);
 	const [highlightedID, setHighlightedID] = useState<string | null>(null);
 	const inputRef = useRef<RichTextInputHandle>(null);
+	const headingRef = useRef<HTMLHeadingElement>(null);
+	useLayoutEffect(() => {
+		if (conversation.id) headingRef.current?.focus({ preventScroll: true });
+	}, [conversation.id]);
 	const handleMention = (user: ChatUser) => {
 		if (user.id === currentUserID) return;
 		if (!inputRef.current?.appendMention(user.id)) {
@@ -190,7 +198,12 @@ export function ConversationPanel({
 		followLatestRef.current = true;
 		container.scrollTo({
 			top: Math.max(0, container.scrollHeight - container.clientHeight),
-			behavior: smooth ? "smooth" : "auto",
+			behavior:
+				smooth &&
+				!container.closest('[data-motion="reduce"]') &&
+				!window.matchMedia("(prefers-reduced-motion: reduce)").matches
+					? "smooth"
+					: "auto",
 		});
 	}, []);
 
@@ -207,7 +220,6 @@ export function ConversationPanel({
 		followLatestRef.current = true;
 		lastScrollPositionRef.current = { top: 0, height: 0 };
 		lastSubmittedReadRef.current = null;
-		setReplyTarget(null);
 		setPendingFocusID(null);
 		setHighlightedID(null);
 		prependScrollAnchorRef.current = null;
@@ -224,7 +236,7 @@ export function ConversationPanel({
 
 	useEffect(() => {
 		const container = scrollContainerRef.current;
-		if (!container) return;
+		if (!container || !active || showDetails) return;
 		let frame = 0;
 		const markVisibleRead = () => {
 			if (document.visibilityState !== "visible" || !document.hasFocus()) return;
@@ -277,7 +289,7 @@ export function ConversationPanel({
 			window.removeEventListener("resize", scheduleRead);
 			document.removeEventListener("visibilitychange", scheduleRead);
 		};
-	}, [conversation.id, messages, read.mutate]);
+	}, [active, showDetails, conversation.id, messages, read.mutate]);
 
 	useEffect(() => {
 		if (!pendingFocusID) return;
@@ -287,7 +299,14 @@ export function ConversationPanel({
 			if (container) {
 				const offset =
 					target.getBoundingClientRect().top - container.getBoundingClientRect().top;
-				container.scrollTo({ top: container.scrollTop + offset - 24, behavior: "smooth" });
+				container.scrollTo({
+					top: container.scrollTop + offset - 24,
+					behavior:
+						container.closest('[data-motion="reduce"]') ||
+						window.matchMedia("(prefers-reduced-motion: reduce)").matches
+							? "auto"
+							: "smooth",
+				});
 			}
 			setHighlightedID(pendingFocusID);
 			setPendingFocusID(null);
@@ -314,12 +333,14 @@ export function ConversationPanel({
 		if (!container) return;
 		const { scrollTop, scrollHeight, clientHeight } = container;
 		const distance = scrollHeight - scrollTop - clientHeight;
-		if (distance <= 2) followLatestRef.current = true;
-		else if (
+		if (distance <= 2) {
+			followLatestRef.current = true;
+		} else if (
 			scrollHeight === lastScrollPositionRef.current.height &&
 			scrollTop < lastScrollPositionRef.current.top - 2
-		)
+		) {
 			followLatestRef.current = false;
+		}
 		lastScrollPositionRef.current = { top: scrollTop, height: scrollHeight };
 		setShowScrollBottom(distance > 150);
 	}, []);
@@ -380,15 +401,8 @@ export function ConversationPanel({
 			currentUserID={currentUserID}
 			userIDs={panelAppearanceUserIDs(conversation, members, messages)}
 		>
-			<motion.div
-				key={conversation.id}
-				initial={{ opacity: 0, y: 6, scale: 0.995 }}
-				animate={{ opacity: 1, y: 0, scale: 1 }}
-				exit={{ opacity: 0, y: -6, scale: 0.995 }}
-				transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-				className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden"
-			>
-				<header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border px-3 md:px-5">
+			<div className="relative flex h-full min-h-0 flex-1 flex-col">
+				<header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border px-3 md:px-5">
 					<div className="flex min-w-0 items-center gap-2.5">
 						<Button
 							iconOnly
@@ -401,19 +415,30 @@ export function ConversationPanel({
 							<ArrowLeft className="size-5" />
 						</Button>
 						<div className="shrink-0">
-							<ChatAvatar
-								user={conversationTargetUser(conversation, currentUserID)}
-								className="size-10 shrink-0"
-							/>
+							{conversation.kind === "room" ? (
+								<Avatar
+									size={40}
+									shape="square"
+									icon={<Users {...iconProps(20, "size-5")} />}
+									alt=""
+								/>
+							) : (
+								<ChatAvatar
+									user={conversationTargetUser(conversation, currentUserID)}
+									className="size-10 shrink-0"
+								/>
+							)}
 						</div>
 						<div className="min-w-0">
-							<h2 className="truncate text-[0.95rem] font-semibold text-foreground">
+							<h2
+								ref={headingRef}
+								tabIndex={-1}
+								className="truncate rounded text-base font-semibold text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+							>
 								{conversationLabel(conversation, currentUserID)}
 							</h2>
 							<p className="text-xs leading-4 text-muted-foreground">
-								{conversation.kind === "room"
-									? `${members.length} 位成员`
-									: "最后登录于最近"}
+								{conversation.kind === "room" ? `${members.length} 位成员` : "私信"}
 							</p>
 						</div>
 					</div>
@@ -430,11 +455,15 @@ export function ConversationPanel({
 					</Button>
 				</header>
 
-				<div className="relative flex min-h-0 flex-1 overflow-hidden">
+				<div className="relative flex min-h-0 flex-1 overflow-hidden bg-background">
 					<section className="flex min-h-0 min-w-0 flex-1 flex-col">
 						<div
 							ref={scrollContainerRef}
 							data-testid="chat-message-list"
+							// biome-ignore lint/a11y/noNoninteractiveTabindex: 历史消息区须独立接受 PageUp、Home 等键盘滚动操作。
+							tabIndex={0}
+							role="region"
+							aria-label="消息记录"
 							onScroll={handleScroll}
 							onPointerDownCapture={pauseFollow}
 							onTouchStartCapture={pauseFollow}
@@ -450,9 +479,9 @@ export function ConversationPanel({
 								)
 									pauseFollow();
 							}}
-							className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 pt-5 md:px-8"
+							className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain px-3 pt-4 -outline-offset-4 focus-visible:outline-2 focus-visible:outline-ring md:px-6"
 						>
-							<div className="mx-auto max-w-4xl space-y-4 pb-5">
+							<div className="mx-auto mt-auto w-full max-w-4xl shrink-0 space-y-1.5 pb-2">
 								{messages.length > 0 &&
 									(hasNextPage ? (
 										<div
@@ -481,7 +510,18 @@ export function ConversationPanel({
 										</div>
 									))}
 
-								{messagesLoading && messages.length === 0 ? (
+								{messagesFailed && messages.length === 0 ? (
+									<Empty
+										variant="plain"
+										title="消息加载失败"
+										description="可以重新加载，草稿不会清空。"
+										action={
+											<Button onClick={() => void reloadMessages()}>
+												重新加载消息
+											</Button>
+										}
+									/>
+								) : messagesLoading && messages.length === 0 ? (
 									<MessageSkeleton />
 								) : messages.length === 0 ? (
 									<MessageEmpty />
@@ -514,12 +554,8 @@ export function ConversationPanel({
 														)}
 													/>
 												))}
-												{/* 每条消息占正文与状态两行，头像约束止于组尾正文。 */}
 												<div
-													className={cn(
-														"pointer-events-none absolute inset-y-0 row-start-1 -row-end-2 flex w-10 flex-col-reverse",
-														unit.mine ? "right-0" : "left-0",
-													)}
+													className={`pointer-events-none absolute inset-y-0 row-start-1 -row-end-2 flex w-10 flex-col-reverse ${unit.mine ? "right-0" : "left-0"}`}
 												>
 													<div className="pointer-events-auto sticky bottom-2 top-0">
 														<ChatAvatar
@@ -535,28 +571,20 @@ export function ConversationPanel({
 								<div className="h-0" />
 							</div>
 						</div>
-						<AnimatePresence>
-							{showScrollBottom && (
-								<motion.div
-									initial={{ opacity: 0, y: 12, scale: 0.8 }}
-									animate={{ opacity: 1, y: 0, scale: 1 }}
-									exit={{ opacity: 0, y: 12, scale: 0.8 }}
-									transition={{ duration: 0.15 }}
-									className="pointer-events-none absolute bottom-24 right-6 z-10 md:right-10"
+						{showScrollBottom && (
+							<div className="pointer-events-none absolute bottom-24 right-4 z-10">
+								<Button
+									aria-label="回到底部"
+									className="pointer-events-auto border border-border bg-card shadow-soft"
+									onClick={() => scrollToBottom(true)}
+									iconOnly
+									size="sm"
+									variant="outline"
 								>
-									<Button
-										aria-label="回到底部"
-										className="pointer-events-auto size-8.5 rounded-full border border-border bg-card shadow-md"
-										onClick={() => scrollToBottom(true)}
-										iconOnly
-										size="sm"
-										variant="outline"
-									>
-										<ArrowDown className="size-4" />
-									</Button>
-								</motion.div>
-							)}
-						</AnimatePresence>
+									<ArrowDown className="size-4" />
+								</Button>
+							</div>
+						)}
 						<TypingIndicator conversationID={conversation.id} members={members} />
 						<MessageComposer
 							key={conversation.id}
@@ -577,16 +605,14 @@ export function ConversationPanel({
 						/>
 					</section>
 
-					<AnimatePresence>
-						{showDetails && (
-							<RoomDetails
-								conversation={conversation}
-								currentUserID={currentUserID}
-								members={members}
-								onClose={onToggleDetails}
-							/>
-						)}
-					</AnimatePresence>
+					{showDetails && (
+						<RoomDetails
+							conversation={conversation}
+							currentUserID={currentUserID}
+							members={members}
+							onClose={onToggleDetails}
+						/>
+					)}
 				</div>
 				<ImagePreview
 					open={imagePreview.open}
@@ -595,7 +621,7 @@ export function ConversationPanel({
 					onClose={imagePreview.closePreview}
 					onIndexChange={imagePreview.setCurrentIndex}
 				/>
-			</motion.div>
+			</div>
 		</ChatAppearanceProvider>
 	);
 }

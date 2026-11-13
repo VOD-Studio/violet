@@ -126,6 +126,10 @@ test("聊天框从 Bot 目录补全命令，移动端菜单保持可见", async 
 	if (!bounds) throw new Error("命令菜单未渲染");
 	expect(bounds.x).toBeGreaterThanOrEqual(0);
 	expect(bounds.x + bounds.width).toBeLessThanOrEqual(390);
+	await page.setViewportSize({ width: 390, height: 480 });
+	await expect(list.getByRole("option").last()).toBeInViewport();
+	await list.getByRole("option").first().click({ trial: true });
+	await expect(editor).toBeInViewport();
 	await editor.press("ArrowDown");
 	await editor.press("Enter");
 	await expect(list).toHaveCount(0);

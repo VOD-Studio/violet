@@ -110,6 +110,7 @@ export function ShareTweetDialog() {
 								type="button"
 							>
 								<ChatAvatar
+									linked={false}
 									className="size-8"
 									user={conversationTargetUser(conversation, me?.id)}
 								/>
@@ -132,7 +133,7 @@ export function ShareTweetDialog() {
 									onClick={() => void handlePickUser(user)}
 									type="button"
 								>
-									<ChatAvatar className="size-8" user={user} />
+									<ChatAvatar className="size-8" user={user} linked={false} />
 									<span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
 										{user.display_name || user.username}
 									</span>

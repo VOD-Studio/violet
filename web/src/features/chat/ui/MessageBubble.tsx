@@ -133,7 +133,7 @@ export function MessageBubble({
 			onPointerUp={clearLongPress}
 			className={cn(
 				"group relative col-start-1 row-span-2 grid min-w-0 grid-rows-subgrid transition-shadow duration-300",
-				!showSender && "mt-4",
+				!showSender && "mt-1.5",
 				highlighted && "rounded-lg ring-2 ring-ring ring-offset-2 ring-offset-background",
 			)}
 		>
@@ -143,13 +143,12 @@ export function MessageBubble({
 					mine && "flex-row-reverse",
 				)}
 			>
-				{/* 头像占位列：头像本体在组层 sticky 列（见 ConversationPanel），此处仅保位 */}
 				<div className="size-10 shrink-0" />
 				<div
 					className={cn(
 						isBotReply
-							? "relative flex min-w-0 w-full max-w-[min(82%,45rem)] flex-col"
-							: "relative flex max-w-[min(70%,36rem)] flex-col",
+							? "relative flex min-w-0 w-fit max-w-[min(82%,45rem)] flex-col"
+							: "relative flex min-w-0 max-w-[min(70%,36rem)] flex-col",
 						mine ? "items-end text-right" : "items-start",
 					)}
 				>
@@ -250,15 +249,15 @@ export function MessageBubble({
 						{!editing && (
 							<div
 								className={cn(
-									"absolute top-1/2 z-10 flex -translate-y-1/2 items-center gap-1.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100 pointer-events-none",
+									"absolute z-10 flex items-center gap-1.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100 pointer-events-none max-md:bottom-full max-md:mb-1 md:top-1/2 md:-translate-y-1/2",
 									touchActionsVisible && "opacity-100",
 									mine
-										? "right-full mr-1.5 flex-row"
-										: "left-full ml-1.5 flex-row-reverse",
+										? "max-md:right-0 md:right-full md:mr-1.5 flex-row"
+										: "max-md:left-0 md:left-full md:ml-1.5 flex-row-reverse",
 								)}
 							>
 								{!sending && !message.is_deleted && (
-									<div className="pointer-events-auto flex items-center gap-0.5 rounded-full border border-border bg-card p-1 shadow-md">
+									<div className="pointer-events-auto flex items-center gap-0.5 rounded-full border border-border bg-card p-1 shadow-soft">
 										{mine && (
 											<button
 												aria-label="编辑消息"
