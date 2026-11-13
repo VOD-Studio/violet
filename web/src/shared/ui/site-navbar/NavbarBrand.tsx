@@ -1,4 +1,4 @@
-import { iconProps } from "@violet/ui";
+import { Avatar, iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { AppWindow, ChevronDown, Music } from "lucide-react";
 import type { ReactNode } from "react";
@@ -28,8 +28,10 @@ export interface NavbarLive {
 export interface NavbarBrandProps {
 	/** 站名，显示为全大写。 */
 	name: string;
-	/** 头像地址；省略时显示默认标记。 */
+	/** 头像地址；省略或加载失败时显示姓名首字。 */
 	avatar?: string | null;
+	/** 头像所属者；与站名字标不同时显式传入。 */
+	avatarName?: string;
 	/** 档案面板是否展开：箭头朝上。 */
 	open?: boolean;
 	/** 实时状态；省略时只有头像与站名。 */
@@ -84,37 +86,25 @@ function Equalizer() {
  * 必须渲染在带 `group` 类的可点击祖先里（悬停变色）。药丸外壳的 `data-collapsed` 为 true 时，
  * 文字、均衡器与箭头折叠，头像与叠圆仍保留。
  */
-export function NavbarBrand({ name, avatar, open = false, live }: NavbarBrandProps) {
+export function NavbarBrand({
+	name,
+	avatar,
+	avatarName = name,
+	open = false,
+	live,
+}: NavbarBrandProps) {
 	const lines = live?.lines;
 	return (
 		<>
 			<span className="flex flex-none items-center">
-				<span
-					aria-hidden="true"
+				<Avatar
 					data-slot="brand-avatar"
-					className={cn(
-						CIRCLE,
-						"bg-selected text-selected-foreground transition-colors group-hover:bg-selected-hover",
-					)}
-				>
-					{avatar ? (
-						<img src={avatar} alt="" className="size-full object-cover" />
-					) : (
-						<svg
-							aria-hidden="true"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							strokeWidth="2"
-							strokeLinecap="round"
-							strokeLinejoin="round"
-							className="size-4"
-						>
-							<circle cx="12" cy="12" r="3" fill="currentColor" stroke="none" />
-							<path d="M12 3v3M12 18v3M3 12h3M18 12h3" />
-						</svg>
-					)}
-				</span>
+					src={avatar ?? undefined}
+					name={avatarName}
+					alt=""
+					size={32}
+					className="shrink-0 border-2 border-card"
+				/>
 				{live?.cover ? (
 					<StackCircle
 						slot="brand-cover"

@@ -48,7 +48,7 @@ export function SiteProfile({
 				aria-label={label}
 				className={cn(NAVBAR_PILL_CLASS, NAVBAR_BRAND_CLASS)}
 			>
-				<NavbarBrand {...brand} open={open} />
+				<NavbarBrand {...brand} avatarName={card.identity.name} open={open} />
 			</MorphingPopoverTrigger>
 			<MorphingPopoverContent
 				aria-label="站长与此刻"
@@ -57,7 +57,7 @@ export function SiteProfile({
 				ghost={
 					// 与触发器同样的边框与内边距，让副本的内容落在触发器上字的原位
 					<span className="flex size-full items-center border border-transparent pr-3 pl-1 group-data-[collapsed=true]/navbar:pr-1">
-						<NavbarBrand {...brand} />
+						<NavbarBrand {...brand} avatarName={card.identity.name} />
 					</span>
 				}
 			>

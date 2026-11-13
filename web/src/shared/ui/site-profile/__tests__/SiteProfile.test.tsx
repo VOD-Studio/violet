@@ -66,6 +66,14 @@ describe("SiteProfile", () => {
 		expect(dialog.textContent).toContain("MacBook Pro");
 	});
 
+	it("站名字标与姓名不同时，药丸和卡片缺图都显示站长姓名首字", () => {
+		setup();
+		expect(pill().querySelector('[data-slot="brand-avatar"]')?.textContent).toBe("X");
+		fireEvent.click(pill());
+		const dialog = screen.getByRole("dialog", { name: "站长与此刻" });
+		expect(dialog.querySelector('[data-slot="profile-avatar"]')?.textContent).toBe("X");
+	});
+
 	it("Esc 收起，焦点回到药丸", async () => {
 		setup();
 		fireEvent.click(pill());

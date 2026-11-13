@@ -1,4 +1,4 @@
-import { GithubIcon, iconProps } from "@violet/ui";
+import { Avatar, GithubIcon, iconProps } from "@violet/ui";
 import { cn } from "cn";
 import { AppWindow, BookOpen, Laptop, Link2, Music, Rss, User } from "lucide-react";
 import type { ReactNode } from "react";
@@ -227,11 +227,13 @@ export function ProfileCard({
 	return (
 		<div className={cn("p-4.5 text-[13px]/[1.5] text-foreground", className)}>
 			<div className="flex items-center gap-3.5">
-				<Disc
-					slot="profile-avatar"
-					src={identity.avatar}
-					fallback={<User aria-hidden="true" className="size-6" />}
-					className="size-13"
+				<Avatar
+					data-slot="profile-avatar"
+					src={identity.avatar ?? undefined}
+					name={identity.name}
+					alt=""
+					size={48}
+					className="size-13 shrink-0"
 				/>
 				<div className="min-w-0 flex-1">
 					<div className="truncate text-base font-bold">{identity.name}</div>

@@ -149,6 +149,8 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 
 只在一个 feature 内使用的实现留在 feature。第二个 feature 需要同一业务能力时，提到 `entities/`；站点专用基础能力放 `shared/`，通用 React 组件放 `packages/ui/`。不要让 `shared` 反向导入业务 feature。
 
+站长药丸与资料卡共用服务端公开身份；头像优先使用公开人设原图，再取站点身份里的头像。两处复用 Avatar 的中性底色和姓名首字占位，图片加载失败不切换为另一套图标。
+
 链接预览先显示 SSR 快照；客户端按规范 URL 共用缓存，只轮询服务端明确标记为 pending 的链接，完成、失败或离开页面后停止。首个消费方是推文；其他 feature 复用 `entities/link-preview`，不要在 `shared` 里导入推文 DTO。
 
 ### 音乐播放器接入
