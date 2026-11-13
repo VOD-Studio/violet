@@ -86,6 +86,8 @@ pnpm dev
 
 ## 数据与认证
 
+路由查询中的 `tag` 始终按文本编解码：`2026`、`1e3`、`null` 等合法 slug 不转换为 JSON 数字或空值，canonical 与浏览器导航使用相同原文。其他查询参数保留 TanStack 的类型化解析。
+
 ### SSR 与查询缓存
 
 TanStack Query 管理服务端数据。`getRouter()` 在服务端为每次请求创建独立 QueryClient，浏览器复用 `clientQueryClient`；Router 负责将服务端查询结果交给客户端，不在其他 Provider 里再建一份缓存。
