@@ -11,7 +11,7 @@ export interface IslandNav {
 	links: NavLink[];
 	/** 收起态常驻的主要入口。 */
 	primaryTabs: RoutableNavItem[];
-	/** 面板「全部」区：有目标的顶层项在前，不与父项重复的二级项（如「归档」）排在其后。 */
+	/** 面板「全部」区：顶层目标在前，同目标优先显示二级项名称，其他二级项排在其后。 */
 	panelLinks: NavLink[];
 	/** 面板里按分组列出的纯分组项。 */
 	panelGroups: NavItem[];
@@ -24,7 +24,7 @@ export function buildIslandNav(items: NavItem[]): IslandNav {
 		links: flattenNavLinks(items),
 		primaryTabs: routable.slice(0, PRIMARY_TAB_COUNT),
 		panelLinks: [
-			...routable,
+			...routable.map((item) => item.children?.find((child) => child.to === item.to) ?? item),
 			...routable.flatMap((item) =>
 				(item.children ?? []).filter((child) => child.to !== item.to),
 			),

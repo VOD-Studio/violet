@@ -34,7 +34,7 @@ const SECTIONS: { title: string; links: { label: string; href: string }[] }[] = 
 		links: [
 			{ label: "文心长墨", href: "/blog" },
 			{ label: "求索札记", href: "/notes" },
-			{ label: "长卷连载", href: "/series" },
+			{ label: "长卷连载", href: "/blog/series" },
 			{ label: "光影撷影", href: "/galleries" },
 		],
 	},

@@ -7,8 +7,9 @@ test("Header 博客二级菜单只标记精确命中的当前页", async ({ page
 	await page.setViewportSize({ width: 1440, height: 900 });
 	await page.emulateMedia({ reducedMotion: "reduce" });
 	for (const route of [
-		{ path: "/blog/archive", current: "归档", inactive: "全部文章" },
-		{ path: "/blog", current: "全部文章", inactive: "归档" },
+		{ path: "/blog/archive", current: "归档", inactive: "文章" },
+		{ path: "/blog/series", current: "系列", inactive: "文章" },
+		{ path: "/blog", current: "文章", inactive: "系列" },
 	]) {
 		await page.goto(route.path);
 		await page.waitForLoadState("networkidle");
@@ -17,6 +18,15 @@ test("Header 博客二级菜单只标记精确命中的当前页", async ({ page
 			.getByRole("link", { name: "博客", exact: true })
 			.hover();
 		const panel = page.getByRole("group", { name: "博客二级菜单" });
+		await expect(panel.getByRole("link", { name: /^文章/ })).toHaveAttribute("href", "/blog");
+		await expect(panel.getByRole("link", { name: /^系列/ })).toHaveAttribute(
+			"href",
+			"/blog/series",
+		);
+		await expect(panel.getByRole("link", { name: /^归档/ })).toHaveAttribute(
+			"href",
+			"/blog/archive",
+		);
 		await expect(
 			panel.getByRole("link", { name: new RegExp(`^${route.current}`) }),
 		).toHaveAttribute("aria-current", "page");
@@ -24,6 +34,14 @@ test("Header 博客二级菜单只标记精确命中的当前页", async ({ page
 			panel.getByRole("link", { name: new RegExp(`^${route.inactive}`) }),
 		).not.toHaveAttribute("aria-current");
 	}
+	await page
+		.getByRole("navigation", { name: "主导航" })
+		.getByRole("button", { name: "更多", exact: true })
+		.hover();
+	await expect(page.getByRole("group", { name: "更多二级菜单" })).toBeVisible();
+	await expect(
+		page.getByRole("group", { name: "更多二级菜单" }).getByRole("link", { name: /^系列/ }),
+	).toHaveCount(0);
 });
 
 test("Header logo 药丸点击展开站长卡片，Esc 与点外面收起并归还焦点", async ({ page, context }) => {

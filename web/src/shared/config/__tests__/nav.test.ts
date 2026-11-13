@@ -22,11 +22,21 @@ describe("getNavItems 一级入口", () => {
 		expect(more?.children?.some((link) => link.to === "/chat")).toBe(false);
 	});
 
-	it("更多收纳项目、系列与图集", () => {
+	it("更多收纳项目与图集，不再收纳系列", () => {
 		const more = getNavItems({ authenticated: false }).find((item) => item.label === "更多");
 		expect(more?.to).toBeUndefined();
 		const targets = more?.children?.map((link) => link.to);
-		expect(targets).toEqual(expect.arrayContaining(["/projects", "/series", "/galleries"]));
+		expect(targets).toEqual(expect.arrayContaining(["/projects", "/galleries"]));
+		expect(targets).not.toContain("/blog/series");
+	});
+
+	it("博客依次提供文章、系列、归档三个路径入口", () => {
+		const blog = getNavItems({ authenticated: false }).find((item) => item.label === "博客");
+		expect(blog?.children?.map(({ label, to }) => ({ label, to }))).toEqual([
+			{ label: "文章", to: "/blog" },
+			{ label: "系列", to: "/blog/series" },
+			{ label: "归档", to: "/blog/archive" },
+		]);
 	});
 });
 
@@ -48,14 +58,30 @@ describe("resolveActiveNav", () => {
 		expect(active?.link.to).toBe("/blog");
 	});
 
-	it("取最长命中：归档不被博客吞掉", () => {
-		const active = resolveActiveNav("/blog/archive", items);
+	it("按路径区分归档，筛选和分页不改变当前项", () => {
+		const active = resolveActiveNav("/blog/archive?source=original&tag=go&page=2#2026", items);
 		expect(active?.item.label).toBe("博客");
 		expect(active?.link.label).toBe("归档");
 	});
 
-	it("等长命中时二级项优先，列表页标记「全部文章」", () => {
-		expect(resolveActiveNav("/blog", items)?.link.label).toBe("全部文章");
+	it("等长命中时二级项优先，列表页标记「文章」", () => {
+		expect(resolveActiveNav("/blog", items)?.link.label).toBe("文章");
+	});
+
+	it("系列视图与系列详情都归属系列入口", () => {
+		for (const href of ["/blog/series?source=original&tag=go&page=2", "/blog/series/go-book"]) {
+			const active = resolveActiveNav(href, items);
+			expect(active?.item.label).toBe("博客");
+			expect(active?.link.label).toBe("系列");
+			expect(active?.link.to).toBe("/blog/series");
+		}
+	});
+
+	it("文章列表与文章详情按路径归属文章，筛选不改变当前项", () => {
+		expect(resolveActiveNav("/blog?source=repost&tag=go&page=2", items)?.link.label).toBe(
+			"文章",
+		);
+		expect(resolveActiveNav("/blog/article?source=original", items)?.link.label).toBe("文章");
 	});
 
 	it("手记详情页归属手记", () => {
@@ -91,6 +117,8 @@ describe("flattenNavLinks", () => {
 		);
 		expect(new Set(targets).size).toBe(targets.length);
 		expect(targets).toContain("/blog/archive");
+		expect(targets).toContain("/blog/series");
+		expect(flattenNavLinks().find((link) => link.to === "/blog")?.label).toBe("文章");
 		expect(targets).toContain("/kanban");
 	});
 });

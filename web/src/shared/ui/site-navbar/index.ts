@@ -1,4 +1,4 @@
-export { type NavbarLinkComponent, RouterLink } from "./link";
+export { type NavbarLinkComponent, type NavbarLinkProps, RouterLink } from "./link";
 export {
 	NAVBAR_BRAND_CLASS,
 	NavbarBrand,

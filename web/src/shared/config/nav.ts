@@ -63,15 +63,21 @@ export const NAV_ITEMS: NavItem[] = [
 		description: "阅读最新文章",
 		children: [
 			{
-				label: "全部文章",
+				label: "文章",
 				to: "/blog",
-				exact: true,
 				icon: FileText,
 				description: "按发布时间阅读最新文章",
 			},
 			{
+				label: "系列",
+				to: "/blog/series",
+				icon: Library,
+				description: "按专题连续阅读",
+			},
+			{
 				label: "归档",
 				to: "/blog/archive",
+				exact: true,
 				icon: Archive,
 				description: "按时间查找文章",
 			},
@@ -99,19 +105,13 @@ export const NAV_ITEMS: NavItem[] = [
 	{
 		label: "更多",
 		icon: LayoutGrid,
-		description: "项目、系列、图集与其他页面",
+		description: "项目、图集与其他页面",
 		children: [
 			{
 				label: "项目",
 				to: "/projects",
 				icon: FolderKanban,
 				description: "查看开源与实验项目",
-			},
-			{
-				label: "系列",
-				to: "/series",
-				icon: Library,
-				description: "按专题连续阅读",
 			},
 			{
 				label: "图集",
@@ -169,19 +169,17 @@ export function getNavItems({ authenticated }: { authenticated: boolean }): NavI
 	return NAV_ITEMS.filter((item) => authenticated || !item.requiresAuth);
 }
 
-const matchesLink = (pathname: string, link: NavLink) =>
-	link.exact ? pathname === link.to : pathname === link.to || pathname.startsWith(`${link.to}/`);
-
 /**
  * 解析当前路径命中的导航位置。
  *
- * 取 `to` 最长的命中项，所以 `/blog/archive` 归「归档」而非「博客」；
- * 长度相同时二级项优先，使「全部文章」在 `/blog` 上被标为当前。
+ * @param href - 当前站内地址，可包含查询参数与锚点
+ * @remarks 优先最长目标，等长时二级项优先；筛选和分页参数不影响视图归属。
  */
-export function resolveActiveNav(pathname: string, items: NavItem[] = NAV_ITEMS): ActiveNav | null {
+export function resolveActiveNav(href: string, items: NavItem[] = NAV_ITEMS): ActiveNav | null {
+	const pathname = new URL(href, "https://navigation.invalid").pathname;
 	let best: ActiveNav | null = null;
 	const consider = (item: NavItem, link: NavLink) => {
-		if (!matchesLink(pathname, link)) return;
+		if (pathname !== link.to && (link.exact || !pathname.startsWith(`${link.to}/`))) return;
 		if (best === null || link.to.length >= best.link.to.length) best = { item, link };
 	};
 	for (const item of items) {
@@ -198,8 +196,8 @@ export function flattenNavLinks(items: NavItem[] = NAV_ITEMS): NavLink[] {
 	const links: NavLink[] = [];
 	for (const item of items) {
 		for (const link of [
-			...(item.to !== undefined ? [item as NavLink] : []),
 			...(item.children ?? []),
+			...(item.to !== undefined ? [item as NavLink] : []),
 		]) {
 			if (seen.has(link.to)) continue;
 			seen.add(link.to);

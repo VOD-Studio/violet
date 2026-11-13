@@ -81,7 +81,7 @@ describe("useNavbarState", () => {
 		renderAt("/blog");
 		const current = await state();
 		expect(current.title).toBeNull();
-		expect(current.active?.link).toBe("全部文章");
+		expect(current.active?.link).toBe("文章");
 	});
 
 	it("离开详情页后标题随之消失，选中项跟着换", async () => {

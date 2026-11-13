@@ -90,6 +90,8 @@ pnpm dev
 
 旧 `/series` 与 `/series/:slug` 分别 301 到 `/blog/series` 与 `/blog/series/:slug`，保留查询参数和片段；资源 API 仍为 `/series`。`/blog/archive` 保持原址。`series` 为博客目录保留 slug，新文章使用该 slug 时沿现有冲突规则分配后缀；上线前须检查存量文章是否占用该地址，不自动改写已有文章链接。
 
+博客下拉与页内切换统一使用「文章／系列／归档」；系列不再出现在「更多」。桌面导航、移动端展开菜单与命令面板共用同一配置，页脚的「长卷连载」直接进入 `/blog/series`。
+
 ## 数据与认证
 
 路由查询中的 `tag` 始终按文本编解码：`2026`、`1e3`、`null` 等合法 slug 不转换为 JSON 数字或空值，canonical 与浏览器导航使用相同原文。其他查询参数保留 TanStack 的类型化解析。

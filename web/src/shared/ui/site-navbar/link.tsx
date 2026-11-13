@@ -2,17 +2,21 @@ import { Link } from "@tanstack/react-router";
 import type { ComponentProps, ComponentType } from "react";
 
 /**
- * 导航里链接的渲染契约：普通锚点属性加 `href`，`ref` 与其余属性必须透传，
- * 因为 Segmented 与 Dropdown 触发器会把状态属性和 `asChild` 引用交给它。
+ * 导航链接统一通过 href 接收目标，原生属性与 ref 必须透传。
+ *
+ * @remarks Segmented 与 Dropdown 的 asChild 组合依赖状态属性和引用。
  */
-export type NavbarLinkComponent = ComponentType<ComponentProps<"a"> & { href: string }>;
+export interface NavbarLinkProps extends ComponentProps<"a"> {
+	href: string;
+}
+
+export type NavbarLinkComponent = ComponentType<NavbarLinkProps>;
 
 /**
  * 默认实现：交给 TanStack Router 做客户端跳转。
  *
- * Link 会给路径前缀命中的链接自动加 `aria-current`，会把「博客」下的「全部文章」也标成当前页；
- * 这里只认精确命中，其余情况的当前项由调用方按导航数据显式给出。
+ * @remarks 仅精确命中时自动标记当前页，其余当前项由导航数据显式给出。
  */
-export function RouterLink({ href, ...props }: ComponentProps<"a"> & { href: string }) {
+export function RouterLink({ href, ...props }: NavbarLinkProps) {
 	return <Link to={href} activeOptions={{ exact: true }} {...props} />;
 }
