@@ -39,6 +39,12 @@ export interface SiteNavbarProps {
 	logo: ReactNode;
 	/** 右药丸内容；药丸外壳由本组件提供。 */
 	actions: ReactNode;
+	/**
+	 * actions 自带药丸外壳时仅保留定位容器，供组合锚点接管整个外形。
+	 *
+	 * @default false
+	 */
+	actionsHaveShell?: boolean;
 	/** 点击搜索入口。 */
 	onSearch: () => void;
 	/** 季节挂件插槽；展示层不依赖 features，由接线层注入。 */
@@ -106,6 +112,7 @@ export function SiteNavbar({
 	collapsed = false,
 	logo,
 	actions,
+	actionsHaveShell = false,
 	onSearch,
 	ornaments,
 	centerClassName = "hidden lg:block",
@@ -212,11 +219,19 @@ export function SiteNavbar({
 				data-slot="navbar-right"
 				inert={collapsed}
 				className={cn(
-					PILL,
-					"gap-0.5 bg-sheet-translucent p-1 transition-opacity duration-200 group-data-[collapsed=true]/navbar:opacity-0 motion-reduce:transition-none",
+					actionsHaveShell
+						? "pointer-events-auto relative"
+						: `${PILL} gap-0.5 bg-sheet-translucent p-1`,
+					"transition-opacity duration-200 has-[[data-slot=morphing-popover-trigger][aria-expanded=true]]:z-20 group-data-[collapsed=true]/navbar:opacity-0 motion-reduce:transition-none",
 				)}
 			>
-				{ornaments?.right}
+				{actionsHaveShell ? (
+					<span className="pointer-events-none absolute inset-0 in-[[data-slot=navbar-right]:has([data-slot=morphing-popover-anchor][data-hidden])]:invisible">
+						{ornaments?.right}
+					</span>
+				) : (
+					ornaments?.right
+				)}
 				{actions}
 			</div>
 		</div>
