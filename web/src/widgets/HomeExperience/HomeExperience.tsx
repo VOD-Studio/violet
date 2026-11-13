@@ -1,9 +1,9 @@
 import { useActivePersona } from "@entities/persona/api/queries";
-import { useSiteIdentity } from "@entities/site-identity/api/queries";
-import type { SiteIdentity } from "@entities/site-identity/model/types";
+import { siteIdentityQueryOptions } from "@entities/site-identity/api/queries";
 import { useLatestComments } from "@features/comments/api/queries";
 import { useTimeline } from "@features/tweets/api/queries";
 import type { Season } from "@shared/lib/theme-preference";
+import { useSuspenseQuery } from "@tanstack/react-query";
 
 import { useFootprintPublications, useRecentPublications } from "./api/queries";
 import { HomeAccumulation } from "./HomeAccumulation";
@@ -11,7 +11,6 @@ import { HomeAccumulationSkeleton } from "./HomeAccumulationSkeleton";
 import { HomeClosing } from "./HomeClosing";
 import { HomeIndex } from "./HomeIndex";
 import { HomePrelude } from "./HomePrelude";
-import { selectHomeLead } from "./home-content";
 
 interface HomeExperienceProps {
 	initialRecentPublicationsFailed: boolean;
@@ -19,31 +18,9 @@ interface HomeExperienceProps {
 	season: Season;
 }
 
-const FALLBACK_SITE_IDENTITY: SiteIdentity = {
-	site_name: "Violet",
-	site_url: "https://xunrua.top",
-	owner_name: "xunrua",
-	bio: "这里是 Violet，记录构建、拆解问题与生活思考。",
-	avatar_url: "",
-	location: "",
-	hero: {
-		banner_url: null,
-		quote: "We can only see a short distance ahead, but we can see plenty there that needs to be done.",
-		quote_translation: "「我们只能看清眼前的一小段路，但已足以看清有无数的事亟待完成。」",
-		quote_author: "Alan Turing",
-	},
-	social_links: [],
-	subscription_channels: [{ kind: "rss", label: "RSS", href: "/feed.xml" }],
-	home: {
-		footprint_enabled: true,
-		footprint_aggregation_days: 7,
-	},
-};
-
 /** Violet 首页按身份、动态、时间与探索顺序组织。 */
 export function HomeExperience({ initialRecentPublicationsFailed, season }: HomeExperienceProps) {
-	const identityQuery = useSiteIdentity();
-	const identity = identityQuery.data ?? FALLBACK_SITE_IDENTITY;
+	const { data: identity } = useSuspenseQuery(siteIdentityQueryOptions());
 	const persona = useActivePersona().data ?? null;
 	const recentPublicationsQuery = useRecentPublications();
 	const recentPublications = recentPublicationsQuery.data?.data ?? [];
@@ -60,11 +37,19 @@ export function HomeExperience({ initialRecentPublicationsFailed, season }: Home
 	const publicationError =
 		recentPublicationsQuery.data === undefined &&
 		(initialRecentPublicationsFailed || recentPublicationsQuery.isError);
-	const lead = selectHomeLead(recentPublications);
+	const lead = recentPublications[0] ?? null;
 
 	return (
 		<div className="overflow-clip text-foreground">
-			<HomePrelude identity={identity} lead={lead} persona={persona} />
+			<HomePrelude
+				identity={identity}
+				lead={lead}
+				persona={persona}
+				publicationError={publicationError}
+				publicationsLoading={recentPublicationsQuery.isPending}
+				publicationsRetrying={recentPublicationsQuery.isFetching}
+				onRetryPublications={() => void recentPublicationsQuery.refetch()}
+			/>
 			<HomeIndex
 				items={recentPublications}
 				tweets={tweets}

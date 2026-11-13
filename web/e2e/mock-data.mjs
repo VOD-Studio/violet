@@ -33,7 +33,7 @@ const PUBLICATIONS = [1, 2, 3].map((i) => ({
 	kind: "article",
 	route_key: `contract-post-${i}`,
 	title: `契约样例文章 ${i}`,
-	published_at: "2026-08-0" + i + "T10:00:00Z",
+	published_at: `2026-08-${String(12 - i).padStart(2, "0")}T10:00:00Z`,
 	featured: i === 1,
 }));
 

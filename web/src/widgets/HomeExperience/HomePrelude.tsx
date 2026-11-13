@@ -3,9 +3,8 @@ import type { SiteIdentity } from "@entities/site-identity/model/types";
 import { formatDate } from "@shared/lib/date";
 import { avatarUrl } from "@shared/lib/image-url";
 import { Epigraph } from "@shared/ui/epigraph";
-import { GithubIcon, ImagePixelReveal, iconProps } from "@violet/ui";
+import { Avatar, Button, GithubIcon, ImagePixelReveal, iconProps } from "@violet/ui";
 import { ArrowDown, ArrowRight, BookText, ExternalLink, Mail, Rss, Share2, Tv } from "lucide-react";
-import { Tooltip as TooltipPrimitive } from "radix-ui";
 import { type ComponentType, type SVGProps, useState } from "react";
 import { useApiDocsDialogStore } from "@/features/api-docs";
 
@@ -13,17 +12,15 @@ import { HomeContentLink } from "./HomeContentLink";
 import { HOME_KIND_LABEL } from "./home-content";
 import type { HomePublicationItem } from "./types";
 
-interface HomePreludeProps {
+/** 首页首屏资料与发布物查询状态。 */
+export interface HomePreludeProps {
 	identity: SiteIdentity;
 	lead: HomePublicationItem | null;
-	/** 当前公开人设；null（未配置或未加载）时左侧回落站点头像。 */
 	persona: PublicPersona | null;
-}
-
-interface SocialLink {
-	href: string;
-	label: string;
-	Icon: ComponentType<SVGProps<SVGSVGElement>>;
+	publicationError: boolean;
+	publicationsLoading: boolean;
+	publicationsRetrying: boolean;
+	onRetryPublications: () => void;
 }
 
 const SOCIAL_ICON_BY_KIND: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
@@ -35,96 +32,70 @@ const SOCIAL_ICON_BY_KIND: Record<string, ComponentType<SVGProps<SVGSVGElement>>
 	rss: Rss,
 };
 
-/** 首页序章：展示服务端归一后的站点身份与最新发布。 */
-export function HomePrelude({ identity, lead, persona }: HomePreludeProps) {
-	const siteName = identity.site_name;
+/** 站长介绍与内容出口；未配置的资料不补演示内容。 */
+export function HomePrelude({
+	identity,
+	lead,
+	persona,
+	publicationError,
+	publicationsLoading,
+	publicationsRetrying,
+	onRetryPublications,
+}: HomePreludeProps) {
 	const owner = identity.owner_name;
-	const socialLinks = identity.social_links.map<SocialLink>((link) => ({
-		href: link.href,
-		label: link.label,
-		Icon: SOCIAL_ICON_BY_KIND[link.kind] ?? ExternalLink,
-	}));
 	const [failedAvatar, setFailedAvatar] = useState<string | null>(null);
-	// 头像级联：公开人设头像优先，未配置人设或其图加载失败时回落站点头像
-	const personaAvatar = persona?.avatar.url.trim() ?? "";
-	const avatarSource =
-		personaAvatar && personaAvatar !== failedAvatar
-			? personaAvatar
-			: identity.avatar_url.trim();
+	const avatarSource = persona?.avatar.url.trim() || identity.avatar_url.trim();
 	const avatar =
 		avatarSource && avatarSource !== failedAvatar ? avatarUrl(avatarSource, owner) : "";
-	const avatarAlt =
-		avatarSource !== "" && avatarSource === personaAvatar
-			? persona?.avatar.alt_text || `${persona?.name ?? owner} 的角色头像`
-			: `${owner || siteName} 的头像`;
-	const customBanner = identity.hero.banner_url?.trim() ?? "";
-	const hasCustomBanner = customBanner.length > 0;
 	const openApiDocs = useApiDocsDialogStore((s) => s.open);
 
 	return (
 		<section
 			aria-label="首页序章"
-			className="relative flex min-h-[calc(100svh-4rem)] w-full flex-col justify-between overflow-hidden text-foreground"
+			className="relative flex min-h-[calc(100svh-8rem)] w-full flex-col text-foreground lg:min-h-[calc(100svh-4rem)]"
 		>
-			<div
-				aria-hidden
-				className="pointer-events-none absolute inset-0 -top-12 z-0 overflow-hidden"
-			>
-				{hasCustomBanner ? (
-					<img
-						src={customBanner}
-						alt=""
-						className="size-full object-cover object-center opacity-35 dark:opacity-20"
-					/>
-				) : (
-					// 遮罩而非叠一层背景色渐变：边缘透明才能露出全站背景点缀
-					<div className="relative size-full mask-radial-from-25% mask-radial-to-80%">
-						<div className="absolute top-1/3 left-1/2 h-115 w-180 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/4 blur-[130px] dark:bg-primary/8" />
-					</div>
-				)}
-			</div>
-
-			<div className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 items-center px-5 py-8 sm:px-8 lg:px-12">
+			{identity.hero.banner_url ? (
 				<div
-					className={
-						avatar
-							? "grid w-full items-center gap-10 md:grid-cols-[auto_1fr] md:gap-14 lg:gap-16"
-							: "mx-auto flex max-w-2xl flex-col items-center text-center"
-					}
+					aria-hidden="true"
+					className="pointer-events-none absolute inset-0 overflow-hidden"
 				>
-					{avatar ? (
-						<div className="flex justify-center md:justify-start">
-							<figure>
-								<div className="size-48 overflow-hidden rounded-xl bg-card sm:size-56 lg:size-60">
-									<ImagePixelReveal
-										src={avatar}
-										alt={avatarAlt}
-										replayOnHover
-										tileSize={40}
-										className="size-full"
-										onError={() => setFailedAvatar(avatarSource)}
-									/>
-								</div>
-							</figure>
-						</div>
-					) : null}
+					<img
+						src={identity.hero.banner_url}
+						alt=""
+						decoding="async"
+						className="size-full object-cover opacity-35 dark:opacity-20"
+					/>
+				</div>
+			) : null}
 
-					<div
-						className={
-							avatar
-								? "max-w-xl space-y-5 text-left"
-								: "max-w-2xl space-y-5 text-center"
-						}
-					>
-						<h1 className="text-4xl font-normal leading-[1.12] tracking-[-0.03em] text-foreground sm:text-5xl lg:text-6xl">
+			<div className="relative mx-auto flex w-full max-w-5xl flex-1 items-center px-5 py-16 sm:px-8 md:py-20 lg:px-12">
+				<div className="grid w-full items-center gap-10 md:grid-cols-[auto_minmax(0,1fr)] md:gap-14 lg:gap-16">
+					<div className="mx-auto size-48 overflow-hidden rounded-xl bg-muted sm:size-56 md:mx-0 lg:size-60">
+						{avatar ? (
+							<ImagePixelReveal
+								src={avatar}
+								alt={`${owner} 的头像`}
+								loading="eager"
+								replayOnHover
+								tileSize={40}
+								className="size-full"
+								onError={() => setFailedAvatar(avatarSource)}
+							/>
+						) : (
+							<Avatar name={owner} size={96} shape="square" className="size-full" />
+						)}
+					</div>
+
+					<div className="min-w-0 space-y-5">
+						<h1 className="font-mono text-4xl font-normal leading-[1.12] tracking-[-0.03em] sm:text-5xl lg:text-6xl">
 							Hi, I&apos;m{" "}
-							<span className="font-medium text-primary underline decoration-primary/35 decoration-wavy underline-offset-8 sm:underline-offset-10">
+							<span className="wrap-anywhere font-medium text-link underline decoration-decoration/35 decoration-wavy underline-offset-8 sm:underline-offset-10">
 								{owner}
 							</span>
 							.
 						</h1>
 
-						<div className="space-y-4 text-left">
+						{identity.hero.quote ? (
 							<Epigraph
 								quote={identity.hero.quote}
 								translation={identity.hero.quote_translation}
@@ -132,129 +103,117 @@ export function HomePrelude({ identity, lead, persona }: HomePreludeProps) {
 								variant="accent-line"
 								captionAlign="end"
 							/>
+						) : null}
 
-							<p className="font-serif text-sm leading-relaxed text-muted-foreground/85 sm:text-base">
+						{identity.bio ? (
+							<p className="wrap-anywhere font-serif text-base leading-relaxed text-foreground/85">
 								{identity.bio}
 							</p>
-						</div>
+						) : null}
+						{identity.location ? (
+							<p className="wrap-anywhere text-xs text-muted-foreground">
+								{identity.location}
+							</p>
+						) : null}
 
-						<div
-							className={`flex flex-wrap items-center gap-2.5 font-mono text-xs text-muted-foreground/80 ${avatar ? "" : "justify-center"}`}
-						>
-							<span>开源探索</span>
-							{identity.location ? (
-								<>
-									<span aria-hidden className="text-muted-foreground/40">
-										·
-									</span>
-									<span>{identity.location}</span>
-								</>
-							) : null}
-						</div>
-
-						<TooltipPrimitive.Provider delayDuration={100}>
-							<nav
-								className={`flex items-center gap-2 pt-2 ${avatar ? "" : "justify-center"}`}
-								aria-label="社交主页链接"
+						<nav aria-label="站长的链接" className="flex flex-wrap items-center gap-2">
+							{identity.social_links.map(({ kind, href, label }) => {
+								const Icon = SOCIAL_ICON_BY_KIND[kind] ?? ExternalLink;
+								return (
+									<Button key={`${kind}:${href}`} asChild>
+										<a
+											href={href}
+											target={href.startsWith("http") ? "_blank" : undefined}
+											rel={href.startsWith("http") ? "noreferrer" : undefined}
+										>
+											<Icon aria-hidden="true" />
+											{label}
+										</a>
+									</Button>
+								);
+							})}
+							{identity.subscription_channels.map((channel) => {
+								const Icon = channel.kind === "rss" ? Rss : Mail;
+								return (
+									<Button key={`${channel.kind}:${channel.href}`} asChild>
+										<a href={channel.href}>
+											<Icon aria-hidden="true" />
+											{channel.kind === "rss" ? "订阅" : channel.label}
+										</a>
+									</Button>
+								);
+							})}
+							<Button
+								onClick={openApiDocs}
+								aria-haspopup="dialog"
+								leftIcon={<BookText aria-hidden="true" />}
 							>
-								{socialLinks.map(({ href, label, Icon }) => (
-									<TooltipPrimitive.Root key={label}>
-										<TooltipPrimitive.Trigger asChild>
-											<a
-												href={href}
-												target={
-													href.startsWith("http") ? "_blank" : undefined
-												}
-												rel={
-													href.startsWith("http")
-														? "noreferrer"
-														: undefined
-												}
-												aria-label={label}
-												className="relative flex size-10 items-center justify-center rounded-full text-muted-foreground/75 transition-colors duration-200 outline-none hover:bg-muted/80 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
-											>
-												<Icon className="size-5 transition-colors duration-200" />
-											</a>
-										</TooltipPrimitive.Trigger>
-										<TooltipPrimitive.Portal>
-											<TooltipPrimitive.Content
-												side="bottom"
-												sideOffset={8}
-												className="z-50 rounded-lg border border-border/80 bg-popover px-3 py-1.5 text-xs font-medium text-popover-foreground shadow-sm animate-in fade-in-0 data-[side=bottom]:slide-in-from-top-1"
-											>
-												{label}
-											</TooltipPrimitive.Content>
-										</TooltipPrimitive.Portal>
-									</TooltipPrimitive.Root>
-								))}
-								<TooltipPrimitive.Root>
-									<TooltipPrimitive.Trigger asChild>
-										<button
-											type="button"
-											onClick={openApiDocs}
-											aria-label="API 文档"
-											className="relative flex size-10 items-center justify-center rounded-full text-muted-foreground/75 transition-colors duration-200 outline-none hover:bg-muted/80 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
-										>
-											<BookText className="size-5 transition-colors duration-200" />
-										</button>
-									</TooltipPrimitive.Trigger>
-									<TooltipPrimitive.Portal>
-										<TooltipPrimitive.Content
-											side="bottom"
-											sideOffset={8}
-											className="z-50 rounded-lg border border-border/80 bg-popover px-3 py-1.5 text-xs font-medium text-popover-foreground shadow-sm animate-in fade-in-0 data-[side=bottom]:slide-in-from-top-1"
-										>
-											API 文档
-										</TooltipPrimitive.Content>
-									</TooltipPrimitive.Portal>
-								</TooltipPrimitive.Root>
-							</nav>
-						</TooltipPrimitive.Provider>
+								API 文档
+							</Button>
+						</nav>
 					</div>
 				</div>
 			</div>
 
-			<div className="relative z-10 border-t border-border/40 bg-background/50 backdrop-blur-md">
-				<div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3.5 text-xs text-muted-foreground sm:px-8 lg:px-12">
-					{lead ? (
-						<HomeContentLink
-							item={lead}
-							className="group flex min-w-0 items-center gap-2.5 transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-						>
-							<span className="size-1.5 rounded-full bg-primary" />
-							<span className="font-medium text-foreground">最新发布</span>
-							<span aria-hidden className="text-border">
-								/
-							</span>
-							<span className="truncate max-w-xs sm:max-w-md lg:max-w-lg">
-								{lead.title}
-							</span>
-							<span className="hidden shrink-0 tabular-nums text-muted-foreground/70 md:inline">
-								{HOME_KIND_LABEL[lead.kind]} ·{" "}
-								{formatDate(lead.published_at, "dotted-date")}
-							</span>
-							<ArrowRight
-								{...iconProps(
-									14,
-									"shrink-0 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none",
-								)}
-							/>
-						</HomeContentLink>
-					) : (
-						<span className="text-muted-foreground">公开内容正在整理中。</span>
-					)}
-
+			<div className="relative border-t border-border/40 bg-background/50 backdrop-blur-md">
+				<div className="mx-auto flex max-w-296 flex-wrap items-center justify-between gap-x-6 gap-y-2 px-5 py-1.5 text-xs text-muted-foreground sm:px-8">
+					<div className="min-w-0 flex-1 basis-48">
+						{lead ? (
+							<HomeContentLink
+								item={lead}
+								className="flex min-h-8 min-w-0 items-center gap-2 transition-colors hover:text-link-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring pointer-coarse:min-h-11"
+							>
+								<span
+									aria-hidden="true"
+									className="size-1.5 shrink-0 rounded-full bg-decoration"
+								/>
+								<span className="shrink-0 font-medium text-foreground">
+									最新发布
+								</span>
+								<span aria-hidden="true" className="text-border">
+									/
+								</span>
+								<span className="truncate">{lead.title}</span>
+								<time
+									dateTime={lead.published_at}
+									className="hidden shrink-0 tabular-nums sm:inline"
+								>
+									{HOME_KIND_LABEL[lead.kind]} ·{" "}
+									{formatDate(
+										lead.published_at,
+										"dotted-date",
+										undefined,
+										"Asia/Shanghai",
+									)}
+								</time>
+								<ArrowRight aria-hidden="true" {...iconProps(14, "shrink-0")} />
+							</HomeContentLink>
+						) : publicationError ? (
+							<div className="flex flex-wrap items-center gap-2">
+								<span role="alert">最新发布暂时无法加载。</span>
+								<Button
+									size="sm"
+									variant="ghost"
+									loading={publicationsRetrying}
+									onClick={onRetryPublications}
+								>
+									重试
+								</Button>
+							</div>
+						) : (
+							<p role="status">
+								{publicationsLoading
+									? "正在获取最新发布…"
+									: "还没有公开发布的内容。"}
+							</p>
+						)}
+					</div>
 					<a
 						href="#recent"
-						className="group inline-flex shrink-0 items-center gap-1.5 pl-4 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+						className="inline-flex min-h-8 shrink-0 items-center gap-2 transition-colors hover:text-link-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring pointer-coarse:min-h-11"
 					>
-						<span>开卷漫游</span>
-						<ArrowDown
-							{...iconProps(
-								14,
-								"transition-transform duration-200 group-hover:translate-y-0.5 motion-reduce:transition-none",
-							)}
-						/>
+						开卷漫游
+						<ArrowDown aria-hidden="true" {...iconProps(14)} />
 					</a>
 				</div>
 			</div>

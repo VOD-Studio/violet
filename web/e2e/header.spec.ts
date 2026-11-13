@@ -1,5 +1,6 @@
 import { expect, type Route, test } from "@playwright/test";
 import { loadClient } from "./client";
+import { openClientPage } from "./support";
 
 test("Header 博客二级菜单只标记精确命中的当前页", async ({ page, context }) => {
 	await loadClient(context);
@@ -60,6 +61,32 @@ test("Header logo 药丸点击展开站长卡片，Esc 与点外面收起并归�
 	await card.getByRole("link", { name: "人设" }).click();
 	await expect(page).toHaveURL(/\/persona$/);
 	await expect(card).toHaveCount(0);
+});
+
+test("站长药丸、资料卡与首页缺图时使用同一姓名首字和中性底色", async ({ page, context }) => {
+	await loadClient(context);
+	await page.setViewportSize({ width: 1440, height: 900 });
+	await page.emulateMedia({ reducedMotion: "reduce" });
+	await openClientPage(page, "/");
+	const trigger = page.getByRole("button", { name: /站长档案/ });
+	const brandAvatar = trigger.locator('[data-slot="brand-avatar"]');
+	const homeAvatar = page.getByRole("region", { name: "首页序章" }).getByRole("img", {
+		name: "contract",
+		exact: true,
+	});
+	await expect(brandAvatar).toHaveText("C");
+	await expect(homeAvatar).toHaveText("C");
+	await trigger.click();
+	const profileAvatar = page
+		.getByRole("dialog", { name: "站长与此刻" })
+		.locator('[data-slot="profile-avatar"]');
+	await expect(profileAvatar).toHaveText("C");
+	const backgroundOf = (element: HTMLElement) =>
+		getComputedStyle(element, "::before").backgroundColor;
+	const background = await homeAvatar.evaluate(backgroundOf);
+	expect(background).not.toBe("rgba(0, 0, 0, 0)");
+	expect(await brandAvatar.evaluate(backgroundOf)).toBe(background);
+	expect(await profileAvatar.evaluate(backgroundOf)).toBe(background);
 });
 
 test("Header 右药丸的控件常驻可见，游客只有季节与外观和登录", async ({ page, context }) => {
