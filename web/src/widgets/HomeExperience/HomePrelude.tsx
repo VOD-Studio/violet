@@ -1,4 +1,5 @@
 import type { PublicPersona } from "@entities/persona/model/types";
+import type { SiteIdentity } from "@entities/site-identity/model/types";
 import { formatDate } from "@shared/lib/date";
 import { avatarUrl } from "@shared/lib/image-url";
 import { Epigraph } from "@shared/ui/epigraph";
@@ -10,7 +11,7 @@ import { useApiDocsDialogStore } from "@/features/api-docs";
 
 import { HomeContentLink } from "./HomeContentLink";
 import { HOME_KIND_LABEL } from "./home-content";
-import type { HomePublicationItem, SiteIdentity } from "./types";
+import type { HomePublicationItem } from "./types";
 
 interface HomePreludeProps {
 	identity: SiteIdentity;

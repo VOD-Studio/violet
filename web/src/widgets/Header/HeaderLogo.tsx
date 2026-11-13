@@ -1,4 +1,5 @@
 import { useActivePersona } from "@entities/persona/api/queries";
+import { useSiteIdentity } from "@entities/site-identity/api/queries";
 import {
 	navbarLive,
 	PresenceProfileProgress,
@@ -6,7 +7,6 @@ import {
 	profileNow,
 	useLivePresence,
 } from "@features/presence";
-import { useSettings } from "@features/settings/api/queries";
 import { avatarUrl } from "@shared/lib/image-url";
 import { yearProgress } from "@shared/lib/year-progress";
 import { type ProfileCardProps, SiteProfile } from "@shared/ui/site-profile";
@@ -15,7 +15,7 @@ import { useProfileLatest } from "./profile-latest";
 
 /** 站点品牌入口：药丸里是站长此刻，点开长成站长卡片。 */
 const HeaderLogo = () => {
-	const { data: settings } = useSettings();
+	const { data: identity } = useSiteIdentity();
 	const { data: persona } = useActivePersona();
 	const { lead, clockOffset } = useLivePresence();
 	const [open, setOpen] = useState(false);
@@ -23,17 +23,10 @@ const HeaderLogo = () => {
 	const [intent, setIntent] = useState(false);
 	const { latest, pending } = useProfileLatest(intent || open);
 
-	const rawName = settings?.site_name?.trim();
-	const siteName = !rawName || rawName === "My Blog" || rawName === "Blog" ? "Violet" : rawName;
-	const githubUsername = settings?.github_username?.trim() || "";
-	const ownerName = githubUsername || siteName;
-	const personaAvatar = persona?.avatar.thumbnail || persona?.avatar.url;
-	const configuredAvatar = settings?.avatar_url?.trim();
-	const githubAvatar = githubUsername
-		? `https://github.com/${encodeURIComponent(githubUsername)}.png?size=96`
-		: "";
-	const avatar =
-		personaAvatar || (configuredAvatar ? avatarUrl(configuredAvatar, ownerName) : githubAvatar);
+	const siteName = identity?.site_name ?? "Violet";
+	const ownerName = identity?.owner_name ?? siteName;
+	const avatarSource = persona?.avatar.url.trim() || identity?.avatar_url;
+	const avatar = avatarSource ? avatarUrl(avatarSource, ownerName) : undefined;
 
 	const label = profileLabel(siteName, lead);
 
@@ -59,12 +52,10 @@ const HeaderLogo = () => {
 	const card: Omit<ProfileCardProps, "onNavigate" | "LinkComponent"> = {
 		identity: {
 			name: ownerName,
-			bio: settings?.bio?.trim() || settings?.tagline?.trim() || undefined,
+			bio: identity?.bio || undefined,
 			avatar,
-			githubHref: githubUsername
-				? `https://github.com/${encodeURIComponent(githubUsername)}`
-				: undefined,
-			rssHref: settings?.social_rss || "/feed.xml",
+			githubHref: identity?.social_links.find((link) => link.kind === "github")?.href,
+			rssHref: identity?.subscription_channels.find((link) => link.kind === "rss")?.href,
 		},
 		now,
 		latest,

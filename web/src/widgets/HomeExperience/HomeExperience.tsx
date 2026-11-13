@@ -1,16 +1,17 @@
 import { useActivePersona } from "@entities/persona/api/queries";
+import { useSiteIdentity } from "@entities/site-identity/api/queries";
+import type { SiteIdentity } from "@entities/site-identity/model/types";
 import { useLatestComments } from "@features/comments/api/queries";
 import { useTimeline } from "@features/tweets/api/queries";
 import type { Season } from "@shared/lib/theme-preference";
 
-import { useFootprintPublications, useRecentPublications, useSiteIdentity } from "./api/queries";
+import { useFootprintPublications, useRecentPublications } from "./api/queries";
 import { HomeAccumulation } from "./HomeAccumulation";
 import { HomeAccumulationSkeleton } from "./HomeAccumulationSkeleton";
 import { HomeClosing } from "./HomeClosing";
 import { HomeIndex } from "./HomeIndex";
 import { HomePrelude } from "./HomePrelude";
 import { selectHomeLead } from "./home-content";
-import type { SiteIdentity } from "./types";
 
 interface HomeExperienceProps {
 	initialRecentPublicationsFailed: boolean;

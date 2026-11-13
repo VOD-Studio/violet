@@ -142,6 +142,7 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 | 四季装饰与图层控制 | `features/seasonal-decor`，入口在 `theme-switcher` 与命令面板 |
 | 管理后台 | `features/admin-*`，公共后台布局与表格在 `admin-layout` / `admin-shared` |
 | 运行策略与代码执行 | `entities/runtime-policy`、`entities/code-runner`、`features/admin-settings` |
+| 公开站点身份模型与查询 | `entities/site-identity` |
 | 首页与阅读页组合 | `widgets/` |
 | 顶栏、移动端底部岛与页脚 | 展示层在 `shared/ui/site-navbar`、`site-island`、`site-footer`（props 驱动），接线层在 `widgets/Header`、`widgets/Footer`；一级入口与登录态可见性在 `shared/config/nav.ts` 的 `getNavItems` |
 | 消息铃铛（通知与聊天面板、新消息轻提示） | 展示层在 `shared/ui/message-panel`（面板、通知行、聊天行、轻提示）；`features/notifications` 取通知并整理成行（`lib/notice-entry`），`features/chat` 提供会话行与新消息提示的数据；`widgets/Header/HeaderMessages` 把两边合流进铃铛，`HeaderChatToast` 挂提示，后台顶栏的铃铛只有通知 |

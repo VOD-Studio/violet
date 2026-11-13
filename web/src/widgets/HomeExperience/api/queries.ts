@@ -2,21 +2,8 @@ import { queryOptions, useQuery } from "@tanstack/react-query";
 
 import { recentTwelveMonthWindow } from "../home-accumulation-model";
 import type { PublicationWindow } from "../types";
-import {
-	fetchPublications,
-	fetchPublicationWindow,
-	fetchSiteIdentity,
-	fetchSiteImpression,
-} from "./client";
+import { fetchPublications, fetchPublicationWindow, fetchSiteImpression } from "./client";
 import { homeResourceKeys } from "./keys";
-
-export function siteIdentityQueryOptions() {
-	return queryOptions({
-		queryKey: homeResourceKeys.siteIdentity(),
-		queryFn: fetchSiteIdentity,
-		staleTime: 60_000,
-	});
-}
 
 export function recentPublicationsQueryOptions() {
 	const query = { limit: 5 } as const;
@@ -41,10 +28,6 @@ export function siteImpressionQueryOptions() {
 		queryFn: fetchSiteImpression,
 		staleTime: 0,
 	});
-}
-
-export function useSiteIdentity() {
-	return useQuery(siteIdentityQueryOptions());
 }
 
 export function useRecentPublications() {

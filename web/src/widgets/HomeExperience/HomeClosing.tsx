@@ -1,3 +1,4 @@
+import type { SiteIdentity } from "@entities/site-identity/model/types";
 import { ClosingVignette } from "@features/seasonal-decor/ui/ClosingVignette";
 import type { Season } from "@shared/lib/theme-preference";
 import { iconProps } from "@violet/ui";
@@ -6,7 +7,6 @@ import { motion } from "motion/react";
 
 import { useLeaveSiteImpression } from "./api/mutations";
 import { useSiteImpression } from "./api/queries";
-import type { SiteIdentity } from "./types";
 
 interface HomeClosingProps {
 	identity: SiteIdentity;
