@@ -115,7 +115,7 @@ func (s *ChatMessageReactionStore) ListByMessages(ctx context.Context, messageID
 	return result, nil
 }
 
-// Add 添加消息反应；重复添加同一种表情保持幂等，并在消息行锁内执行三种表情上限检查。
+// Add 在消息行锁内幂等添加反应，个人满额时替换最早选择，并校验最终消息表情种类数。
 func (s *ChatMessageReactionStore) Add(ctx context.Context, messageID, userID domainshared.ID, emojiID int32) error {
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var message model.ChatMessage
@@ -146,12 +146,32 @@ func (s *ChatMessageReactionStore) Add(ctx context.Context, messageID, userID do
 			return err
 		}
 		if count >= domainchatreaction.MaxReactionsPerMessagePerUser {
-			return domainchatreaction.ErrReactionLimitReached
+			var oldest model.ChatMessageReaction
+			if err := tx.Select("id").
+				Where("message_id = ? AND user_id = ?", messageID.UUID(), userID.UUID()).
+				Order("created_at ASC, id ASC").Take(&oldest).Error; err != nil {
+				return err
+			}
+			if err := tx.Delete(&oldest).Error; err != nil {
+				return err
+			}
 		}
 
-		return tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&model.ChatMessageReaction{
+		if err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&model.ChatMessageReaction{
 			ID: uuid.New(), MessageID: messageID.UUID(), EmojiID: emojiID, UserID: userID.UUID(),
-		}).Error
+		}).Error; err != nil {
+			return err
+		}
+		var distinctCount int64
+		if err := tx.Model(&model.ChatMessageReaction{}).
+			Where("message_id = ?", messageID.UUID()).
+			Distinct("emoji_id").Count(&distinctCount).Error; err != nil {
+			return err
+		}
+		if distinctCount > domainchatreaction.MaxReactionKindsPerMessage {
+			return domainchatreaction.ErrMessageReactionLimitReached
+		}
+		return nil
 	})
 }
 

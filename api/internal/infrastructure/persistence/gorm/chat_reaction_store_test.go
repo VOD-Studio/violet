@@ -27,21 +27,149 @@ func setupChatReactionTestDB(t *testing.T) *gorm.DB {
 	return db
 }
 
-func TestChatMessageReactionStore_AddEnforcesPerUserLimit(t *testing.T) {
+func TestChatMessageReactionStore_AddReplacesOldestPerUser(t *testing.T) {
 	db := setupChatReactionTestDB(t)
 	store := NewChatMessageReactionStore(db)
-	messageID := uuid.New()
-	userID := uuid.New()
+	ctx := context.Background()
+	messageID := domainshared.IDFromUUID(uuid.New())
+	userID := domainshared.IDFromUUID(uuid.New())
+	otherUserID := domainshared.IDFromUUID(uuid.New())
 	require.NoError(t, db.Create(&model.ChatMessage{
-		ID: messageID, ConversationID: uuid.New(), SenderID: userID, MessageType: "text",
+		ID: messageID.UUID(), ConversationID: uuid.New(), SenderID: userID.UUID(), MessageType: "text",
 		Content: "hello", IdempotencyKey: "message-1", CreatedAt: time.Now(), UpdatedAt: time.Now(),
 	}).Error)
 
 	for emojiID := int32(1); emojiID <= 3; emojiID++ {
-		require.NoError(t, store.Add(context.Background(), domainshared.IDFromUUID(messageID), domainshared.IDFromUUID(userID), emojiID))
+		require.NoError(t, store.Add(ctx, messageID, otherUserID, emojiID))
 	}
-	require.ErrorIs(t, store.Add(context.Background(), domainshared.IDFromUUID(messageID), domainshared.IDFromUUID(userID), 4), domainchatreaction.ErrReactionLimitReached)
-	require.NoError(t, store.Add(context.Background(), domainshared.IDFromUUID(messageID), domainshared.IDFromUUID(userID), 1))
+	for emojiID := int32(4); emojiID <= 6; emojiID++ {
+		require.NoError(t, store.Add(ctx, messageID, userID, emojiID))
+	}
+	result, err := store.ListByMessages(ctx, []domainshared.ID{messageID}, userID)
+	require.NoError(t, err)
+	require.Len(t, result[messageID.String()], 6)
+	assertChatReactionSelection(t, store, messageID, otherUserID, []int32{1, 2, 3})
+	assertChatReactionSelection(t, store, messageID, userID, []int32{4, 5, 6})
+
+	// 重复 POST 不刷新选择顺序；SQLite 的时间精度可能同秒，唯一确定顺序由 ID 决定，
+	// 因此先手动校准三条记录的 created_at 再验证 FIFO 替换。
+	require.NoError(t, db.Exec("UPDATE chat_message_reactions SET created_at = ? WHERE message_id = ? AND user_id = ? AND emoji_id = 4", time.Now().Add(-3*time.Hour), messageID.UUID(), userID.UUID()).Error)
+	require.NoError(t, db.Exec("UPDATE chat_message_reactions SET created_at = ? WHERE message_id = ? AND user_id = ? AND emoji_id = 5", time.Now().Add(-2*time.Hour), messageID.UUID(), userID.UUID()).Error)
+	require.NoError(t, db.Exec("UPDATE chat_message_reactions SET created_at = ? WHERE message_id = ? AND user_id = ? AND emoji_id = 6", time.Now().Add(-1*time.Hour), messageID.UUID(), userID.UUID()).Error)
+	require.NoError(t, store.Add(ctx, messageID, userID, 4))
+	require.NoError(t, store.Add(ctx, messageID, userID, 7))
+	assertChatReactionSelection(t, store, messageID, userID, []int32{5, 6, 7})
+	assertChatReactionSelection(t, store, messageID, otherUserID, []int32{1, 2, 3})
+	require.NoError(t, store.Add(ctx, messageID, userID, 1))
+	assertChatReactionSelection(t, store, messageID, userID, []int32{6, 7, 1})
+
+	// 取消只影响本人，重复取消保持幂等。
+	require.NoError(t, store.Remove(ctx, messageID, userID, 1))
+	require.NoError(t, store.Remove(ctx, messageID, userID, 1))
+	require.NoError(t, store.Remove(ctx, messageID, userID, 2))
+	assertChatReactionSelection(t, store, messageID, userID, []int32{6, 7})
+	assertChatReactionSelection(t, store, messageID, otherUserID, []int32{1, 2, 3})
+	require.NoError(t, store.Add(ctx, messageID, userID, 8))
+	assertChatReactionSelection(t, store, messageID, userID, []int32{6, 7, 8})
+}
+
+func TestChatMessageReactionStore_MessageKindLimitUsesFinalSelection(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		sharedOldest  bool
+		newEmoji      int32
+		wantLimit     bool
+		wantSelection []int32
+		wantKinds     int
+	}{
+		{name: "满额加入已有种类", sharedOldest: true, newEmoji: 4, wantSelection: []int32{2, 3, 4}, wantKinds: 11},
+		{name: "替换独占种类", newEmoji: 12, wantSelection: []int32{2, 3, 12}, wantKinds: 11},
+		{name: "第十二种回滚", sharedOldest: true, newEmoji: 12, wantLimit: true, wantSelection: []int32{1, 2, 3}, wantKinds: 11},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			db := setupChatReactionTestDB(t)
+			store := NewChatMessageReactionStore(db)
+			ctx := context.Background()
+			messageID := domainshared.IDFromUUID(uuid.New())
+			userID := domainshared.IDFromUUID(uuid.New())
+			otherUserID := domainshared.IDFromUUID(uuid.New())
+			require.NoError(t, db.Create(&model.ChatMessage{
+				ID: messageID.UUID(), ConversationID: uuid.New(), SenderID: userID.UUID(), MessageType: "text",
+				Content: "hello", IdempotencyKey: "message-1", CreatedAt: time.Now(), UpdatedAt: time.Now(),
+			}).Error)
+			for emojiID := int32(1); emojiID <= 3; emojiID++ {
+				require.NoError(t, store.Add(ctx, messageID, userID, emojiID))
+			}
+			// SQLite created_at 精度不足，校准本人三条的先后再验证 FIFO 替换。
+			calibrate := func(emojiID int32, offset time.Duration) {
+				require.NoError(t, db.Exec("UPDATE chat_message_reactions SET created_at = ? WHERE message_id = ? AND user_id = ? AND emoji_id = ?", time.Now().Add(offset), messageID.UUID(), userID.UUID(), emojiID).Error)
+			}
+			calibrate(1, -3*time.Hour)
+			calibrate(2, -2*time.Hour)
+			calibrate(3, -1*time.Hour)
+			for emojiID := int32(4); emojiID <= 11; emojiID++ {
+				require.NoError(t, store.Add(ctx, messageID, domainshared.IDFromUUID(uuid.New()), emojiID))
+			}
+			if tc.sharedOldest {
+				require.NoError(t, store.Add(ctx, messageID, otherUserID, 1))
+			}
+			err := store.Add(ctx, messageID, userID, tc.newEmoji)
+			if tc.wantLimit {
+				require.ErrorIs(t, err, domainchatreaction.ErrMessageReactionLimitReached)
+			} else {
+				require.NoError(t, err)
+			}
+			assertChatReactionSelection(t, store, messageID, userID, tc.wantSelection)
+			result, err := store.ListByMessages(ctx, []domainshared.ID{messageID}, userID)
+			require.NoError(t, err)
+			require.Len(t, result[messageID.String()], tc.wantKinds)
+			if tc.sharedOldest {
+				assertChatReactionSelection(t, store, messageID, otherUserID, []int32{1})
+			}
+			if tc.wantLimit {
+				// 拒绝新增不能改变原选择时间；下一次合法替换仍应移除 1。
+				require.NoError(t, store.Add(ctx, messageID, userID, 4))
+				assertChatReactionSelection(t, store, messageID, userID, []int32{2, 3, 4})
+				// 未满个人额度也不能给整条消息增加第十二种。
+				require.ErrorIs(t, store.Add(ctx, messageID, otherUserID, 12), domainchatreaction.ErrMessageReactionLimitReached)
+				assertChatReactionSelection(t, store, messageID, otherUserID, []int32{1})
+			}
+		})
+	}
+}
+
+func TestChatMessageReactionStore_EqualSelectionTimesUseIDOrder(t *testing.T) {
+	db := setupChatReactionTestDB(t)
+	store := NewChatMessageReactionStore(db)
+	ctx := context.Background()
+	messageID := domainshared.IDFromUUID(uuid.New())
+	userID := domainshared.IDFromUUID(uuid.New())
+	now := time.Now()
+	require.NoError(t, db.Create(&model.ChatMessage{
+		ID: messageID.UUID(), ConversationID: uuid.New(), SenderID: userID.UUID(), MessageType: "text",
+		Content: "hello", IdempotencyKey: "message-1", CreatedAt: now, UpdatedAt: now,
+	}).Error)
+	require.NoError(t, db.Create(&[]model.ChatMessageReaction{
+		{ID: uuid.MustParse("00000000-0000-0000-0000-000000000003"), MessageID: messageID.UUID(), UserID: userID.UUID(), EmojiID: 1, CreatedAt: now},
+		{ID: uuid.MustParse("00000000-0000-0000-0000-000000000001"), MessageID: messageID.UUID(), UserID: userID.UUID(), EmojiID: 2, CreatedAt: now},
+		{ID: uuid.MustParse("00000000-0000-0000-0000-000000000002"), MessageID: messageID.UUID(), UserID: userID.UUID(), EmojiID: 3, CreatedAt: now},
+	}).Error)
+	require.NoError(t, store.Add(ctx, messageID, userID, 2))
+	require.NoError(t, store.Add(ctx, messageID, userID, 4))
+	assertChatReactionSelection(t, store, messageID, userID, []int32{1, 3, 4})
+}
+
+func assertChatReactionSelection(t *testing.T, store *ChatMessageReactionStore, messageID, userID domainshared.ID, expected []int32) {
+	t.Helper()
+	result, err := store.ListByMessages(context.Background(), []domainshared.ID{messageID}, userID)
+	require.NoError(t, err)
+	selected := make([]int32, 0, len(result[messageID.String()]))
+	for _, reaction := range result[messageID.String()] {
+		if reaction.Self {
+			selected = append(selected, reaction.EmojiID)
+		}
+	}
+	require.ElementsMatch(t, expected, selected)
 }
 
 func TestChatMessageReactionStore_ListAggregatesAndMarksSelf(t *testing.T) {
