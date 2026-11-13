@@ -104,6 +104,35 @@ describe("SiteNavbar", () => {
 		expect(segments(nav).at(-1)).toBe(current);
 	});
 
+	it("长中英混合子页名保留完整可访问名称及全部二级入口", async () => {
+		const items = getNavItems({ authenticated: true }).map((item) => ({
+			...item,
+			children: item.children?.map((child) =>
+				child.to === "/editor-guide"
+					? { ...child, label: "编辑器手册 Editor Guide 与 Markdown 扩展功能" }
+					: child,
+			),
+		}));
+		const name = "编辑器手册 Editor Guide 与 Markdown 扩展功能";
+		const { nav } = setup({
+			items,
+			active: resolveActiveNav("/editor-guide", items),
+		});
+		const current = within(nav).getByRole("button", { name });
+		expect(current.getAttribute("aria-current")).toBe("page");
+		expect(current.querySelector('[data-slot="navbar-label"]')?.textContent).toBe("编辑…");
+		expect(within(nav).getByRole("link", { name: "聊天" })).toBeTruthy();
+		fireEvent.pointerEnter(current, { pointerType: "mouse" });
+		const menu = await screen.findByRole("group", { name: "更多二级菜单" });
+		const children = items.find((item) => item.to === undefined)?.children ?? [];
+		expect(within(menu).getAllByRole("link")).toHaveLength(children.length);
+		expect(
+			within(menu)
+				.getByRole("link", { name: new RegExp(`^${name}`) })
+				.getAttribute("href"),
+		).toBe("/editor-guide");
+	});
+
 	it("收起后更多里的子页也只剩图标，分组按钮仍有名称并标为当前", () => {
 		const { nav } = setup({ path: "/projects", collapsed: true });
 		const current = within(nav).getByRole("button", { name: "更多" });

@@ -1,13 +1,23 @@
 import type { ActiveNav, NavItem } from "@shared/config/nav";
-import { DropdownGroup, iconProps, Kbd, Segmented, type SegmentedItem } from "@violet/ui";
+import {
+	DropdownGroup,
+	iconProps,
+	Kbd,
+	Segmented,
+	type SegmentedItem,
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@violet/ui";
 import { cn } from "cn";
 import { ChevronDown, Search } from "lucide-react";
 import type { ReactNode } from "react";
 import { type NavbarLinkComponent, RouterLink } from "./link";
 import { NavCell } from "./NavCell";
 
-/** 常规态每项的宽度；带箭头的分组项按权重略宽。 */
-const REST_ITEM_SIZE = "4.75rem";
+/** 普通态基础项宽（rem）；额外图标与省略号按占位追加。 */
+const REST_ITEM_SIZE = 4.75;
 /** 只剩图标的项宽：图标加左右各 12px。 */
 const ICON_SIZE = "2.5rem";
 /** 收起态里当前项显示标题时占的宽：图标、间距、190px 标题与内边距。 */
@@ -23,6 +33,11 @@ const PILL =
  */
 export const NAVBAR_PILL_CLASS = `${PILL} bg-sheet-translucent`;
 
+/**
+ * 三枚顶栏药丸的内容与导航状态。
+ *
+ * @remarks items 与 active 必须来自同一组导航对象；收起态仍保留详情标题与完整入口名称。
+ */
 export interface SiteNavbarProps {
 	/** 当前登录态下可见的一级入口。 */
 	items: NavItem[];
@@ -120,7 +135,7 @@ export function SiteNavbar({
 		? activeText
 			? `calc((${TITLE_SLOT} + ${count - 1} * ${ICON_SIZE}) / ${count})`
 			: ICON_SIZE
-		: REST_ITEM_SIZE;
+		: `${REST_ITEM_SIZE}rem`;
 
 	const segments: SegmentedItem[] = items.map((item) => {
 		const current = active?.item === item;
@@ -131,22 +146,35 @@ export function SiteNavbar({
 		} else if (current && collapsed) {
 			label = undefined;
 		}
+		const characters = !expanded && label ? Array.from(label) : null;
+		const shortened = characters !== null && characters.length > 2;
+		const displayLabel = shortened ? `${characters[0]}${characters[1]}…` : label;
+		const hasTrailing = item.to === undefined && !collapsed;
+		// 箭头连间距占 1.125rem，省略号占一个 0.875rem 字宽。
+		const extraSize = (hasTrailing ? 1.125 : 0) + (shortened ? 0.875 : 0);
 		return {
 			value: item.label,
-			// 带尾部箭头的分组项有两枚图标，常规态加宽后内边距与其余项一致
-			weight: item.to === undefined && !collapsed ? 1.25 : 1,
+			weight: expanded ? 1 : (REST_ITEM_SIZE + extraSize) / REST_ITEM_SIZE,
 			icon: <Icon className="size-4 shrink-0" />,
-			label,
-			trailing:
-				item.to === undefined && !collapsed ? (
-					<ChevronDown
-						aria-hidden="true"
-						{...iconProps(
-							12,
-							"transition-transform duration-300 group-data-[state=open]/item:rotate-180",
-						)}
-					/>
-				) : undefined,
+			label: label ? (
+				<Tooltip truncatedOnly={!shortened}>
+					<TooltipTrigger asChild>
+						<span data-slot="navbar-label" className="block truncate">
+							{displayLabel}
+						</span>
+					</TooltipTrigger>
+					<TooltipContent>{label}</TooltipContent>
+				</Tooltip>
+			) : undefined,
+			trailing: hasTrailing ? (
+				<ChevronDown
+					aria-hidden="true"
+					{...iconProps(
+						12,
+						"shrink-0 transition-transform duration-300 group-data-[state=open]/item:rotate-180",
+					)}
+				/>
+			) : undefined,
 			title: expanded && !current ? item.label : undefined,
 			render: (segment) => (
 				<NavCell
@@ -154,7 +182,7 @@ export function SiteNavbar({
 					segment={segment}
 					current={current}
 					activeTo={active?.link.to}
-					label={label === undefined ? item.label : undefined}
+					label={label ?? item.label}
 					readingProgress={reading && current ? readingProgress : undefined}
 					LinkComponent={LinkComponent}
 				/>
@@ -187,18 +215,23 @@ export function SiteNavbar({
 			>
 				<nav aria-label="主导航" className={cn(PILL, "gap-0.5 bg-muted/78 p-1")}>
 					{ornaments?.center}
-					<DropdownGroup>
-						<Segmented
-							value={active?.item.label ?? ""}
-							segments={segments}
-							rounded="full"
-							itemSize={itemSize}
-							collapsedSize={ICON_SIZE}
-							expandSelected={expanded}
-							className="[--v-segmented-font-size:0.875rem] [--v-segmented-pad:0px] [--v-segmented-track:transparent]"
-							itemClassName="group/item font-medium data-[state=open]:text-foreground"
-						/>
-					</DropdownGroup>
+					<TooltipProvider>
+						<DropdownGroup>
+							<Segmented
+								value={active?.item.label ?? ""}
+								segments={segments}
+								rounded="full"
+								itemSize={itemSize}
+								collapsedSize={ICON_SIZE}
+								expandSelected={expanded}
+								className="[--v-segmented-font-size:0.875rem] [--v-segmented-pad:0px] [--v-segmented-track:transparent]"
+								itemClassName={cn(
+									"group/item font-medium data-[state=open]:text-foreground",
+									!expanded && "px-3",
+								)}
+							/>
+						</DropdownGroup>
+					</TooltipProvider>
 					<span aria-hidden="true" className="mx-1 h-4 w-px shrink-0 bg-rule2" />
 					<SearchEntry compact={expanded} onClick={onSearch} />
 					{routing === null ? null : <RoutingLine value={routing} />}

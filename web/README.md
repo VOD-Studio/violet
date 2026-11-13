@@ -163,6 +163,8 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 
 公共页头由 `HeaderActions` 用一个 `MorphingPopover` 编排季节、消息和账号面板，`MorphingPopoverAnchor` 测量整枚右胶囊；展开及收回期间隐藏原胶囊，结束后焦点返回实际触发按钮。未读徽标附着在铃铛右上角，铃铛区域为 `9`、`99`、`99+` 预留空间，不覆盖相邻头像。`features/notifications/hooks/use-notification-panel` 只提供消息数据与动作，后台 `NotificationBell` 仍使用 `shared/ui/message-panel/MessageCenter` 的独立 popover。
 
+中央导航保持一致的左右内边距，普通态标签最多显示两个字符；长名称显示为「编辑…」，完整名称保留在可访问名称与悬停提示中。“更多”仅为额外箭头和间距增加宽度，长名称再追加省略号的占位，不设固定双倍宽。导航标签的 TooltipProvider 由 SiteNavbar 自己提供，宿主无需补全上下文。
+
 博客相框卡片的 hover 保持命中盒不动；避免卡片位移后让静止在下缘的指针反复进入、离开。`e2e/hover-stability.spec.ts` 在真实 `/blog` 页面按帧验证边缘悬停稳定性。
 
 链接预览先显示 SSR 快照；客户端按规范 URL 共用缓存，只轮询服务端明确标记为 pending 的链接，完成、失败或离开页面后停止。首个消费方是推文；其他 feature 复用 `entities/link-preview`，不要在 `shared` 里导入推文 DTO。
