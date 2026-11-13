@@ -23,7 +23,7 @@ import HeaderActions from "@widgets/Header/HeaderActions";
 import { ThemeProvider } from "next-themes";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@features/chat/hooks/useChatStream", () => ({ useChatStream: () => { } }));
+vi.mock("@features/chat/hooks/useChatStream", () => ({ useChatStream: () => {} }));
 vi.mock("@features/auth/hooks/usePermissions", () => ({ useHasPermission: () => false }));
 
 function renderAppearance() {
@@ -112,6 +112,34 @@ describe("页头外观设置", () => {
 		act(() => light.focus());
 		fireEvent.keyDown(light, { key: "ArrowRight" });
 		await waitFor(() => expect(localStorage.getItem("theme")).toBe("dark"));
+	});
+
+	it("四季与跟随配色持久化，装饰关闭后恢复图层偏好", async () => {
+		const { panel } = await openAppearance();
+		const theme = within(panel).getByRole("radiogroup", { name: "主题" });
+		for (const [name, value] of [
+			["春 · 花朝", "spring"],
+			["夏 · 荷风", "summer"],
+			["秋 · 桂月", "autumn"],
+			["冬 · 初雪", "winter"],
+			["跟随季节", "follow"],
+		]) {
+			fireEvent.click(within(theme).getByRole("radio", { name }));
+			await waitFor(() => expect(parseThemeCookie(document.cookie)).toBe(value));
+		}
+		fireEvent.click(within(panel).getByRole("switch", { name: "飘落" }));
+		await waitFor(() =>
+			expect(parseDecorationLayersCookie(document.cookie).particles).toBe(false),
+		);
+		const decoration = within(panel).getByRole("radiogroup", { name: "装饰" });
+		fireEvent.click(within(decoration).getByRole("radio", { name: "关闭装饰" }));
+		await waitFor(() => expect(parseDecorationCookie(document.cookie)).toBe("none"));
+		fireEvent.click(within(decoration).getByRole("radio", { name: "跟随主题" }));
+		await waitFor(() => expect(parseDecorationCookie(document.cookie)).toBe("theme"));
+		expect(parseDecorationLayersCookie(document.cookie).particles).toBe(false);
+		expect(
+			within(panel).getByRole("switch", { name: "飘落" }).getAttribute("aria-checked"),
+		).toBe("false");
 	});
 
 	it.each([
