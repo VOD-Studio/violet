@@ -153,6 +153,8 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 
 `SiteNavbar` 的 `actionsHaveShell` 可让右操作区自行提供药丸外壳，导航仅保留定位与收起控制，供整组形变锚点使用；默认仍为既有操作区提供外壳。
 
+`features/notifications/hooks/use-notification-panel` 将通知查询、未读统计、推送开关和导航动作整理为 `MessagePanel` 的数据，不持有弹层状态。`NotificationBell` 消费该能力，仍保留后台独立通知和公开页头的聊天合流。
+
 链接预览先显示 SSR 快照；客户端按规范 URL 共用缓存，只轮询服务端明确标记为 pending 的链接，完成、失败或离开页面后停止。首个消费方是推文；其他 feature 复用 `entities/link-preview`，不要在 `shared` 里导入推文 DTO。
 
 ### 音乐播放器接入
