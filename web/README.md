@@ -151,9 +151,7 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 
 站长药丸与资料卡共用服务端公开身份；头像优先使用公开人设原图，再取站点身份里的头像。两处复用 Avatar 的中性底色和姓名首字占位，图片加载失败不切换为另一套图标。
 
-`SiteNavbar` 的 `actionsHaveShell` 可让右操作区自行提供药丸外壳，导航仅保留定位与收起控制，供整组形变锚点使用；默认仍为既有操作区提供外壳。
-
-`features/notifications/hooks/use-notification-panel` 将通知查询、未读统计、推送开关和导航动作整理为 `MessagePanel` 的数据，不持有弹层状态。`NotificationBell` 消费该能力，仍保留后台独立通知和公开页头的聊天合流。
+公共页头由 `HeaderActions` 用一个 `MorphingPopover` 编排季节、消息和账号面板，`MorphingPopoverAnchor` 测量整枚右胶囊；展开及收回期间隐藏原胶囊，结束后焦点返回实际触发按钮。未读徽标附着在铃铛右上角，铃铛区域为 `9`、`99`、`99+` 预留空间，不覆盖相邻头像。`features/notifications/hooks/use-notification-panel` 只提供消息数据与动作，后台 `NotificationBell` 仍使用 `shared/ui/message-panel/MessageCenter` 的独立 popover。
 
 链接预览先显示 SSR 快照；客户端按规范 URL 共用缓存，只轮询服务端明确标记为 pending 的链接，完成、失败或离开页面后停止。首个消费方是推文；其他 feature 复用 `entities/link-preview`，不要在 `shared` 里导入推文 DTO。
 
@@ -254,7 +252,7 @@ CLI fixture 使用临时 Git 仓库，可通过 `pnpm test scripts/check-colors.
 
 主题偏好由 `shared/lib/theme-preference.ts` 解析，SSR 通过 `getSSRThemeState` 在 `<html>` 上输出 `data-theme`，首帧即为访客的预设主题；自定义主题按规范化后的种子色在 SSR 现算，内联进 `<head>` 的 `#theme-custom` 样式，`data-theme` 为 `custom`，`data-season` 仍给出偏好对应的季节；规则与术语见 CONTEXT「主题与色彩」。主题契约（`e2e/theme-contract.spec.ts`）覆盖「主题 × 外观 × 视口」的首帧与水合一致性，并在浏览器中实测关键文字组合的对比度。
 
-切换入口是 `@features/theme-switcher` 的 `ThemeMenu`，顶栏右药丸里以当季花形图标呈现为「季节与外观」，打开单层面板：顶部是明暗外观，其后是主题配色与装饰；移动端底部导航的「更多」面板用 `ThemePicker` 承载同一份 `ThemeSettings`。跟随季节与四季色卡用底色、描边表达单选状态，不另加对号；「自定义」打开 `CustomThemeDialog`，取色或输入十六进制种子色，实时预览浅深两种外观下的按钮、链接、选中态与主色文字后应用。设置面板内即时换色，不创建会阻塞点击的整页快照；命令面板保留原有扩散效果。偏好 cookie 写入且 DOM 更新完成后刷新路由上下文，`e2e/theme-switcher.spec.ts` 覆盖切换、刷新保持、键盘操作与自定义流程。
+公开页头以当季花形图标打开整枚右胶囊，内容由 `@features/theme-switcher` 的 `ThemePanel` 提供：顶部是带文字的明暗选择，其后是主题配色与装饰。自定义主题由宿主挂载 `CustomThemeDialog`；编辑、取消或应用后仍可返回设置，Esc 逐层关闭取色器、对话框和外层面板。移动端底部导航的「更多」用 `ThemePicker` 承载同一份 `ThemeSettings`。面板内即时换色，不创建阻塞点击的整页快照；命令面板保留扩散效果。偏好 cookie 落盘且 DOM 更新后刷新路由上下文，`e2e/theme-switcher.spec.ts` 覆盖切换、刷新保持、键盘操作与自定义流程。
 
 ### 装饰偏好
 

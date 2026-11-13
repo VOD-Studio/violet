@@ -157,7 +157,10 @@ test("Header 在已登录页面登出后，导航立即回到游客入口", asyn
 	await expect(nav.getByRole("link", { name: "聊天" })).toBeVisible();
 
 	await page.getByRole("button", { name: "用户菜单" }).click();
-	await page.getByRole("menuitem", { name: "登出" }).click();
+	await page
+		.getByRole("dialog", { name: "用户菜单" })
+		.getByRole("button", { name: "登出", exact: true })
+		.click();
 
 	await expect(nav.getByRole("link", { name: "聊天" })).toHaveCount(0);
 	await expect(
@@ -216,7 +219,7 @@ test("Header 路由切换超过 300ms 才在导航下沿显示加载进度线，
 	await expect(line).toHaveCount(0);
 });
 
-test("Header 消息铃铛：面板与药丸右缘对齐，通知与聊天两个标签；不在聊天室时新消息弹轻提示", async ({
+test("Header 消息铃铛：从整枚右胶囊展开，通知与聊天两个标签；不在聊天室时新消息弹轻提示", async ({
 	page,
 	context,
 }) => {
@@ -351,14 +354,16 @@ test("Header 消息铃铛：面板与药丸右缘对齐，通知与聊天两个�
 	const bell = header.getByRole("button", { name: /^消息/ });
 	await expect(bell).toHaveAttribute("aria-label", "消息，1 条未读");
 
+	const pill = header.locator('[data-slot="morphing-popover-anchor"]');
+	const anchorBox = await pill.boundingBox();
 	await bell.click();
 	const panel = page.getByRole("dialog", { name: "消息" });
 	await expect(panel).toBeVisible();
-	const pill = await header.locator('[data-slot="navbar-right"]').boundingBox();
+	await expect(pill).toHaveAttribute("inert", "");
 	const box = await panel.boundingBox();
 	const panelRight = (box?.x ?? 0) + (box?.width ?? 0);
-	const pillRight = (pill?.x ?? 0) + (pill?.width ?? 0);
-	expect(Math.abs(panelRight - pillRight)).toBeLessThan(3);
+	const anchorRight = (anchorBox?.x ?? 0) + (anchorBox?.width ?? 0);
+	expect(Math.abs(panelRight - anchorRight)).toBeLessThan(3);
 	await expect(
 		panel.getByRole("button", {
 			name: /^林间 评论了你的文章《拆解 Saber》：二十行是乐观估计吧。.+，未读$/,
@@ -396,10 +401,7 @@ test("Header 消息铃铛：面板与药丸右缘对齐，通知与聊天两个�
 	await expect(toast).toHaveCount(0);
 });
 
-test("Header 先开账号菜单再点铃铛：菜单收起归还焦点时，消息面板不会跟着消失", async ({
-	page,
-	context,
-}) => {
+test("Header 账号面板可按 Tab 操作，Esc 回到头像后可打开消息面板", async ({ page, context }) => {
 	await loadClient(context);
 	await context.addCookies([
 		{ name: "contract_admin", value: "1", url: "http://127.0.0.1:4173" },
@@ -431,20 +433,78 @@ test("Header 先开账号菜单再点铃铛：菜单收起归还焦点时，消�
 	await page.goto("/");
 	await page.waitForLoadState("networkidle");
 	const header = page.locator("header").first();
-	await header.getByRole("button", { name: "用户菜单" }).click();
-	await expect(page.getByRole("menu")).toBeVisible();
+	const account = header.getByRole("button", { name: "用户菜单" });
+	await account.click();
+	const accountPanel = page.getByRole("dialog", { name: "用户菜单" });
+	await expect(accountPanel).toBeVisible();
+	await expect(accountPanel.getByRole("link", { name: "个人中心" })).toBeFocused();
+	await page.keyboard.press("Tab");
+	await expect(accountPanel.getByRole("link", { name: "后台管理" })).toBeFocused();
+	await page.keyboard.press("Tab");
+	await expect(accountPanel.getByRole("button", { name: "登出" })).toBeFocused();
+	await page.keyboard.press("Escape");
+	await expect(accountPanel).toHaveCount(0);
+	await expect(account).toBeFocused();
 
-	// 菜单打开时页面其余部分不可点，按坐标点铃铛，和真实鼠标一致
-	const bell = await header.locator('button[aria-label^="消息"]').boundingBox();
-	await page.mouse.click(
-		(bell?.x ?? 0) + (bell?.width ?? 0) / 2,
-		(bell?.y ?? 0) + (bell?.height ?? 0) / 2,
+	await header.getByRole("button", { name: "消息", exact: true }).click();
+	const panel = page.getByRole("dialog", { name: "消息", exact: true });
+	await expect(panel).toBeVisible();
+	await expect
+		.poll(() => panel.evaluate((node) => node.contains(document.activeElement)))
+		.toBe(true);
+	await page.keyboard.press("Escape");
+	await expect(panel).toHaveCount(0);
+	await expect(header.getByRole("button", { name: "消息", exact: true })).toBeFocused();
+});
+
+test("Header 右药丸分隔线居中，未读 9、99、99+ 不遮挡头像", async ({ page, context }) => {
+	await loadClient(context);
+	await context.addCookies([
+		{ name: "contract_admin", value: "1", url: "http://127.0.0.1:4173" },
+	]);
+	let unread = 9;
+	await page.route("**/api/v1/notifications/unread-count", (route) =>
+		route.fulfill({ json: { data: { unread_count: unread } } }),
 	);
-	const panel = page.getByRole("dialog", { name: "消息" });
-	await expect(panel).toBeVisible();
-	await expect(page.getByRole("menu")).toHaveCount(0);
-	// 菜单收起后焦点回到账号按钮，面板要一直在
-	await expect(header.getByRole("button", { name: "用户菜单" })).toBeFocused();
-	await page.waitForTimeout(600);
-	await expect(panel).toBeVisible();
+	await page.route("**/api/v1/chat/unread-count", (route) =>
+		route.fulfill({ json: { data: { unread_count: 0 } } }),
+	);
+	for (const width of [320, 1440]) {
+		await page.setViewportSize({ width, height: 900 });
+		for (const count of [9, 99, 100]) {
+			unread = count;
+			await page.goto("/");
+			const right = page.locator('header [data-slot="navbar-right"]');
+			const bell = right.getByRole("button", { name: `消息，${count} 条未读` });
+			await expect(bell).toBeVisible();
+			const badge = bell.locator('[data-slot="count"]');
+			await expect(badge).toHaveText(count > 99 ? "99+" : String(count));
+			const geometry = await right.evaluate((pill) => {
+				const rect = (selector: string) => {
+					const element = pill.querySelector(selector);
+					if (!element) throw new Error(`缺少页头控件：${selector}`);
+					return element.getBoundingClientRect();
+				};
+				const avatar = rect('button[aria-label="用户菜单"]');
+				const badge = rect('[data-slot="count"]');
+				const separator = rect('[data-orientation="vertical"]');
+				const bell = rect('button[aria-label^="消息"]');
+				const box = pill.getBoundingClientRect();
+				return {
+					gap: avatar.left - badge.right,
+					centerOffset: separator.top + separator.height / 2 - (box.top + box.height / 2),
+					aboveCenter: badge.bottom <= bell.top + bell.height / 2 + 3,
+					overlapsBell: badge.left < bell.right && badge.right > bell.right,
+					right: box.right,
+					left: box.left,
+				};
+			});
+			expect(geometry.gap).toBeGreaterThanOrEqual(4);
+			expect(geometry.aboveCenter).toBe(true);
+			expect(geometry.overlapsBell).toBe(true);
+			expect(Math.abs(geometry.centerOffset)).toBeLessThanOrEqual(1);
+			expect(geometry.left).toBeGreaterThanOrEqual(0);
+			expect(geometry.right).toBeLessThanOrEqual(width);
+		}
+	}
 });

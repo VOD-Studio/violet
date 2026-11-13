@@ -17,8 +17,9 @@ const PILL =
 	"pointer-events-auto relative flex h-10 items-center rounded-full border border-sheet-border shadow-soft backdrop-blur-md";
 
 /**
- * 左药丸外壳：底色、边、软影与模糊。左容器本身只负责定位，外壳由 logo 触发器自己套用，
- * 因为变形弹出层从触发器长成面板，触发器必须是有底色的药丸，不能是外面再套一层药丸的透明按钮。
+ * 药丸的底色、描边、软影与模糊外壳。
+ *
+ * @remarks 套在品牌触发器或操作组锚点上；外容器仅提供定位参照。
  */
 export const NAVBAR_PILL_CLASS = `${PILL} bg-sheet-translucent`;
 
@@ -37,14 +38,8 @@ export interface SiteNavbarProps {
 	collapsed?: boolean;
 	/** 左药丸内容；药丸外壳不由本组件提供，logo 自己套用 {@link NAVBAR_PILL_CLASS}。 */
 	logo: ReactNode;
-	/** 右药丸内容；药丸外壳由本组件提供。 */
+	/** 右药丸内容；宿主以 {@link NAVBAR_PILL_CLASS} 提供可形变的外壳。 */
 	actions: ReactNode;
-	/**
-	 * actions 自带药丸外壳时仅保留定位容器，供组合锚点接管整个外形。
-	 *
-	 * @default false
-	 */
-	actionsHaveShell?: boolean;
 	/** 点击搜索入口。 */
 	onSearch: () => void;
 	/** 季节挂件插槽；展示层不依赖 features，由接线层注入。 */
@@ -95,13 +90,9 @@ export function RoutingLine({ value }: { value: number }) {
 }
 
 /**
- * 站点顶栏：左 logo 药丸、中间导航药丸（一级入口加末尾搜索）、右工具药丸。
+ * 站点顶栏的品牌、导航与工具三枚药丸。
  *
- * 纯展示：不取数据、不读路由；登录态、当前位置、标题、进度与收起态都由调用方给出。
- * 常规、详情（当前项展开成「栏目 / 标题」）、子页（「更多」换成子页名）、
- * 收起（导航只剩图标）四种形态由 props 组合出来。
- *
- * @param props - 见 {@link SiteNavbarProps}
+ * @remarks 展示层不读取数据和路由；当前入口、详情标题、进度与收起状态由 props 提供。
  */
 export function SiteNavbar({
 	items,
@@ -112,7 +103,6 @@ export function SiteNavbar({
 	collapsed = false,
 	logo,
 	actions,
-	actionsHaveShell = false,
 	onSearch,
 	ornaments,
 	centerClassName = "hidden lg:block",
@@ -219,19 +209,12 @@ export function SiteNavbar({
 				data-slot="navbar-right"
 				inert={collapsed}
 				className={cn(
-					actionsHaveShell
-						? "pointer-events-auto relative"
-						: `${PILL} gap-0.5 bg-sheet-translucent p-1`,
-					"transition-opacity duration-200 has-[[data-slot=morphing-popover-trigger][aria-expanded=true]]:z-20 group-data-[collapsed=true]/navbar:opacity-0 motion-reduce:transition-none",
+					"pointer-events-auto relative transition-opacity duration-200 has-[[data-slot=morphing-popover-trigger][aria-expanded=true]]:z-20 group-data-[collapsed=true]/navbar:opacity-0 motion-reduce:transition-none",
 				)}
 			>
-				{actionsHaveShell ? (
-					<span className="pointer-events-none absolute inset-0 in-[[data-slot=navbar-right]:has([data-slot=morphing-popover-anchor][data-hidden])]:invisible">
-						{ornaments?.right}
-					</span>
-				) : (
-					ornaments?.right
-				)}
+				<span className="pointer-events-none absolute inset-0 in-[[data-slot=navbar-right]:has([data-slot=morphing-popover-anchor][data-hidden])]:invisible">
+					{ornaments?.right}
+				</span>
 				{actions}
 			</div>
 		</div>

@@ -41,7 +41,11 @@ function SeedPanel({ hexInputProps, ...props }: ComponentProps<typeof HsvColorPi
 	);
 }
 
-/** 种子只做格式规范化，实际明暗配色与可读性由现有色阶生成器求解。 */
+/**
+ * 以种子色预览并应用自定义主题。
+ *
+ * @remarks 种子只做格式规范化，明暗配色与可读性由色阶生成器求解。
+ */
 export function CustomThemeDialog({ open, onOpenChange }: CustomThemeDialogProps) {
 	const { preset, custom, applyCustomTheme } = useThemeSwitcher("instant");
 	const draft = useCustomThemeDraft(open, custom?.seed ?? THEME_PRESETS[preset].seed);
@@ -53,7 +57,12 @@ export function CustomThemeDialog({ open, onOpenChange }: CustomThemeDialogProps
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent>
+			<DialogContent
+				onEscapeKeyDown={() => {
+					// 外层形变浮层会先标记 Esc 已处理，仍由当前最上层对话框关闭。
+					onOpenChange(false);
+				}}
+			>
 				<DialogHeader>
 					<DialogTitle>自定义主题</DialogTitle>
 					<DialogDescription>
@@ -82,6 +91,7 @@ export function CustomThemeDialog({ open, onOpenChange }: CustomThemeDialogProps
 							<PopoverContent
 								aria-label="种子色取色面板"
 								className="max-h-(--radix-popover-content-available-height) w-72 overflow-y-auto p-4"
+								onEscapeKeyDown={() => draft.setPickerOpen(false)}
 								collisionPadding={12}
 							>
 								<div

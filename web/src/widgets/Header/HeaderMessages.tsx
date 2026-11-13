@@ -1,13 +1,22 @@
 import type { UserDTO } from "@entities/user/model/types";
 import { useChatConversations, useChatUnreadCount } from "@features/chat/api/queries";
 import { toChatEntry } from "@features/chat/lib/chat-inbox";
-import NotificationBell from "@features/notifications/ui/NotificationBell";
+import {
+	type NotificationPanelData,
+	useNotificationPanel,
+} from "@features/notifications/hooks/use-notification-panel";
 import { openChatConversation } from "@shared/lib/open-chat-conversation";
 import { listStatus } from "@shared/ui/message-panel";
-import { useMemo } from "react";
+import { type ReactNode, useMemo } from "react";
 
-/** 右药丸里的消息铃铛：通知来自通知 feature，聊天标签的会话与未读来自聊天 feature，在这里合流。 */
-const HeaderMessages = ({ user }: { user: UserDTO }) => {
+/** 已登录页头的消息数据接入，内容与触发器由同一个胶囊宿主编排。 */
+interface HeaderMessagesProps {
+	user: UserDTO;
+	onNavigate: () => void;
+	children: (panel: NotificationPanelData) => ReactNode;
+}
+
+const HeaderMessages = ({ user, onNavigate, children }: HeaderMessagesProps) => {
 	const conversations = useChatConversations();
 	const { data: unread } = useChatUnreadCount();
 	const chat = useMemo(
@@ -20,7 +29,8 @@ const HeaderMessages = ({ user }: { user: UserDTO }) => {
 		}),
 		[conversations.data, conversations.isError, conversations.refetch, unread, user.id],
 	);
-	return <NotificationBell chat={chat} />;
+	const panel = useNotificationPanel({ chat, onNavigate });
+	return children(panel);
 };
 
 export default HeaderMessages;

@@ -3,6 +3,7 @@ import { chatKeys } from "@features/chat/api/keys";
 import { useChatAlertStore } from "@features/chat/model/chat-alert-store";
 import type { ChatConversation, ChatMessage, ChatUser } from "@features/chat/model/types";
 import { notificationKeys } from "@features/notifications/api/keys";
+import { MessageCenter } from "@shared/ui/message-panel";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
 	createMemoryHistory,
@@ -12,7 +13,8 @@ import {
 	Outlet,
 	RouterProvider,
 } from "@tanstack/react-router";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import HeaderChatToast from "../HeaderChatToast";
 import HeaderMessages from "../HeaderMessages";
@@ -73,6 +75,15 @@ const CONVERSATION: ChatConversation = {
 	updated_at: "2026-11-09T09:58:00+08:00",
 };
 
+function MessagesHost() {
+	const [open, setOpen] = useState(false);
+	return (
+		<HeaderMessages user={ME} onNavigate={() => setOpen(false)}>
+			{(panel) => <MessageCenter {...panel} open={open} onOpenChange={setOpen} />}
+		</HeaderMessages>
+	);
+}
+
 function renderAt(path: string, children: React.ReactNode) {
 	const root = createRootRoute({
 		component: () => (
@@ -115,13 +126,31 @@ afterEach(() => {
 
 describe("HeaderMessages", () => {
 	it("角标是通知与聊天未读之和；聊天标签列出会话与各自未读", async () => {
-		renderAt("/", <HeaderMessages user={ME} />);
-		fireEvent.click(await screen.findByRole("button", { name: "消息，5 条未读" }));
+		renderAt("/", <MessagesHost />);
+		const bell = await screen.findByRole("button", { name: "消息，5 条未读" });
+		expect(screen.getByText("5")).toBeTruthy();
+		fireEvent.click(bell);
 		expect(screen.getByRole("tab", { name: /^通知\s*3$/ })).toBeTruthy();
 		fireEvent.mouseDown(screen.getByRole("tab", { name: /^聊天\s*2$/ }));
 		const row = await screen.findByRole("button", { name: /^Claude/ });
 		expect(row.getAttribute("aria-label")).toContain("摘要已经整理好了");
 		expect(row.getAttribute("aria-label")).toContain("2 条未读");
+	});
+
+	it("选择聊天会话关闭受控面板并打开会话", async () => {
+		const pushState = vi.spyOn(window.history, "pushState").mockImplementation(() => {});
+		try {
+			renderAt("/", <MessagesHost />);
+			const bell = await screen.findByRole("button", { name: "消息，5 条未读" });
+			fireEvent.click(bell);
+			fireEvent.mouseDown(screen.getByRole("tab", { name: /^聊天/ }));
+			fireEvent.click(await screen.findByRole("button", { name: /^Claude/ }));
+			expect(pushState).toHaveBeenCalledWith({}, "", "/chat?c=c1");
+			expect(bell.getAttribute("aria-expanded")).toBe("false");
+			await waitFor(() => expect(screen.queryByRole("dialog", { name: "消息" })).toBeNull());
+		} finally {
+			pushState.mockRestore();
+		}
 	});
 });
 
