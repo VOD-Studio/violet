@@ -22,12 +22,18 @@ export interface ReactionBarProps extends Omit<ComponentProps<"div">, "onToggle"
 	items: readonly ReactionItem[];
 	/** 不提供时不触发切换；只读回应仍可聚焦读取名单。 */
 	onToggle?: (id: string) => void;
-	/** 最多显示前八项；selected 与 items 中的 self 均会阻止重复添加。 */
+	/** 最多显示前八项；默认阻止 selected 或 items.self 标记的已选项重复添加。 */
 	recentItems?: readonly EmojiPickerItem[];
 	/** 不提供时隐藏添加入口；达到 maxSelected 时仍可聚焦并调用 onLimit。 */
 	onAdd?: (id: string) => void;
 	/** 提供真实选择面板；选择后调用 close，直接收回原添加按钮，不退回快捷条。 */
 	renderPicker?: (context: { close: () => void }) => ReactNode;
+	/**
+	 * 允许快捷条的已选项再次触发 onAdd，取消行为由宿主决定；禁用项仍不可操作。
+	 *
+	 * @default false
+	 */
+	allowSelected?: boolean;
 	/**
 	 * 本人可同时回应的种类上限，已选项始终允许取消。
 	 *

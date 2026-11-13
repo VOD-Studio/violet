@@ -10,13 +10,17 @@ import {
 	MorphingPopoverTrigger,
 } from "..";
 
-function Status({ name = "状态", ...props }: { name?: string } & MorphingPopoverProps) {
+function Status({
+	name = "状态",
+	portal = false,
+	...props
+}: { name?: string; portal?: boolean } & MorphingPopoverProps) {
 	return (
 		<MorphingPopover {...props}>
 			<MorphingPopoverTrigger asChild>
 				<button type="button">{name}</button>
 			</MorphingPopoverTrigger>
-			<MorphingPopoverContent aria-label={`${name}详情`}>
+			<MorphingPopoverContent portal={portal} aria-label={`${name}详情`}>
 				<button type="button">刷新</button>
 			</MorphingPopoverContent>
 		</MorphingPopover>
@@ -86,6 +90,65 @@ describe("MorphingPopover", () => {
 		fireEvent.pointerDown(screen.getByText("页面正文"));
 		expect(trigger().getAttribute("aria-expanded")).toBe("false");
 		await waitFor(() => expect(panel()).toBeNull());
+	});
+
+	it("Portal 面板保持内部点击与焦点范围，点外部可聚焦控件时不抢回焦点", async () => {
+		render(
+			<>
+				<Status portal />
+				<button type="button">外部操作</button>
+			</>,
+		);
+		open();
+		const refresh = screen.getByRole("button", { name: "刷新" });
+		expect(document.activeElement).toBe(refresh);
+		expect(trigger().closest(".v-morph")?.contains(refresh)).toBe(false);
+		fireEvent.pointerDown(refresh);
+		expect(trigger().getAttribute("aria-expanded")).toBe("true");
+		const outside = screen.getByRole("button", { name: "外部操作" });
+		fireEvent.pointerDown(outside);
+		act(() => outside.focus());
+		await waitFor(() => expect(panel()).toBeNull());
+		expect(document.activeElement).toBe(outside);
+	});
+
+	it("Portal 使用指定主题容器，并保留源作用域的运行期减弱动态", async () => {
+		const target = document.createElement("div");
+		target.dataset.theme = "consumer";
+		target.style.setProperty("--popover", "Canvas");
+		document.body.append(target);
+		try {
+			render(
+				<div data-testid="动态作用域">
+					<MorphingPopover>
+						<MorphingPopoverTrigger>状态</MorphingPopoverTrigger>
+						<MorphingPopoverContent portal container={target} aria-label="状态详情">
+							<button type="button">刷新</button>
+						</MorphingPopoverContent>
+					</MorphingPopover>
+				</div>,
+			);
+			open();
+			expect(target.contains(panel())).toBe(true);
+			const scope = screen.getByTestId("动态作用域");
+			act(() => {
+				scope.dataset.motion = "reduce";
+			});
+			await waitFor(() => expect(panel()?.closest('[data-motion="reduce"]')).not.toBeNull());
+			fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+			await waitFor(() => expect(panel()).toBeNull());
+			expect(document.activeElement).toBe(trigger());
+		} finally {
+			cleanup();
+			target.remove();
+		}
+	});
+
+	it("服务端打开 Portal 不访问 DOM，仍保留触发器的稳定面板引用", () => {
+		const html = renderToString(<Status portal defaultOpen />);
+		expect(html).toContain('aria-expanded="true"');
+		expect(html).toContain("aria-controls=");
+		expect(html).not.toContain('role="dialog"');
 	});
 
 	describe("焦点", () => {
@@ -306,6 +369,24 @@ describe("MorphingPopover 外形", () => {
 
 		const [expand] = waapi.shape();
 		expect(expand.keyframes.map((frame) => frame.clipPath)).toEqual([FROM_TRIGGER, FULL]);
+	});
+
+	it("Portal 仍从触发器变形展开并缩回，不以淡入替代几何动画", async () => {
+		const waapi = stubWaapi();
+		stubGeometry();
+		render(<Status portal />);
+		open();
+		expect(waapi.shape()[0].keyframes.map((frame) => frame.clipPath)).toEqual([
+			FROM_TRIGGER,
+			FULL,
+		]);
+		waapi.shape()[0].animation.finish();
+		fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+		const collapse = waapi.shape().at(-1) as Track;
+		expect(collapse.keyframes.at(-1)?.clipPath).toBe(FROM_TRIGGER);
+		act(() => collapse.animation.finish());
+		await waitFor(() => expect(panel()).toBeNull());
+		expect(document.activeElement).toBe(trigger());
 	});
 
 	it("展开只播一次：内容晚 140ms、软影晚 260ms，各走各的时间", () => {

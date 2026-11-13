@@ -49,6 +49,16 @@
 		z-index: var(--layer-dropdown, 40);
 	}
 
+	.v-morph__portal {
+		position: fixed;
+		z-index: var(--layer-float, 60);
+		pointer-events: none;
+	}
+
+	.v-morph__portal > .v-morph__layer {
+		pointer-events: auto;
+	}
+
 	.v-morph__layer[data-anchor~="right"] {
 		inset-inline: auto calc(var(--v-morph-outset, 0px) * -1);
 	}

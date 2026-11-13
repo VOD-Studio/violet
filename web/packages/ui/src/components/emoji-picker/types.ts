@@ -10,7 +10,7 @@ export interface EmojiPickerItem {
 	aliases?: readonly string[];
 	/** 提供原因后仍可导航和预览，但不能选值。 */
 	disabledReason?: string;
-	/** 已回应项显示对勾并阻止重复选值；同一面板可同时标记多个已回应项。 */
+	/** 已回应项显示对勾；默认阻止重复选值，同一面板可标记多个已回应项。 */
 	selected?: boolean;
 }
 
@@ -41,6 +41,12 @@ export interface EmojiPickerPanelProps extends Omit<ComponentProps<"div">, "onSe
 	activeGroup: string;
 	onGroupChange: (id: string) => void;
 	onSelect: (item: EmojiPickerItem) => void;
+	/**
+	 * 允许已选项再次触发 onSelect，由宿主决定取消；disabledReason 仍阻止选值。
+	 *
+	 * @default false
+	 */
+	allowSelected?: boolean;
 	/** 当前分组的滚动位置，单位 px；未传时使用组件挂载期间的逐组记录。 */
 	scrollTop?: number;
 	/** 关闭时卸载面板的宿主可按组保存，重新打开后通过 scrollTop 恢复。 */

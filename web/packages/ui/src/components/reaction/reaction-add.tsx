@@ -12,6 +12,7 @@ import type { ReactionBarProps } from "./types";
 interface ReactionAddProps {
 	recentItems: readonly EmojiPickerItem[];
 	selected: ReadonlySet<string>;
+	allowSelected: boolean;
 	disabled: boolean;
 	limited: boolean;
 	maxSelected?: number;
@@ -25,6 +26,7 @@ interface ReactionAddProps {
 export function ReactionAdd({
 	recentItems,
 	selected,
+	allowSelected,
 	disabled,
 	limited,
 	maxSelected,
@@ -39,6 +41,7 @@ export function ReactionAdd({
 	const panelRef = useRef<HTMLDivElement>(null);
 	const reasonId = useId();
 	const reason = limitMessage ?? `最多选择 ${maxSelected} 种回应，请先取消一种`;
+	const blocked = limited && !allowSelected;
 	const close = useCallback(() => {
 		setOpen(false);
 	}, []);
@@ -51,7 +54,7 @@ export function ReactionAdd({
 		if (disabled) {
 			return;
 		}
-		if (limited) {
+		if (blocked) {
 			onLimit?.();
 			return;
 		}
@@ -62,16 +65,18 @@ export function ReactionAdd({
 	};
 
 	useEffect(() => {
-		if (disabled || limited) {
+		if (disabled || blocked) {
 			close();
 		}
-	}, [disabled, limited, close]);
+	}, [disabled, blocked, close]);
 
 	const choose = (id: string) => {
-		if (disabled || selected.has(id)) {
+		const alreadySelected =
+			selected.has(id) || recentItems.some((item) => item.id === id && item.selected);
+		if (disabled || (alreadySelected && !allowSelected)) {
 			return;
 		}
-		if (limited) {
+		if (limited && !alreadySelected) {
 			onLimit?.();
 			return;
 		}
@@ -83,6 +88,7 @@ export function ReactionAdd({
 		<ReactionQuick
 			items={recentItems}
 			selected={selected}
+			allowSelected={allowSelected}
 			limited={limited}
 			disabled={disabled || !open}
 			container={container}
@@ -106,28 +112,29 @@ export function ReactionAdd({
 
 	return (
 		<MorphingPopover className="v-reaction__add-root" open={open} onOpenChange={changeOpen}>
-			<Tooltip open={open || !limited ? false : undefined}>
+			<Tooltip open={open || !blocked ? false : undefined}>
 				<TooltipTrigger asChild>
 					<MorphingPopoverTrigger
 						className="v-reaction__add"
 						aria-label="添加回应"
 						aria-haspopup="dialog"
-						aria-disabled={disabled || limited || undefined}
-						aria-describedby={limited ? reasonId : undefined}
+						aria-disabled={disabled || blocked || undefined}
+						aria-describedby={blocked ? reasonId : undefined}
 					>
 						<AddGlyph />
 					</MorphingPopoverTrigger>
 				</TooltipTrigger>
 				<TooltipContent container={container} className="v-reaction__tooltip">
-					{limited ? reason : "添加回应"}
+					{blocked ? reason : "添加回应"}
 				</TooltipContent>
 			</Tooltip>
-			{limited && (
+			{blocked && (
 				<span id={reasonId} className="v-reaction__sr-only">
 					{reason}
 				</span>
 			)}
 			<MorphingPopoverContent
+				portal
 				ref={panelRef}
 				key={mode}
 				className={`v-reaction__panel v-reaction__panel--${mode}`}

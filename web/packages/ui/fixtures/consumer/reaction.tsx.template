@@ -226,35 +226,42 @@ export function ReactionConsumer() {
 					靠右
 				</button>
 			</fieldset>
-			<section
-				aria-label="交互回应"
-				style={{
-					display: "flex",
-					justifyContent: position,
-					minHeight: 340,
-					alignItems: "flex-end",
-					paddingBlock: 24,
-				}}
-			>
-				<ReactionBar
-					items={items}
-					recentItems={recentChoices}
-					onToggle={(id) => change(id, "toggle")}
-					onAdd={visitor ? undefined : (id) => change(id, "add")}
-					maxSelected={chat ? 3 : undefined}
-					collapseAfter={chat ? 6 : undefined}
-					disabled={pending}
-					onLimit={() => setMessage("单条消息最多 3 种回应，先取消一种")}
-					limitMessage={chat ? "单条消息最多 3 种回应，先取消一种" : undefined}
-					renderPicker={({ close }) => (
-						<FullPicker
+			<div style={{ overflow: "auto", height: 300, transform: "translateZ(0)" }}>
+				<section
+					aria-label="交互回应"
+					data-testid="reaction-message-scroll"
+					style={{ overflow: "auto", height: 240, maxWidth: "100%" }}
+				>
+					<div
+						style={{
+							display: "flex",
+							justifyContent: position,
+							minHeight: 380,
+							alignItems: "flex-end",
+							paddingBlock: 24,
+						}}
+					>
+						<ReactionBar
 							items={items}
-							onPick={(id) => change(id, "add")}
-							close={close}
+							recentItems={recentChoices}
+							onToggle={(id) => change(id, "toggle")}
+							onAdd={visitor ? undefined : (id) => change(id, "add")}
+							maxSelected={chat ? 3 : undefined}
+							collapseAfter={chat ? 6 : undefined}
+							disabled={pending}
+							onLimit={() => setMessage("单条消息最多 3 种回应，先取消一种")}
+							limitMessage={chat ? "单条消息最多 3 种回应，先取消一种" : undefined}
+							renderPicker={({ close }) => (
+								<FullPicker
+									items={items}
+									onPick={(id) => change(id, "add")}
+									close={close}
+								/>
+							)}
 						/>
-					)}
-				/>
-			</section>
+					</div>
+				</section>
+			</div>
 			<p role="status">{message}</p>
 			<section aria-label="叶子入口的只读回应">
 				<LeafReactionBar items={items} />

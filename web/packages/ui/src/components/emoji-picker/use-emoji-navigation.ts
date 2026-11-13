@@ -18,6 +18,7 @@ interface EmojiNavigationOptions {
 	cells: readonly EmojiCell[];
 	cellsByKey: ReadonlyMap<string, EmojiCell>;
 	status: NonNullable<EmojiPickerPanelProps["status"]>;
+	allowSelected: boolean;
 	scrollTop?: number;
 	onScrollTopChange?: (value: number) => void;
 	onSelect: (item: EmojiPickerItem) => void;
@@ -43,6 +44,7 @@ export function useEmojiNavigation({
 	cells,
 	cellsByKey,
 	status,
+	allowSelected,
 	scrollTop,
 	onScrollTopChange,
 	onSelect,
@@ -123,7 +125,7 @@ export function useEmojiNavigation({
 		if (event.key === "Enter" || event.key === " ") {
 			event.preventDefault();
 			const item = cells[activeIndex]?.item;
-			if (item && !item.disabledReason && !item.selected) {
+			if (item && !item.disabledReason && (!item.selected || allowSelected)) {
 				onSelect(item);
 			}
 			return;

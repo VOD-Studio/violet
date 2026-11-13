@@ -159,6 +159,29 @@ describe("EmojiPickerPanel", () => {
 		expect(document.activeElement).toBe(grid);
 	});
 
+	it("allowSelected 时已回应项可再次触发 onSelect，禁用项仍不可选", () => {
+		const onSelect = vi.fn();
+		render(
+			<EmojiPickerPanel
+				groups={GROUPS}
+				activeGroup="small"
+				onGroupChange={() => {}}
+				onSelect={onSelect}
+				allowSelected
+			/>,
+		);
+		const selected = screen.getAllByRole("option")[3];
+		expect(selected.getAttribute("aria-disabled")).toBe("false");
+		fireEvent.click(selected);
+		expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ id: "face-3" }));
+		const grid = screen.getByRole("listbox");
+		fireEvent.keyDown(grid, { key: "Home" });
+		fireEvent.keyDown(grid, { key: "ArrowRight" });
+		fireEvent.keyDown(grid, { key: "ArrowRight" });
+		fireEvent.keyDown(grid, { key: "Enter" });
+		expect(onSelect).toHaveBeenCalledTimes(1);
+	});
+
 	it("从不同密度的 section 跨行移动，上传格占列但不被当作表情选取", () => {
 		const upload = vi.fn();
 		const group: EmojiPickerGroup = {

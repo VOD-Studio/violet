@@ -146,7 +146,7 @@ ImagePixelReveal 的 `className` 属于根容器，用于约束尺寸；`imgClas
 
 Popover 非模态：无遮罩，背后可滚动；点外面、Esc、再点触发器关闭，焦点回到触发器，点到别的可聚焦元素时尊重那次聚焦；触发器滚出视野时自动关闭。面板 `role="dialog"`，默认用触发器命名，传 `aria-label` 时以它为准。触发器是 Button 时，打开期间的按下态由 `aria-expanded` 驱动。HoverCard 悬停 500ms 出现、离开 200ms 消失，指针从触发词移到卡片上不消失，键盘聚焦同样延迟出现，Esc 立即消失，触屏不出现；卡片只做预览，不放按钮。Tooltip 的 `TooltipProvider` 默认 0 延迟，指针离开 60ms 后才退回，按下触发器、Esc 与失焦立即收起；相邻触发器之间同一个气泡滑过去（180ms），所以相邻触发器要在同一个 Provider 下；`truncatedOnly` 只在文字确实被截断时出现；气泡不接收指针，不放链接和按钮。
 
-MorphingPopover 是胶囊自己长成面板的非模态浮层。单个入口直接使用有底色的 Trigger；整枚操作胶囊有多个按钮时，用 `MorphingPopoverAnchor asChild` 把非交互外壳注册为几何源，内部放多个 Trigger，Content 放在 Anchor 外且仍属于同一个根。根是共同定位参照，Anchor 必须保留真实尺寸与底色；每个 Trigger 仍是独立按钮，不能把按钮组嵌套进一个按钮。面板在原位渲染、盖住几何源并固定它的一个角（默认左上，朝空间大的方向长，视口放不下就换角），宽 240 起、最宽 400，没有遮罩、不锁滚动，层级 `--layer-dropdown`（40）。外形只动 clip-path 与底色，打开用弹簧约 480ms，收回 220ms；`ghost` 是几何源上文字和图标的非交互副本，外形长出时模糊淡出、收起的最后一段浮现，内容晚 140ms 由虚变实，软影最后浮起，收回时内容与软影先在 60ms 内淡掉。
+MorphingPopover 是胶囊自己长成面板的非模态浮层。单个入口直接使用有底色的 Trigger；整枚操作胶囊有多个按钮时，用 `MorphingPopoverAnchor asChild` 把非交互外壳注册为几何源，内部放多个 Trigger，Content 放在 Anchor 外且仍属于同一个根。根是共同定位参照，Anchor 必须保留真实尺寸与底色；每个 Trigger 仍是独立按钮，不能把按钮组嵌套进一个按钮。面板默认原位渲染、盖住几何源并固定它的一个角（默认左上，朝空间大的方向长，视口放不下就换角），宽 240 起、最宽 400，没有遮罩、不锁滚动，层级 `--layer-dropdown`（40）。滚动区域内使用 Content 的 `portal`，面板挂到触发器文档的 body，以固定定位的几何副本跟随触发器，层级 `--layer-float`（60），不参与消息滚动区的溢出计算。`container` 可指定无裁剪、无变换的主题挂载点；主题变量沿该容器继承，减弱动态另从源作用域同步，关闭时移除观察与监听。外形只动 clip-path 与底色，打开用弹簧约 480ms，收回 220ms；`ghost` 是几何源上文字和图标的非交互副本，外形长出时模糊淡出、收起的最后一段浮现，内容晚 140ms 由虚变实，软影最后浮起，收回时内容与软影先在 60ms 内淡掉。
 
 独立 Anchor 从实际打开起到退场完成始终隐藏且 `inert`，不使用 `display:none`，因此测量与关闭终点仍取完整胶囊。受控 `open=false` 尚未接受打开意图时不会隐藏。退场完成后，同一轮恢复 Anchor 并卸载面板，再把焦点归还真正点击的 Trigger；外部已有焦点时不抢回。单 Trigger 的既有焦点时序不变。每个 Anchor 内 Trigger 有独立 SSR 稳定 ID，`aria-controls` 共享面板 ID、`aria-expanded` 共享根状态；展开时退出 Tab 序列。每次 Trigger click 明确记录实际按钮，即便其 `onClick` 调用 `preventDefault()` 取消默认开关；宿主可以在该回调里选择面板并设置受控 `open`。没有 `aria-label` 时客户端以实际 Trigger 命名面板；尚未激活的复合胶囊服务端首帧以 Anchor 的内容命名，推荐为每种面板显式提供名称。
 
@@ -174,7 +174,7 @@ MorphingPopover 是胶囊自己长成面板的非模态浮层。单个入口直�
 </MorphingPopover>
 ```
 
-打断时读取当前计算值作为新动画起点，不跳回初始形状：展开到一半关闭会从当前形状收回，收起途中点面板会继续展开。同一根里换 `key` 不同的 Content 是接力：新面板从旧面板的外形长出并沿用锚点，副本是旧面板的内容、不可点，关闭直接缩回 Anchor（无 Anchor 时缩回 Trigger）。点几何源原来的位置、点根之外、Esc、焦点离开都会收起；Esc 在捕获阶段监听且不看 `defaultPrevented`，避免常驻 Radix 层提前标记事件导致无法关闭。焦点进入面板第一个能 Tab 到的控件（`tabindex="-1"` 不算），没有就落在面板。面板角色按内容取 dialog 或 listbox。几何源原来的位置总有一层副本接住点击，没有传 `ghost` 时它是空的；内容在该位置有可点控件时给 `ghostClassName` 传 `pointer-events-none`。系统或宿主减弱动态、或没有 Web Animations 时只淡入淡出各 100ms，展开后才开启减弱动态也直接淡出。面板放进有 `overflow` 裁剪的容器会被裁掉，宿主要留出位置。
+打断时读取当前计算值作为新动画起点，不跳回初始形状：展开到一半关闭会从当前形状收回，收起途中点面板会继续展开。同一根里换 `key` 不同的 Content 是接力：新面板从旧面板的外形长出并沿用锚点，副本是旧面板的内容、不可点，关闭直接缩回 Anchor（无 Anchor 时缩回 Trigger）。点几何源原来的位置、点根与面板之外、Esc、焦点离开都会收起；Esc 在捕获阶段监听且不看 `defaultPrevented`，避免常驻 Radix 层提前标记事件导致无法关闭。Portal 面板与原触发器保持同一交互范围，点击面板内部不按外部点击处理。焦点进入面板第一个能 Tab 到的控件（`tabindex="-1"` 不算），没有就落在面板。面板角色按内容取 dialog 或 listbox。几何源原来的位置总有一层副本接住点击，没有传 `ghost` 时它是空的；内容在该位置有可点控件时给 `ghostClassName` 传 `pointer-events-none`。系统或宿主减弱动态、或没有 Web Animations 时只淡入淡出各 100ms，展开后才开启减弱动态也直接淡出。原位面板会受祖先 overflow 裁剪；滚动消息区应启用 Portal，而不是隐藏溢出选项。
 
 形变浮层接力默认保留旧锚点，但新面板在原竖向放不下时重新选向；水平方向在实际布局视口内保留至少 8px，关闭终点仍是原 Anchor（无 Anchor 时为 Trigger）。宿主缩放下的水平校正使用局部坐标，经典滚动条不计入可用宽度。
 
