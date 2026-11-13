@@ -51,6 +51,7 @@ export interface ImagePixelRevealProps extends Omit<ComponentProps<"div">, "onEr
 	replayOnHover?: boolean;
 	imgClassName?: string;
 	loading?: "eager" | "lazy";
+	/** 包括接管前已经失败的请求；每个 src 周期最多通知一次。 */
 	onError?: () => void;
 	/** 每次揭示或悬停重播完成后调用一次；减弱动态时在加载完成后直接调用。 */
 	onRevealed?: () => void;
@@ -132,6 +133,7 @@ function PixelRevealImage({
 	const [grid, setGrid] = useState<RevealGrid | null>(null);
 	const revealIdRef = useRef(0);
 	const startedRef = useRef(false);
+	const errorNotifiedRef = useRef(false);
 
 	useImperativeHandle<HTMLDivElement | null, HTMLDivElement | null>(
 		ref,
@@ -249,12 +251,18 @@ function PixelRevealImage({
 		[completeReveal, computeDelay, maxTiles, reduceMotion, spreadMs, tileSize, variant],
 	);
 
+	const handleImageError = useCallback(() => {
+		if (errorNotifiedRef.current) return;
+		errorNotifiedRef.current = true;
+		onError?.();
+	}, [onError]);
+
 	useEffect(() => {
 		const img = imgRef.current;
-		if (img?.complete && img.naturalWidth > 0) {
-			triggerReveal();
-		}
-	}, [triggerReveal]);
+		if (!img?.complete) return;
+		if (img.naturalWidth > 0) triggerReveal();
+		else handleImageError();
+	}, [handleImageError, triggerReveal]);
 
 	useEffect(() => {
 		if (reduceMotion && status === "revealing") {
@@ -292,7 +300,7 @@ function PixelRevealImage({
 						alt={alt}
 						loading={loading}
 						onLoad={() => triggerReveal()}
-						onError={onError}
+						onError={handleImageError}
 						className={cn("v-image-pixel-reveal__image", imgClassName)}
 					/>
 				)}
@@ -306,7 +314,7 @@ function PixelRevealImage({
 					aria-hidden="true"
 					loading={loading}
 					onLoad={() => triggerReveal()}
-					onError={onError}
+					onError={handleImageError}
 					className="v-image-pixel-reveal__probe"
 				/>
 			) : null}

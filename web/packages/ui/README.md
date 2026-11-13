@@ -74,6 +74,8 @@ Checkbox 的 ref 指向可聚焦的 button；名称使用关联 Label 或 `aria-
 
 ImagePixelReveal 让图片瓦片逐块裁剪展开，原图始终静止；默认 random 每轮重新洗牌，悬停可重播完整拼合，减弱动态时直接显示。`className` 约束根容器尺寸，`imgClassName` 调整默认图片；`children` 可替换内容，`src` 改变时重新开始独立周期。组件从 `@violet/ui` 导入，按需 CSS 为 `@violet/ui/components/image-pixel-reveal.css`；四种揭示顺序与悬停重播通过包内行为测试和实际消费页验收。
 
+Avatar 与 ImagePixelReveal 在客户端接管时识别浏览器已完成的失败请求：前者立即显示首字或 icon，后者向宿主触发本次图片的 `onError`；不依赖已经错过的原生 `error` 事件。
+
 UploadTile 是由父容器决定尺寸的方形原生按钮：浅底、无虚线、默认 8px 圆角与 20px 加号，`dragActive` 显示季节浅底和上传箭头，`busy` 显示指示器并禁止激活。UploadDropzone 提供带标签和 hint 的原生选择按钮。UploadQueue 展示六种真实上传状态、取消确认、策略暂停/失败、重试冷却和字节加权进度；360px 面板支持内联或右下浮动、收起与焦点安全列表。三个组件不选择或上传文件，宿主持有队列、拖放、取消确认和 API。纯图标入口须提供 `aria-label`；原生 ref、事件和表单属性透传。[上传契约](docs/components/upload.md)说明状态、动作与按需 CSS；集成验收证据单独记录。
 
 LinkCard 是原生 anchor 的紧凑链接预览，接收 `href`、`title`、可选描述、站点名和图片，不依赖业务 DTO 或请求。左侧缩略图与卡片边缘相接，坏图退为文字卡，预览内容更新后可恢复；自动隐藏实质重复的标题/描述与站点/域名。ref、事件和导航策略属于整卡，默认安全新标签，调用方可覆盖。从 `@violet/ui` 或 `@violet/ui/link-card` 导入，按需 CSS 为 `@violet/ui/components/link-card.css`。[组件契约](docs/components/link-card.md)说明原生行为，独立 consumer 的 `?preview=link-card` 覆盖图片降级、内容更新、主题和窄屏场景。

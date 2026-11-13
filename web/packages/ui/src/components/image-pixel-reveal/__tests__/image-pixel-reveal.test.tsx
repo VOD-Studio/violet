@@ -1,5 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
+import { hydrateRoot } from "react-dom/client";
+import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ImagePixelReveal } from "../image-pixel-reveal";
 
@@ -73,5 +75,34 @@ describe("ImagePixelReveal", () => {
 		expect(container.querySelector(".v-flower--osmanthus")).toBeTruthy();
 		fireEvent.load(screen.getByRole("img", { name: "山水" }));
 		expect(container.querySelector(".v-flower--osmanthus")).toBeNull();
+	});
+
+	it("水合前已失败的图片能立即通知调用方显示降级内容", async () => {
+		vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockReturnValue(true);
+		vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(0);
+		function Consumer() {
+			const [failed, setFailed] = useState(false);
+			return failed ? (
+				<span role="img" aria-label="肖像不可用">
+					R
+				</span>
+			) : (
+				<ImagePixelReveal src="/portrait.png" alt="肖像" onError={() => setFailed(true)} />
+			);
+		}
+		const container = document.createElement("div");
+		container.innerHTML = renderToString(<Consumer />);
+		document.body.append(container);
+		let hydrated: ReturnType<typeof hydrateRoot> | undefined;
+		try {
+			await act(async () => {
+				hydrated = hydrateRoot(container, <Consumer />);
+			});
+			expect(screen.getByRole("img", { name: "肖像不可用" }).textContent).toBe("R");
+			expect(container.querySelector("img")).toBeNull();
+		} finally {
+			await act(async () => hydrated?.unmount());
+			container.remove();
+		}
 	});
 });
