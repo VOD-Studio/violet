@@ -10,6 +10,7 @@ import (
 
 	apppost "blog-api/internal/application/post"
 	appseries "blog-api/internal/application/series"
+	domainpost "blog-api/internal/domain/post"
 	domainshared "blog-api/internal/domain/shared"
 )
 
@@ -18,12 +19,12 @@ import (
 // reader 是匿名端点，构造上就不该触达草稿/写能力。
 type PublicPostService interface {
 	GetPublishedBySlug(ctx context.Context, slug string) (apppost.PostDTO, error)
-	ListPublished(ctx context.Context, tag string, q domainshared.PageQuery) (domainshared.PageResult[apppost.PostListItemDTO], error)
+	ListPublished(ctx context.Context, filter domainpost.BrowseFilter, q domainshared.PageQuery) (domainshared.PageResult[apppost.PostListItemDTO], error)
 }
 
 // PublicSeriesService 公开只读通道依赖的系列书服务端口（仅已发布视角）。
 type PublicSeriesService interface {
-	ListPublished(ctx context.Context, page, limit int) ([]appseries.SeriesDTO, int64, error)
+	ListPublished(ctx context.Context, filter domainpost.BrowseFilter, page, limit int) ([]appseries.SeriesDTO, int64, error)
 	GetBySlug(ctx context.Context, slug string) (appseries.SeriesDetailDTO, error)
 }
 
@@ -77,7 +78,7 @@ func (t *PublicTools) ListPosts(ctx context.Context, req *mcp.ReadResourceReques
 	// ListPublished 经 Normalize 钳制单页上限 100，按页聚合到目录上限。
 	var items []apppost.PostListItemDTO
 	for page := 1; len(items) < publicListLimit; page++ {
-		result, err := t.posts.ListPublished(ctx, "", domainshared.PageQuery{Page: page, Limit: domainshared.MaxPageLimit})
+		result, err := t.posts.ListPublished(ctx, domainpost.BrowseFilter{}, domainshared.PageQuery{Page: page, Limit: domainshared.MaxPageLimit})
 		if err != nil {
 			return nil, fmt.Errorf("读取文章目录失败: %w", err)
 		}
@@ -177,7 +178,7 @@ func (t *PublicTools) ReadSeries(ctx context.Context, req *mcp.ReadResourceReque
 func (t *PublicTools) ListSeries(ctx context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
 	var items []appseries.SeriesDTO
 	for page := 1; len(items) < publicListLimit; page++ {
-		result, _, err := t.series.ListPublished(ctx, page, domainshared.MaxPageLimit)
+		result, _, err := t.series.ListPublished(ctx, domainpost.BrowseFilter{}, page, domainshared.MaxPageLimit)
 		if err != nil {
 			return nil, fmt.Errorf("读取系列书目录失败: %w", err)
 		}

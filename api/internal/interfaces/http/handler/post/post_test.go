@@ -151,6 +151,27 @@ func TestArchiveByYear_InvalidYear_Returns400(t *testing.T) {
 	assert.Equal(t, "BAD_REQUEST", decodeBody(t, w)["error"])
 }
 
+func TestPublicBrowse_InvalidSource_Returns400(t *testing.T) {
+	h := newTestHandler()
+	for name, handler := range map[string]http.HandlerFunc{
+		"list":  h.ListPublished,
+		"tags":  h.FilterTags,
+		"years": h.ArchiveYears,
+		"year":  h.ArchiveByYear,
+	} {
+		t.Run(name, func(t *testing.T) {
+			for _, source := range []string{"invalid", "Original", "%20"} {
+				r := newJSONRequest(http.MethodGet, "/posts?source="+source, "")
+				r.SetPathValue("year", "2025")
+				w := httptest.NewRecorder()
+				handler(w, r)
+				assert.Equal(t, http.StatusBadRequest, w.Code)
+				assert.Equal(t, "BAD_REQUEST", decodeBody(t, w)["error"])
+			}
+		})
+	}
+}
+
 // =====================================================================
 // UpdateStatus：状态枚举校验
 // =====================================================================

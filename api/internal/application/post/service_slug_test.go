@@ -10,9 +10,6 @@ import (
 	"blog-api/internal/domain/shared"
 )
 
-// fakeSlugRepo 只为 slug 冲突测试实现 ExistsBySlug,其余方法 panic。
-// 测 resolveSlugConflict 只需要 ExistsBySlug,完整 PostRepository 的 mock
-// 成本过高且与本次改动无关。
 type fakeSlugRepo struct {
 	existing map[string]bool // 模拟已占用的 slug 集合
 	saved    *domain.Post    // 最近一次 Save 的文章（Create 测试断言用）
@@ -22,7 +19,6 @@ func (f *fakeSlugRepo) ExistsBySlug(_ context.Context, slug string) (bool, error
 	return f.existing[slug], nil
 }
 
-// 其余方法未实现,调用即说明测试范围越界
 func (f *fakeSlugRepo) FindByID(context.Context, shared.ID) (*domain.Post, error) {
 	panic("not implemented")
 }
@@ -45,14 +41,19 @@ func (f *fakeSlugRepo) Save(ctx context.Context, p *domain.Post) error {
 func (f *fakeSlugRepo) SaveVersion(context.Context, *domain.PostVersion) error {
 	return nil
 }
-func (f *fakeSlugRepo) Delete(context.Context, shared.ID) error           { panic("not implemented") }
-func (f *fakeSlugRepo) Restore(context.Context, shared.ID) error          { panic("not implemented") }
-func (f *fakeSlugRepo) HardDelete(context.Context, shared.ID) error       { panic("not implemented") }
+func (f *fakeSlugRepo) Delete(context.Context, shared.ID) error     { panic("not implemented") }
+func (f *fakeSlugRepo) Restore(context.Context, shared.ID) error    { panic("not implemented") }
+func (f *fakeSlugRepo) HardDelete(context.Context, shared.ID) error { panic("not implemented") }
 func (f *fakeSlugRepo) IncrementViewAtomic(context.Context, shared.ID, string, string) error {
 	panic("not implemented")
 }
-func (f *fakeSlugRepo) FindArchiveYears(context.Context) ([]int, error) { panic("not implemented") }
-func (f *fakeSlugRepo) FindPublishedByYear(context.Context, int) ([]*domain.Post, error) {
+func (f *fakeSlugRepo) FindArchiveYears(context.Context, domain.BrowseFilter) ([]int, error) {
+	panic("not implemented")
+}
+func (f *fakeSlugRepo) FindPublishedTagCounts(context.Context, string) ([]domain.TagCount, error) {
+	panic("not implemented")
+}
+func (f *fakeSlugRepo) FindPublishedByYear(context.Context, int, domain.BrowseFilter) ([]*domain.Post, error) {
 	panic("not implemented")
 }
 func (f *fakeSlugRepo) FindVersionsByPostID(context.Context, shared.ID) ([]*domain.PostVersion, error) {
@@ -134,10 +135,10 @@ func TestResolveSlugConflict_ExhaustedReturnsError(t *testing.T) {
 func TestService_Create_EmptySlugAutoGenerate(t *testing.T) {
 	s := newServiceWithFakeRepo(nil)
 	dto, err := s.Create(context.Background(), CreateInput{
-		AuthorID:   shared.NewID().String(),
-		Title:      "我的第一篇文章",
-		Slug:       "",
-		ContentMD:  "正文",
+		AuthorID:    shared.NewID().String(),
+		Title:       "我的第一篇文章",
+		Slug:        "",
+		ContentMD:   "正文",
 		ContentHTML: "<p>正文</p>",
 	})
 	if err != nil {
@@ -151,5 +152,20 @@ func TestService_Create_EmptySlugAutoGenerate(t *testing.T) {
 	}
 	if s.repo.(*fakeSlugRepo).saved == nil {
 		t.Fatal("Create 应保存文章")
+	}
+}
+
+func TestService_Create_SeriesSlugDoesNotShadowDirectory(t *testing.T) {
+	s := newServiceWithFakeRepo([]string{"series-2"})
+	dto, err := s.Create(context.Background(), CreateInput{
+		AuthorID: "00000000-0000-0000-0000-000000000001",
+		Title:    "Series",
+		Slug:     "series",
+	})
+	if err != nil {
+		t.Fatalf("保留路径应沿用 slug 编号分配: %v", err)
+	}
+	if dto.Slug != "series-3" {
+		t.Errorf("文章地址不能遮蔽系列目录或已有文章，got %q, want series-3", dto.Slug)
 	}
 }

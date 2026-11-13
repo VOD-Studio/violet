@@ -349,7 +349,8 @@ func TestAllOperationsCount(t *testing.T) {
 func TestPostPaths(t *testing.T) {
 	spec, _ := Spec()
 	for _, p := range []string{
-		"/posts", "/posts/{slug}", "/posts/{id}/view",
+		"/posts", "/posts/{slug}", "/posts/{id}/view", "/posts/filters/tags",
+		"/posts/archive", "/posts/archive/{year}",
 		"/admin/posts", "/admin/posts/{id}", "/admin/posts/{id}/status",
 		"/admin/posts/import-url", "/admin/posts/slugify",
 	} {
@@ -372,6 +373,29 @@ func TestPostPaths(t *testing.T) {
 
 	// 后台接口需鉴权
 	require.NotEmpty(t, spec.Paths.Find("/admin/posts").Get.Security)
+}
+
+func TestPublicBrowseContracts(t *testing.T) {
+	spec, err := Spec()
+	require.NoError(t, err)
+	for _, path := range []string{"/posts", "/posts/filters/tags", "/posts/archive", "/posts/archive/{year}", "/series"} {
+		operation := spec.Paths.Find(path).Get
+		require.NotNil(t, operation)
+		require.True(t, hasParam(operation.Parameters, "source"), path)
+		require.NotNil(t, operation.Responses.Status(400), path)
+		if path != "/posts/filters/tags" {
+			require.True(t, hasParam(operation.Parameters, "tag"), path)
+		}
+		for _, parameter := range operation.Parameters {
+			if parameter.Value.Name == "source" {
+				require.Equal(t, []any{"", "all", "original", "repost"}, parameter.Value.Schema.Value.Enum)
+				require.Equal(t, "all", parameter.Value.Schema.Value.Default)
+			}
+		}
+	}
+	tag := spec.Components.Schemas["PublishedTagDTO"].Value
+	require.ElementsMatch(t, []string{"slug", "name", "count"}, tag.Required)
+	require.Contains(t, spec.Components.Schemas["PostListItemDTO"].Value.Properties, "canonical_url")
 }
 
 func TestNotePaths(t *testing.T) {

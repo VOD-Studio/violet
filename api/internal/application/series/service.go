@@ -6,6 +6,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	appshared "blog-api/internal/application/shared"
+	domainpost "blog-api/internal/domain/post"
 	domain "blog-api/internal/domain/series"
 	"blog-api/internal/domain/shared"
 )
@@ -53,9 +54,12 @@ func (s *Service) SetCoverDeps(gen CoverGenerator, store GeneratedCoverStore) {
 // ============================================================
 
 // ListPublished 公开书架分页（仅 published）。
-func (s *Service) ListPublished(ctx context.Context, page, limit int) ([]SeriesDTO, int64, error) {
+func (s *Service) ListPublished(ctx context.Context, filter domainpost.BrowseFilter, page, limit int) ([]SeriesDTO, int64, error) {
+	if err := filter.Validate(); err != nil {
+		return nil, 0, err
+	}
 	q := shared.PageQuery{Page: page, Limit: limit}.Normalize()
-	result, err := s.repo.FindPublishedPage(ctx, q)
+	result, err := s.repo.FindPublishedPage(ctx, filter, q)
 	if err != nil {
 		return nil, 0, err
 	}

@@ -104,6 +104,23 @@ REST 端点可用 `middleware.PATAuth` 复用 MCP 的 `PATVerifier`，再用 `Re
 
 `POST /api/v1/link-cards/lookup` 公开批量读取最多 10 个 URL 的网页预览，仍需 CSRF cookie。返回 `cards`、`pending`、`unavailable`：仅 pending 继续查询；上游 403 不绕过防护，失败退避期间不重复抓取。成功快照默认缓存 7 天，过期惰性刷新；封面校验后缓存到本站。
 
+### 博客公开浏览筛选
+
+以下路径均相对于 `/api/v1`，响应保持 `data` 信封；列表分页仍使用 `meta.pagination`：
+
+| GET 路径 | 筛选与响应 |
+| --- | --- |
+| `/posts` | `page/limit/tag/source`；未软删除的已发布文章，精选优先，再按 `published_at DESC,id DESC`。列表项透出可选 `canonical_url`，缺省/空串为原创 |
+| `/posts/filters/tags` | 仅按 `source` 聚合，忽略当前 `tag`；`data` 为 `{slug,name,count}[]`，按 `count DESC,slug ASC` 排序，零计数不返回 |
+| `/posts/archive` | `tag/source`；返回 `{years: number[]}`，仅含匹配公开文章的年份，倒序 |
+| `/posts/archive/{year}` | `tag/source`；返回原 `{year,count,items}`，仅含匹配公开文章，按 `published_at DESC,id DESC` |
+| `/series` | `page/limit/tag/source`；有筛选时须含至少一篇同时匹配的已发布、未软删除章节，系列自身也必须已发布；`chapter_count` 仍是整书公开章节数，无筛选保留空书 |
+
+`source` 可为 `all/original/repost`，省略或空串等同 `all`；其他非空值返回 400。原创对应 `canonical_url IS NULL` 或空串，转载对应非空值。标签聚合以去重后的文章计数，不泄露草稿、归档或软删除文章的标签；筛选和计数均在数据库完整集合上执行，再分页。资源 API `/series` 与 `/posts/{slug}` 不随页面路径迁移。
+
+`series` 是博客系列目录的保留 slug。创建文章时，自动生成或显式传入该 slug 均按现有冲突规则分配 `series-2` 等可用后缀，不覆盖或改写存量文章；部署新页面路由前须确认目标数据库没有占用 `series` 的旧文章。
+
+
 ### 评论回应与排序
 
 文章与推文评论共享 `AggregatedReaction` 读模型，但分别存储于 `comment_reactions` 和迁移 150 的 `tweet_comment_reactions`；推文评论不会写入文章评论外键。

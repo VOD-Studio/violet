@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"blog-api/internal/domain/post"
 	"blog-api/internal/domain/shared"
 )
 
@@ -64,8 +65,8 @@ type SeriesRepository interface {
 	FindByID(ctx context.Context, id shared.ID) (*Series, error)
 	// FindBySlug 按 slug 查找（含卷），不存在返回 ErrNotFound
 	FindBySlug(ctx context.Context, slug string) (*Series, error)
-	// FindPublishedPage 公开书架分页：仅 published，created_at DESC
-	FindPublishedPage(ctx context.Context, q shared.PageQuery) (shared.PageResult[*Series], error)
+	// FindPublishedPage 公开书架分页；有筛选时须含匹配的公开章节，统计仍覆盖整书。
+	FindPublishedPage(ctx context.Context, filter post.BrowseFilter, q shared.PageQuery) (shared.PageResult[*Series], error)
 	// FindPage 管理列表分页：全部状态，created_at DESC
 	FindPage(ctx context.Context, q shared.PageQuery) (shared.PageResult[*Series], error)
 	// FindPageByAuthor owner 视角分页（MCP agent=PAT 持有人）：全部状态，created_at DESC

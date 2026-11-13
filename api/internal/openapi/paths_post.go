@@ -32,17 +32,24 @@ func registerPostPaths(t *openapi3.T) {
 
 	// 文章列表项（不含正文，避免响应过大）。ListPublished 与 ListAll 共用。
 	registerSchema(t, "PostListItemDTO", openapi3.Schemas{
-		"id":           reqStr("文章 ID（UUID）"),
-		"slug":         reqStr("URL slug"),
-		"title":        reqStr("标题"),
-		"excerpt":      optStr("摘要"),
-		"cover_image":  optStr("封面图 URL"),
-		"status":       strEnum("状态", "draft", "published", "archived"),
-		"is_featured":  optBool("是否精选"),
-		"view_count":   optInt("浏览数"),
-		"published_at": optStr("发布时间（RFC3339，可空）"),
-		"tags":         strArray("标签名列表"),
+		"id":            reqStr("文章 ID（UUID）"),
+		"slug":          reqStr("URL slug"),
+		"title":         reqStr("标题"),
+		"excerpt":       optStr("摘要"),
+		"cover_image":   optStr("封面图 URL"),
+		"status":        strEnum("状态", "draft", "published", "archived"),
+		"is_featured":   optBool("是否精选"),
+		"view_count":    optInt("浏览数"),
+		"published_at":  optStr("发布时间（RFC3339，可空）"),
+		"canonical_url": optStr("转载源 URL；缺省或空串为原创，非空为转载"),
+		"tags":          strArray("标签名列表"),
 	}, "id", "slug", "title")
+
+	registerSchema(t, "PublishedTagDTO", openapi3.Schemas{
+		"slug":  reqStr("标签 slug"),
+		"name":  reqStr("标签名称"),
+		"count": optInt64("该来源下已发布且未软删除的去重文章数"),
+	}, "slug", "name", "count")
 
 	registerSchema(t, "CreatePostRequest", openapi3.Schemas{
 		"title":           reqStr("标题"),
@@ -176,34 +183,48 @@ func registerPostPaths(t *openapi3.T) {
 		Tags:    []string{"文章"},
 		Summary: "已发布文章列表",
 		Description: "获取已发布文章列表（offset 分页）。前台 limit 上限为 50。" +
-			"可按 tag slug 过滤。",
+			"可按 tag slug 与 source 联合过滤，仅返回未软删除文章，精选优先，再按 published_at DESC,id DESC 排序。",
 		Parameters: openapi3.Parameters{
-			pageParam(), limitParam(50), queryStrParam("tag", "按标签 slug 过滤"),
+			pageParam(), limitParam(50), queryStrParam("tag", "按标签 slug 过滤"), postSourceParam(),
 		},
 		Responses: responses(
 			200, dataArrayResponse("PostListItemDTO", "已发布文章列表", 200, true),
+			400, errorResponse("无效的文章来源"),
+		),
+	})
+
+	get(t, "/posts/filters/tags", &openapi3.Operation{
+		Tags:        []string{"文章"},
+		Summary:     "公开文章标签筛选项",
+		Description: "统计指定来源下已发布且未软删除的文章，不受 tag 参数影响；每篇文章对同一标签只计一次，零计数不返回，按 count DESC,slug ASC 排序。",
+		Parameters:  openapi3.Parameters{postSourceParam()},
+		Responses: responses(
+			200, dataArrayResponse("PublishedTagDTO", "公开标签计数", 200, false),
+			400, errorResponse("无效的文章来源"),
 		),
 	})
 
 	get(t, "/posts/archive", &openapi3.Operation{
 		Tags:    []string{"文章"},
 		Summary: "归档年份索引",
-		Description: "返回所有含已发布文章的年份（倒序）。供归档页渲染年份导航，" +
-			"再按年调用 /posts/archive/{year} 懒加载。",
+		Description: "返回含匹配 tag/source 的已发布且未软删除文章的年份（倒序）。" +
+			"同样的筛选条件应传给 /posts/archive/{year}。",
+		Parameters: openapi3.Parameters{queryStrParam("tag", "按标签 slug 过滤"), postSourceParam()},
 		Responses: responses(
 			200, dataResponse("ArchiveYearsDTO", "归档年份索引", 200),
+			400, errorResponse("无效的文章来源"),
 		),
 	})
 
 	get(t, "/posts/archive/{year}", &openapi3.Operation{
 		Tags:    []string{"文章"},
 		Summary: "指定年份归档",
-		Description: "返回指定年份全部已发布文章的精简项（倒序，不含正文）。" +
-			"前端按月分组展示。",
-		Parameters: openapi3.Parameters{pathStrParam("year", "年份（如 2026）")},
+		Description: "返回指定年份匹配 tag/source 的已发布且未软删除文章精简项，按 published_at DESC,id DESC 排序。" +
+			"count 为筛选后的文章数，前端按月分组展示。",
+		Parameters: openapi3.Parameters{pathStrParam("year", "年份（如 2026）"), queryStrParam("tag", "按标签 slug 过滤"), postSourceParam()},
 		Responses: responses(
 			200, dataResponse("ArchiveYearDTO", "该年归档数据", 200),
-			400, errorResponse("无效的年份"),
+			400, errorResponse("无效的年份或文章来源"),
 		),
 	})
 
@@ -465,4 +486,11 @@ func registerPostPaths(t *openapi3.T) {
 			400, errorResponse("ids 为空或 action 非法"),
 		),
 	})
+}
+
+func postSourceParam() *openapi3.ParameterRef {
+	parameter := queryStrParam("source", "文章来源：省略/空串/all 不过滤；original 为 canonical_url NULL 或空串；repost 为非空值；非法非空值返回 400")
+	parameter.Value.Schema.Value.Enum = []any{"", "all", "original", "repost"}
+	parameter.Value.Schema.Value.Default = "all"
+	return parameter
 }

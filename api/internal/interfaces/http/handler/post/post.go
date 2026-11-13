@@ -10,6 +10,7 @@ import (
 	"github.com/go-playground/validator/v10"
 
 	apppost "blog-api/internal/application/post"
+	domainpost "blog-api/internal/domain/post"
 	domainshared "blog-api/internal/domain/shared"
 	interfacesmw "blog-api/internal/interfaces/http/middleware"
 	"blog-api/internal/interfaces/http/response"
@@ -50,9 +51,9 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 // ListPublished 列出已发布文章（前台公开）
 func (h *Handler) ListPublished(w http.ResponseWriter, r *http.Request) {
-	tag := r.URL.Query().Get("tag")
+	filter := domainpost.BrowseFilter{Tag: r.URL.Query().Get("tag"), Source: r.URL.Query().Get("source")}
 	page, limit := response.ParsePagingWithMax(r, 50)
-	result, err := h.svc.ListPublished(r.Context(), tag, domainshared.PageQuery{Page: page, Limit: limit})
+	result, err := h.svc.ListPublished(r.Context(), filter, domainshared.PageQuery{Page: page, Limit: limit})
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
@@ -60,10 +61,20 @@ func (h *Handler) ListPublished(w http.ResponseWriter, r *http.Request) {
 	response.RespondPaged(w, result.Items, result.Page, result.Limit, result.Total)
 }
 
+func (h *Handler) FilterTags(w http.ResponseWriter, r *http.Request) {
+	tags, err := h.svc.ListPublishedTags(r.Context(), r.URL.Query().Get("source"))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, tags)
+}
+
 // ArchiveYears 归档年份索引（前台公开）。
 // 返回所有含已发布文章的年份（倒序），供归档页渲染年份导航并按年懒加载。
 func (h *Handler) ArchiveYears(w http.ResponseWriter, r *http.Request) {
-	years, err := h.svc.ListArchiveYears(r.Context())
+	filter := domainpost.BrowseFilter{Tag: r.URL.Query().Get("tag"), Source: r.URL.Query().Get("source")}
+	years, err := h.svc.ListArchiveYears(r.Context(), filter)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
@@ -80,7 +91,8 @@ func (h *Handler) ArchiveByYear(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, domainshared.BadRequest("无效的年份"))
 		return
 	}
-	dto, err := h.svc.GetArchiveByYear(r.Context(), year)
+	filter := domainpost.BrowseFilter{Tag: r.URL.Query().Get("tag"), Source: r.URL.Query().Get("source")}
+	dto, err := h.svc.GetArchiveByYear(r.Context(), year, filter)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return

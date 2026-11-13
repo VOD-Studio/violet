@@ -179,6 +179,7 @@ func registerPostPublicRoutes(v1 chi.Router, d *Deps) {
 	postH := d.Post
 	v1.Route("/posts", func(r chi.Router) {
 		r.Get("/", postH.ListPublished)
+		r.Get("/filters/tags", postH.FilterTags)
 		r.Get("/archive", postH.ArchiveYears)
 		r.Get("/archive/{year}", postH.ArchiveByYear)
 		r.Get("/search", postH.SearchPublished)
