@@ -93,6 +93,8 @@ export interface RichTextInputProps {
 	autoFocus?: boolean;
 	/** 编辑场景预填的已上传图片：以 done 态播种进内部图片状态，参与 onImagesChange 上报与占位符还原 */
 	initialImages?: PictureInput[];
+	/** 恢复尚未提交的上传任务；沿用本地占位符与进行中的请求，不重新上传。 */
+	initialImageUploads?: ImageUploadReference[];
 	placeholder?: string;
 	resetNonce?: number;
 	onImagesChange?: (images: PictureInput[]) => void;
@@ -142,6 +144,7 @@ export function RichTextInput({
 	disabled = false,
 	autoFocus = false,
 	initialImages,
+	initialImageUploads,
 	placeholder = "写下你的评论…",
 	resetNonce = 0,
 	onImagesChange,
@@ -159,8 +162,8 @@ export function RichTextInput({
 	inputClassName,
 }: RichTextInputProps) {
 	const fileInputRef = useRef<HTMLInputElement>(null);
-	const [imageItems, setImageItems] = useState<ImageItem[]>(() =>
-		(initialImages ?? [])
+	const [imageItems, setImageItems] = useState<ImageItem[]>(() => [
+		...(initialImages ?? [])
 			.filter((img): img is PictureInput & { id: string } => !!img.id)
 			.map((img) => ({
 				id: img.id,
@@ -169,12 +172,23 @@ export function RichTextInput({
 				status: "done" as const,
 				data: img,
 			})),
-	);
+		...(initialImageUploads ?? []).map(({ id, task }) => ({
+			id,
+			task,
+			previewUrl: task.result?.url ?? task.previewURL,
+			progress: task.progress,
+			status: task.result ? ("done" as const) : ("uploading" as const),
+			data: task.result,
+		})),
+	]);
 	const imageItemsRef = useRef<ImageItem[]>(imageItems);
 	imageItemsRef.current = imageItems;
 	useEffect(
 		() => () => {
-			for (const item of imageItemsRef.current) item.release?.();
+			for (const item of imageItemsRef.current) {
+				item.release?.();
+				item.release = undefined;
+			}
 		},
 		[],
 	);
@@ -184,6 +198,41 @@ export function RichTextInput({
 	const insertImageRef = useRef<
 		((id: string, url: string, status: ImageNodeStatus, replaceId?: string) => void) | null
 	>(null);
+
+	const uploadImage = useCallback(
+		async ({ id, task }: ImageItem) => {
+			if (!task) return;
+			try {
+				const result = await task.upload((progress) => {
+					setImageItems((items) =>
+						items.map((item) => (item.id === id ? { ...item, progress } : item)),
+					);
+				});
+				if (!imageItemsRef.current.some((item) => item.id === id)) return;
+				setImageItems((items) =>
+					items.map((item) =>
+						item.id === id
+							? {
+									...item,
+									id: result.id,
+									status: "done",
+									progress: 100,
+									data: result,
+								}
+							: item,
+					),
+				);
+				if (inlineImages) insertImageRef.current?.(result.id, result.url, "done", id);
+			} catch {
+				if (!imageItemsRef.current.some((item) => item.id === id)) return;
+				setImageItems((items) =>
+					items.map((item) => (item.id === id ? { ...item, status: "error" } : item)),
+				);
+				if (inlineImages) insertImageRef.current?.(id, "", "error");
+			}
+		},
+		[inlineImages],
+	);
 
 	const uploadFilesList = useCallback(
 		async (files: File[]) => {
@@ -220,55 +269,9 @@ export function RichTextInput({
 				}
 			}
 
-			for (let i = 0; i < toUpload.length; i++) {
-				const task = newItems[i].task;
-				if (!task) continue;
-				const itemId = newItems[i].id;
-
-				try {
-					const result = await task.upload((progress) => {
-						setImageItems((prev) =>
-							prev.map((item) => (item.id === itemId ? { ...item, progress } : item)),
-						);
-					});
-
-					// 上传完成前节点可能已被用户退格删除（imageItemsRef 已剔除），此时不再原地回填。
-					if (!imageItemsRef.current.some((item) => item.id === itemId)) continue;
-
-					setImageItems((prev) =>
-						prev.map((item) =>
-							item.id === itemId
-								? {
-										...item,
-										// 换键为服务端 file_id：value 占位符即媒体 id，提交内容可直接解析
-										id: result.id,
-										status: "done" as const,
-										progress: 100,
-										data: {
-											id: result.id,
-											url: result.url,
-											width: result.width ?? 0,
-											height: result.height ?? 0,
-											size: task.file.size,
-										},
-									}
-								: item,
-						),
-					);
-					if (inlineImages)
-						insertImageRef.current?.(result.id, result.url, "done", itemId);
-				} catch {
-					if (!imageItemsRef.current.some((item) => item.id === itemId)) continue;
-					setImageItems((prev) =>
-						prev.map((item) =>
-							item.id === itemId ? { ...item, status: "error" as const } : item,
-						),
-					);
-					if (inlineImages) insertImageRef.current?.(itemId, "", "error");
-				}
-			}
+			for (const item of newItems) await uploadImage(item);
 		},
-		[disabled, enableImage, inlineImages, maxImages, uploadFile],
+		[disabled, enableImage, inlineImages, maxImages, uploadFile, uploadImage],
 	);
 
 	const handleRemoveImage = useCallback((id: string) => {
@@ -279,10 +282,10 @@ export function RichTextInput({
 		});
 	}, []);
 
-	const resolveImage = useCallback(
-		(id: string) => imageItemsRef.current.find((item) => item.id === id)?.data?.url,
-		[],
-	);
+	const resolveImage = useCallback((id: string) => {
+		const item = imageItemsRef.current.find((image) => image.id === id);
+		return item?.data?.url ?? item?.previewUrl;
+	}, []);
 
 	const mentionEnabled = !!mentionCandidates?.length;
 	const mentionListboxId = useId();
@@ -402,6 +405,16 @@ export function RichTextInput({
 				return false;
 		}
 	};
+
+	useEffect(() => {
+		for (const item of imageItemsRef.current) {
+			if (!item.task || item.release) continue;
+			item.release = item.task.retain();
+			if (inlineImages)
+				insertImageRef.current?.(item.id, item.previewUrl, item.status, item.id);
+			void uploadImage(item);
+		}
+	}, [inlineImages, uploadImage]);
 
 	useEffect(() => {
 		if (autoFocus && !disabled) focus();
