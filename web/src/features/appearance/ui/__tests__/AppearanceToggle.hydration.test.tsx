@@ -15,10 +15,10 @@ afterEach(() => {
 });
 
 describe("AppearanceToggle hydration", () => {
-	it("服务端无浏览器外观时仍能水合深色偏好并选中暗色", async () => {
+	it.each([false, true])("文字模式 %s 的服务端首帧可水合深色偏好", async (showLabels) => {
 		storedAppearance = undefined;
 		const host = document.createElement("div");
-		host.innerHTML = renderToString(<AppearanceToggle size="sm" />);
+		host.innerHTML = renderToString(<AppearanceToggle size="sm" showLabels={showLabels} />);
 		expect(host.querySelectorAll('[role="radio"][aria-checked="true"]')).toHaveLength(0);
 		document.body.append(host);
 		storedAppearance = "dark";
@@ -26,7 +26,7 @@ describe("AppearanceToggle hydration", () => {
 		let root: Root | undefined;
 		try {
 			await act(async () => {
-				root = hydrateRoot(host, <AppearanceToggle size="sm" />, {
+				root = hydrateRoot(host, <AppearanceToggle size="sm" showLabels={showLabels} />, {
 					onRecoverableError: recover,
 				});
 			});

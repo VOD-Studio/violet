@@ -1,4 +1,4 @@
-import { type IconSize, iconProps } from "@violet/ui";
+import { type IconSize, iconProps, Segmented } from "@violet/ui";
 import { Monitor, Moon, Sun } from "lucide-react";
 import { motion } from "motion/react";
 import { useId } from "react";
@@ -18,21 +18,42 @@ const dims: Record<AppearanceSize, { pad: string; cell: string; icon: IconSize }
 };
 
 interface SegmentedToggleProps {
-	/** 紧凑尺寸适配 Header 操作区，lg/default 用于实验页陈列 */
+	/** 控制每项高度与图标尺寸。 */
 	size?: AppearanceSize;
+	/** 显示文字并沿容器宽度等分；省略时保留紧凑图标形态。 */
+	showLabels?: boolean;
 }
 
 /**
- * SegmentedToggle - 三段胶囊拨动开关
- *
- * 三个等分格排成一行，滑块用 layoutId 平滑跟随当前外观。
- * 点击任一格子切换到对应外观，配合 useAppearanceSwitcher 的圆形扩散动画。
+ * 三态外观切换，文字形态复用分段器的单一 Tab 停靠与方向键操作。
  */
-export function SegmentedToggle({ size = "default" }: SegmentedToggleProps) {
+export function SegmentedToggle({ size = "default", showLabels = false }: SegmentedToggleProps) {
 	const { appearance, switchAppearance } = useAppearanceSwitcher();
 	const layoutId = useId();
 
 	const { pad, cell, icon } = dims[size];
+
+	if (showLabels) {
+		return (
+			<Segmented
+				aria-label="外观切换"
+				value={appearance ?? ""}
+				onValueChange={(value) => {
+					const choice = choices.find((item) => item.value === value);
+					if (choice) switchAppearance(choice.value);
+				}}
+				segments={choices.map(({ value, label, icon: Icon }) => ({
+					value,
+					label,
+					icon: <Icon aria-hidden {...iconProps(icon)} />,
+				}))}
+				size={size}
+				variant="soft"
+				block
+				itemClassName="gap-1.5 px-1 text-xs"
+			/>
+		);
+	}
 
 	return (
 		<div
