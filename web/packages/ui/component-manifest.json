@@ -429,6 +429,13 @@
 			"documentation": "web/packages/ui/docs/components/tag-input.md"
 		},
 		{
+			"name": "text-mark",
+			"status": "foundation",
+			"entry": "src/components/text-mark/index.ts",
+			"css": "src/components/text-mark/text-mark.css",
+			"documentation": "web/packages/ui/docs/components/text-mark.md"
+		},
+		{
 			"name": "text-underline",
 			"status": "legacy",
 			"entry": "src/components/text-underline/index.ts"

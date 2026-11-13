@@ -1,0 +1,14 @@
+import { TextMark } from "@violet/ui";
+import { TextMark as LeafTextMark } from "@violet/ui/text-mark";
+
+export function TextMarkConsumer() {
+	return <main>
+		<h1>TextMark · 荧光笔标记</h1>
+		<p>根入口：从正文中找到<TextMark id="text-mark-root">设计演进</TextMark>，两侧文字不染色。</p>
+		<p>叶入口：正文中的<LeafTextMark id="text-mark-leaf">设计细节</LeafTextMark>可按需标记。</p>
+		<p>原生 HTML：<mark className="v-text-mark" id="text-mark-html">复用同一笔触</mark>。</p>
+		<p style={{ maxWidth: "16rem", lineHeight: 2, overflowWrap: "anywhere" }}>
+			跨行：<TextMark id="text-mark-wrapped">{"匹配到的一段正文在每一行保留连续的荧光笔笔触。".repeat(4)}{"UnbrokenContent".repeat(8)}</TextMark>
+		</p>
+	</main>;
+}

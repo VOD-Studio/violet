@@ -1,4 +1,4 @@
-import { ChevronLeft, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import {
 	type CSSProperties,
@@ -19,11 +19,14 @@ import {
 	useStackedScrim,
 	useTrackClicks,
 } from "../../lib/modal-opener";
+import { Empty } from "../empty";
 import { iconProps } from "../icons";
 import { Spinner, useDelayedBusy } from "../indicator";
 import { Kbd } from "../kbd";
 import { ListHighlight, ListHighlightItem } from "../list-highlight";
+import { ScrollArea } from "../scroll-area";
 import { Skeleton } from "../skeleton";
+import { TextMark } from "../text-mark";
 import { type CommandGroup, type CommandItem, type CommandMatch, matchCommands } from "./match";
 
 /** 执行前当前项亮一下的时长。 */
@@ -66,18 +69,19 @@ export interface CommandListProps {
 
 type Push = "forward" | "back" | undefined;
 
-/** 标题里匹配到的字加浅季节色底。 */
-function Highlight({ label, ranges }: { label: string; ranges: CommandMatch["ranges"] }) {
+interface HighlightProps {
+	label: string;
+	ranges: CommandMatch["ranges"];
+}
+
+/** 按原文区间分段；未命中部分保持纯文本。 */
+function Highlight({ label, ranges }: HighlightProps) {
 	if (ranges.length === 0) return <>{label}</>;
 	const parts: ReactNode[] = [];
 	let cursor = 0;
 	for (const [start, end] of ranges) {
 		if (start > cursor) parts.push(label.slice(cursor, start));
-		parts.push(
-			<mark key={start} className="v-command__match">
-				{label.slice(start, end)}
-			</mark>,
-		);
+		parts.push(<TextMark key={start}>{label.slice(start, end)}</TextMark>);
 		cursor = end;
 	}
 	if (cursor < label.length) parts.push(label.slice(cursor));
@@ -167,7 +171,7 @@ export function CommandList({
 		const viewport = viewportRef.current;
 		if (!list || !viewport) return;
 		const update = () =>
-			viewport.style.setProperty("--v-command-list", `${list.offsetHeight}px`);
+			contentRef.current?.style.setProperty("--v-command-list", `${list.offsetHeight}px`);
 		update();
 		if (typeof ResizeObserver === "undefined") return;
 		const observer = new ResizeObserver(update);
@@ -179,8 +183,11 @@ export function CommandList({
 	// biome-ignore lint/correctness/useExhaustiveDependencies: 只在当前项变化时滚动
 	useEffect(() => {
 		const viewport = viewportRef.current;
-		if (active === 0 && viewport) viewport.scrollTop = 0;
-		else document.getElementById(optionId(active))?.scrollIntoView({ block: "nearest" });
+		if (active === 0 && viewport) {
+			viewport.scrollTop = 0;
+		} else {
+			document.getElementById(optionId(active))?.scrollIntoView({ block: "nearest" });
+		}
 	}, [active]);
 
 	const enter = (item: CommandItem) => {
@@ -313,17 +320,17 @@ export function CommandList({
 							<Kbd size="sm">Esc</Kbd>
 						)}
 					</div>
-					<div ref={viewportRef} className="v-command__viewport">
+					<ScrollArea
+						ref={viewportRef}
+						className="v-command__scroll-area"
+						id={listboxId}
+						role="listbox"
+						tabIndex={-1}
+						aria-label={level ? level.label : "结果"}
+						aria-busy={searching || undefined}
+					>
 						<ListHighlight mode="active" key={trail.length}>
-							<div
-								ref={listRef}
-								id={listboxId}
-								role="listbox"
-								aria-label={level ? level.label : "结果"}
-								aria-busy={searching || undefined}
-								data-push={push}
-								className="v-command__list"
-							>
+							<div ref={listRef} data-push={push} className="v-command__list">
 								{sections.map(({ group, matches }) => {
 									const labelId = `${baseId}-group-${group.id}`;
 									return (
@@ -404,7 +411,12 @@ export function CommandList({
 																</span>
 																{item.description && (
 																	<span className="v-command__item-description">
-																		{item.description}
+																		<Highlight
+																			label={item.description}
+																			ranges={
+																				match.descriptionRanges
+																			}
+																		/>
 																	</span>
 																)}
 															</span>
@@ -413,14 +425,25 @@ export function CommandList({
 																	size="sm"
 																	keys={item.shortcut}
 																/>
+															) : item.children ? (
+																<ChevronRight
+																	{...iconProps(
+																		12,
+																		"v-command__item-chevron",
+																	)}
+																	aria-hidden="true"
+																/>
 															) : item.hint ? (
 																<span className="v-command__item-hint">
 																	{item.hint}
 																</span>
-															) : item.children ? (
-																<span className="v-command__item-hint">
-																	›
-																</span>
+															) : item.onSelect ? (
+																<Kbd
+																	size="sm"
+																	keys={["enter"]}
+																	className="v-command__item-enter"
+																	aria-hidden="true"
+																/>
 															) : null}
 														</div>
 													</ListHighlightItem>
@@ -444,10 +467,22 @@ export function CommandList({
 										</div>
 									)}
 								{empty && (
-									<div className="v-command__empty">
-										<p className="v-command__empty-text">
-											没有找到「{query.trim()}」
-										</p>
+									<div>
+										<Empty
+											className="v-command__empty"
+											variant="plain"
+											title="没有找到结果"
+											description={
+												<>
+													<span className="v-command__query">
+														「{query.trim()}」
+													</span>
+													{searchAll
+														? "试试在全文里搜索。"
+														: "试试其他关键词。"}
+												</>
+											}
+										/>
 										{searchAll && (
 											<ListHighlightItem active={active === 0}>
 												{/* biome-ignore lint/a11y/useKeyWithClickEvents: 键盘由输入框经 aria-activedescendant 操作 */}
@@ -479,7 +514,7 @@ export function CommandList({
 								)}
 							</div>
 						</ListHighlight>
-					</div>
+					</ScrollArea>
 					<div className="v-command__footer">
 						<span className="v-command__keys">
 							<Kbd size="sm" keys={["up"]} />

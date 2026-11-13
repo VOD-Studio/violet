@@ -63,6 +63,7 @@ export * from "./components/switch/index";
 export * from "./components/table/index";
 export * from "./components/tabs/index";
 export * from "./components/tag-input/index";
+export * from "./components/text-mark/index";
 export * from "./components/textarea/index";
 export * from "./components/toggle-group/index";
 export * from "./components/tooltip/index";
