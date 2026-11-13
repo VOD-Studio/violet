@@ -10,12 +10,23 @@
 		display: inline-flex;
 	}
 
+	/* 保留几何；退场结束与面板卸载同一轮恢复，不露出两枚胶囊。 */
+	.v-morph [data-slot="morphing-popover-anchor"] {
+		display: inline-flex;
+	}
+
+	.v-morph [data-slot="morphing-popover-anchor"][data-hidden] {
+		opacity: 0;
+		visibility: hidden;
+		pointer-events: none;
+	}
+
 	/* 触发器的按下态：50ms 内底色加深 4%。叠一层前景色的伪元素，不必知道触发器自己的底色。 */
-	.v-morph > [data-slot="morphing-popover-trigger"] {
+	.v-morph [data-slot="morphing-popover-trigger"] {
 		position: relative;
 	}
 
-	.v-morph > [data-slot="morphing-popover-trigger"]::after {
+	.v-morph [data-slot="morphing-popover-trigger"]::after {
 		content: "";
 		position: absolute;
 		inset: 0;
@@ -26,7 +37,7 @@
 		transition: opacity 50ms ease-out;
 	}
 
-	.v-morph > [data-slot="morphing-popover-trigger"]:active::after {
+	.v-morph [data-slot="morphing-popover-trigger"]:active::after {
 		opacity: 0.04;
 	}
 

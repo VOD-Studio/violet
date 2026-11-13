@@ -5,10 +5,13 @@ import {
 	type ComponentProps,
 	type CSSProperties,
 	createContext,
+	type Dispatch,
 	type FocusEvent,
 	type MouseEvent,
 	type ReactNode,
 	type RefObject,
+	type SetStateAction,
+	useCallback,
 	useContext,
 	useEffect,
 	useId,
@@ -44,15 +47,20 @@ interface Handoff {
 interface MorphContextValue {
 	open: boolean;
 	setOpen: (open: boolean) => void;
-	/** 触发器与面板的 id 由根生成：服务端首帧就能互相引用，不依赖客户端才有的节点。 */
+	/** 未声明独立 Anchor 时，单触发器与面板在服务端即可互相引用。 */
 	triggerId: string;
 	contentId: string;
 	handoff: RefObject<Handoff | null>;
 	trigger: HTMLElement | null;
-	setTrigger: (node: HTMLElement | null) => void;
+	setTrigger: Dispatch<SetStateAction<HTMLElement | null>>;
+	anchor: HTMLElement | null;
+	setAnchor: (node: HTMLElement | null) => void;
+	sourceHidden: boolean;
+	setPresent: (present: boolean) => void;
 }
 
 const MorphContext = createContext<MorphContextValue | null>(null);
+const CompositeAnchorContext = createContext(false);
 
 function useMorph(part: string): MorphContextValue {
 	const context = useContext(MorphContext);
@@ -68,8 +76,7 @@ interface MorphingPopoverProps extends Omit<ComponentProps<"span">, "defaultValu
 }
 
 /**
- * 触发它的按钮本身长成面板：外形从按钮的位置、大小与圆角长出，内容晚一拍浮现，收起时原路缩回。
- * 只给小而独立的按钮用；根是触发器与面板共同的定位参照。
+ * 胶囊长成面板；独立 Anchor 可容纳多个触发按钮，根是几何源与面板共同的定位参照。
  */
 function MorphingPopover({
 	open: openProp,
@@ -86,6 +93,9 @@ function MorphingPopover({
 		onChange: onOpenChange,
 	});
 	const [trigger, setTrigger] = useState<HTMLElement | null>(null);
+	const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+	const [present, setPresent] = useState(false);
+	const sourceHidden = open || present;
 	const rootRef = useRef<HTMLSpanElement | null>(null);
 	const composedRef = useComposedRefs(ref, rootRef);
 	const triggerId = useId();
@@ -112,21 +122,36 @@ function MorphingPopover({
 		};
 	}, [open, setOpen]);
 
-	// 收起时焦点还在面板里（或已无处可去）就回到触发器。
+	// 独立 Anchor 在退场结束前仍不可操作，恢复可见性后才能归还焦点。
 	const wasOpen = useRef(open);
+	const restoreFocus = useRef(false);
 	useLayoutEffect(() => {
-		const closing = wasOpen.current && !open;
+		if (wasOpen.current && !open) restoreFocus.current = true;
+		if (open) restoreFocus.current = false;
 		wasOpen.current = open;
-		if (!closing) return;
+		if (!restoreFocus.current || (anchor && sourceHidden)) return;
+		restoreFocus.current = false;
 		const active = document.activeElement;
 		if (!active || active === document.body || rootRef.current?.contains(active)) {
 			trigger?.focus({ preventScroll: true });
 		}
-	}, [open, trigger]);
+	}, [open, trigger, anchor, sourceHidden]);
 
 	const context = useMemo(
-		() => ({ open, setOpen, triggerId, contentId, handoff, trigger, setTrigger }),
-		[open, setOpen, triggerId, contentId, trigger],
+		() => ({
+			open,
+			setOpen,
+			triggerId,
+			contentId,
+			handoff,
+			trigger,
+			setTrigger,
+			anchor,
+			setAnchor,
+			sourceHidden,
+			setPresent,
+		}),
+		[open, setOpen, triggerId, contentId, trigger, anchor, sourceHidden],
 	);
 
 	return (
@@ -145,7 +170,37 @@ function MorphingPopover({
 	);
 }
 
-/** 触发器：必须是一个有底色的胶囊或圆钮，透明的图标按钮长不出来。 */
+/** 独立形变源的属性；asChild 将尺寸、底色、ref 与隐藏状态交给唯一非交互子元素。 */
+interface MorphingPopoverAnchorProps extends ComponentProps<"span"> {
+	asChild?: boolean;
+}
+
+/**
+ * 注册有真实尺寸与底色的整枚胶囊；内部可放多个 Trigger，不额外创建交互元素。
+ *
+ * @remarks 展开与收回期间保留布局，但整体隐藏并 inert；Content 必须放在 Anchor 外。
+ */
+function MorphingPopoverAnchor({ asChild, ref, children, ...props }: MorphingPopoverAnchorProps) {
+	const { triggerId, setAnchor, sourceHidden } = useMorph("MorphingPopoverAnchor");
+	const composedRef = useComposedRefs(ref, setAnchor);
+	const Component = asChild ? Slot.Root : "span";
+	return (
+		<CompositeAnchorContext.Provider value={true}>
+			<Component
+				id={triggerId}
+				{...props}
+				ref={composedRef}
+				data-slot="morphing-popover-anchor"
+				data-hidden={sourceHidden ? "" : undefined}
+				inert={sourceHidden || props.inert}
+			>
+				{children}
+			</Component>
+		</CompositeAnchorContext.Provider>
+	);
+}
+
+/** 触发按钮；无独立 Anchor 时自身须为有底色的胶囊或圆钮。 */
 function MorphingPopoverTrigger({
 	asChild,
 	ref,
@@ -154,7 +209,28 @@ function MorphingPopoverTrigger({
 	...props
 }: ComponentProps<"button"> & { asChild?: boolean }) {
 	const { open, setOpen, triggerId, contentId, setTrigger } = useMorph("MorphingPopoverTrigger");
-	const composedRef = useComposedRefs(ref, setTrigger);
+	const composite = useContext(CompositeAnchorContext);
+	const id = useId();
+	const nodeRef = useRef<HTMLElement | null>(null);
+	const register = useCallback(
+		(node: HTMLElement | null) => {
+			// 外部 inline ref 重组会临时 detach；这不代表按钮卸载。
+			if (!node) return;
+			const previous = nodeRef.current;
+			nodeRef.current = node;
+			setTrigger((current) => (current === previous ? node : (current ?? node)));
+		},
+		[setTrigger],
+	);
+	useLayoutEffect(() => {
+		const node = nodeRef.current;
+		if (node) setTrigger((current) => current ?? node);
+		return () => {
+			const removed = nodeRef.current;
+			setTrigger((current) => (current === removed ? null : current));
+		};
+	}, [setTrigger]);
+	const composedRef = useComposedRefs(ref, register);
 	const Component = asChild ? Slot.Root : "button";
 
 	return (
@@ -162,16 +238,19 @@ function MorphingPopoverTrigger({
 			type={asChild ? undefined : "button"}
 			data-slot="morphing-popover-trigger"
 			data-state={open ? "open" : "closed"}
-			id={triggerId}
+			id={composite ? id : triggerId}
 			aria-expanded={open}
 			aria-controls={contentId}
 			// 展开时它被面板盖住，焦点已交给面板；收起后恢复
 			tabIndex={open ? -1 : tabIndex}
 			{...props}
 			ref={composedRef}
-			onClick={composeEventHandlers(onClick, (event: MouseEvent<HTMLButtonElement>) => {
+			onClick={(event: MouseEvent<HTMLButtonElement>) => {
+				// 即便宿主取消默认切换并自行选择面板，也记住真正按下的按钮。
+				setTrigger(event.currentTarget);
+				onClick?.(event);
 				if (!event.defaultPrevented) setOpen(!open);
-			})}
+			}}
 		/>
 	);
 }
@@ -205,8 +284,17 @@ function MorphingPopoverContent({
 	ref,
 	...props
 }: MorphingPopoverContentProps) {
-	const { open, setOpen, triggerId, contentId, trigger, handoff } =
-		useMorph("MorphingPopoverContent");
+	const {
+		open,
+		setOpen,
+		triggerId,
+		contentId,
+		trigger,
+		anchor: sourceAnchor,
+		handoff,
+		setPresent,
+	} = useMorph("MorphingPopoverContent");
+	const source = sourceAnchor ?? trigger;
 	const openRef = useRef(open);
 	useLayoutEffect(() => {
 		openRef.current = open;
@@ -223,6 +311,10 @@ function MorphingPopoverContent({
 	// 收起后先留着面板播完退场，再卸载。
 	const [mounted, setMounted] = useState(open);
 	if (open && !mounted) setMounted(true);
+	useLayoutEffect(() => {
+		setPresent(mounted);
+		return () => setPresent(false);
+	}, [mounted, setPresent]);
 
 	// 挂载：定锚点与副本的位置；能变形就从触发器（接力时从旧面板）长出来，否则由 CSS 直接淡入。
 	useLayoutEffect(() => {
@@ -242,9 +334,9 @@ function MorphingPopoverContent({
 			"--v-morph-available-inline-size",
 			`${viewport.width - 2 * VIEWPORT_MARGIN}px`,
 		);
-		const anchor = trigger
+		const anchor = source
 			? chooseAnchor(
-					trigger.getBoundingClientRect(),
+					source.getBoundingClientRect(),
 					panel.getBoundingClientRect(),
 					viewport,
 					outset,
@@ -266,12 +358,12 @@ function MorphingPopoverContent({
 				layer.style.translate = `${offset / scaleX}px 0`;
 			}
 		}
-		if (!trigger) {
+		if (!source) {
 			layer.dataset.motion = "fade";
 			return;
 		}
 
-		const from = relay?.shape ?? shapeOf(trigger);
+		const from = relay?.shape ?? shapeOf(source);
 		const box = panel.getBoundingClientRect();
 		ghostNode.dataset.from = relay ? "panel" : "trigger";
 		ghostNode.style.left = `${from.left - box.left}px`;
@@ -303,7 +395,7 @@ function MorphingPopoverContent({
 			morph.dispose();
 			morphRef.current = null;
 		};
-	}, [mounted, trigger, radius, outset, handoff]);
+	}, [mounted, source, radius, outset, handoff]);
 
 	// 展开中再收起、收起中再展开，都由外形从当前形状接着走。
 	useLayoutEffect(() => {
@@ -312,7 +404,7 @@ function MorphingPopoverContent({
 		const morph = morphRef.current;
 		const layer = layerRef.current;
 		const panel = panelRef.current;
-		if (!morph || !trigger || !layer || !panel) return;
+		if (!morph || !source || !layer || !panel) return;
 		if (open) {
 			morph.expand();
 		} else if (!canMorph(panel)) {
@@ -321,9 +413,9 @@ function MorphingPopoverContent({
 			morphRef.current = null;
 			layer.dataset.motion = "fade";
 		} else {
-			morph.collapse(shapeOf(trigger), () => setMounted(false));
+			morph.collapse(shapeOf(source), () => setMounted(false));
 		}
-	}, [open, trigger]);
+	}, [open, source]);
 
 	useEffect(() => {
 		if (open || !mounted || morphRef.current) return;
@@ -395,6 +487,8 @@ function MorphingPopoverContent({
 
 export {
 	MorphingPopover,
+	MorphingPopoverAnchor,
+	type MorphingPopoverAnchorProps,
 	MorphingPopoverContent,
 	type MorphingPopoverContentProps,
 	type MorphingPopoverProps,

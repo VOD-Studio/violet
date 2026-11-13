@@ -16,7 +16,7 @@ import { LinkCard as LeafLinkCard } from "@violet/ui/link-card";
 import { Avatar, AvatarGroup, Badge, BadgeAnchor, Card, CardContent, CardFooter, CardFrame, CardFrameBody, CardFrameExcerpt, CardFrameImage, CardFrameMeta, CardFrameTitle, CardHeader, CardTitle, Count, Dot, Kbd, KbdSeparator, Radio, RadioGroup, Separator, Skeleton, Switch, Tabs, TabsContent, TabsCount, TabsList, TabsTrigger, Tag, TagToggle, ToggleGroup, ToggleGroupItem } from "@violet/ui";
 import { Avatar as LeafAvatar } from "@violet/ui/avatar";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, HoverCard, HoverCardContent, HoverCardTrigger, Popover, PopoverContent, PopoverTrigger, Toaster, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@violet/ui";
-import { MorphingPopover, MorphingPopoverContent, MorphingPopoverTrigger } from "@violet/ui";
+import { MorphingPopover, MorphingPopoverAnchor, MorphingPopoverContent, MorphingPopoverTrigger } from "@violet/ui";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@violet/ui";
 import { Select as LeafSelect, SelectContent as LeafSelectContent, SelectItem as LeafSelectItem, SelectTrigger as LeafSelectTrigger, SelectValue as LeafSelectValue } from "@violet/ui/select";
 import { CommandList, ConfirmDialog, Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, Drawer, DrawerBody, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, Sheet, SheetBody, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@violet/ui";
@@ -655,6 +655,16 @@ function OverlayPreview() {
 				<MorphingPopover onOpenChange={(open) => note(`morph:${open}`)}>
 					<MorphingPopoverTrigger id="overlay-morph-trigger" className="display-field">此刻</MorphingPopoverTrigger>
 					<MorphingPopoverContent aria-label="此刻" ghost="此刻"><input id="overlay-morph-input" aria-label="想说点什么" /></MorphingPopoverContent>
+				</MorphingPopover>
+				<MorphingPopover onOpenChange={(open) => note(`morph-composite:${open}`)}>
+					<MorphingPopoverAnchor asChild>
+						<div id="overlay-morph-anchor" className="display-field">
+							<MorphingPopoverTrigger>外观</MorphingPopoverTrigger>
+							<MorphingPopoverTrigger id="overlay-morph-notification">通知</MorphingPopoverTrigger>
+							<MorphingPopoverTrigger>账户</MorphingPopoverTrigger>
+						</div>
+					</MorphingPopoverAnchor>
+					<MorphingPopoverContent aria-label="胶囊面板"><input aria-label="胶囊面板输入" /></MorphingPopoverContent>
 				</MorphingPopover>
 				<HoverCard>
 					<HoverCardTrigger asChild><a id="overlay-hover-trigger" href="#linjian">@林间</a></HoverCardTrigger>

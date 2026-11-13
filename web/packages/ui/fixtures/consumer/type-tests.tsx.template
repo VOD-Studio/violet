@@ -40,8 +40,8 @@ import { LinkCard as LeafLinkCard, type LinkCardProps as LeafLinkCardProps } fro
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger, HoverCard, HoverCardContent, HoverCardTrigger, Popover, PopoverContent, PopoverTrigger, Toaster, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, type DropdownMenuContentProps, type HoverCardContentProps, type PopoverContentProps, type TooltipContentProps, type VioletToasterProps } from "@violet/ui";
 import { DropdownMenu as LeafDropdownMenu, DropdownMenuContent as LeafDropdownMenuContent, DropdownMenuItem as LeafDropdownMenuItem, DropdownMenuTrigger as LeafDropdownMenuTrigger } from "@violet/ui/dropdown-menu";
 import { Popover as LeafPopover, PopoverContent as LeafPopoverContent, PopoverTrigger as LeafPopoverTrigger } from "@violet/ui/popover";
-import { MorphingPopover, MorphingPopoverContent, type MorphingPopoverContentProps, type MorphingPopoverProps, MorphingPopoverTrigger } from "@violet/ui";
-import { MorphingPopover as LeafMorphingPopover, MorphingPopoverContent as LeafMorphingPopoverContent, MorphingPopoverTrigger as LeafMorphingPopoverTrigger } from "@violet/ui/morphing-popover";
+import { MorphingPopover, MorphingPopoverAnchor, type MorphingPopoverAnchorProps, MorphingPopoverContent, type MorphingPopoverContentProps, type MorphingPopoverProps, MorphingPopoverTrigger } from "@violet/ui";
+import { MorphingPopover as LeafMorphingPopover, MorphingPopoverAnchor as LeafMorphingPopoverAnchor, MorphingPopoverContent as LeafMorphingPopoverContent, MorphingPopoverTrigger as LeafMorphingPopoverTrigger } from "@violet/ui/morphing-popover";
 import { Toaster as LeafToaster } from "@violet/ui/sonner";
 import { type CommandItem, CommandList, ConfirmDialog, Dialog, DialogBody, DialogClose, DialogContent, type DialogContentProps, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, Drawer, DrawerBody, DrawerContent, DrawerHeader, DrawerTitle, Modal, PromptDialog, Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@violet/ui";
 import { Tooltip as LeafTooltip, TooltipContent as LeafTooltipContent, TooltipTrigger as LeafTooltipTrigger } from "@violet/ui/tooltip";
@@ -582,13 +582,27 @@ export const invalidHoverDelay = <HoverCard openDelay="500" />;
 const morphRootProps: MorphingPopoverProps = { defaultOpen: false, onOpenChange: (open: boolean) => void open, className: "pill" };
 const morphContentRef = createRef<HTMLDivElement>();
 const morphContentProps: MorphingPopoverContentProps = { role: "listbox", "aria-label": "回应", radius: 20, outset: 6, ghost: <span>＋</span>, ghostClassName: "pointer-events-none" };
+const morphAnchorProps: MorphingPopoverAnchorProps = { asChild: true, ref: createRef<HTMLDivElement>() };
 export const morphingExamples = <>
 	<MorphingPopover {...morphRootProps}>
 		<MorphingPopoverTrigger asChild><button type="button">添加回应</button></MorphingPopoverTrigger>
 		<MorphingPopoverContent ref={morphContentRef} {...morphContentProps}>表情</MorphingPopoverContent>
 	</MorphingPopover>
+	<MorphingPopover>
+		<MorphingPopoverAnchor {...morphAnchorProps}>
+			<div>
+				<MorphingPopoverTrigger>外观</MorphingPopoverTrigger>
+				<MorphingPopoverTrigger>通知</MorphingPopoverTrigger>
+				<MorphingPopoverTrigger>账户</MorphingPopoverTrigger>
+			</div>
+		</MorphingPopoverAnchor>
+		<MorphingPopoverContent aria-label="胶囊面板">内容</MorphingPopoverContent>
+	</MorphingPopover>
 	<LeafMorphingPopover open onOpenChange={() => {}}>
-		<LeafMorphingPopoverTrigger>状态</LeafMorphingPopoverTrigger>
+		<LeafMorphingPopoverAnchor>
+			<LeafMorphingPopoverTrigger>状态</LeafMorphingPopoverTrigger>
+			<LeafMorphingPopoverTrigger>账户</LeafMorphingPopoverTrigger>
+		</LeafMorphingPopoverAnchor>
 		<LeafMorphingPopoverContent>内容</LeafMorphingPopoverContent>
 	</LeafMorphingPopover>
 </>;
