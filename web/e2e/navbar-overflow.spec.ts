@@ -3,6 +3,12 @@ import { loadClient } from "./client";
 import { openClientPage } from "./support";
 
 async function expectContainedIcons(entry: Locator, reference: Locator) {
+	// 箭头旋转时包围盒会变宽，尺寸验收只测过渡结束后的几何。
+	await entry.evaluate(async (node) => {
+		await Promise.all(
+			node.getAnimations({ subtree: true }).map((animation) => animation.finished),
+		);
+	});
 	const geometry = await entry.evaluate((node) => {
 		const entryBox = node.getBoundingClientRect();
 		return Array.from(node.querySelectorAll("svg"), (icon) => {
@@ -37,7 +43,7 @@ async function expectContainedIcons(entry: Locator, reference: Locator) {
 
 for (const authenticated of [false, true]) {
 	for (const width of [1024, 1440]) {
-		test(`导航留白一致且长名称保留两字：${width}px ${authenticated ? "登录" : "游客"}`, async ({
+		test(`分组切换不改变占位且长名称保留两字：${width}px ${authenticated ? "登录" : "游客"}`, async ({
 			page,
 			context,
 		}) => {
@@ -54,15 +60,31 @@ for (const authenticated of [false, true]) {
 			const reference = nav.getByRole("link", { name: "博客", exact: true });
 			const more = nav.getByRole("button", { name: "更多", exact: true });
 			await expectContainedIcons(more, reference);
+			const groupBounds = await more.boundingBox();
+			expect(groupBounds).not.toBeNull();
 			const shortLabel = more.locator('[data-slot="navbar-label"]');
 			await expect
 				.poll(() => shortLabel.evaluate((node) => node.scrollWidth <= node.clientWidth))
 				.toBe(true);
-			await openClientPage(page, "/editor-guide");
+			await more.hover();
+			await page
+				.getByRole("group", { name: "更多二级菜单" })
+				.getByRole("link", { name: /^项目/ })
+				.click();
+			const project = nav.getByRole("button", { name: "项目", exact: true });
+			await expect(project).toBeVisible();
+			await expectContainedIcons(project, reference);
+			await expect.poll(() => project.boundingBox()).toEqual(groupBounds);
+			await project.hover();
+			await page
+				.getByRole("group", { name: "更多二级菜单" })
+				.getByRole("link", { name: /^编辑器手册/ })
+				.click();
 			const entry = nav.locator('[data-segment-item][aria-current="page"]');
 			const label = entry.locator('[data-slot="navbar-label"]');
 			await expect(entry).toBeVisible();
 			await expect(entry).toHaveAccessibleName("编辑器手册");
+			await expect.poll(() => entry.boundingBox()).toEqual(groupBounds);
 			await expect(nav.locator("[data-segment-item]")).toHaveCount(authenticated ? 6 : 5);
 			await expectContainedIcons(entry, reference);
 			await expect(label).toHaveText("编辑…");

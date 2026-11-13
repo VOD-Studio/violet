@@ -163,7 +163,7 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 
 公共页头由 `HeaderActions` 用一个 `MorphingPopover` 编排季节、消息和账号面板，`MorphingPopoverAnchor` 测量整枚右胶囊；展开及收回期间隐藏原胶囊，结束后焦点返回实际触发按钮。未读徽标附着在铃铛右上角，铃铛区域为 `9`、`99`、`99+` 预留空间，不覆盖相邻头像。`features/notifications/hooks/use-notification-panel` 只提供消息数据与动作，后台 `NotificationBell` 仍使用 `shared/ui/message-panel/MessageCenter` 的独立 popover。
 
-中央导航保持一致的左右内边距，普通态标签最多显示两个字符；长名称显示为「编辑…」，完整名称保留在可访问名称与悬停提示中。“更多”仅为额外箭头和间距增加宽度，长名称再追加省略号的占位，不设固定双倍宽。导航标签的 TooltipProvider 由 SiteNavbar 自己提供，宿主无需补全上下文。
+中央导航保持一致的左右内边距，普通态标签最多显示两个字符；长名称显示为「编辑…」，完整名称保留在可访问名称与悬停提示中。分组入口始终预留“两字＋省略号”的标签空间及箭头间距，“更多”“项目”“编辑…”切换时按钮宽度、图标和箭头位置保持不变。导航标签的 TooltipProvider 由 SiteNavbar 自己提供，宿主无需补全上下文。
 
 `widgets/CommandPalette` 将页面路径写入 `CommandItem.keywords`：输入 `/blog/series` 仍能定位“系列”，但路径不再作为结果行尾注。可执行项的回车提示与子菜单箭头由 CommandList 统一呈现，站点不为这些入口虚构独立快捷键。
 

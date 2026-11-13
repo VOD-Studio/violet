@@ -150,8 +150,8 @@ export function SiteNavbar({
 		const shortened = characters !== null && characters.length > 2;
 		const displayLabel = shortened ? `${characters[0]}${characters[1]}…` : label;
 		const hasTrailing = item.to === undefined && !collapsed;
-		// 箭头连间距占 1.125rem，省略号占一个 0.875rem 字宽。
-		const extraSize = (hasTrailing ? 1.125 : 0) + (shortened ? 0.875 : 0);
+		// 分组固定预留箭头与间距（1.125rem）和省略号（0.875rem），避免切换子页时跳位。
+		const extraSize = (hasTrailing ? 1.125 : 0) + (hasTrailing || shortened ? 0.875 : 0);
 		return {
 			value: item.label,
 			weight: expanded ? 1 : (REST_ITEM_SIZE + extraSize) / REST_ITEM_SIZE,
@@ -159,7 +159,13 @@ export function SiteNavbar({
 			label: label ? (
 				<Tooltip truncatedOnly={!shortened}>
 					<TooltipTrigger asChild>
-						<span data-slot="navbar-label" className="block truncate">
+						<span
+							data-slot="navbar-label"
+							className={cn(
+								"block truncate",
+								!expanded && hasTrailing && "w-[3em] text-left",
+							)}
+						>
 							{displayLabel}
 						</span>
 					</TooltipTrigger>
