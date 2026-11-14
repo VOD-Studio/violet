@@ -141,6 +141,7 @@ describe("MessageBubble", () => {
 		expect(screen.getByText("雨の日")).toBeTruthy();
 		expect(screen.getByText("歌手 A / 歌手 B · 4:57")).toBeTruthy();
 		expect(screen.getByRole("group", { name: "歌曲：雨の日 - 歌手 A / 歌手 B" })).toBeTruthy();
+		expect(screen.getByText("角色")).toBeTruthy();
 	});
 
 	it("Bot 历史文本使用独立卡片，凭据状态不影响身份标识", () => {

@@ -164,6 +164,11 @@ export function MessageBubble({
 							>
 								{message.sender.display_name}
 							</button>
+							{message.sender.is_bot && (
+								<span className="rounded bg-selected px-1.5 py-0.5 text-[10px] font-medium leading-none text-selected-foreground">
+									角色
+								</span>
+							)}
 							<AppearanceBadgeStrip badgeIDs={appearance.badge_ids} />
 						</span>
 					)}
