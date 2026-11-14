@@ -15,8 +15,11 @@ export function ConversationStatusLine({
 	members,
 }: ConversationStatusLineProps) {
 	const overrides = useChatPresenceStore((state) => state.overrides);
+	// 本页已建立聊天连接，自己必然在线；成员快照可能早于服务端登记连接。
 	const isOnline = (member: ChatMember) =>
-		!member.user.is_bot && resolveOnline(overrides, member.user.id, member.online);
+		!member.user.is_bot &&
+		(member.user.id === currentUserID ||
+			resolveOnline(overrides, member.user.id, member.online));
 	const muted = members.find((member) => member.user.id === currentUserID)?.is_muted === true;
 	const parts: string[] = [];
 

@@ -114,3 +114,14 @@ it("实时事件覆盖成员读模型里的在线状态", () => {
 	act(() => useChatPresenceStore.getState().setOnline("amy", true));
 	expect(screen.getByText("2 人在线")).toBeTruthy();
 });
+
+it("当前用户自己总是在线：重连快照早于服务端登记连接时也不少算", () => {
+	render(
+		<ConversationStatusLine
+			conversation={conversation("room")}
+			currentUserID="me"
+			members={[member("me"), member("amy", { online: true })]}
+		/>,
+	);
+	expect(screen.getByText("2 人在线")).toBeTruthy();
+});

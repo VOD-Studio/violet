@@ -224,6 +224,8 @@ export const useChatStream = () => {
 					});
 					queryClient.invalidateQueries({ queryKey: chatKeys.messages(conversationID) });
 					if (payload.type === "member.changed") {
+						// 成员变动后，旧的实时覆盖可能对应已不再共处的用户，以重新拉取的成员列表为准。
+						useChatPresenceStore.getState().reset();
 						queryClient.invalidateQueries({
 							queryKey: chatKeys.members(conversationID),
 						});
