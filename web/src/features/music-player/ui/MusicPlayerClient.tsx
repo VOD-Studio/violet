@@ -45,7 +45,9 @@ const PLAYBACK_MODE_KEY = "violet:music-playback-mode";
 /** 模式与上次应用不一致时返回 true；队列里的旧权限判定随之作废，需重建。 */
 function playbackModeChanged(mode: MusicPlaybackMode): boolean {
 	try {
-		if (globalThis.localStorage.getItem(PLAYBACK_MODE_KEY) === mode) return false;
+		if (globalThis.localStorage.getItem(PLAYBACK_MODE_KEY) === mode) {
+			return false;
+		}
 		globalThis.localStorage.setItem(PLAYBACK_MODE_KEY, mode);
 		return true;
 	} catch {
@@ -72,7 +74,9 @@ function MusicPlayerSession({ playlists, mode, theme, onRetry }: MusicPlayerSess
 	useEffect(() => {
 		let active = true;
 		async function initialize() {
-			if (!active) return;
+			if (!active) {
+				return;
+			}
 			const player = getPlayer({ storageKey: "violet:music-player" });
 			playerRef.current = player;
 			player.setSource(createMusicSource(playlists, mode));
@@ -87,8 +91,16 @@ function MusicPlayerSession({ playlists, mode, theme, onRetry }: MusicPlayerSess
 			if (player.state.queue.length === 0) {
 				for (const item of playlists) {
 					const playlist = await player.loadPlaylist(item.id);
-					if (!active) return;
-					if (playlist.tracks.length === 0) continue;
+					if (!active) {
+						return;
+					}
+					// 等歌单期间页面歌曲卡可能已经开始播放，不能再用初始队列覆盖它。
+					if (player.state.queue.length > 0) {
+						break;
+					}
+					if (playlist.tracks.length === 0) {
+						continue;
+					}
 					const first = Math.max(
 						0,
 						playlist.tracks.findIndex((track) => track.playable),
@@ -101,23 +113,32 @@ function MusicPlayerSession({ playlists, mode, theme, onRetry }: MusicPlayerSess
 					);
 					break;
 				}
-				if (player.state.queue.length === 0) throw new Error("展示歌单暂无曲目");
+				if (playlists.length > 0 && player.state.queue.length === 0) {
+					throw new Error("展示歌单暂无曲目");
+				}
 			}
-			if (!active) return;
+			if (!active) {
+				return;
+			}
 			setReady(true);
 			setError(null);
 		}
 		// 跳过 StrictMode 首次 Effect 重放，避免重复装载歌单。
 		queueMicrotask(() => {
-			if (!active) return;
+			if (!active) {
+				return;
+			}
 			setLoading(true);
 			initialize()
 				.catch((reason: unknown) => {
-					if (active)
+					if (active) {
 						setError(reason instanceof Error ? reason : new Error("音乐加载失败"));
+					}
 				})
 				.finally(() => {
-					if (active) setLoading(false);
+					if (active) {
+						setLoading(false);
+					}
 				});
 		});
 		return () => {
@@ -132,20 +153,31 @@ function MusicPlayerSession({ playlists, mode, theme, onRetry }: MusicPlayerSess
 	);
 
 	useEffect(() => {
-		if (!ready) return;
+		if (!ready) {
+			return;
+		}
 		const player = playerRef.current;
-		if (!player) return;
-		let lastId: string | null = null;
+		if (!player) {
+			return;
+		}
+		let lastId = player.state.current?.id ?? null;
+		setCurrentTrackId(lastId);
 		return player.subscribe((state) => {
 			const id = state.current?.id ?? null;
-			if (id === lastId) return;
+			if (id === lastId) {
+				return;
+			}
 			lastId = id;
 			setCurrentTrackId(id);
 		});
 	}, [ready]);
 
-	if (error) return <PlayerFailure error={error} loading={loading} onRetry={onRetry} />;
-	if (!ready) return null;
+	if (error) {
+		return <PlayerFailure error={error} loading={loading} onRetry={onRetry} />;
+	}
+	if (!ready || currentTrackId === null) {
+		return null;
+	}
 	return (
 		<>
 			{playbackDetail?.trial && (
@@ -167,7 +199,7 @@ function MusicPlayerSession({ playlists, mode, theme, onRetry }: MusicPlayerSess
 	);
 }
 
-/** 从公开展示列表装配播放器；手动重试创建新的初始化会话。 */
+/** 装配站点唯一数据源；没有展示歌单时仍允许页面歌曲卡按 ID 发起播放。 */
 export default function MusicPlayerClient() {
 	const { data: playlists, error, isFetching, refetch } = usePublicMusicPlaylists();
 	const { data: playbackStatus, isError: playbackFailed } = usePublicPlaybackStatus();
@@ -176,9 +208,13 @@ export default function MusicPlayerClient() {
 	if (error && !playlists) {
 		return <PlayerFailure error={error} loading={isFetching} onRetry={() => void refetch()} />;
 	}
-	if (!playlists?.length) return null;
+	if (!playlists) {
+		return null;
+	}
 	// 模式未确认前不初始化，避免 anonymous→account 闪切重建队列；查询失败按匿名兜底。
-	if (!playbackStatus && !playbackFailed) return null;
+	if (!playbackStatus && !playbackFailed) {
+		return null;
+	}
 	const mode: MusicPlaybackMode = playbackStatus?.mode ?? "anonymous";
 	return (
 		<MusicPlayerSession
