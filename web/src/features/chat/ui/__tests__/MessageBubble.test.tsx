@@ -362,6 +362,19 @@ describe("MessageBubble 已读回执", () => {
 		};
 	}
 
+	it("时间和已读回执保留在气泡外，不混入正文", () => {
+		const { container } = renderBubble(
+			receiptMessage({ read_state: { read_count: 1, member_count: 1 } }),
+		);
+		const bubble = screen.getByText("内容").closest("[data-chat-bubble]");
+		expect(bubble).toBeTruthy();
+		expect(container.querySelector("time")?.closest("[data-chat-bubble]")).toBeNull();
+		expect(screen.getByText("已读").closest("[data-chat-bubble]")).toBeNull();
+		expect(container.querySelector("time")?.getAttribute("dateTime")).toBe(
+			"2026-08-25T08:00:00Z",
+		);
+	});
+
 	it("私聊：按对方阅读状态显示「已读/未读」", () => {
 		renderBubble(receiptMessage({ read_state: { read_count: 1, member_count: 1 } }));
 		expect(screen.getByText("已读")).toBeTruthy();

@@ -1,5 +1,15 @@
-import { cn } from "cn";
-import { useEffect, useRef } from "react";
+import {
+	Avatar,
+	Button,
+	Empty,
+	List,
+	ListItem,
+	ListItemContent,
+	ListItemDescription,
+	ListItemTitle,
+	Spinner,
+} from "@violet/ui";
+import { type MouseEvent, useEffect, useRef } from "react";
 import type { BotCommand, BotCommandCatalog, ChatUser } from "../model/types";
 
 export interface BotCommandChoice {
@@ -12,18 +22,29 @@ export const botCommandOptionId = (index: number) => `chat-bot-command-${index}`
 export const botTargetListboxId = "chat-bot-target-listbox";
 export const botTargetOptionId = (index: number) => `chat-bot-target-${index}`;
 
+/** 命令候选及目录查询状态；空目录与查询失败不会冒充可执行命令。 */
+export interface BotCommandMenuProps {
+	choices: BotCommandChoice[];
+	activeIndex: number;
+	onActiveIndexChange: (index: number) => void;
+	onSelect: (choice: BotCommandChoice) => void;
+	isLoading?: boolean;
+	isError?: boolean;
+	query?: string;
+	onRetry?: () => void;
+}
+
 export function BotCommandMenu({
 	choices,
 	activeIndex,
 	onActiveIndexChange,
 	onSelect,
-}: {
-	choices: BotCommandChoice[];
-	activeIndex: number;
-	onActiveIndexChange: (index: number) => void;
-	onSelect: (choice: BotCommandChoice) => void;
-}) {
-	const listRef = useRef<HTMLDivElement>(null);
+	isLoading = false,
+	isError = false,
+	query = "",
+	onRetry,
+}: BotCommandMenuProps) {
+	const listRef = useRef<HTMLUListElement>(null);
 	useEffect(() => {
 		listRef.current
 			?.querySelectorAll('[role="option"]')
@@ -31,63 +52,93 @@ export function BotCommandMenu({
 	}, [activeIndex]);
 
 	return (
-		<div
-			aria-label="Bot 命令"
-			className="absolute bottom-full left-0 z-30 mb-2 max-h-[min(40vh,320px)] w-full overflow-y-auto overscroll-contain rounded-xl border border-border bg-popover p-1 text-popover-foreground"
-			id={botCommandListboxId}
-			ref={listRef}
-			role="listbox"
-		>
-			{choices.map((choice, index) => {
-				const path = `/${choice.command.path.join(" ")}`;
-				const argumentsHint = choice.command.arguments
-					.map((argument) =>
-						argument.required ? `<${argument.name}>` : `[${argument.name}]`,
-					)
-					.join(" ");
-				const groupStart =
-					index === 0 || choices[index - 1].bot.bot_user_id !== choice.bot.bot_user_id;
-				return (
-					<div key={`${choice.bot.bot_user_id}:${choice.command.id}`}>
-						{groupStart && (
-							<div className="px-3 pb-1 pt-2 text-xs font-medium text-muted-foreground">
-								{choice.bot.name}
-							</div>
-						)}
-						<button
-							aria-label={`${choice.bot.name} ${path} ${argumentsHint} ${choice.command.description}`}
-							aria-selected={index === activeIndex}
-							className={cn(
-								"block w-full rounded-lg px-3 py-2 text-left",
-								index === activeIndex ? "bg-accent" : "hover:bg-accent/60",
-							)}
-							id={botCommandOptionId(index)}
-							onClick={() => onSelect(choice)}
-							onMouseEnter={() => onActiveIndexChange(index)}
-							onPointerDown={(event) => event.preventDefault()}
-							role="option"
-							type="button"
-						>
-							<span className="flex min-w-0 items-baseline gap-2">
-								<span className="min-w-0 truncate font-mono text-sm text-foreground">
-									{path}
-								</span>
-								{argumentsHint && (
-									<span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
-										{argumentsHint}
-									</span>
-								)}
-							</span>
-							<span className="block truncate text-xs text-muted-foreground">
-								{choice.command.description}
-								{choice.command.scope === "global" ? " · 全局" : ""}
-							</span>
-						</button>
+		<div className="space-y-2" id={choices.length === 0 ? botCommandListboxId : undefined}>
+			<p className="text-xs text-muted-foreground">召唤角色</p>
+			{choices.length === 0 ? (
+				isLoading ? (
+					<div className="flex items-center gap-2" role="status">
+						<Spinner aria-hidden="true" />
+						<span>正在加载角色命令…</span>
 					</div>
-				);
-			})}
+				) : isError ? (
+					<Empty
+						role="alert"
+						title="角色命令加载失败"
+						variant="plain"
+						action={
+							onRetry && (
+								<Button
+									onClick={onRetry}
+									onMouseDown={(event) => event.preventDefault()}
+									size="sm"
+								>
+									重新加载
+								</Button>
+							)
+						}
+					/>
+				) : (
+					<Empty
+						title={query.trim() ? "没有匹配的角色命令" : "本会话暂无可用的角色命令"}
+						variant="plain"
+					/>
+				)
+			) : (
+				<List
+					aria-label="Bot 命令"
+					density="compact"
+					id={botCommandListboxId}
+					ref={listRef}
+					role="listbox"
+				>
+					{choices.map((choice, index) => {
+						const path = `/${choice.command.path.join(" ")}`;
+						const argumentsHint = choice.command.arguments
+							.map((argument) =>
+								argument.required ? `<${argument.name}>` : `[${argument.name}]`,
+							)
+							.join(" ");
+						return (
+							<ListItem
+								aria-current={index === activeIndex ? true : undefined}
+								aria-label={`${choice.bot.name} ${path} ${argumentsHint} ${choice.command.description}`}
+								aria-selected={index === activeIndex}
+								id={botCommandOptionId(index)}
+								key={`${choice.bot.bot_user_id}:${choice.command.id}`}
+								onClick={() => onSelect(choice)}
+								onMouseDown={(event: MouseEvent<HTMLElement>) =>
+									event.preventDefault()
+								}
+								onMouseMove={() => onActiveIndexChange(index)}
+								role="option"
+								tabIndex={-1}
+							>
+								<Avatar alt="" name={choice.bot.name} size={24} />
+								<ListItemContent>
+									<ListItemTitle mono>
+										{path}
+										{argumentsHint && ` ${argumentsHint}`}
+									</ListItemTitle>
+									<ListItemDescription>
+										{choice.bot.name} · {choice.command.description}
+										{choice.command.scope === "global" ? " · 全局" : ""}
+									</ListItemDescription>
+								</ListItemContent>
+							</ListItem>
+						);
+					})}
+				</List>
+			)}
 		</div>
 	);
+}
+
+/** 多角色群聊中未显式寻址的命令目标。 */
+export interface BotTargetMenuProps {
+	bots: ChatUser[];
+	activeIndex: number;
+	onActiveIndexChange: (index: number) => void;
+	onSelect: (bot: ChatUser) => void;
 }
 
 export function BotTargetMenu({
@@ -95,38 +146,48 @@ export function BotTargetMenu({
 	activeIndex,
 	onActiveIndexChange,
 	onSelect,
-}: {
-	bots: ChatUser[];
-	activeIndex: number;
-	onActiveIndexChange: (index: number) => void;
-	onSelect: (bot: ChatUser) => void;
-}) {
+}: BotTargetMenuProps) {
+	const listRef = useRef<HTMLUListElement>(null);
+	useEffect(() => {
+		listRef.current
+			?.querySelectorAll('[role="option"]')
+			[activeIndex]?.scrollIntoView({ block: "nearest" });
+	}, [activeIndex]);
 	return (
-		<div
-			aria-label="选择命令目标"
-			className="absolute bottom-full left-0 z-30 mb-2 w-full rounded-xl border border-border bg-popover p-1 text-popover-foreground"
-			id={botTargetListboxId}
-			role="listbox"
-		>
-			<div className="px-3 py-2 text-xs text-muted-foreground">选择要执行命令的 Bot</div>
-			{bots.map((bot, index) => (
-				<button
-					aria-selected={index === activeIndex}
-					className={cn(
-						"flex w-full items-center rounded-lg px-3 py-2 text-left text-sm",
-						index === activeIndex ? "bg-accent" : "hover:bg-accent/60",
-					)}
-					id={botTargetOptionId(index)}
-					key={bot.id}
-					onClick={() => onSelect(bot)}
-					onMouseEnter={() => onActiveIndexChange(index)}
-					onPointerDown={(event) => event.preventDefault()}
-					role="option"
-					type="button"
-				>
-					{bot.display_name || bot.username}
-				</button>
-			))}
+		<div className="space-y-2">
+			<p className="text-xs text-muted-foreground">选择执行命令的角色</p>
+			<List
+				aria-label="选择命令目标"
+				density="compact"
+				id={botTargetListboxId}
+				ref={listRef}
+				role="listbox"
+			>
+				{bots.map((bot, index) => (
+					<ListItem
+						aria-current={index === activeIndex ? true : undefined}
+						aria-selected={index === activeIndex}
+						id={botTargetOptionId(index)}
+						key={bot.id}
+						onClick={() => onSelect(bot)}
+						onMouseDown={(event: MouseEvent<HTMLElement>) => event.preventDefault()}
+						onMouseMove={() => onActiveIndexChange(index)}
+						role="option"
+						tabIndex={-1}
+					>
+						<Avatar
+							alt=""
+							name={bot.display_name || bot.username}
+							size={24}
+							src={bot.avatar_url}
+						/>
+						<ListItemContent>
+							<ListItemTitle>{bot.display_name || bot.username}</ListItemTitle>
+							<ListItemDescription>@{bot.username}</ListItemDescription>
+						</ListItemContent>
+					</ListItem>
+				))}
+			</List>
 		</div>
 	);
 }

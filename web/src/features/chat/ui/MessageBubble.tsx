@@ -1,45 +1,38 @@
-/**
- * 消息气泡与 Bot 回复卡片，承载操作条和表情反应。
- */
-import { stripPlaceholdersForPreview } from "@shared/ui/rich-text-input/use-rich-text-input";
-import { iconProps, Spinner } from "@violet/ui";
+import { iconProps, Tag } from "@violet/ui";
 import { cn } from "cn";
-import { Check, Copy, Pencil, Reply, Trash2, TriangleAlert } from "lucide-react";
+import { TriangleAlert } from "lucide-react";
 import { motion } from "motion/react";
-import type { PointerEvent } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import { type PointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useChatAppearance } from "../hooks/useChatAppearance";
 import { imageBubbleContent } from "../lib/conversation";
 import type { OutgoingMessage } from "../model/chat-outbox";
-import type {
-	ChatMedia,
-	ChatMessage,
-	ChatMessageReference,
-	ChatUser,
-	ConversationKind,
-} from "../model/types";
+import type { ChatMedia, ChatMessage, ChatUser, ConversationKind } from "../model/types";
 import { AppearanceBadgeStrip } from "./appearance/AppearanceBadgeStrip";
 import { BotReplyCard } from "./BotReplyCard";
 import { BubbleShell, BubbleTimestamp } from "./bubble-shell";
 import { ChatMessageContent } from "./ChatMessageContent";
+import { MessageActions } from "./MessageActions";
+import { MessageDeliveryStatus } from "./MessageDeliveryStatus";
 import { MessageEditComposer } from "./MessageEditComposer";
 import { MessageReactions } from "./MessageReactions";
 import { MessageReadReceipt } from "./MessageReadReceipt";
+import { MessageReplyPreview } from "./MessageReplyPreview";
 import { MusicShareCard } from "./MusicShareCard";
 import { TweetShareCard } from "./TweetShareCard";
 
-interface MessageBubbleProps {
+/** 消息正文与气泡外元数据共用一条消息状态，时间不进入皮肤容器。 */
+export interface MessageBubbleProps {
 	message: ChatMessage;
 	sending?: Pick<OutgoingMessage, "status" | "progress" | "error">;
 	onRetry?: () => void;
 	currentUserID: string;
-	/** 会话形态：决定自己消息已读回执的展示形态。 */
+	/** 会话形态决定已读回执是否提供成员名单。 */
 	conversationKind: ConversationKind;
 	highlighted: boolean;
 	emoteMap: Record<string, { url: string; gif_url?: string; size?: number }>;
 	showSender: boolean;
 	showSenderName: boolean;
+	lastInGroup?: boolean;
 	messageRef: (node: HTMLElement | null) => void;
 	onDelete?: () => void;
 	onImage: (media: ChatMedia) => void;
@@ -50,6 +43,7 @@ interface MessageBubbleProps {
 	animateIn: boolean;
 }
 
+/** 气泡承载正文和引用；时间、回执及回应始终位于气泡外。 */
 export function MessageBubble({
 	animateIn,
 	message,
@@ -61,6 +55,7 @@ export function MessageBubble({
 	highlighted,
 	showSender,
 	showSenderName,
+	lastInGroup = true,
 	messageRef,
 	onDelete,
 	onImage,
@@ -76,50 +71,72 @@ export function MessageBubble({
 		() => (message.custom_emote ? { ...emoteMap, ...message.custom_emote } : emoteMap),
 		[emoteMap, message.custom_emote],
 	);
-	const [copied, setCopied] = useState(false);
 	const [touchActionsVisible, setTouchActionsVisible] = useState(false);
 	const longPressTimer = useRef<number | null>(null);
 	const clearLongPress = () => {
-		if (longPressTimer.current === null) return;
+		if (longPressTimer.current === null) {
+			return;
+		}
 		window.clearTimeout(longPressTimer.current);
 		longPressTimer.current = null;
 	};
 	const startLongPress = (event: PointerEvent) => {
-		if (event.pointerType !== "touch") return;
+		if (event.pointerType !== "touch") {
+			return;
+		}
 		clearLongPress();
 		longPressTimer.current = window.setTimeout(() => {
 			setTouchActionsVisible(true);
 			longPressTimer.current = null;
 		}, 500);
 	};
-
-	useEffect(() => {
-		return () => {
-			if (longPressTimer.current !== null) window.clearTimeout(longPressTimer.current);
-		};
-	}, []);
-
-	const copyText = async () => {
-		if (!message.content) return;
-		try {
-			await navigator.clipboard.writeText(message.content);
-			setCopied(true);
-			toast.success("已复制到剪贴板");
-			setTimeout(() => setCopied(false), 1500);
-		} catch {
-			toast.error("复制失败");
-		}
-	};
+	useEffect(() => () => window.clearTimeout(longPressTimer.current ?? undefined), []);
 
 	if (message.type === "system") {
 		return (
-			<div className="my-2 flex justify-center">
-				<p className="rounded-full bg-secondary px-3.5 py-1.5 text-center text-xs text-muted-foreground">
+			<div ref={messageRef} className="my-2 flex justify-center">
+				<p className="px-3 py-1 text-center text-xs text-muted-foreground">
 					{message.content}
 				</p>
 			</div>
 		);
 	}
+
+	const sender =
+		showSender && !mine && showSenderName && !isBotReply ? (
+			<div className="mb-0.5 flex items-center gap-1.5 text-[13px]">
+				<button
+					aria-label={`提及 ${message.sender.display_name}`}
+					className="rounded text-left font-semibold text-selected-foreground hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+					disabled={!onMention}
+					onClick={() => onMention?.(message.sender)}
+					type="button"
+				>
+					{message.sender.display_name}
+				</button>
+				{message.sender.is_bot && (
+					<Tag size="sm" tone="accent">
+						角色
+					</Tag>
+				)}
+				<AppearanceBadgeStrip badgeIDs={appearance.badge_ids} />
+			</div>
+		) : undefined;
+	const reply = message.reply_to ? (
+		<MessageReplyPreview reference={message.reply_to} onClick={onReplyTo} />
+	) : undefined;
+	const content = (
+		<ChatMessageContent
+			content={
+				message.type === "image" ? imageBubbleContent(message) : (message.content ?? "")
+			}
+			emote={mergedEmote}
+			mentions={message.mentions}
+			viewerID={currentUserID}
+			inlineMedia={message.type === "image" ? message.media : undefined}
+			onImage={onImage}
+		/>
+	);
 
 	return (
 		<motion.article
@@ -134,54 +151,22 @@ export function MessageBubble({
 			onPointerUp={clearLongPress}
 			className={cn(
 				"group relative col-start-1 row-span-2 grid min-w-0 grid-rows-subgrid transition-shadow duration-300",
-				!showSender && "mt-1.5",
+				!showSender && "mt-0.5",
 				highlighted && "rounded-lg ring-2 ring-ring ring-offset-2 ring-offset-background",
 			)}
 		>
-			<div
-				className={cn(
-					"row-start-1 flex min-w-0 items-end gap-2.5",
-					mine && "flex-row-reverse",
-				)}
-			>
-				<div className="size-10 shrink-0" />
+			<div className={cn("row-start-1 flex min-w-0 items-end gap-2", mine && "justify-end")}>
+				{!mine && <div className="size-9 shrink-0" />}
 				<div
 					className={cn(
-						isBotReply
-							? "relative flex min-w-0 w-fit max-w-[min(82%,45rem)] flex-col"
-							: "relative flex min-w-0 max-w-[min(70%,36rem)] flex-col",
-						mine ? "items-end text-right" : "items-start",
+						"relative flex min-w-0 flex-col",
+						mine ? "max-w-[70%] items-end" : "max-w-[78%] items-start",
 					)}
 				>
-					{showSender && !mine && showSenderName && !isBotReply && (
-						<span className="mb-0.5 flex items-center gap-1 self-start text-xs">
-							<button
-								aria-label={`提及 ${message.sender.display_name}`}
-								className="rounded px-0.5 text-left font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
-								disabled={!onMention}
-								onClick={() => onMention?.(message.sender)}
-								type="button"
-							>
-								{message.sender.display_name}
-							</button>
-							{message.sender.is_bot && (
-								<span className="rounded bg-selected px-1.5 py-0.5 text-[10px] font-medium leading-none text-selected-foreground">
-									角色
-								</span>
-							)}
-							<AppearanceBadgeStrip badgeIDs={appearance.badge_ids} />
-						</span>
-					)}
-
-					{/* max-w-full：mine 侧 items-end 让子项走 shrink-to-fit，代码块这类不可收缩内容
-				    的 min-content 会顶穿列的 max-w，须逐层夹住（气泡自身同理，见 BubbleShell）。 */}
 					<div
 						data-chat-message-body
 						className={cn("relative max-w-full", isBotReply && "w-full min-w-0")}
 					>
-						{message.reply_to && !isBotReply && (
-							<ReplyPreview reference={message.reply_to} onClick={onReplyTo} />
-						)}
 						{editing && !message.is_deleted ? (
 							<MessageEditComposer
 								conversationKind={conversationKind}
@@ -202,133 +187,50 @@ export function MessageBubble({
 								viewerID={currentUserID}
 								emote={mergedEmote}
 								onMention={onMention}
-								replyPreview={
-									message.reply_to ? (
-										<ReplyPreview
-											reference={message.reply_to}
-											onClick={onReplyTo}
-										/>
-									) : undefined
-								}
+								replyPreview={reply}
 							/>
-						) : message.type === "image" && message.media?.length ? (
-							<BubbleShell mine={mine} themeId={appearance.bubble_theme_id}>
-								<ChatMessageContent
-									content={imageBubbleContent(message)}
-									emote={mergedEmote}
-									mentions={message.mentions}
-									viewerID={currentUserID}
-									inlineMedia={message.media}
-									onImage={onImage}
-								/>
-							</BubbleShell>
-						) : message.type === "music_share" && message.music_share ? (
-							<BubbleShell mine={mine} themeId={appearance.bubble_theme_id}>
-								<div className="flex min-w-0 max-w-full flex-col gap-2">
-									{message.content && (
-										<ChatMessageContent
-											content={message.content}
-											emote={mergedEmote}
-											mentions={message.mentions}
-											viewerID={currentUserID}
-										/>
-									)}
-									<MusicShareCard song={message.music_share} />
-								</div>
-							</BubbleShell>
-						) : message.type === "tweet_share" ? (
-							<div className="flex flex-col gap-1.5">
-								{message.content && (
-									<BubbleShell mine={mine} themeId={appearance.bubble_theme_id}>
-										<ChatMessageContent
-											content={message.content}
-											emote={mergedEmote}
-											mentions={message.mentions}
-											viewerID={currentUserID}
-										/>
-									</BubbleShell>
-								)}
-								<TweetShareCard
-									tweet={
-										message.shared_tweet ?? { id: message.id, is_deleted: true }
-									}
-								/>
-							</div>
 						) : (
-							<BubbleShell mine={mine} themeId={appearance.bubble_theme_id}>
-								<ChatMessageContent
-									content={message.content ?? ""}
-									emote={mergedEmote}
-									mentions={message.mentions}
-									viewerID={currentUserID}
-								/>
-							</BubbleShell>
-						)}
-
-						{/* Hover 浮动微操作条与时间戳 */}
-						{!editing && (
-							<div
-								className={cn(
-									"absolute z-10 flex items-center gap-1.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100 pointer-events-none max-md:bottom-full max-md:mb-1 md:top-1/2 md:-translate-y-1/2",
-									touchActionsVisible && "opacity-100",
-									mine
-										? "max-md:right-0 md:right-full md:mr-1.5 flex-row"
-										: "max-md:left-0 md:left-full md:ml-1.5 flex-row-reverse",
-								)}
+							<BubbleShell
+								mine={mine}
+								themeId={appearance.bubble_theme_id}
+								lastInGroup={lastInGroup}
+								header={sender}
 							>
-								{!sending && !message.is_deleted && (
-									<div className="pointer-events-auto flex items-center gap-0.5 rounded-full border border-border bg-card p-1 shadow-soft">
-										{mine && (
-											<button
-												aria-label="编辑消息"
-												className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-												onClick={() => setEditing(true)}
-												type="button"
-											>
-												<Pencil {...iconProps(14)} />
-											</button>
-										)}
-										{onReply && (
-											<button
-												aria-label="回复消息"
-												className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-												onClick={onReply}
-												type="button"
-											>
-												<Reply {...iconProps(14)} />
-											</button>
-										)}
-										{message.type === "text" && (
-											<button
-												aria-label="复制消息"
-												className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-												onClick={() => void copyText()}
-												type="button"
-											>
-												{copied ? (
-													<Check {...iconProps(14, "text-primary")} />
-												) : (
-													<Copy {...iconProps(14)} />
-												)}
-											</button>
-										)}
-										{onDelete && (
-											<button
-												aria-label="删除违规消息"
-												className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-destructive/15 hover:text-destructive"
-												onClick={onDelete}
-												type="button"
-											>
-												<Trash2 {...iconProps(14)} />
-											</button>
-										)}
+								{reply}
+								{content}
+								{message.type === "music_share" && message.music_share && (
+									<div className={cn(message.content && "mt-2")}>
+										<MusicShareCard song={message.music_share} />
 									</div>
 								)}
-								<BubbleTimestamp
-									forceVisible={touchActionsVisible}
-									time={message.created_at}
-									editedAt={isBotReply ? undefined : message.edited_at}
-									className="pointer-events-auto shrink-0 select-none text-center"
+								{message.type === "tweet_share" && (
+									<div className={cn(message.content && "mt-2")}>
+										<TweetShareCard
+											tweet={
+												message.shared_tweet ?? {
+													id: message.id,
+													is_deleted: true,
+												}
+											}
+										/>
+									</div>
+								)}
+							</BubbleShell>
+						)}
+						{!editing && !sending && !message.is_deleted && (
+							<div
+								className={cn(
+									"pointer-events-none absolute bottom-full z-10 mb-1 opacity-0 transition-opacity duration-150 group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100",
+									touchActionsVisible && "pointer-events-auto opacity-100",
+									mine ? "right-0" : "left-0",
+								)}
+							>
+								<MessageActions
+									content={message.content}
+									canCopy={message.type === "text"}
+									onEdit={mine ? () => setEditing(true) : undefined}
+									onReply={onReply}
+									onDelete={onDelete}
 								/>
 							</div>
 						)}
@@ -337,115 +239,47 @@ export function MessageBubble({
 			</div>
 			<div
 				className={cn(
-					isBotReply
-						? "row-start-2 flex min-w-0 w-full max-w-[min(82%,45rem)] flex-col"
-						: "row-start-2 flex max-w-[min(70%,36rem)] flex-col",
-					mine ? "mr-12.5 items-end justify-self-end text-right" : "ml-12.5 items-start",
+					"relative row-start-2 flex min-w-0 flex-col",
+					mine
+						? "max-w-[70%] items-end justify-self-end"
+						: "ml-11 max-w-[78%] items-start",
 				)}
 			>
-				<MessageReactions
-					conversationId={message.conversation_id}
-					messageId={message.id}
-					currentUserId={currentUserID}
-					disabled={Boolean(sending) || message.is_deleted}
-					deleted={message.is_deleted}
-					reactions={message.reactions ?? []}
-					mine={mine}
-				/>
-				{(sending || (mine && !message.is_deleted)) && (
-					<div className="flex min-h-4 max-w-full items-center">
-						{sending && (
-							<div
-								className="flex max-w-full items-center gap-1 px-1 text-[11px] leading-4 text-muted-foreground"
-								role="status"
-								aria-live="polite"
-							>
-								{sending.status === "failed" ? (
-									<>
-										<TriangleAlert
-											{...iconProps(14, "shrink-0 text-destructive")}
-										/>
-										<span className="wrap-anywhere text-destructive">
-											{sending.error}
-										</span>
-										<button
-											type="button"
-											className="shrink-0 rounded text-primary underline focus-visible:outline-2 focus-visible:outline-ring"
-											onClick={onRetry}
-										>
-											重试
-										</button>
-									</>
-								) : (
-									<>
-										<Spinner size={16} aria-hidden="true" />
-										<span>
-											{sending.status === "uploading"
-												? `图片上传中 ${sending.progress}%`
-												: "发送中"}
-										</span>
-									</>
-								)}
-							</div>
-						)}
-						{mine && !sending && !message.is_deleted && (
-							<MessageReadReceipt
-								conversationKind={conversationKind}
-								message={message}
-								onMention={onMention}
-							/>
-						)}
-					</div>
-				)}
+				<div className="flex min-h-4 max-w-full flex-wrap items-center gap-1 pt-0.5">
+					{!editing && (
+						<BubbleTimestamp
+							forceVisible={touchActionsVisible}
+							time={message.created_at}
+							editedAt={isBotReply ? undefined : message.edited_at}
+						/>
+					)}
+					{mine && !sending && !message.is_deleted && (
+						<MessageReadReceipt
+							conversationKind={conversationKind}
+							message={message}
+							onMention={onMention}
+						/>
+					)}
+					{sending && <MessageDeliveryStatus sending={sending} onRetry={onRetry} />}
+				</div>
+				<div
+					className={cn(
+						!message.reactions?.length &&
+							"absolute bottom-0 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100",
+						!message.reactions?.length && (mine ? "right-full mr-2" : "left-full ml-2"),
+					)}
+				>
+					<MessageReactions
+						conversationId={message.conversation_id}
+						messageId={message.id}
+						currentUserId={currentUserID}
+						disabled={Boolean(sending) || message.is_deleted}
+						deleted={message.is_deleted}
+						reactions={message.reactions ?? []}
+						mine={mine}
+					/>
+				</div>
 			</div>
 		</motion.article>
-	);
-}
-function ReplyPreview({
-	reference,
-	onClick,
-}: {
-	reference: ChatMessageReference;
-	onClick?: () => void;
-}) {
-	const content = reference.is_deleted
-		? "消息已删除"
-		: reference.type === "image"
-			? stripPlaceholdersForPreview(reference.content ?? "").trim() || "图片消息"
-			: reference.type === "tweet_share"
-				? stripPlaceholdersForPreview(reference.content ?? "").trim() || "分享了一条推文"
-				: reference.type === "music_share"
-					? "分享了一首歌曲"
-					: stripPlaceholdersForPreview(reference.content ?? "").trim() || "文本消息";
-	const className =
-		"flex max-w-60 items-center gap-2 border-s-2 border-primary/60 bg-secondary px-2.5 py-1.5 text-left text-xs text-muted-foreground transition hover:bg-secondary/80";
-	const body = (
-		<>
-			<div className="min-w-0 flex-1">
-				<p className="truncate font-semibold text-foreground/80">
-					{reference.sender.display_name}
-				</p>
-				<p className="truncate">{content}</p>
-			</div>
-			{reference.type === "image" && reference.media && !reference.is_deleted && (
-				<img
-					alt="引用的聊天图片"
-					className="size-10 shrink-0 rounded object-cover"
-					src={reference.media.thumbnail ?? reference.media.url}
-				/>
-			)}
-		</>
-	);
-	if (!onClick || reference.is_deleted)
-		return <div className={cn(className, "mb-1 rounded-lg")}>{body}</div>;
-	return (
-		<button
-			aria-label={`跳转到${reference.sender.display_name}的引用消息`}
-			className={cn(className, "mb-1 rounded-lg hover:text-foreground")}
-			onClick={onClick}
-			type="button"
-		>
-			{body}
-		</button>
 	);
 }

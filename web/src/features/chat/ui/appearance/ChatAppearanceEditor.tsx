@@ -1,80 +1,42 @@
-import { Button } from "@violet/ui";
-
-import { Award, CircleUserRound, Gem, MessageSquare } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
+import { Button, DialogBody, DialogFooter } from "@violet/ui";
 import { useState } from "react";
 import { fetchOwnAppearance } from "../../api/appearance";
-import { useOwnChatBadges, useSaveChatAppearance } from "../../api/appearance-queries";
+import { useSaveChatAppearance } from "../../api/appearance-queries";
 import { appearanceErrorMessage, sameAppearance } from "../../lib/appearance";
 import type { ChatAppearanceState } from "../../model/appearance";
-import {
-	AVATAR_CHARMS,
-	AVATAR_FRAMES,
-	BUBBLE_THEMES,
-	EMPTY_APPEARANCE,
-} from "../../model/appearance-catalog";
+import { useChatBackgroundStore } from "../../model/appearance-background";
+import { EMPTY_APPEARANCE } from "../../model/appearance-catalog";
 import type { ChatUser } from "../../model/types";
-import type { OptionVariant } from "./AppearanceOptionGrid";
-import { AppearanceOptionGrid } from "./AppearanceOptionGrid";
-import { BadgeEquipGrid } from "./BadgeEquipGrid";
+import { AppearanceBasics } from "./AppearanceBasics";
+import { AppearanceDecorations } from "./AppearanceDecorations";
 import styles from "./ChatAppearanceEditor.module.css";
 import { ChatAppearancePreview } from "./ChatAppearancePreview";
 
-const CATEGORIES = [
-	{
-		id: "frames",
-		label: "头像框",
-		icon: CircleUserRound,
-		variant: "frame" as OptionVariant,
-		field: "avatar_frame_id",
-		options: AVATAR_FRAMES,
-	},
-	{
-		id: "charms",
-		label: "挂件",
-		icon: Gem,
-		variant: "charm" as OptionVariant,
-		field: "avatar_charm_id",
-		options: AVATAR_CHARMS,
-	},
-	{
-		id: "bubbles",
-		label: "气泡",
-		icon: MessageSquare,
-		variant: "bubble" as OptionVariant,
-		field: "bubble_theme_id",
-		options: BUBBLE_THEMES,
-	},
-	{
-		id: "badges",
-		label: "徽章",
-		icon: Award,
-	},
-] as const;
-
-type CategoryID = (typeof CATEGORIES)[number]["id"];
-
+/** 每次打开使用已保存快照初始化;后台轮询不替换正在编辑的草稿。 */
 export interface ChatAppearanceEditorProps {
-	/** 草稿的起点:服务端已加载的快照。 */
 	initial: ChatAppearanceState;
-	/** 登录用户:限定变更范围,并用真实头像预览。 */
 	user: ChatUser;
-	/** 仅在保存成功或显式取消后调用。 */
 	onClose: () => void;
+	onBusyChange: (busy: boolean) => void;
 }
 
-/** 后台轮询绝不替换草稿;冲突须显式重载才更新。 */
-export function ChatAppearanceEditor({ initial, user, onClose }: ChatAppearanceEditorProps) {
+export function ChatAppearanceEditor({
+	initial,
+	user,
+	onClose,
+	onBusyChange,
+}: ChatAppearanceEditorProps) {
 	const [base, setBase] = useState(initial);
 	const [draft, setDraft] = useState(initial);
-	const [category, setCategory] = useState<CategoryID>("bubbles");
+	const savedBackground = useChatBackgroundStore(
+		(state) => state.backgrounds[user.id] ?? "paper",
+	);
+	const setBackground = useChatBackgroundStore((state) => state.setBackground);
+	const [background, setDraftBackground] = useState(savedBackground);
 	const [error, setError] = useState("");
-	const [reloading, setReloading] = useState(false);
+	const [busy, setBusy] = useState(false);
 	const save = useSaveChatAppearance(user.id);
-	const ownedBadges = useOwnChatBadges(user.id, true);
-	const ownedIDs = ownedBadges.data?.map((grant) => grant.badge_id);
-	const busy = save.isPending || reloading;
-	const changed = !sameAppearance(base, draft);
+	const changed = !sameAppearance(base, draft) || background !== savedBackground;
 	const setField = (
 		key: "avatar_frame_id" | "avatar_charm_id" | "bubble_theme_id",
 		value: string,
@@ -86,8 +48,12 @@ export function ChatAppearanceEditor({ initial, user, onClose }: ChatAppearanceE
 		setDraft((old) => ({ ...old, badge_ids: ids }));
 		setError("");
 	};
+	const setOperationBusy = (value: boolean) => {
+		setBusy(value);
+		onBusyChange(value);
+	};
 	const reload = async () => {
-		setReloading(true);
+		setOperationBusy(true);
 		setError("");
 		try {
 			const current = await fetchOwnAppearance();
@@ -96,146 +62,85 @@ export function ChatAppearanceEditor({ initial, user, onClose }: ChatAppearanceE
 		} catch (err) {
 			setError(appearanceErrorMessage(err));
 		} finally {
-			setReloading(false);
+			setOperationBusy(false);
 		}
 	};
 	const submit = async () => {
+		if (busy || !changed) {
+			return;
+		}
+		setOperationBusy(true);
 		setError("");
 		try {
-			await save.mutateAsync(draft);
+			if (!sameAppearance(base, draft)) {
+				await save.mutateAsync(draft);
+			}
+			setBackground(user.id, background);
 			onClose();
 		} catch (err) {
 			setError(appearanceErrorMessage(err));
+		} finally {
+			setOperationBusy(false);
 		}
 	};
-	const active = CATEGORIES.find((item) => item.id === category);
-	const selectedValue = active && "field" in active ? draft[active.field] : undefined;
-	// 减少动态偏好下滑块直接跳变,不播滑动
-	const reducedMotion = useReducedMotion();
 	return (
-		<div className={styles.editor}>
-			<div className={styles.body}>
-				<aside className={styles.sideRail}>
-					<ChatAppearancePreview appearance={draft} user={user} />
-					<nav className={styles.categoryNav} aria-label="外观分类">
-						{CATEGORIES.map((item) => {
-							const Icon = item.icon;
-							const selected = category === item.id;
-							return (
-								<button
-									key={item.id}
-									type="button"
-									className={styles.categoryButton}
-									aria-pressed={selected}
-									onClick={() => setCategory(item.id)}
-								>
-									{/* layoutId 共享布局:选中底色块在分类间流体滑动 */}
-									{selected && (
-										<motion.span
-											aria-hidden="true"
-											className={styles.categoryPill}
-											layoutId="chat-appearance-category-pill"
-											transition={
-												reducedMotion
-													? { duration: 0 }
-													: {
-															type: "spring",
-															stiffness: 420,
-															damping: 38,
-														}
-											}
-										/>
-									)}
-									<span className={styles.categoryContent}>
-										<Icon aria-hidden="true" className="size-5" />
-										<span>{item.label}</span>
-									</span>
-								</button>
-							);
-						})}
-					</nav>
-				</aside>
-				<section className={styles.shelf} aria-label="选择聊天外观">
-					{/* key 换分类即重挂内容,由 panelAnimate 播放一次轻淡入 */}
-					<div key={category} className={styles.panelAnimate}>
-						{/* 清空动作常驻占位:出现/消失不再把网格整体下推 */}
-						<div
-							className={styles.shelfTools}
-							data-active={category === "badges" && draft.badge_ids.length > 0}
+		<>
+			<DialogBody aria-busy={busy}>
+				<div className={styles.columns}>
+					<AppearanceBasics
+						themeId={draft.bubble_theme_id}
+						background={background}
+						disabled={busy}
+						onThemeChange={(id) => setField("bubble_theme_id", id)}
+						onBackgroundChange={setDraftBackground}
+					/>
+					<ChatAppearancePreview appearance={draft} background={background} user={user} />
+				</div>
+				<AppearanceDecorations
+					userID={user.id}
+					value={draft}
+					disabled={busy}
+					onFieldChange={setField}
+					onBadgeChange={setBadgeIDs}
+				/>
+				{error && (
+					<div role="alert" className={styles.error}>
+						<span>{error}</span>
+						<Button
+							size="sm"
+							variant="outline"
+							disabled={busy}
+							onClick={() => void reload()}
 						>
-							<button
-								type="button"
-								className={styles.clearButton}
-								disabled={busy}
-								onClick={() => setBadgeIDs([])}
-							>
-								清空佩戴
-							</button>
-						</div>
-						{active && "field" in active ? (
-							<AppearanceOptionGrid
-								label={active.label}
-								variant={active.variant}
-								options={active.options}
-								value={selectedValue ?? ""}
-								onChange={(id) => setField(active.field, id)}
-								disabled={busy}
-							/>
-						) : (
-							<BadgeEquipGrid
-								ownedIDs={ownedIDs}
-								value={draft.badge_ids}
-								onChange={setBadgeIDs}
-								disabled={busy}
-							/>
-						)}
+							重新加载
+						</Button>
 					</div>
-				</section>
-			</div>
-			{error && (
-				<div role="alert" className={styles.error}>
-					{error}
-					<Button
-						size="sm"
-						variant="outline"
-						disabled={busy}
-						onClick={() => {
-							void reload();
-						}}
-					>
-						重新加载
-					</Button>
-				</div>
-			)}
-			<footer className={styles.actions}>
-				<div className={styles.actionContent}>
-					<Button
-						variant="ghost"
-						disabled={busy}
-						onClick={() =>
-							setDraft({
-								...EMPTY_APPEARANCE,
-								badge_ids: [],
-								revision: base.revision,
-							})
-						}
-					>
-						恢复默认
-					</Button>
-					<span className={styles.actionSpacer} />
-					<Button variant="outline" disabled={busy} onClick={onClose}>
-						取消
-					</Button>
-					<Button
-						disabled={busy || !changed}
-						onClick={() => {
-							void submit();
-						}}
-					>
-						{save.isPending ? "保存中…" : "保存"}
-					</Button>
-				</div>
-			</footer>
-		</div>
+				)}
+			</DialogBody>
+			<DialogFooter>
+				<Button
+					variant="ghost"
+					className="mr-auto"
+					disabled={busy}
+					onClick={() => {
+						setDraft({ ...EMPTY_APPEARANCE, badge_ids: [], revision: base.revision });
+						setDraftBackground("paper");
+						setError("");
+					}}
+				>
+					恢复默认
+				</Button>
+				<Button variant="outline" disabled={busy} onClick={onClose}>
+					取消
+				</Button>
+				<Button
+					disabled={busy || !changed}
+					loading={save.isPending}
+					onClick={() => void submit()}
+				>
+					保存
+				</Button>
+			</DialogFooter>
+		</>
 	);
 }

@@ -71,9 +71,11 @@ it("工具调用默认收起，展开后展示名称、参数、结果、错误�
 	const button = screen.getByRole("button", { name: /工具调用/ });
 	expect(button.getAttribute("aria-expanded")).toBe("false");
 	expect(button.textContent).toContain("2");
-	expect(screen.queryByText("web_search")).toBeNull();
+	const panel = document.getElementById(button.getAttribute("aria-controls") ?? "");
+	expect(panel?.hasAttribute("inert")).toBe(true);
 	fireEvent.click(button);
 	expect(button.getAttribute("aria-expanded")).toBe("true");
+	expect(panel?.hasAttribute("inert")).toBe(false);
 	await waitFor(() => expect(screen.getByText("web_search").tagName).toBe("CODE"));
 	expect(screen.getByText('{"q":"violet"}')).toBeTruthy();
 	expect(screen.getByText("三条结果")).toBeTruthy();

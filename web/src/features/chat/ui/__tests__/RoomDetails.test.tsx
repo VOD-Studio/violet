@@ -106,6 +106,7 @@ it("已有通知权限但没有订阅时，设置按钮可以重新启用通知"
 			onClose={() => {}}
 		/>,
 	);
+	fireEvent.click(screen.getByRole("button", { name: "浏览器通知" }));
 	fireEvent.click(screen.getByRole("button", { name: "启用浏览器通知" }));
 	expect(push.enable).toHaveBeenCalledWith(false);
 	expect(push.disable).not.toHaveBeenCalled();

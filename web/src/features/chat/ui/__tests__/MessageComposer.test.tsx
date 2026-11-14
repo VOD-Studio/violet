@@ -18,7 +18,7 @@ vi.mock("../../api/queries", () => ({
 	useSendChatMessage: () => ({ mutateAsync: sendMocks.mutateAsync, isPending: false }),
 	useChatMembers: () => ({ data: activeMembers }),
 	useChatMessages: () => ({ data: messagePages ? { pages: messagePages } : undefined }),
-	useBotCommands: () => ({ data: catalogData, refetch: sendMocks.refetch }),
+	useBotCommands: () => ({ data: catalogData, refetch: sendMocks.refetch, ...commandQueryState }),
 	useEditChatMessage: () => ({ mutate: sendMocks.edit, isPending: false }),
 }));
 vi.mock("../../hooks/useChatTyping", () => ({
@@ -106,6 +106,7 @@ const extraMembers: ChatMember[] = [
 ];
 let activeMembers = members;
 let catalogData: BotCommandsResponse = { bots: [] };
+const commandQueryState = { isPending: false, isError: false };
 /** 会话面板已缓存的消息页，按分页首屏最新排列；缺省表示还没加载到消息。 */
 let messagePages: { data: ChatMessage[] }[] | undefined;
 const bot1 = {
@@ -168,6 +169,8 @@ afterEach(() => {
 	sendMocks.refetch.mockReset();
 	activeMembers = members;
 	catalogData = { bots: [] };
+	commandQueryState.isPending = false;
+	commandQueryState.isError = false;
 	messagePages = undefined;
 	previewMock.portal = false;
 	useShareTweetStore.setState({ tweet: null, pending: null });
@@ -541,6 +544,145 @@ describe("MessageComposer", () => {
 	});
 });
 
+describe("MessageComposer 画板输入栏", () => {
+	it("回复预览和输入位于同一纸面，工具栏按画板排列并使用群聊提示", () => {
+		const { container } = render(
+			<MessageComposer
+				conversationID="c_1"
+				conversationKind="room"
+				conversationTitle="大厅"
+				currentUserID={selfID}
+				onCancelReply={() => {}}
+				pendingShare={null}
+				replyTarget={textMessage("被引用的内容")}
+			/>,
+		);
+		const editor = screen.getByRole("textbox");
+		const paper = editor.closest('[data-slot="rich-text-input"]');
+		expect(paper?.contains(screen.getByRole("button", { name: "取消回复" }))).toBe(true);
+		expect(editor.dataset.placeholder).toBe("在 #大厅 说点什么，输入 / 召唤角色");
+		expect(
+			screen.getAllByRole("button").map((button) => button.getAttribute("aria-label")),
+		).toEqual(["取消回复", "添加附件", "召唤角色", "提及", "添加表情", "发送消息"]);
+		const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+		const openFilePicker = vi.spyOn(fileInput, "click");
+		fireEvent.click(screen.getByRole("button", { name: "添加附件" }));
+		expect(openFilePicker).toHaveBeenCalledOnce();
+	});
+
+	it("私信提示使用当前收件人的展示名", () => {
+		render(
+			<MessageComposer
+				conversationID="c_1"
+				conversationTitle="林间"
+				currentUserID={selfID}
+				onCancelReply={() => {}}
+				pendingShare={null}
+				replyTarget={null}
+			/>,
+		);
+		expect(screen.getByRole("textbox").dataset.placeholder).toBe("发消息给 林间");
+	});
+
+	it("角色按钮不覆盖草稿，选择真实命令后将草稿保留为参数", () => {
+		catalogData = {
+			bots: [
+				{
+					bot_user_id: bot1.id,
+					username: bot1.username,
+					name: bot1.display_name,
+					description: "",
+					revision: "v1",
+					commands: [taskCommand],
+				},
+			],
+		};
+		render(
+			<MessageComposer
+				conversationID="c_1"
+				currentUserID={selfID}
+				onCancelReply={() => {}}
+				pendingShare={null}
+				replyTarget={null}
+			/>,
+		);
+		const editor = screen.getByRole("textbox");
+		typeInto(editor, "下雨天");
+		fireEvent.click(screen.getByRole("button", { name: "召唤角色" }));
+		expect(editor.textContent).toBe("下雨天");
+		expect(sendMocks.refetch).toHaveBeenCalled();
+		fireEvent.click(screen.getByRole("option", { name: /task list/ }));
+		expect(editor.textContent).toBe("/task list\u00a0下雨天");
+		expect(sendMocks.mutateAsync).not.toHaveBeenCalled();
+		fireEvent.keyDown(editor, { key: "Enter" });
+		expect(sendMocks.mutateAsync.mock.calls[0][0].input.content).toBe("/task list 下雨天");
+	});
+
+	it("无命令也显示真实空态，Escape 只关闭菜单且保留回复和草稿", () => {
+		const cancelReply = vi.fn();
+		render(
+			<MessageComposer
+				conversationID="c_1"
+				currentUserID={selfID}
+				onCancelReply={cancelReply}
+				pendingShare={null}
+				replyTarget={textMessage("原消息")}
+			/>,
+		);
+		const editor = screen.getByRole("textbox");
+		typeInto(editor, "我的草稿");
+		fireEvent.click(screen.getByRole("button", { name: "召唤角色" }));
+		expect(screen.getByRole("status").textContent).toBe("本会话暂无可用的角色命令");
+		expect(screen.queryByRole("option")).toBeNull();
+		expect(editor.getAttribute("aria-activedescendant")).toBeNull();
+		fireEvent.keyDown(editor, { key: "Escape" });
+		expect(screen.queryByRole("status")).toBeNull();
+		expect(editor.textContent).toBe("我的草稿");
+		expect(cancelReply).not.toHaveBeenCalled();
+	});
+
+	it("命令目录区分加载和失败，失败入口会重新查询", () => {
+		commandQueryState.isPending = true;
+		const props = {
+			conversationID: "c_1",
+			currentUserID: selfID,
+			onCancelReply: vi.fn(),
+			pendingShare: null,
+			replyTarget: null,
+		};
+		const { rerender } = render(<MessageComposer {...props} />);
+		fireEvent.click(screen.getByRole("button", { name: "召唤角色" }));
+		expect(screen.getByRole("status").textContent).toBe("正在加载角色命令…");
+		commandQueryState.isPending = false;
+		commandQueryState.isError = true;
+		rerender(<MessageComposer {...props} />);
+		expect(screen.getByRole("alert").textContent).toContain("角色命令加载失败");
+		const requests = sendMocks.refetch.mock.calls.length;
+		fireEvent.click(screen.getByRole("button", { name: "重新加载" }));
+		expect(sendMocks.refetch).toHaveBeenCalledTimes(requests + 1);
+	});
+
+	it("提及按钮打开真实候选，选择后提交成员占位符并保留原草稿", () => {
+		render(
+			<MessageComposer
+				conversationID="c_1"
+				currentUserID={selfID}
+				onCancelReply={() => {}}
+				pendingShare={null}
+				replyTarget={null}
+			/>,
+		);
+		const editor = screen.getByRole("textbox");
+		typeInto(editor, "请看");
+		fireEvent.click(screen.getByRole("button", { name: "提及" }));
+		expect(screen.getByRole("option", { name: /Bob/ })).toBeTruthy();
+		expect(screen.queryByRole("option", { name: /Alice/ })).toBeNull();
+		fireEvent.click(screen.getByRole("option", { name: /Bob/ }));
+		fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
+		expect(sendMocks.mutateAsync.mock.calls[0][0].input.content).toBe(`请看 @(bob:${peerID})`);
+	});
+});
+
 describe("MessageComposer 全体提及", () => {
 	it.each([
 		"@",
@@ -876,3 +1018,63 @@ vi.mock("../TweetSharingPreview", () => ({
 		</>
 	),
 }));
+
+it("角色命令草稿中的提及按钮优先打开成员候选", () => {
+	render(
+		<MessageComposer
+			conversationID="c_1"
+			currentUserID={selfID}
+			onCancelReply={() => {}}
+			pendingShare={null}
+			replyTarget={null}
+		/>,
+	);
+	const editor = screen.getByRole("textbox");
+	typeInto(editor, "/task");
+	expect(screen.getByRole("status").textContent).toBe("没有匹配的角色命令");
+	fireEvent.click(screen.getByRole("button", { name: "提及" }));
+	expect(screen.getByRole("option", { name: /Bob/ })).toBeTruthy();
+	expect(screen.queryByText("没有匹配的角色命令")).toBeNull();
+});
+
+it("提及与命令候选都在输入壳外呈现，并保留正文、焦点和原光标", () => {
+	catalogData = {
+		bots: [
+			{
+				bot_user_id: bot1.id,
+				username: bot1.username,
+				name: bot1.display_name,
+				description: "",
+				revision: "v1",
+				commands: [taskCommand],
+			},
+		],
+	};
+	render(
+		<MessageComposer
+			conversationID="c_1"
+			currentUserID={selfID}
+			onCancelReply={() => {}}
+			pendingShare={null}
+			replyTarget={null}
+		/>,
+	);
+	const editor = screen.getByRole("textbox");
+	const shell = editor.closest('[data-slot="rich-text-input"]');
+	expect(shell).not.toBeNull();
+	for (const text of ["/ta", "@bo"]) {
+		typeInto(editor, text);
+		const list = screen.getByRole("listbox");
+		expect(shell?.contains(list)).toBe(false);
+		expect(editor.textContent).toBe(text);
+		expect(document.activeElement).toBe(editor);
+		expect(window.getSelection()?.anchorNode).toBe(editor.firstChild);
+		expect(window.getSelection()?.anchorOffset).toBe(text.length);
+		if (text.startsWith("/")) {
+			expect(screen.getByRole("option").getAttribute("aria-current")).toBe("true");
+			expect(screen.getByText("Saber · 查看任务列表")).toBeTruthy();
+		}
+		fireEvent.keyDown(editor, { key: "Escape" });
+	}
+	expect(sendMocks.mutateAsync).not.toHaveBeenCalled();
+});

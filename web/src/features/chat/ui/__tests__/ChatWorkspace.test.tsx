@@ -6,6 +6,7 @@
  * 2. 输入框使用 RichCommentInput 并提供表情选择、图片选择、发送按钮
  * 3. 消息列表中正确渲染消息内容与气泡
  */
+import { formatDate } from "@shared/lib/date";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
@@ -526,13 +527,12 @@ describe("ChatWorkspace", () => {
 		// 会话行
 		expect(screen.getAllByText("dfy").length).toBeGreaterThan(0);
 		expect(screen.getAllByText("hello world").length).toBeGreaterThan(0);
-		expect(screen.getByRole("link", { name: "xfy 的个人主页" })).toBeTruthy();
-		// 消息输入框与富文本组件（RichCommentInput）
+		expect(screen.queryByRole("link", { name: "xfy 的个人主页" })).toBeNull();
 		const editor = screen.getByRole("textbox", { name: "消息内容" });
 		expect(editor).toBeTruthy();
 		expect(screen.getByRole("button", { name: "发送消息" })).toBeTruthy();
 		expect(screen.getByRole("button", { name: "添加表情" })).toBeTruthy();
-		expect(screen.getByRole("button", { name: "上传图片" })).toBeTruthy();
+		expect(screen.getByRole("button", { name: "添加附件" })).toBeTruthy();
 	});
 
 	it("长按聊天消息显示消息操作栏", () => {
@@ -1061,7 +1061,7 @@ describe("ChatWorkspace", () => {
 		);
 	});
 
-	it("还有更早消息可加载时用哨兵替代会话起始分割线，抓取中显示加载提示", () => {
+	it("还有更早消息可加载时保留哨兵和加载提示", () => {
 		useChatMessagesMock.mockReturnValue({
 			...defaultChatMessagesResult(),
 			hasNextPage: true,
@@ -1069,15 +1069,34 @@ describe("ChatWorkspace", () => {
 		});
 		render(<ChatWorkspace />, { wrapper: createWrapper() });
 
-		expect(screen.queryByTestId("chat-history-start")).toBeNull();
 		expect(screen.getByTestId("chat-load-older-sentinel")).toBeTruthy();
 		expect(screen.getByText("加载更早的消息…")).toBeTruthy();
 	});
 
-	it("没有更早消息时展示会话起始分割线，不展示加载哨兵", () => {
+	it("历史读完后按消息日期显示分隔，不把建群日期当作消息日期", () => {
+		useChatMessagesMock.mockReturnValue({
+			...defaultChatMessagesResult(),
+			data: {
+				pages: [
+					{
+						data: [
+							{
+								...mockConversation.last_message,
+								created_at: "2026-09-15T12:30:00Z",
+							},
+						],
+						pagination: { has_more: false },
+					},
+				],
+				pageParams: [""],
+			},
+		});
 		render(<ChatWorkspace />, { wrapper: createWrapper() });
 
-		expect(screen.getByTestId("chat-history-start")).toBeTruthy();
+		expect(screen.getByText(formatDate("2026-09-15T12:30:00Z", "long-month-day"))).toBeTruthy();
+		expect(
+			screen.queryByText(formatDate(mockConversation.created_at, "long-month-day")),
+		).toBeNull();
 		expect(screen.queryByTestId("chat-load-older-sentinel")).toBeNull();
 	});
 });

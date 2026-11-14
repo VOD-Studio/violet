@@ -1,3 +1,4 @@
+import { Radio, RadioGroup } from "@violet/ui";
 import { CircleSlash } from "lucide-react";
 import type { AppearanceAsset } from "../../model/appearance";
 import { BUBBLE_BY_ID } from "../../model/appearance-catalog";
@@ -31,50 +32,48 @@ export function AppearanceOptionGrid({
 	onChange,
 	disabled,
 }: AppearanceOptionGridProps) {
-	// 气泡用大格网格:正常渲染迷你气泡,底色花纹可辨;头像框/挂件是圆形素材网格
 	const isBubble = variant === "bubble";
-	const container = isBubble ? styles.bubbleGrid : styles.grid;
 	return (
-		<fieldset className={styles.fieldset} disabled={disabled} aria-label={label}>
-			<div className={container}>
-				<button
-					type="button"
-					className={styles.option}
-					aria-pressed={value === ""}
-					onClick={() => onChange("")}
-				>
-					<span className={styles.figure} aria-hidden="true">
-						{isBubble ? (
-							<span className={styles.defaultOptionBubble}>你好，周末见</span>
-						) : (
-							<span className={styles.emptyMold}>
-								<CircleSlash aria-hidden className="size-4" />
-							</span>
-						)}
-						{value === "" && <CheckMark />}
+		<RadioGroup
+			legend={label}
+			value={value}
+			onValueChange={onChange}
+			appearance="card"
+			className={isBubble ? styles.bubbleGrid : styles.grid}
+			disabled={disabled}
+		>
+			<Radio
+				value=""
+				label={
+					<span className={styles.optionContent}>
+						<span className={styles.figure} aria-hidden="true">
+							{isBubble ? (
+								<span className={styles.defaultOptionBubble}>你好，周末见</span>
+							) : (
+								<span className={styles.emptyMold}>
+									<CircleSlash aria-hidden className="size-4" />
+								</span>
+							)}
+						</span>
+						<span className={styles.optionName}>{isBubble ? "季节" : "不使用"}</span>
 					</span>
-					<span className={styles.optionName}>{isBubble ? "默认气泡" : "不使用"}</span>
-				</button>
-				{options.map((item) => {
-					const selected = value === item.id;
-					return (
-						<button
-							key={item.id}
-							type="button"
-							className={styles.option}
-							aria-pressed={selected}
-							onClick={() => onChange(item.id)}
-						>
+				}
+			/>
+			{options.map((item) => (
+				<Radio
+					key={item.id}
+					value={item.id}
+					label={
+						<span className={styles.optionContent}>
 							<span className={styles.figure} aria-hidden="true">
 								<Showpiece variant={variant} item={item} />
-								{selected && <CheckMark />}
 							</span>
 							<span className={styles.optionName}>{item.name}</span>
-						</button>
-					);
-				})}
-			</div>
-		</fieldset>
+						</span>
+					}
+				/>
+			))}
+		</RadioGroup>
 	);
 }
 
@@ -82,7 +81,9 @@ export function AppearanceOptionGrid({
 function Showpiece({ variant, item }: { variant: OptionVariant; item: AppearanceAsset }) {
 	if (variant === "bubble") {
 		const theme = BUBBLE_BY_ID.get(item.id);
-		if (!theme) return null;
+		if (!theme) {
+			return null;
+		}
 		return (
 			<span className={styles.bubbleDemo}>
 				<AppearanceBubbleSurface theme={theme} mine={false}>
@@ -98,22 +99,5 @@ function Showpiece({ variant, item }: { variant: OptionVariant; item: Appearance
 		>
 			<span aria-hidden className={styles.mold} />
 		</AvatarDecoration>
-	);
-}
-
-function CheckMark() {
-	return (
-		<span className={styles.check} aria-hidden="true">
-			<svg viewBox="0 0 12 12" width="8" height="8" fill="none">
-				<title>已选中</title>
-				<path
-					d="M2 6.2 4.8 9 10 3.4"
-					stroke="currentColor"
-					strokeWidth="2"
-					strokeLinecap="round"
-					strokeLinejoin="round"
-				/>
-			</svg>
-		</span>
 	);
 }

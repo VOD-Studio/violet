@@ -31,6 +31,7 @@ export function AppearanceBubbleSurface({
 		<div
 			className={styles.bubble}
 			style={style}
+			data-chat-bubble=""
 			data-chat-bubble-theme={theme.id}
 			data-side={mine ? "outgoing" : "incoming"}
 			data-compact={compact ? "true" : undefined}

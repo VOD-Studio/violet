@@ -35,27 +35,14 @@ export function ChatWorkspace() {
 	const [appearanceOpen, setAppearanceOpen] = useState(false);
 	const indexRef = useRef<HTMLElement>(null);
 	const previousSelection = useRef(selectedID);
-	const workspaceRef = useRef<HTMLDivElement>(null);
-	const wasAppearanceOpen = useRef(false);
-
-	useLayoutEffect(() => {
-		if (appearanceOpen) {
-			workspaceRef.current?.querySelector<HTMLElement>("#chat-appearance-title")?.focus();
-		} else if (wasAppearanceOpen.current) {
-			workspaceRef.current
-				?.querySelector<HTMLElement>(
-					selectedID ? '[aria-label="聊天区"] h2' : '[aria-label="聊天外观"]',
-				)
-				?.focus({ preventScroll: true });
-		}
-		wasAppearanceOpen.current = appearanceOpen;
-	}, [appearanceOpen, selectedID]);
 
 	useLayoutEffect(() => {
 		const previous = previousSelection.current;
 		previousSelection.current = selectedID;
 		setShowDetails(false);
-		if (selectedID || !previous) return;
+		if (selectedID || !previous) {
+			return;
+		}
 		const row = Array.from(
 			indexRef.current?.querySelectorAll<HTMLElement>("[data-conversation-id]") ?? [],
 		).find((element) => element.dataset.conversationId === previous);
@@ -67,14 +54,18 @@ export function ChatWorkspace() {
 	const selected = conversations.find((conversation) => conversation.id === selectedID) ?? null;
 	const filtered = useMemo(() => {
 		const query = search.trim().toLowerCase();
-		if (!query) return conversations;
+		if (!query) {
+			return conversations;
+		}
 		return conversations.filter((conversation) =>
 			conversationLabel(conversation, me?.id).toLowerCase().includes(query),
 		);
 	}, [conversations, me?.id, search]);
 
 	useEffect(() => {
-		if (selectedID && !selected && conversationsPage) clearSelection(true);
+		if (selectedID && !selected && conversationsPage) {
+			clearSelection(true);
+		}
 	}, [clearSelection, conversationsPage, selected, selectedID]);
 
 	// 从 ShareTweetDialog 落定的待发分享：自动切到目标会话，输入框读同一 store 的 pending 展示 banner。
@@ -106,17 +97,14 @@ export function ChatWorkspace() {
 				currentUserID={me.id}
 				userIDs={conversationAppearanceUserIDs(conversations)}
 			>
-				<div
-					ref={workspaceRef}
-					className="mx-auto flex min-h-0 w-full max-w-280 flex-1 gap-4 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:px-4 md:pb-6 md:pt-7 lg:px-0"
-				>
+				<div className="mx-auto flex min-h-0 w-full max-w-280 flex-1 gap-4 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:px-4 md:pb-6 md:pt-7 lg:px-0">
 					<aside
 						ref={indexRef}
 						aria-label="会话列表"
 						className={cn(
 							"relative flex min-h-0 w-full shrink-0 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-soft md:flex md:w-72 lg:w-80",
-							((selectedID && (!conversationsFailed || conversationsPage)) ||
-								appearanceOpen) &&
+							selectedID &&
+								(!conversationsFailed || conversationsPage) &&
 								"hidden md:flex",
 						)}
 					>
@@ -166,18 +154,10 @@ export function ChatWorkspace() {
 						aria-label="聊天区"
 						className={cn(
 							"relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-soft",
-							(!selectedID || (conversationsFailed && !selected)) &&
-								!appearanceOpen &&
-								"hidden md:flex",
+							(!selectedID || (conversationsFailed && !selected)) && "hidden md:flex",
 						)}
 					>
-						<div
-							className={cn(
-								"flex h-full min-h-0 min-w-0 flex-1 flex-col",
-								appearanceOpen && "invisible",
-							)}
-							inert={appearanceOpen}
-						>
+						<div className="flex h-full min-h-0 min-w-0 flex-1 flex-col">
 							{selected ? (
 								<ConversationPanel
 									key={selected.id}
@@ -197,18 +177,17 @@ export function ChatWorkspace() {
 								<EmptyConversation onCreate={() => setShowNew(true)} />
 							)}
 						</div>
-						{appearanceOpen && me && (
-							<ChatAppearanceWorkspace
-								user={{
-									id: me.id,
-									username: me.username,
-									display_name: me.display_name ?? "",
-									avatar_url: me.avatar_url ?? "",
-								}}
-								onClose={() => setAppearanceOpen(false)}
-							/>
-						)}
 					</section>
+					<ChatAppearanceWorkspace
+						open={appearanceOpen}
+						user={{
+							id: me.id,
+							username: me.username,
+							display_name: me.display_name ?? "",
+							avatar_url: me.avatar_url ?? "",
+						}}
+						onClose={() => setAppearanceOpen(false)}
+					/>
 				</div>
 			</ChatAppearanceProvider>
 		</ChatDraftProvider>

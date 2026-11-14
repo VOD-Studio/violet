@@ -39,7 +39,7 @@ const reply = (route: Route, data: unknown, paged = false) =>
 		json: { data, ...(paged ? { meta: { pagination: { limit: 50, has_more: false } } } : {}) },
 	});
 
-test("聊天框从 Bot 目录补全命令，移动端菜单保持可见", async ({ page, context }) => {
+test("聊天候选浮在输入框上方，多行工具栏靠底且 Bot 命令可补全发送", async ({ page, context }) => {
 	await page.setViewportSize({ width: 390, height: 844 });
 	await context.addCookies([
 		{ name: "contract_admin", value: "1", url: "http://127.0.0.1:4173" },
@@ -118,12 +118,79 @@ test("聊天框从 Bot 目录补全命令，移动端菜单保持可见", async 
 	});
 	await page.goto("/chat?c=c1");
 	const editor = page.getByRole("textbox", { name: "消息内容" });
+	const inputShell = editor.locator("xpath=ancestor::*[@data-slot='rich-text-input']");
+	const initialBounds = await inputShell.boundingBox();
+	if (!initialBounds) {
+		throw new Error("输入容器未渲染");
+	}
+	await editor.fill("@sa");
+	await expect(page.getByRole("option", { name: /Saber/ })).toBeVisible();
+	await expect(editor).toBeFocused();
+	await expect(editor).toHaveText("@sa");
+	await expect(async () => {
+		const shell = await inputShell.boundingBox();
+		const panel = await page.getByRole("dialog", { name: "输入建议" }).boundingBox();
+		if (!shell || !panel) {
+			throw new Error("提及候选浮层未渲染");
+		}
+		expect(Math.abs(shell.height - initialBounds.height)).toBeLessThanOrEqual(1);
+		expect(panel.y + panel.height).toBeLessThanOrEqual(shell.y);
+		expect(panel.x).toBeGreaterThanOrEqual(0);
+		expect(panel.x + panel.width).toBeLessThanOrEqual(390);
+	}).toPass();
+	await editor.press("Escape");
+	await expect(page.getByRole("dialog", { name: "输入建议" })).toHaveCount(0);
+	const multilineDraft = Array.from(
+		{ length: 32 },
+		(_, index) => `第 ${index + 1} 行，多行输入保持正文可滚动。`,
+	).join("\n");
+	await editor.fill(multilineDraft);
+	await expect(async () => {
+		const editorBounds = await editor.boundingBox();
+		if (!editorBounds) {
+			throw new Error("多行编辑器未渲染");
+		}
+		expect(
+			await editor.evaluate((element) => element.scrollHeight > element.clientHeight),
+		).toBe(true);
+		for (const name of ["添加附件", "召唤角色", "提及", "添加表情", "发送消息"]) {
+			const action = await page.getByRole("button", { name, exact: true }).boundingBox();
+			if (!action) {
+				throw new Error(`缺少输入操作：${name}`);
+			}
+			expect(
+				Math.abs(action.y + action.height - editorBounds.y - editorBounds.height),
+			).toBeLessThanOrEqual(1);
+		}
+		expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+			390,
+		);
+	}).toPass();
+	await editor.press("Shift+Enter");
+	await editor.evaluate((element) =>
+		element.dispatchEvent(
+			new KeyboardEvent("keydown", { key: "Enter", isComposing: true, bubbles: true }),
+		),
+	);
+	expect(sent).toHaveLength(0);
+	await editor.fill("");
 	await editor.fill("/ta");
 	const list = page.getByRole("listbox", { name: "Bot 命令" });
 	await expect(list).toBeVisible();
 	await expect(list.getByRole("option")).toHaveCount(2);
+	await expect(async () => {
+		const shell = await inputShell.boundingBox();
+		const panel = await page.getByRole("dialog", { name: "输入建议" }).boundingBox();
+		if (!shell || !panel) {
+			throw new Error("角色命令浮层未渲染");
+		}
+		expect(Math.abs(shell.height - initialBounds.height)).toBeLessThanOrEqual(1);
+		expect(panel.y + panel.height).toBeLessThanOrEqual(shell.y);
+	}).toPass();
 	const bounds = await list.boundingBox();
-	if (!bounds) throw new Error("命令菜单未渲染");
+	if (!bounds) {
+		throw new Error("命令菜单未渲染");
+	}
 	expect(bounds.x).toBeGreaterThanOrEqual(0);
 	expect(bounds.x + bounds.width).toBeLessThanOrEqual(390);
 	await page.setViewportSize({ width: 390, height: 480 });

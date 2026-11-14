@@ -1,68 +1,116 @@
-import { Button } from "@violet/ui";
-
-import { ArrowLeft } from "lucide-react";
-import { motion } from "motion/react";
+import {
+	Button,
+	Dialog,
+	DialogBody,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@violet/ui";
+import { useRef, useState } from "react";
 import { useOwnChatAppearance } from "../../api/appearance-queries";
 import type { ChatUser } from "../../model/types";
 import { ChatAppearanceEditor } from "./ChatAppearanceEditor";
 
+/** 模态编辑保持底下会话、滚动位置和输入草稿挂载。 */
 interface ChatAppearanceWorkspaceProps {
+	open: boolean;
 	user: ChatUser;
 	onClose: () => void;
 }
 
-export function ChatAppearanceWorkspace({ user, onClose }: ChatAppearanceWorkspaceProps) {
+export function ChatAppearanceWorkspace({ open, user, onClose }: ChatAppearanceWorkspaceProps) {
 	const query = useOwnChatAppearance(user.id);
+	const busyRef = useRef(false);
+	const contentRef = useRef<HTMLDivElement>(null);
+	const [busy, setBusy] = useState(false);
+	const handleBusyChange = (value: boolean) => {
+		busyRef.current = value;
+		setBusy(value);
+	};
 	return (
-		<motion.section
-			aria-labelledby="chat-appearance-title"
-			className="absolute inset-0 z-10 flex min-h-0 flex-col bg-background"
-			initial={{ opacity: 0 }}
-			animate={{ opacity: 1 }}
-			transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+		<Dialog
+			open={open}
+			onOpenChange={(next) => {
+				if (!next && !busyRef.current) {
+					onClose();
+				}
+			}}
 		>
-			<header className="flex h-16 shrink-0 items-center gap-3 border-b border-border bg-card/60 px-4 md:px-8">
-				<Button iconOnly size="md" variant="ghost" aria-label="返回聊天" onClick={onClose}>
-					<ArrowLeft aria-hidden="true" className="size-5" />
-				</Button>
-				<h2
-					id="chat-appearance-title"
-					tabIndex={-1}
-					className="rounded text-lg font-semibold tracking-tight focus-visible:outline-2 focus-visible:outline-ring"
-				>
-					聊天外观
-				</h2>
-			</header>
-			{query.data ? (
-				<ChatAppearanceEditor
-					key={user.id}
-					initial={query.data}
-					user={user}
-					onClose={onClose}
-				/>
-			) : query.isError ? (
-				<div
-					role="alert"
-					className="flex flex-1 flex-col items-center justify-center gap-4"
-				>
-					<p className="text-sm text-muted-foreground">无法加载已保存的外观。</p>
-					<Button
-						variant="outline"
-						onClick={() => {
-							void query.refetch();
-						}}
-					>
-						重试
-					</Button>
-				</div>
-			) : (
-				<p
-					role="status"
-					className="flex flex-1 items-center justify-center text-sm text-muted-foreground"
-				>
-					正在读取你的外观…
-				</p>
-			)}
-		</motion.section>
+			<DialogContent
+				ref={contentRef}
+				size="lg"
+				className="dialect-public"
+				showCloseButton={!busy}
+				onEscapeKeyDown={(event) => {
+					if (busyRef.current) {
+						event.preventDefault();
+					}
+				}}
+				onPointerDownOutside={(event) => {
+					if (busyRef.current) {
+						event.preventDefault();
+					}
+				}}
+				onOpenAutoFocus={(event) => {
+					const target = contentRef.current?.querySelector<HTMLInputElement>(
+						'input[type="radio"]:checked',
+					);
+					if (target) {
+						event.preventDefault();
+						target.focus({ preventScroll: true });
+					}
+				}}
+			>
+				<DialogHeader>
+					<DialogTitle>聊天外观</DialogTitle>
+					<DialogDescription>选择气泡和本机背景，保存后应用。</DialogDescription>
+				</DialogHeader>
+				{open &&
+					(query.data ? (
+						<ChatAppearanceEditor
+							key={user.id}
+							initial={query.data}
+							user={user}
+							onClose={onClose}
+							onBusyChange={handleBusyChange}
+						/>
+					) : (
+						<>
+							<DialogBody>
+								{query.isError ? (
+									<div
+										role="alert"
+										className="flex flex-col items-center gap-4 py-8"
+									>
+										<p className="text-sm text-muted-foreground">
+											无法加载已保存的外观。
+										</p>
+										<Button
+											variant="outline"
+											onClick={() => void query.refetch()}
+										>
+											重试
+										</Button>
+									</div>
+								) : (
+									<p
+										role="status"
+										className="py-8 text-center text-sm text-muted-foreground"
+									>
+										正在读取你的外观…
+									</p>
+								)}
+							</DialogBody>
+							<DialogFooter>
+								<Button variant="outline" onClick={onClose}>
+									取消
+								</Button>
+							</DialogFooter>
+						</>
+					))}
+			</DialogContent>
+		</Dialog>
 	);
 }
