@@ -66,6 +66,21 @@ func TestCatalogValidation(t *testing.T) {
 		})
 	}
 }
+
+func TestBasicBubbleThemes(t *testing.T) {
+	for _, id := range []string{"", "basic-ink", "basic-paper", "basic-washi", "moon-letter"} {
+		selection := Selection{BubbleThemeID: id, AvatarFrameID: "moon-cloud"}
+		if err := selection.Validate(); err != nil {
+			t.Fatalf("基础款与既有主题 %q 被拒绝: %v", id, err)
+		}
+		if selection.BubbleThemeID != id {
+			t.Fatalf("校验改写了已存主题 %q", id)
+		}
+	}
+	if err := (Selection{BubbleThemeID: "basic-unknown"}).Validate(); !errors.Is(err, ErrInvalid) {
+		t.Fatal("未登记的基础气泡被接受")
+	}
+}
 func TestUserIDValidation(t *testing.T) {
 	for _, id := range []string{"", "../me", "00000000-0000-0000-0000-000000000000", "11111111-1111-4111-8111-111111111111'"} {
 		if ValidUserID(id) {
