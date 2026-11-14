@@ -14,7 +14,7 @@ import {
 } from "@violet/ui";
 
 import { cn } from "cn";
-import { MessageCircle, Plus, Search, Users } from "lucide-react";
+import { MessageCircle, Plus, Search } from "lucide-react";
 import { type ReactNode, useDeferredValue, useState } from "react";
 import { toast } from "sonner";
 import { useChatContacts, useCreateChatConversation } from "../api/queries";
@@ -332,7 +332,14 @@ export function ConversationRow({
 						<Avatar
 							size={40}
 							shape="square"
-							icon={<Users {...iconProps(20, "size-5")} />}
+							icon={
+								<span
+									aria-hidden="true"
+									className="text-lg font-semibold leading-none"
+								>
+									#
+								</span>
+							}
 							alt=""
 						/>
 					) : (
@@ -341,9 +348,16 @@ export function ConversationRow({
 				</div>
 				<span className="min-w-0 flex-1">
 					<span className="flex items-center justify-between gap-2">
-						<strong className="min-w-0 truncate text-[15px] font-semibold text-foreground">
-							{label}
-						</strong>
+						<span className="flex min-w-0 items-center gap-1.5">
+							<strong className="min-w-0 truncate text-[15px] font-semibold text-foreground">
+								{label}
+							</strong>
+							{conversation.kind === "direct" && avatarUser.is_bot && (
+								<span className="shrink-0 rounded-full bg-secondary px-1.5 py-px text-[10px] leading-4 text-muted-foreground">
+									角色
+								</span>
+							)}
+						</span>
 						<time className="shrink-0 text-xs leading-5 text-muted-foreground">
 							{lastTime ? formatRelativeTime(lastTime) : ""}
 						</time>
