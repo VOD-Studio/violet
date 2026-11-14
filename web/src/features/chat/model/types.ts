@@ -54,6 +54,8 @@ export interface BotCommandCatalog {
 	bot_user_id: string;
 	username: string;
 	name: string;
+	/** 角色简介，未填为空串。 */
+	description: string;
 	revision: string;
 	commands: BotCommand[];
 }

@@ -6,6 +6,8 @@ export interface BotDTO {
 	/** @提及与私聊寻址用的用户名 */
 	username: string;
 	name: string;
+	/** 一句话简介，未填为空串 */
+	description: string;
 	avatar_id?: string;
 	avatar_url?: string;
 	enabled: boolean;
@@ -30,6 +32,8 @@ export interface CreateBotRequest {
 /** 改名 / 启停。avatar_id 传空串清除头像，缺省表示不改 */
 export interface UpdateBotRequest {
 	name?: string;
+	/** 空白清空简介，缺省表示不改 */
+	description?: string;
 	avatar_id?: string;
 	enabled?: boolean;
 	show_thinking?: boolean;

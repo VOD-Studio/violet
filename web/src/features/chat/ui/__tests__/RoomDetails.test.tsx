@@ -6,7 +6,12 @@ vi.mock("../../api/client", () => ({
 	fetchChatUser: vi.fn(),
 }));
 
+const botCatalogs = vi.hoisted(() => ({
+	data: undefined as { bots: { bot_user_id: string; description: string }[] } | undefined,
+}));
+
 vi.mock("../../api/queries", () => ({
+	useBotCommands: () => botCatalogs,
 	useRenameChatConversation: () => ({ mutateAsync: vi.fn() }),
 	useInviteChatMember: () => ({ mutateAsync: vi.fn(), isPending: false }),
 	useRemoveChatMember: () => ({ mutate: vi.fn(), isPending: false }),
@@ -94,4 +99,41 @@ it("已有通知权限但没有订阅时，设置按钮可以重新启用通知"
 	fireEvent.click(screen.getByRole("button", { name: "启用浏览器通知" }));
 	expect(push.enable).toHaveBeenCalledWith(false);
 	expect(push.disable).not.toHaveBeenCalled();
+});
+
+it("在场的角色与成员分开列出，角色带简介，成员数不含角色", () => {
+	stubMatchMedia(true);
+	botCatalogs.data = { bots: [{ bot_user_id: "u_rua", description: "看板娘，爱推荐歌" }] };
+	const rua = { id: "u_rua", username: "rua", display_name: "Rua", avatar_url: "", is_bot: true };
+	const members: ChatMember[] = [
+		...mockMembers,
+		{ user: rua, role: "member", joined_at: "2026-08-20T08:05:00Z", is_muted: false },
+	];
+	render(
+		<RoomDetails
+			conversation={mockConversation}
+			currentUserID={mockUser.id}
+			members={members}
+			onClose={vi.fn()}
+		/>,
+	);
+	const roles = screen.getByRole("region", { name: "在场的角色" });
+	expect(roles.textContent).toContain("Rua");
+	expect(roles.textContent).toContain("看板娘，爱推荐歌");
+	expect(screen.getByText("在场的角色 · 1")).toBeTruthy();
+	expect(screen.getByText("成员 · 1")).toBeTruthy();
+	botCatalogs.data = undefined;
+});
+
+it("没有角色时不显示在场的角色分区", () => {
+	stubMatchMedia(true);
+	render(
+		<RoomDetails
+			conversation={mockConversation}
+			currentUserID={mockUser.id}
+			members={mockMembers}
+			onClose={vi.fn()}
+		/>,
+	);
+	expect(screen.queryByRole("region", { name: "在场的角色" })).toBeNull();
 });

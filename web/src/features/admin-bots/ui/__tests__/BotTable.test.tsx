@@ -29,6 +29,7 @@ function bot(overrides: Partial<BotDTO> = {}): BotDTO {
 		user_id: "u1",
 		username: "saber",
 		name: "Saber",
+		description: "",
 		enabled: true,
 		show_thinking: false,
 		thinking_default_expanded: false,

@@ -13,11 +13,12 @@ import {
 	SheetTitle,
 } from "@violet/ui";
 
-import { Bell, BellOff, LogOut, Plus, ShieldCheck, Users, X } from "lucide-react";
+import { Bell, BellOff, Bot, LogOut, Plus, ShieldCheck, Users, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { fetchChatUser } from "../api/client";
 import {
+	useBotCommands,
 	useInviteChatMember,
 	useLeaveChatConversation,
 	useRemoveChatMember,
@@ -48,7 +49,13 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 	const remove = useRemoveChatMember();
 	const mute = useSetChatMuted();
 	const leave = useLeaveChatConversation();
+	const botCommands = useBotCommands(conversation.id);
 	const currentMember = members.find((member) => member.user.id === currentUserID);
+	const people = members.filter((member) => !member.user.is_bot);
+	const roles = members.filter((member) => member.user.is_bot);
+	const descriptions = new Map(
+		(botCommands.data?.bots ?? []).map((bot) => [bot.bot_user_id, bot.description]),
+	);
 	const isOwner = currentMember?.role === "owner";
 	useEffect(() => {
 		setTitle(conversation.title);
@@ -119,13 +126,59 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 						)}
 					</div>
 
+					{roles.length > 0 && (
+						<section aria-label="在场的角色">
+							<div className="mb-2.5 flex items-center justify-between px-1">
+								<p className="text-xs text-muted-foreground">
+									在场的角色 · {roles.length}
+								</p>
+								<Bot {...iconProps(14, "text-muted-foreground")} />
+							</div>
+							<div className="space-y-1">
+								{roles.map((member) => (
+									<div
+										className="flex items-center gap-2.5 rounded-xl p-2 transition-colors hover:bg-secondary/40"
+										key={member.user.id}
+									>
+										<ChatAvatar user={member.user} className="size-7.5" />
+										<div className="min-w-0 flex-1">
+											<p className="truncate text-xs font-medium text-foreground">
+												{member.user.display_name}
+											</p>
+											<p className="truncate text-[11px] text-muted-foreground">
+												{descriptions.get(member.user.id) ||
+													`@${member.user.username}`}
+											</p>
+										</div>
+										{isOwner && (
+											<button
+												aria-label={`移除 ${member.user.display_name}`}
+												className="text-muted-foreground transition hover:text-destructive"
+												disabled={remove.isPending}
+												onClick={() =>
+													remove.mutate({
+														id: conversation.id,
+														userId: member.user.id,
+													})
+												}
+												type="button"
+											>
+												<X {...iconProps(14)} />
+											</button>
+										)}
+									</div>
+								))}
+							</div>
+						</section>
+					)}
+
 					<div>
 						<div className="mb-2.5 flex items-center justify-between px-1">
-							<p className="text-xs text-muted-foreground">成员 · {members.length}</p>
+							<p className="text-xs text-muted-foreground">成员 · {people.length}</p>
 							<Users {...iconProps(14, "text-muted-foreground")} />
 						</div>
 						<div className="space-y-1">
-							{members.map((member) => (
+							{people.map((member) => (
 								<div
 									className="flex items-center gap-2.5 rounded-xl p-2 transition-colors hover:bg-secondary/40"
 									key={member.user.id}
