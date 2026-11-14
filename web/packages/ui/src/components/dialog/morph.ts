@@ -29,7 +29,17 @@ function originBackground(style: CSSStyleDeclaration, panel: HTMLElement) {
 	const color = style.backgroundColor;
 	// 幽灵按钮没有底色，从透明长出来会先露出背后的页面，改从凹陷色开始。
 	if (color === "transparent" || /(?:,|\/)\s*0\)$/.test(color)) {
-		return getComputedStyle(panel).getPropertyValue("--muted").trim() || color;
+		// WAAPI 的颜色关键帧须先解析 light-dark()，否则 Chromium 的颜色插值会崩溃。
+		const original = panel.style.getPropertyValue("background-color");
+		const priority = panel.style.getPropertyPriority("background-color");
+		panel.style.setProperty("background-color", "var(--muted)", "important");
+		const resolved = getComputedStyle(panel).backgroundColor;
+		if (original) {
+			panel.style.setProperty("background-color", original, priority);
+		} else {
+			panel.style.removeProperty("background-color");
+		}
+		return resolved;
 	}
 	return color;
 }
