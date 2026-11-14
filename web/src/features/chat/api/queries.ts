@@ -53,6 +53,7 @@ import {
 	removeChatMessageReaction,
 	renameChatConversation,
 	saveChatPushSubscription,
+	setBotSpeaking,
 	setChatMuted,
 	updateChatSettings,
 } from "./client";
@@ -403,5 +404,18 @@ export const useUpdateChatSettings = () => {
 			qc.invalidateQueries({ queryKey: chatKeys.conversations() });
 		},
 		onError: () => toast.error("在线状态设置失败，请重试"),
+	});
+};
+
+export const useSetBotSpeaking = () => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: ({ id, userId, allowed }: { id: string; userId: string; allowed: boolean }) =>
+			setBotSpeaking(id, userId, allowed),
+		onSuccess: (_, variables) => {
+			qc.invalidateQueries({ queryKey: chatKeys.members(variables.id) });
+			qc.invalidateQueries({ queryKey: chatKeys.conversation(variables.id) });
+		},
+		onError: () => toast.error("角色发言权限设置失败，请重试"),
 	});
 };

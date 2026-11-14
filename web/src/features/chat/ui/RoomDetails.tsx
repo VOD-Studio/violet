@@ -11,10 +11,11 @@ import {
 	SheetContent,
 	SheetHeader,
 	SheetTitle,
+	Switch,
 } from "@violet/ui";
 
 import { Bell, BellOff, Bot, LogOut, Plus, ShieldCheck, Users, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { fetchChatUser } from "../api/client";
 import {
@@ -23,6 +24,7 @@ import {
 	useLeaveChatConversation,
 	useRemoveChatMember,
 	useRenameChatConversation,
+	useSetBotSpeaking,
 	useSetChatMuted,
 } from "../api/queries";
 import { useChatPushNotifications } from "../hooks/useChatPushNotifications";
@@ -48,6 +50,7 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 	const invite = useInviteChatMember();
 	const remove = useRemoveChatMember();
 	const mute = useSetChatMuted();
+	const speaking = useSetBotSpeaking();
 	const leave = useLeaveChatConversation();
 	const botCommands = useBotCommands(conversation.id);
 	const currentMember = members.find((member) => member.user.id === currentUserID);
@@ -134,39 +137,57 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 								</p>
 								<Bot {...iconProps(14, "text-muted-foreground")} />
 							</div>
+							{botCommands.isError && (
+								<p className="mb-2 px-1 text-[11px] text-muted-foreground">
+									角色简介暂时无法加载
+								</p>
+							)}
 							<div className="space-y-1">
 								{roles.map((member) => (
-									<div
-										className="flex items-center gap-2.5 rounded-xl p-2 transition-colors hover:bg-secondary/40"
+									<MemberRow
 										key={member.user.id}
-									>
-										<ChatAvatar user={member.user} className="size-7.5" />
-										<div className="min-w-0 flex-1">
-											<p className="truncate text-xs font-medium text-foreground">
-												{member.user.display_name}
-											</p>
-											<p className="truncate text-[11px] text-muted-foreground">
-												{descriptions.get(member.user.id) ||
-													`@${member.user.username}`}
-											</p>
-										</div>
-										{isOwner && (
-											<button
-												aria-label={`移除 ${member.user.display_name}`}
-												className="text-muted-foreground transition hover:text-destructive"
-												disabled={remove.isPending}
-												onClick={() =>
-													remove.mutate({
-														id: conversation.id,
-														userId: member.user.id,
-													})
-												}
-												type="button"
-											>
-												<X {...iconProps(14)} />
-											</button>
-										)}
-									</div>
+										member={member}
+										subtitle={
+											descriptions.get(member.user.id) ||
+											`@${member.user.username}`
+										}
+										trailing={
+											<>
+												{isOwner ? (
+													<Switch
+														aria-label={`允许 ${member.user.display_name} 发言`}
+														checked={member.can_speak}
+														disabled={speaking.isPending}
+														onCheckedChange={(allowed) =>
+															speaking.mutate({
+																id: conversation.id,
+																userId: member.user.id,
+																allowed,
+															})
+														}
+													/>
+												) : (
+													!member.can_speak && (
+														<span className="text-[11px] text-muted-foreground">
+															已禁言
+														</span>
+													)
+												)}
+												{isOwner && (
+													<RemoveMemberButton
+														disabled={remove.isPending}
+														member={member}
+														onRemove={() =>
+															remove.mutate({
+																id: conversation.id,
+																userId: member.user.id,
+															})
+														}
+													/>
+												)}
+											</>
+										}
+									/>
 								))}
 							</div>
 						</section>
@@ -179,40 +200,36 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 						</div>
 						<div className="space-y-1">
 							{people.map((member) => (
-								<div
-									className="flex items-center gap-2.5 rounded-xl p-2 transition-colors hover:bg-secondary/40"
+								<MemberRow
 									key={member.user.id}
-								>
-									<ChatAvatar user={member.user} className="size-7.5" />
-									<div className="min-w-0 flex-1">
-										<p className="truncate text-xs font-medium text-foreground">
-											{member.user.display_name}
-										</p>
-										<p className="truncate font-mono text-[11px] text-muted-foreground">
-											@{member.user.username}
-										</p>
-									</div>
-									{member.role === "owner" ? (
-										<ShieldCheck className="size-4 text-muted-foreground" />
-									) : (
-										isOwner && (
-											<button
-												aria-label={`移除 ${member.user.display_name}`}
-												className="text-muted-foreground transition hover:text-destructive"
-												disabled={remove.isPending}
-												onClick={() =>
-													remove.mutate({
-														id: conversation.id,
-														userId: member.user.id,
-													})
-												}
-												type="button"
-											>
-												<X {...iconProps(14)} />
-											</button>
-										)
-									)}
-								</div>
+									member={member}
+									subtitle={`@${member.user.username}`}
+									trailing={
+										<>
+											{member.user.is_site_owner && (
+												<span className="rounded bg-selected px-1.5 py-0.5 text-[10px] font-medium leading-none text-selected-foreground">
+													站长
+												</span>
+											)}
+											{member.role === "owner" ? (
+												<ShieldCheck className="size-4 text-muted-foreground" />
+											) : (
+												isOwner && (
+													<RemoveMemberButton
+														disabled={remove.isPending}
+														member={member}
+														onRemove={() =>
+															remove.mutate({
+																id: conversation.id,
+																userId: member.user.id,
+															})
+														}
+													/>
+												)
+											)}
+										</>
+									}
+								/>
 							))}
 						</div>
 					</div>
@@ -339,5 +356,52 @@ function NotificationSettings({
 				</div>
 			</div>
 		</div>
+	);
+}
+
+function MemberRow({
+	member,
+	subtitle,
+	trailing,
+}: {
+	member: ChatMember;
+	subtitle: string;
+	trailing: ReactNode;
+}) {
+	return (
+		<div className="flex items-center gap-2.5 rounded-xl p-2 transition-colors hover:bg-secondary/40">
+			<ChatAvatar user={member.user} className="size-7.5" />
+			<div className="min-w-0 flex-1">
+				<p className="truncate text-xs font-medium text-foreground">
+					{member.user.display_name}
+				</p>
+				<p className="truncate text-[11px] text-muted-foreground">{subtitle}</p>
+			</div>
+			{trailing}
+		</div>
+	);
+}
+
+function RemoveMemberButton({
+	member,
+	disabled,
+	onRemove,
+}: {
+	member: ChatMember;
+	disabled: boolean;
+	onRemove: () => void;
+}) {
+	return (
+		<Button
+			iconOnly
+			aria-label={`移除 ${member.user.display_name}`}
+			className="size-6 text-muted-foreground hover:text-destructive"
+			disabled={disabled}
+			onClick={onRemove}
+			size="sm"
+			variant="ghost"
+		>
+			<X {...iconProps(14)} />
+		</Button>
 	);
 }

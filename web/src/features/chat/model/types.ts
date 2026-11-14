@@ -11,6 +11,8 @@ export interface ChatUser {
 	display_name: string;
 	avatar_url: string;
 	is_bot?: boolean;
+	/** 站长（root 账号），成员列表中标出。 */
+	is_site_owner?: boolean;
 }
 
 export interface BotToolCall {
@@ -42,6 +44,8 @@ export interface ChatMember {
 	is_muted: boolean;
 	/** 是否在线；隐身成员对其他人恒为 false，机器人不计在线。 */
 	online: boolean;
+	/** 机器人成员是否被允许在本会话发言；被房主禁言为 false，真人恒为 true。 */
+	can_speak: boolean;
 }
 
 export interface BotCommand {

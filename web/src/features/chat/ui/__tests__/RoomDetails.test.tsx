@@ -8,10 +8,13 @@ vi.mock("../../api/client", () => ({
 
 const botCatalogs = vi.hoisted(() => ({
 	data: undefined as { bots: { bot_user_id: string; description: string }[] } | undefined,
+	isError: false,
 }));
+const setSpeaking = vi.hoisted(() => ({ mutate: vi.fn(), isPending: false }));
 
 vi.mock("../../api/queries", () => ({
 	useBotCommands: () => botCatalogs,
+	useSetBotSpeaking: () => setSpeaking,
 	useRenameChatConversation: () => ({ mutateAsync: vi.fn() }),
 	useInviteChatMember: () => ({ mutateAsync: vi.fn(), isPending: false }),
 	useRemoveChatMember: () => ({ mutate: vi.fn(), isPending: false }),
@@ -62,6 +65,7 @@ const mockMembers: ChatMember[] = [
 		joined_at: "2026-08-20T08:00:00Z",
 		is_muted: false,
 		online: false,
+		can_speak: true,
 	},
 ];
 
@@ -119,6 +123,7 @@ it("在场的角色与成员分开列出，角色带简介，成员数不含角�
 			joined_at: "2026-08-20T08:05:00Z",
 			is_muted: false,
 			online: false,
+			can_speak: true,
 		},
 	];
 	render(
@@ -148,4 +153,72 @@ it("没有角色时不显示在场的角色分区", () => {
 		/>,
 	);
 	expect(screen.queryByRole("region", { name: "在场的角色" })).toBeNull();
+});
+
+const rua = { id: "u_rua", username: "rua", display_name: "Rua", avatar_url: "", is_bot: true };
+const withRua = (canSpeak: boolean): ChatMember[] => [
+	...mockMembers,
+	{
+		user: rua,
+		role: "member",
+		joined_at: "2026-08-20T08:05:00Z",
+		is_muted: false,
+		online: false,
+		can_speak: canSpeak,
+	},
+];
+const renderDetails = (members: ChatMember[], currentUserID = mockUser.id) =>
+	render(
+		<RoomDetails
+			conversation={mockConversation}
+			currentUserID={currentUserID}
+			members={members}
+			onClose={vi.fn()}
+		/>,
+	);
+
+it("房主可以切换角色的发言权限", () => {
+	stubMatchMedia(true);
+	renderDetails(withRua(true));
+	const toggle = screen.getByRole("switch", { name: "允许 Rua 发言" });
+	expect(toggle.getAttribute("aria-checked")).toBe("true");
+	fireEvent.click(toggle);
+	expect(setSpeaking.mutate).toHaveBeenCalledWith({
+		id: "c_1",
+		userId: "u_rua",
+		allowed: false,
+	});
+});
+
+it("非房主看不到发言开关，被禁言的角色显示已禁言", () => {
+	stubMatchMedia(true);
+	const guest = { id: "u_guest", username: "guest", display_name: "Guest", avatar_url: "" };
+	renderDetails(
+		[
+			...withRua(false),
+			{
+				user: guest,
+				role: "member",
+				joined_at: "2026-08-20T08:06:00Z",
+				is_muted: false,
+				online: false,
+				can_speak: true,
+			},
+		],
+		guest.id,
+	);
+	expect(screen.queryByRole("switch", { name: "允许 Rua 发言" })).toBeNull();
+	expect(screen.getByText("已禁言")).toBeTruthy();
+});
+
+it("站长在成员列表里带站长标记，简介加载失败时给出提示", () => {
+	stubMatchMedia(true);
+	botCatalogs.isError = true;
+	renderDetails([
+		{ ...mockMembers[0], user: { ...mockUser, is_site_owner: true } },
+		...withRua(true).slice(1),
+	]);
+	expect(screen.getByText("站长")).toBeTruthy();
+	expect(screen.getByText("角色简介暂时无法加载")).toBeTruthy();
+	botCatalogs.isError = false;
 });

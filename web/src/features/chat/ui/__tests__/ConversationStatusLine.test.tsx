@@ -21,6 +21,7 @@ const member = (
 	joined_at: "2026-11-14T00:00:00Z",
 	is_muted: false,
 	online: false,
+	can_speak: true,
 	...overrides,
 });
 
@@ -43,8 +44,8 @@ it("群聊显示在线人数与在场角色数，角色不计入在线", () => {
 			conversation={conversation("room")}
 			currentUserID="me"
 			members={[
-				member("me", { online: true }),
-				member("amy", { online: true }),
+				member("me", { online: true, can_speak: true }),
+				member("amy", { online: true, can_speak: true }),
 				member("bob"),
 				member("rua", { bot: true }),
 				member("saber", { bot: true }),
@@ -59,7 +60,10 @@ it("没有角色时不显示角色段，静音时追加已静音", () => {
 		<ConversationStatusLine
 			conversation={conversation("room")}
 			currentUserID="me"
-			members={[member("me", { online: true, is_muted: true }), member("amy")]}
+			members={[
+				member("me", { online: true, can_speak: true, is_muted: true }),
+				member("amy"),
+			]}
 		/>,
 	);
 	expect(screen.getByText("1 人在线 · 已静音")).toBeTruthy();
@@ -70,7 +74,10 @@ it("私信按对方状态显示在线或离线，对方是角色时显示角色"
 		<ConversationStatusLine
 			conversation={conversation("direct")}
 			currentUserID="me"
-			members={[member("me", { online: true }), member("amy", { online: true })]}
+			members={[
+				member("me", { online: true, can_speak: true }),
+				member("amy", { online: true, can_speak: true }),
+			]}
 		/>,
 	);
 	expect(screen.getByText("在线")).toBeTruthy();
@@ -78,7 +85,7 @@ it("私信按对方状态显示在线或离线，对方是角色时显示角色"
 		<ConversationStatusLine
 			conversation={conversation("direct")}
 			currentUserID="me"
-			members={[member("me", { online: true }), member("amy")]}
+			members={[member("me", { online: true, can_speak: true }), member("amy")]}
 		/>,
 	);
 	expect(screen.getByText("离线")).toBeTruthy();
@@ -86,7 +93,10 @@ it("私信按对方状态显示在线或离线，对方是角色时显示角色"
 		<ConversationStatusLine
 			conversation={conversation("direct")}
 			currentUserID="me"
-			members={[member("me", { online: true }), member("rua", { bot: true })]}
+			members={[
+				member("me", { online: true, can_speak: true }),
+				member("rua", { bot: true }),
+			]}
 		/>,
 	);
 	expect(screen.getByText("角色")).toBeTruthy();
@@ -97,7 +107,7 @@ it("实时事件覆盖成员读模型里的在线状态", () => {
 		<ConversationStatusLine
 			conversation={conversation("room")}
 			currentUserID="me"
-			members={[member("me", { online: true }), member("amy")]}
+			members={[member("me", { online: true, can_speak: true }), member("amy")]}
 		/>,
 	);
 	expect(screen.getByText("1 人在线")).toBeTruthy();

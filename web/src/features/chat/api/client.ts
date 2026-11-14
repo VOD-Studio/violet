@@ -128,3 +128,9 @@ export const fetchChatSettings = () => apiGet<ChatSettings>("/chat/settings");
 
 export const updateChatSettings = (settings: Partial<ChatSettings>) =>
 	apiPatch<ChatSettings>("/chat/settings", settings);
+
+export const setBotSpeaking = (id: string, userId: string, allowed: boolean) =>
+	apiPatch<{ user_id: string; can_speak: boolean }>(
+		`/chat/conversations/${id}/members/${userId}/speaking`,
+		{ allowed },
+	);

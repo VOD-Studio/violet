@@ -23,6 +23,7 @@ const direct = (peer: ChatUser): ChatConversation => ({
 			joined_at: "2026-11-14T00:00:00Z",
 			is_muted: false,
 			online: false,
+			can_speak: true,
 		},
 		{
 			user: peer,
@@ -30,6 +31,7 @@ const direct = (peer: ChatUser): ChatConversation => ({
 			joined_at: "2026-11-14T00:00:00Z",
 			is_muted: false,
 			online: false,
+			can_speak: true,
 		},
 	],
 	unread_count: 0,
