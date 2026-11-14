@@ -1639,6 +1639,9 @@ func (s *Service) messageDTOWithReactions(ctx context.Context, message *domainch
 		dto.Mentions, err = s.resolveMentions(ctx, dto.Content)
 		if err != nil {
 			return MessageDTO{}, err
+	if message.Type() == domainchat.MessageSystem {
+		dto.Content = message.Content()
+	}
 		}
 	}
 	if message.SharedTweetID() != nil {
