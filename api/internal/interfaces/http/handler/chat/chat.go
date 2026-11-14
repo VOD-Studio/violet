@@ -337,6 +337,7 @@ func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request) {
 		Content       string   `json:"content"`
 		MediaIDs      []string `json:"media_ids"`
 		SharedTweetID string   `json:"shared_tweet_id"`
+		MusicTrackID  string   `json:"music_track_id"`
 		ReplyToID     string   `json:"reply_to_id"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
@@ -367,7 +368,7 @@ func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	dto, err := h.svc.SendMessage(r.Context(), appchat.SendMessageInput{UserID: userID, ConversationID: conversationID, Type: domainchat.MessageType(req.Type), Content: req.Content, MediaIDs: mediaIDs, SharedTweetID: sharedTweetID, ReplyToID: replyToID, IdempotencyKey: strings.TrimSpace(r.Header.Get("Idempotency-Key"))})
+	dto, err := h.svc.SendMessage(r.Context(), appchat.SendMessageInput{UserID: userID, ConversationID: conversationID, Type: domainchat.MessageType(req.Type), Content: req.Content, MediaIDs: mediaIDs, SharedTweetID: sharedTweetID, MusicTrackID: req.MusicTrackID, ReplyToID: replyToID, IdempotencyKey: strings.TrimSpace(r.Header.Get("Idempotency-Key"))})
 	if err != nil {
 		response.RespondError(w, r, err)
 		return

@@ -48,6 +48,7 @@ type Service struct {
 	botRepo      domainchat.BotRepository
 	presence     PresenceReader
 	settings     domainchat.UserSettingsRepository
+	music        MusicResolver
 }
 
 // WithBotNotifier 注入 bot 事件投递器，返回自身便于装配链式调用。
@@ -114,6 +115,8 @@ type SendMessageInput struct {
 	MediaIDs []domainshared.ID
 	// SharedTweetID 分享消息引用的推文 ID；零值表示不分享推文。
 	SharedTweetID domainshared.ID
+	// MusicTrackID 音乐服务的歌曲 ID；仅 music_share 消息使用。
+	MusicTrackID string
 	// ReplyToID 被引用的同会话消息 ID；零值表示不引用消息。
 	ReplyToID domainshared.ID
 	// IdempotencyKey 客户端发送幂等键。
@@ -313,6 +316,8 @@ type MessageDTO struct {
 	Media []MediaDTO `json:"media,omitempty"`
 	// SharedTweet 读取当前推文与来源状态；本站推文删除后为占位。
 	SharedTweet *SharedTweetDTO `json:"shared_tweet,omitempty"`
+	// MusicShare 发送时保存的歌曲资料，删除消息时省略。
+	MusicShare *MusicShareDTO `json:"music_share,omitempty"`
 	// ReplyTo 被引用消息的动态预览；原消息物理清理后为空。
 	ReplyTo *MessageReferenceDTO `json:"reply_to,omitempty"`
 	// Reactions 消息的聚合表情反应。
@@ -869,7 +874,7 @@ func (s *Service) ListMessages(ctx context.Context, userID, conversationID domai
 	return result, nil
 }
 
-// SendMessage 发送文本或图片消息。
+// SendMessage 发送会话消息。
 func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (MessageDTO, error) {
 	conversation, err := s.repo.FindByIDForMember(ctx, in.ConversationID, in.UserID)
 	if err != nil {
@@ -922,6 +927,8 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 		if _, err = s.tweets.FindByID(ctx, in.SharedTweetID); err == nil {
 			message, err = domainchat.NewTweetShareMessage(in.ConversationID, in.UserID, in.SharedTweetID, in.Content, in.IdempotencyKey, now, replyToID)
 		}
+	case domainchat.MessageMusicShare:
+		message, err = s.newMusicShareMessage(ctx, in, now, replyToID)
 	default:
 		err = domainshared.BadRequest("非法消息类型")
 	}
@@ -959,6 +966,8 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 		}
 	case domainchat.MessageTweetShare:
 		preview = "分享了一条推文"
+	case domainchat.MessageMusicShare:
+		preview = "分享了一首歌曲"
 	}
 	payload := map[string]any{"preview": preview}
 	if len(mentioned) > 0 {
@@ -1630,6 +1639,9 @@ func (s *Service) messageDTOWithReactions(ctx context.Context, message *domainch
 		editedAt := message.EditedAt().Format(time.RFC3339Nano)
 		dto.EditedAt = &editedAt
 	}
+	if message.Type() == domainchat.MessageSystem {
+		dto.Content = message.Content()
+	}
 	if message.HasTextContent() {
 		dto.Content = message.Content()
 		dto.CustomEmote, err = s.resolveCustomEmote(ctx, dto.Content, viewerUserID)
@@ -1639,9 +1651,6 @@ func (s *Service) messageDTOWithReactions(ctx context.Context, message *domainch
 		dto.Mentions, err = s.resolveMentions(ctx, dto.Content)
 		if err != nil {
 			return MessageDTO{}, err
-	if message.Type() == domainchat.MessageSystem {
-		dto.Content = message.Content()
-	}
 		}
 	}
 	if message.SharedTweetID() != nil {
@@ -1649,6 +1658,9 @@ func (s *Service) messageDTOWithReactions(ctx context.Context, message *domainch
 		if err != nil {
 			return MessageDTO{}, err
 		}
+	}
+	if song := message.MusicShare(); song != nil {
+		dto.MusicShare = &MusicShareDTO{TrackID: song.TrackID, Title: song.Title, Artists: song.Artists, DurationMS: song.DurationMS, CoverURL: song.CoverURL}
 	}
 	for _, mediaID := range message.MediaIDs() {
 		media, err := s.mediaDTO(ctx, mediaID)

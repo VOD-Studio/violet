@@ -203,7 +203,7 @@ func (h *BotHandler) UploadMedia(w http.ResponseWriter, r *http.Request) {
 	response.RespondCreated(w, result)
 }
 
-// SendMessage 以 bot 身份发送文本或图片消息。
+// SendMessage 以 bot 身份发送文本、图片或歌曲分享消息。
 //
 // 图片须先走 bot 媒体端点上传，再用 media_ids 引用；归属与图片类型由 chat.Service 校验。
 // Idempotency-Key 必填——外部程序重试是同一条消息，重试两次不该刷两遍屏。
@@ -214,11 +214,12 @@ func (h *BotHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Type      string   `json:"type"`
-		Content   string   `json:"content"`
-		MediaIDs  []string `json:"media_ids"`
-		ReplyToID string   `json:"reply_to_id"`
-		Status    string   `json:"status"`
+		Type         string   `json:"type"`
+		Content      string   `json:"content"`
+		MediaIDs     []string `json:"media_ids"`
+		MusicTrackID string   `json:"music_track_id"`
+		ReplyToID    string   `json:"reply_to_id"`
+		Status       string   `json:"status"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		response.RespondError(w, r, err)
@@ -228,12 +229,12 @@ func (h *BotHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 	if messageType == "" {
 		messageType = domainchat.MessageText
 	}
-	if messageType != domainchat.MessageText && messageType != domainchat.MessageImage {
-		response.RespondError(w, r, domainshared.BadRequest("Bot 仅支持 text 或 image 消息"))
+	if messageType != domainchat.MessageText && messageType != domainchat.MessageImage && messageType != domainchat.MessageMusicShare {
+		response.RespondError(w, r, domainshared.BadRequest("Bot 仅支持 text、image 或 music_share 消息"))
 		return
 	}
-	if messageType == domainchat.MessageImage && req.Status != "" {
-		response.RespondError(w, r, domainshared.BadRequest("图片消息不支持生成状态"))
+	if messageType != domainchat.MessageText && req.Status != "" {
+		response.RespondError(w, r, domainshared.BadRequest("非文本消息不支持生成状态"))
 		return
 	}
 	if messageType == domainchat.MessageText && req.Status != "" && req.Status != string(domainchat.BotReplyPending) {
@@ -263,6 +264,7 @@ func (h *BotHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 		Type:           messageType,
 		Content:        req.Content,
 		MediaIDs:       mediaIDs,
+		MusicTrackID:   req.MusicTrackID,
 		ReplyToID:      replyToID,
 		IdempotencyKey: strings.TrimSpace(r.Header.Get("Idempotency-Key")),
 		BotPending:     req.Status == string(domainchat.BotReplyPending),

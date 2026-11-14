@@ -54,6 +54,13 @@ func registerChatPaths(t *openapi3.T) {
 		"created_at":     optStr("推文创建时间；推文已删除时为空"),
 		"is_deleted":     optBool("被分享的推文是否已被物理删除"),
 	})
+	registerSchema(t, "ChatMusicShareDTO", openapi3.Schemas{
+		"track_id":    reqStr("音乐服务的歌曲 ID；发送时保存的快照"),
+		"title":       reqStr("发送时的歌名"),
+		"artists":     strArray("发送时的歌手名；无资料时为空数组"),
+		"duration_ms": optInt64("歌曲时长（毫秒）"),
+		"cover_url":   reqStr("公开专辑封面地址；无封面时为空串"),
+	}, "track_id", "title", "artists", "duration_ms", "cover_url")
 	registerSchema(t, "ChatMessageReferenceDTO", openapi3.Schemas{
 		"id":         reqStr("被引用消息 ID"),
 		"sender":     &openapi3.SchemaRef{Ref: "#/components/schemas/ChatUserDTO"},
@@ -68,11 +75,12 @@ func registerChatPaths(t *openapi3.T) {
 		"conversation_id":   reqStr("会话 ID"),
 		"sender":            &openapi3.SchemaRef{Ref: "#/components/schemas/ChatUserDTO"},
 		"bot_reply":         &openapi3.SchemaRef{Ref: "#/components/schemas/ChatBotReplyDTO"},
-		"type":              reqStr("text、image、system 或 tweet_share"),
-		"content":           optStr("文本内容或分享推文的配文"),
+		"type":              reqStr("text、image、system、tweet_share 或 music_share"),
+		"content":           optStr("文本内容或图片、推文分享、歌曲分享的可选配文"),
 		"custom_emote":      &openapi3.SchemaRef{Ref: "#/components/schemas/CustomEmojiRefMap"},
 		"media":             &openapi3.SchemaRef{Value: &openapi3.Schema{Type: &openapi3.Types{openapi3.TypeArray}, Items: &openapi3.SchemaRef{Ref: "#/components/schemas/ChatMediaDTO"}}},
 		"shared_tweet":      &openapi3.SchemaRef{Ref: "#/components/schemas/ChatSharedTweetDTO"},
+		"music_share":       optRef("发送时保存的歌曲资料；读取历史不查询音乐服务", "ChatMusicShareDTO"),
 		"reply_to":          &openapi3.SchemaRef{Ref: "#/components/schemas/ChatMessageReferenceDTO"},
 		"is_deleted":        optBool("是否已被管理员删除"),
 		"deleted_at":        optStr("删除时间"),
@@ -106,10 +114,11 @@ func registerChatPaths(t *openapi3.T) {
 		"title": reqStr("新房间名称"),
 	}, "title")
 	registerSchema(t, "ChatSendMessageRequest", openapi3.Schemas{
-		"type":            reqStr("text、image 或 tweet_share"),
-		"content":         optStr("文本消息内容或分享推文的配文"),
+		"type":            reqStr("text、image、tweet_share 或 music_share"),
+		"content":         optStr("文本消息内容或可选配文"),
 		"media_ids":       strArray("图片媒体 ID，按输入流顺序"),
 		"shared_tweet_id": optStr("分享的推文 ID"),
+		"music_track_id":  optStr("type=music_share 时必填；服务端解析歌曲资料并保存快照，歌曲不存在或音乐服务未配置时返回 400，不保存消息"),
 		"reply_to_id":     optStr("被引用消息 ID"),
 	}, "type")
 	registerSchema(t, "ChatPushSubscriptionRequest", openapi3.Schemas{

@@ -630,6 +630,9 @@ func messageToPO(m *domainchat.Message) *model.ChatMessage {
 		DeletedAt: m.DeletedAt(), DeletedBy: deletedBy, EditedAt: m.EditedAt(), CreatedAt: m.CreatedAt(), UpdatedAt: m.UpdatedAt,
 		BotToolCalls: datatypes.JSON([]byte("[]")),
 	}
+	if song := m.MusicShare(); song != nil {
+		po.MusicShare = &model.ChatMusicShare{TrackID: song.TrackID, Title: song.Title, Artists: song.Artists, DurationMS: song.DurationMS, CoverURL: song.CoverURL}
+	}
 	if reply := m.BotReply(); reply != nil {
 		status := string(reply.Status())
 		updatedAt := reply.UpdatedAt()
@@ -670,7 +673,11 @@ func messageToDomain(po model.ChatMessage, mediaIDs []domainshared.ID) *domainch
 	if po.BotStatus != nil && po.BotUpdatedAt != nil {
 		botReply = domainchat.ReconstructBotReply(domainchat.BotReplyStatus(*po.BotStatus), po.BotThinking, botToolCallsFromJSON(po.BotToolCalls), po.BotRevision, *po.BotUpdatedAt)
 	}
-	return domainchat.ReconstructMessage(domainshared.IDFromUUID(po.ID), domainshared.IDFromUUID(po.ConversationID), domainshared.IDFromUUID(po.SenderID), domainchat.MessageType(po.MessageType), po.Content, mediaIDs, sharedTweetID, replyToID, po.IdempotencyKey, po.DeletedAt, deletedBy, po.EditedAt, botReply, po.CreatedAt, po.UpdatedAt)
+	var musicShare *domainchat.MusicShare
+	if song := po.MusicShare; song != nil {
+		musicShare = &domainchat.MusicShare{TrackID: song.TrackID, Title: song.Title, Artists: song.Artists, DurationMS: song.DurationMS, CoverURL: song.CoverURL}
+	}
+	return domainchat.ReconstructMessage(domainshared.IDFromUUID(po.ID), domainshared.IDFromUUID(po.ConversationID), domainshared.IDFromUUID(po.SenderID), domainchat.MessageType(po.MessageType), po.Content, mediaIDs, sharedTweetID, replyToID, po.IdempotencyKey, po.DeletedAt, deletedBy, po.EditedAt, botReply, musicShare, po.CreatedAt, po.UpdatedAt)
 }
 
 // botToolCallsToJSON 序列化工具调用快照；空列表落库为 '[]'。

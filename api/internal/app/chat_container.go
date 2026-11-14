@@ -38,7 +38,7 @@ type ChatContainer struct {
 
 // NewChatContainer 装配聊天领域、持久化与浏览器推送。
 // customEmojiSvc 解析消息正文中的 [name:uuid] 自定义表情占位符；emojiSvc 供 Bot API 下发系统表情目录。
-func NewChatContainer(db *gorm.DB, cfg *config.Config, customEmojiSvc *appcustomemoji.Service, emojiSvc *appmedia.EmojiService, uploadSvc *appmedia.UploadService, bus appshared.EventBus) *ChatContainer {
+func NewChatContainer(db *gorm.DB, cfg *config.Config, customEmojiSvc *appcustomemoji.Service, emojiSvc *appmedia.EmojiService, uploadSvc *appmedia.UploadService, music appchat.MusicResolver, bus appshared.EventBus) *ChatContainer {
 	repo := gormrepo.NewChatRepository(db)
 	reactionStore := gormrepo.NewChatMessageReactionStore(db)
 	userRepo := gormrepo.NewUserRepository(db)
@@ -50,6 +50,7 @@ func NewChatContainer(db *gorm.DB, cfg *config.Config, customEmojiSvc *appcustom
 		pushSender = infrapush.NewSender(cfg.WebPush.VAPIDPublicKey, cfg.WebPush.VAPIDPrivateKey, cfg.WebPush.VAPIDSubject)
 	}
 	svc := appchat.NewService(repo, userRepo, fileRepo, manager, pushSender, cfg.WebPush.VAPIDPublicKey, nil, bus, reactionStore, tweetRepo, &chatCustomEmojiResolver{svc: customEmojiSvc})
+	svc.WithMusicResolver(music)
 	appearanceStore := appearancegorm.NewChatAppearanceStore(db)
 
 	botTokenBox := newBotTokenBox(cfg)
