@@ -19,7 +19,7 @@ export interface TweetPhotosProps {
 }
 
 /** 卡片宽高比的钳制范围，避免极端长图或横幅撑出过窄或过宽的卡片。 */
-const MIN_RATIO = 0.4;
+const MIN_RATIO = 0.08;
 const MAX_RATIO = 1.8;
 
 export function ratioOf(photo: TweetMediaMetadata): number {
