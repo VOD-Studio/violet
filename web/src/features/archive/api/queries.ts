@@ -3,10 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import * as api from "./client";
 import { archiveKeys } from "./keys";
 
-export const useArchiveYears = (filter: PostBrowseFilter = {}) =>
+export const useArchiveYears = (filter: PostBrowseFilter = {}, enabled = true) =>
 	useQuery({
 		queryKey: archiveKeys.years(filter),
 		queryFn: () => api.fetchArchiveYears(filter),
+		enabled,
 	});
 
 /** 未激活的年份不发请求；筛选变化使用独立缓存。 */

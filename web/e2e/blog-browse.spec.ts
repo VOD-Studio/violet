@@ -293,6 +293,11 @@ test("320 像素主操作不溢出，标签选择可用键盘完成", async ({ p
 	await page.keyboard.press("Enter");
 	await expect(page).toHaveURL(/tag=contract/);
 	await expect(tag).toBeFocused();
-	await page.keyboard.press("Tab");
+	await page.keyboard.press("Shift+Tab");
 	await expect(page.getByRole("combobox", { name: "文章来源" })).toBeFocused();
+	await page.keyboard.press("Tab");
+	await page.keyboard.press("Tab");
+	await expect(
+		page.getByRole("group", { name: "博客视图" }).getByRole("link").first(),
+	).toBeFocused();
 });

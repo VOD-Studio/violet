@@ -1,3 +1,4 @@
+import { useArchiveYears } from "@features/archive/api/queries";
 import { usePostTags } from "@features/posts/api/queries";
 import { Link } from "@tanstack/react-router";
 import {
@@ -33,15 +34,91 @@ const views: { value: BlogView; label: string }[] = [
 export function BlogPage({ view, search, children, onSearchChange }: BlogPageProps) {
 	const tags = usePostTags({ source: search.source });
 	const tagOptions = tags.data ?? [];
+	const archive = view === "archive";
+	const years = useArchiveYears({ tag: search.tag }, archive);
+	const yearOptions = years.data?.years ?? [];
 	const unknownTag = search.tag && !tagOptions.some((tag) => tag.slug === search.tag);
-	const filtered = !!(search.tag || search.source);
-	const clear = () => onSearchChange({});
 
 	return (
 		<PageShell className="max-w-292 md:pt-14">
 			<div className="mb-8 flex min-w-0 flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
 				<PageHeader title="博客" className="mb-0 shrink-0" />
 				<div className="flex min-w-0 flex-wrap items-center gap-3">
+					{archive ? (
+						<Select
+							value=""
+							onValueChange={(year) => {
+								if (year) window.location.hash = `year-${year}`;
+							}}
+							disabled={!yearOptions.length}
+						>
+							<SelectTrigger aria-label="归档年份" controlSize="sm" className="w-28">
+								<SelectValue placeholder="跳转年份" />
+							</SelectTrigger>
+							<SelectContent>
+								{yearOptions.map((year) => (
+									<SelectItem key={year} value={String(year)}>
+										{year}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					) : null}
+					{!archive ? (
+						<Select
+							value={search.source ?? "all"}
+							onValueChange={(source) =>
+								onSearchChange({
+									...search,
+									source:
+										source === "original" || source === "repost"
+											? source
+											: undefined,
+									page: undefined,
+								})
+							}
+						>
+							<SelectTrigger aria-label="文章来源" controlSize="sm" className="w-28">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="all">全部来源</SelectItem>
+								<SelectItem value="original">原创</SelectItem>
+								<SelectItem value="repost">转载</SelectItem>
+							</SelectContent>
+						</Select>
+					) : null}
+					<Select
+						value={search.tag ?? ""}
+						onValueChange={(tag) =>
+							onSearchChange({
+								...search,
+								tag: tag || undefined,
+								page: undefined,
+							})
+						}
+						disabled={tags.isLoading || tags.isError}
+					>
+						<SelectTrigger aria-label="文章标签" controlSize="sm" className="w-36">
+							<SelectValue placeholder={tags.isError ? "标签加载失败" : "全部标签"} />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="">全部标签</SelectItem>
+							{unknownTag ? (
+								<SelectItem value={search.tag ?? ""}>{search.tag}</SelectItem>
+							) : null}
+							{tagOptions.map((tag) => (
+								<SelectItem
+									key={tag.slug}
+									value={tag.slug}
+									textValue={tag.name}
+									meta={`${tag.count} 篇`}
+								>
+									{tag.name}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
 					<Segmented
 						value={view}
 						aria-label="博客视图"
@@ -65,84 +142,15 @@ export function BlogPage({ view, search, children, onSearchChange }: BlogPagePro
 							),
 						}))}
 					/>
-					<div className="flex min-h-8 w-66 items-center gap-2">
-						<Select
-							value={search.tag ?? ""}
-							onValueChange={(tag) =>
-								onSearchChange({
-									...search,
-									tag: tag || undefined,
-									page: undefined,
-								})
-							}
-							disabled={tags.isLoading || tags.isError}
-						>
-							<SelectTrigger aria-label="文章标签" controlSize="sm" className="w-36">
-								<SelectValue
-									placeholder={tags.isError ? "标签加载失败" : "全部标签"}
-								/>
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="">全部标签</SelectItem>
-								{unknownTag ? (
-									<SelectItem value={search.tag ?? ""}>{search.tag}</SelectItem>
-								) : null}
-								{tagOptions.map((tag) => (
-									<SelectItem
-										key={tag.slug}
-										value={tag.slug}
-										textValue={tag.name}
-										meta={`${tag.count} 篇`}
-									>
-										{tag.name}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-						{view !== "archive" ? (
-							<Select
-								value={search.source ?? "all"}
-								onValueChange={(source) =>
-									onSearchChange({
-										...search,
-										source:
-											source === "original" || source === "repost"
-												? source
-												: undefined,
-										page: undefined,
-									})
-								}
-							>
-								<SelectTrigger
-									aria-label="文章来源"
-									controlSize="sm"
-									className="w-28"
-								>
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all">全部来源</SelectItem>
-									<SelectItem value="original">原创</SelectItem>
-									<SelectItem value="repost">转载</SelectItem>
-								</SelectContent>
-							</Select>
-						) : null}
-					</div>
 				</div>
 			</div>
-			{filtered || tags.isError ? (
-				<div className="mb-5 flex min-h-8 flex-wrap items-center gap-3 text-sm text-muted-foreground">
-					{filtered ? (
-						<Button variant="ghost" size="sm" onClick={clear}>
-							清除筛选
-						</Button>
-					) : null}
-					{tags.isError ? (
-						<Button variant="ghost" size="sm" onClick={() => void tags.refetch()}>
-							重试标签
-						</Button>
-					) : null}
-				</div>
+			{tags.isError ? (
+				<p className="mb-5 flex min-h-5 items-center gap-3 text-sm text-muted-foreground">
+					标签列表加载失败。
+					<Button variant="link" size="sm" onClick={() => void tags.refetch()}>
+						重试
+					</Button>
+				</p>
 			) : null}
 			{children}
 		</PageShell>

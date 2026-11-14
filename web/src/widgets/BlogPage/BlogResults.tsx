@@ -50,13 +50,15 @@ export function BlogResults({ view, search, limit, onSearchChange }: BlogResults
 	const total = selected.data?.pagination.total;
 	const filtered = !!(search.tag || search.source);
 
-	if (view === "archive") return <ArchiveBrowse filter={filter} />;
+	if (view === "archive") {
+		return <ArchiveBrowse filter={filter} onClearFilter={() => onSearchChange({})} />;
+	}
 	return (
 		<>
 			{total !== undefined ? (
 				<p
 					role="status"
-					className="mb-5 flex min-h-8 items-center text-sm text-muted-foreground"
+					className="mb-5 flex h-8 items-center text-sm text-muted-foreground"
 				>
 					共 {total} {view === "series" ? "个系列" : "篇文章"}
 					{view === "series" && filtered ? " · 包含匹配文章" : ""}
@@ -93,6 +95,8 @@ export function BlogResults({ view, search, limit, onSearchChange }: BlogResults
 							<Button onClick={() => onSearchChange({ ...search, page: undefined })}>
 								返回第一页
 							</Button>
+						) : filtered ? (
+							<Button onClick={() => onSearchChange({})}>清除筛选</Button>
 						) : undefined
 					}
 				/>

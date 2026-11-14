@@ -120,10 +120,12 @@ function ArchiveYearSection({ year, filter, initiallyActive }: ArchiveYearSectio
 /** 归档仅展示同时满足标签与来源的公开文章。 */
 export interface ArchiveBrowseProps {
 	filter: PostBrowseFilter;
+	/** 筛选没有匹配文章时，空状态提供的恢复入口。 */
+	onClearFilter?: () => void;
 }
 
 /** 保留按年懒加载；首个年份在SSR和水合首帧都直接激活。 */
-export function ArchiveBrowse({ filter }: ArchiveBrowseProps) {
+export function ArchiveBrowse({ filter, onClearFilter }: ArchiveBrowseProps) {
 	const { data, isLoading, isError, refetch } = useArchiveYears(filter);
 	if (isLoading) return <ArchiveSkeleton />;
 	if (isError)
@@ -136,16 +138,19 @@ export function ArchiveBrowse({ filter }: ArchiveBrowseProps) {
 		);
 	const years = data?.years ?? [];
 	if (!years.length)
-		return <Empty title="暂无匹配文章" description="可以更换标签或文章来源，查看其他记录。" />;
+		return (
+			<Empty
+				title="暂无匹配文章"
+				description="可以更换标签，查看其他记录。"
+				action={
+					filter.tag && onClearFilter ? (
+						<Button onClick={onClearFilter}>清除筛选</Button>
+					) : undefined
+				}
+			/>
+		);
 	return (
 		<div>
-			<nav aria-label="归档年份" className="mb-10 flex flex-wrap gap-2">
-				{years.map((year) => (
-					<Button key={year} variant="ghost" size="sm" asChild>
-						<a href={`#year-${year}`}>{year}</a>
-					</Button>
-				))}
-			</nav>
 			<div className="space-y-12">
 				{years.map((year, index) => (
 					<ArchiveYearSection
