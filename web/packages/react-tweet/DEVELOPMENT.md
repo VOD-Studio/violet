@@ -44,17 +44,17 @@ This does not replace interactive browser testing of hydration, media, keyboard 
 
 ## Examples and image provenance
 
-`examples/snapshot.tsx` owns the fictional author/text. `examples/themes.tsx` is the actual component rendered into both README images; English uses `en-US`, Chinese uses `zh-CN`, and the author's English text stays unchanged. `quoted.tsx` reuses that snapshot to demonstrate the small-card layout. No user photo, external avatar, or live post is loaded. `remote.tsx` accepts a host fetcher; `server.tsx` exports a real server function and deliberately requires a caller-supplied real ID rather than pretending the fictional example is a live tweet.
+`examples/snapshot.tsx` owns the fictional author/text. `examples/themes.tsx` is the actual component rendered into both README images; English uses `en-US`, Chinese uses `zh-CN`, and the author's English text stays unchanged. `quoted.tsx` reuses that snapshot to demonstrate the small-card layout. `gallery.tsx` is the second rendered example (`gallery-en.png`/`gallery-zh.png`): photo grid, a 20-slice dark rail, saved and compact quotes, poster-only video, and deleted/private states. Its artwork comes from `gallery-art.ts`, which generates gradient SVGs served by the renderer under `/gallery/`, so no photo or external asset is involved. No user photo, external avatar, or live post is loaded. `remote.tsx` accepts a host fetcher; `server.tsx` exports a real server function and deliberately requires a caller-supplied real ID rather than pretending the fictional example is a live tweet.
 
 `scripts/sync-readme.mjs` copies complete example source into marked blocks in both READMEs. `--check` is read-only and fails on drift or missing/duplicate markers. Do not edit generated snippet bodies independently.
 
-`scripts/render-examples.mjs` bundles `themes.tsx` with esbuild, replacing only its styled package import with the built unstyled entry for Node SSR. It serves that markup with the **built package CSS and SVGs** in Chromium, then captures the cards. Every network request is intercepted; third-party requests fail. A package-local temporary module is always removed. Use an existing Playwright Chromium installation, or select an existing executable explicitly:
+`scripts/render-examples.mjs` bundles `themes.tsx` and `gallery.tsx` with esbuild, replacing only its styled package import with the built unstyled entry for Node SSR. It serves that markup with the **built package CSS and SVGs** in Chromium, then captures both examples in both languages. Every network request is intercepted; third-party requests fail. A package-local temporary module is always removed. Use an existing Playwright Chromium installation, or select an existing executable explicitly:
 
 ```sh
 PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/path/to/chromium make react-tweet-examples
 ```
 
-Browser installation is an explicit maintainer/environment step, not something the generation script silently performs. Rasterization can differ by OS, fonts, and browser version. `docs/images/manifest.json` records SHA-256 for example source, renderer source, every built file, and both PNGs. The read-only `--check` recomputes those hashes without importing Playwright or launching a browser. It proves checked-in images belong to the current generated inputs and detects edited assets; it is not a cross-platform pixel-diff test. Regenerate after changing any hashed input. Commit regenerated PNGs and manifest together.
+Browser installation is an explicit maintainer/environment step, not something the generation script silently performs. Rasterization can differ by OS, fonts, and browser version. `docs/images/manifest.json` records SHA-256 for example source, renderer source, every built file, and all four PNGs. The read-only `--check` recomputes those hashes without importing Playwright or launching a browser. It proves checked-in images belong to the current generated inputs and detects edited assets; it is not a cross-platform pixel-diff test. Regenerate after changing any hashed input. Commit regenerated PNGs and manifest together.
 
 ## Package and publication contract
 

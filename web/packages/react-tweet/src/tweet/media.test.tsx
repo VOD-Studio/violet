@@ -76,15 +76,15 @@ it("竖图为主的多张照片用横向滚动条，每张保持各自的宽高�
 	expect(cards).toHaveLength(4);
 	expect(cards[0].style.getPropertyValue("--_photo-ratio")).toBe(String(900 / 2000));
 	expect(cards[2].style.getPropertyValue("--_photo-ratio")).toBe("1");
-	// 极端长图的宽高比被钳制，避免卡片窄到无法辨认。
+	// 极端长图的宽高比被钳制，避免卡片窄到无法辨认；X 的 20 张拼接竖条（71×800）不在此列。
 	const extreme = render(
-		<EmbeddedTweet tweet={tweetWith([{ ...portrait("x"), height: 9000 }, portrait("y")])} />,
+		<EmbeddedTweet tweet={tweetWith([{ ...portrait("x"), height: 20000 }, portrait("y")])} />,
 	);
 	expect(
 		extreme.container
 			.querySelector<HTMLElement>(".v-tweet__photo")
 			?.style.getPropertyValue("--_photo-ratio"),
-	).toBe("0.4");
+	).toBe("0.08");
 });
 
 it("横图为主、单张或缺少尺寸时保持方格或原比例，不使用滚动条", () => {

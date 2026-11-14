@@ -19,20 +19,23 @@ type facet struct {
 	Display     string `json:"display"`
 }
 
-func normalizeText(raw string, displayRange []int, facets []facet) (string, []tweet.ExternalSegment, error) {
-	units := utf16.Encode([]rune(raw))
-	start, end := 0, len(units)
+// normalizeText 按码点切分正文：X 的实体索引与普通推文的显示范围均以 Unicode 码点计数，
+// 只有长推文（note tweet）的显示范围是 UTF-16 偏移，由 utf16Range 指明。
+func normalizeText(raw string, displayRange []int, facets []facet, utf16Range bool) (string, []tweet.ExternalSegment, error) {
+	runes := []rune(raw)
+	start, end := 0, len(runes)
 	if len(displayRange) > 0 {
 		if len(displayRange) != 2 {
 			return "", nil, fmt.Errorf("invalid text range")
 		}
 		start, end = displayRange[0], displayRange[1]
+		if utf16Range {
+			start, end = runeIndexOfUTF16(runes, start), runeIndexOfUTF16(runes, end)
+		}
 	}
-	boundary := func(i int) bool {
-		return i >= 0 && i <= len(units) && (i == 0 || i == len(units) || units[i] < 0xdc00 || units[i] > 0xdfff)
-	}
+	boundary := func(i int) bool { return i >= 0 && i <= len(runes) }
 	if start > end || !boundary(start) || !boundary(end) {
-		return "", nil, fmt.Errorf("invalid UTF-16 boundary")
+		return "", nil, fmt.Errorf("invalid text range")
 	}
 	relevant := make([]facet, 0, len(facets))
 	for _, f := range facets {
@@ -68,12 +71,12 @@ func normalizeText(raw string, displayRange []int, facets []facet) (string, []tw
 		if a < pos {
 			continue
 		}
-		appendText(string(utf16.Decode(units[pos:a])))
+		appendText(string(runes[pos:a]))
 		pos = b
 		if f.Type == "media" {
 			continue
 		}
-		text := html.UnescapeString(string(utf16.Decode(units[a:b])))
+		text := html.UnescapeString(string(runes[a:b]))
 		kind, href := f.Type, ""
 		switch f.Type {
 		case "url":
@@ -98,7 +101,7 @@ func normalizeText(raw string, displayRange []int, facets []facet) (string, []tw
 		}
 		segments = append(segments, tweet.ExternalSegment{Kind: kind, Text: text, URL: href})
 	}
-	appendText(string(utf16.Decode(units[pos:end])))
+	appendText(string(runes[pos:end]))
 	if len(segments) > 0 {
 		segments[0].Text = strings.TrimLeft(segments[0].Text, " \r\n\t")
 		segments[len(segments)-1].Text = strings.TrimRight(segments[len(segments)-1].Text, " \r\n\t")
@@ -116,4 +119,25 @@ func safeLink(raw string) string {
 		return ""
 	}
 	return u.String()
+}
+
+// runeIndexOfUTF16 把 UTF-16 偏移换算为码点下标；落在代理对中间或越界时返回 -1。
+func runeIndexOfUTF16(runes []rune, offset int) int {
+	if offset < 0 {
+		return -1
+	}
+	units := 0
+	for i, r := range runes {
+		if units == offset {
+			return i
+		}
+		if units > offset {
+			return -1
+		}
+		units += utf16.RuneLen(r)
+	}
+	if units == offset {
+		return len(runes)
+	}
+	return -1
 }

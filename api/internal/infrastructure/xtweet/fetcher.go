@@ -20,6 +20,9 @@ import (
 
 const maxJSONBytes = 2 << 20
 
+// maxExternalMedia 与 X 单条推文的图片上限一致（2026 年起最多 20 张）。
+const maxExternalMedia = 20
+
 type Fetcher struct {
 	client   *http.Client
 	mu       sync.Mutex
@@ -281,7 +284,7 @@ func normalizeFX(raw *fxTweet, depth int) (*apptweet.ExternalFetchResult, error)
 	if raw.Type != "status" || !tweet.ValidXID(raw.ID) || !tweet.ValidXID(raw.Author.ID) || !tweet.ValidXHandle(raw.Author.Handle) || raw.RawText == nil || len(raw.RawText.Text) > 100000 {
 		return nil, &apptweet.ExternalFetchError{Kind: "unavailable"}
 	}
-	text, segments, err := normalizeText(raw.RawText.Text, raw.RawText.DisplayTextRange, raw.RawText.Facets)
+	text, segments, err := normalizeText(raw.RawText.Text, raw.RawText.DisplayTextRange, raw.RawText.Facets, raw.IsNoteTweet != nil && *raw.IsNoteTweet)
 	if err != nil {
 		return nil, &apptweet.ExternalFetchError{Kind: "incomplete", StopFallback: true}
 	}
@@ -315,7 +318,7 @@ func normalizeFX(raw *fxTweet, depth int) (*apptweet.ExternalFetchResult, error)
 	if len(media) == 0 {
 		media = append(append([]fxMedia{}, raw.Media.Photos...), raw.Media.Videos...)
 	}
-	if len(media) > 8 {
+	if len(media) > maxExternalMedia {
 		return nil, &apptweet.ExternalFetchError{Kind: "unavailable"}
 	}
 	for _, m := range media {
@@ -477,7 +480,7 @@ func normalizeSyndication(raw *syTweet, depth int) (*apptweet.ExternalFetchResul
 			facets = append(facets, facet{Type: "media", Indices: e.Indices})
 		}
 	}
-	text, segments, err := normalizeText(raw.Text, raw.DisplayTextRange, facets)
+	text, segments, err := normalizeText(raw.Text, raw.DisplayTextRange, facets, false)
 	if err != nil {
 		return nil, &apptweet.ExternalFetchError{Kind: "incomplete", StopFallback: true}
 	}
@@ -497,7 +500,7 @@ func normalizeSyndication(raw *syTweet, depth int) (*apptweet.ExternalFetchResul
 	} else if nonNull(raw.NoteTweet) || raw.IsStaleEdit {
 		snapshot.Completeness = tweet.TextUnknown
 	}
-	if len(raw.MediaDetails) > 8 || len(raw.Photos) > 8 {
+	if len(raw.MediaDetails) > maxExternalMedia || len(raw.Photos) > maxExternalMedia {
 		return nil, &apptweet.ExternalFetchError{Kind: "unavailable"}
 	}
 	for _, m := range raw.MediaDetails {

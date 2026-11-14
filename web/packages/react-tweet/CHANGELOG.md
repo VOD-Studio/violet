@@ -2,6 +2,22 @@
 
 All notable changes to `@violetjs/react-tweet` are documented here. Versions follow [Semantic Versioning](https://semver.org/); before 1.0.0, a minor version may include breaking changes.
 
+## 0.3.0 - 2026-11-14
+
+### Added
+
+- `TweetPhotos`, `TweetPhotosProps`, `resolveLocalization`, and `TweetLocalization` are exported, so a host can assemble its own photo layout with the package's localization.
+- The README gains a "See more layouts" section with an executable `gallery` example and English/Simplified Chinese images: photo grid, a 20-slice rail in the dark theme, saved and compact quotes, poster-only video, and deleted/private states.
+
+### Changed
+
+- Default card, muted, border, link, shadow, and radius styling reads host-overridable `--tweet-*` variables; package defaults remain, and media overlays use an internal variable.
+- Portrait photo rails keep very narrow images at their own proportions: the card aspect-ratio floor drops from 0.4 to 0.08, so a 71×800 slice is no longer widened and cropped.
+
+### Fixed
+
+- Display ranges and entity indices from FxTwitter are Unicode code points for ordinary posts (long posts keep a UTF-16 display range). They were read as UTF-16, so a post containing an emoji lost its last character or the character before a trailing media link, for example `.JPG` rendered as `.JP`.
+
 ## 0.2.0 - 2026-10-13
 
 ### Added

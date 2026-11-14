@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 	"time"
-	"unicode/utf16"
+	"unicode/utf8"
 
 	apptweet "blog-api/internal/application/tweet"
 	"blog-api/internal/domain/tweet"
@@ -21,11 +21,11 @@ type roundTripFunc func(*http.Request) (*http.Response, error)
 func (fn roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) { return fn(req) }
 
 func fxFixture(text string) string {
-	return fmt.Sprintf(`{"code":200,"status":{"type":"status","id":"20","text":%q,"raw_text":{"text":%q,"display_text_range":[0,%d],"facets":[]},"is_note_tweet":false,"created_timestamp":1142974214,"author":{"id":"12","name":"Original","screen_name":"jack"},"media":{}}}`, text, text, len(utf16.Encode([]rune(text))))
+	return fmt.Sprintf(`{"code":200,"status":{"type":"status","id":"20","text":%q,"raw_text":{"text":%q,"display_text_range":[0,%d],"facets":[]},"is_note_tweet":false,"created_timestamp":1142974214,"author":{"id":"12","name":"Original","screen_name":"jack"},"media":{}}}`, text, text, utf8.RuneCountInString(text))
 }
 
 func syFixture(text string) string {
-	return fmt.Sprintf(`{"__typename":"Tweet","id_str":"20","text":%q,"display_text_range":[0,%d],"created_at":"2006-03-21T20:50:14.000Z","user":{"id_str":"12","name":"Original","screen_name":"jack"}}`, text, len(utf16.Encode([]rune(text))))
+	return fmt.Sprintf(`{"__typename":"Tweet","id_str":"20","text":%q,"display_text_range":[0,%d],"created_at":"2006-03-21T20:50:14.000Z","user":{"id_str":"12","name":"Original","screen_name":"jack"}}`, text, utf8.RuneCountInString(text))
 }
 
 func jsonResponse(status int, body string) *http.Response {
@@ -40,33 +40,54 @@ func TestSyndicationTokenJavaScriptFixtures(t *testing.T) {
 	}
 }
 
-func TestNormalizeUTF16FacetsAndMedia(t *testing.T) {
+func TestNormalizeCodePointFacetsAndMedia(t *testing.T) {
 	raw := "中文😀e\u0301 @jack #话题 https://t.co/link https://t.co/media [doge]"
 	index := func(part string) []int {
 		start := strings.Index(raw, part)
-		return []int{len(utf16.Encode([]rune(raw[:start]))), len(utf16.Encode([]rune(raw[:start+len(part)])))}
+		return []int{utf8.RuneCountInString(raw[:start]), utf8.RuneCountInString(raw[:start+len(part)])}
 	}
 	facets := []facet{
 		{Type: "mention", Indices: index("@jack")}, {Type: "hashtag", Indices: index("#话题")},
 		{Type: "url", Indices: index("https://t.co/link"), Replacement: "https://example.com/story", Display: "example.com/story"},
 		{Type: "media", Indices: index("https://t.co/media")},
 	}
-	text, segments, err := normalizeText(raw, nil, facets)
+	text, segments, err := normalizeText(raw, nil, facets, false)
 	require.NoError(t, err)
 	require.Contains(t, text, "中文😀e\u0301")
 	require.Contains(t, text, "[doge]")
 	require.Contains(t, text, "example.com/story")
 	require.NotContains(t, text, "t.co/media")
 	require.Equal(t, "https://x.com/jack", segments[1].URL)
-	plain, _, err := normalizeText("keep https://t.co/unknown", nil, nil)
+	plain, _, err := normalizeText("keep https://t.co/unknown", nil, nil, false)
 	require.NoError(t, err)
 	require.Contains(t, plain, "https://t.co/unknown")
-	_, _, err = normalizeText("😀x", nil, []facet{{Type: "url", Indices: []int{1, 2}}})
+	_, _, err = normalizeText("😀x", nil, []facet{{Type: "url", Indices: []int{1, 9}}}, false)
 	require.Error(t, err)
-	unsafe, segments, err := normalizeText("link", nil, []facet{{Type: "url", Indices: []int{0, 4}, Replacement: "javascript:alert(1)"}})
+	unsafe, segments, err := normalizeText("link", nil, []facet{{Type: "url", Indices: []int{0, 4}, Replacement: "javascript:alert(1)"}}, false)
 	require.NoError(t, err)
 	require.Equal(t, "link", unsafe)
 	require.Empty(t, segments[0].URL)
+}
+
+// 取自真实响应：display_text_range 与 media 实体都以码点计数，😍 在 UTF-16 里占两位。
+func TestNormalizeKeepsTextEndAfterAstralCharacter(t *testing.T) {
+	raw := "上传20张😍\n\nClaude小姐会一直看着你.JPG https://t.co/AiIwdGZGiO"
+	end := utf8.RuneCountInString(strings.TrimSuffix(raw, " https://t.co/AiIwdGZGiO"))
+	media := facet{Type: "media", Indices: []int{end + 1, utf8.RuneCountInString(raw)}}
+	text, _, err := normalizeText(raw, []int{0, end}, []facet{media, media}, false)
+	require.NoError(t, err)
+	require.Equal(t, "上传20张😍\n\nClaude小姐会一直看着你.JPG", text)
+}
+
+// 长推文的显示范围是 UTF-16 偏移，实体仍是码点。
+func TestNormalizeNoteTweetUsesUTF16DisplayRange(t *testing.T) {
+	raw := "😀 @jack 链接"
+	text, segments, err := normalizeText(raw, []int{0, 11}, []facet{{Type: "mention", Indices: []int{2, 7}}}, true)
+	require.NoError(t, err)
+	require.Equal(t, raw, text)
+	require.Equal(t, "https://x.com/jack", segments[1].URL)
+	_, _, err = normalizeText(raw, []int{1, 11}, nil, true)
+	require.Error(t, err)
 }
 
 func TestFetcherFallbackAndTerminalStates(t *testing.T) {
@@ -219,4 +240,24 @@ func TestVideoSourceURLAcceptsOnlyTwitterMP4(t *testing.T) {
 	} {
 		require.Empty(t, videoSourceURL(raw), raw)
 	}
+}
+
+func TestNormalizeFXMediaCountLimit(t *testing.T) {
+	build := func(count int) *fxTweet {
+		photos := make([]string, count)
+		for i := range photos {
+			photos[i] = fmt.Sprintf(`{"type":"photo","url":"https://pbs.twimg.com/media/p%d.jpg?name=orig","width":10,"height":10}`, i)
+		}
+		body := fmt.Sprintf(`{"type":"status","id":"20","raw_text":{"text":"photos","display_text_range":[0,6],"facets":[]},"is_note_tweet":false,"created_timestamp":1142974214,"author":{"id":"12","name":"Original","screen_name":"jack"},"media":{"all":[%s]}}`, strings.Join(photos, ","))
+		var raw fxTweet
+		require.NoError(t, json.Unmarshal([]byte(body), &raw))
+		return &raw
+	}
+	result, err := normalizeFX(build(maxExternalMedia), 0)
+	require.NoError(t, err)
+	require.Len(t, result.Snapshot.Media, maxExternalMedia)
+	_, err = normalizeFX(build(maxExternalMedia+1), 0)
+	var failure *apptweet.ExternalFetchError
+	require.ErrorAs(t, err, &failure)
+	require.Equal(t, "unavailable", failure.Kind)
 }

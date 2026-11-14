@@ -65,7 +65,7 @@ export function normalizeText(tweet: Record<string, unknown>): {
 	if (!Array.isArray(range) || range.length !== 2) {
 		throw new Error("FxTwitter returned an invalid text range");
 	}
-	// 普通推文的显示范围为码点，长推文为 UTF-16；实体片段的两种口径恰好相反。
+	// 实体片段始终按码点计数；显示范围在普通推文里按码点，长推文里按 UTF-16。
 	const scalarRange = raw.display_text_range != null && !noteTweet;
 	const start = scalarRange ? utf16Offset(text, range[0]) : range[0];
 	const end = scalarRange ? utf16Offset(text, range[1]) : range[1];
@@ -88,8 +88,8 @@ export function normalizeText(tweet: Record<string, unknown>): {
 		if (!Array.isArray(indices) || indices.length !== 2) {
 			throw new Error("FxTwitter returned an invalid facet");
 		}
-		const facetStart = noteTweet ? utf16Offset(text, indices[0]) : indices[0];
-		const facetEnd = noteTweet ? utf16Offset(text, indices[1]) : indices[1];
+		const facetStart = utf16Offset(text, indices[0]);
+		const facetEnd = utf16Offset(text, indices[1]);
 		if (!boundary(facetStart) || !boundary(facetEnd) || facetStart >= facetEnd) {
 			throw new Error("FxTwitter returned an invalid facet");
 		}
