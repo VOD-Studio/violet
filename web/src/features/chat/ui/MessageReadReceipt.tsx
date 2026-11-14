@@ -65,6 +65,10 @@ export function MessageReadReceipt({
 					mentioning.current = false;
 				}}
 			>
+				<p className="px-2 pb-1 pt-1.5 text-xs font-medium text-foreground">
+					已读 {state.read_count} · 未读{" "}
+					{Math.max(state.member_count - state.read_count, 0)}
+				</p>
 				{isLoading ? (
 					<p className="px-2 py-3 text-center text-xs text-muted-foreground">加载中…</p>
 				) : isError ? (

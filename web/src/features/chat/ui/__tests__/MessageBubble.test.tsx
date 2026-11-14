@@ -374,6 +374,18 @@ describe("MessageBubble 已读回执", () => {
 		fireEvent.click(screen.getByText("2 人已读"));
 		expect(await screen.findByText("Bob")).toBeTruthy();
 	});
+
+	it("房间：名单浮层标题同时给出已读与未读人数", async () => {
+		receiptMocks.readers = { data: [], isLoading: false, isError: false };
+		renderBubble(
+			receiptMessage({ read_state: { read_count: 2, member_count: 5 } }),
+			() => {},
+			"room",
+		);
+
+		fireEvent.click(screen.getByText("2 人已读"));
+		expect(await screen.findByText("已读 2 · 未读 3")).toBeTruthy();
+	});
 });
 
 it("待发送图片显示进度并隐藏编辑与已读，失败后可原地重试", () => {
