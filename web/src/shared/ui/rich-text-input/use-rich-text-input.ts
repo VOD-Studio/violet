@@ -67,9 +67,12 @@ export interface UseRichTextInputReturn {
 	replaceSlashQuery: (
 		command: string,
 		mention?: { id: string; username: string; displayName: string },
+		prependIfInactive?: boolean,
 	) => boolean;
 	prependMention: (userID: string, username: string, displayName: string) => void;
 	refreshQueries: () => void;
+	/** 在当前或最后保存的选区启动 @ 查询，保留其余正文。 */
+	startMentionQuery: () => boolean;
 	handleInput: () => void;
 	handlePaste: (e: React.ClipboardEvent) => void;
 	handleKeyDown: (e: React.KeyboardEvent) => void;
@@ -458,10 +461,15 @@ export function useRichTextInput({
 
 	const refreshQueries = useCallback(() => {
 		const div = contentRef.current;
-		if (!div) return;
-		onMentionQueryChangeRef.current?.(activeMentionQuery(div));
+		if (!div) {
+			return;
+		}
+		const mentionQuery = onMentionQueryChangeRef.current ? activeMentionQuery(div) : null;
+		onMentionQueryChangeRef.current?.(mentionQuery);
 		onSlashQueryChangeRef.current?.(
-			htmlToMarkdown().startsWith("/") ? (leadingSlashRange(div)?.query ?? null) : null,
+			mentionQuery === null && htmlToMarkdown().startsWith("/")
+				? (leadingSlashRange(div)?.query ?? null)
+				: null,
 		);
 	}, [htmlToMarkdown]);
 
@@ -472,13 +480,68 @@ export function useRichTextInput({
 		refreshQueries();
 	}, [htmlToMarkdown, refreshQueries]);
 
+	const startMentionQuery = useCallback(() => {
+		const div = contentRef.current;
+		const selection = window.getSelection();
+		if (!div || disabled || !selection) {
+			return false;
+		}
+		const liveRange = selection.rangeCount ? selection.getRangeAt(0) : null;
+		const savedRange = emojiCaret.current;
+		const range =
+			liveRange && div.contains(liveRange.commonAncestorContainer)
+				? liveRange.cloneRange()
+				: savedRange && div.contains(savedRange.commonAncestorContainer)
+					? savedRange.cloneRange()
+					: document.createRange();
+		if (!div.contains(range.commonAncestorContainer)) {
+			range.selectNodeContents(div);
+			range.collapse(false);
+		}
+		div.focus();
+		selection.removeAllRanges();
+		selection.addRange(range);
+		if (activeMentionQuery(div) === null) {
+			const prefix = range.cloneRange();
+			prefix.selectNodeContents(div);
+			prefix.setEnd(range.startContainer, range.startOffset);
+			const trigger = document.createTextNode(
+				/\S$/.test(prefix.toString()) ? "\u00a0@" : "@",
+			);
+			range.deleteContents();
+			range.insertNode(trigger);
+			// 查询解析需要文字节点里的光标，而非其父节点的边界。
+			range.setStart(trigger, trigger.length);
+			range.collapse(true);
+			selection.removeAllRanges();
+			selection.addRange(range);
+			emojiCaret.current = range.cloneRange();
+			handleInput();
+		} else {
+			refreshQueries();
+		}
+		return true;
+	}, [disabled, handleInput, refreshQueries]);
+
 	const replaceSlashQuery = useCallback(
-		(command: string, mention?: { id: string; username: string; displayName: string }) => {
+		(
+			command: string,
+			mention?: { id: string; username: string; displayName: string },
+			prependIfInactive = false,
+		) => {
 			const div = contentRef.current;
-			if (!div || disabled || !htmlToMarkdown().startsWith("/")) return false;
-			const active = leadingSlashRange(div);
-			if (!active) return false;
-			const range = active.range;
+			if (!div || disabled) {
+				return false;
+			}
+			const active = htmlToMarkdown().startsWith("/") ? leadingSlashRange(div) : null;
+			if (!active && !prependIfInactive) {
+				return false;
+			}
+			const range = active?.range ?? document.createRange();
+			if (!active) {
+				range.selectNodeContents(div);
+				range.collapse(true);
+			}
 			range.deleteContents();
 			const fragment = document.createDocumentFragment();
 			if (mention) {
@@ -600,6 +663,7 @@ export function useRichTextInput({
 		replaceSlashQuery,
 		prependMention,
 		refreshQueries,
+		startMentionQuery,
 		handleInput,
 		handlePaste,
 		handleKeyDown,
