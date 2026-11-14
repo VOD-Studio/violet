@@ -207,6 +207,8 @@ type UserDTO struct {
 	// AvatarURL 头像地址。
 	AvatarURL string `json:"avatar_url"`
 	IsBot     bool   `json:"is_bot"`
+	// IsSiteOwner 是否为站长（root 账号），用于在成员列表中标出。
+	IsSiteOwner bool `json:"is_site_owner"`
 }
 
 // BotToolCallDTO 工具调用读模型。
@@ -2120,7 +2122,7 @@ func userToDTO(user *domainuser.User) UserDTO {
 	if displayName == "" {
 		displayName = username
 	}
-	return UserDTO{ID: user.GetID().String(), Username: username, DisplayName: displayName, AvatarURL: user.AvatarURL(), IsBot: user.IsBot()}
+	return UserDTO{ID: user.GetID().String(), Username: username, DisplayName: displayName, AvatarURL: user.AvatarURL(), IsBot: user.IsBot(), IsSiteOwner: user.IsRoot()}
 }
 
 func memberIDs(members []*domainchat.Member) []domainshared.ID {

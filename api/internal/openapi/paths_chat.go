@@ -5,11 +5,12 @@ import "github.com/getkin/kin-openapi/openapi3"
 // registerChatPaths 注册聊天资源、事件流和 Web Push 订阅契约。
 func registerChatPaths(t *openapi3.T) {
 	registerSchema(t, "ChatUserDTO", openapi3.Schemas{
-		"id":           reqStr("用户 ID"),
-		"username":     reqStr("用户名"),
-		"display_name": reqStr("展示名"),
-		"avatar_url":   optStr("头像地址"),
-		"is_bot":       optBool("是否为 Bot 虚拟用户；吊销凭据后仍保留身份"),
+		"id":            reqStr("用户 ID"),
+		"username":      reqStr("用户名"),
+		"display_name":  reqStr("展示名"),
+		"avatar_url":    optStr("头像地址"),
+		"is_bot":        optBool("是否为 Bot 虚拟用户；吊销凭据后仍保留身份"),
+		"is_site_owner": optBool("是否为站长（root 账号）"),
 	})
 	registerSchema(t, "ChatBotToolCallDTO", openapi3.Schemas{
 		"id":          optStr("调用方稳定标识，单条回复内唯一"),
