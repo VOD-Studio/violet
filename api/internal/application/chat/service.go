@@ -10,6 +10,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -48,6 +49,7 @@ type Service struct {
 	botRepo      domainchat.BotRepository
 	presence     PresenceReader
 	settings     domainchat.UserSettingsRepository
+	presenceMu   sync.Mutex
 	music        MusicResolver
 }
 

@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/rs/zerolog/log"
+
 	domainchat "blog-api/internal/domain/chat"
 	domainshared "blog-api/internal/domain/shared"
 )
@@ -56,25 +58,44 @@ func (s *Service) SetHideOnline(ctx context.Context, userID domainshared.ID, hid
 	if err := s.settings.SetHideOnline(ctx, userID, hide); err != nil {
 		return err
 	}
-	s.PresenceChanged(ctx, userID)
+	s.presenceMu.Lock()
+	defer s.presenceMu.Unlock()
+	s.pushPresence(ctx, userID, s.isOnline(userID) && !hide)
 	return nil
 }
 
-// PresenceChanged 向与该用户同会话的其他成员推送其对外在线状态。
+// PresenceChanged 处理用户第一条连接建立或最后一条连接断开。
 //
-// 隐身用户对外恒为离线，推送的始终是 online=false，不泄露真实连接状态。
-// 事件不持久化、不带 ID，与输入状态相同，不污染 Last-Event-ID 续传序号。
+// 隐身用户的连接变化对外不可见，不广播，避免对端从事件时间点推断其活动。
+// 与 SetHideOnline 共用一把锁：对外状态在锁内现取现发，较早的回调不会在较晚的
+// 可见性变更之后推出过期状态。
 func (s *Service) PresenceChanged(ctx context.Context, userID domainshared.ID) {
 	if s.notifier == nil {
 		return
 	}
+	s.presenceMu.Lock()
+	defer s.presenceMu.Unlock()
 	hidden, err := s.hiddenOnline(ctx, []domainshared.ID{userID})
 	if err != nil {
+		log.Warn().Err(err).Str("user_id", userID.String()).Msg("读取聊天隐身设置失败，跳过在线状态推送")
 		return
 	}
-	online := s.isOnline(userID) && !hidden[userID]
+	if hidden[userID] {
+		return
+	}
+	s.pushPresence(ctx, userID, s.isOnline(userID))
+}
+
+// pushPresence 向与该用户同会话的其他成员推送在线状态；调用方须持有 presenceMu。
+//
+// 事件不持久化、不带 ID，与输入状态相同，不污染 Last-Event-ID 续传序号。
+func (s *Service) pushPresence(ctx context.Context, userID domainshared.ID, online bool) {
+	if s.notifier == nil {
+		return
+	}
 	peers, err := s.repo.ListCoMemberIDs(ctx, userID)
 	if err != nil {
+		log.Warn().Err(err).Str("user_id", userID.String()).Msg("查询共同成员失败，跳过在线状态推送")
 		return
 	}
 	dto := EventDTO{

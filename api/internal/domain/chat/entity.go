@@ -66,8 +66,8 @@ const (
 	EventMessageReactionUpdated ChatEventType = "message.reaction.updated"
 	// EventMessageUpdated 消息被发送者编辑事件。
 	EventMessageUpdated ChatEventType = "message.updated"
-	// EventTypingUpdated 输入状态变化事件。不持久化、不参与 SSE 断线补发——
-	// 是聊天域内唯一纯内存实时推送的事件类型（见 CONTEXT.md「输入状态」词条）。
+	// EventTypingUpdated 输入状态变化事件。不持久化、不参与 SSE 断线补发，
+	// 与在线状态事件同属纯内存实时推送（见 CONTEXT.md「输入状态」词条）。
 	EventTypingUpdated ChatEventType = "typing.updated"
 	// EventPresenceUpdated 成员在线状态变化事件。与输入状态一样不持久化、不参与断线补发：
 	// 在线是瞬态事实，客户端重连后以成员列表对账。

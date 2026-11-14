@@ -181,5 +181,4 @@ type ChatUserSettings struct {
 	UpdatedAt  time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
 }
 
-// TableName 显式指定表名。
 func (ChatUserSettings) TableName() string { return "chat_user_settings" }

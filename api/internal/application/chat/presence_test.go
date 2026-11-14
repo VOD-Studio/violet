@@ -162,15 +162,32 @@ func TestPresenceChangePushesEphemeralEventToCoMembers(t *testing.T) {
 	}
 }
 
-func TestHiddenUserConnectingPushesNothing(t *testing.T) {
+func TestHiddenUserConnectionActivityPushesNothing(t *testing.T) {
 	f := newPresenceFixture(t)
 	f.settings.hidden[f.peer] = true
 	f.manager.SetPresenceListener(func(userID domainshared.ID) { f.svc.PresenceChanged(context.Background(), userID) })
 	_, cleanup := f.manager.Register(f.peer)
+	cleanup()
+	if len(f.notifier.pushed) != 0 {
+		t.Fatalf("隐身用户的上线与下线对外不可见，不得产生事件: %+v", f.notifier.pushed)
+	}
+}
+
+func TestHideOnlinePushesVisibilityChangeToCoMembers(t *testing.T) {
+	f := newPresenceFixture(t)
+	_, cleanup := f.manager.Register(f.peer)
 	defer cleanup()
-	for _, push := range f.notifier.pushed {
-		if push.event.Data["online"] == true {
-			t.Fatalf("隐身用户上线不得泄露: %+v", push.event)
-		}
+	if err := f.svc.SetHideOnline(context.Background(), f.peer, true); err != nil {
+		t.Fatal(err)
+	}
+	if len(f.notifier.pushed) != 2 || f.notifier.pushed[0].event.Data["online"] != false {
+		t.Fatalf("隐身后向共同成员推送离线: %+v", f.notifier.pushed)
+	}
+	f.notifier.pushed = nil
+	if err := f.svc.SetHideOnline(context.Background(), f.peer, false); err != nil {
+		t.Fatal(err)
+	}
+	if len(f.notifier.pushed) != 2 || f.notifier.pushed[0].event.Data["online"] != true {
+		t.Fatalf("取消隐身后仍在线则推送在线: %+v", f.notifier.pushed)
 	}
 }

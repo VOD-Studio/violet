@@ -12,7 +12,6 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-// ChatUserSettingsRepository 聊天用户设置的 GORM 实现。
 type ChatUserSettingsRepository struct {
 	db *gorm.DB
 }
