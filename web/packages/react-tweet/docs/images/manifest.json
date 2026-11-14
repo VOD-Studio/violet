@@ -62,7 +62,7 @@
 		"dist/unstyled.js": "005ae099b97d8c8b08530f124f02b8cae05ee938266a300350fc35a3973c7020",
 		"examples/card.tsx": "d10e890156d77b36e08dc65cb5444520cac7fbf3af4e62cee446e7577a7a43fa",
 		"examples/gallery-art.ts": "9a1080e6f86b40d3eb96077c331e68ca3d1a9cc237f4d2c193c1e813bf22164c",
-		"examples/gallery.tsx": "99ae31e2bb4e1c4d7cd93559850cab656e151ec1020d420d78c79712c9c0fb55",
+		"examples/gallery.tsx": "e0743d735b0a36a886c6955937bfeb0f274a0919a601d67a463f2c622733edac",
 		"examples/quoted.tsx": "b48bf255d795f16c3d8d767b053953c008b1c556b946b3bbea08307dfcf731c2",
 		"examples/remote.tsx": "a5a65c54c9c601ed371264db3c407d8308df62eb9ba9fd511e1fd5d09549c1b5",
 		"examples/server.tsx": "b47f94df9888b1896f83c93914e88af4543104399dd3047b9028a9c2c15251b4",
@@ -73,7 +73,7 @@
 	"images": {
 		"tweet-en.png": "4e060262062d054ccbef6f2f851ab28c36402e1e6a6f8fa241817eb4d7621954",
 		"tweet-zh.png": "bf8070327678d51aa29012bb24ee3ab7ee8859214985a94b8f35bf7445cecbe2",
-		"gallery-en.png": "4787d4d9c9282105b0bc9fdda562d8f5a6210c4d334e180f1ea15b3197fd8c62",
-		"gallery-zh.png": "a8b51ea194ffb6870c0135a49a785bb17bed9a645b4874478a16e64d9880222f"
+		"gallery-en.png": "166df73a3d3233e8d80ac035d4253fd4da81d140c7775c73447efb16f0d7dc41",
+		"gallery-zh.png": "892c7a90a76779fc2e757b2f5f6d401412e2fc4ecd3484fb9f953117fc68b23e"
 	}
 }

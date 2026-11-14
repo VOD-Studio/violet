@@ -47,7 +47,9 @@ export function Gallery({ locale = "en-US" }: { locale?: string }) {
 		minWidth: 0,
 	} as const;
 	return (
-		<div style={{ display: "flex", gap: 20, padding: 20, width: 1000, background: "#f0f1f3" }}>
+		<div
+			style={{ display: "flex", gap: 20, padding: 20, width: 1000, background: "whitesmoke" }}
+		>
 			<div style={column}>
 				<EmbeddedTweet
 					locale={locale}
