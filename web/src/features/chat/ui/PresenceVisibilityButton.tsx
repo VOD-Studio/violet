@@ -1,11 +1,26 @@
 import { Button } from "@violet/ui";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, RotateCcw } from "lucide-react";
 import { useChatSettings, useUpdateChatSettings } from "../api/queries";
 
 /** 聊天列表头部的在线状态开关：隐身后其他成员看到的是离线。 */
 export function PresenceVisibilityButton() {
 	const settings = useChatSettings();
 	const update = useUpdateChatSettings();
+	if (settings.isError) {
+		return (
+			<Button
+				iconOnly
+				aria-label="在线状态：读取失败，点击重试"
+				className="size-9 rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+				onClick={() => void settings.refetch()}
+				size="md"
+				title="在线状态读取失败，点击重试"
+				variant="ghost"
+			>
+				<RotateCcw className="size-5" />
+			</Button>
+		);
+	}
 	const hidden = settings.data?.hide_online === true;
 	const Icon = hidden ? EyeOff : Eye;
 	return (
