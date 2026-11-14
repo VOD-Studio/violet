@@ -284,7 +284,7 @@ func normalizeFX(raw *fxTweet, depth int) (*apptweet.ExternalFetchResult, error)
 	if raw.Type != "status" || !tweet.ValidXID(raw.ID) || !tweet.ValidXID(raw.Author.ID) || !tweet.ValidXHandle(raw.Author.Handle) || raw.RawText == nil || len(raw.RawText.Text) > 100000 {
 		return nil, &apptweet.ExternalFetchError{Kind: "unavailable"}
 	}
-	text, segments, err := normalizeText(raw.RawText.Text, raw.RawText.DisplayTextRange, raw.RawText.Facets)
+	text, segments, err := normalizeText(raw.RawText.Text, raw.RawText.DisplayTextRange, raw.RawText.Facets, raw.IsNoteTweet != nil && *raw.IsNoteTweet)
 	if err != nil {
 		return nil, &apptweet.ExternalFetchError{Kind: "incomplete", StopFallback: true}
 	}
@@ -480,7 +480,7 @@ func normalizeSyndication(raw *syTweet, depth int) (*apptweet.ExternalFetchResul
 			facets = append(facets, facet{Type: "media", Indices: e.Indices})
 		}
 	}
-	text, segments, err := normalizeText(raw.Text, raw.DisplayTextRange, facets)
+	text, segments, err := normalizeText(raw.Text, raw.DisplayTextRange, facets, false)
 	if err != nil {
 		return nil, &apptweet.ExternalFetchError{Kind: "incomplete", StopFallback: true}
 	}
