@@ -41,7 +41,7 @@ export function ExternalTweetCard({
 				compact={compact}
 				quoted={quoted}
 				onOpenPhoto={(photos, index, trigger) =>
-					openPhoto(preview.openPreview, photos, index, trigger)
+					openPhoto(preview.openPreview, tweet, photos, index, trigger)
 				}
 			/>
 			<ImagePreview
@@ -99,7 +99,9 @@ function toEmbeddedTweet(tweet: ExternalTweet, nested = false): TweetData {
 						...metadata,
 						kind: "photo",
 						url: media.url,
-						thumbnailUrl: media.thumbnail_url ? media.thumbnail_url : media.url,
+						// 正文区的图片按卡片宽度展示，用原图；引用小卡片是固定小方格，用缩略图。
+						thumbnailUrl:
+							!nested || !media.thumbnail_url ? media.url : media.thumbnail_url,
 					};
 				}
 				// 视频封面按卡片尺寸铺满，用原图而不是小缩略图。
@@ -121,11 +123,15 @@ function toEmbeddedTweet(tweet: ExternalTweet, nested = false): TweetData {
 /** 图片布局由推文包决定（竖图为主时是横向滚动条），点击统一交给本站灯箱。 */
 function openPhoto(
 	openPreview: ReturnType<typeof useImagePreview>["openPreview"],
+	tweet: ExternalTweet,
 	photos: TweetPhoto[],
 	index: number,
 	trigger: HTMLElement,
 ) {
-	const thumbnails = photos.map((photo) => photo.thumbnailUrl);
+	const smallByUrl = new Map(
+		tweet.snapshot?.media?.map((media) => [media.url, media.thumbnail_url] as const),
+	);
+	const thumbnails = photos.map((photo) => smallByUrl.get(photo.url) || photo.thumbnailUrl);
 	// 缩略图与原图一一对应才传给预览：飞入占位与底部导航条不必拉取原图。
 	openPreview(
 		photos.map((photo) => photo.url),

@@ -115,6 +115,33 @@ describe("ExternalTweetCard", () => {
 		);
 	});
 
+	it("正文里的图片按卡片宽度展示原图，缩略图只用于灯箱占位", () => {
+		const fixture = externalFixture();
+		if (!fixture.snapshot) throw new Error("fixture has no snapshot");
+		fixture.snapshot.media = [
+			{
+				kind: "photo",
+				url: "/uploads/wide.png",
+				thumbnail_url: "/uploads/wide_thumb.png",
+				width: 1424,
+				height: 800,
+				alt: "横图",
+				file_id: "wide",
+			},
+		];
+		render(<ExternalTweetCard tweet={fixture} />);
+		expect(screen.getByRole("img", { name: "横图" }).getAttribute("src")).toBe(
+			"/uploads/wide.png",
+		);
+		fireEvent.click(screen.getByRole("link", { name: "查看图片 1 原图" }));
+		expect(preview.openPreview).toHaveBeenCalledWith(
+			["/uploads/wide.png"],
+			0,
+			expect.anything(),
+			["/uploads/wide_thumb.png"],
+		);
+	});
+
 	it("竖图为主的多张图片用横向滚动条展示，与 X 原帖一致", () => {
 		const fixture = externalFixture();
 		if (!fixture.snapshot) throw new Error("fixture has no snapshot");
