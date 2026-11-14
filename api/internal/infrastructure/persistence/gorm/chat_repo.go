@@ -209,6 +209,25 @@ func (r *ChatRepository) TransferOwnership(ctx context.Context, conversationID, 
 	})
 }
 
+// ListCoMemberIDs 列出与用户同在任一会话中的其他有效成员。
+func (r *ChatRepository) ListCoMemberIDs(ctx context.Context, userID domainshared.ID) ([]domainshared.ID, error) {
+	var ids []uuid.UUID
+	err := r.db.WithContext(ctx).Model(&model.ChatConversationMember{}).
+		Distinct("user_id").
+		Where("left_at IS NULL AND user_id <> ? AND conversation_id IN (?)", userID.UUID(),
+			r.db.Model(&model.ChatConversationMember{}).Select("conversation_id").
+				Where("user_id = ? AND left_at IS NULL", userID.UUID())).
+		Pluck("user_id", &ids).Error
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domainshared.ID, 0, len(ids))
+	for _, id := range ids {
+		out = append(out, domainshared.IDFromUUID(id))
+	}
+	return out, nil
+}
+
 // SetMemberMuted 更新当前成员的会话通知静音状态。
 func (r *ChatRepository) SetMemberMuted(ctx context.Context, conversationID, userID domainshared.ID, muted bool) error {
 	result := r.db.WithContext(ctx).Model(&model.ChatConversationMember{}).

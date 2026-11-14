@@ -46,6 +46,8 @@ type Service struct {
 	customEmojis CustomEmojiResolver
 	bots         BotNotifier
 	botRepo      domainchat.BotRepository
+	presence     PresenceReader
+	settings     domainchat.UserSettingsRepository
 }
 
 // WithBotNotifier 注入 bot 事件投递器，返回自身便于装配链式调用。
@@ -281,6 +283,9 @@ type MemberDTO struct {
 	JoinedAt string `json:"joined_at"`
 	// IsMuted 当前用户是否静音该会话。
 	IsMuted bool `json:"is_muted"`
+	// Online 成员当前是否在线（有聊天 SSE 连接）。选择隐身的成员对其他人恒为 false，
+	// 本人看到自己的真实状态；机器人不计在线。
+	Online bool `json:"online"`
 }
 
 // MessageDTO 消息读模型。
@@ -717,7 +722,7 @@ func (s *Service) ListMembers(ctx context.Context, userID, conversationID domain
 	if err != nil {
 		return nil, err
 	}
-	return s.membersToDTO(ctx, members)
+	return s.membersToDTO(ctx, members, userID)
 }
 
 // SetConversationMuted 设置当前用户的会话通知静音状态。
@@ -1522,7 +1527,7 @@ func (s *Service) conversationDTO(ctx context.Context, conversation *domainchat.
 		if err != nil {
 			return ConversationDTO{}, err
 		}
-		dto.Members, err = s.membersToDTO(ctx, members)
+		dto.Members, err = s.membersToDTO(ctx, members, userID)
 		if err != nil {
 			return ConversationDTO{}, err
 		}
@@ -1530,7 +1535,7 @@ func (s *Service) conversationDTO(ctx context.Context, conversation *domainchat.
 	return dto, nil
 }
 
-func (s *Service) membersToDTO(ctx context.Context, members []*domainchat.Member) ([]MemberDTO, error) {
+func (s *Service) membersToDTO(ctx context.Context, members []*domainchat.Member, viewerID domainshared.ID) ([]MemberDTO, error) {
 	ids := memberIDs(members)
 	users, err := s.users.FindByIDs(ctx, ids)
 	if err != nil {
@@ -1540,13 +1545,18 @@ func (s *Service) membersToDTO(ctx context.Context, members []*domainchat.Member
 	for _, user := range users {
 		byID[user.GetID().String()] = user
 	}
+	hidden, err := s.hiddenOnline(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
 	out := make([]MemberDTO, 0, len(members))
 	for _, member := range members {
 		user := byID[member.UserID().String()]
 		if user == nil {
 			continue
 		}
-		out = append(out, MemberDTO{User: userToDTO(user), Role: string(member.Role()), JoinedAt: member.JoinedAt().Format(time.RFC3339Nano), IsMuted: member.IsMuted()})
+		online := !user.IsBot() && s.isOnline(member.UserID()) && (member.UserID().Equal(viewerID) || !hidden[member.UserID()])
+		out = append(out, MemberDTO{User: userToDTO(user), Role: string(member.Role()), JoinedAt: member.JoinedAt().Format(time.RFC3339Nano), IsMuted: member.IsMuted(), Online: online})
 	}
 	return out, nil
 }

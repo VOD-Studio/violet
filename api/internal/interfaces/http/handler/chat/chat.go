@@ -461,6 +461,49 @@ func (h *Handler) SetMuted(w http.ResponseWriter, r *http.Request) {
 	response.RespondOK(w, map[string]any{"conversation_id": conversationID.String(), "is_muted": req.Muted})
 }
 
+// GetSettings 读取当前用户的聊天设置。
+func (h *Handler) GetSettings(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	settings, err := h.svc.ChatSettings(r.Context(), userID)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, settings)
+}
+
+// UpdateSettings 保存当前用户的聊天设置，字段缺省表示不改。
+func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	var req struct {
+		HideOnline *bool `json:"hide_online"`
+	}
+	if err := decodeJSON(r, &req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	if req.HideOnline != nil {
+		if err := h.svc.SetHideOnline(r.Context(), userID, *req.HideOnline); err != nil {
+			response.RespondError(w, r, err)
+			return
+		}
+	}
+	settings, err := h.svc.ChatSettings(r.Context(), userID)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, settings)
+}
+
 // SetTyping 上报当前用户在会话中的输入状态。
 func (h *Handler) SetTyping(w http.ResponseWriter, r *http.Request) {
 	userID, err := currentUserID(r)

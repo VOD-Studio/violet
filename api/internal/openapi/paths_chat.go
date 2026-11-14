@@ -33,6 +33,7 @@ func registerChatPaths(t *openapi3.T) {
 		"role":      reqStr("owner 或 member"),
 		"joined_at": reqStr("RFC3339 时间"),
 		"is_muted":  optBool("当前用户是否静音该会话"),
+		"online":    optBool("成员当前是否在线；隐身成员对其他人恒为 false，机器人不计在线"),
 	})
 	registerSchema(t, "ChatMediaDTO", openapi3.Schemas{
 		"id":        reqStr("媒体 ID"),
@@ -116,6 +117,8 @@ func registerChatPaths(t *openapi3.T) {
 		"keys":         &openapi3.SchemaRef{Value: &openapi3.Schema{Type: &openapi3.Types{openapi3.TypeObject}, Properties: openapi3.Schemas{"p256dh": reqStr("浏览器公钥"), "auth": reqStr("浏览器认证密钥")}}},
 		"show_preview": optBool("是否显示消息摘要"),
 	}, "endpoint", "keys")
+	registerSchema(t, "ChatSettings", openapi3.Schemas{"hide_online": optBool("为 true 时对其他成员显示为离线")})
+	registerSchema(t, "ChatSettingsRequest", openapi3.Schemas{"hide_online": optBool("是否对其他成员隐身；缺省表示不改")})
 	registerSchema(t, "ChatMuteRequest", openapi3.Schemas{"muted": optBool("是否静音当前会话")})
 	registerSchema(t, "ChatPushUnsubscribeRequest", openapi3.Schemas{"endpoint": reqStr("浏览器 Push endpoint")}, "endpoint")
 	registerSchema(t, "ChatMuteResponse", openapi3.Schemas{"conversation_id": reqStr("会话 ID"), "is_muted": optBool("静音状态")})
@@ -181,6 +184,8 @@ func registerChatPaths(t *openapi3.T) {
 		Responses:  responses(200, messageResponse("成员已移除")),
 	})
 	del(t, "/chat/conversations/{conversationId}/members/me", &openapi3.Operation{Tags: []string{"聊天"}, Summary: "离开会话", Security: secure, Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), csrfHeaderParam()}, Responses: responses(204, noContentResponse("已离开会话"))})
+	get(t, "/chat/settings", &openapi3.Operation{Tags: []string{"聊天通知"}, Summary: "读取聊天设置", Security: secure, Responses: responses(200, dataResponse("ChatSettings", "当前用户的聊天设置", 200))})
+	patch(t, "/chat/settings", &openapi3.Operation{Tags: []string{"聊天通知"}, Summary: "更新聊天设置", Security: secure, Parameters: openapi3.Parameters{csrfHeaderParam()}, RequestBody: jsonBody("ChatSettingsRequest", true, "聊天设置"), Responses: responses(200, dataResponse("ChatSettings", "更新后的聊天设置", 200))})
 	patch(t, "/chat/conversations/{conversationId}/mute", &openapi3.Operation{Tags: []string{"聊天通知"}, Summary: "静音会话", Security: secure, Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), csrfHeaderParam()}, RequestBody: jsonBody("ChatMuteRequest", true, "通知静音设置"), Responses: responses(200, dataResponse("ChatMuteResponse", "静音状态", 200))})
 	post(t, "/chat/conversations/{conversationId}/read", &openapi3.Operation{Tags: []string{"聊天"}, Summary: "标记会话已读", Security: secure, Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), csrfHeaderParam()}, RequestBody: jsonBody("ChatReadRequest", true, "阅读位置"), Responses: responses(200, dataResponse("ChatUnreadCount", "会话未读数", 200))})
 	post(t, "/chat/conversations/{conversationId}/typing", &openapi3.Operation{Tags: []string{"聊天"}, Summary: "上报输入状态", Description: "瞬态事件，不参与断线补发。", Security: secure, Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), csrfHeaderParam()}, RequestBody: jsonBody("ChatTypingRequest", true, "输入状态"), Responses: responses(204, noContentResponse("输入状态已上报"))})

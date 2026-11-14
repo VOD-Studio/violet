@@ -515,6 +515,8 @@ func registerChatRoutes(v1 chi.Router, d *Deps) {
 		r.With(d.SessionAuth).Post("/conversations/{conversationId}/read", h.MarkRead)
 		r.With(d.SessionAuth, d.limit("chat_typing", "POST /api/v1/chat/conversations/{conversationId}/typing")).Post("/conversations/{conversationId}/typing", h.SetTyping)
 		r.With(d.SessionAuth).Patch("/conversations/{conversationId}/mute", h.SetMuted)
+		r.With(d.SessionAuth).Get("/settings", h.GetSettings)
+		r.With(d.SessionAuth).Patch("/settings", h.UpdateSettings)
 		r.With(d.SessionAuth, middleware.RequirePermission(d.PermissionChecker, permission.ChatManage.String())).
 			Delete("/conversations/{conversationId}/messages/{messageId}", h.DeleteMessage)
 	})

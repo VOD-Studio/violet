@@ -55,6 +55,10 @@ func NewChatContainer(db *gorm.DB, cfg *config.Config, customEmojiSvc *appcustom
 	botTokenBox := newBotTokenBox(cfg)
 	botRepo := gormrepo.NewBotRepository(db, botTokenBox)
 	svc.WithBotRepository(botRepo)
+	svc.WithPresence(manager, gormrepo.NewChatUserSettingsRepository(db))
+	manager.SetPresenceListener(func(userID domainshared.ID) {
+		go svc.PresenceChanged(context.WithoutCancel(context.Background()), userID)
+	})
 	botConnections := appchat.NewBotConnectionManager(log.Logger)
 	svc.WithBotNotifier(appchat.NewBotEventDispatcher(repo, botRepo, botConnections, log.Logger))
 	botService := appchat.NewBotService(botRepo, userRepo, fileRepo, bus, nil)

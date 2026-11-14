@@ -164,3 +164,13 @@ type ChatBotCommandCatalog struct {
 }
 
 func (ChatBotCommandCatalog) TableName() string { return "chat_bot_command_catalogs" }
+
+// ChatUserSettings 用户的聊天设置，目前只有在线状态是否对其他成员隐身。
+type ChatUserSettings struct {
+	UserID     uuid.UUID `gorm:"type:uuid;column:user_id;primaryKey"`
+	HideOnline bool      `gorm:"column:hide_online;not null"`
+	UpdatedAt  time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
+}
+
+// TableName 显式指定表名。
+func (ChatUserSettings) TableName() string { return "chat_user_settings" }

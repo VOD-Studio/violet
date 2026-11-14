@@ -67,6 +67,9 @@ const (
 	// EventTypingUpdated 输入状态变化事件。不持久化、不参与 SSE 断线补发——
 	// 是聊天域内唯一纯内存实时推送的事件类型（见 CONTEXT.md「输入状态」词条）。
 	EventTypingUpdated ChatEventType = "typing.updated"
+	// EventPresenceUpdated 成员在线状态变化事件。与输入状态一样不持久化、不参与断线补发：
+	// 在线是瞬态事实，客户端重连后以成员列表对账。
+	EventPresenceUpdated ChatEventType = "presence.updated"
 	// EventReadPositionAdvanced 成员阅读位置推进事件，是已读回执的实时通道
 	//（见 CONTEXT.md「已读回执」词条）。
 	EventReadPositionAdvanced ChatEventType = "read.advanced"
