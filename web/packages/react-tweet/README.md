@@ -6,6 +6,8 @@ Native React tweet cards with light and dark themes, saved snapshots, accessible
 
 ![The same fictional post in light and dark themes](https://raw.githubusercontent.com/VOD-Studio/violet/release/2.0/web/packages/react-tweet/docs/images/tweet-en.png)
 
+Photo grids, a 20-slice rail, quotes, video posters, and unavailable states are shown in [See more layouts](#see-more-layouts).
+
 ## Install
 
 ```sh
@@ -62,6 +64,116 @@ export function Themes({ locale = "en-US" }: { locale?: string }) {
 <!-- example:themes:end -->
 
 Without an override, the theme follows the system. Ancestor `.light` / `.dark` classes and `data-theme="light"` / `"dark"` are supported. Override `--tweet-background`, `--tweet-foreground`, `--tweet-accent`, and other [CSS variables](https://github.com/VOD-Studio/violet/blob/release/2.0/web/packages/react-tweet/docs/api.md#styling) to match your site.
+
+## See more layouts
+
+One component covers photo grids, a horizontal rail for portrait-heavy sets (20 images in the example), a saved quote, a compact quote card, poster-only video, and known unavailable states. The cards below are rendered from the exact example that follows; the artwork is generated gradients, not photos.
+
+![Photo grid, 20-slice rail in the dark theme, quote, compact quote, video poster, and deleted/private states](https://raw.githubusercontent.com/VOD-Studio/violet/release/2.0/web/packages/react-tweet/docs/images/gallery-en.png)
+
+<!-- example:gallery:start -->
+```tsx
+import { EmbeddedTweet, type TweetData, type TweetMedia } from "@violetjs/react-tweet";
+import { SCENE, type Scene, sceneUrl } from "./gallery-art";
+
+const author = {
+	name: "Mira Chen",
+	handle: "sketchbook_demo",
+	verification: "individual",
+} as const;
+
+function post(
+	id: string,
+	text: string,
+	extra: { media?: TweetMedia[]; quotedTweet?: TweetData } = {},
+): TweetData {
+	return {
+		url: `https://x.com/sketchbook_demo/status/${id}`,
+		availability: "available",
+		snapshot: { author, text, publishedAt: "2026-10-02T08:15:00.000Z", media: extra.media },
+		quotedTweet: extra.quotedTweet,
+	};
+}
+
+const photo = (scene: Scene): TweetMedia => ({
+	kind: "photo",
+	url: sceneUrl(scene),
+	...SCENE,
+	alt: `${scene} scene`,
+});
+
+// One picture cut into 20 narrow slices; portrait-heavy groups become a horizontal rail.
+const slices: TweetMedia[] = Array.from({ length: 20 }, (_, index) => ({
+	kind: "photo",
+	url: sceneUrl("dusk", index * 72, 72),
+	width: 72,
+	height: SCENE.height,
+	alt: `Slice ${index + 1} of 20`,
+}));
+
+const trip = post("1834000000000000003", "Studio trip, day two.", { media: [photo("meadow")] });
+
+export function Gallery({ locale = "en-US" }: { locale?: string }) {
+	const column = {
+		display: "flex",
+		flexDirection: "column",
+		gap: 20,
+		flex: 1,
+		minWidth: 0,
+	} as const;
+	return (
+		<div style={{ display: "flex", gap: 20, padding: 20, width: 1000, background: "#f0f1f3" }}>
+			<div style={column}>
+				<EmbeddedTweet
+					locale={locale}
+					tweet={post("1834000000000000004", "Four pages from the new zine.", {
+						media: [photo("dusk"), photo("lagoon"), photo("meadow"), photo("ink")],
+					})}
+				/>
+				<EmbeddedTweet
+					locale={locale}
+					tweet={post("1834000000000000005", "Reposting the studio trip with a note.", {
+						quotedTweet: trip,
+					})}
+				/>
+				<EmbeddedTweet
+					locale={locale}
+					tweet={{
+						url: "https://x.com/i/web/status/1834000000000000006",
+						availability: "deleted",
+					}}
+				/>
+				<EmbeddedTweet
+					locale={locale}
+					tweet={{
+						url: "https://x.com/i/web/status/1834000000000000009",
+						availability: "private",
+					}}
+				/>
+			</div>
+			<div style={column}>
+				<EmbeddedTweet
+					locale={locale}
+					data-theme="dark"
+					tweet={post("1834000000000000007", "One picture, cut into 20 slices.", {
+						media: slices,
+					})}
+				/>
+				<EmbeddedTweet
+					locale={locale}
+					tweet={post("1834000000000000008", "Process video, poster only.", {
+						media: [{ kind: "video", thumbnailUrl: sceneUrl("lagoon"), ...SCENE }],
+					})}
+				/>
+				<EmbeddedTweet locale={locale} quoted tweet={trip} />
+			</div>
+		</div>
+	);
+}
+```
+<!-- example:gallery:end -->
+
+Photos with known dimensions are laid out from their own aspect ratio, including very narrow slices. `data-theme` applies per card, so light and dark cards can share a page. A deleted, private, or otherwise unavailable post shows only a notice and a link to the original.
 
 ## Embed a compact quote
 
