@@ -56,7 +56,13 @@ const mockConversation: ChatConversation = {
 };
 
 const mockMembers: ChatMember[] = [
-	{ user: mockUser, role: "owner", joined_at: "2026-08-20T08:00:00Z", is_muted: false },
+	{
+		user: mockUser,
+		role: "owner",
+		joined_at: "2026-08-20T08:00:00Z",
+		is_muted: false,
+		online: false,
+	},
 ];
 
 const stubMatchMedia = (matches: boolean) => {
@@ -107,7 +113,13 @@ it("在场的角色与成员分开列出，角色带简介，成员数不含角�
 	const rua = { id: "u_rua", username: "rua", display_name: "Rua", avatar_url: "", is_bot: true };
 	const members: ChatMember[] = [
 		...mockMembers,
-		{ user: rua, role: "member", joined_at: "2026-08-20T08:05:00Z", is_muted: false },
+		{
+			user: rua,
+			role: "member",
+			joined_at: "2026-08-20T08:05:00Z",
+			is_muted: false,
+			online: false,
+		},
 	];
 	render(
 		<RoomDetails

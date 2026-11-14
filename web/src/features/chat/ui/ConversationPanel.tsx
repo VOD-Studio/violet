@@ -27,6 +27,7 @@ import { retryChatMessage, useChatOutbox } from "../model/chat-outbox";
 import type { ChatConversation, ChatMedia, ChatMessage, ChatUser } from "../model/types";
 import { ChatAppearanceProvider } from "./appearance/ChatAppearanceProvider";
 import { ChatAvatar } from "./ChatAvatar";
+import { ConversationStatusLine } from "./ConversationStatusLine";
 import { MessageEmpty, MessageSkeleton } from "./chat-states";
 import { MessageBubble } from "./MessageBubble";
 import { MessageComposer } from "./MessageComposer";
@@ -437,9 +438,11 @@ export function ConversationPanel({
 							>
 								{conversationLabel(conversation, currentUserID)}
 							</h2>
-							<p className="text-xs leading-4 text-muted-foreground">
-								{conversation.kind === "room" ? `${members.length} 位成员` : "私信"}
-							</p>
+							<ConversationStatusLine
+								conversation={conversation}
+								currentUserID={currentUserID}
+								members={members}
+							/>
 						</div>
 					</div>
 

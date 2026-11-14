@@ -43,6 +43,7 @@ import {
 	fetchChatMessageReaders,
 	fetchChatMessages,
 	fetchChatPushConfig,
+	fetchChatSettings,
 	fetchChatUnreadCount,
 	fetchChatUser,
 	inviteChatMember,
@@ -53,6 +54,7 @@ import {
 	renameChatConversation,
 	saveChatPushSubscription,
 	setChatMuted,
+	updateChatSettings,
 } from "./client";
 import { chatKeys } from "./keys";
 
@@ -383,3 +385,23 @@ function captureMessageReaction(
 	}
 	return undefined;
 }
+
+export const useChatSettings = () =>
+	useQuery({
+		queryKey: chatKeys.settings(),
+		queryFn: fetchChatSettings,
+		staleTime: 5 * 60_000,
+	});
+
+/** 隐身开关：成功后写回缓存，成员列表由对端的实时事件与下次拉取对账。 */
+export const useUpdateChatSettings = () => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: updateChatSettings,
+		onSuccess: (settings) => {
+			qc.setQueryData(chatKeys.settings(), settings);
+			qc.invalidateQueries({ queryKey: chatKeys.conversations() });
+		},
+		onError: () => toast.error("在线状态设置失败，请重试"),
+	});
+};

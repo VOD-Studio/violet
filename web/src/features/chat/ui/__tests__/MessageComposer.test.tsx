@@ -47,8 +47,15 @@ const members: ChatMember[] = [
 		role: "member",
 		joined_at: "2026-08-25T08:00:00Z",
 		is_muted: false,
+		online: false,
 	},
-	{ user: sender, role: "member", joined_at: "2026-08-25T08:00:00Z", is_muted: false },
+	{
+		user: sender,
+		role: "member",
+		joined_at: "2026-08-25T08:00:00Z",
+		is_muted: false,
+		online: false,
+	},
 ];
 const carol = {
 	id: "00000000-0000-0000-0000-000000000003",
@@ -70,9 +77,27 @@ const roomBot = {
 	is_bot: true,
 };
 const extraMembers: ChatMember[] = [
-	{ user: carol, role: "owner", joined_at: "2026-08-26T08:00:00Z", is_muted: false },
-	{ user: linjian, role: "member", joined_at: "2026-08-27T08:00:00Z", is_muted: false },
-	{ user: roomBot, role: "member", joined_at: "2026-08-28T08:00:00Z", is_muted: false },
+	{
+		user: carol,
+		role: "owner",
+		joined_at: "2026-08-26T08:00:00Z",
+		is_muted: false,
+		online: false,
+	},
+	{
+		user: linjian,
+		role: "member",
+		joined_at: "2026-08-27T08:00:00Z",
+		is_muted: false,
+		online: false,
+	},
+	{
+		user: roomBot,
+		role: "member",
+		joined_at: "2026-08-28T08:00:00Z",
+		is_muted: false,
+		online: false,
+	},
 ];
 let activeMembers = members;
 let catalogData: BotCommandsResponse = { bots: [] };
@@ -203,8 +228,8 @@ describe("MessageComposer", () => {
 	it("手输命令只自动寻址唯一启用的 Bot", async () => {
 		activeMembers = [
 			...members,
-			{ user: bot1, role: "member", joined_at: "", is_muted: false },
-			{ user: bot2, role: "member", joined_at: "", is_muted: false },
+			{ user: bot1, role: "member", joined_at: "", is_muted: false, online: false },
+			{ user: bot2, role: "member", joined_at: "", is_muted: false, online: false },
 		];
 		catalogData = {
 			bots: [
@@ -240,8 +265,8 @@ describe("MessageComposer", () => {
 	it("群聊补全用真实 bot ID 寻址，参数提示不进入草稿", async () => {
 		activeMembers = [
 			...members,
-			{ user: bot1, role: "member", joined_at: "", is_muted: false },
-			{ user: bot2, role: "member", joined_at: "", is_muted: false },
+			{ user: bot1, role: "member", joined_at: "", is_muted: false, online: false },
+			{ user: bot2, role: "member", joined_at: "", is_muted: false, online: false },
 		];
 		catalogData = {
 			bots: [
@@ -297,8 +322,8 @@ describe("MessageComposer", () => {
 	it("多 bot 手输命令先选择目标；Esc 只关闭命令菜单", async () => {
 		activeMembers = [
 			...members,
-			{ user: bot1, role: "member", joined_at: "", is_muted: false },
-			{ user: bot2, role: "member", joined_at: "", is_muted: false },
+			{ user: bot1, role: "member", joined_at: "", is_muted: false, online: false },
+			{ user: bot2, role: "member", joined_at: "", is_muted: false, online: false },
 		];
 		catalogData = {
 			bots: [

@@ -30,6 +30,7 @@ import { ChatAppearanceProvider } from "./appearance/ChatAppearanceProvider";
 import { ChatAvatar } from "./ChatAvatar";
 import { ChatContactSkeleton } from "./ChatContactSkeleton";
 import { NewConversationForm } from "./NewConversationForm";
+import { PresenceVisibilityButton } from "./PresenceVisibilityButton";
 
 interface ConversationIndexProps {
 	conversations: ChatConversation[];
@@ -72,6 +73,7 @@ export function ConversationIndex({
 			<header className="shrink-0 px-4 pb-1.5 pt-3.5">
 				<div className="flex items-center justify-between gap-2 pb-3">
 					<h1 className="mr-auto text-xl font-semibold text-foreground">聊天</h1>
+					<PresenceVisibilityButton />
 					<ChatAppearanceButton active={appearanceOpen} onClick={onOpenAppearance} />
 					<Button
 						iconOnly

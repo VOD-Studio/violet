@@ -29,8 +29,8 @@ function conversation(muted = false): ChatConversation {
 		title: "",
 		owner: ME,
 		members: [
-			{ user: ME, role: "owner", joined_at: "", is_muted: muted },
-			{ user: CLAUDE, role: "member", joined_at: "", is_muted: false },
+			{ user: ME, role: "owner", joined_at: "", is_muted: muted, online: false },
+			{ user: CLAUDE, role: "member", joined_at: "", is_muted: false, online: false },
 		],
 		last_message: MESSAGE,
 		unread_count: 1,

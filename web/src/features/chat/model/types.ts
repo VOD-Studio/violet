@@ -40,6 +40,8 @@ export interface ChatMember {
 	role: MemberRole;
 	joined_at: string;
 	is_muted: boolean;
+	/** 是否在线；隐身成员对其他人恒为 false，机器人不计在线。 */
+	online: boolean;
 }
 
 export interface BotCommand {
@@ -181,12 +183,25 @@ export interface ChatEvent {
 		| "message.deleted"
 		| "message.reaction.updated"
 		| "read.advanced"
-		| "typing.updated";
+		| "typing.updated"
+		| "presence.updated";
 	version: number;
 	occurred_at: string;
 	data: Record<string, unknown>;
 	/** 新消息正文中自定义表情的解析结果；关系按当前事件接收者计算。 */
 	custom_emote?: Record<string, CommentEmoteRef>;
+}
+
+/** 当前用户的聊天设置。 */
+export interface ChatSettings {
+	/** 为 true 时对其他成员显示为离线。 */
+	hide_online: boolean;
+}
+
+/** presence.updated 事件的 data 载荷；不持久化，仅供实时推送消费。 */
+export interface ChatPresenceEventData {
+	user_id: string;
+	online: boolean;
 }
 
 /** typing.updated 事件的 data 载荷；不持久化，仅供实时推送消费。 */
