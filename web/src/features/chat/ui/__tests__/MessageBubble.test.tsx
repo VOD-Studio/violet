@@ -130,7 +130,7 @@ describe("MessageBubble", () => {
 			edited_at: "2026-09-23T10:00:00Z",
 		};
 		const { container } = renderBubble(message, () => {}, "direct", "u_2");
-		expect(screen.getByText("BOT")).toBeTruthy();
+		expect(screen.getByText("角色")).toBeTruthy();
 		expect(container.querySelector("table")?.textContent).toContain("A1");
 		expect(container.textContent).not.toContain("已编辑");
 	});

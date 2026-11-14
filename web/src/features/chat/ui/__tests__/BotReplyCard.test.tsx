@@ -181,7 +181,7 @@ it("按 Bot 配置默认展开思考，手动收起后不被后续快照重新�
 		created_at: new Date().toISOString(),
 	};
 	const { rerender, unmount } = render(<BotReplyCard message={message} viewerID="viewer-1" />);
-	expect(screen.getByText("BOT")).toBeTruthy();
+	expect(screen.getByText("角色")).toBeTruthy();
 	expect(screen.getByRole("status").textContent).toContain("正在回复");
 	expect(screen.getByText("答案").tagName).toBe("STRONG");
 	await waitFor(() =>

@@ -88,7 +88,7 @@ export function BotReplyCard({
 					{message.sender.display_name}
 				</button>
 				<span className="rounded bg-selected px-1.5 py-0.5 font-medium text-selected-foreground">
-					BOT
+					角色
 				</span>
 				{status && (
 					<span

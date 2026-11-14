@@ -135,7 +135,7 @@ test("Bot 卡片随生成快照更新状态，断线后回查最新内容", asyn
 	});
 	await page.goto("/chat?c=c1");
 	const bubble = page.getByTestId("chat-message-m1");
-	await expect(bubble).toContainText("BOT");
+	await expect(bubble).toContainText("角色");
 	await expect(bubble).toContainText("等待回复");
 	await page.waitForLoadState("networkidle");
 	const initialReads = messageReads;
