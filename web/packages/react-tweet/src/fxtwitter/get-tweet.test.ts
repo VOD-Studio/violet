@@ -60,6 +60,10 @@ describe("推文标识与请求边界", () => {
 		["20", "20"],
 		["https://x.com/jack/status/20", "20"],
 		["https://twitter.com/jack/status/20?s=20", "20"],
+		[
+			"https://x.com/798145343h/status/2121084374175375757?a=Ab8dAx3L0q8yTJs7hjw&s=20",
+			"2121084374175375757",
+		],
 		["https://x.com/i/web/status/20", "20"],
 		["https://mobile.twitter.com/jack/status/20/photo/1", "20"],
 		["0", null],
