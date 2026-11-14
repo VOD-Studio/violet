@@ -29,6 +29,7 @@ type ChatConversationMember struct {
 	JoinedAt       time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"joined_at"`
 	LeftAt         *time.Time `gorm:"column:left_at" json:"left_at,omitempty"`
 	IsMuted        bool       `gorm:"column:is_muted;not null;default:false" json:"is_muted"`
+	Silenced       bool       `gorm:"column:silenced;not null;default:false" json:"silenced"`
 }
 
 // TableName 显式指定表名。

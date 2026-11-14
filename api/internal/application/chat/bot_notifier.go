@@ -116,10 +116,16 @@ func (d *BotEventDispatcher) recipientIDs(ctx context.Context, conversation *dom
 		return nil, err
 	}
 	memberIDs := make([]domainshared.ID, 0, len(members))
+	silenced := make(map[domainshared.ID]struct{})
 	for _, member := range members {
-		if member.IsActive() {
-			memberIDs = append(memberIDs, member.UserID())
+		if !member.IsActive() {
+			continue
 		}
+		if member.IsSilenced() {
+			silenced[member.UserID()] = struct{}{}
+			continue
+		}
+		memberIDs = append(memberIDs, member.UserID())
 	}
 	bots, err := d.bots.ListByUserIDs(ctx, memberIDs)
 	if err != nil {

@@ -35,6 +35,7 @@ func registerChatPaths(t *openapi3.T) {
 		"joined_at": reqStr("RFC3339 时间"),
 		"is_muted":  optBool("当前用户是否静音该会话"),
 		"online":    optBool("成员当前是否在线；隐身成员对其他人恒为 false，机器人不计在线"),
+		"can_speak": optBool("机器人成员是否被允许在本会话发言；被房主禁言为 false，真人恒为 true"),
 	})
 	registerSchema(t, "ChatMediaDTO", openapi3.Schemas{
 		"id":        reqStr("媒体 ID"),
@@ -127,6 +128,8 @@ func registerChatPaths(t *openapi3.T) {
 		"keys":         &openapi3.SchemaRef{Value: &openapi3.Schema{Type: &openapi3.Types{openapi3.TypeObject}, Properties: openapi3.Schemas{"p256dh": reqStr("浏览器公钥"), "auth": reqStr("浏览器认证密钥")}}},
 		"show_preview": optBool("是否显示消息摘要"),
 	}, "endpoint", "keys")
+	registerSchema(t, "ChatBotSpeakingRequest", openapi3.Schemas{"allowed": optBool("是否允许该角色在本会话发言")})
+	registerSchema(t, "ChatBotSpeakingResponse", openapi3.Schemas{"user_id": reqStr("机器人用户 ID"), "can_speak": optBool("更新后的发言权限")})
 	registerSchema(t, "ChatSettings", openapi3.Schemas{"hide_online": optBool("为 true 时对其他成员显示为离线")})
 	registerSchema(t, "ChatSettingsRequest", openapi3.Schemas{"hide_online": optBool("是否对其他成员隐身；缺省表示不改")})
 	registerSchema(t, "ChatMuteRequest", openapi3.Schemas{"muted": optBool("是否静音当前会话")})
@@ -192,6 +195,12 @@ func registerChatPaths(t *openapi3.T) {
 		Tags: []string{"聊天管理"}, Summary: "移除会话成员", Description: "需 chat:manage 权限。", Security: secure,
 		Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), pathStrParam("userId", "成员用户 ID"), csrfHeaderParam()},
 		Responses:  responses(200, messageResponse("成员已移除")),
+	})
+	patch(t, "/chat/conversations/{conversationId}/members/{userId}/speaking", &openapi3.Operation{
+		Tags: []string{"聊天"}, Summary: "设置角色发言权限", Description: "仅房主可调用，目标必须是机器人成员；被禁言的角色收不到本会话事件，也不能在其中发消息。", Security: secure,
+		Parameters:  openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), pathStrParam("userId", "机器人成员用户 ID"), csrfHeaderParam()},
+		RequestBody: jsonBody("ChatBotSpeakingRequest", true, "发言权限"),
+		Responses:   responses(200, dataResponse("ChatBotSpeakingResponse", "更新后的发言权限", 200)),
 	})
 	del(t, "/chat/conversations/{conversationId}/members/me", &openapi3.Operation{Tags: []string{"聊天"}, Summary: "离开会话", Security: secure, Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), csrfHeaderParam()}, Responses: responses(204, noContentResponse("已离开会话"))})
 	get(t, "/chat/settings", &openapi3.Operation{Tags: []string{"聊天通知"}, Summary: "读取聊天设置", Security: secure, Responses: responses(200, dataResponse("ChatSettings", "当前用户的聊天设置", 200))})

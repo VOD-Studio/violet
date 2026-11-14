@@ -168,6 +168,37 @@ func (h *Handler) InviteMember(w http.ResponseWriter, r *http.Request) {
 	response.RespondMessage(w, http.StatusCreated, "成员已加入房间")
 }
 
+// SetBotSpeaking 房主设置机器人成员能否在本会话发言。
+func (h *Handler) SetBotSpeaking(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	conversationID, err := parsePathID(chi.URLParam(r, "conversationId"))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	botUserID, err := parsePathID(chi.URLParam(r, "userId"))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	var req struct {
+		Allowed bool `json:"allowed"`
+	}
+	if err := decodeJSON(r, &req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	if err := h.svc.SetBotSilenced(r.Context(), userID, conversationID, botUserID, !req.Allowed); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, map[string]any{"user_id": botUserID.String(), "can_speak": req.Allowed})
+}
+
 // RemoveMember 房主移除成员。
 func (h *Handler) RemoveMember(w http.ResponseWriter, r *http.Request) {
 	userID, err := currentUserID(r)

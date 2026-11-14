@@ -293,6 +293,8 @@ type MemberDTO struct {
 	// Online 成员当前是否在线（有聊天 SSE 连接）。选择隐身的成员对其他人恒为 false，
 	// 本人看到自己的真实状态；机器人不计在线。
 	Online bool `json:"online"`
+	// CanSpeak 机器人成员是否被允许在本会话发言；被房主禁言为 false，真人恒为 true。
+	CanSpeak bool `json:"can_speak"`
 }
 
 // MessageDTO 消息读模型。
@@ -943,6 +945,11 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 	if err != nil {
 		return MessageDTO{}, err
 	}
+	for _, member := range members {
+		if member.IsActive() && member.UserID().Equal(in.UserID) && member.IsSilenced() {
+			return MessageDTO{}, domainshared.Forbidden("你已被房主禁言")
+		}
+	}
 	recipients := memberIDs(members)
 	if hasMentionAll(message.Content()) {
 		mentioned = make([]domainshared.ID, 0, len(members))
@@ -1569,7 +1576,7 @@ func (s *Service) membersToDTO(ctx context.Context, members []*domainchat.Member
 			continue
 		}
 		online := !user.IsBot() && s.isOnline(member.UserID()) && (member.UserID().Equal(viewerID) || !hidden[member.UserID()])
-		out = append(out, MemberDTO{User: userToDTO(user), Role: string(member.Role()), JoinedAt: member.JoinedAt().Format(time.RFC3339Nano), IsMuted: member.IsMuted(), Online: online})
+		out = append(out, MemberDTO{User: userToDTO(user), Role: string(member.Role()), JoinedAt: member.JoinedAt().Format(time.RFC3339Nano), IsMuted: member.IsMuted(), Online: online, CanSpeak: !member.IsSilenced()})
 	}
 	return out, nil
 }

@@ -209,6 +209,20 @@ func (r *ChatRepository) TransferOwnership(ctx context.Context, conversationID, 
 	})
 }
 
+// SetMemberSilenced 更新成员是否被房主禁言。
+func (r *ChatRepository) SetMemberSilenced(ctx context.Context, conversationID, userID domainshared.ID, silenced bool) error {
+	result := r.db.WithContext(ctx).Model(&model.ChatConversationMember{}).
+		Where("conversation_id = ? AND user_id = ? AND left_at IS NULL", conversationID.UUID(), userID.UUID()).
+		Update("silenced", silenced)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return domainchat.ErrMemberNotFound
+	}
+	return nil
+}
+
 // ListCoMemberIDs 列出与用户同在任一会话中的其他有效成员。
 func (r *ChatRepository) ListCoMemberIDs(ctx context.Context, userID domainshared.ID) ([]domainshared.ID, error) {
 	var ids []uuid.UUID
@@ -602,12 +616,14 @@ func conversationToDomain(po model.ChatConversation) *domainchat.Conversation {
 func memberToPO(m *domainchat.Member) *model.ChatConversationMember {
 	return &model.ChatConversationMember{
 		ConversationID: m.ConversationID().UUID(), UserID: m.UserID().UUID(), Role: string(m.Role()),
-		JoinedAt: m.JoinedAt(), LeftAt: m.LeftAt(), IsMuted: m.IsMuted(),
+		JoinedAt: m.JoinedAt(), LeftAt: m.LeftAt(), IsMuted: m.IsMuted(), Silenced: m.IsSilenced(),
 	}
 }
 
 func memberToDomain(po model.ChatConversationMember) *domainchat.Member {
-	return domainchat.ReconstructMember(domainshared.IDFromUUID(po.ConversationID), domainshared.IDFromUUID(po.UserID), domainchat.MemberRole(po.Role), po.JoinedAt, po.LeftAt, po.IsMuted)
+	member := domainchat.ReconstructMember(domainshared.IDFromUUID(po.ConversationID), domainshared.IDFromUUID(po.UserID), domainchat.MemberRole(po.Role), po.JoinedAt, po.LeftAt, po.IsMuted)
+	member.SetSilenced(po.Silenced)
+	return member
 }
 
 func messageToPO(m *domainchat.Message) *model.ChatMessage {

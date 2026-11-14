@@ -505,6 +505,7 @@ func registerChatRoutes(v1 chi.Router, d *Deps) {
 		r.With(d.SessionAuth).Post("/conversations/{conversationId}/members", h.InviteMember)
 		r.With(d.SessionAuth).Delete("/conversations/{conversationId}/members/me", h.LeaveConversation)
 		r.With(d.SessionAuth).Delete("/conversations/{conversationId}/members/{userId}", h.RemoveMember)
+		r.With(d.SessionAuth).Patch("/conversations/{conversationId}/members/{userId}/speaking", h.SetBotSpeaking)
 		r.With(d.SessionAuth).Get("/conversations/{conversationId}/messages", h.ListMessages)
 		r.With(d.SessionAuth).Get("/conversations/{conversationId}/messages/{messageId}/reactions", h.ListMessageReactions)
 		r.With(d.SessionAuth).Post("/conversations/{conversationId}/messages/{messageId}/reactions", h.AddMessageReaction)

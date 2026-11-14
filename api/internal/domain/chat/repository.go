@@ -51,6 +51,8 @@ type ConversationRepository interface {
 	TransferOwnership(ctx context.Context, conversationID, previousOwnerID, nextOwnerID shared.ID, now time.Time) error
 	// ListCoMemberIDs 列出与用户同在任一会话中的其他有效成员（去重，不含自己）。
 	ListCoMemberIDs(ctx context.Context, userID shared.ID) ([]shared.ID, error)
+	// SetMemberSilenced 更新成员是否被房主禁言。
+	SetMemberSilenced(ctx context.Context, conversationID, userID shared.ID, silenced bool) error
 	// SetMemberMuted 更新当前成员的会话通知静音状态。
 	SetMemberMuted(ctx context.Context, conversationID, userID shared.ID, muted bool) error
 

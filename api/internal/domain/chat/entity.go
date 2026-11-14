@@ -218,6 +218,8 @@ type Member struct {
 	leftAt *time.Time
 	// muted 是否静音该会话的系统通知。
 	muted bool
+	// silenced 是否被房主禁言；只对机器人成员有意义，被禁言的机器人既收不到该会话的事件，也不能在其中发消息。
+	silenced bool
 }
 
 // NewMember 创建成员。
@@ -265,6 +267,12 @@ func (m *Member) LeftAt() *time.Time { return m.leftAt }
 
 // IsActive 判断成员是否仍在会话中。
 func (m *Member) IsActive() bool { return m.leftAt == nil }
+
+// IsSilenced 判断成员是否被房主禁言。
+func (m *Member) IsSilenced() bool { return m.silenced }
+
+// SetSilenced 设置成员是否被房主禁言。
+func (m *Member) SetSilenced(silenced bool) { m.silenced = silenced }
 
 // SetMuted 设置当前成员的系统通知静音状态。
 func (m *Member) SetMuted(muted bool) { m.muted = muted }
