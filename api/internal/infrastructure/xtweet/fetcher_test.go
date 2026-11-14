@@ -220,3 +220,23 @@ func TestVideoSourceURLAcceptsOnlyTwitterMP4(t *testing.T) {
 		require.Empty(t, videoSourceURL(raw), raw)
 	}
 }
+
+func TestNormalizeFXMediaCountLimit(t *testing.T) {
+	build := func(count int) *fxTweet {
+		photos := make([]string, count)
+		for i := range photos {
+			photos[i] = fmt.Sprintf(`{"type":"photo","url":"https://pbs.twimg.com/media/p%d.jpg?name=orig","width":10,"height":10}`, i)
+		}
+		body := fmt.Sprintf(`{"type":"status","id":"20","raw_text":{"text":"photos","display_text_range":[0,6],"facets":[]},"is_note_tweet":false,"created_timestamp":1142974214,"author":{"id":"12","name":"Original","screen_name":"jack"},"media":{"all":[%s]}}`, strings.Join(photos, ","))
+		var raw fxTweet
+		require.NoError(t, json.Unmarshal([]byte(body), &raw))
+		return &raw
+	}
+	result, err := normalizeFX(build(maxExternalMedia), 0)
+	require.NoError(t, err)
+	require.Len(t, result.Snapshot.Media, maxExternalMedia)
+	_, err = normalizeFX(build(maxExternalMedia+1), 0)
+	var failure *apptweet.ExternalFetchError
+	require.ErrorAs(t, err, &failure)
+	require.Equal(t, "unavailable", failure.Kind)
+}

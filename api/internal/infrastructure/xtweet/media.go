@@ -57,7 +57,7 @@ func (s *MediaStore) Prepare(ctx context.Context, id, version string, snapshot *
 	if _, err := uuid.Parse(version); err != nil {
 		return err
 	}
-	if len(snapshot.Media) > 8 {
+	if len(snapshot.Media) > maxExternalMedia {
 		return &apptweet.ExternalFetchError{Kind: "media_failed"}
 	}
 	tmpRoot := filepath.Join(s.root, ".external-tmp")

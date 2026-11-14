@@ -20,6 +20,9 @@ import (
 
 const maxJSONBytes = 2 << 20
 
+// maxExternalMedia 与 X 单条推文的图片上限一致（2026 年起最多 20 张）。
+const maxExternalMedia = 20
+
 type Fetcher struct {
 	client   *http.Client
 	mu       sync.Mutex
@@ -315,7 +318,7 @@ func normalizeFX(raw *fxTweet, depth int) (*apptweet.ExternalFetchResult, error)
 	if len(media) == 0 {
 		media = append(append([]fxMedia{}, raw.Media.Photos...), raw.Media.Videos...)
 	}
-	if len(media) > 8 {
+	if len(media) > maxExternalMedia {
 		return nil, &apptweet.ExternalFetchError{Kind: "unavailable"}
 	}
 	for _, m := range media {
@@ -497,7 +500,7 @@ func normalizeSyndication(raw *syTweet, depth int) (*apptweet.ExternalFetchResul
 	} else if nonNull(raw.NoteTweet) || raw.IsStaleEdit {
 		snapshot.Completeness = tweet.TextUnknown
 	}
-	if len(raw.MediaDetails) > 8 || len(raw.Photos) > 8 {
+	if len(raw.MediaDetails) > maxExternalMedia || len(raw.Photos) > maxExternalMedia {
 		return nil, &apptweet.ExternalFetchError{Kind: "unavailable"}
 	}
 	for _, m := range raw.MediaDetails {
