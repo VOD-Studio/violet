@@ -40,6 +40,15 @@ function textMessage(content?: string): ChatMessage {
 }
 
 describe("messagePreview", () => {
+	it("歌曲分享无论是否有配文都展示歌曲预览", () => {
+		const message: ChatMessage = {
+			...textMessage("下雨天的话，听这首吧。"),
+			type: "music_share",
+		};
+		expect(messagePreview(message)).toBe("分享了一首歌曲");
+		expect(messagePreview({ ...message, content: undefined })).toBe("分享了一首歌曲");
+	});
+
 	it("图片消息预览剥离内联图片占位符，只留环绕文字", () => {
 		expect(messagePreview(imageMessage("你好![img:media-1]世界"))).toBe("你好世界");
 	});

@@ -120,6 +120,29 @@ function renderBubble(
 afterEach(() => cleanup());
 
 describe("MessageBubble", () => {
+	it("歌曲分享在气泡内保留配文、歌曲资料与可访问名称", () => {
+		const message: ChatMessage = {
+			...imageMessage(undefined),
+			sender: { ...sender, is_bot: true },
+			type: "music_share",
+			content: "下雨天的话，听这首吧。",
+			media: undefined,
+			music_share: {
+				track_id: "347230",
+				title: "雨の日",
+				artists: ["歌手 A", "歌手 B"],
+				duration_ms: 297000,
+				cover_url: "https://example.com/cover.jpg",
+			},
+		};
+		renderBubble(message, () => {}, "direct", "u_2");
+
+		expect(screen.getByText("下雨天的话，听这首吧。")).toBeTruthy();
+		expect(screen.getByText("雨の日")).toBeTruthy();
+		expect(screen.getByText("歌手 A / 歌手 B · 4:57")).toBeTruthy();
+		expect(screen.getByRole("group", { name: "歌曲：雨の日 - 歌手 A / 歌手 B" })).toBeTruthy();
+	});
+
 	it("Bot 历史文本使用独立卡片，凭据状态不影响身份标识", () => {
 		const message: ChatMessage = {
 			...imageMessage(undefined),

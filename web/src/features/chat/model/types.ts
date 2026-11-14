@@ -2,7 +2,7 @@ import type { CommentEmoteRef } from "@entities/comment/model/types";
 import type { AggregatedReaction } from "@entities/reaction/model/types";
 
 export type ConversationKind = "direct" | "room";
-export type MessageType = "text" | "image" | "system" | "tweet_share";
+export type MessageType = "text" | "image" | "system" | "tweet_share" | "music_share";
 export type MemberRole = "owner" | "member";
 
 export interface ChatUser {
@@ -90,6 +90,16 @@ export interface SharedTweet {
 	quoted_tweet?: QuotedTweet | null;
 }
 
+/** 发送时保存的歌曲资料，历史展示不查询音乐服务。 */
+export interface MusicShare {
+	track_id: string;
+	title: string;
+	artists: string[];
+	/** 毫秒。 */
+	duration_ms: number;
+	cover_url: string;
+}
+
 export interface ChatMessageReference {
 	id: string;
 	sender: ChatUser;
@@ -115,6 +125,7 @@ export interface ChatMessage {
 	/** 图片消息的媒体列表，按输入流中的占位符顺序；非图片消息缺省 */
 	media?: ChatMedia[];
 	shared_tweet?: SharedTweet;
+	music_share?: MusicShare;
 	reply_to?: ChatMessageReference;
 	reactions: AggregatedReaction[];
 	/** 已读回执；仅自己发送的非系统消息附带（见 CONTEXT.md「已读回执」词条） */
@@ -163,6 +174,7 @@ export interface SendMessageInput {
 	content?: string;
 	media_ids?: string[];
 	shared_tweet_id?: string;
+	music_track_id?: string;
 	reply_to_id?: string;
 }
 

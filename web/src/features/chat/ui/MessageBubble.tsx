@@ -26,6 +26,7 @@ import { ChatMessageContent } from "./ChatMessageContent";
 import { MessageEditComposer } from "./MessageEditComposer";
 import { MessageReactions } from "./MessageReactions";
 import { MessageReadReceipt } from "./MessageReadReceipt";
+import { MusicShareCard } from "./MusicShareCard";
 import { TweetShareCard } from "./TweetShareCard";
 
 interface MessageBubbleProps {
@@ -216,6 +217,20 @@ export function MessageBubble({
 									onImage={onImage}
 								/>
 							</BubbleShell>
+						) : message.type === "music_share" && message.music_share ? (
+							<BubbleShell mine={mine} themeId={appearance.bubble_theme_id}>
+								<div className="flex min-w-0 max-w-full flex-col gap-2">
+									{message.content && (
+										<ChatMessageContent
+											content={message.content}
+											emote={mergedEmote}
+											mentions={message.mentions}
+											viewerID={currentUserID}
+										/>
+									)}
+									<MusicShareCard song={message.music_share} />
+								</div>
+							</BubbleShell>
 						) : message.type === "tweet_share" ? (
 							<div className="flex flex-col gap-1.5">
 								{message.content && (
@@ -394,7 +409,9 @@ function ReplyPreview({
 			? stripPlaceholdersForPreview(reference.content ?? "").trim() || "图片消息"
 			: reference.type === "tweet_share"
 				? stripPlaceholdersForPreview(reference.content ?? "").trim() || "分享了一条推文"
-				: stripPlaceholdersForPreview(reference.content ?? "").trim() || "文本消息";
+				: reference.type === "music_share"
+					? "分享了一首歌曲"
+					: stripPlaceholdersForPreview(reference.content ?? "").trim() || "文本消息";
 	const className =
 		"flex max-w-60 items-center gap-2 border-s-2 border-primary/60 bg-secondary px-2.5 py-1.5 text-left text-xs text-muted-foreground transition hover:bg-secondary/80";
 	const body = (
