@@ -7,6 +7,17 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.25.1](https://github.com/VOD-Studio/violet/compare/v2.25.0...v2.25.1) (2026-11-14)
+
+
+### 修复
+
+* **ExternalTweetCard:** 正文图片使用原图展示 ([c9e3acc](https://github.com/VOD-Studio/violet/commit/c9e3acc4d379af98f320d861d378e1e4d409ef3a))
+* **react-tweet:** 按码点解析正文实体索引 ([f767325](https://github.com/VOD-Studio/violet/commit/f767325e788bd4500873a1765ef283736b302f19))
+* **react-tweet:** 极窄竖图横条保持原始比例 ([b2e7cb8](https://github.com/VOD-Studio/violet/commit/b2e7cb84c37a6e6a21e6f4bf2aa7695cb8d5a058))
+* **xtweet:** 按码点解析正文显示范围与实体索引 ([f70044c](https://github.com/VOD-Studio/violet/commit/f70044cd40185197e1fa50623a99de5ab33cb746))
+* **xtweet:** 放开单条推文 20 张图片上限 ([75e1cbd](https://github.com/VOD-Studio/violet/commit/75e1cbdc555167680cafddc5df1396be291897b4))
+
 ## [2.25.0](https://github.com/VOD-Studio/violet/compare/v2.24.0...v2.25.0) (2026-11-12)
 
 
