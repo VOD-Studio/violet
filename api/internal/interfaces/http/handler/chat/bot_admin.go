@@ -35,6 +35,8 @@ type createBotRequest struct {
 
 type updateBotRequest struct {
 	Name *string `json:"name"`
+	// Description 角色简介；缺省表示不改，空白清空。
+	Description *string `json:"description"`
 	// AvatarID 传空串清除头像，字段缺省表示不改。
 	AvatarID                *string `json:"avatar_id"`
 	Enabled                 *bool   `json:"enabled"`
@@ -95,6 +97,7 @@ func (h *BotAdminHandler) Update(w http.ResponseWriter, r *http.Request) {
 	dto, err := h.bots.UpdateBot(r.Context(), appchat.UpdateBotInput{
 		ID:                      botID,
 		Name:                    req.Name,
+		Description:             req.Description,
 		AvatarID:                req.AvatarID,
 		Enabled:                 req.Enabled,
 		ShowThinking:            req.ShowThinking,

@@ -20,6 +20,9 @@ const botTokenPrefix = "violet_bot_"
 // 后者受 DisplayName 值对象 32 字符上限约束，取两者的交集才不会写出「能存不能显示」的名。
 const MaxBotNameLength = 32
 
+// MaxBotDescriptionLength bot 简介上限，按 Unicode 字符计数。
+const MaxBotDescriptionLength = 80
+
 // normalizeBotName 修剪并校验 bot 名称。
 //
 // 按 Unicode 字符计数而非字节：中文名是常态，按字节会把 30 个汉字判为超限。
@@ -217,6 +220,8 @@ type Bot struct {
 	userID domainshared.ID
 	// name 显示名，出现在会话成员列表与消息 sender 中。
 	name string
+	// description 一句话简介，展示在会话的“在场的角色”里；空串表示未填。
+	description string
 	// avatarID 头像文件 ID；nil 表示无头像，渲染时用默认头像。
 	avatarID *domainshared.ID
 	// tokenHash API token 的 SHA-256 hex，落库并建唯一索引供鉴权反查。
@@ -265,6 +270,7 @@ func NewBot(id, userID domainshared.ID, name string, avatarID *domainshared.ID, 
 func ReconstructBot(
 	id, userID domainshared.ID,
 	name string,
+	description string,
 	avatarID *domainshared.ID,
 	tokenHash string,
 	token string,
@@ -276,6 +282,7 @@ func ReconstructBot(
 	b := &Bot{
 		userID:                  userID,
 		name:                    name,
+		description:             description,
 		avatarID:                avatarID,
 		tokenHash:               tokenHash,
 		token:                   token,
@@ -379,6 +386,23 @@ func (b *Bot) Token() string { return b.token }
 
 // IsEnabled 返回是否启用。
 func (b *Bot) IsEnabled() bool { return b.enabled }
+
+// Description 返回简介；空串表示未填。
+func (b *Bot) Description() string { return b.description }
+
+// SetDescription 修剪并保存简介，空白视为清空；超长返回错误且不改动。
+func (b *Bot) SetDescription(description string, now time.Time) error {
+	trimmed := strings.TrimSpace(description)
+	if len([]rune(trimmed)) > MaxBotDescriptionLength {
+		return domainshared.BadRequest("Bot 简介最多 80 个字符")
+	}
+	if b.description == trimmed {
+		return nil
+	}
+	b.description = trimmed
+	b.UpdatedAt = now
+	return nil
+}
 
 // ShowThinking 返回思考内容的展示策略。
 func (b *Bot) ShowThinking() bool { return b.showThinking }

@@ -28,6 +28,8 @@ type BotDTO struct {
 	Username string `json:"username"`
 	// Name 显示名。
 	Name string `json:"name"`
+	// Description 一句话简介，未填为空串。
+	Description string `json:"description"`
 	// AvatarID 头像文件 ID，未设置时为空。
 	AvatarID string `json:"avatar_id,omitempty"`
 	// AvatarURL 头像地址，取自虚拟用户资料。
@@ -63,6 +65,8 @@ type UpdateBotInput struct {
 	ID domainshared.ID
 	// Name 新显示名；nil 表示不改名。
 	Name *string
+	// Description 新简介；nil 表示不改，空白表示清空。
+	Description *string
 	// AvatarID 新头像文件 ID 字符串；nil 表示不改头像，空串表示清除头像。
 	AvatarID *string
 	// Enabled 启停；nil 表示不改。
@@ -275,6 +279,13 @@ func (s *BotService) updateBot(ctx context.Context, in UpdateBotInput) (BotDTO, 
 		}
 		changed = changed || previous != bot.Name()
 	}
+	if in.Description != nil {
+		previous := bot.Description()
+		if err := bot.SetDescription(*in.Description, now); err != nil {
+			return BotDTO{}, nil, err
+		}
+		changed = changed || previous != bot.Description()
+	}
 	if in.AvatarID != nil {
 		avatarID, avatar, err := s.parseAvatarID(ctx, *in.AvatarID)
 		if err != nil {
@@ -445,6 +456,7 @@ func newBotDTO(bot *domainchat.Bot, user *domainuser.User) BotDTO {
 		UserID:                  bot.UserID().String(),
 		Username:                user.Username().String(),
 		Name:                    bot.Name(),
+		Description:             bot.Description(),
 		Enabled:                 bot.IsEnabled(),
 		ShowThinking:            bot.ShowThinking(),
 		ThinkingDefaultExpanded: bot.ThinkingDefaultExpanded(),

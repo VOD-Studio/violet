@@ -111,7 +111,7 @@ func (r *BotRepository) Save(ctx context.Context, bot *domainchat.Bot) error {
 	if err != nil {
 		return err
 	}
-	cols := []string{"user_id", "name", "avatar_id", "token_hash", "enabled", "show_thinking", "thinking_default_expanded", "updated_at"}
+	cols := []string{"user_id", "name", "description", "avatar_id", "token_hash", "enabled", "show_thinking", "thinking_default_expanded", "updated_at"}
 	// 只有手上拿着明文（新建或刚重置）才改写密文列：改名/启停同样走整行 upsert，
 	// 把列无条件写进去会因聚合明文为空而覆盖成 NULL，凭据从此永久看不见。
 	if po.TokenEncrypted != nil {
@@ -140,6 +140,7 @@ func (r *BotRepository) toPO(b *domainchat.Bot) (*model.ChatBot, error) {
 		ID:                      b.ID().UUID(),
 		UserID:                  b.UserID().UUID(),
 		Name:                    b.Name(),
+		Description:             b.Description(),
 		TokenHash:               b.TokenHash(),
 		Enabled:                 b.IsEnabled(),
 		ShowThinking:            b.ShowThinking(),
@@ -170,7 +171,7 @@ func (r *BotRepository) toDomain(po model.ChatBot) *domainchat.Bot {
 	}
 	return domainchat.ReconstructBot(
 		domainshared.IDFromUUID(po.ID), domainshared.IDFromUUID(po.UserID),
-		po.Name, avatarID, po.TokenHash, r.plainToken(po), po.Enabled, po.ShowThinking, po.ThinkingDefaultExpanded, po.CreatedAt, po.UpdatedAt,
+		po.Name, po.Description, avatarID, po.TokenHash, r.plainToken(po), po.Enabled, po.ShowThinking, po.ThinkingDefaultExpanded, po.CreatedAt, po.UpdatedAt,
 	)
 }
 

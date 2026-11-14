@@ -1,0 +1,1 @@
+ALTER TABLE chat_bots ADD COLUMN description VARCHAR(240) NOT NULL DEFAULT '';

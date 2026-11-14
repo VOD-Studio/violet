@@ -135,11 +135,12 @@ func (ChatPushSubscription) TableName() string { return "chat_push_subscriptions
 // 供后台随时解密查看（见 124 迁移）。enabled 刻意不带 gorm default tag：带 default 时
 // GORM 建插会跳过 false 零值，使「创建即禁用」被 DB 默认值静默改成启用。
 type ChatBot struct {
-	ID        uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
-	UserID    uuid.UUID  `gorm:"type:uuid;column:user_id;uniqueIndex;not null" json:"user_id"`
-	Name      string     `gorm:"type:varchar(80);not null" json:"name"`
-	AvatarID  *uuid.UUID `gorm:"type:uuid;column:avatar_id" json:"avatar_id,omitempty"`
-	TokenHash string     `gorm:"type:varchar(64);column:token_hash;uniqueIndex;not null" json:"-"`
+	ID          uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
+	UserID      uuid.UUID  `gorm:"type:uuid;column:user_id;uniqueIndex;not null" json:"user_id"`
+	Name        string     `gorm:"type:varchar(80);not null" json:"name"`
+	Description string     `gorm:"type:varchar(240);not null;default:''" json:"description"`
+	AvatarID    *uuid.UUID `gorm:"type:uuid;column:avatar_id" json:"avatar_id,omitempty"`
+	TokenHash   string     `gorm:"type:varchar(64);column:token_hash;uniqueIndex;not null" json:"-"`
 	// TokenEncrypted 明文凭据的 AES-GCM 密文（base64）。NULL = 从未存过或密文已作废，
 	// 此时凭据只能靠重置刷新；json:"-" 防它经任何 DTO 序列化外泄。
 	TokenEncrypted          *string   `gorm:"type:text;column:token_encrypted" json:"-"`
