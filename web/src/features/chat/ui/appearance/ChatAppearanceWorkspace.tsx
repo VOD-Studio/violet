@@ -67,49 +67,42 @@ export function ChatAppearanceWorkspace({ open, user, onClose }: ChatAppearanceW
 					<DialogTitle>聊天外观</DialogTitle>
 					<DialogDescription>选择气泡和本机背景，保存后应用。</DialogDescription>
 				</DialogHeader>
-				{open &&
-					(query.data ? (
-						<ChatAppearanceEditor
-							key={user.id}
-							initial={query.data}
-							user={user}
-							onClose={onClose}
-							onBusyChange={handleBusyChange}
-						/>
-					) : (
-						<>
-							<DialogBody>
-								{query.isError ? (
-									<div
-										role="alert"
-										className="flex flex-col items-center gap-4 py-8"
-									>
-										<p className="text-sm text-muted-foreground">
-											无法加载已保存的外观。
-										</p>
-										<Button
-											variant="outline"
-											onClick={() => void query.refetch()}
-										>
-											重试
-										</Button>
-									</div>
-								) : (
-									<p
-										role="status"
-										className="py-8 text-center text-sm text-muted-foreground"
-									>
-										正在读取你的外观…
+				{query.data ? (
+					<ChatAppearanceEditor
+						key={user.id}
+						initial={query.data}
+						user={user}
+						onClose={onClose}
+						onBusyChange={handleBusyChange}
+					/>
+				) : (
+					<>
+						<DialogBody>
+							{query.isError ? (
+								<div role="alert" className="flex flex-col items-center gap-4 py-8">
+									<p className="text-sm text-muted-foreground">
+										无法加载已保存的外观。
 									</p>
-								)}
-							</DialogBody>
-							<DialogFooter>
-								<Button variant="outline" onClick={onClose}>
-									取消
-								</Button>
-							</DialogFooter>
-						</>
-					))}
+									<Button variant="outline" onClick={() => void query.refetch()}>
+										重试
+									</Button>
+								</div>
+							) : (
+								<p
+									role="status"
+									className="py-8 text-center text-sm text-muted-foreground"
+								>
+									正在读取你的外观…
+								</p>
+							)}
+						</DialogBody>
+						<DialogFooter>
+							<Button variant="outline" onClick={onClose}>
+								取消
+							</Button>
+						</DialogFooter>
+					</>
+				)}
 			</DialogContent>
 		</Dialog>
 	);

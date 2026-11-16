@@ -55,6 +55,7 @@ export function GalleryDraftListPage() {
 	const [author, setAuthor] = useState("");
 	const [status, setStatus] = useState("all");
 	const [deleting, setDeleting] = useState<GallerySummary | null>(null);
+	const [deleteOpen, setDeleteOpen] = useState(false);
 
 	const createDraft = useCreateGalleryDraft();
 	const deleteGallery = useDeleteGallery(deleting?.id ?? "", deleting?.slug ?? null);
@@ -79,7 +80,7 @@ export function GalleryDraftListPage() {
 		try {
 			await deleteGallery.mutateAsync({ expected_version: deleting.version });
 			toast.success("图集已删除");
-			setDeleting(null);
+			setDeleteOpen(false);
 		} catch (deleteError) {
 			toast.error(deleteError instanceof Error ? deleteError.message : "删除失败");
 		}
@@ -185,7 +186,10 @@ export function GalleryDraftListPage() {
 										variant="ghost"
 										size="sm"
 										className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-										onClick={() => setDeleting(row)}
+										onClick={() => {
+											setDeleting(row);
+											setDeleteOpen(true);
+										}}
 										aria-label={`删除图集 ${row.title || row.id.slice(0, 8)}`}
 									>
 										<Trash2 {...iconProps(14)} />
@@ -278,10 +282,8 @@ export function GalleryDraftListPage() {
 
 				{/* 列表行级直接删除二次确认 */}
 				<ConfirmDialog
-					open={Boolean(deleting)}
-					onOpenChange={(open) => {
-						if (!open) setDeleting(null);
-					}}
+					open={deleteOpen}
+					onOpenChange={setDeleteOpen}
 					onConfirm={() => void handleConfirmDelete()}
 					title="确认删除图集"
 					description={`确定要删除图集「${deleting?.title || deleting?.id.slice(0, 8) || ""}」吗？此操作将永久删除该图集及其所有图片，不可恢复。`}

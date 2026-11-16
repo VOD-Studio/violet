@@ -117,7 +117,7 @@ export function ConversationIndex({
 					/>
 				</div>
 			</header>
-			{showNew && <NewConversationForm onCreated={onCreated} onClose={onToggleNew} />}
+			<NewConversationForm open={showNew} onCreated={onCreated} onClose={onToggleNew} />
 
 			<div className="min-h-0 min-w-0 flex-1 overflow-y-auto px-2.5 pb-2.5 pt-1">
 				{search.trim() ? (

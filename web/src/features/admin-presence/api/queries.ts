@@ -26,6 +26,7 @@ export const useIssuePresenceDevice = () => {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: issuePresenceDevice,
+		gcTime: 0,
 		onSuccess: () => qc.invalidateQueries({ queryKey: adminPresenceKeys.devices() }),
 	});
 };

@@ -77,6 +77,7 @@ function AdminLogsPage() {
 		},
 	);
 	const [detailLog, setDetailLog] = useState<AuditEventDTO | null>(null);
+	const [detailOpen, setDetailOpen] = useState(false);
 
 	const columns: DataTableColumn<AuditEventDTO>[] = [
 		{
@@ -139,7 +140,10 @@ function AdminLogsPage() {
 					size="sm"
 					aria-label="查看详情"
 					title="查看详情"
-					onClick={() => setDetailLog(row)}
+					onClick={() => {
+						setDetailLog(row);
+						setDetailOpen(true);
+					}}
 				>
 					<Eye {...iconProps(14)} />
 				</Button>
@@ -218,12 +222,7 @@ function AdminLogsPage() {
 				emptyDescription="还没有任何用户操作记录"
 			/>
 
-			<Modal
-				open={!!detailLog}
-				onOpenChange={(open) => !open && setDetailLog(null)}
-				title="操作详情"
-				size="lg"
-			>
+			<Modal open={detailOpen} onOpenChange={setDetailOpen} title="操作详情" size="lg">
 				{detailLog && <AuditEventDetail event={detailLog} />}
 			</Modal>
 		</PageShell>

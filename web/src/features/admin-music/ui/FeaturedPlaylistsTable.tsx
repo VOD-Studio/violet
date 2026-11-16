@@ -61,6 +61,7 @@ export function FeaturedPlaylistsTable({
 	const removeMutation = useRemoveFeaturedPlaylist();
 
 	const [deletingPlaylist, setDeletingPlaylist] = useState<MusicFeaturedPlaylist | null>(null);
+	const [deleteOpen, setDeleteOpen] = useState(false);
 
 	const handleToggleEnabled = async (item: MusicFeaturedPlaylist) => {
 		try {
@@ -106,7 +107,7 @@ export function FeaturedPlaylistsTable({
 		try {
 			await removeMutation.mutateAsync(deletingPlaylist.id);
 			toast.success(`已从站点展示列表中移除歌单「${deletingPlaylist.name}」`);
-			setDeletingPlaylist(null);
+			setDeleteOpen(false);
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "移除歌单失败";
 			toast.error(message);
@@ -308,9 +309,10 @@ export function FeaturedPlaylistsTable({
 														<Button
 															variant="ghost"
 															size="sm"
-															onClick={() =>
-																setDeletingPlaylist(item)
-															}
+															onClick={() => {
+																setDeletingPlaylist(item);
+																setDeleteOpen(true);
+															}}
 															disabled={removeMutation.isPending}
 															className="size-8 p-0 text-destructive hover:bg-destructive/10"
 															aria-label="移除歌单"
@@ -330,8 +332,8 @@ export function FeaturedPlaylistsTable({
 
 			{/* 移除歌单确认弹窗 */}
 			<ConfirmDialog
-				open={Boolean(deletingPlaylist)}
-				onOpenChange={(open) => !open && setDeletingPlaylist(null)}
+				open={deleteOpen}
+				onOpenChange={setDeleteOpen}
 				onConfirm={handleConfirmRemove}
 				title="确认从站点展示中移除歌单？"
 				description={`移除「${deletingPlaylist?.name ?? ""}」只会取消本站的公开展示，不会对网易云原歌单产生任何更改。`}

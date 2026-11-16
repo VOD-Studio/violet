@@ -12,7 +12,7 @@ import {
 
 import { cn } from "cn";
 import { Check, Search, Users, X } from "lucide-react";
-import { useDeferredValue, useState } from "react";
+import { useDeferredValue, useLayoutEffect, useState } from "react";
 import { toast } from "sonner";
 import { useChatContacts, useCreateChatConversation } from "../api/queries";
 import type { ChatUser } from "../model/types";
@@ -20,6 +20,7 @@ import { ChatAvatar } from "./ChatAvatar";
 import { ChatContactSkeleton } from "./ChatContactSkeleton";
 
 export interface NewConversationFormProps {
+	open: boolean;
 	/** 创建成功后接收新会话 ID。 */
 	onCreated: (id: string) => void;
 	/** 关闭浮层。 */
@@ -27,16 +28,22 @@ export interface NewConversationFormProps {
 }
 
 /** 新建会话浮层：私聊/群聊合一，搜索选人后创建。 */
-export function NewConversationForm({ onCreated, onClose }: NewConversationFormProps) {
+export function NewConversationForm({ open, onCreated, onClose }: NewConversationFormProps) {
 	const [memberSearch, setMemberSearch] = useState("");
 	const [selectedUsers, setSelectedUsers] = useState<ChatUser[]>([]);
 	const [title, setTitle] = useState("");
 	const [busy, setBusy] = useState(false);
 	const deferredSearch = useDeferredValue(memberSearch.trim());
-	const contactsQuery = useChatContacts(deferredSearch);
+	const contactsQuery = useChatContacts(deferredSearch, open);
 	const contacts = contactsQuery.data?.pages.flatMap((page) => page.data) ?? [];
 	const create = useCreateChatConversation();
 	const isRoom = selectedUsers.length > 1;
+	useLayoutEffect(() => {
+		if (!open) return;
+		setMemberSearch("");
+		setSelectedUsers([]);
+		setTitle("");
+	}, [open]);
 	const toggleUser = (user: ChatUser) => {
 		setSelectedUsers((current) =>
 			current.some((selected) => selected.id === user.id)
@@ -64,9 +71,9 @@ export function NewConversationForm({ onCreated, onClose }: NewConversationFormP
 
 	return (
 		<Dialog
-			open
-			onOpenChange={(open) => {
-				if (!open) onClose();
+			open={open}
+			onOpenChange={(nextOpen) => {
+				if (!nextOpen) onClose();
 			}}
 		>
 			<DialogContent size="sm" showCloseButton={false} aria-describedby={undefined}>

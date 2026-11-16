@@ -39,6 +39,7 @@ export function BotTable({ bots, pagination, loading, onTokenRevealed }: BotTabl
 	const reveal = useRevealBotToken();
 	const del = useDeleteBot();
 	const [pending, setPending] = React.useState<PendingAction>(null);
+	const [confirmOpen, setConfirmOpen] = React.useState(false);
 
 	const confirmText = React.useMemo(() => {
 		if (!pending) return { title: "", description: "", confirm: "" };
@@ -62,13 +63,13 @@ export function BotTable({ bots, pagination, loading, onTokenRevealed }: BotTabl
 		if (kind === "rotate") {
 			rotate.mutate(bot.id, {
 				onSuccess: (next) => {
-					setPending(null);
+					setConfirmOpen(false);
 					onTokenRevealed(next);
 				},
 			});
 			return;
 		}
-		del.mutate(bot.id, { onSuccess: () => setPending(null) });
+		del.mutate(bot.id, { onSuccess: () => setConfirmOpen(false) });
 	};
 
 	const columns: DataTableColumn<BotDTO>[] = [
@@ -210,7 +211,10 @@ export function BotTable({ bots, pagination, loading, onTokenRevealed }: BotTabl
 						size="sm"
 						aria-label={`重置 ${row.name} 的 token`}
 						title="重置 token"
-						onClick={() => setPending({ kind: "rotate", bot: row })}
+						onClick={() => {
+							setPending({ kind: "rotate", bot: row });
+							setConfirmOpen(true);
+						}}
 					>
 						<KeyRound {...iconProps(14)} />
 					</Button>
@@ -221,7 +225,10 @@ export function BotTable({ bots, pagination, loading, onTokenRevealed }: BotTabl
 						className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 						aria-label={`吊销 ${row.name}`}
 						title="吊销 Bot"
-						onClick={() => setPending({ kind: "revoke", bot: row })}
+						onClick={() => {
+							setPending({ kind: "revoke", bot: row });
+							setConfirmOpen(true);
+						}}
 					>
 						<Trash2 {...iconProps(14)} />
 					</Button>
@@ -243,16 +250,14 @@ export function BotTable({ bots, pagination, loading, onTokenRevealed }: BotTabl
 				emptyDescription="注册一个 Bot，让外部程序以虚拟用户身份参与聊天"
 			/>
 			<Modal
-				open={pending !== null}
-				onOpenChange={(open) => {
-					if (!open) setPending(null);
-				}}
+				open={confirmOpen}
+				onOpenChange={setConfirmOpen}
 				title={confirmText.title}
 				description={confirmText.description}
 				size="sm"
 				footer={
 					<>
-						<Button variant="ghost" onClick={() => setPending(null)}>
+						<Button variant="ghost" onClick={() => setConfirmOpen(false)}>
 							取消
 						</Button>
 						<Button

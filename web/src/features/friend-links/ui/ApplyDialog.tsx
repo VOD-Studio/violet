@@ -29,6 +29,7 @@ export function ApplyDialog({ open, onOpenChange, isLoggedIn, currentUsername }:
 	const [track, setTrack] = useState<Track>(initialTrack);
 	const [step, setStep] = useState<Step>(isLoggedIn ? "card" : "identity");
 	const [form, setForm] = useState<FriendLinkForm>(EMPTY_FORM);
+	const [wasOpen, setWasOpen] = useState(open);
 
 	// 弹窗打开时预取 CSRF token 种 violet_csrf cookie；
 	// axios interceptor 自动从 cookie 读并注入 X-CSRF-Token header。
@@ -47,6 +48,11 @@ export function ApplyDialog({ open, onOpenChange, isLoggedIn, currentUsername }:
 		setForm(EMPTY_FORM);
 		verification.reset();
 	};
+
+	if (open !== wasOpen) {
+		setWasOpen(open);
+		if (open) reset();
+	}
 
 	const stepIndex = step === "identity" ? 1 : step === "card" ? 2 : 3;
 	const stepLabel = step === "identity" ? "验明正身" : step === "card" ? "填写名片" : "交换完成";
@@ -94,10 +100,7 @@ export function ApplyDialog({ open, onOpenChange, isLoggedIn, currentUsername }:
 	return (
 		<Modal
 			open={open}
-			onOpenChange={(v) => {
-				onOpenChange(v);
-				if (!v) reset();
-			}}
+			onOpenChange={onOpenChange}
 			title="交换名片"
 			description="把站点名片递进站长的名片夹，等候审核"
 			size="xl"
@@ -126,7 +129,6 @@ export function ApplyDialog({ open, onOpenChange, isLoggedIn, currentUsername }:
 							<Button
 								onClick={() => {
 									onOpenChange(false);
-									reset();
 								}}
 							>
 								收好回执

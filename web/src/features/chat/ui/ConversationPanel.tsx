@@ -246,14 +246,13 @@ export function ConversationPanel({
 						/>
 					</section>
 
-					{showDetails && (
-						<RoomDetails
-							conversation={conversation}
-							currentUserID={currentUserID}
-							members={members}
-							onClose={onToggleDetails}
-						/>
-					)}
+					<RoomDetails
+						open={showDetails}
+						conversation={conversation}
+						currentUserID={currentUserID}
+						members={members}
+						onClose={onToggleDetails}
+					/>
 				</div>
 				<ImagePreview
 					open={imagePreview.open}

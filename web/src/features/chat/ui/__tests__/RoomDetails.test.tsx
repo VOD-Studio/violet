@@ -100,6 +100,7 @@ it("已有通知权限但没有订阅时，设置按钮可以重新启用通知"
 	push.permission = "granted";
 	render(
 		<RoomDetails
+			open
 			conversation={mockConversation}
 			currentUserID={mockUser.id}
 			members={mockMembers}
@@ -129,6 +130,7 @@ it("在场的角色与成员分开列出，角色带简介，成员数不含角�
 	];
 	render(
 		<RoomDetails
+			open
 			conversation={mockConversation}
 			currentUserID={mockUser.id}
 			members={members}
@@ -147,6 +149,7 @@ it("没有角色时不显示在场的角色分区", () => {
 	stubMatchMedia(true);
 	render(
 		<RoomDetails
+			open
 			conversation={mockConversation}
 			currentUserID={mockUser.id}
 			members={mockMembers}
@@ -171,6 +174,7 @@ const withRua = (canSpeak: boolean): ChatMember[] => [
 const renderDetails = (members: ChatMember[], currentUserID = mockUser.id) =>
 	render(
 		<RoomDetails
+			open
 			conversation={mockConversation}
 			currentUserID={currentUserID}
 			members={members}

@@ -12,15 +12,20 @@ const serverSnapshot = () => false;
 
 /** 宽屏保留页面可交互，窄屏使用模态；焦点、关闭与动效都沿用 Sheet。 */
 export interface ConversationDetailsFrameProps {
+	open: boolean;
 	children: ReactNode;
 	onClose: () => void;
 }
 
-export function ConversationDetailsFrame({ children, onClose }: ConversationDetailsFrameProps) {
+export function ConversationDetailsFrame({
+	open,
+	children,
+	onClose,
+}: ConversationDetailsFrameProps) {
 	const wide = useSyncExternalStore(subscribe, snapshot, serverSnapshot);
 	return (
 		<Sheet
-			open
+			open={open}
 			modal={!wide}
 			onOpenChange={(open) => {
 				if (!open) {

@@ -24,6 +24,7 @@ import { ChatNotificationSettings } from "./ChatNotificationSettings";
 import { ConversationDetailsFrame } from "./ConversationDetailsFrame";
 
 export interface RoomDetailsProps {
+	open: boolean;
 	/** 当前会话。 */
 	conversation: ChatConversation;
 	/** 当前用户 ID。 */
@@ -34,7 +35,22 @@ export interface RoomDetailsProps {
 	onClose: () => void;
 }
 
-export function RoomDetails({ conversation, currentUserID, members, onClose }: RoomDetailsProps) {
+/** 详情会话随 Sheet 内容挂载，关闭动画结束后释放。 */
+export function RoomDetails(props: RoomDetailsProps) {
+	return (
+		<ConversationDetailsFrame open={props.open} onClose={props.onClose}>
+			<RoomDetailsContent {...props} />
+		</ConversationDetailsFrame>
+	);
+}
+
+function RoomDetailsContent({
+	open,
+	conversation,
+	currentUserID,
+	members,
+	onClose,
+}: RoomDetailsProps) {
 	const [title, setTitle] = useState(conversation.title);
 	const [inviteUsername, setInviteUsername] = useState("");
 	const rename = useRenameChatConversation();
@@ -52,8 +68,10 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 	);
 	const isOwner = currentMember?.role === "owner";
 	useEffect(() => {
+		if (!open) return;
 		setTitle(conversation.title);
-	}, [conversation.title]);
+		setInviteUsername("");
+	}, [conversation.title, open]);
 
 	const saveTitle = async () => {
 		if (conversation.kind !== "room" || !title.trim() || title === conversation.title) {
@@ -77,7 +95,7 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 	};
 
 	return (
-		<ConversationDetailsFrame onClose={onClose}>
+		<>
 			{conversation.kind === "room" && isOwner && (
 				<Input
 					aria-label="房间名称"
@@ -239,6 +257,6 @@ export function RoomDetails({ conversation, currentUserID, members, onClose }: R
 					离开会话
 				</Button>
 			</div>
-		</ConversationDetailsFrame>
+		</>
 	);
 }

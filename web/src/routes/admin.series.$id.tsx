@@ -58,6 +58,8 @@ function AdminSeriesEditPage() {
 		null,
 	);
 	const [detachTarget, setDetachTarget] = useState<SeriesChapterDTO | null>(null);
+	const [removeSectionOpen, setRemoveSectionOpen] = useState(false);
+	const [detachOpen, setDetachOpen] = useState(false);
 
 	// 书内全部章节 ID（选择器禁选依据，防重复挂章被后端拒绝）
 	const inBookIds = useMemo(() => {
@@ -102,7 +104,10 @@ function AdminSeriesEditPage() {
 			chapters={chapters}
 			disabled={reorder.isPending}
 			onAttach={() => setPickerScope(scopeId)}
-			onDetach={setDetachTarget}
+			onDetach={(chapter) => {
+				setDetachTarget(chapter);
+				setDetachOpen(true);
+			}}
 			onReorder={(ordered) => reorderScope(scopeId, ordered)}
 			onRemoveSection={
 				label === null
@@ -111,7 +116,10 @@ function AdminSeriesEditPage() {
 							const section = series.sections.find(
 								(candidate) => candidate.section.id === scopeId,
 							);
-							if (section) setRemoveSectionTarget(section);
+							if (section) {
+								setRemoveSectionTarget(section);
+								setRemoveSectionOpen(true);
+							}
 						}
 			}
 		/>
@@ -217,12 +225,12 @@ function AdminSeriesEditPage() {
 			</Dialog>
 
 			<ConfirmDialog
-				open={!!removeSectionTarget}
-				onOpenChange={(v) => !v && setRemoveSectionTarget(null)}
+				open={removeSectionOpen}
+				onOpenChange={setRemoveSectionOpen}
 				onConfirm={() => {
 					if (!removeSectionTarget) return;
 					removeSection.mutate(removeSectionTarget.section.id, {
-						onSuccess: () => setRemoveSectionTarget(null),
+						onSuccess: () => setRemoveSectionOpen(false),
 					});
 				}}
 				title="确认删除卷"
@@ -232,12 +240,12 @@ function AdminSeriesEditPage() {
 			/>
 
 			<ConfirmDialog
-				open={!!detachTarget}
-				onOpenChange={(v) => !v && setDetachTarget(null)}
+				open={detachOpen}
+				onOpenChange={setDetachOpen}
 				onConfirm={() => {
 					if (!detachTarget) return;
 					detach.mutate(detachTarget.post_id, {
-						onSuccess: () => setDetachTarget(null),
+						onSuccess: () => setDetachOpen(false),
 					});
 				}}
 				title="确认摘除章节"

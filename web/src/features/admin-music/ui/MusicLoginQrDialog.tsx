@@ -17,7 +17,7 @@ import type { MusicAccount, MusicChallenge } from "../model/types";
 
 /** 扫码登录对话框的受控状态与完成通知。 */
 export interface MusicLoginQrDialogProps {
-	/** 关闭时卸载当前扫码会话。 */
+	/** 关闭时停止扫码资源，退场结束后卸载视觉内容。 */
 	open: boolean;
 	/** 扫码确认成功后请求关闭对话框。 */
 	onOpenChange: (open: boolean) => void;
@@ -28,6 +28,11 @@ export interface MusicLoginQrDialogProps {
 /** 连接全站统一使用的网易云账号，不向浏览器返回账号凭据。 */
 export function MusicLoginQrDialog({ open, onOpenChange, onSuccess }: MusicLoginQrDialogProps) {
 	const [attempt, setAttempt] = useState(0);
+	const [wasOpen, setWasOpen] = useState(open);
+	if (open !== wasOpen) {
+		setWasOpen(open);
+		if (open) setAttempt((value) => value + 1);
+	}
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent size="sm">
@@ -41,19 +46,18 @@ export function MusicLoginQrDialog({ open, onOpenChange, onSuccess }: MusicLogin
 					</DialogDescription>
 				</DialogHeader>
 				<DialogBody>
-					{open && (
-						<MusicQrSession
-							key={attempt}
-							onRetry={() => setAttempt((value) => value + 1)}
-							onConfirmed={(account) => {
-								toast.success(
-									`网易云账号「${account.profile?.nickname ?? "已连接"}」连接成功`,
-								);
-								onSuccess?.(account);
-								onOpenChange(false);
-							}}
-						/>
-					)}
+					<MusicQrSession
+						key={attempt}
+						open={open}
+						onRetry={() => setAttempt((value) => value + 1)}
+						onConfirmed={(account) => {
+							toast.success(
+								`网易云账号「${account.profile?.nickname ?? "已连接"}」连接成功`,
+							);
+							onSuccess?.(account);
+							onOpenChange(false);
+						}}
+					/>
 				</DialogBody>
 			</DialogContent>
 		</Dialog>
@@ -61,12 +65,13 @@ export function MusicLoginQrDialog({ open, onOpenChange, onSuccess }: MusicLogin
 }
 
 interface MusicQrSessionProps {
+	open: boolean;
 	onRetry: () => void;
 	onConfirmed: (account: MusicAccount) => void;
 }
 
-/** 每次挂载只创建一个挑战，卸载时取消尚未确认的会话。 */
-function MusicQrSession({ onRetry, onConfirmed }: MusicQrSessionProps) {
+/** 每次挂载创建一个挑战，关闭立即取消资源，视觉内容随外壳退出。 */
+function MusicQrSession({ open, onRetry, onConfirmed }: MusicQrSessionProps) {
 	const { mutateAsync: createQr, isPending: isCreating } = useCreateMusicLoginQR();
 	const { mutate: cancelQr } = useCancelMusicLoginQR();
 	const [challenge, setChallenge] = useState<MusicChallenge | null>(null);
@@ -74,6 +79,7 @@ function MusicQrSession({ onRetry, onConfirmed }: MusicQrSessionProps) {
 	const confirmedRef = useRef(false);
 
 	useEffect(() => {
+		if (!open) return;
 		const controller = new AbortController();
 		let active = true;
 		let challengeId: string | undefined;
@@ -98,12 +104,17 @@ function MusicQrSession({ onRetry, onConfirmed }: MusicQrSessionProps) {
 			controller.abort();
 			if (challengeId && !confirmedRef.current) cancelQr(challengeId);
 		};
-	}, [createQr, cancelQr]);
+	}, [open, createQr, cancelQr]);
 
-	const { qrState, error: pollingError } = useMusicQrPolling(challenge, (account) => {
+	const polling = useMusicQrPolling(open ? challenge : null, (account) => {
 		confirmedRef.current = true;
 		onConfirmed(account);
 	});
+	const [lastPolling, setLastPolling] = useState(polling);
+	if (open && (lastPolling.qrState !== polling.qrState || lastPolling.error !== polling.error)) {
+		setLastPolling(polling);
+	}
+	const { qrState, error: pollingError } = open ? polling : lastPolling;
 	const error = createError ?? pollingError;
 
 	return (

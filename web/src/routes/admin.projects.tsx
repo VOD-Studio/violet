@@ -30,7 +30,7 @@ import {
 	TooltipTrigger,
 } from "@violet/ui";
 import { Code, ExternalLink, Pencil, Plus, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
 /** 创建/编辑表单初值 */
@@ -222,13 +222,11 @@ function AdminProjectsPage() {
 					emptyDescription="还没有创建任何项目"
 				/>
 
-				{dialogOpen && (
-					<ProjectDialog
-						open={dialogOpen}
-						onOpenChange={setDialogOpen}
-						editingId={editingId}
-					/>
-				)}
+				<ProjectDialog
+					open={dialogOpen}
+					onOpenChange={setDialogOpen}
+					editingId={editingId}
+				/>
 
 				<DeleteProjectDialog
 					deleteId={deleteId}
@@ -260,6 +258,7 @@ function ProjectDialog({
 		register,
 		handleSubmit,
 		control,
+		reset,
 		formState: { errors },
 	} = useForm<CreateProject>({
 		values:
@@ -276,6 +275,10 @@ function ProjectDialog({
 					}
 				: EMPTY,
 	});
+
+	useEffect(() => {
+		if (open) reset();
+	}, [open, reset]);
 
 	const onSubmit = (values: CreateProject) => {
 		const onSuccess = () => onOpenChange(false);

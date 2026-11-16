@@ -59,6 +59,7 @@ function AdminSubscriptionsPage() {
 	const [createOpen, setCreateOpen] = React.useState(false);
 	const [editing, setEditing] = React.useState<SubscriptionDTO | null>(null);
 	const [deleting, setDeleting] = React.useState<SubscriptionDTO | null>(null);
+	const [deleteOpen, setDeleteOpen] = React.useState(false);
 
 	const handleFetch = (id: string) => {
 		const sub = data?.data?.find((s) => s.id === id);
@@ -174,7 +175,10 @@ function AdminSubscriptionsPage() {
 							aria-label="删除"
 							title="删除"
 							className="hover:bg-destructive/10 hover:text-destructive"
-							onClick={() => setDeleting(row)}
+							onClick={() => {
+								setDeleting(row);
+								setDeleteOpen(true);
+							}}
 						>
 							<Trash2 {...iconProps(14)} />
 						</Button>
@@ -255,17 +259,15 @@ function AdminSubscriptionsPage() {
 			/>
 
 			<ConfirmDialog
-				open={!!deleting}
-				onOpenChange={(open) => {
-					if (!open) setDeleting(null);
-				}}
+				open={deleteOpen}
+				onOpenChange={setDeleteOpen}
 				title="删除订阅"
 				description={`确定删除订阅「${deleting?.title || deleting?.feed_url}」？其抓取记录将一并删除。`}
 				confirmLabel="删除"
 				loading={deleteMut.isPending}
 				onConfirm={() => {
 					if (!deleting) return;
-					deleteMut.mutate(deleting.id, { onSuccess: () => setDeleting(null) });
+					deleteMut.mutate(deleting.id, { onSuccess: () => setDeleteOpen(false) });
 				}}
 			/>
 		</PageShell>

@@ -21,6 +21,7 @@ export function ProfileCoverSection({ user }: { user: UserDTO }) {
 	const updateProfile = useUpdateProfile();
 	const [file, setFile] = useState<File | undefined>();
 	const [open, setOpen] = useState(false);
+	const [session, setSession] = useState(0);
 	const [dragging, setDragging] = useState(false);
 	const {
 		inputProps,
@@ -33,13 +34,13 @@ export function ProfileCoverSection({ user }: { user: UserDTO }) {
 		disabled: updateProfile.isPending || open,
 		onSelect: (files) => {
 			setFile(files[0]);
+			setSession((value) => value + 1);
 			setOpen(true);
 		},
 	});
 
 	const saveCover = async (result: CropUploadResult) => {
 		await updateProfile.mutateAsync({ cover_url: result.url });
-		setFile(undefined);
 		toast.success("主页封面已更新");
 	};
 
@@ -117,7 +118,7 @@ export function ProfileCoverSection({ user }: { user: UserDTO }) {
 			)}
 			<input {...inputProps} className="hidden" aria-label="选择主页封面" />
 			<CropUploadDialog
-				key={file ? `${file.name}:${file.lastModified}` : "empty"}
+				key={session}
 				file={file}
 				aspect={COVER_ASPECT}
 				purpose="cover"
@@ -128,10 +129,7 @@ export function ProfileCoverSection({ user }: { user: UserDTO }) {
 				previews={COVER_PREVIEWS}
 				outputMaxWidth={COVER_OUTPUT_WIDTH}
 				open={open}
-				onOpenChange={(nextOpen) => {
-					setOpen(nextOpen);
-					if (!nextOpen) setFile(undefined);
-				}}
+				onOpenChange={setOpen}
 				onConfirm={saveCover}
 			/>
 		</SectionCard>

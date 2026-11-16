@@ -11,12 +11,23 @@ vi.mock("../../api/client", () => ({
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 function renderDialog(onOpenChange = vi.fn()) {
-	render(
-		<QueryClientProvider client={createQueryClient()}>
+	const client = createQueryClient();
+	const result = render(
+		<QueryClientProvider client={client}>
 			<IssueDeviceDialog open onOpenChange={onOpenChange} />
 		</QueryClientProvider>,
 	);
-	return onOpenChange;
+	return {
+		...result,
+		onOpenChange,
+		setOpen(open: boolean) {
+			result.rerender(
+				<QueryClientProvider client={client}>
+					<IssueDeviceDialog open={open} onOpenChange={onOpenChange} />
+				</QueryClientProvider>,
+			);
+		},
+	};
 }
 
 describe("IssueDeviceDialog", () => {
@@ -70,14 +81,17 @@ describe("IssueDeviceDialog", () => {
 			token: "violet_nb_secret",
 			ingest_path: "/api/v1/presence/ingest",
 		});
-		const onOpenChange = renderDialog();
+		const { onOpenChange, setOpen } = renderDialog();
 		fireEvent.change(screen.getByLabelText("设备名称"), { target: { value: "Mac mini" } });
 		fireEvent.click(screen.getByRole("button", { name: "签发" }));
 		await screen.findByText("violet_nb_secret");
 
 		fireEvent.click(screen.getByRole("button", { name: "完成" }));
 		expect(onOpenChange).toHaveBeenCalledWith(false);
+		// The consumer must commit the controlled close before Presence can remove content.
+		setOpen(false);
 		await waitFor(() => expect(screen.queryByText("violet_nb_secret")).toBeNull());
+		setOpen(true);
 		expect((screen.getByLabelText("设备名称") as HTMLInputElement).value).toBe("");
 	});
 });

@@ -29,7 +29,7 @@ interface CreateUserDialogProps {
  * CreateUserDialog - 创建用户对话框
  *
  * 使用 React Hook Form + Zod 进行表单验证
- * 提交成功后自动关闭对话框并重置表单
+ * 每次打开时重置表单，提交成功后自动关闭对话框
  *
  * 角色限制：superadmin 选项仅当操作者是 root 时可见（被委派超管不可创建超管，授权链不可传递）。
  */
@@ -65,9 +65,9 @@ export function CreateUserDialog({
 	const role = watch("role");
 	const isActive = watch("is_active");
 
-	// 对话框关闭时重置表单
+	// 下次打开时重置，关闭期间保留当前表单供退出动画使用。
 	useEffect(() => {
-		if (!open) {
+		if (open) {
 			reset();
 		}
 	}, [open, reset]);
@@ -76,7 +76,6 @@ export function CreateUserDialog({
 		createUser.mutate(data, {
 			onSuccess: () => {
 				onOpenChange(false);
-				reset();
 			},
 		});
 	};

@@ -41,10 +41,11 @@ const STATUS_FILTER_OPTIONS: Array<{ value: string; label: string }> = [
 export function NotesAdminListPage() {
 	const canManage = useHasPermission("note:manage");
 	const [status, setStatus] = useState("all");
-	// undefined: 抽屉关闭; null: 新建笔记; string: 编辑指定笔记
-	const [activeNoteId, setActiveNoteId] = useState<string | null | undefined>(undefined);
+	const [sheetOpen, setSheetOpen] = useState(false);
+	const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
 	// 当前行级待删除笔记对象
 	const [deleting, setDeleting] = useState<AdminNoteSummary | null>(null);
+	const [deleteOpen, setDeleteOpen] = useState(false);
 
 	const { data, isLoading, error, refetch, pagination, setPage } = usePagedQuery(
 		useAdminNotesQuery,
@@ -54,15 +55,21 @@ export function NotesAdminListPage() {
 
 	const deleteNote = useDeleteNote(deleting?.id ?? "");
 
-	const openCreate = () => setActiveNoteId(null);
-	const openEdit = (id: string) => setActiveNoteId(id);
+	const openCreate = () => {
+		setActiveNoteId(null);
+		setSheetOpen(true);
+	};
+	const openEdit = (id: string) => {
+		setActiveNoteId(id);
+		setSheetOpen(true);
+	};
 
 	const handleConfirmDelete = async () => {
 		if (!deleting) return;
 		try {
 			await deleteNote.mutateAsync();
 			toast.success("笔记已删除");
-			setDeleting(null);
+			setDeleteOpen(false);
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : "删除失败");
 		}
@@ -147,7 +154,10 @@ export function NotesAdminListPage() {
 									size="sm"
 									variant="ghost"
 									className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-									onClick={() => setDeleting(row)}
+									onClick={() => {
+										setDeleting(row);
+										setDeleteOpen(true);
+									}}
 									disabled={!canManage}
 									aria-label={`删除笔记 ${row.title || row.id.slice(0, 8)}`}
 								>
@@ -213,20 +223,12 @@ export function NotesAdminListPage() {
 				/>
 
 				{/* 新建与快速编辑侧滑抽屉 */}
-				<NoteSheet
-					open={activeNoteId !== undefined}
-					onOpenChange={(open) => {
-						if (!open) setActiveNoteId(undefined);
-					}}
-					noteId={activeNoteId}
-				/>
+				<NoteSheet open={sheetOpen} onOpenChange={setSheetOpen} noteId={activeNoteId} />
 
 				{/* 列表行级直接删除二次确认 */}
 				<ConfirmDialog
-					open={Boolean(deleting)}
-					onOpenChange={(open) => {
-						if (!open) setDeleting(null);
-					}}
+					open={deleteOpen}
+					onOpenChange={setDeleteOpen}
 					onConfirm={() => void handleConfirmDelete()}
 					title="删除笔记"
 					description={`确定要删除笔记「${deleting?.title || deleting?.id.slice(0, 8) || ""}」吗？此操作物理删除且不可恢复。`}
