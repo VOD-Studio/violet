@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       run_id:
-        description: '仅重试构建失败的 Deploy run ID'
+        description: '仅重试候选镜像构建失败的 Deploy run ID'
         required: true
 
 permissions:

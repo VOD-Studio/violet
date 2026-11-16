@@ -17,6 +17,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: publish-apidocs
@@ -29,7 +30,7 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.event == 'push' &&
-       startsWith(github.event.workflow_run.head_branch, 'v'))
+       github.event.workflow_run.head_branch == 'release/2.0')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     # secrets 上下文在 if 表达式中不可用(解析期报 Unrecognized named-value,
@@ -37,7 +38,24 @@ jobs:
     env:
       APIFOX_ACCESS_TOKEN: ${{ secrets.APIFOX_ACCESS_TOKEN }}
     steps:
+      - name: 确认生产部署任务成功
+        id: deployment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            echo 'deployed=true' >> "$GITHUB_OUTPUT"
+          else
+            deployed=$(gh api --paginate --slurp \
+              "repos/$GH_REPO/actions/runs/$RUN_ID/jobs?filter=latest&per_page=100" \
+              --jq '[.[].jobs[]] | any(.name == "deploy" and .conclusion == "success")')
+            echo "deployed=$deployed" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: 拉取生产活 spec
+        if: steps.deployment.outputs.deployed == 'true'
         run: |
           curl -fsSL --max-time 60 https://xunrua.top/api/v1/openapi.json -o openapi.json
           jq -e '.openapi != null' openapi.json > /dev/null \
@@ -45,7 +63,7 @@ jobs:
           echo "已拉取 spec:$(wc -c < openapi.json) 字节"
 
       - name: 推送至 Apifox
-        if: env.APIFOX_ACCESS_TOKEN != ''
+        if: steps.deployment.outputs.deployed == 'true' && env.APIFOX_ACCESS_TOKEN != ''
         run: |
           # deleteUnmatchedResources:与 spec 同步——线上已删除的接口/模型在 Apifox 一并移除
           jq -Rs '{input: ., options: {deleteUnmatchedResources: true}}' openapi.json > payload.json
@@ -65,5 +83,5 @@ jobs:
           echo "Apifox 更新完成:$(echo "$resp" | jq -c '.data.counters // {}')"
 
       - name: 提示配置 token
-        if: env.APIFOX_ACCESS_TOKEN == ''
+        if: steps.deployment.outputs.deployed == 'true' && env.APIFOX_ACCESS_TOKEN == ''
         run: echo "::warning::未配置 APIFOX_ACCESS_TOKEN secret,已跳过 API 文档推送(Apifox 账号设置 → API 访问令牌生成后,加入仓库 Actions secrets)"
