@@ -7,6 +7,8 @@
 3. 验收通过后，在发布状态锁内再次核对候选，创建 tag 和 GitHub Release，并保存 `release-manifest.json` 附件。附件绑定源码 SHA、双侧镜像 digest 及验证运行；随后部署这份清单。
 4. 在 Actions 的 Deploy summary 查看实际部署版本、提交、双侧镜像和 schema。GitHub Release 表示候选已完成验收，**不表示生产部署成功**。
 
+`release-please-config.json` 的 `exclude-paths` 是目录过滤，不支持单个文件或 glob。仅修改 `.github/`、`scripts/`、`docs/` 或 `web/e2e/` 的提交不单独触发应用版本；混合应用源码的提交仍参与版本计算。纯 CI、运维或文档 PR 使用 `chore`、`ci`、`test`、`docs` 等类型，包括同时修改 README 或发布配置的情况。不要靠手动关闭 release PR 或修改已有 tag 纠正提交分类。
+
 ```mermaid
 flowchart LR
     A[合并 release PR] --> P[冻结候选 SHA]
@@ -26,7 +28,7 @@ flowchart LR
 
 候选登记、正式发布与 release PR 维护共用 `release-state` 锁；检查和构建不占锁。生产事务另用 `deploy-production` 锁，服务器保留文件锁。两个 Actions 并发组均使用 `queue: max`，最多保留 100 个等待任务；入队次序不代表提交先后。运行被取消或队列满时，候选仍可从 `release-candidate` 及 manifest 恢复，不能把 Actions 队列当作唯一记录。
 
-候选冻结后，新合入的业务 PR 不改变本次 SHA，留给下一批；当前版本尚未公开发布时，release-please 暂停生成下一张 release PR。发布完成后主动触发维护，收集期间合入的提交。人工重新选择同版本的后代 SHA 后，旧运行在发布前标记为 `superseded`；进入生产锁后仍检查祖先关系，已被线上双侧版本包含的旧发布不会覆盖生产。不要手工移动或删除候选分支。
+候选冻结后，新合入的业务 PR 不改变本次 SHA，留给下一批；当前版本尚未公开发布或缺少有效验证清单时，release-please 暂停生成下一张 release PR。发布完成后主动触发维护，收集期间合入的提交。人工重新选择同版本的后代 SHA 后，旧运行在发布前标记为 `superseded`；进入生产锁后仍检查祖先关系，已被线上双侧版本包含的旧发布不会覆盖生产。不要手工移动或删除候选分支。
 
 每个未发布候选验证同一个提交的完整 CI，并构建双侧镜像。正式 Release 的清单一旦存在，重试直接复用原 digest，不重新构建、不重跑全量 CI。PR 的旧运行可取消，不同提交的主干运行互不取消。API 内部拆为静态检查（golangci-lint 已含 vet）、数据库测试（仅此任务启动 PostgreSQL）与镜像校验，`Backend (Go)` 汇总它们；Web 内部拆为静态检查、站点单测（3 分片）、独立包（ui、inkline、react-tweet、kanban、theme 各一）、浏览器契约（2 分片）与镜像校验。`Frontend (React)` 汇总这些任务，总门禁 `CI Gate` 核对实际执行结果；skipped 不充当候选通过。
 
@@ -135,6 +137,7 @@ Runner 不可用时通过 SSH 调用同一个事务入口，详见 [手动部署
 
 - **构建失败**：`auto-retry.yml` 仅重试候选 push 中单纯的 API/Web 构建失败，最多总计三次 attempt。CI、正式发布、迁移、切换、健康检查或回滚失败均不自动重试生产操作。
 - **网络准备失败**：checkout 设置低速中止和步骤超时，发布源码保留完整提交历史但按需下载文件；GHCR 登录最多尝试三次，每次限时 60 秒，失败后不会进入部署事务。这些重试不包含迁移、容器切换或整个 deploy job。先按 [Runner 出网检查](runner-setup.md#部署出网) 验证代理和结果上传链路，再决定是否人工重跑。
+- **清单上传失败**：GitHub 上传接口要求明确的 UTF-8 字节长度；`gh api --input -` 不会自动为标准输入设置 `Content-Length`，发布脚本须显式提供。协议错误不要求创建新版本，也不能重打 tag；保留已通过的 CI、镜像 digest 与运行证据，修复上传后恢复同一版本。清单尚未完整前不维护下一版 release PR。
 - **部署已恢复旧版本**：查看失败日志与 summary，确认 `current.json` 的实际版本。若源码和镜像未变，修复环境后按原版本清单重试；需要修改已发布源码时才创建修正版。自动故障恢复不等于用户主动回滚，不写入 `paused.json`。
 - **部署与恢复均失败**：错误摘要分别保留 `Deploy failed` 和 `restoration failed` 上下文；先区分首次失败与恢复失败的阶段，再检查 `pending.json`。摘要不输出子进程参数、标准输出或错误输出中的凭据；命令错误保留退出码或超时时间。
 - **迁移失败或事务中断**：保留 `pending.json` 并阻止后续部署。先检查该记录的 phase、事务目录、当前容器镜像、`schema_migrations` 和公网状态。dirty 记录说明 SQL 可能部分执行；依据实际 schema 修复迁移，不能盲目 `force` 或删除 pending。

@@ -10,6 +10,12 @@
     ".": {
       "changelog-path": "CHANGELOG.md",
       "release-type": "simple",
+      "exclude-paths": [
+        ".github",
+        "scripts",
+        "docs",
+        "web/e2e"
+      ],
       "changelog-sections": [
         { "type": "feat", "section": "新增" },
         { "type": "fix", "section": "修复" },
@@ -20,8 +26,7 @@
         { "type": "test", "section": "内部维护", "hidden": true },
         { "type": "style", "section": "内部维护", "hidden": true },
         { "type": "chore", "section": "内部维护", "hidden": true }
-      ],
-      "exclude-scopes": []
+      ]
     }
   }
 }
