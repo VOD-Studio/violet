@@ -76,12 +76,14 @@ export function useConversationScroll({
 		});
 	}, []);
 
-	useAppearanceScrollFollow(
-		scrollContainerRef,
+	useAppearanceScrollFollow({
+		scrollRef: scrollContainerRef,
 		followLatestRef,
-		prependScrollAnchorRef,
+		prependAnchorRef: prependScrollAnchorRef,
+		messageRefs,
+		messages,
 		conversationID,
-	);
+	});
 
 	useLayoutEffect(() => {
 		if (!conversationID) {

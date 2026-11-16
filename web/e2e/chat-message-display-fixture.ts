@@ -141,6 +141,15 @@ export async function prepareMessageDisplay(
 	);
 	await page.route("**/api/v1/chat/conversations/c1/messages**", async (route) => {
 		const path = new URL(route.request().url()).pathname;
+		if (route.request().method() === "DELETE") {
+			const match = /\/messages\/([^/]+)\/reactions\/(\d+)$/.exec(path);
+			const target = scenarioMessages.find((entry) => entry.id === match?.[1]);
+			if (!match || !target) return route.abort();
+			target.reactions = (target.reactions ?? []).filter(
+				(reaction) => reaction.emoji_id !== Number(match[2]) || !reaction.self,
+			);
+			return route.fulfill({ json: { data: null } });
+		}
 		if (route.request().method() === "POST" && path.endsWith("/reactions")) {
 			const id = /\/messages\/([^/]+)\/reactions$/.exec(path)?.[1];
 			const target = scenarioMessages.find((entry) => entry.id === id);

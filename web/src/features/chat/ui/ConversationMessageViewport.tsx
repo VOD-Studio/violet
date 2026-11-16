@@ -68,7 +68,7 @@ export function ConversationMessageViewport({
 					"min-h-0 flex-1 [--v-scroll-area-padding:1.25rem_var(--chat-gutter)_0]",
 					backgroundClassName,
 				)}
-				viewportClassName="flex flex-col justify-end-safe"
+				viewportClassName="flex flex-col justify-end-safe [overflow-anchor:none]"
 			>
 				<div className="w-full shrink-0 space-y-3 pb-4">
 					{!empty && loading.hasNextPage && (
