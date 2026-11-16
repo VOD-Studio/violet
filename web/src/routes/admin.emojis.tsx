@@ -107,11 +107,11 @@ function EmojisPage() {
 			{
 				onSuccess: () => {
 					toast.success("分组已删除");
-					setDeleteConfirm({ open: false, group: null });
+					setDeleteConfirm((current) => ({ ...current, open: false }));
 				},
 				onError: (err) => {
 					toast.error(err.message);
-					setDeleteConfirm({ open: false, group: null });
+					setDeleteConfirm((current) => ({ ...current, open: false }));
 				},
 			},
 		);
@@ -357,7 +357,7 @@ function EmojisPage() {
 			<ConfirmDialog
 				open={deleteConfirm.open}
 				onOpenChange={(open: boolean) =>
-					!open && setDeleteConfirm({ open: false, group: null })
+					setDeleteConfirm((current) => ({ ...current, open }))
 				}
 				title="删除表情分组"
 				description={`确定要删除表情分组「${deleteConfirm.group?.name ?? ""}」吗？分组内所有表情也将被删除，此操作不可撤销。`}

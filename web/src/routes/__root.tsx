@@ -1,5 +1,6 @@
 import { useShareTweetStore } from "@entities/tweet/model/share-store";
 import { SiteMusicPlayer } from "@features/music-player/ui/SiteMusicPlayer";
+import { useVisualViewport } from "@shared/hooks/use-visual-viewport";
 import { getClientAppearance } from "@shared/lib/appearance-cookie";
 import {
 	getClientDecoration,
@@ -145,11 +146,10 @@ function RootComponent() {
 	// 包演示页是一屏式工作台，与聊天一样锁定视口、不显示页脚
 	const isWorkbenchRoute = pathname === "/inkline" || pathname.startsWith("/inkline/");
 	const isFullscreenRoute = isChatRoute || isWorkbenchRoute;
+	const viewportRef = useVisualViewport(isFullscreenRoute);
 	const isProfileRoute = pathname.startsWith("/profile");
 	const isLabRoute = pathname.startsWith("/lab");
-	// 组件陈列室自带柜内聚光与明暗，窗只铺在公开内容页
-	const isShowcaseRoute = pathname === "/ui";
-	const showBackdrop = !isProfileRoute && !isFullscreenRoute && !isLabRoute && !isShowcaseRoute;
+	const showBackdrop = !isProfileRoute && !isFullscreenRoute && !isLabRoute;
 
 	// 首次 hydration 复用 SSR claims，不一定重跑客户端 beforeLoad。
 	useEffect(() => {
@@ -165,9 +165,20 @@ function RootComponent() {
 			) : (
 				// 前台路由：包含 Header/Footer 的标准布局（/chat 与 /inkline 隐藏 Footer 并锁定视口高度）
 				<div
+					ref={viewportRef}
+					style={
+						isFullscreenRoute
+							? {
+									height: "var(--visual-viewport-height, 100dvh)",
+									top: "var(--visual-viewport-top, 0px)",
+								}
+							: undefined
+					}
 					className={cn(
-						"flex min-h-screen flex-col",
-						isFullscreenRoute && "h-dvh overflow-hidden",
+						"flex flex-col",
+						isFullscreenRoute
+							? "fixed inset-x-0 min-h-0 overflow-hidden"
+							: "min-h-screen",
 						// 独立层叠上下文让背景点缀的负 z-index 落在壳层画布之上
 						showBackdrop && "isolate",
 					)}

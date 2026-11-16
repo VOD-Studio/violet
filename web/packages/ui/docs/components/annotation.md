@@ -26,7 +26,7 @@ import {
 
 - Mark 的根节点始终是 `mark`，`role="button"`，默认 `tabIndex=0`；必须提供 `aria-label`。Enter / Space 合成一次 click，重复按键不重复激活。调用方在 `onKeyDown` 中 `preventDefault()` 可以取消内部激活。
 - Toolbar 是具名 `role="toolbar"` 的 div；按钮按正常 Tab 顺序访问，没有额外 roving-focus 状态。ToolButton 复用 Button，默认 `type="button"`，原生禁用、事件取消及 ref 不丢失。阻止按下时清空选区的 `onMouseDown` 由宿主选择性传入。
-- CardFrame 是 div，不隐式声明 dialog、不移动焦点、不定位、不创建 Portal。与 Popover.Content 通过 `asChild` 组合时不新增 DOM 层，浮层角色、外部点击、Escape、焦点回退及挂载位置由 Popover 提供。宿主传入 `container` 可把面板留在陈列室舞台。
+- CardFrame 是 div，不隐式声明 dialog、不移动焦点、不定位、不创建 Portal。与 Popover.Content 通过 `asChild` 组合时不新增 DOM 层，浮层角色、外部点击、Escape、焦点回退及挂载位置由 Popover 提供。宿主传入 `container` 可限定面板的挂载范围。
 - 每个组件的原生属性、className、style 和 ref 都落在其唯一根节点。文章里由 DOM Range 动态生成的分段 mark 可继续使用业务笔触与委托事件；作者墨色、AI 配色不是库内变体。
 
 ### 外观与入口

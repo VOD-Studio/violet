@@ -9,6 +9,7 @@ interface HomeContentLinkProps {
 	children: ReactNode;
 }
 
+/** 按发布物类型生成文章、手记或图集的详情链接。 */
 export function HomeContentLink({ item, className, children }: HomeContentLinkProps) {
 	switch (item.kind) {
 		case "article":

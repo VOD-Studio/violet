@@ -5,7 +5,7 @@ import {
 	useRevealBotToken,
 	useUpdateBot,
 } from "@features/admin-bots/api/queries";
-import { BOT_NAME_MAX } from "@features/admin-bots/model/constants";
+import { BOT_DESCRIPTION_MAX, BOT_NAME_MAX } from "@features/admin-bots/model/constants";
 import type { BotDTO } from "@features/admin-bots/model/types";
 import { formatDateTime } from "@shared/lib/date";
 import {
@@ -19,7 +19,7 @@ import {
 	Modal,
 	Switch,
 } from "@violet/ui";
-
+import { cn } from "cn";
 import { Eye, KeyRound, Trash2 } from "lucide-react";
 import * as React from "react";
 
@@ -39,6 +39,7 @@ export function BotTable({ bots, pagination, loading, onTokenRevealed }: BotTabl
 	const reveal = useRevealBotToken();
 	const del = useDeleteBot();
 	const [pending, setPending] = React.useState<PendingAction>(null);
+	const [confirmOpen, setConfirmOpen] = React.useState(false);
 
 	const confirmText = React.useMemo(() => {
 		if (!pending) return { title: "", description: "", confirm: "" };
@@ -62,13 +63,13 @@ export function BotTable({ bots, pagination, loading, onTokenRevealed }: BotTabl
 		if (kind === "rotate") {
 			rotate.mutate(bot.id, {
 				onSuccess: (next) => {
-					setPending(null);
+					setConfirmOpen(false);
 					onTokenRevealed(next);
 				},
 			});
 			return;
 		}
-		del.mutate(bot.id, { onSuccess: () => setPending(null) });
+		del.mutate(bot.id, { onSuccess: () => setConfirmOpen(false) });
 	};
 
 	const columns: DataTableColumn<BotDTO>[] = [
@@ -89,12 +90,33 @@ export function BotTable({ bots, pagination, loading, onTokenRevealed }: BotTabl
 							update.mutate({ id: row.id, body: { avatar_id: file?.id ?? "" } })
 						}
 					/>
-					<EditableBotName
-						name={row.name}
+					<EditableBotText
+						value={row.name}
+						label="改名"
+						title="点击改名"
+						maxLength={BOT_NAME_MAX}
+						className="font-medium"
 						disabled={update.isPending}
 						onCommit={(name) => update.mutate({ id: row.id, body: { name } })}
 					/>
 				</div>
+			),
+		},
+		{
+			key: "description",
+			header: "简介",
+			width: "260px",
+			cell: (row) => (
+				<EditableBotText
+					value={row.description}
+					label="添加简介"
+					title="点击编辑简介，会显示在会话的“在场的角色”里"
+					maxLength={BOT_DESCRIPTION_MAX}
+					allowEmpty
+					className="text-sm"
+					disabled={update.isPending}
+					onCommit={(description) => update.mutate({ id: row.id, body: { description } })}
+				/>
 			),
 		},
 		{
@@ -189,7 +211,10 @@ export function BotTable({ bots, pagination, loading, onTokenRevealed }: BotTabl
 						size="sm"
 						aria-label={`重置 ${row.name} 的 token`}
 						title="重置 token"
-						onClick={() => setPending({ kind: "rotate", bot: row })}
+						onClick={() => {
+							setPending({ kind: "rotate", bot: row });
+							setConfirmOpen(true);
+						}}
 					>
 						<KeyRound {...iconProps(14)} />
 					</Button>
@@ -200,7 +225,10 @@ export function BotTable({ bots, pagination, loading, onTokenRevealed }: BotTabl
 						className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 						aria-label={`吊销 ${row.name}`}
 						title="吊销 Bot"
-						onClick={() => setPending({ kind: "revoke", bot: row })}
+						onClick={() => {
+							setPending({ kind: "revoke", bot: row });
+							setConfirmOpen(true);
+						}}
 					>
 						<Trash2 {...iconProps(14)} />
 					</Button>
@@ -222,16 +250,14 @@ export function BotTable({ bots, pagination, loading, onTokenRevealed }: BotTabl
 				emptyDescription="注册一个 Bot，让外部程序以虚拟用户身份参与聊天"
 			/>
 			<Modal
-				open={pending !== null}
-				onOpenChange={(open) => {
-					if (!open) setPending(null);
-				}}
+				open={confirmOpen}
+				onOpenChange={setConfirmOpen}
 				title={confirmText.title}
 				description={confirmText.description}
 				size="sm"
 				footer={
 					<>
-						<Button variant="ghost" onClick={() => setPending(null)}>
+						<Button variant="ghost" onClick={() => setConfirmOpen(false)}>
 							取消
 						</Button>
 						<Button
@@ -248,20 +274,37 @@ export function BotTable({ bots, pagination, loading, onTokenRevealed }: BotTabl
 	);
 }
 
-interface EditableBotNameProps {
-	/** 当前显示名，仅作初值与「是否真改了」的基准 */
-	name: string;
+interface EditableBotTextProps {
+	/** 当前值，仅作初值与「是否真改了」的基准 */
+	value: string;
+	/** 展示态的占位文案；值为空时显示，同时是编辑态输入框的无障碍名称前缀 */
+	label: string;
+	/** 展示态悬停提示 */
+	title: string;
+	maxLength: number;
+	/** 为 true 时允许提交空串（用于清空简介），否则空值视为放弃 */
+	allowEmpty?: boolean;
 	disabled: boolean;
-	/** 仅在名称有变化且非空时调用 */
-	onCommit: (name: string) => void;
+	/** 仅在内容有变化时调用 */
+	onCommit: (value: string) => void;
+	className?: string;
 }
 
 /**
- * 就地改名件：点击进入编辑，失焦提交，Esc 放弃。
+ * 就地编辑件：点击进入编辑，失焦提交，Esc 放弃。
  */
-function EditableBotName({ name, disabled, onCommit }: EditableBotNameProps) {
+function EditableBotText({
+	value,
+	label,
+	title,
+	maxLength,
+	allowEmpty = false,
+	disabled,
+	onCommit,
+	className,
+}: EditableBotTextProps) {
 	const [editing, setEditing] = React.useState(false);
-	const [draft, setDraft] = React.useState(name);
+	const [draft, setDraft] = React.useState(value);
 	// Esc 也走 blur 收口（避免同时触发两次提交），用 ref 标记这次 blur 不提交
 	const cancelled = React.useRef(false);
 
@@ -270,15 +313,18 @@ function EditableBotName({ name, disabled, onCommit }: EditableBotNameProps) {
 			<button
 				type="button"
 				disabled={disabled}
-				title="点击改名"
-				className="min-w-0 truncate rounded-md px-1 py-0.5 text-left font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+				title={title}
+				className={cn(
+					"min-w-0 truncate rounded-md px-1 py-0.5 text-left transition-colors hover:bg-accent hover:text-accent-foreground",
+					className,
+				)}
 				onClick={() => {
 					cancelled.current = false;
-					setDraft(name);
+					setDraft(value);
 					setEditing(true);
 				}}
 			>
-				{name}
+				{value || <span className="text-muted-foreground">{label}</span>}
 			</button>
 		);
 	}
@@ -287,12 +333,12 @@ function EditableBotName({ name, disabled, onCommit }: EditableBotNameProps) {
 		<Input
 			variant="underline"
 			controlSize="sm"
-			aria-label={`改名 ${name}`}
+			aria-label={`${label} ${value}`.trim()}
 			autoFocus
-			maxLength={BOT_NAME_MAX}
+			maxLength={maxLength}
 			value={draft}
-			className="text-sm font-medium"
-			classNames={{ control: "w-40" }}
+			className="text-sm"
+			classNames={{ control: "w-full min-w-40" }}
 			onFocus={(e) => e.currentTarget.select()}
 			onChange={(e) => setDraft(e.target.value)}
 			onKeyDown={(e) => {
@@ -306,8 +352,8 @@ function EditableBotName({ name, disabled, onCommit }: EditableBotNameProps) {
 			onBlur={() => {
 				const next = draft.trim();
 				setEditing(false);
-				setDraft(name);
-				if (!cancelled.current && next && next !== name) onCommit(next);
+				setDraft(value);
+				if (!cancelled.current && (next || allowEmpty) && next !== value) onCommit(next);
 				cancelled.current = false;
 			}}
 		/>

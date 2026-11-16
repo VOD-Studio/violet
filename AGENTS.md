@@ -14,7 +14,8 @@
 > 本节规定代码归属；commit 边界与依赖顺序统一见「提交流程规范」。
 
 - **前端通用组件与站点公共层各归其位**。跨 feature 的通用 React 组件及基础语义 token 在 `web/packages/ui/`，从 `@violet/ui` 根入口使用组件；Tailwind v4 后导入 `@violet/ui/styles.css`。`web/src/styles/dialects/` 保留站点方言；`web/src/shared/` 只放站点级通用能力，以上两层均不夹带 `posts` / `comments` / `editor` 等 feature 业务逻辑。FSD 分层(`shared` → `entities` → `features` → `widgets`)不允许向业务层反向依赖。
-- **组件库以单元组织并标记成熟度**。所有组件在 `web/packages/ui/src/components/<name>/`，结构、按需 typed recipe、CSS、导出与测试共置；`component-manifest.json` 是公开单元、入口、CSS、文档与 foundation / legacy 状态的事实源。`src/legacy.ts` 仅为兼容 barrel，不放实现副本。基础单元的 React 与 HTML 共用唯一 BEM CSS；其余 legacy 的样式逐个迁移。共享 `lib/` 只接收真实复用能力，字体、签名与站点装饰动画留在 `web/src/styles/site-theme.css`。组件库规范以 `web/packages/ui/docs/architecture.md` 与 `component-design.md` 为权威；`web/src/features/ui-showcase/` 是 `/ui` 组件陈列室，按占地陈列真实组件，不复制规格正文；新增单元按包内规范执行清单同步、源码检查、构建、外部 tarball 消费验收，并上架展品。
+- **组件库以单元组织并标记成熟度**。所有组件在 `web/packages/ui/src/components/<name>/`，结构、按需 typed recipe、CSS、导出与测试共置；`component-manifest.json` 是公开单元、入口、CSS、文档与 foundation / legacy 状态的事实源。`src/legacy.ts` 仅为兼容 barrel，不放实现副本。基础单元的 React 与 HTML 共用唯一 BEM CSS；其余 legacy 的样式逐个迁移。共享 `lib/` 只接收真实复用能力，字体、签名与站点装饰动画留在 `web/src/styles/site-theme.css`。组件库规范以 `web/packages/ui/docs/architecture.md` 与 `component-design.md` 为权威；新增单元执行清单同步、源码检查、构建、外部 tarball 消费验收，并在实际消费页面验证，不再要求组件陈列室展品。
+- **页面改版先复用现有组件**。页面设计稿早于部分组件设计；已有组件的外观、交互与 API 优先于旧页面稿。页面稿决定布局、内容层级与页面级流程，不作为复制控件或回退组件的依据。只有现有能力确有缺口时才提出最小扩展。见 `docs/adr/0030-frontend-pages-use-existing-components.md`。
 - **后端各层各司其职**:领域逻辑进 `domain`,用例编排进 `application`,基础设施细节进 `infrastructure`,HTTP 适配进 `interfaces`;`internal/middleware/` 只放通用横切中间件(auth/cors/csrf/ratelimit 等)。通用基础设施(错误码、observability、通用中间件)不夹带具体业务实体逻辑。
 - **判断「是否公共」看真实消费方**,不是位置。feature 私有逻辑被第二个 feature 复用时先上提；通用组件进 `web/packages/ui/`，站点专用基础能力进 `web/src/shared/`，有业务语义的实体逻辑进 `web/src/entities/`（提交顺序见「依赖与迁移」）。
 
@@ -63,11 +64,11 @@
 
 **PRD、issues 属于 feature 分支的一部分,不是独立任务,不单独建文档分支。** 这是「每个新任务先建分支」规则在文档场景下的具体含义,容易误判,单列一节。
 
-- 一个 feature 的完整生命周期(PRD 起草 → PRD 迭代 → issues 拆分 → 各 issue 实现)都在**同一个 feature 分支**上推进。PRD 和 issues 是该分支的早期 commit,实现代码是后续 commit。
-- **不存在「为写 PRD 单独建 `docs/xxx-prd` 分支」这种事**。写 PRD 的第一步就是建 feature 分支(如 `feat/scrape-mcp`),PRD 作为该分支第一个 commit。
-- PRD 与 issues 可同 commit(如 `docs(prd): 沉淀 X PRD 与 issue 拆分`),也可分开(`docs(prd): ...` + `docs(issues): ...`),按改动体量决定。
-- 各 issue 的**实现**仍可从 feature 分支再叉子分支(可选),也可直接在 feature 分支上按原子提交规则提交。子分支与否不影响「PRD 在 feature 分支上」这一前提。
-- 参考历史:`feat/web-session-cleanup` 分支从 `docs(prd): 沉淀 PRD-0001` 起步,经历多次 PRD 迭代 + issues 拆分,最后到 `feat(web): ...` 实现代码,全部在同一分支。
+- **PRD 使用 GitHub 父 Issue，实施任务使用子 Issue**；正文与验收标准在 Issue 维护，仓库只保留必要的索引链接，不维护第二份 PRD 正文。仅 `gh` 不可用时按 issue tracker 规则降级到本地 Markdown。
+- 一个 feature 的完整生命周期(PRD 起草 → PRD 迭代 → issues 拆分 → 各 issue 实现)都归属**同一个 feature 分支**。需要入库的 ADR、设计归档与索引可作为早期 commit，Issue 正文不为凑 commit 复制到仓库。
+- **不存在「为写 PRD 单独建 `docs/xxx-prd` 分支」这种事**。规划 feature 时先建对应功能分支(如 `feat/scrape-mcp`)，再创建 PRD Issue。
+- 各 issue 的**实现**仍可从 feature 分支再叉子分支(可选)，也可直接在 feature 分支上按原子提交规则提交。
+- 历史本地 PRD 保留，不因当前存储规则变更批量迁移或重写。
 
 **判定方法**:如果这份 PRD/issues 服务于一个具体的 feature,它就属于该 feature 分支;只有跨 feature 的纯架构/流程文档(如本 AGENTS.md、ADR)才考虑独立 docs 分支。
 
@@ -96,7 +97,7 @@ Single-context:根 `CONTEXT.md` 单文件统管所有域(认证/文章/公告),`
 - **非必要不使用 `scale` 动效。** 悬停、选中、打开/关闭等常规状态不得靠缩放制造反馈；优先使用颜色、描边、阴影与透明度。只有图片预览、画布缩放等交互语义本身就是「缩放」时才使用。
 - **非必要不使用从上、下、左、右滑入/滑出的位移动效。** 普通面板、详情区、卡片和弹层默认直接呈现或仅淡入淡出；只有需要表达明确空间来源或去向时才使用方向性运动。
 - **季节装饰的飘落粒子是例外。** 背景层的落花、落叶、落雪与萤火本身就是方向性运动，可以持续飘动；开启减弱动态时必须静止，也不得借此给面板、卡片等界面元素加出入场位移。
-- **组件设计稿明文规定的动效以组件稿为准。** 设计稿「基础」页的时长（浮层 180/120ms 等）与「只动颜色、透明度、描线、裁切」只是默认值；`docs/design/ued/` 里某个组件的设计稿明文规定了时长、位移或缩放时，按该稿实现，不算违反以上三条。见 `docs/adr/0026-ued-design-authority.md`。
+- **已有组件的动效以当前组件契约为准。** 组件包内文档与实现已经明确的时长、位移或缩放继续沿用，不因旧页面稿而回退；新页面只组合组件，不另写一套控件动效。未有组件契约的页面级动效仍遵守以上默认约束。见 `docs/adr/0030-frontend-pages-use-existing-components.md`。
 
 ## 前端视觉红线
 
@@ -141,7 +142,7 @@ Single-context:根 `CONTEXT.md` 单文件统管所有域(认证/文章/公告),`
 | feature 私有实现 | 同一行为涉及的组件、hook、状态和测试一起提交，不按文件或技术层切碎 |
 | 无关修复、格式化、流程文档 | 与当前功能分开；同一文件不是合并不同目的的依据 |
 
-**按职责归组，不按目录机械切分。** 组件的实现、CSS、导出、清单、测试、消费验收 fixture 及对应文档共同构成组件提交。位于 `web/src/features/ui-showcase/` 的展品及陈列室页面属于组件交付，不属于站点业务接入。其余组件或业务变更仍须按各自目的分组。
+**按职责归组，不按目录机械切分。** 组件的实现、CSS、导出、清单、测试、消费验收 fixture 及对应文档共同构成组件提交。其余组件或业务变更仍须按各自目的分组。
 
 ### 依赖与迁移
 

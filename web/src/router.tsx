@@ -5,6 +5,8 @@ import RouteError from "@shared/ui/route-error";
 import type { QueryClient } from "@tanstack/react-query";
 import {
 	createRouter as createTanStackRouter,
+	defaultParseSearch,
+	defaultStringifySearch,
 	type RegisteredRouter,
 } from "@tanstack/react-router";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
@@ -35,6 +37,18 @@ export const getRouter = () => {
 	const queryClient = typeof window === "undefined" ? createQueryClient() : clientQueryClient;
 	const router = createTanStackRouter({
 		routeTree,
+		// 标签 slug 可为 JSON 字面量；编解码都保留原文，不能转换为数值或布尔值。
+		parseSearch: (query) => {
+			const parsed: Record<string, unknown> = defaultParseSearch(query);
+			const tag = new URLSearchParams(query).get("tag");
+			if (tag !== null) parsed.tag = tag;
+			return parsed;
+		},
+		stringifySearch: (search) => {
+			const params = new URLSearchParams(defaultStringifySearch(search));
+			if (typeof search.tag === "string") params.set("tag", search.tag);
+			return params.size ? `?${params}` : "";
+		},
 		scrollRestoration: true,
 		defaultPreload: "intent",
 		defaultPreloadStaleTime: 30_000,

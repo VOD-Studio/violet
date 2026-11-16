@@ -29,6 +29,7 @@ type ChatConversationMember struct {
 	JoinedAt       time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"joined_at"`
 	LeftAt         *time.Time `gorm:"column:left_at" json:"left_at,omitempty"`
 	IsMuted        bool       `gorm:"column:is_muted;not null;default:false" json:"is_muted"`
+	Silenced       bool       `gorm:"column:silenced;not null;default:false" json:"silenced"`
 }
 
 // TableName 显式指定表名。
@@ -46,28 +47,37 @@ func (ChatDirectPair) TableName() string { return "chat_direct_pairs" }
 
 // ChatMessage 聊天消息持久化模型。
 type ChatMessage struct {
-	ID             uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
-	ConversationID uuid.UUID      `gorm:"type:uuid;column:conversation_id;not null" json:"conversation_id"`
-	SenderID       uuid.UUID      `gorm:"type:uuid;column:sender_id;not null" json:"sender_id"`
-	MessageType    string         `gorm:"type:varchar(16);column:message_type;not null" json:"message_type"`
-	Content        string         `gorm:"type:text;not null;default:''" json:"content"`
-	SharedTweetID  *uuid.UUID     `gorm:"type:uuid;column:shared_tweet_id" json:"shared_tweet_id,omitempty"`
-	ReplyToID      *uuid.UUID     `gorm:"type:uuid;column:reply_to_id" json:"reply_to_id,omitempty"`
-	IdempotencyKey string         `gorm:"type:varchar(128);column:idempotency_key;not null" json:"-"`
-	DeletedAt      *time.Time     `gorm:"column:deleted_at" json:"deleted_at,omitempty"`
-	DeletedBy      *uuid.UUID     `gorm:"type:uuid;column:deleted_by" json:"deleted_by,omitempty"`
-	EditedAt       *time.Time     `gorm:"column:edited_at" json:"edited_at,omitempty"`
-	BotStatus      *string        `gorm:"column:bot_status" json:"bot_status,omitempty"`
-	BotThinking    string         `gorm:"column:bot_thinking" json:"-"`
-	BotToolCalls   datatypes.JSON `gorm:"column:bot_tool_calls;type:jsonb;not null;default:'[]'" json:"-"`
-	BotRevision    int64          `gorm:"column:bot_revision" json:"bot_revision"`
-	BotUpdatedAt   *time.Time     `gorm:"column:bot_updated_at" json:"bot_updated_at,omitempty"`
-	CreatedAt      time.Time      `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
-	UpdatedAt      time.Time      `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
+	ID             uuid.UUID       `gorm:"type:uuid;primaryKey" json:"id"`
+	ConversationID uuid.UUID       `gorm:"type:uuid;column:conversation_id;not null" json:"conversation_id"`
+	SenderID       uuid.UUID       `gorm:"type:uuid;column:sender_id;not null" json:"sender_id"`
+	MessageType    string          `gorm:"type:varchar(16);column:message_type;not null" json:"message_type"`
+	Content        string          `gorm:"type:text;not null;default:''" json:"content"`
+	SharedTweetID  *uuid.UUID      `gorm:"type:uuid;column:shared_tweet_id" json:"shared_tweet_id,omitempty"`
+	MusicShare     *ChatMusicShare `gorm:"column:music_share;type:jsonb;serializer:json" json:"music_share,omitempty"`
+	ReplyToID      *uuid.UUID      `gorm:"type:uuid;column:reply_to_id" json:"reply_to_id,omitempty"`
+	IdempotencyKey string          `gorm:"type:varchar(128);column:idempotency_key;not null" json:"-"`
+	DeletedAt      *time.Time      `gorm:"column:deleted_at" json:"deleted_at,omitempty"`
+	DeletedBy      *uuid.UUID      `gorm:"type:uuid;column:deleted_by" json:"deleted_by,omitempty"`
+	EditedAt       *time.Time      `gorm:"column:edited_at" json:"edited_at,omitempty"`
+	BotStatus      *string         `gorm:"column:bot_status" json:"bot_status,omitempty"`
+	BotThinking    string          `gorm:"column:bot_thinking" json:"-"`
+	BotToolCalls   datatypes.JSON  `gorm:"column:bot_tool_calls;type:jsonb;not null;default:'[]'" json:"-"`
+	BotRevision    int64           `gorm:"column:bot_revision" json:"bot_revision"`
+	BotUpdatedAt   *time.Time      `gorm:"column:bot_updated_at" json:"bot_updated_at,omitempty"`
+	CreatedAt      time.Time       `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt      time.Time       `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
 // TableName 显式指定表名。
 func (ChatMessage) TableName() string { return "chat_messages" }
+
+type ChatMusicShare struct {
+	TrackID    string   `json:"track_id"`
+	Title      string   `json:"title"`
+	Artists    []string `json:"artists"`
+	DurationMS int64    `json:"duration_ms"`
+	CoverURL   string   `json:"cover_url"`
+}
 
 // ChatMessageMedia 聊天消息图片媒体关联持久化模型；position 为输入流中的占位符顺序。
 type ChatMessageMedia struct {
@@ -135,11 +145,12 @@ func (ChatPushSubscription) TableName() string { return "chat_push_subscriptions
 // 供后台随时解密查看（见 124 迁移）。enabled 刻意不带 gorm default tag：带 default 时
 // GORM 建插会跳过 false 零值，使「创建即禁用」被 DB 默认值静默改成启用。
 type ChatBot struct {
-	ID        uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
-	UserID    uuid.UUID  `gorm:"type:uuid;column:user_id;uniqueIndex;not null" json:"user_id"`
-	Name      string     `gorm:"type:varchar(80);not null" json:"name"`
-	AvatarID  *uuid.UUID `gorm:"type:uuid;column:avatar_id" json:"avatar_id,omitempty"`
-	TokenHash string     `gorm:"type:varchar(64);column:token_hash;uniqueIndex;not null" json:"-"`
+	ID          uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
+	UserID      uuid.UUID  `gorm:"type:uuid;column:user_id;uniqueIndex;not null" json:"user_id"`
+	Name        string     `gorm:"type:varchar(80);not null" json:"name"`
+	Description string     `gorm:"type:varchar(240);not null;default:''" json:"description"`
+	AvatarID    *uuid.UUID `gorm:"type:uuid;column:avatar_id" json:"avatar_id,omitempty"`
+	TokenHash   string     `gorm:"type:varchar(64);column:token_hash;uniqueIndex;not null" json:"-"`
 	// TokenEncrypted 明文凭据的 AES-GCM 密文（base64）。NULL = 从未存过或密文已作废，
 	// 此时凭据只能靠重置刷新；json:"-" 防它经任何 DTO 序列化外泄。
 	TokenEncrypted          *string   `gorm:"type:text;column:token_encrypted" json:"-"`
@@ -163,3 +174,12 @@ type ChatBotCommandCatalog struct {
 }
 
 func (ChatBotCommandCatalog) TableName() string { return "chat_bot_command_catalogs" }
+
+// ChatUserSettings 用户的聊天设置，目前只有在线状态是否对其他成员隐身。
+type ChatUserSettings struct {
+	UserID     uuid.UUID `gorm:"type:uuid;column:user_id;primaryKey"`
+	HideOnline bool      `gorm:"column:hide_online;not null"`
+	UpdatedAt  time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
+}
+
+func (ChatUserSettings) TableName() string { return "chat_user_settings" }

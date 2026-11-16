@@ -10,15 +10,21 @@ import {
 } from "@shared/lib/image-upload-task";
 import type { InlineEmoji } from "@shared/lib/inline-emoji";
 import {
+	Button,
 	filterMentionCandidates,
 	iconProps,
 	type MentionCandidate,
 	MentionList,
 	mentionOptionId,
+	Popover,
+	PopoverContent,
 } from "@violet/ui";
 import { cn } from "cn";
 import { Image as ImageIcon, Smile, X } from "lucide-react";
+import { Popover as PopoverPrimitive } from "radix-ui";
 import {
+	type ComponentProps,
+	type FocusEvent,
 	type ReactNode,
 	type Ref,
 	useCallback,
@@ -44,12 +50,15 @@ export interface PictureInput {
 	size: number;
 }
 
-/** 供外部交互向输入区追加提及。 */
+/** 供外部交互向输入区追加提及或斜杠命令。 */
 export interface RichTextInputHandle {
 	/** 在草稿末尾追加候选内用户并聚焦；禁用或用户不在候选内时返回 false。 */
 	appendMention: (userID: string) => boolean;
 	replaceSlashQuery: (command: string, mention?: MentionCandidate) => boolean;
 	prependMention: (userID: string, username: string, displayName: string) => void;
+	/** 优先替换光标前的斜杠查询，否则在正文开头插入命令并保留草稿。 */
+	insertSlashCommand: (command: string, mention?: MentionCandidate) => boolean;
+	focus: () => void;
 }
 
 /** 共享编辑器属性；原生编辑、图片占位符与提及使用同一文字流。 */
@@ -82,7 +91,7 @@ export interface RichTextInputProps {
 	/** 图片是否作为行内节点插入光标处、与文字混排（默认 false：图片走独立缩略图行）。仅 chat 消费。 */
 	inlineImages?: boolean;
 	/**
-	 * 布局模式：stacked=编辑区在上、工具栏在下（默认，评论/推文场景）；inline=图标与编辑区同行的圆角药丸容器（聊天场景）；
+	 * 布局模式：stacked=编辑区在上、工具栏在下（默认，评论/推文场景）；inline=图标与编辑区同行，复用组件库输入外壳（聊天场景）；
 	 * field=图标、编辑区与 toolbarEnd 同行，外壳是组件库的输入字段，单行起、随内容增高（批注卡）
 	 */
 	layout?: "stacked" | "inline" | "field";
@@ -93,6 +102,8 @@ export interface RichTextInputProps {
 	autoFocus?: boolean;
 	/** 编辑场景预填的已上传图片：以 done 态播种进内部图片状态，参与 onImagesChange 上报与占位符还原 */
 	initialImages?: PictureInput[];
+	/** 恢复尚未提交的上传任务；沿用本地占位符与进行中的请求，不重新上传。 */
+	initialImageUploads?: ImageUploadReference[];
 	placeholder?: string;
 	resetNonce?: number;
 	onImagesChange?: (images: PictureInput[]) => void;
@@ -108,6 +119,15 @@ export interface RichTextInputProps {
 	slashActiveOptionId?: string;
 	editorLabel?: string;
 	toolbarEnd?: ReactNode;
+	/** inline 输入容器顶部的宿主内容，不参与正文编辑。 */
+	inlineHeader?: ReactNode;
+	/** 仅 inline 布局使用；未提供时保留默认的表情、图片和末尾工具栏。 */
+	renderInlineActions?: (actions: {
+		attachImage: (() => void) | null;
+		canAttachImage: boolean;
+		startMention: (() => void) | null;
+		emojiPicker: ReactNode;
+	}) => { start: ReactNode; end: ReactNode };
 	className?: string;
 	inputClassName?: string;
 }
@@ -142,6 +162,7 @@ export function RichTextInput({
 	disabled = false,
 	autoFocus = false,
 	initialImages,
+	initialImageUploads,
 	placeholder = "写下你的评论…",
 	resetNonce = 0,
 	onImagesChange,
@@ -155,12 +176,16 @@ export function RichTextInput({
 	slashActiveOptionId,
 	editorLabel = "评论内容",
 	toolbarEnd,
+	inlineHeader,
+	renderInlineActions,
 	className,
 	inputClassName,
 }: RichTextInputProps) {
 	const fileInputRef = useRef<HTMLInputElement>(null);
-	const [imageItems, setImageItems] = useState<ImageItem[]>(() =>
-		(initialImages ?? [])
+	const inlineRootRef = useRef<HTMLDivElement>(null);
+	const inlinePanelRef = useRef<HTMLDivElement>(null);
+	const [imageItems, setImageItems] = useState<ImageItem[]>(() => [
+		...(initialImages ?? [])
 			.filter((img): img is PictureInput & { id: string } => !!img.id)
 			.map((img) => ({
 				id: img.id,
@@ -169,12 +194,23 @@ export function RichTextInput({
 				status: "done" as const,
 				data: img,
 			})),
-	);
+		...(initialImageUploads ?? []).map(({ id, task }) => ({
+			id,
+			task,
+			previewUrl: task.result?.url ?? task.previewURL,
+			progress: task.progress,
+			status: task.result ? ("done" as const) : ("uploading" as const),
+			data: task.result,
+		})),
+	]);
 	const imageItemsRef = useRef<ImageItem[]>(imageItems);
 	imageItemsRef.current = imageItems;
 	useEffect(
 		() => () => {
-			for (const item of imageItemsRef.current) item.release?.();
+			for (const item of imageItemsRef.current) {
+				item.release?.();
+				item.release = undefined;
+			}
 		},
 		[],
 	);
@@ -184,6 +220,41 @@ export function RichTextInput({
 	const insertImageRef = useRef<
 		((id: string, url: string, status: ImageNodeStatus, replaceId?: string) => void) | null
 	>(null);
+
+	const uploadImage = useCallback(
+		async ({ id, task }: ImageItem) => {
+			if (!task) return;
+			try {
+				const result = await task.upload((progress) => {
+					setImageItems((items) =>
+						items.map((item) => (item.id === id ? { ...item, progress } : item)),
+					);
+				});
+				if (!imageItemsRef.current.some((item) => item.id === id)) return;
+				setImageItems((items) =>
+					items.map((item) =>
+						item.id === id
+							? {
+									...item,
+									id: result.id,
+									status: "done",
+									progress: 100,
+									data: result,
+								}
+							: item,
+					),
+				);
+				if (inlineImages) insertImageRef.current?.(result.id, result.url, "done", id);
+			} catch {
+				if (!imageItemsRef.current.some((item) => item.id === id)) return;
+				setImageItems((items) =>
+					items.map((item) => (item.id === id ? { ...item, status: "error" } : item)),
+				);
+				if (inlineImages) insertImageRef.current?.(id, "", "error");
+			}
+		},
+		[inlineImages],
+	);
 
 	const uploadFilesList = useCallback(
 		async (files: File[]) => {
@@ -220,55 +291,9 @@ export function RichTextInput({
 				}
 			}
 
-			for (let i = 0; i < toUpload.length; i++) {
-				const task = newItems[i].task;
-				if (!task) continue;
-				const itemId = newItems[i].id;
-
-				try {
-					const result = await task.upload((progress) => {
-						setImageItems((prev) =>
-							prev.map((item) => (item.id === itemId ? { ...item, progress } : item)),
-						);
-					});
-
-					// 上传完成前节点可能已被用户退格删除（imageItemsRef 已剔除），此时不再原地回填。
-					if (!imageItemsRef.current.some((item) => item.id === itemId)) continue;
-
-					setImageItems((prev) =>
-						prev.map((item) =>
-							item.id === itemId
-								? {
-										...item,
-										// 换键为服务端 file_id：value 占位符即媒体 id，提交内容可直接解析
-										id: result.id,
-										status: "done" as const,
-										progress: 100,
-										data: {
-											id: result.id,
-											url: result.url,
-											width: result.width ?? 0,
-											height: result.height ?? 0,
-											size: task.file.size,
-										},
-									}
-								: item,
-						),
-					);
-					if (inlineImages)
-						insertImageRef.current?.(result.id, result.url, "done", itemId);
-				} catch {
-					if (!imageItemsRef.current.some((item) => item.id === itemId)) continue;
-					setImageItems((prev) =>
-						prev.map((item) =>
-							item.id === itemId ? { ...item, status: "error" as const } : item,
-						),
-					);
-					if (inlineImages) insertImageRef.current?.(itemId, "", "error");
-				}
-			}
+			for (const item of newItems) await uploadImage(item);
 		},
-		[disabled, enableImage, inlineImages, maxImages, uploadFile],
+		[disabled, enableImage, inlineImages, maxImages, uploadFile, uploadImage],
 	);
 
 	const handleRemoveImage = useCallback((id: string) => {
@@ -279,10 +304,10 @@ export function RichTextInput({
 		});
 	}, []);
 
-	const resolveImage = useCallback(
-		(id: string) => imageItemsRef.current.find((item) => item.id === id)?.data?.url,
-		[],
-	);
+	const resolveImage = useCallback((id: string) => {
+		const item = imageItemsRef.current.find((image) => image.id === id);
+		return item?.data?.url ?? item?.previewUrl;
+	}, []);
 
 	const mentionEnabled = !!mentionCandidates?.length;
 	const mentionListboxId = useId();
@@ -297,13 +322,17 @@ export function RichTextInput({
 		(query: string | null) => {
 			setMentionQuery(query);
 			setMentionIndex(0);
-			if (query !== null) onSlashQueryChange?.(null);
+			if (query !== null) {
+				onSlashQueryChange?.(null);
+			}
 		},
 		[onSlashQueryChange],
 	);
 	const handleSlashQueryChange = useCallback(
 		(query: string | null) => {
-			if (query !== null) setMentionQuery(null);
+			if (query !== null) {
+				setMentionQuery(null);
+			}
 			onSlashQueryChange?.(query);
 		},
 		[onSlashQueryChange],
@@ -318,6 +347,7 @@ export function RichTextInput({
 		replaceSlashQuery,
 		prependMention,
 		refreshQueries,
+		startMentionQuery,
 		handleInput,
 		handlePaste,
 		handleKeyDown,
@@ -351,6 +381,10 @@ export function RichTextInput({
 				return replaceSlashQuery(command, mention);
 			},
 			prependMention,
+			insertSlashCommand(command, mention) {
+				return replaceSlashQuery(command, mention, true);
+			},
+			focus,
 		}),
 		[disabled, focus, insertMention, mentionCandidates, prependMention, replaceSlashQuery],
 	);
@@ -387,7 +421,9 @@ export function RichTextInput({
 				return true;
 			case "Enter":
 			case "Tab":
-				if (count === 0) return false;
+				if (count === 0 || (event.key === "Enter" && event.shiftKey)) {
+					return false;
+				}
 				event.preventDefault();
 				selectMention(mentionMatches[mentionIndex] ?? mentionMatches[0]);
 				return true;
@@ -402,6 +438,16 @@ export function RichTextInput({
 				return false;
 		}
 	};
+
+	useEffect(() => {
+		for (const item of imageItemsRef.current) {
+			if (!item.task || item.release) continue;
+			item.release = item.task.retain();
+			if (inlineImages)
+				insertImageRef.current?.(item.id, item.previewUrl, item.status, item.id);
+			void uploadImage(item);
+		}
+	}, [inlineImages, uploadImage]);
 
 	useEffect(() => {
 		if (autoFocus && !disabled) focus();
@@ -501,14 +547,16 @@ export function RichTextInput({
 			closeOnSelect: false,
 			disabled: disabled || !overlayActive,
 			trigger: isInline ? (
-				<button
-					type="button"
+				<Button
 					aria-label="添加表情"
+					disabled={disabled || !overlayActive}
+					iconOnly
 					onMouseDown={(event) => event.preventDefault()}
-					className="inline-flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+					size={renderInlineActions ? "sm" : "md"}
+					variant="ghost"
 				>
 					<Smile className="size-4" />
-				</button>
+				</Button>
 			) : isField ? (
 				<button
 					type="button"
@@ -541,6 +589,56 @@ export function RichTextInput({
 		</button>
 	);
 
+	const inlineActions =
+		isInline && renderInlineActions
+			? renderInlineActions({
+					attachImage: enableImage ? () => fileInputRef.current?.click() : null,
+					canAttachImage: canAddMore && overlayActive,
+					startMention:
+						mentionEnabled && !disabled && overlayActive
+							? () => void startMentionQuery()
+							: null,
+					emojiPicker: emojiButton,
+				})
+			: undefined;
+
+	const handleInlineBlur = (event: FocusEvent<HTMLDivElement>) => {
+		const next = event.relatedTarget;
+		if (
+			next &&
+			(event.currentTarget.contains(next) || inlinePanelRef.current?.contains(next))
+		) {
+			return;
+		}
+		setMentionQuery(null);
+		onSlashQueryChange?.(null);
+	};
+
+	const closeInlineSuggestions = () => {
+		setMentionQuery(null);
+		onSlashQueryChange?.(null);
+	};
+	const inlinePanelProps: ComponentProps<typeof PopoverPrimitive.Content> = {
+		ref: inlinePanelRef,
+		"aria-label": "输入建议",
+		align: "start",
+		side: "top",
+		sideOffset: 8,
+		collisionPadding: 8,
+		onOpenAutoFocus: (event) => event.preventDefault(),
+		onCloseAutoFocus: (event) => event.preventDefault(),
+		onInteractOutside(event) {
+			if (event.target instanceof Node && inlineRootRef.current?.contains(event.target)) {
+				event.preventDefault();
+			}
+		},
+		onEscapeKeyDown(event) {
+			event.preventDefault();
+			event.stopPropagation();
+			closeInlineSuggestions();
+		},
+	};
+
 	const editor = (
 		// biome-ignore lint/a11y/useAriaPropsSupportedByRole: 设计稿要求可编辑输入区带 aria-expanded；查询方与既有键盘契约都按 role=textbox
 		<div
@@ -559,14 +657,21 @@ export function RichTextInput({
 			}}
 			onClick={refreshQueries}
 			onBlur={() => {
+				if (isInline) {
+					return;
+				}
 				setMentionQuery(null);
 				onSlashQueryChange?.(null);
 			}}
 			data-placeholder={placeholder}
 			role="textbox"
 			aria-label={editorLabel}
-			aria-autocomplete={mentionEnabled ? "list" : undefined}
-			aria-expanded={mentionEnabled ? mentionOpen : undefined}
+			aria-autocomplete={mentionEnabled || onSlashQueryChange ? "list" : undefined}
+			aria-expanded={
+				mentionEnabled || onSlashQueryChange
+					? mentionOpen || Boolean(slashSuggestions)
+					: undefined
+			}
 			aria-controls={
 				mentionOpen ? mentionListboxId : slashSuggestions ? slashListboxId : undefined
 			}
@@ -581,7 +686,7 @@ export function RichTextInput({
 			suppressContentEditableWarning
 			className={cn(
 				"overflow-y-auto bg-transparent focus:outline-none",
-				isInline && "min-h-9 max-h-40 flex-1 min-w-0 px-1 py-1.5 text-sm leading-relaxed",
+				isInline && "min-h-9 max-h-40 flex-1 min-w-0 px-1 py-1.5",
 				isField &&
 					"max-h-40 min-h-8 min-w-0 px-2 py-1.5 leading-5 pointer-coarse:min-h-9 pointer-coarse:py-2",
 				isField && fieldWrapped && "col-span-2 row-start-1",
@@ -641,12 +746,11 @@ export function RichTextInput({
 			onChange={handleFileSelect}
 		/>
 	);
-	// 页底聊天输入把候选留在下方文档流，让输入区向上增高；其他输入保持浮层定位。
 	const suggestions = mentionOpen && (
 		<MentionList
 			activeIndex={mentionIndex}
 			candidates={mentionMatches}
-			className={isInline ? "relative mt-1.5" : "absolute inset-s-0 top-[calc(100%+6px)]"}
+			className={isInline ? undefined : "absolute inset-s-0 top-[calc(100%+6px)]"}
 			id={mentionListboxId}
 			onActiveIndexChange={setMentionIndex}
 			onSelect={selectMention}
@@ -656,30 +760,66 @@ export function RichTextInput({
 
 	if (isInline) {
 		return (
-			<div className="min-w-0">
-				<div
-					className={cn(
-						"relative rounded-2xl bg-muted/40 px-2 py-1.5",
-						"focus-within:bg-background focus-within:ring-2 focus-within:ring-primary/25",
-						"transition-[background-color,box-shadow]",
-						disabled && "opacity-50",
-						className,
-					)}
-				>
-					{slashSuggestions}
-					{fileInput}
-					{thumbnails}
-					<div className="flex items-center gap-1">
-						<div className="flex shrink-0 items-center gap-0.5">
-							{emojiButton}
-							{imageButton}
+			<Popover
+				open={mentionOpen || Boolean(slashSuggestions)}
+				onOpenChange={(open) => {
+					if (!open) {
+						closeInlineSuggestions();
+					}
+				}}
+			>
+				<div className="min-w-0" onBlur={handleInlineBlur}>
+					<PopoverPrimitive.Anchor asChild>
+						<div
+							ref={inlineRootRef}
+							className={cn(
+								"v-input-control v-input-control--filled block h-auto min-h-(--v-input-h) px-2 py-1.5",
+								className,
+							)}
+							data-disabled={disabled || undefined}
+							data-slot="rich-text-input"
+						>
+							{inlineHeader}
+							{fileInput}
+							{thumbnails}
+							<div className="flex items-center gap-1">
+								<div className="flex min-h-10 shrink-0 items-center self-end gap-0.5">
+									{inlineActions ? (
+										inlineActions.start
+									) : (
+										<>
+											{emojiButton}
+											{imageButton}
+										</>
+									)}
+								</div>
+								{editor}
+								<div className="flex min-h-10 shrink-0 items-center self-end gap-0.5">
+									{inlineActions?.end}
+									{toolbarEnd}
+								</div>
+							</div>
 						</div>
-						{editor}
-						<div className="shrink-0">{toolbarEnd}</div>
-					</div>
+					</PopoverPrimitive.Anchor>
 				</div>
-				{suggestions}
-			</div>
+				{mentionOpen ? (
+					<PopoverPrimitive.Portal>
+						<PopoverPrimitive.Content
+							{...inlinePanelProps}
+							className="z-(--layer-float) max-h-(--radix-popover-content-available-height) overflow-y-auto outline-none"
+						>
+							{suggestions}
+						</PopoverPrimitive.Content>
+					</PopoverPrimitive.Portal>
+				) : slashSuggestions ? (
+					<PopoverContent
+						{...inlinePanelProps}
+						className="max-h-(--radix-popover-content-available-height) overflow-y-auto overscroll-contain"
+					>
+						{slashSuggestions}
+					</PopoverContent>
+				) : null}
+			</Popover>
 		);
 	}
 

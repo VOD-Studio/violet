@@ -30,7 +30,7 @@ func (f *fakePublicPostService) GetPublishedBySlug(_ context.Context, slug strin
 	return dto, nil
 }
 
-func (f *fakePublicPostService) ListPublished(_ context.Context, _ string, q shared.PageQuery) (shared.PageResult[apppost.PostListItemDTO], error) {
+func (f *fakePublicPostService) ListPublished(_ context.Context, _ domain.BrowseFilter, q shared.PageQuery) (shared.PageResult[apppost.PostListItemDTO], error) {
 	f.gotListPQ = q
 	return shared.NewPageResult(q, f.listItems, f.listTotal), nil
 }

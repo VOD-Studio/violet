@@ -168,6 +168,37 @@ func (h *Handler) InviteMember(w http.ResponseWriter, r *http.Request) {
 	response.RespondMessage(w, http.StatusCreated, "成员已加入房间")
 }
 
+// SetBotSpeaking 房主设置机器人成员能否在本会话发言。
+func (h *Handler) SetBotSpeaking(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	conversationID, err := parsePathID(chi.URLParam(r, "conversationId"))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	botUserID, err := parsePathID(chi.URLParam(r, "userId"))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	var req struct {
+		Allowed bool `json:"allowed"`
+	}
+	if err := decodeJSON(r, &req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	if err := h.svc.SetBotSilenced(r.Context(), userID, conversationID, botUserID, !req.Allowed); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, map[string]any{"user_id": botUserID.String(), "can_speak": req.Allowed})
+}
+
 // RemoveMember 房主移除成员。
 func (h *Handler) RemoveMember(w http.ResponseWriter, r *http.Request) {
 	userID, err := currentUserID(r)
@@ -337,6 +368,7 @@ func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request) {
 		Content       string   `json:"content"`
 		MediaIDs      []string `json:"media_ids"`
 		SharedTweetID string   `json:"shared_tweet_id"`
+		MusicTrackID  string   `json:"music_track_id"`
 		ReplyToID     string   `json:"reply_to_id"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
@@ -367,7 +399,7 @@ func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	dto, err := h.svc.SendMessage(r.Context(), appchat.SendMessageInput{UserID: userID, ConversationID: conversationID, Type: domainchat.MessageType(req.Type), Content: req.Content, MediaIDs: mediaIDs, SharedTweetID: sharedTweetID, ReplyToID: replyToID, IdempotencyKey: strings.TrimSpace(r.Header.Get("Idempotency-Key"))})
+	dto, err := h.svc.SendMessage(r.Context(), appchat.SendMessageInput{UserID: userID, ConversationID: conversationID, Type: domainchat.MessageType(req.Type), Content: req.Content, MediaIDs: mediaIDs, SharedTweetID: sharedTweetID, MusicTrackID: req.MusicTrackID, ReplyToID: replyToID, IdempotencyKey: strings.TrimSpace(r.Header.Get("Idempotency-Key"))})
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
@@ -459,6 +491,49 @@ func (h *Handler) SetMuted(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.RespondOK(w, map[string]any{"conversation_id": conversationID.String(), "is_muted": req.Muted})
+}
+
+// GetSettings 读取当前用户的聊天设置。
+func (h *Handler) GetSettings(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	settings, err := h.svc.ChatSettings(r.Context(), userID)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, settings)
+}
+
+// UpdateSettings 保存当前用户的聊天设置，字段缺省表示不改。
+func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	var req struct {
+		HideOnline *bool `json:"hide_online"`
+	}
+	if err := decodeJSON(r, &req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	if req.HideOnline != nil {
+		if err := h.svc.SetHideOnline(r.Context(), userID, *req.HideOnline); err != nil {
+			response.RespondError(w, r, err)
+			return
+		}
+	}
+	settings, err := h.svc.ChatSettings(r.Context(), userID)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, settings)
 }
 
 // SetTyping 上报当前用户在会话中的输入状态。

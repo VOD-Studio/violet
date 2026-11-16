@@ -101,7 +101,7 @@ props 式单部件，没有子部件。原生 `<input>` 属性（`placeholder`�
 
 ## 面板
 
-面板是共用的 `lib/picker-panel.tsx`：Radix Popover 的 `Anchor + Portal + Content`，非模态、不抢焦点，与外壳同宽（最小 160）、距外壳 6px、放不下翻到上方；挂到 `document.body`，用 `container` 改挂到陈列室舞台或带缩放的宿主，`collisionBoundary` 传舞台就不会越出。进出场沿用共享的浮出动画：进入 200ms、收起 140ms，不缩放，减弱动态只做 100ms 透明度；收起动画播完才卸载，期间列表停在收起那一刻，不会因为选中后输入框换成标签而闪成全部建议。Esc 在 Radix 的捕获阶段处理，组合框自己对 Esc 的判断**不看 `defaultPrevented`**（站点根上常驻的 Radix 层会先对每个 Esc 调用 `preventDefault`），只有调用方 `onKeyDown` 里主动 `preventDefault` 才取消组合框的按键处理；并且以「按键开始时面板是否展开」为准，浏览器会在 Radix 收起面板之后、组合框的回调之前提交这次更新，否则同一次 Esc 会把「收起」误判成「清空」。
+面板是共用的 `lib/picker-panel.tsx`：Radix Popover 的 `Anchor + Portal + Content`，非模态、不抢焦点，与外壳同宽（最小 160）、距外壳 6px、放不下翻到上方；挂到 `document.body`，用 `container` 指定局部作用域或带缩放的宿主容器，`collisionBoundary` 限定碰撞边界。进出场沿用共享的浮出动画：进入 200ms、收起 140ms，不缩放，减弱动态只做 100ms 透明度；收起动画播完才卸载，期间列表停在收起那一刻，不会因为选中后输入框换成标签而闪成全部建议。Esc 在 Radix 的捕获阶段处理，组合框自己对 Esc 的判断**不看 `defaultPrevented`**（站点根上常驻的 Radix 层会先对每个 Esc 调用 `preventDefault`），只有调用方 `onKeyDown` 里主动 `preventDefault` 才取消组合框的按键处理；并且以「按键开始时面板是否展开」为准，浏览器会在 Radix 收起面板之后、组合框的回调之前提交这次更新，否则同一次 Esc 会把「收起」误判成「清空」。
 
 ## 没有做的
 

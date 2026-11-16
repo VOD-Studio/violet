@@ -22,6 +22,7 @@
 
 - 实现契约、原生键盘、受控与非受控值、FormData/reset、ref、SSR ID 等行为需要有针对性的测试。源码检查、构建检查与真实 tarball 消费分别执行。
 - 运行 `pnpm --filter @violet/ui check`、`typecheck`、`test`、`build`、`check:dist`、`consumer`。`consumer` 在工作区外安装真实 tarball；不要把 workspace 成功视为发布形态已经正确。
-- 规范正文只在包内 `docs/`。组件落地后在 `/ui` 陈列室上架展品：`web/src/features/ui-showcase/ui/exhibits/` 声明占地、展区、用途与可检视状态并渲染真实组件，`e2e/ui-showcase.spec.ts` 在七个宽度下校验展柜不裁切。目录或边界变化按 `docs/agents/docs-map.md` 同步 README、AGENTS 与 skill。
+- 规范正文只在包内 `docs/`。组件通过包内行为测试、工作区外真实 tarball consumer 与实际消费页验收；实际消费页逐态检查明暗、窄屏、键盘、焦点与减弱动态。目录或边界变化按 `docs/agents/docs-map.md` 同步 README、AGENTS 与 skill。
 - 架构与设计流程以 `web/packages/ui/docs/architecture.md`、`component-design.md` 为权威。作者 pass 与 verifier pass 分开，不在作者上下文自称批准。
+- 组件包当前契约与实现是组件层权威；页面设计稿只决定布局、内容与流程。已有组件必须复用，不为旧页面稿复制组件或倒退其行为。
 - npm 发布、专用 CLI、MCP 均未完成，不在文档中作完成承诺。遵循仓库中文 Conventional Commit 与仅本地提交规则。

@@ -1,5 +1,72 @@
+import { createRequire } from "node:module";
+import { resolve } from "node:path";
 import { expect, type Locator, type Page, test } from "@playwright/test";
-import { loadClient } from "./client";
+
+const { build } = createRequire(new URL("../packages/ui/package.json", import.meta.url))("esbuild");
+let fixtureScript = "";
+let fixtureStyles = "";
+
+test.beforeAll(async () => {
+	const resolveDir = resolve(import.meta.dirname, "..");
+	const [script, styles] = await Promise.all([
+		build({
+			stdin: {
+				resolveDir,
+				loader: "tsx",
+				contents: `
+import { createRoot } from "react-dom/client";
+import { Dropdown, DropdownContent, DropdownGroup, DropdownItem, DropdownTrigger } from "@violet/ui";
+const guides = ["快速入门", "设计原则", "版本记录"];
+const actions = ["复制链接", "查看源码"];
+const triggerStyle = { height: 36, padding: "0 16px", display: "inline-flex", alignItems: "center" };
+function Entries({ items, rowHeight = 64 }) {
+  return items.map((label, index) => <DropdownItem key={label} asChild>
+    <a href={"#entry-" + index} style={{ minHeight: rowHeight }} onClick={(event) => { event.preventDefault(); }}>{label}</a>
+  </DropdownItem>);
+}
+createRoot(document.getElementById("fixture")).render(<>
+  <DropdownGroup>
+    <nav aria-label="文档导航" style={{ display: "flex", gap: 8 }}>
+      <Dropdown>
+        <DropdownTrigger asChild><a href="#guides" style={triggerStyle}>指南</a></DropdownTrigger>
+        <DropdownContent side="bottom" align="start" style={{ width: 280 }}><Entries items={guides} /></DropdownContent>
+      </Dropdown>
+      <Dropdown>
+        <DropdownTrigger style={triggerStyle}>更多</DropdownTrigger>
+        <DropdownContent side="bottom" align="start" style={{ width: 280 }}><Entries items={actions} rowHeight={40} /></DropdownContent>
+      </Dropdown>
+    </nav>
+  </DropdownGroup>
+  <Dropdown>
+    <DropdownTrigger style={{ ...triggerStyle, alignSelf: "start" }}>向上展开</DropdownTrigger>
+    <DropdownContent side="top" align="start" style={{ width: 280 }}><Entries items={actions} rowHeight={40} /></DropdownContent>
+  </Dropdown>
+</>);
+`,
+			},
+			bundle: true,
+			format: "iife",
+			platform: "browser",
+			jsx: "automatic",
+			write: false,
+			logLevel: "error",
+			define: { "process.env.NODE_ENV": '"development"' },
+		}),
+		build({
+			stdin: {
+				resolveDir,
+				loader: "css",
+				contents:
+					'@import "@violet/ui/tokens.css"; @import "@violet/ui/components/dropdown.css";',
+			},
+			bundle: true,
+			write: false,
+			logLevel: "error",
+		}),
+	]);
+	fixtureScript = script.outputFiles[0].text;
+	fixtureStyles = styles.outputFiles[0].text;
+});
 
 interface RecordedAnimation {
 	duration: number;
@@ -14,13 +81,15 @@ declare global {
 	}
 }
 
-/** 在陈列室的检视台里走近下拉面板展品，返回检视台对话框。 */
-async function openDropdownExhibit(page: Page) {
-	await page.goto("/ui?open=dropdown");
-	await page.waitForLoadState("networkidle");
-	const stage = page.getByRole("dialog", { name: "下拉面板" });
-	await expect(stage).toBeFocused();
-	return stage;
+async function mountFixture(page: Page) {
+	await page.setContent(
+		'<main id="fixture" style="position:absolute;top:320px;left:400px;width:320px;height:260px;display:flex;flex-direction:column;justify-content:space-between"></main>',
+	);
+	await page.addStyleTag({ content: fixtureStyles });
+	await page.addScriptTag({ content: fixtureScript });
+	const fixture = page.locator("#fixture");
+	await expect(fixture.getByRole("link", { name: "指南", exact: true })).toBeVisible();
+	return fixture;
 }
 
 function pauseExit(element: Element) {
@@ -29,7 +98,9 @@ function pauseExit(element: Element) {
 			element.getAttribute("data-state") === "closed" &&
 			element.getAttribute("data-handoff") === "true"
 		) {
-			for (const animation of element.getAnimations()) animation.pause();
+			for (const animation of element.getAnimations()) {
+				animation.pause();
+			}
 			observer.disconnect();
 		}
 	});
@@ -49,7 +120,9 @@ function pauseFloatAtHalf(element: Element) {
 				candidate.effect.getKeyframes().some((frame) => "opacity" in frame) &&
 				candidate.effect.getKeyframes().every((frame) => !("width" in frame)),
 		);
-	if (!animation?.effect) throw new Error("没有进行中的浮出动画");
+	if (!animation?.effect) {
+		throw new Error("没有进行中的浮出动画");
+	}
 	animation.pause();
 	animation.currentTime = Number(animation.effect.getComputedTiming().duration) / 2;
 	window.__float = animation;
@@ -113,18 +186,16 @@ async function recordAnimations(page: Page) {
 
 const recordedAnimations = (page: Page) => page.evaluate(() => window.__anims ?? []);
 
-test("Dropdown 关闭中重入立即续开：从当前位置和透明度续播，不跳回起点", async ({
-	page,
-	context,
-}) => {
-	await loadClient(context);
+test("Dropdown 关闭中重入立即续开：从当前位置和透明度续播，不跳回起点", async ({ page }) => {
 	await page.emulateMedia({ reducedMotion: "no-preference" });
-	const stage = await openDropdownExhibit(page);
-	const trigger = stage.getByRole("button", { name: "向上展开", exact: true });
+	const fixture = await mountFixture(page);
+	const trigger = fixture.getByRole("button", { name: "向上展开", exact: true });
 	await trigger.hover();
 	await expect(trigger).toHaveAttribute("aria-expanded", "true");
 	const contentId = await trigger.getAttribute("aria-controls");
-	if (!contentId) throw new Error("展开的 Dropdown 缺少面板关联");
+	if (!contentId) {
+		throw new Error("展开的 Dropdown 缺少面板关联");
+	}
 	const content = page.locator(`[id="${contentId}"]`);
 	await expect(content).toBeVisible();
 	await expect
@@ -156,17 +227,18 @@ test("Dropdown 关闭中重入立即续开：从当前位置和透明度续播�
 	await expect(content).toHaveCount(0);
 });
 
-test("Dropdown 同方向接力后的旧面板不再截获新面板的悬停", async ({ page, context }) => {
-	await loadClient(context);
+test("Dropdown 同方向接力后的旧面板不再截获新面板的悬停", async ({ page }) => {
 	await page.emulateMedia({ reducedMotion: "no-preference" });
-	const stage = await openDropdownExhibit(page);
-	const navigation = stage.getByRole("navigation", { name: "Dropdown 示例" });
+	const fixture = await mountFixture(page);
+	const navigation = fixture.getByRole("navigation", { name: "文档导航" });
 	const guide = navigation.getByRole("link", { name: "指南", exact: true });
 	const more = navigation.getByRole("button", { name: "更多", exact: true });
 	await guide.hover();
 	await expect(guide).toHaveAttribute("aria-expanded", "true");
 	const sourceId = await guide.getAttribute("aria-controls");
-	if (!sourceId) throw new Error("指南面板缺少关联");
+	if (!sourceId) {
+		throw new Error("指南面板缺少关联");
+	}
 	const source = page.locator(`[id="${sourceId}"]`);
 	await expect
 		.poll(() =>
@@ -179,10 +251,14 @@ test("Dropdown 同方向接力后的旧面板不再截获新面板的悬停", as
 	await more.hover();
 	await expect(more).toHaveAttribute("aria-expanded", "true");
 	const destinationId = await more.getAttribute("aria-controls");
-	if (!destinationId) throw new Error("更多面板缺少关联");
+	if (!destinationId) {
+		throw new Error("更多面板缺少关联");
+	}
 	const destination = page.locator(`[id="${destinationId}"]`);
 	const point = await destination.evaluate((element) => {
-		for (const animation of element.getAnimations()) animation.pause();
+		for (const animation of element.getAnimations()) {
+			animation.pause();
+		}
 		const rect = element.getBoundingClientRect();
 		return { x: rect.left + rect.width / 2, y: rect.top + 20 };
 	});
@@ -199,32 +275,36 @@ test("Dropdown 同方向接力后的旧面板不再截获新面板的悬停", as
 		}, point),
 	).toBe(true);
 	await source.evaluate((element) => {
-		for (const animation of element.getAnimations()) animation.play();
+		for (const animation of element.getAnimations()) {
+			animation.play();
+		}
 	});
 	await destination.evaluate((element) => {
-		for (const animation of element.getAnimations()) animation.play();
+		for (const animation of element.getAnimations()) {
+			animation.play();
+		}
 	});
 	await expect(source).toHaveCount(0);
 	await expect(more).toHaveAttribute("aria-expanded", "true");
 });
 
-test("Dropdown 关闭期间开启减弱动态会立即释放面板，之后只做 100ms 透明度", async ({
-	page,
-	context,
-}) => {
-	await loadClient(context);
+test("Dropdown 关闭期间开启减弱动态会立即释放面板，之后只做 100ms 透明度", async ({ page }) => {
 	await page.emulateMedia({ reducedMotion: "no-preference" });
-	const stage = await openDropdownExhibit(page);
-	const trigger = stage.getByRole("button", { name: "向上展开", exact: true });
+	const fixture = await mountFixture(page);
+	const trigger = fixture.getByRole("button", { name: "向上展开", exact: true });
 	await trigger.hover();
 	await expect(trigger).toHaveAttribute("aria-expanded", "true");
 	const contentId = await trigger.getAttribute("aria-controls");
-	if (!contentId) throw new Error("展开的 Dropdown 缺少面板关联");
+	if (!contentId) {
+		throw new Error("展开的 Dropdown 缺少面板关联");
+	}
 	const content = page.locator(`[id="${contentId}"]`);
 	await page.mouse.move(1300, 800);
 	await expect(trigger).toHaveAttribute("aria-expanded", "false");
 	await content.evaluate((element) => {
-		for (const animation of element.getAnimations()) animation.pause();
+		for (const animation of element.getAnimations()) {
+			animation.pause();
+		}
 	});
 	await page.emulateMedia({ reducedMotion: "reduce" });
 	await expect(content).toHaveCount(0);
@@ -243,18 +323,19 @@ test("Dropdown 关闭期间开启减弱动态会立即释放面板，之后只�
 	await expect(content).toHaveCount(0);
 });
 
-test("Dropdown 播放中碰撞翻转后沿实际方位浮出，不重启动画", async ({ page, context }) => {
-	await loadClient(context);
+test("Dropdown 播放中碰撞翻转后沿实际方位浮出，不重启动画", async ({ page }) => {
 	await page.setViewportSize({ width: 1440, height: 1000 });
 	await page.emulateMedia({ reducedMotion: "no-preference" });
-	const stage = await openDropdownExhibit(page);
-	const trigger = stage
-		.getByRole("navigation", { name: "Dropdown 示例" })
+	const fixture = await mountFixture(page);
+	const trigger = fixture
+		.getByRole("navigation", { name: "文档导航" })
 		.getByRole("link", { name: "指南", exact: true });
 	await trigger.hover();
 	await expect(trigger).toHaveAttribute("aria-expanded", "true");
 	const contentId = await trigger.getAttribute("aria-controls");
-	if (!contentId) throw new Error("指南面板缺少关联");
+	if (!contentId) {
+		throw new Error("指南面板缺少关联");
+	}
 	const content = page.locator(`[id="${contentId}"]`);
 	await expect(content).toHaveAttribute("data-side", "bottom");
 	await content.evaluate(pauseFloatAtHalf);
@@ -273,7 +354,9 @@ test("Dropdown 播放中碰撞翻转后沿实际方位浮出，不重启动画",
 	);
 	expect(same, "翻转没有重建动画").toBe(true);
 	await content.evaluate((element) => {
-		for (const animation of element.getAnimations()) animation.play();
+		for (const animation of element.getAnimations()) {
+			animation.play();
+		}
 	});
 	await expect.poll(() => pose(content).then((p) => p.opacity)).toBe(1);
 	expect((await pose(content)).y).toBe(0);
@@ -281,15 +364,11 @@ test("Dropdown 播放中碰撞翻转后沿实际方位浮出，不重启动画",
 	await expect(content).toHaveCount(0);
 });
 
-test("Dropdown 变形中跨方向快速折返后回到当前锚点，不保留暂停的旧几何", async ({
-	page,
-	context,
-}) => {
-	await loadClient(context);
+test("Dropdown 变形中跨方向快速折返后回到当前锚点，不保留暂停的旧几何", async ({ page }) => {
 	await page.setViewportSize({ width: 1440, height: 1000 });
 	await page.emulateMedia({ reducedMotion: "no-preference" });
-	const stage = await openDropdownExhibit(page);
-	const navigation = stage.getByRole("navigation", { name: "Dropdown 示例" });
+	const fixture = await mountFixture(page);
+	const navigation = fixture.getByRole("navigation", { name: "文档导航" });
 	const guide = navigation.getByRole("link", { name: "指南", exact: true });
 	const more = navigation.getByRole("button", { name: "更多", exact: true });
 	await guide.hover();
@@ -297,7 +376,9 @@ test("Dropdown 变形中跨方向快速折返后回到当前锚点，不保留�
 	await more.hover();
 	await expect(more).toHaveAttribute("aria-expanded", "true");
 	const contentId = await more.getAttribute("aria-controls");
-	if (!contentId) throw new Error("更多面板缺少关联");
+	if (!contentId) {
+		throw new Error("更多面板缺少关联");
+	}
 	const content = page.locator(`[id="${contentId}"]`);
 	await content.evaluate((element) => {
 		const morph = element
@@ -307,7 +388,9 @@ test("Dropdown 变形中跨方向快速折返后回到当前锚点，不保留�
 					animation.effect instanceof KeyframeEffect &&
 					animation.effect.getKeyframes().some((frame) => "transform" in frame),
 			);
-		if (!morph?.effect) throw new Error("接力期间没有几何动画");
+		if (!morph?.effect) {
+			throw new Error("接力期间没有几何动画");
+		}
 		morph.pause();
 		morph.currentTime = Number(morph.effect.getComputedTiming().duration) / 2;
 	});
@@ -315,7 +398,9 @@ test("Dropdown 变形中跨方向快速折返后回到当前锚点，不保留�
 	await guide.hover();
 	await expect(guide).toHaveAttribute("aria-expanded", "true");
 	const guideId = await guide.getAttribute("aria-controls");
-	if (!guideId) throw new Error("指南面板缺少关联");
+	if (!guideId) {
+		throw new Error("指南面板缺少关联");
+	}
 	const guideContent = page.locator(`[id="${guideId}"]`);
 	const bottom = await guide.evaluate((element) => element.getBoundingClientRect().bottom);
 	await page.setViewportSize({ width: 1440, height: Math.ceil(bottom + 170) });
@@ -328,7 +413,9 @@ test("Dropdown 变形中跨方向快速折返后回到当前锚点，不保留�
 		.poll(async () => {
 			const anchor = await more.boundingBox();
 			const panel = await content.boundingBox();
-			if (!anchor || !panel) return Infinity;
+			if (!anchor || !panel) {
+				return Infinity;
+			}
 			return Math.abs(panel.x - anchor.x);
 		})
 		.toBeLessThan(1);
@@ -336,18 +423,19 @@ test("Dropdown 变形中跨方向快速折返后回到当前锚点，不保留�
 	await expect(content).toHaveCount(0);
 });
 
-test("Dropdown 共享高亮在快速折返中续接当前位置，菜单行保持静止", async ({ page, context }) => {
-	await loadClient(context);
+test("Dropdown 共享高亮在快速折返中续接当前位置，菜单行保持静止", async ({ page }) => {
 	await page.setViewportSize({ width: 1440, height: 1000 });
 	await page.emulateMedia({ reducedMotion: "no-preference" });
-	const stage = await openDropdownExhibit(page);
-	const trigger = stage
-		.getByRole("navigation", { name: "Dropdown 示例" })
+	const fixture = await mountFixture(page);
+	const trigger = fixture
+		.getByRole("navigation", { name: "文档导航" })
 		.getByRole("link", { name: "指南", exact: true });
 	await trigger.hover();
 	await expect(trigger).toHaveAttribute("aria-expanded", "true");
 	const contentId = await trigger.getAttribute("aria-controls");
-	if (!contentId) throw new Error("指南面板缺少关联");
+	if (!contentId) {
+		throw new Error("指南面板缺少关联");
+	}
 	const content = page.locator(`[id="${contentId}"]`);
 	// 入场浮出还在位移时量不到静止的行位置
 	await expect
@@ -369,7 +457,9 @@ test("Dropdown 共享高亮在快速折返中续接当前位置，菜单行保�
 	await expect(first).toHaveAttribute("data-highlighted", "");
 	const firstRect = await first.boundingBox();
 	const thirdRect = await third.boundingBox();
-	if (!firstRect || !thirdRect) throw new Error("菜单行缺少可见几何");
+	if (!firstRect || !thirdRect) {
+		throw new Error("菜单行缺少可见几何");
+	}
 	await expect.poll(() => offsetFrom(firstRect.y)).toBeLessThan(1);
 	await page.evaluate(
 		() =>
@@ -386,7 +476,9 @@ test("Dropdown 共享高亮在快速折返中续接当前位置，菜单行保�
 					animation.effect instanceof KeyframeEffect &&
 					animation.effect.getKeyframes().some((frame) => "transform" in frame),
 			);
-		if (!movement?.effect) throw new Error("项切换缺少跟随动画");
+		if (!movement?.effect) {
+			throw new Error("项切换缺少跟随动画");
+		}
 		movement.pause();
 		movement.currentTime = Number(movement.effect.getComputedTiming().duration) / 2;
 	});
@@ -402,17 +494,23 @@ test("Dropdown 共享高亮在快速折返中续接当前位置，菜单行保�
 					animation.effect instanceof KeyframeEffect &&
 					animation.effect.getKeyframes().some((frame) => "transform" in frame),
 			);
-		if (!movement) throw new Error("折返缺少续接动画");
+		if (!movement) {
+			throw new Error("折返缺少续接动画");
+		}
 		movement.pause();
 		movement.currentTime = 0;
 	});
 	const resumed = await highlightBox(highlight);
 	expect(Math.abs(resumed.y - middle.y)).toBeLessThan(1);
 	await highlight.evaluate((element) => {
-		for (const animation of element.getAnimations({ subtree: true })) animation.play();
+		for (const animation of element.getAnimations({ subtree: true })) {
+			animation.play();
+		}
 	});
 	const secondRect = await second.boundingBox();
-	if (!secondRect) throw new Error("目标行缺少可见几何");
+	if (!secondRect) {
+		throw new Error("目标行缺少可见几何");
+	}
 	await expect.poll(() => offsetFrom(secondRect.y)).toBeLessThan(1);
 	await expect(second).toHaveAttribute("data-highlighted", "");
 	await expect(first).not.toHaveAttribute("data-highlighted");
@@ -434,17 +532,18 @@ test("Dropdown 共享高亮在快速折返中续接当前位置，菜单行保�
 	await expect(trigger).toHaveAttribute("aria-expanded", "true");
 });
 
-test("Dropdown 减弱动态下高亮立即跟随，并忽略禁用项", async ({ page, context }) => {
-	await loadClient(context);
+test("Dropdown 减弱动态下高亮立即跟随，并忽略禁用项", async ({ page }) => {
 	await page.emulateMedia({ reducedMotion: "reduce" });
-	const stage = await openDropdownExhibit(page);
-	const trigger = stage
-		.getByRole("navigation", { name: "Dropdown 示例" })
+	const fixture = await mountFixture(page);
+	const trigger = fixture
+		.getByRole("navigation", { name: "文档导航" })
 		.getByRole("link", { name: "指南", exact: true });
 	await trigger.hover();
 	await expect(trigger).toHaveAttribute("aria-expanded", "true");
 	const contentId = await trigger.getAttribute("aria-controls");
-	if (!contentId) throw new Error("指南面板缺少关联");
+	if (!contentId) {
+		throw new Error("指南面板缺少关联");
+	}
 	const content = page.locator(`[id="${contentId}"]`);
 	const first = content.getByRole("link", { name: /^快速入门/ });
 	const third = content.getByRole("link", { name: /^版本记录/ });
@@ -453,7 +552,9 @@ test("Dropdown 减弱动态下高亮立即跟随，并忽略禁用项", async ({
 	await third.hover();
 	const row = await third.boundingBox();
 	const background = await highlightBox(highlight);
-	if (!row) throw new Error("菜单行缺少可见几何");
+	if (!row) {
+		throw new Error("菜单行缺少可见几何");
+	}
 	expect(Math.abs(row.y - background.y)).toBeLessThan(1);
 	expect(
 		await highlight.evaluate((element) => element.getAnimations({ subtree: true }).length),
@@ -474,18 +575,19 @@ test("Dropdown 减弱动态下高亮立即跟随，并忽略禁用项", async ({
 	await expect(trigger).toHaveAttribute("aria-expanded", "true");
 });
 
-test("Dropdown 穿过项间空隙与面板留白时保留高亮，真正离开后才清理", async ({ page, context }) => {
-	await loadClient(context);
+test("Dropdown 穿过项间空隙与面板留白时保留高亮，真正离开后才清理", async ({ page }) => {
 	await page.setViewportSize({ width: 1440, height: 1000 });
 	await page.emulateMedia({ reducedMotion: "reduce" });
-	const stage = await openDropdownExhibit(page);
-	const trigger = stage
-		.getByRole("navigation", { name: "Dropdown 示例" })
+	const fixture = await mountFixture(page);
+	const trigger = fixture
+		.getByRole("navigation", { name: "文档导航" })
 		.getByRole("link", { name: "指南", exact: true });
 	await trigger.hover();
 	await expect(trigger).toHaveAttribute("aria-expanded", "true");
 	const contentId = await trigger.getAttribute("aria-controls");
-	if (!contentId) throw new Error("指南面板缺少关联");
+	if (!contentId) {
+		throw new Error("指南面板缺少关联");
+	}
 	const content = page.locator(`[id="${contentId}"]`);
 	const first = content.getByRole("link", { name: /^快速入门/ });
 	const second = content.getByRole("link", { name: /^设计原则/ });
@@ -525,7 +627,9 @@ test("Dropdown 穿过项间空隙与面板留白时保留高亮，真正离开�
 	await content.evaluate((element) => {
 		const observer = new MutationObserver(() => {
 			if (element.getAttribute("data-state") === "closed") {
-				for (const animation of element.getAnimations()) animation.pause();
+				for (const animation of element.getAnimations()) {
+					animation.pause();
+				}
 				observer.disconnect();
 			}
 		});
@@ -537,7 +641,9 @@ test("Dropdown 穿过项间空隙与面板留白时保留高亮，真正离开�
 	await expect.poll(() => highlightOpacity(highlight)).toBe("0");
 	await expect(second).not.toHaveAttribute("data-highlighted");
 	await content.evaluate((element) => {
-		for (const animation of element.getAnimations()) animation.play();
+		for (const animation of element.getAnimations()) {
+			animation.play();
+		}
 	});
 	await expect(content).toHaveCount(0);
 });

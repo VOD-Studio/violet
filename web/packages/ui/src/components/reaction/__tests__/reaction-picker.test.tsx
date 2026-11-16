@@ -155,6 +155,49 @@ describe("ReactionBar 添加与键盘", () => {
 		expect(screen.getByRole("toolbar")).toBeTruthy();
 	});
 
+	it("嵌套滚动消息区中的快捷条和完整选择器都移出滚动祖先，候选可点且焦点归还", () => {
+		const onSelect = vi.fn();
+		render(
+			<div style={{ overflow: "auto", height: 300, transform: "translateZ(0)" }}>
+				<div data-testid="消息滚动区" style={{ overflow: "auto", height: 160, width: 240 }}>
+					<div style={{ minHeight: 320 }}>
+						<ReactionBar
+							items={[]}
+							onAdd={onSelect}
+							recentItems={recent}
+							renderPicker={({ close }) => (
+								<FullPicker close={close} onSelect={onSelect} />
+							)}
+						/>
+					</div>
+				</div>
+			</div>,
+		);
+		const messages = screen.getByTestId("消息滚动区");
+		const add = screen.getByRole("button", { name: "添加回应" });
+		fireEvent.click(add);
+		expect(messages.contains(screen.getByRole("dialog", { name: "常用回应" }))).toBe(false);
+		const more = screen.getByRole("button", { name: "更多表情" });
+		fireEvent.pointerDown(more);
+		act(() => more.focus());
+		expect(add.getAttribute("aria-expanded")).toBe("true");
+		fireEvent.click(more);
+		const picker = screen.getByRole("dialog", { name: "选择回应" });
+		expect(messages.contains(picker)).toBe(false);
+		const option = within(picker).getByRole("option", { name: "表情0" });
+		fireEvent.pointerDown(option);
+		fireEvent.click(option);
+		expect(onSelect).toHaveBeenCalledExactlyOnceWith("system:0");
+		advance(100);
+		expect(screen.queryByRole("dialog")).toBeNull();
+		expect(document.activeElement).toBe(add);
+		fireEvent.click(add);
+		fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+		advance(100);
+		expect(screen.queryByRole("dialog")).toBeNull();
+		expect(document.activeElement).toBe(add);
+	});
+
 	it("完整面板关闭途中反转保留当前导航，旧退场任务不会卸载重新打开的面板", () => {
 		render(
 			<ReactionBar

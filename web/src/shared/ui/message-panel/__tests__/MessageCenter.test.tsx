@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MessageCenter } from "../MessageCenter";
 import { MessageToast } from "../MessageToast";
@@ -20,7 +20,7 @@ describe("MessageCenter", () => {
 		expect(screen.getByRole("button", { name: "消息" })).toBeTruthy();
 	});
 
-	it("点铃铛展开面板；关掉再开，停在上次看的标签", () => {
+	it("点铃铛展开面板；Esc 归还焦点，重开记住聊天标签", async () => {
 		render(
 			<MessageCenter
 				unread={1}
@@ -35,7 +35,8 @@ describe("MessageCenter", () => {
 		fireEvent.mouseDown(screen.getByRole("tab", { name: /^聊天/ }));
 
 		fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
-		expect(screen.queryByRole("dialog", { name: "消息" })).toBeNull();
+		await waitFor(() => expect(screen.queryByRole("dialog", { name: "消息" })).toBeNull());
+		expect(document.activeElement).toBe(bell);
 
 		fireEvent.click(bell);
 		expect(screen.getByRole("tab", { name: /^聊天/ }).getAttribute("aria-selected")).toBe(
@@ -43,24 +44,76 @@ describe("MessageCenter", () => {
 		);
 	});
 
-	it("账号菜单收起后把焦点还给它的触发器，面板不因此关闭；焦点去别处才关", () => {
+	it("受控开合只报告意图，由 open 决定是否展开", async () => {
+		const onOpenChange = vi.fn();
+		const { rerender } = render(
+			<MessageCenter unread={0} open={false} onOpenChange={onOpenChange} {...PANEL} />,
+		);
+		const bell = screen.getByRole("button", { name: "消息" });
+		fireEvent.click(bell);
+		expect(onOpenChange).toHaveBeenLastCalledWith(true);
+		expect(screen.queryByRole("dialog", { name: "消息" })).toBeNull();
+		rerender(<MessageCenter unread={0} open onOpenChange={onOpenChange} {...PANEL} />);
+		expect(screen.getByRole("dialog", { name: "消息" })).toBeTruthy();
+		fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+		expect(onOpenChange).toHaveBeenLastCalledWith(false);
+		expect(bell.getAttribute("aria-expanded")).toBe("true");
+		rerender(<MessageCenter unread={0} open={false} onOpenChange={onOpenChange} {...PANEL} />);
+		await waitFor(() => expect(screen.queryByRole("dialog", { name: "消息" })).toBeNull());
+	});
+
+	it("焦点离开面板时关闭，并保留用户选中的外部焦点", async () => {
 		render(
 			<>
-				<button type="button" aria-haspopup="menu">
-					用户菜单
-				</button>
 				<button type="button">别处</button>
 				<MessageCenter unread={0} {...PANEL} />
 			</>,
 		);
 		fireEvent.click(screen.getByRole("button", { name: "消息" }));
 		expect(screen.getByRole("dialog", { name: "消息" })).toBeTruthy();
+		const outside = screen.getByRole("button", { name: "别处" });
+		act(() => outside.focus());
+		await waitFor(() => expect(screen.queryByRole("dialog", { name: "消息" })).toBeNull());
+		expect(document.activeElement).toBe(outside);
+	});
 
-		act(() => screen.getByRole("button", { name: "用户菜单" }).focus());
-		expect(screen.getByRole("dialog", { name: "消息" })).toBeTruthy();
+	it("点外面收起；点全部已读不收起", async () => {
+		const onReadAll = vi.fn();
+		render(
+			<>
+				<p>面板外的正文</p>
+				<MessageCenter unread={1} {...PANEL} noticeUnread={1} onReadAll={onReadAll} />
+			</>,
+		);
+		const bell = screen.getByRole("button", { name: "消息，1 条未读" });
+		fireEvent.click(bell);
+		await act(() => new Promise<void>((resolve) => setTimeout(resolve, 0)));
+		fireEvent.click(screen.getByRole("button", { name: "全部标为已读" }));
+		expect(onReadAll).toHaveBeenCalledTimes(1);
+		expect(bell.getAttribute("aria-expanded")).toBe("true");
+		const outside = screen.getByText("面板外的正文");
+		fireEvent.pointerDown(outside, { pointerType: "mouse", button: 0 });
+		fireEvent.pointerUp(outside, { pointerType: "mouse", button: 0 });
+		fireEvent.click(outside);
+		await waitFor(() => expect(screen.queryByRole("dialog", { name: "消息" })).toBeNull());
+	});
+});
 
-		act(() => screen.getByRole("button", { name: "别处" }).focus());
-		expect(screen.queryByRole("dialog", { name: "消息" })).toBeNull();
+describe("MessageCenter portal", () => {
+	afterEach(cleanup);
+
+	it("弹层挂载到宿主指定容器", () => {
+		const portal = document.createElement("div");
+		document.body.append(portal);
+		try {
+			render(<MessageCenter unread={0} container={portal} {...PANEL} />);
+			const bell = screen.getByRole("button", { name: "消息" });
+			fireEvent.click(bell);
+			expect(portal.contains(screen.getByRole("dialog", { name: "消息" }))).toBe(true);
+		} finally {
+			cleanup();
+			portal.remove();
+		}
 	});
 });
 

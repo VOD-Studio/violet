@@ -123,16 +123,8 @@ func (r *PostRepository) FindPage(ctx context.Context, filter post.ListFilter, q
 			like, like, like,
 		)
 	}
-	for _, slug := range filter.Tags {
-		slug = strings.TrimSpace(slug)
-		if slug == "" {
-			continue
-		}
-		query = query.Where(
-			"posts.id IN (SELECT post_id FROM post_tags JOIN tags ON tags.id = post_tags.tag_id WHERE tags.slug = ?)",
-			slug,
-		)
-	}
+	query = filterPostSource(query, filter.Source)
+	query = filterPostTags(query, filter.Tags)
 	var pos []model.Post
 	total, err := countAndFind(query.Order(postPageOrder(filter.Sort)).Preload("Tags"), q, &pos, "文章")
 	if err != nil {
@@ -147,6 +139,54 @@ func (r *PostRepository) FindPage(ctx context.Context, filter post.ListFilter, q
 		result = append(result, p)
 	}
 	return domainshared.NewPageResult(q, result, total), nil
+}
+
+func filterPostSource(query *gorm.DB, source string) *gorm.DB {
+	switch source {
+	case "original":
+		return query.Where("(posts.canonical_url IS NULL OR posts.canonical_url = '')")
+	case "repost":
+		return query.Where("posts.canonical_url IS NOT NULL AND posts.canonical_url <> ''")
+	default:
+		return query
+	}
+}
+
+func filterPostTags(query *gorm.DB, tags []string) *gorm.DB {
+	for _, slug := range tags {
+		slug = strings.TrimSpace(slug)
+		if slug != "" {
+			query = query.Where(
+				"posts.id IN (SELECT post_id FROM post_tags JOIN tags ON tags.id = post_tags.tag_id WHERE tags.slug = ?)",
+				slug,
+			)
+		}
+	}
+	return query
+}
+
+func publishedPostsQuery(db *gorm.DB, filter post.BrowseFilter) *gorm.DB {
+	query := db.Model(&model.Post{}).Where("posts.status = ?", post.StatusPublished)
+	query = filterPostSource(query, filter.Source)
+	if filter.Tag != "" {
+		query = filterPostTags(query, []string{filter.Tag})
+	}
+	return query
+}
+
+func (r *PostRepository) FindPublishedTagCounts(ctx context.Context, source string) ([]post.TagCount, error) {
+	counts := make([]post.TagCount, 0)
+	err := publishedPostsQuery(r.db.WithContext(ctx), post.BrowseFilter{Source: source}).
+		Joins("JOIN post_tags ON post_tags.post_id = posts.id").
+		Joins("JOIN tags ON tags.id = post_tags.tag_id").
+		Select("tags.slug, tags.name, COUNT(DISTINCT posts.id) AS count").
+		Group("tags.slug, tags.name").
+		Order("count DESC, tags.slug ASC").
+		Scan(&counts).Error
+	if err != nil {
+		return nil, domainshared.Internal("查询公开文章标签失败", err)
+	}
+	return counts, nil
 }
 
 // postPageOrder 列表排序子句（唯一列 id tiebreaker 防 offset 翻页漂移）。
@@ -320,11 +360,10 @@ func (r *PostRepository) IncrementViewAtomic(ctx context.Context, postID domains
 
 // FindArchiveYears 返回所有含已发布文章的年份（倒序、去重）。
 // 仅取 published_at 的年份分量，过滤未发布与无发布时间的文章。
-func (r *PostRepository) FindArchiveYears(ctx context.Context) ([]int, error) {
-	var years []int
-	err := r.db.WithContext(ctx).
-		Model(&model.Post{}).
-		Where("status = ? AND published_at IS NOT NULL", post.StatusPublished).
+func (r *PostRepository) FindArchiveYears(ctx context.Context, filter post.BrowseFilter) ([]int, error) {
+	years := make([]int, 0)
+	err := publishedPostsQuery(r.db.WithContext(ctx), filter).
+		Where("published_at IS NOT NULL").
 		Distinct("EXTRACT(YEAR FROM published_at)").
 		Order("EXTRACT(YEAR FROM published_at) DESC").
 		Pluck("EXTRACT(YEAR FROM published_at)", &years).
@@ -337,13 +376,12 @@ func (r *PostRepository) FindArchiveYears(ctx context.Context) ([]int, error) {
 
 // FindPublishedByYear 返回指定年份的全部已发布文章（按 published_at 倒序）。
 // Preload Tags 以便归档项携带标签名。
-func (r *PostRepository) FindPublishedByYear(ctx context.Context, year int) ([]*post.Post, error) {
+func (r *PostRepository) FindPublishedByYear(ctx context.Context, year int, filter post.BrowseFilter) ([]*post.Post, error) {
 	var pos []model.Post
-	err := r.db.WithContext(ctx).
+	err := publishedPostsQuery(r.db.WithContext(ctx), filter).
 		Preload("Tags").
-		Where("status = ? AND published_at IS NOT NULL AND EXTRACT(YEAR FROM published_at) = ?",
-			post.StatusPublished, year).
-		Order("published_at DESC").
+		Where("published_at IS NOT NULL AND EXTRACT(YEAR FROM published_at) = ?", year).
+		Order("published_at DESC, id DESC").
 		Find(&pos).Error
 	if err != nil {
 		return nil, domainshared.Internal("按年查询归档文章失败", err)

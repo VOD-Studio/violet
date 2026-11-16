@@ -4,18 +4,23 @@ import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	MorphingPopover,
+	MorphingPopoverAnchor,
 	MorphingPopoverContent,
 	type MorphingPopoverProps,
 	MorphingPopoverTrigger,
 } from "..";
 
-function Status({ name = "状态", ...props }: { name?: string } & MorphingPopoverProps) {
+function Status({
+	name = "状态",
+	portal = false,
+	...props
+}: { name?: string; portal?: boolean } & MorphingPopoverProps) {
 	return (
 		<MorphingPopover {...props}>
 			<MorphingPopoverTrigger asChild>
 				<button type="button">{name}</button>
 			</MorphingPopoverTrigger>
-			<MorphingPopoverContent aria-label={`${name}详情`}>
+			<MorphingPopoverContent portal={portal} aria-label={`${name}详情`}>
 				<button type="button">刷新</button>
 			</MorphingPopoverContent>
 		</MorphingPopover>
@@ -85,6 +90,65 @@ describe("MorphingPopover", () => {
 		fireEvent.pointerDown(screen.getByText("页面正文"));
 		expect(trigger().getAttribute("aria-expanded")).toBe("false");
 		await waitFor(() => expect(panel()).toBeNull());
+	});
+
+	it("Portal 面板保持内部点击与焦点范围，点外部可聚焦控件时不抢回焦点", async () => {
+		render(
+			<>
+				<Status portal />
+				<button type="button">外部操作</button>
+			</>,
+		);
+		open();
+		const refresh = screen.getByRole("button", { name: "刷新" });
+		expect(document.activeElement).toBe(refresh);
+		expect(trigger().closest(".v-morph")?.contains(refresh)).toBe(false);
+		fireEvent.pointerDown(refresh);
+		expect(trigger().getAttribute("aria-expanded")).toBe("true");
+		const outside = screen.getByRole("button", { name: "外部操作" });
+		fireEvent.pointerDown(outside);
+		act(() => outside.focus());
+		await waitFor(() => expect(panel()).toBeNull());
+		expect(document.activeElement).toBe(outside);
+	});
+
+	it("Portal 使用指定主题容器，并保留源作用域的运行期减弱动态", async () => {
+		const target = document.createElement("div");
+		target.dataset.theme = "consumer";
+		target.style.setProperty("--popover", "Canvas");
+		document.body.append(target);
+		try {
+			render(
+				<div data-testid="动态作用域">
+					<MorphingPopover>
+						<MorphingPopoverTrigger>状态</MorphingPopoverTrigger>
+						<MorphingPopoverContent portal container={target} aria-label="状态详情">
+							<button type="button">刷新</button>
+						</MorphingPopoverContent>
+					</MorphingPopover>
+				</div>,
+			);
+			open();
+			expect(target.contains(panel())).toBe(true);
+			const scope = screen.getByTestId("动态作用域");
+			act(() => {
+				scope.dataset.motion = "reduce";
+			});
+			await waitFor(() => expect(panel()?.closest('[data-motion="reduce"]')).not.toBeNull());
+			fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+			await waitFor(() => expect(panel()).toBeNull());
+			expect(document.activeElement).toBe(trigger());
+		} finally {
+			cleanup();
+			target.remove();
+		}
+	});
+
+	it("服务端打开 Portal 不访问 DOM，仍保留触发器的稳定面板引用", () => {
+		const html = renderToString(<Status portal defaultOpen />);
+		expect(html).toContain('aria-expanded="true"');
+		expect(html).toContain("aria-controls=");
+		expect(html).not.toContain('role="dialog"');
 	});
 
 	describe("焦点", () => {
@@ -271,11 +335,16 @@ function stubWaapi() {
 }
 
 /** `panels` 按面板的 aria-label 给出各自的尺寸，其余面板用 PANEL_BOX；`triggerBox` 是触发器的位置。 */
-function stubGeometry(panels: Record<string, DOMRect> = {}, triggerBox = TRIGGER_BOX) {
+function stubGeometry(
+	panels: Record<string, DOMRect> = {},
+	triggerBox = TRIGGER_BOX,
+	anchorBox = new DOMRect(100, 40, 180, 40),
+) {
 	vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (
 		this: HTMLElement,
 	) {
 		const slot = this.getAttribute("data-slot");
+		if (slot === "morphing-popover-anchor") return anchorBox;
 		if (slot === "morphing-popover-trigger") return triggerBox;
 		if (slot === "morphing-popover-content") {
 			return panels[this.getAttribute("aria-label") ?? ""] ?? PANEL_BOX;
@@ -300,6 +369,24 @@ describe("MorphingPopover 外形", () => {
 
 		const [expand] = waapi.shape();
 		expect(expand.keyframes.map((frame) => frame.clipPath)).toEqual([FROM_TRIGGER, FULL]);
+	});
+
+	it("Portal 仍从触发器变形展开并缩回，不以淡入替代几何动画", async () => {
+		const waapi = stubWaapi();
+		stubGeometry();
+		render(<Status portal />);
+		open();
+		expect(waapi.shape()[0].keyframes.map((frame) => frame.clipPath)).toEqual([
+			FROM_TRIGGER,
+			FULL,
+		]);
+		waapi.shape()[0].animation.finish();
+		fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+		const collapse = waapi.shape().at(-1) as Track;
+		expect(collapse.keyframes.at(-1)?.clipPath).toBe(FROM_TRIGGER);
+		act(() => collapse.animation.finish());
+		await waitFor(() => expect(panel()).toBeNull());
+		expect(document.activeElement).toBe(trigger());
 	});
 
 	it("展开只播一次：内容晚 140ms、软影晚 260ms，各走各的时间", () => {
@@ -754,5 +841,225 @@ describe("MorphingPopover 审查补充", () => {
 		expect(regrow.keyframes[0].clipPath).toBe(MID_CLIP);
 		await settle();
 		expect(panel()).not.toBeNull();
+	});
+});
+
+function CompositeStatus(props: MorphingPopoverProps) {
+	const [selected, setSelected] = useState("外观");
+	return (
+		<MorphingPopover {...props}>
+			<MorphingPopoverAnchor asChild>
+				<div data-testid="composite-anchor">
+					{["外观", "通知", "账户"].map((name) => (
+						<MorphingPopoverTrigger key={name} onClick={() => setSelected(name)}>
+							{name}
+						</MorphingPopoverTrigger>
+					))}
+				</div>
+			</MorphingPopoverAnchor>
+			<MorphingPopoverContent key={selected} aria-label={`${selected}面板`}>
+				<button type="button" onClick={() => setSelected("详情")}>
+					详情
+				</button>
+			</MorphingPopoverContent>
+		</MorphingPopover>
+	);
+}
+
+describe("MorphingPopover 整枚胶囊", () => {
+	afterEach(() => {
+		cleanup();
+		vi.restoreAllMocks();
+		vi.unstubAllGlobals();
+		Reflect.deleteProperty(Element.prototype, "animate");
+	});
+
+	it("多个按钮共享面板且 ID 唯一，服务端不生成嵌套按钮", () => {
+		const html = renderToString(<CompositeStatus defaultOpen />);
+		const doc = new DOMParser().parseFromString(html, "text/html");
+		const buttons = Array.from(doc.querySelectorAll('[data-slot="morphing-popover-trigger"]'));
+		const dialog = doc.querySelector('[role="dialog"]');
+		expect(buttons).toHaveLength(3);
+		expect(new Set(buttons.map((button) => button.id)).size).toBe(3);
+		expect(buttons.every((button) => button.getAttribute("aria-controls") === dialog?.id)).toBe(
+			true,
+		);
+		expect(doc.querySelector("button button")).toBeNull();
+		expect(
+			doc.querySelector('[data-slot="morphing-popover-anchor"]')?.hasAttribute("inert"),
+		).toBe(true);
+	});
+
+	it("受控 open 尚未接受打开请求时，整枚胶囊保持可见和可操作", () => {
+		const onOpenChange = vi.fn();
+		render(<CompositeStatus open={false} onOpenChange={onOpenChange} />);
+		fireEvent.click(screen.getByRole("button", { name: "通知" }));
+		expect(onOpenChange).toHaveBeenCalledWith(true);
+		const anchor = screen.getByTestId("composite-anchor");
+		expect(anchor.hasAttribute("inert")).toBe(false);
+		expect(anchor.hasAttribute("data-hidden")).toBe(false);
+		expect(panel()).toBeNull();
+	});
+
+	it("外形从整个 Anchor 长出并缩回，退场结束才恢复胶囊和实际触发按钮焦点", async () => {
+		const waapi = stubWaapi();
+		stubGeometry();
+		render(<CompositeStatus />);
+		const notification = screen.getByRole("button", { name: "通知" });
+		const anchor = screen.getByTestId("composite-anchor");
+		fireEvent.click(notification);
+		expect(waapi.shape()[0].keyframes[0].clipPath).toBe(
+			"inset(0px 200px 200px 0px round 20px)",
+		);
+		expect(anchor.hasAttribute("inert")).toBe(true);
+		expect(anchor.hasAttribute("data-hidden")).toBe(true);
+		fireEvent.keyDown(document, { key: "Escape" });
+		const collapse = waapi.shape().at(-1) as Track;
+		expect(collapse.keyframes.at(-1)?.clipPath).toBe("inset(0px 200px 200px 0px round 20px)");
+		expect(anchor.hasAttribute("inert")).toBe(true);
+		expect(document.activeElement).not.toBe(notification);
+		act(() => collapse.animation.finish());
+		await waitFor(() => expect(panel()).toBeNull());
+		expect(anchor.hasAttribute("inert")).toBe(false);
+		expect(anchor.hasAttribute("data-hidden")).toBe(false);
+		expect(document.activeElement).toBe(notification);
+	});
+
+	it("preventDefault 取消默认开关但不取消实际触发按钮登记", async () => {
+		function Controlled() {
+			const [open, setOpen] = useState(false);
+			return (
+				<MorphingPopover open={open} onOpenChange={setOpen}>
+					<MorphingPopoverAnchor>
+						<MorphingPopoverTrigger>外观</MorphingPopoverTrigger>
+						<MorphingPopoverTrigger asChild>
+							<button
+								type="button"
+								onClick={(event) => {
+									event.preventDefault();
+									setOpen(true);
+								}}
+							>
+								通知
+							</button>
+						</MorphingPopoverTrigger>
+						<MorphingPopoverTrigger>账户</MorphingPopoverTrigger>
+					</MorphingPopoverAnchor>
+					<MorphingPopoverContent>内容</MorphingPopoverContent>
+				</MorphingPopover>
+			);
+		}
+		render(<Controlled />);
+		const notification = screen.getByRole("button", { name: "通知" });
+		fireEvent.click(notification);
+		expect(screen.getByRole("dialog", { name: "通知" })).not.toBeNull();
+		fireEvent.keyDown(document, { key: "Escape" });
+		await waitFor(() => expect(panel()).toBeNull());
+		expect(document.activeElement).toBe(notification);
+	});
+
+	it.each([
+		"通知",
+		"账户",
+	])("inline callback ref 重组后仍以实际点击的%s命名并归还焦点", async (name) => {
+		const attached = new Map<string, HTMLButtonElement>();
+		function WithInlineRefs() {
+			const [selected, setSelected] = useState("外观");
+			return (
+				<MorphingPopover>
+					<MorphingPopoverAnchor>
+						{["外观", "通知", "账户"].map((label) => (
+							<MorphingPopoverTrigger
+								key={label}
+								ref={(node) => {
+									if (node) attached.set(label, node);
+									else attached.delete(label);
+								}}
+								onClick={() => setSelected(label)}
+							>
+								{label}
+							</MorphingPopoverTrigger>
+						))}
+					</MorphingPopoverAnchor>
+					<MorphingPopoverContent key={selected}>当前：{selected}</MorphingPopoverContent>
+				</MorphingPopover>
+			);
+		}
+		render(<WithInlineRefs />);
+		const clicked = screen.getByRole("button", { name });
+		fireEvent.click(clicked);
+		expect(attached.get(name)).toBe(clicked);
+		expect(screen.getByRole("dialog", { name }).getAttribute("aria-labelledby")).toBe(
+			clicked.id,
+		);
+		fireEvent.keyDown(document, { key: "Escape" });
+		await waitFor(() => expect(panel()).toBeNull());
+		expect(document.activeElement).toBe(clicked);
+	});
+
+	it("实际卸载触发器时解除登记，不再以已删除按钮命名面板", () => {
+		function RemovableTrigger() {
+			const [visible, setVisible] = useState(true);
+			return (
+				<MorphingPopover>
+					<MorphingPopoverAnchor>
+						<MorphingPopoverTrigger>外观</MorphingPopoverTrigger>
+						{visible && <MorphingPopoverTrigger>通知</MorphingPopoverTrigger>}
+					</MorphingPopoverAnchor>
+					<MorphingPopoverContent>
+						<button type="button" onClick={() => setVisible(false)}>
+							移除通知入口
+						</button>
+					</MorphingPopoverContent>
+				</MorphingPopover>
+			);
+		}
+		render(<RemovableTrigger />);
+		const notification = screen.getByRole("button", { name: "通知" });
+		fireEvent.click(notification);
+		expect(screen.getByRole("dialog", { name: "通知" })).not.toBeNull();
+		fireEvent.click(screen.getByRole("button", { name: "移除通知入口" }));
+		expect(notification.isConnected).toBe(false);
+		expect(screen.getByRole("dialog").getAttribute("aria-labelledby")).not.toBe(
+			notification.id,
+		);
+	});
+
+	it("减弱动态退场期间 Anchor 仍 inert，完成后不抢走外部焦点", async () => {
+		render(
+			<div data-motion="reduce">
+				<CompositeStatus />
+				<button type="button">外部</button>
+			</div>,
+		);
+		fireEvent.click(screen.getByRole("button", { name: "通知" }));
+		const outside = screen.getByRole("button", { name: "外部" });
+		act(() => outside.focus());
+		expect(screen.getByTestId("composite-anchor").hasAttribute("inert")).toBe(true);
+		await waitFor(() => expect(panel()).toBeNull());
+		expect(screen.getByTestId("composite-anchor").hasAttribute("inert")).toBe(false);
+		expect(document.activeElement).toBe(outside);
+	});
+
+	it("接力与收回打断均保持原 Anchor 隐藏，最终回到同一按钮", async () => {
+		const waapi = stubWaapi();
+		stubGeometry();
+		render(<CompositeStatus />);
+		const notification = screen.getByRole("button", { name: "通知" });
+		fireEvent.click(notification);
+		waapi.shape()[0].animation.finish();
+		fireEvent.click(screen.getByRole("button", { name: "详情" }));
+		expect(screen.getByRole("dialog", { name: "详情面板" })).not.toBeNull();
+		fireEvent.keyDown(document, { key: "Escape" });
+		stubMidFlight();
+		fireEvent.click(screen.getByRole("dialog"));
+		expect(waapi.shape().at(-1)?.keyframes[0].clipPath).toBe(MID_CLIP);
+		expect(screen.getByTestId("composite-anchor").hasAttribute("inert")).toBe(true);
+		fireEvent.keyDown(document, { key: "Escape" });
+		const collapse = waapi.shape().at(-1) as Track;
+		expect(collapse.keyframes.at(-1)?.clipPath).toBe("inset(0px 200px 200px 0px round 20px)");
+		act(() => collapse.animation.finish());
+		await waitFor(() => expect(panel()).toBeNull());
+		expect(document.activeElement).toBe(notification);
 	});
 });

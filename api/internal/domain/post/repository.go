@@ -30,10 +30,12 @@ type PostRepository interface {
 	IncrementViewAtomic(ctx context.Context, postID shared.ID, ipAddress, userAgent string) error
 	// FindArchiveYears 返回所有含已发布文章的年份（倒序、去重）。
 	// 供公开归档页生成年份索引。
-	FindArchiveYears(ctx context.Context) ([]int, error)
+	FindArchiveYears(ctx context.Context, filter BrowseFilter) ([]int, error)
 	// FindPublishedByYear 返回指定年份的全部已发布文章（按 published_at 倒序）。
 	// 供公开归档页按年懒加载，结果在应用层/前端再按月分组。
-	FindPublishedByYear(ctx context.Context, year int) ([]*Post, error)
+	FindPublishedByYear(ctx context.Context, year int, filter BrowseFilter) ([]*Post, error)
+	// FindPublishedTagCounts 按来源统计公开文章标签；同一文章对同一标签只计一次。
+	FindPublishedTagCounts(ctx context.Context, source string) ([]TagCount, error)
 
 	// --- 历史版本控制 ---
 	SaveVersion(ctx context.Context, version *PostVersion) error
@@ -70,6 +72,8 @@ type ListFilter struct {
 	Status string
 	// Tags 标签 slug 列表（AND 关系，文章须同时关联全部标签）；前台单标签浏览传单元素
 	Tags []string
+	// Source 来源：空串/all 不过滤，original 为原创，repost 为转载。
+	Source string
 	// Keyword 关键词检索（空格分词多关键词 AND，命中 title/excerpt/content_md 三列，大小写不敏感），空串 = 不过滤
 	Keyword string
 	// AuthorID 限定作者（检索自己的文章），nil = 不限作者
@@ -87,3 +91,30 @@ const (
 	// SortUpdated 检索场景：更新时间倒序（最近改过的最相关，与后台的 created_at 区分）
 	SortUpdated = "updated_at"
 )
+
+// BrowseFilter 公开文章与系列章节的浏览条件。
+type BrowseFilter struct {
+	// Tag 单个标签 slug；空串不限制标签。
+	Tag string
+	// Source 空串/all 不过滤；original 匹配 NULL/空 canonical_url，repost 匹配非空值。
+	Source string
+}
+
+func (f BrowseFilter) Validate() error {
+	switch f.Source {
+	case "", "all", "original", "repost":
+		return nil
+	default:
+		return shared.BadRequest("无效的文章来源")
+	}
+}
+
+// TagCount 的计数仅包含已发布且未软删除的文章。
+type TagCount struct {
+	// Slug 标签的稳定标识。
+	Slug string
+	// Name 标签显示名称。
+	Name string
+	// Count 去重后的公开文章数。
+	Count int64
+}

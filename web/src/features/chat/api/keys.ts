@@ -14,4 +14,5 @@ export const chatKeys = {
 	user: (username: string) => [...root, "user", username] as const,
 	contacts: (query: string) => [...root, "contacts", query] as const,
 	pushConfig: () => [...root, "push-config"] as const,
+	settings: () => [...root, "settings"] as const,
 };

@@ -5,11 +5,12 @@ import "github.com/getkin/kin-openapi/openapi3"
 // registerChatPaths 注册聊天资源、事件流和 Web Push 订阅契约。
 func registerChatPaths(t *openapi3.T) {
 	registerSchema(t, "ChatUserDTO", openapi3.Schemas{
-		"id":           reqStr("用户 ID"),
-		"username":     reqStr("用户名"),
-		"display_name": reqStr("展示名"),
-		"avatar_url":   optStr("头像地址"),
-		"is_bot":       optBool("是否为 Bot 虚拟用户；吊销凭据后仍保留身份"),
+		"id":            reqStr("用户 ID"),
+		"username":      reqStr("用户名"),
+		"display_name":  reqStr("展示名"),
+		"avatar_url":    optStr("头像地址"),
+		"is_bot":        optBool("是否为 Bot 虚拟用户；吊销凭据后仍保留身份"),
+		"is_site_owner": optBool("是否为站长（root 账号）"),
 	})
 	registerSchema(t, "ChatBotToolCallDTO", openapi3.Schemas{
 		"id":          optStr("调用方稳定标识，单条回复内唯一"),
@@ -33,6 +34,8 @@ func registerChatPaths(t *openapi3.T) {
 		"role":      reqStr("owner 或 member"),
 		"joined_at": reqStr("RFC3339 时间"),
 		"is_muted":  optBool("当前用户是否静音该会话"),
+		"online":    optBool("成员当前是否在线；隐身成员对其他人恒为 false，机器人不计在线"),
+		"can_speak": optBool("机器人成员是否被允许在本会话发言；被房主禁言为 false，真人恒为 true"),
 	})
 	registerSchema(t, "ChatMediaDTO", openapi3.Schemas{
 		"id":        reqStr("媒体 ID"),
@@ -53,6 +56,13 @@ func registerChatPaths(t *openapi3.T) {
 		"created_at":     optStr("推文创建时间；推文已删除时为空"),
 		"is_deleted":     optBool("被分享的推文是否已被物理删除"),
 	})
+	registerSchema(t, "ChatMusicShareDTO", openapi3.Schemas{
+		"track_id":    reqStr("音乐服务的歌曲 ID；发送时保存的快照"),
+		"title":       reqStr("发送时的歌名"),
+		"artists":     strArray("发送时的歌手名；无资料时为空数组"),
+		"duration_ms": optInt64("歌曲时长（毫秒）"),
+		"cover_url":   reqStr("公开专辑封面地址；无封面时为空串"),
+	}, "track_id", "title", "artists", "duration_ms", "cover_url")
 	registerSchema(t, "ChatMessageReferenceDTO", openapi3.Schemas{
 		"id":         reqStr("被引用消息 ID"),
 		"sender":     &openapi3.SchemaRef{Ref: "#/components/schemas/ChatUserDTO"},
@@ -67,11 +77,12 @@ func registerChatPaths(t *openapi3.T) {
 		"conversation_id":   reqStr("会话 ID"),
 		"sender":            &openapi3.SchemaRef{Ref: "#/components/schemas/ChatUserDTO"},
 		"bot_reply":         &openapi3.SchemaRef{Ref: "#/components/schemas/ChatBotReplyDTO"},
-		"type":              reqStr("text、image、system 或 tweet_share"),
-		"content":           optStr("文本内容或分享推文的配文"),
+		"type":              reqStr("text、image、system、tweet_share 或 music_share"),
+		"content":           optStr("文本内容或图片、推文分享、歌曲分享的可选配文"),
 		"custom_emote":      &openapi3.SchemaRef{Ref: "#/components/schemas/CustomEmojiRefMap"},
 		"media":             &openapi3.SchemaRef{Value: &openapi3.Schema{Type: &openapi3.Types{openapi3.TypeArray}, Items: &openapi3.SchemaRef{Ref: "#/components/schemas/ChatMediaDTO"}}},
 		"shared_tweet":      &openapi3.SchemaRef{Ref: "#/components/schemas/ChatSharedTweetDTO"},
+		"music_share":       optRef("发送时保存的歌曲资料；读取历史不查询音乐服务", "ChatMusicShareDTO"),
 		"reply_to":          &openapi3.SchemaRef{Ref: "#/components/schemas/ChatMessageReferenceDTO"},
 		"is_deleted":        optBool("是否已被管理员删除"),
 		"deleted_at":        optStr("删除时间"),
@@ -105,10 +116,11 @@ func registerChatPaths(t *openapi3.T) {
 		"title": reqStr("新房间名称"),
 	}, "title")
 	registerSchema(t, "ChatSendMessageRequest", openapi3.Schemas{
-		"type":            reqStr("text、image 或 tweet_share"),
-		"content":         optStr("文本消息内容或分享推文的配文"),
+		"type":            reqStr("text、image、tweet_share 或 music_share"),
+		"content":         optStr("文本消息内容或可选配文"),
 		"media_ids":       strArray("图片媒体 ID，按输入流顺序"),
 		"shared_tweet_id": optStr("分享的推文 ID"),
+		"music_track_id":  optStr("type=music_share 时必填；服务端解析歌曲资料并保存快照，歌曲不存在或音乐服务未配置时返回 400，不保存消息"),
 		"reply_to_id":     optStr("被引用消息 ID"),
 	}, "type")
 	registerSchema(t, "ChatPushSubscriptionRequest", openapi3.Schemas{
@@ -116,6 +128,10 @@ func registerChatPaths(t *openapi3.T) {
 		"keys":         &openapi3.SchemaRef{Value: &openapi3.Schema{Type: &openapi3.Types{openapi3.TypeObject}, Properties: openapi3.Schemas{"p256dh": reqStr("浏览器公钥"), "auth": reqStr("浏览器认证密钥")}}},
 		"show_preview": optBool("是否显示消息摘要"),
 	}, "endpoint", "keys")
+	registerSchema(t, "ChatBotSpeakingRequest", openapi3.Schemas{"allowed": optBool("是否允许该角色在本会话发言")})
+	registerSchema(t, "ChatBotSpeakingResponse", openapi3.Schemas{"user_id": reqStr("机器人用户 ID"), "can_speak": optBool("更新后的发言权限")})
+	registerSchema(t, "ChatSettings", openapi3.Schemas{"hide_online": optBool("为 true 时对其他成员显示为离线")})
+	registerSchema(t, "ChatSettingsRequest", openapi3.Schemas{"hide_online": optBool("是否对其他成员隐身；缺省表示不改")})
 	registerSchema(t, "ChatMuteRequest", openapi3.Schemas{"muted": optBool("是否静音当前会话")})
 	registerSchema(t, "ChatPushUnsubscribeRequest", openapi3.Schemas{"endpoint": reqStr("浏览器 Push endpoint")}, "endpoint")
 	registerSchema(t, "ChatMuteResponse", openapi3.Schemas{"conversation_id": reqStr("会话 ID"), "is_muted": optBool("静音状态")})
@@ -180,7 +196,15 @@ func registerChatPaths(t *openapi3.T) {
 		Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), pathStrParam("userId", "成员用户 ID"), csrfHeaderParam()},
 		Responses:  responses(200, messageResponse("成员已移除")),
 	})
+	patch(t, "/chat/conversations/{conversationId}/members/{userId}/speaking", &openapi3.Operation{
+		Tags: []string{"聊天"}, Summary: "设置角色发言权限", Description: "仅房主可调用，目标必须是机器人成员；被禁言的角色收不到本会话事件，也不能在其中发消息。", Security: secure,
+		Parameters:  openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), pathStrParam("userId", "机器人成员用户 ID"), csrfHeaderParam()},
+		RequestBody: jsonBody("ChatBotSpeakingRequest", true, "发言权限"),
+		Responses:   responses(200, dataResponse("ChatBotSpeakingResponse", "更新后的发言权限", 200)),
+	})
 	del(t, "/chat/conversations/{conversationId}/members/me", &openapi3.Operation{Tags: []string{"聊天"}, Summary: "离开会话", Security: secure, Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), csrfHeaderParam()}, Responses: responses(204, noContentResponse("已离开会话"))})
+	get(t, "/chat/settings", &openapi3.Operation{Tags: []string{"聊天通知"}, Summary: "读取聊天设置", Security: secure, Responses: responses(200, dataResponse("ChatSettings", "当前用户的聊天设置", 200))})
+	patch(t, "/chat/settings", &openapi3.Operation{Tags: []string{"聊天通知"}, Summary: "更新聊天设置", Security: secure, Parameters: openapi3.Parameters{csrfHeaderParam()}, RequestBody: jsonBody("ChatSettingsRequest", true, "聊天设置"), Responses: responses(200, dataResponse("ChatSettings", "更新后的聊天设置", 200))})
 	patch(t, "/chat/conversations/{conversationId}/mute", &openapi3.Operation{Tags: []string{"聊天通知"}, Summary: "静音会话", Security: secure, Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), csrfHeaderParam()}, RequestBody: jsonBody("ChatMuteRequest", true, "通知静音设置"), Responses: responses(200, dataResponse("ChatMuteResponse", "静音状态", 200))})
 	post(t, "/chat/conversations/{conversationId}/read", &openapi3.Operation{Tags: []string{"聊天"}, Summary: "标记会话已读", Security: secure, Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), csrfHeaderParam()}, RequestBody: jsonBody("ChatReadRequest", true, "阅读位置"), Responses: responses(200, dataResponse("ChatUnreadCount", "会话未读数", 200))})
 	post(t, "/chat/conversations/{conversationId}/typing", &openapi3.Operation{Tags: []string{"聊天"}, Summary: "上报输入状态", Description: "瞬态事件，不参与断线补发。", Security: secure, Parameters: openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), csrfHeaderParam()}, RequestBody: jsonBody("ChatTypingRequest", true, "输入状态"), Responses: responses(204, noContentResponse("输入状态已上报"))})

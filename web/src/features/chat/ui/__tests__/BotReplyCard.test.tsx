@@ -71,9 +71,11 @@ it("工具调用默认收起，展开后展示名称、参数、结果、错误�
 	const button = screen.getByRole("button", { name: /工具调用/ });
 	expect(button.getAttribute("aria-expanded")).toBe("false");
 	expect(button.textContent).toContain("2");
-	expect(screen.queryByText("web_search")).toBeNull();
+	const panel = document.getElementById(button.getAttribute("aria-controls") ?? "");
+	expect(panel?.hasAttribute("inert")).toBe(true);
 	fireEvent.click(button);
 	expect(button.getAttribute("aria-expanded")).toBe("true");
+	expect(panel?.hasAttribute("inert")).toBe(false);
 	await waitFor(() => expect(screen.getByText("web_search").tagName).toBe("CODE"));
 	expect(screen.getByText('{"q":"violet"}')).toBeTruthy();
 	expect(screen.getByText("三条结果")).toBeTruthy();
@@ -181,7 +183,7 @@ it("按 Bot 配置默认展开思考，手动收起后不被后续快照重新�
 		created_at: new Date().toISOString(),
 	};
 	const { rerender, unmount } = render(<BotReplyCard message={message} viewerID="viewer-1" />);
-	expect(screen.getByText("BOT")).toBeTruthy();
+	expect(screen.getByText("角色")).toBeTruthy();
 	expect(screen.getByRole("status").textContent).toContain("正在回复");
 	expect(screen.getByText("答案").tagName).toBe("STRONG");
 	await waitFor(() =>

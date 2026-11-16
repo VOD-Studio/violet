@@ -40,16 +40,20 @@ export function Cover({
 }: CoverProps) {
 	const [pickerOpen, setPickerOpen] = useState(false);
 	const [cropSrc, setCropSrc] = useState<string | undefined>(undefined);
+	const [cropOpen, setCropOpen] = useState(false);
+	const [cropSession, setCropSession] = useState(0);
 
 	const handlePick = (files: MediaFile[]) => {
 		if (files[0]) {
 			setCropSrc(files[0].url);
+			setCropSession((value) => value + 1);
+			setCropOpen(true);
 		}
 	};
 
 	const handleCropConfirm = (url: string) => {
 		onChange(url);
-		setCropSrc(undefined);
+		setCropOpen(false);
 	};
 
 	return (
@@ -97,12 +101,11 @@ export function Cover({
 				onConfirm={handlePick}
 			/>
 			<CropSelectDialog
+				key={cropSession}
 				src={cropSrc ?? ""}
 				aspect={16 / 9}
-				open={!!cropSrc}
-				onOpenChange={(v) => {
-					if (!v) setCropSrc(undefined);
-				}}
+				open={cropOpen}
+				onOpenChange={setCropOpen}
 				onConfirm={handleCropConfirm}
 			/>
 		</div>

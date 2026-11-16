@@ -4,6 +4,7 @@ import { CommentConsumer } from "./comment.js";
 import { ReactionConsumer } from "./reaction.js";
 import { EmojiPickerConsumer } from "./emoji-picker.js";
 import { SortableConsumer } from "./sortable.js";
+import { TextMarkConsumer } from "./text-mark.js";
 import { Button, Checkbox, DocumentScrollbar, Dropdown, DropdownContent, DropdownGroup, DropdownItem, DropdownTrigger, ImagePixelReveal, Field, Input, Label, ScrollArea, SearchInput, Segmented, UploadTile, type PixelRevealVariant } from "@violet/ui";
 import { buttonVariants } from "@violet/ui/variants";
 import checkboxCss from "@violet/ui/components/checkbox.css?raw";
@@ -16,10 +17,11 @@ import { LinkCard as LeafLinkCard } from "@violet/ui/link-card";
 import { Avatar, AvatarGroup, Badge, BadgeAnchor, Card, CardContent, CardFooter, CardFrame, CardFrameBody, CardFrameExcerpt, CardFrameImage, CardFrameMeta, CardFrameTitle, CardHeader, CardTitle, Count, Dot, Kbd, KbdSeparator, Radio, RadioGroup, Separator, Skeleton, Switch, Tabs, TabsContent, TabsCount, TabsList, TabsTrigger, Tag, TagToggle, ToggleGroup, ToggleGroupItem } from "@violet/ui";
 import { Avatar as LeafAvatar } from "@violet/ui/avatar";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, HoverCard, HoverCardContent, HoverCardTrigger, Popover, PopoverContent, PopoverTrigger, Toaster, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@violet/ui";
-import { MorphingPopover, MorphingPopoverContent, MorphingPopoverTrigger } from "@violet/ui";
+import { MorphingPopover, MorphingPopoverAnchor, MorphingPopoverContent, MorphingPopoverTrigger } from "@violet/ui";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@violet/ui";
 import { Select as LeafSelect, SelectContent as LeafSelectContent, SelectItem as LeafSelectItem, SelectTrigger as LeafSelectTrigger, SelectValue as LeafSelectValue } from "@violet/ui/select";
 import { CommandList, ConfirmDialog, Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, Drawer, DrawerBody, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, Sheet, SheetBody, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@violet/ui";
+import { CommandList as LeafCommandList } from "@violet/ui/command";
 import { Cascader, Combobox, TagInput, TreeSelect, type CascaderOption, type ComboboxOption, type TreeSelectOption } from "@violet/ui";
 import { Cascader as LeafCascader } from "@violet/ui/cascader";
 import { Combobox as LeafCombobox } from "@violet/ui/combobox";
@@ -101,6 +103,14 @@ function ScrollAreaPreview() {
 				<div style={{ width: "140%", height: "40rem", padding: "1rem" }}>
 					元素内的滚动内容
 				</div>
+			</ScrollArea>
+			<ScrollArea id="vertical-scroll" aria-label="纵向会话摘要" className="h-32 w-80">
+				<button type="button" style={{ display: "flex", width: "100%", gap: 8, padding: 12 }}>
+					<span style={{ minWidth: 0, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+						{"长会话摘要应在滚动区域内省略。".repeat(40)}
+					</span>
+					<time style={{ flexShrink: 0 }}>11:07</time>
+				</button>
 			</ScrollArea>
 			<div style={{ height: "200vh" }} />
 			<p id="scroll-area-end">文档滚动终点</p>
@@ -625,6 +635,10 @@ function DisplayPreview() {
 
 function OverlayPreview() {
 	const [log, setLog] = useState<string[]>([]);
+	const [commandOpen, setCommandOpen] = useState(false);
+	const [commandQuery, setCommandQuery] = useState("设计");
+	const [commandLeaf, setCommandLeaf] = useState(false);
+	const Command = commandLeaf ? LeafCommandList : CommandList;
 	const note = (entry: string) => setLog((items) => [...items, entry]);
 	return <main>
 		<h1>浮层</h1>
@@ -647,7 +661,24 @@ function OverlayPreview() {
 					<DrawerContent aria-describedby={undefined}><DrawerHeader><DrawerTitle>分享</DrawerTitle></DrawerHeader><DrawerBody>复制链接</DrawerBody></DrawerContent>
 				</Drawer>
 				<ConfirmDialog open={false} onOpenChange={() => {}} title="永久删除？" confirmLabel="永久删除" onConfirm={() => note("confirm")} />
-				<CommandList open={false} onOpenChange={() => {}} items={[]} groups={[]} query="" onQueryChange={() => {}} />
+				<Button id="overlay-command-trigger" onClick={() => { setCommandLeaf(false); setCommandOpen(true); }}>搜索命令</Button>
+				<Button id="overlay-command-leaf-trigger" onClick={() => { setCommandLeaf(true); setCommandOpen(true); }}>叶入口搜索命令</Button>
+				<Command
+					open={commandOpen}
+					onOpenChange={setCommandOpen}
+					query={commandQuery}
+					onQueryChange={setCommandQuery}
+					groups={[{ id: "fulltext", label: "全文" }]}
+					limit={12}
+					items={commandQuery === "" || commandQuery === "设计" ? Array.from({ length: 12 }, (_, index) => ({
+						id: `command-${index}`,
+						label: `文章 ${index + 1}`,
+						group: "fulltext",
+						filter: false,
+						description: `${"纯文本摘要前置说明。".repeat(10)}已定设计 <img src=x onerror=alert(1)>。`,
+						onSelect: ({ newTab }) => note(`command:${index}:${newTab}`),
+					})) : []}
+				/>
 				<Popover onOpenChange={(open) => note(`popover:${open}`)}>
 					<PopoverTrigger asChild><Button id="overlay-popover-trigger" variant="outline">标签</Button></PopoverTrigger>
 					<PopoverContent><input id="overlay-popover-input" aria-label="找标签" /></PopoverContent>
@@ -655,6 +686,16 @@ function OverlayPreview() {
 				<MorphingPopover onOpenChange={(open) => note(`morph:${open}`)}>
 					<MorphingPopoverTrigger id="overlay-morph-trigger" className="display-field">此刻</MorphingPopoverTrigger>
 					<MorphingPopoverContent aria-label="此刻" ghost="此刻"><input id="overlay-morph-input" aria-label="想说点什么" /></MorphingPopoverContent>
+				</MorphingPopover>
+				<MorphingPopover onOpenChange={(open) => note(`morph-composite:${open}`)}>
+					<MorphingPopoverAnchor asChild>
+						<div id="overlay-morph-anchor" className="display-field">
+							<MorphingPopoverTrigger>外观</MorphingPopoverTrigger>
+							<MorphingPopoverTrigger id="overlay-morph-notification">通知</MorphingPopoverTrigger>
+							<MorphingPopoverTrigger>账户</MorphingPopoverTrigger>
+						</div>
+					</MorphingPopoverAnchor>
+					<MorphingPopoverContent aria-label="胶囊面板"><input aria-label="胶囊面板输入" /></MorphingPopoverContent>
 				</MorphingPopover>
 				<HoverCard>
 					<HoverCardTrigger asChild><a id="overlay-hover-trigger" href="#linjian">@林间</a></HoverCardTrigger>
@@ -693,6 +734,7 @@ const previews = new Map<string, ComponentType>([
 	["reaction", ReactionConsumer],
 	["emoji-picker", EmojiPickerConsumer],
 	["sortable", SortableConsumer],
+	["text-mark", TextMarkConsumer],
 	["annotation", AnnotationConsumer],
 	["mention", MentionConsumer],
 	["quote-card", QuoteCardPreview],

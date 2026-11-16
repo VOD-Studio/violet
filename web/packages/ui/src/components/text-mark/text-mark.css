@@ -1,0 +1,27 @@
+@layer components {
+	.v-text-mark {
+		padding-inline: 0.08em;
+		border-radius: 0.35em 0.12em 0.3em 0.15em;
+		background-color: transparent;
+		background-image: linear-gradient(
+			to bottom,
+			transparent 20%,
+			color-mix(in oklab, var(--decoration) 20%, transparent) 24%,
+			color-mix(in oklab, var(--decoration) 32%, transparent) 42%,
+			color-mix(in oklab, var(--decoration) 28%, transparent) 78%,
+			transparent 84%
+		);
+		color: inherit;
+		-webkit-box-decoration-break: clone;
+		box-decoration-break: clone;
+	}
+
+	@media (forced-colors: active) {
+		.v-text-mark {
+			background-image: none;
+			text-decoration: underline;
+			text-decoration-thickness: 2px;
+			text-underline-offset: 0.15em;
+		}
+	}
+}

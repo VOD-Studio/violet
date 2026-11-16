@@ -16,10 +16,6 @@
 		{
 			"pattern": "packages/ui/src/components/color-picker/**",
 			"reason": "取色器：色相渐变、预设色与取色测试数据本身就是原始颜色"
-		},
-		{
-			"pattern": "src/features/ui-showcase/ui/exhibits/color-picker.tsx",
-			"reason": "取色器展品的演示取值"
 		}
 	]
 }

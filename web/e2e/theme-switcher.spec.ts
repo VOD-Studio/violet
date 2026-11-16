@@ -46,7 +46,10 @@ test("切换主题后即时生效，刷新与再次访问后保持", async ({ br
 		page
 			.locator("header")
 			.first()
-			.getByRole("button", { name: `季节与外观：${THEME_PRESETS[target].name}` }),
+			.getByRole("button", {
+				name: `季节与外观：${THEME_PRESETS[target].name}`,
+				includeHidden: true,
+			}),
 	).toBeAttached();
 
 	await page.reload({ waitUntil: "load" });

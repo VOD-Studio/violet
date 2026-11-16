@@ -62,6 +62,7 @@
 @import "./components/table/table.css";
 @import "./components/tabs/tabs.css";
 @import "./components/tag-input/tag-input.css";
+@import "./components/text-mark/text-mark.css";
 @import "./components/textarea/textarea.css";
 @import "./components/toggle-group/toggle-group.css";
 @import "./components/tooltip/tooltip.css";

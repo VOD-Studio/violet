@@ -16,13 +16,14 @@ export function PresenceDevicesCard({ onIssue }: { onIssue: () => void }) {
 	const { data: devices, isLoading, isError } = usePresenceDevices();
 	const revoke = useRevokePresenceDevice();
 	const [revoking, setRevoking] = useState<AdminPresenceDevice | null>(null);
+	const [revokeOpen, setRevokeOpen] = useState(false);
 
 	const confirmRevoke = async () => {
 		if (!revoking) return;
 		try {
 			await revoke.mutateAsync(revoking.id);
 			toast.success(`已撤销「${revoking.display_name}」`);
-			setRevoking(null);
+			setRevokeOpen(false);
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : "撤销失败");
 		}
@@ -94,7 +95,10 @@ export function PresenceDevicesCard({ onIssue }: { onIssue: () => void }) {
 									<Button
 										variant="ghost"
 										size="sm"
-										onClick={() => setRevoking(device)}
+										onClick={() => {
+											setRevoking(device);
+											setRevokeOpen(true);
+										}}
 										className="shrink-0 text-destructive hover:text-destructive"
 									>
 										撤销
@@ -107,8 +111,8 @@ export function PresenceDevicesCard({ onIssue }: { onIssue: () => void }) {
 			)}
 
 			<ConfirmDialog
-				open={revoking !== null}
-				onOpenChange={(open) => !open && setRevoking(null)}
+				open={revokeOpen}
+				onOpenChange={setRevokeOpen}
 				title={`撤销「${revoking?.display_name ?? ""}」？`}
 				description="该设备会立即断开，顶栏上它的状态随之消失。要重新上报，需要签发新凭证。"
 				confirmLabel="撤销"

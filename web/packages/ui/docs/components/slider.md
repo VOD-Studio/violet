@@ -87,4 +87,4 @@ React 导出 `Slider`、`SliderProps`、`SliderMark`。普通 CSS 消费先加�
 
 `src/components/slider/__tests__/slider.test.tsx` 覆盖连续值和小数键盘、区间固定身份与上下界、不等距刻度与非 step 对齐吸附、点击后触屏拖动、受控请求/回写、FormData/外部表单/reset 取消、禁用与只读、事件取消、每钮命名/错误描述、数字输入共享状态。`sliderExhibit` 独立展示单值、范围、刻度、配数字输入和禁用，并提供真实聚焦、只读、错误和整组禁用状态。
 
-本单元编写阶段未运行检查、测试或浏览器验收；集成者需执行包检查、类型、行为测试、构建、真实 tarball consumer 与陈列室视觉/交互验收。
+本单元编写阶段未运行检查、测试或浏览器验收；集成者需执行包检查、类型、行为测试、构建、真实 tarball consumer 与实际消费页视觉/交互验收。

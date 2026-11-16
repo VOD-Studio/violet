@@ -40,11 +40,12 @@ func registerBotPaths(t *openapi3.T) {
 		"height": optInt("图片高度"), "size": optInt64("文件字节数"),
 	}, "id", "url", "mime_type", "width", "height", "size")
 	registerSchema(t, "BotSendMessageRequest", openapi3.Schemas{
-		"type":        strEnum("消息类型；省略时为 text", "text", "image"),
-		"content":     optStr("文本内容或图片说明，≤10000 字符；status=pending 时须为空"),
-		"media_ids":   strArray("图片文件 ID；type=image 时必填"),
-		"reply_to_id": optStr("引用的同会话消息 ID，缺省表示不引用"),
-		"status":      optStr("pending 创建可恢复的文本生成回复；图片消息必须省略"),
+		"type":           strEnum("消息类型；省略时为 text", "text", "image", "music_share"),
+		"content":        optStr("文本内容或图片、歌曲分享的可选配文，≤10000 字符；status=pending 时须为空"),
+		"media_ids":      strArray("图片文件 ID；type=image 时必填"),
+		"music_track_id": optStr("type=music_share 时必填；服务端解析并保存歌曲快照，歌曲不存在或音乐服务未配置时返回 400，不保存消息"),
+		"reply_to_id":    optStr("引用的同会话消息 ID，缺省表示不引用"),
+		"status":         optStr("pending 创建可恢复的文本生成回复；非文本消息必须省略"),
 	})
 	registerSchema(t, "BotEditMessageRequest", openapi3.Schemas{
 		"content":    optStr("累计正文，整体替换原文"),
@@ -120,7 +121,7 @@ func registerBotPaths(t *openapi3.T) {
 
 	post(t, "/chat/bot/conversations/{conversationId}/messages", &openapi3.Operation{
 		Tags: []string{"聊天 Bot"}, Summary: "发送消息",
-		Description: "支持文本与图片消息。图片须先上传并用 media_ids 引用，且不支持 pending 状态。Idempotency-Key 必填。",
+		Description: "支持文本、图片与歌曲分享消息。图片须先上传并用 media_ids 引用；歌曲分享只提交 music_track_id 与可选配文。非文本消息不支持 pending 状态。Idempotency-Key 必填。",
 		Security:    secure,
 		Parameters:  openapi3.Parameters{pathStrParam("conversationId", "会话 ID"), idempotencyHeaderParam()},
 		RequestBody: jsonBody("BotSendMessageRequest", true, "消息参数"),

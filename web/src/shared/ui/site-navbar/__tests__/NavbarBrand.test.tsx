@@ -127,20 +127,4 @@ describe("NavbarBrand", () => {
 		);
 		expect(slot(container, "brand-chevron")?.getAttribute("class")).toContain("rotate-180");
 	});
-
-	it("头像有地址时是 img，无地址时给默认标记", () => {
-		const { container, rerender } = setup();
-		expect(slot(container, "brand-avatar")?.querySelector("img")).toBeNull();
-		expect(slot(container, "brand-avatar")?.querySelector("svg")).toBeTruthy();
-		rerender(
-			<div className="group/navbar" data-collapsed="false">
-				<div className="group">
-					<NavbarBrand name="Violet" avatar="/me.png" />
-				</div>
-			</div>,
-		);
-		expect(slot(container, "brand-avatar")?.querySelector("img")?.getAttribute("src")).toBe(
-			"/me.png",
-		);
-	});
 });

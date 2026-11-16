@@ -30,7 +30,7 @@ export function CascadeCard({ post, index }: { post: Post; index: number }) {
 				<SpotlightCard
 					className={cn(
 						"overflow-hidden rounded-2xl border border-edge-hairline bg-card",
-						"transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-black/30",
+						"transition-all duration-300 hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-black/30",
 					)}
 				>
 					{hasCover ? (

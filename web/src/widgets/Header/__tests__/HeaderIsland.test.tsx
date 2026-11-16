@@ -31,9 +31,18 @@ function renderAt(path: string, presence?: PresenceReceipt, authenticated = fals
 	const empty = () => null;
 	const router = createRouter({
 		routeTree: root.addChildren(
-			["/", "/blog", "/blog/archive", "/notes", "/tweets", "/galleries", "/lab", "/chat"].map(
-				(p) => createRoute({ getParentRoute: () => root, path: p, component: empty }),
-			),
+			[
+				"/",
+				"/blog",
+				"/blog/archive",
+				"/blog/series",
+				"/blog/series/$slug",
+				"/notes",
+				"/tweets",
+				"/galleries",
+				"/lab",
+				"/chat",
+			].map((p) => createRoute({ getParentRoute: () => root, path: p, component: empty })),
 		),
 		history: createMemoryHistory({ initialEntries: [path] }),
 	});
@@ -90,6 +99,20 @@ describe("HeaderIsland", () => {
 		await waitFor(() => expect(screen.queryByText("Violet · 浏览本站")).toBeNull());
 	});
 
+	it("切换归档路径后收起面板并更新当前入口", async () => {
+		renderAt("/blog");
+		fireEvent.click(await screen.findByRole("button", { name: "展开全部导航" }));
+		const archive = await screen.findByRole("link", { name: "归档" });
+		expect(screen.getByRole("link", { name: "文章" }).getAttribute("href")).toBe("/blog");
+		expect(screen.getByRole("link", { name: "系列" }).getAttribute("href")).toBe(
+			"/blog/series",
+		);
+		expect(archive.getAttribute("href")).toBe("/blog/archive");
+		fireEvent.click(archive);
+		await waitFor(() => expect(screen.queryByText("Violet · 浏览本站")).toBeNull());
+		await screen.findByRole("button", { name: "归档，展开全部导航" });
+	});
+
 	it.each([
 		[true, 1],
 		[false, 0],
@@ -104,7 +127,9 @@ describe("HeaderIsland", () => {
 
 	it.each([
 		["/lab", "实验室"],
-		["/blog/archive", "归档"],
+		["/blog/archive?source=original&tag=go&page=2", "归档"],
+		["/blog/series?source=repost&tag=go&page=2", "系列"],
+		["/blog/series/go-book", "系列"],
 	])("在 %s 用当前菜单替代更多入口，并仍可展开全部导航", async (path, label) => {
 		renderAt(path);
 		const more = await screen.findByRole("button", { name: `${label}，展开全部导航` });

@@ -6,6 +6,8 @@ import "blog-api/internal/domain/shared"
 const (
 	// MaxReactionsPerMessagePerUser 单个用户对同一消息可添加的不同表情上限。
 	MaxReactionsPerMessagePerUser = 3
+	// MaxReactionKindsPerMessage 所有用户对同一消息可添加的不同表情总上限。
+	MaxReactionKindsPerMessage = 11
 )
 
 // RecentUser 是聚合反应中可展示的最近回应者。
@@ -34,5 +36,5 @@ type AggregatedReaction struct {
 	RecentUsers []RecentUser `json:"recent_users"`
 }
 
-// ErrReactionLimitReached 当前用户在同一消息上的表情种类已达上限。
-var ErrReactionLimitReached = shared.Conflict("单条消息最多添加 3 种表情")
+// ErrMessageReactionLimitReached 添加反应后整条消息的表情种类将超过上限。
+var ErrMessageReactionLimitReached = shared.Conflict("每条消息最多 11 种不同回应")

@@ -1,6 +1,8 @@
+import { fetchSiteIdentity } from "@entities/site-identity/api/client";
+import type { SiteIdentity } from "@entities/site-identity/model/types";
 import { createFileRoute } from "@tanstack/react-router";
-import { fetchPublications, fetchSiteIdentity } from "@widgets/HomeExperience/api/client";
-import type { HomePublicationItem, SiteIdentity } from "@widgets/HomeExperience/types";
+import { fetchPublications } from "@widgets/HomeExperience/api/client";
+import type { HomePublicationItem } from "@widgets/HomeExperience/types";
 
 const RSS_ITEM_LIMIT = 20;
 

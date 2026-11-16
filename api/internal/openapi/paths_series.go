@@ -71,11 +71,11 @@ func registerSeriesPaths(t *openapi3.T) {
 	})
 
 	registerSchema(t, "SeriesChapterContextDTO", openapi3.Schemas{
-		"series": optRef("所属书（slug/title）", "SeriesContextSeries"),
-		"chapter_no":       optInt("当前章节号"),
-		"total_chapters":   optInt("总章节数"),
-		"prev_chapter":     optRef("上一章（首章为 null）", "SeriesContextChapter"),
-		"next_chapter":     optRef("下一章（末章为 null）", "SeriesContextChapter"),
+		"series":         optRef("所属书（slug/title）", "SeriesContextSeries"),
+		"chapter_no":     optInt("当前章节号"),
+		"total_chapters": optInt("总章节数"),
+		"prev_chapter":   optRef("上一章（首章为 null）", "SeriesContextChapter"),
+		"next_chapter":   optRef("下一章（末章为 null）", "SeriesContextChapter"),
 	})
 
 	registerSchema(t, "SeriesContextSeries", openapi3.Schemas{
@@ -139,10 +139,11 @@ func registerSeriesPaths(t *openapi3.T) {
 	get(t, "/series", &openapi3.Operation{
 		Tags:        []string{"系列书"},
 		Summary:     "书架（已发布系列书列表）",
-		Description: "仅 published 的书（offset 分页）。",
-		Parameters:  openapi3.Parameters{pageParam(), limitParam(100)},
+		Description: "仅 published 的书（offset 分页，created_at DESC,id DESC）。有 tag/source 筛选时，须含至少一篇同时匹配的已发布且未软删除章节；分页与总数在数据库完整集合上计算。chapter_count 始终为整书已发布未软删除章节数，无筛选仍返回空书。",
+		Parameters:  openapi3.Parameters{pageParam(), limitParam(100), queryStrParam("tag", "章节标签 slug"), postSourceParam()},
 		Responses: responses(
 			200, dataArrayResponse("SeriesDTO", "书架列表", 200, true),
+			400, errorResponse("无效的文章来源"),
 		),
 	})
 

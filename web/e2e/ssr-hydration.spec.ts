@@ -61,7 +61,7 @@ const SCENARIOS: HydrationScenario[] = [
 	},
 	{
 		name: "系列目录",
-		path: "/series/contract-series",
+		path: "/blog/series/contract-series",
 		apiPaths: ["/api/v1/series/contract-series"],
 		selector: "main",
 		text: "系列目录在首访接管期间保持可读。",

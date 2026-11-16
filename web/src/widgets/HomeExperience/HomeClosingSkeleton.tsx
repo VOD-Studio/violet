@@ -1,6 +1,6 @@
 import { Skeleton } from "@violet/ui";
 
-/** 首页探索导航专属骨架屏（对齐诗意双核与底部自然消融层）。 */
+/** 首页寄语、印记与订阅入口的加载占位。 */
 export function HomeClosingSkeleton() {
 	return (
 		<section className="relative overflow-hidden pt-28 pb-16 sm:pt-32 sm:pb-20 lg:pt-36 lg:pb-24">

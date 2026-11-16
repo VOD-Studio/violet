@@ -19,6 +19,7 @@ export function EmojiPickerPanel({
 	activeGroup,
 	onGroupChange,
 	onSelect,
+	allowSelected = false,
 	scrollTop,
 	onScrollTopChange,
 	status = "ready",
@@ -54,6 +55,7 @@ export function EmojiPickerPanel({
 		groupId,
 		cells,
 		cellsByKey,
+		allowSelected,
 		status,
 		scrollTop,
 		onScrollTopChange,
@@ -117,6 +119,7 @@ export function EmojiPickerPanel({
 										cells={cells}
 										row={row}
 										activeKey={activeKey}
+										allowSelected={allowSelected}
 										optionId={optionId}
 										optionRefs={navigation.options}
 										onHighlight={navigation.highlight}

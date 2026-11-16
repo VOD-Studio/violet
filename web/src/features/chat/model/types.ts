@@ -2,7 +2,7 @@ import type { CommentEmoteRef } from "@entities/comment/model/types";
 import type { AggregatedReaction } from "@entities/reaction/model/types";
 
 export type ConversationKind = "direct" | "room";
-export type MessageType = "text" | "image" | "system" | "tweet_share";
+export type MessageType = "text" | "image" | "system" | "tweet_share" | "music_share";
 export type MemberRole = "owner" | "member";
 
 export interface ChatUser {
@@ -11,6 +11,8 @@ export interface ChatUser {
 	display_name: string;
 	avatar_url: string;
 	is_bot?: boolean;
+	/** 站长（root 账号），成员列表中标出。 */
+	is_site_owner?: boolean;
 }
 
 export interface BotToolCall {
@@ -40,6 +42,10 @@ export interface ChatMember {
 	role: MemberRole;
 	joined_at: string;
 	is_muted: boolean;
+	/** 是否在线；隐身成员对其他人恒为 false，机器人不计在线。 */
+	online: boolean;
+	/** 机器人成员是否被允许在本会话发言；被房主禁言为 false，真人恒为 true。 */
+	can_speak: boolean;
 }
 
 export interface BotCommand {
@@ -54,6 +60,8 @@ export interface BotCommandCatalog {
 	bot_user_id: string;
 	username: string;
 	name: string;
+	/** 角色简介，未填为空串。 */
+	description: string;
 	revision: string;
 	commands: BotCommand[];
 }
@@ -86,6 +94,16 @@ export interface SharedTweet {
 	quoted_tweet?: QuotedTweet | null;
 }
 
+/** 发送时保存的歌曲资料，历史展示不查询音乐服务。 */
+export interface MusicShare {
+	track_id: string;
+	title: string;
+	artists: string[];
+	/** 毫秒。 */
+	duration_ms: number;
+	cover_url: string;
+}
+
 export interface ChatMessageReference {
 	id: string;
 	sender: ChatUser;
@@ -111,6 +129,7 @@ export interface ChatMessage {
 	/** 图片消息的媒体列表，按输入流中的占位符顺序；非图片消息缺省 */
 	media?: ChatMedia[];
 	shared_tweet?: SharedTweet;
+	music_share?: MusicShare;
 	reply_to?: ChatMessageReference;
 	reactions: AggregatedReaction[];
 	/** 已读回执；仅自己发送的非系统消息附带（见 CONTEXT.md「已读回执」词条） */
@@ -159,6 +178,7 @@ export interface SendMessageInput {
 	content?: string;
 	media_ids?: string[];
 	shared_tweet_id?: string;
+	music_track_id?: string;
 	reply_to_id?: string;
 }
 
@@ -179,12 +199,25 @@ export interface ChatEvent {
 		| "message.deleted"
 		| "message.reaction.updated"
 		| "read.advanced"
-		| "typing.updated";
+		| "typing.updated"
+		| "presence.updated";
 	version: number;
 	occurred_at: string;
 	data: Record<string, unknown>;
 	/** 新消息正文中自定义表情的解析结果；关系按当前事件接收者计算。 */
 	custom_emote?: Record<string, CommentEmoteRef>;
+}
+
+/** 当前用户的聊天设置。 */
+export interface ChatSettings {
+	/** 为 true 时对其他成员显示为离线。 */
+	hide_online: boolean;
+}
+
+/** presence.updated 事件的 data 载荷；不持久化，仅供实时推送消费。 */
+export interface ChatPresenceEventData {
+	user_id: string;
+	online: boolean;
 }
 
 /** typing.updated 事件的 data 载荷；不持久化，仅供实时推送消费。 */

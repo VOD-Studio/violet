@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
 	AVATAR_CHARMS,
 	AVATAR_FRAMES,
+	BASIC_BUBBLE_THEMES,
 	BUBBLE_THEMES,
 	EMPTY_APPEARANCE,
 } from "../model/appearance-catalog";
@@ -32,6 +33,17 @@ describe("chat appearance contract", () => {
 			expect(normalizeAppearance({ bubble_theme_id: item.id }).bubble_theme_id).toBe(item.id);
 		for (const item of CHAT_BADGES)
 			expect(normalizeAppearance({ badge_ids: [item.id] }).badge_ids).toEqual([item.id]);
+	});
+	it("接受四种基础气泡且保留用户已保存的贴图主题", () => {
+		for (const theme of [...BASIC_BUBBLE_THEMES, ...BUBBLE_THEMES]) {
+			const saved = {
+				...EMPTY_APPEARANCE,
+				avatar_frame_id: "moon-cloud",
+				bubble_theme_id: theme.id,
+				revision: 7,
+			};
+			expect(parseAppearanceState(saved)).toEqual(saved);
+		}
 	});
 	it("佩戴列表去重、截断到三枚并丢弃目录外项", () => {
 		expect(

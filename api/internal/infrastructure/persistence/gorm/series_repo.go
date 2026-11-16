@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
+	domainpost "blog-api/internal/domain/post"
 	domainseries "blog-api/internal/domain/series"
 	domainshared "blog-api/internal/domain/shared"
 	"blog-api/internal/infrastructure/persistence/gorm/model"
@@ -119,9 +120,13 @@ func (r *SeriesRepository) FindBySlug(ctx context.Context, slug string) (*domain
 }
 
 // FindPublishedPage 公开书架分页：仅 published，created_at DESC。
-func (r *SeriesRepository) FindPublishedPage(ctx context.Context, q domainshared.PageQuery) (domainshared.PageResult[*domainseries.Series], error) {
+func (r *SeriesRepository) FindPublishedPage(ctx context.Context, filter domainpost.BrowseFilter, q domainshared.PageQuery) (domainshared.PageResult[*domainseries.Series], error) {
 	q = q.Normalize()
 	query := r.db.WithContext(ctx).Model(&model.Series{}).Where("status = ?", domainseries.StatusPublished)
+	if filter.Tag != "" || (filter.Source != "" && filter.Source != "all") {
+		chapters := publishedPostsQuery(r.db.WithContext(ctx), filter).Select("posts.series_id")
+		query = query.Where("series.id IN (?)", chapters)
+	}
 	var pos []model.Series
 	total, err := countAndFind(query.Order("created_at DESC, id DESC"), q, &pos, "系列书")
 	if err != nil {

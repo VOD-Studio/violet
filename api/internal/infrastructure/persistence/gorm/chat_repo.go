@@ -209,6 +209,39 @@ func (r *ChatRepository) TransferOwnership(ctx context.Context, conversationID, 
 	})
 }
 
+// SetMemberSilenced 更新成员是否被房主禁言。
+func (r *ChatRepository) SetMemberSilenced(ctx context.Context, conversationID, userID domainshared.ID, silenced bool) error {
+	result := r.db.WithContext(ctx).Model(&model.ChatConversationMember{}).
+		Where("conversation_id = ? AND user_id = ? AND left_at IS NULL", conversationID.UUID(), userID.UUID()).
+		Update("silenced", silenced)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return domainchat.ErrMemberNotFound
+	}
+	return nil
+}
+
+// ListCoMemberIDs 列出与用户同在任一会话中的其他有效成员。
+func (r *ChatRepository) ListCoMemberIDs(ctx context.Context, userID domainshared.ID) ([]domainshared.ID, error) {
+	var ids []uuid.UUID
+	err := r.db.WithContext(ctx).Model(&model.ChatConversationMember{}).
+		Distinct("user_id").
+		Where("left_at IS NULL AND user_id <> ? AND conversation_id IN (?)", userID.UUID(),
+			r.db.Model(&model.ChatConversationMember{}).Select("conversation_id").
+				Where("user_id = ? AND left_at IS NULL", userID.UUID())).
+		Pluck("user_id", &ids).Error
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domainshared.ID, 0, len(ids))
+	for _, id := range ids {
+		out = append(out, domainshared.IDFromUUID(id))
+	}
+	return out, nil
+}
+
 // SetMemberMuted 更新当前成员的会话通知静音状态。
 func (r *ChatRepository) SetMemberMuted(ctx context.Context, conversationID, userID domainshared.ID, muted bool) error {
 	result := r.db.WithContext(ctx).Model(&model.ChatConversationMember{}).
@@ -583,12 +616,14 @@ func conversationToDomain(po model.ChatConversation) *domainchat.Conversation {
 func memberToPO(m *domainchat.Member) *model.ChatConversationMember {
 	return &model.ChatConversationMember{
 		ConversationID: m.ConversationID().UUID(), UserID: m.UserID().UUID(), Role: string(m.Role()),
-		JoinedAt: m.JoinedAt(), LeftAt: m.LeftAt(), IsMuted: m.IsMuted(),
+		JoinedAt: m.JoinedAt(), LeftAt: m.LeftAt(), IsMuted: m.IsMuted(), Silenced: m.IsSilenced(),
 	}
 }
 
 func memberToDomain(po model.ChatConversationMember) *domainchat.Member {
-	return domainchat.ReconstructMember(domainshared.IDFromUUID(po.ConversationID), domainshared.IDFromUUID(po.UserID), domainchat.MemberRole(po.Role), po.JoinedAt, po.LeftAt, po.IsMuted)
+	member := domainchat.ReconstructMember(domainshared.IDFromUUID(po.ConversationID), domainshared.IDFromUUID(po.UserID), domainchat.MemberRole(po.Role), po.JoinedAt, po.LeftAt, po.IsMuted)
+	member.SetSilenced(po.Silenced)
+	return member
 }
 
 func messageToPO(m *domainchat.Message) *model.ChatMessage {
@@ -610,6 +645,9 @@ func messageToPO(m *domainchat.Message) *model.ChatMessage {
 		MessageType: string(m.Type()), Content: m.Content(), SharedTweetID: sharedTweetID, ReplyToID: replyToID, IdempotencyKey: m.IdempotencyKey(),
 		DeletedAt: m.DeletedAt(), DeletedBy: deletedBy, EditedAt: m.EditedAt(), CreatedAt: m.CreatedAt(), UpdatedAt: m.UpdatedAt,
 		BotToolCalls: datatypes.JSON([]byte("[]")),
+	}
+	if song := m.MusicShare(); song != nil {
+		po.MusicShare = &model.ChatMusicShare{TrackID: song.TrackID, Title: song.Title, Artists: song.Artists, DurationMS: song.DurationMS, CoverURL: song.CoverURL}
 	}
 	if reply := m.BotReply(); reply != nil {
 		status := string(reply.Status())
@@ -651,7 +689,11 @@ func messageToDomain(po model.ChatMessage, mediaIDs []domainshared.ID) *domainch
 	if po.BotStatus != nil && po.BotUpdatedAt != nil {
 		botReply = domainchat.ReconstructBotReply(domainchat.BotReplyStatus(*po.BotStatus), po.BotThinking, botToolCallsFromJSON(po.BotToolCalls), po.BotRevision, *po.BotUpdatedAt)
 	}
-	return domainchat.ReconstructMessage(domainshared.IDFromUUID(po.ID), domainshared.IDFromUUID(po.ConversationID), domainshared.IDFromUUID(po.SenderID), domainchat.MessageType(po.MessageType), po.Content, mediaIDs, sharedTweetID, replyToID, po.IdempotencyKey, po.DeletedAt, deletedBy, po.EditedAt, botReply, po.CreatedAt, po.UpdatedAt)
+	var musicShare *domainchat.MusicShare
+	if song := po.MusicShare; song != nil {
+		musicShare = &domainchat.MusicShare{TrackID: song.TrackID, Title: song.Title, Artists: song.Artists, DurationMS: song.DurationMS, CoverURL: song.CoverURL}
+	}
+	return domainchat.ReconstructMessage(domainshared.IDFromUUID(po.ID), domainshared.IDFromUUID(po.ConversationID), domainshared.IDFromUUID(po.SenderID), domainchat.MessageType(po.MessageType), po.Content, mediaIDs, sharedTweetID, replyToID, po.IdempotencyKey, po.DeletedAt, deletedBy, po.EditedAt, botReply, musicShare, po.CreatedAt, po.UpdatedAt)
 }
 
 // botToolCallsToJSON 序列化工具调用快照；空列表落库为 '[]'。

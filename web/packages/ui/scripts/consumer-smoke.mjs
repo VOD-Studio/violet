@@ -73,6 +73,7 @@ try {
 		["code-block-types.tsx", "code-block-types.tsx"],
 		["code-block-ssr.tsx", "code-block-ssr.tsx"],
 		["icons.tsx", "src/icons.tsx"],
+		["text-mark.tsx", "src/text-mark.tsx"],
 		["index.html", "index.html"],
 		["reaction.tsx", "src/reaction.tsx"],
 		["reaction-ssr.tsx", "reaction-ssr.tsx"],

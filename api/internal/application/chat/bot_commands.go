@@ -11,11 +11,13 @@ import (
 
 // BotCommandDTO 是当前会话可见的单个 bot 目录。
 type BotCommandDTO struct {
-	BotUserID string                  `json:"bot_user_id"`
-	Username  string                  `json:"username"`
-	Name      string                  `json:"name"`
-	Revision  string                  `json:"revision"`
-	Commands  []domainchat.BotCommand `json:"commands"`
+	BotUserID string `json:"bot_user_id"`
+	Username  string `json:"username"`
+	Name      string `json:"name"`
+	// Description 角色简介，未填为空串。
+	Description string                  `json:"description"`
+	Revision    string                  `json:"revision"`
+	Commands    []domainchat.BotCommand `json:"commands"`
 }
 
 // BotCommandsDTO 返回当前会话中已启用的 bot。
@@ -98,7 +100,7 @@ func (s *BotCommandService) ListBotCommands(ctx context.Context, userID, convers
 		}
 		result.Bots = append(result.Bots, BotCommandDTO{
 			BotUserID: bot.UserID().String(), Username: usernames[bot.UserID()],
-			Name: bot.Name(), Revision: revision, Commands: commands,
+			Name: bot.Name(), Description: bot.Description(), Revision: revision, Commands: commands,
 		})
 	}
 	sort.Slice(result.Bots, func(i, j int) bool {

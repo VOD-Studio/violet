@@ -1,49 +1,63 @@
+import { Avatar, Card } from "@violet/ui";
+import { cn } from "cn";
 import type { ChatAppearance } from "../../model/appearance";
+import type { ChatBackground } from "../../model/appearance-background";
 import type { ChatUser } from "../../model/types";
 import { BubbleShell } from "../bubble-shell";
 import { AppearanceBadgeStrip } from "./AppearanceBadgeStrip";
 import { AvatarDecoration } from "./AvatarDecoration";
 import styles from "./ChatAppearanceEditor.module.css";
+import { chatBackgroundClassName } from "./useChatBackground";
 
+/** 草稿即时预览使用真实气泡,不会发布尚未保存的外观。 */
 export interface ChatAppearancePreviewProps {
-	/** 未保存的草稿;预览期间不上传任何数据。 */
 	appearance: ChatAppearance;
-	/** 用户既有头像与昵称;预览不会改动用户本体。 */
+	background: ChatBackground;
 	user: ChatUser;
 }
 
-export function ChatAppearancePreview({ appearance, user }: ChatAppearancePreviewProps) {
+export function ChatAppearancePreview({
+	appearance,
+	background,
+	user,
+}: ChatAppearancePreviewProps) {
 	const label = user.display_name || user.username;
-
 	return (
-		<aside aria-label="未保存的聊天外观预览" className={styles.stageShell}>
-			<div className={styles.stage}>
-				<div className={styles.previewRow}>
-					<div className={styles.previewAvatar}>
-						<AvatarDecoration
-							frameId={appearance.avatar_frame_id}
-							charmId={appearance.avatar_charm_id}
-						>
-							{user.avatar_url ? (
-								<img className={styles.face} src={user.avatar_url} alt="" />
-							) : (
-								<span className={styles.face} aria-hidden="true">
-									{label.slice(0, 1).toUpperCase()}
-								</span>
-							)}
-						</AvatarDecoration>
-					</div>
-					<div className={styles.previewMessage}>
-						<span className={styles.identityName}>
-							{label}
-							<AppearanceBadgeStrip badgeIDs={appearance.badge_ids} />
-						</span>
-						<BubbleShell mine={false} themeId={appearance.bubble_theme_id}>
-							周末见，到了告诉我一声。
-						</BubbleShell>
-					</div>
+		<Card
+			role="complementary"
+			aria-label="未保存的聊天外观预览"
+			className={cn(styles.stage, chatBackgroundClassName(background))}
+		>
+			<span className={styles.sectionTitle}>预览</span>
+			<div className={styles.previewRow}>
+				<Avatar name="小林" size={32} />
+				<div className={styles.previewMessage}>
+					<BubbleShell mine={false}>新皮肤好看吗</BubbleShell>
+					<time className={styles.previewTime} dateTime="09:02">
+						09:02
+					</time>
 				</div>
 			</div>
-		</aside>
+			<div className={cn(styles.previewRow, styles.previewMine)}>
+				<div className={styles.previewMessage}>
+					<span className={styles.identityName}>
+						{label}
+						<AppearanceBadgeStrip badgeIDs={appearance.badge_ids} />
+					</span>
+					<BubbleShell mine themeId={appearance.bubble_theme_id}>
+						刚换的
+					</BubbleShell>
+					<time className={styles.previewTime} dateTime="09:03">
+						09:03
+					</time>
+				</div>
+				<AvatarDecoration
+					frameId={appearance.avatar_frame_id}
+					charmId={appearance.avatar_charm_id}
+				>
+					<Avatar src={user.avatar_url || undefined} name={label} size={32} />
+				</AvatarDecoration>
+			</div>
+		</Card>
 	);
 }

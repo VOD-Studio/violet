@@ -1,6 +1,8 @@
+import { cn } from "cn";
 import type { CSSProperties, ReactNode } from "react";
 import type { BubbleThemeAsset } from "../../model/appearance";
 import styles from "./AppearanceBubbleSurface.module.css";
+import surfaceStyles from "./BubbleSurface.module.css";
 import { DecorativeImage } from "./DecorativeImage";
 
 export interface AppearanceBubbleSurfaceProps {
@@ -29,8 +31,9 @@ export function AppearanceBubbleSurface({
 	} as CSSProperties;
 	return (
 		<div
-			className={styles.bubble}
+			className={cn(surfaceStyles.surface, styles.bubble)}
 			style={style}
+			data-chat-bubble=""
 			data-chat-bubble-theme={theme.id}
 			data-side={mine ? "outgoing" : "incoming"}
 			data-compact={compact ? "true" : undefined}

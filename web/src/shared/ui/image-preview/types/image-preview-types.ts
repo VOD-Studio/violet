@@ -35,7 +35,7 @@ export interface ImagePreviewProps {
 	 * 挂载点，省略时挂到 `document.body` 并铺满视口。
 	 *
 	 * @remarks 传入容器时预览铺满该容器、按容器尺寸适配图片，不锁页面滚动也不启用模态焦点限制；
-	 * 陈列室据此把打开态收进展品舞台，容器需要是定位元素。
+	 * 容器需要是定位元素。
 	 */
 	container?: HTMLElement | null;
 }

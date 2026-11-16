@@ -52,4 +52,4 @@ Tailwind v4 宿主在 Tailwind 后导入 `@violet/ui/styles.css`。React 与纯 
 
 组件 CSS 自行约束长文字、窄容器、明暗主题与两行截断。卡片自身不裁剪焦点环；截断只发生在不可聚焦的文字或图片部件。圆角不超过 16px，不使用阴影、缩放或位移动效，减弱动态时取消颜色过渡。宿主不要把链接放进没有焦点留白的裁剪层。
 
-独立 tarball consumer 的 `?preview=link-card` 提供 logo、封面、坏图、无图、内容更新、聚焦、明暗和窄屏场景；站点 `/ui?open=link-card` 陈列同一组图片状态。
+独立 tarball consumer 的 `?preview=link-card` 提供 logo、封面、坏图、无图、内容更新、聚焦、明暗和窄屏场景；实际消费页另行验收图片降级与业务数据更新。

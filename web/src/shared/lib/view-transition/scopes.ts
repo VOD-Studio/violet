@@ -9,7 +9,7 @@
 export const BLOG_SCOPE = ["/blog", "/blog/$slug"] as const;
 
 /** 系列书架书封 ↔ 系列详情书封。 */
-export const SERIES_SCOPE = ["/series", "/series/$slug"] as const;
+export const SERIES_SCOPE = ["/blog/series", "/blog/series/$slug"] as const;
 
 /** 图集卡片封面 ↔ 图集详情封面。 */
 export const GALLERY_SCOPE = ["/galleries", "/galleries/$slug"] as const;

@@ -1,5 +1,5 @@
-// 目录 ID 集合由 RUA 素材目录核对生成;与前端 web/src/features/chat/model/appearance-catalog.ts
-// 及 web/public/chat-appearance 素材一一对应,不可单边增删。
+// 目录 ID 与前端 web/src/features/chat/model/appearance-catalog.ts 保持同步。
+// basic-* 为纯样式基础款,其它 ID 对应 web/public/chat-appearance 的 RUA 素材。
 
 package chatappearance
 
@@ -69,6 +69,9 @@ var badges = map[string]struct{}{
 }
 
 var bubbles = map[string]struct{}{
+	"basic-ink":     {},
+	"basic-paper":   {},
+	"basic-washi":   {},
 	"game-night":    {},
 	"ivory-lace":    {},
 	"library-page":  {},

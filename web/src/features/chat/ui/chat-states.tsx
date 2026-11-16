@@ -5,18 +5,18 @@
 import { Button, iconProps } from "@violet/ui";
 
 import { cn } from "cn";
-import { Image as ImageIcon, MessageCircle, Plus } from "lucide-react";
+import { MessageCircle, Plus } from "lucide-react";
 
 export function EmptyConversation({ onCreate }: { onCreate: () => void }) {
 	return (
 		<div className="flex flex-1 items-center justify-center p-8">
 			<div className="max-w-sm text-center">
-				<div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-secondary text-muted-foreground">
-					<MessageCircle className="size-5" />
+				<div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-secondary text-muted-foreground">
+					<MessageCircle className="size-7" />
 				</div>
-				<h2 className="mt-4 text-base font-semibold text-foreground">选择一个会话</h2>
-				<p className="mt-1.5 text-sm leading-6 text-muted-foreground">
-					从左侧选择私聊或群聊，或直接新建一个对话。
+				<h2 className="mt-5 text-xl font-semibold text-foreground">开始一段对话</h2>
+				<p className="mt-2 text-sm leading-6 text-muted-foreground">
+					选择左侧会话继续聊天，或与朋友开启新的对话。
 				</p>
 				<div className="mt-5 flex justify-center">
 					<Button onClick={onCreate} size="sm">
@@ -82,10 +82,10 @@ export function MessageSkeleton() {
 
 export function MessageEmpty() {
 	return (
-		<div className="rounded-2xl border border-dashed border-border px-6 py-10 text-center">
-			<ImageIcon className="mx-auto size-5 text-muted-foreground" />
-			<p className="mt-2.5 text-sm font-medium text-foreground">这是新的会话</p>
-			<p className="mt-1 text-xs text-muted-foreground">发送第一条消息或图片，开始对话。</p>
+		<div className="px-6 py-8 text-center">
+			<MessageCircle className="mx-auto size-6 text-muted-foreground" />
+			<p className="mt-3 text-sm font-medium text-foreground">还没有消息</p>
+			<p className="mt-1 text-sm text-muted-foreground">发一条消息，开始对话吧。</p>
 		</div>
 	);
 }

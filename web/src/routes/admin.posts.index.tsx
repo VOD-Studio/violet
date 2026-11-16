@@ -110,6 +110,8 @@ function AdminPostsPage() {
 	const [deleting, setDeleting] = useState<AdminPostListItem | null>(null);
 	// 需二次确认的批量操作（delete / hard_delete）；其余操作直接执行
 	const [pendingBulk, setPendingBulk] = useState<PostBatchAction | null>(null);
+	const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+	const [bulkDeleteIds, setBulkDeleteIds] = useState<string[]>([]);
 
 	const canCreate = useHasPermission("post:create");
 	const { data: me } = useMe({ enabled: true });
@@ -154,7 +156,6 @@ function AdminPostsPage() {
 			onSuccess: () => {
 				toast.success(status === "trashed" ? "文章已彻底删除" : "文章已移至回收站");
 				setDeleteOpen(false);
-				setDeleting(null);
 			},
 			onError: (err) => toast.error(err.message),
 		});
@@ -177,14 +178,14 @@ function AdminPostsPage() {
 
 	// 二次确认后执行的批量删除 / 彻底删除
 	const confirmBulk = () => {
-		if (!pendingBulk || selectedIds.size === 0) return;
+		if (!pendingBulk || bulkDeleteIds.length === 0) return;
 		batchMut.mutate(
-			{ ids: [...selectedIds], action: pendingBulk },
+			{ ids: bulkDeleteIds, action: pendingBulk },
 			{
 				onSuccess: (res) => {
 					toast.success(`已${BATCH_ACTION_LABEL[pendingBulk]} ${res.affected} 篇文章`);
 					setSelectedIds(new Set());
-					setPendingBulk(null);
+					setBulkDeleteOpen(false);
 				},
 				onError: (err) => toast.error(err.message),
 			},
@@ -364,7 +365,11 @@ function AdminPostsPage() {
 							<Button
 								variant="destructive"
 								size="sm"
-								onClick={() => setPendingBulk("hard_delete")}
+								onClick={() => {
+									setPendingBulk("hard_delete");
+									setBulkDeleteIds([...selectedIds]);
+									setBulkDeleteOpen(true);
+								}}
 								disabled={batchMut.isPending}
 							>
 								<Trash2 {...iconProps(14)} />
@@ -412,7 +417,11 @@ function AdminPostsPage() {
 							<Button
 								variant="destructive"
 								size="sm"
-								onClick={() => setPendingBulk("delete")}
+								onClick={() => {
+									setPendingBulk("delete");
+									setBulkDeleteIds([...selectedIds]);
+									setBulkDeleteOpen(true);
+								}}
 								disabled={batchMut.isPending}
 							>
 								<Trash2 {...iconProps(14)} />
@@ -445,14 +454,14 @@ function AdminPostsPage() {
 				loading={status === "trashed" ? hardDeletePost.isPending : deletePost.isPending}
 			/>
 			<ConfirmDialog
-				open={pendingBulk !== null}
-				onOpenChange={(open) => !open && setPendingBulk(null)}
+				open={bulkDeleteOpen}
+				onOpenChange={setBulkDeleteOpen}
 				onConfirm={confirmBulk}
 				title={pendingBulk === "hard_delete" ? "确认彻底删除" : "确认删除"}
 				description={
 					pendingBulk === "hard_delete"
-						? `确定要彻底删除选中的 ${selectedIds.size} 篇文章吗？此操作无法恢复！`
-						: `确定要删除选中的 ${selectedIds.size} 篇文章吗？文章将移至回收站，后续可恢复。`
+						? `确定要彻底删除选中的 ${bulkDeleteIds.length} 篇文章吗？此操作无法恢复！`
+						: `确定要删除选中的 ${bulkDeleteIds.length} 篇文章吗？文章将移至回收站，后续可恢复。`
 				}
 				confirmLabel={pendingBulk === "hard_delete" ? "彻底删除" : "删除"}
 				loading={batchMut.isPending}

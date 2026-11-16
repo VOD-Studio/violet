@@ -44,6 +44,8 @@ const (
 	MessageSystem MessageType = "system"
 	// MessageTweetShare 推文分享消息（分享到聊天，见 CONTEXT.md「分享到聊天」词条）。
 	MessageTweetShare MessageType = "tweet_share"
+	// MessageMusicShare 保存发送时的歌曲资料快照。
+	MessageMusicShare MessageType = "music_share"
 )
 
 // ChatEventType 聊天事件类型。
@@ -64,9 +66,12 @@ const (
 	EventMessageReactionUpdated ChatEventType = "message.reaction.updated"
 	// EventMessageUpdated 消息被发送者编辑事件。
 	EventMessageUpdated ChatEventType = "message.updated"
-	// EventTypingUpdated 输入状态变化事件。不持久化、不参与 SSE 断线补发——
-	// 是聊天域内唯一纯内存实时推送的事件类型（见 CONTEXT.md「输入状态」词条）。
+	// EventTypingUpdated 输入状态变化事件。不持久化、不参与 SSE 断线补发，
+	// 与在线状态事件同属纯内存实时推送（见 CONTEXT.md「输入状态」词条）。
 	EventTypingUpdated ChatEventType = "typing.updated"
+	// EventPresenceUpdated 成员在线状态变化事件。与输入状态一样不持久化、不参与断线补发：
+	// 在线是瞬态事实，客户端重连后以成员列表对账。
+	EventPresenceUpdated ChatEventType = "presence.updated"
 	// EventReadPositionAdvanced 成员阅读位置推进事件，是已读回执的实时通道
 	//（见 CONTEXT.md「已读回执」词条）。
 	EventReadPositionAdvanced ChatEventType = "read.advanced"
@@ -213,6 +218,8 @@ type Member struct {
 	leftAt *time.Time
 	// muted 是否静音该会话的系统通知。
 	muted bool
+	// silenced 是否被房主禁言；只对机器人成员有意义，被禁言的机器人既收不到该会话的事件，也不能在其中发消息。
+	silenced bool
 }
 
 // NewMember 创建成员。
@@ -261,6 +268,12 @@ func (m *Member) LeftAt() *time.Time { return m.leftAt }
 // IsActive 判断成员是否仍在会话中。
 func (m *Member) IsActive() bool { return m.leftAt == nil }
 
+// IsSilenced 判断成员是否被房主禁言。
+func (m *Member) IsSilenced() bool { return m.silenced }
+
+// SetSilenced 设置成员是否被房主禁言。
+func (m *Member) SetSilenced(silenced bool) { m.silenced = silenced }
+
 // SetMuted 设置当前成员的系统通知静音状态。
 func (m *Member) SetMuted(muted bool) { m.muted = muted }
 
@@ -274,7 +287,7 @@ type Message struct {
 	conversationID shared.ID
 	// senderID 发送者 ID，创建后不可变。
 	senderID shared.ID
-	// messageType 消息类型：text、image、system 或 tweet_share。
+	// messageType 消息载体类型。
 	messageType MessageType
 	// content 文本内容；图片消息可选携带说明文字（caption），系统消息不为空。
 	content string
@@ -282,6 +295,8 @@ type Message struct {
 	mediaIDs []shared.ID
 	// sharedTweetID 分享消息引用的推文 ID；不建外键，推文物理删除后仍保留（与 tweets.quote_of 同构）。
 	sharedTweetID *shared.ID
+	// musicShare 歌曲发送时的资料快照；读取历史时不查询音乐服务。
+	musicShare *MusicShare
 	// replyToID 被引用的同会话文本或图片消息 ID；nil 表示普通消息。
 	replyToID *shared.ID
 	// idempotencyKey 客户端发送幂等键。
@@ -377,6 +392,27 @@ func NewTweetShareMessage(conversationID, senderID, tweetID shared.ID, caption, 
 	return newMessage(conversationID, senderID, MessageTweetShare, caption, nil, &tweetID, replyToID, idempotencyKey, now), nil
 }
 
+func NewMusicShareMessage(conversationID, senderID shared.ID, song MusicShare, caption, idempotencyKey string, now time.Time, replyToID *shared.ID) (*Message, error) {
+	caption = strings.TrimSpace(caption)
+	song.TrackID = strings.TrimSpace(song.TrackID)
+	song.Title = strings.TrimSpace(song.Title)
+	if conversationID.IsZero() || senderID.IsZero() || song.TrackID == "" || song.Title == "" || song.DurationMS < 0 {
+		return nil, shared.BadRequest("歌曲分享参数不完整")
+	}
+	if len([]rune(caption)) > MaxMessageContentLength {
+		return nil, shared.BadRequest("分享消息配文过长")
+	}
+	if err := validateIdempotencyKey(idempotencyKey); err != nil {
+		return nil, err
+	}
+	if err := validateReplyToID(replyToID); err != nil {
+		return nil, err
+	}
+	m := newMessage(conversationID, senderID, MessageMusicShare, caption, nil, nil, replyToID, idempotencyKey, now)
+	m.musicShare = &song
+	return m, nil
+}
+
 func newMessage(conversationID, senderID shared.ID, messageType MessageType, content string, mediaIDs []shared.ID, sharedTweetID, replyToID *shared.ID, idempotencyKey string, now time.Time) *Message {
 	m := &Message{
 		conversationID: conversationID, senderID: senderID, messageType: messageType,
@@ -423,11 +459,11 @@ func normalizeMediaIDs(mediaIDs []shared.ID) ([]shared.ID, error) {
 }
 
 // ReconstructMessage 从持久化数据重建消息。
-func ReconstructMessage(id, conversationID, senderID shared.ID, messageType MessageType, content string, mediaIDs []shared.ID, sharedTweetID, replyToID *shared.ID, idempotencyKey string, deletedAt *time.Time, deletedBy *shared.ID, editedAt *time.Time, botReply *BotReply, createdAt, updatedAt time.Time) *Message {
+func ReconstructMessage(id, conversationID, senderID shared.ID, messageType MessageType, content string, mediaIDs []shared.ID, sharedTweetID, replyToID *shared.ID, idempotencyKey string, deletedAt *time.Time, deletedBy *shared.ID, editedAt *time.Time, botReply *BotReply, musicShare *MusicShare, createdAt, updatedAt time.Time) *Message {
 	m := &Message{
 		conversationID: conversationID, senderID: senderID, messageType: messageType,
 		content: content, mediaIDs: mediaIDs, sharedTweetID: sharedTweetID, replyToID: replyToID, idempotencyKey: idempotencyKey,
-		deletedAt: deletedAt, deletedBy: deletedBy, editedAt: editedAt, botReply: botReply,
+		deletedAt: deletedAt, deletedBy: deletedBy, editedAt: editedAt, botReply: botReply, musicShare: musicShare,
 		Timestamps: shared.Timestamps{CreatedAt: createdAt, UpdatedAt: updatedAt},
 	}
 	m.SetID(id)
@@ -475,7 +511,7 @@ func (m *Message) Edit(content string, mediaIDs []shared.ID, now time.Time) erro
 			return err
 		}
 		mediaIDs = unique
-	case MessageTweetShare:
+	case MessageTweetShare, MessageMusicShare:
 		if len([]rune(content)) > MaxMessageContentLength {
 			return shared.BadRequest("分享消息配文过长")
 		}
@@ -522,10 +558,10 @@ func (m *Message) Type() MessageType { return m.messageType }
 // Content 返回文本内容。
 func (m *Message) Content() string { return m.content }
 
-// HasTextContent 判断该消息类型是否会携带展示性文本（text/image 的可选 caption/tweet_share 的可选配文）；
+// HasTextContent 判断消息是否携带正文或可选配文；
 // system 消息始终有 content 但走独立展示路径，不计入此判定。
 func (m *Message) HasTextContent() bool {
-	return m.messageType == MessageText || m.messageType == MessageImage || m.messageType == MessageTweetShare
+	return m.messageType == MessageText || m.messageType == MessageImage || m.messageType == MessageTweetShare || m.messageType == MessageMusicShare
 }
 
 // MediaIDs 返回图片媒体 ID 列表（按输入流顺序）；非图片消息为空。
@@ -533,6 +569,8 @@ func (m *Message) MediaIDs() []shared.ID { return m.mediaIDs }
 
 // SharedTweetID 返回分享消息引用的推文 ID。
 func (m *Message) SharedTweetID() *shared.ID { return m.sharedTweetID }
+
+func (m *Message) MusicShare() *MusicShare { return m.musicShare }
 
 // ReplyToID 返回被引用的消息 ID。
 func (m *Message) ReplyToID() *shared.ID { return m.replyToID }

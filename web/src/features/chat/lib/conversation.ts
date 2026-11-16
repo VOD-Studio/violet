@@ -35,6 +35,9 @@ export function conversationTargetUser(
 
 export function messagePreview(message: ChatMessage) {
 	if (message.is_deleted) return "消息已删除";
+	if (message.type === "music_share") {
+		return "分享了一首歌曲";
+	}
 	if (message.type === "image")
 		return stripPlaceholdersForPreview(message.content ?? "").trim() || "发送了一张图片";
 	if (message.type === "tweet_share")

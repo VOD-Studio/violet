@@ -567,22 +567,20 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 
 				{/* 右侧栏：桌面 grid 并排；移动端通过工具栏「设置」侧滑抽屉打开 */}
 				{!(zenMode && sidebarCollapsed) && (
-					<>
-						<div className="hidden overflow-y-auto lg:block">
-							<PostEditorSidebar control={control} register={register} />
-						</div>
-						<Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
-							<SheetContent className="lg:hidden" aria-describedby={undefined}>
-								<SheetHeader>
-									<SheetTitle>文章设置</SheetTitle>
-								</SheetHeader>
-								<SheetBody>
-									<PostEditorSidebar control={control} register={register} />
-								</SheetBody>
-							</SheetContent>
-						</Sheet>
-					</>
+					<div className="hidden overflow-y-auto lg:block">
+						<PostEditorSidebar control={control} register={register} />
+					</div>
 				)}
+				<Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
+					<SheetContent className="lg:hidden" aria-describedby={undefined}>
+						<SheetHeader>
+							<SheetTitle>文章设置</SheetTitle>
+						</SheetHeader>
+						<SheetBody>
+							<PostEditorSidebar control={control} register={register} />
+						</SheetBody>
+					</SheetContent>
+				</Sheet>
 			</div>
 
 			{/* 插入正文图片选择器 */}

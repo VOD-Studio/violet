@@ -7,6 +7,17 @@
 
 import type { AvatarUser } from "@shared/lib/avatar-user";
 
+/** 依据文章 canonical URL 区分原创与转载。 */
+export type PostSource = "original" | "repost";
+
+/** 公开文章、系列候选与归档共用的筛选条件。 */
+export interface PostBrowseFilter {
+	/** 单个标签 slug，不是展示名称。 */
+	tag?: string;
+	/** 省略时包含全部来源。 */
+	source?: PostSource;
+}
+
 /**
  * Post - 文章摘要，首页列表用
  *
@@ -31,6 +42,8 @@ export interface Post {
 	tags: string[];
 	/** 是否精选 */
 	is_featured: boolean;
+	/** 转载源 URL；省略或空串表示原创。 */
+	canonical_url?: string;
 	/** 作者信息，后端按 author_id join 填充，缺失时省略 */
 	author?: AvatarUser;
 	/** 协同者列表（编辑过但非所有者），按首次编辑时间排序，后端从版本历史衍生，缺失时省略 */

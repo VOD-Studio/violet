@@ -37,6 +37,16 @@ export function LinkConfirmDialog() {
 
 	const [password, setPassword] = useState("");
 	const [error, setError] = useState("");
+	const [previousPayload, setPreviousPayload] = useState(payload);
+	const [displayPayload, setDisplayPayload] = useState(
+		payload
+			? {
+					provider: payload.provider,
+					email: payload.email,
+					hasPassword: payload.hasPassword,
+				}
+			: null,
+	);
 
 	const open = payload !== null;
 
@@ -45,8 +55,19 @@ export function LinkConfirmDialog() {
 		setError("");
 	};
 
+	if (payload !== previousPayload) {
+		setPreviousPayload(payload);
+		if (payload) {
+			setDisplayPayload({
+				provider: payload.provider,
+				email: payload.email,
+				hasPassword: payload.hasPassword,
+			});
+			reset();
+		}
+	}
+
 	const handleClose = () => {
-		reset();
 		closeConfirm();
 	};
 
@@ -61,7 +82,6 @@ export function LinkConfirmDialog() {
 			{
 				onSuccess: () => {
 					toast.success("绑定成功，已登录");
-					reset();
 					closeConfirm();
 					// 若从登录弹窗发起，一并收起（GitHub 回调页无登录弹窗，close 幂等）
 					closeLogin();
@@ -97,13 +117,13 @@ export function LinkConfirmDialog() {
 			}}
 			title="该邮箱已注册账号"
 			description={
-				payload
-					? `输入账号密码确认绑定 ${payload.provider}，绑定后可使用 ${payload.provider} 直接登录`
+				displayPayload
+					? `输入账号密码确认绑定 ${displayPayload.provider}，绑定后可使用 ${displayPayload.provider} 直接登录`
 					: ""
 			}
 			size="sm"
 			footer={
-				payload?.hasPassword ? (
+				displayPayload?.hasPassword ? (
 					<>
 						<Button
 							type="button"
@@ -124,11 +144,11 @@ export function LinkConfirmDialog() {
 				) : undefined
 			}
 		>
-			{payload?.hasPassword ? (
+			{displayPayload?.hasPassword ? (
 				<form id="link-confirm-form" onSubmit={handleSubmit} className="space-y-4">
 					<div className="space-y-2">
 						<Label htmlFor="link-confirm-email">账号邮箱</Label>
-						<Input id="link-confirm-email" value={payload.email} disabled />
+						<Input id="link-confirm-email" value={displayPayload.email} disabled />
 					</div>
 					<div className="space-y-2">
 						<Label htmlFor="link-confirm-password">密码</Label>
@@ -147,7 +167,7 @@ export function LinkConfirmDialog() {
 			) : (
 				<div className="space-y-4">
 					<p className="text-sm text-muted-foreground">
-						账号 {payload?.email} 未设置密码，无法在此确认绑定。
+						账号 {displayPayload?.email} 未设置密码，无法在此确认绑定。
 					</p>
 					<Button
 						variant="outline"

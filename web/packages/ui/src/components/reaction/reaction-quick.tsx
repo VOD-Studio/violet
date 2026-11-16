@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "../tooltip";
 interface ReactionQuickProps {
 	items: readonly EmojiPickerItem[];
 	selected: ReadonlySet<string>;
+	allowSelected: boolean;
 	limited: boolean;
 	disabled: boolean;
 	container: HTMLDivElement | null;
@@ -17,6 +18,7 @@ interface ReactionQuickProps {
 export function ReactionQuick({
 	items,
 	selected,
+	allowSelected,
 	limited,
 	disabled,
 	container,
@@ -62,7 +64,9 @@ export function ReactionQuick({
 				{items.map((item) => {
 					const isSelected = selected.has(item.id) || Boolean(item.selected);
 					const unavailable =
-						disabled || limited || isSelected || Boolean(item.disabledReason);
+						disabled ||
+						Boolean(item.disabledReason) ||
+						(isSelected ? !allowSelected : limited);
 					const label = isSelected ? `${item.name}，已回应` : item.name;
 					return (
 						<Tooltip key={item.id}>

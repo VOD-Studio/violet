@@ -2,6 +2,7 @@ import type { ChatAppearance, ChatAppearanceState } from "../model/appearance";
 import { MAX_EQUIPPED_BADGES } from "../model/appearance";
 import {
 	BADGE_BY_ID,
+	BASIC_BUBBLE_BY_ID,
 	BUBBLE_BY_ID,
 	CHARM_BY_ID,
 	EMPTY_APPEARANCE,
@@ -33,7 +34,9 @@ export function appearanceBatches(ids: readonly string[]): string[][] {
 
 /** 未知的目录 ID 各自独立兜底,含主题下架后遗留的过期偏好。 */
 export function normalizeAppearance(value: unknown): ChatAppearance {
-	if (!value || typeof value !== "object") return { ...EMPTY_APPEARANCE };
+	if (!value || typeof value !== "object") {
+		return { ...EMPTY_APPEARANCE };
+	}
 	const input = value as Record<string, unknown>;
 	const known = (key: string, lookup: ReadonlyMap<string, unknown>): string => {
 		const id = input[key];
@@ -52,7 +55,11 @@ export function normalizeAppearance(value: unknown): ChatAppearance {
 	return {
 		avatar_frame_id: known("avatar_frame_id", FRAME_BY_ID),
 		avatar_charm_id: known("avatar_charm_id", CHARM_BY_ID),
-		bubble_theme_id: known("bubble_theme_id", BUBBLE_BY_ID),
+		bubble_theme_id:
+			typeof input.bubble_theme_id === "string" &&
+			BASIC_BUBBLE_BY_ID.has(input.bubble_theme_id)
+				? input.bubble_theme_id
+				: known("bubble_theme_id", BUBBLE_BY_ID),
 		badge_ids: badgeIDs,
 	};
 }

@@ -65,6 +65,7 @@ function AdminFriendLinksPage() {
 	const [createOpen, setCreateOpen] = useState(false);
 	const [editing, setEditing] = useState<FriendLinkAdminDTO | null>(null);
 	const [deleting, setDeleting] = useState<FriendLinkAdminDTO | null>(null);
+	const [deleteOpen, setDeleteOpen] = useState(false);
 
 	// "all" -> 不传 status（查全部）；其余直接作为筛选值透传后端。
 	const status: FriendLinkStatus | undefined = filter === "all" ? undefined : filter;
@@ -232,7 +233,10 @@ function AdminFriendLinksPage() {
 							aria-label="删除"
 							title="删除"
 							className="hover:bg-destructive/10 hover:text-destructive"
-							onClick={() => setDeleting(row)}
+							onClick={() => {
+								setDeleting(row);
+								setDeleteOpen(true);
+							}}
 						>
 							<Trash2 {...iconProps(14)} />
 						</Button>
@@ -306,17 +310,15 @@ function AdminFriendLinksPage() {
 			/>
 
 			<ConfirmDialog
-				open={!!deleting}
-				onOpenChange={(open) => {
-					if (!open) setDeleting(null);
-				}}
+				open={deleteOpen}
+				onOpenChange={setDeleteOpen}
 				title="删除友链"
 				description={`确定要删除友链「${deleting?.name ?? ""}」吗？此操作不可恢复。`}
 				confirmLabel="删除"
 				loading={deleteMut.isPending}
 				onConfirm={() => {
 					if (!deleting) return;
-					deleteMut.mutate(deleting.id, { onSuccess: () => setDeleting(null) });
+					deleteMut.mutate(deleting.id, { onSuccess: () => setDeleteOpen(false) });
 				}}
 			/>
 		</PageShell>

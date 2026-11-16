@@ -155,7 +155,7 @@ export interface DataTableProps<T> {
 	errorTitle?: string;
 	/**
 	 * 内部浮层（显示列菜单、每页条数、单元格提示）的挂载容器，默认挂到 body；
-	 * 同时作为判定「放不下」的边界。陈列室舞台与带缩放的宿主需要它。
+	 * 同时作为判定「放不下」的边界。带缩放的宿主需要它。
 	 */
 	container?: HTMLElement | null;
 	/** 根容器类名 */

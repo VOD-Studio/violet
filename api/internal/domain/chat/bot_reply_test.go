@@ -118,7 +118,7 @@ func TestBotReplyReconstructsToolCalls(t *testing.T) {
 	now := time.Date(2026, 9, 23, 0, 0, 0, 0, time.UTC)
 	calls := []chat.BotToolCall{{ID: "call_1", Name: "web_search", Status: chat.BotToolCallCompleted, Arguments: `{"q":"x"}`, Result: "ok", DurationMS: 9}}
 	reply := chat.ReconstructBotReply(chat.BotReplyCompleted, "思考", calls, 7, now)
-	message := chat.ReconstructMessage(shared.NewID(), shared.NewID(), shared.NewID(), chat.MessageText, "正文", nil, nil, nil, "idem", nil, nil, nil, reply, now, now)
+	message := chat.ReconstructMessage(shared.NewID(), shared.NewID(), shared.NewID(), chat.MessageText, "正文", nil, nil, nil, "idem", nil, nil, nil, reply, nil, now, now)
 	require.Equal(t, chat.BotReplyCompleted, message.BotReply().Status())
 	require.Equal(t, "思考", message.BotReply().Thinking())
 	require.EqualValues(t, 7, message.BotReply().Revision())

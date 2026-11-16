@@ -6,6 +6,7 @@ import type {
 	ChatMember,
 	ChatMessage,
 	ChatMessageReader,
+	ChatSettings,
 	ChatUnreadCount,
 	ChatUser,
 	CreateConversationInput,
@@ -122,3 +123,14 @@ export const deleteChatPushSubscription = (endpoint: string) =>
 	apiDelete<null>("/chat/push/subscription", { data: { endpoint } });
 
 export const chatEventStreamURL = "/api/v1/chat/events";
+
+export const fetchChatSettings = () => apiGet<ChatSettings>("/chat/settings");
+
+export const updateChatSettings = (settings: Partial<ChatSettings>) =>
+	apiPatch<ChatSettings>("/chat/settings", settings);
+
+export const setBotSpeaking = (id: string, userId: string, allowed: boolean) =>
+	apiPatch<{ user_id: string; can_speak: boolean }>(
+		`/chat/conversations/${id}/members/${userId}/speaking`,
+		{ allowed },
+	);

@@ -16,6 +16,7 @@ export function ReactionBar({
 	recentItems,
 	onAdd,
 	renderPicker,
+	allowSelected = false,
 	maxSelected = Number.POSITIVE_INFINITY,
 	collapseAfter = Number.POSITIVE_INFINITY,
 	onLimit,
@@ -161,6 +162,7 @@ export function ReactionBar({
 					<ReactionAdd
 						recentItems={quickItems}
 						selected={selected}
+						allowSelected={allowSelected}
 						disabled={disabled}
 						limited={limited}
 						maxSelected={maxSelected}

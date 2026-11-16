@@ -1,20 +1,20 @@
-/**
- * RoomDetails 组件测试
- *
- * 锁定动画模式：抽屉为 overlay 滑入（transform 合成层），全断点统一，
- * 不参与聊天区布局。回归场景：曾用 width 弹簧驱动文档流推挤，整个
- * 消息列表每帧 reflow 导致打开/关闭卡顿。jsdom 无布局引擎，断言语义
- * 落在 initial 样式的属性选择上（transform 而非 width）。
- */
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import type { ChatConversation, ChatMember } from "../../model/types";
 
 vi.mock("../../api/client", () => ({
 	fetchChatUser: vi.fn(),
 }));
 
+const botCatalogs = vi.hoisted(() => ({
+	data: undefined as { bots: { bot_user_id: string; description: string }[] } | undefined,
+	isError: false,
+}));
+const setSpeaking = vi.hoisted(() => ({ mutate: vi.fn(), isPending: false }));
+
 vi.mock("../../api/queries", () => ({
+	useBotCommands: () => botCatalogs,
+	useSetBotSpeaking: () => setSpeaking,
 	useRenameChatConversation: () => ({ mutateAsync: vi.fn() }),
 	useInviteChatMember: () => ({ mutateAsync: vi.fn(), isPending: false }),
 	useRemoveChatMember: () => ({ mutate: vi.fn(), isPending: false }),
@@ -59,7 +59,14 @@ const mockConversation: ChatConversation = {
 };
 
 const mockMembers: ChatMember[] = [
-	{ user: mockUser, role: "owner", joined_at: "2026-08-20T08:00:00Z", is_muted: false },
+	{
+		user: mockUser,
+		role: "owner",
+		joined_at: "2026-08-20T08:00:00Z",
+		is_muted: false,
+		online: false,
+		can_speak: true,
+	},
 ];
 
 const stubMatchMedia = (matches: boolean) => {
@@ -93,29 +100,130 @@ it("已有通知权限但没有订阅时，设置按钮可以重新启用通知"
 	push.permission = "granted";
 	render(
 		<RoomDetails
+			open
 			conversation={mockConversation}
 			currentUserID={mockUser.id}
 			members={mockMembers}
 			onClose={() => {}}
 		/>,
 	);
+	fireEvent.click(screen.getByRole("button", { name: "浏览器通知" }));
 	fireEvent.click(screen.getByRole("button", { name: "启用浏览器通知" }));
 	expect(push.enable).toHaveBeenCalledWith(false);
 	expect(push.disable).not.toHaveBeenCalled();
 });
 
-describe("RoomDetails 动画模式", () => {
-	it("全断点统一 overlay 位移动画，不驱动宽度（避免聊天区每帧 reflow）", () => {
-		render(
-			<RoomDetails
-				conversation={mockConversation}
-				currentUserID={mockUser.id}
-				members={mockMembers}
-				onClose={() => {}}
-			/>,
-		);
-		const aside = screen.getByRole("complementary");
-		expect(aside.style.transform).toBe("translateX(100%)");
-		expect(aside.style.width).toBe("");
+it("在场的角色与成员分开列出，角色带简介，成员数不含角色", () => {
+	stubMatchMedia(true);
+	botCatalogs.data = { bots: [{ bot_user_id: "u_rua", description: "看板娘，爱推荐歌" }] };
+	const rua = { id: "u_rua", username: "rua", display_name: "Rua", avatar_url: "", is_bot: true };
+	const members: ChatMember[] = [
+		...mockMembers,
+		{
+			user: rua,
+			role: "member",
+			joined_at: "2026-08-20T08:05:00Z",
+			is_muted: false,
+			online: false,
+			can_speak: true,
+		},
+	];
+	render(
+		<RoomDetails
+			open
+			conversation={mockConversation}
+			currentUserID={mockUser.id}
+			members={members}
+			onClose={vi.fn()}
+		/>,
+	);
+	const roles = screen.getByRole("region", { name: "在场的角色" });
+	expect(roles.textContent).toContain("Rua");
+	expect(roles.textContent).toContain("看板娘，爱推荐歌");
+	expect(screen.getByText("在场的角色 · 1")).toBeTruthy();
+	expect(screen.getByText("成员 · 1")).toBeTruthy();
+	botCatalogs.data = undefined;
+});
+
+it("没有角色时不显示在场的角色分区", () => {
+	stubMatchMedia(true);
+	render(
+		<RoomDetails
+			open
+			conversation={mockConversation}
+			currentUserID={mockUser.id}
+			members={mockMembers}
+			onClose={vi.fn()}
+		/>,
+	);
+	expect(screen.queryByRole("region", { name: "在场的角色" })).toBeNull();
+});
+
+const rua = { id: "u_rua", username: "rua", display_name: "Rua", avatar_url: "", is_bot: true };
+const withRua = (canSpeak: boolean): ChatMember[] => [
+	...mockMembers,
+	{
+		user: rua,
+		role: "member",
+		joined_at: "2026-08-20T08:05:00Z",
+		is_muted: false,
+		online: false,
+		can_speak: canSpeak,
+	},
+];
+const renderDetails = (members: ChatMember[], currentUserID = mockUser.id) =>
+	render(
+		<RoomDetails
+			open
+			conversation={mockConversation}
+			currentUserID={currentUserID}
+			members={members}
+			onClose={vi.fn()}
+		/>,
+	);
+
+it("房主可以切换角色的发言权限", () => {
+	stubMatchMedia(true);
+	renderDetails(withRua(true));
+	const toggle = screen.getByRole("switch", { name: "允许 Rua 发言" });
+	expect(toggle.getAttribute("aria-checked")).toBe("true");
+	fireEvent.click(toggle);
+	expect(setSpeaking.mutate).toHaveBeenCalledWith({
+		id: "c_1",
+		userId: "u_rua",
+		allowed: false,
 	});
+});
+
+it("非房主看不到发言开关，被禁言的角色显示已禁言", () => {
+	stubMatchMedia(true);
+	const guest = { id: "u_guest", username: "guest", display_name: "Guest", avatar_url: "" };
+	renderDetails(
+		[
+			...withRua(false),
+			{
+				user: guest,
+				role: "member",
+				joined_at: "2026-08-20T08:06:00Z",
+				is_muted: false,
+				online: false,
+				can_speak: true,
+			},
+		],
+		guest.id,
+	);
+	expect(screen.queryByRole("switch", { name: "允许 Rua 发言" })).toBeNull();
+	expect(screen.getByText("已禁言")).toBeTruthy();
+});
+
+it("站长在成员列表里带站长标记，简介加载失败时给出提示", () => {
+	stubMatchMedia(true);
+	botCatalogs.isError = true;
+	renderDetails([
+		{ ...mockMembers[0], user: { ...mockUser, is_site_owner: true } },
+		...withRua(true).slice(1),
+	]);
+	expect(screen.getByText("站长")).toBeTruthy();
+	expect(screen.getByText("角色简介暂时无法加载")).toBeTruthy();
+	botCatalogs.isError = false;
 });

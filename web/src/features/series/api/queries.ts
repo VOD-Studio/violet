@@ -1,17 +1,13 @@
 import { apiGet, apiGetPaged } from "@shared/api/request";
-import type { PagedResponse, PageQuery } from "@shared/api/types";
+import type { PagedResponse } from "@shared/api/types";
 import { useQuery } from "@tanstack/react-query";
-import type { ChapterContext, SeriesDetail, SeriesSummary } from "../model/types";
+import type { ChapterContext, SeriesDetail, SeriesListQuery, SeriesSummary } from "../model/types";
 import { seriesKeys } from "./keys";
 
-export const fetchSeries = async (query: PageQuery = {}): Promise<PagedResponse<SeriesSummary>> =>
+export const fetchSeries = async (
+	query: SeriesListQuery = {},
+): Promise<PagedResponse<SeriesSummary>> =>
 	apiGetPaged<SeriesSummary>("/series", { params: query });
-
-export const useSeries = (query: PageQuery = {}) =>
-	useQuery({
-		queryKey: seriesKeys.list(query),
-		queryFn: () => fetchSeries(query),
-	});
 
 export const fetchSeriesBySlug = async (slug: string): Promise<SeriesDetail> =>
 	apiGet<SeriesDetail>(`/series/${slug}`);

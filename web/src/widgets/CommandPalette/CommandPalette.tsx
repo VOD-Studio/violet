@@ -76,11 +76,14 @@ const CommandPalette = () => {
 				id: `page-${link.to}`,
 				label: link.label,
 				group: "pages",
-				hint: link.to,
+				keywords: [link.to],
 				icon: <Compass />,
 				onSelect: ({ newTab }: { newTab: boolean }) => {
-					if (newTab) window.open(link.to, "_blank", "noopener");
-					else void navigate({ to: link.to });
+					if (newTab) {
+						window.open(link.to, "_blank", "noopener");
+					} else {
+						void navigate({ to: link.to });
+					}
 				},
 			})),
 			{
@@ -151,8 +154,11 @@ const CommandPalette = () => {
 				description: inTitle ? undefined : post.snippet,
 				icon: <FileText />,
 				onSelect: ({ newTab }: { newTab: boolean }) => {
-					if (newTab) window.open(`/blog/${post.slug}`, "_blank", "noopener");
-					else void navigate({ to: "/blog/$slug", params: { slug: post.slug } });
+					if (newTab) {
+						window.open(`/blog/${post.slug}`, "_blank", "noopener");
+					} else {
+						void navigate({ to: "/blog/$slug", params: { slug: post.slug } });
+					}
 				},
 			};
 		});

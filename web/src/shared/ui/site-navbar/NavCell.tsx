@@ -9,6 +9,11 @@ import {
 import { type NavbarLinkComponent, RouterLink } from "./link";
 import { NavRow } from "./NavRow";
 
+/**
+ * 顶层链接或分组触发器的导航状态。
+ *
+ * @remarks segment 的样式、事件及数据属性直接传给入口；二级链接保持独立的当前页标记。
+ */
 export interface NavCellProps {
 	item: NavItem;
 	/** Segmented 交给自定义元素的属性，必须展开到入口元素上。 */

@@ -4,37 +4,33 @@
 
 import type { PendingChatShare } from "@entities/tweet/model/share-store";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
-import { formatDate } from "@shared/lib/date";
 import { ImagePreview, useImagePreview } from "@shared/ui/image-preview";
 import type { RichTextInputHandle } from "@shared/ui/rich-text-input/RichTextInput";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button, Spinner } from "@violet/ui";
-import { cn } from "cn";
-import { ArrowDown, ArrowLeft, EllipsisVertical } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import {
-	useChatMembers,
-	useChatMessages,
-	useDeleteChatMessage,
-	useMarkChatRead,
-} from "../api/queries";
+import { useChatMembers, useChatMessages, useDeleteChatMessage } from "../api/queries";
+import { useChatDraftField } from "../hooks/use-chat-draft";
 import { useEmojiEmoteMap } from "../hooks/use-emoji-emote-map";
-import { useAppearanceScrollFollow } from "../hooks/useAppearanceScrollFollow";
+import { useConversationScroll } from "../hooks/useConversationScroll";
 import { panelAppearanceUserIDs } from "../lib/appearance-users";
-import { conversationLabel, conversationTargetUser } from "../lib/conversation";
+import { conversationLabel } from "../lib/conversation";
 import { retryChatMessage, useChatOutbox } from "../model/chat-outbox";
 import type { ChatConversation, ChatMedia, ChatMessage, ChatUser } from "../model/types";
 import { ChatAppearanceProvider } from "./appearance/ChatAppearanceProvider";
-import { ChatAvatar } from "./ChatAvatar";
-import { MessageEmpty, MessageSkeleton } from "./chat-states";
+import { useChatBackground } from "./appearance/useChatBackground";
+import { ConversationHeader } from "./ConversationHeader";
+import { ConversationMessageSearch } from "./ConversationMessageSearch";
+import { ConversationMessageViewport } from "./ConversationMessageViewport";
+import { ConversationTimeline } from "./ConversationTimeline";
 import { MessageBubble } from "./MessageBubble";
 import { MessageComposer } from "./MessageComposer";
 import { RoomDetails } from "./RoomDetails";
 import { TypingIndicator } from "./TypingIndicator";
 
 export interface ConversationPanelProps {
+	/** 被外观编辑遮住时暂停已读推进。 */
+	active?: boolean;
 	/** 当前会话。 */
 	conversation: ChatConversation;
 	/** 当前用户 ID。 */
@@ -50,6 +46,7 @@ export interface ConversationPanelProps {
 }
 
 export function ConversationPanel({
+	active = true,
 	conversation,
 	currentUserID,
 	onBack,
@@ -63,19 +60,26 @@ export function ConversationPanel({
 		hasNextPage,
 		isFetchingNextPage,
 		isLoading: messagesLoading,
+		isError: messagesFailed,
+		refetch: reloadMessages,
 	} = useChatMessages(conversation.id);
 	const { data: memberData } = useChatMembers(conversation.id);
 	const members = memberData ?? [];
 	const canManage = useHasPermission("chat:manage");
 	const deleteMessage = useDeleteChatMessage();
-	const read = useMarkChatRead();
 	const imagePreview = useImagePreview();
-	const [replyTarget, setReplyTarget] = useState<ChatMessage | null>(null);
-	const [pendingFocusID, setPendingFocusID] = useState<string | null>(null);
-	const [highlightedID, setHighlightedID] = useState<string | null>(null);
+	const [replyTarget, setReplyTarget] = useChatDraftField(conversation.id, "reply");
 	const inputRef = useRef<RichTextInputHandle>(null);
+	const headingRef = useRef<HTMLHeadingElement>(null);
+	useLayoutEffect(() => {
+		if (conversation.id) {
+			headingRef.current?.focus({ preventScroll: true });
+		}
+	}, [conversation.id]);
 	const handleMention = (user: ChatUser) => {
-		if (user.id === currentUserID) return;
+		if (user.id === currentUserID) {
+			return;
+		}
 		if (!inputRef.current?.appendMention(user.id)) {
 			toast.info("该用户不在当前会话的提及候选中");
 		}
@@ -112,39 +116,19 @@ export function ConversationPanel({
 			.filter((entry) => entry.status !== "sent")
 			.map((entry) => [entry.message.id, entry]),
 	);
-	const lastMessage = messages.at(-1);
-	const scrollContainerRef = useRef<HTMLDivElement>(null);
-	const messageRefs = useRef<Record<string, HTMLElement | null>>({});
+	const scroll = useConversationScroll({
+		conversationID: conversation.id,
+		currentUserID,
+		messages,
+		active,
+		showDetails,
+		hasNextPage,
+		isFetchingNextPage,
+		fetchNextPage,
+	});
+	const { messageRefs, highlightedID, setPendingFocusID, scrollToBottom, animateInIds } = scroll;
 
-	const renderUnits = useMemo(() => {
-		const units: Array<
-			| { kind: "group"; headId: string; mine: boolean; messages: ChatMessage[] }
-			| { kind: "single"; message: ChatMessage }
-		> = [];
-		let open: { kind: "group"; headId: string; mine: boolean; messages: ChatMessage[] } | null =
-			null;
-		for (const message of messages) {
-			if (message.type === "system") {
-				open = null;
-				units.push({ kind: "single", message });
-				continue;
-			}
-			if (open && open.messages.at(-1)?.sender.id === message.sender.id) {
-				open.messages.push(message);
-			} else {
-				open = {
-					kind: "group",
-					headId: message.client_message_id ?? message.id,
-					mine: message.sender.id === currentUserID,
-					messages: [message],
-				};
-				units.push(open);
-			}
-		}
-		return units;
-	}, [messages, currentUserID]);
-
-	const bubbleProps = (message: ChatMessage, isHead: boolean) => ({
+	const bubbleProps = (message: ChatMessage, isHead: boolean, lastInGroup = true) => ({
 		animateIn: animateInIds.has(message.id),
 		conversationKind: conversation.kind,
 		currentUserID,
@@ -157,6 +141,7 @@ export function ConversationPanel({
 			messageRefs.current[message.id] = node;
 		},
 		showSender: isHead,
+		lastInGroup,
 		showSenderName: conversation.kind === "room",
 		onDelete:
 			canManage && !pendingByID.has(message.id)
@@ -177,386 +162,65 @@ export function ConversationPanel({
 				? () => setPendingFocusID(message.reply_to?.id ?? null)
 				: undefined,
 	});
-	const [showScrollBottom, setShowScrollBottom] = useState(false);
-	const topSentinelRef = useRef<HTMLDivElement>(null);
-	const prependScrollAnchorRef = useRef<number | null>(null);
-	const latestKnownMessageTimeRef = useRef<number | null>(null);
-	const followLatestRef = useRef(true);
-	const lastScrollPositionRef = useRef({ top: 0, height: 0 });
-
-	const scrollToBottom = useCallback((smooth = true) => {
-		const container = scrollContainerRef.current;
-		if (!container) return;
-		followLatestRef.current = true;
-		container.scrollTo({
-			top: Math.max(0, container.scrollHeight - container.clientHeight),
-			behavior: smooth ? "smooth" : "auto",
-		});
-	}, []);
-
-	useAppearanceScrollFollow(
-		scrollContainerRef,
-		followLatestRef,
-		prependScrollAnchorRef,
-		conversation.id,
-	);
-	const lastSubmittedReadRef = useRef<string | null>(null);
-
-	useLayoutEffect(() => {
-		if (!conversation.id) return;
-		followLatestRef.current = true;
-		lastScrollPositionRef.current = { top: 0, height: 0 };
-		lastSubmittedReadRef.current = null;
-		setReplyTarget(null);
-		setPendingFocusID(null);
-		setHighlightedID(null);
-		prependScrollAnchorRef.current = null;
-		latestKnownMessageTimeRef.current = null;
-	}, [conversation.id]);
-
-	useLayoutEffect(() => {
-		if (lastMessage?.id && followLatestRef.current) scrollToBottom(false);
-	}, [lastMessage, scrollToBottom]);
-
-	useEffect(() => {
-		if (lastMessage?.id && lastMessage.sender.id === currentUserID) scrollToBottom(false);
-	}, [lastMessage?.id, lastMessage?.sender.id, currentUserID, scrollToBottom]);
-
-	useEffect(() => {
-		const container = scrollContainerRef.current;
-		if (!container) return;
-		let frame = 0;
-		const markVisibleRead = () => {
-			if (document.visibilityState !== "visible" || !document.hasFocus()) return;
-			const viewport = container.getBoundingClientRect();
-			if (viewport.height <= 0) return;
-			const previousIndex = messages.findIndex(
-				(message) => message.id === lastSubmittedReadRef.current,
-			);
-			for (let index = messages.length - 1; index > previousIndex; index--) {
-				const message = messages[index];
-				if (message.id.startsWith("local:")) continue;
-				const bounds = messageRefs.current[message.id]?.getBoundingClientRect();
-				if (
-					!bounds ||
-					bounds.height <= 0 ||
-					bounds.bottom > viewport.bottom ||
-					bounds.bottom <= viewport.top
-				)
-					continue;
-				lastSubmittedReadRef.current = message.id;
-				read.mutate(
-					{ id: conversation.id, messageId: message.id },
-					{
-						onError: () => {
-							if (lastSubmittedReadRef.current === message.id)
-								lastSubmittedReadRef.current = null;
-						},
-					},
-				);
-				break;
-			}
-		};
-		const scheduleRead = () => {
-			cancelAnimationFrame(frame);
-			frame = requestAnimationFrame(markVisibleRead);
-		};
-		container.addEventListener("scroll", scheduleRead);
-		window.addEventListener("focus", scheduleRead);
-		window.addEventListener("resize", scheduleRead);
-		document.addEventListener("visibilitychange", scheduleRead);
-		const observer = new ResizeObserver(scheduleRead);
-		observer.observe(container);
-		if (container.firstElementChild) observer.observe(container.firstElementChild);
-		scheduleRead();
-		return () => {
-			cancelAnimationFrame(frame);
-			observer.disconnect();
-			container.removeEventListener("scroll", scheduleRead);
-			window.removeEventListener("focus", scheduleRead);
-			window.removeEventListener("resize", scheduleRead);
-			document.removeEventListener("visibilitychange", scheduleRead);
-		};
-	}, [conversation.id, messages, read.mutate]);
-
-	useEffect(() => {
-		if (!pendingFocusID) return;
-		const target = messageRefs.current[pendingFocusID];
-		if (target) {
-			const container = scrollContainerRef.current;
-			if (container) {
-				const offset =
-					target.getBoundingClientRect().top - container.getBoundingClientRect().top;
-				container.scrollTo({ top: container.scrollTop + offset - 24, behavior: "smooth" });
-			}
-			setHighlightedID(pendingFocusID);
-			setPendingFocusID(null);
-			return;
-		}
-		if (hasNextPage && !isFetchingNextPage) {
-			void fetchNextPage();
-			return;
-		}
-		if (!hasNextPage && !isFetchingNextPage) {
-			toast.info("原消息不可用");
-			setPendingFocusID(null);
-		}
-	}, [fetchNextPage, hasNextPage, isFetchingNextPage, pendingFocusID]);
-
-	useEffect(() => {
-		if (!highlightedID) return;
-		const timer = window.setTimeout(() => setHighlightedID(null), 1400);
-		return () => window.clearTimeout(timer);
-	}, [highlightedID]);
-
-	const handleScroll = useCallback(() => {
-		const container = scrollContainerRef.current;
-		if (!container) return;
-		const { scrollTop, scrollHeight, clientHeight } = container;
-		const distance = scrollHeight - scrollTop - clientHeight;
-		if (distance <= 2) followLatestRef.current = true;
-		else if (
-			scrollHeight === lastScrollPositionRef.current.height &&
-			scrollTop < lastScrollPositionRef.current.top - 2
-		)
-			followLatestRef.current = false;
-		lastScrollPositionRef.current = { top: scrollTop, height: scrollHeight };
-		setShowScrollBottom(distance > 150);
-	}, []);
-	const pauseFollow = () => {
-		followLatestRef.current = false;
-	};
-
-	useEffect(() => {
-		const container = scrollContainerRef.current;
-		const sentinel = topSentinelRef.current;
-		if (!container || !sentinel || !hasNextPage) return;
-		const observer = new IntersectionObserver(
-			(entries) => {
-				if (entries[0]?.isIntersecting && !isFetchingNextPage) {
-					prependScrollAnchorRef.current = container.scrollHeight;
-					void fetchNextPage();
-				}
-			},
-			{ root: container, rootMargin: "200px" },
-		);
-		observer.observe(sentinel);
-		return () => observer.disconnect();
-	}, [hasNextPage, isFetchingNextPage, fetchNextPage]);
-
-	// 翻页前记录 scrollHeight，DOM 更新后按差值回补 scrollTop：避免往上翻历史时
-	// 因为顶部插入新内容而把可视区往下顶飘。
-	// biome-ignore lint/correctness/useExhaustiveDependencies: messages 仅作触发器，函数体只读写 ref
-	useLayoutEffect(() => {
-		const container = scrollContainerRef.current;
-		const previousHeight = prependScrollAnchorRef.current;
-		if (!container || previousHeight === null) return;
-		container.scrollTop += container.scrollHeight - previousHeight;
-		prependScrollAnchorRef.current = null;
-	}, [messages]);
-
-	// 只有比上一次已知最新消息更晚的消息才播入场动画：往回翻页拿到的历史批次
-	// 直接以最终态出现，避免一次性弹出一整页历史消息的动效噪音。
-	const animateInIds = useMemo(() => {
-		const boundary = latestKnownMessageTimeRef.current;
-		const ids = new Set<string>();
-		for (const message of messages) {
-			if (boundary === null || new Date(message.created_at).getTime() > boundary) {
-				ids.add(message.id);
-			}
-		}
-		return ids;
-	}, [messages]);
-
-	useEffect(() => {
-		const newest = messages.at(-1)?.created_at;
-		if (newest) latestKnownMessageTimeRef.current = new Date(newest).getTime();
-	}, [messages]);
 
 	const emoteMap = useEmojiEmoteMap();
+	const background = useChatBackground(currentUserID);
+	const [searchOpen, setSearchOpen] = useState(false);
 
 	return (
 		<ChatAppearanceProvider
 			currentUserID={currentUserID}
 			userIDs={panelAppearanceUserIDs(conversation, members, messages)}
 		>
-			<motion.div
-				key={conversation.id}
-				initial={{ opacity: 0, y: 6, scale: 0.995 }}
-				animate={{ opacity: 1, y: 0, scale: 1 }}
-				exit={{ opacity: 0, y: -6, scale: 0.995 }}
-				transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-				className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden"
-			>
-				<header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border px-3 md:px-5">
-					<div className="flex min-w-0 items-center gap-2.5">
-						<Button
-							iconOnly
-							aria-label="返回会话列表"
-							className="size-9 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground md:hidden"
-							onClick={onBack}
-							size="md"
-							variant="ghost"
-						>
-							<ArrowLeft className="size-5" />
-						</Button>
-						<div className="shrink-0">
-							<ChatAvatar
-								user={conversationTargetUser(conversation, currentUserID)}
-								className="size-10 shrink-0"
-							/>
-						</div>
-						<div className="min-w-0">
-							<h2 className="truncate text-[0.95rem] font-semibold text-foreground">
-								{conversationLabel(conversation, currentUserID)}
-							</h2>
-							<p className="text-xs leading-4 text-muted-foreground">
-								{conversation.kind === "room"
-									? `${members.length} 位成员`
-									: "最后登录于最近"}
-							</p>
-						</div>
-					</div>
+			<div className="relative flex h-full min-h-0 flex-1 flex-col [--chat-gutter:1rem] md:[--chat-gutter:1.5rem] xl:[--chat-gutter:2rem] 2xl:[--chat-gutter:3rem]">
+				<ConversationHeader
+					conversation={conversation}
+					currentUserID={currentUserID}
+					members={members}
+					headingRef={headingRef}
+					onBack={onBack}
+					showDetails={showDetails}
+					onToggleDetails={onToggleDetails}
+					searchOpen={searchOpen}
+					onToggleSearch={() => setSearchOpen((open) => !open)}
+					searchContent={
+						<ConversationMessageSearch
+							active={searchOpen}
+							messages={messages}
+							hasNextPage={hasNextPage}
+							loading={isFetchingNextPage}
+							onLoadMore={() => void fetchNextPage()}
+							onSelect={(id) => {
+								setPendingFocusID(id);
+								setSearchOpen(false);
+							}}
+							onClose={() => setSearchOpen(false)}
+						/>
+					}
+				/>
 
-					<Button
-						iconOnly
-						aria-label="打开会话详情"
-						className="size-9 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground"
-						onClick={onToggleDetails}
-						size="md"
-						variant="ghost"
-					>
-						<EllipsisVertical className="size-5" />
-					</Button>
-				</header>
-
-				<div className="relative flex min-h-0 flex-1 overflow-hidden">
+				<div className="relative flex min-h-0 flex-1 overflow-hidden bg-card">
 					<section className="flex min-h-0 min-w-0 flex-1 flex-col">
-						<div
-							ref={scrollContainerRef}
-							data-testid="chat-message-list"
-							onScroll={handleScroll}
-							onPointerDownCapture={pauseFollow}
-							onTouchStartCapture={pauseFollow}
-							onWheelCapture={(event) => {
-								if (event.deltaY < 0) pauseFollow();
+						<ConversationMessageViewport
+							scroll={scroll}
+							backgroundClassName={background}
+							empty={messages.length === 0}
+							loading={{
+								pending: messagesLoading,
+								failed: messagesFailed,
+								reload: () => void reloadMessages(),
+								hasNextPage,
+								fetchingNext: isFetchingNextPage,
 							}}
-							onKeyDownCapture={(event) => {
-								if (
-									event.key === "ArrowUp" ||
-									event.key === "PageUp" ||
-									event.key === "Home" ||
-									(event.key === " " && event.shiftKey)
-								)
-									pauseFollow();
-							}}
-							className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 pt-5 md:px-8"
 						>
-							<div className="mx-auto max-w-4xl space-y-4 pb-5">
-								{messages.length > 0 &&
-									(hasNextPage ? (
-										<div
-											ref={topSentinelRef}
-											data-testid="chat-load-older-sentinel"
-											className="flex items-center justify-center gap-2 py-2 text-xs text-muted-foreground"
-										>
-											{isFetchingNextPage && (
-												<>
-													<Spinner size={16} aria-hidden="true" />
-													加载更早的消息…
-												</>
-											)}
-										</div>
-									) : (
-										<div
-											className="my-4 flex items-center justify-center"
-											data-testid="chat-history-start"
-										>
-											<span className="rounded-full bg-secondary px-3 py-0.5 text-[11px] text-muted-foreground">
-												{formatDate(
-													conversation.created_at,
-													"long-month-day",
-												)}
-											</span>
-										</div>
-									))}
-
-								{messagesLoading && messages.length === 0 ? (
-									<MessageSkeleton />
-								) : messages.length === 0 ? (
-									<MessageEmpty />
-								) : (
-									renderUnits.map((unit) =>
-										unit.kind === "single" ? (
-											<MessageBubble
-												key={
-													unit.message.client_message_id ??
-													unit.message.id
-												}
-												{...bubbleProps(unit.message, false)}
-											/>
-										) : (
-											<div
-												key={unit.headId}
-												className="relative grid grid-cols-1"
-												style={{
-													gridTemplateRows: `repeat(${unit.messages.length * 2}, auto)`,
-												}}
-											>
-												{unit.messages.map((message) => (
-													<MessageBubble
-														key={
-															message.client_message_id ?? message.id
-														}
-														{...bubbleProps(
-															message,
-															message === unit.messages[0],
-														)}
-													/>
-												))}
-												{/* 每条消息占正文与状态两行，头像约束止于组尾正文。 */}
-												<div
-													className={cn(
-														"pointer-events-none absolute inset-y-0 row-start-1 -row-end-2 flex w-10 flex-col-reverse",
-														unit.mine ? "right-0" : "left-0",
-													)}
-												>
-													<div className="pointer-events-auto sticky bottom-2 top-0">
-														<ChatAvatar
-															user={unit.messages[0].sender}
-															className="size-10"
-														/>
-													</div>
-												</div>
-											</div>
-										),
-									)
+							<ConversationTimeline
+								messages={messages}
+								currentUserID={currentUserID}
+								renderMessage={(message, head, last) => (
+									<MessageBubble {...bubbleProps(message, head, last)} />
 								)}
-								<div className="h-0" />
-							</div>
-						</div>
-						<AnimatePresence>
-							{showScrollBottom && (
-								<motion.div
-									initial={{ opacity: 0, y: 12, scale: 0.8 }}
-									animate={{ opacity: 1, y: 0, scale: 1 }}
-									exit={{ opacity: 0, y: 12, scale: 0.8 }}
-									transition={{ duration: 0.15 }}
-									className="pointer-events-none absolute bottom-24 right-6 z-10 md:right-10"
-								>
-									<Button
-										aria-label="回到底部"
-										className="pointer-events-auto size-8.5 rounded-full border border-border bg-card shadow-md"
-										onClick={() => scrollToBottom(true)}
-										iconOnly
-										size="sm"
-										variant="outline"
-									>
-										<ArrowDown className="size-4" />
-									</Button>
-								</motion.div>
-							)}
-						</AnimatePresence>
+							/>
+						</ConversationMessageViewport>
 						<TypingIndicator conversationID={conversation.id} members={members} />
 						<MessageComposer
 							key={conversation.id}
@@ -564,6 +228,7 @@ export function ConversationPanel({
 								members.find((member) => member.user.id === currentUserID)?.user
 							}
 							inputRef={inputRef}
+							conversationTitle={conversationLabel(conversation, currentUserID)}
 							conversationID={conversation.id}
 							conversationKind={conversation.kind}
 							currentUserID={currentUserID}
@@ -577,16 +242,13 @@ export function ConversationPanel({
 						/>
 					</section>
 
-					<AnimatePresence>
-						{showDetails && (
-							<RoomDetails
-								conversation={conversation}
-								currentUserID={currentUserID}
-								members={members}
-								onClose={onToggleDetails}
-							/>
-						)}
-					</AnimatePresence>
+					<RoomDetails
+						open={showDetails}
+						conversation={conversation}
+						currentUserID={currentUserID}
+						members={members}
+						onClose={onToggleDetails}
+					/>
 				</div>
 				<ImagePreview
 					open={imagePreview.open}
@@ -595,7 +257,7 @@ export function ConversationPanel({
 					onClose={imagePreview.closePreview}
 					onIndexChange={imagePreview.setCurrentIndex}
 				/>
-			</motion.div>
+			</div>
 		</ChatAppearanceProvider>
 	);
 }

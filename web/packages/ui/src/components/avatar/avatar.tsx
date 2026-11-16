@@ -105,8 +105,8 @@ export function Avatar({
 					alt=""
 					aria-hidden="true"
 					ref={(img) => {
-						if (img && phase === "loading" && img.complete && img.naturalWidth > 0) {
-							setResult({ src, ok: true });
+						if (img && phase === "loading" && img.complete) {
+							setResult({ src, ok: img.naturalWidth > 0 });
 						}
 					}}
 					onLoad={(event) => {

@@ -165,7 +165,7 @@
 
 /*
  * 悬停滑动底色与加载细圆弧的过渡来自层内样式与 indicator.css；减弱动态时要在同样的层外压住：
- * 系统偏好，以及陈列室等宿主用 data-motion="reduce" 标出的作用域，都静止。
+ * 系统偏好，以及宿主用 data-motion="reduce" 标出的作用域，都静止。
  */
 @media (prefers-reduced-motion: reduce) {
 	.v-cascader-col.v-list-highlight::before {

@@ -62,4 +62,4 @@ import "@violet/ui/styles.css";
 
 样式入口为 `@violet/ui/components/code-block.css`。原生 `figure.v-code-block`、`figcaption.v-code-block__header`、`pre.v-code-block__pre > code` 可供 Tiptap 等宿主编辑器复用，lowlight 的 `.hljs-*` 在该外壳内使用同一语义配色。没有 React 的页面仍能呈现原始代码；交互动作需宿主自行提供。
 
-CodeMirror 适配样式仅作用于 `.v-code-block`；其未分层规则用于覆盖引擎注入的未分层样式，不改变站点其他编辑器。完整消费示例与真实 tarball 验收在 `fixtures/consumer/`，陈列室 `/ui?open=code-block` 包含阅读、Vim、策略五态和执行结果。陈列室输出流是明确标注的交互演示，不执行用户代码；文章的运行器接入真实执行服务。
+CodeMirror 适配样式仅作用于 `.v-code-block`；其未分层规则用于覆盖引擎注入的未分层样式，不改变站点其他编辑器。完整消费示例与真实 tarball 验收在 `fixtures/consumer/`，覆盖阅读、Vim、策略状态和执行结果；文章消费页的运行器接入真实执行服务，需另外验收业务策略与执行链路。

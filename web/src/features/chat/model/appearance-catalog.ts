@@ -13,6 +13,19 @@ export const EMPTY_APPEARANCE: Readonly<ChatAppearance> = Object.freeze({
 	badge_ids: [],
 });
 
+/** 空 ID 的既有默认样式继续表示季节;不迁移或替换用户已选主题。 */
+export const BASIC_BUBBLE_THEMES = [
+	{ id: "", name: "季节" },
+	{ id: "basic-ink", name: "墨色" },
+	{ id: "basic-paper", name: "纸片" },
+	{ id: "basic-washi", name: "和纸" },
+] as const;
+
+/** 基础款与贴图款使用同一个服务端 bubble_theme_id 字段。 */
+export const BASIC_BUBBLE_BY_ID = new Map<string, (typeof BASIC_BUBBLE_THEMES)[number]>(
+	BASIC_BUBBLE_THEMES.map((item) => [item.id, item]),
+);
+
 /** 已核对 RUA 头像框;ID 须与服务端目录保持同步。 */
 export const AVATAR_FRAMES: readonly AvatarFrameAsset[] = [
 	{

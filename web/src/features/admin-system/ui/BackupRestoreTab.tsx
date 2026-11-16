@@ -64,6 +64,7 @@ export function BackupRestoreTab() {
 	const [restoreTarget, setRestoreTarget] = useState<BackupInfoDTO | null>(null);
 	const [restoreText, setRestoreText] = useState("");
 	const [deleteTarget, setDeleteTarget] = useState<BackupInfoDTO | null>(null);
+	const [deleteOpen, setDeleteOpen] = useState(false);
 	const taskQuery = useBackupTask(activeTaskId);
 
 	useEffect(() => {
@@ -242,7 +243,10 @@ export function BackupRestoreTab() {
 						setRestoreText("");
 						setRestoreTarget(backup);
 					}}
-					onDelete={setDeleteTarget}
+					onDelete={(backup) => {
+						setDeleteTarget(backup);
+						setDeleteOpen(true);
+					}}
 				/>
 			</section>
 
@@ -266,10 +270,8 @@ export function BackupRestoreTab() {
 			/>
 
 			<ConfirmDialog
-				open={!!deleteTarget}
-				onOpenChange={(open) => {
-					if (!open) setDeleteTarget(null);
-				}}
+				open={deleteOpen}
+				onOpenChange={setDeleteOpen}
 				title="删除数据库备份"
 				description={`将永久删除 ${deleteTarget?.filename ?? ""} 及其配对上传归档。此操作不可撤销。`}
 				confirmLabel="删除备份"
@@ -278,7 +280,7 @@ export function BackupRestoreTab() {
 					if (!deleteTarget) return;
 					deleteBackup.mutate(deleteTarget.filename, {
 						onSuccess: () => {
-							setDeleteTarget(null);
+							setDeleteOpen(false);
 							toast.success("备份已删除");
 						},
 						onError: (error) => toast.error(error.message),
@@ -573,6 +575,10 @@ function RestoreDialog({
 	onClose: () => void;
 	onConfirm: () => void;
 }) {
+	const lastTarget = useRef(target);
+	if (target) lastTarget.current = target;
+	const shownTarget = target ?? lastTarget.current;
+
 	return (
 		<Modal
 			open={!!target}
@@ -590,7 +596,7 @@ function RestoreDialog({
 					</Button>
 					<Button
 						variant="destructive"
-						disabled={confirmation !== target?.filename}
+						disabled={confirmation !== shownTarget?.filename}
 						loading={pending}
 						onClick={onConfirm}
 					>
@@ -602,7 +608,7 @@ function RestoreDialog({
 			<label htmlFor="backup-restore-confirmation" className="space-y-2 text-sm font-medium">
 				<span>输入完整文件名以确认</span>
 				<code className="bg-muted block break-all rounded-md px-3 py-2 text-xs">
-					{target?.filename}
+					{shownTarget?.filename}
 				</code>
 				<Input
 					id="backup-restore-confirmation"
@@ -610,7 +616,7 @@ function RestoreDialog({
 					value={confirmation}
 					disabled={pending}
 					onChange={(event) => onConfirmationChange(event.target.value)}
-					placeholder={target?.filename}
+					placeholder={shownTarget?.filename}
 				/>
 			</label>
 		</Modal>

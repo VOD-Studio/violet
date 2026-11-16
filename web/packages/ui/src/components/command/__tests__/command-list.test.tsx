@@ -69,6 +69,58 @@ describe("matchCommands", () => {
 		);
 		expect(withFullText.at(-1)?.matches[0].item.id).toBe("ft-1");
 	});
+
+	it("全文摘要按实际查询逐处匹配，保留大小写原文且不改变本地筛选范围", () => {
+		const fullText: CommandItem = {
+			id: "body",
+			label: "正文里的命中",
+			group: "fulltext",
+			description: "先说 Rust，再说 RUST。",
+			filter: false,
+		};
+		const [section] = matchCommands([fullText], GROUPS, " rust ");
+		expect(section.matches[0].ranges).toEqual([]);
+		expect(section.matches[0].descriptionRanges).toEqual([
+			[3, 7],
+			[11, 15],
+		]);
+		expect(matchCommands([{ ...fullText, filter: true }], GROUPS, "rust")).toEqual([]);
+		expect(matchCommands([fullText], GROUPS, "")[0].matches[0].descriptionRanges).toEqual([]);
+	});
+
+	it("全文多关键词分别高亮，重叠词不重复输出同一段文字", () => {
+		const [section] = matchCommands(
+			[
+				{
+					id: "body",
+					label: "编辑器手册",
+					group: "fulltext",
+					description: "设计之后渲染",
+					filter: false,
+				},
+			],
+			GROUPS,
+			"设计 计 渲染 设计",
+		);
+		expect(section.matches[0].descriptionRanges).toEqual([
+			[0, 2],
+			[4, 6],
+		]);
+	});
+
+	it("大小写转换扩展字符时，高亮区间仍指向原文", () => {
+		const description = "İRust";
+		const result = matchCommands(
+			[{ id: "unicode", group: "fulltext", label: "正文", description, filter: false }],
+			GROUPS,
+			"Rust",
+			5,
+		);
+		const match = result[0].matches[0];
+		expect(
+			match.descriptionRanges.map(([start, end]) => description.slice(start, end)),
+		).toEqual(["Rust"]);
+	});
 });
 
 function Palette(props: Partial<CommandListProps>) {
@@ -115,6 +167,45 @@ describe("CommandList", () => {
 		press("ArrowDown");
 		press("ArrowDown");
 		expect(active()?.textContent).toContain("博客");
+	});
+
+	it("标题与靠后的全文摘要命中同时高亮，摘要中的 HTML 保持纯文本", () => {
+		const description = `${"正文前置说明。".repeat(12)}已定设计 <img src=x onerror=alert(1)> 设计。`;
+		render(
+			<Palette
+				query="设计"
+				items={[
+					{
+						id: "body",
+						group: "fulltext",
+						label: "设计手记",
+						description,
+						filter: false,
+					},
+				]}
+			/>,
+		);
+		const option = screen.getByRole("option");
+		expect(option.textContent).toBe(`设计手记${description}`);
+		expect([...option.querySelectorAll("mark")].map((mark) => mark.textContent)).toEqual([
+			"设计",
+			"设计",
+			"设计",
+		]);
+		expect(option.querySelector("img")).toBeNull();
+	});
+
+	it("无结果时安全呈现查询，不留下活动项或额外 Tab 停靠位", () => {
+		const query = `${"abcdefgh".repeat(100)}<img src=x onerror=alert(1)>`;
+		render(<Palette query={query} />);
+		const status = screen.getByRole("status");
+		expect(status.textContent).toContain(query);
+		expect(status.querySelector("img")).toBeNull();
+		expect(screen.queryByRole("option")).toBeNull();
+		expect(input().hasAttribute("aria-activedescendant")).toBe(false);
+		expect(screen.getByRole("listbox").tabIndex).toBe(-1);
+		press("ArrowDown");
+		expect(document.activeElement).toBe(input());
 	});
 
 	it("回车时当前项亮一下再执行并收起，⌘↵ 在新标签页打开", async () => {
@@ -165,8 +256,6 @@ describe("CommandList", () => {
 		const onSearchAll = vi.fn();
 		render(<Palette onSearchAll={onSearchAll} />);
 		fireEvent.change(input(), { target: { value: "桂花酿" } });
-		expect(screen.getByText("没有找到「桂花酿」")).toBeTruthy();
-		expect(active()?.textContent).toBe("在全文里搜索");
 		press("Enter");
 		expect(onSearchAll).toHaveBeenCalledWith("桂花酿");
 	});

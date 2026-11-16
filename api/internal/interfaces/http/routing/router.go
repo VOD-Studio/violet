@@ -179,6 +179,7 @@ func registerPostPublicRoutes(v1 chi.Router, d *Deps) {
 	postH := d.Post
 	v1.Route("/posts", func(r chi.Router) {
 		r.Get("/", postH.ListPublished)
+		r.Get("/filters/tags", postH.FilterTags)
 		r.Get("/archive", postH.ArchiveYears)
 		r.Get("/archive/{year}", postH.ArchiveByYear)
 		r.Get("/search", postH.SearchPublished)
@@ -504,6 +505,7 @@ func registerChatRoutes(v1 chi.Router, d *Deps) {
 		r.With(d.SessionAuth).Post("/conversations/{conversationId}/members", h.InviteMember)
 		r.With(d.SessionAuth).Delete("/conversations/{conversationId}/members/me", h.LeaveConversation)
 		r.With(d.SessionAuth).Delete("/conversations/{conversationId}/members/{userId}", h.RemoveMember)
+		r.With(d.SessionAuth).Patch("/conversations/{conversationId}/members/{userId}/speaking", h.SetBotSpeaking)
 		r.With(d.SessionAuth).Get("/conversations/{conversationId}/messages", h.ListMessages)
 		r.With(d.SessionAuth).Get("/conversations/{conversationId}/messages/{messageId}/reactions", h.ListMessageReactions)
 		r.With(d.SessionAuth).Post("/conversations/{conversationId}/messages/{messageId}/reactions", h.AddMessageReaction)
@@ -514,6 +516,8 @@ func registerChatRoutes(v1 chi.Router, d *Deps) {
 		r.With(d.SessionAuth).Post("/conversations/{conversationId}/read", h.MarkRead)
 		r.With(d.SessionAuth, d.limit("chat_typing", "POST /api/v1/chat/conversations/{conversationId}/typing")).Post("/conversations/{conversationId}/typing", h.SetTyping)
 		r.With(d.SessionAuth).Patch("/conversations/{conversationId}/mute", h.SetMuted)
+		r.With(d.SessionAuth).Get("/settings", h.GetSettings)
+		r.With(d.SessionAuth).Patch("/settings", h.UpdateSettings)
 		r.With(d.SessionAuth, middleware.RequirePermission(d.PermissionChecker, permission.ChatManage.String())).
 			Delete("/conversations/{conversationId}/messages/{messageId}", h.DeleteMessage)
 	})

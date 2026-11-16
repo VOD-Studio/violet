@@ -63,12 +63,12 @@ type PostDTO struct {
 	PublishedAt    string       `json:"published_at,omitempty"` // 发布时间（RFC3339）；空串=未发布（草稿或归档）
 	// EditedAt 发布后最近一次版本快照时间（RFC3339）；空串=发布后未编辑过。
 	// 判据是 post_versions 而非 posts.updated_at：后者会被精选、标签等元数据操作刷新，误报编辑。
-	EditedAt           string `json:"edited_at,omitempty"`
-	EditedVersionCount int    `json:"edited_version_count,omitempty"`
-	CanonicalURL *string `json:"canonical_url,omitempty"` // 转载源 URL；nil/缺省 = 原创，非空 = 转载
-	Tags           []string     `json:"tags"`
-	CreatedAt      string       `json:"created_at"`
-	UpdatedAt      string       `json:"updated_at"`
+	EditedAt           string   `json:"edited_at,omitempty"`
+	EditedVersionCount int      `json:"edited_version_count,omitempty"`
+	CanonicalURL       *string  `json:"canonical_url,omitempty"` // 转载源 URL；nil/缺省 = 原创，非空 = 转载
+	Tags               []string `json:"tags"`
+	CreatedAt          string   `json:"created_at"`
+	UpdatedAt          string   `json:"updated_at"`
 }
 
 // PostVersionDTO 文章版本 DTO
@@ -102,6 +102,7 @@ type PostListItemDTO struct {
 	IsFeatured    bool         `json:"is_featured"`
 	ViewCount     int          `json:"view_count"`
 	PublishedAt   string       `json:"published_at,omitempty"`
+	CanonicalURL  *string      `json:"canonical_url,omitempty"` // nil/缺省/空串为原创，非空为转载来源
 	Tags          []string     `json:"tags"`
 	AuthorID      string       `json:"author_id"` // 文章作者 ID（前端判断所有权，控制操作按钮）
 	Author        *AuthorDTO   `json:"author,omitempty"`
@@ -212,6 +213,7 @@ func (s *Service) GetBySlugForAuthor(ctx context.Context, slug string) (PostDTO,
 	}
 	return s.detailDTO(ctx, p), nil
 }
+
 // GetPublishedByID 按 ID 获取已发布文章；draft/archived/软删除/不存在统一 ErrNotFound（与 GetPublishedBySlug 同语义）。
 func (s *Service) GetPublishedByID(ctx context.Context, id string) (PostDTO, error) {
 	pid, err := shared.ParseID(id)
@@ -257,15 +259,40 @@ func (s *Service) detailDTO(ctx context.Context, p *domain.Post) PostDTO {
 }
 
 // ListPublished 分页列出已发布文章（前台），返回不含正文的列表项，避免响应过大。
-// tag 为标签 slug，空串 = 不过滤；精选优先，再按发布时间倒序。
-func (s *Service) ListPublished(ctx context.Context, tag string, q shared.PageQuery) (shared.PageResult[PostListItemDTO], error) {
+// filter 只影响候选文章；精选优先，再按发布时间与 ID 倒序。
+func (s *Service) ListPublished(ctx context.Context, filter domain.BrowseFilter, q shared.PageQuery) (shared.PageResult[PostListItemDTO], error) {
+	if err := filter.Validate(); err != nil {
+		return shared.PageResult[PostListItemDTO]{}, err
+	}
 	var tags []string
-	if tag != "" {
-		tags = []string{tag}
+	if filter.Tag != "" {
+		tags = []string{filter.Tag}
 	}
 	return s.listPage(ctx, domain.ListFilter{
-		Status: domain.StatusPublished, Tags: tags, Sort: domain.SortPublished,
+		Status: domain.StatusPublished, Tags: tags, Source: filter.Source, Sort: domain.SortPublished,
 	}, q)
+}
+
+type PublishedTagDTO struct {
+	Slug string `json:"slug"`
+	Name string `json:"name"`
+	// Count 当前来源下已发布且未软删除的文章数，同一文章只计一次。
+	Count int64 `json:"count"`
+}
+
+func (s *Service) ListPublishedTags(ctx context.Context, source string) ([]PublishedTagDTO, error) {
+	if err := (domain.BrowseFilter{Source: source}).Validate(); err != nil {
+		return nil, err
+	}
+	counts, err := s.repo.FindPublishedTagCounts(ctx, source)
+	if err != nil {
+		return nil, err
+	}
+	dtos := make([]PublishedTagDTO, 0, len(counts))
+	for _, count := range counts {
+		dtos = append(dtos, PublishedTagDTO{Slug: count.Slug, Name: count.Name, Count: count.Count})
+	}
+	return dtos, nil
 }
 
 // ListAll 分页列出所有文章（后台，含回收站视图），返回不含正文的列表项。
@@ -344,18 +371,20 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (PostDTO, error) {
 	return toDTO(p), nil
 }
 
-// resolveSlugConflict 当 slug 已被占用时,循环追加 -2/-3/-4… 直到不冲突。
+// resolveSlugConflict 对已占用的 slug 和系列目录保留名追加 -2/-3/-4… 直到不冲突。
 // 上限 99(避免极端情况死循环);超过仍冲突则返回 ErrSlugConflict。
 //
 // 注意:ExistsBySlug 不排除当前编辑文章自身,调用方需在 slug 未变时
 // 短路(Update 的 in.Slug != p.Slug() 判断),避免误判自身冲突。
 func (s *Service) resolveSlugConflict(ctx context.Context, slug string) (string, error) {
-	exists, err := s.repo.ExistsBySlug(ctx, slug)
-	if err != nil {
-		return "", err
-	}
-	if !exists {
-		return slug, nil
+	if slug != "series" {
+		exists, err := s.repo.ExistsBySlug(ctx, slug)
+		if err != nil {
+			return "", err
+		}
+		if !exists {
+			return slug, nil
+		}
 	}
 	for i := 2; i <= 99; i++ {
 		candidate := fmt.Sprintf("%s-%d", slug, i)
@@ -601,7 +630,7 @@ var batchActionPerm = map[string]string{
 }
 
 // deletedAuthorName 已注销作者在文章作者位的占位名
-//（与评论/推文域占位同值；本地定义避免跨 feature 依赖）。
+// （与评论/推文域占位同值；本地定义避免跨 feature 依赖）。
 const deletedAuthorName = "已注销用户"
 
 // BatchAction 对多篇文章执行同一操作，返回成功操作数。
@@ -967,18 +996,24 @@ func (s *Service) Slugify(_ context.Context, title string) (SlugResult, error) {
 
 // ListArchiveYears 返回归档年份索引（倒序）。
 // 供公开归档页渲染年份导航，单独成接口以便前端懒加载各年文章。
-func (s *Service) ListArchiveYears(ctx context.Context) ([]int, error) {
-	return s.repo.FindArchiveYears(ctx)
+func (s *Service) ListArchiveYears(ctx context.Context, filter domain.BrowseFilter) ([]int, error) {
+	if err := filter.Validate(); err != nil {
+		return nil, err
+	}
+	return s.repo.FindArchiveYears(ctx, filter)
 }
 
 // GetArchiveByYear 返回指定年份的归档数据（精简文章项，倒序）。
 // year 合法性校验：排除明显非法值，避免无效查询。
-func (s *Service) GetArchiveByYear(ctx context.Context, year int) (ArchiveYearDTO, error) {
+func (s *Service) GetArchiveByYear(ctx context.Context, year int, filter domain.BrowseFilter) (ArchiveYearDTO, error) {
+	if err := filter.Validate(); err != nil {
+		return ArchiveYearDTO{}, err
+	}
 	const minYear = 1900
 	if year < minYear || year > time.Now().Year()+1 {
 		return ArchiveYearDTO{}, shared.BadRequest("无效的年份")
 	}
-	posts, err := s.repo.FindPublishedByYear(ctx, year)
+	posts, err := s.repo.FindPublishedByYear(ctx, year, filter)
 	if err != nil {
 		return ArchiveYearDTO{}, err
 	}
@@ -1169,7 +1204,8 @@ func toListItemDTO(p *domain.Post) PostListItemDTO {
 		Excerpt: p.Excerpt(), CoverImage: p.CoverImage(),
 		Status: p.Status(), IsFeatured: p.IsFeatured(),
 		ViewCount: p.ViewCount(), Tags: p.Tags(),
-		AuthorID: p.AuthorID().String(),
+		CanonicalURL: p.CanonicalURL(),
+		AuthorID:     p.AuthorID().String(),
 	}
 	if p.PublishedAt() != nil {
 		dto.PublishedAt = p.PublishedAt().Format(time.RFC3339)

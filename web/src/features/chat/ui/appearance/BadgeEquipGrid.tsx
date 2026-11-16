@@ -1,4 +1,6 @@
 import { CHAT_BADGES } from "@entities/chat-badge";
+import { Badge, Checkbox, Label } from "@violet/ui";
+import { useId } from "react";
 import { MAX_EQUIPPED_BADGES } from "../../model/appearance";
 import styles from "./ChatAppearanceEditor.module.css";
 
@@ -13,15 +15,18 @@ export interface BadgeEquipGridProps {
 	disabled?: boolean;
 }
 
-/** 徽章多选网格;选中角标显示佩戴顺序,未持有项锁定并标注,清空动作在面板工具行。 */
+/** 徽章多选网格;选中状态由 Checkbox 表达,佩戴顺序和未持有原因直接展示。 */
 export function BadgeEquipGrid({ ownedIDs, value, onChange, disabled }: BadgeEquipGridProps) {
+	const id = useId();
 	const owned = ownedIDs === undefined ? null : new Set(ownedIDs);
-	const toggle = (id: string) => {
-		if (value.includes(id)) {
-			onChange(value.filter((current) => current !== id));
+	const setChecked = (badgeID: string, checked: boolean) => {
+		if (!checked) {
+			onChange(value.filter((current) => current !== badgeID));
 			return;
 		}
-		if (value.length < MAX_EQUIPPED_BADGES) onChange([...value, id]);
+		if (value.length < MAX_EQUIPPED_BADGES && !value.includes(badgeID)) {
+			onChange([...value, badgeID]);
+		}
 	};
 	return (
 		<fieldset
@@ -34,51 +39,45 @@ export function BadgeEquipGrid({ ownedIDs, value, onChange, disabled }: BadgeEqu
 					const isOwned = owned?.has(badge.id) ?? false;
 					const order = value.indexOf(badge.id);
 					const selected = order >= 0;
+					const atLimit = !selected && value.length >= MAX_EQUIPPED_BADGES;
+					const controlID = `${id}-${badge.id}`;
+					const statusID = `${controlID}-status`;
 					return (
-						<button
-							key={badge.id}
-							type="button"
-							className={styles.badgeOption}
-							aria-label={badge.name}
-							aria-pressed={selected}
-							disabled={!isOwned}
-							onClick={() => toggle(badge.id)}
-						>
-							{selected && (
-								<span className={styles.orderTag} aria-hidden="true">
-									{order + 1}
-								</span>
-							)}
-							{!isOwned && (
-								<span className={styles.lockTag} aria-hidden="true">
-									<svg viewBox="0 0 12 12" width="9" height="9" fill="none">
-										<title>未获得</title>
-										<rect
-											x="2.5"
-											y="5"
-											width="7"
-											height="5"
-											rx="1"
-											stroke="currentColor"
-											strokeWidth="1.2"
-										/>
-										<path
-											d="M4 5V3.5a2 2 0 1 1 4 0V5"
-											stroke="currentColor"
-											strokeWidth="1.2"
-										/>
-									</svg>
-									未获得
-								</span>
-							)}
-							<img
-								src={badge.image}
-								alt=""
-								loading="lazy"
-								decoding="async"
-								draggable={false}
+						<div key={badge.id} className={styles.badgeOption}>
+							<Checkbox
+								id={controlID}
+								aria-label={badge.name}
+								aria-describedby={
+									selected || !isOwned || atLimit ? statusID : undefined
+								}
+								checked={selected}
+								disabled={disabled || owned === null || !isOwned || atLimit}
+								onCheckedChange={(checked) =>
+									setChecked(badge.id, checked === true)
+								}
 							/>
-						</button>
+							<Label htmlFor={controlID} className={styles.badgeLabel}>
+								<img
+									src={badge.image}
+									alt=""
+									loading="lazy"
+									decoding="async"
+									draggable={false}
+								/>
+								<span className={styles.optionName}>{badge.name}</span>
+								{selected ? (
+									<Badge id={statusID}>第 {order + 1} 枚</Badge>
+								) : !isOwned ? (
+									<Badge id={statusID} tone="off">
+										未获得
+									</Badge>
+								) : atLimit ? (
+									<Badge id={statusID} tone="off">
+										已达上限
+									</Badge>
+								) : null}
+							</Label>
+						</div>
 					);
 				})}
 			</div>

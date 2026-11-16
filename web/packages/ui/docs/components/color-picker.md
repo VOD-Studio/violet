@@ -49,7 +49,7 @@ Tab 依次进入 SV、色相、HEX、支持时的吸管，最后是恢复原色�
 
 - `recentColors` 由宿主管理，组件规范化、去重并显示最多六个。使用 `onColorCommit` 更新最近记录，避免拖动过程产生大量历史色。
 - 「自定义」默认收起，以 280ms 的 grid 行展开；收起区域带 `inert` 与 `aria-hidden`。减弱动态下立即切换。`defaultCustomOpen` 用于需要直接展开的消费场景。
-- 浮层复用非模态 Popover，不使用会抢走文本输入焦点的 menu。`open/defaultOpen/onOpenChange` 管理展开，`container/collisionBoundary` 接入宿主或陈列室舞台。Popover 沿用 `.v-float` 的 200ms / 140ms 出入场及焦点恢复。
+- 浮层复用非模态 Popover，不使用会抢走文本输入焦点的 menu。`open/defaultOpen/onOpenChange` 管理展开，`container/collisionBoundary` 接入宿主的挂载容器与碰撞边界。Popover 沿用 `.v-float` 的 200ms / 140ms 出入场及焦点恢复。
 - `triggerProps` 原样传触发按钮，可保存编辑器选区；取消其点击或指针事件时尊重 Radix 的事件取消约定。
 
 编辑器实时更新应保存原始选区并应用文字色事务，不在每次颜色回调调用 `.focus()`，否则会从 HEX 输入夺走焦点。关闭后恢复编辑器焦点的策略归编辑器宿主。最近颜色存储与清除动作后的业务提示也归宿主。
@@ -62,4 +62,4 @@ Tab 依次进入 SV、色相、HEX、支持时的吸管，最后是恢复原色�
 
 唯一视觉实现是 `color-picker.css`，闭合导入 input 与 popover CSS。面板 248px，SV 高 156px、圆角 12px，色相条高 12px、滑钮 18px，SV 指针 14px。渐变与 HSV 数据是取色器本身的色域，不是硬编码品牌色。组件框架、焦点、警告、纸面环和墨环消费语义 token。
 
-行为测试覆盖 HEX 草稿、受控回声与外部更新、键盘步进、指针完成/取消、原生 input 接线、禁用只读、EyeDropper、最近色命名与展开焦点、转换边界和传统色纸面对比度。陈列室独立展品覆盖面板、文字预设、自定义展开、纸面对比度提醒、错误、只读与禁用；检查与浏览器验收由集成任务执行，不以文档代替验收证据。
+行为测试覆盖 HEX 草稿、受控回声与外部更新、键盘步进、指针完成/取消、原生 input 接线、禁用只读、EyeDropper、最近色命名与展开焦点、转换边界和传统色纸面对比度。实际消费页需覆盖面板、文字预设、自定义展开、纸面对比度提醒、错误、只读与禁用；包内行为测试、真实 tarball consumer 与浏览器验收分别执行，不以文档代替验收证据。

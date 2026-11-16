@@ -3,6 +3,14 @@
 @import "../indicator/indicator.css";
 @import "../kbd/kbd.css";
 @import "../skeleton/skeleton.css";
+@import "../scroll-area/scroll-area.css";
+@import "../empty/empty.css";
+@import "../text-mark/text-mark.css";
+
+/* ScrollArea 的基础结构位于非分层 CSS；组合约束保持同层级。 */
+.v-command__scroll-area .v-scroll-area__content {
+	inline-size: 100%;
+}
 
 @layer components {
 	.v-command-overlay {
@@ -109,17 +117,20 @@
 		color: var(--muted-foreground);
 	}
 
-	.v-command__viewport {
+	.v-command__scroll-area {
+		--v-scroll-area-padding: 0px;
+		--v-scroll-area-surface: var(--popover);
+
 		flex: 0 1 auto;
 		block-size: var(--v-command-list, auto);
 		min-block-size: 0;
-		overflow-y: auto;
-		overscroll-behavior: contain;
 		transition: block-size 200ms var(--v-command-ease);
 	}
 
 	.v-command__list {
 		padding: 6px;
+		/* 不可见的滑动底色保留旧几何，不能撑大缩窄后的滚动视口。 */
+		overflow: clip;
 	}
 
 	.v-command__group + .v-command__group {
@@ -165,14 +176,16 @@
 		min-inline-size: 0;
 	}
 
-	.v-command__item-label,
-	.v-command__item-description {
+	.v-command__item-label {
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
 
 	.v-command__item-description {
+		overflow-wrap: anywhere;
+		white-space: normal;
+		line-height: 1.6;
 		color: var(--muted-foreground);
 		font-size: var(--text-12);
 	}
@@ -188,10 +201,21 @@
 		white-space: nowrap;
 	}
 
-	.v-command__match {
-		border-radius: 2px;
-		background-color: var(--decoration-muted);
-		color: inherit;
+	.v-command__item-chevron,
+	.v-command__item-enter {
+		flex: none;
+	}
+
+	.v-command__item-chevron {
+		color: var(--muted-foreground);
+	}
+
+	.v-command__item-enter {
+		visibility: hidden;
+	}
+
+	.v-command__item[data-active] .v-command__item-enter {
+		visibility: visible;
 	}
 
 	.v-command__skeleton-row {
@@ -211,10 +235,21 @@
 		block-size: 10px;
 	}
 
-	.v-command__empty-text {
-		margin: 0;
-		padding: 12px 10px 6px;
-		color: var(--muted-foreground);
+	.v-command__empty {
+		padding: 12px 10px;
+		overflow-wrap: anywhere;
+	}
+
+	.v-command__empty > * {
+		max-inline-size: 100%;
+	}
+
+	.v-command__query {
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		overflow: hidden;
+		margin-block-end: 6px;
 	}
 
 	.v-command__footer {
@@ -252,7 +287,7 @@
 		animation: v-command-in 220ms var(--v-command-ease) backwards;
 	}
 
-	.v-command[data-state="open"] .v-command__viewport {
+	.v-command[data-state="open"] .v-command__scroll-area {
 		animation: v-command-expand 260ms var(--v-command-ease) backwards;
 	}
 
@@ -343,7 +378,7 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.v-command__viewport {
+		.v-command__scroll-area {
 			transition: none;
 		}
 
@@ -355,7 +390,7 @@
 			animation: v-command-fade-out 100ms ease-out forwards;
 		}
 
-		.v-command[data-state="open"] .v-command__viewport,
+		.v-command[data-state="open"] .v-command__scroll-area,
 		.v-command[data-state="open"] .v-command__item[data-stagger],
 		.v-command__list[data-push] {
 			animation: none;

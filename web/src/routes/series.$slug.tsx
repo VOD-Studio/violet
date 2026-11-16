@@ -1,68 +1,12 @@
-import { fetchSeriesBySlug, seriesKeys, useSeriesDetail } from "@features/series/api";
-import type { SeriesDetail } from "@features/series/model/types";
-import { SeriesDetailBody } from "@features/series/ui/SeriesDetailBody";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Button, Empty, PageShell, Skeleton } from "@violet/ui";
-
-function SeriesDetailPage() {
-	const { slug } = Route.useParams();
-	const { data: detail, isLoading, isError } = useSeriesDetail(slug);
-
-	if (isLoading) {
-		return (
-			<PageShell>
-				<div className="mx-auto max-w-4xl space-y-6">
-					<Skeleton className="h-4 w-24 rounded-md" />
-					<div className="grid gap-10 md:grid-cols-[220px_minmax(0,1fr)]">
-						<Skeleton className="aspect-2/3 w-full rounded-sm" />
-						<div className="space-y-4">
-							<Skeleton className="h-4 w-32 rounded-md" />
-							<Skeleton className="h-12 w-4/5 rounded-lg" />
-							<Skeleton className="h-4 w-full rounded-md" />
-							<Skeleton className="h-4 w-2/3 rounded-md" />
-						</div>
-					</div>
-					<Skeleton className="h-64 w-full rounded-lg" />
-				</div>
-			</PageShell>
-		);
-	}
-	if (isError || !detail) {
-		return (
-			<PageShell>
-				<Empty
-					title="404"
-					description="书籍不存在或尚未发布"
-					action={
-						<Button variant="outline" size="sm" asChild>
-							<Link to="/series">返回书架</Link>
-						</Button>
-					}
-					className="py-20"
-				/>
-			</PageShell>
-		);
-	}
-
-	return (
-		<PageShell>
-			<SeriesDetailBody detail={detail} />
-		</PageShell>
-	);
-}
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/series/$slug")({
-	// SSR 预取详情；404（draft 书/不存在）不阻塞导航，组件读缓存判空渲染
-	loader: ({ context, params }) =>
-		context.queryClient
-			.ensureQueryData({
-				queryKey: seriesKeys.detail(params.slug),
-				queryFn: () => fetchSeriesBySlug(params.slug),
-			})
-			.catch(() => null),
-	staticData: { navTitle: (detail: SeriesDetail | null) => detail?.title },
-	head: ({ params }) => ({
-		meta: [{ title: `系列书 · ${params.slug}` }],
-	}),
-	component: SeriesDetailPage,
+	beforeLoad: ({ location, params }) => {
+		const target = new URL(location.href, "http://localhost");
+		target.pathname = `/blog/series/${encodeURIComponent(params.slug)}`;
+		throw redirect({
+			href: `${target.pathname}${target.search}${target.hash}`,
+			statusCode: 301,
+		});
+	},
 });

@@ -554,7 +554,7 @@ func TestRevealTokenRejectsCredentialWithoutCiphertext(t *testing.T) {
 		t.Fatal(err)
 	}
 	id := domainshared.MustParseID(created.ID)
-	blind := domainchat.ReconstructBot(id, bots.bots[id].UserID(), "Saber", nil,
+	blind := domainchat.ReconstructBot(id, bots.bots[id].UserID(), "Saber", "", nil,
 		bots.bots[id].TokenHash(), "", true, false, false, time.Now(), time.Now())
 	bots.bots[id] = blind
 

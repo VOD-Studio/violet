@@ -99,7 +99,7 @@ import { Cascader } from "@violet/ui";
 
 ## 面板外壳
 
-沿用选择器族共用的 `lib/picker-panel.tsx`：Radix Popover 的 Anchor + Portal + Content，非模态、不抢焦点，下方起点对齐、距触发器 6px，放不下翻到上方；浮出 200ms、收起 140ms，位移 6px / 4px，不缩放；减弱动态（系统偏好与 `[data-motion="reduce"]` 作用域）只做透明度，滑动底色与加载圆弧静止。陈列室与带缩放的宿主用 `container` 与 `collisionBoundary` 把面板收进舞台。
+沿用选择器族共用的 `lib/picker-panel.tsx`：Radix Popover 的 Anchor + Portal + Content，非模态、不抢焦点，下方起点对齐、距触发器 6px，放不下翻到上方；浮出 200ms、收起 140ms，位移 6px / 4px，不缩放；减弱动态（系统偏好与 `[data-motion="reduce"]` 作用域）只做透明度，滑动底色与加载圆弧静止。带局部作用域或缩放的宿主用 `container` 与 `collisionBoundary` 限定面板挂载范围与碰撞边界。
 
 ## 设计稿取舍
 

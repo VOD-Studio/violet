@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { chatEventStreamURL } from "../api/client";
 import { chatKeys } from "../api/keys";
 import { useChatAlertStore } from "../model/chat-alert-store";
+import { useChatPresenceStore } from "../model/chat-presence-store";
 import { useChatTypingStore } from "../model/chat-typing-store";
 import type {
 	BotReply,
@@ -12,6 +13,7 @@ import type {
 	ChatConversation,
 	ChatEvent,
 	ChatMessage,
+	ChatPresenceEventData,
 	ChatTypingEventData,
 } from "../model/types";
 
@@ -56,6 +58,7 @@ export const useChatStream = () => {
 		const latestUpdate = new Map<string, number>();
 		const stream = new EventSource(chatEventStreamURL);
 		stream.onopen = () => {
+			useChatPresenceStore.getState().reset();
 			queryClient.invalidateQueries({ queryKey: chatKeys.root });
 		};
 		stream.addEventListener("chat", (event) => {
@@ -72,6 +75,12 @@ export const useChatStream = () => {
 							.getState()
 							.clearTyping(data.conversation_id, data.user_id);
 					}
+					return;
+				}
+				if (payload.type === "presence.updated") {
+					// 与输入状态相同的瞬态事件：只写覆盖层，不触发查询失效。
+					const data = payload.data as unknown as ChatPresenceEventData;
+					useChatPresenceStore.getState().setOnline(data.user_id, data.online);
 					return;
 				}
 				if (payload.type === "read.advanced") {
@@ -215,6 +224,8 @@ export const useChatStream = () => {
 					});
 					queryClient.invalidateQueries({ queryKey: chatKeys.messages(conversationID) });
 					if (payload.type === "member.changed") {
+						// 成员变动后，旧的实时覆盖可能对应已不再共处的用户，以重新拉取的成员列表为准。
+						useChatPresenceStore.getState().reset();
 						queryClient.invalidateQueries({
 							queryKey: chatKeys.members(conversationID),
 						});

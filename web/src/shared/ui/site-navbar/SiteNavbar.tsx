@@ -1,13 +1,23 @@
 import type { ActiveNav, NavItem } from "@shared/config/nav";
-import { DropdownGroup, iconProps, Kbd, Segmented, type SegmentedItem } from "@violet/ui";
+import {
+	DropdownGroup,
+	iconProps,
+	Kbd,
+	Segmented,
+	type SegmentedItem,
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@violet/ui";
 import { cn } from "cn";
 import { ChevronDown, Search } from "lucide-react";
 import type { ReactNode } from "react";
 import { type NavbarLinkComponent, RouterLink } from "./link";
 import { NavCell } from "./NavCell";
 
-/** 常规态每项的宽度；带箭头的分组项按权重略宽。 */
-const REST_ITEM_SIZE = "4.75rem";
+/** 普通态基础项宽（rem）；额外图标与省略号按占位追加。 */
+const REST_ITEM_SIZE = 4.75;
 /** 只剩图标的项宽：图标加左右各 12px。 */
 const ICON_SIZE = "2.5rem";
 /** 收起态里当前项显示标题时占的宽：图标、间距、190px 标题与内边距。 */
@@ -17,11 +27,17 @@ const PILL =
 	"pointer-events-auto relative flex h-10 items-center rounded-full border border-sheet-border shadow-soft backdrop-blur-md";
 
 /**
- * 左药丸外壳：底色、边、软影与模糊。左容器本身只负责定位，外壳由 logo 触发器自己套用，
- * 因为变形弹出层从触发器长成面板，触发器必须是有底色的药丸，不能是外面再套一层药丸的透明按钮。
+ * 药丸的底色、描边、软影与模糊外壳。
+ *
+ * @remarks 套在品牌触发器或操作组锚点上；外容器仅提供定位参照。
  */
 export const NAVBAR_PILL_CLASS = `${PILL} bg-sheet-translucent`;
 
+/**
+ * 三枚顶栏药丸的内容与导航状态。
+ *
+ * @remarks items 与 active 必须来自同一组导航对象；收起态仍保留详情标题与完整入口名称。
+ */
 export interface SiteNavbarProps {
 	/** 当前登录态下可见的一级入口。 */
 	items: NavItem[];
@@ -37,7 +53,7 @@ export interface SiteNavbarProps {
 	collapsed?: boolean;
 	/** 左药丸内容；药丸外壳不由本组件提供，logo 自己套用 {@link NAVBAR_PILL_CLASS}。 */
 	logo: ReactNode;
-	/** 右药丸内容；药丸外壳由本组件提供。 */
+	/** 右药丸内容；宿主以 {@link NAVBAR_PILL_CLASS} 提供可形变的外壳。 */
 	actions: ReactNode;
 	/** 点击搜索入口。 */
 	onSearch: () => void;
@@ -89,13 +105,9 @@ export function RoutingLine({ value }: { value: number }) {
 }
 
 /**
- * 站点顶栏：左 logo 药丸、中间导航药丸（一级入口加末尾搜索）、右工具药丸。
+ * 站点顶栏的品牌、导航与工具三枚药丸。
  *
- * 纯展示：不取数据、不读路由；登录态、当前位置、标题、进度与收起态都由调用方给出。
- * 常规、详情（当前项展开成「栏目 / 标题」）、子页（「更多」换成子页名）、
- * 收起（导航只剩图标）四种形态由 props 组合出来。
- *
- * @param props - 见 {@link SiteNavbarProps}
+ * @remarks 展示层不读取数据和路由；当前入口、详情标题、进度与收起状态由 props 提供。
  */
 export function SiteNavbar({
 	items,
@@ -123,7 +135,7 @@ export function SiteNavbar({
 		? activeText
 			? `calc((${TITLE_SLOT} + ${count - 1} * ${ICON_SIZE}) / ${count})`
 			: ICON_SIZE
-		: REST_ITEM_SIZE;
+		: `${REST_ITEM_SIZE}rem`;
 
 	const segments: SegmentedItem[] = items.map((item) => {
 		const current = active?.item === item;
@@ -134,22 +146,41 @@ export function SiteNavbar({
 		} else if (current && collapsed) {
 			label = undefined;
 		}
+		const characters = !expanded && label ? Array.from(label) : null;
+		const shortened = characters !== null && characters.length > 2;
+		const displayLabel = shortened ? `${characters[0]}${characters[1]}…` : label;
+		const hasTrailing = item.to === undefined && !collapsed;
+		// 分组固定预留箭头与间距（1.125rem）和省略号（0.875rem），避免切换子页时跳位。
+		const extraSize = (hasTrailing ? 1.125 : 0) + (hasTrailing || shortened ? 0.875 : 0);
 		return {
 			value: item.label,
-			// 带尾部箭头的分组项有两枚图标，常规态加宽后内边距与其余项一致
-			weight: item.to === undefined && !collapsed ? 1.25 : 1,
+			weight: expanded ? 1 : (REST_ITEM_SIZE + extraSize) / REST_ITEM_SIZE,
 			icon: <Icon className="size-4 shrink-0" />,
-			label,
-			trailing:
-				item.to === undefined && !collapsed ? (
-					<ChevronDown
-						aria-hidden="true"
-						{...iconProps(
-							12,
-							"transition-transform duration-300 group-data-[state=open]/item:rotate-180",
-						)}
-					/>
-				) : undefined,
+			label: label ? (
+				<Tooltip truncatedOnly={!shortened}>
+					<TooltipTrigger asChild>
+						<span
+							data-slot="navbar-label"
+							className={cn(
+								"block truncate",
+								!expanded && hasTrailing && "w-[3em] text-left",
+							)}
+						>
+							{displayLabel}
+						</span>
+					</TooltipTrigger>
+					<TooltipContent>{label}</TooltipContent>
+				</Tooltip>
+			) : undefined,
+			trailing: hasTrailing ? (
+				<ChevronDown
+					aria-hidden="true"
+					{...iconProps(
+						12,
+						"shrink-0 transition-transform duration-300 group-data-[state=open]/item:rotate-180",
+					)}
+				/>
+			) : undefined,
 			title: expanded && !current ? item.label : undefined,
 			render: (segment) => (
 				<NavCell
@@ -157,7 +188,7 @@ export function SiteNavbar({
 					segment={segment}
 					current={current}
 					activeTo={active?.link.to}
-					label={label === undefined ? item.label : undefined}
+					label={label ?? item.label}
 					readingProgress={reading && current ? readingProgress : undefined}
 					LinkComponent={LinkComponent}
 				/>
@@ -190,18 +221,23 @@ export function SiteNavbar({
 			>
 				<nav aria-label="主导航" className={cn(PILL, "gap-0.5 bg-muted/78 p-1")}>
 					{ornaments?.center}
-					<DropdownGroup>
-						<Segmented
-							value={active?.item.label ?? ""}
-							segments={segments}
-							rounded="full"
-							itemSize={itemSize}
-							collapsedSize={ICON_SIZE}
-							expandSelected={expanded}
-							className="[--v-segmented-font-size:0.875rem] [--v-segmented-pad:0px] [--v-segmented-track:transparent]"
-							itemClassName="group/item font-medium data-[state=open]:text-foreground"
-						/>
-					</DropdownGroup>
+					<TooltipProvider>
+						<DropdownGroup>
+							<Segmented
+								value={active?.item.label ?? ""}
+								segments={segments}
+								rounded="full"
+								itemSize={itemSize}
+								collapsedSize={ICON_SIZE}
+								expandSelected={expanded}
+								className="[--v-segmented-font-size:0.875rem] [--v-segmented-pad:0px] [--v-segmented-track:transparent]"
+								itemClassName={cn(
+									"group/item font-medium data-[state=open]:text-foreground",
+									!expanded && "px-3",
+								)}
+							/>
+						</DropdownGroup>
+					</TooltipProvider>
 					<span aria-hidden="true" className="mx-1 h-4 w-px shrink-0 bg-rule2" />
 					<SearchEntry compact={expanded} onClick={onSearch} />
 					{routing === null ? null : <RoutingLine value={routing} />}
@@ -212,11 +248,12 @@ export function SiteNavbar({
 				data-slot="navbar-right"
 				inert={collapsed}
 				className={cn(
-					PILL,
-					"gap-0.5 bg-sheet-translucent p-1 transition-opacity duration-200 group-data-[collapsed=true]/navbar:opacity-0 motion-reduce:transition-none",
+					"pointer-events-auto relative transition-opacity duration-200 has-[[data-slot=morphing-popover-trigger][aria-expanded=true]]:z-20 group-data-[collapsed=true]/navbar:opacity-0 motion-reduce:transition-none",
 				)}
 			>
-				{ornaments?.right}
+				<span className="pointer-events-none absolute inset-0 in-[[data-slot=navbar-right]:has([data-slot=morphing-popover-anchor][data-hidden])]:invisible">
+					{ornaments?.right}
+				</span>
 				{actions}
 			</div>
 		</div>

@@ -15,6 +15,7 @@ export interface TransitionRule {
 const ADMIN = ["/admin", "/admin/*"];
 const LAB = ["/lab", "/lab/*"];
 const WORKBENCH = ["/inkline", "/inkline/*"];
+const BLOG_BROWSE = ["/blog", "/blog/series", "/blog/archive"];
 
 const eitherIn = (patterns: readonly string[]) => (from: string | undefined, to: string) =>
 	matchesAny(patterns, to) || matchesAny(patterns, from);
@@ -29,6 +30,11 @@ export const TRANSITION_RULES: readonly TransitionRule[] = [
 	{ id: "admin", kind: "none", applies: eitherIn(ADMIN) },
 	// 实验页不属于正式页面，也不应带上转场样式。
 	{ id: "lab", kind: "none", applies: eitherIn(LAB) },
+	{
+		id: "blog-browse-internal",
+		kind: "none",
+		applies: (from, to) => matchesAny(BLOG_BROWSE, from) && matchesAny(BLOG_BROWSE, to),
+	},
 	// 包演示页切换各节时工作台保持挂载，只换舞台与面板内容。
 	{
 		id: "workbench-internal",

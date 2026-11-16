@@ -1,0 +1,63 @@
+.bubble {
+	border-radius: 1rem;
+	background: color-mix(in oklab, var(--decoration) 28%, var(--card));
+	color: var(--foreground);
+}
+
+.bubble[data-side="outgoing"][data-first-in-group="false"] {
+	border-top-right-radius: 0.25rem;
+}
+
+.bubble[data-side="outgoing"][data-last-in-group="false"] {
+	border-bottom-right-radius: 0.25rem;
+}
+
+.bubble[data-side="incoming"][data-first-in-group="false"] {
+	border-top-left-radius: 0.25rem;
+}
+
+.bubble[data-side="incoming"][data-last-in-group="false"] {
+	border-bottom-left-radius: 0.25rem;
+}
+
+.incoming {
+	background: var(--card);
+}
+
+.bubble[data-chat-bubble-theme="basic-paper"] {
+	border-color: var(--border);
+	background: var(--card);
+}
+
+.bubble[data-chat-bubble-theme="basic-ink"] {
+	background: var(--foreground);
+	color: var(--background);
+}
+
+.bubble[data-chat-bubble-theme="basic-washi"] {
+	border-color: var(--border);
+	background-color: color-mix(in oklab, var(--decoration) 8%, var(--card));
+	background-image: url("./chat-paper-light.webp");
+	background-size: 45rem 50rem;
+}
+
+[class~="dark"] .bubble[data-chat-bubble-theme="basic-washi"] {
+	background-image: url("./chat-paper-dark.webp");
+}
+
+.bubble pre {
+	max-width: 100%;
+	overflow-x: auto;
+}
+
+.bubble img {
+	max-width: 100%;
+}
+
+@media (forced-colors: active) {
+	.bubble {
+		border-color: CanvasText;
+		background: Canvas;
+		color: CanvasText;
+	}
+}

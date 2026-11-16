@@ -25,10 +25,9 @@ function useViewportWidth(): number {
 }
 
 /**
- * HeaderIsland - 移动端底部灵动岛导航（接线层）。
+ * 移动端底部导航，接入路由、滚动与在线状态。
  *
- * 把路由、滚动、在线状态喂给展示层 SiteIsland。
- * 导航独立于页面转场快照，不随正文淡入淡出。
+ * @remarks 独立于页面转场快照，不随正文淡入淡出。
  */
 const HeaderIsland = ({ authenticated }: { authenticated: boolean }) => {
 	const [mounted, setMounted] = useState(false);
@@ -40,7 +39,7 @@ const HeaderIsland = ({ authenticated }: { authenticated: boolean }) => {
 function Island({ authenticated }: { authenticated: boolean }) {
 	const [open, setOpen] = useState(false);
 	const [compact, setCompact] = useScrollCompact();
-	/** 点击入口后立刻让药丸滑过去，不等路由加载完成 */
+	// 点击后先反馈导航位置，不等路由加载完成。
 	const [optimisticTo, setOptimisticTo] = useState<string | null>(null);
 	const pathname = useRouterState({ select: (state) => state.location.pathname });
 	const items = useMemo(() => getNavItems({ authenticated }), [authenticated]);
@@ -72,7 +71,7 @@ function Island({ authenticated }: { authenticated: boolean }) {
 					),
 				}
 			: undefined;
-	/** 仅在路径真正变化时收起；挂载时的 effect 不能冲掉同步打开的面板（测试/极速点击） */
+	// 仅在路径变化时收起；挂载 effect 不覆盖同轮打开的状态。
 	const prevPathnameRef = useRef(pathname);
 
 	useEffect(() => {

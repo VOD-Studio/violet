@@ -6,6 +6,7 @@ import (
 	"errors"
 
 	domainchat "blog-api/internal/domain/chat"
+	domainmusic "blog-api/internal/domain/music"
 	domainshared "blog-api/internal/domain/shared"
 	domaintweet "blog-api/internal/domain/tweet"
 	domainupload "blog-api/internal/domain/upload"
@@ -34,6 +35,10 @@ type TweetRepository interface {
 type TweetReader interface {
 	GetByID(context.Context, string) (apptweet.TweetDTO, error)
 	GetByIDs(context.Context, []domainshared.ID) ([]apptweet.TweetDTO, error)
+}
+
+type MusicResolver interface {
+	Song(context.Context, string) (domainmusic.Song, error)
 }
 
 // EventNotifier 向在线聊天 SSE 连接广播事件。

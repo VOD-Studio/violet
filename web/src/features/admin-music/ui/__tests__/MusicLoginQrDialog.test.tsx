@@ -123,6 +123,39 @@ describe("扫码登录生命周期", () => {
 		expect(checkMusicLoginQR).toHaveBeenCalledWith("new", expect.any(AbortSignal));
 	});
 
+	it("关闭立即取消已生成挑战和在途轮询，重开不复用旧二维码", async () => {
+		let pollSignal: AbortSignal | undefined;
+		vi.mocked(createMusicLoginQR)
+			.mockResolvedValueOnce(challenge("closing"))
+			.mockResolvedValueOnce(challenge("reopened"));
+		vi.mocked(checkMusicLoginQR).mockImplementation((_id, signal) => {
+			pollSignal = signal;
+			return new Promise(() => {});
+		});
+		const onOpenChange = vi.fn();
+		const { rerender } = render(<MusicLoginQrDialog open onOpenChange={onOpenChange} />, {
+			wrapper,
+		});
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(1);
+		});
+		expect(checkMusicLoginQR).toHaveBeenCalledWith("closing", expect.any(AbortSignal));
+		const closingSignal = pollSignal;
+		rerender(<MusicLoginQrDialog open={false} onOpenChange={onOpenChange} />);
+		expect(closingSignal?.aborted).toBe(true);
+		// TanStack starts mutationFn asynchronously; flushing microtasks must suffice without time passing.
+		await act(async () => {
+			await Promise.resolve();
+		});
+		expect(vi.mocked(cancelMusicLoginQR).mock.calls.map(([id]) => id)).toEqual(["closing"]);
+		rerender(<MusicLoginQrDialog open onOpenChange={onOpenChange} />);
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(1);
+		});
+		expect(createMusicLoginQR).toHaveBeenCalledTimes(2);
+		expect(checkMusicLoginQR).toHaveBeenLastCalledWith("reopened", expect.any(AbortSignal));
+	});
+
 	it("正常扫码只创建一次，确认成功同步账号并停止轮询，不取消已完成挑战", async () => {
 		vi.mocked(createMusicLoginQR).mockResolvedValue(challenge("confirmed"));
 		vi.mocked(checkMusicLoginQR)

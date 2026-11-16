@@ -1,5 +1,6 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { createRef } from "react";
+import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Avatar, AvatarGroup } from "../avatar";
@@ -85,6 +86,25 @@ describe("Avatar 图片状态", () => {
 		vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(96);
 		const { container } = render(<Avatar name="Rua" src={IMG} />);
 		expect(root(container).dataset.state).toBe("loaded");
+	});
+
+	it("水合前图片已经失败时直接退回首字，不等待丢失的 error 事件", async () => {
+		vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockReturnValue(true);
+		vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(0);
+		const container = document.createElement("div");
+		container.innerHTML = renderToString(<Avatar name="Rua" src={IMG} />);
+		document.body.append(container);
+		let hydrated: ReturnType<typeof hydrateRoot> | undefined;
+		try {
+			await act(async () => {
+				hydrated = hydrateRoot(container, <Avatar name="Rua" src={IMG} />);
+			});
+			expect(screen.getByRole("img", { name: "Rua" }).textContent).toBe("R");
+			expect(image(container)).toBeNull();
+		} finally {
+			await act(async () => hydrated?.unmount());
+			container.remove();
+		}
 	});
 
 	it("服务端输出直接包含 img", () => {

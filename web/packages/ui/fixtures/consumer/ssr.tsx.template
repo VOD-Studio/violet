@@ -50,8 +50,8 @@ import { ContextMenu as LeafContextMenu, ContextMenuContent as LeafContextMenuCo
 import { DropdownMenu as LeafDropdownMenu, DropdownMenuContent as LeafDropdownMenuContent, DropdownMenuItem as LeafDropdownMenuItem, DropdownMenuTrigger as LeafDropdownMenuTrigger } from "@violet/ui/dropdown-menu";
 import { HoverCard as LeafHoverCard, HoverCardContent as LeafHoverCardContent, HoverCardTrigger as LeafHoverCardTrigger } from "@violet/ui/hover-card";
 import { Popover as LeafPopover, PopoverContent as LeafPopoverContent, PopoverTrigger as LeafPopoverTrigger } from "@violet/ui/popover";
-import { MorphingPopover, MorphingPopoverContent, MorphingPopoverTrigger } from "@violet/ui";
-import { MorphingPopover as LeafMorphingPopover, MorphingPopoverContent as LeafMorphingPopoverContent, MorphingPopoverTrigger as LeafMorphingPopoverTrigger } from "@violet/ui/morphing-popover";
+import { MorphingPopover, MorphingPopoverAnchor, MorphingPopoverContent, MorphingPopoverTrigger } from "@violet/ui";
+import { MorphingPopover as LeafMorphingPopover, MorphingPopoverAnchor as LeafMorphingPopoverAnchor, MorphingPopoverContent as LeafMorphingPopoverContent, MorphingPopoverTrigger as LeafMorphingPopoverTrigger } from "@violet/ui/morphing-popover";
 import { Toaster as LeafToaster } from "@violet/ui/sonner";
 import { Tooltip as LeafTooltip, TooltipContent as LeafTooltipContent, TooltipProvider as LeafTooltipProvider, TooltipTrigger as LeafTooltipTrigger } from "@violet/ui/tooltip";
 import { CommandList, ConfirmDialog, Dialog, DialogContent, DialogTitle, DialogTrigger, Drawer, DrawerContent, DrawerTitle, DrawerTrigger, Modal, PromptDialog, Sheet, SheetContent, SheetTitle, SheetTrigger } from "@violet/ui";
@@ -448,4 +448,16 @@ assert.match(morphOpen, /role="dialog"/);
 assert.match(morphOpen, /aria-label="状态详情"/);
 assert.match(morphOpen, /此刻在听/);
 assert.doesNotMatch(morphOpen, /data-anchor|data-motion/);
+const compositeMorphTree = (Root: typeof MorphingPopover, Anchor: typeof MorphingPopoverAnchor, Trigger: typeof MorphingPopoverTrigger, Content: typeof MorphingPopoverContent) => (
+	<Root defaultOpen>
+		<Anchor asChild><div><Trigger>外观</Trigger><Trigger>通知</Trigger><Trigger>账户</Trigger></div></Anchor>
+		<Content aria-label="胶囊面板">内容</Content>
+	</Root>
+);
+const compositeMorph = renderToString(compositeMorphTree(MorphingPopover, MorphingPopoverAnchor, MorphingPopoverTrigger, MorphingPopoverContent));
+assert.equal(compositeMorph, renderToString(compositeMorphTree(LeafMorphingPopover, LeafMorphingPopoverAnchor, LeafMorphingPopoverTrigger, LeafMorphingPopoverContent)));
+const compositeIds = Array.from(compositeMorph.matchAll(/\bid="([^"]+)"/g), (match) => match[1]);
+assert.equal(new Set(compositeIds).size, compositeIds.length);
+assert.equal((compositeMorph.match(/aria-controls=/g) ?? []).length, 3);
+assert.match(compositeMorph, /inert=""/);
 console.log("Independent root/leaf SSR, Input, Select, Checkbox, ImagePixelReveal, UploadTile, Dropdown, Segmented, Avatar, Badge, Kbd, Card, Separator, Skeleton, Popover, HoverCard, Tooltip, DropdownMenu, ContextMenu, Toaster, Dialog, Modal, ConfirmDialog, PromptDialog, Sheet, Drawer, CommandList and MorphingPopover semantics passed.");

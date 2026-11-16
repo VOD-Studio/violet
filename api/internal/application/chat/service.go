@@ -10,6 +10,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -46,6 +47,10 @@ type Service struct {
 	customEmojis CustomEmojiResolver
 	bots         BotNotifier
 	botRepo      domainchat.BotRepository
+	presence     PresenceReader
+	settings     domainchat.UserSettingsRepository
+	presenceMu   sync.Mutex
+	music        MusicResolver
 }
 
 // WithBotNotifier 注入 bot 事件投递器，返回自身便于装配链式调用。
@@ -112,6 +117,8 @@ type SendMessageInput struct {
 	MediaIDs []domainshared.ID
 	// SharedTweetID 分享消息引用的推文 ID；零值表示不分享推文。
 	SharedTweetID domainshared.ID
+	// MusicTrackID 音乐服务的歌曲 ID；仅 music_share 消息使用。
+	MusicTrackID string
 	// ReplyToID 被引用的同会话消息 ID；零值表示不引用消息。
 	ReplyToID domainshared.ID
 	// IdempotencyKey 客户端发送幂等键。
@@ -200,6 +207,8 @@ type UserDTO struct {
 	// AvatarURL 头像地址。
 	AvatarURL string `json:"avatar_url"`
 	IsBot     bool   `json:"is_bot"`
+	// IsSiteOwner 是否为站长（root 账号），用于在成员列表中标出。
+	IsSiteOwner bool `json:"is_site_owner"`
 }
 
 // BotToolCallDTO 工具调用读模型。
@@ -281,6 +290,11 @@ type MemberDTO struct {
 	JoinedAt string `json:"joined_at"`
 	// IsMuted 当前用户是否静音该会话。
 	IsMuted bool `json:"is_muted"`
+	// Online 成员当前是否在线（有聊天 SSE 连接）。选择隐身的成员对其他人恒为 false，
+	// 本人看到自己的真实状态；机器人不计在线。
+	Online bool `json:"online"`
+	// CanSpeak 机器人成员是否被允许在本会话发言；被房主禁言为 false，真人恒为 true。
+	CanSpeak bool `json:"can_speak"`
 }
 
 // MessageDTO 消息读模型。
@@ -308,6 +322,8 @@ type MessageDTO struct {
 	Media []MediaDTO `json:"media,omitempty"`
 	// SharedTweet 读取当前推文与来源状态；本站推文删除后为占位。
 	SharedTweet *SharedTweetDTO `json:"shared_tweet,omitempty"`
+	// MusicShare 发送时保存的歌曲资料，删除消息时省略。
+	MusicShare *MusicShareDTO `json:"music_share,omitempty"`
 	// ReplyTo 被引用消息的动态预览；原消息物理清理后为空。
 	ReplyTo *MessageReferenceDTO `json:"reply_to,omitempty"`
 	// Reactions 消息的聚合表情反应。
@@ -717,7 +733,7 @@ func (s *Service) ListMembers(ctx context.Context, userID, conversationID domain
 	if err != nil {
 		return nil, err
 	}
-	return s.membersToDTO(ctx, members)
+	return s.membersToDTO(ctx, members, userID)
 }
 
 // SetConversationMuted 设置当前用户的会话通知静音状态。
@@ -864,7 +880,7 @@ func (s *Service) ListMessages(ctx context.Context, userID, conversationID domai
 	return result, nil
 }
 
-// SendMessage 发送文本或图片消息。
+// SendMessage 发送会话消息。
 func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (MessageDTO, error) {
 	conversation, err := s.repo.FindByIDForMember(ctx, in.ConversationID, in.UserID)
 	if err != nil {
@@ -917,6 +933,8 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 		if _, err = s.tweets.FindByID(ctx, in.SharedTweetID); err == nil {
 			message, err = domainchat.NewTweetShareMessage(in.ConversationID, in.UserID, in.SharedTweetID, in.Content, in.IdempotencyKey, now, replyToID)
 		}
+	case domainchat.MessageMusicShare:
+		message, err = s.newMusicShareMessage(ctx, in, now, replyToID)
 	default:
 		err = domainshared.BadRequest("非法消息类型")
 	}
@@ -926,6 +944,11 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 	members, err := s.repo.ListMembers(ctx, in.ConversationID, false)
 	if err != nil {
 		return MessageDTO{}, err
+	}
+	for _, member := range members {
+		if member.IsActive() && member.UserID().Equal(in.UserID) && member.IsSilenced() {
+			return MessageDTO{}, domainshared.Forbidden("你已被房主禁言")
+		}
 	}
 	recipients := memberIDs(members)
 	if hasMentionAll(message.Content()) {
@@ -954,6 +977,8 @@ func (s *Service) SendMessage(ctx context.Context, in SendMessageInput) (Message
 		}
 	case domainchat.MessageTweetShare:
 		preview = "分享了一条推文"
+	case domainchat.MessageMusicShare:
+		preview = "分享了一首歌曲"
 	}
 	payload := map[string]any{"preview": preview}
 	if len(mentioned) > 0 {
@@ -1522,7 +1547,7 @@ func (s *Service) conversationDTO(ctx context.Context, conversation *domainchat.
 		if err != nil {
 			return ConversationDTO{}, err
 		}
-		dto.Members, err = s.membersToDTO(ctx, members)
+		dto.Members, err = s.membersToDTO(ctx, members, userID)
 		if err != nil {
 			return ConversationDTO{}, err
 		}
@@ -1530,7 +1555,7 @@ func (s *Service) conversationDTO(ctx context.Context, conversation *domainchat.
 	return dto, nil
 }
 
-func (s *Service) membersToDTO(ctx context.Context, members []*domainchat.Member) ([]MemberDTO, error) {
+func (s *Service) membersToDTO(ctx context.Context, members []*domainchat.Member, viewerID domainshared.ID) ([]MemberDTO, error) {
 	ids := memberIDs(members)
 	users, err := s.users.FindByIDs(ctx, ids)
 	if err != nil {
@@ -1540,13 +1565,18 @@ func (s *Service) membersToDTO(ctx context.Context, members []*domainchat.Member
 	for _, user := range users {
 		byID[user.GetID().String()] = user
 	}
+	hidden, err := s.hiddenOnline(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
 	out := make([]MemberDTO, 0, len(members))
 	for _, member := range members {
 		user := byID[member.UserID().String()]
 		if user == nil {
 			continue
 		}
-		out = append(out, MemberDTO{User: userToDTO(user), Role: string(member.Role()), JoinedAt: member.JoinedAt().Format(time.RFC3339Nano), IsMuted: member.IsMuted()})
+		online := !user.IsBot() && s.isOnline(member.UserID()) && (member.UserID().Equal(viewerID) || !hidden[member.UserID()])
+		out = append(out, MemberDTO{User: userToDTO(user), Role: string(member.Role()), JoinedAt: member.JoinedAt().Format(time.RFC3339Nano), IsMuted: member.IsMuted(), Online: online, CanSpeak: !member.IsSilenced()})
 	}
 	return out, nil
 }
@@ -1620,6 +1650,9 @@ func (s *Service) messageDTOWithReactions(ctx context.Context, message *domainch
 		editedAt := message.EditedAt().Format(time.RFC3339Nano)
 		dto.EditedAt = &editedAt
 	}
+	if message.Type() == domainchat.MessageSystem {
+		dto.Content = message.Content()
+	}
 	if message.HasTextContent() {
 		dto.Content = message.Content()
 		dto.CustomEmote, err = s.resolveCustomEmote(ctx, dto.Content, viewerUserID)
@@ -1636,6 +1669,9 @@ func (s *Service) messageDTOWithReactions(ctx context.Context, message *domainch
 		if err != nil {
 			return MessageDTO{}, err
 		}
+	}
+	if song := message.MusicShare(); song != nil {
+		dto.MusicShare = &MusicShareDTO{TrackID: song.TrackID, Title: song.Title, Artists: song.Artists, DurationMS: song.DurationMS, CoverURL: song.CoverURL}
 	}
 	for _, mediaID := range message.MediaIDs() {
 		media, err := s.mediaDTO(ctx, mediaID)
@@ -2093,7 +2129,7 @@ func userToDTO(user *domainuser.User) UserDTO {
 	if displayName == "" {
 		displayName = username
 	}
-	return UserDTO{ID: user.GetID().String(), Username: username, DisplayName: displayName, AvatarURL: user.AvatarURL(), IsBot: user.IsBot()}
+	return UserDTO{ID: user.GetID().String(), Username: username, DisplayName: displayName, AvatarURL: user.AvatarURL(), IsBot: user.IsBot(), IsSiteOwner: user.IsRoot()}
 }
 
 func memberIDs(members []*domainchat.Member) []domainshared.ID {

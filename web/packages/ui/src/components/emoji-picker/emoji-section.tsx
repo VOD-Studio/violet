@@ -11,6 +11,7 @@ interface EmojiSectionProps {
 	cells: readonly EmojiCell[];
 	row: number;
 	activeKey: string | null;
+	allowSelected: boolean;
 	optionId: (key: string) => string;
 	optionRefs: Map<string, HTMLButtonElement>;
 	onHighlight: (cell: EmojiCell, element: HTMLElement, moved: boolean) => void;
@@ -94,7 +95,10 @@ export function EmojiSectionExtras({ section, row, labelRefs }: EmojiSectionExtr
 }
 
 interface EmojiOptionProps
-	extends Pick<EmojiSectionProps, "optionId" | "optionRefs" | "onHighlight" | "onSelect"> {
+	extends Pick<
+		EmojiSectionProps,
+		"optionId" | "optionRefs" | "onHighlight" | "onSelect" | "allowSelected"
+	> {
 	cell: EmojiCell;
 	isActive: boolean;
 }
@@ -102,6 +106,7 @@ interface EmojiOptionProps
 const EmojiOption = memo(function EmojiOption({
 	cell,
 	isActive,
+	allowSelected,
 	optionId,
 	optionRefs,
 	onHighlight,
@@ -122,7 +127,7 @@ const EmojiOption = memo(function EmojiOption({
 		onHighlight(cell, event.currentTarget, true);
 	};
 	const select = () => {
-		if (!item.disabledReason && !item.selected) {
+		if (!item.disabledReason && (!item.selected || allowSelected)) {
 			onSelect(item);
 		}
 	};
@@ -136,7 +141,7 @@ const EmojiOption = memo(function EmojiOption({
 			tabIndex={-1}
 			aria-label={emojiItemName(item)}
 			aria-description={emojiItemDescription(item)}
-			aria-disabled={Boolean(item.disabledReason || item.selected)}
+			aria-disabled={Boolean(item.disabledReason || (item.selected && !allowSelected))}
 			aria-selected={item.selected === true}
 			data-active={isActive}
 			className="v-emoji-picker__item"

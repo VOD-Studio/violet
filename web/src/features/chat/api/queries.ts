@@ -43,6 +43,7 @@ import {
 	fetchChatMessageReaders,
 	fetchChatMessages,
 	fetchChatPushConfig,
+	fetchChatSettings,
 	fetchChatUnreadCount,
 	fetchChatUser,
 	inviteChatMember,
@@ -52,7 +53,9 @@ import {
 	removeChatMessageReaction,
 	renameChatConversation,
 	saveChatPushSubscription,
+	setBotSpeaking,
 	setChatMuted,
+	updateChatSettings,
 } from "./client";
 import { chatKeys } from "./keys";
 
@@ -255,30 +258,36 @@ export const useAddChatMessageReaction = (conversationID: string, messageID: str
 			const previous = captureMessageReaction(qc, queryKey, messageID, emojiID);
 			const emoji = findCachedEmoji(qc, emojiID);
 			const user = me.data;
+			let optimistic = false;
 			if (user) {
 				qc.setQueryData<InfiniteData<PagedResponse<ChatMessage>>>(queryKey, (old) =>
-					updateChatMessageReactions(old, messageID, (reactions) =>
-						addSelfReaction(
+					updateChatMessageReactions(old, messageID, (reactions) => {
+						// 聚合结果没有本人选择顺序；满额替换等待服务端权威结果。
+						if (reactions.filter((reaction) => reaction.self).length >= 3) {
+							return reactions;
+						}
+						optimistic = true;
+						return addSelfReaction(
 							reactions,
 							emojiID,
 							{ id: user.id, name: user.display_name || user.username },
 							emoji,
-						),
-					),
+						);
+					}),
 				);
 			}
-			return { previous };
+			return { previous, optimistic };
 		},
-		onError: (_error, emojiID, context) => {
+		onError: (error, emojiID, context) => {
 			const previous = context?.previous;
-			if (previous) {
+			if (previous && context?.optimistic) {
 				qc.setQueryData<InfiniteData<PagedResponse<ChatMessage>>>(queryKey, (old) =>
 					updateChatMessageReactions(old, messageID, (reactions) =>
 						restoreReaction(reactions, emojiID, previous),
 					),
 				);
 			}
-			toast.error("回应没有成功");
+			toast.error(error instanceof Error ? error.message : "回应没有成功");
 		},
 		onSettled: () => qc.invalidateQueries({ queryKey }),
 	});
@@ -377,3 +386,36 @@ function captureMessageReaction(
 	}
 	return undefined;
 }
+
+export const useChatSettings = () =>
+	useQuery({
+		queryKey: chatKeys.settings(),
+		queryFn: fetchChatSettings,
+		staleTime: 5 * 60_000,
+	});
+
+/** 隐身开关：成功后写回缓存，成员列表由对端的实时事件与下次拉取对账。 */
+export const useUpdateChatSettings = () => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: updateChatSettings,
+		onSuccess: (settings) => {
+			qc.setQueryData(chatKeys.settings(), settings);
+			qc.invalidateQueries({ queryKey: chatKeys.conversations() });
+		},
+		onError: () => toast.error("在线状态设置失败，请重试"),
+	});
+};
+
+export const useSetBotSpeaking = () => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: ({ id, userId, allowed }: { id: string; userId: string; allowed: boolean }) =>
+			setBotSpeaking(id, userId, allowed),
+		onSuccess: (_, variables) => {
+			qc.invalidateQueries({ queryKey: chatKeys.members(variables.id) });
+			qc.invalidateQueries({ queryKey: chatKeys.conversation(variables.id) });
+		},
+		onError: () => toast.error("角色发言权限设置失败，请重试"),
+	});
+};

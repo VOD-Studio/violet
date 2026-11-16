@@ -18,7 +18,7 @@ export interface BreadcrumbItem {
 
 export interface BreadcrumbsProps extends Omit<ComponentProps<"div">, "children"> {
 	items: readonly BreadcrumbItem[];
-	/** 折叠菜单挂载位置；陈列室用它把菜单收进展品舞台 */
+	/** 折叠菜单挂载位置；嵌入式宿主可将菜单挂在自身容器内。 */
 	menuContainer?: ComponentProps<typeof DropdownMenuContent>["container"];
 }
 

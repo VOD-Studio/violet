@@ -33,6 +33,26 @@ function renderApplication() {
 }
 
 describe("匿名友链申请验证码", () => {
+	it("关闭后重新打开从新的身份验证流程开始", () => {
+		const { rerender } = renderApplication();
+		fireEvent.change(screen.getByRole("textbox", { name: "联系邮箱（仅留存，不公开）" }), {
+			target: { value: "draft@example.com" },
+		});
+		rerender(
+			<QueryClientProvider client={queryClient}>
+				<ApplyDialog open={false} onOpenChange={vi.fn()} isLoggedIn={false} />
+			</QueryClientProvider>,
+		);
+		rerender(
+			<QueryClientProvider client={queryClient}>
+				<ApplyDialog open onOpenChange={vi.fn()} isLoggedIn={false} />
+			</QueryClientProvider>,
+		);
+		expect(screen.queryByDisplayValue("draft@example.com")).toBeNull();
+		expect(screen.getByRole("textbox", { name: "联系邮箱（仅留存，不公开）" })).toBeTruthy();
+		expect(screen.queryByRole("group", { name: "邮箱验证码" })).toBeNull();
+	});
+
 	it("发送失败可立即重试，修改邮箱后丢弃旧发送结果", async () => {
 		const oldRequest = Promise.withResolvers<null>();
 		vi.mocked(apiPost).mockReturnValueOnce(oldRequest.promise);

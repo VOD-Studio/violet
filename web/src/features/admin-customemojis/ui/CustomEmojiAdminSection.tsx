@@ -37,6 +37,7 @@ export function CustomEmojiAdminSection() {
 	);
 	const deleteMut = useAdminDeleteCustomEmoji();
 	const [deleting, setDeleting] = useState<AdminCustomEmoji | null>(null);
+	const [deleteOpen, setDeleteOpen] = useState(false);
 
 	const columns: DataTableColumn<AdminCustomEmoji>[] = [
 		{
@@ -94,7 +95,10 @@ export function CustomEmojiAdminSection() {
 								variant="ghost"
 								size="sm"
 								className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-								onClick={() => setDeleting(row)}
+								onClick={() => {
+									setDeleting(row);
+									setDeleteOpen(true);
+								}}
 								aria-label={`下架表情 ${row.name}`}
 							>
 								<Trash2 {...iconProps(14)} />
@@ -136,17 +140,15 @@ export function CustomEmojiAdminSection() {
 			/>
 
 			<ConfirmDialog
-				open={!!deleting}
-				onOpenChange={(open) => {
-					if (!open) setDeleting(null);
-				}}
+				open={deleteOpen}
+				onOpenChange={setDeleteOpen}
 				title="下架自定义表情"
 				description={`确定下架表情「${deleting?.name ?? ""}」（上传者 ${deleting?.owner.display_name || deleting?.owner.username || ""}）？下架后所有引用该表情的消息与评论将降级为占位文本，收藏者同步失效。`}
 				confirmLabel="下架"
 				loading={deleteMut.isPending}
 				onConfirm={() => {
 					if (!deleting) return;
-					deleteMut.mutate(deleting.id, { onSuccess: () => setDeleting(null) });
+					deleteMut.mutate(deleting.id, { onSuccess: () => setDeleteOpen(false) });
 				}}
 			/>
 		</TooltipProvider>

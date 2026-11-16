@@ -1,5 +1,6 @@
 import { localeLabel } from "@shared/ui/locale-switcher";
 import { ConfirmDialog } from "@violet/ui";
+import { useRef } from "react";
 
 interface PersonaEditorDialogsProps {
 	deleteOpen: boolean;
@@ -25,6 +26,10 @@ export function PersonaEditorDialogs({
 	onLocaleRemoveOpenChange,
 	onConfirmLocaleRemove,
 }: PersonaEditorDialogsProps) {
+	const lastLocaleToRemove = useRef(localeToRemove);
+	if (localeToRemove) lastLocaleToRemove.current = localeToRemove;
+	const shownLocaleToRemove = localeToRemove || lastLocaleToRemove.current;
+
 	return (
 		<>
 			<ConfirmDialog
@@ -41,7 +46,7 @@ export function PersonaEditorDialogs({
 				onOpenChange={onLocaleRemoveOpenChange}
 				onConfirm={onConfirmLocaleRemove}
 				title="移除语言版本"
-				description={`确定移除${localeLabel(localeToRemove)}版本吗？该语言的正文、资料项与图片编排将在下次保存时删除。`}
+				description={`确定移除${localeLabel(shownLocaleToRemove)}版本吗？该语言的正文、资料项与图片编排将在下次保存时删除。`}
 				confirmLabel="移除版本"
 			/>
 		</>

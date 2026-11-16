@@ -4,17 +4,24 @@ import { SceneButton } from "./SceneButton";
 import { SegmentedToggle } from "./SegmentedToggle";
 import type { AppearanceSize, AppearanceVariant } from "./types";
 
-/**
- * 外观切换器配置。
- */
-interface AppearanceToggleProps {
-	/** 外观切换器变体 */
+/** 外观切换器的形态、尺寸与分段文字展示契约。 */
+export interface AppearanceToggleProps {
 	variant?: AppearanceVariant;
-	/** 外观切换器尺寸 */
 	size?: AppearanceSize;
+	/**
+	 * 在 segmented 形态显示文字并铺满容器；其他形态忽略。
+	 *
+	 * @default false
+	 */
+	showLabels?: boolean;
 }
 
-export const AppearanceToggle = ({ variant = "segmented", size = "sm" }: AppearanceToggleProps) => {
+/** 切换亮色、暗色或跟随系统的外观，按宿主选择展示形态。 */
+export const AppearanceToggle = ({
+	variant = "segmented",
+	size = "sm",
+	showLabels = false,
+}: AppearanceToggleProps) => {
 	switch (variant) {
 		case "cyclic":
 			return <CyclicAppearanceButton size={size} />;
@@ -23,8 +30,8 @@ export const AppearanceToggle = ({ variant = "segmented", size = "sm" }: Appeara
 		case "scene":
 			return <SceneButton size={size} />;
 		case "segmented":
-			return <SegmentedToggle size={size} />;
+			return <SegmentedToggle size={size} showLabels={showLabels} />;
 		default:
-			return <SegmentedToggle size={size} />;
+			return <SegmentedToggle size={size} showLabels={showLabels} />;
 	}
 };

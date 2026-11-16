@@ -352,6 +352,11 @@
 			"import": "./src/components/tag-input/index.ts",
 			"default": "./src/components/tag-input/index.ts"
 		},
+		"./text-mark": {
+			"types": "./src/components/text-mark/index.ts",
+			"import": "./src/components/text-mark/index.ts",
+			"default": "./src/components/text-mark/index.ts"
+		},
 		"./text-underline": {
 			"types": "./src/components/text-underline/index.ts",
 			"import": "./src/components/text-underline/index.ts",
@@ -473,6 +478,7 @@
 		"./components/table.css": "./src/components/table/table.css",
 		"./components/tabs.css": "./src/components/tabs/tabs.css",
 		"./components/tag-input.css": "./src/components/tag-input/tag-input.css",
+		"./components/text-mark.css": "./src/components/text-mark/text-mark.css",
 		"./components/textarea.css": "./src/components/textarea/textarea.css",
 		"./components/toggle-group.css": "./src/components/toggle-group/toggle-group.css",
 		"./components/tooltip.css": "./src/components/tooltip/tooltip.css",
@@ -841,6 +847,11 @@
 				"import": "./dist/components/tag-input/index.js",
 				"default": "./dist/components/tag-input/index.js"
 			},
+			"./text-mark": {
+				"types": "./dist/components/text-mark/index.d.ts",
+				"import": "./dist/components/text-mark/index.js",
+				"default": "./dist/components/text-mark/index.js"
+			},
 			"./text-underline": {
 				"types": "./dist/components/text-underline/index.d.ts",
 				"import": "./dist/components/text-underline/index.js",
@@ -962,6 +973,7 @@
 			"./components/table.css": "./dist/components/table.css",
 			"./components/tabs.css": "./dist/components/tabs.css",
 			"./components/tag-input.css": "./dist/components/tag-input.css",
+			"./components/text-mark.css": "./dist/components/text-mark.css",
 			"./components/textarea.css": "./dist/components/textarea.css",
 			"./components/toggle-group.css": "./dist/components/toggle-group.css",
 			"./components/tooltip.css": "./dist/components/tooltip.css",

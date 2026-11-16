@@ -193,33 +193,183 @@ it("取消失败恢复本人名单与 GIF，但不覆盖同会话的新消息和
 	);
 });
 
-it("三种已选时仍可取消，添加与未选回应给出准确限额提示；超过六种可以展开", async () => {
-	const reactions = Array.from({ length: 7 }, (_, index) => ({
-		...reaction,
-		emoji_id: index + 1,
-		emoji_name: `表情${index + 1}`,
-		self: index < 3,
-	}));
-	seed([message("m1", reactions)]);
-	const info = vi.spyOn(toast, "info");
+it("他人已有三种回应时，点击他人回应为本人添加，不会取消他人的回应", async () => {
+	seed([
+		message(
+			"m1",
+			groups[0].emojis.slice(0, 3).map((emoji) => ({
+				emoji_id: emoji.id,
+				emoji_name: emoji.name,
+				emoji_url: emoji.url,
+				count: 1,
+				self: false,
+				recent_users: [{ id: "other", name: "小明" }],
+			})),
+		),
+	]);
+	vi.mocked(apiPost).mockReturnValue(new Promise(() => {}));
+	render(
+		<QueryClientProvider client={qc}>
+			<Messages />
+		</QueryClientProvider>,
+	);
+	fireEvent.click(screen.getByRole("button", { name: "表情1，1 人" }));
+	await waitFor(() =>
+		expect(apiPost).toHaveBeenCalledWith("/chat/conversations/c/messages/m1/reactions", {
+			emoji_id: 1,
+		}),
+	);
+	expect(apiDelete).not.toHaveBeenCalled();
+	await screen.findByRole("button", { name: "表情1，2 人，你已回应" });
+	const cached = qc.getQueryData<InfiniteData<PagedResponse<ChatMessage>>>(
+		chatKeys.messages("c"),
+	);
+	expect(cached?.pages[0].data[0].reactions[0].recent_users).toEqual([
+		{ id: "me", name: "本人" },
+		{ id: "other", name: "小明" },
+	]);
+});
+
+it.each([
+	"chip",
+	"quick",
+	"picker",
+] as const)("本人已选三种时从 %s 选择自己的回应只取消本人", async (entry) => {
+	seed([
+		message(
+			"m1",
+			groups[0].emojis.slice(0, 3).map((emoji) => ({
+				...reaction,
+				emoji_id: emoji.id,
+				emoji_name: emoji.name,
+			})),
+		),
+	]);
 	vi.mocked(apiDelete).mockReturnValue(new Promise(() => {}));
 	render(
 		<QueryClientProvider client={qc}>
 			<Messages />
 		</QueryClientProvider>,
 	);
-	fireEvent.click(screen.getByRole("button", { name: "添加回应" }));
-	expect(info).toHaveBeenLastCalledWith("单条消息最多 3 种回应，先取消一种");
-	fireEvent.click(screen.getByRole("button", { name: "表情4，2 人" }));
-	expect(apiPost).not.toHaveBeenCalled();
-	expect(info).toHaveBeenCalledTimes(2);
-	expect(screen.queryByRole("button", { name: "表情7，2 人" })).toBeNull();
-	fireEvent.click(screen.getByRole("button", { name: /展开.*1/ }));
-	expect(screen.getByRole("button", { name: "表情7，2 人" })).toBeTruthy();
-	fireEvent.click(screen.getByRole("button", { name: "表情1，2 人，你已回应" }));
+	if (entry === "chip") {
+		fireEvent.click(screen.getByRole("button", { name: "表情1，2 人，你已回应" }));
+	} else {
+		fireEvent.click(screen.getByRole("button", { name: "添加回应" }));
+		const toolbar = await screen.findByRole("toolbar", { name: "常用回应" });
+		if (entry === "quick") {
+			fireEvent.click(within(toolbar).getByRole("button", { name: "表情1，已回应" }));
+		} else {
+			fireEvent.click(within(toolbar).getByRole("button", { name: "更多表情" }));
+			const dialog = await screen.findByRole("dialog", { name: "选择回应" });
+			fireEvent.click(await within(dialog).findByRole("option", { name: /表情1/ }));
+		}
+	}
 	await waitFor(() =>
-		expect(apiDelete).toHaveBeenCalledWith("/chat/conversations/c/messages/m1/reactions/1"),
+		expect(apiDelete).toHaveBeenCalledExactlyOnceWith(
+			"/chat/conversations/c/messages/m1/reactions/1",
+		),
 	);
+	expect(apiPost).not.toHaveBeenCalled();
+	await screen.findByRole("button", { name: "表情1，1 人" });
+	expect(screen.getAllByRole("button", { name: /你已回应/ })).toHaveLength(2);
+});
+
+it("未满三种的新增乐观显示，失败恢复他人回应并保留原选择", async () => {
+	const other = {
+		...reaction,
+		emoji_id: 2,
+		emoji_name: "表情2",
+		count: 1,
+		self: false,
+		recent_users: [{ id: "other", name: "小明" }],
+	};
+	seed([message("m1", [reaction, other])]);
+	const write = Promise.withResolvers<void>();
+	vi.mocked(apiPost).mockReturnValue(write.promise);
+	vi.mocked(apiGetPaged).mockReturnValue(new Promise(() => {}));
+	render(
+		<QueryClientProvider client={qc}>
+			<Messages />
+		</QueryClientProvider>,
+	);
+	fireEvent.click(screen.getByRole("button", { name: "表情2，1 人" }));
+	await screen.findByRole("button", { name: "表情2，2 人，你已回应" });
+	await act(async () => write.reject(new Error("暂时不可回应")));
+	await screen.findByRole("button", { name: "表情2，1 人" });
+	expect(screen.getByRole("button", { name: "赞，2 人，你已回应" })).toBeTruthy();
+	expect(apiDelete).not.toHaveBeenCalled();
+});
+
+it.each([
+	"success",
+	"failure",
+] as const)("全消息 11 种、本人三种后新增仅 POST，等待及失败保持原三种，成功按服务端结果刷新：%s", async (outcome) => {
+	const reactions = Array.from({ length: 11 }, (_, index) => ({
+		...reaction,
+		emoji_id: index + 1,
+		emoji_name: `表情${index + 1}`,
+		self: index < 3,
+	}));
+	seed([message("m1", reactions)]);
+	const write = Promise.withResolvers<void>();
+	const refresh = Promise.withResolvers<PagedResponse<ChatMessage>>();
+	vi.mocked(apiPost).mockReturnValue(write.promise);
+	vi.mocked(apiGetPaged).mockReturnValue(refresh.promise);
+	const error = vi.spyOn(toast, "error");
+	render(
+		<QueryClientProvider client={qc}>
+			<Messages />
+		</QueryClientProvider>,
+	);
+	expect(screen.queryByRole("button", { name: "表情7，2 人" })).toBeNull();
+	fireEvent.click(screen.getByRole("button", { name: /展开.*5/ }));
+	expect(screen.getByRole("button", { name: "表情7，2 人" })).toBeTruthy();
+	fireEvent.click(screen.getByRole("button", { name: "添加回应" }));
+	const toolbar = await screen.findByRole("toolbar", { name: "常用回应" });
+	fireEvent.click(within(toolbar).getByRole("button", { name: "表情4" }));
+	await waitFor(() =>
+		expect(apiPost).toHaveBeenCalledExactlyOnceWith(
+			"/chat/conversations/c/messages/m1/reactions",
+			{ emoji_id: 4 },
+		),
+	);
+	expect(apiDelete).not.toHaveBeenCalled();
+	expect(screen.getAllByRole("button", { name: /你已回应/ })).toHaveLength(3);
+	expect(screen.getByRole("button", { name: "表情4，2 人" })).toBeTruthy();
+	await act(async () => {
+		if (outcome === "success") {
+			write.resolve();
+		} else {
+			write.reject(new Error("每条消息最多 11 种回应"));
+		}
+	});
+	await waitFor(() => expect(apiGetPaged).toHaveBeenCalled());
+	expect(screen.getAllByRole("button", { name: /你已回应/ })).toHaveLength(3);
+	expect(screen.getByRole("button", { name: "表情1，2 人，你已回应" })).toBeTruthy();
+	if (outcome === "failure") {
+		expect(error).toHaveBeenCalledWith("每条消息最多 11 种回应");
+	}
+	await act(async () => {
+		refresh.resolve({
+			data: [
+				message(
+					"m1",
+					outcome === "success"
+						? reactions.map((entry) => ({
+								...entry,
+								self: [2, 3, 4].includes(entry.emoji_id),
+							}))
+						: reactions,
+				),
+			],
+			pagination: { next_cursor: "", has_more: false, limit: 50 },
+		});
+	});
+	await screen.findByRole("button", {
+		name: outcome === "success" ? "表情4，2 人，你已回应" : "表情1，2 人，你已回应",
+	});
+	expect(screen.getAllByRole("button", { name: /你已回应/ })).toHaveLength(3);
+	expect(apiDelete).not.toHaveBeenCalled();
 });
 
 it("永久不可回应的消息保留人数，但没有失效的添加入口且不提交切换", () => {

@@ -32,8 +32,22 @@ function conversation(overrides: Partial<ChatConversation> = {}): ChatConversati
 		title: "",
 		owner: ME,
 		members: [
-			{ user: ME, role: "owner", joined_at: "2026-11-01T00:00:00Z", is_muted: false },
-			{ user: CLAUDE, role: "member", joined_at: "2026-11-01T00:00:00Z", is_muted: false },
+			{
+				user: ME,
+				role: "owner",
+				joined_at: "2026-11-01T00:00:00Z",
+				is_muted: false,
+				online: false,
+				can_speak: true,
+			},
+			{
+				user: CLAUDE,
+				role: "member",
+				joined_at: "2026-11-01T00:00:00Z",
+				is_muted: false,
+				online: false,
+				can_speak: true,
+			},
 		],
 		last_message: message(),
 		unread_count: 2,
@@ -59,12 +73,21 @@ describe("toChatEntry", () => {
 			conversation({
 				last_message: undefined,
 				members: [
-					{ user: ME, role: "owner", joined_at: "", is_muted: false },
+					{
+						user: ME,
+						role: "owner",
+						joined_at: "",
+						is_muted: false,
+						online: false,
+						can_speak: true,
+					},
 					{
 						user: { ...CLAUDE, avatar_url: "" },
 						role: "member",
 						joined_at: "",
 						is_muted: false,
+						online: false,
+						can_speak: true,
 					},
 				],
 			}),

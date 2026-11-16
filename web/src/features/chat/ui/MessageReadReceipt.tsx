@@ -1,29 +1,41 @@
-/**
- * 已读回执：自己发送消息的阅读状态。私聊显示「已读/未读」；房间显示聚合计数，点击弹出已读成员名单。
- */
 import { formatDateTime } from "@shared/lib/date";
-import { Popover, PopoverContent, PopoverTrigger } from "@violet/ui";
+import { iconProps, Popover, PopoverContent, PopoverTrigger } from "@violet/ui";
+import { cn } from "cn";
 
-import { useRef, useState } from "react";
+import { Check, CheckCheck } from "lucide-react";
+import { type RefObject, useRef } from "react";
 import { useChatMessageReaders } from "../api/queries";
 import type { ChatMessage, ChatUser, ConversationKind } from "../model/types";
 import { ChatAvatar } from "./ChatAvatar";
 
-interface MessageReadReceiptProps {
-	/** 自己发送的消息；read_state 缺省时整体不渲染。 */
+/** 组尾回执与逐条消息菜单共用已读成员名单。 */
+export interface MessageReadReceiptProps {
+	/** 自己发送的消息；非 pending 时缺少 read_state 不渲染。 */
 	message: ChatMessage;
 	/** 会话形态：私聊显示已读/未读，房间显示聚合计数与名单。 */
 	conversationKind: ConversationKind;
+	/** 发送中保留回执尺寸，但不显示或开放名单交互。 */
+	pending?: boolean;
 	/** 点击已读成员名字时追加提及。 */
 	onMention?: (user: ChatUser) => void;
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+	/** 非组尾只保留定位锚点，名单由消息菜单打开。 */
+	collapsed?: boolean;
+	returnFocusRef: RefObject<HTMLButtonElement | null>;
 }
 
+/** 气泡外的阅读状态，房间回执可展开成员名单。 */
 export function MessageReadReceipt({
 	message,
 	conversationKind,
 	onMention,
+	pending = false,
+	open,
+	onOpenChange,
+	collapsed = false,
+	returnFocusRef,
 }: MessageReadReceiptProps) {
-	const [open, setOpen] = useState(false);
 	const mentioning = useRef(false);
 	const {
 		data: readers,
@@ -32,39 +44,83 @@ export function MessageReadReceipt({
 	} = useChatMessageReaders(
 		message.conversation_id,
 		message.id,
-		open && conversationKind === "room",
+		!pending && open && conversationKind === "room",
 	);
 	const state = message.read_state;
-	if (!state) return null;
+	if (!state && !pending) return null;
+	const readCount = state?.read_count ?? 0;
+	const memberCount = state?.member_count ?? 0;
 
 	if (conversationKind === "direct") {
+		if (collapsed) return null;
 		return (
-			<span className="px-1 text-[11px] leading-4 text-muted-foreground">
-				{state.read_count > 0 ? "已读" : "未读"}
+			<span
+				aria-hidden={pending || undefined}
+				className={cn(
+					"inline-flex items-center gap-1 text-xs leading-4 text-muted-foreground",
+					pending && "invisible",
+				)}
+			>
+				{readCount > 0 ? (
+					<CheckCheck aria-hidden="true" {...iconProps(14)} />
+				) : (
+					<Check aria-hidden="true" {...iconProps(14)} />
+				)}
+				{!pending && <span className="sr-only">{readCount > 0 ? "已读" : "未读"}</span>}
 			</span>
 		);
 	}
 
 	return (
-		<Popover onOpenChange={setOpen} open={open}>
+		<Popover onOpenChange={onOpenChange} open={!pending && open}>
 			<PopoverTrigger asChild>
 				<button
-					className="rounded px-1 text-[11px] leading-4 text-muted-foreground transition-colors hover:text-foreground"
+					aria-hidden={pending || collapsed || undefined}
+					aria-label={`${readCount} 人已读`}
+					className={cn(
+						"inline-flex items-center gap-1 rounded px-0.5 text-xs leading-4 tabular-nums text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring",
+						pending && "invisible",
+						collapsed && "pointer-events-none absolute right-0 top-0 opacity-0",
+					)}
+					disabled={pending}
+					tabIndex={collapsed ? -1 : undefined}
 					type="button"
 				>
-					{state.read_count} 人已读
+					{readCount > 0 ? (
+						<>
+							<CheckCheck aria-hidden="true" {...iconProps(14)} />
+							<span aria-hidden="true">{readCount}</span>
+						</>
+					) : (
+						<Check aria-hidden="true" {...iconProps(14)} />
+					)}
 				</button>
 			</PopoverTrigger>
 			<PopoverContent
+				aria-label="已读成员"
 				align="end"
 				className="w-56 min-w-0 p-1.5"
 				onCloseAutoFocus={(event) => {
-					if (!mentioning.current) return;
-					// 提及时输入框已获得焦点，关闭浮层不能再把焦点抢回回执按钮。
-					event.preventDefault();
-					mentioning.current = false;
+					if (mentioning.current) {
+						// 提及时输入框已获得焦点，不能再把焦点抢回回执。
+						event.preventDefault();
+						mentioning.current = false;
+					} else if (collapsed) {
+						event.preventDefault();
+						const active = document.activeElement;
+						if (
+							!active ||
+							active === document.body ||
+							(event.target instanceof HTMLElement && event.target.contains(active))
+						) {
+							returnFocusRef.current?.focus({ preventScroll: true });
+						}
+					}
 				}}
 			>
+				<p className="px-2 pb-1 pt-1.5 text-xs font-medium text-foreground">
+					已读 {readCount} · 未读 {Math.max(memberCount - readCount, 0)}
+				</p>
 				{isLoading ? (
 					<p className="px-2 py-3 text-center text-xs text-muted-foreground">加载中…</p>
 				) : isError ? (
@@ -90,7 +146,7 @@ export function MessageReadReceipt({
 										disabled={!onMention}
 										onClick={() => {
 											mentioning.current = true;
-											setOpen(false);
+											onOpenChange(false);
 											onMention?.(reader.user);
 										}}
 										type="button"

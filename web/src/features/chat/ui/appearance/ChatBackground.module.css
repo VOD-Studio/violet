@@ -1,0 +1,22 @@
+.background {
+	background-color: var(--background);
+}
+
+.texture {
+	background-image: url("./chat-paper-light.webp");
+	background-size: 90rem 100rem;
+}
+
+[class~="dark"] .texture {
+	background-image: url("./chat-paper-dark.webp");
+}
+
+.solid {
+	background-color: var(--muted);
+	background-image: none;
+}
+
+.season {
+	background-color: color-mix(in oklab, var(--decoration) 14%, var(--card));
+	background-image: none;
+}

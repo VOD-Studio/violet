@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	appshared "blog-api/internal/application/shared"
+	domainpost "blog-api/internal/domain/post"
 	domain "blog-api/internal/domain/series"
 	"blog-api/internal/domain/shared"
 )
@@ -85,7 +86,7 @@ func (s *stubRepo) ExistsBySlug(ctx context.Context, slug string, excludeID shar
 	return true, nil
 }
 
-func (s *stubRepo) FindPublishedPage(ctx context.Context, q shared.PageQuery) (shared.PageResult[*domain.Series], error) {
+func (s *stubRepo) FindPublishedPage(ctx context.Context, _ domainpost.BrowseFilter, q shared.PageQuery) (shared.PageResult[*domain.Series], error) {
 	items := make([]*domain.Series, 0)
 	for _, ser := range s.series {
 		if ser.IsPublished() {

@@ -1,0 +1,116 @@
+package chat
+
+import (
+	"context"
+	"time"
+
+	"github.com/rs/zerolog/log"
+
+	domainchat "blog-api/internal/domain/chat"
+	domainshared "blog-api/internal/domain/shared"
+)
+
+// PresenceReader 报告用户当前是否有活跃的聊天连接。
+type PresenceReader interface {
+	IsOnline(userID domainshared.ID) bool
+}
+
+// SettingsDTO 当前用户的聊天设置。
+type SettingsDTO struct {
+	// HideOnline 为 true 时对其他成员显示为离线。
+	HideOnline bool `json:"hide_online"`
+}
+
+// WithPresence 注入在线状态来源与隐身设置，返回自身便于装配链式调用。
+//
+// 未注入时成员的 Online 恒为 false，聊天主链路不受影响。
+func (s *Service) WithPresence(reader PresenceReader, settings domainchat.UserSettingsRepository) *Service {
+	s.presence = reader
+	s.settings = settings
+	return s
+}
+
+func (s *Service) isOnline(userID domainshared.ID) bool {
+	return s.presence != nil && s.presence.IsOnline(userID)
+}
+
+func (s *Service) hiddenOnline(ctx context.Context, ids []domainshared.ID) (map[domainshared.ID]bool, error) {
+	if s.settings == nil {
+		return map[domainshared.ID]bool{}, nil
+	}
+	return s.settings.HiddenOnline(ctx, ids)
+}
+
+// ChatSettings 读取当前用户的聊天设置。
+func (s *Service) ChatSettings(ctx context.Context, userID domainshared.ID) (SettingsDTO, error) {
+	hidden, err := s.hiddenOnline(ctx, []domainshared.ID{userID})
+	if err != nil {
+		return SettingsDTO{}, err
+	}
+	return SettingsDTO{HideOnline: hidden[userID]}, nil
+}
+
+// SetHideOnline 保存隐身设置，并把变化后的对外状态推给共同成员。
+func (s *Service) SetHideOnline(ctx context.Context, userID domainshared.ID, hide bool) error {
+	if s.settings == nil {
+		return domainshared.Internal("聊天设置未启用", nil)
+	}
+	if err := s.settings.SetHideOnline(ctx, userID, hide); err != nil {
+		return err
+	}
+	s.presenceMu.Lock()
+	defer s.presenceMu.Unlock()
+	s.pushPresence(ctx, userID, s.isOnline(userID) && !hide)
+	return nil
+}
+
+// PresenceChanged 处理用户第一条连接建立或最后一条连接断开。
+//
+// 隐身用户的连接变化对外不可见，不广播，避免对端从事件时间点推断其活动。
+// 与 SetHideOnline 共用一把锁：对外状态在锁内现取现发，较早的回调不会在较晚的
+// 可见性变更之后推出过期状态。
+func (s *Service) PresenceChanged(ctx context.Context, userID domainshared.ID) {
+	if s.notifier == nil {
+		return
+	}
+	s.presenceMu.Lock()
+	defer s.presenceMu.Unlock()
+	hidden, err := s.hiddenOnline(ctx, []domainshared.ID{userID})
+	if err != nil {
+		log.Warn().Err(err).Str("user_id", userID.String()).Msg("读取聊天隐身设置失败，跳过在线状态推送")
+		return
+	}
+	if hidden[userID] {
+		return
+	}
+	s.pushPresence(ctx, userID, s.isOnline(userID))
+}
+
+// pushPresence 向与该用户同会话的其他成员推送在线状态；调用方须持有 presenceMu。
+//
+// 事件不持久化、不带 ID，与输入状态相同，不污染 Last-Event-ID 续传序号。
+func (s *Service) pushPresence(ctx context.Context, userID domainshared.ID, online bool) {
+	if s.notifier == nil {
+		return
+	}
+	peers, err := s.repo.ListCoMemberIDs(ctx, userID)
+	if err != nil {
+		log.Warn().Err(err).Str("user_id", userID.String()).Msg("查询共同成员失败，跳过在线状态推送")
+		return
+	}
+	dto := EventDTO{
+		Type:       string(domainchat.EventPresenceUpdated),
+		Version:    1,
+		OccurredAt: s.now().Format(time.RFC3339Nano),
+		Data: map[string]any{
+			"user_id": userID.String(),
+			"online":  online,
+		},
+	}
+	for _, peer := range peers {
+		if peer.Equal(userID) {
+			continue
+		}
+		s.notifier.Push(peer, dto)
+	}
+}

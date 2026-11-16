@@ -22,6 +22,7 @@ export function ApplyDialog({
 	const [form, setForm] = useState<FriendLinkForm>(EMPTY_FORM);
 	const [code, setCode] = useState("");
 	const [codeSent, setCodeSent] = useState(false);
+	const [wasOpen, setWasOpen] = useState(open);
 
 	const set = (key: keyof FriendLinkForm) => (value: string) =>
 		setForm((f) => ({ ...f, [key]: value }));
@@ -33,6 +34,11 @@ export function ApplyDialog({
 		setCode("");
 		setCodeSent(false);
 	};
+
+	if (open !== wasOpen) {
+		setWasOpen(open);
+		if (open) reset();
+	}
 
 	const stepIndex = step === "identity" ? 1 : step === "card" ? 2 : 3;
 	const stepLabel = step === "identity" ? "验明正身" : step === "card" ? "填写名片" : "交换完成";
@@ -54,10 +60,7 @@ export function ApplyDialog({
 		<Modal
 			className="lab-scope"
 			open={open}
-			onOpenChange={(v) => {
-				onOpenChange(v);
-				if (!v) reset();
-			}}
+			onOpenChange={onOpenChange}
 			title="交换名片"
 			description="双轨两步流：匿名先验邮箱，登录直达表单"
 			size="xl"
@@ -86,7 +89,6 @@ export function ApplyDialog({
 							<Button
 								onClick={() => {
 									onOpenChange(false);
-									reset();
 								}}
 							>
 								收好回执

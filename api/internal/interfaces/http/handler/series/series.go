@@ -10,6 +10,7 @@ import (
 	"github.com/go-playground/validator/v10"
 
 	appseries "blog-api/internal/application/series"
+	domainpost "blog-api/internal/domain/post"
 	ifmw "blog-api/internal/interfaces/http/middleware"
 	"blog-api/internal/interfaces/http/response"
 )
@@ -18,7 +19,7 @@ import (
 //
 // 独立定义而非直接用 *appseries.Service：让 handler 测试可注入 stub。
 type seriesService interface {
-	ListPublished(ctx context.Context, page, limit int) ([]appseries.SeriesDTO, int64, error)
+	ListPublished(ctx context.Context, filter domainpost.BrowseFilter, page, limit int) ([]appseries.SeriesDTO, int64, error)
 	GetBySlug(ctx context.Context, slug string) (appseries.SeriesDetailDTO, error)
 	GetChapterContextBySlug(ctx context.Context, postSlug string) (*appseries.ChapterContextDTO, error)
 
@@ -58,7 +59,8 @@ func NewHandler(svc *appseries.Service) *Handler {
 // ListPublished 公开书架（GET /series，page/limit 分页）。
 func (h *Handler) ListPublished(w http.ResponseWriter, r *http.Request) {
 	page, limit := response.ParsePaging(r)
-	items, total, err := h.svc.ListPublished(r.Context(), page, limit)
+	filter := domainpost.BrowseFilter{Tag: r.URL.Query().Get("tag"), Source: r.URL.Query().Get("source")}
+	items, total, err := h.svc.ListPublished(r.Context(), filter, page, limit)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
@@ -351,7 +353,6 @@ func (h *Handler) ReorderChapters(w http.ResponseWriter, r *http.Request) {
 	}
 	response.RespondMessage(w, http.StatusOK, "章节顺序已更新")
 }
-
 
 // generateCoversReq AI 封面生成入参。
 type generateCoversReq struct {

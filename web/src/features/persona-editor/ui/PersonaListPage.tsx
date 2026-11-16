@@ -31,6 +31,7 @@ export function PersonaListPage() {
 	const canManage = useHasPermission("persona:manage");
 	const [search, setSearch] = useState("");
 	const [deleting, setDeleting] = useState<PersonaSummary | null>(null);
+	const [deleteOpen, setDeleteOpen] = useState(false);
 	const createPersona = useCreatePersona();
 	const deletePersona = useDeletePersona(deleting?.id ?? "");
 	const { data, isLoading, error, refetch, pagination, setPage } = usePagedQuery(
@@ -56,10 +57,10 @@ export function PersonaListPage() {
 		if (!deleting) return;
 		try {
 			await deletePersona.mutateAsync({ expected_version: deleting.version });
-			setDeleting(null);
+			setDeleteOpen(false);
 			toast.success("人设档案已删除");
 		} catch (deleteError) {
-			setDeleting(null);
+			setDeleteOpen(false);
 			if (deleteError instanceof ApiError && deleteError.status === 409) {
 				toast.error("当前人设不能删除，请先激活另一份档案");
 				return;
@@ -167,7 +168,10 @@ export function PersonaListPage() {
 										size="sm"
 										disabled={row.is_active}
 										className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-										onClick={() => setDeleting(row)}
+										onClick={() => {
+											setDeleting(row);
+											setDeleteOpen(true);
+										}}
 										aria-label={`删除人设 ${row.name || row.id.slice(0, 8)}`}
 									>
 										<Trash2 {...iconProps(14)} />
@@ -232,10 +236,8 @@ export function PersonaListPage() {
 				/>
 
 				<ConfirmDialog
-					open={Boolean(deleting)}
-					onOpenChange={(open) => {
-						if (!open) setDeleting(null);
-					}}
+					open={deleteOpen}
+					onOpenChange={setDeleteOpen}
 					onConfirm={() => void handleDelete()}
 					title="确认删除人设档案"
 					description={`确定要永久删除「${deleting?.name || deleting?.id.slice(0, 8) || "这份档案"}」吗？设定正文、资料项和图片引用都会一并清理。`}

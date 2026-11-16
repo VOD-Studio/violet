@@ -465,7 +465,7 @@
 
 /*
  * 加载细圆弧来自 indicator.css（不在 @layer 内），减弱动态时要在同样的层外才压得住：
- * 系统偏好，以及陈列室等宿主用 data-motion="reduce" 标出的作用域，都停在静止虚线。
+ * 系统偏好，以及宿主用 data-motion="reduce" 标出的作用域，都停在静止虚线。
  */
 @media (prefers-reduced-motion: reduce) {
 	.v-input-control .v-spinner,

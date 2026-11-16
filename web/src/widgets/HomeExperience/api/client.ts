@@ -5,13 +5,8 @@ import type {
 	HomePublicationItem,
 	PublicationQuery,
 	PublicationWindow,
-	SiteIdentity,
 	SiteImpressionState,
 } from "../types";
-
-export function fetchSiteIdentity(): Promise<SiteIdentity> {
-	return apiGet<SiteIdentity>("/site-identity");
-}
 
 export function fetchPublications(
 	query: PublicationQuery,

@@ -1,9 +1,8 @@
-/** archiveKeys - 归档 query key 工厂 */
+import type { PostBrowseFilter } from "@entities/post/model/types";
+
 export const archiveKeys = {
-	/** 模块根 */
 	all: ["archive"] as const,
-	/** 年份索引 */
-	years: () => [...archiveKeys.all, "years"] as const,
-	/** 指定年份 */
-	year: (year: number) => [...archiveKeys.all, "year", year] as const,
+	years: (filter: PostBrowseFilter = {}) => [...archiveKeys.all, "years", filter] as const,
+	year: (year: number, filter: PostBrowseFilter = {}) =>
+		[...archiveKeys.all, "year", year, filter] as const,
 };

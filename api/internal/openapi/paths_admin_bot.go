@@ -11,6 +11,7 @@ func registerAdminBotPaths(t *openapi3.T) {
 		"user_id":                   reqStr("对应虚拟用户 ID，消息 sender.id 即此值"),
 		"username":                  reqStr("虚拟用户名，@提及与私聊寻址用"),
 		"name":                      reqStr("显示名"),
+		"description":               optStr("角色简介，未填为空串"),
 		"avatar_id":                 optStr("头像文件 ID，未设置为空"),
 		"avatar_url":                optStr("头像地址"),
 		"enabled":                   optBool("是否启用；禁用后 token 鉴权即拒"),
@@ -28,6 +29,7 @@ func registerAdminBotPaths(t *openapi3.T) {
 	}, "name", "username")
 	registerSchema(t, "UpdateBotRequest", openapi3.Schemas{
 		"name":                      nullableStr("新显示名；缺省表示不改"),
+		"description":               nullableStr("新简介（最多 80 个字符）；空白清空，缺省表示不改"),
 		"avatar_id":                 nullableStr("新头像文件 ID；空串清除头像，缺省表示不改"),
 		"enabled":                   optBool("启停；缺省表示不改"),
 		"show_thinking":             optBool("是否允许展示思考内容；缺省表示不改"),

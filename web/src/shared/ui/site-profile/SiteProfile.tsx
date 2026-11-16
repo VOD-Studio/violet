@@ -10,6 +10,7 @@ import {
 } from "../site-navbar";
 import { ProfileCard, type ProfileCardProps } from "./ProfileCard";
 
+/** 品牌触发器与站长卡片的组合契约，开合可由宿主控制。 */
 export interface SiteProfileProps {
 	brand: Omit<NavbarBrandProps, "open">;
 	/** 药丸（触发器）的名称，如「Violet 站长档案，此刻正在播放 晴天」。 */
@@ -22,10 +23,10 @@ export interface SiteProfileProps {
 }
 
 /**
- * 顶栏左药丸：logo 与此刻状态，点开后药丸长成站长卡片。
+ * 由品牌药丸形变展开的站长卡片。
  *
- * 药丸自带外壳（{@link NAVBAR_PILL_CLASS}），必须放进 `SiteNavbar` 的 `logo` 槽，
- * 由它的左容器提供定位参照与展开时的层级。
+ * @remarks 触发器自带 {@link NAVBAR_PILL_CLASS} 外壳，须放入 SiteNavbar 的 logo 槽，
+ * 由左容器提供定位参照与展开层级。
  */
 export function SiteProfile({
 	brand,
@@ -48,7 +49,7 @@ export function SiteProfile({
 				aria-label={label}
 				className={cn(NAVBAR_PILL_CLASS, NAVBAR_BRAND_CLASS)}
 			>
-				<NavbarBrand {...brand} open={open} />
+				<NavbarBrand {...brand} avatarName={card.identity.name} open={open} />
 			</MorphingPopoverTrigger>
 			<MorphingPopoverContent
 				aria-label="站长与此刻"
@@ -57,7 +58,7 @@ export function SiteProfile({
 				ghost={
 					// 与触发器同样的边框与内边距，让副本的内容落在触发器上字的原位
 					<span className="flex size-full items-center border border-transparent pr-3 pl-1 group-data-[collapsed=true]/navbar:pr-1">
-						<NavbarBrand {...brand} />
+						<NavbarBrand {...brand} avatarName={card.identity.name} />
 					</span>
 				}
 			>
