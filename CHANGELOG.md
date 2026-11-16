@@ -7,6 +7,55 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.26.0](https://github.com/VOD-Studio/violet/compare/v2.25.1...v2.26.0) (2026-11-16)
+
+
+### 新增
+
+* **chatappearance:** 接受基础气泡主题目录 ([9834543](https://github.com/VOD-Studio/violet/commit/9834543af4786b0999ea08a7aaa4390d57f10623))
+* **chat:** Bot 增加角色简介字段 ([7ec70d4](https://github.com/VOD-Studio/violet/commit/7ec70d4e89dc988e7b9bfc2d65471612a23079f2))
+* **chat:** 会话头部显示在线人数与在场角色 ([dd52f4f](https://github.com/VOD-Studio/violet/commit/dd52f4f4f13ccb19d432dc2716d88fd54a9e5e6e))
+* **chat:** 会话行以 # 标注群聊并标出角色 ([a531e6b](https://github.com/VOD-Studio/violet/commit/a531e6bbdfc2a77f1c4060652e38c7b04c83a966))
+* **chat:** 会话详情分区展示在场的角色 ([8ddfa87](https://github.com/VOD-Studio/violet/commit/8ddfa8791953dba548cfaeb9c7715381db5bdb8b))
+* **chat:** 会话详情成员区按画板补齐 ([eff3fc6](https://github.com/VOD-Studio/violet/commit/eff3fc6984d38a87bbeb172fdef13b0ffbe481b4))
+* **chat:** 已读名单标题给出已读与未读人数 ([c7be511](https://github.com/VOD-Studio/violet/commit/c7be511f3a4291a36e3e11a935ce5456d5e35e70))
+* **chat:** 成员在线状态与隐身设置 ([f4da9e1](https://github.com/VOD-Studio/violet/commit/f4da9e1cef745481d0a7fc5eae2e59bde8860c59))
+* **chat:** 房主可设置角色在会话里的发言权限 ([cd3d511](https://github.com/VOD-Studio/violet/commit/cd3d511548cab41e4128697fa7e8e8b8bbc76839))
+* **chat:** 按画板重构聊天工作区 ([682ae37](https://github.com/VOD-Studio/violet/commit/682ae37896660e6b0898b63c97f7976f489a508b))
+* **chat:** 机器人消息在名字旁标出“角色” ([2da0a0a](https://github.com/VOD-Studio/violet/commit/2da0a0af3b2ba2e5ce63f4cffc9d84f1c00769bc))
+* **chat:** 气泡内展示歌曲分享卡 ([076b595](https://github.com/VOD-Studio/violet/commit/076b595ee2dae26dadcb7442cd91d64f71afa455))
+* **chat:** 消息支持歌曲分享并保存歌曲快照 ([1ac8f04](https://github.com/VOD-Studio/violet/commit/1ac8f0495aac635f6388231d7a26c3dcb484e8d2))
+* **chat:** 聊天内机器人徽标统一为“角色” ([ddcb531](https://github.com/VOD-Studio/violet/commit/ddcb53131ef134fe3891fa47a0bc7ef5e87cdfc0))
+* **chat:** 聊天用户资料带出站长标记 ([5741287](https://github.com/VOD-Studio/violet/commit/57412872b3f410d3493334bbac002a21c7e44aca))
+* **music-player:** 支持无歌单时播放独立歌曲 ([5e3d7f7](https://github.com/VOD-Studio/violet/commit/5e3d7f775b788f87d046fda8f8032a76fa59f1cc))
+* **pages:** 实施前台部分页面改版 ([148e7ca](https://github.com/VOD-Studio/violet/commit/148e7ca8ac74326c55efb98acfde1ef726b3966c))
+* **rich-text-input:** 支持同行工具栏与浮层候选 ([7267dae](https://github.com/VOD-Studio/violet/commit/7267dae8e46a14088e7677f924706f05d8bc674a))
+
+
+### 修复
+
+* **blog:** 工具栏重排并去掉独立的清除筛选 ([a69a62e](https://github.com/VOD-Studio/violet/commit/a69a62edec4ff53cc508fd0c6ef0043d2474dcd9))
+* **chat-appearance:** 稳定外观抽屉布局 ([254f167](https://github.com/VOD-Studio/violet/commit/254f1674b7340e734e30d7c5f4125dbc7898fc73))
+* **chat:** 在线人数在重连与成员变动后保持准确 ([9ebd01f](https://github.com/VOD-Studio/violet/commit/9ebd01fb2d71941e7d47c8a590e6ad622b87f8ab))
+* **chat:** 在线状态广播串行并对隐身用户静默 ([7a04883](https://github.com/VOD-Studio/violet/commit/7a048830fe6f2962c0f9e89b45dbb7c83704b6a9))
+* **chat:** 在线状态开关读取失败时可重试 ([9fa1899](https://github.com/VOD-Studio/violet/commit/9fa1899ec77e3afa5573a895bcf3ecf788204d13))
+* **chat:** 在绘制前保持历史消息锚点 ([4079520](https://github.com/VOD-Studio/violet/commit/40795205457e80291ac798c8bcd16df400078a0f))
+* **chat:** 将发送等待移至气泡左侧 ([8f8d36e](https://github.com/VOD-Studio/violet/commit/8f8d36edea4c57ed5916cf69c455871eef63ed89))
+* **chat:** 稳定连续消息的阅读布局 ([e6a263f](https://github.com/VOD-Studio/violet/commit/e6a263fa06f11b715945d2559792672bca095737))
+* **chat:** 系统消息读模型返回提示文字 ([51e0ea4](https://github.com/VOD-Studio/violet/commit/51e0ea4dd4d4feb7315fbf4fd7e68863718daad3))
+* **dialog:** 解析形变动画的主题颜色 ([27e667d](https://github.com/VOD-Studio/violet/commit/27e667d3248ad37c6459d73b43badb91d86651da))
+* **overlays:** 保留弹层退场期间的内容 ([71b01ed](https://github.com/VOD-Studio/violet/commit/71b01eda8caf9a0802481125a1b1267cc5630922))
+* **reaction:** 区分回应胶囊与承载面底色 ([a95f068](https://github.com/VOD-Studio/violet/commit/a95f0680638b0378b2efde9f4728847838494bd8))
+* **rich-text-input:** 修复提及标签退格删除 ([7aa9a46](https://github.com/VOD-Studio/violet/commit/7aa9a461097310620613995df37cfe2a84ced72f))
+* **rich-text-input:** 居中行内输入操作按钮 ([8424f38](https://github.com/VOD-Studio/violet/commit/8424f38bcd4680705d64a73c87b9eed268843be5))
+* **scroll-area:** 柔化边缘渐隐切换 ([4275621](https://github.com/VOD-Studio/violet/commit/4275621f3caa696a8123e468826dddafe0ee9c31))
+* **scroll-area:** 约束纵向滚动内容宽度 ([e3dc65f](https://github.com/VOD-Studio/violet/commit/e3dc65f657e5601fab6441352e0411b08fd238c5))
+
+
+### 重构
+
+* **chat:** 重排聊天工作区布局 ([974bb68](https://github.com/VOD-Studio/violet/commit/974bb6886844107da8581320f1731716d191342b))
+
 ## [2.25.1](https://github.com/VOD-Studio/violet/compare/v2.25.0...v2.25.1) (2026-11-14)
 
 
