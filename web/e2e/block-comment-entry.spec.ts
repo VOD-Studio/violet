@@ -36,6 +36,8 @@ test("鼠标点开段评后点外部关闭，悬停照常跟随新段落", async
 	const paragraph = (text: string) =>
 		page.locator("[data-article-content] p").filter({ hasText: text });
 
+	// 可批注块注册完成前入口不在 Tab 顺序中，此时悬停可能先于正文事件订阅。
+	await expect(entry).toHaveAttribute("tabindex", "0");
 	await paragraph("增强恢复后，这段结尾仍是原来的节点。").hover();
 	await expect(entry).toHaveAttribute("data-show", "true");
 	await expect(entry).toHaveAccessibleName("发表段评：增强恢复后，这段结尾仍是原来的节点。");
