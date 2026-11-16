@@ -104,6 +104,14 @@ function ScrollAreaPreview() {
 					元素内的滚动内容
 				</div>
 			</ScrollArea>
+			<ScrollArea id="vertical-scroll" aria-label="纵向会话摘要" className="h-32 w-80">
+				<button type="button" style={{ display: "flex", width: "100%", gap: 8, padding: 12 }}>
+					<span style={{ minWidth: 0, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+						{"长会话摘要应在滚动区域内省略。".repeat(40)}
+					</span>
+					<time style={{ flexShrink: 0 }}>11:07</time>
+				</button>
+			</ScrollArea>
 			<div style={{ height: "200vh" }} />
 			<p id="scroll-area-end">文档滚动终点</p>
 		</main>

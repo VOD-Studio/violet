@@ -53,6 +53,10 @@
 	min-inline-size: 100%;
 }
 
+.v-scroll-area[data-orientation="vertical"] > .v-scroll-area__viewport > .v-scroll-area__content {
+	inline-size: 100%;
+}
+
 /* ---- 边缘渐隐：跟随滚动位置出现与消失，不做过渡 ---- */
 
 .v-scroll-area__fade {
