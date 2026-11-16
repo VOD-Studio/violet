@@ -57,16 +57,21 @@
 	inline-size: 100%;
 }
 
-/* ---- 边缘渐隐：跟随滚动位置出现与消失，不做过渡 ---- */
+/* ---- 边缘渐隐：透明度随可滚动方向过渡 ---- */
 
 .v-scroll-area__fade {
 	--v-scroll-area-fade-color: var(--v-scroll-area-surface, var(--background));
 	position: absolute;
 	z-index: 1;
 	pointer-events: none;
+	opacity: 0;
+	transition: opacity 180ms ease-out;
 }
 
-.v-scroll-area__fade[hidden],
+.v-scroll-area__fade[data-visible] {
+	opacity: 1;
+}
+
 .v-scroll-area__page[hidden] {
 	display: none;
 }
@@ -199,6 +204,10 @@
 
 /* 减弱动态：滑块常显，不做淡入淡出。 */
 @media (prefers-reduced-motion: reduce) {
+	.v-scroll-area__fade {
+		transition: none;
+	}
+
 	.v-scrollbar {
 		--v-scrollbar-fade-in: opacity 0s;
 		--v-scrollbar-fade-out: opacity 0s;
@@ -216,4 +225,8 @@
 
 [data-motion="reduce"] .v-scrollbar__thumb {
 	opacity: 1;
+}
+
+[data-motion="reduce"] .v-scroll-area__fade {
+	transition: none;
 }

@@ -103,7 +103,7 @@ export function ScrollArea({
 					key={edge}
 					className="v-scroll-area__fade"
 					data-edge={edge}
-					hidden={!edges[edge]}
+					data-visible={edges[edge] || undefined}
 					aria-hidden="true"
 				/>
 			))}
