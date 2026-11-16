@@ -782,8 +782,8 @@ export function RichTextInput({
 							{inlineHeader}
 							{fileInput}
 							{thumbnails}
-							<div className="flex items-end gap-1">
-								<div className="flex shrink-0 items-end gap-0.5">
+							<div className="flex items-center gap-1">
+								<div className="flex min-h-10 shrink-0 items-center self-end gap-0.5">
 									{inlineActions ? (
 										inlineActions.start
 									) : (
@@ -794,7 +794,7 @@ export function RichTextInput({
 									)}
 								</div>
 								{editor}
-								<div className="flex shrink-0 items-end gap-0.5">
+								<div className="flex min-h-10 shrink-0 items-center self-end gap-0.5">
 									{inlineActions?.end}
 									{toolbarEnd}
 								</div>

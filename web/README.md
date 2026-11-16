@@ -232,7 +232,7 @@ Shiki 初始化、语言准备与分词由 `@violet/ui` 的代码块在按需创
 
 `RichTextInput.initialImageUploads` 恢复输入区重建前持有的上传任务，保留本地图片占位符并复用进行中的请求或已完成结果。缓存草稿的消费方须在输入区卸载期间持有任务，清空草稿时释放引用。
 
-同行输入复用 `@violet/ui` 的输入外壳与按钮：`renderInlineActions` 注入两侧操作，`inlineHeader` 承载引用或分享预览。提及与斜杠候选通过 Popover 挂到输入框上方，不进入输入布局；多行正文独立滚动，工具按钮底部对齐。`insertSlashCommand` 保留已有参数与草稿，未匹配当前查询时从正文开头插入命令。
+同行输入复用 `@violet/ui` 的输入外壳与按钮：`renderInlineActions` 注入两侧操作，`inlineHeader` 承载引用或分享预览。提及与斜杠候选通过 Popover 挂到输入框上方，不进入输入布局；单行时按钮垂直居中，多行时操作留在末行区域，正文独立滚动。`insertSlashCommand` 保留已有参数与草稿，未匹配当前查询时从正文开头插入命令。
 
 全屏工作区由 `shared/hooks/use-visual-viewport` 将 Visual Viewport 的高度与偏移写入根容器；不支持该 API 时使用 `100dvh`。页面缩放不当作软键盘收缩处理，普通路由不锁定高度。
 
