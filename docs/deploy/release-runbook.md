@@ -37,6 +37,8 @@ Omarchy 自托管 CI 的镜像更新须先通过 `Runner acceptance`：同一份
 
 Web 镜像校验只在 `web/Dockerfile`、`.dockerignore`、`server.mjs`、依赖声明、锁文件或 workspace 包清单变化时运行；源码构建由契约任务验证。正常发布的检查不构建镜像，镜像由 `build-web` 产出；Runner acceptance 强制构建。
 
+工作流语法检查使用 [actionlint 并发队列补丁](https://github.com/rhysd/actionlint/pull/654)的固定提交 `644076a59742c2d1540ebd4686eab3c308f0e562`，源码归档在构建前校验 SHA-256。上游正式版 1.7.12 尚不识别 GitHub 已支持的 `queue`，本地使用该旧版会误报；检查器安装步骤见 `ci.yml`。未屏蔽语法错误，非法队列值及 `queue: max` 与取消运行的冲突仍会失败。
+
 站点单测用 `pnpm test:site` 分片，排除自带 Vitest 配置、由独立包任务运行的 ui、react-tweet、kanban、theme；本地 `make web-test` 仍运行全部。新增带独立测试配置的包时，需同时加入 `web-package` 矩阵与 `test:site` 排除列表。
 
 三个 required check 为 `Backend (Go)`、`Frontend (React)` 与 `CI Gate`。未选中的应用任务以 skipped 结束；被选中的任务必须 success。检测结果缺失、runner 选择失败、必要任务失败或取消都会使 `CI Gate` 失败，不能把前置失败造成的跳过当成无变更。
