@@ -35,7 +35,7 @@
 		padding: 0 10px;
 		border: 0;
 		border-radius: 14px;
-		background: var(--muted);
+		background: var(--v-reaction-surface, var(--muted));
 		color: var(--foreground);
 		font-family: inherit;
 		line-height: 1;
@@ -48,7 +48,11 @@
 
 	.v-reaction__chip:not(.v-reaction__chip--readonly):not([aria-disabled="true"]):hover,
 	.v-reaction__more:not([aria-disabled="true"]):hover {
-		background: color-mix(in oklab, var(--muted) 88%, var(--foreground));
+		background: color-mix(
+			in oklab,
+			var(--v-reaction-surface, var(--muted)) 88%,
+			var(--foreground)
+		);
 	}
 
 	.v-reaction__chip--self {
@@ -62,7 +66,7 @@
 
 	.v-reaction__chip--readonly,
 	.v-reaction__chip--readonly:hover {
-		background: var(--muted);
+		background: var(--v-reaction-surface, var(--muted));
 		cursor: default;
 	}
 

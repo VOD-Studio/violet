@@ -6,7 +6,7 @@ import {
 	type ReactionItem,
 } from "@violet/ui";
 import { ReactionBar as LeafReactionBar } from "@violet/ui/reaction";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 
 const choices: readonly EmojiPickerItem[] = [
 	{ id: "thumb", name: "赞", content: "👍", placeholder: "[赞]" },
@@ -23,6 +23,9 @@ const recentChoices = choices.slice(0, 8);
 const otherUsers = [{ name: "林间" }, { name: "雾里" }];
 const selfUsers = [{ name: "本机用户", self: true }, ...otherUsers];
 const byId = new Map(choices.map((choice) => [choice.id, choice]));
+const cardSurface: CSSProperties & { "--v-reaction-surface": string } = {
+	"--v-reaction-surface": "var(--card)",
+};
 
 function initialItems(): ReactionItem[] {
 	return choices.slice(0, 8).map((choice, index) => ({
@@ -239,9 +242,11 @@ export function ReactionConsumer() {
 							minHeight: 380,
 							alignItems: "flex-end",
 							paddingBlock: 24,
+							background: "var(--muted)",
 						}}
 					>
 						<ReactionBar
+							style={cardSurface}
 							items={items}
 							recentItems={recentChoices}
 							onToggle={(id) => change(id, "toggle")}
@@ -263,8 +268,11 @@ export function ReactionConsumer() {
 				</section>
 			</div>
 			<p role="status">{message}</p>
-			<section aria-label="叶子入口的只读回应">
-				<LeafReactionBar items={items} />
+			<section
+				aria-label="叶子入口的只读回应"
+				style={{ background: "var(--muted)", padding: 16 }}
+			>
+				<LeafReactionBar items={items} style={cardSurface} />
 			</section>
 		</main>
 	);
