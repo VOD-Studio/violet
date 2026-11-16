@@ -75,3 +75,30 @@ for (const width of [1440, 390]) {
 		);
 	});
 }
+
+test("提及标签可退格删除并保留相邻文字", async ({ page }) => {
+	await prepareChat(page);
+	const editor = page.getByRole("textbox", { name: "消息内容" });
+	const send = page.getByRole("button", { name: "发送消息", exact: true });
+	await page.getByRole("button", { name: "添加内容", exact: true }).click();
+	await page.getByRole("menuitem", { name: "提及成员", exact: true }).click();
+	await page.getByRole("option", { name: /全体成员/ }).click();
+	await expect(editor).toBeFocused();
+	await expect(editor).toContainText("@所有人");
+	await editor.press("Backspace");
+	await expect(editor).toBeEmpty();
+	await expect(send).toBeDisabled();
+
+	await editor.type("保留 @lin");
+	await expect(page.getByRole("option", { name: /林间/ })).toBeVisible();
+	await editor.press("Enter");
+	await editor.type("正文");
+	await editor.press("Backspace");
+	await expect(editor).toHaveText("保留 @林间 正");
+	await editor.press("Backspace");
+	await editor.press("Backspace");
+	await expect(editor).toHaveText("保留");
+	await editor.press("ControlOrMeta+z");
+	await expect(editor).toContainText("@林间");
+	await expect(editor).toContainText("保留");
+});

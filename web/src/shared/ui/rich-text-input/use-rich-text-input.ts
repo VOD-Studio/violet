@@ -618,6 +618,19 @@ export function useRichTextInput({
 			// 正在使用中文输入法合成字时忽略回车
 			if (e.nativeEvent.isComposing) return;
 
+			if (
+				e.key === "Backspace" &&
+				!e.altKey &&
+				!e.ctrlKey &&
+				!e.metaKey &&
+				!e.defaultPrevented &&
+				!disabled
+			) {
+				const root = contentRef.current;
+				if (root) selectMentionForBackspace(root);
+				return;
+			}
+
 			if (submitOnEnter) {
 				if (e.key === "Enter" && !e.shiftKey) {
 					e.preventDefault();
@@ -630,7 +643,7 @@ export function useRichTextInput({
 				onSubmitRef.current?.();
 			}
 		},
-		[submitOnEnter],
+		[disabled, submitOnEnter],
 	);
 	const clear = useCallback(() => {
 		if (contentRef.current) {
@@ -672,6 +685,50 @@ export function useRichTextInput({
 	};
 }
 
+function selectMentionForBackspace(root: HTMLElement): void {
+	const selection = window.getSelection();
+	if (!selection?.rangeCount) return;
+	const range = selection.getRangeAt(0);
+	if (!root.contains(range.commonAncestorContainer)) return;
+
+	const ancestor = range.commonAncestorContainer;
+	const element = ancestor instanceof Element ? ancestor : ancestor.parentElement;
+	const enclosedMention = element?.closest<HTMLElement>("[data-mention]");
+	if (enclosedMention && root.contains(enclosedMention)) {
+		range.selectNode(enclosedMention);
+	} else {
+		if (!range.collapsed) return;
+		const start = range.startContainer;
+		let previous: ChildNode | null;
+		let spacerAllowed = true;
+		if (start instanceof Text) {
+			if (range.startOffset > 0) {
+				if (range.startOffset !== 1 || start.data[0] !== "\u00a0") return;
+				spacerAllowed = false;
+			}
+			previous = start.previousSibling;
+		} else {
+			previous = start.childNodes[range.startOffset - 1] ?? null;
+		}
+		while (previous instanceof Text) {
+			if (previous.length === 0) {
+				previous = previous.previousSibling;
+			} else if (spacerAllowed && previous.data === "\u00a0") {
+				spacerAllowed = false;
+				previous = previous.previousSibling;
+			} else {
+				return;
+			}
+		}
+		if (!(previous instanceof HTMLElement) || !previous.dataset.mention) return;
+		range.setStartBefore(previous);
+	}
+
+	// 只扩展选区，实际删除与撤销交给浏览器，草稿仍由原生 input 事件同步。
+	selection.removeAllRanges();
+	selection.addRange(range);
+}
+
 function leadingSlashRange(root: HTMLElement): { range: Range; query: string } | null {
 	const selection = window.getSelection();
 	if (!selection?.isCollapsed || selection.rangeCount === 0) return null;
@@ -695,7 +752,7 @@ function focusEditorEnd(root: HTMLElement): void {
 }
 
 /**
- * 提及节点：contentEditable=false 的 <span>，无子节点，退格一次整体删除。
+ * 提及节点：contentEditable=false 的 <span>，退格一次整体删除。
  * data-mention 存用户 ID（序列化依据），data-mention-username 存用户名（解析兜底）。
  */
 function createMentionElement(userID: string, username: string, displayName: string): HTMLElement {
