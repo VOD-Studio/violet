@@ -75,9 +75,10 @@ beforeEach(() => {
 	}));
 });
 
-describe("聊天外观对话框", () => {
+describe("聊天外观工作区", () => {
 	it("取消丢弃气泡与背景草稿,保留会话输入并归还焦点", async () => {
 		const { opener } = openEditor();
+		expect(document.activeElement).toBe(screen.getByRole("heading", { name: "聊天外观" }));
 		const background = screen.getByTestId(user.id).className;
 		fireEvent.click(screen.getByRole("radio", { name: "墨色" }));
 		fireEvent.click(screen.getByRole("radio", { name: "纯色" }));
@@ -153,7 +154,6 @@ describe("聊天外观对话框", () => {
 			badge_ids: ["rua"],
 		};
 		const { opener, client } = openEditor(custom);
-		expect(screen.getByText(/当前使用：/).textContent).toContain("可在更多装饰中更换");
 		const initialClass = screen.getByTestId(otherID).className;
 		fireEvent.click(screen.getByRole("radio", { name: "纯色" }));
 		fireEvent.click(screen.getByRole("button", { name: "保存" }));

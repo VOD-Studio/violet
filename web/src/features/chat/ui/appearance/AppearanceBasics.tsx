@@ -26,11 +26,17 @@ export function AppearanceBasics({
 	onThemeChange,
 	onBackgroundChange,
 }: AppearanceBasicsProps) {
-	const custom = !BASIC_BUBBLE_BY_ID.has(themeId) ? BUBBLE_BY_ID.get(themeId) : undefined;
+	const theme = BASIC_BUBBLE_BY_ID.get(themeId) ?? BUBBLE_BY_ID.get(themeId);
+	const themeName = theme?.name ?? themeId;
 	return (
 		<div className={styles.choices}>
 			<div>
-				<h3 className={styles.sectionTitle}>我的气泡</h3>
+				<div className={styles.sectionHeading}>
+					<h3 className={styles.sectionTitle}>我的气泡</h3>
+					<span className={styles.currentTheme} title={themeName}>
+						{themeName}
+					</span>
+				</div>
 				<RadioGroup
 					legend="我的气泡"
 					value={themeId}
@@ -56,11 +62,6 @@ export function AppearanceBasics({
 						/>
 					))}
 				</RadioGroup>
-				{custom && (
-					<p className="mt-2 text-xs text-muted-foreground">
-						当前使用：{custom.name}，可在更多装饰中更换。
-					</p>
-				)}
 			</div>
 			<div>
 				<h3 className={styles.sectionTitle}>聊天背景</h3>

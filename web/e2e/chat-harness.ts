@@ -76,7 +76,7 @@ export async function prepareChat(page: Page) {
 		const request = route.request();
 		const url = new URL(request.url());
 		const path = url.pathname;
-		if (path.startsWith("/assets/")) {
+		if (path.startsWith("/assets/") || path.startsWith("/chat-appearance/")) {
 			const file = join(clientDir, path);
 			if (!existsSync(file)) return route.abort();
 			return route.fulfill({
@@ -84,9 +84,11 @@ export async function prepareChat(page: Page) {
 					? "text/css"
 					: path.endsWith(".woff2")
 						? "font/woff2"
-						: path.endsWith(".webp")
-							? "image/webp"
-							: "application/javascript",
+						: path.endsWith(".png")
+							? "image/png"
+							: path.endsWith(".webp")
+								? "image/webp"
+								: "application/javascript",
 				body: readFileSync(file),
 			});
 		}

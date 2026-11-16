@@ -1,8 +1,7 @@
 import { Radio, RadioGroup } from "@violet/ui";
 import { CircleSlash } from "lucide-react";
 import type { AppearanceAsset } from "../../model/appearance";
-import { BUBBLE_BY_ID } from "../../model/appearance-catalog";
-import { AppearanceBubbleSurface } from "./AppearanceBubbleSurface";
+import { BubbleShell } from "../bubble-shell";
 import { AvatarDecoration } from "./AvatarDecoration";
 import styles from "./ChatAppearanceEditor.module.css";
 
@@ -48,7 +47,11 @@ export function AppearanceOptionGrid({
 					<span className={styles.optionContent}>
 						<span className={styles.figure} aria-hidden="true">
 							{isBubble ? (
-								<span className={styles.defaultOptionBubble}>你好，周末见</span>
+								<span className={styles.bubbleDemo}>
+									<BubbleShell themeId="" mine>
+										你好，周末见
+									</BubbleShell>
+								</span>
 							) : (
 								<span className={styles.emptyMold}>
 									<CircleSlash aria-hidden className="size-4" />
@@ -80,15 +83,11 @@ export function AppearanceOptionGrid({
 /** 展台内容:装饰必须落在头像模具上,气泡用真实迷你气泡而非切片原图。 */
 function Showpiece({ variant, item }: { variant: OptionVariant; item: AppearanceAsset }) {
 	if (variant === "bubble") {
-		const theme = BUBBLE_BY_ID.get(item.id);
-		if (!theme) {
-			return null;
-		}
 		return (
 			<span className={styles.bubbleDemo}>
-				<AppearanceBubbleSurface theme={theme} mine={false}>
+				<BubbleShell themeId={item.id} mine>
 					你好，周末见
-				</AppearanceBubbleSurface>
+				</BubbleShell>
 			</span>
 		);
 	}

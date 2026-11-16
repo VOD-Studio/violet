@@ -1,17 +1,18 @@
 import {
 	Button,
-	Dialog,
-	DialogBody,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
+	Sheet,
+	SheetBody,
+	SheetContent,
+	SheetDescription,
+	SheetFooter,
+	SheetHeader,
+	SheetTitle,
 } from "@violet/ui";
 import { useRef, useState } from "react";
 import { useOwnChatAppearance } from "../../api/appearance-queries";
 import type { ChatUser } from "../../model/types";
 import { ChatAppearanceEditor } from "./ChatAppearanceEditor";
+import styles from "./ChatAppearanceEditor.module.css";
 
 /** 模态编辑保持底下会话、滚动位置和输入草稿挂载。 */
 interface ChatAppearanceWorkspaceProps {
@@ -23,14 +24,14 @@ interface ChatAppearanceWorkspaceProps {
 export function ChatAppearanceWorkspace({ open, user, onClose }: ChatAppearanceWorkspaceProps) {
 	const query = useOwnChatAppearance(user.id);
 	const busyRef = useRef(false);
-	const contentRef = useRef<HTMLDivElement>(null);
+	const titleRef = useRef<HTMLHeadingElement>(null);
 	const [busy, setBusy] = useState(false);
 	const handleBusyChange = (value: boolean) => {
 		busyRef.current = value;
 		setBusy(value);
 	};
 	return (
-		<Dialog
+		<Sheet
 			open={open}
 			onOpenChange={(next) => {
 				if (!next && !busyRef.current) {
@@ -38,10 +39,10 @@ export function ChatAppearanceWorkspace({ open, user, onClose }: ChatAppearanceW
 				}
 			}}
 		>
-			<DialogContent
-				ref={contentRef}
+			<SheetContent
 				size="lg"
-				className="dialect-public"
+				side="right"
+				className={`dialect-public ${styles.workspace}`}
 				showCloseButton={!busy}
 				onEscapeKeyDown={(event) => {
 					if (busyRef.current) {
@@ -54,19 +55,16 @@ export function ChatAppearanceWorkspace({ open, user, onClose }: ChatAppearanceW
 					}
 				}}
 				onOpenAutoFocus={(event) => {
-					const target = contentRef.current?.querySelector<HTMLInputElement>(
-						'input[type="radio"]:checked',
-					);
-					if (target) {
-						event.preventDefault();
-						target.focus({ preventScroll: true });
-					}
+					event.preventDefault();
+					titleRef.current?.focus({ preventScroll: true });
 				}}
 			>
-				<DialogHeader>
-					<DialogTitle>聊天外观</DialogTitle>
-					<DialogDescription>选择气泡和本机背景，保存后应用。</DialogDescription>
-				</DialogHeader>
+				<SheetHeader>
+					<SheetTitle ref={titleRef} tabIndex={-1}>
+						聊天外观
+					</SheetTitle>
+					<SheetDescription>选择气泡和本机背景，保存后应用。</SheetDescription>
+				</SheetHeader>
 				{query.data ? (
 					<ChatAppearanceEditor
 						key={user.id}
@@ -77,7 +75,7 @@ export function ChatAppearanceWorkspace({ open, user, onClose }: ChatAppearanceW
 					/>
 				) : (
 					<>
-						<DialogBody>
+						<SheetBody>
 							{query.isError ? (
 								<div role="alert" className="flex flex-col items-center gap-4 py-8">
 									<p className="text-sm text-muted-foreground">
@@ -95,15 +93,15 @@ export function ChatAppearanceWorkspace({ open, user, onClose }: ChatAppearanceW
 									正在读取你的外观…
 								</p>
 							)}
-						</DialogBody>
-						<DialogFooter>
+						</SheetBody>
+						<SheetFooter>
 							<Button variant="outline" onClick={onClose}>
 								取消
 							</Button>
-						</DialogFooter>
+						</SheetFooter>
 					</>
 				)}
-			</DialogContent>
-		</Dialog>
+			</SheetContent>
+		</Sheet>
 	);
 }

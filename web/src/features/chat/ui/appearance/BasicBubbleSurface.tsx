@@ -2,6 +2,7 @@ import { cn } from "cn";
 import type { ReactNode } from "react";
 import { BASIC_BUBBLE_BY_ID } from "../../model/appearance-catalog";
 import styles from "./BasicBubbleSurface.module.css";
+import surfaceStyles from "./BubbleSurface.module.css";
 
 /** 空 ID 是原有季节款;未登记 ID 由 BubbleShell 的既有兜底处理。 */
 export function isBasicBubbleTheme(themeId: string): boolean {
@@ -24,7 +25,11 @@ export function BasicBubbleSurface({
 }: BasicBubbleSurfaceProps) {
 	return (
 		<div
-			className={cn(styles.bubble, themeId === "" && !mine && styles.incoming)}
+			className={cn(
+				surfaceStyles.surface,
+				styles.bubble,
+				themeId === "" && !mine && styles.incoming,
+			)}
 			data-chat-bubble-theme={themeId || "season"}
 			data-side={mine ? "outgoing" : "incoming"}
 			data-chat-bubble=""

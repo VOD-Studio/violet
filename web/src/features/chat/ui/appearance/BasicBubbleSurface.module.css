@@ -1,14 +1,7 @@
 .bubble {
-	min-width: 0;
-	max-width: 100%;
-	padding: 0.5rem 0.75rem;
-	border: 1px solid transparent;
 	border-radius: 1rem;
 	background: color-mix(in oklab, var(--decoration) 28%, var(--card));
 	color: var(--foreground);
-	font-size: 0.9375rem;
-	line-height: 1.55;
-	overflow-wrap: anywhere;
 }
 
 .bubble[data-side="outgoing"][data-last-in-group="true"] {

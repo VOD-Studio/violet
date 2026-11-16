@@ -1,4 +1,4 @@
-import { Button, DialogBody, DialogFooter } from "@violet/ui";
+import { Button, SheetBody, SheetFooter } from "@violet/ui";
 import { useState } from "react";
 import { fetchOwnAppearance } from "../../api/appearance";
 import { useSaveChatAppearance } from "../../api/appearance-queries";
@@ -85,24 +85,26 @@ export function ChatAppearanceEditor({
 	};
 	return (
 		<>
-			<DialogBody aria-busy={busy}>
+			<SheetBody aria-busy={busy} className={styles.body}>
 				<div className={styles.columns}>
-					<AppearanceBasics
-						themeId={draft.bubble_theme_id}
-						background={background}
-						disabled={busy}
-						onThemeChange={(id) => setField("bubble_theme_id", id)}
-						onBackgroundChange={setDraftBackground}
-					/>
+					<div className={styles.controls}>
+						<AppearanceBasics
+							themeId={draft.bubble_theme_id}
+							background={background}
+							disabled={busy}
+							onThemeChange={(id) => setField("bubble_theme_id", id)}
+							onBackgroundChange={setDraftBackground}
+						/>
+						<AppearanceDecorations
+							userID={user.id}
+							value={draft}
+							disabled={busy}
+							onFieldChange={setField}
+							onBadgeChange={setBadgeIDs}
+						/>
+					</div>
 					<ChatAppearancePreview appearance={draft} background={background} user={user} />
 				</div>
-				<AppearanceDecorations
-					userID={user.id}
-					value={draft}
-					disabled={busy}
-					onFieldChange={setField}
-					onBadgeChange={setBadgeIDs}
-				/>
 				{error && (
 					<div role="alert" className={styles.error}>
 						<span>{error}</span>
@@ -116,8 +118,8 @@ export function ChatAppearanceEditor({
 						</Button>
 					</div>
 				)}
-			</DialogBody>
-			<DialogFooter>
+			</SheetBody>
+			<SheetFooter>
 				<Button
 					variant="ghost"
 					className="mr-auto"
@@ -140,7 +142,7 @@ export function ChatAppearanceEditor({
 				>
 					保存
 				</Button>
-			</DialogFooter>
+			</SheetFooter>
 		</>
 	);
 }

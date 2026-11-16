@@ -1,0 +1,11 @@
+.surface {
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
+	padding: 0.5rem 0.75rem;
+	border: 1px solid transparent;
+	text-align: left;
+	font-size: 0.9375rem;
+	line-height: 1.55;
+	overflow-wrap: anywhere;
+}
