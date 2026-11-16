@@ -2,12 +2,12 @@
 	background-color: var(--background);
 }
 
-.paper {
+.texture {
 	background-image: url("./chat-paper-light.webp");
 	background-size: 90rem 100rem;
 }
 
-[class~="dark"] .paper {
+[class~="dark"] .texture {
 	background-image: url("./chat-paper-dark.webp");
 }
 

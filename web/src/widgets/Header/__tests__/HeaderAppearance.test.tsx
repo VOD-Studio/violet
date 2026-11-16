@@ -10,6 +10,7 @@ import {
 	resolvePresetTheme,
 	type ThemeState,
 } from "@shared/lib/theme-preference";
+import { THEME_PRESETS } from "@shared/lib/theme-presets";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
 	createMemoryHistory,
@@ -153,19 +154,25 @@ describe("页头外观设置", () => {
 		fireEvent.click(customize);
 		const dialog = await screen.findByRole("dialog", { name: "自定义主题" });
 		const seed = within(dialog).getByRole("textbox", { name: "种子色" });
-		fireEvent.change(seed, { target: { value: "#336699" } });
-		if (action === "Escape") fireEvent.keyDown(seed, { key: "Escape" });
-		else fireEvent.click(within(dialog).getByRole("button", { name: action }));
+		const customSeed = THEME_PRESETS.winter.seed;
+		fireEvent.change(seed, { target: { value: customSeed } });
+		if (action === "Escape") {
+			fireEvent.keyDown(seed, { key: "Escape" });
+		} else {
+			fireEvent.click(within(dialog).getByRole("button", { name: action }));
+		}
 		await waitFor(() =>
 			expect(screen.queryByRole("dialog", { name: "自定义主题" })).toBeNull(),
 		);
 		await waitFor(() => expect(document.activeElement).toBe(customize));
 		expect(screen.getByRole("dialog", { name: "季节与外观" })).toBeTruthy();
-		if (action === "应用")
+		if (action === "应用") {
 			await waitFor(() =>
-				expect(parseCustomThemeCookie(document.cookie)?.seed).toBe("#336699"),
+				expect(parseCustomThemeCookie(document.cookie)?.seed).toBe(customSeed),
 			);
-		else expect(parseCustomThemeCookie(document.cookie)).toBeNull();
+		} else {
+			expect(parseCustomThemeCookie(document.cookie)).toBeNull();
+		}
 		fireEvent.keyDown(customize, { key: "Escape" });
 		await waitFor(() => expect(document.activeElement).toBe(trigger));
 	});
