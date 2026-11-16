@@ -2,10 +2,13 @@ import contextlib
 import copy
 import importlib.util
 import io
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
+import threading
 import unittest
 
 
@@ -866,6 +869,49 @@ class GitHubAdapterTests(unittest.TestCase):
         self.assertEqual(command[4], "https://uploads.github.com/repos/VOD-Studio/violet/releases/1/assets?name=release-manifest.json")
         self.assertEqual(kwargs["input"], release.compact(evidence()))
         self.assertIn("Content-Type: application/json", command)
+
+    def test_gh_upload_sends_a_known_utf8_body_length(self):
+        received = {}
+
+        class UploadHandler(BaseHTTPRequestHandler):
+            def do_POST(self):
+                self.connection.settimeout(2)
+                received["headers"] = dict(self.headers)
+                length = self.headers.get("Content-Length")
+                if length is None or self.headers.get("Transfer-Encoding"):
+                    self.send_error(411, "Content-Length required")
+                    return
+                received["body"] = self.rfile.read(int(length))
+                self.send_response(201)
+                self.end_headers()
+                self.wfile.write(b'{"id":10}')
+
+            def log_message(self, *_):
+                pass
+
+        def runner(command, **kwargs):
+            return subprocess.run(
+                command, **kwargs, timeout=10,
+                env={**os.environ, "GH_TOKEN": "local-contract", "GH_PROMPT_DISABLED": "1",
+                     "NO_PROXY": "127.0.0.1"},
+            )
+
+        with ThreadingHTTPServer(("127.0.0.1", 0), UploadHandler) as server:
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                github = release.GitHub("VOD-Studio/violet", runner)
+                result = github.request(
+                    "POST", f"http://127.0.0.1:{server.server_port}/assets",
+                    {"message": "中文清单"},
+                )
+            finally:
+                server.shutdown()
+                thread.join()
+        self.assertEqual(result, {"id": 10})
+        self.assertEqual(received["headers"]["Content-Length"], "26")
+        self.assertNotIn("Transfer-Encoding", received["headers"])
+        self.assertEqual(received["body"], '{"message":"中文清单"}'.encode("utf-8"))
 
     def test_upload_rejects_untrusted_urls_before_invoking_gh(self):
         for url in ("https://evil.test/upload", "https://uploads.github.com/repos/elsewhere/violet/releases/1/assets", "http://uploads.github.com/repos/VOD-Studio/violet/releases/1/assets"):

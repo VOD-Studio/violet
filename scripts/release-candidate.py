@@ -144,8 +144,9 @@ class GitHub:
         command = ["gh", "api", "--method", method, path, *headers]
         payload = None
         if body is not None:
-            command += ["-H", "Content-Type: application/json", "--input", "-"]
             payload = body if isinstance(body, str) else compact(body)
+            command += ["-H", "Content-Type: application/json",
+                        "-H", f"Content-Length: {len(payload.encode('utf-8'))}", "--input", "-"]
         result = self.runner(command, input=payload, text=True, capture_output=True)
         if result.returncode:
             # gh emits '(HTTP NNN)' for REST failures; prose such as 'not found'
