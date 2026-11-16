@@ -10,6 +10,16 @@
     ".": {
       "changelog-path": "CHANGELOG.md",
       "release-type": "simple",
+      "exclude-paths": [
+        ".github",
+        "scripts",
+        "docs",
+        "README.md",
+        "api/README.md",
+        "web/README.md",
+        "web/e2e",
+        "release-please-config.json"
+      ],
       "changelog-sections": [
         { "type": "feat", "section": "新增" },
         { "type": "fix", "section": "修复" },
@@ -20,8 +30,7 @@
         { "type": "test", "section": "内部维护", "hidden": true },
         { "type": "style", "section": "内部维护", "hidden": true },
         { "type": "chore", "section": "内部维护", "hidden": true }
-      ],
-      "exclude-scopes": []
+      ]
     }
   }
 }

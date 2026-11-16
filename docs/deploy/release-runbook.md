@@ -7,6 +7,8 @@
 3. 验收通过后，在发布状态锁内再次核对候选，创建 tag 和 GitHub Release，并保存 `release-manifest.json` 附件。附件绑定源码 SHA、双侧镜像 digest 及验证运行；随后部署这份清单。
 4. 在 Actions 的 Deploy summary 查看实际部署版本、提交、双侧镜像和 schema。GitHub Release 表示候选已完成验收，**不表示生产部署成功**。
 
+CI 工作流、根目录运维脚本、部署文档、项目介绍 README 与 `web/e2e` 浏览器契约不单独触发应用版本。`release-please-config.json` 的 `exclude-paths` 按提交的实际文件过滤：只有全部文件都属于排除路径才跳过；混合应用源码的提交仍参与版本计算。不要靠手动关闭 release PR 或修改已有 tag 纠正提交分类。
+
 ```mermaid
 flowchart LR
     A[合并 release PR] --> P[冻结候选 SHA]
@@ -26,7 +28,7 @@ flowchart LR
 
 候选登记、正式发布与 release PR 维护共用 `release-state` 锁；检查和构建不占锁。生产事务另用 `deploy-production` 锁，服务器保留文件锁。两个 Actions 并发组均使用 `queue: max`，最多保留 100 个等待任务；入队次序不代表提交先后。运行被取消或队列满时，候选仍可从 `release-candidate` 及 manifest 恢复，不能把 Actions 队列当作唯一记录。
 
-候选冻结后，新合入的业务 PR 不改变本次 SHA，留给下一批；当前版本尚未公开发布时，release-please 暂停生成下一张 release PR。发布完成后主动触发维护，收集期间合入的提交。人工重新选择同版本的后代 SHA 后，旧运行在发布前标记为 `superseded`；进入生产锁后仍检查祖先关系，已被线上双侧版本包含的旧发布不会覆盖生产。不要手工移动或删除候选分支。
+候选冻结后，新合入的业务 PR 不改变本次 SHA，留给下一批；当前版本尚未公开发布或缺少有效验证清单时，release-please 暂停生成下一张 release PR。发布完成后主动触发维护，收集期间合入的提交。人工重新选择同版本的后代 SHA 后，旧运行在发布前标记为 `superseded`；进入生产锁后仍检查祖先关系，已被线上双侧版本包含的旧发布不会覆盖生产。不要手工移动或删除候选分支。
 
 每个未发布候选验证同一个提交的完整 CI，并构建双侧镜像。正式 Release 的清单一旦存在，重试直接复用原 digest，不重新构建、不重跑全量 CI。PR 的旧运行可取消，不同提交的主干运行互不取消。API 内部拆为静态检查（golangci-lint 已含 vet）、数据库测试（仅此任务启动 PostgreSQL）与镜像校验，`Backend (Go)` 汇总它们；Web 内部拆为静态检查、站点单测（3 分片）、独立包（ui、inkline、react-tweet、kanban、theme 各一）、浏览器契约（2 分片）与镜像校验。`Frontend (React)` 汇总这些任务，总门禁 `CI Gate` 核对实际执行结果；skipped 不充当候选通过。
 

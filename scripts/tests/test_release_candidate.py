@@ -359,7 +359,7 @@ class CoordinatorTests(unittest.TestCase):
             self.controller.prepare("v2.26.0", S2)
         self.assertEqual(self.github.effects, [])
 
-    def test_maintenance_waits_for_public_release_and_tag(self):
+    def test_maintenance_waits_for_public_release_tag_and_verified_manifest(self):
         self.git.head = S1
         self.assertEqual(self.controller.maintenance(), {"maintain": "false"})
         self.github.refs["tags/v2.26.0"] = S1
@@ -367,6 +367,8 @@ class CoordinatorTests(unittest.TestCase):
         self.github.install_release(draft=True, manifest=False)
         self.assertEqual(self.controller.maintenance(), {"maintain": "false"})
         self.github.releases["v2.26.0"]["draft"] = False
+        self.assertEqual(self.controller.maintenance(), {"maintain": "false"})
+        self.github.install_release()
         self.assertEqual(self.controller.maintenance(), {"maintain": "true"})
         self.assertEqual(self.github.effects, [])
 

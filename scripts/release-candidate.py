@@ -389,8 +389,7 @@ class Coordinator:
     def maintenance(self):
         sha = self.git.resolve("HEAD")
         target_version = self.git.version(sha)
-        tag, release, _, _ = self.state(target_version)
-        return {"maintain": "true" if tag and release and not release["draft"] else "false"}
+        return {"maintain": "true" if self.complete(self.state(target_version)) else "false"}
 
     def publish(self, target_version, sha, api_digest, web_digest, workflow_revision):
         target_version = version(target_version)
