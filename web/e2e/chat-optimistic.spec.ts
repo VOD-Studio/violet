@@ -47,7 +47,10 @@ for (const viewport of [
 	{ width: 1440, height: 900 },
 	{ width: 390, height: 844 },
 ]) {
-	test(`所有消息在气泡显示等待与重试 ${viewport.width}`, async ({ page, context }, testInfo) => {
+	test(`消息使用左侧等待指示并保留失败重试 ${viewport.width}`, async ({
+		page,
+		context,
+	}, testInfo) => {
 		await page.setViewportSize(viewport);
 		await context.addCookies([
 			{ name: "contract_admin", value: "1", url: "http://127.0.0.1:4173" },
@@ -118,7 +121,7 @@ for (const viewport of [
 				if (request.method() === "GET")
 					return reply(route, path.includes("/c1/") ? messages : [], true);
 				const input = request.postDataJSON();
-				if (input.content === "第一条") {
+				if (input.content === "1") {
 					heldText = route;
 					return;
 				}
@@ -161,28 +164,57 @@ for (const viewport of [
 		}
 		const send = page.getByRole("button", { name: "发送消息", exact: true });
 		await page.evaluate(() => document.fonts.ready);
-		await editor.fill("第一条");
+		await editor.fill("1");
 		await editor.press("Enter");
-		await expect(page.getByText("发送中", { exact: true })).toBeVisible();
+		const firstMessage = page.locator("article").filter({ hasText: "1" });
+		const waiting = firstMessage.getByRole("status");
+		await expect(waiting).toContainText("发送中");
+		await expect(waiting.locator("svg")).toBeVisible();
+		await expect
+			.poll(() =>
+				waiting.locator("svg").evaluate((svg) =>
+					Array.from(svg.querySelectorAll("path, circle, ellipse")).some((part) => {
+						const style = getComputedStyle(part);
+						return (
+							style.fill !== "none" &&
+							Number(style.fillOpacity) > 0.5 &&
+							Number(style.opacity) > 0.5
+						);
+					}),
+				),
+			)
+			.toBe(true);
+		const loadingBounds = await waiting.boundingBox();
+		const bubbleBounds = await firstMessage.locator("[data-chat-bubble]").boundingBox();
+		if (!loadingBounds || !bubbleBounds) throw new Error("缺少发送指示或消息气泡");
+		expect(loadingBounds.x + loadingBounds.width).toBeLessThanOrEqual(bubbleBounds.x);
+		expect(loadingBounds.x).toBeGreaterThanOrEqual(0);
+		await expect(firstMessage.getByRole("button", { name: /人已读/ })).toHaveCount(0);
+		const pendingTextBounds = await firstMessage.getByText("1", { exact: true }).boundingBox();
+		if (!pendingTextBounds) throw new Error("缺少待发送正文");
+		await page.screenshot({ path: testInfo.outputPath("sending.png") });
 		await expect(editor).toBeEmpty();
 		await expect(send.locator(".animate-spin")).toHaveCount(0);
 		await editor.fill("正在输入下一条");
 		await expect(send).toBeEnabled();
 		await expect.poll(() => Boolean(heldText)).toBe(true);
 		if (!heldText) throw new Error("未捕获发送请求");
-		const pendingBounds = await page
-			.locator("article")
-			.filter({ hasText: "第一条" })
-			.boundingBox();
+		const pendingBounds = await page.locator("article").filter({ hasText: "1" }).boundingBox();
 		if (!pendingBounds) throw new Error("待发送消息不可见");
 		await confirm(heldText);
 		await expect(page.getByText("发送中", { exact: true })).toHaveCount(0);
 		await expect(editor).toHaveText("正在输入下一条");
-		const firstMessage = page.locator("article").filter({ hasText: "第一条" });
 		await expect(firstMessage.getByRole("button", { name: "0 人已读" })).toBeVisible();
 		const sentBounds = await firstMessage.boundingBox();
 		if (!sentBounds) throw new Error("已确认消息不可见");
 		expect(Math.abs(sentBounds.height - pendingBounds.height)).toBeLessThanOrEqual(0.5);
+		const confirmedBubble = await firstMessage.locator("[data-chat-bubble]").boundingBox();
+		const confirmedText = await firstMessage.getByText("1", { exact: true }).boundingBox();
+		if (!confirmedBubble || !confirmedText) throw new Error("缺少已确认气泡或正文");
+		expect(Math.abs(confirmedBubble.width - bubbleBounds.width)).toBeLessThanOrEqual(0.5);
+		expect(Math.abs(confirmedBubble.height - bubbleBounds.height)).toBeLessThanOrEqual(0.5);
+		expect(Math.abs(confirmedText.x - pendingTextBounds.x)).toBeLessThanOrEqual(0.5);
+		expect(Math.abs(confirmedText.y - pendingTextBounds.y)).toBeLessThanOrEqual(0.5);
 		await editor.fill("失败重试");
 		await send.click();
 		await page.getByRole("button", { name: "重试", exact: true }).click();
@@ -195,7 +227,7 @@ for (const viewport of [
 		await expect.poll(() => Boolean(heldUpload)).toBe(true);
 		await send.click();
 		await expect(editor).toBeEmpty();
-		await expect(page.getByText(/图片上传中/)).toBeVisible();
+		await expect(page.getByRole("status").filter({ hasText: /图片上传中/ })).toBeVisible();
 		const localImage = page.locator('article img[src^="blob:"]');
 		await expect(localImage).toBeVisible();
 		await expect
@@ -213,7 +245,7 @@ for (const viewport of [
 			history.pushState({}, "", "/chat?c=c1");
 			dispatchEvent(new PopStateEvent("popstate"));
 		});
-		await expect(page.getByText(/图片上传中/)).toBeVisible();
+		await expect(page.getByRole("status").filter({ hasText: /图片上传中/ })).toBeVisible();
 		await expect(
 			page.getByRole("heading", { name: "c1", exact: true }).locator("../../../.."),
 		).toHaveCSS("opacity", "1");

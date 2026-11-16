@@ -155,14 +155,17 @@ export function MessageBubble({
 				time={message.created_at}
 				editedAt={isBotReply ? undefined : message.edited_at}
 			/>
-			{mine && !sending && !message.is_deleted && (
+			{mine && !message.is_deleted && sending?.status !== "failed" && (
 				<MessageReadReceipt
 					conversationKind={conversationKind}
 					message={message}
 					onMention={onMention}
+					pending={Boolean(sending)}
 				/>
 			)}
-			{sending && <MessageDeliveryStatus sending={sending} onRetry={onRetry} />}
+			{sending?.status === "failed" && (
+				<MessageDeliveryStatus sending={sending} onRetry={onRetry} />
+			)}
 		</div>
 	);
 
@@ -197,6 +200,11 @@ export function MessageBubble({
 						data-chat-message-body
 						className={cn("relative max-w-full", isBotReply && "w-full min-w-0")}
 					>
+						{sending && sending.status !== "failed" && (
+							<div className="absolute right-full top-1/2 mr-2 -translate-y-1/2">
+								<MessageDeliveryStatus sending={sending} />
+							</div>
+						)}
 						{editing && !message.is_deleted ? (
 							<MessageEditComposer
 								conversationKind={conversationKind}

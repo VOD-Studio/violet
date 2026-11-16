@@ -1,4 +1,6 @@
-import { Spinner } from "@violet/ui";
+import { getClientThemeState } from "@shared/lib/theme-preference";
+import { FlowerBloom, SEASON_FLOWER } from "@violet/ui";
+import { cn } from "cn";
 import { TriangleAlert } from "lucide-react";
 import type { OutgoingMessage } from "../model/chat-outbox";
 
@@ -11,9 +13,13 @@ export interface MessageDeliveryStatusProps {
 export function MessageDeliveryStatus({ sending, onRetry }: MessageDeliveryStatusProps) {
 	return (
 		<div
-			className="flex max-w-full items-center gap-1 text-[11px] leading-4 text-muted-foreground"
+			className={cn(
+				"flex max-w-full items-center text-[11px] leading-4 text-muted-foreground",
+				sending.status === "failed" ? "gap-1" : "flex-col gap-0.5",
+			)}
 			role="status"
 			aria-live="polite"
+			aria-busy={sending.status !== "failed" || undefined}
 		>
 			{sending.status === "failed" ? (
 				<>
@@ -32,8 +38,17 @@ export function MessageDeliveryStatus({ sending, onRetry }: MessageDeliveryStatu
 				</>
 			) : (
 				<>
-					<Spinner size={16} aria-hidden="true" />
-					<span>
+					<FlowerBloom
+						kind={SEASON_FLOWER[getClientThemeState().preset]}
+						size={20}
+						variant="solid"
+						tone="season"
+						aria-hidden="true"
+					/>
+					{sending.status === "uploading" && (
+						<span aria-hidden="true">{sending.progress}%</span>
+					)}
+					<span className="sr-only">
 						{sending.status === "uploading"
 							? `图片上传中 ${sending.progress}%`
 							: "发送中"}

@@ -3,6 +3,7 @@
  */
 import { formatDateTime } from "@shared/lib/date";
 import { Popover, PopoverContent, PopoverTrigger } from "@violet/ui";
+import { cn } from "cn";
 
 import { Check, CheckCheck } from "lucide-react";
 import { useRef, useState } from "react";
@@ -11,10 +12,12 @@ import type { ChatMessage, ChatUser, ConversationKind } from "../model/types";
 import { ChatAvatar } from "./ChatAvatar";
 
 interface MessageReadReceiptProps {
-	/** 自己发送的消息；read_state 缺省时整体不渲染。 */
+	/** 自己发送的消息；非 pending 时缺少 read_state 不渲染。 */
 	message: ChatMessage;
 	/** 会话形态：私聊显示已读/未读，房间显示聚合计数与名单。 */
 	conversationKind: ConversationKind;
+	/** 发送中保留回执尺寸，但不显示或开放名单交互。 */
+	pending?: boolean;
 	/** 点击已读成员名字时追加提及。 */
 	onMention?: (user: ChatUser) => void;
 }
@@ -23,6 +26,7 @@ export function MessageReadReceipt({
 	message,
 	conversationKind,
 	onMention,
+	pending = false,
 }: MessageReadReceiptProps) {
 	const [open, setOpen] = useState(false);
 	const mentioning = useRef(false);
@@ -33,36 +37,46 @@ export function MessageReadReceipt({
 	} = useChatMessageReaders(
 		message.conversation_id,
 		message.id,
-		open && conversationKind === "room",
+		!pending && open && conversationKind === "room",
 	);
 	const state = message.read_state;
-	if (!state) return null;
+	if (!state && !pending) return null;
+	const readCount = state?.read_count ?? 0;
+	const memberCount = state?.member_count ?? 0;
 
 	if (conversationKind === "direct") {
 		return (
-			<span className="inline-flex items-center text-current/60">
-				{state.read_count > 0 ? (
+			<span
+				aria-hidden={pending || undefined}
+				className={cn("inline-flex items-center text-current/60", pending && "invisible")}
+			>
+				{readCount > 0 ? (
 					<CheckCheck aria-hidden="true" className="size-3.5" />
 				) : (
 					<Check aria-hidden="true" className="size-3.5" />
 				)}
-				<span className="sr-only">{state.read_count > 0 ? "已读" : "未读"}</span>
+				{!pending && <span className="sr-only">{readCount > 0 ? "已读" : "未读"}</span>}
 			</span>
 		);
 	}
 
 	return (
-		<Popover onOpenChange={setOpen} open={open}>
+		<Popover onOpenChange={setOpen} open={!pending && open}>
 			<PopoverTrigger asChild>
 				<button
-					aria-label={`${state.read_count} 人已读`}
-					className="inline-flex items-center gap-0.5 rounded px-0.5 text-[11px] leading-4 text-current/60 transition-colors hover:text-current focus-visible:outline-2 focus-visible:outline-ring"
+					aria-hidden={pending || undefined}
+					aria-label={`${readCount} 人已读`}
+					className={cn(
+						"inline-flex items-center gap-0.5 rounded px-0.5 text-[11px] leading-4 text-current/60 transition-colors hover:text-current focus-visible:outline-2 focus-visible:outline-ring",
+						pending && "invisible",
+					)}
+					disabled={pending}
 					type="button"
 				>
-					{state.read_count > 0 ? (
+					{readCount > 0 ? (
 						<>
 							<CheckCheck aria-hidden="true" className="size-3.5" />
-							<span aria-hidden="true">{state.read_count}</span>
+							<span aria-hidden="true">{readCount}</span>
 						</>
 					) : (
 						<Check aria-hidden="true" className="size-3.5" />
@@ -80,8 +94,7 @@ export function MessageReadReceipt({
 				}}
 			>
 				<p className="px-2 pb-1 pt-1.5 text-xs font-medium text-foreground">
-					已读 {state.read_count} · 未读{" "}
-					{Math.max(state.member_count - state.read_count, 0)}
+					已读 {readCount} · 未读 {Math.max(memberCount - readCount, 0)}
 				</p>
 				{isLoading ? (
 					<p className="px-2 py-3 text-center text-xs text-muted-foreground">加载中…</p>
