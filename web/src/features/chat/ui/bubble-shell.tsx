@@ -1,6 +1,4 @@
-/**
- * 消息气泡外壳与独立于气泡的时间戳。
- */
+/** 消息气泡与常驻时间戳。 */
 import { formatDateTime, formatTime } from "@shared/lib/date";
 import { cn } from "cn";
 import type { ReactNode } from "react";
@@ -62,38 +60,27 @@ export function BubbleShell({
 	);
 }
 
-/**
- * 气泡外时间戳：常驻 DOM 但视觉隐藏，hover/焦点/长按时淡入。
- *
- * 放在聊天框外侧（发送居左、接收居右）：不额外占用行高，也不遮挡头像与气泡装饰。
- * editedAt 非空时前置「已编辑」标识，悬停可见最后编辑时间。
- */
+/** 时间与编辑标记共用一行，完整日期通过原生提示提供。 */
 export function BubbleTimestamp({
 	time,
 	editedAt,
-	forceVisible = false,
 	className,
 }: {
 	time: string;
 	editedAt?: string;
-	/** 触屏长按等操作态没有 hover，由调用方直接点亮。 */
-	forceVisible?: boolean;
 	className?: string;
 }) {
 	return (
 		<span
 			className={cn(
-				"whitespace-nowrap text-[10px] leading-4 tabular-nums text-muted-foreground opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100",
-				forceVisible && "opacity-100",
+				"inline-flex items-center gap-1 whitespace-nowrap text-[11px] leading-4 tabular-nums text-current/60",
 				className,
 			)}
 		>
 			{editedAt && (
-				<span className="block" title={`编辑于 ${formatDateTime(editedAt, "long-minute")}`}>
-					已编辑
-				</span>
+				<span title={`编辑于 ${formatDateTime(editedAt, "long-minute")}`}>已编辑</span>
 			)}
-			<time className="block" dateTime={time} title={formatDateTime(time, "long-minute")}>
+			<time dateTime={time} title={formatDateTime(time, "long-minute")}>
 				{formatTime(time)}
 			</time>
 		</span>

@@ -116,9 +116,12 @@
 }
 
 .previewTime {
-	color: var(--muted-foreground);
+	display: block;
+	margin-top: 0.25rem;
+	color: color-mix(in oklab, currentColor 60%, transparent);
 	font-size: 0.6875rem;
 	font-variant-numeric: tabular-nums;
+	text-align: right;
 }
 
 .decorations {

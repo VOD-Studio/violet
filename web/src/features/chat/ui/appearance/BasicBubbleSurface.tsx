@@ -8,7 +8,7 @@ export function isBasicBubbleTheme(themeId: string): boolean {
 	return BASIC_BUBBLE_BY_ID.has(themeId);
 }
 
-/** 基础款保留真实消息内容与收发方向,时间戳由调用方放在气泡之外。 */
+/** 基础款保留真实消息内容、状态与收发方向。 */
 export interface BasicBubbleSurfaceProps {
 	themeId: string;
 	mine: boolean;

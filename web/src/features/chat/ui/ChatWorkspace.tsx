@@ -97,12 +97,12 @@ export function ChatWorkspace() {
 				currentUserID={me.id}
 				userIDs={conversationAppearanceUserIDs(conversations)}
 			>
-				<div className="mx-auto flex min-h-0 w-full max-w-280 flex-1 gap-4 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:px-4 md:pb-6 md:pt-7 lg:px-0">
+				<div className="isolate mx-auto flex min-h-0 w-full max-w-360 flex-1 overflow-hidden bg-card md:my-4 md:w-[calc(100%-3rem)] md:rounded-2xl md:border md:border-border md:shadow-soft">
 					<aside
 						ref={indexRef}
 						aria-label="会话列表"
 						className={cn(
-							"relative flex min-h-0 w-full shrink-0 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-soft md:flex md:w-72 lg:w-80",
+							"relative z-10 flex min-h-0 w-full shrink-0 flex-col bg-card md:flex md:w-80 md:border-r md:border-border xl:w-88",
 							selectedID &&
 								(!conversationsFailed || conversationsPage) &&
 								"hidden md:flex",
@@ -153,7 +153,7 @@ export function ChatWorkspace() {
 					<section
 						aria-label="聊天区"
 						className={cn(
-							"relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-soft",
+							"relative flex min-h-0 min-w-0 flex-1 flex-col",
 							(!selectedID || (conversationsFailed && !selected)) && "hidden md:flex",
 						)}
 					>

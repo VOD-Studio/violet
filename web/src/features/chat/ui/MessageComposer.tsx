@@ -1,6 +1,14 @@
 import { stripPlaceholdersForPreview } from "@shared/ui/rich-text-input/use-rich-text-input";
-import { Button, iconProps } from "@violet/ui";
-import { MessageSquareQuote, Reply, Send, X } from "lucide-react";
+import {
+	Button,
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+	iconProps,
+} from "@violet/ui";
+import { MessageSquareQuote, Plus, Reply, Send, X } from "lucide-react";
+import { useRef } from "react";
 import { type UseMessageComposerOptions, useMessageComposer } from "../hooks/use-message-composer";
 import { ChatRichInput } from "./ChatRichInput";
 import { TweetSharingPreview } from "./TweetSharingPreview";
@@ -35,23 +43,23 @@ export function MessageComposer({
 		onMessageSent,
 	});
 	const { commands } = composer;
+	const inputAction = useRef<(() => void) | null>(null);
 	const placeholder = pendingShare
 		? "为分享写点什么…"
-		: conversationKind === "room"
-			? `在 #${conversationTitle || "群聊"} 说点什么，输入 / 召唤角色`
-			: conversationTitle
-				? `发消息给 ${conversationTitle}`
-				: "输入消息…";
+		: conversationTitle
+			? `发给 ${conversationTitle}…`
+			: "发送消息…";
 
 	return (
 		<div
 			ref={composer.composerRef}
 			onKeyDown={composer.onKeyDown}
-			className="flex max-h-[50%] min-h-0 shrink-0 flex-col px-3 pb-3 pt-2 md:px-4 md:pb-4"
+			className="flex max-h-[50%] min-h-0 shrink-0 flex-col border-t border-border bg-card px-(--chat-gutter) pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 md:pb-5"
 		>
-			<div className="relative mx-auto flex min-h-0 w-full max-w-4xl flex-col">
+			<div className="relative flex min-h-0 w-full flex-col">
 				<div className="-m-1 min-h-0 overflow-y-auto p-1">
 					<ChatRichInput
+						inputClassName="min-h-10 py-2 text-[15px] leading-6"
 						inlineHeader={
 							<>
 								{pendingShare ? (
@@ -140,24 +148,70 @@ export function MessageComposer({
 						resetNonce={composer.resetNonce}
 						onImageUploadsChange={composer.onImagesChange}
 						mentionCandidates={composer.mentionCandidates}
-						commandTrigger={
-							<Button
-								aria-label="召唤角色"
-								aria-controls={
-									commands.isCommandMenuOpen ? commands.listboxId : undefined
-								}
-								aria-expanded={commands.isCommandMenuOpen}
-								aria-haspopup="listbox"
-								iconOnly
-								onClick={commands.toggleMenu}
-								onMouseDown={(event) => event.preventDefault()}
-								size="sm"
-								title="召唤角色"
-								variant="ghost"
-							>
-								<span className="font-mono text-[15px]">/</span>
-							</Button>
-						}
+						renderInlineActions={({
+							attachImage,
+							canAttachImage,
+							startMention,
+							emojiPicker,
+						}) => ({
+							start: (
+								<DropdownMenu
+									modal={false}
+									onOpenChange={(open) => {
+										if (open) inputAction.current = null;
+									}}
+								>
+									<DropdownMenuTrigger asChild>
+										<Button
+											aria-label="添加内容"
+											iconOnly
+											size="sm"
+											title="添加图片、提及成员或召唤角色"
+											variant="ghost"
+										>
+											<Plus className="size-5" />
+										</Button>
+									</DropdownMenuTrigger>
+									<DropdownMenuContent
+										align="start"
+										side="top"
+										onCloseAutoFocus={(event) => {
+											const action = inputAction.current;
+											inputAction.current = null;
+											if (action) {
+												event.preventDefault();
+												action();
+											}
+										}}
+									>
+										{attachImage && (
+											<DropdownMenuItem
+												disabled={!canAttachImage}
+												onSelect={attachImage}
+											>
+												添加图片
+											</DropdownMenuItem>
+										)}
+										<DropdownMenuItem
+											disabled={!startMention}
+											onSelect={() => {
+												inputAction.current = startMention;
+											}}
+										>
+											提及成员
+										</DropdownMenuItem>
+										<DropdownMenuItem
+											onSelect={() => {
+												inputAction.current = commands.toggleMenu;
+											}}
+										>
+											召唤角色
+										</DropdownMenuItem>
+									</DropdownMenuContent>
+								</DropdownMenu>
+							),
+							end: emojiPicker,
+						})}
 						toolbarEnd={
 							<Button
 								aria-label="发送消息"
@@ -165,6 +219,7 @@ export function MessageComposer({
 								disabled={!composer.canSend}
 								onClick={composer.sendMessage}
 								iconOnly
+								size="sm"
 								variant="primary"
 							>
 								<Send className="size-4" />

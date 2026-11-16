@@ -7,7 +7,6 @@ import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { ImagePreview, useImagePreview } from "@shared/ui/image-preview";
 import type { RichTextInputHandle } from "@shared/ui/rich-text-input/RichTextInput";
 import { useQueryClient } from "@tanstack/react-query";
-import { cn } from "cn";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useChatMembers, useChatMessages, useDeleteChatMessage } from "../api/queries";
@@ -173,7 +172,7 @@ export function ConversationPanel({
 			currentUserID={currentUserID}
 			userIDs={panelAppearanceUserIDs(conversation, members, messages)}
 		>
-			<div className="relative flex h-full min-h-0 flex-1 flex-col">
+			<div className="relative flex h-full min-h-0 flex-1 flex-col [--chat-gutter:1rem] md:[--chat-gutter:1.5rem] xl:[--chat-gutter:2rem] 2xl:[--chat-gutter:3rem]">
 				<ConversationHeader
 					conversation={conversation}
 					currentUserID={currentUserID}
@@ -184,30 +183,27 @@ export function ConversationPanel({
 					onToggleDetails={onToggleDetails}
 					searchOpen={searchOpen}
 					onToggleSearch={() => setSearchOpen((open) => !open)}
+					searchContent={
+						<ConversationMessageSearch
+							active={searchOpen}
+							messages={messages}
+							hasNextPage={hasNextPage}
+							loading={isFetchingNextPage}
+							onLoadMore={() => void fetchNextPage()}
+							onSelect={(id) => {
+								setPendingFocusID(id);
+								setSearchOpen(false);
+							}}
+							onClose={() => setSearchOpen(false)}
+						/>
+					}
 				/>
 
-				<div
-					className={cn(
-						"relative flex min-h-0 flex-1 overflow-hidden bg-background",
-						background,
-					)}
-				>
+				<div className="relative flex min-h-0 flex-1 overflow-hidden bg-card">
 					<section className="flex min-h-0 min-w-0 flex-1 flex-col">
-						{searchOpen && (
-							<ConversationMessageSearch
-								messages={messages}
-								hasNextPage={hasNextPage}
-								loading={isFetchingNextPage}
-								onLoadMore={() => void fetchNextPage()}
-								onSelect={(id) => {
-									setPendingFocusID(id);
-									setSearchOpen(false);
-								}}
-								onClose={() => setSearchOpen(false)}
-							/>
-						)}
 						<ConversationMessageViewport
 							scroll={scroll}
+							backgroundClassName={background}
 							empty={messages.length === 0}
 							loading={{
 								pending: messagesLoading,

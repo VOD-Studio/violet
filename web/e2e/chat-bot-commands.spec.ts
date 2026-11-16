@@ -153,19 +153,27 @@ test("聊天候选浮在输入框上方，多行工具栏靠底且 Bot 命令可
 		expect(
 			await editor.evaluate((element) => element.scrollHeight > element.clientHeight),
 		).toBe(true);
-		for (const name of ["添加附件", "召唤角色", "提及", "添加表情", "发送消息"]) {
+		for (const name of ["添加内容", "添加表情", "发送消息"]) {
 			const action = await page.getByRole("button", { name, exact: true }).boundingBox();
 			if (!action) {
 				throw new Error(`缺少输入操作：${name}`);
 			}
-			expect(
-				Math.abs(action.y + action.height - editorBounds.y - editorBounds.height),
-			).toBeLessThanOrEqual(1);
+			const shellBounds = await inputShell.boundingBox();
+			if (!shellBounds) throw new Error("输入容器未渲染");
+			expect(action.y).toBeGreaterThanOrEqual(shellBounds.y);
+			expect(action.y + action.height).toBeLessThanOrEqual(
+				shellBounds.y + shellBounds.height,
+			);
 		}
 		expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
 			390,
 		);
 	}).toPass();
+	await page.getByRole("button", { name: "添加内容", exact: true }).click();
+	await page.getByRole("menuitem", { name: "提及成员", exact: true }).click();
+	await expect(page.getByRole("option", { name: /Saber/ })).toBeVisible();
+	await expect(editor).toBeFocused();
+	await editor.press("Escape");
 	await editor.press("Shift+Enter");
 	await editor.evaluate((element) =>
 		element.dispatchEvent(

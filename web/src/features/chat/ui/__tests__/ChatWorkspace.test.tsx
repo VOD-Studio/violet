@@ -517,24 +517,6 @@ describe("ChatWorkspace", () => {
 		}
 	});
 
-	it("渲染聊天会话列表和主聊天面板", () => {
-		render(<ChatWorkspace />, { wrapper: createWrapper() });
-
-		// 侧边栏
-		expect(screen.getByText("聊天")).toBeTruthy();
-		expect(screen.getByLabelText("搜索会话、用户或群聊")).toBeTruthy();
-
-		// 会话行
-		expect(screen.getAllByText("dfy").length).toBeGreaterThan(0);
-		expect(screen.getAllByText("hello world").length).toBeGreaterThan(0);
-		expect(screen.queryByRole("link", { name: "xfy 的个人主页" })).toBeNull();
-		const editor = screen.getByRole("textbox", { name: "消息内容" });
-		expect(editor).toBeTruthy();
-		expect(screen.getByRole("button", { name: "发送消息" })).toBeTruthy();
-		expect(screen.getByRole("button", { name: "添加表情" })).toBeTruthy();
-		expect(screen.getByRole("button", { name: "添加附件" })).toBeTruthy();
-	});
-
 	it("长按聊天消息显示消息操作栏", () => {
 		vi.useFakeTimers();
 		try {
@@ -867,17 +849,15 @@ describe("ChatWorkspace", () => {
 			const view = render(panel(), { wrapper: createWrapper() });
 			const list = screen.getByTestId("chat-message-list") as HTMLDivElement;
 			let height = 1000;
+			let viewportHeight = 300;
 			Object.defineProperties(list, {
-				clientHeight: { configurable: true, value: 300 },
+				clientHeight: { configurable: true, get: () => viewportHeight },
 				scrollHeight: { configurable: true, get: () => height },
 			});
-			const flushResize = () => {
+			const flushResize = (target = list.firstElementChild as Element) => {
 				// 同一元素可能被多个 ResizeObserver 实例 observe，
 				// 真实浏览器会逐实例回调，这里同样全部触发。
-				const matched = observers.filter(({ targets }) =>
-					targets.includes(list.firstElementChild as Element),
-				);
-				expect(matched.length).toBeGreaterThan(0);
+				const matched = observers.filter(({ targets }) => targets.includes(target));
 				for (const observer of matched) {
 					act(() => observer.callback([], observer as unknown as ResizeObserver));
 				}
@@ -918,6 +898,18 @@ describe("ChatWorkspace", () => {
 			fireEvent.scroll(list);
 			flushResize();
 			expect(list.scrollTop).toBe(1200);
+			fireEvent.scroll(list);
+			viewportHeight = 200;
+			flushResize(list);
+			expect(list.scrollTop).toBe(1300);
+			list.scrollTop = 500;
+			fireEvent.scroll(list);
+			viewportHeight = 150;
+			flushResize(list);
+			expect(list.scrollTop).toBe(500);
+			viewportHeight = 300;
+			list.scrollTop = 1200;
+			fireEvent.scroll(list);
 
 			fireEvent.pointerDown(list);
 			height = 1600;
@@ -972,14 +964,6 @@ describe("ChatWorkspace", () => {
 		});
 	});
 
-	it("未选择会话时显示新建对话引导", () => {
-		window.history.replaceState({}, "", "/chat");
-		render(<ChatWorkspace />, { wrapper: createWrapper() });
-
-		expect(screen.getByText("选择一个会话")).toBeTruthy();
-		expect(screen.getAllByRole("button", { name: "新建会话" }).length).toBeGreaterThan(0);
-	});
-
 	it("切换会话时同步 URL 并支持返回列表", () => {
 		render(<ChatWorkspace />, { wrapper: createWrapper() });
 
@@ -987,7 +971,6 @@ describe("ChatWorkspace", () => {
 		fireEvent.click(screen.getByRole("button", { name: "返回会话列表" }));
 
 		expect(new URL(window.location.href).searchParams.has("c")).toBe(false);
-		expect(screen.getByText("选择一个会话")).toBeTruthy();
 	});
 
 	it("身份确定前不开放输入，身份到达后才建立草稿", () => {

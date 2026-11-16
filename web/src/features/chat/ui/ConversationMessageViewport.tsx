@@ -1,4 +1,5 @@
-import { Button, Empty, Spinner } from "@violet/ui";
+import { Button, Empty, ScrollArea, Spinner } from "@violet/ui";
+import { cn } from "cn";
 import { ArrowDown } from "lucide-react";
 import type { ReactNode } from "react";
 import type { ConversationScrollState } from "../hooks/useConversationScroll";
@@ -6,6 +7,7 @@ import { MessageEmpty, MessageSkeleton } from "./chat-states";
 
 interface ConversationMessageViewportProps {
 	scroll: ConversationScrollState;
+	backgroundClassName: string;
 	empty: boolean;
 	loading: {
 		pending: boolean;
@@ -20,16 +22,16 @@ interface ConversationMessageViewportProps {
 /** 输入区不参与历史滚动，键盘和指针向上浏览时暂停追随新消息。 */
 export function ConversationMessageViewport({
 	scroll,
+	backgroundClassName,
 	empty,
 	loading,
 	children,
 }: ConversationMessageViewportProps) {
 	return (
 		<>
-			<div
+			<ScrollArea
 				ref={scroll.scrollContainerRef}
 				data-testid="chat-message-list"
-				// biome-ignore lint/a11y/noNoninteractiveTabindex: 历史消息区须独立接受 PageUp、Home 等键盘滚动操作。
 				tabIndex={0}
 				role="region"
 				aria-label="消息记录"
@@ -51,9 +53,13 @@ export function ConversationMessageViewport({
 						scroll.pauseFollow();
 					}
 				}}
-				className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain px-3 pt-4 -outline-offset-4 focus-visible:outline-2 focus-visible:outline-ring md:px-6"
+				className={cn(
+					"min-h-0 flex-1 [--v-scroll-area-padding:1.25rem_var(--chat-gutter)_0]",
+					backgroundClassName,
+				)}
+				viewportClassName="flex flex-col justify-end-safe"
 			>
-				<div className="mx-auto mt-auto w-full max-w-4xl shrink-0 space-y-1.5 pb-2">
+				<div className="w-full shrink-0 space-y-3 pb-4">
 					{!empty && loading.hasNextPage && (
 						<div
 							ref={scroll.topSentinelRef}
@@ -83,7 +89,7 @@ export function ConversationMessageViewport({
 						children
 					)}
 				</div>
-			</div>
+			</ScrollArea>
 			{scroll.showScrollBottom && (
 				<div className="pointer-events-none absolute bottom-24 right-4 z-10">
 					<Button

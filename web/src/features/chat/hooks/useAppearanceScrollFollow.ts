@@ -23,6 +23,7 @@ export function useAppearanceScrollFollow(
 			});
 		});
 		observer.observe(content);
+		observer.observe(viewport);
 		return () => {
 			observer.disconnect();
 			cancelAnimationFrame(frame);

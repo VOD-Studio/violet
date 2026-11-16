@@ -20,7 +20,7 @@ import { MessageReplyPreview } from "./MessageReplyPreview";
 import { MusicShareCard } from "./MusicShareCard";
 import { TweetShareCard } from "./TweetShareCard";
 
-/** 消息正文与气泡外元数据共用一条消息状态，时间不进入皮肤容器。 */
+/** 正文、引用与发送状态组成一条消息，回应保留在气泡下方。 */
 export interface MessageBubbleProps {
 	message: ChatMessage;
 	sending?: Pick<OutgoingMessage, "status" | "progress" | "error">;
@@ -43,7 +43,7 @@ export interface MessageBubbleProps {
 	animateIn: boolean;
 }
 
-/** 气泡承载正文和引用；时间、回执及回应始终位于气泡外。 */
+/** 同组消息共用头像；时间与回执随气泡呈现，长按可打开操作。 */
 export function MessageBubble({
 	animateIn,
 	message,
@@ -137,6 +137,34 @@ export function MessageBubble({
 			onImage={onImage}
 		/>
 	);
+	const hasReactions = Boolean(message.reactions?.length);
+	const reactions = (
+		<MessageReactions
+			conversationId={message.conversation_id}
+			messageId={message.id}
+			currentUserId={currentUserID}
+			disabled={Boolean(sending) || message.is_deleted}
+			deleted={message.is_deleted}
+			reactions={message.reactions ?? []}
+			mine={mine}
+		/>
+	);
+	const metadata = !editing && (
+		<div data-chat-message-meta className="mt-1 flex min-h-4 items-center justify-end gap-1">
+			<BubbleTimestamp
+				time={message.created_at}
+				editedAt={isBotReply ? undefined : message.edited_at}
+			/>
+			{mine && !sending && !message.is_deleted && (
+				<MessageReadReceipt
+					conversationKind={conversationKind}
+					message={message}
+					onMention={onMention}
+				/>
+			)}
+			{sending && <MessageDeliveryStatus sending={sending} onRetry={onRetry} />}
+		</div>
+	);
 
 	return (
 		<motion.article
@@ -160,7 +188,9 @@ export function MessageBubble({
 				<div
 					className={cn(
 						"relative flex min-w-0 flex-col",
-						mine ? "max-w-[70%] items-end" : "max-w-[78%] items-start",
+						mine
+							? "max-w-[85%] items-end md:max-w-[75%]"
+							: "max-w-[calc(100%-2.75rem)] items-start md:max-w-[80%]",
 					)}
 				>
 					<div
@@ -215,9 +245,10 @@ export function MessageBubble({
 										/>
 									</div>
 								)}
+								{metadata}
 							</BubbleShell>
 						)}
-						{!editing && !sending && !message.is_deleted && (
+						{!editing && !message.is_deleted && (
 							<div
 								className={cn(
 									"pointer-events-none absolute bottom-full z-10 mb-1 opacity-0 transition-opacity duration-150 group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100",
@@ -225,13 +256,18 @@ export function MessageBubble({
 									mine ? "right-0" : "left-0",
 								)}
 							>
-								<MessageActions
-									content={message.content}
-									canCopy={message.type === "text"}
-									onEdit={mine ? () => setEditing(true) : undefined}
-									onReply={onReply}
-									onDelete={onDelete}
-								/>
+								<div className="flex items-center gap-1">
+									{!hasReactions && reactions}
+									{!sending && (
+										<MessageActions
+											content={message.content}
+											canCopy={message.type === "text"}
+											onEdit={mine ? () => setEditing(true) : undefined}
+											onReply={onReply}
+											onDelete={onDelete}
+										/>
+									)}
+								</div>
 							</div>
 						)}
 					</div>
@@ -241,44 +277,12 @@ export function MessageBubble({
 				className={cn(
 					"relative row-start-2 flex min-w-0 flex-col",
 					mine
-						? "max-w-[70%] items-end justify-self-end"
-						: "ml-11 max-w-[78%] items-start",
+						? "max-w-[85%] items-end justify-self-end md:max-w-[75%]"
+						: "ml-11 max-w-[calc(100%-2.75rem)] items-start md:max-w-[80%]",
 				)}
 			>
-				<div className="flex min-h-4 max-w-full flex-wrap items-center gap-1 pt-0.5">
-					{!editing && (
-						<BubbleTimestamp
-							forceVisible={touchActionsVisible}
-							time={message.created_at}
-							editedAt={isBotReply ? undefined : message.edited_at}
-						/>
-					)}
-					{mine && !sending && !message.is_deleted && (
-						<MessageReadReceipt
-							conversationKind={conversationKind}
-							message={message}
-							onMention={onMention}
-						/>
-					)}
-					{sending && <MessageDeliveryStatus sending={sending} onRetry={onRetry} />}
-				</div>
-				<div
-					className={cn(
-						!message.reactions?.length &&
-							"absolute bottom-0 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100",
-						!message.reactions?.length && (mine ? "right-full mr-2" : "left-full ml-2"),
-					)}
-				>
-					<MessageReactions
-						conversationId={message.conversation_id}
-						messageId={message.id}
-						currentUserId={currentUserID}
-						disabled={Boolean(sending) || message.is_deleted}
-						deleted={message.is_deleted}
-						reactions={message.reactions ?? []}
-						mine={mine}
-					/>
-				</div>
+				{(isBotReply || message.is_deleted) && metadata}
+				{hasReactions && <div className="pt-1">{reactions}</div>}
 			</div>
 		</motion.article>
 	);

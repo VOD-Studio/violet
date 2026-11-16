@@ -61,16 +61,3 @@ it("与角色的私信在名字旁标出“角色”，真人私信不标", () =
 	);
 	expect(screen.queryByText("角色")).toBeNull();
 });
-
-it("群聊行在头像位置显示频道符号并以 # 前缀标注名称", () => {
-	render(
-		<ConversationRow
-			active={false}
-			conversation={{ ...direct(user("momo")), kind: "room", title: "大厅" }}
-			currentUserID="me"
-			onClick={() => {}}
-		/>,
-	);
-	expect(screen.getByText("#")).toBeTruthy();
-	expect(screen.getByText("大厅")).toBeTruthy();
-});

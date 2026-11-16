@@ -7,7 +7,7 @@ export function chatBackgroundClassName(background: ChatBackground): string {
 	return cn(styles.background, styles[background]);
 }
 
-/** 返回当前账号已保存的背景类名,用于 ConversationPanel 的消息与输入共同容器。 */
+/** 返回当前账号已保存的背景类名，只铺在消息滚动区。 */
 export function useChatBackground(userID: string): string {
 	const background = useChatBackgroundStore((state) => state.backgrounds[userID] ?? "paper");
 	return chatBackgroundClassName(background);

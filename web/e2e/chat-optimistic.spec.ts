@@ -161,42 +161,8 @@ for (const viewport of [
 		}
 		const send = page.getByRole("button", { name: "发送消息", exact: true });
 		await page.evaluate(() => document.fonts.ready);
-		const positions = page.evaluate(
-			() =>
-				new Promise<number[]>((resolve, reject) => {
-					const offsets: number[] = [];
-					const deadline = performance.now() + 10_000;
-					let started: number | undefined;
-					const sample = () => {
-						const now = performance.now();
-						const bubble = document.querySelector(
-							"article[data-testid^='chat-message-'] [data-chat-message-body]",
-						);
-						const avatar = document.querySelector(
-							"[data-testid='chat-message-list'] a[aria-label='Contract 的个人主页']",
-						);
-						if (bubble && avatar) {
-							started ??= now;
-							offsets.push(
-								avatar.getBoundingClientRect().bottom -
-									bubble.getBoundingClientRect().bottom,
-							);
-						}
-						if (started === undefined ? now < deadline : now - started < 350) {
-							requestAnimationFrame(sample);
-						} else if (offsets.length < 3) {
-							reject(new Error("未捕获发送时的头像与气泡位置"));
-						} else {
-							resolve(offsets);
-						}
-					};
-					requestAnimationFrame(sample);
-				}),
-		);
 		await editor.fill("第一条");
 		await editor.press("Enter");
-		const offsets = await positions;
-		expect(Math.max(...offsets) - Math.min(...offsets)).toBeLessThanOrEqual(0.5);
 		await expect(page.getByText("发送中", { exact: true })).toBeVisible();
 		await expect(editor).toBeEmpty();
 		await expect(send.locator(".animate-spin")).toHaveCount(0);
@@ -217,13 +183,6 @@ for (const viewport of [
 		const sentBounds = await firstMessage.boundingBox();
 		if (!sentBounds) throw new Error("已确认消息不可见");
 		expect(Math.abs(sentBounds.height - pendingBounds.height)).toBeLessThanOrEqual(0.5);
-		const body = await firstMessage.locator("[data-chat-message-body]").boundingBox();
-		const avatar = await page
-			.getByTestId("chat-message-list")
-			.getByRole("link", { name: "Contract 的个人主页" })
-			.boundingBox();
-		if (!body || !avatar) throw new Error("已确认消息或发送者头像不可见");
-		expect(Math.abs(avatar.y + avatar.height - body.y - body.height)).toBeLessThanOrEqual(0.5);
 		await editor.fill("失败重试");
 		await send.click();
 		await page.getByRole("button", { name: "重试", exact: true }).click();

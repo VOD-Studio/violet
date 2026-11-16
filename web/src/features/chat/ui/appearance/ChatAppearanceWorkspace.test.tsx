@@ -76,27 +76,6 @@ beforeEach(() => {
 });
 
 describe("聊天外观对话框", () => {
-	it("展示四种基础款与三种背景,用真实气泡预览并把时间留在气泡外", () => {
-		openEditor();
-		const dialog = screen.getByRole("dialog", { name: "聊天外观" });
-		const bubbles = within(dialog).getByRole("group", { name: "我的气泡" });
-		expect(
-			within(bubbles)
-				.getAllByRole("radio")
-				.map((radio) => radio.getAttribute("value")),
-		).toEqual(["", "basic-ink", "basic-paper", "basic-washi"]);
-		expect(within(dialog).getByRole("radio", { name: "季节", checked: true })).toBeTruthy();
-		expect(within(dialog).getByRole("radio", { name: "纸纹", checked: true })).toBeTruthy();
-		const preview = screen.getByLabelText("未保存的聊天外观预览");
-		expect(preview.querySelectorAll("[data-chat-bubble]")).toHaveLength(2);
-		for (const time of preview.querySelectorAll("time")) {
-			expect(time.closest("[data-chat-bubble]")).toBeNull();
-		}
-		expect(within(dialog).getByRole("button", { name: "保存" }).hasAttribute("disabled")).toBe(
-			true,
-		);
-	});
-
 	it("取消丢弃气泡与背景草稿,保留会话输入并归还焦点", async () => {
 		const { opener } = openEditor();
 		const background = screen.getByTestId(user.id).className;

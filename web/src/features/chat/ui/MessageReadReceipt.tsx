@@ -4,6 +4,7 @@
 import { formatDateTime } from "@shared/lib/date";
 import { Popover, PopoverContent, PopoverTrigger } from "@violet/ui";
 
+import { Check, CheckCheck } from "lucide-react";
 import { useRef, useState } from "react";
 import { useChatMessageReaders } from "../api/queries";
 import type { ChatMessage, ChatUser, ConversationKind } from "../model/types";
@@ -39,8 +40,13 @@ export function MessageReadReceipt({
 
 	if (conversationKind === "direct") {
 		return (
-			<span className="px-1 text-[11px] leading-4 text-muted-foreground">
-				{state.read_count > 0 ? "已读" : "未读"}
+			<span className="inline-flex items-center text-current/60">
+				{state.read_count > 0 ? (
+					<CheckCheck aria-hidden="true" className="size-3.5" />
+				) : (
+					<Check aria-hidden="true" className="size-3.5" />
+				)}
+				<span className="sr-only">{state.read_count > 0 ? "已读" : "未读"}</span>
 			</span>
 		);
 	}
@@ -49,10 +55,18 @@ export function MessageReadReceipt({
 		<Popover onOpenChange={setOpen} open={open}>
 			<PopoverTrigger asChild>
 				<button
-					className="rounded px-1 text-[11px] leading-4 text-muted-foreground transition-colors hover:text-foreground"
+					aria-label={`${state.read_count} 人已读`}
+					className="inline-flex items-center gap-0.5 rounded px-0.5 text-[11px] leading-4 text-current/60 transition-colors hover:text-current focus-visible:outline-2 focus-visible:outline-ring"
 					type="button"
 				>
-					{state.read_count} 人已读
+					{state.read_count > 0 ? (
+						<>
+							<CheckCheck aria-hidden="true" className="size-3.5" />
+							<span aria-hidden="true">{state.read_count}</span>
+						</>
+					) : (
+						<Check aria-hidden="true" className="size-3.5" />
+					)}
 				</button>
 			</PopoverTrigger>
 			<PopoverContent
