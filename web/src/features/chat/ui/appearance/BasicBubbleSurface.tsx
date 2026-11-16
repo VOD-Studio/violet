@@ -14,6 +14,7 @@ export interface BasicBubbleSurfaceProps {
 	themeId: string;
 	mine: boolean;
 	children: ReactNode;
+	firstInGroup?: boolean;
 	lastInGroup?: boolean;
 }
 
@@ -21,6 +22,7 @@ export function BasicBubbleSurface({
 	themeId,
 	mine,
 	children,
+	firstInGroup = true,
 	lastInGroup = true,
 }: BasicBubbleSurfaceProps) {
 	return (
@@ -33,6 +35,7 @@ export function BasicBubbleSurface({
 			data-chat-bubble-theme={themeId || "season"}
 			data-side={mine ? "outgoing" : "incoming"}
 			data-chat-bubble=""
+			data-first-in-group={firstInGroup}
 			data-last-in-group={lastInGroup}
 		>
 			{children}

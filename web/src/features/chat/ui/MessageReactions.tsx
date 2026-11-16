@@ -36,7 +36,7 @@ export function MessageReactions({
 			allowSelected
 			collapseAfter={6}
 			disabled={disabled || add.isPending || remove.isPending}
-			className={mine ? "justify-end pt-1" : "justify-start pt-1"}
+			className={`${mine ? "justify-end" : "justify-start"} [--v-reaction-surface:var(--card)]`}
 		/>
 	);
 }

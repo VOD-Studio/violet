@@ -32,12 +32,10 @@ export function ChatAppearancePreview({
 			<div className={styles.previewRow}>
 				<Avatar name="小林" size={32} />
 				<div className={styles.previewMessage}>
-					<BubbleShell mine={false}>
-						新皮肤好看吗
-						<time className={styles.previewTime} dateTime="09:02">
-							09:02
-						</time>
-					</BubbleShell>
+					<BubbleShell mine={false}>新皮肤好看吗</BubbleShell>
+					<time className={styles.previewTime} dateTime="09:02">
+						09:02
+					</time>
 				</div>
 			</div>
 			<div className={cn(styles.previewRow, styles.previewMine)}>
@@ -48,10 +46,10 @@ export function ChatAppearancePreview({
 					</span>
 					<BubbleShell mine themeId={appearance.bubble_theme_id}>
 						刚换的
-						<time className={styles.previewTime} dateTime="09:03">
-							09:03
-						</time>
 					</BubbleShell>
+					<time className={styles.previewTime} dateTime="09:03">
+						09:03
+					</time>
 				</div>
 				<AvatarDecoration
 					frameId={appearance.avatar_frame_id}

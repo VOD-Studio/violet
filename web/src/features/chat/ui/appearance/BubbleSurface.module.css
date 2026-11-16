@@ -1,5 +1,5 @@
 .surface {
-	min-width: 0;
+	min-width: 4.5rem;
 	max-width: 100%;
 	box-sizing: border-box;
 	padding: 0.5rem 0.75rem;

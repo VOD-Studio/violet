@@ -36,19 +36,30 @@ export function ConversationMessageViewport({
 				role="region"
 				aria-label="消息记录"
 				onScroll={scroll.handleScroll}
-				onPointerDownCapture={scroll.pauseFollow}
-				onTouchStartCapture={scroll.pauseFollow}
+				onTouchMoveCapture={(event) => {
+					if (
+						event.target instanceof Node &&
+						event.currentTarget.contains(event.target)
+					) {
+						scroll.pauseFollow();
+					}
+				}}
 				onWheelCapture={(event) => {
-					if (event.deltaY < 0) {
+					if (
+						event.deltaY < 0 &&
+						event.target instanceof Node &&
+						event.currentTarget.contains(event.target)
+					) {
 						scroll.pauseFollow();
 					}
 				}}
 				onKeyDownCapture={(event) => {
 					if (
-						event.key === "ArrowUp" ||
-						event.key === "PageUp" ||
-						event.key === "Home" ||
-						(event.key === " " && event.shiftKey)
+						event.target === event.currentTarget &&
+						(event.key === "ArrowUp" ||
+							event.key === "PageUp" ||
+							event.key === "Home" ||
+							(event.key === " " && event.shiftKey))
 					) {
 						scroll.pauseFollow();
 					}

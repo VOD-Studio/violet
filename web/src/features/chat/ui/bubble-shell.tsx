@@ -1,4 +1,4 @@
-/** 消息气泡与常驻时间戳。 */
+/** 消息气泡与气泡外的时间戳。 */
 import { formatDateTime, formatTime } from "@shared/lib/date";
 import { cn } from "cn";
 import type { ReactNode } from "react";
@@ -20,7 +20,8 @@ export interface BubbleShellProps {
 	children: ReactNode;
 	/** 空串为季节基础款；未知或下架 ID 退回默认样式。 */
 	themeId?: string;
-	/** 连续消息只有最后一条保留方向性小圆角。 */
+	/** 首尾位置决定基础气泡靠发送侧的连接圆角。 */
+	firstInGroup?: boolean;
 	lastInGroup?: boolean;
 	header?: ReactNode;
 }
@@ -29,6 +30,7 @@ export function BubbleShell({
 	mine,
 	children,
 	themeId = "",
+	firstInGroup = true,
 	lastInGroup = true,
 	header,
 }: BubbleShellProps) {
@@ -41,7 +43,12 @@ export function BubbleShell({
 	);
 	if (isBasicBubbleTheme(themeId)) {
 		return (
-			<BasicBubbleSurface themeId={themeId} mine={mine} lastInGroup={lastInGroup}>
+			<BasicBubbleSurface
+				themeId={themeId}
+				mine={mine}
+				firstInGroup={firstInGroup}
+				lastInGroup={lastInGroup}
+			>
 				{body}
 			</BasicBubbleSurface>
 		);
@@ -54,7 +61,12 @@ export function BubbleShell({
 		);
 	}
 	return (
-		<BasicBubbleSurface themeId="" mine={mine} lastInGroup={lastInGroup}>
+		<BasicBubbleSurface
+			themeId=""
+			mine={mine}
+			firstInGroup={firstInGroup}
+			lastInGroup={lastInGroup}
+		>
 			{body}
 		</BasicBubbleSurface>
 	);
@@ -73,7 +85,7 @@ export function BubbleTimestamp({
 	return (
 		<span
 			className={cn(
-				"inline-flex items-center gap-1 whitespace-nowrap text-[11px] leading-4 tabular-nums text-current/60",
+				"inline-flex items-center gap-1 whitespace-nowrap text-xs leading-4 tabular-nums text-muted-foreground",
 				className,
 			)}
 		>

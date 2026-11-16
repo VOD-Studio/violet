@@ -102,7 +102,7 @@ export function ChatWorkspace() {
 						ref={indexRef}
 						aria-label="会话列表"
 						className={cn(
-							"relative z-10 flex min-h-0 w-full shrink-0 flex-col bg-card md:flex md:w-80 md:border-r md:border-border xl:w-88",
+							"relative z-10 flex min-h-0 w-full shrink-0 flex-col bg-card md:flex md:w-80 xl:w-88",
 							selectedID &&
 								(!conversationsFailed || conversationsPage) &&
 								"hidden md:flex",

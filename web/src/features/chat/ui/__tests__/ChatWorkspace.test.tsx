@@ -731,8 +731,9 @@ describe("ChatWorkspace", () => {
 	it("选择消息回复并在发送请求中携带引用", async () => {
 		render(<ChatWorkspace />, { wrapper: createWrapper() });
 
-		fireEvent.click(screen.getByRole("button", { name: "回复消息" }));
-		expect(screen.getByText("回复 xfy")).toBeTruthy();
+		fireEvent.keyDown(screen.getByRole("button", { name: "消息操作" }), { key: "Enter" });
+		fireEvent.click(await screen.findByRole("menuitem", { name: "回复消息" }));
+		await screen.findByRole("button", { name: "取消回复" });
 		fireEvent.input(screen.getByRole("textbox", { name: "消息内容" }), {
 			target: { textContent: "这是回复" },
 		});
@@ -911,7 +912,7 @@ describe("ChatWorkspace", () => {
 			list.scrollTop = 1200;
 			fireEvent.scroll(list);
 
-			fireEvent.pointerDown(list);
+			fireEvent.wheel(list, { deltaY: -120 });
 			height = 1600;
 			setContent("第一段第二段第三段第四段第五段");
 			view.rerender(panel());
@@ -989,9 +990,11 @@ describe("ChatWorkspace", () => {
 		);
 	});
 
-	it("返回列表再进入会话仍保留未发送正文与引用", () => {
+	it("返回列表再进入会话仍保留未发送正文与引用", async () => {
 		render(<ChatWorkspace />, { wrapper: createWrapper() });
-		fireEvent.click(screen.getByRole("button", { name: "回复消息" }));
+		fireEvent.keyDown(screen.getByRole("button", { name: "消息操作" }), { key: "Enter" });
+		fireEvent.click(await screen.findByRole("menuitem", { name: "回复消息" }));
+		await screen.findByRole("button", { name: "取消回复" });
 		const editor = screen.getByRole("textbox", { name: "消息内容" });
 		editor.textContent = "尚未发送的草稿";
 		fireEvent.input(editor);

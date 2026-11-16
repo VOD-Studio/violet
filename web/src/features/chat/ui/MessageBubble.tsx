@@ -20,6 +20,9 @@ import { MessageReplyPreview } from "./MessageReplyPreview";
 import { MusicShareCard } from "./MusicShareCard";
 import { TweetShareCard } from "./TweetShareCard";
 
+const ACTION_VISIBILITY =
+	"pointer-events-none opacity-0 transition-opacity duration-150 group-hover/message:pointer-events-auto group-hover/message:opacity-100 has-[:focus-visible]:pointer-events-auto has-[:focus-visible]:opacity-100 has-[[aria-expanded=true]]:pointer-events-auto has-[[aria-expanded=true]]:opacity-100 pointer-coarse:pointer-events-auto pointer-coarse:opacity-100";
+
 /** 正文、引用与发送状态组成一条消息，回应保留在气泡下方。 */
 export interface MessageBubbleProps {
 	message: ChatMessage;
@@ -43,7 +46,7 @@ export interface MessageBubbleProps {
 	animateIn: boolean;
 }
 
-/** 同组消息共用头像；时间与回执随气泡呈现，长按可打开操作。 */
+/** 同组消息共用头像；回应与元信息在气泡外排布，长按打开消息菜单。 */
 export function MessageBubble({
 	animateIn,
 	message,
@@ -71,7 +74,9 @@ export function MessageBubble({
 		() => (message.custom_emote ? { ...emoteMap, ...message.custom_emote } : emoteMap),
 		[emoteMap, message.custom_emote],
 	);
-	const [touchActionsVisible, setTouchActionsVisible] = useState(false);
+	const [actionsOpen, setActionsOpen] = useState(false);
+	const [readersOpen, setReadersOpen] = useState(false);
+	const actionTrigger = useRef<HTMLButtonElement>(null);
 	const longPressTimer = useRef<number | null>(null);
 	const clearLongPress = () => {
 		if (longPressTimer.current === null) {
@@ -81,12 +86,19 @@ export function MessageBubble({
 		longPressTimer.current = null;
 	};
 	const startLongPress = (event: PointerEvent) => {
-		if (event.pointerType !== "touch") {
+		if (
+			event.pointerType !== "touch" ||
+			editing ||
+			sending ||
+			message.is_deleted ||
+			(event.target instanceof Element &&
+				event.target.closest("button, a, input, textarea, [contenteditable]"))
+		) {
 			return;
 		}
 		clearLongPress();
 		longPressTimer.current = window.setTimeout(() => {
-			setTouchActionsVisible(true);
+			setActionsOpen(true);
 			longPressTimer.current = null;
 		}, 500);
 	};
@@ -149,18 +161,41 @@ export function MessageBubble({
 			mine={mine}
 		/>
 	);
+	const showMetadata = lastInGroup || sending?.status === "failed";
+	const readCount = message.read_state?.read_count;
+	const readLabel =
+		mine && readCount !== undefined
+			? conversationKind === "room"
+				? `${readCount} 人已读`
+				: readCount > 0
+					? "已读"
+					: "未读"
+			: undefined;
 	const metadata = !editing && (
-		<div data-chat-message-meta className="mt-1 flex min-h-4 items-center justify-end gap-1">
-			<BubbleTimestamp
-				time={message.created_at}
-				editedAt={isBotReply ? undefined : message.edited_at}
-			/>
+		<div
+			data-chat-message-meta={showMetadata || undefined}
+			className={
+				showMetadata
+					? "inline-flex shrink-0 items-center gap-1.5 text-xs leading-4 text-muted-foreground"
+					: "pointer-events-none absolute inset-x-0 top-0"
+			}
+		>
+			{showMetadata && (
+				<BubbleTimestamp
+					time={message.created_at}
+					editedAt={isBotReply ? undefined : message.edited_at}
+				/>
+			)}
 			{mine && !message.is_deleted && sending?.status !== "failed" && (
 				<MessageReadReceipt
 					conversationKind={conversationKind}
 					message={message}
 					onMention={onMention}
 					pending={Boolean(sending)}
+					open={readersOpen}
+					onOpenChange={setReadersOpen}
+					collapsed={!showMetadata}
+					returnFocusRef={actionTrigger}
 				/>
 			)}
 			{sending?.status === "failed" && (
@@ -177,11 +212,12 @@ export function MessageBubble({
 			animate={{ opacity: 1 }}
 			transition={{ duration: 0.15 }}
 			onPointerDown={startLongPress}
+			onPointerMove={clearLongPress}
 			onPointerLeave={clearLongPress}
 			onPointerCancel={clearLongPress}
 			onPointerUp={clearLongPress}
 			className={cn(
-				"group relative col-start-1 row-span-2 grid min-w-0 grid-rows-subgrid transition-shadow duration-300",
+				"group/message relative col-start-1 row-span-2 grid min-w-0 grid-rows-subgrid transition-shadow duration-300",
 				!showSender && "mt-0.5",
 				highlighted && "rounded-lg ring-2 ring-ring ring-offset-2 ring-offset-background",
 			)}
@@ -231,6 +267,7 @@ export function MessageBubble({
 							<BubbleShell
 								mine={mine}
 								themeId={appearance.bubble_theme_id}
+								firstInGroup={showSender}
 								lastInGroup={lastInGroup}
 								header={sender}
 							>
@@ -253,44 +290,59 @@ export function MessageBubble({
 										/>
 									</div>
 								)}
-								{metadata}
 							</BubbleShell>
-						)}
-						{!editing && !message.is_deleted && (
-							<div
-								className={cn(
-									"pointer-events-none absolute bottom-full z-10 mb-1 opacity-0 transition-opacity duration-150 group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100",
-									touchActionsVisible && "pointer-events-auto opacity-100",
-									mine ? "right-0" : "left-0",
-								)}
-							>
-								<div className="flex items-center gap-1">
-									{!hasReactions && reactions}
-									{!sending && (
-										<MessageActions
-											content={message.content}
-											canCopy={message.type === "text"}
-											onEdit={mine ? () => setEditing(true) : undefined}
-											onReply={onReply}
-											onDelete={onDelete}
-										/>
-									)}
-								</div>
-							</div>
 						)}
 					</div>
 				</div>
+				{!editing && !message.is_deleted && (
+					<div
+						className={cn(
+							"flex w-17 shrink-0 items-center gap-1",
+							mine && "order-first flex-row-reverse",
+						)}
+					>
+						<div
+							className={cn(
+								ACTION_VISIBILITY,
+								actionsOpen && "pointer-events-auto opacity-100",
+							)}
+						>
+							<MessageActions
+								message={message}
+								triggerRef={actionTrigger}
+								readLabel={readLabel}
+								onShowReaders={
+									mine &&
+									conversationKind === "room" &&
+									message.read_state &&
+									!sending
+										? () => setReadersOpen(true)
+										: undefined
+								}
+								open={actionsOpen}
+								onOpenChange={setActionsOpen}
+								disabled={Boolean(sending)}
+								onEdit={mine ? () => setEditing(true) : undefined}
+								onReply={onReply}
+								onDelete={onDelete}
+							/>
+						</div>
+						{!hasReactions && <div className={ACTION_VISIBILITY}>{reactions}</div>}
+					</div>
+				)}
 			</div>
 			<div
+				data-chat-message-footer
 				className={cn(
-					"relative row-start-2 flex min-w-0 flex-col",
+					"relative row-start-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1",
+					!editing && (hasReactions || showMetadata) && "pt-0.5",
 					mine
-						? "max-w-[85%] items-end justify-self-end md:max-w-[75%]"
-						: "ml-11 max-w-[calc(100%-2.75rem)] items-start md:max-w-[80%]",
+						? "max-w-[85%] justify-end justify-self-end md:max-w-[75%]"
+						: "ml-11 max-w-[calc(100%-2.75rem)] justify-start md:max-w-[80%]",
 				)}
 			>
-				{(isBotReply || message.is_deleted) && metadata}
-				{hasReactions && <div className="pt-1">{reactions}</div>}
+				{!editing && hasReactions && <div className="min-w-0 max-w-full">{reactions}</div>}
+				{metadata}
 			</div>
 		</motion.article>
 	);

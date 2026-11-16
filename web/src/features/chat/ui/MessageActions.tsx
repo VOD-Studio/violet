@@ -1,91 +1,170 @@
-import { Button, iconProps } from "@violet/ui";
-import { Check, Copy, Pencil, Reply, Trash2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { formatDateTime } from "@shared/lib/date";
+import {
+	Button,
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+	iconProps,
+} from "@violet/ui";
+import { CheckCheck, Copy, Ellipsis, Pencil, Reply, Trash2 } from "lucide-react";
+import { type RefObject, useRef } from "react";
 import { toast } from "sonner";
+import type { ChatMessage } from "../model/types";
 
-interface MessageActionsProps {
-	content?: string;
-	canCopy: boolean;
+/** 消息菜单的可用操作与受控开合状态。 */
+export interface MessageActionsProps {
+	message: ChatMessage;
+	triggerRef: RefObject<HTMLButtonElement | null>;
+	readLabel?: string;
+	onShowReaders?: () => void;
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+	disabled?: boolean;
 	onEdit?: () => void;
 	onReply?: () => void;
 	onDelete?: () => void;
 }
 
-/** 消息操作使用独立按钮，键盘聚焦与触屏长按均由消息行显露。 */
+/** 关闭菜单后再交接编辑、引用与删除的焦点。 */
 export function MessageActions({
-	content,
-	canCopy,
+	message,
+	triggerRef,
+	readLabel,
+	onShowReaders,
+	open,
+	onOpenChange,
+	disabled = false,
 	onEdit,
 	onReply,
 	onDelete,
 }: MessageActionsProps) {
-	const [copied, setCopied] = useState(false);
-	const timer = useRef<number | undefined>(undefined);
-	useEffect(() => () => window.clearTimeout(timer.current), []);
+	const selectedAction = useRef<(() => void) | null>(null);
+	const pointerInteraction = useRef(false);
 	const copy = async () => {
-		if (!content) {
+		if (!message.content) {
 			return;
 		}
 		try {
-			await navigator.clipboard.writeText(content);
-			setCopied(true);
+			await navigator.clipboard.writeText(message.content);
 			toast.success("已复制到剪贴板");
-			window.clearTimeout(timer.current);
-			timer.current = window.setTimeout(() => setCopied(false), 1500);
 		} catch {
 			toast.error("复制失败");
 		}
 	};
 	return (
-		<div className="flex items-center gap-0.5 rounded-full border border-border bg-card p-0.5 shadow-soft">
-			{onEdit && (
+		<DropdownMenu
+			modal={false}
+			open={!disabled && open}
+			onOpenChange={(nextOpen) => {
+				if (nextOpen) selectedAction.current = null;
+				onOpenChange(nextOpen);
+			}}
+		>
+			<DropdownMenuTrigger asChild>
 				<Button
+					ref={triggerRef}
 					iconOnly
 					size="sm"
 					variant="ghost"
-					className="size-7 rounded-full"
-					aria-label="编辑消息"
-					onClick={onEdit}
+					aria-label="消息操作"
+					aria-hidden={disabled || undefined}
+					className={disabled ? "invisible" : "text-muted-foreground"}
+					disabled={disabled}
+					onPointerDownCapture={() => {
+						pointerInteraction.current = true;
+					}}
+					onKeyDownCapture={() => {
+						pointerInteraction.current = false;
+					}}
 				>
-					<Pencil {...iconProps(14)} />
+					<Ellipsis {...iconProps(16)} />
 				</Button>
-			)}
-			{onReply && (
-				<Button
-					iconOnly
-					size="sm"
-					variant="ghost"
-					className="size-7 rounded-full"
-					aria-label="回复消息"
-					onClick={onReply}
-				>
-					<Reply {...iconProps(14)} />
-				</Button>
-			)}
-			{canCopy && (
-				<Button
-					iconOnly
-					size="sm"
-					variant="ghost"
-					className="size-7 rounded-full"
-					aria-label="复制消息"
-					onClick={() => void copy()}
-				>
-					{copied ? <Check {...iconProps(14)} /> : <Copy {...iconProps(14)} />}
-				</Button>
-			)}
-			{onDelete && (
-				<Button
-					iconOnly
-					size="sm"
-					variant="ghost"
-					className="size-7 rounded-full text-destructive"
-					aria-label="删除违规消息"
-					onClick={onDelete}
-				>
-					<Trash2 {...iconProps(14)} />
-				</Button>
-			)}
-		</div>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent
+				align="end"
+				side="top"
+				onKeyDownCapture={() => {
+					pointerInteraction.current = false;
+				}}
+				onPointerDownOutside={() => {
+					pointerInteraction.current = true;
+				}}
+				onCloseAutoFocus={(event) => {
+					const action = selectedAction.current;
+					selectedAction.current = null;
+					if (action) {
+						event.preventDefault();
+						triggerRef.current?.focus({ preventScroll: true });
+						action();
+					} else if (pointerInteraction.current) {
+						event.preventDefault();
+						triggerRef.current?.blur();
+					}
+				}}
+			>
+				<DropdownMenuLabel>
+					<time dateTime={message.created_at}>
+						{formatDateTime(message.created_at, "long-minute")}
+					</time>
+					{readLabel && !onShowReaders && <span className="ml-2">{readLabel}</span>}
+				</DropdownMenuLabel>
+				<DropdownMenuSeparator />
+				{onShowReaders && (
+					<DropdownMenuItem
+						onSelect={() => {
+							selectedAction.current = onShowReaders;
+						}}
+					>
+						<CheckCheck {...iconProps(16)} />
+						{readLabel}
+					</DropdownMenuItem>
+				)}
+				{onReply && (
+					<DropdownMenuItem
+						onSelect={() => {
+							selectedAction.current = onReply;
+						}}
+					>
+						<Reply {...iconProps(16)} />
+						回复消息
+					</DropdownMenuItem>
+				)}
+				{onEdit && (
+					<DropdownMenuItem
+						onSelect={() => {
+							selectedAction.current = onEdit;
+						}}
+					>
+						<Pencil {...iconProps(16)} />
+						编辑消息
+					</DropdownMenuItem>
+				)}
+				{message.type === "text" && (
+					<DropdownMenuItem onSelect={() => void copy()}>
+						<Copy {...iconProps(16)} />
+						复制消息
+					</DropdownMenuItem>
+				)}
+				{onDelete && (
+					<>
+						{(onReply || onEdit || message.type === "text") && (
+							<DropdownMenuSeparator />
+						)}
+						<DropdownMenuItem
+							variant="destructive"
+							onSelect={() => {
+								selectedAction.current = onDelete;
+							}}
+						>
+							<Trash2 {...iconProps(16)} />
+							删除违规消息
+						</DropdownMenuItem>
+					</>
+				)}
+			</DropdownMenuContent>
+		</DropdownMenu>
 	);
 }

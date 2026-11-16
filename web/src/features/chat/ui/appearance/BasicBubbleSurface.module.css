@@ -4,11 +4,19 @@
 	color: var(--foreground);
 }
 
-.bubble[data-side="outgoing"][data-last-in-group="true"] {
+.bubble[data-side="outgoing"][data-first-in-group="false"] {
+	border-top-right-radius: 0.25rem;
+}
+
+.bubble[data-side="outgoing"][data-last-in-group="false"] {
 	border-bottom-right-radius: 0.25rem;
 }
 
-.bubble[data-side="incoming"][data-last-in-group="true"] {
+.bubble[data-side="incoming"][data-first-in-group="false"] {
+	border-top-left-radius: 0.25rem;
+}
+
+.bubble[data-side="incoming"][data-last-in-group="false"] {
 	border-bottom-left-radius: 0.25rem;
 }
 

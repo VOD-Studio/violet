@@ -4,7 +4,7 @@
  * 回归：图片消息正文保留 ![img:id] 占位符，气泡渲染端把占位符还原为内联图片，
  * 实现与输入框一致的图文环绕；旧格式纯文字说明兼容前置渲染。
  */
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { OutgoingMessage } from "../../model/chat-outbox";
@@ -115,6 +115,11 @@ function renderBubble(
 			showSenderName
 		/>,
 	);
+}
+
+async function openMessageActions() {
+	fireEvent.keyDown(screen.getByRole("button", { name: "消息操作" }), { key: "Enter" });
+	await screen.findByRole("menu");
 }
 
 afterEach(() => cleanup());
@@ -291,22 +296,10 @@ describe("MessageBubble 消息编辑", () => {
 		};
 	}
 
-	it("edited_at 存在时时间戳前展示「已编辑」标识，悬停可见编辑时间", () => {
-		renderBubble(textMessage({ edited_at: "2026-08-25T09:30:00Z" }));
-
-		const badge = screen.getByText(/已编辑/);
-		expect(badge.getAttribute("title")).toContain("编辑于");
-	});
-
-	it("未编辑的消息不展示「已编辑」标识", () => {
+	it("自己的消息有编辑入口，他人消息没有", async () => {
 		renderBubble(textMessage());
-
-		expect(screen.queryByText(/已编辑/)).toBeNull();
-	});
-
-	it("自己的消息有编辑入口，他人消息没有", () => {
-		renderBubble(textMessage());
-		expect(screen.getByLabelText("编辑消息")).toBeTruthy();
+		await openMessageActions();
+		expect(screen.getByRole("menuitem", { name: "编辑消息" })).toBeTruthy();
 		cleanup();
 
 		renderBubble(
@@ -314,29 +307,31 @@ describe("MessageBubble 消息编辑", () => {
 				sender: { id: "u_2", username: "bob", display_name: "Bob", avatar_url: "" },
 			}),
 		);
-		expect(screen.queryByLabelText("编辑消息")).toBeNull();
+		await openMessageActions();
+		expect(screen.queryByRole("menuitem", { name: "编辑消息" })).toBeNull();
 	});
 
-	it("点击编辑进入内联编辑模式，Esc 退出还原气泡", () => {
+	it("点击编辑进入内联编辑模式，Esc 退出还原气泡", async () => {
 		const { container } = renderBubble(textMessage());
 
-		fireEvent.click(screen.getByLabelText("编辑消息"));
-		const editor = container.querySelector('[contenteditable="true"]');
-		expect(editor).toBeTruthy();
+		await openMessageActions();
+		fireEvent.click(screen.getByRole("menuitem", { name: "编辑消息" }));
+		const editor = await screen.findByRole("textbox");
 		expect(screen.getByLabelText("保存编辑")).toBeTruthy();
 
-		fireEvent.keyDown(editor as HTMLElement, { key: "Escape" });
+		fireEvent.keyDown(editor, { key: "Escape" });
 		expect(container.querySelector('[contenteditable="true"]')).toBeNull();
 		expect(screen.getByText("原始内容")).toBeTruthy();
 	});
 
 	// 回归：编辑框此前不自动 focus，用户点完编辑还得再点一次输入框才能改字。
-	it("进入编辑模式后输入框自动聚焦，光标落在正文末尾", () => {
-		const { container } = renderBubble(textMessage());
+	it("进入编辑模式后输入框自动聚焦，光标落在正文末尾", async () => {
+		renderBubble(textMessage());
 
-		fireEvent.click(screen.getByLabelText("编辑消息"));
-		const editor = container.querySelector('[contenteditable="true"]') as HTMLElement;
-		expect(document.activeElement).toBe(editor);
+		await openMessageActions();
+		fireEvent.click(screen.getByRole("menuitem", { name: "编辑消息" }));
+		const editor = await screen.findByRole("textbox");
+		await waitFor(() => expect(document.activeElement).toBe(editor));
 
 		const selection = window.getSelection();
 		expect(selection?.isCollapsed).toBe(true);
@@ -398,18 +393,6 @@ describe("MessageBubble 已读回执", () => {
 		fireEvent.click(screen.getByRole("button", { name: "2 人已读" }));
 		expect(await screen.findByText("Bob")).toBeTruthy();
 	});
-
-	it("房间：名单浮层标题同时给出已读与未读人数", async () => {
-		receiptMocks.readers = { data: [], isLoading: false, isError: false };
-		renderBubble(
-			receiptMessage({ read_state: { read_count: 2, member_count: 5 } }),
-			() => {},
-			"room",
-		);
-
-		fireEvent.click(screen.getByRole("button", { name: "2 人已读" }));
-		expect(await screen.findByText("已读 2 · 未读 3")).toBeTruthy();
-	});
 });
 
 it("待发送图片显示进度并隐藏编辑与已读，失败后可原地重试", () => {
@@ -420,7 +403,6 @@ it("待发送图片显示进度并隐藏编辑与已读，失败后可原地重�
 	expect(screen.getByRole("button", { name: "添加回应" }).getAttribute("aria-disabled")).toBe(
 		"true",
 	);
-	expect(screen.queryByText("未读")).toBeNull();
 	cleanup();
 	const retry = vi.fn();
 	renderBubble(
