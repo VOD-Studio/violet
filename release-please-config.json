@@ -14,11 +14,7 @@
         ".github",
         "scripts",
         "docs",
-        "README.md",
-        "api/README.md",
-        "web/README.md",
-        "web/e2e",
-        "release-please-config.json"
+        "web/e2e"
       ],
       "changelog-sections": [
         { "type": "feat", "section": "新增" },

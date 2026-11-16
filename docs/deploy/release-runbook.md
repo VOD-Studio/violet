@@ -7,7 +7,7 @@
 3. 验收通过后，在发布状态锁内再次核对候选，创建 tag 和 GitHub Release，并保存 `release-manifest.json` 附件。附件绑定源码 SHA、双侧镜像 digest 及验证运行；随后部署这份清单。
 4. 在 Actions 的 Deploy summary 查看实际部署版本、提交、双侧镜像和 schema。GitHub Release 表示候选已完成验收，**不表示生产部署成功**。
 
-CI 工作流、根目录运维脚本、部署文档、项目介绍 README 与 `web/e2e` 浏览器契约不单独触发应用版本。`release-please-config.json` 的 `exclude-paths` 按提交的实际文件过滤：只有全部文件都属于排除路径才跳过；混合应用源码的提交仍参与版本计算。不要靠手动关闭 release PR 或修改已有 tag 纠正提交分类。
+`release-please-config.json` 的 `exclude-paths` 是目录过滤，不支持单个文件或 glob。仅修改 `.github/`、`scripts/`、`docs/` 或 `web/e2e/` 的提交不单独触发应用版本；混合应用源码的提交仍参与版本计算。纯 CI、运维或文档 PR 使用 `chore`、`ci`、`test`、`docs` 等类型，包括同时修改 README 或发布配置的情况。不要靠手动关闭 release PR 或修改已有 tag 纠正提交分类。
 
 ```mermaid
 flowchart LR
