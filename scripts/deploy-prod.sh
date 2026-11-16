@@ -6,21 +6,23 @@ remote_host=rua
 manifest=''
 source_root=''
 rollback=''
+resume=false
 while (($#)); do
     case "$1" in
         --host) remote_host="${2:?--host needs a value}"; shift 2 ;;
         --manifest) manifest="${2:?--manifest needs a file}"; shift 2 ;;
         --source-root) source_root="${2:?--source-root needs a remote checkout}"; shift 2 ;;
         --rollback) rollback="${2:?--rollback needs an archived version}"; shift 2 ;;
+        --resume) resume=true; shift ;;
         -h|--help)
             echo '用法: deploy-prod.sh [--host rua] --rollback <归档版本>'
-            echo '      deploy-prod.sh [--host rua] --manifest <本地JSON> --source-root <服务器Git检出目录>'
+            echo '      deploy-prod.sh [--host rua] --manifest <本地JSON> --source-root <服务器Git检出目录> [--resume]'
             exit 0 ;;
         *) echo "不支持的参数: $1；使用 --help 查看统一部署入口" >&2; exit 1 ;;
     esac
 done
 if [[ -n "$rollback" ]]; then
-    [[ -z "$manifest" && -z "$source_root" ]] || { echo '回滚不能同时指定 manifest/source-root' >&2; exit 1; }
+    [[ -z "$manifest" && -z "$source_root" && "$resume" == false ]] || { echo '回滚不能同时指定 manifest/source-root/resume' >&2; exit 1; }
 else
     [[ -f "$manifest" && -n "$source_root" ]] || { echo '正向部署必须指定 manifest 文件与服务器 source-root' >&2; exit 1; }
 fi
@@ -36,6 +38,9 @@ if [[ -n "$rollback" ]]; then
 else
     scp "$manifest" "$remote_host:$remote_tmp/manifest.json"
     args+=(--manifest "$remote_tmp/manifest.json" --source-root "$source_root")
+    if [[ "$resume" == true ]]; then
+        args+=(--resume)
+    fi
 fi
 printf -v remote_command '%q ' "${args[@]}"
 # bash 在远端解析 argv；不要求用户默认 shell 支持 bash 数组或 quoting。

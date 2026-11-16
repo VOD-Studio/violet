@@ -90,6 +90,7 @@ class Deployment:
         self.state = self.root / ".releases"
         self.current_path = self.state / "current.json"
         self.pending_path = self.state / "pending.json"
+        self.paused_path = self.state / "paused.json"
         self.images_file = self.root / ".release-images.json"
         self.schema_path = self.state / "schema.json"
 
@@ -318,6 +319,8 @@ class Deployment:
         self.state.mkdir(parents=True, exist_ok=True)
         with open(self.state / "deploy.lock", "a") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX)
+            if self.paused_path.exists() and not self.args.rollback and not self.args.resume:
+                raise DeployError("Deployment is paused after a manual rollback; use --resume with --manifest to continue")
             if self.pending_path.exists():
                 pending = json.loads(self.pending_path.read_text())
                 current = json.loads(self.current_path.read_text()) if self.current_path.exists() else {}
@@ -420,6 +423,11 @@ class Deployment:
         elif self.schema_path.exists():
             candidate["migration_bundle"] = json.loads(self.schema_path.read_text())["bundle"]
         self.image_override(new_config, candidate)
+        if rollback:
+            candidate["schema_version"] = self.schema()
+            self.validate_migration_bundle(candidate)
+            write_json(self.paused_path, {"reason": "manual_rollback", "rollback": rollback,
+                                          "transaction": transaction})
         pending = {"transaction": transaction, "previous": str(old_config), "candidate": candidate,
                    "phase": "migration" if not rollback else "preparing"}
         write_json(self.pending_path, pending)
@@ -482,6 +490,8 @@ class Deployment:
                 self.pending_path.unlink()
             # A failed or interrupted migration requires inspection; never restart old services.
             raise
+        if self.args.resume:
+            self.paused_path.unlink(missing_ok=True)
         self.output("rolled_back" if rollback else "deployed")
 
 
@@ -500,6 +510,7 @@ def arguments(argv=None):
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--manifest", type=Path)
     mode.add_argument("--rollback")
+    parser.add_argument("--resume", action="store_true", help="Resume forward deployment after a manual rollback")
     parser.add_argument("--source-root", type=Path, default=Path.cwd())
     parser.add_argument("--component", choices=("both", "api", "web"), default="both")
     parser.add_argument("--deploy-dir", type=Path, default=Path("/root/docker/violet"))
@@ -509,6 +520,13 @@ def arguments(argv=None):
     parser.add_argument("--health-attempts", type=int, default=15)
     parser.add_argument("--health-interval", type=float, default=6)
     result = parser.parse_args(argv)
+    if result.resume and result.rollback is not None:
+        parser.error("--resume requires --manifest and cannot be combined with --rollback")
+    if result.rollback is not None:
+        if not VERSION.fullmatch(result.rollback):
+            parser.error("Invalid rollback version")
+        if result.component != "both":
+            parser.error("Rollback restores a complete release; --component must be both")
     if result.health_attempts < 1 or result.health_interval < 0:
         parser.error("Health attempts must be positive and interval nonnegative")
     result.source_root = result.source_root.resolve()

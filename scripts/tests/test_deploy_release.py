@@ -180,6 +180,24 @@ class SiteFetchRouting(unittest.TestCase):
                 self.assertEqual(proxy_requests, [origin + "/control"])
 
 
+class Arguments(unittest.TestCase):
+    def test_invalid_resume_and_rollback_arguments_are_rejected(self):
+        invalid = (
+            ["--resume"],
+            ["--rollback", "v1.0.0", "--resume"],
+            ["--manifest", "candidate.json", "--rollback", "v1.0.0", "--resume"],
+            ["--rollback", "v1.0.0", "--component", "api"],
+            ["--rollback", "v1.0.0", "--component", "web"],
+            ["--rollback", "../v1.0.0"],
+            ["--rollback", ""],
+        )
+        for argv in invalid:
+            with self.subTest(argv=argv), mock.patch("sys.stderr"):
+                with self.assertRaises(SystemExit) as failure:
+                    DEPLOY.arguments(argv)
+                self.assertEqual(failure.exception.code, 2)
+
+
 class Transactions(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
@@ -215,6 +233,20 @@ class Transactions(unittest.TestCase):
     def current(self):
         return json.loads(self.deployment.current_path.read_text())
 
+    def restart_deployment(self):
+        previous = self.deployment
+        self.deployment = FakeDeployment(self.args)
+        self.deployment.live = dict(previous.live)
+        self.deployment.schema_version = previous.schema_version
+
+    def rollback_to_bootstrap(self):
+        self.deployment.execute()
+        bootstrap = next((self.deployment.state / "versions").glob("bootstrap-*"))
+        self.args.rollback = bootstrap.name
+        self.deployment.execute()
+        self.args.rollback = None
+        return bootstrap.name
+
     def assert_restored(self):
         self.assertEqual(self.deployment.live, {"api": "sha256:" + "1" * 64, "web": "sha256:" + "2" * 64})
         self.assertEqual(self.nginx.read_text(), "old nginx")
@@ -241,6 +273,7 @@ class Transactions(unittest.TestCase):
         self.assert_restored()
         self.assertEqual(self.current()["schema_version"], 11)
         self.assertEqual(self.deployment.migrate_count, 1)
+        self.assertFalse(self.deployment.paused_path.exists())
 
     def test_public_ingress_failure_rolls_back(self):
         self.deployment.fail_verify = True
@@ -327,6 +360,175 @@ class Transactions(unittest.TestCase):
         self.assertEqual(self.current()["schema_version"], 11)
         self.assertEqual(self.deployment.migrate_count, 1)
         self.assertEqual(self.nginx.read_text(), "old nginx")
+        paused = json.loads(self.deployment.paused_path.read_text())
+        self.assertEqual(paused["reason"], "manual_rollback")
+        self.assertEqual(paused["rollback"], bootstrap.name)
+        self.assertEqual(paused["transaction"], self.current()["transaction"])
+
+    def test_manual_rollback_persists_pause_and_blocks_the_next_process_before_changes(self):
+        self.rollback_to_bootstrap()
+        self.restart_deployment()
+        before = {path: path.read_bytes() for path in self.production.rglob("*") if path.is_file()}
+        nginx = self.nginx.read_bytes()
+        assets = {path: path.read_bytes() for path in self.assets.rglob("*") if path.is_file()}
+        live = dict(self.deployment.live)
+        with self.assertRaisesRegex(DEPLOY.DeployError, "paused.*--resume"):
+            self.deployment.execute()
+        self.assertEqual(self.deployment.commands, [])
+        self.assertEqual(self.deployment.up_count, 0)
+        self.assertEqual(self.deployment.migrate_count, 0)
+        self.assertEqual(self.deployment.live, live)
+        self.assertEqual({path: path.read_bytes() for path in self.production.rglob("*") if path.is_file()}, before)
+        self.assertEqual(self.nginx.read_bytes(), nginx)
+        self.assertEqual({path: path.read_bytes() for path in self.assets.rglob("*") if path.is_file()}, assets)
+
+    def test_pause_blocks_bootstrap_even_when_its_contents_are_unreadable(self):
+        self.deployment.state.mkdir()
+        self.deployment.paused_path.write_text("incomplete pause metadata")
+        with self.assertRaisesRegex(DEPLOY.DeployError, "paused.*--resume"):
+            self.deployment.execute()
+        self.assertEqual(self.deployment.commands, [])
+        self.assertFalse(self.deployment.current_path.exists())
+        self.assertFalse(self.deployment.pending_path.exists())
+
+    def test_successful_resume_keeps_pause_through_health_checks_then_clears_it(self):
+        bootstrap = self.rollback_to_bootstrap()
+        self.restart_deployment()
+        self.args.resume = True
+        healthy = self.deployment.wait_healthy
+        def verify_while_paused(manifest):
+            self.assertTrue(self.deployment.paused_path.exists())
+            self.assertEqual(self.current()["version"], bootstrap)
+            return healthy(manifest)
+        with mock.patch.object(self.deployment, "wait_healthy", side_effect=verify_while_paused):
+            self.deployment.execute()
+        self.assertEqual(self.current()["version"], self.candidate["version"])
+        self.assertEqual(self.current()["api_image"], self.candidate["api_image"])
+        self.assertEqual(self.current()["web_image"], self.candidate["web_image"])
+        self.assertEqual(self.deployment.outputs, ["deployed"])
+        self.assertFalse(self.deployment.paused_path.exists())
+        self.assertFalse(self.deployment.pending_path.exists())
+
+    def test_failed_resume_health_restores_previous_release_and_keeps_pause(self):
+        self.rollback_to_bootstrap()
+        self.restart_deployment()
+        paused = self.deployment.paused_path.read_bytes()
+        self.args.resume = True
+        self.deployment.fail_verify = True
+        with self.assertRaisesRegex(DEPLOY.DeployError, "public ingress failure"):
+            self.deployment.execute()
+        self.assert_restored()
+        self.assertEqual(self.deployment.paused_path.read_bytes(), paused)
+        self.assertEqual(self.current()["schema_version"], 11)
+
+    def test_failed_resume_current_write_restores_previous_release_and_keeps_pause(self):
+        self.rollback_to_bootstrap()
+        self.restart_deployment()
+        paused = self.deployment.paused_path.read_bytes()
+        self.args.resume = True
+        write_json = DEPLOY.write_json
+        def fail_current(path, value):
+            if path == self.deployment.current_path and value["version"] == self.candidate["version"]:
+                raise OSError("current record write failed")
+            return write_json(path, value)
+        with mock.patch.object(DEPLOY, "write_json", side_effect=fail_current):
+            with self.assertRaisesRegex(OSError, "current record write failed"):
+                self.deployment.execute()
+        self.assert_restored()
+        self.assertEqual(self.deployment.paused_path.read_bytes(), paused)
+
+    def test_failed_resume_migration_retains_pause_and_pending_reconciliation(self):
+        self.rollback_to_bootstrap()
+        self.restart_deployment()
+        paused = self.deployment.paused_path.read_bytes()
+        self.args.resume = True
+        self.deployment.fail_migration = True
+        with self.assertRaisesRegex(DEPLOY.DeployError, "migration failure"):
+            self.deployment.execute()
+        self.assertEqual(self.deployment.up_count, 0)
+        self.assertEqual(json.loads(self.deployment.pending_path.read_text())["phase"], "migration")
+        with self.assertRaisesRegex(DEPLOY.DeployError, "Unfinished deployment"):
+            self.deployment.execute()
+        self.assertEqual(self.deployment.migrate_count, 1)
+        self.assertEqual(self.deployment.paused_path.read_bytes(), paused)
+
+    def test_resume_reconciles_committed_pending_before_redeploying(self):
+        self.rollback_to_bootstrap()
+        self.restart_deployment()
+        self.args.resume = True
+        DEPLOY.write_json(self.deployment.pending_path, {"transaction": self.current()["transaction"]})
+        self.deployment.execute()
+        self.assertEqual(self.current()["version"], self.candidate["version"])
+        self.assertFalse(self.deployment.pending_path.exists())
+        self.assertFalse(self.deployment.paused_path.exists())
+
+    def test_superseded_resume_does_not_clear_pause(self):
+        bootstrap = self.rollback_to_bootstrap()
+        self.restart_deployment()
+        paused = self.deployment.paused_path.read_bytes()
+        self.args.resume = True
+        self.deployment.superseded = True
+        self.deployment.execute()
+        self.assertEqual(self.deployment.outputs, ["superseded"])
+        self.assertEqual(self.current()["version"], bootstrap)
+        self.assertEqual(self.deployment.up_count, 0)
+        self.assertEqual(self.deployment.migrate_count, 0)
+        self.assertEqual(self.deployment.paused_path.read_bytes(), paused)
+
+    def test_failed_manual_rollback_keeps_pause_when_previous_release_is_restored(self):
+        self.deployment.execute()
+        bootstrap = next((self.deployment.state / "versions").glob("bootstrap-*"))
+        self.args.rollback = bootstrap.name
+        self.restart_deployment()
+        self.deployment.fail_verify = True
+        with self.assertRaisesRegex(DEPLOY.DeployError, "public ingress failure"):
+            self.deployment.execute()
+        paused = json.loads(self.deployment.paused_path.read_text())
+        self.assertEqual(paused["rollback"], bootstrap.name)
+        self.assertEqual(self.current()["version"], self.candidate["version"])
+        self.assertFalse(self.deployment.pending_path.exists())
+        self.assertEqual(self.deployment.outputs, ["rolled_back"])
+        self.assertEqual(self.deployment.migrate_count, 0)
+
+    def test_failed_manual_rollback_restoration_retains_pause_and_pending(self):
+        self.deployment.execute()
+        bootstrap = next((self.deployment.state / "versions").glob("bootstrap-*"))
+        self.args.rollback = bootstrap.name
+        self.restart_deployment()
+        self.deployment.fetch = lambda _url: (_ for _ in ()).throw(OSError("ingress down"))
+        with self.assertRaisesRegex(DEPLOY.DeployError, "restoration failed"):
+            self.deployment.execute()
+        paused = json.loads(self.deployment.paused_path.read_text())
+        pending = json.loads(self.deployment.pending_path.read_text())
+        self.assertEqual(paused["rollback"], bootstrap.name)
+        self.assertEqual(paused["transaction"], pending["transaction"])
+        self.assertEqual(self.current()["version"], self.candidate["version"])
+        self.assertEqual(self.deployment.migrate_count, 0)
+
+    def test_missing_rollback_archive_does_not_pause_deployment(self):
+        self.args.rollback = "v0.0.0"
+        with self.assertRaises(FileNotFoundError):
+            self.deployment.execute()
+        self.assertFalse(self.deployment.paused_path.exists())
+        self.assertEqual(self.deployment.up_count, 0)
+        self.assertEqual(self.deployment.migrate_count, 0)
+
+    def test_uncached_rollback_image_does_not_pause_deployment(self):
+        self.deployment.execute()
+        bootstrap = next((self.deployment.state / "versions").glob("bootstrap-*"))
+        self.args.rollback = bootstrap.name
+        self.restart_deployment()
+        inspect_image = self.deployment.inspect_image
+        def missing_image(name):
+            if name == "sha256:" + "1" * 64:
+                raise DEPLOY.DeployError("Rollback image is not cached")
+            return inspect_image(name)
+        with mock.patch.object(self.deployment, "inspect_image", side_effect=missing_image):
+            with self.assertRaisesRegex(DEPLOY.DeployError, "not cached"):
+                self.deployment.execute()
+        self.assertFalse(self.deployment.paused_path.exists())
+        self.assertEqual(self.deployment.up_count, 0)
+        self.assertEqual(self.deployment.migrate_count, 0)
 
     def test_unrecorded_live_image_fails_closed(self):
         self.deployment.execute()
@@ -367,6 +569,7 @@ class Transactions(unittest.TestCase):
             self.deployment.execute()
         self.assertEqual(self.deployment.up_count, 1)
         self.assertEqual(self.current()["version"], "v1.1.0")
+        self.assertFalse(self.deployment.paused_path.exists())
 
     def test_interruption_after_switch_restores_previous_release(self):
         original_reload = self.deployment.reload_nginx
@@ -386,6 +589,7 @@ class Transactions(unittest.TestCase):
         self.assertTrue(self.deployment.pending_path.exists())
         self.assertTrue(self.current()["version"].startswith("bootstrap-"))
         self.assertFalse((self.deployment.state / "versions/v1.1.0").exists())
+        self.assertFalse(self.deployment.paused_path.exists())
 
     def test_failed_restoration_reports_original_and_recovery_failures(self):
         def failing_fetch(_url):
@@ -448,6 +652,7 @@ class Transactions(unittest.TestCase):
         with self.assertRaisesRegex(DEPLOY.DeployError, "complete release"):
             self.deployment.execute()
         self.assertEqual(self.deployment.up_count, 1)
+        self.assertFalse(self.deployment.paused_path.exists())
 
     def test_partial_production_does_not_claim_all_older_candidates_are_included(self):
         self.args.component = "web"
