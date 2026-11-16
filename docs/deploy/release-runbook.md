@@ -3,27 +3,32 @@
 ## 日常发布
 
 1. 功能与修复 PR 合入 `release/2.0`，release-please 根据 Conventional Commits 更新一个 release PR。普通 PR 用 merge commit，release PR 用 squash merge。
-2. 合并 release PR 前检查版本与 CHANGELOG。release-please 创建 tag 和 GitHub Release，tag 触发 `Deploy`。
-3. 在 Actions 的 Deploy summary 查看实际部署版本、提交、双侧镜像和 schema。GitHub Release 表示版本已发布，**不表示生产部署成功**。
+2. 合并 release PR 后，`Deploy` 将该提交冻结到 `release-candidate` 分支，先执行全量 CI 与双侧镜像构建。此时 manifest 中的版本仍是候选，不创建正式 tag。
+3. 验收通过后，在发布状态锁内再次核对候选，创建 tag 和 GitHub Release，并保存 `release-manifest.json` 附件。附件绑定源码 SHA、双侧镜像 digest 及验证运行；随后部署这份清单。
+4. 在 Actions 的 Deploy summary 查看实际部署版本、提交、双侧镜像和 schema。GitHub Release 表示候选已完成验收，**不表示生产部署成功**。
 
 ```mermaid
 flowchart LR
-    A[版本 tag 或手动目标] --> P[解析固定提交 SHA]
+    A[合并 release PR] --> P[冻结候选 SHA]
     P --> C[完整 CI]
     P --> B[构建 API 镜像]
     P --> W[构建 Web 镜像]
-    C --> D[生产互斥事务]
-    B --> D
-    W --> D
+    C --> V[核对候选并发布 tag 与镜像清单]
+    B --> V
+    W --> V
+    V --> D[生产互斥事务]
+    R[手动重试已有发布清单] --> D
     D --> M[独立 SQL 迁移]
     M --> S[资源准备与容器切换]
     S --> H[公网健康与资源检查]
-    H --> R[成功归档或恢复旧发布]
+    H --> F[成功归档或恢复旧发布]
 ```
 
-检查、API 构建和 Web 构建并行。只有生产事务使用 Actions concurrency，服务器另用文件锁防止 SSH 部署并发。Actions concurrency 不是 FIFO 队列，等待中的旧运行可能被新运行替换；进入生产锁后仍检查提交祖先关系，已被线上双侧版本包含的旧候选会跳过。
+候选登记、正式发布与 release PR 维护共用 `release-state` 锁；检查和构建不占锁。生产事务另用 `deploy-production` 锁，服务器保留文件锁。两个 Actions 并发组均使用 `queue: max`，最多保留 100 个等待任务；入队次序不代表提交先后。运行被取消或队列满时，候选仍可从 `release-candidate` 及 manifest 恢复，不能把 Actions 队列当作唯一记录。
 
-每次正常发布验证同一个提交的完整 CI，并构建双侧镜像；不再等待可能被新 push 取消的主干 CI，也不以空检查充当部署门禁。PR 的旧运行可取消，不同提交的主干运行互不取消。API、Web、依赖扫描并行；API 内部拆为静态检查（golangci-lint 已含 vet）、数据库测试（仅此任务启动 PostgreSQL）与镜像校验，`Backend (Go)` 汇总它们；Web 内部再拆为静态检查、站点单测（3 分片）、独立包（ui、inkline、react-tweet、kanban、theme 各一）、浏览器契约（2 分片）与镜像校验，各占一个 runner。`Frontend (React)` 汇总这些任务，总门禁 `CI Gate` 在最后核对变更检测、runner、基础设施及各侧执行结果。
+候选冻结后，新合入的业务 PR 不改变本次 SHA，留给下一批；当前版本尚未公开发布时，release-please 暂停生成下一张 release PR。发布完成后主动触发维护，收集期间合入的提交。人工重新选择同版本的后代 SHA 后，旧运行在发布前标记为 `superseded`；进入生产锁后仍检查祖先关系，已被线上双侧版本包含的旧发布不会覆盖生产。不要手工移动或删除候选分支。
+
+每个未发布候选验证同一个提交的完整 CI，并构建双侧镜像。正式 Release 的清单一旦存在，重试直接复用原 digest，不重新构建、不重跑全量 CI。PR 的旧运行可取消，不同提交的主干运行互不取消。API 内部拆为静态检查（golangci-lint 已含 vet）、数据库测试（仅此任务启动 PostgreSQL）与镜像校验，`Backend (Go)` 汇总它们；Web 内部拆为静态检查、站点单测（3 分片）、独立包（ui、inkline、react-tweet、kanban、theme 各一）、浏览器契约（2 分片）与镜像校验。`Frontend (React)` 汇总这些任务，总门禁 `CI Gate` 核对实际执行结果；skipped 不充当候选通过。
 
 CI 包含 PostgreSQL 仓储与迁移集成测试、前端构建及 Playwright 契约测试，以及工作流、部署脚本和 Compose 校验。镜像用提交标签保存，实际部署只使用构建产出的 `ghcr.io/...@sha256:...`，不读取或改写 `latest`。
 
@@ -36,6 +41,8 @@ Omarchy 自托管 CI 的镜像更新须先通过 `Runner acceptance`：同一份
 纯介绍文档只运行变更检测、runner 选择、轻量基础设施步骤和最终门禁，不启动 PostgreSQL，也不安装应用工具链或构建镜像。Infrastructure 保留 PR 版本意图检查；工作流、复合 action、脚本、部署配置等变化才执行其重校验。发布与 Runner acceptance 的 `full=true` 强制完整检查，不受文档排除影响。
 
 Web 镜像校验只在 `web/Dockerfile`、`.dockerignore`、`server.mjs`、依赖声明、锁文件或 workspace 包清单变化时运行；源码构建由契约任务验证。正常发布的检查不构建镜像，镜像由 `build-web` 产出；Runner acceptance 强制构建。
+
+工作流语法检查使用 [actionlint 并发队列补丁](https://github.com/rhysd/actionlint/pull/654)的固定提交 `644076a59742c2d1540ebd4686eab3c308f0e562`，源码归档在构建前校验 SHA-256。上游正式版 1.7.12 尚不识别 GitHub 已支持的 `queue`，本地使用该旧版会误报；检查器安装步骤见 `ci.yml`。未屏蔽语法错误，非法队列值及 `queue: max` 与取消运行的冲突仍会失败。
 
 站点单测用 `pnpm test:site` 分片，排除自带 Vitest 配置、由独立包任务运行的 ui、react-tweet、kanban、theme；本地 `make web-test` 仍运行全部。新增带独立测试配置的包时，需同时加入 `web-package` 矩阵与 `test:site` 排除列表。
 
@@ -73,6 +80,7 @@ PR 检查拒绝小于或等于目标分支 manifest 的版本意图；release-pl
 | `versions/<版本>/` | 成功发布的清单、Compose 与 nginx 配置快照 |
 | `schema.json` 与 `migrations/` | 当前 schema 及旧镜像恢复所需的迁移文件束 |
 | `pending.json` 与 `transactions/` | 未完成事务与恢复依据 |
+| `paused.json` | 用户主动回滚后暂停正向部署，显式成功恢复才删除 |
 
 旧 `.current-version-api/web` 只用于首次导入，不再写入。归档版本绑定唯一镜像组合，不允许把同一个版本改成另一组镜像。默认部署 `both`；手动单侧发布会保留另一侧镜像及来源提交，但依然归档整套组合。**不能先用同一版本部署 API，再用它补部署 Web**；补齐时使用新提交或新版本。来源不明或交叉的单侧版本会被拒绝，改用更新的双侧发布。
 
@@ -92,26 +100,42 @@ API 镜像内置固定 `cwebp 1.6.0`，构建阶段实际执行 PNG→WebP 探�
 回滚仅接受服务器已归档的完整发布，恢复双侧镜像和配置；不构建、不拉远程镜像、不执行迁移。所需镜像必须仍在服务器缓存。
 
 ```bash
-gh workflow run deploy.yml -f version=v2.0.1 -f skip_build=true -f component=both
+gh workflow run deploy.yml --ref release/2.0 -f version=v2.0.1 -f skip_build=true -f component=both
 ```
 
 将 `v2.0.1` 换成 `versions/` 下的实际归档名，也可指定首次捕获的 `bootstrap-*`。旧流程留下的 tag 不等于可回滚归档。不要为腾空间清理归档引用的镜像或迁移文件束。
 
-正常手动发布已有 tag：
+主动回滚在服务器写入 `paused.json`，阻止排队的正向部署。恢复时选择已验证版本并显式传 `resume=true`；只有部署与健康检查成功才解除暂停，恢复失败或过期候选不会解除。
 
 ```bash
-gh workflow run deploy.yml -f version=v2.0.2 -f component=both
+gh workflow run deploy.yml --ref release/2.0 -f version=v2.0.2 -f resume=true
 ```
 
-不填 version 时部署所选 workflow ref 的提交，生成 `sha-<12位提交>` 标识；提交必须已合入 `release/2.0`。同版本重新构建若产生不同 digest 会被拒绝，应使用新提交发布。
+普通重试已有版本只需 `version`，复用该 Release 的镜像清单：
+
+```bash
+gh workflow run deploy.yml --ref release/2.0 -f version=v2.0.2
+```
+
+不填 `version` 和 `revision` 时继续已冻结候选，不会把新合入的 PR 自动加入本次发布。候选验收失败且需修改源码时，先合入修复，再明确选择同版本的新 SHA；该版本不能已有正式 tag，新 SHA 必须是原候选的后代。核对新增提交与 CHANGELOG 后执行：
+
+```bash
+git fetch origin release/2.0
+gh workflow run deploy.yml --ref release/2.0 \
+  -f version=v2.0.2 -f revision="$(git rev-parse origin/release/2.0)"
+```
+
+这会废弃旧候选的发布资格，重新执行完整验收和构建；不会复用旧候选的绿色结果。若已有正式 tag，则不可修改其源码或镜像。旧流程的 Release 没有镜像清单时，显式指定该版本会对原 tag SHA 完整验收后补充清单，不移动 tag；已在服务器归档的版本仍受原镜像组合约束。
+
+若历史 Release 已启用不可变保护，GitHub 不允许补传清单附件，此迁移会明确失败，不会绕过保护或移动 tag。此类旧版本仍可使用服务器已有归档回滚；不能把它视为已具备新流程的清单复用能力。
 
 Runner 不可用时通过 SSH 调用同一个事务入口，详见 [手动部署指南](manual-deploy.md)。不要用重打 `latest`、直接 `compose up` 或清空静态目录替代归档恢复。
 
 ## 失败处理
 
-- **构建失败**：`auto-retry.yml` 仅重试 tag push 中单纯的 API/Web 构建失败，最多总计三次 attempt。CI、迁移、切换、健康检查或回滚失败均不自动重试生产操作。
+- **构建失败**：`auto-retry.yml` 仅重试候选 push 中单纯的 API/Web 构建失败，最多总计三次 attempt。CI、正式发布、迁移、切换、健康检查或回滚失败均不自动重试生产操作。
 - **网络准备失败**：checkout 设置低速中止和步骤超时，发布源码保留完整提交历史但按需下载文件；GHCR 登录最多尝试三次，每次限时 60 秒，失败后不会进入部署事务。这些重试不包含迁移、容器切换或整个 deploy job。先按 [Runner 出网检查](runner-setup.md#部署出网) 验证代理和结果上传链路，再决定是否人工重跑。
-- **部署已恢复旧版本**：查看失败日志与 summary，确认 `current.json` 的实际版本。修复问题后以新版本发布。
+- **部署已恢复旧版本**：查看失败日志与 summary，确认 `current.json` 的实际版本。若源码和镜像未变，修复环境后按原版本清单重试；需要修改已发布源码时才创建修正版。自动故障恢复不等于用户主动回滚，不写入 `paused.json`。
 - **部署与恢复均失败**：错误摘要分别保留 `Deploy failed` 和 `restoration failed` 上下文；先区分首次失败与恢复失败的阶段，再检查 `pending.json`。摘要不输出子进程参数、标准输出或错误输出中的凭据；命令错误保留退出码或超时时间。
 - **迁移失败或事务中断**：保留 `pending.json` 并阻止后续部署。先检查该记录的 phase、事务目录、当前容器镜像、`schema_migrations` 和公网状态。dirty 记录说明 SQL 可能部分执行；依据实际 schema 修复迁移，不能盲目 `force` 或删除 pending。
 - **需要人工解除 pending**：先完成数据库一致性核对、恢复匹配的镜像与配置、验证公网，再将实际状态与 `current.json` 对齐并保留事故证据。只有确认不存在未完成写入时才能移除 pending；无法确认时保持阻断。
@@ -129,12 +153,13 @@ Go 检查与漏洞扫描从 `api/go.mod` 读取工具链版本；生产与开发
 - `release/2.0` 必须要求 `Backend (Go)`、`Frontend (React)`、`CI Gate` 通过；更名 required check 时，含新名称的提交推送后立即更新 ruleset，并让其他开放 PR 同步基线，否则它们会一直等待旧名称；建议启用合并前更新分支，避免旧绿色检查绕过新基线。
 - production 应限制允许部署的引用与执行者，并按团队需要设置审批；公开仓库的 self-hosted runner 不应用于不可信 PR 代码。
 - 保护发布 tag，限制创建、修改与删除权限。Actions 固定完整 SHA，由 Dependabot 提供升级 PR。
+- `RELEASE_PLEASE_TOKEN` 用于候选指针、Release 附件、release PR 标签和维护工作流。除仓库内容、PR/Issue 与 Actions 权限外，创建包含工作流变更的 Release 需要 classic PAT 的 `workflow` scope，或 fine-grained PAT 的 Workflows 写权限；不能改用只有 `contents: write` 的 `GITHUB_TOKEN`。
 
-合并工作流后，首个新 tag 才会使用这版 Deploy；旧 tag 重跑仍可能运行旧工作流。首次验证应使用包含本次改造的新版本，观察 bootstrap、schema 132、归档和公网检查结果。CI 本地测试通过不等于生产事务已演练。
+合并工作流后，manifest 变化的主干 push 才触发候选发布，普通业务 PR 不直接部署。旧 tag 不会自动触发新流程；手动操作统一指定 `--ref release/2.0`。首次验证观察候选 SHA、全量验收、Release 清单、生产归档和公网检查。本地测试不代表生产事务已演练。
 
 ## API 文档同步
 
-`publish-apidocs.yml` 在成功的 tag push Deploy 后独立运行，也可手动触发。它读取生产 `/api/v1/openapi.json` 并推送 Apifox，失败不回滚部署。`workflow_run` 不使用分支过滤器排除 tag。实际文档以读取时的线上版本为准。
+`publish-apidocs.yml` 在主干候选 Deploy 成功完成且生产 deploy job 确实执行成功后独立运行，也可手动触发。仅候选过期而跳过部署的运行不会触发推送。它读取生产 `/api/v1/openapi.json` 并推送 Apifox，失败不回滚部署；实际文档以读取时的线上版本为准。
 
 配置 `APIFOX_ACCESS_TOKEN`，账号须有目标项目管理员权限；未配置则跳过并告警。同步使用 `deleteUnmatchedResources=true`，手工增加但不在代码中的接口会被删除。
 
@@ -190,7 +215,7 @@ gh workflow run publish-npm.yml --ref release/2.0 \
 
 ## Release notes 改写规范
 
-release-please 的 CHANGELOG 粒度 = commit：功能/修复 PR 用 merge commit 合并时,分支上每个发版型 commit 都平铺进段落（v2.4.0 曾 25 条流水账上线,读者视角全是噪音）。因此 **release PR 合并前,先把新段落改写为功能聚合风格**（在 release PR 分支上 commit,squash 合并后段落即为最终态;Release body 由 release-please 从 CHANGELOG 段落生成,自动一致）。
+release-please 的 CHANGELOG 粒度 = commit：功能/修复 PR 用 merge commit 合并时,分支上每个发版型 commit 都平铺进段落（v2.4.0 曾 25 条流水账上线,读者视角全是噪音）。因此 **release PR 合并前,先把新段落改写为功能聚合风格**（在 release PR 分支上 commit,squash 合并后段落即为最终态；发布协调器从冻结候选的 CHANGELOG 提取该版本章节作为 Release body）。
 
 改写原则:
 

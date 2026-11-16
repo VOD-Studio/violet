@@ -49,6 +49,8 @@ make deploy-remote-skip-build host=rua v=v2.0.1
 
 版本必须来自服务器 `.releases/versions/`，并保留其镜像缓存。回滚恢复完整归档，不支持单侧恢复或数据库 down。
 
+手动回滚会写入 `.releases/paused.json`，后续正向发布被阻止，避免排队任务立即覆盖回滚结果。恢复时对选定清单显式传 `--resume`；只有健康检查及状态提交成功才解除暂停，失败或过期候选不会解除。
+
 ## SSH 正向发布
 
 准备包含完整 Git 历史的服务器 checkout，使它的 HEAD 等于目标提交；保留其中的 Compose 与 nginx 配置。先完成该提交的 CI，并把双侧镜像发布到 GHCR。镜像必须为 linux/amd64，使用构建返回的 digest。
@@ -72,6 +74,14 @@ make deploy-remote-skip-build host=rua v=v2.0.1
 SSH wrapper 只传输事务脚本与候选清单，不同步源码、不构建镜像。服务器必须具备 GHCR 拉取权限。它不会自动运行 GitHub CI，操作者负责核对检查结果；事务仍验证候选 SHA 与源码一致、版本顺序、schema 和实际镜像。
 
 运行结束后核对 summary 或 `.releases/current.json`。若存在 `pending.json`，按发布手册核对实际状态后再恢复，不能循环重跑。
+
+回滚后的首次恢复：
+
+```bash
+./scripts/deploy-prod.sh --host rua --manifest /tmp/release-manifest.json --source-root /root/build/violet --resume
+```
+
+`--resume` 不能与 `--rollback` 同用。不要通过删除 `paused.json` 绕过选定版本的验证。
 
 ## nginx 与静态文件
 

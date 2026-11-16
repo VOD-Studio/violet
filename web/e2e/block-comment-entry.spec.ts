@@ -36,15 +36,19 @@ test("鼠标点开段评后点外部关闭，悬停照常跟随新段落", async
 	const paragraph = (text: string) =>
 		page.locator("[data-article-content] p").filter({ hasText: text });
 
+	// 可批注块注册完成前入口不在 Tab 顺序中，此时悬停可能先于正文事件订阅。
+	await expect(entry).toHaveAttribute("tabindex", "0");
 	await paragraph("增强恢复后，这段结尾仍是原来的节点。").hover();
 	await expect(entry).toHaveAttribute("data-show", "true");
 	await expect(entry).toHaveAccessibleName("发表段评：增强恢复后，这段结尾仍是原来的节点。");
 	await entry.click();
 	const composer = page.getByRole("dialog", { name: "发表段评" });
-	await expect(composer).toBeVisible();
-	// 点面板之外：面板关闭，入口保持可见（不收起），焦点也不被程序化送回入口
-	await page.mouse.click(8, 200);
-	await expect(composer).toHaveCount(0);
+	// 浮层外壳先于懒加载表单挂载，不能只凭外壳可见就派发外部点击。
+	await expect(composer.getByRole("textbox", { name: "段评内容" })).toBeFocused();
+	await page.getByRole("heading", { level: 1, name: "富内容故障契约：toc" }).click();
+	// 滚动也会隐藏离屏浮层：检查 DOM 卸载，不能把 aria-hidden 当成关闭。
+	await expect(page.locator('[role="dialog"][aria-label="发表段评"]')).toHaveCount(0);
+	await expect(entry).not.toBeFocused();
 	await expect(entry).toHaveAttribute("data-show", "true");
 	await expect(entry).toHaveAccessibleName("发表段评：增强恢复后，这段结尾仍是原来的节点。");
 

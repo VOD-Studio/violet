@@ -17,7 +17,7 @@ class RetryDeployTests(unittest.TestCase):
 
     def test_only_build_failures_are_retryable(self):
         self.assertIsNone(retry.retry_reason(self.run, self.jobs("build-api", "build-web")))
-        for name in ("deploy", "validate / Backend (Go)", "prepare", "notify-failure"):
+        for name in ("deploy", "publish", "validate / Backend (Go)", "prepare", "notify-failure"):
             with self.subTest(name=name):
                 self.assertIsNotNone(retry.retry_reason(self.run, self.jobs("build-web", name)))
 

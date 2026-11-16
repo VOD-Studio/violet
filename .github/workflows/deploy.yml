@@ -2,15 +2,24 @@ name: Deploy
 
 on:
   push:
-    tags: ['v*']
+    branches: [release/2.0]
+    paths: ['.release-please-manifest.json']
   workflow_dispatch:
     inputs:
       version:
-        description: '目标版本 tag；留空部署当前提交；缓存回滚必须填写已归档版本'
+        description: '继续待发布候选或部署已有版本；回滚时填写服务器归档版本'
+        required: false
+        default: ''
+      revision:
+        description: '重新选定未发布候选的完整 SHA；留空保持已冻结候选'
         required: false
         default: ''
       skip_build:
-        description: '从服务器成功发布归档回滚，不构建、不迁移数据库'
+        description: '从服务器归档回滚并暂停后续部署，不构建、不迁移数据库'
+        type: boolean
+        default: false
+      resume:
+        description: '显式恢复回滚后暂停的部署；仅成功部署后解除暂停'
         type: boolean
         default: false
       component:
@@ -26,67 +35,50 @@ jobs:
   prepare:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    concurrency:
+      group: release-state
+      queue: max
+      cancel-in-progress: false
+    permissions:
+      contents: write
     outputs:
+      mode: ${{ steps.target.outputs.mode }}
       version: ${{ steps.target.outputs.version }}
       revision: ${{ steps.target.outputs.revision }}
-      rollback: ${{ steps.target.outputs.rollback }}
+      manifest: ${{ steps.target.outputs.manifest }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: 解析发布目标
+      - name: 冻结或恢复发布候选
         id: target
         env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          GH_REPO: ${{ github.repository }}
           VERSION_INPUT: ${{ inputs.version }}
-          SKIP_BUILD: ${{ inputs.skip_build }}
+          REVISION_INPUT: ${{ inputs.revision }}
+          SKIP_BUILD: ${{ inputs.skip_build || false }}
+          RESUME: ${{ inputs.resume || false }}
           COMPONENT: ${{ inputs.component || 'both' }}
         run: |
           set -euo pipefail
-          version="$VERSION_INPUT"
-          if [ "$GITHUB_EVENT_NAME" = push ]; then
-            version="$GITHUB_REF_NAME"
-          fi
-          if [ "$SKIP_BUILD" = true ]; then
-            if [ "$COMPONENT" != both ]; then
-              echo '::error::缓存回滚恢复整份镜像与配置清单，component 必须为 both'
-              exit 1
-            fi
-            if [[ ! "$version" =~ ^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$ ]]; then
-              echo '::error::回滚必须指定成功归档的版本或 bootstrap 标识'
-              exit 1
-            fi
-            {
-              echo "version=$version"
-              echo "revision=$GITHUB_SHA"
-              echo 'rollback=true'
-            } >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          if [ -n "$version" ]; then
-            if [[ ! "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
-              echo '::error::version 必须是 vX.Y.Z 形式的 tag'
-              exit 1
-            fi
-            revision=$(git rev-parse --verify "refs/tags/$version^{commit}")
-          else
-            revision=$(git rev-parse HEAD)
-            version="sha-${revision:0:12}"
-          fi
-          git merge-base --is-ancestor "$revision" origin/release/2.0 || {
-            echo '::error::部署提交必须已合入 release/2.0'
+          if [ "$GITHUB_REF" != refs/heads/release/2.0 ]; then
+            echo '::error::发布协调必须从 release/2.0 工作流运行'
             exit 1
-          }
-          {
-            echo "version=$version"
-            echo "revision=$revision"
-            echo "rollback=${SKIP_BUILD:-false}"
-          } >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$SKIP_BUILD" = true ] && [ "$RESUME" = true ]; then
+            echo '::error::回滚与恢复部署不能同时请求'
+            exit 1
+          fi
+          python3 scripts/release-candidate.py prepare \
+            --version "$VERSION_INPUT" --revision "$REVISION_INPUT" \
+            --rollback "$SKIP_BUILD" --component "$COMPONENT"
 
   # 检查与构建共享精确 SHA，发布检查不依赖容易被取消的主干 push run。
   validate:
     needs: prepare
-    if: needs.prepare.outputs.rollback != 'true'
+    if: needs.prepare.outputs.mode == 'candidate'
     permissions:
       contents: read
       pull-requests: read
@@ -99,7 +91,7 @@ jobs:
 
   build-api:
     needs: prepare
-    if: needs.prepare.outputs.rollback != 'true'
+    if: needs.prepare.outputs.mode == 'candidate'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -133,7 +125,7 @@ jobs:
 
   build-web:
     needs: prepare
-    if: needs.prepare.outputs.rollback != 'true'
+    if: needs.prepare.outputs.mode == 'candidate'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -167,18 +159,80 @@ jobs:
           cache-from: type=gha,scope=violet-web
           cache-to: type=gha,mode=max,scope=violet-web
 
-  deploy:
+  publish:
     needs: [prepare, validate, build-api, build-web]
     if: >-
+      !cancelled() && needs.prepare.outputs.mode == 'candidate' &&
+      needs.validate.result == 'success' &&
+      needs.build-api.result == 'success' && needs.build-web.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: release-state
+      queue: max
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      actions: write
+    outputs:
+      status: ${{ steps.release.outputs.status }}
+      manifest: ${{ steps.release.outputs.manifest }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: 发布已验收候选及不可变镜像清单
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          REVISION: ${{ needs.prepare.outputs.revision }}
+          API_DIGEST: ${{ needs.build-api.outputs.digest }}
+          WEB_DIGEST: ${{ needs.build-web.outputs.digest }}
+          WORKFLOW_REVISION: ${{ github.workflow_sha }}
+          VALIDATE_RESULT: ${{ needs.validate.result }}
+          BUILD_API_RESULT: ${{ needs.build-api.result }}
+          BUILD_WEB_RESULT: ${{ needs.build-web.result }}
+        run: |
+          python3 scripts/release-candidate.py publish \
+            --version "$VERSION" --revision "$REVISION" \
+            --api-digest "$API_DIGEST" --web-digest "$WEB_DIGEST" \
+            --workflow-revision "$WORKFLOW_REVISION"
+
+  maintain-release-pr:
+    needs: [prepare, publish]
+    if: >-
       always() && !cancelled() && needs.prepare.result == 'success' &&
-      (needs.prepare.outputs.rollback == 'true' ||
-       (needs.validate.result == 'success' && needs.build-api.result == 'success' && needs.build-web.result == 'success'))
+      (needs.prepare.outputs.mode == 'reuse' ||
+       (needs.publish.result == 'success' && needs.publish.outputs.status == 'published'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - name: 更新下一批 release PR
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: gh workflow run release-please.yml --ref release/2.0
+
+  deploy:
+    needs: [prepare, publish]
+    if: >-
+      always() && !cancelled() && needs.prepare.result == 'success' &&
+      (needs.prepare.outputs.mode == 'rollback' || needs.prepare.outputs.mode == 'reuse' ||
+       (needs.publish.result == 'success' && needs.publish.outputs.status == 'published'))
     runs-on: [self-hosted, rua]
     environment: production
     timeout-minutes: 25
     # 只有生产事务互斥；候选版本的检查与构建不占生产锁。
     concurrency:
       group: deploy-production
+      queue: max
       cancel-in-progress: false
     permissions:
       contents: read
@@ -196,7 +250,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        if: needs.prepare.outputs.rollback != 'true'
+        if: needs.prepare.outputs.mode != 'rollback'
         timeout-minutes: 6
         with:
           ref: ${{ needs.prepare.outputs.revision }}
@@ -205,7 +259,7 @@ jobs:
           filter: blob:none
           persist-credentials: false
       - name: 登录镜像仓库
-        if: needs.prepare.outputs.rollback != 'true'
+        if: needs.prepare.outputs.mode != 'rollback'
         timeout-minutes: 4
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -232,31 +286,29 @@ jobs:
         id: deploy
         env:
           VERSION: ${{ needs.prepare.outputs.version }}
-          REVISION: ${{ needs.prepare.outputs.revision }}
-          API_DIGEST: ${{ needs.build-api.outputs.digest }}
-          WEB_DIGEST: ${{ needs.build-web.outputs.digest }}
-          ROLLBACK: ${{ needs.prepare.outputs.rollback }}
+          MANIFEST: ${{ needs.publish.outputs.manifest || needs.prepare.outputs.manifest }}
+          MODE: ${{ needs.prepare.outputs.mode }}
+          RESUME: ${{ inputs.resume || false }}
           COMPONENT: ${{ inputs.component || 'both' }}
           REGISTRY_AUTH_FILE: ${{ runner.temp }}/violet-registry-auth.json
         run: |
           set -euo pipefail
-          if [ "$ROLLBACK" = true ]; then
+          if [ "$MODE" = rollback ]; then
             python3 scripts/deploy-release.py --rollback "$VERSION" --component "$COMPONENT"
           else
-            jq -n --arg version "$VERSION" --arg revision "$REVISION" \
-              --arg api_image "ghcr.io/vod-studio/violet-api@$API_DIGEST" \
-              --arg web_image "ghcr.io/vod-studio/violet-web@$WEB_DIGEST" \
-              '{version: $version, revision: $revision, api_image: $api_image, web_image: $web_image}' \
-              > "$RUNNER_TEMP/release-manifest.json"
-            python3 scripts/deploy-release.py --manifest "$RUNNER_TEMP/release-manifest.json" \
-              --source-root release-source --component "$COMPONENT"
+            printf '%s\n' "$MANIFEST" > "$RUNNER_TEMP/release-manifest.json"
+            args=(--manifest "$RUNNER_TEMP/release-manifest.json" --source-root release-source --component "$COMPONENT")
+            if [ "$RESUME" = true ]; then
+              args+=(--resume)
+            fi
+            python3 scripts/deploy-release.py "${args[@]}"
           fi
       - name: 清理仓库凭据
         if: always()
         run: rm -f "$RUNNER_TEMP/violet-registry-auth.json"
 
   notify-failure:
-    needs: [prepare, validate, build-api, build-web, deploy]
+    needs: [prepare, validate, build-api, build-web, publish, maintain-release-pr, deploy]
     if: always() && failure()
     runs-on: ubuntu-latest
     timeout-minutes: 5

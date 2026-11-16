@@ -339,6 +339,8 @@ pnpm test:contract
 
 SSR 内容可见不代表客户端交互已挂载。需要交互的测试使用 [e2e/support.ts](e2e/support.ts) 的 `openClientPage` 等待客户端请求：公开页等顶栏的 `/presence/stream`，后台等 `/auth/me`；涉及页面 effect 的聚焦刷新再使用对应就绪辅助函数，不能仅凭文本出现就派发窗口事件。
 
+懒加载浮层的外壳可见不等于表单可交互。验证输入浮层的外部关闭前，先等待输入区的可编辑或聚焦状态，再使用定位器点击明确的外部元素，不用裸坐标点击代替可操作性等待。若浮层支持离屏隐藏，关闭断言须确认 DOM 已卸载，不能仅检查可访问性树里不再可见。
+
 ## 生产构建与部署
 
 `pnpm build` 输出 `dist/client/` 和 `dist/server/`。生产由 `node server.mjs` 把 SSR Handler 接到 HTTP 服务，`PORT` / `HOST` 控制监听；静态资源、上传文件和后端请求由部署中的反向代理共同处理。单独启动 Node 入口不等于完整生产站点。

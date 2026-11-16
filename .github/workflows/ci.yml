@@ -608,17 +608,28 @@ jobs:
           fi
           python3 scripts/check-release-version.py "${args[@]}"
 
+      - name: Setup workflow checker toolchain
+        if: needs.changes.outputs.infrastructure == 'true'
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: api/go.mod
+          cache: false
+
       - name: Install workflow checkers
         if: needs.changes.outputs.infrastructure == 'true'
         env:
-          ACTIONLINT_VERSION: 1.7.12
+          # rhysd/actionlint#654：官方已支持 queue，但 1.7.12 尚未识别；固定补丁源码而非屏蔽语法检查。
+          ACTIONLINT_REVISION: 644076a59742c2d1540ebd4686eab3c308f0e562
+          ACTIONLINT_SOURCE_SHA256: 747636d922cb81e66613ef80c5d08ff748de58d6d5250b9151853e8f680da3e1
           SHELLCHECK_VERSION: 0.11.0
         run: |
           tool_dir="$RUNNER_TEMP/workflow-tools"
           mkdir -p "$tool_dir"
-          curl -fsSL --retry 3 "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" -o "$tool_dir/actionlint.tar.gz"
-          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  $tool_dir/actionlint.tar.gz" | sha256sum -c -
-          tar -xzf "$tool_dir/actionlint.tar.gz" -C "$tool_dir" actionlint
+          source_dir=$(mktemp -d "$RUNNER_TEMP/actionlint-source.XXXXXX")
+          curl -fsSL --retry 3 "https://codeload.github.com/vvoland/actionlint/tar.gz/$ACTIONLINT_REVISION" -o "$tool_dir/actionlint-source.tar.gz"
+          echo "$ACTIONLINT_SOURCE_SHA256  $tool_dir/actionlint-source.tar.gz" | sha256sum -c -
+          tar -xzf "$tool_dir/actionlint-source.tar.gz" --strip-components=1 -C "$source_dir"
+          (cd "$source_dir" && go build -mod=readonly -trimpath -o "$tool_dir/actionlint" ./cmd/actionlint)
           curl -fsSL --retry 3 "https://github.com/koalaman/shellcheck/releases/download/v${SHELLCHECK_VERSION}/shellcheck-v${SHELLCHECK_VERSION}.linux.x86_64.tar.xz" -o "$tool_dir/shellcheck.tar.xz"
           echo "8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198  $tool_dir/shellcheck.tar.xz" | sha256sum -c -
           tar -xJf "$tool_dir/shellcheck.tar.xz" -C "$tool_dir" --strip-components=1 "shellcheck-v${SHELLCHECK_VERSION}/shellcheck"
