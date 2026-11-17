@@ -416,7 +416,7 @@ describe("ImagePreview 导航与手势", () => {
 		expect(onClose).not.toHaveBeenCalled();
 	});
 
-	it("滚轮可从图片周围开始收回，但工具栏与缩略图保留自身滚动", async () => {
+	it("轻微滚动只触发一次关闭，工具栏与缩略图保留自身滚动", async () => {
 		const onClose = vi.fn();
 		render(
 			<ImagePreview
@@ -432,7 +432,8 @@ describe("ImagePreview 导航与手势", () => {
 		fireEvent.click(screen.getByRole("button", { name: "显示图片列表" }));
 		fireEvent.wheel(screen.getByAltText("缩略图 1"), { deltaY: 600 });
 		expect(onClose).not.toHaveBeenCalled();
-		fireEvent.wheel(stage(), { deltaY: -400 });
+		fireEvent.wheel(stage(), { deltaY: -1 });
+		expect(onClose).toHaveBeenCalledTimes(1);
 		fireEvent.wheel(stage(), { deltaY: -400 });
 		expect(screen.getByText("100%")).not.toBeNull();
 		expect(onClose).toHaveBeenCalledTimes(1);
@@ -576,67 +577,20 @@ describe("ImagePreview 收回关闭", () => {
 		expect(document.activeElement).toBe(first);
 	});
 
-	it("周围区域可沿首次滚动方向收回，并用反向滚动恢复", async () => {
+	it("图片检查模式用滚轮缩放到边界而不关闭", async () => {
 		const onClose = vi.fn();
 		render(
-			<ImagePreview
-				open
-				images={images}
-				alts={alts}
-				triggerRect={triggerRect}
-				onClose={onClose}
-			/>,
-		);
-		await image("湖畔");
-		const background = stage();
-		fireEvent.wheel(background, { deltaY: -300 });
-		expect(onClose).not.toHaveBeenCalled();
-		fireEvent.wheel(background, { deltaY: 300 });
-		expect(onClose).not.toHaveBeenCalled();
-		fireEvent.wheel(background, { deltaY: -600 });
-		expect(onClose).toHaveBeenCalledTimes(1);
-	});
-
-	it("图片放大后，滚轮仍只控制收回而不改变缩放倍率", async () => {
-		const onClose = vi.fn();
-		render(
-			<ImagePreview
-				open
-				images={images}
-				alts={alts}
-				triggerRect={triggerRect}
-				onClose={onClose}
-			/>,
+			<ImagePreview open images={images} alts={alts} wheelAction="zoom" onClose={onClose} />,
 		);
 		const original = await image("湖畔");
-		fireEvent.keyDown(window, { key: "+" });
-		expect(screen.getByText("150%")).not.toBeNull();
-		fireEvent.wheel(original, { deltaY: -200 });
-		expect(screen.getByText("150%")).not.toBeNull();
-		fireEvent.wheel(original, { deltaY: 150 });
-		expect(screen.getByText("150%")).not.toBeNull();
-		expect(onClose).not.toHaveBeenCalled();
-		fireEvent.wheel(original, { deltaY: -550 });
-		expect(screen.getByText("150%")).not.toBeNull();
-		expect(onClose).toHaveBeenCalledTimes(1);
-	});
-
-	it("周围区域在图片离开指针后仍接管当前滚轮手势", async () => {
-		const onClose = vi.fn();
-		render(
-			<ImagePreview
-				open
-				images={images}
-				alts={alts}
-				triggerRect={triggerRect}
-				onClose={onClose}
-			/>,
+		fireEvent.wheel(original, { deltaY: -100 });
+		expect(Number.parseInt(screen.getByText(/^\d+%$/).textContent ?? "", 10)).toBeGreaterThan(
+			100,
 		);
-		await image("湖畔");
-		const background = stage();
-		fireEvent.wheel(background, { deltaY: 300, clientX: 300, clientY: 300 });
-		fireEvent.pointerMove(background, { clientX: 800, clientY: 600 });
-		fireEvent.wheel(background, { deltaY: 300, clientX: 800, clientY: 600 });
-		await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+		fireEvent.wheel(original, { deltaY: 10000 });
+		expect(screen.getByText("50%")).not.toBeNull();
+		fireEvent.wheel(original, { deltaY: -10000 });
+		expect(screen.getByText("300%")).not.toBeNull();
+		expect(onClose).not.toHaveBeenCalled();
 	});
 });

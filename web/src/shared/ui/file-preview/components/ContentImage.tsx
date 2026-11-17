@@ -91,6 +91,7 @@ export function ContentImage({
 			{!onImageClick ? (
 				<ImagePreview
 					open={preview.open}
+					wheelAction="zoom"
 					onClose={preview.closePreview}
 					images={preview.images}
 					currentIndex={preview.currentIndex}

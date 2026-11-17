@@ -196,6 +196,7 @@ export function MediaViewer({
 			{fullscreen ? (
 				<ImagePreview
 					open={fullscreenOpen}
+					wheelAction="zoom"
 					onClose={() => setFullscreenOpen(false)}
 					onExitComplete={() => setFullscreen(null)}
 					images={[fullscreen.url]}

@@ -147,6 +147,7 @@ export function GalleryDetailPage({ slug }: GalleryDetailPageProps) {
 
 				<ImagePreview
 					open={lightbox.open}
+					wheelAction="zoom"
 					onClose={() => setLightbox((state) => ({ ...state, open: false }))}
 					images={items.map((item) => item.url)}
 					thumbnails={items.map((item) => item.thumbnail || item.url)}

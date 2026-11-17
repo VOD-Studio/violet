@@ -77,6 +77,7 @@ export function CommentDetail({ row }: CommentDetailProps) {
 
 			<ImagePreview
 				open={preview.open}
+				wheelAction="close"
 				images={preview.images}
 				currentIndex={preview.currentIndex}
 				triggerElement={preview.triggerElement}

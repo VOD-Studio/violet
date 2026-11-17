@@ -191,6 +191,7 @@ function GalleryLab() {
 
 			<ImagePreview
 				open={openIndex !== null}
+				wheelAction="zoom"
 				onClose={() => setOpenIndex(null)}
 				images={MOCK_GALLERY.items.map((it) => it.url)}
 				currentIndex={openIndex ?? 0}
