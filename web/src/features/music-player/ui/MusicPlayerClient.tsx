@@ -73,7 +73,7 @@ function MusicPlayerSession({ playlists, mode, theme, onRetry }: MusicPlayerSess
 
 	useEffect(() => {
 		let active = true;
-		async function initialize() {
+		const initialize = async () => {
 			if (!active) {
 				return;
 			}
@@ -122,7 +122,7 @@ function MusicPlayerSession({ playlists, mode, theme, onRetry }: MusicPlayerSess
 			}
 			setReady(true);
 			setError(null);
-		}
+		};
 		// 跳过 StrictMode 首次 Effect 重放，避免重复装载歌单。
 		queueMicrotask(() => {
 			if (!active) {
