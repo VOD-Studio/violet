@@ -104,7 +104,7 @@ REST 端点可用 `middleware.PATAuth` 复用 MCP 的 `PATVerifier`，再用 `Re
 
 `POST /api/v1/link-cards/lookup` 公开批量读取最多 10 个 URL 的网页预览，仍需 CSRF cookie。返回 `cards`、`pending`、`unavailable`：仅 pending 继续查询；上游 403 不绕过防护，失败退避期间不重复抓取。成功快照默认缓存 7 天，过期惰性刷新；封面校验后缓存到本站。
 
-聊天链接的专用只读解析要求 Session 登录：`GET /github/repos/{owner}/{repo}` 返回公开仓库信息，服务端缓存 5 分钟并复用链接预览限流；`GET /tweets/external/resolve?url=` 复用 X 原文快照、媒体代理与预览额度，不签发发布凭证、不创建时间线推文，也不要求 `tweet:create`。
+聊天链接的专用只读解析要求 Session 登录：`GET /github/repos/{owner}/{repo}` 返回公开仓库信息，服务端缓存 5 分钟并复用链接预览限流；`GET /tweets/external/resolve?url=` 复用 X 原文快照与媒体代理，不签发发布凭证、不创建时间线推文，也不要求 `tweet:create`。X 只读解析使用独立的 `x-resolve` 额度，默认每用户每分钟 60 次，支持运行策略调整；缓存读取同样受此额度保护，但不消耗发布预览的分钟或滚动日额度。
 
 ### 博客公开浏览筛选
 
