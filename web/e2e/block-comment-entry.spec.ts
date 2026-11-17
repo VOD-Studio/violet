@@ -45,8 +45,8 @@ test("鼠标点开段评后点外部关闭，悬停照常跟随新段落", async
 	const composer = page.getByRole("dialog", { name: "发表段评" });
 	// 浮层外壳先于懒加载表单挂载，不能只凭外壳可见就派发外部点击。
 	await expect(composer.getByRole("textbox", { name: "段评内容" })).toBeFocused();
-	await page.getByRole("heading", { level: 1, name: "富内容故障契约：toc" }).click();
-	// 滚动也会隐藏离屏浮层：检查 DOM 卸载，不能把 aria-hidden 当成关闭。
+	// 指针仍在原段落时关闭浮层，入口继续属于这一段；移出正文仍遵守正常的延迟隐藏。
+	await paragraph("增强恢复后，这段结尾仍是原来的节点。").click();
 	await expect(page.locator('[role="dialog"][aria-label="发表段评"]')).toHaveCount(0);
 	await expect(entry).not.toBeFocused();
 	await expect(entry).toHaveAttribute("data-show", "true");
@@ -55,6 +55,8 @@ test("鼠标点开段评后点外部关闭，悬停照常跟随新段落", async
 	// 悬停其他段落：入口立即跟随
 	await paragraph("键盘焦点保持可见").first().hover();
 	await expect(entry).toHaveAccessibleName(/发表段评：键盘焦点保持可见/);
+	await page.getByRole("heading", { level: 1, name: "富内容故障契约：toc" }).click();
+	await expect(entry).not.toHaveAttribute("data-show", "true");
 });
 
 test.describe("390px 手机", () => {
@@ -62,43 +64,110 @@ test.describe("390px 手机", () => {
 
 	test("点按段落出现段评入口，点按代码块不出现", async ({ page, context }) => {
 		await loadClient(context);
-		await openClientPage(page, PATH);
+		await openClientPage(page, TOC_PATH);
 		const entry = page.getByRole("button", { name: /^发表段评/ });
-		// 首段已有批注（页边角标负责），点按未批注的结尾段
+		// 长文中部有足够滚动空间，避免短文在视口顶部被夹住，未真正抵达碰撞位置。
 		const paragraph = page
 			.locator("[data-article-content] p")
-			.filter({ hasText: "增强恢复后，这段结尾仍是原来的节点。" });
-		// 段落若停在底部浮动评论钮与导航岛后面，点按会落在它们身上；先滚到视口中部
-		await paragraph.evaluate((element) => element.scrollIntoView({ block: "center" }));
-		await expect(async () => {
-			await paragraph.tap();
-			await expect(entry).toHaveAttribute("data-show", "true", { timeout: 1_000 });
-		}).toPass();
+			.filter({ hasText: "键盘焦点保持可见，不被滚动区域裁剪。" })
+			.nth(10);
+		// 触屏入口在首次点按前由 CSS 隐藏；先检查已注册，点按后仍通过正常可访问查询操作。
+		await expect(
+			page.getByRole("button", { name: /^发表段评/, includeHidden: true }),
+		).toHaveAttribute("tabindex", "0");
+		const occluder = page.locator("[data-annotation-occluder]");
+		const controls = await occluder.boundingBox();
+		if (!controls) {
+			throw new Error("文章浮动操作组没有占地");
+		}
+		const dimensions = await page
+			.getByRole("button", { name: /^发表段评/, includeHidden: true })
+			.evaluate((element) => {
+				const style = getComputedStyle(element);
+				return {
+					width: Number.parseFloat(style.width),
+					height: Number.parseFloat(style.height),
+				};
+			});
+		// 仅用正文几何建立碰撞前提；避让后的结果由实际按钮占地与命中检测验证。
+		const unshiftedPosition = () =>
+			paragraph.evaluate((element, size) => {
+				const content = element.closest<HTMLElement>("[data-article-content]");
+				if (!content) {
+					throw new Error("段落不在文章正文中");
+				}
+				const bounds = content.getBoundingClientRect();
+				const block = element.getBoundingClientRect();
+				const range = document.createRange();
+				range.selectNodeContents(element);
+				const lines = range.getClientRects();
+				const last = lines[lines.length - 1];
+				const inline = last && last.right + 6 + size.width <= bounds.right;
+				return {
+					x: inline ? last.right + 6 : bounds.right - size.width,
+					y: inline ? last.top + (last.height - size.height) / 2 : block.bottom + 4,
+					...size,
+				};
+			}, dimensions);
+		const initial = await unshiftedPosition();
+		const targetTop = controls.y + (controls.height - dimensions.height) / 2;
+		await paragraph.evaluate((_element, distance) => {
+			window.scrollBy({ top: distance, behavior: "instant" });
+		}, initial.y - targetTop);
+		const candidate = await unshiftedPosition();
+		const collisionBounds = await occluder.boundingBox();
+		if (!collisionBounds) {
+			throw new Error("滚动后文章浮动操作组没有占地");
+		}
+		expect(Math.abs(candidate.y - targetTop)).toBeLessThanOrEqual(1);
+		expect(candidate.x).toBeLessThan(collisionBounds.x + collisionBounds.width);
+		expect(candidate.x + candidate.width).toBeGreaterThan(collisionBounds.x);
+		expect(candidate.y).toBeLessThan(collisionBounds.y + collisionBounds.height);
+		expect(candidate.y + candidate.height).toBeGreaterThan(collisionBounds.y);
+		await paragraph.tap();
+		await expect(entry).toHaveAttribute("data-show", "true");
 		await expect(entry).toBeVisible();
-		await expect(entry).toHaveAccessibleName("发表段评：增强恢复后，这段结尾仍是原来的节点。");
-		// 入口与段落水平对齐、停在正文范围内（跟在末行文字后），不压页边
+		await expect(entry).toHaveAccessibleName("发表段评：键盘焦点保持可见，不被滚动区域裁剪。");
+		// 等待真实按钮落到段落下方；中心可命中并不表示现有 top 过渡已经结束。
 		await expect
 			.poll(async () => {
-				const box = await entry.boundingBox();
-				const text = await paragraph.boundingBox();
-				return Boolean(
-					box && text && box.x >= text.x && box.x + box.width <= text.x + text.width,
-				);
+				const [box, text, obstacle] = await Promise.all([
+					entry.boundingBox(),
+					paragraph.boundingBox(),
+					occluder.boundingBox(),
+				]);
+				if (!box || !text || !obstacle) {
+					return null;
+				}
+				return {
+					inside: box.x >= text.x && box.x + box.width <= text.x + text.width,
+					below: box.y >= text.y + text.height + 3.5,
+					clear:
+						box.x + box.width <= obstacle.x ||
+						box.x >= obstacle.x + obstacle.width ||
+						box.y + box.height <= obstacle.y ||
+						box.y >= obstacle.y + obstacle.height,
+				};
 			})
+			.toEqual({ inside: true, below: true, clear: true });
+		await expect
+			.poll(() =>
+				entry.evaluate((element) => {
+					const rect = element.getBoundingClientRect();
+					const hit = document.elementFromPoint(
+						rect.x + rect.width / 2,
+						rect.y + rect.height / 2,
+					);
+					return hit !== null && element.contains(hit);
+				}),
+			)
 			.toBe(true);
 		await page.screenshot({ path: test.info().outputPath("mobile-entry.png") });
 
 		const composer = page.getByRole("dialog", { name: "发表段评" });
-		await expect(async () => {
-			// CI 截图里入口会在测量与截图之后收起，此时点按只会落在正文上：先确保入口在，再点它。
-			// 面板已打开时不再点按：入口是开关，重复点按会把刚打开的段评收回去。
-			if (!(await composer.isVisible())) {
-				if ((await entry.getAttribute("data-show")) !== "true") await paragraph.tap();
-				await expect(entry).toHaveAttribute("data-show", "true", { timeout: 1_000 });
-				await entry.tap();
-			}
-			await expect(composer).toBeVisible({ timeout: 1_000 });
-		}).toPass();
+		await entry.tap();
+		await expect(composer).toBeVisible();
+		await expect(composer.getByRole("textbox", { name: "段评内容" })).toBeFocused();
 		await page.keyboard.press("Escape");
 
 		await page.locator("[data-article-content] pre").first().tap();

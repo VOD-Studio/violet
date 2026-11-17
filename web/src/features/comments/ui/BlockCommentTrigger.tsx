@@ -17,6 +17,7 @@ import {
 	useSyncExternalStore,
 } from "react";
 import { useAnnotationAnchorVisible } from "../hooks/use-annotation-anchor-visible";
+import { useBlockTriggerPosition } from "../hooks/use-block-trigger-position";
 import { AnnotationPending } from "./AnnotationPending";
 import { AnnotationPortal } from "./AnnotationPortal";
 import { AnnotationQuote } from "./AnnotationQuote";
@@ -31,14 +32,6 @@ const loadBlockComposer = createAsyncLoader(() =>
 
 /** 指针离开段落后入口延迟隐藏的时间，留给指针经过留白移向入口按钮。 */
 const HIDE_DELAY_MS = 300;
-/** 入口纵向对齐块首行的偏移，px */
-const TOP_OFFSET_PX = 2;
-/** 触屏入口与段落底边的间距，px */
-const BELOW_GAP_PX = 4;
-/** 触屏入口与末行文字的间距，px */
-const INLINE_GAP_PX = 6;
-/** 入口圆钮边长，与样式里的 1.75rem 一致，px */
-const ENTRY_SIZE_PX = 28;
 /** 输入面板与所批注段落底边的间距，px */
 const COMPOSER_GAP_PX = 8;
 /** 入口读屏名称里引用的段落开头字数 */
@@ -87,8 +80,6 @@ export function BlockCommentTrigger({
 		() => true,
 		() => false,
 	);
-	const [top, setTop] = useState(0);
-	const [height, setHeight] = useState(0);
 	const [composerBlock, setComposerBlock] = useState<HTMLElement | null>(null);
 	const buttonRef = useRef<HTMLButtonElement>(null);
 	const hideTimer = useRef<number | undefined>(undefined);
@@ -174,31 +165,11 @@ export function BlockCommentTrigger({
 
 	const visibleBlock = composerBlock ?? current;
 	const touch = mode === "touch";
-	/** 触屏入口的横向位置：跟在末行文字后面；末行写满时为 null，退到段落右下方。 */
-	const [inlineLeft, setInlineLeft] = useState<number | null>(null);
-	useEffect(() => {
-		const layer = layerRef.current;
-		if (!visibleBlock || !layer) return;
-		const rect = visibleBlock.getBoundingClientRect();
-		const layerRect = layer.getBoundingClientRect();
-		setHeight(rect.height);
-		if (!touch) {
-			setTop(rect.top - layerRect.top + TOP_OFFSET_PX);
-			return;
-		}
-		const range = document.createRange();
-		range.selectNodeContents(visibleBlock);
-		// jsdom 没有 Range 几何 API：退到段落下方，与末行写满时相同
-		const lines = typeof range.getClientRects === "function" ? range.getClientRects() : [];
-		const last = lines[lines.length - 1];
-		if (last && last.right + INLINE_GAP_PX + ENTRY_SIZE_PX <= layerRect.right) {
-			setTop(last.top - layerRect.top + (last.height - ENTRY_SIZE_PX) / 2);
-			setInlineLeft(last.right - layerRect.left + INLINE_GAP_PX);
-		} else {
-			setTop(rect.bottom - layerRect.top + BELOW_GAP_PX);
-			setInlineLeft(null);
-		}
-	}, [visibleBlock, layerRef, touch]);
+	const { top, height, inlineLeft } = useBlockTriggerPosition({
+		block: visibleBlock,
+		layerRef,
+		touch,
+	});
 	const below = touch && inlineLeft === null;
 
 	const close = useCallback(() => {
