@@ -24,12 +24,12 @@ export function PdfPreview({ url, name, className, initialPage, initialScale }: 
 	const pdf = usePdfDocument({ initialPage, initialScale });
 	const viewer = useFilePreviewVariant() === "viewer";
 
-	function handleDownload() {
+	const handleDownload = () => {
 		const a = document.createElement("a");
 		a.href = url;
 		a.download = name ?? "document.pdf";
 		a.click();
-	}
+	};
 
 	return (
 		<div

@@ -30,12 +30,12 @@ export function ArchivePreview({ url, name, mimeType, className }: ArchivePrevie
 		return { count: files.length, totalSize };
 	}, [entries]);
 
-	function handleDownload() {
+	const handleDownload = () => {
 		const a = document.createElement("a");
 		a.href = url;
 		a.download = name ?? "archive.zip";
 		a.click();
-	}
+	};
 
 	return (
 		<div
