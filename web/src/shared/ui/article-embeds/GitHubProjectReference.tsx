@@ -6,6 +6,8 @@ import type { GitHubEmbedConfig } from "./types";
 
 interface GitHubProjectReferenceProps {
 	config: GitHubEmbedConfig;
+	/** 嵌入消息等窄容器时取消文章流的居中留白，并使用紧凑内边距。 */
+	compact?: boolean;
 }
 
 const COMPACT_NUMBER = new Intl.NumberFormat("en", {
@@ -14,7 +16,7 @@ const COMPACT_NUMBER = new Intl.NumberFormat("en", {
 });
 
 /** 渲染宿主提供的仓库快照，不在组件内请求元数据。 */
-export function GitHubProjectReference({ config }: GitHubProjectReferenceProps) {
+export function GitHubProjectReference({ config, compact = false }: GitHubProjectReferenceProps) {
 	const [owner, name] = config.repo.split("/");
 	const ownerHref = `https://github.com/${encodeURIComponent(owner)}`;
 	const repoHref = `https://github.com/${config.repo}`;
@@ -25,6 +27,7 @@ export function GitHubProjectReference({ config }: GitHubProjectReferenceProps) 
 	return (
 		<article
 			className={`not-prose ${styles.reference}`}
+			data-compact={compact || undefined}
 			aria-label={`GitHub 项目：${config.repo}`}
 		>
 			<header className={styles.header}>

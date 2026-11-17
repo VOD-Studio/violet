@@ -179,6 +179,8 @@ SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端�
 
 链接预览先显示 SSR 快照；客户端按规范 URL 共用缓存，只轮询服务端明确标记为 pending 的链接，完成、失败或离开页面后停止。首个消费方是推文；其他 feature 复用 `entities/link-preview`，不要在 `shared` 里导入推文 DTO。
 
+网页预览加载与失败使用同一 `LinkCard`：读取中显示骨架与来源，失败仍可直接打开原链接，不重复发起抓取。`LinkPreviews` 与 `GitHubProjectReference` 支持 `compact` 嵌入模式，由消息等宿主控制外部间距；文章流默认布局不变。
+
 ### 音乐播放器接入
 
 站点使用 `@violetjs/kite-player` 的自定义 `DataSource`，对接本站 `/api/v1/music/**`，不改用包内直连外站的数据源。公开歌单按页载入；凭据模式变化时重建队列，刷新恢复队列与进度但不自动播放。
