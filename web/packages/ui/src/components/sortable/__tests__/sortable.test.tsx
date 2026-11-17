@@ -132,6 +132,42 @@ describe("Sortable 落位", () => {
 		await act(() => vi.advanceTimersByTimeAsync(160));
 		expect(onReorder).not.toHaveBeenCalled();
 	});
+
+	it("同组排序保留穿插的其他组位置，不能把另一组作为落点", async () => {
+		vi.useFakeTimers();
+		const onReorder = vi.fn();
+		const { result } = renderHook(() =>
+			useSortableList({
+				items: ITEMS,
+				getId,
+				getLabel,
+				getGroup: (item) => (item.id === "b" ? "pinned" : "regular"),
+				onReorder,
+			}),
+		);
+		act(() => result.current.end({ ...drop, over: { ...drop.over, id: "b" } }));
+		await act(() => vi.advanceTimersByTimeAsync(160));
+		expect(onReorder).not.toHaveBeenCalled();
+		act(() => result.current.end(drop));
+		await act(() => vi.advanceTimersByTimeAsync(160));
+		expect(onReorder.mock.calls[0]?.[0]).toEqual([ITEMS[2], ITEMS[1], ITEMS[0]]);
+	});
+
+	it("启用快照约束时取消拖动期间已被替换的数据", async () => {
+		vi.useFakeTimers();
+		const onReorder = vi.fn();
+		const { result, rerender } = renderHook(
+			({ items }) =>
+				useSortableList({ items, getId, getLabel, onReorder, cancelOnItemsChange: true }),
+			{ initialProps: { items: ITEMS } },
+		);
+		act(() => result.current.start(drop));
+		rerender({ items: [ITEMS[2], ITEMS[1], ITEMS[0]] });
+		act(() => result.current.end(drop));
+		await act(() => vi.advanceTimersByTimeAsync(160));
+		expect(onReorder).not.toHaveBeenCalled();
+		expect(result.current.busy).toBe(false);
+	});
 });
 
 function Fixture({ disabled = false }: { disabled?: boolean }) {

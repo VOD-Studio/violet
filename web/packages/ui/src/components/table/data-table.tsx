@@ -27,6 +27,18 @@ import {
 } from "./data-table-types";
 import { computeStickyOffsets } from "./sticky-utils";
 
+type DataTableStyle = CSSProperties & {
+	"--v-table-lead"?: string;
+	"--v-scroll-area-padding"?: string;
+};
+
+const SCROLLER_STYLE: DataTableStyle = {
+	height: "auto",
+	flex: "1 1 0%",
+	minHeight: 0,
+	"--v-scroll-area-padding": "0px",
+};
+
 const DEFAULT_COLUMN_MIN_WIDTH = 80;
 /** 未声明宽度的列在累加最小总宽时的基准 */
 const FALLBACK_COLUMN_WIDTH = 120;
@@ -362,6 +374,7 @@ export function DataTable<T>({
 	const bulkOpen = selected.size > 0;
 	const showBulkBar = selectable && bulkActions != null;
 	const offPage = selected.size - selectedOnPage;
+	const tableStyle: DataTableStyle = { "--v-table-lead": `${leadWidth}px` };
 
 	const table = (
 		<div
@@ -369,7 +382,7 @@ export function DataTable<T>({
 			data-slot="data-table"
 			data-density={density}
 			className={cn("v-data-table", className)}
-			style={{ "--v-table-lead": `${leadWidth}px` } as CSSProperties}
+			style={tableStyle}
 		>
 			{toolbar ? <div className="v-data-table__toolbar">{toolbar}</div> : null}
 
@@ -382,14 +395,7 @@ export function DataTable<T>({
 					tabIndex={0}
 					aria-label={caption ?? "数据表格"}
 					// 视口自己占据弹性剩余高度而不是写 100% 高度：根容器高度 auto、只靠 max-block-size 限高时，百分比高度没有确定值
-					style={
-						{
-							height: "auto",
-							flex: "1 1 0%",
-							minHeight: 0,
-							"--v-scroll-area-padding": "0px",
-						} as CSSProperties
-					}
+					style={SCROLLER_STYLE}
 				>
 					<table
 						ref={tableRef}

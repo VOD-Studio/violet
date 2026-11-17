@@ -10,6 +10,7 @@
 @import "../pagination/pagination.css";
 @import "../select/select.css";
 @import "../skeleton/skeleton.css";
+@import "../sortable/sortable.css";
 @import "../tooltip/tooltip.css";
 
 @layer components {
@@ -58,7 +59,7 @@
 	}
 
 	.v-table__row[data-reorderable] {
-		transition: var(--v-table-drag-transition, none);
+		transition: var(--v-sortable-transition, none);
 	}
 
 	.v-table__row[data-dragging] {

@@ -1,6 +1,14 @@
 import type { DragEndEvent, DragOverEvent, DragStartEvent, UniqueIdentifier } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
-import { type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+	type RefObject,
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { getDropSlot } from "./restrict-to-list";
 import type { SortableProps } from "./sortable";
 
@@ -25,13 +33,14 @@ interface PendingOrder {
 	saved: boolean;
 }
 
-interface SortableListState {
+export interface SortableListState {
 	activeId: UniqueIdentifier | null;
 	settling: SettlingItem | null;
 	marker: DropMarker | null;
 	busy: boolean;
 	message: string;
-	root: RefObject<HTMLOListElement | null>;
+	root: RefObject<HTMLElement | null>;
+	setRoot: (node: HTMLElement | null) => void;
 	start: (event: DragStartEvent) => void;
 	over: (event: DragOverEvent) => void;
 	cancel: () => void;
@@ -39,7 +48,12 @@ interface SortableListState {
 	move: (index: number, direction: number) => Promise<void>;
 }
 
-type SortableListOptions<T> = Pick<SortableProps<T>, "items" | "getId" | "getLabel" | "onReorder">;
+export interface SortableListOptions<T>
+	extends Pick<SortableProps<T>, "items" | "getId" | "getLabel" | "onReorder"> {
+	getGroup?: (item: T) => string;
+	root?: RefObject<HTMLElement | null>;
+	cancelOnItemsChange?: boolean;
+}
 
 function hasAppliedOrder(ids: readonly UniqueIdentifier[], expected: readonly UniqueIdentifier[]) {
 	const existing = new Set(ids);
@@ -55,13 +69,24 @@ export function useSortableList<T>({
 	getId,
 	getLabel,
 	onReorder,
+	getGroup,
+	root: suppliedRoot,
+	cancelOnItemsChange = false,
 }: SortableListOptions<T>): SortableListState {
 	const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
 	const [settling, setSettling] = useState<SettlingItem | null>(null);
 	const [marker, setMarker] = useState<DropMarker | null>(null);
 	const [pending, setPending] = useState<PendingOrder | null>(null);
 	const [message, setMessage] = useState("");
-	const root = useRef<HTMLOListElement>(null);
+	const localRoot = useRef<HTMLElement>(null);
+	const root = suppliedRoot ?? localRoot;
+	const setRoot = useCallback(
+		(node: HTMLElement | null) => {
+			root.current = node;
+		},
+		[root],
+	);
+	const snapshot = useRef<readonly T[] | null>(null);
 	const activator = useRef<HTMLElement | null>(null);
 	const sourceTop = useRef<number | null>(null);
 	const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -113,16 +138,18 @@ export function useSortableList<T>({
 		if (submission.current) {
 			return;
 		}
+		snapshot.current = items;
 		const focused = document.activeElement;
 		activator.current =
 			focused instanceof HTMLElement && root.current?.contains(focused) ? focused : null;
 		const initial = active.rect.current.initial;
 		const target = activatorEvent.target;
-		const slot = target instanceof Element ? target.closest(".v-sortable__slot") : null;
+		const slot = target instanceof Element ? target.closest("[data-sortable-item]") : null;
 		sourceTop.current = null;
 		// 拿起事件可能早于矩形初始化；布局坐标不会随祖先滚动而改变。
 		if (slot instanceof HTMLElement && root.current?.contains(slot)) {
-			sourceTop.current = slot.offsetTop;
+			sourceTop.current =
+				slot.getBoundingClientRect().top - root.current.getBoundingClientRect().top;
 		} else if (initial) {
 			sourceTop.current = initial.top - (root.current?.getBoundingClientRect().top ?? 0);
 		}
@@ -179,6 +206,10 @@ export function useSortableList<T>({
 		if (submission.current) {
 			return;
 		}
+		if (cancelOnItemsChange && snapshot.current !== null && snapshot.current !== items) {
+			cancel();
+			return;
+		}
 		setActiveId(null);
 		const slot = getDropSlot(event, root.current, ids);
 		const initial = event.active.rect.current.initial;
@@ -191,6 +222,25 @@ export function useSortableList<T>({
 			setMessage(`已放在第 ${slot.to + 1} 位`);
 			return;
 		}
+		let nextIds: UniqueIdentifier[];
+		if (getGroup) {
+			const group = getGroup(items[slot.from]);
+			if (getGroup(items[slot.to]) !== group) {
+				cancel();
+				return;
+			}
+			const members = items.filter((item) => getGroup(item) === group).map(getId);
+			const reordered = arrayMove(
+				members,
+				members.indexOf(event.active.id),
+				members.indexOf(ids[slot.to]),
+			);
+			const memberSet = new Set(members);
+			let index = 0;
+			nextIds = ids.map((id) => (memberSet.has(id) ? reordered[index++] : id));
+		} else {
+			nextIds = arrayMove(ids, slot.from, slot.to);
+		}
 
 		const origin =
 			sourceTop.current ?? initial.top - (root.current?.getBoundingClientRect().top ?? 0);
@@ -202,7 +252,7 @@ export function useSortableList<T>({
 			distance: slot.top - origin,
 		});
 		const transaction = {
-			ids: arrayMove(ids, slot.from, slot.to),
+			ids: nextIds,
 			active: event.active.id,
 			saved: false,
 		};
@@ -255,6 +305,7 @@ export function useSortableList<T>({
 		busy: pending !== null,
 		message,
 		root,
+		setRoot,
 		start,
 		over,
 		cancel,

@@ -1,19 +1,13 @@
 "use client";
 
-import { useSortable } from "@dnd-kit/sortable";
 import { ChevronRight, GripVertical } from "lucide-react";
 import { useComposedRefs } from "radix-ui/internal";
-import {
-	type CSSProperties,
-	type ReactNode,
-	type RefObject,
-	useEffect,
-	useRef,
-	useState,
-} from "react";
+import { type ReactNode, type RefObject, useEffect, useRef, useState } from "react";
 import { Button } from "../button";
 import { Checkbox } from "../checkbox";
 import { Skeleton } from "../skeleton";
+import { useSortableScope } from "../sortable/sortable-scope";
+import { type SortableItemState, useSortableItem } from "../sortable/use-sortable-item";
 import { TooltipProvider } from "../tooltip";
 import { CellWithTooltip } from "./cell-with-tooltip";
 import type { DataTableColumn, DataTableProps } from "./data-table-types";
@@ -143,7 +137,7 @@ interface DataRowProps<T> {
 	onRowClick?: (row: T) => void;
 	rowClassName?: (row: T) => string;
 	container?: HTMLElement | null;
-	drag?: ReturnType<typeof useSortable>;
+	drag?: SortableItemState;
 	dragLabel?: string;
 	dragDisabled?: boolean;
 }
@@ -167,7 +161,6 @@ function DataRow<T>({
 	container,
 	drag,
 	dragLabel,
-	dragDisabled,
 }: DataRowProps<T>) {
 	const rowRef = useRef<HTMLTableRowElement>(null);
 	const composedRef = useComposedRefs(rowRef, drag?.setNodeRef);
@@ -180,17 +173,9 @@ function DataRow<T>({
 			<TableRow
 				ref={composedRef}
 				data-reorderable={drag ? "" : undefined}
-				data-dragging={drag?.isDragging ? "" : undefined}
-				style={
-					drag
-						? ({
-								transform: drag.transform
-									? `translateY(${drag.transform.y}px)`
-									: undefined,
-								"--v-table-drag-transition": drag.transition,
-							} as CSSProperties)
-						: undefined
-				}
+				data-sortable-item={drag ? "" : undefined}
+				data-dragging={drag?.lifted ? "" : undefined}
+				style={drag?.style}
 				data-state={state}
 				data-clickable={onRowClick ? "" : undefined}
 				data-expanded={showPanel ? "" : undefined}
@@ -216,7 +201,7 @@ function DataRow<T>({
 									className="v-table__icon-button v-table__drag-handle"
 									{...drag?.attributes}
 									{...drag?.listeners}
-									aria-disabled={dragDisabled || undefined}
+									aria-disabled={drag?.locked || undefined}
 									aria-label={`移动 ${dragLabel}`}
 									title="拖动排序；空格拿起，上下方向键移动"
 								>
@@ -344,11 +329,7 @@ interface ReorderableDataRowProps<T> extends DataRowProps<T> {
 }
 
 function ReorderableDataRow<T>({ config, ...props }: ReorderableDataRowProps<T>) {
-	const drag = useSortable({
-		id: props.rowKey,
-		disabled: props.dragDisabled,
-		transition: { duration: 200, easing: "cubic-bezier(.32,.72,0,1)" },
-	});
+	const drag = useSortableItem(props.rowKey, props.dragDisabled);
 	return <DataRow {...props} drag={drag} dragLabel={config.getLabel(props.row)} />;
 }
 
@@ -424,6 +405,7 @@ export function DataTableBody<T>({
 	container,
 	rowReorder,
 }: DataTableBodyProps<T>) {
+	const sortable = useSortableScope();
 	if (error) {
 		return (
 			<StateRow
@@ -515,7 +497,7 @@ export function DataTableBody<T>({
 
 	return (
 		<TooltipProvider>
-			<TableBody>
+			<TableBody ref={sortable?.setRoot} aria-busy={sortable?.busy || undefined}>
 				{data.map((row, index) => {
 					const rowKey = keyExtractor(row);
 					const props: DataRowProps<T> = {

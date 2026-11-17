@@ -80,13 +80,13 @@ export interface DataTableProps<T> {
 	/** 排序变更回调；点一下升序，再点降序 */
 	onSortChange?: (sort: DataTableSort) => void;
 
-	/** 直接移动当前页的真实行；保存、乐观更新与失败回退由调用方持有。 */
+	/** 直接移动当前页的真实行；保存成功后须更新 data，失败须拒绝 Promise。 */
 	rowReorder?: {
 		getLabel: (row: T) => string;
 		/** 仅同组行可交换位置；省略时整页为一组。 */
 		getGroup?: (row: T) => string;
 		disabled?: boolean;
-		onReorder: (rows: T[], previous: T[]) => void;
+		onReorder: (rows: T[], previous: T[]) => unknown;
 	};
 
 	/** 加载中：表体换成 4 行骨架，表头保留 */

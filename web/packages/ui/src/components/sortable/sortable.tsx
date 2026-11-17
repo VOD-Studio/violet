@@ -1,23 +1,8 @@
-import {
-	closestCenter,
-	DndContext,
-	KeyboardSensor,
-	PointerSensor,
-	type UniqueIdentifier,
-	useSensor,
-	useSensors,
-} from "@dnd-kit/core";
-import {
-	SortableContext,
-	sortableKeyboardCoordinates,
-	verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
 import { cn } from "cn";
 import { useComposedRefs } from "radix-ui/internal";
-import { type ComponentProps, type ReactNode, useId, useMemo } from "react";
-import { restrictToList } from "./restrict-to-list";
+import { type ComponentProps, type ReactNode, useRef } from "react";
 import { SortableRow } from "./sortable-row";
-import { useSortableList } from "./use-sortable-list";
+import { SortableScope } from "./sortable-scope";
 
 /**
  * 按稳定标识排序；调用方持有数据与持久化，表单内容更新不会被落位时的快照覆盖。
@@ -63,46 +48,20 @@ export function Sortable<T>({
 	ref,
 	...props
 }: SortableProps<T>) {
-	const drag = useSortableList({ items, getId, getLabel, onReorder });
-	const composedRef = useComposedRefs(ref, drag.root);
-	const ids = useMemo(() => items.map(getId), [items, getId]);
-	const modifiers = useMemo(() => [restrictToList(drag.root)], [drag.root]);
-	const sensors = useSensors(
-		useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-		useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-	);
-	const id = useId();
-	const position = (key: UniqueIdentifier) => items.findIndex((item) => getId(item) === key);
-	const label = (key: UniqueIdentifier) => {
-		const item = items.find((item) => getId(item) === key);
-		return item === undefined ? "项目" : getLabel(item);
-	};
+	const root = useRef<HTMLOListElement>(null);
+	const composedRef = useComposedRefs(ref, root);
 	return (
-		<DndContext
-			id={id}
-			sensors={sensors}
-			collisionDetection={closestCenter}
-			modifiers={modifiers}
-			onDragStart={drag.start}
-			onDragOver={drag.over}
-			onDragCancel={drag.cancel}
-			onDragEnd={drag.end}
-			accessibility={{
-				screenReaderInstructions: {
-					draggable:
-						"在把手上按空格或 Enter 拿起，用上下方向键移动，再按空格或 Enter 放下，Esc 取消。",
-				},
-				announcements: {
-					onDragStart: ({ active }) =>
-						`已拿起 ${label(active.id)}，在第 ${position(active.id) + 1} 位`,
-					onDragOver: ({ over }) =>
-						over ? `移到第 ${position(over.id) + 1} 位` : undefined,
-					onDragEnd: () => undefined,
-					onDragCancel: () => "已取消，回到原位",
-				},
-			}}
+		<SortableScope
+			items={items}
+			getId={getId}
+			getLabel={getLabel}
+			onReorder={onReorder}
+			disabled={disabled}
+			root={root}
+			gap={4}
+			inset={4}
 		>
-			<SortableContext items={ids} strategy={verticalListSortingStrategy}>
+			{(drag) => (
 				<ol
 					{...props}
 					ref={composedRef}
@@ -124,9 +83,6 @@ export function Sortable<T>({
 							index={index}
 							total={items.length}
 							disabled={disabled}
-							busy={drag.busy}
-							settling={drag.settling}
-							active={drag.activeId === getId(item)}
 							menuContainer={menuContainer}
 							onMove={(direction) => void drag.move(index, direction)}
 						>
@@ -134,15 +90,7 @@ export function Sortable<T>({
 						</SortableRow>
 					))}
 				</ol>
-			</SortableContext>
-			<span
-				className="v-sortable__announcement"
-				role="status"
-				aria-live="polite"
-				aria-atomic="true"
-			>
-				{drag.message}
-			</span>
-		</DndContext>
+			)}
+		</SortableScope>
 	);
 }
