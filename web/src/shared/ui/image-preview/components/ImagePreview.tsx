@@ -362,7 +362,9 @@ function ImagePreviewDialog({
 								style={{ opacity: chromeOpacity }}
 							>
 								<ImagePreviewThumbnails
-									images={thumbnails ?? images}
+									images={images.map(
+										(src, imageIndex) => thumbnails?.[imageIndex] || src,
+									)}
 									currentIndex={index}
 									onSelect={handleSelect}
 								/>
