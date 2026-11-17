@@ -6,11 +6,11 @@ import { type PointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useChatAppearance } from "../hooks/useChatAppearance";
 import { imageBubbleContent } from "../lib/conversation";
 import type { OutgoingMessage } from "../model/chat-outbox";
-import type { ChatMedia, ChatMessage, ChatUser, ConversationKind } from "../model/types";
+import type { ChatMessage, ChatUser, ConversationKind } from "../model/types";
 import { AppearanceBadgeStrip } from "./appearance/AppearanceBadgeStrip";
 import { BotReplyCard } from "./BotReplyCard";
 import { BubbleShell, BubbleTimestamp } from "./bubble-shell";
-import { ChatMessageContent } from "./ChatMessageContent";
+import { ChatMessageContent, type ChatMessageContentProps } from "./ChatMessageContent";
 import { MessageActions } from "./MessageActions";
 import { MessageDeliveryStatus } from "./MessageDeliveryStatus";
 import { MessageEditComposer } from "./MessageEditComposer";
@@ -38,7 +38,7 @@ export interface MessageBubbleProps {
 	lastInGroup?: boolean;
 	messageRef: (node: HTMLElement | null) => void;
 	onDelete?: () => void;
-	onImage: (media: ChatMedia) => void;
+	onImage: NonNullable<ChatMessageContentProps["onImage"]>;
 	/** 点击发送者或已读成员名字时追加提及。 */
 	onMention?: (user: ChatUser) => void;
 	onReply?: () => void;
@@ -46,7 +46,12 @@ export interface MessageBubbleProps {
 	animateIn: boolean;
 }
 
-/** 同组消息共用头像；回应与元信息在气泡外排布，长按打开消息菜单。 */
+/**
+ * 同组消息共用头像；回应与元信息在气泡外排布，长按打开消息菜单。
+ *
+ * @remarks 代码块与 data-chat-rich-content 占用气泡可用宽度，普通文本保持内容宽度；
+ * inline-size 容器不贡献内容固有宽度，必须同时约束消息列与正文。
+ */
 export function MessageBubble({
 	animateIn,
 	message,
@@ -115,11 +120,11 @@ export function MessageBubble({
 	}
 
 	const sender =
-		showSender && !mine && showSenderName && !isBotReply ? (
-			<div className="mb-0.5 flex items-center gap-1.5 text-[13px]">
+		showSender && !mine && showSenderName ? (
+			<div data-chat-sender className="mb-1 flex max-w-full items-center gap-1.5 text-[13px]">
 				<button
 					aria-label={`提及 ${message.sender.display_name}`}
-					className="rounded text-left font-semibold text-selected-foreground hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+					className="min-w-0 truncate rounded text-left font-semibold text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
 					disabled={!onMention}
 					onClick={() => onMention?.(message.sender)}
 					type="button"
@@ -226,15 +231,19 @@ export function MessageBubble({
 				{!mine && <div className="size-9 shrink-0" />}
 				<div
 					className={cn(
-						"relative flex min-w-0 flex-col",
+						"relative flex min-w-0 flex-col has-[.v-code-block,[data-chat-rich-content]]:w-full",
 						mine
 							? "max-w-[85%] items-end md:max-w-[75%]"
 							: "max-w-[calc(100%-2.75rem)] items-start md:max-w-[80%]",
 					)}
 				>
+					{sender}
 					<div
 						data-chat-message-body
-						className={cn("relative max-w-full", isBotReply && "w-full min-w-0")}
+						className={cn(
+							"relative min-w-0 max-w-full has-[.v-code-block,[data-chat-rich-content]]:w-full",
+							isBotReply && "w-full",
+						)}
 					>
 						{sending && sending.status !== "failed" && (
 							<div className="absolute right-full top-1/2 mr-2 -translate-y-1/2">
@@ -260,7 +269,7 @@ export function MessageBubble({
 								message={message}
 								viewerID={currentUserID}
 								emote={mergedEmote}
-								onMention={onMention}
+								onImage={onImage}
 								replyPreview={reply}
 							/>
 						) : (
@@ -269,7 +278,6 @@ export function MessageBubble({
 								themeId={appearance.bubble_theme_id}
 								firstInGroup={showSender}
 								lastInGroup={lastInGroup}
-								header={sender}
 							>
 								{reply}
 								{content}

@@ -1,10 +1,10 @@
-import { Accordion, AccordionItem, Button, iconProps, Spinner, Tag } from "@violet/ui";
+import { Accordion, AccordionItem, Button, iconProps, Spinner } from "@violet/ui";
 import { Copy } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 import { toast } from "sonner";
-import type { ChatMessage, ChatUser } from "../model/types";
+import type { ChatMessage } from "../model/types";
 import { ToolCallBlock } from "./BotToolCalls";
-import { ChatMessageContent } from "./ChatMessageContent";
+import { ChatMessageContent, type ChatMessageContentProps } from "./ChatMessageContent";
 
 const STALLED_AFTER_MS = 120_000;
 
@@ -13,7 +13,7 @@ export interface BotReplyCardProps {
 	message: ChatMessage;
 	viewerID: string;
 	emote?: ChatMessage["custom_emote"];
-	onMention?: (user: ChatUser) => void;
+	onImage?: ChatMessageContentProps["onImage"];
 	replyPreview?: ReactNode;
 }
 
@@ -22,7 +22,7 @@ export function BotReplyCard({
 	message,
 	viewerID,
 	emote,
-	onMention,
+	onImage,
 	replyPreview,
 }: BotReplyCardProps) {
 	const reply = message.bot_reply;
@@ -78,29 +78,16 @@ export function BotReplyCard({
 			data-chat-bubble
 			className="w-full min-w-0 rounded-2xl rounded-bl bg-card px-3 py-2 text-left text-foreground shadow-soft"
 		>
-			<div className="flex flex-wrap items-center gap-2 text-xs">
-				<button
-					className="font-semibold text-selected-foreground hover:underline disabled:cursor-default disabled:no-underline"
-					disabled={!onMention}
-					onClick={() => onMention?.(message.sender)}
-					type="button"
+			{status && (
+				<div
+					className="flex items-center gap-1 text-xs text-muted-foreground"
+					role="status"
+					aria-live="polite"
 				>
-					{message.sender.display_name}
-				</button>
-				<Tag size="sm" tone="accent">
-					角色
-				</Tag>
-				{status && (
-					<span
-						className="ml-auto flex items-center gap-1 text-muted-foreground"
-						role="status"
-						aria-live="polite"
-					>
-						{active && !stalled && <Spinner size={16} aria-hidden="true" />}
-						{status}
-					</span>
-				)}
-			</div>
+					{active && !stalled && <Spinner size={16} aria-hidden="true" />}
+					{status}
+				</div>
+			)}
 			{replyPreview && <div className="mt-3">{replyPreview}</div>}
 			{(reply?.thinking || toolCalls.length > 0) && (
 				<Accordion
@@ -150,6 +137,7 @@ export function BotReplyCard({
 						content={message.content}
 						emote={emote}
 						mentions={message.mentions}
+						onImage={onImage}
 						variant="bot"
 						viewerID={viewerID}
 					/>
