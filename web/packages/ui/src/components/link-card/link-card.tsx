@@ -2,6 +2,7 @@
 
 import { cn } from "cn";
 import { type ComponentProps, useState } from "react";
+import { Skeleton } from "../skeleton";
 
 /** 原生链接属性和 ref 属于整卡；内容由预览字段生成，不接管导航或请求。 */
 export interface LinkCardProps
@@ -13,6 +14,8 @@ export interface LinkCardProps
 	imageSrc?: string;
 	/** 未提供时图片为装饰，不重复朗读标题。 */
 	imageAlt?: string;
+	/** 元数据尚未就绪时显示骨架；原生链接与来源仍可用，不自行发起请求。 */
+	loading?: boolean;
 }
 
 function comparableText(value: string) {
@@ -57,6 +60,7 @@ export function LinkCard({
 	siteName,
 	imageSrc,
 	imageAlt = "",
+	loading = false,
 	className,
 	target = "_blank",
 	rel = "noopener noreferrer nofollow",
@@ -77,19 +81,30 @@ export function LinkCard({
 			target={target}
 			rel={rel}
 			data-slot="link-card"
+			aria-busy={loading || undefined}
+			aria-label={loading ? `${title}，正在读取链接预览` : props["aria-label"]}
 			className={cn("v-link-card", className)}
 		>
-			{imageSrc && (
+			{!loading && imageSrc && (
 				<LinkCardThumbnail
 					key={JSON.stringify([imageSrc, href, title, description])}
 					src={imageSrc}
 					alt={imageAlt}
 				/>
 			)}
-			<span className="v-link-card__body">
-				<span className="v-link-card__title">{title}</span>
-				{showDescription && (
-					<span className="v-link-card__description">{visibleDescription}</span>
+			<div className="v-link-card__body">
+				{loading ? (
+					<div className="v-link-card__skeleton" aria-hidden="true">
+						<Skeleton className="v-link-card__skeleton-title" />
+						<Skeleton className="v-link-card__skeleton-description" />
+					</div>
+				) : (
+					<>
+						<span className="v-link-card__title">{title}</span>
+						{showDescription && (
+							<span className="v-link-card__description">{visibleDescription}</span>
+						)}
+					</>
 				)}
 				{(showSite || host) && (
 					<span className="v-link-card__meta">
@@ -98,7 +113,7 @@ export function LinkCard({
 						{host && <span className="v-link-card__host">{host}</span>}
 					</span>
 				)}
-			</span>
+			</div>
 		</a>
 	);
 }

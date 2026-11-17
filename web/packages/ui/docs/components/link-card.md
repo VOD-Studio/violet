@@ -1,6 +1,6 @@
 # LinkCard 链接预览
 
-紧凑的原生链接：左侧方形缩略图，右侧标题、说明和轻量来源。组件只接收展示字段，不认识推文 DTO、站点 API 或路由；抓取、缓存、图片代理和加载状态由消费方负责。
+紧凑的原生链接：左侧方形缩略图，右侧标题、说明和轻量来源。组件只接收展示字段，不认识推文 DTO、站点 API 或路由；抓取、缓存、图片代理和加载时机由消费方负责。
 
 ```tsx
 import { LinkCard } from "@violet/ui";
@@ -25,6 +25,7 @@ import { LinkCard } from "@violet/ui";
 | `siteName?: string` | 来源名称；与链接域名相同（忽略 www 前缀及大小写）时只显示域名。 |
 | `imageSrc?: string` | 可选缩略图；图片失败后连同图位一起移除。 |
 | `imageAlt?: string` | 默认空字符串，作为装饰图；需要额外图片信息时显式提供。 |
+| `loading?: boolean` | 默认 `false`；未取得元数据时以两行 Skeleton 替代标题与描述，保留来源、原生导航与焦点，根链接标记 `aria-busy`。 |
 | `ref / className / style` | 全部属于根 `HTMLAnchorElement`，ref 支持对象、回调及 React 19 清理函数。 |
 | `target / rel / onClick / onAuxClick` | 保留原生属性和取消语义；默认新标签，rel 为 `noopener noreferrer nofollow`。可显式覆盖。 |
 
@@ -52,4 +53,4 @@ Tailwind v4 宿主在 Tailwind 后导入 `@violet/ui/styles.css`。React 与纯 
 
 组件 CSS 自行约束长文字、窄容器、明暗主题与两行截断。卡片自身不裁剪焦点环；截断只发生在不可聚焦的文字或图片部件。圆角不超过 16px，不使用阴影、缩放或位移动效，减弱动态时取消颜色过渡。宿主不要把链接放进没有焦点留白的裁剪层。
 
-独立 tarball consumer 的 `?preview=link-card` 提供 logo、封面、坏图、无图、内容更新、聚焦、明暗和窄屏场景；实际消费页另行验收图片降级与业务数据更新。
+独立 tarball consumer 的 `?preview=link-card` 提供骨架加载、logo、封面、坏图、无图、内容更新、聚焦、明暗和窄屏场景；实际消费页另行验收图片降级与业务数据更新。骨架仅表达读取中，不触发请求或重试；失败时由消费方用相同卡片提供原链接与原因。
