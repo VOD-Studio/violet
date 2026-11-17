@@ -13,6 +13,9 @@ node_modules/
 dist/
 *.local
 .pnpm-store/
+web/.ci-test-plan.json
+web/.ci-test-history.json
+web/.ci-test-reports/
 
 # IDE
 .vscode/*

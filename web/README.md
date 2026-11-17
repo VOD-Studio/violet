@@ -362,6 +362,20 @@ pnpm test
 
 Vitest 使用 jsdom，配置在 [vitest.config.ts](vitest.config.ts)。站点、workspace 包和路由脚本的测试分别位于 `src/`、`packages/*/src/`、`scripts/`，测试文件与实现就近放置。
 
+PR 使用 `scripts/ci-tests.mjs` 对照 merge base 生成影响计划：Vitest 按模块依赖选测，浏览器契约使用 `e2e/ci-test-map.json` 的业务映射；共享配置、删除文件或未知影响范围保守全量。主干始终全量。独立包保持各自验收边界，单测最多 3 片、浏览器最多 2 片，按近期成功运行的文件耗时中位数均衡分配。
+
+在 `web/` 下生成并运行计划：
+
+```bash
+pnpm generate-routes
+node scripts/ci-tests.mjs plan --base origin/release/2.0 \
+  --history .ci-test-history.json --output .ci-test-plan.json
+node scripts/ci-tests.mjs run --plan .ci-test-plan.json \
+  --kind unit --shard 1 --report-dir .ci-test-reports
+```
+
+完整验证用 `--full` 替换 `--base`；浏览器分片改为 `--kind contract`，先执行 `pnpm build`。按计划中的非空分片逐一运行，每轮使用新的报告目录，避免旧成功结果遮住失败；SHA 或测试清单变化后须重新生成计划。`history --reports DIR --output FILE` 合并真实成功报告，失败与重试样本不写入耗时历史。PR 只读主干缓存，不发布其测量结果。
+
 ### 浏览器契约
 
 ```bash
