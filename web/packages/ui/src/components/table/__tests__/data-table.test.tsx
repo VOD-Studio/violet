@@ -79,7 +79,7 @@ describe("DataTable 列宽", () => {
 			JSON.stringify({ __expand: 37, __select: 41, actions: 140, name: 150 }),
 		);
 
-		vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (
+		vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function(
 			this: Element,
 		) {
 			return { width: this.hasAttribute("data-fit-content") ? 60 : 0 } as DOMRect;
@@ -215,7 +215,7 @@ describe("DataTable 固定列", () => {
 	});
 
 	it("右固定列按内容宽度撑开，宽度为内容加单元格左右内边距", () => {
-		vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (
+		vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function(
 			this: Element,
 		) {
 			return { width: this.hasAttribute("data-fit-content") ? 60 : 0 } as DOMRect;
@@ -455,7 +455,7 @@ describe("DataTable 批量操作栏", () => {
 		const base = {
 			selectable: true,
 			bulkActions: <button type="button">发布</button>,
-			pagination: { page: 1, pageSize: 3, total: 25, onChange: () => {} },
+			pagination: { page: 1, pageSize: 3, total: 25, onChange: () => { } },
 		} satisfies Partial<DataTableProps<Row>>;
 
 		it("整页选满后提示一键选中全部，点击交给调用方", () => {
@@ -1110,5 +1110,65 @@ describe("DataTable 浮层容器", () => {
 
 		expect(host.querySelector('[role="listbox"]')).toBeNull();
 		expect(document.body.querySelector('[role="listbox"]')).not.toBeNull();
+	});
+});
+
+describe("DataTable 行拖拽", () => {
+	it("把手与原有列、选择共存，点击把手不触发行点击或选择", () => {
+		const onRowClick = vi.fn();
+		const onSelectionChange = vi.fn();
+		const onReorder = vi.fn();
+		renderTable({
+			selectable: true,
+			onRowClick,
+			onSelectionChange,
+			rowReorder: { getLabel: (row) => row.name, onReorder },
+		});
+		expect(screen.getAllByRole("row")).toHaveLength(4);
+		expect(header("名称")).toBeTruthy();
+		expect(header("邮箱")).toBeTruthy();
+		expect(header("浏览")).toBeTruthy();
+		expect(header("移动行")).toBeTruthy();
+		const handle = screen.getByRole("button", { name: "移动 Alice" });
+		fireEvent.click(handle);
+		expect(onRowClick).not.toHaveBeenCalled();
+		expect(onSelectionChange).not.toHaveBeenCalled();
+		expect(onReorder).not.toHaveBeenCalled();
+		handle.focus();
+		expect(document.activeElement).toBe(handle);
+		expect(handle.getAttribute("aria-describedby")).toBeTruthy();
+	});
+
+	it("单行组与保存期间不可拖动，仍保留原生表格和把手焦点", () => {
+		const onReorder = vi.fn();
+		const config = {
+			getLabel: (row: Row) => row.name,
+			getGroup: (row: Row) => (row.id === "1" ? "pinned" : "normal"),
+			onReorder,
+		};
+		const { rerender } = renderTable({ rowReorder: config });
+		expect(
+			screen.getByRole("button", { name: "移动 Alice" }).getAttribute("aria-disabled"),
+		).toBe("true");
+		expect(
+			screen.getByRole("button", { name: "移动 Bob" }).getAttribute("aria-disabled"),
+		).not.toBe("true");
+		rerender(
+			<DataTable
+				columns={COLUMNS}
+				data={ROWS}
+				keyExtractor={(row) => row.id}
+				rowReorder={{ ...config, disabled: true }}
+			/>,
+		);
+		const handle = screen.getByRole("button", { name: "移动 Bob" });
+		handle.focus();
+		fireEvent.keyDown(handle, { key: " ", code: "Space" });
+		fireEvent.keyDown(document, { key: "ArrowDown", code: "ArrowDown" });
+		fireEvent.keyDown(document, { key: " ", code: "Space" });
+		expect(onReorder).not.toHaveBeenCalled();
+		expect(document.activeElement).toBe(handle);
+		expect(screen.getByRole("table").getAttribute("aria-busy")).toBe("true");
+		expect(screen.getByText("bob@example.com")).toBeTruthy();
 	});
 });

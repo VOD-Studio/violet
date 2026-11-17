@@ -156,6 +156,12 @@ const tableProps: DataTableProps<Article> = {
 	pagination: { page: 1, pageSize: 10, total: 25, onChange: (page, pageSize) => { void [page, pageSize]; } },
 	sort: { key: "title", order: "asc" } satisfies DataTableSort,
 	onSortChange: (sort) => { const order: "asc" | "desc" = sort.order; void order; },
+	rowReorder: {
+		getLabel: (row) => row.title,
+		getGroup: (row) => String(row.views),
+		disabled: false,
+		onReorder: (next, previous) => { const rows: Article[] = next; void [rows, previous]; },
+	},
 	selectable: true,
 	onSelectionChange: (ids) => { const selected: Set<string> = ids; void selected; },
 	bulkActions: <button type="button">发布</button>,

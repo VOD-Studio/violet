@@ -57,6 +57,40 @@
 		cursor: pointer;
 	}
 
+	.v-table__row[data-reorderable] {
+		transition: var(--v-table-drag-transition, none);
+	}
+
+	.v-table__row[data-dragging] {
+		position: relative;
+		z-index: 3;
+	}
+
+	.v-table__drag-handle {
+		color: var(--muted-foreground);
+		cursor: grab;
+		touch-action: none;
+	}
+
+	.v-table__row[data-dragging] .v-table__drag-handle {
+		cursor: grabbing;
+	}
+
+	.v-table__drag-handle[aria-disabled="true"] {
+		cursor: default;
+		opacity: 0.35;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v-table__body > .v-table__row[data-reorderable] {
+			transition: none;
+		}
+	}
+
+	[data-motion="reduce"] .v-table__body > .v-table__row[data-reorderable] {
+		transition: none;
+	}
+
 	.v-table__head,
 	.v-table__cell {
 		box-sizing: border-box;
@@ -317,6 +351,7 @@
 		display: flex;
 		flex-direction: column;
 		inline-size: 100%;
+		min-inline-size: 0;
 		max-block-size: 100%;
 		min-block-size: 0;
 	}

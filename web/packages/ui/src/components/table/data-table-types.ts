@@ -80,6 +80,15 @@ export interface DataTableProps<T> {
 	/** 排序变更回调；点一下升序，再点降序 */
 	onSortChange?: (sort: DataTableSort) => void;
 
+	/** 直接移动当前页的真实行；保存、乐观更新与失败回退由调用方持有。 */
+	rowReorder?: {
+		getLabel: (row: T) => string;
+		/** 仅同组行可交换位置；省略时整页为一组。 */
+		getGroup?: (row: T) => string;
+		disabled?: boolean;
+		onReorder: (rows: T[], previous: T[]) => void;
+	};
+
 	/** 加载中：表体换成 4 行骨架，表头保留 */
 	loading?: boolean;
 	/** 非空时表体换成出错状态，优先级高于 loading；`message` 写在第二行 */
@@ -166,12 +175,17 @@ export interface DataTableProps<T> {
 export const SELECT_COLUMN_KEY = "__select";
 /** 展开列保留 key */
 export const EXPAND_COLUMN_KEY = "__expand";
-/** 无展开列时承载「显示列」按钮的独立首列保留 key */
+/** 无拖拽或展开列时承载「显示列」按钮的独立首列保留 key */
 export const COLUMNS_CONTROL_KEY = "__columns_control";
+/** 行排序把手保留 key */
+export const REORDER_COLUMN_KEY = "__reorder";
 
-/** 勾选、展开、显示列这三种注入的窄列：宽度固定，不参与伸缩与持久化 */
+/** 注入的窄列宽度固定，不参与伸缩与持久化。 */
 export const isGutterKey = (key: string): boolean =>
-	key === SELECT_COLUMN_KEY || key === EXPAND_COLUMN_KEY || key === COLUMNS_CONTROL_KEY;
+	key === SELECT_COLUMN_KEY ||
+	key === EXPAND_COLUMN_KEY ||
+	key === COLUMNS_CONTROL_KEY ||
+	key === REORDER_COLUMN_KEY;
 
 /** 内容适配列：显式 `fitContent`，右固定列默认开启 */
 export const isFitContent = <T>(col: DataTableColumn<T>): boolean =>

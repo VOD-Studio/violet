@@ -5,7 +5,12 @@ import { Checkbox } from "../checkbox";
 import { ColumnMenu } from "./column-menu";
 import { ColumnResizer } from "./column-resizer";
 import type { DataTableColumn, DataTableSort } from "./data-table-types";
-import { COLUMNS_CONTROL_KEY, EXPAND_COLUMN_KEY, SELECT_COLUMN_KEY } from "./data-table-types";
+import {
+	COLUMNS_CONTROL_KEY,
+	EXPAND_COLUMN_KEY,
+	REORDER_COLUMN_KEY,
+	SELECT_COLUMN_KEY,
+} from "./data-table-types";
 import { type StickyOffset, stickyProps } from "./sticky-utils";
 import { TableHead, TableHeader, TableRow } from "./table";
 
@@ -75,6 +80,19 @@ export function DataTableHeader<T>({
 					const offset = offsets.get(col.key);
 					const sticky = stickyProps(offset);
 
+					if (col.key === REORDER_COLUMN_KEY) {
+						return (
+							<TableHead
+								key={col.key}
+								scope="col"
+								aria-colindex={index + 1}
+								data-gutter=""
+								{...sticky}
+							>
+								{control ?? <span className="v-table__sr">移动行</span>}
+							</TableHead>
+						);
+					}
 					if (col.key === SELECT_COLUMN_KEY) {
 						return (
 							<TableHead
@@ -105,7 +123,7 @@ export function DataTableHeader<T>({
 								data-gutter=""
 								{...sticky}
 							>
-								{control ??
+								{(index === 0 ? control : null) ??
 									(col.key === EXPAND_COLUMN_KEY ? (
 										<span className="v-table__sr">展开行</span>
 									) : null)}

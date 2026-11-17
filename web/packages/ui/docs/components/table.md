@@ -55,6 +55,7 @@ const columns: DataTableColumn<Post>[] = [
 | `className` | 落在根容器上 |
 | `toolbar` | 表格上方的槽位（搜索、筛选、密度、导出按钮），由调用方排布；根容器是纵向 flex，工具栏与表格间距 14 |
 | `sort` / `onSortChange` | 受控排序态 `{ key, order }`；点一下升序，再点降序 |
+| `rowReorder` | 原表格内移动行：`getLabel(row)` 命名把手，`getGroup(row)?` 限定可交换集合，`disabled?` 锁定，`onReorder(rows, previous)` 接收同组的新旧顺序 |
 | `pagination` | `{ page, pageSize, total, onChange(page, pageSize), pageSizeOptions?, hidePageSizeSelect? }`；不传没有分页栏，`total` 为 0 也不显示 |
 | `selectable` / `selectedIds` / `onSelectionChange` | 勾选列；`selectedIds` 受控，不传由组件自管；都跨页保持 |
 | `bulkActions` | 批量操作区；传了才有批量栏，见「选择与批量操作」 |
@@ -118,13 +119,34 @@ const columns: DataTableColumn<Post>[] = [
 />
 ```
 
+## 行拖拽排序
+
+`rowReorder` 在最左侧提供 32px 固定把手列，位于展开列、勾选列之前；表头的「显示列」菜单复用该列，不额外占用空白列。仍渲染原来的 `<tr>` 与所有业务单元格，不切换成列表。按住把手移动至少 5px 开始拖动；键盘在把手上按 Space / Enter 拿起，↑ / ↓ 移动，Space / Enter 放下，Esc 取消。拖动不触发行点击或行勾选；同组不足两行时把手不可用。排序过程以中文播报。
+
+`getGroup` 省略时当前页为一组；提供时只允许同组内落位，回调只收到该组的当前页集合。拖动期间若 `data` 被替换，本次落位取消，避免提交旧集合。调用方负责把新顺序合并回原有位置、保存与失败回退；保存期间设置 `disabled`，并锁住分页、筛选和会改变数据集的操作。包不推断业务权限、置顶状态或后端排序规则。
+
+```tsx
+<DataTable
+  data={rows}
+  columns={columns}
+  keyExtractor={(row) => row.id}
+  rowReorder={{
+    getLabel: (row) => row.title,
+    getGroup: (row) => row.category,
+    disabled: saving,
+    onReorder: (next, previous) => saveOrder(next, previous),
+  }}
+/>
+```
+
+
 ## 展开
 
 展开列 32 宽，箭头转 90°（280ms）；面板在行下方高度展开 280ms，与上一行隔 8px、缩进到与标题列对齐，浅底、圆角 10、最宽 760（`--v-table-panel-max` 覆盖），不重复标题。面板**只在展开期间挂载**，`renderExpandedRow` 里的请求因此是懒触发的；收起时过渡结束才卸载。展开按钮带 `aria-expanded`，名称「展开」/「收起」；展开列与面板不触发整行点击。减弱动态下面板直接出现与消失。
 
 ## 列显隐、列宽与持久化
 
-传了 `storageKey`，表头左上角（展开列里，没有展开列则是单独的 32 宽首列）出现「显示列」按钮，菜单列出 `hideable !== false` 的列，勾选框连着改不收起；有隐藏列或调整过列宽时多一项「重置列」（恢复全部列与默认列宽）；底部写「记在这台设备上」。「重置列」放在菜单里而不是设计稿的标题行小图标，因为菜单项能用方向键到达。
+传了 `storageKey`，表头最左侧操作列出现「显示列」按钮，依次复用拖拽列、展开列，否则使用单独的 32px 首列。菜单列出 `hideable !== false` 的列，勾选框连着改不收起；有隐藏列或调整过列宽时多一项「重置列」（恢复全部列与默认列宽）；底部写「记在这台设备上」。「重置列」放在菜单里而不是设计稿的标题行小图标，因为菜单项能用方向键到达。
 
 | 键 | 内容 |
 | --- | --- |
@@ -139,7 +161,7 @@ const columns: DataTableColumn<Post>[] = [
 
 `table-layout: fixed` 加表宽 100% 时，若所有列都写了宽度，多出来的宽度会按比例分给全部列。为让窄列与操作列永远精确：
 
-- 勾选列 36、展开列 32、「显示列」独立首列 32，以及右固定的操作列，宽度不被分摊，也不采信设备上记录的值（旧版曾把它们的实测宽度一并记下）。
+- 勾选列 36，拖拽列、展开列与「显示列」独立首列各 32，以及右固定的操作列，宽度不被分摊，也不采信设备上记录的值（旧版曾把它们的实测宽度一并记下）。
 - **伸缩列**：第一个没被拖过宽度、非固定、非 `fitContent` 的数据列。它在 `colgroup` 里不写宽度，多余的宽度只归它；声明的 `width` 与用户拖出的宽度只计入表格最小宽度。
 - 所有非固定数据列都被拖过宽度时（旧版记下的就是这种），退到最后一个非固定数据列做伸缩列。「重置列」可以清掉记录，让第一个数据列重新伸缩。
 - 状态与展开面板的左缘 = 前导列宽度之和 + 单元格内边距 12，正好是首个数据列文字的左缘。
