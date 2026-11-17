@@ -20,6 +20,7 @@ func setupCommentSearchTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 	db := setupCommentTestDB(t)
 	require.NoError(t, db.AutoMigrate(&model.Post{}))
+	require.NoError(t, db.Exec("ALTER TABLE posts ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0").Error)
 	return db
 }
 
