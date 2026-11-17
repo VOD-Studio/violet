@@ -7,6 +7,51 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.26.1](https://github.com/VOD-Studio/violet/compare/v2.26.0...v2.26.1) (2026-11-17)
+
+
+### 新增
+
+* **admin-posts:** 完善表格内文章管理 ([e5cfbca](https://github.com/VOD-Studio/violet/commit/e5cfbca01bb4aee2d5a4989304b2a51b970d39a6))
+* **chat:** 将消息链接解析为既有卡片 ([4405c29](https://github.com/VOD-Studio/violet/commit/4405c29d205e88c70173a97c182104e88c935ef1))
+* **github:** 提供公开仓库只读查询 ([9ffc25b](https://github.com/VOD-Studio/violet/commit/9ffc25bc1d69547bf1d06127b00342cccae4dc2b))
+* **link-card:** 提供统一骨架加载状态 ([10c9164](https://github.com/VOD-Studio/violet/commit/10c916498eb6aca2eed2b3bae747e841539ec85c))
+* **link-preview:** 提供统一的紧凑预览形态 ([2c47920](https://github.com/VOD-Studio/violet/commit/2c47920cdf706d3e881dfe18be23fcb22d18ec77))
+* **post:** 提供文章浏览记录分页查询 ([2c4f903](https://github.com/VOD-Studio/violet/commit/2c4f9035d348c4c980288a36bd47717f72c6a2f6))
+* **post:** 支持持久化文章排序 ([dc81926](https://github.com/VOD-Studio/violet/commit/dc819261e7956969755b0aaf45b922e71faa0b95))
+* **table:** 支持真实表格行内拖拽排序 ([5aa00be](https://github.com/VOD-Studio/violet/commit/5aa00beb8dedfd0a07302bdd761384c015932ca0))
+* **theme:** 提供点赞情感色语义变量 ([4e9ea48](https://github.com/VOD-Studio/violet/commit/4e9ea4827bd5ca58263dff4639ba8520e98e3d25))
+* **tweet:** 提供外部推文只读解析 ([66f96b8](https://github.com/VOD-Studio/violet/commit/66f96b82e5ef0258bdb78f6a271640a42cd6b78c))
+* **tweet:** 提供外部推文实体查询 ([323ad44](https://github.com/VOD-Studio/violet/commit/323ad44471cef2849fa8e82938356bb8e2e1f0e1))
+
+
+### 修复
+
+* **chat:** 发送失败显示紧凑提示与重试 ([126120a](https://github.com/VOD-Studio/violet/commit/126120a73b1aa2c78a67b575c3808c9d343c0a09))
+* **chat:** 发送者名字移到气泡外 ([8fcba73](https://github.com/VOD-Studio/violet/commit/8fcba73babeae35fb6b19e178d65da26de8deeff))
+* **chat:** 统一紧凑链接预览呈现 ([b9610cc](https://github.com/VOD-Studio/violet/commit/b9610ccc72a9f4299a60d41c4eaee27644ce0699))
+* **chat:** 补全图片表情的灯箱开合 ([b031167](https://github.com/VOD-Studio/violet/commit/b03116779d36d2304d39d6fcd7e41cf26cb12d6b))
+* **chat:** 补齐发送失败提示的上下文 ([943156e](https://github.com/VOD-Studio/violet/commit/943156ed5700b9f5d1a7af848774a2487628db76))
+* **chat:** 输入提示不再引起布局抖动 ([6e5d9c1](https://github.com/VOD-Studio/violet/commit/6e5d9c177eaf4d183ce6d55bb26d2c24d7e03317))
+* **home:** 恢复印记爱心的点击反馈 ([f627f3f](https://github.com/VOD-Studio/violet/commit/f627f3f7a7df2ab0586126aca5bfb3fe6df89aad))
+* **image-preview:** 区分滚轮关闭与滚轮缩放 ([6c3efa7](https://github.com/VOD-Studio/violet/commit/6c3efa70b37258b130d4e8f133deab617bc19546))
+* **image-preview:** 显示完整缩略图列表 ([6ac210f](https://github.com/VOD-Studio/violet/commit/6ac210f9beb4e0ba908302ec0f9a896f38c88ccf))
+* **posts:** 修复博客瀑布流分列失衡 ([97ee405](https://github.com/VOD-Studio/violet/commit/97ee4058b0dd8332c86dcc4b70aae95b50079f9d))
+* **posts:** 恢复博客封面悬停放大 ([ad9c101](https://github.com/VOD-Studio/violet/commit/ad9c101e0592d06a3a14ffeb3ffa75fa35986add))
+* **site-navbar:** 修复无选中项时收起文字重叠 ([56f4399](https://github.com/VOD-Studio/violet/commit/56f43990666061ab6b28bac73096e882ab680e30))
+* **site:** 站点导航与文章管理批次修复 ([d809177](https://github.com/VOD-Studio/violet/commit/d809177d0cd5bd30f9b38a4e9e7aa3f097265da1))
+* **tabs:** 修复亚像素底线撑出滚动条 ([38a74b6](https://github.com/VOD-Studio/violet/commit/38a74b6c5d95e3305829bfccba9826ecaa583c9d))
+* **tweet:** 隔离只读原文解析的限流额度 ([7f64a88](https://github.com/VOD-Studio/violet/commit/7f64a88b801013d3e96a420ed47f9a6ffc126973))
+
+
+### 重构
+
+* **github:** 仓库查询上提为共享实体 ([910c6aa](https://github.com/VOD-Studio/violet/commit/910c6aa94786b18eb1a6f44c558bcd97d41a337a))
+* **ui:** 统一业务组件内局部回调 ([d9203a7](https://github.com/VOD-Studio/violet/commit/d9203a74718e1c3c3b38f79fd3ae3097a8712cc8))
+* **ui:** 统一站点公共组件内局部回调 ([43fcc12](https://github.com/VOD-Studio/violet/commit/43fcc12cf3488a972c6d41c77e6028524a44211c))
+* **ui:** 统一组件内局部回调为箭头函数 ([2375bb3](https://github.com/VOD-Studio/violet/commit/2375bb38fb9ee58cd9778c06abd06b7a53ac36fa))
+* **ui:** 表格行拖拽复用共享排序控制 ([78c8b75](https://github.com/VOD-Studio/violet/commit/78c8b759befa6ac1aa7465483b75d857f5f6d2ca))
+
 ## [2.26.0](https://github.com/VOD-Studio/violet/compare/v2.25.1...v2.26.0) (2026-11-16)
 
 
