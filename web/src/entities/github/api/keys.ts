@@ -6,4 +6,5 @@ export const githubKeys = {
 	all: ["github"] as const,
 	/** 仓库列表维度 */
 	repos: () => [...githubKeys.all, "repos"] as const,
+	repo: (repo: string) => [...githubKeys.all, "repo", repo.toLowerCase()] as const,
 };

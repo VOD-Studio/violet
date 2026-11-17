@@ -39,7 +39,7 @@ export interface DialogueEmbedConfig {
 	profile?: "active";
 }
 
-/** GitHub 项目引用的持久化配置；阅读时不请求仓库元数据。 */
+/** 宿主提供的 GitHub 项目快照；卡片本身不请求仓库元数据。 */
 export interface GitHubEmbedConfig {
 	/**
 	 * 仓库所有者与仓库名称，以斜杠分隔。
