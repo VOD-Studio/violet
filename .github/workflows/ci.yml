@@ -5,6 +5,7 @@ on:
     branches: [main, release/2.0]
   pull_request:
     branches: [main, release/2.0]
+  workflow_dispatch:
   workflow_call:
     inputs:
       ref:
@@ -24,7 +25,7 @@ on:
         type: boolean
         default: false
 
-# PR 取消旧检查；主干与部署调用按提交隔离，后续 push 不取消待发布提交的检查。
+# PR 按影响范围验收；主干按精确提交全量验收并产出部署凭据。
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || inputs.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' && !inputs.ref }}
@@ -42,10 +43,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      api: ${{ inputs.full && 'true' || steps.filter.outputs.api }}
-      web: ${{ inputs.full && 'true' || steps.filter.outputs.web }}
-      web_image: ${{ inputs.full && 'true' || steps.filter.outputs.web_image }}
-      infrastructure: ${{ inputs.full && 'true' || steps.filter.outputs.infrastructure }}
+      api: ${{ steps.scope.outputs.full == 'true' && 'true' || steps.filter.outputs.api }}
+      web: ${{ steps.scope.outputs.full == 'true' && 'true' || steps.filter.outputs.web }}
+      web_image: ${{ (inputs.build_images || (!inputs.ref && (steps.scope.outputs.full == 'true' || steps.filter.outputs.web_image == 'true'))) && 'true' || 'false' }}
+      infrastructure: ${{ steps.scope.outputs.full == 'true' && 'true' || steps.filter.outputs.infrastructure }}
+      full: ${{ steps.scope.outputs.full }}
+      base: ${{ steps.scope.outputs.base }}
+      version: ${{ steps.scope.outputs.version }}
+      publish_images: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/release/2.0' && !inputs.ref }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -54,8 +59,26 @@ jobs:
           fetch-depth: 0
           filter: blob:none
 
+      - name: Resolve validation scope
+        id: scope
+        env:
+          FULL: ${{ (github.event_name != 'pull_request' || inputs.full) && 'true' || 'false' }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          echo "full=$FULL" >> "$GITHUB_OUTPUT"
+          if [ "$FULL" = false ]; then
+            echo "base=$(git merge-base "$BASE_SHA" HEAD)" >> "$GITHUB_OUTPUT"
+          fi
+          python3 - <<'PY'
+          import json, os
+          with open(".release-please-manifest.json") as source:
+              version = json.load(source)["."]
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write(f"version=v{version}\n")
+          PY
+
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4
-        if: ${{ !inputs.full }}
+        if: steps.scope.outputs.full != 'true'
         id: filter
         with:
           initial-fetch-depth: '20'
@@ -70,6 +93,8 @@ jobs:
               - 'scripts/tests/test_ci_results.py'
               - 'scripts/check-job-group.py'
               - 'scripts/tests/test_job_group.py'
+              - 'scripts/ci-go-tests.py'
+              - 'scripts/tests/test_ci_go_tests.py'
             'web':
               - 'web/**'
               - '!web/README.md'
@@ -80,6 +105,10 @@ jobs:
               - 'scripts/tests/test_ci_results.py'
               - 'scripts/check-job-group.py'
               - 'scripts/tests/test_job_group.py'
+              - 'scripts/check-web-results.py'
+              - 'scripts/tests/test_web_results.py'
+              - 'api/internal/interfaces/http/**'
+              - 'api/internal/openapi/**'
             # 镜像校验只覆盖 Dockerfile、依赖与锁文件漂移；源码构建由契约任务验证。
             'web_image':
               - 'web/Dockerfile'
@@ -95,6 +124,8 @@ jobs:
               - '.github/workflows/**'
               - '.github/actions/**'
               - 'scripts/**'
+              - 'web/scripts/ci-*'
+              - 'web/e2e/ci-test-map.json'
               - 'deploy/**'
               - 'docker-compose*.yml'
               - '.env.example'
@@ -147,6 +178,23 @@ jobs:
           args: --timeout 5m
           skip-cache: true
 
+  backend-build:
+    name: Backend build
+    needs: [changes, runner]
+    if: needs.changes.outputs.api == 'true'
+    runs-on: ${{ fromJSON(needs.runner.outputs.labels) }}
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: api/go.mod
+          cache-dependency-path: api/go.sum
       - name: Go build
         run: go build ./...
 
@@ -179,6 +227,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ inputs.ref || github.sha }}
+          fetch-depth: 0
+          filter: blob:none
 
       - name: Setup Go
         uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
@@ -186,6 +236,15 @@ jobs:
           go-version-file: api/go.mod
           check-latest: true
           cache-dependency-path: api/go.sum
+
+      - name: Plan affected Go tests
+        env:
+          FULL: ${{ needs.changes.outputs.full }}
+          BASE_SHA: ${{ needs.changes.outputs.base }}
+        run: |
+          args=(--output "$RUNNER_TEMP/go-test-plan.json")
+          if [ "$FULL" = true ]; then args+=(--full); else args+=(--base "$BASE_SHA"); fi
+          python3 ../scripts/ci-go-tests.py "${args[@]}"
 
       - name: Prepare production WebP encoder
         run: |
@@ -200,16 +259,22 @@ jobs:
           "$encoder_directory/cwebp" -version
           echo "$encoder_directory" >> "$GITHUB_PATH"
 
-      - name: Go test
+      - name: Go tests
         env:
           BLOG_TEST_PG_DSN: postgres://violet_ci:violet_ci@127.0.0.1:${{ job.services.postgres.ports['5432'] }}/violet_test?sslmode=disable
-        run: go test ./... -v -count=1
-
-      - name: Migration integration tests
-        env:
           MIGRATE_TEST_DSN: postgres://violet_ci:violet_ci@127.0.0.1:${{ job.services.postgres.ports['5432'] }}/violet_test?sslmode=disable
           CHAT_APPEARANCE_TEST_DSN: postgres://violet_ci:violet_ci@127.0.0.1:${{ job.services.postgres.ports['5432'] }}/violet_test?sslmode=disable
-        run: go test -tags=integration ./internal/migrate ./internal/infrastructure/persistence/gorm/chatappearance -v -count=1
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          plan = json.loads((pathlib.Path(os.environ["RUNNER_TEMP"]) / "go-test-plan.json").read_text())
+          for field, flags in (("packages", []), ("integration_packages", ["-tags=integration"])):
+              packages = plan[field]
+              if packages:
+                  subprocess.run(["go", "test", *flags, *packages, "-v", "-count=1"], check=True)
+              else:
+                  print(f"{field}: no affected packages")
+          PY
 
   backend-image:
     name: Backend image
@@ -219,33 +284,44 @@ jobs:
     permissions:
       actions: write   # buildx type=gha 缓存读写;workflow 级仅 contents:read 会把 actions 收为 none
       contents: read
+      packages: write
     runs-on: ${{ fromJSON(needs.runner.outputs.labels) }}
     env:
       APK_MIRROR: ${{ contains(fromJSON(needs.runner.outputs.labels), 'self-hosted') && 'mirrors.aliyun.com' || 'dl-cdn.alpinelinux.org' }}
+    outputs:
+      digest: ${{ steps.image.outputs.digest }}
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ inputs.ref || github.sha }}
 
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
+        if: needs.changes.outputs.publish_images == 'true'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - name: Docker 镜像构建验证
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        id: image
         with:
           context: ./api
-          push: false
-          tags: violet-api:ci
-          build-args: APK_MIRROR=${{ env.APK_MIRROR }}
-          # scope 与 deploy.yml 构建一致:发版时 deploy 直接命中 CI 已构建的层;
-          # PR 分支命中率低,仅主干 push 写缓存
+          push: ${{ needs.changes.outputs.publish_images == 'true' }}
+          tags: ghcr.io/vod-studio/violet-api:sha-${{ inputs.ref || github.sha }}
+          build-args: |
+            API_VERSION=${{ needs.changes.outputs.version }}
+            APK_MIRROR=${{ env.APK_MIRROR }}
           cache-from: type=gha,scope=violet-api
-          cache-to: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release/2.0') && 'type=gha,mode=max,scope=violet-api' || '' }}
+          cache-to: ${{ needs.changes.outputs.publish_images == 'true' && 'type=gha,mode=max,scope=violet-api' || '' }}
 
   backend:
     name: Backend (Go)
-    needs: [changes, backend-lint, backend-test, backend-image]
+    needs: [changes, backend-lint, backend-build, backend-test, backend-image]
     if: ${{ !cancelled() && needs.changes.outputs.api == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -266,8 +342,8 @@ jobs:
   # 静态检查、站点单测、独立包、浏览器契约与镜像互不依赖，各自占一个 runner 并行；
   # frontend 汇总它们，保持既有 required check 名称。
   # ============================================================
-  web-static:
-    name: Web static checks
+  web-lint:
+    name: Web lint
     needs: [changes, runner]
     if: needs.changes.outputs.web == 'true'
     timeout-minutes: ${{ contains(fromJSON(needs.runner.outputs.labels), 'self-hosted') && 25 || 15 }}
@@ -302,20 +378,104 @@ jobs:
       - name: Generated persona colors
         run: pnpm check:persona-colors
 
+  web-typecheck:
+    name: Web typecheck
+    needs: [changes, runner]
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ${{ fromJSON(needs.runner.outputs.labels) }}
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - uses: ./.github/actions/setup-web
       - name: TypeScript check
         run: pnpm typecheck
+
+  web-build:
+    name: Web build
+    needs: [changes, runner]
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ${{ fromJSON(needs.runner.outputs.labels) }}
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - uses: ./.github/actions/setup-web
+      - name: Build
+        run: pnpm build
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: web-contract-build
+          overwrite: true
+          path: web/dist
+          retention-days: 2
+          if-no-files-found: error
+          include-hidden-files: true
+
+  web-plan:
+    name: Plan Web tests
+    needs: [changes, runner]
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ${{ fromJSON(needs.runner.outputs.labels) }}
+    timeout-minutes: 10
+    outputs:
+      unit_matrix: ${{ steps.plan.outputs.unit_matrix }}
+      contract_matrix: ${{ steps.plan.outputs.contract_matrix }}
+      package_matrix: ${{ steps.plan.outputs.package_matrix }}
+      has_unit: ${{ steps.plan.outputs.has_unit }}
+      has_contract: ${{ steps.plan.outputs.has_contract }}
+      has_packages: ${{ steps.plan.outputs.has_packages }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          fetch-depth: 0
+          filter: blob:none
+      - uses: ./.github/actions/setup-web
+      - uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: web/.ci-test-history.json
+          key: ci-test-times-v1-${{ runner.os }}-${{ runner.arch }}-${{ runner.environment }}-${{ github.sha }}
+          restore-keys: ci-test-times-v1-${{ runner.os }}-${{ runner.arch }}-${{ runner.environment }}-
+      - name: Generate routes
+        run: pnpm --dir web generate-routes
+      - name: Select and balance tests
+        id: plan
+        env:
+          FULL: ${{ needs.changes.outputs.full }}
+          BASE_SHA: ${{ needs.changes.outputs.base }}
+        run: |
+          args=(--output web/.ci-test-plan.json --history web/.ci-test-history.json)
+          if [ "$FULL" = true ]; then args+=(--full); else args+=(--base "$BASE_SHA"); fi
+          node web/scripts/ci-tests.mjs plan "${args[@]}"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: web-test-plan
+          overwrite: true
+          path: web/.ci-test-plan.json
+          retention-days: 7
+          include-hidden-files: true
+          if-no-files-found: error
 
   # 站点测试按文件分片；带独立配置的包由 web-package 运行，不在此重复。
   web-unit:
     name: Web unit (${{ matrix.shard }}/${{ strategy.job-total }})
-    needs: [changes, runner]
-    if: needs.changes.outputs.web == 'true'
+    needs: [changes, runner, web-plan]
+    if: needs.changes.outputs.web == 'true' && needs.web-plan.outputs.has_unit == 'true'
     timeout-minutes: ${{ contains(fromJSON(needs.runner.outputs.labels), 'self-hosted') && 25 || 15 }}
     runs-on: ${{ fromJSON(needs.runner.outputs.labels) }}
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: ${{ fromJSON(needs.web-plan.outputs.unit_matrix) }}
     defaults:
       run:
         working-directory: web
@@ -327,43 +487,43 @@ jobs:
 
       - uses: ./.github/actions/setup-web
 
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: web-test-plan
+          path: web
+      - name: Generate routes
+        run: pnpm generate-routes
       - name: Vitest
-        run: pnpm test:site --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: node scripts/ci-tests.mjs run --plan .ci-test-plan.json --kind unit --shard "$SHARD" --report-dir .ci-test-reports
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always()
+        with:
+          name: ci-web-timings-unit-${{ matrix.shard }}
+          overwrite: true
+          path: web/.ci-test-reports
+          retention-days: 7
+          include-hidden-files: true
+          if-no-files-found: ignore
 
   # 公开包按发布边界独立验证：类型、测试与 tarball 消费；需要浏览器的包安装 Chromium。
   # inkline 的测试沿用站点 Vitest 配置，已在 web-unit 中运行。
   web-package:
     name: Web package (${{ matrix.package }})
-    needs: [changes, runner]
-    if: needs.changes.outputs.web == 'true'
+    needs: [changes, runner, web-plan]
+    if: needs.changes.outputs.web == 'true' && needs.web-plan.outputs.has_packages == 'true'
     timeout-minutes: ${{ contains(fromJSON(needs.runner.outputs.labels), 'self-hosted') && 25 || 15 }}
     runs-on: ${{ fromJSON(needs.runner.outputs.labels) }}
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - package: ui
-            filter: '@violet/ui'
-            check: true
-            test: true
-            chromium: true
-          - package: inkline
-            filter: '@violetjs/inkline'
-          - package: react-tweet
-            filter: '@violetjs/react-tweet'
-            test: true
-          - package: kanban
-            filter: '@violetjs/kanban'
-            test: true
-            browser: true
-            chromium: true
-          - package: theme
-            filter: '@violetjs/theme'
-            test: true
-            chromium: true
+        package: ${{ fromJSON(needs.web-plan.outputs.package_matrix) }}
     defaults:
       run:
         working-directory: web
+    env:
+      PACKAGE: ${{ matrix.package }}
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -372,37 +532,37 @@ jobs:
 
       - uses: ./.github/actions/setup-web
         with:
-          chromium: ${{ matrix.chromium && 'true' || 'false' }}
+          chromium: ${{ contains(fromJSON('["ui","kanban","theme"]'), matrix.package) && 'true' || 'false' }}
 
       - name: Architecture check
-        if: matrix.check
-        run: pnpm --filter "${{ matrix.filter }}" check
+        if: matrix.package == 'ui'
+        run: pnpm --filter "./packages/$PACKAGE" check
 
       - name: Typecheck
-        run: pnpm --filter "${{ matrix.filter }}" typecheck
+        run: pnpm --filter "./packages/$PACKAGE" typecheck
 
       - name: Test
-        if: matrix.test
-        run: pnpm --filter "${{ matrix.filter }}" test
+        if: matrix.package != 'inkline'
+        run: pnpm --filter "./packages/$PACKAGE" test
 
       - name: Real-browser tests
-        if: matrix.browser
-        run: pnpm --filter "${{ matrix.filter }}" browser
+        if: matrix.package == 'kanban'
+        run: pnpm --filter "./packages/$PACKAGE" browser
 
       - name: Independent tarball consumer
-        run: pnpm --filter "${{ matrix.filter }}" consumer
+        run: pnpm --filter "./packages/$PACKAGE" consumer
 
-  # 契约测试跑生产构建产物（server.mjs 读取 dist），各分片自行构建，构建本身仅十余秒。
+  # 浏览器分片消费同一生产构建；单测、lint 和类型检查不等待构建。
   web-contract:
     name: Web contract (${{ matrix.shard }}/${{ strategy.job-total }})
-    needs: [changes, runner]
-    if: needs.changes.outputs.web == 'true'
+    needs: [changes, runner, web-plan, web-build]
+    if: needs.changes.outputs.web == 'true' && needs.web-plan.outputs.has_contract == 'true'
     timeout-minutes: ${{ contains(fromJSON(needs.runner.outputs.labels), 'self-hosted') && 25 || 15 }}
     runs-on: ${{ fromJSON(needs.runner.outputs.labels) }}
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2]
+        shard: ${{ fromJSON(needs.web-plan.outputs.contract_matrix) }}
     defaults:
       run:
         working-directory: web
@@ -416,53 +576,116 @@ jobs:
         with:
           chromium: 'true'
 
-      - name: Build
-        run: pnpm build
-
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: web-test-plan
+          path: web
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: web-contract-build
+          path: web/dist
       - name: Browser contracts
-        run: pnpm test:contract --workers=2 --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: node scripts/ci-tests.mjs run --plan .ci-test-plan.json --kind contract --shard "$SHARD" --report-dir .ci-test-reports
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always()
+        with:
+          name: ci-web-timings-contract-${{ matrix.shard }}
+          overwrite: true
+          path: web/.ci-test-reports
+          retention-days: 7
+          include-hidden-files: true
+          if-no-files-found: ignore
 
       - name: Upload Playwright traces
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: playwright-traces-${{ matrix.shard }}
+          overwrite: true
           path: web/test-results
           retention-days: 7
           if-no-files-found: ignore
+
+  web-timings:
+    name: Record test timings
+    needs: [changes, runner, web-unit, web-contract]
+    if: >-
+      !cancelled() && needs.changes.outputs.publish_images == 'true' &&
+      needs.web-unit.result == 'success' && needs.web-contract.result == 'success'
+    runs-on: ${{ fromJSON(needs.runner.outputs.labels) }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '22'
+      - uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: web/.ci-test-history.json
+          key: ci-test-times-v1-${{ runner.os }}-${{ runner.arch }}-${{ runner.environment }}-${{ github.sha }}
+          restore-keys: ci-test-times-v1-${{ runner.os }}-${{ runner.arch }}-${{ runner.environment }}-
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          pattern: ci-web-timings-*
+          path: web/.ci-test-reports
+          merge-multiple: true
+      - name: Merge successful duration samples
+        run: node web/scripts/ci-tests.mjs history --reports web/.ci-test-reports --history web/.ci-test-history.json --output web/.ci-test-history.json
+      - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: web/.ci-test-history.json
+          key: ci-test-times-v1-${{ runner.os }}-${{ runner.arch }}-${{ runner.environment }}-${{ github.sha }}
 
   # 镜像校验:Dockerfile COPY 引用失效文件、lockfile 与依赖漂移等问题
   # 在此拦截,避免流入生产部署才暴露。只在相关文件变化、PR 之外的精确验证请求镜像时运行。
   web-image:
     name: Web image
     needs: [changes, runner]
-    if: needs.changes.outputs.web == 'true' && (inputs.build_images || (!inputs.ref && needs.changes.outputs.web_image == 'true'))
+    if: needs.changes.outputs.web == 'true' && needs.changes.outputs.web_image == 'true'
     timeout-minutes: ${{ contains(fromJSON(needs.runner.outputs.labels), 'self-hosted') && 25 || 15 }}
     permissions:
       actions: write   # buildx type=gha 缓存读写;workflow 级仅 contents:read 会把 actions 收为 none
       contents: read
+      packages: write
     runs-on: ${{ fromJSON(needs.runner.outputs.labels) }}
+    outputs:
+      digest: ${{ steps.image.outputs.digest }}
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ inputs.ref || github.sha }}
 
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
+        if: needs.changes.outputs.publish_images == 'true'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - name: Docker 镜像构建验证
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        id: image
         with:
           context: ./web
-          push: false
-          tags: violet-web:ci
+          push: ${{ needs.changes.outputs.publish_images == 'true' }}
+          tags: ghcr.io/vod-studio/violet-web:sha-${{ inputs.ref || github.sha }}
+          build-args: |
+            VITE_API_BASE_URL=/api/v1
+            VITE_SITE_URL=https://xunrua.top
+            VITE_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+            VITE_GITHUB_CLIENT_ID=${{ secrets.GH_CLIENT_ID }}
           cache-from: type=gha,scope=violet-web
-          cache-to: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release/2.0') && 'type=gha,mode=max,scope=violet-web' || '' }}
+          cache-to: ${{ needs.changes.outputs.publish_images == 'true' && 'type=gha,mode=max,scope=violet-web' || '' }}
 
   frontend:
     name: Frontend (React)
-    needs: [changes, web-static, web-unit, web-package, web-contract, web-image]
+    needs: [changes, web-plan, web-lint, web-typecheck, web-build, web-unit, web-package, web-contract, web-image]
     if: ${{ !cancelled() && needs.changes.outputs.web == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -470,13 +693,71 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ inputs.ref || github.sha }}
-          sparse-checkout: scripts/check-job-group.py
+          sparse-checkout: scripts/check-web-results.py
           sparse-checkout-cone-mode: false
 
       - name: Require frontend jobs
         env:
           CI_NEEDS_JSON: ${{ toJSON(needs) }}
-        run: python3 scripts/check-job-group.py --optional web-image <<< "$CI_NEEDS_JSON"
+        run: python3 scripts/check-web-results.py <<< "$CI_NEEDS_JSON"
+
+  release-evidence:
+    name: Release evidence
+    needs: [changes, gate, backend-image, web-image]
+    if: needs.changes.outputs.publish_images == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Record exact full-CI evidence
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          CI_FULL: ${{ needs.changes.outputs.full }}
+          VERSION: ${{ needs.changes.outputs.version }}
+          API_DIGEST: ${{ needs.backend-image.outputs.digest }}
+          WEB_DIGEST: ${{ needs.web-image.outputs.digest }}
+          GITHUB_WORKFLOW_SHA: ${{ github.workflow_sha }}
+          VALIDATE_RESULT: ${{ needs.gate.result }}
+          BUILD_API_RESULT: ${{ needs.backend-image.result }}
+          BUILD_WEB_RESULT: ${{ needs.web-image.result }}
+        run: |
+          python3 scripts/ci-release-evidence.py create \
+            --revision "$GITHUB_SHA" --version "$VERSION" \
+            --api-digest "$API_DIGEST" --web-digest "$WEB_DIGEST" \
+            --output release-manifest.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: release-evidence-${{ github.run_attempt }}
+          path: release-manifest.json
+          retention-days: 30
+          if-no-files-found: error
+
+  notify-failure:
+    name: Notify CI failure
+    needs: [changes, gate, release-evidence]
+    if: always() && failure() && needs.changes.outputs.publish_images == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/deploy-alert
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          run_id: ${{ github.run_id }}
+          reason: 主干完整 CI 或镜像构建失败，未获得发布资格，不会触发部署
 
   # ============================================================
   # 依赖漏洞扫描
@@ -667,6 +948,13 @@ jobs:
                   print(f"Checking {path}", flush=True)
                   subprocess.run(["actionlint", "-config-file", str(config), "-oneline", fixture.name], check=True)
           PY
+
+      - uses: ./.github/actions/setup-web
+        if: needs.changes.outputs.infrastructure == 'true'
+
+      - name: Test affected selection and shard planning
+        if: needs.changes.outputs.infrastructure == 'true'
+        run: node --test web/scripts/ci-tests.test.mjs
 
       - name: Deployment script tests
         if: needs.changes.outputs.infrastructure == 'true'
