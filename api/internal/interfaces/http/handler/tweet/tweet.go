@@ -96,6 +96,16 @@ func (h *Handler) PreviewExternal(w http.ResponseWriter, r *http.Request) {
 	response.RespondOK(w, dto)
 }
 
+func (h *Handler) ResolveExternal(w http.ResponseWriter, r *http.Request) {
+	dto, err := h.svc.ResolveExternal(r.Context(), r.URL.Query().Get("url"))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	response.RespondOK(w, dto)
+}
+
 func (h *Handler) WithdrawExternal(w http.ResponseWriter, r *http.Request) {
 	if err := h.svc.WithdrawExternal(r.Context(), r.PathValue("externalId")); err != nil {
 		response.RespondError(w, r, err)

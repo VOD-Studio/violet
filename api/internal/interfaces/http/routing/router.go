@@ -366,6 +366,7 @@ func registerTweetRoutes(v1 chi.Router, d *Deps) {
 			})
 		})
 		r.With(d.SessionAuth, d.limits([]string{"x-preview-minute", "x-preview-day"}, "POST /api/v1/tweets/external/preview")).Post("/external/preview", tweetH.PreviewExternal)
+		r.With(d.SessionAuth, d.limits([]string{"x-preview-minute", "x-preview-day"}, "GET /api/v1/tweets/external/resolve")).Get("/external/resolve", tweetH.ResolveExternal)
 		r.With(d.SessionAuth).Delete("/external/{externalId}", tweetH.WithdrawExternal)
 		r.With(d.SessionAuth, d.limit("x-refresh", "POST /api/v1/tweets/external/{externalId}/refresh")).Post("/external/{externalId}/refresh", tweetH.RefreshExternal)
 		// 拖动进度会产生连续 Range 请求，限额按单 IP 放宽。

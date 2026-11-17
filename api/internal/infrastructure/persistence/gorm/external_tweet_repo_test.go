@@ -126,6 +126,27 @@ func requireExternalCode(t *testing.T, err error, code string) {
 	assert.Equal(t, shared.ErrorCode(code), de.Code)
 }
 
+func TestResolveExternalDoesNotPublishOrIssueToken(t *testing.T) {
+	var calls atomic.Int64
+	db, service, _, _, _, redisServer, bus := externalHarness(t, externalFetchFunc(func(_ context.Context, id string) (*apptweet.ExternalFetchResult, error) {
+		calls.Add(1)
+		return completeExternal(id, "只读原文"), nil
+	}))
+	first, err := service.ResolveExternal(context.Background(), "https://twitter.com/jack/status/20")
+	require.NoError(t, err)
+	require.NotNil(t, first.Snapshot)
+	assert.Equal(t, "只读原文", first.Snapshot.Text)
+	second, err := service.ResolveExternal(context.Background(), "https://x.com/i/status/20")
+	require.NoError(t, err)
+	assert.Equal(t, first.ID, second.ID)
+	assert.EqualValues(t, 1, calls.Load())
+	var count int64
+	require.NoError(t, db.Model(&model.Tweet{}).Count(&count).Error)
+	assert.Zero(t, count)
+	assert.Zero(t, bus.count.Load())
+	assert.Empty(t, redisServer.Keys())
+}
+
 func TestExternalPublicationIdempotencyAndTokenOwnership(t *testing.T) {
 	db, service, external, _, _, redisServer, bus := externalHarness(t, fixedExternalFetcher())
 	ctx := context.Background()

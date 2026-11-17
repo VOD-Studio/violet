@@ -41,6 +41,18 @@ func registerExternalTweetPaths(t *openapi3.T) {
 			401, errorResponse("请先登录"), 429, errorResponse("预览额度已用尽"),
 		),
 	})
+	resolveURL := queryStrParam("url", "完整的 HTTPS X/Twitter 推文链接")
+	resolveURL.Value.Required = true
+	get(t, "/tweets/external/resolve", &openapi3.Operation{
+		Tags: []string{"推文"}, Summary: "只读解析 X 原文", Security: securityCookie(),
+		Description: "登录用户可用，无需推文发布权限。不生成发布凭证或时间线记录；复用共享快照、媒体代理与来源安全校验。与发布预览共享每用户每分钟 5 次、每日 50 次额度。",
+		Parameters: openapi3.Parameters{resolveURL},
+		Responses: responses(
+			200, dataResponse("ExternalTweetDTO", "原文快照与可用状态", 200),
+			400, errorResponse("无效链接或上游暂不可用"),
+			401, errorResponse("请先登录"), 429, errorResponse("查询额度已用尽"),
+		),
+	})
 	post(t, "/tweets/external/{externalId}/refresh", &openapi3.Operation{
 		Tags: []string{"推文"}, Summary: "刷新共享 X 原文", Security: securityCookie(), Parameters: openapi3.Parameters{pathStrParam("externalId", "共享原文 UUID"), csrfHeaderParam()},
 		Description: "需 tweet:delete-any 或内置超管权限；临时失败保留有效快照，明确删除或私密状态撤回全部展示。",
