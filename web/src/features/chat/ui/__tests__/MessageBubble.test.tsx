@@ -5,7 +5,6 @@
  * 实现与输入框一致的图文环绕；旧格式纯文字说明兼容前置渲染。
  */
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { TooltipProvider } from "@violet/ui";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { OutgoingMessage } from "../../model/chat-outbox";
@@ -432,26 +431,24 @@ it("待发送图片显示进度并隐藏编辑与已读，失败原因可通过�
 	cleanup();
 	const retry = vi.fn();
 	render(
-		<TooltipProvider>
-			<MessageBubble
-				animateIn={false}
-				conversationKind="direct"
-				currentUserID="u_1"
-				emoteMap={{}}
-				highlighted={false}
-				message={message}
-				sending={{
-					status: "failed",
-					progress: 42,
-					error: "图片上传失败：请求超时，请稍后重试",
-				}}
-				onRetry={retry}
-				messageRef={() => {}}
-				onImage={() => {}}
-				showSender
-				showSenderName
-			/>
-		</TooltipProvider>,
+		<MessageBubble
+			animateIn={false}
+			conversationKind="direct"
+			currentUserID="u_1"
+			emoteMap={{}}
+			highlighted={false}
+			message={message}
+			sending={{
+				status: "failed",
+				progress: 42,
+				error: "图片上传失败：请求超时，请稍后重试",
+			}}
+			onRetry={retry}
+			messageRef={() => {}}
+			onImage={() => {}}
+			showSender
+			showSenderName
+		/>,
 	);
 	fireEvent.focus(screen.getByRole("button", { name: "重试" }));
 	expect((await screen.findByRole("tooltip")).textContent).toContain(

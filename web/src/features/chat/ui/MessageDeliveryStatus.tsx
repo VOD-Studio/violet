@@ -5,6 +5,7 @@ import {
 	SEASON_FLOWER,
 	Tooltip,
 	TooltipContent,
+	TooltipProvider,
 	TooltipTrigger,
 } from "@violet/ui";
 import { cn } from "cn";
@@ -36,22 +37,24 @@ export function MessageDeliveryStatus({ sending, onRetry }: MessageDeliveryStatu
 					<span id={reasonID} className="sr-only">
 						{reason}
 					</span>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								variant="ghost"
-								size="sm"
-								className="h-5 shrink-0 gap-1 px-1 text-[11px] text-destructive"
-								aria-label={onRetry ? "重试" : "查看发送失败原因"}
-								aria-describedby={reasonID}
-								onClick={onRetry}
-							>
-								<TriangleAlert className="size-3.5" aria-hidden="true" />
-								{onRetry && "重试"}
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>{reason}</TooltipContent>
-					</Tooltip>
+					<TooltipProvider>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									variant="ghost"
+									size="sm"
+									className="h-5 shrink-0 gap-1 px-1 text-[11px] text-destructive"
+									aria-label={onRetry ? "重试" : "查看发送失败原因"}
+									aria-describedby={reasonID}
+									onClick={onRetry}
+								>
+									<TriangleAlert className="size-3.5" aria-hidden="true" />
+									{onRetry && "重试"}
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>{reason}</TooltipContent>
+						</Tooltip>
+					</TooltipProvider>
 				</>
 			) : (
 				<>
