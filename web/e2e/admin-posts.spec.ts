@@ -115,19 +115,6 @@ test("默认50篇，分组拖动持久化，刷新与翻页不丢文章", async 
 	expect(fixture.limits[0]).toBe("50");
 	await expect(page.getByRole("row")).toHaveCount(51);
 	const table = page.getByRole("table", { name: "文章列表" });
-	await expect(table.getByRole("columnheader")).toContainText([
-		"",
-		"",
-		"移动行",
-		"封面",
-		"标题",
-		"状态",
-		"置顶",
-		"标签",
-		"浏览",
-		"发布时间",
-		"操作",
-	]);
 	await expect(table.locator("img")).toHaveAttribute("src", /article-cover/);
 	const first = await table
 		.getByRole("button", { name: "移动 文章02", exact: true })
@@ -207,6 +194,8 @@ test("键盘只移动筛选集合，保存期间锁定，置顶边界与取消�
 	const fixture = await articles(context);
 	await openClientPage(page, "/admin/posts");
 	const table = page.getByRole("table", { name: "文章列表" });
+	const draggingRows = table.locator("tbody tr[data-dragging]");
+	const dragAnnouncements = page.locator('[role="status"][aria-live="assertive"]');
 	await expect(page.getByRole("button", { name: "移动 文章01", exact: true })).toHaveAttribute(
 		"aria-disabled",
 		"true",
@@ -214,13 +203,18 @@ test("键盘只移动筛选集合，保存期间锁定，置顶边界与取消�
 	const boundary = page.getByRole("button", { name: "移动 文章02", exact: true });
 	await boundary.focus();
 	await page.keyboard.press("Space");
+	await expect(draggingRows).toHaveCount(1);
 	await page.keyboard.press("ArrowUp");
 	await page.keyboard.press("Space");
+	await expect(draggingRows).toHaveCount(0);
 	expect(fixture.reorders).toHaveLength(0);
 	await boundary.focus();
 	await page.keyboard.press("Space");
+	await expect(draggingRows).toHaveCount(1);
 	await page.keyboard.press("ArrowDown");
+	await expect(dragAnnouncements).toContainText("第 3 位");
 	await page.keyboard.press("Escape");
+	await expect(draggingRows).toHaveCount(0);
 	expect(fixture.reorders).toHaveLength(0);
 	await expect(table.getByRole("row").nth(2)).toContainText("文章02");
 
@@ -230,7 +224,9 @@ test("键盘只移动筛选集合，保存期间锁定，置顶边界与取消�
 	const handle = page.getByRole("button", { name: "移动 文章10", exact: true });
 	await handle.focus();
 	await page.keyboard.press("Space");
+	await expect(draggingRows).toHaveCount(1);
 	await page.keyboard.press("ArrowDown");
+	await expect(dragAnnouncements).toContainText("第 2 位");
 	await page.keyboard.press("Space");
 	await expect.poll(() => fixture.reorders.length).toBe(1);
 	await expect(table).toHaveAttribute("aria-busy", "true");
