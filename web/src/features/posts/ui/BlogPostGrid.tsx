@@ -12,6 +12,7 @@ import {
 	CardFrameTitle,
 	Tag,
 } from "@violet/ui";
+import { useLayoutEffect, useRef } from "react";
 import styles from "./BlogPostGrid.module.css";
 
 /** 只呈现当前页；精选仅在第一页提升，不重复占用列表位置。 */
@@ -26,7 +27,7 @@ interface PostCardProps {
 
 function PostFrame({ post }: PostCardProps) {
 	return (
-		<article className="mb-4 break-inside-avoid p-1">
+		<article className="mb-4 p-1">
 			<CardFrame className={styles.card}>
 				{post.cover_image ? (
 					<CardFrameImage>
@@ -130,13 +131,44 @@ function FeaturedPost({ post }: PostCardProps) {
 	);
 }
 
-/** 相框卡按自然高度分列，缺封面的文章直接呈现文字，不补示例图片。 */
+/** 相框卡按实测高度填入最短列，缺封面的文章直接呈现文字。 */
 export function BlogPostGrid({ posts, highlightFeatured }: BlogPostGridProps) {
 	const featured = highlightFeatured ? posts.find((post) => post.is_featured) : undefined;
+	const gridRef = useRef<HTMLDivElement>(null);
+
+	useLayoutEffect(() => {
+		const grid = gridRef.current;
+		if (!grid || posts.length === (featured ? 1 : 0)) return;
+		const cards = Array.from(grid.querySelectorAll<HTMLElement>(":scope > article"));
+		const measure = (card: HTMLElement, height: number) => {
+			const gap = Number.parseFloat(getComputedStyle(card).marginBlockEnd);
+			card.style.gridRowEnd = `span ${Math.ceil(height + gap)}`;
+		};
+		const observer = new ResizeObserver((entries) => {
+			for (const entry of entries) {
+				if (entry.target instanceof HTMLElement) {
+					measure(entry.target, entry.borderBoxSize[0].blockSize);
+				}
+			}
+		});
+		for (const card of cards) {
+			measure(card, card.offsetHeight);
+			observer.observe(card, { box: "border-box" });
+		}
+		grid.style.gridAutoRows = "1px";
+		return () => {
+			observer.disconnect();
+			grid.style.removeProperty("grid-auto-rows");
+			for (const card of cards) card.style.removeProperty("grid-row-end");
+		};
+	}, [posts, featured]);
 	return (
 		<>
 			{featured ? <FeaturedPost post={featured} /> : null}
-			<div className="-m-1 columns-1 gap-4 sm:columns-2 lg:columns-3">
+			<div
+				ref={gridRef}
+				className="-m-1 grid grid-flow-dense grid-cols-1 items-start gap-x-4 sm:grid-cols-2 lg:grid-cols-3"
+			>
 				{posts.map((post) =>
 					post.id === featured?.id ? null : <PostFrame key={post.id} post={post} />,
 				)}
