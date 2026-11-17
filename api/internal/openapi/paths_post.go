@@ -8,6 +8,12 @@ import "github.com/getkin/kin-openapi/openapi3"
 // get/put/del helper 注册，会合并到同一 PathItem，避免 Paths.Set 覆盖。
 func registerPostPaths(t *openapi3.T) {
 	// ---- schema ----
+	registerSchema(t, "PostViewDTO", openapi3.Schemas{
+		"id":         reqStr("浏览事件序号（十进制字符串）"),
+		"ip_address": reqStr("请求 IP，未记录时为空"),
+		"user_agent": reqStr("请求 User-Agent，未记录时为空"),
+		"created_at": reqStr("访问时间（RFC3339）"),
+	})
 	registerSchema(t, "PostDTO", openapi3.Schemas{
 		"id":                   reqStr("文章 ID（UUID）"),
 		"title":                reqStr("标题"),
@@ -298,6 +304,21 @@ func registerPostPaths(t *openapi3.T) {
 		},
 		Responses: responses(
 			200, dataArrayResponse("PostListItemDTO", "文章列表", 200, true),
+		),
+	})
+
+	get(t, "/admin/posts/{id}/views", &openapi3.Operation{
+		Tags:        []string{"文章管理"},
+		Summary:     "文章浏览记录",
+		Description: "需 post:view 权限。仅返回该文章实际持久化的浏览事件（含回收站文章），按 created_at DESC,id ASC 稳定分页。pagination.total 为记录总量，可能与文章累计 view_count 不同；不补造历史事件。",
+		Security:    securityAdmin(),
+		Parameters:  openapi3.Parameters{pathStrParam("id", "文章 ID（UUID）"), pageParam(), limitParam(100)},
+		Responses: responses(
+			200, dataArrayResponse("PostViewDTO", "浏览记录", 200, true),
+			400, errorResponse("文章 ID 无效"),
+			401, errorResponse("未登录"),
+			403, errorResponse("无权查看浏览记录"),
+			404, errorResponse("文章不存在或已彻底删除"),
 		),
 	})
 

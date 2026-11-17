@@ -353,6 +353,7 @@ func TestPostPaths(t *testing.T) {
 		"/posts/archive", "/posts/archive/{year}",
 		"/admin/posts", "/admin/posts/{id}", "/admin/posts/{id}/status",
 		"/admin/posts/import-url", "/admin/posts/slugify", "/admin/posts/reorder",
+		"/admin/posts/{id}/views",
 	} {
 		require.NotNil(t, spec.Paths.Find(p), "missing post path %s", p)
 	}
@@ -375,6 +376,8 @@ func TestPostPaths(t *testing.T) {
 	require.NotEmpty(t, spec.Paths.Find("/admin/posts").Get.Security)
 	require.NotEmpty(t, spec.Paths.Find("/admin/posts/reorder").Post.Security)
 	require.Contains(t, spec.Components.Schemas, "ReorderPostsRequest")
+	require.NotEmpty(t, spec.Paths.Find("/admin/posts/{id}/views").Get.Security)
+	require.Contains(t, spec.Components.Schemas, "PostViewDTO")
 }
 
 func TestPublicBrowseContracts(t *testing.T) {

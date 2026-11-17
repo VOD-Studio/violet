@@ -197,6 +197,7 @@ func NewAdminRouter(d *Deps) chi.Router {
 	// 文章管理（读：post:view；写：权限下放应用层，所有权 + 权限码判定）
 	r.With(middleware.RequirePermission(perm, "post:view")).Get("/posts", postH.ListAll)
 	r.With(middleware.RequirePermission(perm, "post:view")).Get("/posts/{id}", postH.GetByID)
+	r.With(middleware.RequirePermission(perm, permission.PostView.String())).Get("/posts/{id}/views", postH.ListViews)
 	r.With(middleware.RequirePermission(perm, "post:create")).Post("/posts", postH.Create)
 	r.With(middleware.RequirePermission(perm, "post:create")).Post("/posts/import-url", postH.ImportURL)
 	r.With(middleware.RequirePermission(perm, "post:create")).Post("/posts/slugify", postH.Slugify)

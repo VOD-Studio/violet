@@ -41,7 +41,7 @@ func TestReorderHTTP(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			repo := &orderHTTPRepository{err: tc.err}
-			h := NewHandler(nil, apppost.NewOrderService(repo, nil))
+			h := NewHandler(nil, apppost.NewOrderService(repo, nil), nil)
 			r := newJSONRequest(http.MethodPost, "/admin/posts/reorder", tc.body)
 			r = r.WithContext(context.WithValue(r.Context(), middleware.UserIsRootKey, tc.root))
 			w := httptest.NewRecorder()

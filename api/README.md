@@ -130,6 +130,8 @@ REST 端点可用 `middleware.PATAuth` 复用 MCP 的 `PATVerifier`，再用 `Re
 
 置顶复用 `PATCH /admin/posts/{id}/featured` 与 `is_featured`，不引入第二套推荐标记；取消置顶只回到普通层，不改其原排序位置。已发布文章从后台打开 `/blog/{slug}`；草稿和归档文章在后台弹窗通过受 `post:view` 保护的 `GET /admin/posts/{id}` 加载并复用正文渲染器，不伪造公开预览链接。
 
+`GET /admin/posts/{id}/views?page=1&limit=50` 沿用 `post:view` 权限，按文章隔离查询实际 `post_views` 记录（包含回收站文章），按 `created_at DESC,id ASC` 稳定分页；不存在或已硬删除文章返回 404。响应仅含事件序号（字符串）、访问时间、IP 与 User-Agent，不推断登录用户、地理位置或来源。`pagination.total` 是可查询记录数，可能与累计 `view_count` 不同；后台分别展示两者，不补造历史事件。此只读接口不增加浏览量、不修改文章内容。
+
 
 ### 评论回应与排序
 

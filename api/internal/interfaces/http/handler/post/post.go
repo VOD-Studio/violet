@@ -20,12 +20,13 @@ import (
 type Handler struct {
 	svc      *apppost.Service
 	order    *apppost.OrderService
+	views    *apppost.ViewQuery
 	validate *validator.Validate
 }
 
 // NewHandler 创建文章 handler
-func NewHandler(svc *apppost.Service, order *apppost.OrderService) *Handler {
-	return &Handler{svc: svc, order: order, validate: validator.New()}
+func NewHandler(svc *apppost.Service, order *apppost.OrderService, views *apppost.ViewQuery) *Handler {
+	return &Handler{svc: svc, order: order, views: views, validate: validator.New()}
 }
 
 // GetBySlug 按 slug 获取文章（前台公开）
@@ -48,6 +49,16 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.RespondOK(w, dto)
+}
+
+func (h *Handler) ListViews(w http.ResponseWriter, r *http.Request) {
+	page, limit := response.ParsePagingWithMax(r, 100)
+	result, err := h.views.List(r.Context(), r.PathValue("id"), domainshared.PageQuery{Page: page, Limit: limit})
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondPaged(w, result.Items, result.Page, result.Limit, result.Total)
 }
 
 // ListPublished 列出已发布文章（前台公开）
