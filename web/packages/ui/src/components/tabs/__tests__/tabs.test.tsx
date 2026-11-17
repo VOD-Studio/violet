@@ -64,19 +64,17 @@ function mockMetrics(values: {
 	scrollLeft?: number;
 }) {
 	const proto = HTMLElement.prototype;
-	type MetricKey =
-		| "offsetLeft"
-		| "offsetWidth"
-		| "offsetTop"
-		| "offsetHeight"
-		| "scrollWidth"
-		| "clientWidth"
-		| "scrollLeft";
+	vi.spyOn(proto, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+		if (this.dataset.slot !== "tabs-trigger") return new DOMRect();
+		return new DOMRect(
+			values.left ?? 0,
+			values.top ?? 0,
+			values.width ?? 0,
+			values.height ?? 0,
+		);
+	});
+	type MetricKey = "scrollWidth" | "clientWidth" | "scrollLeft";
 	const entries: [MetricKey, number | undefined][] = [
-		["offsetLeft", values.left],
-		["offsetWidth", values.width],
-		["offsetTop", values.top],
-		["offsetHeight", values.height],
 		["scrollWidth", values.scrollWidth],
 		["clientWidth", values.clientWidth],
 		["scrollLeft", values.scrollLeft],

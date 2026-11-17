@@ -142,6 +142,8 @@ ImagePixelReveal 的 `className` 属于根容器，用于约束尺寸；`imgClas
 
 选择类单元（`switch`、`radio`、`toggle-group`、`tabs`、`segmented`）共用一套键盘契约：整组只占一个 Tab 停靠位，方向键在启用项之间移动，跳过禁用项。Switch 与 ToggleGroup 的每项是原生 button（Space/Enter 激活）；RadioGroup 用原生 radio 的方向键换选；Tabs 沿用 Radix 的自动激活。Segmented 默认项是 `role="radio"` 的 button、容器 `role="radiogroup"`，带 `render` 的导航类分段保持普通 group 语义。加载中的 Switch 挂 `aria-busy` 并忽略激活，视觉仍跟随宿主的 `checked`；失败回退由宿主翻转状态完成，圆钮自动滑回。Tabs 的底线指示器与渐隐层对读屏隐藏，测量在客户端完成，SSR 不输出位置。
 
+Tabs 底线按标签的亚像素边界测量，并换算回列表自身的 CSS 坐标（含宿主缩放、边框与滚动偏移），不使用取整的 `offsetLeft` / `offsetWidth` 撑出虚假横向溢出。标签全部放得下时底线也必须留在列表边界内；真实溢出仍可横向滚动，内容面板的纵向滚动与标签焦点环不受影响。
+
 浮层类单元（`popover`、`hover-card`、`tooltip`、`dropdown`、`dropdown-menu`、`context-menu`、`sonner`）共用一套出场：从触发器一侧浮出并淡入，收起往触发器方向退并淡出，不缩放。时长与位移按各自的组件稿：弹出层 200/140ms、6/4px，悬停卡片 200/120ms、4px，文字提示 150/120ms，下拉面板 220/140ms，操作菜单 200/140ms，右键菜单 180/120ms 且收起原地淡出，子菜单 180/140ms。共用关键帧在 `src/styles/float.css`，内容元素带 `.v-float`，基础选择器零优先级，单元用 `--v-float-*` 变量覆盖；系统与宿主 `[data-motion="reduce"]` 下统一覆盖为 100ms 透明度。挂到 body 的内容层级是 `--layer-float`（60，盖过 50 的对话框与侧边面板），原位渲染的下拉是 `--layer-dropdown`（40），文字提示 `--layer-tooltip`（70），轻提示 `--layer-toast`（90）。需要 Portal 的内容都接受 `container`，宿主据此限定挂载范围，并让浮层继承局部明暗、主题与减弱动态。
 
 Popover 非模态：无遮罩，背后可滚动；点外面、Esc、再点触发器关闭，焦点回到触发器，点到别的可聚焦元素时尊重那次聚焦；触发器滚出视野时自动关闭。面板 `role="dialog"`，默认用触发器命名，传 `aria-label` 时以它为准。触发器是 Button 时，打开期间的按下态由 `aria-expanded` 驱动。HoverCard 悬停 500ms 出现、离开 200ms 消失，指针从触发词移到卡片上不消失，键盘聚焦同样延迟出现，Esc 立即消失，触屏不出现；卡片只做预览，不放按钮。Tooltip 的 `TooltipProvider` 默认 0 延迟，指针离开 60ms 后才退回，按下触发器、Esc 与失焦立即收起；相邻触发器之间同一个气泡滑过去（180ms），所以相邻触发器要在同一个 Provider 下；`truncatedOnly` 只在文字确实被截断时出现；气泡不接收指针，不放链接和按钮。
