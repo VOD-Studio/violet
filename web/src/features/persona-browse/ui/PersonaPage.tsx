@@ -273,10 +273,10 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 													reduceMotion
 														? { duration: 0 }
 														: {
-															duration: 0.45,
-															ease: PLATE_EASE,
-															delay: index * 0.05,
-														}
+																duration: 0.45,
+																ease: PLATE_EASE,
+																delay: index * 0.05,
+															}
 												}
 											>
 												<article className={styles.plateFrame}>

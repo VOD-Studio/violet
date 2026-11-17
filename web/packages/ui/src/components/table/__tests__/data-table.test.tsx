@@ -79,7 +79,7 @@ describe("DataTable 列宽", () => {
 			JSON.stringify({ __expand: 37, __select: 41, actions: 140, name: 150 }),
 		);
 
-		vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function(
+		vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (
 			this: Element,
 		) {
 			return { width: this.hasAttribute("data-fit-content") ? 60 : 0 } as DOMRect;
@@ -215,7 +215,7 @@ describe("DataTable 固定列", () => {
 	});
 
 	it("右固定列按内容宽度撑开，宽度为内容加单元格左右内边距", () => {
-		vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function(
+		vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (
 			this: Element,
 		) {
 			return { width: this.hasAttribute("data-fit-content") ? 60 : 0 } as DOMRect;
@@ -455,7 +455,7 @@ describe("DataTable 批量操作栏", () => {
 		const base = {
 			selectable: true,
 			bulkActions: <button type="button">发布</button>,
-			pagination: { page: 1, pageSize: 3, total: 25, onChange: () => { } },
+			pagination: { page: 1, pageSize: 3, total: 25, onChange: () => {} },
 		} satisfies Partial<DataTableProps<Row>>;
 
 		it("整页选满后提示一键选中全部，点击交给调用方", () => {
