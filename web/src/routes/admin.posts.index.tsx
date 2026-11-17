@@ -155,6 +155,7 @@ function AdminPostsPage() {
 			toast.success("文章顺序已保存");
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : "保存文章顺序失败");
+			throw err;
 		} finally {
 			setOptimisticPosts(null);
 			reorderLock.current = false;
