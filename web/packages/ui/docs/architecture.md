@@ -90,6 +90,8 @@ component-manifest.json ──> 根入口 / legacy / exports / 构建与 CSS 清
 
 Button 的主要动作变体统一消费 `primary`、`primary-hover` 和 `primary-foreground`；`text-primary` 在 Tailwind 的文字命名空间里映射到 `primary-text` 可读档，状态色与分类色同理，实色档不直接当文字色。悬停档与前景由算法成对求解，不使用降低对比度的透明混色。链接、选择、进度与装饰有独立语义，工具方言无需靠主要动作变量表达所有品牌反馈。
 
+点赞、收藏等表达喜爱的反馈消费 `affection`，不借用墨色的 `primary` 或危险状态色。它在生成层维护明暗配色，提供 `--affection` 与 Tailwind 的 `text-affection` / `fill-affection`；宿主可按情感反馈语义覆盖，不随季节品牌色变成灰色或绿色。
+
 `@violet/ui/variants` 只导出类名 recipes，不导入 React 组件。新增样式 recipe 时需要检查该入口的依赖图，不能让一次类名计算拉入 Dialog、图表或动效运行时。
 
 ## 组件先承诺行为，再选择外观
