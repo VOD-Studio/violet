@@ -45,7 +45,10 @@ export function CustomEmojiContextMenu({ children }: { children: ReactNode }) {
 		const eventTarget = event.target;
 		const image =
 			eventTarget instanceof Element
-				? eventTarget.closest<HTMLImageElement>("img[data-custom-emoji-id]")
+				? (eventTarget.closest<HTMLImageElement>("img[data-custom-emoji-id]") ??
+					eventTarget
+						.closest("button")
+						?.querySelector<HTMLImageElement>("img[data-custom-emoji-id]"))
 				: null;
 		if (!image || !event.currentTarget.contains(image)) {
 			if (!insideNestedContextMenu(event)) event.stopPropagation();

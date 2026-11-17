@@ -7,7 +7,7 @@ import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { ImagePreview, useImagePreview } from "@shared/ui/image-preview";
 import type { RichTextInputHandle } from "@shared/ui/rich-text-input/RichTextInput";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useChatMembers, useChatMessages, useDeleteChatMessage } from "../api/queries";
 import { useChatDraftField } from "../hooks/use-chat-draft";
@@ -16,9 +16,10 @@ import { useConversationScroll } from "../hooks/useConversationScroll";
 import { panelAppearanceUserIDs } from "../lib/appearance-users";
 import { conversationLabel } from "../lib/conversation";
 import { retryChatMessage, useChatOutbox } from "../model/chat-outbox";
-import type { ChatConversation, ChatMedia, ChatMessage, ChatUser } from "../model/types";
+import type { ChatConversation, ChatMessage, ChatUser } from "../model/types";
 import { ChatAppearanceProvider } from "./appearance/ChatAppearanceProvider";
 import { useChatBackground } from "./appearance/useChatBackground";
+import type { ChatMessageContentProps } from "./ChatMessageContent";
 import { ConversationHeader } from "./ConversationHeader";
 import { ConversationMessageSearch } from "./ConversationMessageSearch";
 import { ConversationMessageViewport } from "./ConversationMessageViewport";
@@ -68,6 +69,23 @@ export function ConversationPanel({
 	const canManage = useHasPermission("chat:manage");
 	const deleteMessage = useDeleteChatMessage();
 	const imagePreview = useImagePreview();
+	const [previewNaturalSize, setPreviewNaturalSize] = useState<{ w: number; h: number } | null>(
+		null,
+	);
+	const handleImage = useCallback<NonNullable<ChatMessageContentProps["onImage"]>>(
+		(media, trigger) => {
+			const image = trigger.querySelector("img");
+			const isOriginal =
+				image &&
+				new URL(image.currentSrc || image.src, document.baseURI).href ===
+					new URL(media.url, document.baseURI).href;
+			const width = media.width ?? (isOriginal ? image.naturalWidth : 0);
+			const height = media.height ?? (isOriginal ? image.naturalHeight : 0);
+			setPreviewNaturalSize(width > 0 && height > 0 ? { w: width, h: height } : null);
+			imagePreview.openPreview([media.url], 0, trigger, [media.thumbnail || media.url]);
+		},
+		[imagePreview.openPreview],
+	);
 	const [replyTarget, setReplyTarget] = useChatDraftField(conversation.id, "reply");
 	const inputRef = useRef<RichTextInputHandle>(null);
 	const headingRef = useRef<HTMLHeadingElement>(null);
@@ -151,7 +169,7 @@ export function ConversationPanel({
 							messageID: message.id,
 						})
 				: undefined,
-		onImage: (media: ChatMedia) => imagePreview.openPreview([media.url]),
+		onImage: handleImage,
 		onMention: handleMention,
 		onReply:
 			message.type !== "system" && !message.is_deleted && !pendingByID.has(message.id)
@@ -254,6 +272,10 @@ export function ConversationPanel({
 					open={imagePreview.open}
 					images={imagePreview.images}
 					currentIndex={imagePreview.currentIndex}
+					thumbnails={imagePreview.thumbnails}
+					triggerElement={imagePreview.triggerElement}
+					initialNaturalSize={previewNaturalSize}
+					wheelAction="close"
 					onClose={imagePreview.closePreview}
 					onIndexChange={imagePreview.setCurrentIndex}
 				/>

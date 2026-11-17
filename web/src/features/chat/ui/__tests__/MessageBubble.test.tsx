@@ -9,13 +9,8 @@ import { TooltipProvider } from "@violet/ui";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { OutgoingMessage } from "../../model/chat-outbox";
-import type {
-	ChatMedia,
-	ChatMessage,
-	ChatMessageReader,
-	ConversationKind,
-} from "../../model/types";
-import { MessageBubble } from "../MessageBubble";
+import type { ChatMessage, ChatMessageReader, ConversationKind } from "../../model/types";
+import { MessageBubble, type MessageBubbleProps } from "../MessageBubble";
 
 vi.mock("@tanstack/react-router", () => ({
 	Link: ({
@@ -94,7 +89,7 @@ function imageMessage(content?: string): ChatMessage {
 
 function renderBubble(
 	message: ChatMessage,
-	onImage: (media: ChatMedia) => void = () => {},
+	onImage: MessageBubbleProps["onImage"] = () => {},
 	conversationKind: ConversationKind = "direct",
 	currentUserID = "u_1",
 	sending?: Pick<OutgoingMessage, "status" | "progress" | "error">,
@@ -174,7 +169,7 @@ describe("MessageBubble", () => {
 		expect(p?.childNodes[0]?.textContent).toBe("123");
 		expect(p?.childNodes[2]?.textContent).toBe("456");
 		fireEvent.click(img);
-		expect(onImage).toHaveBeenCalledWith(media);
+		expect(onImage).toHaveBeenCalledWith(media, img.closest("button"));
 	});
 
 	it("一条消息多图：全部占位符各自还原为对应媒体", () => {
@@ -192,6 +187,36 @@ describe("MessageBubble", () => {
 		expect(imgs[1]?.getAttribute("src")).toBe("https://cdn.example.com/b.png");
 		const p = container.querySelector("p");
 		expect(p?.textContent).toBe("123456789");
+	});
+
+	it.each([false, true])("图片表情在普通与 Bot 消息中均保留预览入口（Bot=%s）", (isBot) => {
+		const onImage = vi.fn();
+		const message: ChatMessage = {
+			...imageMessage("[猫:emoji-1]"),
+			type: "text",
+			media: undefined,
+			sender: { ...sender, is_bot: isBot },
+			custom_emote: {
+				"[猫:emoji-1]": {
+					url: "/uploads/cat.png",
+					gif_url: "/uploads/cat.gif",
+					custom_emoji_id: "emoji-1",
+					relation: "favorited",
+				},
+			},
+		};
+		renderBubble(message, onImage);
+		const trigger = screen.getByRole("button", { name: "查看表情 [猫:emoji-1]" });
+		const image = screen.getByAltText("[猫:emoji-1]");
+		expect(image.getAttribute("src")).toBe("/uploads/cat.gif");
+		expect(image.getAttribute("data-relation")).toBe("favorited");
+		fireEvent.contextMenu(image);
+		expect(onImage).not.toHaveBeenCalled();
+		fireEvent.click(trigger);
+		expect(onImage).toHaveBeenCalledWith(
+			{ url: "/uploads/cat.gif", thumbnail: "/uploads/cat.gif" },
+			trigger,
+		);
 	});
 
 	it("旧格式纯文字说明前置占位符内联渲染", () => {

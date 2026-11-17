@@ -62,23 +62,34 @@ describe("CustomEmojiContextMenu", () => {
 		expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual(["编辑"]);
 	});
 
-	it.each([
-		["none", "收藏到我的表情", favorite.mutate],
-		["favorited", "移出我的表情", unfavorite.mutate],
-		["owned", "删除表情", remove.mutate],
-	] as const)("relation=%s 显示 %s 并调用对应 mutation", (relation, label, mutate) => {
+	it.each(
+		(
+			[
+				["none", "收藏到我的表情", favorite.mutate],
+				["favorited", "移出我的表情", unfavorite.mutate],
+				["owned", "删除表情", remove.mutate],
+			] as const
+		).flatMap(([relation, label, mutate]) =>
+			(["image", "button"] as const).map((target) => ({ relation, label, mutate, target })),
+		),
+	)("relation=$relation 从 $target 打开 $label", ({ relation, label, mutate, target }) => {
 		render(
 			<CustomEmojiContextMenu>
-				<img
-					src="/custom.png"
-					alt="自定义表情"
-					data-custom-emoji-id="emoji-1"
-					data-relation={relation}
-				/>
+				<button type="button" aria-label="查看表情">
+					<img
+						src="/custom.png"
+						alt="自定义表情"
+						data-custom-emoji-id="emoji-1"
+						data-relation={relation}
+					/>
+				</button>
 			</CustomEmojiContextMenu>,
 		);
-		const image = screen.getByAltText("自定义表情");
-		fireEvent.contextMenu(image);
+		fireEvent.contextMenu(
+			target === "image"
+				? screen.getByAltText("自定义表情")
+				: screen.getByRole("button", { name: "查看表情" }),
+		);
 
 		expect(screen.getByRole("menuitem").textContent).toContain(label);
 		fireEvent.click(screen.getByRole("menuitem"));
