@@ -27,6 +27,7 @@ import { useMemo } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
+import { collectChatLinks } from "../lib/chat-links";
 import {
 	rehypeChatEmoji,
 	rehypeChatInlineImage,
@@ -34,6 +35,8 @@ import {
 	remarkChatInline,
 } from "../lib/chat-markdown";
 import type { ChatMedia, ChatUser } from "../model/types";
+import { ChatLinkCards } from "./ChatLinkCards";
+import { ChatLinkContextMenu } from "./ChatLinkContextMenu";
 
 const REMARK_PLUGINS = [remarkChatInline, remarkBreaks];
 const BOT_REMARK_PLUGINS = [remarkGfm, remarkBreaks];
@@ -52,6 +55,24 @@ function nodeToText(node: ReactNode): string {
 
 function HeadingFallback({ children }: { children?: ReactNode }) {
 	return <strong className="font-semibold">{children}</strong>;
+}
+
+function ChatMarkdownLink({
+	children,
+	href,
+}: ComponentProps<NonNullable<Exclude<Components["a"], string>>>) {
+	const link = (
+		<a
+			href={href}
+			target="_blank"
+			rel="noopener noreferrer"
+			className="underline underline-offset-2 hover:opacity-80"
+		>
+			{children}
+		</a>
+	);
+	if (!href || !/^https?:\/\//i.test(href)) return link;
+	return <ChatLinkContextMenu href={href}>{link}</ChatLinkContextMenu>;
 }
 
 /** Markdown 图片语法 ![]() 降级为链接，不加载：见文件头注释的隐私考虑。 */
@@ -101,14 +122,9 @@ function chatImg({
 	// 内联图片占位符 ![img:id] 未命中 inlineMedia（如文本消息）时不渲染，避免占位符泄漏
 	if (props["data-image"]) return null;
 	return (
-		<a
-			href={typeof src === "string" ? src : undefined}
-			target="_blank"
-			rel="noopener noreferrer"
-			className="underline underline-offset-2 hover:opacity-80"
-		>
+		<ChatMarkdownLink href={typeof src === "string" ? src : undefined}>
 			{alt || src}
-		</a>
+		</ChatMarkdownLink>
 	);
 }
 
@@ -149,16 +165,7 @@ function chatSpan({
 
 const chatMarkdownComponents: Components = {
 	p: ({ children }) => <p className="my-1 first:mt-0 last:mb-0">{children}</p>,
-	a: ({ children, href }) => (
-		<a
-			href={href}
-			target="_blank"
-			rel="noopener noreferrer"
-			className="underline underline-offset-2 hover:opacity-80"
-		>
-			{children}
-		</a>
-	),
+	a: ChatMarkdownLink,
 	strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
 	em: ({ children }) => <em className="italic">{children}</em>,
 	del: ({ children }) => <del className="line-through opacity-80">{children}</del>,
@@ -244,6 +251,7 @@ export function ChatMessageContent({
 	onImage,
 	variant = "chat",
 }: ChatMessageContentProps) {
+	const links = useMemo(() => collectChatLinks(content, variant), [content, variant]);
 	const rehypePlugins = useMemo(
 		() => [
 			rehypeChatEmoji(emote),
@@ -300,6 +308,7 @@ export function ChatMessageContent({
 			>
 				{content}
 			</ReactMarkdown>
+			<ChatLinkCards links={links} />
 		</div>
 	);
 }

@@ -5,6 +5,7 @@
  * 列表/标题；单换行保留为 <br>；Markdown 图片降级为链接；表情占位符替换与
  * 嵌套格式兼容。
  */
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ChatMessageContent } from "../ChatMessageContent";
@@ -15,8 +16,16 @@ describe("ChatMessageContent", () => {
 	});
 
 	it("渲染行内格式：粗体/斜体/删除线/行内代码/链接", () => {
+		const client = new QueryClient();
+		client.setQueryData(["link-previews", "https://example.com/"], {
+			url: "https://example.com/",
+			card: null,
+			pending: false,
+		});
 		const { container } = render(
-			<ChatMessageContent content="**粗体** *斜体* ~~删除线~~ `code` [链接](https://example.com)" />,
+			<QueryClientProvider client={client}>
+				<ChatMessageContent content="**粗体** *斜体* ~~删除线~~ `code` [链接](https://example.com)" />
+			</QueryClientProvider>,
 		);
 		expect(container.querySelector("strong")?.textContent).toBe("粗体");
 		expect(container.querySelector("em")?.textContent).toBe("斜体");
