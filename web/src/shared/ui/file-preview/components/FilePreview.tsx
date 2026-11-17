@@ -103,7 +103,7 @@ export function FilePreview({
 	const viewer = variant === "viewer";
 	const rendererClassName = viewer ? getViewerRendererClass(kind) : undefined;
 
-	function renderPreview() {
+	const renderPreview = () => {
 		switch (kind) {
 			case "image":
 				return (
@@ -177,7 +177,7 @@ export function FilePreview({
 					/>
 				);
 		}
-	}
+	};
 
 	return (
 		<FilePreviewVariantContext.Provider value={variant}>

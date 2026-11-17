@@ -143,7 +143,7 @@ export function SiteNavbar({
 		let label: string | undefined = item.label;
 		if (current && activeText) {
 			label = reading && !collapsed ? `${item.label} / ${activeText}` : activeText;
-		} else if (current && collapsed) {
+		} else if (collapsed) {
 			label = undefined;
 		}
 		const characters = !expanded && label ? Array.from(label) : null;

@@ -45,7 +45,7 @@ export function CodeRunner({
 		setOutput([]);
 	}, [language, source, reset]);
 
-	function handleRun(code: string) {
+	const handleRun = (code: string) => {
 		if (!policy.allowed || running) return;
 		setOutput([{ kind: "info", text: "运行中…\n" }]);
 		void run(
@@ -57,7 +57,7 @@ export function CodeRunner({
 			},
 			overrides,
 		);
-	}
+	};
 
 	return (
 		<CodeBlock

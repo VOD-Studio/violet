@@ -25,6 +25,8 @@ func setupPostTestDB(t *testing.T) *gorm.DB {
 	})
 	require.NoError(t, err)
 	require.NoError(t, db.AutoMigrate(&model.Post{}, &model.Tag{}, &model.PostView{}))
+	// SQLite 夹具不验证 PostgreSQL 序列；排序分配由真实数据库测试覆盖。
+	require.NoError(t, db.Exec("ALTER TABLE posts ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0").Error)
 	t.Cleanup(func() {
 		if sqlDB, err := db.DB(); err == nil {
 			_ = sqlDB.Close()

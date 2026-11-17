@@ -86,7 +86,7 @@ export function Alert({
 	const canDismiss = !compact && (dismissible ?? onDismiss !== undefined);
 	if (phase === "collapsed" && canDismiss) return null;
 
-	function close() {
+	const close = () => {
 		const next = nextFocusable(rootRef.current);
 		const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 		const fade = reduced ? 0 : 140;
@@ -113,7 +113,7 @@ export function Alert({
 				);
 			}, fade),
 		);
-	}
+	};
 
 	return (
 		<div

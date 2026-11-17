@@ -26,13 +26,13 @@ export function MarkdownPreview({ url, name, className }: MarkdownPreviewProps) 
 	const [copied, setCopied] = useState(false);
 	const viewer = useFilePreviewVariant() === "viewer";
 
-	async function handleCopy() {
+	const handleCopy = async () => {
 		const ok = await copyText(source);
 		if (ok) {
 			setCopied(true);
 			setTimeout(() => setCopied(false), 2000);
 		}
-	}
+	};
 
 	return (
 		<div

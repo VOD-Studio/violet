@@ -48,6 +48,7 @@
 	--success: var(--material-ok);
 	--success-text: var(--material-ok);
 	--success-foreground: var(--success-contrast);
+	--affection: var(--fixed-affection);
 	--border: var(--material-rule);
 	--input: var(--material-rule);
 	--ring: var(--material-accent);

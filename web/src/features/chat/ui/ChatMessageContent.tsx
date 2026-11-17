@@ -17,6 +17,7 @@
  */
 
 import type { CommentEmoteRef } from "@entities/comment/model/types";
+import { originalImageUrl } from "@shared/lib/image-url";
 import { MENTION_ALL } from "@shared/lib/mention-token";
 import { Link } from "@tanstack/react-router";
 import { CodeBlock, InlineCode } from "@violet/ui";
@@ -26,6 +27,7 @@ import { useMemo } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
+import { parseChatLinks } from "../lib/chat-links";
 import {
 	rehypeChatEmoji,
 	rehypeChatInlineImage,
@@ -33,6 +35,8 @@ import {
 	remarkChatInline,
 } from "../lib/chat-markdown";
 import type { ChatMedia, ChatUser } from "../model/types";
+import { ChatLinkCards } from "./ChatLinkCards";
+import { ChatLinkContextMenu } from "./ChatLinkContextMenu";
 
 const REMARK_PLUGINS = [remarkChatInline, remarkBreaks];
 const BOT_REMARK_PLUGINS = [remarkGfm, remarkBreaks];
@@ -53,12 +57,33 @@ function HeadingFallback({ children }: { children?: ReactNode }) {
 	return <strong className="font-semibold">{children}</strong>;
 }
 
+function ChatMarkdownLink({
+	children,
+	href,
+}: ComponentProps<NonNullable<Exclude<Components["a"], string>>>) {
+	const link = (
+		<a
+			href={href}
+			target="_blank"
+			rel="noopener noreferrer"
+			className="underline underline-offset-2 hover:opacity-80"
+		>
+			{children}
+		</a>
+	);
+	if (!href || !/^https?:\/\//i.test(href)) return link;
+	return <ChatLinkContextMenu href={href}>{link}</ChatLinkContextMenu>;
+}
+
 /** Markdown 图片语法 ![]() 降级为链接，不加载：见文件头注释的隐私考虑。 */
 function chatImg({
 	src,
 	alt,
+	onImage,
 	...rest
-}: ComponentProps<NonNullable<Exclude<Components["img"], string>>>) {
+}: ComponentProps<NonNullable<Exclude<Components["img"], string>>> & {
+	onImage?: ChatMessageContentProps["onImage"];
+}) {
 	const props = rest as Record<string, unknown>;
 	if (props["data-emoji"]) {
 		const customEmojiID =
@@ -67,7 +92,7 @@ function chatImg({
 				: undefined;
 		const relation =
 			typeof props["data-relation"] === "string" ? props["data-relation"] : undefined;
-		return (
+		const image = (
 			<img
 				src={typeof src === "string" ? src : undefined}
 				alt={alt ?? ""}
@@ -77,18 +102,29 @@ function chatImg({
 				loading="lazy"
 			/>
 		);
+		if (!onImage || typeof src !== "string") return image;
+		return (
+			<button
+				type="button"
+				aria-label={`查看表情 ${alt ?? ""}`}
+				className={cn(
+					props.className as string | undefined,
+					"focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2",
+				)}
+				onClick={(event) =>
+					onImage({ url: originalImageUrl(src), thumbnail: src }, event.currentTarget)
+				}
+			>
+				{image}
+			</button>
+		);
 	}
 	// 内联图片占位符 ![img:id] 未命中 inlineMedia（如文本消息）时不渲染，避免占位符泄漏
 	if (props["data-image"]) return null;
 	return (
-		<a
-			href={typeof src === "string" ? src : undefined}
-			target="_blank"
-			rel="noopener noreferrer"
-			className="underline underline-offset-2 hover:opacity-80"
-		>
+		<ChatMarkdownLink href={typeof src === "string" ? src : undefined}>
 			{alt || src}
-		</a>
+		</ChatMarkdownLink>
 	);
 }
 
@@ -129,16 +165,7 @@ function chatSpan({
 
 const chatMarkdownComponents: Components = {
 	p: ({ children }) => <p className="my-1 first:mt-0 last:mb-0">{children}</p>,
-	a: ({ children, href }) => (
-		<a
-			href={href}
-			target="_blank"
-			rel="noopener noreferrer"
-			className="underline underline-offset-2 hover:opacity-80"
-		>
-			{children}
-		</a>
-	),
+	a: ChatMarkdownLink,
 	strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
 	em: ({ children }) => <em className="italic">{children}</em>,
 	del: ({ children }) => <del className="line-through opacity-80">{children}</del>,
@@ -205,8 +232,11 @@ export interface ChatMessageContentProps {
 	className?: string;
 	/** 消息自带的上传媒体列表：`![img:id]` 占位符命中任一 id 时还原为内联图片 */
 	inlineMedia?: ChatMedia[];
-	/** 内联图片点击回调（打开原图预览） */
-	onImage?: (media: ChatMedia) => void;
+	/** 图片与表情的原图信息及当前触发元素，用于预览开合定位。 */
+	onImage?: (
+		media: Pick<ChatMedia, "url" | "thumbnail" | "width" | "height">,
+		triggerElement: HTMLElement,
+	) => void;
 	/** bot 启用标题、表格与任务列表。 */
 	variant?: "chat" | "bot";
 }
@@ -221,6 +251,7 @@ export function ChatMessageContent({
 	onImage,
 	variant = "chat",
 }: ChatMessageContentProps) {
+	const { links, linkOnly } = useMemo(() => parseChatLinks(content, variant), [content, variant]);
 	const rehypePlugins = useMemo(
 		() => [
 			rehypeChatEmoji(emote),
@@ -231,9 +262,9 @@ export function ChatMessageContent({
 	);
 	const components = useMemo<Components>(() => {
 		const base = variant === "bot" ? botMarkdownComponents : chatMarkdownComponents;
-		if (!inlineMedia?.length) return base;
+		if (!inlineMedia?.length && !onImage) return base;
 		const mediaByID: Record<string, ChatMedia> = {};
-		for (const media of inlineMedia) mediaByID[media.id] = media;
+		for (const media of inlineMedia ?? []) mediaByID[media.id] = media;
 		return {
 			...base,
 			img: ({ src, alt, ...rest }) => {
@@ -241,7 +272,7 @@ export function ChatMessageContent({
 				const imageID = props["data-image"];
 				const media = typeof imageID === "string" ? mediaByID[imageID] : undefined;
 				if (!media) {
-					return chatImg({ src, alt, ...rest });
+					return chatImg({ src, alt, ...rest, onImage });
 				}
 				const img = (
 					<img
@@ -256,8 +287,8 @@ export function ChatMessageContent({
 				return (
 					<button
 						aria-label="查看图片"
-						className="inline-block align-text-bottom"
-						onClick={() => onImage(media)}
+						className="inline-block align-text-bottom focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+						onClick={(event) => onImage(media, event.currentTarget)}
 						type="button"
 					>
 						{img}
@@ -270,13 +301,16 @@ export function ChatMessageContent({
 	// 不解除自动最小尺寸就会把气泡顶宽，而不是让代码块自己横向滚动。
 	return (
 		<div className={cn("min-w-0", className)}>
-			<ReactMarkdown
-				remarkPlugins={variant === "bot" ? BOT_REMARK_PLUGINS : REMARK_PLUGINS}
-				rehypePlugins={rehypePlugins}
-				components={components}
-			>
-				{content}
-			</ReactMarkdown>
+			{!linkOnly && (
+				<ReactMarkdown
+					remarkPlugins={variant === "bot" ? BOT_REMARK_PLUGINS : REMARK_PLUGINS}
+					rehypePlugins={rehypePlugins}
+					components={components}
+				>
+					{content}
+				</ReactMarkdown>
+			)}
+			<ChatLinkCards links={links} />
 		</div>
 	);
 }

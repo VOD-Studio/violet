@@ -81,6 +81,7 @@ function ImagePreviewDialog({
 	alts,
 	thumbnails,
 	currentIndex = 0,
+	wheelAction = "close",
 	onIndexChange,
 	triggerElement,
 	triggerRect,
@@ -114,6 +115,7 @@ function ImagePreviewDialog({
 		currentIndex,
 		onIndexChange,
 		onClose,
+		wheelAction,
 	});
 
 	const chromeOpacity = useTransform(closeProgress, [0, 1], [1, 0]);
@@ -346,7 +348,7 @@ function ImagePreviewDialog({
 								flipY={flipY}
 								onLoad={() => setLoadedSource(images[index])}
 								onReset={handleResetAll}
-								onWheelFollow={handleWheel}
+								onWheelDelta={handleWheel}
 								onSwipeLeft={images.length > 1 ? handleNext : undefined}
 								onSwipeRight={images.length > 1 ? handlePrevious : undefined}
 								resetKey={resetKey}
@@ -362,7 +364,9 @@ function ImagePreviewDialog({
 								style={{ opacity: chromeOpacity }}
 							>
 								<ImagePreviewThumbnails
-									images={thumbnails ?? images}
+									images={images.map(
+										(src, imageIndex) => thumbnails?.[imageIndex] || src,
+									)}
 									currentIndex={index}
 									onSelect={handleSelect}
 								/>

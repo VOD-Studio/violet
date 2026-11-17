@@ -2,7 +2,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const useRepos = vi.fn();
-vi.mock("../../api/queries", () => ({
+vi.mock("@entities/github/api/queries", () => ({
 	useRepos: () => useRepos(),
 }));
 

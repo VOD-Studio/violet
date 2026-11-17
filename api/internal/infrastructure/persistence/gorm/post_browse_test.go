@@ -125,7 +125,7 @@ func TestPostRepository_PublicBrowseDuplicateTags(t *testing.T) {
 func TestPostPublicBrowseHTTP(t *testing.T) {
 	db := setupPostTestDB(t)
 	seedPublicBrowsePosts(t, db, domainshared.NewID())
-	h := posthttp.NewHandler(apppost.NewService(NewPostRepository(db), nil, nil, nil, nil, nil))
+	h := posthttp.NewHandler(apppost.NewService(NewPostRepository(db), nil, nil, nil, nil, nil), nil, nil)
 	for _, tc := range []struct {
 		query string
 		want  string
@@ -195,7 +195,7 @@ func TestPostRepository_PublicTagCountsEmptyAndTie(t *testing.T) {
 		{Slug: "zeta", Name: "Zeta", Count: 1},
 	}, counts)
 
-	h := posthttp.NewHandler(apppost.NewService(repo, nil, nil, nil, nil, nil))
+	h := posthttp.NewHandler(apppost.NewService(repo, nil, nil, nil, nil, nil), nil, nil)
 	w := httptest.NewRecorder()
 	h.FilterTags(w, httptest.NewRequest(http.MethodGet, "/posts/filters/tags?source=repost", nil))
 	require.Equal(t, http.StatusOK, w.Code, w.Body.String())

@@ -7,6 +7,7 @@
 	--fixed-image-overlay: rgb(0 0 0 / 0.4);
 	--fixed-image-overlay-strong: rgb(0 0 0 / 0.6);
 	--fixed-image-overlay-foreground: #fff;
+	--fixed-affection: light-dark(oklch(0.55 0.2 15), oklch(0.75 0.16 15));
 	--seed-spring: #f47983;
 	--seed-summer: #2f9e7a;
 	--seed-autumn: #d9a21b;

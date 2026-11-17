@@ -217,7 +217,10 @@ for (const viewport of [
 		expect(Math.abs(confirmedText.y - pendingTextBounds.y)).toBeLessThanOrEqual(0.5);
 		await editor.fill("失败重试");
 		await send.click();
-		await page.getByRole("button", { name: "重试", exact: true }).click();
+		const retry = page.getByRole("button", { name: "重试", exact: true });
+		await retry.focus();
+		await expect(page.getByRole("tooltip")).toContainText("测试发送失败");
+		await retry.click();
 		await expect(page.getByRole("button", { name: "重试", exact: true })).toHaveCount(0);
 		expect(retryKeys).toHaveLength(2);
 		expect(retryKeys[0]).toBe(retryKeys[1]);

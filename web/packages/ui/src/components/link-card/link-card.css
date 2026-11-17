@@ -1,3 +1,5 @@
+@import "../skeleton/skeleton.css";
+
 @layer components {
 	/*
 	 * 链接卡：纸片底色 + 软影 + 12 圆角，缩略图随卡角裁切。
@@ -61,6 +63,22 @@
 		gap: 0.25rem;
 		min-inline-size: 0;
 		padding: 0.75rem;
+	}
+
+	.v-link-card__skeleton {
+		display: grid;
+		gap: 0.5rem;
+		padding-block: 0.25rem;
+	}
+
+	.v-link-card__skeleton-title {
+		inline-size: 72%;
+		block-size: 0.875rem;
+	}
+
+	.v-link-card__skeleton-description {
+		inline-size: 48%;
+		block-size: 0.75rem;
 	}
 
 	.v-link-card__title,

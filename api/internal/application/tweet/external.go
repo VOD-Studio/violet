@@ -436,6 +436,26 @@ func (s *Service) PreviewExternal(ctx context.Context, userID, url string) (Exte
 	return s.external.Preview(ctx, userID, url)
 }
 
+// ResolveExternal 读取共享原文快照，不生成发布凭证或时间线记录。
+func (s *Service) ResolveExternal(ctx context.Context, rawURL string) (ExternalTweetDTO, error) {
+	if s.external == nil {
+		return ExternalTweetDTO{}, shared.Internal("X 转发服务未启用", nil)
+	}
+	sourceID, err := domaintweet.ParseXURL(rawURL)
+	if err != nil {
+		return ExternalTweetDTO{}, err
+	}
+	ext, err := s.external.load(ctx, sourceID, false)
+	if err != nil {
+		return ExternalTweetDTO{}, externalError(err)
+	}
+	dtos, err := s.external.GetMany(ctx, []shared.ID{ext.ID})
+	if err != nil {
+		return ExternalTweetDTO{}, err
+	}
+	return dtos[ext.ID.String()], nil
+}
+
 func (s *Service) WithdrawExternal(ctx context.Context, id string) error {
 	if !s.canManageExternal(ctx) {
 		return shared.Forbidden("无权下架共享原文")

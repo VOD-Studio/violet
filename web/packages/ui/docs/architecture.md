@@ -90,6 +90,8 @@ component-manifest.json ──> 根入口 / legacy / exports / 构建与 CSS 清
 
 Button 的主要动作变体统一消费 `primary`、`primary-hover` 和 `primary-foreground`；`text-primary` 在 Tailwind 的文字命名空间里映射到 `primary-text` 可读档，状态色与分类色同理，实色档不直接当文字色。悬停档与前景由算法成对求解，不使用降低对比度的透明混色。链接、选择、进度与装饰有独立语义，工具方言无需靠主要动作变量表达所有品牌反馈。
 
+点赞、收藏等表达喜爱的反馈消费 `affection`，不借用墨色的 `primary` 或危险状态色。它在生成层维护明暗配色，提供 `--affection` 与 Tailwind 的 `text-affection` / `fill-affection`；宿主可按情感反馈语义覆盖，不随季节品牌色变成灰色或绿色。
+
 `@violet/ui/variants` 只导出类名 recipes，不导入 React 组件。新增样式 recipe 时需要检查该入口的依赖图，不能让一次类名计算拉入 Dialog、图表或动效运行时。
 
 ## 组件先承诺行为，再选择外观
@@ -141,6 +143,8 @@ ImagePixelReveal 的 `className` 属于根容器，用于约束尺寸；`imgClas
 数据展示与反馈单元（`steps`、`breadcrumbs`、`page-header`、`progress`、`alert`、`empty`、`chart`）把状态与版式拆开：Steps 只按 `current` 推导完成/当前/未到，只有已完成的步骤可点回去；Breadcrumbs 超过四级把中间层折进菜单，窄容器只留返回上一级；PageHeader 的窄条与完整页头共用同一份 DOM，由宿主按滚动位置切换 `compact`，不复制标题与操作；Progress 的条形与圆环用 `aria-valuenow` / `aria-valuetext` 表达百分比与结果，颜色只做辅助；Alert 的危险语气用 `role="alert"`，关闭后退场动画结束才把焦点交给下一个可聚焦元素；Empty 只负责标题、说明、插画槽与出口，文案要求写「发生了什么、现在能做什么」。Chart 保留 Recharts 外壳并新增 `Stat` 与 `MiniBars`，分类色取 `--chart-1` 到 `--chart-5`，统计整项以一句完整的话作为读屏名称。
 
 选择类单元（`switch`、`radio`、`toggle-group`、`tabs`、`segmented`）共用一套键盘契约：整组只占一个 Tab 停靠位，方向键在启用项之间移动，跳过禁用项。Switch 与 ToggleGroup 的每项是原生 button（Space/Enter 激活）；RadioGroup 用原生 radio 的方向键换选；Tabs 沿用 Radix 的自动激活。Segmented 默认项是 `role="radio"` 的 button、容器 `role="radiogroup"`，带 `render` 的导航类分段保持普通 group 语义。加载中的 Switch 挂 `aria-busy` 并忽略激活，视觉仍跟随宿主的 `checked`；失败回退由宿主翻转状态完成，圆钮自动滑回。Tabs 的底线指示器与渐隐层对读屏隐藏，测量在客户端完成，SSR 不输出位置。
+
+Tabs 底线按标签的亚像素边界测量，并换算回列表自身的 CSS 坐标（含宿主缩放、边框与滚动偏移），不使用取整的 `offsetLeft` / `offsetWidth` 撑出虚假横向溢出。标签全部放得下时底线也必须留在列表边界内；真实溢出仍可横向滚动，内容面板的纵向滚动与标签焦点环不受影响。
 
 浮层类单元（`popover`、`hover-card`、`tooltip`、`dropdown`、`dropdown-menu`、`context-menu`、`sonner`）共用一套出场：从触发器一侧浮出并淡入，收起往触发器方向退并淡出，不缩放。时长与位移按各自的组件稿：弹出层 200/140ms、6/4px，悬停卡片 200/120ms、4px，文字提示 150/120ms，下拉面板 220/140ms，操作菜单 200/140ms，右键菜单 180/120ms 且收起原地淡出，子菜单 180/140ms。共用关键帧在 `src/styles/float.css`，内容元素带 `.v-float`，基础选择器零优先级，单元用 `--v-float-*` 变量覆盖；系统与宿主 `[data-motion="reduce"]` 下统一覆盖为 100ms 透明度。挂到 body 的内容层级是 `--layer-float`（60，盖过 50 的对话框与侧边面板），原位渲染的下拉是 `--layer-dropdown`（40），文字提示 `--layer-tooltip`（70），轻提示 `--layer-toast`（90）。需要 Portal 的内容都接受 `container`，宿主据此限定挂载范围，并让浮层继承局部明暗、主题与减弱动态。
 

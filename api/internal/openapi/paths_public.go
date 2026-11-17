@@ -176,6 +176,17 @@ func registerPublicPaths(t *openapi3.T) {
 		},
 	})
 
+	registerSchema(t, "GitHubRepoDTO", openapi3.Schemas{
+		"name": reqStr("仓库名"), "description": reqStr("项目简介"), "url": reqStr("仓库地址"),
+		"language": reqStr("主要语言"), "stars": optInt("星标数"), "forks": optInt("Fork 数"), "pinned": optBool("是否置顶"),
+	})
+	get(t, "/github/repos/{owner}/{repo}", &openapi3.Operation{
+		Tags: []string{"GitHub"}, Summary: "读取公开 GitHub 仓库", Security: securityCookie(),
+		Description: "只接受仓库标识，固定 GitHub API 主机、禁止重定向、拒绝私有仓库。服务端缓存 5 分钟，每 IP 每分钟 30 次。",
+		Parameters: openapi3.Parameters{pathStrParam("owner", "所有者"), pathStrParam("repo", "仓库名")},
+		Responses: responses(200, dataResponse("GitHubRepoDTO", "公开仓库元数据", 200), 400, errorResponse("无效的仓库标识"), 401, errorResponse("请先登录"), 429, errorResponse("请求过于频繁"), 500, errorResponse("GitHub 暂不可用")),
+	})
+
 	// ---- GET /projects ----
 	t.Paths.Set("/projects", &openapi3.PathItem{
 		Get: &openapi3.Operation{

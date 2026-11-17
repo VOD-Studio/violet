@@ -36,8 +36,8 @@ export interface ImagePreviewImageProps {
 	/** 原图解码完成后触发。 */
 	onLoad: () => void;
 	onReset: () => void;
-	/** 已换算为像素的垂直滚动增量；首次方向用于收回，反向用于恢复。 */
-	onWheelFollow: (deltaY: number) => void;
+	/** 已换算为像素的垂直滚动增量，由查看场景决定关闭或缩放。 */
+	onWheelDelta: (deltaY: number) => void;
 	onSwipeLeft?: () => void;
 	onSwipeRight?: () => void;
 	resetKey: number;
@@ -86,7 +86,7 @@ export function ImagePreviewImage({
 	flipY,
 	onLoad,
 	onReset,
-	onWheelFollow,
+	onWheelDelta,
 	onSwipeLeft,
 	onSwipeRight,
 	resetKey,
@@ -101,7 +101,6 @@ export function ImagePreviewImage({
 	const [viewport, setViewport] = useState(() => measureViewport(frame));
 	const imgRef = useRef<HTMLImageElement>(null);
 	const stageRef = useRef<HTMLDivElement>(null);
-	const wheelActive = useRef(false);
 	const decodingImage = useRef<HTMLImageElement | null>(null);
 	const active = useRef(true);
 	const gesture = useRef<Gesture | null>(null);
@@ -167,15 +166,14 @@ export function ImagePreviewImage({
 		if (!stage || !isPresent) return;
 		const followWheel = (event: WheelEvent) => {
 			event.preventDefault();
-			wheelActive.current = true;
-			onWheelFollow(
+			onWheelDelta(
 				event.deltaY *
 					(event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1),
 			);
 		};
 		stage.addEventListener("wheel", followWheel, { passive: false });
 		return () => stage.removeEventListener("wheel", followWheel);
-	}, [isPresent, onWheelFollow]);
+	}, [isPresent, onWheelDelta]);
 
 	useEffect(() => {
 		const resize = () => setViewport(measureViewport(frame));
@@ -284,7 +282,6 @@ export function ImagePreviewImage({
 	};
 
 	const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
-		if (wheelActive.current) wheelActive.current = false;
 		const current = gesture.current;
 		if (!current || current.pointerId !== event.pointerId) return;
 		const x = event.clientX - current.startX;

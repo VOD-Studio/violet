@@ -21,7 +21,7 @@ export function DecorationPicker({ className }: { className?: string }) {
 		if (preference !== "theme" && preference !== "none") lastSeason.current = preference;
 	}, [preference]);
 
-	function selectMode(mode: string) {
+	const selectMode = (mode: string) => {
 		if (independent) lastSeason.current = preference;
 		if (mode === "theme" || mode === "none") {
 			void switchDecoration(mode);
@@ -30,7 +30,7 @@ export function DecorationPicker({ className }: { className?: string }) {
 				lastSeason.current ?? season ?? resolvePresetTheme("follow", new Date()),
 			);
 		}
-	}
+	};
 
 	return (
 		<section aria-label="季节装饰" className={className}>

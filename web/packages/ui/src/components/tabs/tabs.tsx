@@ -83,9 +83,30 @@ export function TabsList({
 		const list = listRef.current;
 		const active = list?.querySelector<HTMLElement>(ACTIVE_TRIGGER_SELECTOR);
 		if (!list || !active) return;
-		const next = vertical
-			? { offset: active.offsetTop, size: active.offsetHeight }
-			: { offset: active.offsetLeft, size: active.offsetWidth };
+		const rect = active.getBoundingClientRect();
+		const origin = list.getBoundingClientRect();
+		const style = getComputedStyle(list);
+		const borderStart =
+			parseFloat(vertical ? style.borderTopWidth : style.borderLeftWidth) || 0;
+		const borderEnd =
+			parseFloat(vertical ? style.borderBottomWidth : style.borderRightWidth) || 0;
+		let size = parseFloat(vertical ? style.height : style.width);
+		if (style.boxSizing !== "border-box") {
+			size +=
+				(parseFloat(vertical ? style.paddingTop : style.paddingLeft) || 0) +
+				(parseFloat(vertical ? style.paddingBottom : style.paddingRight) || 0) +
+				borderStart +
+				borderEnd;
+		}
+		// offsetLeft / offsetWidth 会取整，末项底线可能因此撑出不足 1px 的滚动区。
+		const scale = (size && (vertical ? origin.height : origin.width) / size) || 1;
+		const next = {
+			offset:
+				(vertical ? rect.top - origin.top : rect.left - origin.left) / scale -
+				borderStart +
+				(vertical ? list.scrollTop : list.scrollLeft),
+			size: (vertical ? rect.height : rect.width) / scale,
+		};
 		setGeometry((prev) =>
 			prev && prev.offset === next.offset && prev.size === next.size ? prev : next,
 		);

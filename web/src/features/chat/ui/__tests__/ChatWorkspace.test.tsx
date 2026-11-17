@@ -552,6 +552,45 @@ describe("ChatWorkspace", () => {
 		);
 	}
 
+	it("打开图片与表情预览时不重建来源按钮", () => {
+		const result = defaultChatMessagesResult();
+		result.data.pages[0].data = [
+			{
+				...mockConversation.last_message,
+				type: "image",
+				content: "![img:photo][猫:emoji-1]",
+				media: [
+					{
+						id: "photo",
+						url: "/uploads/photo.png",
+						thumbnail: "/uploads/photo-thumb.png",
+						mime_type: "image/png",
+						size: 1,
+						width: 1600,
+						height: 900,
+					},
+				],
+				custom_emote: {
+					"[猫:emoji-1]": {
+						url: "/uploads/cat.png",
+						custom_emoji_id: "emoji-1",
+						relation: "none",
+					},
+				},
+			},
+		];
+		useChatMessagesMock.mockReturnValue(result);
+		renderRoom();
+		const photo = screen.getByRole("button", { name: "查看图片" });
+		const emoji = screen.getByRole("button", { name: "查看表情 [猫:emoji-1]" });
+
+		fireEvent.click(photo);
+		expect(photo.isConnected).toBe(true);
+		fireEvent.keyDown(document, { key: "Escape" });
+		fireEvent.click(emoji);
+		expect(emoji.isConnected).toBe(true);
+	});
+
 	it("点击消息发送者名字追加提及，保留草稿并发送用户 ID", async () => {
 		useChatMessagesMock.mockReturnValue({
 			...defaultChatMessagesResult(),

@@ -2,7 +2,7 @@
  * 全屏查看图片组。
  *
  * @remarks 鼠标拖动与触摸轻扫可循环切图，放大后拖动平移。
- * 滚轮手势从图片区域开始，仅控制逐渐收回与反向恢复；图片缩放使用工具栏或快捷键。
+ * 阅读场景滚轮直接关闭，图片检查场景滚轮缩放；工具栏与缩略图保留自身交互。
  */
 export interface ImagePreviewProps {
 	open: boolean;
@@ -16,6 +16,8 @@ export interface ImagePreviewProps {
 	 */
 	thumbnails?: string[];
 	currentIndex?: number;
+	/** close 用于快速预览后返回正文；zoom 用于图库与素材检查，滚轮不关闭。 */
+	wheelAction?: "close" | "zoom";
 	onIndexChange?: (index: number) => void;
 	/** 触发预览的原始图片元素，用于计算入场与收回位置。 */
 	triggerElement?: HTMLElement | null;

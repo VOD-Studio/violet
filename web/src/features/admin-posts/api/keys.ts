@@ -1,4 +1,4 @@
-import type { AdminPostListQuery } from "../model/types";
+import type { AdminPostListQuery, PostViewQuery } from "../model/types";
 
 /** adminPostKeys - 后台文章 query key 工厂 */
 export const adminPostKeys = {
@@ -16,4 +16,6 @@ export const adminPostKeys = {
 	versions: (postId: string) => [...adminPostKeys.detail(postId), "versions"] as const,
 	/** 具体历史版本，按版本 ID */
 	version: (versionId: string) => ["admin-posts", "versions", versionId] as const,
+	views: ({ postId, ...page }: PostViewQuery) =>
+		[...adminPostKeys.detail(postId), "views", page] as const,
 };

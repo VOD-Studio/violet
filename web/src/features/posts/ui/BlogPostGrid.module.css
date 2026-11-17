@@ -1,0 +1,20 @@
+.cover {
+	transition: scale 500ms ease-out;
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+	.card:hover .cover {
+		scale: 1.05;
+	}
+
+	[data-motion="reduce"] .card:hover .cover {
+		scale: none;
+		transition: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.cover {
+		transition: none;
+	}
+}

@@ -197,9 +197,11 @@ func NewAdminRouter(d *Deps) chi.Router {
 	// 文章管理（读：post:view；写：权限下放应用层，所有权 + 权限码判定）
 	r.With(middleware.RequirePermission(perm, "post:view")).Get("/posts", postH.ListAll)
 	r.With(middleware.RequirePermission(perm, "post:view")).Get("/posts/{id}", postH.GetByID)
+	r.With(middleware.RequirePermission(perm, permission.PostView.String())).Get("/posts/{id}/views", postH.ListViews)
 	r.With(middleware.RequirePermission(perm, "post:create")).Post("/posts", postH.Create)
 	r.With(middleware.RequirePermission(perm, "post:create")).Post("/posts/import-url", postH.ImportURL)
 	r.With(middleware.RequirePermission(perm, "post:create")).Post("/posts/slugify", postH.Slugify)
+	r.With(middleware.RequirePermission(perm, permission.PostPublish.String())).Post("/posts/reorder", postH.Reorder)
 	r.Put("/posts/{id}", postH.Update)                                                                // 应用层鉴权
 	r.Patch("/posts/{id}/status", postH.UpdateStatus)                                                 // 应用层鉴权
 	r.Patch("/posts/{id}/featured", postH.SetFeatured)                                                // 应用层鉴权

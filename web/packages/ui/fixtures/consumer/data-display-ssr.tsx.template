@@ -80,6 +80,7 @@ for (const Component of [DataTable, LeafDataTable]) {
 			data={[row]}
 			keyExtractor={(item: Row) => item.id}
 			sort={{ key: "title", order: "asc" }}
+			rowReorder={{ getLabel: (item: Row) => item.title, onReorder: () => {} }}
 			selectable
 			pagination={{ page: 1, pageSize: 10, total: 25, onChange: () => {} }}
 		/>,
@@ -90,6 +91,7 @@ for (const Component of [DataTable, LeafDataTable]) {
 	assert.match(data, /独库公路/);
 	assert.match(data, /aria-label="全选本页"/);
 	assert.match(data, /aria-label="每页条数"/);
+	assert.match(data, /aria-label="移动 独库公路"/);
 	const loading = renderToString(<Component columns={columns} data={[]} keyExtractor={(item: Row) => item.id} loading />);
 	assert.match(loading, /aria-busy="true"/);
 	const failed = renderToString(<Component columns={columns} data={[]} keyExtractor={(item: Row) => item.id} error={new Error("502")} onRetry={() => {}} />);

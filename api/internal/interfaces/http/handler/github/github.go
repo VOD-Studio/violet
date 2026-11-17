@@ -37,3 +37,12 @@ func (h *Handler) GetRepos(w http.ResponseWriter, r *http.Request) {
 	}
 	response.RespondOK(w, data)
 }
+
+func (h *Handler) GetRepo(w http.ResponseWriter, r *http.Request) {
+	data, err := h.svc.GetRepo(r.Context(), r.PathValue("owner"), r.PathValue("repo"))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, data)
+}

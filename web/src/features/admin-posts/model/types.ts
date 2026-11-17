@@ -142,3 +142,16 @@ export interface PostVersionDTO {
 	summary: string;
 	created_at: string;
 }
+
+/** 后台浏览事件分页按文章隔离。 */
+export interface PostViewQuery extends PageQuery {
+	postId: string;
+}
+
+/** 实际持久化的浏览事件，不包含推断的访问者资料。 */
+export interface PostViewRecord {
+	id: string;
+	ip_address: string;
+	user_agent: string;
+	created_at: string;
+}

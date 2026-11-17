@@ -25,12 +25,12 @@ export function FilePlaceholder({ url, name, mimeType, hint, className }: FilePl
 	const { icon: Icon, label } = getFileInfo(mimeType, name);
 	const viewer = useFilePreviewVariant() === "viewer";
 
-	function handleDownload() {
+	const handleDownload = () => {
 		const a = document.createElement("a");
 		a.href = url;
 		a.download = name ?? "download";
 		a.click();
-	}
+	};
 
 	return (
 		<div className={`flex flex-col items-center justify-center gap-4 p-8 ${className ?? ""}`}>

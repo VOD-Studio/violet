@@ -46,6 +46,7 @@ function LinkCardPreview() {
 	const [image, setImage] = useState("logo");
 	const [version, setVersion] = useState(1);
 	const [narrow, setNarrow] = useState(false);
+	const [loading, setLoading] = useState(false);
 	const [dark, setDark] = useState(document.documentElement.classList.contains("dark"));
 	const [clicks, setClicks] = useState(0);
 	const ref = useRef<HTMLAnchorElement>(null);
@@ -62,6 +63,7 @@ function LinkCardPreview() {
 			</select>
 			<Button id="link-card-update" onClick={() => setVersion(version + 1)}>更新内容</Button>
 			<Button id="link-card-narrow" onClick={() => setNarrow(!narrow)}>切换宽窄</Button>
+			<Button id="link-card-loading" onClick={() => setLoading(!loading)}>切换加载</Button>
 			<Button id="link-card-theme" onClick={() => {
 				document.documentElement.classList.toggle("dark", !dark);
 				setDark(!dark);
@@ -72,6 +74,7 @@ function LinkCardPreview() {
 			<LinkCard
 				ref={ref}
 				id="link-card-preview"
+				loading={loading}
 				href={`#link-card-destination-${version}`}
 				target="_self"
 				title={`组件设计指南 · 第 ${version} 版：保持原生链接与完整图片内容`}
@@ -83,6 +86,7 @@ function LinkCardPreview() {
 			/>
 			<LeafLinkCard id="link-card-duplicate" href="https://www.example.com/profile" title="y_defect的推文" description="@y_defect的推文" siteName="EXAMPLE.COM" />
 			<LeafLinkCard id="link-card-long" href="https://example.com/long-path" title={"AnUnbrokenTitle".repeat(16)} description={"LongUnbrokenDescription".repeat(20)} imageSrc={linkCardCover} />
+			<LeafLinkCard id="link-card-loading-leaf" href="https://example.com/loading" title="Example" loading />
 		</section>
 		<output id={`link-card-destination-${version}`}>原生链接激活：{clicks}</output>
 	</main>;

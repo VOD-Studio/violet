@@ -60,10 +60,11 @@ function Articles() {
 	const [page, setPage] = useState(1);
 	const [pageSize, setPageSize] = useState(10);
 	const [sort, setSort] = useState<DataTableSort | null>(null);
+	const [articles, setArticles] = useState(ARTICLES);
 	const rows = useMemo(() => {
-		const sorted = sort ? [...ARTICLES].sort((a, b) => (a[sort.key as "title" | "views"] > b[sort.key as "title" | "views"] ? 1 : -1) * (sort.order === "asc" ? 1 : -1)) : ARTICLES;
+		const sorted = sort ? [...articles].sort((a, b) => (a[sort.key as "title" | "views"] > b[sort.key as "title" | "views"] ? 1 : -1) * (sort.order === "asc" ? 1 : -1)) : articles;
 		return sorted.slice((page - 1) * pageSize, page * pageSize);
-	}, [page, pageSize, sort]);
+	}, [articles, page, pageSize, sort]);
 	return (
 		<section aria-label="表格">
 			<div className="input-controls">
@@ -76,6 +77,14 @@ function Articles() {
 				columns={COLUMNS}
 				data={state === "data" ? rows : []}
 				keyExtractor={(row) => row.id}
+				rowReorder={sort ? undefined : {
+					getLabel: (row) => row.title,
+					onReorder: (next, previous) => {
+						const ids = new Set(previous.map((row) => row.id));
+						let index = 0;
+						setArticles((current) => current.map((row) => ids.has(row.id) ? next[index++] : row));
+					},
+				}}
 				loading={state === "loading"}
 				error={state === "error" ? new Error("502 · 上游超时，已经重试 2 次") : null}
 				onRetry={() => setState("data")}

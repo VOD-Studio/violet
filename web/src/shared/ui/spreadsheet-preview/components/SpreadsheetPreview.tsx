@@ -24,12 +24,12 @@ export function SpreadsheetPreview({ url, name, className }: SpreadsheetPreviewP
 		url,
 	});
 
-	function handleDownload() {
+	const handleDownload = () => {
 		const a = document.createElement("a");
 		a.href = url;
 		a.download = name ?? "spreadsheet.xlsx";
 		a.click();
-	}
+	};
 
 	return (
 		<div

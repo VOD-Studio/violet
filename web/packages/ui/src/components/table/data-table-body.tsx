@@ -1,10 +1,13 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, GripVertical } from "lucide-react";
+import { useComposedRefs } from "radix-ui/internal";
 import { type ReactNode, type RefObject, useEffect, useRef, useState } from "react";
 import { Button } from "../button";
 import { Checkbox } from "../checkbox";
 import { Skeleton } from "../skeleton";
+import { useSortableScope } from "../sortable/sortable-scope";
+import { type SortableItemState, useSortableItem } from "../sortable/use-sortable-item";
 import { TooltipProvider } from "../tooltip";
 import { CellWithTooltip } from "./cell-with-tooltip";
 import type { DataTableColumn, DataTableProps } from "./data-table-types";
@@ -12,6 +15,8 @@ import {
 	COLUMNS_CONTROL_KEY,
 	EXPAND_COLUMN_KEY,
 	isFitContent,
+	isGutterKey,
+	REORDER_COLUMN_KEY,
 	SELECT_COLUMN_KEY,
 } from "./data-table-types";
 import { type StickyOffset, stickyProps } from "./sticky-utils";
@@ -57,6 +62,7 @@ interface DataTableBodyProps<T> extends StateProps {
 	/** 当前页首行在全集中的序号，用于全局 aria-rowindex */
 	pageBaseIndex: number;
 	container?: HTMLElement | null;
+	rowReorder?: DataTableProps<T>["rowReorder"];
 }
 
 function prefersReducedMotion(scope: Element | null): boolean {
@@ -131,6 +137,9 @@ interface DataRowProps<T> {
 	onRowClick?: (row: T) => void;
 	rowClassName?: (row: T) => string;
 	container?: HTMLElement | null;
+	drag?: SortableItemState;
+	dragLabel?: string;
+	dragDisabled?: boolean;
 }
 
 function DataRow<T>({
@@ -150,8 +159,11 @@ function DataRow<T>({
 	onRowClick,
 	rowClassName,
 	container,
+	drag,
+	dragLabel,
 }: DataRowProps<T>) {
 	const rowRef = useRef<HTMLTableRowElement>(null);
+	const composedRef = useComposedRefs(rowRef, drag?.setNodeRef);
 	const presence = useCollapsePresence(expandable && expanded, rowRef);
 	const showPanel = expandable && renderExpandedRow != null && presence.mounted;
 	const state = selected ? "selected" : undefined;
@@ -159,7 +171,11 @@ function DataRow<T>({
 	return (
 		<>
 			<TableRow
-				ref={rowRef}
+				ref={composedRef}
+				data-reorderable={drag ? "" : undefined}
+				data-sortable-item={drag ? "" : undefined}
+				data-dragging={drag?.lifted ? "" : undefined}
+				style={drag?.style}
 				data-state={state}
 				data-clickable={onRowClick ? "" : undefined}
 				data-expanded={showPanel ? "" : undefined}
@@ -170,6 +186,30 @@ function DataRow<T>({
 			>
 				{columns.map((col) => {
 					const sticky = stickyProps(offsets.get(col.key));
+
+					if (col.key === REORDER_COLUMN_KEY) {
+						return (
+							<TableCell
+								key={col.key}
+								data-gutter=""
+								{...sticky}
+								onClick={(event) => event.stopPropagation()}
+							>
+								<button
+									type="button"
+									ref={drag?.setActivatorNodeRef}
+									className="v-table__icon-button v-table__drag-handle"
+									{...drag?.attributes}
+									{...drag?.listeners}
+									aria-disabled={drag?.locked || undefined}
+									aria-label={`移动 ${dragLabel}`}
+									title="拖动排序；空格拿起，上下方向键移动"
+								>
+									<GripVertical size={16} aria-hidden="true" />
+								</button>
+							</TableCell>
+						);
+					}
 
 					if (col.key === SELECT_COLUMN_KEY) {
 						return (
@@ -284,6 +324,15 @@ function DataRow<T>({
 	);
 }
 
+interface ReorderableDataRowProps<T> extends DataRowProps<T> {
+	config: NonNullable<DataTableProps<T>["rowReorder"]>;
+}
+
+function ReorderableDataRow<T>({ config, ...props }: ReorderableDataRowProps<T>) {
+	const drag = useSortableItem(props.rowKey, props.dragDisabled);
+	return <DataRow {...props} drag={drag} dragLabel={config.getLabel(props.row)} />;
+}
+
 interface StateRowProps {
 	colSpan: number;
 	kind: "error" | "empty" | "filtered";
@@ -354,7 +403,9 @@ export function DataTableBody<T>({
 	rowClassName,
 	pageBaseIndex,
 	container,
+	rowReorder,
 }: DataTableBodyProps<T>) {
+	const sortable = useSortableScope();
 	if (error) {
 		return (
 			<StateRow
@@ -374,12 +425,7 @@ export function DataTableBody<T>({
 	}
 
 	if (loading) {
-		const firstDataIndex = columns.findIndex(
-			(col) =>
-				col.key !== SELECT_COLUMN_KEY &&
-				col.key !== EXPAND_COLUMN_KEY &&
-				col.key !== COLUMNS_CONTROL_KEY,
-		);
+		const firstDataIndex = columns.findIndex((col) => !isGutterKey(col.key));
 		return (
 			<TableBody>
 				{Array.from({ length: SKELETON_ROWS }, (_, rowIndex) => (
@@ -441,31 +487,49 @@ export function DataTableBody<T>({
 		);
 	}
 
+	const groupCounts = new Map<string | undefined, number>();
+	if (rowReorder) {
+		for (const row of data) {
+			const group = rowReorder.getGroup?.(row);
+			groupCounts.set(group, (groupCounts.get(group) ?? 0) + 1);
+		}
+	}
+
 	return (
 		<TooltipProvider>
-			<TableBody>
+			<TableBody ref={sortable?.setRoot} aria-busy={sortable?.busy || undefined}>
 				{data.map((row, index) => {
 					const rowKey = keyExtractor(row);
-					return (
-						<DataRow
+					const props: DataRowProps<T> = {
+						row,
+						columns,
+						offsets,
+						rowKey,
+						rowNumber: pageBaseIndex + index + 1,
+						selectable,
+						selected: selectable && selectedIds.has(rowKey),
+						expandable,
+						expanded: expandedRowKeys.has(rowKey),
+						expandedRowFixed,
+						onToggleRow,
+						onToggleExpand,
+						renderExpandedRow,
+						onRowClick,
+						rowClassName,
+						container,
+					};
+					return rowReorder ? (
+						<ReorderableDataRow
 							key={rowKey}
-							row={row}
-							columns={columns}
-							offsets={offsets}
-							rowKey={rowKey}
-							rowNumber={pageBaseIndex + index + 1}
-							selectable={selectable}
-							selected={selectable && selectedIds.has(rowKey)}
-							expandable={expandable}
-							expanded={expandedRowKeys.has(rowKey)}
-							expandedRowFixed={expandedRowFixed}
-							onToggleRow={onToggleRow}
-							onToggleExpand={onToggleExpand}
-							renderExpandedRow={renderExpandedRow}
-							onRowClick={onRowClick}
-							rowClassName={rowClassName}
-							container={container}
+							{...props}
+							config={rowReorder}
+							dragDisabled={
+								rowReorder.disabled ||
+								(groupCounts.get(rowReorder.getGroup?.(row)) ?? 0) < 2
+							}
 						/>
+					) : (
+						<DataRow key={rowKey} {...props} />
 					);
 				})}
 			</TableBody>

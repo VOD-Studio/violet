@@ -46,6 +46,7 @@ func RegisterRoutes(r chi.Router, d *Deps) {
 		v1.Route("/github", func(r chi.Router) {
 			r.Get("/contributions", d.GitHub.GetContributions)
 			r.Get("/repos", d.GitHub.GetRepos)
+			r.With(d.SessionAuth, d.limit("link_cards", "GET /api/v1/github/repos/{owner}/{repo}")).Get("/repos/{owner}/{repo}", d.GitHub.GetRepo)
 		})
 
 		// 更新日志（公开，后端代理 GitHub Releases + Redis 缓存）
@@ -365,6 +366,7 @@ func registerTweetRoutes(v1 chi.Router, d *Deps) {
 			})
 		})
 		r.With(d.SessionAuth, d.limits([]string{"x-preview-minute", "x-preview-day"}, "POST /api/v1/tweets/external/preview")).Post("/external/preview", tweetH.PreviewExternal)
+		r.With(d.SessionAuth, d.limit("x-resolve", "GET /api/v1/tweets/external/resolve")).Get("/external/resolve", tweetH.ResolveExternal)
 		r.With(d.SessionAuth).Delete("/external/{externalId}", tweetH.WithdrawExternal)
 		r.With(d.SessionAuth, d.limit("x-refresh", "POST /api/v1/tweets/external/{externalId}/refresh")).Post("/external/{externalId}/refresh", tweetH.RefreshExternal)
 		// 拖动进度会产生连续 Range 请求，限额按单 IP 放宽。

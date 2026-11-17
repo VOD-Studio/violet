@@ -43,6 +43,10 @@ func (p *stubGitHubProvider) GetRepos(_ context.Context, username, token string)
 	return p.repos, p.err
 }
 
+func (p *stubGitHubProvider) GetRepo(_ context.Context, _, _, _ string) (*domaingithub.RepoData, error) {
+	return nil, p.err
+}
+
 // stubSettingsStore 手写 stub，实现 domainsettings.SettingsStore。
 type stubSettingsStore struct {
 	values map[string]string

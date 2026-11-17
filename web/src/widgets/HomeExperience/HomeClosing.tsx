@@ -4,9 +4,11 @@ import type { Season } from "@shared/lib/theme-preference";
 import { iconProps } from "@violet/ui";
 import { Heart, Mail, Rss } from "lucide-react";
 import { motion } from "motion/react";
+import { useRef, useState } from "react";
 
 import { useLeaveSiteImpression } from "./api/mutations";
 import { useSiteImpression } from "./api/queries";
+import styles from "./HomeClosing.module.css";
 
 interface HomeClosingProps {
 	identity: SiteIdentity;
@@ -26,12 +28,31 @@ export function HomeClosing({ identity, season }: HomeClosingProps) {
 	const greeting = SEASONAL_GREETINGS[season];
 	const impressionQuery = useSiteImpression();
 	const impressionMutation = useLeaveSiteImpression();
+	const submitting = useRef(false);
+	const [feedback, setFeedback] = useState(0);
 	const impression = impressionMutation.data ?? impressionQuery.data;
 	const impressionLabel = impressionMutation.isError
 		? "重试留下印记"
 		: impression?.impressed
 			? "印记已留下"
 			: "留下印记";
+
+	const leaveImpression = () => {
+		if (submitting.current || impressionMutation.isPending || impressionQuery.isPending) return;
+		if (impression?.impressed) {
+			setFeedback((value) => value + 1);
+			return;
+		}
+		submitting.current = true;
+		impressionMutation.mutate(undefined, {
+			onSuccess: (state) => {
+				if (state.impressed) setFeedback((value) => value + 1);
+			},
+			onSettled: () => {
+				submitting.current = false;
+			},
+		});
+	};
 
 	return (
 		<section className="relative pt-28 pb-16 sm:pt-32 sm:pb-20 lg:pt-36 lg:pb-24">
@@ -56,8 +77,9 @@ export function HomeClosing({ identity, season }: HomeClosingProps) {
 					<button
 						type="button"
 						aria-pressed={impression?.impressed ?? false}
-						disabled={impressionMutation.isPending || impression?.impressed}
-						onClick={() => impressionMutation.mutate()}
+						aria-busy={impressionMutation.isPending || impressionQuery.isPending}
+						disabled={impressionMutation.isPending || impressionQuery.isPending}
+						onClick={leaveImpression}
 						title={
 							impressionMutation.isError
 								? "印记提交失败，点击重试"
@@ -71,16 +93,25 @@ export function HomeClosing({ identity, season }: HomeClosingProps) {
 							{impressionLabel}
 						</span>
 						<span className="inline-flex items-center gap-1 font-mono text-xs text-foreground/80 transition-colors group-hover:text-primary">
-							<Heart
-								{...iconProps(
-									14,
-									`transition-colors duration-200 ${
-										impression?.impressed
-											? "fill-primary text-primary"
-											: "text-muted-foreground/60 group-hover:text-primary"
-									}`,
-								)}
-							/>
+							<span
+								key={feedback}
+								aria-hidden
+								className={styles.heart}
+								data-impressed={impression?.impressed ?? false}
+								data-feedback={feedback > 0}
+							>
+								<Heart {...iconProps(14, styles.icon)} />
+								{feedback > 0 ? (
+									<span className={styles.particles}>
+										<i />
+										<i />
+										<i />
+										<i />
+										<i />
+										<i />
+									</span>
+								) : null}
+							</span>
 							<span className="tabular-nums">
 								{impressionMutation.isPending ? "…" : (impression?.count ?? "—")}
 							</span>

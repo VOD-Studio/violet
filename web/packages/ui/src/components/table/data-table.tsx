@@ -15,15 +15,29 @@ import { ScrollArea } from "../scroll-area";
 import { DataTableBody } from "./data-table-body";
 import { DataTableFooter } from "./data-table-footer";
 import { DataTableHeader } from "./data-table-header";
+import { DataTableReorder } from "./data-table-reorder";
 import type { DataTableColumn, DataTableProps } from "./data-table-types";
 import {
 	COLUMNS_CONTROL_KEY,
 	EXPAND_COLUMN_KEY,
 	isFitContent,
 	isGutterKey,
+	REORDER_COLUMN_KEY,
 	SELECT_COLUMN_KEY,
 } from "./data-table-types";
 import { computeStickyOffsets } from "./sticky-utils";
+
+type DataTableStyle = CSSProperties & {
+	"--v-table-lead"?: string;
+	"--v-scroll-area-padding"?: string;
+};
+
+const SCROLLER_STYLE: DataTableStyle = {
+	height: "auto",
+	flex: "1 1 0%",
+	minHeight: 0,
+	"--v-scroll-area-padding": "0px",
+};
 
 const DEFAULT_COLUMN_MIN_WIDTH = 80;
 /** 未声明宽度的列在累加最小总宽时的基准 */
@@ -83,6 +97,7 @@ export function DataTable<T>({
 	pagination,
 	sort,
 	onSortChange,
+	rowReorder,
 	loading,
 	error,
 	onRetry,
@@ -118,6 +133,7 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
 	const rootRef = useRef<HTMLDivElement>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
+	const reorderable = rowReorder !== undefined;
 	const tableRef = useRef<HTMLTableElement>(null);
 
 	const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(
@@ -201,15 +217,17 @@ export function DataTable<T>({
 	const hideableColumns = useMemo(() => columns.filter((c) => c.hideable !== false), [columns]);
 	const showColumnControl = !!storageKey && hideableColumns.length > 0;
 
-	// 左侧依次是：展开列（没有则单独的「显示列」列）、勾选列
 	const visibleColumns = useMemo<DataTableColumn<T>[]>(() => {
 		const injected: DataTableColumn<T>[] = [];
-		if (expandable) injected.push(injectedColumn(EXPAND_COLUMN_KEY, EXPAND_COLUMN_WIDTH));
-		else if (showColumnControl)
+		if (reorderable) injected.push(injectedColumn(REORDER_COLUMN_KEY, CONTROL_COLUMN_WIDTH));
+		if (expandable) {
+			injected.push(injectedColumn(EXPAND_COLUMN_KEY, EXPAND_COLUMN_WIDTH));
+		} else if (showColumnControl && !reorderable) {
 			injected.push(injectedColumn(COLUMNS_CONTROL_KEY, CONTROL_COLUMN_WIDTH));
+		}
 		if (selectable) injected.push(injectedColumn(SELECT_COLUMN_KEY, SELECT_COLUMN_WIDTH));
 		return [...injected, ...columns.filter((c) => !hiddenKeys.has(c.key))];
-	}, [columns, hiddenKeys, expandable, selectable, showColumnControl]);
+	}, [columns, hiddenKeys, expandable, selectable, showColumnControl, reorderable]);
 
 	// fitContent 列只测量不可截断的单元格；其余未显式调整的列保持自适应
 	const [fitContentWidths, setFitContentWidths] = useState<Record<string, number>>({});
@@ -323,22 +341,25 @@ export function DataTable<T>({
 		root.style.setProperty("--v-table-viewport", `${clientWidth}px`);
 	}, []);
 
-	useEffect(() => {
-		const scroller = scrollRef.current;
-		if (!scroller) return;
-		syncScrollState();
-		scroller.addEventListener("scroll", syncScrollState, { passive: true });
-		window.addEventListener("resize", syncScrollState);
-		// 容器变化（侧边栏折叠）与表格自身变化（列显隐、列宽）都可能改变是否有横向滚动
-		const observer = new ResizeObserver(syncScrollState);
-		observer.observe(scroller);
-		if (tableRef.current) observer.observe(tableRef.current);
-		return () => {
-			scroller.removeEventListener("scroll", syncScrollState);
-			window.removeEventListener("resize", syncScrollState);
-			observer.disconnect();
-		};
-	}, [syncScrollState]);
+	const connectScroller = useCallback(
+		(scroller: HTMLDivElement | null) => {
+			scrollRef.current = scroller;
+			if (!scroller) return;
+			syncScrollState();
+			scroller.addEventListener("scroll", syncScrollState, { passive: true });
+			window.addEventListener("resize", syncScrollState);
+			const observer = new ResizeObserver(syncScrollState);
+			observer.observe(scroller);
+			if (tableRef.current) observer.observe(tableRef.current);
+			return () => {
+				scroller.removeEventListener("scroll", syncScrollState);
+				window.removeEventListener("resize", syncScrollState);
+				observer.disconnect();
+				if (scrollRef.current === scroller) scrollRef.current = null;
+			};
+		},
+		[syncScrollState],
+	);
 
 	const resizeColumn = (key: string, width: number) => {
 		setColumnWidths((prev) => ({ ...prev, [key]: width }));
@@ -353,40 +374,34 @@ export function DataTable<T>({
 	const bulkOpen = selected.size > 0;
 	const showBulkBar = selectable && bulkActions != null;
 	const offPage = selected.size - selectedOnPage;
+	const tableStyle: DataTableStyle = { "--v-table-lead": `${leadWidth}px` };
 
-	return (
+	const table = (
 		<div
 			ref={rootRef}
 			data-slot="data-table"
 			data-density={density}
 			className={cn("v-data-table", className)}
-			style={{ "--v-table-lead": `${leadWidth}px` } as CSSProperties}
+			style={tableStyle}
 		>
 			{toolbar ? <div className="v-data-table__toolbar">{toolbar}</div> : null}
 
 			<div className="v-data-table__frame">
 				<ScrollArea
-					ref={scrollRef}
+					ref={connectScroller}
 					className="v-data-table__scroller"
 					orientation="both"
 					role="region"
 					tabIndex={0}
 					aria-label={caption ?? "数据表格"}
 					// 视口自己占据弹性剩余高度而不是写 100% 高度：根容器高度 auto、只靠 max-block-size 限高时，百分比高度没有确定值
-					style={
-						{
-							height: "auto",
-							flex: "1 1 0%",
-							minHeight: 0,
-							"--v-scroll-area-padding": "0px",
-						} as CSSProperties
-					}
+					style={SCROLLER_STYLE}
 				>
 					<table
 						ref={tableRef}
 						data-slot="table"
 						className="v-table"
-						aria-busy={loading ? true : undefined}
+						aria-busy={loading || rowReorder?.disabled ? true : undefined}
 						style={{ minWidth: `${minTableWidth}px` }}
 					>
 						{caption ? <caption className="v-table__sr">{caption}</caption> : null}
@@ -449,6 +464,7 @@ export function DataTable<T>({
 							renderExpandedRow={renderExpandedRow}
 							onRowClick={onRowClick}
 							rowClassName={rowClassName}
+							rowReorder={rowReorder}
 							pageBaseIndex={
 								pagination ? (pagination.page - 1) * pagination.pageSize : 0
 							}
@@ -506,5 +522,12 @@ export function DataTable<T>({
 				/>
 			) : null}
 		</div>
+	);
+	return rowReorder ? (
+		<DataTableReorder data={data} keyExtractor={keyExtractor} config={rowReorder}>
+			{table}
+		</DataTableReorder>
+	) : (
+		table
 	);
 }

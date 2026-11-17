@@ -8,6 +8,12 @@ import "github.com/getkin/kin-openapi/openapi3"
 // get/put/del helper 注册，会合并到同一 PathItem，避免 Paths.Set 覆盖。
 func registerPostPaths(t *openapi3.T) {
 	// ---- schema ----
+	registerSchema(t, "PostViewDTO", openapi3.Schemas{
+		"id":         reqStr("浏览事件序号（十进制字符串）"),
+		"ip_address": reqStr("请求 IP，未记录时为空"),
+		"user_agent": reqStr("请求 User-Agent，未记录时为空"),
+		"created_at": reqStr("访问时间（RFC3339）"),
+	})
 	registerSchema(t, "PostDTO", openapi3.Schemas{
 		"id":                   reqStr("文章 ID（UUID）"),
 		"title":                reqStr("标题"),
@@ -70,6 +76,11 @@ func registerPostPaths(t *openapi3.T) {
 	registerSchema(t, "SetFeaturedRequest", openapi3.Schemas{
 		"is_featured": optBool("是否精选"),
 	}, "is_featured")
+
+	registerSchema(t, "ReorderPostsRequest", openapi3.Schemas{
+		"expected_ids": strArray("当前相对顺序，2–100 个唯一文章 UUID"),
+		"ids":          strArray("同一集合的新顺序；仅交换这些文章占用的位置"),
+	}, "expected_ids", "ids")
 
 	registerSchema(t, "ImportURLRequest", openapi3.Schemas{
 		"url":                reqStr("远程网页 URL，仅限 http/https"),
@@ -183,7 +194,7 @@ func registerPostPaths(t *openapi3.T) {
 		Tags:    []string{"文章"},
 		Summary: "已发布文章列表",
 		Description: "获取已发布文章列表（offset 分页）。前台 limit 上限为 50。" +
-			"可按 tag slug 与 source 联合过滤，仅返回未软删除文章，精选优先，再按 published_at DESC,id DESC 排序。",
+			"可按 tag slug 与 source 联合过滤，仅返回未软删除文章，精选（置顶）优先，再按 sort_order ASC,published_at DESC,id DESC 排序。",
 		Parameters: openapi3.Parameters{
 			pageParam(), limitParam(50), queryStrParam("tag", "按标签 slug 过滤"), postSourceParam(),
 		},
@@ -279,7 +290,7 @@ func registerPostPaths(t *openapi3.T) {
 	get(t, "/admin/posts", &openapi3.Operation{
 		Tags:        []string{"文章管理"},
 		Summary:     "所有文章列表",
-		Description: "管理员查看所有文章（含草稿/归档），可按 status 过滤。需管理员权限。",
+		Description: "管理员查看所有文章（含草稿/归档），按置顶优先与持久化手动顺序返回。支持状态、关键词与标签筛选；后台页面显式以每页 50 篇开始。需 post:view 权限。",
 		Security:    securityAdmin(),
 		Parameters: openapi3.Parameters{
 			pageParam(), limitParam(100),
@@ -293,6 +304,21 @@ func registerPostPaths(t *openapi3.T) {
 		},
 		Responses: responses(
 			200, dataArrayResponse("PostListItemDTO", "文章列表", 200, true),
+		),
+	})
+
+	get(t, "/admin/posts/{id}/views", &openapi3.Operation{
+		Tags:        []string{"文章管理"},
+		Summary:     "文章浏览记录",
+		Description: "需 post:view 权限。仅返回该文章实际持久化的浏览事件（含回收站文章），按 created_at DESC,id ASC 稳定分页。pagination.total 为记录总量，可能与文章累计 view_count 不同；不补造历史事件。",
+		Security:    securityAdmin(),
+		Parameters:  openapi3.Parameters{pathStrParam("id", "文章 ID（UUID）"), pageParam(), limitParam(100)},
+		Responses: responses(
+			200, dataArrayResponse("PostViewDTO", "浏览记录", 200, true),
+			400, errorResponse("文章 ID 无效"),
+			401, errorResponse("未登录"),
+			403, errorResponse("无权查看浏览记录"),
+			404, errorResponse("文章不存在或已彻底删除"),
 		),
 	})
 
@@ -353,8 +379,8 @@ func registerPostPaths(t *openapi3.T) {
 
 	patch(t, "/admin/posts/{id}/featured", &openapi3.Operation{
 		Tags:        []string{"文章管理"},
-		Summary:     "切换精选标记",
-		Description: "设置或取消文章的精选状态。需管理员权限。",
+		Summary:     "切换文章置顶",
+		Description: "复用精选标记 is_featured 设置或取消置顶，不改变普通层排序位置。需 post:publish 权限，不凭所有权放行。",
 		Security:    securityAdmin(),
 		Parameters: openapi3.Parameters{
 			pathStrParam("id", "文章 ID（UUID）"), csrfHeaderParam(),
@@ -363,6 +389,21 @@ func registerPostPaths(t *openapi3.T) {
 		Responses: responses(
 			200, dataResponse("PostDTO", "更新后的文章", 200),
 			404, errorResponse("文章不存在"),
+		),
+	})
+
+	post(t, "/admin/posts/reorder", &openapi3.Operation{
+		Tags:        []string{"文章管理"},
+		Summary:     "保存文章分组顺序",
+		Description: "需 post:publish 权限。原子交换同一置顶层中 2–100 篇未删除文章的位置，保全页外/筛选外文章；原顺序或分组变化时返回 409。",
+		Security:    securityAdmin(),
+		Parameters:  openapi3.Parameters{csrfHeaderParam()},
+		RequestBody: jsonBody("ReorderPostsRequest", true, "原顺序与新顺序"),
+		Responses: responses(
+			200, messageResponse("文章顺序已保存"),
+			400, errorResponse("ID 集合非法"),
+			403, errorResponse("无权调整文章顺序"),
+			409, errorResponse("文章已删除、顺序或置顶层已变化"),
 		),
 	})
 

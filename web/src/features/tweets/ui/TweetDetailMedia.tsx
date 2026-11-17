@@ -112,6 +112,7 @@ export function TweetDetailMedia({ images, className }: TweetDetailMediaProps) {
 			)}
 			<ImagePreview
 				open={preview.open}
+				wheelAction="close"
 				images={preview.images}
 				thumbnails={preview.thumbnails}
 				currentIndex={preview.currentIndex}

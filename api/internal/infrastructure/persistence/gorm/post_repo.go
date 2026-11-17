@@ -192,8 +192,8 @@ func (r *PostRepository) FindPublishedTagCounts(ctx context.Context, source stri
 // postPageOrder 列表排序子句（唯一列 id tiebreaker 防 offset 翻页漂移）。
 func postPageOrder(sort string) string {
 	switch sort {
-	case post.SortPublished:
-		return "is_featured DESC, published_at DESC, id DESC"
+	case post.SortPublished, post.SortManual:
+		return "is_featured DESC, sort_order ASC, published_at DESC, id DESC"
 	case post.SortUpdated:
 		return "updated_at DESC, id DESC"
 	default:
@@ -240,9 +240,8 @@ func (r *PostRepository) ExistsBySlug(ctx context.Context, slug string) (bool, e
 func (r *PostRepository) Save(ctx context.Context, p *post.Post) error {
 	po := postToPO(p)
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// Omit 章节归属三列：post 聚合不感知书，全量 Save 不得覆盖
-		// series 域写入的归属（PRD-0021，否则发布/编辑会清掉挂章）。
-		if err := tx.Omit("series_id", "series_section_id", "chapter_order").Save(&po).Error; err != nil {
+		// 章节归属与排序由各自用例维护，正文保存不覆盖它们。
+		if err := tx.Omit("series_id", "series_section_id", "chapter_order", "sort_order").Save(&po).Error; err != nil {
 			return domainshared.Internal("保存文章失败", err)
 		}
 		// 同步标签关联：按 name 查 tag → 替换关联

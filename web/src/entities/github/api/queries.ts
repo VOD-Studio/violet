@@ -23,3 +23,15 @@ export const useRepos = () =>
 		queryFn: fetchRepos,
 		staleTime: 5 * 60 * 1000,
 	});
+
+export const useGitHubRepo = (repo: string) =>
+	useQuery({
+		queryKey: githubKeys.repo(repo),
+		queryFn: ({ signal }) =>
+			apiGet<Repo>(`/github/repos/${repo.split("/").map(encodeURIComponent).join("/")}`, {
+				signal,
+			}),
+		staleTime: 5 * 60 * 1000,
+		retry: false,
+		enabled: typeof window !== "undefined",
+	});

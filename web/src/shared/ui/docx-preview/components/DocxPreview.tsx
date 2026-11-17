@@ -23,12 +23,12 @@ export function DocxPreview({ url, name, className }: DocxPreviewProps) {
 	const { containerRef, loadStatus, retry } = useDocxRender({ url });
 	const viewer = useFilePreviewVariant() === "viewer";
 
-	function handleDownload() {
+	const handleDownload = () => {
 		const a = document.createElement("a");
 		a.href = url;
 		a.download = name ?? "document.docx";
 		a.click();
-	}
+	};
 
 	return (
 		<div

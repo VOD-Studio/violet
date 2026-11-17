@@ -140,6 +140,7 @@ export function PersonaImagesSection({ images, disabled, onChange }: PersonaImag
 			/>
 			<ImagePreview
 				open={lightbox.open}
+				wheelAction="zoom"
 				onClose={() => setLightbox((state) => ({ ...state, open: false }))}
 				images={images.map((image) => image.url)}
 				thumbnails={images.map((image) => image.thumbnail || image.url)}

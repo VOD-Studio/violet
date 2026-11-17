@@ -28,6 +28,7 @@ var rateBindings = map[string]rateBinding{
 	"friendlink_code":   {"友链验证码", "ip", 60, 5},
 	"x-preview-minute":  {"外部推文预览分钟额度", "user", 60, 5},
 	"x-preview-day":     {"外部推文预览滚动日额度", "user", 86400, 50},
+	"x-resolve":         {"外部推文只读解析", "user", 60, 60},
 	"x-refresh":         {"刷新外部推文", "user", 60, 5},
 	"x-video":           {"外部推文视频", "ip", 60, 600},
 	"link_cards":        {"链接卡片查询", "ip", 60, 30},

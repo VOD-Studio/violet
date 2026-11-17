@@ -196,14 +196,14 @@ export function UploadQueue({
 		.filter(Boolean)
 		.join(" · ");
 
-	function remove(item: UploadEntry, button: HTMLButtonElement) {
+	const remove = (item: UploadEntry, button: HTMLButtonElement) => {
 		const row = button.closest("li");
 		const next =
 			row?.nextElementSibling?.querySelector<HTMLButtonElement>("button:not(:disabled)") ??
 			row?.previousElementSibling?.querySelector<HTMLButtonElement>("button:not(:disabled)");
 		(next ?? toggleRef.current)?.focus({ preventScroll: true });
 		onRemove?.(item.id);
-	}
+	};
 
 	return (
 		<section

@@ -19,6 +19,8 @@ pnpm --filter @violet/ui pack --pack-destination /tmp
 pnpm add /tmp/violet-ui-0.1.0.tgz
 ```
 
+`pnpm --filter @violet/ui consumer` 在仓库外安装真实 tarball，按工作区已安装版本固定工具、直接依赖和 Motion/CSS 类型依赖链；配置写入独立消费者的 `pnpm-workspace.yaml`。Bundler 与 NodeNext 检查都保留 `skipLibCheck: false`，避免上游传递依赖的新发布改变同一提交的验收结果。
+
 ## 样式
 
 Tailwind CSS v4 宿主在全局 CSS 中导入完整入口：

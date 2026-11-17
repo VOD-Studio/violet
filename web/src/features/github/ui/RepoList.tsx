@@ -1,10 +1,8 @@
+import { useRepos } from "@entities/github/api/queries";
+import type { Repo } from "@entities/github/model/types";
 import { Empty, iconProps } from "@violet/ui";
-
 import { cn } from "cn";
 import { ExternalLink, GitFork, Star } from "lucide-react";
-
-import { useRepos } from "../api/queries";
-import type { Repo } from "../model/types";
 import RepoListSkeleton from "./RepoListSkeleton";
 
 interface RepoCardProps {

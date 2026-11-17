@@ -5,7 +5,8 @@
  * 列表/标题；单换行保留为 <br>；Markdown 图片降级为链接；表情占位符替换与
  * 嵌套格式兼容。
  */
-import { cleanup, fireEvent, render } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ChatMessageContent } from "../ChatMessageContent";
 
@@ -15,8 +16,16 @@ describe("ChatMessageContent", () => {
 	});
 
 	it("渲染行内格式：粗体/斜体/删除线/行内代码/链接", () => {
+		const client = new QueryClient();
+		client.setQueryData(["link-previews", "https://example.com/"], {
+			url: "https://example.com/",
+			card: null,
+			pending: false,
+		});
 		const { container } = render(
-			<ChatMessageContent content="**粗体** *斜体* ~~删除线~~ `code` [链接](https://example.com)" />,
+			<QueryClientProvider client={client}>
+				<ChatMessageContent content="**粗体** *斜体* ~~删除线~~ `code` [链接](https://example.com)" />
+			</QueryClientProvider>,
 		);
 		expect(container.querySelector("strong")?.textContent).toBe("粗体");
 		expect(container.querySelector("em")?.textContent).toBe("斜体");
@@ -85,7 +94,7 @@ describe("ChatMessageContent", () => {
 			"/uploads/emojis/doge.png",
 		);
 	});
-	it("自定义表情图片带 ID 与关系属性，系统表情不带自定义属性", () => {
+	it("自定义与系统图片表情均可预览，保留尺寸、关系与各自触发元素", () => {
 		const emote = {
 			"[mycat:emoji-1]": {
 				url: "/uploads/emojis/mycat.png",
@@ -94,8 +103,13 @@ describe("ChatMessageContent", () => {
 			},
 			"[doge]": { url: "/uploads/emojis/doge.png" },
 		};
+		const onImage = vi.fn();
 		const { container } = render(
-			<ChatMessageContent content="[mycat:emoji-1][doge]" emote={emote} />,
+			<ChatMessageContent
+				content="[mycat:emoji-1][doge][mycat:emoji-1] 😀"
+				emote={emote}
+				onImage={onImage}
+			/>,
 		);
 		const [custom, system] = container.querySelectorAll("img");
 		expect(custom?.dataset.customEmojiId).toBe("emoji-1");
@@ -104,6 +118,25 @@ describe("ChatMessageContent", () => {
 		// 自定义表情是贴纸语义，按大表情档渲染；系统表情无 size 元数据时保持小档
 		expect(custom?.className).toContain("size-10");
 		expect(system?.className).toContain("size-5");
+		const previews = screen.getAllByRole("button", { name: /^查看表情/ });
+		expect(previews).toHaveLength(3);
+		fireEvent.click(custom);
+		expect(onImage).toHaveBeenLastCalledWith(
+			{ url: "/uploads/emojis/mycat.png", thumbnail: "/uploads/emojis/mycat.png" },
+			previews[0],
+		);
+		fireEvent.click(system);
+		expect(onImage).toHaveBeenLastCalledWith(
+			{ url: "/uploads/emojis/doge.png", thumbnail: "/uploads/emojis/doge.png" },
+			previews[1],
+		);
+		previews[2].focus();
+		expect(document.activeElement).toBe(previews[2]);
+		fireEvent.click(previews[2]);
+		expect(onImage).toHaveBeenLastCalledWith(
+			{ url: "/uploads/emojis/mycat.png", thumbnail: "/uploads/emojis/mycat.png" },
+			previews[2],
+		);
 	});
 
 	it("未命中 emote 表的占位符保持字面文本", () => {
@@ -117,9 +150,12 @@ describe("ChatMessageContent", () => {
 
 	it("非图片 URL 的 emote（颜文字）降级为文本", () => {
 		const emote = { "[颜文字]": { url: "(╯°□°）╯︵ ┻━┻" } };
-		const { container } = render(<ChatMessageContent content="激动[颜文字]" emote={emote} />);
+		const { container } = render(
+			<ChatMessageContent content="激动[颜文字] 😀" emote={emote} onImage={vi.fn()} />,
+		);
 		expect(container.querySelector("img")).toBeNull();
 		expect(container.textContent).toContain("(╯°□°）╯︵ ┻━┻");
+		expect(container.querySelector("button")).toBeNull();
 	});
 
 	it("![img:id] 命中 inlineMedia 还原为内联图片，文字环绕且点击回调媒体", () => {
@@ -143,7 +179,7 @@ describe("ChatMessageContent", () => {
 		expect(p?.childNodes[0]?.textContent).toBe("123");
 		expect(p?.childNodes[2]?.textContent).toBe("456");
 		fireEvent.click(img as Element);
-		expect(onImage).toHaveBeenCalledWith(media);
+		expect(onImage).toHaveBeenCalledWith(media, img?.closest("button"));
 	});
 
 	it("多个占位符各自命中 inlineMedia 中对应媒体", () => {

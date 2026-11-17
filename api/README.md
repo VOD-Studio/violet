@@ -104,13 +104,15 @@ REST 端点可用 `middleware.PATAuth` 复用 MCP 的 `PATVerifier`，再用 `Re
 
 `POST /api/v1/link-cards/lookup` 公开批量读取最多 10 个 URL 的网页预览，仍需 CSRF cookie。返回 `cards`、`pending`、`unavailable`：仅 pending 继续查询；上游 403 不绕过防护，失败退避期间不重复抓取。成功快照默认缓存 7 天，过期惰性刷新；封面校验后缓存到本站。
 
+聊天链接的专用只读解析要求 Session 登录：`GET /github/repos/{owner}/{repo}` 返回公开仓库信息，服务端缓存 5 分钟并复用链接预览限流；`GET /tweets/external/resolve?url=` 复用 X 原文快照与媒体代理，不签发发布凭证、不创建时间线推文，也不要求 `tweet:create`。X 只读解析使用独立的 `x-resolve` 额度，默认每用户每分钟 60 次，支持运行策略调整；缓存读取同样受此额度保护，但不消耗发布预览的分钟或滚动日额度。
+
 ### 博客公开浏览筛选
 
 以下路径均相对于 `/api/v1`，响应保持 `data` 信封；列表分页仍使用 `meta.pagination`：
 
 | GET 路径 | 筛选与响应 |
 | --- | --- |
-| `/posts` | `page/limit/tag/source`；未软删除的已发布文章，精选优先，再按 `published_at DESC,id DESC`。列表项透出可选 `canonical_url`，缺省/空串为原创 |
+| `/posts` | `page/limit/tag/source`；未软删除的已发布文章，精选（置顶）优先，再按持久化 `sort_order ASC,published_at DESC,id DESC`。列表项透出可选 `canonical_url`，缺省/空串为原创 |
 | `/posts/filters/tags` | 仅按 `source` 聚合，忽略当前 `tag`；`data` 为 `{slug,name,count}[]`，按 `count DESC,slug ASC` 排序，零计数不返回 |
 | `/posts/archive` | `tag/source`；返回 `{years: number[]}`，仅含匹配公开文章的年份，倒序 |
 | `/posts/archive/{year}` | `tag/source`；返回原 `{year,count,items}`，仅含匹配公开文章，按 `published_at DESC,id DESC` |
@@ -119,6 +121,18 @@ REST 端点可用 `middleware.PATAuth` 复用 MCP 的 `PATVerifier`，再用 `Re
 `source` 可为 `all/original/repost`，省略或空串等同 `all`；其他非空值返回 400。原创对应 `canonical_url IS NULL` 或空串，转载对应非空值。标签聚合以去重后的文章计数，不泄露草稿、归档或软删除文章的标签；筛选和计数均在数据库完整集合上执行，再分页。资源 API `/series` 与 `/posts/{slug}` 不随页面路径迁移。
 
 `series` 是博客系列目录的保留 slug。创建文章时，自动生成或显式传入该 slug 均按现有冲突规则分配 `series-2` 等可用后缀，不覆盖或改写存量文章；部署新页面路由前须确认目标数据库没有占用 `series` 的旧文章。
+
+### 后台文章顺序与预览
+
+`GET /admin/posts` 与公开列表共用置顶优先的手动顺序，后台页面显式以 `limit=50` 开始，不修改接口或其他页面的分页默认值。迁移 157 按发布时间倒序初始化旧文章位置（未发布文章随后按创建时间倒序），新文章通过递减序列获得普通层前端的位置；正文保存、状态切换和版本回滚均不覆盖排序位置。归档年份视图和全文检索保留各自的时间排序。
+
+SQLite 集成夹具在 `AutoMigrate` 后显式补建 `sort_order` 列；模型用 `-:migration` 避免自动迁移覆盖 PostgreSQL 序列默认值。序列分配、并发顺序校验和事务回滚由 PostgreSQL 集成测试覆盖。
+
+`POST /admin/posts/reorder` 沿用 `post:publish` 权限（不凭文章所有权放行），请求为 `{"expected_ids":["原顺序 ID"],"ids":["新顺序 ID"]}`。两数组必须是相同的 2–100 个唯一 UUID，且全部未软删除、属于同一置顶层。事务按 ID 固定顺序锁定这些行，核对原相对顺序后交换它们已占用的位置；页外或筛选外的文章不重排、不删除。非法集合返回 400，文章已删除、置顶层或顺序已变化返回 409，事务失败不部分保存。
+
+置顶复用 `PATCH /admin/posts/{id}/featured` 与 `is_featured`，不引入第二套推荐标记；取消置顶只回到普通层，不改其原排序位置。已发布文章从后台打开 `/blog/{slug}`；草稿和归档文章在后台弹窗通过受 `post:view` 保护的 `GET /admin/posts/{id}` 加载并复用正文渲染器，不伪造公开预览链接。
+
+`GET /admin/posts/{id}/views?page=1&limit=50` 沿用 `post:view` 权限，按文章隔离查询实际 `post_views` 记录（包含回收站文章），按 `created_at DESC,id ASC` 稳定分页；不存在或已硬删除文章返回 404。响应仅含事件序号（字符串）、访问时间、IP 与 User-Agent，不推断登录用户、地理位置或来源。`pagination.total` 是可查询记录数，可能与累计 `view_count` 不同；后台分别展示两者，不补造历史事件。此只读接口不增加浏览量、不修改文章内容。
 
 
 ### 评论回应与排序

@@ -17,6 +17,7 @@ import (
 	"blog-api/internal/application/markdown"
 	appshared "blog-api/internal/application/shared"
 	"blog-api/internal/brand"
+	"blog-api/internal/domain/permission"
 	domain "blog-api/internal/domain/post"
 	domainpublication "blog-api/internal/domain/publication"
 	domainsettings "blog-api/internal/domain/settings"
@@ -259,7 +260,7 @@ func (s *Service) detailDTO(ctx context.Context, p *domain.Post) PostDTO {
 }
 
 // ListPublished 分页列出已发布文章（前台），返回不含正文的列表项，避免响应过大。
-// filter 只影响候选文章；精选优先，再按发布时间与 ID 倒序。
+// filter 只影响候选文章；精选（置顶）优先，再按持久化手动顺序。
 func (s *Service) ListPublished(ctx context.Context, filter domain.BrowseFilter, q shared.PageQuery) (shared.PageResult[PostListItemDTO], error) {
 	if err := filter.Validate(); err != nil {
 		return shared.PageResult[PostListItemDTO]{}, err
@@ -299,7 +300,7 @@ func (s *Service) ListPublishedTags(ctx context.Context, source string) ([]Publi
 // keyword 标题+正文搜索（空格分词 AND）；tags 为标签 slug 列表（AND 关系）。
 func (s *Service) ListAll(ctx context.Context, status, keyword string, tags []string, q shared.PageQuery) (shared.PageResult[PostListItemDTO], error) {
 	return s.listPage(ctx, domain.ListFilter{
-		Status: status, Keyword: keyword, Tags: tags, Sort: domain.SortCreatedAt,
+		Status: status, Keyword: keyword, Tags: tags, Sort: domain.SortManual,
 	}, q)
 }
 
@@ -645,6 +646,12 @@ func (s *Service) BatchAction(ctx context.Context, in BatchActionInput) (int, er
 	}
 	if len(in.IDs) == 0 {
 		return 0, shared.BadRequest("文章 ID 列表不能为空")
+	}
+	if in.Action == "feature" || in.Action == "unfeature" {
+		isRoot := middleware.GetUserIsRoot(ctx)
+		if !isRoot && (s.perm == nil || !s.perm.HasPermission(middleware.GetUserRole(ctx), isRoot, permission.PostPublish.String())) {
+			return 0, shared.Forbidden("无权设置精选")
+		}
 	}
 	ids := make([]shared.ID, 0, len(in.IDs))
 	for _, idStr := range in.IDs {

@@ -86,21 +86,21 @@ function EmojisPage() {
 		return groups.filter((g) => g.name.toLowerCase().includes(query));
 	}, [groups, searchQuery]);
 
-	function handleCreateGroup() {
+	const handleCreateGroup = () => {
 		setEditingGroup(null);
 		setGroupFormOpen(true);
-	}
+	};
 
-	function handleEditGroup(group: EmojiGroup) {
+	const handleEditGroup = (group: EmojiGroup) => {
 		setEditingGroup(group);
 		setGroupFormOpen(true);
-	}
+	};
 
-	function handleDeleteGroup(group: EmojiGroup) {
+	const handleDeleteGroup = (group: EmojiGroup) => {
 		setDeleteConfirm({ open: true, group });
-	}
+	};
 
-	function confirmDeleteGroup() {
+	const confirmDeleteGroup = () => {
 		if (!deleteConfirm.group) return;
 		deleteGroup.mutate(
 			{ id: deleteConfirm.group.id },
@@ -115,14 +115,14 @@ function EmojisPage() {
 				},
 			},
 		);
-	}
+	};
 
-	function handleManageEmojis(groupId: number) {
+	const handleManageEmojis = (groupId: number) => {
 		setActiveGroupId(groupId);
 		setEmojisOpen(true);
-	}
+	};
 
-	function handleBatchEnable() {
+	const handleBatchEnable = () => {
 		if (!groups || groups.length === 0) return;
 		const disabledIds = groups.filter((g) => !g.is_enabled).map((g) => g.id);
 		if (disabledIds.length === 0) {
@@ -136,9 +136,9 @@ function EmojisPage() {
 				onError: (err) => toast.error(err.message),
 			},
 		);
-	}
+	};
 
-	function handleBatchDisable() {
+	const handleBatchDisable = () => {
 		if (!groups || groups.length === 0) return;
 		const enabledIds = groups.filter((g) => g.is_enabled).map((g) => g.id);
 		if (enabledIds.length === 0) {
@@ -152,7 +152,7 @@ function EmojisPage() {
 				onError: (err) => toast.error(err.message),
 			},
 		);
-	}
+	};
 
 	const isEmpty = !isLoading && !error && (!groups || groups.length === 0);
 	const isFilteredEmpty =

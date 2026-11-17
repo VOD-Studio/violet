@@ -43,8 +43,7 @@ describe("Sortable 滚动坐标", () => {
 		vi.useFakeTimers();
 		const root = document.createElement("ol");
 		const source = document.createElement("li");
-		source.className = "v-sortable__slot";
-		Object.defineProperty(source, "offsetTop", { value: 4 });
+		source.dataset.sortableItem = "";
 		const handle = document.createElement("button");
 		source.appendChild(handle);
 		root.appendChild(source);
@@ -53,6 +52,9 @@ describe("Sortable 滚动坐标", () => {
 		let top = 200;
 		vi.spyOn(root, "getBoundingClientRect").mockImplementation(
 			() => new DOMRect(0, top, 300, 160),
+		);
+		vi.spyOn(source, "getBoundingClientRect").mockImplementation(
+			() => new DOMRect(0, top + 4, 300, 48),
 		);
 		const { result } = renderHook(() =>
 			useSortableList({ items: ITEMS, getId, getLabel: getId, onReorder: vi.fn() }),

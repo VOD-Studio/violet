@@ -1,7 +1,6 @@
 import type { UniqueIdentifier } from "@dnd-kit/core";
-import { useSortable } from "@dnd-kit/sortable";
 import { ArrowDown, ArrowUp, Ellipsis, GripVertical } from "lucide-react";
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Button } from "../button";
 import {
 	DropdownMenu,
@@ -10,7 +9,7 @@ import {
 	DropdownMenuTrigger,
 } from "../dropdown-menu";
 import { iconProps } from "../icons";
-import type { SettlingItem } from "./use-sortable-list";
+import { useSortableItem } from "./use-sortable-item";
 
 interface SortableRowProps {
 	id: UniqueIdentifier;
@@ -18,9 +17,6 @@ interface SortableRowProps {
 	index: number;
 	total: number;
 	disabled: boolean;
-	busy: boolean;
-	active: boolean;
-	settling: SettlingItem | null;
 	menuContainer?: HTMLElement | null;
 	onMove: (direction: number) => void;
 	children: ReactNode;
@@ -33,43 +29,20 @@ export function SortableRow({
 	index,
 	total,
 	disabled,
-	busy,
-	active,
-	settling,
 	menuContainer,
 	onMove,
 	children,
 }: SortableRowProps) {
-	const locked = disabled || busy;
-	const { setNodeRef, setActivatorNodeRef, attributes, listeners, transform, transition } =
-		useSortable({
-			id,
-			disabled: locked,
-			transition: { duration: 200, easing: "cubic-bezier(.32,.72,0,1)" },
-		});
-	let y = transform?.y ?? 0;
-	if (settling) {
-		if (settling.id === id) {
-			y = settling.distance;
-		} else if (settling.from < settling.to && index > settling.from && index <= settling.to) {
-			y = -settling.height - 4;
-		} else if (settling.from > settling.to && index >= settling.to && index < settling.from) {
-			y = settling.height + 4;
-		} else {
-			y = 0;
-		}
-	}
-
-	const lifted = active || settling?.id === id;
-	const style: CSSProperties & { "--v-sortable-transition": string | undefined } = {
-		transform: y === 0 ? undefined : `translate3d(0,${y}px,0)`,
-		"--v-sortable-transition": settling
-			? "transform 160ms cubic-bezier(.32,.72,0,1)"
-			: transition,
-	};
+	const { setNodeRef, setActivatorNodeRef, attributes, listeners, style, lifted, locked } =
+		useSortableItem(id, disabled);
 
 	return (
-		<li ref={setNodeRef} className="v-sortable__slot" data-lifted={lifted || undefined}>
+		<li
+			ref={setNodeRef}
+			className="v-sortable__slot"
+			data-sortable-item=""
+			data-lifted={lifted || undefined}
+		>
 			<div className="v-sortable__row" style={style}>
 				<Button
 					{...attributes}

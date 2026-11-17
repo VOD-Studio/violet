@@ -29,6 +29,7 @@ func setupStatsTestDB(t *testing.T) *gorm.DB {
 	})
 	require.NoError(t, err)
 	require.NoError(t, db.AutoMigrate(&model.Post{}, &model.Comment{}, &model.User{}, &model.PostView{}, &model.FriendLink{}, &model.Subscription{}))
+	require.NoError(t, db.Exec("ALTER TABLE posts ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0").Error)
 	t.Cleanup(func() {
 		if sqlDB, err := db.DB(); err == nil {
 			_ = sqlDB.Close()

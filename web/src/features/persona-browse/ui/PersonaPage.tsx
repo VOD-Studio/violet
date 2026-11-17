@@ -381,6 +381,7 @@ export function PersonaPage({ locale, onLocaleChange }: PersonaPageProps) {
 			{/* 全屏大图灯箱预览 */}
 			<ImagePreview
 				open={lightbox.open}
+				wheelAction="zoom"
 				onClose={() => setLightbox((state) => ({ ...state, open: false }))}
 				images={allImageUrls}
 				thumbnails={allThumbnails}

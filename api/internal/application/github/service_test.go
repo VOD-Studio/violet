@@ -42,6 +42,10 @@ func (s *stubProvider) GetRepos(_ context.Context, username, token string) ([]do
 	return s.repos, s.err
 }
 
+func (s *stubProvider) GetRepo(_ context.Context, _, _, _ string) (*domaingithub.RepoData, error) {
+	return nil, s.err
+}
+
 // 编译期断言：stubProvider 实现 GitHubProvider
 var _ domaingithub.GitHubProvider = (*stubProvider)(nil)
 

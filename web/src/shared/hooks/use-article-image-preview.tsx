@@ -79,6 +79,7 @@ export function useArticleImagePreview() {
 	const previewElement = (
 		<ImagePreview
 			open={state.open}
+			wheelAction="close"
 			onClose={close}
 			images={state.images}
 			thumbnails={state.thumbnails}
