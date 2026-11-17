@@ -48,6 +48,11 @@ try {
 	run(["pack", "--pack-destination", temporaryRoot]);
 	const tarball = resolve(temporaryRoot, readdirSync(temporaryRoot).find((name) => name.endsWith(".tgz")));
 	const tools = ["vite", "typescript", "tailwindcss", "@tailwindcss/vite", "@types/react", "@types/react-dom", "@types/node", "esbuild"];
+	const pinnedDependencies = [
+		...Object.keys(packageJson.dependencies),
+		"framer-motion", "motion-dom", "motion-utils", "csstype",
+	];
+	const overrides = Object.fromEntries(pinnedDependencies.map((name) => [name, installedVersion(name)]));
 	const consumerPackage = {
 		name: "violet-ui-independent-consumer",
 		private: true,
@@ -59,10 +64,17 @@ try {
 			"lucide-react": installedVersion("lucide-react"),
 		},
 		devDependencies: Object.fromEntries(tools.map((name) => [name, installedVersion(name)])),
-		pnpm: { overrides: Object.fromEntries(Object.keys(packageJson.dependencies).map((name) => [name, installedVersion(name)])) },
 	};
 	writeFileSync(resolve(consumerRoot, "package.json"), `${JSON.stringify(consumerPackage, null, 2)}\n`);
-	writeFileSync(resolve(consumerRoot, "pnpm-workspace.yaml"), "packages: []\nallowBuilds:\n  esbuild: true\n  lightningcss: true\n");
+	writeFileSync(resolve(consumerRoot, "pnpm-workspace.yaml"), [
+		"packages: []",
+		"allowBuilds:",
+		"  esbuild: true",
+		"  lightningcss: true",
+		"overrides:",
+		...Object.entries(overrides).map(([name, version]) => `  ${JSON.stringify(name)}: ${JSON.stringify(version)}`),
+		"",
+	].join("\n"));
 	run(["install", "--prefer-offline", "--ignore-scripts", "--no-frozen-lockfile"], consumerRoot);
 	mkdirSync(resolve(consumerRoot, "src"));
 	const fixtureRoot = resolve(packageRoot, "fixtures/consumer");
