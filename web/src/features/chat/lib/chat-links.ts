@@ -52,8 +52,15 @@ export function classifyChatLink(href: string): ChatLink | null {
 	return { kind: "web", href, key: normalized };
 }
 
-/** 按 Markdown 链接节点收集预览，排除代码、图片及未被引用的链接定义。 */
-export function collectChatLinks(content: string, variant: "chat" | "bot" = "chat"): ChatLink[] {
+/**
+ * 按 Markdown 语义提取预览，代码、图片和未引用的定义不参与解析。
+ *
+ * @returns 去重后的卡片，以及正文是否仅由裸 URL 构成；命名链接与上下文必须保留。
+ */
+export function parseChatLinks(
+	content: string,
+	variant: "chat" | "bot" = "chat",
+): { links: ChatLink[]; linkOnly: boolean } {
 	const root: Root = (variant === "bot" ? botParser : chatParser).parse(content);
 	const definitions = new Map<string, string>();
 	visit(root, "definition", (node) => {
@@ -71,5 +78,21 @@ export function collectChatLinks(content: string, variant: "chat" | "bot" = "cha
 		const link = classifyChatLink(href);
 		if (link && !links.has(link.key)) links.set(link.key, link);
 	});
-	return [...links.values()];
+	const linkOnly =
+		links.size > 0 &&
+		root.children.every(
+			(node) =>
+				node.type === "definition" ||
+				(node.type === "paragraph" &&
+					node.children.every(
+						(child) =>
+							(child.type === "text" && child.value.trim() === "") ||
+							(child.type === "link" &&
+								classifyChatLink(child.url) !== null &&
+								child.children.length === 1 &&
+								child.children[0].type === "text" &&
+								child.children[0].value === child.url),
+					)),
+		);
+	return { links: [...links.values()], linkOnly };
 }

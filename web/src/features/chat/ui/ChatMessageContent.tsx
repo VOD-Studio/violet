@@ -27,7 +27,7 @@ import { useMemo } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
-import { collectChatLinks } from "../lib/chat-links";
+import { parseChatLinks } from "../lib/chat-links";
 import {
 	rehypeChatEmoji,
 	rehypeChatInlineImage,
@@ -251,7 +251,7 @@ export function ChatMessageContent({
 	onImage,
 	variant = "chat",
 }: ChatMessageContentProps) {
-	const links = useMemo(() => collectChatLinks(content, variant), [content, variant]);
+	const { links, linkOnly } = useMemo(() => parseChatLinks(content, variant), [content, variant]);
 	const rehypePlugins = useMemo(
 		() => [
 			rehypeChatEmoji(emote),
@@ -301,13 +301,15 @@ export function ChatMessageContent({
 	// 不解除自动最小尺寸就会把气泡顶宽，而不是让代码块自己横向滚动。
 	return (
 		<div className={cn("min-w-0", className)}>
-			<ReactMarkdown
-				remarkPlugins={variant === "bot" ? BOT_REMARK_PLUGINS : REMARK_PLUGINS}
-				rehypePlugins={rehypePlugins}
-				components={components}
-			>
-				{content}
-			</ReactMarkdown>
+			{!linkOnly && (
+				<ReactMarkdown
+					remarkPlugins={variant === "bot" ? BOT_REMARK_PLUGINS : REMARK_PLUGINS}
+					rehypePlugins={rehypePlugins}
+					components={components}
+				>
+					{content}
+				</ReactMarkdown>
+			)}
 			<ChatLinkCards links={links} />
 		</div>
 	);
