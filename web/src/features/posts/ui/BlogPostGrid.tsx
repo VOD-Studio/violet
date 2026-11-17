@@ -12,6 +12,7 @@ import {
 	CardFrameTitle,
 	Tag,
 } from "@violet/ui";
+import styles from "./BlogPostGrid.module.css";
 
 /** 只呈现当前页；精选仅在第一页提升，不重复占用列表位置。 */
 export interface BlogPostGridProps {
@@ -26,7 +27,7 @@ interface PostCardProps {
 function PostFrame({ post }: PostCardProps) {
 	return (
 		<article className="mb-4 break-inside-avoid p-1">
-			<CardFrame>
+			<CardFrame className={styles.card}>
 				{post.cover_image ? (
 					<CardFrameImage>
 						<CroppedImage
@@ -36,6 +37,7 @@ function PostFrame({ post }: PostCardProps) {
 							loading="lazy"
 							fillContainer
 							className="h-full w-full"
+							imgClassName={styles.cover}
 						/>
 					</CardFrameImage>
 				) : null}
@@ -85,7 +87,7 @@ function FeaturedPost({ post }: PostCardProps) {
 		);
 	}
 	return (
-		<article className="relative mb-8 rounded-2xl bg-muted">
+		<article className={`${styles.card} relative mb-8 rounded-2xl bg-muted`}>
 			<div className="absolute inset-0 overflow-hidden rounded-2xl">
 				<CroppedImage
 					src={post.cover_image}
@@ -95,6 +97,7 @@ function FeaturedPost({ post }: PostCardProps) {
 					fetchPriority="high"
 					fillContainer
 					className="h-full w-full"
+					imgClassName={styles.cover}
 				/>
 				<div className="absolute inset-0 bg-linear-to-t from-(--image-overlay-strong) via-(--image-overlay) to-transparent" />
 			</div>
