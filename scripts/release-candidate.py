@@ -2,6 +2,9 @@
 """Freeze, verify and publish one recoverable release candidate under release-state."""
 
 import argparse
+import base64
+import hashlib
+import io
 import json
 import os
 from pathlib import Path
@@ -9,6 +12,7 @@ import re
 import subprocess
 import sys
 from urllib.parse import quote, urlsplit
+import zipfile
 
 
 MANIFEST_PATH = ".release-please-manifest.json"
@@ -19,6 +23,21 @@ SHA = re.compile(r"[a-f0-9]{40}\Z")
 VERSION = re.compile(r"v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\Z")
 ARCHIVE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}\Z")
 DIGEST = re.compile(r"sha256:[a-f0-9]{64}\Z")
+CI_WORKFLOW = ".github/workflows/ci.yml"
+CI_BRANCH = "release/2.0"
+CI_EVIDENCE_JOB = "Release evidence"
+CI_REQUIRED_JOBS = (
+    "Detect Changes", "Pick runner / Pick runner", "Backend lint", "Backend build", "Backend tests",
+    "Backend image", "Backend (Go)", "Web lint", "Web typecheck", "Web build", "Plan Web tests",
+    *(f"Web unit ({shard}/3)" for shard in range(1, 4)),
+    *(f"Web contract ({shard}/2)" for shard in range(1, 3)),
+    *(f"Web package ({package})" for package in ("ui", "inkline", "react-tweet", "kanban", "theme")),
+    "Frontend (React)", "Web image", "Dependency Scan", "Infrastructure", "CI Gate",
+)
+
+
+def evidence_artifact_name(attempt):
+    return f"release-evidence-{positive_integer(attempt, 'run_attempt')}"
 
 
 class ReleaseError(RuntimeError):
@@ -72,6 +91,42 @@ def validate_manifest(value, expected_version, expected_revision):
         positive_integer(evidence[field], field)
     revision(evidence.get("workflow_revision"))
     return value
+
+
+def build_manifest(target_version, sha, api_digest, web_digest, run_id, run_attempt, workflow_revision):
+    value = {
+        "version": version(target_version), "revision": revision(sha),
+        "api_image": f"ghcr.io/vod-studio/violet-api@{api_digest}",
+        "web_image": f"ghcr.io/vod-studio/violet-web@{web_digest}",
+        "verification": {"run_id": positive_integer(run_id, "run_id"),
+                         "run_attempt": positive_integer(run_attempt, "run_attempt"),
+                         "workflow_revision": revision(workflow_revision), "full": True},
+    }
+    return validate_manifest(value, value["version"], value["revision"])
+
+
+def read_manifest(path):
+    value = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(value, dict):
+        raise ReleaseError("发布清单必须是 JSON 对象")
+    return validate_manifest(value, version(value.get("version")), revision(value.get("revision")))
+
+
+def evidence_outputs(manifest):
+    return {"revision": manifest["revision"], "version": manifest["version"],
+            "api_digest": manifest["api_image"].split("@", 1)[1],
+            "web_digest": manifest["web_image"].split("@", 1)[1],
+            **{f"verification_{key}": str(value).lower() for key, value in manifest["verification"].items()}}
+
+
+def write_outputs(result, env):
+    for value in result.values():
+        if "\n" in value or "\r" in value:
+            raise ReleaseError("GITHUB_OUTPUT 值不能包含换行")
+    if env.get("GITHUB_OUTPUT"):
+        with open(env["GITHUB_OUTPUT"], "a", encoding="utf-8") as stream:
+            for key, value in result.items():
+                stream.write(f"{key}={value}\n")
 
 
 def release_notes(changelog, target_version):
@@ -271,6 +326,142 @@ class GitHub:
             label = quote("autorelease: pending", safe="")
             self.request("DELETE", f"{self.root}/issues/{number}/labels/{label}")
 
+    def object_pages(self, path, field):
+        page = 1
+        while True:
+            separator = "&" if "?" in path else "?"
+            value = self.request("GET", f"{path}{separator}per_page=100&page={page}")
+            if not isinstance(value, dict) or not isinstance(value.get(field), list):
+                raise ReleaseError(f"GitHub {field} 分页响应无效")
+            yield from value[field]
+            if len(value[field]) < 100:
+                return
+            page += 1
+
+    def verify_ci_run(self, run_id, sha, workflow_revision, attempt=None, *, creating=False):
+        run_id = positive_integer(run_id, "run_id")
+        sha = revision(sha)
+        if revision(workflow_revision) != sha:
+            raise ReleaseError("主干 CI workflow revision 必须等于已验收源码 SHA")
+        current = self.request("GET", f"{self.root}/actions/runs/{run_id}")
+        if not isinstance(current, dict):
+            raise ReleaseError("CI run 响应无效")
+        latest = positive_integer(current.get("run_attempt"), "run_attempt")
+        attempt = latest if attempt is None else positive_integer(attempt, "run_attempt")
+        if latest != attempt:
+            raise ReleaseError("CI 证据已被新的 run attempt 替代")
+        run = self.request("GET", f"{self.root}/actions/runs/{run_id}/attempts/{attempt}")
+        for value in (current, run):
+            if not isinstance(value, dict) or value.get("id") != run_id or value.get("run_attempt") != attempt:
+                raise ReleaseError("CI run/attempt 身份不匹配")
+            if (value.get("head_sha") != sha or value.get("head_branch") != CI_BRANCH
+                    or value.get("path") != CI_WORKFLOW or value.get("event") not in ("push", "workflow_dispatch")
+                    or value.get("repository", {}).get("full_name", "").lower() != self.repo.lower()
+                    or value.get("head_repository", {}).get("full_name", "").lower() != self.repo.lower()):
+                raise ReleaseError("CI 必须来自当前仓库 release/2.0 的精确 SHA 主干工作流")
+            if creating:
+                if value.get("status") != "in_progress" or value.get("conclusion") is not None:
+                    raise ReleaseError("只能在正在执行的全量 CI 中创建证据")
+            elif value.get("status") != "completed" or value.get("conclusion") != "success":
+                raise ReleaseError("CI run/attempt 尚未完整成功")
+        workflow_id = positive_integer(run.get("workflow_id"), "workflow_id")
+        workflow = self.request("GET", f"{self.root}/actions/workflows/{workflow_id}")
+        if (current.get("workflow_id") != workflow_id or not isinstance(workflow, dict)
+                or workflow.get("id") != workflow_id or workflow.get("path") != CI_WORKFLOW
+                or workflow.get("state") != "active"):
+            raise ReleaseError("CI workflow 身份不匹配")
+        if run["event"] == "workflow_dispatch":
+            actor = run.get("triggering_actor", {}).get("login", "")
+            if not re.fullmatch(r"[A-Za-z0-9-]+(?:\[bot\])?", actor):
+                raise ReleaseError("手动 CI 缺少有效触发者")
+            permission = self.request("GET", f"{self.root}/collaborators/{quote(actor, safe='')}/permission")
+            if not isinstance(permission, dict) or permission.get("permission") not in ("admin", "maintain", "write"):
+                raise ReleaseError("手动 CI 触发者没有发布权限")
+        jobs = list(self.object_pages(f"{self.root}/actions/runs/{run_id}/attempts/{attempt}/jobs", "jobs"))
+        for name in (*CI_REQUIRED_JOBS, CI_EVIDENCE_JOB):
+            matches = [job for job in jobs if job.get("name") == name]
+            if len(matches) != 1:
+                raise ReleaseError(f"全量 CI 必须恰好包含一个 {name} job")
+            job = matches[0]
+            if job.get("run_id") != run_id or job.get("run_attempt") != attempt or job.get("head_sha") != sha:
+                raise ReleaseError(f"{name} job 不属于指定 CI SHA/attempt")
+            if creating and name == CI_EVIDENCE_JOB:
+                if job.get("status") != "in_progress" or job.get("conclusion") is not None:
+                    raise ReleaseError("证据必须由当前 Release evidence job 创建")
+            elif job.get("status") != "completed" or job.get("conclusion") != "success":
+                raise ReleaseError(f"全量 CI 的 {name} job 未成功")
+        return run
+
+    def ci_artifact(self, run_id, attempt, sha):
+        artifacts = list(self.object_pages(f"{self.root}/actions/runs/{run_id}/artifacts", "artifacts"))
+        matches = [item for item in artifacts if item.get("name") == evidence_artifact_name(attempt)]
+        if len(matches) != 1:
+            raise ReleaseError("指定 CI attempt 必须恰好有一份 release evidence artifact")
+        asset = matches[0]
+        source = asset.get("workflow_run", {})
+        digest = asset.get("digest", "")
+        if (asset.get("expired") is not False or source.get("id") != run_id
+                or source.get("head_sha") != sha or source.get("head_branch") != CI_BRANCH
+                or not isinstance(digest, str) or not DIGEST.fullmatch(digest)):
+            raise ReleaseError("CI artifact 来源、有效期或 digest 无效")
+        identifier = positive_integer(asset.get("id"), "artifact_id")
+        result = self.runner(["gh", "api", "--method", "GET", f"{self.root}/actions/artifacts/{identifier}/zip",
+                              "-H", "Accept: application/vnd.github+json",
+                              "-H", "X-GitHub-Api-Version: 2022-11-28"], capture_output=True)
+        if result.returncode:
+            raise ReleaseError("下载 CI evidence artifact 失败，禁止发布")
+        if not isinstance(result.stdout, bytes) or "sha256:" + hashlib.sha256(result.stdout).hexdigest() != digest:
+            raise ReleaseError("CI evidence artifact digest 不匹配")
+        try:
+            with zipfile.ZipFile(io.BytesIO(result.stdout)) as archive:
+                entries = archive.infolist()
+                if len(entries) != 1 or entries[0].filename != ASSET_NAME or entries[0].file_size > 65536:
+                    raise ReleaseError("CI artifact 必须只包含 release-manifest.json")
+                return json.loads(archive.read(entries[0]).decode("utf-8"))
+        except (ValueError, UnicodeError, zipfile.BadZipFile, RuntimeError) as error:
+            raise ReleaseError("CI evidence artifact 内容无效") from error
+
+    def ci_source_version(self, sha):
+        source = self.request("GET", f"{self.root}/contents/{MANIFEST_PATH}?ref={revision(sha)}")
+        if not isinstance(source, dict) or source.get("type") != "file" or source.get("encoding") != "base64":
+            raise ReleaseError("CI 源码 release manifest 响应无效")
+        try:
+            content = base64.b64decode("".join(source["content"].split()), validate=True)
+            return version(json.loads(content)["."])
+        except (KeyError, TypeError, ValueError) as error:
+            raise ReleaseError("CI 源码 release manifest 无效") from error
+
+    def ci_evidence(self, run_id, sha, target_version):
+        run = self.verify_ci_run(run_id, sha, sha)
+        manifest = self.ci_artifact(run["id"], run["run_attempt"], sha)
+        validate_manifest(manifest, target_version, sha)
+        evidence = manifest["verification"]
+        if (evidence["run_id"] != run["id"] or evidence["run_attempt"] != run["run_attempt"]
+                or evidence["workflow_revision"] != sha or self.ci_source_version(sha) != target_version):
+            raise ReleaseError("CI evidence 与实际 run/源码版本不一致")
+        return manifest
+
+    def find_ci_evidence(self, sha, target_version):
+        runs = self.object_pages(
+            f"{self.root}/actions/workflows/ci.yml/runs?branch={CI_BRANCH}&head_sha={revision(sha)}&status=success",
+            "workflow_runs",
+        )
+        for run in runs:
+            if run.get("event") in ("push", "workflow_dispatch") and run.get("head_sha") == sha:
+                return self.ci_evidence(positive_integer(run.get("id"), "run_id"), sha, target_version)
+        raise ReleaseError("没有该精确 SHA 的成功全量主干 CI，禁止隐式重建或部署")
+
+    def verify_ci_evidence(self, manifest, run_id=None):
+        validate_manifest(manifest, version(manifest.get("version")), revision(manifest.get("revision")))
+        evidence = manifest["verification"]
+        if run_id is not None and positive_integer(run_id, "run_id") != evidence["run_id"]:
+            raise ReleaseError("CI evidence run_id 与指定运行不一致")
+        self.verify_ci_run(evidence["run_id"], manifest["revision"], evidence["workflow_revision"], evidence["run_attempt"])
+        canonical = self.ci_artifact(evidence["run_id"], evidence["run_attempt"], manifest["revision"])
+        if canonical != manifest or self.ci_source_version(manifest["revision"]) != manifest["version"]:
+            raise ReleaseError("CI evidence 清单与可信 artifact/源码版本不一致")
+        return manifest
+
 
 class Coordinator:
     def __init__(self, git, github, env):
@@ -321,8 +512,8 @@ class Coordinator:
 
     def prepare(self, requested_version="", requested_revision="", rollback=False, component="both"):
         event = self.env.get("GITHUB_EVENT_NAME")
-        if event not in ("push", "workflow_dispatch"):
-            raise ReleaseError("prepare 只接受 push 或 workflow_dispatch")
+        if event not in ("push", "workflow_dispatch", "workflow_run"):
+            raise ReleaseError("prepare 只接受 push、workflow_dispatch 或 workflow_run")
         if component not in ("both", "api", "web"):
             raise ReleaseError("component 必须是 both、api 或 web")
         if rollback:
@@ -332,6 +523,17 @@ class Coordinator:
         if requested_revision:
             revision(requested_revision)
         target_version = version(requested_version) if requested_version else None
+        if event == "workflow_run":
+            source = self.env.get("CI_REVISION", "")
+            if source and requested_revision and source != requested_revision:
+                raise ReleaseError("workflow_run revision 与 CI_REVISION 不一致")
+            sha = revision(requested_revision or source)
+            self.ensure_main(sha)
+            actual_version = self.git.version(sha)
+            if target_version and target_version != actual_version:
+                raise ReleaseError("指定版本与 CI revision manifest 不一致")
+            target_version = actual_version
+            self.github.ci_evidence(self.env.get("CI_RUN_ID"), sha, target_version)
         if event == "push":
             if requested_revision or requested_version:
                 raise ReleaseError("push 候选必须使用事件 SHA，不能指定 version/revision")
@@ -342,6 +544,8 @@ class Coordinator:
             if parent is not None and self.git.version(parent) == target_version:
                 return {"mode": "skip", "version": target_version, "revision": sha}
         frozen = self.github.ref(CANDIDATE_REF)
+        if event == "workflow_run" and frozen and frozen != sha and self.git.ancestor(sha, frozen):
+            return {"mode": "skip", "version": self.git.version(frozen), "revision": frozen}
         state = self.state(target_version) if target_version else None
         if event == "workflow_dispatch":
             if requested_revision:
@@ -359,6 +563,8 @@ class Coordinator:
             target_version = target_version or actual_version
         state = state or self.state(target_version)
         tag, release, manifest, _ = state
+        if event == "workflow_run" and self.complete(state):
+            return {"mode": "skip", "version": target_version, "revision": sha}
         if tag is not None and tag != sha:
             raise ReleaseError("已存在 tag 指向其他 revision，禁止移动")
         if manifest is not None and manifest["revision"] != sha:
@@ -377,12 +583,20 @@ class Coordinator:
             if not self.complete(frozen_state):
                 if frozen_version != target_version:
                     raise ReleaseError("另一个未发布版本已冻结，不能挤占候选")
-                if not requested_revision:
+                if event == "workflow_run":
+                    if not self.git.ancestor(frozen, sha):
+                        raise ReleaseError("自动 CI 只能推进到冻结候选的后代")
+                elif not requested_revision:
                     if event == "push":
                         return {"mode": "skip", "version": target_version, "revision": frozen}
                     raise ReleaseError("同版本已有冻结候选，必须明确 revision 才能重选")
-                if not self.git.ancestor(frozen, sha):
+                elif not self.git.ancestor(frozen, sha):
                     raise ReleaseError("只能将候选重选为原候选的后代")
+        if event == "workflow_dispatch" and manifest is None:
+            if self.env.get("CI_RUN_ID"):
+                self.github.ci_evidence(self.env["CI_RUN_ID"], sha, target_version)
+            else:
+                self.github.find_ci_evidence(sha, target_version)
         if not same_frozen:
             self.github.set_candidate(sha, frozen)
         return {"mode": "candidate", "version": target_version, "revision": sha}
@@ -392,24 +606,17 @@ class Coordinator:
         target_version = self.git.version(sha)
         return {"maintain": "true" if self.complete(self.state(target_version)) else "false"}
 
-    def publish(self, target_version, sha, api_digest, web_digest, workflow_revision):
+    def publish(self, target_version, sha, api_digest, web_digest, verification):
         target_version = version(target_version)
         sha = revision(sha)
-        workflow_revision = revision(workflow_revision)
-        if workflow_revision != revision(self.env.get("GITHUB_SHA")):
-            raise ReleaseError("workflow revision 与当前 workflow SHA 不一致")
-        for key in ("VALIDATE_RESULT", "BUILD_API_RESULT", "BUILD_WEB_RESULT"):
-            if self.env.get(key) != "success":
-                raise ReleaseError(f"{key} 未成功，禁止发布")
-        proposed = {
-            "version": target_version, "revision": sha,
-            "api_image": f"ghcr.io/vod-studio/violet-api@{api_digest}",
-            "web_image": f"ghcr.io/vod-studio/violet-web@{web_digest}",
-            "verification": {"run_id": positive_integer(self.env.get("GITHUB_RUN_ID"), "run_id"),
-                             "run_attempt": positive_integer(self.env.get("GITHUB_RUN_ATTEMPT"), "run_attempt"),
-                             "workflow_revision": workflow_revision, "full": True},
-        }
+        if verification is None:
+            raise ReleaseError("publish 必须指定可信 CI verification 清单")
+        proposed = read_manifest(verification)
         validate_manifest(proposed, target_version, sha)
+        if (proposed["api_image"] != f"ghcr.io/vod-studio/violet-api@{api_digest}"
+                or proposed["web_image"] != f"ghcr.io/vod-studio/violet-web@{web_digest}"):
+            raise ReleaseError("publish 参数与 CI verification digest 不一致")
+        self.github.verify_ci_evidence(proposed)
         self.ensure_main(sha)
         if self.git.version(sha) != target_version:
             raise ReleaseError("候选 manifest 版本与 publish 版本不一致")
@@ -471,8 +678,9 @@ def main(argv=None, *, git=None, github=None, env=None):
     prepare.add_argument("--component", choices=("both", "api", "web"), default="both")
     commands.add_parser("maintenance")
     publish = commands.add_parser("publish")
-    for field in ("version", "revision", "api-digest", "web-digest", "workflow-revision"):
+    for field in ("version", "revision", "api-digest", "web-digest"):
         publish.add_argument(f"--{field}", required=True)
+    publish.add_argument("--verification", type=Path, required=True)
     args = parser.parse_args(argv)
     environment = os.environ if env is None else env
     try:
@@ -483,13 +691,8 @@ def main(argv=None, *, git=None, github=None, env=None):
         elif args.command == "maintenance":
             result = controller.maintenance()
         else:
-            result = controller.publish(args.version, args.revision, args.api_digest, args.web_digest, args.workflow_revision)
-        if environment.get("GITHUB_OUTPUT"):
-            with open(environment["GITHUB_OUTPUT"], "a", encoding="utf-8") as stream:
-                for key, value in result.items():
-                    if "\n" in value or "\r" in value:
-                        raise ReleaseError("GITHUB_OUTPUT 值不能包含换行")
-                    stream.write(f"{key}={value}\n")
+            result = controller.publish(args.version, args.revision, args.api_digest, args.web_digest, args.verification)
+        write_outputs(result, environment)
         print("发布状态：" + "，".join(f"{key}={value}" for key, value in result.items() if key != "manifest"))
         return 0
     except (ReleaseError, subprocess.CalledProcessError, OSError, KeyError, TypeError, ValueError) as error:

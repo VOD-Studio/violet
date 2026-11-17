@@ -112,9 +112,12 @@ test("键盘可打开设置并切换主题，Escape 关闭后焦点回到入口"
 	}
 	await expect(current).toBeFocused();
 	const option = group.getByRole("radio", { name: title, exact: true });
-	for (let step = 0; step < 5; step++) {
-		if (await option.evaluate((element) => element === document.activeElement)) break;
+	for (const name of ["春 · 花朝", "夏 · 荷风", "秋 · 桂月"]) {
 		await page.keyboard.press("ArrowRight");
+		await expect(group.getByRole("radio", { name, exact: true })).toBeFocused();
+		if (name === title) {
+			break;
+		}
 	}
 	await expect(option).toBeFocused();
 	await page.keyboard.press("Space");

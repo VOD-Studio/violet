@@ -34,19 +34,19 @@ it("连续离开正文与入口后重新悬停，旧隐藏任务不会关闭新�
 	render(<Harness />);
 	const paragraph = screen.getByText("可以反复悬停的段落。");
 	const article = screen.getByRole("article", { name: "文章正文" });
-	fireEvent.mouseMove(paragraph);
+	fireEvent.pointerMove(paragraph, { pointerType: "mouse" });
 	act(() => vi.advanceTimersToNextFrame());
 	const trigger = screen.getByRole("button", { name: /^发表段评/ });
-	fireEvent.mouseLeave(article);
-	fireEvent.mouseLeave(trigger);
-	fireEvent.mouseMove(paragraph);
+	fireEvent.pointerLeave(article, { pointerType: "mouse" });
+	fireEvent.pointerLeave(trigger, { pointerType: "mouse" });
+	fireEvent.pointerMove(paragraph, { pointerType: "mouse" });
 	act(() => vi.advanceTimersToNextFrame());
 	act(() => vi.advanceTimersByTime(300));
-	expect(screen.getByRole("button", { name: /^发表段评/ })).toBe(trigger);
+	expect(trigger.dataset.show).toBe("true");
 });
 
 function hover(target: Element) {
-	fireEvent.mouseMove(target);
+	fireEvent.pointerMove(target, { pointerType: "mouse" });
 	act(() => vi.advanceTimersToNextFrame());
 }
 
@@ -61,8 +61,8 @@ it("从段落移向右侧入口途中经过正文留白，入口不消失", () =
 	act(() => vi.advanceTimersByTime(100));
 	expect(trigger.dataset.show).toBe("true");
 
-	fireEvent.mouseLeave(article);
-	fireEvent.mouseEnter(trigger);
+	fireEvent.pointerLeave(article, { pointerType: "mouse" });
+	fireEvent.pointerEnter(trigger, { pointerType: "mouse" });
 	act(() => vi.advanceTimersByTime(2000));
 	expect(trigger.dataset.show).toBe("true");
 });
@@ -73,7 +73,7 @@ it("鼠标离开正文又没有进入入口，留出一段时间后才收起", (
 	hover(screen.getByText("可以反复悬停的段落。"));
 	const trigger = screen.getByRole("button", { name: /^发表段评/ });
 
-	fireEvent.mouseLeave(article);
+	fireEvent.pointerLeave(article, { pointerType: "mouse" });
 	act(() => vi.advanceTimersByTime(150));
 	expect(trigger.dataset.show).toBe("true");
 	act(() => vi.advanceTimersByTime(500));
@@ -132,12 +132,12 @@ it("指针从段落右缘的任意高度移出，落进贴着段落的右侧热�
 	const rail = container.querySelector("[data-trigger-rail]");
 	if (!rail) throw new Error("悬停段落时应有右侧热区");
 
-	fireEvent.mouseLeave(article);
-	fireEvent.mouseEnter(rail);
+	fireEvent.pointerLeave(article, { pointerType: "mouse" });
+	fireEvent.pointerEnter(rail, { pointerType: "mouse" });
 	act(() => vi.advanceTimersByTime(3000));
 	expect(trigger.dataset.show).toBe("true");
 
-	fireEvent.mouseLeave(rail);
+	fireEvent.pointerLeave(rail, { pointerType: "mouse" });
 	act(() => vi.advanceTimersByTime(1000));
 	expect(trigger.dataset.show).toBeUndefined();
 });
@@ -149,9 +149,9 @@ it("指针刚从正文留白移上入口时，滞后的鼠标移动回调不会�
 	const trigger = screen.getByRole("button", { name: /^发表段评/ });
 
 	// 最后一次留白上的移动还排在下一帧，指针已经走到入口上
-	fireEvent.mouseMove(article);
-	fireEvent.mouseLeave(article);
-	fireEvent.mouseEnter(trigger);
+	fireEvent.pointerMove(article, { pointerType: "mouse" });
+	fireEvent.pointerLeave(article, { pointerType: "mouse" });
+	fireEvent.pointerEnter(trigger, { pointerType: "mouse" });
 	act(() => vi.advanceTimersToNextFrame());
 	act(() => vi.advanceTimersByTime(3000));
 	expect(trigger.dataset.show).toBe("true");
@@ -219,5 +219,45 @@ it("触屏点按段落后入口出现在段落下方，点到代码块等不可�
 	expect(trigger.dataset.show).toBe("true");
 	expect(trigger.dataset.placement).toBe("below");
 	fireEvent.pointerDown(screen.getByText("代码块不能段评"), { pointerType: "touch" });
+	expect(trigger.dataset.show).toBeUndefined();
+});
+
+it("触屏点按后的兼容鼠标事件与触屏离开不会收起段评入口", () => {
+	render(<ParagraphsHarness />);
+	const article = screen.getByRole("article", { name: "文章正文" });
+	const trigger = screen.getByRole("button", { name: /^发表段评/ });
+	fireEvent.pointerDown(screen.getByText("第三段文字。"), { pointerType: "touch" });
+	fireEvent.mouseMove(article);
+	fireEvent.mouseLeave(article);
+	fireEvent.mouseLeave(trigger);
+	fireEvent.pointerLeave(article, { pointerType: "touch" });
+	fireEvent.pointerLeave(trigger, { pointerType: "touch" });
+	act(() => vi.advanceTimersToNextFrame());
+	act(() => vi.advanceTimersByTime(3000));
+	expect(trigger.dataset.show).toBe("true");
+	expect(trigger.dataset.placement).toBe("below");
+	expect(trigger.getAttribute("aria-label")).toBe("发表段评：第三段文字。");
+});
+
+it.each(["mouse", "pen"])("触屏接管取消旧悬停任务，%s 随后仍能切段并正常移出", (pointerType) => {
+	render(<ParagraphsHarness />);
+	const article = screen.getByRole("article", { name: "文章正文" });
+	const trigger = screen.getByRole("button", { name: /^发表段评/ });
+	hover(screen.getByText("第一段文字。"));
+	fireEvent.pointerLeave(article, { pointerType });
+	fireEvent.pointerMove(article, { pointerType });
+	fireEvent.pointerDown(screen.getByText("第三段文字。"), { pointerType: "touch" });
+	act(() => vi.advanceTimersToNextFrame());
+	act(() => vi.advanceTimersByTime(1000));
+	expect(trigger.dataset.show).toBe("true");
+	expect(trigger.dataset.placement).toBe("below");
+	expect(trigger.getAttribute("aria-label")).toBe("发表段评：第三段文字。");
+
+	fireEvent.pointerMove(screen.getByText("第一段文字。"), { pointerType });
+	act(() => vi.advanceTimersToNextFrame());
+	expect(trigger.getAttribute("aria-label")).toBe("发表段评：第一段文字。");
+	expect(trigger.dataset.placement).toBeUndefined();
+	fireEvent.pointerLeave(article, { pointerType });
+	act(() => vi.advanceTimersByTime(1000));
 	expect(trigger.dataset.show).toBeUndefined();
 });

@@ -1,9 +1,10 @@
 name: Deploy
 
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
     branches: [release/2.0]
-    paths: ['.release-please-manifest.json']
+    types: [completed]
   workflow_dispatch:
     inputs:
       version:
@@ -11,7 +12,7 @@ on:
         required: false
         default: ''
       revision:
-        description: '重新选定未发布候选的完整 SHA；留空保持已冻结候选'
+        description: '选择已有完整 CI 验收证据的 SHA；留空继续已冻结候选'
         required: false
         default: ''
       skip_build:
@@ -33,6 +34,12 @@ permissions:
 
 jobs:
   prepare:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'release/2.0' &&
+       github.event.workflow_run.head_repository.full_name == github.repository &&
+       contains(fromJSON('["push","workflow_dispatch"]'), github.event.workflow_run.event))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     concurrency:
@@ -41,14 +48,18 @@ jobs:
       cancel-in-progress: false
     permissions:
       contents: write
+      actions: read
     outputs:
       mode: ${{ steps.target.outputs.mode }}
       version: ${{ steps.target.outputs.version }}
       revision: ${{ steps.target.outputs.revision }}
       manifest: ${{ steps.target.outputs.manifest }}
+      api_digest: ${{ steps.verified.outputs.api_digest }}
+      web_digest: ${{ steps.verified.outputs.web_digest }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          ref: release/2.0
           fetch-depth: 0
           persist-credentials: false
       - name: 冻结或恢复发布候选
@@ -61,6 +72,8 @@ jobs:
           SKIP_BUILD: ${{ inputs.skip_build || false }}
           RESUME: ${{ inputs.resume || false }}
           COMPONENT: ${{ inputs.component || 'both' }}
+          CI_REVISION: ${{ github.event.workflow_run.head_sha }}
+          CI_RUN_ID: ${{ github.event.workflow_run.id }}
         run: |
           set -euo pipefail
           if [ "$GITHUB_REF" != refs/heads/release/2.0 ]; then
@@ -71,100 +84,37 @@ jobs:
             echo '::error::回滚与恢复部署不能同时请求'
             exit 1
           fi
+          revision="$REVISION_INPUT"
+          if [ "$GITHUB_EVENT_NAME" = workflow_run ]; then revision="$CI_REVISION"; fi
           python3 scripts/release-candidate.py prepare \
-            --version "$VERSION_INPUT" --revision "$REVISION_INPUT" \
+            --version "$VERSION_INPUT" --revision "$revision" \
             --rollback "$SKIP_BUILD" --component "$COMPONENT"
 
-  # 检查与构建共享精确 SHA，发布检查不依赖容易被取消的主干 push run。
-  validate:
-    needs: prepare
-    if: needs.prepare.outputs.mode == 'candidate'
-    permissions:
-      contents: read
-      pull-requests: read
-      actions: write
-    uses: ./.github/workflows/ci.yml
-    with:
-      ref: ${{ needs.prepare.outputs.revision }}
-      full: true
-      build_images: false
+      - name: Retrieve verified CI evidence
+        if: steps.target.outputs.mode == 'candidate'
+        id: verified
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          REVISION: ${{ steps.target.outputs.revision }}
+          CI_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          args=(--revision "$REVISION" --output "$RUNNER_TEMP/release-manifest.json")
+          if [ -n "$CI_RUN_ID" ]; then args+=(--run-id "$CI_RUN_ID"); fi
+          python3 scripts/ci-release-evidence.py fetch "${args[@]}"
 
-  build-api:
-    needs: prepare
-    if: needs.prepare.outputs.mode == 'candidate'
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      contents: read
-      packages: write
-      actions: write
-    outputs:
-      digest: ${{ steps.build.outputs.digest }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: steps.target.outputs.mode == 'candidate'
         with:
-          ref: ${{ needs.prepare.outputs.revision }}
-          persist-credentials: false
-      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
-      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
-        id: build
-        with:
-          context: ./api
-          push: true
-          tags: ghcr.io/vod-studio/violet-api:sha-${{ needs.prepare.outputs.revision }}
-          build-args: |
-            API_VERSION=${{ needs.prepare.outputs.version }}
-            APK_MIRROR=dl-cdn.alpinelinux.org
-          cache-from: type=gha,scope=violet-api
-          cache-to: type=gha,mode=max,scope=violet-api
+          name: verified-release-evidence-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/release-manifest.json
+          retention-days: 7
+          if-no-files-found: error
 
-  build-web:
-    needs: prepare
-    if: needs.prepare.outputs.mode == 'candidate'
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      contents: read
-      packages: write
-      actions: write
-    outputs:
-      digest: ${{ steps.build.outputs.digest }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          ref: ${{ needs.prepare.outputs.revision }}
-          persist-credentials: false
-      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
-      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
-        id: build
-        with:
-          context: ./web
-          push: true
-          tags: ghcr.io/vod-studio/violet-web:sha-${{ needs.prepare.outputs.revision }}
-          build-args: |
-            VITE_API_BASE_URL=/api/v1
-            VITE_SITE_URL=https://xunrua.top
-            VITE_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
-            VITE_GITHUB_CLIENT_ID=${{ secrets.GH_CLIENT_ID }}
-          cache-from: type=gha,scope=violet-web
-          cache-to: type=gha,mode=max,scope=violet-web
 
   publish:
-    needs: [prepare, validate, build-api, build-web]
-    if: >-
-      !cancelled() && needs.prepare.outputs.mode == 'candidate' &&
-      needs.validate.result == 'success' &&
-      needs.build-api.result == 'success' && needs.build-web.result == 'success'
+    needs: prepare
+    if: needs.prepare.outputs.mode == 'candidate'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     concurrency:
@@ -182,8 +132,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          ref: release/2.0
           fetch-depth: 0
           persist-credentials: false
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: verified-release-evidence-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/verified-release
       - name: 发布已验收候选及不可变镜像清单
         id: release
         env:
@@ -191,17 +146,13 @@ jobs:
           GH_REPO: ${{ github.repository }}
           VERSION: ${{ needs.prepare.outputs.version }}
           REVISION: ${{ needs.prepare.outputs.revision }}
-          API_DIGEST: ${{ needs.build-api.outputs.digest }}
-          WEB_DIGEST: ${{ needs.build-web.outputs.digest }}
-          WORKFLOW_REVISION: ${{ github.workflow_sha }}
-          VALIDATE_RESULT: ${{ needs.validate.result }}
-          BUILD_API_RESULT: ${{ needs.build-api.result }}
-          BUILD_WEB_RESULT: ${{ needs.build-web.result }}
+          API_DIGEST: ${{ needs.prepare.outputs.api_digest }}
+          WEB_DIGEST: ${{ needs.prepare.outputs.web_digest }}
         run: |
           python3 scripts/release-candidate.py publish \
             --version "$VERSION" --revision "$REVISION" \
             --api-digest "$API_DIGEST" --web-digest "$WEB_DIGEST" \
-            --workflow-revision "$WORKFLOW_REVISION"
+            --verification "$RUNNER_TEMP/verified-release/release-manifest.json"
 
   maintain-release-pr:
     needs: [prepare, publish]
@@ -229,7 +180,7 @@ jobs:
     runs-on: [self-hosted, rua]
     environment: production
     timeout-minutes: 25
-    # 只有生产事务互斥；候选版本的检查与构建不占生产锁。
+    # CI 已完成验收；这里只串行生产事务，不运行应用检查或构建。
     concurrency:
       group: deploy-production
       queue: max
@@ -308,7 +259,7 @@ jobs:
         run: rm -f "$RUNNER_TEMP/violet-registry-auth.json"
 
   notify-failure:
-    needs: [prepare, validate, build-api, build-web, publish, maintain-release-pr, deploy]
+    needs: [prepare, publish, maintain-release-pr, deploy]
     if: always() && failure()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -325,4 +276,4 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           run_id: ${{ github.run_id }}
-          reason: 检查或部署失败；生产事务失败后请检查归档与恢复结果，不自动重试迁移或切换
+          reason: 发布或部署失败；CI 证据不会被重跑替代，迁移与生产切换需人工核对恢复结果

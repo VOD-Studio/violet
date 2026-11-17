@@ -35,7 +35,7 @@ def evidence(sha=S1, target="v2.26.0"):
         "api_image": f"ghcr.io/vod-studio/violet-api@{API_DIGEST}",
         "web_image": f"ghcr.io/vod-studio/violet-web@{WEB_DIGEST}",
         "verification": {"run_id": 123, "run_attempt": 1,
-                         "workflow_revision": WORKFLOW, "full": True},
+                         "workflow_revision": sha, "full": True},
     }
 
 
@@ -194,6 +194,22 @@ class MemoryGitHub:
         if tag:
             self.refs["tags/" + target] = sha
 
+    def ci_evidence(self, run_id, sha, target):
+        self.checkpoint("ci_evidence")
+        release.positive_integer(run_id, "run_id")
+        return evidence(sha, target)
+
+    def find_ci_evidence(self, sha, target):
+        self.checkpoint("find_ci_evidence")
+        return evidence(sha, target)
+
+    def verify_ci_evidence(self, manifest, run_id=None):
+        self.checkpoint("verify_ci_evidence")
+        release.validate_manifest(manifest, manifest["version"], manifest["revision"])
+        if manifest["verification"]["workflow_revision"] != manifest["revision"]:
+            raise release.ReleaseError("CI workflow revision 与源码 SHA 不一致")
+        return manifest
+
 
 class CoordinatorTests(unittest.TestCase):
     def setUp(self):
@@ -205,12 +221,31 @@ class CoordinatorTests(unittest.TestCase):
             "VALIDATE_RESULT": "success", "BUILD_API_RESULT": "success", "BUILD_WEB_RESULT": "success",
         }
         self.controller = release.Coordinator(self.git, self.github, self.env)
+        self.folder = tempfile.TemporaryDirectory()
+        self.addCleanup(self.folder.cleanup)
+        self.verification = Path(self.folder.name) / "release-manifest.json"
+        self.verification.write_text(release.compact(evidence()))
 
     def freeze(self, sha=S1):
         self.github.refs[release.CANDIDATE_REF] = sha
 
-    def publish(self, sha=S1, target="v2.26.0", api_digest=API_DIGEST, web_digest=WEB_DIGEST, workflow=WORKFLOW):
-        return self.controller.publish(target, sha, api_digest, web_digest, workflow)
+    def publish(self, sha=S1, target="v2.26.0", api_digest=API_DIGEST, web_digest=WEB_DIGEST):
+        proposed = evidence(sha, target)
+        proposed["api_image"] = f"ghcr.io/vod-studio/violet-api@{api_digest}"
+        proposed["web_image"] = f"ghcr.io/vod-studio/violet-web@{web_digest}"
+        self.verification.write_text(release.compact(proposed))
+        return self.controller.publish(target, sha, api_digest, web_digest, verification=self.verification)
+
+    def test_historical_manifest_reuse_keeps_original_verification_identity(self):
+        self.freeze()
+        self.github.install_release()
+        original = evidence()
+        original["verification"].update(run_id=987, workflow_revision=WORKFLOW)
+        self.github.releases["v2.26.0"]["assets"][0]["body"] = release.compact(original)
+        result = self.controller.prepare("v2.26.0")
+        self.assertEqual(result["mode"], "reuse")
+        self.assertEqual(json.loads(result["manifest"]), original)
+        self.assertNotIn(("verify_ci_evidence", False), self.github.calls)
 
     def test_push_freezes_event_sha_even_when_main_has_later_pr(self):
         self.env.update(GITHUB_EVENT_NAME="push", GITHUB_SHA=S1)
@@ -387,28 +422,23 @@ class CoordinatorTests(unittest.TestCase):
                         controller.prepare("v2.26.0")
                     self.assertEqual(github.effects, [])
 
-    def test_each_full_gate_must_explicitly_succeed(self):
+    def test_success_env_cannot_replace_required_ci_evidence(self):
         self.freeze()
-        for key in ("VALIDATE_RESULT", "BUILD_API_RESULT", "BUILD_WEB_RESULT"):
-            for value in (None, "failed", "failure", "skipped", "cancelled", ""):
-                with self.subTest(key=key, value=value):
-                    self.env[key] = value
-                    with self.assertRaisesRegex(release.ReleaseError, key):
-                        self.publish()
-                    self.env[key] = "success"
+        for supplied in (None, ""):
+            with self.subTest(verification=supplied), self.assertRaises((release.ReleaseError, OSError)):
+                self.controller.publish("v2.26.0", S1, API_DIGEST, WEB_DIGEST, verification=supplied)
         self.assertEqual(self.github.effects, [])
         self.assertEqual(self.github.calls, [])
 
     def test_malformed_publish_evidence_fails_before_external_effects(self):
         self.freeze()
-        cases = [("GITHUB_RUN_ID", "0"), ("GITHUB_RUN_ID", "-1"), ("GITHUB_RUN_ID", "1.2"),
-                 ("GITHUB_RUN_ATTEMPT", None), ("GITHUB_RUN_ATTEMPT", "01"), ("GITHUB_SHA", S1)]
-        for key, value in cases:
-            old = self.env[key]
-            self.env[key] = value
+        for key, value in (("run_id", 0), ("run_id", -1), ("run_id", "123"),
+                           ("run_attempt", None), ("run_attempt", "01"), ("workflow_revision", "short")):
+            proposed = evidence()
+            proposed["verification"][key] = value
+            self.verification.write_text(release.compact(proposed))
             with self.subTest(key=key, value=value), self.assertRaises(release.ReleaseError):
-                self.publish()
-            self.env[key] = old
+                self.controller.publish("v2.26.0", S1, API_DIGEST, WEB_DIGEST, verification=self.verification)
         self.assertEqual(self.github.effects, [])
         self.assertEqual(self.github.calls, [])
 
@@ -417,8 +447,11 @@ class CoordinatorTests(unittest.TestCase):
         for digest in ("latest", "sha256:" + "f" * 63, "SHA256:" + "f" * 64, "ghcr.io/other/api@" + API_DIGEST):
             with self.subTest(digest=digest), self.assertRaises(release.ReleaseError):
                 self.publish(api_digest=digest)
+        proposed = evidence()
+        proposed["verification"]["workflow_revision"] = "abc"
+        self.verification.write_text(release.compact(proposed))
         with self.assertRaises(release.ReleaseError):
-            self.publish(workflow="abc")
+            self.controller.publish("v2.26.0", S1, API_DIGEST, WEB_DIGEST, verification=self.verification)
         self.assertEqual(self.github.effects, [])
 
     def test_publish_requires_version_bound_to_candidate(self):
@@ -669,22 +702,33 @@ class CoordinatorTests(unittest.TestCase):
             output.write_text("prior=value\n")
             self.env["GITHUB_OUTPUT"] = str(output)
             args = ["publish", "--version", "v2.26.0", "--revision", S1,
-                    "--api-digest", API_DIGEST, "--web-digest", WEB_DIGEST, "--workflow-revision", WORKFLOW]
+                    "--api-digest", API_DIGEST, "--web-digest", WEB_DIGEST, "--verification", str(self.verification)]
             with contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(release.main(args, git=self.git, github=self.github, env=self.env), 0)
             self.assertEqual(output.read_text(), f"prior=value\nstatus=published\nmanifest={release.compact(evidence())}\n")
 
     def test_failed_cli_emits_no_outputs_and_returns_nonzero(self):
-        self.env["VALIDATE_RESULT"] = "failure"
+        self.github.fail("verify_ci_evidence", status=403)
         with tempfile.TemporaryDirectory() as folder:
             output = Path(folder) / "outputs"
             self.env["GITHUB_OUTPUT"] = str(output)
             args = ["publish", "--version", "v2.26.0", "--revision", S1,
-                    "--api-digest", API_DIGEST, "--web-digest", WEB_DIGEST, "--workflow-revision", WORKFLOW]
+                    "--api-digest", API_DIGEST, "--web-digest", WEB_DIGEST, "--verification", str(self.verification)]
             with contextlib.redirect_stderr(io.StringIO()):
                 self.assertEqual(release.main(args, git=self.git, github=self.github, env=self.env), 1)
             self.assertFalse(output.exists())
         self.assertEqual(self.github.effects, [])
+
+    def test_publish_cli_requires_verification_even_with_success_env(self):
+        self.env["GITHUB_OUTPUT"] = str(Path(self.folder.name) / "output")
+        args = ["publish", "--version", "v2.26.0", "--revision", S1,
+                "--api-digest", API_DIGEST, "--web-digest", WEB_DIGEST]
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as caught:
+            release.main(args, git=self.git, github=self.github, env=self.env)
+        self.assertEqual(caught.exception.code, 2)
+        self.assertFalse(Path(self.env["GITHUB_OUTPUT"]).exists())
+        self.assertEqual(self.github.effects, [])
+        self.assertEqual(self.github.calls, [])
 
     def test_out_of_order_release_push_preserves_reselected_descendant(self):
         self.freeze(S2)
@@ -712,7 +756,7 @@ class CoordinatorTests(unittest.TestCase):
                     expected = "maintain=false\n"
                 else:
                     args = ["publish", "--version", "v2.26.0", "--revision", S1,
-                            "--api-digest", API_DIGEST, "--web-digest", WEB_DIGEST, "--workflow-revision", WORKFLOW]
+                            "--api-digest", API_DIGEST, "--web-digest", WEB_DIGEST, "--verification", str(self.verification)]
                     expected = "status=superseded\n"
                 with tempfile.TemporaryDirectory() as folder:
                     output = Path(folder) / "outputs"
@@ -754,6 +798,127 @@ class CoordinatorTests(unittest.TestCase):
         with self.assertRaises(release.ReleaseError):
             self.controller.prepare(requested_revision=S1)
         self.assertEqual(self.github.calls, [])
+
+
+class WorkflowRunTests(unittest.TestCase):
+    freeze = CoordinatorTests.freeze
+
+    def setUp(self):
+        CoordinatorTests.setUp(self)
+        self.env.update(GITHUB_EVENT_NAME="workflow_run", CI_REVISION=S2, CI_RUN_ID="999")
+
+    def test_successful_descendant_advances_same_unpublished_version(self):
+        self.freeze()
+        for node in (S1, S2):
+            self.git.nodes[node]["version"] = "v2.26.1"
+        result = self.controller.prepare()
+        self.assertEqual(result, {"mode": "candidate", "version": "v2.26.1", "revision": S2})
+        self.assertEqual(self.github.refs[release.CANDIDATE_REF], S2)
+        self.assertIn(("ci_evidence", False), self.github.calls)
+
+    def test_older_completed_ci_never_replaces_newer_candidate(self):
+        self.freeze(S2)
+        self.env["CI_REVISION"] = S1
+        self.assertEqual(self.controller.prepare(), {"mode": "skip", "version": "v2.26.0", "revision": S2})
+        self.assertEqual(self.github.effects, [])
+
+    def test_older_ci_skips_when_newer_candidate_already_has_immutable_draft(self):
+        self.freeze(S2)
+        self.github.install_release(sha=S2, draft=True, tag=False)
+        self.env["CI_REVISION"] = S1
+        self.assertEqual(self.controller.prepare()["mode"], "skip")
+        self.assertEqual(self.github.refs[release.CANDIDATE_REF], S2)
+        self.assertEqual(self.github.effects, [])
+
+    def test_published_version_new_commits_skip_without_redeploy_or_tag_movement(self):
+        self.github.install_release()
+        result = self.controller.prepare()
+        self.assertEqual(result, {"mode": "skip", "version": "v2.26.0", "revision": S2})
+        self.assertEqual(self.github.refs["tags/v2.26.0"], S1)
+        self.assertEqual(self.github.effects, [])
+
+    def test_ci_revision_override_must_match_verified_source(self):
+        with self.assertRaisesRegex(release.ReleaseError, "CI_REVISION"):
+            self.controller.prepare(requested_revision=S1)
+        self.assertEqual(self.github.calls, [])
+
+    def test_missing_run_id_or_failed_evidence_never_freezes(self):
+        for run_id in (None, "0", "bad"):
+            self.env["CI_RUN_ID"] = run_id
+            with self.subTest(run_id=run_id), self.assertRaises(release.ReleaseError):
+                self.controller.prepare()
+        self.env["CI_RUN_ID"] = "999"
+        self.github.fail("ci_evidence", status=403)
+        with self.assertRaises(release.APIError):
+            self.controller.prepare()
+        self.assertEqual(self.github.effects, [])
+
+    def test_unmerged_ci_or_unrelated_revision_cannot_advance(self):
+        self.freeze()
+        self.env["CI_REVISION"] = OTHER
+        with self.assertRaisesRegex(release.ReleaseError, "合入"):
+            self.controller.prepare()
+        self.assertEqual(self.github.effects, [])
+
+
+class VerifiedPublicationTests(unittest.TestCase):
+    freeze = CoordinatorTests.freeze
+
+    def setUp(self):
+        CoordinatorTests.setUp(self)
+        self.folder = tempfile.TemporaryDirectory()
+        self.addCleanup(self.folder.cleanup)
+        self.verification = Path(self.folder.name) / "release-manifest.json"
+        self.ci_manifest = evidence()
+        self.ci_manifest["verification"] = {"run_id": 999, "run_attempt": 3, "workflow_revision": S1, "full": True}
+        self.verification.write_text(release.compact(self.ci_manifest))
+        self.env.update(GITHUB_RUN_ID="2000", GITHUB_RUN_ATTEMPT="1", VALIDATE_RESULT="skipped")
+
+    def verified_publish(self, **kwargs):
+        return self.controller.publish("v2.26.0", S1, API_DIGEST, WEB_DIGEST, verification=self.verification, **kwargs)
+
+    def test_publish_preserves_original_ci_run_and_digests(self):
+        self.freeze()
+        result = self.verified_publish()
+        self.assertEqual(result["status"], "published")
+        self.assertEqual(json.loads(result["manifest"]), self.ci_manifest)
+        self.assertIn(("verify_ci_evidence", False), self.github.calls)
+
+    def test_bad_verification_cannot_publish_or_create_draft(self):
+        self.freeze()
+        for key, value in (("revision", S2), ("version", "v2.27.0"),
+                           ("api_image", "ghcr.io/vod-studio/violet-api@" + NEXT_DIGEST)):
+            broken = {**self.ci_manifest, key: value}
+            self.verification.write_text(release.compact(broken))
+            with self.subTest(field=key), self.assertRaises(release.ReleaseError):
+                self.verified_publish()
+        self.assertEqual(self.github.effects, [])
+
+    def test_api_failure_and_superseded_candidate_cannot_publish(self):
+        self.freeze()
+        self.github.fail("verify_ci_evidence", status=500)
+        with self.assertRaises(release.APIError):
+            self.verified_publish()
+        self.assertEqual(self.github.effects, [])
+        self.freeze(S2)
+        self.assertEqual(self.verified_publish(), {"status": "superseded"})
+        self.assertEqual(self.github.effects, [])
+
+    def test_cli_accepts_verification_without_workflow_revision(self):
+        self.freeze()
+        self.env["GITHUB_OUTPUT"] = str(Path(self.folder.name) / "output")
+        args = ["publish", "--version", "v2.26.0", "--revision", S1, "--api-digest", API_DIGEST,
+                "--web-digest", WEB_DIGEST, "--verification", str(self.verification)]
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(release.main(args, git=self.git, github=self.github, env=self.env), 0)
+        self.assertEqual(Path(self.env["GITHUB_OUTPUT"]).read_text(),
+                         f"status=published\nmanifest={release.compact(self.ci_manifest)}\n")
+
+    def test_manual_candidate_without_exact_ci_fails_closed(self):
+        self.github.fail("find_ci_evidence", status=403)
+        with self.assertRaises(release.APIError):
+            self.controller.prepare()
+        self.assertEqual(self.github.effects, [])
 
 
 class ScriptedRunner:

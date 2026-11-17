@@ -1,0 +1,105 @@
+{
+	"version": 1,
+	"always": [
+		"e2e/appearance-cookie.spec.ts",
+		"e2e/auth-sdk-readiness.spec.ts",
+		"e2e/command-palette.spec.ts",
+		"e2e/decoration.spec.ts",
+		"e2e/header.spec.ts",
+		"e2e/hover-stability.spec.ts",
+		"e2e/navbar-overflow.spec.ts",
+		"e2e/sortable.spec.ts",
+		"e2e/ssr-hydration.spec.ts",
+		"e2e/theme-contract.spec.ts",
+		"e2e/theme-migration.spec.ts",
+		"e2e/theme-switcher.spec.ts",
+		"e2e/ui-checkbox.spec.ts",
+		"e2e/ui-dialog.spec.ts",
+		"e2e/ui-dropdown.spec.ts",
+		"e2e/ui-icons.spec.ts",
+		"e2e/ui-input.spec.ts"
+	],
+	"rules": [
+		{
+			"name": "chat",
+			"prefixes": ["src/features/chat/", "src/routes/chat.tsx"],
+			"specs": [
+				"e2e/chat-appearance.spec.ts",
+				"e2e/chat-bot-commands.spec.ts",
+				"e2e/chat-bot-streaming.spec.ts",
+				"e2e/chat-message-display.spec.ts",
+				"e2e/chat-optimistic.spec.ts",
+				"e2e/chat-panels.spec.ts",
+				"e2e/chat-scroll-follow.spec.ts",
+				"e2e/chat-workspace.spec.ts"
+			]
+		},
+		{
+			"name": "article-and-blog",
+			"prefixes": [
+				"src/features/posts/",
+				"src/features/comments/",
+				"src/features/article-rich-content/",
+				"src/features/archive/",
+				"src/features/series/",
+				"src/routes/blog/"
+			],
+			"specs": [
+				"e2e/annotation-capability.spec.ts",
+				"e2e/annotation-panel-anchoring.spec.ts",
+				"e2e/article-math-ssr.spec.ts",
+				"e2e/article-ssr-cache.spec.ts",
+				"e2e/block-comment-entry.spec.ts",
+				"e2e/blog-browse.spec.ts",
+				"e2e/code-block-typography.spec.ts",
+				"e2e/comment-loading.spec.ts",
+				"e2e/highlight-worker.spec.ts",
+				"e2e/image-hydration.spec.ts",
+				"e2e/image-sizing.spec.ts",
+				"e2e/reading-interactions.spec.ts",
+				"e2e/rich-content-loading.spec.ts",
+				"e2e/roadmap-embed.spec.ts",
+				"e2e/admin-posts.spec.ts",
+				"e2e/editor-roadmap-embed.spec.ts"
+			]
+		},
+		{
+			"name": "post-editor",
+			"prefixes": ["src/features/admin-posts/", "src/routes/admin.posts"],
+			"specs": [
+				"e2e/admin-posts.spec.ts",
+				"e2e/editor-roadmap-embed.spec.ts",
+				"e2e/roadmap-embed.spec.ts"
+			]
+		},
+		{
+			"name": "projects",
+			"prefixes": [
+				"src/features/projects/",
+				"src/features/admin-projects/",
+				"src/routes/projects/",
+				"src/routes/admin.projects.tsx"
+			],
+			"specs": [
+				"e2e/project-roadmap-admin.spec.ts",
+				"e2e/project-roadmap-checklist.spec.ts",
+				"e2e/project-roadmap-filters.spec.ts",
+				"e2e/project-roadmap-relations.spec.ts",
+				"e2e/project-roadmap.spec.ts",
+				"e2e/projects-list.spec.ts",
+				"e2e/roadmap-embed.spec.ts",
+				"e2e/editor-roadmap-embed.spec.ts"
+			]
+		},
+		{
+			"name": "music-admin",
+			"prefixes": ["src/features/admin-music/", "src/routes/admin.music.tsx"],
+			"specs": ["e2e/admin-music.spec.ts"]
+		},
+		{
+			"name": "kanban-documentation",
+			"prefixes": ["src/features/kanban-docs/", "src/routes/kanban.tsx"],
+			"specs": ["e2e/kanban-docs.spec.ts"]
+		}
+	]
+}

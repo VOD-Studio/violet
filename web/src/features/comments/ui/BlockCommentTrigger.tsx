@@ -10,6 +10,7 @@ import { MessageSquareText } from "lucide-react";
 import { Popover } from "radix-ui";
 import {
 	type KeyboardEvent,
+	type PointerEvent as ReactPointerEvent,
 	useCallback,
 	useEffect,
 	useRef,
@@ -17,6 +18,7 @@ import {
 	useSyncExternalStore,
 } from "react";
 import { useAnnotationAnchorVisible } from "../hooks/use-annotation-anchor-visible";
+import { useBlockTriggerPosition } from "../hooks/use-block-trigger-position";
 import { AnnotationPending } from "./AnnotationPending";
 import { AnnotationPortal } from "./AnnotationPortal";
 import { AnnotationQuote } from "./AnnotationQuote";
@@ -31,14 +33,6 @@ const loadBlockComposer = createAsyncLoader(() =>
 
 /** 指针离开段落后入口延迟隐藏的时间，留给指针经过留白移向入口按钮。 */
 const HIDE_DELAY_MS = 300;
-/** 入口纵向对齐块首行的偏移，px */
-const TOP_OFFSET_PX = 2;
-/** 触屏入口与段落底边的间距，px */
-const BELOW_GAP_PX = 4;
-/** 触屏入口与末行文字的间距，px */
-const INLINE_GAP_PX = 6;
-/** 入口圆钮边长，与样式里的 1.75rem 一致，px */
-const ENTRY_SIZE_PX = 28;
 /** 输入面板与所批注段落底边的间距，px */
 const COMPOSER_GAP_PX = 8;
 /** 入口读屏名称里引用的段落开头字数 */
@@ -87,8 +81,6 @@ export function BlockCommentTrigger({
 		() => true,
 		() => false,
 	);
-	const [top, setTop] = useState(0);
-	const [height, setHeight] = useState(0);
 	const [composerBlock, setComposerBlock] = useState<HTMLElement | null>(null);
 	const buttonRef = useRef<HTMLButtonElement>(null);
 	const hideTimer = useRef<number | undefined>(undefined);
@@ -114,20 +106,34 @@ export function BlockCommentTrigger({
 		clearTimeout(hideTimer.current);
 		hideTimer.current = window.setTimeout(() => setCurrent(null), HIDE_DELAY_MS);
 	}, []);
-	const enterEntry = useCallback(() => {
+	const enterEntry = useCallback((event: ReactPointerEvent<HTMLElement>) => {
+		if (event.pointerType === "touch") {
+			return;
+		}
 		overEntry.current = true;
 		clearTimeout(hideTimer.current);
 	}, []);
-	const leaveEntry = useCallback(() => {
-		overEntry.current = false;
-		if (!focused) scheduleHide();
-	}, [focused, scheduleHide]);
+	const leaveEntry = useCallback(
+		(event: ReactPointerEvent<HTMLElement>) => {
+			if (event.pointerType === "touch") {
+				return;
+			}
+			overEntry.current = false;
+			if (!focused) {
+				scheduleHide();
+			}
+		},
+		[focused, scheduleHide],
+	);
 
 	useEffect(() => {
 		const root = contentRef.current;
 		if (!root) return;
 		let frame = 0;
-		const onMove = (event: globalThis.MouseEvent) => {
+		const onMove = (event: globalThis.PointerEvent) => {
+			if (event.pointerType === "touch") {
+				return;
+			}
 			cancelAnimationFrame(frame);
 			frame = requestAnimationFrame(() => {
 				const block = closestAnnotatableBlock(event.target, root);
@@ -137,14 +143,19 @@ export function BlockCommentTrigger({
 					return;
 				}
 				clearTimeout(hideTimer.current);
-				setMode((cur) => (cur === "touch" ? cur : "pointer"));
+				setMode("pointer");
 				setCurrent((cur) => (cur === block ? cur : block));
 			});
 		};
 		// 离开正文时排在下一帧的移动回调作废，免得它在指针已到入口上之后才安排收起。
-		const onLeave = () => {
+		const onLeave = (event: globalThis.PointerEvent) => {
+			if (event.pointerType === "touch") {
+				return;
+			}
 			cancelAnimationFrame(frame);
-			if (!focused) scheduleHide();
+			if (!focused) {
+				scheduleHide();
+			}
 		};
 		// 触屏没有悬停：点按一段文字（不是选词）就把入口放到这段下面，点到别处收起。
 		const onPointerDown = (event: PointerEvent) => {
@@ -152,53 +163,36 @@ export function BlockCommentTrigger({
 				setMode((cur) => (cur === "touch" ? "pointer" : cur));
 				return;
 			}
+			// 触屏接管时作废先前鼠标排下的任务，兼容 mouse 事件不参与悬停生命周期。
+			cancelAnimationFrame(frame);
+			clearTimeout(hideTimer.current);
+			overEntry.current = false;
 			if (buttonRef.current?.contains(event.target as Node)) return;
 			const block = root.contains(event.target as Node)
 				? closestAnnotatableBlock(event.target, root)
 				: null;
-			clearTimeout(hideTimer.current);
 			setMode("touch");
 			setCurrent(block);
 		};
-		root.addEventListener("mousemove", onMove);
-		root.addEventListener("mouseleave", onLeave);
+		root.addEventListener("pointermove", onMove);
+		root.addEventListener("pointerleave", onLeave);
 		document.addEventListener("pointerdown", onPointerDown, true);
 		return () => {
 			cancelAnimationFrame(frame);
 			clearTimeout(hideTimer.current);
-			root.removeEventListener("mousemove", onMove);
-			root.removeEventListener("mouseleave", onLeave);
+			root.removeEventListener("pointermove", onMove);
+			root.removeEventListener("pointerleave", onLeave);
 			document.removeEventListener("pointerdown", onPointerDown, true);
 		};
 	}, [contentRef, scheduleHide, focused]);
 
 	const visibleBlock = composerBlock ?? current;
 	const touch = mode === "touch";
-	/** 触屏入口的横向位置：跟在末行文字后面；末行写满时为 null，退到段落右下方。 */
-	const [inlineLeft, setInlineLeft] = useState<number | null>(null);
-	useEffect(() => {
-		const layer = layerRef.current;
-		if (!visibleBlock || !layer) return;
-		const rect = visibleBlock.getBoundingClientRect();
-		const layerRect = layer.getBoundingClientRect();
-		setHeight(rect.height);
-		if (!touch) {
-			setTop(rect.top - layerRect.top + TOP_OFFSET_PX);
-			return;
-		}
-		const range = document.createRange();
-		range.selectNodeContents(visibleBlock);
-		// jsdom 没有 Range 几何 API：退到段落下方，与末行写满时相同
-		const lines = typeof range.getClientRects === "function" ? range.getClientRects() : [];
-		const last = lines[lines.length - 1];
-		if (last && last.right + INLINE_GAP_PX + ENTRY_SIZE_PX <= layerRect.right) {
-			setTop(last.top - layerRect.top + (last.height - ENTRY_SIZE_PX) / 2);
-			setInlineLeft(last.right - layerRect.left + INLINE_GAP_PX);
-		} else {
-			setTop(rect.bottom - layerRect.top + BELOW_GAP_PX);
-			setInlineLeft(null);
-		}
-	}, [visibleBlock, layerRef, touch]);
+	const { top, height, inlineLeft } = useBlockTriggerPosition({
+		block: visibleBlock,
+		layerRef,
+		touch,
+	});
 	const below = touch && inlineLeft === null;
 
 	const close = useCallback(() => {
@@ -274,8 +268,8 @@ export function BlockCommentTrigger({
 					data-trigger-rail
 					aria-hidden="true"
 					style={{ top, height }}
-					onMouseEnter={enterEntry}
-					onMouseLeave={leaveEntry}
+					onPointerEnter={enterEntry}
+					onPointerLeave={leaveEntry}
 					className="annotation-trigger-rail pointer-events-auto absolute"
 				/>
 			)}
@@ -284,8 +278,8 @@ export function BlockCommentTrigger({
 				type="button"
 				style={{ top, left: inlineLeft ?? undefined }}
 				tabIndex={hasBlocks ? 0 : -1}
-				onMouseEnter={enterEntry}
-				onMouseLeave={leaveEntry}
+				onPointerEnter={enterEntry}
+				onPointerLeave={leaveEntry}
 				onFocus={onFocus}
 				onBlur={onBlur}
 				onKeyDown={onKeyDown}

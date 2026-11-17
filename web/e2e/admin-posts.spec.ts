@@ -170,15 +170,33 @@ test("浏览走阅读地址，草稿受保护预览，置顶可取消", async ({
 test("保存失败保留原顺序且不显示成功", async ({ page, context }) => {
 	const fixture = await articles(context);
 	fixture.reject();
+	fixture.pause();
 	await openClientPage(page, "/admin/posts");
+	const table = page.getByRole("table", { name: "文章列表" });
+	const draggingRows = table.locator("tbody tr[data-dragging]");
+	const dragAnnouncements = page.locator('[role="status"][aria-live="assertive"]');
 	const handle = page.getByRole("button", { name: "移动 文章03", exact: true });
 	await handle.focus();
 	await page.keyboard.press("Space");
+	await expect(draggingRows).toHaveCount(1);
 	await page.keyboard.press("ArrowUp");
+	await expect(dragAnnouncements).toContainText("第 2 位");
+	const saving = page.waitForRequest("**/api/v1/admin/posts/reorder");
 	await page.keyboard.press("Space");
+	const request = await saving;
+	expect(request.method()).toBe("POST");
+	const { expected_ids, ids } = request.postDataJSON();
+	expect(expected_ids).toHaveLength(49);
+	expect(ids).toEqual([expected_ids[1], expected_ids[0], ...expected_ids.slice(2)]);
+	await expect(table).toHaveAttribute("aria-busy", "true");
+	await expect(table.getByRole("row").nth(2)).toContainText("文章03");
+	fixture.release();
 	await expect(page.getByText("顺序已变化，请刷新", { exact: true })).toBeVisible();
-	await expect(page.getByRole("row").nth(2)).toContainText("文章02");
-	await expect(page.getByRole("table", { name: "文章列表" })).toBeVisible();
+	expect(fixture.reorders).toHaveLength(1);
+	await expect(table).not.toHaveAttribute("aria-busy", "true");
+	await expect(table.getByRole("row").nth(2)).toContainText("文章02");
+	await expect(table.getByRole("row").nth(3)).toContainText("文章03");
+	await expect(table).toBeVisible();
 	await expect(page.getByText("文章顺序已保存", { exact: true })).toHaveCount(0);
 });
 

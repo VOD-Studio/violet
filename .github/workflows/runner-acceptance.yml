@@ -16,6 +16,8 @@ permissions:
   actions: write
   contents: read
   pull-requests: read
+  packages: write
+  issues: write
 
 concurrency:
   group: runner-acceptance

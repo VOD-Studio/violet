@@ -233,7 +233,10 @@ export function BlogDetailPage({ slug, initialPost }: BlogDetailPageProps) {
 			</article>
 
 			<FloatingBack to="/blog" label="返回博客" history />
-			<div className="fixed right-8 bottom-8 z-40 flex flex-col items-center gap-3 max-lg:bottom-24">
+			<div
+				data-annotation-occluder
+				className="fixed right-8 bottom-8 z-40 flex flex-col items-center gap-3 max-lg:bottom-24"
+			>
 				{hasSidebarToc ? (
 					<div className="xl:hidden">
 						<MobileTocFab key={post.id} items={toc} contentRef={contentRef} />

@@ -3,23 +3,24 @@
 ## 日常发布
 
 1. 功能与修复 PR 合入 `release/2.0`，release-please 根据 Conventional Commits 更新一个 release PR。普通 PR 用 merge commit，release PR 用 squash merge。
-2. 合并 release PR 后，`Deploy` 将该提交冻结到 `release-candidate` 分支，先执行全量 CI 与双侧镜像构建。此时 manifest 中的版本仍是候选，不创建正式 tag。
-3. 验收通过后，在发布状态锁内再次核对候选，创建 tag 和 GitHub Release，并保存 `release-manifest.json` 附件。附件绑定源码 SHA、双侧镜像 digest 及验证运行；随后部署这份清单。
+2. 主干每次 push 先运行完整 `CI`，包括全部测试与双侧镜像构建。`Release evidence` 只有在 `CI Gate` 和镜像任务成功后才能上传验收清单；清单绑定同一 SHA、当前 attempt 和镜像 digest。
+3. `Deploy` 监听主干 CI 成功事件，核对真实运行、全部必需任务和当次清单。manifest 中的版本尚未发布时，在 `release-state` 锁内登记候选，创建 tag、GitHub Release 和 `release-manifest.json` 附件，然后部署原 digest。Deploy 不再重复运行测试或构建镜像。
 4. 在 Actions 的 Deploy summary 查看实际部署版本、提交、双侧镜像和 schema。GitHub Release 表示候选已完成验收，**不表示生产部署成功**。
 
 `release-please-config.json` 的 `exclude-paths` 是目录过滤，不支持单个文件或 glob。仅修改 `.github/`、`scripts/`、`docs/` 或 `web/e2e/` 的提交不单独触发应用版本；混合应用源码的提交仍参与版本计算。纯 CI、运维或文档 PR 使用 `chore`、`ci`、`test`、`docs` 等类型，包括同时修改 README 或发布配置的情况。不要靠手动关闭 release PR 或修改已有 tag 纠正提交分类。
 
 ```mermaid
 flowchart LR
-    A[合并 release PR] --> P[冻结候选 SHA]
-    P --> C[完整 CI]
-    P --> B[构建 API 镜像]
-    P --> W[构建 Web 镜像]
-    C --> V[核对候选并发布 tag 与镜像清单]
-    B --> V
-    W --> V
-    V --> D[生产互斥事务]
-    R[手动重试已有发布清单] --> D
+    A[主干 push 或手动 CI] --> L[lint 与类型检查]
+    A --> T[完整测试]
+    A --> B[生产构建与双侧镜像]
+    L --> G[CI Gate]
+    T --> G
+    B --> G
+    G --> E[验收清单]
+    E --> C[CI 整体成功]
+    C --> V[Deploy 核对证据并发布]
+    V --> D[部署原镜像 digest]
     D --> M[独立 SQL 迁移]
     M --> S[资源准备与容器切换]
     S --> H[公网健康与资源检查]
@@ -28,32 +29,36 @@ flowchart LR
 
 候选登记、正式发布与 release PR 维护共用 `release-state` 锁；检查和构建不占锁。生产事务另用 `deploy-production` 锁，服务器保留文件锁。两个 Actions 并发组均使用 `queue: max`，最多保留 100 个等待任务；入队次序不代表提交先后。运行被取消或队列满时，候选仍可从 `release-candidate` 及 manifest 恢复，不能把 Actions 队列当作唯一记录。
 
-候选冻结后，新合入的业务 PR 不改变本次 SHA，留给下一批；当前版本尚未公开发布或缺少有效验证清单时，release-please 暂停生成下一张 release PR。发布完成后主动触发维护，收集期间合入的提交。人工重新选择同版本的后代 SHA 后，旧运行在发布前标记为 `superseded`；进入生产锁后仍检查祖先关系，已被线上双侧版本包含的旧发布不会覆盖生产。不要手工移动或删除候选分支。
+同版本尚未发布时，后续完整 CI 成功的后代 SHA 可以推进候选，修复失败候选不需要升版本。晚完成的旧运行不能覆盖新候选；已发布版本的后续 CI 只做验证，不重新发布或部署。release-please 在当前版本公开发布且清单完整前暂停下一张 release PR，发布后主动触发维护。进入生产锁后仍检查祖先关系，已被线上双侧版本包含的旧发布不会覆盖生产。不要手工移动或删除候选分支。
 
-每个未发布候选验证同一个提交的完整 CI，并构建双侧镜像。正式 Release 的清单一旦存在，重试直接复用原 digest，不重新构建、不重跑全量 CI。PR 的旧运行可取消，不同提交的主干运行互不取消。API 内部拆为静态检查（golangci-lint 已含 vet）、数据库测试（仅此任务启动 PostgreSQL）与镜像校验，`Backend (Go)` 汇总它们；Web 内部拆为静态检查、站点单测（3 分片）、独立包（ui、inkline、react-tweet、kanban、theme 各一）、浏览器契约（2 分片）与镜像校验。`Frontend (React)` 汇总这些任务，总门禁 `CI Gate` 核对实际执行结果；skipped 不充当候选通过。
+lint、类型检查、构建和测试拆为独立任务并行执行。API 的构建、golangci-lint、数据库测试与镜像构建互不等待；仅数据库测试启动 PostgreSQL。Web 的 lint、类型检查、生产构建、站点单测和独立包验收并行，浏览器契约下载一次生产构建产物后运行。`Backend (Go)`、`Frontend (React)` 和 `CI Gate` 核对实际结果；发布另行要求完整 CI 的每个任务成功，skipped 不充当通过。
 
 CI 包含 PostgreSQL 仓储与迁移集成测试、前端构建及 Playwright 契约测试，以及工作流、部署脚本和 Compose 校验。镜像用提交标签保存，实际部署只使用构建产出的 `ghcr.io/...@sha256:...`，不读取或改写 `latest`。
 
 Omarchy 自托管 CI 的镜像更新须先通过 `Runner acceptance`：同一份 CI 强制双侧全量与镜像构建，禁止回退官方 runner。验收和工作流合入完成后才能开启 `SELF_HOSTED_RUNNER`，具体操作见 [Runner 运维指南](runner-setup.md#完整-ci-验收与启用)。生产部署仍固定使用 rua runner。
 
-### PR 与主干按需验证
+### PR 影响范围与耗时分片
 
-普通 PR 与主干 push 按文件影响选择检查，不根据 `docs` 等提交标题跳过 CI。顶层 `api/README.md`、`web/README.md` 不触发对应应用检查；根 README 和根文档配图也不触发重任务。被站点导入的 Markdown、包内 README 和示例仍属于构建输入。
+PR 对照目标分支的 merge base 生成选测计划，不根据提交标题跳过检查。Go 使用 `go list` 的生产、测试和 integration 依赖图选择变更包及其反向依赖；Vitest 使用实际模块依赖图；浏览器契约使用显式影响映射。删除、重命名、共享配置、生成输入或无法证明影响范围的变更保守全量。选测计划保存理由与文件清单，Web summary 同时显示选择数量和理由；计划中的测试失败、漏跑或意外跳过都会阻断门禁。
 
-纯介绍文档只运行变更检测、runner 选择、轻量基础设施步骤和最终门禁，不启动 PostgreSQL，也不安装应用工具链或构建镜像。Infrastructure 保留 PR 版本意图检查；工作流、复合 action、脚本、部署配置等变化才执行其重校验。发布与 Runner acceptance 的 `full=true` 强制完整检查，不受文档排除影响。
+仅介绍文档的 PR 不启动应用重任务。顶层 `api/README.md`、`web/README.md`、根 README 和根文档配图不作为应用输入；被站点导入的 Markdown、包内 README 和示例仍参与选测。主干 push、手动 CI 和 Runner acceptance 始终全量，不受文档排除影响。
 
-Web 镜像校验只在 `web/Dockerfile`、`.dockerignore`、`server.mjs`、依赖声明、锁文件或 workspace 包清单变化时运行；源码构建由契约任务验证。正常发布的检查不构建镜像，镜像由 `build-web` 产出；Runner acceptance 强制构建。
+站点单测最多 3 个分片，浏览器契约最多 2 个分片。按历史成功测试耗时的中位数降序分配，每次放入预计剩余工作最少的分片；无历史的文件仍会执行，使用保守默认值。PR 只读取主干缓存，只有完整主干验收成功的测试报告可更新耗时历史；失败、超时和重试样本不参与估算。
+
+PR 的 Web 镜像任务只在 Docker 输入或依赖清单变化时运行；源码始终由独立的生产构建任务验证。主干 CI 构建并推送双侧 SHA 镜像，发布直接消费其 digest，不再构建第二份镜像。Runner acceptance 构建镜像但不发布。
 
 工作流语法检查使用 [actionlint 并发队列补丁](https://github.com/rhysd/actionlint/pull/654)的固定提交 `644076a59742c2d1540ebd4686eab3c308f0e562`，源码归档在构建前校验 SHA-256。上游正式版 1.7.12 尚不识别 GitHub 已支持的 `queue`，本地使用该旧版会误报；检查器安装步骤见 `ci.yml`。未屏蔽语法错误，非法队列值及 `queue: max` 与取消运行的冲突仍会失败。
 
-站点单测用 `pnpm test:site` 分片，排除自带 Vitest 配置、由独立包任务运行的 ui、react-tweet、kanban、theme；本地 `make web-test` 仍运行全部。新增带独立测试配置的包时，需同时加入 `web-package` 矩阵与 `test:site` 排除列表。
+独立包仍保留自己的验收边界：站点单测不重复执行 `ui`、`react-tweet`、`kanban`、`theme` 的测试；`inkline`、`agent-status`、`mascot` 沿用站点配置。独立包的类型检查、浏览器行为和真实 tarball 消费继续执行，PR 仅选择受影响的包。
 
 三个 required check 为 `Backend (Go)`、`Frontend (React)` 与 `CI Gate`。未选中的应用任务以 skipped 结束；被选中的任务必须 success。检测结果缺失、runner 选择失败、必要任务失败或取消都会使 `CI Gate` 失败，不能把前置失败造成的跳过当成无变更。
 
 本地验证最终门禁的退出码与失败传播：
 
 ```bash
-python3 -m unittest discover -s scripts/tests -p test_ci_results.py -v
+node --test web/scripts/ci-tests.test.mjs
+python3 -m unittest discover -s scripts/tests -p 'test_ci_*.py' -v
+python3 -m unittest discover -s scripts/tests -p 'test_web_results.py' -v
 ```
 
 ### 多个 PR 与补丁版本
@@ -119,7 +124,7 @@ gh workflow run deploy.yml --ref release/2.0 -f version=v2.0.2 -f resume=true
 gh workflow run deploy.yml --ref release/2.0 -f version=v2.0.2
 ```
 
-不填 `version` 和 `revision` 时继续已冻结候选，不会把新合入的 PR 自动加入本次发布。候选验收失败且需修改源码时，先合入修复，再明确选择同版本的新 SHA；该版本不能已有正式 tag，新 SHA 必须是原候选的后代。核对新增提交与 CHANGELOG 后执行：
+不填 `version` 和 `revision` 时继续已冻结候选。未发布候选的源码需要修复时，先合入修复并等待该 SHA 的完整主干 CI 成功；自动发布会选择同版本的后代 SHA。需要人工选择时，核对新增提交与 CHANGELOG 后执行：
 
 ```bash
 git fetch origin release/2.0
@@ -127,7 +132,7 @@ gh workflow run deploy.yml --ref release/2.0 \
   -f version=v2.0.2 -f revision="$(git rev-parse origin/release/2.0)"
 ```
 
-这会废弃旧候选的发布资格，重新执行完整验收和构建；不会复用旧候选的绿色结果。若已有正式 tag，则不可修改其源码或镜像。旧流程的 Release 没有镜像清单时，显式指定该版本会对原 tag SHA 完整验收后补充清单，不移动 tag；已在服务器归档的版本仍受原镜像组合约束。
+这只选择已有完整主干 CI 证据的 SHA；没有对应成功运行、当次清单或镜像 digest 就立即拒绝，不在 Deploy 中隐式补跑。已有正式 tag 的源码和镜像不可改写。完整 Release 的重新部署及服务器归档回滚不依赖临时 CI artifact，也不重跑验收；旧 Release 缺少清单时仍须明确版本并提供其原 SHA 的可信完整 CI 证据。
 
 若历史 Release 已启用不可变保护，GitHub 不允许补传清单附件，此迁移会明确失败，不会绕过保护或移动 tag。此类旧版本仍可使用服务器已有归档回滚；不能把它视为已具备新流程的清单复用能力。
 
@@ -135,7 +140,7 @@ Runner 不可用时通过 SSH 调用同一个事务入口，详见 [手动部署
 
 ## 失败处理
 
-- **构建失败**：`auto-retry.yml` 仅重试候选 push 中单纯的 API/Web 构建失败，最多总计三次 attempt。CI、正式发布、迁移、切换、健康检查或回滚失败均不自动重试生产操作。
+- **CI 失败**：先修复失败场景；未获得完整成功证据的 SHA 不进入部署。需要重跑 CI 时重跑整次运行，不以旧 attempt 的成功任务拼接新证据。已移除部署构建自动重试，Deploy 不再承担应用验收或镜像构建。
 - **网络准备失败**：checkout 设置低速中止和步骤超时，发布源码保留完整提交历史但按需下载文件；GHCR 登录最多尝试三次，每次限时 60 秒，失败后不会进入部署事务。这些重试不包含迁移、容器切换或整个 deploy job。先按 [Runner 出网检查](runner-setup.md#部署出网) 验证代理和结果上传链路，再决定是否人工重跑。
 - **清单上传失败**：GitHub 上传接口要求明确的 UTF-8 字节长度；`gh api --input -` 不会自动为标准输入设置 `Content-Length`，发布脚本须显式提供。协议错误不要求创建新版本，也不能重打 tag；保留已通过的 CI、镜像 digest 与运行证据，修复上传后恢复同一版本。清单尚未完整前不维护下一版 release PR。
 - **部署已恢复旧版本**：查看失败日志与 summary，确认 `current.json` 的实际版本。若源码和镜像未变，修复环境后按原版本清单重试；需要修改已发布源码时才创建修正版。自动故障恢复不等于用户主动回滚，不写入 `paused.json`。
@@ -158,7 +163,7 @@ Go 检查与漏洞扫描从 `api/go.mod` 读取工具链版本；生产与开发
 - 保护发布 tag，限制创建、修改与删除权限。Actions 固定完整 SHA，由 Dependabot 提供升级 PR。
 - `RELEASE_PLEASE_TOKEN` 用于候选指针、Release 附件、release PR 标签和维护工作流。除仓库内容、PR/Issue 与 Actions 权限外，创建包含工作流变更的 Release 需要 classic PAT 的 `workflow` scope，或 fine-grained PAT 的 Workflows 写权限；不能改用只有 `contents: write` 的 `GITHUB_TOKEN`。
 
-合并工作流后，manifest 变化的主干 push 才触发候选发布，普通业务 PR 不直接部署。旧 tag 不会自动触发新流程；手动操作统一指定 `--ref release/2.0`。首次验证观察候选 SHA、全量验收、Release 清单、生产归档和公网检查。本地测试不代表生产事务已演练。
+`Deploy` 只接受同仓库 `release/2.0` 的成功 CI 事件，或明确的手动请求。读取 artifact 时同时核对真实 run、workflow、源码 SHA、当前 attempt、每个必需任务和归档 digest，拒绝 PR 证据或跨 SHA 复用。旧 tag 不自动触发发布；手动操作统一指定 `--ref release/2.0`。首次验证观察 CI 清单、候选 SHA、Release 附件、生产归档和公网检查。本地测试不代表生产事务已演练。
 
 ## API 文档同步
 
