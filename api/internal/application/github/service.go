@@ -3,9 +3,11 @@ package github
 
 import (
 	"context"
+	"regexp"
 
 	domaingithub "blog-api/internal/domain/github"
 	domainsettings "blog-api/internal/domain/settings"
+	"blog-api/internal/domain/shared"
 )
 
 // Service GitHub 数据用例服务
@@ -45,4 +47,19 @@ func (s *Service) GetRepos(ctx context.Context) ([]domaingithub.RepoData, error)
 		return []domaingithub.RepoData{}, nil
 	}
 	return s.provider.GetRepos(ctx, username, token)
+}
+
+var repoOwnerPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9-]{0,38}$`)
+var repoNamePattern = regexp.MustCompile(`^[A-Za-z0-9_.-]{1,100}$`)
+
+// GetRepo 仅接受 GitHub 仓库标识，不能指定上游主机或路径。
+func (s *Service) GetRepo(ctx context.Context, owner, repo string) (*domaingithub.RepoData, error) {
+	if !repoOwnerPattern.MatchString(owner) || !repoNamePattern.MatchString(repo) || repo == "." || repo == ".." {
+		return nil, shared.BadRequest("无效的 GitHub 仓库")
+	}
+	settings, err := s.settings.GetAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return s.provider.GetRepo(ctx, owner, repo, settings["github_token"])
 }

@@ -46,6 +46,7 @@ func RegisterRoutes(r chi.Router, d *Deps) {
 		v1.Route("/github", func(r chi.Router) {
 			r.Get("/contributions", d.GitHub.GetContributions)
 			r.Get("/repos", d.GitHub.GetRepos)
+			r.With(d.SessionAuth, d.limit("link_cards", "GET /api/v1/github/repos/{owner}/{repo}")).Get("/repos/{owner}/{repo}", d.GitHub.GetRepo)
 		})
 
 		// 更新日志（公开，后端代理 GitHub Releases + Redis 缓存）

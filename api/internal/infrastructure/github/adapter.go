@@ -12,7 +12,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
+
+	"golang.org/x/sync/singleflight"
 
 	domaingithub "blog-api/internal/domain/github"
 	domainreleases "blog-api/internal/domain/releases"
@@ -20,12 +23,20 @@ import (
 
 // Adapter GitHub API 适配器
 type Adapter struct {
-	client *http.Client
+	client    *http.Client
+	repoMu    sync.Mutex
+	repos     map[string]repoCacheEntry
+	repoGroup singleflight.Group
+}
+
+type repoCacheEntry struct {
+	data    domaingithub.RepoData
+	expires time.Time
 }
 
 // NewAdapter 创建 GitHub 适配器
 func NewAdapter() *Adapter {
-	return &Adapter{client: &http.Client{Timeout: 15 * time.Second}}
+	return &Adapter{client: &http.Client{Timeout: 15 * time.Second}, repos: make(map[string]repoCacheEntry)}
 }
 
 // GetContributions 获取贡献日历（GraphQL）
@@ -144,6 +155,68 @@ func (a *Adapter) GetRepos(ctx context.Context, username, token string) ([]domai
 	return fallback, nil
 }
 
+// GetRepo 只读取公开仓库；固定主机且禁止重定向，不跟随用户给出的 URL。
+func (a *Adapter) GetRepo(ctx context.Context, owner, repo, token string) (*domaingithub.RepoData, error) {
+	key := owner + "/" + repo
+	result := a.repoGroup.DoChan(key, func() (any, error) {
+		a.repoMu.Lock()
+		cached, ok := a.repos[key]
+		a.repoMu.Unlock()
+		if ok && time.Now().Before(cached.expires) {
+			return cached.data, nil
+		}
+		workCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 15*time.Second)
+		defer cancel()
+		req, err := http.NewRequestWithContext(workCtx, http.MethodGet, "https://api.github.com/repos/"+url.PathEscape(owner)+"/"+url.PathEscape(repo), nil)
+		if err != nil {
+			return nil, domaingithub.ErrGitHubAPI
+		}
+		req.Header.Set("Accept", "application/vnd.github+json")
+		if token != "" {
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
+		client := *a.client
+		client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, domaingithub.ErrGitHubAPI
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			return nil, domaingithub.ErrGitHubAPI
+		}
+		var source struct {
+			Name        string  `json:"name"`
+			Description *string `json:"description"`
+			Language    *string `json:"language"`
+			Stars       int     `json:"stargazers_count"`
+			Forks       int     `json:"forks_count"`
+			Private     bool    `json:"private"`
+		}
+		if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&source); err != nil || source.Private || source.Name == "" {
+			return nil, domaingithub.ErrGitHubAPI
+		}
+		data := repoToDomain(source.Name, source.Description, source.Language, source.Stars, source.Forks, "https://github.com/"+key, false, false)
+		a.repoMu.Lock()
+		if len(a.repos) >= 256 {
+			clear(a.repos)
+		}
+		a.repos[key] = repoCacheEntry{data: data, expires: time.Now().Add(5 * time.Minute)}
+		a.repoMu.Unlock()
+		return data, nil
+	})
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case value := <-result:
+		if value.Err != nil {
+			return nil, value.Err
+		}
+		data := value.Val.(domaingithub.RepoData)
+		return &data, nil
+	}
+}
+
 func repoToDomain(name string, desc, lang *string, stars, forks int, url string, isFork, pinned bool) domaingithub.RepoData {
 	dto := domaingithub.RepoData{Name: name, Stars: stars, Forks: forks, URL: url, Pinned: pinned}
 	if desc != nil {
@@ -189,8 +262,8 @@ func (a *Adapter) fetchPinnedRepos(ctx context.Context, username, token string) 
 						Name            string  `json:"name"`
 						Description     *string `json:"description"`
 						URL             string  `json:"url"`
-						StargazerCount int     `json:"stargazerCount"`
-						ForkCount      int     `json:"forkCount"`
+						StargazerCount  int     `json:"stargazerCount"`
+						ForkCount       int     `json:"forkCount"`
 						PrimaryLanguage *struct {
 							Name string `json:"name"`
 						} `json:"primaryLanguage"`

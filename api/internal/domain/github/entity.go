@@ -47,6 +47,7 @@ type RepoData struct {
 type GitHubProvider interface {
 	GetContributions(ctx context.Context, username, token string) (*ContributionData, error)
 	GetRepos(ctx context.Context, username, token string) ([]RepoData, error)
+	GetRepo(ctx context.Context, owner, repo, token string) (*RepoData, error)
 }
 
 var ErrGitHubAPI = shared.Internal("GitHub API 请求失败", nil)
