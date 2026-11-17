@@ -110,7 +110,7 @@ REST 端点可用 `middleware.PATAuth` 复用 MCP 的 `PATVerifier`，再用 `Re
 
 | GET 路径 | 筛选与响应 |
 | --- | --- |
-| `/posts` | `page/limit/tag/source`；未软删除的已发布文章，精选优先，再按 `published_at DESC,id DESC`。列表项透出可选 `canonical_url`，缺省/空串为原创 |
+| `/posts` | `page/limit/tag/source`；未软删除的已发布文章，精选（置顶）优先，再按持久化 `sort_order ASC,published_at DESC,id DESC`。列表项透出可选 `canonical_url`，缺省/空串为原创 |
 | `/posts/filters/tags` | 仅按 `source` 聚合，忽略当前 `tag`；`data` 为 `{slug,name,count}[]`，按 `count DESC,slug ASC` 排序，零计数不返回 |
 | `/posts/archive` | `tag/source`；返回 `{years: number[]}`，仅含匹配公开文章的年份，倒序 |
 | `/posts/archive/{year}` | `tag/source`；返回原 `{year,count,items}`，仅含匹配公开文章，按 `published_at DESC,id DESC` |
@@ -119,6 +119,14 @@ REST 端点可用 `middleware.PATAuth` 复用 MCP 的 `PATVerifier`，再用 `Re
 `source` 可为 `all/original/repost`，省略或空串等同 `all`；其他非空值返回 400。原创对应 `canonical_url IS NULL` 或空串，转载对应非空值。标签聚合以去重后的文章计数，不泄露草稿、归档或软删除文章的标签；筛选和计数均在数据库完整集合上执行，再分页。资源 API `/series` 与 `/posts/{slug}` 不随页面路径迁移。
 
 `series` 是博客系列目录的保留 slug。创建文章时，自动生成或显式传入该 slug 均按现有冲突规则分配 `series-2` 等可用后缀，不覆盖或改写存量文章；部署新页面路由前须确认目标数据库没有占用 `series` 的旧文章。
+
+### 后台文章顺序与预览
+
+`GET /admin/posts` 与公开列表共用置顶优先的手动顺序，后台页面显式以 `limit=50` 开始，不修改接口或其他页面的分页默认值。迁移 157 按发布时间倒序初始化旧文章位置（未发布文章随后按创建时间倒序），新文章通过递减序列获得普通层前端的位置；正文保存、状态切换和版本回滚均不覆盖排序位置。归档年份视图和全文检索保留各自的时间排序。
+
+`POST /admin/posts/reorder` 沿用 `post:publish` 权限（不凭文章所有权放行），请求为 `{"expected_ids":["原顺序 ID"],"ids":["新顺序 ID"]}`。两数组必须是相同的 2–100 个唯一 UUID，且全部未软删除、属于同一置顶层。事务按 ID 固定顺序锁定这些行，核对原相对顺序后交换它们已占用的位置；页外或筛选外的文章不重排、不删除。非法集合返回 400，文章已删除、置顶层或顺序已变化返回 409，事务失败不部分保存。
+
+置顶复用 `PATCH /admin/posts/{id}/featured` 与 `is_featured`，不引入第二套推荐标记；取消置顶只回到普通层，不改其原排序位置。已发布文章从后台打开 `/blog/{slug}`；草稿和归档文章在后台弹窗通过受 `post:view` 保护的 `GET /admin/posts/{id}` 加载并复用正文渲染器，不伪造公开预览链接。
 
 
 ### 评论回应与排序

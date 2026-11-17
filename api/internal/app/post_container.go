@@ -23,5 +23,5 @@ func NewPostContainer(db *gorm.DB, perm middleware.PermissionChecker, settingsSt
 	repo := gormrepo.NewPostRepository(db)
 	userRepo := gormrepo.NewUserRepository(db)
 	svc := apppost.NewService(repo, userRepo, perm, settingsStore, bus, gormrepo.NewPostPublicationUnitOfWork(db))
-	return &PostContainer{PostHandler: posthttp.NewHandler(svc), PostService: svc}
+	return &PostContainer{PostHandler: posthttp.NewHandler(svc, apppost.NewOrderService(repo, perm)), PostService: svc}
 }

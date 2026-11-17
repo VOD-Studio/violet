@@ -16,8 +16,7 @@ type PostRepository interface {
 	FindBySlug(ctx context.Context, slug string) (*Post, error)
 	// FindPage 分页列出文章（统一入口，筛选与排序语义见 ListFilter 字段注释）。
 	//
-	// 各场景排序互不相同（发布列表看 published_at、后台看 created_at、检索看
-	// updated_at），由 ListFilter.Sort 显式指定，避免按筛选维度隐式推导。
+	// 各场景由 ListFilter.Sort 显式指定，避免按筛选维度隐式推导。
 	FindPage(ctx context.Context, filter ListFilter, q shared.PageQuery) (shared.PageResult[*Post], error)
 	ExistsBySlug(ctx context.Context, slug string) (bool, error)
 	Save(ctx context.Context, p *Post) error
@@ -65,7 +64,7 @@ var (
 //
 // 由调用方按场景组装：前台发布列表传 Status=published + SortPublished（可带
 // Tags 单标签）；后台管理传 Status（trashed 取回收站）+ Keyword/Tags +
-// SortCreatedAt；检索场景传 Keyword + AuthorID + SortUpdated。
+// SortManual；检索场景传 Keyword + AuthorID + SortUpdated。
 type ListFilter struct {
 	// Status 状态过滤：draft/published/archived 按 status 列过滤；空串或 "all" 不过滤；
 	// "trashed" 切 Unscoped 取软删除行（回收站视图）
@@ -84,9 +83,11 @@ type ListFilter struct {
 
 // 列表排序键（ListFilter.Sort；各场景排序语义不同，显式指定而非按筛选推导）。
 const (
-	// SortPublished 前台发布列表：精选优先，再按发布时间倒序
+	// SortPublished 前台发布列表：置顶优先，再按持久化顺序。
 	SortPublished = "published"
-	// SortCreatedAt 后台管理列表：创建时间倒序
+	// SortManual 后台管理列表与公开列表共享手动顺序。
+	SortManual = "manual"
+	// SortCreatedAt 创建时间倒序。
 	SortCreatedAt = "created_at"
 	// SortUpdated 检索场景：更新时间倒序（最近改过的最相关，与后台的 created_at 区分）
 	SortUpdated = "updated_at"

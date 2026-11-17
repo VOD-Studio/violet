@@ -200,6 +200,7 @@ func NewAdminRouter(d *Deps) chi.Router {
 	r.With(middleware.RequirePermission(perm, "post:create")).Post("/posts", postH.Create)
 	r.With(middleware.RequirePermission(perm, "post:create")).Post("/posts/import-url", postH.ImportURL)
 	r.With(middleware.RequirePermission(perm, "post:create")).Post("/posts/slugify", postH.Slugify)
+	r.With(middleware.RequirePermission(perm, permission.PostPublish.String())).Post("/posts/reorder", postH.Reorder)
 	r.Put("/posts/{id}", postH.Update)                                                                // 应用层鉴权
 	r.Patch("/posts/{id}/status", postH.UpdateStatus)                                                 // 应用层鉴权
 	r.Patch("/posts/{id}/featured", postH.SetFeatured)                                                // 应用层鉴权

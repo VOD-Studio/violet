@@ -57,7 +57,7 @@ func TestPostRepositoryIntegration_PublicBrowse(t *testing.T) {
 		})
 	}
 
-	h := posthttp.NewHandler(apppost.NewService(repo, nil, nil, nil, nil, nil))
+	h := posthttp.NewHandler(apppost.NewService(repo, nil, nil, nil, nil, nil), nil)
 	w := httptest.NewRecorder()
 	h.ArchiveYears(w, httptest.NewRequest(http.MethodGet, "/posts/archive?tag=go&source=repost", nil))
 	require.Equal(t, http.StatusOK, w.Code, w.Body.String())

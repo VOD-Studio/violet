@@ -19,12 +19,13 @@ import (
 // Handler 文章 HTTP 处理器
 type Handler struct {
 	svc      *apppost.Service
+	order    *apppost.OrderService
 	validate *validator.Validate
 }
 
 // NewHandler 创建文章 handler
-func NewHandler(svc *apppost.Service) *Handler {
-	return &Handler{svc: svc, validate: validator.New()}
+func NewHandler(svc *apppost.Service, order *apppost.OrderService) *Handler {
+	return &Handler{svc: svc, order: order, validate: validator.New()}
 }
 
 // GetBySlug 按 slug 获取文章（前台公开）
@@ -257,6 +258,19 @@ func (h *Handler) SetFeatured(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.RespondOK(w, dto)
+}
+
+func (h *Handler) Reorder(w http.ResponseWriter, r *http.Request) {
+	var req apppost.ReorderInput
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	if err := h.order.Reorder(r.Context(), req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondMessage(w, http.StatusOK, "文章顺序已保存")
 }
 
 // Publish 发布文章

@@ -11,17 +11,19 @@ import (
 
 // Post 文章表持久化模型
 type Post struct {
-	ID             uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
-	Title          string     `gorm:"type:varchar(255);not null" json:"title"`
-	Slug           string     `gorm:"type:varchar(255)" json:"slug"`
-	ContentMD      string     `gorm:"type:text;column:content_md" json:"content_md"`
-	ContentHTML    string     `gorm:"type:text;column:content_html" json:"content_html"`
-	Excerpt        string     `gorm:"type:text" json:"excerpt"`
-	CoverImage     string     `gorm:"type:text;column:cover_image" json:"cover_image"`
-	Status         string     `gorm:"type:varchar(20);default:draft" json:"status"`
-	AuthorID       uuid.UUID  `gorm:"type:uuid;column:author_id" json:"author_id"`
-	ViewCount      int        `gorm:"default:0" json:"view_count"`
-	IsFeatured     bool       `gorm:"default:false" json:"is_featured"`
+	ID          uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+	Title       string    `gorm:"type:varchar(255);not null" json:"title"`
+	Slug        string    `gorm:"type:varchar(255)" json:"slug"`
+	ContentMD   string    `gorm:"type:text;column:content_md" json:"content_md"`
+	ContentHTML string    `gorm:"type:text;column:content_html" json:"content_html"`
+	Excerpt     string    `gorm:"type:text" json:"excerpt"`
+	CoverImage  string    `gorm:"type:text;column:cover_image" json:"cover_image"`
+	Status      string    `gorm:"type:varchar(20);default:draft" json:"status"`
+	AuthorID    uuid.UUID `gorm:"type:uuid;column:author_id" json:"author_id"`
+	ViewCount   int       `gorm:"default:0" json:"view_count"`
+	IsFeatured  bool      `gorm:"default:false" json:"is_featured"`
+	// SortOrder 的序列默认值由 SQL 迁移维护；AutoMigrate 与正文保存不得覆盖。
+	SortOrder      int64      `gorm:"not null;-:migration" json:"-"`
 	ShowSignature  bool       `gorm:"default:false;column:show_signature" json:"show_signature"`
 	SEOTitle       string     `gorm:"type:varchar(255);column:seo_title" json:"seo_title"`
 	SEODescription string     `gorm:"type:text;column:seo_description" json:"seo_description"`
