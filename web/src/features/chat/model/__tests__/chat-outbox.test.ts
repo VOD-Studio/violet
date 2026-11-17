@@ -91,6 +91,7 @@ it("失败保留消息，重复点击重试仍复用幂等键且只发一次", a
 	await enqueueChatMessage(qc, request());
 	expect(useChatOutbox.getState().entries[0]).toMatchObject({
 		status: "failed",
+		error: "消息发送未确认：网络连接异常，请检查连接后重试",
 		message: { content: "hello" },
 	});
 	const retry = deferred<ChatMessage>();

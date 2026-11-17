@@ -1,7 +1,15 @@
 import { getClientThemeState } from "@shared/lib/theme-preference";
-import { FlowerBloom, SEASON_FLOWER } from "@violet/ui";
+import {
+	Button,
+	FlowerBloom,
+	SEASON_FLOWER,
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@violet/ui";
 import { cn } from "cn";
 import { TriangleAlert } from "lucide-react";
+import { useId } from "react";
 import type { OutgoingMessage } from "../model/chat-outbox";
 
 /** 尚未确认的消息显示上传或失败状态，重试仍复用原草稿和幂等键。 */
@@ -11,10 +19,12 @@ export interface MessageDeliveryStatusProps {
 }
 
 export function MessageDeliveryStatus({ sending, onRetry }: MessageDeliveryStatusProps) {
+	const reasonID = useId();
+	const reason = sending.error ?? "消息发送失败，请稍后重试";
 	return (
 		<div
 			className={cn(
-				"flex max-w-full items-center text-[11px] leading-4 text-muted-foreground",
+				"flex min-h-5 max-w-full items-center text-[11px] leading-4 text-muted-foreground",
 				sending.status === "failed" ? "gap-1" : "flex-col gap-0.5",
 			)}
 			role="status"
@@ -23,18 +33,25 @@ export function MessageDeliveryStatus({ sending, onRetry }: MessageDeliveryStatu
 		>
 			{sending.status === "failed" ? (
 				<>
-					<TriangleAlert
-						className="size-3.5 shrink-0 text-destructive"
-						aria-hidden="true"
-					/>
-					<span className="text-destructive wrap-anywhere">{sending.error}</span>
-					<button
-						type="button"
-						className="shrink-0 rounded text-selected-foreground underline focus-visible:outline-2 focus-visible:outline-ring"
-						onClick={onRetry}
-					>
-						重试
-					</button>
+					<span id={reasonID} className="sr-only">
+						{reason}
+					</span>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								variant="ghost"
+								size="sm"
+								className="h-5 shrink-0 gap-1 px-1 text-[11px] text-destructive"
+								aria-label={onRetry ? "重试" : "查看发送失败原因"}
+								aria-describedby={reasonID}
+								onClick={onRetry}
+							>
+								<TriangleAlert className="size-3.5" aria-hidden="true" />
+								{onRetry && "重试"}
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>{reason}</TooltipContent>
+					</Tooltip>
 				</>
 			) : (
 				<>

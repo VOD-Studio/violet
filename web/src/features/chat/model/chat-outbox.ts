@@ -5,6 +5,7 @@ import type { InfiniteData, QueryClient } from "@tanstack/react-query";
 import { create } from "zustand";
 import { sendChatMessage } from "../api/client";
 import { chatKeys } from "../api/keys";
+import { messageDeliveryError } from "../lib/message-delivery-error";
 import type { ChatMessage, SendMessageInput } from "./types";
 
 export interface ChatSendRequest {
@@ -194,10 +195,9 @@ async function deliver(qc: QueryClient, entry: OutgoingMessage) {
 		void qc.invalidateQueries({ queryKey: chatKeys.conversations() });
 	} catch (error) {
 		if (!active()) return;
-		const detail = error instanceof Error ? error.message : "请检查网络后重试";
 		update(key, {
 			status: "failed",
-			error: `${uploading ? "图片上传失败" : "消息发送失败"}：${detail}`,
+			error: messageDeliveryError(error, uploading),
 		});
 	}
 }
