@@ -169,6 +169,19 @@ export function CodeEditor(props: CodeEditorProps) {
 				"aria-multiline": "true",
 				"aria-label": label,
 			});
+		const syncStatus = () => {
+			if (disposed) return;
+			const next = readStatus(view);
+			setStatus((previous) =>
+				previous.mode === next.mode &&
+				previous.pending === next.pending &&
+				previous.position === next.position &&
+				previous.selected === next.selected &&
+				previous.search === next.search
+					? previous
+					: next,
+			);
+		};
 		const view = new EditorView({
 			parent: host,
 			state: EditorState.create({
@@ -197,20 +210,7 @@ export function CodeEditor(props: CodeEditorProps) {
 				],
 			}),
 		});
-		function syncStatus() {
-			if (disposed) return;
-			const next = readStatus(view);
-			setStatus((previous) =>
-				previous.mode === next.mode &&
-				previous.pending === next.pending &&
-				previous.position === next.position &&
-				previous.selected === next.selected &&
-				previous.search === next.search
-					? previous
-					: next,
-			);
-		}
-		function attachVim(cm: CodeMirror) {
+		const attachVim = (cm: CodeMirror) => {
 			const originalDialog = cm.openDialog;
 			const originalSave = cm.save;
 			cm.save = () => setNotice("修改仅保留在本页，未保存到文章");
@@ -267,7 +267,7 @@ export function CodeEditor(props: CodeEditorProps) {
 				cm.save = originalSave;
 				cm.state.currentNotificationClose?.();
 			};
-		}
+		};
 		const initialCM = getCM(view);
 		if (initialCM) {
 			attachVim(initialCM);
