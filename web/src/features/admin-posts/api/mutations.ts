@@ -14,10 +14,12 @@ import { adminPostKeys } from "./keys";
 /** useInvalidateAdminPosts - 失效后台文章全部列表与详情缓存 */
 const useInvalidateAdminPosts = () => {
 	const qc = useQueryClient();
-	return () => {
-		qc.invalidateQueries({ queryKey: adminPostKeys.lists() });
-		qc.invalidateQueries({ queryKey: adminPostKeys.details() });
-	};
+	return () =>
+		Promise.all([
+			qc.invalidateQueries({ queryKey: adminPostKeys.lists() }),
+			qc.invalidateQueries({ queryKey: adminPostKeys.details() }),
+			qc.invalidateQueries({ queryKey: ["posts"] }),
+		]);
 };
 
 /**
@@ -74,10 +76,19 @@ export const useSetFeatured = (id: string) => {
 	const invalidate = useInvalidateAdminPosts();
 	return useMutation({
 		mutationFn: (body: SetFeatured) => apiPatch<AdminPost>(`/admin/posts/${id}/featured`, body),
-		onSuccess: (data) => {
+		onSuccess: async (data) => {
 			qc.setQueryData(adminPostKeys.detail(id), data);
-			invalidate();
+			await invalidate();
 		},
+	});
+};
+
+export const useReorderPosts = () => {
+	const invalidate = useInvalidateAdminPosts();
+	return useMutation({
+		mutationFn: (body: { expected_ids: string[]; ids: string[] }) =>
+			apiPost<null>("/admin/posts/reorder", body),
+		onSuccess: () => invalidate(),
 	});
 };
 

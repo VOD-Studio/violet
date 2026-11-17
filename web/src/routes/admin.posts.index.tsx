@@ -3,17 +3,21 @@ import {
 	useBatchAction,
 	useDeletePost,
 	useHardDeletePost,
+	useReorderPosts,
 	useRestorePost,
 	useSetFeatured,
 	useUpdatePostStatus,
 } from "@features/admin-posts/api/mutations";
 import { useAdminPosts } from "@features/admin-posts/api/queries";
 import type { AdminPostListItem, PostBatchAction } from "@features/admin-posts/model/types";
+import { PostPreviewDialog } from "@features/admin-posts/ui/PostPreviewDialog";
+import { PostViewsDialog } from "@features/admin-posts/ui/PostViewsDialog";
 import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { useMe } from "@features/auth/api/queries";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useTags } from "@features/tags/api/queries";
 import { formatDateTime } from "@shared/lib/date";
+import { imageUrl } from "@shared/lib/image-url";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
 	Badge,
@@ -44,8 +48,10 @@ import {
 	Archive,
 	ChevronDown,
 	Ellipsis,
+	Eye,
 	FileEdit,
 	Pencil,
+	Pin,
 	Plus,
 	RotateCcw,
 	Send,
@@ -55,7 +61,7 @@ import {
 	Trash2,
 	Undo2,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Tag as TagEntity } from "@/entities/tag/model/types";
 
@@ -83,9 +89,7 @@ const STATUS_OPTIONS = [
 	{ value: "trashed", label: "回收站" },
 ];
 
-const PAGE_SIZE = 10;
-
-// TODO: 文章列表当前无排序能力；后端 /admin/posts 需支持 sort_by + order 查询参数。
+const PAGE_SIZE = 50;
 
 /** 批量操作 -> 中文动词，用于确认文案与 toast */
 const BATCH_ACTION_LABEL: Record<PostBatchAction, string> = {
@@ -93,8 +97,8 @@ const BATCH_ACTION_LABEL: Record<PostBatchAction, string> = {
 	hard_delete: "彻底删除",
 	publish: "发布",
 	archive: "归档",
-	feature: "加精",
-	unfeature: "取消精选",
+	feature: "置顶",
+	unfeature: "取消置顶",
 	restore: "恢复",
 };
 
@@ -108,12 +112,15 @@ function AdminPostsPage() {
 
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [deleting, setDeleting] = useState<AdminPostListItem | null>(null);
+	const [viewingPost, setViewingPost] = useState<AdminPostListItem | null>(null);
 	// 需二次确认的批量操作（delete / hard_delete）；其余操作直接执行
 	const [pendingBulk, setPendingBulk] = useState<PostBatchAction | null>(null);
 	const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 	const [bulkDeleteIds, setBulkDeleteIds] = useState<string[]>([]);
 
 	const canCreate = useHasPermission("post:create");
+	const canReorder = useHasPermission("post:publish");
+	const canView = useHasPermission("post:view");
 	const { data: me } = useMe({ enabled: true });
 	const { data: tags = [] } = useTags();
 	const { data, isLoading, error, refetch, pagination, setPage } = usePagedQuery(
@@ -128,8 +135,31 @@ function AdminPostsPage() {
 	const deletePost = useDeletePost(deleting?.id ?? "");
 	const hardDeletePost = useHardDeletePost(deleting?.id ?? "");
 	const batchMut = useBatchAction();
+	const reorderPosts = useReorderPosts();
+	const reorderLock = useRef(false);
+	const [optimisticPosts, setOptimisticPosts] = useState<AdminPostListItem[] | null>(null);
 
 	const posts = data?.data ?? [];
+
+	const handleReorder = async (ordered: AdminPostListItem[], expected: AdminPostListItem[]) => {
+		if (reorderLock.current || !canReorder || status === "trashed") return;
+		reorderLock.current = true;
+		const movedIds = new Set(expected.map((post) => post.id));
+		let index = 0;
+		setOptimisticPosts(posts.map((post) => (movedIds.has(post.id) ? ordered[index++] : post)));
+		try {
+			await reorderPosts.mutateAsync({
+				expected_ids: expected.map((post) => post.id),
+				ids: ordered.map((post) => post.id),
+			});
+			toast.success("文章顺序已保存");
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : "保存文章顺序失败");
+		} finally {
+			setOptimisticPosts(null);
+			reorderLock.current = false;
+		}
+	};
 
 	const handleStatusChange = (v: string) => {
 		setStatus(v);
@@ -194,6 +224,23 @@ function AdminPostsPage() {
 
 	const columns: DataTableColumn<AdminPostListItem>[] = [
 		{
+			key: "cover_image",
+			header: "封面",
+			width: "80px",
+			fitContent: true,
+			cell: (row) =>
+				row.cover_image ? (
+					<img
+						src={imageUrl(row.cover_image, { w: 112, format: "webp" })}
+						alt=""
+						loading="lazy"
+						className="h-8 w-14 rounded object-cover"
+					/>
+				) : (
+					<span className="text-xs text-muted-foreground">—</span>
+				),
+		},
+		{
 			key: "title",
 			header: "标题",
 			hideable: false,
@@ -232,12 +279,12 @@ function AdminPostsPage() {
 		},
 		{
 			key: "is_featured",
-			header: "精选",
+			header: "置顶",
 			width: "80px",
 			align: "center",
 			cell: (row) =>
 				row.is_featured ? (
-					<Tag icon={<Star />}>精选</Tag>
+					<Tag icon={<Pin />}>置顶</Tag>
 				) : (
 					<span className="text-xs text-muted-foreground">—</span>
 				),
@@ -268,7 +315,19 @@ function AdminPostsPage() {
 			header: "浏览",
 			width: "80px",
 			align: "right",
-			cell: (row) => <span className="tabular-nums">{row.view_count}</span>,
+			stopClickPropagation: true,
+			cell: (row) => (
+				<Button
+					variant="ghost"
+					size="sm"
+					className="tabular-nums"
+					disabled={!canView}
+					aria-label={`查看「${row.title}」的浏览记录，累计 ${row.view_count} 次`}
+					onClick={() => setViewingPost(row)}
+				>
+					{row.view_count}
+				</Button>
+			),
 		},
 		{
 			key: "published_at",
@@ -288,6 +347,8 @@ function AdminPostsPage() {
 			key: "actions_col",
 			header: "操作",
 			sticky: "right",
+			hideable: false,
+			stopClickPropagation: true,
 			width: "120px",
 			cell: (row) => (
 				<RowActions
@@ -316,7 +377,10 @@ function AdminPostsPage() {
 				) : null
 			}
 			sticky={
-				<div className="flex flex-wrap items-center gap-3 pt-1">
+				<div
+					className="flex flex-wrap items-center gap-3 pt-1"
+					inert={reorderPosts.isPending}
+				>
 					<div className="min-w-50 max-w-80 flex-1">
 						<SearchInput
 							controlSize="sm"
@@ -342,104 +406,124 @@ function AdminPostsPage() {
 				</div>
 			}
 		>
-			<DataTable<AdminPostListItem>
-				data={posts}
-				columns={columns}
-				keyExtractor={(row) => row.id}
-				pagination={pagination}
-				selectable
-				selectedIds={selectedIds}
-				onSelectionChange={setSelectedIds}
-				bulkActions={
-					status === "trashed" ? (
-						<>
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => runBulk("restore")}
-								disabled={batchMut.isPending}
-							>
-								<RotateCcw {...iconProps(14)} />
-								恢复
-							</Button>
-							<Button
-								variant="destructive"
-								size="sm"
-								onClick={() => {
-									setPendingBulk("hard_delete");
-									setBulkDeleteIds([...selectedIds]);
-									setBulkDeleteOpen(true);
-								}}
-								disabled={batchMut.isPending}
-							>
-								<Trash2 {...iconProps(14)} />
-								彻底删除
-							</Button>
-						</>
-					) : (
-						<>
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => runBulk("publish")}
-								disabled={batchMut.isPending}
-							>
-								<Send {...iconProps(14)} />
-								发布
-							</Button>
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => runBulk("archive")}
-								disabled={batchMut.isPending}
-							>
-								<Archive {...iconProps(14)} />
-								归档
-							</Button>
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => runBulk("feature")}
-								disabled={batchMut.isPending}
-							>
-								<Star {...iconProps(14)} />
-								加精
-							</Button>
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => runBulk("unfeature")}
-								disabled={batchMut.isPending}
-							>
-								<StarOff {...iconProps(14)} />
-								取消精选
-							</Button>
-							<Button
-								variant="destructive"
-								size="sm"
-								onClick={() => {
-									setPendingBulk("delete");
-									setBulkDeleteIds([...selectedIds]);
-									setBulkDeleteOpen(true);
-								}}
-								disabled={batchMut.isPending}
-							>
-								<Trash2 {...iconProps(14)} />
-								删除
-							</Button>
-						</>
-					)
-				}
-				loading={isLoading}
-				error={error ? new Error(error.message) : null}
-				onRetry={() => refetch()}
-				filtered={keyword.trim().length > 0 || selectedTags.length > 0}
-				rowClassName={(row) => (row.is_featured ? "bg-primary/5" : "")}
-				storageKey="admin-posts-columns"
-				caption="文章列表"
-				emptyTitle="暂无文章"
-				emptyDescription="还没有发布任何文章"
-			/>
+			<div className="flex min-h-0 flex-1 flex-col" inert={reorderPosts.isPending}>
+				<DataTable<AdminPostListItem>
+					data={optimisticPosts ?? posts}
+					rowReorder={
+						canReorder && status !== "trashed"
+							? {
+									getLabel: (post) => post.title,
+									getGroup: (post) => (post.is_featured ? "featured" : "regular"),
+									disabled: reorderPosts.isPending || batchMut.isPending,
+									onReorder: (ordered, expected) =>
+										void handleReorder(ordered, expected),
+								}
+							: undefined
+					}
+					columns={columns}
+					keyExtractor={(row) => row.id}
+					pagination={pagination}
+					selectable
+					selectedIds={selectedIds}
+					onSelectionChange={setSelectedIds}
+					bulkActions={
+						status === "trashed" ? (
+							<>
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => runBulk("restore")}
+									disabled={batchMut.isPending}
+								>
+									<RotateCcw {...iconProps(14)} />
+									恢复
+								</Button>
+								<Button
+									variant="destructive"
+									size="sm"
+									onClick={() => {
+										setPendingBulk("hard_delete");
+										setBulkDeleteIds([...selectedIds]);
+										setBulkDeleteOpen(true);
+									}}
+									disabled={batchMut.isPending}
+								>
+									<Trash2 {...iconProps(14)} />
+									彻底删除
+								</Button>
+							</>
+						) : (
+							<>
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => runBulk("publish")}
+									disabled={batchMut.isPending}
+								>
+									<Send {...iconProps(14)} />
+									发布
+								</Button>
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => runBulk("archive")}
+									disabled={batchMut.isPending}
+								>
+									<Archive {...iconProps(14)} />
+									归档
+								</Button>
+								{canCreate && canReorder ? (
+									<>
+										<Button
+											variant="outline"
+											size="sm"
+											onClick={() => runBulk("feature")}
+											disabled={batchMut.isPending}
+										>
+											<Star {...iconProps(14)} />
+											置顶
+										</Button>
+										<Button
+											variant="outline"
+											size="sm"
+											onClick={() => runBulk("unfeature")}
+											disabled={batchMut.isPending}
+										>
+											<StarOff {...iconProps(14)} />
+											取消置顶
+										</Button>
+									</>
+								) : null}
+								<Button
+									variant="destructive"
+									size="sm"
+									onClick={() => {
+										setPendingBulk("delete");
+										setBulkDeleteIds([...selectedIds]);
+										setBulkDeleteOpen(true);
+									}}
+									disabled={batchMut.isPending}
+								>
+									<Trash2 {...iconProps(14)} />
+									删除
+								</Button>
+							</>
+						)
+					}
+					loading={isLoading}
+					error={error ? new Error(error.message) : null}
+					onRetry={() => refetch()}
+					filtered={keyword.trim().length > 0 || selectedTags.length > 0}
+					rowClassName={(row) => (row.is_featured ? "bg-primary/5" : "")}
+					storageKey="admin-posts-columns"
+					caption="文章列表"
+					emptyTitle="暂无文章"
+					emptyDescription="还没有发布任何文章"
+				/>
+			</div>
+			{viewingPost && canView ? (
+				<PostViewsDialog post={viewingPost} onClose={() => setViewingPost(null)} />
+			) : null}
 			<ConfirmDialog
 				open={deleteOpen}
 				onOpenChange={setDeleteOpen}
@@ -470,23 +554,22 @@ function AdminPostsPage() {
 	);
 }
 
-/** 行操作下拉：编辑 / 状态切换 / 删除 */
-function RowActions({
-	row,
-	viewStatus,
-	currentUserId,
-	onDelete,
-}: {
+interface RowActionsProps {
 	row: AdminPostListItem;
 	viewStatus: string;
 	currentUserId?: string;
-	onDelete: (p: AdminPostListItem) => void;
-}) {
+	onDelete: (post: AdminPostListItem) => void;
+}
+
+/** 提供公开浏览、非公开预览与受权限保护的文章操作。 */
+function RowActions({ row, viewStatus, currentUserId, onDelete }: RowActionsProps) {
 	const navigate = useNavigate();
 	const updateStatus = useUpdatePostStatus(row.id);
 	const setFeatured = useSetFeatured(row.id);
 	const restorePost = useRestorePost(row.id);
 
+	const [previewOpen, setPreviewOpen] = useState(false);
+	const canView = useHasPermission("post:view");
 	// 所有权：自己的文章可以编辑/删除/发布（后端应用层放行）
 	const isOwner = !!row.author_id && row.author_id === currentUserId;
 	// 权限码：操作他人的文章需要对应权限
@@ -517,7 +600,7 @@ function RowActions({
 		setFeatured.mutate(
 			{ is_featured: !row.is_featured },
 			{
-				onSuccess: () => toast.success(row.is_featured ? "已取消加精" : "已加精"),
+				onSuccess: () => toast.success(row.is_featured ? "已取消置顶" : "已置顶"),
 				onError: (err) => toast.error(err.message),
 			},
 		);
@@ -563,83 +646,120 @@ function RowActions({
 		);
 	}
 
-	// 无任何写权限时不渲染下拉触发器
-	if (!canEdit && !canPublish && !canDelete && !canFeature) return null;
-
 	return (
 		<div className="v-table__row-actions items-center justify-end">
-			<DropdownMenu>
-				<DropdownMenuTrigger asChild>
+			{canView ? (
+				row.status === "published" ? (
+					<Button
+						asChild
+						iconOnly
+						variant="ghost"
+						size="sm"
+						aria-label={`浏览 ${row.title}`}
+					>
+						<a
+							href={`/blog/${encodeURIComponent(row.slug)}`}
+							target="_blank"
+							rel="noopener noreferrer"
+						>
+							<Eye {...iconProps(14)} />
+						</a>
+					</Button>
+				) : (
 					<Button
 						iconOnly
 						variant="ghost"
 						size="sm"
-						aria-label="更多操作"
-						title="更多操作"
-						className="w-auto min-w-8 px-1.5"
+						aria-label={`预览 ${row.title}`}
+						onClick={() => setPreviewOpen(true)}
 					>
-						<Ellipsis />
-						<ChevronDown {...iconProps(12, "opacity-50")} />
+						<Eye {...iconProps(14)} />
 					</Button>
-				</DropdownMenuTrigger>
-				<DropdownMenuContent align="end">
-					{canEdit ? (
-						<DropdownMenuItem
-							onClick={() =>
-								navigate({
-									to: "/admin/posts/$id",
-									params: { id: row.id },
-									state: { post: row } as Record<string, unknown>,
-								})
-							}
+				)
+			) : null}
+			{previewOpen ? (
+				<PostPreviewDialog postId={row.id} onClose={() => setPreviewOpen(false)} />
+			) : null}
+			{canEdit || canPublish || canDelete || canFeature ? (
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<Button
+							iconOnly
+							variant="ghost"
+							size="sm"
+							aria-label="更多操作"
+							title="更多操作"
+							className="w-auto min-w-8 px-1.5"
 						>
-							<Pencil />
-							编辑
-						</DropdownMenuItem>
-					) : null}
-					{canPublish ? (
-						<>
-							<DropdownMenuSeparator />
-							{row.status !== "published" ? (
-								<DropdownMenuItem onClick={() => changeStatus("published")}>
-									<Send />
-									发布
-								</DropdownMenuItem>
-							) : null}
-							{row.status !== "draft" ? (
-								<DropdownMenuItem onClick={() => changeStatus("draft")}>
-									<FileEdit />
-									移至草稿
-								</DropdownMenuItem>
-							) : null}
-							{row.status !== "archived" ? (
-								<DropdownMenuItem onClick={() => changeStatus("archived")}>
-									<Archive />
-									归档
-								</DropdownMenuItem>
-							) : null}
-						</>
-					) : null}
-					{canFeature ? (
-						<>
-							<DropdownMenuSeparator />
-							<DropdownMenuItem onClick={toggleFeatured}>
-								<Star />
-								{row.is_featured ? "取消加精" : "加精"}
+							<Ellipsis />
+							<ChevronDown {...iconProps(12, "opacity-50")} />
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="end">
+						{canEdit ? (
+							<DropdownMenuItem
+								onClick={() =>
+									navigate({
+										to: "/admin/posts/$id",
+										params: { id: row.id },
+										state: { post: row } as Record<string, unknown>,
+									})
+								}
+							>
+								<Pencil />
+								编辑
 							</DropdownMenuItem>
-						</>
-					) : null}
-					{canDelete ? (
-						<>
-							<DropdownMenuSeparator />
-							<DropdownMenuItem variant="destructive" onClick={() => onDelete(row)}>
-								<Trash2 />
-								删除
-							</DropdownMenuItem>
-						</>
-					) : null}
-				</DropdownMenuContent>
-			</DropdownMenu>
+						) : null}
+						{canPublish ? (
+							<>
+								<DropdownMenuSeparator />
+								{row.status !== "published" ? (
+									<DropdownMenuItem onClick={() => changeStatus("published")}>
+										<Send />
+										发布
+									</DropdownMenuItem>
+								) : null}
+								{row.status !== "draft" ? (
+									<DropdownMenuItem onClick={() => changeStatus("draft")}>
+										<FileEdit />
+										移至草稿
+									</DropdownMenuItem>
+								) : null}
+								{row.status !== "archived" ? (
+									<DropdownMenuItem onClick={() => changeStatus("archived")}>
+										<Archive />
+										归档
+									</DropdownMenuItem>
+								) : null}
+							</>
+						) : null}
+						{canFeature ? (
+							<>
+								<DropdownMenuSeparator />
+								<DropdownMenuItem
+									onClick={toggleFeatured}
+									disabled={setFeatured.isPending}
+								>
+									<Pin />
+									{row.is_featured ? "取消置顶" : "置顶"}
+								</DropdownMenuItem>
+							</>
+						) : null}
+						{canDelete ? (
+							<>
+								<DropdownMenuSeparator />
+								<DropdownMenuItem
+									variant="destructive"
+									onClick={() => onDelete(row)}
+								>
+									<Trash2 />
+									删除
+								</DropdownMenuItem>
+							</>
+						) : null}
+					</DropdownMenuContent>
+				</DropdownMenu>
+			) : null}
 		</div>
 	);
 }

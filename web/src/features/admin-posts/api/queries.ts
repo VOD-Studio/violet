@@ -6,6 +6,8 @@ import type {
 	AdminPostListItem,
 	AdminPostListQuery,
 	PostVersionDTO,
+	PostViewQuery,
+	PostViewRecord,
 } from "../model/types";
 import { adminPostKeys } from "./keys";
 
@@ -78,3 +80,13 @@ export function usePostVersion(versionId: string) {
 		staleTime: Infinity,
 	});
 }
+
+export const fetchPostViews = ({ postId, ...page }: PostViewQuery) =>
+	apiGetPaged<PostViewRecord>(`/admin/posts/${postId}/views`, { params: page });
+
+export const usePostViews = (query: PostViewQuery) =>
+	useQuery({
+		queryKey: adminPostKeys.views(query),
+		queryFn: () => fetchPostViews(query),
+		enabled: query.postId.length > 0,
+	});
