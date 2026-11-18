@@ -167,6 +167,7 @@ func projectToPO(p *project.Project) model.Project {
 	po := model.Project{
 		ID: p.ID().UUID(), Title: p.Title(), Slug: p.Slug(), Description: p.Description(),
 		URL: p.URL(), GithubURL: p.GithubURL(), ImageURL: p.ImageURL(),
+		DocsURL: p.DocsURL(), Status: string(p.Status()),
 		TechStack: pq.StringArray(p.TechStack()), SortOrder: p.SortOrder(),
 	}
 	if c := p.CreatedAt(); !c.IsZero() {
@@ -184,6 +185,7 @@ func projectPOToDomain(po model.Project) *project.Project {
 	return project.ReconstructProject(
 		domainshared.MustParseID(po.ID.String()),
 		po.Title, po.Slug, po.Description, po.URL, po.GithubURL, po.ImageURL,
+		po.DocsURL, project.Status(po.Status),
 		[]string(po.TechStack), po.SortOrder, po.CreatedAt, po.UpdatedAt,
 	)
 }

@@ -11,6 +11,7 @@ import (
 
 	appann "blog-api/internal/application/announcement"
 	appproj "blog-api/internal/application/project"
+	domainproj "blog-api/internal/domain/project"
 	"blog-api/internal/interfaces/http/response"
 )
 
@@ -192,9 +193,9 @@ func (h *Handler) DeleteAnnouncement(w http.ResponseWriter, r *http.Request) {
 // ============================================================
 
 func (h *Handler) ListProjects(w http.ResponseWriter, r *http.Request) {
-	// 公开路由无分页参数时保持全量数组（前台项目页零改动）；带参则分页
+	// 不分页的公开总览附带发布摘要；管理表格只读项目资料与数据库摘要。
 	if r.URL.Query().Get("page") == "" && r.URL.Query().Get("limit") == "" {
-		items, err := h.projSvc.List(r.Context())
+		items, err := h.projSvc.ListOverview(r.Context())
 		if err != nil {
 			response.RespondError(w, r, err)
 			return
@@ -231,14 +232,16 @@ func (h *Handler) GetProjectBySlug(w http.ResponseWriter, r *http.Request) {
 }
 
 type projectRequest struct {
-	Title       string   `json:"title" validate:"required"`
-	Slug        *string  `json:"slug"`
-	Description string   `json:"description"`
-	URL         string   `json:"url"`
-	GithubURL   string   `json:"github_url"`
-	ImageURL    string   `json:"image_url"`
-	TechStack   []string `json:"tech_stack"`
-	SortOrder   int      `json:"sort_order"`
+	Title       string             `json:"title" validate:"required"`
+	Slug        *string            `json:"slug"`
+	Description string             `json:"description"`
+	URL         string             `json:"url"`
+	GithubURL   string             `json:"github_url"`
+	ImageURL    string             `json:"image_url"`
+	DocsURL     *string            `json:"docs_url"`
+	Status      *domainproj.Status `json:"status"`
+	TechStack   []string           `json:"tech_stack"`
+	SortOrder   int                `json:"sort_order"`
 }
 
 func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
@@ -254,6 +257,7 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	in := appproj.CreateInput{
 		Title: req.Title, Description: req.Description, URL: req.URL,
 		GithubURL: req.GithubURL, ImageURL: req.ImageURL,
+		DocsURL: req.DocsURL, Status: req.Status,
 		TechStack: req.TechStack, SortOrder: req.SortOrder,
 	}
 	if req.Slug != nil {
@@ -276,6 +280,7 @@ func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 	if err := h.projSvc.Update(r.Context(), id, appproj.UpdateInput{
 		Title: req.Title, Slug: req.Slug, Description: req.Description, URL: req.URL,
 		GithubURL: req.GithubURL, ImageURL: req.ImageURL,
+		DocsURL: req.DocsURL, Status: req.Status,
 		TechStack: req.TechStack, SortOrder: req.SortOrder,
 	}); err != nil {
 		response.RespondError(w, r, err)

@@ -14,7 +14,7 @@ func TestProjectListRoadmapSummaryContract(t *testing.T) {
 	spec, err := Spec()
 	require.NoError(t, err)
 	schemas := openapi3.Schemas{}
-	for _, name := range []string{"ProjectDTO", "ProjectRoadmapSummaryDTO", "ProjectRoadmapProgressDTO", "ProjectRoadmapItemPreviewDTO"} {
+	for _, name := range []string{"ProjectDTO", "ProjectRoadmapSummaryDTO", "ProjectRoadmapProgressDTO", "ProjectRoadmapItemPreviewDTO", "ProjectReleaseSummaryDTO"} {
 		schemas[name] = spec.Components.Schemas[name]
 	}
 	data, err := json.Marshal(&openapi3.T{OpenAPI: spec.OpenAPI, Info: spec.Info, Paths: &openapi3.Paths{},
@@ -26,6 +26,10 @@ func TestProjectListRoadmapSummaryContract(t *testing.T) {
 	project := resolved.Components.Schemas["ProjectDTO"].Value
 	require.Contains(t, project.Properties, "roadmap")
 	assert.NotContains(t, project.Required, "roadmap", "项目详情不附带列表摘要")
+	require.Contains(t, project.Properties, "release")
+	assert.NotContains(t, project.Required, "release", "未发布或 GitHub 不可用时不返回版本")
+	assert.Contains(t, project.Required, "status")
+	assert.Equal(t, []any{"active", "stable", "archived"}, project.Properties["status"].Value.Enum)
 	summary := resolved.Components.Schemas["ProjectRoadmapSummaryDTO"].Value
 	var empty map[string]any
 	require.NoError(t, json.Unmarshal([]byte(`{"progress":{"planned":0,"in_progress":0,"completed":0,"total":0,"percent":0},"in_progress":[],"latest_completed":null}`), &empty))

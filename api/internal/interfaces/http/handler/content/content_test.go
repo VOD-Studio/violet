@@ -171,7 +171,7 @@ func TestListActiveAnnouncements_Returns200(t *testing.T) {
 
 func TestListProjects_Returns200(t *testing.T) {
 	proj := domainproj.ReconstructProject(
-		domainshared.NewID(), "我的项目", "my-project", "描述", "https://example.com", "", "",
+		domainshared.NewID(), "我的项目", "my-project", "描述", "https://example.com", "", "", "/guide", domainproj.StatusStable,
 		[]string{"Go"}, 0, time.Now(), time.Now(),
 	)
 	repo := &stubProjRepo{items: []*domainproj.Project{proj}}
@@ -186,7 +186,10 @@ func TestListProjects_Returns200(t *testing.T) {
 	list, ok := body["data"].([]any)
 	require.True(t, ok, "data 应为数组: %T", body["data"])
 	require.Len(t, list, 1)
-	assert.Equal(t, "我的项目", list[0].(map[string]any)["title"])
+	project := list[0].(map[string]any)
+	assert.Equal(t, "我的项目", project["title"])
+	assert.Equal(t, "stable", project["status"])
+	assert.Equal(t, "/guide", project["docs_url"])
 }
 
 // =====================================================================
@@ -195,7 +198,7 @@ func TestListProjects_Returns200(t *testing.T) {
 
 func TestGetProject_Returns200(t *testing.T) {
 	proj := domainproj.ReconstructProject(
-		domainshared.NewID(), "详情项目", "project", "描述", "", "", "", nil, 0, time.Now(), time.Now(),
+		domainshared.NewID(), "详情项目", "project", "描述", "", "", "", "", domainproj.StatusActive, nil, 0, time.Now(), time.Now(),
 	)
 	repo := &stubProjRepo{canned: proj}
 	h := NewHandler(nil, appproj.NewService(repo))
@@ -293,6 +296,25 @@ func TestCreateProject_MissingTitle_Returns400(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Equal(t, "VALIDATION_ERROR", decodeBody(t, w)["error"])
+}
+
+func TestProjectRejectsInvalidOverviewFields(t *testing.T) {
+	for _, tc := range []struct{ name, body string }{
+		{"未知项目状态", `{"title":"Example","status":"paused"}`},
+		{"非 HTTP 文档链接", `{"title":"Example","docs_url":"javascript:alert(1)"}`},
+		{"非站内文档路径", `{"title":"Example","docs_url":"//example.com/docs"}`},
+		{"浏览器会按外站解析的路径", `{"title":"Example","docs_url":"/\\example.com/docs"}`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := &stubProjRepo{}
+			h := NewHandler(nil, appproj.NewService(repo))
+			r := newJSONRequest(http.MethodPost, "/admin/projects", tc.body)
+			w := httptest.NewRecorder()
+			h.CreateProject(w, r)
+			require.Equal(t, http.StatusBadRequest, w.Code)
+			assert.Nil(t, repo.saved)
+		})
+	}
 }
 
 func TestGetProjectBySlug(t *testing.T) {
