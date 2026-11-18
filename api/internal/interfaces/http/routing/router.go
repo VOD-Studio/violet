@@ -372,7 +372,9 @@ func registerTweetRoutes(v1 chi.Router, d *Deps) {
 		// 拖动进度会产生连续 Range 请求，限额按单 IP 放宽。
 		r.With(d.limit("x-video", "GET /api/v1/tweets/external/{externalId}/media/{index}/video")).Get("/external/{externalId}/media/{index}/video", tweetH.ExternalVideo)
 		r.With(d.OptionalAuth).Get("/", tweetH.ListTimeline)
+		r.Get("/sidebar", tweetH.Sidebar)
 		r.With(d.OptionalAuth).Get("/{id}", tweetH.Get)
+		r.With(d.limit("tweet-views", "POST /api/v1/tweets/{id}/views")).Post("/{id}/views", tweetH.RecordView)
 		r.With(d.OptionalAuth).Get("/topics/{tag}", tweetH.ListByTopic)
 		r.With(d.SessionAuth, d.limit("tweet", "POST /api/v1/tweets")).Post("/", tweetH.Create)
 		r.With(d.SessionAuth).Delete("/{id}", tweetH.Delete)

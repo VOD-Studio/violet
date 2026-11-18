@@ -150,13 +150,14 @@ func TestReconstructTweet(t *testing.T) {
 	images := []ImageRef{NewImageRef("/u/a.webp", nil, nil)}
 	now := time.Now()
 	quoteID := shared.NewID()
-	tw := ReconstructTweet(id, authorID, "重建", images, &quoteID, 7, now, now)
+	tw := ReconstructTweet(id, authorID, "重建", images, &quoteID, 7, 21, now, now)
 
 	assert.Equal(t, id, tw.ID())
 	assert.Equal(t, authorID, tw.AuthorID())
 	assert.Equal(t, "重建", tw.Content())
 	assert.Equal(t, images, tw.Images())
 	assert.Equal(t, 7, tw.LikeCount())
+	assert.EqualValues(t, 21, tw.ViewCount())
 	assert.False(t, tw.HasEvents(), "重建不应携带待发布事件")
 }
 

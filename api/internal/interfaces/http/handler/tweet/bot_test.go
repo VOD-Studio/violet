@@ -139,7 +139,7 @@ func TestBotCreate_ConflictOnChangedContent(t *testing.T) {
 func TestBotCreate_Quote(t *testing.T) {
 	bot, users := newTestBot(t, "helperbot")
 	repo := newStubBotTweetRepo()
-	quoted := domaintweet.ReconstructTweet(shared.NewID(), authorID, "原推", nil, nil, 0, sampleTime, sampleTime)
+	quoted := domaintweet.ReconstructTweet(shared.NewID(), authorID, "原推", nil, nil, 0, 0, sampleTime, sampleTime)
 	repo.byID[quoted.ID().String()] = quoted
 	h := newBotTweetHandler(repo, nil, users, nil, 0)
 

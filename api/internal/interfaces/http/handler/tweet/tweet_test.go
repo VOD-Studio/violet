@@ -197,7 +197,7 @@ var (
 func sampleTweet() *domaintweet.Tweet {
 	return domaintweet.ReconstructTweet(
 		shared.MustParseID("00000000-0000-0000-0000-000000000001"),
-		authorID, "示例推文", nil, nil, 0, sampleTime, sampleTime,
+		authorID, "示例推文", nil, nil, 0, 0, sampleTime, sampleTime,
 	)
 }
 

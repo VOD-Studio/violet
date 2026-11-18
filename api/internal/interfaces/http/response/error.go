@@ -128,7 +128,7 @@ func httpStatusForCode(code domainshared.ErrorCode) int {
 		return http.StatusUnauthorized
 	case domainshared.CodeForbidden:
 		return http.StatusForbidden
-	case domainshared.CodeConflict:
+	case domainshared.CodeConflict, "TWEET_HOT_CURSOR_EXPIRED":
 		return http.StatusConflict
 	case domainshared.CodeInternal:
 		return http.StatusInternalServerError

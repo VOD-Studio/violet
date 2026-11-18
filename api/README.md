@@ -106,6 +106,16 @@ REST 端点可用 `middleware.PATAuth` 复用 MCP 的 `PATVerifier`，再用 `Re
 
 聊天链接的专用只读解析要求 Session 登录：`GET /github/repos/{owner}/{repo}` 返回公开仓库信息，服务端缓存 5 分钟并复用链接预览限流；`GET /tweets/external/resolve?url=` 复用 X 原文快照与媒体代理，不签发发布凭证、不创建时间线推文，也不要求 `tweet:create`。X 只读解析使用独立的 `x-resolve` 额度，默认每用户每分钟 60 次，支持运行策略调整；缓存读取同样受此额度保护，但不消耗发布预览的分钟或滚动日额度。
 
+### 推文公开时间线
+
+`GET /api/v1/tweets` 接受 `sort=latest|hot|images`，省略为 `latest`。最新和有图按 `created_at DESC, id DESC` 继续游标；有图只收本站推文自身的图片，不把引用、X 原文或链接封面算作配图。三个视图均先过滤公开数据再分页，游标不能混用。
+
+热门取近 30 天的公开推文，按点赞数、公开评论数及公开引用数之和降序，分数相同按发布时间和 ID 降序。Redis 每分钟共享一份只含推文 ID 的顺序快照，保留 15 分钟；翻页仍读取当前可见数据。游标失效返回 `409 TWEET_HOT_CURSOR_EXPIRED`，客户端不带游标重新加载。推文响应不进入 HTTP 缓存。
+
+`GET /api/v1/tweets/sidebar` 返回 `authors`、`topics`、`images`。作者和话题统计近 30 天的公开推文，最多各四项；图片取公开推文最近六张自身配图，不受当前时间线筛选或分页影响。
+
+`POST /api/v1/tweets/{id}/views` 接受带 CSRF 的游客或用户请求，按推文和受信 IP 在 30 分钟内去重，返回持久化的 `{view_count}`。列表、详情 GET、SSR 和预取不增加计数。
+
 ### 博客公开浏览筛选
 
 以下路径均相对于 `/api/v1`，响应保持 `data` 信封；列表分页仍使用 `meta.pagination`：

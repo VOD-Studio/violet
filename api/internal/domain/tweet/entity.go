@@ -163,6 +163,8 @@ type Tweet struct {
 	publication Publication
 	// likeCount 点赞冗余计数（tweet_likes 表是唯一数据源，此列服务列表性能）
 	likeCount int
+	// viewCount 公开浏览计数，由仓储原子自增。
+	viewCount int64
 	// timestamps 创建/更新时间（无 Update 路径，updated_at 实际恒等于 created_at）
 	timestamps shared.Timestamps
 }
@@ -219,6 +221,7 @@ func ReconstructTweet(
 	images []ImageRef,
 	quoteOf *shared.ID,
 	likeCount int,
+	viewCount int64,
 	createdAt, updatedAt time.Time,
 	publication ...Publication,
 ) *Tweet {
@@ -237,6 +240,7 @@ func ReconstructTweet(
 		quoteOf:     quoteOf,
 		publication: pub,
 		likeCount:   likeCount,
+		viewCount:   viewCount,
 		timestamps:  shared.Timestamps{CreatedAt: createdAt, UpdatedAt: updatedAt},
 	}
 }
@@ -248,6 +252,7 @@ func (t *Tweet) Content() string             { return t.content }
 func (t *Tweet) Images() []ImageRef          { return t.images }
 func (t *Tweet) QuoteOf() *shared.ID         { return t.quoteOf }
 func (t *Tweet) LikeCount() int              { return t.likeCount }
+func (t *Tweet) ViewCount() int64            { return t.viewCount }
 func (t *Tweet) CreatedAt() time.Time        { return t.timestamps.CreatedAt }
 func (t *Tweet) UpdatedAt() time.Time        { return t.timestamps.UpdatedAt }
 func (t *Tweet) Hashtags() []string          { return ExtractHashtags(t.content) }

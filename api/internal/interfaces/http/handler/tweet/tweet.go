@@ -18,7 +18,8 @@ import (
 
 // Handler 推文 HTTP handler。
 type Handler struct {
-	svc *apptweet.Service
+	svc          *apptweet.Service
+	viewIdentity func(*http.Request) string
 }
 
 // NewHandler 构造推文 handler。
@@ -26,15 +27,38 @@ func NewHandler(svc *apptweet.Service) *Handler {
 	return &Handler{svc: svc}
 }
 
-// ListTimeline 全局时间线（公开）：GET /tweets?cursor=&limit=
+func (h *Handler) WithViewIdentity(identity func(*http.Request) string) *Handler {
+	h.viewIdentity = identity
+	return h
+}
+
+// ListTimeline 获取公开时间线；sort 省略时沿用原有时间降序游标。
 func (h *Handler) ListTimeline(w http.ResponseWriter, r *http.Request) {
 	cursor, limit := response.ParseCursor(r)
-	dtos, nextCursor, err := h.svc.ListTimeline(r.Context(), cursor, limit)
+	dtos, nextCursor, err := h.svc.ListTimeline(r.Context(), r.URL.Query().Get("sort"), cursor, limit)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
 	response.RespondCursor(w, dtos, limit, nextCursor != "", nextCursor)
+}
+
+func (h *Handler) Sidebar(w http.ResponseWriter, r *http.Request) {
+	dto, err := h.svc.Sidebar(r.Context())
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, dto)
+}
+
+func (h *Handler) RecordView(w http.ResponseWriter, r *http.Request) {
+	dto, err := h.svc.RecordView(r.Context(), r.PathValue("id"), h.viewIdentity(r))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, dto)
 }
 
 // ListByTopic 话题时间线（公开）：GET /tweets/topics/{tag}?cursor=&limit=

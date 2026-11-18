@@ -22,6 +22,7 @@ type Tweet struct {
 	RequestHash              string                            `gorm:"not null;default:''" json:"-"`
 	ExternalPreviewTokenHash *string                           `gorm:"uniqueIndex:idx_tweets_preview_token" json:"-"`
 	LikeCount                int                               `gorm:"column:like_count;not null;default:0" json:"like_count"`
+	ViewCount                int64                             `gorm:"column:view_count;not null;default:0" json:"view_count"`
 	CreatedAt                time.Time                         `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt                time.Time                         `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
