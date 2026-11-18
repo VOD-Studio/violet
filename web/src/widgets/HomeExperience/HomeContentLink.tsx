@@ -20,7 +20,7 @@ export function HomeContentLink({ item, className, children }: HomeContentLinkPr
 			);
 		case "note":
 			return (
-				<Link to="/notes/$id" params={{ id: item.route_key }} className={className}>
+				<Link to="/journal/$id" params={{ id: item.route_key }} className={className}>
 					{children}
 				</Link>
 			);

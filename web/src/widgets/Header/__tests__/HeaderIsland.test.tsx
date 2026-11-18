@@ -37,7 +37,7 @@ function renderAt(path: string, presence?: PresenceReceipt, authenticated = fals
 				"/blog/archive",
 				"/blog/series",
 				"/blog/series/$slug",
-				"/notes",
+				"/journal",
 				"/tweets",
 				"/galleries",
 				"/lab",
@@ -60,7 +60,7 @@ describe("HeaderIsland", () => {
 	afterEach(cleanup);
 
 	it("收起时显示主要入口，当前页带文字标出，全部导航收在「更多」里", async () => {
-		renderAt("/notes");
+		renderAt("/journal");
 		const nav = await screen.findByRole("navigation", { name: "移动端导航" });
 		expect(nav.querySelectorAll("a")).toHaveLength(4);
 		expect(nav.querySelector('a[aria-current="page"]')?.getAttribute("aria-label")).toBe(

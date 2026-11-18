@@ -54,7 +54,7 @@ describe("latestPost / latestNote", () => {
 			published_at: "2026-10-29T08:00:00+08:00",
 		});
 		expect(note?.title).toContain("实时状态接入");
-		expect(note?.href).toBe("/notes/n1");
+		expect(note?.href).toBe("/journal/n1");
 		expect(latestNote(undefined)).toBeUndefined();
 	});
 });

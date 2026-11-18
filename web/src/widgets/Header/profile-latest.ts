@@ -51,7 +51,7 @@ export function latestNote(
 	return {
 		title: noteTitle(note),
 		date: monthDay(note.published_at),
-		href: `/notes/${note.id}`,
+		href: `/journal/${note.id}`,
 	};
 }
 

@@ -1,209 +1,88 @@
 import { usePublishedNote } from "@entities/note/api/queries";
+import { useTags } from "@features/tags/api/queries";
 import { useArticleImagePreview } from "@shared/hooks/use-article-image-preview";
+import { copyText } from "@shared/lib/clipboard";
 import { formatDate } from "@shared/lib/date";
 import { FloatingBack } from "@shared/ui/floating-back";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
-import { Link } from "@tanstack/react-router";
-import { Empty, iconProps, PageShell, Skeleton } from "@violet/ui";
-import { ArrowLeft, Calendar, CircleCheck, Copy, ShieldCheck } from "lucide-react";
-import { useState } from "react";
+import { Button, Card, Empty, iconProps, PageShell, Skeleton } from "@violet/ui";
+import { Copy } from "lucide-react";
 import { toast } from "sonner";
-import { notePlainLength, noteTitle } from "../model/display";
+import { JOURNAL_TIME_ZONE, noteTitle } from "../model/display";
+import { journalNoteUrl } from "../model/navigation";
+import { NoteBadges, NotePitfallContent, NoteTags } from "./NoteJournalMeta";
 
-interface NoteDetailPageProps {
-	noteId: string;
-}
-
-/**
- * 笔记前台详情页 - 独创「技术案卷卡片 / 战地工单报告」设计
- *
- * 彻底消除空旷感与粗暴跨行黑体，将短篇踩坑手记封装为结构严谨的工程档案文件：
- * - 顶部工单元数据标尺（UUID、状态、时间戳、快捷复制）
- * - 精炼醒目的标题编排
- * - 正文结构化呈现
- * - 尾部归档验收章（VERIFIED & ARCHIVED）
- */
-export function NoteDetailPage({ noteId }: NoteDetailPageProps) {
-	const { data: note, isLoading, isError } = usePublishedNote(noteId);
+/** 展示手记正文、公开元数据以及作者填写的踩坑记录。 */
+export function NoteDetailPage({ noteId }: { noteId: string }) {
+	const { data: note, isLoading } = usePublishedNote(noteId);
+	const { data: tags } = useTags();
 	const articleImages = useArticleImagePreview();
-	const [copied, setCopied] = useState(false);
-
-	const handleCopy = () => {
-		if (typeof window !== "undefined") {
-			void navigator.clipboard.writeText(window.location.href);
-			setCopied(true);
-			toast.success("工单访问链接已复制");
-			setTimeout(() => setCopied(false), 2000);
-		}
-	};
 
 	return (
 		<PageShell>
-			<FloatingBack to="/notes" label="返回工单列表" />
+			<FloatingBack to="/journal" label="返回手记" />
 
 			{isLoading ? (
-				<DossierDetailSkeleton />
-			) : isError || !note ? (
-				<Empty
-					title="未检索到该工单档案"
-					description="可能已被删除、合并或处于非公开状态"
-					className="py-24"
-				/>
-			) : (
-				<div className="mx-auto max-w-3xl">
-					{/* 战地技术档案卡本体 */}
-					<article className="border-edge-hairline bg-card/40 relative overflow-hidden rounded-xl border shadow-xl">
-						{/* 顶部装配挂钩与打孔装饰线 */}
-						<div className="border-edge-hairline bg-muted/30 flex items-center justify-between border-b px-5 py-3 font-mono text-[11px] text-muted-foreground/80">
-							<div className="flex items-center gap-2">
-								<Link
-									to="/notes"
-									className="hover:text-foreground inline-flex items-center gap-1 font-semibold text-foreground/80 transition-colors"
+				<Card aria-busy="true" className="mx-auto max-w-3xl gap-5 p-6 sm:p-10">
+					<Skeleton className="h-5 w-28" />
+					<Skeleton className="h-9 w-4/5" />
+					<Skeleton className="h-5 w-48" />
+					<Skeleton className="h-24 w-full" />
+				</Card>
+			) : note ? (
+				<article className="mx-auto max-w-3xl">
+					<Card className="gap-6 p-5 sm:p-10">
+						<header className="space-y-4 border-b border-edge-hairline pb-6">
+							<div className="flex flex-wrap items-center justify-between gap-3">
+								<NoteBadges note={note} />
+								<Button
+									size="sm"
+									variant="ghost"
+									leftIcon={<Copy {...iconProps(14)} />}
+									onClick={async () => {
+										const copied = await copyText(journalNoteUrl(note.id));
+										if (copied) {
+											toast.success("手记链接已复制");
+										} else {
+											toast.error("无法复制手记链接");
+										}
+									}}
 								>
-									<ArrowLeft {...iconProps(12)} />
-									<span>NOTES_INDEX</span>
-								</Link>
-								<span className="text-muted-foreground/40">/</span>
-								<span className="text-[10px] text-muted-foreground/60 uppercase">
-									CASE-{note.id.slice(0, 8)}
-								</span>
+									复制链接
+								</Button>
 							</div>
-
-							<div className="flex items-center gap-3 tabular-nums">
-								<span className="flex items-center gap-1 text-success font-medium">
-									<CircleCheck {...iconProps(12)} />
-									RESOLVED
-								</span>
-								<span className="text-muted-foreground/40">|</span>
-								<button
-									type="button"
-									onClick={handleCopy}
-									className="hover:text-foreground inline-flex items-center gap-2 text-muted-foreground transition-colors"
-									title="复制此工单直达链接"
-								>
-									<Copy {...iconProps(12)} />
-									<span>{copied ? "COPIED" : "SHARE"}</span>
-								</button>
-							</div>
-						</div>
-
-						{/* 工单主体内容区 */}
-						<div className="p-6 sm:p-8 md:p-10">
-							{/* 工单头部信息 */}
-							<header className="space-y-4 border-b border-edge-hairline pb-6">
-								{/* 标签标尺 */}
-								<div className="flex flex-wrap items-center gap-1.5 font-mono text-xs">
-									<span className="text-muted-foreground/50 text-[10px] uppercase">
-										TAGS:
-									</span>
-									{note.tags.length > 0 ? (
-										note.tags.map((t) => (
-											<Link key={t} to="/notes" search={{ tag: t }}>
-												<span className="border-edge-hairline bg-muted/40 hover:border-foreground/30 hover:bg-muted/80 inline-block rounded px-2 py-0.5 text-[11px] text-muted-foreground transition-colors">
-													#{t}
-												</span>
-											</Link>
-										))
-									) : (
-										<span className="text-[11px] text-muted-foreground/50">
-											#general
-										</span>
+							<h1 className="wrap-anywhere font-serif text-2xl leading-snug tracking-tight sm:text-3xl">
+								{noteTitle(note)}
+							</h1>
+							<div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+								<time dateTime={note.published_at}>
+									{formatDate(
+										note.published_at,
+										"long-date",
+										"—",
+										JOURNAL_TIME_ZONE,
 									)}
-								</div>
-
-								{/* 标题 */}
-								<h1 className="text-xl font-bold leading-snug tracking-tight text-foreground sm:text-2xl font-mono">
-									{noteTitle(note)}
-								</h1>
-
-								{/* 元数据参数栏 */}
-								<div className="flex flex-wrap items-center justify-between gap-y-2 pt-1 font-mono text-[11px] text-muted-foreground/70">
-									<div className="flex items-center gap-3 tabular-nums">
-										<span className="flex items-center gap-1">
-											<Calendar {...iconProps(12)} />
-											{formatDate(note.published_at)}
-										</span>
-										<span>•</span>
-										<span>{notePlainLength(note.content_html)} CHARS</span>
-										<span>•</span>
-										<span>
-											EST.{" "}
-											{Math.max(
-												1,
-												Math.ceil(notePlainLength(note.content_html) / 400),
-											)}{" "}
-											MIN
-										</span>
-									</div>
-
-									<div className="text-[10px] text-muted-foreground/50 uppercase">
-										ORIGIN: PRODUCTION_LOG
-									</div>
-								</div>
-							</header>
-
-							{/* 正文呈现 */}
-							<div
-								className="prose prose-neutral dark:prose-invert max-w-none pt-6 leading-relaxed font-sans prose-pre:rounded-lg prose-pre:border prose-pre:border-edge-hairline"
-								data-article-content
-								onClick={articleImages.bind.onClick}
-								onKeyDown={articleImages.bind.onKeyDown}
-							>
-								<ArticleContent content={note.content_html} contentType="html" />
+								</time>
+								<NoteTags names={note.tags} catalog={tags ?? []} />
 							</div>
-
-							{/* 尾部验收签名章 */}
-							<footer className="mt-10 border-t border-edge-hairline pt-6">
-								<div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-									<div className="flex items-center gap-1 font-mono text-xs text-muted-foreground">
-										<ShieldCheck className="size-4 text-success" />
-										<span>VERIFIED_POSTMORTEM_ENTRY</span>
-									</div>
-
-									<Link
-										to="/notes"
-										className="group inline-flex items-center gap-1 font-mono text-xs text-primary transition-colors hover:underline"
-									>
-										<span>INDEX_OVERVIEW</span>
-										<ArrowLeft
-											{...iconProps(
-												12,
-												"rotate-180 transition-transform group-hover:translate-x-1",
-											)}
-										/>
-									</Link>
-								</div>
-							</footer>
-						</div>
-					</article>
-				</div>
+						</header>
+						{note.pitfall && <NotePitfallContent pitfall={note.pitfall} />}
+						<section
+							{...articleImages.bind}
+							className="prose prose-neutral max-w-none font-sans leading-relaxed prose-pre:rounded-lg prose-pre:border prose-pre:border-edge-hairline dark:prose-invert"
+						>
+							<ArticleContent content={note.content_html} contentType="html" />
+						</section>
+					</Card>
+				</article>
+			) : (
+				<Empty
+					title="手记不可用"
+					description="这篇手记可能已删除或不再公开。"
+					className="py-20"
+				/>
 			)}
+			{articleImages.preview}
 		</PageShell>
-	);
-}
-
-function DossierDetailSkeleton() {
-	return (
-		<div className="mx-auto max-w-3xl">
-			<div className="border-edge-hairline bg-card/20 rounded-xl border p-6 sm:p-10 space-y-6">
-				<div className="flex justify-between border-b border-edge-hairline pb-4">
-					<Skeleton className="h-3 w-28" />
-					<Skeleton className="h-3 w-20" />
-				</div>
-				<Skeleton className="h-4 w-36" />
-				<Skeleton className="h-7 w-4/5" />
-				<div className="flex justify-between border-b border-edge-hairline pb-4">
-					<Skeleton className="h-3 w-40" />
-					<Skeleton className="h-3 w-24" />
-				</div>
-				<div className="space-y-3 pt-4">
-					<Skeleton className="h-4 w-full" />
-					<Skeleton className="h-4 w-11/12" />
-					<Skeleton className="h-4 w-4/5" />
-					<Skeleton className="h-4 w-full" />
-					<Skeleton className="h-4 w-2/3" />
-				</div>
-			</div>
-		</div>
 	);
 }
