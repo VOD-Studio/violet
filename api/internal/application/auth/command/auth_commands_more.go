@@ -162,12 +162,15 @@ func (h *ResetPasswordHandler) Handle(ctx context.Context, in ResetPasswordInput
 //
 // 所有字段为指针，nil 表示不更新该字段，空字符串表示清空。
 type UpdateProfileInput struct {
-	UserID      string
-	Username    *string
-	DisplayName *string
-	Bio         *string
-	AvatarURL   *string
-	CoverURL    *string
+	UserID                   string
+	Username                 *string
+	DisplayName              *string
+	Bio                      *string
+	AvatarURL                *string
+	CoverURL                 *string
+	Location                 *string
+	Website                  *string
+	PublicReadingPreferences *[]string
 }
 
 // UpdateProfileHandler 更新个人资料用例
@@ -227,6 +230,9 @@ func (h *UpdateProfileHandler) Handle(ctx context.Context, in UpdateProfileInput
 
 	if in.Bio != nil {
 		u.UpdateBio(*in.Bio)
+	}
+	if err := u.UpdatePublicDetails(in.Location, in.Website, in.PublicReadingPreferences); err != nil {
+		return nil, err
 	}
 
 	if err := h.userRepo.Save(ctx, u); err != nil {

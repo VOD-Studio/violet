@@ -32,10 +32,13 @@ func registerAuthPaths(t *openapi3.T) {
 	}, "email", "code", "new_password")
 
 	registerSchema(t, "UpdateProfileRequest", openapi3.Schemas{
-		"username":   optStr("用户名（3-32 字符）"),
-		"bio":        optStr("个人简介（最多 500 字）"),
-		"avatar_url": optStr("头像 URL（最多 2048 字符）"),
-		"cover_url":  optStr("主页封面 URL（最多 2048 字符），省略保留，空串移除；保留 GIF 裁剪坐标"),
+		"username":                   optStr("用户名（3-32 字符）"),
+		"bio":                        optStr("个人简介（最多 500 字）"),
+		"avatar_url":                 optStr("头像 URL（最多 2048 字符）"),
+		"cover_url":                  optStr("主页封面 URL（最多 2048 字符），省略保留，空串移除；保留 GIF 裁剪坐标"),
+		"location":                   optStr("主动公开的所在地，最多 100 字"),
+		"website":                    optStr("主动公开的完整 HTTP(S) 主页，空串清除"),
+		"public_reading_preferences": strArray("本人主动公开的常读主题，至多 8 项，每项至多 30 字；空数组清除，省略保留"),
 	})
 
 	registerSchema(t, "ChangePasswordRequest", openapi3.Schemas{
@@ -75,13 +78,16 @@ func registerAuthPaths(t *openapi3.T) {
 
 	// ProfileResponse：auth/profile 响应的 data
 	registerSchema(t, "ProfileResponse", openapi3.Schemas{
-		"id":         reqStr("用户 ID（UUID）"),
-		"username":   reqStr("用户名"),
-		"email":      reqStr("邮箱"),
-		"avatar_url": optStr("头像 URL"),
-		"cover_url":  reqStr("主页封面 URL，未设置时为空串"),
-		"bio":        optStr("个人简介"),
-		"role":       strEnum("角色", "user", "admin", "superadmin"),
+		"id":                         reqStr("用户 ID（UUID）"),
+		"username":                   reqStr("用户名"),
+		"email":                      reqStr("邮箱"),
+		"avatar_url":                 optStr("头像 URL"),
+		"cover_url":                  reqStr("主页封面 URL，未设置时为空串"),
+		"bio":                        optStr("个人简介"),
+		"role":                       strEnum("角色", "user", "admin", "superadmin"),
+		"location":                   reqStr("主动公开的所在地"),
+		"website":                    reqStr("主动公开的网站"),
+		"public_reading_preferences": strArray("主动公开的常读主题"),
 	})
 
 	// CSRFToken：auth/csrf-token 响应的 data

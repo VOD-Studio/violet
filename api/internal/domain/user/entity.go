@@ -292,6 +292,8 @@ type User struct {
 	coverURL string
 	// bio 个人简介
 	bio string
+	// publicDetails 仅由本人主动公开，不从阅读历史推导。
+	publicDetails PublicProfileDetails
 	// role 角色
 	role Role
 	// googleID 绑定的 Google 账号 Subject

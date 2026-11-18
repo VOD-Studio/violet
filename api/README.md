@@ -134,6 +134,10 @@ REST 端点可用 `middleware.PATAuth` 复用 MCP 的 `PATVerifier`，再用 `Re
 
 后台可维护 RSS 地址与站长、回链信息。抓取只访问公开地址并检查每次重定向；站点状态与订阅状态独立。短暂抓取失败保留该订阅上次成功读取的最新发文；替换订阅地址后重新计算。
 
+### 用户公开档案
+
+`GET /api/v1/users/{username}` 返回公开资料、最近半年的 UTC 日活跃统计及当前公开内容分项数量。`GET /api/v1/users/{username}/activity` 接受 `tab=all|posts|tweets|comments|annotations` 与游标，按时间和稳定键倒序合并公开活动。未公开或已移除的内容、未审核通过的评论不纳入。本人可编辑公开所在地、网站与主动填写的常读主题，不公开邮箱或浏览历史。
+
 ### 博客公开浏览筛选
 
 以下路径均相对于 `/api/v1`，响应保持 `data` 信封；列表分页仍使用 `meta.pagination`：

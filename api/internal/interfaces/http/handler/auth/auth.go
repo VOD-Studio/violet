@@ -581,11 +581,14 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	userID := interfacesmw.GetUserIDFromContext(r)
 	var req struct {
-		Username    *string `json:"username" validate:"omitempty,min=3,max=32"`
-		DisplayName *string `json:"display_name" validate:"omitempty,max=32"`
-		Bio         *string `json:"bio" validate:"omitempty,max=500"`
-		AvatarURL   *string `json:"avatar_url" validate:"omitempty,max=2048"`
-		CoverURL    *string `json:"cover_url" validate:"omitempty,max=2048"`
+		Username                 *string   `json:"username" validate:"omitempty,min=3,max=32"`
+		DisplayName              *string   `json:"display_name" validate:"omitempty,max=32"`
+		Bio                      *string   `json:"bio" validate:"omitempty,max=500"`
+		AvatarURL                *string   `json:"avatar_url" validate:"omitempty,max=2048"`
+		CoverURL                 *string   `json:"cover_url" validate:"omitempty,max=2048"`
+		Location                 *string   `json:"location" validate:"omitempty,max=100"`
+		Website                  *string   `json:"website" validate:"omitempty,max=2048"`
+		PublicReadingPreferences *[]string `json:"public_reading_preferences"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.RespondError(w, r, err)
@@ -598,20 +601,25 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 
 	u, err := h.updatePf.Handle(r.Context(), authcmd.UpdateProfileInput{
 		UserID: userID, Username: req.Username, DisplayName: req.DisplayName, Bio: req.Bio, AvatarURL: req.AvatarURL, CoverURL: req.CoverURL,
+		Location: req.Location, Website: req.Website, PublicReadingPreferences: req.PublicReadingPreferences,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
+	details := u.PublicDetails()
 	response.RespondOK(w, map[string]any{
-		"id":           u.GetID().String(),
-		"username":     u.Username().String(),
-		"display_name": u.DisplayName().String(),
-		"email":        u.Email().String(),
-		"avatar_url":   u.AvatarURL(),
-		"cover_url":    u.CoverURL(),
-		"bio":          u.Bio(),
-		"role":         string(u.Role()),
+		"id":                         u.GetID().String(),
+		"username":                   u.Username().String(),
+		"display_name":               u.DisplayName().String(),
+		"email":                      u.Email().String(),
+		"avatar_url":                 u.AvatarURL(),
+		"cover_url":                  u.CoverURL(),
+		"bio":                        u.Bio(),
+		"role":                       string(u.Role()),
+		"location":                   details.Location,
+		"website":                    details.Website,
+		"public_reading_preferences": details.ReadingPreferences,
 	})
 }
 
