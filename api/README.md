@@ -124,6 +124,10 @@ REST 端点可用 `middleware.PATAuth` 复用 MCP 的 `PATVerifier`，再用 `Re
 
 `POST /api/v1/tweets/{id}/views` 接受带 CSRF 的游客或用户请求，按推文和受信 IP 在 30 分钟内去重，返回持久化的 `{view_count}`。列表、详情 GET、SSR 和预取不增加计数。
 
+### 公开图集
+
+`GET /api/v1/gallery-summary` 返回实际已发布图集数量 `album_count` 和图片项数量 `image_count`。精选取已发布列表第一本；发现顺序以首次发布时间降序、ID 降序为准。`GET /api/v1/galleries` 与 `/galleries/{slug}` 读取已发布快照；地点随版本保存，未发布的内容修改不会改变公开快照。
+
 ### 博客公开浏览筛选
 
 以下路径均相对于 `/api/v1`，响应保持 `data` 信封；列表分页仍使用 `meta.pagination`：

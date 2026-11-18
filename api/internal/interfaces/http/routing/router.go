@@ -213,6 +213,7 @@ func registerPersonaPublicRoute(v1 chi.Router, d *Deps) {
 
 func registerGalleryPublicRoutes(v1 chi.Router, d *Deps) {
 	galleryH := d.Gallery
+	v1.Get("/gallery-summary", galleryH.PublishedSummary)
 	v1.Route("/galleries", func(r chi.Router) {
 		r.Get("/", galleryH.BrowsePublished)
 		r.Get("/{slug}", galleryH.GetPublished)

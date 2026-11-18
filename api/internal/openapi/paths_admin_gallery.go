@@ -12,6 +12,7 @@ func registerGalleryPaths(t *openapi3.T) {
 		"expected_version": optInt64("工作稿乐观锁版本，必须大于 0"),
 		"title":            reqStr("工作稿标题，允许空串，最多 120 字符"),
 		"summary":          reqStr("工作稿摘要，允许空串，最多 500 字符"),
+		"location":         optStr("可选拍摄地点；空串表示未填写，最多 120 字符，随工作稿保存并经发布生效"),
 		"items":            refArray("完整有序图片列表；数组顺序是权威顺序，最多 50 项", "GallerySaveItemRequest"),
 	}, "expected_version", "title", "summary", "items")
 	registerSchema(t, "GalleryVersionRequest", openapi3.Schemas{
@@ -37,6 +38,7 @@ func registerGalleryPaths(t *openapi3.T) {
 		"slug":         nullableStr("首次发布后生成的稳定公开 slug；从未发布为 null，撤回后保留"),
 		"title":        reqStr("工作稿标题"),
 		"summary":      reqStr("工作稿摘要"),
+		"location":     reqStr("工作稿可选拍摄地点，未填写为空串"),
 		"status":       strEnum("图集发布状态", "draft", "published", "modified", "unpublished"),
 		"version":      optInt64("工作稿乐观锁版本"),
 		"item_count":   optInt("图片数量"),
@@ -44,14 +46,14 @@ func registerGalleryPaths(t *openapi3.T) {
 		"created_at":   reqStr("创建时间，RFC3339"),
 		"updated_at":   reqStr("最近保存时间，RFC3339"),
 	}
-	requiredSummary := []string{"id", "author_id", "author_name", "slug", "title", "summary", "status", "version", "item_count", "published_at", "created_at", "updated_at"}
+	requiredSummary := []string{"id", "author_id", "author_name", "slug", "title", "summary", "location", "status", "version", "item_count", "published_at", "created_at", "updated_at"}
 	registerSchema(t, "GallerySummaryDTO", summaryFields, requiredSummary...)
 	detailFields := make(openapi3.Schemas, len(summaryFields)+1)
 	for key, value := range summaryFields {
 		detailFields[key] = value
 	}
 	detailFields["items"] = refArray("完整有序图片列表", "GalleryItemDTO")
-	detailRequired := []string{"id", "author_id", "author_name", "slug", "title", "summary", "status", "version", "item_count", "published_at", "created_at", "updated_at", "items"}
+	detailRequired := []string{"id", "author_id", "author_name", "slug", "title", "summary", "location", "status", "version", "item_count", "published_at", "created_at", "updated_at", "items"}
 	registerSchema(t, "GalleryDetailDTO", detailFields, detailRequired...)
 	registerSchema(t, "PublicGalleryItemDTO", openapi3.Schemas{
 		"file_id":   reqStr("素材文件 UUID"),
@@ -68,9 +70,10 @@ func registerGalleryPaths(t *openapi3.T) {
 		"slug":         reqStr("稳定公开 slug"),
 		"title":        reqStr("公开版本标题"),
 		"summary":      reqStr("公开版本摘要"),
+		"location":     reqStr("公开版本的可选拍摄地点，未填写为空串"),
 		"published_at": reqStr("首次发布时间，RFC3339"),
 		"items":        refArray("公开版本的完整有序图片列表", "PublicGalleryItemDTO"),
-	}, "id", "slug", "title", "summary", "published_at", "items")
+	}, "id", "slug", "title", "summary", "location", "published_at", "items")
 
 	secure := securityAdmin()
 	get(t, "/admin/galleries", &openapi3.Operation{
@@ -123,9 +126,18 @@ func registerGalleryPaths(t *openapi3.T) {
 		RequestBody: jsonBody("GalleryVersionRequest", true, "删除时的乐观锁版本"),
 		Responses:   responses(204, noContentResponse("图集已删除"), 401, errorResponse("未认证"), 403, errorResponse("不是图集作者且缺少 gallery:moderate 权限"), 404, errorResponse("图集不存在"), 409, errorResponse("expected_version 已过期")),
 	})
+	registerSchema(t, "PublicGallerySummaryDTO", openapi3.Schemas{
+		"album_count": optInt64("当前已发布相册总数，与页大小及游标无关"),
+		"image_count": optInt64("所有公开快照中的图片项总数，同素材跨相册分别计数；不含工作稿及已撤回作品"),
+	}, "album_count", "image_count")
+	get(t, "/gallery-summary", &openapi3.Operation{
+		Tags: []string{"图集"}, Summary: "公开图集总数",
+		Description: "匿名读取当前已发布相册及图片项总数；仅消费公开版本，与分页无关。",
+		Responses:   responses(200, dataResponse("PublicGallerySummaryDTO", "公开图集汇总", 200)),
+	})
 	get(t, "/galleries", &openapi3.Operation{
 		Tags: []string{"图集"}, Summary: "公开图集浏览流",
-		Description: "匿名读取公开版本，按 published_at 与 id 复合游标倒序分页；每项返回完整有序图片数组。",
+		Description: "匿名读取公开版本，按首次发布时间 published_at DESC、id DESC 复合游标分页；每项返回完整有序图片数组。第一页首项作为精选相册，精选也计入当前页，客户端在其余网格中排除同一 ID；更新发布不改变首发排序。",
 		Parameters:  openapi3.Parameters{queryStrParam("cursor", "下一页不透明游标"), limitParam(50)},
 		Responses:   responses(200, dataArrayResponse("PublicGalleryDTO", "公开图集列表", 200, true), 400, errorResponse("分页游标非法")),
 	})

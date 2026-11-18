@@ -87,6 +87,9 @@ func (s *stubGalleryService) GetPublished(_ context.Context, _ string) (appgalle
 	s.getPublicCalls++
 	return s.getPublishedDTO, s.getPublishedErr
 }
+func (s *stubGalleryService) PublishedSummary(context.Context) (appgallery.PublicGallerySummaryDTO, error) {
+	return appgallery.PublicGallerySummaryDTO{AlbumCount: 7, ImageCount: 112}, nil
+}
 
 type permissionChecker struct{ allow map[string]bool }
 
@@ -486,4 +489,12 @@ func TestListForEditorPassesAuthorAndStatusFilters(t *testing.T) {
 	assert.Equal(t, "published", stub.listQuery.Status)
 	assert.Equal(t, 2, stub.listQuery.Page)
 	assert.Equal(t, 10, stub.listQuery.Limit)
+}
+
+func TestPublishedSummaryIsAnonymousAndIncludesBothTotals(t *testing.T) {
+	handler := &Handler{service: &stubGalleryService{}}
+	recorder := httptest.NewRecorder()
+	handler.PublishedSummary(recorder, httptest.NewRequest(http.MethodGet, "/api/v1/gallery-summary", nil))
+	require.Equal(t, http.StatusOK, recorder.Code)
+	assert.JSONEq(t, `{"data":{"album_count":7,"image_count":112}}`, recorder.Body.String())
 }

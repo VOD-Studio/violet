@@ -138,7 +138,7 @@ func TestGalleryPublishAndCopyOnWriteKeepPublicSnapshotStable(t *testing.T) {
 	require.NoError(t, err)
 	saved, err := service.Save(context.Background(), appgallery.SaveInput{
 		UserID: ownerID.String(), GalleryID: draft.ID, ExpectedVersion: draft.Version,
-		Title: "公开标题", Summary: "公开摘要",
+		Title: "公开标题", Summary: "公开摘要", Location: "新疆",
 		Items: []appgallery.SaveItemInput{{FileID: firstID.String()}, {FileID: secondID.String(), Caption: "第二张"}},
 	})
 	require.NoError(t, err)
@@ -156,7 +156,7 @@ func TestGalleryPublishAndCopyOnWriteKeepPublicSnapshotStable(t *testing.T) {
 
 	maintained, err := service.Save(context.Background(), appgallery.SaveInput{
 		UserID: ownerID.String(), GalleryID: draft.ID, ExpectedVersion: published.Version,
-		Title: "维护中标题", Items: []appgallery.SaveItemInput{{FileID: firstID.String()}, {FileID: thirdID.String()}},
+		Title: "维护中标题", Location: "青岛", Items: []appgallery.SaveItemInput{{FileID: firstID.String()}, {FileID: thirdID.String()}},
 	})
 	require.NoError(t, err)
 	assert.Equal(t, int64(4), maintained.Version)
@@ -167,6 +167,8 @@ func TestGalleryPublishAndCopyOnWriteKeepPublicSnapshotStable(t *testing.T) {
 	public, err := service.GetPublished(context.Background(), *published.Slug)
 	require.NoError(t, err)
 	assert.Equal(t, "公开标题", public.Title)
+	assert.Equal(t, "新疆", public.Location)
+	assert.Equal(t, "青岛", maintained.Location)
 	require.Len(t, public.Items, 2)
 	assert.Equal(t, firstID.String(), public.Items[0].FileID)
 	assert.Equal(t, secondID.String(), public.Items[1].FileID)
