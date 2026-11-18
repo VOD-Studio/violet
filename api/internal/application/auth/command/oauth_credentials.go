@@ -64,6 +64,20 @@ func (c *OAuthCredentials) GithubClientSecret() string {
 	return c.githubSecret
 }
 
+// PublicLoginClientIDs 返回同一快照里可公开的登录客户端 ID，不返回 secret。
+// 提供方是否启用仍由站点登录设置决定。
+func (c *OAuthCredentials) PublicLoginClientIDs() (google, github string) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	if strings.HasSuffix(c.googleClientID, ".apps.googleusercontent.com") {
+		google = c.googleClientID
+	}
+	if c.githubSecret != "" {
+		github = c.githubClientID
+	}
+	return google, github
+}
+
 // OAuthCredentialUpdate OAuth 凭据写入入参（指针表部分更新，nil 不更新）
 type OAuthCredentialUpdate struct {
 	GoogleClientID     *string

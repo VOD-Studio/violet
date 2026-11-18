@@ -90,6 +90,8 @@ make api
 
 SSR 使用 `GET /auth/session` 只读探活，**不续期、不写 Cookie**。不要用会续期的客户端探活接口替换它。MCP 和 Bot 使用独立的令牌认证，不与浏览器 Cookie / CSRF 混用。
 
+公开站点设置下发可供登录使用的 OAuth `client_id`，不下发密钥。GitHub 缺少 ID 或 secret、Google ID 为空或格式不匹配时，对应值为空；前端还需遵守各提供方的登录开关。这不是上游可用性探测。
+
 REST 端点可用 `middleware.PATAuth` 复用 MCP 的 `PATVerifier`，再用 `RequireScope` 精确断言权限。成功后上下文包含持有人 ID 和 scopes，异步更新令牌最近使用时间；伪造、缺失或过期令牌返回 401 JSON，权限不足返回 403 JSON，存储故障返回 500。`usage:write` 只授予用量上报，不包含其他写权限。
 
 ### 验证邮件

@@ -98,6 +98,33 @@ func TestGetPublicSettings_OmitsSensitiveFields(t *testing.T) {
 	assert.NotContains(t, raw, "sk-should-not-leak", "公开配置不得泄露 llm_api_key")
 }
 
+func TestGetPublicSettings_OnlyAdvertisesConfiguredOAuthClients(t *testing.T) {
+	for _, tc := range []struct {
+		name, googleID, githubID, githubSecret string
+		wantGoogle, wantGitHub                 string
+	}{
+		{name: "incomplete", googleID: "not-a-google-client", githubID: "github-id"},
+		{name: "configured", googleID: "test.apps.googleusercontent.com", githubID: "github-id",
+			githubSecret: "private-client-secret", wantGoogle: "test.apps.googleusercontent.com", wantGitHub: "github-id"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := newSettingsHandler(&stubSettingsStore{})
+			h.creds = authcmd.NewOAuthCredentials(tc.googleID, tc.githubID, tc.githubSecret)
+			rr := httptest.NewRecorder()
+			h.GetPublicSettings(rr, httptest.NewRequest(http.MethodGet, "/settings", nil))
+			require.Equal(t, http.StatusOK, rr.Code)
+
+			var got struct {
+				Data map[string]any `json:"data"`
+			}
+			require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &got))
+			assert.Equal(t, tc.wantGoogle, got.Data["google_client_id"])
+			assert.Equal(t, tc.wantGitHub, got.Data["github_client_id"])
+			assert.NotContains(t, rr.Body.String(), "private-client-secret")
+		})
+	}
+}
+
 // =====================================================================
 // UpdateGeneral —— 参数校验（空 body → 400，不触达 service）
 // =====================================================================
