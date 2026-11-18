@@ -54,6 +54,7 @@ const TweetCard = ({
 	const canDeleteAny = useHasPermission("tweet:delete-any");
 	const [confirmOpen, setConfirmOpen] = useState(false);
 	const [quoteModalOpen, setQuoteModalOpen] = useState(false);
+	const [likeFeedback, setLikeFeedback] = useState(false);
 	const deleteTweet = useDeleteTweet(tweet.id);
 	const toggleLike = useToggleLikeTweet(tweet);
 	const openShareTweet = useShareTweetStore((state) => state.open);
@@ -68,7 +69,12 @@ const TweetCard = ({
 			navigate({ to: "/login" });
 			return;
 		}
-		toggleLike.mutate();
+		setLikeFeedback(false);
+		toggleLike.mutate(undefined, {
+			onSuccess: () => {
+				if (!tweet.is_liked) setLikeFeedback(true);
+			},
+		});
 	};
 
 	const handleQuoteClick = (event: MouseEvent<HTMLButtonElement>) => {
@@ -192,6 +198,7 @@ const TweetCard = ({
 						tweet={tweet}
 						isDetail={isDetail}
 						isLikePending={toggleLike.isPending}
+						likeFeedback={likeFeedback}
 						onLike={handleLikeClick}
 						onQuote={handleQuoteClick}
 						onShare={handleShareClick}

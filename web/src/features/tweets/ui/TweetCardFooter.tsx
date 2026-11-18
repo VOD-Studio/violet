@@ -1,7 +1,8 @@
 import type { Tweet } from "@entities/tweet/model/types";
+import { AffectionHeart } from "@shared/ui/affection-heart";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@violet/ui";
-import { ChartNoAxesColumn, Heart, MessageCircle, Repeat2, Share2 } from "lucide-react";
+import { ChartNoAxesColumn, MessageCircle, Repeat2, Share2 } from "lucide-react";
 import type { MouseEventHandler } from "react";
 
 /** 仅提供本站互动，不包含 X 原站操作。 */
@@ -12,6 +13,8 @@ export interface TweetCardFooterProps {
 	isDetail: boolean;
 	/** 点赞请求未完成时禁止重复操作。 */
 	isLikePending: boolean;
+	/** 只有服务端确认点赞后才播放成功反馈。 */
+	likeFeedback: boolean;
 	/** 本站点赞操作。 */
 	onLike: MouseEventHandler<HTMLButtonElement>;
 	/** 打开引用编辑器。 */
@@ -25,6 +28,7 @@ export function TweetCardFooter({
 	tweet,
 	isDetail,
 	isLikePending,
+	likeFeedback,
 	onLike,
 	onQuote,
 	onShare,
@@ -66,7 +70,7 @@ export function TweetCardFooter({
 				onClick={onLike}
 				loading={isLikePending}
 			>
-				<Heart className={tweet.is_liked ? "fill-current" : undefined} />
+				<AffectionHeart selected={tweet.is_liked} feedback={likeFeedback ? 1 : 0} />
 				{tweet.like_count}
 			</Button>
 			<span className="inline-flex items-center gap-1.5 tabular-nums">
