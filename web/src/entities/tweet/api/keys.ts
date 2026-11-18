@@ -20,8 +20,9 @@ export const tweetKeys = {
 	sidebar: [...tweetsRoot, "sidebar"] as const,
 	userTimeline: [...tweetsRoot, "userTimeline"] as const,
 	topicTimeline: [...tweetsRoot, "topicTimeline"] as const,
+	details: [...tweetsRoot, "detail"] as const,
 	/** 单条推文详情维度（按 id 区分） */
-	detail: (id: string) => [...tweetsRoot, "detail", id] as const,
+	detail: (id: string) => [...tweetKeys.details, id] as const,
 	/** 用户推文列表维度（按 username 与 limit 区分） */
 	userTimelineOf: (username: string, limit: number = TIMELINE_PAGE_SIZE) =>
 		[...tweetKeys.userTimeline, username, { limit }] as const,
@@ -33,8 +34,9 @@ export const tweetKeys = {
 	/** 顶层评论的真实排序维度；page 仍由无限查询持有。 */
 	commentListOf: (tweetId: string, sort: CommentSort = "latest") =>
 		[...tweetKeys.commentList(tweetId), { sort }] as const,
-	/** 不放进 comments 前缀，避免评论增删的列表更新器误处理回应数组。 */
-	commentReactions: (tweetId: string) => [...tweetsRoot, "comment-reactions", tweetId] as const,
+	/** 与评论分页分开，也可在访问者变化时清除旧会话的已回应状态。 */
+	commentReactionRoot: [...tweetsRoot, "comment-reactions"] as const,
+	commentReactions: (tweetId: string) => [...tweetKeys.commentReactionRoot, tweetId] as const,
 	commentReactionList: (tweetId: string, commentId: string) =>
 		[...tweetKeys.commentReactions(tweetId), commentId] as const,
 	commentReactionBatch: (tweetId: string, commentIds: readonly string[]) =>
