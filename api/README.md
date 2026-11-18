@@ -370,6 +370,18 @@ docker compose -f docker-compose.dev.yml exec -T api go test ./...
 
 新增模块时，从领域与用例契约开始，再补仓储 / 外部适配、HTTP Handler 和 SQL 迁移；最后在 `app/*_container.go`、根 `Container`、路由 `Deps` 与注册入口完成装配。可参照现有 [music_container.go](internal/app/music_container.go) 与 [music_routes.go](internal/interfaces/http/routing/music_routes.go)。接口变化同步 OpenAPI，模块变化同步本 README；不另建一套旧式 handler/service/repository 分层。
 
+## Go 注释
+
+注释说明调用方看不出的契约，例如零值含义、业务不变量和必须释放的资源。导出 API 的 godoc 写给调用方；不要翻译签名、给短函数加步骤标签，或把设计沿革写进源码。设计取舍放 PR 或 ADR；每个包的 `// Package …` 说明只放在一个文件。
+
+| 字段归属 | 什么时候写注释 |
+| --- | --- |
+| `internal/domain/` 的实体与值对象 | 每个命名字段上方写 `// fieldName 中文说明`；嵌入字段豁免。容易混淆时写明不变量或与相邻字段的区别，见 [User](internal/domain/user/entity.go)。改到已有领域实体或值对象文件时也补齐。 |
+| application 导出的 DTO、Input、Output，以及 HTTP Request、Response | 只补名字、类型和 tag 没说清的语义：零值、单位或格式、枚举、引用关系、计算口径、PATCH 是否保留原值。例如 `CanonicalURL *string // nil 表示原创，非空为转载来源`。 |
+| GORM 持久化模型、单依赖容器、函数内临时行结构 | 不逐字段复述列名、构造参数或局部变量。带 `jsonschema` 描述的 DTO、带 `validate` 的未导出请求结构也不重复已声明的规则。 |
+
+简单约束可写在行尾，多个条件写在字段上方。重构时同步更新失效的注释；除上述领域字段要求外，只清理本次改动涉及的注释，不单独开 PR 扫存量。
+
 ## 项目结构
 
 ```text
