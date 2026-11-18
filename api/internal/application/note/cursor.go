@@ -14,7 +14,8 @@ type publishedCursorPayload struct {
 	ID          string `json:"id"`
 }
 
-func encodePublishedCursor(cursor domainnote.PublishedCursor) string {
+// EncodePublishedCursor 保留时间精度，供混合时间线按已发布笔记的顺序继续读取。
+func EncodePublishedCursor(cursor domainnote.PublishedCursor) string {
 	payload, _ := json.Marshal(publishedCursorPayload{
 		PublishedAt: cursor.PublishedAt.UTC().Format(time.RFC3339Nano), ID: cursor.ID.String(),
 	})

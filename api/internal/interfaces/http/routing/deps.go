@@ -29,6 +29,7 @@ import (
 	galleryhttp "blog-api/internal/interfaces/http/handler/gallery"
 	githubhttp "blog-api/internal/interfaces/http/handler/github"
 	imagehttp "blog-api/internal/interfaces/http/handler/image"
+	journalhttp "blog-api/internal/interfaces/http/handler/journal"
 	linkpreviewhttp "blog-api/internal/interfaces/http/handler/linkpreview"
 	mediahttp "blog-api/internal/interfaces/http/handler/media"
 	musichttp "blog-api/internal/interfaces/http/handler/music"
@@ -124,6 +125,7 @@ type Deps struct {
 	Series             *serieshttp.Handler
 	Gallery            *galleryhttp.Handler
 	Note               *notehttp.Handler
+	Journal            *journalhttp.Handler
 	Publication        *publicationhttp.Handler
 	Persona            *personahttp.Handler
 	Notification       *notificationhttp.Handler

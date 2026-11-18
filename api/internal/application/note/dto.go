@@ -169,7 +169,7 @@ func toPublicDTO(p domainnote.PublishedNote) PublicNoteDTO {
 		Title:       p.Title,
 		ContentHTML: p.ContentHTML,
 		Tags:        nonNilTags(p.Tags),
-		PublishedAt: p.PublishedAt.UTC().Format(time.RFC3339),
+		PublishedAt: p.PublishedAt.UTC().Format(time.RFC3339Nano),
 		Type:        p.Type,
 		Project:     project,
 		Pitfall:     (*PitfallDTO)(p.Pitfall),
