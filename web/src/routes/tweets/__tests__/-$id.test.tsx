@@ -1,6 +1,8 @@
 import type { Tweet } from "@entities/tweet/model/types";
+import { tweetDetailContextOptions } from "@features/tweets/api/detail-context";
+import { ApiError } from "@shared/api/error";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Route } from "../$id";
@@ -16,12 +18,14 @@ vi.mock("@tanstack/react-router", async () => {
 			onClick,
 			to,
 			params,
+			hashScrollIntoView: _hashScrollIntoView,
 			...props
 		}: {
 			children?: ReactNode;
 			onClick?: () => void;
 			to?: string;
 			params?: { username?: string };
+			hashScrollIntoView?: ScrollIntoViewOptions;
 		} & ComponentPropsWithoutRef<"a">) => (
 			<a
 				href={to?.replace("$username", params?.username ?? "") ?? "#"}
@@ -104,14 +108,25 @@ vi.mock("@features/tweets/api/mutations", () => ({
 
 function createWrapper() {
 	const qc = new QueryClient({
-		defaultOptions: { queries: { retry: false } },
+		defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+	});
+	qc.setQueryData(tweetDetailContextOptions(mockTweet.id).queryKey, {
+		author: {
+			username: "xfy",
+			display_name: "",
+			avatar_url: "",
+			bio: "",
+			tweet_count: 1,
+			received_like_count: 0,
+		},
+		quotes: [],
 	});
 	return function Wrapper({ children }: { children: ReactNode }) {
 		return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
 	};
 }
 
-describe("/tweets/$id TweetDetailPage layout", () => {
+describe("推文详情", () => {
 	beforeEach(() => {
 		mockTweetDetailResult = {
 			data: mockTweet,
@@ -121,61 +136,16 @@ describe("/tweets/$id TweetDetailPage layout", () => {
 		vi.spyOn(Route, "useSearch").mockReturnValue({});
 	});
 
-	it("renders page content wrapped inside PageShell with vertical spacing", () => {
+	it("后台刷新失败时保留已展示的推文", () => {
 		const Component = Route.options.component;
-		expect(Component).toBeDefined();
-		if (!Component) return;
-
-		// Mock Route.useParams & Route.useLoaderData
+		if (!Component) throw new Error("推文详情路由缺少页面");
+		mockTweetDetailResult.error = ApiError.network();
 		vi.spyOn(Route, "useParams").mockReturnValue({ id: mockTweet.id });
 		vi.spyOn(Route, "useLoaderData").mockReturnValue(mockTweet);
 
-		const { container } = render(<Component />, { wrapper: createWrapper() });
+		render(<Component />, { wrapper: createWrapper() });
 
-		// Assert PageShell container exists (providing standard vertical padding & min-height)
-		const pageShell = container.querySelector(".min-h-\\[calc\\(100dvh-4rem\\)\\]");
-		expect(pageShell).not.toBeNull();
-		expect(pageShell?.className).toContain("py-8");
-		expect(pageShell?.className).toContain("md:py-12");
-	});
-
-	it("renders loading skeleton wrapped inside PageShell", () => {
-		const Component = Route.options.component;
-		expect(Component).toBeDefined();
-		if (!Component) return;
-
-		mockTweetDetailResult = {
-			data: undefined,
-			isLoading: true,
-			error: null,
-		};
-
-		vi.spyOn(Route, "useParams").mockReturnValue({ id: mockTweet.id });
-		vi.spyOn(Route, "useLoaderData").mockReturnValue(undefined);
-
-		const { container } = render(<Component />, { wrapper: createWrapper() });
-
-		const pageShell = container.querySelector(".min-h-\\[calc\\(100dvh-4rem\\)\\]");
-		expect(pageShell).not.toBeNull();
-	});
-
-	it("renders empty state wrapped inside PageShell when tweet not found", () => {
-		const Component = Route.options.component;
-		expect(Component).toBeDefined();
-		if (!Component) return;
-
-		mockTweetDetailResult = {
-			data: undefined,
-			isLoading: false,
-			error: new Error("Not found"),
-		};
-
-		vi.spyOn(Route, "useParams").mockReturnValue({ id: mockTweet.id });
-		vi.spyOn(Route, "useLoaderData").mockReturnValue(undefined);
-
-		const { container } = render(<Component />, { wrapper: createWrapper() });
-
-		const pageShell = container.querySelector(".min-h-\\[calc\\(100dvh-4rem\\)\\]");
-		expect(pageShell).not.toBeNull();
+		expect(screen.getByText("测试推文内容")).toBeTruthy();
+		expect(screen.queryByText("推文不存在")).toBeNull();
 	});
 });

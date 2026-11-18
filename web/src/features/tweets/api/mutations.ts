@@ -10,6 +10,7 @@ import {
 	type TweetCommentListCache as CommentListCache,
 	removeTweetCommentFromCaches,
 } from "./comment-cache";
+import { tweetDetailContexts } from "./detail-context";
 import { tweetKeys } from "./keys";
 import { type TweetTimelineCache, timelinePrefixes, updateCachedTweet } from "./timeline-cache";
 
@@ -56,6 +57,7 @@ export const useCreateTweet = () => {
 				void qc.invalidateQueries({ queryKey: tweetKeys.timelineSorted("latest") });
 				void qc.invalidateQueries({ queryKey: tweetKeys.timelineSorted("images") });
 			}
+			void qc.invalidateQueries({ queryKey: tweetDetailContexts });
 		},
 	});
 };
@@ -80,7 +82,10 @@ export const useDeleteTweet = (id: string) => {
 		onSuccess: async () => {
 			await Promise.all(timelinePrefixes.map((queryKey) => qc.cancelQueries({ queryKey })));
 			updateCachedTweet(qc, id, () => null);
-			qc.removeQueries({ queryKey: tweetKeys.detail(id), exact: true });
+			qc.removeQueries({ queryKey: tweetKeys.detail(id) });
+			// 已删除原文的引用快照、引用总数和作者累计统计都需重新读取。
+			void qc.invalidateQueries({ queryKey: tweetKeys.details });
+			void qc.invalidateQueries({ queryKey: tweetDetailContexts });
 			for (const queryKey of timelinePrefixes) void qc.invalidateQueries({ queryKey });
 			void qc.invalidateQueries({ queryKey: tweetKeys.sidebar });
 		},
@@ -105,7 +110,7 @@ export const useToggleLikeTweet = (tweet: Tweet) => {
 				: apiPost<unknown>(`/tweets/${id}/like`, {}),
 		onMutate: async () => {
 			await Promise.all([
-				qc.cancelQueries({ queryKey: tweetKeys.detail(id) }),
+				qc.cancelQueries({ queryKey: tweetKeys.detail(id), exact: true }),
 				...timelinePrefixes.map((queryKey) => qc.cancelQueries({ queryKey })),
 			]);
 			updateCachedTweet(qc, id, (current) => ({
@@ -125,6 +130,9 @@ export const useToggleLikeTweet = (tweet: Tweet) => {
 						}
 					: current,
 			);
+		},
+		onSuccess: () => {
+			void qc.invalidateQueries({ queryKey: tweetDetailContexts });
 		},
 		onSettled: () => {
 			void qc.invalidateQueries({ queryKey: tweetKeys.timelineSorted("hot") });
@@ -217,7 +225,7 @@ export const useDeleteTweetComment = (tweetId: string) => {
 		onMutate: async (commentId) => {
 			await Promise.all([
 				qc.cancelQueries({ queryKey: [...tweetKeys.all, "comments"] }),
-				qc.cancelQueries({ queryKey: tweetKeys.detail(tweetId) }),
+				qc.cancelQueries({ queryKey: tweetKeys.detail(tweetId), exact: true }),
 				...timelinePrefixes.map((queryKey) => qc.cancelQueries({ queryKey })),
 			]);
 
@@ -236,7 +244,7 @@ export const useDeleteTweetComment = (tweetId: string) => {
 		onSuccess: () => {
 			// 重取详情拿权威 comment_count（顶层评论删除级联回复，-1 是低估）
 			void qc.invalidateQueries({ queryKey: tweetKeys.timelineSorted("hot") });
-			return qc.invalidateQueries({ queryKey: tweetKeys.detail(tweetId) });
+			return qc.invalidateQueries({ queryKey: tweetKeys.detail(tweetId), exact: true });
 		},
 	});
 };

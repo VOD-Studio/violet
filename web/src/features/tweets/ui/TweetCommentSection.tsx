@@ -12,7 +12,9 @@
 import type { CommentSort } from "@entities/comment/model/types";
 import { useMe } from "@features/auth/api/queries";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
+import { avatarUrl } from "@shared/lib/image-url";
 import { CommentList, CommentSection as CommentSectionShell } from "@shared/ui/comment-section";
+import { Avatar, Button, Card } from "@violet/ui";
 import { useMemo, useState } from "react";
 import { useDeleteTweetComment } from "../api/mutations";
 import { useTweetComments } from "../api/queries";
@@ -25,22 +27,25 @@ export interface TweetCommentSectionProps {
 	tweetId: string;
 	/** 推文作者 id（作者徽章判定：comment.author.id === tweetAuthorId） */
 	tweetAuthorId?: string;
+	/** 整条推文的评论总数，包含回复；分页总数只计算顶层。 */
+	commentCount: number;
 }
 
-export function TweetCommentSection({ tweetId, tweetAuthorId }: TweetCommentSectionProps) {
+export function TweetCommentSection({
+	tweetId,
+	tweetAuthorId,
+	commentCount,
+}: TweetCommentSectionProps) {
 	const [sort, setSort] = useState<CommentSort>("latest");
 	const me = useMe();
 	const isLoggedIn = !!me.data;
 	const canDeleteAny = useHasPermission("tweet:delete-any");
 	const deleteComment = useDeleteTweetComment(tweetId);
 
-	const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useTweetComments(
-		tweetId,
-		sort,
-	);
+	const { data, isLoading, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
+		useTweetComments(tweetId, sort);
 
 	const comments = useMemo(() => data?.pages.flatMap((page) => page.data) ?? [], [data]);
-	const total = data?.pages[0]?.pagination?.total ?? 0;
 
 	const config = useMemo(
 		() =>
@@ -58,28 +63,54 @@ export function TweetCommentSection({ tweetId, tweetAuthorId }: TweetCommentSect
 	);
 
 	return (
-		<TweetCommentReactionProvider
-			tweetId={tweetId}
-			commentIds={comments.map((comment) => comment.id)}
-		>
-			<CommentSectionShell
-				title="评论"
-				count={total}
-				sort={sort}
-				onSortChange={setSort}
-				form={<TweetCommentForm tweetId={tweetId} isLoggedIn={isLoggedIn} />}
-				isLoggedIn={isLoggedIn}
+		<div className="flex min-w-0 flex-col gap-8">
+			<Card id="comments" className="scroll-mt-24 lg:scroll-mt-1">
+				<div className="flex items-start gap-3">
+					{me.data && (
+						<Avatar
+							name={me.data.username}
+							src={avatarUrl(me.data.avatar_url, me.data.username)}
+							alt=""
+							size={40}
+						/>
+					)}
+					<div className="min-w-0 flex-1">
+						<TweetCommentForm tweetId={tweetId} isLoggedIn={isLoggedIn} />
+					</div>
+				</div>
+			</Card>
+			<TweetCommentReactionProvider
+				tweetId={tweetId}
+				commentIds={comments.map((comment) => comment.id)}
 			>
-				<CommentList
-					comments={comments}
-					config={config}
+				<CommentSectionShell
+					title="评论"
+					count={commentCount}
+					sort={sort}
+					onSortChange={setSort}
+					form={null}
 					isLoggedIn={isLoggedIn}
-					isLoading={isLoading}
-					onLoadMore={hasNextPage ? fetchNextPage : undefined}
-					isLoadingMore={isFetchingNextPage}
-				/>
-			</CommentSectionShell>
-		</TweetCommentReactionProvider>
+				>
+					{isError && !data ? (
+						<Card className="items-start">
+							<p role="status">评论暂时加载失败</p>
+							<Button variant="outline" onClick={() => void refetch()}>
+								重试加载评论
+							</Button>
+						</Card>
+					) : (
+						<CommentList
+							comments={comments}
+							config={config}
+							isLoggedIn={isLoggedIn}
+							isLoading={isLoading}
+							onLoadMore={hasNextPage ? fetchNextPage : undefined}
+							isLoadingMore={isFetchingNextPage}
+						/>
+					)}
+				</CommentSectionShell>
+			</TweetCommentReactionProvider>
+		</div>
 	);
 }
 

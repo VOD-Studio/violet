@@ -62,7 +62,9 @@ it("真实评论标题只显示一次数量，最热按钮切换真实请求和�
 		{ comment_id: "new", reactions: [] },
 		{ comment_id: "hot", reactions: [] },
 	]);
-	const routeTree = createRootRoute({ component: () => <TweetCommentSection tweetId="t1" /> });
+	const routeTree = createRootRoute({
+		component: () => <TweetCommentSection tweetId="t1" commentCount={4} />,
+	});
 	const router = createRouter({
 		routeTree,
 		history: createMemoryHistory({ initialEntries: ["/"] }),
@@ -74,7 +76,7 @@ it("真实评论标题只显示一次数量，最热按钮切换真实请求和�
 	);
 	await screen.findByText("最新评论");
 	expect(screen.getAllByText("评论", { exact: true })).toHaveLength(1);
-	expect(screen.getAllByText("2", { exact: true })).toHaveLength(1);
+	expect(screen.getAllByText("4", { exact: true })).toHaveLength(1);
 	const before = screen.getAllByRole("article");
 	expect(before[0].textContent).toContain("最新评论");
 	fireEvent.click(screen.getByRole("radio", { name: "最热" }));

@@ -13,8 +13,8 @@
 import type { TweetComment } from "@entities/tweet/model/types";
 import { RichCommentInput } from "@features/comments/ui/RichCommentInput";
 import { ApiError } from "@shared/api/error";
+import { useLoginDialogStore } from "@shared/api/login-dialog-store";
 import type { PictureInput } from "@shared/ui/rich-text-input/RichTextInput";
-import { useNavigate } from "@tanstack/react-router";
 import { Button, iconProps } from "@violet/ui";
 import { LogIn, Send } from "lucide-react";
 import { useRef, useState } from "react";
@@ -42,7 +42,6 @@ export function TweetCommentForm({
 	compact = false,
 	onSuccess,
 }: TweetCommentFormProps) {
-	const navigate = useNavigate();
 	const createComment = useCreateTweetComment(tweetId);
 	const [body, setBody] = useState("");
 	const [pictures, setPictures] = useState<PictureInput[]>([]);
@@ -58,14 +57,14 @@ export function TweetCommentForm({
 	if (!isLoggedIn) {
 		if (compact) return null;
 		return (
-			<button
-				type="button"
-				onClick={() => navigate({ to: "/login" })}
-				className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-edge-hairline py-3 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+			<Button
+				variant="outline"
+				className="w-full"
+				onClick={() => useLoginDialogStore.getState().open()}
+				leftIcon={<LogIn {...iconProps(16)} />}
 			>
-				<LogIn className="size-4" />
 				登录后发表评论
-			</button>
+			</Button>
 		);
 	}
 

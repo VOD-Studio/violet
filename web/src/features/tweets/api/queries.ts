@@ -72,17 +72,10 @@ export const useTopicTimeline = (tag: string, limit: number = TIMELINE_PAGE_SIZE
 		getNextPageParam: (lastPage) => lastPage.pagination?.next_cursor || undefined,
 		enabled: !!tag,
 	});
-/**
- * fetchTweetDetail - 调后端 GET /tweets/{id} 拉单条推文详情（公开）
- */
-export const fetchTweetDetail = (id: string): Promise<Tweet> => apiGet<Tweet>(`/tweets/${id}`);
+export const fetchTweetDetail = (id: string, cookie?: string): Promise<Tweet> =>
+	apiGet<Tweet>(`/tweets/${id}`, cookie ? { headers: { Cookie: cookie } } : undefined);
 
-/**
- * useTweetDetail - 单条推文详情 hook
- *
- * 匿名可访问。详情页通过 route loader ensureQueryData 预取首屏，
- * 此 hook 跟踪同一 queryKey 保证导航后即时命中缓存。
- */
+/** 与详情路由预取共用缓存，避免水合时重复请求。 */
 export const useTweetDetail = (id: string) =>
 	useQuery({
 		queryKey: tweetKeys.detail(id),
