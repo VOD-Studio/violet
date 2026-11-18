@@ -1,6 +1,7 @@
 import type { Tweet } from "@entities/tweet/model/types";
 import { Link } from "@tanstack/react-router";
-import { Heart, MessageCircle, Repeat2, Share2 } from "lucide-react";
+import { Button } from "@violet/ui";
+import { ChartNoAxesColumn, Heart, MessageCircle, Repeat2, Share2 } from "lucide-react";
 import type { MouseEventHandler } from "react";
 
 /** 仅提供本站互动，不包含 X 原站操作。 */
@@ -29,55 +30,61 @@ export function TweetCardFooter({
 	onShare,
 }: TweetCardFooterProps) {
 	return (
-		<footer
-			className={`grid gap-1 pt-2 text-xs text-muted-foreground ${isDetail ? "grid-cols-3" : "grid-cols-4"}`}
-		>
+		<footer className="flex flex-wrap items-center justify-between gap-1 pt-2 text-sm text-muted-foreground">
 			{!isDetail && (
-				<Link
-					to="/tweets/$id"
-					params={{ id: tweet.id }}
-					aria-label={`查看评论（${tweet.comment_count}）`}
-					onClick={(event) => event.stopPropagation()}
-					className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg text-muted-foreground! no-underline! transition-colors hover:bg-muted hover:text-primary!"
-				>
-					<MessageCircle className="size-4 shrink-0" />
-					<span>评论{tweet.comment_count > 0 ? ` ${tweet.comment_count}` : ""}</span>
-				</Link>
+				<Button asChild variant="ghost" size="sm">
+					<Link
+						to="/tweets/$id"
+						params={{ id: tweet.id }}
+						hash="comments"
+						aria-label={`查看评论（${tweet.comment_count}）`}
+						onClick={(event) => event.stopPropagation()}
+					>
+						<MessageCircle />
+						{tweet.comment_count}
+					</Link>
+				</Button>
 			)}
-			<button
+			<Button
 				type="button"
+				variant="ghost"
+				size="sm"
 				data-testid="quote-button"
 				aria-label="引用推文"
 				onClick={onQuote}
-				className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg transition-colors hover:bg-muted hover:text-primary"
 			>
-				<Repeat2 className="size-4 shrink-0" />
-				<span>引用{tweet.quote_count > 0 ? ` ${tweet.quote_count}` : ""}</span>
-			</button>
-			<button
+				<Repeat2 />
+				{tweet.quote_count}
+			</Button>
+			<Button
 				type="button"
+				variant="ghost"
+				size="sm"
 				data-testid="like-button"
 				aria-label={tweet.is_liked ? "取消点赞" : "点赞推文"}
 				aria-pressed={tweet.is_liked}
 				onClick={onLike}
-				disabled={isLikePending}
-				className={`inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg transition-colors hover:bg-muted ${
-					tweet.is_liked ? "font-medium text-primary" : "hover:text-primary"
-				}`}
+				loading={isLikePending}
 			>
-				<Heart className={`size-4 shrink-0 ${tweet.is_liked ? "fill-current" : ""}`} />
-				<span>点赞{tweet.like_count > 0 ? ` ${tweet.like_count}` : ""}</span>
-			</button>
-			<button
+				<Heart className={tweet.is_liked ? "fill-current" : undefined} />
+				{tweet.like_count}
+			</Button>
+			<span className="inline-flex items-center gap-1.5 tabular-nums">
+				<ChartNoAxesColumn aria-hidden className="size-4" />
+				<span className="sr-only">浏览 </span>
+				{tweet.view_count}
+			</span>
+			<Button
 				type="button"
+				variant="ghost"
+				size="sm"
+				iconOnly
 				data-testid="share-button"
-				aria-label="分享到聊天"
+				aria-label="分享推文"
 				onClick={onShare}
-				className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg transition-colors hover:bg-muted hover:text-primary"
 			>
-				<Share2 className="size-4 shrink-0" />
-				<span>聊天</span>
-			</button>
+				<Share2 />
+			</Button>
 		</footer>
 	);
 }

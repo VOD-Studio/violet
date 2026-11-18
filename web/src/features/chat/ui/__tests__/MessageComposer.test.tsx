@@ -1,6 +1,4 @@
-import { useShareTweetStore } from "@entities/tweet/model/share-store";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { createPortal } from "react-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BotCommandsResponse, ChatMember, ChatMessage, ChatUser } from "../../model/types";
 import { MessageComposer } from "../MessageComposer";
@@ -12,7 +10,6 @@ const sendMocks = vi.hoisted(() => ({
 	upload: vi.fn(),
 	refetch: vi.fn(),
 }));
-const previewMock = vi.hoisted(() => ({ portal: false }));
 
 vi.mock("../../api/queries", () => ({
 	useSendChatMessage: () => ({ mutateAsync: sendMocks.mutateAsync, isPending: false }),
@@ -180,8 +177,6 @@ afterEach(() => {
 	commandQueryState.isPending = false;
 	commandQueryState.isError = false;
 	messagePages = undefined;
-	previewMock.portal = false;
-	useShareTweetStore.setState({ tweet: null, pending: null });
 });
 
 describe("MessageComposer", () => {
@@ -203,7 +198,6 @@ describe("MessageComposer", () => {
 				conversationID="c_1"
 				currentUserID={selfID}
 				onCancelReply={() => {}}
-				pendingShare={null}
 				replyTarget={null}
 			/>,
 		);
@@ -229,7 +223,6 @@ describe("MessageComposer", () => {
 				conversationKind="room"
 				currentUserID={selfID}
 				onCancelReply={() => {}}
-				pendingShare={null}
 				replyTarget={null}
 			/>,
 		);
@@ -279,7 +272,6 @@ describe("MessageComposer", () => {
 				conversationKind="room"
 				currentUserID={selfID}
 				onCancelReply={() => {}}
-				pendingShare={null}
 				replyTarget={null}
 			/>,
 		);
@@ -345,7 +337,6 @@ describe("MessageComposer", () => {
 				conversationKind="room"
 				currentUserID={selfID}
 				onCancelReply={() => {}}
-				pendingShare={null}
 				replyTarget={null}
 			/>,
 		);
@@ -410,7 +401,6 @@ describe("MessageComposer", () => {
 				conversationKind="room"
 				currentUserID={selfID}
 				onCancelReply={cancelReply}
-				pendingShare={null}
 				replyTarget={textMessage("原消息")}
 			/>,
 		);
@@ -438,7 +428,6 @@ describe("MessageComposer", () => {
 				conversationID="c_1"
 				currentUserID={selfID}
 				onCancelReply={() => {}}
-				pendingShare={null}
 				replyTarget={textMessage("你好[1:00000000-0000-0000-0000-000000000001]世界")}
 			/>,
 		);
@@ -453,7 +442,6 @@ describe("MessageComposer", () => {
 				conversationID="c_1"
 				currentUserID={selfID}
 				onCancelReply={() => {}}
-				pendingShare={null}
 				replyTarget={textMessage(`@(bob:${peerID}) 你好`)}
 			/>,
 		);
@@ -470,7 +458,6 @@ describe("MessageComposer", () => {
 					conversationID="c_1"
 					currentUserID={selfID}
 					onCancelReply={() => {}}
-					pendingShare={null}
 					replyTarget={null}
 				/>
 			</>,
@@ -484,7 +471,6 @@ describe("MessageComposer", () => {
 					conversationID="c_1"
 					currentUserID={selfID}
 					onCancelReply={() => {}}
-					pendingShare={null}
 					replyTarget={textMessage("原消息")}
 				/>
 			</>,
@@ -499,7 +485,6 @@ describe("MessageComposer", () => {
 				conversationID="c_1"
 				currentUserID={selfID}
 				onCancelReply={() => {}}
-				pendingShare={null}
 				replyTarget={null}
 			/>,
 		);
@@ -516,7 +501,6 @@ describe("MessageComposer", () => {
 				conversationID="c_1"
 				currentUserID={selfID}
 				onCancelReply={() => {}}
-				pendingShare={null}
 				replyTarget={null}
 			/>,
 		);
@@ -538,7 +522,6 @@ describe("MessageComposer", () => {
 				conversationID="c_1"
 				currentUserID={selfID}
 				onCancelReply={onCancelReply}
-				pendingShare={null}
 				replyTarget={textMessage("原消息")}
 			/>,
 		);
@@ -561,7 +544,6 @@ describe("MessageComposer 输入操作", () => {
 				conversationTitle="大厅"
 				currentUserID={selfID}
 				onCancelReply={() => {}}
-				pendingShare={null}
 				replyTarget={textMessage("被引用的内容")}
 			/>,
 		);
@@ -590,7 +572,6 @@ describe("MessageComposer 输入操作", () => {
 				conversationID="c_1"
 				currentUserID={selfID}
 				onCancelReply={() => {}}
-				pendingShare={null}
 				replyTarget={null}
 			/>,
 		);
@@ -613,7 +594,6 @@ describe("MessageComposer 输入操作", () => {
 				conversationID="c_1"
 				currentUserID={selfID}
 				onCancelReply={cancelReply}
-				pendingShare={null}
 				replyTarget={textMessage("原消息")}
 			/>,
 		);
@@ -635,7 +615,6 @@ describe("MessageComposer 输入操作", () => {
 			conversationID: "c_1",
 			currentUserID: selfID,
 			onCancelReply: vi.fn(),
-			pendingShare: null,
 			replyTarget: null,
 		};
 		const { rerender } = render(<MessageComposer {...props} />);
@@ -656,7 +635,6 @@ describe("MessageComposer 输入操作", () => {
 				conversationID="c_1"
 				currentUserID={selfID}
 				onCancelReply={() => {}}
-				pendingShare={null}
 				replyTarget={null}
 			/>,
 		);
@@ -683,7 +661,6 @@ describe("MessageComposer 全体提及", () => {
 				conversationKind="room"
 				currentUserID={selfID}
 				onCancelReply={() => {}}
-				pendingShare={null}
 				replyTarget={null}
 			/>,
 		);
@@ -706,7 +683,6 @@ describe("MessageComposer 全体提及", () => {
 				conversationKind="direct"
 				currentUserID={selfID}
 				onCancelReply={() => {}}
-				pendingShare={null}
 				replyTarget={null}
 			/>,
 		);
@@ -730,7 +706,6 @@ describe("MessageComposer 提及候选", () => {
 				conversationKind="room"
 				currentUserID={selfID}
 				onCancelReply={() => {}}
-				pendingShare={null}
 				replyTarget={null}
 			/>,
 		);
@@ -754,7 +729,6 @@ describe("MessageComposer 提及候选", () => {
 				conversationKind="room"
 				currentUserID={selfID}
 				onCancelReply={() => {}}
-				pendingShare={null}
 				replyTarget={null}
 			/>,
 		);
@@ -771,7 +745,6 @@ describe("MessageComposer 提及候选", () => {
 				conversationKind="room"
 				currentUserID={selfID}
 				onCancelReply={() => {}}
-				pendingShare={null}
 				replyTarget={null}
 			/>,
 		);
@@ -795,7 +768,6 @@ describe("MessageComposer 提及候选", () => {
 				conversationKind="room"
 				currentUserID={selfID}
 				onCancelReply={() => {}}
-				pendingShare={null}
 				replyTarget={null}
 			/>,
 		);
@@ -820,7 +792,6 @@ describe("MessageComposer 提及候选", () => {
 				conversationKind="room"
 				currentUserID={selfID}
 				onCancelReply={() => {}}
-				pendingShare={null}
 				replyTarget={null}
 			/>,
 		);
@@ -870,7 +841,6 @@ describe("乐观提交", () => {
 				conversationID="c_1"
 				currentUserID={selfID}
 				onCancelReply={() => {}}
-				pendingShare={null}
 				replyTarget={null}
 			/>,
 		);
@@ -897,7 +867,6 @@ describe("乐观提交", () => {
 				conversationID="c_1"
 				currentUserID={selfID}
 				onCancelReply={cancel}
-				pendingShare={null}
 				replyTarget={target}
 			/>,
 		);
@@ -909,62 +878,6 @@ describe("乐观提交", () => {
 		});
 		expect(cancel).toHaveBeenCalledOnce();
 	});
-
-	it("推文分享立即提交本站 ID 与配文", () => {
-		render(
-			<MessageComposer
-				conversationID="c_1"
-				currentUserID={selfID}
-				onCancelReply={() => {}}
-				pendingShare={{
-					conversationId: "c_1",
-					tweet: {
-						id: "tweet",
-						authorUsername: "bob",
-						content: "推文原文",
-						imageUrl: "/tweet.png",
-					},
-				}}
-				replyTarget={null}
-			/>,
-		);
-		typeInto(screen.getByRole("textbox"), "分享配文");
-		fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
-		expect(screen.getByRole("textbox").textContent).toBe("");
-		expect(sendMocks.mutateAsync.mock.calls[0][0]).toMatchObject({
-			input: { type: "tweet_share", shared_tweet_id: "tweet", content: "分享配文" },
-			draft: {
-				shared_tweet: {
-					id: "tweet",
-					content: "推文原文",
-					images: [{ url: "/tweet.png", width: null, height: null }],
-					author: { username: "bob" },
-				},
-			},
-		});
-	});
-
-	it("图片灯箱的 Escape 不取消分享，输入框的 Escape 仍可取消", () => {
-		previewMock.portal = true;
-		const share = {
-			conversationId: "c_1",
-			tweet: { id: "tweet", authorUsername: "bob", content: "" },
-		};
-		useShareTweetStore.setState({ pending: share });
-		render(
-			<MessageComposer
-				conversationID="c_1"
-				currentUserID={selfID}
-				onCancelReply={() => {}}
-				pendingShare={share}
-				replyTarget={null}
-			/>,
-		);
-		fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
-		expect(useShareTweetStore.getState().pending).toBe(share);
-		fireEvent.keyDown(screen.getByRole("textbox"), { key: "Escape" });
-		expect(useShareTweetStore.getState().pending).toBeNull();
-	});
 });
 
 it("图片上传未完成也可发送并移交原始文件", async () => {
@@ -974,7 +887,6 @@ it("图片上传未完成也可发送并移交原始文件", async () => {
 			conversationID="c_1"
 			currentUserID={selfID}
 			onCancelReply={() => {}}
-			pendingShare={null}
 			replyTarget={null}
 		/>,
 	);
@@ -992,20 +904,6 @@ it("图片上传未完成也可发送并移交原始文件", async () => {
 	expect(request.images[0].task.file).toBe(file);
 	expect(screen.getByRole("textbox").textContent).toBe("");
 });
-vi.mock("../TweetSharingPreview", () => ({
-	TweetSharingPreview: () => (
-		<>
-			<div>当前推文预览</div>
-			{previewMock.portal &&
-				createPortal(
-					<div role="dialog" tabIndex={-1}>
-						图片灯箱
-					</div>,
-					document.body,
-				)}
-		</>
-	),
-}));
 
 it("角色命令草稿中的提及按钮优先打开成员候选", async () => {
 	render(
@@ -1013,7 +911,6 @@ it("角色命令草稿中的提及按钮优先打开成员候选", async () => {
 			conversationID="c_1"
 			currentUserID={selfID}
 			onCancelReply={() => {}}
-			pendingShare={null}
 			replyTarget={null}
 		/>,
 	);
@@ -1043,7 +940,6 @@ it("提及与命令候选都在输入壳外呈现，并保留正文、焦点和�
 			conversationID="c_1"
 			currentUserID={selfID}
 			onCancelReply={() => {}}
-			pendingShare={null}
 			replyTarget={null}
 		/>,
 	);

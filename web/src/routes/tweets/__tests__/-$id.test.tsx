@@ -41,9 +41,9 @@ const mockTweet: Tweet = {
 	content: "测试推文内容",
 	images: [],
 	like_count: 0,
+	view_count: 0,
 	comment_count: 2,
 	quote_count: 0,
-	view_count: 0,
 	is_liked: false,
 	created_at: "2026-08-20T00:00:00Z",
 	link_cards: [],
@@ -118,6 +118,7 @@ describe("/tweets/$id TweetDetailPage layout", () => {
 			isLoading: false,
 			error: null,
 		};
+		vi.spyOn(Route, "useSearch").mockReturnValue({});
 	});
 
 	it("renders page content wrapped inside PageShell with vertical spacing", () => {

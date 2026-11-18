@@ -2,21 +2,16 @@
 import type { Tweet } from "@entities/tweet/model/types";
 import { ApiError } from "@shared/api/error";
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
+import { TweetSharingPreview } from "../TweetSharingPreview";
 
-const query = vi.hoisted(() => ({
-	data: null as Tweet | null,
+const query = {
+	data: undefined as Tweet | undefined,
 	isPending: false,
 	isFetching: false,
 	isError: false,
 	error: null as Error | null,
-}));
-
-vi.mock("@entities/tweet/api/queries", () => ({
-	useSharedTweet: () => query,
-}));
-
-import { TweetSharingPreview } from "../TweetSharingPreview";
+};
 
 function makeTweet(overrides: Partial<Tweet> = {}): Tweet {
 	return {
@@ -38,14 +33,14 @@ function makeTweet(overrides: Partial<Tweet> = {}): Tweet {
 describe("TweetSharingPreview", () => {
 	afterEach(() => {
 		cleanup();
-		query.data = null;
+		query.data = undefined;
 		query.isError = false;
 		query.error = null;
 	});
 
 	it("预览只展示内容，不生成导航链接", () => {
 		query.data = makeTweet();
-		render(<TweetSharingPreview id="t1" />);
+		render(<TweetSharingPreview query={query} />);
 		expect(screen.getByText("author")).toBeTruthy();
 		expect(screen.getByText("分享的正文")).toBeTruthy();
 		expect(screen.queryByRole("link")).toBeNull();
@@ -58,7 +53,7 @@ describe("TweetSharingPreview", () => {
 				{ url: "/uploads/b.png", width: null, height: null },
 			],
 		});
-		const { container } = render(<TweetSharingPreview id="t1" />);
+		const { container } = render(<TweetSharingPreview query={query} />);
 		expect(container.querySelectorAll(".v-quote-card__image")).toHaveLength(1);
 	});
 
@@ -74,14 +69,14 @@ describe("TweetSharingPreview", () => {
 				link_cards: [],
 			},
 		});
-		render(<TweetSharingPreview id="t1" />);
+		render(<TweetSharingPreview query={query} />);
 		expect(screen.getByText("引用了一条推文")).toBeTruthy();
 		expect(screen.queryByText("更早的正文")).toBeNull();
 	});
 
 	it("下一层目标已删除仍保留当前卡作者、时间与引用关系", () => {
 		query.data = makeTweet({ quote_of: "q1" });
-		const { container } = render(<TweetSharingPreview id="t1" />);
+		const { container } = render(<TweetSharingPreview query={query} />);
 		expect(screen.getByText("author")).toBeTruthy();
 		expect(screen.getByText("分享的正文")).toBeTruthy();
 		expect(container.querySelector("time")).not.toBeNull();
@@ -93,7 +88,7 @@ describe("TweetSharingPreview", () => {
 		query.data = makeTweet();
 		query.isError = true;
 		query.error = new ApiError({ error: "NOT_FOUND", message: "已删除", status: 404 });
-		const { container } = render(<TweetSharingPreview id="t1" />);
+		const { container } = render(<TweetSharingPreview query={query} />);
 		expect(screen.queryByText("author")).toBeNull();
 		expect(screen.queryByText("分享的正文")).toBeNull();
 		expect(screen.queryByRole("link")).toBeNull();
@@ -104,7 +99,7 @@ describe("TweetSharingPreview", () => {
 
 	it("读取失败给出重试提示", () => {
 		query.isError = true;
-		render(<TweetSharingPreview id="t1" />);
+		render(<TweetSharingPreview query={query} />);
 		expect(screen.getByRole("alert").textContent).toContain("推文暂不可用");
 	});
 });

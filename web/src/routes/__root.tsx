@@ -1,4 +1,4 @@
-import { useShareTweetStore } from "@entities/tweet/model/share-store";
+import { useShareTweetStore } from "@entities/tweet/model/share-dialog-store";
 import { SiteMusicPlayer } from "@features/music-player/ui/SiteMusicPlayer";
 import { useVisualViewport } from "@shared/hooks/use-visual-viewport";
 import { getClientAppearance } from "@shared/lib/appearance-cookie";
@@ -217,7 +217,7 @@ const NO_PROPS = {};
 
 /** 分享推文的会话选择器连同聊天查询层，首次发起分享才下载。 */
 function ShareTweetDialogSlot() {
-	const sharing = useShareTweetStore((state) => state.tweet !== null);
+	const sharing = useShareTweetStore((state) => state.tweetId !== null);
 	const [hasShared, setHasShared] = useState(sharing);
 	useEffect(() => {
 		if (sharing) setHasShared(true);

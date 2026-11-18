@@ -108,6 +108,7 @@ function previewFixture(): ExternalTweetPreview {
 }
 
 async function openExternalPreview() {
+	fireEvent.click(screen.getByRole("button", { name: "添加链接" }));
 	fireEvent.click(screen.getByRole("button", { name: "转发 X 推文" }));
 	fireEvent.change(screen.getByRole("textbox", { name: "X 推文链接" }), {
 		target: { value: "https://x.com/jack/status/20" },
@@ -391,6 +392,7 @@ describe("TweetComposer", () => {
 			(screen.getByRole("textbox", { name: "推文正文" }) as HTMLTextAreaElement).value,
 		).toBe("我的草稿");
 		expect(screen.getByRole("button", { name: "移除图片" })).toBeTruthy();
+		fireEvent.click(screen.getByRole("button", { name: "添加链接" }));
 		fireEvent.click(screen.getByRole("button", { name: "转发 X 推文" }));
 		expect((screen.getByRole("button", { name: "发布" }) as HTMLButtonElement).disabled).toBe(
 			true,
@@ -417,11 +419,39 @@ describe("TweetComposer", () => {
 		expect(mutateMock).toHaveBeenCalledTimes(1);
 		act(() => mutateMock.mock.calls[0][1].onError(ApiError.network()));
 		mutateMock.mockClear();
+		fireEvent.click(screen.getByRole("button", { name: "添加链接" }));
 		fireEvent.click(screen.getByRole("button", { name: "转发 X 推文" }));
 		const input = screen.getByRole("textbox", { name: "X 推文链接" });
 		fireEvent.change(input, { target: { value: "https://x.com/jack/status/20" } });
 		await act(async () => fireEvent.keyDown(input, { key: "Enter", ctrlKey: true }));
 		expect(previewPostMock).toHaveBeenCalledTimes(1);
+		expect(mutateMock).not.toHaveBeenCalled();
+	});
+
+	it("用链接和话题入口替换选中的正文，非法话题不会写入草稿", async () => {
+		render(<TweetComposer />);
+		const textarea = screen.getByRole<HTMLTextAreaElement>("textbox", { name: "推文正文" });
+		fireEvent.change(textarea, { target: { value: "开头占位结尾" } });
+		textarea.setSelectionRange(2, 4);
+
+		fireEvent.click(screen.getByRole("button", { name: "添加话题" }));
+		const topic = screen.getByRole("textbox", { name: "话题名" });
+		fireEvent.change(topic, { target: { value: "坏#话题" } });
+		fireEvent.keyDown(topic, { key: "Enter" });
+		expect(textarea.value).toBe("开头占位结尾");
+		expect(screen.getByRole("alert").textContent).toContain("不含 #");
+
+		fireEvent.change(topic, { target: { value: "街角摄影" } });
+		fireEvent.keyDown(topic, { key: "Enter" });
+		expect(textarea.value).toBe("开头 #街角摄影# 结尾");
+		await waitFor(() => expect(document.activeElement).toBe(textarea));
+		textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+		fireEvent.click(screen.getByRole("button", { name: "添加链接" }));
+		const url = screen.getByRole("textbox", { name: "网页链接" });
+		fireEvent.change(url, { target: { value: "https://example.org/gallery" } });
+		fireEvent.keyDown(url, { key: "Enter" });
+		expect(textarea.value).toBe("开头 #街角摄影# 结尾 https://example.org/gallery");
 		expect(mutateMock).not.toHaveBeenCalled();
 	});
 
@@ -450,10 +480,10 @@ describe("TweetComposer", () => {
 			],
 			quote_of: "deleted-nested",
 			like_count: 0,
+			view_count: 0,
 			is_liked: false,
 			comment_count: 0,
 			quote_count: 0,
-			view_count: 0,
 			created_at: "2026-11-01T00:00:00Z",
 			link_cards: [],
 		};

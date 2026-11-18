@@ -1,5 +1,7 @@
 import { tweetKeys } from "@features/tweets/api/keys";
 import { fetchTweetDetail, useTweetDetail } from "@features/tweets/api/queries";
+import { useRecordTweetView } from "@features/tweets/api/useRecordTweetView";
+import { MAX_TWEET_IMAGES } from "@features/tweets/model/types";
 import TweetCard from "@features/tweets/ui/TweetCard";
 import TweetCommentSection from "@features/tweets/ui/TweetCommentSection";
 import { TweetDetailMedia } from "@features/tweets/ui/TweetDetailMedia";
@@ -18,12 +20,14 @@ import { cn } from "cn";
  */
 function TweetDetailPage() {
 	const { id } = Route.useParams();
+	const { image } = Route.useSearch();
 	const initial = Route.useLoaderData();
 	const navigate = useNavigate();
 	const { data: tweet, isLoading, error } = useTweetDetail(id);
 
 	// loader 已尝试预取：initial 非空直接用，loading 态仅初次未命中时出现
 	const current = tweet ?? initial;
+	useRecordTweetView(id, !!current && !error);
 
 	if (isLoading && !current) {
 		return (
@@ -81,7 +85,11 @@ function TweetDetailPage() {
 								hasImages && !hasSources && "lg:sticky lg:top-24",
 							)}
 						>
-							<TweetDetailMedia images={current.images} />
+							<TweetDetailMedia
+								key={`${id}:${image ?? 1}`}
+								images={current.images}
+								initialIndex={(image ?? 1) - 1}
+							/>
 							<TweetDetailSources tweet={current} />
 						</div>
 					)}
@@ -92,10 +100,12 @@ function TweetDetailPage() {
 							detachMedia={split}
 							onDeleted={() => navigate({ to: "/tweets" })}
 						/>
-						<TweetCommentSection
-							tweetId={current.id}
-							tweetAuthorId={current.author.id}
-						/>
+						<div id="comments" className="scroll-mt-24">
+							<TweetCommentSection
+								tweetId={current.id}
+								tweetAuthorId={current.author.id}
+							/>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -104,6 +114,10 @@ function TweetDetailPage() {
 }
 
 export const Route = createFileRoute("/tweets/$id")({
+	validateSearch: ({ image }: Record<string, unknown>): { image?: number } => {
+		if (typeof image !== "number" || !Number.isInteger(image)) return {};
+		return image > 1 && image <= MAX_TWEET_IMAGES ? { image } : {};
+	},
 	// 公开详情：loader 预取，404 时 ensureQueryData 抛错由组件兜底渲染
 	loader: async ({ context, params }) => {
 		try {

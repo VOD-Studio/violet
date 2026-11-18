@@ -1,5 +1,4 @@
 import { toEmojiToken } from "@entities/emoji/model/token";
-import { type PendingChatShare, useShareTweetStore } from "@entities/tweet/model/share-store";
 import { useMyCustomEmojis } from "@features/customemoji/api/queries";
 import type { ImageUploadReference } from "@shared/lib/image-upload-task";
 import type { RichTextInputHandle } from "@shared/ui/rich-text-input/RichTextInput";
@@ -25,7 +24,7 @@ import { type UseComposerCommandsReturn, useComposerCommands } from "./use-compo
 import { useMentionCandidates } from "./use-mention-candidates";
 import { useChatTypingBroadcaster } from "./useChatTyping";
 
-/** 消息草稿、回复和分享的会话范围与提交回调。 */
+/** 消息草稿、回复的会话范围与提交回调。 */
 export interface UseMessageComposerOptions {
 	/** 接收会话内点击用户名触发的提及。 */
 	inputRef?: Ref<RichTextInputHandle>;
@@ -34,7 +33,6 @@ export interface UseMessageComposerOptions {
 	conversationKind?: ConversationKind;
 	currentUserID: string;
 	currentUser?: ChatUser;
-	pendingShare: PendingChatShare | null;
 	replyTarget: ChatMessage | null;
 	onCancelReply: () => void;
 	onMessageSent?: () => void;
@@ -54,7 +52,6 @@ export interface UseMessageComposerReturn {
 	onImagesChange: (images: ImageUploadReference[]) => void;
 	onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void;
 	sendMessage: () => void;
-	clearPendingShare: () => void;
 }
 
 /** 组合草稿、输入状态和命令寻址，提交时移交上传任务及乐观快照。 */
@@ -64,7 +61,6 @@ export function useMessageComposer({
 	conversationKind = "direct",
 	currentUserID,
 	currentUser,
-	pendingShare,
 	replyTarget,
 	onCancelReply,
 	onMessageSent,
@@ -91,7 +87,6 @@ export function useMessageComposer({
 		conversationKind,
 		inputRef: richInputRef,
 	});
-	const clearPendingShare = useShareTweetStore((state) => state.clearPending);
 	const { notifyTyping, notifyStopped } = useChatTypingBroadcaster(conversationID);
 	const mentionCandidates = useMentionCandidates(conversationID, currentUserID, conversationKind);
 	const send = useSendChatMessage();
@@ -110,10 +105,10 @@ export function useMessageComposer({
 		}
 	}, [replyTarget]);
 	useEffect(() => {
-		if (!content && !pendingShare) {
+		if (!content) {
 			submittedRef.current = false;
 		}
-	}, [content, pendingShare]);
+	}, [content]);
 
 	const sendMessage = () => {
 		if (submittedRef.current) {
@@ -124,30 +119,24 @@ export function useMessageComposer({
 		const text = (
 			attachments.length ? content.trim() : stripImagePlaceholders(content).trim()
 		).replaceAll("\u00a0", " ");
-		if (!pendingShare && !text && !attachments.length) {
+		if (!text && !attachments.length) {
 			return;
 		}
-		const addressedText = pendingShare ? text : commands.resolveTarget(text);
+		const addressedText = commands.resolveTarget(text);
 		if (addressedText === null) {
 			return;
 		}
-		const input: SendMessageInput = pendingShare
-			? {
-					type: "tweet_share",
-					content: addressedText,
-					shared_tweet_id: pendingShare.tweet.id,
-				}
-			: {
-					type: attachments.length ? "image" : "text",
-					content: addressedText,
-					...(replyTarget ? { reply_to_id: replyTarget.id } : {}),
-				};
+		const input: SendMessageInput = {
+			type: attachments.length ? "image" : "text",
+			content: addressedText,
+			...(replyTarget ? { reply_to_id: replyTarget.id } : {}),
+		};
 		submittedRef.current = true;
 		void send.mutateAsync({
 			id: conversationID,
 			input,
 			idempotencyKey: crypto.randomUUID(),
-			images: pendingShare ? [] : attachments,
+			images: attachments,
 			draft: {
 				custom_emote: Object.fromEntries(
 					[...(customEmojis?.owned ?? []), ...(customEmojis?.favorited ?? [])]
@@ -168,7 +157,7 @@ export function useMessageComposer({
 					avatar_url: "",
 				},
 				reply_to:
-					!pendingShare && replyTarget && replyTarget.type !== "system"
+					replyTarget && replyTarget.type !== "system"
 						? {
 								id: replyTarget.id,
 								sender: replyTarget.sender,
@@ -178,31 +167,12 @@ export function useMessageComposer({
 								is_deleted: replyTarget.is_deleted,
 							}
 						: undefined,
-				shared_tweet: pendingShare
-					? {
-							id: pendingShare.tweet.id,
-							content: pendingShare.tweet.content,
-							is_deleted: false,
-							author: {
-								id: "",
-								username: pendingShare.tweet.authorUsername,
-								display_name: pendingShare.tweet.authorUsername,
-								avatar_url: "",
-							},
-							images: pendingShare.tweet.imageUrl
-								? [{ url: pendingShare.tweet.imageUrl, width: null, height: null }]
-								: [],
-						}
-					: undefined,
 			},
 		});
 		setContent("");
 		commands.clear();
 		setImages([]);
 		setResetNonce((nonce) => nonce + 1);
-		if (pendingShare) {
-			clearPendingShare();
-		}
 		notifyStopped();
 		onCancelReply();
 		onMessageSent?.();
@@ -215,9 +185,6 @@ export function useMessageComposer({
 		if (commands.dismissActiveMenu()) {
 			event.preventDefault();
 			richInputRef.current?.focus();
-		} else if (pendingShare) {
-			event.preventDefault();
-			clearPendingShare();
 		} else if (replyTarget) {
 			event.preventDefault();
 			onCancelReply();
@@ -229,7 +196,7 @@ export function useMessageComposer({
 		content,
 		images,
 		resetNonce,
-		canSend: Boolean(pendingShare || content.trim() || images.length),
+		canSend: Boolean(content.trim() || images.length),
 		mentionCandidates,
 		commands,
 		onContentChange(value) {
@@ -239,6 +206,5 @@ export function useMessageComposer({
 		onImagesChange: setImages,
 		onKeyDown,
 		sendMessage,
-		clearPendingShare,
 	};
 }

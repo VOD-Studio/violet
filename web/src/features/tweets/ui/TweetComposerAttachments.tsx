@@ -5,7 +5,6 @@ import { TWEET_MESSAGES } from "@shared/lib/tweet-messages";
 import { Button, iconProps, QuoteCard } from "@violet/ui";
 import { CircleAlert, X } from "lucide-react";
 import type { TweetComposerImage } from "../hooks/useTweetComposerImages";
-import styles from "./TweetComposer.module.css";
 
 /** 发布草稿的附图与本站引用，不拥有上传或提交状态。 */
 export interface TweetComposerAttachmentsProps {
@@ -28,10 +27,7 @@ export function TweetComposerAttachments({
 			{images.length > 0 && (
 				<div className="flex flex-wrap gap-2" role="group" aria-label="已添加图片">
 					{images.map((image) => (
-						<div
-							key={image.id}
-							className="relative size-24 overflow-hidden rounded-lg border border-border"
-						>
+						<div key={image.id} className="relative size-24">
 							<img
 								src={
 									image.status === "done"
@@ -39,7 +35,7 @@ export function TweetComposerAttachments({
 										: image.preview
 								}
 								alt=""
-								className="size-full object-cover"
+								className="size-full rounded-lg border border-border object-cover"
 							/>
 							{image.status === "uploading" && (
 								<div
@@ -48,7 +44,7 @@ export function TweetComposerAttachments({
 									aria-valuenow={image.progress}
 									aria-valuemin={0}
 									aria-valuemax={100}
-									className="absolute inset-x-0 bottom-0 h-1 bg-secondary"
+									className="absolute inset-x-0 bottom-0 h-1 overflow-hidden rounded-b-lg bg-secondary"
 								>
 									<div
 										className="h-full bg-primary"
@@ -59,23 +55,23 @@ export function TweetComposerAttachments({
 							{image.status === "error" && (
 								<div
 									role="alert"
-									className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-destructive text-destructive-foreground"
+									className="absolute inset-0 flex flex-col items-center justify-center gap-1 rounded-lg bg-destructive text-destructive-foreground"
 								>
 									<CircleAlert className="size-4" />
 									<span className="text-xs">上传失败</span>
 								</div>
 							)}
-							<button
-								type="button"
+							<Button
+								variant="outline"
+								size="sm"
+								iconOnly
 								aria-label="移除图片"
 								disabled={disabled}
 								onClick={() => onRemoveImage(image.id)}
-								className={`${styles.action} absolute top-0 right-0`}
+								className="absolute top-1 right-1"
 							>
-								<span className="inline-flex size-6 items-center justify-center rounded-md bg-background/90">
-									<X {...iconProps(14)} />
-								</span>
-							</button>
+								<X {...iconProps(14)} />
+							</Button>
 						</div>
 					))}
 				</div>

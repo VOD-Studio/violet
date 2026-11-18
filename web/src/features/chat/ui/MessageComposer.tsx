@@ -7,13 +7,12 @@ import {
 	DropdownMenuTrigger,
 	iconProps,
 } from "@violet/ui";
-import { MessageSquareQuote, Plus, Reply, Send, X } from "lucide-react";
+import { Plus, Reply, Send, X } from "lucide-react";
 import { useRef } from "react";
 import { type UseMessageComposerOptions, useMessageComposer } from "../hooks/use-message-composer";
 import { ChatRichInput } from "./ChatRichInput";
-import { TweetSharingPreview } from "./TweetSharingPreview";
 
-/** 回复和分享预览与输入栏共用一张纸面。 */
+/** 回复预览与输入栏共用一张纸面。 */
 export interface MessageComposerProps extends UseMessageComposerOptions {
 	/** 当前会话的展示名，用于群聊和私信输入提示。 */
 	conversationTitle?: string;
@@ -26,7 +25,6 @@ export function MessageComposer({
 	conversationTitle,
 	currentUserID,
 	currentUser,
-	pendingShare,
 	replyTarget,
 	onCancelReply,
 	onMessageSent,
@@ -37,18 +35,13 @@ export function MessageComposer({
 		conversationKind,
 		currentUserID,
 		currentUser,
-		pendingShare,
 		replyTarget,
 		onCancelReply,
 		onMessageSent,
 	});
 	const { commands } = composer;
 	const inputAction = useRef<(() => void) | null>(null);
-	const placeholder = pendingShare
-		? "为分享写点什么…"
-		: conversationTitle
-			? `发给 ${conversationTitle}…`
-			: "发送消息…";
+	const placeholder = conversationTitle ? `发给 ${conversationTitle}…` : "发送消息…";
 
 	return (
 		<div
@@ -61,70 +54,35 @@ export function MessageComposer({
 					<ChatRichInput
 						inputClassName="min-h-10 py-2 text-[15px] leading-6"
 						inlineHeader={
-							<>
-								{pendingShare ? (
-									<div className="flex items-center gap-2 border-b border-border px-3 py-2">
-										<MessageSquareQuote className="size-4 shrink-0 text-muted-foreground" />
-										<div className="min-w-0 flex-1">
-											<p className="text-xs font-medium text-foreground">
-												分享推文 @{pendingShare.tweet.authorUsername}
-											</p>
-											<p className="truncate text-xs text-muted-foreground">
-												{pendingShare.tweet.content ||
-													(pendingShare.tweet.externalTweet
-														? "X 推文转发"
-														: pendingShare.tweet.quotedTweet
-															? "本站引用"
-															: "（图片推文）")}
-											</p>
-										</div>
-										<Button
-											aria-label="取消分享"
-											iconOnly
-											onClick={composer.clearPendingShare}
-											size="sm"
-											variant="ghost"
-										>
-											<X {...iconProps(14)} />
-										</Button>
+							replyTarget && (
+								<div className="flex items-center gap-2 border-b border-border px-3 py-1.5">
+									<Reply className="size-3.5 shrink-0 text-muted-foreground" />
+									<div className="flex min-w-0 flex-1 items-baseline gap-2 text-xs">
+										<span className="max-w-1/2 shrink-0 truncate font-semibold text-primary">
+											回复{" "}
+											{replyTarget.sender.display_name ||
+												replyTarget.sender.username}
+										</span>
+										<span className="truncate text-muted-foreground">
+											{stripPlaceholdersForPreview(
+												replyTarget.content ?? "",
+											).trim() ||
+												(replyTarget.type === "image"
+													? "图片消息"
+													: "文本消息")}
+										</span>
 									</div>
-								) : (
-									replyTarget && (
-										<div className="flex items-center gap-2 border-b border-border px-3 py-1.5">
-											<Reply className="size-3.5 shrink-0 text-muted-foreground" />
-											<div className="flex min-w-0 flex-1 items-baseline gap-2 text-xs">
-												<span className="max-w-1/2 shrink-0 truncate font-semibold text-primary">
-													回复{" "}
-													{replyTarget.sender.display_name ||
-														replyTarget.sender.username}
-												</span>
-												<span className="truncate text-muted-foreground">
-													{stripPlaceholdersForPreview(
-														replyTarget.content ?? "",
-													).trim() ||
-														(replyTarget.type === "image"
-															? "图片消息"
-															: "文本消息")}
-												</span>
-											</div>
-											<Button
-												aria-label="取消回复"
-												iconOnly
-												onClick={onCancelReply}
-												size="sm"
-												variant="ghost"
-											>
-												<X {...iconProps(14)} />
-											</Button>
-										</div>
-									)
-								)}
-								{pendingShare && (
-									<div className="px-3 pt-3">
-										<TweetSharingPreview id={pendingShare.tweet.id} />
-									</div>
-								)}
-							</>
+									<Button
+										aria-label="取消回复"
+										iconOnly
+										onClick={onCancelReply}
+										size="sm"
+										variant="ghost"
+									>
+										<X {...iconProps(14)} />
+									</Button>
+								</div>
+							)
 						}
 						ref={composer.editorRef}
 						value={composer.content}
@@ -138,8 +96,8 @@ export function MessageComposer({
 						slashActiveOptionId={commands.activeOptionId}
 						editorLabel="消息内容"
 						enableEmoji
-						enableImage={!pendingShare}
-						inlineImages={!pendingShare}
+						enableImage
+						inlineImages
 						uploadPurpose="chat"
 						submitOnEnter
 						compact

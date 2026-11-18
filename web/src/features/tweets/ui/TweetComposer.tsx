@@ -4,7 +4,7 @@ import type { QuotedTweet, Tweet } from "@entities/tweet/model/types";
 import { useMe } from "@features/auth/api/queries";
 import { avatarUrl } from "@shared/lib/image-url";
 import { isImageURL } from "@shared/lib/url";
-import { Label, Textarea } from "@violet/ui";
+import { Avatar, Button, Label, Textarea } from "@violet/ui";
 import { useId, useRef, useState } from "react";
 import { useExternalTweetPreview } from "../hooks/useExternalTweetPreview";
 import { useTweetComposerImages } from "../hooks/useTweetComposerImages";
@@ -67,21 +67,29 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 		if (!event.clipboardData.getData("text/plain")) event.preventDefault();
 		void handleFiles(files);
 	};
-	const handleEmojiSelect = (emoji: Emoji) => {
+	const insertText = (text: string, separate = false) => {
 		if (submission.isPending) return;
-		const imageUrl = emoji.gif_url || emoji.url;
-		const text =
-			imageUrl && isImageURL(imageUrl)
-				? toEmojiToken(emoji)
-				: emoji.text_content || emoji.name;
 		const textarea = textareaRef.current;
 		const start = textarea?.selectionStart ?? content.length;
 		const end = textarea?.selectionEnd ?? content.length;
-		setContent(content.slice(0, start) + text + content.slice(end));
+		const before = content.slice(0, start);
+		const after = content.slice(end);
+		const leadingSpace = separate && before && !/\s$/.test(before) ? " " : "";
+		const trailingSpace = separate && after && !/^\s/.test(after) ? " " : "";
+		const next = before + leadingSpace + text + trailingSpace;
+		setContent(next + after);
 		requestAnimationFrame(() => {
 			textarea?.focus();
-			textarea?.setSelectionRange(start + text.length, start + text.length);
+			textarea?.setSelectionRange(next.length, next.length);
 		});
+	};
+	const handleEmojiSelect = (emoji: Emoji) => {
+		const imageUrl = emoji.gif_url || emoji.url;
+		insertText(
+			imageUrl && isImageURL(imageUrl)
+				? toEmojiToken(emoji)
+				: emoji.text_content || emoji.name,
+		);
 	};
 
 	return (
@@ -97,9 +105,10 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 			}
 		>
 			{me.data && (
-				<img
+				<Avatar
 					src={avatarUrl(me.data.avatar_url, me.data.username)}
-					alt={me.data.username}
+					name={me.data.username}
+					alt=""
 					className={styles.avatar}
 				/>
 			)}
@@ -134,6 +143,15 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 			{externalMode && external.preview && (
 				<div className={styles.references}>
 					<ExternalTweetPreviewPanel state={external} disabled={submission.isPending} />
+					<Button
+						variant="ghost"
+						size="sm"
+						className="mt-2"
+						disabled={submission.isPending}
+						onClick={() => changeMode("write")}
+					>
+						取消 X 转发
+					</Button>
 				</div>
 			)}
 			{(media.images.length > 0 || quotedTweet) && (
@@ -176,6 +194,7 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 				}
 				charCount={charCount}
 				countId={countId}
+				onInsert={(text) => insertText(text, true)}
 				onEmojiSelect={handleEmojiSelect}
 			/>
 		</form>

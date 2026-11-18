@@ -3,7 +3,6 @@ import { Button, Input } from "@violet/ui";
 import { useId } from "react";
 import type { ExternalTweetPreviewState } from "../hooks/useExternalTweetPreview";
 import cardStyles from "./TweetCard.module.css";
-import styles from "./TweetComposer.module.css";
 
 /** 发布器持有的原文获取状态与发布锁。 */
 export interface ExternalTweetPreviewPanelProps {
@@ -31,7 +30,7 @@ export function ExternalTweetPreviewPanel({ state, disabled }: ExternalTweetPrev
 						</p>
 						<Button
 							type="button"
-							className={styles.action}
+							size="sm"
 							disabled={disabled}
 							loading={state.loading}
 							loadingText="获取中…"
@@ -69,7 +68,7 @@ export function ExternalTweetPreviewPanel({ state, disabled }: ExternalTweetPrev
 				<Button
 					type="button"
 					aria-label="预览原文"
-					className={styles.action}
+					size="sm"
 					disabled={disabled || !state.url.trim()}
 					loading={state.loading}
 					loadingText="获取中…"

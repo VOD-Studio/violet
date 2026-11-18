@@ -1,5 +1,5 @@
 import { LinkPreviews } from "@entities/link-preview/ui/LinkPreviews";
-import { useShareTweetStore } from "@entities/tweet/model/share-store";
+import { useShareTweetStore } from "@entities/tweet/model/share-dialog-store";
 import type { Tweet } from "@entities/tweet/model/types";
 import { ExternalTweetCard } from "@entities/tweet/ui/ExternalTweetCard";
 import { useMe } from "@features/auth/api/queries";
@@ -83,19 +83,7 @@ const TweetCard = ({
 
 	const handleShareClick = (event: MouseEvent<HTMLButtonElement>) => {
 		event.stopPropagation();
-		if (!me.data) {
-			toast.info("请先登录后再分享到聊天");
-			navigate({ to: "/login" });
-			return;
-		}
-		openShareTweet({
-			id: tweet.id,
-			authorUsername: tweet.author.username,
-			content: tweet.content,
-			imageUrl: tweet.images[0]?.url,
-			externalTweet: tweet.external_tweet,
-			quotedTweet: tweet.quoted_tweet,
-		});
+		openShareTweet(tweet.id);
 	};
 
 	const openDetail = () => {

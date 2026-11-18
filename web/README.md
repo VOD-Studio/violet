@@ -72,7 +72,7 @@ pnpm dev
 | `/blog/:slug`、`/blog/series/:slug` | 文章阅读与系列目录 |
 | `/notes`、`/notes/:id` | 笔记流与详情 |
 | `/galleries`、`/galleries/:slug` | 图集流与详情 |
-| `/tweets`、`/tweets/:id` | 推文时间线与讨论 |
+| `/tweets`、`/tweets/:id`、`/tweets/topics/:tag` | 时间线（最新／热门／有图）、推文讨论与话题 |
 | `/projects`、`/projects/:slug` | 项目与路线图 |
 | `/chat` | 私聊、房间与 Bot 会话 |
 | `/users/:username`、`/users/:username/usage`、`/profile` | 公开主页、本人用量与个人中心（资料、安全） |
