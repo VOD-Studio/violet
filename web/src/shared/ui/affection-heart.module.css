@@ -17,7 +17,7 @@
 	fill: currentColor;
 }
 
-.heart[data-feedback="true"] .icon {
+.heart[data-pulse="true"] .icon {
 	animation: affection-heart 420ms ease-out;
 }
 
@@ -96,7 +96,7 @@
 	}
 }
 
-[data-motion="reduce"] .heart[data-feedback="true"] .icon {
+[data-motion="reduce"] .heart[data-pulse="true"] .icon {
 	animation: none;
 }
 
@@ -105,7 +105,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.heart[data-feedback="true"] .icon {
+	.heart[data-pulse="true"] .icon {
 		animation: none;
 	}
 
