@@ -58,6 +58,10 @@ func (f *fakeRepo) FindApproved(context.Context) ([]*domain.FriendLink, error) {
 	return f.approved, nil
 }
 
+func (f *fakeRepo) FindApprovedPage(_ context.Context, _ string, q shared.PageQuery) (shared.PageResult[*domain.FriendLink], error) {
+	return shared.NewPageResult(q, f.approved, int64(len(f.approved))), nil
+}
+
 func (f *fakeRepo) FindPage(_ context.Context, filter domain.ListFilter, q shared.PageQuery) (shared.PageResult[*domain.FriendLink], error) {
 	f.gotStatus, f.gotPage, f.gotLimit = filter.Status, q.Page, q.Limit
 	return shared.NewPageResult(q, f.byStatus, f.statusTotal), nil

@@ -74,6 +74,9 @@ type stubFriendlinkService struct {
 func (s *stubFriendlinkService) ListPublic(context.Context) ([]appfriendlink.FriendLinkDTO, error) {
 	return s.listPublicResult, nil
 }
+func (s *stubFriendlinkService) ListPublicPage(context.Context, string, int, int) ([]appfriendlink.FriendLinkDTO, int64, error) {
+	return s.listPublicResult, int64(len(s.listPublicResult)), nil
+}
 func (s *stubFriendlinkService) Apply(_ context.Context, in appfriendlink.ApplyInput) (appfriendlink.FriendLinkDTO, error) {
 	s.applyCalled = true
 	s.applyInput = in

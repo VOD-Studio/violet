@@ -128,6 +128,12 @@ REST 端点可用 `middleware.PATAuth` 复用 MCP 的 `PATVerifier`，再用 `Re
 
 `GET /api/v1/gallery-summary` 返回实际已发布图集数量 `album_count` 和图片项数量 `image_count`。精选取已发布列表第一本；发现顺序以首次发布时间降序、ID 降序为准。`GET /api/v1/galleries` 与 `/galleries/{slug}` 读取已发布快照；地点随版本保存，未发布的内容修改不会改变公开快照。
 
+### 公开友链
+
+`GET /api/v1/friend-links` 仅返回已审核通过的站点，不返回申请人邮箱。无分页参数时保持原列表响应；使用 `page`、`limit` 或 `sort` 时返回分页结果。`sort=updated` 按有效的最近 RSS 发文时间排序，无记录排在末尾；`sort=manual` 采用后台配置的顺序。
+
+后台可维护 RSS 地址与站长、回链信息。抓取只访问公开地址并检查每次重定向；站点状态与订阅状态独立。短暂抓取失败保留该订阅上次成功读取的最新发文；替换订阅地址后重新计算。
+
 ### 博客公开浏览筛选
 
 以下路径均相对于 `/api/v1`，响应保持 `data` 信封；列表分页仍使用 `meta.pagination`：

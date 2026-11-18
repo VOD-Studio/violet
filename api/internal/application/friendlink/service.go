@@ -59,7 +59,7 @@ func NewService(repo domain.FriendLinkRepository, codeStore appshared.CodeStore,
 // 公开用例
 // ============================================================
 
-// ListPublic 前台友链列表（仅 approved，sort_order 升序同权重 created_at）。
+// ListPublic 公开所有 approved 友链，按真实文章日期倒序，不触发外站请求。
 //
 // 空列表返回空数组而非 nil（前端空态依赖 [] 序列化）。
 func (s *Service) ListPublic(ctx context.Context) ([]FriendLinkDTO, error) {
@@ -83,6 +83,7 @@ type ApplyInput struct {
 	Name        string
 	URL         string
 	AvatarURL   string // 可空
+	RSSURL      string // 可选 RSS/Atom 源
 	Description string // 可空
 	OwnerName   string // 可空
 	LinkbackURL string // 可空，回链页地址（审核参考）
@@ -136,6 +137,7 @@ func (s *Service) Apply(ctx context.Context, in ApplyInput) (FriendLinkDTO, erro
 		Name:         in.Name,
 		URL:          in.URL,
 		AvatarURL:    in.AvatarURL,
+		RSSURL:       in.RSSURL,
 		Description:  in.Description,
 		OwnerName:    in.OwnerName,
 		LinkbackURL:  in.LinkbackURL,
@@ -249,6 +251,7 @@ type ManualInput struct {
 	Name         string
 	URL          string
 	AvatarURL    string
+	RSSURL       string
 	Description  string
 	OwnerName    string
 	LinkbackURL  string
@@ -268,6 +271,9 @@ func (s *Service) CreateManual(ctx context.Context, in ManualInput) (FriendLinkA
 		in.OwnerName, in.LinkbackURL, in.ContactEmail, in.SortOrder,
 	)
 	if err != nil {
+		return FriendLinkAdminDTO{}, err
+	}
+	if err := f.SetRSSURL(in.RSSURL); err != nil {
 		return FriendLinkAdminDTO{}, err
 	}
 	if err := s.repo.Save(ctx, f); err != nil {
@@ -297,6 +303,7 @@ func (s *Service) Update(ctx context.Context, id string, in ManualInput) (Friend
 	if err := f.Update(domain.UpdateParams{
 		Name: in.Name, URL: in.URL, AvatarURL: in.AvatarURL, Description: in.Description,
 		OwnerName: in.OwnerName, LinkbackURL: in.LinkbackURL,
+		RSSURL:       in.RSSURL,
 		ContactEmail: in.ContactEmail, SortOrder: in.SortOrder,
 	}); err != nil {
 		return FriendLinkAdminDTO{}, err

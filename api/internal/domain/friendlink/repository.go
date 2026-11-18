@@ -11,8 +11,10 @@ type FriendLinkRepository interface {
 	Save(ctx context.Context, f *FriendLink) error
 	// FindByID 按 ID 查找，不存在返回 ErrNotFound
 	FindByID(ctx context.Context, id shared.ID) (*FriendLink, error)
-	// FindApproved 前台公开列表：仅 approved，按 sort_order 升序（同权重 created_at DESC）
+	// FindApproved 前台公开列表：仅 approved，真实文章日期倒序，最后 id ASC。
 	FindApproved(ctx context.Context) ([]*FriendLink, error)
+	// FindApprovedPage 公开分页；sort 为 updated 或 manual，始终仅 approved。
+	FindApprovedPage(ctx context.Context, sort string, q shared.PageQuery) (shared.PageResult[*FriendLink], error)
 	// FindPage 后台列表分页：按状态筛选（空串 = 全部），created_at DESC + id DESC tiebreaker
 	FindPage(ctx context.Context, filter ListFilter, q shared.PageQuery) (shared.PageResult[*FriendLink], error)
 	// CountPending 待审核计数（后台菜单角标）

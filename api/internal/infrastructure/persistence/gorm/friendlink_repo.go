@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	domainfriendlink "blog-api/internal/domain/friendlink"
 	domainshared "blog-api/internal/domain/shared"
@@ -25,7 +26,18 @@ func NewFriendLinkRepository(db *gorm.DB) *FriendLinkRepository {
 // Save 保存友链（按主键 upsert，创建与状态转换/编辑共用）。
 func (r *FriendLinkRepository) Save(ctx context.Context, f *domainfriendlink.FriendLink) error {
 	po := friendlinkToPO(f)
-	if err := r.db.WithContext(ctx).Save(&po).Error; err != nil {
+	po.UpdatedAt = time.Now()
+	updates := clause.AssignmentColumns([]string{"name", "url", "avatar_url", "rss_url", "description", "owner_name", "linkback_url", "contact_email", "status", "sort_order", "ip_hash", "user_id", "updated_at"})
+	// 后台编辑只写业务列；刷新快照不被过期实体覆盖。改源时原子清空旧源数据。
+	changed := "friendlinks.url <> excluded.url OR friendlinks.rss_url <> excluded.rss_url"
+	for column, reset := range map[string]string{
+		"feed_status": "'pending'", "site_status": "'unchecked'", "checked_at": "NULL",
+		"latest_title": "''", "latest_url": "''", "latest_published_at": "NULL",
+		"next_refresh_at": "CURRENT_TIMESTAMP",
+	} {
+		updates = append(updates, clause.Assignment{Column: clause.Column{Name: column}, Value: gorm.Expr("CASE WHEN " + changed + " THEN " + reset + " ELSE friendlinks." + column + " END")})
+	}
+	if err := r.db.WithContext(ctx).Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "id"}}, DoUpdates: updates}).Create(&po).Error; err != nil {
 		return domainshared.Internal("保存友链失败", err)
 	}
 	return nil
@@ -43,12 +55,12 @@ func (r *FriendLinkRepository) FindByID(ctx context.Context, id domainshared.ID)
 	return friendlinkToDomain(po), nil
 }
 
-// FindApproved 前台公开列表：仅 approved，按 sort_order 升序（同权重 created_at DESC）。
+// FindApproved 仅公开已审核项，按真实文章时间倒序和唯一 ID 排序。
 func (r *FriendLinkRepository) FindApproved(ctx context.Context) ([]*domainfriendlink.FriendLink, error) {
 	var pos []model.FriendLink
 	if err := r.db.WithContext(ctx).
 		Where("status = ?", domainfriendlink.StatusApproved).
-		Order("sort_order ASC, created_at DESC").
+		Order("latest_published_at DESC NULLS LAST, sort_order ASC, id ASC").
 		Find(&pos).Error; err != nil {
 		return nil, domainshared.Internal("查询友链列表失败", err)
 	}
@@ -129,6 +141,7 @@ func friendlinkToPO(f *domainfriendlink.FriendLink) model.FriendLink {
 		URL:          f.URL(),
 		AvatarURL:    f.AvatarURL(),
 		Description:  f.Description(),
+		RSSURL:       f.RSSURL(),
 		OwnerName:    f.OwnerName(),
 		LinkbackURL:  f.LinkbackURL(),
 		ContactEmail: f.ContactEmail(),
@@ -158,13 +171,18 @@ func friendlinkToDomain(po model.FriendLink) *domainfriendlink.FriendLink {
 		uid := domainshared.MustParseID(po.UserID.String())
 		userID = &uid
 	}
-	return domainfriendlink.ReconstructFriendLink(
+	f := domainfriendlink.ReconstructFriendLink(
 		domainshared.MustParseID(po.ID.String()),
 		userID,
 		po.Name, po.URL, po.AvatarURL, po.Description, po.OwnerName,
 		po.LinkbackURL, po.ContactEmail, po.Status, po.SortOrder, po.IPHash,
 		po.CreatedAt, po.UpdatedAt,
 	)
+	f.ReconstructActivity(po.RSSURL, domainfriendlink.Activity{
+		FeedStatus: po.FeedStatus, SiteStatus: po.SiteStatus, CheckedAt: po.CheckedAt,
+		LatestTitle: po.LatestTitle, LatestURL: po.LatestURL, LatestPublishedAt: po.LatestPublishedAt,
+	})
+	return f
 }
 
 // friendlinkPOsToDomain 批量转换。

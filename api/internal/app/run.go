@@ -42,6 +42,16 @@ func Run(ctx context.Context, cfg *config.Config) error {
 	go container.Image.RunMaintenance(ctx)
 	go container.Presence.Service.Run(ctx)
 	startJobs(ctx, container, infra.Gorm, cfg.UploadDir)
+	friendRefreshCtx, stopFriendRefresh := context.WithCancel(ctx)
+	friendRefreshDone := make(chan struct{})
+	go func() {
+		defer close(friendRefreshDone)
+		container.FriendLink.FriendLinkRefresh.Run(friendRefreshCtx)
+	}()
+	defer func() {
+		stopFriendRefresh()
+		<-friendRefreshDone
+	}()
 
 	if cfg.SuperAdmin.Enabled {
 		// 返回 error 而非 log.Fatal：Fatal 调 os.Exit 会跳过上方 defer cleanup，
