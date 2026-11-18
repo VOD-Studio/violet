@@ -1,7 +1,7 @@
 import type { GalleryItem } from "@entities/gallery/model/types";
+import { GalleryAlbumContent } from "@entities/gallery/ui/GalleryAlbumContent";
 import { contentImageUrl } from "@shared/lib/image-url";
 import { ImagePreview } from "@shared/ui/image-preview";
-import { PhotoStack } from "@shared/ui/photo-stack";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@violet/ui";
 import { Images } from "lucide-react";
 import { useState } from "react";
@@ -9,6 +9,7 @@ import { useState } from "react";
 interface GalleryDraftPreviewProps {
 	title: string;
 	summary: string;
+	location: string;
 	items: GalleryItem[];
 }
 
@@ -30,7 +31,7 @@ function itemAlt(item: GalleryItem, index: number, title: string): string {
 }
 
 /** 使用当前工作稿预览浏览流、详情排版与灯箱，不读取公开版本。 */
-export function GalleryDraftPreview({ title, summary, items }: GalleryDraftPreviewProps) {
+export function GalleryDraftPreview({ title, summary, location, items }: GalleryDraftPreviewProps) {
 	const [lightbox, setLightbox] = useState<LightboxState>(LIGHTBOX_CLOSED);
 
 	if (items.length === 0) {
@@ -54,21 +55,18 @@ export function GalleryDraftPreview({ title, summary, items }: GalleryDraftPrevi
 					<TabsTrigger value="detail">详情与灯箱</TabsTrigger>
 				</TabsList>
 				<TabsContent value="feed">
-					<PhotoStack
-						images={items.map((item, index) => ({
-							src: item.thumbnail || item.url,
-							alt: alts[index],
-						}))}
-						footer={
-							<div>
-								<p className="truncate font-medium">{title || "未命名图集"}</p>
-								{summary ? (
-									<p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-										{summary}
-									</p>
-								) : null}
-							</div>
-						}
+					<GalleryAlbumContent
+						featured
+						gallery={{
+							title: title || "未命名图集",
+							summary,
+							location,
+							items: items.map((item, index) => ({
+								...item,
+								position: index,
+								alt_text: alts[index],
+							})),
+						}}
 					/>
 				</TabsContent>
 				<TabsContent value="detail" className="mt-4">
@@ -77,6 +75,9 @@ export function GalleryDraftPreview({ title, summary, items }: GalleryDraftPrevi
 							<h2 className="font-mono font-bold text-xl">{title || "未命名图集"}</h2>
 							{summary ? (
 								<p className="text-muted-foreground text-sm">{summary}</p>
+							) : null}
+							{location ? (
+								<p className="text-muted-foreground text-sm">{location}</p>
 							) : null}
 						</header>
 						<ol className="space-y-6">
