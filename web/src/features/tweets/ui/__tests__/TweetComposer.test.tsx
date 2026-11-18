@@ -453,6 +453,7 @@ describe("TweetComposer", () => {
 			is_liked: false,
 			comment_count: 0,
 			quote_count: 0,
+			view_count: 0,
 			created_at: "2026-11-01T00:00:00Z",
 			link_cards: [],
 		};

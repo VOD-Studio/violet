@@ -1,18 +1,10 @@
 import type { CommentSort } from "@entities/comment/model/types";
+import type { TweetTimelineSort } from "../model/types";
 
 /** 推文读取与互动的缓存键，供推文和聊天入口复用。 */
 
 /** 全局时间线每页条数（cursor 滚动加载，与评论 TOP_LEVEL_PAGE_SIZE 对齐） */
 export const TIMELINE_PAGE_SIZE = 20;
-
-/**
- * timelineKeyShape - 时间线 query key 的固定维度
- *
- * 仅 limit 进 key；cursor 是 pageParam，随每页变化，不在此处。
- */
-interface TimelineKeyShape {
-	limit: number;
-}
 
 /** 推文模块根 key（提取为常量，供 timeline/detail 维度派生） */
 const tweetsRoot = ["tweets"] as const;
@@ -20,19 +12,22 @@ const tweetsRoot = ["tweets"] as const;
 export const tweetKeys = {
 	/** 推文模块根 key */
 	all: tweetsRoot,
-	/** 时间线根维度：各 limit 子 key 的公共前缀，用于批量缓存操作 */
+	/** 排序为缓存前缀；cursor 仍是每页的 pageParam。 */
 	timeline: [...tweetsRoot, "timeline"] as const,
-	/** 全局时间线维度（按 limit 区分） */
-	timelineOf: (limit: number = TIMELINE_PAGE_SIZE) =>
-		[...tweetKeys.timeline, { limit } satisfies TimelineKeyShape] as const,
+	timelineSorted: (sort: TweetTimelineSort) => [...tweetKeys.timeline, sort] as const,
+	timelineOf: (limit: number = TIMELINE_PAGE_SIZE, sort: TweetTimelineSort = "latest") =>
+		[...tweetKeys.timelineSorted(sort), { limit }] as const,
+	sidebar: [...tweetsRoot, "sidebar"] as const,
+	userTimeline: [...tweetsRoot, "userTimeline"] as const,
+	topicTimeline: [...tweetsRoot, "topicTimeline"] as const,
 	/** 单条推文详情维度（按 id 区分） */
 	detail: (id: string) => [...tweetsRoot, "detail", id] as const,
 	/** 用户推文列表维度（按 username 与 limit 区分） */
 	userTimelineOf: (username: string, limit: number = TIMELINE_PAGE_SIZE) =>
-		[...tweetsRoot, "userTimeline", username, { limit }] as const,
+		[...tweetKeys.userTimeline, username, { limit }] as const,
 	/** 话题推文列表维度（按 tag 与 limit 区分） */
 	topicTimelineOf: (tag: string, limit: number = TIMELINE_PAGE_SIZE) =>
-		[...tweetsRoot, "topicTimeline", tag, { limit }] as const,
+		[...tweetKeys.topicTimeline, tag, { limit }] as const,
 	/** 同一推文全部顶层排序的公共缓存前缀。 */
 	commentList: (tweetId: string) => [...tweetsRoot, "comments", "list", tweetId] as const,
 	/** 顶层评论的真实排序维度；page 仍由无限查询持有。 */

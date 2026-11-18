@@ -42,6 +42,7 @@ function makeTweet(overrides: Partial<Tweet> = {}): Tweet {
 		is_liked: false,
 		comment_count: 0,
 		quote_count: 1,
+		view_count: 0,
 		created_at: "2026-11-02T02:00:00Z",
 		link_cards: [],
 		...overrides,

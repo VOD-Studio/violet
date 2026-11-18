@@ -43,6 +43,7 @@ const mockTweet: Tweet = {
 	like_count: 0,
 	comment_count: 2,
 	quote_count: 0,
+	view_count: 0,
 	is_liked: false,
 	created_at: "2026-08-20T00:00:00Z",
 	link_cards: [],

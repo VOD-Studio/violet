@@ -14,6 +14,7 @@ function tweet(id: string, ageDays: number, content = "", likes = 0): Tweet {
 		like_count: likes,
 		comment_count: 0,
 		quote_count: 0,
+		view_count: 0,
 		is_liked: false,
 		created_at: new Date(now.getTime() - ageDays * day).toISOString(),
 		link_cards: [],
