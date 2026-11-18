@@ -4,8 +4,9 @@ import type { QuotedTweet, Tweet } from "@entities/tweet/model/types";
 import { useMe } from "@features/auth/api/queries";
 import { avatarUrl } from "@shared/lib/image-url";
 import { isImageURL } from "@shared/lib/url";
-import { Avatar, Button, Label, Textarea } from "@violet/ui";
-import { useId, useRef, useState } from "react";
+import { Avatar, Button, Label, Modal, Textarea } from "@violet/ui";
+import { SquarePen } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useExternalTweetPreview } from "../hooks/useExternalTweetPreview";
 import { useTweetComposerImages } from "../hooks/useTweetComposerImages";
 import { useTweetComposerSubmit } from "../hooks/useTweetComposerSubmit";
@@ -20,13 +21,24 @@ export interface TweetComposerProps {
 	quotedTweet?: Tweet | QuotedTweet;
 	onSuccess?: () => void;
 	onCancelQuote?: () => void;
+	/** 内联发布器滚出上沿后，显示继续编辑同一份草稿的入口。 */
+	quickAccess?: boolean;
 }
 
 /** 添加或移除 X 原文保留正文与附图，链接浮层仅管理来源凭证。 */
-export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetComposerProps = {}) {
+export function TweetComposer({
+	quotedTweet,
+	onSuccess,
+	onCancelQuote,
+	quickAccess = false,
+}: TweetComposerProps = {}) {
 	const me = useMe();
 	const [content, setContent] = useState("");
 	const [mode, setMode] = useState<"write" | "external">("write");
+	const inlineRef = useRef<HTMLDivElement>(null);
+	const [hasScrolledPast, setHasScrolledPast] = useState(false);
+	const [inlineHeight, setInlineHeight] = useState<number | null>(null);
+	const quickOpen = inlineHeight !== null;
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const contentId = useId();
 	const countId = useId();
@@ -34,6 +46,21 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 	const external = useExternalTweetPreview();
 	const media = useTweetComposerImages();
 	const externalMode = mode === "external" && !quotedTweet;
+
+	useEffect(() => {
+		const inline = inlineRef.current;
+		if (!quickAccess || !inline || typeof IntersectionObserver === "undefined") return;
+		const observer = new IntersectionObserver(
+			([entry]) => {
+				if (!entry) return;
+				const top = entry.rootBounds?.top ?? 0;
+				setHasScrolledPast(entry.boundingClientRect.bottom <= top);
+			},
+			{ rootMargin: "-96px 0px 0px" },
+		);
+		observer.observe(inline);
+		return () => observer.disconnect();
+	}, [quickAccess]);
 	const submission = useTweetComposerSubmit({
 		content,
 		images: media.doneUrls,
@@ -45,6 +72,7 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 			setMode("write");
 			setContent("");
 			media.clearImages();
+			setInlineHeight(null);
 			onSuccess?.();
 		},
 	});
@@ -92,7 +120,7 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 		);
 	};
 
-	return (
+	const form = (
 		<form
 			onSubmit={(event) => {
 				event.preventDefault();
@@ -198,6 +226,40 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 				onEmojiSelect={handleEmojiSelect}
 			/>
 		</form>
+	);
+
+	if (!quickAccess) return form;
+
+	return (
+		<>
+			<div ref={inlineRef} style={{ blockSize: inlineHeight ?? undefined }}>
+				{!quickOpen && form}
+			</div>
+			{(hasScrolledPast || quickOpen) && (
+				<Button
+					variant="primary"
+					aria-haspopup="dialog"
+					className="fixed right-4 bottom-24 z-30 lg:right-8 lg:bottom-8"
+					leftIcon={<SquarePen />}
+					onClick={() => {
+						const height = inlineRef.current?.getBoundingClientRect().height;
+						if (height !== undefined) setInlineHeight(height);
+					}}
+				>
+					写推文
+				</Button>
+			)}
+			<Modal
+				open={quickOpen}
+				onOpenChange={(open) => {
+					if (!open) setInlineHeight(null);
+				}}
+				title="写推文"
+				size="lg"
+			>
+				{quickOpen && form}
+			</Modal>
+		</>
 	);
 }
 

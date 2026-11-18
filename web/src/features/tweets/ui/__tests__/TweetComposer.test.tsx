@@ -9,6 +9,7 @@ import {
 	render,
 	screen,
 	waitFor,
+	within,
 } from "@testing-library/react";
 import { toast } from "sonner";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -131,6 +132,47 @@ describe("TweetComposer", () => {
 		cleanup();
 		vi.useRealTimers();
 		vi.restoreAllMocks();
+		vi.unstubAllGlobals();
+	});
+
+	it("离开发布区后用快捷入口续写，关闭弹窗后草稿仍在原发布器", async () => {
+		let scrollPastComposer: (() => void) | undefined;
+		vi.stubGlobal(
+			"IntersectionObserver",
+			class {
+				constructor(
+					notify: (
+						entries: {
+							boundingClientRect: { bottom: number };
+							rootBounds: { top: number };
+						}[],
+					) => void,
+				) {
+					scrollPastComposer = () =>
+						notify([{ boundingClientRect: { bottom: -20 }, rootBounds: { top: 96 } }]);
+				}
+				observe() {}
+				disconnect() {}
+			},
+		);
+		render(<TweetComposer quickAccess />);
+		fireEvent.change(screen.getByRole("textbox", { name: "推文正文" }), {
+			target: { value: "这段话还没写完" },
+		});
+		expect(screen.queryByRole("button", { name: "写推文" })).toBeNull();
+		act(() => scrollPastComposer?.());
+		fireEvent.click(screen.getByRole("button", { name: "写推文" }));
+		const dialog = await screen.findByRole("dialog", { name: "写推文" });
+		const editor = within(dialog).getByRole<HTMLTextAreaElement>("textbox", {
+			name: "推文正文",
+		});
+		expect(editor.value).toBe("这段话还没写完");
+		fireEvent.change(editor, { target: { value: "我在原地写完了" } });
+		fireEvent.click(within(dialog).getByRole("button", { name: "关闭" }));
+		await waitFor(() => expect(screen.queryByRole("dialog", { name: "写推文" })).toBeNull());
+		expect(screen.getByRole<HTMLTextAreaElement>("textbox", { name: "推文正文" }).value).toBe(
+			"我在原地写完了",
+		);
 	});
 
 	it("选择表情后在输入框插入 [name] 占位符", () => {

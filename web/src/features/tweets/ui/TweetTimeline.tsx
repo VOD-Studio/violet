@@ -91,7 +91,7 @@ export function TweetTimeline({ limit, tag, sort = "latest", header }: TweetTime
 				}
 			>
 				<section aria-label="推文时间线" className="flex min-w-0 flex-col gap-4">
-					{isLoggedIn && <TweetComposer />}
+					{isLoggedIn && <TweetComposer quickAccess />}
 					{!data && !isError && (
 						<div
 							role="status"
