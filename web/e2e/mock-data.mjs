@@ -566,12 +566,74 @@ const annotationSummary = () => [
 /** 本进程内提交过的顶层批注数；批注摘要随之变化，模拟后端聚合更新。 */
 let postedAnnotations = 0;
 
+export const SCROLL_TWEET_ID = "60000000-0000-4000-8000-000000000001";
+const scrollAuthor = { id: "tweet-author", username: "scroll-reader", avatar_url: "", display_name: "" };
+const scrollDate = "2026-11-01T08:00:00Z";
+const scrollComments = Array.from({ length: 8 }, (_, i) => ({
+	id: `scroll-comment-${i + 1}`,
+	tweet_id: SCROLL_TWEET_ID,
+	author: scrollAuthor,
+	body: `滚动验收评论 ${i + 1}`,
+	pictures: [],
+	depth: 0,
+	replies_count: 0,
+	created_at: scrollDate,
+}));
+const scrollTweet = {
+	id: SCROLL_TWEET_ID,
+	author: scrollAuthor,
+	content: "一条有长图和评论的推文",
+	images: [{ url: "/assets/contract-image.png", width: 360, height: 960 }],
+	like_count: 0,
+	is_liked: false,
+	comment_count: scrollComments.length,
+	quote_count: 6,
+	view_count: 1,
+	created_at: scrollDate,
+	link_cards: [],
+};
+const scrollTweetContext = {
+	author: {
+		...scrollAuthor,
+		bio: "记录散步路上遇见的树影、光线、天气，也拍下走过的地方。".repeat(5),
+		tweet_count: 7,
+		received_like_count: 0,
+	},
+	quotes: Array.from({ length: 6 }, (_, i) => ({
+		id: `scroll-quote-${i + 1}`,
+		author: scrollAuthor,
+		content: `引用 ${i + 1}：`.concat("沿着河边向下走，读到最后一段时仍想看到写下这条推文的人。".repeat(2)),
+		created_at: scrollDate,
+	})),
+};
+const scrollTweetPath = `/api/v1/tweets/${SCROLL_TWEET_ID}`;
+
+function handleScrollTweet(method, pathname) {
+	switch (`${method} ${pathname.slice(scrollTweetPath.length)}`) {
+		case "GET ":
+			return { status: 200, body: envelope(scrollTweet) };
+		case "GET /context":
+			return { status: 200, body: envelope(scrollTweetContext) };
+		case "GET /comments":
+			return { status: 200, body: paged(scrollComments, 10) };
+		case "POST /comments/reactions/batch":
+			return { status: 200, body: envelope([]) };
+		case "POST /views":
+			return { status: 200, body: envelope({ view_count: scrollTweet.view_count }) };
+		default:
+			return { status: 404, body: JSON.stringify({ error: "NOT_FOUND" }) };
+	}
+}
+
 
 /** 与后端 envelope 语义一致的路由表；浏览器侧 page.route 复用同一份数据。
  * cookie 含 contract_admin=1 时按已登录 root 应答会话与后台数据（工具方言契约用）。 */
 export function handle(method, pathname, search, cookie = "", rawBody = "") {
 	const params = new URLSearchParams(search || "");
 	const isAdminActor = /(?:^|;\s*)contract_admin=1(?:;|$)/.test(cookie);
+	if (pathname === scrollTweetPath || pathname.startsWith(`${scrollTweetPath}/`)) {
+		return handleScrollTweet(method, pathname);
+	}
 	if (
 		method === "POST" &&
 		pathname === `/api/v1/posts/${CODE_POST_ID}/comments`

@@ -64,7 +64,7 @@ export function TweetCommentSection({
 
 	return (
 		<div className="flex min-w-0 flex-col gap-8">
-			<Card id="comments" className="scroll-mt-24 lg:scroll-mt-1">
+			<Card id="comments" className="scroll-mt-24">
 				<div className="flex items-start gap-3">
 					{me.data && (
 						<Avatar

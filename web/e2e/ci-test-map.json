@@ -35,6 +35,11 @@
 			]
 		},
 		{
+			"name": "tweets",
+			"prefixes": ["src/features/tweets/", "src/routes/tweets/"],
+			"specs": ["e2e/tweet-detail-scroll.spec.ts"]
+		},
+		{
 			"name": "article-and-blog",
 			"prefixes": [
 				"src/features/posts/",

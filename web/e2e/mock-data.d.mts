@@ -11,6 +11,8 @@ export declare function handle(
 	contentType?: string;
 };
 
+export declare const SCROLL_TWEET_ID: string;
+
 /** 项目列表契约用数据：站主顺序，含完整摘要、封面失效、空路线图与读不到摘要四种。 */
 export declare const PROJECTS_FIXTURE: Array<{
 	title: string;

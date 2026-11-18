@@ -17,7 +17,6 @@ import { createServerOnlyFn } from "@tanstack/react-start";
 import { Button, Empty, PageShell, ScrollArea, Skeleton } from "@violet/ui";
 import { useEffect, useRef } from "react";
 
-const mobileViewportClass = "max-lg:overflow-visible! max-lg:overscroll-auto!";
 const requestCookie = createServerOnlyFn(() => getForwardedCookie());
 
 // 详情 GET 的唯一输入是 ID；非法 ID 不指向有效的详情页。
@@ -87,8 +86,8 @@ function TweetDetailPage() {
 	if (!current) throw error ?? notFound();
 
 	return (
-		<PageShell className="lg:flex lg:h-[calc(100dvh-4rem)] lg:flex-col">
-			<div className="mx-auto flex w-full max-w-280 flex-col gap-4 font-reading lg:min-h-0 lg:flex-1">
+		<PageShell>
+			<div className="mx-auto flex w-full max-w-280 flex-col gap-4 font-reading">
 				<HistoryBack
 					fallbackTo="/tweets"
 					className="min-h-11 w-fit shrink-0 gap-1.5 rounded-lg px-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
@@ -96,35 +95,33 @@ function TweetDetailPage() {
 					返回时间线
 				</HistoryBack>
 
-				<div className="grid gap-6 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,640px)_minmax(0,1fr)] lg:gap-12 xl:gap-18">
-					<ScrollArea
-						key={id}
-						aria-label="推文与评论"
-						className="-m-1"
-						viewportClassName={mobileViewportClass}
-					>
-						<div className="flex min-w-0 flex-col gap-4">
-							<TweetCard
-								tweet={current}
-								variant="detail"
-								initialImageIndex={image === undefined ? undefined : image - 1}
-								onDeleted={() => void navigate({ to: "/tweets" })}
-							/>
-							<TweetCommentSection
+				<div className="grid items-start gap-6 lg:grid-cols-[minmax(0,640px)_minmax(0,1fr)] lg:gap-12 xl:gap-18">
+					<div key={id} className="flex min-w-0 flex-col gap-4">
+						<TweetCard
+							tweet={current}
+							variant="detail"
+							initialImageIndex={image === undefined ? undefined : image - 1}
+							onDeleted={() => void navigate({ to: "/tweets" })}
+						/>
+						<TweetCommentSection
+							tweetId={current.id}
+							tweetAuthorId={current.author.id}
+							commentCount={current.comment_count}
+						/>
+					</div>
+					<div className="min-w-0 lg:sticky lg:top-24">
+						<ScrollArea
+							key={`${id}:rail`}
+							aria-label="作者与引用"
+							className="-m-1 lg:max-h-[calc(100dvh-7rem)]"
+							viewportClassName="overscroll-auto! max-lg:overflow-visible!"
+						>
+							<TweetDetailRail
 								tweetId={current.id}
-								tweetAuthorId={current.author.id}
-								commentCount={current.comment_count}
+								quoteCount={current.quote_count}
 							/>
-						</div>
-					</ScrollArea>
-					<ScrollArea
-						key={`${id}:rail`}
-						aria-label="作者与引用"
-						className="-m-1"
-						viewportClassName={mobileViewportClass}
-					>
-						<TweetDetailRail tweetId={current.id} quoteCount={current.quote_count} />
-					</ScrollArea>
+						</ScrollArea>
+					</div>
 				</div>
 			</div>
 		</PageShell>
