@@ -3,6 +3,7 @@ package gorm
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -43,6 +44,11 @@ func TestPublicTweetFeedFiltersAndSnapshots(t *testing.T) {
 }
 
 func TestPublicTweetFeedPostgres(t *testing.T) {
+	testPublicTweetFeed(t, setupTweetFeedPostgresTestDB(t))
+}
+
+func setupTweetFeedPostgresTestDB(t *testing.T) *gorm.DB {
+	t.Helper()
 	dsn := os.Getenv("VIOLET_TWEET_FEED_TEST_DSN")
 	if dsn == "" {
 		t.Skip("VIOLET_TWEET_FEED_TEST_DSN is not configured")
@@ -58,7 +64,7 @@ func TestPublicTweetFeedPostgres(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, db.Exec("DROP SCHEMA "+schema+" CASCADE").Error) })
 	require.NoError(t, db.Exec("SET search_path TO "+schema).Error)
 	require.NoError(t, db.AutoMigrate(&model.User{}, &model.Tweet{}, &model.TweetLike{}, &model.TweetHashtag{}))
-	testPublicTweetFeed(t, db)
+	return db
 }
 
 func testPublicTweetFeed(t *testing.T, db *gorm.DB) {
@@ -191,4 +197,101 @@ func testPublicTweetFeed(t *testing.T, db *gorm.DB) {
 	require.ErrorIs(t, err, domaintweet.ErrNotFound)
 	_, err = svc.RecordView(ctx, removed.String(), "another-visitor")
 	require.ErrorIs(t, err, domaintweet.ErrNotFound)
+}
+
+func TestPublicTweetDetailContext(t *testing.T) {
+	testPublicTweetDetailContext(t, setupTweetTestDB(t))
+}
+
+func TestPublicTweetDetailContextPostgres(t *testing.T) {
+	testPublicTweetDetailContext(t, setupTweetFeedPostgresTestDB(t))
+}
+
+func testPublicTweetDetailContext(t *testing.T, db *gorm.DB) {
+	t.Helper()
+	require.NoError(t, db.AutoMigrate(&model.TweetComment{}, &model.TweetCommentReaction{}))
+	ctx := context.Background()
+	repo := NewTweetRepository(db)
+	svc := apptweet.NewService(repo, nil, nil, nil, nil, nil, nil, nil, appshared.NoopEventBus{}).WithDetailContextRepository(repo)
+	h := tweethttp.NewHandler(svc)
+
+	stamp := time.Date(2026, time.October, 30, 23, 41, 0, 0, time.UTC)
+	newer := stamp.Add(time.Hour)
+	alice := seedFeedAuthor(t, db, "alice", nil)
+	bob := seedFeedAuthor(t, db, "bob", nil)
+	deleted := seedFeedAuthor(t, db, "deleted", &newer)
+	require.NoError(t, db.Model(&model.User{}).Where("id = ?", alice.UUID()).
+		Updates(map[string]any{"bio": "写代码的人", "avatar_url": "/uploads/alice.png"}).Error)
+
+	id := func(n int) shared.ID { return shared.MustParseID(fmt.Sprintf("00000000-0000-0000-0000-%012x", n)) }
+	add := func(n int, author shared.ID, content string, when time.Time, quoteOf int) {
+		t.Helper()
+		row := model.Tweet{ID: id(n).UUID(), AuthorID: author.UUID(), Content: content, CreatedAt: when, UpdatedAt: when}
+		if quoteOf != 0 {
+			target := id(quoteOf).UUID()
+			row.QuoteOf = &target
+		}
+		require.NoError(t, db.Create(&row).Error)
+	}
+	add(1, alice, "root", stamp, 0)
+	add(2, alice, "old public tweet", stamp.AddDate(-1, 0, 0), 0)
+	add(3, alice, "removed", newer, 1)
+	add(4, deleted, "hidden direct quote", newer, 1)
+	add(5, bob, "nested quote", newer, 8)
+	add(6, bob, "", newer, 1)
+	add(12, bob, "same time, higher id", stamp, 1)
+	add(7, bob, "below the limit", stamp, 1)
+	add(8, bob, "direct quote eight", stamp, 1)
+	add(9, bob, "direct quote nine", stamp, 1)
+	add(10, bob, "direct quote ten", stamp, 1)
+	add(11, bob, "direct quote eleven", stamp, 1)
+	add(13, bob, "oldest direct quote", stamp.Add(-time.Minute), 1)
+
+	for _, n := range []int{1, 2, 3, 4} {
+		require.NoError(t, repo.Like(ctx, id(n), bob))
+	}
+	require.NoError(t, repo.Like(ctx, id(13), alice))
+	require.NoError(t, repo.Delete(ctx, id(3)))
+	commentID := shared.NewID().UUID()
+	require.NoError(t, db.Create(&model.TweetComment{ID: commentID, TweetID: id(1).UUID(), AuthorID: bob.UUID(), Body: "comment"}).Error)
+	require.NoError(t, db.Create(&model.TweetCommentReaction{ID: shared.NewID().UUID(), CommentID: commentID, UserID: bob.UUID(), EmojiID: 1}).Error)
+
+	get := func(n, wantStatus int) *httptest.ResponseRecorder {
+		t.Helper()
+		tweetID := id(n).String()
+		r := httptest.NewRequest(http.MethodGet, "/api/v1/tweets/"+tweetID+"/context", nil)
+		r.SetPathValue("id", tweetID)
+		w := httptest.NewRecorder()
+		h.DetailContext(w, r)
+		require.Equal(t, wantStatus, w.Code, w.Body.String())
+		return w
+	}
+	read := func(n int) map[string]any {
+		t.Helper()
+		var body struct {
+			Data map[string]any `json:"data"`
+		}
+		require.NoError(t, json.Unmarshal(get(n, http.StatusOK).Body.Bytes(), &body))
+		return body.Data
+	}
+	quote := func(n int, content string, when time.Time) map[string]any {
+		return map[string]any{
+			"id": id(n).String(), "content": content, "created_at": when.Format(time.RFC3339),
+			"author": map[string]any{"username": "bob", "display_name": "显示名 bob", "avatar_url": ""},
+		}
+	}
+	author := map[string]any{
+		"username": "alice", "display_name": "显示名 alice", "avatar_url": "/uploads/alice.png",
+		"bio": "写代码的人", "tweet_count": float64(2), "received_like_count": float64(2),
+	}
+	require.Equal(t, map[string]any{
+		"author": author,
+		"quotes": []any{
+			quote(6, "", newer), quote(12, "same time, higher id", stamp), quote(11, "direct quote eleven", stamp),
+			quote(10, "direct quote ten", stamp), quote(9, "direct quote nine", stamp), quote(8, "direct quote eight", stamp),
+		},
+	}, read(1))
+	require.Equal(t, map[string]any{"author": author, "quotes": []any{}}, read(2))
+	get(3, http.StatusNotFound)
+	get(4, http.StatusNotFound)
 }

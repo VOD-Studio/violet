@@ -114,6 +114,10 @@ REST 端点可用 `middleware.PATAuth` 复用 MCP 的 `PATVerifier`，再用 `Re
 
 `GET /api/v1/tweets/sidebar` 返回 `authors`、`topics`、`images`。作者和话题统计近 30 天的公开推文，最多各四项；图片取公开推文最近六张自身配图，不受当前时间线筛选或分页影响。
 
+`GET /api/v1/tweets/{id}/context` 公开返回 `data.author`（`username`、`display_name`、`avatar_url`、`bio`、`tweet_count`、`received_like_count`）与 `data.quotes`。作者统计覆盖其当前全部公开推文，不限时间或分页；获赞是各条公开推文的现有点赞数之和，同一用户对不同推文的赞分别计入，不计评论或回应。
+
+`quotes` 至多六条，按 `created_at DESC, id DESC` 排序，只返回直接引用该推文且作者未注销的现存推文。每条包含 `id`、`author`（`username`、`display_name`、`avatar_url`）、自身 `content` 与 `created_at`，不展开嵌套引用或 X 原文；无引用返回 `[]`。详情主推文不存在或作者已注销时返回 `404`。
+
 `POST /api/v1/tweets/{id}/views` 接受带 CSRF 的游客或用户请求，按推文和受信 IP 在 30 分钟内去重，返回持久化的 `{view_count}`。列表、详情 GET、SSR 和预取不增加计数。
 
 ### 博客公开浏览筛选

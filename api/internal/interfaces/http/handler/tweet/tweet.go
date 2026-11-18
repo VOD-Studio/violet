@@ -187,6 +187,16 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	response.RespondOK(w, dto)
 }
 
+// DetailContext 返回主推文作者累计数据与最近直接引用。
+func (h *Handler) DetailContext(w http.ResponseWriter, r *http.Request) {
+	dto, err := h.svc.DetailContext(r.Context(), r.PathValue("id"))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, dto)
+}
+
 // Delete 删除推文（登录，作者或 tweet:delete-any）：DELETE /tweets/{id}
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	if err := h.svc.Delete(r.Context(), r.PathValue("id")); err != nil {

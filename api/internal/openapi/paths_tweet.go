@@ -89,6 +89,35 @@ func registerTweetPaths(t *openapi3.T) {
 		"images":  refArray("最新的本站推文自身配图，至多 6 张", "TweetSidebarImageDTO"),
 	}, "authors", "topics", "images")
 
+	registerSchema(t, "TweetDetailContextProfileDTO", openapi3.Schemas{
+		"username":     reqStr("用户主页使用的用户名"),
+		"display_name": reqStr("公开昵称，未设置时为空串"),
+		"avatar_url":   reqStr("公开头像，未设置时为空串"),
+	}, "username", "display_name", "avatar_url")
+
+	registerSchema(t, "TweetDetailContextAuthorDTO", openapi3.Schemas{
+		"username":            reqStr("用户主页使用的用户名"),
+		"display_name":        reqStr("公开昵称，未设置时为空串"),
+		"avatar_url":          reqStr("公开头像，未设置时为空串"),
+		"bio":                 reqStr("公开简介，未设置时为空串"),
+		"tweet_count":         optInt64("作者全部当前公开推文数，不限时间"),
+		"received_like_count": optInt64("上述推文各自现有点赞数之和，不按点赞用户去重"),
+	}, "username", "display_name", "avatar_url", "bio", "tweet_count", "received_like_count")
+
+	registerSchema(t, "TweetDetailContextQuoteDTO", openapi3.Schemas{
+		"id":         reqStr("引用推文的 ID（UUID）"),
+		"author":     optRef("引用推文作者", "TweetDetailContextProfileDTO"),
+		"content":    reqStr("引用推文自身正文，纯引用时为空串"),
+		"created_at": reqStr("发布时间（RFC3339 UTC）"),
+	}, "id", "author", "content", "created_at")
+
+	directQuotes := refArray("最近的公开直接引用，无引用时为空数组", "TweetDetailContextQuoteDTO")
+	directQuotes.Value.MaxItems = new(uint64(6))
+	registerSchema(t, "TweetDetailContextDTO", openapi3.Schemas{
+		"author": optRef("主推文作者资料与统计", "TweetDetailContextAuthorDTO"),
+		"quotes": directQuotes,
+	}, "author", "quotes")
+
 	registerSchema(t, "TweetViewCountDTO", openapi3.Schemas{
 		"view_count": optInt64("累计去重浏览次数"),
 	}, "view_count")
@@ -193,6 +222,19 @@ func registerTweetPaths(t *openapi3.T) {
 			200, dataResponse("TweetDTO", "推文详情", 200),
 			400, errorResponse("ID 格式非法"),
 			404, errorResponse("推文不存在"),
+		),
+	})
+
+	get(t, "/tweets/{id}/context", &openapi3.Operation{
+		Tags:    []string{"推文"},
+		Summary: "推文详情上下文",
+		Description: "匿名可用。累计所有当前公开的该作者推文及其现有点赞数，不计评论和回应。" +
+			"至多返回六条公开的直接引用，按发布时间与 ID 降序；不展开下级引用或 X 原文。已注销作者的推文不公开。响应 no-store。",
+		Parameters: openapi3.Parameters{pathStrParam("id", "推文 ID（UUID）")},
+		Responses: responses(
+			200, dataResponse("TweetDetailContextDTO", "作者资料、累计统计与最近直接引用", 200),
+			400, errorResponse("ID 格式非法"),
+			404, errorResponse("推文不存在或不可公开访问"),
 		),
 	})
 

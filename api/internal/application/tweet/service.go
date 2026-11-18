@@ -47,6 +47,8 @@ type Service struct {
 	external    *ExternalService
 	feedRepo    domaintweet.FeedRepository
 	feedStore   FeedStore
+
+	detailContextRepo domaintweet.DetailContextRepository
 }
 
 func (s *Service) WithExternal(external *ExternalService) *Service { s.external = external; return s }

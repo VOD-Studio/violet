@@ -374,6 +374,7 @@ func registerTweetRoutes(v1 chi.Router, d *Deps) {
 		r.With(d.OptionalAuth).Get("/", tweetH.ListTimeline)
 		r.Get("/sidebar", tweetH.Sidebar)
 		r.With(d.OptionalAuth).Get("/{id}", tweetH.Get)
+		r.Get("/{id}/context", tweetH.DetailContext)
 		r.With(d.limit("tweet-views", "POST /api/v1/tweets/{id}/views")).Post("/{id}/views", tweetH.RecordView)
 		r.With(d.OptionalAuth).Get("/topics/{tag}", tweetH.ListByTopic)
 		r.With(d.SessionAuth, d.limit("tweet", "POST /api/v1/tweets")).Post("/", tweetH.Create)

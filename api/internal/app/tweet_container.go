@@ -68,7 +68,7 @@ func NewTweetContainer(
 		perm,
 		&tweetEmojiLookupAdapter{repo: emojiRepo, customEmojiSvc: customEmojiSvc},
 		bus,
-	).WithExternal(external).WithFeed(tweetRepo, tweetfeed.NewStore(redisClient))
+	).WithExternal(external).WithFeed(tweetRepo, tweetfeed.NewStore(redisClient)).WithDetailContextRepository(tweetRepo)
 	viewKey := hmac.New(sha256.New, []byte(cfg.ResourceSigningKey))
 	_, _ = viewKey.Write([]byte("violet/tweet-views/ip/v1"))
 	return &TweetContainer{
