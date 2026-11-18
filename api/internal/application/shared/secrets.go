@@ -9,7 +9,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"time"
 )
+
+// VerificationCodeTTL 同时用于 Redis 存储和收件人看到的有效期。
+const VerificationCodeTTL = 10 * time.Minute
 
 // GenerateVerificationCode 生成 6 位数字验证码（crypto/rand 安全随机）。
 //

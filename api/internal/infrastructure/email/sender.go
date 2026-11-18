@@ -31,13 +31,13 @@ func NewSender(apiKey, fromEmail string, devMode bool) *Sender {
 // SendVerificationCode 发送邮箱验证码
 func (s *Sender) SendVerificationCode(ctx context.Context, email, code string) error {
 	s.logDevCode("邮箱验证码", email, code)
-	return s.send(ctx, email, "验证您的邮箱地址", buildVerificationEmail(code))
+	return s.sendCode(ctx, email, code, verificationCopy)
 }
 
 // SendPasswordResetCode 发送密码重置验证码
 func (s *Sender) SendPasswordResetCode(ctx context.Context, email, code string) error {
 	s.logDevCode("密码重置码", email, code)
-	return s.send(ctx, email, "重置您的密码", buildPasswordResetEmail(code))
+	return s.sendCode(ctx, email, code, resetCopy)
 }
 
 // logDevCode 开发模式打印验证码明文，方便联调（生产环境 no-op）
@@ -48,10 +48,15 @@ func (s *Sender) logDevCode(label, email, code string) {
 	log.Info().Str("email", email).Str("code", code).Msgf("[DEV] %s", label)
 }
 
-func (s *Sender) send(ctx context.Context, to, subject, html string) error {
+func (s *Sender) sendCode(ctx context.Context, to, code string, content codeEmailCopy) error {
+	html, text, err := renderCodeEmail(content, code)
+	if err != nil {
+		return err
+	}
+	subject := "Violet · " + content.Title
 	log.Info().Str("email", to).Str("subject", subject).Msg("发送邮件")
-	_, err := s.client.Emails.SendWithContext(ctx, &resend.SendEmailRequest{
-		From: s.fromEmail, To: []string{to}, Subject: subject, Html: html,
+	_, err = s.client.Emails.SendWithContext(ctx, &resend.SendEmailRequest{
+		From: s.fromEmail, To: []string{to}, Subject: subject, Html: html, Text: text,
 	})
 	if err != nil {
 		// devMode 下 Resend 失败是预期的（未配置 key），已通过 logDevCode 打印验证码，

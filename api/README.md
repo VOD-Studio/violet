@@ -92,6 +92,10 @@ SSR 使用 `GET /auth/session` 只读探活，**不续期、不写 Cookie**。�
 
 REST 端点可用 `middleware.PATAuth` 复用 MCP 的 `PATVerifier`，再用 `RequireScope` 精确断言权限。成功后上下文包含持有人 ID 和 scopes，异步更新令牌最近使用时间；伪造、缺失或过期令牌返回 401 JSON，权限不足返回 403 JSON，存储故障返回 500。`usage:write` 只授予用量上报，不包含其他写权限。
 
+### 验证邮件
+
+注册、匿名评论和匿名友链共用验证码邮件；找回密码使用同一版式的重置说明。Resend 同时接收 HTML 和纯文本，有效期与 Redis 存储使用同一常量。邮件不依赖外链图片，验证码可直接选取和复制。
+
 ### 响应与分页
 
 普通 JSON 成功响应使用 `data` 信封；分页信息位于 `meta.pagination`。错误响应使用 `error`、`message`，可附带 `request_id` 与字段错误 `details`。
