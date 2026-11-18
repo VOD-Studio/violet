@@ -38,7 +38,7 @@ const luminance = (locator: Locator, property: "backgroundColor" | "color") =>
 		return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
 	}, property);
 
-test.describe("/kanban 看板文档与演示", () => {
+test.describe("/projects/kanban/docs 看板文档与演示", () => {
 	test.use({ viewport: { width: 1440, height: 1000 } });
 
 	test.beforeEach(async ({ context }) => {
@@ -51,7 +51,7 @@ test.describe("/kanban 看板文档与演示", () => {
 		await page.getByRole("button", { name: "更多" }).click();
 		await page.getByRole("link", { name: /看板/ }).click();
 
-		await expect(page).toHaveURL(/\/kanban$/);
+		await expect(page).toHaveURL(/\/projects\/kanban\/docs$/);
 		await expect(page.getByRole("heading", { level: 1 })).toHaveText("看板");
 		await expect(page).toHaveTitle("看板 · @violetjs/kanban");
 	});
@@ -60,13 +60,13 @@ test.describe("/kanban 看板文档与演示", () => {
 		page,
 		request,
 	}) => {
-		const html = await (await request.get("/kanban")).text();
+		const html = await (await request.get("/projects/kanban/docs")).text();
 		// 只断言正文文字：代码块由懒加载组件渲染，服务器冷启动时首个请求可能只输出占位
 		for (const text of ["可编辑看板与历史", "仓库外", 'id="board"', "主题接缝"])
 			expect(html).toContain(text);
 
 		const diagnostics = collectDiagnostics(page);
-		await openClientPage(page, "/kanban");
+		await openClientPage(page, "/projects/kanban/docs");
 		const example = page.locator("#example-editable");
 		await example.getByText("源码 · examples/editable.tsx").click();
 		await expect(example.locator("pre")).toContainText("export function EditableBoard()");
@@ -87,7 +87,7 @@ test.describe("/kanban 看板文档与演示", () => {
 		page.on("request", (request) => {
 			if (request.method() !== "GET") writes.push(`${request.method()} ${request.url()}`);
 		});
-		await openClientPage(page, "/kanban");
+		await openClientPage(page, "/projects/kanban/docs");
 		await expect(card(page, "Write the specification")).toBeVisible();
 
 		await drag(page, card(page, "Write the specification"), column(page, "In progress"));
@@ -103,7 +103,7 @@ test.describe("/kanban 看板文档与演示", () => {
 	});
 
 	test("演示：键盘拿起、移动、放下，Ctrl/⌘+Z 撤销", async ({ page }) => {
-		await openClientPage(page, "/kanban");
+		await openClientPage(page, "/projects/kanban/docs");
 		const prototype = card(page, "Build the prototype");
 		await prototype.focus();
 
@@ -122,7 +122,7 @@ test.describe("/kanban 看板文档与演示", () => {
 
 	test("暗色模式：演示与正文跟随站点主题", async ({ page }) => {
 		await page.emulateMedia({ colorScheme: "dark" });
-		await page.goto("/kanban");
+		await page.goto("/projects/kanban/docs");
 		await expect(page.locator("html")).toHaveClass(/\bdark\b/);
 
 		const spec = card(page, "Write the specification");

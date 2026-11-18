@@ -142,14 +142,13 @@ function RootComponent() {
 	const { auth } = Route.useRouteContext();
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
 	const isAdminRoute = pathname.startsWith("/admin");
-	const isChatRoute = pathname === "/chat" || pathname.startsWith("/chat/");
-	// 包演示页是一屏式工作台，与聊天一样锁定视口、不显示页脚
-	const isWorkbenchRoute = pathname === "/inkline" || pathname.startsWith("/inkline/");
+	const isChatRoute = pathname === "/chat" || pathname === "/chat/";
+	const isWorkbenchRoute =
+		pathname === "/projects/inkline/docs" || pathname.startsWith("/projects/inkline/docs/");
 	const isFullscreenRoute = isChatRoute || isWorkbenchRoute;
 	const viewportRef = useVisualViewport(isFullscreenRoute);
 	const isProfileRoute = pathname.startsWith("/profile");
-	const isLabRoute = pathname.startsWith("/lab");
-	const showBackdrop = !isProfileRoute && !isFullscreenRoute && !isLabRoute;
+	const showBackdrop = !isProfileRoute && !isFullscreenRoute;
 
 	// 首次 hydration 复用 SSR claims，不一定重跑客户端 beforeLoad。
 	useEffect(() => {
@@ -163,7 +162,7 @@ function RootComponent() {
 				// 后台路由：完全独立的布局，不包含前台 Header/Footer
 				<Outlet />
 			) : (
-				// 前台路由：包含 Header/Footer 的标准布局（/chat 与 /inkline 隐藏 Footer 并锁定视口高度）
+				// 聊天工作区和手绘工作台锁定视口；公开角色页沿用普通页面。
 				<div
 					ref={viewportRef}
 					style={

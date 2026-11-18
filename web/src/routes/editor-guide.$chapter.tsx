@@ -1,15 +1,14 @@
 import { findEditorGuideChapter } from "@features/editor-docs/model/chapters";
-import { EditorGuideChapterPage } from "@features/editor-docs/ui/EditorGuideChapterPage";
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/editor-guide/$chapter")({
-	beforeLoad: ({ params }) => {
+	beforeLoad: ({ location, params }) => {
 		if (!findEditorGuideChapter(params.chapter)) throw notFound();
+		const target = new URL(location.href, "http://localhost");
+		target.pathname = `/projects/violet/docs/editor/${encodeURIComponent(params.chapter)}`;
+		throw redirect({
+			href: `${target.pathname}${target.search}${target.hash}`,
+			statusCode: 301,
+		});
 	},
-	component: ChapterRoute,
 });
-
-function ChapterRoute() {
-	const { chapter } = Route.useParams();
-	return <EditorGuideChapterPage chapterId={chapter} />;
-}

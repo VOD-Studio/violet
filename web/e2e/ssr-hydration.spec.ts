@@ -75,7 +75,7 @@ const SCENARIOS: HydrationScenario[] = [
 	},
 	{
 		name: "人设成功空资源",
-		path: "/persona",
+		path: "/chat/personas",
 		apiPaths: ["/api/v1/persona"],
 		selector: "main",
 		text: "人设档案尚未公开",

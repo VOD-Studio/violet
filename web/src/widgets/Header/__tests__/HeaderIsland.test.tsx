@@ -40,7 +40,7 @@ function renderAt(path: string, presence?: PresenceReceipt, authenticated = fals
 				"/notes",
 				"/tweets",
 				"/galleries",
-				"/lab",
+				"/projects/inkline/docs",
 				"/chat",
 			].map((p) => createRoute({ getParentRoute: () => root, path: p, component: empty })),
 		),
@@ -126,7 +126,7 @@ describe("HeaderIsland", () => {
 	});
 
 	it.each([
-		["/lab", "实验室"],
+		["/projects/inkline/docs", "手绘"],
 		["/blog/archive?source=original&tag=go&page=2", "归档"],
 		["/blog/series?source=repost&tag=go&page=2", "系列"],
 		["/blog/series/go-book", "系列"],

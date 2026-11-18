@@ -7,7 +7,7 @@ function ChatPage() {
 	return <ChatWorkspace />;
 }
 
-export const Route = createFileRoute("/chat")({
+export const Route = createFileRoute("/chat/")({
 	ssr: false,
 	beforeLoad: ({ context, location }) => {
 		if (!context.auth.isAuthenticated && !isSessionActive()) {

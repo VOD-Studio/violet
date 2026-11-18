@@ -76,13 +76,12 @@ pnpm dev
 | `/projects`、`/projects/:slug` | 项目与路线图 |
 | `/chat` | 私聊、房间与 Bot 会话 |
 | `/users/:username`、`/users/:username/usage`、`/profile` | 公开主页、本人用量与个人中心（资料、安全） |
-| `/persona`、`/about`、`/friends`、`/changelog` | 人设、关于、友链与更新日志 |
+| `/chat/personas`、`/about`、`/friends`、`/changelog` | 公开人设、关于、友链与更新日志 |
 | `/login`、`/register`、`/forgot-password` | 认证流程 |
 | `/admin/*` | 内容与站点管理 |
-| `/editor-guide`、`/kanban`、`/inkline` | 编辑器手册与工具文档 |
-| `/pet` | 电子宠物演示 |
+| `/projects/violet/docs/editor`、`/projects/kanban/docs`、`/projects/inkline/docs` | 项目文档、编辑器手册与独立工具工作台 |
 
-`/pet` 的 SDK 不入库；开发该页面时需准备 [kodama](https://github.com/VOD-Studio/kodama)，再执行 `pnpm pet:sync`。脚本默认读取并排检出的仓库，也可通过 `PET_REPO` 指定。
+旧人设与工具文档地址会永久重定向到新址。`/lab`、`/pet`、`/ui` 不再是公开入口。宠物 SDK 与内部演示保留，仅内部调试需要 [kodama](https://github.com/VOD-Studio/kodama) 和 `pnpm pet:sync`；脚本默认读取并排检出的仓库，可通过 `PET_REPO` 指定。
 
 博客浏览通过路径区分视图，查询参数只保存标签、来源与页码。文章和系列支持 `tag`、`source=original|repost`、`page`；归档只接受 `tag`，进入归档时清除来源和页码。筛选在服务端完整数据集上执行，系列按其公开章节匹配，章节数仍是全书公开章节总数。
 
@@ -328,7 +327,7 @@ CLI fixture 使用临时 Git 仓库，可通过 `pnpm test scripts/check-colors.
 
 `next-themes` 的 `useTheme`、`setTheme` 等 API 与默认 localStorage 键保持不变，已保存的 `light` / `dark` / `system` 选择继续生效。
 
-站点切换器与 hook 从 `@features/appearance` 引入 `AppearanceToggle`、`useAppearanceSwitcher`。Header、后台顶栏、命令面板和 `/lab/theme` 演示共用这一入口，正式页面不依赖 lab 实现。分段形态可通过 `showLabels` 展示文字并沿容器等分，使用单一 Tab 停靠与方向键换选；默认仍为紧凑图标形态。
+站点切换器与 hook 从 `@features/appearance` 引入 `AppearanceToggle`、`useAppearanceSwitcher`。Header、后台顶栏与命令面板共用这一入口。分段形态可通过 `showLabels` 展示文字并沿容器等分，使用单一 Tab 停靠与方向键换选；默认仍为紧凑图标形态。
 
 ### 主题偏好
 
@@ -351,8 +350,8 @@ CLI fixture 使用临时 Git 仓库，可通过 `pnpm test scripts/check-colors.
 | 包 | 文档站 / 站内用途 | 开发依据 |
 | --- | --- | --- |
 | `@violet/ui` | 通用 UI 与主题，供实际业务页消费 | [架构](packages/ui/docs/architecture.md)、[组件设计](packages/ui/docs/component-design.md) |
-| `@violetjs/kanban` | `/kanban`，项目路线图看板与画布 | [使用说明](packages/kanban/README.zh-CN.md)、[维护指南](packages/kanban/DEVELOPMENT.md) |
-| `@violetjs/inkline` | `/inkline`，手绘工作台与文章图表 | [使用说明](packages/inkline/README.zh-CN.md)、[维护指南](packages/inkline/DEVELOPMENT.md) |
+| `@violetjs/kanban` | `/projects/kanban/docs`，项目路线图看板与画布 | [使用说明](packages/kanban/README.zh-CN.md)、[维护指南](packages/kanban/DEVELOPMENT.md) |
+| `@violetjs/inkline` | `/projects/inkline/docs`，手绘工作台与文章图表 | [使用说明](packages/inkline/README.zh-CN.md)、[维护指南](packages/inkline/DEVELOPMENT.md) |
 | `@violetjs/react-tweet` | 文章引用与推文页面 | [使用说明](packages/react-tweet/README.zh-CN.md)、[维护指南](packages/react-tweet/DEVELOPMENT.md) |
 | `@violetjs/theme` | 构建期生成组件色阶与站点局部身份色 | [使用说明](packages/theme/README.zh-CN.md)、[维护指南](packages/theme/DEVELOPMENT.md) |
 

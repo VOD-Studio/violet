@@ -5,11 +5,11 @@ import { type ExportSettings, exportCode } from "../lib/export-code";
 import { findSectionBySlug, SECTIONS, sectionFromPath } from "../model/sections";
 
 describe("sections", () => {
-	it("maps /inkline and each slug to its section", () => {
-		expect(sectionFromPath("/inkline").id).toBe("artwork");
-		expect(sectionFromPath("/inkline/").id).toBe("artwork");
-		expect(sectionFromPath("/inkline/pens").id).toBe("pens");
-		expect(sectionFromPath("/inkline/export/").id).toBe("export");
+	it("maps the project documentation root and each slug to its section", () => {
+		expect(sectionFromPath("/projects/inkline/docs").id).toBe("artwork");
+		expect(sectionFromPath("/projects/inkline/docs/").id).toBe("artwork");
+		expect(sectionFromPath("/projects/inkline/docs/pens").id).toBe("pens");
+		expect(sectionFromPath("/projects/inkline/docs/export/").id).toBe("export");
 	});
 
 	it("gives every section except the artwork a unique slug", () => {
