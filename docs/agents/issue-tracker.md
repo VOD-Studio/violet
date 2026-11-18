@@ -15,13 +15,19 @@ Use the `gh` CLI for all operations.
 
 Infer the repo from `git remote -v` — `gh` does this automatically when run inside a clone.
 
+## Requirements, titles, and labels
+
+- Track each PRD in a parent issue and its implementation tasks in sub-issues. Keep the specification and acceptance criteria in GitHub; link to the parent instead of copying the text into the repository.
+- Use `[scope] <summary>` for one change in the smallest relevant module. Add `Tn` only to a numbered series. Do not use `vertical:` as a prefix.
+- Leave routine issues unlabeled unless `bug` or `documentation` applies. Reserve [triage labels](triage-labels.md) such as `ready-for-agent` for incoming external issues, not a maintainer's own task breakdown.
+
 ## Fallback: local markdown (when `gh` is unavailable)
 
-Layout follows the existing `docs/issues/` convention (used by historical PRD-0001 / PRD-0002 issue breakdowns):
+Store fallback PRDs in `docs/prd/` and their implementation issues under `docs/issues/<prd-id>/`:
 
 ```
 docs/issues/
-└── <prd-id-or-slug>/          # e.g. 0002-登录态opaque-session重构/
+└── <prd-id-or-slug>/          # one directory per PRD
     ├── 0001-<slug>.md          # one file per issue, zero-padded
     ├── 0002-<slug>.md
     └── ...
