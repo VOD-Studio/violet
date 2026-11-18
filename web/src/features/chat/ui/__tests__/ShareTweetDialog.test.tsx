@@ -88,7 +88,7 @@ afterEach(() => {
 });
 
 describe("分享推文", () => {
-	it("匿名可读取、复制或导出公开推文，不请求私有会话，登录链接保留原路由", async () => {
+	it("匿名可分享公开推文，沿登录链接离开时关闭分享弹窗并保留返回地址", async () => {
 		const requests: (string | undefined)[] = [];
 		httpClient.defaults.adapter = async (config) => {
 			requests.push(config.url);
@@ -110,6 +110,9 @@ describe("分享推文", () => {
 		expect(screen.queryByRole("searchbox")).toBeNull();
 		expect(screen.queryByRole("link", { name: "在 X 打开" })).toBeNull();
 		expect(requests).toEqual(["/tweets/tweet-1"]);
+		login.addEventListener("click", (event) => event.preventDefault(), { once: true });
+		fireEvent.click(login);
+		expect(screen.queryByRole("dialog", { name: /^分享$/ })).toBeNull();
 	});
 
 	it("登录后搜索后续页，保留已选项；部分失败后只用原幂等键重试失败会话", async () => {

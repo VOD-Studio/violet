@@ -398,7 +398,11 @@ function ShareSession({
 								</p>
 							) : (
 								<Button asChild size="sm" variant="secondary">
-									<Link to="/login" search={{ redirect: returnTo }}>
+									<Link
+										to="/login"
+										search={{ redirect: returnTo }}
+										onClick={close}
+									>
 										登录后发到聊天
 									</Link>
 								</Button>
