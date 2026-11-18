@@ -1,24 +1,25 @@
 import { LinkPreviews } from "@entities/link-preview/ui/LinkPreviews";
-import { useShareTweetStore } from "@entities/tweet/model/share-store";
+import { useShareTweetStore } from "@entities/tweet/model/share-dialog-store";
 import type { Tweet } from "@entities/tweet/model/types";
-import { ExternalTweetCard } from "@entities/tweet/ui/ExternalTweetCard";
 import { useMe } from "@features/auth/api/queries";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useDeleteTweet, useToggleLikeTweet } from "@features/tweets/api/mutations";
+import { useLoginDialogStore } from "@shared/api/login-dialog-store";
 import { tokenizeLinks } from "@shared/lib/linkify";
 import { useNavigate } from "@tanstack/react-router";
-import { ConfirmDialog, Modal, QuoteCard } from "@violet/ui";
+import { ConfirmDialog, Modal } from "@violet/ui";
 import { TweetCard as TweetCardLayout } from "@violetjs/react-tweet";
 import { type MouseEvent, useState } from "react";
 import { toast } from "sonner";
 import { ExternalTweetActions } from "./ExternalTweetActions";
-import { QuotedTweetCard } from "./QuotedTweetCard";
 import styles from "./TweetCard.module.css";
 import { TweetCardFooter } from "./TweetCardFooter";
 import { TweetCardHeader } from "./TweetCardHeader";
 import { TweetCardImages } from "./TweetCardImages";
 import TweetComposer from "./TweetComposer";
 import TweetContent from "./TweetContent";
+import { TweetDetailMedia } from "./TweetDetailMedia";
+import { TweetDetailSources } from "./TweetDetailSources";
 import { TweetMoreMenu } from "./TweetMoreMenu";
 
 /** 本站推文的列表与详情展示形态。 */
@@ -35,11 +36,8 @@ export interface TweetCardProps {
 	variant?: TweetCardVariant;
 	/** 删除成功后回调；列表缓存由 mutation 更新。 */
 	onDeleted?: (tweet: Tweet) => void;
-	/**
-	 * 不渲染图片与引用，由调用方单独摆放（详情页的左右分栏）。
-	 * @default false
-	 */
-	detachMedia?: boolean;
+	/** 发现区深链指向的零基下标；省略时展示配图网格。 */
+	initialImageIndex?: number;
 }
 
 /** 将本站内容和互动组合到来源无关的推文布局。 */
@@ -47,13 +45,14 @@ const TweetCard = ({
 	tweet,
 	variant = "timeline",
 	onDeleted,
-	detachMedia = false,
+	initialImageIndex,
 }: TweetCardProps) => {
 	const me = useMe();
 	const navigate = useNavigate();
 	const canDeleteAny = useHasPermission("tweet:delete-any");
 	const [confirmOpen, setConfirmOpen] = useState(false);
 	const [quoteModalOpen, setQuoteModalOpen] = useState(false);
+	const [likeFeedback, setLikeFeedback] = useState(false);
 	const deleteTweet = useDeleteTweet(tweet.id);
 	const toggleLike = useToggleLikeTweet(tweet);
 	const openShareTweet = useShareTweetStore((state) => state.open);
@@ -64,18 +63,21 @@ const TweetCard = ({
 	const handleLikeClick = (event: MouseEvent<HTMLButtonElement>) => {
 		event.stopPropagation();
 		if (!me.data) {
-			toast.info("请先登录后再点赞");
-			navigate({ to: "/login" });
+			useLoginDialogStore.getState().open();
 			return;
 		}
-		toggleLike.mutate();
+		setLikeFeedback(false);
+		toggleLike.mutate(undefined, {
+			onSuccess: () => {
+				if (!tweet.is_liked) setLikeFeedback(true);
+			},
+		});
 	};
 
 	const handleQuoteClick = (event: MouseEvent<HTMLButtonElement>) => {
 		event.stopPropagation();
 		if (!me.data) {
-			toast.info("请先登录后再引用转发");
-			navigate({ to: "/login" });
+			useLoginDialogStore.getState().open();
 			return;
 		}
 		setQuoteModalOpen(true);
@@ -83,19 +85,7 @@ const TweetCard = ({
 
 	const handleShareClick = (event: MouseEvent<HTMLButtonElement>) => {
 		event.stopPropagation();
-		if (!me.data) {
-			toast.info("请先登录后再分享到聊天");
-			navigate({ to: "/login" });
-			return;
-		}
-		openShareTweet({
-			id: tweet.id,
-			authorUsername: tweet.author.username,
-			content: tweet.content,
-			imageUrl: tweet.images[0]?.url,
-			externalTweet: tweet.external_tweet,
-			quotedTweet: tweet.quoted_tweet,
-		});
+		openShareTweet(tweet.id);
 	};
 
 	const openDetail = () => {
@@ -184,19 +174,20 @@ const TweetCard = ({
 						{linkUrls.length > 0 && (
 							<LinkPreviews urls={linkUrls} snapshots={tweet.link_cards ?? []} />
 						)}
-						{!detachMedia && <TweetCardImages images={tweet.images} />}
+						{isDetail && initialImageIndex !== undefined ? (
+							<TweetDetailMedia
+								key={`${tweet.id}:${initialImageIndex}`}
+								images={tweet.images}
+								initialIndex={initialImageIndex}
+							/>
+						) : (
+							<TweetCardImages images={tweet.images} />
+						)}
 					</>
 				}
 				quoteSlot={
-					!detachMedia &&
-					(tweet.external_tweet || tweet.quoted_tweet || tweet.quote_of) ? (
-						<div className="space-y-2">
-							{tweet.external_tweet && (
-								<ExternalTweetCard tweet={tweet.external_tweet} />
-							)}
-							{tweet.quoted_tweet && <QuotedTweetCard tweet={tweet.quoted_tweet} />}
-							{tweet.quote_of && !tweet.quoted_tweet && <QuoteCard deleted />}
-						</div>
+					tweet.external_tweet || tweet.quoted_tweet || tweet.quote_of ? (
+						<TweetDetailSources tweet={tweet} />
 					) : null
 				}
 				footerSlot={
@@ -204,6 +195,7 @@ const TweetCard = ({
 						tweet={tweet}
 						isDetail={isDetail}
 						isLikePending={toggleLike.isPending}
+						likeFeedback={likeFeedback}
 						onLike={handleLikeClick}
 						onQuote={handleQuoteClick}
 						onShare={handleShareClick}

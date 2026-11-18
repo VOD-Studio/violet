@@ -25,7 +25,7 @@ func setupTweetTestDB(t *testing.T) *gorm.DB {
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	require.NoError(t, err)
-	require.NoError(t, db.AutoMigrate(&model.Tweet{}, &model.TweetLike{}, &model.TweetHashtag{}))
+	require.NoError(t, db.AutoMigrate(&model.User{}, &model.Tweet{}, &model.TweetLike{}, &model.TweetHashtag{}))
 	t.Cleanup(func() {
 		if sqlDB, err := db.DB(); err == nil {
 			_ = sqlDB.Close()
@@ -39,9 +39,18 @@ func setupTweetTestDB(t *testing.T) *gorm.DB {
 func mustSeedTweet(t *testing.T, repo *TweetRepository, authorID domainshared.ID, content string, createdAt time.Time) *domaintweet.Tweet {
 	t.Helper()
 	ts := createdAt.UTC().Truncate(time.Microsecond)
-	tw := domaintweet.ReconstructTweet(domainshared.NewID(), authorID, content, nil, nil, 0, ts, ts)
+	seedTweetRepoAuthor(t, repo.db, authorID)
+	tw := domaintweet.ReconstructTweet(domainshared.NewID(), authorID, content, nil, nil, 0, 0, ts, ts)
 	require.NoError(t, repo.Save(context.Background(), tw))
 	return tw
+}
+
+func seedTweetRepoAuthor(t *testing.T, db *gorm.DB, id domainshared.ID) {
+	t.Helper()
+	username := "user-" + id.String()[:8]
+	author := model.User{Username: username, Email: username + "@example.com"}
+	author.ID = id.UUID()
+	require.NoError(t, db.Where("id = ?", author.ID).FirstOrCreate(&author).Error)
 }
 
 func TestTweetRepository_SaveAndFindByID(t *testing.T) {
@@ -68,6 +77,7 @@ func TestTweetRepository_SaveAndFindByIDs_WithQuote(t *testing.T) {
 	repo := NewTweetRepository(db)
 	ctx := context.Background()
 	authorID := domainshared.NewID()
+	seedTweetRepoAuthor(t, db, authorID)
 
 	quoted, err := domaintweet.NewTweet(authorID, "被引用的推文", nil, nil)
 	require.NoError(t, err)
@@ -92,6 +102,7 @@ func TestTweetRepository_FindByTopic(t *testing.T) {
 	repo := NewTweetRepository(db)
 	ctx := context.Background()
 	authorID := domainshared.NewID()
+	seedTweetRepoAuthor(t, db, authorID)
 
 	tw1, err := domaintweet.NewTweet(authorID, "讨论一下 #Golang# 吧", nil, nil)
 	require.NoError(t, err)

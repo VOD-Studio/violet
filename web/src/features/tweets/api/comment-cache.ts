@@ -1,39 +1,20 @@
-import type { Tweet, TweetComment } from "@entities/tweet/model/types";
+import type { TweetComment } from "@entities/tweet/model/types";
 import type { PagedResponse } from "@shared/api/types";
 import type { QueryClient } from "@tanstack/react-query";
 import { tweetKeys } from "./keys";
+import { updateCachedTweet } from "./timeline-cache";
 
 export type TweetCommentListCache = {
 	pages: PagedResponse<TweetComment>[];
 	pageParams: (number | undefined)[];
 };
 
-type TimelineCache = { pages: PagedResponse<Tweet>[] };
-
 /** 增减当前推文的数量，不覆盖其它推文或并发创建/删除的结果。 */
 export function bumpTweetCommentCount(qc: QueryClient, tweetId: string, delta: number) {
-	const apply = (tweet: Tweet): Tweet => ({
+	updateCachedTweet(qc, tweetId, (tweet) => ({
 		...tweet,
 		comment_count: Math.max(0, tweet.comment_count + delta),
-	});
-	qc.setQueryData<Tweet>(tweetKeys.detail(tweetId), (old) => (old ? apply(old) : old));
-	const updateTimeline = (old?: TimelineCache): TimelineCache | undefined => {
-		if (!old?.pages) {
-			return old;
-		}
-		return {
-			...old,
-			pages: old.pages.map((page) => ({
-				...page,
-				data: page.data.map((tweet) => (tweet.id === tweetId ? apply(tweet) : tweet)),
-			})),
-		};
-	};
-	qc.setQueriesData<TimelineCache>({ queryKey: tweetKeys.timeline }, updateTimeline);
-	qc.setQueriesData<TimelineCache>(
-		{ queryKey: [...tweetKeys.all, "userTimeline"] },
-		updateTimeline,
-	);
+	}));
 }
 
 /** 删除仅保存目标条目；回滚按原相邻项复位，不覆盖其它成功删除或新评论。 */

@@ -2,7 +2,7 @@ import { userKeys } from "@entities/user/api/keys";
 import type { UserDTO } from "@entities/user/model/types";
 import { CSRF_HEADER, getCSRFToken } from "@shared/api/csrf";
 import { apiDelete, apiPatch, apiPost } from "@shared/api/request";
-import { clearSessionActive, markSessionActive } from "@shared/api/session";
+import { clearSessionActive } from "@shared/api/session";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
 	BindingsDTO,
@@ -18,7 +18,7 @@ import type {
 	VerifyEmailRequest,
 } from "../model/types";
 import { authKeys } from "./keys";
-import { clearAuthCache } from "./queries";
+import { clearAuthCache, refreshAuthCache } from "./queries";
 
 /**
  * useRegister - 注册并触发邮箱验证邮件
@@ -64,11 +64,7 @@ export const useLogin = (csrfToken?: string) => {
 				__skipAuthDialog: true,
 			});
 		},
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: authKeys.me() });
-			// 登录成功：标记会话活跃（守卫据此不再因瞬态失败踢人）
-			markSessionActive();
-		},
+		onSuccess: () => refreshAuthCache(qc),
 	});
 };
 
@@ -94,10 +90,7 @@ export const useGoogleLoginMutation = (csrfToken?: string) => {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: (credential: string) => googleLogin(credential, csrfToken),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: authKeys.me() });
-			markSessionActive();
-		},
+		onSuccess: () => refreshAuthCache(qc),
 	});
 };
 
@@ -123,10 +116,7 @@ export const useGithubLoginMutation = (csrfToken?: string) => {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: (credential: string) => githubLogin(credential, csrfToken),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: authKeys.me() });
-			markSessionActive();
-		},
+		onSuccess: () => refreshAuthCache(qc),
 	});
 };
 
@@ -156,10 +146,7 @@ export const useConfirmLinkMutation = (csrfToken?: string) => {
 	return useMutation({
 		mutationFn: (input: { linkToken: string; password: string }) =>
 			confirmLink(input.linkToken, input.password, csrfToken),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: authKeys.me() });
-			markSessionActive();
-		},
+		onSuccess: () => refreshAuthCache(qc),
 	});
 };
 

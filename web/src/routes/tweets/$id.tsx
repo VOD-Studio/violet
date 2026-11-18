@@ -1,101 +1,126 @@
+import { useMe } from "@features/auth/api/queries";
+import { tweetDetailContextOptions } from "@features/tweets/api/detail-context";
 import { tweetKeys } from "@features/tweets/api/keys";
 import { fetchTweetDetail, useTweetDetail } from "@features/tweets/api/queries";
+import { useRecordTweetView } from "@features/tweets/api/useRecordTweetView";
+import { MAX_TWEET_IMAGES } from "@features/tweets/model/types";
 import TweetCard from "@features/tweets/ui/TweetCard";
 import TweetCommentSection from "@features/tweets/ui/TweetCommentSection";
-import { TweetDetailMedia } from "@features/tweets/ui/TweetDetailMedia";
-import { TweetDetailSources } from "@features/tweets/ui/TweetDetailSources";
+import { TweetDetailRail } from "@features/tweets/ui/TweetDetailRail";
+import { ApiError } from "@shared/api/error";
 import { SITE_URL } from "@shared/config/env";
+import { getForwardedCookie } from "@shared/server/cookies";
 import { HistoryBack } from "@shared/ui/history-back";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Empty, PageShell, Skeleton } from "@violet/ui";
-import { cn } from "cn";
+import { useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link, notFound, useNavigate, useRouter } from "@tanstack/react-router";
+import { createServerOnlyFn } from "@tanstack/react-start";
+import { Button, Empty, PageShell, ScrollArea, Skeleton } from "@violet/ui";
+import { useEffect, useRef } from "react";
 
-/**
- * /tweets/$id - 单条推文详情页（公开）
- *
- * 匿名可访问。route loader 预取首屏（ensureQueryData），useTweetDetail 跟踪
- * 同一 queryKey 命中缓存。推文不存在/已删除 → 后端 404 → 友好兜底页。
- */
+const requestCookie = createServerOnlyFn(() => getForwardedCookie());
+
+// 详情 GET 的唯一输入是 ID；非法 ID 不指向有效的详情页。
+const isMissingTweet = (error: unknown) =>
+	error instanceof ApiError && (error.status === 404 || error.status === 400);
+
+function TweetDetailPending() {
+	return (
+		<PageShell>
+			<div role="status" aria-label="正在加载推文" className="mx-auto w-full max-w-280">
+				<Skeleton className="h-48 w-full rounded-xl" />
+			</div>
+		</PageShell>
+	);
+}
+
+function TweetDetailNotFound() {
+	return (
+		<PageShell>
+			<Empty
+				title="推文不存在"
+				description="该推文可能已被删除或链接有误。"
+				action={
+					<Button asChild variant="outline">
+						<Link to="/tweets">返回时间线</Link>
+					</Button>
+				}
+			/>
+		</PageShell>
+	);
+}
+
+function TweetDetailError() {
+	const router = useRouter();
+	return (
+		<PageShell>
+			<Empty
+				title="推文暂时加载失败"
+				description="重试不会离开当前地址。"
+				action={<Button onClick={() => void router.invalidate()}>重试</Button>}
+			/>
+		</PageShell>
+	);
+}
+
 function TweetDetailPage() {
 	const { id } = Route.useParams();
+	const { image } = Route.useSearch();
 	const initial = Route.useLoaderData();
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
+	const viewerId = useMe().data?.id;
+	const previousViewerId = useRef(viewerId);
 	const { data: tweet, isLoading, error } = useTweetDetail(id);
-
-	// loader 已尝试预取：initial 非空直接用，loading 态仅初次未命中时出现
 	const current = tweet ?? initial;
+	useRecordTweetView(id, !!current && !error);
 
-	if (isLoading && !current) {
-		return (
-			<PageShell>
-				<div className="mx-auto w-full max-w-3xl">
-					<Skeleton className="h-48 w-full rounded-xl" />
-				</div>
-			</PageShell>
-		);
-	}
+	useEffect(() => {
+		if (previousViewerId.current === viewerId) return;
+		previousViewerId.current = viewerId;
+		void queryClient.invalidateQueries({ queryKey: tweetKeys.details });
+		void queryClient.resetQueries({ queryKey: tweetKeys.commentReactionRoot });
+	}, [queryClient, viewerId]);
 
-	// 不存在 / 已删除：后端返回 404（作者删除后物理删，详情与列表均不可见）
-	if (error || !current) {
-		return (
-			<PageShell>
-				<Empty
-					title="推文不存在"
-					description="该推文可能已被删除或链接有误。"
-					className="py-20"
-				/>
-			</PageShell>
-		);
-	}
-
-	const hasImages = current.images.length > 0;
-	const hasSources = !!(current.external_tweet || current.quoted_tweet || current.quote_of);
-	const split = hasImages || hasSources;
+	if (isMissingTweet(error)) throw notFound();
+	if (isLoading && !current) return <TweetDetailPending />;
+	if (!current) throw error ?? notFound();
 
 	return (
 		<PageShell>
-			<div
-				className={cn(
-					"mx-auto flex w-full flex-col gap-6 font-reading",
-					split ? "max-w-6xl" : "max-w-3xl",
-				)}
-			>
+			<div className="mx-auto flex w-full max-w-280 flex-col gap-4 font-reading">
 				<HistoryBack
 					fallbackTo="/tweets"
-					className="min-h-11 w-fit gap-1.5 rounded-lg px-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+					className="min-h-11 w-fit shrink-0 gap-1.5 rounded-lg px-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
 				>
 					返回时间线
 				</HistoryBack>
 
-				<div
-					className={cn(
-						"grid gap-6",
-						split && "lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start",
-					)}
-				>
-					{split && (
-						<div
-							className={cn(
-								"flex min-w-0 flex-col gap-4",
-								// 只有图片时固定在视口里，右侧评论滚动时大图不离开；带转发原文时内容可能很高，不固定。
-								hasImages && !hasSources && "lg:sticky lg:top-24",
-							)}
-						>
-							<TweetDetailMedia images={current.images} />
-							<TweetDetailSources tweet={current} />
-						</div>
-					)}
-					<div className="flex min-w-0 flex-col gap-6">
+				<div className="grid items-start gap-6 lg:grid-cols-[minmax(0,640px)_minmax(0,1fr)] lg:gap-12 xl:gap-18">
+					<div key={id} className="flex min-w-0 flex-col gap-4">
 						<TweetCard
 							tweet={current}
 							variant="detail"
-							detachMedia={split}
-							onDeleted={() => navigate({ to: "/tweets" })}
+							initialImageIndex={image === undefined ? undefined : image - 1}
+							onDeleted={() => void navigate({ to: "/tweets" })}
 						/>
 						<TweetCommentSection
 							tweetId={current.id}
 							tweetAuthorId={current.author.id}
+							commentCount={current.comment_count}
 						/>
+					</div>
+					<div className="min-w-0 lg:sticky lg:top-24">
+						<ScrollArea
+							key={`${id}:rail`}
+							aria-label="作者与引用"
+							className="-m-1 lg:max-h-[calc(100dvh-7rem)]"
+							viewportClassName="overscroll-auto! max-lg:overflow-visible!"
+						>
+							<TweetDetailRail
+								tweetId={current.id}
+								quoteCount={current.quote_count}
+							/>
+						</ScrollArea>
 					</div>
 				</div>
 			</div>
@@ -104,16 +129,29 @@ function TweetDetailPage() {
 }
 
 export const Route = createFileRoute("/tweets/$id")({
-	// 公开详情：loader 预取，404 时 ensureQueryData 抛错由组件兜底渲染
+	validateSearch: ({ image }: Record<string, unknown>): { image?: number } => {
+		if (typeof image !== "number" || !Number.isInteger(image)) return {};
+		return image > 1 && image <= MAX_TWEET_IMAGES ? { image } : {};
+	},
 	loader: async ({ context, params }) => {
+		const { queryClient } = context;
+		const rail = tweetDetailContextOptions(params.id);
+		const cookie = typeof window === "undefined" ? requestCookie() : undefined;
 		try {
-			return await context.queryClient.ensureQueryData({
-				queryKey: tweetKeys.detail(params.id),
-				queryFn: () => fetchTweetDetail(params.id),
-			});
-		} catch {
-			// 推文不存在/已删除：返回 undefined，组件渲染 404 兜底
-			return undefined;
+			// 服务端与水合首帧必须看到同一份侧栏快照。
+			const [tweet] = await Promise.all([
+				queryClient.fetchQuery({
+					queryKey: tweetKeys.detail(params.id),
+					queryFn: () => fetchTweetDetail(params.id, cookie),
+				}),
+				queryClient.ensureQueryData({ ...rail, retry: false }).catch(() => {
+					queryClient.removeQueries({ queryKey: rail.queryKey, exact: true });
+				}),
+			]);
+			return tweet;
+		} catch (error) {
+			if (isMissingTweet(error)) throw notFound();
+			throw error;
 		}
 	},
 	head: ({ loaderData }) => {
@@ -152,4 +190,7 @@ export const Route = createFileRoute("/tweets/$id")({
 		};
 	},
 	component: TweetDetailPage,
+	pendingComponent: TweetDetailPending,
+	notFoundComponent: TweetDetailNotFound,
+	errorComponent: TweetDetailError,
 });

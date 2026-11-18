@@ -197,6 +197,35 @@ func TestTweetCommentRepository_FindPage_RepliesAscOrder(t *testing.T) {
 	}
 }
 
+func TestTweetCommentRepository_FindPage_RepliesStayInThread(t *testing.T) {
+	db := setupTweetCommentTestDB(t)
+	repo := NewTweetCommentRepository(db)
+	ctx := context.Background()
+	tweetID, otherTweetID, authorID := domainshared.NewID(), domainshared.NewID(), domainshared.NewID()
+	now := time.Now()
+	top := mustSeedComment(t, repo, tweetID, authorID, "顶层", nil, now)
+	topID := top.ID()
+	existing := mustSeedComment(t, repo, tweetID, authorID, "已有回复", top, now.Add(time.Minute))
+	other := mustSeedComment(t, repo, otherTweetID, authorID, "另一条推文的评论", nil, now)
+	mustSeedComment(t, repo, otherTweetID, authorID, "另一条推文的回复", other, now.Add(time.Minute))
+	mustSeedComment(t, repo, tweetID, authorID, "同一推文的另一个楼层", nil, now)
+	require.NoError(t, db.Model(&model.TweetComment{}).Where("id = ?", topID.UUID()).Update("path", "").Error)
+
+	imported, err := repo.FindByID(ctx, topID)
+	require.NoError(t, err)
+	added := mustSeedComment(t, repo, tweetID, authorID, "给导入评论的新回复", imported, now.Add(2*time.Minute))
+	page := domainshared.PageQuery{Page: 1, Limit: 20}
+	result, err := repo.FindPage(ctx, domaintweet.ListFilter{TweetID: &tweetID, ParentID: &topID}, page)
+	require.NoError(t, err)
+	require.Equal(t, int64(2), result.Total)
+	require.Len(t, result.Items, 2)
+	assert.Equal(t, existing.ID(), result.Items[0].ID())
+	assert.Equal(t, added.ID(), result.Items[1].ID())
+
+	_, err = repo.FindPage(ctx, domaintweet.ListFilter{TweetID: &otherTweetID, ParentID: &topID}, page)
+	require.ErrorIs(t, err, domaintweet.ErrCommentNotFound)
+}
+
 // TestTweetCommentRepository_FindPage_RepliesReplyToReply 回复一条回复：path 挂同一顶层，
 // FindPage(ParentID) 按顶层前缀能把整条链拉出
 func TestTweetCommentRepository_FindPage_RepliesReplyToReply(t *testing.T) {

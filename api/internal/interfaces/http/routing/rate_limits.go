@@ -22,6 +22,7 @@ var rateBindings = map[string]rateBinding{
 	"comment_code":      {"评论验证码", "ip", 60, 5},
 	"upload":            {"文件上传", "ip", 60, 30},
 	"tweet":             {"发布推文", "user", 3600, 10},
+	"tweet-views":       {"登记推文浏览", "ip", 60, 120},
 	"chat_typing":       {"聊天输入状态", "user", 60, 60},
 	"code_runner":       {"代码执行", "ip", 60, 5},
 	"friendlink":        {"友链申请", "ip", 60, 3},

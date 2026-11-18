@@ -5,7 +5,7 @@
 	color: var(--muted-foreground);
 }
 
-.heart[data-impressed="true"] {
+.heart[data-selected="true"] {
 	color: var(--affection);
 }
 
@@ -13,12 +13,12 @@
 	fill: transparent;
 }
 
-.heart[data-impressed="true"] .icon {
+.heart[data-selected="true"] .icon {
 	fill: currentColor;
 }
 
-.heart[data-feedback="true"] .icon {
-	animation: impression-heart 420ms ease-out;
+.heart[data-pulse="true"] .icon {
+	animation: affection-heart 420ms ease-out;
 }
 
 .particles {
@@ -36,7 +36,7 @@
 	border-radius: 50%;
 	background: currentColor;
 	opacity: 0;
-	animation: impression-particle 480ms ease-out both;
+	animation: affection-particle 480ms ease-out both;
 }
 
 .particles i:nth-child(1) {
@@ -69,7 +69,7 @@
 	--particle-y: -9px;
 }
 
-@keyframes impression-heart {
+@keyframes affection-heart {
 	0%,
 	100% {
 		transform: scale(1);
@@ -82,7 +82,7 @@
 	}
 }
 
-@keyframes impression-particle {
+@keyframes affection-particle {
 	0% {
 		opacity: 0;
 		transform: translate(-50%, -50%);
@@ -96,7 +96,7 @@
 	}
 }
 
-[data-motion="reduce"] .heart[data-feedback="true"] .icon {
+[data-motion="reduce"] .heart[data-pulse="true"] .icon {
 	animation: none;
 }
 
@@ -105,7 +105,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.heart[data-feedback="true"] .icon {
+	.heart[data-pulse="true"] .icon {
 		animation: none;
 	}
 

@@ -37,6 +37,7 @@ const grid: ActivityGrid = buildActivityGrid(
 			like_count: 0,
 			comment_count: 0,
 			quote_count: 0,
+			view_count: 0,
 			is_liked: false,
 			created_at: new Date().toISOString(),
 			link_cards: [],

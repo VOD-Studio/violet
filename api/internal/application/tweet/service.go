@@ -45,6 +45,10 @@ type Service struct {
 	emojiLookup EmojiLookup
 	bus         appshared.EventBus
 	external    *ExternalService
+	feedRepo    domaintweet.FeedRepository
+	feedStore   FeedStore
+
+	detailContextRepo domaintweet.DetailContextRepository
 }
 
 func (s *Service) WithExternal(external *ExternalService) *Service { s.external = external; return s }
@@ -143,6 +147,7 @@ type TweetDTO struct {
 	Images        []TweetImageDTO     `json:"images"`
 	Emote         map[string]EmojiRef `json:"emote,omitempty"`
 	LikeCount     int                 `json:"like_count"`
+	ViewCount     int64               `json:"view_count"`
 	IsLiked       bool                `json:"is_liked"`
 	CommentCount  int                 `json:"comment_count"`
 	QuoteCount    int                 `json:"quote_count"`
@@ -357,11 +362,18 @@ func (s *Service) Unlike(ctx context.Context, userIDStr, tweetIDStr string) erro
 
 // GetByID 查单条推文详情（公开）。
 func (s *Service) GetByID(ctx context.Context, id string) (TweetDTO, error) {
-	tw, err := s.findByID(ctx, id)
+	tid, err := shared.ParseID(id)
 	if err != nil {
 		return TweetDTO{}, err
 	}
-	return s.toDTOs(ctx, []*domaintweet.Tweet{tw})[0], nil
+	tweets, err := s.repo.FindByIDs(ctx, []shared.ID{tid})
+	if err != nil {
+		return TweetDTO{}, err
+	}
+	if len(tweets) == 0 {
+		return TweetDTO{}, domaintweet.ErrNotFound
+	}
+	return s.toDTOs(ctx, tweets)[0], nil
 }
 
 func (s *Service) GetByIDs(ctx context.Context, ids []shared.ID) ([]TweetDTO, error) {
@@ -370,23 +382,6 @@ func (s *Service) GetByIDs(ctx context.Context, ids []shared.ID) ([]TweetDTO, er
 		return nil, err
 	}
 	return s.toDTOs(ctx, tweets), nil
-}
-
-// ListTimeline 全局时间线（公开）：倒序 cursor 分页。
-//
-// 取 limit+1 条判定 hasMore：多取的第 limit+1 条仅用于探测「还有下一页」，
-// 不下发给客户端；nextCursor 由本页末条生成。
-func (s *Service) ListTimeline(ctx context.Context, cursorStr string, limit int) ([]TweetDTO, string, error) {
-	cursor, err := s.decodeCursorOrNil(cursorStr)
-	if err != nil {
-		return nil, "", err
-	}
-	tweets, err := s.repo.FindTimeline(ctx, cursor, limit+1)
-	if err != nil {
-		return nil, "", err
-	}
-	dtos, nextCursor := s.buildPage(ctx, tweets, limit)
-	return dtos, nextCursor, nil
 }
 
 // ListByTopic 话题时间线（公开）：按话题标签倒序 cursor 分页。
@@ -668,6 +663,7 @@ func (s *Service) toDTOs(ctx context.Context, tweets []*domaintweet.Tweet) []Twe
 			Images:        ImageRefsToDTOs(tw.Images()),
 			Emote:         filterEmoteForBody(tw.Content(), allEmoteMap),
 			LikeCount:     tw.LikeCount(),
+			ViewCount:     tw.ViewCount(),
 			IsLiked:       likedMap[tw.ID().String()],
 			CommentCount:  int(commentCountMap[tw.ID().String()]),
 			QuoteCount:    int(quoteCountMap[tw.ID().String()]),
@@ -1002,15 +998,19 @@ func (s *Service) attachRepliesCount(ctx context.Context, comments []*domaintwee
 }
 
 // ListReplies 列出某顶层评论下的回复（公开，page/limit 分页，最早在前）。
-func (s *Service) ListReplies(ctx context.Context, parentIDStr string, page, limit int) ([]CommentDTO, int64, error) {
+func (s *Service) ListReplies(ctx context.Context, tweetIDStr, parentIDStr string, page, limit int) ([]CommentDTO, int64, error) {
 	if s.commentRepo == nil {
 		return nil, 0, errCommentRepoNotInjected
+	}
+	tweetID, err := shared.ParseID(tweetIDStr)
+	if err != nil {
+		return nil, 0, shared.BadRequest("非法的推文 ID")
 	}
 	parentID, err := shared.ParseID(parentIDStr)
 	if err != nil {
 		return nil, 0, shared.BadRequest("非法的评论 ID")
 	}
-	result, err := s.commentRepo.FindPage(ctx, domaintweet.ListFilter{ParentID: &parentID, Sort: "asc"},
+	result, err := s.commentRepo.FindPage(ctx, domaintweet.ListFilter{TweetID: &tweetID, ParentID: &parentID},
 		shared.PageQuery{Page: page, Limit: limit}.Normalize())
 	if err != nil {
 		return nil, 0, err

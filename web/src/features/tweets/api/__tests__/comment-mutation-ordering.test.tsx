@@ -108,6 +108,7 @@ it("删除失败原位恢复目标，不复活其它成功删除或抹掉并发�
 		is_liked: false,
 		comment_count: 3,
 		quote_count: 0,
+		view_count: 0,
 		link_cards: [],
 		created_at: "2026-11-12T00:00:00Z",
 	};

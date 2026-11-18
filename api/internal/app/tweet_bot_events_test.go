@@ -183,8 +183,8 @@ func TestTweetBotEvents_QuoteNotifiesQuotedAuthor(t *testing.T) {
 	f.reader.tweets[quotedID.String()] = apptweet.TweetDTO{ID: quotedID.String(), IsLiked: true}
 	f.reader.tweets[quoteID.String()] = apptweet.TweetDTO{ID: quoteID.String(), IsLiked: true}
 
-	quoted := domaintweet.ReconstructTweet(quotedID, quotedAuthorID, "原推", nil, nil, 0, time.Now(), time.Now())
-	quote := domaintweet.ReconstructTweet(quoteID, actorID, "感想", nil, nil, 0, time.Now(), time.Now())
+	quoted := domaintweet.ReconstructTweet(quotedID, quotedAuthorID, "原推", nil, nil, 0, 0, time.Now(), time.Now())
+	quote := domaintweet.ReconstructTweet(quoteID, actorID, "感想", nil, nil, 0, 0, time.Now(), time.Now())
 
 	require.NoError(t, f.sub.handle(context.Background(), domaintweet.NewTweetQuoted(quoted, quote)))
 
@@ -206,7 +206,7 @@ func TestTweetBotEvents_LikeNotifiesAuthorWithActor(t *testing.T) {
 
 	tweetID := shared.NewID()
 	f.reader.tweets[tweetID.String()] = apptweet.TweetDTO{ID: tweetID.String(), IsLiked: true}
-	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "被赞", nil, nil, 0, time.Now(), time.Now())
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "被赞", nil, nil, 0, 0, time.Now(), time.Now())
 
 	require.NoError(t, f.sub.handle(context.Background(), domaintweet.NewTweetLiked(tweet, actorID)))
 
@@ -232,7 +232,7 @@ func TestTweetBotEvents_DropsBotActor(t *testing.T) {
 
 	tweetID := shared.NewID()
 	f.reader.tweets[tweetID.String()] = apptweet.TweetDTO{ID: tweetID.String()}
-	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "x", nil, nil, 0, time.Now(), time.Now())
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "x", nil, nil, 0, 0, time.Now(), time.Now())
 
 	require.NoError(t, f.sub.handle(context.Background(), domaintweet.NewTweetLiked(tweet, botUser.GetID())))
 	assert.Empty(t, f.pusher.pushes)
@@ -245,7 +245,7 @@ func TestTweetBotEvents_DropsSelfInteraction(t *testing.T) {
 
 	tweetID := shared.NewID()
 	f.reader.tweets[tweetID.String()] = apptweet.TweetDTO{ID: tweetID.String()}
-	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "x", nil, nil, 0, time.Now(), time.Now())
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "x", nil, nil, 0, 0, time.Now(), time.Now())
 
 	require.NoError(t, f.sub.handle(context.Background(), domaintweet.NewTweetLiked(tweet, authorID)))
 	assert.Empty(t, f.pusher.pushes)
@@ -262,7 +262,7 @@ func TestTweetBotEvents_DropsDisabledOrCredentialless(t *testing.T) {
 	for _, authorID := range []shared.ID{disabledID, noCredentialID} {
 		tweetID := shared.NewID()
 		f.reader.tweets[tweetID.String()] = apptweet.TweetDTO{ID: tweetID.String()}
-		tweet := domaintweet.ReconstructTweet(tweetID, authorID, "x", nil, nil, 0, time.Now(), time.Now())
+		tweet := domaintweet.ReconstructTweet(tweetID, authorID, "x", nil, nil, 0, 0, time.Now(), time.Now())
 		require.NoError(t, f.sub.handle(context.Background(), domaintweet.NewTweetLiked(tweet, actorID)))
 	}
 	assert.Empty(t, f.pusher.pushes)

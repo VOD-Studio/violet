@@ -8,6 +8,8 @@ import type { TweetImageRef } from "@/entities/tweet/model/types";
 export interface TweetDetailMediaProps {
 	/** 本站推文图片，按发布顺序。 */
 	images: TweetImageRef[];
+	/** 从发现侧栏进入时打开的零基图片下标。 */
+	initialIndex?: number;
 	className?: string;
 }
 
@@ -17,8 +19,8 @@ export interface TweetDetailMediaProps {
  * 大图在固定高度的舞台里完整显示（contain），竖图、横图都不裁切；
  * 只有一张图时不显示切换控件。
  */
-export function TweetDetailMedia({ images, className }: TweetDetailMediaProps) {
-	const [index, setIndex] = useState(0);
+export function TweetDetailMedia({ images, className, initialIndex = 0 }: TweetDetailMediaProps) {
+	const [index, setIndex] = useState(initialIndex < images.length ? initialIndex : 0);
 	const preview = useImagePreview();
 	if (images.length === 0) return null;
 	const urls = images.map((img) => img.url);

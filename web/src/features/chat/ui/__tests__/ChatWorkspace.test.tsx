@@ -395,7 +395,6 @@ describe("ChatWorkspace", () => {
 					conversation={{ ...mockConversation, unread_count: 0 }}
 					currentUserID={mockMe.id}
 					onBack={() => {}}
-					pendingShare={null}
 					showDetails={false}
 					onToggleDetails={() => {}}
 				/>
@@ -466,7 +465,6 @@ describe("ChatWorkspace", () => {
 					conversation={{ ...mockConversation, unread_count: 1 }}
 					currentUserID={mockMe.id}
 					onBack={() => {}}
-					pendingShare={null}
 					showDetails={false}
 					onToggleDetails={() => {}}
 				/>,
@@ -491,7 +489,6 @@ describe("ChatWorkspace", () => {
 					conversation={{ ...mockConversation, id: "c_2" }}
 					currentUserID={mockMe.id}
 					onBack={() => {}}
-					pendingShare={null}
 					showDetails={false}
 					onToggleDetails={() => {}}
 				/>,
@@ -544,7 +541,6 @@ describe("ChatWorkspace", () => {
 				conversation={{ ...mockConversation, kind: "room" }}
 				currentUserID={mockMe.id}
 				onBack={() => {}}
-				pendingShare={null}
 				showDetails={false}
 				onToggleDetails={() => {}}
 			/>,
@@ -879,7 +875,6 @@ describe("ChatWorkspace", () => {
 				conversation={mockConversation}
 				currentUserID={mockMe.id}
 				onBack={() => {}}
-				pendingShare={null}
 				showDetails={false}
 				onToggleDetails={() => {}}
 			/>

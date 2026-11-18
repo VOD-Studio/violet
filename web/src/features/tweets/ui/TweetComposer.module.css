@@ -12,11 +12,7 @@
 }
 
 .avatar {
-	width: 2.5rem;
-	height: 2.5rem;
 	margin-top: 0.125rem;
-	border-radius: 50%;
-	object-fit: cover;
 }
 
 .editor {
@@ -28,11 +24,8 @@
 	width: 20rem;
 	max-width: calc(100vw - 2rem);
 	font-family: var(--font-reading);
-}
-
-.sourcePopover input:focus-visible {
-	border-color: transparent;
-	outline-offset: -1px;
+	display: grid;
+	gap: 0.5rem;
 }
 
 .references {
@@ -48,6 +41,7 @@
 	justify-content: space-between;
 	gap: 0.5rem;
 	min-width: 0;
+	margin-block-start: 0.5rem;
 }
 
 .status {
@@ -75,8 +69,7 @@
 	}
 
 	.avatar {
-		width: 2rem;
-		height: 2rem;
+		--v-avatar-size: 2rem;
 	}
 
 	.toolbar {
@@ -86,78 +79,5 @@
 	/* 触屏与窄窗口下的可读性：输入区字号提到 16，避免 iOS 聚焦放大页面 */
 	.editor :is(textarea) {
 		font-size: 1rem;
-	}
-}
-
-.action {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	gap: 0.25rem;
-	min-width: 2.75rem;
-	min-height: 2.75rem;
-	padding: 0.25rem 0.5rem;
-	border: 0;
-	border-radius: 0.5rem;
-	background: transparent;
-	color: var(--muted-foreground);
-	font: inherit;
-	font-size: 0.75rem;
-	font-weight: 500;
-	cursor: pointer;
-	transition: color 150ms ease;
-}
-
-.action[aria-pressed="true"],
-.action:hover:not(:disabled),
-.action:active:not(:disabled) {
-	color: var(--primary-text);
-}
-
-.action:focus-visible {
-	outline: 2px solid var(--ring);
-	outline-offset: 2px;
-}
-
-.action:disabled {
-	opacity: 0.45;
-	cursor: not-allowed;
-}
-
-.submit {
-	padding: 0;
-}
-
-.submit:disabled {
-	opacity: 1;
-}
-
-.submitLabel {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	gap: 0.25rem;
-	min-height: 2rem;
-	padding: 0.25rem 0.75rem;
-	border-radius: 0.5rem;
-	background: var(--primary);
-	color: var(--primary-foreground);
-	font-weight: 600;
-	line-height: 1.25;
-	transition: background-color 150ms ease;
-}
-
-.submit:disabled:not([aria-busy="true"]) .submitLabel {
-	background: color-mix(in oklab, var(--primary) 55%, var(--card));
-}
-
-.submit:hover:not(:disabled) .submitLabel {
-	background: var(--primary-hover);
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.action,
-	.submitLabel {
-		transition: none;
 	}
 }

@@ -142,6 +142,7 @@ export const Route = createFileRoute("/users/$username/")({
 				context.queryClient
 					.ensureInfiniteQueryData({
 						queryKey: tweetKeys.userTimelineOf(params.username),
+						meta: { viewerDependent: true },
 						queryFn: ({ pageParam }) =>
 							fetchUserTimeline(params.username, { cursor: pageParam }),
 						initialPageParam: undefined as string | undefined,

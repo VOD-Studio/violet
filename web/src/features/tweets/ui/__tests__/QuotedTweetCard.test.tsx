@@ -39,6 +39,7 @@ function makeTweet(overrides: Partial<Tweet> = {}): Tweet {
 		content: "转发了别人的推文",
 		images: [],
 		like_count: 0,
+		view_count: 0,
 		is_liked: false,
 		comment_count: 0,
 		quote_count: 1,

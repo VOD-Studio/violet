@@ -6,6 +6,7 @@
  */
 
 import type { CommentSort } from "@entities/comment/model/types";
+import type { TweetImageRef } from "@entities/tweet/model/types";
 import type { PictureInput } from "@shared/ui/rich-text-input/RichTextInput";
 
 /** 正文长度上限（rune 计，对齐后端聚合根不变量 content ≤500） */
@@ -25,6 +26,19 @@ export interface TweetTimelineQuery {
 	cursor?: string;
 	/** 每页条数，缺省由后端补（20） */
 	limit?: number;
+}
+
+/** 发现侧栏由服务端统计，与已读时间线的筛选和页数无关。 */
+export interface TweetSidebar {
+	authors: {
+		id: string;
+		username: string;
+		display_name: string;
+		avatar_url: string;
+		count: number;
+	}[];
+	topics: { tag: string; count: number }[];
+	images: (TweetImageRef & { tweet_id: string; index: number })[];
 }
 
 /**

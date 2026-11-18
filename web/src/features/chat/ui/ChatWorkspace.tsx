@@ -2,7 +2,6 @@
  * 聊天工作区：会话索引侧栏 + 会话面板的顶层布局与选中态编排。
  */
 
-import { useShareTweetStore } from "@entities/tweet/model/share-store";
 import { useMe } from "@features/auth/api/queries";
 import { Button, Empty, Spinner } from "@violet/ui";
 import { cn } from "cn";
@@ -28,7 +27,6 @@ export function ChatWorkspace() {
 	} = useChatConversations();
 	const conversations = conversationsPage?.data ?? [];
 	const { selectedID, selectConversation, clearSelection } = useChatSelection();
-	const pendingShare = useShareTweetStore((s) => s.pending);
 	const [search, setSearch] = useState("");
 	const [showDetails, setShowDetails] = useState(false);
 	const [showNew, setShowNew] = useState(false);
@@ -67,14 +65,6 @@ export function ChatWorkspace() {
 			clearSelection(true);
 		}
 	}, [clearSelection, conversationsPage, selected, selectedID]);
-
-	// 从 ShareTweetDialog 落定的待发分享：自动切到目标会话，输入框读同一 store 的 pending 展示 banner。
-	useEffect(() => {
-		if (pendingShare) {
-			selectConversation(pendingShare.conversationId);
-			setAppearanceOpen(false);
-		}
-	}, [pendingShare, selectConversation]);
 
 	if (!me) {
 		return identityFailed ? (
@@ -165,11 +155,6 @@ export function ChatWorkspace() {
 									conversation={selected}
 									currentUserID={me?.id ?? ""}
 									onBack={clearSelection}
-									pendingShare={
-										pendingShare?.conversationId === selected.id
-											? pendingShare
-											: null
-									}
 									showDetails={showDetails}
 									onToggleDetails={() => setShowDetails((value) => !value)}
 								/>

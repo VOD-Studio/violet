@@ -132,7 +132,7 @@ func (s *stubCommentRepo) FindByID(_ context.Context, id shared.ID) (*domaintwee
 func (s *stubCommentRepo) FindPage(_ context.Context, filter domaintweet.ListFilter, q shared.PageQuery) (shared.PageResult[*domaintweet.Comment], error) {
 	if filter.ParentID != nil {
 		parent, ok := s.byID[filter.ParentID.String()]
-		if !ok {
+		if !ok || (filter.TweetID != nil && parent.TweetID() != *filter.TweetID) {
 			return shared.PageResult[*domaintweet.Comment]{}, domaintweet.ErrCommentNotFound
 		}
 		prefix := parent.ID().String() + "/"
@@ -197,7 +197,7 @@ var (
 func sampleTweet() *domaintweet.Tweet {
 	return domaintweet.ReconstructTweet(
 		shared.MustParseID("00000000-0000-0000-0000-000000000001"),
-		authorID, "示例推文", nil, nil, 0, sampleTime, sampleTime,
+		authorID, "示例推文", nil, nil, 0, 0, sampleTime, sampleTime,
 	)
 }
 
@@ -603,7 +603,8 @@ func TestListReplies_OK(t *testing.T) {
 	}
 	h := newCommentTestHandler(repo, comments)
 
-	req := httptest.NewRequest(http.MethodGet, "/tweets/x/comments/y/replies?page=1&limit=10", nil)
+	req := httptest.NewRequest(http.MethodGet, "/tweets/"+top.TweetID().String()+"/comments/"+top.ID().String()+"/replies?page=1&limit=10", nil)
+	req.SetPathValue("id", top.TweetID().String())
 	req.SetPathValue("commentId", top.ID().String())
 	rr := httptest.NewRecorder()
 	h.ListReplies(rr, req)

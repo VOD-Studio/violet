@@ -1,41 +1,54 @@
 /** tweets feature 查询层（cursor 分页时间线） */
 
 import type { CommentSort } from "@entities/comment/model/types";
-import type { Tweet, TweetComment } from "@entities/tweet/model/types";
+import type { Tweet, TweetComment, TweetTimelineSort } from "@entities/tweet/model/types";
 import { userKeys } from "@entities/user/api/keys";
 import type { UserProfile } from "@entities/user/model/types";
 import { apiGet, apiGetPaged } from "@shared/api/request";
 import type { PagedResponse } from "@shared/api/types";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import {
+	infiniteQueryOptions,
+	queryOptions,
+	useInfiniteQuery,
+	useQuery,
+} from "@tanstack/react-query";
 import {
 	TWEET_COMMENT_PAGE_SIZE,
 	type TweetCommentListQuery,
 	type TweetCommentPageQuery,
+	type TweetSidebar,
 	type TweetTimelineQuery,
 } from "../model/types";
 import { TIMELINE_PAGE_SIZE, tweetKeys } from "./keys";
 
-/**
- * fetchTimeline - 调后端 GET /tweets 拉全局时间线（公开，cursor 分页）
- */
-export const fetchTimeline = async (
-	query: TweetTimelineQuery = {},
-): Promise<PagedResponse<Tweet>> => apiGetPaged<Tweet>("/tweets", { params: query });
-
-/**
- * useTimeline - 全局时间线 hook（cursor 滚动加载）
- *
- * @param limit 每页条数，默认 20
- */
-export const useTimeline = (limit: number = TIMELINE_PAGE_SIZE, enabled: boolean = true) =>
-	useInfiniteQuery({
-		queryKey: tweetKeys.timelineOf(limit),
-		queryFn: ({ pageParam }) => fetchTimeline({ cursor: pageParam, limit }),
-		// 首页无 cursor；pageParam 类型为 string | undefined
+export const timelineOptions = (
+	sort: TweetTimelineSort = "latest",
+	limit: number = TIMELINE_PAGE_SIZE,
+	cookie?: string,
+) =>
+	infiniteQueryOptions({
+		queryKey: tweetKeys.timelineOf(limit, sort),
+		meta: { viewerDependent: true },
+		queryFn: ({ pageParam, signal }) =>
+			apiGetPaged<Tweet>("/tweets", {
+				params: { cursor: pageParam, limit, ...(sort === "latest" ? {} : { sort }) },
+				signal,
+				...(cookie ? { headers: { Cookie: cookie } } : {}),
+			}),
 		initialPageParam: undefined as string | undefined,
-		getNextPageParam: (lastPage) => lastPage.pagination?.next_cursor || undefined,
-		enabled,
+		getNextPageParam: (lastPage) => lastPage.pagination?.next_cursor ?? undefined,
 	});
+
+export const useTimeline = (limit?: number, enabled = true, sort: TweetTimelineSort = "latest") =>
+	useInfiniteQuery({ ...timelineOptions(sort, limit), enabled });
+
+export const tweetSidebarOptions = () =>
+	queryOptions({
+		queryKey: tweetKeys.sidebar,
+		queryFn: ({ signal }) => apiGet<TweetSidebar>("/tweets/sidebar", { signal }),
+	});
+
+export const useTweetSidebar = () => useQuery(tweetSidebarOptions());
 
 /**
  * fetchTopicTimeline - 调后端 GET /tweets/topics/{tag} 拉话题时间线（公开，cursor 分页）
@@ -55,22 +68,16 @@ export const fetchTopicTimeline = async (
 export const useTopicTimeline = (tag: string, limit: number = TIMELINE_PAGE_SIZE) =>
 	useInfiniteQuery({
 		queryKey: tweetKeys.topicTimelineOf(tag, limit),
+		meta: { viewerDependent: true },
 		queryFn: ({ pageParam }) => fetchTopicTimeline(tag, { cursor: pageParam, limit }),
 		initialPageParam: undefined as string | undefined,
 		getNextPageParam: (lastPage) => lastPage.pagination?.next_cursor || undefined,
 		enabled: !!tag,
 	});
-/**
- * fetchTweetDetail - 调后端 GET /tweets/{id} 拉单条推文详情（公开）
- */
-export const fetchTweetDetail = (id: string): Promise<Tweet> => apiGet<Tweet>(`/tweets/${id}`);
+export const fetchTweetDetail = (id: string, cookie?: string): Promise<Tweet> =>
+	apiGet<Tweet>(`/tweets/${id}`, cookie ? { headers: { Cookie: cookie } } : undefined);
 
-/**
- * useTweetDetail - 单条推文详情 hook
- *
- * 匿名可访问。详情页通过 route loader ensureQueryData 预取首屏，
- * 此 hook 跟踪同一 queryKey 保证导航后即时命中缓存。
- */
+/** 与详情路由预取共用缓存，避免水合时重复请求。 */
 export const useTweetDetail = (id: string) =>
 	useQuery({
 		queryKey: tweetKeys.detail(id),
@@ -108,6 +115,7 @@ export const fetchUserTimeline = async (
 export const useUserTimeline = (username: string, limit: number = TIMELINE_PAGE_SIZE) =>
 	useInfiniteQuery({
 		queryKey: tweetKeys.userTimelineOf(username, limit),
+		meta: { viewerDependent: true },
 		queryFn: ({ pageParam }) => fetchUserTimeline(username, { cursor: pageParam, limit }),
 		initialPageParam: undefined as string | undefined,
 		getNextPageParam: (lastPage) => lastPage.pagination?.next_cursor || undefined,

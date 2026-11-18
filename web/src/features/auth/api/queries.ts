@@ -1,7 +1,7 @@
 import type { UserDTO } from "@entities/user/model/types";
 import { clientQueryClient } from "@shared/api/query-client";
 import { apiGet } from "@shared/api/request";
-import { useSessionStore } from "@shared/api/session";
+import { markSessionActive, useSessionStore } from "@shared/api/session";
 import { registerSessionExpiredHandler } from "@shared/api/session-expired";
 import {
 	type QueryClient,
@@ -11,6 +11,17 @@ import {
 } from "@tanstack/react-query";
 import type { CsrfTokenResponse } from "../model/types";
 import { authKeys } from "./keys";
+
+const viewerQueries: QueryFilters = {
+	predicate: (query) => query.meta?.viewerDependent === true,
+};
+
+/** 会话 Cookie 更新后，丢弃上一个访问者的公开查询结果，再刷新用户身份。 */
+export function refreshAuthCache(qc: QueryClient): void {
+	void qc.resetQueries(viewerQueries);
+	void qc.invalidateQueries({ queryKey: authKeys.me() });
+	markSessionActive();
+}
 
 /**
  * useLogout（主动登出）、LoginDialog 取消重登、401 拦截器（被动过期）共用：
@@ -27,6 +38,7 @@ export const clearAuthCache = (qc: QueryClient): void => {
 	void qc.cancelQueries({ queryKey: authKeys.me() });
 	qc.setQueryData<UserDTO | null>(authKeys.me(), null);
 	qc.removeQueries({ queryKey: authKeys.csrfToken() });
+	void qc.resetQueries(viewerQueries);
 };
 
 // 注册会话失效清理：401 拦截器调 onSessionExpired → clearAuthCache(clientQueryClient)。

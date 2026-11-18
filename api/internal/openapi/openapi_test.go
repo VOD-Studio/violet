@@ -52,6 +52,38 @@ func TestPublicPaths(t *testing.T) {
 	}
 }
 
+func TestTweetTimelineOpenAPI(t *testing.T) {
+	spec, err := Spec()
+	require.NoError(t, err)
+	timeline := spec.Paths.Find("/tweets").Get
+	require.NotNil(t, timeline.Responses.Status(409))
+	require.Contains(t, *timeline.Responses.Status(409).Value.Description, "TWEET_HOT_CURSOR_EXPIRED")
+	var sort *openapi3.Parameter
+	for _, parameter := range timeline.Parameters {
+		if parameter.Value.Name == "sort" {
+			sort = parameter.Value
+			break
+		}
+	}
+	require.NotNil(t, sort)
+	require.Equal(t, []any{"latest", "hot", "images"}, sort.Schema.Value.Enum)
+	require.Equal(t, "latest", sort.Schema.Value.Default)
+
+	require.NotNil(t, spec.Paths.Find("/tweets/sidebar").Get)
+	sidebar := spec.Components.Schemas["TweetSidebarDTO"].Value
+	require.ElementsMatch(t, []string{"authors", "topics", "images"}, sidebar.Required)
+	image := spec.Components.Schemas["TweetSidebarImageDTO"].Value
+	require.True(t, image.Properties["width"].Value.Nullable)
+	require.True(t, image.Properties["height"].Value.Nullable)
+
+	views := spec.Paths.Find("/tweets/{id}/views").Post
+	require.Empty(t, views.Security)
+	require.True(t, hasParam(views.Parameters, "X-CSRF-Token"))
+	require.Nil(t, views.RequestBody)
+	require.Contains(t, spec.Components.Schemas["TweetDTO"].Value.Required, "view_count")
+	require.Contains(t, spec.Components.Schemas["TweetViewCountDTO"].Value.Required, "view_count")
+}
+
 func TestAuthPaths(t *testing.T) {
 	spec, _ := Spec()
 	for _, p := range []string{

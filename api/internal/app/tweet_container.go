@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
 
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
@@ -18,6 +20,7 @@ import (
 	domainupload "blog-api/internal/domain/upload"
 	infraimage "blog-api/internal/infrastructure/image"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
+	"blog-api/internal/infrastructure/tweetfeed"
 	"blog-api/internal/infrastructure/xtweet"
 	tweethttp "blog-api/internal/interfaces/http/handler/tweet"
 	tweetreactionhttp "blog-api/internal/interfaces/http/handler/tweetcommentreaction"
@@ -65,9 +68,11 @@ func NewTweetContainer(
 		perm,
 		&tweetEmojiLookupAdapter{repo: emojiRepo, customEmojiSvc: customEmojiSvc},
 		bus,
-	).WithExternal(external)
+	).WithExternal(external).WithFeed(tweetRepo, tweetfeed.NewStore(redisClient)).WithDetailContextRepository(tweetRepo)
+	viewKey := hmac.New(sha256.New, []byte(cfg.ResourceSigningKey))
+	_, _ = viewKey.Write([]byte("violet/tweet-views/ip/v1"))
 	return &TweetContainer{
-		TweetHandler: tweethttp.NewHandler(svc),
+		TweetHandler: tweethttp.NewHandler(svc).WithViewIdentity(middleware.HashedIPIdentity(viewKey.Sum(nil))),
 		CommentReactions: tweetreactionhttp.NewHandler(apptweetreaction.NewService(
 			tweetRepo, commentRepo, emojiRepo, gormrepo.NewTweetCommentReactionStore(db),
 		)),

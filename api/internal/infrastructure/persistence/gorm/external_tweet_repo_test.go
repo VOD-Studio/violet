@@ -216,7 +216,9 @@ func TestExternalPublicationIdempotencyAndTokenOwnership(t *testing.T) {
 func TestExternalVersionChangeWithdrawalAndNativeQuote(t *testing.T) {
 	db, service, external, _, media, _, _ := externalHarness(t, fixedExternalFetcher())
 	ctx := context.Background()
-	user := shared.NewID().String()
+	authorID := shared.NewID()
+	seedTweetRepoAuthor(t, db, authorID)
+	user := authorID.String()
 	preview, err := external.Preview(ctx, user, "https://x.com/jack/status/20")
 	require.NoError(t, err)
 	id := shared.MustParseID(preview.ExternalTweet.ID)

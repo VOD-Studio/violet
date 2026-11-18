@@ -2,7 +2,6 @@
  * 会话面板：消息流（滚动加载历史）、气泡、输入区与详情抽屉的编排。
  */
 
-import type { PendingChatShare } from "@entities/tweet/model/share-store";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { ImagePreview, useImagePreview } from "@shared/ui/image-preview";
 import type { RichTextInputHandle } from "@shared/ui/rich-text-input/RichTextInput";
@@ -38,8 +37,6 @@ export interface ConversationPanelProps {
 	currentUserID: string;
 	/** 返回会话列表。 */
 	onBack: () => void;
-	/** 落定到当前会话的待发分享；非本会话或无分享时为 null。 */
-	pendingShare: PendingChatShare | null;
 	/** 是否显示成员详情。 */
 	showDetails: boolean;
 	/** 切换成员详情抽屉。 */
@@ -51,7 +48,6 @@ export function ConversationPanel({
 	conversation,
 	currentUserID,
 	onBack,
-	pendingShare,
 	showDetails,
 	onToggleDetails,
 }: ConversationPanelProps) {
@@ -255,7 +251,6 @@ export function ConversationPanel({
 								setReplyTarget(null);
 								scrollToBottom(true);
 							}}
-							pendingShare={pendingShare}
 							replyTarget={replyTarget}
 						/>
 					</section>

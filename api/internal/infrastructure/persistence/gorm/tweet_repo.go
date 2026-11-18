@@ -5,12 +5,13 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
+	"strings"
+	"time"
+
 	"github.com/google/uuid"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-	"strings"
-	"time"
 
 	domainshared "blog-api/internal/domain/shared"
 	domaintweet "blog-api/internal/domain/tweet"
@@ -42,7 +43,7 @@ func saveTweet(tx *gorm.DB, t *domaintweet.Tweet, create bool) error {
 	if create {
 		err = tx.Create(&po).Error
 	} else {
-		err = tx.Save(&po).Error
+		err = tx.Omit("view_count").Save(&po).Error
 	}
 	if err != nil {
 		return domainshared.Internal("保存推文失败", err)
@@ -180,7 +181,7 @@ func (r *TweetRepository) FindByID(ctx context.Context, id domainshared.ID) (*do
 	return tweetToDomain(po)
 }
 
-// FindByIDs 批量按 ID 查找推文（服务 toDTOs 预加载引用推文）。
+// FindByIDs 批量加载公开推文，供时间线、引用与聊天分享读取。
 func (r *TweetRepository) FindByIDs(ctx context.Context, ids []domainshared.ID) ([]*domaintweet.Tweet, error) {
 	if len(ids) == 0 {
 		return []*domaintweet.Tweet{}, nil
@@ -190,7 +191,7 @@ func (r *TweetRepository) FindByIDs(ctx context.Context, ids []domainshared.ID) 
 		uuids[i] = id.UUID()
 	}
 	var pos []model.Tweet
-	if err := r.db.WithContext(ctx).Where("id IN ?", uuids).Find(&pos).Error; err != nil {
+	if err := publicTweets(r.db.WithContext(ctx)).Select("tweets.*").Where("tweets.id IN ?", uuids).Find(&pos).Error; err != nil {
 		return nil, domainshared.Internal("批量查询推文失败", err)
 	}
 	result := make([]*domaintweet.Tweet, 0, len(pos))
@@ -210,62 +211,32 @@ func (r *TweetRepository) FindByTopic(ctx context.Context, tag string, cursor *d
 	if tag == "" {
 		return []*domaintweet.Tweet{}, nil
 	}
-	query := r.db.WithContext(ctx).
-		Table("tweets").
-		Select("tweets.*").
+	query := publicTweets(r.db.WithContext(ctx)).
 		Joins("JOIN tweet_hashtags ON tweets.id = tweet_hashtags.tweet_id").
 		Where("tweet_hashtags.tag = ?", tag)
 
+	return findTweetPage(query, cursor, limit)
+}
+
+// FindTimeline 全局时间线：按 (created_at, id) 倒序 keyset 分页（走 idx_tweets_timeline）。
+func (r *TweetRepository) FindTimeline(ctx context.Context, cursor *domaintweet.Cursor, limit int) ([]*domaintweet.Tweet, error) {
+	return findTweetPage(publicTweets(r.db.WithContext(ctx)), cursor, limit)
+}
+
+// FindByAuthor 用户主页推文列表：按作者过滤的同构 keyset 分页（走 idx_tweets_author）。
+func (r *TweetRepository) FindByAuthor(ctx context.Context, authorID domainshared.ID, cursor *domaintweet.Cursor, limit int) ([]*domaintweet.Tweet, error) {
+	return findTweetPage(publicTweets(r.db.WithContext(ctx)).Where("tweets.author_id = ?", authorID.UUID()), cursor, limit)
+}
+
+func findTweetPage(query *gorm.DB, cursor *domaintweet.Cursor, limit int) ([]*domaintweet.Tweet, error) {
 	if cursor != nil {
 		query = query.Where(
 			"tweets.created_at < ? OR (tweets.created_at = ? AND tweets.id < ?)",
 			cursor.CreatedAt, cursor.CreatedAt, cursor.ID.UUID(),
 		)
 	}
-
 	var pos []model.Tweet
-	if err := query.Order("tweets.created_at DESC, tweets.id DESC").Limit(limit).Find(&pos).Error; err != nil {
-		return nil, domainshared.Internal("查询话题推文列表失败", err)
-	}
-
-	result := make([]*domaintweet.Tweet, 0, len(pos))
-	for _, po := range pos {
-		t, err := tweetToDomain(po)
-		if err != nil {
-			return nil, err
-		}
-		result = append(result, t)
-	}
-	return result, nil
-}
-
-// FindTimeline 全局时间线：按 (created_at, id) 倒序 keyset 分页（走 idx_tweets_timeline）。
-func (r *TweetRepository) FindTimeline(ctx context.Context, cursor *domaintweet.Cursor, limit int) ([]*domaintweet.Tweet, error) {
-	return r.findPage(ctx, nil, cursor, limit)
-}
-
-// FindByAuthor 用户主页推文列表：按作者过滤的同构 keyset 分页（走 idx_tweets_author）。
-func (r *TweetRepository) FindByAuthor(ctx context.Context, authorID domainshared.ID, cursor *domaintweet.Cursor, limit int) ([]*domaintweet.Tweet, error) {
-	return r.findPage(ctx, &authorID, cursor, limit)
-}
-
-// findPage keyset 分页共享实现。authorFilter 非 nil 时按作者过滤。
-//
-// 游标条件展开为 OR 形式而非行值 (created_at, id) < (?, ?)：
-// 语义等价，且兼容 SQLite（仓储契约测试用 SQLite，见 repository_test.go 折中说明）。
-func (r *TweetRepository) findPage(ctx context.Context, authorFilter *domainshared.ID, cursor *domaintweet.Cursor, limit int) ([]*domaintweet.Tweet, error) {
-	query := r.db.WithContext(ctx).Model(&model.Tweet{})
-	if authorFilter != nil {
-		query = query.Where("author_id = ?", authorFilter.UUID())
-	}
-	if cursor != nil {
-		query = query.Where(
-			"created_at < ? OR (created_at = ? AND id < ?)",
-			cursor.CreatedAt, cursor.CreatedAt, cursor.ID.UUID(),
-		)
-	}
-	var pos []model.Tweet
-	if err := query.Order("created_at DESC, id DESC").Limit(limit).Find(&pos).Error; err != nil {
+	if err := query.Select("tweets.*").Order("tweets.created_at DESC, tweets.id DESC").Limit(limit).Find(&pos).Error; err != nil {
 		return nil, domainshared.Internal("查询推文时间线失败", err)
 	}
 	result := make([]*domaintweet.Tweet, 0, len(pos))
@@ -386,11 +357,10 @@ func (r *TweetRepository) CountQuotesByTweetIDs(ctx context.Context, tweetIDs []
 		Cnt     int64     `gorm:"column:cnt"`
 	}
 	var rows []countRow
-	err := r.db.WithContext(ctx).
-		Table("tweets").
-		Select("quote_of, COUNT(*) as cnt").
-		Where("quote_of IN ?", uuids).
-		Group("quote_of").
+	err := publicTweets(r.db.WithContext(ctx)).
+		Select("tweets.quote_of, COUNT(*) as cnt").
+		Where("tweets.quote_of IN ?", uuids).
+		Group("tweets.quote_of").
 		Scan(&rows).Error
 	if err != nil {
 		return nil, domainshared.Internal("批量查询推文引用数失败", err)
@@ -457,6 +427,7 @@ func tweetToDomain(po model.Tweet) (*domaintweet.Tweet, error) {
 		imageRefsFromPO(po.Images),
 		quoteOf,
 		po.LikeCount,
+		po.ViewCount,
 		po.CreatedAt,
 		po.UpdatedAt,
 		pub,

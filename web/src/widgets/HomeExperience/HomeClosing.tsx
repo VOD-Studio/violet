@@ -1,14 +1,14 @@
 import type { SiteIdentity } from "@entities/site-identity/model/types";
 import { ClosingVignette } from "@features/seasonal-decor/ui/ClosingVignette";
 import type { Season } from "@shared/lib/theme-preference";
+import { AffectionHeart } from "@shared/ui/affection-heart";
 import { iconProps } from "@violet/ui";
-import { Heart, Mail, Rss } from "lucide-react";
+import { Mail, Rss } from "lucide-react";
 import { motion } from "motion/react";
 import { useRef, useState } from "react";
 
 import { useLeaveSiteImpression } from "./api/mutations";
 import { useSiteImpression } from "./api/queries";
-import styles from "./HomeClosing.module.css";
 
 interface HomeClosingProps {
 	identity: SiteIdentity;
@@ -93,25 +93,10 @@ export function HomeClosing({ identity, season }: HomeClosingProps) {
 							{impressionLabel}
 						</span>
 						<span className="inline-flex items-center gap-1 font-mono text-xs text-foreground/80 transition-colors group-hover:text-primary">
-							<span
-								key={feedback}
-								aria-hidden
-								className={styles.heart}
-								data-impressed={impression?.impressed ?? false}
-								data-feedback={feedback > 0}
-							>
-								<Heart {...iconProps(14, styles.icon)} />
-								{feedback > 0 ? (
-									<span className={styles.particles}>
-										<i />
-										<i />
-										<i />
-										<i />
-										<i />
-										<i />
-									</span>
-								) : null}
-							</span>
+							<AffectionHeart
+								selected={impression?.impressed ?? false}
+								feedback={feedback}
+							/>
 							<span className="tabular-nums">
 								{impressionMutation.isPending ? "…" : (impression?.count ?? "—")}
 							</span>

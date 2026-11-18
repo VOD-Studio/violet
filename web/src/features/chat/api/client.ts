@@ -16,14 +16,16 @@ import type {
 	SendMessageInput,
 } from "../model/types";
 
-export const fetchChatConversations = (cursor?: string, limit = 20) =>
+export const fetchChatConversations = (cursor?: string, limit = 20, signal?: AbortSignal) =>
 	apiGetPaged<ChatConversation>("/chat/conversations", {
 		params: { cursor, limit },
+		signal,
 	});
 
-export const fetchChatContacts = (query = "", cursor?: string, limit = 50) =>
+export const fetchChatContacts = (query = "", cursor?: string, limit = 50, signal?: AbortSignal) =>
 	apiGetPaged<ChatUser>("/chat/contacts", {
 		params: { q: query.trim() || undefined, cursor, limit },
+		signal,
 	});
 
 export const fetchChatConversation = (id: string) =>

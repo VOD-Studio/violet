@@ -94,6 +94,7 @@ export interface Tweet {
 	comment_count: number;
 	/** 引用计数 */
 	quote_count: number;
+	view_count: number;
 	/** 转发引用的推文 ID */
 	quote_of?: string;
 	/** 被引用的推文（如果存在且未被删除） */
@@ -104,6 +105,8 @@ export interface Tweet {
 	/** 正文 URL 逐个对应的链接卡片；后端保证为数组，边界处 ?? [] */
 	link_cards: LinkPreviewCard[];
 }
+
+export type TweetTimelineSort = "latest" | "hot" | "images";
 
 /** 共享的 X 原文；不可用时不携带旧正文或媒体。 */
 export interface ExternalTweet {

@@ -47,23 +47,30 @@ func (r *TweetCommentRepository) FindByID(ctx context.Context, id domainshared.I
 
 // FindPage 分页列出推文评论（统一入口；筛选与排序语义见 domaintweet.ListFilter）。
 //
-// TweetID 场景返回顶层评论（depth=0）；ParentID 场景先查 parent 拿 path（顶层
-// 评论 path 形如 "<uuid>/"），再按 path 前缀查所有回复（path LIKE "<uuid>/%"），
-// 排除 parent 自身。两层扁平下回复的 parent_id 可能指另一条回复，但 path 都挂
-// 同一顶层，所以按 path 前缀能把「回复 @yyy」整条链都拉出来。
+// 顶层评论用 ID 确定楼层前缀，即使导入数据未填写自己的 path。
 func (r *TweetCommentRepository) FindPage(ctx context.Context, filter domaintweet.ListFilter, q domainshared.PageQuery) (domainshared.PageResult[*domaintweet.Comment], error) {
 	q = q.Normalize()
 	query := r.db.WithContext(ctx).Model(&model.TweetComment{})
 	if filter.ParentID != nil {
 		var parent model.TweetComment
-		if err := r.db.WithContext(ctx).First(&parent, "id = ?", filter.ParentID.UUID()).Error; err != nil {
+		parentQuery := r.db.WithContext(ctx).Where("id = ?", filter.ParentID.UUID())
+		if filter.TweetID != nil {
+			parentQuery = parentQuery.Where("tweet_id = ?", filter.TweetID.UUID())
+		}
+		if err := parentQuery.First(&parent).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return domainshared.PageResult[*domaintweet.Comment]{}, domaintweet.ErrCommentNotFound
 			}
 			return domainshared.PageResult[*domaintweet.Comment]{}, domainshared.Internal("查询父评论失败", err)
 		}
-		query = query.Where("path LIKE ?", parent.Path+"%").
-			Where("id != ?", filter.ParentID.UUID())
+		prefix := parent.Path
+		if parent.Depth == 0 {
+			prefix = filter.ParentID.String() + "/"
+		}
+		if prefix == "" {
+			return domainshared.NewPageResult(q, []*domaintweet.Comment{}, 0), nil
+		}
+		query = query.Where("tweet_id = ? AND depth = 1 AND path LIKE ? AND id <> ?", parent.TweetID, prefix+"%", parent.ID)
 	} else if filter.TweetID != nil {
 		query = query.Where("tweet_id = ? AND depth = 0", filter.TweetID.UUID())
 	}

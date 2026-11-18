@@ -69,13 +69,7 @@ export function TweetCardHeader({
 						<BotBadge show={author.is_bot} />
 					</div>
 					{isDetail ? (
-						<time
-							dateTime={createdAt}
-							title={formatDateTime(createdAt, "long")}
-							className="v-tweet__handle"
-						>
-							{formatDateTime(createdAt)}
-						</time>
+						<span className="v-tweet__handle">@{author.username}</span>
 					) : (
 						<Link
 							to="/tweets/$id"

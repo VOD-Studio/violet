@@ -50,5 +50,35 @@ type TweetRepository interface {
 	FindLikedTweetIDs(ctx context.Context, userID shared.ID, tweetIDs []shared.ID) (map[string]bool, error)
 }
 
+type SidebarAuthor struct {
+	// ID 公开用户 ID。
+	ID shared.ID
+	// Username 用户主页路径名。
+	Username string
+	// DisplayName 用户公开昵称。
+	DisplayName string
+	// AvatarURL 公开头像，未设置时为空。
+	AvatarURL string
+	// Count 统计窗口内的公开推文数。
+	Count int64
+}
+
+type SidebarTopic struct {
+	// Tag 规范化话题名，不含 #。
+	Tag string
+	// Count 统计窗口内包含该话题的公开推文数。
+	Count int64
+}
+
+// FeedRepository 查询匿名可见的公开时间线投影。
+type FeedRepository interface {
+	FindImageTimeline(context.Context, *Cursor, int) ([]*Tweet, error)
+	RankHotTimeline(context.Context, time.Time, time.Time) ([]shared.ID, error)
+	FindSidebarAuthors(context.Context, time.Time, time.Time, int) ([]SidebarAuthor, error)
+	FindSidebarTopics(context.Context, time.Time, time.Time, int) ([]SidebarTopic, error)
+	ReadViewCount(context.Context, shared.ID) (int64, error)
+	IncrementViewCount(context.Context, shared.ID) (int64, error)
+}
+
 // ErrNotFound 推文不存在
 var ErrNotFound = shared.NotFound("推文")

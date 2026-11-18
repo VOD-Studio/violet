@@ -163,7 +163,13 @@ func (c *Comment) SetParent(parent *Comment) error {
 	c.depth = 1
 	pid := parent.id
 	c.parentID = &pid
-	c.path = topAncestorPath(parent.path) + c.id.String() + "/"
+	var prefix string
+	if parent.depth == 0 {
+		prefix = pid.String() + "/"
+	} else {
+		prefix = topAncestorPath(parent.path)
+	}
+	c.path = prefix + c.id.String() + "/"
 	return nil
 }
 

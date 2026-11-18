@@ -1,5 +1,6 @@
 /** 推文消费行为：管理权限、二次确认删除、本站互动与整卡导航边界。 */
 import type { Tweet } from "@entities/tweet/model/types";
+import { useLoginDialogStore } from "@shared/api/login-dialog-store";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -60,6 +61,7 @@ function makeTweet(overrides: Partial<Tweet> = {}): Tweet {
 		content: "hello world",
 		images: [],
 		like_count: 0,
+		view_count: 0,
 		is_liked: false,
 		comment_count: 0,
 		quote_count: 0,
@@ -151,9 +153,10 @@ describe("TweetCard — 作者个人页链接", () => {
 describe("TweetCard — 点赞交互", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		useLoginDialogStore.getState().close();
 	});
 	afterEach(() => cleanup());
-	it("未登录时点击点赞按钮引导登录跳转", () => {
+	it("未登录时在原页面打开登录弹窗，不发出点赞请求", () => {
 		meDataOverride = null;
 		const tweet = makeTweet({ like_count: 5, is_liked: false });
 		render(<TweetCard tweet={tweet} />);
@@ -162,7 +165,8 @@ describe("TweetCard — 点赞交互", () => {
 		fireEvent.click(likeButton);
 
 		expect(toggleLikeMutate).not.toHaveBeenCalled();
-		expect(navigateMock).toHaveBeenCalledWith({ to: "/login" });
+		expect(useLoginDialogStore.getState().isOpen).toBe(true);
+		expect(navigateMock).not.toHaveBeenCalled();
 	});
 
 	it("登录状态下点击点赞按钮触发 toggleLike 并且不触发整卡 openDetail", () => {
