@@ -1,6 +1,6 @@
 ---
 name: violet-ui
-description: 在 violet 仓库使用、扩展 @violet/ui、编写包内规范或在 /ui 陈列室上架展品时，核对组件清单、原生行为、样式入口、展品占地与真实 tarball 消费。
+description: 在 Violet 使用或扩展 @violet/ui 时，核对组件清单、原生语义、样式入口，并通过独立 tarball 消费和实际业务页面验收。
 ---
 
 # 使用与扩展 @violet/ui
@@ -12,8 +12,8 @@ description: 在 violet 仓库使用、扩展 @violet/ui、编写包内规范或
 5. 保留 native 属性、ref、受控与非受控值、FormData/reset、SSR ID 和事件取消语义。Input 的 className/style/ref 属于 input，外壳是根元素，用 `classNames.control`；标签、描述、错误属于表单项，输入框只原样透传 `aria-describedby` 与 `aria-invalid`。Button asChild 保留子内容，禁用或忙碌时拦截子 handlers，自定义 Link 必须透传 props 和 ref。
 6. 增加或迁移组件时登记清单，再运行 `pnpm --filter @violet/ui sync` 与只读 `check`。清单驱动根入口、组件入口、legacy 汇总、包 exports 与 CSS 列表；不要维护第二套列表。`@violet/ui/variants` 保持纯 recipe，不依赖 React。
 7. 常规 React 消费从 `@violet/ui` 或组件入口导入，Tailwind v4 之后加载 `@violet/ui/styles.css`。普通 CSS 消费先加载 `tokens.css`，再加载 `classes.css` 或 `components/<name>.css`。JS 与 CSS 的按需加载分别核对。工作区入口指向源码，pack 后由 publishConfig 指向 dist。
-8. 在 `web/src/features/ui-showcase/ui/exhibits/<id>.tsx` 上架展品并登记到馆藏目录：声明含展开态的占地、展区、用途与可检视状态，渲染真实组件；展品状态由清单推导，规格正文不进陈列室。按 docs-map 同步负责的 README/AGENTS。
-9. 执行包的 `check`、`typecheck`、`test`、`build`、`check:dist`、`consumer`。最后一步把真实 tarball 安装到工作区外，验证类型、SSR、Vite 构建与模块可达性。在站点跑 `e2e/ui-showcase.spec.ts` 的展柜契约，再用检视台逐态核对明暗、季节、窄屏、键盘与减弱动态，交给独立 verifier；作者 pass 不自称批准。
+8. 按[组件设计方法](../../../web/packages/ui/docs/component-design.md#跑源码检查与真实消费者)执行包内检查、行为测试、构建和 `consumer`。`consumer` 在工作区外安装真实 tarball，验证类型、SSR、Vite 构建与按需 CSS；不能用工作区导入成功替代。
+9. 打开实际使用该组件的业务页面，走一次受影响的操作，核对明暗主题、窄屏、键盘焦点与减弱动态。弹层还要检查展开和关闭后的焦点。按[文档责任地图](../../../docs/agents/docs-map.md)同步对应文档，分别记录包内、独立消费者与页面的验证结果，交由独立 reviewer 复核。
 
 架构指南在 `web/packages/ui/docs/architecture.md`，逐步流程在同目录 `component-design.md`，包边界见 `web/packages/ui/AGENTS.md`。
 
