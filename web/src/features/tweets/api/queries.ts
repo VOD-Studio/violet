@@ -28,6 +28,7 @@ export const timelineOptions = (
 ) =>
 	infiniteQueryOptions({
 		queryKey: tweetKeys.timelineOf(limit, sort),
+		meta: { viewerDependent: true },
 		queryFn: ({ pageParam, signal }) =>
 			apiGetPaged<Tweet>("/tweets", {
 				params: { cursor: pageParam, limit, ...(sort === "latest" ? {} : { sort }) },
@@ -67,6 +68,7 @@ export const fetchTopicTimeline = async (
 export const useTopicTimeline = (tag: string, limit: number = TIMELINE_PAGE_SIZE) =>
 	useInfiniteQuery({
 		queryKey: tweetKeys.topicTimelineOf(tag, limit),
+		meta: { viewerDependent: true },
 		queryFn: ({ pageParam }) => fetchTopicTimeline(tag, { cursor: pageParam, limit }),
 		initialPageParam: undefined as string | undefined,
 		getNextPageParam: (lastPage) => lastPage.pagination?.next_cursor || undefined,
@@ -113,6 +115,7 @@ export const fetchUserTimeline = async (
 export const useUserTimeline = (username: string, limit: number = TIMELINE_PAGE_SIZE) =>
 	useInfiniteQuery({
 		queryKey: tweetKeys.userTimelineOf(username, limit),
+		meta: { viewerDependent: true },
 		queryFn: ({ pageParam }) => fetchUserTimeline(username, { cursor: pageParam, limit }),
 		initialPageParam: undefined as string | undefined,
 		getNextPageParam: (lastPage) => lastPage.pagination?.next_cursor || undefined,

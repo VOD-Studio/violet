@@ -32,7 +32,8 @@ vi.mock("@shared/api/csrf", () => ({
 }));
 
 import type { UpdatedProfile } from "@features/auth/model/types";
-import { apiGet, apiPatch, apiPost } from "@shared/api/request";
+import { useTimeline, useTopicTimeline, useUserTimeline } from "@features/tweets/api/queries";
+import { apiGet, apiGetPaged, apiPatch, apiPost } from "@shared/api/request";
 import { useSessionStore } from "@shared/api/session";
 import { authKeys } from "../keys";
 import { useChangePassword, useLogin, useLogout, useUpdateProfile } from "../mutations";
@@ -152,6 +153,39 @@ describe("auth mutations — 缓存副作用", () => {
 
 		expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: authKeys.me() });
 		expect(useSessionStore.getState().sessionActive).toBe(true);
+	});
+
+	it("原地登录和退出后，同一批时间线反映当前访问者的点赞状态", async () => {
+		let loggedIn = false;
+		vi.mocked(apiPost).mockImplementation(async (path) => {
+			loggedIn = path === "/auth/login";
+			return loggedIn ? { user_id: "u1" } : { message: "ok" };
+		});
+		vi.mocked(apiGetPaged).mockImplementation(async () => ({
+			data: [{ id: "t1", is_liked: loggedIn, like_count: 1 }],
+			pagination: { limit: 20 },
+		}));
+
+		const { result } = renderHook(
+			() => ({
+				global: useTimeline(),
+				topic: useTopicTimeline("开发"),
+				user: useUserTimeline("alice"),
+				login: useLogin(),
+				logout: useLogout(),
+			}),
+			{ wrapper: createWrapper(qc) },
+		);
+		const liked = () =>
+			[result.current.global, result.current.topic, result.current.user].map(
+				(query) => query.data?.pages[0].data[0]?.is_liked,
+			);
+
+		await waitFor(() => expect(liked()).toEqual([false, false, false]));
+		await result.current.login.mutateAsync({ identifier: "alice", password: "test-password" });
+		await waitFor(() => expect(liked()).toEqual([true, true, true]));
+		await result.current.logout.mutateAsync();
+		await waitFor(() => expect(liked()).toEqual([false, false, false]));
 	});
 
 	it("useUpdateProfile：改名后合并 me，旧用户名不再命中新资料缓存", async () => {
