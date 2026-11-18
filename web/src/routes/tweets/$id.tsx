@@ -9,8 +9,10 @@ import { TweetDetailSources } from "@features/tweets/ui/TweetDetailSources";
 import { SITE_URL } from "@shared/config/env";
 import { HistoryBack } from "@shared/ui/history-back";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Empty, PageShell, Skeleton } from "@violet/ui";
+import { Empty, PageShell, ScrollArea, Skeleton } from "@violet/ui";
 import { cn } from "cn";
+
+const mobileViewportClass = "max-lg:overflow-visible! max-lg:overscroll-auto!";
 
 /**
  * /tweets/$id - 单条推文详情页（公开）
@@ -55,18 +57,31 @@ function TweetDetailPage() {
 	const hasImages = current.images.length > 0;
 	const hasSources = !!(current.external_tweet || current.quoted_tweet || current.quote_of);
 	const split = hasImages || hasSources;
+	const discussion = (
+		<div className="flex min-w-0 flex-col gap-6">
+			<TweetCard
+				tweet={current}
+				variant="detail"
+				detachMedia={split}
+				onDeleted={() => navigate({ to: "/tweets" })}
+			/>
+			<div id="comments" className={cn("scroll-mt-24", split && "lg:scroll-mt-1")}>
+				<TweetCommentSection tweetId={current.id} tweetAuthorId={current.author.id} />
+			</div>
+		</div>
+	);
 
 	return (
-		<PageShell>
+		<PageShell className={split ? "lg:flex lg:h-[calc(100dvh-4rem)] lg:flex-col" : undefined}>
 			<div
 				className={cn(
 					"mx-auto flex w-full flex-col gap-6 font-reading",
-					split ? "max-w-6xl" : "max-w-3xl",
+					split ? "max-w-6xl lg:min-h-0 lg:flex-1" : "max-w-3xl",
 				)}
 			>
 				<HistoryBack
 					fallbackTo="/tweets"
-					className="min-h-11 w-fit gap-1.5 rounded-lg px-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+					className="min-h-11 w-fit shrink-0 gap-1.5 rounded-lg px-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
 				>
 					返回时间线
 				</HistoryBack>
@@ -74,39 +89,36 @@ function TweetDetailPage() {
 				<div
 					className={cn(
 						"grid gap-6",
-						split && "lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start",
+						split && "lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]",
 					)}
 				>
 					{split && (
-						<div
-							className={cn(
-								"flex min-w-0 flex-col gap-4",
-								// 只有图片时固定在视口里，右侧评论滚动时大图不离开；带转发原文时内容可能很高，不固定。
-								hasImages && !hasSources && "lg:sticky lg:top-24",
-							)}
+						<ScrollArea
+							aria-label="推文媒体与来源"
+							className="-m-1"
+							viewportClassName={mobileViewportClass}
 						>
-							<TweetDetailMedia
-								key={`${id}:${image ?? 1}`}
-								images={current.images}
-								initialIndex={(image ?? 1) - 1}
-							/>
-							<TweetDetailSources tweet={current} />
-						</div>
+							<div className="flex min-w-0 flex-col gap-4">
+								<TweetDetailMedia
+									key={`${id}:${image ?? 1}`}
+									images={current.images}
+									initialIndex={(image ?? 1) - 1}
+								/>
+								<TweetDetailSources tweet={current} />
+							</div>
+						</ScrollArea>
 					)}
-					<div className="flex min-w-0 flex-col gap-6">
-						<TweetCard
-							tweet={current}
-							variant="detail"
-							detachMedia={split}
-							onDeleted={() => navigate({ to: "/tweets" })}
-						/>
-						<div id="comments" className="scroll-mt-24">
-							<TweetCommentSection
-								tweetId={current.id}
-								tweetAuthorId={current.author.id}
-							/>
-						</div>
-					</div>
+					{split ? (
+						<ScrollArea
+							aria-label="推文与评论"
+							className="-m-1"
+							viewportClassName={mobileViewportClass}
+						>
+							{discussion}
+						</ScrollArea>
+					) : (
+						discussion
+					)}
 				</div>
 			</div>
 		</PageShell>
