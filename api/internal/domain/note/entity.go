@@ -48,6 +48,12 @@ type PublishedNote struct {
 	Tags []string
 	// PublishedAt 首次发布时间。
 	PublishedAt time.Time
+	// Type 分类由作者声明；旧记录为 TypeUnclassified。
+	Type Type
+	// Project 仅提供仍可公开访问的关联项目；未关联或项目已移除时为 nil。
+	Project *PublishedProject
+	// Pitfall 仅踩坑手记有值。
+	Pitfall *Pitfall
 }
 
 var (
@@ -79,12 +85,14 @@ type Note struct {
 	updatedAt time.Time
 	// tags 标签名列表快照（多对多关联的快照，同 post 建模），去重后 0–8 个
 	tags []string
+	// journal 时间线元数据；正文编辑可独立保留它。
+	journal Journal
 }
 
 // NewNote 创建草稿笔记；校验失败返回领域错误。
-func NewNote(id, authorID shared.ID, title, contentMD string, tags []string) (*Note, error) {
-	n := &Note{id: id, authorID: authorID, status: StatusDraft}
-	if err := n.applyContent(title, contentMD, tags); err != nil {
+func NewNote(id, authorID shared.ID, title, contentMD, contentHTML string, tags []string, journal *Journal) (*Note, error) {
+	n := &Note{id: id, authorID: authorID, status: StatusDraft, journal: Journal{Type: TypeUnclassified}}
+	if err := n.Edit(title, contentMD, contentHTML, tags, journal); err != nil {
 		return nil, err
 	}
 	return n, nil
@@ -97,22 +105,31 @@ func Reconstruct(
 	publishedAt *time.Time,
 	createdAt, updatedAt time.Time,
 	tags []string,
+	journal Journal,
 ) *Note {
 	return &Note{
 		id: id, authorID: authorID,
 		title: title, contentMD: contentMD, contentHTML: contentHTML,
 		status: status, publishedAt: publishedAt,
 		createdAt: createdAt, updatedAt: updatedAt,
-		tags: tags,
+		tags: tags, journal: journal,
 	}
 }
 
-// Edit 全量替换可编辑内容（标题/正文/标签）；状态与发布时间不变。
-func (n *Note) Edit(title, contentMD, contentHTML string, tags []string) error {
+// Edit 替换正文和标签，journal 非 nil 时同时替换时间线元数据；状态与发布时间不变。
+func (n *Note) Edit(title, contentMD, contentHTML string, tags []string, journal *Journal) error {
+	if journal != nil {
+		if err := journal.validate(); err != nil {
+			return err
+		}
+	}
 	if err := n.applyContent(title, contentMD, tags); err != nil {
 		return err
 	}
 	n.contentHTML = contentHTML
+	if journal != nil {
+		n.journal = *journal
+	}
 	return nil
 }
 
@@ -174,6 +191,7 @@ func (n *Note) PublishedAt() *time.Time { return n.publishedAt }
 func (n *Note) CreatedAt() time.Time    { return n.createdAt }
 func (n *Note) UpdatedAt() time.Time    { return n.updatedAt }
 func (n *Note) Tags() []string          { return n.tags }
+func (n *Note) Journal() Journal        { return n.journal }
 
 // IsPublished 是否处于已发布态。
 func (n *Note) IsPublished() bool { return n.status == StatusPublished }

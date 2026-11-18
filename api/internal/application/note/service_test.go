@@ -236,13 +236,13 @@ func TestBrowsePublished_CursorFlow(t *testing.T) {
 		ids = append(ids, dto.ID)
 	}
 
-	page1, next, err := svc.BrowsePublished(context.Background(), "", 2, "")
+	page1, next, err := svc.BrowsePublished(context.Background(), BrowseQuery{Limit: 2})
 	require.NoError(t, err)
 	require.Len(t, page1, 2)
 	assert.NotEmpty(t, next, "还有第三条，应返回游标")
 	assert.Equal(t, ids[2], page1[0].ID, "published_at 倒序")
 
-	page2, next2, err := svc.BrowsePublished(context.Background(), next, 2, "")
+	page2, next2, err := svc.BrowsePublished(context.Background(), BrowseQuery{Cursor: next, Limit: 2})
 	require.NoError(t, err)
 	require.Len(t, page2, 1)
 	assert.Empty(t, next2)
@@ -251,7 +251,7 @@ func TestBrowsePublished_CursorFlow(t *testing.T) {
 
 func TestBrowsePublished_InvalidCursor(t *testing.T) {
 	svc, _ := newService(t)
-	_, _, err := svc.BrowsePublished(context.Background(), "!!!not-base64!!!", 10, "")
+	_, _, err := svc.BrowsePublished(context.Background(), BrowseQuery{Cursor: "!!!not-base64!!!", Limit: 10})
 	require.Error(t, err)
 }
 
@@ -259,7 +259,7 @@ func TestBrowsePublished_PassesTagFilter(t *testing.T) {
 	svc, repo := newService(t)
 	_, err := svc.Create(context.Background(), CreateInput{UserID: seedAuthor(t), ContentMD: "x", Tags: []string{"redis"}})
 	require.NoError(t, err)
-	_, _, err = svc.BrowsePublished(context.Background(), "", 10, "redis")
+	_, _, err = svc.BrowsePublished(context.Background(), BrowseQuery{Limit: 10, TagSlug: "redis"})
 	require.NoError(t, err)
 	assert.Equal(t, "redis", repo.lastBrowseFilter.TagSlug, "标签筛选应透传仓储")
 	assert.Equal(t, 11, repo.lastBrowseLimit, "limit+1 探测 hasMore")
