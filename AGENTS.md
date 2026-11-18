@@ -3,92 +3,39 @@
 全栈博客平台 monorepo。
 
 ## 架构与代码边界
-- **后端 (`api/`)**: Go 1.26, Chi 路由, PostgreSQL 16, Redis 7。
-  - **关键**: 后端为 DDD 单一架构: `internal/{domain,application,infrastructure,interfaces,app}`(旧 handler/service/repository 分层已移除)。依赖注入为 `app/` 下手工容器装配(`*Container` + `container.go` 聚合,不使用 wire)。
-- **前端 (`web/`)**: React 19, Vite, Tailwind CSS v4。
-  - **关键**: 使用 **`pnpm`** 作为包管理器，**切勿使用 `npm` 或 `yarn`**。
-  - 状态管理: Zustand + TanStack Query。
+后端是 Go、Chi、PostgreSQL 和 Redis；前端是 React、Vite、Tailwind CSS、Zustand 和 TanStack Query。前端只用 `pnpm`，不用 npm 或 yarn。
 
 ### 架构耦合约束
 
-> 本节规定代码归属；commit 边界与依赖顺序统一见「提交流程规范」。
-
-- **前端通用组件与站点公共层各归其位**。跨 feature 的通用 React 组件及基础语义 token 在 `web/packages/ui/`，从 `@violet/ui` 根入口使用组件；Tailwind v4 后导入 `@violet/ui/styles.css`。`web/src/styles/dialects/` 保留站点方言；`web/src/shared/` 只放站点级通用能力，以上两层均不夹带 `posts` / `comments` / `editor` 等 feature 业务逻辑。FSD 分层(`shared` → `entities` → `features` → `widgets`)不允许向业务层反向依赖。
-- **组件库以单元组织并标记成熟度**。所有组件在 `web/packages/ui/src/components/<name>/`，结构、按需 typed recipe、CSS、导出与测试共置；`component-manifest.json` 是公开单元、入口、CSS、文档与 foundation / legacy 状态的事实源。`src/legacy.ts` 仅为兼容 barrel，不放实现副本。基础单元的 React 与 HTML 共用唯一 BEM CSS；其余 legacy 的样式逐个迁移。共享 `lib/` 只接收真实复用能力，字体、签名与站点装饰动画留在 `web/src/styles/site-theme.css`。组件库规范以 `web/packages/ui/docs/architecture.md` 与 `component-design.md` 为权威；新增单元执行清单同步、源码检查、构建、外部 tarball 消费验收，并在实际消费页面验证，不再要求组件陈列室展品。
-- **页面改版先复用现有组件**。页面设计稿早于部分组件设计；已有组件的外观、交互与 API 优先于旧页面稿。页面稿决定布局、内容层级与页面级流程，不作为复制控件或回退组件的依据。只有现有能力确有缺口时才提出最小扩展。见 `docs/adr/0030-frontend-pages-use-existing-components.md`。
-- **后端各层各司其职**:领域逻辑进 `domain`,用例编排进 `application`,基础设施细节进 `infrastructure`,HTTP 适配进 `interfaces`;`internal/middleware/` 只放通用横切中间件(auth/cors/csrf/ratelimit 等)。通用基础设施(错误码、observability、通用中间件)不夹带具体业务实体逻辑。
-- **判断「是否公共」看真实消费方**,不是位置。feature 私有逻辑被第二个 feature 复用时先上提；通用组件进 `web/packages/ui/`，站点专用基础能力进 `web/src/shared/`，有业务语义的实体逻辑进 `web/src/entities/`（提交顺序见「依赖与迁移」）。
+- 后端只用 DDD 分层：`api/internal/domain` 管业务不变量，`application` 编排用例，`infrastructure` 实现适配器，`interfaces` 处理 HTTP。`app` 手工装配容器，不用 Wire。`internal/middleware/` 只放通用横切逻辑。新增模块见[后端分层与装配](api/README.md#分层与新增模块)。
+- 前端按实际消费方归属：跨 feature 的通用控件和语义 token 进 `web/packages/ui/`，站点从 `@violet/ui` 根入口消费；站点专用基础能力进 `web/src/shared/`，有业务语义的共用逻辑进 `web/src/entities/`，只服务一个 feature 的逻辑留在该 feature。站点方言留在 `web/src/styles/dialects/`。依赖从上层指向下层：`widgets` → `features` → `entities` → `shared`，下层不反向依赖业务。
+- 页面稿决定布局、内容和流程，已有组件的外观、交互和 API 以当前组件契约为准。先复用，确有缺口再扩展，不为旧稿复制控件。见 [ADR-0030](docs/adr/0030-frontend-pages-use-existing-components.md)。
 
 ## 开发流与命令 (Makefile)
-所有核心操作都通过根目录的 `Makefile` 统管：
-- **启动本地开发**: `make dev` (一键启动 Postgres、Redis、API 和 Web)
-- **数据库迁移**: `make migrate` (使用 golang-migrate)
 
-### 后端 (`api/`) 须知
-- **环境依赖**: 后端需要 Go 1.26。本机无 Go 时不擅自安装,按 `.agents/skills/api-toolchain` 的流程问用户一次并记住决定(本地安装或容器执行)。
-- **测试**: `make api-test` (本机无 Go 时按上方容器方式执行,下同)
-- **代码检查**: `make api-lint` (使用 golangci-lint)
+在仓库根目录运行 `make help` 查目标，`make dev` 启动开发环境，`make migrate` 执行数据库迁移。
 
-### 前端 (`web/`) 须知
-- **代码检查与格式化**: 使用 **Biome** (非 ESLint/Prettier)。命令: `make web-lint` 和 `make web-format`。
-- **类型检查**: `make web-typecheck`
-- **测试**: `make web-test`
-- **Tailwind CSS v4**: 支持任意数字值简写 (例如 `max-w-50` = 200px 替代 `max-w-[200px]`)。详见 `tailwind-canonical-classes` skill。
-- **前端动笔前读 skill**:新建或编辑前端代码(组件/hook/util/测试)前读 `frontend-conventions`,编辑 className 前读 `tailwind-canonical-classes`——触发即读,不凭记忆;写完对照 skill 关键规则自查(TSDoc 标签形态、canonical 类形态)。做 UI 设计决策前读 `web/packages/ui/docs/architecture.md` 与 `component-design.md`，从真实需求、原生语义和可验证契约推导。
+| 改动 | 动笔前 | 验证入口 |
+| --- | --- | --- |
+| 后端 | Go 版本见 [`api/go.mod`](api/go.mod)。本机缺 Go 时按 [api-toolchain](.agents/skills/api-toolchain/SKILL.md) 问一次使用本机还是容器，不自行安装。 | `make api-test`、`make api-lint`；未装 golangci-lint 时后者回退到 `go vet`。 |
+| 站点前端 | 组件、hook、工具和测试先读 [frontend-conventions](.agents/skills/frontend-conventions/SKILL.md)；编辑 `className` 还须读 [tailwind-canonical-classes](.agents/skills/tailwind-canonical-classes/SKILL.md)，写完按对应规范自查。 | `make web-lint`、`make web-typecheck`、`make web-test`；`make web-format` 会写回文件。 |
+| UI 设计与组件包 | 做设计决策先读[组件架构](web/packages/ui/docs/architecture.md)和[组件设计方法](web/packages/ui/docs/component-design.md)。新增或迁移单元以 [manifest](web/packages/ui/component-manifest.json) 为准。 | 按 [violet-ui](.agents/skills/violet-ui/SKILL.md) 验收包内行为、真实 tarball 和实际消费页面，三者不互相替代。 |
 
 ## 分支命名
 
 每个新任务 / feature 先从 `release/2.0` 新建分支完成，不在 `release/2.0` 上直接开发。
 
-格式:**`<type>/<scope>-<简述>`**
+分支名用 `<type>/<scope>-<简述>`，例如 `fix/handler-search-encoding`。type 对应变更性质，scope 取最内层模块，跨模块且难以归属时可省略。简述用小写英文或拼音，词间用 `-`。
 
-- **type** 对齐 Conventional Commits:`feat` / `fix` / `chore` / `docs` / `refactor` / `style` / `test` / `perf` / `hotfix`。
-- **scope** 指向最内层模块(同提交 scope 规则):前端 (`posts`/`editor`/`auth`/`comments`)、后端 (`handler`/`service`/`domain`/`repository`)、或文件 / 区域名 (`readme`/`ci`/`deps`/`deploy`)。改动难以定位到单模块时可省略 scope。
-- 全小写,`/` 分段,`-` 连词。无空格、无大写、无特殊字符。
-- 简述用英文或拼音,短而清晰。
+### 需求与实施分支
 
-✅ 正确:
-- `feat/post-slug-pinyin`
-- `feat/front-end-redesign`
-- `fix/handler-search-encoding`
-- `docs/deploy`
-- `chore/deps-bump`
+同一功能的需求文档（PRD）与实施归属同一功能分支，不另建 `docs/*-prd` 分支。实施子任务可从功能分支切出，也可直接在功能分支提交。需求建 GitHub 父议题，实施任务建子议题，仓库不复制正文；只有 `gh` 不可用才用[本地记录](docs/agents/issue-tracker.md#fallback-local-markdown-when-gh-is-unavailable)。跨功能的独立流程规范可用 `docs/` 分支。
 
-❌ 错误:
-- `feature/这是一个很长的中文分支名`(冗长 + 中文)
-- `update`(无 type 无 scope)
-- `Fix/Login`(大写)
-- `new-feature`(能定位到模块时该写 scope,而非泛称)
+## 按任务查阅
 
-### PRD / issues 与分支的关系
-
-**PRD、issues 属于 feature 分支的一部分,不是独立任务,不单独建文档分支。** 这是「每个新任务先建分支」规则在文档场景下的具体含义,容易误判,单列一节。
-
-- **PRD 使用 GitHub 父 Issue，实施任务使用子 Issue**；正文与验收标准在 Issue 维护，仓库只保留必要的索引链接，不维护第二份 PRD 正文。仅 `gh` 不可用时按 issue tracker 规则降级到本地 Markdown。
-- 一个 feature 的完整生命周期(PRD 起草 → PRD 迭代 → issues 拆分 → 各 issue 实现)都归属**同一个 feature 分支**。需要入库的 ADR、设计归档与索引可作为早期 commit，Issue 正文不为凑 commit 复制到仓库。
-- **不存在「为写 PRD 单独建 `docs/xxx-prd` 分支」这种事**。规划 feature 时先建对应功能分支(如 `feat/scrape-mcp`)，再创建 PRD Issue。
-- 各 issue 的**实现**仍可从 feature 分支再叉子分支(可选)，也可直接在 feature 分支上按原子提交规则提交。
-- 历史本地 PRD 保留，不因当前存储规则变更批量迁移或重写。
-
-**判定方法**:如果这份 PRD/issues 服务于一个具体的 feature,它就属于该 feature 分支;只有跨 feature 的纯架构/流程文档(如本 AGENTS.md、ADR)才考虑独立 docs 分支。
-
-## Agent skills
-
-### Issue tracker
-
-GitHub Issues 为主(`gh issue create`),`gh` 不可用时降级到本地 markdown(`docs/issues/<prd-id>/`)。外部 PR 不进 triage 队列。详见 `docs/agents/issue-tracker.md`。
-
-### Triage labels
-
-五个 canonical triage 角色(needs-triage / needs-info / ready-for-agent / ready-for-human / wontfix),label 字符串与角色名一致,wontfix 复用 GitHub 自带。详见 `docs/agents/triage-labels.md`。
-
-### Blog writing
-
-`.agents/skills/blog-writing/` 仅在用户主动要求时使用（不在会话结束时自动触发）：写文章、改稿、写笔记、保存或发布，沿用用户已有授权。文章分发现型、库介绍型与场景型，写作须有实际运行的输出或对比，算法与外部来源须给出处，不以功能规模分级，不默认上传。文章质量与出版操作分开，草稿可供完整审阅。术语见 CONTEXT.md「笔记(Notes)」节，部署见 `docs/guides/mcp-servers.md`。
-
-### Domain docs
-
-Single-context:根 `CONTEXT.md` 单文件统管所有域(认证/文章/公告),`docs/adr/` 放 auth 系列 ADR。详见 `docs/agents/domain.md`。
+- 查领域术语用根 [CONTEXT.md](CONTEXT.md)，检查既有决策见[领域指南](docs/agents/domain.md)。
+- 功能、模块或架构变化时，按[文档责任地图](docs/agents/docs-map.md)同步对应文档，与所属改动一起提交。
+- 只有用户主动要求写文章、改稿、记笔记或出版时才使用 [blog-writing](.agents/skills/blog-writing/SKILL.md)。不在会话结束时自动写作；保存、上传和发布沿用用户已有授权，不默认执行。
 
 <!-- MANUAL: Any manually added notes below this line are preserved on regeneration -->
 
@@ -101,258 +48,45 @@ Single-context:根 `CONTEXT.md` 单文件统管所有域(认证/文章/公告),`
 
 ## 前端视觉红线
 
-- **功能性圆角上限 `rounded-2xl`（16px）。** 再大只是装饰、不作功能圆角；胶囊 `rounded-full` 是形态不是超限圆角。
-- **硬投影禁用。** 浮起感唯一配方是 `0 4px 24px / 0.05` 的轻微软影；`ring-1 ring-border` 只是描边分界，不产生浮起。暗色域软影弱，可加描边辅助分界。其余 box-shadow 一律不用。
-- **聚焦环不得被裁剪。** `overflow-hidden` / `overflow-auto` / 折叠动画（`grid-rows-[0fr]`、`height`）容器里的可聚焦元素，其 `ring` / `outline` / `ring-offset` 会向外扩 2–4px，被容器边界直接裁掉（输入框左、上缘光环缺一截）。裁剪层须留 ≥4px 内边距并用等量负外边距抵消（`-m-1 p-1`），或让裁剪发生在不含可聚焦元素的内层；抽屉、气泡的滚动内容区同样要有水平内边距。新增或改动含裁剪容器的布局后，用 Tab 与点击逐个聚焦其中的输入框、按钮，目视四周聚焦环完整再提交。
-- 组件设计依据包内 `web/packages/ui/docs/` 规范；用色与间距按具体需求和语义 token 确定，品牌色板为可插拔预设，界面不锁色值。
+改动滚动区或折叠容器后，用 Tab 和点击检查可聚焦控件四边的聚焦环。站点圆角、投影、颜色和裁剪处理见[站点视觉与焦点](docs/guides/frontend-style-guide.md#站点视觉与焦点)。
 
 ## 提交流程规范
 
-每次完成任务都要提交，但**一个任务可以对应多个 commit**。默认只在本地 commit，不推送。
+有入库改动才提交，默认只在本地，不推送。只读分析、答疑或评审不需要为交付建分支或制造空提交。
 
 ### 提交步骤
 
-1. **先分组，再暂存**。提交前列出每组的目的、文件范围、前置提交与验证方式；按下方职责边界分组，再按依赖排序。
-2. **逐组暂存**。使用明确路径或 hunk；同一文件包含不同目的的改动时按 hunk 拆分。其他任务或用户的改动留在工作区。
-3. **核对暂存内容**。每组只包含一个逻辑变更及必需的测试、生成文件和文档。功能/模块增删、架构调整按 `docs/agents/docs-map.md` 同步文档，随所属代码提交。
-4. **验证提交序列**。每个提交及其前置提交组成的状态都必须可构建、可验证；最终工作区全绿不能替代中间状态验证。拆分已验证的改动时，补验拆分产生的中间状态，并确认最终代码未丢失。
-5. **逐组提交**。标题必须能准确概括本组目的；交付时列出各 commit 与验证结果。纯流程规范修改独立提交。
+提交前按目的、文件范围、前置依赖和验证方式分组。逐组选择路径或 hunk，核对只包含本任务的改动，保留用户与其他任务的工作。交付时列出各提交和实际验证结果。
 
 ### 原子性
 
-本节是通用原子性判据的唯一维护处。其他项目复用时引用本节，只补充各自的职责边界，不再复制维护同一套判据。
+这里是通用原子性判据的唯一维护处。一个提交解决一个问题，带上该行为必需的测试、生成物与文档，不按文件或技术层机械拆分。
 
-**一个 commit = 一个逻辑变更，不等于一个需求、一个会话或整个工作区。** 用以下三问判断：
-
-1. **回退后还能保持有效状态吗？** 按依赖逆序撤回后，构建与契约仍须有效；否则应调整拆分边界。具体顺序见「依赖与迁移」。
-2. **三个月后看标题能知道做了什么吗？** 不能，说明标题过于笼统，或提交混合了多个目的。
-3. **这些改动服务于同一个任务吗？** 无关任务必须拆开；同一个任务也须按提供方与消费方等职责边界分组。
-
-**反对过度拆分。** 同一职责内的完整行为，不按文件、技术层或实现步骤切碎；每组实现及其必需的测试、文档一起提交。
-
-**draft 阶段宽松，交付历史严格。** 开发中允许 WIP 和调试提交；报告任务完成或提交 PR 前，须整理为可验证的原子提交。重写范围限于本次任务且未共享的历史；涉及他人或已共享提交时先取得授权。
+每个提交连同其前置提交都应可构建、可验证，按依赖逆序回退仍有效。拆分已验证的改动时，补验新产生的中间状态；最终工作区全绿不能代替中间验证。交付前整理本任务未共享的 WIP；重写已共享或他人历史须先获授权。
 
 ### 职责边界
 
-| 改动边界 | 提交方式 |
-|---|---|
-| 后端 `api/` 与前端 `web/` | 分开提交；接口提供方先于消费方 |
-| 独立组件包 `web/packages/ui/` 与站点业务消费方 | 组件能力单独提交；首页、人设、文章等业务接入另行提交，即使此次只有一个消费方 |
-| 站点公共层 `shared` / `entities` 与 feature | 可复用能力或修复先提交，再提交 feature 接入；代码归属按「架构耦合约束」 |
-| feature 私有实现 | 同一行为涉及的组件、hook、状态和测试一起提交，不按文件或技术层切碎 |
-| 无关修复、格式化、流程文档 | 与当前功能分开；同一文件不是合并不同目的的依据 |
-
-**按职责归组，不按目录机械切分。** 组件的实现、CSS、导出、清单、测试、消费验收 fixture 及对应文档共同构成组件提交。其余组件或业务变更仍须按各自目的分组。
+| 改动边界 | 如何提交 |
+| --- | --- |
+| 后端 API 与前端 | 分开提交，接口提供方在先。 |
+| `web/packages/ui/` 与站点 | 组件实现、CSS、清单、导出、测试、消费 fixture 与包文档一起提交；站点接入另提，即使只有一个消费方。 |
+| 站点 `shared` / `entities` 与 feature | 先提交可独立验收的公共能力或修复，再提交 feature 接入。 |
+| feature 私有行为 | 同一行为的组件、hook、状态和测试一起提交。无关修复、格式化或流程规则另提。 |
 
 ### 依赖与迁移
 
-- **提供能力 → 接入消费方**。先提交可独立验收的公共能力，再提交使用它的业务。回退时先回退消费方，再回退提供方；在消费方仍存在时直接撤掉依赖会失败，不是合并提交的理由。
-- **迁移分两步**。先在目标包提供完整实现并保留旧调用链；再切换全部消费方，同时删除旧实现、旧导出和过期测试。旧路径仅存在于中间提交，最终交付不保留重复实现或兼容壳。
-- **拆分受阻时说明具体阻断**。若接口破坏性变更无法通过排序保持每一步有效，提交前指出受影响的符号、调用方和失败环节，请用户决定迁移策略；不得仅以“强耦合”“同一个需求”跳过职责边界。
+迁移先在目标包提供完整实现，保留旧调用链；再切换所有消费方，同时删除旧实现、导出与过期测试。若破坏性接口无法按此顺序拆分，提交前列出受影响的符号、调用方和失败环节，请用户决定。
 
 ### 提交信息
 
-- 使用**中文 Conventional Commits**：`<type>(<scope>): <subject>`。type 按实际变更选择；纯文档或流程规则使用 `docs`，不以 `fix` / `refactor` 触发功能发版。
-- **scope 指向最小改动单元**，不叠加冗余前缀。例如 `fix(handler): 修复搜索参数编码`，不用 `fix(api/handler): ...`；集中在单个组件时使用组件名，不以 `web` 代替。
-- **subject 只概括一个主要变更**，使用祈使句，50 字符内为宜。禁止用 `+` / `、` 堆砌多个独立要点；改成「与」「并」也不能代替拆分。此标题约束同样适用于 issue 与 PR。
-- **body 用 bullet points 列出改动事实**，不写散文或主观评价。方案论证、被否决对比和机制解释放入 PR 描述或 ADR。
+使用中文 Conventional Commits：`<type>(<scope>): <subject>`。scope 取最小改动单元；标题用祈使句，宜在 50 字内，不用 `+`、`、` 或连接词堆砌独立要点。正文用 bullet 列改动事实，决策理由放 PR 或 ADR。纯文档或流程规则用 `docs`，不用发版型 type。
 
 ## 代码注释规范
 
-注释只写代码**无法自表达**的信息。代码已说明的,注释复述就是噪音——维护时注释与代码双线漂移,先信谁都是坑。
+注释写契约、不变量和陷阱，不复述签名。改 Go 结构体前看[字段注释规则](api/README.md#go-注释)：领域实体和值对象的命名字段必注，对外 DTO 只注释无法推断的语义。
 
-### 无效注释(禁止新增,存量逐步清理)
+## 议题与合并
 
-**1. 复读签名**——把类型名/函数名/字段名用中文重述一遍,没补充任何新信息。
-
-```go
-// ❌ AuditContainer 操作日志模块容器
-type AuditContainer struct { ... }
-// 类型名 AuditContainer 已说明它是 audit 模块的容器,注释只是翻译了一遍。
-
-// ❌ NewAuditContainer 装配操作日志模块
-func NewAuditContainer(db *gorm.DB) *AuditContainer {
-// 函数名 NewAuditContainer 已说明它构造这个容器,注释是复读。
-
-// ✅ Handle 执行邮箱验证
-func (h *VerifyEmailHandler) Handle(...) {
-// Handle 是泛词(不知道做什么),"邮箱验证"补充了签名没有的信息——有效。
-
-// ✅ List 分页查询日志
-func (s *Service) List(...) {
-// List 是泛词(不知道 list 什么),"日志"补充了签名没有的信息——有效。
-```
-
-判定:名字本身是否已自解释?是 → 注释复读,无效。名字是泛词(Handle/List/Get/Update),注释补充了"做什么/查什么" → 有效。
-
-**2. 短函数里的废话分隔标签**——函数几行长,`// --- XXX ---` 比代码还多。
-
-```go
-// ❌
-func Run(ctx context.Context, cfg *config.Config) error {
-    // --- 基础设施 ---
-    infra, cleanup := InitInfra(ctx, cfg)
-    defer cleanup()
-
-    // --- 模块容器 ---
-    container, cc, err := NewContainer(...)
-```
-
-边界:**长文件**(如 300+ 行的 service)用 `// --- 输入/输出 DTO ---` `// --- CRUD 用例 ---` 分段有导航价值,保留;**短函数**(几十行)的分隔标签纯噪音,删。
-
-**3. 设计论证当注释**——把 why、框架原则、历史决策塞进注释。
-
-「提交信息」节规定详细决策过程写入 PR 描述或 ADR；代码注释同样不承载设计论证。
-
-```go
-// ❌ seed 调用 application use case 合规,但 input DTO 构造由模块自治。
-// ❌ 符合 ABP「seed contributor 封装在模块内」原则。
-// ❌ 此前 role 模块用 google/wire 装配...为统一 DI 方式、消除 wire 孤岛...
-```
-
-这些是「为什么这么设计」的论证,属于 PR/ADR,不属于代码。代码注释只管「这段代码现在做了什么、有什么陷阱」,不管「过去为什么这么决定」。
-
-**4. 过期/不准确注释**——重构后没更新,注释指向已被删除的符号或旧的调用方。
-
-```go
-// ❌ "由 main.go 调用"    ← 实际已改为 app.NewContainer 调用
-// ❌ "从 main.go 抽离"    ← 实际已在 app.Run 内部
-```
-
-重构搬代码时,跟着搬的注释要同步改指向。拿不准就删——过期的注释比没有注释更危险。
-
-**5. 一个包多个 package comment**——Go 规范要求一个包**只在一个文件**有 `// Package xxx` 文档。
-
-```go
-// ❌ 同一个 internal/app 包下,多个文件各写一份:
-// auth_container.go:   // Package app 提供 auth/user DDD 模块的手工 DI 装配。
-// container.go:        // Package app 根容器:聚合全部 DDD 模块容器。
-// run.go:              // Package app 应用启动入口。
-```
-
-包级文档只在**一个文件**保留(通常 `doc.go`,或字母序第一个文件)。其余文件的 `package app` 行不带注释。`go vet`/`revive` 会警告重复。
-
-### 有效注释(保留)
-
-注释值得存在,当且仅当它提供了代码本身没有的信息:
-
-- **非显然陷阱**:`// 返回 error 而非 log.Fatal:Fatal 调 os.Exit 会跳过 defer cleanup,导致连接泄漏。`
-- **不明显的业务规则**:`// display 字段创建后不可变更:不同形态语义与必填字段不同,中途切换会数据不完整。`
-- **跨模块编排约束**:`// login 只校验凭证返回 userID,session 创建交由 CreateSessionHandler,避免三种登录方式重复 session 逻辑。`
-- **魔法值的理由**:`const replyPreviewLimit = 3 // 前端首屏无需为每条顶层发独立请求拉预览。`
-- **公开 API 的 godoc**(导出符号的契约文档,调用方靠它理解用法)。
-
-### 自检
-
-写注释前问:这段话是不是在描述代码「做了什么」(代码已说明)?还是「为什么这么做、有什么坑」(代码没说)?前者删,后者留。
-
-### 新增代码强制遵守;存量注释不专门开 PR 清理
-
-新代码(含重构搬移)必须遵守上述规范。存量无效注释不单独开 PR 清理；因其他原因改动到该文件时顺手清理，仅限与本次修改相关的注释，随所属逻辑变更提交。
-
-### 字段注释规范(struct field)
-
-上一节讲「该删什么注释」,本节讲「该补什么注释」。两者不矛盾:废话注释删掉,关键注释补上。
-
-#### 金标准:领域实体/值对象的每个字段都要注释
-
-`domain/user/entity.go` 的 `User`、`domain/comment/entity.go` 的 `Comment`/`Anchor`、`domain/subscription/entity.go` 的 `Subscription`、`config/config.go` 的全部配置 struct 是项目主流高质量样本。它们的共同点:
-
-```go
-type User struct {
-    shared.AggregateRoot
-    // email 邮箱(值对象)
-    email Email
-    // username 用户名(值对象)
-    username Username
-    // ...
-    // isBuiltinSuperAdmin 是否为内置超级管理员
-    //
-    // 区分"内置超管"(系统初始化的唯一超管,通配符权限,靠标志位短路)
-    // 与"被委派超管"(被内置超管授予 superadmin 角色的用户,按 role_permissions 表授权)。
-    isBuiltinSuperAdmin bool
-}
-```
-
-- 每个命名字段一行 `// fieldName 中文说明`。
-- 嵌入字段(`shared.AggregateRoot` 等)豁免,不注释。
-- 语义不显然的字段(如上例 `isBuiltinSuperAdmin`)补多行 why,解释不变量/取值约束/与相邻字段的区分。
-
-#### 强制范围(必须补字段注释)
-
-按对象类型分两档,判定标准是「字段名 + 类型 + tag 能否让调用方推断正确用法」:
-
-**领域实体 / 值对象(`internal/domain/**`):每个命名字段必须补。**
-
-原因:领域对象有不变量、状态机、取值约束、业务语义,代码本身看不出这些。这是项目既有基线(`User`、`Comment`、`Subscription` 均如此),存量未达标的领域 struct(如 `Announcement`、`PAT`、`ExecutionTask`、`Emoji*`、`SiteSettings`、`upload.File`、`stats.*`)改动到该文件时补齐。嵌入字段豁免。
-
-**对外 DTO(application 导出 `*DTO`/`*Input`/`*Output`、handler 导出 `*Request`/`*Response`):只补非自解释字段。**
-
-原因:DTO 是原始类型 + `json` tag 的数据载体,字段名 + 类型 + tag 多数已说清 schema。给自解释字段补注释会沦为复读签名(无效注释第 1 类)。**只补这些:**
-
-- 零值 / nil / 空串的语义(`CanonicalURL *string // nil=原创,非空=转载源 URL`)
-- 合法值枚举(`Status string // 'draft'|'published'|'archived'`)
-- 单位 / 格式(`Duration uint64 // 微秒`、`PublishedAt string // RFC3339`)
-- 引用关系 / 计算口径(`IsAuthor bool // created_by == post.author_id`、`AnnotationCount // 批注数,非评论总数`)
-- PATCH 语义(`Interval string // 空串=保留原值`)
-
-判定方法:去掉注释,调用方/前端能否从字段名 + 类型 + json tag 推断出**正确**用法?能 → 不补;不能(有歧义)→ 补。
-
-反例(不需要补,补了就是复读):`Hostname string \`json:"hostname"\``、`TotalBytes uint64 \`json:"totalBytes"\``、`CommentsEnabled bool \`json:"comments_enabled"\``。
-
-#### 豁免范围(不强制字段注释)
-
-以下 struct 字段不要求 `// fieldName` 注释,因为信息已由代码其他部分自表达,补注释反而是噪音:
-
-- **GORM PO 模型**(`infrastructure/persistence/gorm/model/`):字段带 `gorm:"column:xxx"` + `json:"xxx"` tag,列名与类型已自描述。
-- **单字段依赖注入容器**(`app/*Container`、`application/*Service`/`*Handler`、`interfaces/http/handler/*Handler`):字段是注入的依赖,构造函数签名已说明,struct 内重复注释即「复读签名」(见无效注释第 1 类)。
-- **带 `jsonschema` 描述 tag 的 DTO**(如 MCP tool 参数 struct):tag 里的描述已是字段文档。
-- **函数内临时 row struct**(如 GORM 查询的 `row`/`statRow`):局部临时,不暴露。
-- **带 `validate` tag 的未导出请求 DTO**:校验规则已由 tag 表达。
-
-#### 写法约定
-
-- 行上注释优先(`// fieldName 说明` 紧贴字段上方一行),与金标准一致。
-- 行尾内联注释(`field Type // 说明`)仅用于一句话能说清的简单字段(如 `sourceType string // 'rss' | 'page'`),复杂字段仍用行上多行。
-- 注释内容是「这个字段是什么/取什么值/有什么约束」,不是「这个字段叫什么」(后者是复读字段名)。
-
-## PR 与 issue 规范
-
-### Issue 标题格式
-
-用 **`[scope] 描述`**,不要 `vertical: ...`(vertical slice 是拆分方法论,不该暴露在标题)。对齐仓库已有的 `[code-runner] Tn` 系列惯例。**标题禁止用 `+` / `、` 堆砌多要点**,多要点用「与」等连接词或拆分。
-
-- ✅ 正确：`[auth] opaque session 退出码归一`
-- ✅ 正确：`[code-runner] T9 部署配置与文档同步`
-- ❌ 错误：`vertical: 补全挂载(kit 表驱动...)`(暴露实现方法论,且冗长)
-
-连续任务序列(如 code-runner T1–Tn)带 `Tn` 编号;独立 feature 不带编号。scope 用最内层模块名(同提交 scope 规则)。
-
-### Issue labels
-
-- **默认不加 label**。仅当改动性质明确匹配 GitHub 内置语义 label 时才加(如 `bug`、`documentation`)。
-- **禁止加 `ready-for-agent`** 等流程性 triage label——本仓库不跑 AFK agent 拣选流程,此类 label 无信息量(triage 五角色仅用于外部来件的 triage 流转)。
-
-### PR 创建
-
-开 PR 时(`gh pr create`)固定配齐:
-
-- **assignees**:**默认不指定**——不自动加 `@me`。避免发邮件通知,需要时人工在 PR UI 分配。
-- **reviewers**:**默认不指定**——不自动艾特 collaborator(邮件通知太烦)。需要 review 时人工在 PR UI 添加。
-- **labels**:**默认不加 label**。仅当改动性质明确匹配 GitHub 内置语义 label 时才加(如纯文档加 `documentation`、修 bug 加 `bug`)。**禁止加 `ready-for-agent`** 等流程性 label(对人工 review 无信息量)。
-- **base**:指向 `release/2.0`(仓库主开发分支,非 `main`)。
-- **关联 issue**:PR 有对应 issue 时,在 body 用 `Closes #N`(或 `Fixes #N`)关键字引用,合并后自动关闭该 issue。纯关联不关 issue 的用普通链接(如 `issue #N`)——两者语义不同,别混用。
-
-### 合并
-
-- **手动合并**,不勾 auto-merge。由人工 review approve 后在 UI 点合并。
-- 合并方式:**功能/修复 PR 用 merge commit**(保留分支原子 commit 粒度,`gh pr merge --merge`);**release-please 自动开的 release PR(`chore(release): vX.Y.Z`)用 squash merge**(单 commit,`gh pr merge --squash`)。
-- **merge commit 的前提**:分支上每个 commit 必须是 final 形态的 Conventional Commit(无 WIP/中间态/回退 commit)——release-please 会把分支上每个发版型 commit 都写进 CHANGELOG(粒度 = commit 而非 PR),废 commit 会污染 changelog 且无法用 squash 的「只留 PR title」遮丑。
-- 已知坑:merge commit 合并时 release-please 会以 PR title 与原始 commit 各记一条导致 changelog 重复条目,`api/internal/application/releases/service.go` 已有去重兜底。
-- 合并后:**自动删除分支**(`gh pr merge --delete-branch`,合并即删远程+本地 feature 分支)。
-
-### 版本号
-
-- **按需触发，非默认**。release-please 默认从 commit 类型推导版本号（`feat` → minor，`fix` → patch）。用户未明确要求时不写 `Release-As`。
-- **按发布批次集中决定**。只有用户明确要求 patch/minor/major 或指定版本时，才为待发布批次设置一次 `Release-As: v<版本>`。基于最新 `release/2.0` manifest 与已发布 tag 确定目标；不要让多个并行 feature 分支各自计算并写死“下个 patch”。
-- **合并前重新核对**。目标必须大于当前已发布版本。若其他 release PR 先合并，移除或更新尚未合并分支中的过期 footer，再重新检查。PR CI 和 release-please 发布前都会拦截过期意图；追加新 footer 不会抵消历史中的过期 footer。
+- 议题标题用 `[scope] 描述`。普通建单默认不加标签，外部议题才走[分诊](docs/agents/triage-labels.md)。建单与子任务操作见[任务跟踪指南](docs/agents/issue-tracker.md)。
+- PR 的目标分支为 `release/2.0`。默认不指定经办人或评审人，不加标签，不启用自动合并。如何关联议题和手动合并见[贡献指南](CONTRIBUTING.md#提交-pr-流程)。
+- 普通 PR 用 merge commit，release-please 的发版 PR 用 squash。用户未要求时不写 `Release-As`；明确指定版本时按[发布手册](docs/deploy/release-runbook.md#多个-pr-与补丁版本)为整个批次设置一次。
