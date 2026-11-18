@@ -7,6 +7,41 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.27.0](https://github.com/VOD-Studio/violet/compare/v2.26.1...v2.27.0) (2026-11-18)
+
+
+### 新增
+
+* **tweets:** 增加快捷发布入口 ([78df164](https://github.com/VOD-Studio/violet/commit/78df16443c942f2deae00062fa8d6de6351ac2b4))
+* **tweets:** 按画板改版推文时间线 ([57d7ec8](https://github.com/VOD-Studio/violet/commit/57d7ec852d121421dc58bb64f5395de93dd25acf))
+* **tweets:** 按画板改版推文浏览 ([984d5d0](https://github.com/VOD-Studio/violet/commit/984d5d0394f205dbaa8c97eaf9dc6500c93affe5))
+* **tweets:** 按画板改版推文详情 ([bf9c4a5](https://github.com/VOD-Studio/violet/commit/bf9c4a5c6f5fefd9f66e013a9e7f470285631020))
+* **tweet:** 提供公开时间线筛选与发现数据 ([6fbe81a](https://github.com/VOD-Studio/violet/commit/6fbe81af17bfdfee0b6da28666b8c9bedd337ee9))
+* **tweet:** 提供推文详情侧栏数据 ([d761a02](https://github.com/VOD-Studio/violet/commit/d761a025afea2ced34299525e3745819b5e1eb8f))
+
+
+### 修复
+
+* **auth:** 区分主动登录与重新登录提示 ([14ca936](https://github.com/VOD-Studio/violet/commit/14ca9363ca1b385d5c299b7777d90a52f6e6d49f))
+* **share-tweet:** 前往登录时关闭分享弹窗 ([335deda](https://github.com/VOD-Studio/violet/commit/335dedac2fcb073c0b31215da51622aa7ca63adf))
+* **timeline:** 登录转换后刷新推文点赞 ([c38b673](https://github.com/VOD-Studio/violet/commit/c38b67345d2f4247ccbf3182c7ada6b315a8c70e))
+* **tweet-card:** 取消推文点赞缩放 ([4619162](https://github.com/VOD-Studio/violet/commit/4619162ebb3fd151ab71eb2a68ad33f79be0d691))
+* **tweets:** 分离详情页双栏滚动 ([fe1c169](https://github.com/VOD-Studio/violet/commit/fe1c16928030adac5b9289a6827fe6fb07a9239b))
+* **tweets:** 复用首页爱心点赞反馈 ([1cdf2d7](https://github.com/VOD-Studio/violet/commit/1cdf2d704c306197f13812375a95c28bf3e70a09))
+* **tweets:** 恢复推文详情整页滚动 ([9294c27](https://github.com/VOD-Studio/violet/commit/9294c27139891a6e7faa4b7ca3bfd48d20c29225))
+* **tweets:** 拉开正文与发布工具栏间距 ([ac1d6dc](https://github.com/VOD-Studio/violet/commit/ac1d6dc2e3db6982c5328fc8ea604360b248c398))
+* **tweet:** 限定推文回复的楼层范围 ([293bb69](https://github.com/VOD-Studio/violet/commit/293bb69dfc10c4a9ce66efe241afa97766f15b71))
+
+
+### 重构
+
+* **affection-heart:** 分离爱心回弹与粒子反馈 ([9e7babf](https://github.com/VOD-Studio/violet/commit/9e7babf665c3eab81942141b02547b9344fe8ebd))
+* **affection-heart:** 提供共用印记爱心 ([403fe69](https://github.com/VOD-Studio/violet/commit/403fe69523b1c2aa34a97c8dbe3136db2b379307))
+* **affection-heart:** 提取首页印记爱心 ([f52ccad](https://github.com/VOD-Studio/violet/commit/f52ccadd0b56cfb68ed42a35069749aeaed7c3c2))
+* **share-tweet:** 提供分享弹窗状态 ([fcac855](https://github.com/VOD-Studio/violet/commit/fcac8555286bb58637436cca040f2cff135b4e3e))
+* **tweet:** 提供时间线实体契约 ([0e15964](https://github.com/VOD-Studio/violet/commit/0e15964fa0eb6d2b5e5d82fb45053237f3e95bbc))
+* **tweet:** 提供详情和评论回应的缓存前缀 ([50adc90](https://github.com/VOD-Studio/violet/commit/50adc90a4136ff61ff1debc3a9e90db0d7d99cd3))
+
 ## [2.26.1](https://github.com/VOD-Studio/violet/compare/v2.26.0...v2.26.1) (2026-11-17)
 
 
