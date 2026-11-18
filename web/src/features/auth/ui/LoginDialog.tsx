@@ -2,7 +2,7 @@ import { clearAuthCache } from "@features/auth/api/queries";
 import { useLoginFlows } from "@features/auth/hooks/use-login-flows";
 import type { LoginRequest } from "@features/auth/model/types";
 import { useLoginDialogStore } from "@shared/api/login-dialog-store";
-import { clearSessionActive } from "@shared/api/session";
+import { clearSessionActive, useSessionStore } from "@shared/api/session";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { Button, GithubIcon, GoogleIcon, Input, Label, Modal } from "@violet/ui";
@@ -33,6 +33,7 @@ function LoginDialogContent({ googleError }: { googleError: ReactNode }) {
 	const isOpen = useLoginDialogStore((s) => s.isOpen);
 	const open = useLoginDialogStore((s) => s.open);
 	const close = useLoginDialogStore((s) => s.close);
+	const isReauth = useSessionStore((s) => s.sessionActive);
 	const navigate = useNavigate();
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
 
@@ -104,8 +105,8 @@ function LoginDialogContent({ googleError }: { googleError: ReactNode }) {
 		<Modal
 			open={isOpen}
 			onOpenChange={handleOpenChange}
-			title="重新登录"
-			description="登录状态已失效，请重新登录后继续。"
+			title={isReauth ? "重新登录" : "登录"}
+			description={isReauth ? "登录状态已失效，请重新登录后继续。" : "登录后可继续当前操作。"}
 			size="sm"
 			footer={
 				<>
