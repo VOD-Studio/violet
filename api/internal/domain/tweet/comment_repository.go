@@ -19,10 +19,8 @@ type CommentRepository interface {
 	FindByID(ctx context.Context, id shared.ID) (*Comment, error)
 	// FindPage 分页列出推文评论（统一入口，筛选维度由 ListFilter 正交组合）。
 	//
-	// TweetID 场景返回顶层评论（depth=0），由 TopLevelSort 决定时间或总回应数降序；
-	// ParentID 场景按顶层评论 path 前缀拉全部扁平回复（排除自身），排序由 Sort
-	// 决定（默认 asc 对话时间线）。均带 id tiebreaker 防 offset 翻页漂移；
-	// ParentID 指向的评论不存在时返回 ErrCommentNotFound。
+	// 只传 TweetID 查询顶层（depth=0）；ParentID 查询同一推文中该评论的扁平回复。
+	// 同时传两者时，父评论不属于该推文也返回 ErrCommentNotFound。
 	FindPage(ctx context.Context, filter ListFilter, q shared.PageQuery) (shared.PageResult[*Comment], error)
 	// CountByTweet 统计推文下的评论总数（顶层 + 回复，供详情页展示）。
 	CountByTweet(ctx context.Context, tweetID shared.ID) (int64, error)
@@ -42,10 +40,9 @@ type CommentRepository interface {
 
 // ListFilter 推文评论列表筛选条件（FindPage 入参，维度正交组合）。
 //
-// 由调用方按场景组装：顶层评论列表传 TweetID；回复链传 ParentID+Sort，
-// 两者互斥（TweetID 只出顶层、ParentID 只出回复链）。
+// 只传 TweetID 查顶层评论；同时传 TweetID 与 ParentID 将回复链限制在指定推文。
 type ListFilter struct {
-	// TweetID 按推文过滤，仅返回顶层评论（depth=0），配合 TopLevelSort
+	// TweetID 评论所属推文；未指定 ParentID 时只查顶层评论。
 	TweetID *shared.ID
 	// ParentID 按顶层评论拉全部扁平回复（path 前缀，排除自身），配合 Sort
 	ParentID *shared.ID

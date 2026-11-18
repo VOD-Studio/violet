@@ -224,7 +224,7 @@ func (f *fakeCommentRepo) FindByID(_ context.Context, id shared.ID) (*domaintwee
 func (f *fakeCommentRepo) FindPage(_ context.Context, filter domaintweet.ListFilter, q shared.PageQuery) (shared.PageResult[*domaintweet.Comment], error) {
 	if filter.ParentID != nil {
 		parent, ok := f.byID[filter.ParentID.String()]
-		if !ok {
+		if !ok || (filter.TweetID != nil && parent.TweetID() != *filter.TweetID) {
 			return shared.PageResult[*domaintweet.Comment]{}, domaintweet.ErrCommentNotFound
 		}
 		prefix := parent.ID().String() + "/"
@@ -1122,7 +1122,7 @@ func TestListReplies(t *testing.T) {
 		comments.byID[r.ID().String()] = r
 	}
 
-	dtos, total, err := svc.ListReplies(context.Background(), top.ID().String(), 1, 20)
+	dtos, total, err := svc.ListReplies(context.Background(), tweetID.String(), top.ID().String(), 1, 20)
 	require.NoError(t, err)
 	assert.Equal(t, int64(2), total)
 	assert.Len(t, dtos, 2)

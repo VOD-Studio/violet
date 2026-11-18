@@ -998,15 +998,19 @@ func (s *Service) attachRepliesCount(ctx context.Context, comments []*domaintwee
 }
 
 // ListReplies 列出某顶层评论下的回复（公开，page/limit 分页，最早在前）。
-func (s *Service) ListReplies(ctx context.Context, parentIDStr string, page, limit int) ([]CommentDTO, int64, error) {
+func (s *Service) ListReplies(ctx context.Context, tweetIDStr, parentIDStr string, page, limit int) ([]CommentDTO, int64, error) {
 	if s.commentRepo == nil {
 		return nil, 0, errCommentRepoNotInjected
+	}
+	tweetID, err := shared.ParseID(tweetIDStr)
+	if err != nil {
+		return nil, 0, shared.BadRequest("非法的推文 ID")
 	}
 	parentID, err := shared.ParseID(parentIDStr)
 	if err != nil {
 		return nil, 0, shared.BadRequest("非法的评论 ID")
 	}
-	result, err := s.commentRepo.FindPage(ctx, domaintweet.ListFilter{ParentID: &parentID, Sort: "asc"},
+	result, err := s.commentRepo.FindPage(ctx, domaintweet.ListFilter{TweetID: &tweetID, ParentID: &parentID},
 		shared.PageQuery{Page: page, Limit: limit}.Normalize())
 	if err != nil {
 		return nil, 0, err

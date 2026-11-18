@@ -300,7 +300,7 @@ func (h *Handler) ListComments(w http.ResponseWriter, r *http.Request) {
 // ListReplies 列出某顶层评论下的回复（公开）：GET /tweets/{id}/comments/{commentId}/replies
 func (h *Handler) ListReplies(w http.ResponseWriter, r *http.Request) {
 	page, limit := response.ParsePaging(r)
-	dtos, total, err := h.svc.ListReplies(r.Context(), r.PathValue("commentId"), page, limit)
+	dtos, total, err := h.svc.ListReplies(r.Context(), r.PathValue("id"), r.PathValue("commentId"), page, limit)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
