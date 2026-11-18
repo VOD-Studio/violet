@@ -12,10 +12,9 @@ export interface ApplicationVerification {
 	onResend: () => Promise<boolean>;
 	changeEmail: (value: string) => void;
 	onReject: (reason: unknown) => boolean;
-	reset: () => void;
 }
 
-/** 管理一次匿名申请的邮箱验证码，隔离换邮箱和关闭弹窗前的发送结果。 */
+/** 管理匿名申请的邮箱验证码，隔离换邮箱前的发送结果。 */
 export function useApplicationVerification(
 	email: string,
 	onEmailChange: (email: string) => void,
@@ -79,5 +78,5 @@ export function useApplicationVerification(
 		return false;
 	};
 
-	return { code, sent, error, invalid, onChange, onResend, changeEmail, onReject, reset };
+	return { code, sent, error, invalid, onChange, onResend, changeEmail, onReject };
 }

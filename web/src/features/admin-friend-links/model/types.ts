@@ -20,6 +20,8 @@ export interface FriendLinkAdminDTO {
 	url: string;
 	/** 头像 URL，空串则前端首字符占位 */
 	avatar_url: string;
+	/** 可选 RSS/Atom 源，只在审核通过后抓取。 */
+	rss_url: string;
 	/** 一句话描述 */
 	description: string;
 	/** 站长称呼 */
@@ -54,6 +56,7 @@ export interface FriendLinkManualRequest {
 	name: string;
 	url: string;
 	avatar_url: string;
+	rss_url: string;
 	description: string;
 	owner_name: string;
 	linkback_url: string;
