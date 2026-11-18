@@ -23,8 +23,6 @@
 
 ## 分支命名
 
-每个新任务 / feature 先从 `release/2.0` 新建分支完成，不在 `release/2.0` 上直接开发。
-
 分支名用 `<type>/<scope>-<简述>`，例如 `fix/handler-search-encoding`。type 对应变更性质，scope 取最内层模块，跨模块且难以归属时可省略。简述用小写英文或拼音，词间用 `-`。
 
 ### 需求与实施分支
