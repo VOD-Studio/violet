@@ -97,7 +97,11 @@ export function TweetCardFooter({
 					onClick={onLike}
 					loading={isLikePending}
 				>
-					<AffectionHeart selected={tweet.is_liked} feedback={likeFeedback ? 1 : 0} />
+					<AffectionHeart
+						selected={tweet.is_liked}
+						feedback={likeFeedback ? 1 : 0}
+						pulse={false}
+					/>
 					{tweet.like_count}
 				</Button>
 				{!isDetail && (
