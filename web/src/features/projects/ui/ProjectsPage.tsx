@@ -1,6 +1,6 @@
+import { useProjects } from "@entities/project/api/queries";
+import type { Project } from "@entities/project/model/types";
 import { Empty, PageHeader, PageShell } from "@violet/ui";
-import { useProjects } from "../api/queries";
-import type { Project } from "../model/types";
 import { ProjectRow } from "./ProjectRow";
 
 export interface ProjectsPageProps {

@@ -1,5 +1,5 @@
+import type { RoadmapProgress as RoadmapProgressData } from "@entities/project/model/roadmap-summary";
 import { ROADMAP_STAGE_LABELS, ROADMAP_STAGES } from "../lib/roadmap-board";
-import type { RoadmapProgress as RoadmapProgressData } from "../model/roadmap-summary";
 import { StageDot } from "./StageDot";
 
 export interface RoadmapProgressProps {

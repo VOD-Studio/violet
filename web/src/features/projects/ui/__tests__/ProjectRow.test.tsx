@@ -1,7 +1,7 @@
+import type { ProjectRoadmapSummary } from "@entities/project/model/roadmap-summary";
+import type { Project } from "@entities/project/model/types";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { ProjectRoadmapSummary } from "../../model/roadmap-summary";
-import type { Project } from "../../model/types";
 import { ProjectRow } from "../ProjectRow";
 
 // Link 退化为普通 <a>，脱离 RouterProvider 上下文；params 填进路径

@@ -1,7 +1,7 @@
+import type { Project } from "@entities/project/model/types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { Project } from "../../model/types";
 import { ProjectsPage } from "../ProjectsPage";
 
 vi.mock("@tanstack/react-router", () => ({

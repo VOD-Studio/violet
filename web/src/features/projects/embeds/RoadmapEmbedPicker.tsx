@@ -1,3 +1,4 @@
+import { useProjects } from "@entities/project/api/queries";
 import type { ArticleEmbedPickerProps } from "@shared/ui/article-embeds";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -10,7 +11,7 @@ import {
 	SelectValue,
 } from "@violet/ui";
 import { useEffect, useId, useState } from "react";
-import { roadmapEmbedQueryOptions, useProjects } from "../api/queries";
+import { roadmapEmbedQueryOptions } from "../api/queries";
 import {
 	type RoadmapEmbedChoice,
 	type RoadmapEmbedShape,

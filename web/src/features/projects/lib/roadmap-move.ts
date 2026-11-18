@@ -1,6 +1,6 @@
+import type { RoadmapProgress } from "@entities/project/model/roadmap-summary";
 import type { BoardMove } from "@violetjs/kanban/core";
 import type { RoadmapDetail, RoadmapItem, RoadmapStage } from "../model/roadmap";
-import type { RoadmapProgress } from "../model/roadmap-summary";
 import { ROADMAP_STAGES } from "./roadmap-board";
 
 /** 移动接口的请求体：目标阶段与目标位置两侧的条目，位于阶段首位或末尾时那一侧为空串。 */
