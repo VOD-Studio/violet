@@ -25,20 +25,20 @@ export function ProjectCover({ src, title }: ProjectCoverProps) {
 		[src],
 	);
 	return (
-		<span className="block size-18 overflow-hidden rounded-xl bg-muted sm:size-28">
+		<span className="block size-full overflow-hidden">
 			{showImage ? (
 				<img
 					ref={checkLoaded}
-					src={contentImageUrl(src, { width: 240 })}
+					src={contentImageUrl(src, { width: 1080 })}
 					alt=""
-					className="size-full object-cover"
+					className="size-full object-cover object-top"
 					onError={() => setBrokenFor(src)}
 				/>
 			) : (
 				<span
 					aria-hidden="true"
 					data-testid="project-cover-placeholder"
-					className="grid size-full place-items-center font-mono text-3xl font-bold text-muted-foreground/60"
+					className="grid size-full place-items-center font-mono text-4xl font-bold text-muted-foreground/70 sm:text-6xl"
 				>
 					{title.slice(0, 1).toUpperCase()}
 				</span>

@@ -13,13 +13,18 @@ export declare function handle(
 
 export declare const SCROLL_TWEET_ID: string;
 
-/** 项目列表契约用数据：站主顺序，含完整摘要、封面失效、空路线图与读不到摘要四种。 */
+/** 项目列表契约用数据：站主顺序、项目状态、真实封面回退语义与不同摘要形态。 */
 export declare const PROJECTS_FIXTURE: Array<{
 	title: string;
 	slug: string;
 	description: string;
+	url: string;
+	github_url: string;
+	docs_url: string;
+	status: "active" | "stable" | "archived";
 	image_url: string;
 	tech_stack: string[];
+	release?: { tag: string; published_at: string; count: number; html_url: string };
 	roadmap?: {
 		progress: { planned: number; in_progress: number; completed: number; total: number; percent: number };
 		in_progress: Array<{ number: number; title: string }>;

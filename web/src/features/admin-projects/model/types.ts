@@ -4,6 +4,8 @@
  * 后台项目管理的写操作请求体。领域读模型 Project 见 projects/model。
  */
 
+import type { ProjectStatus } from "@features/projects/model/types";
+
 /**
  * CreateProject - 创建项目请求体
  *
@@ -22,6 +24,10 @@ export interface CreateProject {
 	github_url?: string;
 	/** 封面图 URL */
 	image_url?: string;
+	/** 已可访问的站内路径或 HTTP(S) 链接；更新时传空串移除。 */
+	docs_url?: string;
+	/** 创建默认进行中；更新省略时保留原值。 */
+	status?: ProjectStatus;
 	/** 技术栈标签列表 */
 	tech_stack?: string[];
 	/** 排序权重，越小越靠前 */
