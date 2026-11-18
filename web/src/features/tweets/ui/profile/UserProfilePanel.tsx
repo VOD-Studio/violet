@@ -143,7 +143,7 @@ export function UserProfilePanel({
 			<div className="mt-5 flex items-center gap-2">
 				{isSelf ? (
 					<Button variant="outline" className="flex-1" asChild>
-						<Link to="/profile">
+						<Link to="/settings">
 							<SquarePen className="size-4" />
 							编辑资料
 						</Link>

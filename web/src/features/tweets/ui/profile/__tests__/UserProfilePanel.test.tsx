@@ -62,7 +62,7 @@ describe("UserProfilePanel", () => {
 		me.current = { id: "u1" };
 		render(<UserProfilePanel profile={profile} tweetCount="0" mediaCount={0} likeCount="0" />);
 		expect(screen.getByRole("link", { name: /编辑资料/ }).getAttribute("href")).toBe(
-			"/profile",
+			"/settings",
 		);
 		expect(screen.getByRole("link", { name: /用量/ })).toBeTruthy();
 		expect(screen.queryByRole("button", { name: /发起私聊/ })).toBeNull();

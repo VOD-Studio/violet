@@ -147,8 +147,10 @@ function RootComponent() {
 		pathname === "/projects/inkline/docs" || pathname.startsWith("/projects/inkline/docs/");
 	const isFullscreenRoute = isChatRoute || isWorkbenchRoute;
 	const viewportRef = useVisualViewport(isFullscreenRoute);
-	const isProfileRoute = pathname.startsWith("/profile");
-	const showBackdrop = !isProfileRoute && !isFullscreenRoute;
+	const isSettingsRoute = pathname === "/settings" || pathname === "/settings/";
+	const isAuthEntryRoute =
+		pathname === "/login" || pathname === "/register" || pathname === "/forgot-password";
+	const showBackdrop = !isSettingsRoute && !isFullscreenRoute;
 
 	// 首次 hydration 复用 SSR claims，不一定重跑客户端 beforeLoad。
 	useEffect(() => {
@@ -161,6 +163,10 @@ function RootComponent() {
 			{isAdminRoute ? (
 				// 后台路由：完全独立的布局，不包含前台 Header/Footer
 				<Outlet />
+			) : isAuthEntryRoute ? (
+				<main className="flex min-h-dvh flex-col">
+					<Outlet />
+				</main>
 			) : (
 				// 聊天工作区和手绘工作台锁定视口；公开角色页沿用普通页面。
 				<div

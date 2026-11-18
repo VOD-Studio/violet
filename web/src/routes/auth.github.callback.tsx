@@ -2,9 +2,11 @@ import { authKeys } from "@features/auth/api/keys";
 import { useBindConnectionMutation, useGithubLoginMutation } from "@features/auth/api/mutations";
 import {
 	GITHUB_BIND_INTENT_KEY,
+	GITHUB_LOGIN_REDIRECT_KEY,
 	GITHUB_OAUTH_MESSAGE,
 } from "@features/auth/hooks/use-github-oauth";
 import { openLinkConfirmFromError } from "@features/auth/lib/open-link-confirm";
+import { safeRedirectTarget } from "@features/auth/lib/safe-redirect";
 import { PageLoading } from "@shared/ui/page-loading";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
@@ -50,9 +52,14 @@ function GithubCallbackPage() {
 			window.close();
 			return;
 		}
+		const target = safeRedirectTarget(
+			window.sessionStorage.getItem(GITHUB_LOGIN_REDIRECT_KEY) ?? undefined,
+		);
+		const retrySearch = target === "/" ? {} : { search: { redirect: target } };
+		window.sessionStorage.removeItem(GITHUB_LOGIN_REDIRECT_KEY);
 		if (!code) {
 			toast.error("未获取到授权码");
-			navigate({ to: "/login", replace: true });
+			navigate({ to: "/login", replace: true, ...retrySearch });
 			return;
 		}
 
@@ -71,14 +78,14 @@ function GithubCallbackPage() {
 					if (!isMounted.current || handledCode.current !== code) return;
 					toast.success("GitHub 绑定成功");
 					qc.invalidateQueries({ queryKey: authKeys.me() });
-					navigate({ to: "/profile", replace: true });
+					navigate({ to: "/settings", replace: true });
 				},
 				(err: unknown) => {
 					if (!isMounted.current || handledCode.current !== code) return;
 					toast.error(
 						`GitHub 绑定失败：${err instanceof Error ? err.message : "请重试"}`,
 					);
-					navigate({ to: "/profile", replace: true });
+					navigate({ to: "/settings", replace: true });
 				},
 			);
 			return;
@@ -90,18 +97,18 @@ function GithubCallbackPage() {
 				toast.success("登录成功");
 				// useGithubLoginMutation 的 onSuccess 已 invalidate authKeys.me() 并
 				// markSessionActive()，新页面加载时 Header 会自动拉取一次 me。
-				navigate({ to: "/", replace: true });
+				navigate({ to: target, replace: true });
 			},
 			(err: unknown) => {
 				if (!isMounted.current || handledCode.current !== code) return;
 				if (openLinkConfirmFromError(err)) {
 					// 确认弹窗全局挂载；背景落登录页而非首页，避免「未操作却被
 					// 跳走」的错觉，用户取消弹窗后也能原地换登录方式重试
-					navigate({ to: "/login", replace: true });
+					navigate({ to: "/login", replace: true, ...retrySearch });
 					return;
 				}
 				toast.error("GitHub 登录失败");
-				navigate({ to: "/login", replace: true });
+				navigate({ to: "/login", replace: true, ...retrySearch });
 			},
 		);
 	}, [code, githubLogin, bindConnection, qc, navigate]);

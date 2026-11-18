@@ -75,7 +75,7 @@ pnpm dev
 | `/tweets`、`/tweets/:id`、`/tweets/topics/:tag` | 时间线（最新／热门／有图）、推文讨论与话题 |
 | `/projects`、`/projects/:slug` | 项目与路线图 |
 | `/chat` | 私聊、房间与 Bot 会话 |
-| `/users/:username`、`/users/:username/usage`、`/profile` | 公开主页、本人用量与个人中心（资料、安全） |
+| `/users/:username`、`/users/:username/usage`、`/settings` | 公开主页、本人用量与个人中心（资料、安全） |
 | `/chat/personas`、`/about`、`/friends`、`/changelog` | 公开人设、关于、友链与更新日志 |
 | `/login`、`/register`、`/forgot-password` | 认证流程 |
 | `/admin/*` | 内容与站点管理 |
@@ -120,6 +120,8 @@ Zustand 用于需要跨组件共享的客户端交互状态，不替代服务端
 | `violet_uid` | 可读用户标识，不作为权限判断依据 |
 
 SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端会话查询、登录弹窗及失效处理复用 `shared/api/` 与 `features/auth/`，不要在单个页面另做一套登录状态。
+
+登录、注册和找回密码共用账号页面布局。邮箱验证码使用组件库的六格输入和重发控件；登录仅在公开配置确认可用后提供第三方入口。注册、重置及 GitHub 整页回调保留经校验的站内回跳地址；旧 `/profile` 永久跳转到仅本人可访问的 `/settings`。
 
 推文的全站、话题与个人时间线向所有人开放，但点赞状态随访问者变化；登录、退出或会话失效时重新读取这三类列表，不沿用上一个访问者的点赞状态。
 

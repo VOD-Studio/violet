@@ -7,6 +7,7 @@ const LEGACY_ROOTS: Record<string, string | undefined> = {
 	"/inkline": "/projects/inkline/docs",
 	"/kanban": "/projects/kanban/docs",
 	"/persona": "/chat/personas",
+	"/profile": "/settings",
 };
 
 function destinationFor(pathname: string): string | undefined {

@@ -11,11 +11,15 @@ const router = vi.hoisted(() => ({ navigate: vi.fn() }));
 vi.mock("@tanstack/react-router", async () => ({
 	...(await vi.importActual("@tanstack/react-router")),
 	useNavigate: () => router.navigate,
+	useSearch: () => ({ redirect: "/chat" }),
 	Link: ({ children }: { children: ReactNode }) => <a href="/login">{children}</a>,
 }));
 vi.mock("@features/auth/api/queries", () => ({
 	useCsrfToken: () => "csrf",
 	clearAuthCache: vi.fn(),
+}));
+vi.mock("@features/auth/ui/AuthPageLayout", () => ({
+	AuthPageLayout: ({ children }: { children: ReactNode }) => children,
 }));
 vi.mock("@shared/api/request", () => ({
 	apiPost: vi.fn(),
@@ -93,7 +97,7 @@ describe("注册邮箱验证码", () => {
 			expect(router.navigate).toHaveBeenCalledWith({
 				to: "/login",
 				replace: true,
-				search: { email: "reader@example.com" },
+				search: { email: "reader@example.com", redirect: "/chat" },
 			}),
 		);
 		expect(verificationCalls()).toHaveLength(1);
