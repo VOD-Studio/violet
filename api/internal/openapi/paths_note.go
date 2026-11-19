@@ -40,7 +40,8 @@ func registerNotePaths(t *openapi3.T) {
 		"updated_at":   reqStr("最近编辑时间，RFC3339"),
 		"published_at": nullableStr("首次发布时间，RFC3339；从未发布为 null，发布后编辑不变"),
 	}
-	summaryRequired := []string{"id", "author_id", "title", "status", "tags", "created_at", "updated_at", "published_at"}
+	summaryRequired := make([]string, 0, len(summaryFields)+3)
+	summaryRequired = append(summaryRequired, "id", "author_id", "title", "status", "tags", "created_at", "updated_at", "published_at")
 	registerSchema(t, "NoteSummaryDTO", summaryFields, summaryRequired...)
 	detailFields := make(openapi3.Schemas, len(summaryFields)+3)
 	for key, value := range summaryFields {
