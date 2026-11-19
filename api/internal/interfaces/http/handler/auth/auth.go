@@ -199,9 +199,10 @@ func (h *Handler) UpdateOAuthCredentials(w http.ResponseWriter, r *http.Request)
 // Register POST /auth/register
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Email    string `json:"email" validate:"required,email"`
-		Username string `json:"username" validate:"required,min=3,max=32"`
-		Password string `json:"password" validate:"required,min=8"`
+		Email             string `json:"email" validate:"required,email"`
+		Username          string `json:"username" validate:"required,min=3,max=32"`
+		Password          string `json:"password" validate:"required,min=8"`
+		RegistrationToken string `json:"registration_token" validate:"omitempty,max=128"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.RespondError(w, r, err)
@@ -212,13 +213,15 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.register.Handle(ctxWithAuditInfo(r), authcmd.RegisterUserInput{
-		Email: req.Email, Username: req.Username, Password: req.Password,
-	}); err != nil {
+	out, err := h.register.Handle(ctxWithAuditInfo(r), authcmd.RegisterUserInput{
+		Email: req.Email, Username: req.Username, Password: req.Password, RegistrationToken: req.RegistrationToken,
+	})
+	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
-	response.RespondMessage(w, http.StatusCreated, "注册成功，请查收验证邮件")
+	w.Header().Set("Cache-Control", "no-store")
+	response.RespondCreated(w, out)
 }
 
 // VerifyEmail POST /auth/verify-email

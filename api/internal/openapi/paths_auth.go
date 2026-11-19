@@ -6,10 +6,14 @@ import "github.com/getkin/kin-openapi/openapi3"
 func registerAuthPaths(t *openapi3.T) {
 	// ---- 请求体 schema ----
 	registerSchema(t, "RegisterRequest", openapi3.Schemas{
-		"email":    reqStr("邮箱"),
-		"username": reqStr("用户名（3-32 字符）"),
-		"password": reqStr("密码（至少 8 位）"),
+		"email":              reqStr("邮箱"),
+		"username":           reqStr("用户名（3-32 字符）"),
+		"password":           reqStr("密码（至少 8 位）"),
+		"registration_token": optStr("原始注册凭据；继续该待验证注册或更正邮箱时传入"),
 	}, "email", "username", "password")
+	registerSchema(t, "RegisterResponse", openapi3.Schemas{
+		"registration_token": optStr("仅创建待验证注册时签发，邮箱验证成功后失效"),
+	})
 
 	registerSchema(t, "VerifyEmailRequest", openapi3.Schemas{
 		"email": reqStr("邮箱"),
@@ -112,12 +116,13 @@ func registerAuthPaths(t *openapi3.T) {
 		Post: &openapi3.Operation{
 			Tags:        []string{"认证"},
 			Summary:     "注册",
-			Description: "注册新用户并发送验证邮件。受认证限流保护。",
+			Description: "注册并发送验证邮件。持有原始注册凭据时，可以在待验证阶段更正邮箱并保留账号。受认证限流保护。",
 			Parameters:  openapi3.Parameters{csrfHeaderParam()},
 			RequestBody: jsonBody("RegisterRequest", true, "注册信息"),
 			Responses: responses(
-				201, messageResponse("注册成功，请查收验证邮件"),
+				201, dataResponse("RegisterResponse", "已发起邮箱验证", 201),
 				400, errorResponse("请求参数错误"),
+				409, errorResponse("邮箱或用户名已被占用，或待验证注册已失效"),
 			),
 		},
 	})
