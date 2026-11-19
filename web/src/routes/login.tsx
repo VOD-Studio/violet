@@ -109,7 +109,7 @@ function LoginPage() {
 	});
 
 	return (
-		<AuthPageLayout title="登录" description="登录后即可评论、批注和聊天。">
+		<AuthPageLayout title="登录" description="评论、批注和聊天需要登录。">
 			{showOAuth ? (
 				<div className="space-y-4">
 					<div
@@ -151,7 +151,7 @@ function LoginPage() {
 				</div>
 			) : null}
 			<form onSubmit={submit} className="space-y-3">
-				<Field label="账号" error={errors.identifier?.message}>
+				<Field label="用户名或邮箱" error={errors.identifier?.message}>
 					<Input
 						type="text"
 						placeholder="用户名或邮箱"
@@ -159,19 +159,19 @@ function LoginPage() {
 						{...register("identifier")}
 					/>
 				</Field>
-				<Field label="密码" error={errors.password?.message}>
-					<Input
-						type="password"
-						passwordToggle
-						autoComplete="current-password"
-						{...register("password")}
-					/>
-				</Field>
-				<div className="flex justify-end">
+				<div className="relative">
+					<Field label="密码" error={errors.password?.message}>
+						<Input
+							type="password"
+							passwordToggle
+							autoComplete="current-password"
+							{...register("password")}
+						/>
+					</Field>
 					<Link
 						to="/forgot-password"
 						search={{ redirect: redirectTo, email }}
-						className="text-sm text-primary hover:underline"
+						className="absolute inset-e-0 top-0 rounded-sm text-sm leading-[1.4] text-primary hover:underline"
 					>
 						忘记密码？
 					</Link>
