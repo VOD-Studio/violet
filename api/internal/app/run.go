@@ -77,6 +77,7 @@ func startJobs(ctx context.Context, c *Container, gormDB *gorm.DB, uploadRoot st
 	go job.NewCleanupJob(gormDB, chunkDir).Start(ctx)
 	go job.NewExternalTweetJob(c.Tweet.ExternalService).Start(ctx)
 	go job.NewMusicRenewalJob(c.Music.Service).Start(ctx)
+	go job.RunRepositoryActivity(ctx, c.Journal.Activity)
 
 	go job.NewSubscriptionJob(
 		c.Subscription.SubscriptionService,
@@ -177,6 +178,7 @@ func buildRoutingDeps(cfg *config.Config, redisClient *redis.Client, c *Containe
 		Series:                 c.Series.SeriesHandler,
 		Gallery:                c.Gallery.Handler,
 		Note:                   c.Note.Handler,
+		Journal:                c.Journal.Handler,
 		Publication:            c.Publication.Handler,
 		Persona:                c.Persona.Handler,
 		Notification:           c.Notification.NotificationHandler,

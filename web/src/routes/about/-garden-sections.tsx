@@ -1,7 +1,7 @@
+import { useProjects } from "@entities/project/api/queries";
 import { useSiteIdentity } from "@entities/site-identity/api/queries";
 import { AboutChapter } from "@features/about/ui/AboutChapter";
 import { AboutSectionState } from "@features/about/ui/AboutSectionState";
-import { useProjects } from "@features/projects/api/queries";
 import { Link } from "@tanstack/react-router";
 import { Avatar, Button, ProgressBar, Skeleton } from "@violet/ui";
 

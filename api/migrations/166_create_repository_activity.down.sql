@@ -1,0 +1,2 @@
+DROP TABLE repository_activity_events;
+DROP TABLE repository_activity_sources;
