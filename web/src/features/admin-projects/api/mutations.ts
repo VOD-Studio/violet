@@ -1,10 +1,7 @@
+import { projectKeys } from "@entities/project/api/keys";
 import { apiDelete, apiPost, apiPut } from "@shared/api/request";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { CreateProject, UpdateProject } from "../model/types";
-
-// projects 公开列表根 key，写操作后按前缀失效以刷新前后台共用列表。
-// 硬编码避免跨 feature 引入 projects/api/keys。
-const PROJECTS_KEY = ["projects"] as const;
 
 /**
  * useCreateProject - 调后端 POST /admin/projects 创建项目
@@ -17,7 +14,7 @@ export const useCreateProject = () => {
 	return useMutation({
 		mutationFn: (body: CreateProject) => apiPost<null>("/admin/projects", body),
 		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: PROJECTS_KEY });
+			qc.invalidateQueries({ queryKey: projectKeys.all });
 		},
 	});
 };
@@ -32,7 +29,7 @@ export const useUpdateProject = (id: string) => {
 	return useMutation({
 		mutationFn: (body: UpdateProject) => apiPut<null>(`/admin/projects/${id}`, body),
 		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: PROJECTS_KEY });
+			qc.invalidateQueries({ queryKey: projectKeys.all });
 		},
 	});
 };
@@ -47,7 +44,7 @@ export const useDeleteProject = (id: string) => {
 	return useMutation({
 		mutationFn: () => apiDelete<null>(`/admin/projects/${id}`),
 		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: PROJECTS_KEY });
+			qc.invalidateQueries({ queryKey: projectKeys.all });
 		},
 	});
 };

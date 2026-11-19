@@ -1,7 +1,7 @@
 import type { PublicNote, PublicNoteListQuery } from "@entities/note/model/types";
 import { apiGet, apiGetPaged } from "@shared/api/request";
 import type { PagedResponse } from "@shared/api/types";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { hashKey, queryOptions, useQueries, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { publishedNoteKeys } from "./keys";
 
@@ -12,73 +12,84 @@ export function fetchPublishedNotes(
 	return apiGetPaged<PublicNote>("/notes", { params: query });
 }
 
-/** 公开笔记列表查询。 */
-export function usePublishedNotes(query: PublicNoteListQuery = {}) {
-	return useQuery({
+export function publishedNotesQueryOptions(query: PublicNoteListQuery = {}) {
+	return queryOptions({
 		queryKey: publishedNoteKeys.list(query),
 		queryFn: () => fetchPublishedNotes(query),
 	});
 }
 
-/** 将公开笔记的游标页组合为可重试的连续浏览流；tag 切换时重置已加载页。 */
-export function usePublishedNotesFeed(limit: number, tag?: string) {
-	const activeTag = tag?.trim() || undefined;
-	const first = usePublishedNotes({ limit, tag: activeTag });
-	const [cursors, setCursors] = useState<string[]>([]);
-	const [lastTag, setLastTag] = useState(activeTag);
-	// 标签切换时旧游标属于上一份流，渲染期清空从头续读（React 状态调整模式）
-	if (lastTag !== activeTag) {
-		setLastTag(activeTag);
-		setCursors([]);
-	}
+export function usePublishedNotes(query: PublicNoteListQuery = {}) {
+	return useQuery(publishedNotesQueryOptions(query));
+}
+
+/** 筛选变更时从首页续读；末页请求失败时保留已读条目。 */
+export function usePublishedNotesFeed(query: Omit<PublicNoteListQuery, "cursor">) {
+	const first = usePublishedNotes(query);
+	const key = hashKey(publishedNoteKeys.list(query));
+	const [feed, setFeed] = useState<{ key: string; cursors: string[] }>({ key, cursors: [] });
+	const cursors = feed.key === key ? feed.cursors : [];
+	if (feed.key !== key) setFeed({ key, cursors });
 
 	const more = useQueries({
-		queries: cursors.map((cursor) => ({
-			queryKey: publishedNoteKeys.list({ cursor, limit, tag: activeTag }),
-			queryFn: () => fetchPublishedNotes({ cursor, limit, tag: activeTag }),
-		})),
+		queries: cursors.map((cursor) => publishedNotesQueryOptions({ ...query, cursor })),
 	});
-	const pages = [first.data, ...more.map((query) => query.data)].filter(
-		(page) => page !== undefined,
-	);
-	const lastPage = pages.at(-1);
 	const lastMore = more.at(-1);
-	const nextCursor = lastPage?.pagination.next_cursor;
-	const loadMoreFailed = lastMore?.isError ?? false;
+	let nextCursor = first.data?.pagination.next_cursor;
+	const notes: PublicNote[] = [];
+	const seen = new Set<string>();
+	for (const page of [first, ...more]) {
+		if (!page.data) break;
+		for (const note of page.data.data) {
+			if (seen.has(note.id)) continue;
+			seen.add(note.id);
+			notes.push(note);
+		}
+		nextCursor = page.data.pagination.next_cursor;
+	}
 
+	const loadingMore = lastMore?.isFetching ?? false;
+	const loadMoreFailed = lastMore?.isError ?? false;
 	const loadMore = () => {
+		if (loadingMore) return;
 		if (loadMoreFailed) {
 			void lastMore?.refetch();
 			return;
 		}
-		if (!nextCursor) return;
-		setCursors((current) =>
-			current.includes(nextCursor) ? current : [...current, nextCursor],
+		const cursor = nextCursor;
+		if (!cursor) return;
+		setFeed((current) =>
+			current.key !== key || current.cursors.includes(cursor)
+				? current
+				: { key, cursors: [...current.cursors, cursor] },
 		);
 	};
 
 	return {
-		notes: pages.flatMap((page) => page.data),
+		notes,
 		isLoading: first.isLoading,
-		isError: first.isError,
+		isError: first.isError && !first.data,
 		refetch: first.refetch,
-		hasMore: Boolean(nextCursor),
-		loadingMore: lastMore?.isLoading ?? false,
+		hasMore:
+			loadMoreFailed || loadingMore || Boolean(nextCursor && !cursors.includes(nextCursor)),
+		loadingMore,
 		loadMoreFailed,
 		loadMore,
 	};
 }
 
-/** 读取一条已发布笔记。 */
-export function fetchPublishedNote(id: string): Promise<PublicNote> {
+function fetchPublishedNote(id: string): Promise<PublicNote> {
 	return apiGet<PublicNote>(`/notes/${encodeURIComponent(id)}`);
 }
 
-/** 公开笔记详情查询。 */
-export function usePublishedNote(id: string) {
-	return useQuery({
+export function publishedNoteQueryOptions(id: string) {
+	return queryOptions({
 		queryKey: publishedNoteKeys.detail(id),
 		queryFn: () => fetchPublishedNote(id),
 		enabled: id.length > 0,
 	});
+}
+
+export function usePublishedNote(id: string) {
+	return useQuery(publishedNoteQueryOptions(id));
 }

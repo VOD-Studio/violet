@@ -1,10 +1,11 @@
+import { projectKeys } from "@entities/project/api/keys";
+import type { Project } from "@entities/project/model/types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { projectKeys } from "../../api/keys";
+import { roadmapKeys } from "../../api/keys";
 import type { RoadmapEmbedResult } from "../../api/queries";
 import type { RoadmapDetail, RoadmapItem } from "../../model/roadmap";
-import type { Project } from "../../model/types";
 import { RoadmapEmbedPicker } from "../RoadmapEmbedPicker";
 
 beforeAll(() => {
@@ -31,8 +32,8 @@ function renderPicker(initialSource?: string) {
 		detail: { items: [item(1, "收敛执行入口"), item(2, "建立领域模型")] } as RoadmapDetail,
 	};
 	const violet: RoadmapEmbedResult = { status: "missing" };
-	client.setQueryData(projectKeys.roadmapEmbed("kite"), kite);
-	client.setQueryData(projectKeys.roadmapEmbed("violet"), violet);
+	client.setQueryData(roadmapKeys.embed("kite"), kite);
+	client.setQueryData(roadmapKeys.embed("violet"), violet);
 	const onChange = vi.fn();
 	render(
 		<QueryClientProvider client={client}>

@@ -1,42 +1,8 @@
-import type { ProjectListQuery } from "../model/types";
+import { projectKeys } from "@entities/project/api/keys";
 
-/**
- * projectKeys - 项目查询的 query key 工厂
- *
- * 用工厂模式集中管理 key，避免散落字符串导致缓存失效不彻底。
- * 子键按 list/detail 维度组织，便于按维度 invalidate。
- */
-export const projectKeys = {
-	/** 项目模块根 key */
-	all: ["projects"] as const,
-	/** 项目列表维度 */
-	lists: () => [...projectKeys.all, "list"] as const,
-	/**
-	 * 具体列表查询
-	 *
-	 * @param query 分页参数，当前后端未生效，仅参与 key 区分
-	 */
-	list: (query: ProjectListQuery) => [...projectKeys.lists(), query] as const,
-	/** 项目详情维度 */
-	details: () => [...projectKeys.all, "detail"] as const,
-	/**
-	 * 具体项目详情
-	 *
-	 * @param id 项目 ID
-	 */
-	detail: (id: string) => [...projectKeys.details(), id] as const,
-	/** 路线图维度 */
-	roadmaps: () => [...projectKeys.all, "roadmap"] as const,
-	/**
-	 * 某个项目的路线图
-	 *
-	 * @param slug 项目 slug
-	 */
-	roadmap: (slug: string) => [...projectKeys.roadmaps(), slug] as const,
-	/**
-	 * 文章里嵌入的路线图：结果把「不存在」与「出错」也当作数据，和详情页的查询分开缓存
-	 *
-	 * @param slug 项目 slug
-	 */
-	roadmapEmbed: (slug: string) => [...projectKeys.roadmaps(), slug, "embed"] as const,
+/** 路线图嵌入将「不存在」与「出错」也作为结果，和详情页分开缓存。 */
+export const roadmapKeys = {
+	all: [...projectKeys.all, "roadmap"] as const,
+	detail: (slug: string) => [...roadmapKeys.all, slug] as const,
+	embed: (slug: string) => [...roadmapKeys.all, slug, "embed"] as const,
 };

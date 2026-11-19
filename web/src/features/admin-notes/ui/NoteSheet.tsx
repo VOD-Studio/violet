@@ -10,6 +10,8 @@ import {
 	NOTE_FORM_DEFAULTS,
 	type NoteForm,
 	noteSchema,
+	noteToForm,
+	noteToSaveRequest,
 	parseTagsText,
 } from "@features/admin-notes/model/schema";
 import { NOTE_STATUS_LABELS } from "@features/admin-notes/model/types";
@@ -38,6 +40,7 @@ import { ExternalLink, Maximize2, Plus, Tag as TagIcon, Trash2 } from "lucide-re
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { NoteJournalFields } from "./NoteJournalFields";
 
 interface NoteSheetProps {
 	open: boolean;
@@ -79,34 +82,21 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 		defaultValues: NOTE_FORM_DEFAULTS,
 	});
 
-	// 打开抽屉时初始化表单
-	const prevOpen = useRef(false);
+	const initializedFor = useRef<string | null | undefined>(undefined);
 	useEffect(() => {
 		if (!open) {
-			prevOpen.current = false;
+			initializedFor.current = undefined;
 			return;
 		}
-		if (!prevOpen.current) {
-			prevOpen.current = true;
-			setTagInput("");
-			if (!isEdit) {
-				reset(NOTE_FORM_DEFAULTS);
-			}
-		}
-	}, [open, isEdit, reset]);
-
-	// 数据加载完成后回填
-	useEffect(() => {
-		if (open && isEdit && note) {
-			reset({
-				title: note.title,
-				contentMD: note.content_md,
-				tagsText: note.tags.join(", "),
-			});
-		}
-	}, [open, isEdit, note, reset]);
+		const id = noteId ?? null;
+		if (initializedFor.current === id || (id !== null && note?.id !== id)) return;
+		initializedFor.current = id;
+		setTagInput("");
+		reset(id !== null && note ? noteToForm(note) : NOTE_FORM_DEFAULTS);
+	}, [open, noteId, note, reset]);
 
 	const tagsText = watch("tagsText");
+	const journal = watch("journal");
 	const currentTags = parseTagsText(tagsText);
 
 	// 推荐常用标签
@@ -134,32 +124,21 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 		setValue("tagsText", next.join(", "), { shouldDirty: true });
 	};
 
-	const buildRequest = () => {
-		const values = getValues();
-		return {
-			title: values.title.trim(),
-			content_md: values.contentMD,
-			tags: parseTagsText(values.tagsText),
-		};
-	};
-
 	const handleSave = async () => {
-		const values = getValues();
-		const parsed = noteSchema.safeParse(values);
+		if (!canManage || (isEdit && !note)) return;
+		const parsed = noteSchema.safeParse(getValues());
 		if (!parsed.success) {
 			toast.error(parsed.error.issues[0]?.message ?? "表单校验失败");
 			return;
 		}
 		try {
-			if (!isEdit) {
-				await createNote.mutateAsync(buildRequest());
-				toast.success("笔记已创建");
-				onOpenChange(false);
-			} else {
-				await saveNote.mutateAsync(buildRequest());
-				toast.success("已保存");
-				onOpenChange(false);
-			}
+			const request = noteToSaveRequest(parsed.data);
+			const saved = isEdit
+				? await saveNote.mutateAsync(request)
+				: await createNote.mutateAsync(request);
+			reset(noteToForm(saved));
+			toast.success(isEdit ? "已保存" : "笔记已创建");
+			onOpenChange(false);
 		} catch (saveError) {
 			toast.error(saveError instanceof Error ? saveError.message : "保存失败");
 		}
@@ -215,7 +194,7 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 						) : null}
 					</div>
 					<SheetDescription className="sr-only">
-						{isEdit ? "编辑笔记内容与标签" : "创建一条新的随手笔记"}
+						{isEdit ? "编辑笔记内容、属性与标签" : "创建一条新的随手笔记"}
 					</SheetDescription>
 
 					{/* 扩展操作：全屏跳转 + 前台预览 */}
@@ -229,7 +208,7 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 								aria-label="查看前台公开页"
 								title="查看前台公开页"
 							>
-								<a href={`/notes/${note.id}`} target="_blank" rel="noreferrer">
+								<a href={`/journal/${note.id}`} target="_blank" rel="noreferrer">
 									<ExternalLink className="size-4" />
 								</a>
 							</Button>
@@ -250,12 +229,20 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 				</SheetHeader>
 
 				{/* 中间表单主区 */}
-				{isEdit && isLoading ? (
+				{isEdit && !note ? (
 					<div className="flex flex-1 items-center justify-center">
-						<Spinner size={24} className="text-muted-foreground" aria-hidden="true" />
+						{isLoading ? (
+							<Spinner
+								size={24}
+								className="text-muted-foreground"
+								aria-hidden="true"
+							/>
+						) : (
+							<p role="alert">无法读取笔记</p>
+						)}
 					</div>
 				) : (
-					<div className="flex min-h-0 flex-1 flex-col space-y-4 overflow-y-auto px-6 py-5">
+					<div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5">
 						{/* 标题输入 */}
 						<div className="space-y-1">
 							<Input
@@ -273,6 +260,11 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 								<p className="text-xs text-destructive">{errors.title.message}</p>
 							) : null}
 						</div>
+
+						<NoteJournalFields
+							value={journal}
+							onChange={(value) => setValue("journal", value, { shouldDirty: true })}
+						/>
 
 						{/* 标签选择与输入区 */}
 						<div className="border-edge-hairline bg-muted/20 space-y-2.5 rounded-lg border p-3">
@@ -354,7 +346,7 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 						</div>
 
 						{/* 正文 Markdown 沉浸式编辑器（RichTextEditor 所见即所得） */}
-						<div className="flex min-h-0 flex-1 flex-col space-y-1">
+						<div className="space-y-1">
 							<Controller
 								control={control}
 								name="contentMD"
@@ -437,6 +429,7 @@ export function NoteSheet({ open, onOpenChange, noteId }: NoteSheetProps) {
 							<Button
 								type="button"
 								size="sm"
+								disabled={isEdit && !note}
 								loading={saving}
 								onClick={() => void handleSave()}
 							>

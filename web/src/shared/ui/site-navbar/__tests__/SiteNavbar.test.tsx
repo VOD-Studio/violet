@@ -58,7 +58,9 @@ describe("SiteNavbar", () => {
 
 	it("入口链接经 LinkComponent 渲染，目标取自导航数据", () => {
 		const { nav } = setup({});
-		expect(within(nav).getByRole("link", { name: "手记" }).getAttribute("href")).toBe("/notes");
+		expect(within(nav).getByRole("link", { name: "手记" }).getAttribute("href")).toBe(
+			"/journal",
+		);
 		expect(within(nav).getByRole("link", { name: "聊天" }).getAttribute("href")).toBe("/chat");
 	});
 

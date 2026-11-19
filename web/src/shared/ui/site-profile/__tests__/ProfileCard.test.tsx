@@ -111,7 +111,7 @@ describe("ProfileCard", () => {
 		setup({
 			latest: {
 				post: { title: "测试发送", date: "10.10", href: "/blog/test" },
-				note: { title: "实时状态接入，发布 2.22.1", date: "10.29", href: "/notes/1" },
+				note: { title: "实时状态接入，发布 2.22.1", date: "10.29", href: "/journal/1" },
 			},
 		});
 		const post = screen.getByRole("link", { name: /新文章/ });
@@ -119,13 +119,13 @@ describe("ProfileCard", () => {
 		expect(within(post).getByText("10.10")).toBeTruthy();
 		expect(within(post).getByText("测试发送")).toBeTruthy();
 		const note = screen.getByRole("link", { name: /新手记/ });
-		expect(note.getAttribute("href")).toBe("/notes/1");
+		expect(note.getAttribute("href")).toBe("/journal/1");
 		expect(within(note).getByText("实时状态接入，发布 2.22.1")).toBeTruthy();
 		expect(post.parentElement?.className).toContain("grid-cols-2");
 	});
 
 	it("最新只有一条：独占一行；两条都缺：整行不出现", () => {
-		setup({ latest: { note: { title: "只有手记", date: "10.29", href: "/notes/1" } } });
+		setup({ latest: { note: { title: "只有手记", date: "10.29", href: "/journal/1" } } });
 		const note = screen.getByRole("link", { name: /新手记/ });
 		expect(screen.queryByRole("link", { name: /新文章/ })).toBeNull();
 		expect(note.parentElement?.className).toContain("grid-cols-1");
@@ -185,7 +185,7 @@ describe("ProfileCard", () => {
 
 	describe("最新两条的按条占位", () => {
 		const post = { title: "测试发送", date: "10.10", href: "/blog/test" };
-		const note = { title: "实时状态接入，发布 2.22.1", date: "10.29", href: "/notes/1" };
+		const note = { title: "实时状态接入，发布 2.22.1", date: "10.29", href: "/journal/1" };
 		const grid = (container: HTMLElement) =>
 			container.querySelector<HTMLElement>('[data-slot="profile-latest"]');
 		const placeholders = (container: HTMLElement) =>

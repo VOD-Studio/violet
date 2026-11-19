@@ -4,13 +4,14 @@ import { formatDate } from "@shared/lib/date";
 import { Input, iconProps, Kbd, Label, Tag } from "@violet/ui";
 
 import { Clock, FileText, Hash, Info, Plus, Tag as TagIcon } from "lucide-react";
-import { useMemo, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 
 interface NoteEditorSidebarProps {
 	note?: AdminNote;
 	contentLength: number;
 	tags: string[];
 	onTagsChange: (tags: string[]) => void;
+	journalFields: ReactNode;
 }
 
 export function NoteEditorSidebar({
@@ -18,6 +19,7 @@ export function NoteEditorSidebar({
 	contentLength,
 	tags,
 	onTagsChange,
+	journalFields,
 }: NoteEditorSidebarProps) {
 	const { data: allTags = [] } = useTags();
 	const [tagInput, setTagInput] = useState("");
@@ -48,6 +50,10 @@ export function NoteEditorSidebar({
 
 	return (
 		<aside className="flex flex-col gap-4">
+			<div className="border-edge-hairline bg-background rounded-lg border p-4 shadow-2xs">
+				{journalFields}
+			</div>
+
 			{/* 标签管理卡片 */}
 			<div className="border-edge-hairline bg-background rounded-lg border p-4 shadow-2xs">
 				<div className="mb-3 flex items-center justify-between">
@@ -180,7 +186,7 @@ export function NoteEditorSidebar({
 						• 按 <Kbd size="sm" keys={["mod", "S"]} /> 随时快捷保存。
 					</li>
 					<li>• 标题留空时，系统自动提取首行作为索引摘要。</li>
-					<li>• 正文推荐使用「现象 / 根因 / 修法」三段式排版。</li>
+					<li>• 踩坑笔记可单独填写「现象 / 根因 / 修法」。</li>
 				</ul>
 			</div>
 		</aside>

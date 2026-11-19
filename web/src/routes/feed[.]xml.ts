@@ -56,10 +56,15 @@ ${items}
 
 function renderItem(siteURL: string, publication: HomePublicationItem): string {
 	const href = new URL(publicationPath(publication), siteURL).toString();
+	// 旧 GUID 继续标识同一篇手记；订阅链接指向新的规范地址。
+	const guid =
+		publication.kind === "note"
+			? new URL(`/notes/${encodeURIComponent(publication.route_key)}`, siteURL).toString()
+			: href;
 	return `    <item>
       <title>${escapeXml(publication.title)}</title>
       <link>${escapeXml(href)}</link>
-      <guid isPermaLink="true">${escapeXml(href)}</guid>
+      <guid isPermaLink="true">${escapeXml(guid)}</guid>
       <pubDate>${escapeXml(new Date(publication.published_at).toUTCString())}</pubDate>
     </item>`;
 }
@@ -69,7 +74,7 @@ function publicationPath(publication: HomePublicationItem): string {
 		case "article":
 			return `/blog/${encodeURIComponent(publication.route_key)}`;
 		case "note":
-			return `/notes/${encodeURIComponent(publication.route_key)}`;
+			return `/journal/${encodeURIComponent(publication.route_key)}`;
 		case "gallery":
 			return `/galleries/${encodeURIComponent(publication.route_key)}`;
 	}

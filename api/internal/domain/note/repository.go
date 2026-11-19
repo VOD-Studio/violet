@@ -10,6 +10,10 @@ import (
 type BrowseFilter struct {
 	// TagSlug 只读挂该标签（按 slug）的笔记；空串表示全部。
 	TagSlug string
+	// Type 空串表示不过滤；TypeUnclassified 只读显式未分类与历史记录。
+	Type Type
+	// ProjectID 非 nil 时只读仍关联到该公开项目的笔记。
+	ProjectID *shared.ID
 }
 
 // ListFilter 管理列表筛选条件；零值表示不过滤。

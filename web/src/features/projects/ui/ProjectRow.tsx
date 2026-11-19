@@ -1,8 +1,8 @@
+import type { ProjectRoadmapSummary } from "@entities/project/model/roadmap-summary";
+import type { Project } from "@entities/project/model/types";
 import { Link } from "@tanstack/react-router";
 import { Tag } from "@violet/ui";
 import { cn } from "cn";
-import type { ProjectRoadmapSummary } from "../model/roadmap-summary";
-import type { Project } from "../model/types";
 import { ProjectCover } from "./ProjectCover";
 
 function RoadmapSummary({ title, summary }: { title: string; summary: ProjectRoadmapSummary }) {

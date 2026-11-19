@@ -45,7 +45,7 @@ describe("resolveTransitionKind", () => {
 			["/blog/hello", "/blog"],
 			["/blog/series", "/blog/series/book"],
 			["/galleries", "/galleries/trip"],
-			["/notes", "/notes/1"],
+			["/journal", "/journal/1"],
 			["/tweets", "/users/alice"],
 			["/", "/projects"],
 			["/projects", "/about"],

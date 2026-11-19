@@ -186,6 +186,10 @@ SQLite 集成夹具在 `AutoMigrate` 后显式补建 `sort_order` 列；模型�
 
 `GET /posts/{postId}/comments?type=free&top_level=true` 与 `GET /tweets/{id}/comments` 接受 `sort=latest|hot`（缺省 latest，非法值 400）。hot 在数据库分页前按该评论全部回应记录数降序，再按 `created_at DESC,id DESC` 稳定破同；不维护冗余计数。文章匿名黑洞、自己的 pending、批注/后台/检索与回复 asc/desc 的原有语义不变。
 
+### 手记
+
+`GET /notes` 保留标签 `tag` 和游标 `cursor`，可再按 `type` 与 `project_id` 组合筛选。公开列表和详情只返回已发布记录，关联项目删除后保留手记、清除项目关联。创建与修改仍走 `/admin/notes`；修改时省略 `journal` 会保留已保存的分类和踩坑信息。字段定义见 OpenAPI。
+
 ## 业务模块
 
 按用例定位 [internal/application/](internal/application/)，再查看对应领域与适配器；不是每个模块都具有完全同名的四层目录。

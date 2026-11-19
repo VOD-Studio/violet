@@ -84,9 +84,9 @@ export const NAV_ITEMS: NavItem[] = [
 	},
 	{
 		label: "手记",
-		to: "/notes",
+		to: "/journal",
 		icon: NotebookText,
-		description: "浏览知识笔记与踩坑记录",
+		description: "按日期、分类和项目浏览手记",
 	},
 	{
 		label: "推文",

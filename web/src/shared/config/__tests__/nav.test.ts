@@ -12,9 +12,9 @@ describe("getNavItems 一级入口", () => {
 		expect(labels(true)).toEqual(["首页", "博客", "手记", "推文", "聊天", "更多"]);
 	});
 
-	it("手记指向现有 /notes", () => {
+	it("手记入口指向新的时间线", () => {
 		const journal = getNavItems({ authenticated: false }).find((item) => item.label === "手记");
-		expect(journal?.to).toBe("/notes");
+		expect(journal?.to).toBe("/journal");
 	});
 
 	it("聊天不再藏在更多里", () => {
@@ -87,9 +87,9 @@ describe("resolveActiveNav", () => {
 	});
 
 	it("手记详情页归属手记", () => {
-		const active = resolveActiveNav("/notes/12", items);
+		const active = resolveActiveNav("/journal/12", items);
 		expect(active?.item.label).toBe("手记");
-		expect(active?.link.to).toBe("/notes");
+		expect(active?.link.to).toBe("/journal");
 	});
 
 	it("更多里的子页归属更多分组", () => {

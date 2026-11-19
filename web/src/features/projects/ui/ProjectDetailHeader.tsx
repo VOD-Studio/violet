@@ -1,9 +1,9 @@
+import type { RoadmapProgress as RoadmapProgressData } from "@entities/project/model/roadmap-summary";
+import type { Project } from "@entities/project/model/types";
 import { BackLink } from "@shared/ui/back-link";
 import { Link } from "@tanstack/react-router";
 import { Button, iconProps } from "@violet/ui";
 import { ArrowUpRight } from "lucide-react";
-import type { RoadmapProgress as RoadmapProgressData } from "../model/roadmap-summary";
-import type { Project } from "../model/types";
 import { RoadmapProgress } from "./RoadmapProgress";
 
 export interface ProjectDetailHeaderProps {

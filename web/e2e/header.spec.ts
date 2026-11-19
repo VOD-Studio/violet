@@ -236,7 +236,7 @@ test("Header 路由切换超过 300ms 才在导航下沿显示加载进度线，
 	expect(Number(await line.getAttribute("aria-valuenow"))).toBeLessThan(100);
 
 	release?.();
-	await expect(page).toHaveURL(/\/notes$/);
+	await expect(page).toHaveURL(/\/journal$/);
 	await expect(line).toHaveCount(0);
 });
 

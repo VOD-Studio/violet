@@ -121,6 +121,9 @@ const CONTRACT_NOTE = {
 	content_html: "<p>笔记内容在首访接管期间保持可读。</p>",
 	tags: ["ssr"],
 	published_at: "2026-08-11T10:00:00Z",
+	type: "unclassified",
+	project: null,
+	pitfall: null,
 };
 
 const CONTRACT_SERIES = {

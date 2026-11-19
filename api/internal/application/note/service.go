@@ -40,15 +40,16 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (NoteDTO, error) {
 	if err != nil {
 		return NoteDTO{}, shared.BadRequest("作者身份无效")
 	}
+	journal, err := parseJournal(in.Journal)
+	if err != nil {
+		return NoteDTO{}, err
+	}
 	html, err := markdown.ToHTML(in.ContentMD)
 	if err != nil {
 		return NoteDTO{}, shared.BadRequest("笔记正文渲染失败")
 	}
-	n, err := domainnote.NewNote(shared.NewID(), authorID, in.Title, in.ContentMD, in.Tags)
+	n, err := domainnote.NewNote(shared.NewID(), authorID, in.Title, in.ContentMD, html, in.Tags, journal)
 	if err != nil {
-		return NoteDTO{}, err
-	}
-	if err := n.Edit(in.Title, in.ContentMD, html, in.Tags); err != nil {
 		return NoteDTO{}, err
 	}
 	if err := s.repo.Create(ctx, n); err != nil {
@@ -63,6 +64,10 @@ func (s *Service) Update(ctx context.Context, in UpdateInput) (NoteDTO, error) {
 	if err != nil {
 		return NoteDTO{}, err
 	}
+	journal, err := parseJournal(in.Journal)
+	if err != nil {
+		return NoteDTO{}, err
+	}
 	html, err := markdown.ToHTML(in.ContentMD)
 	if err != nil {
 		return NoteDTO{}, shared.BadRequest("笔记正文渲染失败")
@@ -71,7 +76,7 @@ func (s *Service) Update(ctx context.Context, in UpdateInput) (NoteDTO, error) {
 	if err != nil {
 		return NoteDTO{}, err
 	}
-	if err := n.Edit(in.Title, in.ContentMD, html, in.Tags); err != nil {
+	if err := n.Edit(in.Title, in.ContentMD, html, in.Tags, journal); err != nil {
 		return NoteDTO{}, err
 	}
 	if err := s.saveWithPublication(ctx, n); err != nil {
@@ -157,14 +162,23 @@ func (s *Service) saveWithPublication(ctx context.Context, n *domainnote.Note) e
 	})
 }
 
-// BrowsePublished 按稳定复合游标读取公开笔记流，可按标签 slug 筛选。
-func (s *Service) BrowsePublished(ctx context.Context, encodedCursor string, limit int, tagSlug string) ([]PublicNoteDTO, string, error) {
-	cursor, err := decodePublishedCursor(encodedCursor)
+// BrowsePublished 按首次发布日期及 ID 倒序，叠加分类、项目与标签筛选。
+func (s *Service) BrowsePublished(ctx context.Context, query BrowseQuery) ([]PublicNoteDTO, string, error) {
+	cursor, err := decodePublishedCursor(query.Cursor)
 	if err != nil {
 		return nil, "", err
 	}
-	limit = normalizePublicLimit(limit)
-	rows, err := s.repo.FindPublishedPage(ctx, cursor, domainnote.BrowseFilter{TagSlug: strings.TrimSpace(tagSlug)}, limit+1)
+	if query.Type != "" && !query.Type.IsValid() {
+		return nil, "", shared.BadRequest("手记类型无效")
+	}
+	projectID, err := parseJournalProject(query.ProjectID)
+	if err != nil {
+		return nil, "", err
+	}
+	limit := normalizePublicLimit(query.Limit)
+	rows, err := s.repo.FindPublishedPage(ctx, cursor, domainnote.BrowseFilter{
+		TagSlug: strings.TrimSpace(query.TagSlug), Type: query.Type, ProjectID: projectID,
+	}, limit+1)
 	if err != nil {
 		return nil, "", err
 	}
@@ -196,6 +210,37 @@ func (s *Service) GetPublished(ctx context.Context, noteID string) (PublicNoteDT
 		return PublicNoteDTO{}, err
 	}
 	return toPublicDTO(row), nil
+}
+
+func parseJournal(input *JournalDTO) (*domainnote.Journal, error) {
+	if input == nil {
+		return nil, nil
+	}
+	var projectID *shared.ID
+	if input.ProjectID != nil {
+		id, err := parseJournalProject(*input.ProjectID)
+		if err != nil {
+			return nil, err
+		}
+		if id == nil {
+			return nil, shared.BadRequest("关联项目 ID 无效")
+		}
+		projectID = id
+	}
+	return &domainnote.Journal{
+		Type: input.Type, ProjectID: projectID, Pitfall: (*domainnote.Pitfall)(input.Pitfall),
+	}, nil
+}
+
+func parseJournalProject(raw string) (*shared.ID, error) {
+	if raw == "" {
+		return nil, nil
+	}
+	id, err := shared.ParseID(raw)
+	if err != nil {
+		return nil, shared.BadRequest("关联项目 ID 无效")
+	}
+	return &id, nil
 }
 
 func normalizePublicLimit(limit int) int {

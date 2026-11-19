@@ -17,7 +17,7 @@ func newID(t *testing.T) shared.ID {
 
 func TestNewNote_Valid(t *testing.T) {
 	author := newID(t)
-	n, err := NewNote(newID(t), author, "  Redis 取整坑  ", "# 现象\n正文", []string{"redis", " redis ", "", "ops", "redis"})
+	n, err := NewNote(newID(t), author, "  Redis 取整坑  ", "# 现象\n正文", "", []string{"redis", " redis ", "", "ops", "redis"}, nil)
 	require.NoError(t, err)
 	assert.Equal(t, StatusDraft, n.Status())
 	assert.Equal(t, "Redis 取整坑", n.Title())
@@ -26,13 +26,13 @@ func TestNewNote_Valid(t *testing.T) {
 }
 
 func TestNewNote_EmptyTitleAllowed(t *testing.T) {
-	n, err := NewNote(newID(t), newID(t), "", "正文", nil)
+	n, err := NewNote(newID(t), newID(t), "", "正文", "", nil, nil)
 	require.NoError(t, err)
 	assert.Equal(t, "", n.Title())
 }
 
 func TestNewNote_BlankContentRejected(t *testing.T) {
-	_, err := NewNote(newID(t), newID(t), "标题", "   \n  ", nil)
+	_, err := NewNote(newID(t), newID(t), "标题", "   \n  ", "", nil, nil)
 	require.Error(t, err)
 }
 
@@ -41,23 +41,23 @@ func TestNewNote_TitleTooLong(t *testing.T) {
 	for i := range long {
 		long[i] = '坑'
 	}
-	_, err := NewNote(newID(t), newID(t), string(long), "正文", nil)
+	_, err := NewNote(newID(t), newID(t), string(long), "正文", "", nil, nil)
 	require.Error(t, err)
 }
 
 func TestNewNote_TooManyTags(t *testing.T) {
 	tags := []string{"a", "b", "c", "d", "e", "f", "g", "h", "i"}
-	_, err := NewNote(newID(t), newID(t), "", "正文", tags)
+	_, err := NewNote(newID(t), newID(t), "", "正文", "", tags, nil)
 	require.Error(t, err, "去重后超过 8 个标签应拒绝")
 }
 
 func TestEdit_ReplacesContentWithoutTouchingState(t *testing.T) {
-	n, err := NewNote(newID(t), newID(t), "旧标题", "旧正文", []string{"old"})
+	n, err := NewNote(newID(t), newID(t), "旧标题", "旧正文", "", []string{"old"}, nil)
 	require.NoError(t, err)
 	published := time.Date(2026, 9, 1, 10, 0, 0, 0, time.UTC)
 	n.Publish(published)
 
-	require.NoError(t, n.Edit("新标题", "新正文", "<p>新正文</p>", []string{"new"}))
+	require.NoError(t, n.Edit("新标题", "新正文", "<p>新正文</p>", []string{"new"}, nil))
 	assert.Equal(t, "新标题", n.Title())
 	assert.Equal(t, "新正文", n.ContentMD())
 	assert.Equal(t, "<p>新正文</p>", n.ContentHTML())
@@ -68,13 +68,13 @@ func TestEdit_ReplacesContentWithoutTouchingState(t *testing.T) {
 }
 
 func TestEdit_BlankContentRejected(t *testing.T) {
-	n, err := NewNote(newID(t), newID(t), "", "正文", nil)
+	n, err := NewNote(newID(t), newID(t), "", "正文", "", nil, nil)
 	require.NoError(t, err)
-	require.Error(t, n.Edit("", "  ", "", nil))
+	require.Error(t, n.Edit("", "  ", "", nil, nil))
 }
 
 func TestPublish_FirstTimeStampsIdempotentKeepsOriginal(t *testing.T) {
-	n, err := NewNote(newID(t), newID(t), "", "正文", nil)
+	n, err := NewNote(newID(t), newID(t), "", "正文", "", nil, nil)
 	require.NoError(t, err)
 	assert.False(t, n.IsPublished())
 
@@ -91,7 +91,7 @@ func TestPublish_FirstTimeStampsIdempotentKeepsOriginal(t *testing.T) {
 func TestReconstruct_RoundTrip(t *testing.T) {
 	id, author := newID(t), newID(t)
 	published := time.Date(2026, 9, 2, 9, 0, 0, 0, time.UTC)
-	n := Reconstruct(id, author, "标题", "md", "html", StatusPublished, &published, published, published, []string{"x"})
+	n := Reconstruct(id, author, "标题", "md", "html", StatusPublished, &published, published, published, []string{"x"}, Journal{Type: TypeUnclassified})
 	assert.Equal(t, id, n.ID())
 	assert.Equal(t, author, n.AuthorID())
 	assert.Equal(t, StatusPublished, n.Status())

@@ -1,3 +1,4 @@
+import { projectKeys } from "@entities/project/api/keys";
 import { useQueryClient } from "@tanstack/react-query";
 import {
 	type BoardMove,
@@ -7,7 +8,7 @@ import {
 } from "@violetjs/kanban/core";
 import { useMemo, useRef } from "react";
 import { toast } from "sonner";
-import { projectKeys } from "../api/keys";
+import { roadmapKeys } from "../api/keys";
 import {
 	createRoadmapItem,
 	createRoadmapRelation,
@@ -80,7 +81,7 @@ export function useRoadmapEditor(slug: string, detail: RoadmapDetail | undefined
 	);
 
 	return useMemo(() => {
-		const key = projectKeys.roadmap(slug);
+		const key = roadmapKeys.detail(slug);
 		const projectId = () => latest.current?.project.id ?? "";
 		const settle = (item: RoadmapItem) => {
 			queryClient.setQueryData<RoadmapDetail>(key, (current) =>

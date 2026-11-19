@@ -29,7 +29,7 @@ func newNoteTestDB(t *testing.T) *gorm.DB {
 
 func mustNote(t *testing.T, author shared.ID, md string) *domainnote.Note {
 	t.Helper()
-	n, err := domainnote.NewNote(shared.NewID(), author, "", md, nil)
+	n, err := domainnote.NewNote(shared.NewID(), author, "", md, "", nil, nil)
 	require.NoError(t, err)
 	return n
 }
@@ -40,7 +40,7 @@ func TestNoteRepositoryCreateAndFindByID(t *testing.T) {
 	author := shared.NewID()
 
 	n := mustNote(t, author, "# 正文")
-	require.NoError(t, n.Edit("", "# 正文", "<h1>正文</h1>", []string{"redis", "css"}))
+	require.NoError(t, n.Edit("", "# 正文", "<h1>正文</h1>", []string{"redis", "css"}, nil))
 	require.NoError(t, repo.Create(context.Background(), n))
 
 	got, err := repo.FindByID(context.Background(), n.ID())
@@ -55,7 +55,7 @@ func TestNoteRepositoryCreateUnknownTagRejected(t *testing.T) {
 	db := newNoteTestDB(t)
 	repo := NewNoteRepository(db)
 	n := mustNote(t, shared.NewID(), "x")
-	require.NoError(t, n.Edit("", "x", "x", []string{"不存在的标签"}))
+	require.NoError(t, n.Edit("", "x", "x", []string{"不存在的标签"}, nil))
 	err := repo.Create(context.Background(), n)
 	require.Error(t, err, "未知标签应报错而非静默丢弃")
 }
@@ -66,10 +66,10 @@ func TestNoteRepositorySaveReplacesTags(t *testing.T) {
 	author := shared.NewID()
 
 	n := mustNote(t, author, "x")
-	require.NoError(t, n.Edit("", "x", "x", []string{"redis"}))
+	require.NoError(t, n.Edit("", "x", "x", []string{"redis"}, nil))
 	require.NoError(t, repo.Create(context.Background(), n))
 
-	require.NoError(t, n.Edit("", "x2", "x2", []string{"css", "deploy"}))
+	require.NoError(t, n.Edit("", "x2", "x2", []string{"css", "deploy"}, nil))
 	require.NoError(t, repo.Save(context.Background(), n))
 
 	got, err := repo.FindByID(context.Background(), n.ID())
@@ -102,8 +102,8 @@ func TestNoteRepositoryFindPageFiltersAndOrders(t *testing.T) {
 	// 显式给 createdAt：SQLite 的 CURRENT_TIMESTAMP 只有秒级分辨率，
 	// 依赖插入间隔会因同秒并列退化为 id 排序。
 	base := time.Now().UTC().Add(-time.Hour)
-	old := domainnote.Reconstruct(shared.NewID(), author, "", "旧", "旧", domainnote.StatusDraft, nil, base, base, nil)
-	fresh := domainnote.Reconstruct(shared.NewID(), author, "", "新", "新", domainnote.StatusDraft, nil, base.Add(time.Minute), base.Add(time.Minute), nil)
+	old := domainnote.Reconstruct(shared.NewID(), author, "", "旧", "旧", domainnote.StatusDraft, nil, base, base, nil, domainnote.Journal{Type: domainnote.TypeUnclassified})
+	fresh := domainnote.Reconstruct(shared.NewID(), author, "", "新", "新", domainnote.StatusDraft, nil, base.Add(time.Minute), base.Add(time.Minute), nil, domainnote.Journal{Type: domainnote.TypeUnclassified})
 	require.NoError(t, repo.Create(context.Background(), old))
 	require.NoError(t, repo.Create(context.Background(), fresh))
 	fresh.Publish(time.Now().UTC())
@@ -130,7 +130,7 @@ func TestNoteRepositoryFindPublishedPageKeyset(t *testing.T) {
 	ids := make([]shared.ID, 0, 3)
 	for i := 0; i < 3; i++ {
 		n := mustNote(t, author, "正文")
-		require.NoError(t, n.Edit("", "正文", "<p>正文</p>", []string{"redis"}))
+		require.NoError(t, n.Edit("", "正文", "<p>正文</p>", []string{"redis"}, nil))
 		n.Publish(base.Add(time.Duration(i) * time.Minute))
 		require.NoError(t, repo.Create(context.Background(), n))
 		ids = append(ids, n.ID())

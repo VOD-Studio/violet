@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	appnote "blog-api/internal/application/note"
+	domainnote "blog-api/internal/domain/note"
 	"blog-api/internal/domain/shared"
 )
 
@@ -32,8 +33,7 @@ type stubNoteService struct {
 	deleteCalled bool
 	deleteErr    error
 
-	browseTag    string
-	browseCursor string
+	browseQuery  appnote.BrowseQuery
 	browseCalled bool
 
 	getPublishedID string
@@ -80,10 +80,9 @@ func (s *stubNoteService) Delete(_ context.Context, id string) error {
 	return s.deleteErr
 }
 
-func (s *stubNoteService) BrowsePublished(_ context.Context, cursor string, _ int, tag string) ([]appnote.PublicNoteDTO, string, error) {
+func (s *stubNoteService) BrowsePublished(_ context.Context, query appnote.BrowseQuery) ([]appnote.PublicNoteDTO, string, error) {
 	s.browseCalled = true
-	s.browseCursor = cursor
-	s.browseTag = tag
+	s.browseQuery = query
 	return []appnote.PublicNoteDTO{{ID: "n1", Tags: []string{}}}, "", nil
 }
 
@@ -174,13 +173,15 @@ func TestPublishAndDelete(t *testing.T) {
 	assert.Equal(t, "n7", stub.deleteID)
 }
 
-func TestBrowsePublished_PassesCursorAndTag(t *testing.T) {
+func TestBrowsePublished_PassesCombinedFilters(t *testing.T) {
 	stub := &stubNoteService{}
-	rec := perform(newHandlerFor(stub).BrowsePublished, http.MethodGet, "/api/v1/notes?cursor=abc&tag=redis", nil)
+	rec := perform(newHandlerFor(stub).BrowsePublished, http.MethodGet, "/api/v1/notes?cursor=abc&tag=redis&type=pitfall&project_id=8fb31d50-4714-40e9-a105-a794053c1471&limit=2", nil)
 	require.Equal(t, http.StatusOK, rec.Code)
 	assert.True(t, stub.browseCalled)
-	assert.Equal(t, "abc", stub.browseCursor)
-	assert.Equal(t, "redis", stub.browseTag)
+	assert.Equal(t, appnote.BrowseQuery{
+		Cursor: "abc", TagSlug: "redis", Type: domainnote.TypePitfall,
+		ProjectID: "8fb31d50-4714-40e9-a105-a794053c1471", Limit: 2,
+	}, stub.browseQuery)
 }
 
 func TestGetPublished_PathID(t *testing.T) {
