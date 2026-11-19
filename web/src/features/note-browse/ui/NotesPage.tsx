@@ -58,10 +58,10 @@ export function NotesPage({ search, onSearchChange }: NotesPageProps) {
 		: search.project_id;
 
 	return (
-		<PageShell>
+		<PageShell className="lg:pt-16.5">
 			<div className="mx-auto max-w-280">
 				<header className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-end">
-					<h1 className="font-serif text-4xl leading-none tracking-tight md:text-[3.25rem]">
+					<h1 className="font-serif text-4xl leading-[1.1] tracking-tight md:text-[3.25rem]">
 						手记
 					</h1>
 					<div className="flex max-w-full flex-wrap items-center gap-2.5">
