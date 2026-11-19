@@ -15,8 +15,8 @@ export interface ProjectsPageProps {
 }
 
 const GRID_CLASS = "grid grid-cols-1 gap-6 md:grid-cols-2 lg:gap-8";
-const SHELL_CLASS = "max-w-292"; // 1120px 内容宽度，加上 PageShell 桌面两侧的内边距。
-const HEADING_CLASS = "text-4xl font-semibold tracking-tight sm:text-5xl";
+const SHELL_CLASS = "max-w-292 lg:pt-16.5";
+const HEADING_CLASS = "font-serif text-4xl leading-[1.15] font-semibold md:text-[3.25rem]";
 
 /** 路由尚未取得列表时的骨架；请求失败后可在当前地址重试。 */
 export function ProjectsPageFallback({ onRetry }: { onRetry?: () => void }) {

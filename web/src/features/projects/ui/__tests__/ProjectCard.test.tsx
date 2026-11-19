@@ -149,7 +149,7 @@ describe("ProjectCard", () => {
 		expect(screen.getByRole("link", { name: "Violet" })).toBeTruthy();
 	});
 
-	it("有正式发布时优先显示版本、发布日期和发布数量", () => {
+	it("稳定迭代的项目优先显示版本、发布日期和发布数量", () => {
 		const { rerender } = render(<ProjectCard project={project({ release })} />);
 
 		expect(screen.getByRole("link", { name: "v1.4.0" }).getAttribute("href")).toBe(
@@ -168,6 +168,42 @@ describe("ProjectCard", () => {
 		);
 		expect(screen.getByText("v1.4.0")).toBeTruthy();
 		expect(screen.queryByRole("link", { name: "v1.4.0" })).toBeNull();
+	});
+
+	it("进行中的项目以路线图为主且保留已发布的版本链接", () => {
+		const pending = project({ status: "active", release });
+		const { rerender } = render(<ProjectCard project={pending} />);
+		expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("71");
+		expect(screen.getByRole("list", { name: "正在做" }).textContent).toContain(
+			"进行中的第一项",
+		);
+		const releaseLink = screen.getByRole("link", { name: release.tag });
+		expect(releaseLink.getAttribute("href")).toBe(release.html_url);
+		expect(
+			screen.getByRole("progressbar").compareDocumentPosition(releaseLink) &
+				Node.DOCUMENT_POSITION_FOLLOWING,
+		).toBeTruthy();
+
+		rerender(
+			<ProjectCard
+				project={{
+					...pending,
+					roadmap: summary({
+						progress: {
+							planned: 0,
+							in_progress: 0,
+							completed: 0,
+							total: 0,
+							percent: 0,
+						},
+						in_progress: [],
+						latest_completed: null,
+					}),
+				}}
+			/>,
+		);
+		expect(screen.queryByRole("progressbar")).toBeNull();
+		expect(screen.getByRole("link", { name: release.tag })).toBeTruthy();
 	});
 
 	it("安全的访问、GitHub 与文档地址各有独立链接，危险或非绝对地址不显示", () => {
@@ -204,11 +240,12 @@ describe("ProjectCard", () => {
 		expect(screen.getAllByRole("link").map((link) => link.textContent)).toEqual(["Violet"]);
 	});
 
-	it("封面：没有地址显示首字母占位；有地址是装饰图，加载失败回落到占位", () => {
-		const { container, rerender } = render(<ProjectCard project={project()} />);
+	it("无专用插画的项目缺图或加载失败时显示首字母占位", () => {
+		const generic = project({ slug: "generic" });
+		const { container, rerender } = render(<ProjectCard project={generic} />);
 		expect(screen.getByTestId("project-cover-placeholder").textContent).toBe("V");
 
-		rerender(<ProjectCard project={project({ image_url: "/uploads/cover.png" })} />);
+		rerender(<ProjectCard project={{ ...generic, image_url: "/uploads/cover.png" }} />);
 		const image = container.querySelector("img") as HTMLImageElement;
 		expect(image.getAttribute("alt")).toBe("");
 		expect(screen.queryByTestId("project-cover-placeholder")).toBeNull();
@@ -218,12 +255,16 @@ describe("ProjectCard", () => {
 		expect(screen.getByTestId("project-cover-placeholder").textContent).toBe("V");
 	});
 
-	it("封面地址变了，之前的失败记录不再生效", () => {
-		const { container, rerender } = render(
-			<ProjectCard project={project({ image_url: "/uploads/a.png" })} />,
-		);
-		fireEvent.error(container.querySelector("img") as HTMLImageElement);
-		expect(container.querySelector("img")).toBeNull();
+	it("已配置的项目封面优先，失效时用画板插画，换图后采用新配置", () => {
+		const { container, rerender } = render(<ProjectCard project={project()} />);
+		const fallback = container.querySelector("img")?.getAttribute("src");
+		expect(fallback).toMatch(/violet-cover.*\.webp$/);
+
+		rerender(<ProjectCard project={project({ image_url: "/uploads/a.png" })} />);
+		const configured = container.querySelector("img") as HTMLImageElement;
+		expect(configured.getAttribute("src")).toContain("/uploads/a.png");
+		fireEvent.error(configured);
+		expect(container.querySelector("img")?.getAttribute("src")).toBe(fallback);
 
 		rerender(<ProjectCard project={project({ image_url: "/uploads/b.png" })} />);
 		expect(container.querySelector("img")?.getAttribute("src")).toContain("/uploads/b.png");

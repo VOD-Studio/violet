@@ -154,7 +154,8 @@ export interface ProjectCardProps {
 export function ProjectCard({ project }: ProjectCardProps) {
 	const { release, roadmap } = project;
 	const techStack = project.tech_stack ?? [];
-	const hasRoadmap = roadmap && roadmap.progress.total > 0;
+	const showRoadmap =
+		roadmap && roadmap.progress.total > 0 && (!release || project.status === "active");
 	const visit = projectHref(project.url, true);
 	const github = projectHref(project.github_url);
 	const docs = projectHref(project.docs_url, true);
@@ -162,7 +163,11 @@ export function ProjectCard({ project }: ProjectCardProps) {
 		<li className="min-w-0">
 			<CardFrame className="flex h-full flex-col">
 				<CardFrameImage className="aspect-16/9 shrink-0">
-					<ProjectCover src={project.image_url} title={project.title} />
+					<ProjectCover
+						src={project.image_url}
+						slug={project.slug}
+						title={project.title}
+					/>
 				</CardFrameImage>
 				<CardFrameBody className="grow gap-3 p-4 sm:p-5">
 					<div className="flex flex-wrap items-center gap-x-2.5 gap-y-2">
@@ -214,13 +219,12 @@ export function ProjectCard({ project }: ProjectCardProps) {
 							))}
 						</ul>
 					)}
-					{(release || hasRoadmap) && (
-						<div className="mt-auto border-t border-edge-hairline pt-4 text-sm text-muted-foreground">
-							{release ? (
-								<ReleaseSummary release={release} />
-							) : hasRoadmap ? (
+					{(release || showRoadmap) && (
+						<div className="mt-auto space-y-3 border-t border-edge-hairline pt-4 text-sm text-muted-foreground">
+							{showRoadmap && (
 								<RoadmapSummary title={project.title} summary={roadmap} />
-							) : null}
+							)}
+							{release && <ReleaseSummary release={release} />}
 						</div>
 					)}
 				</CardFrameBody>
