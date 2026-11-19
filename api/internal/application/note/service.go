@@ -192,7 +192,7 @@ func (s *Service) BrowsePublished(ctx context.Context, query BrowseQuery) ([]Pub
 	}
 	next := ""
 	if hasMore && len(rows) > 0 {
-		next = encodePublishedCursor(domainnote.PublishedCursor{
+		next = EncodePublishedCursor(domainnote.PublishedCursor{
 			PublishedAt: rows[len(rows)-1].PublishedAt, ID: rows[len(rows)-1].ID,
 		})
 	}

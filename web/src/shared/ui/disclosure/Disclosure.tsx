@@ -12,6 +12,8 @@ export interface DisclosureProps {
 	className?: string;
 	summaryClassName?: string;
 	contentClassName?: string;
+	/** 用户切换折叠状态后通知调用方；首屏不触发。 */
+	onOpenChange?: (open: boolean) => void;
 }
 
 /** 带键盘语义与高度过渡的通用折叠面板。 */
@@ -23,6 +25,7 @@ export function Disclosure({
 	className,
 	summaryClassName,
 	contentClassName,
+	onOpenChange,
 }: DisclosureProps) {
 	const [open, setOpen] = useState(defaultOpen);
 	const contentId = useId();
@@ -37,7 +40,11 @@ export function Disclosure({
 				className={cn(styles.summary, summaryClassName)}
 				aria-expanded={open}
 				aria-controls={contentId}
-				onClick={() => setOpen((current) => !current)}
+				onClick={() => {
+					const next = !open;
+					setOpen(next);
+					onOpenChange?.(next);
+				}}
 			>
 				<span className={styles.summaryContent}>{summary}</span>
 				<ChevronDown className={styles.chevron} aria-hidden />

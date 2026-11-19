@@ -1,4 +1,4 @@
-import { publishedNotesQueryOptions } from "@entities/note/api/queries";
+import { journalQueryOptions } from "@entities/note/api/queries";
 import { projectsQueryOptions } from "@entities/project/api/queries";
 import { NOTES_PAGE_LIMIT } from "@features/note-browse/model/display";
 import { parseJournalSearch } from "@features/note-browse/model/navigation";
@@ -13,9 +13,7 @@ export const Route = createFileRoute("/journal/")({
 	loaderDeps: ({ search }) => search,
 	loader: async ({ context: { queryClient }, deps }) => {
 		await Promise.all([
-			queryClient.ensureQueryData(
-				publishedNotesQueryOptions({ ...deps, limit: NOTES_PAGE_LIMIT }),
-			),
+			queryClient.ensureQueryData(journalQueryOptions({ ...deps, limit: NOTES_PAGE_LIMIT })),
 			queryClient.prefetchQuery(projectsQueryOptions()),
 			queryClient.prefetchQuery({ queryKey: tagKeys.list(), queryFn: fetchTags }),
 		]);
@@ -23,7 +21,7 @@ export const Route = createFileRoute("/journal/")({
 	head: () => ({
 		meta: [
 			{ title: "手记" },
-			{ name: "description", content: "踩过的坑、随手记下的想法与摘录" },
+			{ name: "description", content: "公开项目进展、踩过的坑、随手记下的想法与摘录" },
 		],
 		links: [{ rel: "canonical", href: `${SITE_URL.replace(/\/+$/, "")}/journal` }],
 	}),

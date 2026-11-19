@@ -525,6 +525,32 @@ export const PROJECTS_FIXTURE = [
 	},
 ];
 
+const JOURNAL_COMMITS = Array.from({ length: 8 }, (_, index) => {
+	const sha = (index + 1).toString(16).padStart(40, "0");
+	return {
+		sha,
+		title: `feat: 第 ${index + 1} 条契约提交`,
+		url: `https://github.com/VOD-Studio/violet/commit/${sha}`,
+		occurred_at: "2026-08-11T09:00:00Z",
+	};
+});
+const JOURNAL_DAY = {
+	day: "2026-08-11",
+	project: { id: ROADMAP_PROJECT.id, title: ROADMAP_PROJECT.title, slug: ROADMAP_PROJECT.slug },
+	first_at: "2026-08-11T08:00:00Z",
+	last_at: "2026-08-11T09:00:00Z",
+	commit_count: JOURNAL_COMMITS.length,
+	release_count: 1,
+	summary: "进展契约版本",
+	commits: JOURNAL_COMMITS.slice(0, 6),
+	releases: [{
+		tag: "v2.0.0",
+		title: "进展契约版本",
+		url: "https://github.com/VOD-Studio/violet/releases/tag/v2.0.0",
+		occurred_at: "2026-08-11T08:00:00Z",
+	}],
+};
+
 /** 实时状态未公开或无人在线时的应答：顶栏不显示活动。 */
 const NO_PRESENCE = { generated_at: "2026-10-01T00:00:00Z", devices: [] };
 
@@ -792,6 +818,32 @@ export function handle(method, pathname, search, cookie = "", rawBody = "") {
 	}
 	if (pathname === "/api/v1/series/context/contract-post-1") {
 		return { status: 200, body: envelope(null) };
+	}
+	if (pathname === "/api/v1/journal") {
+		const tag = params.get("tag");
+		const type = params.get("type");
+		const project = params.get("project_id");
+		const showProgress = !tag && (!type || type === "progress");
+		const entries = [];
+		if (showProgress && (!project || project === JOURNAL_DAY.project.id)) {
+			entries.push({ kind: "progress", progress: JOURNAL_DAY });
+		}
+		if ((!type || type === CONTRACT_NOTE.type) && !project && (!tag || CONTRACT_NOTE.tags.includes(tag))) {
+			entries.push({ kind: "note", note: CONTRACT_NOTE });
+		}
+		return {
+			status: 200,
+			body: envelope({
+				entries,
+				next_cursor: null,
+				progress: showProgress
+					? { state: "ready", reason: null, last_synced_at: JOURNAL_DAY.last_at }
+					: null,
+			}),
+		};
+	}
+	if (pathname === `/api/v1/journal/progress/${JOURNAL_DAY.project.id}/${JOURNAL_DAY.day}`) {
+		return { status: 200, body: envelope({ ...JOURNAL_DAY, commits: JOURNAL_COMMITS }) };
 	}
 	if (pathname === "/api/v1/notes") {
 		const tag = params.get("tag");
