@@ -131,7 +131,7 @@ function RemainingCommits({ progress, remaining }: { progress: ProgressDay; rema
 			className="border-0!"
 			summary={<span className="text-sm text-muted-foreground">另 {remaining} 个提交</span>}
 			summaryClassName="py-1! text-end!"
-			contentClassName="-m-1 p-1!"
+			contentClassName="p-1!"
 			onOpenChange={(open) => {
 				if (open) setOpened(true);
 			}}
