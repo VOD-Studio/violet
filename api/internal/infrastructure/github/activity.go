@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	domainreleases "blog-api/internal/domain/releases"
 	activity "blog-api/internal/domain/repositoryactivity"
 )
 
@@ -89,6 +90,7 @@ func (a *ActivityAdapter) Releases(ctx context.Context, remote activity.Remote, 
 		ID          int64     `json:"id"`
 		Tag         string    `json:"tag_name"`
 		Name        string    `json:"name"`
+		Body        string    `json:"body"`
 		Draft       *bool     `json:"draft"`
 		PublishedAt time.Time `json:"published_at"`
 	}
@@ -107,8 +109,12 @@ func (a *ActivityAdapter) Releases(ctx context.Context, remote activity.Remote, 
 		if item.ID <= 0 || item.Tag == "" {
 			return activity.Page{}, fmt.Errorf("GitHub 发布缺少标识或版本标签")
 		}
+		title := publicTitle(item.Name, item.Tag)
+		if title == item.Tag {
+			title = publicTitle(domainreleases.FirstChangeSummary(item.Body), item.Tag)
+		}
 		result.Events = append(result.Events, activity.Event{
-			Kind: activity.KindRelease, ID: strconv.FormatInt(item.ID, 10), Tag: item.Tag, Title: publicTitle(item.Name, item.Tag),
+			Kind: activity.KindRelease, ID: strconv.FormatInt(item.ID, 10), Tag: item.Tag, Title: title,
 			URL: "https://github.com/" + remote.Key + "/releases/tag/" + url.PathEscape(item.Tag), OccurredAt: item.PublishedAt,
 		})
 	}

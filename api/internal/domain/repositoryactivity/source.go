@@ -74,7 +74,7 @@ type Event struct {
 	ID string
 	// Tag 仅发布有值，不参与去重。
 	Tag string
-	// Title 提交首行或发布标题。
+	// Title 提交首行或公开发布的显示标题。
 	Title string
 	// URL GitHub 原始活动入口。
 	URL string
@@ -179,11 +179,13 @@ type Change struct {
 	ReconciledKind string
 }
 
-// Repository 持久化后台检查点，并为前台仅从数据库读取日卡。
+// Repository 持久化后台检查点，并为前台仅从数据库读取日卡和生长历史。
 type Repository interface {
 	Sources(ctx context.Context, keys []string) (map[string]Source, error)
 	BlockedUntil(ctx context.Context, now time.Time) (*time.Time, error)
 	Save(ctx context.Context, state Source, change Change) error
 	Browse(ctx context.Context, bindings []Binding, before *Cursor, limit int, cutoff time.Time) ([]Day, error)
 	GetDay(ctx context.Context, binding Binding, day string, cutoff time.Time) (Day, error)
+	// Growth 只读取当前同一仓库的绑定，today 是包含在统计中的最后一个上海日历日。
+	Growth(ctx context.Context, bindings []Binding, today string, cutoff time.Time) (GrowthHistory, error)
 }

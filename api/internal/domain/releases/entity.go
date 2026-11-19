@@ -6,9 +6,18 @@ package releases
 
 import (
 	"context"
+	"strings"
 
 	domainshared "blog-api/internal/domain/shared"
 )
+
+// RepositoryTarget 兼容完整 owner/repo 和只填仓库名的站点发布配置。
+func RepositoryTarget(username, repository string) (owner, name string) {
+	if owner, name, full := strings.Cut(repository, "/"); full && owner != "" && name != "" {
+		return owner, name
+	}
+	return username, repository
+}
 
 // Release 单个版本发布
 type Release struct {

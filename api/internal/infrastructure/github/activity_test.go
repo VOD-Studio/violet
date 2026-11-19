@@ -39,7 +39,9 @@ func TestActivityAdapterReadsOnlyPublicMetadata(t *testing.T) {
 			assert.Equal(t, "1", req.URL.Query().Get("page"))
 			return activityResponse(http.StatusOK, `[
 				{"id":52,"tag_name":"unpublished","name":"Hidden draft","draft":true,"published_at":null},
-				{"id":51,"tag_name":"v2.0.0","name":"","body":"not exposed","draft":false,"created_at":"2026-11-15T15:00:00Z","published_at":"2026-11-15T16:15:00Z"}
+				{"id":51,"tag_name":"v2.0.0","name":"","body":"not exposed","draft":false,"created_at":"2026-11-15T15:00:00Z","published_at":"2026-11-15T16:15:00Z"},
+				{"id":50,"tag_name":"v1.9.0","name":"v1.9.0","body":"### 新增\n\n* **about:** 展示公开仓库活动 ([4924fe9](https://github.com/Owner/Repo/commit/4924fe9))\n* 第二项不进入摘要","draft":false,"published_at":"2026-11-14T16:15:00Z"},
+				{"id":49,"tag_name":"v1.8.0","name":"第一朵花","body":"* 不覆盖人工标题","draft":false,"published_at":"2026-11-13T16:15:00Z"}
 			]`)
 		default:
 			t.Errorf("unexpected GitHub request: %s", req.URL)
@@ -59,11 +61,14 @@ func TestActivityAdapterReadsOnlyPublicMetadata(t *testing.T) {
 	assert.Equal(t, "https://github.com/Owner/Repo/commit/"+sha, commits.Events[0].URL)
 	releases, err := adapter.Releases(t.Context(), remote, 1)
 	require.NoError(t, err)
-	require.Len(t, releases.Events, 1)
+	require.Len(t, releases.Events, 3)
 	assert.Equal(t, "51", releases.Events[0].ID)
 	assert.Equal(t, "v2.0.0", releases.Events[0].Title)
 	assert.Equal(t, "2026-11-15T16:15:00Z", releases.Events[0].OccurredAt.Format(time.RFC3339))
 	assert.Equal(t, "https://github.com/Owner/Repo/releases/tag/v2.0.0", releases.Events[0].URL)
+	assert.Equal(t, "展示公开仓库活动", releases.Events[1].Title)
+	assert.Equal(t, "v1.9.0", releases.Events[1].Tag)
+	assert.Equal(t, "第一朵花", releases.Events[2].Title)
 	assert.Equal(t, []string{"/repos/owner/repo", "/repos/Owner/Repo/commits", "/repos/Owner/Repo/releases"}, requests)
 }
 

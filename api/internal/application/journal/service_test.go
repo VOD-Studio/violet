@@ -83,7 +83,7 @@ func TestBrowsePaginatesAcrossProjectTiesAndShanghaiMidnight(t *testing.T) {
 		progressDay("2026-11-19", "同日项目二", largeID),
 		progressDay("2026-11-19", "同日项目一", smallID),
 		progressDay("2026-11-18", "前一天的项目进展", smallID),
-	}})
+	}}, nil)
 
 	var cursor string
 	for _, want := range []string{"同日项目二", "同日项目一", "刚过零点的小 ID", "刚过零点的大 ID", "前一天的项目进展", "前一天的手记"} {
@@ -111,7 +111,7 @@ func TestBrowseKeepsNotesAvailableWithoutBackfillingScrolledDays(t *testing.T) {
 	service := NewService(appnote.NewService(noteRows{rows: []domainnote.PublishedNote{
 		published(t, "先看到的手记", largeID, "2026-11-18T18:02:00Z"),
 		published(t, "下一页手记", smallID, "2026-11-18T13:02:00Z"),
-	}}, nil), source)
+	}}, nil), source, nil)
 
 	first, err := service.Browse(t.Context(), Query{Limit: 1})
 	require.NoError(t, err)

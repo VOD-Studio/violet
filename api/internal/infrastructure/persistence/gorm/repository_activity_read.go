@@ -36,6 +36,15 @@ type activityBindingRow struct {
 	Key       string    `json:"key"`
 }
 
+func activityBindingPayload(bindings []activity.Binding) (string, error) {
+	bound := make([]activityBindingRow, len(bindings))
+	for i, binding := range bindings {
+		bound[i] = activityBindingRow{ProjectID: binding.ProjectID.UUID(), GithubURL: binding.URL, Key: binding.Key}
+	}
+	payload, err := json.Marshal(bound)
+	return string(payload), err
+}
+
 type activityDayRow struct {
 	Day          string
 	ProjectID    uuid.UUID
@@ -53,16 +62,12 @@ func (r *RepositoryActivityRepository) activityDays(ctx context.Context, binding
 	if len(bindings) == 0 || limit <= 0 {
 		return []activity.Day{}, nil
 	}
-	bound := make([]activityBindingRow, len(bindings))
-	for i, binding := range bindings {
-		bound[i] = activityBindingRow{ProjectID: binding.ProjectID.UUID(), GithubURL: binding.URL, Key: binding.Key}
-	}
-	payload, err := json.Marshal(bound)
+	payload, err := activityBindingPayload(bindings)
 	if err != nil {
 		return nil, err
 	}
-	args := make([]any, 1, 8)
-	args[0] = string(payload)
+	args := make([]any, 0, 8)
+	args = append(args, payload, cutoff, cutoff)
 	predicate := ""
 	switch {
 	case day != "":
@@ -76,7 +81,7 @@ func (r *RepositoryActivityRepository) activityDays(ctx context.Context, binding
 		predicate = "AND e.activity_day <= CAST(? AS date) - CASE WHEN p.id >= CAST(? AS uuid) THEN 1 ELSE 0 END"
 		args = append(args, before.Day, before.ProjectID.UUID())
 	}
-	args = append(args, limit, cutoff, cutoff, limit, commitLimit)
+	args = append(args, limit, limit, commitLimit)
 	var rows []activityDayRow
 	if err := r.db.WithContext(ctx).Raw(repositoryActivityDaysHead+predicate+repositoryActivityDaysTail, args...).Scan(&rows).Error; err != nil {
 		return nil, err
@@ -104,13 +109,18 @@ func (r *RepositoryActivityRepository) activityDays(ctx context.Context, binding
 	return days, nil
 }
 
-// 先选所需项目与日期，再聚合活动。重查在同一快照中的项目链接以拒绝过期映射。
+// 在同一读快照中重查项目绑定，并拒绝未核验或过期的快照。
+const repositoryActivityVisibleBindings = `
+FROM jsonb_to_recordset(CAST(? AS jsonb)) AS b(project_id uuid, github_url text, key text)
+JOIN projects p ON p.id = b.project_id AND p.github_url = b.github_url
+JOIN repository_activity_sources s ON s.key = b.key
+  AND NOT s.unavailable AND s.verified_at >= ? AND COALESCE(s.synced_at, s.data_at) >= ?`
+
+// 先选所需项目与日期，再聚合活动。
 const repositoryActivityDaysHead = `
 WITH selected_days AS (
   SELECT p.id AS project_id, p.title AS project_title, p.slug AS project_slug, s.repository_id, d.activity_day
-  FROM jsonb_to_recordset(CAST(? AS jsonb)) AS b(project_id uuid, github_url text, key text)
-  JOIN projects p ON p.id = b.project_id AND p.github_url = b.github_url
-  JOIN repository_activity_sources s ON s.key = b.key
+  ` + repositoryActivityVisibleBindings + `
   CROSS JOIN LATERAL (
     SELECT DISTINCT e.activity_day
     FROM repository_activity_events e
@@ -120,7 +130,6 @@ const repositoryActivityDaysTail = `
     ORDER BY e.activity_day DESC
     LIMIT ?
   ) d
-  WHERE NOT s.unavailable AND s.verified_at >= ? AND COALESCE(s.synced_at, s.data_at) >= ?
   ORDER BY d.activity_day DESC, p.id DESC
   LIMIT ?
 )

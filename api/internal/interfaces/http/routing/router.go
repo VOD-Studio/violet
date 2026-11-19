@@ -106,6 +106,7 @@ func RegisterRoutes(r chi.Router, d *Deps) {
 		// 笔记（前台公开：知识笔记流 + 详情）
 		registerNotePublicRoutes(v1, d)
 		v1.Get("/journal", d.Journal.Browse)
+		v1.Get("/journal/growth", d.Journal.Growth)
 		v1.Get("/journal/progress/{projectId}/{day}", d.Journal.GetDay)
 		// 人设档案（前台公开：唯一当前人设）
 		registerPersonaPublicRoute(v1, d)
