@@ -1,7 +1,7 @@
 .page {
 	width: min(100%, 73rem);
 	margin: 0 auto;
-	padding: clamp(3rem, 7vw, 6rem) 1.5rem 8rem;
+	padding: clamp(3rem, 8vw, 7.125rem) 1.5rem 8rem;
 	color: var(--foreground);
 }
 
@@ -11,7 +11,7 @@
 
 .hero {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) minmax(13rem, 28rem);
+	grid-template-columns: minmax(0, 1fr) minmax(13rem, 23.75rem);
 	align-items: end;
 	gap: 1.25rem 3.5rem;
 }
@@ -21,8 +21,8 @@
 	font-family: var(--font-serif);
 	font-size: clamp(2.55rem, 6vw, 3.75rem);
 	font-weight: 600;
-	letter-spacing: -0.025em;
-	line-height: 1.2;
+	letter-spacing: -0.01em;
+	line-height: 1.25;
 }
 
 .dayCount {
@@ -33,11 +33,10 @@
 }
 
 .subtitle {
-	max-width: 20rem;
-	margin: 0 0 0.4rem;
+	margin: 0 0 0.625rem;
 	color: var(--muted-foreground);
-	font-size: 0.95rem;
-	line-height: 1.8;
+	font-size: 1rem;
+	line-height: 2;
 }
 
 .gardenSections {
@@ -45,12 +44,25 @@
 	grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
 	gap: 1.25rem 2.5rem;
 	margin-top: 3rem;
-	padding-top: 2rem;
+	padding-top: 3.5rem;
 	border-top: 1px solid var(--border);
 }
 
 .gardenSections > section {
 	min-width: 0;
+}
+
+.gardenSections > section > header h2 {
+	color: var(--muted-foreground);
+	font-size: 0.875rem;
+	font-weight: 400;
+}
+
+@media (min-width: 64rem) {
+	.gardenSections:has(> section:nth-child(3)) {
+		grid-template-columns: minmax(0, 1.1fr) repeat(2, minmax(0, 1fr));
+		gap: 3.5rem;
+	}
 }
 
 .chapterFlow {

@@ -45,37 +45,6 @@ export function GrowthTimeline({ period }: { period: GrowthPeriod }) {
 
 	return (
 		<>
-			<div className={styles.toolbar}>
-				<p className={styles.periodLabel}>
-					{growthDayLabel(Math.max(start, oldestDay))} 至 {growthDayLabel(end)}
-				</p>
-				{(previous || next) && (
-					<nav aria-label="生长时段" className="flex flex-wrap gap-2">
-						{previous ? (
-							<Button variant="outline" size="sm" asChild>
-								<Link to="/about" search={{ growth: previous }} resetScroll={false}>
-									上一个时段
-								</Link>
-							</Button>
-						) : (
-							<Button variant="outline" size="sm" disabled>
-								上一个时段
-							</Button>
-						)}
-						{next ? (
-							<Button variant="outline" size="sm" asChild>
-								<Link to="/about" search={{ growth: next }} resetScroll={false}>
-									下一个时段
-								</Link>
-							</Button>
-						) : (
-							<Button variant="outline" size="sm" disabled>
-								下一个时段
-							</Button>
-						)}
-					</nav>
-				)}
-			</div>
 			<figure className={styles.figure}>
 				<div className={styles.plotScroll}>
 					<div
@@ -129,6 +98,37 @@ export function GrowthTimeline({ period }: { period: GrowthPeriod }) {
 					</span>
 				</figcaption>
 			</figure>
+			<div className={styles.toolbar}>
+				<p className={styles.periodLabel}>
+					{growthDayLabel(Math.max(start, oldestDay))} 至 {growthDayLabel(end)}
+				</p>
+				{(previous || next) && (
+					<nav aria-label="生长时段" className="flex flex-wrap gap-2">
+						{previous ? (
+							<Button variant="outline" size="sm" asChild>
+								<Link to="/about" search={{ growth: previous }} resetScroll={false}>
+									上一个时段
+								</Link>
+							</Button>
+						) : (
+							<Button variant="outline" size="sm" disabled>
+								上一个时段
+							</Button>
+						)}
+						{next ? (
+							<Button variant="outline" size="sm" asChild>
+								<Link to="/about" search={{ growth: next }} resetScroll={false}>
+									下一个时段
+								</Link>
+							</Button>
+						) : (
+							<Button variant="outline" size="sm" disabled>
+								下一个时段
+							</Button>
+						)}
+					</nav>
+				)}
+			</div>
 			<section id="growth-selection" className={styles.selection} aria-label="所选周进展">
 				<p aria-live="polite">{growthWeekLabel(active, today)}</p>
 				<div className={styles.stats}>

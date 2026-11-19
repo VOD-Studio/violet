@@ -1,28 +1,51 @@
 import { type GrowthPeriod, growthDate, growthDay } from "../model/growth";
 import styles from "./GardenGrowth.module.css";
 
-const width = 1120;
-const height = 308;
-const inset = 0.03 * width; // 与周命中层的 3% 左右边距一致。
+const width = 1440;
+const height = 440;
+// 与周命中层的 1/6 和 1/12 边距一致，为里程碑标签留两端空间。
+const inset = width / 6;
+const timelineWidth = width * 0.75;
+const stemSegments = [
+	[245, 265, 247, 225],
+	[225, 203, 235, 240],
+	[240, 245, 221, 198],
+] as const;
+
+function dateLabel(day: number) {
+	const date = growthDate(day);
+	const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+	return `${month}.${String(date.getUTCDate()).padStart(2, "0")}`;
+}
 
 /** 时间沿茎连续前进；叶片大小只比较提交量，花苞按实际发布日定位。 */
 export function GrowthPlot({ period }: { period: GrowthPeriod }) {
 	const { start, end, oldestDay, today, firstCommitDay, firstReleaseDay, weeks, maxCommitCount } =
 		period;
 	const chartDays = weeks.length * 7;
-	const x = (day: number) => inset + ((day - start + 0.5) / chartDays) * (width - 2 * inset);
+	const x = (day: number) => inset + ((day - start + 0.5) / chartDays) * timelineWidth;
 	const firstX = x(Math.max(start, oldestDay));
-	const leafScale = Math.min(1, (width - 2 * inset) / weeks.length / 96);
+	const halfWeek = timelineWidth / (weeks.length * 2);
 	const lastX = x(end);
 	const span = lastX - firstX;
-	const fromY = 178;
-	const toY = 146;
+	const step = span / stemSegments.length;
 	const y = (at: number) => {
-		if (span === 0) return fromY;
-		const t = (at - firstX) / span;
+		if (span === 0) return stemSegments[0][0];
+		const p = Math.min(stemSegments.length, Math.max(0, (at - firstX) / step));
+		const segment = Math.min(Math.floor(p), stemSegments.length - 1);
+		const [fromY, controlY1, controlY2, toY] = stemSegments[segment];
+		const t = p - segment;
 		const u = 1 - t;
-		return u ** 3 * fromY + 3 * u * u * t * 99 + 3 * u * t * t * 214 + t ** 3 * toY;
+		return (
+			u ** 3 * fromY + 3 * u * u * t * controlY1 + 3 * u * t * t * controlY2 + t ** 3 * toY
+		);
 	};
+	const curve = stemSegments
+		.map(([, first, second, end], i) => {
+			const x0 = firstX + i * step;
+			return `C ${x0 + step / 3} ${first} ${x0 + (2 * step) / 3} ${second} ${x0 + step} ${end}`;
+		})
+		.join(" ");
 	const months: { day: number; label: string }[] = [];
 	const firstMonth = growthDate(start);
 	const lastDate = growthDate(end);
@@ -46,8 +69,8 @@ export function GrowthPlot({ period }: { period: GrowthPeriod }) {
 		<svg viewBox={`0 0 ${width} ${height}`} aria-hidden="true" className={styles.plot}>
 			{months.map(({ day, label }) => (
 				<g key={day} className={styles.monthTick}>
-					<line x1={x(day)} x2={x(day)} y1={22} y2={272} />
-					<text x={x(day) + 5} y={292}>
+					<line x1={x(day)} x2={x(day)} y1={40} y2={405} />
+					<text x={x(day) + 6} y={428}>
 						{label}
 					</text>
 				</g>
@@ -55,7 +78,8 @@ export function GrowthPlot({ period }: { period: GrowthPeriod }) {
 			{span > 0 && (
 				<path
 					className={styles.stem}
-					d={`M ${firstX} ${fromY} C ${firstX + span / 3} 99 ${lastX - span / 3} 214 ${lastX} ${toY}`}
+					pathLength={1}
+					d={`M ${firstX} ${stemSegments[0][0]} ${curve}`}
 				/>
 			)}
 			{weeks.map((week, index) => {
@@ -65,12 +89,13 @@ export function GrowthPlot({ period }: { period: GrowthPeriod }) {
 					week.commitCount > 0
 						? 16 + 61 * Math.sqrt(week.commitCount / maxCommitCount)
 						: 0;
-				// 叶尖不伸入相邻周的触区；不足一周时朝该周内部生长。
+				// 较长叶片横向收窄，仍以挂靠的周为命中区。
 				const center = week.start + 3;
 				const leaningLeft = mid > center || (mid === center && index % 2 === 0);
 				const tilt = leaningLeft ? -34 : 34;
 				const angle = index % 2 === 0 ? tilt : 180 - tilt;
-				const leafWidth = length * 0.3;
+				const leafWidth = length * 0.34;
+				const leafScale = Math.min(1, (halfWeek - 1) / (length * 0.56 + leafWidth));
 				const releaseDays = new Map<number, number>();
 				for (const release of week.releases) {
 					const day = growthDay(release.occurred_at);
@@ -84,40 +109,37 @@ export function GrowthPlot({ period }: { period: GrowthPeriod }) {
 							>
 								<path
 									className={styles.leaf}
-									d={`M 0 0 Q ${leafWidth} ${-length * 0.6} 0 ${-length} Q ${-leafWidth} ${-length * 0.55} 0 0 Z`}
+									d={`M 0 0 C ${leafWidth} ${-length * 0.25} ${leafWidth} ${-length * 0.7} 0 ${-length} C ${-leafWidth} ${-length * 0.7} ${-leafWidth} ${-length * 0.25} 0 0 Z`}
 								/>
 								<path className={styles.vein} d={`M 0 0 L 0 ${-length * 0.83}`} />
 							</g>
 						)}
-						{Array.from(releaseDays)
-							.reverse()
-							.map(([day, count], lane) => {
-								const cx = x(day);
-								const cy = y(cx) - 24 - lane * 15;
-								const atRight = cx > width - 65;
-								return (
-									<g key={day} className={styles.bloom}>
-										<line x1={cx} x2={cx} y1={y(cx)} y2={cy} />
-										{day === firstReleaseDay ? (
-											<path
-												transform={`translate(${cx} ${cy})`}
-												d="M0 5 C-15 0 -10 -8 -4 -6 C-3 -16 4 -16 5 -6 C14 -9 17 0 0 5Z"
-											/>
-										) : (
-											<circle cx={cx} cy={cy} r={count > 1 ? 5 : 3.5} />
-										)}
-										{count > 1 && (
-											<text
-												x={cx + (atRight ? -7 : 7)}
-												y={cy + 4}
-												textAnchor={atRight ? "end" : "start"}
-											>
-												×{count}
-											</text>
-										)}
-									</g>
-								);
-							})}
+						{Array.from(releaseDays, ([day, count]) => {
+							const cx = x(day);
+							const cy = y(cx);
+							const first = day === firstReleaseDay;
+							// 极密的发布日合并成一枚较大的花苞；精确版本仍列在周详情。
+							const remaining = count - Number(first);
+							const buds = Math.min(4, remaining);
+							return (
+								<g key={day} className={styles.bloom}>
+									{Array.from({ length: buds }, (_, i) => (
+										<circle
+											key={i}
+											cx={cx}
+											cy={cy - 10 - 7 * i}
+											r={i === buds - 1 && remaining > buds ? 4 : 2.7}
+										/>
+									))}
+									{first && (
+										<path
+											transform={`translate(${cx} ${cy - 22 - 7 * buds})`}
+											d="M0-4C-9-16 4-22 7-10 21-17 25-3 12 1 20 13 6 20 1 9-7 21-19 11-10 4-24-1-14-14 0-4Z"
+										/>
+									)}
+								</g>
+							);
+						})}
 					</g>
 				);
 			})}
@@ -125,13 +147,13 @@ export function GrowthPlot({ period }: { period: GrowthPeriod }) {
 				<g className={styles.milestone}>
 					<circle cx={x(firstCommitDay)} cy={y(x(firstCommitDay))} r={4} />
 					<line
-						x1={x(firstCommitDay)}
-						x2={x(firstCommitDay)}
-						y1={y(x(firstCommitDay)) + 8}
-						y2={239}
+						x1={x(firstCommitDay) - 82}
+						x2={x(firstCommitDay) - 5}
+						y1={y(x(firstCommitDay))}
+						y2={y(x(firstCommitDay))}
 					/>
-					<text x={x(firstCommitDay) + 4} y={256}>
-						首次提交
+					<text x={x(firstCommitDay) - 11} y={y(x(firstCommitDay)) - 11} textAnchor="end">
+						{dateLabel(firstCommitDay)} · 首次提交
 					</text>
 				</g>
 			)}
@@ -151,8 +173,8 @@ export function GrowthPlot({ period }: { period: GrowthPeriod }) {
 			{visible(today) && (
 				<g className={styles.milestone}>
 					<circle cx={lastX} cy={y(lastX)} r={5} />
-					<text x={lastX - 6} y={219} textAnchor="end">
-						今天
+					<text x={lastX + 12} y={y(lastX) + 4}>
+						{dateLabel(today)} · 今天
 					</text>
 				</g>
 			)}
