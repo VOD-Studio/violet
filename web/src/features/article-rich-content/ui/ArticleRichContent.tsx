@@ -19,7 +19,7 @@ function PersonaAwareArticleContent(props: ArticleRichContentProps) {
 				subtitle: persona.subtitle,
 				description: persona.summary,
 				avatarUrl: persona.avatar?.thumbnail || persona.avatar?.url,
-				href: "/persona",
+				href: "/chat/personas",
 			},
 		};
 	}, [persona]);

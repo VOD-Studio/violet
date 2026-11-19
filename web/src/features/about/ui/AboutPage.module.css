@@ -1,5 +1,5 @@
 .page {
-	width: min(100%, 62rem);
+	width: min(100%, 73rem);
 	margin: 0 auto;
 	padding: 4rem 1.5rem 8rem;
 	color: var(--foreground);
@@ -20,10 +20,10 @@
 
 .title {
 	margin: 0.55rem 0 0;
-	font-family: var(--font-sans);
-	font-size: clamp(2.55rem, 5vw, 3rem);
-	font-weight: 700;
-	letter-spacing: -0.055em;
+	font-family: var(--font-serif);
+	font-size: clamp(2.55rem, 6vw, 3.75rem);
+	font-weight: 600;
+	letter-spacing: -0.025em;
 	line-height: 1.08;
 }
 
@@ -35,16 +35,28 @@
 	line-height: 1.8;
 }
 
-.chapterFlow,
+.gardenSections {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+	gap: 1.25rem 2.5rem;
+	margin-top: 3rem;
+	padding-top: 2rem;
+	border-top: 1px solid var(--border);
+}
+
+.gardenSections > section {
+	min-width: 0;
+}
+
+.chapterFlow {
+	width: 100%;
+	max-width: 62rem;
+	margin: 2.5rem auto 0;
+}
+
 .skeletonFlow {
 	width: 100%;
 	margin-top: 2.5rem;
-}
-
-.empty {
-	margin: 0;
-	color: var(--muted-foreground);
-	line-height: 1.9;
 }
 
 .statePage {

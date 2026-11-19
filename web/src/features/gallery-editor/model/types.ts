@@ -10,6 +10,7 @@ export interface SaveGalleryInput {
 	expected_version: number;
 	title: string;
 	summary: string;
+	location: string;
 	items: SaveGalleryItemInput[];
 }
 

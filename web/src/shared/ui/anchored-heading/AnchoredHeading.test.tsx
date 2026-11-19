@@ -10,7 +10,7 @@ const originalExecCommand = Object.getOwnPropertyDescriptor(document, "execComma
 const writeText = vi.fn().mockResolvedValue(undefined);
 
 beforeEach(() => {
-	window.history.replaceState(null, "", "/editor-guide?section=colors");
+	window.history.replaceState(null, "", "/projects/violet/docs/editor?section=colors");
 	Object.defineProperty(window, "isSecureContext", { configurable: true, value: true });
 	Object.defineProperty(navigator, "clipboard", {
 		configurable: true,

@@ -11,11 +11,15 @@ const router = vi.hoisted(() => ({ navigate: vi.fn() }));
 vi.mock("@tanstack/react-router", async () => ({
 	...(await vi.importActual("@tanstack/react-router")),
 	useNavigate: () => router.navigate,
+	useSearch: () => ({ redirect: "/chat" }),
 	Link: ({ children }: { children: ReactNode }) => <a href="/login">{children}</a>,
 }));
 vi.mock("@features/auth/api/queries", () => ({
 	useCsrfToken: () => "csrf",
 	clearAuthCache: vi.fn(),
+}));
+vi.mock("@features/auth/ui/AuthPageLayout", () => ({
+	AuthPageLayout: ({ children }: { children: ReactNode }) => children,
 }));
 vi.mock("@shared/api/request", () => ({
 	apiPost: vi.fn(),
@@ -78,7 +82,7 @@ describe("注册邮箱验证码", () => {
 	it("用户填满只验证一次，重渲染与成功状态不会重复提交", async () => {
 		const verification = Promise.withResolvers<null>();
 		vi.mocked(apiPost).mockImplementation((path) =>
-			path === "/auth/verify-email" ? verification.promise : Promise.resolve(null),
+			path === "/auth/verify-email" ? verification.promise : Promise.resolve({}),
 		);
 		const group = await startRegistration();
 		enterCode(group);
@@ -93,24 +97,23 @@ describe("注册邮箱验证码", () => {
 			expect(router.navigate).toHaveBeenCalledWith({
 				to: "/login",
 				replace: true,
-				search: { email: "reader@example.com" },
+				search: { email: "reader@example.com", redirect: "/chat" },
 			}),
 		);
 		expect(verificationCalls()).toHaveLength(1);
 	});
 
 	it("明确验证码错误先保留错误码呈现反馈，再清空归焦且不循环请求", async () => {
-		vi.mocked(apiPost).mockImplementation((path) =>
-			path === "/auth/verify-email"
-				? Promise.reject(
-						new ApiError({
-							error: "UNAUTHORIZED",
-							status: 401,
-							message: "账号或密码错误",
-						}),
-					)
-				: Promise.resolve(null),
-		);
+		vi.mocked(apiPost).mockImplementation((path) => {
+			if (path !== "/auth/verify-email") return Promise.resolve({});
+			return Promise.reject(
+				new ApiError({
+					error: "UNAUTHORIZED",
+					status: 401,
+					message: "账号或密码错误",
+				}),
+			);
+		});
 		const group = await startRegistration();
 		enterCode(group);
 		await waitFor(() => expect(group.getAttribute("aria-invalid")).toBe("true"));
@@ -126,7 +129,7 @@ describe("注册邮箱验证码", () => {
 		vi.mocked(apiPost).mockImplementation((path) =>
 			path === "/auth/verify-email"
 				? Promise.reject(ApiError.network())
-				: Promise.resolve(null),
+				: Promise.resolve({}),
 		);
 		const group = await startRegistration();
 		enterCode(group);
@@ -138,12 +141,12 @@ describe("注册邮箱验证码", () => {
 	});
 
 	it("重发失败不冷却可立即重试，成功后清除旧验证码", async () => {
-		vi.mocked(apiPost).mockResolvedValue(null);
+		vi.mocked(apiPost).mockResolvedValue({});
 		const group = await startRegistration();
 		fireEvent.change(within(group).getByRole("textbox", { name: "第 1 位" }), {
 			target: { value: "4" },
 		});
-		vi.mocked(apiPost).mockRejectedValueOnce(ApiError.network()).mockResolvedValueOnce(null);
+		vi.mocked(apiPost).mockRejectedValueOnce(ApiError.network()).mockResolvedValueOnce({});
 		const resend = screen.getByRole("button", { name: "重新发送" });
 		fireEvent.click(resend);
 		await waitFor(() => expect((resend as HTMLButtonElement).disabled).toBe(false));
@@ -151,6 +154,42 @@ describe("注册邮箱验证码", () => {
 		fireEvent.click(resend);
 		await screen.findByRole("button", { name: /秒后可重新发送/ });
 		expect(readCode(group)).toBe("");
+	});
+
+	it("重发后更正邮箱仍保留用户名，并用新邮箱验证和跳转", async () => {
+		const token = "pending-registration";
+		vi.mocked(apiPost)
+			.mockResolvedValueOnce({ registration_token: token })
+			.mockResolvedValueOnce({})
+			.mockImplementation((path, body) => {
+				if (path === "/auth/register") {
+					expect(body).toMatchObject({
+						email: "corrected@example.com",
+						username: "reader",
+						registration_token: token,
+					});
+					return Promise.resolve({});
+				}
+				expect(body).toMatchObject({ email: "corrected@example.com" });
+				return Promise.resolve(null);
+			});
+		await startRegistration();
+		fireEvent.click(screen.getByRole("button", { name: "重新发送" }));
+		await screen.findByRole("button", { name: /秒后可重新发送/ });
+		fireEvent.click(screen.getByRole("button", { name: "更改邮箱" }));
+		expect(screen.getByLabelText("用户名")).toHaveProperty("value", "reader");
+		fireEvent.change(screen.getByLabelText("邮箱"), {
+			target: { value: "corrected@example.com" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "注册" }));
+		enterCode(await screen.findByRole("group", { name: "邮箱验证码" }));
+		await waitFor(() =>
+			expect(router.navigate).toHaveBeenCalledWith({
+				to: "/login",
+				replace: true,
+				search: { email: "corrected@example.com", redirect: "/chat" },
+			}),
+		);
 	});
 });
 

@@ -90,7 +90,13 @@ make api
 
 SSR 使用 `GET /auth/session` 只读探活，**不续期、不写 Cookie**。不要用会续期的客户端探活接口替换它。MCP 和 Bot 使用独立的令牌认证，不与浏览器 Cookie / CSRF 混用。
 
+公开站点设置下发可供登录使用的 OAuth `client_id`，不下发密钥。GitHub 缺少 ID 或 secret、Google ID 为空或格式不匹配时，对应值为空；前端还需遵守各提供方的登录开关。这不是上游可用性探测。
+
 REST 端点可用 `middleware.PATAuth` 复用 MCP 的 `PATVerifier`，再用 `RequireScope` 精确断言权限。成功后上下文包含持有人 ID 和 scopes，异步更新令牌最近使用时间；伪造、缺失或过期令牌返回 401 JSON，权限不足返回 403 JSON，存储故障返回 500。`usage:write` 只授予用量上报，不包含其他写权限。
+
+### 验证邮件
+
+注册、匿名评论和匿名友链共用验证码邮件；找回密码使用同一版式的重置说明。Resend 同时接收 HTML 和纯文本，有效期与 Redis 存储使用同一常量。邮件不依赖外链图片，验证码可直接选取和复制。
 
 ### 响应与分页
 
@@ -119,6 +125,20 @@ REST 端点可用 `middleware.PATAuth` 复用 MCP 的 `PATVerifier`，再用 `Re
 `quotes` 至多六条，按 `created_at DESC, id DESC` 排序，只返回直接引用该推文且作者未注销的现存推文。每条包含 `id`、`author`（`username`、`display_name`、`avatar_url`）、自身 `content` 与 `created_at`，不展开嵌套引用或 X 原文；无引用返回 `[]`。详情主推文不存在或作者已注销时返回 `404`。
 
 `POST /api/v1/tweets/{id}/views` 接受带 CSRF 的游客或用户请求，按推文和受信 IP 在 30 分钟内去重，返回持久化的 `{view_count}`。列表、详情 GET、SSR 和预取不增加计数。
+
+### 公开图集
+
+`GET /api/v1/gallery-summary` 返回实际已发布图集数量 `album_count` 和图片项数量 `image_count`。精选取已发布列表第一本；发现顺序以首次发布时间降序、ID 降序为准。`GET /api/v1/galleries` 与 `/galleries/{slug}` 读取已发布快照；地点随版本保存，未发布的内容修改不会改变公开快照。
+
+### 公开友链
+
+`GET /api/v1/friend-links` 仅返回已审核通过的站点，不返回申请人邮箱。无分页参数时保持原列表响应；使用 `page`、`limit` 或 `sort` 时返回分页结果。`sort=updated` 按有效的最近 RSS 发文时间排序，无记录排在末尾；`sort=manual` 采用后台配置的顺序。
+
+后台可维护 RSS 地址与站长、回链信息。抓取只访问公开地址并检查每次重定向；站点状态与订阅状态独立。短暂抓取失败保留该订阅上次成功读取的最新发文；替换订阅地址后重新计算。
+
+### 用户公开档案
+
+`GET /api/v1/users/{username}` 返回公开资料、最近半年的 UTC 日活跃统计及当前公开内容分项数量。`GET /api/v1/users/{username}/activity` 接受 `tab=all|posts|tweets|comments|annotations` 与游标，按时间和稳定键倒序合并公开活动。未公开或已移除的内容、未审核通过的评论不纳入。本人可编辑公开所在地、网站与主动填写的常读主题，不公开邮箱或浏览历史。
 
 ### 博客公开浏览筛选
 

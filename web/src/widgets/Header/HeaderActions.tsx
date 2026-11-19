@@ -84,8 +84,7 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
 				toast.success("已登出");
 				// 登出后离开受保护页：卸载 profile/admin 的 useMe 观察者，
 				// 避免缓存陈旧后 refetch → 401 → 误弹登录窗。
-				const onProtected =
-					pathname.startsWith("/profile") || pathname.startsWith("/admin");
+				const onProtected = pathname === "/settings" || pathname.startsWith("/admin");
 				if (onProtected) {
 					navigate({ to: "/", replace: true }).catch(() => {});
 				}
@@ -276,7 +275,7 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
 									</div>
 									<List aria-label="账号导航" density="compact" className="p-1.5">
 										<ListItem asChild>
-											<Link to="/profile" onClick={() => setOpen(false)}>
+											<Link to="/settings" onClick={() => setOpen(false)}>
 												<ListItemIcon>
 													<User {...iconProps(14)} />
 												</ListItemIcon>

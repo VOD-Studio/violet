@@ -1,3 +1,4 @@
+import { siteIdentityQueryOptions } from "@entities/site-identity/api/queries";
 import { resolveSectionOrder } from "@features/about/model/about-config";
 import { AboutPageLayout } from "@features/about/ui/AboutPageLayout";
 import { AboutPageError, AboutPageSkeleton } from "@features/about/ui/AboutPageSkeleton";
@@ -5,6 +6,7 @@ import { ABOUT_SECTION_IDS, resolveAboutSection } from "@features/about/ui/secti
 import { settingsKeys } from "@features/settings/api/keys";
 import { fetchSettings, useSettings } from "@features/settings/api/queries";
 import { createFileRoute } from "@tanstack/react-router";
+import { GardenerSection, GrowingSection } from "./-garden-sections";
 
 function AboutPage() {
 	const { data: settings, isLoading, isError, isFetching, refetch } = useSettings();
@@ -24,22 +26,37 @@ function AboutPage() {
 		const section = resolveAboutSection(id, settings);
 		return section ? [section] : [];
 	});
+	const releases = sections.find(({ id }) => id === "changelog");
+	const ReleaseSection = releases?.Component;
 
 	return (
-		<AboutPageLayout hasSections={sections.length > 0}>
-			{sections.map(({ id, Component }) => (
-				<Component key={id} settings={settings} />
-			))}
+		<AboutPageLayout
+			gardenSections={
+				<>
+					<GardenerSection />
+					{ReleaseSection && <ReleaseSection settings={settings} />}
+					<GrowingSection />
+				</>
+			}
+		>
+			{sections
+				.filter(({ id }) => id !== "changelog")
+				.map(({ id, Component }) => (
+					<Component key={id} settings={settings} />
+				))}
 		</AboutPageLayout>
 	);
 }
 
 export const Route = createFileRoute("/about/")({
 	loader: async ({ context }) => {
-		await context.queryClient.ensureQueryData({
-			queryKey: settingsKeys.public(),
-			queryFn: fetchSettings,
-		});
+		await Promise.all([
+			context.queryClient.ensureQueryData({
+				queryKey: settingsKeys.public(),
+				queryFn: fetchSettings,
+			}),
+			context.queryClient.prefetchQuery(siteIdentityQueryOptions()),
+		]);
 	},
 	head: () => ({
 		meta: [

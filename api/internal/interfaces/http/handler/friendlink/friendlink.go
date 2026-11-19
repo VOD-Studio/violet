@@ -2,18 +2,18 @@
 package friendlink
 
 import (
+	appfriendlink "blog-api/internal/application/friendlink"
+	"blog-api/internal/domain/shared"
+	domainuser "blog-api/internal/domain/user"
+	ifmw "blog-api/internal/interfaces/http/middleware"
+	"blog-api/internal/interfaces/http/response"
+	mw "blog-api/internal/middleware"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"github.com/go-playground/validator/v10"
 	"net/http"
-	appfriendlink "blog-api/internal/application/friendlink"
-	"blog-api/internal/domain/shared"
-	domainuser "blog-api/internal/domain/user"
-	ifmw "blog-api/internal/interfaces/http/middleware"
-	mw "blog-api/internal/middleware"
-	"blog-api/internal/interfaces/http/response"
 )
 
 // friendlinkService handler 层依赖的 application service 接口视图。
@@ -23,6 +23,7 @@ import (
 // Go 结构化接口天然满足此契约。
 type friendlinkService interface {
 	ListPublic(ctx context.Context) ([]appfriendlink.FriendLinkDTO, error)
+	ListPublicPage(ctx context.Context, sort string, page, limit int) ([]appfriendlink.FriendLinkDTO, int64, error)
 	Apply(ctx context.Context, in appfriendlink.ApplyInput) (appfriendlink.FriendLinkDTO, error)
 	SendCode(ctx context.Context, in appfriendlink.SendCodeInput) error
 
@@ -53,6 +54,17 @@ func NewHandler(svc *appfriendlink.Service, users domainuser.UserRepository) *Ha
 
 // ListPublic 前台公开友链列表（GET /friend-links，仅 approved）。
 func (h *Handler) ListPublic(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query()
+	if query.Has("page") || query.Has("limit") || query.Has("sort") {
+		page, limit := response.ParsePaging(r)
+		items, total, err := h.svc.ListPublicPage(r.Context(), query.Get("sort"), page, limit)
+		if err != nil {
+			response.RespondError(w, r, err)
+			return
+		}
+		response.RespondPaged(w, items, page, limit, total)
+		return
+	}
 	items, err := h.svc.ListPublic(r.Context())
 	if err != nil {
 		response.RespondError(w, r, err)
@@ -67,12 +79,13 @@ func (h *Handler) ListPublic(w http.ResponseWriter, r *http.Request) {
 //   - 登录态：忽略 ContactEmail，由 handler 从 user 资料覆盖（防伪造）；忽略 Code
 //   - 匿名态：ContactEmail 必填 + Code 必填（邮箱验证码）
 type applyRequest struct {
-	Name         string `json:"name"         validate:"required"`
-	URL          string `json:"url"          validate:"required"`
-	AvatarURL    string `json:"avatar_url"`
-	Description  string `json:"description"`
-	OwnerName    string `json:"owner_name"`
-	LinkbackURL  string `json:"linkback_url"`
+	Name        string `json:"name"         validate:"required"`
+	URL         string `json:"url"          validate:"required"`
+	AvatarURL   string `json:"avatar_url"`
+	RSSURL      string `json:"rss_url"`
+	Description string `json:"description"`
+	OwnerName   string `json:"owner_name"`
+	LinkbackURL string `json:"linkback_url"`
 
 	// ContactEmail 联系邮箱；登录态由 handler 从 user 资料覆盖（防伪造）；
 	// 匿名态手填必填。service 层会再做归一化。
@@ -103,6 +116,7 @@ func (h *Handler) Apply(w http.ResponseWriter, r *http.Request) {
 
 	in := appfriendlink.ApplyInput{
 		Name: req.Name, URL: req.URL, AvatarURL: req.AvatarURL,
+		RSSURL:      req.RSSURL,
 		Description: req.Description, OwnerName: req.OwnerName,
 		LinkbackURL: req.LinkbackURL, Code: req.Code, IPHash: ipHash,
 	}
@@ -198,6 +212,7 @@ type manualRequest struct {
 	Name         string `json:"name"        validate:"required"`
 	URL          string `json:"url"         validate:"required"`
 	AvatarURL    string `json:"avatar_url"`
+	RSSURL       string `json:"rss_url"`
 	Description  string `json:"description"`
 	OwnerName    string `json:"owner_name"`
 	LinkbackURL  string `json:"linkback_url"`
@@ -208,6 +223,7 @@ type manualRequest struct {
 func (m manualRequest) toInput() appfriendlink.ManualInput {
 	return appfriendlink.ManualInput{
 		Name: m.Name, URL: m.URL, AvatarURL: m.AvatarURL,
+		RSSURL:      m.RSSURL,
 		Description: m.Description, OwnerName: m.OwnerName,
 		LinkbackURL: m.LinkbackURL, ContactEmail: m.ContactEmail, SortOrder: m.SortOrder,
 	}

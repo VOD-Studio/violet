@@ -23,6 +23,7 @@ const {
 		author_id: "author-1",
 		title: "原始标题",
 		summary: "原始摘要",
+		location: "原始地点",
 		status: "draft" as "draft" | "published" | "modified" | "unpublished",
 		slug: null as string | null,
 		published_at: null as string | null,
@@ -197,7 +198,6 @@ vi.mock("@features/upload/ui/Uploader", () => ({
 		</button>
 	),
 }));
-vi.mock("@shared/ui/photo-stack", () => ({ PhotoStack: () => <div>工作稿图片预览</div> }));
 
 import { GalleryDraftEditor } from "../GalleryDraftEditor";
 
@@ -234,6 +234,7 @@ describe("GalleryDraftEditor", () => {
 	it("选择、排序后显式保存完整 document", async () => {
 		render(<GalleryDraftEditor id="gallery-1" />);
 		fireEvent.change(screen.getByLabelText("标题"), { target: { value: "新标题" } });
+		fireEvent.change(screen.getByLabelText("地点（可选）"), { target: { value: "新疆" } });
 		fireEvent.click(screen.getByRole("button", { name: "从素材库选择" }));
 		fireEvent.click(screen.getByRole("button", { name: "确认选择测试图片" }));
 		const menus = screen.getAllByRole("button", { name: /^调整 .* 的顺序$/ });
@@ -247,6 +248,7 @@ describe("GalleryDraftEditor", () => {
 			expected_version: 4,
 			title: "新标题",
 			summary: "原始摘要",
+			location: "新疆",
 			items: [
 				{ file_id: "a", caption: "", alt_text_override: "" },
 				{ file_id: "c", caption: "", alt_text_override: "" },

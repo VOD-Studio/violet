@@ -2,6 +2,7 @@ package gorm
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"time"
@@ -32,27 +33,32 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 
 // toPO 将领域实体转换为持久化模型
 func toPO(u *user.User) model.User {
+	details := u.PublicDetails()
+	preferences, _ := json.Marshal(details.ReadingPreferences)
 	return model.User{
 		BaseModel: model.BaseModel{
 			ID:        u.GetID().UUID(),
 			CreatedAt: u.CreatedAt(),
 			UpdatedAt: u.UpdatedAt(),
 		},
-		Username:      u.Username().String(),
-		DisplayName:   u.DisplayName().String(),
-		Email:         u.Email().String(),
-		PasswordHash:  u.PasswordHash().String(),
-		AvatarURL:     u.AvatarURL(),
-		CoverURL:      u.CoverURL(),
-		Bio:           u.Bio(),
-		Role:          string(u.Role()),
-		GoogleID:      u.GoogleID(),
-		GithubID:      u.GithubID(),
-		GithubLogin:   u.GithubLogin(),
-		IsRoot:        u.IsRoot(),
-		EmailVerified: u.EmailVerified(),
-		IsActive:      u.IsActive(),
-		DeletedAt:     nilIfZero(u.DeletedAt()),
+		Username:                 u.Username().String(),
+		DisplayName:              u.DisplayName().String(),
+		Email:                    u.Email().String(),
+		PasswordHash:             u.PasswordHash().String(),
+		AvatarURL:                u.AvatarURL(),
+		CoverURL:                 u.CoverURL(),
+		Bio:                      u.Bio(),
+		Location:                 details.Location,
+		Website:                  details.Website,
+		PublicReadingPreferences: preferences,
+		Role:                     string(u.Role()),
+		GoogleID:                 u.GoogleID(),
+		GithubID:                 u.GithubID(),
+		GithubLogin:              u.GithubLogin(),
+		IsRoot:                   u.IsRoot(),
+		EmailVerified:            u.EmailVerified(),
+		IsActive:                 u.IsActive(),
+		DeletedAt:                nilIfZero(u.DeletedAt()),
 	}
 }
 
@@ -84,7 +90,7 @@ func toDomain(po model.User) (*user.User, error) {
 	rebuiltID := domainshared.MustParseID(po.ID.String())
 	id := rebuiltID
 
-	return user.ReconstructUser(
+	u := user.ReconstructUser(
 		id,
 		email,
 		username,
@@ -103,7 +109,17 @@ func toDomain(po model.User) (*user.User, error) {
 		derefTime(po.DeletedAt),
 		po.CreatedAt,
 		po.UpdatedAt,
-	), nil
+	)
+	preferences := []string{}
+	if len(po.PublicReadingPreferences) > 0 {
+		if err := json.Unmarshal(po.PublicReadingPreferences, &preferences); err != nil {
+			return nil, domainshared.Internal("读取公开偏好失败", err)
+		}
+	}
+	if err := u.UpdatePublicDetails(&po.Location, &po.Website, &preferences); err != nil {
+		return nil, err
+	}
+	return u, nil
 }
 
 // nilIfZero 领域层零值时间 → PO 可空列（NULL=活跃）。

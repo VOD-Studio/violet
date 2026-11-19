@@ -1,5 +1,5 @@
 import { MarkdownContent } from "@shared/ui/markdown-preview/MarkdownContent";
-import { iconProps, PageShell } from "@violet/ui";
+import { Breadcrumbs, iconProps, PageShell } from "@violet/ui";
 import { ArrowUpRight } from "lucide-react";
 import type { ReactNode } from "react";
 import packageJson from "../../../../packages/kanban/package.json";
@@ -61,14 +61,18 @@ function Section({
 	);
 }
 
-/** `/kanban`：@violetjs/kanban 的演示、安装与 API。演示全用本地状态，不连后端。 */
+/** 项目文档：@violetjs/kanban 的演示、安装与 API。演示全用本地状态，不连后端。 */
 export function KanbanDocsPage() {
 	return (
 		<PageShell>
 			<header className="border-b border-border/40 pb-8 md:pb-10">
-				<p className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground/60 uppercase">
-					Package
-				</p>
+				<Breadcrumbs
+					items={[
+						{ label: "项目", href: "/projects" },
+						{ label: "kanban", href: "/projects/kanban" },
+						{ label: "文档" },
+					]}
+				/>
 				<h1 className="mt-2 text-4xl leading-tight font-normal tracking-[-0.03em] sm:text-5xl">
 					看板
 				</h1>

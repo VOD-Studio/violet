@@ -184,8 +184,13 @@ export function DeferredContent<P extends object>({
 }: DeferredContentProps<P>) {
 	const { ref, ready } = useViewportPreparation<HTMLDivElement>({ idle: defer === "idle" });
 	const active = ready || defer === false;
+	// 已启用的边界无需观察；挂载 ref 会对仍在等待模块的水合边界触发更新。
 	return (
-		<div ref={ref} className="min-w-0" data-content-preparation={active ? "ready" : "waiting"}>
+		<div
+			ref={defer === false ? undefined : ref}
+			className="min-w-0"
+			data-content-preparation={active ? "ready" : "waiting"}
+		>
 			{active ? <AsyncContent {...props} /> : props.fallback}
 		</div>
 	);

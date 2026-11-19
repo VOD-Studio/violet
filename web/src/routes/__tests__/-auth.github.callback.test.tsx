@@ -110,7 +110,7 @@ describe("GitHub 授权回调", () => {
 
 		expect(apiPost).toHaveBeenCalledTimes(1);
 		expect(router.navigate).toHaveBeenCalledExactlyOnceWith({
-			to: bind ? "/profile" : "/",
+			to: bind ? "/settings" : "/",
 			replace: true,
 		});
 		expect(useSessionStore.getState().sessionActive).toBe(!bind);
@@ -124,7 +124,7 @@ describe("GitHub 授权回调", () => {
 
 		expect(apiPost).toHaveBeenCalledTimes(1);
 		expect(router.navigate).toHaveBeenCalledExactlyOnceWith({
-			to: bind ? "/profile" : "/login",
+			to: bind ? "/settings" : "/login",
 			replace: true,
 		});
 		expect(toast.error).toHaveBeenCalledExactlyOnceWith(

@@ -44,6 +44,7 @@ export function usePublishGallery(id: string) {
 			queryClient.setQueryData(galleryKeys.detail(id), published);
 			queryClient.invalidateQueries({ queryKey: galleryKeys.lists() });
 			queryClient.invalidateQueries({ queryKey: publishedGalleryKeys.lists() });
+			queryClient.invalidateQueries({ queryKey: publishedGalleryKeys.summary() });
 			if (published.slug) {
 				queryClient.invalidateQueries({
 					queryKey: publishedGalleryKeys.detail(published.slug),
@@ -63,6 +64,7 @@ export function useUnpublishGallery(id: string) {
 			queryClient.setQueryData(galleryKeys.detail(id), unpublished);
 			queryClient.invalidateQueries({ queryKey: galleryKeys.lists() });
 			queryClient.invalidateQueries({ queryKey: publishedGalleryKeys.lists() });
+			queryClient.invalidateQueries({ queryKey: publishedGalleryKeys.summary() });
 			if (unpublished.slug) {
 				queryClient.invalidateQueries({
 					queryKey: publishedGalleryKeys.detail(unpublished.slug),
@@ -82,6 +84,7 @@ export function useDeleteGallery(id: string, slug: string | null) {
 			queryClient.removeQueries({ queryKey: galleryKeys.detail(id) });
 			queryClient.invalidateQueries({ queryKey: galleryKeys.lists() });
 			queryClient.invalidateQueries({ queryKey: publishedGalleryKeys.lists() });
+			queryClient.invalidateQueries({ queryKey: publishedGalleryKeys.summary() });
 			if (slug) {
 				queryClient.invalidateQueries({ queryKey: publishedGalleryKeys.detail(slug) });
 			}

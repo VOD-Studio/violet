@@ -8,7 +8,7 @@ const profile = {
 	subtitle: "信息设计专业",
 	description: "她习惯在开口前先认真想清楚。",
 	avatarUrl: "/avatar.webp",
-	href: "/persona",
+	href: "/chat/personas",
 };
 
 function fence(language: string, config: unknown): string {
@@ -25,7 +25,7 @@ describe("ArticleContent rich nodes", () => {
 		);
 
 		const mention = await screen.findByRole("link", { name: "瑠爱" });
-		expect(mention.getAttribute("href")).toBe("/persona");
+		expect(mention.getAttribute("href")).toBe("/chat/personas");
 		fireEvent.focus(mention);
 		expect(await screen.findByText(profile.description)).toBeTruthy();
 	});

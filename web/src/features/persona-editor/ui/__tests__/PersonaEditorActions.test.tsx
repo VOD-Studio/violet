@@ -42,7 +42,7 @@ describe("人设工作台动作状态", () => {
 		render(<PersonaEditorToolbar {...baseProps} isActive />);
 
 		expect(screen.getByRole("link", { name: "查看公开页" }).getAttribute("href")).toBe(
-			"/persona",
+			"/chat/personas",
 		);
 		const remove = screen.getByRole("button", { name: "删除" });
 		expect((remove as HTMLButtonElement).disabled).toBe(true);

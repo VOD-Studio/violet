@@ -8,13 +8,20 @@ func registerFriendLinkPaths(t *openapi3.T) {
 	// ---- 公共 schema ----
 
 	registerSchema(t, "FriendLinkDTO", openapi3.Schemas{
-		"id":          reqStr("友链 ID"),
-		"name":        reqStr("站点名称"),
-		"url":         reqStr("站点 URL"),
-		"avatar_url":  optStr("头像 URL"),
-		"description": optStr("描述"),
-		"owner_name":  optStr("站长称呼"),
-		"sort_order":  optInt("排序权重"),
+		"id":                  reqStr("友链 ID"),
+		"name":                reqStr("站点名称"),
+		"url":                 reqStr("站点 URL"),
+		"avatar_url":          optStr("头像 URL"),
+		"description":         optStr("描述"),
+		"owner_name":          optStr("站长称呼"),
+		"sort_order":          optInt("排序权重"),
+		"rss_url":             optStr("选填 RSS/Atom 地址"),
+		"feed_status":         strEnum("RSS 抓取状态", "no_feed", "pending", "ok", "empty", "error"),
+		"site_status":         strEnum("站点健康，与 RSS 状态独立", "unchecked", "up", "down"),
+		"checked_at":          nullableStr("上次健康探测时间，未探测为 null"),
+		"latest_title":        optStr("最近文章标题；失败保留上次成功结果"),
+		"latest_url":          optStr("最近文章外站链接"),
+		"latest_published_at": nullableStr("源站文章时间，缺失为 null，不以抓取时间填充"),
 	})
 
 	registerSchema(t, "FriendLinkAdminDTO", openapi3.Schemas{
@@ -25,22 +32,30 @@ func registerFriendLinkPaths(t *openapi3.T) {
 		"created_at":    optStr("申请时间（RFC3339）"),
 		"updated_at":    optStr("最近更新时间（RFC3339）"),
 		// 公开字段同 FriendLinkDTO（FriendLinkAdminDTO 内嵌之）
-		"id":          reqStr("友链 ID"),
-		"name":        reqStr("站点名称"),
-		"url":         reqStr("站点 URL"),
-		"avatar_url":  optStr("头像 URL"),
-		"description": optStr("描述"),
-		"owner_name":  optStr("站长称呼"),
-		"sort_order":  optInt("排序权重"),
+		"id":                  reqStr("友链 ID"),
+		"name":                reqStr("站点名称"),
+		"url":                 reqStr("站点 URL"),
+		"avatar_url":          optStr("头像 URL"),
+		"description":         optStr("描述"),
+		"owner_name":          optStr("站长称呼"),
+		"sort_order":          optInt("排序权重"),
+		"rss_url":             optStr("选填 RSS/Atom 地址"),
+		"feed_status":         strEnum("RSS 抓取状态", "no_feed", "pending", "ok", "empty", "error"),
+		"site_status":         strEnum("站点健康", "unchecked", "up", "down"),
+		"checked_at":          nullableStr("上次健康探测时间"),
+		"latest_title":        optStr("最近文章标题"),
+		"latest_url":          optStr("最近文章外站链接"),
+		"latest_published_at": nullableStr("源站文章时间"),
 	})
 
 	registerSchema(t, "FriendLinkApplyRequest", openapi3.Schemas{
-		"name":         reqStr("站点名称"),
-		"url":          reqStr("站点 URL"),
-		"avatar_url":   optStr("头像 URL"),
-		"description":  optStr("描述"),
-		"owner_name":   optStr("站长称呼"),
-		"linkback_url": optStr("回链 URL"),
+		"name":          reqStr("站点名称"),
+		"url":           reqStr("站点 URL"),
+		"avatar_url":    optStr("头像 URL"),
+		"rss_url":       optStr("选填 RSS/Atom 地址，仅 HTTP(S) 公开站点"),
+		"description":   optStr("描述"),
+		"owner_name":    optStr("站长称呼"),
+		"linkback_url":  optStr("回链 URL"),
 		"contact_email": optStr("联系邮箱（匿名态必填；登录态由用户资料覆盖）"),
 		"code":          optStr("邮箱验证码（匿名态必填；登录态忽略）"),
 	}, "name", "url")
@@ -50,14 +65,15 @@ func registerFriendLinkPaths(t *openapi3.T) {
 	}, "email")
 
 	registerSchema(t, "FriendLinkManualRequest", openapi3.Schemas{
-		"name":         reqStr("站点名称"),
-		"url":          reqStr("站点 URL"),
-		"avatar_url":   optStr("头像 URL"),
-		"description":  optStr("描述"),
-		"owner_name":   optStr("站长称呼"),
-		"linkback_url": optStr("回链 URL"),
+		"name":          reqStr("站点名称"),
+		"url":           reqStr("站点 URL"),
+		"avatar_url":    optStr("头像 URL"),
+		"rss_url":       optStr("选填 RSS/Atom 地址，仅 HTTP(S) 公开站点"),
+		"description":   optStr("描述"),
+		"owner_name":    optStr("站长称呼"),
+		"linkback_url":  optStr("回链 URL"),
 		"contact_email": optStr("联系邮箱"),
-		"sort_order":   optInt("排序权重（默认 0）"),
+		"sort_order":    optInt("排序权重（默认 0）"),
 	}, "name", "url")
 
 	registerSchema(t, "FriendLinkPendingCount", openapi3.Schemas{
@@ -67,12 +83,12 @@ func registerFriendLinkPaths(t *openapi3.T) {
 	// ---- 公开接口 ----
 
 	get(t, "/friend-links", &openapi3.Operation{
-		Tags:    []string{"友链"},
-		Summary: "友链列表（已通过）",
-		Description: "仅 approved 友链，不分页（首页直接全量渲染）。" +
-			"刻意不含联系邮箱/审核状态等私有字段。",
+		Tags:        []string{"友链"},
+		Summary:     "友链列表（已通过）",
+		Description: "仅 approved，读取服务端持久快照，不等待第三方网络。无参数返回全量数组；带 page/limit/sort 时返回分页，默认按真实文章日期倒序，空日期最后，sort_order 与 id ASC 稳定破同分。抓取失败保留上次文章，不改变审核状态。",
+		Parameters:  openapi3.Parameters{pageParam(), limitParam(100), queryStrParam("sort", "updated（默认）或 manual（站长顺序）")},
 		Responses: responses(
-			200, dataArrayResponse("FriendLinkDTO", "已通过友链", 200, false),
+			200, dataArrayResponse("FriendLinkDTO", "已通过友链；有查询参数时附加分页元数据", 200, true),
 		),
 	})
 

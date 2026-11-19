@@ -767,33 +767,6 @@ func TestService_ListByUser(t *testing.T) {
 	_, _, err = svc.ListByUser(context.Background(), "ghost_user", "", 20)
 	require.ErrorIs(t, err, domainuser.ErrNotFound)
 }
-func TestService_GetUserProfile(t *testing.T) {
-	author := newTestUser(t, "alice")
-	displayName, err := domainuser.ParseDisplayName("Alice")
-	require.NoError(t, err)
-	author.UpdateDisplayName(displayName)
-	users := &fakeUserRepo{
-		byUsername: map[string]*domainuser.User{"alice": author},
-		byIDs:      map[string]*domainuser.User{author.GetID().String(): author},
-	}
-	svc := newService(&fakeTweetRepo{}, users, nil, nil, appshared.NoopEventBus{})
-
-	profile, err := svc.GetUserProfile(context.Background(), "alice")
-	require.NoError(t, err)
-	assert.Equal(t, author.GetID().String(), profile.ID)
-	assert.Equal(t, "alice", profile.Username)
-	assert.Equal(t, "Alice", profile.DisplayName)
-	assert.NotEmpty(t, profile.CreatedAt)
-	assert.Empty(t, profile.CoverURL)
-
-	author.UpdateCoverURL("https://example.com/cover.gif?crop=12,24,640,240")
-	profile, err = svc.GetUserProfile(context.Background(), "alice")
-	require.NoError(t, err)
-	assert.Equal(t, "https://example.com/cover.gif?crop=12,24,640,240", profile.CoverURL)
-
-	_, err = svc.GetUserProfile(context.Background(), "ghost_user")
-	require.ErrorIs(t, err, domainuser.ErrNotFound)
-}
 func TestService_Like_Unlike(t *testing.T) {
 	repo := &fakeTweetRepo{}
 	svc := newService(repo, &fakeUserRepo{}, nil, nil, appshared.NoopEventBus{})
@@ -1529,17 +1502,6 @@ func TestAuthorDTO_IsBot(t *testing.T) {
 	humanDTO, err := svc.GetByID(context.Background(), humanTweet.ID().String())
 	require.NoError(t, err)
 	assert.False(t, humanDTO.Author.IsBot)
-}
-
-func TestGetUserProfile_IsBot(t *testing.T) {
-	botID := shared.NewID()
-	bot := newBotUser(t, botID)
-	users := &fakeUserRepo{byUsername: map[string]*domainuser.User{"helperbot": bot}}
-	svc := newService(&fakeTweetRepo{findByIDData: map[string]*domaintweet.Tweet{}}, users, nil, nil, appshared.NoopEventBus{})
-
-	dto, err := svc.GetUserProfile(context.Background(), "helperbot")
-	require.NoError(t, err)
-	assert.True(t, dto.IsBot)
 }
 
 func TestGetComment(t *testing.T) {

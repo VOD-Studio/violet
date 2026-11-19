@@ -12,6 +12,7 @@ import type {
 	LoginResponse,
 	MessageResponse,
 	RegisterRequest,
+	RegisterResponse,
 	ResetPasswordRequest,
 	UpdatedProfile,
 	UpdateProfileRequest,
@@ -23,13 +24,13 @@ import { clearAuthCache, refreshAuthCache } from "./queries";
 /**
  * useRegister - 注册并触发邮箱验证邮件
  *
- * @returns POST /auth/register，成功 data 为 null
+ * @returns 待验证注册的响应；首次创建时返回邮箱更正凭据。
  */
 export const useRegister = () =>
 	useMutation({
 		mutationFn: (body: RegisterRequest) =>
 			// 主动认证请求，401/403 是业务结果，不触发登录弹窗
-			apiPost<MessageResponse>("/auth/register", body, { __skipAuthDialog: true }),
+			apiPost<RegisterResponse>("/auth/register", body, { __skipAuthDialog: true }),
 	});
 
 /**

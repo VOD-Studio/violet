@@ -93,7 +93,7 @@ function LoginDialogContent({ googleError }: { googleError: ReactNode }) {
 
 		// 在受保护页（profile/用量/admin）取消重登 → 回首页
 		const needsAuth =
-			pathname.startsWith("/profile") ||
+			pathname === "/settings" ||
 			pathname.startsWith("/admin") ||
 			/^\/users\/[^/]+\/usage(\/|$)/.test(pathname);
 		if (needsAuth) {

@@ -147,7 +147,9 @@ describe("ProfileCard", () => {
 	it("入口三链指向关于、人设与友链", () => {
 		setup();
 		expect(screen.getByRole("link", { name: "关于我" }).getAttribute("href")).toBe("/about");
-		expect(screen.getByRole("link", { name: "人设" }).getAttribute("href")).toBe("/persona");
+		expect(screen.getByRole("link", { name: "人设" }).getAttribute("href")).toBe(
+			"/chat/personas",
+		);
 		expect(screen.getByRole("link", { name: "友链" }).getAttribute("href")).toBe("/friends");
 	});
 

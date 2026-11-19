@@ -32,6 +32,7 @@ export function FriendLinkFormDialog({
 	const [name, setName] = React.useState("");
 	const [url, setUrl] = React.useState("");
 	const [avatarUrl, setAvatarUrl] = React.useState("");
+	const [rssUrl, setRssUrl] = React.useState("");
 	const [description, setDescription] = React.useState("");
 	const [ownerName, setOwnerName] = React.useState("");
 	const [linkbackUrl, setLinkbackUrl] = React.useState("");
@@ -43,6 +44,7 @@ export function FriendLinkFormDialog({
 			setName(initial?.name ?? "");
 			setUrl(initial?.url ?? "");
 			setAvatarUrl(initial?.avatar_url ?? "");
+			setRssUrl(initial?.rss_url ?? "");
 			setDescription(initial?.description ?? "");
 			setOwnerName(initial?.owner_name ?? "");
 			setLinkbackUrl(initial?.linkback_url ?? "");
@@ -64,6 +66,7 @@ export function FriendLinkFormDialog({
 			name: name.trim(),
 			url: url.trim(),
 			avatar_url: avatarUrl.trim(),
+			rss_url: rssUrl.trim(),
 			description: description.trim(),
 			owner_name: ownerName.trim(),
 			linkback_url: linkbackUrl.trim(),
@@ -141,6 +144,17 @@ export function FriendLinkFormDialog({
 					/>
 				</div>
 				<div className="space-y-2">
+					<Label htmlFor="fl-rss">RSS 地址（选填）</Label>
+					<Input
+						id="fl-rss"
+						type="url"
+						value={rssUrl}
+						onChange={(event) => setRssUrl(event.target.value)}
+						maxLength={2048}
+						disabled={loading}
+					/>
+				</div>
+				<div className="space-y-2">
 					<Label htmlFor="fl-desc">一句话描述</Label>
 					<Input
 						id="fl-desc"
@@ -182,7 +196,9 @@ export function FriendLinkFormDialog({
 						onChange={(e) => setSortOrder(e.target.value)}
 						disabled={loading}
 					/>
-					<p className="text-muted-foreground text-xs">越小越靠前，同权重按创建时间</p>
+					<p className="text-muted-foreground text-xs">
+						站长编排排序时越小越靠前；按最近更新排序时用于同日期的顺序。
+					</p>
 				</div>
 			</div>
 		</Modal>

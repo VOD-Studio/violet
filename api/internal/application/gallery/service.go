@@ -165,7 +165,7 @@ func (s *Service) Save(ctx context.Context, in SaveInput) (GalleryDetailDTO, err
 		if err := gallery.EnsureVersion(in.ExpectedVersion); err != nil {
 			return err
 		}
-		if gallery.WorkingDocumentEquals(in.Title, in.Summary, document) {
+		if gallery.WorkingDocumentEquals(in.Title, in.Summary, in.Location, document) {
 			assets, err := tx.Assets().FindByIDs(ctx, ids)
 			if err != nil {
 				return err
@@ -179,7 +179,7 @@ func (s *Service) Save(ctx context.Context, in SaveInput) (GalleryDetailDTO, err
 				return err
 			}
 		}
-		if err := gallery.ReplaceWorkingDocument(in.ExpectedVersion, in.Title, in.Summary, document); err != nil {
+		if err := gallery.ReplaceWorkingDocument(in.ExpectedVersion, in.Title, in.Summary, in.Location, document); err != nil {
 			return err
 		}
 		assets, err := tx.Assets().FindByIDsForUpdate(ctx, sortedIDUnion(oldIDs, ids))
@@ -376,6 +376,15 @@ func (s *Service) Delete(ctx context.Context, in VersionInput) error {
 		log.Error().Err(err).Str("gallery_id", deleted.ID().String()).Msg("发布图集删除事件失败")
 	}
 	return nil
+}
+
+// PublishedSummary 只汇总当前公开版本中的相册和图片项。
+func (s *Service) PublishedSummary(ctx context.Context) (PublicGallerySummaryDTO, error) {
+	summary, err := s.repo.PublishedSummary(ctx)
+	if err != nil {
+		return PublicGallerySummaryDTO{}, err
+	}
+	return PublicGallerySummaryDTO{AlbumCount: summary.AlbumCount, ImageCount: summary.ImageCount}, nil
 }
 
 // BrowsePublished 按稳定复合游标读取公开图集。

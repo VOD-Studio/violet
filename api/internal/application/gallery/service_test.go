@@ -82,6 +82,13 @@ func (r *fakeGalleryRepo) FindPublishedBySlug(_ context.Context, slug string) (d
 	}
 	return r.publishedOne, nil
 }
+func (r *fakeGalleryRepo) PublishedSummary(_ context.Context) (domaingallery.PublishedSummary, error) {
+	summary := domaingallery.PublishedSummary{AlbumCount: int64(len(r.publishedRows))}
+	for _, row := range r.publishedRows {
+		summary.ImageCount += int64(len(row.Revision.Items()))
+	}
+	return summary, nil
+}
 
 type fakeAssetStore struct {
 	assets     map[shared.ID]Asset
@@ -200,7 +207,7 @@ func newServiceFixture(t *testing.T, owner shared.ID, initial []shared.ID) (*Ser
 		for _, id := range initial {
 			document = append(document, domaingallery.DocumentItem{FileID: id})
 		}
-		require.NoError(t, gallery.ReplaceWorkingDocument(1, "旧标题", "", document))
+		require.NoError(t, gallery.ReplaceWorkingDocument(1, "旧标题", "", "", document))
 	}
 	repo := &fakeGalleryRepo{gallery: gallery}
 	assets := &fakeAssetStore{assets: make(map[shared.ID]Asset), deltas: make(map[shared.ID]int)}
@@ -573,7 +580,7 @@ func TestBrowsePublishedReturnsCompleteItemsAndStableCursor(t *testing.T) {
 		gallery, err := domaingallery.NewGallery(shared.NewID(), owner, shared.NewID())
 		require.NoError(t, err)
 		first, second := shared.NewID(), shared.NewID()
-		require.NoError(t, gallery.ReplaceWorkingDocument(1, "公开作品", "摘要", []domaingallery.DocumentItem{{FileID: first}, {FileID: second, AltTextOverride: "覆盖文本"}}))
+		require.NoError(t, gallery.ReplaceWorkingDocument(1, "公开作品", "摘要", "新疆", []domaingallery.DocumentItem{{FileID: first}, {FileID: second, AltTextOverride: "覆盖文本"}}))
 		assets.assets[first] = Asset{ID: first, OwnerID: owner, URL: "/original-a", Thumbnail: "/thumb-a", AltText: "素材文本"}
 		assets.assets[second] = Asset{ID: second, OwnerID: owner, URL: "/original-b", Thumbnail: "/thumb-b"}
 		rows = append(rows, domaingallery.PublishedGallery{ID: gallery.ID(), Slug: "gallery-" + string(rune('a'+i)), PublishedAt: publishedAt.Add(-time.Duration(i) * time.Minute), Revision: gallery.WorkingRevision()})
@@ -586,6 +593,10 @@ func TestBrowsePublishedReturnsCompleteItemsAndStableCursor(t *testing.T) {
 	assert.Len(t, dtos[0].Items, 2)
 	assert.Equal(t, "素材文本", dtos[0].Items[0].AltText)
 	assert.Equal(t, "覆盖文本", dtos[0].Items[1].AltText)
+	assert.Equal(t, "新疆", dtos[0].Location)
+	summary, err := service.PublishedSummary(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, PublicGallerySummaryDTO{AlbumCount: 3, ImageCount: 6}, summary)
 	assert.NotEmpty(t, next)
 	assert.Equal(t, 3, repo.lastLimit)
 	assert.Equal(t, 1, assets.findCalls)
@@ -598,7 +609,7 @@ func TestBrowsePublishedReturnsCompleteItemsAndStableCursor(t *testing.T) {
 func TestGetPublishedFallsBackToTitleAndPositionForAltText(t *testing.T) {
 	owner, first, second := shared.NewID(), shared.NewID(), shared.NewID()
 	service, repo, assets, gallery, _ := newServiceFixture(t, owner, nil)
-	require.NoError(t, gallery.ReplaceWorkingDocument(1, "远山", "", []domaingallery.DocumentItem{{FileID: first}, {FileID: second}}))
+	require.NoError(t, gallery.ReplaceWorkingDocument(1, "远山", "", "", []domaingallery.DocumentItem{{FileID: first}, {FileID: second}}))
 	repo.publishedOne = domaingallery.PublishedGallery{ID: gallery.ID(), Slug: "far-mountain", PublishedAt: time.Now(), Revision: gallery.WorkingRevision()}
 	assets.assets[first] = Asset{ID: first, URL: "/a", Thumbnail: "/ta"}
 	assets.assets[second] = Asset{ID: second, URL: "/b", Thumbnail: "/tb"}
@@ -615,7 +626,7 @@ func newMaintainFixture(t *testing.T, granted map[string]bool) (*Service, *fakeG
 	owner, first, second := shared.NewID(), shared.NewID(), shared.NewID()
 	gallery, err := domaingallery.NewGallery(shared.NewID(), owner, shared.NewID())
 	require.NoError(t, err)
-	require.NoError(t, gallery.ReplaceWorkingDocument(1, "他人作品", "", []domaingallery.DocumentItem{{FileID: first}, {FileID: second}}))
+	require.NoError(t, gallery.ReplaceWorkingDocument(1, "他人作品", "", "", []domaingallery.DocumentItem{{FileID: first}, {FileID: second}}))
 	require.NoError(t, gallery.Publish(2, "stable-slug", time.Now()))
 	gallery.PullEvents() // 夹具直连聚合产生的事件不计入断言,排空为空基线
 	repo := &fakeGalleryRepo{gallery: gallery}
@@ -767,4 +778,32 @@ func TestGetForEditorReadableWithoutOwnership(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "作者", dto.AuthorName)
 	assert.Equal(t, gallery.ID().String(), dto.ID)
+}
+
+func TestSaveLocationOnlyCreatesIsolatedWorkingRevisionAndNormalizesNoOp(t *testing.T) {
+	owner, first, second := shared.NewID(), shared.NewID(), shared.NewID()
+	service, repo, assets, gallery, _ := newServiceFixture(t, owner, []shared.ID{first, second})
+	require.NoError(t, gallery.Publish(gallery.Version(), "location-album", time.Now()))
+	publicID := gallery.PublishedRevision().ID()
+	input := SaveInput{
+		UserID: owner.String(), GalleryID: gallery.ID().String(), ExpectedVersion: gallery.Version(),
+		Title: "旧标题", Location: "  新疆  ", Items: []SaveItemInput{{FileID: first.String()}, {FileID: second.String()}},
+	}
+	saved, err := service.Save(context.Background(), input)
+	require.NoError(t, err)
+	assert.True(t, repo.saved)
+	assert.Equal(t, "modified", saved.Status)
+	assert.Equal(t, "新疆", saved.Location)
+	assert.Equal(t, "", gallery.PublishedRevision().Location())
+	assert.True(t, gallery.PublishedRevision().ID().Equal(publicID))
+	assert.False(t, gallery.WorkingRevision().ID().Equal(publicID))
+	assert.Equal(t, 1, assets.deltas[first])
+	assert.Equal(t, 1, assets.deltas[second])
+	input.ExpectedVersion = saved.Version
+	input.Location = "新疆"
+	repo.saved = false
+	unchanged, err := service.Save(context.Background(), input)
+	require.NoError(t, err)
+	assert.Equal(t, saved.Version, unchanged.Version)
+	assert.False(t, repo.saved)
 }
