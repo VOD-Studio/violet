@@ -95,6 +95,22 @@ export function GalleryDraftForm({ draft, disabled, updateDraft }: GalleryDraftF
 									}
 								/>
 							</div>
+							<div className="space-y-2">
+								<Label htmlFor="gallery-location">地点（可选）</Label>
+								<Input
+									id="gallery-location"
+									value={draft.location}
+									maxLength={120}
+									disabled={disabled}
+									placeholder="填写拍摄地点"
+									onChange={(event) =>
+										updateDraft((current) => ({
+											...current,
+											location: event.target.value,
+										}))
+									}
+								/>
+							</div>
 						</CardContent>
 					</Card>
 

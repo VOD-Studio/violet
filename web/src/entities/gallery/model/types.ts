@@ -11,6 +11,7 @@ export interface GallerySummary {
 	author_name: string;
 	title: string;
 	summary: string;
+	location: string;
 	status: GalleryStatus;
 	slug: string | null;
 	published_at: string | null;
@@ -64,8 +65,15 @@ export interface PublishedGallery {
 	slug: string;
 	title: string;
 	summary: string;
+	location: string;
 	published_at: string;
 	items: PublishedGalleryItem[];
+}
+
+/** 全部当前已发布相册与图片项总数，与分页无关。 */
+export interface PublishedGallerySummary {
+	album_count: number;
+	image_count: number;
 }
 
 /** 公开图集游标分页参数。 */

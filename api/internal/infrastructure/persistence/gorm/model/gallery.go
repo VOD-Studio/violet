@@ -25,6 +25,7 @@ type GalleryRevision struct {
 	GalleryID uuid.UUID `gorm:"type:uuid;column:gallery_id;not null"`
 	Title     string    `gorm:"type:varchar(120);not null;default:''"`
 	Summary   string    `gorm:"type:varchar(500);not null;default:''"`
+	Location  string    `gorm:"type:varchar(120);not null;default:''"`
 	CreatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
 	UpdatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
 }

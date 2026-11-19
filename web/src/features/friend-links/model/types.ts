@@ -1,13 +1,9 @@
-/**
- * friend-links 模块公开类型
- *
- * 对齐后端 application/friendlink/dto.go 的 FriendLinkPublicDTO：
- * GET /api/v1/friend-links 仅 approved，且可选字段序列为 null（avatar_url
- * / description / owner_name），前端据此决定是否走占位文案。
- *
- * 申请相关请求体与公开 DTO 不在一个文件——后台 FriendLinkAdminDTO
- * 已在 admin-friend-links/model/types.ts 定义，不要重复。
- */
+import type { PageQuery } from "@shared/api/types";
+
+/** 公开列表由服务端按文章更新时间或站长顺序排序。 */
+export interface FriendLinkPublicQuery extends PageQuery {
+	sort?: "updated" | "manual";
+}
 
 /** FriendLinkPublicDTO - 公开友链读模型 */
 export interface FriendLinkPublicDTO {
@@ -16,14 +12,21 @@ export interface FriendLinkPublicDTO {
 	name: string;
 	/** 站点 URL */
 	url: string;
-	/** 头像 URL，null 时前端首字符占位 */
+	/** 头像缺失时由 Avatar 显示站名首字。 */
 	avatar_url: string | null;
-	/** 一句话描述，null 时走「这位朋友什么也没写」 */
+	/** 站点的一句话简介。 */
 	description: string | null;
-	/** 站长称呼，null 时走「佚名站长」 */
+	/** 可选站长称呼。 */
 	owner_name: string | null;
 	/** 站长编排的展示顺序（越小越靠前） */
 	sort_order: number;
+	rss_url: string;
+	feed_status: "no_feed" | "pending" | "ok" | "empty" | "error";
+	site_status: "unchecked" | "up" | "down";
+	checked_at: string | null;
+	latest_title: string;
+	latest_url: string;
+	latest_published_at: string | null;
 }
 
 /**
@@ -50,6 +53,7 @@ export interface CreateFriendLinkBody {
 	name: string;
 	url: string;
 	avatar_url: string;
+	rss_url: string;
 	description: string;
 	owner_name: string;
 	linkback_url: string;

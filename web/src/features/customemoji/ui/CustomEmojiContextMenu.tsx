@@ -7,7 +7,7 @@ import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } 
 
 import { BookmarkMinus, BookmarkPlus, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 interface CustomEmojiTarget {
 	id: string;
@@ -15,33 +15,20 @@ interface CustomEmojiTarget {
 }
 
 /**
- * 目标在自己的 ContextMenu 触发区内（如列表行上的行菜单）：事件留给那个菜单。
- * 它打开时会 preventDefault，外层 Radix 触发器随之跳过，不会同时弹出两个菜单。
- *
- * 用最近的触发器是否就是外层这个来判断，而不是 DOM 包含关系：
- * Portal 渲染的对话框内容不在这个 DOM 子树里，但 React 事件仍会穿过来。
- */
-function insideNestedContextMenu(event: React.MouseEvent<HTMLDivElement>) {
-	if (!(event.target instanceof Element)) return false;
-	const selector = '[data-slot="context-menu-trigger"]';
-	const nearest = event.target.closest(selector);
-	return nearest !== null && nearest !== event.currentTarget.closest(selector);
-}
-
-/**
  * 全局自定义表情右键菜单：只有带 data-custom-emoji-id 的图片拦截浏览器菜单。
  *
- * 系统表情与普通内容在捕获阶段停止冒泡但不阻止默认行为，继续使用浏览器原生菜单；
- * 页面里自带 ContextMenu 的区域例外，事件照常交给它。
+ * 普通内容保留浏览器原生菜单；内层菜单优先处理自己的右键事件。
  */
 export function CustomEmojiContextMenu({ children }: { children: ReactNode }) {
 	const [target, setTarget] = useState<CustomEmojiTarget | null>(null);
+	const triggerRef = useRef<HTMLSpanElement>(null);
 	const favorite = useFavoriteCustomEmoji();
 	const unfavorite = useUnfavoriteCustomEmoji();
 	const remove = useDeleteCustomEmoji();
 	const busy = favorite.isPending || unfavorite.isPending || remove.isPending;
 
-	const handleContextMenuCapture = (event: React.MouseEvent<HTMLDivElement>) => {
+	const handleContextMenu = (event: React.MouseEvent<HTMLDivElement>) => {
+		if (event.defaultPrevented) return;
 		const eventTarget = event.target;
 		const image =
 			eventTarget instanceof Element
@@ -50,23 +37,27 @@ export function CustomEmojiContextMenu({ children }: { children: ReactNode }) {
 						.closest("button")
 						?.querySelector<HTMLImageElement>("img[data-custom-emoji-id]"))
 				: null;
-		if (!image || !event.currentTarget.contains(image)) {
-			if (!insideNestedContextMenu(event)) event.stopPropagation();
+		const id = image?.dataset.customEmojiId;
+		const trigger = triggerRef.current;
+		if (!image || !id || !trigger || !event.currentTarget.contains(image)) {
 			setTarget(null);
 			return;
 		}
 
-		const id = image.dataset.customEmojiId;
-		if (!id) {
-			event.stopPropagation();
-			setTarget(null);
-			return;
-		}
 		const relation = image.dataset.relation;
+		event.preventDefault();
 		setTarget({
 			id,
 			relation: relation === "owned" || relation === "favorited" ? relation : "none",
 		});
+		trigger.dispatchEvent(
+			new MouseEvent("contextmenu", {
+				bubbles: true,
+				cancelable: true,
+				clientX: event.clientX,
+				clientY: event.clientY,
+			}),
+		);
 	};
 
 	const handleOpenChange = (open: boolean) => {
@@ -89,36 +80,36 @@ export function CustomEmojiContextMenu({ children }: { children: ReactNode }) {
 	};
 
 	return (
-		<ContextMenu open={target !== null} onOpenChange={handleOpenChange}>
-			<ContextMenuTrigger asChild>
-				<div className="contents">
-					<div className="contents" onContextMenuCapture={handleContextMenuCapture}>
-						{children}
-					</div>
-				</div>
-			</ContextMenuTrigger>
-			{target && (
-				<ContextMenuContent>
-					<ContextMenuItem
-						disabled={busy}
-						variant={target.relation === "owned" ? "destructive" : "default"}
-						onSelect={handleSelect}
-					>
-						{target.relation === "owned" ? (
-							<Trash2 />
-						) : target.relation === "favorited" ? (
-							<BookmarkMinus />
-						) : (
-							<BookmarkPlus />
-						)}
-						{target.relation === "owned"
-							? "删除表情"
-							: target.relation === "favorited"
-								? "移出我的表情"
-								: "收藏到我的表情"}
-					</ContextMenuItem>
-				</ContextMenuContent>
-			)}
-		</ContextMenu>
+		<>
+			<div className="contents" onContextMenu={handleContextMenu}>
+				{children}
+			</div>
+			{/* Radix 定位状态只属于菜单，不应触发仍在水合的页面内容更新。 */}
+			<ContextMenu open={target !== null} onOpenChange={handleOpenChange}>
+				<ContextMenuTrigger ref={triggerRef} hidden />
+				{target && (
+					<ContextMenuContent>
+						<ContextMenuItem
+							disabled={busy}
+							variant={target.relation === "owned" ? "destructive" : "default"}
+							onSelect={handleSelect}
+						>
+							{target.relation === "owned" ? (
+								<Trash2 />
+							) : target.relation === "favorited" ? (
+								<BookmarkMinus />
+							) : (
+								<BookmarkPlus />
+							)}
+							{target.relation === "owned"
+								? "删除表情"
+								: target.relation === "favorited"
+									? "移出我的表情"
+									: "收藏到我的表情"}
+						</ContextMenuItem>
+					</ContextMenuContent>
+				)}
+			</ContextMenu>
+		</>
 	);
 }

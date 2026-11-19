@@ -1,5 +1,5 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Button, CodeBlock, iconProps, Segmented } from "@violet/ui";
+import { Breadcrumbs, Button, CodeBlock, iconProps, Segmented } from "@violet/ui";
 import { cn } from "cn";
 import { ArrowUpRight, Check, Copy, X } from "lucide-react";
 import { type ComponentType, type ReactNode, useEffect, useRef, useState } from "react";
@@ -244,6 +244,13 @@ function Brand() {
 	};
 	return (
 		<div className="grid min-w-0 gap-2 border-b border-border px-5 py-5">
+			<Breadcrumbs
+				items={[
+					{ label: "项目", href: "/projects" },
+					{ label: "inkline", href: "/projects/inkline" },
+					{ label: "文档" },
+				]}
+			/>
 			<div className="flex items-baseline gap-2">
 				<span className="text-lg font-semibold tracking-tight">inkline</span>
 				<span className="font-mono text-xs text-muted-foreground">
@@ -294,7 +301,7 @@ function SectionNav({ current, className }: { current: WorkbenchSection; classNa
 						<li key={section.id}>
 							{section.slug ? (
 								<Link
-									to="/inkline/$section"
+									to="/projects/inkline/docs/$section"
 									params={{ section: section.slug }}
 									aria-current={active ? "page" : undefined}
 									className={itemClass}
@@ -303,7 +310,7 @@ function SectionNav({ current, className }: { current: WorkbenchSection; classNa
 								</Link>
 							) : (
 								<Link
-									to="/inkline"
+									to="/projects/inkline/docs"
 									aria-current={active ? "page" : undefined}
 									className={itemClass}
 								>

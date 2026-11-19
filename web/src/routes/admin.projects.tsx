@@ -1,3 +1,4 @@
+import { PROJECT_STATUS_LABELS, type Project } from "@entities/project/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { Cover } from "@features/admin-media/ui/Cover";
 import {
@@ -9,7 +10,6 @@ import type { CreateProject } from "@features/admin-projects/model/types";
 import { usePagedQuery } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useProjectsPaged } from "@features/projects/api/queries";
-import { PROJECT_STATUS_LABELS, type Project } from "@features/projects/model/types";
 import { createFileRoute } from "@tanstack/react-router";
 import {
 	Button,

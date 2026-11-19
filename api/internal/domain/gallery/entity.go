@@ -16,6 +16,8 @@ const (
 	MaxTitleRunes = 120
 	// MaxSummaryRunes 摘要字符上限。
 	MaxSummaryRunes = 500
+	// MaxLocationRunes 可选拍摄地点字符上限。
+	MaxLocationRunes = 120
 	// MaxCaptionRunes 单项说明字符上限。
 	MaxCaptionRunes = 500
 	// MaxAltOverrideRunes 单项无障碍文本覆盖字符上限。
@@ -111,6 +113,8 @@ type Revision struct {
 	title string
 	// summary 图集摘要；允许为空。
 	summary string
+	// location 作者显式填写的拍摄地点；空串表示未填写。
+	location string
 	// items 按 position 升序保存的图片项。
 	items []*RevisionItem
 	// createdAt revision 创建时间。
@@ -180,11 +184,11 @@ func Reconstruct(id, authorID shared.ID, slug string, working, published *Revisi
 }
 
 // ReconstructRevision 从持久化数据重建 revision。
-func ReconstructRevision(id, galleryID shared.ID, title, summary string, items []*RevisionItem, createdAt, updatedAt time.Time) *Revision {
+func ReconstructRevision(id, galleryID shared.ID, title, summary, location string, items []*RevisionItem, createdAt, updatedAt time.Time) *Revision {
 	if items == nil {
 		items = make([]*RevisionItem, 0)
 	}
-	return &Revision{id: id, galleryID: galleryID, title: title, summary: summary, items: items, createdAt: createdAt, updatedAt: updatedAt}
+	return &Revision{id: id, galleryID: galleryID, title: title, summary: summary, location: location, items: items, createdAt: createdAt, updatedAt: updatedAt}
 }
 
 // ReconstructItem 从持久化数据重建 revision item。
@@ -198,11 +202,13 @@ func (g *Gallery) EnsureVersion(expected int64) error {
 	}
 	return nil
 }
+
 // WorkingDocumentEquals 判断输入规范化后是否与当前完整工作稿一致。
-func (g *Gallery) WorkingDocumentEquals(title, summary string, input []DocumentItem) bool {
+func (g *Gallery) WorkingDocumentEquals(title, summary, location string, input []DocumentItem) bool {
 	title = strings.TrimSpace(title)
 	summary = strings.TrimSpace(summary)
-	if title != g.workingRevision.title || summary != g.workingRevision.summary || len(input) != len(g.workingRevision.items) {
+	location = strings.TrimSpace(location)
+	if title != g.workingRevision.title || summary != g.workingRevision.summary || location != g.workingRevision.location || len(input) != len(g.workingRevision.items) {
 		return false
 	}
 	for position, item := range input {
@@ -216,19 +222,22 @@ func (g *Gallery) WorkingDocumentEquals(title, summary string, input []DocumentI
 	return true
 }
 
-
 // ReplaceWorkingDocument 用完整文档替换工作稿，数组顺序是唯一排序权威。
-func (g *Gallery) ReplaceWorkingDocument(expected int64, title, summary string, input []DocumentItem) error {
+func (g *Gallery) ReplaceWorkingDocument(expected int64, title, summary, location string, input []DocumentItem) error {
 	if err := g.EnsureVersion(expected); err != nil {
 		return err
 	}
 	title = strings.TrimSpace(title)
 	summary = strings.TrimSpace(summary)
+	location = strings.TrimSpace(location)
 	if utf8.RuneCountInString(title) > MaxTitleRunes {
 		return shared.BadRequest("图集标题不能超过 120 个字符")
 	}
 	if utf8.RuneCountInString(summary) > MaxSummaryRunes {
 		return shared.BadRequest("图集摘要不能超过 500 个字符")
+	}
+	if utf8.RuneCountInString(location) > MaxLocationRunes {
+		return shared.BadRequest("图集地点不能超过 120 个字符")
 	}
 	if len(input) > MaxItems {
 		return shared.BadRequest("图集最多包含 50 张图片")
@@ -258,6 +267,7 @@ func (g *Gallery) ReplaceWorkingDocument(expected int64, title, summary string, 
 	now := time.Now()
 	g.workingRevision.title = title
 	g.workingRevision.summary = summary
+	g.workingRevision.location = location
 	g.workingRevision.items = items
 	g.workingRevision.updatedAt = now
 	g.version++
@@ -282,7 +292,7 @@ func (g *Gallery) CloneWorkingRevision(id shared.ID) error {
 	}
 	now := time.Now()
 	g.workingRevision = &Revision{
-		id: id, galleryID: g.id, title: g.workingRevision.title, summary: g.workingRevision.summary,
+		id: id, galleryID: g.id, title: g.workingRevision.title, summary: g.workingRevision.summary, location: g.workingRevision.location,
 		items: items, createdAt: now, updatedAt: now,
 	}
 	return nil
@@ -390,6 +400,7 @@ func (r *Revision) ID() shared.ID               { return r.id }
 func (r *Revision) GalleryID() shared.ID        { return r.galleryID }
 func (r *Revision) Title() string               { return r.title }
 func (r *Revision) Summary() string             { return r.summary }
+func (r *Revision) Location() string            { return r.location }
 func (r *Revision) CreatedAt() time.Time        { return r.createdAt }
 func (r *Revision) UpdatedAt() time.Time        { return r.updatedAt }
 func (i *RevisionItem) FileID() shared.ID       { return i.fileID }

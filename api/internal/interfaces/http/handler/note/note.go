@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	appnote "blog-api/internal/application/note"
+	domainnote "blog-api/internal/domain/note"
 	"blog-api/internal/domain/shared"
 	ifmw "blog-api/internal/interfaces/http/middleware"
 	"blog-api/internal/interfaces/http/response"
@@ -19,7 +20,7 @@ type noteService interface {
 	List(ctx context.Context, query appnote.ListQuery) ([]appnote.NoteSummaryDTO, int64, error)
 	Publish(ctx context.Context, noteID string) (appnote.NoteDTO, error)
 	Delete(ctx context.Context, noteID string) error
-	BrowsePublished(ctx context.Context, cursor string, limit int, tagSlug string) ([]appnote.PublicNoteDTO, string, error)
+	BrowsePublished(ctx context.Context, query appnote.BrowseQuery) ([]appnote.PublicNoteDTO, string, error)
 	GetPublished(ctx context.Context, noteID string) (appnote.PublicNoteDTO, error)
 }
 
@@ -29,12 +30,12 @@ type Handler struct {
 
 func NewHandler(service *appnote.Service) *Handler { return &Handler{service: service} }
 
-// saveRequest 指针字段区分「显式空值」与「字段缺失」；content_md 必填，
-// title 缺失视为空标题、tags 缺失视为清空标签（PUT 全量替换语义）。
+// saveRequest 替换正文和标签；缺省的 journal 不改变已有时间线元数据。
 type saveRequest struct {
-	Title     *string   `json:"title"`
-	ContentMD *string   `json:"content_md"`
-	Tags      *[]string `json:"tags"`
+	Title     *string             `json:"title"`
+	ContentMD *string             `json:"content_md"`
+	Tags      *[]string           `json:"tags"`
+	Journal   *appnote.JournalDTO `json:"journal"`
 }
 
 func decodeSaveRequest(w http.ResponseWriter, r *http.Request) (saveRequest, bool) {
@@ -74,6 +75,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		Title:     req.title(),
 		ContentMD: *req.ContentMD,
 		Tags:      req.tags(),
+		Journal:   req.Journal,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)
@@ -92,6 +94,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		Title:     req.title(),
 		ContentMD: *req.ContentMD,
 		Tags:      req.tags(),
+		Journal:   req.Journal,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)
@@ -142,7 +145,11 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) BrowsePublished(w http.ResponseWriter, r *http.Request) {
 	cursor, limit := response.ParseCursor(r)
-	items, next, err := h.service.BrowsePublished(r.Context(), cursor, limit, r.URL.Query().Get("tag"))
+	search := r.URL.Query()
+	items, next, err := h.service.BrowsePublished(r.Context(), appnote.BrowseQuery{
+		Cursor: cursor, Limit: limit, TagSlug: search.Get("tag"),
+		Type: domainnote.Type(search.Get("type")), ProjectID: search.Get("project_id"),
+	})
 	if err != nil {
 		response.RespondError(w, r, err)
 		return

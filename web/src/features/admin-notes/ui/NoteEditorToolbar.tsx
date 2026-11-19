@@ -82,7 +82,7 @@ export function NoteEditorToolbar({
 				{note?.status === "published" ? (
 					<Button variant="ghost" size="sm" asChild>
 						<a
-							href={`/notes/${note.id}`}
+							href={`/journal/${note.id}`}
 							target="_blank"
 							rel="noreferrer"
 							title="在新标签页查看公开笔记"

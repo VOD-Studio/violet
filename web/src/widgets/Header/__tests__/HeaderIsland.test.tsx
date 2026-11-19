@@ -37,10 +37,10 @@ function renderAt(path: string, presence?: PresenceReceipt, authenticated = fals
 				"/blog/archive",
 				"/blog/series",
 				"/blog/series/$slug",
-				"/notes",
+				"/journal",
 				"/tweets",
 				"/galleries",
-				"/lab",
+				"/projects/inkline/docs",
 				"/chat",
 			].map((p) => createRoute({ getParentRoute: () => root, path: p, component: empty })),
 		),
@@ -60,7 +60,7 @@ describe("HeaderIsland", () => {
 	afterEach(cleanup);
 
 	it("收起时显示主要入口，当前页带文字标出，全部导航收在「更多」里", async () => {
-		renderAt("/notes");
+		renderAt("/journal");
 		const nav = await screen.findByRole("navigation", { name: "移动端导航" });
 		expect(nav.querySelectorAll("a")).toHaveLength(4);
 		expect(nav.querySelector('a[aria-current="page"]')?.getAttribute("aria-label")).toBe(
@@ -76,7 +76,7 @@ describe("HeaderIsland", () => {
 		await act(async () => {});
 		fireEvent.click(more);
 		await screen.findByText("Violet · 浏览本站");
-		expect(screen.getByRole("link", { name: "实验室" })).toBeTruthy();
+		expect(screen.getByRole("link", { name: "图集" }).getAttribute("href")).toBe("/galleries");
 		const themes = screen.getByRole("radiogroup", { name: "主题" });
 		expect(
 			within(themes).getByRole("radio", { name: "跟随季节" }).getAttribute("aria-checked"),
@@ -126,7 +126,7 @@ describe("HeaderIsland", () => {
 	});
 
 	it.each([
-		["/lab", "实验室"],
+		["/projects/inkline/docs", "手绘"],
 		["/blog/archive?source=original&tag=go&page=2", "归档"],
 		["/blog/series?source=repost&tag=go&page=2", "系列"],
 		["/blog/series/go-book", "系列"],

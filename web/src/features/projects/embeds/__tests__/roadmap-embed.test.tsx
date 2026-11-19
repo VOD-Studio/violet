@@ -7,7 +7,8 @@ import type { RoadmapDetail, RoadmapItem } from "../../model/roadmap";
 import "../register";
 
 // Link 退化为普通 <a>，脱离 RouterProvider 上下文；params 填进路径
-vi.mock("@tanstack/react-router", () => ({
+vi.mock("@tanstack/react-router", async (importOriginal) => ({
+	...(await importOriginal<object>()),
 	Link: ({
 		to,
 		params,

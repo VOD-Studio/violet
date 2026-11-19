@@ -1,5 +1,5 @@
 /** 手册站点入口；章节页 URL 为 `${base}/${chapter.id}`。 */
-export const EDITOR_GUIDE_BASE = "/editor-guide";
+export const EDITOR_GUIDE_BASE = "/projects/violet/docs/editor";
 
 export interface EditorGuideChapter {
 	/** URL 段，与 `web/src/features/editor/docs/` 下的 md 文件名一致 */
@@ -50,13 +50,15 @@ export function findEditorGuideChapter(id: string): EditorGuideChapter | undefin
 }
 
 /**
- * 章内互链改写为站内路由：`(./x.md)` → `(/editor-guide/x)`、`(./README.md)` → `(/editor-guide)`；
+ * 章内互链改写为项目文档路由；保留查询参数和章节锚点。
  * 仓库内阅读时仍是可点的相对链接。
  */
 export function rewriteChapterLinks(source: string): string {
-	let out = source.replaceAll("(./README.md)", `(${EDITOR_GUIDE_BASE})`);
-	for (const chapter of EDITOR_GUIDE_CHAPTERS) {
-		out = out.replaceAll(`(./${chapter.id}.md)`, `(${EDITOR_GUIDE_BASE}/${chapter.id})`);
-	}
-	return out;
+	return source.replace(
+		/\(\.\/(README|[\w-]+)\.md([?#][^)]*)?\)/g,
+		(link, id: string, suffix: string | undefined) => {
+			if (id !== "README" && !findEditorGuideChapter(id)) return link;
+			return `(${EDITOR_GUIDE_BASE}${id === "README" ? "" : `/${id}`}${suffix ?? ""})`;
+		},
+	);
 }

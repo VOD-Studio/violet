@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 
 	domainnote "blog-api/internal/domain/note"
@@ -26,7 +28,7 @@ func (r *NoteRepository) Create(ctx context.Context, n *domainnote.Note) error {
 	po := noteToPO(n)
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(&po).Error; err != nil {
-			return shared.Internal("创建笔记失败", err)
+			return noteWriteError("创建笔记失败", err)
 		}
 		return replaceNoteTags(tx, &po, n.Tags())
 	})
@@ -41,17 +43,25 @@ func (r *NoteRepository) FindByID(ctx context.Context, id shared.ID) (*domainnot
 		}
 		return nil, shared.Internal("查询笔记失败", err)
 	}
-	return noteFromPO(po), nil
+	return noteFromPO(&po), nil
 }
 
 func (r *NoteRepository) Save(ctx context.Context, n *domainnote.Note) error {
 	po := noteToPO(n)
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Save(&po).Error; err != nil {
-			return shared.Internal("保存笔记失败", err)
+			return noteWriteError("保存笔记失败", err)
 		}
 		return replaceNoteTags(tx, &po, n.Tags())
 	})
+}
+
+func noteWriteError(message string, err error) error {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == "23503" && pgErr.ConstraintName == "notes_project_id_fkey" {
+		return shared.BadRequest("关联项目不存在")
+	}
+	return shared.Internal(message, err)
 }
 
 func (r *NoteRepository) Delete(ctx context.Context, id shared.ID) error {
@@ -79,15 +89,20 @@ func (r *NoteRepository) FindPage(ctx context.Context, filter domainnote.ListFil
 		return shared.PageResult[*domainnote.Note]{}, err
 	}
 	items := make([]*domainnote.Note, 0, len(rows))
-	for _, po := range rows {
-		items = append(items, noteFromPO(po))
+	for i := range rows {
+		items = append(items, noteFromPO(&rows[i]))
 	}
 	return shared.NewPageResult(q, items, total), nil
 }
 
 func (r *NoteRepository) FindPublishedPage(ctx context.Context, cursor *domainnote.PublishedCursor, filter domainnote.BrowseFilter, limit int) ([]domainnote.PublishedNote, error) {
-	query := r.db.WithContext(ctx).Model(&model.Note{}).
-		Where("status = ?", domainnote.StatusPublished)
+	query := r.publishedNotes(ctx)
+	if filter.Type != "" {
+		query = query.Where("note_type = ?", filter.Type)
+	}
+	if filter.ProjectID != nil {
+		query = query.Where("project_id = ?", filter.ProjectID.UUID())
+	}
 	if filter.TagSlug != "" {
 		query = query.Where(
 			"id IN (SELECT nt.note_id FROM note_tags nt JOIN tags t ON nt.tag_id = t.id WHERE t.slug = ?)",
@@ -102,28 +117,37 @@ func (r *NoteRepository) FindPublishedPage(ctx context.Context, cursor *domainno
 		)
 	}
 	var rows []model.Note
-	if err := query.Preload("Tags").Order("published_at DESC, id DESC").Limit(limit).Find(&rows).Error; err != nil {
+	if err := query.Order("published_at DESC, id DESC").Limit(limit).Find(&rows).Error; err != nil {
 		return nil, shared.Internal("查询公开笔记流失败", err)
 	}
 	out := make([]domainnote.PublishedNote, 0, len(rows))
-	for _, po := range rows {
-		out = append(out, publishedNoteFromPO(po))
+	for i := range rows {
+		out = append(out, publishedNoteFromPO(&rows[i]))
 	}
 	return out, nil
 }
 
 func (r *NoteRepository) FindPublishedByID(ctx context.Context, id shared.ID) (domainnote.PublishedNote, error) {
 	var po model.Note
-	err := r.db.WithContext(ctx).Preload("Tags").
-		Where("id = ? AND status = ?", id.UUID(), domainnote.StatusPublished).
-		First(&po).Error
+	err := r.publishedNotes(ctx).Where("id = ?", id.UUID()).First(&po).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return domainnote.PublishedNote{}, domainnote.ErrNotFound
 		}
 		return domainnote.PublishedNote{}, shared.Internal("查询公开笔记失败", err)
 	}
-	return publishedNoteFromPO(po), nil
+	return publishedNoteFromPO(&po), nil
+}
+
+func (r *NoteRepository) publishedNotes(ctx context.Context) *gorm.DB {
+	return r.db.WithContext(ctx).Model(&model.Note{}).
+		Select("id", "title", "content_html", "published_at", "note_type", "project_id",
+			"pitfall_symptom", "pitfall_cause", "pitfall_remedy", "pitfall_resolved", "pitfall_code").
+		Where("status = ?", domainnote.StatusPublished).
+		Preload("Tags").
+		Preload("Project", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "title")
+		})
 }
 
 // replaceNoteTags 按 name 解析标签并整体替换关联；语义与 post 仓储一致：
@@ -154,7 +178,8 @@ func replaceNoteTags(tx *gorm.DB, po *model.Note, tagNames []string) error {
 }
 
 func noteToPO(n *domainnote.Note) model.Note {
-	return model.Note{
+	journal := n.Journal()
+	po := model.Note{
 		ID:          n.ID().UUID(),
 		AuthorID:    n.AuthorID().UUID(),
 		Title:       n.Title(),
@@ -164,25 +189,45 @@ func noteToPO(n *domainnote.Note) model.Note {
 		PublishedAt: n.PublishedAt(),
 		CreatedAt:   n.CreatedAt(),
 		UpdatedAt:   n.UpdatedAt(),
+		NoteType:    string(journal.Type),
 	}
+	if journal.ProjectID != nil {
+		id := journal.ProjectID.UUID()
+		po.ProjectID = &id
+	}
+	if p := journal.Pitfall; p != nil {
+		po.PitfallSymptom = p.Symptom
+		po.PitfallCause = p.Cause
+		po.PitfallRemedy = p.Remedy
+		po.PitfallResolved = p.Resolved
+		po.PitfallCode = p.Code
+	}
+	return po
 }
 
-func noteFromPO(po model.Note) *domainnote.Note {
+func noteFromPO(po *model.Note) *domainnote.Note {
 	tags := make([]string, 0, len(po.Tags))
 	for _, t := range po.Tags {
 		tags = append(tags, t.Name)
+	}
+	journal := domainnote.Journal{
+		Type: domainnote.Type(po.NoteType), ProjectID: noteProjectID(po.ProjectID), Pitfall: notePitfallFromPO(po),
 	}
 	return domainnote.Reconstruct(
 		shared.IDFromUUID(po.ID), shared.IDFromUUID(po.AuthorID),
 		po.Title, po.ContentMD, po.ContentHTML, po.Status,
-		po.PublishedAt, po.CreatedAt, po.UpdatedAt, tags,
+		po.PublishedAt, po.CreatedAt, po.UpdatedAt, tags, journal,
 	)
 }
 
-func publishedNoteFromPO(po model.Note) domainnote.PublishedNote {
+func publishedNoteFromPO(po *model.Note) domainnote.PublishedNote {
 	tags := make([]string, 0, len(po.Tags))
 	for _, t := range po.Tags {
 		tags = append(tags, t.Name)
+	}
+	var project *domainnote.PublishedProject
+	if po.Project != nil {
+		project = &domainnote.PublishedProject{ID: shared.IDFromUUID(po.Project.ID), Title: po.Project.Title}
 	}
 	return domainnote.PublishedNote{
 		ID:          shared.IDFromUUID(po.ID),
@@ -190,6 +235,27 @@ func publishedNoteFromPO(po model.Note) domainnote.PublishedNote {
 		ContentHTML: po.ContentHTML,
 		Tags:        tags,
 		PublishedAt: derefTime(po.PublishedAt),
+		Type:        domainnote.Type(po.NoteType),
+		Project:     project,
+		Pitfall:     notePitfallFromPO(po),
+	}
+}
+
+func noteProjectID(id *uuid.UUID) *shared.ID {
+	if id == nil {
+		return nil
+	}
+	projectID := shared.IDFromUUID(*id)
+	return &projectID
+}
+
+func notePitfallFromPO(po *model.Note) *domainnote.Pitfall {
+	if po.NoteType != string(domainnote.TypePitfall) {
+		return nil
+	}
+	return &domainnote.Pitfall{
+		Symptom: po.PitfallSymptom, Cause: po.PitfallCause, Remedy: po.PitfallRemedy,
+		Resolved: po.PitfallResolved, Code: po.PitfallCode,
 	}
 }
 

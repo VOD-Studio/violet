@@ -33,14 +33,14 @@ const SCENARIOS: HydrationScenario[] = [
 	},
 	{
 		name: "笔记列表",
-		path: "/notes",
+		path: "/journal",
 		apiPaths: ["/api/v1/notes"],
 		selector: "main",
 		text: "缓存接管笔记",
 	},
 	{
 		name: "笔记正文",
-		path: "/notes/41000000-0000-0000-0000-000000000001",
+		path: "/journal/41000000-0000-0000-0000-000000000001",
 		apiPaths: ["/api/v1/notes/41000000-0000-0000-0000-000000000001"],
 		selector: "main",
 		text: "笔记内容在首访接管期间保持可读。",
@@ -75,7 +75,7 @@ const SCENARIOS: HydrationScenario[] = [
 	},
 	{
 		name: "人设成功空资源",
-		path: "/persona",
+		path: "/chat/personas",
 		apiPaths: ["/api/v1/persona"],
 		selector: "main",
 		text: "人设档案尚未公开",
@@ -144,3 +144,15 @@ for (const scenario of SCENARIOS) {
 		}
 	});
 }
+
+test("旧手记列表与详情以 301 保留原始查询串", async ({ request }) => {
+	const id = "41000000-0000-0000-0000-000000000001";
+	const query = "?tag=1e3&ref=a%20b&ref=c%2Bd";
+	for (const suffix of ["", `/${id}`]) {
+		const response = await request.get(`/notes${suffix}${query}`, { maxRedirects: 0 });
+		expect(response.status()).toBe(301);
+		const target = new URL(response.headers().location, response.url());
+		expect(`${target.pathname}${target.search}`).toBe(`/journal${suffix}${query}`);
+		expect((await request.get(target.href)).status()).toBe(200);
+	}
+});

@@ -3,6 +3,7 @@ import { loadClient } from "./client";
 
 const PATH = "/blog/contract-rich-math";
 const LATER = "a^2 + b^2 = c^2";
+const FORMULA_CHUNK = /\/assets\/MathFormula-[^/]+\.js$/;
 
 /** 块公式容器里直接放着的文字：未排版时就是 LaTeX 原文（排版层与注解层都在子元素里）。 */
 const ownText = (element: Element) =>
@@ -14,6 +15,7 @@ const ownText = (element: Element) =>
 test("首屏公式随 HTML 排好，脚本接管前后都不退回 LaTeX 原文", async ({ page, context }) => {
 	await loadClient(context);
 	const scripts = Promise.withResolvers<void>();
+	const formulaChunk = Promise.withResolvers<void>();
 	const hydrationErrors: string[] = [];
 	page.on("pageerror", (error) => {
 		if (/hydration|hydrated|React error #418/i.test(error.message)) {
@@ -22,6 +24,9 @@ test("首屏公式随 HTML 排好，脚本接管前后都不退回 LaTeX 原文"
 	});
 	await context.route("**/assets/*.js", async (route) => {
 		await scripts.promise;
+		if (FORMULA_CHUNK.test(new URL(route.request().url()).pathname)) {
+			await formulaChunk.promise;
+		}
 		await route.fallback();
 	});
 	try {
@@ -37,19 +42,31 @@ test("首屏公式随 HTML 排好，脚本接管前后都不退回 LaTeX 原文"
 		// 首屏之外的公式服务端只给原文，脚本接管后再排
 		await expect(page.locator('[data-type="block-math"]').last()).toContainText(LATER);
 
-		const ready = page.waitForResponse("**/api/v1/presence/stream");
+		const started = Promise.all([
+			page.waitForResponse("**/api/v1/presence/stream"),
+			page.waitForRequest(FORMULA_CHUNK),
+		]);
 		scripts.resolve();
-		await ready;
-		await page.waitForLoadState("networkidle");
+		await started;
+		// 留出浏览器布局与视口观察回调，同时保持公式模块未下载完成。
+		await page.evaluate(() => {
+			const { promise, resolve } = Promise.withResolvers<void>();
+			requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+			return promise;
+		});
 		await expect(first.locator(".katex-display")).toBeVisible();
 		expect(await first.evaluate(ownText)).toBe("");
-		expect(hydrationErrors).toEqual([]);
+		formulaChunk.resolve();
 		// 文末的公式不必滚到跟前：空闲时已排好，读者从目录跳过去看不到 LaTeX 原文
 		await expect(
 			page.locator('[data-type="block-math"]').last().locator(".katex-display"),
 		).toBeAttached();
+		await expect(first.locator(".katex-display")).toBeVisible();
+		expect(await first.evaluate(ownText)).toBe("");
+		expect(hydrationErrors).toEqual([]);
 	} finally {
 		scripts.resolve();
+		formulaChunk.resolve();
 		await context.unrouteAll({ behavior: "wait" });
 	}
 });

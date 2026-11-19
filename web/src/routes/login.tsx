@@ -6,33 +6,20 @@ import {
 import { useCsrfToken } from "@features/auth/api/queries";
 import { useGithubOAuth } from "@features/auth/hooks/use-github-oauth";
 import { useOAuthVisibility } from "@features/auth/hooks/use-oauth-visibility";
+import { parseAuthEntrySearch } from "@features/auth/lib/auth-entry-search";
 import { openLinkConfirmFromError } from "@features/auth/lib/open-link-confirm";
 import { safeRedirectTarget } from "@features/auth/lib/safe-redirect";
 import { type LoginFormData, loginSchema } from "@features/auth/model/schemas";
+import { AuthPageLayout } from "@features/auth/ui/AuthPageLayout";
 import { GoogleOAuthGate } from "@features/auth/ui/GoogleOAuthGate";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useGoogleLogin, useGoogleOAuth } from "@react-oauth/google";
 import { ApiError } from "@shared/api/error";
 import { createFileRoute, Link, redirect, useNavigate, useSearch } from "@tanstack/react-router";
-import { Button, GithubIcon, GoogleIcon, Input, Label } from "@violet/ui";
-import type { ReactNode } from "react";
+import { Button, Field, GithubIcon, GoogleIcon, Input } from "@violet/ui";
+import { type ReactNode, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-
-/**
- * 登录页 URL 查询参数；非字符串值回落为默认值。
- *
- * - redirect: 登录成功后跳转的目标路径，默认回到首页。
- * - email: 预填邮箱（注册/找回密码成功后跳转时传入，省去用户重复输入）。
- */
-function parseLoginSearch(search: Record<string, unknown>): { redirect?: string; email?: string } {
-	const result: { redirect?: string; email?: string } = {};
-	if (search.redirect !== undefined)
-		result.redirect = typeof search.redirect === "string" ? search.redirect : "/";
-	if (search.email !== undefined)
-		result.email = typeof search.email === "string" ? search.email : "";
-	return result;
-}
 
 /**
  * 后端未返回 message 时的兜底文案（按状态码）。正常路径下后端会给出
@@ -51,7 +38,7 @@ const FALLBACK_BY_STATUS: Record<number, string> = {
  */
 export const Route = createFileRoute("/login")({
 	ssr: false,
-	validateSearch: parseLoginSearch,
+	validateSearch: parseAuthEntrySearch,
 	beforeLoad: ({ context, search }) => {
 		// 已登录(网络确认)则重定向到目标页,避免已登录用户看到登录页。
 		// 只认 context.auth(父路由 __root.beforeLoad 已 await getAuthSession 的准确网络判定)。
@@ -59,220 +46,192 @@ export const Route = createFileRoute("/login")({
 			throw redirect({ to: safeRedirectTarget(search.redirect), replace: true });
 		}
 	},
+	head: () => ({ meta: [{ title: "登录" }] }),
 	component: LoginPage,
 });
 
 function LoginPage() {
-	return (
-		<GoogleOAuthGate>
-			{(googleError) => <LoginForm googleError={googleError} />}
-		</GoogleOAuthGate>
-	);
-}
-
-function LoginForm({ googleError }: { googleError: ReactNode }) {
-	const { redirect, email: prefilledEmail } = useSearch({ from: "/login" });
+	const { redirect: redirectTo, email } = useSearch({ from: "/login" });
 	const navigate = useNavigate();
-
+	const [submitError, setSubmitError] = useState("");
 	const {
-		register: registerField,
+		register,
 		handleSubmit,
 		formState: { errors },
 	} = useForm<LoginFormData>({
 		resolver: zodResolver(loginSchema),
-		defaultValues: { identifier: prefilledEmail ?? "", password: "" },
+		defaultValues: { identifier: email ?? "", password: "" },
 	});
-
 	const csrfToken = useCsrfToken();
 	const login = useLogin(csrfToken);
 	const githubLogin = useGithubLoginMutation(csrfToken);
 	const googleLogin = useGoogleLoginMutation(csrfToken);
 	const { showGoogle, showGithub, showOAuth } = useOAuthVisibility();
-	const { scriptLoadedSuccessfully } = useGoogleOAuth();
+	const submitting = login.isPending || githubLogin.isPending || googleLogin.isPending;
 
-	const handleGoogleLogin = useGoogleLogin({
-		flow: "implicit",
-		onSuccess: (tokenResponse) => {
-			googleLogin.mutate(tokenResponse.access_token, {
-				onSuccess: async () => {
-					toast.success("登录成功");
-					const target = safeRedirectTarget(redirect);
-					try {
-						await navigate({ to: target, replace: true });
-					} catch {
-						window.location.href = target;
-					}
-					// useGoogleLoginMutation 已 invalidate authKeys.me() 并 markSessionActive()，
-					// Header 等观察者只会自动拉取一次 me，这里不再显式 refetch。
-				},
-				onError: (err) => {
-					if (openLinkConfirmFromError(err)) return;
-					toast.error(err instanceof ApiError ? err.message : "登录失败");
-				},
-			});
-		},
-		onError: () => toast.error("Google 登录失败，请重试"),
-	});
+	async function finishLogin() {
+		toast.success("登录成功");
+		const target = safeRedirectTarget(redirectTo);
+		try {
+			await navigate({ to: target, replace: true });
+		} catch {
+			window.location.href = target;
+		}
+	}
 
-	const openGithubWindow = useGithubOAuth({
-		onCode: (ghCode) => {
-			githubLogin.mutate(ghCode, {
-				onSuccess: async () => {
-					toast.success("登录成功");
-					const target = safeRedirectTarget(redirect);
-					try {
-						await navigate({ to: target, replace: true });
-					} catch {
-						window.location.href = target;
-					}
-				},
-				onError: (err) => {
-					if (openLinkConfirmFromError(err)) return;
-					toast.error(err instanceof ApiError ? err.message : "登录失败");
-				},
-			});
+	function reportOAuthError(error: Error) {
+		if (!openLinkConfirmFromError(error)) {
+			setSubmitError(error instanceof ApiError ? error.message : "第三方登录失败，请重试");
+		}
+	}
+
+	const openGithub = useGithubOAuth({
+		redirectTo,
+		onCode: (code) => {
+			githubLogin.mutate(code, { onSuccess: finishLogin, onError: reportOAuthError });
 		},
 	});
 
-	const onSubmit = handleSubmit((data) => {
+	const submit = handleSubmit((data) => {
+		setSubmitError("");
 		login.mutate(data, {
-			onSuccess: async () => {
-				toast.success("登录成功");
-				const target = safeRedirectTarget(redirect);
-				try {
-					await navigate({ to: target, replace: true });
-				} catch {
-					window.location.href = target;
-				}
-				// useLogin 的 onSuccess 已 invalidate authKeys.me() 并 markSessionActive()，
-				// Header 等观察者会自动拉取一次 me。这里不再显式 refetch。
-			},
-			onError: (err) => {
-				// 优先展示后端返回的具体原因（邮箱未验证 / 账户已被禁用 /
-				// 请求过于频繁 / 邮箱或密码错误 等）。后端已按状态码返回明确 message，
-				// 前端不再凭状态码猜文案（之前 403 一律显示「账户已被禁用」会误导未验证用户）。
-				// 仅当后端没给 message 时，按状态码给兜底。
-				const msg =
-					err instanceof ApiError
-						? err.message || FALLBACK_BY_STATUS[err.status] || "登录失败，请稍后重试"
-						: err.message || "登录失败，请检查账号和密码";
-				toast.error(msg);
+			onSuccess: finishLogin,
+			onError: (error) => {
+				setSubmitError(
+					error instanceof ApiError
+						? error.message ||
+								FALLBACK_BY_STATUS[error.status] ||
+								"登录失败，请稍后重试"
+						: error.message || "登录失败，请检查账号和密码",
+				);
 			},
 		});
 	});
 
 	return (
-		<div className="container mx-auto flex flex-1 items-center justify-center px-4 py-16">
-			<div className="w-full max-w-sm space-y-6">
-				<div className="text-center">
-					<h1 className="font-mono text-2xl font-bold tracking-tight">登录</h1>
-					<p className="mt-2 text-sm text-muted-foreground">请输入账号和密码访问后台</p>
-				</div>
-
-				<form onSubmit={onSubmit} className="space-y-4">
-					<div className="space-y-1">
-						<Label htmlFor="identifier">账号</Label>
-						<Input
-							id="identifier"
-							type="text"
-							placeholder="用户名或邮箱"
-							autoComplete="username"
-							aria-invalid={!!errors.identifier}
-							{...registerField("identifier")}
-						/>
-						{errors.identifier ? (
-							<p className="text-xs text-destructive">{errors.identifier.message}</p>
-						) : null}
-					</div>
-
-					<div className="space-y-1">
-						<Label htmlFor="password">密码</Label>
-						<Input
-							id="password"
-							type="password"
-							placeholder="••••••••"
-							aria-invalid={!!errors.password}
-							{...registerField("password")}
-						/>
-						{errors.password ? (
-							<p className="text-xs text-destructive">{errors.password.message}</p>
-						) : null}
-					</div>
-
-					<div className="flex items-center justify-between text-xs">
-						<Link
-							to="/register"
-							className="text-muted-foreground hover:text-foreground"
-						>
-							没有账号？注册
-						</Link>
-						<Link
-							to="/forgot-password"
-							className="text-muted-foreground hover:text-foreground"
-						>
-							忘记密码？
-						</Link>
-					</div>
-
-					<Button
-						type="submit"
-						className="w-full"
-						disabled={login.isPending || googleLogin.isPending || !csrfToken}
+		<AuthPageLayout title="登录" description="登录后即可评论、批注和聊天。">
+			{showOAuth ? (
+				<div className="space-y-4">
+					<div
+						className={
+							showGithub && showGoogle ? "grid gap-3 sm:grid-cols-2" : "grid gap-3"
+						}
 					>
-						{login.isPending || googleLogin.isPending ? "登录中…" : "登录"}
-					</Button>
-
-					{showOAuth ? (
-						<div className="mt-4 flex flex-col items-center gap-2">
-							<div className="relative w-full">
-								<div className="absolute inset-0 flex items-center">
-									<span className="w-full border-t" />
-								</div>
-								<div className="relative flex justify-center text-xs uppercase">
-									<span className="bg-background px-2 text-muted-foreground">
-										或者
-									</span>
-								</div>
-							</div>
-							<div className="flex justify-center">
-								{showGoogle ? (
-									<Button
-										iconOnly
-										type="button"
-										variant="outline"
-										size="md"
-										className="size-12 rounded-full"
-										onClick={() => {
-											if (scriptLoadedSuccessfully) handleGoogleLogin();
-										}}
-										disabled={
-											googleLogin.isPending || !scriptLoadedSuccessfully
+						{showGithub ? (
+							<Button
+								variant="outline"
+								onClick={openGithub}
+								disabled={submitting || !csrfToken}
+								aria-label="使用 GitHub 登录"
+								leftIcon={<GithubIcon title="GitHub" />}
+							>
+								GitHub
+							</Button>
+						) : null}
+						{showGoogle ? (
+							<GoogleOAuthGate>
+								{(sdkError) => (
+									<GoogleLoginAction
+										disabled={submitting || !csrfToken}
+										sdkError={sdkError}
+										onToken={(token) =>
+											googleLogin.mutate(token, {
+												onSuccess: finishLogin,
+												onError: reportOAuthError,
+											})
 										}
-										aria-label="使用 Google 登录"
-									>
-										<GoogleIcon title="Google" className="size-6" />
-									</Button>
-								) : null}
-								{showGithub ? (
-									<Button
-										iconOnly
-										type="button"
-										variant="outline"
-										size="md"
-										className="ml-4 size-12 rounded-full"
-										onClick={openGithubWindow}
-										aria-label="使用 GitHub 登录"
-										disabled={githubLogin.isPending}
-									>
-										<GithubIcon title="GitHub" className="size-6" />
-									</Button>
-								) : null}
-							</div>
-							{showGoogle && googleError}
-						</div>
-					) : null}
-				</form>
-			</div>
-		</div>
+									/>
+								)}
+							</GoogleOAuthGate>
+						) : null}
+					</div>
+					<p className="flex items-center gap-3 text-xs text-muted-foreground before:h-px before:flex-1 before:bg-border after:h-px after:flex-1 after:bg-border">
+						或使用账号登录
+					</p>
+				</div>
+			) : null}
+			<form onSubmit={submit} className="space-y-3">
+				<Field label="账号" error={errors.identifier?.message}>
+					<Input
+						type="text"
+						placeholder="用户名或邮箱"
+						autoComplete="username"
+						{...register("identifier")}
+					/>
+				</Field>
+				<Field label="密码" error={errors.password?.message}>
+					<Input
+						type="password"
+						passwordToggle
+						autoComplete="current-password"
+						{...register("password")}
+					/>
+				</Field>
+				<div className="flex justify-end">
+					<Link
+						to="/forgot-password"
+						search={{ redirect: redirectTo, email }}
+						className="text-sm text-primary hover:underline"
+					>
+						忘记密码？
+					</Link>
+				</div>
+				{submitError ? (
+					<p role="alert" className="text-sm text-destructive">
+						{submitError}
+					</p>
+				) : null}
+				<Button
+					variant="primary"
+					size="lg"
+					type="submit"
+					className="w-full"
+					disabled={submitting || !csrfToken}
+				>
+					{login.isPending ? "正在登录…" : "登录"}
+				</Button>
+			</form>
+			<p className="text-center text-sm text-muted-foreground">
+				还没有账号？{" "}
+				<Link
+					to="/register"
+					search={{ redirect: redirectTo, email }}
+					className="font-semibold text-primary hover:underline"
+				>
+					注册
+				</Link>
+			</p>
+		</AuthPageLayout>
+	);
+}
+
+function GoogleLoginAction({
+	disabled,
+	onToken,
+	sdkError,
+}: {
+	disabled: boolean;
+	onToken: (token: string) => void;
+	sdkError: ReactNode;
+}) {
+	const { scriptLoadedSuccessfully } = useGoogleOAuth();
+	const openGoogle = useGoogleLogin({
+		flow: "implicit",
+		onSuccess: (response) => onToken(response.access_token),
+		onError: () => toast.error("Google 登录失败，请重试"),
+	});
+	return (
+		<>
+			<Button
+				variant="outline"
+				disabled={disabled || !scriptLoadedSuccessfully}
+				onClick={() => openGoogle()}
+				aria-label="使用 Google 登录"
+				leftIcon={<GoogleIcon title="Google" />}
+			>
+				Google
+			</Button>
+			{sdkError ? <div className="sm:col-span-full">{sdkError}</div> : null}
+		</>
 	);
 }

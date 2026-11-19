@@ -14,20 +14,28 @@ import (
 //   - uniq_friendlinks_url_active：url 唯一 WHERE status != 'rejected'（被拒不阻塞重新申请）
 //   - uniq_friendlinks_pending_identity：(ip_hash, contact_email) 唯一 WHERE status = 'pending'（申请配额）
 type FriendLink struct {
-	ID           uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
-	UserID       *uuid.UUID `gorm:"type:uuid;column:user_id" json:"user_id,omitempty"`
-	Name         string     `gorm:"type:varchar(30);not null" json:"name"`
-	URL          string     `gorm:"type:text;not null" json:"url"`
-	AvatarURL    string     `gorm:"type:text;not null;default:''" json:"avatar_url"`
-	Description  string     `gorm:"type:varchar(80);not null;default:''" json:"description"`
-	OwnerName    string     `gorm:"type:varchar(30);not null;default:''" json:"owner_name"`
-	LinkbackURL  string     `gorm:"type:text;not null;default:''" json:"linkback_url"`
-	ContactEmail string     `gorm:"type:varchar(254);not null;default:''" json:"contact_email"`
-	Status       string     `gorm:"type:varchar(16);not null;default:'pending'" json:"status"`
-	SortOrder    int        `gorm:"column:sort_order;not null;default:0" json:"sort_order"`
-	IPHash       string     `gorm:"type:varchar(64);column:ip_hash;not null;default:''" json:"ip_hash"`
-	CreatedAt    time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
-	UpdatedAt    time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
+	ID                uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
+	UserID            *uuid.UUID `gorm:"type:uuid;column:user_id" json:"user_id,omitempty"`
+	Name              string     `gorm:"type:varchar(30);not null" json:"name"`
+	URL               string     `gorm:"type:text;not null" json:"url"`
+	AvatarURL         string     `gorm:"type:text;not null;default:''" json:"avatar_url"`
+	RSSURL            string     `gorm:"column:rss_url;type:text;not null;default:''" json:"rss_url"`
+	FeedStatus        string     `gorm:"not null;default:'pending'" json:"feed_status"`
+	SiteStatus        string     `gorm:"not null;default:'unchecked'" json:"site_status"`
+	CheckedAt         *time.Time `json:"checked_at"`
+	LatestTitle       string     `gorm:"not null;default:''" json:"latest_title"`
+	LatestURL         string     `gorm:"not null;default:''" json:"latest_url"`
+	LatestPublishedAt *time.Time `json:"latest_published_at"`
+	NextRefreshAt     time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"-"`
+	Description       string     `gorm:"type:varchar(80);not null;default:''" json:"description"`
+	OwnerName         string     `gorm:"type:varchar(30);not null;default:''" json:"owner_name"`
+	LinkbackURL       string     `gorm:"type:text;not null;default:''" json:"linkback_url"`
+	ContactEmail      string     `gorm:"type:varchar(254);not null;default:''" json:"contact_email"`
+	Status            string     `gorm:"type:varchar(16);not null;default:'pending'" json:"status"`
+	SortOrder         int        `gorm:"column:sort_order;not null;default:0" json:"sort_order"`
+	IPHash            string     `gorm:"type:varchar(64);column:ip_hash;not null;default:''" json:"ip_hash"`
+	CreatedAt         time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt         time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
 // TableName 显式指定表名

@@ -4,8 +4,8 @@
  * 字段来源 application/roadmap 的 DetailDTO、ItemDTO、RelationDTO，snake_case。
  * 写接口的请求体随后续票补充。
  */
-import type { RoadmapProgress } from "./roadmap-summary";
-import type { Project } from "./types";
+import type { RoadmapProgress } from "@entities/project/model/roadmap-summary";
+import type { Project } from "@entities/project/model/types";
 
 /** 条目所处阶段；阶段只由管理员手动设置，关系不会改变它。 */
 export type RoadmapStage = "planned" | "in_progress" | "completed";

@@ -1,0 +1,22 @@
+.illustration {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+
+.illustration > svg {
+	inset: 0 auto auto 0;
+	inline-size: 100%;
+	max-block-size: 78%;
+	mask-image: radial-gradient(ellipse at 30% 28%, var(--foreground) 44%, transparent 80%);
+}
+
+@media (width < 350px) {
+	.content [data-slot="input-otp-group"] {
+		gap: 0.25rem;
+	}
+
+	.content [data-slot="input-otp-group"] > [data-break] {
+		margin-inline-end: 0.25rem;
+	}
+}

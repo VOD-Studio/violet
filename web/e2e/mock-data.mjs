@@ -121,6 +121,9 @@ const CONTRACT_NOTE = {
 	content_html: "<p>笔记内容在首访接管期间保持可读。</p>",
 	tags: ["ssr"],
 	published_at: "2026-08-11T10:00:00Z",
+	type: "unclassified",
+	project: null,
+	pitfall: null,
 };
 
 const CONTRACT_SERIES = {
@@ -203,6 +206,7 @@ const CONTRACT_GALLERY = {
 	slug: "contract-gallery",
 	title: "沉浸契约图集",
 	summary: "用于沉浸方言视觉验收的样例图集。",
+	location: "",
 	published_at: "2026-08-01T10:00:00Z",
 	items: [
 		{
@@ -868,6 +872,12 @@ export function handle(method, pathname, search, cookie = "", rawBody = "") {
 		return detail
 			? { status: 200, body: envelope(detail) }
 			: { status: 404, body: JSON.stringify({ error: "NOT_FOUND", message: "项目不存在" }) };
+	}
+	if (pathname === "/api/v1/gallery-summary") {
+		return {
+			status: 200,
+			body: envelope({ album_count: 1, image_count: CONTRACT_GALLERY.items.length }),
+		};
 	}
 	if (pathname === "/api/v1/galleries") {
 		const limit = Number(params.get("limit") || 12);

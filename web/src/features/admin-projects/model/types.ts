@@ -1,10 +1,10 @@
 /**
  * admin-projects 模块类型定义
  *
- * 后台项目管理的写操作请求体。领域读模型 Project 见 projects/model。
+ * 后台项目管理的写操作请求体。领域读模型见 @entities/project/model/types。
  */
 
-import type { ProjectStatus } from "@features/projects/model/types";
+import type { ProjectStatus } from "@entities/project/model/types";
 
 /**
  * CreateProject - 创建项目请求体

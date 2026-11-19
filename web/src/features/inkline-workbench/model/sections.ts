@@ -1,7 +1,7 @@
 /** 工作台的一节：左侧目录的一项，对应一个能力。 */
 export interface WorkbenchSection {
 	id: SectionId;
-	/** 路径段，/inkline/<slug>；画稿一节是 /inkline 本身，为 null */
+	/** 路径段，项目文档根目录对应画稿一节，为 null。 */
 	slug: string | null;
 	title: string;
 	/** 舞台标题下的一句说明 */
@@ -80,8 +80,8 @@ export function findSectionBySlug(slug: string): WorkbenchSection | undefined {
 	return SECTIONS.find((section) => section.slug === slug);
 }
 
-/** 由当前路径取所在的节；/inkline 与无法识别的路径都落在画稿一节。 */
+/** 由已校验的项目文档路径取当前节；根路径显示画稿。 */
 export function sectionFromPath(pathname: string): WorkbenchSection {
-	const slug = pathname.replace(/^\/inkline\/?/, "").replace(/\/$/, "");
+	const slug = pathname.replace(/^\/projects\/inkline\/docs\/?/, "").replace(/\/$/, "");
 	return (slug && findSectionBySlug(slug)) || SECTIONS[0];
 }

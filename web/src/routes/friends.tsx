@@ -1,82 +1,144 @@
 import { useMe } from "@features/auth/api/queries";
-import { fetchFriendLinks } from "@features/friend-links/api/client";
+import { fetchFriendLinkPage } from "@features/friend-links/api/client";
 import { friendLinkPublicKeys } from "@features/friend-links/api/keys";
-import { useFriendLinks } from "@features/friend-links/api/queries";
-import { ApplyDialog } from "@features/friend-links/ui/ApplyDialog";
+import { useFriendLinkPage } from "@features/friend-links/api/queries";
+import { ApplyForm } from "@features/friend-links/ui/ApplyForm";
+import { ExchangeIdentity } from "@features/friend-links/ui/ExchangeIdentity";
+import { FriendGrid } from "@features/friend-links/ui/FriendGrid";
 import { FriendsSkeleton } from "@features/friend-links/ui/FriendsSkeleton";
-import { PostcardWall } from "@features/friend-links/ui/PostcardWall";
-import { createFileRoute } from "@tanstack/react-router";
-import { Button, Empty, PageHeader, PageShell } from "@violet/ui";
-import { ArrowRight, Plus } from "lucide-react";
-import { useState } from "react";
+import { settingsKeys } from "@features/settings/api/keys";
+import { fetchSettings, useSettings } from "@features/settings/api/queries";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Button, Empty, PageHeader, PageShell, Pagination } from "@violet/ui";
+import { Plus } from "lucide-react";
 
-/**
- * /friends - 友链公开页（issue #162 / F3）
- *
- * 视觉语言对齐全站内容页：mono eyebrow + 大标题 + 申请按钮右对齐，
- * 明信片墙（users lab 选定方向）展示已审核友链；
- * 空态走 shared Empty 解密标题范式。
- */
 function FriendsPage() {
-	const { data: links, isLoading, error } = useFriendLinks();
+	const { page, sort } = Route.useSearch();
+	const navigate = Route.useNavigate();
+	const query = { page, sort, limit: 9 };
+	const { data, isLoading, error, refetch } = useFriendLinkPage(query);
+	const { data: settings, error: settingsError } = useSettings();
 	const { data: user } = useMe({ enabled: true });
-	const isLoggedIn = !!user;
-	const currentUsername = user?.username;
-	const [applyOpen, setApplyOpen] = useState(false);
-	// 空态自带「递出第一张名片」主行动作，此时常驻入口收敛掉，避免同屏双入口
-	const isEmpty = !isLoading && !error && (!links || links.length === 0);
-
+	const links = data?.data ?? [];
+	const total = data?.pagination.total;
+	const totalPages = data?.pagination.total_pages ?? 0;
 	return (
 		<PageShell>
 			<PageHeader
 				title="友链"
+				description={
+					total === undefined
+						? "认识一些写字与做事的朋友"
+						: `${total} 位朋友，${sort === "manual" ? "按站长编排排序" : "按最近更新排序"}`
+				}
 				primaryAction={
-					!isEmpty ? (
-						<Button variant="outline" onClick={() => setApplyOpen(true)}>
-							<Plus className="size-4" />
-							申请友链
-						</Button>
-					) : null
+					<Button
+						variant="primary"
+						onClick={() => document.getElementById("apply")?.focus()}
+					>
+						<Plus className="size-4" aria-hidden="true" />
+						申请友链
+					</Button>
 				}
 			/>
-
-			{isLoading ? (
-				<FriendsSkeleton />
-			) : error ? (
-				<p className="text-muted-foreground">加载失败</p>
-			) : !links || links.length === 0 ? (
-				<Empty
-					title="NO LINKS YET"
-					description="还没有互换任何友链。递出你的名片，成为第一个。"
-					action={
-						<Button onClick={() => setApplyOpen(true)}>
-							递出第一张名片
-							<ArrowRight className="size-4" />
-						</Button>
-					}
-					className="py-16"
-				/>
-			) : (
-				<PostcardWall links={links} />
-			)}
-
-			<ApplyDialog
-				open={applyOpen}
-				onOpenChange={setApplyOpen}
-				isLoggedIn={isLoggedIn}
-				currentUsername={currentUsername}
-			/>
+			<section aria-label="公开友链" className="mt-10">
+				{isLoading ? (
+					<FriendsSkeleton />
+				) : error ? (
+					<Empty
+						title="友链加载失败"
+						description={error.message}
+						action={<Button onClick={() => void refetch()}>重新加载</Button>}
+					/>
+				) : links.length === 0 ? (
+					<Empty
+						title={total ? "这一页没有友链" : "还没有公开友链"}
+						description={
+							total
+								? "回到第一页，继续认识这里的朋友。"
+								: "申请交换友链，审核通过后会出现在这里。"
+						}
+						action={
+							total ? (
+								<Button
+									onClick={() => void navigate({ search: { page: 1, sort } })}
+								>
+									回到第一页
+								</Button>
+							) : undefined
+						}
+					/>
+				) : (
+					<FriendGrid links={links} />
+				)}
+				{totalPages > 1 ? (
+					<div className="mt-8 flex flex-col items-center gap-5">
+						{page === 1 ? (
+							<Button asChild>
+								<Link to="/friends" search={{ page: 2, sort }}>
+									看全部 {total} 位朋友
+								</Link>
+							</Button>
+						) : null}
+						<Pagination
+							aria-label="友链分页"
+							page={page}
+							totalPages={totalPages}
+							onPageChange={(next) => void navigate({ search: { page: next, sort } })}
+						/>
+					</div>
+				) : null}
+			</section>
+			<section
+				id="apply"
+				tabIndex={-1}
+				aria-labelledby="exchange-title"
+				className="mt-24 grid scroll-mt-24 gap-10 border-t border-border pt-14 lg:grid-cols-2 lg:gap-14"
+			>
+				<div>
+					<h2 id="exchange-title" className="text-2xl font-semibold">
+						交换友链
+					</h2>
+					<p className="mt-3 text-sm leading-8 text-muted-foreground">
+						先把本站加到你的友链里，再填写申请。留下 RSS，你的最新文章会显示在卡片上。
+					</p>
+					{settings ? (
+						<ExchangeIdentity settings={settings} />
+					) : (
+						<p role="status" className="mt-7 text-sm text-muted-foreground">
+							{settingsError
+								? "本站信息暂时无法加载，请稍后刷新。"
+								: "正在加载本站信息…"}
+						</p>
+					)}
+				</div>
+				<ApplyForm isLoggedIn={!!user} username={user?.username} />
+			</section>
 		</PageShell>
 	);
 }
 
 export const Route = createFileRoute("/friends")({
-	// SSR 预取公开列表，脱水合后首屏直出
-	loader: async ({ context }) => {
-		await context.queryClient.ensureQueryData({
-			queryKey: friendLinkPublicKeys.list(),
-			queryFn: fetchFriendLinks,
-		});
+	validateSearch: (search: Record<string, unknown>) => {
+		const value = Number(search.page);
+		return {
+			page: Number.isSafeInteger(value) && value > 0 ? value : 1,
+			sort: search.sort === "manual" ? ("manual" as const) : ("updated" as const),
+		};
+	},
+	loaderDeps: ({ search }) => ({ page: search.page, sort: search.sort }),
+	loader: async ({ context, deps }) => {
+		const query = { ...deps, limit: 9 };
+		await Promise.allSettled([
+			context.queryClient.ensureQueryData({
+				queryKey: friendLinkPublicKeys.list(query),
+				queryFn: () => fetchFriendLinkPage(query),
+			}),
+			context.queryClient.ensureQueryData({
+				queryKey: settingsKeys.public(),
+				queryFn: fetchSettings,
+			}),
+		]);
 	},
 	component: FriendsPage,
 });

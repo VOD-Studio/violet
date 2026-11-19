@@ -101,20 +101,6 @@ type AuthorDTO struct {
 	IsBot bool `json:"is_bot"`
 }
 
-// UserProfileDTO 用户公开资料卡（公开，仅包含不敏感的非私域字段）。
-type UserProfileDTO struct {
-	ID          string `json:"id"`
-	Username    string `json:"username"`
-	DisplayName string `json:"display_name"`
-	AvatarURL   string `json:"avatar_url"`
-	CoverURL    string `json:"cover_url"`
-	Bio         string `json:"bio"`
-	// CreatedAt RFC3339 格式
-	CreatedAt string `json:"created_at"`
-	// IsBot 该主页是否为 bot 虚拟用户
-	IsBot bool `json:"is_bot"`
-}
-
 // QuotedTweetDTO 被引用推文读模型。
 type QuotedTweetDTO struct {
 	ID         string              `json:"id"`
@@ -424,28 +410,6 @@ func (s *Service) ListByUser(ctx context.Context, username, cursorStr string, li
 	}
 	dtos, nextCursor := s.buildPage(ctx, tweets, limit)
 	return dtos, nextCursor, nil
-}
-
-// GetUserProfile 获取公开用户资料（公开）：按 username 查找用户并转化公开资料卡。
-func (s *Service) GetUserProfile(ctx context.Context, username string) (UserProfileDTO, error) {
-	uname, err := domainuser.ParseUsername(username)
-	if err != nil {
-		return UserProfileDTO{}, shared.BadRequest("非法的用户名")
-	}
-	u, err := s.userRepo.FindByUsername(ctx, uname)
-	if err != nil {
-		return UserProfileDTO{}, err
-	}
-	return UserProfileDTO{
-		ID:          u.GetID().String(),
-		Username:    u.Username().String(),
-		DisplayName: u.DisplayName().String(),
-		AvatarURL:   u.AvatarURL(),
-		CoverURL:    u.CoverURL(),
-		Bio:         u.Bio(),
-		CreatedAt:   u.CreatedAt().Format(time.RFC3339),
-		IsBot:       u.IsBot(),
-	}, nil
 }
 
 // --- 内部辅助 ---

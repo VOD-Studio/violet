@@ -199,7 +199,7 @@ describe("HtmlContent 图块（流程图，浏览时渲染）", () => {
 	});
 
 	it("同一 context 复用同一组件映射，避免代码块被重挂载", () => {
-		const context = { profile: { name: "a", href: "/persona" } };
+		const context = { profile: { name: "a", href: "/chat/personas" } };
 		expect(createMarkdownComponents(context)).toBe(createMarkdownComponents(context));
 		expect(createMarkdownComponents({ ...context })).not.toBe(
 			createMarkdownComponents(context),

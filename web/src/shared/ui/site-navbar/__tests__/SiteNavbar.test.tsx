@@ -58,7 +58,9 @@ describe("SiteNavbar", () => {
 
 	it("入口链接经 LinkComponent 渲染，目标取自导航数据", () => {
 		const { nav } = setup({});
-		expect(within(nav).getByRole("link", { name: "手记" }).getAttribute("href")).toBe("/notes");
+		expect(within(nav).getByRole("link", { name: "手记" }).getAttribute("href")).toBe(
+			"/journal",
+		);
 		expect(within(nav).getByRole("link", { name: "聊天" }).getAttribute("href")).toBe("/chat");
 	});
 
@@ -108,7 +110,7 @@ describe("SiteNavbar", () => {
 		const items = getNavItems({ authenticated: true }).map((item) => ({
 			...item,
 			children: item.children?.map((child) =>
-				child.to === "/editor-guide"
+				child.to === "/projects/violet/docs/editor"
 					? { ...child, label: "编辑器手册 Editor Guide 与 Markdown 扩展功能" }
 					: child,
 			),
@@ -116,7 +118,7 @@ describe("SiteNavbar", () => {
 		const name = "编辑器手册 Editor Guide 与 Markdown 扩展功能";
 		const { nav } = setup({
 			items,
-			active: resolveActiveNav("/editor-guide", items),
+			active: resolveActiveNav("/projects/violet/docs/editor", items),
 		});
 		const current = within(nav).getByRole("button", { name });
 		expect(current.getAttribute("aria-current")).toBe("page");
@@ -130,7 +132,7 @@ describe("SiteNavbar", () => {
 			within(menu)
 				.getByRole("link", { name: new RegExp(`^${name}`) })
 				.getAttribute("href"),
-		).toBe("/editor-guide");
+		).toBe("/projects/violet/docs/editor");
 	});
 
 	it("收起后更多里的子页也只剩图标，分组按钮仍有名称并标为当前", () => {

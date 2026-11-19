@@ -46,7 +46,7 @@ export function PersonaEditorToolbar({
 			<div className="flex flex-wrap items-center justify-end gap-2">
 				{isActive ? (
 					<Button variant="outline" size="sm" asChild>
-						<Link to="/persona">
+						<Link to="/chat/personas">
 							<ExternalLink className="size-4" />
 							查看公开页
 						</Link>

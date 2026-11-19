@@ -1,8 +1,8 @@
+import type { ProjectRoadmapSummary } from "@entities/project/model/roadmap-summary";
+import type { Project } from "@entities/project/model/types";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { TooltipProvider } from "@violet/ui";
 import { describe, expect, it, vi } from "vitest";
-import type { ProjectRoadmapSummary } from "../../model/roadmap-summary";
-import type { Project } from "../../model/types";
 import { ProjectCard } from "../ProjectCard";
 
 vi.mock("@tanstack/react-router", () => ({

@@ -103,8 +103,26 @@
 		},
 		{
 			"name": "kanban-documentation",
-			"prefixes": ["src/features/kanban-docs/", "src/routes/kanban.tsx"],
-			"specs": ["e2e/kanban-docs.spec.ts"]
+			"prefixes": [
+				"src/features/kanban-docs/",
+				"src/routes/kanban.tsx",
+				"src/routes/projects/kanban/"
+			],
+			"specs": ["e2e/kanban-docs.spec.ts", "e2e/public-route-migration.spec.ts"]
+		},
+		{
+			"name": "public-route-migration",
+			"prefixes": [
+				"src/features/editor-docs/",
+				"src/features/inkline-workbench/",
+				"src/routes/editor-guide",
+				"src/routes/inkline",
+				"src/routes/persona.tsx",
+				"src/routes/chat",
+				"src/routes/projects/violet/",
+				"src/routes/projects/inkline/"
+			],
+			"specs": ["e2e/public-route-migration.spec.ts", "e2e/ssr-hydration.spec.ts"]
 		}
 	]
 }

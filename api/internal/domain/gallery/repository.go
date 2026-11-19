@@ -27,6 +27,14 @@ type PublishedGallery struct {
 	Revision *Revision
 }
 
+// PublishedSummary 汇总当前公开版本，不包含工作稿或已撤回作品。
+type PublishedSummary struct {
+	// AlbumCount 当前已发布相册数量。
+	AlbumCount int64
+	// ImageCount 当前公开快照的图片项总数；同一素材出现在不同相册时分别计数。
+	ImageCount int64
+}
+
 var (
 	// ErrNotFound 图集不存在。
 	ErrNotFound = shared.NotFound("图集")
@@ -68,6 +76,8 @@ type Repository interface {
 	Delete(ctx context.Context, id shared.ID, expectedVersion int64) error
 	// FindPublishedPage 按 published_at、id 倒序读取公开快照。
 	FindPublishedPage(ctx context.Context, cursor *PublishedCursor, limit int) ([]PublishedGallery, error)
+	// PublishedSummary 独立于游标和页大小汇总全部公开相册及图片数量。
+	PublishedSummary(ctx context.Context) (PublishedSummary, error)
 	// FindPublishedBySlug 只返回该 slug 的公开快照。
 	FindPublishedBySlug(ctx context.Context, slug string) (PublishedGallery, error)
 }

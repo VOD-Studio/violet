@@ -1,6 +1,6 @@
+import { useProjects } from "@entities/project/api/queries";
+import { PROJECT_STATUS_LABELS, type Project } from "@entities/project/model/types";
 import { Button, Empty, PageShell, Segmented, Skeleton, TooltipProvider } from "@violet/ui";
-import { useProjects } from "../api/queries";
-import { PROJECT_STATUS_LABELS, type Project } from "../model/types";
 import { ProjectCard } from "./ProjectCard";
 
 /** 项目总览的筛选口径；稳定迭代与进行中的项目同组。 */

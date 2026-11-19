@@ -12,9 +12,9 @@ describe("getNavItems 一级入口", () => {
 		expect(labels(true)).toEqual(["首页", "博客", "手记", "推文", "聊天", "更多"]);
 	});
 
-	it("手记指向现有 /notes", () => {
+	it("手记入口指向新的时间线", () => {
 		const journal = getNavItems({ authenticated: false }).find((item) => item.label === "手记");
-		expect(journal?.to).toBe("/notes");
+		expect(journal?.to).toBe("/journal");
 	});
 
 	it("聊天不再藏在更多里", () => {
@@ -41,11 +41,13 @@ describe("getNavItems 一级入口", () => {
 });
 
 describe("NAV_ITEMS 看板入口", () => {
-	it("更多菜单提供看板文档与演示入口，/kanban 归它", () => {
+	it("更多菜单提供项目文档入口，新路径归属对应文档", () => {
 		const items = getNavItems({ authenticated: false });
 		const more = items.find((item) => item.label === "更多");
-		expect(more?.children?.find((link) => link.to === "/kanban")?.label).toBe("看板");
-		expect(resolveActiveNav("/kanban", items)?.link.label).toBe("看板");
+		expect(more?.children?.find((link) => link.to === "/projects/kanban/docs")?.label).toBe(
+			"看板",
+		);
+		expect(resolveActiveNav("/projects/kanban/docs", items)?.link.label).toBe("看板");
 	});
 });
 
@@ -85,9 +87,9 @@ describe("resolveActiveNav", () => {
 	});
 
 	it("手记详情页归属手记", () => {
-		const active = resolveActiveNav("/notes/12", items);
+		const active = resolveActiveNav("/journal/12", items);
 		expect(active?.item.label).toBe("手记");
-		expect(active?.link.to).toBe("/notes");
+		expect(active?.link.to).toBe("/journal");
 	});
 
 	it("更多里的子页归属更多分组", () => {
@@ -119,6 +121,19 @@ describe("flattenNavLinks", () => {
 		expect(targets).toContain("/blog/archive");
 		expect(targets).toContain("/blog/series");
 		expect(flattenNavLinks().find((link) => link.to === "/blog")?.label).toBe("文章");
-		expect(targets).toContain("/kanban");
+		expect(targets).toContain("/projects/kanban/docs");
+		expect(targets).toContain("/projects/violet/docs/editor");
+		expect(targets).toContain("/projects/inkline/docs");
+		for (const retired of [
+			"/editor-guide",
+			"/inkline",
+			"/kanban",
+			"/persona",
+			"/lab",
+			"/pet",
+			"/ui",
+		]) {
+			expect(targets).not.toContain(retired);
+		}
 	});
 });

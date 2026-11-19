@@ -1,49 +1,22 @@
+import { projectKeys } from "@entities/project/api/keys";
+import type { Project } from "@entities/project/model/types";
 import { ApiError } from "@shared/api/error";
 import { apiGet, apiGetPaged } from "@shared/api/request";
 import type { PagedResponse, PageQuery } from "@shared/api/types";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import type { RoadmapDetail } from "../model/roadmap";
-import type { Project, ProjectListQuery } from "../model/types";
-import { projectKeys } from "./keys";
-
-/**
- * fetchProjects - 调后端 GET /projects 拉取项目列表
- *
- * 无分页参数时后端返回全量 ProjectDTO 数组（前台项目页用）；
- * 带 page/limit 时返回 paged 信封（后台项目管理页用 fetchProjectsPaged）。
- *
- * @param query 预留筛选参数
- * @returns 项目数组
- */
-export const fetchProjects = async (query: ProjectListQuery = {}): Promise<Project[]> =>
-	apiGet<Project[]>("/projects", { params: query });
+import { roadmapKeys } from "./keys";
 
 /** fetchProjectsPaged - 分页拉取项目列表（后台管理页用） */
 export const fetchProjectsPaged = async (query: PageQuery): Promise<PagedResponse<Project>> =>
 	apiGetPaged<Project>("/projects", { params: query });
 
 /**
- * useProjects - 项目列表 hook
- *
- * 缓存 key 由 query 参数决定。后端返回全量列表，顺序是站主设定的展示顺序，前端不要重排。
- *
- * @param query 预留分页参数
- * @param initialData 路由 loader 已取到的列表：客户端的查询缓存不随 SSR 传递，不给它首帧没有数据，
- * 与服务端直出的 HTML 对不上
- */
-export const useProjects = (query: ProjectListQuery = {}, initialData?: Project[]) =>
-	useQuery({
-		queryKey: projectKeys.list(query),
-		queryFn: () => fetchProjects(query),
-		initialData,
-	});
-
-/**
  * useProjectsPaged - 分页项目列表 hook（后台管理页用）
  */
 export const useProjectsPaged = (query: PageQuery = {}) =>
 	useQuery({
-		queryKey: [...projectKeys.lists(), query],
+		queryKey: projectKeys.list(query),
 		queryFn: () => fetchProjectsPaged(query),
 	});
 
@@ -96,7 +69,7 @@ export const fetchProjectRoadmap = async (slug: string): Promise<RoadmapDetail> 
  */
 export const projectRoadmapQueryOptions = (slug: string) =>
 	queryOptions({
-		queryKey: projectKeys.roadmap(slug),
+		queryKey: roadmapKeys.detail(slug),
 		queryFn: () => fetchProjectRoadmap(slug),
 		refetchOnWindowFocus: "always",
 	});
@@ -124,7 +97,7 @@ export type RoadmapEmbedResult =
  */
 export const roadmapEmbedQueryOptions = (slug: string) =>
 	queryOptions({
-		queryKey: projectKeys.roadmapEmbed(slug),
+		queryKey: roadmapKeys.embed(slug),
 		queryFn: async (): Promise<RoadmapEmbedResult> => {
 			try {
 				return { status: "ok", detail: await fetchProjectRoadmap(slug) };

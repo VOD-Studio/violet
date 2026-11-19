@@ -60,7 +60,10 @@ test("Header logo 药丸点击展开站长卡片，Esc 与点外面收起并归�
 	await expect(trigger).toHaveAttribute("aria-expanded", "true");
 	await expect(card).toBeVisible();
 	await expect(card.getByRole("link", { name: "关于我" })).toHaveAttribute("href", "/about");
-	await expect(card.getByRole("link", { name: "人设" })).toHaveAttribute("href", "/persona");
+	await expect(card.getByRole("link", { name: "人设" })).toHaveAttribute(
+		"href",
+		"/chat/personas",
+	);
 	await expect(card.getByRole("link", { name: "友链" })).toHaveAttribute("href", "/friends");
 	// 最新文章与最新手记各一条，取自站点数据
 	await expect(card.getByText("新文章")).toBeVisible();
@@ -77,7 +80,7 @@ test("Header logo 药丸点击展开站长卡片，Esc 与点外面收起并归�
 
 	await trigger.click();
 	await card.getByRole("link", { name: "人设" }).click();
-	await expect(page).toHaveURL(/\/persona$/);
+	await expect(page).toHaveURL(/\/chat\/personas$/);
 	await expect(card).toHaveCount(0);
 });
 
@@ -233,7 +236,7 @@ test("Header 路由切换超过 300ms 才在导航下沿显示加载进度线，
 	expect(Number(await line.getAttribute("aria-valuenow"))).toBeLessThan(100);
 
 	release?.();
-	await expect(page).toHaveURL(/\/notes$/);
+	await expect(page).toHaveURL(/\/journal$/);
 	await expect(line).toHaveCount(0);
 });
 

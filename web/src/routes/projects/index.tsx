@@ -1,5 +1,4 @@
-import { projectKeys } from "@features/projects/api/keys";
-import { fetchProjects } from "@features/projects/api/queries";
+import { projectsQueryOptions } from "@entities/project/api/queries";
 import {
 	type ProjectFilter,
 	ProjectsPage,
@@ -17,11 +16,7 @@ export const Route = createFileRoute("/projects/")({
 		return { status: status === "active" || status === "archived" ? status : undefined };
 	},
 	// SSR 预取项目列表，首屏直出；列表同时作为组件的首帧数据
-	loader: ({ context }) =>
-		context.queryClient.ensureQueryData({
-			queryKey: projectKeys.list({}),
-			queryFn: () => fetchProjects({}),
-		}),
+	loader: ({ context }) => context.queryClient.ensureQueryData(projectsQueryOptions()),
 	pendingComponent: () => <ProjectsPageFallback />,
 	errorComponent: ProjectsError,
 	component: ProjectsRoute,

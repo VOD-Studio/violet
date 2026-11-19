@@ -102,7 +102,7 @@ func (r *GalleryRepository) SaveWorking(ctx context.Context, gallery *domaingall
 	} else {
 		result := r.db.WithContext(ctx).Model(&model.GalleryRevision{}).
 			Where("id = ? AND gallery_id = ?", revision.ID().UUID(), gallery.ID().UUID()).
-			Updates(map[string]any{"title": revision.Title(), "summary": revision.Summary(), "updated_at": revision.UpdatedAt()})
+			Updates(map[string]any{"title": revision.Title(), "summary": revision.Summary(), "location": revision.Location(), "updated_at": revision.UpdatedAt()})
 		if result.Error != nil {
 			return shared.Internal("保存图集工作稿失败", result.Error)
 		}
@@ -186,6 +186,20 @@ func (r *GalleryRepository) Delete(ctx context.Context, id shared.ID, expectedVe
 	return nil
 }
 
+func (r *GalleryRepository) PublishedSummary(ctx context.Context) (domaingallery.PublishedSummary, error) {
+	var summary domaingallery.PublishedSummary
+	// 一次查询让两个总数来自同一数据库快照；只连接公开指针，不读取 working revision。
+	err := r.db.WithContext(ctx).Table("galleries AS g").
+		Select("COUNT(DISTINCT g.id) AS album_count, COUNT(i.file_id) AS image_count").
+		Joins("LEFT JOIN gallery_revision_items AS i ON i.revision_id = g.published_revision_id").
+		Where("g.published_revision_id IS NOT NULL AND g.published_at IS NOT NULL").
+		Scan(&summary).Error
+	if err != nil {
+		return domaingallery.PublishedSummary{}, shared.Internal("汇总公开图集失败", err)
+	}
+	return summary, nil
+}
+
 func (r *GalleryRepository) FindPublishedPage(ctx context.Context, cursor *domaingallery.PublishedCursor, limit int) ([]domaingallery.PublishedGallery, error) {
 	query := r.db.WithContext(ctx).
 		Where("published_revision_id IS NOT NULL AND published_at IS NOT NULL")
@@ -256,7 +270,7 @@ func (r *GalleryRepository) reconstructPublishedList(ctx context.Context, roots 
 			items = append(items, domaingallery.ReconstructItem(shared.IDFromUUID(row.FileID), row.Position, row.Caption, row.AltTextOverride))
 		}
 		domainRevision := domaingallery.ReconstructRevision(
-			shared.IDFromUUID(revision.ID), shared.IDFromUUID(revision.GalleryID), revision.Title, revision.Summary,
+			shared.IDFromUUID(revision.ID), shared.IDFromUUID(revision.GalleryID), revision.Title, revision.Summary, revision.Location,
 			items, revision.CreatedAt, revision.UpdatedAt,
 		)
 		result = append(result, domaingallery.PublishedGallery{
@@ -345,7 +359,7 @@ func galleryToPO(gallery *domaingallery.Gallery) model.Gallery {
 
 func revisionToPO(revision *domaingallery.Revision) model.GalleryRevision {
 	return model.GalleryRevision{
-		ID: revision.ID().UUID(), GalleryID: revision.GalleryID().UUID(), Title: revision.Title(), Summary: revision.Summary(),
+		ID: revision.ID().UUID(), GalleryID: revision.GalleryID().UUID(), Title: revision.Title(), Summary: revision.Summary(), Location: revision.Location(),
 		CreatedAt: revision.CreatedAt(), UpdatedAt: revision.UpdatedAt(),
 	}
 }
@@ -363,7 +377,7 @@ func revisionFromPO(revision model.GalleryRevision, rows []model.GalleryRevision
 		items = append(items, domaingallery.ReconstructItem(shared.IDFromUUID(row.FileID), row.Position, row.Caption, row.AltTextOverride))
 	}
 	return domaingallery.ReconstructRevision(
-		shared.IDFromUUID(revision.ID), shared.IDFromUUID(revision.GalleryID), revision.Title, revision.Summary,
+		shared.IDFromUUID(revision.ID), shared.IDFromUUID(revision.GalleryID), revision.Title, revision.Summary, revision.Location,
 		items, revision.CreatedAt, revision.UpdatedAt,
 	)
 }

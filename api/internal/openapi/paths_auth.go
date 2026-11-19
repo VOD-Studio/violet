@@ -6,10 +6,14 @@ import "github.com/getkin/kin-openapi/openapi3"
 func registerAuthPaths(t *openapi3.T) {
 	// ---- 请求体 schema ----
 	registerSchema(t, "RegisterRequest", openapi3.Schemas{
-		"email":    reqStr("邮箱"),
-		"username": reqStr("用户名（3-32 字符）"),
-		"password": reqStr("密码（至少 8 位）"),
+		"email":              reqStr("邮箱"),
+		"username":           reqStr("用户名（3-32 字符）"),
+		"password":           reqStr("密码（至少 8 位）"),
+		"registration_token": optStr("原始注册凭据；继续该待验证注册或更正邮箱时传入"),
 	}, "email", "username", "password")
+	registerSchema(t, "RegisterResponse", openapi3.Schemas{
+		"registration_token": optStr("仅创建待验证注册时签发，邮箱验证成功后失效"),
+	})
 
 	registerSchema(t, "VerifyEmailRequest", openapi3.Schemas{
 		"email": reqStr("邮箱"),
@@ -32,10 +36,13 @@ func registerAuthPaths(t *openapi3.T) {
 	}, "email", "code", "new_password")
 
 	registerSchema(t, "UpdateProfileRequest", openapi3.Schemas{
-		"username":   optStr("用户名（3-32 字符）"),
-		"bio":        optStr("个人简介（最多 500 字）"),
-		"avatar_url": optStr("头像 URL（最多 2048 字符）"),
-		"cover_url":  optStr("主页封面 URL（最多 2048 字符），省略保留，空串移除；保留 GIF 裁剪坐标"),
+		"username":                   optStr("用户名（3-32 字符）"),
+		"bio":                        optStr("个人简介（最多 500 字）"),
+		"avatar_url":                 optStr("头像 URL（最多 2048 字符）"),
+		"cover_url":                  optStr("主页封面 URL（最多 2048 字符），省略保留，空串移除；保留 GIF 裁剪坐标"),
+		"location":                   optStr("主动公开的所在地，最多 100 字"),
+		"website":                    optStr("主动公开的完整 HTTP(S) 主页，空串清除"),
+		"public_reading_preferences": strArray("本人主动公开的常读主题，至多 8 项，每项至多 30 字；空数组清除，省略保留"),
 	})
 
 	registerSchema(t, "ChangePasswordRequest", openapi3.Schemas{
@@ -75,13 +82,16 @@ func registerAuthPaths(t *openapi3.T) {
 
 	// ProfileResponse：auth/profile 响应的 data
 	registerSchema(t, "ProfileResponse", openapi3.Schemas{
-		"id":         reqStr("用户 ID（UUID）"),
-		"username":   reqStr("用户名"),
-		"email":      reqStr("邮箱"),
-		"avatar_url": optStr("头像 URL"),
-		"cover_url":  reqStr("主页封面 URL，未设置时为空串"),
-		"bio":        optStr("个人简介"),
-		"role":       strEnum("角色", "user", "admin", "superadmin"),
+		"id":                         reqStr("用户 ID（UUID）"),
+		"username":                   reqStr("用户名"),
+		"email":                      reqStr("邮箱"),
+		"avatar_url":                 optStr("头像 URL"),
+		"cover_url":                  reqStr("主页封面 URL，未设置时为空串"),
+		"bio":                        optStr("个人简介"),
+		"role":                       strEnum("角色", "user", "admin", "superadmin"),
+		"location":                   reqStr("主动公开的所在地"),
+		"website":                    reqStr("主动公开的网站"),
+		"public_reading_preferences": strArray("主动公开的常读主题"),
 	})
 
 	// CSRFToken：auth/csrf-token 响应的 data
@@ -106,12 +116,13 @@ func registerAuthPaths(t *openapi3.T) {
 		Post: &openapi3.Operation{
 			Tags:        []string{"认证"},
 			Summary:     "注册",
-			Description: "注册新用户并发送验证邮件。受认证限流保护。",
+			Description: "注册并发送验证邮件。持有原始注册凭据时，可以在待验证阶段更正邮箱并保留账号。受认证限流保护。",
 			Parameters:  openapi3.Parameters{csrfHeaderParam()},
 			RequestBody: jsonBody("RegisterRequest", true, "注册信息"),
 			Responses: responses(
-				201, messageResponse("注册成功，请查收验证邮件"),
+				201, dataResponse("RegisterResponse", "已发起邮箱验证", 201),
 				400, errorResponse("请求参数错误"),
+				409, errorResponse("邮箱或用户名已被占用，或待验证注册已失效"),
 			),
 		},
 	})

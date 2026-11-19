@@ -2,72 +2,100 @@ package email
 
 import (
 	"fmt"
-	"html"
+	"html/template"
+	"strings"
+	"time"
+
+	appshared "blog-api/internal/application/shared"
 )
 
-// buildVerificationEmail 构建邮箱验证码 HTML 邮件
-// code 经 html.EscapeString 转义，防未来传入用户可控内容时产生 HTML 注入。
-func buildVerificationEmail(code string) string {
-	safe := html.EscapeString(code)
-	return fmt.Sprintf(`<!DOCTYPE html>
-<html lang="zh-CN">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>邮箱验证码</title></head>
-<body style="margin:0; padding:0; background-color:#f4f4f7; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
-    <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f7; padding:40px 0;">
-        <tr><td align="center">
-            <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.08); overflow:hidden;">
-                <tr><td style="background:linear-gradient(135deg,#667eea 0%%,#764ba2 100%%); padding:32px 40px; text-align:center;">
-                    <h1 style="margin:0; color:#ffffff; font-size:24px; font-weight:600;">邮箱验证</h1>
-                </td></tr>
-                <tr><td style="padding:40px;">
-                    <p style="margin:0 0 20px; color:#333333; font-size:16px; line-height:1.6;">您好，</p>
-                    <p style="margin:0 0 20px; color:#333333; font-size:16px; line-height:1.6;">感谢您注册我们的博客平台。请使用以下验证码完成邮箱验证：</p>
-                    <div style="background-color:#f8f9fa; border:2px dashed #667eea; border-radius:8px; padding:24px; text-align:center; margin:24px 0;">
-                        <p style="margin:0 0 8px; color:#666666; font-size:14px;">您的验证码</p>
-                        <p style="margin:0; color:#333333; font-size:36px; font-weight:700; letter-spacing:8px; font-family:monospace;">%s</p>
-                    </div>
-                    <p style="margin:0 0 12px; color:#666666; font-size:14px;">验证码有效期为 <strong>10 分钟</strong>，请尽快完成验证。</p>
-                    <p style="margin:0; color:#999999; font-size:13px;">如果这不是您的操作，请忽略此邮件。</p>
-                </td></tr>
-                <tr><td style="background-color:#f8f9fa; padding:20px 40px; text-align:center; border-top:1px solid #eeeeee;">
-                    <p style="margin:0; color:#999999; font-size:13px;">此邮件由系统自动发送，请勿直接回复。</p>
-                </td></tr>
-            </table>
-        </td></tr>
-    </table>
-</body>
-</html>`, safe)
+type codeEmailCopy struct {
+	Title       string
+	Instruction string
+	Ignore      string
 }
 
-// buildPasswordResetEmail 构建密码重置验证码 HTML 邮件
-func buildPasswordResetEmail(code string) string {
-	safe := html.EscapeString(code)
-	return fmt.Sprintf(`<!DOCTYPE html>
-<html lang="zh-CN">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>密码重置</title></head>
-<body style="margin:0; padding:0; background-color:#f4f4f7; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
-    <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f7; padding:40px 0;">
-        <tr><td align="center">
-            <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.08); overflow:hidden;">
-                <tr><td style="background:linear-gradient(135deg,#f093fb 0%%,#f5576c 100%%); padding:32px 40px; text-align:center;">
-                    <h1 style="margin:0; color:#ffffff; font-size:24px; font-weight:600;">密码重置</h1>
-                </td></tr>
-                <tr><td style="padding:40px;">
-                    <p style="margin:0 0 20px; color:#333333; font-size:16px; line-height:1.6;">您好，</p>
-                    <p style="margin:0 0 20px; color:#333333; font-size:16px; line-height:1.6;">我们收到了您的密码重置请求。请使用以下验证码重置您的密码：</p>
-                    <div style="background-color:#f8f9fa; border:2px dashed #f5576c; border-radius:8px; padding:24px; text-align:center; margin:24px 0;">
-                        <p style="margin:0 0 8px; color:#666666; font-size:14px;">您的重置码</p>
-                        <p style="margin:0; color:#333333; font-size:36px; font-weight:700; letter-spacing:8px; font-family:monospace;">%s</p>
-                    </div>
-                    <p style="margin:0 0 12px; color:#666666; font-size:14px;">重置码有效期为 <strong>10 分钟</strong>，请尽快完成操作。</p>
-                    <p style="margin:0; color:#999999; font-size:13px;">如果您没有请求重置密码，请忽略此邮件，您的密码不会被更改。</p>
-                </td></tr>
-                <tr><td style="background-color:#f8f9fa; padding:20px 40px; text-align:center; border-top:1px solid #eeeeee;">
-                    <p style="margin:0; color:#999999; font-size:13px;">此邮件由系统自动发送，请勿直接回复。</p>
-                </td></tr>
-            </table>
-        </td></tr>
-    </table>
-</body>
-</html>`, safe)
+var verificationCopy = codeEmailCopy{
+	Title:       "验证邮箱",
+	Instruction: "回到刚才的页面，输入以下 6 位验证码继续。",
+	Ignore:      "如果你没有请求这个验证码，忽略此邮件即可。",
 }
+
+var resetCopy = codeEmailCopy{
+	Title:       "重置密码",
+	Instruction: "回到找回密码页面，输入以下 6 位验证码，再设置新密码。",
+	Ignore:      "如果你没有请求重置，忽略此邮件即可。你的密码不会更改。",
+}
+
+func renderCodeEmail(content codeEmailCopy, code string) (string, string, error) {
+	validMinutes := int(appshared.VerificationCodeTTL / time.Minute)
+	data := struct {
+		codeEmailCopy
+		Code         string
+		ValidMinutes int
+	}{content, code, validMinutes}
+	var html strings.Builder
+	if err := codeEmailTemplate.Execute(&html, data); err != nil {
+		return "", "", fmt.Errorf("渲染验证码邮件: %w", err)
+	}
+	text := fmt.Sprintf("Violet · %s\n\n%s\n\n%s\n\n验证码在 %d 分钟内有效，请勿转发。\n%s\n", content.Title, content.Instruction, code, validMinutes, content.Ignore)
+	return html.String(), text, nil
+}
+
+// 关键排版写内联样式；不支持媒体查询或禁用远程图片的客户端也能读到验证码。
+var codeEmailTemplate = template.Must(template.New("code").Parse(`<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <title>Violet · {{.Title}}</title>
+  <style>
+    :root { color-scheme: light dark; }
+    @media (max-width: 400px) {
+      .canvas-inset { padding: 20px 12px !important; }
+      .letter-inset { padding-left: 20px !important; padding-right: 20px !important; }
+    }
+    @media (prefers-color-scheme: dark) {
+      .canvas { background-color: #1c1820 !important; }
+      .letter { background-color: #28222d !important; border-color: #413849 !important; }
+      .ink { color: #f6edf9 !important; }
+      .muted { color: #d8cbdc !important; }
+      .rule { border-color: #4b3f53 !important; }
+      .code-paper { background-color: #382d43 !important; }
+      .accent { color: #e6c5f6 !important; }
+    }
+  </style>
+</head>
+<body class="canvas" style="margin:0;padding:0;background-color:#f5f1f4;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;">{{.Instruction}} 验证码在 {{.ValidMinutes}} 分钟内有效。</div>
+  <table role="presentation" class="canvas" width="100%" cellpadding="0" cellspacing="0" style="width:100%;background-color:#f5f1f4;">
+    <tr><td class="canvas-inset" align="center" style="padding:52px 16px;">
+      <table role="presentation" class="letter" width="520" cellpadding="0" cellspacing="0" style="width:100%;max-width:520px;border:1px solid #e8e0e9;border-radius:14px;background-color:#fffdfd;">
+        <tr><td class="letter-inset" style="padding:30px 36px 0;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <tr><td class="rule" style="padding:0 0 16px;border-bottom:1px solid #e8e0e9;">
+              <p class="accent" style="margin:0;color:#684779;font-family:Georgia,serif;font-size:23px;font-weight:700;line-height:1.2;">Violet</p>
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td class="letter-inset" style="padding:28px 36px;">
+          <h1 class="ink" style="margin:0;color:#271e2b;font-size:27px;font-weight:650;line-height:1.3;">{{.Title}}</h1>
+          <p class="muted" style="margin:10px 0 22px;color:#63566b;font-size:15px;line-height:1.7;">{{.Instruction}}</p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <tr><td class="code-paper" style="padding:18px 20px;border-radius:8px;background-color:#f1eaf5;">
+              <p class="accent" style="margin:0 0 4px;color:#684779;font-size:13px;font-weight:600;line-height:1.5;">一次性验证码</p>
+              <p class="ink" style="margin:0;color:#271e2b;font-family:Consolas,'Courier New',monospace;font-size:34px;font-weight:700;letter-spacing:4px;line-height:1.25;white-space:nowrap;">{{.Code}}</p>
+            </td></tr>
+          </table>
+          <p class="muted" style="margin:18px 0 0;color:#63566b;font-size:14px;line-height:1.65;">验证码在 <strong>{{.ValidMinutes}} 分钟</strong>内有效，请勿转发。</p>
+        </td></tr>
+        <tr><td class="letter-inset" style="padding:0 36px 26px;">
+          <p class="muted rule" style="margin:0;padding:16px 0 0;border-top:1px solid #e8e0e9;color:#63566b;font-size:13px;line-height:1.7;">{{.Ignore}}<br>此邮件自动发送，请勿回复。</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`))

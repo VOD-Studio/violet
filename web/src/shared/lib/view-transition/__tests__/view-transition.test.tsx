@@ -45,7 +45,7 @@ describe("resolveTransitionKind", () => {
 			["/blog/hello", "/blog"],
 			["/blog/series", "/blog/series/book"],
 			["/galleries", "/galleries/trip"],
-			["/notes", "/notes/1"],
+			["/journal", "/journal/1"],
 			["/tweets", "/users/alice"],
 			["/", "/projects"],
 			["/projects", "/about"],
@@ -54,18 +54,20 @@ describe("resolveTransitionKind", () => {
 			["/", "/chat"],
 			["/profile", "/"],
 			["/announcements/1", "/"],
-			["/editor-guide", "/"],
+			["/projects/violet/docs/editor", "/"],
 		] as const)
 			expect(resolveTransitionKind(from, to), `${from} → ${to}`).toBe("fade");
 	});
 
-	it("后台与实验页不做转场；进出编辑器手册仍有淡入淡出", () => {
+	it("后台不做转场；进出编辑器手册仍有淡入淡出", () => {
 		expect(resolveTransitionKind("/", "/admin")).toBe("none");
 		expect(resolveTransitionKind("/admin/posts", "/")).toBe("none");
 		expect(resolveTransitionKind("/admin/posts", "/admin/users")).toBe("none");
-		expect(resolveTransitionKind("/", "/lab/blog")).toBe("none");
-		expect(resolveTransitionKind("/", "/editor-guide")).toBe("fade");
-		expect(resolveTransitionKind("/editor-guide", "/blog")).toBe("fade");
+		expect(resolveTransitionKind("/", "/projects/violet/docs/editor")).toBe("fade");
+		expect(resolveTransitionKind("/projects/violet/docs/editor", "/blog")).toBe("fade");
+		expect(
+			resolveTransitionKind("/projects/inkline/docs/pens", "/projects/inkline/docs/fills"),
+		).toBe("none");
 	});
 
 	it("没有来源（首次进入）时按目标判断", () => {

@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { PageShell } from "@violet/ui";
+import { Breadcrumbs, PageShell } from "@violet/ui";
 import { EDITOR_GUIDE_CHAPTERS } from "../model/chapters";
 
 /** 手册目录页：章节卡片索引。 */
@@ -8,7 +8,13 @@ export function EditorGuideIndexPage() {
 		<PageShell className="pt-4 font-sans sm:pt-8">
 			<div className="mx-auto w-full max-w-4xl pb-24">
 				<header className="space-y-3 border-b border-border/60 pb-8">
-					<p className="text-sm text-muted-foreground">作者参考</p>
+					<Breadcrumbs
+						items={[
+							{ label: "项目", href: "/projects" },
+							{ label: "Violet", href: "/projects/violet" },
+							{ label: "文章编辑器手册" },
+						]}
+					/>
 					<h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
 						文章编辑器手册
 					</h1>
@@ -22,7 +28,7 @@ export function EditorGuideIndexPage() {
 					{EDITOR_GUIDE_CHAPTERS.map((chapter, index) => (
 						<li key={chapter.id}>
 							<Link
-								to="/editor-guide/$chapter"
+								to="/projects/violet/docs/editor/$chapter"
 								params={{ chapter: chapter.id }}
 								className="flex h-full flex-col gap-2 rounded-2xl border border-border p-5 motion-safe:transition-colors hover:border-selected-foreground"
 							>

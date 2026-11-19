@@ -10,6 +10,7 @@ import { toast } from "sonner";
 export interface GalleryDraftDocument {
 	title: string;
 	summary: string;
+	location: string;
 	items: GalleryItem[];
 }
 
@@ -43,6 +44,7 @@ function toDraftDocument(detail: GalleryDetail): GalleryDraftDocument {
 	return {
 		title: detail.title,
 		summary: detail.summary,
+		location: detail.location,
 		items: detail.items,
 	};
 }
@@ -103,7 +105,13 @@ export function useGalleryDraftDocument({
 			setSaveState("saving");
 			try {
 				const saved = await mutateAsync(
-					buildSaveGalleryInput(serverVersion, draft.title, draft.summary, draft.items),
+					buildSaveGalleryInput(
+						serverVersion,
+						draft.title,
+						draft.summary,
+						draft.location,
+						draft.items,
+					),
 				);
 				setServerVersion(saved.version);
 				if (sequence === changeSequenceRef.current) {

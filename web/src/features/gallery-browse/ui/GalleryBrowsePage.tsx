@@ -1,80 +1,62 @@
-import { usePublishedGalleryFeed } from "@entities/gallery/api/queries";
-import { sortedByPosition } from "@entities/gallery/model/sort";
-import type { PublishedGallery } from "@entities/gallery/model/types";
-import { formatDate } from "@shared/lib/date";
-import { PhotoStack } from "@shared/ui/photo-stack";
+import { usePublishedGalleryFeed, usePublishedGallerySummary } from "@entities/gallery/api/queries";
+import { GalleryAlbumContent } from "@entities/gallery/ui/GalleryAlbumContent";
 import { Link } from "@tanstack/react-router";
-import { Button, Empty, PageHeader, PageShell, Skeleton } from "@violet/ui";
+import { Button, Empty, PageShell, Skeleton } from "@violet/ui";
 
 export const PUBLISHED_GALLERY_PAGE_LIMIT = 12;
 
-function GalleryCard({ gallery }: { gallery: PublishedGallery }) {
-	const date = formatDate(gallery.published_at, "slash-date", "");
-	const items = sortedByPosition(gallery.items);
-
-	return (
-		<PhotoStack
-			loading="lazy"
-			images={items.map((item, index) => ({
-				src: item.thumbnail || item.url,
-				alt: item.alt_text || `${gallery.title} · 第 ${index + 1} 张`,
-			}))}
-			footer={
-				<div className="space-y-1.5">
-					<Link
-						to="/galleries/$slug"
-						params={{ slug: gallery.slug }}
-						className="inline-flex rounded-sm font-semibold text-lg leading-tight hover:underline focus-visible:outline-2"
-					>
-						{gallery.title}
-					</Link>
-					{gallery.summary ? (
-						<p className="line-clamp-2 text-muted-foreground text-sm leading-relaxed">
-							{gallery.summary}
-						</p>
-					) : null}
-					{date ? (
-						<time
-							dateTime={gallery.published_at}
-							className="block text-muted-foreground text-xs"
-						>
-							{date}
-						</time>
-					) : null}
-				</div>
-			}
-		/>
-	);
-}
-
 function GalleryBrowseSkeleton() {
 	return (
-		<div className="grid gap-x-10 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
-			{Array.from({ length: 6 }).map((_, index) => (
-				<div key={index} className="space-y-4">
-					<Skeleton className="aspect-3/4 w-full rounded-2xl" />
-					<Skeleton className="h-5 w-2/3 rounded-md" />
-					<Skeleton className="h-4 w-full rounded-md" />
-				</div>
-			))}
+		<div role="status" aria-busy="true" aria-label="正在载入相册">
+			<Skeleton className="h-80 w-full rounded-2xl md:h-130" />
+			<Skeleton className="mt-6 h-8 w-1/2" />
+			<Skeleton className="mt-3 h-12 w-2/3" />
+			<div className="mt-20 grid gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
+				{Array.from({ length: 3 }).map((_, index) => (
+					<div key={index} className="space-y-4">
+						<Skeleton className="aspect-4/3 w-full rounded-xl" />
+						<Skeleton className="h-6 w-1/2" />
+					</div>
+				))}
+			</div>
 		</div>
 	);
 }
 
-/** 已发布图集的游标分页浏览流。 */
+/** 精选取第一页首项：首次发布时间倒序，同一时间以 ID 倒序；其余网格排除精选。 */
 export function GalleryBrowsePage() {
 	const feed = usePublishedGalleryFeed(PUBLISHED_GALLERY_PAGE_LIMIT);
-	if (feed.isLoading) {
-		return (
-			<PageShell>
-				<GalleryBrowseSkeleton />
-			</PageShell>
-		);
-	}
+	const summary = usePublishedGallerySummary();
+	const [featured, ...remaining] = feed.galleries;
 
-	if (feed.isError) {
-		return (
-			<PageShell>
+	return (
+		<PageShell className="max-w-292">
+			<header className="mb-10 flex flex-wrap items-end justify-between gap-4">
+				<h1 className="text-4xl font-semibold leading-tight md:text-[52px]">图集</h1>
+				{summary.data ? (
+					<p className="text-sm text-muted-foreground">
+						<span className="font-mono tabular-nums">{summary.data.album_count}</span>{" "}
+						个相册 ·{" "}
+						<span className="font-mono tabular-nums">{summary.data.image_count}</span>{" "}
+						张
+					</p>
+				) : summary.isError ? (
+					<div className="flex items-center gap-2 text-sm text-muted-foreground">
+						<span role="alert">总数暂时无法载入</span>
+						<Button variant="ghost" size="sm" onClick={() => void summary.refetch()}>
+							重试总数
+						</Button>
+					</div>
+				) : (
+					<div role="status" aria-busy="true" aria-label="正在载入相册总数">
+						<Skeleton className="h-5 w-40" />
+					</div>
+				)}
+			</header>
+
+			{feed.isLoading ? (
+				<GalleryBrowseSkeleton />
+			) : feed.isError ? (
 				<Empty
 					title="加载失败"
 					description="暂时无法读取图集，请稍后再试"
@@ -85,27 +67,33 @@ export function GalleryBrowsePage() {
 					}
 					className="py-20"
 				/>
-			</PageShell>
-		);
-	}
-
-	return (
-		<PageShell>
-			<PageHeader
-				title="图集"
-				description="已经发布的视觉作品。"
-				className="mb-12 max-w-2xl"
-			/>
-
-			{feed.galleries.length === 0 ? (
+			) : !featured ? (
 				<Empty title="暂无图集" description="还没有发布的图集" className="py-20" />
 			) : (
 				<>
-					<div className="grid gap-x-10 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
-						{feed.galleries.map((gallery) => (
-							<GalleryCard key={gallery.id} gallery={gallery} />
-						))}
-					</div>
+					<Link
+						to="/galleries/$slug"
+						params={{ slug: featured.slug }}
+						aria-label={`查看相册：${featured.title}`}
+						className="block rounded-2xl outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-offset-4 focus-visible:ring-offset-background"
+					>
+						<GalleryAlbumContent gallery={featured} featured />
+					</Link>
+					{remaining.length > 0 ? (
+						<div className="mt-20 grid gap-x-8 gap-y-14 border-t border-border pt-14 sm:grid-cols-2 lg:grid-cols-3">
+							{remaining.map((gallery) => (
+								<Link
+									key={gallery.id}
+									to="/galleries/$slug"
+									params={{ slug: gallery.slug }}
+									aria-label={`查看相册：${gallery.title}`}
+									className="block min-w-0 rounded-xl outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-offset-4 focus-visible:ring-offset-background"
+								>
+									<GalleryAlbumContent gallery={gallery} />
+								</Link>
+							))}
+						</div>
+					) : null}
 					{feed.hasMore ? (
 						<div className="mt-14 flex justify-center">
 							<div className="space-y-3 text-center">

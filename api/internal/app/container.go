@@ -12,10 +12,12 @@ import (
 	"blog-api/config"
 	appaudit "blog-api/internal/application/audit"
 	authcmd "blog-api/internal/application/auth/command"
+	appprofile "blog-api/internal/application/publicprofile"
 	infraemail "blog-api/internal/infrastructure/email"
 	infraeventbus "blog-api/internal/infrastructure/eventbus"
 	infraimage "blog-api/internal/infrastructure/image"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
+	profilehttp "blog-api/internal/interfaces/http/handler/publicprofile"
 )
 
 type Container struct {
@@ -45,6 +47,7 @@ type Container struct {
 	CodeRunner      *CodeRunnerContainer
 	Image           *ImageContainer
 	Tweet           *TweetContainer
+	PublicProfile   *profilehttp.Handler
 	FriendLink      *FriendLinkContainer
 	Series          *SeriesContainer
 	Gallery         *GalleryContainer
@@ -142,6 +145,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	policies.SetImageMaintenanceStatus(image.DiskCache.Status)
 	linkPreview := NewLinkPreviewContainer(ctx, db, cfg, policies, encoder)
 	tweet := NewTweetContainer(db, rdb, cfg, permissionChecker, customEmoji.Service, bus, policies, encoder, linkPreview, media.UploadService)
+	publicProfile := profilehttp.NewHandler(appprofile.NewService(gormrepo.NewUserRepository(db), gormrepo.NewPublicProfileReader(db)))
 	chat := NewChatContainer(db, cfg, customEmoji.Service, media.EmojiService, media.UploadService, music.Service, bus)
 	chat.ChatService.WithTweetReader(tweet.TweetService)
 	// 推文互动事件复用 bot 的聊天 SSE 流，须在 ChatContainer 装配后订阅。
@@ -157,7 +161,8 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 		APIToken: apiToken, Subscription: subscription, MCP: mcp, System: system,
 		OMPUsage: ompUsage,
 		Media:    media, CodeRunner: codeRunner, Image: image, Tweet: tweet, FriendLink: friendLink,
-		Series: series, Gallery: gallery, Note: note, Publication: publication, Persona: persona, Notification: notification, Chat: chat, CustomEmoji: customEmoji,
+		PublicProfile: publicProfile,
+		Series:        series, Gallery: gallery, Note: note, Publication: publication, Persona: persona, Notification: notification, Chat: chat, CustomEmoji: customEmoji,
 		LinkPreview: linkPreview, Presence: presence, Window: window,
 	}
 	return c, roleCleanup, nil

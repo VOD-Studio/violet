@@ -81,11 +81,12 @@ describe("gallery draft document helpers", () => {
 
 	it("保存请求保留数组顺序但不回传 position 或媒体投影", () => {
 		const items = [galleryItem("c", 2), galleryItem("a", 0), galleryItem("b", 1)];
-		const input = buildSaveGalleryInput(7, "标题", "摘要", items);
+		const input = buildSaveGalleryInput(7, "标题", "摘要", "新疆", items);
 		expect(input).toEqual({
 			expected_version: 7,
 			title: "标题",
 			summary: "摘要",
+			location: "新疆",
 			items: [
 				{ file_id: "c", caption: "说明 c", alt_text_override: "替代 c" },
 				{ file_id: "a", caption: "说明 a", alt_text_override: "替代 a" },

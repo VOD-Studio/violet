@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
+import { safeRedirectTarget } from "../lib/safe-redirect";
 import { useOAuthVisibility } from "./use-oauth-visibility";
 
 /** popup 授权码回传协议（回调页 → 发起窗口，同源 postMessage） */
@@ -7,6 +8,9 @@ export const GITHUB_OAUTH_MESSAGE = "violet:github-oauth-code";
 
 /** GitHub 绑定意图标记：popup 被拦截降级整页时，回调页据此区分「绑定」与「登录」 */
 export const GITHUB_BIND_INTENT_KEY = "violet:github-bind-intent";
+
+/** 被拦截降级整页 OAuth 时，回调页一次性读取的站内回跳目标。 */
+export const GITHUB_LOGIN_REDIRECT_KEY = "violet:github-login-redirect";
 
 // GitHub 授权页在 620 宽即可完整展示，过窄会触发其内部横向滚动
 const POPUP_WIDTH = 620;
@@ -18,6 +22,8 @@ interface GithubOAuthOptions {
 	onCode: (code: string) => void;
 	/** 设置页绑定入口传 true：降级整页跳转前写 sessionStorage 意图标记 */
 	bindIntent?: boolean;
+	/** 登录页要求登录完成后回到原业务页面；仅在整页回调时持久化。 */
+	redirectTo?: string;
 }
 
 /**
@@ -29,9 +35,10 @@ interface GithubOAuthOptions {
  *
  * @param options.onCode 授权码回调，收到即发起登录/绑定请求
  * @param options.bindIntent 降级整页时是否写绑定意图标记
+ * @param options.redirectTo 原业务页面路径，外部地址回落到首页
  * @returns 发起函数，须在用户手势同步调用栈内调用（否则 popup 被拦截）
  */
-export function useGithubOAuth({ onCode, bindIntent = false }: GithubOAuthOptions) {
+export function useGithubOAuth({ onCode, bindIntent = false, redirectTo }: GithubOAuthOptions) {
 	const { githubClientId } = useOAuthVisibility();
 	// onCode 闭包每次渲染变化，ref 转发使发起函数引用稳定
 	const onCodeRef = useRef(onCode);
@@ -58,7 +65,15 @@ export function useGithubOAuth({ onCode, bindIntent = false }: GithubOAuthOption
 			`popup=yes,width=${POPUP_WIDTH},height=${POPUP_HEIGHT},left=${left},top=${top}`,
 		);
 		if (!popup) {
-			if (bindIntent) window.sessionStorage.setItem(GITHUB_BIND_INTENT_KEY, "1");
+			if (bindIntent) {
+				window.sessionStorage.setItem(GITHUB_BIND_INTENT_KEY, "1");
+			} else {
+				window.sessionStorage.removeItem(GITHUB_BIND_INTENT_KEY);
+				window.sessionStorage.setItem(
+					GITHUB_LOGIN_REDIRECT_KEY,
+					safeRedirectTarget(redirectTo),
+				);
+			}
 			window.location.href = url;
 			return;
 		}
@@ -81,5 +96,5 @@ export function useGithubOAuth({ onCode, bindIntent = false }: GithubOAuthOption
 		}, POPUP_WATCH_INTERVAL);
 		window.addEventListener("message", onMessage);
 		teardownRef.current = teardown;
-	}, [githubClientId, bindIntent]);
+	}, [githubClientId, bindIntent, redirectTo]);
 }

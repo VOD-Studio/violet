@@ -1,3 +1,9 @@
+import type { ProjectRoadmapSummary } from "@entities/project/model/roadmap-summary";
+import {
+	PROJECT_STATUS_LABELS,
+	type Project,
+	type ProjectStatus,
+} from "@entities/project/model/types";
 import { formatDate } from "@shared/lib/date";
 import { validateUrl } from "@shared/lib/url";
 import { Link } from "@tanstack/react-router";
@@ -18,8 +24,6 @@ import {
 } from "@violet/ui";
 import { BookOpen, ExternalLink } from "lucide-react";
 import type { ReactNode } from "react";
-import type { ProjectRoadmapSummary } from "../model/roadmap-summary";
-import { PROJECT_STATUS_LABELS, type Project, type ProjectStatus } from "../model/types";
 import { ProjectCover } from "./ProjectCover";
 
 const STATUS_TONES = {

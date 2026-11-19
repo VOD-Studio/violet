@@ -133,7 +133,7 @@ type FriendLinkDisabled struct {
 	// From 原状态
 	From string
 	// To 目标状态（恒 disabled）
-	To   string
+	To string
 }
 
 // NewFriendLinkDisabled 构造下柜事件
@@ -154,7 +154,7 @@ type FriendLinkRestored struct {
 	// From 原状态
 	From string
 	// To 目标状态（恒 approved）
-	To   string
+	To string
 }
 
 // NewFriendLinkRestored 构造恢复事件
@@ -172,16 +172,16 @@ type FriendLinkChange struct {
 	// Field 字段名
 	Field string
 	// From 变更前值
-	From  string
+	From string
 	// To 变更后值
-	To    string
+	To string
 }
 
 // FriendLinkUpdated 友链已更新事件（后台编辑字段/排序）
 type FriendLinkUpdated struct {
 	shared.BaseEvent
 	// Name 站点名称快照（审计可读标识）
-	Name    string
+	Name string
 	// Changes 本次实际发生变化的字段集合（同值编辑不产生事件）
 	Changes []FriendLinkChange
 }
@@ -228,6 +228,10 @@ type FriendLink struct {
 	url string
 	// avatarURL 头像 URL（可空，空则前端首字母占位）
 	avatarURL string
+	// rssURL 可选 RSS/Atom 源；只在审核通过后由后台抓取。
+	rssURL string
+	// activity 后台探测快照，不参与审核及编辑事件。
+	activity Activity
 	// description 一句话描述（可空，≤80 rune）
 	description string
 	// ownerName 站长称呼（可空，展示用）
@@ -258,6 +262,7 @@ type CreateParams struct {
 	Name        string
 	URL         string
 	AvatarURL   string // 可空
+	RSSURL      string // 可空，仅 http/https
 	Description string // 可空
 	OwnerName   string // 可空
 	LinkbackURL string // 可空
@@ -279,6 +284,9 @@ func NewFriendLink(p CreateParams) (*FriendLink, error) {
 	if err := validateFields(p.Name, p.URL, p.AvatarURL, p.Description, p.LinkbackURL); err != nil {
 		return nil, err
 	}
+	if err := validateRSSURL(p.RSSURL); err != nil {
+		return nil, err
+	}
 	email := NormalizeEmail(p.ContactEmail)
 	if email == "" {
 		return nil, shared.BadRequest("联系邮箱不能为空")
@@ -287,6 +295,7 @@ func NewFriendLink(p CreateParams) (*FriendLink, error) {
 		id: p.ID, userID: p.UserID,
 		name: strings.TrimSpace(p.Name), url: strings.TrimSpace(p.URL),
 		avatarURL: strings.TrimSpace(p.AvatarURL), description: strings.TrimSpace(p.Description),
+		rssURL:    strings.TrimSpace(p.RSSURL),
 		ownerName: strings.TrimSpace(p.OwnerName), linkbackURL: strings.TrimSpace(p.LinkbackURL),
 		contactEmail: email, ipHash: p.IPHash,
 		status: StatusPending,
@@ -303,7 +312,7 @@ func NewManual(id shared.ID, name, siteURL, avatarURL, description, ownerName, l
 		return nil, err
 	}
 	f := &FriendLink{
-		id: id,
+		id:   id,
 		name: strings.TrimSpace(name), url: strings.TrimSpace(siteURL),
 		avatarURL: strings.TrimSpace(avatarURL), description: strings.TrimSpace(description),
 		ownerName: strings.TrimSpace(ownerName), linkbackURL: strings.TrimSpace(linkbackURL),
@@ -427,6 +436,7 @@ type UpdateParams struct {
 	Name         string
 	URL          string
 	AvatarURL    string
+	RSSURL       string
 	Description  string
 	OwnerName    string
 	LinkbackURL  string
@@ -442,6 +452,9 @@ func (f *FriendLink) Update(p UpdateParams) error {
 		return err
 	}
 	email := NormalizeEmail(p.ContactEmail)
+	if err := validateRSSURL(p.RSSURL); err != nil {
+		return err
+	}
 	changes := make([]FriendLinkChange, 0, 8)
 	diff := func(field, from, to string) {
 		if from != to {
@@ -453,6 +466,7 @@ func (f *FriendLink) Update(p UpdateParams) error {
 	diff("avatar_url", f.avatarURL, strings.TrimSpace(p.AvatarURL))
 	diff("description", f.description, strings.TrimSpace(p.Description))
 	diff("owner_name", f.ownerName, strings.TrimSpace(p.OwnerName))
+	diff("rss_url", f.rssURL, strings.TrimSpace(p.RSSURL))
 	diff("linkback_url", f.linkbackURL, strings.TrimSpace(p.LinkbackURL))
 	diff("contact_email", f.contactEmail, email)
 	if f.sortOrder != p.SortOrder {
@@ -472,6 +486,7 @@ func (f *FriendLink) Update(p UpdateParams) error {
 	f.ownerName = strings.TrimSpace(p.OwnerName)
 	f.linkbackURL = strings.TrimSpace(p.LinkbackURL)
 	f.contactEmail = email
+	f.rssURL = strings.TrimSpace(p.RSSURL)
 	f.sortOrder = p.SortOrder
 	f.RecordEvent(NewFriendLinkUpdated(f.id, f.name, changes))
 	return nil
@@ -490,10 +505,10 @@ func (f *FriendLink) OwnerName() string   { return f.ownerName }
 func (f *FriendLink) LinkbackURL() string { return f.linkbackURL }
 
 // ContactEmail 返回归一化后的联系邮箱（仅留存不公开，admin DTO 才带）。
-func (f *FriendLink) ContactEmail() string     { return f.contactEmail }
-func (f *FriendLink) Status() string           { return f.status }
-func (f *FriendLink) SortOrder() int           { return f.sortOrder }
-func (f *FriendLink) IPHash() string           { return f.ipHash }
-func (f *FriendLink) CreatedAt() time.Time     { return f.timestamps.CreatedAt }
-func (f *FriendLink) UpdatedAt() time.Time     { return f.timestamps.UpdatedAt }
-func (f *FriendLink) IsApproved() bool         { return f.status == StatusApproved }
+func (f *FriendLink) ContactEmail() string { return f.contactEmail }
+func (f *FriendLink) Status() string       { return f.status }
+func (f *FriendLink) SortOrder() int       { return f.sortOrder }
+func (f *FriendLink) IPHash() string       { return f.ipHash }
+func (f *FriendLink) CreatedAt() time.Time { return f.timestamps.CreatedAt }
+func (f *FriendLink) UpdatedAt() time.Time { return f.timestamps.UpdatedAt }
+func (f *FriendLink) IsApproved() bool     { return f.status == StatusApproved }

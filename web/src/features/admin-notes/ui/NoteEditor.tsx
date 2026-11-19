@@ -10,6 +10,8 @@ import {
 	NOTE_FORM_DEFAULTS,
 	type NoteForm,
 	noteSchema,
+	noteToForm,
+	noteToSaveRequest,
 	parseTagsText,
 } from "@features/admin-notes/model/schema";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
@@ -31,6 +33,7 @@ import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { NoteEditorSidebar } from "./NoteEditorSidebar";
 import { NoteEditorToolbar } from "./NoteEditorToolbar";
+import { NoteJournalFields } from "./NoteJournalFields";
 
 interface NoteEditorProps {
 	/** 路由参数；"new" 表示创建模式。 */
@@ -42,6 +45,10 @@ interface NoteEditorProps {
  * 顶栏工具条 + 左侧沉浸式所见即所得写作区（基于 RichTextEditor，Markdown 原生支持）+ 右侧元信息与标签侧栏。
  */
 export function NoteEditor({ id }: NoteEditorProps) {
+	return <NoteEditorForm key={id} id={id} />;
+}
+
+function NoteEditorForm({ id }: NoteEditorProps) {
 	const navigate = useNavigate();
 	const canManage = useHasPermission("note:manage");
 	const isCreate = id === "new";
@@ -51,6 +58,7 @@ export function NoteEditor({ id }: NoteEditorProps) {
 	const saveNote = useSaveNote(id);
 	const publishNote = usePublishNote(id);
 	const deleteNote = useDeleteNote(id);
+	const saving = createNote.isPending || saveNote.isPending;
 
 	const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -72,31 +80,20 @@ export function NoteEditor({ id }: NoteEditorProps) {
 	useEffect(() => {
 		if (isCreate || !note || initialized.current) return;
 		initialized.current = true;
-		reset({
-			title: note.title,
-			contentMD: note.content_md,
-			tagsText: note.tags.join(", "),
-		});
+		reset(noteToForm(note));
 	}, [isCreate, note, reset]);
 
 	const contentMD = watch("contentMD");
 	const tagsText = watch("tagsText");
+	const journal = watch("journal");
 	const currentTags = parseTagsText(tagsText);
 
 	const handleTagsChange = (newTags: string[]) => {
 		setValue("tagsText", newTags.join(", "), { shouldDirty: true });
 	};
 
-	const buildRequest = () => {
-		const values = getValues();
-		return {
-			title: values.title.trim(),
-			content_md: values.contentMD,
-			tags: parseTagsText(values.tagsText),
-		};
-	};
-
 	const handleSave = async () => {
+		if (!canManage || saving || (!isCreate && !note)) return;
 		const values = getValues();
 		const parsed = noteSchema.safeParse(values);
 		if (!parsed.success) {
@@ -104,9 +101,9 @@ export function NoteEditor({ id }: NoteEditorProps) {
 			return;
 		}
 		try {
+			const request = noteToSaveRequest(parsed.data);
 			if (isCreate) {
-				const created = await createNote.mutateAsync(buildRequest());
-				initialized.current = false;
+				const created = await createNote.mutateAsync(request);
 				await navigate({
 					to: "/admin/notes/$id",
 					params: { id: created.id },
@@ -114,7 +111,18 @@ export function NoteEditor({ id }: NoteEditorProps) {
 				});
 				toast.success("笔记已创建");
 			} else {
-				await saveNote.mutateAsync(buildRequest());
+				const saved = await saveNote.mutateAsync(request);
+				const current = getValues();
+				reset(noteToForm(saved));
+				// 请求期间新输入的内容不属于这次保存。
+				const dirty = { shouldDirty: true };
+				if (current.title !== values.title) setValue("title", current.title, dirty);
+				if (current.contentMD !== values.contentMD) {
+					setValue("contentMD", current.contentMD, dirty);
+				}
+				if (current.tagsText !== values.tagsText)
+					setValue("tagsText", current.tagsText, dirty);
+				if (current.journal !== values.journal) setValue("journal", current.journal, dirty);
 				toast.success("已保存");
 			}
 		} catch (saveError) {
@@ -161,15 +169,24 @@ export function NoteEditor({ id }: NoteEditorProps) {
 		}
 	};
 
-	if (!isCreate && isLoading) {
+	if (!isCreate && !note) {
 		return (
 			<div className="flex h-full items-center justify-center">
-				<Spinner size={24} className="text-muted-foreground" aria-hidden="true" />
+				{isLoading ? (
+					<Spinner size={24} className="text-muted-foreground" aria-hidden="true" />
+				) : (
+					<p role="alert">无法读取笔记</p>
+				)}
 			</div>
 		);
 	}
 
-	const saving = createNote.isPending || saveNote.isPending;
+	const journalFields = (
+		<NoteJournalFields
+			value={journal}
+			onChange={(value) => setValue("journal", value, { shouldDirty: true })}
+		/>
+	);
 
 	return (
 		<div className="flex h-full flex-col gap-3.5">
@@ -236,12 +253,13 @@ export function NoteEditor({ id }: NoteEditorProps) {
 				</div>
 
 				{/* 桌面端右侧栏 */}
-				<div className="hidden overflow-y-auto lg:block">
+				<div className="-m-1 hidden overflow-y-auto p-1 lg:block">
 					<NoteEditorSidebar
 						note={note}
 						contentLength={contentMD.length}
 						tags={currentTags}
 						onTagsChange={handleTagsChange}
+						journalFields={journalFields}
 					/>
 				</div>
 
@@ -257,6 +275,7 @@ export function NoteEditor({ id }: NoteEditorProps) {
 								contentLength={contentMD.length}
 								tags={currentTags}
 								onTagsChange={handleTagsChange}
+								journalFields={journalFields}
 							/>
 						</SheetBody>
 					</SheetContent>
