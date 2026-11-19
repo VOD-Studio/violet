@@ -33,8 +33,9 @@ SELECT c.id, CASE WHEN c.anchor_block_id IS NULL THEN 3 ELSE 4 END, c.created_at
 FROM comments c JOIN posts p ON p.id = c.post_id
 WHERE c.created_by = @owner AND c.status = 'approved' AND p.status = 'published' AND p.deleted_at IS NULL AND p.published_at <= @now AND c.created_at <= @now
 UNION ALL
-SELECT c.id, 5, c.created_at, LEFT(t.content, 120), c.body, '', '/tweets/' || t.id::text, '', c.pictures
-FROM tweet_comments c JOIN tweets t ON t.id = c.tweet_id
+SELECT c.id, 5, c.created_at, LEFT(tweets.content, 120), c.body, '', '/tweets/' || tweets.id::text, '', c.pictures
+FROM tweet_comments c JOIN tweets ON tweets.id = c.tweet_id
+` + publicTweetAuthorJoin + `
 WHERE c.author_id = @owner AND c.created_at <= @now`
 
 func (r *PublicProfileReader) Summary(ctx context.Context, owner shared.ID, start, end time.Time) (publicprofile.Stats, []publicprofile.Day, error) {

@@ -100,6 +100,42 @@ func TestPublicProfileIntegration_StableMixedCursorAndPrivacy(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestPublicProfileIntegration_HidesCommentsOnUnavailableTweets(t *testing.T) {
+	db := setupIntegrationDB(t)
+	owner, parentAuthor := preseedAuthor(t, db), preseedAuthor(t, db)
+	const username = "public_commenter"
+	require.NoError(t, db.Model(&model.User{}).Where("id = ?", owner.UUID()).Update("username", username).Error)
+	at := time.Now().UTC().Add(-time.Hour).Truncate(time.Microsecond)
+	own := model.Tweet{ID: uuid.New(), AuthorID: owner.UUID(), Content: "Own tweet", CreatedAt: at, UpdatedAt: at}
+	parent := model.Tweet{ID: uuid.New(), AuthorID: parentAuthor.UUID(), Content: "Parent text", CreatedAt: at, UpdatedAt: at}
+	require.NoError(t, db.Create(&[]model.Tweet{own, parent}).Error)
+	reply := model.TweetComment{ID: uuid.New(), TweetID: parent.ID, AuthorID: owner.UUID(), Body: "Reply", Pictures: []byte("[]"), CreatedAt: at, UpdatedAt: at}
+	require.NoError(t, db.Create(&reply).Error)
+
+	ctx := context.Background()
+	svc := publicprofile.NewService(NewUserRepository(db), NewPublicProfileReader(db))
+	items, _, err := svc.List(ctx, username, "all", "", 10)
+	require.NoError(t, err)
+	require.Len(t, items, 2)
+	require.Equal(t, reply.ID.String(), items[0].ID)
+	require.Equal(t, parent.Content, items[0].Title)
+	profile, err := svc.Get(ctx, username)
+	require.NoError(t, err)
+	require.Equal(t, int64(1), profile.Stats.Comments)
+	require.Contains(t, profile.Activity.Days, publicprofile.Day{Date: at.Format(time.DateOnly), Count: 2})
+
+	require.NoError(t, db.Model(&model.User{}).Where("id = ?", parentAuthor.UUID()).Update("deleted_at", time.Now()).Error)
+	items, _, err = svc.List(ctx, username, "all", "", 10)
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+	assert.Equal(t, own.ID.String(), items[0].ID)
+	profile, err = svc.Get(ctx, username)
+	require.NoError(t, err)
+	assert.Zero(t, profile.Stats.Comments)
+	assert.Equal(t, int64(1), profile.Activity.Total)
+	assert.Contains(t, profile.Activity.Days, publicprofile.Day{Date: at.Format(time.DateOnly), Count: 1})
+}
+
 func TestPublicProfileIntegration_PreferenceRoundTrip(t *testing.T) {
 	db := setupIntegrationDB(t)
 	id := preseedAuthor(t, db)
