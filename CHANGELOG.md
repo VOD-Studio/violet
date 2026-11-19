@@ -7,6 +7,55 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.28.0](https://github.com/VOD-Studio/violet/compare/v2.27.0...v2.28.0) (2026-11-19)
+
+
+### 新增
+
+* **about:** 展示花园的真实站点资料 ([4924fe9](https://github.com/VOD-Studio/violet/commit/4924fe9ba5a0b9035aabc4d4a3c60e070130c353))
+* **auth:** 统一注册登录与账号设置入口 ([74ab634](https://github.com/VOD-Studio/violet/commit/74ab63478af0e7341bff6544ee3cbfcdee33225d))
+* **disclosure:** 提供展开状态回调 ([bf4aec9](https://github.com/VOD-Studio/violet/commit/bf4aec93b06fb97fbfeaf0417c00e033f5597555))
+* **email:** 重做邮箱验证码邮件 ([3c6c443](https://github.com/VOD-Studio/violet/commit/3c6c443c6ecf1f3ef9a13951ff81386a3c8bbd6f))
+* **friendlink:** 维护公开友链的订阅状态 ([8ec2e8d](https://github.com/VOD-Studio/violet/commit/8ec2e8d715414d1455a487b8bd1575b1be5fe9a1))
+* **friendlink:** 重做友链列表和申请区 ([413c804](https://github.com/VOD-Studio/violet/commit/413c80499b59462d75c9396a6b3e471e0e02efae))
+* **gallery:** 共用相册封面布局与公开读模型 ([bcd1a07](https://github.com/VOD-Studio/violet/commit/bcd1a0749ad47f3a10a1a9d8052817bd53d1c2c8))
+* **gallery:** 改版图集发现与编辑预览 ([aecaada](https://github.com/VOD-Studio/violet/commit/aecaadafc26f784b937070cda1474a2022f07ccb))
+* **gallery:** 补齐公开图集统计与地点 ([c06d3cf](https://github.com/VOD-Studio/violet/commit/c06d3cf0784bd0a212ced0cb0a07ea00290eabdf))
+* **journal:** 同步公开仓库进展 ([f8561ad](https://github.com/VOD-Studio/violet/commit/f8561ad5afd602f5d459c55de829ab40f4215544))
+* **journal:** 在时间线展示仓库进展 ([31631ba](https://github.com/VOD-Studio/violet/commit/31631ba6f23760bec1195db1da1fe41223793ece))
+* **journal:** 展示公开仓库进展手记 ([fe2b66d](https://github.com/VOD-Studio/violet/commit/fe2b66dc43be7d0457f16e910fd7dc29b8d3026f))
+* **notes:** 按画板实现手写手记时间线 ([a666d51](https://github.com/VOD-Studio/violet/commit/a666d51cd3419cba5659166519205644539fb11d))
+* **notes:** 按画板实现手写手记时间线 ([2e0cf4e](https://github.com/VOD-Studio/violet/commit/2e0cf4e8d573111257022c4ec7dc84617e964696))
+* **notes:** 支持手记分类和项目关联 ([773f781](https://github.com/VOD-Studio/violet/commit/773f7815a2a7f6f045e1770fd34b2feca63cc705))
+* **profile:** 提供公开活动档案 ([6b9866f](https://github.com/VOD-Studio/violet/commit/6b9866f3205771735cf42f89526163f14f258c68))
+* **profile:** 改版公开个人主页 ([60fb667](https://github.com/VOD-Studio/violet/commit/60fb66705dc7ed40e090fddb20ab58c446bed065))
+* **projects:** 按画板改版项目总览 ([0fbdd0a](https://github.com/VOD-Studio/violet/commit/0fbdd0aeb4eed4bbeef09123f98b4be4157a143f))
+* **projects:** 按画板改版项目总览 ([4c3256f](https://github.com/VOD-Studio/violet/commit/4c3256f1dcce1802819fc5fe315d37b435640f65))
+* **project:** 提供公开项目总览数据 ([b29ba78](https://github.com/VOD-Studio/violet/commit/b29ba78669986ef15888c3a57eb5a5a77e5d32eb))
+* **routes:** 迁移公开文档与人设入口 ([0fd2d6a](https://github.com/VOD-Studio/violet/commit/0fd2d6aa16ae416c72ce688d5167174bb0e8478b))
+* **site:** 交付公开页面与账号流程改版 ([306e666](https://github.com/VOD-Studio/violet/commit/306e6660bdd2a8381d91d3d58d30b4f739dc4818))
+
+
+### 修复
+
+* **auth:** 允许待验证注册安全更正邮箱 ([5fa362e](https://github.com/VOD-Studio/violet/commit/5fa362e45ac4c9f03af45d2ae0bc7579d45d054e))
+* **auth:** 只公布已配置的登录提供方 ([4c72e8a](https://github.com/VOD-Studio/violet/commit/4c72e8a689a84f353e19a77ba914bb0e936668fe))
+* **ci:** 修复后端镜像依赖下载超时 ([06bae7e](https://github.com/VOD-Studio/violet/commit/06bae7e860a22e3b7c7db5e486b06be0bc9e7310))
+* **customemoji:** 隔离全站右键菜单的定位状态 ([87673cf](https://github.com/VOD-Studio/violet/commit/87673cf084560941d6812febc6fe877fb601f7b8))
+* **deferred-content:** 避免首屏水合期间重复启用 ([a3be03f](https://github.com/VOD-Studio/violet/commit/a3be03fc40520b4e9cd437ec02c64cf49d2c4f14))
+* **gallery:** 复用相册封面的语义软阴影 ([325c188](https://github.com/VOD-Studio/violet/commit/325c188e917090d06c308892120c6b1bc5dea066))
+* **journal:** 保留展开提交的聚焦环 ([e060c82](https://github.com/VOD-Studio/violet/commit/e060c820559fef84ecac91a60f5dd783aab1aa48))
+* **migrations:** 消除注册与手记迁移编号冲突 ([787f2e4](https://github.com/VOD-Studio/violet/commit/787f2e44fe760ba41647addefd35b3b5b1586f1c))
+* **publicprofile:** 修复带图评论动态读取 ([32b489e](https://github.com/VOD-Studio/violet/commit/32b489ed862f1815202e8e5ce50da72bb361b302))
+* **publicprofile:** 隐藏不可见推文的评论动态 ([4c272a2](https://github.com/VOD-Studio/violet/commit/4c272a216a394121d37bfee8e3b808f584f15ac4))
+* **register:** 继续原注册流程更正邮箱 ([52a3422](https://github.com/VOD-Studio/violet/commit/52a34224c3bed8002858548b2ff214797f59cb9b))
+* **roadmap:** 卡片接管后再启用详情按钮 ([765a720](https://github.com/VOD-Studio/violet/commit/765a7202d1dc82c082598f83a2c579c64df7c2d8))
+
+
+### 重构
+
+* **projects:** 上提公开项目查询 ([1748179](https://github.com/VOD-Studio/violet/commit/174817963c58b06ea87c77a3b284d6a55073c213))
+
 ## [2.27.0](https://github.com/VOD-Studio/violet/compare/v2.26.1...v2.27.0) (2026-11-18)
 
 
