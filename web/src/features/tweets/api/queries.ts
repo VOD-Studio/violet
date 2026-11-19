@@ -2,8 +2,6 @@
 
 import type { CommentSort } from "@entities/comment/model/types";
 import type { Tweet, TweetComment, TweetTimelineSort } from "@entities/tweet/model/types";
-import { userKeys } from "@entities/user/api/keys";
-import type { UserProfile } from "@entities/user/model/types";
 import { apiGet, apiGetPaged } from "@shared/api/request";
 import type { PagedResponse } from "@shared/api/types";
 import {
@@ -84,22 +82,6 @@ export const useTweetDetail = (id: string) =>
 		queryFn: () => fetchTweetDetail(id),
 		enabled: !!id,
 	});
-/**
- * fetchUserProfile - 调后端 GET /users/{username} 拉公开用户资料（公开）
- */
-export const fetchUserProfile = (username: string): Promise<UserProfile> =>
-	apiGet<UserProfile>(`/users/${username}`);
-
-/**
- * useUserProfile - 用户公开资料卡 hook
- */
-export const useUserProfile = (username: string) =>
-	useQuery({
-		queryKey: userKeys.profile(username),
-		queryFn: () => fetchUserProfile(username),
-		enabled: !!username,
-	});
-
 /**
  * fetchUserTimeline - 调后端 GET /users/{username}/tweets 拉用户推文列表（公开，cursor 分页）
  */

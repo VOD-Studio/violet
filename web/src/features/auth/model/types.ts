@@ -96,6 +96,10 @@ export interface UpdateProfileRequest {
 	avatar_url?: string;
 	/** 主页封面 URL，最多 2048 字符；省略保留，空串清除 */
 	cover_url?: string;
+	location?: string;
+	website?: string;
+	/** 本人主动公开的主题，至多 8 项；空数组清除。 */
+	public_reading_preferences?: string[];
 }
 
 /**
