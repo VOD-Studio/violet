@@ -19,17 +19,16 @@ RUN wget -q https://storage.googleapis.com/downloads.webmproject.org/releases/we
     printf '%s' 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DQAAAEgQGALFXOsAAAAABJRU5ErkJggg==' | base64 -d > /tmp/encoder-probe.png && \
     /cwebp -quiet /tmp/encoder-probe.png -o /tmp/encoder-probe.webp
 
-# 单构建阶段:go module 与编译缓存走 BuildKit cache mount,跨构建共享;
-# 不做 deps 阶段 COPY --from 传递(mount 内容不进镜像层,COPY 只能拿到空目录)
 FROM golang:1.26.10-alpine AS builder
 
-# 临时：服务器在国内，用 goproxy.cn 加速 module 下载
-ENV GOPROXY=https://goproxy.cn,direct
+# 国内构建默认用镜像源；GitHub 托管 runner 通过构建参数使用 Go 官方代理。
+ARG GOPROXY=https://goproxy.cn,direct
 
 WORKDIR /app
 
 COPY go.mod go.sum ./
-RUN --mount=type=cache,target=/go/pkg/mod go mod download
+# GHA 跨 runner 只恢复镜像层，不恢复 cache mount；模块必须留在构建层中。
+RUN go mod download
 
 COPY . .
 
@@ -38,8 +37,7 @@ COPY . .
 ARG API_VERSION=dev
 
 # 构建 server 与 migrate 两个二进制，ldflags 去除调试信息减小体积
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
+RUN --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w -X blog-api/internal/version.Version=${API_VERSION#v}" -o /server ./cmd/server && \
     CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /migrate ./cmd/migrate
 
