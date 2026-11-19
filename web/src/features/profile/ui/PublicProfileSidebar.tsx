@@ -42,22 +42,24 @@ export function PublicProfileSidebar({
 	const name = getDisplayName(profile);
 	return (
 		<aside className="relative z-1 flex min-w-0 flex-col gap-4 lg:-mt-30">
-			<Card className="p-6 pt-0">
+			<Card className="gap-0 p-6 pt-0">
 				<Avatar
 					src={avatarUrl(profile.avatar_url, profile.username)}
 					name={name}
 					size={96}
 					className="-mt-12 ring-4 ring-card"
 				/>
-				<h1 className="mt-4 flex items-center gap-2 text-2xl font-bold wrap-break-word">
+				<h1 className="mt-4 flex items-center gap-2 font-mono text-2xl font-bold wrap-anywhere">
 					{name}
 					{profile.is_bot && <Badge>Bot</Badge>}
 				</h1>
 				<p className="mt-1 font-mono text-sm text-muted-foreground">@{profile.username}</p>
-				<p className="mt-4 text-sm leading-relaxed whitespace-pre-wrap wrap-break-word">
-					{profile.bio.trim() || "还没有留下简介。"}
-				</p>
-				<div className="mt-4 space-y-2 text-sm text-muted-foreground">
+				{profile.bio.trim() ? (
+					<p className="mt-3.5 text-[0.9375rem] leading-relaxed whitespace-pre-wrap wrap-anywhere">
+						{profile.bio}
+					</p>
+				) : null}
+				<div className="mt-3 space-y-1 text-[0.8125rem] text-muted-foreground">
 					{profile.location && (
 						<p className="flex items-center gap-2">
 							<MapPin className="size-4 shrink-0" />
@@ -69,7 +71,7 @@ export function PublicProfileSidebar({
 							href={profile.website}
 							target="_blank"
 							rel="noopener noreferrer me"
-							className="flex items-center gap-2 text-primary hover:underline"
+							className="flex items-center gap-2 font-mono text-primary hover:underline"
 						>
 							<LinkIcon className="size-4 shrink-0" />
 							<span className="truncate">
@@ -94,6 +96,7 @@ export function PublicProfileSidebar({
 					) : (
 						<Button
 							className="flex-1"
+							variant="primary"
 							loading={chat.isPending}
 							onClick={async () => {
 								if (!currentUser) {
@@ -122,7 +125,7 @@ export function PublicProfileSidebar({
 					)}
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
-							<Button iconOnly variant="ghost" aria-label="更多主页操作">
+							<Button iconOnly variant="secondary" aria-label="更多主页操作">
 								<Ellipsis className="size-4" />
 							</Button>
 						</DropdownMenuTrigger>

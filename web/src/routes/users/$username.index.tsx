@@ -66,12 +66,13 @@ function UserPublicProfilePage() {
 	const isSelf = currentUser?.id === profile.id;
 	const next = page.pagination.next_cursor;
 	return (
-		<PageShell>
-			<div className="mx-auto w-full max-w-280">
+		<PageShell className="max-w-292 lg:pt-10.5">
+			<div>
 				<div className="relative">
 					<UserProfileCover
 						avatarSrc={avatarUrl(profile.avatar_url, profile.username)}
 						coverSrc={profile.cover_url}
+						className="w-full lg:max-h-85"
 					/>
 					{isSelf && currentUser && (
 						<div className="absolute right-4 bottom-4">
@@ -92,21 +93,22 @@ function UserPublicProfilePage() {
 						</div>
 					)}
 				</div>
-				<div className="mt-6 grid items-start gap-8 lg:grid-cols-[20rem_minmax(0,1fr)] lg:gap-10">
+				<div className="mt-6 grid items-start gap-8 lg:mt-0 lg:grid-cols-[20rem_minmax(0,1fr)] lg:gap-10">
 					<PublicProfileSidebar profile={profile} currentUser={currentUser} />
-					<section className="min-w-0" aria-label="公开内容">
-						<dl className="grid grid-cols-5 gap-2 sm:gap-6">
+					<section className="min-w-0 lg:pt-5" aria-label="公开内容">
+						<dl className="grid grid-cols-5 gap-2 lg:flex lg:flex-wrap lg:gap-9">
 							{(["posts", "tweets", "comments", "annotations"] as const).map(
 								(tab) => (
-									<div key={tab}>
+									<div key={tab} className="flex flex-col-reverse gap-1">
 										<dt className="text-xs text-muted-foreground sm:text-sm">
 											{labels[tab]}
 										</dt>
-										<dd className="mt-1 font-mono text-xl font-medium sm:text-2xl">
+										<dd className="font-mono text-xl font-medium sm:text-2xl">
 											<Link
 												to="/users/$username"
 												params={{ username }}
 												search={{ tab }}
+												aria-label={`${labels[tab]} ${profile.stats[tab]}`}
 												resetScroll={false}
 											>
 												{profile.stats[tab]}
@@ -115,16 +117,16 @@ function UserPublicProfilePage() {
 									</div>
 								),
 							)}
-							<div>
+							<div className="flex flex-col-reverse gap-1">
 								<dt className="text-xs text-muted-foreground sm:text-sm">获赞</dt>
-								<dd className="mt-1 font-mono text-xl font-medium sm:text-2xl">
+								<dd className="font-mono text-xl font-medium sm:text-2xl">
 									{profile.stats.received_likes}
 								</dd>
 							</div>
 						</dl>
-						<p className="mt-4 text-xs leading-relaxed text-muted-foreground">
-							统计当前公开内容。评论含文章和推文评论；获赞仅计推文收到的点赞，另收到{" "}
-							{profile.stats.received_reactions} 次评论／批注表情回应。
+						<p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+							评论含文章和推文评论。获赞仅计推文点赞，另有{" "}
+							{profile.stats.received_reactions} 次评论与批注表情回应。
 						</p>
 						<Tabs
 							value={tab}
