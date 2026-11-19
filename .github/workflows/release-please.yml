@@ -23,8 +23,14 @@ permissions:
 
 
 jobs:
+  runner:
+    uses: ./.github/workflows/pick-runner.yml
+    secrets:
+      RUNNER_STATUS_TOKEN: ${{ secrets.RUNNER_STATUS_TOKEN }}
+
   release-please:
-    runs-on: ubuntu-latest
+    needs: runner
+    runs-on: ${{ fromJSON(needs.runner.outputs.labels) }}
     # 正常 10-20s,基线紊乱回溯全历史时 3m30s+;10 分钟上限兜住异常放大
     timeout-minutes: 10
     concurrency:
@@ -77,14 +83,14 @@ jobs:
           reason: release PR 维护失败(API 或版本意图检查),详见 run 日志
 
   retry-on-failure:
-    needs: release-please
+    needs: [runner, release-please]
     # 不能在自身 run 进行中 gh run rerun:GitHub 要求 run 处终态(completed),
     # in-progress 调用返回 403。改用 gh workflow run 开新 run(dispatch 事件),
     # concurrency 排队等当前 run 结束后执行。
     # 防死循环:仅 push 触发的首次 attempt 失败才重试;重试出的 dispatch run
     # 失败不再重试(告警 issue 已留痕,deploy-alert 按 run id 去重)。
     if: failure() && github.event_name == 'push' && github.run_attempt == 1
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(needs.runner.outputs.labels || '["ubuntu-latest"]') }}
     permissions:
       actions: write   # gh workflow run 触发新 run
     steps:

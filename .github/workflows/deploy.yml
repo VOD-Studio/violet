@@ -33,14 +33,24 @@ permissions:
   contents: read
 
 jobs:
-  prepare:
+  runner:
     if: >-
-      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/release/2.0') ||
       (github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.head_branch == 'release/2.0' &&
        github.event.workflow_run.head_repository.full_name == github.repository &&
        contains(fromJSON('["push","workflow_dispatch"]'), github.event.workflow_run.event))
-    runs-on: ubuntu-latest
+    uses: ./.github/workflows/pick-runner.yml
+    secrets:
+      RUNNER_STATUS_TOKEN: ${{ secrets.RUNNER_STATUS_TOKEN }}
+
+  prepare:
+    needs: runner
+    # 非主干的手动请求在官方 runner 报错，不交给自托管机。
+    if: >-
+      !cancelled() && (needs.runner.result == 'success' ||
+      (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/release/2.0'))
+    runs-on: ${{ fromJSON(needs.runner.outputs.labels || '["ubuntu-latest"]') }}
     timeout-minutes: 5
     concurrency:
       group: release-state
@@ -113,9 +123,9 @@ jobs:
 
 
   publish:
-    needs: prepare
+    needs: [runner, prepare]
     if: needs.prepare.outputs.mode == 'candidate'
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(needs.runner.outputs.labels) }}
     timeout-minutes: 10
     concurrency:
       group: release-state
@@ -155,12 +165,12 @@ jobs:
             --verification "$RUNNER_TEMP/verified-release/release-manifest.json"
 
   maintain-release-pr:
-    needs: [prepare, publish]
+    needs: [runner, prepare, publish]
     if: >-
       always() && !cancelled() && needs.prepare.result == 'success' &&
       (needs.prepare.outputs.mode == 'reuse' ||
        (needs.publish.result == 'success' && needs.publish.outputs.status == 'published'))
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(needs.runner.outputs.labels) }}
     timeout-minutes: 5
     permissions:
       actions: write
@@ -259,9 +269,9 @@ jobs:
         run: rm -f "$RUNNER_TEMP/violet-registry-auth.json"
 
   notify-failure:
-    needs: [prepare, publish, maintain-release-pr, deploy]
+    needs: [runner, prepare, publish, maintain-release-pr, deploy]
     if: always() && failure()
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(needs.runner.outputs.labels || '["ubuntu-latest"]') }}
     timeout-minutes: 5
     permissions:
       contents: read
@@ -270,6 +280,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          ref: release/2.0
           persist-credentials: false
       - uses: ./.github/actions/deploy-alert
         env:

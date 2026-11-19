@@ -30,6 +30,12 @@ jobs:
       labels: ${{ steps.pick.outputs.labels }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # 决定能否使用自托管机的脚本不从待审 PR 检出。
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          sparse-checkout: scripts/pick-ci-runner.sh
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
       - id: pick
         env:
           REQUIRE_SELF_HOSTED: ${{ inputs.require_self_hosted }}

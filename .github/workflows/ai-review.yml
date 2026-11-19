@@ -43,9 +43,15 @@ permissions:
   pull-requests: write   # 提交 review 评论
 
 jobs:
-  ai-review:
-    runs-on: ubuntu-latest
+  runner:
     if: ${{ !startsWith(github.head_ref, 'release-please--') && vars.AI_REVIEW_ENABLED != 'false' }}
+    uses: ./.github/workflows/pick-runner.yml
+    secrets:
+      RUNNER_STATUS_TOKEN: ${{ secrets.RUNNER_STATUS_TOKEN }}
+
+  ai-review:
+    needs: runner
+    runs-on: ${{ fromJSON(needs.runner.outputs.labels) }}
     env:
       MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
     steps:
