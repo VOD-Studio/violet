@@ -113,7 +113,7 @@
 	height: 20px;
 	border-radius: 10px;
 	background: color-mix(in oklab, var(--card) 70%, var(--muted));
-	box-shadow: 0 4px 24px rgb(0 0 0 / 0.05);
+	box-shadow: var(--shadow-soft);
 }
 
 .coverStack::after {
