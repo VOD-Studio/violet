@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { loadClient } from "./client";
 import { ROADMAP_CANVAS_POST, ROADMAP_EMBED_POST, ROADMAP_FIXTURE } from "./mock-data.mjs";
-import { collectDiagnostics, openClientPage } from "./support.ts";
+import { collectDiagnostics } from "./support.ts";
 
 const PATH = `/blog/${ROADMAP_EMBED_POST.slug}`;
 const titleOf = (number: number) =>
@@ -34,7 +34,23 @@ test.describe("文章里的 roadmap 卡片", () => {
 	}) => {
 		await loadClient(context);
 		const diagnostics = collectDiagnostics(page);
-		await openClientPage(page, PATH);
+		const chunk = "**/assets/roadmap-embed-*.js";
+		const { promise, resolve } = Promise.withResolvers<void>();
+		const trigger = card(page, "item").getByRole("button", { name: new RegExp(titleOf(2)) });
+		await context.route(chunk, async (route) => {
+			await promise;
+			await route.fallback();
+		});
+		try {
+			await Promise.all([
+				page.waitForRequest(chunk),
+				page.goto(PATH, { waitUntil: "commit" }),
+			]);
+			await expect(trigger).toBeDisabled();
+			await expect(card(page, "project").getByRole("button").first()).toBeDisabled();
+		} finally {
+			resolve();
+		}
 
 		await expect(card(page, "item")).toContainText(titleOf(2));
 		await expect(card(page, "item")).toContainText("被阻塞");
@@ -48,9 +64,7 @@ test.describe("文章里的 roadmap 卡片", () => {
 		);
 		await expect(page.getByText("文章结尾的一段话。")).toBeVisible();
 
-		await card(page, "item")
-			.getByRole("button", { name: new RegExp(titleOf(2)) })
-			.click();
+		await trigger.click();
 		const dialog = page.getByRole("dialog", { name: titleOf(2) });
 		await expect(dialog).toBeVisible();
 		await expect(dialog.getByRole("button", { name: "编辑" })).toHaveCount(0);
