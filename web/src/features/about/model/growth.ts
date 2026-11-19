@@ -1,4 +1,3 @@
-import type { ProgressCommit, ProgressHealth, ProgressRelease } from "@entities/note/model/types";
 import { formatDate } from "@shared/lib/date";
 
 const dayMs = 86_400_000;
@@ -7,22 +6,44 @@ const windowDays = 32 * weekDays;
 const timeZone = "Asia/Shanghai";
 const numberFormat = new Intl.NumberFormat("zh-CN");
 
-/** 与手记同源的公开快照；回填完成前不能据此推断最早日期或空窗。 */
+interface GrowthCommit {
+	sha: string;
+	title: string;
+	url: string;
+	occurred_at: string;
+}
+
+/** 公开的 GitHub 发布；日期是实际发布时间。 */
+export interface GrowthRelease {
+	tag: string;
+	title: string;
+	url: string;
+	occurred_at: string;
+}
+
+/** 陈旧快照可以同时携带最近一次同步的失败原因。 */
+interface GrowthHealth {
+	state: "unconfigured" | "syncing" | "ready" | "stale" | "limited" | "failed";
+	reason: "limited" | "failed" | null;
+	last_synced_at: string | null;
+}
+
+/** 站点发布仓库的公开快照；回填完成前不能据此推断最早日期或空窗。 */
 export interface GardenGrowth {
 	today: string;
 	elapsed_days: number | null;
 	history_complete: boolean;
-	first_commit: ProgressCommit | null;
+	first_commit: GrowthCommit | null;
 	weeks: { start: string; commit_count: number }[];
-	releases: ProgressRelease[];
-	health: ProgressHealth;
+	releases: GrowthRelease[];
+	health: GrowthHealth;
 }
 
 /** 图层与可访问视图共用的一个上海日历周。 */
 export interface GrowthWeek {
 	start: number;
 	commitCount: number;
-	releases: ProgressRelease[];
+	releases: GrowthRelease[];
 }
 
 /** 一次最多画 32 周；绝对日期不随手机宽度、时区或历史长度漂移。 */

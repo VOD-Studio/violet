@@ -1,9 +1,9 @@
-import type { ProgressRelease } from "@entities/note/model/types";
 import { Link, useHydrated } from "@tanstack/react-router";
 import { Button, Stat, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@violet/ui";
 import { type CSSProperties, type KeyboardEvent, useRef, useState } from "react";
 import {
 	type GrowthPeriod,
+	type GrowthRelease,
 	growthDay,
 	growthDayLabel,
 	growthNumber,
@@ -153,7 +153,7 @@ export function GrowthTimeline({ period }: { period: GrowthPeriod }) {
 	);
 }
 
-function ReleaseLinks({ releases }: { releases: ProgressRelease[] }) {
+function ReleaseLinks({ releases }: { releases: GrowthRelease[] }) {
 	if (releases.length === 0) return null;
 	return (
 		<ul className={styles.versionLinks} aria-label="该周发布的版本">

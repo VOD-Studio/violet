@@ -70,7 +70,7 @@ pnpm dev
 | `/` | 首页与发布物入口 |
 | `/blog`、`/blog/series`、`/blog/archive` | 共用博客布局的文章、系列与归档视图 |
 | `/blog/:slug`、`/blog/series/:slug` | 文章阅读与系列目录 |
-| `/journal`、`/journal/:id` | 手写手记与自动仓库进展的时间线、手写详情；旧 `/notes` 地址保留 301 |
+| `/journal`、`/journal/:id` | 手写手记时间线与详情，不混入仓库更新；旧 `/notes` 地址保留 301 |
 | `/galleries`、`/galleries/:slug` | 图集流与详情 |
 | `/tweets`、`/tweets/:id`、`/tweets/topics/:tag` | 时间线（最新／热门／有图）、推文讨论与话题 |
 | `/projects`、`/projects/:slug` | 项目与路线图 |

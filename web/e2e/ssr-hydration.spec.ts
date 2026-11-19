@@ -34,7 +34,7 @@ const SCENARIOS: HydrationScenario[] = [
 	{
 		name: "笔记列表",
 		path: "/journal",
-		apiPaths: ["/api/v1/journal"],
+		apiPaths: ["/api/v1/notes"],
 		selector: "main",
 		text: "缓存接管笔记",
 	},

@@ -1,22 +1,17 @@
-import { type JournalFilters, NOTE_TYPES } from "@entities/note/model/types";
+import { NOTE_TYPES, type PublicNoteListQuery } from "@entities/note/model/types";
 import { SITE_URL } from "@shared/config/env";
 import { redirect } from "@tanstack/react-router";
 
 /** 手记列表在地址栏支持的筛选组合，不含分页游标。 */
-export type JournalSearch = JournalFilters;
+export type JournalSearch = Pick<PublicNoteListQuery, "tag" | "type" | "project_id">;
 
 const PROJECT_ID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 
 /** 解析手记的可分享筛选条件。 */
 export function parseJournalSearch(search: Record<string, unknown>): JournalSearch {
-	const type =
-		search.type === "progress" ? "progress" : NOTE_TYPES.find((type) => type === search.type);
 	return {
-		tag:
-			type !== "progress" && typeof search.tag === "string"
-				? search.tag.trim() || undefined
-				: undefined,
-		type,
+		tag: typeof search.tag === "string" ? search.tag.trim() || undefined : undefined,
+		type: NOTE_TYPES.find((type) => type === search.type),
 		project_id:
 			typeof search.project_id === "string" && PROJECT_ID.test(search.project_id)
 				? search.project_id.toLowerCase()

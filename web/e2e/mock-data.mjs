@@ -297,6 +297,20 @@ const ROADMAP_PROJECT = {
 	created_at: "2026-08-01T00:00:00Z",
 };
 
+const PUBLISHED_NOTES = [
+	CONTRACT_NOTE,
+	{
+		id: "41000000-0000-0000-0000-000000000002",
+		title: "路线图记录方法",
+		content_html: "<p>先记下要解决的问题，再拆分实施步骤。</p>",
+		tags: ["roadmap"],
+		published_at: "2026-08-10T10:00:00Z",
+		type: "idea",
+		project: { id: ROADMAP_PROJECT.id, title: ROADMAP_PROJECT.title },
+		pitfall: null,
+	},
+];
+
 const roadmapItem = (number, stage, overrides = {}) => ({
 	id: `41000000-0000-0000-0000-${String(number).padStart(12, "0")}`,
 	project_id: ROADMAP_PROJECT.id,
@@ -837,7 +851,7 @@ export function handle(method, pathname, search, cookie = "", rawBody = "") {
 				entries,
 				next_cursor: null,
 				progress: showProgress
-					? { state: "ready", reason: null, last_synced_at: JOURNAL_DAY.last_at }
+					? { state: "stale", reason: "failed", last_synced_at: JOURNAL_DAY.last_at }
 					: null,
 			}),
 		};
@@ -870,11 +884,22 @@ export function handle(method, pathname, search, cookie = "", rawBody = "") {
 	}
 	if (pathname === "/api/v1/notes") {
 		const tag = params.get("tag");
-		const notes = !tag || CONTRACT_NOTE.tags.includes(tag) ? [CONTRACT_NOTE] : [];
-		return { status: 200, body: paged(notes, Number(params.get("limit") || 24)) };
+		const type = params.get("type");
+		const project = params.get("project_id");
+		const limit = Number(params.get("limit") || 24);
+		const notes = PUBLISHED_NOTES.filter(
+			(note) =>
+				(!tag || note.tags.includes(tag)) &&
+				(!type || note.type === type) &&
+				(!project || note.project?.id === project),
+		);
+		return { status: 200, body: paged(notes.slice(0, limit), limit) };
 	}
-	if (pathname === `/api/v1/notes/${CONTRACT_NOTE.id}`) {
-		return { status: 200, body: envelope(CONTRACT_NOTE) };
+	if (pathname.startsWith("/api/v1/notes/")) {
+		const note = PUBLISHED_NOTES.find((note) => pathname === `/api/v1/notes/${note.id}`);
+		if (note) {
+			return { status: 200, body: envelope(note) };
+		}
 	}
 	if (pathname === "/api/v1/series/contract-rich-series") {
 		return { status: 200, body: envelope(RICH_CONTENT_SERIES) };

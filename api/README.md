@@ -188,13 +188,15 @@ SQLite 集成夹具在 `AutoMigrate` 后显式补建 `sort_order` 列；模型�
 
 ### 手记
 
-`GET /notes` 保留标签 `tag` 和游标 `cursor`，可再按 `type` 与 `project_id` 组合筛选。公开列表和详情只返回已发布记录，关联项目删除后保留手记、清除项目关联。创建与修改仍走 `/admin/notes`；修改时省略 `journal` 会保留已保存的分类和踩坑信息。字段定义见 OpenAPI。
+网页手记只读取 `/notes`。`GET /notes` 支持组合筛选 `tag`、`type`、`project_id` 和游标 `cursor`。公开列表和详情只返回已发布记录，关联项目删除后保留手记、清除项目关联。创建与修改仍走 `/admin/notes`；修改时省略 `journal` 会保留已保存的分类和踩坑信息。字段定义见 OpenAPI。
+
+### 仓库进展
 
 `GET /journal` 合并已发布手记与公开仓库日卡，按上海日倒序，同日先显示进展。支持 `type=progress`、`project_id` 与游标；`tag` 只查手写记录。列表最多预览六个提交，`GET /journal/progress/{projectId}/{day}` 返回当天完整提交。
 
 自动进展只读取公开项目明确绑定的 `https://github.com/owner/repo`，并在 GitHub 核实仓库公开；不需要 GitHub 令牌。后台启动时同步一批，之后每 15 分钟续跑并分批核对历史。页面只查 PostgreSQL，不访问 GitHub。提交按默认分支的提交者时间、发布按实际发布时间归档；上海周一为一周起点。
 
-项目删除或解除仓库绑定后立即隐藏相关进展；GitHub 确认仓库不可见时同样隐藏。临时失败或限流时，最多沿用 24 小时内核验过的公开快照。无论仓库是否配置或同步成功，已发布的手写手记仍可浏览。
+项目删除或解除仓库绑定后立即隐藏相关进展；GitHub 确认仓库不可见时同样隐藏。临时失败或限流时，最多沿用 24 小时内核验过的公开快照。
 
 `GET /journal/growth` 供关于页读取同一公开快照。只查与 `releases_repo` 匹配且仍绑定公开项目的仓库（短仓库名用 `github_username` 补所有者）。首轮历史回填完成才返回首次提交、上海日历运行天数与有提交的周；已读到的公开版本可以先展示。发布名称仅为标签时，快照存首条变更，不存发布正文。无提交时运行天数为 `null`，不返回假日期或假版本。
 
@@ -206,7 +208,7 @@ SQLite 集成夹具在 `AutoMigrate` 后显式补建 `sort_order` 列；模型�
 | --- | --- | --- |
 | 身份与权限 | `auth`、`role`、`permission`、`useradmin`、`api_token` | 登录、账户、RBAC、用户管理与 PAT |
 | 文章与知识 | `post`、`series`、`note`、`tag`、`markdown` | 文章、系列、笔记、标签与正文转换 |
-| 仓库进展 | `repositoryactivity`、`journal` | 公开仓库快照与手记混合时间线 |
+| 仓库进展 | `repositoryactivity`、`journal` | 公开仓库快照、活动查询与关于页生长历史 |
 | 视觉内容 | `gallery`、`persona` | 图集工作稿与公开版本、多语言人设 |
 | 评论互动 | `comment`、`commentreaction` | 普通评论、锚点批注、审核与表情反应 |
 | 社区与消息 | `tweet`、`chat`、`chatappearance`、`notification` | 推文、X 转发、聊天、Bot、外观与通知 |

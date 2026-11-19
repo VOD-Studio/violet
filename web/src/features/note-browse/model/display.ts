@@ -1,4 +1,4 @@
-import type { JournalEntry, PublicNote } from "@entities/note/model/types";
+import type { PublicNote } from "@entities/note/model/types";
 import { formatDate } from "@shared/lib/date";
 import type { Nodes } from "hast";
 import { raw } from "hast-util-raw";
@@ -74,18 +74,15 @@ export function notePreview(note: Pick<PublicNote, "title" | "content_html">, ma
 }
 
 /** 按已加载游标页的顺序归档，同一天的条目共用一个日期标题。 */
-export function groupJournalDays(entries: JournalEntry[]) {
-	const days = new Map<string, JournalEntry[]>();
-	for (const entry of entries) {
-		const day =
-			entry.kind === "progress"
-				? entry.progress.day
-				: formatDate(entry.note.published_at, "iso-date", "", JOURNAL_TIME_ZONE);
+export function groupJournalDays(notes: PublicNote[]) {
+	const days = new Map<string, PublicNote[]>();
+	for (const note of notes) {
+		const day = formatDate(note.published_at, "iso-date", "", JOURNAL_TIME_ZONE);
 		const group = days.get(day);
 		if (group) {
-			group.push(entry);
+			group.push(note);
 		} else {
-			days.set(day, [entry]);
+			days.set(day, [note]);
 		}
 	}
 	return [...days];
