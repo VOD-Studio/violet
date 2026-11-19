@@ -1,7 +1,7 @@
 .page {
 	width: min(100%, 73rem);
 	margin: 0 auto;
-	padding: 4rem 1.5rem 8rem;
+	padding: clamp(3rem, 7vw, 6rem) 1.5rem 8rem;
 	color: var(--foreground);
 }
 
@@ -9,27 +9,32 @@
 	width: 100%;
 }
 
-.eyebrow {
-	margin: 0;
-	color: color-mix(in oklab, var(--foreground) 68%, var(--background));
-	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-	font-size: 0.78rem;
-	font-weight: 700;
-	letter-spacing: 0.18em;
+.hero {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(13rem, 28rem);
+	align-items: end;
+	gap: 1.25rem 3.5rem;
 }
 
 .title {
-	margin: 0.55rem 0 0;
+	margin: 0;
 	font-family: var(--font-serif);
 	font-size: clamp(2.55rem, 6vw, 3.75rem);
 	font-weight: 600;
 	letter-spacing: -0.025em;
-	line-height: 1.08;
+	line-height: 1.2;
+}
+
+.dayCount {
+	font-family: var(--font-mono, monospace);
+	font-variant-numeric: tabular-nums;
+	letter-spacing: -0.06em;
+	white-space: nowrap;
 }
 
 .subtitle {
-	max-width: 46rem;
-	margin: 0.85rem 0 0;
+	max-width: 20rem;
+	margin: 0 0 0.4rem;
 	color: var(--muted-foreground);
 	font-size: 0.95rem;
 	line-height: 1.8;
@@ -149,17 +154,23 @@
 	width: 78%;
 }
 
+@media (max-width: 50rem) {
+	.hero {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
 @media (max-width: 39.99rem) {
 	.page {
 		padding: 3rem 1.25rem 6rem;
 	}
 
 	.title {
-		font-size: 2.45rem;
+		font-size: clamp(1.85rem, 8vw, 2.45rem);
 	}
 
 	.subtitle {
-		margin-top: 0.75rem;
+		margin: 0;
 		font-size: 0.9rem;
 	}
 

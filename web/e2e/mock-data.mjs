@@ -842,6 +842,29 @@ export function handle(method, pathname, search, cookie = "", rawBody = "") {
 			}),
 		};
 	}
+	if (pathname === "/api/v1/journal/growth") {
+		return {
+			status: 200,
+			body: envelope({
+				today: "2026-08-19",
+				elapsed_days: 1326,
+				history_complete: true,
+				first_commit: {
+					sha: "1234567",
+					title: "种下花园",
+					url: "https://github.com/VOD-Studio/violet/commit/1234567",
+					occurred_at: "2022-12-31T16:00:00Z",
+				},
+				weeks: [
+					{ start: "2022-12-26", commit_count: 1 },
+					{ start: "2026-08-03", commit_count: 17 },
+					{ start: "2026-08-10", commit_count: 8 },
+				],
+				releases: JOURNAL_DAY.releases,
+				health: { state: "ready", reason: null, last_synced_at: JOURNAL_DAY.last_at },
+			}),
+		};
+	}
 	if (pathname === `/api/v1/journal/progress/${JOURNAL_DAY.project.id}/${JOURNAL_DAY.day}`) {
 		return { status: 200, body: envelope({ ...JOURNAL_DAY, commits: JOURNAL_COMMITS }) };
 	}
@@ -907,7 +930,7 @@ export function handle(method, pathname, search, cookie = "", rawBody = "") {
 				github_client_id: "contract-github-client",
 				tagline: "",
 				about_config: {
-					sections: [{ id: "bio", enabled: true }],
+					sections: [{ id: "bio", enabled: true }, { id: "changelog", enabled: true }],
 				},
 			}),
 		};
