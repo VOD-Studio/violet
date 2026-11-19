@@ -9,7 +9,7 @@ import { FriendsSkeleton } from "@features/friend-links/ui/FriendsSkeleton";
 import { settingsKeys } from "@features/settings/api/keys";
 import { fetchSettings, useSettings } from "@features/settings/api/queries";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Button, Empty, PageHeader, PageShell, Pagination } from "@violet/ui";
+import { Button, Empty, PageShell, Pagination } from "@violet/ui";
 import { Plus } from "lucide-react";
 
 function FriendsPage() {
@@ -23,24 +23,30 @@ function FriendsPage() {
 	const total = data?.pagination.total;
 	const totalPages = data?.pagination.total_pages ?? 0;
 	return (
-		<PageShell>
-			<PageHeader
-				title="友链"
-				description={
-					total === undefined
-						? "认识一些写字与做事的朋友"
-						: `${total} 位朋友，${sort === "manual" ? "按站长编排排序" : "按最近更新排序"}`
-				}
-				primaryAction={
-					<Button
-						variant="primary"
-						onClick={() => document.getElementById("apply")?.focus()}
-					>
+		<PageShell className="max-w-292 lg:pt-16.5">
+			<header className="flex flex-wrap items-end justify-between gap-4">
+				<div>
+					<h1 className="font-serif text-4xl leading-[1.15] font-semibold md:text-[3.25rem]">
+						友链
+					</h1>
+					<p className="mt-3 text-[0.9375rem] text-muted-foreground">
+						{total === undefined ? (
+							"认识一些写字与做事的朋友"
+						) : (
+							<>
+								<span className="font-mono tabular-nums">{total}</span> 位朋友，
+								{sort === "manual" ? "按站长编排排序" : "按最近更新排序"}
+							</>
+						)}
+					</p>
+				</div>
+				<Button variant="primary" asChild>
+					<a href="#apply">
 						<Plus className="size-4" aria-hidden="true" />
 						申请友链
-					</Button>
-				}
-			/>
+					</a>
+				</Button>
+			</header>
 			<section aria-label="公开友链" className="mt-10">
 				{isLoading ? (
 					<FriendsSkeleton />
@@ -96,7 +102,7 @@ function FriendsPage() {
 				className="mt-24 grid scroll-mt-24 gap-10 border-t border-border pt-14 lg:grid-cols-2 lg:gap-14"
 			>
 				<div>
-					<h2 id="exchange-title" className="text-2xl font-semibold">
+					<h2 id="exchange-title" className="font-serif text-[1.625rem] font-semibold">
 						交换友链
 					</h2>
 					<p className="mt-3 text-sm leading-8 text-muted-foreground">
