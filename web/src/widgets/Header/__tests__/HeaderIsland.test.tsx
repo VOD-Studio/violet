@@ -76,7 +76,7 @@ describe("HeaderIsland", () => {
 		await act(async () => {});
 		fireEvent.click(more);
 		await screen.findByText("Violet · 浏览本站");
-		expect(screen.getByRole("link", { name: "实验室" })).toBeTruthy();
+		expect(screen.getByRole("link", { name: "图集" }).getAttribute("href")).toBe("/galleries");
 		const themes = screen.getByRole("radiogroup", { name: "主题" });
 		expect(
 			within(themes).getByRole("radio", { name: "跟随季节" }).getAttribute("aria-checked"),
