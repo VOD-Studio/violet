@@ -28,6 +28,13 @@ export interface RegisterRequest {
 	username: string;
 	/** 密码，至少 8 位 */
 	password: string;
+	/** 继续同一次待验证注册时传入，可在该流程内更正邮箱。 */
+	registration_token?: string;
+}
+
+export interface RegisterResponse {
+	/** 仅创建待验证注册时签发，验证成功后失效。 */
+	registration_token?: string;
 }
 
 /**

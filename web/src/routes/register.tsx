@@ -23,6 +23,7 @@ function RegisterPage() {
 	const { redirect, email } = useSearch({ from: "/register" });
 	const csrfToken = useCsrfToken();
 	const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
+	const [registrationToken, setRegistrationToken] = useState<string>();
 	const [code, setCode] = useState("");
 	const [verificationError, setVerificationError] = useState("");
 	const [submitError, setSubmitError] = useState("");
@@ -46,9 +47,15 @@ function RegisterPage() {
 	const onSubmitRegister = handleSubmit((data) => {
 		setSubmitError("");
 		registerMutation.mutate(
-			{ email: data.email, username: data.username, password: data.password },
 			{
-				onSuccess: () => {
+				email: data.email,
+				username: data.username,
+				password: data.password,
+				registration_token: registrationToken,
+			},
+			{
+				onSuccess: ({ registration_token }) => {
+					if (registration_token) setRegistrationToken(registration_token);
 					setRegisteredEmail(data.email);
 					setCode("");
 					setVerificationError("");
@@ -106,11 +113,13 @@ function RegisterPage() {
 		if (!registeredEmail) return false;
 		setSubmitError("");
 		try {
-			await registerMutation.mutateAsync({
+			const { registration_token } = await registerMutation.mutateAsync({
 				email: registeredEmail,
 				username: values.username,
 				password: values.password,
+				registration_token: registrationToken,
 			});
+			if (registration_token) setRegistrationToken(registration_token);
 			setCode("");
 			setInvalidCode(false);
 			setVerificationError("");
@@ -177,19 +186,21 @@ function RegisterPage() {
 							resetKey={registeredEmail}
 							disabled={verifyMutation.isPending || !csrfToken}
 						/>
-						<Button
-							variant="ghost"
-							disabled={verifyMutation.isPending || registerMutation.isPending}
-							onClick={() => {
-								setRegisteredEmail(null);
-								setCode("");
-								setVerificationError("");
-								setInvalidCode(false);
-								setSubmitError("");
-							}}
-						>
-							更改邮箱
-						</Button>
+						{registrationToken ? (
+							<Button
+								variant="ghost"
+								disabled={verifyMutation.isPending || registerMutation.isPending}
+								onClick={() => {
+									setRegisteredEmail(null);
+									setCode("");
+									setVerificationError("");
+									setInvalidCode(false);
+									setSubmitError("");
+								}}
+							>
+								更改邮箱
+							</Button>
+						) : null}
 					</div>
 				</div>
 			) : (
