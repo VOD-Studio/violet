@@ -290,6 +290,8 @@ const ROADMAP_PROJECT = {
 	url: "https://example.com/demo",
 	github_url: "https://github.com/example/roadmap-contract",
 	image_url: "",
+	docs_url: "",
+	status: "active",
 	tech_stack: ["Go", "React", "PostgreSQL"],
 	sort_order: 1,
 	created_at: "2026-08-01T00:00:00Z",
@@ -459,7 +461,6 @@ const summarize = (progress, inProgress, latestCompleted) => ({
 export const PROJECTS_FIXTURE = [
 	{
 		...ROADMAP_PROJECT,
-		status: "active",
 		docs_url: "/projects/roadmap-empty",
 		image_url: "/assets/contract-cover.png",
 		created_at: "2026-08-01T00:00:00Z",
@@ -497,7 +498,6 @@ export const PROJECTS_FIXTURE = [
 	{
 		...ROADMAP_EMPTY.project,
 		status: "archived",
-		docs_url: "",
 		image_url: "",
 		sort_order: 3,
 		created_at: "2026-07-01T00:00:00Z",
