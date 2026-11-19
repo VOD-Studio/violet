@@ -20,8 +20,8 @@ export function ChangelogSection(_: AboutSectionProps) {
 		return (
 			<AboutChapter
 				id="changelog"
-				title="这座站还会继续改吗？"
-				intro="会。最近几次变化都留在下面，新的版本也会继续往这里长。"
+				title="最近开的花"
+				intro="最近三次正式发布，记录这里的变化。"
 			>
 				<Skeleton className={styles.loadingRelease} />
 			</AboutChapter>
@@ -32,8 +32,8 @@ export function ChangelogSection(_: AboutSectionProps) {
 		return (
 			<AboutChapter
 				id="changelog"
-				title="这座站还会继续改吗？"
-				intro="会。最近几次变化都留在下面，新的版本也会继续往这里长。"
+				title="最近开的花"
+				intro="最近三次正式发布，记录这里的变化。"
 			>
 				<AboutSectionState
 					message="更新日志暂时未能抵达。"
@@ -49,8 +49,8 @@ export function ChangelogSection(_: AboutSectionProps) {
 		return (
 			<AboutChapter
 				id="changelog"
-				title="这座站还会继续改吗？"
-				intro="会。最近几次变化都留在下面，新的版本也会继续往这里长。"
+				title="最近开的花"
+				intro="最近三次正式发布，记录这里的变化。"
 			>
 				<AboutSectionState message="暂时没有公开的更新记录。" />
 			</AboutChapter>
@@ -58,13 +58,9 @@ export function ChangelogSection(_: AboutSectionProps) {
 	}
 
 	return (
-		<AboutChapter
-			id="changelog"
-			title="这座站还会继续改吗？"
-			intro="会。最近几次变化都留在下面，新的版本也会继续往这里长。"
-		>
+		<AboutChapter id="changelog" title="最近开的花" intro="最近三次正式发布，记录这里的变化。">
 			<Timeline ariaLabel="最近三次公开发布" className={styles.releaseTimeline}>
-				{releases.map((release, releaseIndex) => {
+				{releases.map((release) => {
 					const categories = release.categories
 						.map((category) => ({
 							label: category.label,
@@ -74,6 +70,10 @@ export function ChangelogSection(_: AboutSectionProps) {
 						}))
 						.filter((category) => category.items.length > 0);
 					const releaseName = release.name.trim();
+					const headline =
+						releaseName && releaseName !== release.tag
+							? releaseName
+							: categories[0]?.items[0];
 
 					return (
 						<TimelineItem
@@ -83,14 +83,11 @@ export function ChangelogSection(_: AboutSectionProps) {
 						>
 							<Disclosure
 								variant="panel"
-								defaultOpen={releaseIndex === 0}
 								summary={
 									<span className={styles.releaseSummaryContent}>
 										<span className={styles.releaseVersion}>{release.tag}</span>
-										{releaseName && releaseName !== release.tag ? (
-											<span className={styles.releaseName}>
-												{releaseName}
-											</span>
+										{headline ? (
+											<span className={styles.releaseName}>{headline}</span>
 										) : null}
 									</span>
 								}
