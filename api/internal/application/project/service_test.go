@@ -63,7 +63,7 @@ func TestService_List(t *testing.T) {
 	svc, repo := newSvc()
 	id := shared.MustParseID(testUUID)
 	now := time.Now()
-	p := domain.ReconstructProject(id, "My Project", "my-project", "desc", "https://x.com", "https://gh.com", "https://img.com", []string{"Go", "React"}, 2, now, now)
+	p := domain.ReconstructProject(id, "My Project", "my-project", "desc", "https://x.com", "https://gh.com", "https://img.com", "", domain.StatusStable, []string{"Go", "React"}, 2, now, now)
 	repo.On("FindAll", mock.Anything).Return([]*domain.Project{p}, nil).Once()
 
 	dtos, err := svc.List(context.Background())
@@ -91,7 +91,7 @@ func TestService_Get(t *testing.T) {
 	svc, repo := newSvc()
 	id := shared.MustParseID(testUUID)
 	now := time.Now()
-	p := domain.ReconstructProject(id, "My Project", "my-project", "desc", "https://x.com", "", "", []string{"Go"}, 1, now, now)
+	p := domain.ReconstructProject(id, "My Project", "my-project", "desc", "https://x.com", "", "", "", domain.StatusActive, []string{"Go"}, 1, now, now)
 	repo.On("FindByID", mock.Anything, id).Return(p, nil).Once()
 
 	got, err := svc.Get(context.Background(), id.String())
@@ -133,13 +133,15 @@ func TestService_Create_EmptyTitle(t *testing.T) {
 func TestService_Update(t *testing.T) {
 	svc, repo := newSvc()
 	id := shared.MustParseID(testUUID)
-	p := domain.ReconstructProject(id, "Old", "old", "", "", "", "", nil, 0, time.Now(), time.Now())
+	p := domain.ReconstructProject(id, "Old", "old", "", "", "", "", "/guide", domain.StatusArchived, nil, 0, time.Now(), time.Now())
 	repo.On("FindByID", mock.Anything, id).Return(p, nil).Once()
 	repo.On("Save", mock.Anything, mock.AnythingOfType("*project.Project")).Return(nil).Once()
 
 	err := svc.Update(context.Background(), id.String(), UpdateInput{Title: "New", TechStack: []string{"Rust"}})
 	assert.NoError(t, err)
 	assert.Equal(t, "New", p.Title())
+	assert.Equal(t, domain.StatusArchived, p.Status())
+	assert.Equal(t, "/guide", p.DocsURL())
 	assert.Equal(t, []string{"Rust"}, p.TechStack())
 	repo.AssertExpectations(t)
 }

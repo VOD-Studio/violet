@@ -22,6 +22,8 @@ func TestNewProject_SetsDefaults(t *testing.T) {
 	assert.Empty(t, p.URL())
 	assert.Empty(t, p.GithubURL())
 	assert.Empty(t, p.ImageURL())
+	assert.Empty(t, p.DocsURL())
+	assert.Equal(t, StatusActive, p.Status())
 
 	// techStack 永不为 nil，默认空切片
 	assert.NotNil(t, p.TechStack())
@@ -50,7 +52,7 @@ func TestReconstructProject_PreservesAllFields(t *testing.T) {
 
 	p := ReconstructProject(
 		id, "标题", "title", "简介",
-		"https://example.com", "https://github.com/x/y", "https://cdn/x.png",
+		"https://example.com", "https://github.com/x/y", "https://cdn/x.png", "/guide", StatusArchived,
 		[]string{"Go", "React"}, 5,
 		created, updated,
 	)
@@ -60,6 +62,8 @@ func TestReconstructProject_PreservesAllFields(t *testing.T) {
 	assert.Equal(t, "简介", p.Description())
 	assert.Equal(t, "https://example.com", p.URL())
 	assert.Equal(t, "https://github.com/x/y", p.GithubURL())
+	assert.Equal(t, "/guide", p.DocsURL())
+	assert.Equal(t, StatusArchived, p.Status())
 	assert.Equal(t, "https://cdn/x.png", p.ImageURL())
 	assert.Equal(t, []string{"Go", "React"}, p.TechStack())
 	assert.Equal(t, 5, p.SortOrder())
@@ -71,7 +75,7 @@ func TestReconstructProject_NilTechStackBecomesEmpty(t *testing.T) {
 	// Reconstruct 不校验，但从持久化重建时 nil techStack 归一化为空切片
 	p := ReconstructProject(
 		domainshared.NewID(), "t", "t", "d",
-		"", "", "", nil, 0,
+		"", "", "", "", StatusActive, nil, 0,
 		time.Time{}, time.Time{},
 	)
 	assert.Equal(t, []string{}, p.TechStack(), "nil 技术栈应归一化为空切片")

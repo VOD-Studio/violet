@@ -40,5 +40,22 @@ type Provider interface {
 	ListReleases(ctx context.Context, owner, repo, token string) ([]Release, error)
 }
 
+// PublicSummary 是公开仓库正式发布的摘要；Count 为零表示没有正式发布。
+type PublicSummary struct {
+	// TagName 最近一次实际发布对应的 Git 标签，不按语义版本号排序。
+	TagName string `json:"tag"`
+	// PublishedAt 正式发布的 RFC3339 时间。
+	PublishedAt string `json:"published_at"`
+	// Count 公开的正式发布数，不含草稿与预发布。
+	Count int `json:"count"`
+	// HTMLURL 最近版本的公开发布页。
+	HTMLURL string `json:"html_url"`
+}
+
+// PublicSummaryProvider 匿名读取公开仓库的正式发布，与站点更新日志独立。
+type PublicSummaryProvider interface {
+	SummarizePublicReleases(ctx context.Context, owner, repo string) (PublicSummary, error)
+}
+
 // ErrReleasesAPI GitHub Releases 请求失败
 var ErrReleasesAPI = domainshared.Internal("GitHub Releases 请求失败", nil)

@@ -290,6 +290,8 @@ const ROADMAP_PROJECT = {
 	url: "https://example.com/demo",
 	github_url: "https://github.com/example/roadmap-contract",
 	image_url: "",
+	docs_url: "",
+	status: "active",
 	tech_stack: ["Go", "React", "PostgreSQL"],
 	sort_order: 1,
 	created_at: "2026-08-01T00:00:00Z",
@@ -453,12 +455,13 @@ const summarize = (progress, inProgress, latestCompleted) => ({
 
 /**
  * 项目列表契约用数据（GET /projects）。顺序是站主设定的展示顺序，故意既不按标题也不按时间排：
- * 路线图契约项目有完整摘要与可用封面；Zeta 工具封面失效、没有进行中与已完成；
- * 空路线图项目有摘要但没有条目；Alpha 读不到摘要。
+ * 路线图契约项目有完整摘要与可用封面；Zeta 工具封面失效、只有计划中的条目；
+ * 空路线图项目没有任何条目；Alpha 没有路线图但有正式发布。
  */
 export const PROJECTS_FIXTURE = [
 	{
 		...ROADMAP_PROJECT,
+		docs_url: "/projects/roadmap-empty",
 		image_url: "/assets/contract-cover.png",
 		created_at: "2026-08-01T00:00:00Z",
 		roadmap: summarize(
@@ -484,6 +487,8 @@ export const PROJECTS_FIXTURE = [
 		description: "封面失效的项目，只有计划中的条目。",
 		url: "",
 		github_url: "",
+		status: "archived",
+		docs_url: "",
 		image_url: "/uploads/missing-cover.png",
 		tech_stack: ["TypeScript"],
 		sort_order: 2,
@@ -492,6 +497,7 @@ export const PROJECTS_FIXTURE = [
 	},
 	{
 		...ROADMAP_EMPTY.project,
+		status: "archived",
 		image_url: "",
 		sort_order: 3,
 		created_at: "2026-07-01T00:00:00Z",
@@ -503,11 +509,19 @@ export const PROJECTS_FIXTURE = [
 		slug: "alpha",
 		description: "后端没有附带路线图摘要的项目。",
 		url: "",
-		github_url: "",
+		github_url: "https://github.com/violet-contract/alpha",
+		status: "stable",
+		docs_url: "https://example.com/alpha/docs",
 		image_url: "",
 		tech_stack: [],
 		sort_order: 4,
 		created_at: "2026-10-01T00:00:00Z",
+		release: {
+			tag: "v1.4.0",
+			published_at: "2026-10-29T08:00:00Z",
+			count: 12,
+			html_url: "https://github.com/violet-contract/alpha/releases/tag/v1.4.0",
+		},
 	},
 ];
 

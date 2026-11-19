@@ -318,9 +318,11 @@ Cookie 由 `MUSIC_CREDENTIAL_KEY` 加密保存，凭据不交给前端。账号�
 
 账号权益、试听判定和分页能力受上游版本影响。重复页、缺页或匿名结果不能当作完整私有音乐库；已知限制见 [Kite 接入分析](../docs/research/kite-integration.md)，配置见[部署手册](../docs/deploy/manual-deploy.md#kite-音乐服务可选)。
 
-### 项目路线图接口
+### 项目总览与路线图接口
 
-公开接口按项目 slug 读取；写操作需 `project:update` 与 CSRF。
+`GET /projects` 批量返回路线图进度与在做事项；不分页时一并附带可用的公开 GitHub 正式发布摘要。计数不含预发布和草稿，GitHub 不可用时仍返回项目与路线图。项目写接口支持设置维护状态与文档地址，归档不撤下公开详情或路线图。
+
+路线图按项目 slug 公开读取；写操作需 `project:update` 与 CSRF。
 
 | 方法 | 路径 | 用途 |
 | --- | --- | --- |

@@ -22,8 +22,15 @@ func TestRepositoryActivityIntegration(t *testing.T) {
 	projects := NewProjectRepository(db)
 	storage := NewRepositoryActivityRepository(db)
 	const sourceKey = "owner/repo"
-	first := project.ReconstructProject(shared.MustParseID("00000000-0000-0000-0000-000000000010"), "第一个", "first", "", "", "https://github.com/Owner/Repo", "", []string{}, 0, time.Now(), time.Now())
-	second := project.ReconstructProject(shared.MustParseID("00000000-0000-0000-0000-000000000020"), "第二个", "second", "", "", "https://github.com/owner/repo/", "", []string{}, 1, time.Now(), time.Now())
+	now := time.Now()
+	first := project.ReconstructProject(
+		shared.MustParseID("00000000-0000-0000-0000-000000000010"), "第一个", "first",
+		"", "", "https://github.com/Owner/Repo", "", "", project.StatusActive, nil, 0, now, now,
+	)
+	second := project.ReconstructProject(
+		shared.MustParseID("00000000-0000-0000-0000-000000000020"), "第二个", "second",
+		"", "", "https://github.com/owner/repo/", "", "", project.StatusActive, nil, 1, now, now,
+	)
 	require.NoError(t, projects.Save(ctx, first))
 	require.NoError(t, projects.Save(ctx, second))
 

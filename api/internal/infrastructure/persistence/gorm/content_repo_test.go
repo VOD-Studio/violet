@@ -135,6 +135,8 @@ func TestProjectRepository_Lifecycle(t *testing.T) {
 	require.NoError(t, err)
 	p.SetSortOrder(10)
 	p.SetTechStack([]string{"go", "react"})
+	require.NoError(t, p.SetStatus(domainproject.StatusArchived))
+	require.NoError(t, p.SetDocsURL("/guide#install"))
 	require.NoError(t, repo.Save(ctx, p))
 
 	// 第二个项目，sort_order 更小，用于验证 FindAll 排序
@@ -150,6 +152,8 @@ func TestProjectRepository_Lifecycle(t *testing.T) {
 	assert.Equal(t, "博客系统", got.Description())
 	assert.Equal(t, []string{"go", "react"}, got.TechStack())
 	assert.Equal(t, 10, got.SortOrder())
+	assert.Equal(t, domainproject.StatusArchived, got.Status())
+	assert.Equal(t, "/guide#install", got.DocsURL())
 
 	// FindAll：按 sort_order ASC → iris(1) 在前，violet(10) 在后
 	all, err := repo.FindAll(ctx)

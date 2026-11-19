@@ -8,29 +8,39 @@ import (
 	"time"
 
 	domain "blog-api/internal/domain/project"
+	domainreleases "blog-api/internal/domain/releases"
 	domainshared "blog-api/internal/domain/shared"
 )
 
 // ProjectDTO 项目读模型
 type ProjectDTO struct {
-	ID          string   `json:"id"`
-	Title       string   `json:"title"`
-	Slug        string   `json:"slug"`
-	Description string   `json:"description"`
-	URL         string   `json:"url"`
-	GithubURL   string   `json:"github_url"`
-	ImageURL    string   `json:"image_url"`
-	TechStack   []string `json:"tech_stack"`
-	SortOrder   int      `json:"sort_order"`
-	CreatedAt   string   `json:"created_at"`
+	ID          string        `json:"id"`
+	Title       string        `json:"title"`
+	Slug        string        `json:"slug"`
+	Description string        `json:"description"`
+	URL         string        `json:"url"`
+	GithubURL   string        `json:"github_url"`
+	ImageURL    string        `json:"image_url"`
+	DocsURL     string        `json:"docs_url"`
+	Status      domain.Status `json:"status"`
+	TechStack   []string      `json:"tech_stack"`
+	SortOrder   int           `json:"sort_order"`
+	CreatedAt   string        `json:"created_at"`
 	// Roadmap 仅项目列表附带；详情接口使用独立的路线图读模型。
 	Roadmap *RoadmapSummaryDTO `json:"roadmap,omitempty"`
+	// Release 仅公开总览查到正式 GitHub 发布时附带。
+	Release *domainreleases.PublicSummary `json:"release,omitempty"`
+}
+
+type ReleaseSummaryReader interface {
+	ReadSummaries(ctx context.Context, githubURLs []string) map[string]domainreleases.PublicSummary
 }
 
 // Service 项目用例服务
 type Service struct {
 	repo      domain.ProjectRepository
 	summaries RoadmapSummaryReader
+	releases  ReleaseSummaryReader
 }
 
 // NewService 构造项目用例服务
@@ -44,6 +54,12 @@ func (s *Service) WithRoadmapSummaries(reader RoadmapSummaryReader) *Service {
 	return s
 }
 
+// WithReleaseSummaries 配置公开总览的发布摘要，不影响详情、MCP 或管理分页读取。
+func (s *Service) WithReleaseSummaries(reader ReleaseSummaryReader) *Service {
+	s.releases = reader
+	return s
+}
+
 // List 获取所有项目
 func (s *Service) List(ctx context.Context) ([]ProjectDTO, error) {
 	items, err := s.repo.FindAll(ctx)
@@ -51,6 +67,30 @@ func (s *Service) List(ctx context.Context) ([]ProjectDTO, error) {
 		return nil, err
 	}
 	return s.listDTOs(ctx, items)
+}
+
+// ListOverview 合并路线图和公开版本摘要；版本不可用不阻断已有项目内容。
+func (s *Service) ListOverview(ctx context.Context) ([]ProjectDTO, error) {
+	items, err := s.List(ctx)
+	if err != nil || s.releases == nil || len(items) == 0 {
+		return items, err
+	}
+	urls := make([]string, 0, len(items))
+	for i := range items {
+		if items[i].GithubURL != "" {
+			urls = append(urls, items[i].GithubURL)
+		}
+	}
+	if len(urls) == 0 {
+		return items, nil
+	}
+	summaries := s.releases.ReadSummaries(ctx, urls)
+	for i := range items {
+		if summary, ok := summaries[items[i].GithubURL]; ok {
+			items[i].Release = &summary
+		}
+	}
+	return items, nil
 }
 
 // ListPage 分页获取项目
@@ -122,6 +162,8 @@ type CreateInput struct {
 	URL         string
 	GithubURL   string
 	ImageURL    string
+	DocsURL     *string        // nil 不配置文档入口
+	Status      *domain.Status // nil 默认进行中
 	TechStack   []string
 	SortOrder   int
 }
@@ -147,6 +189,9 @@ func (s *Service) Create(ctx context.Context, in CreateInput) error {
 	if err := p.Update(in.Title, in.Description, in.URL, in.GithubURL, in.ImageURL); err != nil {
 		return err
 	}
+	if err := applyOverview(p, in.Status, in.DocsURL); err != nil {
+		return err
+	}
 	p.SetTechStack(in.TechStack)
 	p.SetSortOrder(in.SortOrder)
 	return s.repo.Save(ctx, p)
@@ -160,6 +205,8 @@ type UpdateInput struct {
 	URL         string
 	GithubURL   string
 	ImageURL    string
+	DocsURL     *string        // nil 保留原值，空串移除文档入口
+	Status      *domain.Status // nil 保留原值
 	TechStack   []string
 	SortOrder   int
 }
@@ -187,9 +234,24 @@ func (s *Service) Update(ctx context.Context, id string, in UpdateInput) error {
 			return err
 		}
 	}
+	if err := applyOverview(p, in.Status, in.DocsURL); err != nil {
+		return err
+	}
 	p.SetTechStack(in.TechStack)
 	p.SetSortOrder(in.SortOrder)
 	return s.repo.Save(ctx, p)
+}
+
+func applyOverview(p *domain.Project, status *domain.Status, docsURL *string) error {
+	if status != nil {
+		if err := p.SetStatus(*status); err != nil {
+			return err
+		}
+	}
+	if docsURL != nil {
+		return p.SetDocsURL(*docsURL)
+	}
+	return nil
 }
 
 func (s *Service) checkSlug(ctx context.Context, slug string, except domainshared.ID) error {
@@ -242,6 +304,7 @@ func ToDTO(p *domain.Project) ProjectDTO {
 	return ProjectDTO{
 		ID: p.ID().String(), Title: p.Title(), Slug: p.Slug(), Description: p.Description(),
 		URL: p.URL(), GithubURL: p.GithubURL(), ImageURL: p.ImageURL(),
+		DocsURL: p.DocsURL(), Status: p.Status(),
 		TechStack: p.TechStack(), SortOrder: p.SortOrder(),
 		CreatedAt: p.CreatedAt().Format(time.RFC3339),
 	}

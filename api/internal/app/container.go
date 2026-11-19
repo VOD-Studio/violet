@@ -109,7 +109,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 		return nil, nil, err
 	}
 
-	content := NewContentContainer(db, bus)
+	content := NewContentContainer(db, bus, rdb)
 	roadmap := NewRoadmapContainer(db, permissionChecker, bus)
 	music := NewMusicContainer(db, cfg.Music)
 	presence := NewPresenceContainer(db, bus)

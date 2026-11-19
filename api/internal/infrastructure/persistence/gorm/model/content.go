@@ -167,6 +167,8 @@ type Project struct {
 	URL         string         `gorm:"type:text" json:"url"`
 	GithubURL   string         `gorm:"type:text;column:github_url" json:"github_url"`
 	ImageURL    string         `gorm:"type:text;column:image_url" json:"image_url"`
+	DocsURL     string         `gorm:"type:text;column:docs_url;not null;default:''" json:"docs_url"`
+	Status      string         `gorm:"type:text;not null;default:active" json:"status"`
 	TechStack   pq.StringArray `gorm:"type:text[];column:tech_stack" json:"tech_stack"`
 	SortOrder   int            `gorm:"default:0" json:"sort_order"`
 	CreatedAt   time.Time      `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`

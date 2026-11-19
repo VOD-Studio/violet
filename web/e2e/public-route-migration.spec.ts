@@ -188,7 +188,12 @@ for (const [slug, destination] of [
 		page,
 	}) => {
 		await loadClient(context);
-		const project = { ...ROADMAP_FIXTURE.project, slug, title: `文档入口 ${slug}` };
+		const project = {
+			...ROADMAP_FIXTURE.project,
+			slug,
+			title: `文档入口 ${slug}`,
+			docs_url: destination,
+		};
 		await context.route("**/api/v1/projects**", async (route) => {
 			const path = new URL(route.request().url()).pathname;
 			if (path === "/api/v1/projects") {
@@ -202,7 +207,13 @@ for (const [slug, destination] of [
 		await openClientPage(page, "/");
 		await page.getByRole("button", { name: "更多", exact: true }).click();
 		await page.getByRole("link", { name: /^项目/ }).click();
-		await page.getByRole("link", { name: project.title, exact: true }).click();
+		const title = page.getByRole("link", { name: project.title, exact: true });
+		const card = page.getByRole("listitem").filter({ has: title });
+		await expect(card.getByRole("link", { name: "文档", exact: true })).toHaveAttribute(
+			"href",
+			destination,
+		);
+		await title.click();
 		await expect(page).toHaveURL(`/projects/${slug}`);
 		const docs = page.getByRole("link", { name: "文档", exact: true });
 		await expect(docs).toHaveAttribute("href", destination);

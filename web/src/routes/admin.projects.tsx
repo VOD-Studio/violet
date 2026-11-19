@@ -1,5 +1,4 @@
-import { useProjects } from "@entities/project/api/queries";
-import type { Project } from "@entities/project/model/types";
+import { PROJECT_STATUS_LABELS, type Project } from "@entities/project/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { Cover } from "@features/admin-media/ui/Cover";
 import {
@@ -23,6 +22,11 @@ import {
 	iconProps,
 	Modal,
 	NumberInput,
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
 	Tag,
 	Textarea,
 	Tooltip,
@@ -42,14 +46,32 @@ const EMPTY: CreateProject = {
 	url: "",
 	github_url: "",
 	image_url: "",
+	docs_url: "",
+	status: "active",
 	tech_stack: [],
 	sort_order: 0,
 };
+
+function projectFormValues(project: Project): CreateProject {
+	return {
+		title: project.title,
+		slug: project.slug,
+		description: project.description,
+		url: project.url,
+		github_url: project.github_url,
+		image_url: project.image_url,
+		docs_url: project.docs_url,
+		status: project.status,
+		tech_stack: project.tech_stack,
+		sort_order: project.sort_order,
+	};
+}
+
 function AdminProjectsPage() {
 	const { data: paged, isLoading, error, refetch, pagination } = usePagedQuery(useProjectsPaged);
 	const projects = paged?.data ?? [];
 	const [dialogOpen, setDialogOpen] = useState(false);
-	const [editingId, setEditingId] = useState<string | null>(null);
+	const [editing, setEditing] = useState<Project | null>(null);
 	const [deleteId, setDeleteId] = useState<string | null>(null);
 	const [sort, setSort] = useState<DataTableSort | null>(null);
 
@@ -73,12 +95,12 @@ function AdminProjectsPage() {
 	// TODO: 项目有 sort_order 字段，但缺少拖拽排序批量更新接口（如 POST /admin/projects/reorder）。
 
 	const openCreate = () => {
-		setEditingId(null);
+		setEditing(null);
 		setDialogOpen(true);
 	};
 
 	const openEdit = (p: Project) => {
-		setEditingId(p.id);
+		setEditing(p);
 		setDialogOpen(true);
 	};
 
@@ -223,11 +245,7 @@ function AdminProjectsPage() {
 					emptyDescription="还没有创建任何项目"
 				/>
 
-				<ProjectDialog
-					open={dialogOpen}
-					onOpenChange={setDialogOpen}
-					editingId={editingId}
-				/>
+				<ProjectDialog open={dialogOpen} onOpenChange={setDialogOpen} editing={editing} />
 
 				<DeleteProjectDialog
 					deleteId={deleteId}
@@ -242,18 +260,15 @@ function AdminProjectsPage() {
 function ProjectDialog({
 	open,
 	onOpenChange,
-	editingId,
+	editing,
 }: {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	editingId: string | null;
+	editing: Project | null;
 }) {
 	const createMut = useCreateProject();
-	const updateMut = useUpdateProject(editingId ?? "");
-	const isEditing = !!editingId;
-
-	const { data: projects = [] } = useProjects();
-	const editing = isEditing ? projects.find((p) => p.id === editingId) : undefined;
+	const updateMut = useUpdateProject(editing?.id ?? "");
+	const isEditing = editing !== null;
 
 	const {
 		register,
@@ -261,21 +276,7 @@ function ProjectDialog({
 		control,
 		reset,
 		formState: { errors },
-	} = useForm<CreateProject>({
-		values:
-			isEditing && editing
-				? {
-						title: editing.title,
-						slug: editing.slug,
-						description: editing.description,
-						url: editing.url,
-						github_url: editing.github_url,
-						image_url: editing.image_url,
-						tech_stack: editing.tech_stack,
-						sort_order: editing.sort_order,
-					}
-				: EMPTY,
-	});
+	} = useForm<CreateProject>({ values: editing ? projectFormValues(editing) : EMPTY });
 
 	useEffect(() => {
 		if (open) reset();
@@ -357,6 +358,41 @@ function ProjectDialog({
 						<Input id="project-github" {...register("github_url")} />
 					</div>
 				</div>
+				<div className="grid gap-4 sm:grid-cols-2">
+					<div className="space-y-1.5">
+						<label htmlFor="project-status" className="text-sm font-medium">
+							项目状态
+						</label>
+						<Controller
+							name="status"
+							control={control}
+							render={({ field }) => (
+								<Select
+									value={field.value ?? "active"}
+									onValueChange={field.onChange}
+								>
+									<SelectTrigger id="project-status" className="w-full">
+										<SelectValue>
+											{PROJECT_STATUS_LABELS[field.value ?? "active"]}
+										</SelectValue>
+									</SelectTrigger>
+									<SelectContent>
+										{Object.entries(PROJECT_STATUS_LABELS).map(
+											([value, label]) => (
+												<SelectItem key={value} value={value}>
+													{label}
+												</SelectItem>
+											),
+										)}
+									</SelectContent>
+								</Select>
+							)}
+						/>
+					</div>
+					<Field label="文档地址" hint="填写已可访问的站内路径或完整网址，留空不显示。">
+						<Input id="project-docs-url" {...register("docs_url")} />
+					</Field>
+				</div>
 				<div className="space-y-1.5">
 					<label htmlFor="project-cover" className="text-sm font-medium">
 						封面图
@@ -392,16 +428,11 @@ function ProjectDialog({
 											? field.value.join(", ")
 											: (field.value ?? "")
 									}
-									onChange={(e) =>
-										field.onChange(
-											e.target.value
-												? e.target.value
-														.split(",")
-														.map((s) => s.trim())
-														.filter(Boolean)
-												: [],
-										)
-									}
+									onChange={(event) => {
+										const tags = event.target.value.split(",");
+										const normalized = tags.map((tag) => tag.trim());
+										field.onChange(normalized.filter(Boolean));
+									}}
 									placeholder="React, Go, PostgreSQL"
 								/>
 							)}

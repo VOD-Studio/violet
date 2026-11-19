@@ -288,6 +288,7 @@ jobs:
     runs-on: ${{ fromJSON(needs.runner.outputs.labels) }}
     env:
       APK_MIRROR: ${{ contains(fromJSON(needs.runner.outputs.labels), 'self-hosted') && 'mirrors.aliyun.com' || 'dl-cdn.alpinelinux.org' }}
+      GOPROXY: ${{ contains(fromJSON(needs.runner.outputs.labels), 'self-hosted') && 'https://goproxy.cn,direct' || 'https://proxy.golang.org,direct' }}
     outputs:
       digest: ${{ steps.image.outputs.digest }}
 
@@ -316,6 +317,7 @@ jobs:
           build-args: |
             API_VERSION=${{ needs.changes.outputs.version }}
             APK_MIRROR=${{ env.APK_MIRROR }}
+            GOPROXY=${{ env.GOPROXY }}
           cache-from: type=gha,scope=violet-api
           cache-to: ${{ needs.changes.outputs.publish_images == 'true' && 'type=gha,mode=max,scope=violet-api' || '' }}
 

@@ -55,6 +55,12 @@ func registerPublicPaths(t *openapi3.T) {
 		"in_progress":      inProgress,
 		"latest_completed": {Value: &latestCompleted},
 	}, "progress", "in_progress", "latest_completed")
+	registerSchema(t, "ProjectReleaseSummaryDTO", openapi3.Schemas{
+		"tag":          reqStr("最近正式发布的版本"),
+		"published_at": reqStr("实际发布时间（RFC3339）"),
+		"count":        optInt("公开正式发布总数，不含草稿和预发布"),
+		"html_url":     reqStr("最近正式发布的 GitHub 链接"),
+	}, "tag", "published_at", "count", "html_url")
 	registerSchema(t, "ProjectDTO", openapi3.Schemas{
 		"id":          reqStr("项目 ID（UUID）"),
 		"title":       reqStr("项目标题"),
@@ -63,11 +69,14 @@ func registerPublicPaths(t *openapi3.T) {
 		"url":         optStr("项目链接"),
 		"github_url":  optStr("GitHub 仓库链接"),
 		"image_url":   optStr("项目封面图链接"),
+		"docs_url":    optStr("已可访问的站内文档路径或 HTTP(S) 链接；空串无文档入口"),
+		"status":      strEnum("维护状态；归档项目仍公开", "active", "stable", "archived"),
 		"tech_stack":  strArray("技术栈"),
 		"sort_order":  optInt("排序权重"),
 		"created_at":  optStr("创建时间（RFC3339）"),
 		"roadmap":     optRef("仅项目列表附带；无条目时计数为零、开发中为 []、最近完成为 null", "ProjectRoadmapSummaryDTO"),
-	})
+		"release":     optRef("仅不分页的公开总览附带；正式发布不存在或暂不可用时省略", "ProjectReleaseSummaryDTO"),
+	}, "status", "docs_url")
 
 	// AnnouncementDTO
 	registerSchema(t, "AnnouncementDTO", openapi3.Schemas{
@@ -192,7 +201,7 @@ func registerPublicPaths(t *openapi3.T) {
 		Get: &openapi3.Operation{
 			Tags:        []string{"项目"},
 			Summary:     "项目列表",
-			Description: "每个项目附带路线图进度概览、至多两条开发中条目与一条最近完成条目。无 page/limit 时返回全部；传入任一参数时返回 offset 分页结果。",
+			Description: "每个项目附带路线图进度及条目摘要；不传 page/limit 时返回全部，并附带可用的公开 GitHub 正式发布摘要。传入任一参数时返回 offset 分页结果。",
 			Parameters:  openapi3.Parameters{pageParam(), limitParam(100)},
 			Responses: responses(
 				200, dataArrayResponse("ProjectDTO", "项目列表（分页请求附带 meta.pagination）", 200, true),
@@ -329,6 +338,8 @@ func registerPublicPaths(t *openapi3.T) {
 		"url":         optStr("项目链接"),
 		"github_url":  optStr("GitHub 仓库链接"),
 		"image_url":   optStr("封面图链接"),
+		"docs_url":    optStr("已可访问的站内路径或 HTTP(S) 链接；空串移除入口，更新时省略保留原值"),
+		"status":      strEnum("项目状态；创建时默认 active，更新时省略保留原值", "active", "stable", "archived"),
 		"tech_stack":  strArray("技术栈"),
 		"sort_order":  optInt("排序权重"),
 	}, "title")
@@ -342,7 +353,7 @@ func registerPublicPaths(t *openapi3.T) {
 		RequestBody: jsonBody("ProjectRequest", true, "项目信息"),
 		Responses: responses(
 			201, messageResponse("项目已创建"),
-			400, errorResponse("标题或 slug 格式不合法"),
+			400, errorResponse("标题、slug、项目状态或文档地址不合法"),
 			409, errorResponse("项目 slug 已被占用"),
 		),
 	})
@@ -350,13 +361,13 @@ func registerPublicPaths(t *openapi3.T) {
 	put(t, "/admin/projects/{id}", &openapi3.Operation{
 		Tags:        []string{"项目"},
 		Summary:     "更新项目",
-		Description: "需管理员权限。全量替换语义。",
+		Description: "需管理员权限。全量替换；slug、status 和 docs_url 省略时保留原值。",
 		Security:    securityAdmin(),
 		Parameters:  openapi3.Parameters{pathStrParam("id", "项目 ID"), csrfHeaderParam()},
 		RequestBody: jsonBody("ProjectRequest", true, "项目信息"),
 		Responses: responses(
 			200, messageResponse("项目已更新"),
-			400, errorResponse("标题或 slug 格式不合法"),
+			400, errorResponse("标题、slug、项目状态或文档地址不合法"),
 			404, errorResponse("项目不存在"),
 			409, errorResponse("项目 slug 已被占用"),
 		),
