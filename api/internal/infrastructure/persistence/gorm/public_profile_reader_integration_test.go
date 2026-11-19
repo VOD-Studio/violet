@@ -24,10 +24,11 @@ func TestPublicProfileIntegration_StableMixedCursorAndPrivacy(t *testing.T) {
 	require.NoError(t, db.Create(&draft).Error)
 	tweet := model.Tweet{ID: uuid.New(), AuthorID: owner.UUID(), Content: "Visible tweet", CreatedAt: at, UpdatedAt: at}
 	require.NoError(t, db.Create(&tweet).Error)
-	comment := model.Comment{ID: uuid.New(), PostID: visiblePost.ID, CreatedBy: new(owner.UUID()), AuthorName: "profile_t13", AuthorEmail: "private@example.com", Body: "Public comment", Pictures: []byte("[]"), Status: "approved", CreatedAt: at, UpdatedAt: at}
+	pictures := []byte(`[{"url":"/uploads/profile.png","width":640,"height":480,"size":4096}]`)
+	comment := model.Comment{ID: uuid.New(), PostID: visiblePost.ID, CreatedBy: new(owner.UUID()), AuthorName: "profile_t13", AuthorEmail: "private@example.com", Body: "Public comment", Pictures: pictures, Status: "approved", CreatedAt: at, UpdatedAt: at}
 	require.NoError(t, db.Create(&comment).Error)
 	secondComment := comment
-	secondComment.ID = uuid.New()
+	secondComment.ID, secondComment.Pictures = uuid.New(), []byte("null")
 	require.NoError(t, db.Create(&secondComment).Error)
 	annotation := comment
 	annotation.ID, annotation.Body = uuid.New(), "Public annotation"
@@ -40,7 +41,7 @@ func TestPublicProfileIntegration_StableMixedCursorAndPrivacy(t *testing.T) {
 	onDraft := comment
 	onDraft.ID, onDraft.PostID, onDraft.Body = uuid.New(), draft.ID, "PRIVATE DRAFT COMMENT"
 	require.NoError(t, db.Create(&onDraft).Error)
-	tweetComment := model.TweetComment{ID: uuid.New(), TweetID: tweet.ID, AuthorID: owner.UUID(), Body: "Public tweet reply", Pictures: []byte("[]"), CreatedAt: at, UpdatedAt: at}
+	tweetComment := model.TweetComment{ID: uuid.New(), TweetID: tweet.ID, AuthorID: owner.UUID(), Body: "Public tweet reply", Pictures: pictures, CreatedAt: at, UpdatedAt: at}
 	require.NoError(t, db.Create(&tweetComment).Error)
 	require.NoError(t, db.Create(&model.TweetLike{TweetID: tweet.ID, UserID: owner.UUID(), CreatedAt: at}).Error)
 
@@ -56,6 +57,7 @@ func TestPublicProfileIntegration_StableMixedCursorAndPrivacy(t *testing.T) {
 	var kinds []string
 	var ids []string
 	cursor := ""
+	pictured := map[string]bool{comment.ID.String(): true, annotation.ID.String(): true, tweetComment.ID.String(): true}
 	for {
 		items, next, err := svc.List(ctx, "profile_t13", "all", cursor, 1)
 		require.NoError(t, err)
@@ -63,6 +65,12 @@ func TestPublicProfileIntegration_StableMixedCursorAndPrivacy(t *testing.T) {
 		kinds = append(kinds, items[0].Type)
 		ids = append(ids, items[0].ID)
 		assert.NotContains(t, items[0].Body, "PRIVATE")
+		if pictured[items[0].ID] {
+			assert.Equal(t, []publicprofile.Image{{URL: "/uploads/profile.png", Width: new(640), Height: new(480)}}, items[0].Images)
+		}
+		if items[0].ID == secondComment.ID.String() {
+			assert.Equal(t, []publicprofile.Image{}, items[0].Images)
+		}
 		if next == "" {
 			break
 		}

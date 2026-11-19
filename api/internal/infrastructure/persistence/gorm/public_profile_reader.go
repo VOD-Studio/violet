@@ -96,19 +96,14 @@ SELECT * FROM events WHERE created_at <= @now`+filter+` ORDER BY created_at DESC
 	items := make([]publicprofile.Activity, 0, len(rows))
 	kinds := [...]string{"", "post", "tweet", "comment", "annotation", "tweet_comment"}
 	for _, row := range rows {
-		images := make([]publicprofile.Image, 0)
-		if row.Kind == 2 {
+		var images []publicprofile.Image
+		if row.Kind > 1 && len(row.Images) > 0 {
 			if err := json.Unmarshal(row.Images, &images); err != nil {
-				return nil, shared.Internal("读取推文图片失败", err)
+				return nil, shared.Internal("读取动态图片失败", err)
 			}
-		} else if row.Kind > 2 {
-			var urls []string
-			if err := json.Unmarshal(row.Images, &urls); err != nil {
-				return nil, shared.Internal("读取评论图片失败", err)
-			}
-			for _, url := range urls {
-				images = append(images, publicprofile.Image{URL: url})
-			}
+		}
+		if images == nil {
+			images = []publicprofile.Image{}
 		}
 		items = append(items, publicprofile.Activity{ID: row.ID, Type: kinds[row.Kind], Order: row.Kind, CreatedAt: row.CreatedAt.UTC(), Title: row.Title, Body: row.Body, SelectedText: row.SelectedText, URL: row.URL, CoverImage: row.CoverImage, Images: images})
 	}
