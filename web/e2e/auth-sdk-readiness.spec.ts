@@ -54,7 +54,7 @@ async function openSecurity(context: BrowserContext, page: Page) {
 		Object.assign(body.data, { has_password: true, google_bound: false, github_bound: false });
 		await route.fulfill({ json: body });
 	});
-	await openAuthPage(page, "/profile");
+	await openAuthPage(page, "/settings");
 	await page.getByRole("tab", { name: "账户与安全" }).click();
 	await expect(page.getByRole("heading", { name: "登录方式", exact: true })).toBeVisible();
 }
@@ -65,8 +65,10 @@ async function openLoginSurface(
 	surface: "page" | "inline" | "dialog",
 ) {
 	if (surface === "page") {
-		await openAuthPage(page, "/login");
-		return page.locator("form");
+		await page.goto("/login", { waitUntil: "domcontentloaded" });
+		const main = page.getByRole("main");
+		await expect(main.getByRole("button", { name: "登录", exact: true })).toBeEnabled();
+		return main;
 	}
 	if (surface === "inline") {
 		await openAuthPage(page, "/blog/contract-rich-code");
@@ -104,6 +106,17 @@ async function expectOtherLoginsWork(page: Page, surface: Locator) {
 	expect(request.postDataJSON()).toEqual({ identifier: IDENTIFIER, password: PASSWORD });
 }
 
+test("旧个人中心保留查询，访客到新址仍需登录", async ({ context, page, request }) => {
+	const query = "?from=old%20link&tag=one&tag=two";
+	const response = await request.get(`/profile${query}`, { maxRedirects: 0 });
+	expect(response.status()).toBe(301);
+	expect(response.headers().location).toBe(`/settings${query}`);
+	await loadClient(context);
+	await page.goto("/settings");
+	await expect(page).toHaveURL(/\/login\?/);
+	expect(new URL(page.url()).searchParams.get("redirect")).toBe("/settings");
+});
+
 for (const surface of ["page", "inline", "dialog"] as const) {
 	for (const outcome of ["success", "error"] as const) {
 		test(`${surface}: Google SDK pending → ${outcome} 保留输入与其他登录方式`, async ({
@@ -123,7 +136,7 @@ for (const surface of ["page", "inline", "dialog"] as const) {
 			await expectOtherLoginsWork(page, content);
 			release(outcome);
 			if (outcome === "error") {
-				await expect(content.getByRole("alert")).toHaveText(SDK_ERROR);
+				await expect(content.getByText(SDK_ERROR, { exact: true })).toBeVisible();
 				await expect(google).toBeDisabled();
 				await expectOtherLoginsWork(page, content);
 			} else {

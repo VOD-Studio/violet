@@ -8,6 +8,7 @@ import (
 	appshared "blog-api/internal/application/shared"
 	infraauth "blog-api/internal/infrastructure/auth"
 	infraemail "blog-api/internal/infrastructure/email"
+	infrafriendlink "blog-api/internal/infrastructure/friendlink"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
 	friendlinkhttp "blog-api/internal/interfaces/http/handler/friendlink"
 )
@@ -15,6 +16,7 @@ import (
 type FriendLinkContainer struct {
 	FriendLinkHandler *friendlinkhttp.Handler
 	FriendLinkService *appfriendlink.Service
+	FriendLinkRefresh *appfriendlink.RefreshWorker
 }
 
 // NewFriendLinkContainer 装配友链模块。
@@ -31,5 +33,6 @@ func NewFriendLinkContainer(db *gorm.DB, redisClient *redis.Client, emailSender 
 	return &FriendLinkContainer{
 		FriendLinkHandler: friendlinkhttp.NewHandler(svc, userRepo),
 		FriendLinkService: svc,
+		FriendLinkRefresh: appfriendlink.NewRefreshWorker(friendLinkRepo, infrafriendlink.NewFetcher()),
 	}
 }

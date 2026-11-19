@@ -13,8 +13,7 @@ export interface TransitionRule {
 }
 
 const ADMIN = ["/admin", "/admin/*"];
-const LAB = ["/lab", "/lab/*"];
-const WORKBENCH = ["/inkline", "/inkline/*"];
+const WORKBENCH = ["/projects/inkline/docs", "/projects/inkline/docs/*"];
 const BLOG_BROWSE = ["/blog", "/blog/series", "/blog/archive"];
 
 const eitherIn = (patterns: readonly string[]) => (from: string | undefined, to: string) =>
@@ -28,8 +27,6 @@ const eitherIn = (patterns: readonly string[]) => (from: string | undefined, to:
 export const TRANSITION_RULES: readonly TransitionRule[] = [
 	// 后台是独立布局，没有前台的 Header 与页脚，整页切换不做转场。
 	{ id: "admin", kind: "none", applies: eitherIn(ADMIN) },
-	// 实验页不属于正式页面，也不应带上转场样式。
-	{ id: "lab", kind: "none", applies: eitherIn(LAB) },
 	{
 		id: "blog-browse-internal",
 		kind: "none",

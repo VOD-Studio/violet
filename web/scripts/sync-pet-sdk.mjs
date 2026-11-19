@@ -1,4 +1,4 @@
-// 构建 kodama 仓库的 pet-sdk 并同步到 src/features/pet-demo/sdk,供 /pet 演示页经 import.meta.glob 加载。
+// 构建 kodama 仓库的 pet-sdk 并同步到 src/features/pet-demo/sdk，供内部演示经 import.meta.glob 加载。
 // 需要 cargo、wasm32-unknown-unknown 目标与 wasm-bindgen;产物已在 .gitignore,不入库。
 //
 //   pnpm pet:sync                         构建并同步一次

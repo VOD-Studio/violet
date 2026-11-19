@@ -30,8 +30,9 @@ func (h *Handler) GetPublicSettings(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, err)
 		return
 	}
-	data["google_client_id"] = h.creds.GoogleClientID()
-	data["github_client_id"] = h.creds.GithubClientID()
+	googleID, githubID := h.creds.PublicLoginClientIDs()
+	data["google_client_id"] = googleID
+	data["github_client_id"] = githubID
 	response.RespondOK(w, data)
 }
 

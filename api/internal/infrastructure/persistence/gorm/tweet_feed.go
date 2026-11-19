@@ -15,10 +15,11 @@ import (
 )
 
 const ownTweetImages = "tweets.images <> '[]'"
+const publicTweetAuthorJoin = "JOIN users AS tweet_author ON tweet_author.id = tweets.author_id AND tweet_author.deleted_at IS NULL"
 
 func publicTweets(db *gorm.DB) *gorm.DB {
 	return db.Model(&model.Tweet{}).
-		Joins("JOIN users AS tweet_author ON tweet_author.id = tweets.author_id AND tweet_author.deleted_at IS NULL")
+		Joins(publicTweetAuthorJoin)
 }
 
 func tweetWindow(query *gorm.DB, since, until time.Time) *gorm.DB {

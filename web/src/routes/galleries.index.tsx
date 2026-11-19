@@ -1,5 +1,8 @@
 import { publishedGalleryKeys } from "@entities/gallery/api/keys";
-import { fetchPublishedGalleries } from "@entities/gallery/api/queries";
+import {
+	fetchPublishedGalleries,
+	fetchPublishedGallerySummary,
+} from "@entities/gallery/api/queries";
 import {
 	GalleryBrowsePage,
 	PUBLISHED_GALLERY_PAGE_LIMIT,
@@ -10,10 +13,16 @@ import { createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/galleries/")({
 	loader: async ({ context }) => {
 		const query = { limit: PUBLISHED_GALLERY_PAGE_LIMIT };
-		await context.queryClient.ensureQueryData({
-			queryKey: publishedGalleryKeys.list(query),
-			queryFn: () => fetchPublishedGalleries(query),
-		});
+		await Promise.allSettled([
+			context.queryClient.ensureQueryData({
+				queryKey: publishedGalleryKeys.list(query),
+				queryFn: () => fetchPublishedGalleries(query),
+			}),
+			context.queryClient.ensureQueryData({
+				queryKey: publishedGalleryKeys.summary(),
+				queryFn: fetchPublishedGallerySummary,
+			}),
+		]);
 	},
 	head: () => ({
 		meta: [

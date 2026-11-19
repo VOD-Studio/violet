@@ -33,14 +33,17 @@ type BaseModel struct {
 //   - internal/model.User（旧 DTO）：API 响应，将逐步废弃
 type User struct {
 	BaseModel
-	Username     string `gorm:"type:varchar(32);not null" json:"username"`
-	DisplayName  string `gorm:"type:varchar(32);default:''" json:"display_name"`
-	Email        string `gorm:"type:varchar(255);not null" json:"email"`
-	PasswordHash string `gorm:"type:varchar(255);not null" json:"-"`
-	AvatarURL    string `gorm:"type:text" json:"avatar_url"`
-	CoverURL     string `gorm:"type:text;not null;default:''" json:"cover_url"`
-	Bio          string `gorm:"type:text" json:"bio"`
-	Role         string `gorm:"type:varchar(32);not null;default:'user'" json:"role"`
+	Username                 string `gorm:"type:varchar(32);not null" json:"username"`
+	DisplayName              string `gorm:"type:varchar(32);default:''" json:"display_name"`
+	Email                    string `gorm:"type:varchar(255);not null" json:"email"`
+	PasswordHash             string `gorm:"type:varchar(255);not null" json:"-"`
+	AvatarURL                string `gorm:"type:text" json:"avatar_url"`
+	CoverURL                 string `gorm:"type:text;not null;default:''" json:"cover_url"`
+	Bio                      string `gorm:"type:text" json:"bio"`
+	Location                 string `gorm:"type:varchar(100);not null;default:''" json:"location"`
+	Website                  string `gorm:"type:text;not null;default:''" json:"website"`
+	PublicReadingPreferences []byte `gorm:"type:jsonb;not null;default:'[]'" json:"public_reading_preferences"`
+	Role                     string `gorm:"type:varchar(32);not null;default:'user'" json:"role"`
 	// IsRoot root 用户标志位，区分 root 与被委派超管
 	IsRoot        bool `gorm:"column:is_root;not null;default:false" json:"is_root"`
 	EmailVerified bool `gorm:"not null;default:false" json:"email_verified"`

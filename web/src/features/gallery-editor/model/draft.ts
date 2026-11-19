@@ -64,12 +64,14 @@ export function buildSaveGalleryInput(
 	expectedVersion: number,
 	title: string,
 	summary: string,
+	location: string,
 	items: GalleryItem[],
 ): SaveGalleryInput {
 	return {
 		expected_version: expectedVersion,
 		title,
 		summary,
+		location,
 		items: items.map(({ file_id, caption, alt_text_override }) => ({
 			file_id,
 			caption,

@@ -1,9 +1,24 @@
-import type { PublishedGallery, PublishedGalleryListQuery } from "@entities/gallery/model/types";
+import type {
+	PublishedGallery,
+	PublishedGalleryListQuery,
+	PublishedGallerySummary,
+} from "@entities/gallery/model/types";
 import { apiGet, apiGetPaged } from "@shared/api/request";
 import type { PagedResponse } from "@shared/api/types";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { publishedGalleryKeys } from "./keys";
+
+export function fetchPublishedGallerySummary(): Promise<PublishedGallerySummary> {
+	return apiGet<PublishedGallerySummary>("/gallery-summary");
+}
+
+export function usePublishedGallerySummary() {
+	return useQuery({
+		queryKey: publishedGalleryKeys.summary(),
+		queryFn: fetchPublishedGallerySummary,
+	});
+}
 
 /** 读取一页已发布图集。 */
 export function fetchPublishedGalleries(
@@ -37,6 +52,14 @@ export function usePublishedGalleryFeed(limit: number) {
 	const lastMore = more.at(-1);
 	const nextCursor = lastPage?.pagination.next_cursor;
 	const loadMoreFailed = lastMore?.isError ?? false;
+	const seen = new Set<string>();
+	const galleries = pages
+		.flatMap((page) => page.data)
+		.filter((gallery) => {
+			if (seen.has(gallery.id)) return false;
+			seen.add(gallery.id);
+			return true;
+		});
 
 	const loadMore = () => {
 		if (loadMoreFailed) {
@@ -50,7 +73,7 @@ export function usePublishedGalleryFeed(limit: number) {
 	};
 
 	return {
-		galleries: pages.flatMap((page) => page.data),
+		galleries,
 		isLoading: first.isLoading,
 		isError: first.isError,
 		refetch: first.refetch,

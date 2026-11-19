@@ -46,6 +46,7 @@ describe("published gallery queries", () => {
 			slug: "first",
 			title: "第一页",
 			summary: "",
+			location: "",
 			published_at: "2026-08-31T00:00:00Z",
 			items: [],
 		};
@@ -61,7 +62,10 @@ describe("published gallery queries", () => {
 			}
 			nextAttempts += 1;
 			if (nextAttempts === 1) return Promise.reject(new Error("temporary failure"));
-			return Promise.resolve({ data: [secondGallery], pagination: { limit: 1 } });
+			return Promise.resolve({
+				data: [firstGallery, secondGallery],
+				pagination: { limit: 2 },
+			});
 		});
 		const queryClient = new QueryClient({
 			defaultOptions: { queries: { retry: false } },

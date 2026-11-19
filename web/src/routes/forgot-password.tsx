@@ -1,15 +1,16 @@
 import { useForgotPassword, useResetPassword } from "@features/auth/api/mutations";
 import { useCsrfToken } from "@features/auth/api/queries";
+import { parseAuthEntrySearch } from "@features/auth/lib/auth-entry-search";
 import {
 	type ForgotPasswordFormData,
 	forgotPasswordSchema,
 	type ResetPasswordFormData,
 	resetPasswordSchema,
 } from "@features/auth/model/schemas";
+import { AuthPageLayout } from "@features/auth/ui/AuthPageLayout";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Button, Field, Input, InputOTP, Label, ResendButton } from "@violet/ui";
-import { MailCheck } from "lucide-react";
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { Button, Field, Input, InputOTP, ResendButton } from "@violet/ui";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -17,14 +18,18 @@ import { ApiError } from "@/shared/api/error";
 
 export const Route = createFileRoute("/forgot-password")({
 	ssr: false,
+	validateSearch: parseAuthEntrySearch,
+	head: () => ({ meta: [{ title: "找回密码" }] }),
 	component: ForgotPasswordPage,
 });
 
 function ForgotPasswordPage() {
 	const navigate = useNavigate();
+	const { redirect, email } = useSearch({ from: "/forgot-password" });
 	const csrfToken = useCsrfToken();
 	const [sentEmail, setSentEmail] = useState<string | null>(null);
 	const [invalidCode, setInvalidCode] = useState(false);
+	const [submitError, setSubmitError] = useState("");
 
 	// 步骤 1 表单：邮箱
 	const {
@@ -33,7 +38,7 @@ function ForgotPasswordPage() {
 		formState: { errors: emailErrors },
 	} = useForm<ForgotPasswordFormData>({
 		resolver: zodResolver(forgotPasswordSchema),
-		defaultValues: { email: "" },
+		defaultValues: { email: email ?? "" },
 	});
 
 	// 步骤 2 表单：验证码 + 新密码 + 确认
@@ -42,6 +47,7 @@ function ForgotPasswordPage() {
 		handleSubmit: handleSubmitReset,
 		setValue: setResetValue,
 		watch: watchReset,
+		reset: resetForm,
 		clearErrors: clearResetErrors,
 		setError: setResetError,
 		formState: { errors: resetErrors },
@@ -57,20 +63,20 @@ function ForgotPasswordPage() {
 
 	// 步骤 1：发送重置码
 	const onSubmitEmail = handleSubmitEmail((data) => {
+		setSubmitError("");
 		forgotMutation.mutate(
 			{ email: data.email },
 			{
 				onSuccess: () => {
 					setSentEmail(data.email);
 					setResetValue("email", data.email);
-					toast.success("重置码已发送至该邮箱");
 				},
 				onError: (err) => {
 					const msg =
 						err instanceof ApiError
 							? err.message
 							: err.message || "发送失败，请稍后重试";
-					toast.error(msg);
+					setSubmitError(msg);
 				},
 			},
 		);
@@ -78,6 +84,7 @@ function ForgotPasswordPage() {
 
 	// 步骤 2：重置密码
 	const onSubmitReset = handleSubmitReset((data) => {
+		setSubmitError("");
 		resetMutation.mutate(
 			{ email: data.email, code: data.code, new_password: data.newPassword },
 			{
@@ -86,7 +93,7 @@ function ForgotPasswordPage() {
 					navigate({
 						to: "/login",
 						replace: true,
-						search: { email: sentEmail ?? undefined },
+						search: { email: data.email, ...(redirect ? { redirect } : {}) },
 					});
 				},
 				onError: (err) => {
@@ -94,10 +101,11 @@ function ForgotPasswordPage() {
 						err instanceof ApiError
 							? err.message || "重置失败，请检查验证码"
 							: err.message || "重置失败";
-					toast.error(msg);
 					if (err instanceof ApiError && err.code === "UNAUTHORIZED") {
 						setResetError("code", { type: "server", message: msg });
 						setInvalidCode(true);
+					} else {
+						setSubmitError(msg);
 					}
 				},
 			},
@@ -109,16 +117,17 @@ function ForgotPasswordPage() {
 	const handleResend = async (): Promise<boolean> => {
 		const email = sentEmail;
 		if (!email) return false;
+		setSubmitError("");
 		try {
 			await forgotMutation.mutateAsync({ email });
 			setResetValue("code", "");
 			clearResetErrors("code");
 			setInvalidCode(false);
-			toast.success("重置码已重新发送");
+			toast.success("如果邮箱已注册，你会收到新的重置邮件");
 			return true;
 		} catch (err) {
 			const msg = err instanceof ApiError ? err.message : "重发失败";
-			toast.error(msg);
+			setSubmitError(msg);
 			return false;
 		}
 	};
@@ -131,123 +140,113 @@ function ForgotPasswordPage() {
 	};
 
 	return (
-		<div className="container mx-auto flex flex-1 items-center justify-center px-4 py-16">
-			<div className="w-full max-w-sm space-y-6">
-				<div className="text-center">
-					<h1 className="font-mono text-2xl font-bold tracking-tight">找回密码</h1>
-					<p className="mt-2 text-sm text-muted-foreground">
-						{sentEmail ? "输入重置码和新密码" : "输入注册邮箱重置密码"}
-					</p>
-				</div>
-
-				{sentEmail ? (
-					// 步骤 2：重置码 + 新密码
-					<form onSubmit={onSubmitReset} className="space-y-4">
-						<div className="flex flex-col items-center gap-3 text-center">
-							<MailCheck className="size-6 text-primary" />
-							<p className="text-sm text-muted-foreground">
-								重置码已发送至
-								<br />
-								<span className="font-medium text-foreground">{sentEmail}</span>
-							</p>
-						</div>
-
-						<Field label="邮箱重置码" error={resetErrors.code?.message}>
-							<InputOTP
-								name="code"
-								value={codeValue}
-								onChange={handleCodeChange}
-								invalid={invalidCode && !resetMutation.isPending}
-								valid={resetMutation.isSuccess}
-								required
-								disabled={resetMutation.isPending || forgotMutation.isPending}
-							/>
-						</Field>
-
-						<div className="text-center">
-							<ResendButton
-								onResend={handleResend}
-								resetKey={sentEmail}
-								disabled={resetMutation.isPending}
-							/>
-						</div>
-
-						<div className="space-y-1">
-							<Label htmlFor="newPassword">新密码</Label>
-							<Input
-								id="newPassword"
-								type="password"
-								placeholder="至少 8 位"
-								aria-invalid={!!resetErrors.newPassword}
-								{...registerReset("newPassword")}
-							/>
-							{resetErrors.newPassword ? (
-								<p className="text-xs text-destructive">
-									{resetErrors.newPassword.message}
-								</p>
-							) : null}
-						</div>
-
-						<div className="space-y-1">
-							<Label htmlFor="confirmPassword">确认新密码</Label>
-							<Input
-								id="confirmPassword"
-								type="password"
-								placeholder="再次输入新密码"
-								aria-invalid={!!resetErrors.confirmPassword}
-								{...registerReset("confirmPassword")}
-							/>
-							{resetErrors.confirmPassword ? (
-								<p className="text-xs text-destructive">
-									{resetErrors.confirmPassword.message}
-								</p>
-							) : null}
-						</div>
-
-						<Button
-							type="submit"
-							className="w-full"
-							disabled={resetMutation.isPending || !csrfToken}
-						>
-							{resetMutation.isPending ? "重置中…" : "重置密码"}
-						</Button>
-					</form>
+		<AuthPageLayout
+			title={sentEmail ? "重置密码" : "找回密码"}
+			description={
+				sentEmail ? (
+					<>
+						如果{" "}
+						<span className="break-all font-medium text-foreground">{sentEmail}</span>{" "}
+						已注册，你会收到一封重置邮件。
+					</>
 				) : (
-					// 步骤 1：输入邮箱
-					<form onSubmit={onSubmitEmail} className="space-y-4">
-						<div className="space-y-1">
-							<Label htmlFor="email">注册邮箱</Label>
-							<Input
-								id="email"
-								type="email"
-								placeholder="you@example.com"
-								aria-invalid={!!emailErrors.email}
-								{...registerEmail("email")}
-							/>
-							{emailErrors.email ? (
-								<p className="text-xs text-destructive">
-									{emailErrors.email.message}
-								</p>
-							) : null}
-						</div>
-
+					"填写注册邮箱，我们会发送六位验证码。"
+				)
+			}
+		>
+			{sentEmail ? (
+				<form onSubmit={onSubmitReset} className="space-y-4">
+					<Field label="邮箱重置码" error={resetErrors.code?.message}>
+						<InputOTP
+							name="code"
+							value={codeValue}
+							onChange={handleCodeChange}
+							invalid={invalidCode && !resetMutation.isPending}
+							valid={resetMutation.isSuccess}
+							required
+							disabled={resetMutation.isPending || forgotMutation.isPending}
+						/>
+					</Field>
+					<div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+						<ResendButton
+							onResend={handleResend}
+							resetKey={sentEmail}
+							disabled={resetMutation.isPending || !csrfToken}
+						/>
 						<Button
-							type="submit"
-							className="w-full"
-							disabled={forgotMutation.isPending || !csrfToken}
+							variant="ghost"
+							disabled={resetMutation.isPending || forgotMutation.isPending}
+							onClick={() => {
+								setSentEmail(null);
+								setInvalidCode(false);
+								setSubmitError("");
+								resetForm();
+							}}
 						>
-							{forgotMutation.isPending ? "发送中…" : "发送重置码"}
+							更改邮箱
 						</Button>
-
-						<p className="text-center text-xs text-muted-foreground">
-							想起来了？
-							<Link to="/login" className="ml-1 text-primary hover:underline">
-								返回登录
-							</Link>
+					</div>
+					<Field label="新密码" error={resetErrors.newPassword?.message}>
+						<Input
+							type="password"
+							passwordToggle
+							autoComplete="new-password"
+							{...registerReset("newPassword")}
+						/>
+					</Field>
+					<Field label="确认新密码" error={resetErrors.confirmPassword?.message}>
+						<Input
+							type="password"
+							passwordToggle
+							autoComplete="new-password"
+							{...registerReset("confirmPassword")}
+						/>
+					</Field>
+					{submitError ? (
+						<p role="alert" className="text-sm text-destructive">
+							{submitError}
 						</p>
-					</form>
-				)}
-			</div>
-		</div>
+					) : null}
+					<Button
+						variant="primary"
+						size="lg"
+						type="submit"
+						className="w-full"
+						disabled={resetMutation.isPending || forgotMutation.isPending || !csrfToken}
+					>
+						{resetMutation.isPending ? "正在重置…" : "重置密码"}
+					</Button>
+				</form>
+			) : (
+				<form onSubmit={onSubmitEmail} className="space-y-4">
+					<Field label="注册邮箱" error={emailErrors.email?.message}>
+						<Input type="email" autoComplete="email" {...registerEmail("email")} />
+					</Field>
+					{submitError ? (
+						<p role="alert" className="text-sm text-destructive">
+							{submitError}
+						</p>
+					) : null}
+					<Button
+						variant="primary"
+						size="lg"
+						type="submit"
+						className="w-full"
+						disabled={forgotMutation.isPending || !csrfToken}
+					>
+						{forgotMutation.isPending ? "正在发送…" : "发送重置码"}
+					</Button>
+				</form>
+			)}
+			<p className="text-center text-sm text-muted-foreground">
+				<Link
+					to="/login"
+					search={{ redirect, email: sentEmail ?? email }}
+					className="font-semibold text-primary hover:underline"
+				>
+					返回登录
+				</Link>
+			</p>
+		</AuthPageLayout>
 	);
 }

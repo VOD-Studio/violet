@@ -15,9 +15,10 @@ type GallerySummaryDTO struct {
 	// AuthorName 作者可读名（display_name 优先，缺省 username）；用户不存在时为空串。
 	AuthorName string `json:"author_name"`
 	// Slug nil 表示从未发布；撤回后仍保留原值。
-	Slug    *string `json:"slug"`
-	Title   string  `json:"title"`
-	Summary string  `json:"summary"`
+	Slug     *string `json:"slug"`
+	Title    string  `json:"title"`
+	Summary  string  `json:"summary"`
+	Location string  `json:"location"`
 	// Status 为 draft、published、modified 或 unpublished。
 	Status string `json:"status"`
 	// Version 从 1 开始，每次保存或发布递增。
@@ -82,6 +83,7 @@ type SaveInput struct {
 	ExpectedVersion int64
 	Title           string
 	Summary         string
+	Location        string
 	Items           []SaveItemInput
 }
 
@@ -114,13 +116,21 @@ type PublicGalleryItemDTO struct {
 
 // PublicGalleryDTO 只投影当前公开 revision。
 type PublicGalleryDTO struct {
-	ID      string `json:"id"`
-	Slug    string `json:"slug"`
-	Title   string `json:"title"`
-	Summary string `json:"summary"`
+	ID       string `json:"id"`
+	Slug     string `json:"slug"`
+	Title    string `json:"title"`
+	Summary  string `json:"summary"`
+	Location string `json:"location"`
 	// PublishedAt 首次发布时间，格式为 RFC3339。
 	PublishedAt string                 `json:"published_at"`
 	Items       []PublicGalleryItemDTO `json:"items"`
+}
+
+// PublicGallerySummaryDTO 汇总全部当前已发布相册，与游标分页无关。
+type PublicGallerySummaryDTO struct {
+	AlbumCount int64 `json:"album_count"`
+	// ImageCount 按相册公开快照的图片项计数，同素材跨相册分别计数。
+	ImageCount int64 `json:"image_count"`
 }
 
 func toSummaryDTO(gallery *domaingallery.Gallery) GallerySummaryDTO {
@@ -137,7 +147,7 @@ func toSummaryDTO(gallery *domaingallery.Gallery) GallerySummaryDTO {
 	}
 	return GallerySummaryDTO{
 		ID: gallery.ID().String(), AuthorID: gallery.AuthorID().String(),
-		Slug: slug, Title: working.Title(), Summary: working.Summary(), Status: gallery.Status(),
+		Slug: slug, Title: working.Title(), Summary: working.Summary(), Location: working.Location(), Status: gallery.Status(),
 		Version: gallery.Version(), ItemCount: len(working.Items()),
 		PublishedAt: publishedAt, CreatedAt: formatTime(gallery.CreatedAt()), UpdatedAt: formatTime(gallery.UpdatedAt()),
 	}
@@ -171,7 +181,7 @@ func toPublicDTO(gallery domaingallery.PublishedGallery, assets []Asset) (Public
 		byID[asset.ID] = asset
 	}
 	dto := PublicGalleryDTO{
-		ID: gallery.ID.String(), Slug: gallery.Slug, Title: gallery.Revision.Title(), Summary: gallery.Revision.Summary(),
+		ID: gallery.ID.String(), Slug: gallery.Slug, Title: gallery.Revision.Title(), Summary: gallery.Revision.Summary(), Location: gallery.Revision.Location(),
 		PublishedAt: formatTime(gallery.PublishedAt), Items: make([]PublicGalleryItemDTO, 0, len(gallery.Revision.Items())),
 	}
 	for _, item := range gallery.Revision.Items() {

@@ -292,6 +292,8 @@ type User struct {
 	coverURL string
 	// bio 个人简介
 	bio string
+	// publicDetails 仅由本人主动公开，不从阅读历史推导。
+	publicDetails PublicProfileDetails
 	// role 角色
 	role Role
 	// googleID 绑定的 Google 账号 Subject
@@ -575,18 +577,12 @@ func (u *User) UpdateBio(bio string) {
 	u.bio = bio
 }
 
-// ReRegister 重新注册（覆盖未完成验证的注册信息）
-//
-// 业务规则：仅允许邮箱未验证（emailVerified=false）的用户被覆盖。
-// 已验证用户无法被覆盖，避免注册信息被恶意重置。
-// 覆盖字段：username、passwordHash（email 保持不变，因为就是用这个邮箱查到的）。
-// 不记录领域事件——这是注册流程的一部分，由调用方在注册完成后统一发事件。
-//
-// 调用方应先通过 ExistsByUsername 校验新 username 未被其他已验证用户占用。
-func (u *User) ReRegister(username Username, passwordHash PasswordHash) error {
+// ReRegister 更新尚未验证的注册资料；改址前由调用方校验原始注册凭据。
+func (u *User) ReRegister(email Email, username Username, passwordHash PasswordHash) error {
 	if u.emailVerified {
-		return ErrEmailExists // 已验证用户不可覆盖，表现为邮箱已被注册
+		return ErrEmailExists
 	}
+	u.email = email
 	u.username = username
 	u.passwordHash = passwordHash
 	return nil

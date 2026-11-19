@@ -1,4 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-// 画稿与时间轴一节；工作台由父路由 /inkline 渲染，切换各节时保持挂载
-export const Route = createFileRoute("/inkline/")({});
+export const Route = createFileRoute("/inkline/")({
+	beforeLoad: ({ location }) => {
+		const target = new URL(location.href, "http://localhost");
+		target.pathname = "/projects/inkline/docs";
+		throw redirect({
+			href: `${target.pathname}${target.search}${target.hash}`,
+			statusCode: 301,
+		});
+	},
+});

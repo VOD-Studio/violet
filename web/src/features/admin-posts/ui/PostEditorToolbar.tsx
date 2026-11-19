@@ -146,7 +146,7 @@ export function PostEditorToolbar({
 				)}
 				<Button iconOnly asChild variant="ghost" size="sm" className="hidden lg:flex">
 					<a
-						href="/editor-guide"
+						href="/projects/violet/docs/editor"
 						target="_blank"
 						rel="noreferrer"
 						aria-label="语法与功能手册（新标签页）"
@@ -187,7 +187,9 @@ export function PostEditorToolbar({
 							</DropdownMenuItem>
 						)}
 						<DropdownMenuItem
-							onClick={() => window.open("/editor-guide", "_blank", "noopener")}
+							onClick={() =>
+								window.open("/projects/violet/docs/editor", "_blank", "noopener")
+							}
 						>
 							<BookOpen className="size-4" /> 语法手册
 						</DropdownMenuItem>

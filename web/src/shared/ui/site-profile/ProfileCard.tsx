@@ -92,7 +92,7 @@ const EXTERNAL = {
 } as const;
 const ENTRIES = [
 	{ href: "/about", label: "关于我", Icon: BookOpen },
-	{ href: "/persona", label: "人设", Icon: User },
+	{ href: "/chat/personas", label: "人设", Icon: User },
 	{ href: "/friends", label: "友链", Icon: Link2 },
 ] as const;
 

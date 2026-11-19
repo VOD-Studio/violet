@@ -4,6 +4,7 @@ import { ROADMAP_FIXTURE } from "./mock-data.mjs";
 import { authenticated, collectDiagnostics } from "./support.ts";
 
 const PROJECT = ROADMAP_FIXTURE.project;
+const ROADMAP_SOURCE = ".ProseMirror pre[data-node-view-content].language-roadmap";
 const titleOf = (number: number) =>
 	ROADMAP_FIXTURE.items.find((item) => item.number === number)?.title ?? "";
 
@@ -45,8 +46,9 @@ test.describe("编辑器里的路线图入口", () => {
 		await dialog.getByRole("button", { name: "插入" }).click();
 
 		await expect(dialog).toBeHidden();
-		const block = page.locator(".ProseMirror pre");
-		await expect(block).toHaveText(`{"project":"${PROJECT.slug}","item":2}`);
+		await expect(page.locator(ROADMAP_SOURCE)).toHaveText(
+			`{"project":"${PROJECT.slug}","item":2}`,
+		);
 		await expect(
 			page.getByRole("region", { name: "嵌入预览" }).locator('[data-roadmap-embed="item"]'),
 		).toContainText(titleOf(2));
@@ -79,7 +81,7 @@ test.describe("编辑器里的路线图入口", () => {
 		await dialog.getByRole("button", { name: "更新" }).click();
 
 		await expect(dialog).toBeHidden();
-		await expect(page.locator(".ProseMirror pre")).toHaveText(
+		await expect(page.locator(ROADMAP_SOURCE)).toHaveText(
 			`{"project":"${PROJECT.slug}","display":"canvas","view":"graph","item":1}`,
 		);
 		await expect(

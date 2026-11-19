@@ -1,246 +1,201 @@
-import type { Tweet } from "@entities/tweet/model/types";
-import type { UserProfile } from "@entities/user/model/types";
-import { useUserTimeline } from "@features/tweets/api/queries";
+import type { UserDTO } from "@entities/user/model/types";
+import { publicActivityOptions } from "@features/profile/api/public-profile";
+import type { PublicActivity, PublicProfile } from "@features/profile/model/public-profile";
+import { ApiError } from "@shared/api/error";
+import { apiGet, apiGetPaged, apiPatch } from "@shared/api/request";
 import type { PagedResponse } from "@shared/api/types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { AnchorHTMLAttributes, ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Route } from "../$username.index";
 
+const navigate = vi.fn();
+const createChat = vi.fn();
+let viewer: Pick<UserDTO, "id" | "username" | "email"> | null = null;
 vi.mock("@shared/api/request", () => ({
 	apiGet: vi.fn(),
 	apiGetPaged: vi.fn(),
+	apiPatch: vi.fn(),
 }));
-
-const mockNavigate = vi.fn();
-vi.mock("@tanstack/react-router", async () => {
-	const actual = await vi.importActual("@tanstack/react-router");
-	return {
-		...actual,
-		useNavigate: () => mockNavigate,
-		Link: ({
-			children,
-			to,
-			...props
-		}: { to: string; children?: ReactNode } & AnchorHTMLAttributes<HTMLAnchorElement>) => (
-			<a href={to} {...props}>
-				{children}
-			</a>
-		),
-	};
-});
-
-vi.mock("@features/auth/api/queries", () => ({
-	useMe: () => ({
-		data: { id: "current_user_1", username: "tester" },
-	}),
-}));
-
-const mockCreateChatMutateAsync = vi.fn();
+vi.mock("@features/auth/api/queries", () => ({ useMe: () => ({ data: viewer }) }));
 vi.mock("@features/chat/api/queries", () => ({
-	useCreateChatConversation: () => ({
-		mutateAsync: mockCreateChatMutateAsync,
-	}),
+	useCreateChatConversation: () => ({ mutateAsync: createChat, isPending: false }),
+}));
+vi.mock("@features/profile/ui/ProfileCoverSection", () => ({
+	ProfileCoverSection: () => <div>横幅编辑</div>,
+}));
+vi.mock("@tanstack/react-router", async () => ({
+	...(await vi.importActual("@tanstack/react-router")),
+	useNavigate: () => navigate,
+	Link: ({
+		children,
+		to,
+		params: _params,
+		search: _search,
+		resetScroll: _scroll,
+		...props
+	}: {
+		to: string;
+		children?: ReactNode;
+		params?: unknown;
+		search?: unknown;
+		resetScroll?: boolean;
+	} & AnchorHTMLAttributes<HTMLAnchorElement>) => (
+		<a href={to} {...props}>
+			{children}
+		</a>
+	),
 }));
 
-import { apiGet, apiGetPaged } from "@shared/api/request";
+const profile: PublicProfile = {
+	id: "alice-id",
+	username: "alice",
+	display_name: "Alice",
+	avatar_url: "",
+	cover_url: "",
+	bio: "公开简介",
+	created_at: "2026-01-01T00:00:00Z",
+	location: "杭州",
+	website: "https://example.com",
+	public_reading_preferences: ["Go"],
+	stats: {
+		posts: 23,
+		tweets: 31,
+		comments: 42,
+		annotations: 9,
+		received_likes: 100,
+		received_reactions: 7,
+	},
+	activity: {
+		timezone: "UTC",
+		start_date: "2026-05-18",
+		end_date: "2026-11-18",
+		total: 12,
+		days: [
+			{ date: "2026-11-17", count: 0 },
+			{ date: "2026-11-18", count: 12 },
+		],
+	},
+};
+const activity: PublicActivity = {
+	id: "a1",
+	type: "annotation",
+	title: "真实文章",
+	body: "公开批注",
+	selected_text: "原文选区",
+	url: "/blog/real-post",
+	cover_image: "",
+	images: [],
+	created_at: "2026-11-18T10:00:00Z",
+};
+const page: PagedResponse<PublicActivity> = {
+	data: [activity],
+	pagination: { limit: 20, has_more: true, next_cursor: "next-page" },
+};
 
-function createWrapper(qc: QueryClient) {
-	return function Wrapper({ children }: { children: ReactNode }) {
-		return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
-	};
+function wrapper(client: QueryClient) {
+	return ({ children }: { children: ReactNode }) => (
+		<QueryClientProvider client={client}>{children}</QueryClientProvider>
+	);
+}
+function prepare(search: { tab?: "annotations" | "posts"; cursor?: string } = {}) {
+	const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+	vi.mocked(apiGet).mockResolvedValue(profile);
+	vi.mocked(apiGetPaged).mockResolvedValue(page);
+	vi.spyOn(Route, "useParams").mockReturnValue({ username: "alice" });
+	vi.spyOn(Route, "useSearch").mockReturnValue(search);
+	vi.spyOn(Route, "useLoaderData").mockReturnValue({ profile, page });
+	vi.spyOn(Route, "useNavigate").mockReturnValue(navigate);
+	const Component = Route.options.component as React.ComponentType;
+	render(<Component />, { wrapper: wrapper(client) });
+	return client;
 }
 
-describe("/users/$username Route.loader", () => {
-	it("prefetches profile and timeline into QueryClient cache compatible with useUserTimeline", async () => {
-		const qc = new QueryClient({
-			defaultOptions: { queries: { retry: false } },
-		});
-
-		const mockProfile: UserProfile = {
-			id: "u1",
-			username: "大鸟哥",
-			display_name: "大鸟哥",
-			avatar_url: "",
-			cover_url: "",
-			bio: "Hello bio",
-			created_at: "2026-01-01T00:00:00Z",
-		};
-		const mockTimeline: PagedResponse<Tweet> = {
-			data: [
-				{
-					id: "t1",
-					author: { id: "u1", username: "大鸟哥", avatar_url: "" },
-					content: "推文1",
-					images: [],
-					like_count: 5,
-					comment_count: 1,
-					quote_count: 0,
-					view_count: 0,
-					is_liked: false,
-					created_at: "2026-01-01T00:00:00Z",
-					link_cards: [],
-				},
-			],
-			pagination: {
-				has_more: false,
-				limit: 20,
-				next_cursor: undefined,
-			},
-		};
-
-		vi.mocked(apiGet).mockResolvedValue(mockProfile);
-		vi.mocked(apiGetPaged).mockResolvedValue(mockTimeline);
-
-		const loaderFn = Route.options.loader as (args: {
-			context: { queryClient: QueryClient };
-			params: { username: string };
-		}) => Promise<UserProfile>;
-		const profile = await loaderFn({
-			context: { queryClient: qc },
-			params: { username: "大鸟哥" },
-		});
-		expect(profile).toEqual(mockProfile);
-
-		const { result } = renderHook(() => useUserTimeline("大鸟哥"), {
-			wrapper: createWrapper(qc),
-		});
-
-		expect(result.current.data?.pages[0].data[0].content).toBe("推文1");
-	});
+beforeEach(() => {
+	vi.clearAllMocks();
+	viewer = null;
 });
 
-describe("UserPublicProfilePage rendering", () => {
-	let qc: QueryClient;
-
-	beforeEach(() => {
-		qc = new QueryClient({
-			defaultOptions: { queries: { retry: false } },
+describe("公开主页", () => {
+	it("直接访问分类和游标时预取同一份可水合数据，并保留真正的 404", async () => {
+		const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+		vi.mocked(apiGet).mockResolvedValue(profile);
+		vi.mocked(apiGetPaged).mockResolvedValue(page);
+		const loader = Route.options.loader as (args: {
+			context: { queryClient: QueryClient };
+			params: { username: string };
+			deps: { tab: "annotations"; cursor: string };
+		}) => Promise<{ profile: PublicProfile; page: PagedResponse<PublicActivity> }>;
+		const loaded = await loader({
+			context: { queryClient: client },
+			params: { username: "alice" },
+			deps: { tab: "annotations", cursor: "previous-page" },
 		});
-		vi.clearAllMocks();
-		Object.assign(navigator, {
-			clipboard: {
-				writeText: vi.fn().mockResolvedValue(undefined),
-			},
-		});
+		expect(loaded.page.data[0].selected_text).toBe("原文选区");
+		expect(
+			client.getQueryData(
+				publicActivityOptions("alice", "annotations", "previous-page").queryKey,
+			),
+		).toEqual(page);
+		expect(apiGetPaged).toHaveBeenCalledWith(
+			"/users/alice/activity",
+			expect.objectContaining({
+				params: { tab: "annotations", cursor: "previous-page", limit: 20 },
+			}),
+		);
+		client.clear();
+		vi.mocked(apiGet).mockRejectedValue(
+			new ApiError({ status: 404, error: "NOT_FOUND", message: "已注销" }),
+		);
+		await expect(
+			loader({
+				context: { queryClient: client },
+				params: { username: "alice" },
+				deps: { tab: "annotations", cursor: "" },
+			}),
+		).rejects.toMatchObject({ isNotFound: true });
 	});
 
-	it("renders the profile header, handle, bio and empty state", async () => {
-		const mockProfile: UserProfile = {
-			id: "u2",
-			username: "dfy",
-			display_name: "DFY",
-			avatar_url: "",
-			cover_url: "",
-			bio: "前端工程师，热爱开源",
-			created_at: "2026-08-01T00:00:00Z",
-		};
-		const mockTimeline: PagedResponse<Tweet> = {
-			data: [],
-			pagination: {
-				has_more: false,
-				limit: 20,
-				next_cursor: undefined,
-			},
-		};
-
-		vi.mocked(apiGet).mockResolvedValue(mockProfile);
-		vi.mocked(apiGetPaged).mockResolvedValue(mockTimeline);
-		vi.spyOn(Route, "useParams").mockReturnValue({ username: "dfy" });
-		vi.spyOn(Route, "useLoaderData").mockReturnValue(mockProfile);
-
-		const Component = Route.options.component as React.ComponentType;
-
-		render(<Component />, {
-			wrapper: createWrapper(qc),
-		});
-		expect(await screen.findByText("DFY")).toBeTruthy();
-		expect(screen.getByText("@dfy")).toBeTruthy();
-		expect(screen.getByText("前端工程师，热爱开源")).toBeTruthy();
-		expect(await screen.findByText("还没有推文")).toBeTruthy();
-		expect(screen.getByText("这位用户还没有发布推文。")).toBeTruthy();
-		expect(screen.getByText("发起私聊")).toBeTruthy();
-		// 测试发起私聊跳转
-		mockCreateChatMutateAsync.mockResolvedValueOnce({ id: "conv_123" });
-		fireEvent.click(screen.getByRole("button", { name: /发起私聊/ }));
-
-		await waitFor(() => {
-			expect(mockCreateChatMutateAsync).toHaveBeenCalledWith({
-				kind: "direct",
-				participant_ids: ["u2"],
-			});
-			expect(mockNavigate).toHaveBeenCalledWith({
-				to: "/chat",
-				search: { c: "conv_123" },
-			});
-		});
+	it("匿名只看到公开资料和全量统计，批注保留选区与来源，分类切换保留滚动", async () => {
+		prepare({ tab: "annotations" });
+		expect(await screen.findByText("Alice")).toBeTruthy();
+		expect(screen.getByText("原文选区")).toBeTruthy();
+		expect(screen.getByText("真实文章").closest("a")?.getAttribute("href")).toBe("/blog/$slug");
+		expect(screen.getByText("100")).toBeTruthy();
+		expect(screen.queryByRole("button", { name: "更换横幅" })).toBeNull();
+		expect(screen.queryByText("编辑公开偏好")).toBeNull();
+		fireEvent.mouseDown(screen.getByRole("tab", { name: /文章/ }), { button: 0 });
+		expect(navigate).toHaveBeenCalledWith({ search: { tab: "posts" }, resetScroll: false });
+		const originalURL = window.location.href;
+		const target = "/users/alice?tab=annotations#activity";
+		window.history.replaceState(null, "", target);
+		try {
+			fireEvent.click(screen.getByRole("button", { name: "私信" }));
+			expect(navigate).toHaveBeenCalledWith({ to: "/login", search: { redirect: target } });
+		} finally {
+			window.history.replaceState(null, "", originalURL);
+		}
 	});
 
-	it("supports media filter tab when tweets exist", async () => {
-		const mockProfile: UserProfile = {
-			id: "u3",
-			username: "alice",
-			display_name: "Alice",
-			avatar_url: "",
-			cover_url: "",
-			bio: "",
-			created_at: "2026-01-01T00:00:00Z",
-		};
-		const mockTimeline: PagedResponse<Tweet> = {
-			data: [
-				{
-					id: "t1",
-					author: { id: "u3", username: "alice", avatar_url: "" },
-					content: "普通纯文本推文",
-					images: [],
-					like_count: 2,
-					comment_count: 0,
-					quote_count: 0,
-					view_count: 0,
-					is_liked: false,
-					created_at: "2026-01-01T00:00:00Z",
-					link_cards: [],
-				},
-				{
-					id: "t2",
-					author: { id: "u3", username: "alice", avatar_url: "" },
-					content: "带图摄影推文",
-					images: [{ url: "/uploads/photo.jpg", width: null, height: null }],
-					like_count: 8,
-					comment_count: 1,
-					quote_count: 0,
-					view_count: 0,
-					is_liked: false,
-					created_at: "2026-01-02T00:00:00Z",
-					link_cards: [],
-				},
-			],
-			pagination: {
-				has_more: false,
-				limit: 20,
-				next_cursor: undefined,
-			},
-		};
-
-		vi.mocked(apiGet).mockResolvedValue(mockProfile);
-		vi.mocked(apiGetPaged).mockResolvedValue(mockTimeline);
-		vi.spyOn(Route, "useParams").mockReturnValue({ username: "alice" });
-
-		const Component = Route.options.component as React.ComponentType;
-
-		render(<Component />, {
-			wrapper: createWrapper(qc),
+	it("本人可清除明确公开的偏好，并显示横幅编辑入口", async () => {
+		viewer = { id: profile.id, username: profile.username, email: "private@example.com" };
+		vi.mocked(apiPatch).mockResolvedValue({ ...viewer, public_reading_preferences: [] });
+		prepare();
+		expect(screen.getByRole("button", { name: "更换横幅" })).toBeTruthy();
+		expect(screen.queryByRole("button", { name: "私信" })).toBeNull();
+		fireEvent.click(screen.getByRole("button", { name: "编辑公开偏好" }));
+		fireEvent.change(screen.getByRole("textbox", { name: "常读主题" }), {
+			target: { value: "" },
 		});
-
-		expect(await screen.findByText("普通纯文本推文")).toBeTruthy();
-		expect(screen.getByText("带图摄影推文")).toBeTruthy();
-
-		// 切换到图文 Tab
-		const mediaTab = screen.getByRole("radio", { name: /图文/ });
-		fireEvent.click(mediaTab);
-
-		expect(screen.queryByText("普通纯文本推文")).toBeNull();
-		expect(screen.getByText("带图摄影推文")).toBeTruthy();
+		fireEvent.click(screen.getByRole("button", { name: "保存公开资料" }));
+		await waitFor(() =>
+			expect(apiPatch).toHaveBeenCalledWith("/auth/profile", {
+				location: "杭州",
+				website: "https://example.com",
+				public_reading_preferences: [],
+			}),
+		);
+		expect(screen.queryByText("private@example.com")).toBeNull();
 	});
 });

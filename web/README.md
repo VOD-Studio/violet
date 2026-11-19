@@ -75,14 +75,19 @@ pnpm dev
 | `/tweets`、`/tweets/:id`、`/tweets/topics/:tag` | 时间线（最新／热门／有图）、推文讨论与话题 |
 | `/projects`、`/projects/:slug` | 项目与路线图 |
 | `/chat` | 私聊、房间与 Bot 会话 |
-| `/users/:username`、`/users/:username/usage`、`/profile` | 公开主页、本人用量与个人中心（资料、安全） |
-| `/persona`、`/about`、`/friends`、`/changelog` | 人设、关于、友链与更新日志 |
+| `/users/:username`、`/users/:username/usage`、`/settings` | 公开主页、本人用量与个人中心（资料、安全） |
+| `/chat/personas`、`/about`、`/friends`、`/changelog` | 公开人设、关于、友链与更新日志 |
 | `/login`、`/register`、`/forgot-password` | 认证流程 |
 | `/admin/*` | 内容与站点管理 |
-| `/editor-guide`、`/kanban`、`/inkline` | 编辑器手册与工具文档 |
-| `/pet` | 电子宠物演示 |
+| `/projects/violet/docs/editor`、`/projects/kanban/docs`、`/projects/inkline/docs` | 项目文档、编辑器手册与独立工具工作台 |
 
-`/pet` 的 SDK 不入库；开发该页面时需准备 [kodama](https://github.com/VOD-Studio/kodama)，再执行 `pnpm pet:sync`。脚本默认读取并排检出的仓库，也可通过 `PET_REPO` 指定。
+旧人设与工具文档地址会永久重定向到新址。`/lab`、`/pet`、`/ui` 不再是公开入口。宠物 SDK 与内部演示保留，仅内部调试需要 [kodama](https://github.com/VOD-Studio/kodama) 和 `pnpm pet:sync`；脚本默认读取并排检出的仓库，可通过 `PET_REPO` 指定。
+
+`/galleries` 从已发布快照读取总数和精选，按首次发布时间取最新相册，剩余相册以游标分页展示。封面组合在公开页和编辑器预览中共用，图片不足时按实际数量重排；地点是相册版本的可选字段。点击整张相册卡进入详情，逐张查看仍使用现有灯箱。
+
+`/friends` 默认按服务端保存的最近 RSS 发文排序，支持真实分页。站点不可达、未提供 RSS、暂时抓取失败与成功但无文章分别显示。页面下方可逐项复制本站资料并提交申请；已登录使用账号邮箱，匿名通过验证码申请，均需后台批准才公开。
+
+`/about` 的园丁使用站点身份投影；版本区链接现有公开 Releases；项目区使用路线图摘要和事项筛选入口。版本及项目查询独立于首屏正文，站长已有的「关于」区块配置继续生效。
 
 博客浏览通过路径区分视图，查询参数只保存标签、来源与页码。文章和系列支持 `tag`、`source=original|repost`、`page`；归档只接受 `tag`，进入归档时清除来源和页码。筛选在服务端完整数据集上执行，系列按其公开章节匹配，章节数仍是全书公开章节总数。
 
@@ -122,11 +127,15 @@ Zustand 用于需要跨组件共享的客户端交互状态，不替代服务端
 
 SSR 通过 `/auth/session` 只读探活，不续期、不写 Cookie。客户端会话查询、登录弹窗及失效处理复用 `shared/api/` 与 `features/auth/`，不要在单个页面另做一套登录状态。
 
+登录、注册和找回密码共用账号页面布局。邮箱验证码使用组件库的六格输入和重发控件；登录仅在公开配置确认可用后提供第三方入口。注册、重置及 GitHub 整页回调保留经校验的站内回跳地址；旧 `/profile` 永久跳转到仅本人可访问的 `/settings`。
+
 推文的全站、话题与个人时间线向所有人开放，但点赞状态随访问者变化；登录、退出或会话失效时重新读取这三类列表，不沿用上一个访问者的点赞状态。
 
 ### 个人中心
 
 个人中心在桌面使用纵向页签，窄屏切换为横向页签。资料卡中的姓名链接进入公开主页，旁边的外跳图标与悬停、键盘聚焦提示标识这一入口。
+
+公开 `/users/:username` 的动态、文章、推文、评论和批注共用服务端可见范围；分类与游标在地址中保存，逐日活跃格使用 UTC 日期，可用方向键选择。常读仅取本人主动公开的主题。横幅和资料编辑只对本人提供，私信仍走现有登录和会话权限。
 
 ### 个人用量
 
@@ -328,7 +337,7 @@ CLI fixture 使用临时 Git 仓库，可通过 `pnpm test scripts/check-colors.
 
 `next-themes` 的 `useTheme`、`setTheme` 等 API 与默认 localStorage 键保持不变，已保存的 `light` / `dark` / `system` 选择继续生效。
 
-站点切换器与 hook 从 `@features/appearance` 引入 `AppearanceToggle`、`useAppearanceSwitcher`。Header、后台顶栏、命令面板和 `/lab/theme` 演示共用这一入口，正式页面不依赖 lab 实现。分段形态可通过 `showLabels` 展示文字并沿容器等分，使用单一 Tab 停靠与方向键换选；默认仍为紧凑图标形态。
+站点切换器与 hook 从 `@features/appearance` 引入 `AppearanceToggle`、`useAppearanceSwitcher`。Header、后台顶栏与命令面板共用这一入口。分段形态可通过 `showLabels` 展示文字并沿容器等分，使用单一 Tab 停靠与方向键换选；默认仍为紧凑图标形态。
 
 ### 主题偏好
 
@@ -351,8 +360,8 @@ CLI fixture 使用临时 Git 仓库，可通过 `pnpm test scripts/check-colors.
 | 包 | 文档站 / 站内用途 | 开发依据 |
 | --- | --- | --- |
 | `@violet/ui` | 通用 UI 与主题，供实际业务页消费 | [架构](packages/ui/docs/architecture.md)、[组件设计](packages/ui/docs/component-design.md) |
-| `@violetjs/kanban` | `/kanban`，项目路线图看板与画布 | [使用说明](packages/kanban/README.zh-CN.md)、[维护指南](packages/kanban/DEVELOPMENT.md) |
-| `@violetjs/inkline` | `/inkline`，手绘工作台与文章图表 | [使用说明](packages/inkline/README.zh-CN.md)、[维护指南](packages/inkline/DEVELOPMENT.md) |
+| `@violetjs/kanban` | `/projects/kanban/docs`，项目路线图看板与画布 | [使用说明](packages/kanban/README.zh-CN.md)、[维护指南](packages/kanban/DEVELOPMENT.md) |
+| `@violetjs/inkline` | `/projects/inkline/docs`，手绘工作台与文章图表 | [使用说明](packages/inkline/README.zh-CN.md)、[维护指南](packages/inkline/DEVELOPMENT.md) |
 | `@violetjs/react-tweet` | 文章引用与推文页面 | [使用说明](packages/react-tweet/README.zh-CN.md)、[维护指南](packages/react-tweet/DEVELOPMENT.md) |
 | `@violetjs/theme` | 构建期生成组件色阶与站点局部身份色 | [使用说明](packages/theme/README.zh-CN.md)、[维护指南](packages/theme/DEVELOPMENT.md) |
 

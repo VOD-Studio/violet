@@ -1,5 +1,6 @@
 import { BackLink } from "@shared/ui/back-link";
-import { iconProps } from "@violet/ui";
+import { Link } from "@tanstack/react-router";
+import { Button, iconProps } from "@violet/ui";
 import { ArrowUpRight } from "lucide-react";
 import type { RoadmapProgress as RoadmapProgressData } from "../model/roadmap-summary";
 import type { Project } from "../model/types";
@@ -14,9 +15,16 @@ export interface ProjectDetailHeaderProps {
 const LINK =
 	"inline-flex items-center gap-1 text-muted-foreground transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 
+const PROJECT_DOCS: Record<string, string | undefined> = {
+	violet: "/projects/violet/docs/editor",
+	inkline: "/projects/inkline/docs",
+	kanban: "/projects/kanban/docs",
+};
+
 /** 详情页头部：标题、简介、技术栈与外链在左，进度概览在右，底部一条细线与路线图分开。 */
 export function ProjectDetailHeader({ project, progress }: ProjectDetailHeaderProps) {
 	const stack = project.tech_stack ?? [];
+	const docsHref = PROJECT_DOCS[project.slug];
 	return (
 		<header className="mb-8 border-b border-border/40 pb-8 md:mb-10 md:pb-10">
 			<BackLink label="项目" to="/projects" className="mb-8" />
@@ -33,7 +41,7 @@ export function ProjectDetailHeader({ project, progress }: ProjectDetailHeaderPr
 							{project.description}
 						</p>
 					) : null}
-					{stack.length > 0 || project.url || project.github_url ? (
+					{stack.length > 0 || project.url || project.github_url || docsHref ? (
 						<div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-xs">
 							{stack.length > 0 ? (
 								<ul
@@ -71,6 +79,11 @@ export function ProjectDetailHeader({ project, progress }: ProjectDetailHeaderPr
 									源码
 									<ArrowUpRight {...iconProps(14)} aria-hidden="true" />
 								</a>
+							) : null}
+							{docsHref ? (
+								<Button variant="ghost" size="sm" asChild>
+									<Link to={docsHref}>文档</Link>
+								</Button>
 							) : null}
 						</div>
 					) : null}

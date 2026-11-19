@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	appshared "blog-api/internal/application/shared"
+
 	"github.com/redis/go-redis/v9"
 )
 
@@ -39,7 +41,7 @@ type RedisCodeStore struct {
 func NewRedisCodeStore(client *redis.Client) *RedisCodeStore {
 	return &RedisCodeStore{
 		client:     client,
-		ttl:        10 * time.Minute,
+		ttl:        appshared.VerificationCodeTTL,
 		maxAttempt: 5,
 	}
 }

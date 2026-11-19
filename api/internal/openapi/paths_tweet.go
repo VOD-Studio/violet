@@ -7,6 +7,7 @@ import "github.com/getkin/kin-openapi/openapi3"
 func registerTweetPaths(t *openapi3.T) {
 	registerExternalTweetPaths(t)
 	registerTweetCommentReactionPaths(t)
+	registerPublicProfilePaths(t)
 	// ---- 公共 schema ----
 
 	registerSchema(t, "TweetAuthorDTO", openapi3.Schemas{
@@ -131,17 +132,6 @@ func registerTweetPaths(t *openapi3.T) {
 		"depth":         optInt("嵌套深度（顶层=0）"),
 		"replies_count": optInt64("回复数（回复列表里恒 0）"),
 		"created_at":    reqStr("发布时间（RFC3339）"),
-	})
-
-	registerSchema(t, "TweetUserProfileDTO", openapi3.Schemas{
-		"id":           reqStr("用户 ID"),
-		"username":     reqStr("用户名"),
-		"display_name": reqStr("显示名"),
-		"avatar_url":   reqStr("头像 URL"),
-		"cover_url":    reqStr("主页封面 URL，未设置时为空串"),
-		"bio":          reqStr("个人简介"),
-		"created_at":   reqStr("注册时间（RFC3339）"),
-		"is_bot":       optBool("该主页是否为 bot 虚拟用户"),
 	})
 
 	registerSchema(t, "CreateTweetRequest", openapi3.Schemas{
@@ -358,17 +348,6 @@ func registerTweetPaths(t *openapi3.T) {
 	})
 
 	// ---- 用户主页 ----
-
-	get(t, "/users/{username}", &openapi3.Operation{
-		Tags:       []string{"推文"},
-		Summary:    "用户公开资料",
-		Parameters: openapi3.Parameters{pathStrParam("username", "用户名")},
-		Responses: responses(
-			200, dataResponse("TweetUserProfileDTO", "用户公开资料", 200),
-			400, errorResponse("用户名格式非法"),
-			404, errorResponse("用户不存在"),
-		),
-	})
 
 	get(t, "/users/{username}/tweets", &openapi3.Operation{
 		Tags:        []string{"推文"},

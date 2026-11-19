@@ -77,7 +77,7 @@ const ChangePasswordCard = () => {
 				onSuccess: () => {
 					toast.success("密码已修改，请重新登录");
 					setTimeout(() => {
-						navigate({ to: "/login", search: { redirect: "/profile" } });
+						navigate({ to: "/login", search: { redirect: "/settings" } });
 					}, 1500);
 				},
 				onError: (err) => {

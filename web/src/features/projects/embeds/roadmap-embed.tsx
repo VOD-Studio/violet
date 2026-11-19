@@ -1,6 +1,6 @@
 import type { ArticleEmbedModule } from "@shared/ui/article-embeds";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, useHydrated } from "@tanstack/react-router";
 import { iconProps } from "@violet/ui";
 import { ArrowUpRight, CircleAlert, Lock } from "lucide-react";
 import { type ReactNode, Suspense, useRef, useState } from "react";
@@ -109,6 +109,7 @@ function ProjectLink({ detail, children }: { detail: RoadmapDetail; children: Re
 /** 单个条目的卡片：阶段、标题、阻塞与标签、子项进度或交付信息；点开看只读详情。 */
 function ItemCard({ detail, item }: { detail: RoadmapDetail; item: RoadmapItem }) {
 	const { show, dialog } = useItemDialog(detail);
+	const hydrated = useHydrated();
 	const delivered = [item.delivered_version, item.completion_date].filter(Boolean).join(" · ");
 	return (
 		<EmbedFrame variant="item">
@@ -123,8 +124,9 @@ function ItemCard({ detail, item }: { detail: RoadmapDetail; item: RoadmapItem }
 			<button
 				type="button"
 				aria-haspopup="dialog"
+				disabled={!hydrated}
 				onClick={(event) => show(item, event.currentTarget)}
-				className={`mt-3 block w-full cursor-pointer text-left ${FOCUS}`}
+				className={`mt-3 block w-full cursor-pointer text-left disabled:cursor-wait ${FOCUS}`}
 			>
 				<span className="block font-reading text-base leading-snug font-medium">
 					{item.title}
@@ -165,6 +167,7 @@ function ItemCard({ detail, item }: { detail: RoadmapDetail; item: RoadmapItem }
 /** 项目卡片：简介、进度概览、正在做的与最近完成的条目；条目可点开看只读详情。 */
 function ProjectCard({ detail }: { detail: RoadmapDetail }) {
 	const { show, dialog } = useItemDialog(detail);
+	const hydrated = useHydrated();
 	const now = detail.items.filter((item) => item.stage === "in_progress").slice(0, 3);
 	const latest = detail.items.find((item) => item.stage === "completed");
 	const entry = (item: RoadmapItem) => (
@@ -172,8 +175,9 @@ function ProjectCard({ detail }: { detail: RoadmapDetail }) {
 			<button
 				type="button"
 				aria-haspopup="dialog"
+				disabled={!hydrated}
 				onClick={(event) => show(item, event.currentTarget)}
-				className={`flex w-full cursor-pointer items-baseline gap-2 text-left text-sm hover:text-primary ${FOCUS}`}
+				className={`flex w-full cursor-pointer items-baseline gap-2 text-left text-sm enabled:hover:text-primary disabled:cursor-wait ${FOCUS}`}
 			>
 				<span className="font-mono text-xs text-muted-foreground">#{item.number}</span>
 				<span className="min-w-0 flex-1 font-reading">{item.title}</span>

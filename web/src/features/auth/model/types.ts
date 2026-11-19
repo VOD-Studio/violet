@@ -28,6 +28,13 @@ export interface RegisterRequest {
 	username: string;
 	/** 密码，至少 8 位 */
 	password: string;
+	/** 继续同一次待验证注册时传入，可在该流程内更正邮箱。 */
+	registration_token?: string;
+}
+
+export interface RegisterResponse {
+	/** 仅创建待验证注册时签发，验证成功后失效。 */
+	registration_token?: string;
 }
 
 /**
@@ -96,6 +103,10 @@ export interface UpdateProfileRequest {
 	avatar_url?: string;
 	/** 主页封面 URL，最多 2048 字符；省略保留，空串清除 */
 	cover_url?: string;
+	location?: string;
+	website?: string;
+	/** 本人主动公开的主题，至多 8 项；空数组清除。 */
+	public_reading_preferences?: string[];
 }
 
 /**

@@ -213,6 +213,7 @@ func registerPersonaPublicRoute(v1 chi.Router, d *Deps) {
 
 func registerGalleryPublicRoutes(v1 chi.Router, d *Deps) {
 	galleryH := d.Gallery
+	v1.Get("/gallery-summary", galleryH.PublishedSummary)
 	v1.Route("/galleries", func(r chi.Router) {
 		r.Get("/", galleryH.BrowsePublished)
 		r.Get("/{slug}", galleryH.GetPublished)
@@ -395,7 +396,10 @@ func registerTweetRoutes(v1 chi.Router, d *Deps) {
 	})
 
 	// 用户主页公开资料与推文列表（公开，支持 OptionalAuth 获取 is_liked）
-	v1.With(d.OptionalAuth).Get("/users/{username}", tweetH.GetUserProfile)
+	if d.PublicProfile != nil {
+		v1.With(d.OptionalAuth).Get("/users/{username}", d.PublicProfile.Get)
+		v1.With(d.OptionalAuth).Get("/users/{username}/activity", d.PublicProfile.List)
+	}
 	v1.With(d.OptionalAuth).Get("/users/{username}/tweets", tweetH.ListByUser)
 }
 

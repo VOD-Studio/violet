@@ -158,7 +158,7 @@ test("SSR 首帧按图层开关卸载插画与粒子，不留下空背景", asyn
 test("工具页面不显示背景与插画装饰，页头药丸装饰仍属导航", async ({ browser }) => {
 	const context = await appearanceContext(browser, "light", { decoration: "autumn" });
 	const page = await context.newPage();
-	await page.goto("/inkline", { waitUntil: "load" });
+	await page.goto("/projects/inkline/docs", { waitUntil: "load" });
 	const shown = await page.locator("[data-decoration-slot]").evaluateAll(
 		(nodes) =>
 			nodes.filter((node) => {

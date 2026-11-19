@@ -99,6 +99,9 @@ export function GalleryDetailPage({ slug }: GalleryDetailPageProps) {
 							{date}
 						</time>
 					) : null}
+					{gallery.location ? (
+						<p className="mt-2 text-muted-foreground text-sm">{gallery.location}</p>
+					) : null}
 				</header>
 
 				<ol className="space-y-12">

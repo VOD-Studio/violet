@@ -39,6 +39,7 @@ import (
 	posthttp "blog-api/internal/interfaces/http/handler/post"
 	presencehttp "blog-api/internal/interfaces/http/handler/presence"
 	publicationhttp "blog-api/internal/interfaces/http/handler/publication"
+	profilehttp "blog-api/internal/interfaces/http/handler/publicprofile"
 	releaseshttp "blog-api/internal/interfaces/http/handler/releases"
 	roadmaphttp "blog-api/internal/interfaces/http/handler/roadmap"
 	rolehttp "blog-api/internal/interfaces/http/handler/role"
@@ -117,6 +118,7 @@ type Deps struct {
 	System                 *systemhttp.Handler
 	Image                  *imagehttp.Handler
 	Tweet                  *tweethttp.Handler
+	PublicProfile          *profilehttp.Handler
 	// TweetBot 外部 bot 的推文写入面（与 ChatBot 一样挂根 router 绕开 CSRF）。
 	TweetBot           *tweethttp.BotHandler
 	FriendLink         *friendlinkhttp.Handler

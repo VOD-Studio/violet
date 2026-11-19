@@ -3,6 +3,7 @@ export interface FriendLinkForm {
 	name: string;
 	url: string;
 	avatar_url: string;
+	rss_url: string;
 	description: string;
 	owner_name: string;
 	linkback_url: string;
@@ -13,6 +14,7 @@ export const EMPTY_FORM: FriendLinkForm = {
 	name: "",
 	url: "",
 	avatar_url: "",
+	rss_url: "",
 	description: "",
 	owner_name: "",
 	linkback_url: "",

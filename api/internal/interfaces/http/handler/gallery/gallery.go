@@ -22,6 +22,7 @@ type galleryService interface {
 	Unpublish(ctx context.Context, input appgallery.VersionInput) (appgallery.GalleryDetailDTO, error)
 	Delete(ctx context.Context, input appgallery.VersionInput) error
 	BrowsePublished(ctx context.Context, cursor string, limit int) ([]appgallery.PublicGalleryDTO, string, error)
+	PublishedSummary(ctx context.Context) (appgallery.PublicGallerySummaryDTO, error)
 	GetPublished(ctx context.Context, slug string) (appgallery.PublicGalleryDTO, error)
 }
 
@@ -75,6 +76,7 @@ type saveRequest struct {
 	ExpectedVersion *int64             `json:"expected_version"`
 	Title           *string            `json:"title"`
 	Summary         *string            `json:"summary"`
+	Location        string             `json:"location"`
 	Items           *[]saveItemRequest `json:"items"`
 }
 
@@ -105,7 +107,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 	}
 	dto, err := h.service.Save(r.Context(), appgallery.SaveInput{
 		UserID: ifmw.GetUserIDFromContext(r), GalleryID: r.PathValue("id"),
-		ExpectedVersion: *req.ExpectedVersion, Title: *req.Title, Summary: *req.Summary, Items: items,
+		ExpectedVersion: *req.ExpectedVersion, Title: *req.Title, Summary: *req.Summary, Location: req.Location, Items: items,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)
@@ -179,6 +181,15 @@ func decodeVersionRequest(w http.ResponseWriter, r *http.Request) (int64, bool) 
 		return 0, false
 	}
 	return *req.ExpectedVersion, true
+}
+
+func (h *Handler) PublishedSummary(w http.ResponseWriter, r *http.Request) {
+	dto, err := h.service.PublishedSummary(r.Context())
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, dto)
 }
 
 func (h *Handler) BrowsePublished(w http.ResponseWriter, r *http.Request) {
