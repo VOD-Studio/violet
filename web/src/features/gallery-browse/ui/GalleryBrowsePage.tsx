@@ -30,9 +30,11 @@ export function GalleryBrowsePage() {
 	const [featured, ...remaining] = feed.galleries;
 
 	return (
-		<PageShell className="max-w-292">
+		<PageShell className="max-w-292 lg:pt-16.5">
 			<header className="mb-10 flex flex-wrap items-end justify-between gap-4">
-				<h1 className="text-4xl font-semibold leading-tight md:text-[52px]">图集</h1>
+				<h1 className="font-serif text-4xl leading-[1.15] font-semibold md:text-[3.25rem]">
+					图集
+				</h1>
 				{summary.data ? (
 					<p className="text-sm text-muted-foreground">
 						<span className="font-mono tabular-nums">{summary.data.album_count}</span>{" "}
