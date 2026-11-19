@@ -1,6 +1,6 @@
 # 自托管 Runner 运维指南
 
-CI 默认使用 GitHub-hosted runner，`SELF_HOSTED_RUNNER=true` 时可选择 Omarchy runner；生产部署固定使用 rua runner。两者的注册信息、工作目录和 Docker 状态独立。
+仓库变量 `SELF_HOSTED_RUNNER` 控制日常 CI、AI 评审和发布协调。未设置或为 `false` 时使用 GitHub 托管 runner；为 `true` 时优先选择在线且空闲的 Omarchy，不可用则回退。实际切换生产容器或回滚的 `Deploy / deploy` 始终在 `rua` 上执行。关闭开关不会暂停上线，也不需要 SSH 凭据。
 
 ## Omarchy CI 镜像
 
@@ -39,7 +39,7 @@ gh api repos/VOD-Studio/violet/actions/runs/<run-id>/jobs \
   --jq '.jobs[] | {name, runner_name, conclusion, steps: [.steps[] | {name, conclusion}]}'
 ```
 
-验收要求 Backend、Frontend、Infrastructure、CI Gate 均由 `vod-omarchy-docker-01` 实际执行成功；变更检测和选择 runner 的控制作业仍在官方 runner 上。核对 Go 单元与迁移测试、浏览器契约测试、双侧 Docker 构建均执行，不能把 skip 或官方 runner 重跑结果作为验收。依赖漏洞扫描（`govulncheck`、`pnpm audit`）均为 advisory，不影响验收结论。
+验收时核对变更检测、Backend、Frontend、Infrastructure 和 CI Gate 均由 `vod-omarchy-docker-01` 实际执行成功；只有选择 runner 的引导作业仍在官方 runner 上。核对 Go 单元与迁移测试、浏览器契约测试、双侧 Docker 构建均执行，不能把跳过的任务或官方 runner 重跑结果当作验收。依赖漏洞扫描（`govulncheck`、`pnpm audit`）均为 advisory，不影响验收结论。
 
 CI PostgreSQL 的数据目录使用上限 1 GiB 的 tmpfs，数据只保留在 job 生命周期内。仓储测试为每例创建 schema 并执行全部迁移；在机械盘上的 DinD 数据目录中，这些同步写入曾使测试包超过 Go 默认的 10 分钟超时。tmpfs 用于消除这一存储瓶颈，仍执行相同的 PostgreSQL 事务和迁移测试。
 
@@ -126,7 +126,7 @@ curl -sS --proxy http://127.0.0.1:20171 --connect-timeout 8 --max-time 12 \
 
 ## 安全约束
 
-- `deploy.yml` 只在 tag push 与手动 dispatch 时运行，不响应 pull_request，避免在 rua 执行未评审代码。
+- 生产事务只接受 `release/2.0` 上通过验收的同仓库 CI 事件，或该分支上的手动请求；PR 不会在 `rua` 上执行。
 - runner 进程以受限用户运行，不要用 root 注册。
 - 保持 runner 更新：下载新版 actions-runner 包解压覆盖原目录后，执行 `sudo ./svc.sh stop && sudo ./svc.sh install && sudo ./svc.sh start` 重启服务。
 

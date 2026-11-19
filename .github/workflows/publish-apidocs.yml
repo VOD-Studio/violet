@@ -24,14 +24,19 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  publish:
-    # Deploy 失败/回滚时不推送;手动 dispatch 无条件推
+  runner:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.event == 'push' &&
        github.event.workflow_run.head_branch == 'release/2.0')
-    runs-on: ubuntu-latest
+    uses: ./.github/workflows/pick-runner.yml
+    secrets:
+      RUNNER_STATUS_TOKEN: ${{ secrets.RUNNER_STATUS_TOKEN }}
+
+  publish:
+    needs: runner
+    runs-on: ${{ fromJSON(needs.runner.outputs.labels) }}
     timeout-minutes: 5
     # secrets 上下文在 if 表达式中不可用(解析期报 Unrecognized named-value,
     # 曾让整条 Deploy 流水线 0s 失败),故经 job env 中转,step if 判 env

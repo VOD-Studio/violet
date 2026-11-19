@@ -5,7 +5,7 @@ FROM ghcr.io/actions/actions-runner:2.337.0@sha256:e5496277be5d09bc968b3d64911b7
 USER root
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-       build-essential ca-certificates curl git jq libatomic1 \
+       build-essential ca-certificates curl gh git jq libatomic1 \
        python3-pip python3-venv unzip xz-utils \
        fonts-freefont-ttf fonts-ipafont-gothic fonts-liberation \
        fonts-noto-color-emoji fonts-tlwg-loma-otf fonts-unifont fonts-wqy-zenhei \

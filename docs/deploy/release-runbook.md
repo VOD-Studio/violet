@@ -35,7 +35,7 @@ lint、类型检查、构建和测试拆为独立任务并行执行。API 的构
 
 CI 包含 PostgreSQL 仓储与迁移集成测试、前端构建及 Playwright 契约测试，以及工作流、部署脚本和 Compose 校验。镜像用提交标签保存，实际部署只使用构建产出的 `ghcr.io/...@sha256:...`，不读取或改写 `latest`。
 
-Omarchy 自托管 CI 的镜像更新须先通过 `Runner acceptance`：同一份 CI 强制双侧全量与镜像构建，禁止回退官方 runner。验收和工作流合入完成后才能开启 `SELF_HOSTED_RUNNER`，具体操作见 [Runner 运维指南](runner-setup.md#完整-ci-验收与启用)。生产部署仍固定使用 rua runner。
+`SELF_HOSTED_RUNNER` 同时控制 CI、release PR 维护、候选准备、发布、部署告警和 API 文档同步。关闭时在 GitHub 托管机运行；开启前先完成 [Omarchy 强制验收](runner-setup.md#完整-ci-验收与启用)。开关只选工作流的运行器，不选生产目标：数据库迁移、容器切换和回滚始终由 `rua` 上已有的 Actions runner 执行。
 
 ### PR 影响范围与耗时分片
 
@@ -148,7 +148,7 @@ Runner 不可用时通过 SSH 调用同一个事务入口，详见 [手动部署
 - **迁移失败或事务中断**：保留 `pending.json` 并阻止后续部署。先检查该记录的 phase、事务目录、当前容器镜像、`schema_migrations` 和公网状态。dirty 记录说明 SQL 可能部分执行；依据实际 schema 修复迁移，不能盲目 `force` 或删除 pending。
 - **需要人工解除 pending**：先完成数据库一致性核对、恢复匹配的镜像与配置、验证公网，再将实际状态与 `current.json` 对齐并保留事故证据。只有确认不存在未完成写入时才能移除 pending；无法确认时保持阻断。
 
-失败告警在托管 runner 上创建 Issue，按 run id 复用；同一 run 再次失败会重开已关闭告警。恢复成功后由维护者核对生产状态并关闭 Issue。告警不能替代运行结果与实际版本检查。
+失败告警按 run id 创建或复用 Issue；选择器本身失败时，告警仍可在 GitHub 托管机上发出。同一 run 再次失败会重开已关闭告警。恢复成功后由维护者核对生产状态并关闭 Issue。
 
 ## GitHub 配置与上线边界
 
@@ -173,7 +173,7 @@ Go 检查与漏洞扫描从 `api/go.mod` 读取工具链版本；生产与开发
 
 ## npm 独立包发布
 
-`@violetjs/inkline` 与 `@violetjs/react-tweet` 使用各自 `web/packages/<包>/package.json` 的版本，不跟随站点 release-please，也不因合并或站点 tag 自动发布。`publish-npm.yml` 仅接受手动触发，默认执行验收和 dry-run；正式发布限定 `release/2.0`。
+`@violetjs/inkline` 与 `@violetjs/react-tweet` 使用各自 `web/packages/<包>/package.json` 的版本，不跟随站点 release-please。`publish-npm.yml` 仅接受手动触发；默认 dry-run 跟随 `SELF_HOSTED_RUNNER`。正式发布限定 `release/2.0`，构建和签发固定在 GitHub 托管机，以满足 [npm provenance 的要求](https://docs.npmjs.com/generating-provenance-statements/#provenance-limitations)。
 
 ### 首次配置
 

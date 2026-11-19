@@ -2,7 +2,7 @@
 set -euo pipefail
 
 [[ "$(id -u)" != 0 ]] || { echo 'Run environment checks as the runner user.' >&2; exit 1; }
-for tool in curl git jq tar xz unzip cc c++ make python3 docker; do
+for tool in curl gh git jq tar xz unzip cc c++ make python3 docker; do
   command -v "$tool"
 done
 python3 -m pip --version
