@@ -1,15 +1,16 @@
 import { contentImageUrl } from "@shared/lib/image-url";
 import { useCallback, useState } from "react";
+import { ProjectCoverArt } from "./ProjectCoverArt";
 
 export interface ProjectCoverProps {
-	/** 封面图地址；空串或加载失败时显示占位。 */
+	/** 配置的封面优先；无图或加载失败时使用对应项目的画板插画。 */
 	src: string;
-	/** 占位上显示它的首字母。 */
+	slug: string;
 	title: string;
 }
 
-/** 项目封面：真实图片，没有或失效时回落到带首字母的占位，页面不出现碎图。 */
-export function ProjectCover({ src, title }: ProjectCoverProps) {
+/** 项目封面：保留已配置图片，缺图时按项目回落到插画或首字母。 */
+export function ProjectCover({ src, slug, title }: ProjectCoverProps) {
 	// 失败态按地址记录：地址变了自然重置
 	const [brokenFor, setBrokenFor] = useState<string | null>(null);
 	const showImage = src !== "" && brokenFor !== src;
@@ -25,7 +26,7 @@ export function ProjectCover({ src, title }: ProjectCoverProps) {
 		[src],
 	);
 	return (
-		<span className="block size-full overflow-hidden">
+		<span className="block size-full overflow-hidden" aria-hidden="true">
 			{showImage ? (
 				<img
 					ref={checkLoaded}
@@ -35,13 +36,7 @@ export function ProjectCover({ src, title }: ProjectCoverProps) {
 					onError={() => setBrokenFor(src)}
 				/>
 			) : (
-				<span
-					aria-hidden="true"
-					data-testid="project-cover-placeholder"
-					className="grid size-full place-items-center font-mono text-4xl font-bold text-muted-foreground/70 sm:text-6xl"
-				>
-					{title.slice(0, 1).toUpperCase()}
-				</span>
+				<ProjectCoverArt slug={slug} title={title} />
 			)}
 		</span>
 	);

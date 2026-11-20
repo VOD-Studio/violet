@@ -7,7 +7,6 @@ package releases
 import (
 	"context"
 	"encoding/json"
-	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -24,23 +23,6 @@ var breakingKeywords = map[string]bool{
 	"破坏":       true,
 	"破坏性":      true,
 	"不兼容":      true,
-}
-
-// 条目尾部的 commit hash 引用（7-40 位十六进制，与 PR/issue 的 (#36) 区分：后者带 # 且是十进制）。
-// 三种形态：括号包链接 ([704a52a](url))、裸链接 [704a52a](url)、纯文本短 hash (704a52a)。
-// 读者不关心短 hash；merge 合并时同一条目带两个不同 hash 还会破坏去重。
-var (
-	commitRefParenLinkRe = regexp.MustCompile(`\s*\(\[[0-9a-f]{7,40}\]\([^)]*\)\)`)
-	commitRefLinkRe      = regexp.MustCompile(`\s*\[[0-9a-f]{7,40}\]\([^)]*\)`)
-	commitRefTextRe      = regexp.MustCompile(`\s*\([0-9a-f]{7,40}\)`)
-)
-
-// cleanCommitRef 去掉条目中的 commit hash 引用。
-func cleanCommitRef(item string) string {
-	item = commitRefParenLinkRe.ReplaceAllString(item, "")
-	item = commitRefLinkRe.ReplaceAllString(item, "")
-	item = commitRefTextRe.ReplaceAllString(item, "")
-	return strings.TrimSpace(item)
 }
 
 // cacheKey Redis 缓存键，cacheTTL 缓存有效期
@@ -72,17 +54,9 @@ func (s *Service) Get(ctx context.Context) (*domainreleases.ReleasesData, error)
 		return nil, err
 	}
 	token := m["github_token"]
-	owner := m["github_username"]
-	repo := m["releases_repo"]
+	owner, repo := domainreleases.RepositoryTarget(m["github_username"], m["releases_repo"])
 	if repo == "" {
 		return emptyData(), nil
-	}
-	// releases_repo 支持完整 owner/repo 格式（如 "VOD-Studio/violet"）：
-	// 含 "/" 时拆分，直接用其中的 owner，不依赖 github_username（后者可能是个人号而非组织）。
-	// 仅填仓库名（如 "violet"）时回退用 github_username 作 owner。
-	if parts := strings.SplitN(repo, "/", 2); len(parts) == 2 && parts[0] != "" && parts[1] != "" {
-		owner = parts[0]
-		repo = parts[1]
 	}
 
 	// 尝试调 GitHub API
@@ -195,7 +169,7 @@ func parseBody(body string) ([]domainreleases.Category, bool) {
 			}
 			// 先清理 commit hash 引用再去重：merge 合并 PR 时 release-please 会以
 			// PR title 与原始 commit 各记一条，hash 不同但内容相同，不清理则去不掉。
-			item = cleanCommitRef(item)
+			item = domainreleases.WithoutCommitReference(item)
 			if slices.Contains(current.Items, item) {
 				continue
 			}

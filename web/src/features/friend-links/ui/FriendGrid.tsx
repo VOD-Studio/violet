@@ -15,7 +15,7 @@ export function FriendGrid({ links }: { links: FriendLinkPublicDTO[] }) {
 	return (
 		<div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
 			{links.map((link) => (
-				<Card key={link.id} className="flex min-w-0 flex-col">
+				<Card key={link.id} className="min-w-0 gap-0 px-5.5 pt-5 pb-4.5">
 					<div className="flex items-center gap-3">
 						<Avatar
 							src={link.avatar_url || undefined}
@@ -25,7 +25,7 @@ export function FriendGrid({ links }: { links: FriendLinkPublicDTO[] }) {
 							imgProps={{ loading: "lazy", referrerPolicy: "no-referrer" }}
 						/>
 						<div className="min-w-0">
-							<h2 className="font-semibold">
+							<h2 className="font-semibold leading-snug">
 								<a
 									href={link.url}
 									target="_blank"
@@ -40,21 +40,23 @@ export function FriendGrid({ links }: { links: FriendLinkPublicDTO[] }) {
 							</p>
 						</div>
 					</div>
-					<p className="my-3 flex-1 text-sm leading-7">
+					<p className="mt-3 flex-1 text-sm leading-7">
 						{link.description || "这位朋友还没有填写简介。"}
 					</p>
-					<div className="flex flex-wrap items-center gap-2 text-xs">
-						{link.site_status === "down" ? (
-							<Badge tone="warning">站点暂不可达</Badge>
-						) : null}
-						{link.feed_status !== "ok" ? (
-							<Badge tone={link.feed_status === "error" ? "warning" : "neutral"}>
-								{FEED_LABELS[link.feed_status]}
-							</Badge>
-						) : null}
-					</div>
+					{(link.site_status === "down" || link.feed_status !== "ok") && (
+						<div className="mt-3 flex flex-wrap items-center gap-2">
+							{link.site_status === "down" && (
+								<Badge tone="warning">站点暂不可达</Badge>
+							)}
+							{link.feed_status !== "ok" && (
+								<Badge tone={link.feed_status === "error" ? "warning" : "neutral"}>
+									{FEED_LABELS[link.feed_status]}
+								</Badge>
+							)}
+						</div>
+					)}
 					{link.latest_url ? (
-						<div className="mt-4 flex items-baseline gap-2 border-t border-dashed border-border pt-3 text-xs">
+						<div className="mt-3.5 flex items-baseline gap-2 border-t border-dashed border-border pt-3 text-xs">
 							<span className="shrink-0 text-muted-foreground">最近</span>
 							<a
 								href={link.latest_url}
@@ -70,7 +72,7 @@ export function FriendGrid({ links }: { links: FriendLinkPublicDTO[] }) {
 									dateTime={link.latest_published_at}
 									title={link.latest_published_at}
 									suppressHydrationWarning
-									className="shrink-0 text-muted-foreground"
+									className="shrink-0 font-mono text-muted-foreground"
 								>
 									{formatRelativeTime(link.latest_published_at)}
 								</time>

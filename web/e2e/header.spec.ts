@@ -224,10 +224,13 @@ test("Header 路由切换超过 300ms 才在导航下沿显示加载进度线，
 	const gate = new Promise<void>((resolve) => {
 		release = resolve;
 	});
-	await page.route("**/api/v1/journal**", async (route) => {
-		await gate;
-		await route.fallback();
-	});
+	await page.route(
+		(url) => url.pathname === "/api/v1/notes",
+		async (route) => {
+			await gate;
+			await route.fallback();
+		},
+	);
 	await page
 		.getByRole("navigation", { name: "主导航" })
 		.getByRole("link", { name: "手记" })

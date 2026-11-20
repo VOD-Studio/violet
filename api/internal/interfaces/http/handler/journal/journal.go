@@ -38,3 +38,12 @@ func (h *Handler) GetDay(w http.ResponseWriter, r *http.Request) {
 	}
 	response.RespondOK(w, day)
 }
+
+func (h *Handler) Growth(w http.ResponseWriter, r *http.Request) {
+	growth, err := h.service.Growth(r.Context())
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, growth)
+}

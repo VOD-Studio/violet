@@ -1,11 +1,5 @@
-import { journalEntryKey, useJournalFeed } from "@entities/note/api/queries";
-import {
-	type JournalEntry,
-	type JournalType,
-	NOTE_TYPE_LABELS,
-	type ProgressHealth,
-	type PublicNote,
-} from "@entities/note/model/types";
+import { usePublishedNotesFeed } from "@entities/note/api/queries";
+import { NOTE_TYPE_LABELS, type NoteType, type PublicNote } from "@entities/note/model/types";
 import { useProjects } from "@entities/project/api/queries";
 import type { Tag } from "@entities/tag/model/types";
 import { useTags } from "@features/tags/api/queries";
@@ -32,17 +26,15 @@ import {
 	notePreview,
 } from "../model/display";
 import type { JournalSearch } from "../model/navigation";
-import { JournalProgressCard } from "./JournalProgressCard";
 import { NoteBadges, NotePitfallContent, NoteTags } from "./NoteJournalMeta";
 
 const ALL = "all";
 const TYPE_SEGMENTS = [
 	{ value: ALL, label: "全部" },
-	{ value: "progress", label: "进展" },
 	{ value: "pitfall", label: NOTE_TYPE_LABELS.pitfall },
 	{ value: "idea", label: NOTE_TYPE_LABELS.idea },
 	{ value: "excerpt", label: NOTE_TYPE_LABELS.excerpt },
-] satisfies { value: JournalType | typeof ALL; label: string }[];
+] satisfies { value: NoteType | typeof ALL; label: string }[];
 const WEEKDAY = new Intl.DateTimeFormat("zh-CN", {
 	timeZone: JOURNAL_TIME_ZONE,
 	weekday: "short",
@@ -54,17 +46,9 @@ export interface NotesPageProps {
 	onSearchChange: (next: JournalSearch) => void;
 }
 
-/** 按日期浏览自动进展和手写条目。 */
+/** 按日期浏览已发布的手写手记。 */
 export function NotesPage({ search, onSearchChange }: NotesPageProps) {
-	const feed = useJournalFeed({ ...search, limit: NOTES_PAGE_LIMIT });
-	const progressOnly = search.type === "progress";
-	const showProgress = progressOnly || (search.type === undefined && !search.tag);
-	const progressStatus = showProgress
-		? getProgressStatus(
-				feed.progress,
-				!feed.hasMore && !feed.entries.some((entry) => entry.kind === "progress"),
-			)
-		: undefined;
+	const feed = usePublishedNotesFeed({ ...search, limit: NOTES_PAGE_LIMIT });
 	const { data: projects, isLoading: projectsLoading, isError: projectsError } = useProjects();
 	const { data: tags } = useTags();
 	const tagName = tags?.find((tag) => tag.slug === search.tag)?.name ?? search.tag;
@@ -74,14 +58,14 @@ export function NotesPage({ search, onSearchChange }: NotesPageProps) {
 		: search.project_id;
 
 	return (
-		<PageShell>
+		<PageShell className="lg:pt-16.5">
 			<div className="mx-auto max-w-280">
 				<header className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-end">
-					<h1 className="font-serif text-4xl leading-none tracking-tight md:text-[3.25rem]">
+					<h1 className="font-serif text-4xl leading-[1.1] tracking-tight md:text-[3.25rem]">
 						手记
 					</h1>
 					<div className="flex max-w-full flex-wrap items-center gap-2.5">
-						<Segmented<JournalType | typeof ALL>
+						<Segmented<NoteType | typeof ALL>
 							aria-label="按手记类型筛选"
 							rounded="full"
 							size="default"
@@ -91,7 +75,6 @@ export function NotesPage({ search, onSearchChange }: NotesPageProps) {
 								onSearchChange({
 									...search,
 									type: type === ALL ? undefined : type,
-									tag: type === "progress" ? undefined : search.tag,
 								})
 							}
 						/>
@@ -156,14 +139,6 @@ export function NotesPage({ search, onSearchChange }: NotesPageProps) {
 				)}
 
 				<div aria-busy={feed.isLoading || feed.loadingMore} className="mt-10">
-					{progressStatus && (
-						<p
-							role="status"
-							className="mb-4 ps-8 text-sm text-muted-foreground md:ps-37"
-						>
-							{progressStatus}
-						</p>
-					)}
 					{feed.isLoading ? (
 						<div className="space-y-3.5 ps-8 md:ps-37">
 							<Skeleton className="h-24 rounded-xl" />
@@ -176,22 +151,18 @@ export function NotesPage({ search, onSearchChange }: NotesPageProps) {
 							action={<Button onClick={() => void feed.refetch()}>重试</Button>}
 							className="py-20"
 						/>
-					) : feed.entries.length === 0 && !feed.hasMore ? (
-						progressOnly && progressStatus ? null : (
-							<Empty
-								title={hasFilters ? "没有符合筛选条件的手记" : "暂无手记"}
-								description={
-									hasFilters
-										? "试试清除或更换筛选条件。"
-										: "新的手记会在这里发布。"
-								}
-								className="py-20"
-							/>
-						)
+					) : feed.notes.length === 0 && !feed.hasMore ? (
+						<Empty
+							title={hasFilters ? "没有符合筛选条件的手记" : "暂无手记"}
+							description={
+								hasFilters ? "试试清除或更换筛选条件。" : "新的手记会在这里发布。"
+							}
+							className="py-20"
+						/>
 					) : (
 						<>
 							<JournalTimeline
-								entries={feed.entries}
+								notes={feed.notes}
 								catalog={tags ?? []}
 								search={search}
 							/>
@@ -222,53 +193,31 @@ export function NotesPage({ search, onSearchChange }: NotesPageProps) {
 	);
 }
 
-function getProgressStatus(health: ProgressHealth | null, empty: boolean) {
-	switch (health?.state) {
-		case "unconfigured":
-			return "尚未配置自动进展来源。";
-		case "syncing":
-			return "正在同步仓库进展。";
-		case "ready":
-			return empty ? "暂无仓库进展。" : undefined;
-		case "stale":
-			if (health.reason === "limited")
-				return "自动进展同步受限流影响，当前显示上次同步的数据。";
-			if (health.reason === "failed") return "自动进展同步失败，当前显示上次同步的数据。";
-			return "自动进展尚未更新，当前显示上次同步的数据。";
-		case "limited":
-			return "自动进展同步受限流影响，暂未更新。";
-		case "failed":
-			return "自动进展同步失败，暂未更新。";
-		default:
-			return undefined;
-	}
-}
-
 function JournalTimeline({
-	entries,
+	notes,
 	catalog,
 	search,
 }: {
-	entries: JournalEntry[];
+	notes: PublicNote[];
 	catalog: Tag[];
 	search: JournalSearch;
 }) {
-	const days = groupJournalDays(entries);
-	return days.map(([day, entries], dayIndex) => (
+	const days = groupJournalDays(notes);
+	return days.map(([day, dayNotes], dayIndex) => (
 		<section
 			key={day}
 			className="grid grid-cols-[1.5rem_minmax(0,1fr)] gap-x-2 md:grid-cols-[5.75rem_1.5rem_minmax(0,1fr)] md:gap-x-4"
 		>
 			<DateHeading day={day} first={dayIndex === 0} />
 			<div className="col-span-2 min-w-0 md:col-start-2 md:row-start-1">
-				{entries.map((entry, index) => {
+				{dayNotes.map((note, index) => {
 					const first = dayIndex === 0 && index === 0;
-					const dayEnd = index === entries.length - 1;
+					const dayEnd = index === dayNotes.length - 1;
 					const last = dayEnd && dayIndex === days.length - 1;
 					return (
 						<div
 							className="grid grid-cols-[1.5rem_minmax(0,1fr)] gap-x-2 md:gap-x-4"
-							key={journalEntryKey(entry)}
+							key={note.id}
 						>
 							<div
 								aria-hidden="true"
@@ -282,7 +231,7 @@ function JournalTimeline({
 								<span
 									className={cn(
 										"absolute inset-s-1/2 top-5.5 size-3.5 -translate-x-1/2 rounded-full border-3 border-background",
-										entry.kind === "note" && entry.note.type === "pitfall"
+										note.type === "pitfall"
 											? "bg-destructive"
 											: "bg-decoration",
 									)}
@@ -294,15 +243,7 @@ function JournalTimeline({
 									!last && (dayEnd ? "pb-5 md:pb-11" : "pb-3.5"),
 								)}
 							>
-								{entry.kind === "progress" ? (
-									<JournalProgressCard progress={entry.progress} />
-								) : (
-									<JournalCard
-										note={entry.note}
-										catalog={catalog}
-										search={search}
-									/>
-								)}
+								<JournalCard note={note} catalog={catalog} search={search} />
 							</div>
 						</div>
 					);

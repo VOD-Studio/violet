@@ -12,7 +12,9 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	appnote "blog-api/internal/application/note"
+	appactivity "blog-api/internal/application/repositoryactivity"
 	domainnote "blog-api/internal/domain/note"
+	"blog-api/internal/domain/releases"
 	activity "blog-api/internal/domain/repositoryactivity"
 	"blog-api/internal/domain/shared"
 )
@@ -28,15 +30,32 @@ type NoteReader interface {
 type ProgressReader interface {
 	Browse(context.Context, *shared.ID, *activity.Cursor, int) ([]activity.Day, activity.Health, error)
 	GetDay(context.Context, shared.ID, string) (activity.Day, error)
+	Growth(context.Context, string) (appactivity.Growth, error)
+}
+
+type growthSettingsReader interface {
+	GetAll(context.Context) (map[string]string, error)
 }
 
 type Service struct {
 	notes    NoteReader
 	progress ProgressReader
+	settings growthSettingsReader
 }
 
-func NewService(notes NoteReader, progress ProgressReader) *Service {
-	return &Service{notes: notes, progress: progress}
+func NewService(notes NoteReader, progress ProgressReader, settings growthSettingsReader) *Service {
+	return &Service{notes: notes, progress: progress, settings: settings}
+}
+
+// Growth 只允许站点配置的发布仓库作为关于页的数据来源。
+func (s *Service) Growth(ctx context.Context) (appactivity.Growth, error) {
+	values, err := s.settings.GetAll(ctx)
+	if err != nil {
+		return appactivity.Growth{}, err
+	}
+	owner, repo := releases.RepositoryTarget(values["github_username"], values["releases_repo"])
+	key, _ := activity.RepositoryKey("https://github.com/" + owner + "/" + repo)
+	return s.progress.Growth(ctx, key)
 }
 
 type Query struct {

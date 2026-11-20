@@ -1,0 +1,265 @@
+.growth {
+	--stem-ink: color-mix(in oklab, var(--success-text) 65%, var(--foreground));
+	--leaf-wash: color-mix(in oklab, var(--stem-ink) 29%, var(--background));
+	margin-block-start: clamp(2.5rem, 6vw, 4.5rem);
+}
+
+.loadingPlot {
+	width: 100%;
+	height: clamp(12rem, 30.55vw, 27.5rem);
+	border-radius: 0.75rem;
+}
+
+.toolbar,
+.caption {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem 1.25rem;
+}
+
+.periodLabel,
+.caption {
+	color: var(--muted-foreground);
+	font-size: 0.8rem;
+	font-variant-numeric: tabular-nums;
+}
+
+.figure {
+	margin: 0;
+}
+
+.plotScroll {
+	/* 给绝对定位的周命中区和滚动条都留焦点环余量。 */
+	overflow-x: auto;
+	overscroll-behavior-inline: contain;
+	/* 窄屏从最新一周开始，内容本身仍按从左到右的时间顺序。 */
+	direction: rtl;
+	margin-inline: -4px;
+	padding: 4px;
+}
+
+@media (min-width: 75rem) {
+	.plotScroll {
+		inline-size: min(90rem, calc(100vw - 2rem));
+		margin-inline: calc((100% - min(90rem, 100vw - 2rem)) / 2);
+	}
+}
+
+.canvas {
+	position: relative;
+	direction: ltr;
+	/* 茎占画布 75%；32 周并列时，每周仍至少有 25.5px 的命中宽度。 */
+	min-inline-size: max(22rem, calc(var(--growth-weeks) * 34px));
+}
+
+.plot {
+	display: block;
+	width: 100%;
+	height: auto;
+	font-family: var(--font-mono, monospace);
+	font-size: 15px;
+}
+
+.stem {
+	fill: none;
+	stroke: var(--stem-ink);
+	stroke-width: 2.5;
+	stroke-linecap: round;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	:root:not([data-motion="reduce"]) .stem {
+		stroke-dasharray: 1;
+		animation: draw-stem 1.35s ease-out both;
+	}
+}
+
+@keyframes draw-stem {
+	from {
+		stroke-dashoffset: 1;
+	}
+}
+
+.leaf {
+	fill: var(--leaf-wash);
+	stroke: var(--stem-ink);
+	stroke-width: 0.9;
+}
+
+.vein {
+	fill: none;
+	stroke: var(--stem-ink);
+	stroke-width: 0.75;
+}
+
+.monthTick line {
+	stroke: var(--border);
+	stroke-dasharray: 2 6;
+}
+
+.monthTick text,
+.milestone text {
+	fill: var(--muted-foreground);
+}
+
+.bloom {
+	fill: var(--decoration);
+}
+
+.milestone line {
+	stroke: var(--border);
+}
+
+.milestone circle {
+	fill: var(--background);
+	stroke: var(--stem-ink);
+	stroke-width: 2;
+}
+
+.weekTargets {
+	position: absolute;
+	inset-block: 9% 10%;
+	inset-inline: calc(100% / 6) calc(100% / 12);
+	display: grid;
+	grid-auto-flow: column;
+	grid-auto-columns: minmax(0, 1fr);
+}
+
+.weekTarget {
+	border-radius: 0.3rem;
+	border: 0;
+	padding: 0;
+	background: transparent;
+	cursor: pointer;
+}
+
+.weekTarget[aria-pressed="true"] {
+	box-shadow: inset 0 -2px var(--stem-ink);
+}
+
+.weekTarget:not(:disabled):hover {
+	background: color-mix(in oklab, var(--stem-ink) 6%, transparent);
+}
+
+.weekTarget:focus-visible,
+.weekList summary:focus-visible,
+.growth a:focus-visible {
+	outline: 2px solid var(--ring);
+	outline-offset: 2px;
+}
+
+.caption {
+	margin-block-start: 0.6rem;
+}
+
+.toolbar {
+	margin-block-start: 0.8rem;
+}
+
+.selection {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 0.8rem 1.25rem;
+	margin-block-start: 1.5rem;
+	padding: 1rem 0;
+	border-block: 1px solid var(--border);
+}
+
+.selection p {
+	font-size: 0.9rem;
+}
+
+.stats {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1.25rem;
+}
+
+.versionLinks,
+.milestones {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem 1.25rem;
+	font-size: 0.82rem;
+}
+
+.versionLinks {
+	grid-column: 1 / -1;
+}
+
+.versionLinks li {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem;
+}
+
+.versionLinks time,
+.milestones span {
+	color: var(--muted-foreground);
+}
+
+.versionLinks a,
+.milestones a {
+	text-decoration: underline;
+	text-underline-offset: 0.23em;
+	overflow-wrap: anywhere;
+}
+
+.weekList {
+	margin-block-start: 1rem;
+}
+
+.weekList summary {
+	width: fit-content;
+	border-radius: 0.3rem;
+	padding: 0.45rem 0.12rem;
+	color: var(--muted-foreground);
+	font-size: 0.85rem;
+	cursor: pointer;
+}
+
+.weekList ol {
+	margin-block-start: 0.35rem;
+}
+
+.weekList ol > li {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 0.45rem 0.8rem;
+	padding-block: 0.65rem;
+	border-block-start: 1px solid var(--border);
+	font-size: 0.85rem;
+}
+
+.milestones {
+	margin-block-start: 1.35rem;
+}
+
+.milestones li {
+	min-width: 0;
+}
+
+.milestones span {
+	margin-inline-end: 0.35rem;
+}
+
+@media (max-width: 36rem) {
+	.selection {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.weekList ol > li {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+@media (scripting: none) {
+	.weekTargets,
+	.selection,
+	.graphHelp {
+		display: none;
+	}
+}

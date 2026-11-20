@@ -19,7 +19,7 @@ export function LiveStatsSection(_: AboutSectionProps) {
 				intro="数字不是成绩单，只是这座站确实一直在生长的证据。"
 			>
 				<div className={styles.loadingRows} role="status" aria-label="正在加载站点统计">
-					{["posts", "words", "comments", "uptime"].map((key) => (
+					{["posts", "words", "comments"].map((key) => (
 						<div key={key} className={styles.loadingCell}>
 							<Skeleton className={styles.loadingValue} />
 							<Skeleton className={styles.loadingLabel} />
@@ -62,7 +62,6 @@ export function LiveStatsSection(_: AboutSectionProps) {
 		{ label: "文章", value: data.posts_count },
 		{ label: "总字数", value: data.total_words },
 		{ label: "评论", value: data.comments_count },
-		{ label: "运行天数", value: data.uptime_days },
 	];
 
 	return (

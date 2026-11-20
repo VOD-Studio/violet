@@ -137,7 +137,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	series := NewSeriesContainer(db, bus, settings.Store, media.UploadService)
 	gallery := NewGalleryContainer(db, bus, permissionChecker)
 	note := NewNoteContainer(db)
-	journal := NewJournalContainer(db, note.Service)
+	journal := NewJournalContainer(db, note.Service, settings.Store)
 	publication := NewPublicationContainer(db, []byte(cfg.ResourceSigningKey))
 	persona := NewPersonaContainer(db)
 	mcp := NewMCPContainer(apiToken.TokenLookup, post.PostService, tag.TagService, subscription.SubscriptionService, comment.CommentService, series.SeriesService, note.Service, media.UploadService,

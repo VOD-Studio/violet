@@ -21,8 +21,17 @@ export function AuthPageLayout({ title, description, children }: AuthPageLayoutP
 	const { illustration } = useDecorationLayers();
 
 	return (
-		<div className="relative mx-auto flex w-full max-w-360 flex-1 flex-col px-4 sm:px-8 lg:px-12">
-			<div className="relative z-10 pt-7 lg:pt-9">
+		<div className="relative isolate mx-auto flex w-full max-w-360 flex-1 flex-col px-4 sm:px-8 lg:px-12">
+			{season && illustration ? (
+				<div
+					className={`${styles.illustration} hidden lg:block`}
+					data-mirror={season === "spring" || season === "autumn" || undefined}
+					aria-hidden="true"
+				>
+					<CornerIllustration season={season} />
+				</div>
+			) : null}
+			<div className="relative z-10 pt-7 lg:absolute lg:inset-s-12 lg:top-5 lg:pt-0">
 				<Link
 					to="/"
 					aria-label={`${name} 首页`}
@@ -31,17 +40,9 @@ export function AuthPageLayout({ title, description, children }: AuthPageLayoutP
 					{name}
 				</Link>
 			</div>
-			<div className="grid min-w-0 flex-1 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,1fr)]">
-				<div
-					className="relative hidden min-h-152 flex-col justify-end lg:flex"
-					aria-hidden="true"
-				>
-					{season && illustration ? (
-						<div className={styles.illustration}>
-							<CornerIllustration season={season} />
-						</div>
-					) : null}
-					<blockquote className="relative my-14 ml-12 max-w-84 space-y-4 text-3xl leading-relaxed xl:my-22 xl:ml-18">
+			<div className="grid min-w-0 flex-1 lg:grid-cols-2">
+				<div className="relative hidden min-h-152 flex-col justify-end pb-24 lg:flex">
+					<blockquote className="max-w-52 space-y-4 text-[1.75rem] leading-relaxed text-balance lg:ms-10 xl:ms-18">
 						<p>{tagline}</p>
 						{settings?.github_username ? (
 							<footer className="font-signature text-3xl text-muted-foreground">
@@ -52,17 +53,17 @@ export function AuthPageLayout({ title, description, children }: AuthPageLayoutP
 				</div>
 				<section
 					aria-labelledby="auth-heading"
-					className="flex min-w-0 items-start justify-center pt-10 pb-14 sm:pt-14 lg:items-center lg:px-6 lg:py-12"
+					className="relative flex min-w-0 items-start justify-center pt-10 pb-14 sm:pt-14 lg:items-center lg:justify-start lg:py-20 lg:pe-4 lg:ps-11 xl:ps-15"
 				>
-					<div className={`${styles.content} w-full max-w-104 space-y-7`}>
+					<div className={`${styles.content} w-full max-w-100 space-y-7`}>
 						<div className="space-y-2">
 							<h1
 								id="auth-heading"
-								className="text-3xl leading-tight font-semibold tracking-tight"
+								className="text-[2rem] leading-tight font-semibold tracking-tight"
 							>
 								{title}
 							</h1>
-							<div className="text-sm leading-relaxed text-muted-foreground">
+							<div className="text-[0.9375rem] leading-relaxed text-muted-foreground">
 								{description}
 							</div>
 						</div>

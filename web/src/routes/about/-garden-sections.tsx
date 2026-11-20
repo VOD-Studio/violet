@@ -89,6 +89,11 @@ export function GrowingSection() {
 								>
 									{project.title}
 								</Link>
+								{project.description && (
+									<p className="text-sm text-muted-foreground">
+										{project.description}
+									</p>
+								)}
 								<ProgressBar
 									value={roadmap.progress.percent}
 									label={`${project.title} 路线图进度`}

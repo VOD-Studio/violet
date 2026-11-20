@@ -281,7 +281,7 @@
 .statsGrid,
 .loadingRows {
 	display: grid;
-	grid-template-columns: repeat(4, minmax(0, 1fr));
+	grid-template-columns: repeat(3, minmax(0, 1fr));
 	gap: 0.55rem;
 }
 
@@ -310,15 +310,27 @@
 	font-size: 0.68rem;
 }
 
-.releaseTimeline {
-	margin-left: -0.2rem;
+.releaseList {
+	border-block: 1px solid var(--border);
 }
 
-.releaseSummaryContent {
-	display: flex;
-	min-width: 0;
-	align-items: baseline;
-	gap: 0.75rem;
+.releaseList > li + li {
+	border-block-start: 1px solid var(--border);
+}
+
+.releaseRow {
+	display: grid;
+	grid-template-columns: minmax(0, 5.5rem) minmax(0, 1fr);
+	gap: 0.7rem;
+	padding-block: 0.85rem;
+	font-size: 0.85rem;
+	overflow-wrap: anywhere;
+}
+
+.releaseRow:focus-visible {
+	border-radius: 0.25rem;
+	outline: 2px solid var(--ring);
+	outline-offset: 2px;
 }
 
 .releaseVersion {
@@ -329,99 +341,19 @@
 	font-variant-numeric: tabular-nums;
 }
 
-.releaseName {
-	overflow: hidden;
-	flex: 1;
-	font-size: 0.82rem;
-	font-weight: 620;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.releaseCategory + .releaseCategory {
-	margin-top: 1.35rem;
-}
-
-.releaseCategoryTitle {
-	margin: 0 0 0.65rem;
-	color: var(--muted-foreground);
-	font-size: 0.68rem;
-	font-weight: 620;
-	letter-spacing: 0.08em;
-	text-transform: uppercase;
-}
-
-.releaseItems {
-	display: grid;
-	gap: 0.55rem;
-	margin: 0;
-	padding: 0;
-	list-style: none;
-}
-
-.releaseItem {
-	position: relative;
-	padding-left: 0.9rem;
-	color: color-mix(in oklab, var(--foreground) 78%, var(--background));
-	font-size: 0.78rem;
-	line-height: 1.7;
-}
-
-.releaseItem::before {
-	position: absolute;
-	top: 0.7em;
-	left: 0;
-	width: 0.24rem;
-	height: 0.24rem;
-	border-radius: 999px;
-	background: var(--primary);
-	content: "";
-}
-
-.releaseActions {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.8rem 1.2rem;
-	margin-top: 1.35rem;
-}
-
-.releaseLink,
-.allReleasesLink {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.35rem;
-	color: var(--foreground);
-	font-size: 0.72rem;
-	font-weight: 620;
+.releaseRow:hover .releaseVersion {
 	text-decoration: underline;
-	text-decoration-color: color-mix(in oklab, var(--primary) 36%, transparent);
-	text-underline-offset: 0.25em;
-	transition:
-		color 160ms ease-out,
-		text-decoration-color 160ms ease-out;
+	text-underline-offset: 0.2em;
 }
 
-.releaseLink:hover,
-.allReleasesLink:hover {
-	color: var(--primary-text);
-	text-decoration-color: var(--primary);
+.releaseDetail {
+	display: grid;
+	gap: 0.25rem;
 }
 
-.releaseLink:focus-visible,
-.allReleasesLink:focus-visible {
-	border-radius: 0.2rem;
-	outline: 2px solid color-mix(in oklab, var(--primary) 58%, transparent);
-	outline-offset: 3px;
-}
-
-.releaseLinkIcon {
-	width: 0.875rem;
-	height: 0.875rem;
-}
-
-.allReleasesLink {
-	margin-top: 0.8rem;
-	margin-left: 7.5rem;
+.releaseDetail time {
+	color: var(--muted-foreground);
+	font-size: 0.78rem;
 }
 
 .state {
@@ -500,21 +432,10 @@
 	.skillCard {
 		min-height: 5.9rem;
 	}
-
-	.statsGrid,
-	.loadingRows {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-	}
-
-	.allReleasesLink {
-		margin-left: 5.5rem;
-	}
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.socialLink,
-	.releaseLink,
-	.allReleasesLink {
+	.socialLink {
 		transition: none;
 	}
 }

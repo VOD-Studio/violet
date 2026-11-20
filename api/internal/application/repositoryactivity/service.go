@@ -44,21 +44,27 @@ func (s *Service) Browse(ctx context.Context, projectID *shared.ID, before *acti
 		return []activity.Day{}, activity.Health{State: activity.StateUnconfigured}, nil
 	}
 	now := s.now()
-	keys := sourceKeys(bindings)
-	sources, err := s.storage.Sources(ctx, keys)
+	health, err := s.health(ctx, sourceKeys(bindings), now)
 	if err != nil {
 		return nil, activity.Health{}, err
 	}
-	till, err := s.storage.BlockedUntil(ctx, now)
-	if err != nil {
-		return nil, activity.Health{}, err
-	}
-	health := aggregateHealth(sources, len(keys), now, till != nil)
 	if limit <= 0 {
 		return []activity.Day{}, health, nil
 	}
 	days, err := s.storage.Browse(ctx, bindings, before, limit, now.Add(-keepFor))
 	return days, health, err
+}
+
+func (s *Service) health(ctx context.Context, keys []string, now time.Time) (activity.Health, error) {
+	sources, err := s.storage.Sources(ctx, keys)
+	if err != nil {
+		return activity.Health{}, err
+	}
+	till, err := s.storage.BlockedUntil(ctx, now)
+	if err != nil {
+		return activity.Health{}, err
+	}
+	return aggregateHealth(sources, len(keys), now, till != nil), nil
 }
 
 // GetDay 仅当项目仍关联当前可见的仓库时返回日详情。

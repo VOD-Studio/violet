@@ -52,7 +52,7 @@ type Commit struct {
 type Release struct {
 	// Tag 关联的 Git 标签。
 	Tag string `json:"tag"`
-	// Title 发布标题；无标题时使用标签。
+	// Title 优先用发布名称；名称只是标签时取首条变更，无变更时保留标签。
 	Title string `json:"title"`
 	// URL GitHub 版本详情入口。
 	URL string `json:"url"`

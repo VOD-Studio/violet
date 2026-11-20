@@ -1,11 +1,4 @@
-import type {
-	JournalEntry,
-	JournalPage,
-	JournalQuery,
-	ProgressDay,
-	PublicNote,
-	PublicNoteListQuery,
-} from "@entities/note/model/types";
+import type { PublicNote, PublicNoteListQuery } from "@entities/note/model/types";
 import { apiGet, apiGetPaged } from "@shared/api/request";
 import type { PagedResponse } from "@shared/api/types";
 import { hashKey, queryOptions, useQueries, useQuery } from "@tanstack/react-query";
@@ -15,48 +8,42 @@ import { publishedNoteKeys } from "./keys";
 /** 读取一页已发布笔记。 */
 export function fetchPublishedNotes(
 	query: PublicNoteListQuery = {},
+	signal?: AbortSignal,
 ): Promise<PagedResponse<PublicNote>> {
-	return apiGetPaged<PublicNote>("/notes", { params: query });
+	return apiGetPaged<PublicNote>("/notes", { params: query, signal });
 }
 
-export function journalQueryOptions(query: JournalQuery) {
+/** 列表 SSR 和客户端分页共用相同的查询与缓存键。 */
+export function publishedNotesQueryOptions(query: PublicNoteListQuery) {
 	return queryOptions({
-		queryKey: publishedNoteKeys.journal(query),
-		queryFn: ({ signal }) => apiGet<JournalPage>("/journal", { params: query, signal }),
+		queryKey: publishedNoteKeys.list(query),
+		queryFn: ({ signal }) => fetchPublishedNotes(query, signal),
 	});
 }
 
-/** 同一项目日卡跨页只出现一次。 */
-export function journalEntryKey(entry: JournalEntry): string {
-	return entry.kind === "note"
-		? `note:${entry.note.id}`
-		: `progress:${entry.progress.project.id}:${entry.progress.day}`;
-}
-
 /** 筛选变更时从首页续读；末页请求失败时保留已读条目。 */
-export function useJournalFeed(query: Omit<JournalQuery, "cursor">) {
-	const first = useQuery(journalQueryOptions(query));
-	const key = hashKey(publishedNoteKeys.journal(query));
+export function usePublishedNotesFeed(query: Omit<PublicNoteListQuery, "cursor">) {
+	const first = useQuery(publishedNotesQueryOptions(query));
+	const key = hashKey(publishedNoteKeys.list(query));
 	const [feed, setFeed] = useState<{ key: string; cursors: string[] }>({ key, cursors: [] });
 	const cursors = feed.key === key ? feed.cursors : [];
 	if (feed.key !== key) setFeed({ key, cursors });
 
 	const more = useQueries({
-		queries: cursors.map((cursor) => journalQueryOptions({ ...query, cursor })),
+		queries: cursors.map((cursor) => publishedNotesQueryOptions({ ...query, cursor })),
 	});
 	const lastMore = more.at(-1);
-	let nextCursor = first.data?.next_cursor;
-	const entries: JournalEntry[] = [];
+	let nextCursor = first.data?.pagination.next_cursor;
+	const notes: PublicNote[] = [];
 	const seen = new Set<string>();
 	for (const page of [first, ...more]) {
 		if (!page.data) break;
-		for (const entry of page.data.entries) {
-			const entryKey = journalEntryKey(entry);
-			if (seen.has(entryKey)) continue;
-			seen.add(entryKey);
-			entries.push(entry);
+		for (const note of page.data.data) {
+			if (seen.has(note.id)) continue;
+			seen.add(note.id);
+			notes.push(note);
 		}
-		nextCursor = page.data.next_cursor;
+		nextCursor = page.data.pagination.next_cursor;
 	}
 
 	const loadingMore = lastMore?.isFetching ?? false;
@@ -77,8 +64,7 @@ export function useJournalFeed(query: Omit<JournalQuery, "cursor">) {
 	};
 
 	return {
-		entries,
-		progress: first.data?.progress ?? null,
+		notes,
 		isLoading: first.isLoading,
 		isError: first.isError && !first.data,
 		refetch: first.refetch,
@@ -88,19 +74,6 @@ export function useJournalFeed(query: Omit<JournalQuery, "cursor">) {
 		loadMoreFailed,
 		loadMore,
 	};
-}
-
-export function useJournalProgressDay(projectId: string, day: string, enabled: boolean) {
-	return useQuery({
-		queryKey: publishedNoteKeys.progressDay(projectId, day),
-		queryFn: ({ signal }) =>
-			apiGet<ProgressDay>(
-				`/journal/progress/${encodeURIComponent(projectId)}/${encodeURIComponent(day)}`,
-				{ signal },
-			),
-		enabled,
-		retry: false,
-	});
 }
 
 function fetchPublishedNote(id: string): Promise<PublicNote> {
