@@ -7,6 +7,27 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.29.0](https://github.com/VOD-Studio/violet/compare/v2.28.0...v2.29.0) (2026-11-20)
+
+
+### 新增
+
+* **about:** 按画板呈现花园生长图 ([aeeb2fa](https://github.com/VOD-Studio/violet/commit/aeeb2faca808347870f5d1de2ec6a1f1ff7f2df2)), closes [#767](https://github.com/VOD-Studio/violet/issues/767)
+* **journal:** 提供同源的花园生长历史 ([0a8ad33](https://github.com/VOD-Studio/violet/commit/0a8ad33ae68a1e5a6b738cda2b4114a584eba674)), closes [#767](https://github.com/VOD-Studio/violet/issues/767)
+
+
+### 修复
+
+* **about:** 按设计稿展开花园生长图 ([2bf72aa](https://github.com/VOD-Studio/violet/commit/2bf72aa2eb486d1b8f60b0087146ee8c7a8e21f6))
+* **auth:** 按设计稿调整登录双栏 ([5112202](https://github.com/VOD-Studio/violet/commit/5112202cb2d556c60799a388788580250822953f))
+* **friends:** 对齐友链页头与交换区域 ([2cbdfa7](https://github.com/VOD-Studio/violet/commit/2cbdfa7d9b04995594ac71071ec97605a3bb1e16))
+* **galleries:** 对齐精选图集的页头留白 ([5b36036](https://github.com/VOD-Studio/violet/commit/5b360368f3579cf48e55f1a7dfec285e6aec79c1))
+* **journal:** 只展示已发布的手写手记 ([bd67666](https://github.com/VOD-Studio/violet/commit/bd67666992bb751f83f4cc1bd46ad661b93947d7))
+* **journal:** 对齐手记页头与时间线 ([07ef960](https://github.com/VOD-Studio/violet/commit/07ef960fd1687a69dbff1adc9bafac49c921983e))
+* **profile:** 对齐公开主页横幅与统计区 ([c323193](https://github.com/VOD-Studio/violet/commit/c3231935ecf11ec7540abe589f1491a130a6cf0e))
+* **projects:** 恢复项目总览封面与路线图层级 ([4c89400](https://github.com/VOD-Studio/violet/commit/4c89400120156a493427bbf14708aeae44bd5a61))
+* **site:** 对齐站点页面设计稿 ([15ab326](https://github.com/VOD-Studio/violet/commit/15ab32677cc302891d5c20fb5a780e184a98383e))
+
 ## [2.28.0](https://github.com/VOD-Studio/violet/compare/v2.27.0...v2.28.0) (2026-11-19)
 
 
