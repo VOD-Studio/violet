@@ -93,6 +93,8 @@ make dev
 - 后端 API：http://localhost:9090
 - 健康检查：http://localhost:9090/api/health
 
+后端用容器、前端在本机运行时，使用 `make dev-mixed`。Vite 从 `127.0.0.1:5173` 开始，遇到占用就试下一个端口；打开终端 `Local:` 打印的地址。
+
 不想在本机装 Go 和 Node.js 时，可用全容器化开发环境，Go、Node.js、PostgreSQL、Redis 都跑在容器里：
 
 ```bash
