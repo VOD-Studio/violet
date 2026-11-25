@@ -33,6 +33,6 @@ echo "启动前端开发服务器（本地 Vite HMR）..."
 echo "按 Ctrl+C 停止前端（后端容器保持运行）"
 echo ""
 
-# 前台运行前端，Ctrl+C 直接传递给它
+# 固定 IPv4 回环；否则 localhost 可能解析到 ::1，和另一个 IPv4 项目同时使用 5173。
 cd web
-pnpm dev
+exec pnpm dev --host 127.0.0.1
