@@ -7,6 +7,13 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.29.1](https://github.com/VOD-Studio/violet/compare/v2.29.0...v2.29.1) (2026-11-25)
+
+
+### 修复
+
+* **dev-mixed:** 在 IPv4 回环地址顺延前端端口 ([#826](https://github.com/VOD-Studio/violet/issues/826)) ([58b4df9](https://github.com/VOD-Studio/violet/commit/58b4df9d90fab1f01a1f1137f562e6a7282adc96))
+
 ## [2.29.0](https://github.com/VOD-Studio/violet/compare/v2.28.0...v2.29.0) (2026-11-20)
 
 
